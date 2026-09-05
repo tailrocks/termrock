@@ -20,7 +20,6 @@
 //! LogPane for single local build/process buffer.
 //!
 //! Research: k9s, stern, Textual logs, btop, TermRock LogPane.
-
 use std::collections::BTreeSet;
 
 use ratatui_core::{
@@ -28,9 +27,7 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols, wrap_display_cols},
@@ -79,23 +76,13 @@ impl LogLevel {
 
     /// Level mark (`ascii` uses T/D/I/W/E).
     #[must_use]
-    pub const fn glyph(self, ascii: bool) -> &'static str {
-        if ascii {
-            match self {
-                Self::Trace => "T",
-                Self::Debug => "D",
-                Self::Info => "I",
-                Self::Warn => "W",
-                Self::Error => "E",
-            }
-        } else {
-            match self {
-                Self::Trace => ".",
-                Self::Debug => "·",
-                Self::Info => "i",
-                Self::Warn => "!",
-                Self::Error => "x",
-            }
+    pub const fn glyph(self, _ascii: bool) -> &'static str {
+        match self {
+            Self::Trace => ".",
+            Self::Debug => "·",
+            Self::Info => "i",
+            Self::Warn => "!",
+            Self::Error => "x",
         }
     }
 
@@ -321,8 +308,6 @@ pub struct LogStreamState {
     content_width: u16,
     /// Hit regions.
     pub regions: Vec<LogStreamRegion>,
-    /// Prefer ASCII glyphs for levels / chrome (or set on the widget).
-    pub ascii: bool,
     /// Prefer no-color paint (letter marks; or set on the widget).
     pub colorless: bool,
     /// Anchor line id for preserve-across-reproject.
@@ -361,7 +346,6 @@ impl LogStreamState {
             batched: 0,
             content_width: 0,
             regions: Vec::new(),
-            ascii: false,
             colorless: false,
             anchor_id: None,
         }
@@ -459,7 +443,7 @@ impl LogStreamState {
         if let Some(aid) = self.anchor_id.as_ref() {
             if let Some(i) = view.iter().position(|l| l.id == aid) {
                 self.cursor = i;
-                self.ensure_cursor_visible(view.len());
+                self.scroll.reveal_row(self.cursor);
             }
         }
     }
@@ -487,22 +471,6 @@ impl LogStreamState {
         }
     }
 
-    fn ensure_cursor_visible(&mut self, len: usize) {
-        if len == 0 || self.body_rows == 0 {
-            return;
-        }
-        let vh = usize::from(self.body_rows);
-        let start = usize::from(self.scroll.offset_y());
-        let end = start.saturating_add(vh);
-        if self.cursor < start {
-            self.scroll.set_offset_y_quiet(self.cursor as u16);
-        } else if self.cursor >= end {
-            let next = self.cursor.saturating_add(1).saturating_sub(vh);
-            self.scroll.set_offset_y_quiet(next as u16);
-        }
-        self.scroll.clamp();
-    }
-
     fn scroll_by_lines(&mut self, delta: i32) -> bool {
         if self.body_rows == 0 && self.line_count == 0 {
             return false;
@@ -516,10 +484,10 @@ impl LogStreamState {
 
     /// Keys.
     pub fn handle_key(&mut self, key: KeyEvent, lines: &[LogLine<'_>]) -> LogStreamOutcome {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return LogStreamOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         // Search
         if is_press && matches!(key.code, KeyCode::Char('/')) && key.modifiers.is_empty() {
@@ -686,7 +654,7 @@ impl LogStreamState {
                     } else {
                         self.scroll.pause_follow();
                     }
-                    self.ensure_cursor_visible(len);
+                    self.scroll.reveal_row(self.cursor);
                     if was && !self.is_following() {
                         return LogStreamOutcome::Detach;
                     }
@@ -710,7 +678,7 @@ impl LogStreamState {
                 if len > 0 && self.cursor > 0 {
                     self.cursor -= 1;
                     self.scroll.pause_follow();
-                    self.ensure_cursor_visible(len);
+                    self.scroll.reveal_row(self.cursor);
                     if was {
                         return LogStreamOutcome::Detach;
                     }
@@ -946,7 +914,6 @@ pub struct LogStream<'a> {
     lines: &'a [LogLine<'a>],
     system: &'a DesignSystem,
     focused: bool,
-    ascii: bool,
     colorless: bool,
     title: Option<&'a str>,
 }
@@ -959,7 +926,6 @@ impl<'a> LogStream<'a> {
             lines,
             system,
             focused: true,
-            ascii: false,
             colorless: false,
             title: None,
         }
@@ -981,13 +947,7 @@ impl<'a> LogStream<'a> {
 
     /// ASCII level / follow glyphs.
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
     /// Reduced-color paint.
-    #[must_use]
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
         self
@@ -1001,8 +961,8 @@ impl<'a> LogStream<'a> {
             state.area_rows = 0;
             return;
         }
-        let ascii = self.ascii || state.ascii;
-        let colorless = self.colorless || state.colorless;
+        let separator = " · ";
+        let colorless = self.colorless || state.colorless || self.system.mono();
         state.origin = (area.x, area.y);
         state.area_rows = area.height;
 
@@ -1099,7 +1059,7 @@ impl<'a> LogStream<'a> {
             .min(area.bottom().saturating_sub(u16::from(show_chip)));
 
         if view.is_empty() {
-            let mark = if ascii { "[ ] " } else { "∅ " };
+            let mark = "∅ ";
             let msg = if tiny {
                 format!("{mark}empty")
             } else {
@@ -1157,14 +1117,10 @@ impl<'a> LogStream<'a> {
                 );
                 let style = chrome.label_style(style);
 
-                let g = line.level.glyph(ascii);
-                let bm = if bookmarked {
-                    if ascii { "*" } else { "★" }
-                } else {
-                    " "
-                };
+                let g = line.level.glyph(false);
+                let bm = if bookmarked { "★" } else { " " };
                 let batch = if line.batch_count > 1 {
-                    format!("×{}", line.batch_count)
+                    format!("{}{}", "×", line.batch_count)
                 } else {
                     String::new()
                 };
@@ -1267,7 +1223,6 @@ impl<'a> LogStream<'a> {
                         style,
                     );
                     if ri == 0 {
-                        chrome.paint(buffer, Rect::new(area.x, py, area.width, 1));
                         // Tiers ride the first row only: a wrapped
                         // continuation is all message, and all one tone.
                         let skip = if matches!(state.wrap, LogWrap::Wrap) {
@@ -1286,6 +1241,11 @@ impl<'a> LogStream<'a> {
                             skip,
                         );
                     }
+                    let continuation = Rect::new(area.x, py, area.width, 1);
+                    chrome.paint_wash(buffer, continuation);
+                    if ri == 0 {
+                        chrome.paint_gutter(buffer, continuation);
+                    }
                     py = py.saturating_add(1);
                 }
 
@@ -1302,39 +1262,34 @@ impl<'a> LogStream<'a> {
             let following = state.scroll.is_following();
             let indicator = state.scroll.new_content();
             let mut chip = if following {
-                if ascii {
-                    "v follow".to_string()
-                } else {
-                    "↓ follow".to_string()
-                }
+                "↓ follow".to_string()
             } else if indicator.visible {
-                if ascii {
-                    format!("v {} new  f=follow", indicator.unseen)
-                } else {
-                    format!("↓ {} new · f follow", indicator.unseen)
-                }
-            } else if ascii {
-                "^ pinned  f=follow".to_string()
+                format!("↓ {} new · f follow", indicator.unseen)
             } else {
                 "↑ pinned · f follow".to_string()
             };
             if state.dropped > 0 {
-                chip.push_str(&format!(" · drop {}", state.dropped));
+                chip.push_str(&format!("{separator}drop {}", state.dropped));
             }
             if state.batched > 1 {
-                chip.push_str(&format!(" · batch {}", state.batched));
+                chip.push_str(&format!("{separator}batch {}", state.batched));
             }
             if let Some(q) = &state.search {
-                chip.push_str(&format!(" · /{q}"));
+                chip.push_str(&format!("{separator}/{q}"));
             }
             if state.level_floor > LogLevel::Trace {
-                chip.push_str(&format!(" · ≥{}", state.level_floor.letter()));
+                let comparison = "≥";
+                chip.push_str(&format!(
+                    "{separator}{comparison}{}",
+                    state.level_floor.letter()
+                ));
             }
             if !state.bookmarks.is_empty() {
-                chip.push_str(&format!(" · ★{}", state.bookmarks.len()));
+                let bookmark = "★";
+                chip.push_str(&format!("{separator}{bookmark}{}", state.bookmarks.len()));
             }
             if matches!(state.recipe, LogLineRecipe::Compact) {
-                chip.push_str(" · compact");
+                chip.push_str(&format!("{separator}compact"));
             }
             let chip_style = if following && surface {
                 if colorless {
@@ -1724,6 +1679,7 @@ mod tests {
         let lines = sample();
         let mut state = LogStreamState::new();
         state.set_following(false);
+        state.cursor = 1;
         state.recipe = LogLineRecipe::Detailed;
         let stream = LogStream::new(&lines, &system).focused(true);
         let area = Rect::new(0, 0, 72, 10);

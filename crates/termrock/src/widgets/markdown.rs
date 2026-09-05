@@ -18,15 +18,14 @@
 //! **Streaming.** Incomplete fences/tables set [`MarkdownBlock::incomplete`];
 //! layout measures only closed content rows + a one-row streaming cue so
 //! appending does not thrash unrelated block geometry.
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
-
-use crate::input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
+use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
     EventResult, NavigationMove, PageMove, SemanticNode, SemanticRole, SemanticScene,
     SemanticState, UiIntent, default_list_intent,
 };
-use crate::style::{DesignSystem, Role};
+use crate::style::{DesignSystem, Glyph, Role};
 use crate::text::{display_cols, take_display_cols, wrap_display_cols};
 use crate::widgets::{
     CodeBlock, CodeBlockState, CodeWrap, Heading, HeadingLevel, Paragraph, RoleTokenSyntax, Text,
@@ -683,17 +682,29 @@ impl<'a> MarkdownView<'a> {
             .fold(0u16, |a, h| a.saturating_add(h))
     }
 
-    /// Build row map: each display row → (block_index, sub_row).
-    #[must_use]
-    pub fn row_map(&self, width: u16) -> Vec<(usize, u16)> {
-        let mut map = Vec::new();
+    /// Heights of every block at `width`, in document order.
+    ///
+    /// Paint measures once per frame and derives row positions
+    /// arithmetically; materializing one entry per display row allocated a
+    /// full-document vector on every frame and every click.
+    fn block_heights(&self, width: u16) -> Vec<u16> {
+        self.blocks
+            .iter()
+            .map(|b| self.measure_block_height(b, width))
+            .collect()
+    }
+
+    /// Block containing absolute display row `doc_row`.
+    fn block_at_row(&self, doc_row: usize, width: u16) -> Option<usize> {
+        let mut seen = 0usize;
         for (bi, block) in self.blocks.iter().enumerate() {
-            let h = self.measure_block_height(block, width);
-            for sub in 0..h {
-                map.push((bi, sub));
+            let h = usize::from(self.measure_block_height(block, width));
+            if doc_row < seen.saturating_add(h) {
+                return Some(bi);
             }
+            seen = seen.saturating_add(h);
         }
-        map
+        None
     }
 
     /// First display row index of `first_block` (for Widget migration).
@@ -704,6 +715,19 @@ impl<'a> MarkdownView<'a> {
             .take(block_index)
             .map(|b| self.measure_block_height(b, width))
             .fold(0u16, |a, h| a.saturating_add(h))
+    }
+
+    /// Absolute display row `idx` as `(block, sub_row)`, from block heights.
+    fn walk_rows(heights: &[u16], idx: usize) -> Option<(usize, u16)> {
+        let mut seen = 0usize;
+        for (bi, h) in heights.iter().enumerate() {
+            let h = usize::from(*h);
+            if idx < seen.saturating_add(h) {
+                return Some((bi, u16::try_from(idx - seen).unwrap_or(u16::MAX)));
+            }
+            seen = seen.saturating_add(h);
+        }
+        None
     }
 
     /// Plain text for selection / full doc.
@@ -754,8 +778,8 @@ impl<'a> MarkdownView<'a> {
         }
 
         let width = area.width;
-        let map = self.row_map(width);
-        let total = u16::try_from(map.len()).unwrap_or(u16::MAX);
+        let heights = self.block_heights(width);
+        let total = heights.iter().fold(0u16, |a, h| a.saturating_add(*h));
         state.total_rows = total;
         state.viewport_rows = area.height;
         // Seed scroll from first_block once when unset path
@@ -771,7 +795,7 @@ impl<'a> MarkdownView<'a> {
 
         for row in 0..area.height {
             let idx = first.saturating_add(usize::from(row));
-            let Some(&(bi, sub)) = map.get(idx) else {
+            let Some((bi, sub)) = Self::walk_rows(&heights, idx) else {
                 break;
             };
             let block = &self.blocks[bi];
@@ -878,7 +902,7 @@ impl<'a> MarkdownView<'a> {
             MarkdownBlockKind::Code => {
                 if body_sub == 0 {
                     let _ = Text::spans(
-                        [TextSpan::new(block.text).role(Role::Info).code()],
+                        [TextSpan::new(block.text).role(Role::TextSecondary).code()],
                         self.system,
                     )
                     .truncate()
@@ -1036,7 +1060,7 @@ impl<'a> MarkdownView<'a> {
         if has_header && body_sub == 0 {
             let lang = block.language.unwrap_or("code");
             let label = if block.incomplete {
-                format!("{lang} …")
+                format!("{lang} {}", "…")
             } else {
                 lang.to_string()
             };
@@ -1076,26 +1100,20 @@ impl<'a> MarkdownView<'a> {
         }
         // After body: streaming cue
         if block.incomplete {
-            let cue = if self.system.glyphs.is_ascii() {
-                "..."
-            } else {
-                "…"
-            };
+            let cue = "…";
             buffer.set_stringn(
                 area.x,
                 area.y,
                 cue,
                 usize::from(area.width),
-                self.system
-                    .style(Role::TextMuted)
-                    .add_modifier(Modifier::DIM),
+                self.system.style(Role::TextFaint),
             );
         }
     }
 
     /// Keys: scroll, cursor, copy, link activate.
     pub fn handle_key(&self, state: &mut MarkdownViewState, key: KeyEvent) -> MarkdownOutcome {
-        if !state.focused || key.kind != KeyEventKind::Press {
+        if !state.focused || !key.is_press() {
             return MarkdownOutcome::Ignored;
         }
         if matches!(key.code, crate::input::KeyCode::Char('c' | 'C')) && key.modifiers.is_empty() {
@@ -1300,8 +1318,7 @@ impl<'a> MarkdownView<'a> {
                 let row = event.position.y.saturating_sub(parts.root.y);
                 let doc_row = parts.first_row.saturating_add(row);
                 let width = parts.root.width;
-                let map = self.row_map(width);
-                if let Some(&(bi, _)) = map.get(usize::from(doc_row)) {
+                if let Some(bi) = self.block_at_row(usize::from(doc_row), width) {
                     state.focused = true;
                     state.cursor_block = Some(bi);
                     state.selection = Some((bi, bi.saturating_add(1)));
@@ -1585,28 +1602,17 @@ fn wants_leading_gap(kind: MarkdownBlockKind, level: HeadingLevel) -> bool {
 fn list_prefix(block: &MarkdownBlock<'_>, system: &DesignSystem) -> String {
     match block.kind {
         MarkdownBlockKind::TaskItem => {
-            if block.task_checked == Some(true) {
-                if system.glyphs.is_ascii() {
-                    "[x] ".into()
-                } else {
-                    "☑ ".into()
-                }
-            } else if system.glyphs.is_ascii() {
-                "[ ] ".into()
+            let mark = if block.task_checked == Some(true) {
+                system.glyphs.resolve(Glyph::CheckOn).text
             } else {
-                "☐ ".into()
-            }
+                system.glyphs.resolve(Glyph::CheckOff).text
+            };
+            format!("{mark} ")
         }
         MarkdownBlockKind::OrderedItem => {
             format!("{}. ", block.list_index.unwrap_or(1))
         }
-        MarkdownBlockKind::ListItem => {
-            if system.glyphs.is_ascii() {
-                "* ".into()
-            } else {
-                "• ".into()
-            }
-        }
+        MarkdownBlockKind::ListItem => "• ".into(),
         _ => String::new(),
     }
 }
@@ -1628,26 +1634,15 @@ fn list_prefix_width(block: &MarkdownBlock<'_>) -> u16 {
 /// Each cell keeps its own foreground and modifiers — a selected heading is
 /// still a heading — so only the ground moves.
 fn select_row(buffer: &mut Buffer, area: Rect, system: &DesignSystem) {
-    if area.width == 0 {
-        return;
-    }
-    let wash = system.style(Role::SelectionTint).bg;
-    for x in area.x..area.x.saturating_add(area.width) {
-        let cell = &mut buffer[(x, area.y)];
-        let mut s = cell.style();
-        if let Some(bg) = wash {
-            s = s.bg(bg);
-        }
-        cell.set_style(s);
-    }
-    let gutter = system.glyphs.selection_gutter();
-    let cell = &mut buffer[(area.x, area.y)];
-    let mut marked = cell.style().patch(system.style(Role::Accent));
-    if let Some(bg) = wash {
-        marked = marked.bg(bg);
-    }
-    cell.set_symbol(gutter);
-    cell.set_style(marked);
+    super::row_chrome::RowChrome::resolve(
+        system,
+        crate::style::ListRowVisualState {
+            selected: true,
+            focused: true,
+            ..Default::default()
+        },
+    )
+    .paint(buffer, area);
 }
 
 fn spans_to_text<'a>(spans: &'a [MarkdownInline<'a>], _system: &DesignSystem) -> Vec<TextSpan<'a>> {
@@ -1658,10 +1653,10 @@ fn spans_to_text<'a>(spans: &'a [MarkdownInline<'a>], _system: &DesignSystem) ->
             match sp.kind {
                 MarkdownInlineKind::Text => {}
                 MarkdownInlineKind::Strong => t = t.strong(),
-                MarkdownInlineKind::Emphasis => {
-                    t = t.emphasis(crate::widgets::TextEmphasis::Emphasis);
-                }
-                MarkdownInlineKind::Code => t = t.code().role(Role::Info),
+                // Weight is the one legal emphasis in the terminal (D5: ITALIC
+                // is the comment tier), so `*this*` reads as bold, too.
+                MarkdownInlineKind::Emphasis => t = t.strong(),
+                MarkdownInlineKind::Code => t = t.code().role(Role::TextSecondary),
                 MarkdownInlineKind::Link => t = t.role(Role::Link).underline(true),
             }
             t
@@ -1971,7 +1966,7 @@ fn x() {}
     #[test]
     fn renders_heading_strong() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let blocks = [MarkdownBlock::heading("Hello", HeadingLevel::H1)];
         let mut buffer = Buffer::empty(Rect::new(0, 0, 20, 2));
         MarkdownView::new(&blocks, &system).render(Rect::new(0, 0, 20, 2), &mut buffer);
@@ -2146,5 +2141,29 @@ fn x() {}
         assert!(!d.contains("**"));
         assert_eq!(links.len(), 1);
         assert_eq!(links[0].0, "x");
+    }
+
+    #[test]
+    fn paints_task_checkboxes_from_glyph_catalog() {
+        let system = DesignSystem::junie();
+        let src = "- [ ] todo\n- [x] done\n";
+        let blocks = project_markdown(src);
+        let mut state = MarkdownViewState::new();
+        let area = Rect::new(0, 0, 24, 4);
+        let mut buf = Buffer::empty(area);
+        let _ = MarkdownView::new(&blocks, &system).paint(area, &mut buf, &mut state);
+        let mut text = String::new();
+        for y in 0..area.height {
+            for x in 0..area.width {
+                text.push_str(buf[(x, y)].symbol());
+            }
+        }
+        let on = format!("{} ", system.glyphs.resolve(Glyph::CheckOn).text);
+        let off = format!("{} ", system.glyphs.resolve(Glyph::CheckOff).text);
+        assert_eq!(on, "[✓] ");
+        assert_eq!(off, "[ ] ");
+        assert!(text.contains("[✓]"), "checked task missing: {text:?}");
+        assert!(text.contains("[ ]"), "unchecked task missing: {text:?}");
+        assert!(text.contains("todo") && text.contains("done"), "{text:?}");
     }
 }

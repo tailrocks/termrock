@@ -17,16 +17,20 @@
 //! semantic label (`remove {name}`) for inspection / help.
 //!
 //! References: token inputs, Grok paste/file chips, desktop filter chips.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    style::{Color, Modifier},
+    widgets::Widget,
+};
 
 use crate::input::{KeyCode, KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
     EventResult, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome, SemanticNode,
-    SemanticRole, SemanticScene, SemanticState,
+    SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
 };
-use crate::style::{DesignSystem, FocusEmphasis, Glyph, Role, SurfaceFamily};
+use crate::style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, Role};
 use crate::text::{display_cols, take_display_cols};
 
 // ── Shared token chrome ─────────────────────────────────────────────────────
@@ -125,6 +129,8 @@ pub enum TagOutcome<Id> {
     PartChanged(TokenPart),
     /// Body activated (Enter on non-removable or body when not remove-focused).
     Activated(Id),
+    /// Pointer entered or left the remove glyph.
+    HoverChanged,
 }
 
 /// Removable or static compact tag (entity / attachment).
@@ -224,13 +230,13 @@ impl<'a, Id> Tag<'a, Id> {
     pub fn measure_width(&self) -> u16 {
         u16::try_from(display_cols(&self.decorated_body()))
             .unwrap_or(1)
+            .saturating_add(1) // gutter ▎
             .saturating_add(if self.removable {
-                // gap + remove glyph
                 1 + u16::try_from(display_cols(remove_glyph(self.system))).unwrap_or(1)
             } else {
                 0
             })
-            .saturating_add(2) // brackets padding
+            .saturating_add(1) // trailing pad
             .max(1)
     }
 
@@ -259,6 +265,8 @@ pub struct TagState {
     pub focused: bool,
     /// Body vs remove (when removable).
     pub part: TokenPart,
+    /// Pointer is over the remove glyph.
+    pub hovered_remove: bool,
     /// Cached parts.
     pub parts: Option<TokenParts>,
 }
@@ -270,6 +278,7 @@ impl TagState {
         Self {
             focused: false,
             part: TokenPart::Body,
+            hovered_remove: false,
             parts: None,
         }
     }
@@ -292,6 +301,16 @@ impl<'a, Id: Clone> Tag<'a, Id> {
     /// Paint; updates state geometry.
     /// Paint; updates state geometry.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut TagState) -> TokenParts {
+        self.paint_on(area, buffer, state, None)
+    }
+
+    fn paint_on(
+        &self,
+        area: Rect,
+        buffer: &mut Buffer,
+        state: &mut TagState,
+        background: Option<Color>,
+    ) -> TokenParts {
         state.parts = None;
         if area.is_empty() {
             return TokenParts::default();
@@ -299,7 +318,6 @@ impl<'a, Id: Clone> Tag<'a, Id> {
         // A tag is a neutral label: angle brackets, no selection pip.
         let parts = TokenPaint {
             system: self.system,
-            bracket: BracketStyle::Angle,
             mark: None,
             prefix: token_prefix(self.system, self.status),
             label: self.label,
@@ -309,6 +327,9 @@ impl<'a, Id: Clone> Tag<'a, Id> {
             selected: false,
             disabled: self.disabled,
             part: state.part,
+            hovered_remove: state.hovered_remove,
+            overlay: false,
+            background,
         }
         .paint(area, buffer);
         state.parts = Some(parts);
@@ -317,8 +338,23 @@ impl<'a, Id: Clone> Tag<'a, Id> {
 
     /// Key path: Left/Right part, Delete remove, Enter activate/remove.
     pub fn handle_key(&self, state: &mut TagState, key: KeyEvent) -> TagOutcome<Id> {
-        if self.disabled || !state.focused || key.kind != KeyEventKind::Press {
+        if self.disabled || !state.focused || !key.is_press() {
             return TagOutcome::Ignored;
+        }
+        if let Some(intent) = default_button_intent(key) {
+            if matches!(intent, UiIntent::Activate) {
+                return if self.is_removable() && matches!(state.part, TokenPart::Remove) {
+                    TagOutcome::Remove(self.id.clone())
+                } else {
+                    TagOutcome::Activated(self.id.clone())
+                };
+            }
+            if matches!(intent, UiIntent::Activate | UiIntent::Toggle)
+                && self.is_removable()
+                && matches!(state.part, TokenPart::Remove)
+            {
+                return TagOutcome::Remove(self.id.clone());
+            }
         }
         match key.code {
             KeyCode::Left | KeyCode::Char('h') if self.is_removable() => {
@@ -338,25 +374,27 @@ impl<'a, Id: Clone> Tag<'a, Id> {
             KeyCode::Delete | KeyCode::Backspace if self.is_removable() => {
                 TagOutcome::Remove(self.id.clone())
             }
-            KeyCode::Enter => {
-                if self.is_removable() && matches!(state.part, TokenPart::Remove) {
-                    TagOutcome::Remove(self.id.clone())
-                } else {
-                    TagOutcome::Activated(self.id.clone())
-                }
-            }
-            KeyCode::Char(' ')
-                if self.is_removable() && matches!(state.part, TokenPart::Remove) =>
-            {
-                TagOutcome::Remove(self.id.clone())
-            }
             _ => TagOutcome::Ignored,
         }
     }
 
     /// Mouse: body activate, remove hits remove.
     pub fn handle_mouse(&self, state: &mut TagState, event: MouseEvent) -> TagOutcome<Id> {
-        if self.disabled || event.kind != MouseEventKind::Down(MouseButton::Left) {
+        if self.disabled {
+            return TagOutcome::Ignored;
+        }
+        if matches!(event.kind, MouseEventKind::Moved) {
+            let Some(parts) = state.parts else {
+                return TagOutcome::Ignored;
+            };
+            let over = parts.has_remove() && parts.remove.contains(event.position);
+            if over == state.hovered_remove {
+                return TagOutcome::Ignored;
+            }
+            state.hovered_remove = over;
+            return TagOutcome::HoverChanged;
+        }
+        if event.kind != MouseEventKind::Down(MouseButton::Left) {
             return TagOutcome::Ignored;
         }
         let Some(parts) = state.parts else {
@@ -400,6 +438,7 @@ impl<'a, Id: Clone> Tag<'a, Id> {
         let mut st = TagState {
             focused: state.focused,
             part: state.part,
+            hovered_remove: state.hovered_remove,
             parts: None,
         };
         // layout without paint
@@ -488,14 +527,12 @@ impl BracketStyle {
     }
 }
 
-/// One token's paint plan: brackets, an optional mark, a label, a remove slot.
+/// One token's paint plan: gutter, an optional mark, a label, a remove slot.
 ///
-/// Tag, Chip, keycaps, token-field entries and attachment chips are one family
-/// with different brackets and marks — not five paint bodies that drift apart
-/// (plans/015 Step 2).
+/// Filter chips are a row: `▎label ×`. The `×` stays faint until hovered.
+/// No boxed-pill chrome.
 struct TokenPaint<'a> {
     system: &'a DesignSystem,
-    bracket: BracketStyle,
     /// Selection pip for interactive tokens (shape before colour).
     mark: Option<&'a str>,
     /// Status glyph painted before the label.
@@ -507,6 +544,11 @@ struct TokenPaint<'a> {
     selected: bool,
     disabled: bool,
     part: TokenPart,
+    hovered_remove: bool,
+    /// Chip wells sit on overlay (junie Toggle/Secondary). Tags stay quiet.
+    overlay: bool,
+    /// Host surface used by a source chip bar.
+    background: Option<Color>,
 }
 
 impl TokenPaint<'_> {
@@ -514,12 +556,12 @@ impl TokenPaint<'_> {
         if area.is_empty() {
             return TokenParts::default();
         }
-        let (open, close) = self.bracket.pair(self.system.glyphs.is_ascii());
         let remove = if self.removable {
             remove_glyph(self.system)
         } else {
             ""
         };
+        let gutter = self.system.glyphs.selection_gutter();
 
         let mut inner = String::new();
         if let Some(prefix) = self.prefix {
@@ -532,85 +574,95 @@ impl TokenPaint<'_> {
         }
         inner.push_str(self.label);
 
-        let mut full = String::from(open);
-        full.push_str(&inner);
-        if self.removable {
-            full.push(' ');
-            full.push_str(remove);
-        }
-        full.push_str(close);
-
-        let clipped = take_display_cols(&full, usize::from(area.width));
         let mut style = token_style(
             self.system,
             self.status,
             self.focused,
             self.selected,
             self.disabled,
+            self.overlay,
         );
-        let emphasis = self.system.focus_emphasis(SurfaceFamily::Token);
-        if self.focused && matches!(emphasis, FocusEmphasis::Reversed) {
-            style = style.add_modifier(Modifier::REVERSED);
+        if self.focused {
+            style = style.add_modifier(Modifier::BOLD);
         }
-        buffer.set_stringn(area.x, area.y, &clipped, usize::from(area.width), style);
+        buffer.set_style(
+            Rect {
+                x: area.x,
+                y: area.y,
+                width: area.width,
+                height: 1.min(area.height),
+            },
+            style,
+        );
 
-        let used = u16::try_from(display_cols(&clipped))
-            .unwrap_or(0)
-            .min(area.width);
-        let open_w = u16::try_from(display_cols(open)).unwrap_or(1);
+        let fill_bg = style
+            .bg
+            .or(self.background)
+            .unwrap_or(self.system.junie_theme().surface);
+        let gutter_style = self.system.gutter(
+            crate::style::VisualState {
+                focused: self.focused,
+                selected: self.selected,
+                disabled: self.disabled,
+                ..crate::style::VisualState::default()
+            },
+            fill_bg,
+            false,
+        );
+        buffer.set_stringn(area.x, area.y, gutter, 1, gutter_style);
+
         let inner_w = u16::try_from(display_cols(&inner)).unwrap_or(0);
+        let body_x = area.x.saturating_add(1);
+        let body_w = inner_w.min(area.right().saturating_sub(body_x));
+        if body_w > 0 {
+            buffer.set_stringn(
+                body_x,
+                area.y,
+                &take_display_cols(&inner, usize::from(body_w)),
+                usize::from(body_w),
+                style,
+            );
+        }
+
         let remove_w = if self.removable {
-            1 + u16::try_from(display_cols(remove)).unwrap_or(1)
+            u16::try_from(display_cols(remove)).unwrap_or(1)
         } else {
             0
         };
-        let body = Rect {
-            x: area.x.saturating_add(open_w),
-            y: area.y,
-            width: inner_w.min(used.saturating_sub(open_w)),
-            height: 1.min(area.height),
-        };
-        let remove_rect = if self.removable && used > open_w.saturating_add(inner_w) {
+        let remove_x = body_x
+            .saturating_add(body_w)
+            .saturating_add(1)
+            .min(area.right().saturating_sub(remove_w.max(1)));
+        let remove_rect = if self.removable && remove_x < area.right() && remove_w > 0 {
+            let hot =
+                self.hovered_remove || (self.focused && matches!(self.part, TokenPart::Remove));
+            let xs = if hot {
+                style
+                    .patch(self.system.style(Role::TextStrong))
+                    .add_modifier(Modifier::BOLD)
+            } else {
+                style.patch(self.system.style(Role::TextMuted))
+            };
+            buffer.set_stringn(remove_x, area.y, remove, 1, xs);
             Rect {
-                x: area
-                    .x
-                    .saturating_add(used.saturating_sub(remove_w.saturating_add(open_w)))
-                    .min(area.right().saturating_sub(1)),
+                x: remove_x,
                 y: area.y,
-                width: remove_w.min(2).max(1),
+                width: remove_w.max(1),
                 height: 1.min(area.height),
             }
         } else {
             Rect::default()
         };
 
-        if self.focused && matches!(emphasis, FocusEmphasis::PillGlyph) && used > 0 {
-            // The bracket carries focus so the mark keeps stating membership
-            // (audit D18): only the two bracket cells brighten.
-            let bracket = self.system.style(Role::BorderFocused);
-            for x in [area.x, area.x.saturating_add(used.saturating_sub(1))] {
-                if x < area.right() {
-                    let cell = &mut buffer[(x, area.y)];
-                    let ground = cell.style().bg;
-                    let mut bracket_style = bracket;
-                    if let Some(bg) = ground {
-                        bracket_style = bracket_style.bg(bg);
-                    }
-                    cell.set_style(bracket_style);
-                }
-            }
-        }
-
-        if self.focused && matches!(self.part, TokenPart::Remove) && remove_rect.width > 0 {
-            // The remove affordance is one or two cells: reverse them so the
-            // focus lands on the `×` itself.
-            buffer.set_style(
-                remove_rect,
-                self.system
-                    .style(Role::Danger)
-                    .add_modifier(Modifier::BOLD | Modifier::REVERSED),
-            );
-        }
+        let used = if self.removable {
+            remove_x
+                .saturating_add(remove_w)
+                .saturating_sub(area.x)
+                .saturating_add(1)
+                .min(area.width)
+        } else {
+            1u16.saturating_add(body_w).min(area.width)
+        };
 
         TokenParts {
             root: Rect {
@@ -619,7 +671,12 @@ impl TokenPaint<'_> {
                 width: used,
                 height: 1.min(area.height),
             },
-            body,
+            body: Rect {
+                x: body_x,
+                y: area.y,
+                width: body_w,
+                height: 1.min(area.height),
+            },
             remove: remove_rect,
         }
     }
@@ -640,27 +697,37 @@ fn token_style(
     focused: bool,
     selected: bool,
     disabled: bool,
+    overlay: bool,
 ) -> ratatui_core::style::Style {
-    if disabled {
-        return system.style(Role::TextDisabled);
-    }
+    // Junie chips always use Toggle/Secondary overlay fill. Enabled vs not
+    // is foreground weight, not a second well. Tags stay Quiet on surface.
+    let recipe = system.button_recipe(
+        if overlay || selected {
+            ButtonRecipeVariant::Secondary
+        } else {
+            ButtonRecipeVariant::Quiet
+        },
+        if disabled {
+            ControlState::Disabled
+        } else if matches!(status, TokenStatus::Loading) {
+            ControlState::Loading
+        } else if focused {
+            ControlState::Focused
+        } else {
+            ControlState::Default
+        },
+        system.junie_theme().surface,
+    );
     // Status and membership are different facts and compose: an errored chip
     // that is also selected used to lose its selection entirely, because the
     // status arm matched first and returned (plans/021 Step 4).
-    let mut style = match status {
-        TokenStatus::Error => system.style(Role::Danger),
-        TokenStatus::Loading => system.style(Role::TextMuted),
-        TokenStatus::Default if selected => system.style(Role::TextStrong),
-        TokenStatus::Default if focused => system.style(Role::Focus),
-        TokenStatus::Default => system.style(Role::TextMuted),
-    };
-    if selected {
-        style = style.patch(system.style(Role::SelectionTint));
+    let mut style = recipe.fill.patch(recipe.label);
+    if matches!(status, TokenStatus::Error) {
+        style = style.patch(system.style(Role::Danger));
     }
-    if !selected {
-        if let Some(bg) = system.style(Role::Raised).bg {
-            style = style.bg(bg);
-        }
+    // Source ChipBar: disabled/off chips keep the overlay well but `text_faint`.
+    if overlay && !selected && !disabled && !matches!(status, TokenStatus::Error) {
+        style = style.fg(system.junie_theme().text_faint);
     }
     if focused {
         style = style.add_modifier(Modifier::BOLD);
@@ -686,6 +753,8 @@ pub enum ChipOutcome<Id> {
     PartChanged(TokenPart),
     /// Body activated without toggle (e.g. loading chip expand).
     Activated(Id),
+    /// Pointer entered or left the remove glyph.
+    HoverChanged,
 }
 
 /// Selectable filter / token chip.
@@ -792,29 +861,24 @@ impl<'a, Id> Chip<'a, Id> {
     }
 
     /// Measure width for selected state.
+    ///
+    /// Source ChipBar: `1 + label + 1 + removable 2 + 1`, then a 1-cell gap
+    /// after the chip. The extra removable cell is trailing wash, not a
+    /// second glyph.
     #[must_use]
-    pub fn measure_width(&self, selected: bool) -> u16 {
-        let mark = self
-            .system
-            .glyphs
-            .resolve(if selected {
-                Glyph::RadioOn
-            } else {
-                Glyph::RadioOff
-            })
-            .text;
-        let mut body = if self.interactive {
-            format!("{mark} {}", self.label)
-        } else {
-            self.label.to_string()
-        };
+    pub fn measure_width(&self, _selected: bool) -> u16 {
+        let mut body = self.label.to_string();
         if matches!(self.status, TokenStatus::Loading) {
             body = format!("{} {body}", loading_glyph(self.system));
         }
-        let mut w = display_cols(&body) + 2; // brackets
-        if self.removable {
-            w += 1 + display_cols(remove_glyph(self.system));
+        if matches!(self.status, TokenStatus::Error) {
+            body = format!("{} {body}", self.system.glyphs.resolve(Glyph::Error).text);
         }
+        let mut w = 1 + display_cols(&body) + 1;
+        if self.removable {
+            w += 2;
+        }
+        w += 1;
         u16::try_from(w).unwrap_or(1).max(1)
     }
 }
@@ -828,6 +892,8 @@ pub struct ChipState {
     focused: bool,
     /// Body vs remove.
     part: TokenPart,
+    /// Pointer is over the remove glyph.
+    hovered_remove: bool,
     /// Geometry.
     parts: Option<TokenParts>,
 }
@@ -840,6 +906,7 @@ impl ChipState {
             selected,
             focused: false,
             part: TokenPart::Body,
+            hovered_remove: false,
             parts: None,
         }
     }
@@ -885,31 +952,33 @@ impl ChipState {
     pub const fn parts(&self) -> Option<TokenParts> {
         self.parts
     }
+
+    /// Pointer over the remove glyph.
+    pub const fn set_hovered_remove(&mut self, on: bool) {
+        self.hovered_remove = on;
+    }
 }
 
 impl<'a, Id: Clone> Chip<'a, Id> {
     /// Paint chip.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut ChipState) -> TokenParts {
+        self.paint_on(area, buffer, state, None)
+    }
+
+    fn paint_on(
+        &self,
+        area: Rect,
+        buffer: &mut Buffer,
+        state: &mut ChipState,
+        background: Option<Color>,
+    ) -> TokenParts {
         state.parts = None;
         if area.is_empty() {
             return TokenParts::default();
         }
-        // A chip is interactive: square brackets and a selection pip whose
-        // shape states membership before any colour does.
-        let mark = self.interactive.then(|| {
-            self.system
-                .glyphs
-                .resolve(if state.selected {
-                    Glyph::RadioOn
-                } else {
-                    Glyph::RadioOff
-                })
-                .text
-        });
         let parts = TokenPaint {
             system: self.system,
-            bracket: BracketStyle::Square,
-            mark,
+            mark: None,
             prefix: token_prefix(self.system, self.status),
             label: self.label,
             removable: self.is_removable(),
@@ -918,6 +987,9 @@ impl<'a, Id: Clone> Chip<'a, Id> {
             selected: state.selected,
             disabled: self.disabled,
             part: state.part,
+            hovered_remove: state.hovered_remove,
+            overlay: true,
+            background,
         }
         .paint(area, buffer);
         state.parts = Some(parts);
@@ -926,8 +998,25 @@ impl<'a, Id: Clone> Chip<'a, Id> {
 
     /// Keys: part nav, toggle, remove.
     pub fn handle_key(&self, state: &mut ChipState, key: KeyEvent) -> ChipOutcome<Id> {
-        if self.disabled || !state.focused || key.kind != KeyEventKind::Press {
+        if self.disabled || !state.focused || !key.is_press() {
             return ChipOutcome::Ignored;
+        }
+        if let Some(intent) = default_button_intent(key) {
+            if matches!(intent, UiIntent::Activate) {
+                return if self.is_removable() && matches!(state.part, TokenPart::Remove) {
+                    ChipOutcome::Remove(self.id.clone())
+                } else if self.interactive {
+                    self.toggle(state)
+                } else {
+                    ChipOutcome::Activated(self.id.clone())
+                };
+            }
+            if matches!(intent, UiIntent::Activate | UiIntent::Toggle)
+                && self.interactive
+                && matches!(state.part, TokenPart::Body)
+            {
+                return self.toggle(state);
+            }
         }
         match key.code {
             KeyCode::Left | KeyCode::Char('h') if self.is_removable() => {
@@ -947,18 +1036,6 @@ impl<'a, Id: Clone> Chip<'a, Id> {
             KeyCode::Delete | KeyCode::Backspace if self.is_removable() => {
                 ChipOutcome::Remove(self.id.clone())
             }
-            KeyCode::Enter => {
-                if self.is_removable() && matches!(state.part, TokenPart::Remove) {
-                    ChipOutcome::Remove(self.id.clone())
-                } else if self.interactive {
-                    self.toggle(state)
-                } else {
-                    ChipOutcome::Activated(self.id.clone())
-                }
-            }
-            KeyCode::Char(' ') if self.interactive && matches!(state.part, TokenPart::Body) => {
-                self.toggle(state)
-            }
             _ => ChipOutcome::Ignored,
         }
     }
@@ -974,7 +1051,21 @@ impl<'a, Id: Clone> Chip<'a, Id> {
 
     /// Mouse.
     pub fn handle_mouse(&self, state: &mut ChipState, event: MouseEvent) -> ChipOutcome<Id> {
-        if self.disabled || event.kind != MouseEventKind::Down(MouseButton::Left) {
+        if self.disabled {
+            return ChipOutcome::Ignored;
+        }
+        if matches!(event.kind, MouseEventKind::Moved) {
+            let Some(parts) = state.parts else {
+                return ChipOutcome::Ignored;
+            };
+            let over = parts.has_remove() && parts.remove.contains(event.position);
+            if over == state.hovered_remove {
+                return ChipOutcome::Ignored;
+            }
+            state.hovered_remove = over;
+            return ChipOutcome::HoverChanged;
+        }
+        if event.kind != MouseEventKind::Down(MouseButton::Left) {
             return ChipOutcome::Ignored;
         }
         let Some(parts) = state.parts else {
@@ -1150,6 +1241,10 @@ pub enum TokenStripOutcome<Id> {
     OverflowActivated,
     /// Part focus within token.
     PartChanged(TokenPart),
+    /// Add-filter affordance activated.
+    Add,
+    /// Pointer entered or left a remove glyph.
+    HoverChanged,
 }
 
 /// Token strip / TokenField geometry host.
@@ -1167,6 +1262,16 @@ pub struct TokenStripState<Id> {
     pub regions: Vec<(Id, Rect)>,
     /// Overflow chip region.
     pub overflow_region: Option<Rect>,
+    /// Add-filter affordance region.
+    pub add_region: Option<Rect>,
+    /// Leading control (` match all ▾ `) region. Source ChipBar `lead`.
+    pub lead_region: Option<Rect>,
+    /// When false, chips stay idle even if the strip owns keyboard focus.
+    pub show_chip_cursor: bool,
+    /// Add-filter owns the strip cursor.
+    pub add_focused: bool,
+    /// Token whose remove glyph is hovered.
+    pub hovered_remove: Option<Id>,
     /// Indices not shown (overflow).
     pub overflow_ids: Vec<Id>,
 }
@@ -1190,6 +1295,11 @@ impl<Id> TokenStripState<Id> {
             scroll: 0,
             regions: Vec::new(),
             overflow_region: None,
+            add_region: None,
+            lead_region: None,
+            show_chip_cursor: false,
+            add_focused: false,
+            hovered_remove: None,
             overflow_ids: Vec::new(),
         }
     }
@@ -1223,6 +1333,11 @@ pub struct TokenStrip<'a, Id> {
     /// Max tokens before `+N` overflow (0 = show all that fit).
     max_visible: usize,
     gap: u16,
+    add_label: Option<&'a str>,
+    /// Leading label such as `match all ▾` (source ChipBar `lead`).
+    lead: Option<&'a str>,
+    /// Optional background for the host surface.
+    background: Option<Color>,
 }
 
 impl<'a, Id> TokenStrip<'a, Id> {
@@ -1235,6 +1350,9 @@ impl<'a, Id> TokenStrip<'a, Id> {
             layout: TokenStripLayout::Scroll,
             max_visible: 0,
             gap: 1,
+            add_label: Some("+ Add filter"),
+            lead: None,
+            background: None,
         }
     }
 
@@ -1265,6 +1383,28 @@ impl<'a, Id> TokenStrip<'a, Id> {
         self.gap = gap;
         self
     }
+
+    /// Trailing add affordance (`+ Add filter`). `None` hides it.
+    #[must_use]
+    pub const fn add_label(mut self, label: Option<&'a str>) -> Self {
+        self.add_label = label;
+        self
+    }
+
+    /// Leading control. Source ChipBar paints `" {lead} "` in muted on the
+    /// strip row, then a one-cell gap before the first chip.
+    #[must_use]
+    pub const fn lead(mut self, lead: Option<&'a str>) -> Self {
+        self.lead = lead;
+        self
+    }
+
+    /// Paint the strip on an explicit host background.
+    #[must_use]
+    pub const fn background(mut self, background: Color) -> Self {
+        self.background = Some(background);
+        self
+    }
 }
 
 impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
@@ -1280,8 +1420,12 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut TokenStripState<Id>) {
         state.regions.clear();
         state.overflow_region = None;
+        state.add_region = None;
+        state.lead_region = None;
         state.overflow_ids.clear();
-        if area.is_empty() || self.items.is_empty() {
+        if area.is_empty()
+            || (self.items.is_empty() && self.add_label.is_none() && self.lead.is_none())
+        {
             return;
         }
         let entries = self.entries();
@@ -1302,6 +1446,10 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
             state.overflow_ids.push(o.id.clone());
         }
 
+        let area = self.paint_lead(area, buffer, state);
+        if area.is_empty() {
+            return;
+        }
         match self.layout {
             TokenStripLayout::Scroll => {
                 self.paint_scroll(area, buffer, state, &visible, !overflow.is_empty());
@@ -1309,6 +1457,36 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
             TokenStripLayout::Wrap => {
                 self.paint_wrap(area, buffer, state, &visible, !overflow.is_empty());
             }
+        }
+    }
+
+    /// Source ChipBar: `" {lead} "` in muted on `surface`, then gap 1.
+    fn paint_lead(&self, area: Rect, buffer: &mut Buffer, state: &mut TokenStripState<Id>) -> Rect {
+        let Some(lead) = self.lead else {
+            return area;
+        };
+        let text = format!(" {lead} ");
+        let w = u16::try_from(display_cols(&text)).unwrap_or(0);
+        if w == 0 || area.width <= w {
+            return area;
+        }
+        let surface = self
+            .background
+            .unwrap_or_else(|| self.system.style(Role::Surface).bg.unwrap_or(Color::Reset));
+        let style = self.system.style(Role::TextMuted).bg(surface);
+        buffer.set_string(area.x, area.y, &text, style);
+        state.lead_region = Some(Rect {
+            x: area.x,
+            y: area.y,
+            width: w,
+            height: 1.min(area.height),
+        });
+        let next = area.x.saturating_add(w).saturating_add(self.gap);
+        Rect {
+            x: next,
+            y: area.y,
+            width: area.right().saturating_sub(next),
+            height: area.height,
         }
     }
 
@@ -1323,6 +1501,8 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
         // scroll is offset in cells of content start
         let mut content_x: i32 = -(i32::from(state.scroll));
         let overflow_w = if has_overflow { 5u16 } else { 0 };
+        // Source ChipBar never shrinks a chip to keep the add control:
+        // a chip that does not fit becomes `…` and the add is leftover-only.
         let budget_right = area.right().saturating_sub(overflow_w);
 
         for item in visible {
@@ -1335,14 +1515,24 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
             let draw_x = area
                 .x
                 .saturating_add(u16::try_from(abs_x.max(0)).unwrap_or(0));
-            if draw_x >= budget_right {
+            if draw_x.saturating_add(w) > budget_right {
+                // Source ChipBar paints `…` at the would-be chip origin even
+                // when only one cell remains.
+                if draw_x >= area.x && draw_x < buffer.area().right() {
+                    buffer.set_stringn(
+                        draw_x,
+                        area.y,
+                        self.system.glyphs.ellipsis(),
+                        1,
+                        self.system.style(Role::TextMuted),
+                    );
+                }
                 break;
             }
-            let width = w.min(budget_right.saturating_sub(draw_x));
             let rect = Rect {
                 x: draw_x,
                 y: area.y,
-                width,
+                width: w,
                 height: 1.min(area.height),
             };
             self.paint_item(item, rect, buffer, state);
@@ -1359,16 +1549,21 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
                 width: ow.min(area.width),
                 height: 1.min(area.height),
             };
-            let text = format!("[{label}]");
-            buffer.set_stringn(
-                rect.x,
-                rect.y,
-                &take_display_cols(&text, usize::from(rect.width)),
-                usize::from(rect.width),
-                self.system.style(Role::TextMuted),
-            );
+            paint_subtle_chip(self.system, buffer, rect, &label, false, self.background);
             state.overflow_region = Some(rect);
         }
+        let next_x = state
+            .regions
+            .last()
+            .map(|(_, r)| r.right().saturating_add(self.gap))
+            .unwrap_or(area.x);
+        let add_right = state.overflow_region.map(|r| r.x).unwrap_or(area.right());
+        self.paint_add(
+            Rect::new(next_x, area.y, add_right.saturating_sub(next_x), 1),
+            buffer,
+            state,
+            add_right,
+        );
     }
 
     fn paint_wrap(
@@ -1406,8 +1601,8 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
         }
         if has_overflow && y < bottom {
             let n = state.overflow_ids.len();
-            let label = format!("[+{n}]");
-            let ow = u16::try_from(display_cols(&label)).unwrap_or(4);
+            let label = format!("+{n}");
+            let ow = add_chip_width(&label);
             if x.saturating_add(ow) > area.right() {
                 x = area.x;
                 y = y.saturating_add(1);
@@ -1419,15 +1614,18 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
                     width: ow.min(area.right().saturating_sub(x)),
                     height: 1,
                 };
-                buffer.set_stringn(
-                    rect.x,
-                    rect.y,
-                    &take_display_cols(&label, usize::from(rect.width)),
-                    usize::from(rect.width),
-                    self.system.style(Role::TextMuted),
-                );
+                paint_subtle_chip(self.system, buffer, rect, &label, false, self.background);
                 state.overflow_region = Some(rect);
+                x = x.saturating_add(ow).saturating_add(self.gap);
             }
+        }
+        if y < bottom {
+            self.paint_add(
+                Rect::new(x, y, area.right().saturating_sub(x), 1),
+                buffer,
+                state,
+                area.right(),
+            );
         }
     }
 
@@ -1438,7 +1636,11 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
         buffer: &mut Buffer,
         state: &TokenStripState<Id>,
     ) {
-        let focused = state.surface_focused && state.roving.active() == Some(&item.id);
+        let focused = state.show_chip_cursor
+            && state.surface_focused
+            && !state.add_focused
+            && state.roving.active() == Some(&item.id);
+        let hovered_remove = state.hovered_remove.as_ref() == Some(&item.id);
         if item.selectable {
             let chip = Chip::new(item.id.clone(), item.label, self.system)
                 .removable(item.removable)
@@ -1446,10 +1648,11 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
                 .disabled(item.disabled);
             let mut cs = ChipState::new(item.selected);
             cs.set_focused(focused);
+            cs.set_hovered_remove(hovered_remove);
             if focused {
                 cs.set_part(state.part);
             }
-            let _ = chip.paint(rect, buffer, &mut cs);
+            let _ = chip.paint_on(rect, buffer, &mut cs, self.background);
         } else {
             let tag = Tag::new(item.id.clone(), item.label, self.system)
                 .removable(item.removable)
@@ -1457,11 +1660,56 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
                 .disabled(item.disabled);
             let mut ts = TagState::new();
             ts.set_focused(focused);
+            ts.hovered_remove = hovered_remove;
             if focused {
                 ts.set_part(state.part);
             }
-            let _ = tag.paint(rect, buffer, &mut ts);
+            let _ = tag.paint_on(rect, buffer, &mut ts, self.background);
         }
+    }
+
+    fn paint_add(
+        &self,
+        area: Rect,
+        buffer: &mut Buffer,
+        state: &mut TokenStripState<Id>,
+        budget_right: u16,
+    ) {
+        let Some(label) = self.add_label else {
+            return;
+        };
+        let w = add_chip_width(label);
+        if w == 0 || area.is_empty() {
+            return;
+        }
+        let x = if area.x >= budget_right {
+            return;
+        } else {
+            area.x
+        };
+        // Source ChipBar paints add only when the full control fits.
+        if x.saturating_add(w) > budget_right {
+            return;
+        }
+        let width = w.min(area.width);
+        if width < w {
+            return;
+        }
+        let rect = Rect {
+            x,
+            y: area.y,
+            width,
+            height: 1.min(area.height),
+        };
+        paint_subtle_chip(
+            self.system,
+            buffer,
+            rect,
+            label,
+            state.surface_focused && state.add_focused,
+            self.background,
+        );
+        state.add_region = Some(rect);
     }
 
     /// Key path for strip.
@@ -1470,11 +1718,26 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
         state: &mut TokenStripState<Id>,
         key: KeyEvent,
     ) -> TokenStripOutcome<Id> {
-        if !state.surface_focused || key.kind != KeyEventKind::Press {
+        if !state.surface_focused || !key.is_press() {
             return TokenStripOutcome::Ignored;
         }
         let entries = self.entries();
         let _ = state.roving.reconcile(&entries);
+
+        // Source ChipBar: ← → move the chip cursor. TokenPart is mouse/Tab-internal,
+        // not arrow-internal.
+        if matches!(
+            key.code,
+            KeyCode::Left | KeyCode::Right | KeyCode::Char('h') | KeyCode::Char('l')
+        ) {
+            match state.roving.handle_key(key, &entries) {
+                RovingOutcome::Ignored => {}
+                RovingOutcome::ActiveChanged { from, to } => {
+                    state.part = TokenPart::Body;
+                    return TokenStripOutcome::CursorMoved { from, to };
+                }
+            }
+        }
 
         // Focused token internal part / activate / remove
         if let Some(id) = state.roving.active().cloned() {
@@ -1499,6 +1762,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
                             return TokenStripOutcome::PartChanged(p);
                         }
                         ChipOutcome::Activated(id) => return TokenStripOutcome::Activated(id),
+                        ChipOutcome::HoverChanged => return TokenStripOutcome::HoverChanged,
                     }
                     // If chip ignored Left/Right at edges, fall through to roving
                 } else {
@@ -1517,8 +1781,26 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
                             return TokenStripOutcome::PartChanged(p);
                         }
                         TagOutcome::Activated(id) => return TokenStripOutcome::Activated(id),
+                        TagOutcome::HoverChanged => return TokenStripOutcome::HoverChanged,
                     }
                 }
+            }
+        }
+
+        if state.add_focused {
+            match key.code {
+                KeyCode::Left | KeyCode::Char('h') => {
+                    state.add_focused = false;
+                    if let Some(last) = self.items.iter().rev().find(|i| !i.disabled) {
+                        state.roving.set_active(Some(last.id.clone()));
+                    }
+                    return TokenStripOutcome::CursorMoved {
+                        from: None,
+                        to: state.roving.active().cloned(),
+                    };
+                }
+                KeyCode::Enter | KeyCode::Char(' ') => return TokenStripOutcome::Add,
+                _ => return TokenStripOutcome::Ignored,
             }
         }
 
@@ -1530,9 +1812,34 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
         }
 
         match state.roving.handle_key(key, &entries) {
-            RovingOutcome::Ignored => TokenStripOutcome::Ignored,
+            RovingOutcome::Ignored => {
+                if self.add_label.is_some()
+                    && matches!(
+                        key.code,
+                        KeyCode::Right | KeyCode::Char('l') | KeyCode::Enter
+                    )
+                    && state.roving.active().is_some()
+                    && self
+                        .items
+                        .iter()
+                        .rev()
+                        .find(|i| !i.disabled)
+                        .is_some_and(|last| state.roving.active() == Some(&last.id))
+                {
+                    if matches!(key.code, KeyCode::Enter) {
+                        return TokenStripOutcome::Ignored;
+                    }
+                    state.add_focused = true;
+                    return TokenStripOutcome::CursorMoved {
+                        from: state.roving.active().cloned(),
+                        to: None,
+                    };
+                }
+                TokenStripOutcome::Ignored
+            }
             RovingOutcome::ActiveChanged { from, to } => {
                 state.part = TokenPart::Body;
+                state.add_focused = false;
                 TokenStripOutcome::CursorMoved { from, to }
             }
         }
@@ -1544,8 +1851,32 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
         state: &mut TokenStripState<Id>,
         event: MouseEvent,
     ) -> TokenStripOutcome<Id> {
+        if matches!(event.kind, MouseEventKind::Moved) {
+            let mut next = None;
+            for (id, rect) in &state.regions {
+                if rect.contains(event.position)
+                    && event.position.x + 1 >= rect.right().saturating_sub(1)
+                    && rect.width > 3
+                {
+                    next = Some(id.clone());
+                    break;
+                }
+            }
+            if next == state.hovered_remove {
+                return TokenStripOutcome::Ignored;
+            }
+            state.hovered_remove = next;
+            return TokenStripOutcome::HoverChanged;
+        }
         if event.kind != MouseEventKind::Down(MouseButton::Left) {
             return TokenStripOutcome::Ignored;
+        }
+        if let Some(r) = state.add_region
+            && r.contains(event.position)
+        {
+            state.surface_focused = true;
+            state.add_focused = true;
+            return TokenStripOutcome::Add;
         }
         if let Some(r) = state.overflow_region
             && r.contains(event.position)
@@ -1579,6 +1910,54 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
             }
         }
         TokenStripOutcome::Ignored
+    }
+}
+
+fn add_chip_width(label: &str) -> u16 {
+    u16::try_from(1 + display_cols(label) + 1).unwrap_or(1)
+}
+
+fn paint_subtle_chip(
+    system: &DesignSystem,
+    buffer: &mut Buffer,
+    rect: Rect,
+    label: &str,
+    focused: bool,
+    background: Option<Color>,
+) {
+    if rect.is_empty() {
+        return;
+    }
+    let fill_bg = background.or_else(|| buffer.cell((rect.x, rect.y)).map(|cell| cell.bg));
+    let mut style = system.style(Role::TextSecondary);
+    if let Some(bg) = fill_bg {
+        style = style.bg(bg);
+    }
+    if focused {
+        style = system.style(Role::Text).add_modifier(Modifier::BOLD);
+        if let Some(bg) = fill_bg {
+            style = style.bg(bg);
+        }
+    }
+    buffer.set_style(rect, style);
+    let gutter = system.glyphs.selection_gutter();
+    let gutter_style = system.gutter(
+        crate::style::VisualState {
+            focused,
+            ..crate::style::VisualState::default()
+        },
+        fill_bg.unwrap_or(Color::Reset),
+        false,
+    );
+    buffer.set_stringn(rect.x, rect.y, gutter, 1, gutter_style);
+    if rect.width > 1 {
+        buffer.set_stringn(
+            rect.x.saturating_add(1),
+            rect.y,
+            take_display_cols(label, usize::from(rect.width.saturating_sub(1))),
+            usize::from(rect.width.saturating_sub(1)),
+            style,
+        );
     }
 }
 
@@ -1634,6 +2013,23 @@ mod tests {
     }
 
     #[test]
+    fn unselected_chip_sits_on_overlay() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let chip = Chip::new("f", "status = 'pending'", &system).removable(true);
+        let mut state = ChipState::new(false);
+        let area = Rect::new(0, 0, 24, 1);
+        let mut buffer = Buffer::empty(area);
+        let _ = chip.paint(area, &mut buffer, &mut state);
+        assert_eq!(
+            buffer[(1, 0)].bg,
+            theme.surface_overlay,
+            "unselected chip uses Toggle/Secondary overlay, not surface"
+        );
+        assert_eq!(buffer[(0, 0)].symbol(), system.glyphs.selection_gutter());
+    }
+
+    #[test]
     fn chip_toggle_space() {
         let system = DesignSystem::default();
         let chip = Chip::new("f1", "rust", &system);
@@ -1650,15 +2046,57 @@ mod tests {
     }
 
     #[test]
-    fn chip_ascii_radio() {
-        let system = DesignSystem::default().glyphs(GlyphSet::Ascii);
-        let chip = Chip::new("f", "x", &system);
-        let mut state = ChipState::new(true);
-        let mut buf = Buffer::empty(Rect::new(0, 0, 16, 1));
-        let _ = chip.paint(Rect::new(0, 0, 16, 1), &mut buf, &mut state);
-        // ascii radio on is (*)
-        let row: String = (0..16).map(|x| buf[(x, 0)].symbol().to_owned()).collect();
-        assert!(row.contains('*') || row.contains('('));
+    fn tag_chip_and_strip_mouse_use_painted_regions() {
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 24, 1);
+        let mut buffer = Buffer::empty(area);
+
+        let tag = Tag::removable_tag("tag", "alpha", &system);
+        let mut tag_state = TagState::new();
+        let parts = tag.paint(area, &mut buffer, &mut tag_state);
+        assert!(matches!(
+            tag.handle_mouse(
+                &mut tag_state,
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: ratatui_core::layout::Position::new(parts.body.x, parts.body.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+            ),
+            TagOutcome::Activated("tag")
+        ));
+
+        let chip = Chip::new("chip", "beta", &system);
+        let mut chip_state = ChipState::new(false);
+        let parts = chip.paint(area, &mut buffer, &mut chip_state);
+        assert!(matches!(
+            chip.handle_mouse(
+                &mut chip_state,
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: ratatui_core::layout::Position::new(parts.body.x, parts.body.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+            ),
+            ChipOutcome::Selected("chip")
+        ));
+
+        let items = [TokenItem::chip("strip", "gamma")];
+        let strip = TokenStrip::new(&items, &system);
+        let mut strip_state = TokenStripState::new();
+        strip.paint(area, &mut buffer, &mut strip_state);
+        let hit = strip_state.regions[0].1;
+        assert!(matches!(
+            strip.handle_mouse(
+                &mut strip_state,
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: ratatui_core::layout::Position::new(hit.x, hit.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+            ),
+            TokenStripOutcome::Selected("strip")
+        ));
     }
 
     #[test]
@@ -1739,5 +2177,126 @@ mod tests {
         assert!(s.is_selected());
         s.set_selected(false);
         assert!(!s.is_selected());
+    }
+
+    #[test]
+    fn removable_chip_width_matches_junie_chip_bar() {
+        let system = DesignSystem::junie();
+        let chip = Chip::new("s", "status = 'pending'", &system).removable(true);
+        assert_eq!(
+            chip.measure_width(true),
+            1 + 18 + 1 + 2 + 1,
+            "gutter + label + pad + removable 2 + trail"
+        );
+        let plain = Chip::new("p", "ok", &system);
+        assert_eq!(plain.measure_width(false), 1 + 2 + 1 + 1);
+    }
+
+    #[test]
+    fn filter_chip_is_gutter_row_not_boxed_pill() {
+        let system = DesignSystem::default();
+        let chip = Chip::new("rust", "Rust", &system).removable(true);
+        let mut state = ChipState::new(true);
+        let area = Rect::new(0, 0, 16, 1);
+        let mut buffer = Buffer::empty(area);
+        let parts = chip.paint(area, &mut buffer, &mut state);
+        assert_eq!(
+            buffer[(0, 0)].symbol(),
+            system.glyphs.selection_gutter(),
+            "col0 is the list gutter"
+        );
+        let row: String = (0..area.width)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(
+            !row.contains('[') && !row.contains(']') && !row.contains('⟨'),
+            "chips are not boxed pills: {row:?}"
+        );
+        assert!(row.contains('×') || row.contains(system.glyphs.resolve(Glyph::Close).text));
+        let muted = system.style(Role::TextMuted).fg.expect("text_muted");
+        assert_eq!(
+            buffer[(parts.remove.x, parts.remove.y)].fg,
+            muted,
+            "× stays faint until hovered"
+        );
+        state.hovered_remove = true;
+        let _ = chip.paint(area, &mut buffer, &mut state);
+        assert_ne!(
+            buffer[(parts.remove.x, parts.remove.y)].fg,
+            muted,
+            "hovered × brightens"
+        );
+    }
+
+    #[test]
+    fn token_strip_keeps_full_chips_and_drops_add_when_tight() {
+        let system = DesignSystem::junie();
+        let items = [
+            TokenItem::chip(0, "status = 'pending'")
+                .removable(true)
+                .selected(true),
+            TokenItem::chip(1, "total > 100")
+                .removable(true)
+                .selected(true),
+            TokenItem::chip(2, "country in (DE, FR)")
+                .removable(true)
+                .selected(false),
+        ];
+        let strip = TokenStrip::new(&items, &system).add_label(Some("+ Add filter"));
+        let mut state = TokenStripState::new();
+        // 42 cells after the lead: three full chips fit, add does not.
+        let area = Rect::new(0, 0, 66, 1);
+        let mut buffer = Buffer::empty(area);
+        strip.paint(area, &mut buffer, &mut state);
+        let row: String = (0..area.width)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(
+            row.contains("country in (DE, FR)"),
+            "last chip must not clip: {row:?}"
+        );
+        assert!(!row.contains("Add filter"), "add is leftover-only: {row:?}");
+        assert!(state.add_region.is_none(), "add must drop, not clip");
+    }
+
+    #[test]
+    fn token_strip_does_not_clip_add_into_leftover() {
+        let system = DesignSystem::junie();
+        let items = [TokenItem::chip(0, "status = 'pending'")
+            .removable(true)
+            .selected(true)];
+        let strip = TokenStrip::new(&items, &system).add_label(Some("+ Add filter"));
+        let mut state = TokenStripState::new();
+        // Chip 23 + gap 1 = 24; leftover 10 < add 14.
+        let area = Rect::new(0, 0, 34, 1);
+        let mut buffer = Buffer::empty(area);
+        strip.paint(area, &mut buffer, &mut state);
+        let row: String = (0..area.width)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(
+            !row.contains('+') && !row.contains("Add"),
+            "clipped add must not paint: {row:?}"
+        );
+        assert!(state.add_region.is_none());
+    }
+
+    #[test]
+    fn token_strip_paints_subtle_add_filter() {
+        let system = DesignSystem::default();
+        let items = [TokenItem::chip("a", "Rust").removable(true)];
+        let strip = TokenStrip::new(&items, &system);
+        let mut state = TokenStripState::new();
+        let area = Rect::new(0, 0, 40, 1);
+        let mut buffer = Buffer::empty(area);
+        strip.paint(area, &mut buffer, &mut state);
+        let row: String = (0..area.width)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(
+            row.contains("Add filter") || row.contains('+'),
+            "add affordance: {row:?}"
+        );
+        assert!(state.add_region.is_some());
     }
 }

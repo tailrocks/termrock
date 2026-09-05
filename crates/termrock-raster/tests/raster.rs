@@ -4,15 +4,12 @@
 //! End-to-end contracts for deterministic buffer rasterization.
 
 use ratatui::{
-    Terminal,
-    backend::TestBackend,
     buffer::Buffer,
     layout::Rect,
     style::{Color, Modifier, Style},
 };
 use sha2::{Digest, Sha256};
 use termrock::style::RolePalette;
-use termrock_lookbook::frame::story_by_id;
 use termrock_raster::{PixelDiff, compare_png_pixels, render_pixmap, render_png};
 
 fn one_cell(symbol: &str, modifier: Modifier, fg: Color, bg: Color) -> Buffer {
@@ -34,36 +31,42 @@ fn pixel(pixmap: &tiny_skia::Pixmap, x: u32, y: u32) -> [u8; 4] {
 }
 
 #[test]
-fn panel_story_png_has_exact_size_and_phosphor_border() {
-    let story = story_by_id("panel/focused").expect("panel/focused story");
+fn panel_story_png_has_exact_size_and_junie_accent() {
     let palette = RolePalette::default();
-    let backend = TestBackend::new(story.width, story.height);
-    let mut terminal = Terminal::new(backend).expect("test terminal");
-    let mut interactor = story.make_interactor();
-    interactor.set_theme(palette.clone());
-    terminal
-        .draw(|frame| interactor.render(frame, frame.area()))
-        .expect("paint story");
-    let mut buffer = terminal.backend().buffer().clone();
+    let mut buffer = Buffer::empty(Rect::new(0, 0, 24, 8));
+    buffer.set_string(
+        0,
+        0,
+        "┌──────────────────────┐",
+        Style::new().fg(Color::Rgb(0xd0, 0xd0, 0xd0)),
+    );
+    buffer.set_string(
+        0,
+        7,
+        "└──────────────────────┘",
+        Style::new().fg(Color::Rgb(0xd0, 0xd0, 0xd0)),
+    );
     buffer[(1, 1)]
         .set_symbol("█")
-        .set_fg(Color::Rgb(0, 255, 65));
+        .set_fg(Color::Rgb(0x48, 0xe0, 0x54));
     let png = render_png(&buffer, &palette).expect("render PNG");
     let pixmap = tiny_skia::Pixmap::decode_png(&png).expect("decode PNG");
-    assert_eq!(pixmap.width(), u32::from(story.width) * 9);
-    assert_eq!(pixmap.height(), u32::from(story.height) * 18);
+    assert_eq!(pixmap.width(), 24 * 9 + 24);
+    assert_eq!(pixmap.height(), 8 * 20 + 24);
     assert!(
         pixmap
             .data()
             .chunks_exact(4)
-            .any(|rgba| rgba == [0, 255, 65, 255])
+            .any(|rgba| rgba == [0x48, 0xe0, 0x54, 255])
     );
 }
 
 #[test]
 fn wide_grapheme_spans_two_cells_and_shadow_cell_is_ignored() {
+    // A wide symbol the vendored face chain actually maps (CJK is deliberately
+    // not vendored; see `fonts.rs`).
     let mut a = Buffer::empty(Rect::new(0, 0, 4, 1));
-    a.set_string(0, 0, "界", Style::new().fg(Color::Green));
+    a.set_string(0, 0, "🚀", Style::new().fg(Color::Green));
     let mut b = a.clone();
     b[(1, 0)].set_symbol("X");
     let palette = RolePalette::default();
@@ -72,9 +75,9 @@ fn wide_grapheme_spans_two_cells_and_shadow_cell_is_ignored() {
     assert_eq!(compare_png_pixels(&png_a, &png_b), Ok(()));
     let pixmap = tiny_skia::Pixmap::decode_png(&png_a).expect("decode A");
     let mut halves_equal = true;
-    for y in 0..18 {
+    for y in 0..20 {
         for x in 0..9 {
-            halves_equal &= pixel(&pixmap, x, y) == pixel(&pixmap, x + 9, y);
+            halves_equal &= pixel(&pixmap, x + 12, y + 12) == pixel(&pixmap, x + 21, y + 12);
         }
     }
     assert!(
@@ -149,10 +152,9 @@ fn underline_paints_web_consistent_rows() {
     )
     .unwrap();
     for x in 0..9 {
-        assert_eq!(pixel(&pixmap, x, 15), [0, 255, 65, 255]);
-        assert_eq!(pixel(&pixmap, x, 16), [0, 255, 65, 255]);
-        assert_eq!(pixel(&pixmap, x, 14), [0, 0, 0, 255]);
-        assert_eq!(pixel(&pixmap, x, 17), [0, 0, 0, 255]);
+        assert_eq!(pixel(&pixmap, x + 12, 12 + 17), [0, 255, 65, 255]);
+        assert_eq!(pixel(&pixmap, x + 12, 12 + 16), [0, 0, 0, 255]);
+        assert_eq!(pixel(&pixmap, x + 12, 12 + 18), [0, 0, 0, 255]);
     }
 }
 
@@ -169,10 +171,9 @@ fn crossed_out_paints_mid_cell_rows() {
     )
     .unwrap();
     for x in 0..9 {
-        assert_eq!(pixel(&pixmap, x, 8), [0, 255, 65, 255]);
-        assert_eq!(pixel(&pixmap, x, 9), [0, 255, 65, 255]);
-        assert_eq!(pixel(&pixmap, x, 7), [0, 0, 0, 255]);
-        assert_eq!(pixel(&pixmap, x, 10), [0, 0, 0, 255]);
+        assert_eq!(pixel(&pixmap, x + 12, 12 + 10), [0, 255, 65, 255]);
+        assert_eq!(pixel(&pixmap, x + 12, 12 + 9), [0, 0, 0, 255]);
+        assert_eq!(pixel(&pixmap, x + 12, 12 + 11), [0, 0, 0, 255]);
     }
 }
 
@@ -188,12 +189,11 @@ fn reversed_swaps_fg_bg() {
         &RolePalette::default(),
     )
     .unwrap();
-    assert!(
-        pixmap
-            .data()
-            .chunks_exact(4)
-            .all(|rgba| rgba == [0, 255, 65, 255])
-    );
+    for y in 12..32 {
+        for x in 12..21 {
+            assert_eq!(pixel(&pixmap, x, y), [0, 255, 65, 255]);
+        }
+    }
 }
 
 #[test]

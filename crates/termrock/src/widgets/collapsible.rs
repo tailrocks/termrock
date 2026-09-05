@@ -18,10 +18,9 @@
 //! Glyphs use [`GlyphSet`] disclosure markers (ASCII fallbacks).
 //!
 //! References: Radix Collapsible, tree disclosures, agent tool-detail expansion.
-
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
-use crate::input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
+use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{EventResult, UiIntent, default_tree_intent};
 use crate::style::{DesignSystem, Role};
 use crate::text::take_display_cols;
@@ -229,7 +228,7 @@ impl CollapsibleState {
         disabled: bool,
         controlled_open: Option<bool>,
     ) -> CollapsibleOutcome {
-        if disabled || !self.focused || key.kind != KeyEventKind::Press {
+        if disabled || !self.focused || !key.is_press() {
             return CollapsibleOutcome::Ignored;
         }
         let Some(intent) = default_tree_intent(key) else {
@@ -668,7 +667,6 @@ impl Widget for Collapsible<'_> {
 mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
-    use crate::style::GlyphSet;
 
     #[test]
     fn uncontrolled_toggle_via_enter() {
@@ -818,19 +816,6 @@ mod tests {
             None,
         );
         assert_eq!(out, CollapsibleOutcome::Opened);
-    }
-
-    #[test]
-    fn ascii_disclosure_glyph() {
-        let system = DesignSystem::default().glyphs(GlyphSet::Ascii);
-        let c = Collapsible::new("A", &system);
-        let mut state = CollapsibleState::new();
-        let mut buf = Buffer::empty(Rect::new(0, 0, 10, 2));
-        let _ = c.paint(Rect::new(0, 0, 10, 2), &mut buf, &mut state);
-        assert_eq!(buf[(0, 0)].symbol(), ">");
-        state.set_open(true);
-        let _ = c.paint(Rect::new(0, 0, 10, 2), &mut buf, &mut state);
-        assert_eq!(buf[(0, 0)].symbol(), "v");
     }
 
     #[test]

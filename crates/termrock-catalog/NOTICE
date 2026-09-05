@@ -1,0 +1,7 @@
+TermRock catalog adapts showcase shell, page composition, deterministic
+fixtures, and the TablePro application from junie-tui:
+
+    https://github.com/donbeave/terminal-components-claude
+
+junie-tui is licensed under the MIT License. Copyright notices from that
+project are preserved on adapted files. TermRock itself remains Apache-2.0.

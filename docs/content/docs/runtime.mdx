@@ -3,12 +3,13 @@ title: Runtime integration
 description: Event loops, keymaps, time, effects, and host ownership.
 ---
 
-The `showcase` example is the executable on-ramp. It composes tabs, a panel,
-list navigation, keymap-driven hints, status, toast feedback, mouse interaction,
-theme switching, and managed Crossterm cleanup without product-specific state:
+The canonical `termrock-catalog` application is the executable on-ramp. It
+mounts the shared catalog shell and state model used by native, headless, and
+browser hosts; runtime behavior remains independent of product-specific state:
 
 ```sh
-cargo run -p termrock --example showcase --features crossterm
+cargo run -p termrock-catalog --release
+cargo run -p termrock-catalog --release -- --page datagrid
 ```
 
 TermRock does not require an application architecture. Consumers may use a

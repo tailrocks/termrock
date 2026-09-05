@@ -7,7 +7,6 @@
 //! bytes from [`Widget::render`]. Callers supply metadata; this widget paints a
 //! product-neutral cell fallback. Pair with [`crate::style::CapabilityPreviewHost`]
 //! for generation-safe placement planning and session commands.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
@@ -147,6 +146,7 @@ impl Widget for &ImageSurface<'_> {
             ImageProtocol::ITerm2 => "iterm2",
         };
         let dims = match (self.meta.pixel_width, self.meta.pixel_height) {
+            (Some(w), Some(h)) if false => format!("{w}x{h}"),
             (Some(w), Some(h)) => format!("{w}×{h}"),
             _ => "size unknown".to_owned(),
         };
@@ -157,8 +157,9 @@ impl Widget for &ImageSurface<'_> {
         } else {
             "ready"
         };
-        let line1 = format!("▣ {}", self.meta.label);
-        let line2 = format!("{proto} · {dims} · {status}");
+        let line1 = format!("{} {}", "▣", self.meta.label);
+        let separator = " · ";
+        let line2 = format!("{proto}{separator}{dims}{separator}{status}");
         let style = if self.meta.stale || self.meta.pending {
             self.system.style(Role::TextMuted)
         } else {
@@ -211,7 +212,7 @@ mod tests {
     #[test]
     fn paints_label_and_lifecycle_flags() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let mut meta = ImageMeta::new("shot.png", ImageProtocol::Kitty);
         meta.pending = true;
         meta.generation = 3;

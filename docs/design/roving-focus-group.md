@@ -11,7 +11,7 @@
 |---------|------|
 | `FocusGraph` + roving **node** flag | **Preserve** — external keyboard surface |
 | `ListState` selection | **Preserve** (can adopt later) |
-| `MenuState` index cursor | **Migrate** internals → `RovingFocusGroup<usize>` |
+| `DropdownMenuState` panel cursors | **Preserve** — each cascade frame composes `RovingFocusGroup<usize>` |
 | `RadioState` focus_index | **Migrate** → `RovingFocusGroup<Id>` |
 | `TabsState` | **Preserve** selection; optional roving helper later |
 | Dual public FocusRing | **Still deleted** |

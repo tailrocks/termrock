@@ -35,7 +35,7 @@ TermRock is **not** only a crate of Ratatui widgets. The product category is:
 | **Kernel** | Rust crate (`termrock`) | Session lifecycle, focus, hit geometry, scroll, Unicode safety, overlay stack, semantic intents, per-frame scene registration, design tokens |
 | **Components** | Crate today; source-copy registry later | Styled widgets with stable IDs and borrowed data |
 | **Blocks / patterns** | Crate recipes today; installable sources later | Agent shell, ops dashboard, resource browser layouts |
-| **Studio** | `termrock-lookbook` | Stories, contracts, SVG previews; path to component studio |
+| **Catalog** | `termrock-catalog` | One Junie-derived interactive catalog, deterministic capture, and application previews |
 
 shadcn/ui’s defining advantage is **owned, inspectable source**—not React buttons. TermRock aims at the same for the terminal: developers pin the kernel, own application chrome, and can later install blocks without losing interaction contracts.
 

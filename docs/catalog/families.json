@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "components": [
+    {
+      "id": "action",
+      "title": "Actions",
+      "description": "Direct activation controls and compact command surfaces.",
+      "order": 10
+    },
+    {
+      "id": "input",
+      "title": "Inputs",
+      "description": "Editable values, forms, validation, and selection controls.",
+      "order": 20
+    },
+    {
+      "id": "navigation",
+      "title": "Navigation",
+      "description": "Selection, wayfinding, disclosure, and collection movement.",
+      "order": 30
+    },
+    {
+      "id": "overlay",
+      "title": "Overlays",
+      "description": "Layered, modal, anchored, and transient surfaces.",
+      "order": 40
+    },
+    {
+      "id": "layout",
+      "title": "Layout",
+      "description": "Spatial structure, framing, and text hierarchy.",
+      "order": 50
+    },
+    {
+      "id": "feedback",
+      "title": "Feedback",
+      "description": "Status, progress, errors, and operator-facing outcomes.",
+      "order": 60
+    },
+    {
+      "id": "data",
+      "title": "Data",
+      "description": "Structured, streaming, and inspectable terminal data.",
+      "order": 70
+    },
+    {
+      "id": "visualization",
+      "title": "Visualization",
+      "description": "Measures, series, timelines, and compact quantitative views.",
+      "order": 80
+    },
+    {
+      "id": "content",
+      "title": "Content",
+      "description": "Semantic text, media, identity, and product-neutral fragments.",
+      "order": 90
+    }
+  ],
+  "patterns": [
+    {
+      "id": "application",
+      "title": "Applications",
+      "description": "Complete multi-surface examples with persistent state.",
+      "order": 10
+    },
+    {
+      "id": "composite",
+      "title": "Composites",
+      "description": "Product-shaped recipes assembled from public components.",
+      "order": 20
+    },
+    {
+      "id": "layout-helper",
+      "title": "Layout helpers",
+      "description": "Geometry recipes shown in their canonical parent context.",
+      "order": 30
+    }
+  ]
+}

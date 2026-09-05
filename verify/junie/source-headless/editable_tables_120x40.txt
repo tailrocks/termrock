@@ -1,0 +1,40 @@
+ ▪ Junie Design system / Components / Editable tables                        truecolor · 120×40   i Inspector   ? Help  
+                                                                                                                        
+   Foundations            Editable tables  Navigation is reversed cell; editing is a cursor. They never look alike.     
+▎  Overview                                                                                                             
+                            Tasks                                                                              0 edits  
+   Components                                                                                                           
+▎  Buttons                     ID     Task                               Owner     Status     Branch                 …  
+▎  Inputs                   ▎  #1040  Add rate limiting to auth endpoi…  mira      Done       feat/rate-limit           
+▎  Text areas               ▎  #1041  Migrate sessions table to UUID k…  jonas     ▸ Running  chore/uuid-sessions       
+▎  Forms                    ▎  #1042  Fix flaky checkout integration t…  ana       Failed     fix/checkout flake   !    
+▎  Lists                    ▎  #1043  Write release notes for 3.2        mira      Queued     docs/release-3.2          
+▎  Trees                    ▎  #1044  Replace deprecated Vue mixins      kai       Done       refactor/mixins           
+▎  Tables                   ▎  #1045  Upgrade Postgres driver to 0.9     jonas     Paused     chore/pg-driver           
+▎› Editable tables          ▎  #1046  Extract billing service module     sofia     Done       refactor/billing          
+▎  Panels                   ▎  #1047  Add OpenTelemetry tracing spans    kai       ▸ Running  feat/otel                 
+▎  Sidebars                 ▎  #1048  Remove legacy feature flags        ana       Queued     chore/flags               
+▎  Dialogs                  ▎  #1049  Generate API client from OpenAPI   sofia     Done       feat/api-client           
+▎  Progress                 ▎  #1050  Harden CSP headers                 mira      Done       sec/csp                   
+▎  Scrolling                ▎  #1051  Speed up cold start of worker      jonas     Failed     perf/worker-boot          
+▎  Code editor              ▎  #1052  Localize onboarding emails         kai       Queued     feat/i18n-emails          
+▎  Data grid                ▎  #1053  Add pagination to audit log        ana       Done       feat/audit-pages          
+▎  Chips & selects                                                                                                      
+▎  Pickers                                                                                                              
+                          reversed  cell cursor (navigation)                                                            
+   Screens                ▁         editing cursor + accent underline                                                   
+▎  Settings               !         validation error                                                                    
+▎  Task runner                                                                                                          
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+ ↑ ↓ Move  Enter Open  Tab Into page  q Quit                                                                            

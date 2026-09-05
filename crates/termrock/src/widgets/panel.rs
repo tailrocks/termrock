@@ -10,7 +10,6 @@
 //! Focus belongs to interactive *descendants* by default. Only
 //! [`PanelVariant::Interactive`] (or collapsible header) registers panel-level
 //! focus / activation.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -19,14 +18,13 @@ use ratatui_core::{
     text::{Line, Span},
     widgets::Widget,
 };
-use ratatui_widgets::block::Block;
 
 use crate::input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{EventResult, UiIntent, default_button_intent, default_list_intent};
 use crate::style::{DesignSystem, Elevation, GlyphSet, PanelChrome, PanelRecipe, Role};
 use crate::text::{display_cols, take_display_cols};
 use crate::widgets::empty_state::EmptyState;
-use crate::widgets::error_state::ErrorView;
+use crate::widgets::error_state::ErrorState;
 use crate::widgets::skeleton::Skeleton;
 use crate::widgets::surface::{Surface, SurfaceFill, SurfaceRecipe};
 use crate::widgets::view_state::LoadingView;
@@ -37,10 +35,10 @@ use crate::widgets::view_state::LoadingView;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum PanelVariant {
-    /// Single-line border + surface fill (default).
-    #[default]
+    /// Single-line border + surface fill.
     Bordered,
-    /// No border; density padding only (quiet region).
+    /// No border; density padding only (quiet region, default).
+    #[default]
     Quiet,
     /// Top/bottom divider rules only (no side borders).
     DividerOnly,
@@ -208,6 +206,8 @@ pub struct PanelParts {
     pub disclosure: Option<Rect>,
     /// Header-actions band (right of title); host paints labels into action hits on state.
     pub actions: Option<Rect>,
+    /// Right-edge overflow track when [`Panel::vertical_scroll`] is set.
+    pub scrollbar: Option<Rect>,
     /// Mouse hit region for panel-level interaction.
     pub hit: Rect,
     /// Clip contract (= body for children).
@@ -273,7 +273,7 @@ impl PanelState {
         collapsible: bool,
         interactive: bool,
     ) -> PanelOutcome {
-        if !self.focused || key.kind != KeyEventKind::Press {
+        if !self.focused || !key.is_press() {
             return PanelOutcome::Ignored;
         }
         let Some(intent) = default_button_intent(key).or_else(|| default_list_intent(key)) else {
@@ -497,7 +497,10 @@ pub struct Panel<'a> {
     /// Header actions (dropped under narrow width before badge).
     header_actions: &'a [PanelAction<'a>],
     title_spec: Option<PanelTitleSpec<'a>>,
-    style: Option<Style>,
+    /// Wrapped line count for framed overflow chrome; `None` is no track.
+    vertical_scroll: Option<usize>,
+    /// Viewport offset in wrapped lines (top-relative).
+    scroll_offset: u16,
     tokens: &'a DesignSystem,
 }
 
@@ -517,22 +520,17 @@ impl<'a> Panel<'a> {
                 body_detail: None,
             },
             emphasis: PanelChrome::Normal,
-            variant: PanelVariant::Bordered,
+            variant: PanelVariant::Quiet,
             body: PanelBody::Host,
             collapsible: false,
             raised: false,
             overlay: false,
             header_actions: &[],
             title_spec: None,
-            style: None,
+            vertical_scroll: None,
+            scroll_offset: 0,
             tokens,
         }
-    }
-
-    /// Alias for [`Self::new`].
-    #[must_use]
-    pub const fn from_tokens(tokens: &'a DesignSystem) -> Self {
-        Self::new(tokens)
     }
 
     /// Quiet bordered-off panel (no chrome line).
@@ -634,13 +632,6 @@ impl<'a> Panel<'a> {
         self
     }
 
-    /// Canonical chrome setter (alias of [`Self::emphasis`]).
-    #[must_use]
-    pub const fn chrome(mut self, chrome: PanelChrome) -> Self {
-        self.emphasis = chrome;
-        self
-    }
-
     /// Border / interaction variant.
     #[must_use]
     pub const fn variant(mut self, variant: PanelVariant) -> Self {
@@ -679,11 +670,37 @@ impl<'a> Panel<'a> {
         self
     }
 
+    /// Enables framed vertical overflow chrome.
+    ///
+    /// `content_len` is the host's wrapped line count. The title row keeps two
+    /// blank cells before `─╮` (junie empty `meta` `"  "`). The body gutter
+    /// paints `│`/`┃` with [`crate::scroll::overflow_thumb`] when content
+    /// overflows. Hosts wrap body copy at [`Self::scrolled_content_area`].
     #[must_use]
-    /// Overrides the recipe border style.
-    pub const fn style(mut self, style: Style) -> Self {
-        self.style = Some(style);
+    pub const fn vertical_scroll(mut self, content_len: usize) -> Self {
+        self.vertical_scroll = Some(content_len);
         self
+    }
+
+    /// Top-relative wrapped-line offset for [`Self::vertical_scroll`].
+    #[must_use]
+    pub const fn scroll_offset(mut self, offset: u16) -> Self {
+        self.scroll_offset = offset;
+        self
+    }
+
+    /// Columns the host may write when [`Self::vertical_scroll`] is set.
+    ///
+    /// Junie `ScrollPanel` wraps at `inner.width - 2`: one column before the
+    /// track, then the track itself.
+    #[must_use]
+    pub const fn scrolled_content_area(body: Rect) -> Rect {
+        Rect {
+            x: body.x,
+            y: body.y,
+            width: body.width.saturating_sub(2),
+            height: body.height,
+        }
     }
 
     /// Whether this panel claims panel-level keyboard focus.
@@ -797,38 +814,6 @@ impl<'a> Panel<'a> {
         }
     }
 
-    #[must_use]
-    /// Builds the surrounding block from the recipe (single-line border only).
-    pub fn block(&self) -> Block<'a> {
-        self.block_for_width(u16::MAX)
-    }
-
-    /// Builds chrome contracted to the available outer width.
-    #[must_use]
-    pub fn block_for_width(&self, width: u16) -> Block<'a> {
-        let recipe = self.recipe();
-        let border = self.style.unwrap_or(recipe.border);
-        let mut block = if self.has_box_border() {
-            Block::bordered()
-                .border_style(border)
-                .border_set(self.tokens.border_set())
-        } else {
-            Block::default()
-        };
-        let slots = self.slots_for_width(width);
-        if let Some(spec) = self.title_spec {
-            block = block.title(self.title_spec_line(spec, width.saturating_sub(4), recipe.title));
-        } else if let Some(title) = self.title_line(slots, None) {
-            let clipped = self.chrome_label(&title, width.saturating_sub(4));
-            block = block.title(Span::styled(format!(" {clipped} "), recipe.title));
-        }
-        if let Some(footer) = slots.footer {
-            let clipped = self.chrome_label(footer, width.saturating_sub(4));
-            block = block.title_bottom(Span::styled(format!(" {clipped} "), recipe.title));
-        }
-        block
-    }
-
     /// Contracts a title or footer to the cells the chrome can spare.
     ///
     /// One rule for all four panel variants: grapheme-safe, ellipsis-marked,
@@ -848,7 +833,8 @@ impl<'a> Panel<'a> {
     fn title_spec_line(
         &self,
         spec: PanelTitleSpec<'a>,
-        budget: u16,
+        collapsed: Option<bool>,
+        _budget: u16,
         title_style: Style,
     ) -> Line<'static> {
         let live_glyph = self
@@ -856,20 +842,28 @@ impl<'a> Panel<'a> {
             .glyphs
             .resolve(crate::style::Glyph::Success)
             .text;
-        let plain = spec.text(live_glyph);
-        // Contraction is one rule for every panel title, spec or not: when the
-        // segments cannot fit, the whole line contracts as text rather than
-        // dropping a segment silently.
-        if crate::text::display_cols(&plain) > usize::from(budget.max(1)) {
-            return Line::from(Span::styled(
-                format!(" {} ", self.chrome_label(&plain, budget)),
-                title_style,
-            ));
+        let mut prefix = Vec::new();
+        if self.collapsible {
+            prefix.push(
+                if collapsed.unwrap_or(false) {
+                    self.tokens.glyphs.disclosure_closed()
+                } else {
+                    self.tokens.glyphs.disclosure_open()
+                }
+                .to_string(),
+            );
         }
-        let mut spans = vec![
-            Span::raw(" "),
-            Span::styled(spec.name.trim().to_string(), title_style),
-        ];
+        if let Some(warning) = self.recipe().title_prefix {
+            prefix.push(warning.to_string());
+        }
+        let prefix = prefix.join(" ");
+        // Overflow is one rule: `paint_border_label` ellipsizes the full
+        // multi-span line. Pre-truncating here ate the ellipsis (pad + Clip).
+        let mut spans = vec![Span::raw(" ")];
+        if !prefix.is_empty() {
+            spans.push(Span::styled(format!("{prefix} "), title_style));
+        }
+        spans.push(Span::styled(spec.name.trim().to_string(), title_style));
         if let Some(scope) = spec.scope {
             spans.push(Span::styled(
                 format!("({})", scope.trim()),
@@ -939,85 +933,94 @@ impl<'a> Panel<'a> {
     pub fn layout(&self, area: Rect, state: Option<&PanelState>) -> PanelParts {
         let collapsed = state.is_some_and(|s| s.collapsed && self.collapsible);
         let has_border = self.has_box_border();
-        let border_cells: u16 = if has_border { 1 } else { 0 };
-        let inner = shrink(area, border_cells, border_cells, border_cells, border_cells);
         let spacing = self.tokens.spacing;
-        let pad_x = if inner.width >= spacing.pad_x.saturating_mul(2).saturating_add(4) {
-            spacing.pad_x
-        } else {
-            0
-        };
-        let pad_y = if inner.height >= spacing.pad_y.saturating_mul(2).saturating_add(1) {
-            spacing.pad_y
-        } else {
-            0
-        };
-        let inner = shrink(inner, pad_x, pad_y, pad_x, pad_y);
-
         let slots = self.slots_for_width(area.width);
-        let has_title = slots.title_text().is_some() || self.collapsible;
+        let has_title =
+            self.title_spec.is_some() || slots.title_text().is_some() || self.collapsible;
         let has_footer_band = slots.footer.is_some() && !has_border;
-        // With box border, footer sits on bottom border (Block title_bottom).
         let footer_rows: u16 = if has_footer_band { 1 } else { 0 };
-        // Header is one row inside when we paint multi-part header band for collapsible
-        // without relying only on Block title (Block title is on the border line).
-        let header_inside: u16 = if self.collapsible && has_title && has_border {
-            0 // disclosure lives in border title
-        } else if !has_border && has_title {
-            1
-        } else {
-            0
-        };
 
-        let mut y = inner.y;
-        let header = if header_inside > 0 && inner.height > 0 {
-            let h = Rect {
-                x: inner.x,
-                y,
-                width: inner.width,
-                height: 1.min(inner.height),
+        // Card: filled surface, card-inset 2, title on the top pad row.
+        // Frame: rounded edge, frame-inset 3 (border + 2), one spare column right.
+        let (header, body, footer) = if has_border {
+            let inner = shrink(area, 1, 1, 1, 1);
+            let body = Rect::new(
+                inner.x.saturating_add(2),
+                inner.y,
+                inner.width.saturating_sub(3),
+                if collapsed { 0 } else { inner.height },
+            );
+            let header = if has_title {
+                Some(Rect {
+                    x: area.x.saturating_add(2),
+                    y: area.y,
+                    width: area.width.saturating_sub(4),
+                    height: 1.min(area.height),
+                })
+            } else {
+                None
             };
-            y = y.saturating_add(1);
-            Some(h)
-        } else if has_title && has_border {
-            // Title on border — expose header as top inner row for hit tests.
-            Some(Rect {
-                x: area.x.saturating_add(1),
-                y: area.y,
-                width: area.width.saturating_sub(2),
-                height: 1.min(area.height),
-            })
+            let footer = if footer_rows > 0 && !collapsed {
+                Some(Rect {
+                    x: body.x,
+                    y: area.bottom().saturating_sub(1),
+                    width: body.width,
+                    height: 1,
+                })
+            } else {
+                None
+            };
+            (header, body, footer)
         } else {
-            None
-        };
-
-        let footer_y = inner.bottom().saturating_sub(footer_rows);
-        let body_bottom = if collapsed { y } else { footer_y };
-        let body_h = body_bottom.saturating_sub(y);
-        let body = if collapsed {
-            Rect {
-                x: inner.x,
-                y,
-                width: inner.width,
-                height: 0,
-            }
-        } else {
-            Rect {
-                x: inner.x,
-                y,
-                width: inner.width,
-                height: body_h,
-            }
-        };
-        let footer = if footer_rows > 0 && !collapsed {
-            Some(Rect {
-                x: inner.x,
-                y: footer_y,
-                width: inner.width,
-                height: 1,
-            })
-        } else {
-            None
+            let pad_x = if area.width >= spacing.card_inset.saturating_mul(2).saturating_add(4) {
+                spacing.card_inset
+            } else {
+                0
+            };
+            let pad_y: u16 = if area.height >= 3 { 1 } else { 0 };
+            let header = if has_title && area.height > 0 {
+                Some(Rect {
+                    x: area.x.saturating_add(pad_x),
+                    y: area.y,
+                    width: area.width.saturating_sub(pad_x.saturating_mul(2)),
+                    height: 1,
+                })
+            } else {
+                None
+            };
+            let body_y = if has_title {
+                area.y.saturating_add(pad_y.saturating_add(1))
+            } else {
+                area.y.saturating_add(pad_y)
+            };
+            let footer_y = area.bottom().saturating_sub(footer_rows);
+            let content_bottom = if footer_rows > 0 {
+                footer_y
+            } else {
+                area.bottom().saturating_sub(pad_y)
+            };
+            let body_bottom = if collapsed { body_y } else { content_bottom };
+            let body = Rect {
+                x: area.x.saturating_add(pad_x),
+                y: body_y,
+                width: area.width.saturating_sub(pad_x.saturating_mul(2)),
+                height: if collapsed {
+                    0
+                } else {
+                    body_bottom.saturating_sub(body_y)
+                },
+            };
+            let footer = if footer_rows > 0 && !collapsed {
+                Some(Rect {
+                    x: body.x,
+                    y: footer_y,
+                    width: body.width,
+                    height: 1,
+                })
+            } else {
+                None
+            };
+            (header, body, footer)
         };
 
         let disclosure = header.map(|h| Rect {
@@ -1037,11 +1040,14 @@ impl<'a> Panel<'a> {
                 .sum::<u16>()
                 .min(area.width / 2)
                 .max(4);
+            let right_inset = if has_border { 1 } else { 0 };
             Some(Rect {
-                x: area
-                    .x
-                    .saturating_add(area.width.saturating_sub(band_w).saturating_sub(1)),
-                y: area.y,
+                x: area.x.saturating_add(
+                    area.width
+                        .saturating_sub(band_w)
+                        .saturating_sub(right_inset),
+                ),
+                y: header.map_or(area.y, |header| header.y),
                 width: band_w.min(area.width),
                 height: 1.min(area.height),
             })
@@ -1055,6 +1061,17 @@ impl<'a> Panel<'a> {
             body
         };
 
+        let scrollbar = if self.vertical_scroll.is_some() && body.width > 0 && body.height > 0 {
+            Some(Rect {
+                x: body.right().saturating_sub(1),
+                y: body.y,
+                width: 1,
+                height: body.height,
+            })
+        } else {
+            None
+        };
+
         PanelParts {
             root: area,
             header,
@@ -1062,6 +1079,7 @@ impl<'a> Panel<'a> {
             footer,
             disclosure,
             actions,
+            scrollbar,
             hit,
             clip: body,
         }
@@ -1085,40 +1103,64 @@ impl<'a> Panel<'a> {
         let parts = self.layout(area, state.as_ref().map(|s| &**s));
 
         // Surface fill (variant-aware).
-        let surface_recipe = if focused && self.is_focusable() {
-            SurfaceRecipe::Focused
+        let focused_chrome = focused
+            || matches!(self.emphasis, PanelChrome::Focused)
+            || (self.is_focusable() && focused);
+        if self.has_box_border() {
+            // Framed pane: canvas fill, rounded edge, border-subtle / border-strong.
+            // Overlay hosts lift to elevated so the page recedes.
+            let fill_recipe = if self.overlay {
+                if matches!(self.emphasis, PanelChrome::Danger) {
+                    SurfaceRecipe::OverlayDanger
+                } else if focused_chrome {
+                    SurfaceRecipe::OverlayFocused
+                } else {
+                    SurfaceRecipe::Overlay
+                }
+            } else {
+                SurfaceRecipe::Canvas
+            };
+            let _ = Surface::new(self.tokens)
+                .recipe(fill_recipe)
+                .bordered(false)
+                .padding(0, 0)
+                .paint(area, buffer);
+            let theme = self.tokens.junie_theme();
+            let border = if matches!(self.emphasis, PanelChrome::Danger) {
+                self.tokens.style(Role::Danger)
+            } else {
+                theme.border(focused_chrome)
+            };
+            ratatui_widgets::block::Block::default()
+                .borders(ratatui_widgets::borders::Borders::ALL)
+                .border_style(border)
+                .border_set(self.tokens.border_set())
+                .render(area, buffer);
         } else {
-            self.surface_recipe()
-        };
-        let fill_policy = if matches!(self.variant, PanelVariant::Quiet) {
-            SurfaceFill::Transparent
-        } else {
-            SurfaceFill::Auto
-        };
-        let surface_style = if focused && self.is_focusable() {
-            PanelChrome::Focused
-        } else {
-            self.emphasis
-        };
-        let surface_recipe_tokens = self.tokens.panel_recipe(surface_style, self.elevation());
-        let _ = Surface::new(self.tokens)
-            .recipe(surface_recipe)
-            .bordered(false)
-            .fill(fill_policy)
-            .padding(surface_recipe_tokens.pad_x, surface_recipe_tokens.pad_y)
-            .paint(area, buffer);
+            let fill_policy = if self.raised {
+                SurfaceFill::Auto
+            } else {
+                SurfaceFill::Transparent
+            };
+            let _ = Surface::new(self.tokens)
+                .recipe(if self.raised {
+                    SurfaceRecipe::Inset
+                } else {
+                    self.surface_recipe()
+                })
+                .bordered(false)
+                .fill(fill_policy)
+                .padding(0, 0)
+                .paint(area, buffer);
+        }
 
-        // Box border + title/footer on border.
+        // Surface owns the box. Panel only places semantic chrome onto it.
         if self.has_box_border() {
             let mut emphasis = self.emphasis;
             if focused && self.is_focusable() {
                 emphasis = PanelChrome::Focused;
             }
             let recipe = self.tokens.panel_recipe(emphasis, self.elevation());
-            let border = self.style.unwrap_or(recipe.border);
-            let mut block = Block::bordered()
-                .border_style(border)
-                .border_set(self.tokens.border_set());
             let slots = self.slots_for_width(area.width);
             // Reserve right band for header actions so title does not collide.
             let action_reserve = parts
@@ -1126,21 +1168,55 @@ impl<'a> Panel<'a> {
                 .map(|a| a.width.saturating_add(1))
                 .unwrap_or(0);
             let budget = area.width.saturating_sub(4).saturating_sub(action_reserve);
-            if let Some(spec) = self.title_spec {
-                block = block.title(self.title_spec_line(spec, budget, recipe.title));
-            } else if let Some(title) = self.title_line(slots, Some(collapsed)) {
-                let clipped = self.chrome_label(&title, budget);
-                block = block.title(Span::styled(format!(" {clipped} "), recipe.title));
+            let mut title_slots = slots;
+            title_slots.trailing = None;
+            let title = if let Some(spec) = self.title_spec {
+                Some(self.title_spec_line(spec, Some(collapsed), budget, recipe.title))
+            } else if let Some(title) = self.title_line(title_slots, Some(collapsed)) {
+                Some(Line::from(Span::styled(format!(" {title} "), recipe.title)))
+            } else {
+                None
+            };
+            if let Some(title) = title {
+                paint_border_label(area, true, &title, recipe.title, buffer, self.tokens);
+            }
+            if let Some(meta) = slots.trailing.filter(|m| !m.is_empty()) {
+                let theme = self.tokens.junie_theme();
+                let text = format!(" {meta} ");
+                let tw = display_cols(&text) as u16;
+                // junie framed meta sits at `title_row_right - tw`, leaving `─╮`.
+                if area.width > tw + 4 {
+                    buffer.set_stringn(
+                        area.right().saturating_sub(2).saturating_sub(tw),
+                        area.y,
+                        &text,
+                        usize::from(tw),
+                        theme
+                            .faint()
+                            .bg(theme.canvas)
+                            .remove_modifier(ratatui_core::style::Modifier::BOLD),
+                    );
+                }
+            } else if (slots.trailing.is_some() || self.vertical_scroll.is_some()) && area.width > 4
+            {
+                // junie `.meta("")` still paints `"  "` faint before `─╮`.
+                let theme = self.tokens.junie_theme();
+                buffer.set_stringn(
+                    area.right().saturating_sub(4),
+                    area.y,
+                    "  ",
+                    2,
+                    theme.faint().bg(theme.canvas),
+                );
             }
             if let Some(footer) = slots.footer {
-                let clipped = self.chrome_label(footer, area.width.saturating_sub(4));
-                block = block.title_bottom(Span::styled(format!(" {clipped} "), recipe.title));
+                let line = Line::from(Span::styled(format!(" {footer} "), recipe.title));
+                paint_border_label(area, false, &line, recipe.title, buffer, self.tokens);
             }
-            block.render(area, buffer);
         } else if matches!(self.variant, PanelVariant::DividerOnly) {
             paint_divider_only(area, buffer, self.tokens);
             if let Some(header) = parts.header {
-                paint_header_line(self, header, buffer, collapsed);
+                paint_header_line(self, header, buffer, collapsed, focused);
             }
             if let Some(footer) = parts.footer {
                 if let Some(text) = self.slots_for_width(area.width).footer {
@@ -1156,7 +1232,7 @@ impl<'a> Panel<'a> {
             }
         } else if matches!(self.variant, PanelVariant::Quiet) {
             if let Some(header) = parts.header {
-                paint_header_line(self, header, buffer, collapsed);
+                paint_header_line(self, header, buffer, collapsed, focused);
             }
             if let Some(footer) = parts.footer {
                 if let Some(text) = self.slots_for_width(area.width).footer {
@@ -1189,21 +1265,15 @@ impl<'a> Panel<'a> {
                     let title = self.slots.body_title.unwrap_or("No items");
                     let mut empty = EmptyState::new(title, self.tokens);
                     if let Some(d) = self.slots.body_detail {
-                        empty = empty.detail(d);
+                        empty = empty.explanation(d);
                     }
-                    let glyph = self
-                        .tokens
-                        .glyphs
-                        .resolve(crate::style::Glyph::EmptyCircle)
-                        .text;
-                    empty = empty.glyph(glyph);
                     Widget::render(&empty, parts.body, buffer);
                 }
                 PanelBody::Error => {
                     let title = self.slots.body_title.unwrap_or("Error");
-                    let mut err = ErrorView::new(title, self.tokens);
+                    let mut err = ErrorState::new(title, self.tokens);
                     if let Some(d) = self.slots.body_detail {
-                        err = err.detail(d);
+                        err = err.explanation(d);
                     }
                     Widget::render(&err, parts.body, buffer);
                 }
@@ -1254,6 +1324,18 @@ impl<'a> Panel<'a> {
                     break;
                 }
             }
+        }
+
+        if let (Some(content_len), Some(gutter)) = (self.vertical_scroll, parts.scrollbar) {
+            crate::scroll::paint_overflow_scrollbar(
+                buffer,
+                gutter,
+                content_len,
+                usize::from(gutter.height),
+                self.scroll_offset,
+                focused_chrome,
+                self.tokens,
+            );
         }
 
         if let Some(state) = state {
@@ -1314,17 +1396,33 @@ impl Widget for Panel<'_> {
     }
 }
 
-fn paint_header_line(panel: &Panel<'_>, header: Rect, buffer: &mut Buffer, collapsed: bool) {
+fn paint_header_line(
+    panel: &Panel<'_>,
+    header: Rect,
+    buffer: &mut Buffer,
+    collapsed: bool,
+    focused: bool,
+) {
     let slots = panel.slots_for_width(header.width.saturating_add(4));
-    let style = if panel.emphasis == PanelChrome::Focused {
-        panel.tokens.style(Role::TextStrong)
+    let theme = panel.tokens.junie_theme();
+    let focused = focused || panel.emphasis == PanelChrome::Focused;
+    let style = if focused {
+        theme.title()
     } else {
-        panel.tokens.style(Role::Text)
+        theme.secondary()
     };
+    if focused && header.x >= 1 {
+        // Card focus: ▎ in the padding column, bold title.
+        buffer.set_stringn(
+            header.x.saturating_sub(1),
+            header.y,
+            panel.tokens.glyphs.selection_gutter(),
+            1,
+            theme.accent_fg(),
+        );
+    }
     if let Some(spec) = panel.title_spec {
-        // A frameless header states the same segments in the same tones as a
-        // bordered one; only the box differs.
-        let line = panel.title_spec_line(spec, header.width, style);
+        let line = panel.title_spec_line(spec, Some(collapsed), header.width, style);
         let mut scratch = String::new();
         crate::text::paint_line_overflow(
             buffer,
@@ -1340,11 +1438,89 @@ fn paint_header_line(panel: &Panel<'_>, header: Rect, buffer: &mut Buffer, colla
         );
         return;
     }
-    if let Some(title) = panel.title_line(slots, Some(collapsed)) {
-        // Same rule as the bordered variants: a clipped header says so.
-        let t = panel.chrome_label(&title, header.width);
-        buffer.set_stringn(header.x, header.y, &t, usize::from(header.width), style);
+    let mut left = String::new();
+    if panel.collapsible {
+        left.push_str(if collapsed {
+            panel.tokens.glyphs.disclosure_closed()
+        } else {
+            panel.tokens.glyphs.disclosure_open()
+        });
+        left.push(' ');
     }
+    if let Some(leading) = slots.leading {
+        left.push_str(leading.trim());
+        left.push(' ');
+    }
+    if let Some(title) = slots.title {
+        left.push_str(title.trim());
+    }
+    if let Some(subtitle) = slots.subtitle {
+        if !left.is_empty() {
+            left.push(' ');
+        }
+        left.push_str("· ");
+        left.push_str(subtitle.trim());
+    }
+    let t = panel.chrome_label(&left, header.width);
+    buffer.set_stringn(header.x, header.y, &t, usize::from(header.width), style);
+    let mut right = header.right();
+    if let Some(meta) = slots.trailing {
+        let text = meta.trim();
+        let tw = display_cols(text) as u16;
+        if right > header.x.saturating_add(tw.saturating_add(1)) {
+            right = right.saturating_sub(tw);
+            buffer.set_stringn(right, header.y, text, usize::from(tw), theme.faint());
+        }
+    }
+}
+
+fn paint_border_label(
+    area: Rect,
+    top: bool,
+    line: &Line<'_>,
+    style: Style,
+    buffer: &mut Buffer,
+    system: &DesignSystem,
+) {
+    if area.width <= 2 || area.height == 0 {
+        return;
+    }
+    let line_w = line
+        .spans
+        .iter()
+        .map(|span| display_cols(span.content.as_ref()))
+        .sum::<usize>();
+    let budget = usize::from(area.width.saturating_sub(4));
+    if budget == 0 || line_w == 0 {
+        return;
+    }
+    // Occupy only the contracted label so trailing `─` survive (`╭─ Title ─╮`).
+    // Ellipsis marks contraction; Clip used to swallow the glyph after pad.
+    let width = line_w.min(budget);
+    // junie title_row sits at x+2 so the `─` after `╭` survives: `╭─ Title ─`.
+    let rect = Rect::new(
+        area.x.saturating_add(2),
+        if top {
+            area.y
+        } else {
+            area.bottom().saturating_sub(1)
+        },
+        u16::try_from(width).unwrap_or(u16::MAX),
+        1,
+    );
+    let mut scratch = String::new();
+    crate::text::paint_line_overflow(
+        buffer,
+        rect,
+        line,
+        style,
+        crate::text::LinePlacement {
+            alignment: crate::text::CellAlignment::Left,
+            overflow: crate::text::CellOverflow::Ellipsis,
+            ellipsis: system.glyphs.ellipsis(),
+        },
+        &mut scratch,
+    );
 }
 
 fn paint_divider_only(area: Rect, buffer: &mut Buffer, system: &DesignSystem) {
@@ -1396,22 +1572,30 @@ mod tests {
 
     #[test]
     fn overlay_panels_fill_from_the_elevated_rung() {
-        let system = DesignSystem::phosphor();
+        let system = DesignSystem::junie();
         let area = Rect::new(0, 0, 12, 5);
 
         let mut overlay = Buffer::empty(area);
         Panel::new(&system)
+            .variant(PanelVariant::Bordered)
             .overlay(true)
             .emphasis(PanelChrome::Focused)
             .paint(area, &mut overlay, None);
 
         let mut in_flow = Buffer::empty(area);
         Panel::new(&system)
+            .variant(PanelVariant::Bordered)
             .emphasis(PanelChrome::Focused)
             .paint(area, &mut in_flow, None);
 
         assert_eq!(overlay[(4, 2)].bg, system.style(Role::Elevated).bg.unwrap());
-        assert_eq!(in_flow[(4, 2)].bg, system.style(Role::Surface).bg.unwrap());
+        // Framed in-flow panes sit on the canvas; overlays lift to elevated.
+        assert_eq!(
+            in_flow[(4, 2)].bg,
+            system.style(Role::Canvas).bg.unwrap(),
+            "framed fill is canvas, got {:?}",
+            in_flow[(4, 2)].bg
+        );
         assert_ne!(
             overlay[(4, 2)].bg,
             in_flow[(4, 2)].bg,
@@ -1431,21 +1615,22 @@ mod tests {
         let area = Rect::new(0, 0, 34, 4);
         let mut buffer = Buffer::empty(area);
         Panel::new(&tokens)
+            .variant(PanelVariant::Bordered)
             .title("日本語のタイトルです、とても長い見出し")
             .footer("a footer far too long for this panel")
             .render(area, &mut buffer);
         for y in [0u16, area.height - 1] {
             let row: String = (0..area.width).map(|x| buffer[(x, y)].symbol()).collect();
             // Corners survive: the label never overruns its own border.
-            assert!(row.starts_with('┌') || row.starts_with('└'), "{row:?}");
-            assert!(row.ends_with('┐') || row.ends_with('┘'), "{row:?}");
+            assert!(row.starts_with('╭') || row.starts_with('╰'), "{row:?}");
+            assert!(row.ends_with('╮') || row.ends_with('╯'), "{row:?}");
             assert!(row.contains('…'), "{row:?}");
         }
     }
 
     #[test]
     fn danger_chrome_marks_its_title_for_colorless_terminals() {
-        let system = DesignSystem::phosphor();
+        let system = DesignSystem::junie();
         let panel = Panel::new(&system)
             .title("Delete branch")
             .emphasis(PanelChrome::Danger);
@@ -1453,68 +1638,37 @@ mod tests {
             .title_line(panel.slots_for_width(24), None)
             .expect("panel has a title");
         assert!(
-            title.starts_with(system.glyphs.resolve(crate::style::Glyph::Warning).text),
-            "danger titles carry the warning mark, got {title:?}"
+            title.starts_with(system.glyphs.resolve(crate::style::Glyph::Error).text),
+            "danger titles carry the error mark, got {title:?}"
         );
     }
 
-    fn render_border(system: &DesignSystem) -> Buffer {
-        let area = Rect::new(0, 0, 8, 4);
-        let mut buffer = Buffer::empty(area);
-        Panel::new(system).paint(area, &mut buffer, None);
-        buffer
-    }
-
     #[test]
-    fn rounded_shape_changes_corners_only() {
-        let square = render_border(&DesignSystem::default());
-        let rounded = render_border(&DesignSystem::default().border_shape(BorderShape::Rounded));
-        for (position, square_symbol, rounded_symbol) in [
-            ((0, 0), "\u{250c}", "\u{256d}"),
-            ((7, 0), "┐", "╮"),
-            ((0, 3), "└", "╰"),
-            ((7, 3), "┘", "╯"),
-        ] {
-            assert_eq!(square[position].symbol(), square_symbol);
-            assert_eq!(rounded[position].symbol(), rounded_symbol);
-            assert_eq!(square[position].style(), rounded[position].style());
-        }
-        assert_eq!(square[(3, 0)].symbol(), "─");
-        assert_eq!(rounded[(3, 0)].symbol(), "─");
-        assert_eq!(square[(0, 2)].symbol(), "│");
-        assert_eq!(rounded[(0, 2)].symbol(), "│");
-    }
-
-    #[test]
-    fn ascii_maps_both_shapes_to_plus() {
-        let square = render_border(&DesignSystem::default().glyphs(GlyphSet::Ascii));
-        let rounded = render_border(
-            &DesignSystem::default()
-                .glyphs(GlyphSet::Ascii)
-                .border_shape(BorderShape::Rounded),
-        );
-        assert_eq!(square, rounded);
-        assert_eq!(square[(0, 0)].symbol(), "+");
-        assert_eq!(square[(7, 3)].symbol(), "+");
-    }
-
-    #[test]
-    fn square_is_the_default_border_shape() {
-        assert_eq!(DesignSystem::default().border_shape, BorderShape::Square);
-    }
-
-    #[test]
-    fn panel_inner_uses_density_padding_and_contracts_when_narrow() {
+    fn default_panel_is_quiet_and_explicit_border_reserves_chrome() {
         let area = Rect::new(0, 0, 20, 10);
+        let system = DesignSystem::default();
+        let mut quiet_buffer = Buffer::empty(area);
+        Panel::new(&system).paint(area, &mut quiet_buffer, None);
+        let mut bordered_buffer = Buffer::empty(area);
+        Panel::new(&system)
+            .variant(PanelVariant::Bordered)
+            .paint(area, &mut bordered_buffer, None);
         let comfortable = Panel::new(&DesignSystem::default()).inner(area);
-        let dashboard =
-            Panel::new(&DesignSystem::default().density(crate::style::Density::Dashboard))
-                .inner(area);
-        assert_eq!(comfortable, Rect::new(3, 2, 14, 6));
-        assert_eq!(dashboard, Rect::new(1, 1, 18, 8));
+        let bordered = Panel::new(&DesignSystem::default())
+            .variant(PanelVariant::Bordered)
+            .inner(area);
+        assert!(!Panel::new(&DesignSystem::default()).has_box_border());
+        assert_eq!(quiet_buffer[(0, 0)].symbol(), " ");
+        assert_eq!(
+            bordered_buffer[(0, 0)].symbol(),
+            system.border_set().top_left
+        );
+        assert_eq!(comfortable, Rect::new(2, 1, 16, 8));
+        // frame-inset 3: border + 2, one spare column on the right.
+        assert_eq!(bordered, Rect::new(3, 1, 15, 8));
         assert_eq!(
             Panel::new(&DesignSystem::default()).inner(Rect::new(0, 0, 5, 2)),
-            Rect::new(1, 1, 0, 0)
+            Rect::new(0, 0, 5, 2)
         );
     }
 
@@ -1767,7 +1921,9 @@ mod tests {
             .scope("kube-system")
             .count(42)
             .filter("api");
-        let panel = Panel::new(&system).title_spec(spec);
+        let panel = Panel::new(&system)
+            .variant(PanelVariant::Bordered)
+            .title_spec(spec);
         let area = Rect::new(0, 0, 48, 4);
         let mut buffer = Buffer::empty(area);
         Widget::render(&panel, area, &mut buffer);
@@ -1798,7 +1954,9 @@ mod tests {
             .scope("crates/termrock/src/widgets")
             .count(1234)
             .filter("unresolved import");
-        let panel = Panel::new(&system).title_spec(spec);
+        let panel = Panel::new(&system)
+            .variant(PanelVariant::Bordered)
+            .title_spec(spec);
         let area = Rect::new(0, 0, 24, 3);
         let mut buffer = Buffer::empty(area);
         Widget::render(&panel, area, &mut buffer);
@@ -1812,5 +1970,122 @@ mod tests {
     #[test]
     fn variant_ids_stable() {
         assert_eq!(PanelVariant::DividerOnly.id(), "divider-only");
+    }
+
+    #[test]
+    fn framed_uses_rounded_corners_and_frame_inset() {
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 20, 8);
+        let mut buffer = Buffer::empty(area);
+        Panel::new(&system)
+            .variant(PanelVariant::Bordered)
+            .title("Pane")
+            .paint(area, &mut buffer, None);
+        assert_eq!(buffer[(0, 0)].symbol(), "╭");
+        assert_eq!(buffer[(19, 0)].symbol(), "╮");
+        assert_eq!(buffer[(0, 7)].symbol(), "╰");
+        assert_eq!(buffer[(19, 7)].symbol(), "╯");
+        let inner = Panel::new(&system)
+            .variant(PanelVariant::Bordered)
+            .inner(area);
+        assert_eq!(inner.x, 3);
+        assert_eq!(inner.y, 1);
+        assert_eq!(inner.width, 15);
+    }
+
+    #[test]
+    fn framed_vertical_scroll_reserves_title_and_uses_junie_thumb() {
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 46, 17);
+        let mut buffer = Buffer::empty(area);
+        Panel::new(&system)
+            .variant(PanelVariant::Bordered)
+            .title("Framed · split pane")
+            .vertical_scroll(24)
+            .paint(area, &mut buffer, None);
+        assert_eq!(buffer[(42, 0)].symbol(), " ");
+        assert_eq!(buffer[(43, 0)].symbol(), " ");
+        assert_eq!(buffer[(44, 0)].symbol(), "─");
+        assert_eq!(buffer[(45, 0)].symbol(), "╮");
+        let thumbs: Vec<u16> = (1..16)
+            .filter(|y| buffer[(43, *y)].symbol() == "┃")
+            .collect();
+        assert_eq!(thumbs, (1..10).collect::<Vec<_>>());
+        assert_eq!(buffer[(43, 10)].symbol(), crate::scroll::SCROLLBAR_TRACK);
+        assert_eq!(
+            Panel::scrolled_content_area(
+                Panel::new(&system)
+                    .variant(PanelVariant::Bordered)
+                    .inner(area)
+            )
+            .width,
+            39
+        );
+    }
+
+    #[test]
+    fn framed_vertical_scroll_short_pane_thumb_is_one_cell() {
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 29, 9);
+        let mut buffer = Buffer::empty(area);
+        Panel::new(&system)
+            .variant(PanelVariant::Bordered)
+            .title("Framed · split pane")
+            .vertical_scroll(49)
+            .paint(area, &mut buffer, None);
+        assert_eq!(buffer[(25, 0)].symbol(), " ");
+        assert_eq!(buffer[(26, 0)].symbol(), " ");
+        assert_eq!(buffer[(27, 0)].symbol(), "─");
+        assert_eq!(buffer[(28, 0)].symbol(), "╮");
+        assert_eq!(buffer[(26, 1)].symbol(), "┃");
+        assert_eq!(buffer[(26, 2)].symbol(), crate::scroll::SCROLLBAR_TRACK);
+    }
+
+    #[test]
+    fn framed_without_scroll_keeps_dashes_before_corner() {
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 29, 3);
+        let mut buffer = Buffer::empty(area);
+        Panel::new(&system)
+            .variant(PanelVariant::Bordered)
+            .title("Framed · split pane")
+            .paint(area, &mut buffer, None);
+        assert_eq!(buffer[(25, 0)].symbol(), "─");
+        assert_eq!(buffer[(26, 0)].symbol(), "─");
+        assert_eq!(buffer[(27, 0)].symbol(), "─");
+        assert_eq!(buffer[(28, 0)].symbol(), "╮");
+    }
+
+    #[test]
+    fn framed_title_is_secondary_idle_and_bold_when_focused() {
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 24, 5);
+        let idle = Panel::new(&system)
+            .variant(PanelVariant::Bordered)
+            .title("Logs");
+        let mut a = Buffer::empty(area);
+        idle.paint(area, &mut a, None);
+        let theme = system.junie_theme();
+        let x = (0..area.width)
+            .find(|x| a[(*x, 0)].symbol() == "L")
+            .unwrap();
+        assert_eq!(a[(x, 0)].fg, theme.secondary().fg.unwrap());
+
+        let focused = Panel::new(&system)
+            .variant(PanelVariant::Bordered)
+            .title("Logs")
+            .emphasis(PanelChrome::Focused);
+        let mut b = Buffer::empty(area);
+        focused.paint(area, &mut b, None);
+        let x = (0..area.width)
+            .find(|x| b[(*x, 0)].symbol() == "L")
+            .unwrap();
+        assert_eq!(b[(x, 0)].fg, theme.title().fg.unwrap());
+        assert!(
+            b[(x, 0)]
+                .modifier
+                .contains(ratatui_core::style::Modifier::BOLD)
+        );
+        assert_eq!(b[(0, 0)].fg, theme.border(true).fg.unwrap());
     }
 }

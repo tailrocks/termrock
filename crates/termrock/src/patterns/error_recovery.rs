@@ -12,9 +12,9 @@
 //! **Host owns** panic hooks, process restart, session persistence, log tails,
 //! issue trackers, and terminal restore — outcomes/requests only.
 //!
-//! **vs standalone [`ErrorState`] / [`ErrorView`].** Elevated composition with
-//! crash-report redaction, multi-option action list, and inline fallback mode —
-//! not a second paint fork of ErrorState.
+//! **vs standalone [`ErrorState`].** Elevated composition with crash-report
+//! redaction, multi-option action list, and inline fallback mode — not a second
+//! paint fork of ErrorState.
 //!
 //! Research: crash reporters, terminal panic hooks, session restoration,
 //! resilient CLI design.
@@ -29,12 +29,11 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 
 use crate::{
     capability::DoctorReport,
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     interaction::Outcome,
     layout::{
         PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
@@ -771,16 +770,27 @@ impl ErrorRecoveryState {
     #[must_use]
     pub fn status_slots(&self) -> Vec<StatusSlot<'static, &'static str>> {
         let mut slots = vec![
-            StatusSlot::context("mode", self.mode.id()).priority(10),
-            StatusSlot::focus_zone("focus", self.focus).priority(20),
+            StatusSlot::new("failure", "recovery required")
+                .semantic(crate::widgets::SemanticStatus::Failed)
+                .priority(100),
+            StatusSlot::context("mode", self.mode.id()).priority(50),
+            StatusSlot::focus_zone("focus", self.focus).priority(70),
             StatusSlot::shortcut("keys", "r restart · s restore · l logs · i report · q quit")
-                .priority(90),
+                .priority(10),
         ];
         if self.terminal_restore_failed {
-            slots.push(StatusSlot::new("tty", "tty-restore-failed").priority(5));
+            slots.push(
+                StatusSlot::new("tty", "tty restore failed")
+                    .semantic(crate::widgets::SemanticStatus::Failed)
+                    .priority(95),
+            );
         }
         if self.partial_init {
-            slots.push(StatusSlot::new("init", "partial-init").priority(6));
+            slots.push(
+                StatusSlot::new("init", "partial init")
+                    .semantic(crate::widgets::SemanticStatus::Warning)
+                    .priority(90),
+            );
         }
         slots
     }
@@ -814,10 +824,10 @@ impl ErrorRecoveryState {
         key: KeyEvent,
         snap: &CrashReportSnapshot,
     ) -> ErrorRecoveryOutcome {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return ErrorRecoveryOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         if is_press {
             match key.code {
@@ -888,7 +898,7 @@ impl ErrorRecoveryState {
         match out {
             ErrorStateOutcome::Ignored => {
                 // r on summary with retry focus → restart
-                if key.kind == KeyEventKind::Press && matches!(key.code, KeyCode::Char('r')) {
+                if key.is_press() && matches!(key.code, KeyCode::Char('r')) {
                     return self.outcome_for_action(RecoveryActionId::Restart, snap);
                 }
                 ErrorRecoveryOutcome::Ignored
@@ -916,7 +926,7 @@ impl ErrorRecoveryState {
     ) -> ErrorRecoveryOutcome {
         let set = self.action_set();
         let rows = recovery_action_rows(set);
-        if key.kind == KeyEventKind::Press && key.code == KeyCode::Enter {
+        if key.is_press() && key.code == KeyCode::Enter {
             if let Some(id) = self.actions.selected().cloned() {
                 if let Some(action) = set.iter().find(|a| a.id() == id) {
                     return self.outcome_for_action(*action, snap);
@@ -1193,7 +1203,7 @@ pub fn render_error_recovery(buffer: &mut Buffer, area: Rect, surfaces: ErrorRec
                 Rect::new(inner.x, inner.y, inner.width, 1),
                 &msg,
                 system.style(if snapshot.work_preserved {
-                    Role::Success
+                    Role::TextStrong
                 } else {
                     Role::TextMuted
                 }),
@@ -1246,7 +1256,7 @@ pub fn render_error_recovery(buffer: &mut Buffer, area: Rect, surfaces: ErrorRec
                         buffer,
                         Rect::new(inner.x, y, inner.width, 1),
                         &cue,
-                        system.style(Role::Info),
+                        system.style(Role::TextSecondary),
                     );
                 }
             }

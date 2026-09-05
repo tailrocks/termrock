@@ -6,7 +6,6 @@
 //! Law: never redraw idle screens solely for decorative animation. Hosts
 //! poll [`AnimationDemand`] / [`Presence::next_deadline`] and only wake when
 //! something timed is active and [`crate::style::MotionPolicy`] allows motion.
-
 use std::time::Duration;
 
 use super::Instant;
@@ -78,29 +77,9 @@ pub fn spinner_step(
     if !motion.animate_spinners() {
         return 0;
     }
-    let period = period_ms
-        .max(1)
-        .saturating_mul(motion.spinner_divisor().max(1));
+    let period = period_ms.max(1);
     let step = tick.elapsed().as_millis() as u64 / period;
     (step as usize) % frame_count
-}
-
-/// Soft pulse 0.0..1.0 for reduced-friendly indeterminate bars (static when Off).
-#[must_use]
-pub fn pulse_fraction(tick: FrameTick, period_ms: u64, motion: MotionPolicy) -> f64 {
-    match motion {
-        MotionPolicy::Off => 0.5,
-        MotionPolicy::Basic | MotionPolicy::Full => {
-            let period = period_ms.max(1) as f64
-                * if matches!(motion, MotionPolicy::Basic) {
-                    2.0
-                } else {
-                    1.0
-                };
-            let t = tick.elapsed().as_secs_f64() * (std::f64::consts::TAU / period);
-            0.5 + 0.5 * t.sin()
-        }
-    }
 }
 
 /// Demand for an active spinner while work is in progress.
@@ -109,8 +88,8 @@ pub fn spinner_demand(tick: FrameTick, motion: MotionPolicy, active: bool) -> An
     if !active || !motion.animate_spinners() {
         return AnimationDemand::idle();
     }
-    // Wake about once per frame period (~80ms default).
-    let period = Duration::from_millis(80 * motion.spinner_divisor().max(1));
+    // Wake about once per frame period (junie spinner cadence).
+    let period = Duration::from_millis(80);
     AnimationDemand {
         needs_redraw: true,
         next_deadline: Some(tick.now() + period),
@@ -154,6 +133,8 @@ pub struct Presence {
     visible_ttl: Option<Duration>,
     /// Exit phase duration (`Duration::ZERO` = instant hide).
     exit_duration: Duration,
+    /// When timed progression was paused, if any.
+    paused_since: Option<Instant>,
 }
 
 impl Default for Presence {
@@ -171,6 +152,7 @@ impl Presence {
             show_delay: Duration::ZERO,
             visible_ttl: None,
             exit_duration: Duration::ZERO,
+            paused_since: None,
         }
     }
 
@@ -182,6 +164,7 @@ impl Presence {
             show_delay: delay,
             visible_ttl: None,
             exit_duration: Duration::ZERO,
+            paused_since: None,
         }
     }
 
@@ -193,6 +176,7 @@ impl Presence {
             show_delay: Duration::ZERO,
             visible_ttl: Some(ttl),
             exit_duration: Duration::ZERO,
+            paused_since: None,
         }
     }
 
@@ -239,7 +223,8 @@ impl Presence {
         if span.is_zero() {
             return 1.0;
         }
-        let elapsed = tick.now().saturating_duration_since(since);
+        let now = self.paused_since.unwrap_or(tick.now());
+        let elapsed = now.saturating_duration_since(since);
         (elapsed.as_secs_f32() / span.as_secs_f32()).clamp(0.0, 1.0)
     }
 
@@ -280,28 +265,81 @@ impl Presence {
         } else {
             self.phase = PresencePhase::Pending { since: tick.now() };
         }
+        if self.paused_since.is_some() {
+            self.paused_since = Some(tick.now());
+        }
     }
 
     /// Request hide (instant or Exiting).
     pub fn request_hide(&mut self, tick: FrameTick, motion: MotionPolicy) {
-        if matches!(self.phase, PresencePhase::Hidden) {
+        if matches!(
+            self.phase,
+            PresencePhase::Hidden | PresencePhase::Pending { .. }
+        ) {
+            // A surface that never became visible has no painted transition
+            // to animate. Cancellation must stay hidden, including when an
+            // exit duration is configured.
+            self.phase = PresencePhase::Hidden;
+            self.paused_since = None;
             return;
         }
         // Exits are transitions, not spinners: `Basic` still fades.
         if self.exit_duration.is_zero() || !motion.allows_transitions() {
             self.phase = PresencePhase::Hidden;
+            self.paused_since = None;
         } else {
             self.phase = PresencePhase::Exiting { since: tick.now() };
+            if self.paused_since.is_some() {
+                self.paused_since = Some(tick.now());
+            }
         }
     }
 
     /// Hard clear (no exit phase).
     pub const fn force_hide(&mut self) {
         self.phase = PresencePhase::Hidden;
+        self.paused_since = None;
+    }
+
+    /// Pause timed progression at this frame.
+    ///
+    /// The timestamp is required so resuming can extend every timed phase by
+    /// the exact time spent paused. Pending show and exit phases use the same
+    /// origin shift as visible TTLs.
+    pub fn set_paused(&mut self, tick: FrameTick, on: bool) {
+        match (self.paused_since, on) {
+            (None, true) => self.paused_since = Some(tick.now()),
+            (Some(paused_since), false) => {
+                let paused_for = tick.now().saturating_duration_since(paused_since);
+                self.phase = match self.phase {
+                    PresencePhase::Hidden => PresencePhase::Hidden,
+                    PresencePhase::Pending { since } => PresencePhase::Pending {
+                        since: since.checked_add(paused_for).unwrap_or(since),
+                    },
+                    PresencePhase::Visible { since } => PresencePhase::Visible {
+                        since: since.checked_add(paused_for).unwrap_or(since),
+                    },
+                    PresencePhase::Exiting { since } => PresencePhase::Exiting {
+                        since: since.checked_add(paused_for).unwrap_or(since),
+                    },
+                };
+                self.paused_since = None;
+            }
+            (Some(_), true) | (None, false) => {}
+        }
+    }
+
+    /// Whether timed progression is paused.
+    #[must_use]
+    pub const fn is_paused(self) -> bool {
+        self.paused_since.is_some()
     }
 
     /// Advance phase from frame time; returns whether visibility changed.
     pub fn advance(&mut self, tick: FrameTick, motion: MotionPolicy) -> PresenceChange {
+        if self.is_paused() {
+            return PresenceChange::None;
+        }
         let before = self.is_visible();
         match self.phase {
             PresencePhase::Hidden => {}
@@ -336,6 +374,9 @@ impl Presence {
     /// Next deadline for pending / TTL / exit (for host poll).
     #[must_use]
     pub fn next_deadline(self) -> Option<Instant> {
+        if self.is_paused() {
+            return None;
+        }
         match self.phase {
             PresencePhase::Hidden => None,
             PresencePhase::Pending { since } => since.checked_add(self.show_delay),
@@ -385,12 +426,6 @@ impl FrameTick {
     #[must_use]
     pub fn spinner_step(self, frame_count: usize, period_ms: u64, motion: MotionPolicy) -> usize {
         spinner_step(self, frame_count, period_ms, motion)
-    }
-
-    /// Pulse fraction 0..1.
-    #[must_use]
-    pub fn pulse_fraction(self, period_ms: u64, motion: MotionPolicy) -> f64 {
-        pulse_fraction(self, period_ms, motion)
     }
 }
 
@@ -447,6 +482,39 @@ mod tests {
     }
 
     #[test]
+    fn presence_pause_shifts_timed_phase_origin() {
+        let start = Instant::now();
+        let mut p = Presence::toast(Duration::from_secs(2));
+        p.request_show(FrameTick::manual(start, Duration::ZERO, Duration::ZERO));
+        p.set_paused(
+            FrameTick::manual(
+                start + Duration::from_secs(1),
+                Duration::from_secs(1),
+                Duration::from_secs(1),
+            ),
+            true,
+        );
+        assert!(p.is_paused());
+        assert_eq!(p.next_deadline(), None);
+        p.set_paused(
+            FrameTick::manual(
+                start + Duration::from_secs(10),
+                Duration::from_secs(10),
+                Duration::from_secs(9),
+            ),
+            false,
+        );
+        assert!(!p.is_paused());
+        assert_eq!(
+            p.phase(),
+            PresencePhase::Visible {
+                since: start + Duration::from_secs(9)
+            }
+        );
+        assert_eq!(p.next_deadline(), Some(start + Duration::from_secs(11)));
+    }
+
+    #[test]
     fn exit_phase_is_reachable_and_fades() {
         let start = Instant::now();
         let mut clock = FrameClock::from_start(start);
@@ -479,17 +547,26 @@ mod tests {
         let mut clock = FrameClock::from_start(start);
         let build = || Presence::immediate().with_exit(Duration::from_millis(120));
 
-        // `Basic` keeps transitions: it must still fade.
-        let mut basic = build();
-        basic.request_show(tick_at(&mut clock, start, 0));
-        basic.request_hide(tick_at(&mut clock, start, 1), MotionPolicy::Basic);
-        assert!(matches!(basic.phase(), PresencePhase::Exiting { .. }));
-
-        // `Off` hides instantly.
+        // `Off` hides instantly: the tier owns the exit, not the spinner.
         let mut off = build();
-        off.request_show(tick_at(&mut clock, start, 2));
-        off.request_hide(tick_at(&mut clock, start, 3), MotionPolicy::Off);
+        off.request_show(tick_at(&mut clock, start, 0));
+        off.request_hide(tick_at(&mut clock, start, 1), MotionPolicy::Off);
         assert_eq!(off.phase(), PresencePhase::Hidden);
+    }
+
+    #[test]
+    fn cancelling_pending_presence_never_paints_exit() {
+        let start = Instant::now();
+        let mut clock = FrameClock::from_start(start);
+        let mut presence =
+            Presence::tooltip(Duration::from_millis(400)).with_exit(Duration::from_millis(120));
+
+        presence.request_show(tick_at(&mut clock, start, 0));
+        presence.request_hide(tick_at(&mut clock, start, 100), MotionPolicy::Full);
+
+        assert_eq!(presence.phase(), PresencePhase::Hidden);
+        assert!(!presence.is_visible());
+        assert_eq!(presence.next_deadline(), None);
     }
 
     #[test]

@@ -12,7 +12,7 @@
 //! - **Text editing** — [`TextAreaState`] + undo/redo/history/selection.
 //! - **Token model** — [`ComposerChip`] attachments / paste payloads / mentions.
 //! - **Completion** — [`CompletionQuery`] only; host owns candidate rows + menu.
-//! - **Presentation** — compact / normal / expanded / fullscreen + density/ascii.
+//! - **Presentation** — compact / normal / expanded / fullscreen.
 //! - **Submission policy** — [`SubmitPolicy`], busy, connection; outcomes only.
 //!
 //! Draft is never cleared when host gates input — only
@@ -20,7 +20,6 @@
 //!
 //! Research: Grok Build prompt widget, Amp, OpenCode, Claude Code,
 //! prompt-toolkit, terminal editors.
-
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -28,19 +27,16 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{
-        Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent,
-        MouseEventKind,
-    },
+    input::{Event, KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack,
         place_overlay,
     },
-    style::{Density, DesignSystem, Glyph, Role},
+    style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        HelpEntry, Panel, PanelChrome, TextArea, TextAreaOutcome, TextAreaState, TextCursor,
-        TokenMeter,
+        HelpEntry, Panel, PanelChrome, PanelVariant, TextArea, TextAreaOutcome, TextAreaState,
+        TextCursor, TokenMeter,
         history_picker::{HistoryEntry, HistoryKind},
     },
 };
@@ -496,8 +492,6 @@ pub struct PromptComposerState {
     mode: Option<ModeIndicator>,
     model: Option<ModelIndicator>,
     context: ContextEstimate,
-    density: Density,
-    ascii_fallback: bool,
     /// Force word/glyph status (no emoji); pair with monochrome Theme for no-color.
     colorless: bool,
     placeholder: String,
@@ -526,6 +520,7 @@ impl PromptComposerState {
     pub fn new() -> Self {
         let mut editor = TextAreaState::default();
         editor.set_accepts_input(true);
+        editor.set_editing(true);
         Self {
             editor,
             undo: Vec::new(),
@@ -541,10 +536,8 @@ impl PromptComposerState {
             mode: None,
             model: None,
             context: ContextEstimate::default(),
-            density: Density::Comfortable,
-            ascii_fallback: false,
             colorless: false,
-            placeholder: "Message…".into(),
+            placeholder: "Message".into(),
             policy: SubmitPolicy::default(),
             connection: ComposerConnection::Ready,
             busy: false,
@@ -581,6 +574,7 @@ impl PromptComposerState {
         self.accepts_input = accepts;
         // Embedded editor must accept keys when the composer does (parent already gates).
         self.editor.set_accepts_input(accepts);
+        self.editor.set_editing(accepts);
     }
 
     /// Agent busy flag.
@@ -642,23 +636,10 @@ impl PromptComposerState {
         self.context = context;
     }
 
-    /// Density for chrome spacing.
-    pub fn set_density(&mut self, density: Density) {
-        self.density = density;
-    }
-
-    /// ASCII glyph fallback for badges.
-    pub fn set_ascii_fallback(&mut self, ascii: bool) {
-        self.ascii_fallback = ascii;
-    }
-
     /// No-color / monochrome-friendly chrome (forces ASCII marks; host should also
     /// pass a monochrome-quantized [`DesignSystem`]).
     pub fn set_colorless(&mut self, colorless: bool) {
         self.colorless = colorless;
-        if colorless {
-            self.ascii_fallback = true;
-        }
     }
 
     /// Whether colorless chrome is active.
@@ -902,13 +883,7 @@ impl PromptComposerState {
         };
         if rank(target) < rank(self.presentation) {
             self.presentation = target;
-            if width < 48 {
-                self.ascii_fallback = true;
-            }
             return PromptComposerOutcome::PresentationChanged(target);
-        }
-        if width < 48 {
-            self.ascii_fallback = true;
         }
         PromptComposerOutcome::Ignored
     }
@@ -1001,7 +976,7 @@ impl PromptComposerState {
         if self.connection == ComposerConnection::Disabled {
             return PromptComposerOutcome::Ignored;
         }
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return PromptComposerOutcome::Ignored;
         }
 
@@ -1072,7 +1047,7 @@ impl PromptComposerState {
         }
 
         // Submit / newline policy
-        if key.code == KeyCode::Enter && key.kind == KeyEventKind::Press {
+        if key.code == KeyCode::Enter && key.is_press() {
             let mod_newline = self.policy.newline_chord
                 && (key.modifiers.contains(KeyModifiers::ALT)
                     || key.modifiers.contains(KeyModifiers::CONTROL)
@@ -1801,23 +1776,13 @@ fn layout_composer(area: Rect, state: &PromptComposerState) -> PromptComposerLay
     }
 
     let status_h = if remaining > 1 { 1u16 } else { 0 };
-    let valid_h = if state.validation_error.is_some() && remaining > status_h + 1 {
-        1u16
-    } else {
-        0
-    };
+    let valid_h = if remaining > status_h + 1 { 1u16 } else { 0 };
     let editor_h = remaining
         .saturating_sub(status_h)
         .saturating_sub(valid_h)
         .max(1);
 
-    let prompt_gutter = area.width.min(2);
-    layout.editor = Rect::new(
-        area.x.saturating_add(prompt_gutter),
-        y,
-        area.width.saturating_sub(prompt_gutter),
-        editor_h,
-    );
+    layout.editor = Rect::new(area.x, y, area.width, editor_h);
     y = y.saturating_add(editor_h);
     if status_h > 0 {
         layout.status = Rect::new(area.x, y, area.width, 1);
@@ -1936,12 +1901,13 @@ impl StatefulWidget for &PromptComposer<'_> {
             } else {
                 PanelChrome::Normal
             };
-            let panel = Panel::new(self.system).emphasis(emphasis);
+            let panel = Panel::new(self.system)
+                .variant(PanelVariant::Bordered)
+                .emphasis(emphasis);
             Widget::render(&panel, area, buffer);
         }
 
         // Chips — AttachmentChip / PasteChip (Tag chrome underneath).
-        let ascii = state.ascii_fallback || state.colorless;
         for (i, (id, rect)) in layout.chip_hits.iter().enumerate() {
             if let Some(chip) = state.chips.iter().find(|c| c.id == *id) {
                 let focused = state.chip_cursor == Some(i);
@@ -1950,9 +1916,7 @@ impl StatefulWidget for &PromptComposer<'_> {
                         use crate::widgets::{PasteChip, PasteChipState};
                         let mut ps = PasteChipState::new();
                         ps.set_focused(focused);
-                        let _ = PasteChip::new(&paste, self.system)
-                            .ascii(ascii)
-                            .paint(*rect, buffer, &mut ps);
+                        let _ = PasteChip::new(&paste, self.system).paint(*rect, buffer, &mut ps);
                         continue;
                     }
                 }
@@ -1960,9 +1924,7 @@ impl StatefulWidget for &PromptComposer<'_> {
                     use crate::widgets::{AttachmentChip, AttachmentChipState};
                     let mut st = AttachmentChipState::new();
                     st.set_focused(focused);
-                    let _ = AttachmentChip::new(&item, self.system)
-                        .ascii(ascii)
-                        .paint(*rect, buffer, &mut st);
+                    let _ = AttachmentChip::new(&item, self.system).paint(*rect, buffer, &mut st);
                 } else {
                     // Fallback Tag for unexpected kinds
                     use crate::widgets::{Tag, TagState};
@@ -1976,24 +1938,6 @@ impl StatefulWidget for &PromptComposer<'_> {
 
         // Editor
         if !layout.editor.is_empty() {
-            let editor_surface =
-                Rect::new(area.x, layout.editor.y, area.width, layout.editor.height);
-            buffer.set_style(editor_surface, self.system.style(Role::Sunken));
-            let prompt = Glyph::Prompt.resolve(self.system.glyphs).text;
-            // The caret is the accent only while the composer can be typed
-            // into; a blocked composer is not the current intent (plans/007).
-            let prompt_role = if state.accepts_input() {
-                Role::Accent
-            } else {
-                Role::TextMuted
-            };
-            buffer.set_stringn(
-                area.x,
-                layout.editor.y,
-                prompt,
-                usize::from(area.width.min(1)),
-                self.system.style(prompt_role),
-            );
             let placeholder = state.placeholder.as_str();
             StatefulWidget::render(
                 &TextArea::new(self.system).placeholder(placeholder),
@@ -2003,20 +1947,14 @@ impl StatefulWidget for &PromptComposer<'_> {
             );
             // Selection highlight (after TextArea paint)
             if state.has_selection() {
-                // Selected text keeps its own foreground; the range washes.
-                let sel = if state.colorless {
-                    ratatui_core::style::Style::new()
-                        .add_modifier(ratatui_core::style::Modifier::REVERSED)
-                } else {
-                    self.system.style(Role::SelectionTint)
-                };
-                paint_editor_selection(buffer, layout.editor, state, sel);
+                // D8: the selection is one explicit pair, applied whole.
+                let sel = self.system.selected_text();
+                paint_editor_selection(buffer, state.editor.body_area(), state, sel);
             }
         }
 
         // Status row: mode · model · context · queue · busy
         if !layout.status.is_empty() {
-            let ascii = state.ascii_fallback || state.colorless;
             let mut parts: Vec<String> = Vec::new();
             if let Some(mode) = &state.mode {
                 parts.push(mode.label.clone());
@@ -2025,21 +1963,13 @@ impl StatefulWidget for &PromptComposer<'_> {
                 parts.push(model.label.clone());
             }
             if state.busy {
-                parts.push(if ascii {
-                    "BUSY ^C soft ^U stop".into()
-                } else {
-                    "● busy  ^C interrupt  ^U stop".into()
-                });
+                parts.push("busy  ^C interrupt  ^U stop".into());
             }
             if !state.queue.is_empty() {
                 parts.push(format!("queue:{}", state.queue.len()));
             }
             if state.presentation == ComposerPresentation::Fullscreen {
-                parts.push(if ascii {
-                    "FULL".into()
-                } else {
-                    "fullscreen".into()
-                });
+                parts.push("fullscreen".into());
             }
             match state.connection {
                 ComposerConnection::Disconnected => parts.push("offline".into()),
@@ -2077,13 +2007,12 @@ impl StatefulWidget for &PromptComposer<'_> {
             state.validation_error.as_ref(),
             !layout.validation.is_empty(),
         ) {
-            let clipped = take_display_cols(err, usize::from(layout.validation.width));
-            buffer.set_stringn(
-                layout.validation.x,
-                layout.validation.y,
-                &clipped,
-                usize::from(layout.validation.width),
-                self.system.style(Role::Danger),
+            crate::widgets::field_message::paint_field_message(
+                buffer,
+                layout.validation,
+                self.system,
+                crate::widgets::label::DescriptionKind::Error,
+                err,
             );
         }
     }
@@ -2399,7 +2328,6 @@ mod tests {
             out,
             PromptComposerOutcome::PresentationChanged(ComposerPresentation::Compact)
         ));
-        assert!(state.ascii_fallback);
     }
 
     #[test]
@@ -2468,12 +2396,11 @@ mod tests {
     }
 
     #[test]
-    fn colorless_forces_ascii() {
+    fn colorless_flag_sticks() {
         let mut state = PromptComposerState::new();
         state.set_accepts_input(true);
         state.set_colorless(true);
         assert!(state.is_colorless());
-        assert!(state.ascii_fallback);
     }
 
     #[test]
@@ -2505,7 +2432,7 @@ mod tests {
     }
 
     #[test]
-    fn selection_paint_does_not_panic() {
+    fn selection_paints_inside_editor_body_with_input_recipe() {
         let system = crate::style::DesignSystem::default();
         let mut state = PromptComposerState::new();
         state.set_accepts_input(true);
@@ -2514,6 +2441,17 @@ mod tests {
         assert!(state.editor.set_cursor(TextCursor { line: 0, byte: 5 }));
         let mut buf = Buffer::empty(Rect::new(0, 0, 40, 8));
         PromptComposer::new(&system).render(Rect::new(0, 0, 40, 8), &mut buf, &mut state);
+        let body = state.editor.body_area();
+        // D8: the selection is one explicit pair, applied whole — no
+        // reversal modifier anywhere in it.
+        let theme = system.junie_theme();
+        assert_eq!(buf[(body.x, body.y)].fg, theme.text_primary);
+        assert_eq!(buf[(body.x, body.y)].bg, theme.popover);
+        assert!(
+            !buf[(body.x, body.y)]
+                .modifier
+                .contains(ratatui_core::style::Modifier::REVERSED)
+        );
     }
 
     #[test]
@@ -2524,11 +2462,33 @@ mod tests {
         let area = Rect::new(0, 0, 40, 6);
         let mut buffer = Buffer::empty(area);
         PromptComposer::new(&system).render(area, &mut buffer, &mut state);
-        assert_eq!(
-            buffer[(0, 0)].symbol(),
-            Glyph::Prompt.resolve(system.glyphs).text
+        let body = state.editor.body_area();
+        assert!(
+            (body.x..body.right()).any(|x| buffer[(x, body.y)].bg == system.junie_theme().field),
+            "the prompt well is the field plane"
         );
-        assert_eq!(buffer[(1, 0)].bg, system.style(Role::Sunken).bg.unwrap());
+    }
+
+    #[test]
+    fn narrow_composer_keeps_existing_draft_visible() {
+        let system = DesignSystem::default();
+        let mut state = PromptComposerState::new();
+        state.set_text("Explain this module");
+        state.add_chip(ComposerChip::file("a", "lib.rs"));
+        let area = Rect::new(0, 0, 22, 8);
+        let mut buffer = Buffer::empty(area);
+
+        PromptComposer::new(&system).render(area, &mut buffer, &mut state);
+
+        let body = state.editor.body_area();
+        let painted: String = (body.x..body.right())
+            .map(|x| buffer[(x, body.y)].symbol())
+            .collect();
+        assert!(
+            painted.chars().any(|ch| !ch.is_whitespace()),
+            "draft vanished: body={body:?} scroll_x={} text={painted:?}",
+            state.editor.scroll().offset_x()
+        );
     }
 
     #[test]

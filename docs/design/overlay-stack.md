@@ -15,7 +15,6 @@
 | `place_overlay` | **Preserve**; add `place_overlay_detailed` |
 | `open_*_overlay` (Dialog, Completion, Palette, Drawer, …) | **Preserve** |
 | Picker local popup geometry | **Migrate** → `open_picker_overlay` / Select kind |
-| Public `ModalStack` | **Already deleted** (0065); crate-private only |
 | Dual Esc handlers (scene + stack both dismiss) | **Forbidden** — stack first, then scene |
 
 ## Mission

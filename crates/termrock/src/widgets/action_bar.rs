@@ -1,16 +1,36 @@
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Style,
-    widgets::{StatefulWidget, Widget},
-};
-use ratatui_widgets::paragraph::Paragraph;
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 use unicode_width::UnicodeWidthStr;
 
-use crate::{
-    interaction::HitRegion,
-    style::{DesignSystem, Role},
-};
+use crate::{interaction::HitRegion, style::DesignSystem};
+
+use super::primitives::{Button, ButtonState, ButtonVariant};
+
+/// Semantic hierarchy for an [`ActionBar`] item.
+///
+/// Raw terminal styles are intentionally not accepted here. The action recipe
+/// must retain disabled, focus, press, monochrome, and ASCII cues regardless
+/// of the caller's visual intent.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum ActionVariant {
+    /// The single solid commit action in a group.
+    Primary,
+    /// A quiet alternative or cancellation action.
+    #[default]
+    Secondary,
+    /// An irreversible or dangerous action.
+    Destructive,
+}
+
+impl ActionVariant {
+    const fn button_variant(self) -> ButtonVariant {
+        match self {
+            Self::Primary => ButtonVariant::Primary,
+            Self::Secondary => ButtonVariant::Secondary,
+            Self::Destructive => ButtonVariant::Destructive,
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 /// A stable, labeled action rendered by an [`ActionBar`].
@@ -21,8 +41,8 @@ pub struct Action<'a, Id> {
     pub label: &'a str,
     /// Whether this item is enabled.
     pub enabled: bool,
-    /// Ratatui style applied while rendering this item.
-    pub style: Option<Style>,
+    /// Semantic action hierarchy.
+    pub variant: ActionVariant,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -46,27 +66,12 @@ impl<Id> Default for ActionBarState<Id> {
     }
 }
 
-impl<Id> ActionBarState<Id> {
-    /// Deprecated alias for [`Self::cursor`].
-    #[deprecated(note = "use cursor")]
-    pub fn focused(&self) -> Option<&Id> {
-        self.cursor.as_ref()
-    }
-
-    /// Deprecated alias for setting cursor.
-    #[deprecated(note = "use cursor field")]
-    pub fn set_focused(&mut self, id: Option<Id>) {
-        self.cursor = id;
-    }
-}
-
 #[derive(Debug, Clone, Copy)]
 /// A horizontal (or stacked) group of product-neutral actions.
 pub struct ActionBar<'a, Id> {
     actions: &'a [Action<'a, Id>],
     gap: &'a str,
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
     /// Stack one action per row (narrow dialogs).
     vertical: bool,
@@ -82,7 +87,6 @@ impl<'a, Id> ActionBar<'a, Id> {
             actions,
             gap: " ",
             system,
-            ascii: false,
             colorless: false,
             vertical: false,
             centered: false,
@@ -98,13 +102,7 @@ impl<'a, Id> ActionBar<'a, Id> {
 
     /// ASCII cursor brackets (`[label]`).
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
     /// Reduced-color paint (strong text instead of ActionFocused).
-    #[must_use]
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
         self
@@ -127,12 +125,17 @@ impl<'a, Id> ActionBar<'a, Id> {
     /// Cells required to paint every action on one row without clipping.
     pub(crate) fn required_horizontal_width(&self) -> u16 {
         let labels = self.actions.iter().fold(0u16, |width, action| {
-            let label = UnicodeWidthStr::width(action.label).min(u16::MAX as usize) as u16;
-            width.saturating_add(label.saturating_add(2))
+            width.saturating_add(self.button_for(action, action.variant).preferred_width())
         });
         let gaps = self.actions.len().saturating_sub(1);
         let gap_width = UnicodeWidthStr::width(self.gap).min(u16::MAX as usize) as u16;
         labels.saturating_add(gap_width.saturating_mul(gaps.min(u16::MAX as usize) as u16))
+    }
+
+    fn button_for(&self, action: &Action<'a, Id>, variant: ActionVariant) -> Button<'a> {
+        Button::new(action.label, self.system)
+            .variant(variant.button_variant())
+            .colorless(self.colorless)
     }
 }
 
@@ -149,8 +152,10 @@ impl<Id: Clone + PartialEq> StatefulWidget for &ActionBar<'_, Id> {
                 if y >= area.bottom() {
                     break;
                 }
-                let label = self.label_for(action, state);
-                let width = (UnicodeWidthStr::width(label.as_str()).min(u16::MAX as usize) as u16)
+                let variant = self.effective_variant(action);
+                let width = self
+                    .button_for(action, variant)
+                    .preferred_width()
                     .min(area.width);
                 let x = if self.centered {
                     area.x.saturating_add(area.width.saturating_sub(width) / 2)
@@ -170,8 +175,8 @@ impl<Id: Clone + PartialEq> StatefulWidget for &ActionBar<'_, Id> {
             area.x
         };
         for action in self.actions {
-            let label = self.label_for(action, state);
-            let width = UnicodeWidthStr::width(label.as_str()).min(u16::MAX as usize) as u16;
+            let variant = self.effective_variant(action);
+            let width = self.button_for(action, variant).preferred_width();
             let rect = Rect::new(
                 x,
                 area.y,
@@ -190,16 +195,18 @@ impl<Id: Clone + PartialEq> StatefulWidget for &ActionBar<'_, Id> {
 }
 
 impl<Id: Clone + PartialEq> ActionBar<'_, Id> {
-    fn label_for(&self, action: &Action<'_, Id>, state: &ActionBarState<Id>) -> String {
-        let on_cursor = state.cursor.as_ref() == Some(&action.id);
-        if on_cursor && (self.ascii || self.colorless) {
-            if self.ascii {
-                format!("[{}]", action.label)
-            } else {
-                format!("›{}‹", action.label)
-            }
+    fn effective_variant(&self, action: &Action<'_, Id>) -> ActionVariant {
+        if !matches!(action.variant, ActionVariant::Primary) {
+            return action.variant;
+        }
+        let first_primary = self
+            .actions
+            .iter()
+            .find(|candidate| matches!(candidate.variant, ActionVariant::Primary));
+        if first_primary.is_some_and(|candidate| std::ptr::eq(candidate, action)) {
+            ActionVariant::Primary
         } else {
-            format!(" {} ", action.label)
+            ActionVariant::Secondary
         }
     }
 
@@ -214,30 +221,21 @@ impl<Id: Clone + PartialEq> ActionBar<'_, Id> {
             return;
         }
         let on_cursor = state.cursor.as_ref() == Some(&action.id);
-        let label = self.label_for(action, state);
-        // A caller's style is an opinion about the label, not a licence to
-        // erase the cursor: it composes over the chrome instead of replacing
-        // it, so a danger action under the cursor still reads as focused
-        // (plans/007 rule 4).
-        let mut style = if !action.enabled {
-            self.system.style(Role::ActionDisabled)
-        } else if on_cursor {
-            if self.colorless {
-                self.system.style(Role::TextStrong)
-            } else {
-                self.system.style(Role::ActionFocused)
-            }
-        } else {
-            self.system.style(Role::Text)
-        };
-        if let Some(custom) = action.style {
-            style = style.patch(custom);
-        }
-        Paragraph::new(label).style(style).render(rect, buffer);
+        let variant = self.effective_variant(action);
+        let button = self.button_for(action, variant);
+        let mut button_state = ButtonState::new();
+        button_state.activation.set_enabled(action.enabled);
+        button_state
+            .activation
+            .set_accepts_input(action.enabled && on_cursor);
+        // Focus is the `▎` bar. Only the cursor action owns it; siblings keep
+        // the reserved column with fg = fill so the glyph is invisible.
+        button_state.focused = on_cursor && action.enabled;
+        let painted = button.paint(rect, buffer, &mut button_state);
         if action.enabled {
             state.regions.push(HitRegion {
                 id: action.id.clone(),
-                area: rect,
+                area: painted.root,
             });
         }
     }
@@ -262,17 +260,18 @@ mod tests {
                 id: "wide",
                 label: "界",
                 enabled: true,
-                style: None,
+                variant: ActionVariant::Primary,
             },
             Action {
                 id: "ok",
                 label: "OK",
                 enabled: true,
-                style: None,
+                variant: ActionVariant::Secondary,
             },
         ];
         let system = DesignSystem::default();
 
+        // junie: each button is label+2, default gap is one cell.
         assert_eq!(
             ActionBar::new(&actions, &system).required_horizontal_width(),
             9
@@ -283,5 +282,158 @@ mod tests {
                 .required_horizontal_width(),
             11
         );
+    }
+
+    #[test]
+    fn only_the_cursor_action_paints_a_visible_focus_bar() {
+        let actions = [
+            Action {
+                id: "delete",
+                label: "Delete",
+                enabled: true,
+                variant: ActionVariant::Destructive,
+            },
+            Action {
+                id: "cancel",
+                label: "Cancel",
+                enabled: true,
+                variant: ActionVariant::Secondary,
+            },
+        ];
+        let system = DesignSystem::junie();
+        let mut state = ActionBarState {
+            cursor: Some("cancel"),
+            regions: Vec::new(),
+        };
+        let area = Rect::new(0, 0, 24, 1);
+        let mut buffer = Buffer::empty(area);
+        ActionBar::new(&actions, &system).render(area, &mut buffer, &mut state);
+        let delete = &buffer[(0, 0)];
+        let cancel_x = state
+            .regions
+            .iter()
+            .find(|r| r.id == "cancel")
+            .expect("cancel hit")
+            .area
+            .x;
+        let cancel = &buffer[(cancel_x, 0)];
+        assert_eq!(delete.symbol(), "▎");
+        assert_eq!(delete.fg, delete.bg, "unfocused Delete bar is invisible");
+        assert_eq!(cancel.symbol(), "▎");
+        assert_eq!(
+            cancel.fg,
+            system.style(crate::style::Role::Focus).fg.unwrap()
+        );
+        assert_ne!(cancel.fg, cancel.bg);
+    }
+
+    #[test]
+    fn action_configuration_has_no_raw_style_escape_hatch() {
+        let source = include_str!("action_bar.rs");
+        let declaration = source
+            .split("pub struct Action<'a, Id>")
+            .nth(1)
+            .expect("Action declaration")
+            .split("\n}")
+            .next()
+            .expect("Action body");
+        assert!(!declaration.contains(&["sty", "le"].concat()));
+        assert!(!declaration.contains(&["Sty", "le"].concat()));
+    }
+
+    #[test]
+    fn duplicate_primaries_are_downgraded_to_one_solid_action() {
+        let actions = [
+            Action {
+                id: "save",
+                label: "Save",
+                enabled: true,
+                variant: ActionVariant::Primary,
+            },
+            Action {
+                id: "apply",
+                label: "Apply",
+                enabled: true,
+                variant: ActionVariant::Primary,
+            },
+        ];
+        let system = DesignSystem::default();
+        let bar = ActionBar::new(&actions, &system);
+
+        assert_eq!(bar.effective_variant(&actions[0]), ActionVariant::Primary);
+        assert_eq!(bar.effective_variant(&actions[1]), ActionVariant::Secondary);
+
+        let duplicate_ids = [
+            Action {
+                id: "same",
+                label: "First",
+                enabled: true,
+                variant: ActionVariant::Primary,
+            },
+            Action {
+                id: "same",
+                label: "Second",
+                enabled: true,
+                variant: ActionVariant::Primary,
+            },
+        ];
+        let duplicate_bar = ActionBar::new(&duplicate_ids, &system);
+        assert_eq!(
+            duplicate_bar.effective_variant(&duplicate_ids[1]),
+            ActionVariant::Secondary
+        );
+    }
+
+    #[test]
+    fn disabled_action_never_publishes_a_pointer_target() {
+        let actions = [
+            Action {
+                id: "blocked",
+                label: "Blocked",
+                enabled: false,
+                variant: ActionVariant::Primary,
+            },
+            Action {
+                id: "ready",
+                label: "Ready",
+                enabled: true,
+                variant: ActionVariant::Secondary,
+            },
+        ];
+        let system = DesignSystem::default();
+        let mut state = ActionBarState {
+            cursor: Some("blocked"),
+            regions: Vec::new(),
+        };
+        let area = Rect::new(0, 0, 32, 1);
+        let mut buffer = Buffer::empty(area);
+
+        StatefulWidget::render(
+            ActionBar::new(&actions, &system),
+            area,
+            &mut buffer,
+            &mut state,
+        );
+
+        assert_eq!(state.regions.len(), 1);
+        assert_eq!(state.regions[0].id, "ready");
+    }
+
+    #[test]
+    fn empty_action_bar_is_safe_at_tiny_geometry() {
+        let actions: [Action<'_, &str>; 0] = [];
+        let system = DesignSystem::default();
+        let mut state = ActionBarState::<&str>::default();
+        let area = Rect::new(0, 0, 1, 1);
+        let mut buffer = Buffer::empty(area);
+
+        StatefulWidget::render(
+            ActionBar::new(&actions, &system),
+            area,
+            &mut buffer,
+            &mut state,
+        );
+
+        assert!(state.regions.is_empty());
     }
 }

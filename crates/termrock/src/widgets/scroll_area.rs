@@ -8,7 +8,6 @@
 //! `termrock::scroll` (scrollbar paint, `TailScroll`, dialog dual-axis) remain
 //! available; this module owns **policy**: follow/pause, anchors, chaining,
 //! visible ranges, and new-content indication.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
@@ -435,6 +434,31 @@ impl ScrollAreaState {
         self.clamp();
     }
 
+    /// Cursor reveal: scroll the minimal amount so content row `row` is fully
+    /// visible. Programmatic motion (does not pause follow).
+    ///
+    /// Uses the stored content and viewport sizes, so keep them synced with
+    /// [`Self::set_content_size`] / [`Self::set_viewport`]. Returns whether
+    /// the offset moved.
+    pub fn reveal_row(&mut self, row: usize) -> bool {
+        if self.content_h == 0 || self.viewport_h == 0 {
+            return false;
+        }
+        let before = self.offset_y;
+        let start = usize::from(self.offset_y);
+        let end = start.saturating_add(usize::from(self.viewport_h));
+        let row = row.min(usize::from(u16::MAX));
+        if row < start {
+            self.set_offset_y_quiet(row as u16);
+        } else if row >= end {
+            let next = row
+                .saturating_add(1)
+                .saturating_sub(usize::from(self.viewport_h));
+            self.set_offset_y_quiet(next as u16);
+        }
+        self.offset_y != before
+    }
+
     /// Clamp offsets to content.
     pub fn clamp(&mut self) {
         let max_y = max_offset(self.content_h as usize, self.viewport_h as usize) as u16;
@@ -549,7 +573,7 @@ impl ScrollAreaState {
 
     /// Page / line / home / end / arrows.
     pub fn handle_key(&mut self, key: KeyEvent) -> ScrollOutcome {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return ScrollOutcome::Ignored;
         }
         if !key.modifiers.is_empty()
@@ -648,6 +672,8 @@ pub struct ScrollArea<'a> {
     tokens: &'a DesignSystem,
     bar: ScrollBarVisibility,
     show_new_content: bool,
+    focused: bool,
+    hovered: bool,
 }
 
 impl<'a> ScrollArea<'a> {
@@ -658,6 +684,8 @@ impl<'a> ScrollArea<'a> {
             tokens,
             bar: ScrollBarVisibility::Auto,
             show_new_content: true,
+            focused: false,
+            hovered: false,
         }
     }
 
@@ -672,6 +700,20 @@ impl<'a> ScrollArea<'a> {
     #[must_use]
     pub const fn show_new_content(mut self, show: bool) -> Self {
         self.show_new_content = show;
+        self
+    }
+
+    /// Keyboard owner: the thumb uses the primary rung.
+    #[must_use]
+    pub const fn focused(mut self, focused: bool) -> Self {
+        self.focused = focused;
+        self
+    }
+
+    /// Pointer over the track: the thumb uses the secondary rung.
+    #[must_use]
+    pub const fn hovered(mut self, hovered: bool) -> Self {
+        self.hovered = hovered;
         self
     }
 
@@ -717,23 +759,7 @@ impl<'a> ScrollArea<'a> {
         let need_v = self.need_bar_v(state);
         let need_h = self.need_bar_h(state);
 
-        // Continuation belongs to the painted content, not the gutter. Keep
-        // this beside scrollbar painting so a new bar cannot silently omit the
-        // other half of the scroll contract.
-        if state.axis_y && state.overflows_y() {
-            crate::scroll::paint_scroll_edges(
-                buffer,
-                self.body_area(area, state),
-                self.tokens,
-                state.offset_y > 0,
-                usize::from(state.offset_y).saturating_add(usize::from(state.viewport_h))
-                    < usize::from(state.content_h),
-            );
-        }
-
-        // One scrollbar language for every scroll surface: the canonical `·`
-        // track with a `┃` / `━` thumb, and one owner for the thumb math
-        // (plans/022 Step 5).
+        // One scrollbar language: `│` track, `┃` / `━` thumb, overflow only.
         if need_v && area.width >= 1 {
             let bar_h = if need_h {
                 area.height.saturating_sub(1)
@@ -750,7 +776,9 @@ impl<'a> ScrollArea<'a> {
                         usize::from(state.viewport_h),
                         state.offset_y,
                     ),
-                ),
+                )
+                .focused(self.focused)
+                .hovered(self.hovered),
                 self.tokens,
             );
         }
@@ -771,19 +799,22 @@ impl<'a> ScrollArea<'a> {
                         usize::from(state.viewport_w),
                         state.offset_x,
                     ),
-                ),
+                )
+                .focused(self.focused)
+                .hovered(self.hovered),
                 self.tokens,
             );
         }
     }
 
-    /// Paint new-content indicator (non-color: `↓ N new` with Role::Warning).
+    /// Paint new-content indicator with a structural down cue and warning role.
     pub fn render_new_content(&self, area: Rect, buffer: &mut Buffer, state: &ScrollAreaState) {
         if !self.show_new_content || !state.indicator.visible || area.height == 0 {
             return;
         }
         let style = self.tokens.style(Role::Warning);
-        let label = format!("↓ {} new", state.indicator.unseen);
+        let marker = "↓";
+        let label = format!("{marker} {} new", state.indicator.unseen);
         let y = area.bottom().saturating_sub(1);
         let text = take_display_cols(&label, usize::from(area.width));
         buffer.set_stringn(area.x, y, &text, usize::from(area.width), style);
@@ -950,29 +981,6 @@ mod tests {
     }
 
     #[test]
-    fn visual_bars_and_new_content_paint() {
-        use ratatui_core::buffer::Buffer;
-        let system = DesignSystem::default();
-        let mut s = ScrollAreaState::new();
-        s.set_content_size(20, 100);
-        s.set_viewport(10, 10);
-        s.set_offset_y(20);
-        s.set_content_size(20, 130); // pause + grow → indicator
-        assert!(s.new_content().visible);
-        let area = Rect::new(0, 0, 12, 12);
-        let mut buf = Buffer::empty(area);
-        let sa = ScrollArea::new(&system).bar(ScrollBarVisibility::Always);
-        sa.render_bars(area, &mut buf, &s);
-        sa.render_new_content(area, &mut buf, &s);
-        // Thumb / indicator used non-space glyphs somewhere in buffer.
-        let any_glyph = buf
-            .content()
-            .iter()
-            .any(|c| !c.symbol().trim().is_empty() && c.symbol() != " ");
-        assert!(any_glyph);
-    }
-
-    #[test]
     fn horizontal_wheel_and_keys() {
         let mut s = ScrollAreaState::new().axes(true, true);
         s.set_content_size(200, 20);
@@ -989,5 +997,46 @@ mod tests {
         };
         assert_eq!(s.handle_mouse(ev), ScrollOutcome::Scrolled);
         assert!(s.offset_x() > 1);
+    }
+
+    #[test]
+    fn overflow_paints_one_column_box_track_and_thumb() {
+        let system = DesignSystem::default();
+        let mut state = ScrollAreaState::new();
+        state.set_content_size(10, 40);
+        state.set_viewport(10, 8);
+        let area = Rect::new(0, 0, 10, 8);
+        let mut buffer = Buffer::empty(area);
+        ScrollArea::new(&system)
+            .focused(true)
+            .render_bars(area, &mut buffer, &state);
+        let gutter: Vec<&str> = (0..area.height)
+            .map(|y| buffer[(area.right() - 1, y)].symbol())
+            .collect();
+        assert!(gutter.contains(&"┃"), "{gutter:?}");
+        assert!(gutter.contains(&"│"), "{gutter:?}");
+        assert_eq!(
+            buffer[(area.right() - 1, 0)].fg,
+            system.scrollbar_thumb(true, false).fg.unwrap()
+        );
+        let track_y = gutter.iter().position(|g| *g == "│").unwrap() as u16;
+        assert_eq!(
+            buffer[(area.right() - 1, track_y)].fg,
+            system.scrollbar_track().fg.unwrap()
+        );
+    }
+
+    #[test]
+    fn no_bar_when_content_fits() {
+        let system = DesignSystem::default();
+        let mut state = ScrollAreaState::new();
+        state.set_content_size(10, 8);
+        state.set_viewport(10, 8);
+        let area = Rect::new(0, 0, 10, 8);
+        let mut buffer = Buffer::empty(area);
+        ScrollArea::new(&system).render_bars(area, &mut buffer, &state);
+        for y in 0..area.height {
+            assert_eq!(buffer[(area.right() - 1, y)].symbol(), " ");
+        }
     }
 }

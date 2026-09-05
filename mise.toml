@@ -50,14 +50,16 @@ cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
 cargo nextest run --workspace --all-features --locked
 mise run preview-goldens
 mise run png-baselines
+mise run junie-capture
+mise run junie-compare
 cargo check -p termrock --no-default-features --locked
 cargo check --workspace --examples --locked
 cargo check --workspace --examples --features crossterm --locked
-cargo check -p termrock-lookbook-web --target wasm32-unknown-unknown --locked
+cargo check -p termrock-catalog-web --target wasm32-unknown-unknown --locked
 RUSTDOCFLAGS='-D warnings' cargo doc --workspace --all-features --no-deps --locked
 mkdir -p target
-rustup toolchain install nightly --profile minimal
-mise x cargo:cargo-public-api@0.52.0 -- cargo public-api -p termrock --all-features > target/public-api-fresh.txt
+rustup toolchain install nightly-2026-09-01 --profile minimal
+RUSTUP_TOOLCHAIN=nightly-2026-09-01 mise x cargo:cargo-public-api@0.52.0 -- cargo public-api -p termrock --all-features > target/public-api-fresh.txt
 diff -u docs/api/public-api.txt target/public-api-fresh.txt
 cargo hack check --workspace --feature-powerset --all-targets --locked
 cargo deny check advisories bans licenses sources
@@ -68,20 +70,20 @@ cargo package -p termrock --locked --allow-dirty
 """
 
 [tasks.bless-previews]
-description = "Regenerate the flagship preview baselines after an intended paint change"
-run = "TERMROCK_BLESS_PREVIEWS=1 cargo nextest run -p termrock-lookbook --all-features --test goldens --no-capture"
+description = "Canonical catalog cell parity against source reference frames"
+run = "cargo test -p termrock-catalog --offline --test parity --locked"
 
 [tasks.preview-goldens]
-description = "Diff the flagship previews against their committed baselines"
-run = "cargo nextest run -p termrock-lookbook --all-features --test goldens --locked"
+description = "Canonical catalog cell parity against source reference frames"
+run = "cargo test -p termrock-catalog --offline --test parity --locked"
 
 [tasks.bless-pngs]
-description = "Regenerate the subset PNG baselines after an intended paint change"
-run = "TERMROCK_BLESS_PNGS=1 cargo nextest run -p termrock-lookbook --all-features --test png_baselines --no-capture"
+description = "Canonical catalog coverage and deterministic raster baselines"
+run = "cargo test -p termrock-catalog --offline --test coverage --locked"
 
 [tasks.png-baselines]
-description = "Diff the subset PNG baselines against their committed files"
-run = "cargo nextest run -p termrock-lookbook --all-features --test png_baselines --locked"
+description = "Canonical catalog coverage and deterministic raster baselines"
+run = "cargo test -p termrock-catalog --offline --test coverage --locked"
 
 [tasks.docs-quality]
 description = "Placeholder rustdoc ban + component quality contracts (v2)"
@@ -107,4 +109,18 @@ bun run docs/scripts/check-contracts.ts
 description = "Export one static fallback poster for each live docs demo"
 run = """
 (cd docs && bun run build:preview-posters)
+"""
+
+[tasks.junie-capture]
+description = "Capture all five artifacts from the canonical junie-reference catalog"
+run = """
+mkdir -p verify/junie/out/target-capture
+find verify/junie/out/target-capture -mindepth 1 -maxdepth 1 -type f -delete
+TERMROCK_CATALOG_PROFILE=junie-reference cargo run -q -p termrock-catalog -- capture --out verify/junie/out/target-capture --all
+"""
+
+[tasks.junie-compare]
+description = "Strictly compare every target artifact with the pinned Junie evidence"
+run = """
+python3 verify/junie/bin/compare_artifacts.py --manifest verify/junie/reference/manifest.json --source-dir verify/junie/reference/scenes --target-dir verify/junie/out/target-capture --diff-dir verify/junie/out/diffs
 """

@@ -5,8 +5,7 @@
 //!
 //! Domain widgets map into this type; do not invent private status glyph sets.
 //! See [`super::StatusIndicator`] for compact/labeled/elapsed paint.
-
-use crate::style::{GlyphSet, HEARTBEAT_PERIOD_MS, MotionChannel, Role};
+use crate::style::Role;
 
 /// Canonical status kind for TermRock surfaces.
 ///
@@ -40,45 +39,6 @@ pub enum SemanticStatus {
 }
 
 impl SemanticStatus {
-    /// What this status is *saying*, in the shared motion vocabulary.
-    ///
-    /// Terminal states — success, failure, offline, paused, queued — map to
-    /// [`MotionChannel::Static`] on purpose. Gravity: a finished thing must not
-    /// keep moving, and a state that costs frames forever is a bug, not polish.
-    #[must_use]
-    pub const fn channel(self) -> MotionChannel {
-        match self {
-            // Alive and working: a slow breathe says "still here", where a spin
-            // would claim a rate this status does not know.
-            Self::Running => MotionChannel::Live,
-            // Blocked on something external: a quicker pulse, no progress claim.
-            Self::Waiting => MotionChannel::Wait,
-            // Presence, not progress — see `period_ms`, which slows it further.
-            Self::Online => MotionChannel::Live,
-            Self::Offline
-            | Self::Idle
-            | Self::Queued
-            | Self::Success
-            | Self::Warning
-            | Self::Failed
-            | Self::Paused
-            | Self::Unknown => MotionChannel::Static,
-        }
-    }
-
-    /// Loop period for this status (`0` when it does not animate).
-    ///
-    /// `Online` breathes on the [`HEARTBEAT_PERIOD_MS`] heartbeat rather than
-    /// the channel's 2 s: presence should be barely perceptible, and anything
-    /// faster reads as activity.
-    #[must_use]
-    pub const fn period_ms(self) -> u64 {
-        match self {
-            Self::Online => HEARTBEAT_PERIOD_MS,
-            other => other.channel().period_ms(),
-        }
-    }
-
     /// Stable id.
     #[must_use]
     pub const fn id(self) -> &'static str {
@@ -119,14 +79,14 @@ impl SemanticStatus {
     #[must_use]
     pub const fn role(self) -> Role {
         match self {
-            Self::Online | Self::Success => Role::Success,
+            // Junie law: success tone IS the accent green (theme `tone(Success)`,
+            // `status-success: primary`), and spinners / live activity / a
+            // finished `✓` sit inside the green budget. The label stays in the
+            // body tone; only the glyph and rail take the hue.
+            Self::Online | Self::Success | Self::Running => Role::Success,
             Self::Offline | Self::Idle | Self::Queued | Self::Paused | Self::Unknown => {
                 Role::TextMuted
             }
-            // Live work is information, not the brand: the reserved hue
-            // belongs to the one thing the operator is acting on
-            // (docs/design/termrock-design-language.md §3, plans/007).
-            Self::Running => Role::InfoDim,
             Self::Waiting | Self::Warning => Role::Warning,
             Self::Failed => Role::Danger,
         }
@@ -168,23 +128,10 @@ impl SemanticStatus {
         }
     }
 
-    /// Glyph for capability profile.
+    /// Glyph in the one vocabulary.
     #[must_use]
-    pub const fn glyph(self, ascii: bool) -> &'static str {
-        if ascii {
-            self.glyph_ascii()
-        } else {
-            self.glyph_unicode()
-        }
-    }
-
-    /// Glyph from [`GlyphSet`] on the design system.
-    #[must_use]
-    pub const fn glyph_for_set(self, glyphs: GlyphSet) -> &'static str {
-        match glyphs {
-            GlyphSet::Ascii => self.glyph_ascii(),
-            GlyphSet::Unicode | GlyphSet::Enhanced => self.glyph_unicode(),
-        }
+    pub const fn glyph(self) -> &'static str {
+        self.glyph_unicode()
     }
 
     /// Parse stable id.

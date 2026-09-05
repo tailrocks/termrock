@@ -15,11 +15,12 @@
 //! - [`CopyPayload`] — cell/range copy requests (consumer writes clipboard)
 //!
 //! See `docs/design/data-presentation.md` for the full component redesign.
-
 use std::collections::BTreeSet;
 
 use ratatui_core::style::Style;
 use std::num::NonZeroU16;
+
+use crate::style::{DesignSystem, Role};
 
 // ── Load / empty / error ────────────────────────────────────────────────────
 
@@ -78,6 +79,48 @@ impl LoadState {
     #[must_use]
     pub fn shows_error(&self) -> bool {
         matches!(self, Self::Error { .. })
+    }
+}
+
+/// Canonical non-ready dataset chrome shared by data owners.
+pub(crate) struct DataLoadChrome {
+    pub(crate) prefix: &'static str,
+    pub(crate) message: String,
+    pub(crate) role: Role,
+}
+
+/// Resolves loading/empty/error copy and non-color semantics once.
+pub(crate) fn data_load_chrome(
+    load: &LoadState,
+    system: &DesignSystem,
+    colorless: bool,
+    empty_message: &str,
+) -> Option<DataLoadChrome> {
+    match load {
+        LoadState::Loading { message } => Some(DataLoadChrome {
+            prefix: "… ",
+            message: message.clone().unwrap_or_else(|| "Loading…".into()),
+            role: Role::TextMuted,
+        }),
+        LoadState::Empty { message } => Some(DataLoadChrome {
+            prefix: "∅ ",
+            message: message.clone().unwrap_or_else(|| empty_message.into()),
+            role: Role::TextMuted,
+        }),
+        LoadState::Error { message, retryable } => Some(DataLoadChrome {
+            prefix: "✗ ",
+            message: if *retryable {
+                format!("{message}  (r retry)")
+            } else {
+                message.clone()
+            },
+            role: if colorless || system.mono() {
+                Role::TextStrong
+            } else {
+                Role::Danger
+            },
+        }),
+        LoadState::Idle | LoadState::Partial { .. } | LoadState::Ready { .. } => None,
     }
 }
 
@@ -229,12 +272,15 @@ pub enum ColumnKind {
     /// Prose, names, paths: the row's own tone.
     #[default]
     Text,
-    /// Counts, sizes, durations: the quiet tone, so the identity stays loud.
+    /// Counts, sizes, durations: the quiet tone, right-aligned, so the
+    /// identity stays loud.
     Numeric,
     /// A state letter or glyph. Keeps the row tone and, unlike every other
     /// column, contracts to its first grapheme instead of ellipsizing — a
     /// one-cell status column shows the letter, not an ellipsis.
     Status,
+    /// Keys / surrogates: secondary text, not the muted count tier.
+    Id,
 }
 
 impl ColumnKind {
@@ -246,7 +292,7 @@ impl ColumnKind {
     pub const fn cell_style(self, base: Style, quiet: Style) -> Style {
         match self {
             Self::Text | Self::Status => base,
-            Self::Numeric => quiet,
+            Self::Numeric | Self::Id => quiet,
         }
     }
 
@@ -254,6 +300,15 @@ impl ColumnKind {
     #[must_use]
     pub const fn clips_instead_of_ellipsizing(self) -> bool {
         matches!(self, Self::Status)
+    }
+
+    /// Whether header and body cells sit on the right edge of the column.
+    ///
+    /// Source DataGrid `CellKind::right_aligned` is Number-only; the same
+    /// rule is the kind, not a second alignment field.
+    #[must_use]
+    pub const fn right_aligned(self) -> bool {
+        matches!(self, Self::Numeric)
     }
 }
 
@@ -279,6 +334,8 @@ pub struct DataColumn<Id> {
     pub editable: bool,
     /// What the column holds, which decides its tone.
     pub kind: ColumnKind,
+    /// Primary key: header paints junie `⚷` over the title origin.
+    pub primary: bool,
 }
 
 impl<Id> DataColumn<Id> {
@@ -295,10 +352,11 @@ impl<Id> DataColumn<Id> {
             sortable: false,
             editable: false,
             kind: ColumnKind::Text,
+            primary: false,
         }
     }
 
-    /// States what the column holds, which decides its tone.
+    /// States what the column holds, which decides its tone and alignment.
     #[must_use]
     pub const fn kind(mut self, kind: ColumnKind) -> Self {
         self.kind = kind;
@@ -337,6 +395,13 @@ impl<Id> DataColumn<Id> {
     #[must_use]
     pub const fn editable(mut self) -> Self {
         self.editable = true;
+        self
+    }
+
+    /// Marks a primary-key column. Header origin is `⚷` (faint), not `▪`.
+    #[must_use]
+    pub const fn primary(mut self) -> Self {
+        self.primary = true;
         self
     }
 }
@@ -475,13 +540,52 @@ impl<Id: PartialEq> ColumnModel<Id> {
 
     /// Resolve paint widths for visible columns into `out` (declaration index, width).
     /// Fills share remaining budget after fixed/min/overrides.
+    ///
+    /// Uses a two-cell gap (junie `gap = 2` / [`crate::style::SpacingScale::column_gap`]).
     pub fn resolve_paint_widths(&self, budget: u16, out: &mut Vec<(usize, u16)>) {
+        self.resolve_paint_widths_with_gap(budget, 2, out);
+    }
+
+    /// [`Self::resolve_paint_widths`] with an explicit inter-column gap.
+    pub fn resolve_paint_widths_with_gap(
+        &self,
+        budget: u16,
+        gap: u16,
+        out: &mut Vec<(usize, u16)>,
+    ) {
         out.clear();
-        let visible: Vec<usize> = self.visible().map(|(i, _)| i).collect();
+        let mut visible: Vec<usize> = self.visible().map(|(i, _)| i).collect();
         if visible.is_empty() || budget == 0 {
             return;
         }
-        let gap = 1u16;
+        let floor = |index: usize| -> u16 {
+            if let Some(Some(w)) = self.width_overrides.get(index).copied() {
+                return w.max(1);
+            }
+            match self.columns[index].width {
+                DataColumnWidth::Fixed(w) | DataColumnWidth::Min(w) => w.max(1),
+                DataColumnWidth::Fill(_) => 0,
+            }
+        };
+        loop {
+            if visible.len() <= 1 {
+                break;
+            }
+            let gaps =
+                gap.saturating_mul(u16::try_from(visible.len().saturating_sub(1)).unwrap_or(0));
+            let mandatory: u64 = visible.iter().map(|&i| u64::from(floor(i))).sum();
+            if mandatory + u64::from(gaps) <= u64::from(budget) {
+                break;
+            }
+            let Some(drop) = visible
+                .iter()
+                .copied()
+                .min_by_key(|i| (self.columns[*i].priority, usize::MAX - i))
+            else {
+                break;
+            };
+            visible.retain(|&index| index != drop);
+        }
         let gaps = gap.saturating_mul(u16::try_from(visible.len().saturating_sub(1)).unwrap_or(0));
         let mut remaining = budget.saturating_sub(gaps);
         // (index, assigned_or_weight, is_fill)
@@ -512,7 +616,26 @@ impl<Id: PartialEq> ColumnModel<Id> {
             .filter_map(|(pos, (_, _, f))| (*f).then_some(pos))
             .collect();
         if fill_positions.is_empty() {
-            // nothing
+            // junie `Constraint::Min` grows into leftover; Fixed does not.
+            let mins: Vec<usize> = bases
+                .iter()
+                .enumerate()
+                .filter_map(|(pos, (index, _, _))| {
+                    matches!(self.columns[*index].width, DataColumnWidth::Min(_)).then_some(pos)
+                })
+                .collect();
+            if !mins.is_empty() && remaining > 0 {
+                let n = u64::try_from(mins.len()).unwrap_or(1);
+                let total = u64::from(remaining);
+                let mut left = total;
+                for (k, &pos) in mins.iter().enumerate() {
+                    let extra = if k + 1 == mins.len() { left } else { total / n };
+                    bases[pos].1 = bases[pos]
+                        .1
+                        .saturating_add(u16::try_from(extra).unwrap_or(u16::MAX));
+                    left = left.saturating_sub(extra);
+                }
+            }
         } else if remaining == 0 {
             for pos in fill_positions {
                 bases[pos].1 = 1;
@@ -922,6 +1045,37 @@ mod tests {
     use super::*;
 
     #[test]
+    fn min_width_absorbs_leftover_after_fixed() {
+        let cols = ColumnModel::new(vec![
+            DataColumn::new("id", "ID", DataColumnWidth::Fixed(5)),
+            DataColumn::new("task", "Task", DataColumnWidth::Min(24)),
+            DataColumn::new("owner", "Owner", DataColumnWidth::Fixed(8)),
+        ]);
+        let mut out = Vec::new();
+        cols.resolve_paint_widths_with_gap(51, 2, &mut out);
+        assert_eq!(out, vec![(0, 5), (1, 34), (2, 8)]);
+    }
+
+    #[test]
+    fn resolve_drops_rightmost_when_over_budget_then_min_grows() {
+        let cols = ColumnModel::new(vec![
+            DataColumn::new("id", "ID", DataColumnWidth::Fixed(5)),
+            DataColumn::new("task", "Task", DataColumnWidth::Min(24)),
+            DataColumn::new("owner", "Owner", DataColumnWidth::Fixed(8)),
+            DataColumn::new("status", "Status", DataColumnWidth::Fixed(9)),
+            DataColumn::new("branch", "Branch", DataColumnWidth::Fixed(22)),
+            DataColumn::new("changes", "Changes", DataColumnWidth::Fixed(8)),
+        ]);
+        let mut out = Vec::new();
+        cols.resolve_paint_widths_with_gap(85, 2, &mut out);
+        assert!(
+            !out.iter().any(|(index, _)| *index == 5),
+            "Changes must drop: {out:?}"
+        );
+        assert_eq!(out[1], (1, 33), "Task Min absorbs leftover after the drop");
+    }
+
+    #[test]
     fn virtual_window_clamps_and_reveals() {
         let mut w = VirtualWindow::new(bench::ROWS_1M, 20);
         assert_eq!(w.max_offset(), bench::ROWS_1M - 20);
@@ -1004,6 +1158,43 @@ mod tests {
             }
             .shows_error()
         );
+    }
+
+    #[test]
+    fn load_state_chrome_is_shared_ascii_and_non_color_semantics() {
+        let system = DesignSystem::junie().no_color();
+        let loading = data_load_chrome(
+            &LoadState::Loading { message: None },
+            &system,
+            true,
+            "No rows",
+        )
+        .unwrap();
+        let empty = data_load_chrome(
+            &LoadState::Empty { message: None },
+            &system,
+            true,
+            "No rows",
+        )
+        .unwrap();
+        let error = data_load_chrome(
+            &LoadState::Error {
+                message: "failed".into(),
+                retryable: false,
+            },
+            &system,
+            true,
+            "No rows",
+        )
+        .unwrap();
+
+        assert_eq!(
+            (loading.prefix, loading.message.as_str()),
+            ("… ", "Loading…")
+        );
+        assert_eq!((empty.prefix, empty.message.as_str()), ("∅ ", "No rows"));
+        assert_eq!((error.prefix, error.message.as_str()), ("✗ ", "failed"));
+        assert_eq!(error.role, Role::TextStrong);
     }
 
     #[test]

@@ -23,16 +23,13 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
 
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::ColumnModel,
@@ -41,7 +38,7 @@ use crate::{
     widgets::LoadState,
     widgets::SortSpec,
     widgets::VirtualWindow,
-    widgets::{EmptyKind, EmptyState},
+    widgets::{EmptyKind, EmptyState, SemanticStatus, StatusIndicator},
 };
 
 // ── Identity ────────────────────────────────────────────────────────────────
@@ -118,15 +115,16 @@ impl ProcessStatus {
         }
     }
 
-    /// Semantic role.
+    /// Shared lifecycle projection for recipe-owned status paint.
     #[must_use]
-    pub const fn role(self) -> Role {
+    pub const fn semantic(self) -> SemanticStatus {
         match self {
-            Self::Running => Role::Success,
-            Self::Sleeping | Self::Idle => Role::TextMuted,
-            Self::Stopped => Role::Warning,
-            Self::Zombie | Self::Dead => Role::Danger,
-            Self::Unknown => Role::TextDisabled,
+            Self::Running => SemanticStatus::Running,
+            Self::Sleeping => SemanticStatus::Idle,
+            Self::Idle => SemanticStatus::Waiting,
+            Self::Stopped => SemanticStatus::Paused,
+            Self::Zombie | Self::Dead => SemanticStatus::Failed,
+            Self::Unknown => SemanticStatus::Unknown,
         }
     }
 }
@@ -684,8 +682,6 @@ pub struct ProcessTableState {
     pub generation: u64,
     /// Load chrome.
     pub load: LoadState,
-    /// ASCII glyphs.
-    pub ascii: bool,
     /// Host grants input.
     accepts_input: bool,
     /// Previous index for nearest-neighbor restore.
@@ -719,7 +715,6 @@ impl ProcessTableState {
             refresh_ms: 1000,
             generation: 0,
             load: LoadState::Ready { count: 0 },
-            ascii: false,
             accepts_input: true,
             previous_index: None,
             row_regions: Vec::new(),
@@ -906,10 +901,10 @@ impl ProcessTableState {
         processes: &[ProcessRow<'_>],
         key: KeyEvent,
     ) -> ProcessTableOutcome {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return ProcessTableOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         if self.pending_confirm.is_some() && is_press {
             match key.code {
@@ -1190,7 +1185,6 @@ pub struct ProcessTable<'a> {
     system: &'a DesignSystem,
     focused: bool,
     title: Option<&'a str>,
-    ascii: bool,
 }
 
 impl<'a> ProcessTable<'a> {
@@ -1202,7 +1196,6 @@ impl<'a> ProcessTable<'a> {
             system,
             focused: true,
             title: None,
-            ascii: false,
         }
     }
 
@@ -1222,17 +1215,11 @@ impl<'a> ProcessTable<'a> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Paint.
     pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut ProcessTableState) {
         if area.is_empty() {
             return;
         }
-        let ascii = self.ascii || state.ascii;
         let mut y = area.y;
         let mut h = area.height;
         state.row_regions.clear();
@@ -1278,8 +1265,8 @@ impl<'a> ProcessTable<'a> {
             // The leading space stands in for the row's selection mark, so the
             // header sits over its own data instead of one cell to the right.
             let hdr = format!(
-                " {:<2} {:>7} {:>5} {:>7} {:<8} {:>8} {}",
-                "S", "PID", "CPU%", "MEM", "USER", "TIME", "COMMAND"
+                " {:<12} {:>7} {:>5} {:>7} {:<8} {:>8} {}",
+                "STATUS", "PID", "CPU%", "MEM", "USER", "TIME", "COMMAND"
             );
             self.system.paint_row(
                 buffer,
@@ -1317,26 +1304,22 @@ impl<'a> ProcessTable<'a> {
                     String::new()
                 };
                 let disc = if matches!(state.view_mode, ProcessViewMode::Tree) && p.branch {
-                    if p.expanded {
-                        if ascii { "v " } else { "▾ " }
-                    } else if ascii {
-                        "> "
-                    } else {
-                        "▸ "
-                    }
+                    if p.expanded { "▾ " } else { "▸ " }
                 } else {
                     "  "
                 };
                 let mark = if selected {
-                    if ascii { ">" } else { "›" }
+                    "›"
                 } else if checked {
-                    if ascii { "*" } else { "★" }
+                    "★"
                 } else {
                     " "
                 };
+                let indicator =
+                    StatusIndicator::new(p.status.semantic(), self.system).label(p.status.id());
+                let status_text = indicator.text(None);
                 let line = format!(
-                    "{mark}{:<2} {:>7} {:>5} {:>7} {:<8} {:>8} {}{}{}",
-                    p.status.label(),
+                    "{mark}{status_text:<12} {:>7} {:>5} {:>7} {:<8} {:>8} {}{}{}",
                     p.key.pid,
                     format_cpu_pct(p.cpu_pct),
                     format_mem_bytes(p.mem_bytes),
@@ -1355,12 +1338,15 @@ impl<'a> ProcessTable<'a> {
                 };
                 self.system
                     .paint_row(buffer, Rect::new(area.x, py, area.width, 1), &line, style);
-                if !selected {
-                    self.system.paint_row(
+                if area.width > 1 {
+                    indicator.paint(
+                        Rect::new(
+                            area.x.saturating_add(1),
+                            py,
+                            area.width.saturating_sub(1).min(12),
+                            1,
+                        ),
                         buffer,
-                        Rect::new(area.x.saturating_add(1), py, 1, 1),
-                        p.status.label(),
-                        self.system.style(p.status.role()),
                     );
                 }
                 state.row_regions.push((
@@ -1379,16 +1365,13 @@ impl<'a> ProcessTable<'a> {
         if let Some(conf) = &state.pending_confirm {
             let cy = area.bottom().saturating_sub(1);
             let msg = format!(
-                "! {} {}? Enter=yes Esc=no",
+                "confirm {} {}? Enter=yes Esc=no",
                 conf.signal.safe_verb(),
                 conf.subject
             );
-            self.system.paint_row(
-                buffer,
-                Rect::new(area.x, cy, area.width, 1),
-                &msg,
-                self.system.style(Role::Danger),
-            );
+            StatusIndicator::new(SemanticStatus::Warning, self.system)
+                .label(&msg)
+                .paint(Rect::new(area.x, cy, area.width, 1), buffer);
         }
     }
 }
@@ -1556,7 +1539,7 @@ mod tests {
         state.select(Some(ProcessKey::new(1888, 400)));
         let area = Rect::new(0, 0, 72, 12);
         let mut buf = Buffer::empty(area);
-        ProcessTable::new(&rows, &system)
+        let _ = ProcessTable::new(&rows, &system)
             .title("Procs")
             .render(area, &mut buf, &mut state);
         let text: String = buf
@@ -1570,7 +1553,7 @@ mod tests {
         );
 
         state.view_mode = ProcessViewMode::Tree;
-        ProcessTable::new(&rows, &system).render(area, &mut buf, &mut state);
+        let _ = ProcessTable::new(&rows, &system).render(area, &mut buf, &mut state);
     }
 
     #[test]
@@ -1642,7 +1625,7 @@ mod tests {
         let area = Rect::new(0, 0, 100, 30);
         let mut buf = Buffer::empty(area);
         for _ in 0..8 {
-            ProcessTable::new(&rows, &system).render(area, &mut buf, &mut state);
+            let _ = ProcessTable::new(&rows, &system).render(area, &mut buf, &mut state);
             let _ = state.handle_key(&rows, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
         }
     }
@@ -1685,32 +1668,41 @@ mod tests {
         let mut state = ProcessTableState::new();
         let area = Rect::new(0, 0, 72, 12);
         let mut buf = Buffer::empty(area);
-        ProcessTable::new(&rows, &system).render(area, &mut buf, &mut state);
+        let _ = ProcessTable::new(&rows, &system).render(area, &mut buf, &mut state);
         let row_text = |y: u16| -> String {
             (0..area.width)
                 .map(|x| buf[(x, y)].symbol().to_string())
                 .collect()
         };
-        let header = (0..area.height)
-            .map(row_text)
-            .find(|line| line.contains("PID"))
-            .expect("header row");
         let header_y = (0..area.height)
             .find(|y| row_text(*y).contains("PID"))
             .expect("header row index");
         // `PID` is right-aligned in a 7-cell column; the first data row's pid
         // must end in the same column, not one cell to its left.
-        let pid_end = header.find("PID").expect("PID header") + "PID".len();
-        let data = row_text(header_y + 1);
+        // Inspect terminal cells, not UTF-8 byte offsets: the preceding status
+        // indicator deliberately contains multibyte glyphs.
+        let header_cells: Vec<String> = (0..area.width)
+            .map(|x| buf[(x, header_y)].symbol().to_string())
+            .collect();
+        let pid_start = header_cells
+            .windows(3)
+            .position(|cells| cells == ["P", "I", "D"])
+            .expect("PID header cells");
+        let pid_end = pid_start + 3;
+        let data_cells: Vec<String> = (0..area.width)
+            .map(|x| buf[(x, header_y + 1)].symbol().to_string())
+            .collect();
         assert_eq!(
-            data[..pid_end].trim_end().len(),
-            pid_end,
-            "pid column drifted left of its header: {data:?}"
+            data_cells[pid_end - 1].chars().all(|c| c.is_ascii_digit()),
+            true,
+            "pid column drifted left of its header: {:?}",
+            row_text(header_y + 1)
         );
         assert_eq!(
-            data.as_bytes()[pid_end],
-            b' ',
-            "pid column overruns its header: {data:?}"
+            data_cells[pid_end],
+            " ",
+            "pid column overruns its header: {:?}",
+            row_text(header_y + 1)
         );
     }
 

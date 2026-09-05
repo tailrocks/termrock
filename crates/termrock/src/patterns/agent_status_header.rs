@@ -20,7 +20,7 @@
 //! Teaches: how to compose compact top-level status for the current
 //! agent/session.
 //!
-//! Composes: [`crate::widgets::Panel`], [`crate::widgets::StatefulWidget`],
+//! Composes: [`crate::widgets::AccentRail`], [`crate::widgets::StatefulWidget`],
 //! [`crate::widgets::StatusBar`], [`crate::widgets::StatusBarRecipe`],
 //! [`crate::widgets::StatusBarState`], [`crate::widgets::StatusKind`],
 //! [`crate::widgets::StatusRegion`], [`crate::widgets::StatusSegment`], and 3
@@ -28,22 +28,22 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
     style::Modifier,
-    widgets::{StatefulWidget, Widget},
+    widgets::StatefulWidget,
 };
 
 use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
-    style::{DesignSystem, PanelChrome, Role},
+    style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
-    widgets::Panel,
+    widgets::AccentRail,
+    widgets::SemanticStatus,
     widgets::StatusBar,
     widgets::StatusBarRecipe,
     widgets::StatusBarState,
@@ -135,12 +135,15 @@ impl AgentWorkStatus {
         }
     }
 
-    fn role(self) -> Role {
+    /// Shared lifecycle projection for recipe-owned status paint.
+    #[must_use]
+    pub const fn semantic(self) -> SemanticStatus {
         match self {
-            Self::Idle => Role::TextMuted,
-            Self::Working | Self::Streaming => Role::Info,
-            Self::WaitingUser | Self::WaitingPermission | Self::ActionRequired => Role::Warning,
-            Self::Error => Role::Danger,
+            Self::Idle => SemanticStatus::Idle,
+            Self::Working | Self::Streaming => SemanticStatus::Running,
+            Self::WaitingUser | Self::WaitingPermission => SemanticStatus::Waiting,
+            Self::Error => SemanticStatus::Failed,
+            Self::ActionRequired => SemanticStatus::Warning,
         }
     }
 
@@ -227,12 +230,14 @@ impl AgentConnectionStatus {
         }
     }
 
-    fn role(self) -> Role {
+    /// Shared lifecycle projection for recipe-owned status paint.
+    #[must_use]
+    pub const fn semantic(self) -> SemanticStatus {
         match self {
-            Self::Ready => Role::Success,
-            Self::Connecting => Role::Info,
-            Self::Disconnected => Role::Danger,
-            Self::Degraded => Role::Warning,
+            Self::Ready => SemanticStatus::Online,
+            Self::Connecting => SemanticStatus::Running,
+            Self::Disconnected => SemanticStatus::Offline,
+            Self::Degraded => SemanticStatus::Warning,
         }
     }
 
@@ -634,7 +639,7 @@ impl AgentStatusHeaderState {
 
     /// Keyboard.
     pub fn handle_key(&mut self, key: KeyEvent) -> AgentStatusHeaderOutcome {
-        if !self.focused || !self.accepts_input || key.kind != KeyEventKind::Press {
+        if !self.focused || !self.accepts_input || !key.is_press() {
             return AgentStatusHeaderOutcome::Ignored;
         }
         if self.actions.is_empty() {
@@ -709,8 +714,14 @@ impl AgentStatusHeaderState {
     pub fn project_status_slots(&mut self) -> Vec<StatusSlot<'_, &str>> {
         self.slot_strings.clear();
         let snap = &self.snapshot;
-        let mut specs: Vec<(StatusRegion, StatusKind, u8, String, Option<&'static str>)> =
-            Vec::new();
+        let mut specs: Vec<(
+            StatusRegion,
+            StatusKind,
+            u8,
+            String,
+            Option<&'static str>,
+            Option<SemanticStatus>,
+        )> = Vec::new();
 
         // Priority: action > connection issues > work > project/session > mode/model > context > cost/time
         if snap.needs_attention() {
@@ -729,6 +740,7 @@ impl AgentStatusHeaderState {
                 100,
                 text,
                 Some(snap.work.glyph(false)),
+                Some(snap.work.semantic()),
             ));
         } else {
             specs.push((
@@ -737,21 +749,18 @@ impl AgentStatusHeaderState {
                 70,
                 snap.work_text(),
                 Some(snap.work.glyph(false)),
+                Some(snap.work.semantic()),
             ));
         }
 
-        if snap.connection.is_actionable() || true {
-            let prio = if snap.connection.is_actionable() {
-                98
-            } else {
-                40
-            };
+        if snap.connection.is_actionable() {
             specs.push((
                 StatusRegion::Right,
                 StatusKind::Connection,
-                prio,
+                98,
                 snap.connection.label().into(),
                 Some(snap.connection.glyph(false)),
+                Some(snap.connection.semantic()),
             ));
         }
 
@@ -760,7 +769,7 @@ impl AgentStatusHeaderState {
             if let Some(b) = snap.branch.as_ref() {
                 s = format!("{s} · {b}");
             }
-            specs.push((StatusRegion::Center, StatusKind::Context, 60, s, None));
+            specs.push((StatusRegion::Center, StatusKind::Context, 60, s, None, None));
         } else if let Some(s) = snap.session.as_ref() {
             specs.push((
                 StatusRegion::Center,
@@ -768,23 +777,59 @@ impl AgentStatusHeaderState {
                 55,
                 s.clone(),
                 None,
+                None,
             ));
         }
 
         if let Some(m) = snap.mode.as_ref() {
-            specs.push((StatusRegion::Left, StatusKind::Mode, 50, m.clone(), None));
+            specs.push((
+                StatusRegion::Left,
+                StatusKind::Mode,
+                50,
+                m.clone(),
+                None,
+                None,
+            ));
         }
         if let Some(m) = snap.model.as_ref() {
-            specs.push((StatusRegion::Right, StatusKind::Text, 45, m.clone(), None));
+            specs.push((
+                StatusRegion::Right,
+                StatusKind::Text,
+                45,
+                m.clone(),
+                None,
+                None,
+            ));
         }
         if let Some(ctx) = snap.context_text() {
-            specs.push((StatusRegion::Right, StatusKind::Context, 35, ctx, None));
+            specs.push((
+                StatusRegion::Right,
+                StatusKind::Context,
+                35,
+                ctx,
+                None,
+                None,
+            ));
         }
         if let Some(c) = snap.cost.as_ref() {
-            specs.push((StatusRegion::Right, StatusKind::Text, 25, c.clone(), None));
+            specs.push((
+                StatusRegion::Right,
+                StatusKind::Text,
+                25,
+                c.clone(),
+                None,
+                None,
+            ));
         }
         if let Some(e) = snap.elapsed.as_ref() {
-            specs.push((StatusRegion::Right, StatusKind::Text, 20, e.clone(), None));
+            specs.push((
+                StatusRegion::Right,
+                StatusKind::Text,
+                20,
+                e.clone(),
+                None,
+                None,
+            ));
         }
         if let Some(q) = snap.queue_depth {
             if q > 0 {
@@ -794,19 +839,20 @@ impl AgentStatusHeaderState {
                     65,
                     format!("q:{q}"),
                     None,
+                    None,
                 ));
             }
         }
 
         // Sort by priority desc for stable fill, but StatusBar uses priority itself
-        for (_, _, _, content, _) in &specs {
+        for (_, _, _, content, _, _) in &specs {
             self.slot_strings.push(content.clone());
         }
 
         specs
             .into_iter()
             .enumerate()
-            .map(|(i, (region, kind, priority, _, glyph))| {
+            .map(|(i, (region, kind, priority, _, glyph, semantic))| {
                 let content: &str = self.slot_strings[i].as_str();
                 let id: &str = match kind {
                     StatusKind::Mode => {
@@ -848,6 +894,9 @@ impl AgentStatusHeaderState {
                 if let Some(g) = glyph {
                     slot = slot.glyph(g);
                 }
+                if let Some(status) = semantic {
+                    slot = slot.semantic(status);
+                }
                 slot
             })
             .collect()
@@ -860,7 +909,6 @@ impl AgentStatusHeaderState {
 #[derive(Debug, Clone, Copy)]
 pub struct AgentStatusHeader<'a> {
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
     show_actions: bool,
 }
@@ -871,7 +919,6 @@ impl<'a> AgentStatusHeader<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             system,
-            ascii: false,
             colorless: false,
             show_actions: true,
         }
@@ -879,13 +926,7 @@ impl<'a> AgentStatusHeader<'a> {
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -954,26 +995,17 @@ impl<'a> AgentStatusHeader<'a> {
             if parts.is_empty() {
                 "Agent".into()
             } else {
-                parts.join(" · ")
+                // Identity hierarchy is not footer metadata. Keep it visually
+                // distinct from the meta separator that marks key-hint rows.
+                parts.join(" / ")
             }
         };
-        let emphasis = if state.focused {
-            PanelChrome::Focused
+        let rail_role = if self.colorless {
+            Role::TextStrong
         } else {
-            PanelChrome::Normal
+            snap.work.semantic().role()
         };
-        // Single-line header without heavy panel when short
-        let use_panel = area.height >= 2;
-        let inner = if use_panel {
-            let panel = Panel::new(self.system)
-                .title(title.as_str())
-                .emphasis(emphasis);
-            let inner = panel.inner(area);
-            Widget::render(&panel, area, buffer);
-            inner
-        } else {
-            area
-        };
+        let inner = AccentRail::new(self.system, rail_role).paint(area, buffer);
         if inner.is_empty() {
             return;
         }
@@ -982,18 +1014,32 @@ impl<'a> AgentStatusHeader<'a> {
         let _w = usize::from(inner.width);
         let max_y = inner.bottom();
 
-        // Row 1: actionable first
+        // A wide header starts with identity, then status. At the two-row
+        // minimum the status keeps the first row and actions keep the second.
+        if area.height >= 3 && y < max_y {
+            let identity = match snap.agent.as_deref() {
+                Some(agent) if false => format!("{title} / {agent}"),
+                Some(agent) => format!("{title} — {agent}"),
+                None => title,
+            };
+            let identity = take_display_cols(&identity, usize::from(inner.width));
+            self.system.paint_row(
+                buffer,
+                Rect::new(inner.x, y, inner.width, 1),
+                &identity,
+                self.system.style(Role::TextStrong),
+            );
+            y = y.saturating_add(1);
+        }
+
+        // Status is always rail + glyph + verb; metadata never displaces it.
         if y < max_y {
             let work = snap.work_text();
-            let mut work_s = format!("{} {work}", snap.work.glyph(self.ascii));
+            let mut work_s = work.to_string();
             if let Some(d) = snap.action_detail.as_ref() {
                 work_s = format!("{work_s}: {d}");
             }
-            let connection = format!(
-                "{} {}",
-                snap.connection.glyph(self.ascii),
-                snap.connection.label()
-            );
+            let connection = snap.connection.label().to_string();
             let queue = snap
                 .queue_depth
                 .filter(|q| *q > 0)
@@ -1010,13 +1056,13 @@ impl<'a> AgentStatusHeader<'a> {
             let ready = matches!(snap.connection, AgentConnectionStatus::Ready);
             let mut segments = vec![
                 StatusSegment::new(&work_s)
-                    .role(snap.work.role())
+                    .semantic(snap.work.semantic())
                     .priority(100),
             ];
             if expanded || !ready {
                 segments.push(
                     StatusSegment::new(&connection)
-                        .role(snap.connection.role())
+                        .semantic(snap.connection.semantic())
                         .priority(90),
                 );
             }
@@ -1024,7 +1070,11 @@ impl<'a> AgentStatusHeader<'a> {
                 segments.push(StatusSegment::new(model).priority(70));
             }
             if let Some(queue) = queue.as_ref() {
-                segments.push(StatusSegment::new(queue).role(Role::Warning).priority(80));
+                segments.push(
+                    StatusSegment::new(queue)
+                        .semantic(SemanticStatus::Warning)
+                        .priority(80),
+                );
             }
             let context = snap.context_text();
             if expanded {
@@ -1060,7 +1110,7 @@ impl<'a> AgentStatusHeader<'a> {
                 format!("i +{hidden}")
             };
             if expanded || hidden > 0 {
-                segments.push(StatusSegment::new(&hint).role(Role::TextFaint).priority(5));
+                segments.push(StatusSegment::new(&hint).quiet().priority(5));
             }
 
             StatusStrip::new(&segments, self.system)
@@ -1289,7 +1339,6 @@ mod tests {
         let area = Rect::new(0, 0, 64, 3);
         let mut buf = Buffer::empty(area);
         AgentStatusHeader::new(&system)
-            .ascii(true)
             .colorless(true)
             .actions(false)
             .paint(area, &mut buf, &mut st);
@@ -1376,23 +1425,32 @@ mod tests {
     }
 
     #[test]
-    fn unicode_labels() {
+    fn resize_cjk_combining_and_ascii_safe() {
         let system = DesignSystem::default();
-        let mut st = AgentStatusHeaderState::new();
-        st.set_snapshot(
-            AgentStatusSnapshot::new()
-                .project("プロジェクト")
-                .session("検査 🔍")
-                .branch("機能")
-                .mode("編集")
-                .model("モデル")
-                .work(AgentWorkStatus::Working),
-        );
-        st.presentation = AgentStatusPresentation::Header;
-        st.auto_contract = false;
-        let area = Rect::new(0, 0, 48, 3);
-        let mut buf = Buffer::empty(area);
-        AgentStatusHeader::new(&system).paint(area, &mut buf, &mut st);
+        for _ in [false, true] {
+            for (width, height) in [(48, 3), (20, 1), (1, 1), (0, 0)] {
+                let mut st = AgentStatusHeaderState::new();
+                st.set_snapshot(
+                    AgentStatusSnapshot::new()
+                        .project("プロジェクト Cafe\u{301}")
+                        .session("検査 🔍")
+                        .branch("機能")
+                        .mode("編集")
+                        .model("モデル")
+                        .work(AgentWorkStatus::Working),
+                );
+                st.presentation = AgentStatusPresentation::Header;
+                st.auto_contract = false;
+                let area = Rect::new(0, 0, width, height);
+                let mut buf = Buffer::empty(area);
+                AgentStatusHeader::new(&system).paint(area, &mut buf, &mut st);
+                if width == 48 {
+                    let text: String = buf.content().iter().map(|cell| cell.symbol()).collect();
+                    assert!(text.contains('プ'), "{text:?}");
+                    assert!(text.contains("Cafe\u{301}"), "{text:?}");
+                }
+            }
+        }
     }
 
     #[test]

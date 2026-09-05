@@ -9,7 +9,6 @@
 //!
 //! Hierarchy is optional (`parent` on items). Flat collections leave it `None`.
 //! Active-descendant movement reuses [`super::RovingFocusGroup`].
-
 use crate::{
     input::KeyEvent,
     interaction::{
@@ -109,6 +108,8 @@ pub struct CollectionState<Id> {
     offset: usize,
     viewport_len: usize,
     total_len: usize,
+    /// Absolute start of the projected window, when `items` is not the full list.
+    window_start: Option<usize>,
 }
 
 impl<Id> Default for CollectionState<Id> {
@@ -126,6 +127,7 @@ impl<Id> CollectionState<Id> {
             offset: 0,
             viewport_len: 0,
             total_len: 0,
+            window_start: None,
         }
     }
 
@@ -221,6 +223,7 @@ impl<Id: Clone + PartialEq> CollectionState<Id> {
     ///
     /// Sets `total_len` to `items.len()` when not using a virtual window.
     pub fn reconcile(&mut self, items: &[CollectionItem<Id>]) -> CollectionOutcome<Id> {
+        self.window_start = None;
         self.total_len = items.len();
         if self.viewport_len == 0 {
             self.viewport_len = items.len();
@@ -243,9 +246,18 @@ impl<Id: Clone + PartialEq> CollectionState<Id> {
         total_len: usize,
         viewport_len: usize,
     ) -> CollectionOutcome<Id> {
+        self.window_start = Some(window_start);
         self.total_len = total_len;
         self.viewport_len = viewport_len;
         self.offset = window_start.min(total_len.saturating_sub(viewport_len.min(total_len)));
+        if total_len > 0
+            && self
+                .roving
+                .active()
+                .is_some_and(|active| !window.iter().any(|item| &item.id == active))
+        {
+            return CollectionOutcome::Ignored;
+        }
         let entries = Self::to_roving_entries(window);
         self.roving.reconcile(&entries).into()
     }
@@ -275,7 +287,7 @@ impl<Id: Clone + PartialEq> CollectionState<Id> {
         let entries = Self::to_roving_entries(items);
         let out: CollectionOutcome<Id> = self.roving.move_first(&entries).into();
         if out.active_changed() {
-            self.offset = 0;
+            self.offset = self.window_start.unwrap_or(0);
         }
         out
     }
@@ -326,12 +338,12 @@ impl<Id: Clone + PartialEq> CollectionState<Id> {
         let Some(active) = self.roving.active() else {
             return CollectionOutcome::Ignored;
         };
-        let Some(idx) = items.iter().position(|i| &i.id == active) else {
+        let Some(local_idx) = items.iter().position(|i| &i.id == active) else {
             return CollectionOutcome::Ignored;
         };
-        // idx is index within the provided projection; if projection is the full
-        // list, align offset. If projection is a window, host should pass absolute
-        // indices via reconcile_window first.
+        let idx = self.window_start.map_or(local_idx, |window_start| {
+            window_start.saturating_add(local_idx)
+        });
         let vp = self.viewport_len.max(1);
         let before = self.offset;
         if idx < self.offset {
@@ -427,6 +439,37 @@ mod tests {
         assert_eq!(c.total_len(), 10);
         assert_eq!(c.viewport_len(), 2);
         assert_eq!(c.active(), Some(&"c"));
+    }
+
+    #[test]
+    fn virtual_window_movement_keeps_absolute_offset() {
+        let mut c = CollectionState::new();
+        let window = items(&[("c", true), ("d", true)]);
+        let _ = c.reconcile_window(&window, 50, 200, 2);
+
+        assert!(c.move_next(&window).active_changed());
+        assert_eq!(c.active(), Some(&"d"));
+        assert_eq!(c.offset(), 50);
+        assert_eq!(c.total_len(), 200);
+
+        let _ = c.move_first(&window);
+        assert_eq!(c.active(), Some(&"c"));
+        assert_eq!(c.offset(), 50);
+    }
+
+    #[test]
+    fn virtual_window_reconcile_preserves_off_window_active() {
+        let full = items(&[("a", true), ("b", true), ("c", true), ("d", true)]);
+        let window = items(&[("c", true), ("d", true)]);
+        let mut c = CollectionState::new();
+        let _ = c.reconcile(&full);
+        c.set_active(Some("b"));
+
+        let out = c.reconcile_window(&window, 2, 4, 2);
+
+        assert_eq!(out, CollectionOutcome::Ignored);
+        assert_eq!(c.active(), Some(&"b"));
+        assert_eq!(c.offset(), 2);
     }
 
     #[test]

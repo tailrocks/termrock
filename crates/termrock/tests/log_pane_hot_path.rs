@@ -30,7 +30,7 @@ fn warmed_tail_render_allocations_scale_with_visible_rows() {
         state.append("resident log line");
     }
     let theme = RolePalette::default();
-    let system = DesignSystem::from_palette(theme.clone());
+    let system = DesignSystem::new(theme.clone());
     let pane = LogPane::new(&system).title("Build log");
     let area = Rect::new(0, 0, 120, VIEWPORT_HEIGHT);
     let mut buffer = Buffer::empty(area);

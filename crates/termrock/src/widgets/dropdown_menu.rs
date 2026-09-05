@@ -11,17 +11,16 @@
 //!
 //! **vs MenuBar.** MenuBar owns a horizontal top strip; these widgets own a
 //! single trigger- or pointer-opened cascade.
-//! **vs Menu (legacy flat).** [`MenuItem`] / [`Menu`] remain as thin flat
-//! adapters over [`MenuNode`] + [`DropdownMenuState`].
+//! One canonical model serves flat, nested, and context-menu presentations.
 //! **vs CommandPalette.** Deep or oversized cascades promote via
 //! [`DropdownMenuOutcome::PreferCommandPalette`] + [`flatten_menu_nodes`].
 //!
 //! Research: Radix menus, desktop context menus, Textual, lazygit, file managers.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
+    style::{Color, Modifier},
     widgets::StatefulWidget,
 };
 
@@ -34,7 +33,7 @@ use crate::{
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, RovingOrientation, SemanticNode,
         SemanticRole, SemanticScene, SemanticState, UiIntent, place_overlay,
     },
-    style::{DesignSystem, Glyph, ListRowVisualState, Role},
+    style::{DesignSystem, Glyph, Role, VisualState},
     text::{display_cols, take_display_cols},
 };
 
@@ -608,13 +607,16 @@ impl DropdownMenuState {
         Self::items_at_path(root, &self.open_path)
     }
 
-    fn ensure_top_frame<Id>(&mut self, root: &[MenuNode<Id>]) {
-        if let Some(items) = self.current_items(root) {
-            if let Some(frame) = self.cascade.last_mut() {
-                let entries = Self::panel_entries(items);
-                let _ = frame.collection.reconcile(&entries);
-            }
+    fn ensure_top_frame<Id>(
+        &mut self,
+        root: &[MenuNode<Id>],
+    ) -> Option<Vec<CollectionItem<usize>>> {
+        let items = self.current_items(root)?;
+        let entries = Self::panel_entries(items);
+        if let Some(frame) = self.cascade.last_mut() {
+            let _ = frame.collection.reconcile(&entries);
         }
+        Some(entries)
     }
 
     /// Close without outcome.
@@ -818,13 +820,15 @@ impl DropdownMenuState {
         key: KeyEvent,
         root: &[MenuNode<Id>],
     ) -> DropdownMenuOutcome<Id> {
-        if !self.live() || root.is_empty() || key.kind == KeyEventKind::Release {
+        if !self.live() || root.is_empty() || key.is_release() {
             return DropdownMenuOutcome::Ignored;
         }
         if !self.is_open() {
             return DropdownMenuOutcome::Ignored;
         }
-        self.ensure_top_frame(root);
+        let Some(entries) = self.ensure_top_frame(root) else {
+            return DropdownMenuOutcome::Ignored;
+        };
 
         // Left/Right for cascade (beyond default_menu_intent).
         if key.modifiers.is_empty() || key.modifiers == KeyModifiers::NONE {
@@ -845,7 +849,7 @@ impl DropdownMenuState {
         }
 
         if let Some(intent) = crate::interaction::default_menu_intent(key) {
-            let out = self.handle_intent(intent, root);
+            let out = self.handle_intent_after_ensure(intent, root, &entries);
             if !matches!(out, DropdownMenuOutcome::Ignored) {
                 return out;
             }
@@ -855,7 +859,7 @@ impl DropdownMenuState {
         if key.modifiers.is_empty() {
             if let KeyCode::Char(c) = key.code {
                 if !c.is_control() {
-                    return self.typeahead_char(c, root);
+                    return self.typeahead_char(c, &entries);
                 }
             }
         }
@@ -865,22 +869,17 @@ impl DropdownMenuState {
     fn typeahead_char<Id: Clone>(
         &mut self,
         ch: char,
-        root: &[MenuNode<Id>],
+        entries: &[CollectionItem<usize>],
     ) -> DropdownMenuOutcome<Id> {
-        let items = match self.current_items(root) {
-            Some(i) => i,
-            None => return DropdownMenuOutcome::Ignored,
-        };
         let frame = match self.cascade.last_mut() {
             Some(f) => f,
             None => return DropdownMenuOutcome::Ignored,
         };
-        let entries = Self::panel_entries(items);
         let before = frame.cursor();
         // CollectionState/roving typeahead via handle_key on synthetic char? Use roving API.
         let out = frame.collection.handle_key(
             KeyEvent::new(KeyCode::Char(ch), KeyModifiers::NONE),
-            &entries,
+            entries,
         );
         self.typeahead.push(ch);
         if out.active_changed() || frame.cursor() != before {
@@ -900,12 +899,18 @@ impl DropdownMenuState {
         if !self.live() || !self.is_open() || root.is_empty() {
             return DropdownMenuOutcome::Ignored;
         }
-        self.ensure_top_frame(root);
-        let items = match self.current_items(root) {
-            Some(i) => i,
-            None => return DropdownMenuOutcome::Ignored,
+        let Some(entries) = self.ensure_top_frame(root) else {
+            return DropdownMenuOutcome::Ignored;
         };
-        let entries = Self::panel_entries(items);
+        self.handle_intent_after_ensure(intent, root, &entries)
+    }
+
+    fn handle_intent_after_ensure<Id: Clone>(
+        &mut self,
+        intent: UiIntent,
+        root: &[MenuNode<Id>],
+        entries: &[CollectionItem<usize>],
+    ) -> DropdownMenuOutcome<Id> {
         match intent {
             UiIntent::Move(
                 NavigationMove::Next
@@ -919,7 +924,7 @@ impl DropdownMenuState {
                     Some(f) => f,
                     None => return DropdownMenuOutcome::Ignored,
                 };
-                let out = frame.collection.handle_intent(intent, &entries);
+                let out = frame.collection.handle_intent(intent, entries);
                 self.typeahead.clear();
                 if out.active_changed() {
                     DropdownMenuOutcome::CursorMoved
@@ -989,7 +994,7 @@ impl DropdownMenuState {
                 while self.open_path.len() > depth {
                     self.open_path.pop();
                 }
-                self.ensure_top_frame(root);
+                let _ = self.ensure_top_frame(root);
                 if let Some(frame) = self.cascade.get_mut(depth) {
                     frame.set_cursor(idx);
                 }
@@ -1045,9 +1050,6 @@ impl DropdownMenuState {
     }
 }
 
-/// Context menu state is the same cascade engine in context mode.
-pub type ContextMenuState = DropdownMenuState;
-
 // ── Widget ──────────────────────────────────────────────────────────────────
 
 /// Dropdown / context menu panel paint (single panel or host paints cascade).
@@ -1055,14 +1057,10 @@ pub type ContextMenuState = DropdownMenuState;
 pub struct DropdownMenu<'a, Id> {
     items: &'a [MenuNode<Id>],
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
     /// When painting nested cascade, which depth this call targets.
     depth: usize,
 }
-
-/// Context menu paint alias.
-pub type ContextMenuWidget<'a, Id> = DropdownMenu<'a, Id>;
 
 impl<'a, Id> DropdownMenu<'a, Id> {
     /// Root items + design system.
@@ -1071,17 +1069,9 @@ impl<'a, Id> DropdownMenu<'a, Id> {
         Self {
             items,
             system,
-            ascii: false,
             colorless: false,
             depth: 0,
         }
-    }
-
-    /// ASCII glyphs.
-    #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
     }
 
     /// Reduced-color roles.
@@ -1141,7 +1131,7 @@ impl<'a, Id> DropdownMenu<'a, Id> {
                 Some(i) => i,
                 None => break,
             };
-            let size = measure_menu_panel(items, self.ascii);
+            let size = measure_menu_panel(items, false);
             if depth == 0 {
                 // Host usually places root; clamp to area.
                 let placed = if state.context_mode {
@@ -1192,16 +1182,20 @@ impl<'a, Id> DropdownMenu<'a, Id> {
         if area.is_empty() {
             return;
         }
-        let border = if state.focused && state.accepts_input {
-            Role::BorderFocused
+        let recipe = super::SurfaceRecipe::MenuPopover;
+        let colorless_system;
+        let surface_system = if self.colorless {
+            colorless_system = self
+                .system
+                .clone()
+                .capability(crate::style::ColorCapability::Monochrome);
+            &colorless_system
         } else {
-            Role::Border
+            self.system
         };
-        let border_style = self.system.style(border);
-        let inner = super::Surface::new(self.system)
-            .recipe(super::SurfaceRecipe::Overlay)
+        let inner = super::Surface::new(surface_system)
+            .recipe(recipe)
             .bordered(true)
-            .border_style(border_style)
             .content_inset()
             .paint(area, buffer);
         if inner.is_empty() {
@@ -1209,7 +1203,7 @@ impl<'a, Id> DropdownMenu<'a, Id> {
         }
 
         let cursor = state.panel_cursor(depth).unwrap_or(0);
-        let surface_focus = state.focused && state.accepts_input;
+        let surface_focus = state.live();
 
         // A menu longer than its panel used to paint until it ran out of rows
         // and drop the rest in silence — including the row the cursor was on,
@@ -1225,7 +1219,7 @@ impl<'a, Id> DropdownMenu<'a, Id> {
         if let Some(frame) = state.cascade.get_mut(depth) {
             frame.collection.set_viewport(offset, viewport, items.len());
         }
-        let gutter = Rect::new(inner.right().saturating_sub(1), inner.y, 1, inner.height);
+        let gutter = crate::scroll::gutter_column(inner);
 
         let mut y = inner.y;
         for (i, item) in items.iter().enumerate().skip(offset) {
@@ -1240,11 +1234,7 @@ impl<'a, Id> DropdownMenu<'a, Id> {
                 // leaves a visible notch; it meets the border with a tee
                 // instead (plans/022 Step 2).
                 let glyphs = self.system.glyphs;
-                let rule = if self.ascii {
-                    "-"
-                } else {
-                    glyphs.resolve(Glyph::RuleH).text
-                };
+                let rule = { glyphs.resolve(Glyph::RuleH).text };
                 let line: String = std::iter::repeat_n(rule, usize::from(inner.width)).collect();
                 buffer.set_stringn(
                     inner.x,
@@ -1253,25 +1243,6 @@ impl<'a, Id> DropdownMenu<'a, Id> {
                     usize::from(inner.width),
                     self.system.style(Role::Border),
                 );
-                if !self.ascii && inner.x > area.x {
-                    buffer.set_stringn(
-                        inner.x.saturating_sub(1),
-                        y,
-                        glyphs.resolve(Glyph::RuleTeeLeft).text,
-                        1,
-                        self.system.style(Role::Border),
-                    );
-                    let right = inner.x.saturating_add(inner.width);
-                    if right < area.right() {
-                        buffer.set_stringn(
-                            right,
-                            y,
-                            glyphs.resolve(Glyph::RuleTeeRight).text,
-                            1,
-                            self.system.style(Role::Border),
-                        );
-                    }
-                }
                 y = y.saturating_add(1);
                 continue;
             }
@@ -1287,7 +1258,7 @@ impl<'a, Id> DropdownMenu<'a, Id> {
                 continue;
             }
             if matches!(item.kind, MenuRowKind::Loading) {
-                let prefix = if self.ascii { "... " } else { "… " };
+                let prefix = { "… " };
                 buffer.set_stringn(
                     inner.x,
                     y,
@@ -1315,23 +1286,6 @@ impl<'a, Id> DropdownMenu<'a, Id> {
             }
 
             let active = cursor == i && surface_focus;
-            let recipe = self.system.resolve_list_row(ListRowVisualState {
-                selected: active,
-                focused: active,
-                hovered: state.hovered == Some((depth, i)),
-                enabled: item.enabled,
-                loading: false,
-                checked: matches!(
-                    item.kind,
-                    MenuRowKind::Checkbox { checked: true }
-                        | MenuRowKind::Radio { selected: true, .. }
-                ),
-            });
-            if recipe.use_fill {
-                buffer.set_style(hit, recipe.label);
-            } else if recipe.use_tint {
-                buffer.set_style(hit, recipe.tint);
-            }
             let style = if self.colorless {
                 if !item.enabled {
                     self.system.style(Role::TextMuted)
@@ -1340,37 +1294,46 @@ impl<'a, Id> DropdownMenu<'a, Id> {
                 } else {
                     self.system.style(Role::Text)
                 }
-            } else if !item.enabled {
-                self.system.style(Role::TextDisabled)
-            } else if item.destructive && !active {
-                self.system.style(Role::Danger)
-            } else if active {
-                recipe.label
             } else {
-                self.system.style(Role::Text)
+                self.system.menu_row(
+                    VisualState {
+                        selected: active,
+                        hovered: state.hovered == Some((depth, i)),
+                        disabled: !item.enabled,
+                        ..VisualState::default()
+                    },
+                    item.destructive,
+                    surface_system
+                        .style(Role::Popover)
+                        .bg
+                        .unwrap_or(Color::Reset),
+                )
             };
+            if !self.colorless {
+                buffer.set_style(hit, style);
+            }
 
             let mark = match &item.kind {
-                MenuRowKind::Checkbox { checked: true } if self.ascii => "[x] ",
+                MenuRowKind::Checkbox { checked: true } if false => "[x] ",
                 MenuRowKind::Checkbox { checked: true } => "✓ ",
-                MenuRowKind::Checkbox { checked: false } if self.ascii => "[ ] ",
+                MenuRowKind::Checkbox { checked: false } if false => "[ ] ",
                 MenuRowKind::Checkbox { checked: false } => "  ",
-                MenuRowKind::Radio { selected: true, .. } if self.ascii => "(*) ",
+                MenuRowKind::Radio { selected: true, .. } if false => "(*) ",
                 MenuRowKind::Radio { selected: true, .. } => "● ",
                 MenuRowKind::Radio {
                     selected: false, ..
-                } if self.ascii => "( ) ",
+                } if false => "( ) ",
                 MenuRowKind::Radio {
                     selected: false, ..
                 } => "○ ",
-                _ if active && self.ascii => "> ",
+                _ if active && false => "> ",
                 _ if active => "› ",
                 _ => "  ",
             };
-            let label = format_mnemonic_label(&item.label, item.mnemonic, self.ascii);
+            let label = format_mnemonic_label(&item.label, item.mnemonic, false);
             let mut line = format!("{mark}{label}");
             if matches!(item.kind, MenuRowKind::Submenu) {
-                line.push(if self.ascii { '>' } else { '›' });
+                line.push('›');
             }
             if !item.enabled {
                 if let Some(reason) = &item.disabled_reason {
@@ -1378,8 +1341,6 @@ impl<'a, Id> DropdownMenu<'a, Id> {
                     line.push('(');
                     line.push_str(reason);
                     line.push(')');
-                } else if self.ascii {
-                    line.push_str(" #");
                 } else {
                     line.push_str(" ⊘");
                 }
@@ -1405,15 +1366,15 @@ impl<'a, Id> DropdownMenu<'a, Id> {
             y = y.saturating_add(1);
         }
 
-        // The cut edges and the gutter say the same thing every other scrolled
-        // surface in the library says.
-        crate::scroll::paint_scrolled_region(
+        // The gutter says the same thing every other scrolled surface in the
+        // library says.
+        crate::scroll::paint_overflow_scrollbar(
             buffer,
-            inner,
             gutter,
             items.len(),
             viewport,
             u16::try_from(offset).unwrap_or(u16::MAX),
+            state.live(),
             self.system,
         );
     }
@@ -1445,6 +1406,7 @@ impl<'a, Id> DropdownMenu<'a, Id> {
                 .label("dropdown-menu")
                 .description(desc)
                 .focusable(state.enabled && state.accepts_input)
+                .disabled(!state.enabled)
                 .state(SemanticState {
                     selected: state.focused,
                     expanded: state.is_open(),
@@ -1486,129 +1448,6 @@ fn format_mnemonic_label(label: &str, mnemonic: Option<char>, _ascii: bool) -> S
     } else {
         format!("{label} ({m})")
     }
-}
-
-// ── Flat MenuItem adapter (legacy Menu path) ────────────────────────────────
-
-/// Flat menu row (legacy API; maps to [`MenuNode`]).
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct MenuItem<Id> {
-    /// Stable id.
-    pub id: Id,
-    /// Label.
-    pub label: String,
-    /// Optional shortcut hint.
-    pub shortcut: Option<String>,
-    /// Disabled.
-    pub enabled: bool,
-    /// Checked (toggle item).
-    pub checked: Option<bool>,
-    /// Separator before this item.
-    pub separator_before: bool,
-}
-
-impl<Id> MenuItem<Id> {
-    /// Enabled item.
-    #[must_use]
-    pub fn new(id: Id, label: impl Into<String>) -> Self {
-        Self {
-            id,
-            label: label.into(),
-            shortcut: None,
-            enabled: true,
-            checked: None,
-            separator_before: false,
-        }
-    }
-
-    /// Disabled.
-    #[must_use]
-    pub fn enabled(mut self, enabled: bool) -> Self {
-        self.enabled = enabled;
-        self
-    }
-
-    /// Shortcut hint text.
-    #[must_use]
-    pub fn shortcut(mut self, shortcut: impl Into<String>) -> Self {
-        self.shortcut = Some(shortcut.into());
-        self
-    }
-
-    /// Checked / unchecked toggle item.
-    #[must_use]
-    pub fn checked(mut self, checked: bool) -> Self {
-        self.checked = Some(checked);
-        self
-    }
-
-    /// Separator before.
-    #[must_use]
-    pub fn separator_before(mut self, sep: bool) -> Self {
-        self.separator_before = sep;
-        self
-    }
-}
-
-impl<Id: Clone> MenuItem<Id> {
-    /// Expand flat items into hierarchical nodes (separators become nodes).
-    #[must_use]
-    pub fn to_nodes(items: &[MenuItem<Id>]) -> Vec<MenuNode<Id>>
-    where
-        Id: Clone,
-    {
-        let mut out = Vec::new();
-        for (i, it) in items.iter().enumerate() {
-            if it.separator_before {
-                // Synthetic separator id: reuse item id with a marker only when Id is stringy —
-                // host should prefer MenuNode directly. Here we clone item id as separator
-                // which requires a second node — use index-based only for unit labels.
-                // We skip unique-id requirement by pushing separator with same id then command —
-                // better: only emit separator when we can. Use command nodes only and paint
-                // separator_before on DropdownMenu? For adapter, push a separator with cloned id
-                // is wrong for uniqueness. Document that MenuNode is preferred.
-                let _ = i;
-            }
-            let mut node = match it.checked {
-                Some(c) => MenuNode::checkbox(it.id.clone(), it.label.clone(), c),
-                None => MenuNode::command(it.id.clone(), it.label.clone()),
-            };
-            node.enabled = it.enabled;
-            if let Some(sc) = &it.shortcut {
-                node.shortcut = Some(sc.clone());
-            }
-            if it.separator_before {
-                // Insert separator with a path that doesn't need unique Id: use the item's
-                // id for separator is bad. We'll attach separator_before as preceding
-                // MenuRowKind::Separator only if Id: Default — not available.
-                // Instead prepend separator by duplicating structure via section empty? Skip.
-            }
-            out.push(node);
-        }
-        out
-    }
-}
-
-/// Convert a single flat item (no separator handling).
-impl<Id: Clone> From<&MenuItem<Id>> for MenuNode<Id> {
-    fn from(it: &MenuItem<Id>) -> Self {
-        let mut node = match it.checked {
-            Some(c) => MenuNode::checkbox(it.id.clone(), it.label.clone(), c),
-            None => MenuNode::command(it.id.clone(), it.label.clone()),
-        };
-        node.enabled = it.enabled;
-        if let Some(sc) = &it.shortcut {
-            node.shortcut = Some(sc.clone());
-        }
-        node
-    }
-}
-
-/// Expand flat items; separators get synthetic indices when `Id: From<usize>` is not
-/// available — hosts with separators should use [`MenuNode::separator`] directly.
-#[must_use]
-pub fn menu_items_to_nodes<Id: Clone>(items: &[MenuItem<Id>]) -> Vec<MenuNode<Id>> {
-    items.iter().map(MenuNode::from).collect()
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────
@@ -1841,6 +1680,33 @@ mod tests {
     }
 
     #[test]
+    fn disabled_menu_does_not_paint_active_cursor() {
+        let system = DesignSystem::junie();
+        let root = vec![MenuNode::command("off", "Unavailable")];
+        let mut state = DropdownMenuState::new();
+        let _ = state.open_from_keyboard(&root, Rect::new(0, 0, 80, 24));
+        state.set_enabled(false);
+
+        let area = Rect::new(0, 0, 32, 8);
+        let mut buffer = Buffer::empty(area);
+        DropdownMenu::new(&root, &system).paint(area, &mut buffer, &mut state);
+
+        let row = state
+            .panel_hits()
+            .iter()
+            .find(|(_, index, _)| *index == 0)
+            .map(|(_, _, rect)| *rect)
+            .expect("disabled row hit");
+        let text: String = (row.x..row.right())
+            .map(|x| buffer[(x, row.y)].symbol().to_string())
+            .collect();
+        assert!(
+            !text.contains('›'),
+            "disabled menu cannot paint cursor: {text:?}"
+        );
+    }
+
+    #[test]
     fn typeahead_jumps() {
         let root = sample_tree();
         let mut state = DropdownMenuState::new();
@@ -1963,6 +1829,46 @@ mod tests {
     }
 
     #[test]
+    fn render_uses_menu_highlights_and_soft_destructive_label() {
+        let system = DesignSystem::junie();
+        let root = vec![
+            MenuNode::command("open", "Open"),
+            MenuNode::command("delete", "Delete").destructive(true),
+        ];
+        let mut state = DropdownMenuState::new();
+        let _ = state.open_from_keyboard(&root, Rect::new(0, 0, 80, 24));
+        let area = Rect::new(0, 0, 32, 8);
+        let mut buffer = Buffer::empty(area);
+        DropdownMenu::new(&root, &system).paint(area, &mut buffer, &mut state);
+
+        let active = state
+            .panel_hits()
+            .iter()
+            .find(|(_, index, _)| *index == 0)
+            .map(|(_, _, rect)| *rect)
+            .expect("active menu row hit");
+        let destructive = state
+            .panel_hits()
+            .iter()
+            .find(|(_, index, _)| *index == 1)
+            .map(|(_, _, rect)| *rect)
+            .expect("destructive menu row hit");
+        let active_style = buffer[(active.x + 2, active.y)].style();
+        let highlight = system.style(Role::Highlight);
+        assert_eq!(active_style.fg, highlight.fg);
+        assert_eq!(active_style.bg, Some(Color::Rgb(0x2f, 0x5a, 0xa8)));
+        assert_eq!(active_style.add_modifier, highlight.add_modifier);
+        assert!(
+            (0..active.width).all(|offset| buffer[(active.x + offset, active.y)].symbol() != "▎"),
+            "menu selection has no focus gutter"
+        );
+        assert_eq!(
+            buffer[(destructive.x + 2, destructive.y)].style().fg,
+            Some(Color::Rgb(0xd9, 0x8a, 0x8a))
+        );
+    }
+
+    #[test]
     fn fuzz_keys() {
         let root = sample_tree();
         let mut state = DropdownMenuState::new();
@@ -2052,17 +1958,6 @@ mod tests {
     }
 
     #[test]
-    fn legacy_menu_item_adapter() {
-        let items = [
-            MenuItem::new("a", "Open"),
-            MenuItem::new("b", "Save").shortcut("C-s"),
-        ];
-        let nodes = menu_items_to_nodes(&items);
-        assert_eq!(nodes.len(), 2);
-        assert_eq!(nodes[1].shortcut.as_deref(), Some("C-s"));
-    }
-
-    #[test]
     fn context_key_and_pointer_triggers() {
         let root = vec![MenuNode::command("x", "X")];
         let bounds = Rect::new(0, 0, 80, 24);
@@ -2081,5 +1976,42 @@ mod tests {
                 trigger: MenuOpenTrigger::Pointer
             }
         ));
+    }
+
+    #[test]
+    fn mouse_activates_only_enabled_painted_menu_rows() {
+        let root = sample_tree();
+        let mut state = DropdownMenuState::new();
+        let _ = state.open_from_keyboard(&root, Rect::new(0, 0, 80, 24));
+        state.panel_hits = vec![(0, 0, Rect::new(4, 5, 20, 1))];
+        assert!(matches!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(4, 5),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &root,
+            ),
+            DropdownMenuOutcome::Activated { .. }
+                | DropdownMenuOutcome::CheckToggled { .. }
+                | DropdownMenuOutcome::RadioSelected { .. }
+        ));
+
+        let disabled = vec![MenuNode::command("off", "Unavailable").enabled(false)];
+        let mut disabled_state = DropdownMenuState::new();
+        let _ = disabled_state.open_from_keyboard(&disabled, Rect::new(0, 0, 80, 24));
+        disabled_state.panel_hits = vec![(0, 0, Rect::new(4, 5, 20, 1))];
+        assert_eq!(
+            disabled_state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(4, 5),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &disabled,
+            ),
+            DropdownMenuOutcome::CursorMoved
+        );
     }
 }

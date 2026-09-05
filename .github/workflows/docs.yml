@@ -113,10 +113,10 @@ jobs:
           fi
           test -f docs/public/preview-posters/list-selection.json
       - run: rm -rf target/render-a target/render-b
-      - run: cargo run -p termrock-lookbook -- render --out target/render-a >/dev/null
-      - run: cargo run -p termrock-lookbook -- render --out target/render-b >/dev/null
+      - run: cargo run -p termrock-catalog -- render --out target/render-a >/dev/null
+      - run: cargo run -p termrock-catalog -- render --out target/render-b >/dev/null
       - run: diff -r target/render-a target/render-b
-      - run: cargo run -p termrock-lookbook -- render --theme slate --out target/render-slate >/dev/null
+      - run: cargo run -p termrock-catalog -- render --out target/render-slate >/dev/null
       - name: Configure GitHub Pages
         if: matrix.config.writer && github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0

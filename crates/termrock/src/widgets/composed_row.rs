@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Named-part row projection for priority-aware contraction.
-
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, text::Line};
 
 use crate::style::ListRowRecipe;
@@ -55,11 +54,10 @@ impl<'a, Id> ComposedRow<'a, Id> {
     #[must_use]
     pub fn parts_for_width(&self, width: u16) -> ComposedRowParts<'a> {
         let mut parts = ComposedRowParts {
-            leading: if self.loading {
-                Some(Line::from("…"))
-            } else {
-                self.leading.clone()
-            },
+            // Busy chrome is resolved by the collection recipe, where the
+            // active GlyphSet is available. This projection never invents a
+            // loading glyph on its own.
+            leading: self.leading.clone(),
             primary: self.primary.clone(),
             secondary: self.secondary.clone(),
             badge: self.badge.clone(),
@@ -125,12 +123,10 @@ impl RowTones {
 
     fn from_recipe(recipe: &ListRowRecipe) -> Self {
         Self {
-            leading: recipe
-                .gutter
-                .map_or(recipe.label, |(_, gutter_style)| gutter_style),
+            leading: recipe.gutter.1,
             primary: recipe.label,
             secondary: recipe.secondary,
-            badge: recipe.trailing,
+            badge: recipe.secondary,
             shortcut: recipe.shortcut,
         }
     }
@@ -328,7 +324,7 @@ mod tests {
     }
 
     #[test]
-    fn loading_forces_ellipsis_leading() {
+    fn loading_leaves_glyph_ownership_to_collection_recipe() {
         let row = ComposedRow {
             id: 1,
             leading: Some(Line::from("!")),
@@ -340,7 +336,7 @@ mod tests {
             loading: true,
         };
         let parts = row.parts_for_width(40);
-        assert_eq!(parts.leading, Some(Line::from("…")));
+        assert_eq!(parts.leading, Some(Line::from("!")));
     }
 
     #[test]
@@ -372,16 +368,15 @@ mod tests {
 
     #[test]
     fn paint_with_gives_every_part_its_own_tone() {
-        use crate::style::{Density, DesignSystem, ListRowVisualState, RolePalette};
+        use crate::style::{DesignSystem, ListRowVisualState, RolePalette};
 
-        let system = DesignSystem::new(RolePalette::default(), Density::Compact);
+        let system = DesignSystem::new(RolePalette::default());
         let recipe = system.resolve_list_row(ListRowVisualState {
             selected: false,
             focused: false,
             hovered: false,
             enabled: true,
-            loading: false,
-            checked: false,
+            ..ListRowVisualState::default()
         });
         let row = ComposedRow {
             id: "r",
@@ -411,7 +406,7 @@ mod tests {
 
         assert_eq!(primary.fg, recipe.label.fg);
         assert_eq!(secondary.fg, recipe.secondary.fg);
-        assert_eq!(badge.fg, recipe.trailing.fg);
+        assert_eq!(badge.fg, recipe.secondary.fg);
         assert_eq!(shortcut.fg, recipe.shortcut.fg);
         assert_ne!(
             primary.fg, secondary.fg,

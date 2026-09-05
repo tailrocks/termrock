@@ -1,5 +1,7 @@
 # Web-premium → TUI translation law
 
+> **Superseded (2026-09-02).** Token taxonomy, spacing, glyphs, and state grammar live in [`DESIGN.md`](../../DESIGN.md). This file is historical.
+
 | Field | Value |
 |-------|-------|
 | **Status** | Binding design law for the "feels like it's NOT a terminal" quality bar. |

@@ -14,7 +14,6 @@
 //!
 //! Research: Vim easymotion, browser keyboard nav extensions, Posting jump,
 //! accessibility focus inspectors.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -186,7 +185,7 @@ impl<Id> JumpTarget<Id> {
         }
     }
 
-    /// First character of the key sequence (legacy single-badge consumers).
+    /// Badge character derived from the first key in the sequence.
     #[must_use]
     pub fn badge(&self) -> char {
         self.keys.chars().next().unwrap_or('?')
@@ -234,9 +233,6 @@ pub enum JumpOutcome<Id> {
     /// Filter changed; host should rebuild targets.
     FilterChanged,
 }
-
-/// Alias: JumpMode is the product name for jump navigation state.
-pub type JumpModeState = JumpOverlayState;
 
 // ── Label generation (deterministic, collision-free) ────────────────────────
 
@@ -465,7 +461,7 @@ where
 
 // ── State ───────────────────────────────────────────────────────────────────
 
-/// Jump-mode state (also known as [`JumpModeState`]).
+/// Jump-mode state.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct JumpOverlayState {
     open: bool,
@@ -580,10 +576,10 @@ impl JumpOverlayState {
         key: KeyEvent,
         targets: &[JumpTarget<Id>],
     ) -> JumpOutcome<Id> {
-        if !self.open || !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.open || !self.accepts_input || key.is_release() {
             return JumpOutcome::Ignored;
         }
-        if key.kind != KeyEventKind::Press && key.kind != KeyEventKind::Repeat {
+        if key.is_insert() {
             // Allow Press primarily; ignore other.
         }
         match key.code {
@@ -712,7 +708,6 @@ impl JumpOverlayState {
 pub struct JumpOverlay<'a, Id> {
     targets: &'a [JumpTarget<Id>],
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
     /// Prefix to highlight partial matches (from state).
     prefix: &'a str,
@@ -726,7 +721,6 @@ impl<'a, Id> JumpOverlay<'a, Id> {
         Self {
             targets,
             system,
-            ascii: false,
             colorless: false,
             prefix: "",
             dim_unmatched: true,
@@ -735,13 +729,7 @@ impl<'a, Id> JumpOverlay<'a, Id> {
 
     /// ASCII brackets only.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Reduced-color roles.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -771,16 +759,12 @@ impl<'a, Id> JumpOverlay<'a, Id> {
         Self {
             targets,
             system,
-            ascii: false,
             colorless: false,
             prefix: state.prefix(),
             dim_unmatched: state.dim_unmatched(),
         }
     }
 }
-
-/// Product alias for the paint widget.
-pub type JumpMode<'a, Id> = JumpOverlay<'a, Id>;
 
 impl<Id> Widget for &JumpOverlay<'_, Id> {
     fn render(self, _area: Rect, buffer: &mut Buffer) {
@@ -797,7 +781,7 @@ impl<Id> Widget for &JumpOverlay<'_, Id> {
                 if matches_prefix {
                     self.system
                         .style(Role::TextStrong)
-                        .add_modifier(Modifier::REVERSED | Modifier::BOLD)
+                        .add_modifier(Modifier::BOLD)
                 } else {
                     self.system.style(Role::TextMuted)
                 }
@@ -810,9 +794,7 @@ impl<Id> Widget for &JumpOverlay<'_, Id> {
             };
 
             let keys = &target.keys;
-            let label = if self.ascii {
-                format!("[{keys}]")
-            } else if !self.prefix.is_empty() && keys.starts_with(self.prefix) {
+            let label = if !self.prefix.is_empty() && keys.starts_with(self.prefix) {
                 // Show remaining suffix emphasized: [ab] with prefix a → [·b]
                 let rest = &keys[self.prefix.len()..];
                 if rest.is_empty() {
@@ -1114,7 +1096,6 @@ mod tests {
         let area = Rect::new(0, 0, 40, 24);
         let mut buf = Buffer::empty(area);
         JumpOverlay::from_state(&targets, &system, &state)
-            .ascii(true)
             .colorless(true)
             .render(area, &mut buf);
         let text: String = buf

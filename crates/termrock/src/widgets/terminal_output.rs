@@ -20,7 +20,6 @@
 //! owns chrome, follow, and control outcomes.
 //!
 //! Research: Grok Build, Amp, OpenCode, terminal emulators, CI command logs.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeSet;
 
@@ -70,19 +69,11 @@ impl TerminalStream {
 
     /// No-color prefix.
     #[must_use]
-    pub const fn prefix(self, ascii: bool) -> &'static str {
-        if ascii {
-            match self {
-                Self::Stdout => "o ",
-                Self::Stderr => "e ",
-                Self::System => "* ",
-            }
-        } else {
-            match self {
-                Self::Stdout => "│ ",
-                Self::Stderr => "! ",
-                Self::System => "· ",
-            }
+    pub const fn prefix(self, _ascii: bool) -> &'static str {
+        match self {
+            Self::Stdout => "│ ",
+            Self::Stderr => "! ",
+            Self::System => "· ",
         }
     }
 
@@ -157,31 +148,17 @@ impl TerminalRunStatus {
 
     /// Glyph (ASCII uses letter).
     #[must_use]
-    pub const fn glyph(self, ascii: bool) -> &'static str {
-        if ascii {
-            match self {
-                Self::Pending => ".",
-                Self::WaitingPermission => "A",
-                Self::Running => ">",
-                Self::Succeeded => "+",
-                Self::Failed => "x",
-                Self::Signaled => "!",
-                Self::Cancelled => "c",
-                Self::TimedOut => "t",
-                Self::Detached => "d",
-            }
-        } else {
-            match self {
-                Self::Pending => "·",
-                Self::WaitingPermission => "⏸",
-                Self::Running => "▶",
-                Self::Succeeded => "✓",
-                Self::Failed => "✗",
-                Self::Signaled => "⚡",
-                Self::Cancelled => "⊘",
-                Self::TimedOut => "⏱",
-                Self::Detached => "⧉",
-            }
+    pub const fn glyph(self, _ascii: bool) -> &'static str {
+        match self {
+            Self::Pending => "·",
+            Self::WaitingPermission => "⏸",
+            Self::Running => "▶",
+            Self::Succeeded => "✓",
+            Self::Failed => "✗",
+            Self::Signaled => "⚡",
+            Self::Cancelled => "⊘",
+            Self::TimedOut => "⏱",
+            Self::Detached => "⧉",
         }
     }
 
@@ -192,7 +169,7 @@ impl TerminalRunStatus {
             Self::Pending | Self::Detached => Role::TextMuted,
             Self::WaitingPermission => Role::Warning,
             // Running is live information, not the brand (plans/007).
-            Self::Running => Role::InfoDim,
+            Self::Running => Role::TextMuted,
             Self::Succeeded => Role::Success,
             Self::Failed | Self::Signaled | Self::TimedOut => Role::Danger,
             Self::Cancelled => Role::Warning,
@@ -557,8 +534,6 @@ pub struct TerminalOutputState {
     pub cursor: usize,
     /// Hit regions.
     pub regions: Vec<TerminalOutputRegion>,
-    /// Prefer ASCII status/stream glyphs.
-    pub ascii: bool,
     /// Prefer no-color paint.
     pub colorless: bool,
     /// Anchor line id across reproject.
@@ -591,7 +566,6 @@ impl TerminalOutputState {
             hide_stderr: false,
             cursor: 0,
             regions: Vec::new(),
-            ascii: false,
             colorless: false,
             anchor_id: None,
         }
@@ -663,7 +637,7 @@ impl TerminalOutputState {
         if let Some(aid) = self.anchor_id.as_ref() {
             if let Some(i) = view.iter().position(|l| l.id == aid) {
                 self.cursor = i;
-                self.ensure_cursor_visible(view.len());
+                self.scroll.reveal_row(self.cursor);
             }
         }
     }
@@ -673,22 +647,6 @@ impl TerminalOutputState {
         self.body_rows = viewport;
         self.scroll.set_content_size(1, total);
         self.scroll.set_viewport(1, viewport);
-        self.scroll.clamp();
-    }
-
-    fn ensure_cursor_visible(&mut self, len: usize) {
-        if len == 0 || self.body_rows == 0 {
-            return;
-        }
-        let vh = usize::from(self.body_rows);
-        let start = usize::from(self.scroll.offset_y());
-        let end = start.saturating_add(vh);
-        if self.cursor < start {
-            self.scroll.set_offset_y_quiet(self.cursor as u16);
-        } else if self.cursor >= end {
-            let next = self.cursor.saturating_add(1).saturating_sub(vh);
-            self.scroll.set_offset_y_quiet(next as u16);
-        }
         self.scroll.clamp();
     }
 
@@ -703,10 +661,10 @@ impl TerminalOutputState {
         lines: &[TerminalLine<'_>],
         meta: &TerminalCommandMeta<'_>,
     ) -> TerminalOutputOutcome {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return TerminalOutputOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
         let view = filter_terminal_lines(lines, self.hide_stdout, self.hide_stderr);
 
         if is_press {
@@ -820,7 +778,7 @@ impl TerminalOutputState {
                     } else {
                         self.scroll.pause_follow();
                     }
-                    self.ensure_cursor_visible(len);
+                    self.scroll.reveal_row(self.cursor);
                     if was && !self.is_following() {
                         return TerminalOutputOutcome::Detach;
                     }
@@ -844,7 +802,7 @@ impl TerminalOutputState {
                 if len > 0 && self.cursor > 0 {
                     self.cursor -= 1;
                     self.scroll.pause_follow();
-                    self.ensure_cursor_visible(len);
+                    self.scroll.reveal_row(self.cursor);
                     if was {
                         return TerminalOutputOutcome::Detach;
                     }
@@ -1043,7 +1001,6 @@ pub struct TerminalOutput<'a> {
     lines: &'a [TerminalLine<'a>],
     system: &'a DesignSystem,
     focused: bool,
-    ascii: bool,
     colorless: bool,
     title: Option<&'a str>,
     /// When false, paint stream body (+ follow chip) only — for card composition.
@@ -1063,7 +1020,6 @@ impl<'a> TerminalOutput<'a> {
             lines,
             system,
             focused: true,
-            ascii: false,
             colorless: false,
             title: None,
             show_chrome: true,
@@ -1086,13 +1042,7 @@ impl<'a> TerminalOutput<'a> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
         self
@@ -1113,8 +1063,7 @@ impl<'a> TerminalOutput<'a> {
             state.area_rows = 0;
             return;
         }
-        let ascii = self.ascii || state.ascii;
-        let colorless = self.colorless || state.colorless;
+        let colorless = self.colorless || state.colorless || self.system.mono();
         state.origin = (area.x, area.y);
         state.area_rows = area.height;
         let surface = self.focused && state.accepts_input;
@@ -1166,7 +1115,7 @@ impl<'a> TerminalOutput<'a> {
                 state,
                 self.system,
                 surface,
-                ascii,
+                false,
                 colorless,
                 tiny,
                 narrow,
@@ -1177,9 +1126,9 @@ impl<'a> TerminalOutput<'a> {
         // Body
         let body = Rect::new(area.x, y, area.width, body_h);
         if view.is_empty() {
-            let mark = if ascii { "[ ] " } else { "∅ " };
+            let mark = "∅ ";
             let msg = if matches!(self.meta.status, TerminalRunStatus::Pending) {
-                format!("{mark}waiting…")
+                format!("{mark}{}", "waiting…")
             } else if matches!(self.meta.status, TerminalRunStatus::Running) {
                 format!("{mark}(no output yet)")
             } else {
@@ -1208,7 +1157,7 @@ impl<'a> TerminalOutput<'a> {
                     state.paint_mode,
                     self.system,
                     surface,
-                    ascii,
+                    false,
                     colorless,
                     cursor,
                     tiny,
@@ -1224,33 +1173,27 @@ impl<'a> TerminalOutput<'a> {
 
         // Follow chip
         if chip_h > 0 {
+            let separator = " · ";
             let chip_y = area.bottom().saturating_sub(1);
             let following = state.is_following();
             let indicator = state.scroll.new_content();
             let mut chip = if following {
-                if ascii {
-                    "v follow".to_string()
-                } else {
-                    "↓ follow".to_string()
-                }
+                "↓ follow".to_string()
             } else if indicator.visible {
-                if ascii {
-                    format!("v {} new  f=follow", indicator.unseen)
-                } else {
-                    format!("↓ {} new · f follow", indicator.unseen)
-                }
-            } else if ascii {
-                "^ pinned  f=follow".to_string()
+                format!("↓ {} new · f follow", indicator.unseen)
             } else {
                 "↑ pinned · f follow".to_string()
             };
             if state.hide_stdout {
-                chip.push_str(" · -out");
+                chip.push_str(separator);
+                chip.push_str("-out");
             }
             if state.hide_stderr {
-                chip.push_str(" · -err");
+                chip.push_str(separator);
+                chip.push_str("-err");
             }
-            chip.push_str(&format!(" · {}", state.paint_mode.id()));
+            chip.push_str(separator);
+            chip.push_str(state.paint_mode.id());
             let st = if following && surface {
                 self.system.style(Role::Accent)
             } else if indicator.visible {
@@ -1277,7 +1220,7 @@ fn paint_header(
     state: &TerminalOutputState,
     system: &DesignSystem,
     surface: bool,
-    ascii: bool,
+    _ascii: bool,
     colorless: bool,
     tiny: bool,
     narrow: bool,
@@ -1287,7 +1230,7 @@ fn paint_header(
         return area.y;
     }
     let mut y = area.y;
-    let g = meta.status.glyph(ascii);
+    let g = meta.status.glyph(false);
     let badge = meta.status.label();
     let exit = meta
         .exit_code
@@ -1305,7 +1248,8 @@ fn paint_header(
         format!("{g} {badge}{exit}")
     } else {
         let t = title.unwrap_or("terminal");
-        format!("{g} {badge}{exit}{sig}{dur}{pid} · {t}")
+        let separator = " · ";
+        format!("{g} {badge}{exit}{sig}{dur}{pid}{separator}{t}")
     };
     let st = if colorless {
         system.style(Role::TextStrong)
@@ -1358,11 +1302,7 @@ fn paint_header(
     }
 
     if matches!(recipe, TerminalOutputRecipe::Fullscreen) && y < area.bottom() {
-        let hints = if ascii {
-            "c=cancel r=retry d=detach C-c=copy e=env f=follow m=mode"
-        } else {
-            "c cancel · r retry · d detach · C-c copy · e env · f follow · m mode"
-        };
+        let hints = "c cancel · r retry · d detach · C-c copy · e env · f follow · m mode";
         buffer.set_stringn(
             area.x,
             y,
@@ -1417,7 +1357,7 @@ fn paint_line(
     paint_mode: TerminalPaintMode,
     system: &DesignSystem,
     surface: bool,
-    ascii: bool,
+    _ascii: bool,
     colorless: bool,
     cursor: bool,
     tiny: bool,
@@ -1427,7 +1367,7 @@ fn paint_line(
     }
     // The cursor column is stamped by the shared row chrome.
     let gutter = " ";
-    let prefix = if tiny { "" } else { line.stream.prefix(ascii) };
+    let prefix = if tiny { "" } else { line.stream.prefix(false) };
 
     // The stream rides its prefix, not the whole sentence: a page of stderr
     // is a page of readable text with a marked left edge, not a wall of red
@@ -1489,6 +1429,7 @@ fn paint_line(
             paint_stream_line(buffer, area, gutter, prefix, line.text, style, stream_tone);
         }
     }
+    chrome.paint(buffer, area);
 }
 
 /// Paints `gutter + prefix + body`, with the stream tone on the prefix only.

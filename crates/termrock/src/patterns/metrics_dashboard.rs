@@ -23,15 +23,15 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     style::{DesignSystem, Role},
-    widgets::{CommandEntry, LoadState, MetricTile, MetricTileHealth, MetricTilePresentation},
+    widgets::{
+        CommandEntry, LoadState, MetricTile, MetricTileHealth, MetricTilePresentation,
+        SemanticStatus, StatusIndicator,
+    },
 };
 
 /// Width at or below which layout becomes a vertical summary stack.
@@ -209,13 +209,13 @@ impl MetricAlertSeverity {
         }
     }
 
-    /// Role.
+    /// Shared severity projection for recipe-owned status paint.
     #[must_use]
-    pub const fn role(self) -> Role {
+    pub const fn semantic(self) -> SemanticStatus {
         match self {
-            Self::Info => Role::Info,
-            Self::Warning => Role::Warning,
-            Self::Critical => Role::Danger,
+            Self::Info => SemanticStatus::Idle,
+            Self::Warning => SemanticStatus::Warning,
+            Self::Critical => SemanticStatus::Failed,
         }
     }
 }
@@ -608,8 +608,6 @@ pub struct MetricsDashboardState {
     pub grid_cols: usize,
     /// Last slots.
     pub slots: MetricsDashboardSlots,
-    /// ASCII.
-    pub ascii: bool,
     accepts_input: bool,
 }
 
@@ -635,7 +633,6 @@ impl MetricsDashboardState {
             layout_override: None,
             grid_cols: 2,
             slots: MetricsDashboardSlots::default(),
-            ascii: false,
             accepts_input: true,
         }
     }
@@ -671,7 +668,7 @@ impl MetricsDashboardState {
         tiles: &[MetricTile<'_>],
         alerts: &[MetricAlert<'_>],
     ) -> MetricsDashboardOutcome {
-        if !self.accepts_input || key.kind != KeyEventKind::Press {
+        if !self.accepts_input || !key.is_press() {
             return MetricsDashboardOutcome::Ignored;
         }
 
@@ -911,7 +908,6 @@ pub struct MetricsDashboard<'a> {
     system: &'a DesignSystem,
     focused: bool,
     title: Option<&'a str>,
-    ascii: bool,
     hints: bool,
 }
 
@@ -930,7 +926,6 @@ impl<'a> MetricsDashboard<'a> {
             focused: true,
             hints: true,
             title: None,
-            ascii: false,
         }
     }
 
@@ -961,17 +956,11 @@ impl<'a> MetricsDashboard<'a> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Paint using public Sparkline/Gauge APIs only.
     pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut MetricsDashboardState) {
         if area.is_empty() {
             return;
         }
-        let ascii = self.ascii || state.ascii;
         let mode = state.layout_mode(area.width);
         let slots = layout_metrics_dashboard(area, self.tiles.len(), self.alerts.len(), mode);
         // grid cols for nav
@@ -1045,7 +1034,6 @@ impl<'a> MetricsDashboard<'a> {
             tile.view(self.system)
                 .presentation(presentation)
                 .focused(focused)
-                .ascii(ascii)
                 .paint(rect, buffer);
         }
 
@@ -1060,18 +1048,38 @@ impl<'a> MetricsDashboard<'a> {
                 let focused = matches!(state.focus, MetricsFocus::Alerts)
                     && i == state.focus_alert
                     && self.focused;
-                let letter = a.severity.letter();
-                let line = format!("{letter} {}", a.message);
+                let mark = if focused { "›" } else { " " };
+                let indicator =
+                    StatusIndicator::new(a.severity.semantic(), self.system).label(a.severity.id());
+                let status_text = indicator.text(None);
+                let line = format!("{mark} {status_text} · {}", a.message);
                 self.system.paint_row(
                     buffer,
                     Rect::new(slots.alerts.x, y, slots.alerts.width, 1),
                     &line,
-                    if focused {
-                        self.system.style(Role::Focus)
-                    } else {
-                        self.system.style(a.severity.role())
-                    },
+                    self.system.style(Role::Text),
                 );
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(slots.alerts.x, y, slots.alerts.width.min(1), 1),
+                    mark,
+                    self.system.style(if focused {
+                        Role::Focus
+                    } else {
+                        Role::TextMuted
+                    }),
+                );
+                if slots.alerts.width > 2 {
+                    indicator.paint(
+                        Rect::new(
+                            slots.alerts.x.saturating_add(2),
+                            y,
+                            slots.alerts.width.saturating_sub(2),
+                            1,
+                        ),
+                        buffer,
+                    );
+                }
                 y = y.saturating_add(1);
             }
             // An alert list that stops at three says so.
@@ -1248,7 +1256,7 @@ mod tests {
         let mut state = MetricsDashboardState::new();
         let area = Rect::new(0, 0, 80, 20);
         let mut buf = Buffer::empty(area);
-        MetricsDashboard::new(&tiles, &alerts, &system)
+        let _ = MetricsDashboard::new(&tiles, &alerts, &system)
             .title("Ops")
             .render(area, &mut buf, &mut state);
         assert!(!state.slots.tiles.is_empty());
@@ -1264,7 +1272,8 @@ mod tests {
 
         let area_n = Rect::new(0, 0, 40, 12);
         let mut buf_n = Buffer::empty(area_n);
-        MetricsDashboard::new(&tiles, &alerts, &system).render(area_n, &mut buf_n, &mut state);
+        let _ =
+            MetricsDashboard::new(&tiles, &alerts, &system).render(area_n, &mut buf_n, &mut state);
         assert_eq!(state.layout_mode(40), MetricsDashboardLayoutMode::Summary);
     }
 
@@ -1334,7 +1343,7 @@ mod tests {
         let area = Rect::new(0, 0, 120, 36);
         let mut buf = Buffer::empty(area);
         for _ in 0..6 {
-            MetricsDashboard::new(&tiles, &[], &system).render(area, &mut buf, &mut state);
+            let _ = MetricsDashboard::new(&tiles, &[], &system).render(area, &mut buf, &mut state);
             let _ = state.handle_key(
                 KeyEvent::new(KeyCode::Right, KeyModifiers::NONE),
                 &tiles,

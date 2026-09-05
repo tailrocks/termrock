@@ -1,40 +1,24 @@
 ---
-title: Plan Review
-description: 'Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned.'
-pattern: PlanReview
-demo: plan-review/basic
-interaction: activation
+title: "Plan Review"
+description: "Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned."
+catalogId: PlanReview
 source: crates/termrock/src/patterns/plan_review.rs
 classification: composite
+tags:
+  - "composite"
+  - "AccentRail"
+  - "ActionBar"
+  - "FieldRow"
+aliases: []
+uses:
+  - "AccentRail"
+  - "ActionBar"
+  - "FieldRow"
+  - "Panel"
+supportingTypes:
+  - "Action"
+  - "FieldRowValue"
+  - "PermissionRisk"
+  - "StatefulWidget"
+  - "Widget"
 ---
-
-This is an example composite from `termrock::patterns`, not a first-class widget. Copy the recipe, keep its reusable parts, and replace its sample domain model with your own.
-
-## Live application preview
-
-<TerminalPreview story="plan-review/basic" interactive caption="Plan Review · shared Rust demo" />
-
-## Classification and composition
-
-**composite** · default grid 56×16
-
-Composed public building blocks: `AccentRail`, `Action`, `ActionBar`, `FieldRow`, `FieldRowValue`, `Panel`, `PermissionRisk`, `StatefulWidget`, `Widget`.
-
-## Workflow
-
-- `Tab panes`: move visible focus, selection, pane, or hierarchy state for the next action.
-- `↑↓ select`: move visible focus, selection, pane, or hierarchy state for the next action.
-- `Enter inspect`: invoke the focused public state-machine action and inspect its typed request.
-- `A approve`: invoke the focused public state-machine action and inspect its typed request.
-- `R reject`: forward this normalized action to the mounted public pattern state.
-
-Accepted actions update the same persistent pattern instance in web docs and native Lookbook. Typed requests appear in the status line; the fixtures never authenticate, connect, execute, persist, or mutate external state.
-
-## Ownership
-
-TermRock owns composition, focus geometry, responsive layout, and reusable state transitions. The consuming application owns records, commands, persistence, secrets, authorization, and side effects.
-
-## Source
-
-- Pattern recipe: [`crates/termrock/src/patterns/plan_review.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/patterns/plan_review.rs)
-- Demo: `plan-review/basic`

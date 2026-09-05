@@ -14,7 +14,6 @@
 //! pages, loading/empty/no-result chrome, keymap/scene projection helpers.
 //!
 //! Research: VS Code palette, Textual, Posting, Zellij, television, agent TUIs.
-
 #![allow(unused_variables, unused_mut)] // unit-test fixtures
 use std::collections::VecDeque;
 
@@ -26,13 +25,12 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         CollectionItem, CollectionState, NavigationMove, OverlayId, OverlayKind, OverlayOutcome,
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PageMove, RovingOrientation,
-        SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, place_overlay,
+        SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_palette_intent,
+        place_overlay,
     },
     style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
@@ -125,17 +123,35 @@ pub fn command_palette_presentation_for_bounds(bounds: Rect) -> CommandPalettePr
     }
 }
 
-/// Centered command-palette rectangle inside `bounds` (policy-aware; may promote).
+/// Centered command-palette rectangle inside `bounds` (upper third).
 #[must_use]
 pub fn place_command_palette(bounds: Rect, preferred: CommandPaletteSize) -> Rect {
     if bounds.is_empty() || preferred.width == 0 || preferred.height == 0 {
         return Rect::default();
     }
-    place_overlay(
-        bounds,
-        None,
-        OverlaySize::from(preferred),
-        OverlayPolicy::for_kind(OverlayKind::CommandPalette),
+    if bounds.width <= COMMAND_PALETTE_FULLSCREEN_MAX_WIDTH
+        || bounds.height <= COMMAND_PALETTE_FULLSCREEN_MAX_HEIGHT
+    {
+        return place_overlay(
+            bounds,
+            None,
+            OverlaySize::from(preferred),
+            OverlayPolicy::for_kind(OverlayKind::CommandPalette),
+        );
+    }
+    let width = preferred.width.min(bounds.width.saturating_sub(4)).max(24);
+    let height = preferred.height.min(bounds.height.saturating_sub(2)).max(6);
+    let x = bounds
+        .x
+        .saturating_add(bounds.width.saturating_sub(width) / 2);
+    let y = bounds
+        .y
+        .saturating_add((bounds.height.saturating_sub(height) / 3).max(1));
+    Rect::new(
+        x,
+        y.min(bounds.bottom().saturating_sub(height)),
+        width,
+        height,
     )
 }
 
@@ -593,8 +609,12 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
     #[must_use]
     pub fn new(_selected: Option<Id>) -> Self {
         Self {
-            query: TextInputState::new("").with_allow_empty(true),
-            argument: TextInputState::new("").with_allow_empty(true),
+            query: TextInputState::new("")
+                .with_allow_empty(true)
+                .with_editing(),
+            argument: TextInputState::new("")
+                .with_allow_empty(true)
+                .with_editing(),
             collection: CollectionState::new().orientation(RovingOrientation::Vertical),
             generation: 0,
             applied_generation: 0,
@@ -805,7 +825,9 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         let page_id = page_id.into();
         let title = title.into();
         self.page_stack.push((page_id.clone(), title));
-        self.query = TextInputState::new("").with_allow_empty(true);
+        self.query = TextInputState::new("")
+            .with_allow_empty(true)
+            .with_editing();
         let generation = self.bump_generation();
         let _ = generation;
         CommandPaletteOutcome::PageOpened { page_id }
@@ -814,7 +836,9 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
     /// Close one page (or ignored at root).
     pub fn close_page(&mut self) -> CommandPaletteOutcome<Id> {
         if self.page_stack.pop().is_some() {
-            self.query = TextInputState::new("").with_allow_empty(true);
+            self.query = TextInputState::new("")
+                .with_allow_empty(true)
+                .with_editing();
             let _ = self.bump_generation();
             CommandPaletteOutcome::PageClosed
         } else {
@@ -838,7 +862,9 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         if let Some(prompt) = &entry.argument_prompt {
             self.pending_id = Some(entry.id.clone());
             self.pending_command = entry.command.clone();
-            self.argument = TextInputState::new("").with_allow_empty(true);
+            self.argument = TextInputState::new("")
+                .with_allow_empty(true)
+                .with_editing();
             self.phase = CommandPalettePhase::Argument {
                 entry_key: format!("{:?}", ()), // placeholder overwritten below
                 prompt: prompt.clone(),
@@ -872,7 +898,9 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         let command = self.pending_command.take();
         let argument = self.argument.value().to_string();
         self.phase = CommandPalettePhase::Browse;
-        self.argument = TextInputState::new("").with_allow_empty(true);
+        self.argument = TextInputState::new("")
+            .with_allow_empty(true)
+            .with_editing();
         let q = self.query_text().to_string();
         self.push_history(q);
         CommandPaletteOutcome::Activated {
@@ -892,7 +920,7 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         key: KeyEvent,
         visible: &[CommandEntry<Id>],
     ) -> CommandPaletteOutcome<Id> {
-        if !self.live() || key.kind == KeyEventKind::Release {
+        if !self.live() || key.is_release() {
             return CommandPaletteOutcome::Ignored;
         }
         let _ = self.apply_results(self.generation, visible);
@@ -912,7 +940,9 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         // Esc: clear query → close page → cancel.
         if key.code == KeyCode::Esc {
             if !self.query_text().is_empty() {
-                self.query = TextInputState::new("").with_allow_empty(true);
+                self.query = TextInputState::new("")
+                    .with_allow_empty(true)
+                    .with_editing();
                 let generation = self.bump_generation();
                 return CommandPaletteOutcome::QueryChanged {
                     query: String::new(),
@@ -938,7 +968,7 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         ) || (matches!(key.code, KeyCode::Char('j' | 'k' | 'J' | 'K'))
             && key.modifiers.contains(KeyModifiers::CONTROL))
         {
-            if let Some(intent) = default_command_palette_intent(key) {
+            if let Some(intent) = default_palette_intent(key) {
                 let out = self.handle_intent(intent, visible);
                 if !matches!(out, CommandPaletteOutcome::Ignored) {
                     return out;
@@ -975,7 +1005,7 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
                 CommandPaletteOutcome::Ignored
             }
             TextInputOutcome::Ignored => {
-                if let Some(intent) = default_command_palette_intent(key) {
+                if let Some(intent) = default_palette_intent(key) {
                     self.handle_intent(intent, visible)
                 } else {
                     CommandPaletteOutcome::Ignored
@@ -990,7 +1020,9 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
             self.phase = CommandPalettePhase::Browse;
             self.pending_id = None;
             self.pending_command = None;
-            self.argument = TextInputState::new("").with_allow_empty(true);
+            self.argument = TextInputState::new("")
+                .with_allow_empty(true)
+                .with_editing();
             return CommandPaletteOutcome::ArgumentCancelled;
         }
         if key.code == KeyCode::Enter {
@@ -1019,7 +1051,9 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         };
         self.history_cursor = Some(idx);
         let q = self.history[idx].clone();
-        self.query = TextInputState::new(&q).with_allow_empty(true);
+        self.query = TextInputState::new(&q)
+            .with_allow_empty(true)
+            .with_editing();
         let generation = self.bump_generation();
         let _ = generation;
         CommandPaletteOutcome::HistoryApplied { query: q }
@@ -1040,7 +1074,9 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
                     self.phase = CommandPalettePhase::Browse;
                     self.pending_id = None;
                     self.pending_command = None;
-                    self.argument = TextInputState::new("").with_allow_empty(true);
+                    self.argument = TextInputState::new("")
+                        .with_allow_empty(true)
+                        .with_editing();
                     CommandPaletteOutcome::ArgumentCancelled
                 }
                 UiIntent::Activate | UiIntent::Submit => self.submit_argument(),
@@ -1085,7 +1121,9 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
             }
             UiIntent::Cancel | UiIntent::Close => {
                 if !self.query_text().is_empty() {
-                    self.query = TextInputState::new("").with_allow_empty(true);
+                    self.query = TextInputState::new("")
+                        .with_allow_empty(true)
+                        .with_editing();
                     let generation = self.bump_generation();
                     CommandPaletteOutcome::QueryChanged {
                         query: String::new(),
@@ -1170,29 +1208,6 @@ fn rect_contains(rect: Rect, pos: Position) -> bool {
         && pos.y < rect.y.saturating_sub(0).saturating_add(rect.height)
 }
 
-/// Default intent map for result navigation.
-#[must_use]
-pub fn default_command_palette_intent(key: KeyEvent) -> Option<UiIntent> {
-    if key.kind == KeyEventKind::Release {
-        return None;
-    }
-    let is_press = key.kind == KeyEventKind::Press;
-    let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
-    match key.code {
-        KeyCode::Down => Some(UiIntent::Move(NavigationMove::Next)),
-        KeyCode::Up => Some(UiIntent::Move(NavigationMove::Previous)),
-        KeyCode::Char('j' | 'J') if ctrl => Some(UiIntent::Move(NavigationMove::Next)),
-        KeyCode::Char('k' | 'K') if ctrl => Some(UiIntent::Move(NavigationMove::Previous)),
-        KeyCode::PageDown => Some(UiIntent::Page(PageMove::Forward)),
-        KeyCode::PageUp => Some(UiIntent::Page(PageMove::Backward)),
-        KeyCode::Home if ctrl => Some(UiIntent::Move(NavigationMove::First)),
-        KeyCode::End if ctrl => Some(UiIntent::Move(NavigationMove::Last)),
-        KeyCode::Enter if is_press => Some(UiIntent::Activate),
-        KeyCode::Esc if is_press => Some(UiIntent::Cancel),
-        _ => None,
-    }
-}
-
 // ── Widget ──────────────────────────────────────────────────────────────────
 
 /// Floating command palette chrome.
@@ -1202,7 +1217,6 @@ pub struct CommandPalette<'a, Id> {
     entries: &'a [CommandEntry<Id>],
     system: &'a DesignSystem,
     focused: bool,
-    ascii: bool,
     colorless: bool,
     footer_hint: Option<&'a str>,
     empty_message: &'a str,
@@ -1252,7 +1266,6 @@ impl<'a, Id> CommandPalette<'a, Id> {
             entries,
             system,
             focused: true,
-            ascii: false,
             colorless: false,
             footer_hint: None,
             empty_message: "Type to search commands",
@@ -1271,13 +1284,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
     /// Reduced color.
-    #[must_use]
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
         self
@@ -1367,10 +1374,10 @@ impl<'a, Id> CommandPalette<'a, Id> {
         }
 
         let surface = self.focused && state.accepts_input();
-        let border = if surface {
-            Role::BorderFocused
+        let recipe = if surface {
+            SurfaceRecipe::OverlayFocused
         } else {
-            Role::Border
+            SurfaceRecipe::Overlay
         };
 
         let title = if state.current_page_title().is_some() {
@@ -1382,10 +1389,19 @@ impl<'a, Id> CommandPalette<'a, Id> {
         };
         let _ = pt_title_marker(state, title);
 
-        let inner = Surface::new(self.system)
-            .recipe(SurfaceRecipe::Overlay)
+        let colorless_system;
+        let surface_system = if self.colorless {
+            colorless_system = self
+                .system
+                .clone()
+                .capability(crate::style::ColorCapability::Monochrome);
+            &colorless_system
+        } else {
+            self.system
+        };
+        let inner = Surface::new(surface_system)
+            .recipe(recipe)
             .bordered(true)
-            .border_style(self.system.style(border))
             .padding(1, 0)
             .paint(area, buffer);
         if area.width > 4 {
@@ -1423,11 +1439,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
         let mut content = body;
         if let Some(pt) = state.current_page_title() {
             if content.height > 0 {
-                let crumb = if self.ascii {
-                    format!(".. / {pt}")
-                } else {
-                    format!("← {pt}")
-                };
+                let crumb = { format!("← {pt}") };
                 buffer.set_stringn(
                     content.x,
                     content.y,
@@ -1446,11 +1458,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
             buffer.set_style(field_area, self.system.style(Role::Sunken));
             match &state.phase {
                 CommandPalettePhase::Argument { prompt, .. } => {
-                    let prefix = if self.ascii {
-                        format!("{prompt}> ")
-                    } else {
-                        format!("{prompt} › ")
-                    };
+                    let prefix = { format!("{prompt} › ") };
                     let pw = display_cols(&prefix) as u16;
                     buffer.set_stringn(
                         field_area.x,
@@ -1492,11 +1500,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
 
         // Separator under query.
         if content.height > 0 && content.width > 0 {
-            let line = if self.ascii {
-                "-".repeat(usize::from(content.width))
-            } else {
-                "─".repeat(usize::from(content.width))
-            };
+            let line = { "─".repeat(usize::from(content.width)) };
             buffer.set_stringn(
                 content.x,
                 content.y,
@@ -1566,7 +1570,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
         }
 
         if state.loading && self.entries.is_empty() {
-            let msg = if self.ascii && self.loading_message == COMMAND_PALETTE_LOADING {
+            let msg = if false && self.loading_message == COMMAND_PALETTE_LOADING {
                 COMMAND_PALETTE_LOADING_ASCII
             } else {
                 self.loading_message
@@ -1585,13 +1589,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
 
         if self.entries.is_empty() {
             let (glyph, msg) = if state.query_text().is_empty() {
-                if self.ascii {
-                    ("[ ]", self.empty_message)
-                } else {
-                    ("∅", self.empty_message)
-                }
-            } else if self.ascii {
-                ("[x]", self.no_result_message)
+                ("∅", self.empty_message)
             } else {
                 ("∅", self.no_result_message)
             };
@@ -1609,14 +1607,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
                 buffer.set_stringn(
                     area.x,
                     area.y.saturating_add(1),
-                    &take_display_cols(
-                        if self.ascii {
-                            "Recent queries:"
-                        } else {
-                            "Recent queries"
-                        },
-                        usize::from(area.width),
-                    ),
+                    &take_display_cols("Recent queries", usize::from(area.width)),
                     usize::from(area.width),
                     self.system.style(Role::TextMuted),
                 );
@@ -1690,41 +1681,40 @@ impl<'a, Id> CommandPalette<'a, Id> {
                 enabled: entry.enabled,
                 loading: false,
                 checked: false,
+                ..ListRowVisualState::default()
             });
-            if recipe.use_fill {
-                buffer.set_style(row_rect, recipe.label);
-            } else if recipe.use_tint {
+            if recipe.use_tint {
                 buffer.set_style(row_rect, recipe.tint);
             }
 
-            // Cursor gutter.
-            let gutter = if active {
-                if self.ascii { "> " } else { "› " }
-            } else {
-                "  "
-            };
-            let mut x = area.x;
-            let gstyle = if active {
-                recipe.label
-            } else {
-                self.system.style(Role::Text)
-            };
-            buffer.set_stringn(x, y, gutter, 2, gstyle);
-            x = x.saturating_add(2);
+            let chrome = super::row_chrome::RowChrome::resolve(
+                self.system,
+                ListRowVisualState {
+                    selected: active,
+                    focused: active,
+                    hovered: state.hovered == Some(i),
+                    enabled: entry.enabled,
+                    loading: false,
+                    checked: false,
+                    ..ListRowVisualState::default()
+                },
+            );
+            chrome.paint(buffer, row_rect);
+            let mut x = area.x.saturating_add(3);
 
             // Leading badges: recent / contextual / disabled.
             let mut leading = String::new();
             if entry.recent {
-                leading.push_str(if self.ascii { "* " } else { "↻ " });
+                leading.push_str("↻ ");
             }
             if entry.contextual {
-                leading.push_str(if self.ascii { "@ " } else { "◎ " });
+                leading.push_str("◎ ");
             }
             if !entry.enabled {
-                leading.push_str(if self.ascii { "# " } else { "⊘ " });
+                leading.push_str("⊘ ");
             }
             if entry.opens_page.is_some() {
-                leading.push_str(if self.ascii { "> " } else { "▸ " });
+                leading.push_str("▸ ");
             }
             if !leading.is_empty() {
                 let lw = display_cols(&leading) as u16;
@@ -1764,9 +1754,11 @@ impl<'a, Id> CommandPalette<'a, Id> {
                         if !entry.enabled {
                             self.system.style(Role::TextMuted)
                         } else if active {
+                            // Bold carries the cursor row without colour and
+                            // without a reversal slab.
                             self.system
                                 .style(Role::TextStrong)
-                                .add_modifier(Modifier::REVERSED)
+                                .add_modifier(Modifier::BOLD)
                         } else {
                             self.system.style(Role::Text)
                         }
@@ -1878,7 +1870,7 @@ pub fn example_command_catalog() -> Vec<CommandEntry<&'static str>> {
             .group("Appearance")
             .shortcut("C-t")
             .command_key("view.theme")
-            .preview("Cycle phosphor / high-contrast")
+            .preview("Cycle theme / high-contrast")
             .keywords(["appearance", "color"]),
         CommandEntry::new("status", "Toggle status bar")
             .group("Appearance")
@@ -2080,7 +2072,9 @@ mod tests {
         s.set_loading(false);
         let mut buf2 = Buffer::empty(area);
         // no results with query
-        s.query = TextInputState::new("zzz").with_allow_empty(true);
+        s.query = TextInputState::new("zzz")
+            .with_allow_empty(true)
+            .with_editing();
         CommandPalette::new("Commands", &[], &system).paint(area, &mut buf2, &mut s);
         let t2: String = buf2
             .content()
@@ -2133,6 +2127,38 @@ mod tests {
     }
 
     #[test]
+    fn mouse_hit_activates_same_enabled_command_as_keyboard() {
+        let visible = vec![CommandEntry::new("run", "Run")];
+        let mut state = focused();
+        state.hits = vec![(0, Rect::new(4, 3, 8, 1))];
+        let out = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position::new(4, 3),
+                modifiers: KeyModifiers::NONE,
+            },
+            &visible,
+        );
+        assert!(matches!(
+            out,
+            CommandPaletteOutcome::Activated { id: "run", .. }
+        ));
+
+        let disabled = vec![CommandEntry::new("run", "Run").enabled(false)];
+        assert_eq!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(4, 3),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &disabled,
+            ),
+            CommandPaletteOutcome::Ignored
+        );
+    }
+
+    #[test]
     fn history_ctrl_p() {
         let mut s = focused();
         s.push_history("theme");
@@ -2178,6 +2204,18 @@ mod tests {
         assert!(
             text.contains("Toggle") || text.contains("theme") || text.contains("Theme"),
             "{text}"
+        );
+        assert!(!s.hits.is_empty(), "result rows must paint hit geometry");
+        let (idx, row) = s.hits[0];
+        let _ = idx;
+        let gutter = buf[(row.x, row.y)].symbol();
+        assert_ne!(
+            gutter, "›",
+            "› is membership at col1, not a gutter replacement"
+        );
+        assert!(
+            gutter == system.glyphs.selection_gutter(),
+            "col0 is the focus bar or reserved slot, got {gutter:?}"
         );
     }
 

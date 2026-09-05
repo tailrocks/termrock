@@ -18,14 +18,11 @@
 //!
 //! **Ownership.** Host executes tools / cancels processes. Outcomes are requests
 //! only.
-
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
-    style::{DesignSystem, Glyph, MotionPolicy, PanelChrome, Role, SPINNER_DOT_PULSE_FRAMES},
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    style::{DesignSystem, MotionPolicy, PanelChrome, Role, SPINNER_BRAILLE_FRAMES},
     text::{display_cols, take_display_cols},
     widgets::{AccentRail, agent::ToolStatus, card::Card},
 };
@@ -534,7 +531,7 @@ impl ToolCallCardState {
 
     /// Keys.
     pub fn handle_key(&mut self, key: KeyEvent, call: &ToolCall) -> ToolCallCardOutcome {
-        if !self.accepts_input || !self.focused || key.kind != KeyEventKind::Press {
+        if !self.accepts_input || !self.focused || !key.is_press() {
             return ToolCallCardOutcome::Ignored;
         }
         match key.code {
@@ -707,7 +704,6 @@ pub fn project_tool_call_lines(call: &ToolCall, expanded: bool, ascii: bool) -> 
 pub struct ToolCallCard<'a> {
     call: &'a ToolCall,
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
     tick: u64,
 }
@@ -719,7 +715,6 @@ impl<'a> ToolCallCard<'a> {
         Self {
             call,
             system,
-            ascii: false,
             colorless: false,
             tick: 0,
         }
@@ -727,13 +722,7 @@ impl<'a> ToolCallCard<'a> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -754,10 +743,7 @@ impl<'a> ToolCallCard<'a> {
         }
         let call = self.call;
         let running = matches!(call.status, ToolStatus::Running | ToolStatus::Streaming);
-        let rail = AccentRail::new(self.system, Role::ActorTool)
-            .active(running)
-            .tick(self.tick)
-            .collapsed(!state.is_expanded());
+        let rail = AccentRail::new(self.system, Role::ActorTool).collapsed(!state.is_expanded());
         let content_area = rail.paint(area, buffer);
         state.header_hit = Rect {
             x: area.x,
@@ -770,26 +756,36 @@ impl<'a> ToolCallCard<'a> {
         }
 
         if !state.is_expanded() {
-            let diamond = Glyph::DiamondFilled.resolve(self.system.glyphs).text;
             let disclosure = self.system.glyphs.disclosure_closed();
             let pulse = if running {
                 if matches!(self.system.motion, MotionPolicy::Full) {
-                    SPINNER_DOT_PULSE_FRAMES[self.tick as usize % SPINNER_DOT_PULSE_FRAMES.len()]
-                } else if self.ascii || self.colorless {
-                    "o"
+                    SPINNER_BRAILLE_FRAMES[self.tick as usize % SPINNER_BRAILLE_FRAMES.len()]
                 } else {
                     "●"
                 }
             } else {
                 ""
             };
-            let prefix = format!("{disclosure} {diamond} ");
+            let status = call.status.semantic();
+            let status_glyph = { status.glyph() };
+            let prefix = format!("{disclosure} {status_glyph} {} · ", status.default_label());
             buffer.set_stringn(
                 content_area.x,
                 content_area.y,
                 &prefix,
                 usize::from(content_area.width),
-                self.system.style(Role::ActorTool),
+                self.system.style(Role::Text),
+            );
+            crate::widgets::row_chrome::paint_status_glyph(
+                buffer,
+                content_area,
+                u16::try_from(display_cols(disclosure).saturating_add(1)).unwrap_or(u16::MAX),
+                status_glyph,
+                self.system.style(if self.colorless {
+                    Role::TextStrong
+                } else {
+                    status.role()
+                }),
             );
             let verb_x = content_area.x.saturating_add(display_cols(&prefix) as u16);
             let verb = take_display_cols(
@@ -830,24 +826,9 @@ impl<'a> ToolCallCard<'a> {
             }
             return;
         }
-        let status_label = if self.ascii || self.colorless {
-            // letter badge
-            let mut s = String::new();
-            s.push(call.status.letter());
-            s
-        } else {
-            call.status.badge().to_string()
-        };
-        let leading = if self.ascii || self.colorless {
-            // use letter as leading via empty and put in title
-            ""
-        } else {
-            call.status.semantic().glyph_for_set(self.system.glyphs)
-        };
-        let mut title = call.name.clone();
-        if self.ascii || self.colorless {
-            title = format!("{} {}", call.status.letter(), call.name);
-        }
+        let status_label = { call.status.badge().to_string() };
+        let leading = { call.status.semantic().glyph() };
+        let title = call.name.clone();
         let mut subtitle = call.verb.clone();
         if !call.args_summary.is_empty() {
             subtitle = format!(
@@ -911,11 +892,7 @@ impl<'a> ToolCallCard<'a> {
                 usize::from(body.width),
             )
         };
-        let style = if self.colorless {
-            self.system.style(Role::Text)
-        } else {
-            self.system.style(call.status.role())
-        };
+        let style = self.system.style(Role::Text);
         buffer.set_stringn(body.x, y, &line1, usize::from(body.width), style);
         y = y.saturating_add(1);
 
@@ -1172,7 +1149,7 @@ mod tests {
     }
 
     #[test]
-    fn collapsed_row_shape_uses_diamond_verb_and_dim_details() {
+    fn collapsed_row_shape_uses_status_glyph_verb_and_dim_details() {
         let system = DesignSystem::default();
         let call = ToolCall::new("t", "bash", "Run tests")
             .status(ToolStatus::Success)
@@ -1186,7 +1163,8 @@ mod tests {
             .iter()
             .map(|cell| cell.symbol())
             .collect::<String>();
-        assert!(text.contains(Glyph::DiamondFilled.resolve(system.glyphs).text));
+        assert!(text.contains(ToolStatus::Success.semantic().glyph()));
+        assert!(text.contains("ok"));
         assert!(text.contains("Run tests"));
         assert!(text.contains("(cargo test)"));
         let detail_x = text.find('(').unwrap() as u16;
@@ -1198,15 +1176,13 @@ mod tests {
 
     #[test]
     fn reduced_motion_running_card_is_tick_static() {
-        let system = DesignSystem::default().motion(MotionPolicy::Basic);
+        let system = DesignSystem::default().motion(MotionPolicy::Off);
         let call = ToolCall::new("t", "bash", "Run tests").args_summary("cargo test");
-        let render = |tick| {
+        let render = |_tick| {
             let area = Rect::new(0, 0, 48, 1);
             let mut buffer = Buffer::empty(area);
             let mut state = ToolCallCardState::new();
-            ToolCallCard::new(&call, &system)
-                .tick(tick)
-                .paint(area, &mut buffer, &mut state);
+            ToolCallCard::new(&call, &system).paint(area, &mut buffer, &mut state);
             buffer
         };
         assert_eq!(render(0), render(31));

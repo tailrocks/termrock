@@ -1,13 +1,15 @@
 # TermRock component quality standard
 
+> Token taxonomy, spacing, glyphs, and state grammar live in [`DESIGN.md`](../../DESIGN.md).
+> This document defines evidence and acceptance for the unified `termrock-catalog`.
+
 | Field | Value |
 |-------|-------|
 | **Status** | Binding design SoT |
 | **Rule** | A component is **not** complete because it compiles and paints |
 | **Schema** | `docs/api/component-contract.schema.json` |
-| **Contracts v1** | `docs/api/component-contracts.json` (six axes; catalog CI) |
-| **Contracts v2** | `docs/api/component-contracts.v2.json` (optional until Q2) + example |
-| **Related** | [`component-anatomy-spec.md`](./component-anatomy-spec.md), Studio stories, lookbook SVG gate, migration `0048` |
+| **Contracts** | `docs/api/component-contracts.v2.json` (mandatory full catalog) |
+| **Related** | [`component-anatomy-spec.md`](./component-anatomy-spec.md), catalog scenarios, five-artifact capture gate, migration `0048` |
 
 ---
 
@@ -16,10 +18,10 @@
 A public interactive component is **complete** only when:
 
 1. Every **applicable** quality axis (§1) is either **`covered`** with machine-linkable evidence or explicitly **`not_applicable` / `caller_owned`** with a one-line reason.  
-2. Evidence is **machine-linkable** (story id, test filter, snapshot path, bench name, recording path).  
+2. Evidence is **machine-linkable** (catalog scenario id, test filter, snapshot path, bench name, recording path).  
 3. Claiming `covered` without evidence **fails CI**.  
 4. Design lints (§3) for that component are clean (or **waived** with ticket + expiry).  
-5. Public inventory alignment holds: `public-api.txt` ↔ `COMPONENTS.md` ↔ stories ↔ contracts.
+5. Public inventory alignment holds: typed Rust inventories ↔ catalog scenarios ↔ canonical MDX ↔ contracts.
 
 **Compile + render alone never suffice.**
 
@@ -48,7 +50,7 @@ no_color | color_ladder | streaming | large_data | resize | panic_safety
 | Interactive states use **non-color** cues (glyph, border role, text prefix) — never color alone |
 | Emphasis uses semantic `Role` tokens (no ad-hoc RGB for meaning) |
 
-**Evidence:** buffer/SVG snapshots per state; Studio story matrix.  
+**Evidence:** cell-buffer or five-artifact snapshots per state; catalog scenario matrix.  
 **N/A:** pure decorations without state.
 
 ### 1.2 Keyboard access
@@ -59,7 +61,7 @@ no_color | color_ladder | streaming | large_data | resize | panic_safety
 | Chords map through intents / keymap adapters — not product-hardcoded only paths |
 | No dead focus traps; Tab/Esc specified |
 
-**Evidence:** interaction tests; keyboard-only Studio scenario.  
+**Evidence:** interaction tests; keyboard-only catalog scenario.  
 **Lint:** `hardcoded_key_handling`, `mouse_without_keyboard` (inverse).  
 **N/A:** non-interactive.
 
@@ -114,7 +116,7 @@ no_color | color_ladder | streaming | large_data | resize | panic_safety
 | Retry only if retryable (typed outcome optional) |
 | No panic on bad / partial data |
 
-**Evidence:** error story; invalid-input tests.
+**Evidence:** error scenario; invalid-input tests.
 
 ### 1.8 Empty behavior
 
@@ -162,7 +164,7 @@ no_color | color_ladder | streaming | large_data | resize | panic_safety
 | Usable at ≤20×5 **or** documented hide / LineMode |
 | Essential labels survive |
 
-**Evidence:** `tiny` / extreme narrow stories.
+**Evidence:** `tiny` / extreme narrow catalog scenarios.
 
 ### 1.13 Unicode · CJK · combining · emoji
 
@@ -174,7 +176,7 @@ no_color | color_ladder | streaming | large_data | resize | panic_safety
 | Combining marks don’t break cursor/measure |
 | Emoji / ZWJ sequences don’t destroy adjacent cells |
 
-**Evidence:** dedicated stories or combined unicode matrix + fuzz.  
+**Evidence:** dedicated catalog scenarios or combined unicode matrix + fuzz.  
 **Split axes** allow partial migration from a single “unicode covered” claim.
 
 ### 1.14 ASCII fallback
@@ -185,7 +187,7 @@ no_color | color_ladder | streaming | large_data | resize | panic_safety
 | Status not only emoji / box-drawing that fails on limited terminals |
 
 **Lint:** `missing_ascii_fallback`.  
-**Evidence:** `ascii` story or glyph-set tests.
+**Evidence:** `ascii` catalog scenario or glyph-set tests.
 
 ### 1.15 No-color · truecolor · reduced color
 
@@ -244,12 +246,12 @@ no_color | color_ladder | streaming | large_data | resize | panic_safety
 | Layer | What | Tooling |
 |------:|------|---------|
 | **L0** Unit | State machines, outcomes, clamp | `cargo test -p termrock` |
-| **L1** Buffer snapshots | Cell grid + styles | TestBackend / Studio `.snap` |
+| **L1** Buffer snapshots | Cell grid + styles | TestBackend / catalog `.snap` |
 | **L2** ANSI snapshots | Serialized styled lines | Optional export |
-| **L3** SVG previews | Deterministic lookbook | `termrock-lookbook check` |
+| **L3** terminal previews | Deterministic catalog frames and five-artifact captures | `cargo test -p termrock-catalog --test shots` |
 | **L4** Semantic-scene snapshots | Focus, layers, hits, actions | `InspectionFrame` digest |
-| **L5** Interaction traces | Key/mouse → outcome log | Unit + Studio |
-| **L6** Replay recordings | `.rec.json` scripts | Studio replay |
+| **L5** Interaction traces | Key/mouse → outcome log | Unit + catalog |
+| **L6** Replay recordings | `.rec.json` scripts | Catalog replay |
 | **L7** PTY integration | Real terminal adapters | Feature-gated CI job |
 | **L8** Property layout | Random sizes still valid geometry | proptest / quickcheck |
 | **L9** Unicode fuzz | Random grapheme inserts | cargo-fuzz / quickcheck |
@@ -284,9 +286,9 @@ Machine-checkable rules. Severity: **error** (blocks complete) · **warn** (debt
 ### Implementation strategy
 
 1. **Static (CI):** scan `crates/termrock/src/widgets/**/*.rs` for raw product-key patterns; allowlist `keymap`, `input`, adapters.  
-2. **Contract validator:** schema + evidence path/story existence.  
+2. **Contract validator:** schema + evidence path/catalog-scenario existence.  
 3. **Snapshot heuristics (Q4):** buffer diff focus vs default for glyph/border delta.  
-4. **Studio inspector:** live warnings during authoring.
+4. **Catalog verifier:** live and headless warnings during authoring and capture.
 
 ---
 
@@ -296,12 +298,10 @@ Machine-checkable rules. Severity: **error** (blocks complete) · **warn** (debt
 
 | Artifact | Path |
 |----------|------|
-| JSON Schema | `docs/api/component-contract.schema.json` |
-| v1 catalog (live CI) | `docs/api/component-contracts.json` |
-| v2 example | `docs/api/component-contracts.v2.example.json` |
-| v2 catalog (target) | `docs/api/component-contracts.v2.json` |
+| Generated JSON Schema | `docs/api/component-contract.schema.json` |
+| Full v2 catalog | `docs/api/component-contracts.v2.json` |
 | Validator | `docs/scripts/check-contracts.ts` |
-| Catalog inventory | `docs/scripts/check-catalog.ts` |
+| Catalog join | `docs/scripts/generate-catalog.ts` |
 
 ### 4.2 Status vocabulary (v2)
 
@@ -315,18 +315,21 @@ Machine-checkable rules. Severity: **error** (blocks complete) · **warn** (debt
 
 ### 4.3 Evidence object
 
+The contract schema retains the `stories` evidence key; its values are catalog
+scenario IDs, not a separate preview registry.
+
 ```json
 {
   "stories": ["list/selection", "list/narrow"],
   "tests": ["list::tests::keyboard_moves"],
   "snapshots": ["docs/public/preview-posters/list-selection.json"],
   "benches": ["list_paint_10k"],
-  "recordings": ["stories/list/selection.rec.json"],
+  "recordings": ["catalog/list/selection.rec.json"],
   "notes": "optional free text"
 }
 ```
 
-`covered` requires at least one of: stories · tests · snapshots · recordings · benches.
+`covered` requires at least one of: catalog scenarios (`stories`) · tests · snapshots · recordings · benches.
 
 ### 4.4 `complete` flag
 
@@ -336,23 +339,23 @@ Machine-checkable rules. Severity: **error** (blocks complete) · **warn** (debt
 - no axis is `partial` **without** a waiver `{ ticket, expires }`, and  
 - all design lints are `pass` or `waived`.
 
-### 4.5 Example (excerpt)
+### 4.5 Entry excerpt
 
-See `docs/api/component-contracts.v2.example.json` (ApprovalCard, List). Full schema: `component-contract.schema.json`.
+The full catalog is the example. Partial documents are rejected.
 
 ```json
 {
   "schema": 2,
-  "component": "List",
-  "kind": "interactive",
+  "id": "List",
+  "entryKind": "component",
   "complete": false,
   "axes": {
     "keyboard": {
       "status": "covered",
       "evidence": { "tests": ["list::tests::…"], "stories": ["list/selection"] }
     },
-    "streaming": { "status": "not_applicable", "reason": "static projection per frame" },
-    "ascii_fallback": { "status": "missing", "reason": "no ascii story yet" }
+    "streaming": { "status": "not_applicable", "evidence": { "stories": [], "tests": [], "snapshots": [], "recordings": [], "benches": [] }, "reason": "static projection per frame" },
+    "ascii_fallback": { "status": "missing", "evidence": { "stories": [], "tests": [], "snapshots": [], "recordings": [], "benches": [] }, "reason": "no ascii catalog scenario yet" }
   },
   "lints": {
     "hardcoded_key_handling": "pass",
@@ -372,7 +375,7 @@ See `docs/api/component-contracts.v2.example.json` (ApprovalCard, List). Full sc
 | unicode | unicode (+ cjk / combining / emoji) |
 | narrowTerminal | responsive + tiny_terminal |
 
-During transition CI accepts **v1 catalog** (inventory) and optionally validates **v2** documents when present.
+CI accepts only the complete v2 document. Missing catalog entries or axes fail.
 
 ---
 
@@ -381,19 +384,15 @@ During transition CI accepts **v1 catalog** (inventory) and optionally validates
 ### 5.1 Pipeline
 
 ```
+typed Rust inventories ─┐
+catalog scenarios ──────┼─► generate-catalog.ts ─► generated catalog + nav meta + schema
+canonical MDX ──────────┤
+families.json ──────────┤
+full v2 contracts ──────┘
+
+full v2 contracts + evidence targets ─► check-contracts.ts
 ┌─────────────────┐
-│ public-api.txt  │──┐
-│ COMPONENTS.md   │──┼──► check-catalog.ts (inventory + v1 six-axis)
-│ lookbook stories│──┤
-│ contracts v1    │──┘
-└─────────────────┘
-┌─────────────────┐
-│ schema.json     │──┐
-│ contracts v2*   │──┼──► check-contracts.ts (schema rules + evidence + lints)
-│ example v2      │──┘
-└─────────────────┘
-┌─────────────────┐
-│ lookbook SVG    │──► termrock-lookbook check
+│ catalog frames │──► exact temporary re-render + full cell comparison
 └─────────────────┘
 ┌─────────────────┐
 │ unit / nextest  │──► axis evidence (tests)
@@ -401,25 +400,22 @@ During transition CI accepts **v1 catalog** (inventory) and optionally validates
 └─────────────────┘
 ```
 
-\* `component-contracts.v2.json` optional until Q2; example always validated.
-
 ### 5.2 Validator algorithm
 
 ```
-public = widgets from public-api.txt
-stories = lookbook list --format json
-validate_schema_struct(v2_docs)
+catalog = termrock-catalog scenarios --format json
+editorial = canonical component/pattern MDX
+validate_exact_join(catalog, editorial, full_v2)
 
-for each v2 component:
+for each v2 catalog entry:
   for each REQUIRED_AXIS:
     cell.status ∈ vocabulary
-    if covered: evidence non-empty; stories ⊆ lookbook; snapshots exist if listed
+    if covered: evidence non-empty; scenarios ⊆ catalog; snapshots exist if listed
     if not_applicable|caller_owned|missing|partial: reason non-empty
   if complete: no missing/partial without waiver; lints not fail
 
-if component-contracts.v2.json present:
-  every public interactive widget has entry (or policy allowlist)
-  no stale component names
+require exact contract ids for component-doc PublicUiIds + PatternIds
+reject stale ids, routes, slugs, representative catalog scenarios, and aliases
 
 design_lint_hardcoded_keys(widgets/) → warn/error by phase
 ```
@@ -427,11 +423,12 @@ design_lint_hardcoded_keys(widgets/) → warn/error by phase
 ### 5.3 Commands
 
 ```bash
-# inventory + v1 contracts + story axis names
-bun run docs/scripts/check-catalog.ts
+# deterministic authority join and generated projections
+bun --cwd docs run generate:catalog
+bun --cwd docs run check:catalog
 
-# v2 schema rules + example + optional v2 catalog + static key lint
-bun run docs/scripts/check-contracts.ts
+# mandatory v2 rules, evidence targets, and static key lint
+bun --cwd docs run check:contracts
 
 # deterministic no-JS fallback posters
 bun --cwd docs run build:preview-posters
@@ -439,30 +436,30 @@ bun --cwd docs run check:catalog
 
 # mise
 mise run contracts
-mise run check   # includes docs-quality; gate includes lookbook check
+mise run check   # includes docs-quality and the catalog checks
 ```
 
 ### 5.4 GitHub Actions
 
 `rust-required` / docs lane should run:
 
-1. `bun run docs/scripts/check-catalog.ts`  
-2. `bun run docs/scripts/check-contracts.ts`  
-3. lookbook `check` (existing gate)  
+1. `bun --cwd docs run check:catalog`
+2. `bun --cwd docs run check:contracts`
+3. catalog capture and cell-parity checks  
 4. unit tests that prove axis evidence  
 
 `complete: true` enforcement for **new** widgets starts phase **Q5**.
 
 ---
 
-## 6. Studio, registry, anatomy
+## 6. Catalog, registry, anatomy
 
 | System | Role |
 |--------|------|
-| **Studio / lookbook stories** | Primary visual + interaction evidence |
+| **Catalog scenarios** | Primary visual + interaction evidence |
 | **Replay recordings** | Escape, overlay, stream proofs (L6) |
 | **InspectionFrame** | Semantic-scene snapshots (L4) |
-| **Registry items** | Ship contract + stories with block |
+| **Registry items** | Ship contract + catalog scenarios with block |
 | **Anatomy spec (1–24)** | Human checklist; this standard is the **gate** |
 
 ---
@@ -472,8 +469,8 @@ mise run check   # includes docs-quality; gate includes lookbook check
 - [ ] Public API + COMPONENTS inventory updated  
 - [ ] Contract entry (v1 minimum; v2 preferred)  
 - [ ] No un-evidenced `covered`; no silent `missing` on ship path without waiver  
-- [ ] Stories for interaction + visual claims  
-- [ ] SVG/buffer evidence generated where claimed  
+- [ ] Catalog scenarios for interaction + visual claims  
+- [ ] Terminal cell/ANSI/HTML/PNG evidence generated where claimed  
 - [ ] Unit tests: outcomes, empty, disabled, zero-area  
 - [ ] Narrow/tiny or explicit N/A  
 - [ ] Unicode / colorless or explicit N/A  
@@ -487,7 +484,7 @@ mise run check   # includes docs-quality; gate includes lookbook check
 
 | Phase | Work | Status |
 |-------|------|--------|
-| **Q0** | Standard + JSON Schema + example | **Done** |
+| **Q0** | Standard + parser-generated JSON Schema + full ledger | **Done** |
 | **Q1** | `check-contracts.ts` dual validation + evidence paths | **Done** (this pass) |
 | **Q2** | Expand components to v2 axes (partial/missing OK) | Next |
 | **Q3** | Design lint hardcoded keys → error | Next |
@@ -499,21 +496,20 @@ mise run check   # includes docs-quality; gate includes lookbook check
 ## 9. Decision summary
 
 1. **Compile ≠ complete.**  
-2. **22 quality axes** are mandatory to classify (cover, N/A, or missing).  
+2. **23 quality axes** are mandatory to classify (cover, N/A, or missing).
 3. **Evidence is mandatory** for `covered`.  
 4. **12 testing layers** scale from unit to PTY to fuzz to benches.  
 5. **Design lints** catch systemic UX failures (color-only focus, undismissible overlay, …).  
-6. **CI enforces** inventory (v1) + schema/evidence (v2) + previews.  
-7. **v1 six-axis map remains** until v2 migration finishes — dual-accept.
+6. **CI enforces** the exact Rust/MDX/catalog-scenario/v2 join plus previews.
+7. **One full v2 ledger** is mandatory; partial or legacy maps are rejected.
 
 ---
 
 ## 10. References
 
 - `docs/api/component-contract.schema.json`  
-- `docs/api/component-contracts.json`  
-- `docs/api/component-contracts.v2.example.json`  
-- `docs/scripts/check-catalog.ts`  
+- `docs/api/component-contracts.v2.json`
+- `docs/scripts/generate-catalog.ts`
 - `docs/scripts/check-contracts.ts`  
 - `migrations/0048-v0.12.0-component-quality-standard.md`  
 - `docs/design/component-anatomy-spec.md`  

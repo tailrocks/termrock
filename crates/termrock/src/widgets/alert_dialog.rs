@@ -21,15 +21,8 @@
 //!
 //! Research: Radix AlertDialog, database drop/truncate UX, cloud consoles,
 //! permission surfaces.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::{Modifier, Style},
-    text::Text,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, text::Text, widgets::StatefulWidget};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
@@ -42,9 +35,10 @@ use crate::{
     widgets::Hint,
 };
 
+use super::dialog::paint_dialog_actions;
 use super::{
-    Action, ActionBar, ActionBarState, Dialog, DialogClosePolicy, DialogFocusZone, DialogOutcome,
-    DialogRecipe, DialogSize, DialogState, DialogVariant, open_dialog_configured,
+    Action, ActionVariant, Dialog, DialogClosePolicy, DialogFocusZone, DialogOutcome, DialogRecipe,
+    DialogSize, DialogState, open_dialog_configured,
 };
 
 /// Default overlay id for alert confirmations.
@@ -537,19 +531,18 @@ impl<Id: Clone + PartialEq> AlertDialogState<Id> {
     /// Build action strip with confirm enabled only when gates pass.
     #[must_use]
     pub fn actions(&self) -> [Action<'_, Id>; 2] {
-        let danger = Style::default().add_modifier(Modifier::BOLD);
         [
             Action {
                 id: self.cancel_id.clone(),
                 label: self.cancel_label.as_str(),
                 enabled: true,
-                style: None,
+                variant: ActionVariant::Secondary,
             },
             Action {
                 id: self.confirm_id.clone(),
                 label: self.confirm_label.as_str(),
                 enabled: self.confirm_enabled(),
-                style: Some(danger),
+                variant: ActionVariant::Destructive,
             },
         ]
     }
@@ -610,10 +603,7 @@ impl<Id: Clone + PartialEq> AlertDialogState<Id> {
 
     /// Keyboard routing — every dismissal / focus path.
     pub fn handle_key(&mut self, key: KeyEvent) -> AlertDialogOutcome<Id> {
-        if !self.dialog.is_open()
-            || !self.dialog.accepts_input()
-            || key.kind == KeyEventKind::Release
-        {
+        if !self.dialog.is_open() || !self.dialog.accepts_input() || key.is_release() {
             return AlertDialogOutcome::Ignored;
         }
 
@@ -623,14 +613,14 @@ impl<Id: Clone + PartialEq> AlertDialogState<Id> {
             && !key.modifiers.contains(KeyModifiers::CONTROL)
         {
             match key.code {
-                KeyCode::Char(c) if !c.is_control() && key.kind == KeyEventKind::Press => {
+                KeyCode::Char(c) if !c.is_control() && key.is_press() => {
                     // Don't steal j/k when on actions without typed focus —
                     // typed buffer always accepts printable when gate present,
                     // except when user is moving actions with arrows.
                     self.typed_buffer.push(c);
                     return AlertDialogOutcome::TypedChanged;
                 }
-                KeyCode::Backspace if key.kind == KeyEventKind::Press => {
+                KeyCode::Backspace if key.is_press() => {
                     self.typed_buffer.pop();
                     return AlertDialogOutcome::TypedChanged;
                 }
@@ -639,7 +629,7 @@ impl<Id: Clone + PartialEq> AlertDialogState<Id> {
         }
 
         // Esc paths
-        if matches!(key.code, KeyCode::Esc) && key.kind == KeyEventKind::Press {
+        if matches!(key.code, KeyCode::Esc) && key.is_press() {
             return self.handle_escape();
         }
 
@@ -771,6 +761,7 @@ impl<Id: Clone + PartialEq> AlertDialogState<Id> {
             }
             DialogOutcome::Cancelled => self.handle_escape(),
             DialogOutcome::ValidationFailed => AlertDialogOutcome::TypedMismatch,
+            DialogOutcome::TypedChanged => AlertDialogOutcome::TypedChanged,
         }
     }
 
@@ -791,10 +782,10 @@ impl<Id: Clone + PartialEq> AlertDialogState<Id> {
 }
 
 fn alert_nav_intent(key: KeyEvent) -> Option<UiIntent> {
-    if key.kind == KeyEventKind::Release {
+    if key.is_release() {
         return None;
     }
-    let is_press = key.kind == KeyEventKind::Press;
+    let is_press = key.is_press();
     if key.modifiers.contains(KeyModifiers::CONTROL) || key.modifiers.contains(KeyModifiers::ALT) {
         return None;
     }
@@ -820,7 +811,6 @@ fn alert_nav_intent(key: KeyEvent) -> Option<UiIntent> {
 #[derive(Debug, Clone, Copy)]
 pub struct AlertDialog<'a, Id> {
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
     _id: core::marker::PhantomData<Id>,
 }
@@ -831,7 +821,6 @@ impl<'a, Id> AlertDialog<'a, Id> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             system,
-            ascii: false,
             colorless: false,
             _id: core::marker::PhantomData,
         }
@@ -839,13 +828,7 @@ impl<'a, Id> AlertDialog<'a, Id> {
 
     /// ASCII markers.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Reduced color.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -862,14 +845,11 @@ impl<'a, Id> AlertDialog<'a, Id> {
         let title = state.title().to_string();
         let rev = state.scope.reversibility.label();
         let loading = state.dialog.is_loading();
-        let body = build_body_text(state, self.ascii);
+        let body = build_body_text(state, false);
         let footer = footer_hints(state);
-        let dialog = Dialog::new(&title, body, self.system)
+        let dialog = Dialog::destructive(&title, body, self.system)
             .description(rev)
-            .variant(DialogVariant::Danger)
-            .recipe(DialogRecipe::Destructive)
             .loading(loading)
-            .ascii(self.ascii)
             .colorless(self.colorless)
             .hints(footer);
 
@@ -886,7 +866,7 @@ impl<'a, Id> AlertDialog<'a, Id> {
                 &state.typed_buffer,
                 state.typed_satisfied(),
                 self.system,
-                self.ascii,
+                false,
             );
         }
 
@@ -894,11 +874,7 @@ impl<'a, Id> AlertDialog<'a, Id> {
         if let Some(left) = state.countdown_left_ms {
             if left > 0 {
                 let secs = left.div_ceil(1000);
-                let msg = if self.ascii {
-                    format!("wait {secs}s")
-                } else {
-                    format!("Wait {secs}s before confirming")
-                };
+                let msg = { format!("Wait {secs}s before confirming") };
                 let strip = state.dialog.slots().validation;
                 let y = if strip.is_empty() {
                     state
@@ -930,20 +906,19 @@ impl<'a, Id> AlertDialog<'a, Id> {
             state.regions.clear();
             return;
         }
-        let mut bar_state = ActionBarState {
-            cursor: state.dialog.action_cursor().cloned(),
-            regions: Vec::new(),
-        };
         let actions = state.actions();
-        (&ActionBar::new(&actions, self.system)
-            .ascii(self.ascii)
-            .colorless(self.colorless)
-            .vertical(narrow))
-            .render(action_area, buffer, &mut bar_state);
-        state.regions = bar_state.regions;
-        if let Some(c) = bar_state.cursor {
-            state.dialog.set_action_cursor(Some(c));
-        }
+        state.regions = paint_dialog_actions(
+            &actions,
+            action_area,
+            buffer,
+            state.dialog.action_cursor(),
+            Some(&state.cancel_id),
+            false,
+            state.confirm_enabled(),
+            self.system,
+            self.colorless,
+            narrow,
+        );
     }
 
     /// Semantic registration.
@@ -1036,13 +1011,13 @@ fn build_body_text<Id>(state: &AlertDialogState<Id>, ascii: bool) -> Text<'stati
 const LOCKED_HINTS: &[Hint<'static>] = &[
     Hint {
         chord: "←→",
-        label: "choose",
+        label: "Choose",
         priority: 10,
         visible: true,
     },
     Hint {
-        chord: "enter",
-        label: "confirm",
+        chord: "Enter",
+        label: "Confirm",
         priority: 20,
         visible: true,
     },
@@ -1051,20 +1026,20 @@ const LOCKED_HINTS: &[Hint<'static>] = &[
 /// Footer chords for a type-to-confirm dialog.
 const TYPED_HINTS: &[Hint<'static>] = &[
     Hint {
-        chord: "type",
-        label: "phrase",
+        chord: "Type",
+        label: "Phrase",
         priority: 10,
         visible: true,
     },
     Hint {
-        chord: "enter",
-        label: "confirm",
+        chord: "Enter",
+        label: "Confirm",
         priority: 20,
         visible: true,
     },
     Hint {
-        chord: "esc",
-        label: "cancel",
+        chord: "Esc",
+        label: "Cancel",
         priority: 30,
         visible: true,
     },
@@ -1074,19 +1049,19 @@ const TYPED_HINTS: &[Hint<'static>] = &[
 const ALERT_HINTS: &[Hint<'static>] = &[
     Hint {
         chord: "←→",
-        label: "choose",
+        label: "Choose",
         priority: 10,
         visible: true,
     },
     Hint {
-        chord: "enter",
-        label: "confirm",
+        chord: "Enter",
+        label: "Confirm",
         priority: 20,
         visible: true,
     },
     Hint {
-        chord: "esc",
-        label: "cancel",
+        chord: "Esc",
+        label: "Cancel",
         priority: 30,
         visible: true,
     },
@@ -1541,5 +1516,54 @@ mod tests {
             state.activate_focused(),
             AlertDialogOutcome::ConfirmBlocked
         ));
+    }
+
+    #[test]
+    fn buffer_destructive_frame_is_rounded_without_title_bang() {
+        let system = DesignSystem::junie();
+        let mut state = delete_state();
+        let area = Rect::new(0, 0, 56, 16);
+        let mut buf = Buffer::empty(area);
+        AlertDialog::new(&system).paint(area, &mut buf, &mut state);
+        assert_eq!(state.action_cursor().copied(), Some("keep"));
+        assert!(
+            state
+                .actions()
+                .iter()
+                .any(|a| matches!(a.variant, ActionVariant::Destructive))
+        );
+        assert_eq!(buf[(0, 0)].symbol(), "╭");
+        assert_eq!(buf[(area.width - 1, 0)].symbol(), "╮");
+        let title: String = (0..area.width)
+            .map(|x| buf[(x, 2)].symbol().to_string())
+            .collect();
+        assert_eq!(
+            title.matches('!').count(),
+            0,
+            "junie titles have no bang: {title:?}"
+        );
+    }
+
+    #[test]
+    fn buffer_typed_ack_keeps_confirm_disabled_until_match() {
+        let system = DesignSystem::junie();
+        let mut state = delete_state();
+        state.set_gates(AlertConfirmGates::typed("prod-db.customers"));
+        let area = Rect::new(0, 0, 56, 16);
+        let mut buf = Buffer::empty(area);
+        AlertDialog::new(&system).paint(area, &mut buf, &mut state);
+        assert!(!state.confirm_enabled());
+        assert!(
+            state.regions.iter().all(|r| r.id != "delete"),
+            "unarmed danger action is not hittable"
+        );
+        for c in "prod-db.customers".chars() {
+            let _ = state.handle_key(KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE));
+        }
+        assert!(state.typed_satisfied());
+        buf = Buffer::empty(area);
+        AlertDialog::new(&system).paint(area, &mut buf, &mut state);
+        assert!(state.confirm_enabled());
+        assert!(state.regions.iter().any(|r| r.id == "delete"));
     }
 }

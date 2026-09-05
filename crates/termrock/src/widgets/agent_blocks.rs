@@ -4,11 +4,10 @@
 //! Product-neutral agent composition blocks: mode ribbon.
 //! QuestionFlow / PlanReview / TaskRail / SessionPicker elevated to dedicated modules.
 //! Domain wording and effects stay consumer-owned.
-
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind},
+    input::{KeyCode, KeyEvent},
     style::{DesignSystem, Role},
     text::take_display_cols,
 };
@@ -96,7 +95,7 @@ impl<Id: Clone + PartialEq> ModeRibbonState<Id> {
         modes: &[WorkbenchMode<'_, Id>],
         key: KeyEvent,
     ) -> ModeRibbonOutcome<Id> {
-        if !self.focused || key.kind != KeyEventKind::Press {
+        if !self.focused || !key.is_press() {
             return ModeRibbonOutcome::Ignored;
         }
         let enabled: Vec<usize> = modes
@@ -150,13 +149,7 @@ impl<Id: Clone + PartialEq> Widget for &ModeRibbon<'_, Id> {
         let labels: Vec<String> = self
             .modes
             .iter()
-            .map(|mode| {
-                if mode.active {
-                    format!("[{}]", mode.label)
-                } else {
-                    format!(" {} ", mode.label)
-                }
-            })
+            .map(|mode| format!(" {} ", mode.label))
             .collect();
         let sizes: Vec<FlexSize> = labels
             .iter()
@@ -176,8 +169,8 @@ impl<Id: Clone + PartialEq> Widget for &ModeRibbon<'_, Id> {
             if rect.width == 0 || rect.height == 0 {
                 continue;
             }
-            // The active mode already wears its brackets; a permanent ribbon
-            // is ambient chrome and does not spend the accent (plans/007).
+            // Active is weight, not `[inner]` wells. Ambient ribbon does not
+            // spend the accent (plans/007).
             let style = if !mode.enabled {
                 self.tokens.style(Role::TextDisabled)
             } else if mode.active {

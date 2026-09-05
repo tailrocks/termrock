@@ -17,7 +17,6 @@
 //! gutters and presence-only rails.
 //!
 //! Research: chat identity systems and agent TUIs, adapted to terminals.
-
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
 use crate::style::{DesignSystem, Glyph, Role};
@@ -81,8 +80,8 @@ impl IdentityRole {
     pub const fn glyph(self) -> Glyph {
         match self {
             Self::User | Self::Collaborator => Glyph::EmptyCircle,
-            Self::Agent | Self::Bot => Glyph::Busy,
-            Self::Service => Glyph::Settings,
+            Self::Agent | Self::Bot => Glyph::ModeDot,
+            Self::Service => Glyph::DiamondFilled,
             Self::System => Glyph::ModeDot,
             Self::Unknown => Glyph::Ellipsis,
         }
@@ -92,7 +91,7 @@ impl IdentityRole {
     #[must_use]
     pub const fn paint_role(self) -> Role {
         match self {
-            Self::User => Role::Info,
+            Self::User => Role::TextSecondary,
             Self::Agent => Role::ActorAssistant,
             Self::Service => Role::TextMuted,
             Self::System => Role::Warning,
@@ -151,10 +150,10 @@ impl PresenceStatus {
 
     /// 1-cell paint character from shared [`SemanticStatus`] glyphs.
     #[must_use]
-    pub const fn glyph_char(self, ascii: bool) -> Option<&'static str> {
+    pub const fn glyph_char(self, _ascii: bool) -> Option<&'static str> {
         match self {
             Self::None => None,
-            other => Some(other.semantic().glyph(ascii)),
+            other => Some(other.semantic().glyph()),
         }
     }
 
@@ -437,7 +436,7 @@ impl<'a> AvatarGlyph<'a> {
     #[must_use]
     pub fn face_text(&self) -> String {
         let cols = usize::from(self.body_cols());
-        let ascii = self.system.glyphs.is_ascii()
+        let ascii = false
             || matches!(
                 self.system.capability,
                 crate::style::ColorCapability::Monochrome
@@ -568,7 +567,9 @@ impl<'a> AvatarGlyph<'a> {
             crate::style::ColorCapability::Monochrome
         ) {
             style.fg = None;
-            style = style.add_modifier(Modifier::BOLD | Modifier::REVERSED);
+            // Monochrome states presence with weight; reversal reads as a
+            // selection the user made, not as a face.
+            style = style.add_modifier(Modifier::BOLD);
         }
         buffer.set_stringn(
             parts.face.x,
@@ -578,7 +579,7 @@ impl<'a> AvatarGlyph<'a> {
             style,
         );
         if parts.presence.width > 0 {
-            if let Some(ch) = self.presence.glyph_char(self.system.glyphs.is_ascii()) {
+            if let Some(ch) = self.presence.glyph_char(false) {
                 let mut ps = self.system.style(self.presence.role());
                 ps = ratatui_core::style::Style { bg: None, ..ps };
                 if matches!(
@@ -586,13 +587,13 @@ impl<'a> AvatarGlyph<'a> {
                     crate::style::ColorCapability::Monochrome
                 ) {
                     ps.fg = None;
+                    // Weight is the only monochrome modifier that is not a
+                    // reversal or a dim: busy states bold, the rest stay plain.
                     ps = match self.presence {
-                        PresenceStatus::Online => ps.add_modifier(Modifier::BOLD),
-                        PresenceStatus::Busy | PresenceStatus::Error => {
-                            ps.add_modifier(Modifier::BOLD | Modifier::REVERSED)
+                        PresenceStatus::Online | PresenceStatus::Busy | PresenceStatus::Error => {
+                            ps.add_modifier(Modifier::BOLD)
                         }
-                        PresenceStatus::Away => ps.add_modifier(Modifier::DIM),
-                        _ => ps.add_modifier(Modifier::DIM),
+                        _ => ps,
                     };
                 }
                 buffer.set_stringn(parts.presence.x, parts.presence.y, ch, 1, ps);
@@ -940,7 +941,7 @@ impl Widget for Identity<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::style::{ColorCapability, GlyphSet};
+    use crate::style::ColorCapability;
     // GlyphSet used for ASCII width contract
 
     #[test]
@@ -972,17 +973,6 @@ mod tests {
         let a = AvatarGlyph::new("Ada Lovelace", &system).size(AvatarSize::Normal);
         assert_eq!(a.body_cols(), 2);
         assert_eq!(display_cols(&a.face_text()), 2);
-    }
-
-    #[test]
-    fn ascii_profile_width_stable() {
-        let system = DesignSystem::default().glyphs(GlyphSet::Ascii);
-        for seed in ["A", "Ada", "🤖", "x"] {
-            let c = AvatarGlyph::new(seed, &system).compact();
-            assert_eq!(display_cols(&c.face_text()), 1, "{seed}");
-            let n = AvatarGlyph::new(seed, &system).size(AvatarSize::Normal);
-            assert_eq!(display_cols(&n.face_text()), 2, "{seed}");
-        }
     }
 
     #[test]

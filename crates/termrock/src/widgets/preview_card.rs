@@ -24,7 +24,6 @@
 //! is the reusable floating / side card primitive.
 //!
 //! Research: IDE quick previews, hover cards, Yazi previews, QuickOpen panels.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::time::Duration;
 use web_time::Instant;
@@ -526,7 +525,6 @@ pub struct PreviewCardState {
     /// Debounce: selection changed at this synth time; show waits until quiet.
     selection_dirty_at_ms: Option<u64>,
     slots: PreviewCardSlots,
-    ascii: bool,
     max_width: u16,
 }
 
@@ -562,7 +560,6 @@ impl PreviewCardState {
             applied_generation: 0,
             selection_dirty_at_ms: None,
             slots: PreviewCardSlots::empty(),
-            ascii: false,
             max_width: PREVIEW_CARD_DEFAULT_MAX_WIDTH,
         }
     }
@@ -600,10 +597,6 @@ impl PreviewCardState {
     }
 
     /// ASCII chrome preference (paint also accepts widget flag).
-    pub fn set_ascii(&mut self, on: bool) {
-        self.ascii = on;
-    }
-
     /// Max width for measure helpers.
     pub fn set_max_width(&mut self, w: u16) {
         self.max_width = w.max(12);
@@ -858,7 +851,7 @@ impl PreviewCardState {
 
     fn effective_delay(&self, motion: MotionPolicy) -> Duration {
         match motion {
-            MotionPolicy::Off | MotionPolicy::Basic => Duration::ZERO,
+            MotionPolicy::Off => Duration::ZERO,
             MotionPolicy::Full => self.delay,
         }
     }
@@ -943,8 +936,7 @@ impl PreviewCardState {
             self.show_requested = true;
         }
         let _ = self.presence.advance(tick, motion);
-        if matches!(motion, MotionPolicy::Basic | MotionPolicy::Off) && !self.presence.is_visible()
-        {
+        if matches!(motion, MotionPolicy::Off) && !self.presence.is_visible() {
             self.presence = Presence::tooltip(Duration::ZERO);
             self.presence.request_show(tick);
             self.show_requested = true;
@@ -1013,10 +1005,10 @@ impl PreviewCardState {
         if !self.pinned || self.disabled {
             return PreviewCardOutcome::Ignored;
         }
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return PreviewCardOutcome::Ignored;
         }
-        if !matches!(key.kind, KeyEventKind::Press | KeyEventKind::Repeat) {
+        if !key.is_insert() {
             return PreviewCardOutcome::Ignored;
         }
         match key.code {
@@ -1057,7 +1049,6 @@ impl PreviewCardState {
 pub struct PreviewCard<'a> {
     content: PreviewCardContent<'a>,
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
     max_width: u16,
 }
@@ -1069,7 +1060,6 @@ impl<'a> PreviewCard<'a> {
         Self {
             content,
             system,
-            ascii: false,
             colorless: false,
             max_width: PREVIEW_CARD_DEFAULT_MAX_WIDTH,
         }
@@ -1077,13 +1067,7 @@ impl<'a> PreviewCard<'a> {
 
     /// ASCII borders.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless roles.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -1112,28 +1096,24 @@ impl<'a> PreviewCard<'a> {
             return;
         }
 
-        let ascii = self.ascii || state.ascii;
-        let border = if state.pinned && !self.colorless {
-            Role::BorderFocused
+        let recipe = if state.pinned {
+            SurfaceRecipe::OverlayFocused
         } else {
-            Role::Border
+            SurfaceRecipe::Overlay
         };
-        let ascii_system;
-        let surface_system = if ascii {
-            ascii_system = self.system.clone().glyphs(GlyphSet::Ascii);
-            &ascii_system
-        } else {
-            self.system
-        };
+        let adapted_system = (false || self.colorless).then(|| {
+            let system = { self.system.clone() };
+            if self.colorless {
+                system.capability(crate::style::ColorCapability::Monochrome)
+            } else {
+                system
+            }
+        });
+        let surface_system = adapted_system.as_ref().unwrap_or(self.system);
         state.slots.root = area;
         let inner = Surface::new(surface_system)
-            .recipe(if self.colorless {
-                SurfaceRecipe::Inset
-            } else {
-                SurfaceRecipe::Overlay
-            })
+            .recipe(recipe)
             .bordered(true)
-            .border_style(self.system.style(border))
             .content_inset()
             .paint(area, buffer);
         if inner.is_empty() {
@@ -1158,11 +1138,7 @@ impl<'a> PreviewCard<'a> {
         // Header: [kind] title  [pin]
         state.slots.header = Rect::new(inner.x, y, inner.width, header_h);
         let badge = self.content.kind.badge();
-        let pin_mark = if state.pinned {
-            if ascii { " * " } else { " ● " }
-        } else {
-            ""
-        };
+        let pin_mark = if state.pinned { " ● " } else { "" };
         let title = format!("[{badge}] {}{pin_mark}", self.content.title);
         let title_style = self
             .system
@@ -1221,7 +1197,7 @@ impl<'a> PreviewCard<'a> {
             PreviewLoadState::Loading => {
                 // Verb first, ellipsis trailing: the row reads as an action in
                 // progress, not as an elision.
-                let msg = if ascii { "loading..." } else { "loading…" };
+                let msg = { "loading…" };
                 buffer.set_stringn(
                     inner.x,
                     y,
@@ -1242,7 +1218,7 @@ impl<'a> PreviewCard<'a> {
                 );
             }
             PreviewLoadState::Stale => {
-                let msg = if ascii { "~ stale" } else { "↻ stale" };
+                let msg = { "↻ stale" };
                 buffer.set_stringn(
                     inner.x,
                     y,
@@ -1801,7 +1777,7 @@ mod tests {
         let mut state = PreviewCardState::with_delay(Duration::from_millis(500));
         state.set_pointer_over(true);
         let tick = FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO);
-        let out = state.advance(tick, MotionPolicy::Basic);
+        let out = state.advance(tick, MotionPolicy::Off);
         assert!(
             matches!(
                 out,

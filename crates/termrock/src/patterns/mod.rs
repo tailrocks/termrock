@@ -51,7 +51,6 @@
 //! **Canonical shell:** [`layout_app_shell`] / [`AppShellConfig`]. Specialized
 //! helpers (`layout_agent_shell`, `layout_studio_shell`, …) are thin recipe
 //! wrappers over AppShell slots.
-
 mod agent_shell;
 mod agent_workbench;
 mod app_dashboard;

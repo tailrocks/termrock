@@ -11,7 +11,6 @@
 //! history ([`super::progress_steps`]).
 //!
 //! Research: Git history, CI timelines, observability tools, agent session views.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeSet;
 
@@ -110,17 +109,7 @@ impl TimelineStatus {
 
     /// Marker glyph (unicode / ascii).
     #[must_use]
-    pub const fn marker(self, active: bool, ascii: bool) -> &'static str {
-        if ascii {
-            return match (self, active) {
-                (_, true) => "*",
-                (Self::Failed, _) => "x",
-                (Self::Success, _) => "+",
-                (Self::Running, _) => "o",
-                (Self::Warning, _) => "!",
-                _ => ".",
-            };
-        }
+    pub const fn marker(self, active: bool, _ascii: bool) -> &'static str {
         match (self, active) {
             (_, true) => "●",
             (Self::Failed, _) => "✗",
@@ -136,28 +125,10 @@ impl TimelineStatus {
     fn role(self) -> Role {
         match self {
             Self::Pending | Self::Cancelled => Role::TextMuted,
-            Self::Running | Self::Info => Role::Info,
+            Self::Running | Self::Info => Role::TextSecondary,
             Self::Success => Role::Success,
             Self::Failed => Role::Danger,
             Self::Warning => Role::Warning,
-        }
-    }
-
-    /// Motion channel for this status, matching [`SemanticStatus::channel`].
-    ///
-    /// A running step is the same fact as a running status indicator, so it
-    /// breathes on the same channel at the same period. Every terminal state
-    /// is `Static`: a finished row that keeps moving reads as still working.
-    ///
-    /// [`SemanticStatus::channel`]: crate::widgets::SemanticStatus::channel
-    #[must_use]
-    pub const fn channel(self) -> crate::style::MotionChannel {
-        match self {
-            Self::Running => crate::style::MotionChannel::Live,
-            Self::Pending => crate::style::MotionChannel::Wait,
-            Self::Success | Self::Failed | Self::Warning | Self::Cancelled | Self::Info => {
-                crate::style::MotionChannel::Static
-            }
         }
     }
 }
@@ -445,8 +416,6 @@ pub struct TimelineState<Id: Clone + PartialEq = ()> {
     expanded: BTreeSet<Id>,
     /// Checkpoint mode (Enter → RestoreRequested).
     checkpoint_mode: bool,
-    /// ASCII markers.
-    pub ascii: bool,
     /// Colorless paint.
     pub colorless: bool,
     /// Hit regions.
@@ -476,7 +445,6 @@ impl<Id: Clone + PartialEq + Ord> TimelineState<Id> {
             filter: None,
             expanded: BTreeSet::new(),
             checkpoint_mode: false,
-            ascii: false,
             colorless: false,
             regions: Vec::new(),
             painted: Rect::default(),
@@ -577,10 +545,10 @@ impl<Id: Clone + PartialEq + Ord> TimelineState<Id> {
         key: KeyEvent,
         events: &[TimelineEvent<'_, Id>],
     ) -> TimelineOutcome<Id> {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return TimelineOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         // Filter
         if is_press && matches!(key.code, KeyCode::Char('/')) && key.modifiers.is_empty() {
@@ -862,7 +830,6 @@ pub struct Timeline<'a, Id = ()> {
     system: &'a DesignSystem,
     recipe: TimelineRecipe,
     focused: bool,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -876,7 +843,6 @@ impl<'a> Timeline<'a, ()> {
             system,
             recipe: TimelineRecipe::Detailed,
             focused: true,
-            ascii: false,
             colorless: false,
         }
     }
@@ -905,7 +871,6 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
             system,
             recipe: TimelineRecipe::Detailed,
             focused: true,
-            ascii: false,
             colorless: false,
         }
     }
@@ -926,13 +891,7 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
 
     /// ASCII markers.
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
         self
@@ -946,8 +905,7 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
             state.viewport = 0;
             return;
         }
-        let ascii = self.ascii || state.ascii;
-        let colorless = self.colorless || state.colorless;
+        let colorless = self.colorless || state.colorless || self.system.mono();
         let footer = 1u16;
         let body_h = area.height.saturating_sub(footer).max(1);
         state.viewport = usize::from(body_h);
@@ -970,7 +928,7 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
         let end = (start + state.viewport).min(len);
 
         if view.is_empty() {
-            let mark = if ascii { "[ ] " } else { "∅ " };
+            let mark = "∅ ";
             buffer.set_stringn(
                 area.x,
                 y,
@@ -981,7 +939,7 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
                 usize::from(area.width),
                 self.system.style(Role::TextMuted),
             );
-            self.paint_footer(area, buffer, state, ascii);
+            self.paint_footer(area, buffer, state, false);
             return;
         }
 
@@ -996,12 +954,12 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
             let cursor = idx == state.cursor;
 
             if matches!(event.kind, TimelineRowKind::Group) {
-                self.paint_group(area, row_y, buffer, event, ascii);
+                self.paint_group(area, row_y, buffer, event, false);
                 y = row_y;
                 continue;
             }
 
-            let marker = event.status.marker(event.active || selected, ascii);
+            let marker = event.status.marker(event.active || selected, false);
             let mut style = if colorless {
                 if selected || cursor {
                     self.system
@@ -1031,7 +989,7 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
             );
             let style = chrome.label_style(style);
 
-            let line = self.format_line(event, area.width, ascii, colorless);
+            let line = self.format_line(event, area.width, false, colorless);
             buffer.set_stringn(area.x, row_y, " ", 1, style);
             buffer.set_stringn(area.x.saturating_add(1), row_y, " ", 1, style);
             let body = format!("{marker} {line}");
@@ -1042,26 +1000,9 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
                 usize::from(area.width.saturating_sub(GUTTER)),
                 style,
             );
-            // The marker cell breathes while the step runs; the label never
-            // does. Same channel and period as `StatusIndicator`, so a running
-            // step and a running status agree instead of each inventing a
-            // rhythm (plans/014 Step 4).
-            let brightness = crate::style::breathe_over(
-                self.system.motion,
-                self.system.elapsed_ms(),
-                event.status.channel().period_ms(),
-            );
-            if brightness < 1.0 && !colorless {
-                let canvas = self
-                    .system
-                    .style(Role::Canvas)
-                    .bg
-                    .unwrap_or(ratatui_core::style::Color::Reset);
-                let marker_x = area.x.saturating_add(GUTTER);
-                if marker_x < area.right() {
-                    let faded = crate::style::fade_style(style, brightness, canvas);
-                    buffer.set_stringn(marker_x, row_y, marker, 1, faded);
-                }
+            let marker_x = area.x.saturating_add(GUTTER);
+            if marker_x < area.right() && !colorless {
+                buffer.set_stringn(marker_x, row_y, marker, 1, style);
             }
 
             chrome.paint(buffer, Rect::new(area.x, row_y, area.width, 1));
@@ -1081,14 +1022,14 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
             y = row_y;
         }
         let _ = y;
-        self.paint_footer(area, buffer, state, ascii);
+        self.paint_footer(area, buffer, state, false);
     }
 
     fn format_line(
         &self,
         event: &TimelineEvent<'a, Id>,
         width: u16,
-        ascii: bool,
+        _ascii: bool,
         colorless: bool,
     ) -> String {
         let narrow = width < 36;
@@ -1131,7 +1072,7 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
                         }
                     }
                     if matches!(event.kind, TimelineRowKind::Checkpoint) {
-                        parts.push(if ascii { "[ckpt]".into() } else { "◆".into() });
+                        parts.push("◆".into());
                     }
                     parts.join("  ")
                 }
@@ -1145,9 +1086,9 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
         y: u16,
         buffer: &mut Buffer,
         event: &TimelineEvent<'a, Id>,
-        ascii: bool,
+        _ascii: bool,
     ) {
-        let mark = if ascii { "# " } else { "▸ " };
+        let mark = "▸ ";
         let line = format!("{mark}{}", event.when);
         buffer.set_stringn(
             area.x,
@@ -1165,7 +1106,7 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
         area: Rect,
         buffer: &mut Buffer,
         state: &TimelineState<Id>,
-        ascii: bool,
+        _ascii: bool,
     ) {
         let y = area.bottom().saturating_sub(1);
         if y < area.y {
@@ -1174,7 +1115,7 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
         let mut parts = Vec::new();
         parts.push(format!("recipe:{}", self.recipe.id()));
         if state.following {
-            parts.push(if ascii { "FOLLOW" } else { "↓ live" }.into());
+            parts.push("↓ live".into());
         } else {
             parts.push("paused".into());
         }
@@ -1397,12 +1338,6 @@ mod tests {
     }
 
     #[test]
-    fn ascii_markers() {
-        assert_eq!(TimelineStatus::Failed.marker(false, true), "x");
-        assert_eq!(TimelineStatus::Success.marker(false, false), "✓");
-    }
-
-    #[test]
     fn fuzz_filter_and_status() {
         let events = sample();
         for q in ["", "ci", "ZZZ", "12:", "trace"] {
@@ -1433,33 +1368,5 @@ mod tests {
         let view = filter_timeline_events(&events, "");
         let out = state.handle_intent(UiIntent::Activate, &view);
         assert!(matches!(out, TimelineOutcome::RestoreRequested("a")));
-    }
-
-    #[test]
-    fn only_a_running_step_breathes_and_it_breathes_like_a_status() {
-        use crate::style::MotionChannel;
-
-        assert_eq!(TimelineStatus::Running.channel(), MotionChannel::Live);
-        assert_eq!(TimelineStatus::Pending.channel(), MotionChannel::Wait);
-        for status in [
-            TimelineStatus::Success,
-            TimelineStatus::Failed,
-            TimelineStatus::Warning,
-            TimelineStatus::Cancelled,
-            TimelineStatus::Info,
-        ] {
-            assert_eq!(
-                status.channel(),
-                MotionChannel::Static,
-                "{status:?} has finished; it must be still"
-            );
-        }
-        // The same channel a running status indicator uses, so the two agree.
-        assert_eq!(
-            TimelineStatus::Running.channel().period_ms(),
-            crate::widgets::SemanticStatus::Running
-                .channel()
-                .period_ms()
-        );
     }
 }

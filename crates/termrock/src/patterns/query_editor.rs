@@ -32,9 +32,12 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    widgets::{StatefulWidget, Widget},
+};
 
 use crate::{
     input::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
@@ -42,8 +45,8 @@ use crate::{
     text::take_display_cols,
     widgets::{
         CodeFrame, CodeFrameLine, CompletionMenuState, Diagnostic, DiagnosticSeverity, HelpEntry,
-        HistoryEntry, HistoryKind, SourceLabel, SourceRange, SpanStyle, TextArea, TextAreaOutcome,
-        TextAreaState, TextCursor, TextWrap,
+        HistoryEntry, HistoryKind, SemanticStatus, SourceLabel, SourceRange, SpanStyle,
+        StatusIndicator, TextArea, TextAreaOutcome, TextAreaState, TextCursor, TextWrap,
     },
 };
 
@@ -188,6 +191,30 @@ impl QueryRunStatus {
             Self::Success { .. } => "success",
             Self::Failed { .. } => "failed",
             Self::Cancelled => "cancelled",
+        }
+    }
+
+    /// Operator-facing lifecycle verb.
+    #[must_use]
+    pub fn verb(&self) -> &'static str {
+        match self {
+            Self::Idle => "idle",
+            Self::Running { .. } => "running",
+            Self::Success { .. } => "completed",
+            Self::Failed { .. } => "failed",
+            Self::Cancelled => "cancelled",
+        }
+    }
+
+    /// Shared lifecycle projection for recipe-owned status chrome.
+    #[must_use]
+    pub fn semantic(&self) -> SemanticStatus {
+        match self {
+            Self::Idle => SemanticStatus::Idle,
+            Self::Running { .. } => SemanticStatus::Running,
+            Self::Success { .. } => SemanticStatus::Success,
+            Self::Failed { .. } => SemanticStatus::Failed,
+            Self::Cancelled => SemanticStatus::Paused,
         }
     }
 
@@ -562,8 +589,6 @@ pub struct QueryEditorState {
     pub diagnostic_cursor: usize,
     /// Soft wrap in editor.
     pub soft_wrap: bool,
-    /// ASCII chrome.
-    pub ascii: bool,
     /// Line numbers.
     pub line_numbers: bool,
     /// Title override.
@@ -588,6 +613,7 @@ impl QueryEditorState {
     pub fn new() -> Self {
         let mut editor = TextAreaState::new("");
         editor.set_accepts_input(true);
+        editor.set_editing(true);
         Self {
             editor,
             language: QueryLanguage::sql(),
@@ -602,7 +628,6 @@ impl QueryEditorState {
             completion_open: false,
             diagnostic_cursor: 0,
             soft_wrap: false,
-            ascii: false,
             line_numbers: true,
             title: None,
             placeholder: "Enter query…".into(),
@@ -636,6 +661,7 @@ impl QueryEditorState {
         let on =
             self.accepts_input && matches!(self.focus, QueryFocus::Editor) && !self.completion_open;
         self.editor.set_accepts_input(on);
+        self.editor.set_editing(on);
     }
 
     /// Draft text.
@@ -777,10 +803,10 @@ impl QueryEditorState {
         key: KeyEvent,
         diagnostics: &[Diagnostic<'_>],
     ) -> QueryEditorOutcome {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return QueryEditorOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
         if !is_press {
             return QueryEditorOutcome::Ignored;
         }
@@ -1152,7 +1178,6 @@ pub struct QueryEditor<'a> {
     diagnostics: &'a [Diagnostic<'a>],
     focused: bool,
     title: Option<&'a str>,
-    ascii: bool,
 }
 
 impl<'a> QueryEditor<'a> {
@@ -1164,7 +1189,6 @@ impl<'a> QueryEditor<'a> {
             diagnostics: &[],
             focused: true,
             title: None,
-            ascii: false,
         }
     }
 
@@ -1191,17 +1215,11 @@ impl<'a> QueryEditor<'a> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Paint workbench; host paints result grid into [`QueryEditorSlots::results`].
     pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut QueryEditorState) {
         if area.is_empty() {
             return;
         }
-        let ascii = self.ascii || state.ascii;
         let mut slots = QueryEditorSlots {
             root: area,
             ..QueryEditorSlots::empty()
@@ -1219,50 +1237,29 @@ impl<'a> QueryEditor<'a> {
                 height: 1,
             };
             let title = self.title.or(state.title.as_deref()).unwrap_or("Query");
-            let run = match &state.run {
-                QueryRunStatus::Idle => "idle",
-                QueryRunStatus::Running { .. } => "running…",
-                QueryRunStatus::Success { rows, duration_ms } => {
-                    // short static
-                    let _ = (rows, duration_ms);
-                    "ok"
-                }
-                QueryRunStatus::Failed { .. } => "error",
-                QueryRunStatus::Cancelled => "cancelled",
-            };
+            let status =
+                StatusIndicator::new(state.run.semantic(), self.system).label(state.run.verb());
+            let status_width = status.measure_width(None).min(area.width);
+            Widget::render(&status, Rect::new(area.x, y, status_width, 1), buffer);
+            let metadata_x = area.x.saturating_add(status_width.saturating_add(1));
+            let metadata_width = area.right().saturating_sub(metadata_x);
             let line = format!(
-                "{title} · {} · {} · {} · {}",
+                "· {title} · {} · {} · {}",
                 state.language.label,
                 state.mode.id(),
                 state.focus.id(),
-                run
             );
             let style = if self.focused {
                 self.system.style(Role::TextStrong)
             } else {
                 self.system.style(Role::TextMuted)
             };
-            self.system
-                .paint_row(buffer, Rect::new(area.x, y, area.width, 1), &line, style);
-            // run status color cue
-            if matches!(state.run, QueryRunStatus::Failed { .. }) {
+            if metadata_width > 0 {
                 self.system.paint_row(
                     buffer,
-                    Rect::new(area.x.saturating_add(area.width.saturating_sub(8)), y, 5, 1),
-                    "error",
-                    self.system.style(Role::Danger),
-                );
-            } else if state.run.is_running() {
-                self.system.paint_row(
-                    buffer,
-                    Rect::new(
-                        area.x.saturating_add(area.width.saturating_sub(10)),
-                        y,
-                        6,
-                        1,
-                    ),
-                    if ascii { "run..." } else { "run…" },
-                    self.system.style(Role::Warning),
+                    Rect::new(metadata_x, y, metadata_width, 1),
+                    &line,
+                    style,
                 );
             }
             y = y.saturating_add(1);
@@ -1342,7 +1339,6 @@ impl<'a> QueryEditor<'a> {
         TextArea::new(self.system)
             .placeholder(state.placeholder.as_str())
             .line_numbers(state.line_numbers)
-            .ascii(ascii)
             .render(slots.editor, buffer, &mut state.editor);
         // Focus border cue on first cell of editor row when focused
         if matches!(state.focus, QueryFocus::Editor) && self.focused {
@@ -1351,7 +1347,7 @@ impl<'a> QueryEditor<'a> {
                 self.system.paint_row(
                     buffer,
                     Rect::new(slots.editor.x, slots.editor.y, 1, 1),
-                    if ascii { ">" } else { "›" },
+                    "›",
                     self.system.style(Role::Accent),
                 );
             }
@@ -1371,15 +1367,7 @@ impl<'a> QueryEditor<'a> {
             self.system.paint_row(
                 buffer,
                 Rect::new(area.x, y, area.width, 1),
-                &format!(
-                    "{} {}",
-                    if focused_diag {
-                        if ascii { "*" } else { "●" }
-                    } else {
-                        " "
-                    },
-                    summary
-                ),
+                &format!("{} {}", if focused_diag { "●" } else { " " }, summary),
                 if focused_diag {
                     self.system.style(Role::Focus)
                 } else {
@@ -1500,7 +1488,6 @@ impl<'a> QueryEditor<'a> {
         let line_refs: Vec<CodeFrameLine<'_>> = lines;
         CodeFrame::new(&line_refs, self.system)
             .labels(labels)
-            .ascii(self.ascii || state.ascii)
             .render(area, buffer);
     }
 }
@@ -1691,7 +1678,7 @@ mod tests {
         let diags = [sample_diag()];
         let area = Rect::new(0, 0, 72, 20);
         let mut buf = Buffer::empty(area);
-        QueryEditor::new(&system)
+        let _ = QueryEditor::new(&system)
             .diagnostics(&diags)
             .title("SQL")
             .render(area, &mut buf, &mut state);
@@ -1715,7 +1702,7 @@ mod tests {
         state.mode = QueryEditorMode::Compact;
         let area = Rect::new(0, 0, 40, 10);
         let mut buf = Buffer::empty(area);
-        QueryEditor::new(&system).render(area, &mut buf, &mut state);
+        let _ = QueryEditor::new(&system).render(area, &mut buf, &mut state);
         assert!(state.slots.results.is_empty() || state.slots.results.height == 0);
     }
 
@@ -1767,7 +1754,7 @@ mod tests {
         let area = Rect::new(0, 0, 80, 24);
         let mut buf = Buffer::empty(area);
         for _ in 0..8 {
-            QueryEditor::new(&system).render(area, &mut buf, &mut state);
+            let _ = QueryEditor::new(&system).render(area, &mut buf, &mut state);
         }
         assert!(!state.slots.editor.is_empty());
     }

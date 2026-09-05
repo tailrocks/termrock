@@ -1,46 +1,41 @@
 ---
-title: Agent Workbench
-description: 'Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned.'
-pattern: AgentWorkbench
-demo: agent-workbench/basic
-interaction: activation
+title: "Agent Workbench"
+description: "Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned."
+catalogId: AgentWorkbench
 source: crates/termrock/src/patterns/agent_workbench.rs
 classification: application
+tags:
+  - "application"
+  - "DiffReview"
+  - "List"
+  - "ModeRibbon"
+aliases: []
+uses:
+  - "DiffReview"
+  - "List"
+  - "ModeRibbon"
+  - "Panel"
+  - "PermissionPrompt"
+  - "PromptComposer"
+  - "QuestionFlow"
+  - "StatusBar"
+  - "Transcript"
+supportingTypes:
+  - "DiffHunk"
+  - "ListRow"
+  - "NavItem"
+  - "NavItemStatus"
+  - "PermissionRequest"
+  - "PermissionRisk"
+  - "Question"
+  - "QuestionOption"
+  - "QuestionSet"
+  - "SemanticStatus"
+  - "StatefulWidget"
+  - "StatusSlot"
+  - "TranscriptBlock"
+  - "Widget"
 ---
-
-This is an example composite from `termrock::patterns`, not a first-class widget. Copy the recipe, keep its reusable parts, and replace its sample domain model with your own.
-
-## Live application preview
-
-<TerminalPreview story="agent-workbench/basic" interactive caption="Agent Workbench · shared Rust demo" />
-
-## Classification and composition
-
-**application** · default grid 100×28
-
-Composed public building blocks: `DiffHunk`, `DiffReview`, `List`, `ListRow`, `ModeRibbon`, `NavItem`, `NavItemStatus`, `Panel`, `PermissionPrompt`, `PermissionRequest`, `PermissionRisk`, `PromptComposer`, `Question`, `QuestionFlow`, `QuestionOption`, `QuestionSet`, `SemanticStatus`, `StatefulWidget`, `StatusBar`, `StatusSlot`, `Transcript`, `TranscriptBlock`, `Widget`.
-
-## Workflow
-
-- `Tab cycle panes`: move visible focus, selection, pane, or hierarchy state for the next action.
-- `type in prompt`: focus the real field and edit its persistent Unicode-safe draft.
-- `O open session overlay`: invoke the focused public state-machine action and inspect its typed request.
-- `Esc peel top layer`: peel or cancel the current transient layer and preserve underlying state.
-
-Accepted actions update the same persistent pattern instance in web docs and native Lookbook. Typed requests appear in the status line; the fixtures never authenticate, connect, execute, persist, or mutate external state.
-
-## Ownership
-
-TermRock owns composition, focus geometry, responsive layout, and reusable state transitions. The consuming application owns records, commands, persistence, secrets, authorization, and side effects.
-
-## Source
-
-- Pattern recipe: [`crates/termrock/src/patterns/agent_workbench.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/patterns/agent_workbench.rs)
-- Demo: `agent-workbench/basic`
-
-## Migrated handbook guidance
-
-# AgentWorkbench
 
 Composition pattern for an agent shell. **Not** a product agent — consumers own wording, tools, policy, and effects. Source-owned registry block (migration `0236`).
 
@@ -67,7 +62,6 @@ Composition pattern for an agent shell. **Not** a product agent — consumers ow
 
 **Deleted duals:** `ApprovalCard`, `PromptBox` on the agent path (migration `0063` / elevated `0236`).
 
-
 ## Anatomy
 
 ```
@@ -87,57 +81,6 @@ Composition pattern for an agent shell. **Not** a product agent — consumers ow
 - Overlays are dismissible scene layers; **one-layer Esc**. Composer draft is never cleared by overlays.
 - Densities: `Normal` (≥72) · `Narrow` (40–71) · `Tiny` (&lt;40).
 
-## Minimal host loop
-
-```rust
-use termrock::patterns::{
-    AgentWorkbenchState, WorkbenchSurfaces, default_modes,
-    example_workbench_tasks, example_workbench_activities, render_agent_workbench,
-};
-use termrock::style::DesignSystem;
-use termrock::widgets::{
-    PermissionPrompt, PermissionPromptState, PromptComposer, PromptComposerState,
-    Transcript, TranscriptState, /* … */
-};
-
-let system = DesignSystem::default();
-let mut workbench = AgentWorkbenchState::new();
-let mut prompt_state = PromptComposerState::new();
-let mut permission_state = PermissionPromptState::new();
-let tasks = example_workbench_tasks();
-let activities = example_workbench_activities();
-
-// each frame:
-render_agent_workbench(buf, area, WorkbenchSurfaces {
-    system: &system,
-    state: &mut workbench,
-    task_models: Some(&tasks),
-    tasks: &[],
-    modes: &default_modes("build"),
-    transcript: &transcript,
-    transcript_state: &mut tstate,
-    activities: Some(&activities),
-    prompt: &PromptComposer::new(&system),
-    prompt_state: &mut prompt_state,
-    status_slots: &slots,
-    status_state: &mut sstate,
-    permission: Some((&PermissionPrompt::new(&system), &mut permission_state)),
-    question: None,
-    plan: None,
-    diff: None,
-    session: None,
-    working: None,
-});
-
-// keys — overlay first, then focused pane; draft never cleared
-let _ = workbench.handle_key(
-    key, &mut prompt_state, &mut tstate, &blocks,
-    Some(&mut permission_state),
-    Some(&tasks), None,
-    Some(&activities), None,
-);
-```
-
 ## Laws
 
 | Law | Detail |
@@ -147,13 +90,3 @@ let _ = workbench.handle_key(
 | Focus | Tab cycles TaskRail → Transcript → Activity → Prompt |
 | Public only | Pattern uses public widgets + layout/scene only |
 | Host owns I/O | Outcomes are requests |
-
-## Stories
-
-`agent-workbench/{basic,tool-running,permission,plan,diff,session,multi-agent,narrow,tiny,ascii,no-color}`
-
-## Related
-
-PermissionPrompt · PromptComposer · TaskRail · ActivityShelf · PlanReview · DiffReview · SessionPicker · WorkingStateCard · Transcript · InteractionScene · [Agent parity anchors](/docs/interaction-notes)
-
-Migration `0236` · design `docs/design/agent-workbench-cutover.md` · `docs/design/showcase-workbench.md`

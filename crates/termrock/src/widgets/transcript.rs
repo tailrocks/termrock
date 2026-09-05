@@ -8,15 +8,12 @@
 //!
 //! **Break J:** the one-row `StreamView` paint shell was deleted; project
 //! one-line turns into single-line [`TranscriptBlock`]s.
-
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, widgets::StatefulWidget};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{DesignSystem, Role, blend_toward},
+    style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
     widgets::AccentRail,
 };
@@ -460,7 +457,7 @@ impl<Id: Clone + Eq> TranscriptState<Id> {
         key: KeyEvent,
         blocks: &[TranscriptBlock<'_, Id>],
     ) -> TranscriptOutcome<Id> {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return TranscriptOutcome::Ignored;
         }
         if let Some(intent) = crate::interaction::default_transcript_intent(key) {
@@ -469,7 +466,7 @@ impl<Id: Clone + Eq> TranscriptState<Id> {
         // Product fold chord (Ctrl+F) — not in generic intent map.
         if matches!(key.code, KeyCode::Char('f' | 'F'))
             && key.modifiers.contains(KeyModifiers::CONTROL)
-            && key.kind == KeyEventKind::Press
+            && key.is_press()
         {
             if let Some(id) = self.selected.clone() {
                 let folded = blocks
@@ -654,8 +651,6 @@ pub struct Transcript<'a, Id> {
     system: &'a DesignSystem,
     /// Accepts-input chrome (selection gutter emphasis).
     focused: bool,
-    /// Prefer ASCII kind prefixes.
-    ascii: bool,
     /// Suppress chromatic roles (use Text / TextMuted only).
     colorless: bool,
     /// Empty-state copy when `blocks` is empty.
@@ -672,7 +667,6 @@ impl<'a, Id> Transcript<'a, Id> {
             blocks,
             system,
             focused: false,
-            ascii: false,
             colorless: false,
             empty_label: "No messages yet",
             tick: 0,
@@ -688,13 +682,7 @@ impl<'a, Id> Transcript<'a, Id> {
 
     /// ASCII kind prefixes and fold markers.
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
     /// Reduced / no-color paint path.
-    #[must_use]
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
         self
@@ -715,12 +703,8 @@ impl<'a, Id> Transcript<'a, Id> {
     }
 }
 
-fn kind_prefix(kind: TranscriptKind, ascii: bool) -> &'static str {
-    if ascii {
-        kind.glyph_ascii()
-    } else {
-        kind.glyph()
-    }
+fn kind_prefix(kind: TranscriptKind, _ascii: bool) -> &'static str {
+    kind.glyph()
 }
 
 fn kind_style(system: &DesignSystem, kind: TranscriptKind, colorless: bool) -> Style {
@@ -732,21 +716,15 @@ fn kind_style(system: &DesignSystem, kind: TranscriptKind, colorless: bool) -> S
         };
     }
     let style = system.style(kind.role());
-    if matches!(kind, TranscriptKind::Thinking) {
-        let canvas = system
-            .style(Role::Canvas)
-            .bg
-            .unwrap_or(ratatui_core::style::Color::Reset);
-        style.fg(style.fg.map_or(canvas, |fg| blend_toward(fg, canvas, 0.3)))
-    } else {
-        style
-    }
+    let _ = kind;
+    style
 }
 
 impl<Id: Clone + Eq> StatefulWidget for &Transcript<'_, Id> {
     type State = TranscriptState<Id>;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        let colorless = self.colorless || self.system.mono();
         state.painted_area = area;
         state.block_regions.clear();
         // Keep state chrome flag aligned with paint-time ownership when host sets both.
@@ -762,7 +740,7 @@ impl<Id: Clone + Eq> StatefulWidget for &Transcript<'_, Id> {
         if self.blocks.is_empty() {
             state.total_display_rows = 0;
             state.first_display_row = 0;
-            let style = if self.colorless {
+            let style = if colorless {
                 self.system.style(Role::TextMuted)
             } else {
                 self.system.style(Role::TextDisabled)
@@ -787,8 +765,8 @@ impl<Id: Clone + Eq> StatefulWidget for &Transcript<'_, Id> {
         let view_start = state.first_display_row;
         let view_end = view_start.saturating_add(u64::from(area.height));
         let accepts = self.focused || state.focused;
-        let fold_open = if self.ascii { "v " } else { "▾ " };
-        let fold_closed = if self.ascii { "> " } else { "▸ " };
+        let fold_open = "▾ ";
+        let fold_closed = "▸ ";
         let sel_gutter = self.system.glyphs.selection_gutter();
 
         for (block_index, block) in self.blocks.iter().enumerate() {
@@ -801,16 +779,16 @@ impl<Id: Clone + Eq> StatefulWidget for &Transcript<'_, Id> {
             }
             let selected = state.selected.as_ref() == Some(&block.id);
             let style = if selected && accepts {
-                if self.colorless {
+                if colorless {
                     self.system.style(Role::TextStrong)
                 } else {
                     self.system.style(Role::Accent)
                 }
             } else {
-                kind_style(self.system, block.kind, self.colorless)
+                kind_style(self.system, block.kind, colorless)
             };
 
-            let prefix = kind_prefix(block.kind, self.ascii);
+            let prefix = kind_prefix(block.kind, false);
             let mut region_y0: Option<u16> = None;
             let mut region_y1: u16 = area.y;
 
@@ -825,8 +803,6 @@ impl<Id: Clone + Eq> StatefulWidget for &Transcript<'_, Id> {
                 u16::try_from(visible_end.saturating_sub(visible_start)).unwrap_or(u16::MAX),
             );
             let content_area = AccentRail::new(self.system, block.kind.role())
-                .active(block.active)
-                .tick(self.tick)
                 .collapsed(block.folded)
                 .paint(rail_area, buffer);
             let content_x = content_area.x;
@@ -1141,7 +1117,7 @@ mod tests {
 
     #[test]
     fn reduced_motion_rail_is_static() {
-        let system = system().motion(crate::style::MotionPolicy::Basic);
+        let system = system().motion(crate::style::MotionPolicy::Off);
         let lines = ["streaming", "response"];
         let blocks = [TranscriptBlock::new(1u32, TranscriptKind::Assistant, &lines).active(true)];
         let render = |tick| {
@@ -1181,7 +1157,7 @@ mod tests {
         terminal
             .draw(|f| {
                 f.render_stateful_widget(
-                    &Transcript::new(&blocks, &system).ascii(true),
+                    &Transcript::new(&blocks, &system),
                     Rect::new(0, 0, 24, 2),
                     &mut state,
                 );
@@ -1207,7 +1183,6 @@ mod tests {
                     f.render_stateful_widget(
                         &Transcript::new(&blocks, &system)
                             .focused(true)
-                            .ascii(w < 16)
                             .colorless(w < 12),
                         Rect::new(0, 0, w, h),
                         &mut state,

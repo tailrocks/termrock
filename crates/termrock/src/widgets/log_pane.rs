@@ -10,7 +10,6 @@
 //! LogPane when a single local process/build buffer must own append+evict.
 //! Project owned lines with [`super::log_stream::log_lines_from_plain`] or map
 //! each frame into [`super::LogLine`] when severity/source are known.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::fmt::Write as _;
 
@@ -178,7 +177,7 @@ impl LogPaneState {
 
     /// Applies line, page, oldest, and live-tail scrollback navigation.
     pub fn handle_key(&mut self, key: KeyEvent) -> Outcome<()> {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return Outcome::Ignored;
         }
         let page = self.viewport_height.max(1);
@@ -455,7 +454,7 @@ mod tests {
     #[test]
     fn rendering_is_deterministic_and_shows_follow_state() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let pane = LogPane::new(&system).title("Build");
         let area = Rect::new(0, 0, 24, 4);
         let mut state = LogPaneState::new();
@@ -473,13 +472,13 @@ mod tests {
     #[test]
     fn follow_indicator_preserves_borders_and_long_titles() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let mut state = LogPaneState::new();
         let exact_area = Rect::new(0, 0, 14, 3);
         let mut exact = Buffer::empty(exact_area);
         (&LogPane::new(&system)).render(exact_area, &mut exact, &mut state);
-        assert_eq!(exact[(0, 0)].symbol(), "\u{250c}");
-        assert_eq!(exact[(13, 0)].symbol(), "┐");
+        assert_eq!(exact[(0, 0)].symbol(), "\u{256d}");
+        assert_eq!(exact[(13, 0)].symbol(), "╮");
         assert!(!rendered(&exact).contains("following"));
 
         let titled_area = Rect::new(0, 0, 28, 3);
@@ -490,13 +489,13 @@ mod tests {
             &mut state,
         );
         assert!(!rendered(&titled).contains("following"));
-        assert_eq!(titled[(27, 0)].symbol(), "┐");
+        assert_eq!(titled[(27, 0)].symbol(), "\u{256e}");
     }
 
     #[test]
     fn scrolled_back_indicator_reports_lines_below_view() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let area = Rect::new(0, 0, 32, 4);
         let mut state = LogPaneState::new();
         for line in ["one", "two", "three", "four"] {

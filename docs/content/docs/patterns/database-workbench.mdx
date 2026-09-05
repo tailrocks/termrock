@@ -1,41 +1,29 @@
 ---
-title: Database Workbench
-description: 'Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned.'
-pattern: DatabaseWorkbench
-demo: database-workbench/basic
-interaction: activation
+title: "Database Workbench"
+description: "Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned."
+catalogId: DatabaseWorkbench
 source: crates/termrock/src/patterns/database_workbench.rs
 classification: application
+tags:
+  - "application"
+  - "CommandPalette"
+  - "HistoryPicker"
+  - "ObjectInspector"
+aliases: []
+uses:
+  - "CommandPalette"
+  - "HistoryPicker"
+  - "ObjectInspector"
+  - "Panel"
+  - "StatusBar"
+supportingTypes:
+  - "CommandEntry"
+  - "HistoryEntry"
+  - "InspectorField"
+  - "NavItem"
+  - "NavItemStatus"
+  - "StatefulWidget"
+  - "StatusRegion"
+  - "StatusSlot"
+  - "Widget"
 ---
-
-This is an example composite from `termrock::patterns`, not a first-class widget. Copy the recipe, keep its reusable parts, and replace its sample domain model with your own.
-
-## Live application preview
-
-<TerminalPreview story="database-workbench/basic" interactive caption="Database Workbench · shared Rust demo" />
-
-## Classification and composition
-
-**application** · default grid 120×36
-
-Composed public building blocks: `CommandEntry`, `CommandPalette`, `HistoryEntry`, `HistoryPicker`, `InspectorField`, `NavItem`, `NavItemStatus`, `ObjectInspector`, `Panel`, `StatefulWidget`, `StatusBar`, `StatusRegion`, `StatusSlot`, `Widget`.
-
-## Workflow
-
-- `Tab cycle panes`: move visible focus, selection, pane, or hierarchy state for the next action.
-- `type SQL`: focus the real field and edit its persistent Unicode-safe draft.
-- `Ctrl+Enter run`: invoke the focused public state-machine action and inspect its typed request.
-- `Ctrl+P palette`: forward this normalized action to the mounted public pattern state.
-- `Ctrl+H history`: forward this normalized action to the mounted public pattern state.
-- `Esc close layer`: peel or cancel the current transient layer and preserve underlying state.
-
-Accepted actions update the same persistent pattern instance in web docs and native Lookbook. Typed requests appear in the status line; the fixtures never authenticate, connect, execute, persist, or mutate external state.
-
-## Ownership
-
-TermRock owns composition, focus geometry, responsive layout, and reusable state transitions. The consuming application owns records, commands, persistence, secrets, authorization, and side effects.
-
-## Source
-
-- Pattern recipe: [`crates/termrock/src/patterns/database_workbench.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/patterns/database_workbench.rs)
-- Demo: `database-workbench/basic`

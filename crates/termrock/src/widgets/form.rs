@@ -16,7 +16,6 @@
 //!
 //! Research: shadcn form composition, React Hook Form concepts, Huh, Textual,
 //! desktop settings panels.
-
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -25,17 +24,19 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     interaction::{HitRegion, PageMove, UiIntent},
     layout::{ResponsiveSurface, form_grid_template},
     scroll::max_offset,
-    style::{DesignSystem, Role},
+    style::{DesignSystem, Glyph, Role, VisualState},
     text::{display_cols, take_display_cols},
     widgets::{
-        field_row::{FieldRow, FieldRowValue},
-        label::Description,
+        field_row::FieldRowValue,
+        label::{DescriptionKind, Label, LabelMark, LabelTone},
     },
 };
+
+use super::field_message::paint_field_message;
 
 // ── Field ───────────────────────────────────────────────────────────────────
 
@@ -316,10 +317,8 @@ impl FormLayout {
     }
 
     fn field_row_height(self) -> usize {
-        match self {
-            Self::Compact | Self::Inline => 3,
-            Self::Responsive | Self::Stacked => 4,
-        }
+        let _ = self;
+        3
     }
 
     fn section_header_height(self) -> usize {
@@ -563,11 +562,11 @@ impl<Id: Clone + PartialEq> FormState<Id> {
         key: KeyEvent,
         focused_field: Option<&Id>,
     ) -> FormOutcome<Id> {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return FormOutcome::Ignored;
         }
         // Form-level chords before default form intent
-        if key.kind == KeyEventKind::Press {
+        if key.is_press() {
             if key.modifiers.contains(KeyModifiers::CONTROL)
                 && matches!(
                     key.code,
@@ -836,7 +835,10 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
             );
             content_y = content_y.saturating_add(1);
             for (label, msg) in errors.iter().take(shown_errors) {
-                let line = format!("{} {label}: {msg}", self.system.glyphs.bullet());
+                let line = format!(
+                    "{} {label}: {msg}",
+                    self.system.glyphs.resolve(Glyph::Error).text
+                );
                 let text = crate::text::truncate_cols(
                     &line,
                     usize::from(content_area.width),
@@ -984,15 +986,15 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
         }
 
         if show_scrollbar {
-            let scrollbar = Rect::new(area.right().saturating_sub(1), area.y, 1, area.height);
+            let scrollbar = crate::scroll::gutter_column(area);
             state.scrollbar_region = Some(scrollbar);
-            crate::scroll::paint_scrolled_region(
+            crate::scroll::paint_overflow_scrollbar(
                 buffer,
-                area,
                 scrollbar,
                 content_height,
                 state.viewport_height,
                 u16::try_from(state.offset).unwrap_or(u16::MAX),
+                state.accepts_input,
                 self.system,
             );
         }
@@ -1093,49 +1095,132 @@ fn paint_field<Id: Clone>(
     focused: bool,
     hovered: bool,
 ) {
+    let _ = layout;
+    let theme = system.junie_theme();
     let invalid = field.is_invalid();
-    let label_row = visible_rect(
+    let enabled = field.enabled && !field.read_only;
+    let visual = VisualState {
+        focused: focused && enabled,
+        hovered: hovered && enabled && !focused,
+        disabled: !enabled,
+        error: invalid,
+        editing: false,
+        busy: field.status.is_pending(),
+        ..VisualState::default()
+    };
+
+    if let Some(row) = visible_rect(
         viewport,
         offset,
         content_y,
         1,
         field_area.x,
         field_area.width,
-    );
-    if let Some(row) = label_row {
-        let marker = if field.required {
-            Some("*")
-        } else if field.dirty {
-            Some("·")
-        } else {
-            None
-        };
-        let annotation = if field.read_only {
-            Some("read only")
-        } else if field.show_optional && !field.required {
-            Some("optional")
-        } else {
-            None
-        };
-        let label_cols = if matches!(layout, FormLayout::Inline) && row.width >= 20 {
-            (row.width / 3).max(8)
-        } else {
-            8
-        };
-        let mut field_row = FieldRow::new(system, field.label, field.value.clone())
-            .label_cols(label_cols)
-            .required(field.required)
-            .selected(focused)
-            .hovered(hovered)
-            .enabled(field.enabled && !field.read_only)
-            .invalid(invalid);
-        if let Some(marker) = marker {
-            field_row = field_row.marker(marker);
+    ) {
+        let indent = 2u16.min(row.width);
+        let mut label = Label::<()>::new(field.label, system);
+        if field.required {
+            label = label.mark(LabelMark::Required);
+        } else if field.show_optional {
+            label = label.mark(LabelMark::Optional);
         }
-        if let Some(annotation) = annotation {
-            field_row = field_row.annotation(annotation);
+        if !enabled {
+            label = label.tone(LabelTone::Disabled);
+        } else if focused {
+            label = label.tone(LabelTone::Focused);
         }
-        field_row.paint(row, buffer);
+        let _ = label.paint(
+            Rect::new(
+                row.x.saturating_add(indent),
+                row.y,
+                row.width.saturating_sub(indent),
+                1,
+            ),
+            buffer,
+        );
+    }
+
+    if let Some(row) = visible_rect(
+        viewport,
+        offset,
+        content_y.saturating_add(1),
+        1,
+        field_area.x,
+        field_area.width,
+    ) {
+        let field_style = theme.field_style(visual);
+        let field_bg = field_style.bg.unwrap_or(theme.field);
+        buffer.set_style(row, field_style);
+        buffer.set_stringn(
+            row.x,
+            row.y,
+            system.glyphs.selection_gutter(),
+            1,
+            theme.gutter(visual, field_bg, false),
+        );
+        let bang = u16::from(invalid);
+        let inner = Rect::new(
+            row.x.saturating_add(2),
+            row.y,
+            row.width
+                .saturating_sub(2)
+                .saturating_sub(bang.saturating_mul(2)),
+            1,
+        );
+        let value_style = if !enabled {
+            theme.faint().bg(field_bg)
+        } else {
+            Style::new().fg(theme.text_primary).bg(field_bg)
+        };
+        match &field.value {
+            FieldRowValue::Plain(value) => {
+                let text = take_display_cols(value, usize::from(inner.width));
+                buffer.set_stringn(
+                    inner.x,
+                    inner.y,
+                    &text,
+                    usize::from(inner.width),
+                    value_style,
+                );
+            }
+            FieldRowValue::Masked { .. } => {
+                let mask = Glyph::Mask.resolve().text.repeat(crate::style::MASK_CELLS);
+                buffer.set_stringn(
+                    inner.x,
+                    inner.y,
+                    &mask,
+                    usize::from(inner.width),
+                    value_style,
+                );
+            }
+            FieldRowValue::Composed(line) => {
+                buffer.set_line(inner.x, inner.y, line, inner.width);
+            }
+            FieldRowValue::Unset { hint } => {
+                buffer.set_stringn(
+                    inner.x,
+                    inner.y,
+                    take_display_cols(hint, usize::from(inner.width)),
+                    usize::from(inner.width),
+                    theme.placeholder(visual),
+                );
+            }
+        }
+        if invalid {
+            let bang_x = row.right().saturating_sub(2);
+            if bang_x >= row.x {
+                buffer.set_stringn(
+                    bang_x,
+                    row.y,
+                    Glyph::Error.resolve().text,
+                    1,
+                    Style::new()
+                        .fg(theme.error)
+                        .bg(field_bg)
+                        .add_modifier(Modifier::BOLD),
+                );
+            }
+        }
     }
 
     let supporting_y = content_y.saturating_add(2);
@@ -1147,38 +1232,36 @@ fn paint_field<Id: Clone>(
         field_area.x,
         field_area.width,
     ) {
+        let msg_row = Rect::new(
+            row.x.saturating_add(2.min(row.width)),
+            row.y,
+            row.width.saturating_sub(2.min(row.width)),
+            1,
+        );
         match field.status {
             FieldStatus::Error(msg) => {
-                let _ = Description::error(msg, system)
-                    .for_id(field.id.clone())
-                    .paint(row, buffer);
+                paint_field_message(buffer, msg_row, system, DescriptionKind::Error, msg);
             }
             FieldStatus::Warning(msg) => {
-                let _ = Description::new(msg, system)
-                    .for_id(field.id.clone())
-                    .paint(row, buffer);
+                paint_field_message(buffer, msg_row, system, DescriptionKind::Warning, msg);
             }
             FieldStatus::Pending(msg) => {
-                let line = format!("… {msg}");
-                let text = take_display_cols(&line, usize::from(row.width));
+                let line = format!("{} {msg}", system.glyphs.loading());
+                let text = take_display_cols(&line, usize::from(msg_row.width));
                 buffer.set_stringn(
-                    row.x,
-                    row.y,
+                    msg_row.x,
+                    msg_row.y,
                     &text,
-                    usize::from(row.width),
-                    system.style(Role::TextMuted),
+                    usize::from(msg_row.width),
+                    theme.muted(),
                 );
             }
             FieldStatus::Help(msg) => {
-                let _ = Description::new(msg, system)
-                    .for_id(field.id.clone())
-                    .paint(row, buffer);
+                paint_field_message(buffer, msg_row, system, DescriptionKind::Help, msg);
             }
             FieldStatus::None => {
                 if let Some(desc) = field.description {
-                    let _ = Description::new(desc, system)
-                        .for_id(field.id.clone())
-                        .paint(row, buffer);
+                    paint_field_message(buffer, msg_row, system, DescriptionKind::Help, desc);
                 }
             }
         }
@@ -1250,6 +1333,7 @@ fn visible_rect(
 mod unit_tests {
     use super::*;
     use crate::interaction::default_form_intent;
+    use crate::style::DesignSystem;
     use ratatui_core::layout::Rect;
 
     fn sample_fields() -> [Field<'static, &'static str>; 3] {
@@ -1360,9 +1444,7 @@ mod unit_tests {
         Form::new(&sections, &system)
             .stacked()
             .render(area, &mut buf, &mut state);
-        Form::new(&sections, &system)
-            .inline()
-            .render(area, &mut buf, &mut state);
+        Form::new(&sections, &system).render(area, &mut buf, &mut state);
         assert!(state.content_height() > 0);
     }
 
@@ -1384,8 +1466,63 @@ mod unit_tests {
             .iter()
             .map(|cell| cell.symbol())
             .collect::<String>();
-        assert!(text.contains("●●●●●"));
+        assert!(text.contains(&"●".repeat(8)));
         assert!(text.contains("required"));
+    }
+
+    #[test]
+    fn error_summary_uses_bang_not_bullet() {
+        let system = DesignSystem::junie();
+        let fields = [Field::new("email", "Email", "bad").error("invalid email")];
+        let sections = [Fieldset::new("Security", &fields)];
+        let area = Rect::new(0, 0, 40, 12);
+        let mut buf = Buffer::empty(area);
+        let mut state = FormState::new();
+        Form::new(&sections, &system).render(area, &mut buf, &mut state);
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|cell| cell.symbol().to_string())
+            .collect();
+        assert!(text.contains("! Email: invalid email"), "{text}");
+        assert!(
+            !text.contains("• Email"),
+            "error summary must not use the pending bullet: {text}"
+        );
+    }
+
+    #[test]
+    fn field_anatomy_is_three_rows_with_gutter_and_bang() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let fields = [Field::new("email", "Email", "bad")
+            .required(true)
+            .error("invalid email")];
+        let sections = [Fieldset::new("Security", &fields)];
+        let area = Rect::new(0, 0, 40, 10);
+        let mut buf = Buffer::empty(area);
+        let mut state = FormState::new();
+        Form::new(&sections, &system)
+            .show_error_summary(false)
+            .focused_field(Some(&"email"))
+            .render(area, &mut buf, &mut state);
+        let region = state
+            .field_regions()
+            .iter()
+            .find(|r| r.id == "email")
+            .expect("email field");
+        let value = region.value.expect("value row");
+        assert_eq!(buf[(value.x, value.y)].symbol(), "▎");
+        assert_eq!(buf[(value.x, value.y)].fg, theme.accent);
+        let row: String = (value.x..value.right())
+            .map(|x| buf[(x, value.y)].symbol().to_string())
+            .collect();
+        assert!(row.contains('!'), "{row:?}");
+        let supporting = region.supporting.expect("help row");
+        let msg: String = (supporting.x..supporting.right())
+            .map(|x| buf[(x, supporting.y)].symbol().to_string())
+            .collect();
+        assert!(msg.contains("invalid email"), "{msg:?}");
     }
 
     #[test]
@@ -1415,5 +1552,23 @@ mod unit_tests {
             Some(&"mode"),
         );
         assert_eq!(out, FormOutcome::Ignored);
+    }
+
+    #[test]
+    fn empty_form_is_safe_and_publishes_no_field_regions() {
+        let system = DesignSystem::default();
+        let fieldsets: [Fieldset<'_, &str>; 0] = [];
+        let mut state = FormState::<&str>::new();
+        let area = Rect::new(0, 0, 1, 1);
+        let mut buffer = Buffer::empty(area);
+
+        StatefulWidget::render(
+            Form::new(&fieldsets, &system),
+            area,
+            &mut buffer,
+            &mut state,
+        );
+
+        assert!(state.field_regions().is_empty());
     }
 }

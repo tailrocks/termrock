@@ -19,7 +19,6 @@
 //! **vs Toast.** Transient overlay. Callout/Alert live in layout flow.
 //!
 //! Research: shadcn Alert, Glow quote rails, CLI warnings, system diagnostics.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 #![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{
@@ -41,7 +40,7 @@ use crate::{
     text::{display_cols, take_display_cols},
 };
 
-use super::{Action, Surface, SurfaceFill, SurfaceRecipe};
+use super::{Action, ActionVariant, Surface, SurfaceFill, SurfaceRecipe};
 
 // ── Tone / recipe ───────────────────────────────────────────────────────────
 
@@ -64,9 +63,6 @@ pub enum CalloutTone {
     Neutral,
 }
 
-/// Alert tone (same set as callout).
-pub type AlertTone = CalloutTone;
-
 impl CalloutTone {
     /// Stable id.
     #[must_use]
@@ -85,7 +81,7 @@ impl CalloutTone {
     #[must_use]
     pub const fn role(self) -> Role {
         match self {
-            Self::Info => Role::Info,
+            Self::Info => Role::TextSecondary,
             Self::Success => Role::Success,
             Self::Warning => Role::Warning,
             Self::Danger | Self::Destructive => Role::Danger,
@@ -119,14 +115,10 @@ impl CalloutTone {
         }
     }
 
-    /// Glyph for current mode.
+    /// Glyph for the one vocabulary.
     #[must_use]
-    pub const fn glyph(self, ascii: bool) -> &'static str {
-        if ascii {
-            self.glyph_ascii()
-        } else {
-            self.glyph_unicode()
-        }
+    pub const fn glyph(self) -> &'static str {
+        self.glyph_unicode()
     }
 }
 
@@ -140,9 +132,6 @@ pub enum CalloutRecipe {
     /// Prominent section (bordered, multi-line body/details, source, actions).
     Section,
 }
-
-/// Alert recipe (same compact/section axis).
-pub type AlertRecipe = CalloutRecipe;
 
 impl CalloutRecipe {
     /// Stable id.
@@ -243,9 +232,6 @@ impl CalloutSlots {
     }
 }
 
-/// Alert slots (same geometry model).
-pub type AlertSlots = CalloutSlots;
-
 /// Callout outcomes (dismiss / action when enabled).
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
@@ -333,7 +319,7 @@ struct PaintArgs<'a, Id> {
     actions: &'a [Action<'a, Id>],
     action_cursor: Option<&'a Id>,
     focused: bool,
-    ascii: bool,
+    enabled: bool,
     colorless: bool,
     emphasize: bool,
 }
@@ -351,47 +337,49 @@ fn paint_feedback<Id: Clone + PartialEq>(
 
     let tone = args.content.tone;
     let tone_role = tone.role();
-    let tone_style = if args.colorless {
+    let tone_style = if !args.enabled {
+        args.system.style(Role::TextDisabled)
+    } else if args.colorless {
         args.system.style(Role::Text).add_modifier(Modifier::BOLD)
     } else {
         args.system.style(tone_role)
     };
-    let text_style = args.system.style(Role::Text);
-    let muted = args.system.style(Role::TextMuted);
+    let text_style = args.system.style(if args.enabled {
+        Role::Text
+    } else {
+        Role::TextDisabled
+    });
+    let muted = args.system.style(if args.enabled {
+        Role::TextMuted
+    } else {
+        Role::TextDisabled
+    });
     let strong = args
         .system
-        .style(Role::TextStrong)
+        .style(if args.enabled {
+            Role::TextStrong
+        } else {
+            Role::TextDisabled
+        })
         .add_modifier(Modifier::BOLD);
 
     let section = matches!(args.content.recipe, CalloutRecipe::Section);
     // Tone rides the rail and the glyph; the border is chrome and stays
     // neutral, so a page of callouts is not a page of colored boxes
     // (plans/007).
-    let border_role = if args.focused && args.emphasize {
-        Role::BorderFocused
+    let surface_recipe = if args.enabled && args.focused && args.emphasize {
+        SurfaceRecipe::Focused
     } else {
-        Role::Border
-    };
-    let border_style = if args.colorless {
-        args.system.style(Role::TextMuted)
-    } else {
-        args.system.style(border_role)
+        SurfaceRecipe::Inset
     };
 
     // Optional outer border for section recipe (no full-surface fill).
     let mut inner = area;
     if section && area.width >= 2 && area.height >= 2 {
-        let ascii_system;
-        let surface_system = if args.ascii {
-            ascii_system = args.system.clone().glyphs(GlyphSet::Ascii);
-            &ascii_system
-        } else {
-            args.system
-        };
+        let surface_system = args.system;
         inner = Surface::new(surface_system)
-            .recipe(SurfaceRecipe::Inset)
+            .recipe(surface_recipe)
             .bordered(true)
-            .border_style(border_style)
             .fill(SurfaceFill::Transparent)
             .content_inset()
             .paint(area, buffer);
@@ -404,7 +392,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
     // The rail is one cell plus the density's own gap (plans/022 Step 6).
     let gutter_w = 1u16;
     slots.gutter = Rect::new(inner.x, inner.y, gutter_w.min(inner.width), inner.height);
-    let rail = if args.ascii { "|" } else { "│" };
+    let rail = "│";
     for y in inner.y..inner.bottom() {
         buffer.set_stringn(inner.x, y, rail, 1, tone_style);
     }
@@ -437,7 +425,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
     let _ = rows_needed;
 
     let mut y = inner.y;
-    let glyph = tone.glyph(args.ascii);
+    let glyph = tone.glyph();
     let glyph_w = display_cols(glyph) as u16;
 
     // Title line: glyph + title (+ dismiss on far right for compact)
@@ -445,7 +433,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
     buffer.set_stringn(content_x, y, glyph, usize::from(content_w), tone_style);
 
     let title_x = content_x.saturating_add(glyph_w.saturating_add(1));
-    let dismiss_label = if args.ascii { "[x]" } else { "×" };
+    let dismiss_label = "×";
     let dismiss_w = if args.content.dismissible {
         display_cols(dismiss_label) as u16
     } else {
@@ -514,11 +502,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
     if let Some(src) = args.content.source {
         if y < inner.bottom() {
             slots.source = Rect::new(content_x, y, content_w, 1);
-            let line = if args.ascii {
-                format!("-- {src}")
-            } else {
-                format!("— {src}")
-            };
+            let line = format!("— {src}");
             buffer.set_stringn(
                 content_x,
                 y,
@@ -545,7 +529,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
                 format!(" {} ", a.label)
             };
             let w = display_cols(&label) as u16;
-            let style = if !a.enabled {
+            let style = if !args.enabled || !a.enabled {
                 args.system.style(Role::TextDisabled)
             } else if active {
                 args.system
@@ -566,7 +550,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
         }
         if args.content.dismissible && args.actions.is_empty() {
             // hint when only dismiss
-            let hint = if args.ascii { "esc" } else { "esc" };
+            let hint = "esc";
             buffer.set_stringn(content_x, y, hint, usize::from(content_w), muted);
         }
     }
@@ -589,12 +573,11 @@ pub struct Callout<'a, Id = ()> {
     actions: &'a [Action<'a, Id>],
     dismissible: bool,
     show_details: bool,
-    ascii: bool,
     colorless: bool,
 }
 
 impl<'a> Callout<'a, ()> {
-    /// Title + system (legacy constructor — Info tone, Compact recipe).
+    /// Title + design system (Info tone, Compact recipe).
     #[must_use]
     pub const fn new(title: &'a str, system: &'a DesignSystem) -> Self {
         Self {
@@ -608,21 +591,13 @@ impl<'a> Callout<'a, ()> {
             actions: &[],
             dismissible: false,
             show_details: false,
-            ascii: false,
             colorless: false,
         }
     }
 }
 
 impl<'a, Id> Callout<'a, Id> {
-    /// Body / description line (legacy name).
-    #[must_use]
-    pub const fn body(mut self, body: &'a str) -> Self {
-        self.description = Some(body);
-        self
-    }
-
-    /// Description (same as body).
+    /// Description line.
     #[must_use]
     pub const fn description(mut self, text: &'a str) -> Self {
         self.description = Some(text);
@@ -694,13 +669,7 @@ impl<'a, Id> Callout<'a, Id> {
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -745,7 +714,7 @@ impl<'a, Id> Callout<'a, Id> {
                 actions: self.actions,
                 action_cursor: None,
                 focused: false,
-                ascii: self.ascii,
+                enabled: true,
                 colorless: self.colorless,
                 emphasize: false,
             },
@@ -816,7 +785,7 @@ pub struct AlertState<Id = ()> {
     /// Enabled.
     enabled: bool,
     /// Slots.
-    slots: AlertSlots,
+    slots: CalloutSlots,
     /// Action hit regions.
     action_regions: Vec<HitRegion<Id>>,
     /// Dismiss hit.
@@ -841,7 +810,7 @@ impl<Id> AlertState<Id> {
             action_cursor: None,
             accepts_input: true,
             enabled: true,
-            slots: AlertSlots::empty(),
+            slots: CalloutSlots::empty(),
             action_regions: Vec::new(),
             dismiss_region: None,
         }
@@ -877,7 +846,7 @@ impl<Id> AlertState<Id> {
 
     /// Slots.
     #[must_use]
-    pub const fn slots(&self) -> AlertSlots {
+    pub const fn slots(&self) -> CalloutSlots {
         self.slots
     }
 
@@ -931,25 +900,26 @@ impl<Id: Clone + PartialEq> AlertState<Id> {
         if !self.visible || !self.enabled || !self.accepts_input || !self.focused {
             return AlertOutcome::Ignored;
         }
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return AlertOutcome::Ignored;
         }
-        let is_press = matches!(key.kind, KeyEventKind::Press | KeyEventKind::Repeat);
+        let is_insert = key.is_insert();
 
-        if matches!(key.code, KeyCode::Esc) && is_press && key.modifiers.is_empty() && dismissible {
+        if matches!(key.code, KeyCode::Esc) && is_insert && key.modifiers.is_empty() && dismissible
+        {
             self.dismiss();
             return AlertOutcome::Dismissed;
         }
 
         if !actions.is_empty() {
             match key.code {
-                KeyCode::Left | KeyCode::Char('h' | 'H') if is_press => {
+                KeyCode::Left | KeyCode::Char('h' | 'H') if is_insert => {
                     return self.move_action(actions, -1);
                 }
-                KeyCode::Right | KeyCode::Char('l' | 'L') if is_press => {
+                KeyCode::Right | KeyCode::Char('l' | 'L') if is_insert => {
                     return self.move_action(actions, 1);
                 }
-                KeyCode::Enter if is_press && key.modifiers.is_empty() => {
+                KeyCode::Enter if is_insert && key.modifiers.is_empty() => {
                     if let Some(id) = self.action_cursor.clone() {
                         if actions.iter().any(|a| a.id == id && a.enabled) {
                             return AlertOutcome::ActionActivated { id };
@@ -957,7 +927,7 @@ impl<Id: Clone + PartialEq> AlertState<Id> {
                     }
                     return AlertOutcome::Acknowledged;
                 }
-                KeyCode::Char('d' | 'D') if is_press && key.modifiers.is_empty() => {
+                KeyCode::Char('d' | 'D') if is_insert && key.modifiers.is_empty() => {
                     self.details_open = !self.details_open;
                     return AlertOutcome::DetailsToggled {
                         open: self.details_open,
@@ -965,7 +935,7 @@ impl<Id: Clone + PartialEq> AlertState<Id> {
                 }
                 _ => {}
             }
-        } else if matches!(key.code, KeyCode::Enter) && is_press && key.modifiers.is_empty() {
+        } else if matches!(key.code, KeyCode::Enter) && is_insert && key.modifiers.is_empty() {
             return AlertOutcome::Acknowledged;
         }
 
@@ -1096,12 +1066,11 @@ pub struct Alert<'a, Id = ()> {
     description: Option<&'a str>,
     details: Option<&'a str>,
     source: Option<&'a str>,
-    tone: AlertTone,
-    recipe: AlertRecipe,
+    tone: CalloutTone,
+    recipe: CalloutRecipe,
     system: &'a DesignSystem,
     actions: &'a [Action<'a, Id>],
     dismissible: bool,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -1114,12 +1083,11 @@ impl<'a, Id> Alert<'a, Id> {
             description: None,
             details: None,
             source: None,
-            tone: AlertTone::Warning,
-            recipe: AlertRecipe::Section,
+            tone: CalloutTone::Warning,
+            recipe: CalloutRecipe::Section,
             system,
             actions: &[],
             dismissible: true,
-            ascii: false,
             colorless: false,
         }
     }
@@ -1127,13 +1095,6 @@ impl<'a, Id> Alert<'a, Id> {
     /// Description.
     #[must_use]
     pub const fn description(mut self, text: &'a str) -> Self {
-        self.description = Some(text);
-        self
-    }
-
-    /// Body alias.
-    #[must_use]
-    pub const fn body(mut self, text: &'a str) -> Self {
         self.description = Some(text);
         self
     }
@@ -1154,14 +1115,14 @@ impl<'a, Id> Alert<'a, Id> {
 
     /// Tone.
     #[must_use]
-    pub const fn tone(mut self, tone: AlertTone) -> Self {
+    pub const fn tone(mut self, tone: CalloutTone) -> Self {
         self.tone = tone;
         self
     }
 
     /// Recipe.
     #[must_use]
-    pub const fn recipe(mut self, recipe: AlertRecipe) -> Self {
+    pub const fn recipe(mut self, recipe: CalloutRecipe) -> Self {
         self.recipe = recipe;
         self
     }
@@ -1169,14 +1130,14 @@ impl<'a, Id> Alert<'a, Id> {
     /// Compact inline alert.
     #[must_use]
     pub const fn compact(mut self) -> Self {
-        self.recipe = AlertRecipe::Compact;
+        self.recipe = CalloutRecipe::Compact;
         self
     }
 
     /// Banner-style section (default).
     #[must_use]
     pub const fn banner(mut self) -> Self {
-        self.recipe = AlertRecipe::Section;
+        self.recipe = CalloutRecipe::Section;
         self
     }
 
@@ -1196,13 +1157,7 @@ impl<'a, Id> Alert<'a, Id> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -1230,7 +1185,7 @@ impl<'a, Id> Alert<'a, Id> {
         Id: Clone + PartialEq,
     {
         state.region = None;
-        state.slots = AlertSlots::empty();
+        state.slots = CalloutSlots::empty();
         state.action_regions.clear();
         state.dismiss_region = None;
         if area.is_empty() || !state.visible {
@@ -1252,7 +1207,7 @@ impl<'a, Id> Alert<'a, Id> {
                 actions: self.actions,
                 action_cursor: state.action_cursor.as_ref(),
                 focused: state.focused,
-                ascii: self.ascii,
+                enabled: state.enabled,
                 colorless: self.colorless,
                 emphasize: true,
             },
@@ -1284,14 +1239,6 @@ impl<'a, Id> Alert<'a, Id> {
         }
     }
 
-    /// Legacy render entry.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut AlertState<Id>)
-    where
-        Id: Clone + PartialEq,
-    {
-        self.paint(area, buffer, state);
-    }
-
     /// Semantic registration.
     pub fn register_semantic<Sid, Act>(
         &self,
@@ -1319,7 +1266,11 @@ impl<'a, Id> Alert<'a, Id> {
                 .role(SemanticRole::Status)
                 .label("alert")
                 .description(desc)
-                .focusable(state.focused || self.dismissible || !self.actions.is_empty())
+                .focusable(
+                    state.enabled
+                        && (state.focused || self.dismissible || !self.actions.is_empty()),
+                )
+                .disabled(!state.enabled)
                 .state(SemanticState {
                     selected: state.focused,
                     expanded: state.details_open,
@@ -1376,7 +1327,7 @@ mod tests {
         let area = Rect::new(0, 0, 40, 4);
         let mut buf = Buffer::empty(area);
         let slots = Callout::new("Heads up", &system)
-            .body("Non-color risk glyph present.")
+            .description("Non-color risk glyph present.")
             .tone(CalloutTone::Warning)
             .paint(area, &mut buf);
         assert_eq!(slots.gutter.width, 1);
@@ -1396,32 +1347,12 @@ mod tests {
         let area = Rect::new(0, 0, 36, 6);
         let mut buf = Buffer::empty(area);
         let slots = Callout::new("Notice", &system)
-            .body("body")
+            .description("body")
             .section()
             .source("diag")
             .paint(area, &mut buf);
         assert!(!slots.root.is_empty());
-        assert_eq!(buf[(0, 0)].symbol(), "\u{250c}");
-    }
-
-    #[test]
-    fn callout_ascii_colorless() {
-        let system = DesignSystem::default();
-        let area = Rect::new(0, 0, 32, 3);
-        let mut buf = Buffer::empty(area);
-        let _ = Callout::new("Err", &system)
-            .tone(CalloutTone::Danger)
-            .ascii(true)
-            .colorless(true)
-            .body("failed")
-            .paint(area, &mut buf);
-        assert_eq!(buf[(0, 0)].symbol(), "|");
-        let text: String = buf
-            .content()
-            .iter()
-            .map(|c| c.symbol().to_string())
-            .collect();
-        assert!(text.contains("x") || text.contains("Err"), "{text}");
+        assert_eq!(buf[(0, 0)].symbol(), "\u{256d}"); // Rounded is the canonical border
     }
 
     #[test]
@@ -1462,7 +1393,7 @@ mod tests {
             id: "retry",
             label: "Retry",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Primary,
         }];
         state.action_cursor = Some("retry");
         assert!(matches!(
@@ -1483,8 +1414,8 @@ mod tests {
         let area = Rect::new(0, 0, 48, 8);
         let mut buf = Buffer::empty(area);
         Alert::new("Deploy failed", &system)
-            .tone(AlertTone::Danger)
-            .body("Rollout aborted at step 3.")
+            .tone(CalloutTone::Danger)
+            .description("Rollout aborted at step 3.")
             .details("timeout waiting for health check")
             .source("pipeline #42")
             .banner()
@@ -1505,8 +1436,11 @@ mod tests {
     #[test]
     fn compact_vs_section_height() {
         let system = DesignSystem::default();
-        let c = Callout::new("T", &system).body("b").compact();
-        let s = Callout::new("T", &system).body("b").section().source("x");
+        let c = Callout::new("T", &system).description("b").compact();
+        let s = Callout::new("T", &system)
+            .description("b")
+            .section()
+            .source("x");
         assert!(s.measure_height(40) >= c.measure_height(40));
     }
 
@@ -1542,6 +1476,58 @@ mod tests {
     }
 
     #[test]
+    fn disabled_alert_is_noninteractive_and_semantically_disabled() {
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 32, 4);
+        let mut state = AlertState::<()>::new();
+        state.set_focused(true);
+        let alert = Alert::new("Unavailable", &system).dismissible(true);
+        let mut buffer = Buffer::empty(area);
+        alert.paint(area, &mut buffer, &mut state);
+
+        let dismiss = state.dismiss_region.expect("painted dismiss region");
+        assert_eq!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: ratatui_core::layout::Position::new(dismiss.x, dismiss.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &[],
+                true,
+            ),
+            AlertOutcome::Dismissed
+        );
+        state.show();
+        state.set_focused(true);
+        state.set_enabled(false);
+        alert.paint(area, &mut buffer, &mut state);
+
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            AlertOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: ratatui_core::layout::Position::new(dismiss.x, dismiss.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &[],
+                true,
+            ),
+            AlertOutcome::Ignored
+        );
+
+        let mut scene = SemanticScene::<&str, ()>::default();
+        alert.register_semantic(&mut scene, "alert", area, &state);
+        let node = scene.nodes().first().expect("disabled alert semantic node");
+        assert!(node.disabled);
+        assert!(!node.focusable);
+    }
+
+    #[test]
     fn fuzz_alert_keys() {
         let mut state = AlertState::<&str>::new();
         state.set_focused(true);
@@ -1550,13 +1536,13 @@ mod tests {
                 id: "a",
                 label: "A",
                 enabled: true,
-                style: None,
+                variant: ActionVariant::Secondary,
             },
             Action {
                 id: "b",
                 label: "B",
                 enabled: true,
-                style: None,
+                variant: ActionVariant::Secondary,
             },
         ];
         let keys = [
@@ -1591,12 +1577,12 @@ mod tests {
             terminal
                 .draw(|f| {
                     Alert::new("Warning", &system)
-                        .body("check disk")
+                        .description("check disk")
                         .source("host-a")
                         .paint(f.area(), f.buffer_mut(), &mut state);
                     let _ = Callout::new("Info", &system)
                         .tone(CalloutTone::Info)
-                        .body("ok")
+                        .description("ok")
                         .paint(Rect::new(0, 8, 60, 3), f.buffer_mut());
                 })
                 .unwrap();
@@ -1615,8 +1601,8 @@ mod tests {
             terminal
                 .draw(|f| {
                     Alert::new("Saved", &system)
-                        .tone(AlertTone::Success)
-                        .body("checkpoint written")
+                        .tone(CalloutTone::Success)
+                        .description("checkpoint written")
                         .compact()
                         .paint(f.area(), f.buffer_mut(), &mut state);
                 })
@@ -1650,7 +1636,7 @@ mod tests {
             let mut buf = Buffer::empty(area);
             let _ = Callout::new(tone.id(), &system)
                 .tone(tone)
-                .body("msg")
+                .description("msg")
                 .paint(area, &mut buf);
         }
     }

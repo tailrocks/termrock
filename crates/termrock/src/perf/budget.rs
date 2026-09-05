@@ -5,7 +5,6 @@
 //!
 //! Budgets are **debug-profile tolerant** (see existing `tree_hot_path` 250 ms /
 //! 100 samples). Release numbers are informational until measured on CI class.
-
 use std::time::Duration;
 
 /// Workload class for a surface.

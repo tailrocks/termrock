@@ -15,12 +15,11 @@
 //! host resolves bracketed paste / OSC 52 / system clipboard.
 //!
 //! Research: prompt-toolkit, Reedline, Textual Input, terminal line editors.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::Modifier,
+    style::{Modifier, Style},
     widgets::StatefulWidget,
 };
 use unicode_segmentation::UnicodeSegmentation;
@@ -33,8 +32,8 @@ use crate::{
     interaction::{
         EventResult, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
     },
-    style::{ControlState, DesignSystem, Role},
-    text::{display_cols, take_display_cols},
+    style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, MASK_CELLS, VisualState},
+    text::{display_cols, take_display_cols, truncate_cols},
 };
 
 use super::edit_core;
@@ -86,6 +85,10 @@ pub enum EditAction {
     },
     /// Select entire value.
     SelectAll,
+    /// Delete from start of line to cursor (Ctrl+U).
+    KillToStart,
+    /// Delete from cursor to end of line (Ctrl+K).
+    KillToEnd,
     /// Clear value.
     Clear,
     /// Undo.
@@ -208,6 +211,12 @@ pub struct TextInputState {
     parts: Option<TextInputParts>,
     #[cfg_attr(feature = "serde", serde(default))]
     focused: bool,
+    #[cfg_attr(feature = "serde", serde(default))]
+    editing: bool,
+    #[cfg_attr(feature = "serde", serde(default))]
+    hovered: bool,
+    #[cfg_attr(feature = "serde", serde(skip))]
+    snapshot: Option<String>,
     #[cfg_attr(feature = "serde", serde(skip))]
     selecting_with_mouse: bool,
 }
@@ -224,7 +233,8 @@ impl Default for TextInputState {
 }
 
 impl TextInputState {
-    /// Creates text-input state with the cursor at the end of the value.
+    /// Creates idle (not editing) text-input state with the cursor at the end
+    /// of the value. Junie `TextInput::new` starts `editing: false`.
     #[must_use]
     pub fn new(value: impl Into<String>) -> Self {
         let value = value.into();
@@ -244,6 +254,9 @@ impl TextInputState {
             redo: Vec::new(),
             parts: None,
             focused: false,
+            editing: false,
+            hovered: false,
+            snapshot: None,
             selecting_with_mouse: false,
         }
     }
@@ -269,6 +282,35 @@ impl TextInputState {
         self
     }
 
+    /// Live query, search, or draft surfaces that type immediately.
+    ///
+    /// Idle fields stay on [`Self::new`] (`editing: false`).
+    #[must_use]
+    pub fn with_editing(mut self) -> Self {
+        self.set_editing(true);
+        self
+    }
+
+    /// New value, keep editing/focus/enabled/read_only/allow_empty.
+    #[must_use]
+    pub(crate) fn reseed(&self, text: impl Into<String>) -> Self {
+        let mut next = Self::new(text).with_allow_empty(self.allow_empty);
+        if let Some(max) = self.max_graphemes {
+            next = next.with_max_graphemes(max);
+        }
+        if !self.forbidden.is_empty() {
+            next = next.with_forbidden(self.forbidden.clone());
+        }
+        if self.editing {
+            next.set_editing(true);
+        }
+        next.set_focused(self.focused);
+        next.set_enabled(self.enabled);
+        next.set_read_only(self.read_only);
+        next.set_loading(self.loading);
+        next
+    }
+
     /// Enabled.
     pub const fn set_enabled(&mut self, on: bool) {
         self.enabled = on;
@@ -287,6 +329,70 @@ impl TextInputState {
     /// Focus flag for paint.
     pub const fn set_focused(&mut self, on: bool) {
         self.focused = on;
+    }
+
+    /// Pointer hover (lifts the well only while not editing).
+    pub const fn set_hovered(&mut self, on: bool) {
+        self.hovered = on;
+    }
+
+    /// Whether the field owns the keyboard.
+    #[must_use]
+    pub const fn is_focused(&self) -> bool {
+        self.focused
+    }
+
+    /// Whether the pointer is over the field.
+    #[must_use]
+    pub const fn is_hovered(&self) -> bool {
+        self.hovered
+    }
+
+    /// Whether the field is in the editing session.
+    #[must_use]
+    pub const fn is_editing(&self) -> bool {
+        self.editing
+    }
+
+    /// Enter or leave the editing session without committing.
+    pub fn set_editing(&mut self, on: bool) {
+        if on {
+            self.begin_edit();
+        } else {
+            self.editing = false;
+            self.snapshot = None;
+        }
+    }
+
+    /// Start an editing session (snapshot for Esc).
+    pub fn begin_edit(&mut self) {
+        if self.editing {
+            return;
+        }
+        if !self.can_edit() {
+            return;
+        }
+        self.editing = true;
+        self.snapshot = Some(self.value.clone());
+        self.anchor = None;
+    }
+
+    /// End the editing session, keeping the current value.
+    pub fn commit(&mut self) {
+        self.editing = false;
+        self.snapshot = None;
+        self.anchor = None;
+    }
+
+    /// End the editing session and restore the snapshot.
+    pub fn cancel_edit(&mut self) {
+        if let Some(snap) = self.snapshot.take() {
+            self.value = snap;
+            self.cursor = self.value.len();
+            self.anchor = None;
+            self.viewport = 0;
+        }
+        self.editing = false;
     }
 
     /// Whether edits are allowed.
@@ -474,6 +580,8 @@ impl TextInputState {
                 | EditAction::Backspace
                 | EditAction::Delete
                 | EditAction::Clear
+                | EditAction::KillToStart
+                | EditAction::KillToEnd
                 | EditAction::Undo
                 | EditAction::Redo
         );
@@ -564,6 +672,23 @@ impl TextInputState {
                     self.cursor = self.value.len();
                 }
             }
+            EditAction::KillToStart => {
+                if self.delete_selection() {
+                    // ok
+                } else if self.cursor > 0 {
+                    self.value.drain(..self.cursor);
+                    self.cursor = 0;
+                    self.anchor = None;
+                }
+            }
+            EditAction::KillToEnd => {
+                if self.delete_selection() {
+                    // ok
+                } else if self.cursor < self.value.len() {
+                    self.value.drain(self.cursor..);
+                    self.anchor = None;
+                }
+            }
             EditAction::Clear => {
                 if self.value.is_empty() {
                     let _ = self.undo.pop();
@@ -616,7 +741,7 @@ impl TextInputState {
 
     /// Default key adapter (Emacs-style chords). Prefer keymaps → intents in hosts.
     pub fn handle_key(&mut self, key: KeyEvent) -> TextInputOutcome {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return TextInputOutcome::Ignored;
         }
         if !self.enabled {
@@ -625,6 +750,14 @@ impl TextInputState {
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let alt = key.modifiers.contains(KeyModifiers::ALT);
         let shift = key.modifiers.contains(KeyModifiers::SHIFT);
+
+        if !self.editing {
+            if matches!(key.code, KeyCode::Enter) && !ctrl && !alt && self.can_edit() {
+                self.begin_edit();
+                return TextInputOutcome::Changed;
+            }
+            return TextInputOutcome::Ignored;
+        }
 
         // Clipboard chords → host
         if ctrl && !alt {
@@ -650,7 +783,19 @@ impl TextInputState {
                 KeyCode::Char('v' | 'V') if self.can_edit() => {
                     return TextInputOutcome::ClipboardPasteRequest;
                 }
-                KeyCode::Char('a' | 'A') => return self.edit(EditAction::SelectAll),
+                KeyCode::Char('a' | 'A') => {
+                    return self.edit(EditAction::Home { select: false });
+                }
+                KeyCode::Char('e' | 'E') => {
+                    return self.edit(EditAction::End { select: false });
+                }
+                KeyCode::Char('u' | 'U') if self.can_edit() => {
+                    return self.edit(EditAction::KillToStart);
+                }
+                KeyCode::Char('k' | 'K') if self.can_edit() => {
+                    return self.edit(EditAction::KillToEnd);
+                }
+                KeyCode::Char('l' | 'L') => return self.edit(EditAction::SelectAll),
                 KeyCode::Char('z' | 'Z') if !shift && self.can_edit() => {
                     return self.edit(EditAction::Undo);
                 }
@@ -661,7 +806,37 @@ impl TextInputState {
                     return self.edit(EditAction::Redo);
                 }
                 KeyCode::Char('w' | 'W') if self.can_edit() => {
-                    // kill word backward
+                    self.push_undo();
+                    if self.delete_selection() {
+                        return TextInputOutcome::Changed;
+                    }
+                    let start = edit_core::previous_word_boundary(&self.value, self.cursor);
+                    if start < self.cursor {
+                        self.value.drain(start..self.cursor);
+                        self.cursor = start;
+                        self.anchor = None;
+                        return TextInputOutcome::Changed;
+                    }
+                    let _ = self.undo.pop();
+                    return TextInputOutcome::Ignored;
+                }
+                KeyCode::Home => return self.edit(EditAction::Home { select: false }),
+                KeyCode::End => return self.edit(EditAction::End { select: false }),
+                _ => {}
+            }
+        }
+
+        if alt && !ctrl {
+            match key.code {
+                KeyCode::Char('b' | 'B') => {
+                    return self.edit(EditAction::WordLeft { select: shift });
+                }
+                KeyCode::Char('f' | 'F') => {
+                    return self.edit(EditAction::WordRight { select: shift });
+                }
+                KeyCode::Left => return self.edit(EditAction::WordLeft { select: shift }),
+                KeyCode::Right => return self.edit(EditAction::WordRight { select: shift }),
+                KeyCode::Backspace if self.can_edit() => {
                     self.push_undo();
                     let start = edit_core::previous_word_boundary(&self.value, self.cursor);
                     if start < self.cursor {
@@ -678,11 +853,23 @@ impl TextInputState {
         }
 
         match key.code {
-            KeyCode::Enter => self.submit(),
-            KeyCode::Char('m' | 'M') if ctrl => self.submit(),
-            KeyCode::Esc => TextInputOutcome::Cancelled,
-            KeyCode::Backspace if ctrl => {
-                // word backspace
+            KeyCode::Enter => {
+                self.commit();
+                self.submit()
+            }
+            KeyCode::Tab | KeyCode::BackTab => {
+                self.commit();
+                self.submit()
+            }
+            KeyCode::Char('m' | 'M') if ctrl => {
+                self.commit();
+                self.submit()
+            }
+            KeyCode::Esc => {
+                self.cancel_edit();
+                TextInputOutcome::Cancelled
+            }
+            KeyCode::Backspace if ctrl || alt => {
                 if !self.can_edit() {
                     return TextInputOutcome::Ignored;
                 }
@@ -723,7 +910,10 @@ impl TextInputState {
         }
         match intent {
             UiIntent::Submit | UiIntent::Activate => self.submit(),
-            UiIntent::Cancel | UiIntent::Close => TextInputOutcome::Cancelled,
+            UiIntent::Cancel | UiIntent::Close => {
+                self.cancel_edit();
+                TextInputOutcome::Cancelled
+            }
             UiIntent::Move(crate::interaction::NavigationMove::Previous)
             | UiIntent::Move(crate::interaction::NavigationMove::Left) => {
                 self.edit(EditAction::MoveLeft { select: false })
@@ -898,7 +1088,9 @@ pub struct TextInputParts {
 pub struct TextInput<'a> {
     label: &'a str,
     required: bool,
+    show_optional: bool,
     placeholder: &'a str,
+    help: &'a str,
     validation: Validation<'a>,
     system: &'a DesignSystem,
     prefix: Option<&'a str>,
@@ -915,14 +1107,16 @@ impl<'a> TextInput<'a> {
         Self {
             label,
             required: false,
+            show_optional: false,
             placeholder: "",
+            help: "",
             validation: Validation::Valid,
             system,
             prefix: None,
             suffix: None,
             secret: false,
             show_clear: false,
-            secret_mask: '*',
+            secret_mask: '●',
         }
     }
 
@@ -940,6 +1134,20 @@ impl<'a> TextInput<'a> {
     #[must_use]
     pub const fn placeholder(mut self, placeholder: &'a str) -> Self {
         self.placeholder = placeholder;
+        self
+    }
+
+    /// Helper copy on the third row (replaced by the error message when invalid).
+    #[must_use]
+    pub const fn help(mut self, help: &'a str) -> Self {
+        self.help = help;
+        self
+    }
+
+    /// Paint the `optional` suffix when the field is not required and the word fits.
+    #[must_use]
+    pub const fn optional(mut self, on: bool) -> Self {
+        self.show_optional = on;
         self
     }
 
@@ -995,11 +1203,8 @@ impl<'a> TextInput<'a> {
         self.label
     }
 
-    fn masked_display(&self, value: &str) -> String {
-        if !self.secret {
-            return value.to_owned();
-        }
-        value.graphemes(true).map(|_| self.secret_mask).collect()
+    fn masked_display(&self) -> String {
+        self.secret_mask.to_string().repeat(MASK_CELLS)
     }
 
     /// Paint (preferred over StatefulWidget when parts needed).
@@ -1021,33 +1226,41 @@ impl<'a> TextInput<'a> {
             };
         }
 
-        let invalid = !state.is_valid() || matches!(self.validation, Validation::Invalid(_));
+        let theme = self.system.junie_theme();
+        let invalid = matches!(self.validation, Validation::Invalid(_));
+        let visual = VisualState {
+            focused: state.focused && state.enabled,
+            hovered: state.hovered && state.enabled && !state.editing,
+            disabled: !state.enabled,
+            error: invalid,
+            editing: state.editing && state.focused && state.enabled,
+            busy: state.loading,
+            ..VisualState::default()
+        };
+        let field_style = theme.field_style(visual);
+        let field_bg = field_style.bg.unwrap_or(theme.field);
+
         let mut y = area.y;
-        // Optional label row when height >= 2
         if area.height >= 2 && !self.label.is_empty() {
-            let mut style = self.system.style(if invalid {
-                Role::Danger
-            } else if state.focused {
-                Role::Focus
-            } else {
-                Role::Text
-            });
-            if state.focused {
-                style = style.add_modifier(Modifier::BOLD);
-            }
-            let text = take_display_cols(self.label, usize::from(area.width));
-            buffer.set_stringn(area.x, y, &text, usize::from(area.width), style);
+            let mut label = crate::widgets::label::Label::<()>::new(self.label, self.system);
             if self.required {
-                // A form that only reveals a requirement after you submit is a
-                // form that wasted your time: say it beside the name.
-                let mark_x = area
-                    .x
-                    .saturating_add(u16::try_from(display_cols(&text)).unwrap_or(0))
-                    .saturating_add(1);
-                if mark_x < area.right() {
-                    buffer.set_stringn(mark_x, y, "*", 1, self.system.style(Role::Danger));
-                }
+                label = label.required();
+            } else if self.show_optional {
+                label = label.optional();
             }
+            if !state.enabled {
+                label = label.disabled();
+            } else if state.focused {
+                label = label.focused();
+            }
+            let indent = 2u16.min(area.width);
+            let label_area = Rect::new(
+                area.x.saturating_add(indent),
+                y,
+                area.width.saturating_sub(indent),
+                1,
+            );
+            let _ = label.paint(label_area, buffer);
             y = y.saturating_add(1);
         }
 
@@ -1057,20 +1270,31 @@ impl<'a> TextInput<'a> {
             area.width,
             1,
         );
-        let mut x = field_row.x;
+        buffer.set_style(field_row, field_style);
+        let gutter = theme.gutter(visual, field_bg, false);
+        buffer.set_stringn(
+            field_row.x,
+            field_row.y,
+            self.system.glyphs.selection_gutter(),
+            1,
+            gutter,
+        );
+
+        let mut x = field_row.x.saturating_add(2);
         let mut prefix_rect = None;
         let mut suffix_rect = None;
         let mut clear_rect = None;
 
         if let Some(p) = self.prefix {
             if !p.is_empty() {
-                let pw = display_cols(p).min(usize::from(field_row.width)) as u16;
+                let pw =
+                    display_cols(p).min(usize::from(field_row.right().saturating_sub(x))) as u16;
                 buffer.set_stringn(
                     x,
                     field_row.y,
                     take_display_cols(p, usize::from(pw)),
                     usize::from(pw),
-                    self.system.style(Role::TextMuted),
+                    theme.placeholder(visual),
                 );
                 prefix_rect = Some(Rect::new(x, field_row.y, pw, 1));
                 x = x.saturating_add(pw).saturating_add(1);
@@ -1078,15 +1302,20 @@ impl<'a> TextInput<'a> {
         }
 
         let mut right = field_row.right();
+        if invalid && right > x.saturating_add(2) {
+            right = right.saturating_sub(2);
+        }
         let show_clear = self.show_clear
             && state.focused
             && state.can_edit()
             && !state.value.is_empty()
             && right > x.saturating_add(2);
-        if show_clear {
+        if self.show_clear && right > x.saturating_add(2) {
             let cw = 1u16;
             right = right.saturating_sub(cw.saturating_add(1));
-            clear_rect = Some(Rect::new(right.saturating_add(1), field_row.y, cw, 1));
+            if show_clear {
+                clear_rect = Some(Rect::new(right.saturating_add(1), field_row.y, cw, 1));
+            }
         }
         if let Some(s) = self.suffix {
             if !s.is_empty() && right > x.saturating_add(2) {
@@ -1096,61 +1325,34 @@ impl<'a> TextInput<'a> {
             }
         }
 
-        // One field-chrome authority for the whole input family: the well,
-        // the value tone, the cursor and the focus cue all come from
-        // `input_recipe` (plans/008 Step 2).
-        let control_state = if !state.enabled {
-            ControlState::Disabled
-        } else if state.focused {
-            ControlState::Focused
-        } else if state.loading {
-            ControlState::Loading
-        } else {
-            ControlState::Default
-        };
-        let recipe = self.system.input_recipe(control_state, invalid);
-        // The prompt column is reserved in every state, so a value does not
-        // shift sideways the moment focus arrives.
-        let prompt_rect = Rect::new(x, field_row.y, 1.min(right.saturating_sub(x)), 1);
-        let x = x.saturating_add(1).min(right);
         let field = Rect::new(x, field_row.y, right.saturating_sub(x).max(1), 1);
-        let well = Rect::new(
-            prompt_rect.x,
-            field_row.y,
-            field.right().saturating_sub(prompt_rect.x),
-            1,
-        );
-        buffer.set_style(well, recipe.fill);
-        if let Some((glyph, style)) = recipe.prompt {
-            buffer.set_stringn(prompt_rect.x, prompt_rect.y, glyph, 1, style);
-        }
-        let input_style = if state.loading {
-            self.system.style(Role::TextMuted)
-        } else {
-            recipe.value
-        };
-
         let field_w = usize::from(field.width);
         state.reveal_cursor(field_w);
 
-        let display_src = if state.value.is_empty() {
-            self.placeholder
+        let empty = state.value.is_empty();
+        let painted = if empty {
+            truncate_cols(self.placeholder, field_w, self.system.glyphs.ellipsis()).into_owned()
+        } else if self.secret {
+            take_display_cols(&self.masked_display(), field_w)
         } else {
-            &state.value[state.viewport..]
+            take_display_cols(&state.value[state.viewport..], field_w)
         };
-        let painted = if state.value.is_empty() {
-            take_display_cols(display_src, field_w)
+        let mut text_style = if empty {
+            theme.placeholder(visual)
+        } else if !state.enabled {
+            theme.faint().bg(field_bg)
         } else {
-            take_display_cols(&self.masked_display(display_src), field_w)
+            Style::new().fg(theme.text_primary).bg(field_bg)
         };
-        let text_style = if state.value.is_empty() {
-            recipe.placeholder
-        } else {
-            input_style
-        };
+        // junie `input.rs`: underline ONLY while editing, always accent.
+        // Idle invalid is the trailing bold `!` plus helper, not a red line.
+        if visual.editing {
+            text_style = text_style
+                .add_modifier(Modifier::UNDERLINED)
+                .underline_color(theme.accent);
+        }
         buffer.set_stringn(field.x, field.y, &painted, field_w, text_style);
 
-        // Selection reverse
         if let Some((a, b)) = state.selection_range() {
             let a = a.max(state.viewport);
             if b > a {
@@ -1167,32 +1369,44 @@ impl<'a> TextInput<'a> {
                 if ex > sx {
                     buffer.set_style(
                         Rect::new(sx, field.y, ex.saturating_sub(sx), 1),
-                        self.system
-                            .style(Role::Focus)
-                            .add_modifier(Modifier::REVERSED),
+                        self.system.selected_text(),
                     );
                 }
             }
         }
 
-        let cursor_column = UnicodeWidthStr::width(
-            &state.value[state.viewport..state.cursor.min(state.value.len())],
-        );
+        let cursor_column = if self.secret && !empty {
+            0
+        } else {
+            UnicodeWidthStr::width(
+                &state.value[state.viewport..state.cursor.min(state.value.len())],
+            )
+        };
         let cursor_x = field
             .x
             .saturating_add(u16::try_from(cursor_column).unwrap_or(u16::MAX))
             .min(field.right().saturating_sub(1));
-        let cursor_rect = if state.focused && state.enabled {
-            buffer.set_style(
-                Rect::new(cursor_x, field.y, 1, 1),
-                self.system
-                    .style(Role::Focus)
-                    .add_modifier(Modifier::REVERSED),
-            );
+        let cursor_rect = if visual.editing {
             Some(Rect::new(cursor_x, field.y, 1, 1))
         } else {
             None
         };
+
+        if invalid {
+            let bang_x = field_row.right().saturating_sub(2);
+            if bang_x >= field_row.x {
+                buffer.set_stringn(
+                    bang_x,
+                    field_row.y,
+                    Glyph::Error.resolve().text,
+                    1,
+                    Style::new()
+                        .fg(theme.error)
+                        .bg(field_bg)
+                        .add_modifier(Modifier::BOLD),
+                );
+            }
+        }
 
         if let Some(sr) = suffix_rect {
             if let Some(s) = self.suffix {
@@ -1201,12 +1415,28 @@ impl<'a> TextInput<'a> {
                     sr.y,
                     take_display_cols(s, usize::from(sr.width)),
                     usize::from(sr.width),
-                    self.system.style(Role::TextMuted),
+                    theme.placeholder(visual),
                 );
             }
         }
         if let Some(cr) = clear_rect {
-            buffer.set_stringn(cr.x, cr.y, "×", 1, self.system.style(Role::TextMuted));
+            let clear_recipe = self.system.button_recipe(
+                ButtonRecipeVariant::Quiet,
+                if state.enabled {
+                    ControlState::Focused
+                } else {
+                    ControlState::Disabled
+                },
+                theme.surface,
+            );
+            buffer.set_style(cr, clear_recipe.fill);
+            buffer.set_stringn(
+                cr.x,
+                cr.y,
+                self.system.glyphs.resolve(Glyph::Close).text,
+                1,
+                clear_recipe.label,
+            );
         }
         if state.loading {
             let g = self.system.glyphs.loading();
@@ -1216,22 +1446,39 @@ impl<'a> TextInput<'a> {
                     field.y,
                     g,
                     1,
-                    self.system.style(Role::TextMuted),
+                    theme.placeholder(visual),
                 );
             }
         }
 
-        // Validation message, directly under the field in every input.
-        if area.height >= 3
-            && let Validation::Invalid(msg) = self.validation
-        {
-            crate::widgets::field_message::paint_field_message(
-                buffer,
-                Rect::new(area.x, area.y.saturating_add(2), area.width, 1),
-                self.system,
-                crate::widgets::label::DescriptionKind::Error,
-                msg,
+        if field_row.y.saturating_add(1) < area.bottom() {
+            let msg_row = Rect::new(
+                area.x.saturating_add(2.min(area.width)),
+                field_row.y.saturating_add(1),
+                area.width.saturating_sub(2.min(area.width)),
+                1,
             );
+            match self.validation {
+                Validation::Invalid(msg) => {
+                    crate::widgets::field_message::paint_field_message(
+                        buffer,
+                        msg_row,
+                        self.system,
+                        crate::widgets::label::DescriptionKind::Error,
+                        msg,
+                    );
+                }
+                Validation::Valid if !self.help.is_empty() => {
+                    crate::widgets::field_message::paint_field_message(
+                        buffer,
+                        msg_row,
+                        self.system,
+                        crate::widgets::label::DescriptionKind::Help,
+                        self.help,
+                    );
+                }
+                Validation::Valid => {}
+            }
         }
 
         let parts = TextInputParts {
@@ -1247,6 +1494,9 @@ impl<'a> TextInput<'a> {
     }
 
     /// Clear hit test helper.
+    ///
+    /// First click focuses; a second click on an already-focused field starts
+    /// editing and places the caret.
     pub fn handle_mouse(&self, state: &mut TextInputState, event: MouseEvent) -> TextInputOutcome {
         let Some(parts) = state.parts.clone() else {
             return TextInputOutcome::Ignored;
@@ -1260,6 +1510,17 @@ impl<'a> TextInput<'a> {
                     return TextInputOutcome::Cleared;
                 }
                 return TextInputOutcome::Ignored;
+            }
+        }
+        if matches!(event.kind, MouseEventKind::Down(MouseButton::Left))
+            && (parts.field.contains(event.position) || parts.root.contains(event.position))
+        {
+            if !state.focused {
+                state.set_focused(true);
+                return TextInputOutcome::Changed;
+            }
+            if !state.editing {
+                state.begin_edit();
             }
         }
         state.handle_mouse(event, parts.field)
@@ -1329,8 +1590,91 @@ impl StatefulWidget for TextInput<'_> {
 mod tests {
 
     #[test]
+    fn editing_uses_hardware_cursor_not_a_reversed_cell() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let area = Rect::new(0, 0, 16, 1);
+        let mut state = TextInputState::new("abc");
+        state.set_focused(true);
+        state.set_editing(true);
+        assert!(state.set_cursor_byte(0), "the caret sits on a grapheme");
+        let mut buffer = Buffer::empty(area);
+        let parts = TextInput::new("", &system).paint(area, &mut buffer, &mut state);
+
+        let cursor = parts.cursor.expect("editing publishes a hardware caret");
+        let cell = &buffer[(cursor.x, cursor.y)];
+        assert_eq!(cell.symbol(), "a");
+        assert_eq!(cell.fg, theme.text_primary);
+        assert_eq!(cell.bg, theme.field);
+        assert!(!cell.style().add_modifier.contains(Modifier::REVERSED));
+        assert_eq!(cell.style().underline_color, Some(theme.accent));
+    }
+
+    #[test]
+    fn selected_text_uses_the_selection_pair() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let area = Rect::new(0, 0, 16, 1);
+        let mut state = TextInputState::new("abcdef");
+        state.set_focused(true);
+        assert!(state.apply(EditAction::Home { select: false }));
+        assert!(state.apply(EditAction::MoveRight { select: true }));
+        assert!(state.apply(EditAction::MoveRight { select: true }));
+        let mut buffer = Buffer::empty(area);
+        let parts = TextInput::new("", &system).paint(area, &mut buffer, &mut state);
+
+        let cell = &buffer[(parts.field.x, area.y)];
+        assert_eq!(cell.fg, theme.text_primary);
+        assert_eq!(cell.bg, theme.popover, "selection is text on popover");
+        assert!(!cell.style().add_modifier.contains(Modifier::REVERSED));
+    }
+
+    #[test]
+    fn focus_gutter_keeps_value_column_stable() {
+        let system = DesignSystem::junie();
+        let area = Rect::new(0, 0, 16, 1);
+        let mut idle = TextInputState::new("abc");
+        idle.set_editing(false);
+        let mut idle_buffer = Buffer::empty(area);
+        let idle_parts = TextInput::new("", &system).paint(area, &mut idle_buffer, &mut idle);
+
+        let mut focused = TextInputState::new("abc");
+        focused.set_focused(true);
+        focused.set_editing(false);
+        let mut focused_buffer = Buffer::empty(area);
+        let focused_parts =
+            TextInput::new("", &system).paint(area, &mut focused_buffer, &mut focused);
+
+        assert_eq!(idle_parts.field.x, focused_parts.field.x);
+        assert_eq!(idle_parts.field.x, area.x + 2);
+        assert_eq!(idle_buffer[(area.x + 2, area.y)].symbol(), "a");
+        assert_eq!(focused_buffer[(area.x + 2, area.y)].symbol(), "a");
+        assert_eq!(focused_buffer[(area.x, area.y)].symbol(), "▎");
+    }
+
+    #[test]
+    fn conditional_clear_action_does_not_resize_the_field() {
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 16, 1);
+        let input = TextInput::new("", &system).show_clear(true);
+
+        let mut idle = TextInputState::new("abc");
+        let mut idle_buffer = Buffer::empty(area);
+        let idle_parts = input.paint(area, &mut idle_buffer, &mut idle);
+
+        let mut focused = TextInputState::new("abc");
+        focused.set_focused(true);
+        let mut focused_buffer = Buffer::empty(area);
+        let focused_parts = input.paint(area, &mut focused_buffer, &mut focused);
+
+        assert_eq!(idle_parts.field, focused_parts.field);
+        assert!(idle_parts.clear.is_none());
+        assert!(focused_parts.clear.is_some());
+    }
+
+    #[test]
     fn a_required_field_says_so_before_you_submit() {
-        let system = DesignSystem::phosphor();
+        let system = DesignSystem::junie();
         let area = Rect::new(0, 0, 20, 3);
         let mut buffer = Buffer::empty(area);
         let mut state = TextInputState::new("");
@@ -1356,39 +1700,341 @@ mod tests {
     }
 
     #[test]
-    fn an_invalid_field_leads_its_message_with_a_glyph() {
-        let system = DesignSystem::phosphor();
-        let area = Rect::new(0, 0, 24, 3);
+    fn an_invalid_field_trails_a_bang_and_keeps_the_value_tone() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let area = Rect::new(0, 0, 28, 3);
         let mut buffer = Buffer::empty(area);
         let mut state = TextInputState::new("x");
         TextInput::new("Email", &system)
             .validation(Validation::Invalid("not an address"))
             .paint(area, &mut buffer, &mut state);
 
-        let row: String = (0..area.width)
+        let field_row: String = (0..area.width)
+            .map(|x| buffer[(x, 1)].symbol().to_string())
+            .collect();
+        assert!(
+            field_row.contains('!'),
+            "invalid fields trail a bold `!`, got {field_row:?}"
+        );
+        let bang = &buffer[(area.width - 2, 1)];
+        assert_eq!(bang.symbol(), "!");
+        assert_eq!(bang.fg, theme.error);
+        assert!(bang.style().add_modifier.contains(Modifier::BOLD));
+        let value = buffer
+            .content()
+            .iter()
+            .find(|cell| cell.symbol() == "x")
+            .expect("value");
+        assert_eq!(value.fg, theme.text_primary);
+        assert!(
+            !value.style().add_modifier.contains(Modifier::UNDERLINED),
+            "idle invalid value is not underlined"
+        );
+        assert_ne!(value.style().underline_color, Some(theme.error));
+        let msg: String = (0..area.width)
             .map(|x| buffer[(x, 2)].symbol().to_string())
             .collect();
-        let mark = system.glyphs.resolve(crate::style::Glyph::Error).text;
+        assert!(msg.contains("not an address"), "{msg:?}");
         assert!(
-            row.starts_with(mark),
-            "the error row leads with its glyph so it survives NO_COLOR, got {row:?}"
+            !msg.contains('•'),
+            "error copy must not use the pending bullet"
         );
-        assert!(row.contains("not an address"));
+    }
+
+    #[test]
+    fn an_invalid_editing_field_underlines_in_accent_and_trails_a_bang() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let area = Rect::new(0, 0, 28, 3);
+        let mut buffer = Buffer::empty(area);
+        let mut state = TextInputState::new("x");
+        state.set_focused(true);
+        state.set_editing(true);
+        TextInput::new("Email", &system)
+            .validation(Validation::Invalid("not an address"))
+            .paint(area, &mut buffer, &mut state);
+
+        let field_row: String = (0..area.width)
+            .map(|x| buffer[(x, 1)].symbol().to_string())
+            .collect();
+        assert!(
+            field_row.contains('!'),
+            "invalid fields trail a bold `!`, got {field_row:?}"
+        );
+        let bang = &buffer[(area.width - 2, 1)];
+        assert_eq!(bang.symbol(), "!");
+        assert_eq!(bang.fg, theme.error);
+        assert!(bang.style().add_modifier.contains(Modifier::BOLD));
+        let value = buffer
+            .content()
+            .iter()
+            .find(|cell| cell.symbol() == "x")
+            .expect("value");
+        assert_eq!(value.fg, theme.text_primary);
+        assert!(value.style().add_modifier.contains(Modifier::UNDERLINED));
+        assert_eq!(value.style().underline_color, Some(theme.accent));
+    }
+
+    fn row_text(buffer: &Buffer, y: u16, width: u16) -> String {
+        (0..width)
+            .map(|x| buffer[(x, y)].symbol().to_string())
+            .collect()
+    }
+
+    #[test]
+    fn idle_field_is_field_plane_with_hidden_gutter() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let area = Rect::new(0, 0, 24, 3);
+        let mut state = TextInputState::new("Ada");
+        state.set_editing(false);
+        let mut buffer = Buffer::empty(area);
+        TextInput::new("Name", &system).paint(area, &mut buffer, &mut state);
+        let gutter = &buffer[(0, 1)];
+        assert_eq!(gutter.symbol(), "▎");
+        assert_eq!(gutter.fg, gutter.bg);
+        assert_eq!(gutter.bg, theme.field);
+        let value = buffer
+            .content()
+            .iter()
+            .find(|cell| cell.symbol() == "A")
+            .expect("value");
+        assert_eq!(value.bg, theme.field);
+        assert_eq!(value.fg, theme.text_primary);
+    }
+
+    #[test]
+    fn focused_editing_keeps_field_plane_accent_bar_and_underline() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let area = Rect::new(0, 0, 24, 3);
+        let mut state = TextInputState::new("Ada");
+        state.set_focused(true);
+        state.set_editing(true);
+        state.set_hovered(true);
+        let mut buffer = Buffer::empty(area);
+        let parts = TextInput::new("Name", &system).paint(area, &mut buffer, &mut state);
+        let gutter = &buffer[(0, 1)];
+        assert_eq!(gutter.symbol(), "▎");
+        assert_eq!(gutter.fg, theme.accent);
+        assert_eq!(gutter.bg, theme.field);
+        let value = buffer
+            .content()
+            .iter()
+            .find(|cell| cell.symbol() == "A")
+            .expect("value");
+        assert_eq!(value.bg, theme.field, "editing does not lift the well");
+        assert_eq!(value.style().underline_color, Some(theme.accent));
+        assert!(parts.cursor.is_some(), "hardware cursor while editing");
+        assert!(
+            buffer[(2, 0)].style().add_modifier.contains(Modifier::BOLD),
+            "focused label is bold"
+        );
+        assert_eq!(buffer[(2, 0)].fg, theme.text_primary);
+    }
+
+    #[test]
+    fn hover_not_editing_lifts_to_field_hover() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let area = Rect::new(0, 0, 24, 3);
+        let mut state = TextInputState::new("Ada");
+        state.set_editing(false);
+        state.set_hovered(true);
+        let mut buffer = Buffer::empty(area);
+        TextInput::new("Name", &system).paint(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(2, 1)].bg, theme.field_hover);
+        assert_eq!(buffer[(0, 1)].fg, buffer[(0, 1)].bg);
+    }
+
+    #[test]
+    fn disabled_is_faint_and_does_not_hover() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let area = Rect::new(0, 0, 24, 3);
+        let mut state = TextInputState::new("Ada");
+        state.set_enabled(false);
+        state.set_hovered(true);
+        state.set_editing(false);
+        let mut buffer = Buffer::empty(area);
+        TextInput::new("Name", &system).paint(area, &mut buffer, &mut state);
+        let gutter = &buffer[(0, 1)];
+        assert_eq!(gutter.fg, gutter.bg, "disabled has no focus bar");
+        assert_eq!(gutter.bg, theme.field);
+        let value = buffer
+            .content()
+            .iter()
+            .find(|cell| cell.symbol() == "A")
+            .expect("value");
+        assert_eq!(value.fg, theme.disabled);
+        assert_eq!(value.bg, theme.field);
+    }
+
+    #[test]
+    fn password_mask_is_eight_cells() {
+        let system = DesignSystem::junie();
+        let area = Rect::new(0, 0, 28, 3);
+        let mut state = TextInputState::new("hunter2-secret");
+        state.set_focused(true);
+        let mut buffer = Buffer::empty(area);
+        TextInput::new("Password", &system)
+            .secret(true)
+            .paint(area, &mut buffer, &mut state);
+        let row = row_text(&buffer, 1, area.width);
+        assert!(
+            row.contains(&"●".repeat(MASK_CELLS)),
+            "masked secret is {MASK_CELLS} cells, got {row:?}"
+        );
+        assert!(!row.contains("hunter"), "{row:?}");
+        assert!(
+            !row.contains(&"●".repeat(MASK_CELLS + 1)),
+            "mask must not track length: {row:?}"
+        );
+    }
+
+    #[test]
+    fn emacs_chords_home_end_kill_and_words() {
+        let mut state = TextInputState::new("hello world");
+        state.set_focused(true);
+        state.set_editing(true);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::CONTROL)),
+            TextInputOutcome::Changed
+        );
+        assert_eq!(state.cursor_byte(), 0);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('e'), KeyModifiers::CONTROL)),
+            TextInputOutcome::Changed
+        );
+        assert_eq!(state.cursor_byte(), state.value().len());
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('b'), KeyModifiers::ALT)),
+            TextInputOutcome::Changed
+        );
+        assert_eq!(&state.value()[state.cursor_byte()..], "world");
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('u'), KeyModifiers::CONTROL)),
+            TextInputOutcome::Changed
+        );
+        assert_eq!(state.value(), "world");
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('k'), KeyModifiers::CONTROL)),
+            TextInputOutcome::Changed
+        );
+        assert_eq!(state.value(), "");
+    }
+
+    #[test]
+    fn enter_begins_edit_when_navigating_esc_reverts() {
+        let mut state = TextInputState::new("keep");
+        state.set_focused(true);
+        state.set_editing(false);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            TextInputOutcome::Changed
+        );
+        assert!(state.is_editing());
+        assert!(state.apply(EditAction::Insert('!')));
+        assert_eq!(state.value(), "keep!");
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            TextInputOutcome::Cancelled
+        );
+        assert_eq!(state.value(), "keep");
+        assert!(!state.is_editing());
+    }
+
+    #[test]
+    fn new_focused_field_is_nav_not_editing() {
+        let mut state = TextInputState::new("abc");
+        state.set_focused(true);
+        assert!(!state.is_editing());
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE)),
+            TextInputOutcome::Ignored
+        );
+        assert_eq!(state.value(), "abc");
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            TextInputOutcome::Changed
+        );
+        assert!(state.is_editing());
+    }
+
+    #[test]
+    fn first_click_focuses_second_click_edits() {
+        let system = DesignSystem::junie();
+        let mut state = TextInputState::new("abc");
+        state.set_editing(false);
+        let area = Rect::new(0, 0, 20, 1);
+        let mut buf = Buffer::empty(area);
+        let input = TextInput::new("", &system);
+        let _ = input.paint(area, &mut buf, &mut state);
+        let down = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position { x: 4, y: 0 },
+            modifiers: KeyModifiers::NONE,
+        };
+        assert_eq!(
+            input.handle_mouse(&mut state, down),
+            TextInputOutcome::Changed
+        );
+        assert!(state.is_focused());
+        assert!(!state.is_editing());
+        assert_eq!(
+            input.handle_mouse(&mut state, down),
+            TextInputOutcome::Changed
+        );
+        assert!(state.is_editing());
+    }
+
+    #[test]
+    fn helper_text_is_muted_below_the_field() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let area = Rect::new(0, 0, 32, 3);
+        let mut state = TextInputState::new("Ada");
+        state.set_editing(false);
+        let mut buffer = Buffer::empty(area);
+        TextInput::new("Name", &system)
+            .help("Display name")
+            .paint(area, &mut buffer, &mut state);
+        let msg = row_text(&buffer, 2, area.width);
+        assert!(msg.contains("Display name"), "{msg:?}");
+        assert_eq!(buffer[(2, 2)].fg, theme.text_muted);
+    }
+
+    #[test]
+    fn overflow_placeholder_uses_ellipsis_not_hard_clip() {
+        let system = DesignSystem::junie();
+        let area = Rect::new(0, 0, 16, 1);
+        let mut state = TextInputState::new("");
+        let mut buffer = Buffer::empty(area);
+        TextInput::new("", &system)
+            .placeholder("What should Junie do, and what does done look like?")
+            .paint(area, &mut buffer, &mut state);
+        let line = row_text(&buffer, 0, area.width);
+        assert!(
+            line.contains(system.glyphs.ellipsis()),
+            "overflow placeholder must mark the cut, got {line:?}"
+        );
+        assert!(
+            !line.contains("look"),
+            "overflow placeholder must not hard-clip the tail, got {line:?}"
+        );
     }
     use super::*;
-    use crate::style::RolePalette;
+    use crate::style::{MASK_CELLS, RolePalette};
 
     #[test]
     fn keyboard_owns_edit_submit_cancel_and_validation() {
         let mut state = TextInputState::new("")
             .with_forbidden(["taken".to_owned()])
             .with_max_graphemes(5);
-        assert_eq!(
-            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
-            TextInputOutcome::Ignored
-        );
+        state.set_editing(true);
         for character in "taken!".chars() {
-            state.handle_key(KeyEvent::new(KeyCode::Char(character), KeyModifiers::NONE));
+            let _ = state.handle_key(KeyEvent::new(KeyCode::Char(character), KeyModifiers::NONE));
         }
         assert_eq!(state.value(), "taken");
         assert_eq!(state.validity(), TextInputValidity::Forbidden);
@@ -1399,14 +2045,15 @@ mod tests {
         );
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
-            TextInputOutcome::Cancelled
+            TextInputOutcome::Ignored,
+            "Esc after commit is idle; revert is only while editing"
         );
     }
 
     #[test]
     fn render_reveals_wide_cursor_in_narrow_viewport() {
         let theme = RolePalette::default();
-        let system = DesignSystem::from_palette(theme.clone());
+        let system = DesignSystem::new(theme.clone());
         let mut state = TextInputState::new("alpha🧪");
         state.set_focused(true);
         let area = Rect::new(3, 2, 4, 1);
@@ -1449,6 +2096,8 @@ mod tests {
         assert_eq!(state.value(), "");
         assert_eq!(state.cursor_byte(), 0);
         assert!(state.is_valid());
+        assert!(!state.is_editing());
+        state.set_editing(true);
         for character in "abcd".chars() {
             let _ = state.handle_key(KeyEvent::new(KeyCode::Char(character), KeyModifiers::NONE));
         }
@@ -1493,6 +2142,7 @@ mod tests {
     #[test]
     fn clipboard_outcomes() {
         let mut state = TextInputState::new("hello");
+        state.set_editing(true);
         state.set_cursor_byte(0);
         let _ = state.apply(EditAction::End { select: true });
         let out = state.handle_key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL));

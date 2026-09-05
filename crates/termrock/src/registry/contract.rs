@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Component contract and registry item schema (kernel-owned types).
-
 /// Current contract schema version (v3 = registry + quality identity).
 pub const CONTRACT_SCHEMA: u32 = 3;
 

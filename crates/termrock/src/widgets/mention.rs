@@ -19,13 +19,12 @@
 //! - Completion: [`mention_to_completion_candidate`] + [`CompletionMenu`]
 //! - Chips: [`MentionRef::to_composer_label`] / PromptComposer mention chips
 //! - Strip: project via [`mention_to_token_item`]
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
-    style::{DesignSystem, Role},
+    style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
     widgets::{
         completion_menu::CompletionCandidate,
@@ -249,7 +248,7 @@ impl MentionValidity {
             }
             Self::Unknown => {
                 if ascii {
-                    "…"
+                    "."
                 } else {
                     "…"
                 }
@@ -1403,29 +1402,18 @@ impl InlineMentionState {
 pub struct InlineMention<'a> {
     mention: &'a MentionRef,
     system: &'a DesignSystem,
-    ascii: bool,
 }
 
 impl<'a> InlineMention<'a> {
     /// Mention + system.
     #[must_use]
     pub const fn new(mention: &'a MentionRef, system: &'a DesignSystem) -> Self {
-        Self {
-            mention,
-            system,
-            ascii: false,
-        }
+        Self { mention, system }
     }
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// From file mention.
-    #[must_use]
     pub const fn file(file: &'a FileMention, system: &'a DesignSystem) -> Self {
         Self::new(&file.mention, system)
     }
@@ -1439,7 +1427,7 @@ impl<'a> InlineMention<'a> {
     /// Measure width.
     #[must_use]
     pub fn measure_width(&self) -> u16 {
-        let label = self.mention.display_label(self.ascii);
+        let label = self.mention.display_label(false);
         let tag = if self.mention.removable {
             Tag::removable_tag(self.mention.id.as_str(), label.as_str(), self.system)
         } else {
@@ -1456,7 +1444,7 @@ impl<'a> InlineMention<'a> {
         buffer: &mut Buffer,
         state: &mut InlineMentionState,
     ) -> TokenParts {
-        let label = self.mention.display_label(self.ascii);
+        let label = self.mention.display_label(false);
         let tag = if self.mention.removable {
             Tag::removable_tag(self.mention.id.as_str(), label.as_str(), self.system)
         } else {
@@ -1503,25 +1491,34 @@ impl<'a> InlineMention<'a> {
                 break;
             }
             let mark = if i == state.disambiguation_cursor {
-                if self.ascii { "*" } else { "›" }
+                "›"
             } else {
                 " "
             };
             let line = match &d.detail {
-                Some(det) => format!("{mark} {} · {det}", d.label),
+                Some(det) => format!("{mark} {} {} {det}", d.label, { "·" }),
                 None => format!("{mark} {}", d.label),
             };
-            let style = if i == state.disambiguation_cursor {
-                self.system.style(Role::Focus)
-            } else {
-                self.system.style(Role::Text)
-            };
+            let selected = i == state.disambiguation_cursor;
+            let recipe = self.system.resolve_list_row(ListRowVisualState {
+                selected,
+                focused: selected && state.tag.focused,
+                hovered: false,
+                enabled: true,
+                loading: false,
+                checked: false,
+                ..ListRowVisualState::default()
+            });
+            let row = Rect::new(area.x, y, area.width, 1);
+            if recipe.use_tint {
+                buffer.set_style(row, recipe.tint);
+            }
             buffer.set_stringn(
                 area.x,
                 y,
                 take_display_cols(&line, usize::from(area.width)),
                 usize::from(area.width),
-                style,
+                recipe.label,
             );
         }
     }
@@ -1532,7 +1529,7 @@ impl<'a> InlineMention<'a> {
         state: &mut InlineMentionState,
         key: KeyEvent,
     ) -> InlineMentionOutcome {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return InlineMentionOutcome::Ignored;
         }
         if state.disambiguation_open {
@@ -1568,7 +1565,7 @@ impl<'a> InlineMention<'a> {
                 id: self.mention.id.clone(),
             };
         }
-        let label = self.mention.display_label(self.ascii);
+        let label = self.mention.display_label(false);
         let tag = if self.mention.removable {
             Tag::removable_tag(self.mention.id.as_str(), label.as_str(), self.system)
         } else {
@@ -1580,6 +1577,7 @@ impl<'a> InlineMention<'a> {
             TagOutcome::Remove(id) => InlineMentionOutcome::Removed { id: id.to_string() },
             TagOutcome::PartChanged(p) => InlineMentionOutcome::PartChanged(p),
             TagOutcome::Activated(id) => InlineMentionOutcome::Activated { id: id.to_string() },
+            TagOutcome::HoverChanged => InlineMentionOutcome::Ignored,
         }
     }
 
@@ -1620,7 +1618,7 @@ impl<'a> InlineMention<'a> {
         state: &mut InlineMentionState,
         event: MouseEvent,
     ) -> InlineMentionOutcome {
-        let label = self.mention.display_label(self.ascii);
+        let label = self.mention.display_label(false);
         let tag = if self.mention.removable {
             Tag::removable_tag(self.mention.id.as_str(), label.as_str(), self.system)
         } else {
@@ -1639,6 +1637,7 @@ impl<'a> InlineMention<'a> {
                     InlineMentionOutcome::Activated { id: id.to_string() }
                 }
             }
+            TagOutcome::HoverChanged => InlineMentionOutcome::Ignored,
         }
     }
 }
@@ -1852,7 +1851,7 @@ fn unescape_markup_part(s: &str) -> String {
 }
 
 fn redacted_canonical(c: &str) -> &str {
-    c.rsplit(['/', '\\', ':']).next().unwrap_or("…")
+    c.rsplit(['/', '\\', ':']).next().unwrap_or("redacted")
 }
 
 fn prev_char_boundary(s: &str, byte: usize) -> usize {
@@ -2028,9 +2027,7 @@ mod tests {
         st.set_focused(true);
         let area = Rect::new(0, 0, 40, 2);
         let mut buf = Buffer::empty(area);
-        InlineMention::file(&file, &system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut st);
+        InlineMention::file(&file, &system).paint(area, &mut buf, &mut st);
         let out = InlineMention::file(&file, &system).handle_key(
             &mut st,
             KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL),

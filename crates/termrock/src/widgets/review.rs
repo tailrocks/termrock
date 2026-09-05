@@ -19,17 +19,14 @@
 //!
 //! Research: GitHub reviews, lazygit staging, Grok Build plan review, agent
 //! diff approval.
-
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::UiIntent,
-    style::{DesignSystem, Role},
+    style::{DesignSystem, ListRowVisualState, Role},
     text::take_display_cols,
     widgets::diff::{
         DiffFile, DiffHunk, DiffLine, DiffMode, DiffView, DiffViewOutcome, DiffViewState,
@@ -123,27 +120,15 @@ impl DiffDecision {
 
     /// Compact mark (ascii uses letters).
     #[must_use]
-    pub const fn glyph(self, ascii: bool) -> &'static str {
-        if ascii {
-            match self {
-                Self::Pending => " ",
-                Self::Approved => "A",
-                Self::Rejected => "R",
-                Self::Staged => "S",
-                Self::Unstaged => "U",
-                Self::Applied => "X",
-                Self::Skipped => ".",
-            }
-        } else {
-            match self {
-                Self::Pending => " ",
-                Self::Approved => "✓",
-                Self::Rejected => "✗",
-                Self::Staged => "●",
-                Self::Unstaged => "○",
-                Self::Applied => "▶",
-                Self::Skipped => "·",
-            }
+    pub const fn glyph(self, _ascii: bool) -> &'static str {
+        match self {
+            Self::Pending => " ",
+            Self::Approved => "✓",
+            Self::Rejected => "✗",
+            Self::Staged => "●",
+            Self::Unstaged => "○",
+            Self::Applied => "▶",
+            Self::Skipped => "·",
         }
     }
 
@@ -590,8 +575,6 @@ pub struct DiffReviewState {
     comment_area: Rect,
     /// Painted file-tree hit rows.
     pub file_regions: Vec<(String, Rect)>,
-    /// ASCII chrome preference (also on widget).
-    pub ascii: bool,
     /// Colorless preference.
     pub colorless: bool,
 }
@@ -629,7 +612,6 @@ impl DiffReviewState {
             summary_area: Rect::default(),
             comment_area: Rect::default(),
             file_regions: Vec::new(),
-            ascii: false,
             colorless: false,
         }
     }
@@ -1050,10 +1032,10 @@ impl DiffReviewState {
         hunks: &[DiffHunk],
         files: &[DiffReviewFileRow<'_>],
     ) -> DiffReviewOutcome {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return DiffReviewOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         // Confirm banner
         if self.pending_confirm.is_some() && is_press {
@@ -1255,7 +1237,7 @@ impl DiffReviewState {
         hunks: &[DiffHunk],
         lines: &[DiffLine<'_>],
     ) -> DiffReviewOutcome {
-        if files.is_empty() || key.kind != KeyEventKind::Press {
+        if files.is_empty() || !key.is_press() {
             return DiffReviewOutcome::Ignored;
         }
         match key.code {
@@ -1425,7 +1407,6 @@ pub struct DiffReview<'a> {
     diff_files: &'a [DiffFile<'a>],
     system: &'a DesignSystem,
     focused: bool,
-    ascii: bool,
     colorless: bool,
     title: Option<&'a str>,
     show_tree: bool,
@@ -1443,7 +1424,6 @@ impl<'a> DiffReview<'a> {
             diff_files: &[],
             system,
             focused: true,
-            ascii: false,
             colorless: false,
             title: None,
             show_tree: true,
@@ -1488,13 +1468,7 @@ impl<'a> DiffReview<'a> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
         self
@@ -1520,8 +1494,7 @@ impl<'a> DiffReview<'a> {
         if area.is_empty() {
             return;
         }
-        let ascii = self.ascii || state.ascii;
-        let colorless = self.colorless || state.colorless;
+        let colorless = self.colorless || state.colorless || self.system.mono();
         state.origin = (area.x, area.y);
         let surface = self.focused && state.accepts_input;
 
@@ -1568,7 +1541,7 @@ impl<'a> DiffReview<'a> {
                 state,
                 self.system,
                 surface,
-                ascii,
+                false,
                 colorless,
             );
         }
@@ -1579,7 +1552,6 @@ impl<'a> DiffReview<'a> {
             .hunks(self.hunks)
             .files(self.diff_files)
             .focused(self.focused && state.region == DiffReviewRegion::Diff)
-            .ascii(ascii)
             .colorless(colorless)
             .title(title);
         view.render(body, buffer, &mut state.view);
@@ -1592,7 +1564,7 @@ impl<'a> DiffReview<'a> {
             self.hunks,
             state,
             self.system,
-            ascii,
+            false,
             colorless,
         );
 
@@ -1630,10 +1602,11 @@ impl<'a> DiffReview<'a> {
 
         // Summary
         if summary_h > 0 {
+            let separator = " · ";
             let sum = state.summary(self.files.len(), self.hunks.len());
             let focus = state.region == DiffReviewRegion::Summary;
             let msg = format!(
-                "{} files {} hunks · A{} R{} S{} · cmt {}/{} · sel {} · a/r/t/x · u undo{}",
+                "{} files {} hunks{separator}A{} R{} S{}{separator}cmt {}/{}{separator}sel {}{separator}a/r/t/x{separator}u undo{}",
                 sum.files,
                 sum.hunks,
                 sum.approved,
@@ -1667,14 +1640,14 @@ fn paint_file_tree(
     state: &mut DiffReviewState,
     system: &DesignSystem,
     surface: bool,
-    ascii: bool,
+    _ascii: bool,
     colorless: bool,
 ) {
     if area.is_empty() {
         return;
     }
     let focus = state.region == DiffReviewRegion::FileTree && surface;
-    let head = if ascii { "FILES" } else { "files" };
+    let head = "files";
     buffer.set_stringn(
         area.x,
         area.y,
@@ -1699,36 +1672,26 @@ fn paint_file_tree(
             .unwrap_or(DiffDecision::Pending);
         let sel = state.selected_files.contains(f.id);
         let cur = i == state.file_cursor;
-        let mark = dec.glyph(ascii);
-        let sel_m = if sel {
-            if ascii { "*" } else { "★" }
-        } else {
-            " "
-        };
-        let gutter = if cur && focus {
-            system.glyphs.selection_gutter()
-        } else {
-            " "
-        };
+        let mark = dec.glyph(false);
+        let sel_m = if sel { "★" } else { " " };
+        let gutter = " ";
         let stats = if area.width >= 20 {
             format!(" +{} -{}", f.added, f.removed)
         } else {
             String::new()
         };
         let line = format!("{gutter}{mark}{sel_m}{}{stats}", f.path);
-        let style = if colorless {
-            if cur {
-                system.style(Role::TextStrong)
-            } else {
-                system.style(Role::Text)
-            }
-        } else if cur && focus {
-            system.style(Role::Focus)
-        } else if sel {
-            system.style(Role::Accent)
-        } else {
-            system.style(Role::Text)
-        };
+        let chrome = crate::widgets::row_chrome::RowChrome::resolve(
+            system,
+            ListRowVisualState {
+                selected: sel || (cur && focus),
+                focused: cur && focus,
+                enabled: true,
+                ..Default::default()
+            },
+        )
+        .colorless(colorless);
+        let style = chrome.label_style(system.style(Role::Text));
         buffer.set_stringn(
             area.x,
             y,
@@ -1736,6 +1699,7 @@ fn paint_file_tree(
             usize::from(area.width),
             style,
         );
+        chrome.paint(buffer, Rect::new(area.x, y, area.width, 1));
         state
             .file_regions
             .push((f.id.to_string(), Rect::new(area.x, y, area.width, 1)));
@@ -1745,13 +1709,7 @@ fn paint_file_tree(
     if area.width > 0 {
         let div_x = area.right().saturating_sub(1);
         for row in area.y..area.bottom() {
-            buffer.set_stringn(
-                div_x,
-                row,
-                if ascii { "|" } else { "│" },
-                1,
-                system.style(Role::Border),
-            );
+            buffer.set_stringn(div_x, row, "│", 1, system.style(Role::Border));
         }
     }
 }
@@ -1763,7 +1721,7 @@ fn paint_review_marks(
     hunks: &[DiffHunk],
     state: &DiffReviewState,
     system: &DesignSystem,
-    ascii: bool,
+    _ascii: bool,
     colorless: bool,
 ) {
     // Use DiffView regions if present
@@ -1773,16 +1731,16 @@ fn paint_review_marks(
         };
         let mut marks = String::new();
         if state.selected_lines.contains(line.id) {
-            marks.push(if ascii { '*' } else { '★' });
+            marks.push('★');
         }
         if let Some(hid) = line.hunk_id {
             if state.selected_hunks.contains(hid) {
-                marks.push(if ascii { '#' } else { '◈' });
+                marks.push('◈');
             }
             let key = DiffReviewUnit::hunk(hid).key();
             if let Some(d) = state.decisions.get(&key) {
                 if *d != DiffDecision::Pending {
-                    marks.push_str(d.glyph(ascii));
+                    marks.push_str(d.glyph(false));
                 }
             }
         }
@@ -1791,7 +1749,7 @@ fn paint_review_marks(
             .iter()
             .any(|c| matches!(&c.anchor, DiffCommentAnchor::Line { line_id } if line_id == line.id))
         {
-            marks.push(if ascii { '@' } else { '💬' });
+            marks.push('💬');
         }
         if marks.is_empty() {
             continue;
@@ -2191,7 +2149,7 @@ mod tests {
         assert!(DiffDecision::Rejected.safe_verb().contains("reject"));
         assert!(DiffDecision::Applied.is_destructive());
         assert!(!DiffDecision::Approved.is_destructive());
-        assert_eq!(DiffDecision::Staged.glyph(true), "S");
+        assert_eq!(DiffDecision::Staged.glyph(true), "●");
     }
 
     #[test]

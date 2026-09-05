@@ -13,18 +13,15 @@
 //! embeds and the setup-form control for single-path entry.
 //!
 //! Research: shell completion, file pickers, Yazi, CLI setup tools.
-
 use std::collections::VecDeque;
 
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
-    style::{DesignSystem, Glyph, Role},
-    text::{display_cols, take_display_cols},
+    style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, Role},
+    text::take_display_cols,
 };
 
 use super::{TextInput, TextInputOutcome, TextInputState, Validation};
@@ -425,6 +422,18 @@ impl PathInputState {
         self
     }
 
+    /// Live typing. [`Self::new`] stays idle (`editing: false`).
+    #[must_use]
+    pub fn with_editing(mut self) -> Self {
+        self.path.begin_edit();
+        self
+    }
+
+    /// Start the insert session (Junie Enter on an idle field).
+    pub fn begin_edit(&mut self) {
+        self.path.begin_edit();
+    }
+
     /// Path style.
     #[must_use]
     pub const fn with_style(mut self, style: PathStyle) -> Self {
@@ -560,11 +569,10 @@ impl PathInputState {
 
     /// Replace path text.
     pub fn set_path(&mut self, path: impl Into<String>) {
-        let mut p = TextInputState::new(path).with_allow_empty(true);
-        p.set_focused(self.focused);
-        p.set_enabled(self.enabled);
-        p.set_read_only(self.read_only);
-        self.path = p;
+        self.path.set_focused(self.focused);
+        self.path.set_enabled(self.enabled);
+        self.path.set_read_only(self.read_only);
+        self.path = self.path.reseed(path);
         self.history_cursor = None;
         self.history_stash = None;
     }
@@ -705,7 +713,7 @@ impl PathInputState {
 
     /// Key adapter.
     pub fn handle_key(&mut self, key: KeyEvent) -> PathInputOutcome {
-        if key.kind == KeyEventKind::Release || !self.enabled {
+        if key.is_release() || !self.enabled {
             return PathInputOutcome::Ignored;
         }
         self.sync_editor();
@@ -796,6 +804,7 @@ impl PathInputState {
         if !self.enabled || self.read_only {
             return PathInputOutcome::Ignored;
         }
+        self.path.begin_edit();
         // Strip newlines from multi-line paste
         let cleaned: String = text
             .chars()
@@ -891,7 +900,6 @@ pub struct PathInput<'a> {
     show_browse: bool,
     show_clear: bool,
     show_base: bool,
-    ascii: bool,
     validation: Validation<'a>,
 }
 
@@ -901,13 +909,12 @@ impl<'a> PathInput<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             label: "",
-            placeholder: "Path…",
+            placeholder: "Path",
             system,
             status_message: None,
             show_browse: true,
             show_clear: true,
             show_base: true,
-            ascii: false,
             validation: Validation::Valid,
         }
     }
@@ -956,13 +963,7 @@ impl<'a> PathInput<'a> {
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Validation projection.
-    #[must_use]
     pub const fn validation(mut self, validation: Validation<'a>) -> Self {
         self.validation = validation;
         self
@@ -996,19 +997,26 @@ impl<'a> PathInput<'a> {
                 state.fs_status,
                 PathFsStatus::Error | PathFsStatus::Inaccessible
             );
+        let field_recipe = self.system.input_recipe(
+            if !state.enabled {
+                ControlState::Disabled
+            } else if matches!(state.fs_status, PathFsStatus::Pending) {
+                ControlState::Loading
+            } else if state.focused {
+                ControlState::Focused
+            } else {
+                ControlState::Default
+            },
+            invalid || destructive,
+            state.path.is_editing(),
+        );
 
         let mut y = area.y;
         if area.height >= 2 && !self.label.is_empty() {
-            let role = if destructive {
-                Role::Danger
-            } else if invalid {
-                Role::Danger
-            } else if state.focused {
-                Role::Focus
-            } else {
-                Role::Text
-            };
-            let mut style = self.system.style(role);
+            let mut style = field_recipe.value;
+            if destructive {
+                style = style.patch(self.system.style(Role::Danger));
+            }
             if state.focused {
                 style = style.add_modifier(Modifier::BOLD);
             }
@@ -1016,7 +1024,7 @@ impl<'a> PathInput<'a> {
                 style = style.add_modifier(Modifier::BOLD);
             }
             let label = if destructive {
-                format!("⚠ {}", self.label)
+                format!("{} {}", { "⚠" }, self.label)
             } else {
                 self.label.to_owned()
             };
@@ -1032,21 +1040,23 @@ impl<'a> PathInput<'a> {
 
         // Optional base context line
         let mut base_rect = None;
-        if self.show_base
-            && area.height >= 3
-            && state.base.as_ref().is_some_and(|b| !b.is_empty())
-            && !is_absolute_path(state.path.value())
-        {
-            let base = state.base.as_deref().unwrap_or("");
-            let text = format!("base {base}");
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(&text, usize::from(area.width)),
-                usize::from(area.width),
-                self.system.style(Role::TextMuted),
-            );
-            base_rect = Some(Rect::new(area.x, y, area.width, 1));
+        if self.show_base && area.height >= 3 {
+            if state.base.as_ref().is_some_and(|b| !b.is_empty())
+                && !is_absolute_path(state.path.value())
+            {
+                let base = state.base.as_deref().unwrap_or("");
+                let text = format!("base {base}");
+                buffer.set_stringn(
+                    area.x,
+                    y,
+                    take_display_cols(&text, usize::from(area.width)),
+                    usize::from(area.width),
+                    field_recipe.placeholder,
+                );
+                base_rect = Some(Rect::new(area.x, y, area.width, 1));
+            }
+            // Relative context is an optional value in a permanent slot. A
+            // path becoming absolute must not pull the editable row upward.
             y = y.saturating_add(1);
         }
 
@@ -1062,62 +1072,23 @@ impl<'a> PathInput<'a> {
         // Leading path kind glyph
         if row.width > 6 {
             let g = match state.fs_status {
-                PathFsStatus::Directory => {
-                    if self.ascii {
-                        "d"
-                    } else {
-                        self.system.glyphs.resolve(Glyph::Folder).text
-                    }
-                }
-                PathFsStatus::File => {
-                    if self.ascii {
-                        "f"
-                    } else {
-                        self.system.glyphs.resolve(Glyph::File).text
-                    }
-                }
-                PathFsStatus::Missing => {
-                    if self.ascii {
-                        "?"
-                    } else {
-                        "∅"
-                    }
-                }
+                PathFsStatus::Directory => "▸",
+                PathFsStatus::File => " ",
+                PathFsStatus::Missing => "∅",
                 PathFsStatus::Pending => "…",
-                PathFsStatus::Inaccessible | PathFsStatus::Error => {
-                    if self.ascii {
-                        "!"
-                    } else {
-                        "⚠"
-                    }
-                }
-                PathFsStatus::Unknown => {
-                    if self.ascii {
-                        "/"
-                    } else {
-                        "·"
-                    }
-                }
+                PathFsStatus::Inaccessible | PathFsStatus::Error => "⚠",
+                PathFsStatus::Unknown => "·",
             };
             // Force single-cell ascii for layout stability in ascii mode
-            let g = if self.ascii {
-                match state.fs_status {
-                    PathFsStatus::Directory => "d",
-                    PathFsStatus::File => "f",
-                    PathFsStatus::Missing => "?",
-                    PathFsStatus::Pending => ".",
-                    PathFsStatus::Inaccessible | PathFsStatus::Error => "!",
-                    PathFsStatus::Unknown => "/",
-                }
+            let g = { g };
+            let style = if destructive {
+                field_recipe
+                    .placeholder
+                    .patch(self.system.style(Role::Danger))
             } else {
-                g
+                field_recipe.placeholder
             };
-            let role = if destructive {
-                Role::Danger
-            } else {
-                Role::TextMuted
-            };
-            buffer.set_stringn(x, row.y, g, 1, self.system.style(role));
+            buffer.set_stringn(x, row.y, g, 1, style);
             x = x.saturating_add(2);
         }
 
@@ -1127,58 +1098,75 @@ impl<'a> PathInput<'a> {
         let mut clear_rect = None;
 
         let status_label = state.fs_status.short_label();
-        if !status_label.is_empty() && right > x.saturating_add(6) {
-            let sw = display_cols(status_label).min(6) as u16;
+        if right > x.saturating_add(6) {
+            let sw = 4u16;
             right = right.saturating_sub(sw.saturating_add(1));
-            status_rect = Some(Rect::new(right.saturating_add(1), row.y, sw, 1));
-            let role = match state.fs_status {
-                PathFsStatus::Error | PathFsStatus::Inaccessible => Role::Danger,
-                PathFsStatus::Missing
-                    if matches!(state.expect, PathExpect::File | PathExpect::Directory) =>
-                {
-                    Role::Warning
-                }
-                PathFsStatus::Pending => Role::TextMuted,
-                _ if state.kind_mismatch() => Role::Danger,
-                _ if destructive => Role::Danger,
-                _ => Role::TextMuted,
-            };
+            if !status_label.is_empty() {
+                status_rect = Some(Rect::new(right.saturating_add(1), row.y, sw, 1));
+                let role = match state.fs_status {
+                    PathFsStatus::Error | PathFsStatus::Inaccessible => Role::Danger,
+                    PathFsStatus::Missing
+                        if matches!(state.expect, PathExpect::File | PathExpect::Directory) =>
+                    {
+                        Role::Warning
+                    }
+                    PathFsStatus::Pending => Role::TextMuted,
+                    _ if state.kind_mismatch() => Role::Danger,
+                    _ if destructive => Role::Danger,
+                    _ => Role::TextMuted,
+                };
+                buffer.set_stringn(
+                    right.saturating_add(1),
+                    row.y,
+                    status_label,
+                    usize::from(sw),
+                    field_recipe.placeholder.patch(self.system.style(role)),
+                );
+            }
+        }
+
+        if self.show_browse && right > x.saturating_add(4) {
+            right = right.saturating_sub(2);
+            if state.enabled {
+                browse_rect = Some(Rect::new(right.saturating_add(1), row.y, 1, 1));
+            }
+            let action = self.system.button_recipe(
+                ButtonRecipeVariant::Quiet,
+                if state.enabled {
+                    ControlState::Default
+                } else {
+                    ControlState::Disabled
+                },
+                self.system.junie_theme().surface,
+            );
             buffer.set_stringn(
                 right.saturating_add(1),
                 row.y,
-                status_label,
-                usize::from(sw),
-                self.system.style(role),
+                "…",
+                1,
+                action.fill.patch(action.label),
             );
         }
 
-        if self.show_browse && state.enabled && right > x.saturating_add(4) {
+        let show_clear =
+            self.show_clear && state.focused && state.enabled && !state.path.value().is_empty();
+        if self.show_clear && right > x.saturating_add(3) {
             right = right.saturating_sub(2);
-            browse_rect = Some(Rect::new(right.saturating_add(1), row.y, 1, 1));
-            buffer.set_stringn(
-                right.saturating_add(1),
-                row.y,
-                if self.ascii { "…" } else { "…" },
-                1,
-                self.system.style(Role::TextMuted),
-            );
-        }
-
-        if self.show_clear
-            && state.focused
-            && state.enabled
-            && !state.path.value().is_empty()
-            && right > x.saturating_add(3)
-        {
-            right = right.saturating_sub(2);
-            clear_rect = Some(Rect::new(right.saturating_add(1), row.y, 1, 1));
-            buffer.set_stringn(
-                right.saturating_add(1),
-                row.y,
-                "×",
-                1,
-                self.system.style(Role::TextMuted),
-            );
+            if show_clear {
+                clear_rect = Some(Rect::new(right.saturating_add(1), row.y, 1, 1));
+                let action = self.system.button_recipe(
+                    ButtonRecipeVariant::Quiet,
+                    ControlState::Default,
+                    self.system.junie_theme().surface,
+                );
+                buffer.set_stringn(
+                    right.saturating_add(1),
+                    row.y,
+                    self.system.glyphs.resolve(Glyph::Close).text,
+                    1,
+                    action.fill.patch(action.label),
+                );
+            }
         }
 
         let field = Rect::new(x, row.y, right.saturating_sub(x).max(1), 1);
@@ -1200,35 +1188,52 @@ impl<'a> PathInput<'a> {
             // its own role and weight — the field keeps its border language.
             buffer.set_style(
                 field,
-                self.system.style(Role::Danger).add_modifier(Modifier::BOLD),
+                field_recipe
+                    .fill
+                    .patch(field_recipe.value)
+                    .patch(self.system.style(Role::Danger))
+                    .add_modifier(Modifier::BOLD),
             );
         }
 
-        // Message row
-        if area.height >= y.saturating_sub(area.y).saturating_add(2) {
-            let msg_y = area.bottom().saturating_sub(1);
-            if msg_y > row.y {
-                if let Some(msg) = self.status_message {
-                    buffer.set_stringn(
-                        area.x,
-                        msg_y,
-                        take_display_cols(msg, usize::from(area.width)),
-                        usize::from(area.width),
-                        self.system.style(if destructive || invalid {
-                            Role::Danger
-                        } else {
-                            Role::TextMuted
-                        }),
-                    );
-                } else if destructive {
-                    buffer.set_stringn(
-                        area.x,
-                        msg_y,
-                        "destructive target",
-                        usize::from(area.width),
-                        self.system.style(Role::Danger),
-                    );
-                }
+        // Message row is directly under the field in every layout.
+        if row.y.saturating_add(1) < area.bottom() {
+            if let Some(msg) = self.status_message {
+                crate::widgets::field_message::paint_field_message(
+                    buffer,
+                    Rect::new(area.x, row.y.saturating_add(1), area.width, 1),
+                    self.system,
+                    if destructive || invalid {
+                        crate::widgets::label::DescriptionKind::Error
+                    } else {
+                        crate::widgets::label::DescriptionKind::Meta
+                    },
+                    msg,
+                );
+            } else if let Validation::Invalid(msg) = self.validation {
+                crate::widgets::field_message::paint_field_message(
+                    buffer,
+                    Rect::new(area.x, row.y.saturating_add(1), area.width, 1),
+                    self.system,
+                    crate::widgets::label::DescriptionKind::Error,
+                    msg,
+                );
+            } else if destructive {
+                crate::widgets::field_message::paint_field_message(
+                    buffer,
+                    Rect::new(area.x, row.y.saturating_add(1), area.width, 1),
+                    self.system,
+                    crate::widgets::label::DescriptionKind::Error,
+                    "destructive target",
+                );
+            } else if state.kind_mismatch() {
+                crate::widgets::field_message::paint_field_message(
+                    buffer,
+                    Rect::new(area.x, row.y.saturating_add(1), area.width, 1),
+                    self.system,
+                    crate::widgets::label::DescriptionKind::Error,
+                    "type mismatch",
+                );
             }
         }
 
@@ -1402,6 +1407,7 @@ mod tests {
     fn history_and_submit() {
         let mut state = PathInputState::new().with_path("/a");
         state.set_focused(true);
+        state.begin_edit();
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
             PathInputOutcome::Submitted { path: "/a".into() }
@@ -1414,8 +1420,19 @@ mod tests {
     }
 
     #[test]
+    fn escape_cancels_without_committing_the_path() {
+        let mut state = PathInputState::new().with_path("/tmp");
+        state.set_focused(true);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            PathInputOutcome::Cancelled
+        );
+        assert_eq!(state.path(), "/tmp");
+    }
+
+    #[test]
     fn destructive_paint() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let mut state = PathInputState::new().with_path("/etc/passwd");
         state.set_focused(true);
         state.set_risk(PathRisk::Destructive);
@@ -1424,7 +1441,6 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let parts = PathInput::new(&system)
             .label("Target")
-            .ascii(true)
             .paint(area, &mut buf, &mut state);
         assert!(!parts.field.is_empty());
         let mut row0 = String::new();
@@ -1447,9 +1463,7 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 40, 2);
         let mut buf = Buffer::empty(area);
-        let parts = PathInput::new(&system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
+        let parts = PathInput::new(&system).paint(area, &mut buf, &mut state);
         let browse = parts.browse.expect("browse");
         assert_eq!(
             state.handle_mouse(MouseEvent {
@@ -1497,7 +1511,7 @@ mod tests {
         state.set_fs_status(PathFsStatus::Directory);
         let area = Rect::new(0, 0, 50, 2);
         let mut buf = Buffer::empty(area);
-        let w = PathInput::new(&system).ascii(true);
+        let w = PathInput::new(&system);
         for _ in 0..200 {
             let _ = w.paint(area, &mut buf, &mut state);
         }

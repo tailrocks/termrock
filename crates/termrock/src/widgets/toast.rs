@@ -1,57 +1,47 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! **Toast** — transient notifications with priority, actions, lifecycle, and
-//! non-disruptive placement.
+//! **Toast** — transient footer status sentence (junie feedback grammar).
 //!
-//! **Mission.** Sonner-class toast stack for informational, success, warning,
-//! error, progress, undo, persistent, and grouped notifications. Queueing,
-//! deduplication, replacement, timeout pause, and announcement semantics without
-//! covering critical content or stealing keyboard focus.
+//! **Mission.** Host-usable queue (`push` / `dismiss` / expire) that paints as
+//! **one status sentence on the footer's right edge**, never as a stacked
+//! overlay card. Quiet, timed, not focusable, does not steal the keyboard.
 //!
-//! **Focus law.** Toasts are **never focusable**. Actions are activated via
-//! host hotkeys / pointer hits only; keyboard focus stays on the primary UI.
-//! Missed or expired items archive to [`ToastQueue::drain_missed`] for
-//! [`super::NotificationCenter`] (`ToastArchive`).
+//! Junie: “Feedback is quiet and timed. A status sentence on the footer's
+//! right edge for 4–5 seconds… No toasts, no flashing.”
 //!
-//! **vs Alert/Callout.** Inline layout feedback. Toast is transient overlay.
-//! **vs AlertDialog.** Modal risk. Toast never traps.
+//! **Paint.** One row. [`Role::TextSecondary`] body. Error: [`Role::Danger`] +
+//! `!`. Warning: [`Role::Warning`] + `•`. Success: `✓` + secondary text (no
+//! green fill). Info is secondary, never an accent swatch. Several live
+//! notices collapse to that one sentence plus `N notices`.
 //!
-//! Research: shadcn/Sonner, desktop notifications, Textual notifications, agent
-//! task updates.
-
+//! **Focus law.** Never focusable. Missed or expired items archive to
+//! [`ToastQueue::drain_missed`] for [`super::NotificationCenter`].
 use std::collections::VecDeque;
 use std::time::Duration;
-use web_time::Instant;
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::{Modifier, Style},
-    widgets::Widget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
-use super::{Surface, SurfaceRecipe};
 use crate::{
-    runtime::{FrameTick, Presence},
+    runtime::{FrameTick, Instant, Presence},
     style::{DesignSystem, MotionPolicy, Role},
-    text::{display_cols, take_display_cols},
+    text::{display_cols, truncate_cols},
 };
 
-// ── Constants (migrated timing defaults) ────────────────────────────────────
+// ── Timing / retained host constants ────────────────────────────────────────
 
-/// Default auto-dismiss TTL (Sonner-ish; hosts may override).
+/// Default auto-dismiss TTL (junie footer status: ~4–5 seconds).
 pub const TOAST_DEFAULT_TTL: Duration = Duration::from_secs(4);
-/// Maximum simultaneous visible toasts in a stack.
+/// Queue cap before eviction into the missed archive. Paint is always one row.
 pub const TOAST_DEFAULT_MAX_VISIBLE: usize = 5;
-/// Vertical gap between stacked toasts (cells).
+/// No stack: footer status is one row. Always zero.
 pub const TOAST_STACK_GAP: u16 = 0;
-/// Default horizontal margin from outer edge.
-pub const TOAST_DEFAULT_H_MARGIN: u16 = 2;
-/// Default vertical margin from outer edge.
-pub const TOAST_DEFAULT_V_MARGIN: u16 = 1;
+/// Default inset from the footer right (or left) edge.
+pub const TOAST_DEFAULT_H_MARGIN: u16 = 0;
+/// Default inset from the footer row (the last row of the host area).
+pub const TOAST_DEFAULT_V_MARGIN: u16 = 0;
 
-// ── Severity / Anchor / Lifetime (preserved public API) ─────────────────────
+// ── Severity / Anchor / Lifetime ────────────────────────────────────────────
 
 /// Semantic status severities used by toasts, banners, and status slots.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -80,52 +70,50 @@ impl Severity {
         }
     }
 
-    /// Semantic paint role.
+    /// Footer-status paint role.
     #[must_use]
     pub const fn role(self) -> Role {
         match self {
-            Self::Info => Role::Info,
-            Self::Success => Role::Success,
-            Self::Warning => Role::Warning,
             Self::Error => Role::Danger,
+            Self::Warning => Role::Warning,
+            Self::Info | Self::Success => Role::TextSecondary,
         }
     }
 
-    /// Non-color glyph (ASCII).
+    /// Marker painted before the sentence (`!` / `•` / `✓`; info is quiet).
     #[must_use]
     pub const fn glyph_ascii(self) -> &'static str {
-        match self {
-            Self::Info => "i",
-            Self::Success => "+",
-            Self::Warning => "!",
-            Self::Error => "x",
-        }
+        self.glyph()
     }
 
-    /// Unicode glyph.
+    /// Marker painted before the sentence (`!` / `•` / `✓`; info is quiet).
     #[must_use]
     pub const fn glyph_unicode(self) -> &'static str {
+        self.glyph()
+    }
+
+    const fn glyph(self) -> &'static str {
         match self {
-            Self::Info => "ℹ",
+            Self::Info => "",
             Self::Success => "✓",
-            Self::Warning => "!",
-            Self::Error => "✗",
+            Self::Warning => "•",
+            Self::Error => "!",
         }
     }
 }
 
-/// Corners used to anchor a toast within its containing rectangle.
+/// Horizontal edge used to place the footer sentence.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum Anchor {
-    /// Places content at the top left.
+    /// Footer left edge.
     TopLeft,
-    /// Places content at the top right.
-    #[default]
+    /// Footer right edge.
     TopRight,
-    /// Places content at the bottom left.
+    /// Footer left edge.
     BottomLeft,
-    /// Places content at the bottom right.
+    /// Footer right edge (junie).
+    #[default]
     BottomRight,
 }
 
@@ -141,10 +129,10 @@ impl Anchor {
         }
     }
 
-    /// Stack grows downward from top anchors; upward from bottom.
+    /// Whether the sentence sits on the right edge of the footer.
     #[must_use]
-    pub const fn stacks_down(self) -> bool {
-        matches!(self, Self::TopLeft | Self::TopRight)
+    pub const fn is_right(self) -> bool {
+        matches!(self, Self::TopRight | Self::BottomRight)
     }
 }
 
@@ -213,40 +201,35 @@ impl ToastKind {
         }
     }
 
-    /// Border / glyph role.
+    /// Footer-status paint role. Success is secondary text, not a green fill.
     #[must_use]
     pub const fn role(self) -> Role {
         match self {
-            Self::Info | Self::Progress => Role::Info,
-            Self::Success | Self::Undo => Role::Success,
-            Self::Warning => Role::Warning,
             Self::Error => Role::Danger,
+            Self::Warning => Role::Warning,
+            Self::Info | Self::Success | Self::Progress | Self::Undo => Role::TextSecondary,
         }
     }
 
-    /// ASCII glyph.
+    /// Marker painted before the sentence.
     #[must_use]
     pub const fn glyph_ascii(self) -> &'static str {
-        match self {
-            Self::Info => "i",
-            Self::Success => "+",
-            Self::Warning => "!",
-            Self::Error => "x",
-            Self::Progress => "~",
-            Self::Undo => "<",
-        }
+        self.glyph()
     }
 
-    /// Unicode glyph.
+    /// Marker painted before the sentence.
     #[must_use]
     pub const fn glyph_unicode(self) -> &'static str {
+        self.glyph()
+    }
+
+    const fn glyph(self) -> &'static str {
         match self {
-            Self::Info => "ℹ",
-            Self::Success => "✓",
-            Self::Warning => "!",
-            Self::Error => "✗",
+            Self::Info => "",
+            Self::Success | Self::Undo => "✓",
+            Self::Warning => "•",
+            Self::Error => "!",
             Self::Progress => "…",
-            Self::Undo => "↶",
         }
     }
 }
@@ -319,7 +302,7 @@ pub enum ToastOutcome {
         /// Entry id.
         id: String,
     },
-    /// Queue paused (hover / host).
+    /// Queue paused (host / unfocused window).
     Paused,
     /// Queue resumed.
     Resumed,
@@ -330,29 +313,17 @@ pub enum ToastOutcome {
     },
 }
 
-// ── Single ToastState (preserved) ───────────────────────────────────────────
+// ── Single ToastState ───────────────────────────────────────────────────────
 
 /// Visibility and expiry state for a **single** transient notification.
 ///
-/// Entrance fade window (motion SoT §6: overlays fade in, ≤ 120 ms).
-pub const TOAST_ENTER_MS: u64 = 120;
-/// Single acknowledging pulse after a success toast arrives, then static.
-pub const TOAST_SUCCESS_PULSE_MS: u64 = 400;
-/// Exit fade window: the stack reflows once the leaving toast has faded.
-///
-/// A toast that vanishes between two frames moves every toast under it in the
-/// same frame, and the eye reads that as a new stack rather than a departure.
-/// Fading first is what makes the reflow legible (motion SoT §6).
-pub const TOAST_EXIT_MS: u64 = 120;
-
-/// Backed by [`Presence`] so TTL, deadlines, and focus rules share one motion
-/// primitive (toasts are never focusable).
+/// Backed by [`Presence`] so TTL and deadlines share one motion primitive
+/// (toasts are never focusable). No entrance or exit fade: junie feedback is
+/// quiet and timed, not flashing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ToastState {
     presence: Presence,
     lifetime: ToastLifetime,
-    /// Timeout pause (hover over toast region).
-    paused: bool,
 }
 
 impl Default for ToastState {
@@ -364,20 +335,11 @@ impl Default for ToastState {
 impl ToastState {
     /// Creates hidden toast state with an explicit lifetime policy.
     pub const fn new(lifetime: ToastLifetime) -> Self {
-        // Every presence constructor starts with a zero exit, which made
-        // `PresencePhase::Exiting` unreachable for toasts: they could only
-        // vanish. The tier still decides — `MotionPolicy::Off` collapses this
-        // back to an instant hide (plans/014 Step 3b).
-        let exit = Duration::from_millis(TOAST_EXIT_MS);
         let presence = match lifetime {
-            ToastLifetime::Persistent => Presence::persistent().with_exit(exit),
-            ToastLifetime::ExpiresAfter(ttl) => Presence::toast(ttl).with_exit(exit),
+            ToastLifetime::Persistent => Presence::persistent(),
+            ToastLifetime::ExpiresAfter(ttl) => Presence::toast(ttl),
         };
-        Self {
-            presence,
-            lifetime,
-            paused: false,
-        }
+        Self { presence, lifetime }
     }
 
     /// Lifetime policy.
@@ -394,28 +356,21 @@ impl ToastState {
     /// Hides the toast immediately.
     pub const fn dismiss(&mut self) {
         self.presence.force_hide();
-        self.paused = false;
     }
 
-    /// Pause TTL (e.g. pointer over toast).
-    pub fn set_paused(&mut self, on: bool) {
-        self.paused = on;
+    /// Pause TTL (e.g. terminal focus lost).
+    pub fn set_paused(&mut self, tick: FrameTick, on: bool) {
+        self.presence.set_paused(tick, on);
     }
 
     /// Paused?
     #[must_use]
     pub const fn is_paused(self) -> bool {
-        self.paused
+        self.presence.is_paused()
     }
 
     /// Advance TTL (call once per frame when shown). No-op while paused.
-    ///
-    /// The policy is the caller's, not `Off`: hardcoding it here is what kept
-    /// the exit phase unreachable no matter what the design system said.
     pub fn advance(&mut self, tick: FrameTick, motion: MotionPolicy) {
-        if self.paused {
-            return;
-        }
         let _ = self.presence.advance(tick, motion);
     }
 
@@ -428,81 +383,15 @@ impl ToastState {
         }
     }
 
-    /// Paint alpha for this frame: entrance fade, then the per-kind rule.
-    ///
-    /// - **Errors never animate.** A failure must be readable the instant it
-    ///   lands; fading one in delays the only message that cannot wait.
-    /// - **Success pulses once, then goes still** — an acknowledgement, not an
-    ///   ongoing state.
-    /// - Everything else fades in over [`TOAST_ENTER_MS`] and then holds.
-    #[must_use]
-    pub fn paint_alpha(self, tick: FrameTick, kind: ToastKind, policy: MotionPolicy) -> f32 {
-        if !policy.allows_transitions() {
-            return 1.0;
-        }
-        // The exit is checked first because a leaving toast has no `shown_at`:
-        // `Presence` has left `Visible`, so every rule below it — including the
-        // error rule, which is about arrival — has nothing to measure from. A
-        // departure fades whatever the kind: "read me now" is not "stay after
-        // you are gone".
-        if self.is_leaving() {
-            return self.presence.exit_alpha(tick);
-        }
-        if matches!(kind, ToastKind::Error) {
-            return 1.0;
-        }
-        let Some(since) = self.shown_at() else {
-            return 1.0;
-        };
-        let age = tick.now().saturating_duration_since(since).as_millis() as u64;
-        let enter = policy.clamp_duration(Duration::from_millis(TOAST_ENTER_MS));
-        let enter_ms = enter.as_millis() as u64;
-        if enter_ms > 0 && age < enter_ms {
-            return (age as f32 / enter_ms as f32).clamp(0.0, 1.0);
-        }
-        if matches!(kind, ToastKind::Success) && policy.allows_ambient() {
-            let pulse_age = age.saturating_sub(enter_ms);
-            if pulse_age < TOAST_SUCCESS_PULSE_MS {
-                // One dip and back to full: it starts and ends at 1.0, so the
-                // pulse cannot snap when it stops. A breathe would end at its
-                // trough and jump.
-                let phase = pulse_age as f32 / TOAST_SUCCESS_PULSE_MS as f32;
-                let dip = (std::f32::consts::PI * phase).sin().powi(2);
-                return 1.0 - crate::style::AMBIENT_PEAK * dip;
-            }
-        }
-        1.0
-    }
-
     /// Returns whether the toast is visible at this frame.
-    ///
-    /// Takes the tier for the same reason [`Self::advance`] does: whether a
-    /// toast past its TTL is still on screen depends on whether the tier gives
-    /// it an exit, and guessing here would contradict the frame that paints it.
     pub fn is_visible(&self, tick: FrameTick, motion: MotionPolicy) -> bool {
-        // Lazily apply TTL without requiring host to call advance (unless paused).
-        if self.paused {
-            return self.presence.is_visible();
-        }
         let mut copy = *self;
         copy.advance(tick, motion);
         copy.presence.is_visible()
     }
 
-    /// Whether the toast is on its way out (still painted, no longer live).
-    #[must_use]
-    pub const fn is_leaving(self) -> bool {
-        matches!(
-            self.presence.phase(),
-            crate::runtime::PresencePhase::Exiting { .. }
-        )
-    }
-
     /// Returns the expiration deadline, or `None` when hidden or persistent.
     pub fn next_deadline(&self) -> Option<Instant> {
-        if self.paused {
-            return None;
-        }
         self.presence.next_deadline()
     }
 
@@ -526,7 +415,7 @@ pub struct ToastSpec {
     pub kind: ToastKind,
     /// Priority for eviction.
     pub priority: ToastPriority,
-    /// Optional title (shown above body when set).
+    /// Optional title (folded into the one sentence when set).
     pub title: Option<String>,
     /// Primary message.
     pub message: String,
@@ -707,11 +596,11 @@ struct LiveToast {
     state: ToastState,
     progress: Option<u8>,
     group_id: Option<String>,
-    undo_label: Option<String>,
     announcement: String,
     archive_on_expire: bool,
     /// Last painted rect (hit testing).
     region: Option<Rect>,
+    undo_label: Option<String>,
 }
 
 /// Multi-toast host: queue, dedup, replace, pause, archive for NotificationCenter.
@@ -745,24 +634,24 @@ impl ToastQueue {
             max_visible: TOAST_DEFAULT_MAX_VISIBLE,
             max_missed: 50,
             paused: false,
-            anchor: Anchor::TopRight,
+            anchor: Anchor::BottomRight,
             h_margin: TOAST_DEFAULT_H_MARGIN,
             v_margin: TOAST_DEFAULT_V_MARGIN,
             generation: 0,
         }
     }
 
-    /// Max simultaneous visible.
+    /// Max simultaneous queued notices (paint is still one sentence).
     pub fn set_max_visible(&mut self, n: usize) {
         self.max_visible = n.max(1);
     }
 
-    /// Placement anchor for the stack.
+    /// Placement edge for the footer sentence.
     pub fn set_anchor(&mut self, anchor: Anchor) {
         self.anchor = anchor;
     }
 
-    /// Margins.
+    /// Insets from the footer edge.
     pub fn set_margins(&mut self, horizontal: u16, vertical: u16) {
         self.h_margin = horizontal;
         self.v_margin = vertical;
@@ -815,14 +704,14 @@ impl ToastQueue {
         std::mem::take(&mut self.missed)
     }
 
-    /// Pause all TTL clocks (pointer over stack).
-    pub fn set_paused(&mut self, on: bool) -> ToastOutcome {
+    /// Pause all TTL clocks (terminal focus lost).
+    pub fn set_paused(&mut self, tick: FrameTick, on: bool) -> ToastOutcome {
         if self.paused == on {
             return ToastOutcome::Ignored;
         }
         self.paused = on;
         for t in &mut self.live {
-            t.state.set_paused(on);
+            t.state.set_paused(tick, on);
         }
         if on {
             ToastOutcome::Paused
@@ -831,11 +720,11 @@ impl ToastQueue {
         }
     }
 
-    /// Push a toast; handles replace, dedup, eviction.
+    /// Push a toast; handles replace, dedup, eviction. Latest becomes the
+    /// visible footer sentence.
     pub fn push(&mut self, tick: FrameTick, spec: ToastSpec) -> ToastOutcome {
         self.generation = self.generation.saturating_add(1);
 
-        // Replace by explicit id
         if let Some(ref rid) = spec.replace_id {
             if let Some(pos) = self.live.iter().position(|t| t.id == *rid) {
                 let prev = self.live.remove(pos).expect("pos");
@@ -847,7 +736,6 @@ impl ToastQueue {
                 };
             }
         }
-        // Replace same id
         if let Some(pos) = self.live.iter().position(|t| t.id == spec.id) {
             let prev = self.live.remove(pos).expect("pos");
             let id = spec.id.clone();
@@ -857,7 +745,6 @@ impl ToastQueue {
                 id,
             };
         }
-        // Dedup
         if let Some(ref key) = spec.dedup_key {
             if let Some(existing) = self.live.iter().find(|t| t.dedup_key.as_ref() == Some(key)) {
                 return ToastOutcome::Deduplicated {
@@ -865,7 +752,6 @@ impl ToastQueue {
                 };
             }
         }
-        // Group replace: latest progress in group replaces prior
         if let Some(ref gid) = spec.group_id {
             if matches!(spec.kind, ToastKind::Progress) {
                 if let Some(pos) = self
@@ -893,7 +779,8 @@ impl ToastQueue {
     fn insert_live(&mut self, tick: FrameTick, spec: ToastSpec) {
         let mut state = ToastState::new(spec.lifetime);
         state.show(tick);
-        state.set_paused(self.paused);
+        state.set_paused(tick, self.paused);
+        let announcement = spec.announcement.unwrap_or_else(|| spec.message.clone());
         self.live.push_front(LiveToast {
             id: spec.id,
             dedup_key: spec.dedup_key,
@@ -904,22 +791,15 @@ impl ToastQueue {
             state,
             progress: spec.progress,
             group_id: spec.group_id,
-            undo_label: spec.undo_label,
-            announcement: spec.announcement.unwrap_or_else(|| String::new()),
+            announcement,
             archive_on_expire: spec.archive_on_expire,
             region: None,
+            undo_label: spec.undo_label,
         });
-        // Fix empty announcement
-        if let Some(front) = self.live.front_mut() {
-            if front.announcement.is_empty() {
-                front.announcement = front.message.clone();
-            }
-        }
     }
 
     fn evict_if_needed(&mut self) {
         while self.live.len() > self.max_visible {
-            // Drop lowest priority from back (oldest low)
             let mut worst = self.live.len() - 1;
             for (i, t) in self.live.iter().enumerate().rev() {
                 if t.priority < self.live[worst].priority {
@@ -927,9 +807,6 @@ impl ToastQueue {
                 }
             }
             if let Some(t) = self.live.remove(worst) {
-                if t.priority == ToastPriority::Critical && self.live.len() >= self.max_visible {
-                    // Prefer archiving non-critical — if only critical left, still archive oldest
-                }
                 self.archive(t, ToastArchiveReason::Evicted);
             } else {
                 break;
@@ -965,39 +842,22 @@ impl ToastQueue {
         ToastOutcome::Ignored
     }
 
-    /// Dismisses the newest live toast — the `esc` path.
-    ///
-    /// A toast that can only be waited out is a modal with no exit. `esc`
-    /// takes the top one; repeated presses walk the stack (plans/021 Step 6).
+    /// Dismisses the newest live toast.
     pub fn dismiss_top(&mut self) -> ToastOutcome {
-        // Newest first: the queue pushes to the front.
         let Some(id) = self.live.front().map(|t| t.id.clone()) else {
             return ToastOutcome::Ignored;
         };
         self.dismiss(&id)
     }
 
-    /// Keyboard path: `esc` dismisses the newest toast.
-    pub fn handle_key(&mut self, key: crate::input::KeyEvent) -> ToastOutcome {
-        if key.kind != crate::input::KeyEventKind::Press {
-            return ToastOutcome::Ignored;
-        }
-        match key.code {
-            crate::input::KeyCode::Esc => self.dismiss_top(),
-            _ => ToastOutcome::Ignored,
-        }
-    }
-
     /// Pauses or resumes every live toast's TTL.
     ///
-    /// Hosts wire this to terminal focus (`FocusGained` / `FocusLost`): a
-    /// notification that expires while the window is in the background was
-    /// never actually shown to anyone.
-    pub fn set_focus_paused(&mut self, paused: bool) -> ToastOutcome {
-        self.set_paused(paused)
+    /// Hosts wire this to terminal focus (`FocusGained` / `FocusLost`).
+    pub fn set_focus_paused(&mut self, tick: FrameTick, paused: bool) -> ToastOutcome {
+        self.set_paused(tick, paused)
     }
 
-    /// Activate undo / action for top matching id (host maps hotkey).
+    /// Activate undo / action for matching id (host maps hotkey).
     pub fn activate_action(&mut self, id: &str, action: impl Into<String>) -> ToastOutcome {
         if self.live.iter().any(|t| t.id == id) {
             ToastOutcome::ActionActivated {
@@ -1010,10 +870,6 @@ impl ToastQueue {
     }
 
     /// Advance all live toasts; expire and archive.
-    ///
-    /// The tier reaches the queue because the exit phase lives here: a toast
-    /// stays in the stack while it fades, so the toasts beneath it hold their
-    /// rows until it is gone.
     pub fn advance(&mut self, tick: FrameTick, motion: MotionPolicy) -> Vec<ToastOutcome> {
         let mut outs = Vec::new();
         if self.paused {
@@ -1057,7 +913,7 @@ impl ToastQueue {
         self.live.iter().map(|t| t.id.as_str())
     }
 
-    /// Hit-test stacked regions for pause / click (call after paint).
+    /// Hit-test the painted footer sentence (call after paint).
     pub fn region_at(&self, x: u16, y: u16) -> Option<&str> {
         let pos = ratatui_core::layout::Position { x, y };
         for t in &self.live {
@@ -1069,81 +925,91 @@ impl ToastQueue {
     }
 }
 
-// ── Paint helpers ───────────────────────────────────────────────────────────
+// ── Sentence composition / paint ────────────────────────────────────────────
 
-fn place_toast(
-    outer: Rect,
-    width: u16,
-    height: u16,
+fn body_text(title: Option<&str>, message: &str, progress: Option<u8>) -> String {
+    let mut body = match title {
+        Some(t) if !t.is_empty() && message.is_empty() => t.to_string(),
+        Some(t) if !t.is_empty() && t != message => format!("{t} · {message}"),
+        _ => message.to_string(),
+    };
+    if let Some(pct) = progress {
+        body = format!("{body} {pct}%");
+    }
+    body
+}
+
+fn status_sentence(
+    kind: ToastKind,
+    title: Option<&str>,
+    message: &str,
+    progress: Option<u8>,
+    live_count: usize,
+    undo_label: Option<&str>,
+) -> String {
+    let body = body_text(title, message, progress);
+    let body = match undo_label {
+        Some(label) if !label.is_empty() && body.is_empty() => label.to_string(),
+        Some(label) if !label.is_empty() => format!("{label} · {body}"),
+        _ => body,
+    };
+    let marker = kind.glyph();
+    let mut sentence = if marker.is_empty() {
+        body
+    } else if body.is_empty() {
+        marker.to_string()
+    } else {
+        format!("{marker} {body}")
+    };
+    if live_count > 1 {
+        sentence = format!("{sentence} · {live_count} notices");
+    }
+    sentence
+}
+
+fn place_status_sentence(
+    area: Rect,
+    sentence: &str,
     anchor: Anchor,
     h_margin: u16,
     v_margin: u16,
-    stack_index: u16,
-    stacks_down: bool,
-) -> Option<Rect> {
-    if outer.is_empty() || width == 0 || height == 0 {
+    ellipsis: &str,
+) -> Option<(Rect, String)> {
+    if area.is_empty() || sentence.is_empty() {
         return None;
     }
-    let width = width.min(outer.width);
-    let height = height.min(outer.height);
-    let x = match anchor {
-        Anchor::TopLeft | Anchor::BottomLeft => outer
-            .left()
-            .saturating_add(h_margin)
-            .min(outer.right().saturating_sub(width)),
-        Anchor::TopRight | Anchor::BottomRight => outer
-            .right()
+    let y = area
+        .bottom()
+        .saturating_sub(1)
+        .saturating_sub(v_margin)
+        .max(area.y);
+    if y >= area.bottom() {
+        return None;
+    }
+    let budget = usize::from(area.width.saturating_sub(h_margin));
+    if budget == 0 {
+        return None;
+    }
+    let fitted = truncate_cols(sentence, budget, ellipsis).into_owned();
+    let cols = u16::try_from(display_cols(&fitted)).unwrap_or(u16::MAX);
+    if cols == 0 {
+        return None;
+    }
+    let x = if anchor.is_right() {
+        area.right()
             .saturating_sub(h_margin)
-            .saturating_sub(width)
-            .max(outer.left()),
-    };
-    let step = height.saturating_add(TOAST_STACK_GAP);
-    let y = if stacks_down {
-        let base = outer
-            .top()
-            .saturating_add(v_margin)
-            .min(outer.bottom().saturating_sub(height));
-        base.saturating_add(stack_index.saturating_mul(step))
-            .min(outer.bottom().saturating_sub(height))
+            .saturating_sub(cols)
+            .max(area.x)
     } else {
-        let base = outer
-            .bottom()
-            .saturating_sub(v_margin)
-            .saturating_sub(height)
-            .max(outer.top());
-        base.saturating_sub(stack_index.saturating_mul(step))
-            .max(outer.top())
+        area.x
+            .saturating_add(h_margin)
+            .min(area.right().saturating_sub(cols).max(area.x))
     };
-    Some(Rect::new(x, y, width, height))
+    let width = cols.min(area.width);
+    Some((Rect::new(x, y, width, 1), fitted))
 }
 
-fn measure_toast_size(
-    title: Option<&str>,
-    message: &str,
-    has_undo: bool,
-    progress: Option<u8>,
-) -> (u16, u16) {
-    let mut w = display_cols(message) as u16 + 6; // glyph + pad + border
-    if let Some(t) = title {
-        w = w.max(display_cols(t) as u16 + 6);
-    }
-    if has_undo {
-        w = w.saturating_add(8);
-    }
-    if progress.is_some() {
-        w = w.max(16);
-    }
-    let mut h = 3u16; // border + line
-    if title.is_some() {
-        h = h.saturating_add(1);
-    }
-    if progress.is_some() {
-        h = h.saturating_add(1);
-    }
-    (w.clamp(10, 60), h.min(6))
-}
-
-fn paint_one_toast(
+fn paint_status_sentence(
     area: Rect,
     buffer: &mut Buffer,
     system: &DesignSystem,
@@ -1151,132 +1017,28 @@ fn paint_one_toast(
     title: Option<&str>,
     message: &str,
     progress: Option<u8>,
+    live_count: usize,
     undo_label: Option<&str>,
-    ascii: bool,
-    style_override: Option<Style>,
-) {
-    if area.is_empty() {
-        return;
-    }
-    let inner = Surface::new(system)
-        .recipe(SurfaceRecipe::Overlay)
-        .bordered(true)
-        .padding(0, 0)
-        .paint(area, buffer);
-    if inner.is_empty() {
-        return;
-    }
-    // The rail is chrome, not a signal: severity lives on the icon, so a
-    // stack of toasts is not a stack of colored bars (plans/007).
-    let rail = system.style(Role::Border);
-    for y in inner.y..inner.bottom() {
-        buffer[(inner.x, y)].set_style(rail);
-        buffer[(inner.x, y)].set_symbol(system.glyphs.rule_v());
-    }
-    let content = Rect::new(
-        inner.x.saturating_add(2),
-        inner.y,
-        inner.width.saturating_sub(2),
-        inner.height,
-    );
-    if content.is_empty() {
-        return;
-    }
-    let glyph = if ascii {
-        kind.glyph_ascii()
-    } else {
-        kind.glyph_unicode()
-    };
-    let text_style = style_override.unwrap_or(system.style(Role::Text));
-    let mut y = content.y;
-    if let Some(title) = title {
-        buffer.set_stringn(content.x, y, glyph, 1, system.style(kind.role()));
-        buffer.set_stringn(
-            content.x.saturating_add(2),
-            y,
-            &take_display_cols(title, usize::from(content.width.saturating_sub(2))),
-            usize::from(content.width.saturating_sub(2)),
-            system.style(Role::TextStrong).add_modifier(Modifier::BOLD),
-        );
-        y = y.saturating_add(1);
-        if y < content.bottom() {
-            buffer.set_stringn(
-                content.x,
-                y,
-                &take_display_cols(message, usize::from(content.width)),
-                usize::from(content.width),
-                text_style,
-            );
-            y = y.saturating_add(1);
-        }
-    } else {
-        buffer.set_stringn(content.x, y, glyph, 1, system.style(kind.role()));
-        let mut line = message.to_string();
-        if let Some(ul) = undo_label {
-            line = format!("{line}  [{ul}]");
-        }
-        buffer.set_stringn(
-            content.x.saturating_add(2),
-            y,
-            &take_display_cols(&line, usize::from(content.width.saturating_sub(2))),
-            usize::from(content.width.saturating_sub(2)),
-            text_style,
-        );
-        y = y.saturating_add(1);
-    }
-    if let Some(pct) = progress {
-        if y < content.bottom() {
-            let bar_w = usize::from(content.width).saturating_sub(5).max(1);
-            buffer.set_stringn(
-                content.x,
-                y,
-                &format!("{pct:3}% "),
-                5.min(usize::from(content.width)),
-                system.style(Role::Info),
-            );
-            let scaled = f64::from(pct) * bar_w as f64 / 100.0;
-            let filled = scaled.floor() as usize;
-            let partial = ((scaled.fract() * 8.0).floor() as usize).min(7);
-            let partial_glyph = crate::style::BLOCK_RAMP[partial].to_string();
-            let track_x = content.x.saturating_add(5);
-            for column in 0..bar_w {
-                let on = column < filled || (!ascii && column == filled && partial > 0);
-                let symbol = if column < filled {
-                    if ascii { "#" } else { "█" }
-                } else if !ascii && column == filled && partial > 0 {
-                    partial_glyph.as_str()
-                } else if ascii {
-                    "-"
-                } else {
-                    " "
-                };
-                buffer.set_stringn(
-                    track_x.saturating_add(column as u16),
-                    y,
-                    symbol,
-                    1,
-                    system.style(if on { Role::Info } else { Role::Sunken }),
-                );
-            }
-        }
-    } else if undo_label.is_some() && title.is_some() && y < content.bottom() {
-        if let Some(ul) = undo_label {
-            buffer.set_stringn(
-                content.x,
-                y,
-                &take_display_cols(&format!("[{ul}]"), usize::from(content.width)),
-                usize::from(content.width),
-                system.style(Role::TextMuted),
-            );
-        }
-    }
+    anchor: Anchor,
+    h_margin: u16,
+    v_margin: u16,
+) -> Option<Rect> {
+    let sentence = status_sentence(kind, title, message, progress, live_count, undo_label);
+    let (rect, fitted) = place_status_sentence(
+        area,
+        &sentence,
+        anchor,
+        h_margin,
+        v_margin,
+        system.glyphs.ellipsis(),
+    )?;
+    system.paint_row(buffer, rect, &fitted, system.style(kind.role()));
+    Some(rect)
 }
 
-// ── Single Toast widget (preserved shape) ───────────────────────────────────
+// ── Single Toast widget ─────────────────────────────────────────────────────
 
-/// Transient notification overlay with caller-owned lifetime and placement.
-///
-/// See lookbook `toast/*` stories for semantic variants and timing.
+/// Transient footer status sentence with caller-owned lifetime and placement.
 ///
 /// # Examples
 ///
@@ -1285,10 +1047,10 @@ fn paint_one_toast(
 /// use termrock::style::DesignSystem;
 /// use termrock::widgets::{Anchor, Severity, Toast};
 ///
-/// let system = DesignSystem::phosphor();
+/// let system = DesignSystem::junie();
 /// let toast = Toast::new(&system, "Saved", Severity::Success)
 ///     .anchor(Anchor::BottomRight)
-///     .margins(1, 1);
+///     .margins(1, 0);
 /// assert!(toast.rect(Rect::new(0, 0, 40, 8)).is_some());
 /// ```
 #[derive(Debug, Clone, Copy)]
@@ -1298,17 +1060,15 @@ pub struct Toast<'a> {
     kind: Option<ToastKind>,
     title: Option<&'a str>,
     anchor: Anchor,
-    style: Option<Style>,
     horizontal_margin: u16,
     vertical_margin: u16,
     system: &'a DesignSystem,
     progress: Option<u8>,
     undo_label: Option<&'a str>,
-    ascii: bool,
 }
 
 impl<'a> Toast<'a> {
-    /// Creates a toast with default top-right anchoring and margins.
+    /// Creates a toast anchored to the footer right edge.
     #[must_use]
     pub const fn new(system: &'a DesignSystem, message: &'a str, severity: Severity) -> Self {
         Self {
@@ -1316,25 +1076,23 @@ impl<'a> Toast<'a> {
             severity,
             kind: None,
             title: None,
-            anchor: Anchor::TopRight,
-            style: None,
+            anchor: Anchor::BottomRight,
             horizontal_margin: TOAST_DEFAULT_H_MARGIN,
             vertical_margin: TOAST_DEFAULT_V_MARGIN,
             system,
             progress: None,
             undo_label: None,
-            ascii: false,
         }
     }
 
-    /// Sets the corner used to anchor this content.
+    /// Sets the footer edge used to place this sentence.
     #[must_use]
     pub const fn anchor(mut self, anchor: Anchor) -> Self {
         self.anchor = anchor;
         self
     }
 
-    /// Sets horizontal and vertical margins in terminal cells.
+    /// Sets horizontal and vertical insets in terminal cells.
     #[must_use]
     pub const fn margins(mut self, horizontal: u16, vertical: u16) -> Self {
         self.horizontal_margin = horizontal;
@@ -1342,14 +1100,7 @@ impl<'a> Toast<'a> {
         self
     }
 
-    /// Overrides the theme-derived toast text style.
-    #[must_use]
-    pub const fn style(mut self, style: Style) -> Self {
-        self.style = Some(style);
-        self
-    }
-
-    /// Optional title line.
+    /// Optional title folded into the one sentence.
     #[must_use]
     pub const fn title(mut self, title: &'a str) -> Self {
         self.title = Some(title);
@@ -1371,18 +1122,12 @@ impl<'a> Toast<'a> {
         self
     }
 
-    /// Undo label.
+    /// Undo label (kind Undo). The sentence stays one row; the host owns the
+    /// hotkey that fires [`ToastQueue::activate_action`].
     #[must_use]
     pub const fn undo(mut self, label: &'a str) -> Self {
         self.undo_label = Some(label);
         self.kind = Some(ToastKind::Undo);
-        self
-    }
-
-    /// ASCII chrome.
-    #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
         self
     }
 
@@ -1391,59 +1136,43 @@ impl<'a> Toast<'a> {
             .unwrap_or_else(|| ToastKind::from_severity(self.severity))
     }
 
-    /// Returns the resolved outer toast rectangle.
+    /// Returns the resolved one-row footer rectangle.
     #[must_use]
     pub fn rect(&self, area: Rect) -> Option<Rect> {
-        if area.is_empty() || self.message.is_empty() {
-            return None;
-        }
-        // Classic single-line toast geometry (preserved for stories/docs).
-        let (width, height) =
-            if self.title.is_none() && self.progress.is_none() && self.undo_label.is_none() {
-                // Chrome is 6 columns: border (2), severity rail (1), the
-                // gaps around the glyph (2), and the glyph itself (1) —
-                // same budget `measure_toast_size` uses for the rich layout.
-                let width = u16::try_from(display_cols(self.message).saturating_add(6))
-                    .unwrap_or(u16::MAX)
-                    .min(area.width);
-                (width, 3.min(area.height))
-            } else {
-                let (w, h) = measure_toast_size(
-                    self.title,
-                    self.message,
-                    self.undo_label.is_some(),
-                    self.progress,
-                );
-                (w.min(area.width), h.min(area.height))
-            };
-        place_toast(
+        let sentence = status_sentence(
+            self.resolved_kind(),
+            self.title,
+            self.message,
+            self.progress,
+            1,
+            self.undo_label,
+        );
+        place_status_sentence(
             area,
-            width,
-            height,
+            &sentence,
             self.anchor,
             self.horizontal_margin,
             self.vertical_margin,
-            0,
-            self.anchor.stacks_down(),
+            self.system.glyphs.ellipsis(),
         )
+        .map(|(rect, _)| rect)
     }
 
     /// Paint when host has already decided visibility.
     pub fn paint(&self, outer: Rect, buffer: &mut Buffer) {
-        let Some(area) = self.rect(outer) else {
-            return;
-        };
-        paint_one_toast(
-            area,
+        let _ = paint_status_sentence(
+            outer,
             buffer,
             self.system,
             self.resolved_kind(),
             self.title,
             self.message,
             self.progress,
+            1,
             self.undo_label,
-            self.ascii,
-            self.style,
+            self.anchor,
+            self.horizontal_margin,
+            self.vertical_margin,
         );
     }
 }
@@ -1464,368 +1193,352 @@ impl Widget for Toast<'_> {
     }
 }
 
-// ── Toast stack widget ──────────────────────────────────────────────────────
+// ── Queue painter (one footer sentence, never a stack) ──────────────────────
 
-/// Paints a [`ToastQueue`] as a non-focus-stealing stack.
+/// Paints a [`ToastQueue`] as one footer status sentence. Latest wins; extra
+/// live notices are named (`3 notices`) on that same row.
 #[derive(Debug, Clone, Copy)]
 pub struct ToastStack<'a> {
     system: &'a DesignSystem,
-    ascii: bool,
 }
 
 impl<'a> ToastStack<'a> {
     /// System.
     #[must_use]
     pub const fn new(system: &'a DesignSystem) -> Self {
-        Self {
-            system,
-            ascii: false,
-        }
+        Self { system }
     }
 
-    /// ASCII.
-    #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
-    /// Paint queue; updates entry regions for hit-testing.
+    /// Paint the newest live notice as a footer sentence; records its region.
     pub fn paint(&self, outer: Rect, buffer: &mut Buffer, queue: &mut ToastQueue) {
+        for entry in &mut queue.live {
+            entry.region = None;
+        }
         if outer.is_empty() {
             return;
         }
-        let down = queue.anchor.stacks_down();
-        for (i, entry) in queue.live.iter_mut().enumerate() {
-            let (w, h) = measure_toast_size(
-                entry.title.as_deref(),
-                &entry.message,
-                entry.undo_label.is_some(),
-                entry.progress,
-            );
-            let h = if entry.title.is_none() && entry.progress.is_none() {
-                3
-            } else {
-                h
-            };
-            let Some(area) = place_toast(
-                outer,
-                w.min(outer.width),
-                h.min(outer.height),
-                queue.anchor,
-                queue.h_margin,
-                queue.v_margin,
-                i as u16,
-                down,
-            ) else {
-                entry.region = None;
-                continue;
-            };
-            // Skip if stacked out of bounds
-            if area.bottom() > outer.bottom() || area.y < outer.y {
-                entry.region = None;
-                continue;
-            }
-            // The tick rides the design system (migration 0299), so the stack
-            // fades without a new paint parameter.
-            let alpha = self.system.tick().map_or(1.0, |tick| {
-                entry
-                    .state
-                    .paint_alpha(tick, entry.kind, self.system.motion)
-            });
-            let faded = (alpha < 1.0).then(|| {
-                let canvas = self
-                    .system
-                    .style(Role::Canvas)
-                    .bg
-                    .unwrap_or(ratatui_core::style::Color::Reset);
-                crate::style::fade_style(self.system.style(Role::Text), alpha, canvas)
-            });
-            paint_one_toast(
-                area,
-                buffer,
-                self.system,
-                entry.kind,
-                entry.title.as_deref(),
-                &entry.message,
-                entry.progress,
-                entry.undo_label.as_deref(),
-                self.ascii,
-                faded,
-            );
-            entry.region = Some(area);
-        }
+        let live_count = queue.live.len();
+        let Some(entry) = queue.live.front_mut() else {
+            return;
+        };
+        entry.region = paint_status_sentence(
+            outer,
+            buffer,
+            self.system,
+            entry.kind,
+            entry.title.as_deref(),
+            &entry.message,
+            entry.progress,
+            live_count,
+            entry.undo_label.as_deref(),
+            queue.anchor,
+            queue.h_margin,
+            queue.v_margin,
+        );
     }
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
-mod state_tests {
-
-    #[test]
-    fn errors_never_fade_in() {
-        // A failure must be readable the instant it lands. Fading one in delays
-        // the one message that cannot wait.
-        let start = Instant::now();
-        let mut state = ToastState::new(ToastLifetime::Persistent);
-        state.show(tick(start, Duration::ZERO));
-        for ms in [0, 40, 119, 200] {
-            assert_eq!(
-                state.paint_alpha(
-                    tick(start, Duration::from_millis(ms)),
-                    ToastKind::Error,
-                    MotionPolicy::Full
-                ),
-                1.0,
-                "error faded at {ms}ms"
-            );
-        }
-    }
-
-    #[test]
-    fn ordinary_toasts_fade_in_then_hold() {
-        let start = Instant::now();
-        let mut state = ToastState::new(ToastLifetime::Persistent);
-        state.show(tick(start, Duration::ZERO));
-        let alpha = |ms: u64| {
-            state.paint_alpha(
-                tick(start, Duration::from_millis(ms)),
-                ToastKind::Info,
-                MotionPolicy::Full,
-            )
-        };
-
-        assert!(alpha(0) < 0.2, "entrance starts dim");
-        assert!(alpha(60) > alpha(0) && alpha(60) < 1.0, "entrance ramps");
-        assert_eq!(alpha(TOAST_ENTER_MS), 1.0, "entrance completes at the cap");
-        assert_eq!(alpha(5_000), 1.0, "and then holds — no ongoing motion");
-    }
-
-    #[test]
-    fn success_pulses_once_and_then_goes_still() {
-        let start = Instant::now();
-        let mut state = ToastState::new(ToastLifetime::Persistent);
-        state.show(tick(start, Duration::ZERO));
-        let alpha = |ms: u64| {
-            state.paint_alpha(
-                tick(start, Duration::from_millis(ms)),
-                ToastKind::Success,
-                MotionPolicy::Full,
-            )
-        };
-        assert_eq!(alpha(TOAST_ENTER_MS), 1.0, "the pulse starts at full");
-        let deepest = alpha(TOAST_ENTER_MS + TOAST_SUCCESS_PULSE_MS / 2);
-        assert!(deepest < 1.0, "success should acknowledge with one dip");
-        assert!(
-            deepest >= 1.0 - crate::style::AMBIENT_PEAK,
-            "the dip must whisper, not flash: {deepest}"
-        );
-        assert_eq!(
-            alpha(TOAST_ENTER_MS + TOAST_SUCCESS_PULSE_MS + 1),
-            1.0,
-            "one pulse, not a loop — a finished thing must not keep moving"
-        );
-    }
-
-    #[test]
-    fn off_lands_every_toast_instantly_and_basic_keeps_only_the_entrance() {
-        let start = Instant::now();
-        let mut state = ToastState::new(ToastLifetime::Persistent);
-        state.show(tick(start, Duration::ZERO));
-
-        // `Off`: nothing moves, for any kind.
-        for kind in [ToastKind::Info, ToastKind::Success, ToastKind::Error] {
-            let a = state.paint_alpha(tick(start, Duration::ZERO), kind, MotionPolicy::Off);
-            let b = state.paint_alpha(
-                tick(start, Duration::from_millis(300)),
-                kind,
-                MotionPolicy::Off,
-            );
-            assert_eq!(a, 1.0);
-            assert_eq!(b, 1.0, "{kind:?} moved under Off");
-        }
-
-        // `Basic` is "transitions ≤ 120 ms only" (SoT §3), so the entrance
-        // survives — but the ambient success pulse does not.
-        let entrance = state.paint_alpha(
-            tick(start, Duration::from_millis(60)),
-            ToastKind::Info,
-            MotionPolicy::Basic,
-        );
-        assert!(entrance < 1.0, "Basic should keep a short entrance fade");
-        assert_eq!(
-            state.paint_alpha(
-                tick(start, Duration::from_millis(TOAST_ENTER_MS + 200)),
-                ToastKind::Success,
-                MotionPolicy::Basic
-            ),
-            1.0,
-            "Basic must not run the ambient success pulse"
-        );
-    }
-    use super::*;
-
-    fn tick(start: Instant, elapsed: Duration) -> FrameTick {
-        FrameTick::manual(start + elapsed, elapsed, elapsed)
-    }
-
-    #[test]
-    fn a_toast_fades_out_before_the_stack_reflows() {
-        let start = Instant::now();
-        let ttl = Duration::from_secs(2);
-        let mut state = ToastState::new(ToastLifetime::ExpiresAfter(ttl));
-        state.show(tick(start, Duration::ZERO));
-
-        // Past its TTL the toast is leaving, not gone: it holds its row while
-        // it fades, so the toasts under it do not jump.
-        let leaving = tick(start, ttl + Duration::from_millis(20));
-        state.advance(leaving, MotionPolicy::Full);
-        assert!(state.is_leaving(), "TTL must open the exit, not skip it");
-        assert!(state.is_visible(leaving, MotionPolicy::Full));
-        // Sampled inside the window: at the instant the exit opens the fade
-        // has not travelled yet, so alpha is still exactly 1.0 there.
-        let mid = tick(start, ttl + Duration::from_millis(20 + TOAST_EXIT_MS / 2));
-        let alpha = state.paint_alpha(mid, ToastKind::Info, MotionPolicy::Full);
-        assert!(alpha < 1.0 && alpha > 0.0, "alpha {alpha}");
-
-        // And it is gone once the exit window closes.
-        let gone = tick(start, ttl + Duration::from_millis(TOAST_EXIT_MS + 20));
-        state.advance(gone, MotionPolicy::Full);
-        assert!(!state.is_leaving());
-        assert!(!state.is_visible(gone, MotionPolicy::Full));
-    }
-
-    #[test]
-    fn reduced_motion_skips_the_exit_entirely() {
-        let start = Instant::now();
-        let ttl = Duration::from_secs(2);
-        let mut state = ToastState::new(ToastLifetime::ExpiresAfter(ttl));
-        state.show(tick(start, Duration::ZERO));
-        let after = tick(start, ttl + Duration::from_millis(20));
-        state.advance(after, MotionPolicy::Off);
-        assert!(
-            !state.is_leaving(),
-            "a tier that forbids transitions hides at once"
-        );
-    }
-
-    #[test]
-    fn an_error_toast_never_fades_in_but_still_fades_out() {
-        let start = Instant::now();
-        let ttl = Duration::from_secs(2);
-        let mut state = ToastState::new(ToastLifetime::ExpiresAfter(ttl));
-        state.show(tick(start, Duration::ZERO));
-        // Arrival: full strength immediately — a failure cannot wait 120 ms.
-        assert_eq!(
-            state.paint_alpha(
-                tick(start, Duration::from_millis(20)),
-                ToastKind::Error,
-                MotionPolicy::Full
-            ),
-            1.0
-        );
-        let leaving = tick(start, ttl + Duration::from_millis(20));
-        state.advance(leaving, MotionPolicy::Full);
-        let mid = tick(start, ttl + Duration::from_millis(20 + TOAST_EXIT_MS / 2));
-        assert!(
-            state.paint_alpha(mid, ToastKind::Error, MotionPolicy::Full) < 1.0,
-            "leaving is a departure, not a message"
-        );
-    }
-
-    #[test]
-    fn ttl_is_visible_before_deadline_and_expires_at_boundary() {
-        let start = Instant::now();
-        let mut state = ToastState::new(ToastLifetime::ExpiresAfter(Duration::from_secs(2)));
-        state.show(tick(start, Duration::ZERO));
-
-        assert!(state.is_visible(tick(start, Duration::from_millis(1_999)), MotionPolicy::Off));
-        assert!(!state.is_visible(tick(start, Duration::from_secs(2)), MotionPolicy::Off));
-        assert_eq!(
-            state.next_deadline(),
-            start.checked_add(Duration::from_secs(2))
-        );
-    }
-
-    #[test]
-    fn persistent_toast_stays_visible_until_dismissed() {
-        let start = Instant::now();
-        let mut state = ToastState::new(ToastLifetime::Persistent);
-        state.show(tick(start, Duration::ZERO));
-
-        assert!(state.is_visible(tick(start, Duration::from_secs(86_400)), MotionPolicy::Off));
-        assert_eq!(state.next_deadline(), None);
-        state.dismiss();
-        assert!(!state.is_visible(tick(start, Duration::ZERO), MotionPolicy::Off));
-    }
-
-    #[test]
-    fn pause_freezes_ttl() {
-        let start = Instant::now();
-        let mut state = ToastState::new(ToastLifetime::ExpiresAfter(Duration::from_secs(2)));
-        state.show(tick(start, Duration::ZERO));
-        state.set_paused(true);
-        assert!(state.is_visible(tick(start, Duration::from_secs(10)), MotionPolicy::Off));
-        state.set_paused(false);
-        // After unpause, presence still advances from original show time
-        assert!(!state.is_visible(tick(start, Duration::from_secs(10)), MotionPolicy::Off));
-    }
-}
-
-#[cfg(test)]
 mod tests {
     use super::*;
+    use ratatui_core::style::Color;
 
     fn tick(start: Instant, elapsed: Duration) -> FrameTick {
         FrameTick::manual(start + elapsed, elapsed, Duration::ZERO)
     }
 
-    #[test]
-    fn anchors_and_margins_resolve_inside_the_outer_area() {
-        let theme = crate::style::RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
-        let outer = Rect::new(10, 5, 30, 12);
-        let top_right = Toast::new(&system, "Saved", Severity::Success)
-            .anchor(Anchor::TopRight)
-            .margins(2, 1)
-            .rect(outer)
-            .expect("visible toast");
-        let bottom_left = Toast::new(&system, "Saved", Severity::Success)
-            .anchor(Anchor::BottomLeft)
-            .margins(2, 1)
-            .rect(outer)
-            .expect("visible toast");
-
-        assert_eq!(top_right, Rect::new(27, 6, 11, 3));
-        assert_eq!(bottom_left, Rect::new(12, 13, 11, 3));
+    fn occupied_rows(buffer: &Buffer, area: Rect) -> Vec<u16> {
+        (area.y..area.bottom())
+            .filter(|&y| {
+                (area.x..area.right()).any(|x| {
+                    let sym = buffer[(x, y)].symbol();
+                    !sym.is_empty() && sym != " "
+                })
+            })
+            .collect()
     }
 
-    #[test]
-    fn classic_toast_rect_budgets_rail_and_glyph_so_message_never_clips() {
-        let system = crate::style::DesignSystem::default();
-        let message = "Selection copied";
-        let outer = Rect::new(0, 0, 60, 10);
-        let toast = Toast::new(&system, message, Severity::Success);
-        let mut buffer = Buffer::empty(outer);
-        toast.paint(outer, &mut buffer);
-        let mut painted = String::new();
-        for y in 0..outer.height {
-            for x in 0..outer.width {
-                if let Some(cell) = buffer.cell((x, y)) {
-                    painted.push_str(cell.symbol());
-                }
-            }
+    fn row_text(buffer: &Buffer, area: Rect, y: u16) -> String {
+        (area.x..area.right())
+            .map(|x| buffer[(x, y)].symbol().to_string())
+            .collect::<String>()
+    }
+
+    fn assert_no_rounded_frame(buffer: &Buffer) {
+        for cell in buffer.content() {
+            let s = cell.symbol();
+            assert!(
+                !matches!(
+                    s,
+                    "╭" | "╮"
+                        | "╰"
+                        | "╯"
+                        | "┌"
+                        | "┐"
+                        | "└"
+                        | "┘"
+                        | "╔"
+                        | "╗"
+                        | "╚"
+                        | "╝"
+                ),
+                "footer status must not paint overlay-card chrome, found {s:?}"
+            );
         }
-        assert!(
-            painted.contains(message),
-            "classic toast must paint the full message unclipped: {painted:?}"
-        );
+    }
+
+    fn painted_cells<'a>(
+        buffer: &'a Buffer,
+        area: Rect,
+    ) -> impl Iterator<Item = (u16, u16, &'a ratatui_core::buffer::Cell)> {
+        (area.y..area.bottom()).flat_map(move |y| {
+            (area.x..area.right()).filter_map(move |x| {
+                let cell = &buffer[(x, y)];
+                let sym = cell.symbol();
+                if sym.is_empty() || sym == " " {
+                    None
+                } else {
+                    Some((x, y, cell))
+                }
+            })
+        })
     }
 
     #[test]
     fn never_focusable() {
         assert!(!ToastState::new(ToastLifetime::Persistent).is_focusable());
+    }
+
+    #[test]
+    fn default_ttl_is_four_seconds() {
+        assert_eq!(TOAST_DEFAULT_TTL, Duration::from_secs(4));
+        assert!(matches!(
+            ToastLifetime::default_ttl(),
+            ToastLifetime::ExpiresAfter(d) if d == TOAST_DEFAULT_TTL
+        ));
+    }
+
+    #[test]
+    fn footer_sentence_sits_on_the_last_row_right_edge() {
+        let system = DesignSystem::junie();
+        let outer = Rect::new(0, 0, 40, 8);
+        let toast = Toast::new(&system, "Saved", Severity::Success);
+        let rect = toast.rect(outer).expect("visible status");
+        assert_eq!(rect.height, 1);
+        assert_eq!(rect.y, outer.bottom() - 1);
+        assert_eq!(rect.right(), outer.right());
+        assert!(rect.width >= 7, "✓ Saved must fit: {rect:?}");
+    }
+
+    #[test]
+    fn push_error_paints_bang_and_message_in_danger_on_a_single_row() {
+        let system = DesignSystem::junie();
+        let start = Instant::now();
+        let mut q = ToastQueue::new();
+        let _ = q.push(
+            tick(start, Duration::ZERO),
+            ToastSpec::message("e", "deploy failed").severity(Severity::Error),
+        );
+        let area = Rect::new(0, 0, 48, 6);
+        let mut buffer = Buffer::empty(area);
+        ToastStack::new(&system).paint(area, &mut buffer, &mut q);
+
+        let rows = occupied_rows(&buffer, area);
+        assert_eq!(
+            rows,
+            vec![area.bottom() - 1],
+            "one footer row, got {rows:?}"
+        );
+        let text = row_text(&buffer, area, rows[0]);
+        assert!(text.contains('!'), "{text:?}");
+        assert!(text.contains("deploy failed"), "{text:?}");
+        assert_no_rounded_frame(&buffer);
+
+        let danger = system.style(Role::Danger).fg.expect("danger fg");
+        for (_, _, cell) in painted_cells(&buffer, area) {
+            assert_eq!(cell.fg, danger, "error sentence must use Role::Danger");
+            assert!(
+                matches!(cell.bg, Color::Reset),
+                "error must not fill a second surface, bg={:?}",
+                cell.bg
+            );
+        }
+    }
+
+    #[test]
+    fn push_success_paints_check_in_secondary_text_without_green_fill() {
+        let system = DesignSystem::junie();
+        let start = Instant::now();
+        let mut q = ToastQueue::new();
+        let _ = q.push(
+            tick(start, Duration::ZERO),
+            ToastSpec::message("s", "Saved").severity(Severity::Success),
+        );
+        let area = Rect::new(0, 0, 40, 5);
+        let mut buffer = Buffer::empty(area);
+        ToastStack::new(&system).paint(area, &mut buffer, &mut q);
+
+        let rows = occupied_rows(&buffer, area);
+        assert_eq!(rows.len(), 1);
+        let text = row_text(&buffer, area, rows[0]);
+        assert!(text.contains('✓'), "{text:?}");
+        assert!(text.contains("Saved"), "{text:?}");
+        assert_no_rounded_frame(&buffer);
+
+        let secondary = system.style(Role::TextSecondary).fg.expect("secondary fg");
+        let success = system.style(Role::Success).fg.expect("success fg");
+        for (_, _, cell) in painted_cells(&buffer, area) {
+            assert_eq!(
+                cell.fg, secondary,
+                "success is secondary text, not a green fill"
+            );
+            assert_ne!(cell.fg, success);
+            assert!(
+                matches!(cell.bg, Color::Reset),
+                "success must not fill, bg={:?}",
+                cell.bg
+            );
+        }
+    }
+
+    #[test]
+    fn warning_uses_bullet_and_warning_role() {
+        let system = DesignSystem::junie();
+        let area = Rect::new(0, 0, 40, 4);
+        let mut buffer = Buffer::empty(area);
+        Toast::new(&system, "disk low", Severity::Warning).paint(area, &mut buffer);
+        let rows = occupied_rows(&buffer, area);
+        assert_eq!(rows.len(), 1);
+        let text = row_text(&buffer, area, rows[0]);
+        assert!(text.contains('•'), "{text:?}");
+        assert!(text.contains("disk low"), "{text:?}");
+        let warning = system.style(Role::Warning).fg.expect("warning fg");
+        for (_, _, cell) in painted_cells(&buffer, area) {
+            assert_eq!(cell.fg, warning);
+        }
+    }
+
+    #[test]
+    fn info_is_text_secondary_never_accent() {
+        let system = DesignSystem::junie();
+        let area = Rect::new(0, 0, 40, 4);
+        let mut buffer = Buffer::empty(area);
+        Toast::new(&system, "watching files", Severity::Info).paint(area, &mut buffer);
+        let rows = occupied_rows(&buffer, area);
+        assert_eq!(rows.len(), 1);
+        let text = row_text(&buffer, area, rows[0]);
+        assert!(text.contains("watching files"), "{text:?}");
+        let secondary = system.style(Role::TextSecondary).fg.expect("secondary fg");
+        let accent = system.style(Role::Accent).fg.expect("accent fg");
+        for (_, _, cell) in painted_cells(&buffer, area) {
+            assert_eq!(cell.fg, secondary);
+            assert_ne!(cell.fg, accent, "Info is never an accent swatch");
+        }
+    }
+
+    #[test]
+    fn expiry_after_four_seconds_with_frame_tick() {
+        let system = DesignSystem::junie();
+        let start = Instant::now();
+        let mut q = ToastQueue::new();
+        let _ = q.push(
+            tick(start, Duration::ZERO),
+            ToastSpec::message("e", "boom").severity(Severity::Error),
+        );
+        let area = Rect::new(0, 0, 32, 4);
+        let mut buffer = Buffer::empty(area);
+        ToastStack::new(&system).paint(area, &mut buffer, &mut q);
+        assert!(
+            occupied_rows(&buffer, area)
+                .iter()
+                .any(|&y| row_text(&buffer, area, y).contains("boom"))
+        );
+
+        let still = tick(start, Duration::from_millis(3_999));
+        assert!(
+            q.advance(still, MotionPolicy::Off).is_empty(),
+            "must hold until 4s"
+        );
+        assert_eq!(q.len(), 1);
+
+        let gone = tick(start, TOAST_DEFAULT_TTL);
+        let outs = q.advance(gone, MotionPolicy::Off);
+        assert!(
+            outs.iter()
+                .any(|o| matches!(o, ToastOutcome::Expired { id } if id == "e")),
+            "{outs:?}"
+        );
+        assert!(q.is_empty());
+
+        let mut buffer = Buffer::empty(area);
+        ToastStack::new(&system).paint(area, &mut buffer, &mut q);
+        assert!(
+            occupied_rows(&buffer, area).is_empty(),
+            "expired status must not paint"
+        );
+        assert_no_rounded_frame(&buffer);
+    }
+
+    #[test]
+    fn empty_paint_clears_stale_hit_regions() {
+        let system = DesignSystem::junie();
+        let start = Instant::now();
+        let mut q = ToastQueue::new();
+        let _ = q.push(
+            tick(start, Duration::ZERO),
+            ToastSpec::message("a", "Saved"),
+        );
+        let area = Rect::new(0, 0, 40, 5);
+        let mut buffer = Buffer::empty(area);
+        ToastStack::new(&system).paint(area, &mut buffer, &mut q);
+
+        assert!((area.x..area.right()).any(|x| { q.region_at(x, area.bottom() - 1).is_some() }));
+
+        ToastStack::new(&system).paint(Rect::default(), &mut buffer, &mut q);
+
+        assert!((area.x..area.right()).all(|x| { q.region_at(x, area.bottom() - 1).is_none() }));
+    }
+
+    #[test]
+    fn latest_wins_and_names_the_count_on_one_row() {
+        let system = DesignSystem::junie();
+        let start = Instant::now();
+        let mut q = ToastQueue::new();
+        let t0 = tick(start, Duration::ZERO);
+        let _ = q.push(t0, ToastSpec::message("a", "one"));
+        let _ = q.push(t0, ToastSpec::message("b", "two"));
+        let _ = q.push(
+            t0,
+            ToastSpec::message("c", "three").severity(Severity::Error),
+        );
+        let area = Rect::new(0, 0, 48, 8);
+        let mut buffer = Buffer::empty(area);
+        ToastStack::new(&system).paint(area, &mut buffer, &mut q);
+        let rows = occupied_rows(&buffer, area);
+        assert_eq!(rows.len(), 1, "never a stack, got {rows:?}");
+        let text = row_text(&buffer, area, rows[0]);
+        assert!(text.contains("three"), "{text:?}");
+        assert!(text.contains("3 notices"), "{text:?}");
+        assert!(!text.contains("one"), "{text:?}");
+        assert_no_rounded_frame(&buffer);
+    }
+
+    #[test]
+    fn never_steals_keyboard() {
+        assert!(!ToastState::new(ToastLifetime::Persistent).is_focusable());
+        let start = Instant::now();
+        let mut queue = ToastQueue::new();
+        let _ = queue.push(
+            tick(start, Duration::ZERO),
+            ToastSpec::message("a", "Saved"),
+        );
+        assert_eq!(queue.len(), 1);
+        assert!(matches!(
+            queue.dismiss("a"),
+            ToastOutcome::Dismissed { ref id } if id == "a"
+        ));
     }
 
     #[test]
@@ -1894,7 +1607,10 @@ mod tests {
             ToastOutcome::Replaced { .. }
         ));
         assert_eq!(q.len(), 1);
-        assert!(matches!(q.set_paused(true), ToastOutcome::Paused));
+        assert!(matches!(
+            q.set_paused(tick(start, Duration::ZERO), true),
+            ToastOutcome::Paused
+        ));
         assert!(q.is_paused());
         assert!(
             q.advance(tick(start, Duration::from_secs(9)), MotionPolicy::Off)
@@ -1927,7 +1643,7 @@ mod tests {
 
     #[test]
     fn stack_paint_and_announcement() {
-        let system = DesignSystem::default();
+        let system = DesignSystem::junie();
         let start = Instant::now();
         let mut q = ToastQueue::new();
         let _ = q.push(
@@ -1946,15 +1662,14 @@ mod tests {
             .iter()
             .map(|c| c.symbol().to_string())
             .collect();
-        assert!(
-            text.contains("Saved") || text.contains("+") || text.contains("✓"),
-            "{text}"
-        );
+        assert!(text.contains("Saved") && text.contains('✓'), "{text}");
+        assert_eq!(occupied_rows(&buf, area).len(), 1);
+        assert_no_rounded_frame(&buf);
     }
 
     #[test]
     fn single_toast_kinds_paint() {
-        let system = DesignSystem::default();
+        let system = DesignSystem::junie();
         let area = Rect::new(0, 0, 40, 10);
         for (sev, kind) in [
             (Severity::Info, ToastKind::Info),
@@ -1966,52 +1681,152 @@ mod tests {
             Toast::new(&system, "msg", sev)
                 .kind(kind)
                 .paint(area, &mut buf);
+            assert_eq!(occupied_rows(&buf, area).len(), 1);
+            assert_no_rounded_frame(&buf);
         }
         let mut buf = Buffer::empty(area);
         Toast::new(&system, "working", Severity::Info)
             .progress(40)
             .paint(area, &mut buf);
+        let text = occupied_rows(&buf, area)
+            .into_iter()
+            .map(|y| row_text(&buf, area, y))
+            .collect::<String>();
+        assert!(text.contains("40%"), "{text}");
         let mut buf = Buffer::empty(area);
         Toast::new(&system, "deleted", Severity::Success)
             .undo("Undo")
             .paint(area, &mut buf);
+        let text = occupied_rows(&buf, area)
+            .into_iter()
+            .map(|y| row_text(&buf, area, y))
+            .collect::<String>();
+        assert!(text.contains('✓'), "{text}");
+        assert!(text.contains("Undo · deleted"), "{text}");
     }
 
     #[test]
-    fn toast_chrome_is_muted_and_severity_lives_on_the_icon() {
-        let system = DesignSystem::default();
-        let area = Rect::new(0, 0, 24, 4);
-        let mut buffer = Buffer::empty(area);
-        paint_one_toast(
-            area,
-            &mut buffer,
-            &system,
-            ToastKind::Warning,
-            Some("Warning"),
-            "Check input",
-            None,
-            None,
-            false,
-            None,
+    fn undo_label_is_in_the_footer_sentence() {
+        let system = DesignSystem::junie();
+        let area = Rect::new(0, 0, 48, 4);
+        let mut buf = Buffer::empty(area);
+        Toast::new(&system, "Deleted draft", Severity::Success)
+            .undo("Undo")
+            .paint(area, &mut buf);
+        let text = occupied_rows(&buf, area)
+            .into_iter()
+            .map(|y| row_text(&buf, area, y))
+            .collect::<String>();
+        assert!(text.contains("Undo · Deleted draft"), "{text}");
+
+        let start = Instant::now();
+        let mut q = ToastQueue::new();
+        let _ = q.push(
+            tick(start, Duration::ZERO),
+            ToastSpec::message("u", "Deleted draft").undo("Undo"),
         );
-        // Border and rail are chrome; only the icon carries the severity
-        // (plans/007).
-        assert_eq!(buffer[(0, 0)].fg, system.style(Role::Border).fg.unwrap());
-        assert_eq!(buffer[(1, 1)].fg, system.style(Role::Border).fg.unwrap());
-        let warning = system.style(Role::Warning).fg.unwrap();
-        let icon_cells = (0..area.width)
-            .filter(|x| buffer[(*x, 1)].fg == warning)
-            .count();
-        assert_eq!(icon_cells, 1, "severity belongs to the icon cell alone");
+        let mut buf = Buffer::empty(area);
+        ToastStack::new(&system).paint(area, &mut buf, &mut q);
+        let text = occupied_rows(&buf, area)
+            .into_iter()
+            .map(|y| row_text(&buf, area, y))
+            .collect::<String>();
+        assert!(text.contains("Undo · Deleted draft"), "{text}");
     }
 
     #[test]
-    fn default_ttl_constant() {
-        assert_eq!(TOAST_DEFAULT_TTL, Duration::from_secs(4));
+    fn ttl_is_visible_before_deadline_and_expires_at_boundary() {
+        let start = Instant::now();
+        let mut state = ToastState::new(ToastLifetime::ExpiresAfter(Duration::from_secs(2)));
+        state.show(tick(start, Duration::ZERO));
+
+        assert!(state.is_visible(tick(start, Duration::from_millis(1_999)), MotionPolicy::Off));
+        assert!(!state.is_visible(tick(start, Duration::from_secs(2)), MotionPolicy::Off));
+        assert_eq!(
+            state.next_deadline(),
+            start.checked_add(Duration::from_secs(2))
+        );
+    }
+
+    #[test]
+    fn persistent_toast_stays_visible_until_dismissed() {
+        let start = Instant::now();
+        let mut state = ToastState::new(ToastLifetime::Persistent);
+        state.show(tick(start, Duration::ZERO));
+
+        assert!(state.is_visible(tick(start, Duration::from_secs(86_400)), MotionPolicy::Off));
+        assert_eq!(state.next_deadline(), None);
+        state.dismiss();
+        assert!(!state.is_visible(tick(start, Duration::ZERO), MotionPolicy::Off));
+    }
+
+    #[test]
+    fn pause_freezes_ttl_and_shifts_deadline() {
+        let start = Instant::now();
+        let mut state = ToastState::new(ToastLifetime::ExpiresAfter(Duration::from_secs(2)));
+        state.show(tick(start, Duration::ZERO));
+        state.set_paused(tick(start, Duration::from_secs(1)), true);
+        assert!(state.is_paused());
+        assert!(state.next_deadline().is_none());
+        assert!(state.is_visible(tick(start, Duration::from_secs(10)), MotionPolicy::Off));
+
+        state.set_paused(tick(start, Duration::from_secs(10)), false);
+        assert!(!state.is_paused());
+        assert_eq!(state.shown_at(), start.checked_add(Duration::from_secs(9)));
+        assert_eq!(
+            state.next_deadline(),
+            start.checked_add(Duration::from_secs(11))
+        );
+        assert!(state.is_visible(tick(start, Duration::from_secs(10)), MotionPolicy::Off));
+        state.advance(tick(start, Duration::from_secs(11)), MotionPolicy::Off);
+        assert!(!state.is_visible(tick(start, Duration::from_secs(11)), MotionPolicy::Off));
+    }
+
+    #[test]
+    fn queue_pause_freezes_existing_and_new_toasts() {
+        let start = Instant::now();
+        let lifetime = ToastLifetime::ExpiresAfter(Duration::from_secs(2));
+        let mut q = ToastQueue::new();
+        let _ = q.push(
+            tick(start, Duration::ZERO),
+            ToastSpec::message("old", "old").lifetime(lifetime),
+        );
         assert!(matches!(
-            ToastLifetime::default_ttl(),
-            ToastLifetime::ExpiresAfter(d) if d == TOAST_DEFAULT_TTL
+            q.set_paused(tick(start, Duration::from_secs(1)), true),
+            ToastOutcome::Paused
         ));
+        let _ = q.push(
+            tick(start, Duration::from_secs(9)),
+            ToastSpec::message("new", "new").lifetime(lifetime),
+        );
+
+        assert!(q.next_deadline().is_none());
+        assert!(
+            q.advance(tick(start, Duration::from_secs(10)), MotionPolicy::Off)
+                .is_empty()
+        );
+        assert!(matches!(
+            q.set_paused(tick(start, Duration::from_secs(10)), false),
+            ToastOutcome::Resumed
+        ));
+        assert_eq!(
+            q.next_deadline(),
+            start.checked_add(Duration::from_secs(11))
+        );
+        let old_expired = q.advance(tick(start, Duration::from_secs(11)), MotionPolicy::Off);
+        assert!(
+            old_expired
+                .iter()
+                .any(|out| matches!(out, ToastOutcome::Expired { id } if id == "old"))
+        );
+        assert_eq!(q.len(), 1);
+        let new_expired = q.advance(tick(start, Duration::from_secs(12)), MotionPolicy::Off);
+        assert!(
+            new_expired
+                .iter()
+                .any(|out| matches!(out, ToastOutcome::Expired { id } if id == "new"))
+        );
+        assert!(q.is_empty());
     }
 
     #[test]
@@ -2045,7 +1860,7 @@ mod tests {
                     );
                 }
                 2 => {
-                    let _ = q.set_paused(seed % 2 == 0);
+                    let _ = q.set_paused(t, seed % 2 == 0);
                 }
                 3 => {
                     let _ = q.advance(t, MotionPolicy::Off);
@@ -2064,7 +1879,7 @@ mod tests {
     fn paint_perf_smoke() {
         use ratatui_core::backend::TestBackend;
         use ratatui_core::terminal::Terminal;
-        let system = DesignSystem::default();
+        let system = DesignSystem::junie();
         let start = Instant::now();
         let mut q = ToastQueue::new();
         for i in 0..4 {
@@ -2086,43 +1901,16 @@ mod tests {
     }
 
     #[test]
-    fn esc_dismisses_the_newest_toast() {
-        use crate::input::{KeyCode, KeyEvent, KeyModifiers};
-
-        let start = Instant::now();
-        let mut queue = ToastQueue::new();
-        let _ = queue.push(
-            tick(start, Duration::ZERO),
-            ToastSpec::message("a", "Saved"),
-        );
-        let _ = queue.push(
-            tick(start, Duration::from_millis(10)),
-            ToastSpec::message("b", "Copied"),
-        );
-        let out = queue.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
-        assert!(
-            matches!(out, ToastOutcome::Dismissed { ref id } if id == "b"),
-            "esc takes the newest toast: {out:?}"
-        );
-        let out = queue.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
-        assert!(matches!(out, ToastOutcome::Dismissed { ref id } if id == "a"));
-        assert!(matches!(
-            queue.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
-            ToastOutcome::Ignored
-        ));
-    }
-
-    #[test]
     fn pty_snapshot_stable() {
         use ratatui_core::backend::TestBackend;
         use ratatui_core::terminal::Terminal;
-        let system = DesignSystem::default();
+        let system = DesignSystem::junie();
         let paint = || {
             let mut terminal = Terminal::new(TestBackend::new(40, 8)).unwrap();
             terminal
                 .draw(|f| {
                     Toast::new(&system, "Updated", Severity::Success)
-                        .anchor(Anchor::TopRight)
+                        .anchor(Anchor::BottomRight)
                         .paint(f.area(), f.buffer_mut());
                 })
                 .unwrap();

@@ -10,10 +10,9 @@
 //! dashboards. Focus belongs to the header when collapsible; otherwise to
 //! interactive descendants in `body`. Nested sections use [`Section::indent`]
 //! / [`Section::depth`].
-
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
-use crate::input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
+use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{EventResult, UiIntent, default_button_intent, default_list_intent};
 use crate::style::{DesignSystem, Role};
 use crate::text::{display_cols, take_display_cols};
@@ -140,7 +139,7 @@ impl SectionState {
 
     /// Key path via intents.
     pub fn handle_key(&mut self, key: KeyEvent, collapsible: bool) -> SectionOutcome {
-        if !self.focused || !collapsible || key.kind != KeyEventKind::Press {
+        if !self.focused || !collapsible || !key.is_press() {
             return SectionOutcome::Ignored;
         }
         let Some(intent) = default_button_intent(key).or_else(|| default_list_intent(key)) else {
@@ -773,18 +772,6 @@ mod tests {
         let mut state = SectionState::new();
         let body = section.paint(Rect::new(0, 0, 32, 8), &mut buf, Some(&mut state));
         assert!(body.height > 0);
-    }
-
-    #[test]
-    fn ascii_disclosure_glyphs() {
-        use crate::style::GlyphSet;
-        let system = DesignSystem::default().glyphs(GlyphSet::Ascii);
-        let section = Section::new("A", &system).collapsible(true);
-        let mut state = SectionState::new();
-        state.set_collapsed(true);
-        let mut buf = Buffer::empty(Rect::new(0, 0, 20, 3));
-        let _ = section.paint(Rect::new(0, 0, 20, 3), &mut buf, Some(&mut state));
-        assert_eq!(buf[(0, 0)].symbol(), ">");
     }
 
     #[test]

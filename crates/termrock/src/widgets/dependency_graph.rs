@@ -15,16 +15,13 @@
 //! TermRock owns layout, paint, selection chrome, and typed outcomes.
 //!
 //! Research: terminal graph tools, dependency trees, service maps, FTXUI canvases.
-
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
-    style::{DesignSystem, Role},
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    style::{DesignSystem, ListRowVisualState, Role},
     text::take_display_cols,
     widgets::{
         data_view::{ColumnModel, DataColumn, DataColumnWidth},
@@ -81,27 +78,15 @@ impl DepNodeKind {
 
     /// Glyph.
     #[must_use]
-    pub const fn glyph(self, ascii: bool) -> &'static str {
-        if ascii {
-            match self {
-                Self::Package => "P",
-                Self::Service => "S",
-                Self::Schema => "C",
-                Self::Table => "T",
-                Self::Task => "J",
-                Self::Module => "M",
-                Self::Other => "?",
-            }
-        } else {
-            match self {
-                Self::Package => "▣",
-                Self::Service => "⬡",
-                Self::Schema => "▤",
-                Self::Table => "▦",
-                Self::Task => "▸",
-                Self::Module => "◇",
-                Self::Other => "?",
-            }
+    pub const fn glyph(self, _ascii: bool) -> &'static str {
+        match self {
+            Self::Package => "▣",
+            Self::Service => "⬡",
+            Self::Schema => "▤",
+            Self::Table => "▦",
+            Self::Task => "▸",
+            Self::Module => "◇",
+            Self::Other => "?",
         }
     }
 }
@@ -203,16 +188,12 @@ impl DepEdgeKind {
 
     /// Connector glyph preference.
     #[must_use]
-    pub const fn arrow(self, ascii: bool) -> &'static str {
-        if ascii {
-            "->"
-        } else {
-            match self {
-                Self::DependsOn | Self::Imports => "→",
-                Self::Calls => "⇒",
-                Self::Contains => "⊃",
-                Self::Blocks => "↛",
-            }
+    pub const fn arrow(self, _ascii: bool) -> &'static str {
+        match self {
+            Self::DependsOn | Self::Imports => "→",
+            Self::Calls => "⇒",
+            Self::Contains => "⊃",
+            Self::Blocks => "↛",
         }
     }
 }
@@ -819,8 +800,6 @@ pub struct DependencyGraphState {
     pub filter: Option<String>,
     /// Cursor index in list/tree projection.
     pub cursor: usize,
-    /// ASCII connectors.
-    pub ascii: bool,
     /// Last effective view (set on paint).
     pub effective_view: DependencyGraphView,
     /// Unreadable reason if any.
@@ -848,7 +827,6 @@ impl DependencyGraphState {
             pan_y: 0,
             filter: None,
             cursor: 0,
-            ascii: false,
             effective_view: DependencyGraphView::Graph,
             unreadable: None,
             node_regions: Vec::new(),
@@ -893,7 +871,7 @@ impl DependencyGraphState {
         edges: &[DepEdge<'_>],
         key: KeyEvent,
     ) -> DependencyGraphOutcome {
-        if !self.accepts_input || key.kind != KeyEventKind::Press {
+        if !self.accepts_input || !key.is_press() {
             return DependencyGraphOutcome::Ignored;
         }
 
@@ -1125,7 +1103,6 @@ pub struct DependencyGraph<'a> {
     system: &'a DesignSystem,
     focused: bool,
     title: Option<&'a str>,
-    ascii: bool,
 }
 
 impl<'a> DependencyGraph<'a> {
@@ -1142,7 +1119,6 @@ impl<'a> DependencyGraph<'a> {
             system,
             focused: true,
             title: None,
-            ascii: false,
         }
     }
 
@@ -1162,17 +1138,11 @@ impl<'a> DependencyGraph<'a> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Paint.
     pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut DependencyGraphState) {
         if area.is_empty() {
             return;
         }
-        let ascii = self.ascii || state.ascii;
         state.node_regions.clear();
 
         let filtered = filter_dep_nodes(self.nodes, state.filter.as_deref().unwrap_or(""));
@@ -1247,7 +1217,7 @@ impl<'a> DependencyGraph<'a> {
                     buffer,
                     self.system,
                     state,
-                    ascii,
+                    false,
                     self.focused,
                 );
             }
@@ -1259,7 +1229,7 @@ impl<'a> DependencyGraph<'a> {
                     buffer,
                     self.system,
                     state,
-                    ascii,
+                    false,
                     self.focused,
                     matches!(view, DependencyGraphView::Tree),
                 );
@@ -1275,7 +1245,7 @@ fn paint_graph(
     buffer: &mut Buffer,
     system: &DesignSystem,
     state: &mut DependencyGraphState,
-    ascii: bool,
+    _ascii: bool,
     focused: bool,
 ) {
     if nodes.is_empty() {
@@ -1293,9 +1263,9 @@ fn paint_graph(
     let node_by: BTreeMap<&str, &DepNode<'_>> = nodes.iter().map(|n| (n.id, n)).collect();
 
     // Draw edges first (under nodes)
-    let h_line = if ascii { "-" } else { "─" };
-    let v_line = if ascii { "|" } else { "│" };
-    let corner = if ascii { "+" } else { "┼" };
+    let h_line = "─";
+    let v_line = "│";
+    let corner = "┼";
 
     for e in edges {
         let Some(a) = by_id.get(e.from) else {
@@ -1339,7 +1309,7 @@ fn paint_graph(
         if mid_x >= area.x && mid_x < area.right() && mid_y >= area.y && mid_y < area.bottom() {
             put_sym(buffer, mid_x, mid_y, corner, style);
         }
-        let _ = e.kind.arrow(ascii);
+        let _ = e.kind.arrow(false);
     }
 
     // Draw nodes
@@ -1360,27 +1330,24 @@ fn paint_graph(
             continue;
         }
         let selected = state.selected.as_deref() == Some(n.id);
-        let letter = if ascii {
-            n.status.letter_ascii()
-        } else {
-            n.status.letter()
-        };
-        let mark = if selected {
-            if ascii { "*" } else { "›" }
-        } else {
-            " "
-        };
+        let letter = n.status.letter();
+        let mark = " ";
         let label = format!(
             "{mark}{}{} {}",
-            n.kind.glyph(ascii),
+            n.kind.glyph(false),
             letter,
             take_display_cols(n.label, usize::from(w.saturating_sub(4)))
         );
-        let style = if selected && focused {
-            system.style(Role::Focus)
-        } else {
-            system.style(n.status.role())
-        };
+        let chrome = crate::widgets::row_chrome::RowChrome::resolve(
+            system,
+            ListRowVisualState {
+                selected,
+                focused: selected && focused,
+                enabled: true,
+                ..Default::default()
+            },
+        );
+        let style = chrome.label_style(system.style(n.status.role()));
         buffer.set_stringn(
             x,
             y,
@@ -1399,6 +1366,7 @@ fn paint_graph(
                 );
             }
         }
+        chrome.paint(buffer, Rect::new(x, y, w, h));
         state.node_regions.push((
             n.id.to_string(),
             Rect {
@@ -1430,7 +1398,7 @@ fn paint_list_or_tree(
     buffer: &mut Buffer,
     system: &DesignSystem,
     state: &mut DependencyGraphState,
-    ascii: bool,
+    _ascii: bool,
     focused: bool,
     tree: bool,
 ) {
@@ -1499,38 +1467,34 @@ fn paint_list_or_tree(
             String::new()
         };
         let disc = if tree && m.2 {
-            if m.3 {
-                if ascii { "v " } else { "▾ " }
-            } else if ascii {
-                "> "
-            } else {
-                "▸ "
-            }
+            if m.3 { "▾ " } else { "▸ " }
         } else {
             "  "
         };
-        let mark = if selected {
-            if ascii { ">" } else { "›" }
-        } else {
-            " "
-        };
+        let mark = " ";
         let line = format!(
             "{mark}{indent}{disc}{:<16} {:<8} {}",
             take_display_cols(&cells[0], 16),
             cells[1],
             cells[2]
         );
+        let chrome = crate::widgets::row_chrome::RowChrome::resolve(
+            system,
+            ListRowVisualState {
+                selected,
+                focused: selected && focused,
+                enabled: true,
+                ..Default::default()
+            },
+        );
         buffer.set_stringn(
             area.x,
             y,
             take_display_cols(&line, usize::from(area.width)),
             usize::from(area.width),
-            if selected && focused {
-                system.style(Role::Focus)
-            } else {
-                system.style(Role::Text)
-            },
+            chrome.label_style(system.style(Role::Text)),
         );
+        chrome.paint(buffer, Rect::new(area.x, y, area.width, 1));
         state.node_regions.push((
             m.0.clone(),
             Rect {
@@ -1667,7 +1631,7 @@ mod tests {
         let mut state = DependencyGraphState::with_selected("termrock");
         let area = Rect::new(0, 0, 72, 16);
         let mut buf = Buffer::empty(area);
-        DependencyGraph::new(&nodes, &edges, &system)
+        let _ = DependencyGraph::new(&nodes, &edges, &system)
             .title("Crates")
             .render(area, &mut buf, &mut state);
         assert_eq!(state.effective_view, DependencyGraphView::Graph);
@@ -1682,7 +1646,7 @@ mod tests {
         );
 
         state.force_tree = true;
-        DependencyGraph::new(&nodes, &edges, &system).render(area, &mut buf, &mut state);
+        let _ = DependencyGraph::new(&nodes, &edges, &system).render(area, &mut buf, &mut state);
         assert_eq!(state.effective_view, DependencyGraphView::Tree);
     }
 
@@ -1738,7 +1702,8 @@ mod tests {
         let area = Rect::new(0, 0, 100, 30);
         let mut buf = Buffer::empty(area);
         for _ in 0..8 {
-            DependencyGraph::new(&nodes, &edges, &system).render(area, &mut buf, &mut state);
+            let _ =
+                DependencyGraph::new(&nodes, &edges, &system).render(area, &mut buf, &mut state);
             let _ = state.handle_key(
                 &nodes,
                 &edges,

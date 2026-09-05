@@ -78,4 +78,4 @@ jobs:
             exit 1
           fi
           test -f docs/public/preview-posters/list-selection.json
-          cargo run -p termrock-lookbook -- frame --story list/selection --cols 40 --rows 8 >/dev/null
+          cargo run -p termrock-catalog -- frame --page lists --cols 40 --rows 8 >/dev/null

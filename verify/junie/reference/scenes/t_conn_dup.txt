@@ -1,0 +1,40 @@
+ ▪  TablePro  Connections  7 saved                                                           truecolor · 120×40  ? help
+
+ ╭─ Connections ─────────────────── 7 ─╮    Local PostgreSQL
+ │                                     │
+ │ ▎ Filter connections                │    Engine       PostgreSQL
+ │ ▎▾ Personal                         │    Host         localhost:5432
+ │ ▎    · Local PostgreSQL         pg  │    Database     acme_dev
+ │ ▎    · Local PostgreSQL (Copy)  pg  │    User         postgres
+ │ ▎    · Scratch              sqlite  │    Environment  local
+ │ ▎▾ Acme                             │    Safe Mode    Silent · Writes run without asking. DROP, TRUNCATE
+ │ ▎    · Development              pg  │                 and DELETE without WHERE still confirm.
+ │ ▎    ◇ Staging                  pg  │    SSL / SSH    off / off
+ │ ▎    ◆ Analytics             mysql  │    Last used    2 minutes ago
+ │ ▎    ◆ Production               pg  │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │    ▎Connect   ▎Edit   ▎Duplicate   ▎Delete…
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ ╰─────────────────────────────────────╯
+
+ ↑ ↓ Move  Enter Connect  / Filter  Ctrl+N New  Tab Next                                                     Duplicated

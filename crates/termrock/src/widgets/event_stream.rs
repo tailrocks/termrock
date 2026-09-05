@@ -15,7 +15,6 @@
 //! EventStream optimizes sustained append rates and unread/backpressure.
 //!
 //! Research: observability event consoles, k8s events, agent activity streams.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeSet;
 
@@ -98,25 +97,14 @@ impl EventSeverity {
 
     /// Glyph for structured chrome.
     #[must_use]
-    pub const fn glyph(self, ascii: bool) -> &'static str {
-        if ascii {
-            match self {
-                Self::Trace => "T",
-                Self::Debug => "D",
-                Self::Info => "I",
-                Self::Warn => "W",
-                Self::Error => "E",
-                Self::Critical => "!",
-            }
-        } else {
-            match self {
-                Self::Trace => ".",
-                Self::Debug => "·",
-                Self::Info => "i",
-                Self::Warn => "!",
-                Self::Error => "x",
-                Self::Critical => "◆",
-            }
+    pub const fn glyph(self, _ascii: bool) -> &'static str {
+        match self {
+            Self::Trace => ".",
+            Self::Debug => "·",
+            Self::Info => "i",
+            Self::Warn => "!",
+            Self::Error => "x",
+            Self::Critical => "◆",
         }
     }
 
@@ -379,8 +367,6 @@ pub struct EventStreamState<Id: Clone + PartialEq + Ord = ()> {
     event_count: u16,
     /// Hit regions from the last paint.
     pub regions: Vec<EventStreamRegion<Id>>,
-    /// Prefer ASCII severity / follow glyphs.
-    pub ascii: bool,
     /// Prefer non-chromatic severity emphasis.
     pub colorless: bool,
     /// Show inspector detail strip under selection when detail present.
@@ -416,7 +402,6 @@ impl<Id: Clone + PartialEq + Ord> EventStreamState<Id> {
             area_rows: 0,
             event_count: 0,
             regions: Vec::new(),
-            ascii: false,
             colorless: false,
             show_inline_detail: true,
         }
@@ -533,7 +518,7 @@ impl<Id: Clone + PartialEq + Ord> EventStreamState<Id> {
             if let Some(i) = view.iter().position(|e| &e.id == aid) {
                 self.cursor = i;
                 self.selected = Some(aid.clone());
-                self.ensure_cursor_visible(view.len());
+                self.scroll.reveal_row(self.cursor);
             }
         }
     }
@@ -562,32 +547,16 @@ impl<Id: Clone + PartialEq + Ord> EventStreamState<Id> {
         }
     }
 
-    fn ensure_cursor_visible(&mut self, len: usize) {
-        if len == 0 || self.body_rows == 0 {
-            return;
-        }
-        let vh = usize::from(self.body_rows);
-        let start = usize::from(self.scroll.offset_y());
-        let end = start.saturating_add(vh);
-        if self.cursor < start {
-            self.scroll.set_offset_y_quiet(self.cursor as u16);
-        } else if self.cursor >= end {
-            let next = self.cursor.saturating_add(1).saturating_sub(vh);
-            self.scroll.set_offset_y_quiet(next as u16);
-        }
-        self.scroll.clamp();
-    }
-
     /// Keys.
     pub fn handle_key(
         &mut self,
         key: KeyEvent,
         events: &[StreamEvent<'_, Id>],
     ) -> EventStreamOutcome<Id> {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return EventStreamOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         if is_press && matches!(key.code, KeyCode::Char('/')) && key.modifiers.is_empty() {
             if self.filter.is_none() {
@@ -695,7 +664,7 @@ impl<Id: Clone + PartialEq + Ord> EventStreamState<Id> {
                     let was = self.scroll.is_following();
                     self.cursor = 0;
                     self.scroll.pause_follow();
-                    self.ensure_cursor_visible(view.len());
+                    self.scroll.reveal_row(self.cursor);
                     self.select_at(&view);
                     if was {
                         EventStreamOutcome::Detach
@@ -786,7 +755,7 @@ impl<Id: Clone + PartialEq + Ord> EventStreamState<Id> {
             return EventStreamOutcome::Ignored;
         }
         self.cursor = idx;
-        self.ensure_cursor_visible(view.len());
+        self.scroll.reveal_row(self.cursor);
         self.select_at(view);
         if was_follow && !self.is_following() {
             EventStreamOutcome::Detach
@@ -919,7 +888,6 @@ pub struct EventStream<'a, Id = ()> {
     events: &'a [StreamEvent<'a, Id>],
     system: &'a DesignSystem,
     focused: bool,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -931,7 +899,6 @@ impl<'a> EventStream<'a, ()> {
             events,
             system,
             focused: true,
-            ascii: false,
             colorless: false,
         }
     }
@@ -945,7 +912,6 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
             events,
             system,
             focused: true,
-            ascii: false,
             colorless: false,
         }
     }
@@ -959,13 +925,7 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
         self
@@ -979,8 +939,8 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
             state.area_rows = 0;
             return;
         }
-        let ascii = self.ascii || state.ascii;
-        let colorless = self.colorless || state.colorless;
+        let separator = " · ";
+        let colorless = self.colorless || state.colorless || self.system.mono();
         state.origin = (area.x, area.y);
         state.area_rows = area.height;
 
@@ -1016,7 +976,7 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
         let narrow = area.width < 40;
 
         if view.is_empty() {
-            let mark = if ascii { "[ ] " } else { "∅ " };
+            let mark = "∅ ";
             let msg = if tiny {
                 format!("{mark}empty")
             } else {
@@ -1042,7 +1002,7 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
                 let cursor = i == state.cursor;
 
                 if matches!(event.kind, StreamRowKind::Group) {
-                    let mark = if ascii { "# " } else { "▸ " };
+                    let mark = "▸ ";
                     let line = format!("{mark}{}", event.event_type);
                     buffer.set_stringn(
                         area.x,
@@ -1096,9 +1056,9 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
                 );
                 buffer.set_stringn(area.x.saturating_add(1), y, " ", 1, style);
 
-                let sev = event.severity.glyph(ascii);
+                let sev = event.severity.glyph(false);
                 let batch = if event.batch_count > 1 {
-                    format!("×{}", event.batch_count)
+                    format!("{}{}", "×", event.batch_count)
                 } else {
                     String::new()
                 };
@@ -1164,6 +1124,7 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
                     ),
                     0,
                 );
+                chrome.paint(buffer, Rect::new(area.x, y, area.width, 1));
                 if event.focusable() {
                     state.regions.push(EventStreamRegion {
                         id: event.id.clone(),
@@ -1182,7 +1143,8 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
                 if let Some(ev) = view.iter().find(|e| &e.id == sel) {
                     let detail = ev.detail.unwrap_or(ev.summary);
                     let line = format!(
-                        "  └ {}",
+                        "{}{}",
+                        "  └ ",
                         take_display_cols(detail, usize::from(area.width.saturating_sub(4)))
                     );
                     buffer.set_stringn(
@@ -1200,27 +1162,27 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
         if show_chip {
             let cy = area.bottom().saturating_sub(1);
             let mut chip = if following {
-                if ascii {
-                    "FOLLOW".into()
-                } else {
-                    "↓ live".into()
-                }
+                "↓ live".into()
             } else if unread > 0 {
                 format!("↓ {unread} new")
             } else {
                 "paused".into()
             };
             if state.dropped > 0 {
-                chip.push_str(&format!(" · drop {}", state.dropped));
+                chip.push_str(&format!("{separator}drop {}", state.dropped));
             }
             if state.batched > 1 {
-                chip.push_str(&format!(" · batch {}", state.batched));
+                chip.push_str(&format!("{separator}batch {}", state.batched));
             }
             if let Some(q) = &state.filter {
-                chip.push_str(&format!(" · /{q}"));
+                chip.push_str(&format!("{separator}/{q}"));
             }
             if state.severity_floor > EventSeverity::Trace {
-                chip.push_str(&format!(" · ≥{}", state.severity_floor.letter()));
+                let comparison = "≥";
+                chip.push_str(&format!(
+                    "{separator}{comparison}{}",
+                    state.severity_floor.letter()
+                ));
             }
             buffer.set_stringn(
                 area.x,

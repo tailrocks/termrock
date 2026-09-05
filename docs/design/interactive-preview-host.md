@@ -2,17 +2,17 @@
 
 ## Accepted architecture
 
-Component docs, application-pattern docs, and native Lookbook execute one
+Component docs, application-pattern docs, and the native catalog execute one
 backend-neutral Rust demo runtime. Ratatui remains the paint engine; the web
 host only translates browser events and paints returned cells.
 
 ```text
                   stable demo id
                        │
-              termrock-lookbook library
-              DemoSession + interactor
+              termrock-catalog library
+              CatalogSession + application host
                │                    │
-        native Lookbook       wasm-bindgen adapter
+        native catalog        wasm-bindgen adapter
                │                    │
       crossterm events       browser events → Event
                └──── same Rust state/paint ────┘
@@ -24,10 +24,10 @@ host only translates browser events and paints returned cells.
 
 | Piece | Location | Responsibility |
 |---|---|---|
-| Shared session | `crates/termrock-lookbook/src/demo.rs` | Mount, event dispatch, reset, render, hints, outcomes |
-| Public-API interactors | `crates/termrock-lookbook/src/interactors.rs` | Deterministic sample state using real widget/pattern APIs |
-| Catalog | `crates/termrock-lookbook/src/stories.rs` | Stable IDs, dimensions, factories, classifications |
-| WASM adapter | `crates/termrock-lookbook-web/src/lib.rs` | Handle lifecycle and JSON boundary |
+| Shared session | `crates/termrock-catalog/src/host.rs` | Mount, event dispatch, reset, render, hints, outcomes |
+| Public-API pages | `crates/termrock-catalog/src/pages/` | Deterministic sample state using real widget/pattern APIs |
+| Catalog | `crates/termrock-catalog/src/catalog.rs` | Stable IDs, dimensions, factories, classifications |
+| WASM adapter | `crates/termrock-catalog-web/src/lib.rs` | Handle lifecycle and JSON boundary |
 | Web host | `docs/src/components/TerminalPreview.tsx` | Lazy module load, DOM event translation, cell paint, status chrome |
 | Poster export | `docs/scripts/export-preview-posters.ts` | One initial frame per embedded demo for fallback |
 
@@ -85,7 +85,7 @@ Regenerate and validate:
 rtk bun --cwd docs run build:preview-runtime
 rtk bun --cwd docs run build:preview-posters
 rtk bun --cwd docs run check:preview
-rtk cargo test -p termrock-lookbook --lib --locked
+rtk cargo test -p termrock-catalog --lib --locked
 ```
 
 ## Acceptance families

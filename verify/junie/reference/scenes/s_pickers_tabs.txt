@@ -1,0 +1,40 @@
+ ▪ Junie Design system / Components / Pickers                                truecolor · 120×40   i Inspector   ? Help
+
+   Foundations            Pickers  One modal list for files, tabs and levels: search, scope, tag, alternate action
+▎  Overview
+                            Open a picker
+   Components
+▎  Buttons                  ▎Open quickly   ▎Switch tab   ▎Choose a level
+▎  Inputs
+▎  Text areas               Quick: fuzzy over files and tasks, Tab cycles the scope, Alt+Enter is the alternate actio…
+▎  Forms                            ╭──────────────────────────────────────────────╮
+▎  Lists                            │ Open tabs                                    │
+▎  Trees                            │ ▎ Filter tabs…                               │
+▎  Tables                   Result  │                                              │
+▎  Editable tables                  │ ▎≡ Query 1      query             Open tabs  │
+▎  Panels                   Chosen  │ ▎T orders       public ·… active             │
+▎  Sidebars                 Detail  │ ▎T order_items  public ·…                    │
+▎  Dialogs                  Level   │ ▎T History      public ·…                    │
+▎  Progress                 Open tab│                                              │
+▎  Scrolling                Pickers │ ↑↓ Move · Enter Switch · Delete Close tab ·… │
+▎  Code editor                      ╰──────────────────────────────────────────────╯
+▎  Data grid
+▎  Chips & selects
+▎› Pickers
+
+   Screens
+▎  Settings
+▎  Task runner
+
+
+
+
+
+
+
+
+
+
+
+
+ Esc Close  Tab Next

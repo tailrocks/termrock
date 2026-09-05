@@ -30,7 +30,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -45,12 +44,13 @@ use crate::{
     },
     patterns::ActivityKind,
     patterns::task_rail::{ActivityModel, ActivityScope},
-    style::{DesignSystem, PanelChrome, Role},
+    style::{DesignSystem, ListRowVisualState, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::NotificationItem,
     widgets::Panel,
     widgets::PermissionRisk,
     widgets::SemanticStatus,
+    widgets::StatusIndicator,
     widgets::ToastKind,
     widgets::ToastPriority,
     widgets::{EmptyKind, EmptyState},
@@ -687,7 +687,7 @@ impl ApprovalQueueState {
 
     /// Keyboard.
     pub fn handle_key(&mut self, key: KeyEvent) -> ApprovalQueueOutcome {
-        if !self.focused || !self.accepts_input || key.kind != KeyEventKind::Press {
+        if !self.focused || !self.accepts_input || !key.is_press() {
             return ApprovalQueueOutcome::Ignored;
         }
 
@@ -923,7 +923,6 @@ impl ApprovalQueueState {
 #[derive(Debug, Clone, Copy)]
 pub struct ApprovalQueue<'a> {
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -933,20 +932,13 @@ impl<'a> ApprovalQueue<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             system,
-            ascii: false,
             colorless: false,
         }
     }
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -968,24 +960,19 @@ impl<'a> ApprovalQueue<'a> {
     }
 
     fn paint_badge(&self, area: Rect, buffer: &mut Buffer, state: &ApprovalQueueState) {
-        let _w = usize::from(area.width);
         let label = state.badge_label();
-        let role = if state.high_risk_count() > 0 {
-            Role::Danger
+        let (semantic, verb) = if state.high_risk_count() > 0 {
+            (SemanticStatus::Warning, "warning")
         } else if state.blocking_count() > 0 {
-            Role::Warning
+            (SemanticStatus::Waiting, "waiting")
         } else {
-            Role::TextMuted
+            (SemanticStatus::Idle, "idle")
         };
-        let g = if self.ascii { "!" } else { "⚑" };
-        let text = format!("{g} {label}");
-        self.system.paint_row(
-            buffer,
-            Rect::new(area.x, area.y, area.width, 1),
-            &text,
-            self.system
-                .style(if self.colorless { Role::Text } else { role }),
-        );
+        let text = format!("{verb}: {label}");
+        StatusIndicator::new(semantic, self.system)
+            .label(&text)
+            .colorless(self.colorless)
+            .paint(Rect::new(area.x, area.y, area.width, 1), buffer);
     }
 
     fn paint_list(&self, area: Rect, buffer: &mut Buffer, state: &mut ApprovalQueueState) {
@@ -1054,34 +1041,37 @@ impl<'a> ApprovalQueue<'a> {
             let selected = vi == state.cursor;
             let multi = state.multi.iter().any(|m| m == &item.id);
             let mark = if selected {
-                if self.ascii { ">" } else { "›" }
+                crate::style::Glyph::SelectionMarker.resolve().text
             } else {
                 " "
             };
             let boxm = if multi {
-                if self.ascii { "[x]" } else { "☑" }
-            } else if self.ascii {
-                "[ ]"
+                crate::style::Glyph::Success.resolve().text
             } else {
-                "☐"
+                " "
             };
-            let kg = item.kind.glyph(self.ascii);
-            let risk_g = item.risk.glyph();
+            let kg = item.kind.glyph(false);
+            let risk = format!("{} {}", item.risk.glyph(), item.risk.label());
             let proto = if item.protocol_ordered { " fifo" } else { "" };
             let def = if item.deferred { " def" } else { "" };
             let text = format!(
-                "{mark}{boxm}{kg}[{risk_g}] {} · {}{proto}{def}",
+                "{mark}{boxm}{kg}[{risk}] {} · {}{proto}{def}",
                 item.kind.label(),
                 item.summary
             );
+            // Selection speaks through the shared row recipe (tint + weight via
+            // the cursor marker), never by painting the whole label accent.
             let style = if selected {
-                self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
-            } else if item.risk.is_destructive() && !self.colorless {
-                self.system.style(Role::Danger)
-            } else if self.colorless {
-                self.system.style(Role::Text)
+                self.system
+                    .resolve_list_row(ListRowVisualState {
+                        selected: true,
+                        focused: selected,
+                        enabled: true,
+                        ..ListRowVisualState::default()
+                    })
+                    .label
             } else {
-                self.system.style(item.risk.role())
+                self.system.style(Role::Text)
             };
             self.system
                 .paint_row(buffer, Rect::new(inner.x, y, inner.width, 1), &text, style);
@@ -1175,8 +1165,12 @@ impl<'a> ApprovalQueue<'a> {
             if col.saturating_add(tw) > end {
                 break;
             }
-            let style = if focused {
+            let style = if focused && !self.colorless {
                 self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
+            } else if focused {
+                // Mono focus is the explicit reversal pair (D5), not a swap
+                // modifier over the idle face.
+                self.system.reversed()
             } else if disabled_look {
                 self.system.style(Role::TextMuted)
             } else {
@@ -1565,7 +1559,6 @@ mod tests {
         ] {
             st.presentation = p;
             ApprovalQueue::new(&system)
-                .ascii(true)
                 .colorless(true)
                 .paint(area, &mut buf, &mut st);
         }
@@ -1650,5 +1643,32 @@ mod tests {
             ApprovalQueueOutcome::SelectionToggled { selected: true, .. }
         ));
         assert!(st.multi.contains(&"p2".into()));
+    }
+
+    #[test]
+    fn multi_membership_is_check_not_checkbox_well() {
+        let system = DesignSystem::junie();
+        let mut st = open();
+        let i = st
+            .view
+            .iter()
+            .position(|&ii| st.items[ii].id == "p2")
+            .unwrap();
+        st.cursor = i;
+        let _ = st.handle_key(press(KeyCode::Char(' ')));
+        let area = Rect::new(0, 0, 56, 14);
+        let mut buf = Buffer::empty(area);
+        ApprovalQueue::new(&system).paint(area, &mut buf, &mut st);
+        let mut text = String::new();
+        for y in 0..area.height {
+            for x in 0..area.width {
+                text.push_str(buf[(x, y)].symbol());
+            }
+        }
+        assert!(
+            !text.contains("[✓]") && !text.contains("[ ]"),
+            "checkbox wells leaked: {text:?}"
+        );
+        assert!(text.contains('✓'), "list membership ✓ missing: {text:?}");
     }
 }

@@ -1,0 +1,40 @@
+ ▪  TablePro  Production  ◆ production  acme_prod › public  safe                             truecolor · 120×40  ? help
+
+ ▎≡ Query 1 ×                                                                                                       +
+ ─━━━━━━━━━━━━─────────────────────────────────────────────────────────────────────────────────────────────────────────
+ ╭─ Explorer ─────── public ─╮ ╭─ Query 1 ─────────────────────────────────────────────────────────────────────────  ─╮
+ │                           │ │  ▎›  1 UPDATE orders SET status = 'paid' WHERE id = 'x'                              │
+ │ ▎ Filter objects          │ │                                                                                      │
+ │ ▎▾ D acme_prod            │ │                                                                                      │
+ │ ▎  ▾ S public             │ │                                                                                      │
+ │ ▎    ▾ Tables          7  │ │                                                                                      │
+ │ ▎      ▸ T organizations  │ │                                                                                      │
+ │ ▎      ▸ T customers╭────────────────────────────────────────────────────────────────────────╮                     │
+ │ ▎      ▸ T products │                                                                        │                     │
+ │ ▎      ▸ T orders   │  Execute write query?                                                  │                     │
+ │ ▎      ▸ T order_ite│                                                                        │                     │
+ │ ▎      ▸ T payments │  Action      UPDATE                                                    │                     │
+ │ ▎      ▸ T subscript│  Target      Production · production · acme_prod · orders              │                     │
+ │ ▎    ▸ Views        │  Scope       matching rows in orders                                   │                     │
+ │ ▎    ▸ Functions    │  Reversible  Reversible by a compensating UPDATE                       │                     │
+ │ ▎    ▸ Sequences    │  Safe Mode   Safe Mode · deliberate confirmation required              │                     │
+ │ ▎  ▸ S analytics    │                                                                        │                     │
+ │ ▎  ▸ S audit        │  UPDATE orders SET status = 'paid' WHERE id = 'x'                      │                     │
+ │                     │                                                                        │                     │
+ │                     │   Type orders to confirm                                               │                     │
+ │                     │ ▎ orders                                                               │                     │
+ │                     │                                                                        │                     │
+ │                     │                                                                        │                     │
+ │                     │                                                    ▎Cancel  ▎Execute   │runs all             │
+ │                     │                                                                        │                     │
+ │                     ╰────────────────────────────────────────────────────────────────────────╯                     │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ ╰───────────────────────────╯ ╰──────────────────────────────────────────────────────────────────────────────────────╯
+
+ ← → Choose  Enter Confirm  Esc Cancel                                                          Connected to Production

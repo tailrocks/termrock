@@ -1,12 +1,12 @@
 [workspace]
 members = [
     "crates/termrock",
-    "crates/termrock-lookbook",
-    "crates/termrock-lookbook-web",
+    "crates/termrock-catalog",
+    "crates/termrock-catalog-web",
     "crates/termrock-cli",
-    "crates/termrock-showcase",
     "crates/termrock-raster",
 ]
+default-members = ["crates/termrock-catalog"]
 resolver = "3"
 
 [workspace.package]
@@ -29,6 +29,7 @@ serde = { version = "1.0.229", features = ["alloc", "derive"], default-features 
 serde_json = "1.0.151"
 wasm-bindgen = "0.2.127"
 stats_alloc = "0.1.10"
+syn = { version = "2.0.119", features = ["full", "visit"] }
 tui-scrollbar = "0.2.7"
 unicode-segmentation = "1.13.3"
 unicode-width = "0.2.2"

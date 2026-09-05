@@ -11,8 +11,8 @@ use termrock::{
     input::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEventKind},
     interaction::Outcome,
     widgets::{
-        Action, ChoiceDialogState, List, ListRow, ListState, RowRole, TextInputOutcome,
-        TextInputState,
+        Action, ActionVariant, ChoiceDialogState, List, ListRow, ListState, RowRole,
+        TextInputOutcome, TextInputState,
     },
 };
 
@@ -33,6 +33,7 @@ fn every_mapped_crossterm_key_roundtrips() {
         (CrosstermKeyCode::BackTab, KeyCode::BackTab),
         (CrosstermKeyCode::Delete, KeyCode::Delete),
         (CrosstermKeyCode::Esc, KeyCode::Esc),
+        (CrosstermKeyCode::F(5), KeyCode::F(5)),
         (CrosstermKeyCode::Char('x'), KeyCode::Char('x')),
     ];
 
@@ -87,7 +88,6 @@ fn neutral_mouse_event_drives_list_activation() {
         badge: None,
         shortcut: None,
         actions: None,
-        trailing: None,
         custom: None,
         role: RowRole::Item,
         enabled: true,
@@ -105,7 +105,6 @@ fn neutral_mouse_event_drives_list_activation() {
 #[test]
 fn unmapped_keys_become_unknown() {
     let keys = [
-        CrosstermKeyCode::F(5),
         CrosstermKeyCode::Insert,
         CrosstermKeyCode::CapsLock,
         CrosstermKeyCode::Media(MediaKeyCode::Play),
@@ -131,7 +130,6 @@ fn unknown_is_inert_in_widgets() {
         badge: None,
         shortcut: None,
         actions: None,
-        trailing: None,
         custom: None,
         role: RowRole::Item,
         enabled: true,
@@ -142,7 +140,7 @@ fn unknown_is_inert_in_widgets() {
         id: 1,
         label: "Accept",
         enabled: true,
-        style: None,
+        variant: ActionVariant::Secondary,
     }];
     let mut dialog = ChoiceDialogState::new(Some(1));
 
@@ -167,7 +165,6 @@ fn release_events_are_ignored() {
         badge: None,
         shortcut: None,
         actions: None,
-        trailing: None,
         custom: None,
         role: RowRole::Item,
         enabled: true,
@@ -178,7 +175,7 @@ fn release_events_are_ignored() {
         id: 1,
         label: "Accept",
         enabled: true,
-        style: None,
+        variant: ActionVariant::Secondary,
     }];
     let mut dialog = ChoiceDialogState::new(Some(1));
 

@@ -13,20 +13,21 @@
 //! **Ownership.** Host owns search I/O, ranking, and async generation.
 //! TermRock owns paint, navigation, group chrome, and typed outcomes.
 //!
+//! The lifecycle authority is [`SearchResultsState::status`]. It is deliberately
+//! not mirrored into a data-view load state, because stale and cancelled
+//! searches are distinct outcomes rather than empty result sets.
+//!
 //! Research: ripgrep UIs, IDE search, fzf previews, documentation search.
-
 use std::collections::BTreeSet;
 
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::{
-        data_view::{LoadState, VirtualWindow},
+        data_view::VirtualWindow,
         highlighted_text::{HighlightedText, MatchKind, MatchRange, MatchRanges, MatchTruncate},
         quick_open::{QuickOpenItem, QuickOpenPreview},
         tiered_row::TieredRow,
@@ -73,18 +74,8 @@ impl SearchResultKind {
 
     /// Short glyph.
     #[must_use]
-    pub const fn glyph(self, ascii: bool) -> &'static str {
-        if ascii {
-            match self {
-                Self::File => "f",
-                Self::Log => "l",
-                Self::Object => "o",
-                Self::Command => "c",
-                Self::Doc => "d",
-                Self::Symbol => "s",
-                Self::Other => "?",
-            }
-        } else {
+    pub const fn glyph(self, _ascii: bool) -> &'static str {
+        {
             match self {
                 Self::File => "·",
                 Self::Log => "☰",
@@ -102,8 +93,8 @@ impl SearchResultKind {
     pub const fn role(self) -> Role {
         match self {
             Self::File => Role::Text,
-            Self::Log => Role::Info,
-            Self::Object => Role::Info,
+            Self::Log => Role::TextSecondary,
+            Self::Object => Role::TextSecondary,
             Self::Command => Role::Warning,
             Self::Doc => Role::Link,
             Self::Symbol => Role::Success,
@@ -193,34 +184,6 @@ impl SearchResultsStatus {
             Self::Error { message, .. } => message.clone(),
             Self::Stale { generation } => format!("stale gen {generation} · refresh"),
             Self::Cancelled => "cancelled".into(),
-        }
-    }
-
-    /// Map to LoadState for consistency.
-    #[must_use]
-    pub fn to_load_state(&self, projected: usize) -> LoadState {
-        match self {
-            Self::Idle => LoadState::Idle,
-            Self::Loading { message } => LoadState::Loading {
-                message: message.clone(),
-            },
-            Self::Partial { resident, total } => LoadState::Partial {
-                resident: *resident,
-                total: *total,
-            },
-            Self::Ready { total } => LoadState::Ready {
-                count: total.unwrap_or(projected as u64),
-            },
-            Self::Empty { message } => LoadState::Empty {
-                message: message.clone(),
-            },
-            Self::Error { message, retryable } => LoadState::Error {
-                message: message.clone(),
-                retryable: *retryable,
-            },
-            Self::Stale { .. } | Self::Cancelled => LoadState::Empty {
-                message: Some(self.summary_line(0)),
-            },
         }
     }
 }
@@ -612,10 +575,6 @@ pub struct SearchResultsState {
     pub multi: bool,
     /// Match walk index into [`collect_match_targets`].
     pub match_walk: usize,
-    /// Load mirror.
-    pub load: LoadState,
-    /// ASCII.
-    pub ascii: bool,
     /// Title.
     pub title: Option<String>,
     /// Row hit regions from last paint.
@@ -649,8 +608,6 @@ impl SearchResultsState {
             checked: Vec::new(),
             multi: false,
             match_walk: 0,
-            load: LoadState::Idle,
-            ascii: false,
             title: None,
             row_regions: Vec::new(),
             accepts_input: true,
@@ -677,24 +634,27 @@ impl SearchResultsState {
     pub fn begin_search(&mut self) -> u64 {
         self.generation = self.generation.saturating_add(1);
         self.status = SearchResultsStatus::Loading { message: None };
-        self.load = LoadState::Loading { message: None };
         self.cursor = 0;
         self.window.offset = 0;
         self.match_walk = 0;
         self.generation
     }
 
-    /// Apply host results if generation matches; else mark stale.
+    /// Apply host results, rejecting stale or cancelled completions.
     pub fn apply_results(&mut self, generation: u64, status: SearchResultsStatus, count: usize) {
         if generation < self.generation {
-            self.status = SearchResultsStatus::Stale { generation };
+            if !matches!(self.status, SearchResultsStatus::Cancelled) {
+                self.status = SearchResultsStatus::Stale { generation };
+            }
+            return;
+        }
+        if generation == self.generation && matches!(self.status, SearchResultsStatus::Cancelled) {
             return;
         }
         if generation > self.generation {
             self.generation = generation;
         }
         self.status = status;
-        self.load = self.status.to_load_state(count);
         self.window.logical_len = count as u64;
         self.window.clamp();
         if self.cursor >= count && count > 0 {
@@ -705,9 +665,6 @@ impl SearchResultsState {
     /// Cancel current search chrome.
     pub fn cancel(&mut self) {
         self.status = SearchResultsStatus::Cancelled;
-        self.load = LoadState::Empty {
-            message: Some("cancelled".into()),
-        };
     }
 
     /// Toggle group collapse.
@@ -732,10 +689,10 @@ impl SearchResultsState {
         items: &[SearchResultItem<'_>],
         key: KeyEvent,
     ) -> SearchResultsOutcome {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return SearchResultsOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
         if !is_press {
             return SearchResultsOutcome::Ignored;
         }
@@ -1087,7 +1044,6 @@ pub struct SearchResults<'a> {
     system: &'a DesignSystem,
     focused: bool,
     title: Option<&'a str>,
-    ascii: bool,
     /// Show two-line items (title + snippet).
     dense: bool,
 }
@@ -1106,7 +1062,6 @@ impl<'a> SearchResults<'a> {
             system,
             focused: true,
             title: None,
-            ascii: false,
             dense: true,
         }
     }
@@ -1127,13 +1082,7 @@ impl<'a> SearchResults<'a> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Single-line density.
-    #[must_use]
     pub const fn compact(mut self) -> Self {
         self.dense = false;
         self
@@ -1144,7 +1093,6 @@ impl<'a> SearchResults<'a> {
         if area.is_empty() {
             return;
         }
-        let ascii = self.ascii || state.ascii;
         state.row_regions.clear();
 
         let mut y = area.y;
@@ -1222,13 +1170,7 @@ impl<'a> SearchResults<'a> {
             match &flat[i] {
                 SearchFlatRow::Group { group, .. } => {
                     let collapsed = group.collapsed || state.collapsed.contains(&group.id);
-                    let disc = if collapsed {
-                        if ascii { ">" } else { "▸" }
-                    } else if ascii {
-                        "v"
-                    } else {
-                        "▾"
-                    };
+                    let disc = if collapsed { "▸" } else { "▾" };
                     let mark = if selected {
                         self.system.glyphs.selection_gutter()
                     } else {
@@ -1262,11 +1204,11 @@ impl<'a> SearchResults<'a> {
                     let mark = if selected {
                         self.system.glyphs.selection_gutter()
                     } else if state.multi && state.checked.iter().any(|c| c == item.id) {
-                        if ascii { "*" } else { "★" }
+                        "★"
                     } else {
                         " "
                     };
-                    let glyph = item.kind.glyph(ascii);
+                    let glyph = item.kind.glyph(false);
                     let line_no = item.line.map(|n| format!(":{n}")).unwrap_or_default();
                     let title_budget = usize::from(area.width).saturating_sub(4);
                     // Focused match walk: mark first range focused when this is walk target
@@ -1508,6 +1450,17 @@ mod tests {
     }
 
     #[test]
+    fn cancellation_rejects_late_results_for_current_generation() {
+        let mut state = SearchResultsState::new();
+        let generation = state.begin_search();
+        state.cancel();
+
+        state.apply_results(generation, SearchResultsStatus::Ready { total: Some(1) }, 1);
+
+        assert_eq!(state.status, SearchResultsStatus::Cancelled);
+    }
+
+    #[test]
     fn keep_match_visible() {
         let long = "aaaaaaabbbbbsearch_termccccccccddddddd";
         let ranges = [MatchRange::new(13, 24)];
@@ -1619,6 +1572,32 @@ mod tests {
             ),
             SearchResultsOutcome::Ignored
         ));
+    }
+
+    #[test]
+    fn mouse_hit_uses_painted_row_identity_and_input_gate() {
+        let (groups, items) = sample();
+        let flat = flatten_search_results(&groups, &items, &BTreeSet::new());
+        let mut state = SearchResultsState::new();
+        state.row_regions = vec![(
+            SearchHitKind::Item,
+            items[0].id.to_string(),
+            Rect::new(3, 4, 24, 1),
+        )];
+        let event = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: ratatui_core::layout::Position::new(3, 4),
+            modifiers: KeyModifiers::NONE,
+        };
+        assert!(matches!(
+            state.handle_mouse(&flat, event),
+            SearchResultsOutcome::SelectionChanged { ref id, .. } if id == items[0].id
+        ));
+        state.set_accepts_input(false);
+        assert_eq!(
+            state.handle_mouse(&flat, event),
+            SearchResultsOutcome::Ignored
+        );
     }
 
     #[test]

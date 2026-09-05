@@ -8,7 +8,7 @@ use ratatui_core::{
 };
 use termrock::{
     input::{KeyCode, KeyEvent, KeyModifiers},
-    style::{Density, DesignSystem, Role, RolePalette, SelectionChrome},
+    style::{DesignSystem, Role, RolePalette},
     widgets::{Tree, TreeNode, TreeNodeStatus, TreeOutcome, TreeState},
 };
 
@@ -21,7 +21,6 @@ fn nodes() -> Vec<TreeNode<'static, &'static str>> {
             secondary: None,
             badge: None,
             shortcut: None,
-            trailing: None,
             depth: 0,
             branch: true,
             expanded: true,
@@ -38,7 +37,6 @@ fn nodes() -> Vec<TreeNode<'static, &'static str>> {
             secondary: None,
             badge: None,
             shortcut: None,
-            trailing: None,
             depth: 1,
             branch: true,
             expanded: false,
@@ -55,7 +53,6 @@ fn nodes() -> Vec<TreeNode<'static, &'static str>> {
             secondary: None,
             badge: None,
             shortcut: None,
-            trailing: None,
             depth: 1,
             branch: false,
             expanded: false,
@@ -144,10 +141,7 @@ fn empty_and_zero_sized_trees_are_safe() {
 
 #[test]
 fn painted_disclosure_and_selected_row_have_distinct_mouse_outcomes() {
-    // Fill selection (not the gutter default) so disclosure column geometry
-    // matches the historical hit-test expectations for this regression.
-    let tokens = DesignSystem::new(RolePalette::default(), Density::default())
-        .selection(SelectionChrome::Fill);
+    let tokens = DesignSystem::new(RolePalette::default());
     let rows = nodes();
     let tree = Tree::new(&rows, &tokens);
     let mut state = TreeState::new(Some("leaf"));
@@ -161,7 +155,7 @@ fn painted_disclosure_and_selected_row_have_distinct_mouse_outcomes() {
     );
     assert_eq!(
         state.click(Position::new(8, 6)),
-        TreeOutcome::Activated("leaf")
+        TreeOutcome::SelectionChanged("leaf")
     );
     assert_eq!(state.hover(Position::new(8, 6)), Some(&"leaf"));
 }
@@ -177,7 +171,6 @@ fn selected_node_is_scrolled_into_a_bounded_viewport() {
             secondary: None,
             badge: None,
             shortcut: None,
-            trailing: None,
             depth: 0,
             branch: false,
             expanded: false,
@@ -194,7 +187,6 @@ fn selected_node_is_scrolled_into_a_bounded_viewport() {
             secondary: None,
             badge: None,
             shortcut: None,
-            trailing: None,
             depth: 0,
             branch: false,
             expanded: false,
@@ -211,7 +203,6 @@ fn selected_node_is_scrolled_into_a_bounded_viewport() {
             secondary: None,
             badge: None,
             shortcut: None,
-            trailing: None,
             depth: 0,
             branch: false,
             expanded: false,
@@ -250,7 +241,6 @@ fn page_keys_and_scroll_delta_use_the_painted_viewport() {
             secondary: None,
             badge: None,
             shortcut: None,
-            trailing: None,
             depth: 0,
             branch: false,
             expanded: false,
@@ -268,7 +258,7 @@ fn page_keys_and_scroll_delta_use_the_painted_viewport() {
     tree.render(area, &mut buffer, &mut state);
     // One scrollbar language across every scroll surface (plans/022 Step 5).
     assert_eq!(buffer[(11, 0)].symbol(), "┃");
-    assert_eq!(buffer[(11, 2)].symbol(), "·");
+    assert_eq!(buffer[(11, 2)].symbol(), "│");
 
     assert_eq!(
         state.handle_key(&rows, KeyEvent::new(KeyCode::PageDown, KeyModifiers::NONE)),
@@ -296,29 +286,39 @@ fn host_focus_chrome_preserves_non_color_selection_cues() {
     Tree::new(&rows, &tokens)
         .focused(false)
         .render(area, &mut buffer, &mut state);
-    let gutter = tokens.glyphs.selection_gutter();
+    // D8: a parked selection carries the marker glyph alone — never a fill
+    // and never the focus weight.
     assert_eq!(
         buffer[(0, 0)].symbol(),
-        gutter,
-        "unfocused selection remains visible without color"
+        tokens.glyphs.selection_gutter(),
+        "col 0 is always the reserved ▎ gutter"
+    );
+    assert!(
+        !buffer[(4, 0)]
+            .modifier
+            .contains(ratatui_core::style::Modifier::BOLD),
+        "parked selection never takes the focus weight"
     );
     state.hover(Position::new(4, 2));
     Tree::new(&rows, &tokens)
         .focused(true)
         .render(area, &mut buffer, &mut state);
-    assert_eq!(buffer[(0, 0)].symbol(), gutter);
+    assert_eq!(
+        buffer[(0, 0)].symbol(),
+        tokens.glyphs.selection_gutter(),
+        "the row owning the keyboard takes the focus bar"
+    );
     assert!(
-        buffer[(3, 0)]
+        buffer[(4, 0)]
             .modifier
             .contains(ratatui_core::style::Modifier::BOLD),
         "focused selection remains visible without color"
     );
+    // junie hover is a plane, not a role: exactly one lift above the ground.
+    let theme = tokens.junie_theme();
     assert_eq!(
         buffer[(4, 2)].bg,
-        tokens
-            .style(Role::HoverTint)
-            .bg
-            .expect("hover wash carries a background"),
+        theme.lift(theme.surface),
         "hover lifts the row instead of underlining it"
     );
 }
@@ -335,7 +335,6 @@ fn disabled_loading_and_error_rows_have_explicit_semantic_styles() {
             secondary: None,
             badge: None,
             shortcut: None,
-            trailing: None,
             depth: 0,
             branch: false,
             expanded: false,
@@ -352,11 +351,12 @@ fn disabled_loading_and_error_rows_have_explicit_semantic_styles() {
             secondary: None,
             badge: None,
             shortcut: None,
-            trailing: None,
             depth: 0,
             branch: false,
             expanded: false,
-            enabled: false,
+            // Busy law observes the busy tone only on an enabled row; a
+            // disabled row takes TextDisabled regardless of status.
+            enabled: true,
             status: TreeNodeStatus::Loading,
             tone: termrock::widgets::ToneTier::Primary,
             actions: None,
@@ -369,7 +369,6 @@ fn disabled_loading_and_error_rows_have_explicit_semantic_styles() {
             secondary: None,
             badge: None,
             shortcut: None,
-            trailing: None,
             depth: 0,
             branch: false,
             expanded: false,
@@ -397,7 +396,8 @@ fn disabled_loading_and_error_rows_have_explicit_semantic_styles() {
         rendered.contains("error") || rendered.contains("failed"),
         "{rendered:?}"
     );
-    // Semantic styles: disabled dim, loading muted, error danger — scan primary label cells.
+    // Semantic styles: disabled faint, busy secondary, error danger — scan
+    // primary label cells (junie `row()` busy law).
     let find_fg = |needle: &str| -> Option<ratatui_core::style::Color> {
         for y in 0..3 {
             let row: String = (0..20)
@@ -410,7 +410,7 @@ fn disabled_loading_and_error_rows_have_explicit_semantic_styles() {
         None
     };
     assert_eq!(find_fg("disabled"), theme.style(Role::TextDisabled).fg);
-    assert_eq!(find_fg("loading"), theme.style(Role::TextMuted).fg);
+    assert_eq!(find_fg("loading"), theme.style(Role::TextSecondary).fg);
     assert_eq!(find_fg("failed"), theme.style(Role::Danger).fg);
 }
 
@@ -424,7 +424,6 @@ fn narrow_clipping_never_splits_a_wide_grapheme() {
         secondary: None,
         badge: None,
         shortcut: None,
-        trailing: None,
         depth: 0,
         branch: false,
         expanded: false,
@@ -476,7 +475,6 @@ fn status_suffix_reserves_space_before_clipping_wide_labels() {
         secondary: None,
         badge: None,
         shortcut: None,
-        trailing: None,
         depth: 0,
         branch: false,
         expanded: false,
@@ -508,7 +506,7 @@ fn status_suffix_reserves_space_before_clipping_wide_labels() {
 }
 
 #[test]
-fn trailing_cells_align_right_and_preserve_wide_metadata() {
+fn badge_cells_align_right_and_preserve_wide_metadata() {
     let tokens = DesignSystem::default();
     let rows = vec![
         TreeNode {
@@ -516,9 +514,8 @@ fn trailing_cells_align_right_and_preserve_wide_metadata() {
             label: Line::from("🧪🧪label"),
             leading: None,
             secondary: None,
-            badge: None,
+            badge: Some(Line::from("12 KiB")),
             shortcut: None,
-            trailing: Some(Line::from("12 KiB")),
             depth: 0,
             branch: false,
             expanded: false,
@@ -533,9 +530,8 @@ fn trailing_cells_align_right_and_preserve_wide_metadata() {
             label: Line::from("short"),
             leading: None,
             secondary: None,
-            badge: None,
+            badge: Some(Line::from("1 B")),
             shortcut: None,
-            trailing: Some(Line::from("1 B")),
             depth: 0,
             branch: false,
             expanded: false,
@@ -548,15 +544,15 @@ fn trailing_cells_align_right_and_preserve_wide_metadata() {
     ];
     let tree = Tree::new(&rows, &tokens);
     let mut state = TreeState::default();
-    let area = Rect::new(0, 0, 16, 2);
+    let area = Rect::new(0, 0, 32, 2);
     let mut buffer = Buffer::empty(area);
 
     tree.render(area, &mut buffer, &mut state);
 
-    let row0: String = (0..16)
+    let row0: String = (0..32)
         .map(|x| buffer[(x, 0)].symbol().to_string())
         .collect();
-    let row1: String = (0..16)
+    let row1: String = (0..32)
         .map(|x| buffer[(x, 1)].symbol().to_string())
         .collect();
     assert!(row0.contains("12") && row0.contains('B'), "{row0:?}");
@@ -565,16 +561,15 @@ fn trailing_cells_align_right_and_preserve_wide_metadata() {
 }
 
 #[test]
-fn narrow_trailing_cell_clips_wide_graphemes_and_separates_status() {
+fn narrow_badge_cell_clips_wide_graphemes_and_separates_status() {
     let tokens = DesignSystem::default();
     let narrow_rows = [TreeNode {
         id: 0,
         label: Line::from("hidden"),
         leading: None,
         secondary: None,
-        badge: None,
+        badge: Some(Line::from("🧪Z")),
         shortcut: None,
-        trailing: Some(Line::from("🧪Z")),
         depth: 0,
         branch: false,
         expanded: false,
@@ -603,9 +598,8 @@ fn narrow_trailing_cell_clips_wide_graphemes_and_separates_status() {
         label: Line::from("job"),
         leading: None,
         secondary: None,
-        badge: None,
+        badge: Some(Line::from("7 B")),
         shortcut: None,
-        trailing: Some(Line::from("7 B")),
         depth: 0,
         branch: false,
         expanded: false,
@@ -625,7 +619,7 @@ fn narrow_trailing_cell_clips_wide_graphemes_and_separates_status() {
         .collect();
     assert!(
         rendered.contains("loading") && rendered.contains("7 B"),
-        "status + trailing badge both visible: {rendered:?}"
+        "status + badge both visible: {rendered:?}"
     );
 }
 
@@ -648,8 +642,8 @@ fn multi_select_toggles_by_space_and_painted_checkbox() {
         .map(|x| buffer[(x, 0)].symbol().to_string())
         .collect();
     assert!(
-        row0.contains('☑') || row0.contains('[') || row0.contains('x'),
-        "multi-select check chrome: {row0:?}"
+        row0.contains('✓'),
+        "multi-select membership is list ✓, not checkbox [✓]: {row0:?}"
     );
     // Toggle leaf via Space after selecting it (check hit regions vary by glyph width).
     assert_eq!(
@@ -673,7 +667,7 @@ fn multi_select_toggles_by_space_and_painted_checkbox() {
 
 #[test]
 fn tone_tiers_map_to_semantic_roles() {
-    let tokens = DesignSystem::phosphor();
+    let tokens = DesignSystem::junie();
     let rows = [
         TreeNode::new("live", Line::from("streaming"), 0).tone(termrock::widgets::ToneTier::Live),
         TreeNode::new("dim", Line::from("waiting"), 0).tone(termrock::widgets::ToneTier::LiveDim),
@@ -683,14 +677,14 @@ fn tone_tiers_map_to_semantic_roles() {
     Tree::new(&rows, &tokens).render(area, &mut buffer, &mut TreeState::default());
     assert_eq!(
         buffer[(2, 0)].fg,
-        tokens.style(Role::InfoStrong).fg.unwrap()
+        tokens.style(Role::TextStrong).fg.unwrap()
     );
-    assert_eq!(buffer[(2, 1)].fg, tokens.style(Role::InfoDim).fg.unwrap());
+    assert_eq!(buffer[(2, 1)].fg, tokens.style(Role::TextMuted).fg.unwrap());
 }
 
 #[test]
 fn horizontal_scroll_keeps_hierarchy_prefix_pinned() {
-    let tokens = DesignSystem::phosphor();
+    let tokens = DesignSystem::junie();
     let rows = [TreeNode::new("root", Line::from("abcdefghijklmnopqrstuvwxyz"), 0).branch()];
     let area = Rect::new(0, 0, 12, 1);
     let mut state = TreeState::default();

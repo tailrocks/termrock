@@ -26,7 +26,6 @@
 //! | Typeahead | Jump focus to label prefix match |
 //!
 //! Research: VS Code trees, file explorers, Yazi, broot, DB navigators.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -453,10 +452,7 @@ impl<Id> TreeNavigationState<Id> {
     {
         nodes
             .iter()
-            .filter(|n| n.enabled || n.branch)
-            .map(|n| {
-                CollectionItem::new(n.id.clone(), n.label.clone()).enabled(n.enabled || n.branch)
-            })
+            .map(|n| CollectionItem::new(n.id.clone(), n.label.clone()).enabled(n.enabled))
             .collect()
     }
 
@@ -523,9 +519,19 @@ impl<Id> TreeNavigationState<Id> {
     where
         Id: Clone + PartialEq,
     {
-        self.recompute_ancestors(nodes);
         let coll = Self::collection_items(nodes);
-        let _ = self.collection.reconcile(&coll);
+        self.reconcile_route_with_collection(nodes, &coll);
+    }
+
+    fn reconcile_route_with_collection(
+        &mut self,
+        nodes: &[TreeNavNode<Id>],
+        coll: &[CollectionItem<Id>],
+    ) where
+        Id: Clone + PartialEq,
+    {
+        self.recompute_ancestors(nodes);
+        let _ = self.collection.reconcile(coll);
         if let Some(r) = self.route.clone() {
             if nodes.iter().any(|n| n.id == r) {
                 // keep focus near route if focus missing
@@ -545,7 +551,7 @@ impl<Id> TreeNavigationState<Id> {
     where
         Id: Clone + PartialEq,
     {
-        if key.kind == KeyEventKind::Release || !self.enabled {
+        if key.is_release() || !self.enabled {
             return TreeNavigationOutcome::Ignored;
         }
         if !self.focused {
@@ -578,7 +584,14 @@ impl<Id> TreeNavigationState<Id> {
         }
 
         let coll = Self::collection_items(nodes);
-        let _ = self.collection.reconcile(&coll);
+        match self.collection.reconcile(&coll) {
+            CollectionOutcome::ActiveChanged { to, .. } => {
+                self.typeahead.clear();
+                return TreeNavigationOutcome::FocusChanged { id: to };
+            }
+            CollectionOutcome::Scrolled => return TreeNavigationOutcome::Changed,
+            CollectionOutcome::Ignored => {}
+        }
         if self.collection.active().is_none() {
             if let Some(r) = self.route.clone() {
                 if coll.iter().any(|c| c.id == r) {
@@ -696,6 +709,9 @@ impl<Id> TreeNavigationState<Id> {
             return TreeNavigationOutcome::Ignored;
         };
         let node = &nodes[idx];
+        if !node.enabled {
+            return TreeNavigationOutcome::Ignored;
+        }
         if node.branch && node.expanded {
             return TreeNavigationOutcome::ExpandToggled {
                 id,
@@ -704,7 +720,7 @@ impl<Id> TreeNavigationState<Id> {
         }
         // jump to parent
         if let Some(pid) = node.parent.clone() {
-            if nodes.iter().any(|n| n.id == pid) {
+            if nodes.iter().any(|n| n.id == pid && n.enabled) {
                 self.collection.set_active(Some(pid.clone()));
                 return TreeNavigationOutcome::FocusChanged { id: Some(pid) };
             }
@@ -732,6 +748,9 @@ impl<Id> TreeNavigationState<Id> {
             return TreeNavigationOutcome::Ignored;
         };
         let node = &nodes[idx];
+        if !node.enabled {
+            return TreeNavigationOutcome::Ignored;
+        }
         if node.branch && !node.expanded {
             if node.lazy {
                 return self.request_lazy(id);
@@ -739,13 +758,15 @@ impl<Id> TreeNavigationState<Id> {
             return TreeNavigationOutcome::ExpandToggled { id, expanded: true };
         }
         // first child: next row with greater depth
-        if let Some(child) = nodes.iter().skip(idx + 1).find(|n| n.depth > node.depth) {
-            if child.enabled || child.branch {
-                self.collection.set_active(Some(child.id.clone()));
-                return TreeNavigationOutcome::FocusChanged {
-                    id: Some(child.id.clone()),
-                };
-            }
+        if let Some(child) = nodes
+            .iter()
+            .skip(idx + 1)
+            .find(|n| n.depth > node.depth && n.enabled)
+        {
+            self.collection.set_active(Some(child.id.clone()));
+            return TreeNavigationOutcome::FocusChanged {
+                id: Some(child.id.clone()),
+            };
         }
         TreeNavigationOutcome::Ignored
     }
@@ -763,6 +784,13 @@ impl<Id> TreeNavigationState<Id> {
             return TreeNavigationOutcome::Ignored;
         }
         let coll = Self::collection_items(nodes);
+        match self.collection.reconcile(&coll) {
+            CollectionOutcome::ActiveChanged { to, .. } => {
+                return TreeNavigationOutcome::FocusChanged { id: to };
+            }
+            CollectionOutcome::Scrolled => return TreeNavigationOutcome::Changed,
+            CollectionOutcome::Ignored => {}
+        }
         match intent {
             UiIntent::Activate | UiIntent::Submit => self.activate_focus(nodes),
             UiIntent::Expand => self.expand_or_child(nodes),
@@ -809,6 +837,9 @@ impl<Id> TreeNavigationState<Id> {
             if r.area.contains(event.position) {
                 let id = r.id.clone();
                 if let Some(n) = nodes.iter().find(|n| n.id == id) {
+                    if !n.enabled {
+                        return TreeNavigationOutcome::Ignored;
+                    }
                     if n.lazy && !n.expanded {
                         return self.request_lazy(id);
                     }
@@ -829,7 +860,7 @@ impl<Id> TreeNavigationState<Id> {
                         self.recompute_ancestors(nodes);
                         return TreeNavigationOutcome::RouteChanged { id };
                     }
-                    if n.branch {
+                    if n.branch && n.enabled {
                         if n.lazy && !n.expanded {
                             return self.request_lazy(id);
                         }
@@ -853,7 +884,6 @@ impl<Id> TreeNavigationState<Id> {
 pub struct TreeNavigation<'a, Id> {
     nodes: &'a [TreeNavNode<Id>],
     system: &'a DesignSystem,
-    ascii: bool,
     empty_message: &'a str,
 }
 
@@ -864,20 +894,13 @@ impl<'a, Id> TreeNavigation<'a, Id> {
         Self {
             nodes,
             system,
-            ascii: false,
             empty_message: "Nothing here",
         }
     }
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Empty message.
-    #[must_use]
     pub const fn empty_message(mut self, msg: &'a str) -> Self {
         self.empty_message = msg;
         self
@@ -896,8 +919,8 @@ impl<'a, Id> TreeNavigation<'a, Id> {
             return;
         }
 
-        state.reconcile_route(self.nodes);
         let coll = TreeNavigationState::<Id>::collection_items(self.nodes);
+        state.reconcile_route_with_collection(self.nodes, &coll);
         let vp = usize::from(area.height).saturating_sub(if state.filter_active { 1 } else { 0 });
         state
             .collection
@@ -932,18 +955,13 @@ impl<'a, Id> TreeNavigation<'a, Id> {
         let offset = state.collection.offset();
         let mut row = 0usize;
         for node in filtered {
-            if !node.enabled && !node.branch {
-                // still paint disabled route leaves
-            }
-            // Map collection offset to paint rows for focusable set
-            let focusable = node.enabled || node.branch;
-            if focusable {
-                if row < offset {
-                    row += 1;
-                    continue;
-                }
+            // Collection and paint share the full projection so virtual offsets
+            // remain stable while roving focus skips disabled nodes.
+            if row < offset {
                 row += 1;
+                continue;
             }
+            row += 1;
             if y >= area.bottom() {
                 break;
             }
@@ -952,7 +970,7 @@ impl<'a, Id> TreeNavigation<'a, Id> {
             let is_ancestor = state.is_route_ancestor(&node.id);
             let is_focus = state.collection.active() == Some(&node.id) && state.focused;
 
-            let style = if !node.enabled && !node.branch {
+            let style = if !node.enabled {
                 self.system.style(Role::TextDisabled)
             } else if is_route {
                 self.system
@@ -960,9 +978,7 @@ impl<'a, Id> TreeNavigation<'a, Id> {
                     .patch(self.system.style(Role::SelectionTint))
                     .add_modifier(Modifier::BOLD)
             } else if is_focus {
-                self.system
-                    .style(Role::Focus)
-                    .add_modifier(Modifier::REVERSED)
+                self.system.style(Role::Focus).add_modifier(Modifier::BOLD)
             } else if is_ancestor {
                 self.system
                     .style(Role::TextStrong)
@@ -980,22 +996,14 @@ impl<'a, Id> TreeNavigation<'a, Id> {
             let indent = " ".repeat(usize::from(indent_cols));
 
             let chev = if node.branch {
-                if node.expanded {
-                    if self.ascii { "v" } else { "▾" }
-                } else if self.ascii {
-                    ">"
-                } else {
-                    "▸"
-                }
-            } else if self.ascii {
-                " "
+                if node.expanded { "▾" } else { "▸" }
             } else {
                 "·"
             };
 
             let status = node
                 .status
-                .mark(self.ascii)
+                .mark(false)
                 .map(|m| format!("{m} "))
                 .unwrap_or_default();
             let icon = node
@@ -1009,7 +1017,7 @@ impl<'a, Id> TreeNavigation<'a, Id> {
                 .map(|b| format!(" [{b}]"))
                 .unwrap_or_default();
             let lazy = if node.lazy && !node.expanded {
-                if self.ascii { " ?" } else { " …" }
+                " …"
             } else {
                 ""
             };
@@ -1031,7 +1039,7 @@ impl<'a, Id> TreeNavigation<'a, Id> {
             );
 
             // disclosure hit: first few cols after indent
-            if node.branch {
+            if node.branch && node.enabled {
                 let dw = 2u16;
                 let dx = area.x.saturating_add(indent_cols);
                 state.disclosure_regions.push(HitRegion {
@@ -1039,7 +1047,7 @@ impl<'a, Id> TreeNavigation<'a, Id> {
                     area: Rect::new(dx, y, dw.min(area.width), 1),
                 });
             }
-            if node.enabled || node.branch {
+            if node.enabled {
                 state.regions.push(HitRegion {
                     id: node.id.clone(),
                     area: rect,
@@ -1235,6 +1243,41 @@ mod tests {
     }
 
     #[test]
+    fn disabled_nodes_are_skipped_and_cannot_be_activated_directly() {
+        let nodes = example_docs_tree();
+        let mut state = TreeNavigationState::new(Some("interaction"));
+        state.set_focused(true);
+        state.reconcile_route(&nodes);
+        state.focus_route(&nodes);
+
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &nodes),
+            TreeNavigationOutcome::Ignored
+        );
+        assert_eq!(state.focus(), Some(&"interaction"));
+
+        state.collection.set_active(Some("broken"));
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &nodes),
+            TreeNavigationOutcome::FocusChanged {
+                id: Some("interaction")
+            }
+        ));
+        assert_eq!(state.route(), Some(&"interaction"));
+
+        let disabled_branch = [TreeNavNode::branch("locked", "Locked", 0).enabled(false)];
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 20, 2);
+        let mut buffer = Buffer::empty(area);
+        let mut branch_state = TreeNavigationState::new(None);
+        branch_state.set_focused(true);
+        TreeNavigation::new(&disabled_branch, &system).paint(area, &mut buffer, &mut branch_state);
+        assert!(branch_state.regions.is_empty());
+        assert!(branch_state.disclosure_regions.is_empty());
+        assert_eq!(branch_state.focus(), None);
+    }
+
+    #[test]
     fn left_collapses_or_parent() {
         let mut nodes = example_project_tree();
         // src is expanded
@@ -1325,6 +1368,19 @@ mod tests {
     }
 
     #[test]
+    fn escape_cancels_one_navigation_layer_without_changing_route() {
+        let nodes = example_docs_tree();
+        let mut state = TreeNavigationState::new(Some("install"));
+        state.set_focused(true);
+        state.reconcile_route(&nodes);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &nodes),
+            TreeNavigationOutcome::Cancelled
+        );
+        assert_eq!(state.route(), Some(&"install"));
+    }
+
+    #[test]
     fn context_menu() {
         let nodes = example_settings_tree();
         let mut state = TreeNavigationState::new(Some("general"));
@@ -1341,15 +1397,13 @@ mod tests {
 
     #[test]
     fn paint_and_mouse() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let nodes = example_schema_tree();
         let mut state = TreeNavigationState::new(Some("users"));
         state.set_focused(true);
         let area = Rect::new(0, 0, 32, 12);
         let mut buf = Buffer::empty(area);
-        TreeNavigation::new(&nodes, &system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
+        TreeNavigation::new(&nodes, &system).paint(area, &mut buf, &mut state);
         assert!(!state.regions.is_empty());
         if let Some(hit) = state.regions.iter().find(|r| r.id == "events") {
             assert!(matches!(
@@ -1374,9 +1428,7 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 12, 10);
         let mut buf = Buffer::empty(area);
-        TreeNavigation::new(&nodes, &system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
+        TreeNavigation::new(&nodes, &system).paint(area, &mut buf, &mut state);
         assert!(state.narrow);
     }
 
@@ -1416,7 +1468,7 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 40, 14);
         let mut buf = Buffer::empty(area);
-        let w = TreeNavigation::new(&nodes, &system).ascii(true);
+        let w = TreeNavigation::new(&nodes, &system);
         for _ in 0..50 {
             w.paint(area, &mut buf, &mut state);
         }

@@ -9,11 +9,11 @@
 //! ToggleGroup applies single- or multi-select semantics with roving focus.
 //!
 //! **vs [`Checkbox`](crate::widgets::Checkbox).** Checkbox is a form field with
-//! label association and checked semantics (`[x]` / `[ ]`). Toggle is a toolbar
-//! affordance (`[B]` pressed vs ` B ` unpressed).
+//! label association and checked semantics (`[✓]` / `[ ]`). Toggle is a toolbar
+//! affordance (pressed reverse + label vs padded idle label). No `[inner]` wells.
 //!
 //! **vs [`Switch`](crate::widgets::Switch).** Switch is an immediate On/Off
-//! setting (`[ON ]` / `[OFF]`). Toggle does not imply a persistent preference.
+//! setting (`▎──●` / `○──`). Toggle does not imply a persistent preference.
 //!
 //! **vs Tabs / ModeRibbon.** Tabs select content panels; ModeRibbon selects agent
 //! modes. ToggleGroup is for tool state (bold/italic, align L|C|R), not navigation.
@@ -30,7 +30,6 @@
 //! - Exclusive options with long descriptions → RadioGroup
 //!
 //! Research: Radix Toggle/ToggleGroup, editor toolbars, terminal mode chips.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -45,7 +44,7 @@ use crate::interaction::{
     SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
     default_list_intent,
 };
-use crate::style::{DesignSystem, Role};
+use crate::style::{ButtonRecipeVariant, ControlState, DesignSystem, Role, VisualState};
 use crate::text::{display_cols, take_display_cols};
 
 // ── Value / size / recipe ───────────────────────────────────────────────────
@@ -114,10 +113,10 @@ impl ToggleValue {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum ToggleSize {
-    /// Default padding (` B ` / `[B]`).
+    /// Default padding (` B `).
     #[default]
     Default,
-    /// Toolbar density (`B` / `[B]`).
+    /// Toolbar density (`B`).
     Compact,
 }
 
@@ -141,7 +140,7 @@ pub enum ToggleRecipe {
     Outline,
     /// Minimal chrome; pressed uses reverse/bold only.
     Quiet,
-    /// Solid accent when pressed.
+    /// Solid secondary selection when pressed.
     Solid,
 }
 
@@ -431,68 +430,59 @@ impl<'a> Toggle<'a> {
     pub fn preferred_width(&self, value: ToggleValue) -> u16 {
         let inner = self.face_inner();
         let cols = display_cols(&inner).max(1);
-        let chrome = match (self.recipe, value, self.size) {
-            (ToggleRecipe::Quiet, ToggleValue::Unpressed, ToggleSize::Compact) => 0,
-            (ToggleRecipe::Quiet, ToggleValue::Unpressed, ToggleSize::Default) => 2,
-            (_, ToggleValue::Indeterminate, _) => 4, // [~x]
-            (_, ToggleValue::Pressed, _) => 2,       // [x]
-            (_, ToggleValue::Unpressed, ToggleSize::Compact) => 0,
-            (_, ToggleValue::Unpressed, ToggleSize::Default) => 2,
+        let chrome = match self.size {
+            ToggleSize::Compact => 0,
+            ToggleSize::Default => 2,
         };
+        let _ = (self.recipe, value);
         u16::try_from(cols.saturating_add(chrome).max(1)).unwrap_or(1)
     }
 
     fn format_face(&self, value: ToggleValue) -> String {
+        let _ = value;
         let inner = self.face_inner();
         let inner = if inner.is_empty() { "·".into() } else { inner };
-        match (self.recipe, value, self.size) {
-            (_, ToggleValue::Indeterminate, _) => format!("[~{inner}]"),
-            (_, ToggleValue::Pressed, _) => format!("[{inner}]"),
-            (ToggleRecipe::Quiet, ToggleValue::Unpressed, ToggleSize::Compact) => inner,
-            (ToggleRecipe::Quiet, ToggleValue::Unpressed, _) => format!(" {inner} "),
-            (_, ToggleValue::Unpressed, ToggleSize::Compact) => format!(" {inner}"),
-            (_, ToggleValue::Unpressed, _) => format!(" {inner} "),
+        match self.size {
+            ToggleSize::Compact => inner,
+            ToggleSize::Default => format!(" {inner} "),
         }
     }
 
     fn face_style(&self, state: &ToggleState) -> ratatui_core::style::Style {
-        if !state.enabled {
-            return self.system.style(Role::TextDisabled);
-        }
-        let mono = self.colorless
-            || self.system.glyphs.is_ascii()
-            || matches!(
-                self.system.capability,
-                crate::style::ColorCapability::Monochrome
-            );
-        let mut style = match (self.recipe, state.value) {
-            (ToggleRecipe::Solid, ToggleValue::Pressed) => self.system.style(Role::Accent),
-            (_, ToggleValue::Pressed) if mono => self.system.style(Role::TextStrong),
-            (_, ToggleValue::Pressed) => self.system.style(Role::ActionFocused),
-            (_, ToggleValue::Indeterminate) => self.system.style(Role::TextMuted),
-            (ToggleRecipe::Quiet, _) => self.system.style(Role::TextMuted),
-            _ => self.system.style(Role::Text),
+        let variant = if self.colorless {
+            ButtonRecipeVariant::Quiet
+        } else {
+            match self.recipe {
+                ToggleRecipe::Solid => ButtonRecipeVariant::Secondary,
+                ToggleRecipe::Outline => ButtonRecipeVariant::Outline,
+                ToggleRecipe::Quiet => ButtonRecipeVariant::Quiet,
+            }
         };
-        if state.focused {
-            // Pressed-and-focused stays bold; focus alone is the Focus role.
-            // The bracket chrome around the label already says "pressed".
-            style = self.system.style(Role::Focus);
-            if matches!(state.value, ToggleValue::Pressed) {
-                style = style.add_modifier(Modifier::BOLD);
-            }
-        } else if matches!(state.value, ToggleValue::Pressed) {
-            style = style.add_modifier(Modifier::BOLD);
-            if mono || matches!(self.recipe, ToggleRecipe::Quiet) {
-                style = style.add_modifier(Modifier::REVERSED);
-            }
+        let control_state = if !state.enabled {
+            ControlState::Disabled
+        } else if state.focused {
+            ControlState::Focused
         } else if state.hovered {
-            style = self.system.style(Role::TextStrong);
+            ControlState::Hovered
+        } else {
+            ControlState::Default
+        };
+        let recipe =
+            self.system
+                .button_recipe(variant, control_state, self.system.junie_theme().surface);
+        let mut style = recipe.fill.patch(recipe.label);
+        if matches!(state.value, ToggleValue::Pressed) {
+            // M2: pressed is a full style replacement — the explicit
+            // reversal pair, not a stack of modifiers over the idle one.
+            style = self.system.reversed();
+        } else if matches!(state.value, ToggleValue::Indeterminate) {
+            // One ladder step down, never a dimmed copy of the active mark.
+            style = style.patch(self.system.style(Role::TextMuted));
         }
-        // Brackets already encode pressed without color; reverse reinforces mono.
         style
     }
 
-    /// Paint toggle.
+    /// Paint toggle as the junie form switch: `▎──● label on` / `▎○── label off`.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut ToggleState) -> ToggleParts {
         state.region = None;
         if area.is_empty() {
@@ -506,19 +496,89 @@ impl<'a> Toggle<'a> {
             state.region = Some(root);
             return ToggleParts { root };
         }
-        let face = self.format_face(state.value);
-        let text = take_display_cols(&face, usize::from(area.width));
-        let style = self.face_style(state);
-        buffer.set_stringn(area.x, area.y, &text, usize::from(area.width), style);
-        let w = display_cols(&text).min(usize::from(area.width)) as u16;
-        let root = Rect::new(area.x, area.y, w.max(1), 1.min(area.height));
+        let theme = self.system.junie_theme();
+        let bg = theme.surface;
+        let on = state.value.is_pressed();
+        let visual = VisualState {
+            focused: state.focused && state.enabled,
+            hovered: state.hovered && state.enabled,
+            selected: on,
+            disabled: !state.enabled,
+            ..VisualState::default()
+        };
+        let st = self.system.row(visual, bg);
+        let row = Rect::new(area.x, area.y, area.width, 1.min(area.height));
+        buffer.set_style(row, st);
+        buffer.set_stringn(
+            area.x,
+            area.y,
+            self.system.glyphs.selection_gutter(),
+            1,
+            self.system.gutter(visual, st.bg.unwrap_or(bg), false),
+        );
+        let knob = match state.value {
+            ToggleValue::Pressed => "──●",
+            ToggleValue::Unpressed => "○──",
+            ToggleValue::Indeterminate => "─●─",
+        };
+        let knob_style = if !state.enabled {
+            st
+        } else if on {
+            st.fg(theme.accent)
+        } else {
+            st.fg(theme.text_muted)
+        };
+        if area.width > 1 {
+            buffer.set_stringn(
+                area.x.saturating_add(1),
+                area.y,
+                knob,
+                3.min(usize::from(area.width.saturating_sub(1))),
+                knob_style,
+            );
+        }
+        let label = if self.label.is_empty() {
+            self.icon.unwrap_or("")
+        } else {
+            self.label
+        };
+        let label_x = area.x.saturating_add(5);
+        if label_x < area.right() && !label.is_empty() {
+            let lw = area.right().saturating_sub(label_x);
+            buffer.set_stringn(
+                label_x,
+                area.y,
+                take_display_cols(label, usize::from(lw)),
+                usize::from(lw),
+                st,
+            );
+        }
+        let state_word = if on { "on" } else { "off" };
+        let sx = label_x
+            .saturating_add(display_cols(label) as u16)
+            .saturating_add(1);
+        if sx + 3 < area.right() {
+            buffer.set_stringn(
+                sx,
+                area.y,
+                state_word,
+                3,
+                st.fg(if state.enabled {
+                    theme.text_muted
+                } else {
+                    theme.disabled
+                }),
+            );
+        }
+        let used = sx.saturating_add(3).saturating_sub(area.x).min(area.width);
+        let root = Rect::new(area.x, area.y, used.max(1), 1.min(area.height));
         state.region = Some(root);
         ToggleParts { root }
     }
 
     /// Keys: Space/Enter flip value when focused.
     pub fn handle_key(&self, state: &mut ToggleState, key: KeyEvent) -> ToggleOutcome {
-        if !state.enabled || !state.focused || key.kind != KeyEventKind::Press {
+        if !state.enabled || !state.focused || !key.is_press() {
             return ToggleOutcome::Ignored;
         }
         if let Some(intent) = default_button_intent(key) {
@@ -531,12 +591,6 @@ impl<'a> Toggle<'a> {
                 state.value = next;
                 return ToggleOutcome::ValueChanged { value: next };
             }
-        }
-        // Explicit Space as Toggle even if button map differs
-        if matches!(key.code, crate::input::KeyCode::Char(' ')) {
-            let next = state.value.activate();
-            state.value = next;
-            return ToggleOutcome::ValueChanged { value: next };
         }
         ToggleOutcome::Ignored
     }
@@ -838,7 +892,7 @@ impl<'a, Id> ToggleGroup<'a, Id> {
             orientation: ToggleGroupOrientation::Horizontal,
             size: ToggleSize::Default,
             face_recipe: ToggleRecipe::Outline,
-            overflow_label: "…",
+            overflow_label: system.glyphs.ellipsis(),
         }
     }
 
@@ -1085,7 +1139,7 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
             }
             ToggleGroupOrientation::Horizontal => {
                 let gap = self.recipe.inter_cols();
-                let sep = self.recipe.separator_glyph(self.system.glyphs.is_ascii());
+                let sep = self.recipe.separator_glyph(false);
                 let mut x = area.x;
                 let mut first = true;
                 for &idx in &visible {
@@ -1142,13 +1196,23 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
                         .min(area.right().saturating_sub(x));
                     if tw > 0 {
                         let rect = Rect::new(x, area.y, tw, 1.min(area.height));
-                        let mut style = self.system.style(if state.overflow_open {
-                            Role::ActionFocused
+                        let recipe = self.system.button_recipe(
+                            ButtonRecipeVariant::Quiet,
+                            if state.overflow_open {
+                                ControlState::Focused
+                            } else {
+                                ControlState::Default
+                            },
+                            self.system.junie_theme().surface,
+                        );
+                        let mut style = recipe.fill.patch(recipe.label);
+                        if state.overflow_open {
+                            // The open trigger is held down: the explicit
+                            // reversal, not a stacked modifier.
+                            style = self.system.reversed();
                         } else {
-                            Role::TextMuted
-                        });
-                        style = style.add_modifier(Modifier::BOLD);
-                        style = style.patch(self.system.style(Role::SelectionTint));
+                            style = style.add_modifier(Modifier::BOLD);
+                        }
                         let label = take_display_cols(self.overflow_label, usize::from(tw));
                         buffer.set_stringn(rect.x, rect.y, &label, usize::from(tw), style);
                         overflow_trigger = Some(rect);
@@ -1187,7 +1251,12 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
         ts.enabled = item.enabled;
         ts.focused = state.surface_focused && state.cursor.as_ref() == Some(&item.id);
         ts.hovered = state.hovered.as_ref() == Some(&item.id);
-        let _ = t.paint(area, buffer, &mut ts);
+        // Toolbar group is reverse+label (no `[inner]` wells). Form switch
+        // lives on standalone [`Toggle::paint`].
+        let face = t.format_face(item.value);
+        let text = take_display_cols(&face, usize::from(area.width));
+        let style = t.face_style(&ts);
+        buffer.set_stringn(area.x, area.y, &text, usize::from(area.width), style);
     }
 
     fn activate_item(&self, state: &ToggleGroupState<Id>, id: Id) -> ToggleGroupOutcome<Id> {
@@ -1223,7 +1292,7 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
         state: &mut ToggleGroupState<Id>,
         key: KeyEvent,
     ) -> ToggleGroupOutcome<Id> {
-        if !state.surface_focused || key.kind != KeyEventKind::Press {
+        if !state.surface_focused || !key.is_press() {
             return ToggleGroupOutcome::Ignored;
         }
         if matches!(key.code, crate::input::KeyCode::Esc) && state.overflow_open {
@@ -1271,12 +1340,6 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
                 }
             }
         }
-        if matches!(key.code, crate::input::KeyCode::Char(' ')) {
-            if let Some(c) = state.cursor.clone() {
-                return self.activate_item(state, c);
-            }
-        }
-
         let ro = state.roving.handle_key(key, &visible);
         if let RovingOutcome::ActiveChanged { to: Some(id), .. } = ro {
             state.cursor = Some(id.clone());
@@ -1486,18 +1549,6 @@ mod tests {
     }
 
     #[test]
-    fn pressed_mark_without_color() {
-        let system = DesignSystem::default().glyphs(crate::style::GlyphSet::Ascii);
-        let t = Toggle::new("B", &system).colorless(true).compact();
-        let mut state = ToggleState::with_value(ToggleValue::Pressed);
-        let mut buf = Buffer::empty(Rect::new(0, 0, 10, 1));
-        let _ = t.paint(Rect::new(0, 0, 10, 1), &mut buf, &mut state);
-        // Brackets encode pressed
-        let cell = buf.cell((0, 0)).map(|c| c.symbol().to_string());
-        assert_eq!(cell.as_deref(), Some("["));
-    }
-
-    #[test]
     fn icon_only_requires_a11y() {
         let system = DesignSystem::default();
         let bad = Toggle::new("", &system).icon("B");
@@ -1678,6 +1729,15 @@ mod tests {
             "pressed high-priority kept; vis={vis:?} over={over:?}"
         );
         assert!(!over.is_empty() || vis.len() < 4);
+
+        let mut state = ToggleGroupState::new();
+        state.set_surface_focused(true);
+        state.overflow_open = true;
+        assert!(matches!(
+            g.handle_key(&mut state, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            ToggleGroupOutcome::OverflowClosed
+        ));
+        assert!(!state.overflow_open);
     }
 
     #[test]
@@ -1766,14 +1826,129 @@ mod tests {
 
     #[test]
     fn indeterminate_paint() {
-        let system = DesignSystem::default();
+        let system = DesignSystem::junie();
         let t = Toggle::new("B", &system);
         let mut state = ToggleState::with_value(ToggleValue::Indeterminate);
-        let mut buf = Buffer::empty(Rect::new(0, 0, 12, 1));
-        let _ = t.paint(Rect::new(0, 0, 12, 1), &mut buf, &mut state);
-        let s0 = buf.cell((0, 0)).map(|c| c.symbol().to_string());
-        assert_eq!(s0.as_deref(), Some("["));
-        let s1 = buf.cell((1, 0)).map(|c| c.symbol().to_string());
-        assert_eq!(s1.as_deref(), Some("~"));
+        let mut buf = Buffer::empty(Rect::new(0, 0, 16, 1));
+        let _ = t.paint(Rect::new(0, 0, 16, 1), &mut buf, &mut state);
+        assert_eq!(
+            buf.cell((1, 0)).map(|c| c.symbol().to_string()).as_deref(),
+            Some("─")
+        );
+        assert_eq!(
+            buf.cell((2, 0)).map(|c| c.symbol().to_string()).as_deref(),
+            Some("●")
+        );
+    }
+
+    fn cell(buffer: &Buffer, x: u16, y: u16) -> String {
+        buffer[(x, y)].symbol().to_string()
+    }
+
+    #[test]
+    fn form_switch_anatomy_on_off_hover_disabled() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let t = Toggle::new("Verbose", &system);
+        let area = Rect::new(0, 0, 24, 1);
+
+        let mut on = ToggleState::with_value(ToggleValue::Pressed);
+        on.set_focused(true);
+        let mut buf = Buffer::empty(area);
+        let _ = t.paint(area, &mut buf, &mut on);
+        assert_eq!(cell(&buf, 0, 0), "▎");
+        assert_eq!(cell(&buf, 1, 0), "─");
+        assert_eq!(cell(&buf, 2, 0), "─");
+        assert_eq!(cell(&buf, 3, 0), "●");
+        assert_eq!(cell(&buf, 5, 0), "V");
+        assert_eq!(buf[(3, 0)].fg, theme.accent);
+        let text: String = (0..24).map(|x| buf[(x, 0)].symbol().to_string()).collect();
+        assert!(text.contains("on"), "{text}");
+
+        let mut off = ToggleState::new();
+        let mut buf = Buffer::empty(area);
+        let _ = t.paint(area, &mut buf, &mut off);
+        assert_eq!(cell(&buf, 1, 0), "○");
+        assert_eq!(cell(&buf, 2, 0), "─");
+        assert_eq!(cell(&buf, 3, 0), "─");
+        assert_eq!(buf[(1, 0)].fg, theme.text_muted);
+        let text: String = (0..24).map(|x| buf[(x, 0)].symbol().to_string()).collect();
+        assert!(text.contains("off"), "{text}");
+
+        let mut hover = ToggleState::new();
+        hover.hovered = true;
+        let mut buf = Buffer::empty(area);
+        let _ = t.paint(area, &mut buf, &mut hover);
+        assert_eq!(buf[(5, 0)].bg, theme.lift(theme.surface));
+
+        let mut disabled = ToggleState::with_value(ToggleValue::Pressed);
+        disabled.set_enabled(false);
+        let mut buf = Buffer::empty(area);
+        let _ = t.paint(area, &mut buf, &mut disabled);
+        assert_eq!(buf[(5, 0)].fg, theme.disabled);
+        assert_eq!(cell(&buf, 0, 0), "▎");
+        assert_eq!(
+            buf[(0, 0)].fg,
+            buf[(0, 0)].bg,
+            "disabled gutter is reserved, fg=bg"
+        );
+    }
+
+    #[test]
+    fn format_face_is_padded_inner_without_wells() {
+        let system = DesignSystem::junie();
+        let t = Toggle::new("B", &system);
+        for value in [
+            ToggleValue::Unpressed,
+            ToggleValue::Pressed,
+            ToggleValue::Indeterminate,
+        ] {
+            let face = t.format_face(value);
+            assert!(!face.contains('['), "well leaked: {face:?}");
+            assert!(!face.contains(']'), "well leaked: {face:?}");
+            assert!(face.contains('B'), "{face:?}");
+        }
+        let compact = Toggle::new("B", &system).size(ToggleSize::Compact);
+        assert_eq!(compact.format_face(ToggleValue::Pressed), "B");
+    }
+
+    #[test]
+    fn group_paint_has_no_wells() {
+        let system = DesignSystem::junie();
+        let items = [
+            ToggleGroupItem::new("b", "B").pressed(true),
+            ToggleGroupItem::new("i", "I"),
+        ];
+        let g = ToggleGroup::new(&items, &system).multiple();
+        let mut state = ToggleGroupState::new();
+        let area = Rect::new(0, 0, 30, 1);
+        let mut buf = Buffer::empty(area);
+        let _ = g.paint(area, &mut buf, &mut state);
+        let text: String = (0..area.width)
+            .map(|x| buf[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(!text.contains('['), "well leaked: {text:?}");
+        assert!(!text.contains(']'), "well leaked: {text:?}");
+        assert!(text.contains('B') && text.contains('I'), "{text:?}");
+    }
+
+    #[test]
+    fn group_pressed_is_reversed_not_bracket() {
+        let system = DesignSystem::junie();
+        let items = [ToggleGroupItem::new("b", "B").pressed(true)];
+        let g = ToggleGroup::new(&items, &system);
+        let mut state = ToggleGroupState::new();
+        let area = Rect::new(0, 0, 12, 1);
+        let mut buf = Buffer::empty(area);
+        let _ = g.paint(area, &mut buf, &mut state);
+        let reversed = system.reversed();
+        let b = (0..area.width)
+            .map(|x| &buf[(x, 0)])
+            .find(|cell| cell.symbol() == "B")
+            .expect("pressed label");
+        assert_eq!(Some(b.fg), reversed.fg);
+        assert_eq!(Some(b.bg), reversed.bg);
+        assert!(b.style().add_modifier.contains(Modifier::BOLD));
+        assert!(!b.style().add_modifier.contains(Modifier::REVERSED));
     }
 }

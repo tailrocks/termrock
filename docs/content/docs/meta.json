@@ -1,11 +1,14 @@
 {
   "pages": [
     "index",
+    "installation",
+    "getting-started",
+    "customization",
     "components",
     "patterns",
     "runtime",
     "interaction",
-    "interaction-notes",
+    "advanced-composition",
     "quality-migrations"
   ]
 }

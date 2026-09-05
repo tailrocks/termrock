@@ -1,5 +1,4 @@
 //! Typed terminal requests and pure OSC encoders. Consumers own emission.
-
 mod encode;
 mod request;
 

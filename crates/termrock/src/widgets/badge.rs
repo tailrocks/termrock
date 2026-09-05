@@ -7,16 +7,15 @@
 //! **Actionable** only when [`Badge::interactive`]: selected / focused / disabled
 //! then apply; non-interactive badges ignore activation (display-only chrome).
 //!
-//! Dense-view default: **no background fill** — brackets + role fg + optional
-//! [`crate::style::Glyph`] so meaning survives no-color. Optional soft fill for
-//! rare emphasis surfaces.
+//! Default: glyph (status variants) + body + role fg. Soft fill pads ` inner `.
+//! Meaning survives no-color via [`crate::style::Glyph`], not invented `[label]`
+//! wells. Count is numeric `(n)`. Outline is padded inner + Border role.
 //!
 //! References: shadcn Badge, issue labels, btop indicators, agent task status.
-
 #![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
-use crate::input::{KeyCode, KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
+use crate::input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
     EventResult, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
     default_button_intent,
@@ -63,8 +62,8 @@ impl BadgeVariant {
     fn role(self) -> Role {
         match self {
             Self::Neutral | Self::Count => Role::TextMuted,
-            Self::Info => Role::Info,
-            Self::Success => Role::Success,
+            Self::Info => Role::TextSecondary,
+            Self::Success => Role::TextStrong,
             Self::Warning => Role::Warning,
             Self::Destructive => Role::Danger,
             Self::Outline => Role::Border,
@@ -367,7 +366,7 @@ impl<'a> Badge<'a> {
         self.variant
     }
 
-    /// Visible body text (without brackets).
+    /// Visible body text (without padding or count parens).
     #[must_use]
     pub fn body_text(&self) -> String {
         match self.variant {
@@ -388,7 +387,7 @@ impl<'a> Badge<'a> {
         }
     }
 
-    /// Full painted string including brackets / glyph (for measure + plain).
+    /// Full painted string including padding / glyph (for measure + paint).
     #[must_use]
     pub fn decorated(&self, state: Option<&BadgeState>) -> String {
         let mut inner = String::new();
@@ -412,21 +411,9 @@ impl<'a> Badge<'a> {
         {
             inner.push('*');
         }
-        if matches!(self.variant, BadgeVariant::Outline) {
-            return if self.system.glyphs.is_ascii() {
-                format!("[{inner}]")
-            } else {
-                format!("⟨{inner}⟩")
-            };
-        }
-        if matches!(self.fill, BadgeFill::Soft) && !self.system.glyphs.is_ascii() {
-            return format!(" {inner} ");
-        }
-        // Transparent/ASCII badges retain explicit structural delimiters.
         match self.variant {
             BadgeVariant::Count => format!("({inner})"),
-            BadgeVariant::Outline => format!("⟨{inner}⟩"),
-            _ => format!("[{inner}]"),
+            _ => format!(" {inner} "),
         }
     }
 
@@ -549,7 +536,7 @@ impl<'a> Badge<'a> {
             && self.show_glyph
             && let Some(glyph) = self.variant.status_glyph()
         {
-            // `decorated` always opens with one delimiter cell before the glyph.
+            // Padded inner opens with one space cell before the glyph.
             crate::widgets::row_chrome::paint_status_glyph(
                 buffer,
                 parts.content,
@@ -563,7 +550,7 @@ impl<'a> Badge<'a> {
 
     /// Key path — only when interactive and not disabled.
     pub fn handle_key(&self, state: &mut BadgeState, key: KeyEvent) -> BadgeOutcome {
-        if !self.interactive || self.disabled || !state.focused || key.kind != KeyEventKind::Press {
+        if !self.interactive || self.disabled || !state.focused || !key.is_press() {
             return BadgeOutcome::Ignored;
         }
         if let Some(intent) = default_button_intent(key) {
@@ -683,7 +670,12 @@ impl Widget for Badge<'_> {
 mod tests {
     use super::*;
     use crate::input::KeyModifiers;
-    use crate::style::GlyphSet;
+
+    fn buffer_row(buf: &Buffer, y: u16) -> String {
+        (0..buf.area.width)
+            .map(|x| buf[(x, y)].symbol().to_string())
+            .collect()
+    }
 
     #[test]
     fn variants_paint_soft_chip() {
@@ -719,14 +711,6 @@ mod tests {
         let d = b.decorated(None);
         assert!(d.contains('✓') || d.contains('+'));
         assert!(b.plain().contains("success"));
-    }
-
-    #[test]
-    fn ascii_glyph_fallback() {
-        let system = DesignSystem::default().glyphs(GlyphSet::Ascii);
-        let b = Badge::new("ok", &system).success();
-        let d = b.decorated(None);
-        assert!(d.contains('+'));
     }
 
     #[test]
@@ -786,10 +770,82 @@ mod tests {
     }
 
     #[test]
-    fn outline_uses_angle_brackets() {
+    fn default_variants_have_no_square_bracket_wells() {
         let system = DesignSystem::default();
-        let d = Badge::new("meta", &system).outline().decorated(None);
-        assert!(d.starts_with('⟨') || d.starts_with('['));
+        let cases = [
+            (BadgeVariant::Neutral, "meta"),
+            (BadgeVariant::Info, "note"),
+            (BadgeVariant::Success, "ok"),
+            (BadgeVariant::Warning, "slow"),
+            (BadgeVariant::Destructive, "fail"),
+        ];
+        for (variant, label) in cases {
+            for fill in [BadgeFill::Soft, BadgeFill::None] {
+                let b = Badge::new(label, &system).variant(variant).fill(fill);
+                let d = b.decorated(None);
+                assert!(
+                    !d.contains('[') && !d.contains(']'),
+                    "{variant:?} fill={fill:?} decorated well: {d:?}"
+                );
+                assert!(
+                    d.contains(label),
+                    "{variant:?} fill={fill:?} missing label: {d:?}"
+                );
+                assert!(
+                    d.starts_with(' ') && d.ends_with(' '),
+                    "{variant:?} fill={fill:?} not padded inner: {d:?}"
+                );
+                let area = Rect::new(0, 0, 24, 1);
+                let mut buf = Buffer::empty(area);
+                let _ = b.paint(area, &mut buf, None);
+                let row = buffer_row(&buf, 0);
+                assert!(
+                    !row.contains('[') && !row.contains(']'),
+                    "{variant:?} fill={fill:?} paint well: {row:?}"
+                );
+                assert!(
+                    row.contains(label),
+                    "{variant:?} fill={fill:?} paint missing label: {row:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn count_uses_numeric_parens_not_wells() {
+        let system = DesignSystem::default();
+        for fill in [BadgeFill::Soft, BadgeFill::None] {
+            let b = Badge::count(7, &system).fill(fill);
+            let d = b.decorated(None);
+            assert_eq!(d, "(7)", "fill={fill:?} decorated={d:?}");
+            let area = Rect::new(0, 0, 12, 1);
+            let mut buf = Buffer::empty(area);
+            let _ = b.paint(area, &mut buf, None);
+            let row = buffer_row(&buf, 0);
+            assert!(row.contains("(7)"), "paint missing (7): {row:?}");
+            assert!(
+                !row.contains('[') && !row.contains(']'),
+                "count well: {row:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn outline_is_padded_inner_not_invented_delimiter() {
+        let system = DesignSystem::default();
+        let b = Badge::new("meta", &system).outline();
+        let d = b.decorated(None);
+        assert_eq!(d, " meta ");
+        assert!(!d.contains('⟨') && !d.contains('⟩') && !d.contains('[') && !d.contains(']'));
+        let area = Rect::new(0, 0, 16, 1);
+        let mut buf = Buffer::empty(area);
+        let _ = b.paint(area, &mut buf, None);
+        let row = buffer_row(&buf, 0);
+        assert!(row.contains("meta"), "{row:?}");
+        assert!(
+            !row.contains('⟨') && !row.contains('⟩') && !row.contains('[') && !row.contains(']'),
+            "outline delimiter leaked: {row:?}"
+        );
     }
 
     #[test]

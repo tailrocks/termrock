@@ -14,7 +14,6 @@
 //! hosts only know visual columns.
 //!
 //! Research: fzf, television, command palettes.
-
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 use unicode_segmentation::UnicodeSegmentation;
 

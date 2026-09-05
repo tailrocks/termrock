@@ -11,13 +11,12 @@
 //! into [`SemanticStatus`] so components do not invent private status sets.
 //!
 //! Research: btop, process monitors, collaboration presence, agent status.
-
 #![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
 use crate::{
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
-    style::{DesignSystem, GlyphSet},
+    style::{DesignSystem, Glyph},
     text::{display_cols, take_display_cols},
 };
 
@@ -105,7 +104,8 @@ impl SemanticStatus {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum StatusIndicatorVariant {
-    /// Single-cell (or short) glyph only — still has accessible label in semantics.
+    /// Embedded single-cell glyph only — still has accessible label in semantics.
+    /// Use only where a host row already supplies the status verb.
     Compact,
     /// Glyph + short label (default).
     #[default]
@@ -199,9 +199,7 @@ pub struct StatusIndicator<'a> {
     system: &'a DesignSystem,
     label: Option<&'a str>,
     variant: StatusIndicatorVariant,
-    ascii: bool,
-    /// When true, force ASCII glyphs regardless of system glyph set.
-    force_ascii: bool,
+    colorless: bool,
     elapsed_secs: Option<u64>,
     strong: bool,
 }
@@ -215,8 +213,7 @@ impl<'a> StatusIndicator<'a> {
             system,
             label: None,
             variant: StatusIndicatorVariant::Labeled,
-            ascii: false,
-            force_ascii: false,
+            colorless: false,
             elapsed_secs: None,
             strong: false,
         }
@@ -230,8 +227,7 @@ impl<'a> StatusIndicator<'a> {
             system,
             label: None,
             variant: StatusIndicatorVariant::Compact,
-            ascii: false,
-            force_ascii: false,
+            colorless: false,
             elapsed_secs: None,
             strong: false,
         }
@@ -261,11 +257,10 @@ impl<'a> StatusIndicator<'a> {
         self
     }
 
-    /// ASCII glyphs.
+    /// Remove hue without changing the glyph vocabulary.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self.force_ascii = on;
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
         self
     }
 
@@ -282,20 +277,16 @@ impl<'a> StatusIndicator<'a> {
         self.kind
     }
 
-    /// Effective ASCII from flag or system glyphs.
-    #[must_use]
-    pub fn use_ascii(&self) -> bool {
-        self.force_ascii || matches!(self.system.glyphs, GlyphSet::Ascii)
-    }
-
     /// Glyph for current capability.
     #[must_use]
     pub fn glyph(&self) -> &'static str {
-        if self.use_ascii() {
-            self.kind.glyph_ascii()
-        } else {
-            self.kind.glyph_for_set(self.system.glyphs)
-        }
+        self.kind.glyph()
+    }
+
+    /// Status rail for labeled presentations.
+    #[must_use]
+    pub fn rail(&self) -> &'static str {
+        self.system.glyphs.resolve(Glyph::RailHeavy).text
     }
 
     /// Label text used when not compact-only.
@@ -314,10 +305,10 @@ impl<'a> StatusIndicator<'a> {
         match self.variant {
             StatusIndicatorVariant::Compact => g.to_string(),
             StatusIndicatorVariant::Labeled => {
-                format!("{g} {}", self.resolved_label())
+                format!("{} {g} {}", self.rail(), self.resolved_label())
             }
             StatusIndicatorVariant::Elapsed => {
-                let mut s = format!("{g} {}", self.resolved_label());
+                let mut s = format!("{} {g} {}", self.rail(), self.resolved_label());
                 if let Some(secs) = elapsed {
                     s = format!("{s} {}", format_elapsed(secs));
                 }
@@ -349,7 +340,7 @@ impl<'a> StatusIndicator<'a> {
         }
         let text = self.text(state);
         // The label is words, not a signal: it stays in the body tone and the
-        // status color lands on the glyph cell alone (plans/007).
+        // status color lands on the rail + glyph cells (plans/007).
         let mut style = self.system.style(crate::style::Role::Text);
         if self.strong {
             style = style.add_modifier(Modifier::BOLD);
@@ -361,7 +352,11 @@ impl<'a> StatusIndicator<'a> {
             usize::from(area.width),
             style,
         );
-        let mut glyph_style = self.system.style(self.kind.role());
+        let mut glyph_style = self.system.style(if self.colorless {
+            crate::style::Role::TextStrong
+        } else {
+            self.kind.role()
+        });
         if self.strong
             || matches!(
                 self.kind,
@@ -370,23 +365,25 @@ impl<'a> StatusIndicator<'a> {
         {
             glyph_style = glyph_style.add_modifier(Modifier::BOLD);
         }
-        // The status *cell* breathes; the label never does. Amplitude is capped
-        // at AMBIENT_PEAK, and terminal states resolve to 1.0, so a finished or
-        // failed row is perfectly still.
-        let brightness = crate::style::breathe_over(
-            self.system.motion,
-            self.system.elapsed_ms(),
-            self.kind.period_ms(),
+        let glyph_column = if matches!(self.variant, StatusIndicatorVariant::Compact) {
+            0
+        } else {
+            crate::widgets::row_chrome::paint_status_glyph(
+                buffer,
+                area,
+                0,
+                self.rail(),
+                glyph_style,
+            );
+            u16::try_from(display_cols(self.rail()).saturating_add(1)).unwrap_or(u16::MAX)
+        };
+        crate::widgets::row_chrome::paint_status_glyph(
+            buffer,
+            area,
+            glyph_column,
+            self.glyph(),
+            glyph_style,
         );
-        if brightness < 1.0 {
-            let canvas = self
-                .system
-                .style(crate::style::Role::Canvas)
-                .bg
-                .unwrap_or(ratatui_core::style::Color::Reset);
-            glyph_style = crate::style::fade_style(glyph_style, brightness, canvas);
-        }
-        crate::widgets::row_chrome::paint_status_glyph(buffer, area, 0, self.glyph(), glyph_style);
     }
 
     /// Semantic registration — always exposes text name even for compact dots.
@@ -467,89 +464,7 @@ pub fn example_status_catalog() -> [(SemanticStatus, &'static str); 11] {
 #[cfg(test)]
 mod tests {
 
-    #[test]
-    fn only_live_states_breathe_and_terminal_states_are_still() {
-        // Gravity: a finished, failed, or offline status must cost no frames.
-        for status in [
-            SemanticStatus::Success,
-            SemanticStatus::Failed,
-            SemanticStatus::Warning,
-            SemanticStatus::Offline,
-            SemanticStatus::Paused,
-            SemanticStatus::Queued,
-            SemanticStatus::Idle,
-            SemanticStatus::Unknown,
-        ] {
-            assert_eq!(
-                status.channel(),
-                crate::style::MotionChannel::Static,
-                "{status:?} claims a rate it does not have"
-            );
-        }
-        assert_eq!(
-            SemanticStatus::Running.channel(),
-            crate::style::MotionChannel::Live
-        );
-        assert_eq!(
-            SemanticStatus::Waiting.channel(),
-            crate::style::MotionChannel::Wait
-        );
-        // Presence is barely perceptible; anything faster reads as activity.
-        assert_eq!(
-            SemanticStatus::Online.period_ms(),
-            crate::style::HEARTBEAT_PERIOD_MS
-        );
-        assert!(SemanticStatus::Online.period_ms() > SemanticStatus::Running.period_ms());
-    }
-
-    #[test]
-    fn the_glyph_breathes_and_the_label_never_does() {
-        let base = DesignSystem::default();
-        let area = Rect::new(0, 0, 20, 1);
-        let paint = |ms: u64| -> Buffer {
-            let system = base.clone().at(crate::runtime::FrameTick::manual(
-                crate::runtime::Instant::now(),
-                std::time::Duration::from_millis(ms),
-                std::time::Duration::from_millis(16),
-            ));
-            let mut buf = Buffer::empty(area);
-            StatusIndicator::new(SemanticStatus::Running, &system).paint(area, &mut buf);
-            buf
-        };
-        let trough = paint(0);
-        let peak = paint(1_000);
-        assert_ne!(
-            trough[(0, 0)].style(),
-            peak[(0, 0)].style(),
-            "the status cell must breathe"
-        );
-        for x in 2..area.width {
-            assert_eq!(
-                trough[(x, 0)].style(),
-                peak[(x, 0)].style(),
-                "column {x} of the label moved; words are not a signal"
-            );
-        }
-    }
-
-    #[test]
-    fn reduced_motion_stops_the_breathe() {
-        let base = DesignSystem::default().motion(crate::style::MotionPolicy::Basic);
-        let area = Rect::new(0, 0, 20, 1);
-        let paint = |ms: u64| -> Buffer {
-            let system = base.clone().at(crate::runtime::FrameTick::manual(
-                crate::runtime::Instant::now(),
-                std::time::Duration::from_millis(ms),
-                std::time::Duration::from_millis(16),
-            ));
-            let mut buf = Buffer::empty(area);
-            StatusIndicator::new(SemanticStatus::Running, &system).paint(area, &mut buf);
-            buf
-        };
-        assert_eq!(paint(0), paint(1_000));
-    }
     use super::*;
-    use crate::style::GlyphSet;
 
     fn system() -> DesignSystem {
         DesignSystem::default()
@@ -692,20 +607,14 @@ mod tests {
     }
 
     #[test]
-    fn capability_profiles_ascii_vs_unicode() {
-        let mut sys_u = system();
-        // default phosphor uses unicode/enhanced
-        let mut sys_a = DesignSystem::default();
-        // Force via widget ascii flag
-        let u = StatusIndicator::new(SemanticStatus::Online, &sys_u);
-        let a = StatusIndicator::new(SemanticStatus::Online, &sys_a).ascii(true);
-        assert_eq!(u.glyph(), "●");
-        assert_eq!(a.glyph(), "*");
-        assert_ne!(u.glyph(), a.glyph());
-        let _ = sys_u;
-        // GlyphSet path
-        assert_eq!(SemanticStatus::Failed.glyph_for_set(GlyphSet::Ascii), "x");
-        assert_eq!(SemanticStatus::Failed.glyph_for_set(GlyphSet::Unicode), "✗");
+    fn glyph_comes_from_the_one_vocabulary() {
+        let sys = system();
+        let s = StatusIndicator::new(SemanticStatus::Online, &sys);
+        assert_eq!(s.glyph(), SemanticStatus::Online.glyph_unicode());
+        assert_eq!(
+            SemanticStatus::Failed.glyph(),
+            SemanticStatus::Failed.glyph_unicode()
+        );
     }
 
     #[test]
@@ -718,6 +627,7 @@ mod tests {
         let l = StatusIndicator::new(SemanticStatus::Success, &system).label("saved");
         assert!(l.text(None).contains("saved"));
         assert!(l.text(None).contains(l.glyph()));
+        assert!(l.text(None).starts_with(l.rail()));
 
         let e = StatusIndicator::new(SemanticStatus::Running, &system)
             .label("job")
@@ -783,6 +693,27 @@ mod tests {
     }
 
     #[test]
+    fn resize_cjk_combining_and_ascii_safe() {
+        let system = system();
+        let label = "実行 Cafe\u{301}";
+        for _ in 0..2 {
+            let indicator = StatusIndicator::new(SemanticStatus::Running, &system)
+                .label(label)
+                .variant(StatusIndicatorVariant::Labeled);
+            for width in [32, 12, 1, 0] {
+                let area = Rect::new(0, 0, width, 1);
+                let mut buffer = Buffer::empty(area);
+                indicator.paint(area, &mut buffer);
+                if width == 32 {
+                    let text: String = buffer.content().iter().map(|cell| cell.symbol()).collect();
+                    assert!(text.contains('実'), "{text:?}");
+                    assert!(text.contains("Cafe\u{301}"), "{text:?}");
+                }
+            }
+        }
+    }
+
+    #[test]
     fn fuzz_kinds_variants() {
         let system = system();
         let mut seed = 3u64;
@@ -794,9 +725,7 @@ mod tests {
                 1 => StatusIndicatorVariant::Labeled,
                 _ => StatusIndicatorVariant::Elapsed,
             };
-            let mut ind = StatusIndicator::new(k, &system)
-                .variant(v)
-                .ascii(seed % 2 == 0);
+            let mut ind = StatusIndicator::new(k, &system).variant(v);
             if matches!(v, StatusIndicatorVariant::Elapsed) {
                 ind = ind.elapsed_secs(seed % 10_000);
             }

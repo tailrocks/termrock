@@ -16,7 +16,6 @@
 //! Research: browser devtools, jq/fx viewers, Textual trees, DB JSON inspectors.
 //! Leaves for pure metadata panels: [`super::KeyValueTable`]. Flat hierarchy:
 //! [`super::Tree`].
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeSet;
 
@@ -82,29 +81,16 @@ impl InspectKind {
 
     /// Short type glyph for chrome.
     #[must_use]
-    pub const fn glyph(self, ascii: bool) -> &'static str {
-        if ascii {
-            match self {
-                Self::Null => "?",
-                Self::Bool => "b",
-                Self::Number => "#",
-                Self::String => "s",
-                Self::Binary => "x",
-                Self::Object => "{}",
-                Self::Array => "[]",
-                Self::Unknown => "*",
-            }
-        } else {
-            match self {
-                Self::Null => "∅",
-                Self::Bool => "⊤",
-                Self::Number => "#",
-                Self::String => "\"",
-                Self::Binary => "⬡",
-                Self::Object => "{}",
-                Self::Array => "[]",
-                Self::Unknown => "·",
-            }
+    pub const fn glyph(self, _ascii: bool) -> &'static str {
+        match self {
+            Self::Null => "∅",
+            Self::Bool => "⊤",
+            Self::Number => "#",
+            Self::String => "\"",
+            Self::Binary => "⬡",
+            Self::Object => "{}",
+            Self::Array => "[]",
+            Self::Unknown => "·",
         }
     }
 
@@ -357,17 +343,11 @@ impl<'a> InspectorField<'a> {
 
     /// Preview text for collapsed containers.
     #[must_use]
-    pub fn container_preview(&self, ascii: bool) -> String {
+    pub fn container_preview(&self, _ascii: bool) -> String {
         match self.kind {
             InspectKind::Object => {
                 if let Some(n) = self.child_count {
-                    if ascii {
-                        format!("{{…{n}}}")
-                    } else {
-                        format!("{{…{n}}}")
-                    }
-                } else if ascii {
-                    "{…}".into()
+                    format!("{{…{n}}}")
                 } else {
                     "{…}".into()
                 }
@@ -375,8 +355,6 @@ impl<'a> InspectorField<'a> {
             InspectKind::Array => {
                 if let Some(n) = self.child_count {
                     format!("[{n}]")
-                } else if ascii {
-                    "[…]".into()
                 } else {
                     "[…]".into()
                 }
@@ -412,9 +390,11 @@ pub enum ObjectInspectorOutcome {
         /// Stable path when known.
         path: String,
     },
-    /// Activate (legacy index-based).
-    Activate {
-        /// Field index.
+    /// Activate a stable projected field.
+    Activated {
+        /// Stable path.
+        path: String,
+        /// Projected index.
         index: usize,
     },
     /// Viewport scrolled.
@@ -503,8 +483,6 @@ pub struct ObjectInspectorState {
     pub edit_draft: String,
     /// Host grants input.
     accepts_input: bool,
-    /// ASCII glyphs.
-    pub ascii: bool,
     /// Colorless.
     pub colorless: bool,
     origin: (u16, u16),
@@ -542,7 +520,6 @@ impl ObjectInspectorState {
             editing: false,
             edit_draft: String::new(),
             accepts_input: true,
-            ascii: false,
             colorless: false,
             origin: (0, 0),
             body_rows: 0,
@@ -691,18 +668,7 @@ impl ObjectInspectorState {
     }
 
     fn ensure_cursor_visible(&mut self, field_count: usize) {
-        if field_count == 0 || self.body_rows == 0 {
-            return;
-        }
-        let vh = usize::from(self.body_rows);
-        let start = usize::from(self.scroll.offset_y());
-        let end = start.saturating_add(vh);
-        if self.cursor < start {
-            self.scroll.set_offset_y_quiet(self.cursor as u16);
-        } else if self.cursor >= end {
-            let next = self.cursor.saturating_add(1).saturating_sub(vh);
-            self.scroll.set_offset_y_quiet(next as u16);
-        }
+        self.scroll.reveal_row(self.cursor);
         self.scroll
             .set_content_size(1, field_count.min(u16::MAX as usize) as u16);
         self.scroll.set_viewport(1, self.body_rows);
@@ -715,10 +681,10 @@ impl ObjectInspectorState {
         key: KeyEvent,
         fields: &[InspectorField<'_>],
     ) -> ObjectInspectorOutcome {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return ObjectInspectorOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
         let field_count = fields.len();
 
         if matches!(
@@ -874,7 +840,10 @@ impl ObjectInspectorState {
                 if f.branch {
                     return self.hierarchy_step(fields, !f.expanded);
                 }
-                ObjectInspectorOutcome::Activate { index: self.cursor }
+                ObjectInspectorOutcome::Activated {
+                    path: f.path.to_string(),
+                    index: self.cursor,
+                }
             }
             UiIntent::Cancel => {
                 if self.search.is_some() {
@@ -889,58 +858,6 @@ impl ObjectInspectorState {
             self.ensure_cursor_visible(field_count);
         }
         out
-    }
-
-    /// Legacy handle_intent with only count (paths empty).
-    pub fn handle_intent_index(
-        &mut self,
-        intent: UiIntent,
-        field_count: usize,
-    ) -> ObjectInspectorOutcome {
-        // Build dummy fields for index-only callers — prefer handle_intent with fields.
-        let _ = field_count;
-        let empty: &[InspectorField<'_>] = &[];
-        if field_count == 0 {
-            return ObjectInspectorOutcome::Ignored;
-        }
-        // Index-only navigation without path
-        if !self.accepts_input {
-            return ObjectInspectorOutcome::Ignored;
-        }
-        self.clamp_cursor(field_count);
-        match intent {
-            UiIntent::Move(NavigationMove::Next) => {
-                let next = (self.cursor + 1).min(field_count - 1);
-                if next == self.cursor {
-                    return ObjectInspectorOutcome::Ignored;
-                }
-                self.cursor = next;
-                self.ensure_cursor_visible(field_count);
-                ObjectInspectorOutcome::CursorMoved {
-                    index: self.cursor,
-                    path: String::new(),
-                }
-            }
-            UiIntent::Move(NavigationMove::Previous) => {
-                let next = self.cursor.saturating_sub(1);
-                if next == self.cursor {
-                    return ObjectInspectorOutcome::Ignored;
-                }
-                self.cursor = next;
-                self.ensure_cursor_visible(field_count);
-                ObjectInspectorOutcome::CursorMoved {
-                    index: self.cursor,
-                    path: String::new(),
-                }
-            }
-            UiIntent::Activate | UiIntent::Submit | UiIntent::Toggle => {
-                ObjectInspectorOutcome::Activate { index: self.cursor }
-            }
-            _ => {
-                let _ = empty;
-                ObjectInspectorOutcome::Ignored
-            }
-        }
     }
 
     fn move_cursor(
@@ -1116,7 +1033,7 @@ impl ObjectInspectorState {
         key: KeyEvent,
         fields: &[InspectorField<'_>],
     ) -> ObjectInspectorOutcome {
-        if key.kind != KeyEventKind::Press {
+        if !key.is_press() {
             return ObjectInspectorOutcome::Ignored;
         }
         match key.code {
@@ -1192,7 +1109,7 @@ impl ObjectInspectorState {
                         };
                     }
                     if self.cursor == index {
-                        return ObjectInspectorOutcome::Activate { index };
+                        return ObjectInspectorOutcome::Activated { path, index };
                     }
                     self.cursor = index;
                     self.cursor_path = Some(path.clone());
@@ -1208,7 +1125,10 @@ impl ObjectInspectorState {
                         return ObjectInspectorOutcome::Ignored;
                     }
                     if self.cursor == index {
-                        return ObjectInspectorOutcome::Activate { index };
+                        return ObjectInspectorOutcome::Activated {
+                            path: path_at(fields, index),
+                            index,
+                        };
                     }
                     self.cursor = index;
                     self.sync_path(fields);
@@ -1219,54 +1139,6 @@ impl ObjectInspectorState {
                     };
                 }
                 ObjectInspectorOutcome::Ignored
-            }
-            _ => ObjectInspectorOutcome::Ignored,
-        }
-    }
-
-    /// Legacy mouse API (index-only).
-    pub fn handle_mouse_count(
-        &mut self,
-        event: MouseEvent,
-        field_count: usize,
-    ) -> ObjectInspectorOutcome {
-        if field_count == 0 {
-            return ObjectInspectorOutcome::Ignored;
-        }
-        // Minimal index path for callers that don't pass fields.
-        if !self.accepts_input {
-            return ObjectInspectorOutcome::Ignored;
-        }
-        let (ox, oy) = self.origin;
-        let body = Rect {
-            x: ox,
-            y: oy,
-            width: 240,
-            height: self.body_rows.max(1),
-        };
-        match event.kind {
-            MouseEventKind::ScrollDown if body.contains(event.position) => {
-                self.handle_intent_index(UiIntent::Move(NavigationMove::Next), field_count)
-            }
-            MouseEventKind::ScrollUp if body.contains(event.position) => {
-                self.handle_intent_index(UiIntent::Move(NavigationMove::Previous), field_count)
-            }
-            MouseEventKind::Down(MouseButton::Left) if body.contains(event.position) => {
-                let start = self.scroll.offset_y() as usize;
-                let row = usize::from(event.position.y.saturating_sub(oy));
-                let index = start.saturating_add(row);
-                if index >= field_count {
-                    return ObjectInspectorOutcome::Ignored;
-                }
-                if self.cursor == index {
-                    return ObjectInspectorOutcome::Activate { index };
-                }
-                self.cursor = index;
-                self.ensure_cursor_visible(field_count);
-                ObjectInspectorOutcome::CursorMoved {
-                    index,
-                    path: String::new(),
-                }
             }
             _ => ObjectInspectorOutcome::Ignored,
         }
@@ -1339,7 +1211,6 @@ pub struct ObjectInspector<'a> {
     fields: &'a [InspectorField<'a>],
     system: &'a DesignSystem,
     focused: bool,
-    ascii: bool,
     colorless: bool,
     presentation: InspectPresentation,
     show_types: bool,
@@ -1353,7 +1224,6 @@ impl<'a> ObjectInspector<'a> {
             fields,
             system,
             focused: true,
-            ascii: false,
             colorless: false,
             presentation: InspectPresentation::Compact,
             show_types: true,
@@ -1369,13 +1239,7 @@ impl<'a> ObjectInspector<'a> {
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
     /// Reduced-color paint.
-    #[must_use]
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
         self
@@ -1403,25 +1267,16 @@ impl<'a> ObjectInspector<'a> {
         state: &ObjectInspectorState,
     ) -> String {
         if field.secret && !state.is_revealed(field.path) {
-            let set = if self.ascii || state.ascii {
-                GlyphSet::Ascii
-            } else {
-                GlyphSet::Unicode
-            };
-            return Glyph::Mask.resolve(set).text.repeat(MASK_CELLS);
+            return Glyph::Mask.resolve().text.repeat(MASK_CELLS);
         }
         if state.editing && state.cursor_path.as_deref() == Some(field.path) {
             return escape_inspect_value(&state.edit_draft);
         }
         if field.branch && !field.expanded {
-            return field.container_preview(self.ascii || state.ascii);
+            return field.container_preview(false);
         }
         if matches!(field.status, InspectNodeStatus::Loading) {
-            return if self.ascii {
-                "...".into()
-            } else {
-                "…".into()
-            };
+            return "…".into();
         }
         if matches!(field.status, InspectNodeStatus::Error) {
             return if field.value.is_empty() {
@@ -1431,11 +1286,7 @@ impl<'a> ObjectInspector<'a> {
             };
         }
         if matches!(field.status, InspectNodeStatus::Lazy) && field.value.is_empty() {
-            return if self.ascii {
-                "(lazy)".into()
-            } else {
-                "(lazy)".into()
-            };
+            return "(lazy)".into();
         }
         escape_inspect_value(field.value)
     }
@@ -1447,8 +1298,7 @@ impl<'a> ObjectInspector<'a> {
             state.body_rows = 0;
             return;
         }
-        let ascii = self.ascii || state.ascii;
-        let colorless = self.colorless || state.colorless;
+        let colorless = self.colorless || state.colorless || self.system.mono();
         let footer = 1u16;
         let header = u16::from(
             matches!(self.presentation, InspectPresentation::Fullscreen)
@@ -1483,6 +1333,23 @@ impl<'a> ObjectInspector<'a> {
             y = y.saturating_add(1);
         }
 
+        if let Some(chrome) =
+            super::data_view::data_load_chrome(&state.load, self.system, colorless, "Empty object")
+        {
+            let line = format!("{}{}", chrome.prefix, chrome.message);
+            buffer.set_stringn(
+                area.x,
+                y,
+                take_display_cols(&line, usize::from(area.width)),
+                usize::from(area.width),
+                self.system.style(chrome.role),
+            );
+            state.origin = (area.x, y);
+            state.body_rows = 0;
+            state.body_width = area.width;
+            return;
+        }
+
         // Apply search filter view (indices into self.fields)
         let view: Vec<&InspectorField<'a>> = if let Some(q) = state.search.as_ref() {
             filter_inspect_fields(self.fields, q)
@@ -1515,7 +1382,7 @@ impl<'a> ObjectInspector<'a> {
         let compare = matches!(state.mode, InspectMode::Compare);
 
         if view.is_empty() {
-            let glyph = if ascii { "[ ] " } else { "∅ " };
+            let glyph = "∅ ";
             let line = if tiny {
                 format!("{glyph}empty")
             } else if state.search.is_some() {
@@ -1530,7 +1397,7 @@ impl<'a> ObjectInspector<'a> {
                 usize::from(area.width),
                 self.system.style(Role::TextMuted),
             );
-            self.paint_footer(area, buffer, state, ascii);
+            self.paint_footer(area, buffer, state, false);
             return;
         }
 
@@ -1544,7 +1411,7 @@ impl<'a> ObjectInspector<'a> {
             let gutter = if cursor && surface {
                 self.system.glyphs.selection_gutter()
             } else if cursor {
-                if ascii { "." } else { "·" }
+                "·"
             } else {
                 " "
             };
@@ -1566,13 +1433,7 @@ impl<'a> ObjectInspector<'a> {
             let mut disclosure = None;
             if field.branch {
                 let glyph = if field.expanded {
-                    if ascii {
-                        "v"
-                    } else {
-                        self.system.glyphs.disclosure_open()
-                    }
-                } else if ascii {
-                    ">"
+                    self.system.glyphs.disclosure_open()
                 } else {
                     self.system.glyphs.disclosure_closed()
                 };
@@ -1641,7 +1502,7 @@ impl<'a> ObjectInspector<'a> {
                 }
                 if compare && let Some(c) = field.compare {
                     let esc = escape_inspect_value(c);
-                    let mark = if ascii { " ~ " } else { " ↔ " };
+                    let mark = " ↔ ";
                     tiers.push_joined(mark, meta_tone);
                     tiers.push_joined(&esc, key_tone);
                 }
@@ -1656,6 +1517,7 @@ impl<'a> ObjectInspector<'a> {
                 style,
             );
             tiers.paint_tiers(buffer, Rect::new(x, y, remain, 1), 0);
+            chrome.paint(buffer, Rect::new(area.x, y, area.width, 1));
 
             state.regions.push(InspectRegion {
                 index: i,
@@ -1666,7 +1528,7 @@ impl<'a> ObjectInspector<'a> {
             y = y.saturating_add(1);
         }
 
-        self.paint_footer(area, buffer, state, ascii);
+        self.paint_footer(area, buffer, state, false);
     }
 
     fn paint_footer(
@@ -1674,7 +1536,7 @@ impl<'a> ObjectInspector<'a> {
         area: Rect,
         buffer: &mut Buffer,
         state: &ObjectInspectorState,
-        ascii: bool,
+        _ascii: bool,
     ) {
         let y = area.bottom().saturating_sub(1);
         if y < area.y {
@@ -1691,11 +1553,7 @@ impl<'a> ObjectInspector<'a> {
         if matches!(state.presentation, InspectPresentation::Fullscreen) {
             parts.push("full".into());
         }
-        parts.push(if ascii {
-            "c val y path e edit r secret / find".into()
-        } else {
-            "c value · y path · e edit · r secret · / find · C-f full".into()
-        });
+        parts.push("c value · y path · e edit · r secret · / find · C-f full".into());
         let line = parts.join(" · ");
         buffer.set_stringn(
             area.x,
@@ -1722,24 +1580,6 @@ impl StatefulWidget for &ObjectInspector<'_> {
 }
 
 // ── Compatibility: handle_key(field_count) for old call sites ───────────────
-
-impl ObjectInspectorState {
-    /// Legacy key handler taking only a count (no path outcomes).
-    pub fn handle_key_count(
-        &mut self,
-        key: KeyEvent,
-        field_count: usize,
-    ) -> ObjectInspectorOutcome {
-        if !self.accepts_input || field_count == 0 || key.kind == KeyEventKind::Release {
-            return ObjectInspectorOutcome::Ignored;
-        }
-        self.clamp_cursor(field_count);
-        if let Some(intent) = crate::interaction::default_inspector_intent(key) {
-            return self.handle_intent_index(intent, field_count);
-        }
-        ObjectInspectorOutcome::Ignored
-    }
-}
 
 #[cfg(test)]
 mod tests {
@@ -1913,6 +1753,34 @@ mod tests {
     }
 
     #[test]
+    fn root_load_states_paint_before_the_empty_object_fallback() {
+        let system = DesignSystem::junie().no_color();
+        let fields: [InspectorField<'_>; 0] = [];
+        let render = |load| {
+            let mut state = ObjectInspectorState::new();
+            state.load = load;
+            let area = Rect::new(0, 0, 32, 4);
+            let mut buffer = Buffer::empty(area);
+            ObjectInspector::new(&fields, &system).render(area, &mut buffer, &mut state);
+            buffer
+                .content()
+                .iter()
+                .map(|cell| cell.symbol())
+                .collect::<String>()
+        };
+
+        assert!(render(LoadState::Loading { message: None }).contains("… Loading…"));
+        assert!(render(LoadState::Empty { message: None }).contains("∅ Empty object"));
+        assert!(
+            render(LoadState::Error {
+                message: "failed".into(),
+                retryable: false,
+            })
+            .contains("✗ failed")
+        );
+    }
+
+    #[test]
     fn max_depth_blocks_expand() {
         let fields = [
             InspectorField::container("deep", "a.b.c", InspectKind::Object)
@@ -1949,16 +1817,6 @@ mod tests {
             &fields,
         );
         assert!(matches!(out, ObjectInspectorOutcome::FullscreenRequested));
-    }
-
-    #[test]
-    fn legacy_index_api() {
-        let mut state = ObjectInspectorState::new();
-        let out = state.handle_key_count(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), 3);
-        assert!(matches!(
-            out,
-            ObjectInspectorOutcome::CursorMoved { index: 1, .. }
-        ));
     }
 
     #[test]

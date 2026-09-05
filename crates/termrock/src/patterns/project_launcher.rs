@@ -29,7 +29,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -55,7 +54,7 @@ use crate::{
         ListState, Panel, PreviewCard, PreviewCardContent, PreviewCardState, PreviewLoadState,
         PreviewMetadata, PreviewResourceKind, QuickOpen, QuickOpenItem, QuickOpenOutcome,
         QuickOpenProvider, QuickOpenState, SearchInput, SearchInputOutcome, SearchInputState,
-        StatusBar, StatusBarState, StatusRegion, StatusSlot,
+        SemanticStatus, StatusBar, StatusBarState, StatusRegion, StatusSlot,
     },
 };
 
@@ -250,13 +249,13 @@ impl ProjectPathStatus {
         }
     }
 
-    /// Role.
+    /// Shared lifecycle projection for recipe-owned status paint.
     #[must_use]
-    pub const fn role(self) -> Role {
+    pub const fn semantic(self) -> SemanticStatus {
         match self {
-            Self::Ok => Role::Success,
-            Self::Missing | Self::Error => Role::Danger,
-            Self::Stale => Role::Warning,
+            Self::Ok => SemanticStatus::Success,
+            Self::Missing | Self::Error => SemanticStatus::Failed,
+            Self::Stale => SemanticStatus::Warning,
         }
     }
 
@@ -448,7 +447,12 @@ pub fn project_list_rows<'a>(entries: &[&'a ProjectEntry]) -> Vec<ListRow<'a, St
             label = format!("{label} · {b}");
         }
         if e.path_status.is_problem() {
-            label = format!("[{}] {label}", e.path_status.label());
+            let status = e.path_status.semantic();
+            label = format!(
+                "| {} {} · {label}",
+                status.glyph_ascii(),
+                e.path_status.label()
+            );
         }
         let mut row = ListRow::item(e.id.clone(), Line::from(label));
         let mut secondary = e.path.clone();
@@ -601,8 +605,6 @@ pub struct ProjectLauncherState {
     pub project_count: u64,
     /// Stale/missing count chrome.
     pub problem_count: u64,
-    /// ASCII.
-    pub ascii: bool,
     /// Colorless.
     pub colorless: bool,
     /// Last panes.
@@ -649,7 +651,6 @@ impl ProjectLauncherState {
             selected_id: None,
             project_count: 0,
             problem_count: 0,
-            ascii: false,
             colorless: false,
             last_panes: Vec::new(),
             last_area_width: None,
@@ -812,24 +813,28 @@ impl ProjectLauncherState {
     #[must_use]
     pub fn status_slots(&self) -> Vec<StatusSlot<'static, &'static str>> {
         let mut slots = vec![
-            StatusSlot::connection("conn", self.connection.label()).priority(10),
-            StatusSlot::context("mode", self.mode.id()).priority(20),
-            StatusSlot::focus_zone("focus", self.focus).priority(30),
-            StatusSlot::shortcut("keys", "enter open · n new · i import · f fav · C-o quick")
+            StatusSlot::connection("conn", self.connection.label())
+                .semantic(self.connection.semantic())
                 .priority(90),
+            StatusSlot::context("mode", self.mode.id()).priority(50),
+            StatusSlot::focus_zone("focus", self.focus).priority(70),
+            StatusSlot::shortcut("keys", "enter open · n new · i import · f fav · C-o quick")
+                .priority(10),
         ];
         if self.problem_count > 0 {
             slots.push(
                 StatusSlot::new("problems", "stale/missing")
+                    .semantic(crate::widgets::SemanticStatus::Warning)
                     .region(StatusRegion::Left)
-                    .priority(5),
+                    .priority(95),
             );
         }
         if self.host_error.is_some() {
             slots.push(
                 StatusSlot::new("err", "error")
+                    .semantic(crate::widgets::SemanticStatus::Failed)
                     .region(StatusRegion::Left)
-                    .priority(4),
+                    .priority(100),
             );
         }
         slots
@@ -843,10 +848,10 @@ impl ProjectLauncherState {
         sessions: &[SessionEntry],
         quick_open_items: &[QuickOpenItem<String>],
     ) -> ProjectLauncherOutcome {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return ProjectLauncherOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         // Quick open overlay first
         if self.quick_open_open {
@@ -947,7 +952,7 @@ impl ProjectLauncherState {
         key: KeyEvent,
         projects: &[ProjectEntry],
     ) -> ProjectLauncherOutcome {
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
         let query = self.search.query().to_string();
         let filtered = filter_project_entries(projects, &query);
         let rows = project_list_rows(&filtered);
@@ -1060,7 +1065,7 @@ impl ProjectLauncherState {
     fn handle_onboarding_key(&mut self, key: KeyEvent) -> ProjectLauncherOutcome {
         // EmptyState needs the widget for handle_key — use a minimal system-free path:
         // Enter/primary → onboarding or new; secondary → import
-        if key.kind != KeyEventKind::Press {
+        if !key.is_press() {
             return ProjectLauncherOutcome::Ignored;
         }
         match key.code {
@@ -1421,7 +1426,6 @@ pub fn render_project_launcher(
         state.sessions.set_accepts_input(focused);
         state.sessions.set_focused(focused);
         SessionPicker::new(system)
-            .ascii(state.ascii)
             .colorless(state.colorless)
             .list_only(true)
             .paint(r, buffer, &mut state.sessions);

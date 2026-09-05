@@ -17,7 +17,6 @@
 //! the standalone field used *inside* those surfaces.
 //!
 //! Research: fzf, television, browser find, VisiData, editor search bars.
-
 use std::collections::VecDeque;
 use std::time::Duration;
 use web_time::Instant;
@@ -25,12 +24,10 @@ use web_time::Instant;
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
     runtime::FrameTick,
-    style::{DesignSystem, Role},
+    style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -247,10 +244,21 @@ impl SearchInputState {
     /// Seed query.
     #[must_use]
     pub fn with_query(mut self, query: impl Into<String>) -> Self {
-        let mut q = TextInputState::new(query).with_allow_empty(true);
-        q.set_focused(false);
-        self.query = q;
+        self.query.set_focused(false);
+        self.query = self.query.reseed(query);
         self
+    }
+
+    /// Live typing. [`Self::new`] stays idle (`editing: false`).
+    #[must_use]
+    pub fn with_editing(mut self) -> Self {
+        self.query.begin_edit();
+        self
+    }
+
+    /// Start the insert session (Junie Enter on an idle field).
+    pub fn begin_edit(&mut self) {
+        self.query.begin_edit();
     }
 
     /// Debounce quiet period (`Duration::ZERO` = emit every poll after change).
@@ -344,10 +352,9 @@ impl SearchInputState {
     /// Replace query without history side effects.
     pub fn set_query(&mut self, text: impl Into<String>) {
         let text = text.into();
-        let mut q = TextInputState::new(text).with_allow_empty(true);
-        q.set_focused(self.focused);
-        q.set_enabled(self.enabled);
-        self.query = q;
+        self.query.set_focused(self.focused);
+        self.query.set_enabled(self.enabled);
+        self.query = self.query.reseed(text);
         self.history_cursor = None;
         self.history_stash = None;
         self.mark_edited(None);
@@ -478,16 +485,15 @@ impl SearchInputState {
     }
 
     fn apply_recalled(&mut self, text: &str) {
-        let mut q = TextInputState::new(text.to_owned()).with_allow_empty(true);
-        q.set_focused(self.focused);
-        q.set_enabled(self.enabled);
-        self.query = q;
+        self.query.set_focused(self.focused);
+        self.query.set_enabled(self.enabled);
+        self.query = self.query.reseed(text.to_owned());
         self.mark_edited(None);
     }
 
     /// Key adapter.
     pub fn handle_key(&mut self, key: KeyEvent) -> SearchInputOutcome {
-        if key.kind == KeyEventKind::Release || !self.enabled {
+        if key.is_release() || !self.enabled {
             return SearchInputOutcome::Ignored;
         }
         self.query.set_focused(self.focused);
@@ -602,6 +608,7 @@ impl SearchInputState {
         if !self.enabled {
             return SearchInputOutcome::Ignored;
         }
+        self.query.begin_edit();
         match self.query.insert_str(text) {
             TextInputOutcome::Changed => {
                 self.history_cursor = None;
@@ -694,7 +701,6 @@ pub struct SearchInput<'a> {
     filters: &'a [SearchFilterChip<'a>],
     show_clear: bool,
     show_leading_icon: bool,
-    ascii: bool,
     validation: Validation<'a>,
 }
 
@@ -704,14 +710,13 @@ impl<'a> SearchInput<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             label: "",
-            placeholder: "Search…",
+            placeholder: "Search",
             system,
             status: SearchStatus::Idle,
             status_message: None,
             filters: &[],
             show_clear: true,
             show_leading_icon: true,
-            ascii: false,
             validation: Validation::Valid,
         }
     }
@@ -767,13 +772,7 @@ impl<'a> SearchInput<'a> {
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// External validation.
-    #[must_use]
     pub const fn validation(mut self, validation: Validation<'a>) -> Self {
         self.validation = validation;
         self
@@ -800,14 +799,25 @@ impl<'a> SearchInput<'a> {
                 cursor: None,
             };
         }
+        let invalid = matches!(self.status, SearchStatus::Error)
+            || matches!(self.validation, Validation::Invalid(_));
+        let field_recipe = self.system.input_recipe(
+            if !state.enabled {
+                ControlState::Disabled
+            } else if matches!(self.status, SearchStatus::Searching) {
+                ControlState::Loading
+            } else if state.focused {
+                ControlState::Focused
+            } else {
+                ControlState::Default
+            },
+            invalid,
+            state.query.is_editing(),
+        );
 
         let mut y = area.y;
         if area.height >= 2 && !self.label.is_empty() {
-            let style = self.system.style(if state.focused {
-                Role::Focus
-            } else {
-                Role::Text
-            });
+            let style = field_recipe.value;
             let style = if state.focused {
                 style.add_modifier(Modifier::BOLD)
             } else {
@@ -835,8 +845,8 @@ impl<'a> SearchInput<'a> {
 
         // Leading icon (contracts before query)
         if self.show_leading_icon && row.width > 4 {
-            let icon = if self.ascii { "/" } else { "⌕" };
-            buffer.set_stringn(x, row.y, icon, 1, self.system.style(Role::TextMuted));
+            let icon = { "⌕" };
+            buffer.set_stringn(x, row.y, icon, 1, field_recipe.placeholder);
             x = x.saturating_add(2);
         }
 
@@ -845,21 +855,13 @@ impl<'a> SearchInput<'a> {
             if x.saturating_add(3) >= right {
                 break;
             }
-            let label = take_display_cols(chip.label, 8);
-            let w = display_cols(&label).min(8) as u16;
+            let label = format!(" {} ", take_display_cols(chip.label, 8));
+            let w = display_cols(&label).min(10) as u16;
             if x.saturating_add(w.saturating_add(1)) >= right {
                 break;
             }
             let rect = Rect::new(x, row.y, w, 1);
-            buffer.set_stringn(
-                x,
-                row.y,
-                &label,
-                usize::from(w),
-                self.system
-                    .style(Role::Focus)
-                    .add_modifier(Modifier::REVERSED),
-            );
+            buffer.set_stringn(x, row.y, &label, usize::from(w), field_recipe.cursor);
             chip_rects.push(rect);
             x = x.saturating_add(w).saturating_add(1);
         }
@@ -870,10 +872,10 @@ impl<'a> SearchInput<'a> {
         let mut clear_rect = None;
         let mut status_rect = None;
         let status_text = self.status_label(state);
-        if !status_text.is_empty() && right > x.saturating_add(4) {
-            let sw = display_cols(&status_text).min(12) as u16;
-            if right > x.saturating_add(sw.saturating_add(1)) {
-                right = right.saturating_sub(sw.saturating_add(1));
+        if right > x.saturating_add(13) {
+            let sw = 12u16;
+            right = right.saturating_sub(sw.saturating_add(1));
+            if !status_text.is_empty() {
                 status_rect = Some(Rect::new(right.saturating_add(1), row.y, sw, 1));
                 let role = match self.status {
                     SearchStatus::Error => Role::Danger,
@@ -896,16 +898,23 @@ impl<'a> SearchInput<'a> {
             && state.enabled
             && !state.query.value().is_empty()
             && right > x.saturating_add(2);
-        if show_clear {
+        if self.show_clear && right > x.saturating_add(2) {
             right = right.saturating_sub(2);
-            clear_rect = Some(Rect::new(right.saturating_add(1), row.y, 1, 1));
-            buffer.set_stringn(
-                right.saturating_add(1),
-                row.y,
-                "×",
-                1,
-                self.system.style(Role::TextMuted),
-            );
+            if show_clear {
+                clear_rect = Some(Rect::new(right.saturating_add(1), row.y, 1, 1));
+                let action = self.system.button_recipe(
+                    ButtonRecipeVariant::Quiet,
+                    ControlState::Default,
+                    self.system.junie_theme().surface,
+                );
+                buffer.set_stringn(
+                    right.saturating_add(1),
+                    row.y,
+                    self.system.glyphs.resolve(Glyph::Close).text,
+                    1,
+                    action.fill.patch(action.label),
+                );
+            }
         }
 
         let field = Rect::new(x, row.y, right.saturating_sub(x).max(1), 1);
@@ -915,17 +924,28 @@ impl<'a> SearchInput<'a> {
         let ti = input.paint(field, buffer, &mut state.query);
 
         // Second row: expanded status / error
-        if area.height >= 3 {
-            if let Some(msg) = self.status_message {
-                if matches!(self.status, SearchStatus::Error) || !msg.is_empty() {
-                    buffer.set_stringn(
-                        area.x,
-                        area.y.saturating_add(2),
-                        take_display_cols(msg, usize::from(area.width)),
-                        usize::from(area.width),
-                        self.system.style(Role::Danger),
-                    );
+        if ti.field.y.saturating_add(1) < area.bottom() {
+            let feedback = match self.validation {
+                Validation::Invalid(msg) => {
+                    Some((crate::widgets::label::DescriptionKind::Error, msg))
                 }
+                Validation::Valid => self.status_message.map(|msg| {
+                    let kind = if matches!(self.status, SearchStatus::Error) {
+                        crate::widgets::label::DescriptionKind::Error
+                    } else {
+                        crate::widgets::label::DescriptionKind::Meta
+                    };
+                    (kind, msg)
+                }),
+            };
+            if let Some((kind, msg)) = feedback {
+                crate::widgets::field_message::paint_field_message(
+                    buffer,
+                    Rect::new(area.x, ti.field.y.saturating_add(1), area.width, 1),
+                    self.system,
+                    kind,
+                    msg,
+                );
             }
         }
 
@@ -950,13 +970,7 @@ impl<'a> SearchInput<'a> {
         }
         let label = match self.status {
             SearchStatus::Idle => String::new(),
-            SearchStatus::Searching => {
-                if self.ascii {
-                    "...".into()
-                } else {
-                    "…".into()
-                }
-            }
+            SearchStatus::Searching => "…".into(),
             SearchStatus::Results { count } => format!("{count}"),
             SearchStatus::NoResults => "0".into(),
             SearchStatus::Error => "err".into(),
@@ -1109,6 +1123,7 @@ mod tests {
     fn clear_control_and_submit_history() {
         let mut state = SearchInputState::new().with_query("x");
         state.set_focused(true);
+        state.begin_edit();
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
             SearchInputOutcome::Submitted { query: "x".into() }
@@ -1130,7 +1145,7 @@ mod tests {
 
     #[test]
     fn paint_meta_before_query_and_status() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let mut state = SearchInputState::new().with_query("table");
         state.set_focused(true);
         let chips = [SearchFilterChip::new("ext", "rs")];
@@ -1139,7 +1154,6 @@ mod tests {
         let parts = SearchInput::new(&system)
             .filters(&chips)
             .status(SearchStatus::Results { count: 12 })
-            .ascii(true)
             .paint(area, &mut buf, &mut state);
         assert!(!parts.meta.is_empty() || parts.meta.width > 0);
         assert!(!parts.filter_chips.is_empty());
@@ -1157,7 +1171,6 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let parts = SearchInput::new(&system)
             .filters(&chips)
-            .ascii(true)
             .paint(area, &mut buf, &mut state);
         let chip = parts.filter_chips[0];
         assert_eq!(
@@ -1191,6 +1204,7 @@ mod tests {
     fn fuzz_keys_stable() {
         let mut state = SearchInputState::new().with_debounce(Duration::from_millis(10));
         state.set_focused(true);
+        state.begin_edit();
         let keys = [
             KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE),
             KeyEvent::new(KeyCode::Char('>'), KeyModifiers::NONE),
@@ -1212,12 +1226,29 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 48, 2);
         let mut buf = Buffer::empty(area);
-        let w = SearchInput::new(&system)
-            .status(SearchStatus::Results { count: 3 })
-            .ascii(true);
+        let w = SearchInput::new(&system).status(SearchStatus::Results { count: 3 });
         for _ in 0..200 {
             let _ = w.paint(area, &mut buf, &mut state);
         }
+    }
+
+    #[test]
+    fn field_plane_idle_and_hover() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let mut state = SearchInputState::new().with_query("table");
+        let area = Rect::new(0, 0, 40, 2);
+        let mut buf = Buffer::empty(area);
+        let parts = SearchInput::new(&system).paint(area, &mut buf, &mut state);
+        let cell = &buf[(parts.field.x, parts.field.y)];
+        assert_eq!(cell.bg, theme.field);
+        state.query_mut().set_hovered(true);
+        let mut hover = Buffer::empty(area);
+        let hover_parts = SearchInput::new(&system).paint(area, &mut hover, &mut state);
+        assert_eq!(
+            hover[(hover_parts.field.x, hover_parts.field.y)].bg,
+            theme.field_hover
+        );
     }
 
     #[test]

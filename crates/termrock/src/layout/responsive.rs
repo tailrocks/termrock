@@ -20,14 +20,17 @@
 //!
 //! Pair with [`crate::style::Density`] for spacing tokens and with
 //! [`crate::layout::Workspace`] for multi-pane collapse.
-
-use crate::style::Density;
-
 /// Canonical width samples for responsive test matrices (cells).
 pub const WIDTH_LADDER: [u16; 7] = [160, 120, 100, 80, 60, 40, 20];
 
 /// Canonical height samples for responsive test matrices (rows).
 pub const HEIGHT_LADDER: [u16; 6] = [40, 24, 16, 10, 6, 3];
+
+/// Global reference viewport used by generic surfaces.
+pub const REFERENCE_VIEWPORT: (u16, u16) = (80, 24);
+
+/// Global minimum viewport before a dedicated too-small state is required.
+pub const MINIMUM_VIEWPORT: (u16, u16) = (20, 3);
 
 /// Semantic priority of a content part (survival order under pressure).
 ///
@@ -106,20 +109,6 @@ impl ContractionStage {
             101..=120 => Self::ShortenSecondary,
             121..=159 => Self::CompactSpacing,
             _ => Self::Full,
-        }
-    }
-
-    /// Suggested design density for this stage.
-    #[must_use]
-    pub const fn suggested_density(self) -> Density {
-        match self {
-            Self::Full => Density::Comfortable,
-            Self::CompactSpacing | Self::ShortenSecondary => Density::Compact,
-            Self::HideOptionalMeta
-            | Self::CollapseSecondaryActions
-            | Self::SinglePane
-            | Self::DrawerOrOverlay
-            | Self::LineMode => Density::Dashboard,
         }
     }
 
@@ -244,8 +233,6 @@ pub struct AdaptiveAnatomy {
     pub use_drawer: bool,
     /// Tiny-terminal single-line / essential-only mode.
     pub line_mode: bool,
-    /// Suggested density for spacing tokens.
-    pub density: Density,
     /// Default overflow for clipped essential labels.
     pub overflow: OverflowBehavior,
 }
@@ -264,7 +251,6 @@ impl AdaptiveAnatomy {
                 multi_pane: true,
                 use_drawer: false,
                 line_mode: false,
-                density: Density::Comfortable,
                 overflow: OverflowBehavior::Ellipsis,
             },
             ContractionStage::CompactSpacing => Self {
@@ -276,7 +262,6 @@ impl AdaptiveAnatomy {
                 multi_pane: true,
                 use_drawer: false,
                 line_mode: false,
-                density: Density::Compact,
                 overflow: OverflowBehavior::Ellipsis,
             },
             ContractionStage::ShortenSecondary => Self {
@@ -288,7 +273,6 @@ impl AdaptiveAnatomy {
                 multi_pane: true,
                 use_drawer: false,
                 line_mode: false,
-                density: Density::Compact,
                 overflow: OverflowBehavior::Ellipsis,
             },
             ContractionStage::HideOptionalMeta => Self {
@@ -300,7 +284,6 @@ impl AdaptiveAnatomy {
                 multi_pane: true,
                 use_drawer: false,
                 line_mode: false,
-                density: Density::Dashboard,
                 overflow: OverflowBehavior::Ellipsis,
             },
             ContractionStage::CollapseSecondaryActions => Self {
@@ -312,7 +295,6 @@ impl AdaptiveAnatomy {
                 multi_pane: true,
                 use_drawer: false,
                 line_mode: false,
-                density: Density::Dashboard,
                 overflow: OverflowBehavior::Ellipsis,
             },
             ContractionStage::SinglePane => Self {
@@ -324,7 +306,6 @@ impl AdaptiveAnatomy {
                 multi_pane: false,
                 use_drawer: false,
                 line_mode: false,
-                density: Density::Dashboard,
                 overflow: OverflowBehavior::Ellipsis,
             },
             ContractionStage::DrawerOrOverlay => Self {
@@ -336,7 +317,6 @@ impl AdaptiveAnatomy {
                 multi_pane: false,
                 use_drawer: true,
                 line_mode: false,
-                density: Density::Dashboard,
                 overflow: OverflowBehavior::Ellipsis,
             },
             ContractionStage::LineMode => Self {
@@ -348,7 +328,6 @@ impl AdaptiveAnatomy {
                 multi_pane: false,
                 use_drawer: false,
                 line_mode: true,
-                density: Density::Dashboard,
                 overflow: OverflowBehavior::Ellipsis,
             },
         }
@@ -379,6 +358,16 @@ pub struct ViewportClass {
     pub stage: ContractionStage,
     /// Adaptive anatomy flags.
     pub anatomy: AdaptiveAnatomy,
+    /// Reference width for the selected responsive contract.
+    pub reference_width: u16,
+    /// Reference height for the selected responsive contract.
+    pub reference_height: u16,
+    /// Minimum usable width for the selected responsive contract.
+    pub minimum_width: u16,
+    /// Minimum usable height for the selected responsive contract.
+    pub minimum_height: u16,
+    /// Actual viewport is below at least one minimum axis.
+    pub below_minimum: bool,
 }
 
 impl ViewportClass {
@@ -398,6 +387,11 @@ impl ViewportClass {
             height,
             stage,
             anatomy: AdaptiveAnatomy::from_stage(stage),
+            reference_width: REFERENCE_VIEWPORT.0,
+            reference_height: REFERENCE_VIEWPORT.1,
+            minimum_width: MINIMUM_VIEWPORT.0,
+            minimum_height: MINIMUM_VIEWPORT.1,
+            below_minimum: width < MINIMUM_VIEWPORT.0 || height < MINIMUM_VIEWPORT.1,
         }
     }
 
@@ -415,7 +409,26 @@ impl ViewportClass {
             height,
             stage,
             anatomy,
+            reference_width: policy.width.preferred,
+            reference_height: policy.height.preferred,
+            minimum_width: policy.width.min_usable,
+            minimum_height: policy.height.min_usable,
+            below_minimum: policy.width.below_min_usable(width)
+                || policy.height.below_min_usable(height),
         }
+    }
+
+    /// Dedicated too-small copy with actual and required dimensions.
+    #[must_use]
+    pub fn too_small_message(self, ascii: bool) -> Option<String> {
+        if !self.below_minimum {
+            return None;
+        }
+        let (times, separator) = if ascii { ("x", " - ") } else { ("×", " · ") };
+        Some(format!(
+            "Terminal too small{separator}{}{}{}{separator}need {}{}{}",
+            self.width, times, self.height, self.minimum_width, times, self.minimum_height
+        ))
     }
 }
 
@@ -1206,6 +1219,12 @@ impl ResponsiveRecipe {
                 height,
                 stage,
                 anatomy,
+                reference_width: policy.width.preferred,
+                reference_height: policy.height.preferred,
+                minimum_width: policy.width.min_usable,
+                minimum_height: policy.height.min_usable,
+                below_minimum: policy.width.below_min_usable(width)
+                    || policy.height.below_min_usable(height),
             };
         }
         // Height floors like global classify when no surface.
@@ -1220,6 +1239,11 @@ impl ResponsiveRecipe {
             height,
             stage,
             anatomy: AdaptiveAnatomy::from_stage(stage),
+            reference_width: REFERENCE_VIEWPORT.0,
+            reference_height: REFERENCE_VIEWPORT.1,
+            minimum_width: MINIMUM_VIEWPORT.0,
+            minimum_height: MINIMUM_VIEWPORT.1,
+            below_minimum: width < MINIMUM_VIEWPORT.0 || height < MINIMUM_VIEWPORT.1,
         }
     }
 }
@@ -1276,7 +1300,7 @@ pub struct ResponsiveSnapshot {
     pub recipe: &'static str,
     /// Classified viewport.
     pub class: ViewportClass,
-    /// One line per WIDTH_LADDER sample: `80→collapse-secondary-actions`.
+    /// One line per WIDTH_LADDER sample: `80->collapse-secondary-actions`.
     pub ladder: Vec<String>,
 }
 
@@ -1289,7 +1313,7 @@ impl ResponsiveSnapshot {
             .iter()
             .map(|&w| {
                 let c = surface.classify(w, height.max(24));
-                format!("{w}→{}", c.stage.as_str())
+                format!("{w}->{}", c.stage.as_str())
             })
             .collect();
         Self {
@@ -1308,7 +1332,7 @@ impl ResponsiveSnapshot {
             .iter()
             .map(|&w| {
                 let c = recipe.classify(w, height.max(24));
-                format!("{w}→{}", c.stage.as_str())
+                format!("{w}->{}", c.stage.as_str())
             })
             .collect();
         Self {
@@ -1324,7 +1348,7 @@ impl ResponsiveSnapshot {
     pub fn lines(&self) -> Vec<String> {
         let mut out = vec![
             format!(
-                "{} [{}] {}×{} → {}",
+                "{} [{}] {}x{} -> {}",
                 self.surface.as_str(),
                 self.recipe,
                 self.class.width,
@@ -1341,7 +1365,14 @@ impl ResponsiveSnapshot {
                 self.class.anatomy.use_drawer as u8,
                 self.class.anatomy.line_mode as u8,
             ),
-            format!("density={:?}", self.class.anatomy.density),
+            format!(
+                "reference={}x{} minimum={}x{} below-minimum={}",
+                self.class.reference_width,
+                self.class.reference_height,
+                self.class.minimum_width,
+                self.class.minimum_height,
+                self.class.below_minimum as u8
+            ),
         ];
         out.extend(self.ladder.iter().cloned());
         out
@@ -1591,6 +1622,30 @@ mod tests {
     fn short_height_forces_line_mode() {
         let class = ViewportClass::classify(160, 4);
         assert_eq!(class.stage, ContractionStage::LineMode);
+    }
+
+    #[test]
+    fn minimum_contract_reports_actual_and_required_sizes() {
+        let policy = ResponsiveSurface::DataTable.policy();
+        let supported = ResponsiveSurface::DataTable
+            .classify(policy.width.min_usable, policy.height.min_usable);
+        assert!(!supported.below_minimum);
+        assert_eq!(supported.too_small_message(false), None);
+
+        let tiny = ResponsiveSurface::DataTable.classify(8, 2);
+        let unicode = tiny
+            .too_small_message(false)
+            .expect("below-minimum viewport has dedicated copy");
+        let ascii = tiny
+            .too_small_message(true)
+            .expect("ASCII mode has dedicated copy");
+        assert!(unicode.contains("8×2"), "{unicode:?}");
+        assert!(unicode.contains(&format!(
+            "need {}×{}",
+            policy.width.min_usable, policy.height.min_usable
+        )));
+        assert!(ascii.contains("8x2"), "{ascii:?}");
+        assert!(!ascii.contains(['×', '·']));
     }
 
     #[test]

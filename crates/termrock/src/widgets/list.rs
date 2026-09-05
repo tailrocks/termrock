@@ -10,7 +10,6 @@
 //! printable keys feed typeahead through the collection roving model.
 //!
 //! Research: lazygit, Yazi, Textual ListView, shadcn command items.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -27,11 +26,10 @@ use crate::{
         CollectionState, HitRegion, NavigationMove, Outcome, PageMove, UiIntent,
         default_list_intent,
     },
-    scroll::max_offset,
-    style::{Density, DesignSystem, Glyph, ListRowVisualState, Role},
+    style::{DesignSystem, Glyph, ListRowVisualState, Role},
 };
 
-use super::{ComposedRow, Selection};
+use super::Selection;
 
 /// How a pointer press on a row is interpreted.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -69,24 +67,19 @@ impl ListSelectionMode {
     }
 }
 
-const fn list_row_height(density: Density, has_secondary_below: bool) -> u16 {
-    if matches!(density, Density::Comfortable) && has_secondary_below {
-        2
-    } else {
-        1
-    }
+const fn list_row_height() -> u16 {
+    1
 }
 
 /// Narrow-terminal drop order (lowest survival first).
 ///
-/// shortcut → actions → badge → status → secondary → trailing → leading → primary
+/// shortcut → actions → badge → status → secondary → leading → primary
 pub const LIST_NARROW_DROP_ORDER: &[&str] = &[
     "shortcut",
     "actions",
     "badge",
     "status",
     "secondary",
-    "trailing",
     "leading",
     "primary",
 ];
@@ -115,7 +108,7 @@ impl RowRole {
 /// A stable row in a selectable list with composed-part anatomy.
 ///
 /// Parts: leading · primary(label) · secondary · status · badge · actions ·
-/// shortcut · trailing. Narrow drop order: [`LIST_NARROW_DROP_ORDER`].
+/// shortcut. Narrow drop order: [`LIST_NARROW_DROP_ORDER`].
 pub struct ListRow<'a, Id> {
     /// Stable identity used for selection and activation.
     pub id: Id,
@@ -133,8 +126,6 @@ pub struct ListRow<'a, Id> {
     pub shortcut: Option<&'a str>,
     /// Optional trailing action labels (display; host handles activation).
     pub actions: Option<Line<'a>>,
-    /// Optional metadata aligned at the trailing edge (legacy + composed).
-    pub trailing: Option<Line<'a>>,
     /// When set, replaces standard composed paint for the content band.
     pub custom: Option<Line<'a>>,
     /// Interaction role controlling selection and hit testing.
@@ -158,7 +149,6 @@ impl<'a, Id> ListRow<'a, Id> {
             badge: None,
             shortcut: None,
             actions: None,
-            trailing: None,
             custom: None,
             role: RowRole::Item,
             enabled: true,
@@ -178,7 +168,6 @@ impl<'a, Id> ListRow<'a, Id> {
             badge: None,
             shortcut: None,
             actions: None,
-            trailing: None,
             custom: None,
             role: RowRole::Separator,
             enabled: true,
@@ -198,7 +187,6 @@ impl<'a, Id> ListRow<'a, Id> {
             badge: None,
             shortcut: None,
             actions: None,
-            trailing: None,
             custom: None,
             role: RowRole::GroupHeader,
             enabled: true,
@@ -248,13 +236,6 @@ impl<'a, Id> ListRow<'a, Id> {
         self
     }
 
-    /// Sets legacy trailing metadata (also used as badge when badge is unset).
-    #[must_use]
-    pub fn trailing(mut self, trailing: Line<'a>) -> Self {
-        self.trailing = Some(trailing);
-        self
-    }
-
     /// Full custom content band (replaces composed primary cluster).
     #[must_use]
     pub fn custom(mut self, line: Line<'a>) -> Self {
@@ -281,37 +262,14 @@ impl<'a, Id> ListRow<'a, Id> {
     pub fn plain_label(&self) -> String {
         line_plain(&self.label)
     }
-
-    /// Projects this row into composed anatomy for contraction/paint.
-    #[must_use]
-    pub fn composed(&self) -> ComposedRow<'a, ()>
-    where
-        Id: Clone,
-    {
-        ComposedRow {
-            id: (),
-            leading: self.leading.clone(),
-            primary: self.custom.clone().unwrap_or_else(|| self.label.clone()),
-            secondary: self.secondary.clone(),
-            badge: self
-                .badge
-                .clone()
-                .or_else(|| self.status.clone())
-                .or_else(|| self.trailing.clone()),
-            shortcut: self.shortcut,
-            enabled: self.enabled,
-            loading: self.loading,
-        }
-    }
 }
 
 /// Plain text from a ratatui [`Line`].
 fn line_plain(line: &Line<'_>) -> String {
     line.spans
         .iter()
-        .map(|s| s.content.as_ref())
-        .collect::<Vec<_>>()
-        .join("")
+        .map(|span| span.content.as_ref())
+        .collect()
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -332,6 +290,10 @@ pub struct ListState<Id> {
     virtual_total: usize,
     /// Absolute start index of the painted window in the full universe.
     virtual_window_start: usize,
+    /// Junie single-select membership. Independent of the keyboard cursor:
+    /// arrows move [`collection`] active; Enter/Space writes this. `new(None)`
+    /// is chosen-none (no `›`).
+    chosen: Option<Id>,
 }
 
 impl<Id> Default for ListState<Id> {
@@ -348,6 +310,7 @@ impl<Id> Default for ListState<Id> {
             search_query: None,
             virtual_total: 0,
             virtual_window_start: 0,
+            chosen: None,
         }
     }
 }
@@ -360,7 +323,7 @@ impl<Id> ListState<Id> {
         Id: Clone + PartialEq,
     {
         let mut collection = CollectionState::new();
-        collection.set_active(selected);
+        collection.set_active(selected.clone());
         Self {
             collection,
             hovered: None,
@@ -373,6 +336,7 @@ impl<Id> ListState<Id> {
             search_query: None,
             virtual_total: 0,
             virtual_window_start: 0,
+            chosen: selected,
         }
     }
 
@@ -477,6 +441,12 @@ impl<Id> ListState<Id> {
         self.collection.active()
     }
 
+    /// Junie single-select membership (`›`). Distinct from the keyboard cursor.
+    #[must_use]
+    pub const fn chosen(&self) -> Option<&Id> {
+        self.chosen.as_ref()
+    }
+
     #[must_use]
     /// Returns the stable identity currently under the pointer.
     pub const fn hovered(&self) -> Option<&Id> {
@@ -487,6 +457,21 @@ impl<Id> ListState<Id> {
     /// Returns the first visible row index.
     pub const fn offset(&self) -> usize {
         self.collection.offset()
+    }
+
+    /// Skip into the row slice passed to this frame's paint.
+    ///
+    /// [`Self::offset`] is the absolute collection index. A virtual window
+    /// already *is* that slice, so paint skip is 0. Callers that
+    /// `rows.iter().skip(offset)` after [`List`] paint must use this, not
+    /// [`Self::offset`], or they skip the window origin twice.
+    #[must_use]
+    pub const fn paint_skip(&self) -> usize {
+        if self.virtual_total > 0 {
+            0
+        } else {
+            self.collection.offset()
+        }
     }
 
     #[must_use]
@@ -561,31 +546,25 @@ impl<Id: Clone + PartialEq> ListState<Id> {
     /// feed collection typeahead. Prefer [`Self::handle_intent`] when the app
     /// owns keymaps.
     pub fn handle_key(&mut self, rows: &[ListRow<'_, Id>], key: KeyEvent) -> Outcome<Id> {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return Outcome::Ignored;
         }
         // Shift+Space: range-select along visible enabled items (multi-select).
-        if key.kind == KeyEventKind::Press
+        if key.is_press()
             && matches!(key.code, KeyCode::Char(' '))
             && key.modifiers.contains(KeyModifiers::SHIFT)
         {
             return self.range_select_to_active(rows);
         }
         // Search: '/' opens filter mode (host still owns filtering projection).
-        if key.kind == KeyEventKind::Press
-            && matches!(key.code, KeyCode::Char('/'))
-            && key.modifiers.is_empty()
-        {
+        if key.is_press() && matches!(key.code, KeyCode::Char('/')) && key.modifiers.is_empty() {
             if self.search_query.is_none() {
                 self.search_query = Some(String::new());
             }
             return Outcome::Changed;
         }
         // While search query is Some, printable chars append; Backspace pops.
-        if self.search_query.is_some()
-            && key.kind == KeyEventKind::Press
-            && key.modifiers.is_empty()
-        {
+        if self.search_query.is_some() && key.is_press() && key.modifiers.is_empty() {
             match key.code {
                 KeyCode::Backspace => {
                     if let Some(q) = self.search_query.as_mut() {
@@ -609,6 +588,34 @@ impl<Id: Clone + PartialEq> ListState<Id> {
                 _ => {}
             }
         }
+        if key.is_press()
+            && !key.modifiers.contains(KeyModifiers::CONTROL)
+            && !key.modifiers.contains(KeyModifiers::ALT)
+        {
+            match key.code {
+                KeyCode::Char('g') if !key.modifiers.contains(KeyModifiers::SHIFT) => {
+                    self.collection.clear_typeahead();
+                    return self.handle_intent(rows, UiIntent::Move(NavigationMove::First));
+                }
+                KeyCode::Char('g') | KeyCode::Char('G') => {
+                    self.collection.clear_typeahead();
+                    return self.handle_intent(rows, UiIntent::Move(NavigationMove::Last));
+                }
+                KeyCode::Left | KeyCode::Char('h' | 'H') => {
+                    self.collection.clear_typeahead();
+                    return self.handle_intent(rows, UiIntent::Move(NavigationMove::Previous));
+                }
+                KeyCode::Right | KeyCode::Char('l' | 'L') => {
+                    self.collection.clear_typeahead();
+                    return self.handle_intent(rows, UiIntent::Move(NavigationMove::Next));
+                }
+                KeyCode::Char('a' | 'A') if self.selection.is_some() => {
+                    self.collection.clear_typeahead();
+                    return self.toggle_all(rows);
+                }
+                _ => {}
+            }
+        }
         match default_list_intent(key) {
             Some(intent) => {
                 self.collection.clear_typeahead();
@@ -620,7 +627,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
 
     /// Typeahead jump via [`CollectionState`] / roving (labels from primary text).
     fn handle_typeahead(&mut self, rows: &[ListRow<'_, Id>], key: KeyEvent) -> Outcome<Id> {
-        if key.kind != KeyEventKind::Press {
+        if !key.is_press() {
             return Outcome::Ignored;
         }
         let KeyCode::Char(c) = key.code else {
@@ -679,7 +686,13 @@ impl<Id: Clone + PartialEq> ListState<Id> {
                 }
             }
             UiIntent::Activate | UiIntent::Open | UiIntent::Submit => self.activate(rows),
-            UiIntent::Toggle => self.toggle_selected(rows),
+            UiIntent::Toggle => {
+                if self.selection.is_some() {
+                    self.toggle_selected(rows)
+                } else {
+                    self.activate(rows)
+                }
+            }
             UiIntent::Cancel | UiIntent::Close => Outcome::Cancelled,
             UiIntent::Expand | UiIntent::Collapse => Outcome::Ignored,
             // Global chrome / edit intents: host + specialized surfaces handle them.
@@ -703,6 +716,29 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         key: KeyEvent,
     ) -> crate::interaction::EventResult<Outcome<Id>> {
         self.handle_key(rows, key).into_event_result()
+    }
+
+    fn toggle_all(&mut self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
+        let Some(selection) = self.selection.as_mut() else {
+            return Outcome::Ignored;
+        };
+        let ids: Vec<Id> = rows
+            .iter()
+            .filter(|row| row.enabled && row.role.is_navigable())
+            .map(|row| row.id.clone())
+            .collect();
+        if ids.is_empty() {
+            return Outcome::Ignored;
+        }
+        let all = ids.iter().all(|id| selection.is_checked(id));
+        if all {
+            for id in &ids {
+                let _ = selection.toggle(id);
+            }
+        } else {
+            selection.select_all(&ids);
+        }
+        Outcome::Changed
     }
 
     fn toggle_selected(&mut self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
@@ -765,14 +801,19 @@ impl<Id: Clone + PartialEq> ListState<Id> {
 
     #[must_use]
     /// Returns the semantic action associated with the supplied stable identity.
-    pub fn activate(&self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
+    pub fn activate(&mut self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
         self.collection
             .active()
+            .cloned()
             .and_then(|selected| {
                 rows.iter()
-                    .find(|row| row.enabled && row.role.is_navigable() && &row.id == selected)
+                    .find(|row| row.enabled && row.role.is_navigable() && row.id == selected)
+                    .map(|row| row.id.clone())
             })
-            .map_or(Outcome::Ignored, |row| Outcome::Activated(row.id.clone()))
+            .map_or(Outcome::Ignored, |id| {
+                self.chosen = Some(id.clone());
+                Outcome::Activated(id)
+            })
     }
 
     /// Updates hover state from the current pointer position and painted hit regions.
@@ -817,7 +858,10 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         self.collection.set_active(Some(region.id.clone()));
         // Shift+click range when multi-select is on (pointer path; host passes modifiers via click_range).
         match self.click_policy {
-            ListClickPolicy::Activate => Outcome::Activated(region.id.clone()),
+            ListClickPolicy::Activate => {
+                self.chosen = Some(region.id.clone());
+                Outcome::Activated(region.id.clone())
+            }
             ListClickPolicy::Select => Outcome::Changed,
         }
     }
@@ -869,22 +913,31 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         Outcome::CheckToggled(to.clone())
     }
 
-    /// Projects list rows into headless collection items and reconciles active id.
-    pub fn reconcile_collection(&mut self, rows: &[ListRow<'_, Id>]) {
+    fn reconcile_rows(&mut self, rows: &[ListRow<'_, Id>], viewport_height: usize) {
         let items = collection_items_from_rows(rows);
-        let vp = self.collection.viewport_len().max(1);
+        let total = if self.virtual_total > 0 {
+            self.virtual_total
+        } else {
+            rows.len()
+        };
         if self.virtual_total > 0 {
             let _ = self.collection.reconcile_window(
                 &items,
                 self.virtual_window_start,
-                self.virtual_total,
-                vp,
+                total,
+                viewport_height,
             );
         } else {
             self.collection
-                .set_viewport(self.collection.offset(), vp, items.len());
+                .set_viewport(self.collection.offset(), viewport_height, total);
             let _ = self.collection.reconcile(&items);
         }
+    }
+
+    /// Projects list rows into headless collection items and reconciles active id.
+    pub fn reconcile_collection(&mut self, rows: &[ListRow<'_, Id>]) {
+        let vp = self.collection.viewport_len().max(1);
+        self.reconcile_rows(rows, vp);
     }
 
     /// Sync vertical offset into a [`crate::widgets::ScrollAreaState`] (bars only).
@@ -1021,7 +1074,6 @@ pub struct List<'a, Id> {
     rows: &'a [ListRow<'a, Id>],
     tokens: &'a DesignSystem,
     empty_message: Option<Line<'a>>,
-    density: Density,
 }
 
 impl<'a, Id> List<'a, Id> {
@@ -1033,34 +1085,13 @@ impl<'a, Id> List<'a, Id> {
             rows,
             tokens,
             empty_message: None,
-            density: Density::Compact,
         }
-    }
-
-    /// Creates a list from a [`DesignSystem`] (preferred public paint root).
-    #[must_use]
-    pub const fn from_system(rows: &'a [ListRow<'a, Id>], system: &'a DesignSystem) -> Self {
-        Self::new(rows, system)
     }
 
     /// Whether this surface owns keyboard focus this frame (host / scene).
     #[must_use]
     pub const fn focused(mut self, focused: bool) -> Self {
         self.focused = focused;
-        self
-    }
-
-    /// Compact (1-line) or comfortable (secondary below primary).
-    #[must_use]
-    pub const fn density(mut self, density: Density) -> Self {
-        self.density = density;
-        self
-    }
-
-    /// Comfortable density shorthand.
-    #[must_use]
-    pub const fn comfortable(mut self) -> Self {
-        self.density = Density::Comfortable;
         self
     }
 
@@ -1096,26 +1127,22 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
         } else {
             self.rows.len()
         };
-        let items = collection_items_from_rows(self.rows);
-        if state.virtual_total > 0 {
-            let _ = state.collection.reconcile_window(
-                &items,
-                state.virtual_window_start,
-                total,
-                viewport_height,
-            );
-        } else {
-            state
-                .collection
-                .set_viewport(state.collection.offset(), viewport_height, total);
-            let _ = state.collection.reconcile(&items);
-        }
+        state.reconcile_rows(self.rows, viewport_height);
         ensure_list_active_visible(state, self.rows, viewport_height);
         if self.rows.is_empty() {
-            if let Some(message) = self.empty_message.as_ref() {
-                let style = self.tokens.style(Role::TextMuted);
-                buffer.set_line(area.x, area.y, message, area.width);
-                buffer.set_style(Rect::new(area.x, area.y, area.width, 1), style);
+            let fallback = Line::from("Nothing here yet");
+            let message = self.empty_message.as_ref().unwrap_or(&fallback);
+            let width = u16::try_from(message.width())
+                .unwrap_or(u16::MAX)
+                .min(area.width);
+            if width > 0 && area.height > 0 {
+                let y = area.y.saturating_add(area.height / 2);
+                let x = area.x.saturating_add(area.width.saturating_sub(width) / 2);
+                buffer.set_line(x, y, message, width);
+                buffer.set_style(
+                    Rect::new(x, y, width, 1),
+                    self.tokens.style(Role::TextMuted),
+                );
             }
             state.hovered = None;
             return;
@@ -1130,7 +1157,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                 area.y,
                 &crate::text::take_display_cols(&strip, usize::from(area.width)),
                 usize::from(area.width),
-                self.tokens.style(Role::Info),
+                self.tokens.style(Role::TextSecondary),
             );
             body_y = area.y.saturating_add(1);
             body_h = area.height.saturating_sub(1);
@@ -1138,39 +1165,19 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
         let body = Rect::new(area.x, body_y, area.width, body_h);
         let scrollable = crate::scroll::is_scrollable(total, usize::from(body.height).max(1));
         let content_width = body.width.saturating_sub(u16::from(scrollable));
-        let offset = if state.virtual_total > 0 {
-            0 // rows are already the window
-        } else {
-            state.collection.offset()
-        };
+        let offset = state.paint_skip();
         let mut y = body.y;
-        let mut painted_rows = 0usize;
-        // Breathing rows: under Comfortable density a group header opens with
-        // one blank canvas row, so sections read as sections instead of as one
-        // unbroken column (law P1, audit D8; plans/015 Step 4).
-        let breathing = matches!(self.density, Density::Comfortable);
-        let mut painted_any = false;
+        let mut scratch = String::new();
         for row in self.rows.iter().skip(offset) {
             if y >= body.bottom() {
                 break;
             }
-            if breathing
-                && painted_any
-                && matches!(row.role, RowRole::GroupHeader)
-                && y.saturating_add(1) < body.bottom()
-            {
-                y = y.saturating_add(1);
-            }
-            painted_any = true;
-            let secondary_below = matches!(self.density, Density::Comfortable)
-                && row.secondary.is_some()
-                && !matches!(row.role, RowRole::Separator | RowRole::GroupHeader);
-            let rh = list_row_height(self.density, secondary_below);
+            let rh = list_row_height();
             if y.saturating_add(rh) > body.bottom() {
                 break;
             }
             let rect = Rect::new(body.x, y, content_width, 1);
-            let selected = state.collection.active() == Some(&row.id);
+            let cursor = state.collection.active() == Some(&row.id);
             let hovered = row.enabled
                 && row.role.is_navigable()
                 && state
@@ -1180,38 +1187,35 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                 .selection
                 .as_ref()
                 .is_some_and(|selection| selection.is_checked(&row.id));
-            let recipe = self.tokens.resolve_list_row(ListRowVisualState {
-                selected,
-                focused: self.focused && selected,
+            let chosen = if state.selection.is_some() {
+                checked
+            } else {
+                state.chosen.as_ref() == Some(&row.id)
+            };
+            let visual_state = ListRowVisualState {
+                selected: chosen,
+                focused: self.focused && cursor && row.enabled,
                 hovered,
                 enabled: row.enabled,
                 loading: row.loading,
                 checked,
-            });
-            let style = if hovered && row.enabled && !selected {
-                recipe.hover
-            } else if checked && !selected {
-                self.tokens.style(Role::Accent)
-            } else {
-                recipe.label
+                ..ListRowVisualState::default()
             };
-            if recipe.use_fill {
-                buffer.set_style(rect, style);
-            } else if recipe.use_tint {
-                buffer.set_style(rect, recipe.tint);
-            } else if recipe.hover_fill {
-                buffer.set_style(rect, recipe.hover_wash);
-            }
+            let recipe = self.tokens.resolve_list_row(visual_state);
+            let chrome = super::row_chrome::RowChrome::resolve(self.tokens, visual_state);
+            let style = chrome.label_style(recipe.label);
+            let secondary_style = chrome.secondary_style(recipe.secondary);
+            let shortcut_style = chrome.secondary_style(recipe.shortcut);
+            let trailing_style = chrome.secondary_style(recipe.secondary);
             if matches!(row.role, RowRole::Separator) {
                 let rule = self.tokens.glyphs.rule();
                 buffer.set_stringn(rect.x, rect.y, rule, usize::from(rect.width), style);
                 if rect.width > 2 {
                     let label_x = rect.x.saturating_add(2);
-                    let parts = row.composed().parts_for_width(rect.width.saturating_sub(2));
                     buffer.set_line(
                         label_x,
                         rect.y,
-                        &parts.primary,
+                        &row.label,
                         rect.right().saturating_sub(label_x),
                     );
                 }
@@ -1223,16 +1227,11 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                 buffer.set_line(rect.x, rect.y, &row.label, rect.width);
                 buffer.set_style(rect, style);
             } else {
-                // Stable 2-cell gutter slot for quiet selection chrome.
-                if let Some((glyph, gstyle)) = recipe.gutter {
-                    buffer.set_stringn(rect.x, rect.y, glyph, 1, gstyle);
-                    buffer.set_stringn(rect.x.saturating_add(1), rect.y, " ", 1, style);
-                } else if recipe.show_gutter_slot {
-                    buffer.set_stringn(rect.x, rect.y, "  ", 2, style);
-                }
-                let check_x = rect.x.saturating_add(2);
-                let check_w = render_check_cell(buffer, state, row, rect, check_x, &recipe, style);
-                let content_x = check_x.saturating_add(check_w);
+                buffer.set_style(rect, style);
+                chrome.paint(buffer, Rect::new(rect.x, rect.y, rect.width, rh));
+                register_check_region(state, row, rect);
+                // Universal row: col 0 bar, col 1 marker, col 2 space, col 3+ label.
+                let content_x = rect.x.saturating_add(3);
                 if content_x < rect.right() {
                     let content_w = rect.right().saturating_sub(content_x);
                     // Custom body replaces composed primary cluster.
@@ -1240,11 +1239,8 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                         buffer.set_line(content_x, rect.y, custom, content_w);
                         buffer.set_style(Rect::new(content_x, rect.y, content_w, 1), style);
                     } else {
-                        let badge = row
-                            .badge
-                            .as_ref()
-                            .or(row.status.as_ref())
-                            .or(row.trailing.as_ref());
+                        let status = row.status.as_ref();
+                        let badge = row.badge.as_ref();
                         let mut budget = content_w.saturating_sub(1);
                         let shortcut_need = row
                             .shortcut
@@ -1263,7 +1259,8 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                                     .saturating_add(1)
                             })
                             .unwrap_or(0);
-                        // Drop order: shortcut → actions → badge/status → secondary → leading → primary.
+                        // Optional chrome is resolved independently. Status has
+                        // higher survival than badge under pressure.
                         let show_shortcut = row.shortcut.is_some()
                             && content_w >= 12
                             && budget >= shortcut_need + 2;
@@ -1282,6 +1279,18 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                             budget = budget.saturating_sub(actions_need);
                         } else if show_action_marker {
                             budget = budget.saturating_sub(2);
+                        }
+                        let status_need = status
+                            .map(|s| {
+                                u16::try_from(s.width())
+                                    .unwrap_or(u16::MAX)
+                                    .saturating_add(2)
+                            })
+                            .unwrap_or(0);
+                        let show_status =
+                            status.is_some() && content_w >= 8 && budget > status_need;
+                        if show_status {
+                            budget = budget.saturating_sub(status_need);
                         }
                         let badge_need = badge
                             .map(|b| {
@@ -1303,9 +1312,12 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                                     .saturating_add(1)
                             })
                             .unwrap_or(0);
-                        // Compact: inline secondary when budget allows; Comfortable: below.
-                        let show_secondary =
-                            row.secondary.is_some() && !secondary_below && budget >= secondary_need;
+                        // junie list rows are strictly one line: the secondary rides
+                        // inline or is dropped, never wrapped to a second row.
+                        // Hide meta rather than starve the label below 12 cells.
+                        let show_secondary = row.secondary.is_some()
+                            && budget >= secondary_need
+                            && budget.saturating_sub(secondary_need) >= 12;
                         if show_secondary {
                             budget = budget.saturating_sub(secondary_need);
                         }
@@ -1340,7 +1352,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                                         rect.y,
                                         recipe.loading_glyph,
                                         usize::from(lw),
-                                        recipe.secondary,
+                                        secondary_style,
                                     );
                                     x = x.saturating_add(lw).saturating_add(1);
                                 }
@@ -1355,32 +1367,46 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                                 }
                             }
                         }
-                        let reserve = if show_badge { badge_need } else { 0 }
+                        let reserve = if show_status { status_need } else { 0 }
+                            .saturating_add(if show_badge { badge_need } else { 0 })
                             .saturating_add(if show_shortcut { shortcut_need } else { 0 });
                         let mid_end = right.saturating_sub(reserve);
                         let primary_budget = mid_end.saturating_sub(x);
                         if primary_budget > 0 {
-                            buffer.set_line(x, rect.y, &row.label, primary_budget);
+                            let label_area = Rect::new(x, rect.y, primary_budget, 1);
+                            crate::text::paint_line_overflow(
+                                buffer,
+                                label_area,
+                                &row.label,
+                                style,
+                                crate::text::LinePlacement::contracting(
+                                    self.tokens.glyphs.ellipsis(),
+                                ),
+                                &mut scratch,
+                            );
                             let primary_w = u16::try_from(row.label.width())
                                 .unwrap_or(u16::MAX)
                                 .min(primary_budget);
-                            buffer.set_style(
-                                Rect::new(x, rect.y, primary_w.max(1).min(primary_budget), 1),
-                                style,
-                            );
                             x = x.saturating_add(primary_w);
                         }
                         if show_secondary && let Some(sec) = row.secondary.as_ref() {
-                            let avail = mid_end.saturating_sub(x);
-                            if avail > 2 {
-                                x = x.saturating_add(1);
-                                let sw = u16::try_from(sec.width())
-                                    .unwrap_or(u16::MAX)
-                                    .min(mid_end.saturating_sub(x));
-                                if sw > 0 {
-                                    buffer.set_line(x, rect.y, sec, sw);
-                                    buffer.set_style(Rect::new(x, rect.y, sw, 1), recipe.secondary);
-                                }
+                            // Junie list meta is right-aligned with one trailing
+                            // pad cell, never packed against the label.
+                            let sw = u16::try_from(sec.width()).unwrap_or(u16::MAX);
+                            if sw > 0 && mid_end > x.saturating_add(sw).saturating_add(1) {
+                                let mx = mid_end
+                                    .saturating_sub(sw.saturating_add(1))
+                                    .max(x.saturating_add(1));
+                                buffer.set_line(
+                                    mx,
+                                    rect.y,
+                                    sec,
+                                    sw.min(mid_end.saturating_sub(mx)),
+                                );
+                                buffer.set_style(
+                                    Rect::new(mx, rect.y, sw.min(mid_end.saturating_sub(mx)), 1),
+                                    secondary_style,
+                                );
                             }
                         }
                         let mut cursor = right;
@@ -1395,7 +1421,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                                     rect.y,
                                     sc,
                                     usize::from(w),
-                                    recipe.shortcut,
+                                    shortcut_style,
                                 );
                             }
                         }
@@ -1422,7 +1448,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                             if w > 0 {
                                 cursor = cursor.saturating_sub(w);
                                 buffer.set_line(cursor, rect.y, act, w);
-                                buffer.set_style(Rect::new(cursor, rect.y, w, 1), recipe.shortcut);
+                                buffer.set_style(Rect::new(cursor, rect.y, w, 1), shortcut_style);
                             }
                         }
                         if show_badge && let Some(b) = badge {
@@ -1435,26 +1461,24 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                                 }
                                 cursor = cursor.saturating_sub(w);
                                 buffer.set_line(cursor, rect.y, b, w);
-                                buffer.set_style(Rect::new(cursor, rect.y, w, 1), recipe.trailing);
+                                buffer.set_style(Rect::new(cursor, rect.y, w, 1), trailing_style);
+                            }
+                        }
+                        if show_status && let Some(status) = status {
+                            let w = u16::try_from(status.width())
+                                .unwrap_or(u16::MAX)
+                                .min(cursor.saturating_sub(content_x));
+                            if w > 0 {
+                                // Gap before status, plus a trailing pad when
+                                // status is rightmost — junie meta is
+                                // `right - width - 1`.
+                                cursor = cursor.saturating_sub(1);
+                                cursor = cursor.saturating_sub(w);
+                                buffer.set_line(cursor, rect.y, status, w);
+                                buffer.set_style(Rect::new(cursor, rect.y, w, 1), secondary_style);
                             }
                         }
                     } // end non-custom
-                }
-                // Comfortable: secondary on next line
-                if secondary_below {
-                    if let Some(sec) = row.secondary.as_ref() {
-                        let indent = rect.x.saturating_add(4);
-                        let sub = Rect::new(
-                            indent.min(rect.right().saturating_sub(1)),
-                            rect.y.saturating_add(1),
-                            rect.right().saturating_sub(indent.min(rect.right())),
-                            1,
-                        );
-                        if !sub.is_empty() {
-                            buffer.set_line(sub.x, sub.y, sec, sub.width);
-                            buffer.set_style(sub, recipe.secondary);
-                        }
-                    }
                 }
             }
             let hit_h = rh;
@@ -1465,30 +1489,15 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                 });
             }
             y = y.saturating_add(rh);
-            painted_rows = painted_rows.saturating_add(1);
         }
-        let _ = painted_rows;
         if scrollable {
-            // The cut edges say there is more; the scrollbar says where.
-            let offset = state.collection.offset();
-            crate::scroll::paint_scroll_edges(
-                buffer,
-                body,
-                self.tokens,
-                offset > 0,
-                offset.saturating_add(usize::from(body.height)) < total,
-            );
-            crate::scroll::render_scrollbar(
+            crate::scroll::paint_overflow_scrollbar(
                 buffer,
                 Rect::new(body.right().saturating_sub(1), body.y, 1, body.height),
-                crate::scroll::ScrollbarSpec::new(
-                    crate::scroll::ScrollAxis::Vertical,
-                    crate::scroll::ScrollbarGeometry::new(
-                        total,
-                        usize::from(body.height).max(1),
-                        u16::try_from(state.collection.offset()).unwrap_or(u16::MAX),
-                    ),
-                ),
+                total,
+                usize::from(body.height).max(1),
+                u16::try_from(state.collection.offset()).unwrap_or(u16::MAX),
+                self.focused,
                 self.tokens,
             );
         }
@@ -1502,44 +1511,17 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
     }
 }
 
-/// Paints multi-select check chrome; returns occupied width including trailing gap.
-fn render_check_cell<Id: Clone>(
-    buffer: &mut Buffer,
-    state: &mut ListState<Id>,
-    row: &ListRow<'_, Id>,
-    rect: Rect,
-    check_x: u16,
-    recipe: &crate::style::ListRowRecipe,
-    style: ratatui_core::style::Style,
-) -> u16 {
-    if state.selection.is_none() || check_x >= rect.right() {
-        return 0;
+/// Multi-select hit target is the col-1 `✓` slot; paint lives in row chrome.
+fn register_check_region<Id: Clone>(state: &mut ListState<Id>, row: &ListRow<'_, Id>, rect: Rect) {
+    if state.selection.is_none() || rect.width < 2 {
+        return;
     }
-
-    let marker = if recipe.checked {
-        recipe.check_on
-    } else {
-        recipe.check_off
-    };
-    let glyph_w = u16::try_from(crate::text::display_cols(marker)).unwrap_or(1);
-    let available = rect.right().saturating_sub(check_x);
-    let paint_w = glyph_w.min(available);
-    if paint_w == 0 {
-        return 0;
-    }
-    buffer.set_stringn(check_x, rect.y, marker, usize::from(paint_w), style);
-    // Trailing gap after check for content separation.
-    let gap = u16::from(available > paint_w);
-    if gap > 0 {
-        buffer.set_stringn(check_x.saturating_add(paint_w), rect.y, " ", 1, style);
-    }
-    if row.enabled && paint_w >= 1 {
+    if row.enabled {
         state.check_regions.push(HitRegion {
             id: row.id.clone(),
-            area: Rect::new(check_x, rect.y, paint_w.max(1), 1),
+            area: Rect::new(rect.x.saturating_add(1), rect.y, 1, 1),
         });
     }
-    paint_w.saturating_add(gap)
 }
 
 impl<Id: Clone + PartialEq> StatefulWidget for List<'_, Id> {
@@ -1572,6 +1554,9 @@ fn ensure_list_active_visible<Id: Clone + PartialEq>(
     rows: &[ListRow<'_, Id>],
     viewport_height: usize,
 ) {
+    if state.virtual_total > 0 {
+        return;
+    }
     let vp = viewport_height.max(1);
     let Some(active) = state.collection.active() else {
         return;
@@ -1613,6 +1598,83 @@ mod tests {
         );
     }
 
+    #[test]
+    fn chosen_stays_put_when_cursor_moves() {
+        let rows = rows();
+        let system = DesignSystem::junie();
+        let mut state = ListState::new(Some("first"));
+        assert_eq!(state.chosen(), Some(&"first"));
+        assert_eq!(
+            state.handle_intent(&rows, UiIntent::Move(NavigationMove::Next)),
+            Outcome::Changed
+        );
+        assert_eq!(state.selected(), Some(&"second"));
+        assert_eq!(state.chosen(), Some(&"first"));
+        let area = Rect::new(0, 0, 16, 4);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &system).focused(true)).render(area, &mut buffer, &mut state);
+        let first = state
+            .regions()
+            .iter()
+            .find(|r| r.id == "first")
+            .unwrap()
+            .area;
+        let second = state
+            .regions()
+            .iter()
+            .find(|r| r.id == "second")
+            .unwrap()
+            .area;
+        assert_eq!(
+            buffer[(first.x.saturating_add(1), first.y)].symbol(),
+            system.glyphs.selection_marker(),
+            "› stays on chosen after cursor move"
+        );
+        assert_eq!(
+            buffer[(second.x.saturating_add(1), second.y)].symbol(),
+            " ",
+            "cursor row is not chosen"
+        );
+        assert_eq!(
+            state.handle_intent(&rows, UiIntent::Activate),
+            Outcome::Activated("second")
+        );
+        assert_eq!(state.chosen(), Some(&"second"));
+    }
+
+    #[test]
+    fn click_writes_chosen() {
+        let rows = rows();
+        let system = DesignSystem::junie();
+        let mut state = ListState::new(Some("first"));
+        let area = Rect::new(0, 0, 16, 4);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &system).focused(true)).render(area, &mut buffer, &mut state);
+        let second = state
+            .regions()
+            .iter()
+            .find(|r| r.id == "second")
+            .unwrap()
+            .area;
+        assert_eq!(
+            state.click(Position::new(second.x, second.y)),
+            Outcome::Activated("second")
+        );
+        assert_eq!(state.chosen(), Some(&"second"));
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &system).focused(true)).render(area, &mut buffer, &mut state);
+        let second = state
+            .regions()
+            .iter()
+            .find(|r| r.id == "second")
+            .unwrap()
+            .area;
+        assert_eq!(
+            buffer[(second.x.saturating_add(1), second.y)].symbol(),
+            system.glyphs.selection_marker()
+        );
+    }
+
     fn rows() -> [ListRow<'static, &'static str>; 4] {
         [
             ListRow {
@@ -1624,7 +1686,6 @@ mod tests {
                 badge: None,
                 shortcut: None,
                 actions: None,
-                trailing: None,
                 custom: None,
                 role: RowRole::Separator,
                 enabled: true,
@@ -1639,7 +1700,6 @@ mod tests {
                 badge: None,
                 shortcut: None,
                 actions: None,
-                trailing: None,
                 custom: None,
                 role: RowRole::Item,
                 enabled: false,
@@ -1654,7 +1714,6 @@ mod tests {
                 badge: None,
                 shortcut: None,
                 actions: None,
-                trailing: None,
                 custom: None,
                 role: RowRole::Item,
                 enabled: true,
@@ -1669,7 +1728,6 @@ mod tests {
                 badge: None,
                 shortcut: None,
                 actions: None,
-                trailing: None,
                 custom: None,
                 role: RowRole::Item,
                 enabled: true,
@@ -1715,14 +1773,14 @@ mod tests {
         let position = Position::new(area.x, area.y);
         assert_eq!(state.hover(position), Some(&"second"));
         assert_eq!(state.click(position), Outcome::Activated("second"));
-        // Quiet phosphor selection uses design-token gutter glyph.
-        assert_eq!(buffer[(area.x, area.y)].symbol(), "▌");
+        assert_eq!(buffer[(area.x, area.y)].symbol(), "\u{258e}");
     }
 
     #[test]
-    fn phosphor_selection_is_a_gutter_not_neon() {
+    fn junie_selection_is_a_gutter_and_marker_not_neon() {
         let rows = rows();
-        let system = DesignSystem::default();
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
         let mut state = ListState::new(Some("second"));
         let area = Rect::new(0, 0, 16, 4);
         let mut buffer = Buffer::empty(area);
@@ -1736,20 +1794,27 @@ mod tests {
         assert_eq!(
             buffer[(row.x, row.y)].symbol(),
             system.glyphs.selection_gutter(),
-            "the selected row is marked by its gutter"
+            "col 0 is the focus bar"
         );
-        let label = &buffer[(row.x.saturating_add(2), row.y)];
+        assert_eq!(
+            buffer[(row.x.saturating_add(1), row.y)].symbol(),
+            system.glyphs.selection_marker(),
+            "col 1 is the chosen marker"
+        );
+        let label = &buffer[(row.x.saturating_add(3), row.y)];
+        assert_eq!(label.bg, theme.accent_bg, "selected+focused tints");
         assert_ne!(
             label.bg,
             system.style(Role::Selection).bg.unwrap(),
             "selection never fills the row by default"
         );
+        assert_ne!(label.fg, theme.accent, "label never uses accent");
     }
 
     #[test]
-    fn marker_selection_paints_triangle_into_full_fill() {
+    fn selected_focused_tint_is_accent_bg_not_text_selection() {
         let rows = rows();
-        let system = DesignSystem::default().selection(crate::style::SelectionChrome::Marker);
+        let system = DesignSystem::junie();
         let mut state = ListState::new(Some("second"));
         let area = Rect::new(0, 0, 16, 4);
         let mut buffer = Buffer::empty(area);
@@ -1760,23 +1825,23 @@ mod tests {
             .find(|r| r.id == "second")
             .unwrap()
             .area;
-        let fill_bg = system.style(Role::Selection).bg.unwrap();
-        let marker = &buffer[(row.x, row.y)];
+        let tint_bg = system.style(Role::SelectionTint).bg.unwrap();
         assert_eq!(
-            marker.symbol(),
-            system.glyphs.selection_marker(),
-            "the selected row leads with the marker triangle"
+            buffer[(row.x, row.y)].symbol(),
+            system.glyphs.selection_gutter(),
+            "col 0 is always the focus bar"
         );
-        assert_eq!(
-            marker.bg, fill_bg,
-            "the marker speaks the fill's own foreground/background"
+        let label = &buffer[(row.x.saturating_add(3), row.y)];
+        assert_eq!(label.bg, tint_bg, "the quiet tint owns the row ground");
+        assert_ne!(
+            label.bg,
+            system.style(Role::Selection).bg.unwrap(),
+            "no row ever paints the text-selection ground"
         );
-        let label = &buffer[(row.x.saturating_add(2), row.y)];
-        assert_eq!(label.bg, fill_bg, "marker chrome fills the whole row");
     }
 
     #[test]
-    fn trailing_cells_align_right_and_wide_labels_truncate_first() {
+    fn badge_cells_align_right_and_wide_labels_truncate_first() {
         let rows = [
             ListRow {
                 id: "wide",
@@ -1784,10 +1849,9 @@ mod tests {
                 leading: None,
                 secondary: None,
                 status: None,
-                badge: None,
                 shortcut: None,
                 actions: None,
-                trailing: Some(Line::from("9 KiB")),
+                badge: Some(Line::from("9 KiB")),
                 custom: None,
                 role: RowRole::Item,
                 enabled: true,
@@ -1799,10 +1863,9 @@ mod tests {
                 leading: None,
                 secondary: None,
                 status: None,
-                badge: None,
                 shortcut: None,
                 actions: None,
-                trailing: Some(Line::from("1 B")),
+                badge: Some(Line::from("1 B")),
                 custom: None,
                 role: RowRole::Item,
                 enabled: true,
@@ -1811,29 +1874,59 @@ mod tests {
         ];
         let tokens = DesignSystem::default();
         let mut state = ListState::new(None);
-        // Gutter (2) + content: badge right-aligned within content band.
+        // Gutter (3) + content: badge right-aligned within content band.
         let area = Rect::new(0, 0, 14, 2);
         let mut buffer = Buffer::empty(area);
 
         (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
 
-        // Right edge of full row holds trailing badge.
+        // Right edge of full row holds the badge.
         assert_eq!(buffer[(9, 0)].symbol(), "9");
         assert_eq!(buffer[(13, 0)].symbol(), "B");
         assert_eq!(buffer[(11, 1)].symbol(), "1");
         assert_eq!(buffer[(13, 1)].symbol(), "B");
-        // Primary starts after gutter and keeps wide graphemes intact.
-        assert_eq!(buffer[(2, 0)].symbol(), "🧪");
+        // Primary starts after ▎, marker, space and keeps wide graphemes intact.
+        assert_eq!(buffer[(3, 0)].symbol(), "🧪");
     }
 
     #[test]
-    fn narrow_trailing_cell_clips_only_at_grapheme_boundaries() {
-        let mut row = ListRow::item("wide-trailing", Line::from("x"));
-        row.trailing = Some(Line::from("🧪Z"));
+    fn overflow_label_uses_ellipsis_not_hard_clip() {
+        let rows =
+            [ListRow::item(0usize, Line::from("src/api/auth.rs")).status(Line::from("modified"))];
+        let system = DesignSystem::junie();
+        let mut state = ListState::new(Some(0));
+        let area = Rect::new(0, 0, 26, 1);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &system)).render(area, &mut buffer, &mut state);
+        let line: String = (0..area.width)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(
+            line.contains(system.glyphs.ellipsis()),
+            "overflow label must mark the cut, got {line:?}"
+        );
+        assert!(
+            line.contains("auth…"),
+            "label must contract one cell before the status gap, got {line:?}"
+        );
+        assert!(
+            !line.contains("auth.…"),
+            "label budget must not keep the extra cell source leaves for the status gap, got {line:?}"
+        );
+        assert!(
+            line.contains("modified"),
+            "status must survive label contraction, got {line:?}"
+        );
+    }
+
+    #[test]
+    fn narrow_badge_cell_clips_only_at_grapheme_boundaries() {
+        let mut row = ListRow::item("wide-badge", Line::from("x"));
+        row.badge = Some(Line::from("🧪Z"));
         let rows = [row];
         let tokens = DesignSystem::default();
         let mut state = ListState::new(None);
-        // Gutter 2 + content 3: badge "🧪Z" (3 cells) fits; grapheme-safe clip drops Z if tighter.
+        // Gutter 3 + content 2: badge "🧪Z" (3 cells) may drop; grapheme-safe clip never splits.
         let area = Rect::new(0, 0, 5, 1);
         let mut buffer = Buffer::empty(area);
 
@@ -1884,7 +1977,7 @@ mod tests {
         let rows = [row];
         let tokens = DesignSystem::default();
         let mut state = ListState::new(None);
-        // Gutter 2 + content 4: optional chrome must drop before primary.
+        // Gutter 3 + content 3: optional chrome must drop before primary.
         let area = Rect::new(0, 0, 6, 1);
         let mut buffer = Buffer::empty(area);
         (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
@@ -1933,14 +2026,21 @@ mod tests {
         let area = Rect::new(0, 0, 20, 4);
         let mut buffer = Buffer::empty(area);
         (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
-        // Unicode check glyph (or ASCII "[x]") in the multi-select slot after gutter.
-        let check = buffer[(2, 2)].symbol();
+        // List multi-select is a single-cell `✓` at col 1, never `[✓]` (Checkbox).
+        let row: String = (0..area.width)
+            .map(|x| buffer[(x, 2)].symbol().to_string())
+            .collect();
+        assert_eq!(buffer[(1, 2)].symbol(), "✓", "got {row:?}");
         assert!(
-            check == "☑" || check == "[" || check == "x",
-            "expected check chrome, got {check:?}"
+            !row.contains("[✓]") && !row.contains("[ ]"),
+            "checkbox brackets leaked into the list: {row:?}"
+        );
+        assert!(
+            !row.contains('☑') && !row.contains('☐'),
+            "legacy checkbox glyph leaked: {row:?}"
         );
         assert_eq!(
-            state.click(Position::new(2, 3)),
+            state.click(Position::new(1, 3)),
             Outcome::CheckToggled("second")
         );
         assert_eq!(state.selection().unwrap().checked(), ["first", "second"]);
@@ -1950,7 +2050,7 @@ mod tests {
         state.disable_multi_select();
         assert_eq!(
             state.handle_key(&rows, KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE)),
-            Outcome::Ignored
+            Outcome::Activated("second")
         );
     }
 
@@ -2013,45 +2113,28 @@ mod tests {
         let mut buffer = Buffer::empty(area);
         let list = List::new(&rows, &tokens).empty_message(Line::from("No items"));
         (&list).render(area, &mut buffer, &mut state);
-        assert_eq!(buffer[(0, 0)].symbol(), "N");
+        assert_eq!(buffer[(6, 1)].symbol(), "N");
         assert!(state.regions().is_empty());
     }
 
     #[test]
-    fn loading_row_uses_recipe_loading_glyph() {
-        let row = ListRow::item("job", Line::from("Build")).loading();
-        let rows = [row];
-        let tokens = DesignSystem::default();
-        let mut state = ListState::new(None);
-        let area = Rect::new(0, 0, 24, 1);
-        let mut buffer = Buffer::empty(area);
-        (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
-        let text: String = (0..24)
-            .map(|x| buffer[(x, 0)].symbol().to_string())
-            .collect();
-        let loading = Glyph::Loading.resolve(tokens.glyphs).text;
-        assert!(text.contains(loading), "loading glyph present: {text:?}");
-        assert!(text.contains("Build"), "{text:?}");
-    }
-
-    #[test]
-    fn fluent_row_builder_and_from_system() {
+    fn fluent_row_builder_and_canonical_constructor() {
         let row = ListRow::item("x", Line::from("X"))
             .leading(Line::from("*"))
             .secondary(Line::from("s"))
             .badge(Line::from("b"))
             .shortcut("⌘K");
         let rows = [row];
-        let system = DesignSystem::phosphor();
+        let system = DesignSystem::junie();
         let mut state = ListState::new(Some("x"));
         let area = Rect::new(0, 0, 40, 1);
         let mut buffer = Buffer::empty(area);
-        (&List::from_system(&rows, &system)).render(area, &mut buffer, &mut state);
+        (&List::new(&rows, &system)).render(area, &mut buffer, &mut state);
         let text: String = (0..40)
             .map(|x| buffer[(x, 0)].symbol().to_string())
             .collect();
         assert!(text.contains('X'), "{text:?}");
-        assert_eq!(buffer[(0, 0)].symbol(), "▌");
+        assert_eq!(buffer[(0, 0)].symbol(), "\u{258e}");
     }
 
     #[test]
@@ -2067,28 +2150,6 @@ mod tests {
         assert_eq!(state.regions().len(), 20);
         assert!(state.offset() <= 9_500);
         assert!(state.offset() + 20 > 9_500);
-    }
-
-    #[test]
-    fn ascii_gutter_and_check_glyphs() {
-        let rows = [ListRow::item("a", Line::from("A"))];
-        let tokens = DesignSystem::default()
-            .glyphs(crate::style::GlyphSet::Ascii)
-            .selection(crate::style::SelectionChrome::Gutter);
-        let mut state = ListState::new(Some("a"));
-        state.enable_multi_select();
-        state.selection_mut().unwrap().toggle(&"a");
-        let area = Rect::new(0, 0, 20, 1);
-        let mut buffer = Buffer::empty(area);
-        (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
-        assert_eq!(
-            buffer[(0, 0)].symbol(),
-            Glyph::SelectionGutter
-                .resolve(crate::style::GlyphSet::Ascii)
-                .text
-        );
-        let check = buffer[(2, 0)].symbol();
-        assert!(check == "[" || check == "x", "ascii check: {check:?}");
     }
 
     #[test]
@@ -2152,26 +2213,6 @@ mod tests {
     }
 
     #[test]
-    fn comfortable_density_paints_secondary_below() {
-        let rows = [ListRow::item("a", Line::from("Title")).secondary(Line::from("meta"))];
-        let tokens = DesignSystem::default();
-        let mut state = ListState::new(Some("a"));
-        let area = Rect::new(0, 0, 24, 3);
-        let mut buffer = Buffer::empty(area);
-        (&List::new(&rows, &tokens).comfortable()).render(area, &mut buffer, &mut state);
-        let mut painted = String::new();
-        for y in 0..3 {
-            for x in 0..24 {
-                painted.push_str(buffer[(x, y)].symbol());
-            }
-        }
-        assert!(
-            painted.contains("Title") || painted.contains("meta"),
-            "{painted}"
-        );
-    }
-
-    #[test]
     fn status_actions_custom_row_paint() {
         let rows = [
             ListRow::item("a", Line::from("Job"))
@@ -2198,6 +2239,34 @@ mod tests {
     }
 
     #[test]
+    fn status_and_badge_are_independent_and_status_survives_badge_contraction() {
+        let rows = [ListRow::item("job", Line::from("Job"))
+            .status(Line::from("! run"))
+            .badge(Line::from("1234ms"))];
+        let tokens = DesignSystem::default();
+
+        let mut full_state = ListState::new(Some("job"));
+        let full_area = Rect::new(0, 0, 32, 1);
+        let mut full = Buffer::empty(full_area);
+        (&List::new(&rows, &tokens)).render(full_area, &mut full, &mut full_state);
+        let full_text: String = (0..full_area.width)
+            .map(|x| full[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(full_text.contains("! run"), "{full_text:?}");
+        assert!(full_text.contains("1234ms"), "{full_text:?}");
+
+        let mut narrow_state = ListState::new(Some("job"));
+        let narrow_area = Rect::new(0, 0, 16, 1);
+        let mut narrow = Buffer::empty(narrow_area);
+        (&List::new(&rows, &tokens)).render(narrow_area, &mut narrow, &mut narrow_state);
+        let narrow_text: String = (0..narrow_area.width)
+            .map(|x| narrow[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(narrow_text.contains("! run"), "{narrow_text:?}");
+        assert!(!narrow_text.contains("1234ms"), "{narrow_text:?}");
+    }
+
+    #[test]
     fn virtual_window_reconcile() {
         let rows = [
             ListRow::item("50", Line::from("fifty")),
@@ -2206,8 +2275,14 @@ mod tests {
         let mut state = ListState::new(Some("50"));
         state.set_virtual_window(50, 200);
         state.reconcile_collection(&rows);
+        let area = Rect::new(0, 0, 20, 2);
+        let tokens = DesignSystem::default();
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
         assert_eq!(state.virtual_total(), 200);
         assert_eq!(state.collection().offset(), 50);
+        assert_eq!(state.paint_skip(), 0, "virtual window is already the slice");
+        assert_eq!(state.collection().total_len(), 200);
     }
 
     #[test]
@@ -2232,5 +2307,144 @@ mod tests {
         state.sync_scroll_area(&mut scroll, rows.len(), 2);
         assert_eq!(scroll.viewport_h(), 2);
         assert_eq!(scroll.content_h(), 3);
+    }
+
+    #[test]
+    fn overflowing_list_uses_overflow_thumb() {
+        let rows: Vec<ListRow<'_, usize>> = (0..24)
+            .map(|i| ListRow::item(i, Line::from(format!("row-{i:02}"))))
+            .collect();
+        let system = DesignSystem::default();
+        let mut state = ListState::new(Some(0));
+        let area = Rect::new(0, 0, 20, 8);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &system)).render(area, &mut buffer, &mut state);
+        let thumb = crate::scroll::ScrollbarStyle::Line.vertical_thumb();
+        let track = crate::scroll::SCROLLBAR_TRACK;
+        let x = area.right().saturating_sub(1);
+        let viewport = usize::from(area.height);
+        let (start, len) = crate::scroll::overflow_thumb(24, viewport, viewport, 0)
+            .expect("24 rows overflow an 8-row viewport");
+        let thumbs: Vec<u16> = (0..area.height)
+            .filter(|y| buffer[(x, *y)].symbol() == thumb)
+            .collect();
+        assert_eq!(thumbs.len(), len);
+        assert_eq!(thumbs[0], start as u16);
+        assert_eq!(buffer[(x, len as u16)].symbol(), track);
+        let mut fitting = Buffer::empty(area);
+        let short = &rows[..8];
+        let mut fit_state = ListState::new(Some(0));
+        (&List::new(short, &system)).render(area, &mut fitting, &mut fit_state);
+        assert!(
+            (0..area.height)
+                .all(|y| fitting[(x, y)].symbol() != thumb && fitting[(x, y)].symbol() != track),
+            "a fitting list must not paint a gutter thumb"
+        );
+    }
+
+    #[test]
+    fn single_select_focused_chosen_row_paints_junie_anatomy() {
+        let rows = [ListRow::item("a", Line::from("Alpha"))];
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let mut state = ListState::new(Some("a"));
+        let area = Rect::new(0, 0, 20, 1);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &system)).render(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(0, 0)].symbol(), "▎");
+        assert_eq!(buffer[(0, 0)].fg, theme.focus);
+        assert_eq!(buffer[(1, 0)].symbol(), "›");
+        assert_eq!(buffer[(1, 0)].fg, theme.accent);
+        assert_eq!(buffer[(2, 0)].symbol(), " ");
+        assert_eq!(buffer[(3, 0)].symbol(), "A");
+        assert_ne!(buffer[(3, 0)].fg, theme.accent);
+    }
+
+    #[test]
+    fn unfocused_selected_row_hides_the_bar_and_marks_in_secondary() {
+        let rows = [ListRow::item("a", Line::from("Alpha"))];
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let mut state = ListState::new(Some("a"));
+        let area = Rect::new(0, 0, 20, 1);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &system).focused(false)).render(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(0, 0)].symbol(), "▎");
+        assert_eq!(buffer[(0, 0)].fg, buffer[(0, 0)].bg);
+        assert_eq!(buffer[(1, 0)].symbol(), "›");
+        assert_eq!(buffer[(1, 0)].fg, theme.text_secondary);
+        assert_ne!(buffer[(3, 0)].bg, theme.accent_bg);
+        assert_ne!(buffer[(3, 0)].fg, theme.accent);
+    }
+
+    #[test]
+    fn selected_focused_row_tints_accent_bg() {
+        let rows = [ListRow::item("a", Line::from("Alpha"))];
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let mut state = ListState::new(Some("a"));
+        let area = Rect::new(0, 0, 20, 1);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &system)).render(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(3, 0)].bg, theme.accent_bg);
+    }
+
+    #[test]
+    fn multi_select_paints_check_in_marker_slot() {
+        let rows = [
+            ListRow::item("a", Line::from("Alpha")),
+            ListRow::item("b", Line::from("Beta")),
+        ];
+        let system = DesignSystem::junie();
+        let mut state = ListState::new(Some("a"));
+        state.set_selection_mode(ListSelectionMode::Multi);
+        assert!(state.selection_mut().unwrap().toggle(&"a"));
+        let area = Rect::new(0, 0, 20, 2);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &system)).render(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(1, 0)].symbol(), "✓");
+        assert_eq!(buffer[(1, 1)].symbol(), " ");
+        assert_eq!(buffer[(3, 0)].symbol(), "A");
+        let row: String = (0..20)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(!row.contains("[✓]"), "checkbox brackets leaked: {row:?}");
+    }
+
+    #[test]
+    fn disabled_row_is_faint_with_no_hover_and_no_visible_bar() {
+        let rows = [
+            ListRow::item("a", Line::from("Able")),
+            ListRow::item("b", Line::from("Nope")).disabled(),
+        ];
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let mut state = ListState::new(Some("a"));
+        let _ = state.hover(Position::new(0, 1));
+        let area = Rect::new(0, 0, 20, 2);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &system)).render(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(3, 1)].symbol(), "N");
+        assert_eq!(buffer[(3, 1)].fg, theme.disabled);
+        assert_eq!(buffer[(3, 1)].fg, theme.text_faint);
+        assert_eq!(buffer[(0, 1)].symbol(), "▎");
+        assert_eq!(buffer[(0, 1)].fg, buffer[(0, 1)].bg);
+        assert_ne!(buffer[(3, 1)].bg, theme.lift(theme.surface));
+        assert_eq!(buffer[(1, 1)].symbol(), " ");
+    }
+
+    #[test]
+    fn empty_list_centers_muted_default_message() {
+        let rows: [ListRow<'_, &str>; 0] = [];
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let mut state = ListState::<&str>::default();
+        let area = Rect::new(0, 0, 20, 5);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &system)).render(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(2, 2)].symbol(), "N");
+        assert_eq!(buffer[(17, 2)].symbol(), "t");
+        assert_eq!(buffer[(2, 2)].fg, theme.text_muted);
+        assert_eq!(buffer[(0, 0)].symbol(), " ");
     }
 }

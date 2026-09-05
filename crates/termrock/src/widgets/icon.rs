@@ -8,7 +8,6 @@
 //! (always available) so Studio, help, and no-color profiles stay legible.
 //!
 //! Resolves through [`DesignSystem::glyphs`] (`Unicode` / `Ascii` / `Enhanced`).
-
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::style::{DesignSystem, Glyph, GlyphResolved, Role};
@@ -199,7 +198,6 @@ impl Widget for Icon<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::style::GlyphSet;
 
     #[test]
     fn meaning_always_present() {
@@ -214,13 +212,6 @@ mod tests {
         let system = DesignSystem::default();
         let icon = Icon::new(Glyph::Error, &system).label("failed");
         assert!(icon.plain().contains("failed"));
-    }
-
-    #[test]
-    fn ascii_profile_resolves() {
-        let system = DesignSystem::default().glyphs(GlyphSet::Ascii);
-        let icon = Icon::new(Glyph::DisclosureClosed, &system);
-        assert_eq!(icon.resolved().text, ">");
     }
 
     #[test]

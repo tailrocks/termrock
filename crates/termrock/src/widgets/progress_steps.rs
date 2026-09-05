@@ -20,7 +20,6 @@
 //! live run progress.
 //!
 //! Research: CI pipelines, installers, agent task plans.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -37,7 +36,7 @@ use crate::{
         NavigationMove, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
         default_list_intent,
     },
-    style::{DesignSystem, Role},
+    style::{DesignSystem, Glyph, Role},
     text::{display_cols, take_display_cols},
     widgets::{Hint, HintBar},
 };
@@ -116,45 +115,26 @@ impl ProgressStepStatus {
         }
     }
 
-    /// Non-color mark.
+    /// Non-color mark. One junie vocabulary; no ASCII profile.
+    ///
+    /// Progress marks, not checkbox wells: `[✓]` / `[ ]` belong to Checkbox.
     #[must_use]
-    pub const fn mark(self, ascii: bool) -> &'static str {
-        match (self, ascii) {
-            (Self::Queued, true) => "[ ]",
-            (Self::Queued, false) => "[ ]",
-            (Self::Running, true) => "[>]",
-            (Self::Running, false) => "[›]",
-            (Self::Waiting, true) => "[.]",
-            (Self::Waiting, false) => "[…]",
-            (Self::Complete, true) => "[x]",
-            (Self::Complete, false) => "[✓]",
-            (Self::Skipped, true) => "[-]",
-            (Self::Skipped, false) => "[–]",
-            (Self::Warning, true) => "[~]",
-            (Self::Warning, false) => "[⚠]",
-            (Self::Failed, true) => "[!]",
-            (Self::Failed, false) => "[✗]",
-            (Self::Retrying, true) => "[r]",
-            (Self::Retrying, false) => "[↻]",
-            (Self::Cancelled, true) => "[#]",
-            (Self::Cancelled, false) => "[⊘]",
-        }
-    }
-
-    /// Paint role.
-    #[must_use]
-    pub const fn role(self) -> Role {
+    pub const fn mark(self) -> &'static str {
         match self {
-            Self::Queued | Self::Skipped | Self::Cancelled => Role::TextMuted,
-            // Running is live information, not the brand (plans/007).
-            Self::Running | Self::Retrying => Role::InfoDim,
-            Self::Waiting => Role::Warning,
-            Self::Complete => Role::Success,
-            Self::Warning => Role::Warning,
-            Self::Failed => Role::Danger,
+            Self::Queued => " ",
+            Self::Running | Self::Retrying => Glyph::SelectionMarker.resolve().text,
+            Self::Waiting => Glyph::Ellipsis.resolve().text,
+            Self::Complete => Glyph::Success.resolve().text,
+            Self::Skipped | Self::Cancelled => Glyph::Remove.resolve().text,
+            Self::Warning | Self::Failed => Glyph::Error.resolve().text,
         }
     }
 
+    /// Shared lifecycle projection for recipe-owned status paint.
+    #[must_use]
+    pub const fn semantic(self) -> super::SemanticStatus {
+        super::SemanticStatus::from_progress_step_status(self)
+    }
     /// Active work (not terminal).
     #[must_use]
     pub const fn is_active(self) -> bool {
@@ -383,7 +363,6 @@ pub struct ProgressStepsState {
     focused: bool,
     accepts_input: bool,
     enabled: bool,
-    ascii: bool,
     /// Show footer hint when interactive.
     show_hint: bool,
 }
@@ -406,7 +385,6 @@ impl ProgressStepsState {
             focused: false,
             accepts_input: true,
             enabled: true,
-            ascii: false,
             show_hint: true,
         }
     }
@@ -444,11 +422,11 @@ impl ProgressStepsState {
         self.presentation = p;
     }
 
-    /// ASCII marks.
-    pub fn set_ascii(&mut self, on: bool) {
-        self.ascii = on;
+    fn can_interact(&self) -> bool {
+        matches!(self.mode, ProgressStepsMode::Interactive) && self.enabled && self.accepts_input
     }
 
+    /// ASCII marks.
     /// Cursor.
     #[must_use]
     pub fn cursor(&self) -> Option<&str> {
@@ -526,18 +504,13 @@ impl ProgressStepsState {
 
     /// Keyboard (interactive only).
     pub fn handle_key(&mut self, steps: &[ProgressStep], key: KeyEvent) -> ProgressStepsOutcome {
-        if !matches!(self.mode, ProgressStepsMode::Interactive)
-            || !self.enabled
-            || !self.accepts_input
-            || !self.focused
-        {
+        if !self.can_interact() || !self.focused {
             return ProgressStepsOutcome::Ignored;
         }
-        if key.kind == KeyEventKind::Release || steps.is_empty() {
+        if key.is_release() || steps.is_empty() {
             return ProgressStepsOutcome::Ignored;
         }
-        let press = matches!(key.kind, KeyEventKind::Press | KeyEventKind::Repeat);
-        if !press {
+        if !key.is_insert() {
             return ProgressStepsOutcome::Ignored;
         }
 
@@ -603,10 +576,7 @@ impl ProgressStepsState {
         steps: &[ProgressStep],
         intent: UiIntent,
     ) -> ProgressStepsOutcome {
-        if !matches!(self.mode, ProgressStepsMode::Interactive)
-            || !self.focused
-            || !self.accepts_input
-        {
+        if !self.can_interact() || !self.focused {
             return ProgressStepsOutcome::Ignored;
         }
         match intent {
@@ -635,8 +605,7 @@ impl ProgressStepsState {
         list_area: Rect,
         row_height: u16,
     ) -> ProgressStepsOutcome {
-        if !matches!(self.mode, ProgressStepsMode::Interactive)
-            || !self.enabled
+        if !self.can_interact()
             || event.kind != MouseEventKind::Down(MouseButton::Left)
             || list_area.is_empty()
         {
@@ -665,7 +634,6 @@ impl ProgressStepsState {
 pub struct ProgressSteps<'a> {
     steps: &'a [ProgressStep],
     system: &'a DesignSystem,
-    ascii: bool,
     title: Option<&'a str>,
 }
 
@@ -676,7 +644,6 @@ impl<'a> ProgressSteps<'a> {
         Self {
             steps,
             system,
-            ascii: false,
             title: None,
         }
     }
@@ -690,13 +657,7 @@ impl<'a> ProgressSteps<'a> {
 
     /// ASCII marks.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Resolve presentation.
-    #[must_use]
     pub fn presentation(
         &self,
         state: &ProgressStepsState,
@@ -712,7 +673,6 @@ impl<'a> ProgressSteps<'a> {
         if area.is_empty() {
             return;
         }
-        let ascii = self.ascii || state.ascii;
         let pres = self.presentation(state, area.width);
 
         if matches!(pres, ProgressStepsPresentation::Summary) {
@@ -774,7 +734,7 @@ impl<'a> ProgressSteps<'a> {
             let selected = state.cursor.as_ref() == Some(&step.id)
                 && matches!(state.mode, ProgressStepsMode::Interactive)
                 && state.focused;
-            let mark = step.status.mark(ascii);
+            let mark = step.status.mark();
             let dur = step.duration_ms.map(format_duration_ms).unwrap_or_default();
             let verb = step.effective_verb();
             let line = if expanded {
@@ -789,11 +749,11 @@ impl<'a> ProgressSteps<'a> {
             // A selected step keeps its status tone; selection is a wash.
             let style = if selected {
                 self.system
-                    .style(step.status.role())
+                    .style(step.status.semantic().role())
                     .patch(self.system.style(Role::SelectionTint))
                     .add_modifier(Modifier::BOLD)
             } else {
-                self.system.style(step.status.role())
+                self.system.style(step.status.semantic().role())
             };
             buffer.set_stringn(
                 area.x,
@@ -822,7 +782,7 @@ impl<'a> ProgressSteps<'a> {
                         ProgressStepStatus::Failed | ProgressStepStatus::Cancelled
                     )
                 {
-                    let retry = if ascii { " [r] retry" } else { " ↻ retry" };
+                    let retry = { " ↻ retry" };
                     detail = format!("{detail}{retry}");
                 }
                 if !detail.is_empty() {
@@ -948,13 +908,20 @@ pub fn progress_steps_as_list_rows(steps: &[ProgressStep]) -> Vec<ListRow<'stati
     steps
         .iter()
         .map(|s| {
-            let label = format!("{} {}", s.status.mark(false), s.title);
-            let mut row = ListRow::item(s.id.clone(), ratatui_core::text::Line::from(label));
+            let mut row = ListRow::item(
+                s.id.clone(),
+                ratatui_core::text::Line::from(s.title.clone()),
+            );
+            row.status = Some(ratatui_core::text::Line::from(format!(
+                "| {} {}",
+                s.status.semantic().glyph_unicode(),
+                s.status.default_verb()
+            )));
             if let Some(d) = &s.detail {
                 row.secondary = Some(ratatui_core::text::Line::from(d.clone()));
             }
             if let Some(ms) = s.duration_ms {
-                row.trailing = Some(ratatui_core::text::Line::from(format_duration_ms(ms)));
+                row.badge = Some(ratatui_core::text::Line::from(format_duration_ms(ms)));
             }
             row.enabled = !matches!(s.status, ProgressStepStatus::Cancelled);
             row
@@ -1027,10 +994,34 @@ mod tests {
             ProgressStepStatus::Retrying,
             ProgressStepStatus::Cancelled,
         ] {
-            assert!(!s.mark(true).is_empty());
-            assert!(!s.mark(false).is_empty());
+            assert!(!s.mark().is_empty());
             assert!(!s.id().is_empty());
+            assert!(
+                !s.mark().contains('['),
+                "progress marks are glyph catalog, not checkbox wells: {:?}",
+                s.mark()
+            );
         }
+        assert_eq!(
+            ProgressStepStatus::Complete.mark(),
+            Glyph::Success.resolve().text
+        );
+        assert_eq!(
+            ProgressStepStatus::Running.mark(),
+            Glyph::SelectionMarker.resolve().text
+        );
+        assert_eq!(
+            ProgressStepStatus::Failed.mark(),
+            Glyph::Error.resolve().text
+        );
+        assert_eq!(
+            ProgressStepStatus::Skipped.mark(),
+            Glyph::Remove.resolve().text
+        );
+        assert_eq!(
+            ProgressStepStatus::Waiting.mark(),
+            Glyph::Ellipsis.resolve().text
+        );
     }
 
     #[test]
@@ -1084,6 +1075,74 @@ mod tests {
             state.handle_key(&steps, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
             ProgressStepsOutcome::Blurred
         ));
+    }
+
+    #[test]
+    fn disabled_state_ignores_key_intent_and_mouse() {
+        let steps = example_build_pipeline();
+        let mut state = ProgressStepsState::interactive();
+        state.set_cursor(Some("compile".into()));
+        state.enabled = false;
+
+        assert_eq!(
+            state.handle_key(&steps, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
+            ProgressStepsOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_intent(&steps, UiIntent::Move(NavigationMove::Next)),
+            ProgressStepsOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_intent(&steps, UiIntent::Activate),
+            ProgressStepsOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_intent(&steps, UiIntent::Cancel),
+            ProgressStepsOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_mouse(
+                &steps,
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(0, 1),
+                    modifiers: KeyModifiers::NONE,
+                },
+                Rect::new(0, 0, 20, 4),
+                1,
+            ),
+            ProgressStepsOutcome::Ignored
+        );
+        assert_eq!(state.cursor(), Some("compile"));
+        assert!(state.focused);
+    }
+
+    #[test]
+    fn accepts_input_false_ignores_mouse_and_intent() {
+        let steps = example_build_pipeline();
+        let mut state = ProgressStepsState::interactive();
+        state.set_cursor(Some("compile".into()));
+        state.accepts_input = false;
+
+        assert_eq!(
+            state.handle_mouse(
+                &steps,
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(0, 1),
+                    modifiers: KeyModifiers::NONE,
+                },
+                Rect::new(0, 0, 20, 4),
+                1,
+            ),
+            ProgressStepsOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_intent(&steps, UiIntent::Cancel),
+            ProgressStepsOutcome::Ignored
+        );
+        assert_eq!(state.cursor(), Some("compile"));
+        assert!(state.focused);
     }
 
     #[test]
@@ -1265,27 +1324,5 @@ mod tests {
                 .collect::<String>()
         };
         assert_eq!(paint(), paint());
-    }
-
-    #[test]
-    fn ascii_marks() {
-        let system = DesignSystem::default();
-        let steps = example_agent_plan_steps();
-        let mut state = ProgressStepsState::new();
-        state.set_ascii(true);
-        let area = Rect::new(0, 0, 40, 10);
-        let mut buf = Buffer::empty(area);
-        ProgressSteps::new(&steps, &system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
-        let text: String = buf
-            .content()
-            .iter()
-            .map(|c| c.symbol().to_string())
-            .collect();
-        assert!(
-            text.contains("[!]") || text.contains("[x]") || text.contains("Build"),
-            "{text}"
-        );
     }
 }

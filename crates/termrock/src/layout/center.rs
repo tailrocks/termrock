@@ -14,8 +14,7 @@
 //! - Never underflows: sizes use saturating arithmetic; child is always
 //!   contained in `area` (may be zero-sized when outer is empty).
 //! - Tiny terminals: preferred size is clamped to available space after margins.
-//! - Optional one-cell safe margin (legacy [`crate::layout::centered_rect`]).
-
+//! - Optional one-cell safe margin through [`Center::dialog`].
 use ratatui_core::layout::Rect;
 
 /// Which axes to center on.
@@ -64,8 +63,7 @@ pub struct CenterSpec {
     pub margin_x: u16,
     /// Outer vertical margin.
     pub margin_y: u16,
-    /// When true, force at least one cell margin per side if outer ≥ preferred+2
-    /// (matches historical `centered_rect` dialog chrome room).
+    /// When true, force at least one cell margin per side if outer ≥ preferred+2.
     pub safe_margin: bool,
 }
 
@@ -472,13 +470,6 @@ pub fn layout_center(area: Rect, spec: &CenterSpec) -> CenterLayout {
     }
 }
 
-/// Center a fixed-size block (legacy API). Equivalent to
-/// `Center::dialog(width, height).layout(area).child` with safe margin.
-#[must_use]
-pub fn centered_rect(width: u16, height: u16, area: Rect) -> Rect {
-    Center::dialog(width, height).layout(area).child
-}
-
 /// A modal sized as a share of the terminal it opens in.
 ///
 /// The minimums are *preferences*, not floors. A terminal narrower than the
@@ -668,7 +659,7 @@ mod tests {
     }
 
     #[test]
-    fn dialog_safe_margin_matches_legacy() {
+    fn dialog_safe_margin_matches_expected_geometry() {
         let outer = Rect::new(7, 11, 20, 10);
         let legacy = {
             let w = 8u16.min(outer.width.saturating_sub(2));
@@ -680,8 +671,9 @@ mod tests {
                 height: h,
             }
         };
-        assert_eq!(centered_rect(8, 4, outer), legacy);
-        assert_eq!(centered_rect(8, 4, outer), Rect::new(13, 14, 8, 4));
+        let child = Center::dialog(8, 4).layout(outer).child;
+        assert_eq!(child, legacy);
+        assert_eq!(child, Rect::new(13, 14, 8, 4));
     }
 
     #[test]
@@ -814,7 +806,7 @@ mod tests {
         for &(ow, oh) in &screens {
             for &(pw, ph) in &prefs {
                 let outer = Rect::new(0, 0, ow, oh);
-                let child = centered_rect(pw, ph, outer);
+                let child = Center::dialog(pw, ph).layout(outer).child;
                 assert!(child_inside(outer, child));
                 let fail = Center::failure(pw, ph).layout(outer).child;
                 assert!(child_inside(outer, fail));

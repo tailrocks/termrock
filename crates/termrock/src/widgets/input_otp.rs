@@ -11,12 +11,11 @@
 //! multiline field.
 //!
 //! Research: shadcn Input OTP, CLI pin prompts, 2FA terminal flows.
-
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
-    style::{DesignSystem, Role},
+    input::{KeyCode, KeyEvent, KeyModifiers},
+    style::{ControlState, DesignSystem},
     text::take_display_cols,
 };
 
@@ -240,8 +239,7 @@ impl InputOtpState {
 
     /// Keys.
     pub fn handle_key(&mut self, key: KeyEvent) -> InputOtpOutcome {
-        if !self.enabled || !self.accepts_input || !self.focused || key.kind != KeyEventKind::Press
-        {
+        if !self.enabled || !self.accepts_input || !self.focused || !key.is_press() {
             return InputOtpOutcome::Ignored;
         }
         match key.code {
@@ -334,7 +332,6 @@ impl InputOtpState {
 #[derive(Debug, Clone, Copy)]
 pub struct InputOtp<'a> {
     system: &'a DesignSystem,
-    ascii: bool,
     label: Option<&'a str>,
 }
 
@@ -344,20 +341,13 @@ impl<'a> InputOtp<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             system,
-            ascii: false,
             label: None,
         }
     }
 
     /// ASCII box glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Optional label row.
-    #[must_use]
     pub const fn label(mut self, l: &'a str) -> Self {
         self.label = Some(l);
         self
@@ -366,8 +356,8 @@ impl<'a> InputOtp<'a> {
     /// Preferred width for `n` slots.
     #[must_use]
     pub fn preferred_width(n: usize) -> u16 {
-        // each slot: [X] + gap = 4, last no gap
-        (n as u16).saturating_mul(4).saturating_sub(1).max(3)
+        // Reserved prompt + each slot: [X] + gap = 4, last no gap.
+        (n as u16).saturating_mul(4).max(4)
     }
 
     /// Paint.
@@ -375,6 +365,14 @@ impl<'a> InputOtp<'a> {
         if area.is_empty() {
             return;
         }
+        let control_state = if !state.is_enabled() {
+            ControlState::Disabled
+        } else if state.focused {
+            ControlState::Focused
+        } else {
+            ControlState::Default
+        };
+        let recipe = self.system.input_recipe(control_state, false, false);
         let mut y = area.y;
         if let Some(label) = self.label {
             if area.height >= 2 {
@@ -383,51 +381,42 @@ impl<'a> InputOtp<'a> {
                     y,
                     take_display_cols(label, usize::from(area.width)),
                     usize::from(area.width),
-                    self.system.style(Role::TextMuted),
+                    recipe.value,
                 );
                 y = y.saturating_add(1);
             }
         }
-        let mut x = area.x;
+        let row = Rect::new(area.x, y, area.width, 1.min(area.height));
+        buffer.set_style(row, recipe.fill);
+        if let Some((glyph, style)) = recipe.prompt {
+            buffer.set_stringn(area.x, y, glyph, 1, style);
+        }
+        let mut x = area.x.saturating_add(1);
         let end_x = area.x.saturating_add(area.width);
         for (i, slot) in state.slots.iter().enumerate() {
             if x.saturating_add(3) > end_x {
                 break;
             }
             let ch = match slot {
-                Some(c) if state.masked => '•',
+                Some(_) if state.masked && false => '*',
+                Some(_) if state.masked => '•',
                 Some(c) => *c,
-                None => {
-                    if self.ascii {
-                        '_'
-                    } else {
-                        '·'
-                    }
-                }
+                None => '·',
             };
             // A disabled OTP row was pixel-identical to an editable one: the
             // state existed in the model and never reached paint (plans/021
             // Step 4).
             let disabled = !state.is_enabled();
             let focused_slot = state.focused && i == state.cursor && !disabled;
-            // Slots are fields: they sit in the same sunken well the rest of
-            // the input family uses, so an OTP row reads as somewhere to type
-            // rather than as three loose brackets (plans/008 Step 5).
-            let well = self.system.style(Role::Sunken).bg;
             let mut style = if focused_slot {
-                // The slot under the cursor is one cell: reverse it.
-                self.system
-                    .style(Role::Accent)
-                    .add_modifier(Modifier::REVERSED)
-            } else if disabled {
-                self.system.style(Role::TextDisabled)
+                recipe.cursor
             } else if slot.is_some() {
-                self.system.style(Role::TextStrong)
+                recipe.value.add_modifier(Modifier::BOLD)
             } else {
-                self.system.style(Role::TextMuted)
+                recipe.placeholder
             };
-            if !focused_slot && let Some(bg) = well {
-                style = style.bg(bg);
+            if disabled {
+                style = recipe.value;
             }
             let cell = format!("[{ch}]");
             buffer.set_stringn(x, y, &cell, 3, style);
@@ -539,5 +528,35 @@ mod tests {
         InputOtp::new(&system)
             .label("Code")
             .paint(area, &mut buf, &st);
+    }
+
+    #[test]
+    fn focus_enabled_and_accepts_input_are_independent_key_gates() {
+        let mut state = InputOtpState::new(4);
+        state.set_focused(false);
+        assert_eq!(state.handle_key(press('1')), InputOtpOutcome::Ignored);
+
+        state.set_focused(true);
+        state.set_enabled(false);
+        assert_eq!(state.handle_key(press('1')), InputOtpOutcome::Ignored);
+
+        state.set_enabled(true);
+        state.set_accepts_input(false);
+        assert_eq!(state.handle_key(press('1')), InputOtpOutcome::Ignored);
+        assert_eq!(state.filled(), 0);
+    }
+
+    #[test]
+    fn escape_cancels_only_while_the_otp_owns_input() {
+        let mut state = InputOtpState::new(4);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            InputOtpOutcome::Cancelled
+        );
+        state.set_accepts_input(false);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            InputOtpOutcome::Ignored
+        );
     }
 }

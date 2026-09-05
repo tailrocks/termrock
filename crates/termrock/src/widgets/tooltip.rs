@@ -14,7 +14,6 @@
 //! (skipped under reduced motion).
 //!
 //! Research: Radix Tooltip, desktop tooltips, terminal-adapted hover semantics.
-
 use std::time::Duration;
 use web_time::Instant;
 
@@ -99,13 +98,17 @@ pub fn dismiss_tooltip_overlay<FocusId: Clone>(
 /// Measure overlay size for content (clamped).
 #[must_use]
 pub fn tooltip_overlay_size(content_cols: u16, lines: u16, max_width: u16) -> OverlaySize {
-    let w = content_cols.clamp(1, max_width.max(1)).saturating_add(2); // padding
-    let h = lines.max(1).saturating_add(0);
+    let max_width = max_width.max(TOOLTIP_CHROME_COLS.saturating_add(1));
+    let body_width = content_cols
+        .max(1)
+        .min(max_width.saturating_sub(TOOLTIP_CHROME_COLS));
+    let width = body_width.saturating_add(TOOLTIP_CHROME_COLS);
+    let height = lines.max(1).saturating_add(TOOLTIP_CHROME_ROWS);
     OverlaySize {
-        width: w,
-        height: h.max(1),
-        min_width: 3,
-        min_height: 1,
+        width,
+        height,
+        min_width: TOOLTIP_CHROME_COLS.saturating_add(1),
+        min_height: TOOLTIP_CHROME_ROWS.saturating_add(1),
         max_width,
         max_height: 6,
     }
@@ -251,9 +254,9 @@ impl<'a> TooltipContent<'a> {
                 w = w.saturating_add(display_cols(s) as u16 + 2);
             }
         }
-        // Border and inset on both sides: the caller sizes the whole floating
-        // surface, not just its words.
-        w.saturating_add(TOOLTIP_CHROME_COLS).min(max_width.max(1))
+        // `tooltip_overlay_size` owns chrome. Keeping this as body width avoids
+        // spending border/inset columns twice.
+        w.min(max_width.saturating_sub(TOOLTIP_CHROME_COLS).max(1))
     }
 }
 
@@ -421,7 +424,7 @@ impl TooltipState {
 
     fn effective_delay(&self, motion: MotionPolicy) -> Duration {
         match motion {
-            MotionPolicy::Off | MotionPolicy::Basic => Duration::ZERO,
+            MotionPolicy::Off => Duration::ZERO,
             MotionPolicy::Full => self.delay,
         }
     }
@@ -470,7 +473,7 @@ impl TooltipState {
 
     /// FrameTick-driven advance (canonical).
     ///
-    /// Under [`MotionPolicy::Basic`] / [`MotionPolicy::Off`], show delay is zero.
+    /// Under [`MotionPolicy::Off`], show delay is zero.
     pub fn advance(&mut self, tick: FrameTick, motion: MotionPolicy) -> TooltipOutcome {
         if self.disabled {
             self.force_hide();
@@ -493,7 +496,7 @@ impl TooltipState {
         }
         let _ = self.presence.advance(tick, motion);
         // Reduced motion: if still pending after request, force zero-delay show.
-        if matches!(motion, MotionPolicy::Basic | MotionPolicy::Off) && !self.is_visible() {
+        if matches!(motion, MotionPolicy::Off) && !self.is_visible() {
             self.presence = Presence::tooltip(Duration::ZERO);
             self.presence.request_show(tick);
             self.show_requested = true;
@@ -561,25 +564,11 @@ pub struct Tooltip<'a> {
     content: TooltipContent<'a>,
     system: &'a DesignSystem,
     variant: TooltipVariant,
-    ascii: bool,
     colorless: bool,
     max_width: u16,
 }
 
 impl<'a> Tooltip<'a> {
-    /// Plain body text (legacy constructor).
-    #[must_use]
-    pub const fn new(text: &'a str, system: &'a DesignSystem) -> Self {
-        Self {
-            content: TooltipContent::plain(text),
-            system,
-            variant: TooltipVariant::Plain,
-            ascii: false,
-            colorless: false,
-            max_width: TOOLTIP_DEFAULT_MAX_WIDTH,
-        }
-    }
-
     /// Full content.
     #[must_use]
     pub const fn content(content: TooltipContent<'a>, system: &'a DesignSystem) -> Self {
@@ -587,7 +576,6 @@ impl<'a> Tooltip<'a> {
             content,
             system,
             variant: TooltipVariant::Plain,
-            ascii: false,
             colorless: false,
             max_width: TOOLTIP_DEFAULT_MAX_WIDTH,
         }
@@ -616,13 +604,7 @@ impl<'a> Tooltip<'a> {
 
     /// ASCII border glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless roles.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -671,10 +653,19 @@ impl<'a> Tooltip<'a> {
         // content is unreadable against whatever it lands on. One overlay
         // surface, one quiet outline, one cell of breathing room
         // (plans/009 Step 4).
-        let area = super::Surface::new(self.system)
+        let colorless_system;
+        let surface_system = if self.colorless {
+            colorless_system = self
+                .system
+                .clone()
+                .capability(crate::style::ColorCapability::Monochrome);
+            &colorless_system
+        } else {
+            self.system
+        };
+        let area = super::Surface::new(surface_system)
             .recipe(super::SurfaceRecipe::Overlay)
             .bordered(true)
-            .border_style(self.system.style(Role::Border))
             .content_inset()
             .paint(area, buffer);
         if area.is_empty() {
@@ -740,11 +731,6 @@ impl<'a> Tooltip<'a> {
                 }
             }
         }
-    }
-
-    /// Legacy name for [`Self::paint`].
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &TooltipState) {
-        self.paint(area, buffer, state);
     }
 }
 
@@ -828,7 +814,7 @@ mod tests {
         let mut state = TooltipState::with_delay(Duration::from_millis(500));
         state.set_pointer_over(true);
         let tick = FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO);
-        let _ = state.advance(tick, MotionPolicy::Basic);
+        let _ = state.advance(tick, MotionPolicy::Off);
         assert!(state.is_visible());
     }
 
@@ -891,7 +877,7 @@ mod tests {
         // The floating surface costs a border row above and below.
         let area = Rect::new(0, 0, 24, 3);
         let mut buf = Buffer::empty(area);
-        Tooltip::new("Save file", &system).paint(area, &mut buf, &state);
+        Tooltip::content(TooltipContent::plain("Save file"), &system).paint(area, &mut buf, &state);
         let t: String = buf
             .content()
             .iter()
@@ -925,6 +911,17 @@ mod tests {
             .map(|c| c.symbol().to_string())
             .collect();
         assert!(t3.contains("Save") || t3.contains("Writes"), "{t3}");
+    }
+
+    #[test]
+    fn overlay_size_spends_one_chrome_ring_and_declares_it_minimum() {
+        let system = DesignSystem::default();
+        let tip = Tooltip::content(TooltipContent::plain("Save"), &system);
+        let size = tip.overlay_size();
+        assert_eq!(size.width, 4 + TOOLTIP_CHROME_COLS);
+        assert_eq!(size.height, 1 + TOOLTIP_CHROME_ROWS);
+        assert_eq!(size.min_width, TOOLTIP_CHROME_COLS + 1);
+        assert_eq!(size.min_height, TOOLTIP_CHROME_ROWS + 1);
     }
 
     #[test]
@@ -972,7 +969,7 @@ mod tests {
                 Duration::from_millis(30),
             );
             let motion = if seed % 5 == 0 {
-                MotionPolicy::Basic
+                MotionPolicy::Off
             } else {
                 MotionPolicy::Full
             };
@@ -996,7 +993,6 @@ mod tests {
             &system,
         )
         .rich()
-        .ascii(true)
         .colorless(true)
         .paint(area, &mut buf, &state);
     }

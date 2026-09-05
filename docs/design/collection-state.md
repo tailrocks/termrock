@@ -11,7 +11,7 @@
 |---------|------|
 | `RovingFocusGroup` | **Preserve** — composed inside CollectionState for active cursor |
 | `ListState` paint regions / multi-select / hover | **Preserve**; cursor+offset via CollectionState |
-| `MenuState` | **Migrate** roving → CollectionState |
+| `DropdownMenuState` | **Preserve** — cascade frames compose CollectionState |
 | `RadioState` | **Migrate** → CollectionState (flat, no virt) |
 | `PickerState` | **Reuse** via ListState.collection |
 | Tree hierarchy | **Optional** `parent` on frame items only — not forced |

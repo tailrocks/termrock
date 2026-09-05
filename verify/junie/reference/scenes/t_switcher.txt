@@ -1,0 +1,40 @@
+ ▪  TablePro  Production  ◆ production  acme_prod › public  safe                             truecolor · 120×40  ? help
+
+ ▎≡ Query 1 ×                                                                                                       +
+ ─━━━━━━━━━━━━─────────────────────────────────────────────────────────────────────────────────────────────────────────
+ ╭─ Explorer ─────── public ─╮ ╭─ Query 1 ─────────────────────────────────────────────────────────────────────────  ─╮
+ │                           │ │  ▎   1 Type SQL. Ctrl+R runs the statement under the cursor.                         │
+ │ ▎ Filter objects          │ │                                                                                      │
+ │ ▎▾ D acme_prod            │ │                                                                                      │
+ │ ▎  ▾ S public             │ │                                                                                      │
+ │ ▎    ▾ Tables          7  │ │                                                                                      │
+ │ ▎      ▸ T organizations  │ │                                                                                      │
+ │ ▎      ▸ T customers      │ ▎Open quickly                                                                          │
+ │ ▎      ▸ T products  312  │                                                                                        │
+ │ ▎      ▸ T orders         │  ▎ Filter tables, tabs, queries          All · Tab scope                               │
+ │ ▎      ▸ T order_items    │                                                                                        │
+ │ ▎      ▸ T payments       │                                                                                        │
+ │ ▎      ▸ T subscriptions  │  ▎› change_log                       audit · Production ┃                              │
+ │ ▎    ▸ Views           2  │  ▎  customers                       public · Production ┃                              │
+ │ ▎    ▸ Functions       1  │  ▎  daily_revenue                analytics · Production ┃                              │
+ │ ▎    ▸ Sequences       1  │  ▎  events                       analytics · Production ┃                              │
+ │ ▎  ▸ S analytics          │  ▎  login_attempts                   audit · Production │                              │
+ │ ▎  ▸ S audit              │  ▎  order_items                     public · Production │                              │
+ │                           │  ▎  orders                          public · Production │                              │
+ │                           │  ▎  organizations                   public · Production │                              │
+ │                           │  ▎  payments                        public · Production │                              │
+ │                           │  ▎  products                        public · Production │                              │
+ │                           │  ▎  subscriptions                   public · Production │                              │
+ │                           │  ▎  active_customers                public · Production │   Alt+R runs all             │
+ │                           │                                                                                        │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ ╰───────────────────────────╯ ╰──────────────────────────────────────────────────────────────────────────────────────╯
+
+ Esc Close  Enter Confirm                                                                       Connected to Production

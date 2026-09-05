@@ -1,13 +1,12 @@
 //! Product-neutral dialog shell and body helpers.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{layout::Rect, terminal::Frame, text::Line, widgets::Widget};
 use ratatui_widgets::{clear::Clear, paragraph::Paragraph};
 
 use crate::{
     scroll::{DialogScroll, effective_offset},
-    style::{Density, DesignSystem, Role, RolePalette},
-    widgets::{Panel, PanelChrome},
+    style::{DesignSystem, Role, RolePalette},
+    widgets::{Panel, PanelChrome, PanelVariant},
 };
 
 /// Minimal dialog shell: clear area, paint bordered block, return inner area.
@@ -21,14 +20,14 @@ pub fn render_dialog_shell(
 ) -> Rect {
     Clear.render(area, frame.buffer_mut());
 
-    let mut panel = Panel::new(system).emphasis(emphasis);
+    let mut panel = Panel::new(system)
+        .variant(PanelVariant::Bordered)
+        .emphasis(emphasis);
     if let Some(title) = title {
         panel = panel.title(title);
     }
-    let block = panel.block();
-
-    let inner = block.inner(area);
-    frame.render_widget(block, area);
+    let inner = panel.inner(area);
+    panel.paint(area, frame.buffer_mut(), None);
     inner
 }
 
@@ -66,36 +65,24 @@ pub fn render_scrollable_dialog_body(
 
 #[cfg(test)]
 mod tests {
-    use ratatui_core::{
-        backend::TestBackend,
-        style::{Color, Style},
-        terminal::Terminal,
-    };
+    use ratatui_core::{backend::TestBackend, terminal::Terminal};
 
     use super::*;
 
     #[test]
     fn dialog_shell_uses_caller_theme_for_each_border_mode() {
-        let theme = RolePalette::default()
-            .with_role(Role::Border, Style::new().fg(Color::Blue))
-            .with_role(Role::BorderFocused, Style::new().fg(Color::Green))
-            .with_role(Role::Danger, Style::new().fg(Color::Red));
-
+        let system = DesignSystem::junie();
+        let junie = system.junie_theme();
         for (emphasis, expected) in [
-            (PanelChrome::Normal, Color::Blue),
-            (PanelChrome::Focused, Color::Green),
-            (PanelChrome::Danger, Color::Red),
+            (PanelChrome::Normal, junie.border_subtle),
+            (PanelChrome::Focused, junie.border_strong),
+            (PanelChrome::Danger, junie.error),
         ] {
             let mut terminal = Terminal::new(TestBackend::new(12, 4)).unwrap();
             terminal
                 .draw(|frame| {
-                    let _ = render_dialog_shell(
-                        frame,
-                        frame.area(),
-                        Some("Test"),
-                        emphasis,
-                        &DesignSystem::from_palette(theme.clone()),
-                    );
+                    let _ =
+                        render_dialog_shell(frame, frame.area(), Some("Test"), emphasis, &system);
                 })
                 .unwrap();
             assert_eq!(terminal.backend().buffer()[(0, 0)].fg, expected);

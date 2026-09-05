@@ -30,20 +30,18 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
-    style::{DesignSystem, MotionPolicy, PanelChrome, Role, SPINNER_DOT_PULSE_FRAMES},
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        AccentRail, Card, TerminalCommandMeta, TerminalEnvEntry, TerminalLine, TerminalOutput,
-        TerminalOutputOutcome, TerminalOutputRecipe, TerminalOutputState, TerminalPaintMode,
-        TerminalRunStatus, ToolCall, ToolRisk, ToolStatus, escape_raw_terminal,
-        filter_terminal_lines, format_duration_ms, redact_env_value, redact_tool_secrets,
+        AccentRail, Card, SemanticStatus, StatusIndicator, TerminalCommandMeta, TerminalEnvEntry,
+        TerminalLine, TerminalOutput, TerminalOutputOutcome, TerminalOutputRecipe,
+        TerminalOutputState, TerminalPaintMode, TerminalRunStatus, ToolCall, ToolRisk, ToolStatus,
+        escape_raw_terminal, filter_terminal_lines, format_duration_ms, redact_env_value,
+        redact_tool_secrets,
     },
 };
 
@@ -53,6 +51,33 @@ pub const TERMINAL_RUN_FULLSCREEN_OVERLAY_ID: &str = "termrock.terminal_run";
 pub const TERMINAL_RUN_ENV_CAP: usize = 6;
 /// Compact body lines when not expanded.
 pub const TERMINAL_RUN_COMPACT_BODY_LINES: u16 = 3;
+
+const fn terminal_run_semantic(status: TerminalRunStatus) -> SemanticStatus {
+    match status {
+        TerminalRunStatus::Pending => SemanticStatus::Queued,
+        TerminalRunStatus::WaitingPermission => SemanticStatus::Waiting,
+        TerminalRunStatus::Running | TerminalRunStatus::Detached => SemanticStatus::Running,
+        TerminalRunStatus::Succeeded => SemanticStatus::Success,
+        TerminalRunStatus::Failed | TerminalRunStatus::Signaled | TerminalRunStatus::TimedOut => {
+            SemanticStatus::Failed
+        }
+        TerminalRunStatus::Cancelled => SemanticStatus::Paused,
+    }
+}
+
+const fn terminal_run_verb(status: TerminalRunStatus) -> &'static str {
+    match status {
+        TerminalRunStatus::Pending => "queued",
+        TerminalRunStatus::WaitingPermission => "waiting permission",
+        TerminalRunStatus::Running => "running",
+        TerminalRunStatus::Succeeded => "succeeded",
+        TerminalRunStatus::Failed => "failed",
+        TerminalRunStatus::Signaled => "signaled",
+        TerminalRunStatus::Cancelled => "cancelled",
+        TerminalRunStatus::TimedOut => "timed out",
+        TerminalRunStatus::Detached => "detached",
+    }
+}
 
 // ── Domain ──────────────────────────────────────────────────────────────────
 
@@ -776,7 +801,7 @@ impl TerminalRunCardState {
         run: &TerminalRun,
         lines: &[TerminalLine<'_>],
     ) -> TerminalRunCardOutcome {
-        if !self.accepts_input || !self.focused || key.kind != KeyEventKind::Press {
+        if !self.accepts_input || !self.focused || !key.is_press() {
             return TerminalRunCardOutcome::Ignored;
         }
         match key.code {
@@ -847,7 +872,6 @@ pub struct TerminalRunCard<'a> {
     run: &'a TerminalRun,
     lines: &'a [TerminalLine<'a>],
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
     tick: u64,
 }
@@ -864,7 +888,6 @@ impl<'a> TerminalRunCard<'a> {
             run,
             lines,
             system,
-            ascii: false,
             colorless: false,
             tick: 0,
         }
@@ -872,13 +895,7 @@ impl<'a> TerminalRunCard<'a> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -897,9 +914,7 @@ impl<'a> TerminalRunCard<'a> {
             return;
         }
         let run = self.run;
-        let ascii = self.ascii || state.output.ascii;
         let colorless = self.colorless || state.output.colorless;
-        state.output.ascii = ascii;
         state.output.colorless = colorless;
         state.output.recipe = state.presentation.to_recipe();
         state
@@ -908,44 +923,39 @@ impl<'a> TerminalRunCard<'a> {
 
         let phase = run.phase();
         if matches!(state.presentation, TerminalRunPresentation::Compact) {
-            let running = matches!(run.status, TerminalRunStatus::Running);
-            let marker = if running {
-                if ascii || !matches!(self.system.motion, MotionPolicy::Full) {
-                    if ascii { "." } else { "●" }
-                } else {
-                    SPINNER_DOT_PULSE_FRAMES[self.tick as usize % SPINNER_DOT_PULSE_FRAMES.len()]
-                }
+            let semantic = terminal_run_semantic(run.status);
+            let rail_role = if colorless {
+                Role::TextStrong
             } else {
-                run.status.glyph(ascii || colorless)
+                semantic.role()
             };
+            let inner = AccentRail::new(self.system, rail_role).paint(area, buffer);
+            if inner.is_empty() {
+                return;
+            }
+            let marker = semantic.glyph();
             let line = format!(
-                "{marker} {} ({})",
-                run.display_command(),
-                run.status.label()
+                "{marker} {} · {}",
+                terminal_run_verb(run.status),
+                run.display_command()
             );
             self.system.paint_row(
                 buffer,
-                Rect::new(area.x, area.y, area.width, 1),
+                Rect::new(inner.x, inner.y, inner.width, 1),
                 &line,
-                self.system.style(if colorless {
-                    Role::Text
-                } else {
-                    run.status.role()
-                }),
+                self.system.style(Role::Text),
             );
+            StatusIndicator::compact(semantic, self.system)
+                .colorless(colorless)
+                .paint(Rect::new(inner.x, inner.y, inner.width.min(1), 1), buffer);
             state.header_hit = Rect::new(area.x, area.y, area.width, 1);
             return;
         }
-        let active = matches!(run.status, TerminalRunStatus::Running);
-        let rail = AccentRail::new(self.system, Role::ActorTool)
-            .active(active)
-            .tick(self.tick);
+        let _active = matches!(run.status, TerminalRunStatus::Running);
+        let rail = AccentRail::new(self.system, Role::ActorTool);
         let content_area = rail.paint(area, buffer);
-        let mut title = take_display_cols(run.display_command(), 40);
-        if ascii {
-            title = format!("{} {title}", run.status.glyph(true));
-        }
-        let mut subtitle = format!("{} · {}", phase.badge(), run.status.label());
+        let title = take_display_cols(run.display_command(), 40);
+        let mut subtitle = format!("{} · {}", phase.badge(), terminal_run_verb(run.status));
         if let Some(ms) = run.duration_ms {
             subtitle.push_str(" · ");
             subtitle.push_str(&format_duration_ms(ms));
@@ -973,7 +983,7 @@ impl<'a> TerminalRunCard<'a> {
 
         // Colorless is exactly when the glyph matters most: dropping it left
         // the card with no status cue at all (plans/013 Step 2).
-        let leading = run.status.glyph(ascii);
+        let leading = run.status.glyph(false);
         let badge = phase.badge();
         let card = Card::new(self.system)
             .title(title.as_str())
@@ -1032,7 +1042,7 @@ impl<'a> TerminalRunCard<'a> {
                     buffer,
                     Rect::new(body.x, y, body.width, 1),
                     &line,
-                    self.system.style(Role::Accent),
+                    self.system.style(Role::TextStrong),
                 );
                 y = y.saturating_add(1);
             }
@@ -1060,22 +1070,19 @@ impl<'a> TerminalRunCard<'a> {
             }
         }
         if run.status.needs_permission() && y < max_y {
-            self.system.paint_row(
-                buffer,
-                Rect::new(body.x, y, body.width, 1),
-                "permission required · p",
-                self.system.style(Role::Warning),
-            );
+            StatusIndicator::new(SemanticStatus::Waiting, self.system)
+                .label("permission required · p")
+                .colorless(colorless)
+                .paint(Rect::new(body.x, y, body.width, 1), buffer);
             y = y.saturating_add(1);
         }
         if let Some(e) = &run.egress {
             if y < max_y {
-                self.system.paint_row(
-                    buffer,
-                    Rect::new(body.x, y, body.width, 1),
-                    &format!("egress: {e}"),
-                    self.system.style(Role::Warning),
-                );
+                let warning = format!("warning: egress {e}");
+                StatusIndicator::new(SemanticStatus::Warning, self.system)
+                    .label(&warning)
+                    .colorless(colorless)
+                    .paint(Rect::new(body.x, y, body.width, 1), buffer);
                 y = y.saturating_add(1);
             }
         }
@@ -1105,7 +1112,6 @@ impl<'a> TerminalRunCard<'a> {
         let meta = terminal_run_to_meta(run, &env);
         let view = TerminalOutput::new(&meta, self.lines, self.system)
             .focused(state.focused)
-            .ascii(ascii)
             .colorless(colorless)
             .show_chrome(false); // card owns command chrome; substrate owns stream
         view.render(stream_area, buffer, &mut state.output);
@@ -1186,6 +1192,7 @@ pub mod bench {
 mod tests {
     use super::*;
     use crate::ansi_text::{AnsiParseOptions, parse_to_line};
+    use crate::style::MotionPolicy;
     use ratatui_core::layout::Position;
 
     #[test]
@@ -1342,19 +1349,17 @@ mod tests {
 
     #[test]
     fn reduced_motion_running_presence_is_tick_static() {
-        let system = DesignSystem::default().motion(MotionPolicy::Basic);
+        let system = DesignSystem::default().motion(MotionPolicy::Off);
         let run = TerminalRun::new("r", "cargo test")
             .execute("cargo test")
             .status(TerminalRunStatus::Running);
         let lines = example_terminal_run_lines();
-        let render = |tick| {
+        let render = |_tick| {
             let area = Rect::new(0, 0, 48, 10);
             let mut buffer = Buffer::empty(area);
             let mut state = TerminalRunCardState::new();
             state.presentation = TerminalRunPresentation::Expanded;
-            TerminalRunCard::new(&run, &lines, &system)
-                .tick(tick)
-                .paint(area, &mut buffer, &mut state);
+            TerminalRunCard::new(&run, &lines, &system).paint(area, &mut buffer, &mut state);
             buffer
         };
         assert_eq!(render(0), render(19));

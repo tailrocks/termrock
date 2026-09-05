@@ -125,7 +125,7 @@ A `[Style; 38]` theme can answer “what color is a focused border?” It cannot
 * How does a dialog contract at 50 columns?
 * What is the minimum touch target for mouse interaction?
 * Does the user prefer comfortable, compact or dense layouts?
-* How do Button, MenuItem and Tab each interpret the same semantic accent?
+* How do Button, DropdownMenu and Tab each interpret the same semantic accent?
 
 TermRock needs design tokens and **component recipes**, not only semantic colors.
 
@@ -1158,5 +1158,5 @@ The most important immediate decision is therefore not which widget to add next.
 [23]: https://no-color.org/ "https://no-color.org/"
 [24]: https://sw.kovidgoyal.net/kitty/keyboard-protocol/ "https://sw.kovidgoyal.net/kitty/keyboard-protocol/"
 [25]: https://github.com/charmbracelet/bubbletea/blob/main/README.md?utm_source=chatgpt.com "README.md - charmbracelet/bubbletea"
-[26]: https://raw.githubusercontent.com/tailrocks/termrock/main/docs/api/component-contracts.json "https://raw.githubusercontent.com/tailrocks/termrock/main/docs/api/component-contracts.json"
+[26]: https://raw.githubusercontent.com/tailrocks/termrock/main/docs/api/component-contracts.v2.json "TermRock catalog quality contracts"
 [27]: https://github.com/xai-org/grok-build/tree/main/crates/codegen "https://github.com/xai-org/grok-build/tree/main/crates/codegen"

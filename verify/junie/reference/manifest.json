@@ -1,0 +1,1582 @@
+{
+  "source_repo": "https://github.com/donbeave/terminal-components-claude",
+  "source_ref": "main",
+  "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+  "jackin_sha": "52e54c48deffccf4c73b9b357e81dc184f44634c",
+  "jackin_vs_main": "jackin is an ancestor with 23 scoped differences: workspace metadata, showcase/TablePro/Jackin entrypoints, removed perf/visual-test files, removed baseline tooling, and removed source_f_* shots; shared page/widget implementations otherwise retained",
+  "artifact_set": [
+    "ansi",
+    "cursor",
+    "txt",
+    "html",
+    "png"
+  ],
+  "event_authority": "crates/termrock-catalog/src/scenarios.rs",
+  "event_provenance": {
+    "status": "reconstructed",
+    "source_event_log": false,
+    "source_tests": [
+      "src/bin/showcase/app_tests.rs",
+      "src/bin/tablepro/app_tests.rs"
+    ],
+    "source_capture_tool": "tools/capture.sh",
+    "note": "The source capture tool stored rendered artifacts, not input events. Event arrays are the deterministic replay reconstruction mirroring the source states; the enforced authority is the Rust replay inventory in crates/termrock-catalog/src/scenarios.rs."
+  },
+  "scenes": {
+    "f_80x24_taskrunner": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "events": [
+        "r",
+        "ticks:19"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "81bd66d8366a126d58971b0f96ed2eab3ca592ad6b2209b5992ce8f722470365",
+        "cursor": "9399c2cf664917802faac759de508825b99ed4ec00bc5e426b3c638131445c95",
+        "txt": "6c59df8951980615b3fe9261277e5ba6beef05e36f5fdf6ffb7e10e9449ec958",
+        "html": "c59a67fd7ec8982dd903264e364b3ff2b6a0ba42b3acaf081066a577a5145506",
+        "png": "3455da06bb3edc28ad0c622a1a6548557246a7d23bcd26cbaf016290085a335c"
+      }
+    },
+    "f_buttons_hover": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "Tab",
+        "move 49,7"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "afc0ba17743fe255cee2d3c068506ba8b05eab688d6c0e2c5144471cfc8f8c58",
+        "cursor": "54e518de80db6756af733633b148346ee4c7f558f2409ffca4d94e9186d03e84",
+        "txt": "5479bd0cc82f251ab9041a6baf46abd99d622e0cf459c231560d5ad99e9b5594",
+        "html": "2ccf029d5d0940a3394ad61a33b9d9971b5a26a694f99d3ef9949cb71b2daa7d",
+        "png": "c62611c5143dc837d51016560cb3e2363f8054bf9bd6ec8260e42afc9b82afe9"
+      }
+    },
+    "f_dialog_delete": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "Tab",
+        "Tab",
+        "Tab",
+        "Enter"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "273e2556f5c154a51d0baf6537212639c1893cbf45327a967ab3f1ee21a32ab9",
+        "cursor": "763678dd71f9f5e2469f127428f5cf38312070d9aa70b18be5332bf2847d4244",
+        "txt": "94efeba91d653ce2a0d3687dbfd2ab97dc4251255e6727efe7222c837c2e455d",
+        "html": "0ecdd8e8251fe791588c31ba0e1761ab5f60c2be00daa81c4bc5e278fce1679a",
+        "png": "f72a442119d0394e551db14b73d5be864ac2e8689f52b6d0f428ff070aa6136b"
+      }
+    },
+    "f_forms": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "Tab",
+        "Tab",
+        "Tab"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "6a531c32a4f848c8cca3a74751fec49414b47d35bae9a003af443772861f6f02",
+        "cursor": "c661a7e8bc17264f3ea799f8a366208db8ec583fcd4b8671607e4b9e72ece6dc",
+        "txt": "3ec64f30a92eae6127b99a2538a9ae74e8bf77919f08fd9577b395d8ed9ed60a",
+        "html": "b266b03d9610d0f5926ceb3e64c7c35742d02b16fb070a4987dcc93e14a3df7b",
+        "png": "7a4db970b4f3e3de8248c16b879e52971fa7b2a3232be719afbe7da827a65a66"
+      }
+    },
+    "f_inputs_edit": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "Enter"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "404787b4bc660b3842e32b9445e2c50b33b90bfc983934519e2447a89ef3a1ac",
+        "cursor": "94330f49a6b6e82dee0f137492730a11763d4e2a468ffd4728e82b833367f474",
+        "txt": "17d83885925e18fe3dbed2500c071215855821ee62d1a70b6451b345c9be05fa",
+        "html": "497c3e10356587fc35c15d682400024462a925e8237d3cffa585f1db85554e6b",
+        "png": "8bc88dee2812246c979e3e6edc7ddb46d170e4bfa6a4cac93f6a2140ff9d0bcf"
+      }
+    },
+    "f_lists_hover": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "lists"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "Down",
+        "Down",
+        "move 86,9"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "9322e10289c527e37229b714c8afe9bf26eb588d2c272a389b95a3e98bf875fe",
+        "cursor": "b970a80489ae0e516126a357fa5ba2e4cdfb54cb3f691896ac2a7ef68a82330b",
+        "txt": "ac19632ec42b8996454a951d2d6a9c89e0ea85dfa9bd07646f865c46d000061e",
+        "html": "00ee166677529ceb02b29b906652614f9200527d2b2cef362d21eff0a159a7bc",
+        "png": "dbcdc97349981aba8d9281aa56d0ab296cac1edff127614fa6bd8a990fb038e0"
+      }
+    },
+    "f_overview": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "6d5ed2aa3f5cf68a9d26cd722759de67ab3d0449be61c61ab92eda4a410c3a11",
+        "cursor": "671dbdb5b9e32b612cecba9fc1b8f217c41f5b9b05fd23c34d5325f86509222a",
+        "txt": "41e6d45a52ce6e562b5c18657d5b7a17b2e1346c69a2b5d05e208bbbcdb1986d",
+        "html": "d14997a84a1ef29fefa9f6fb27d7da4492e971b53a6aa588af092d2f0b460c04",
+        "png": "ed2699f11a2dff5a23b52f89fcce1852b094b79681342f65bd5840be2b04c67a"
+      }
+    },
+    "f_panels": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "Tab"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "8a7984648dc56b20ab3cf15605d4ce5b9b0295a3619a003491143cf51b607ff7",
+        "cursor": "1eb4b5738d58334b5c196a944542c791ed36a3c7e0b69899b77e48423512d8df",
+        "txt": "f6a4dc6296f36ebf957e559ef970cbccfbbb70ee0eb0e31413b011dad817b20d",
+        "html": "3bd965dd89aa6f22365f135d5c720a24fafaf6e12cf2a1de40a2529ec3d9f4e4",
+        "png": "2a473d14c39087bfca294af67c7b74eea1b0a31554c9f9187e9832ac47948aea"
+      }
+    },
+    "f_progress": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "ticks:26"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "808d0523e992011cc9e446c3a84d323720164b17fea47beda1d9f50b69f72f71",
+        "cursor": "c6aa3cb7c23a01c6afbb1127cee63494616bfc04ca60346bd825bc2ba2a465f1",
+        "txt": "364ba22e616c644ff1d5392940e826f5e6613b44d3421cc9c73d1212a005cbdf",
+        "html": "780f6009077cf6f6b89a6bc04bdbc37ef0e8a14e3e683ae9a8d16d74c8c2047f",
+        "png": "d58d38ed067282254e0cba5654c123cc945d44aa3ae33f7bc2542f48359c1148"
+      }
+    },
+    "f_scrolling": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "Tab",
+        "Tab",
+        "ticks:17"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "b92ebf462864a8cc2216b69eb32cecdb3b31922adde9232eb7da049175a3da33",
+        "cursor": "cb777799c96ce486eb2dae50979af773728e9200e2490be0068da38e86ff9516",
+        "txt": "18fdeb0cfb1b5302e052af4c1ce0989c5451d598339a3a4ca1a6cf0809f045f3",
+        "html": "190381583a0d795d1fb0e22c44901a773b5a4adc96698167d6e37e690d2ae0c3",
+        "png": "9cc1271ac872a0ba7f899b53583fce61bbdaad70662a2508f14a12fa76ab0897"
+      }
+    },
+    "f_settings_members": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "Right",
+        "Tab",
+        "Down",
+        "Right",
+        "Right",
+        "Enter"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "c4f3801667ba8be7668b8d03c94766d8bc3d886b91204b3831326f5df65bfd78",
+        "cursor": "82c8ee9a719be323f18c339c02f526a08f76071a8c44293535b8920591681977",
+        "txt": "0cac6dd571a1d68e7ff2dd46d8901def9d051ff94343eb8bb5a775983994d10a",
+        "html": "145a54225ae1f1c44e2e83433148068e9d95caa4d46ef5197301def7bc298b6c",
+        "png": "fcd86d6db328291f8d5a4ddcf4c4a39e0b002549b2abcb7f0c50a57e60f3941a"
+      }
+    },
+    "f_sidebars": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "7f9c0246603df58befef38189c5ab516f1b3321cac21454223967d0bdd979831",
+        "cursor": "20a1432784ff5e56243e453fc30429b847943573a3fc7c1a00a7e5e7193064a5",
+        "txt": "ba2f270eb61e5ae38cc23c29e64577e3c2f3c8b77cc4dcb91633569aed9efd90",
+        "html": "2105fea75f3e261a6e30bfb5f0551ebbd23ddad96a227ba631ebf61c2be308ff",
+        "png": "0dd74de503bbbe20e2d0f4cf9f3b8668fa96465aa9539f3d1145adcc81098cd7"
+      }
+    },
+    "f_tables_hover": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "move 117,9"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "ebdfadd9ae08e942bf55ec6dd194d37357b790ca64c154aa90d2e10098b0a4a2",
+        "cursor": "08ad4e246e2fd134873432970e23216dffc19587afa09f5b27b5f15fe53f78f2",
+        "txt": "42354b7f7a507f2454eb4277e8329ecfca6225fb6cf3a97ac33991fe8cafea54",
+        "html": "fe74a731a5f8e3de6a830cfbba7827e5c5c0a0be0a3f961e45c1216fcb61766a",
+        "png": "3e1c97674d9aad0c36a24cd854608da0e74131741e5ec55c407994fd7d24963d"
+      }
+    },
+    "f_taskrunner_running": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "r",
+        "ticks:35"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "ab1f925b03cb0ad4f4f29ee77d664b521d17e3e99a06bb3ac03e8f72c2304c5b",
+        "cursor": "525549c32e08990b8655b253a69c1b6627723275a376e94f94b9a3db074d86a6",
+        "txt": "1289e2be85793bb27ba4ca76ea30c78cf84b247fc0642101ee87ca3a514b1080",
+        "html": "cf7a3b83f7faeec510ede05e008a0d18f0f3273d244bc54b2495572ad5342e67",
+        "png": "088950c299f56238cc5a8a0d51b7d0c298161c71e5da4c6121091a1d42b6a599"
+      }
+    },
+    "s_chips": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "Right"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "1f421e2e7e637c45d788707c9d8ba7847d603d247e1d308c52aea330a5bca398",
+        "cursor": "1fede8cf84ab1556b983da96a9f7bb5aba44d47ec9384e4a46c3df52bf9c754e",
+        "txt": "6b56debbcee4835eb1061bcd76d16b6a425e72f1227058ab0abfdcc3e632a107",
+        "html": "cff873fba730497e73fbbae278201f5d0f897dcd9d818bca27008c556869c4c4",
+        "png": "67bc3013f7c3584144e1d8533721d198faa03affcaa021f6bb0dcfd9be2eea2e"
+      }
+    },
+    "s_chips_80": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "events": [
+        "Tab",
+        "Tab"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "006f959dbd025901abca5e4ee108de3fd60fb594e508d75b85913992bb505c02",
+        "cursor": "ff3ea2cb3e97f85cebc32474fa863fb69f9dd66e90844d6c2a3a6a36528437af",
+        "txt": "1a80ff4bd6049a054d66b21a0ee1624f2f32fe7dc2259ea638dcb0d3d9e931c8",
+        "html": "156b08d215726509cb2a632413c63fbe67bd7c145d8d77db760475f7495a1b24",
+        "png": "8d55807e813e27bbf5e33cc73bf8bdb2f8717f5e1227091a20b88d0d4127a40d"
+      }
+    },
+    "s_chips_select": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "Tab",
+        "Enter"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "65a0c47b8ab36df986018e09a88e93e768d74db88c5c2bdb6a86955f9099d7ec",
+        "cursor": "251ff3d47753e9fd2b6a0a3c8b006f46076c2bd3de46306ebcc81d38ba59da2c",
+        "txt": "033dd1bdc98671c257407fdef35bbeacf692cb07fcef4272229d9665744a60ba",
+        "html": "8208524f0868af5cb2642a76597b94a5678e448dd549caaf11a2b32b4a1fa19f",
+        "png": "eb80d9483336709d92417a93a931cbc09bd5bc00045f880daf8d68d1ca22702d"
+      }
+    },
+    "s_editor": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "87f31400d4440f48beb1db24fe6a4a3daa99b082670dad2280295d0f7c356545",
+        "cursor": "764111a9f994478c4b32393eefd799d398e9515e71e700fa72b5b04339c05c91",
+        "txt": "eeb9a3d36ae82de845b77b21404239e122fc1b8e7e386a88988971e687c85991",
+        "html": "2faefc9bfff2a72d66433b262008a378c566d73fbda665a805aefc2df4be1d5e",
+        "png": "05588ba0b316ba256c2f7608ea0622dc47c4bf2041188f760347d9648b02f0ca"
+      }
+    },
+    "s_editor_80": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "events": [
+        "Tab"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "5087367f27cea5f482212b2369235cc22ec1e0210e19d4c15374504e0ffe3f1b",
+        "cursor": "65e68ef9d167b028c518a6ee3a4ef581b6ee56c535edbf3a07db5f96301eb0f6",
+        "txt": "852218a135705d5e3143a58ae9ebb7eb981e9a6dade7ea0889df95f3b3209d9e",
+        "html": "616412aef0d513f73f136a5806f863b797664e2a96bd27a69fd79ca97c805df1",
+        "png": "a25f53105b2c16ba8d47b4773ef8d3258fbff07bfefe2713d6cad1b43997fb78"
+      }
+    },
+    "s_editor_complete": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "Enter",
+        "Down",
+        "Enter",
+        "Up",
+        "type     cl"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "ab822fafeb63d2c47127b9e1bb3df2c368f4e5a92dedd915c5607fb92993df7b",
+        "cursor": "9387b22a852ebbf762d9845ba5a3c394f0555d00678b898cc0222c1223650cf6",
+        "txt": "8818092910690ee606dc9d2a345e4e3c6dd93b07fdb23a06e9017a6289909eb7",
+        "html": "39e2fed655bf9ec9b61850bb6cd1f0230bb93af112bd58478fa5aff89121e092",
+        "png": "4fd48b382f0f407ead6ce7ec47667ca22ddc03599d70a6a82ecdaf3cd90cfa31"
+      }
+    },
+    "s_editor_diag": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "}",
+        "Ctrl-r",
+        "ticks:10"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "0d1f6df6ff1bb8f8bfb77d9e35c0d82be4885c3858c4bed7cafdb12da2413fe5",
+        "cursor": "b7f209325d539baec80e7b7b6a5e6c7119ab0cd2756cf30d69895ab6c7fb79a9",
+        "txt": "925db39c6a6698de0577b5090ae8ad7504a65b7f0fe449d0ed6651ab55041af9",
+        "html": "cd34eeb118eaa8d382995236ea80c384d3c0968eb40912150a554b4ccbfd69b7",
+        "png": "bea3ffdd5a89f4563657a1e346a364babf50ae1dca26e4d48357b8be64d39a8a"
+      }
+    },
+    "s_editor_running": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "}",
+        "Ctrl-r",
+        "ticks:4"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "9b261d308842d16a94588bada9f4530dc12fb61af7781da26871e109590805b4",
+        "cursor": "9442b9723a331b3ad1c31c01956d3af42fd4ffc77ece51a85d63b3171e21a97f",
+        "txt": "997713b668ddf4c0234931ffc0da0bc6d68164140d82be5f19f33162fc91c86e",
+        "html": "65fd9156b0b0a81290b9cc14a294ff8b0c1c8a0473782fb8e114e8a3692e29ed",
+        "png": "c1b33de473e268a635d7bb398cd595ee98c8fc04bfc5369472f12705210fa253"
+      }
+    },
+    "s_grid": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "525cd62a71b48c5b3b34f24afbc65752570792e2d251a0043dd35ecb6655d844",
+        "cursor": "5a28c39da117b59ad12536fc3ab05190c7fd830c019a99f57d5e8aeebf2af2c6",
+        "txt": "ab9a4b3452222f00bd07d93be33dd3658041cbc63ab6ed8a80e37bf950e6be9f",
+        "html": "eb6179e9fbdeb5dde2395884ca4a9d8e89e17cb034e5638ec843665054b7949f",
+        "png": "beaeb4830ca156dec56dc9fdeba2cb4244508d5d8454623539b1ec865b02917f"
+      }
+    },
+    "s_grid_80": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "events": [
+        "Tab"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "f4580d74b2482a294c3dc051e48935459c8573337b66cc48ed546ff93bccb2f9",
+        "cursor": "8b70034730bd8c697cbc113d68b270cb461755daaff661d40bdce863cd20c744",
+        "txt": "e990c43f93952e28758d38959d7fddad3fe047f978aac7792616132f3d1d6430",
+        "html": "82ef911c127214e98a5962ebdfb75ac26dc3a394c469c3a67161792c789dce1a",
+        "png": "dda88ca51869d2887ccd22c307b4af1e0c75a1724af3af0bc59da405592971d8"
+      }
+    },
+    "s_grid_failed": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "Right",
+        "Right",
+        "Right",
+        "Enter",
+        "Backspace",
+        "type 600",
+        "Enter",
+        "Down",
+        "Enter",
+        "Backspace",
+        "Backspace",
+        "type 12",
+        "Enter",
+        "Ctrl-s",
+        "ticks:4"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "6200a5f08a7c7d78d616b90bb96afc7712370e98f98fe2c1af1e4415eddc78c5",
+        "cursor": "b7f209325d539baec80e7b7b6a5e6c7119ab0cd2756cf30d69895ab6c7fb79a9",
+        "txt": "024b802aeff1d24997e26181b263d7cf8434e9823145272f30c1e6e935f595a1",
+        "html": "d9fb4ac55d467562f5fe638734617f01b320544e78347d8176f979deff57517e",
+        "png": "31ee36c10f5e6ebc0d01711a3c9b6cc33096eb42275349ff1dbf69d10a97dd55"
+      }
+    },
+    "s_grid_pending": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "Right",
+        "Right",
+        "Right",
+        "Enter",
+        "Backspace",
+        "type 600",
+        "Enter",
+        "Down",
+        "Enter",
+        "Backspace",
+        "Backspace",
+        "type 12",
+        "Enter",
+        "Right"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "b775f7c4ae4c5080cbdbbbe317632148e52ff9961eb836eb598ac4bf59ac3122",
+        "cursor": "4a4b32bc97df68e11adf43e9514853130f567a815f5f87a1bf5ca74047ebbfe0",
+        "txt": "eb7d6ce0847d826fce0144f6593817b1f566e16c597b269a90e694c626298271",
+        "html": "1919b13ad8fef690431c8b8258dd867726f9f64534d9b7a8d44ea60f2cc9707b",
+        "png": "ca8891a2e571d5cf4d56a4934ebb588bafec22076bd26796dbf068246d973d57"
+      }
+    },
+    "s_grid_preview": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "Right",
+        "Right",
+        "Right",
+        "Enter",
+        "Backspace",
+        "type 600",
+        "Enter",
+        "Down",
+        "Enter",
+        "Backspace",
+        "Backspace",
+        "type 12",
+        "Enter",
+        "Right",
+        "p"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "4ff90ea09eb9b51fe97e1a25b2ad44f6a72fe958a2993f20c84569f2d332dcc2",
+        "cursor": "3e6f95e7483f10c4a59bac39ce729930b4b7c2248880e7811e2ca15f7ef156cc",
+        "txt": "21c7f48dbd6bc7d6bee4f0c26c06931a9fd9eba8992c84aea65ef7e1581b6a01",
+        "html": "285c3c68f73e8ce3971f7083ee8fb616aecb9712d98284512e44f8926d1b63ae",
+        "png": "4696d0f1b74dceff3fb52199ad67c1a9e0568bb908744b0a3bbe1665d61c02db"
+      }
+    },
+    "s_pickers": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "Enter",
+        "type bil"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "c551af860a871da41e974740f24865516a41faa13f1cbcbc5a570f6d2b7b1e55",
+        "cursor": "152a6844768ea4d42953c05df3b355940d10542e13d675bf68d4753948f3193d",
+        "txt": "7ae43056935c09a5d062fb03ceb2891c377b27049494f431348470ead037d997",
+        "html": "a6ccb7fab47e174b9ff0506b2a619ce3fe67bfbd89f7e13ba1a8515cbb2d9f7c",
+        "png": "2afba2f68e49625ed8ceff3210a08bba6984da0429ab76ce737711d558d47364"
+      }
+    },
+    "s_pickers_80": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "events": [
+        "Tab",
+        "Enter"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "48216bbe92b85b7ebc59ef7c089ee562fa053777560f4c48056d4e2cee1f3a27",
+        "cursor": "a67f9a2f8469e6a6c7fe62ada7c877859a45fb37d37fc1ebe4fd1eec177fb7e7",
+        "txt": "eb732cebb23d5e83040d0856762486818dcdfa1ad3f003f94a31046fbd44e1af",
+        "html": "664ec756aadcbacb7c777279f532b01fde29a701a52b627ea1679ac9304e9a46",
+        "png": "d4dec6a78c4b256983a47116e8a842f826970b20e33e621bba12069f58d30b14"
+      }
+    },
+    "s_pickers_level": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "Tab",
+        "Tab",
+        "Enter"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "f8048c440986ee9d0a132b396f01397a290823f09caca553ff2f7c6669ee2d73",
+        "cursor": "3ccedd657d215057fcc190c26236003f9757d493f71cacf30b97c54e103a890b",
+        "txt": "a7d1ea6702bb84c5b3f948e6a38b770a2f4484fc2105824327d26785c00bad2b",
+        "html": "71fa8694a9177acf4a6e152ada5bbdaf21c9b665fe8494a4e942475f2486a597",
+        "png": "6c9b9644c93b01e24d642998c3906452479c9e1b6f90bd87baed84a30caa9b19"
+      }
+    },
+    "s_pickers_tabs": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "Tab",
+        "Enter"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "04b1b2020005644c2fb67b278323a4543b1db992a1d9ce2e92ce6b93ac36f6a9",
+        "cursor": "a194d0040ea384467774fa7d817b501a5c37619050c8d809fd2fe03ca7e53a4a",
+        "txt": "3f2236a0ea4abe778b5188934ac564588e074ba1b235a2078b0b34b2d42240b8",
+        "html": "2c37e4ba1a92cf1e93e32339854f04d02ec3607836c83bebfc2f3de56f07a6f5",
+        "png": "0b44e600d3a25d898060d98cb2111f15d53de09f2a3a3c3dc5d955e1d170c3cb"
+      }
+    },
+    "t_100": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 100,
+      "rows": 30,
+      "events": [
+        "Tab",
+        "Ctrl-r",
+        "ticks:4"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "cc970fd35d010597e25c3f3df2b58b8982c4600c3da9de0ab5bf2515728b95ea",
+        "cursor": "59a1d3d9316b2190c7fcc42f56e5a1de5be827686dd8b6bfea2eec7605a46005",
+        "txt": "35d4a746ec3479f998807dba575c735e6a9d5bc8e4eef8a3fcc3fb22a64884c4",
+        "html": "875073a544fcc4cf5ff01c5812b45310711235c15b3daba472009b19770b2145",
+        "png": "292132eb3e19238b4b003b8da933cfe5392fafccaed088e1a6d56d79c8cf457c"
+      }
+    },
+    "t_100_table": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 100,
+      "rows": 30,
+      "events": [
+        "0",
+        "Down",
+        "Down",
+        "Down",
+        "Down",
+        "Down",
+        "Enter",
+        "ticks:3",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "s"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "c8c3fb11e2f1b11bfcb5de61ae931c77955619a07423d7b3ef61176dbe65c9b6",
+        "cursor": "ed7ac000790384368242224d8ebf38027ad5ecefc4174f32549e19788af3a684",
+        "txt": "3f46addc6120753f6c70e88107857ad821ea27ed30f7595e822f16d2e9ee9f9f",
+        "html": "47df11e98500c5288d91b8022de67bd367106dfafb03990874ce6f5c2d6bd2d1",
+        "png": "559f793f42dbc489551ada0bf4101b0a1cad9fc976ccb5c45b6ad78ecb02b6d5"
+      }
+    },
+    "t_160": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 160,
+      "rows": 50,
+      "events": [
+        "Alt-x",
+        "ticks:8"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "409d85a0405ea618f69c318dd3889c68d2a4162b6a17970a7c4d0ef042edd925",
+        "cursor": "26805a15ab383861d5e6f3cc0cb610b35c07504f92f5a162b9abb28342e29136",
+        "txt": "47a4a4103de2270939cc285b51694a3c1bcac8d9356a48c81d09ffa638e94c0e",
+        "html": "37e701dac52ef5886d9e104aff8a2013a0d571c519396b54c20ee3155434b2b6",
+        "png": "5e414440d153d8eba21b0f7b9757c7c7be49c36432eb84451144b24943998d79"
+      }
+    },
+    "t_160_table": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 160,
+      "rows": 50,
+      "events": [
+        "0",
+        "Down",
+        "Down",
+        "Down",
+        "Down",
+        "Down",
+        "Enter",
+        "ticks:3",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "f",
+        "BackTab",
+        "BackTab",
+        "Enter",
+        "Ctrl-l",
+        "type pending",
+        "Enter"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "bd8159d225e2a73e80027a66f55d204d1b08e116ad09949e29a1bc58079c4a4d",
+        "cursor": "cedb2e7763fcfb6717dbc93d5b591bc9976ba8044013eddb33630b49a9398827",
+        "txt": "56beee240586cb37b6370fd1843d9ef8317b9086e4ef4ebff20688432afba2c1",
+        "html": "1829eb0f1fafd3e73c58f4e82e3ad02f2d87812462e3cd5d76e6cefee692f42e",
+        "png": "f0ac31677c05d8e460001e374ee8bc460fa8379534c5d3d8240626ebad596d38"
+      }
+    },
+    "t_80": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "events": [
+        "0",
+        "Down",
+        "Down",
+        "Down",
+        "Down",
+        "Down",
+        "Enter"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "6bbda8543650bf3047061223c18493c504d5e9f194238c36c0e4e76f9a899a25",
+        "cursor": "392bda32757bcc2c39ff10ee1b8a6fe268409a2cec8a5c25a0e5de45b4145155",
+        "txt": "81c9c37e149de66f7bd0a08da8d85a03f5cada27ee40c4b00e09af3f5457540c",
+        "html": "ddf108f3f0e37bf8e812947862620c55b0235adbb05cf19444b2f27a0ff0e756",
+        "png": "701c5454c488f9e94352f95a0353220d44e3f0600f982137c669673fab5bb756"
+      }
+    },
+    "t_80_drawer": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "events": [
+        "Down",
+        "Down",
+        "Down",
+        "Ctrl-b",
+        "Ctrl-b"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "5dae8513b9efae77f690a61bc0e1f4c6a3270ea21365e12ebd9348385501122b",
+        "cursor": "e15fdf0832ead1562c58d57fab37abf675497aa94ba9b0afafd60cb2f28ae98f",
+        "txt": "6312d57c9c0780e47ae9c6b649b08fc0baa28a978919b350edff43ffb0fb1964",
+        "html": "6fcd338f2af8576344923968c349e4df44905018b7c970a09c3f7284a5235bf4",
+        "png": "597a24c96c790fb19974443d4a0603fb98e033447889a190113766fc2790009a"
+      }
+    },
+    "t_80_query": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "events": [
+        "Tab",
+        "Ctrl-r",
+        "ticks:8"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "9c8a53a41bfa708c16e680e99a5921731c74b56cb038ca05f2e5fe94b1fd429f",
+        "cursor": "f241561ab8920feafd0b97bcf61547ce6edd1609370e5ba97bf12913d12d291e",
+        "txt": "694284976fe2ccddcf9baf0a11091645d77e666f1e64c26bbf1c4c0713567ed8",
+        "html": "62415682f497076c2f01bad6daba59273720b2c8d0f2c2da1c5e1bed58925ace",
+        "png": "b93487356d055915ebe97fa82b894048b303146c89ad1535d209f2c5e32ea08b"
+      }
+    },
+    "t_complete": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "i",
+        "type SELECT * FROM ord",
+        "Ctrl-Space"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "c6912b9f8d939a8cf1ea79c3867d9561f9840ab9b17912d937d8a7951abc893e",
+        "cursor": "5dd30ea2a5079b5542f29a3cce7a12a98d12d5d2d819a71fd92e50d74b31061d",
+        "txt": "2969f9a12a7f0b928ad20ed5a45ecc9ae79fbf770bc49b6b5a2e17784f528052",
+        "html": "7dcad882468a6c763b887ee8a59a2c1b8122a65ff53cc24a354a58e57c19f68b",
+        "png": "a3b927671f43023bd422695ab223a1ee661fa73a2029cd2cb465e9af269aa3af"
+      }
+    },
+    "t_complete2": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "i",
+        "Home",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Ctrl-Space",
+        "ticks:51"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "97f7bf52a7a58d64f7997822d6875c070cb0756cce299d4f59fa1b8728201307",
+        "cursor": "6ca9a04b36d0afe59a5ccf9ea4dfafbd77c73836ac410f67c05904467768e893",
+        "txt": "a86ec8dc24894e6df95bfa5bc37dded1ff3b5ec1265150e4b4346bd9a63b4bf9",
+        "html": "19b4e23b3ba7916bbb6e5f07c6d4ac76c676f6c0e2bb5414a5d7c0697787842b",
+        "png": "20bfb66f99bd810311227624e9c6d7dbffa78eb795c88abf2605af197f21e76d"
+      }
+    },
+    "t_conn_dup": {
+      "bin": "tablepro",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Ctrl-d"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "470e1580e8eba6427e4ab2fa8578aea7852a0b8222305116d1ec0bc1bbe99059",
+        "cursor": "e281aa960ca7d2e02e2fe08e36309b9b596b5b20b8f3963b34f1d232d8f2ef1b",
+        "txt": "bd74d40ef14e6b5c7121239925d313b4b8b00087365c7fc52a1dc32e7fdac28b",
+        "html": "e7df07ca49d6a2d74262570ba831ef70a5a586607b4a1a4bb838acdaefdc761e",
+        "png": "eda3781e38c59eefbfc6fd78b7b498352ba01c187895cba9e4d94d7a4f7f4cc7"
+      }
+    },
+    "t_conn_form": {
+      "bin": "tablepro",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "n"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "a4395a0147558f933a8de50fd9a27f1bd7917c2cdb5e8728386875c78e03cbcd",
+        "cursor": "7497a555371f217a04a744316c79200ebf13d7a4b57795d5501807f0261d1281",
+        "txt": "3db3a468d319608efc5cff6f713fdf8174819a0ccd8cb3bb05a3751a1e596c4f",
+        "html": "5607c4e645863de56f996aa4eaaaf33c47dab6a3fde99e7ce9cdc81a7648be32",
+        "png": "76f484e94642073811617dbc871ae2bc4407ee7705aa2f6856e7af33598d594b"
+      }
+    },
+    "t_conn_form_adv": {
+      "bin": "tablepro",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "Tab",
+        "Enter",
+        "click 116,17",
+        "move 117,17"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "4ebc223c1ba1458d75dcc0134fe5c6b319b289b2d27db8e0311801c088ff72a6",
+        "cursor": "a80d586b99d4592b39c25468cca2b5d458ec86c4952f3e4acdf5612e556695e5",
+        "txt": "d57c21056a423217d27f6e8ac834bcef27841635600133e42999341b86264011",
+        "html": "5dfc8065548f4822da95b8c417a51ef55e86fab299aba471b1edaf121b1e05ac",
+        "png": "cbf15e5d490702e8cbdb6cbe661a9dca8ddacf9f9ec308ecdebd72154a1d1aff"
+      }
+    },
+    "t_conn_prod": {
+      "bin": "tablepro",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Down",
+        "Down",
+        "Down",
+        "Down",
+        "Down",
+        "Down",
+        "Down",
+        "Down"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "c64e3342cea6f9582999e79b4775364e00f2d4a5b525ab570851f3848812aee6",
+        "cursor": "629f5ec2e923322dd3127f20e95771072f446ae142ac5792b1907a3ad87dfc28",
+        "txt": "d73633e87c77a130f70a2b057973f4f8b13558a422b94aa7df4e6e6757b02168",
+        "html": "9c673dcfa1d5fa08457cb14d9b7ccd166613e55fc0cc271dae4d4681903804fc",
+        "png": "92734ac8e51dc32e1f97627706c6e8537835331e4c12c62b422b774aa5260af0"
+      }
+    },
+    "t_connections": {
+      "bin": "tablepro",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "67d07a8ef3e65ef98055176657f40e3b73e21025031190c25e2bfd0ae793d181",
+        "cursor": "be0f70100bcb6d1c14dc527121c4a572e07d8b99d28cfe33554830408761c11f",
+        "txt": "e379d37d9c4bdd4ae42a7acb7a8f8d56e01a25ad4e2b58f66925f61702042567",
+        "html": "0276c23c16c39a3c545eb1aadfc0ceca035b8b2c30f46115dd8bacc87076a710",
+        "png": "c7a1e1dc842ce96638ef5d6161e6f0da69d8547b8a2641b2003d02df4ba7ee75"
+      }
+    },
+    "t_danger": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "i",
+        "type DELETE FROM orders",
+        "Esc",
+        "Ctrl-r"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "60bffaa46c7951998e4cc7c0b3aac4712cecb6a7d1b47530ddb6ad8f5cd12d95",
+        "cursor": "174697e2ce425f3eb584dfb7cac0dde1b880f7556877fbf8decb44b6467985d4",
+        "txt": "985efd38bd8f9c3b1ffb5820266f2c823f42abbc10224cb0d61388bdbbac398f",
+        "html": "11e0bebef7458c10c32375bf78e360c1cd3bceb0756838a1116c7702b5cfb9a5",
+        "png": "557062d7d473237b5b00dc219bee0f9fedd159bdd5338c70b6cef438f4dfc710"
+      }
+    },
+    "t_dirty": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Down",
+        "Down",
+        "Down",
+        "Down",
+        "Down",
+        "Enter",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Enter",
+        "Ctrl-l",
+        "type EUR",
+        "Enter",
+        "Down",
+        "Space",
+        "-"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "d359fb71ab80a07353210373865c39172fb8881e5518a86fef4e72219559d661",
+        "cursor": "6504f051b3144bd40d90a39708c3a3abcca0c88edd65e368b5fcd28337e2187f",
+        "txt": "bff4871f05fa0c5d39aa4c4dc037ac30203644ca9dbb3115f556d91e3662f976",
+        "html": "c8650098dfc97709801072303ba9351b9c1ac50ed677151978fdfe896686cc43",
+        "png": "fc00b3744213873e9e0cd4f946ec988ccc482c61669504d2c48b9a8e1e694f75"
+      }
+    },
+    "t_editing_cell": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Down",
+        "Down",
+        "Down",
+        "Down",
+        "Down",
+        "Enter",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Enter",
+        "Ctrl-l",
+        "type EUR"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "60f48e4ea3a5534d1842c49a99b57af4380935bdea52919b27fe3d4f54348ce5",
+        "cursor": "e2429b3f6b52641382a91824a7f706a43cc9bdd45639407836cd40fb8e9df4c6",
+        "txt": "9cad4900417b70d4bf7e70bd6686cad6df8a8c3ab24cb10e7726b67ba4214430",
+        "html": "13cd448a0d6611a5c7967485b070e3675cb8759b675bf8df01048b314357985e",
+        "png": "2a2dd4a2b7006dec4d3aa94fafd0424f3d22c2506194dbd2ac1b512fb8123ab8"
+      }
+    },
+    "t_error": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "i",
+        "type SELECT nope FROM orders",
+        "Esc",
+        "Ctrl-r",
+        "ticks:10"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "709a7210051f2d45531c1989361b49f7970875dda95020893799a30cd2b422a0",
+        "cursor": "ba74deffcc1fd44c4724fe1e691eea4e41b0c651f138ece41c8badd31d91edf0",
+        "txt": "d9a99e0ffc7eb04adb5299ae79fb377930f9aa08441b1e4c4b9833674466cf27",
+        "html": "348999fcc41d0b23f905b9d820cd382716c2a15becd0d2cb5ebb9ec256fff9b8",
+        "png": "f9583d180352598b3cb0260abffc96bcecff32a37a525a5c9fb7b634de337469"
+      }
+    },
+    "t_explain": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "i",
+        "type SELECT * FROM orders WHERE notes LIKE '%gift%' ORDER BY created_at LIMIT 10",
+        "Esc",
+        "Alt-x",
+        "ticks:10"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "8c116309de33bb7f30741974cc442fdc326efb754b7ec9f9a62190888755d18d",
+        "cursor": "0c4e247cdddf6cee636be172d1ad4ad37eecd8ad21e9a3f8e5dd416fc609e2e6",
+        "txt": "1b5dcc6304a75676e01190d83d2f4462e802e6af02964a01d9b431e9887c3494",
+        "html": "9b7f16d2ab08fd172a092b28421416ea98d736df0217fef43edcee89b5615f03",
+        "png": "de87b6e2248f309a886de3ebee06744af04515316f9cffa14635dc1edd459dd0"
+      }
+    },
+    "t_history": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Ctrl-y"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "381f0c195eadad3dcfb2fc6dd44239ef0a3c793d89d5f005ed75a5405c5fee60",
+        "cursor": "c170be9443922608d9843d93aab7d88183c79900cf0e65c67643c3528927652f",
+        "txt": "d3e615f5e8316aee89ea4040472f228971cb432f8b7f3ef6f3526acc32105d3c",
+        "html": "490177e8b138bb062d63a31697e532de3c5394cdd81efc4b076911805c5c890d",
+        "png": "8a427acf253457a68fe596843a0dae1616e46ca44ee7031fd49f2d328cd4b7d2"
+      }
+    },
+    "t_orders": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Down",
+        "Down",
+        "Down",
+        "Down",
+        "Down",
+        "Enter"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "14cdf7222c8e1bbdce14d7857a8032aa95a6c346c07b12b67a2623bd2043cc41",
+        "cursor": "3eef9f4854b5de86e848e7daab9da3b9c017e24e224133f81b4b31ed38064c82",
+        "txt": "95bc25128fc8d82f42e719211f7764222500805e8e4ee0d6a9d975f56729da41",
+        "html": "687c98eef48e5031eb7d333816a73a4d13763e90e0c9e0e7c88608172f7c90dc",
+        "png": "4f47fe45b5337123f2b974760e2963e72500da822b713f7c21542284641661bf"
+      }
+    },
+    "t_orders_wide": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Down",
+        "Down",
+        "Down",
+        "Down",
+        "Down",
+        "Enter",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Right"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "1ff1de8f8acccadc4684c11b989589f9b0100a8fac3078e6eb63296989503065",
+        "cursor": "f5351a26d7f325482c3981a24d8ecb9cbd4783f974cafa7b6ae3d1b9debb8062",
+        "txt": "117df6cdf9b73edbe31d708c2d56e1e9ad8a5bec0c925eca23cbd042dd439052",
+        "html": "ece123f44bb27897c3228a1fae77275aa253c17f51a4b1b96d77499531efb04f",
+        "png": "1a903fa7b3f90e5a60efcbd5bff09ad72bf0eec8fd9b88a07dd81eda44b966a7"
+      }
+    },
+    "t_result": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "i",
+        "type SELECT * FROM orders LIMIT 25",
+        "Esc",
+        "Ctrl-r",
+        "ticks:10"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "4f5b1eee0fac10f5eb6ce29125c9156a402c8909716173efd8482c92087f66ba",
+        "cursor": "cd3f6de4f323e5acca162fb59557d96e6e30426c12e355fff22d593907671b0b",
+        "txt": "2caf7cafd450687244938b0aa886d69fded37ca284c1bde10c482dc3b58dab3d",
+        "html": "775c33a9bbf138ff76fe67c487710df9b645171c270809a0fdc82c8ed15ee6ef",
+        "png": "6cee4883d933f8a12273c1c62329443caaf796c7906de02eaf9ca96a2dd45ce3"
+      }
+    },
+    "t_running": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "i",
+        "type SELECT * FROM events",
+        "Esc",
+        "Ctrl-r"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "c1204bdd78cb75964089ad7b44cd58d8ea0c780dea58ce93f71fe4418a4769ca",
+        "cursor": "38fd2773aff5bcffcf9df9ed18178d5b5659e406c39f9f9670815b9440218ef9",
+        "txt": "14cc1b500524604241acba7d62d152fad14cac02de5410e6415f79d9f42f2909",
+        "html": "510fbed015a021f48ffe6fe8d5e0df5a35edeb65b19a520d33143f8603c816ab",
+        "png": "779070ed6c0d9cb184e3dac88dc49db82e672544e4179a9abdc451874395cfc8"
+      }
+    },
+    "t_safemode": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Ctrl-l"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "89605ec3a966d241d2e425962e2d829ce20ef3bf2c202da437f94ff035e771cd",
+        "cursor": "df5d8b32ffa00447867c0fe259d0d8c10956a7d896e4d38fae93950e93a12aa1",
+        "txt": "8ec573e65c6a15d75112477d6f6daf079fb000d4cf16ae8ea3e4be2dcc693d7b",
+        "html": "87ba43ef16cb35c4939ec943ff14523ea1f769b20250f3be8dc445aa2ecc14dc",
+        "png": "d020a75e74b9184e84f70b3a7717152ce1bdab2408d143e69f15da2bb2e72213"
+      }
+    },
+    "t_sorted_filtered": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Down",
+        "Down",
+        "Down",
+        "Down",
+        "Down",
+        "Enter",
+        "Home",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "Right",
+        "s",
+        "f"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "9044a8cc35e820bf43d591f79421c14f6ad793422391252ce6f9e22f9aaeb0ff",
+        "cursor": "b7f209325d539baec80e7b7b6a5e6c7119ab0cd2756cf30d69895ab6c7fb79a9",
+        "txt": "fa7c3bc1cef1dc86f4626e865b3eaf632812bcde5341612e5b2442af1363355f",
+        "html": "608184936b462aaeaf386cb1afcb0220a2bebde560154d750f8cbe54942e2742",
+        "png": "0988c75686606c64abda9b7f488fc0891879fb1be61ed82c3258948f406740e6"
+      }
+    },
+    "t_structure": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Down",
+        "Down",
+        "Enter",
+        "Ctrl-d"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "80083a05099a675543fa88ef4452ec0091a22c7892a42b7453b1f5bc1b3570eb",
+        "cursor": "db7c21048ceefaa095f2139d79b2e338e89eac04a36935655e543c62020a61e8",
+        "txt": "c1ea97d72dbcd54c6e36ac4ce197b4e058c9af3686f17692b4d5e9a80c3f3e80",
+        "html": "c69078b3700b6e730a73c9f7774e56f31d73eacf254a2468265ce68bd540f1c9",
+        "png": "a743c0bfb87b0aad9abc3adb15e137c27a6269d7c2f781568282752710ff6bc6"
+      }
+    },
+    "t_structure_fk": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Down",
+        "Down",
+        "Enter",
+        "Ctrl-d",
+        "Right",
+        "Right"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "ca69b56d868e2a55a75433195add212041a95b64732bab3ee5a6fcaf1a46db76",
+        "cursor": "1ca0580090dc211bfa03e6423f3cced4cfb9e49df7176195a8fc959da6aac9fa",
+        "txt": "77d3afa5225ac99472675add84a2bfc44d1c4ed828d809b7a96d4c0b325e091a",
+        "html": "90fbfc3c5d1a94ba88a218ebe3b29b204b04df455404107f4dd75a7ad7058cb8",
+        "png": "7dbd546d3c46883569867ec36839ef84d33ade521adf17ca8c8d5dc18ee02e79"
+      }
+    },
+    "t_switcher": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Ctrl-o"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "adc041310f0af31390355d512f35482695e5e253d1c32554d820e9991d067bbc",
+        "cursor": "dc95224df50bc08bf0d7a16bf8043678c97266d9cf4a66f32d91003ecfeeb555",
+        "txt": "d580f34aa1592efecf1276279f35b5978241de4b5bf1313743787ac1bd24b1ba",
+        "html": "cd89986290790ada75b26fbd6ac4adb3104f559abb019f94a94c0fb6b454a2e2",
+        "png": "f9ae46a8d2853cedbeffc0af3e81e60ad1799a8fb9fe6a446209ff2444330595"
+      }
+    },
+    "t_tablist": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Ctrl-g"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "6de42f86804775c237deadab04a0c5945cb77ad094571aaac879db78d112bd32",
+        "cursor": "797a7111ef5769a72ab8e6af51e29fff67a1dc7b26ab69c823a18d4391cd5616",
+        "txt": "67d2506c937729cd2cf54976a85ed736ef3c74b47b82bbcc5065a40268beb2fc",
+        "html": "8d36590147c5c6292d17dd4c8b29d5ede00fa508bfdd3e9a35644e5f9c2fd032",
+        "png": "168e9cf18330b2033547bdea27b3a05a921b9962fec58c49128b113d12ebc9a0"
+      }
+    },
+    "t_workbench": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "6de42f86804775c237deadab04a0c5945cb77ad094571aaac879db78d112bd32",
+        "cursor": "797a7111ef5769a72ab8e6af51e29fff67a1dc7b26ab69c823a18d4391cd5616",
+        "txt": "67d2506c937729cd2cf54976a85ed736ef3c74b47b82bbcc5065a40268beb2fc",
+        "html": "8d36590147c5c6292d17dd4c8b29d5ede00fa508bfdd3e9a35644e5f9c2fd032",
+        "png": "168e9cf18330b2033547bdea27b3a05a921b9962fec58c49128b113d12ebc9a0"
+      }
+    },
+    "t_write": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "events": [
+        "Tab",
+        "i",
+        "type UPDATE orders SET status = 'paid' WHERE id = 'x'",
+        "Esc",
+        "Ctrl-r"
+      ],
+      "evidence": "catalog replay export (deterministic); the source state is mirrored by the replay, not machine-captured",
+      "sha256": {
+        "ansi": "82f643eec2c3f4ce3f299cd28b48978606d39cc514ae3133ef3aa1c6133ec868",
+        "cursor": "cd3f6de4f323e5acca162fb59557d96e6e30426c12e355fff22d593907671b0b",
+        "txt": "0240700610119a7198ecd3493eb09f6d9d6cb469475eeec5ec16b66f9e43549e",
+        "html": "609f25658684c41e56544d8433b6ae1f9d9161e9e15ab1a6796b24a6937153b0",
+        "png": "45ee3c038bcb2f2cfeeb5fadc5423c903fb40ab69dd64241e1fcdd437040fbe5"
+      }
+    }
+  },
+  "scene_provenance": {
+    "status": "replay-export",
+    "rendered_by": "termrock-catalog capture (deterministic replay of each scenario)",
+    "note": "Scene artifacts are exported from the canonical catalog replay, not captured from a tmux session. Source anchoring lives in the parity gate against verify/junie/source-headless, rendered by the pinned source executables. shot_provenance records which source generation each scenario's mirrored page logic comes from."
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "description": "Intentional differences between junie-reference profile and default TermRock catalog. Unlisted differences are defects.",
+  "source_sha": "014a07f6ade5d2732e53fcd783ff8819d43aa05b",
+  "deltas": [
+    {
+      "id": "product-name",
+      "junie-reference": "Junie",
+      "termrock": "TermRock",
+      "where": "header, too-small title, --help identity"
+    },
+    {
+      "id": "help-binary-name",
+      "junie-reference": "USAGE: Junie [--color ...]",
+      "termrock": "USAGE: TermRock [--color ...]",
+      "where": "--help"
+    },
+    {
+      "id": "applications-tablepro",
+      "junie-reference": "absent",
+      "termrock": "Applications / TablePro nav entry after source prefix",
+      "where": "sidebar"
+    },
+    {
+      "id": "termrock-extra-pages",
+      "junie-reference": "absent",
+      "termrock": "Library Feedback, Overlays, Charts, Structure after the source prefix",
+      "where": "sidebar"
+    },
+    {
+      "id": "f-shots-sixteen-page-nav",
+      "junie-reference": "20-page source prefix (014a07f6 NAV_ENTRIES: includes Code editor, Data grid, Chips & selects, Pickers)",
+      "source-shots-f": "16-page nav captured before those four pages. f_80x24_taskrunner.txt (3,16) is Settings; current executable paints Code editor. s_* shots are 20-page.",
+      "where": "sidebar of every f_* shot"
+    }
+  ]
+}

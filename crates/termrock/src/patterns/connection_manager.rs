@@ -35,7 +35,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::fmt;
 
@@ -54,7 +53,7 @@ use crate::{
     text::{display_cols, take_display_cols},
     widgets::{
         ConnectivityPhase, Panel, PasswordInput, PasswordInputState, ReconnectingState,
-        RevealPolicy,
+        RevealPolicy, SemanticStatus, StatusIndicator,
     },
 };
 
@@ -226,13 +225,15 @@ impl ConnectionStatus {
         }
     }
 
-    fn role(self) -> Role {
+    /// Shared lifecycle projection for status recipes.
+    #[must_use]
+    pub const fn semantic(self) -> SemanticStatus {
         match self {
-            Self::Connected => Role::Success,
-            Self::Disconnected | Self::Offline => Role::TextMuted,
-            Self::Connecting | Self::Reconnecting => Role::Info,
-            Self::AuthRequired => Role::Warning,
-            Self::Error => Role::Danger,
+            Self::Connected => SemanticStatus::Online,
+            Self::Disconnected | Self::Offline => SemanticStatus::Offline,
+            Self::Connecting | Self::Reconnecting => SemanticStatus::Running,
+            Self::Error => SemanticStatus::Failed,
+            Self::AuthRequired => SemanticStatus::Warning,
         }
     }
 
@@ -1291,7 +1292,7 @@ impl ConnectionManagerState {
 
     /// Keyboard.
     pub fn handle_key(&mut self, key: KeyEvent) -> ConnectionManagerOutcome {
-        if !self.focused || !self.accepts_input || key.kind != KeyEventKind::Press {
+        if !self.focused || !self.accepts_input || !key.is_press() {
             return ConnectionManagerOutcome::Ignored;
         }
 
@@ -1715,7 +1716,6 @@ pub fn filter_connections<'a>(
 #[derive(Debug, Clone, Copy)]
 pub struct ConnectionManager<'a> {
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
     show_detail: bool,
 }
@@ -1726,7 +1726,6 @@ impl<'a> ConnectionManager<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             system,
-            ascii: false,
             colorless: false,
             show_detail: true,
         }
@@ -1734,13 +1733,7 @@ impl<'a> ConnectionManager<'a> {
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless roles.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -1790,13 +1783,11 @@ impl<'a> ConnectionManager<'a> {
         if let Some(c) = state.current() {
             if c.status.is_offline_like() && y < max_y {
                 let offline = connection_to_reconnecting_state(c);
-                let line = offline.banner_line(self.ascii);
-                self.system.paint_row(
-                    buffer,
-                    Rect::new(inner.x, y, inner.width, 1),
-                    &line,
-                    self.system.style(self.role(c.status.role())),
-                );
+                let line = offline.status_bar_content();
+                StatusIndicator::new(c.status.semantic(), self.system)
+                    .label(&line)
+                    .colorless(self.colorless)
+                    .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
                 y = y.saturating_add(1);
             }
         }
@@ -1851,7 +1842,7 @@ impl<'a> ConnectionManager<'a> {
                         buffer,
                         Rect::new(content.x, content.y, inner.width, 1),
                         "testing connection… host owns protocol I/O",
-                        self.system.style(self.role(Role::Info)),
+                        self.system.style(self.role(Role::TextSecondary)),
                     );
                 }
             }
@@ -1962,21 +1953,16 @@ impl<'a> ConnectionManager<'a> {
                 continue;
             };
             let selected = row_i == state.cursor;
-            let status_g = if self.colorless {
-                c.status.letter().to_string()
-            } else {
-                c.status.glyph(self.ascii).to_string()
-            };
-            let fav = if c.favorite {
-                if self.ascii { "*" } else { "★" }
-            } else {
-                " "
-            };
+            let indicator = StatusIndicator::new(c.status.semantic(), self.system)
+                .label(c.status.label())
+                .colorless(self.colorless);
+            let status_text = indicator.text(None);
+            let fav = if c.favorite { "★" } else { " " };
             let line = if tiny {
                 format!(
                     "{}{} {}",
                     if selected { ">" } else { " " },
-                    status_g,
+                    status_text,
                     c.name
                 )
             } else if narrow {
@@ -1985,7 +1971,7 @@ impl<'a> ConnectionManager<'a> {
                     "{}{}{} {} · {}",
                     if selected { ">" } else { " " },
                     fav,
-                    status_g,
+                    status_text,
                     c.name,
                     c.environment
                 )
@@ -1997,12 +1983,12 @@ impl<'a> ConnectionManager<'a> {
                     "{}{}{} {} · {}",
                     if selected { ">" } else { " " },
                     fav,
-                    status_g,
+                    status_text,
                     c.name,
                     c.environment
                 )
             };
-            let mut style = self.system.style(self.role(c.status.role()));
+            let mut style = self.system.style(Role::Text);
             if selected {
                 // The gutter marks the row; weight and a tint carry it. A
                 // reversed slab loses the connection's own status (plans/010).
@@ -2013,7 +1999,9 @@ impl<'a> ConnectionManager<'a> {
                     ..Default::default()
                 });
                 style = if self.colorless {
-                    style.add_modifier(Modifier::REVERSED | Modifier::BOLD)
+                    // Mono selection survives as the explicit reversal pair
+                    // (D5); weight alone would not mark the row.
+                    self.system.reversed()
                 } else {
                     style.patch(recipe.tint).add_modifier(Modifier::BOLD)
                 };
@@ -2023,6 +2011,13 @@ impl<'a> ConnectionManager<'a> {
             }
             self.system
                 .paint_row(buffer, Rect::new(area.x, y, area.width, 1), &line, style);
+            let status_x = area.x.saturating_add(if tiny { 1 } else { 2 });
+            if status_x < area.right() {
+                indicator.paint(
+                    Rect::new(status_x, y, area.right().saturating_sub(status_x), 1),
+                    buffer,
+                );
+            }
             state.row_hits.push((
                 c.id.clone(),
                 Rect {
@@ -2053,48 +2048,63 @@ impl<'a> ConnectionManager<'a> {
             return;
         };
 
-        let lines: Vec<(String, Role)> = {
+        let lines: Vec<(String, Role, Option<(SemanticStatus, String)>)> = {
+            let status = StatusIndicator::new(c.status.semantic(), self.system)
+                .label(c.status.label())
+                .colorless(self.colorless);
             let mut v = vec![
-                (c.name.clone(), Role::Accent),
+                (c.name.clone(), Role::TextStrong, None),
                 (
                     format!("{} · {}", c.kind.label(), c.protocol_label),
                     Role::TextMuted,
+                    None,
                 ),
-                (format!("target  {}", c.target), Role::Text),
-                (format!("env     {}", c.environment), Role::Text),
+                (format!("target  {}", c.target), Role::Text, None),
+                (format!("env     {}", c.environment), Role::Text, None),
                 (
                     format!("group   {}", c.group.as_deref().unwrap_or("—")),
                     Role::TextMuted,
+                    None,
                 ),
                 (
-                    format!(
-                        "status  {} {}",
-                        c.status.glyph(self.ascii),
-                        c.status.label()
-                    ),
-                    c.status.role(),
+                    status.text(None),
+                    Role::Text,
+                    Some((c.status.semantic(), c.status.label().to_string())),
                 ),
                 (
                     format!("cred    {}", c.credential_scene_label()),
                     Role::TextMuted,
+                    None,
                 ),
             ];
             if let Some(r) = &c.recency {
-                v.push((format!("recent  {r}"), Role::TextMuted));
+                v.push((format!("recent  {r}"), Role::TextMuted, None));
             }
             if let Some(s) = &c.summary {
-                v.push((s.clone(), Role::Text));
+                v.push((s.clone(), Role::Text, None));
             }
             if let Some(err) = &c.last_error {
-                v.push((format!("error   {err}"), Role::Danger));
+                let error = format!("error: {err}");
+                let status = StatusIndicator::new(SemanticStatus::Failed, self.system)
+                    .label(&error)
+                    .colorless(self.colorless);
+                v.push((
+                    status.text(None),
+                    Role::Text,
+                    Some((SemanticStatus::Failed, error)),
+                ));
                 if let Some(d) = connection_error_diagnostic(c) {
-                    v.push((format!("diag    {} · {}", d.id, d.source), Role::Danger));
+                    v.push((
+                        format!("diag    {} · {}", d.id, d.source),
+                        Role::TextMuted,
+                        None,
+                    ));
                 }
             }
             v
         };
 
-        for (line, role) in lines {
+        for (line, role, semantic) in lines {
             if y >= max_y {
                 break;
             }
@@ -2104,6 +2114,12 @@ impl<'a> ConnectionManager<'a> {
                 &line,
                 self.system.style(self.role(role)),
             );
+            if let Some((semantic, label)) = semantic {
+                StatusIndicator::new(semantic, self.system)
+                    .label(&label)
+                    .colorless(self.colorless)
+                    .paint(Rect::new(area.x, y, area.width, 1), buffer);
+            }
             y = y.saturating_add(1);
         }
     }
@@ -2145,8 +2161,16 @@ impl<'a> ConnectionManager<'a> {
                 return;
             }
             let focus = state.form_field == field;
-            let marker = if focus { ">" } else { " " };
-            let caret = if focus { "▌" } else { "" };
+            let marker = if focus {
+                crate::style::Glyph::SelectionMarker.resolve().text
+            } else {
+                " "
+            };
+            let caret = if focus {
+                crate::style::Glyph::SelectionGutter.resolve().text
+            } else {
+                ""
+            };
             let line = format!("{marker}{label:8} {value}{caret}");
             let style = if focus {
                 self.system
@@ -2188,10 +2212,11 @@ impl<'a> ConnectionManager<'a> {
                     height: 1,
                 };
                 state.secret.set_focused(focus);
-                PasswordInput::new("", self.system)
-                    .ascii(self.ascii)
-                    .mask(if self.ascii { '*' } else { '•' })
-                    .paint(secret_area, buffer, &mut state.secret);
+                let _ = PasswordInput::new("", self.system).mask('•').paint(
+                    secret_area,
+                    buffer,
+                    &mut state.secret,
+                );
             }
             y = y.saturating_add(1);
         }
@@ -2216,12 +2241,11 @@ impl<'a> ConnectionManager<'a> {
             .current()
             .map(|c| c.name.as_str())
             .unwrap_or("connection");
-        self.system.paint_row(
-            buffer,
-            Rect::new(area.x, y, area.width, 1),
-            &format!("! Delete “{name}” — host removes (irreversible)"),
-            self.system.style(self.role(Role::Danger)),
-        );
+        let warning = format!("confirm delete “{name}” — irreversible");
+        StatusIndicator::new(SemanticStatus::Warning, self.system)
+            .label(&warning)
+            .colorless(self.colorless)
+            .paint(Rect::new(area.x, y, area.width, 1), buffer);
         let bar_y = area.bottom().saturating_sub(1);
         let cancel = if !state.confirm_proceed_focused {
             "[Cancel]"
@@ -2761,7 +2785,6 @@ mod tests {
         }
         st.phase = ConnectionManagerPhase::ConfirmDelete;
         ConnectionManager::new(&system)
-            .ascii(true)
             .colorless(true)
             .list_only(true)
             .paint(area, &mut buf, &mut st);
@@ -2933,27 +2956,36 @@ mod tests {
     }
 
     #[test]
-    fn unicode_names() {
+    fn resize_cjk_combining_and_ascii_safe() {
         let system = DesignSystem::default();
-        let mut st = ConnectionManagerState::new();
-        st.set_connections(vec![
-            ConnectionEntry::new(
-                "u1",
-                "本番DB 🔍",
-                ConnectionKind::Database,
-                "postgres",
-                "db.東京:5432",
-            )
-            .environment("本番")
-            .group("データベース")
-            .favorite(true)
-            .credential(ConnectionCredentialMeta::present("パスワード")),
-            ConnectionEntry::new("u2", "堡垒机", ConnectionKind::Ssh, "ssh", "堡垒:22")
-                .environment("运维"),
-        ]);
-        let area = Rect::new(0, 0, 48, 14);
-        let mut buf = Buffer::empty(area);
-        ConnectionManager::new(&system).paint(area, &mut buf, &mut st);
+        for _ascii in [false, true] {
+            for (width, height) in [(48, 14), (20, 5), (1, 1), (0, 0)] {
+                let mut st = ConnectionManagerState::new();
+                st.set_connections(vec![
+                    ConnectionEntry::new(
+                        "u1",
+                        "本番DB Cafe\u{301}",
+                        ConnectionKind::Database,
+                        "postgres",
+                        "db.東京:5432",
+                    )
+                    .environment("本番")
+                    .group("データベース")
+                    .favorite(true)
+                    .credential(ConnectionCredentialMeta::present("パスワード")),
+                    ConnectionEntry::new("u2", "堡垒机", ConnectionKind::Ssh, "ssh", "堡垒:22")
+                        .environment("运维"),
+                ]);
+                let area = Rect::new(0, 0, width, height);
+                let mut buf = Buffer::empty(area);
+                ConnectionManager::new(&system).paint(area, &mut buf, &mut st);
+                if width == 48 {
+                    let text: String = buf.content().iter().map(|cell| cell.symbol()).collect();
+                    assert!(text.contains('本'), "{text:?}");
+                    assert!(text.contains("Cafe\u{301}"), "{text:?}");
+                }
+            }
+        }
     }
 
     #[test]

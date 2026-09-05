@@ -12,13 +12,10 @@
 //! that can project into the same [`SliderBounds`](super::SliderBounds).
 //!
 //! Research: shadcn numeric inputs, Textual numeric fields, desktop form UX.
-
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
-    style::{DesignSystem, Role},
+    style::{ButtonRecipeVariant, ControlState, DesignSystem},
     text::{display_cols, take_display_cols},
 };
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
@@ -412,13 +409,11 @@ impl NumberInputState {
         self.sync_draft_gates();
     }
 
-    /// Focus; starts draft edit session.
+    /// Focus flag. Does not begin the draft edit session.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
         self.sync_draft_gates();
-        if on {
-            self.begin_edit();
-        } else {
+        if !on {
             let _ = self.commit_draft();
         }
     }
@@ -454,17 +449,17 @@ impl NumberInputState {
             None => String::new(),
             Some(v) => format_number(self.kind, v),
         };
-        let mut draft = TextInputState::new(text).with_allow_empty(true);
-        draft.set_enabled(self.enabled);
-        draft.set_read_only(self.read_only);
-        draft.set_focused(self.focused);
-        self.draft = draft;
+        self.draft.set_enabled(self.enabled);
+        self.draft.set_read_only(self.read_only);
+        self.draft.set_focused(self.focused);
+        self.draft = self.draft.reseed(text);
+        self.draft.set_editing(self.editing);
     }
 
     fn begin_edit(&mut self) {
         if !self.editing {
-            self.sync_draft_from_value();
             self.editing = true;
+            self.sync_draft_from_value();
         }
         self.sync_draft_gates();
     }
@@ -601,7 +596,7 @@ impl NumberInputState {
 
     /// Key adapter.
     pub fn handle_key(&mut self, key: KeyEvent) -> NumberInputOutcome {
-        if key.kind == KeyEventKind::Release || !self.enabled {
+        if key.is_release() || !self.enabled {
             return NumberInputOutcome::Ignored;
         }
         self.sync_draft_gates();
@@ -899,8 +894,8 @@ fn is_allowed_char(kind: NumberKind, c: char, draft: &str) -> bool {
 
 fn filter_numeric_paste(kind: NumberKind, text: &str) -> String {
     let mut out = String::with_capacity(text.len());
-    let mut saw_dot = false;
     let mut started = false;
+    let mut saw_dot = false;
     for c in text.chars() {
         if c == '\n' || c == '\r' || c.is_control() {
             break;
@@ -952,7 +947,6 @@ pub struct NumberInput<'a> {
     validation: Validation<'a>,
     system: &'a DesignSystem,
     show_steppers: bool,
-    ascii: bool,
 }
 
 impl<'a> NumberInput<'a> {
@@ -966,7 +960,6 @@ impl<'a> NumberInput<'a> {
             validation: Validation::Valid,
             system,
             show_steppers: true,
-            ascii: false,
         }
     }
 
@@ -1000,11 +993,6 @@ impl<'a> NumberInput<'a> {
 
     /// ASCII steppers `-` / `+`.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Paint.
     pub fn paint(
         &self,
@@ -1029,16 +1017,21 @@ impl<'a> NumberInput<'a> {
             state.validity(),
             NumberValidity::Invalid | NumberValidity::OutOfRange
         ) || matches!(self.validation, Validation::Invalid(_));
+        let field_recipe = self.system.input_recipe(
+            if !state.enabled {
+                ControlState::Disabled
+            } else if state.focused {
+                ControlState::Focused
+            } else {
+                ControlState::Default
+            },
+            invalid,
+            state.editing,
+        );
 
         let mut y = area.y;
         if area.height >= 2 && !self.label.is_empty() {
-            let mut style = self.system.style(if invalid {
-                Role::Danger
-            } else if state.focused {
-                Role::Focus
-            } else {
-                Role::Text
-            });
+            let mut style = field_recipe.value;
             if state.focused {
                 style = style.add_modifier(Modifier::BOLD);
             }
@@ -1064,35 +1057,25 @@ impl<'a> NumberInput<'a> {
         let mut inc = None;
         let mut unit_rect = None;
 
-        let steppers = self.show_steppers && row.width >= 8 && state.enabled;
+        let steppers = self.show_steppers && row.width >= 8;
         if steppers {
-            dec = Some(Rect::new(x, row.y, 1, 1));
-            let dec_g = if self.ascii { "-" } else { "−" };
-            buffer.set_stringn(
-                x,
-                row.y,
-                dec_g,
-                1,
-                self.system.style(if state.read_only {
-                    Role::TextDisabled
+            let step_recipe = self.system.button_recipe(
+                ButtonRecipeVariant::Quiet,
+                if !state.enabled || state.read_only {
+                    ControlState::Disabled
                 } else {
-                    Role::TextMuted
-                }),
+                    ControlState::Default
+                },
+                self.system.junie_theme().surface,
             );
+            let step_style = step_recipe.fill.patch(step_recipe.label);
+            dec = Some(Rect::new(x, row.y, 1, 1));
+            let dec_g = { "−" };
+            buffer.set_stringn(x, row.y, dec_g, 1, step_style);
             x = x.saturating_add(2);
             right = right.saturating_sub(2);
             inc = Some(Rect::new(right.saturating_add(1), row.y, 1, 1));
-            buffer.set_stringn(
-                right.saturating_add(1),
-                row.y,
-                "+",
-                1,
-                self.system.style(if state.read_only {
-                    Role::TextDisabled
-                } else {
-                    Role::TextMuted
-                }),
-            );
+            buffer.set_stringn(right.saturating_add(1), row.y, "+", 1, step_style);
         }
 
         if let Some(unit) = self.unit {
@@ -1105,7 +1088,7 @@ impl<'a> NumberInput<'a> {
                     row.y,
                     take_display_cols(unit, usize::from(uw)),
                     usize::from(uw),
-                    self.system.style(Role::TextMuted),
+                    field_recipe.placeholder,
                 );
             }
         }
@@ -1139,11 +1122,11 @@ impl<'a> NumberInput<'a> {
         let ti = input.paint(field, buffer, &mut state.draft);
 
         // Validation row
-        if area.height >= 3 {
+        if ti.field.y.saturating_add(1) < area.bottom() {
             if let Validation::Invalid(msg) = self.validation {
                 crate::widgets::field_message::paint_field_message(
                     buffer,
-                    Rect::new(area.x, area.y.saturating_add(2), area.width, 1),
+                    Rect::new(area.x, ti.field.y.saturating_add(1), area.width, 1),
                     self.system,
                     crate::widgets::label::DescriptionKind::Error,
                     msg,
@@ -1157,12 +1140,12 @@ impl<'a> NumberInput<'a> {
                     NumberValidity::OutOfRange => "out of range",
                     _ => "invalid",
                 };
-                buffer.set_stringn(
-                    area.x,
-                    area.y.saturating_add(2),
+                crate::widgets::field_message::paint_field_message(
+                    buffer,
+                    Rect::new(area.x, ti.field.y.saturating_add(1), area.width, 1),
+                    self.system,
+                    crate::widgets::label::DescriptionKind::Error,
                     msg,
-                    usize::from(area.width),
-                    self.system.style(Role::Danger),
                 );
             }
         }
@@ -1244,6 +1227,7 @@ impl StatefulWidget for NumberInput<'_> {
 mod tests {
     use super::*;
     use crate::style::RolePalette;
+    use crate::widgets::Validation;
 
     #[test]
     fn draft_separate_from_committed() {
@@ -1262,7 +1246,9 @@ mod tests {
     fn commit_and_submit() {
         let mut state = NumberInputState::new().with_value(1.0);
         state.set_focused(true);
-        state.draft = TextInputState::new("42").with_allow_empty(true);
+        state.draft = TextInputState::new("42")
+            .with_allow_empty(true)
+            .with_editing();
         state.editing = true;
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
@@ -1363,14 +1349,13 @@ mod tests {
 
     #[test]
     fn paint_steppers_and_unit() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let mut state = NumberInputState::new().with_value(3.0);
         state.set_focused(true);
         let area = Rect::new(0, 0, 28, 2);
         let mut buf = Buffer::empty(area);
         let parts = NumberInput::new("Opacity", &system)
             .unit("%")
-            .ascii(true)
             .paint(area, &mut buf, &mut state);
         assert!(parts.decrement.is_some());
         assert!(parts.increment.is_some());
@@ -1386,9 +1371,7 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 20, 2);
         let mut buf = Buffer::empty(area);
-        let parts = NumberInput::new("N", &system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
+        let parts = NumberInput::new("N", &system).paint(area, &mut buf, &mut state);
         let dec = parts.decrement.unwrap();
         assert_eq!(
             state.handle_mouse(MouseEvent {
@@ -1440,13 +1423,49 @@ mod tests {
     }
 
     #[test]
+    fn field_plane_and_invalid_bang() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let mut state = NumberInputState::new().with_value(3.0);
+        state.set_focused(true);
+        let area = Rect::new(0, 0, 28, 3);
+        let mut buf = Buffer::empty(area);
+        let parts = NumberInput::new("Count", &system).paint(area, &mut buf, &mut state);
+        assert_eq!(buf[(parts.field.x, parts.field.y)].bg, theme.field);
+        let mut bad = NumberInputState::new();
+        bad.set_focused(true);
+        let mut err = Buffer::empty(area);
+        let err_parts = NumberInput::new("Count", &system)
+            .validation(Validation::Invalid("invalid number"))
+            .paint(area, &mut err, &mut bad);
+        let row: String = (0..area.width)
+            .map(|x| err[(x, err_parts.field.y)].symbol().to_string())
+            .collect();
+        assert!(row.contains('!'), "{row:?}");
+        let msg: String = (0..area.width)
+            .map(|x| {
+                err[(x, err_parts.field.y.saturating_add(1))]
+                    .symbol()
+                    .to_string()
+            })
+            .collect();
+        assert!(msg.contains("invalid number"), "{msg:?}");
+        let bang = err
+            .content()
+            .iter()
+            .find(|cell| cell.symbol() == "!")
+            .expect("trailing bang");
+        assert_eq!(bang.fg, theme.error);
+    }
+
+    #[test]
     fn paint_hot_path() {
         let system = DesignSystem::default();
         let mut state = NumberInputState::new().with_value(42.0);
         state.set_focused(true);
         let area = Rect::new(0, 0, 24, 2);
         let mut buf = Buffer::empty(area);
-        let w = NumberInput::new("N", &system).ascii(true);
+        let w = NumberInput::new("N", &system);
         for _ in 0..200 {
             let _ = w.paint(area, &mut buf, &mut state);
         }

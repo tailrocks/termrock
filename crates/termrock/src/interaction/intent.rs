@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Semantic UI intents — widgets consume these instead of raw key matching.
-
-use crate::input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+use crate::input::{KeyCode, KeyEvent, KeyModifiers};
 
 /// Relative navigation step.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -169,7 +168,7 @@ impl UiIntent {
 /// for releases and unmapped keys.
 #[must_use]
 pub fn default_list_intent(key: KeyEvent) -> Option<UiIntent> {
-    if key.kind == KeyEventKind::Release {
+    if !key.is_insert() {
         return None;
     }
     // Ignore pure-modifier noise; list defaults ignore most modifiers.
@@ -201,7 +200,7 @@ pub fn default_list_intent(key: KeyEvent) -> Option<UiIntent> {
 /// Default intent map for tree collections (list + expand/collapse).
 #[must_use]
 pub fn default_tree_intent(key: KeyEvent) -> Option<UiIntent> {
-    if key.kind == KeyEventKind::Release {
+    if !key.is_insert() {
         return None;
     }
     match key.code {
@@ -217,7 +216,7 @@ pub fn default_tree_intent(key: KeyEvent) -> Option<UiIntent> {
 /// scroll on [`crate::widgets::Table`]. Space does not toggle multi-select.
 #[must_use]
 pub fn default_table_intent(key: KeyEvent) -> Option<UiIntent> {
-    if key.kind == KeyEventKind::Release {
+    if !key.is_insert() {
         return None;
     }
     match key.code {
@@ -236,10 +235,10 @@ pub fn default_table_intent(key: KeyEvent) -> Option<UiIntent> {
 /// [`crate::widgets::TranscriptState::handle_key`] as a product chord.
 #[must_use]
 pub fn default_transcript_intent(key: KeyEvent) -> Option<UiIntent> {
-    if key.kind == KeyEventKind::Release {
+    if !key.is_insert() {
         return None;
     }
-    let is_press = key.kind == KeyEventKind::Press;
+    let is_press = key.is_press();
     match key.code {
         KeyCode::Up | KeyCode::Char('k' | 'K') => Some(UiIntent::Move(NavigationMove::Previous)),
         KeyCode::Down | KeyCode::Char('j' | 'J') => Some(UiIntent::Move(NavigationMove::Next)),
@@ -256,13 +255,13 @@ pub fn default_transcript_intent(key: KeyEvent) -> Option<UiIntent> {
     }
 }
 
-/// Default intent map for [`crate::widgets::Menu`] / context menus.
+/// Default intent map for [`crate::widgets::DropdownMenu`] / context menus.
 #[must_use]
 pub fn default_menu_intent(key: KeyEvent) -> Option<UiIntent> {
-    if key.kind == KeyEventKind::Release {
+    if !key.is_insert() {
         return None;
     }
-    let is_press = key.kind == KeyEventKind::Press;
+    let is_press = key.is_press();
     match key.code {
         KeyCode::Down | KeyCode::Char('j' | 'J') => Some(UiIntent::Move(NavigationMove::Next)),
         KeyCode::Up | KeyCode::Char('k' | 'K') => Some(UiIntent::Move(NavigationMove::Previous)),
@@ -275,16 +274,45 @@ pub fn default_menu_intent(key: KeyEvent) -> Option<UiIntent> {
     }
 }
 
+/// Default intent map for readline-style result overlays
+/// ([`crate::widgets::CommandPalette`], [`crate::widgets::HistoryPicker`],
+/// [`crate::widgets::QuickOpen`]).
+///
+/// Plain ↑/↓ and Ctrl+J/K move the result cursor, PageUp/PageDown page,
+/// Ctrl+Home/End jump; Enter (Activate) and Esc (Cancel) fire on press only so
+/// a held key cannot close and reopen the overlay.
+#[must_use]
+pub fn default_palette_intent(key: KeyEvent) -> Option<UiIntent> {
+    if !key.is_insert() {
+        return None;
+    }
+    let is_press = key.is_press();
+    let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
+    match key.code {
+        KeyCode::Down => Some(UiIntent::Move(NavigationMove::Next)),
+        KeyCode::Up => Some(UiIntent::Move(NavigationMove::Previous)),
+        KeyCode::Char('j' | 'J') if ctrl => Some(UiIntent::Move(NavigationMove::Next)),
+        KeyCode::Char('k' | 'K') if ctrl => Some(UiIntent::Move(NavigationMove::Previous)),
+        KeyCode::PageDown => Some(UiIntent::Page(PageMove::Forward)),
+        KeyCode::PageUp => Some(UiIntent::Page(PageMove::Backward)),
+        KeyCode::Home if ctrl => Some(UiIntent::Move(NavigationMove::First)),
+        KeyCode::End if ctrl => Some(UiIntent::Move(NavigationMove::Last)),
+        KeyCode::Enter if is_press => Some(UiIntent::Activate),
+        KeyCode::Esc if is_press => Some(UiIntent::Cancel),
+        _ => None,
+    }
+}
+
 /// Default intent map for [`crate::widgets::DataTable`] navigation.
 ///
 /// Product chords (sort `s`, filter `/`, expand Shift+arrow, copy, edit) stay on
 /// [`DataTableState::handle_key`].
 #[must_use]
 pub fn default_data_table_intent(key: KeyEvent) -> Option<UiIntent> {
-    if key.kind == KeyEventKind::Release {
+    if !key.is_insert() {
         return None;
     }
-    let is_press = key.kind == KeyEventKind::Press;
+    let is_press = key.is_press();
     // Ctrl+Home / Ctrl+End handled as page extremes via intent + host, or product path.
     if key.modifiers.contains(KeyModifiers::CONTROL)
         && matches!(key.code, KeyCode::Home | KeyCode::End)
@@ -334,10 +362,10 @@ pub fn default_inspector_intent(key: KeyEvent) -> Option<UiIntent> {
 /// Home/End jump first/last hunk when hunks exist.
 #[must_use]
 pub fn default_diff_review_intent(key: KeyEvent) -> Option<UiIntent> {
-    if key.kind == KeyEventKind::Release {
+    if !key.is_insert() {
         return None;
     }
-    let is_press = key.kind == KeyEventKind::Press;
+    let is_press = key.is_press();
     match key.code {
         KeyCode::Down | KeyCode::Char('j' | 'J') => Some(UiIntent::Move(NavigationMove::Next)),
         KeyCode::Up | KeyCode::Char('k' | 'K') => Some(UiIntent::Move(NavigationMove::Previous)),
@@ -361,7 +389,7 @@ pub fn default_diff_review_intent(key: KeyEvent) -> Option<UiIntent> {
 /// Esc / Enter stay on the state path (search cancel / copy).
 #[must_use]
 pub fn default_log_stream_intent(key: KeyEvent) -> Option<UiIntent> {
-    if key.kind == KeyEventKind::Release {
+    if !key.is_insert() {
         return None;
     }
     match key.code {
@@ -382,7 +410,7 @@ pub fn default_log_stream_intent(key: KeyEvent) -> Option<UiIntent> {
 /// Up/Down line motion stays key-path (not list Previous/Next).
 #[must_use]
 pub fn default_text_area_intent(key: KeyEvent) -> Option<UiIntent> {
-    if key.kind == KeyEventKind::Release {
+    if !key.is_insert() {
         return None;
     }
     if !key.modifiers.is_empty() && key.modifiers != KeyModifiers::SHIFT {
@@ -406,7 +434,7 @@ pub fn default_text_area_intent(key: KeyEvent) -> Option<UiIntent> {
 /// map (callers still see kind on the key event). Product chords stay out.
 #[must_use]
 pub fn default_button_intent(key: KeyEvent) -> Option<UiIntent> {
-    if key.kind == KeyEventKind::Release || key.kind == KeyEventKind::Repeat {
+    if !key.is_press() {
         return None;
     }
     if !key.modifiers.is_empty() {
@@ -428,10 +456,10 @@ pub fn default_button_intent(key: KeyEvent) -> Option<UiIntent> {
 /// [`crate::widgets::PromptComposerState::handle_key`].
 #[must_use]
 pub fn default_prompt_composer_intent(key: KeyEvent) -> Option<UiIntent> {
-    if key.kind == KeyEventKind::Release {
+    if !key.is_insert() {
         return None;
     }
-    let is_press = key.kind == KeyEventKind::Press;
+    let is_press = key.is_press();
     if !key.modifiers.is_empty() {
         return None;
     }
@@ -450,10 +478,10 @@ pub fn default_prompt_composer_intent(key: KeyEvent) -> Option<UiIntent> {
 ///   when action ids are registered as focus targets
 #[must_use]
 pub fn default_choice_dialog_intent(key: KeyEvent) -> Option<UiIntent> {
-    if key.kind == KeyEventKind::Release {
+    if !key.is_insert() {
         return None;
     }
-    let is_press = key.kind == KeyEventKind::Press;
+    let is_press = key.is_press();
     match key.code {
         KeyCode::Left | KeyCode::Up | KeyCode::Char('h' | 'H' | 'k' | 'K') => {
             Some(UiIntent::Move(NavigationMove::Previous))
@@ -474,10 +502,10 @@ pub fn default_choice_dialog_intent(key: KeyEvent) -> Option<UiIntent> {
 /// **Field cycle (Tab / Up / Down) is host / scene owned** — not mapped here.
 #[must_use]
 pub fn default_form_intent(key: KeyEvent) -> Option<UiIntent> {
-    if key.kind == KeyEventKind::Release {
+    if !key.is_insert() {
         return None;
     }
-    let is_press = key.kind == KeyEventKind::Press;
+    let is_press = key.is_press();
     match key.code {
         KeyCode::Enter if is_press => Some(UiIntent::Activate),
         KeyCode::PageUp => Some(UiIntent::Page(PageMove::Backward)),
@@ -495,11 +523,11 @@ pub fn default_form_intent(key: KeyEvent) -> Option<UiIntent> {
 /// keymap pack is adopted.
 #[must_use]
 pub fn default_permission_intent(key: KeyEvent) -> Option<UiIntent> {
-    if key.kind == KeyEventKind::Release {
+    if !key.is_insert() {
         return None;
     }
     // Press-only for confirm/cancel to avoid held-key multi-fire.
-    let is_press = key.kind == KeyEventKind::Press;
+    let is_press = key.is_press();
     match key.code {
         KeyCode::Left | KeyCode::Up => Some(UiIntent::Move(NavigationMove::Previous)),
         KeyCode::Right | KeyCode::Down | KeyCode::Tab
@@ -522,12 +550,20 @@ pub fn default_permission_intent(key: KeyEvent) -> Option<UiIntent> {
 
 #[cfg(test)]
 mod tests {
+    use crate::input::KeyEventKind;
+
     use super::*;
 
     #[test]
     fn default_text_area_intent_nav_cancel() {
         assert_eq!(
             default_text_area_intent(KeyEvent::new(KeyCode::Home, KeyModifiers::NONE)),
+            Some(UiIntent::Move(NavigationMove::First))
+        );
+        let mut repeat = KeyEvent::new(KeyCode::Home, KeyModifiers::NONE);
+        repeat.kind = KeyEventKind::Repeat;
+        assert_eq!(
+            default_text_area_intent(repeat),
             Some(UiIntent::Move(NavigationMove::First))
         );
         assert_eq!(
@@ -573,6 +609,38 @@ mod tests {
             default_list_intent(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE)),
             None
         );
+    }
+
+    #[test]
+    fn default_palette_intent_moves_pages_and_press_gates() {
+        assert_eq!(
+            default_palette_intent(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
+            Some(UiIntent::Move(NavigationMove::Next))
+        );
+        assert_eq!(
+            default_palette_intent(KeyEvent::new(KeyCode::Char('k'), KeyModifiers::CONTROL)),
+            Some(UiIntent::Move(NavigationMove::Previous))
+        );
+        assert_eq!(
+            default_palette_intent(KeyEvent::new(KeyCode::PageUp, KeyModifiers::NONE)),
+            Some(UiIntent::Page(PageMove::Backward))
+        );
+        assert_eq!(
+            default_palette_intent(KeyEvent::new(KeyCode::Home, KeyModifiers::CONTROL)),
+            Some(UiIntent::Move(NavigationMove::First))
+        );
+        // Home without Ctrl is not a palette chord.
+        assert_eq!(
+            default_palette_intent(KeyEvent::new(KeyCode::Home, KeyModifiers::NONE)),
+            None
+        );
+        // Enter/Esc fire on press only; a held key cannot re-cancel the overlay.
+        let mut repeat = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
+        repeat.kind = KeyEventKind::Repeat;
+        assert_eq!(default_palette_intent(repeat), None);
+        let mut release = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
+        release.kind = KeyEventKind::Release;
+        assert_eq!(default_palette_intent(release), None);
     }
 
     #[test]

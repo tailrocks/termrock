@@ -1,0 +1,50 @@
+ ▪  TablePro  Production  ◆ production  acme_prod › public  safe                                                                     truecolor · 160×50  ? help
+
+ ▎≡ Query 1 ×                                                                                                                                               +
+ ─━━━━━━━━━━━━─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ ╭─ Explorer ───────────────── public ─╮ ╭─ Query 1 ───────────────────────────────────────────────────────────────────────────────────────────────── 386 ms ─╮
+ │                                     │ │  ▎›  1 SELECT * FROM orders WHERE status = 'pending' LIMIT 30                                                      │
+ │ ▎ Filter objects                    │ │                                                                                                                    │
+ │ ▎▾ D acme_prod                      │ │                                                                                                                    │
+ │ ▎  ▾ S public                       │ │                                                                                                                    │
+ │ ▎    ▾ Tables                    7  │ │                                                                                                                    │
+ │ ▎      ▸ T organizations     1.2 k  │ │                                                                                                                    │
+ │ ▎      ▸ T customers        48.9 k  │ │                                                                                                                    │
+ │ ▎      ▸ T products            312  │ │                                                                                                                    │
+ │ ▎      ▸ T orders            1.2 M  │ │                                                                                                                    │
+ │ ▎      ▸ T order_items       3.8 M  │ │                                                                                                                    │
+ │ ▎      ▸ T payments          1.2 M  │ │                                                                                                                    │
+ │ ▎      ▸ T subscriptions     1.1 k  │ │                                                                                                                    │
+ │ ▎    ▸ Views                     2  │ │                                                                                                                    │
+ │ ▎    ▸ Functions                 1  │ │                                                                                                                    │
+ │ ▎    ▸ Sequences                 1  │ │                                                                                                                    │
+ │ ▎  ▸ S analytics                    │ │                                                                                                                    │
+ │ ▎  ▸ S audit                        │ │  ▎EXPLAIN ANALYZE ×                                                                                                │
+ │                                     │ │  ─━━━━━━━━━━━━━━━━━━────────────────────────────────────────────────────────────────────────────────────────────── │
+ │                                     │ │   Planning 0.300 ms · Execution 385.768 ms                                                                         │
+ │                                     │ │     Operation                              cost     rows     actual    %    Limit                                  │
+ │                                     │ │  ▎▾ Limit                                  1..1       30   385.4 ms   0                                            │
+ │                                     │ │  ▎    Index Scan on public.orders       1..1164   96.3 k   385.4 ms 100▲    Cost    0.56..0.92                     │
+ │                                     │ │                                                                             Rows    30 est.                        │
+ │                                     │ │                                                                             Actual  385.368 ms · 1 loop            │
+ │                                     │ │                                                                             Rows    30                             │
+ │                                     │ │                                                                                                                    │
+ │                                     │ │                                                                                                                    │
+ │                                     │ │                                                                                                                    │
+ │                                     │ │                                                                                                                    │
+ │                                     │ │                                                                                                                    │
+ │                                     │ │                                                                                                                    │
+ │                                     │ │                                                                                                                    │
+ │                                     │ │                                                                                                                    │
+ │                                     │ │                                                                                                                    │
+ │                                     │ │                                                                                                                    │
+ │                                     │ │                                                                                                                    │
+ │                                     │ │                                                                                                                    │
+ │                                     │ │                                                                                                                    │
+ │                                     │ │                                                                                                                    │
+ │                                     │ │                                                                                                                    │
+ │                                     │ │                                                                                                                    │
+ │                                     │ │                                                                                                                    │
+ ╰─────────────────────────────────────╯ ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+ ↑ ↓ Move  Tab Next                                                                                                                     Connected to Production

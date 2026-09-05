@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Bridge Keymap chord resolution to InteractionScene action availability.
-
 use crate::{
     input::{KeyEvent, KeyEventKind},
     interaction::{InteractionOutcome, InteractionScene},
@@ -23,7 +22,7 @@ where
     LayerId: PartialEq,
     Action: Clone + Copy + PartialEq + 'static,
 {
-    if key.kind == KeyEventKind::Release {
+    if key.is_release() {
         return InteractionOutcome::Ignored;
     }
     let chord = KeyChord::from(key);

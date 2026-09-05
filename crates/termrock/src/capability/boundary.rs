@@ -6,11 +6,10 @@
 //! Hosts resolve [`super::TerminalCapabilities`] once, then pass a
 //! [`CapabilityBoundary`] (or the full caps) into paint/session setup so optional
 //! features never become hidden hard dependencies.
-
 use super::CapabilityProfile;
 use super::profile::{SessionFlags, TerminalCapabilities};
 use super::set::{CapabilityKind, CapabilitySet, FallbackPolicy, fallback_policies};
-use crate::style::{ColorCapability, DesignSystem, GlyphSet, RolePalette, quantize_palette};
+use crate::style::{ColorCapability, DesignSystem, RolePalette};
 
 /// Progressive-enhancement contract for components (derived from a capability set).
 ///
@@ -54,12 +53,6 @@ impl CapabilityBoundary {
         matches!(self.set.color, ColorCapability::Monochrome)
     }
 
-    /// Prefer ASCII glyph substitutes.
-    #[must_use]
-    pub const fn ascii_glyphs(self) -> bool {
-        matches!(self.set.glyphs, GlyphSet::Ascii)
-    }
-
     /// Mouse reporting desired.
     #[must_use]
     pub const fn allow_mouse(self) -> bool {
@@ -95,7 +88,6 @@ impl CapabilityBoundary {
     pub const fn component_hints(self) -> ComponentCapabilityHints {
         ComponentCapabilityHints {
             colorless: self.colorless(),
-            ascii: self.ascii_glyphs(),
             mouse: self.allow_mouse(),
             hyperlinks: self.allow_hyperlinks(),
             interactive: self.interactive(),
@@ -123,28 +115,21 @@ impl CapabilityBoundary {
         fallback_policies().iter().find(|p| p.kind == kind)
     }
 
-    /// Quantize a palette to this boundary's color ladder.
+    /// Resolve a palette onto this boundary's colour ladder.
     #[must_use]
     pub fn project_palette(self, palette: RolePalette) -> RolePalette {
-        quantize_palette(&palette, self.set.color)
+        palette.quantized(self.set.color)
     }
 
-    /// Project design tokens onto this boundary (host may still set density).
+    /// Project design tokens onto this boundary.
     ///
-    /// The palette is quantized, the capability recorded, and interaction chrome
-    /// the ladder can no longer paint is downgraded: a monochrome or ASCII
-    /// boundary gets [`crate::style::SelectionChrome::Gutter`] and
-    /// [`GlyphSet::Ascii`], because a selection *fill* has nothing left to fill
-    /// with on those terminals.
+    /// The palette is resolved for the boundary's colour rung and the rung is
+    /// recorded. Glyphs are one junie vocabulary; capability does not swap them.
     #[must_use]
     pub fn project_system(self, system: DesignSystem) -> DesignSystem {
         let mut out = system;
         out.palette = self.project_palette(out.palette);
         out.capability = self.set.color;
-        if self.ascii_glyphs() {
-            out.glyphs = GlyphSet::Ascii;
-        }
-        crate::style::degrade_projection_chrome(&mut out);
         out
     }
 
@@ -160,8 +145,6 @@ impl CapabilityBoundary {
 pub struct ComponentCapabilityHints {
     /// No chromatic color.
     pub colorless: bool,
-    /// ASCII glyph set.
-    pub ascii: bool,
     /// Mouse available.
     pub mouse: bool,
     /// Hyperlinks allowed.
@@ -180,19 +163,19 @@ mod tests {
     use crate::style::RolePalette;
 
     #[test]
-    fn minimal_boundary_is_colorless_ascii() {
+    fn minimal_boundary_is_colorless() {
         let b = CapabilityBoundary::from_profile(CapabilityProfile::Minimal);
-        assert!(b.colorless() && b.ascii_glyphs());
+        assert!(b.colorless());
         assert!(!b.allow_mouse());
         let hints = b.component_hints();
-        assert!(hints.colorless && hints.ascii && !hints.mouse);
+        assert!(hints.colorless && !hints.mouse);
     }
 
     #[test]
     fn modern_projects_truecolor_palette() {
         let b = CapabilityBoundary::from_profile(CapabilityProfile::Modern);
         assert!(!b.colorless());
-        let q = b.project_palette(RolePalette::tailrocks_phosphor());
+        let q = b.project_palette(RolePalette::junie());
         let _ = q;
     }
 
@@ -205,24 +188,18 @@ mod tests {
     }
 
     #[test]
-    fn mono_projection_downgrades_selection_and_glyphs() {
+    fn mono_projection_downgrades_capability() {
         let b = CapabilityBoundary::from_profile(CapabilityProfile::Minimal);
-        let projected = b.project_system(DesignSystem::phosphor());
+        let projected = b.project_system(DesignSystem::junie());
         assert_eq!(projected.capability, ColorCapability::Monochrome);
-        assert_eq!(projected.glyphs, GlyphSet::Ascii);
-        assert_eq!(
-            projected.selection,
-            crate::style::SelectionChrome::Gutter,
-            "a fill has nothing to fill with once color is gone"
-        );
     }
 
     #[test]
     fn modern_projection_keeps_rich_chrome() {
         let b = CapabilityBoundary::from_profile(CapabilityProfile::Modern);
-        let projected = b.project_system(DesignSystem::phosphor());
-        assert_eq!(projected.glyphs, DesignSystem::phosphor().glyphs);
-        assert_eq!(projected.selection, DesignSystem::phosphor().selection);
+        let projected = b.project_system(DesignSystem::junie());
+        assert_eq!(projected.glyphs, DesignSystem::junie().glyphs);
+        assert_eq!(projected.capability, DesignSystem::junie().capability);
     }
 
     #[test]

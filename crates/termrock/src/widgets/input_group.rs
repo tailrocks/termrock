@@ -16,12 +16,11 @@
 //! dual-paint: pick one surface per control.
 //!
 //! Research: shadcn Input Group, browser URL bars, CLI flag+value pairs.
-
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
-    style::{DesignSystem, Role},
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    style::{ButtonRecipeVariant, ControlState, DesignSystem},
     text::{display_cols, take_display_cols},
     widgets::{TextInput, TextInputOutcome, TextInputState},
 };
@@ -115,6 +114,8 @@ pub struct InputGroupState {
     pub field: TextInputState,
     focused: bool,
     accepts_input: bool,
+    enabled: bool,
+    parts: Option<InputGroupParts>,
 }
 
 impl Default for InputGroupState {
@@ -133,18 +134,47 @@ impl InputGroupState {
             field,
             focused: false,
             accepts_input: true,
+            enabled: true,
+            parts: None,
         }
+    }
+
+    /// Live typing. [`Self::new`] stays idle (`editing: false`).
+    #[must_use]
+    pub fn with_editing(mut self) -> Self {
+        self.field.begin_edit();
+        self
+    }
+
+    /// Start the insert session (Junie Enter on an idle field).
+    pub fn begin_edit(&mut self) {
+        self.field.begin_edit();
     }
 
     /// Focus.
     pub fn set_focused(&mut self, on: bool) {
-        self.focused = on;
-        self.field.set_focused(on);
+        self.focused = on && self.enabled;
+        self.field.set_focused(self.focused);
     }
 
     /// Input gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
+    }
+
+    /// Enables both field editing and addon activation.
+    pub fn set_enabled(&mut self, on: bool) {
+        self.enabled = on;
+        self.field.set_enabled(on);
+        if !on {
+            self.set_focused(false);
+        }
+    }
+
+    /// Whether the group can accept field or addon input.
+    #[must_use]
+    pub const fn is_enabled(&self) -> bool {
+        self.enabled
     }
 
     /// Value.
@@ -162,7 +192,7 @@ impl InputGroupState {
 
     /// Keys — field first; Alt+Enter activates first actionable suffix.
     pub fn handle_key(&mut self, key: KeyEvent, addons: &[InputAddon]) -> InputGroupOutcome {
-        if !self.accepts_input || key.kind != KeyEventKind::Press {
+        if !self.enabled || !self.accepts_input || !key.is_press() {
             return InputGroupOutcome::Ignored;
         }
         // Alt+Enter or Ctrl+. → first suffix action
@@ -190,9 +220,48 @@ impl InputGroupState {
             other => InputGroupOutcome::Field(other),
         }
     }
+
+    /// Mouse path over geometry published by the last paint.
+    pub fn handle_mouse(&mut self, event: MouseEvent, addons: &[InputAddon]) -> InputGroupOutcome {
+        if !self.enabled
+            || !self.accepts_input
+            || !matches!(event.kind, MouseEventKind::Down(MouseButton::Left))
+        {
+            return InputGroupOutcome::Ignored;
+        }
+        let Some(parts) = self.parts.clone() else {
+            return InputGroupOutcome::Ignored;
+        };
+        if let Some((id, _)) = parts
+            .addon_regions
+            .iter()
+            .find(|(_, rect)| rect.contains(event.position))
+            && addons
+                .iter()
+                .any(|addon| addon.action_id.as_deref() == Some(id.as_str()))
+        {
+            self.set_focused(true);
+            return InputGroupOutcome::AddonActivated { id: id.clone() };
+        }
+        if parts.field.contains(event.position) {
+            self.set_focused(true);
+            return match self.field.handle_mouse(event, parts.field) {
+                TextInputOutcome::Ignored => InputGroupOutcome::Ignored,
+                other => InputGroupOutcome::Field(other),
+            };
+        }
+        InputGroupOutcome::Ignored
+    }
 }
 
 // ── Widget ──────────────────────────────────────────────────────────────────
+
+/// Geometry published by [`InputGroup::paint`] for internal pointer routing.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct InputGroupParts {
+    field: Rect,
+    addon_regions: Vec<(String, Rect)>,
+}
 
 /// Input group paint.
 #[derive(Debug, Clone, Copy)]
@@ -222,9 +291,26 @@ impl<'a> InputGroup<'a> {
 
     /// Paint prefix | field | suffix on one row.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut InputGroupState) {
+        state.parts = None;
         if area.is_empty() {
+            state.parts = Some(InputGroupParts {
+                field: area,
+                addon_regions: Vec::new(),
+            });
             return;
         }
+        let input_recipe = self.system.input_recipe(
+            if !state.enabled {
+                ControlState::Disabled
+            } else if state.focused {
+                ControlState::Focused
+            } else {
+                ControlState::Default
+            },
+            false,
+            state.field.is_editing(),
+        );
+        buffer.set_style(area, input_recipe.fill);
         let prefixes: Vec<&InputAddon> = self
             .addons
             .iter()
@@ -239,6 +325,7 @@ impl<'a> InputGroup<'a> {
         let mut x = area.x;
         let y = area.y;
         let end = area.x.saturating_add(area.width);
+        let mut addon_regions = Vec::new();
 
         // Prefixes
         for p in &prefixes {
@@ -251,8 +338,11 @@ impl<'a> InputGroup<'a> {
                 y,
                 take_display_cols(&p.text, usize::from(w)),
                 usize::from(w),
-                self.system.style(Role::TextMuted),
+                input_recipe.placeholder,
             );
+            if let Some(id) = &p.action_id {
+                addon_regions.push((id.clone(), Rect::new(x, y, w, 1.min(area.height))));
+            }
             x = x.saturating_add(w.saturating_add(1));
         }
 
@@ -276,9 +366,18 @@ impl<'a> InputGroup<'a> {
                 break;
             }
             let style = if s.action_id.is_some() {
-                self.system.style(Role::Accent)
+                let action = self.system.button_recipe(
+                    ButtonRecipeVariant::Quiet,
+                    if state.enabled {
+                        ControlState::Default
+                    } else {
+                        ControlState::Disabled
+                    },
+                    self.system.junie_theme().surface,
+                );
+                action.fill.patch(action.label)
             } else {
-                self.system.style(Role::TextMuted)
+                input_recipe.placeholder
             };
             buffer.set_stringn(
                 x,
@@ -287,8 +386,16 @@ impl<'a> InputGroup<'a> {
                 usize::from(w),
                 style,
             );
+            if let Some(id) = &s.action_id {
+                addon_regions.push((id.clone(), Rect::new(x, y, w, 1.min(area.height))));
+            }
             x = x.saturating_add(w.saturating_add(1));
         }
+        let parts = InputGroupParts {
+            field: field_area,
+            addon_regions,
+        };
+        state.parts = Some(parts.clone());
     }
 }
 
@@ -313,6 +420,7 @@ mod tests {
     fn field_typing_and_addon_action() {
         let mut st = InputGroupState::new();
         st.set_focused(true);
+        st.begin_edit();
         let addons = example_url_input_addons();
         let out = st.handle_key(press('a'), &addons);
         assert!(
@@ -362,5 +470,76 @@ mod tests {
             left.contains("http") || left.contains("://") || left.contains('h'),
             "prefix painted: {left:?}"
         );
+    }
+
+    #[test]
+    fn escape_cancels_without_mutating_the_field() {
+        let addons = example_url_input_addons();
+        let mut state = InputGroupState::new();
+        state.set_focused(true);
+        state.set_value("example.com");
+
+        let outcome = state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &addons);
+
+        assert_eq!(outcome, InputGroupOutcome::Cancelled);
+        assert_eq!(state.value(), "example.com");
+    }
+
+    #[test]
+    fn accepts_input_gate_blocks_field_and_addon_actions() {
+        let addons = example_url_input_addons();
+        let mut state = InputGroupState::new();
+        state.set_focused(true);
+        state.set_accepts_input(false);
+
+        assert_eq!(
+            state.handle_key(press('a'), &addons),
+            InputGroupOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::ALT), &addons),
+            InputGroupOutcome::Ignored
+        );
+        assert!(state.value().is_empty());
+    }
+
+    #[test]
+    fn mouse_routes_painted_field_and_addon_while_disabled_blocks_both() {
+        let system = DesignSystem::default();
+        let addons = example_url_input_addons();
+        let widget = InputGroup::new(&addons, &system);
+        let area = Rect::new(0, 0, 40, 1);
+        let mut buffer = Buffer::empty(area);
+        let mut state = InputGroupState::new();
+        widget.paint(area, &mut buffer, &mut state);
+        let parts = state.parts.clone().expect("painted geometry");
+        let (id, addon) = parts.addon_regions[0].clone();
+        let click = |rect: Rect| MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: ratatui_core::layout::Position::new(rect.x, rect.y),
+            modifiers: KeyModifiers::NONE,
+        };
+
+        assert!(matches!(
+            state.handle_mouse(click(parts.field), &addons),
+            InputGroupOutcome::Field(TextInputOutcome::Changed)
+        ));
+        assert_eq!(
+            state.handle_mouse(click(addon), &addons),
+            InputGroupOutcome::AddonActivated { id }
+        );
+
+        state.set_enabled(false);
+        assert!(!state.is_enabled());
+        assert_eq!(
+            state.handle_mouse(click(addon), &addons),
+            InputGroupOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_key(press('x'), &addons),
+            InputGroupOutcome::Ignored
+        );
+        widget.paint(area, &mut buffer, &mut state);
+        assert_eq!(state.parts.as_ref(), Some(&parts));
     }
 }

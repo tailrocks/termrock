@@ -12,7 +12,6 @@
 //!
 //! Import from modules (`termrock::style::…`, `termrock::widgets::…`). The crate
 //! root does **not** re-export types (pre-1.0 Break A / migration 0060).
-
 pub mod ansi_text;
 pub mod capability;
 pub mod context;

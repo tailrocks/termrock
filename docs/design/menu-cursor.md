@@ -1,4 +1,4 @@
-# Menu / Sidebar cursor vs scene focus
+# Dropdown menu / Sidebar cursor vs scene focus
 
 | Field | Value |
 |-------|-------|
@@ -7,12 +7,12 @@
 
 ## Problem
 
-`MenuOutcome::FocusChanged` + `focus_index` conflate in-menu **cursor** with **scene focus**. Same pattern as DataTable before `0068`.
+The removed flat menu conflated in-menu **cursor** with **scene focus**. `DropdownMenuOutcome` and `DropdownMenuState` keep the replacement cascade's cursor local while the scene owns surface focus.
 
 ## Decisions
 
-1. `FocusChanged` → `CursorMoved`; `focus_index` → `cursor_index`.
-2. Cursor is menu-local state when `accepts_input`; host owns surface focus via `Menu::focused(bool)`.
+1. `DropdownMenuOutcome::CursorMoved` reports local navigation; `cursor_index` exposes the root panel cursor.
+2. Cursor is menu-local state when `accepts_input`; host owns surface focus via `DropdownMenuState::set_focused`.
 3. `handle_intent` + `default_menu_intent` (j/k, arrows, enter, space, esc).
 4. `handle_mouse` click-to-cursor / activate.
 5. Non-color cursor `›`/`>`, disabled dim + `⊘`, checked `✓`/`[x]`/`[ ]` ascii.

@@ -9,13 +9,12 @@
 //! that embeds TextArea and may own additional undo/selection layers.
 //!
 //! Research: tui-textarea, prompt-toolkit, terminal editors, agent composers.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::Modifier,
-    widgets::{StatefulWidget, Widget},
+    style::{Modifier, Style},
+    widgets::StatefulWidget,
 };
 
 use crate::{
@@ -24,13 +23,11 @@ use crate::{
         MouseEventKind,
     },
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
-    style::{Density, DesignSystem, Role, RolePalette},
-    text::{display_cols, display_cols_slice_into, take_display_cols},
+    style::{DesignSystem, VisualState},
+    text::{display_cols, display_cols_slice_into, take_display_cols, truncate_cols},
 };
 
-use super::{
-    Panel, PanelChrome, ScrollArea, ScrollAreaState, ScrollBarVisibility, ScrollChain, edit_core,
-};
+use super::{ScrollAreaState, ScrollChain, edit_core};
 
 /// Undo snapshot limit for standalone TextArea.
 const UNDO_LIMIT: usize = 64;
@@ -174,6 +171,8 @@ pub struct TextAreaState {
     /// Dual-axis viewport via canonical [`ScrollAreaState`] (native-feel input box).
     scroll: ScrollAreaState,
     accepts_input: bool,
+    /// Two-mode like junie TextInput: focused-idle vs editing.
+    editing: bool,
     read_only: bool,
     wrap: TextWrap,
     indent: String,
@@ -194,6 +193,8 @@ pub struct TextAreaState {
     gutter_width: u16,
     scratch: String,
     selecting_mouse: bool,
+    /// Hardware caret cell while editing (host applies `set_cursor_position`).
+    hardware_cursor: Option<Position>,
 }
 
 impl Default for TextAreaState {
@@ -216,6 +217,7 @@ impl TextAreaState {
                 .chain(ScrollChain::Capture)
                 .wheel_steps(3, 4),
             accepts_input: false,
+            editing: false,
             read_only: false,
             wrap: TextWrap::None,
             indent: DEFAULT_INDENT.to_owned(),
@@ -233,6 +235,7 @@ impl TextAreaState {
             gutter_width: 0,
             scratch: String::new(),
             selecting_mouse: false,
+            hardware_cursor: None,
         };
         state.cursor.line = state.lines.len() - 1;
         state.cursor.byte = state.lines.last().map_or(0, String::len);
@@ -490,8 +493,23 @@ impl TextAreaState {
     }
 
     /// Host input gate (scene/overlay ownership). Does not clear buffer.
+    /// Does not enter editing — host or Enter/F2 does.
     pub const fn set_accepts_input(&mut self, accepts: bool) {
         self.accepts_input = accepts;
+        if !accepts {
+            self.editing = false;
+        }
+    }
+
+    /// Begin/leave editing. No-op when read-only.
+    pub const fn set_editing(&mut self, editing: bool) {
+        self.editing = editing && !self.read_only && self.accepts_input;
+    }
+
+    /// Whether the document currently accepts inserts (not merely focused).
+    #[must_use]
+    pub const fn is_editing(&self) -> bool {
+        self.editing && self.accepts_input && !self.read_only
     }
 
     /// Whether host granted keyboard/pointer input.
@@ -511,23 +529,22 @@ impl TextAreaState {
         self.read_only
     }
 
-    /// Deprecated name for [`Self::set_accepts_input`].
-    #[deprecated(note = "use set_accepts_input")]
-    pub const fn set_focused(&mut self, focused: bool) {
-        self.accepts_input = focused;
-    }
-
-    /// Deprecated name for [`Self::accepts_input`].
-    #[deprecated(note = "use accepts_input")]
-    #[must_use]
-    pub const fn is_focused(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Two-axis viewport ([`ScrollAreaState`] — same engine as lists/logs).
     #[must_use]
     pub const fn scroll(&self) -> &ScrollAreaState {
         &self.scroll
+    }
+
+    /// Last painted editor body, excluding label, gutter, and scrollbar.
+    #[must_use]
+    pub const fn body_area(&self) -> Rect {
+        self.body
+    }
+
+    /// Hardware caret cell while editing; `None` when not editing or off-screen.
+    #[must_use]
+    pub const fn cursor_cell(&self) -> Option<Position> {
+        self.hardware_cursor
     }
 
     /// Mutable scroll (hosts may overscan / chain when nested).
@@ -604,7 +621,15 @@ impl TextAreaState {
             return TextAreaOutcome::Ignored;
         }
         match intent {
-            UiIntent::Cancel | UiIntent::Close => TextAreaOutcome::Cancelled,
+            UiIntent::Cancel | UiIntent::Close => {
+                if self.editing {
+                    self.editing = false;
+                    self.select_anchor = None;
+                    TextAreaOutcome::Changed
+                } else {
+                    TextAreaOutcome::Cancelled
+                }
+            }
             UiIntent::Move(NavigationMove::Previous) => {
                 if self.left() {
                     self.reveal();
@@ -661,16 +686,57 @@ impl TextAreaState {
         }
     }
 
-    /// Routes keyboard editing when host granted input. Enter inserts a newline.
+    /// Routes keyboard. Idle (focused, not editing): Enter/F2 begin edit,
+    /// j/k and arrows scroll. Editing: Enter inserts a newline; Esc commits.
     pub fn handle_key(&mut self, key: KeyEvent) -> TextAreaOutcome {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return TextAreaOutcome::Ignored;
         }
+        let plain = key.modifiers.is_empty();
+        if !self.editing || self.read_only {
+            return match key.code {
+                KeyCode::Enter if plain && !self.read_only => {
+                    self.editing = true;
+                    TextAreaOutcome::Changed
+                }
+                KeyCode::Up | KeyCode::Char('k') if plain => {
+                    if self.scroll_by(0, -1) {
+                        TextAreaOutcome::Changed
+                    } else {
+                        TextAreaOutcome::Ignored
+                    }
+                }
+                KeyCode::Down | KeyCode::Char('j') if plain => {
+                    if self.scroll_by(0, 1) {
+                        TextAreaOutcome::Changed
+                    } else {
+                        TextAreaOutcome::Ignored
+                    }
+                }
+                KeyCode::PageUp if plain => {
+                    let step = -isize::try_from(self.viewport_height.max(1)).unwrap_or(isize::MAX);
+                    if self.vertical(step) {
+                        TextAreaOutcome::Changed
+                    } else {
+                        TextAreaOutcome::Ignored
+                    }
+                }
+                KeyCode::PageDown if plain => {
+                    let step = isize::try_from(self.viewport_height.max(1)).unwrap_or(isize::MAX);
+                    if self.vertical(step) {
+                        TextAreaOutcome::Changed
+                    } else {
+                        TextAreaOutcome::Ignored
+                    }
+                }
+                _ => TextAreaOutcome::Ignored,
+            };
+        }
         if key.code == KeyCode::Esc {
-            if self.select_anchor.take().is_some() {
-                return TextAreaOutcome::Changed;
-            }
-            return TextAreaOutcome::Cancelled;
+            // junie: Esc finishes editing and keeps the document.
+            self.editing = false;
+            self.select_anchor = None;
+            return TextAreaOutcome::Changed;
         }
 
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
@@ -1399,11 +1465,14 @@ pub struct TextArea<'a> {
     system: &'a DesignSystem,
     title: Option<&'a str>,
     placeholder: Option<&'a str>,
-    ascii: bool,
+    help: Option<&'a str>,
+    error: Option<&'a str>,
     colorless: bool,
     line_numbers: bool,
     wrap: TextWrap,
     variant: TextAreaVariant,
+    /// Visible text rows. Height is `rows + 2` (label + footer). `0` fills `area`.
+    rows: u16,
 }
 
 impl<'a> TextArea<'a> {
@@ -1414,14 +1483,16 @@ impl<'a> TextArea<'a> {
             system,
             title: None,
             placeholder: None,
+            help: None,
+            error: None,
             // Seeded from the system: a widget that defaults to false is
             // claiming the terminal has Unicode and colour before anyone
             // asked it. Builders below still force either way.
-            ascii: system.ascii_glyphs(),
             colorless: system.mono(),
             line_numbers: false,
             wrap: TextWrap::None,
             variant: TextAreaVariant::Editor,
+            rows: 0,
         }
     }
     /// Sets panel title.
@@ -1437,15 +1508,36 @@ impl<'a> TextArea<'a> {
         self
     }
 
-    /// ASCII scrollbar / empty cues.
+    /// Footer help (yields to [`Self::error`]).
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
+    pub const fn help(mut self, help: &'a str) -> Self {
+        self.help = Some(help);
         self
     }
 
-    /// Reduced-color caret/chrome.
+    /// Footer error; paints `!` in the field and replaces help.
     #[must_use]
+    pub const fn error(mut self, error: &'a str) -> Self {
+        self.error = Some(error);
+        self
+    }
+
+    /// Visible text rows. Painted height is `rows + 2`.
+    #[must_use]
+    pub const fn rows(mut self, rows: u16) -> Self {
+        self.rows = rows;
+        self
+    }
+
+    /// Label + body rows + footer.
+    #[must_use]
+    pub const fn height(&self) -> u16 {
+        self.rows.saturating_add(2)
+    }
+
+    /// ASCII scrollbar / empty cues.
+    #[must_use]
+    /// Reduced-color caret/chrome.
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
         self
@@ -1505,8 +1597,8 @@ impl<'a> TextArea<'a> {
                 .role(SemanticRole::Input)
                 .label(self.title.unwrap_or("text area"))
                 .description(self.variant.id())
-                .focusable(state.accepts_input)
-                .disabled(state.read_only && !state.accepts_input)
+                .focusable(!state.is_read_only())
+                .disabled(false)
                 .state(SemanticState {
                     selected: state.accepts_input,
                     ..Default::default()
@@ -1518,69 +1610,104 @@ impl<'a> TextArea<'a> {
 impl StatefulWidget for &TextArea<'_> {
     type State = TextAreaState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        let tokens = self.system.clone();
         state.wrap = self.wrap;
-        let focused = state.accepts_input;
-        let emphasis = match (self.variant, focused) {
-            (TextAreaVariant::Review, true) => PanelChrome::Focused,
-            (TextAreaVariant::Review, false) => PanelChrome::Normal,
-            (_, true) => PanelChrome::Focused,
-            (_, false) => PanelChrome::Normal,
-        };
-        let mut panel = Panel::new(&tokens).emphasis(emphasis);
-        if let Some(title) = self.title {
-            panel = panel.title(title);
+        state.hardware_cursor = None;
+        state.vertical_scrollbar = None;
+        state.horizontal_scrollbar = None;
+        if area.is_empty() {
+            state.body = Rect::default();
+            return;
         }
-        let inner = panel.inner(area);
-        panel.render(area, buffer);
 
-        let gutter = if self.line_numbers {
+        let theme = self.system.junie_theme();
+        let focused = state.accepts_input;
+        let editing = state.editing && focused && !state.read_only;
+        let invalid = self.error.is_some();
+        let visual = VisualState {
+            focused,
+            disabled: state.read_only,
+            editing,
+            error: invalid,
+            ..VisualState::default()
+        };
+        let fs = theme.field_style(visual);
+        let field_bg = fs.bg.unwrap_or(theme.field);
+
+        // Label row (always reserved: height = rows + 2).
+        let label_style = if state.read_only {
+            theme.faint()
+        } else if matches!(self.variant, TextAreaVariant::Review) && !focused {
+            theme.muted()
+        } else {
+            theme.label(focused)
+        };
+        if let Some(title) = self.title {
+            let text = take_display_cols(title, usize::from(area.width.saturating_sub(2)));
+            buffer.set_stringn(
+                area.x.saturating_add(2),
+                area.y,
+                text,
+                usize::from(area.width.saturating_sub(2)),
+                label_style,
+            );
+        }
+
+        let max_rows = area.height.saturating_sub(2);
+        let rows = if self.rows == 0 {
+            max_rows
+        } else {
+            self.rows.min(max_rows)
+        };
+        if rows == 0 {
+            state.body = Rect::default();
+            return;
+        }
+
+        let field = Rect::new(area.x, area.y.saturating_add(1), area.width, rows);
+        buffer.set_style(field, fs);
+        let gutter = self.system.gutter(visual, field_bg, false);
+        for y in field.top()..field.bottom() {
+            buffer.set_stringn(field.x, y, self.system.glyphs.selection_gutter(), 1, gutter);
+        }
+
+        let number_w = if self.line_numbers {
             let digits = state.lines.len().max(1).ilog10() as u16 + 1;
             digits.saturating_add(1).min(6)
         } else {
             0
         };
-        state.gutter_width = gutter;
-
-        let mut show_vertical = false;
-        let mut show_horizontal = false;
-        for _ in 0..2 {
-            let width = inner
-                .width
-                .saturating_sub(u16::from(show_vertical))
-                .saturating_sub(gutter);
-            let height = inner.height.saturating_sub(u16::from(show_horizontal));
-            let content_h = match state.wrap {
-                TextWrap::Soft => state.content_height.max(state.lines.len()),
-                TextWrap::None => state.lines.len(),
-            };
-            show_vertical = crate::scroll::is_scrollable(content_h, usize::from(height));
-            show_horizontal = matches!(state.wrap, TextWrap::None)
-                && crate::scroll::is_scrollable(state.max_width, usize::from(width));
-        }
-        let body = Rect::new(
-            inner.x.saturating_add(gutter),
-            inner.y,
-            inner
-                .width
-                .saturating_sub(u16::from(show_vertical))
-                .saturating_sub(gutter),
-            inner.height.saturating_sub(u16::from(show_horizontal)),
+        // Two-cell inset (bar + space) plus optional line numbers; right 2
+        // cells are scrollbar + pad, matching junie inner = width − 4.
+        state.gutter_width = 2u16.saturating_add(number_w);
+        let inner = Rect::new(
+            field.x.saturating_add(2),
+            field.y,
+            field.width.saturating_sub(4),
+            rows,
         );
-        state.body = body;
-        state.vertical_scrollbar = None;
-        state.horizontal_scrollbar = None;
-        state.viewport_width = usize::from(body.width);
-        state.viewport_height = usize::from(body.height);
+        let text = Rect::new(
+            inner.x.saturating_add(number_w),
+            inner.y,
+            inner.width.saturating_sub(number_w),
+            inner.height,
+        );
+        state.body = text;
+        state.viewport_width = usize::from(text.width);
+        state.viewport_height = usize::from(text.height);
         state.measure();
-        state.reveal();
-        if body.is_empty() {
+        // Junie only follows the cursor while editing. Idle view stays put
+        // so a committed document is not scrolled to EOF.
+        if editing {
+            state.reveal();
+        }
+        if text.is_empty() {
+            paint_textarea_footer(self, area, field, state, buffer, theme, editing);
             return;
         }
 
-        // Line number gutter
-        if gutter > 0 {
+        if number_w > 0 {
             let first = usize::from(state.scroll.offset_y());
+            let nstyle = theme.faint().bg(field_bg);
             for row in 0..state.viewport_height {
                 let line_no = first.saturating_add(row).saturating_add(1);
                 if line_no > state.lines.len() && matches!(state.wrap, TextWrap::None) {
@@ -1588,114 +1715,91 @@ impl StatefulWidget for &TextArea<'_> {
                 }
                 let label = format!(
                     "{line_no:>width$}",
-                    width = usize::from(gutter.saturating_sub(1))
+                    width = usize::from(number_w.saturating_sub(1))
                 );
                 buffer.set_stringn(
                     inner.x,
-                    body.y.saturating_add(u16::try_from(row).unwrap_or(0)),
-                    take_display_cols(&label, usize::from(gutter)),
-                    usize::from(gutter),
-                    self.system.style(Role::TextMuted),
+                    text.y.saturating_add(u16::try_from(row).unwrap_or(0)),
+                    take_display_cols(&label, usize::from(number_w)),
+                    usize::from(number_w),
+                    nstyle,
                 );
             }
         }
 
         let first = usize::from(state.scroll.offset_y());
-        // Read-only is not disabled: the words stay legible, the caret goes
-        // away, and the ground says the field is not accepting typing. A
-        // read-only area used to be pixel-identical to an editable one
-        // (plans/021 Step 4).
-        let text_role = if matches!(self.variant, TextAreaVariant::Review) || state.is_read_only() {
-            Role::TextMuted
-        } else {
-            Role::Text
-        };
+        let text_style = fs;
+        let placeholder_style = theme.placeholder(visual);
+        let empty_doc = state.lines.len() == 1 && state.lines[0].is_empty();
 
         match state.wrap {
             TextWrap::None => {
                 let last = (first + state.viewport_height).min(state.lines.len());
-                for (painted, (line_idx, line)) in state.lines[first..last]
-                    .iter()
-                    .enumerate()
-                    .map(|(i, l)| (first + i, l))
-                    .enumerate()
-                {
-                    let _ = line_idx;
+                for (painted, line) in state.lines[first..last].iter().enumerate() {
+                    let y = text.y + u16::try_from(painted).unwrap_or(u16::MAX);
+                    let offset_x = usize::from(state.scroll.offset_x());
+                    if offset_x > 0 && !line.is_empty() {
+                        buffer.set_stringn(text.x, y, "…", 1, fs.fg(theme.text_muted));
+                    }
                     display_cols_slice_into(
                         line,
-                        usize::from(state.scroll.offset_x()),
+                        offset_x,
                         state.viewport_width,
                         &mut state.scratch,
                     );
-                    if line.is_empty()
-                        && state.lines.len() == 1
+                    if empty_doc
+                        && painted == 0
                         && let Some(placeholder) = self.placeholder
                     {
-                        display_cols_slice_into(
-                            placeholder,
-                            0,
-                            state.viewport_width,
+                        write_placeholder(
                             &mut state.scratch,
+                            placeholder,
+                            state.viewport_width,
+                            self.system.glyphs.ellipsis(),
                         );
                     }
-                    let y = body.y + u16::try_from(painted).unwrap_or(u16::MAX);
-                    buffer.set_stringn(
-                        body.x,
-                        y,
-                        &state.scratch,
-                        state.viewport_width,
-                        self.system.style(if line.is_empty() {
-                            Role::TextMuted
-                        } else {
-                            text_role
-                        }),
-                    );
-                    // Selection on this line
+                    let style = if empty_doc {
+                        placeholder_style
+                    } else {
+                        text_style
+                    };
+                    buffer.set_stringn(text.x, y, &state.scratch, state.viewport_width, style);
+                    if display_cols(line).saturating_sub(offset_x) > state.viewport_width
+                        && text.width > 0
+                    {
+                        buffer.set_stringn(
+                            text.right().saturating_sub(1),
+                            y,
+                            "…",
+                            1,
+                            fs.fg(theme.text_muted),
+                        );
+                    }
                     if let Some((a, b)) = state.selection_range() {
                         paint_selection_line(
                             buffer,
-                            body,
+                            text,
                             line,
                             first + painted,
                             a,
                             b,
-                            usize::from(state.scroll.offset_x()),
+                            offset_x,
                             state.viewport_width,
                             y,
-                            self.system,
+                            self.system.selected_text(),
                         );
                     }
                 }
-                if state.accepts_input && state.cursor.line >= first && state.cursor.line < last {
-                    let col = display_cols(&state.lines[state.cursor.line][..state.cursor.byte])
-                        .saturating_sub(usize::from(state.scroll.offset_x()));
-                    let x = body
-                        .x
-                        .saturating_add(u16::try_from(col).unwrap_or(u16::MAX))
-                        .min(body.right().saturating_sub(1));
-                    let y = body.y + u16::try_from(state.cursor.line - first).unwrap_or(u16::MAX);
-                    let caret = if self.colorless {
-                        self.system
-                            .style(Role::TextStrong)
-                            .add_modifier(Modifier::REVERSED)
-                    } else {
-                        self.system
-                            .style(Role::Focus)
-                            .add_modifier(Modifier::REVERSED)
-                    };
-                    buffer.set_style(Rect::new(x, y, 1, 1), caret);
-                }
             }
             TextWrap::Soft => {
-                // Paint visual rows starting at scroll offset
                 let w = state.viewport_width.max(1);
                 let mut visual = 0usize;
                 let mut painted = 0usize;
                 let sel = state.selection_range();
                 for (line_idx, line) in state.lines.iter().enumerate() {
                     let cols = display_cols(line).max(1);
-                    let rows = cols.div_ceil(w).max(1);
-                    for r in 0..rows {
+                    let wrap_rows = cols.div_ceil(w).max(1);
+                    for r in 0..wrap_rows {
                         if visual + r < first {
                             continue;
                         }
@@ -1704,72 +1808,184 @@ impl StatefulWidget for &TextArea<'_> {
                         }
                         let start_col = r.saturating_mul(w);
                         display_cols_slice_into(line, start_col, w, &mut state.scratch);
-                        if line.is_empty()
-                            && state.lines.len() == 1
+                        if empty_doc
                             && r == 0
                             && let Some(placeholder) = self.placeholder
                         {
-                            display_cols_slice_into(placeholder, 0, w, &mut state.scratch);
+                            write_placeholder(
+                                &mut state.scratch,
+                                placeholder,
+                                w,
+                                self.system.glyphs.ellipsis(),
+                            );
                         }
-                        let y = body.y + u16::try_from(painted).unwrap_or(0);
+                        let y = text.y + u16::try_from(painted).unwrap_or(0);
                         buffer.set_stringn(
-                            body.x,
+                            text.x,
                             y,
                             &state.scratch,
                             w,
-                            self.system.style(text_role),
+                            if empty_doc {
+                                placeholder_style
+                            } else {
+                                text_style
+                            },
                         );
-                        if let Some((a, b)) = sel {
-                            // soft wrap selection: approximate full-line highlight when line in range
-                            if line_idx >= a.line && line_idx <= b.line {
-                                buffer.set_style(
-                                    Rect::new(body.x, y, body.width.min(w as u16), 1),
-                                    self.system
-                                        .style(Role::Focus)
-                                        .add_modifier(Modifier::REVERSED),
-                                );
-                            }
+                        if let Some((a, b)) = sel
+                            && line_idx >= a.line
+                            && line_idx <= b.line
+                        {
+                            buffer.set_style(
+                                Rect::new(text.x, y, text.width.min(w as u16), 1),
+                                self.system.selected_text(),
+                            );
                         }
                         painted += 1;
                     }
-                    visual = visual.saturating_add(rows);
+                    visual = visual.saturating_add(wrap_rows);
                     if painted >= state.viewport_height {
                         break;
-                    }
-                }
-                // Caret
-                if state.accepts_input {
-                    let crow = state.visual_row_of_cursor();
-                    if crow >= first && crow < first + state.viewport_height {
-                        let line = &state.lines[state.cursor.line];
-                        let col = display_cols(&line[..state.cursor.byte.min(line.len())]);
-                        let x_off = col % w;
-                        let y = body.y + u16::try_from(crow.saturating_sub(first)).unwrap_or(0);
-                        let x = body
-                            .x
-                            .saturating_add(u16::try_from(x_off).unwrap_or(0))
-                            .min(body.right().saturating_sub(1));
-                        buffer.set_style(
-                            Rect::new(x, y, 1, 1),
-                            self.system
-                                .style(Role::Focus)
-                                .add_modifier(Modifier::REVERSED),
-                        );
                     }
                 }
             }
         }
 
-        if show_vertical || show_horizontal {
-            let sa = ScrollArea::new(self.system).bar(ScrollBarVisibility::Auto);
-            sa.render_bars(inner, buffer, &state.scroll);
-            if show_vertical && inner.width > 0 {
-                state.vertical_scrollbar = Some(Rect::new(body.right(), inner.y, 1, body.height));
-            }
-            if show_horizontal && inner.height > 0 {
-                state.horizontal_scrollbar = Some(Rect::new(body.x, body.bottom(), body.width, 1));
+        // Current line: border-strong underline (not accent — that is
+        // single-line editing). Hardware cursor; no reverse cell caret.
+        if editing {
+            let (cy, cx_off) = match state.wrap {
+                TextWrap::None => {
+                    let col = display_cols(&state.lines[state.cursor.line][..state.cursor.byte])
+                        .saturating_sub(usize::from(state.scroll.offset_x()));
+                    let y = text.y
+                        + u16::try_from(state.cursor.line.saturating_sub(first))
+                            .unwrap_or(u16::MAX);
+                    (y, col)
+                }
+                TextWrap::Soft => {
+                    let crow = state.visual_row_of_cursor();
+                    let line = &state.lines[state.cursor.line];
+                    let col = display_cols(&line[..state.cursor.byte.min(line.len())]);
+                    let w = state.viewport_width.max(1);
+                    let y = text.y + u16::try_from(crow.saturating_sub(first)).unwrap_or(0);
+                    (y, col % w)
+                }
+            };
+            if cy >= text.y && cy < text.bottom() {
+                underline_row(buffer, inner, cy, theme.border_strong);
+                let x = text
+                    .x
+                    .saturating_add(u16::try_from(cx_off).unwrap_or(u16::MAX))
+                    .min(text.right());
+                state.hardware_cursor = Some(Position { x, y: cy });
             }
         }
+
+        if invalid {
+            buffer.set_stringn(
+                field.right().saturating_sub(2),
+                field.y,
+                "!",
+                1,
+                fs.fg(theme.error).add_modifier(Modifier::BOLD),
+            );
+        }
+
+        let content_h = match state.wrap {
+            TextWrap::Soft => state.content_height.max(state.lines.len()),
+            TextWrap::None => state.lines.len(),
+        };
+        let sb = Rect::new(field.right().saturating_sub(1), field.y, 1, rows);
+        state.vertical_scrollbar = Some(sb);
+        crate::scroll::paint_overflow_scrollbar(
+            buffer,
+            sb,
+            content_h,
+            state.viewport_height,
+            state.scroll.offset_y(),
+            focused,
+            self.system,
+        );
+
+        paint_textarea_footer(self, area, field, state, buffer, theme, editing);
+        let _ = self.colorless;
+    }
+}
+
+fn write_placeholder(scratch: &mut String, placeholder: &str, width: usize, ellipsis: &str) {
+    scratch.clear();
+    scratch.push_str(truncate_cols(placeholder, width, ellipsis).as_ref());
+}
+
+fn underline_row(buffer: &mut Buffer, inner: Rect, y: u16, color: ratatui_core::style::Color) {
+    for x in inner.x..inner.right() {
+        if let Some(cell) = buffer.cell_mut((x, y)) {
+            cell.set_style(
+                cell.style()
+                    .add_modifier(Modifier::UNDERLINED)
+                    .underline_color(color),
+            );
+        }
+    }
+}
+
+fn paint_textarea_footer(
+    widget: &TextArea<'_>,
+    area: Rect,
+    field: Rect,
+    state: &mut TextAreaState,
+    buffer: &mut Buffer,
+    theme: crate::style::JunieTheme,
+    editing: bool,
+) {
+    let fy = field.bottom();
+    if fy >= area.bottom() {
+        return;
+    }
+    let n = state.lines.len().max(1);
+    let first = usize::from(state.scroll.offset_y());
+    let last = (first + state.viewport_height.max(1)).min(n);
+    state.scratch.clear();
+    if editing {
+        use std::fmt::Write as _;
+        let _ = write!(
+            state.scratch,
+            "ln {}/{n}",
+            state.cursor.line.saturating_add(1)
+        );
+    } else if crate::scroll::is_scrollable(n, state.viewport_height.max(1)) {
+        use std::fmt::Write as _;
+        let _ = write!(state.scratch, "{}–{last} of {n}", first.saturating_add(1));
+    }
+    let pos_w = if state.scratch.is_empty() {
+        0
+    } else {
+        display_cols(&state.scratch) as u16 + 3
+    };
+    let msg_w = usize::from(area.width.saturating_sub(2 + pos_w));
+    if let Some(err) = widget.error {
+        buffer.set_stringn(
+            area.x.saturating_add(2),
+            fy,
+            crate::text::truncate_cols(err, msg_w, widget.system.glyphs.ellipsis()).as_ref(),
+            msg_w,
+            theme.error_fg(),
+        );
+    } else if let Some(help) = widget.help {
+        buffer.set_stringn(
+            area.x.saturating_add(2),
+            fy,
+            crate::text::truncate_cols(help, msg_w, widget.system.glyphs.ellipsis()).as_ref(),
+            msg_w,
+            theme.muted(),
+        );
+    }
+    if !state.scratch.is_empty() {
+        let w = display_cols(&state.scratch);
+        let px = area
+            .right()
+            .saturating_sub(u16::try_from(w).unwrap_or(0).saturating_add(1));
+        buffer.set_stringn(px, fy, &state.scratch, w, theme.faint());
     }
 }
 
@@ -1784,7 +2000,7 @@ fn paint_selection_line(
     offset_x: usize,
     viewport_width: usize,
     y: u16,
-    system: &DesignSystem,
+    cursor_style: Style,
 ) {
     if line_idx < a.line || line_idx > b.line {
         return;
@@ -1808,10 +2024,9 @@ fn paint_selection_line(
         .saturating_add(u16::try_from(end_col.min(viewport_width)).unwrap_or(0))
         .min(body.right());
     if ex > sx {
-        buffer.set_style(
-            Rect::new(sx, y, ex.saturating_sub(sx), 1),
-            system.style(Role::Focus).add_modifier(Modifier::REVERSED),
-        );
+        // D8: selected text is one explicit pair, applied as a whole —
+        // never a reversal of whatever the cell already carried.
+        buffer.set_style(Rect::new(sx, y, ex.saturating_sub(sx), 1), cursor_style);
     }
 }
 
@@ -1837,10 +2052,12 @@ fn parse_lines(text: &str) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::style::RolePalette;
     #[test]
     fn normalized_editing_and_goal_column_contract() {
         let mut state = TextAreaState::new("ab🧪\r\nx\r12345");
         state.set_accepts_input(true);
+        state.set_editing(true);
         assert_eq!(state.lines().collect::<Vec<_>>(), ["ab🧪", "x", "12345"]);
         assert!(state.set_cursor(TextCursor { line: 2, byte: 4 }));
         assert_eq!(
@@ -1858,6 +2075,7 @@ mod tests {
     fn paste_split_join_and_invalid_cursor_are_safe() {
         let mut state = TextAreaState::new("e\u{301}x");
         state.set_accepts_input(true);
+        state.set_editing(true);
         assert!(!state.set_cursor(TextCursor { line: 0, byte: 1 }));
         assert!(state.set_cursor(TextCursor { line: 0, byte: 3 }));
         assert_eq!(state.insert_text("A\r\nB\rC"), TextAreaOutcome::Changed);
@@ -2173,6 +2391,8 @@ mod tests {
         for case in cases {
             let mut state = TextAreaState::new(case.text);
             state.set_accepts_input(true);
+            state.set_editing(true);
+            state.set_editing(true);
             assert!(state.set_cursor(case.cursor), "{} cursor", case.name);
             let outcome = state.handle_key(KeyEvent::new(case.key, KeyModifiers::NONE));
             assert_eq!(
@@ -2194,6 +2414,7 @@ mod tests {
     fn multi_line_deltas_and_ranges_restore_without_document_snapshots() {
         let mut state = TextAreaState::new("alpha\nbeta\ngamma");
         state.set_accepts_input(true);
+        state.set_editing(true);
         assert_eq!(
             state.extract_range(c(0, 2), c(2, 2)).as_deref(),
             Some("pha\nbeta\nga")
@@ -2239,6 +2460,7 @@ mod tests {
         }
         let mut state = TextAreaState::new(lines);
         state.set_accepts_input(true);
+        state.set_editing(true);
         state.viewport_width = 24;
         state.viewport_height = 6;
         state.sync_scroll_metrics();
@@ -2253,18 +2475,23 @@ mod tests {
     }
 
     #[test]
-    fn scrollbars_stay_inside_panel_and_own_press_drag_geometry() {
+    fn scrollbars_stay_inside_field_and_own_press_drag_geometry() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let mut state = TextAreaState::new("wide content beyond viewport\none\ntwo\nthree\nfour");
         state.set_accepts_input(true);
+        state.set_editing(true);
         assert!(state.set_cursor(c(0, 0)));
         let area = Rect::new(2, 2, 14, 8);
         let mut buffer = Buffer::empty(Rect::new(0, 0, 20, 12));
-        (&TextArea::new(&system).title("Edit")).render(area, &mut buffer, &mut state);
-        assert_eq!(buffer[(area.right() - 1, area.y)].symbol(), "┐");
-        assert_eq!(buffer[(area.x, area.bottom() - 1)].symbol(), "└");
+        (&TextArea::new(&system).title("Edit").rows(3)).render(area, &mut buffer, &mut state);
+        // junie: ▎ on every body row; scrollbar occupies the field's last column.
+        let field_y = area.y + 1;
+        assert_eq!(buffer[(area.x, field_y)].symbol(), "▎");
         let vertical = state.vertical_scrollbar.unwrap();
+        assert_eq!(vertical.x, area.right() - 1);
+        assert!(vertical.y >= field_y);
+        assert!(vertical.bottom() <= area.bottom());
         let outcome = state.handle_event(Event::Mouse(crate::input::MouseEvent {
             kind: MouseEventKind::Down(MouseButton::Left),
             position: Position::new(vertical.x, vertical.bottom() - 1),
@@ -2291,6 +2518,28 @@ mod tests {
     }
 
     #[test]
+    fn height_is_rows_plus_two_and_body_fills_between_label_and_footer() {
+        let system = crate::style::DesignSystem::default();
+        let mut state = TextAreaState::new("Explain this module");
+        state.set_accepts_input(true);
+        state.set_editing(true);
+        let area = Rect::new(0, 0, 22, 5);
+        let mut buffer = Buffer::empty(area);
+
+        let widget = TextArea::new(&system).rows(3);
+        assert_eq!(widget.height(), 5);
+        (&widget).render(area, &mut buffer, &mut state);
+
+        // area 5 = label + 3 body rows + footer
+        assert_eq!(state.body.height, 3);
+        assert!(state.horizontal_scrollbar.is_none());
+        let painted: String = (state.body.x..state.body.right())
+            .map(|x| buffer[(x, state.body.y)].symbol())
+            .collect();
+        assert!(painted.chars().any(|ch| !ch.is_whitespace()), "{painted:?}");
+    }
+
+    #[test]
     fn accepts_input_gate_and_read_only() {
         let mut state = TextAreaState::new("ab");
         assert_eq!(
@@ -2298,6 +2547,7 @@ mod tests {
             TextAreaOutcome::Ignored
         );
         state.set_accepts_input(true);
+        state.set_editing(true);
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE)),
             TextAreaOutcome::Changed
@@ -2311,9 +2561,23 @@ mod tests {
     }
 
     #[test]
+    fn escape_cancels_without_mutating_multiline_text() {
+        let mut state = TextAreaState::new("one\ntwo");
+        state.set_accepts_input(true);
+        state.set_editing(true);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            TextAreaOutcome::Changed
+        );
+        assert!(!state.is_editing());
+        assert_eq!(state.text(), "one\ntwo");
+    }
+
+    #[test]
     fn measurement_invalidates_only_on_edits_and_tiny_control_input_is_safe() {
         let mut state = TextAreaState::new("ab");
         state.set_accepts_input(true);
+        state.set_editing(true);
         assert_eq!(state.max_width, 2);
         assert_eq!(state.insert_text("\u{7}東京"), TextAreaOutcome::Changed);
         assert_eq!(state.text(), "ab東京");
@@ -2335,6 +2599,7 @@ mod tests {
     fn selection_shift_and_select_all_and_delete() {
         let mut state = TextAreaState::new("hello world");
         state.set_accepts_input(true);
+        state.set_editing(true);
         assert!(state.set_cursor(c(0, 0)));
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::SHIFT)),
@@ -2359,6 +2624,7 @@ mod tests {
     fn undo_redo_and_clipboard_outcomes() {
         let mut state = TextAreaState::new("ab");
         state.set_accepts_input(true);
+        state.set_editing(true);
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::NONE)),
             TextAreaOutcome::Changed
@@ -2405,6 +2671,7 @@ mod tests {
     fn word_motion_and_indent() {
         let mut state = TextAreaState::new("foo bar");
         state.set_accepts_input(true);
+        state.set_editing(true);
         assert!(state.set_cursor(c(0, 0)));
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::CONTROL)),
@@ -2438,6 +2705,7 @@ mod tests {
     fn soft_wrap_preserves_caret_row_on_reflow() {
         let mut state = TextAreaState::new("abcdefghijklmnopqrstuvwxyz");
         state.set_accepts_input(true);
+        state.set_editing(true);
         state.set_wrap(TextWrap::Soft);
         state.viewport_width = 10;
         state.viewport_height = 4;
@@ -2459,6 +2727,7 @@ mod tests {
         let system = crate::style::DesignSystem::default();
         let mut state = TextAreaState::new("a\nb\nc");
         state.set_accepts_input(true);
+        state.set_editing(true);
         let area = Rect::new(0, 0, 24, 8);
         let mut buffer = Buffer::empty(area);
         (&TextArea::new(&system)
@@ -2468,14 +2737,57 @@ mod tests {
             .render(area, &mut buffer, &mut state);
         assert!(state.gutter_width >= 2);
         assert!(!state.body.is_empty());
-        // Gutter starts immediately before the live padded body.
-        let inner_x = state.body.x.saturating_sub(state.gutter_width);
-        let cell = &buffer[(inner_x, state.body.y)];
+        // junie: ▎ at the field origin; line numbers sit in the two-cell inset.
+        assert_eq!(buffer[(area.x, state.body.y)].symbol(), "▎");
+        let number_cell = &buffer[(area.x + 2, state.body.y)];
         assert!(
-            cell.symbol().chars().any(|c| c.is_ascii_digit()) || !cell.symbol().trim().is_empty(),
+            number_cell.symbol().chars().any(|c| c.is_ascii_digit())
+                || !number_cell.symbol().trim().is_empty(),
             "expected line number gutter cell, got {:?}",
-            cell.symbol()
+            number_cell.symbol()
         );
+    }
+
+    #[test]
+    fn title_paint_preserves_prefilled_owner_surface() {
+        let system = crate::style::DesignSystem::junie();
+        let theme = system.junie_theme();
+        let area = Rect::new(0, 0, 24, 4);
+        let mut buffer = Buffer::empty(area);
+        buffer.set_style(area, Style::new().bg(theme.surface));
+        let mut state = TextAreaState::new("body");
+
+        (&TextArea::new(&system).title("Description")).render(area, &mut buffer, &mut state);
+
+        let title_x = area.x + 2;
+        let title = &buffer[(title_x, area.y)];
+        assert_eq!(title.symbol(), "D");
+        assert_eq!(title.bg, theme.surface);
+        assert_eq!(title.fg, theme.text_secondary);
+        assert!(!title.modifier.contains(Modifier::BOLD));
+        assert_eq!(buffer[(title_x + 11, area.y)].bg, theme.surface);
+    }
+
+    #[test]
+    fn help_footer_preserves_prefilled_owner_surface() {
+        let system = crate::style::DesignSystem::junie();
+        let theme = system.junie_theme();
+        let area = Rect::new(0, 0, 32, 4);
+        let mut buffer = Buffer::empty(area);
+        buffer.set_style(area, Style::new().bg(theme.surface));
+        let mut state = TextAreaState::new("body");
+        let help = "Optional · Markdown";
+
+        (&TextArea::new(&system).help(help)).render(area, &mut buffer, &mut state);
+
+        let footer_y = area.bottom() - 1;
+        let help_x = area.x + 2;
+        let first = &buffer[(help_x, footer_y)];
+        assert_eq!(first.symbol(), "O");
+        assert_eq!(first.bg, theme.surface);
+        assert_eq!(first.fg, theme.text_muted);
+        let trailing_x = help_x + u16::try_from(display_cols(help)).unwrap_or(0);
+        assert_eq!(buffer[(trailing_x, footer_y)].bg, theme.surface);
     }
 
     #[test]
@@ -2486,6 +2798,7 @@ mod tests {
             .join("\n");
         let mut state = TextAreaState::new(text);
         state.set_accepts_input(true);
+        state.set_editing(true);
         state.viewport_width = 40;
         state.viewport_height = 12;
         state.sync_scroll_metrics();
@@ -2527,6 +2840,8 @@ mod tests {
         for seed in samples {
             let mut state = TextAreaState::new(seed);
             state.set_accepts_input(true);
+            state.set_editing(true);
+            state.set_editing(true);
             state.viewport_width = 12;
             state.viewport_height = 4;
             for (i, key) in keys.iter().cycle().take(48).enumerate() {
@@ -2542,6 +2857,55 @@ mod tests {
     }
 
     #[test]
+    fn idle_jk_scrolls_without_moving_caret() {
+        let system = crate::style::DesignSystem::junie();
+        let mut state = TextAreaState::new("a\nb\nc\nd\ne\nf\ng\nh");
+        state.set_accepts_input(true);
+        let area = Rect::new(0, 0, 24, 5);
+        let mut buffer = Buffer::empty(area);
+        (&TextArea::new(&system).rows(2)).render(area, &mut buffer, &mut state);
+        let caret = state.cursor();
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE)),
+            TextAreaOutcome::Changed
+        );
+        assert_eq!(state.cursor(), caret, "idle j must not move the caret");
+        assert!(!state.is_editing());
+    }
+
+    #[test]
+    fn handle_intent_esc_commits_edit() {
+        use crate::interaction::UiIntent;
+        let mut state = TextAreaState::new("ab");
+        state.set_accepts_input(true);
+        state.set_editing(true);
+        assert_eq!(
+            state.handle_intent(UiIntent::Cancel),
+            TextAreaOutcome::Changed
+        );
+        assert!(!state.is_editing());
+        assert_eq!(state.text(), "ab");
+    }
+
+    #[test]
+    fn enter_begins_edit_when_idle_without_inserting() {
+        let mut state = TextAreaState::new("ab");
+        state.set_accepts_input(true);
+        assert!(!state.is_editing());
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            TextAreaOutcome::Changed
+        );
+        assert!(state.is_editing());
+        assert_eq!(state.text(), "ab");
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            TextAreaOutcome::Changed
+        );
+        assert_eq!(state.text(), "ab\n");
+    }
+
+    #[test]
     fn semantic_registration() {
         let system = crate::style::DesignSystem::default();
         let widget = TextArea::new(&system).title("Notes").review();
@@ -2549,5 +2913,119 @@ mod tests {
         let mut scene = SemanticScene::<&str, ()>::default();
         widget.register_semantic(&mut scene, "ta", Rect::new(0, 0, 20, 5), &state);
         assert!(scene.get(&"ta").is_some());
+    }
+
+    #[test]
+    fn editing_uses_field_plane_border_strong_underline_and_hardware_cursor() {
+        let system = crate::style::DesignSystem::junie();
+        let theme = system.junie_theme();
+        let mut state = TextAreaState::new("hello\nworld");
+        state.set_accepts_input(true);
+        state.set_editing(true);
+        assert!(state.set_cursor(c(0, 2)));
+        let area = Rect::new(0, 0, 28, 6);
+        let mut buffer = Buffer::empty(area);
+        (&TextArea::new(&system)
+            .title("Notes")
+            .help("Enter inserts a newline")
+            .rows(3))
+            .render(area, &mut buffer, &mut state);
+
+        assert_eq!(TextArea::new(&system).rows(3).height(), 5);
+        let field_y = area.y + 1;
+        let cell = &buffer[(area.x + 4, field_y)];
+        assert_eq!(cell.bg, theme.field, "field plane is #1e1e22");
+        assert!(
+            cell.style().add_modifier.contains(Modifier::UNDERLINED),
+            "current line is underlined"
+        );
+        assert_eq!(cell.underline_color, theme.border_strong);
+        let cursor = state.cursor_cell().expect("hardware caret while editing");
+        assert_eq!(cursor.y, field_y);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            TextAreaOutcome::Changed
+        );
+        assert!(!state.is_editing());
+        assert_eq!(state.text(), "hello\nworld");
+    }
+
+    #[test]
+    fn enter_inserts_newline_while_editing() {
+        let mut state = TextAreaState::new("ab");
+        state.set_accepts_input(true);
+        state.set_editing(true);
+        assert!(state.set_cursor(c(0, 1)));
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            TextAreaOutcome::Changed
+        );
+        assert_eq!(state.text(), "a\nb");
+    }
+
+    #[test]
+    fn overflow_placeholder_uses_ellipsis_not_hard_clip() {
+        let system = crate::style::DesignSystem::junie();
+        let mut state = TextAreaState::new("");
+        let area = Rect::new(0, 0, 20, 3);
+        let mut buffer = Buffer::empty(area);
+        (&TextArea::new(&system)
+            .placeholder("What should Junie do, and what does done look like?")
+            .rows(1))
+            .render(area, &mut buffer, &mut state);
+        let y = area.y + 1;
+        let line: String = (0..area.width)
+            .map(|x| buffer[(x, y)].symbol().to_string())
+            .collect();
+        assert!(
+            line.contains(system.glyphs.ellipsis()),
+            "overflow placeholder must mark the cut, got {line:?}"
+        );
+        assert!(
+            !line.contains("look"),
+            "overflow placeholder must not hard-clip the tail, got {line:?}"
+        );
+    }
+
+    #[test]
+    fn overflowing_text_area_uses_overflow_thumb() {
+        let system = DesignSystem::default();
+        let body: String = (0..24)
+            .map(|i| format!("line-{i:02}"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        let mut state = TextAreaState::new(body);
+        state.set_accepts_input(true);
+        let area = Rect::new(0, 0, 28, 12);
+        let mut buffer = Buffer::empty(area);
+        (&TextArea::new(&system).rows(8)).render(area, &mut buffer, &mut state);
+        let thumb = crate::scroll::ScrollbarStyle::Line.vertical_thumb();
+        let mut sb_x = None;
+        let mut track_ys = Vec::new();
+        for y in 0..area.height {
+            for x in 0..area.width {
+                if buffer[(x, y)].symbol() == thumb {
+                    sb_x = Some(x);
+                }
+            }
+        }
+        let sb_x = sb_x.expect("overflowing text area paints a thumb");
+        let track = crate::scroll::SCROLLBAR_TRACK;
+        for y in 0..area.height {
+            let symbol = buffer[(sb_x, y)].symbol();
+            if symbol == thumb || symbol == track {
+                track_ys.push(y);
+            }
+        }
+        let viewport = track_ys.len();
+        let (start, len) = crate::scroll::overflow_thumb(24, viewport, viewport, 0)
+            .expect("24 lines overflow the field viewport");
+        let thumbs: Vec<u16> = track_ys
+            .iter()
+            .copied()
+            .filter(|y| buffer[(sb_x, *y)].symbol() == thumb)
+            .collect();
+        assert_eq!(thumbs.len(), len);
+        assert_eq!(thumbs[0], track_ys[start]);
     }
 }

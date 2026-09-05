@@ -15,7 +15,6 @@
 //! outcomes (never I/O).
 //!
 //! Research: hex editors, xxd, binary-analysis tools.
-
 #![allow(unused_imports)] // test-only imports retained
 use std::collections::BTreeSet;
 
@@ -287,10 +286,14 @@ pub fn interpret_byte(b: u8, mode: HexAsciiMode) -> char {
     }
 }
 
-/// Format one byte as two uppercase hex digits.
-#[must_use]
-pub fn format_byte_hex(b: u8) -> String {
-    format!("{b:02X}")
+/// Append one byte as two uppercase hex digits.
+///
+/// Paint and export call this per byte per frame; a `String` return would
+/// allocate twice per cell. Digits are pushed directly.
+pub fn push_byte_hex(out: &mut String, b: u8) {
+    const HEX: &[u8; 16] = b"0123456789ABCDEF";
+    out.push(HEX[usize::from(b >> 4)] as char);
+    out.push(HEX[usize::from(b & 0x0F)] as char);
 }
 
 // ── Inspector ───────────────────────────────────────────────────────────────
@@ -383,8 +386,8 @@ pub fn inspect_at(window: &HexWindow<'_>, offset: u64, endian: HexEndian) -> Hex
 
 /// Format inspector as one status line.
 #[must_use]
-pub fn format_inspector_line(v: &HexInspectorValues, ascii: bool) -> String {
-    let end = if ascii { v.endian.id() } else { v.endian.id() };
+pub fn format_inspector_line(v: &HexInspectorValues, _ascii: bool) -> String {
+    let end = v.endian.id();
     let mut parts = vec![format!("@{offset:X}", offset = v.offset)];
     if let Some(b) = v.u8 {
         parts.push(format!("u8={b}"));
@@ -567,8 +570,6 @@ pub struct HexViewerState {
     search_needle: Option<Vec<u8>>,
     /// Hit regions.
     pub regions: Vec<HexRegion>,
-    /// Prefer ASCII chrome glyphs.
-    pub ascii: bool,
     /// Prefer no-color paint (brackets still mark selection).
     pub colorless: bool,
     /// Last total_len for metrics.
@@ -605,7 +606,6 @@ impl HexViewerState {
             search: None,
             search_needle: None,
             regions: Vec::new(),
-            ascii: false,
             colorless: false,
             total_len: 0,
             offset_w: 8,
@@ -677,23 +677,11 @@ impl HexViewerState {
     }
 
     fn ensure_cursor_row_visible(&mut self) {
-        if self.body_rows == 0 || self.effective_bpr == 0 {
+        if self.effective_bpr == 0 {
             return;
         }
-        let row = row_for_offset(self.cursor, self.effective_bpr);
-        let start = u64::from(self.scroll.offset_y());
-        let end = start.saturating_add(u64::from(self.body_rows));
-        if row < start {
-            self.scroll
-                .set_offset_y_quiet(row.min(u64::from(u16::MAX)) as u16);
-        } else if row >= end {
-            let next = row
-                .saturating_add(1)
-                .saturating_sub(u64::from(self.body_rows));
-            self.scroll
-                .set_offset_y_quiet(next.min(u64::from(u16::MAX)) as u16);
-        }
-        self.scroll.clamp();
+        self.scroll
+            .reveal_row(row_for_offset(self.cursor, self.effective_bpr) as usize);
     }
 
     fn move_cursor(&mut self, next: u64, extend: bool) -> HexViewerOutcome {
@@ -719,10 +707,10 @@ impl HexViewerState {
 
     /// Keys. Host must re-project window when [`HexViewerOutcome::PageNeeded`].
     pub fn handle_key(&mut self, key: KeyEvent, window: &HexWindow<'_>) -> HexViewerOutcome {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return HexViewerOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
         let bpr = self.effective_bpr.max(1);
         let total = window.total_len;
         self.total_len = total;
@@ -983,11 +971,13 @@ impl HexViewerState {
         if bytes.is_empty() && (start < window.base_offset || start >= window.end_offset()) {
             return HexViewerOutcome::PageNeeded { offset: start };
         }
-        let text = bytes
-            .iter()
-            .map(|b| format!("{b:02X}"))
-            .collect::<Vec<_>>()
-            .join(" ");
+        let mut text = String::with_capacity(bytes.len().saturating_mul(3));
+        for (i, b) in bytes.iter().enumerate() {
+            if i > 0 {
+                text.push(' ');
+            }
+            push_byte_hex(&mut text, *b);
+        }
         HexViewerOutcome::CopyHex { text }
     }
 
@@ -1126,7 +1116,7 @@ pub fn format_hex_dump(
             if i > 0 {
                 out.push(' ');
             }
-            out.push_str(&format_byte_hex(*b));
+            push_byte_hex(&mut out, *b);
         }
         // pad
         let missing = usize::from(bpr).saturating_sub(slice.len());
@@ -1155,7 +1145,6 @@ pub struct HexViewer<'a> {
     window: HexWindow<'a>,
     system: &'a DesignSystem,
     focused: bool,
-    ascii: bool,
     colorless: bool,
     title: Option<&'a str>,
 }
@@ -1168,7 +1157,6 @@ impl<'a> HexViewer<'a> {
             window,
             system,
             focused: true,
-            ascii: false,
             colorless: false,
             title: None,
         }
@@ -1190,13 +1178,7 @@ impl<'a> HexViewer<'a> {
 
     /// ASCII chrome.
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
         self
@@ -1210,8 +1192,7 @@ impl<'a> HexViewer<'a> {
             state.area_rows = 0;
             return;
         }
-        let ascii = self.ascii || state.ascii;
-        let colorless = self.colorless || state.colorless;
+        let colorless = self.colorless || state.colorless || self.system.mono();
         state.origin = (area.x, area.y);
         state.area_rows = area.height;
         let surface = self.focused && state.accepts_input;
@@ -1256,7 +1237,7 @@ impl<'a> HexViewer<'a> {
             .max(body_top.saturating_add(1));
 
         if self.window.total_len == 0 {
-            let mark = if ascii { "[ ] " } else { "∅ " };
+            let mark = "∅ ";
             buffer.set_stringn(
                 area.x,
                 body_top,
@@ -1280,7 +1261,7 @@ impl<'a> HexViewer<'a> {
                     state,
                     self.system,
                     surface,
-                    ascii,
+                    false,
                     colorless,
                     tiny,
                 );
@@ -1296,7 +1277,7 @@ impl<'a> HexViewer<'a> {
         if inspector_h > 0 {
             let iy = area.bottom().saturating_sub(1);
             let vals = inspect_at(&self.window, state.cursor, state.endian);
-            let mut line = format_inspector_line(&vals, ascii);
+            let mut line = format_inspector_line(&vals, false);
             if let Some((s, e)) = state.selection() {
                 line.push_str(&format!(" sel={s:X}..{e:X}"));
             }
@@ -1324,7 +1305,7 @@ fn paint_hex_row(
     state: &HexViewerState,
     system: &DesignSystem,
     surface: bool,
-    ascii: bool,
+    _ascii: bool,
     colorless: bool,
     tiny: bool,
 ) {
@@ -1344,9 +1325,9 @@ fn paint_hex_row(
         state.cursor >= row_off && state.cursor < row_off.saturating_add(u64::from(bpr));
     let bm = (0..bpr).any(|i| state.bookmarks.contains(&(row_off + u64::from(i))));
     if cursor_in_row && surface {
-        gutter.push(if ascii { '>' } else { '›' });
+        gutter.push('›');
     } else if bm {
-        gutter.push(if ascii { '*' } else { '★' });
+        gutter.push('★');
     } else {
         gutter.push(' ');
     }
@@ -1373,7 +1354,7 @@ fn paint_hex_row(
 
         if !tiny {
             if is_cursor {
-                s.push(if ascii { '[' } else { '⟨' });
+                s.push('⟨');
             } else if selected {
                 s.push('{');
             } else {
@@ -1383,9 +1364,9 @@ fn paint_hex_row(
 
         if let Some(b) = byte {
             if tiny && is_cursor {
-                s.push_str(&format_byte_hex(b));
+                push_byte_hex(&mut s, b);
             } else if !tiny {
-                s.push_str(&format_byte_hex(b));
+                push_byte_hex(&mut s, b);
             }
             ascii_col.push(interpret_byte(b, state.ascii_mode));
         } else {
@@ -1398,7 +1379,7 @@ fn paint_hex_row(
 
         if !tiny {
             if is_cursor {
-                s.push(if ascii { ']' } else { '⟩' });
+                s.push('⟩');
             } else if selected {
                 s.push('}');
             } else {
@@ -1418,7 +1399,7 @@ fn paint_hex_row(
         // compact: offset short + few hex
         gutter.clear();
         if cursor_in_row && surface {
-            gutter.push(if ascii { '>' } else { '›' });
+            gutter.push('›');
         } else {
             gutter.push(' ');
         }
@@ -1429,10 +1410,10 @@ fn paint_hex_row(
             if let Some(b) = window.get(abs) {
                 if abs == state.cursor {
                     compact.push('[');
-                    compact.push_str(&format_byte_hex(b));
+                    push_byte_hex(&mut compact, b);
                     compact.push(']');
                 } else {
-                    compact.push_str(&format_byte_hex(b));
+                    push_byte_hex(&mut compact, b);
                     compact.push(' ');
                 }
             }
@@ -1480,8 +1461,8 @@ fn paint_hex_row(
         usize::from(area.width),
         style,
     );
-    chrome.paint(buffer, area);
     tiers.paint_tiers(buffer, area, 0);
+    chrome.paint(buffer, area);
 }
 
 impl StatefulWidget for &HexViewer<'_> {

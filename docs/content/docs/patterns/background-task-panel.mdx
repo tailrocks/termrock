@@ -1,50 +1,35 @@
 ---
-title: Background Task Panel
-description: 'Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned.'
-pattern: BackgroundTaskPanel
-demo: background-tasks/mixed-statuses
-interaction: activation
+title: "Background Task Panel"
+description: "Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned."
+catalogId: BackgroundTaskPanel
 source: crates/termrock/src/patterns/background_task_panel.rs
 classification: composite
+tags:
+  - "composite"
+  - "List"
+  - "Panel"
+  - "TerminalOutput"
+aliases: []
+uses:
+  - "List"
+  - "Panel"
+  - "TerminalOutput"
+supportingTypes:
+  - "ListRow"
+  - "NotificationItem"
+  - "RowRole"
+  - "SemanticStatus"
+  - "StatefulWidget"
+  - "TerminalCommandMeta"
+  - "TerminalLine"
+  - "TerminalRunStatus"
+  - "TerminalStream"
+  - "ToastPriority"
+  - "Widget"
 ---
-
-This is an example composite from `termrock::patterns`, not a first-class widget. Copy the recipe, keep its reusable parts, and replace its sample domain model with your own.
-
-## Live application preview
-
-<TerminalPreview story="background-tasks/mixed-statuses" interactive caption="Background Task Panel · shared Rust demo" />
-
-## Classification and composition
-
-**composite** · default grid 88×20
-
-Composed public building blocks: `List`, `ListRow`, `NotificationItem`, `Panel`, `RowRole`, `SemanticStatus`, `StatefulWidget`, `TerminalCommandMeta`, `TerminalLine`, `TerminalOutput`, `TerminalRunStatus`, `TerminalStream`, `ToastPriority`, `Widget`.
-
-## Workflow
-
-- `↑↓ select`: move visible focus, selection, pane, or hierarchy state for the next action.
-- `Enter inspect`: invoke the focused public state-machine action and inspect its typed request.
-- `S stop request`: invoke the focused public state-machine action and inspect its typed request.
-- `C clear completed`: invoke the focused public state-machine action and inspect its typed request.
-
-Accepted actions update the same persistent pattern instance in web docs and native Lookbook. Typed requests appear in the status line; the fixtures never authenticate, connect, execute, persist, or mutate external state.
-
-## Ownership
-
-TermRock owns composition, focus geometry, responsive layout, and reusable state transitions. The consuming application owns records, commands, persistence, secrets, authorization, and side effects.
-
-## Source
-
-- Pattern recipe: [`crates/termrock/src/patterns/background_task_panel.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/patterns/background_task_panel.rs)
-- Demo: `background-tasks/mixed-statuses`
-
-## Migrated handbook guidance
-
-# BackgroundTaskPanel
 
 Multi-job supervisor UI: list + live output detail, reconnect/lost states,
 bounded scrollback with drop banners. Outcomes request stop/restart/detach only.
-
 
 ## When to use / when not
 
@@ -53,7 +38,7 @@ bounded scrollback with drop banners. Outcomes request stop/restart/detach only.
 | Detached builds, watchers, servers | — |
 | OS process browser | [ProcessTable](/docs/patterns/process-table) |
 | Single agent shell card | [TerminalRunCard](/docs/patterns/terminal-run-card) |
-| Agent task inventory | [TaskRail](/docs/components/task-rail) |
+| Agent task inventory | [TaskRail](/docs/patterns/task-rail) |
 
 ## Output history
 
@@ -63,7 +48,3 @@ dropped-line indicator when eviction occurs.
 ## Keys
 
 j/k · enter open · x stop · r restart · d detach · f follow · Shift+C clear done · esc close
-
-## Related
-
-TerminalOutput · TaskRail · ProcessTable · migration `0224`

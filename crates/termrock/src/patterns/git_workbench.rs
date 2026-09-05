@@ -30,7 +30,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -195,14 +194,14 @@ impl GitRepoStatus {
         }
     }
 
-    /// Role.
+    /// Shared lifecycle projection for recipe-owned status chrome.
     #[must_use]
-    pub const fn role(self) -> Role {
+    pub const fn semantic(self) -> crate::widgets::SemanticStatus {
         match self {
-            Self::Clean => Role::Success,
-            Self::Dirty => Role::Warning,
-            Self::Conflict | Self::Merging | Self::Rebasing => Role::Danger,
-            Self::Detached => Role::Info,
+            Self::Clean => crate::widgets::SemanticStatus::Success,
+            Self::Dirty | Self::Detached => crate::widgets::SemanticStatus::Warning,
+            Self::Conflict => crate::widgets::SemanticStatus::Failed,
+            Self::Merging | Self::Rebasing => crate::widgets::SemanticStatus::Running,
         }
     }
 }
@@ -485,8 +484,6 @@ pub struct GitWorkbenchState {
     pub confirm_proceed_focused: bool,
     /// Help modal open (mirrors KeyboardHelp modal).
     pub help_open: bool,
-    /// ASCII.
-    pub ascii: bool,
     /// Colorless.
     pub colorless: bool,
     /// Last panes.
@@ -530,7 +527,6 @@ impl GitWorkbenchState {
             confirm: None,
             confirm_proceed_focused: false,
             help_open: false,
-            ascii: false,
             colorless: false,
             last_panes: Vec::new(),
             last_area_width: None,
@@ -768,7 +764,7 @@ impl GitWorkbenchState {
         terminal_lines: &[TerminalLine<'_>],
         terminal_meta: &TerminalCommandMeta<'_>,
     ) -> GitWorkbenchOutcome {
-        if key.kind != KeyEventKind::Press {
+        if !key.is_press() {
             return GitWorkbenchOutcome::Ignored;
         }
 
@@ -1023,21 +1019,24 @@ impl GitWorkbenchState {
     pub fn status_slots(&self) -> Vec<StatusSlot<'static, &'static str>> {
         let status = self.repo_status.label();
         let mut slots = vec![
-            StatusSlot::connection("repo", status).priority(10),
-            StatusSlot::mode("branch", "branch").priority(20),
-            StatusSlot::focus_zone("focus", self.focus).priority(40),
+            StatusSlot::connection("repo", status)
+                .semantic(self.repo_status.semantic())
+                .priority(90),
+            StatusSlot::mode("branch", "branch").priority(50),
+            StatusSlot::focus_zone("focus", self.focus).priority(70),
             StatusSlot::shortcut(
                 "keys",
                 "t stage · T unstage · x discard · C-f full · ? help",
             )
-            .priority(90),
+            .priority(10),
         ];
         if matches!(self.repo_status, GitRepoStatus::Conflict) {
             slots.insert(
                 0,
                 StatusSlot::new("conflict", "conflict")
+                    .semantic(crate::widgets::SemanticStatus::Failed)
                     .region(StatusRegion::Left)
-                    .priority(5),
+                    .priority(100),
             );
         }
         let _ = self.head_label.as_str();
@@ -1274,7 +1273,6 @@ pub fn render_git_workbench(buffer: &mut Buffer, area: Rect, surfaces: GitWorkbe
         });
         let inner = panel.inner(r);
         Widget::render(&panel, r, buffer);
-        state.files.ascii = state.ascii;
         FileTree::new(files, system)
             .title("Changes")
             .focused(focused)
@@ -1292,7 +1290,6 @@ pub fn render_git_workbench(buffer: &mut Buffer, area: Rect, surfaces: GitWorkbe
                 "Diff"
             })
             .focused(focused)
-            .ascii(state.ascii)
             .colorless(state.colorless)
             .show_tree(false) // FileTree is west pane
             .render(r, buffer, &mut state.diff);
@@ -1301,9 +1298,7 @@ pub fn render_git_workbench(buffer: &mut Buffer, area: Rect, surfaces: GitWorkbe
     if let Some(r) = pane_area(&panes, "history") {
         // state.history.focused is the paint authority (PanelChrome); keep in sync.
         state.history.set_focused(state.focus == "history");
-        CheckpointTimeline::new(system)
-            .ascii(state.ascii)
-            .paint(r, buffer, &mut state.history);
+        CheckpointTimeline::new(system).paint(r, buffer, &mut state.history);
     }
 
     if let Some(r) = pane_area(&panes, "branches") {
@@ -1315,7 +1310,6 @@ pub fn render_git_workbench(buffer: &mut Buffer, area: Rect, surfaces: GitWorkbe
         TerminalOutput::new(terminal_meta, terminal_lines, system)
             .title("Git output")
             .focused(focused)
-            .ascii(state.ascii)
             .colorless(state.colorless)
             .render(r, buffer, &mut state.output);
     }
@@ -1325,7 +1319,6 @@ pub fn render_git_workbench(buffer: &mut Buffer, area: Rect, surfaces: GitWorkbe
         DiagnosticView::new(diagnostics, system)
             .title("Conflicts")
             .focused(focused)
-            .ascii(state.ascii)
             .colorless(state.colorless)
             .render(r, buffer, &mut state.diagnostics);
     }
@@ -1350,7 +1343,6 @@ pub fn render_git_workbench(buffer: &mut Buffer, area: Rect, surfaces: GitWorkbe
         let m = centered_modal(area);
         KeyboardHelp::new(help_entries, system)
             .title("Git workbench help")
-            .ascii(state.ascii)
             .colorless(state.colorless)
             .paint(m, buffer, &mut state.help);
     }
@@ -1391,7 +1383,7 @@ fn paint_branch_list(
         };
         // Ahead / behind is stated with catalog arrows, so an ASCII terminal
         // gets ASCII instead of a box (plans/013 Step 2).
-        let up = system.glyphs.resolve(Glyph::ArrowUp).text;
+        let up = "↑";
         let down = system.glyphs.resolve(Glyph::ArrowDown).text;
         let track = match (b.ahead, b.behind) {
             (0, 0) => String::new(),
@@ -1400,7 +1392,11 @@ fn paint_branch_list(
             (a, be) => format!(" {up}{a}{down}{be}"),
         };
         let line = format!("{sel}{cur}{}{track}", b.name);
-        let mut style = system.style(if b.current { Role::Accent } else { Role::Text });
+        let mut style = system.style(if b.current {
+            Role::TextStrong
+        } else {
+            Role::Text
+        });
         if i == state.branch_cursor && focused {
             // Selection is chrome: the gutter marks it and the weight carries
             // it. A reversed slab hides which branch is current (plans/010).

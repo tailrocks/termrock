@@ -7,7 +7,8 @@
 //! View…) with nested submenus, checked/radio rows, separators, shortcuts, recent
 //! items, and dynamic host-owned commands — without the widget owning side effects.
 //!
-//! **vs [`super::Menu`].** `Menu` is a flat popup list (context menus, one panel).
+//! **vs [`super::DropdownMenu`].** Dropdown menus are anchored popup lists;
+//! the menu bar owns application-wide top-level groups.
 //! `MenuBar` owns horizontal top-level menus, cascade depth, mnemonic arming, and
 //! narrow replacement with [`super::CommandPalette`].
 //!
@@ -17,7 +18,6 @@
 //!
 //! Research: desktop menu bars, Textual, terminal editors (Helix/Kakoune chrome),
 //! Radix Menubar / DropdownMenu (roving + nested dismiss).
-
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -26,15 +26,13 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         CollectionItem, CollectionState, NavigationMove, OverlayId, OverlayKind, OverlayOutcome,
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, RovingOrientation, SemanticNode,
         SemanticRole, SemanticScene, SemanticState, UiIntent, place_overlay,
     },
-    style::{DesignSystem, ListRowVisualState, Role},
+    style::{DesignSystem, Role, VisualState},
     text::{display_cols, take_display_cols},
 };
 
@@ -106,8 +104,7 @@ impl MenuRowKind {
 
 /// One hierarchical menu row (commands, submenus, separators).
 ///
-/// Shared model for [`super::MenuBar`], [`super::DropdownMenu`], and
-/// [`super::ContextMenu`].
+/// Shared model for [`super::MenuBar`] and [`super::DropdownMenu`] context or dropdown surfaces.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MenuNode<Id> {
     /// Stable identity for outcomes and host command maps.
@@ -179,12 +176,6 @@ impl<Id> MenuNode<Id> {
         let mut n = Self::base(id, label.into(), MenuRowKind::Section);
         n.enabled = false;
         n
-    }
-
-    /// Alias for [`Self::section`] (Radix / a11y "label" row).
-    #[must_use]
-    pub fn label_row(id: Id, label: impl Into<String>) -> Self {
-        Self::section(id, label)
     }
 
     /// Checkbox row.
@@ -631,9 +622,10 @@ impl MenuBarState {
             .collect()
     }
 
-    fn ensure_bar<Id>(&mut self, menus: &[MenuBarMenu<Id>]) {
+    fn ensure_bar<Id>(&mut self, menus: &[MenuBarMenu<Id>]) -> Vec<CollectionItem<usize>> {
         let entries = Self::bar_entries(menus);
         let _ = self.bar.reconcile(&entries);
+        entries
     }
 
     fn items_at_path<'a, Id>(
@@ -674,7 +666,18 @@ impl MenuBarState {
         if !menus[idx].enabled {
             return MenuBarOutcome::Ignored;
         }
-        self.ensure_bar(menus);
+        let _ = self.ensure_bar(menus);
+        self.open_menu_at_after_ensure(menus, idx)
+    }
+
+    fn open_menu_at_after_ensure<Id: Clone>(
+        &mut self,
+        menus: &[MenuBarMenu<Id>],
+        idx: usize,
+    ) -> MenuBarOutcome<Id> {
+        if !self.enabled || menus.is_empty() || idx >= menus.len() || !menus[idx].enabled {
+            return MenuBarOutcome::Ignored;
+        }
         self.bar.set_active(Some(idx));
         self.open_top = Some(idx);
         self.open_path.clear();
@@ -690,9 +693,12 @@ impl MenuBarState {
 
     /// Open bar cursor menu.
     pub fn open_active_menu<Id: Clone>(&mut self, menus: &[MenuBarMenu<Id>]) -> MenuBarOutcome<Id> {
-        self.ensure_bar(menus);
+        if !self.enabled || menus.is_empty() {
+            return MenuBarOutcome::Ignored;
+        }
+        let _ = self.ensure_bar(menus);
         let idx = self.bar_cursor();
-        self.open_menu_at(menus, idx)
+        self.open_menu_at_after_ensure(menus, idx)
     }
 
     fn current_items<'a, Id>(&self, menus: &'a [MenuBarMenu<Id>]) -> Option<&'a [MenuNode<Id>]> {
@@ -700,13 +706,16 @@ impl MenuBarState {
         Self::items_at_path(menus, top, &self.open_path)
     }
 
-    fn ensure_top_frame<Id>(&mut self, menus: &[MenuBarMenu<Id>]) {
-        if let Some(items) = self.current_items(menus) {
-            if let Some(frame) = self.cascade.last_mut() {
-                let entries = Self::panel_entries(items);
-                let _ = frame.collection.reconcile(&entries);
-            }
+    fn ensure_top_frame<Id>(
+        &mut self,
+        menus: &[MenuBarMenu<Id>],
+    ) -> Option<Vec<CollectionItem<usize>>> {
+        let items = self.current_items(menus)?;
+        let entries = Self::panel_entries(items);
+        if let Some(frame) = self.cascade.last_mut() {
+            let _ = frame.collection.reconcile(&entries);
         }
+        Some(entries)
     }
 
     fn open_submenu_under_cursor<Id: Clone>(
@@ -822,12 +831,10 @@ impl MenuBarState {
         key: KeyEvent,
         menus: &[MenuBarMenu<Id>],
     ) -> MenuBarOutcome<Id> {
-        if !self.live() || menus.is_empty() || key.kind == KeyEventKind::Release {
+        if !self.live() || menus.is_empty() || key.is_release() {
             // Allow Alt release to keep mode; ignore other releases.
             return MenuBarOutcome::Ignored;
         }
-        self.ensure_bar(menus);
-
         // Platform-neutral mnemonics:
         // - Alt+letter opens matching top menu when the terminal delivers Alt.
         // - Hosts arm sticky mnemonic mode via [`Self::set_mnemonic_mode`] (map
@@ -910,7 +917,7 @@ impl MenuBarState {
         if !self.live() || menus.is_empty() {
             return MenuBarOutcome::Ignored;
         }
-        self.ensure_bar(menus);
+        let bar_entries = self.ensure_bar(menus);
 
         if matches!(self.presentation, MenuBarPresentation::CommandPalette) && !self.is_open() {
             return match intent {
@@ -926,17 +933,17 @@ impl MenuBarState {
         }
 
         if !self.is_open() {
-            return self.handle_intent_closed(intent, menus);
+            return self.handle_intent_closed(intent, menus, &bar_entries);
         }
-        self.handle_intent_open(intent, menus)
+        self.handle_intent_open(intent, menus, &bar_entries)
     }
 
     fn handle_intent_closed<Id: Clone>(
         &mut self,
         intent: UiIntent,
         menus: &[MenuBarMenu<Id>],
+        bar_entries: &[CollectionItem<usize>],
     ) -> MenuBarOutcome<Id> {
-        let entries = Self::bar_entries(menus);
         match intent {
             UiIntent::Move(
                 NavigationMove::Next
@@ -946,7 +953,7 @@ impl MenuBarState {
                 | NavigationMove::First
                 | NavigationMove::Last,
             ) => {
-                let out = self.bar.handle_intent(intent, &entries);
+                let out = self.bar.handle_intent(intent, bar_entries);
                 if out.active_changed() {
                     MenuBarOutcome::BarMoved
                 } else {
@@ -954,9 +961,13 @@ impl MenuBarState {
                 }
             }
             UiIntent::Activate | UiIntent::Submit | UiIntent::Toggle | UiIntent::Expand => {
-                self.open_active_menu(menus)
+                let idx = self.bar_cursor();
+                self.open_menu_at_after_ensure(menus, idx)
             }
-            UiIntent::Move(NavigationMove::Down) => self.open_active_menu(menus),
+            UiIntent::Move(NavigationMove::Down) => {
+                let idx = self.bar_cursor();
+                self.open_menu_at_after_ensure(menus, idx)
+            }
             UiIntent::Cancel | UiIntent::Close => {
                 if self.mnemonic_mode {
                     self.mnemonic_mode = false;
@@ -973,16 +984,12 @@ impl MenuBarState {
         &mut self,
         intent: UiIntent,
         menus: &[MenuBarMenu<Id>],
+        bar_entries: &[CollectionItem<usize>],
     ) -> MenuBarOutcome<Id> {
-        self.ensure_top_frame(menus);
-        let items = match self.current_items(menus) {
-            Some(i) => i,
-            None => {
-                self.close_all();
-                return MenuBarOutcome::Closed;
-            }
+        let Some(entries) = self.ensure_top_frame(menus) else {
+            self.close_all();
+            return MenuBarOutcome::Closed;
         };
-        let entries = Self::panel_entries(items);
 
         match intent {
             UiIntent::Move(
@@ -1009,13 +1016,12 @@ impl MenuBarState {
                 }
                 // At root depth, switch to next top menu (desktop style).
                 if self.cascade.len() == 1 {
-                    let entries = Self::bar_entries(menus);
                     let out = self
                         .bar
-                        .handle_intent(UiIntent::Move(NavigationMove::Next), &entries);
+                        .handle_intent(UiIntent::Move(NavigationMove::Next), bar_entries);
                     if out.active_changed() {
                         let idx = self.bar_cursor();
-                        return self.open_menu_at(menus, idx);
+                        return self.open_menu_at_after_ensure(menus, idx);
                     }
                 }
                 MenuBarOutcome::Ignored
@@ -1025,13 +1031,12 @@ impl MenuBarState {
                     return self.close_one_layer();
                 }
                 // At root: switch previous top menu.
-                let entries = Self::bar_entries(menus);
                 let out = self
                     .bar
-                    .handle_intent(UiIntent::Move(NavigationMove::Previous), &entries);
+                    .handle_intent(UiIntent::Move(NavigationMove::Previous), bar_entries);
                 if out.active_changed() {
                     let idx = self.bar_cursor();
-                    return self.open_menu_at(menus, idx);
+                    return self.open_menu_at_after_ensure(menus, idx);
                 }
                 MenuBarOutcome::Ignored
             }
@@ -1143,10 +1148,10 @@ fn rect_contains(rect: Rect, pos: Position) -> bool {
 /// Default intent map for MenuBar (closed + open panels).
 #[must_use]
 pub fn default_menu_bar_intent(key: KeyEvent) -> Option<UiIntent> {
-    if key.kind == KeyEventKind::Release {
+    if key.is_release() {
         return None;
     }
-    let is_press = key.kind == KeyEventKind::Press;
+    let is_press = key.is_press();
     // Ignore Alt chords here; handle_key processes mnemonics.
     if key.modifiers.contains(KeyModifiers::ALT) && matches!(key.code, KeyCode::Char(_)) {
         return None;
@@ -1300,7 +1305,6 @@ pub fn dismiss_menu_bar_overlays<FocusId: Clone>(
 pub struct MenuBar<'a, Id> {
     menus: &'a [MenuBarMenu<Id>],
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -1311,20 +1315,13 @@ impl<'a, Id> MenuBar<'a, Id> {
         Self {
             menus,
             system,
-            ascii: false,
             colorless: false,
         }
     }
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Reduced-color roles.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -1359,15 +1356,13 @@ impl<'a, Id> MenuBar<'a, Id> {
 
         match presentation {
             MenuBarPresentation::CommandPalette => {
-                let label = if self.ascii { "Menu..." } else { "Menu…" };
+                let label = { "Menu…" };
                 let armed = state.mnemonic_mode || state.focused;
                 let style = if self.colorless {
                     self.system
                         .style(if armed { Role::TextStrong } else { Role::Text })
                 } else if armed {
-                    self.system
-                        .style(Role::Focus)
-                        .add_modifier(Modifier::REVERSED)
+                    self.system.style(Role::Focus).add_modifier(Modifier::BOLD)
                 } else {
                     self.system.style(Role::Text)
                 };
@@ -1394,7 +1389,7 @@ impl<'a, Id> MenuBar<'a, Id> {
                     } else {
                         menu.label.clone()
                     };
-                    let painted = format_mnemonic_label(&label, menu.mnemonic, self.ascii);
+                    let painted = format_mnemonic_label(&label, menu.mnemonic, false);
                     let pad = format!(" {painted} ");
                     let w = (display_cols(&pad) as u16).min(area.right().saturating_sub(x));
                     if w == 0 {
@@ -1466,7 +1461,7 @@ impl<'a, Id> MenuBar<'a, Id> {
         let mut anchor = root_anchor;
 
         for depth in 0..state.cascade.len() {
-            let size = measure_panel(items, self.ascii);
+            let size = measure_panel(items, false);
             let rect = place_menu_bar_panel(bounds, anchor, size);
             self.paint_panel_at(rect, buffer, state, items, depth);
             // Next anchor: selected row rect if any.
@@ -1512,17 +1507,20 @@ impl<'a, Id> MenuBar<'a, Id> {
         if area.is_empty() {
             return;
         }
-        // Panel chrome.
-        let border = if state.focused {
-            Role::BorderFocused
+        let recipe = super::SurfaceRecipe::MenuPopover;
+        let colorless_system;
+        let surface_system = if self.colorless {
+            colorless_system = self
+                .system
+                .clone()
+                .capability(crate::style::ColorCapability::Monochrome);
+            &colorless_system
         } else {
-            Role::Border
+            self.system
         };
-        let border_style = self.system.style(border);
-        let inner = super::Surface::new(self.system)
-            .recipe(super::SurfaceRecipe::Overlay)
+        let inner = super::Surface::new(surface_system)
+            .recipe(recipe)
             .bordered(true)
-            .border_style(border_style)
             .content_inset()
             .paint(area, buffer);
         if inner.is_empty() {
@@ -1541,11 +1539,7 @@ impl<'a, Id> MenuBar<'a, Id> {
                 break;
             }
             if matches!(item.kind, MenuRowKind::Separator) {
-                let line = if self.ascii {
-                    "-".repeat(usize::from(inner.width))
-                } else {
-                    "─".repeat(usize::from(inner.width))
-                };
+                let line = { "─".repeat(usize::from(inner.width)) };
                 buffer.set_stringn(
                     inner.x,
                     y,
@@ -1575,7 +1569,7 @@ impl<'a, Id> MenuBar<'a, Id> {
                 continue;
             }
             if matches!(item.kind, MenuRowKind::Loading) {
-                let prefix = if self.ascii { "... " } else { "… " };
+                let prefix = { "… " };
                 let text =
                     take_display_cols(&format!("{prefix}{}", item.label), usize::from(inner.width));
                 buffer.set_stringn(
@@ -1609,24 +1603,7 @@ impl<'a, Id> MenuBar<'a, Id> {
             }
 
             let active = cursor == i && surface_focus;
-            let recipe = self.system.resolve_list_row(ListRowVisualState {
-                selected: active,
-                focused: active,
-                hovered: state.hovered == Some((depth, i)),
-                enabled: item.enabled,
-                loading: false,
-                checked: matches!(
-                    item.kind,
-                    MenuRowKind::Checkbox { checked: true }
-                        | MenuRowKind::Radio { selected: true, .. }
-                ),
-            });
             let row = Rect::new(inner.x, y, inner.width, 1);
-            if recipe.use_fill {
-                buffer.set_style(row, recipe.label);
-            } else if recipe.use_tint {
-                buffer.set_style(row, recipe.tint);
-            }
             let style = if self.colorless {
                 if !item.enabled {
                     self.system.style(Role::TextMuted)
@@ -1635,38 +1612,47 @@ impl<'a, Id> MenuBar<'a, Id> {
                 } else {
                     self.system.style(Role::Text)
                 }
-            } else if !item.enabled {
-                self.system.style(Role::TextDisabled)
-            } else if item.destructive && !active {
-                self.system.style(Role::Danger)
-            } else if active {
-                recipe.label
             } else {
-                self.system.style(Role::Text)
+                self.system.menu_row(
+                    VisualState {
+                        selected: active,
+                        hovered: state.hovered == Some((depth, i)),
+                        disabled: !item.enabled,
+                        ..VisualState::default()
+                    },
+                    item.destructive,
+                    self.system
+                        .style(Role::Popover)
+                        .bg
+                        .unwrap_or(ratatui_core::style::Color::Reset),
+                )
             };
+            if !self.colorless {
+                buffer.set_style(row, style);
+            }
 
             let mark = match &item.kind {
-                MenuRowKind::Checkbox { checked: true } if self.ascii => "[x] ",
+                MenuRowKind::Checkbox { checked: true } if false => "[x] ",
                 MenuRowKind::Checkbox { checked: true } => "✓ ",
-                MenuRowKind::Checkbox { checked: false } if self.ascii => "[ ] ",
+                MenuRowKind::Checkbox { checked: false } if false => "[ ] ",
                 MenuRowKind::Checkbox { checked: false } => "  ",
-                MenuRowKind::Radio { selected: true, .. } if self.ascii => "(*) ",
+                MenuRowKind::Radio { selected: true, .. } if false => "(*) ",
                 MenuRowKind::Radio { selected: true, .. } => "● ",
                 MenuRowKind::Radio {
                     selected: false, ..
-                } if self.ascii => "( ) ",
+                } if false => "( ) ",
                 MenuRowKind::Radio {
                     selected: false, ..
                 } => "○ ",
-                _ if active && self.ascii => "> ",
+                _ if active && false => "> ",
                 _ if active => "› ",
                 _ => "  ",
             };
-            let label = format_mnemonic_label(&item.label, item.mnemonic, self.ascii);
+            let label = format_mnemonic_label(&item.label, item.mnemonic, false);
             let mut line = format!("{mark}{label}");
             if matches!(item.kind, MenuRowKind::Submenu) {
-                line.push(if self.ascii { ' ' } else { ' ' });
-                line.push(if self.ascii { '>' } else { '›' });
+                line.push(' ');
+                line.push('›');
             }
             if let Some(sc) = &item.shortcut {
                 let used = display_cols(&line);
@@ -1872,8 +1858,8 @@ pub fn example_app_menus() -> Vec<MenuBarMenu<&'static str>> {
             "view",
             "View",
             vec![
-                MenuNode::radio("theme-ph", "Phosphor", "theme", true)
-                    .command_key("view.theme.phosphor"),
+                MenuNode::radio("theme-junie", "Junie", "theme", true)
+                    .command_key("view.theme.junie"),
                 MenuNode::radio("theme-hi", "High contrast", "theme", false)
                     .command_key("view.theme.hc"),
                 MenuNode::separator("view-sep"),
@@ -2158,12 +2144,7 @@ mod tests {
             .draw(|f| {
                 let area = f.area();
                 let bar = Rect::new(area.x, area.y, area.width, 1);
-                MenuBar::new(&menus, &system).ascii(true).paint_all(
-                    bar,
-                    area,
-                    f.buffer_mut(),
-                    &mut s,
-                );
+                MenuBar::new(&menus, &system).paint_all(bar, area, f.buffer_mut(), &mut s);
             })
             .unwrap();
         let text: String = terminal
@@ -2179,6 +2160,50 @@ mod tests {
                 || text.contains("(N)ew")
                 || text.contains("(O)pen")
                 || text.contains("Recent")
+        );
+    }
+
+    #[test]
+    fn render_panel_uses_menu_highlights_and_soft_destructive_label() {
+        let system = DesignSystem::junie();
+        let menus = vec![MenuBarMenu::new(
+            "file",
+            "File",
+            vec![
+                MenuNode::command("open", "Open"),
+                MenuNode::command("delete", "Delete").destructive(true),
+            ],
+        )];
+        let mut state = focused_state();
+        let _ = state.open_menu_at(&menus, 0);
+        let bar = MenuBar::new(&menus, &system);
+        let bounds = Rect::new(0, 0, 32, 8);
+        let mut buffer = Buffer::empty(bounds);
+        bar.paint_panels(bounds, &mut buffer, &mut state);
+
+        let active = state
+            .panel_hits
+            .iter()
+            .find(|(_, index, _)| *index == 0)
+            .map(|(_, _, rect)| *rect)
+            .expect("active menu row hit");
+        let destructive = state
+            .panel_hits
+            .iter()
+            .find(|(_, index, _)| *index == 1)
+            .map(|(_, _, rect)| *rect)
+            .expect("destructive menu row hit");
+        let active_style = buffer[(active.x + 2, active.y)].style();
+        let highlight = system.style(Role::Highlight);
+        assert_eq!(active_style.fg, highlight.fg);
+        assert_eq!(
+            active_style.bg,
+            Some(ratatui_core::style::Color::Rgb(0x2f, 0x5a, 0xa8))
+        );
+        assert_eq!(active_style.add_modifier, highlight.add_modifier);
+        assert_eq!(
+            buffer[(destructive.x + 2, destructive.y)].style().fg,
+            Some(ratatui_core::style::Color::Rgb(0xd9, 0x8a, 0x8a))
         );
     }
 
@@ -2226,6 +2251,24 @@ mod tests {
         assert!(matches!(
             s.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &menus),
             MenuBarOutcome::Ignored
+        ));
+    }
+
+    #[test]
+    fn mouse_bar_hit_opens_the_same_menu_model_as_keyboard() {
+        let menus = example_app_menus();
+        let mut state = MenuBarState::new();
+        state.bar_hits = vec![(0, Rect::new(1, 1, 6, 1))];
+        assert!(matches!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(1, 1),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &menus,
+            ),
+            MenuBarOutcome::Opened { menu_id: "file" }
         ));
     }
 

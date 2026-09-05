@@ -11,13 +11,13 @@
 //! primary app routing (often AppShell start dock).
 //! **vs [`Tree`](super::Tree).** Tree is data hierarchy; NavigationList is
 //! route-oriented with sections, rail collapse, and semantic commands.
-//! **vs [`Menu`](super::Menu).** Menu is ephemeral overlay; nav is persistent.
+//! **vs [`DropdownMenu`](super::DropdownMenu).** Dropdown menus are ephemeral;
+//! navigation is persistent.
 //!
 //! **Route ≠ focus.** [`NavigationListState::route`] is the active destination;
 //! roving focus is independent until activation (Enter / click).
 //!
 //! Research: IDE sidebars, Yazi, Posting, OpenCode, shadcn sidebar.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -35,11 +35,11 @@ use crate::{
         OverlaySize, OverlaySpec, OverlayStack, RovingOrientation, SemanticNode, SemanticRole,
         SemanticScene, SemanticState, UiIntent,
     },
-    style::{DesignSystem, Role},
+    style::{DesignSystem, Role, VisualState},
     text::{display_cols, take_display_cols},
 };
 
-use super::{Panel, PanelChrome};
+use super::{Panel, PanelChrome, PanelVariant};
 
 /// Width under which expanded sidebar prefers rail.
 pub const SIDEBAR_RAIL_MAX_WIDTH: u16 = 12;
@@ -279,9 +279,6 @@ impl<Id> NavItem<Id> {
     }
 }
 
-/// Compatibility alias used by ResourceBrowser / older call sites.
-pub type SidebarItem<Id> = NavItem<Id>;
-
 /// Drop rows nested under a **collapsed** section/group ancestor (depth stack).
 ///
 /// Host may project a full tree with `expanded` flags; this pure filter is the
@@ -307,6 +304,23 @@ pub fn filter_nav_collapsed<Id: Clone>(items: &[NavItem<Id>]) -> Vec<NavItem<Id>
         }
     }
     out
+}
+
+fn filter_nav_query<Id>(items: Vec<NavItem<Id>>, query: &str) -> Vec<NavItem<Id>> {
+    if query.is_empty() {
+        return items;
+    }
+    let query = query.to_ascii_lowercase();
+    items
+        .into_iter()
+        .filter(|item| {
+            item.label.to_ascii_lowercase().contains(&query)
+                || item
+                    .command
+                    .as_ref()
+                    .is_some_and(|command| command.to_ascii_lowercase().contains(&query))
+        })
+        .collect()
 }
 
 // ── Presentation ────────────────────────────────────────────────────────────
@@ -403,17 +417,15 @@ pub enum SidebarOutcome<Id> {
     Ignored,
     /// Chrome changed.
     Changed,
-    /// Route selected (compat name for ResourceBrowser).
-    Selected(Id),
+    /// Active route changed.
+    RouteChanged {
+        /// Route id.
+        id: Id,
+    },
     /// Focus moved.
     FocusChanged {
         /// Focus id.
         id: Option<Id>,
-    },
-    /// Rail/expanded toggled (compat).
-    ToggleRail {
-        /// Expanded (true) vs rail (false).
-        expanded: bool,
     },
     /// Presentation changed.
     PresentationChanged {
@@ -458,7 +470,7 @@ impl<Id> From<NavigationListOutcome<Id>> for SidebarOutcome<Id> {
             NavigationListOutcome::Ignored => Self::Ignored,
             NavigationListOutcome::Changed => Self::Changed,
             NavigationListOutcome::FocusChanged { id } => Self::FocusChanged { id },
-            NavigationListOutcome::RouteChanged { id } => Self::Selected(id),
+            NavigationListOutcome::RouteChanged { id } => Self::RouteChanged { id },
             NavigationListOutcome::ExpandToggled { id, expanded } => {
                 Self::ExpandToggled { id, expanded }
             }
@@ -480,7 +492,7 @@ pub struct NavigationListState<Id> {
     route: Option<Id>,
     /// Roving focus among focusable rows.
     collection: CollectionState<Id>,
-    /// Search / filter query (host may filter projection).
+    /// Search / filter query.
     filter: String,
     /// Filter field active.
     filter_active: bool,
@@ -528,23 +540,10 @@ impl<Id> NavigationListState<Id> {
         self.route.as_ref()
     }
 
-    /// Compat: selected == route.
-    #[must_use]
-    pub const fn selected(&self) -> Option<&Id> {
-        self.route.as_ref()
-    }
-
     /// Focused row id.
     #[must_use]
     pub fn focus(&self) -> Option<&Id> {
         self.collection.active()
-    }
-
-    /// Cursor index among last projected items (compat).
-    #[must_use]
-    pub fn cursor_index(&self) -> usize {
-        // best-effort: 0 if unknown without projection
-        0
     }
 
     /// Cursor index from projection.
@@ -553,7 +552,8 @@ impl<Id> NavigationListState<Id> {
     where
         Id: Clone + PartialEq,
     {
-        let focusable = focusable_items(items);
+        let projected = self.projected_items(items);
+        let focusable = focusable_items(&projected);
         self.collection.active_index(&focusable).unwrap_or(0)
     }
 
@@ -601,6 +601,13 @@ impl<Id> NavigationListState<Id> {
         self.filter = q.into();
     }
 
+    fn projected_items(&self, items: &[NavItem<Id>]) -> Vec<NavItem<Id>>
+    where
+        Id: Clone,
+    {
+        filter_nav_query(filter_nav_collapsed(items), &self.filter)
+    }
+
     fn collection_items(items: &[NavItem<Id>]) -> Vec<CollectionItem<Id>>
     where
         Id: Clone,
@@ -608,14 +615,47 @@ impl<Id> NavigationListState<Id> {
         focusable_items(items)
     }
 
+    fn reconcile_projected(&mut self, projected: &[NavItem<Id>]) -> Vec<CollectionItem<Id>>
+    where
+        Id: Clone + PartialEq,
+    {
+        let coll = Self::collection_items(projected);
+        let _ = self.collection.reconcile(&coll);
+        coll
+    }
+
+    fn ensure_initial_focus(&mut self, coll: &[CollectionItem<Id>])
+    where
+        Id: Clone + PartialEq,
+    {
+        if self.collection.active().is_none() {
+            if let Some(r) = self.route.clone() {
+                if coll.iter().any(|c| c.id == r) {
+                    self.collection.set_active(Some(r));
+                }
+            }
+            if self.collection.active().is_none() {
+                let _ = self.collection.move_first(coll);
+            }
+        }
+    }
+
     /// Activate focused row as route (if item).
     ///
-    /// `items` should be the **visible** projection (see [`filter_nav_collapsed`]).
+    /// `items` is the full host projection; collapse and query filtering are
+    /// applied before activation.
     pub fn activate_focus(&mut self, items: &[NavItem<Id>]) -> NavigationListOutcome<Id>
     where
         Id: Clone + PartialEq,
     {
-        let projected = filter_nav_collapsed(items);
+        let projected = self.projected_items(items);
+        self.activate_focus_projected(&projected)
+    }
+
+    fn activate_focus_projected(&mut self, projected: &[NavItem<Id>]) -> NavigationListOutcome<Id>
+    where
+        Id: Clone + PartialEq,
+    {
         let Some(id) = self.collection.active().cloned() else {
             return NavigationListOutcome::Ignored;
         };
@@ -643,21 +683,21 @@ impl<Id> NavigationListState<Id> {
 
     /// Key adapter.
     ///
-    /// Collapsed section/group children are skipped for focus (via
-    /// [`filter_nav_collapsed`]). Host still owns storing `expanded` on the
-    /// full tree after [`NavigationListOutcome::ExpandToggled`].
+    /// Collapsed section/group children and non-matching query rows are skipped
+    /// for focus. Host still owns storing `expanded` on the full tree after
+    /// [`NavigationListOutcome::ExpandToggled`].
     pub fn handle_key(&mut self, key: KeyEvent, items: &[NavItem<Id>]) -> NavigationListOutcome<Id>
     where
         Id: Clone + PartialEq,
     {
-        if key.kind == KeyEventKind::Release || !self.enabled || !self.accepts_input {
+        if key.is_release() || !self.enabled || !self.accepts_input {
             return NavigationListOutcome::Ignored;
         }
         if !self.focused {
             return NavigationListOutcome::Ignored;
         }
 
-        let projected = filter_nav_collapsed(items);
+        let mut projected = self.projected_items(items);
 
         // Filter mode
         if self.filter_active {
@@ -667,11 +707,15 @@ impl<Id> NavigationListState<Id> {
                     return NavigationListOutcome::Changed;
                 }
                 KeyCode::Enter => {
+                    let _ = self.reconcile_projected(&projected);
                     self.filter_active = false;
-                    return self.activate_focus(items);
+                    return self.activate_focus_projected(&projected);
                 }
                 KeyCode::Backspace => {
                     self.filter.pop();
+                    projected = self.projected_items(items);
+                    let coll = self.reconcile_projected(&projected);
+                    self.ensure_initial_focus(&coll);
                     return NavigationListOutcome::FilterChanged {
                         query: self.filter.clone(),
                     };
@@ -682,6 +726,9 @@ impl<Id> NavigationListState<Id> {
                         && !c.is_control() =>
                 {
                     self.filter.push(c);
+                    projected = self.projected_items(items);
+                    let coll = self.reconcile_projected(&projected);
+                    self.ensure_initial_focus(&coll);
                     return NavigationListOutcome::FilterChanged {
                         query: self.filter.clone(),
                     };
@@ -690,18 +737,8 @@ impl<Id> NavigationListState<Id> {
             }
         }
 
-        let coll = Self::collection_items(&projected);
-        let _ = self.collection.reconcile(&coll);
-        if self.collection.active().is_none() {
-            if let Some(r) = self.route.clone() {
-                if coll.iter().any(|c| c.id == r) {
-                    self.collection.set_active(Some(r));
-                }
-            }
-            if self.collection.active().is_none() {
-                let _ = self.collection.move_first(&coll);
-            }
-        }
+        let coll = self.reconcile_projected(&projected);
+        self.ensure_initial_focus(&coll);
 
         // Start filter
         if matches!(key.code, KeyCode::Char('/') | KeyCode::Char('f'))
@@ -739,12 +776,12 @@ impl<Id> NavigationListState<Id> {
         }
 
         if key.code == KeyCode::Enter && key.modifiers.is_empty() {
-            return self.activate_focus(items);
+            return self.activate_focus_projected(&projected);
         }
 
         // Space activates item without expand (if leaf)
         if matches!(key.code, KeyCode::Char(' ')) && key.modifiers.is_empty() {
-            return self.activate_focus(items);
+            return self.activate_focus_projected(&projected);
         }
 
         match self.collection.handle_key(key, &coll) {
@@ -756,7 +793,7 @@ impl<Id> NavigationListState<Id> {
         }
     }
 
-    /// Intent (same collapse projection as [`Self::handle_key`]).
+    /// Intent (same collapse + query projection as [`Self::handle_key`]).
     pub fn handle_intent(
         &mut self,
         intent: UiIntent,
@@ -768,11 +805,10 @@ impl<Id> NavigationListState<Id> {
         if !self.enabled || !self.focused || !self.accepts_input {
             return NavigationListOutcome::Ignored;
         }
-        let projected = filter_nav_collapsed(items);
-        let coll = Self::collection_items(&projected);
-        let _ = self.collection.reconcile(&coll);
+        let projected = self.projected_items(items);
+        let coll = self.reconcile_projected(&projected);
         match intent {
-            UiIntent::Activate | UiIntent::Submit => self.activate_focus(items),
+            UiIntent::Activate | UiIntent::Submit => self.activate_focus_projected(&projected),
             UiIntent::Search => {
                 self.filter_active = true;
                 NavigationListOutcome::Changed
@@ -828,7 +864,7 @@ impl<Id> NavigationListState<Id> {
             return NavigationListOutcome::Ignored;
         }
         self.focused = true;
-        let projected = filter_nav_collapsed(items);
+        let projected = self.projected_items(items);
         for r in &self.regions {
             if r.area.contains(event.position) {
                 let id = r.id.clone();
@@ -877,8 +913,8 @@ pub struct SidebarState<Id> {
     /// Inner list (route / focus / filter).
     pub nav: NavigationListState<Id>,
     presentation: SidebarPresentation,
-    /// Host grants input (compat field).
-    pub accepts_input: bool,
+    /// Host input authority; synchronized into the nested navigation state.
+    accepts_input: bool,
 }
 
 impl<Id> Default for SidebarState<Id> {
@@ -890,8 +926,8 @@ impl<Id> Default for SidebarState<Id> {
 impl<Id> SidebarState<Id> {
     /// Expanded sidebar with optional initial route.
     #[must_use]
-    pub fn new(selected: Option<Id>) -> Self {
-        let mut nav = NavigationListState::new(selected);
+    pub fn new(route: Option<Id>) -> Self {
+        let mut nav = NavigationListState::new(route);
         nav.accepts_input = true;
         Self {
             nav,
@@ -905,12 +941,6 @@ impl<Id> SidebarState<Id> {
     pub const fn with_presentation(mut self, p: SidebarPresentation) -> Self {
         self.presentation = p;
         self
-    }
-
-    /// Selected route (compat).
-    #[must_use]
-    pub const fn selected(&self) -> Option<&Id> {
-        self.nav.route()
     }
 
     /// Route.
@@ -935,12 +965,6 @@ impl<Id> SidebarState<Id> {
     #[must_use]
     pub const fn presentation(&self) -> SidebarPresentation {
         self.presentation
-    }
-
-    /// Cursor index among items (compat; uses projection).
-    #[must_use]
-    pub fn cursor_index(&self) -> usize {
-        self.nav.cursor_index()
     }
 
     /// Cursor in projection.
@@ -976,7 +1000,9 @@ impl<Id> SidebarState<Id> {
         } else {
             SidebarPresentation::Rail
         };
-        SidebarOutcome::ToggleRail { expanded }
+        SidebarOutcome::PresentationChanged {
+            presentation: self.presentation,
+        }
     }
 
     /// Auto presentation from width.
@@ -1005,7 +1031,7 @@ impl<Id> SidebarState<Id> {
         if !self.accepts_input {
             return SidebarOutcome::Ignored;
         }
-        // ensure focused when host only sets accepts_input (legacy tests)
+        // Input authority and focus ownership enter together.
         if !self.nav.focused && self.accepts_input {
             self.nav.focused = true;
         }
@@ -1086,7 +1112,6 @@ impl<Id> SidebarState<Id> {
 pub struct NavigationList<'a, Id> {
     items: &'a [NavItem<Id>],
     system: &'a DesignSystem,
-    ascii: bool,
     rail: bool,
     show_filter: bool,
 }
@@ -1098,7 +1123,6 @@ impl<'a, Id> NavigationList<'a, Id> {
         Self {
             items,
             system,
-            ascii: false,
             rail: false,
             show_filter: true,
         }
@@ -1106,13 +1130,7 @@ impl<'a, Id> NavigationList<'a, Id> {
 
     /// ASCII marks.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Rail (compact) paint.
-    #[must_use]
     pub const fn rail(mut self, on: bool) -> Self {
         self.rail = on;
         self
@@ -1135,24 +1153,9 @@ impl<'a, Id> NavigationList<'a, Id> {
         if area.is_empty() {
             return;
         }
-        // Reconcile focus/viewport against the same collapsed projection used for paint.
-        let collapsed = filter_nav_collapsed(self.items);
-        let coll = NavigationListState::<Id>::collection_items(&collapsed);
-        let _ = state.collection.reconcile(&coll);
-        // Drop active if it pointed at a now-hidden nested row.
-        if let Some(active) = state.collection.active().cloned() {
-            if !coll.iter().any(|c| c.id == active) {
-                if let Some(r) = state.route.clone() {
-                    if coll.iter().any(|c| c.id == r) {
-                        state.collection.set_active(Some(r));
-                    } else {
-                        let _ = state.collection.move_first(&coll);
-                    }
-                } else {
-                    let _ = state.collection.move_first(&coll);
-                }
-            }
-        }
+        // Reconcile focus/viewport against the exact projection used for paint.
+        let projected = state.projected_items(self.items);
+        let coll = state.reconcile_projected(&projected);
         let vp = usize::from(area.height).max(1);
         state
             .collection
@@ -1173,21 +1176,8 @@ impl<'a, Id> NavigationList<'a, Id> {
         }
 
         let surface = state.focused && state.accepts_input;
-        let filter_q = state.filter.to_ascii_lowercase();
-        let visible: Vec<&NavItem<Id>> = collapsed
-            .iter()
-            .filter(|i| {
-                if filter_q.is_empty() {
-                    return true;
-                }
-                i.label.to_ascii_lowercase().contains(&filter_q)
-                    || i.command
-                        .as_ref()
-                        .is_some_and(|c| c.to_ascii_lowercase().contains(&filter_q))
-            })
-            .collect();
 
-        if visible.is_empty() && !filter_q.is_empty() && y < area.bottom() {
+        if projected.is_empty() && !state.filter.is_empty() && y < area.bottom() {
             // A filter that hides everything has to say so, or the rail looks
             // like it lost its contents.
             buffer.set_stringn(
@@ -1203,7 +1193,7 @@ impl<'a, Id> NavigationList<'a, Id> {
         let offset = state.collection.offset();
         // Map offset through focusable — simple paint all filtered from y
         let mut painted = 0usize;
-        for item in visible {
+        for item in &projected {
             if y >= area.bottom() {
                 break;
             }
@@ -1228,84 +1218,182 @@ impl<'a, Id> NavigationList<'a, Id> {
                 painted += 1;
             }
 
+            // Junie NavList: section headers are a faint label at col 3, no
+            // gutter, and a blank row between groups. Items are list anatomy
+            // (▎ › icon label, badge right-aligned) — `›` is the current
+            // route, not a disclosure chevron.
+            if matches!(item.kind, NavItemKind::Section) && !self.rail {
+                if y > area.y {
+                    y = y.saturating_add(1);
+                    if y >= area.bottom() {
+                        break;
+                    }
+                }
+                let label_w = usize::from(area.width.saturating_sub(3));
+                if label_w > 0 {
+                    buffer.set_stringn(
+                        area.x.saturating_add(3),
+                        y,
+                        take_display_cols(&item.label, label_w),
+                        label_w,
+                        self.system.style(Role::TextFaint),
+                    );
+                }
+                y = y.saturating_add(1);
+                continue;
+            }
+
             let route = state.route.as_ref() == Some(&item.id);
             let focus = state.collection.active() == Some(&item.id) && surface;
-            let style = if !item.enabled && item.kind.is_route() {
+            let disabled = !item.enabled && item.kind.is_route();
+            // Junie `row()` fills idle rows with primary; only the label is
+            // stepped down to secondary. Spacer/marker cells stay primary.
+            let fill = if disabled {
                 self.system.style(Role::TextDisabled)
-            } else if route {
-                // The active route is a strong label on the selection wash —
-                // never a full-width slab of brand color.
+            } else if route && focus {
                 self.system
-                    .style(Role::TextStrong)
+                    .style(Role::Text)
                     .patch(self.system.style(Role::SelectionTint))
                     .add_modifier(Modifier::BOLD)
             } else if focus {
-                self.system
-                    .style(Role::Focus)
-                    .add_modifier(Modifier::REVERSED)
-            } else if matches!(item.kind, NavItemKind::Section) {
-                self.system
-                    .style(Role::TextMuted)
-                    .add_modifier(Modifier::BOLD)
+                self.system.style(Role::Text).add_modifier(Modifier::BOLD)
             } else {
                 self.system.style(Role::Text)
             };
-
-            // Route and cursor share the one gutter glyph; the tone says
-            // which is which (Accent while the rail owns keys, muted otherwise).
-            let gutter = if focus || route {
-                self.system.glyphs.selection_gutter()
+            let style = if disabled {
+                fill
+            } else if route || focus {
+                fill
             } else {
-                " "
+                self.system.style(Role::TextSecondary)
             };
 
-            let text = if self.rail {
+            let rect = Rect::new(area.x, y, area.width, 1);
+            buffer.set_style(rect, fill);
+            let visual = VisualState {
+                focused: focus,
+                selected: route,
+                disabled: !item.enabled,
+                ..VisualState::default()
+            };
+            let theme = self.system.junie_theme();
+            let bg = style.bg.unwrap_or(theme.surface);
+            let gutter = self.system.glyphs.selection_gutter();
+            if self.rail {
                 let ch = item
                     .icon
                     .as_ref()
                     .and_then(|i| i.chars().next())
                     .or_else(|| item.label.chars().next())
-                    .unwrap_or(if self.ascii { '.' } else { '·' });
-                format!("{gutter}{ch}")
+                    .unwrap_or('·');
+                buffer.set_stringn(
+                    rect.x,
+                    rect.y,
+                    take_display_cols(&format!("{gutter}{ch}"), usize::from(rect.width)),
+                    usize::from(rect.width),
+                    style,
+                );
             } else {
-                let indent = "  ".repeat(usize::from(item.depth));
-                let chev = if item.has_children {
-                    if item.expanded {
-                        if self.ascii { "v " } else { "▾ " }
-                    } else if self.ascii {
-                        "> "
+                let indent = u16::from(item.depth).saturating_mul(2);
+                buffer.set_stringn(
+                    rect.x,
+                    rect.y,
+                    gutter,
+                    1,
+                    self.system.gutter(visual, bg, false),
+                );
+                if rect.width > 1 {
+                    let marker = if route {
+                        "›"
+                    } else if item.has_children {
+                        if item.expanded { "▾" } else { "▸" }
                     } else {
-                        "▸ "
-                    }
+                        " "
+                    };
+                    let marker_style = if route && item.enabled {
+                        fill.fg(theme.accent)
+                    } else {
+                        fill
+                    };
+                    buffer.set_stringn(rect.x.saturating_add(1), rect.y, marker, 1, marker_style);
+                }
+                let mut cluster_x = rect.x.saturating_add(3).saturating_add(indent);
+                if let Some(mark) = item.status.mark(self.system.mono())
+                    && cluster_x < rect.right()
+                {
+                    buffer.set_stringn(cluster_x, rect.y, mark, 1, style);
+                    cluster_x = cluster_x.saturating_add(2);
+                }
+                if let Some(icon) = item.icon.as_deref()
+                    && cluster_x < rect.right()
+                {
+                    let icon_style = if item.enabled {
+                        style.fg(theme.text_muted)
+                    } else {
+                        style
+                    };
+                    buffer.set_stringn(
+                        cluster_x,
+                        rect.y,
+                        take_display_cols(
+                            icon,
+                            usize::from(rect.right().saturating_sub(cluster_x)),
+                        ),
+                        usize::from(rect.right().saturating_sub(cluster_x)),
+                        icon_style,
+                    );
+                }
+                let label_x = if item.icon.is_some() {
+                    cluster_x.saturating_add(2)
                 } else {
-                    "  "
+                    cluster_x
                 };
-                let icon = item
-                    .icon
-                    .as_deref()
-                    .map(|i| format!("{i} "))
-                    .unwrap_or_default();
-                let status = item
-                    .status
-                    .mark(self.ascii)
-                    .map(|m| format!("{m} "))
-                    .unwrap_or_default();
-                let badge = item
-                    .badge
-                    .as_deref()
-                    .map(|b| format!(" [{b}]"))
-                    .unwrap_or_default();
-                format!("{gutter}{indent}{chev}{status}{icon}{}{badge}", item.label)
-            };
-
-            let rect = Rect::new(area.x, y, area.width, 1);
-            buffer.set_stringn(
-                rect.x,
-                rect.y,
-                take_display_cols(&text, usize::from(rect.width)),
-                usize::from(rect.width),
-                style,
-            );
+                if label_x < rect.right() {
+                    let badge_w = item
+                        .badge
+                        .as_deref()
+                        .map(|b| {
+                            u16::try_from(display_cols(b))
+                                .unwrap_or(0)
+                                .saturating_add(1)
+                        })
+                        .unwrap_or(0);
+                    let label_w = rect.right().saturating_sub(label_x).saturating_sub(badge_w);
+                    if label_w > 0 {
+                        buffer.set_stringn(
+                            label_x,
+                            rect.y,
+                            take_display_cols(&item.label, usize::from(label_w)),
+                            usize::from(label_w),
+                            style,
+                        );
+                    }
+                }
+                if let Some(badge) = item.badge.as_deref() {
+                    let bw = u16::try_from(display_cols(badge)).unwrap_or(0);
+                    if bw > 0 {
+                        let bx = rect
+                            .right()
+                            .saturating_sub(bw.saturating_add(1))
+                            .max(rect.x);
+                        let badge_style = if item.enabled {
+                            style.fg(theme.accent)
+                        } else {
+                            style
+                        };
+                        buffer.set_stringn(bx, rect.y, badge, usize::from(bw), badge_style);
+                    }
+                }
+            }
+            if self.rail {
+                buffer.set_stringn(
+                    rect.x,
+                    rect.y,
+                    gutter,
+                    1,
+                    self.system.gutter(visual, bg, false),
+                );
+            }
             if item.kind.is_focusable() {
                 state.regions.push(HitRegion {
                     id: item.id.clone(),
@@ -1339,7 +1427,6 @@ pub struct Sidebar<'a, Id> {
     items: &'a [NavItem<Id>],
     system: &'a DesignSystem,
     focused: bool,
-    ascii: bool,
     title: &'a str,
     show_panel: bool,
 }
@@ -1353,7 +1440,6 @@ impl<'a, Id: Clone + PartialEq> Sidebar<'a, Id> {
             system,
             // A surface does not own focus until its host says so.
             focused: false,
-            ascii: false,
             title: "",
             show_panel: false,
         }
@@ -1363,13 +1449,6 @@ impl<'a, Id: Clone + PartialEq> Sidebar<'a, Id> {
     #[must_use]
     pub const fn focused(mut self, focused: bool) -> Self {
         self.focused = focused;
-        self
-    }
-
-    /// ASCII rail glyph fallback.
-    #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
         self
     }
 
@@ -1387,13 +1466,6 @@ impl<'a, Id: Clone + PartialEq> Sidebar<'a, Id> {
         self
     }
 
-    /// Render rail or full labels.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &SidebarState<Id>) {
-        // immutable state path for legacy; paint needs mut for hits — clone regions only via paint_mut
-        let mut state_mut = state.clone();
-        self.paint(area, buffer, &mut state_mut);
-    }
-
     /// Preferred paint (updates hit regions on state.nav).
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut SidebarState<Id>) {
         if area.is_empty() {
@@ -1407,11 +1479,13 @@ impl<'a, Id: Clone + PartialEq> Sidebar<'a, Id> {
 
         let mut inner = area;
         if self.show_panel {
-            let panel = Panel::new(self.system).emphasis(if self.focused {
-                PanelChrome::Focused
-            } else {
-                PanelChrome::Normal
-            });
+            let panel = Panel::new(self.system)
+                .variant(PanelVariant::Bordered)
+                .emphasis(if self.focused {
+                    PanelChrome::Focused
+                } else {
+                    PanelChrome::Normal
+                });
             let title = if self.title.is_empty() {
                 match state.presentation {
                     SidebarPresentation::Rail => "Nav",
@@ -1426,7 +1500,6 @@ impl<'a, Id: Clone + PartialEq> Sidebar<'a, Id> {
 
         let rail = matches!(state.presentation, SidebarPresentation::Rail);
         NavigationList::new(self.items, self.system)
-            .ascii(self.ascii)
             .rail(rail)
             .paint(inner, buffer, &mut state.nav);
     }
@@ -1566,8 +1639,8 @@ mod tests {
     }
 
     #[test]
-    fn sidebar_select_compat() {
-        let items = [SidebarItem::new("x", "X"), SidebarItem::new("y", "Y")];
+    fn sidebar_route_change_is_explicit() {
+        let items = [NavItem::new("x", "X"), NavItem::new("y", "Y")];
         let mut state = SidebarState::new(None);
         let _ = state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &items);
         // first focus may be x after reconcile; down -> y
@@ -1576,21 +1649,22 @@ mod tests {
         // new() with None: move_first on first key path sets focus
         // Down then Enter — depends on initial active
         assert!(
-            matches!(out, SidebarOutcome::Selected(_))
+            matches!(out, SidebarOutcome::RouteChanged { .. })
                 || matches!(
                     {
                         let _ = state
                             .handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &items);
                         state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items)
                     },
-                    SidebarOutcome::Selected("y") | SidebarOutcome::Selected("x")
+                    SidebarOutcome::RouteChanged { id: "y" }
+                        | SidebarOutcome::RouteChanged { id: "x" }
                 )
         );
     }
 
     #[test]
-    fn sidebar_legacy_select_y() {
-        let items = [SidebarItem::new("x", "X"), SidebarItem::new("y", "Y")];
+    fn sidebar_selects_pointer_row() {
+        let items = [NavItem::new("x", "X"), NavItem::new("y", "Y")];
         let mut state = SidebarState::new(None);
         let _ = state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &items);
         // Ensure focus on y
@@ -1599,7 +1673,7 @@ mod tests {
         }
         assert!(matches!(
             state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items),
-            SidebarOutcome::Selected("y")
+            SidebarOutcome::RouteChanged { id: "y" }
         ));
     }
 
@@ -1609,12 +1683,16 @@ mod tests {
         assert!(state.is_expanded());
         assert!(matches!(
             state.toggle_rail(),
-            SidebarOutcome::ToggleRail { expanded: false }
+            SidebarOutcome::PresentationChanged {
+                presentation: SidebarPresentation::Rail
+            }
         ));
         assert!(!state.is_expanded());
         assert!(matches!(
             state.handle_key(KeyEvent::new(KeyCode::Char('['), KeyModifiers::NONE), &[]),
-            SidebarOutcome::ToggleRail { expanded: true }
+            SidebarOutcome::PresentationChanged {
+                presentation: SidebarPresentation::Expanded
+            }
         ));
     }
 
@@ -1699,7 +1777,10 @@ mod tests {
             "{out:?}"
         );
         let out = state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items);
-        assert!(matches!(out, SidebarOutcome::Selected("leaf")), "{out:?}");
+        assert!(
+            matches!(out, SidebarOutcome::RouteChanged { id: "leaf" }),
+            "{out:?}"
+        );
         assert_eq!(state.route(), Some(&"leaf"));
         // Focus was on leaf; route is leaf — distinct still holds when we move without enter
         let out = state.handle_key(KeyEvent::new(KeyCode::Up, KeyModifiers::NONE), &items);
@@ -1818,9 +1899,7 @@ mod tests {
         assert_eq!(state.focus(), Some(&"hidden"));
         let area = Rect::new(0, 0, 24, 8);
         let mut buf = Buffer::empty(area);
-        NavigationList::new(&items, &system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
+        NavigationList::new(&items, &system).paint(area, &mut buf, &mut state);
         // After paint, focus must not remain on collapsed child
         assert_ne!(
             state.focus(),
@@ -1857,6 +1936,117 @@ mod tests {
             state.handle_key(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE), &items),
             NavigationListOutcome::FilterChanged { query } if query == "a"
         ));
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &items),
+            NavigationListOutcome::Changed
+        );
+        assert!(!state.is_filter_active());
+    }
+
+    #[test]
+    fn filter_projection_reconciles_focus_and_activation() {
+        let items = [
+            NavItem::new("alpha", "Alpha"),
+            NavItem::new("beta", "Beta"),
+            NavItem::new("gamma", "Gamma"),
+        ];
+        let mut state = NavigationListState::new(None);
+        state.set_focused(true);
+        state.collection.set_active(Some("alpha"));
+        state.set_filter("beta");
+
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items),
+            NavigationListOutcome::RouteChanged { id: "beta" }
+        ));
+        assert_eq!(state.focus(), Some(&"beta"));
+        assert_eq!(state.route(), Some(&"beta"));
+    }
+
+    #[test]
+    fn filter_edit_reconciles_focus_and_no_match() {
+        let items = [NavItem::new("alpha", "Alpha"), NavItem::new("beta", "Beta")];
+        let mut state = NavigationListState::new(None);
+        state.set_focused(true);
+        state.collection.set_active(Some("alpha"));
+        state.filter_active = true;
+
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE), &items),
+            NavigationListOutcome::FilterChanged { query } if query == "b"
+        ));
+        assert_eq!(state.focus(), Some(&"beta"));
+
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('z'), KeyModifiers::NONE), &items),
+            NavigationListOutcome::FilterChanged { query } if query == "bz"
+        ));
+        assert_eq!(state.focus(), None);
+    }
+
+    #[test]
+    fn paint_uses_filtered_projection_for_offset() {
+        let system = DesignSystem::default();
+        let items = [
+            NavItem::new("alpha", "Alpha"),
+            NavItem::new("beta", "Beta"),
+            NavItem::new("gamma", "Gamma"),
+        ];
+        let mut state = NavigationListState::new(None);
+        state.set_focused(true);
+        state.collection.set_active(Some("gamma"));
+        state.collection.set_viewport(1, 1, 3);
+        state.set_filter("gamma");
+        let area = Rect::new(0, 0, 24, 1);
+        let mut buf = Buffer::empty(area);
+
+        NavigationList::new(&items, &system).paint(area, &mut buf, &mut state);
+
+        assert_eq!(state.collection.offset(), 0);
+        assert_eq!(
+            state
+                .regions
+                .iter()
+                .map(|region| region.id)
+                .collect::<Vec<_>>(),
+            vec!["gamma"]
+        );
+        let row: String = (0..area.width)
+            .map(|x| buf[(x, area.y)].symbol().to_string())
+            .collect();
+        assert!(row.contains("Gamma"), "{row:?}");
+    }
+
+    #[test]
+    fn paint_clears_focus_for_no_matches() {
+        let system = DesignSystem::default();
+        let items = [NavItem::new("alpha", "Alpha")];
+        let mut state = NavigationListState::new(None);
+        state.set_focused(true);
+        state.collection.set_active(Some("alpha"));
+        state.set_filter("missing");
+        let area = Rect::new(0, 0, 24, 2);
+        let mut buf = Buffer::empty(area);
+
+        NavigationList::new(&items, &system).paint(area, &mut buf, &mut state);
+
+        assert_eq!(state.focus(), None);
+        let row: String = (0..area.width)
+            .map(|x| buf[(x, area.y)].symbol().to_string())
+            .collect();
+        assert!(row.contains("No matches"), "{row:?}");
+    }
+
+    #[test]
+    fn sidebar_escape_blurs_without_changing_route() {
+        let items = example_sectioned_sidebar_nav();
+        let mut state = SidebarState::new(Some("chat"));
+        state.set_focused(true);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &items),
+            SidebarOutcome::Blurred
+        );
+        assert_eq!(state.route(), Some(&"chat"));
     }
 
     #[test]
@@ -1878,23 +2068,20 @@ mod tests {
 
     #[test]
     fn paint_rail_and_expanded() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let items = example_settings_nav();
         let mut state = SidebarState::new(Some("profile"));
         state.set_focused(true);
         let area = Rect::new(0, 0, 24, 12);
         let mut buf = Buffer::empty(area);
         Sidebar::new(&items, &system)
-            .ascii(true)
             .show_panel(true)
             .title("Settings")
             .paint(area, &mut buf, &mut state);
         assert!(!state.nav.regions.is_empty());
         let _ = state.toggle_rail();
         let rail_area = Rect::new(0, 0, 6, 12);
-        Sidebar::new(&items, &system)
-            .ascii(true)
-            .paint(rail_area, &mut buf, &mut state);
+        Sidebar::new(&items, &system).paint(rail_area, &mut buf, &mut state);
         assert_eq!(state.presentation(), SidebarPresentation::Rail);
     }
 
@@ -1906,9 +2093,7 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 20, 6);
         let mut buf = Buffer::empty(area);
-        Sidebar::new(&items, &system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
+        Sidebar::new(&items, &system).paint(area, &mut buf, &mut state);
         let hit = state.nav.regions.iter().find(|r| r.id == "b").expect("b");
         assert!(matches!(
             state.handle_mouse(
@@ -1919,7 +2104,7 @@ mod tests {
                 },
                 &items
             ),
-            SidebarOutcome::Selected("b")
+            SidebarOutcome::RouteChanged { id: "b" }
         ));
     }
 
@@ -1963,7 +2148,7 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 28, 16);
         let mut buf = Buffer::empty(area);
-        let w = Sidebar::new(&items, &system).ascii(true);
+        let w = Sidebar::new(&items, &system);
         for _ in 0..50 {
             w.paint(area, &mut buf, &mut state);
         }

@@ -1,0 +1,40 @@
+ ▪ Junie Design system / Components / Code editor                            truecolor · 120×40   i Inspector   ? Help
+
+   Foundations            Code editor  Blocks, tones, diagnostics and completion; the gutter says where you are
+▎  Overview
+                           ▎retry.rs                                      3 blocks      State
+   Components
+▎  Buttons                   ›  1 // Retry a request with exponential backoff.   ┃      Mode         editing
+▎  Inputs                   ▎   2     cl                                         ┃      Cursor       ln 2 · col 7
+▎  Text areas                   3 pub ╭─────────────────────────────────────────────╮   Block        1 of 3
+▎  Forms                        4     │▎T Client                             struct │   Runs         0
+▎  Lists                        5     │▎ƒ client(                   fn () -> Client │   Last run     —
+▎  Trees                        6     │▎ƒ schedule(  fn (attempts: u32) -> Vec<u64> │   Diagnostics  0
+▎  Tables                       7     ╰─────────────────────────────────────────────╯   Completion   3 items
+▎  Editable tables              8             Err(e) if e.is_transient() => {    ┃
+▎  Panels                       9                 log::warn!("attempt {attempt} …┃
+▎  Sidebars                    10                 sleep(delay).await;            ┃
+▎  Dialogs                     11                 delay *= 2;                    ┃      Diagnostics
+▎  Progress                    12             }                                  ┃
+▎  Scrolling                   13             Err(e) => return Err(e),           ┃
+▎› Code editor                 14         }                                      ┃             Nothing flagged
+▎  Data grid                   15     }                                          ┃
+▎  Chips & selects             16     Err(Error::Exhausted)                      ┃        Run the second block: its
+▎  Pickers                     17 }                                              ┃         unwrap() gets a warning
+                               18                                                │
+   Screens                     19 fn client() -> Client {                        │
+▎  Settings                    20     Client::builder().timeout(10).build().unwr…│
+▎  Task runner                 21 }                                              │
+                               22                                                │
+                                                                  ln 2/27 · col 7
+
+
+
+
+
+
+
+
+
+
+  EDIT   ↑ ↓ Move  Enter Accept  Esc Close

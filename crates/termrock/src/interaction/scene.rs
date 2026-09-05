@@ -5,7 +5,6 @@
 //!
 //! Immediate-mode registration each frame. Stable focus and open layers persist
 //! across frames. No callbacks, effects, or domain policy.
-
 use ratatui_core::layout::{Position, Rect};
 
 use crate::input::{
@@ -549,14 +548,14 @@ impl<Id, LayerId, Action> InteractionScene<Id, LayerId, Action> {
         Id: Clone + PartialEq,
         LayerId: Clone + PartialEq,
     {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return InteractionOutcome::Ignored;
         }
         match key.code {
             KeyCode::Tab if key.modifiers.contains(KeyModifiers::SHIFT) => self.focus_move(true),
             KeyCode::Tab => self.focus_move(false),
             KeyCode::BackTab => self.focus_move(true),
-            KeyCode::Esc if key.kind == KeyEventKind::Press => self.handle_escape(),
+            KeyCode::Esc if key.is_press() => self.handle_escape(),
             _ => InteractionOutcome::Ignored,
         }
     }
@@ -878,9 +877,6 @@ impl<Id, Action> SemanticNode<Id, Action> {
     }
 }
 
-/// Alias kept for earlier sketches; prefer [`SemanticNode`].
-pub type SemanticElement<Id, Action = ()> = SemanticNode<Id, Action>;
-
 /// One node in a portable semantic snapshot (string identities).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SemanticSnapshotNode {
@@ -1152,12 +1148,6 @@ impl<Id, Action> SemanticScene<Id, Action> {
     /// Registered nodes in order.
     #[must_use]
     pub fn nodes(&self) -> &[SemanticNode<Id, Action>] {
-        &self.nodes
-    }
-
-    /// Alias of [`Self::nodes`] for older call sites.
-    #[must_use]
-    pub fn elements(&self) -> &[SemanticNode<Id, Action>] {
         &self.nodes
     }
 

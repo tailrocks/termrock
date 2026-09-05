@@ -11,7 +11,6 @@
 //! own z-order and geometry; this module owns **policy evaluation**, nested
 //! capture/bubble, pointer gesture safety, and single-event double-dismiss
 //! prevention.
-
 use ratatui_core::layout::{Position, Rect};
 
 use super::scene::LayerDismissPolicy;
@@ -46,7 +45,7 @@ pub enum DismissAction {
 }
 
 impl DismissAction {
-    /// Map scene/overlay legacy policy.
+    /// Map the scene layer policy into its concrete dismiss action.
     #[must_use]
     pub const fn from_layer(policy: LayerDismissPolicy) -> Self {
         match policy {

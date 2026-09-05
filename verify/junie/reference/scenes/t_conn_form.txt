@@ -1,0 +1,40 @@
+ ▪  TablePro  Connections  6 saved                                                           truecolor · 120×40  ? help
+
+ ╭─ Connections ─────────────────── 6 ─╮    New connection                                                Ctrl+S Save
+ │                                     │
+ │ ▎ Filter connections                │    ▎Basic   ▎Advanced
+ │ ▎▾ Personal                         │    ─━━━━━━──────────────────────────────────────────────────────────────────
+ │ ▎    · Local PostgreSQL         pg  │
+ │ ▎    · Scratch              sqlite  │      Name *                                Environment
+ │ ▎▾ Acme                             │    ▎                                     ▎(●) local
+ │ ▎    · Development              pg  │                                          ▎( ) development
+ │ ▎    ◇ Staging                  pg  │      Engine                              ▎( ) staging
+ │ ▎    ◆ Analytics             mysql  │    ▎ PostgreSQL                    ▾     ▎( ) production
+ │ ▎    ◆ Production               pg  │
+ │                                     │      Host  optional          Port          Group
+ │                                     │    ▎ localhost             ▎ 5432        ▎ Personal                       ▾
+ │                                     │      Blank: driver defau…
+ │                                     │      Database  optional                    Safe Mode
+ │                                     │    ▎                                     ▎(●) Silent
+ │                                     │      Required for PostgreSQL             ▎( ) Alert
+ │                                     │      Username  optional                  ▎( ) Alert (Full)
+ │                                     │    ▎                                     ▎( ) Safe Mode
+ │                                     │                                          ▎( ) Safe Mode (Full)
+ │                                     │      Password  optional                  ▎( ) Read-Only
+ │                                     │    ▎ stored in the keychain                Writes run without asking.
+ │                                     │      Never written to connections.js…      Destructive statements still
+ │                                     │    ▎[ ] Prompt for password on conn…
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │    ▎Test connection   ▎Cancel   ▎Save   ▎Save & connect
+ ╰─────────────────────────────────────╯
+
+ Enter Edit  ← → Basic / Advanced  Ctrl+S Save  Tab Next

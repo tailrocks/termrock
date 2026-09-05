@@ -85,6 +85,13 @@ fn u16_offset_helpers_clamp_and_move() {
 }
 
 #[test]
+fn overflow_thumb_matches_junie_scroll_state() {
+    assert_eq!(overflow_thumb(24, 15, 15, 0), Some((0, 9)));
+    assert_eq!(overflow_thumb(49, 7, 7, 0), Some((0, 1)));
+    assert_eq!(overflow_thumb(15, 15, 15, 0), None);
+}
+
+#[test]
 fn full_cell_thumb_reaches_track_end_at_max_offset() {
     let thumb = full_cell_thumb(20, 5, 10, 15).expect("overflowing content");
     assert_eq!(thumb.start + thumb.len, 10);

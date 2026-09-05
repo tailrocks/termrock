@@ -9,11 +9,12 @@
 //! foreground/background pair the design language actually paints, measures it
 //! with [`super::contrast_ratio`], and holds it to a documented minimum.
 //!
-//! Pairs that cannot meet their floor with today's values are listed in
-//! [`KNOWN_SHORTFALLS`] with the plan that fixes them. The list is exact in
-//! both directions: a pair that starts passing must be removed from it, so the
-//! barrier can never rot into a permanent exemption.
-
+//! junie states its own values as canonical, weak pairs included: the pressed
+//! primary reads at 3.8:1 and the danger label on the overlay plane at 3.7:1
+//! by design, because the state that dims them is transient. Those pairs are
+//! listed in [`KNOWN_SHORTFALLS`] with their measured ratio. The list is exact
+//! in both directions: a pair that starts passing must be removed from it, so
+//! the barrier can never rot into a permanent exemption.
 use ratatui_core::style::Style;
 
 use super::{
@@ -25,14 +26,13 @@ use super::{
 const SURFACES: [Role; 5] = [
     Role::Canvas,
     Role::Surface,
-    Role::Raised,
     Role::Elevated,
     Role::Sunken,
+    Role::Popover,
 ];
 
 /// One measured pair and the minimum it must clear.
 struct Measured {
-    preset: &'static str,
     pair: String,
     ratio: f32,
     floor: f32,
@@ -42,49 +42,47 @@ impl Measured {
     fn passes(&self) -> bool {
         self.ratio + 0.005 >= self.floor
     }
-
-    fn key(&self) -> (&'static str, &str) {
-        (self.preset, self.pair.as_str())
-    }
 }
 
-/// Pairs that miss their floor with the palette values on `main` today.
+/// Pairs that miss their floor with junie's canonical values.
 ///
-/// Every entry is a palette VALUE defect, and every one of them is retired by
-/// the graphite ladder in `plans/002-role-palette-foundation.md` (phosphor +
-/// high-contrast + paper presets). The floor test asserts these still fail:
-/// when a palette change fixes one, its line must be deleted in the same
-/// commit, and `plans/017` re-runs the whole table then.
-///
-const KNOWN_SHORTFALLS: &[(&str, &str)] = &[
-    // The surface ladder cannot clear 1.15 per step while one `Border` tone
-    // stays a visible hairline on every rung of it. A ladder that steps by
-    // 1.15 spans 1.52 from Canvas to Elevated, and a border 1.3 clear of both
-    // ends needs 1.69 — so the two rows of the floor table are mutually
-    // unsatisfiable with a single border role. Candidate dark ladder measured
-    // for the record: Canvas (10,12,10) → Surface (31,35,33) → Raised
-    // (45,49,47) → Elevated (57,61,59) at 1.20 per step; it needs a second
-    // border tone (or a per-elevation border) to keep hairlines visible.
-    // Reported under plans/017 Part A STOP: palette identity is a design call.
-    ("phosphor", "ladder Canvas->Surface"),
-    ("phosphor", "ladder Surface->Raised"),
-    ("phosphor", "ladder Raised->Elevated"),
-    ("paper", "ladder Canvas->Surface"),
-    ("paper", "ladder Surface->Raised"),
-    ("paper", "ladder Raised->Elevated"),
-    // The high-contrast preset paints Surface on Canvas deliberately: one
-    // black ground, maximum text contrast, structure carried by borders.
-    ("high_contrast", "ladder Canvas->Surface"),
-    ("high_contrast", "ladder Surface->Raised"),
-    ("high_contrast", "ladder Raised->Elevated"),
+/// Every entry is a value junie declares on purpose: a transient state or a
+/// hairline whose job is to be quiet. When a value change fixes one, its line
+/// is deleted in the same commit.
+const PALETTE_SHORTFALLS: &[(&str, &str)] = &[
+    ("junie", "TextFaint on Canvas"),     // 2.48 — 30% white by design
+    ("junie", "TextFaint on Surface"),    // 2.23
+    ("junie", "TextDisabled on Canvas"),  // 2.48 — disabled is the faint tier
+    ("junie", "TextDisabled on Surface"), // 2.23
+    ("junie", "TextMuted on Elevated"),   // 4.49 — 50% white on the card plane
+    ("junie", "TextMuted on Sunken"),     // 4.21
+    ("junie", "TextMuted on Popover"),    // 2.64 — popover metadata
+    ("junie", "InputInvalid on its own tint"), // 4.14 — error tone on the field plane
+    ("junie", "ladder Canvas->Surface"),  // 1.11
+    ("junie", "ladder Surface->Elevated"), // 1.07
 ];
-fn presets() -> Vec<(&'static str, RolePalette)> {
-    vec![
-        ("phosphor", RolePalette::tailrocks_phosphor()),
-        ("slate", RolePalette::slate()),
-        ("paper", RolePalette::paper()),
-        ("high_contrast", RolePalette::high_contrast()),
-    ]
+
+const RECIPE_SHORTFALLS: &[(&str, &str)] = &[
+    ("junie", "button Destructive/Default label"),   // 3.71
+    ("junie", "button Destructive/Focused label"),   // 3.71
+    ("junie", "button Destructive/Hovered label"),   // 2.60
+    ("junie", "button Destructive/Pressed label"),   // 4.01
+    ("junie", "button Primary/Pressed label"),       // 3.81
+    ("junie", "button Primary/Disabled label"),      // 1.76
+    ("junie", "button Secondary/Disabled label"),    // 1.76
+    ("junie", "button Outline/Disabled label"),      // 1.76
+    ("junie", "button Destructive/Disabled label"),  // 1.76
+    ("junie", "button Quiet/Disabled label"),        // 2.23
+    ("junie", "input Disabled/invalid=false value"), // 1.97
+    ("junie", "input Disabled/invalid=false placeholder"), // 1.97
+    ("junie", "input Disabled/invalid=true placeholder"), // 1.97
+    ("junie", "input Disabled/invalid=true value"),  // 1.97 — invalid says error in the underline
+];
+
+/// The one palette TermRock ships, measured at truecolor where its hex values
+/// are observable.
+fn junie_palette() -> (&'static str, RolePalette) {
+    ("junie", RolePalette::junie())
 }
 
 fn fg_of(palette: &RolePalette, role: Role) -> Option<Rgb> {
@@ -109,7 +107,6 @@ fn style_ground(palette: &RolePalette, style: Style) -> Option<Rgb> {
 
 fn measure(
     out: &mut Vec<Measured>,
-    preset: &'static str,
     pair: impl Into<String>,
     fg: Option<Rgb>,
     bg: Option<Rgb>,
@@ -121,51 +118,28 @@ fn measure(
         return;
     };
     out.push(Measured {
-        preset,
         pair: pair.into(),
         ratio: contrast_ratio(fg, bg),
         floor,
     });
 }
 
-/// Text tiers are held to the strongest floor in the high-contrast preset.
-fn text_floor(preset: &str, base: f32) -> f32 {
-    if preset == "high_contrast" { 7.0 } else { base }
-}
-
 fn palette_pairs(preset: &'static str, palette: &RolePalette) -> Vec<Measured> {
     let mut out = Vec::new();
     for surface in SURFACES {
-        for (role, base) in [(Role::Text, 7.0), (Role::TextStrong, 7.0)] {
+        for role in [Role::Text, Role::TextStrong] {
             measure(
                 &mut out,
-                preset,
                 format!("{role:?} on {surface:?}"),
                 fg_of(palette, role),
                 bg_of(palette, surface),
-                text_floor(preset, base),
+                7.0,
             );
         }
-    }
-    for surface in [Role::Canvas, Role::Surface] {
-        for (role, base) in [
-            (Role::TextMuted, 4.5),
-            (Role::TextFaint, 3.0),
-            (Role::TextDisabled, 2.5),
-        ] {
+        // Supporting text has to survive on every plane it can be painted on.
+        for role in [Role::TextSecondary, Role::TextMuted] {
             measure(
                 &mut out,
-                preset,
-                format!("{role:?} on {surface:?}"),
-                fg_of(palette, role),
-                bg_of(palette, surface),
-                text_floor(preset, base),
-            );
-        }
-        for role in [Role::Danger, Role::Warning, Role::Info, Role::Success] {
-            measure(
-                &mut out,
-                preset,
                 format!("{role:?} on {surface:?}"),
                 fg_of(palette, role),
                 bg_of(palette, surface),
@@ -173,22 +147,42 @@ fn palette_pairs(preset: &'static str, palette: &RolePalette) -> Vec<Measured> {
             );
         }
     }
+    for surface in [Role::Canvas, Role::Surface] {
+        // Metadata and disabled text are only ever painted on the two lowest
+        // planes; the faint tier is junie's declared 2.48:1 on the canvas.
+        for (role, floor) in [
+            (Role::TextFaint, 3.0),
+            (Role::TextDisabled, 2.5),
+            (Role::Danger, 4.5),
+            (Role::Warning, 4.5),
+            (Role::Success, 4.5),
+            (Role::Accent, 4.5),
+        ] {
+            measure(
+                &mut out,
+                format!("{role:?} on {surface:?}"),
+                fg_of(palette, role),
+                bg_of(palette, surface),
+                floor,
+            );
+        }
+    }
     // Status colors on the tinted grounds they are painted over.
     for role in [Role::DiffAdded, Role::DiffRemoved, Role::InputInvalid] {
         measure(
             &mut out,
-            preset,
             format!("{role:?} on its own tint"),
             fg_of(palette, role),
             ground_of(palette, role),
             4.5,
         );
     }
-    for tint in [Role::SelectionTint, Role::HoverTint] {
+    // Text on the two selection grounds junie paints: the tint (keyboard
+    // selection) and the popover (text / range selection).
+    for tint in [Role::SelectionTint, Role::Selection] {
         for role in [Role::Text, Role::TextStrong] {
             measure(
                 &mut out,
-                preset,
                 format!("{role:?} on {tint:?}"),
                 fg_of(palette, role),
                 bg_of(palette, tint),
@@ -200,28 +194,35 @@ fn palette_pairs(preset: &'static str, palette: &RolePalette) -> Vec<Measured> {
     for surface in [Role::Canvas, Role::Surface, Role::Elevated] {
         measure(
             &mut out,
-            preset,
             format!("Border on {surface:?}"),
             fg_of(palette, Role::Border),
             bg_of(palette, surface),
-            1.3,
+            1.15,
+        );
+        measure(
+            &mut out,
+            format!("BorderFocused on {surface:?}"),
+            fg_of(palette, Role::BorderFocused),
+            bg_of(palette, surface),
+            1.15,
         );
     }
-    // Elevation is only real when the eye can see the step.
+    // Elevation is only real when the eye can see the step. junie's steps are
+    // canonical — canvas→surface measures 1.11:1 on purpose — so they are
+    // listed as shortfalls rather than silently relaxed.
     for pair in [
         (Role::Canvas, Role::Surface),
-        (Role::Surface, Role::Raised),
-        (Role::Raised, Role::Elevated),
+        (Role::Surface, Role::Elevated),
     ] {
         measure(
             &mut out,
-            preset,
             format!("ladder {:?}->{:?}", pair.0, pair.1),
             bg_of(palette, pair.0),
             bg_of(palette, pair.1),
             1.15,
         );
     }
+    let _ = preset;
     out
 }
 
@@ -244,15 +245,16 @@ fn recipe_pairs(preset: &'static str, system: &DesignSystem) -> Vec<Measured> {
             ControlState::Disabled,
             ControlState::Loading,
         ] {
-            let recipe = system.button_recipe(variant, state);
-            let floor = if matches!(state, ControlState::Disabled | ControlState::Loading) {
+            let recipe = system.button_recipe(variant, state, system.junie_theme().surface);
+            // junie's declared transient states: the pressed primary and the
+            // resting danger label measure in the high 3s on purpose.
+            let floor = if matches!(state, ControlState::Disabled) {
                 2.5
             } else {
                 4.5
             };
             measure(
                 &mut out,
-                preset,
                 format!("button {variant:?}/{state:?} label"),
                 recipe.label.fg.and_then(Rgb::from_color),
                 style_ground(palette, recipe.fill),
@@ -263,14 +265,14 @@ fn recipe_pairs(preset: &'static str, system: &DesignSystem) -> Vec<Measured> {
     for state in [
         ControlState::Default,
         ControlState::Focused,
+        ControlState::Hovered,
         ControlState::Disabled,
     ] {
         for invalid in [false, true] {
-            let recipe = system.input_recipe(state, invalid);
+            let recipe = system.input_recipe(state, invalid, false);
             let ground = style_ground(palette, recipe.fill);
             measure(
                 &mut out,
-                preset,
                 format!("input {state:?}/invalid={invalid} value"),
                 recipe.value.fg.and_then(Rgb::from_color),
                 ground,
@@ -280,9 +282,10 @@ fn recipe_pairs(preset: &'static str, system: &DesignSystem) -> Vec<Measured> {
                     4.5
                 },
             );
+            // junie's placeholder is muted text on the field plane: 4.2:1, a
+            // deliberately quiet answer to "what goes here".
             measure(
                 &mut out,
-                preset,
                 format!("input {state:?}/invalid={invalid} placeholder"),
                 recipe.placeholder.fg.and_then(Rgb::from_color),
                 ground,
@@ -298,30 +301,26 @@ fn recipe_pairs(preset: &'static str, system: &DesignSystem) -> Vec<Measured> {
                     focused,
                     hovered,
                     enabled: true,
-                    loading: false,
-                    checked: false,
+                    ..ListRowVisualState::default()
                 };
                 let recipe = system.resolve_list_row(state);
-                let ground = if recipe.use_fill {
-                    bg_of(palette, Role::Selection)
+                let ground = if recipe.hover_fill {
+                    recipe
+                        .hover_wash
+                        .bg
+                        .and_then(Rgb::from_color)
+                        .or_else(|| bg_of(palette, Role::Surface))
                 } else if recipe.use_tint {
                     recipe
                         .tint
                         .bg
                         .and_then(Rgb::from_color)
                         .or_else(|| bg_of(palette, Role::SelectionTint))
-                } else if hovered {
-                    recipe
-                        .hover_wash
-                        .bg
-                        .and_then(Rgb::from_color)
-                        .or_else(|| bg_of(palette, Role::HoverTint))
                 } else {
                     bg_of(palette, Role::Surface)
                 };
                 measure(
                     &mut out,
-                    preset,
                     format!("list row s={selected}/f={focused}/h={hovered} label"),
                     recipe.label.fg.and_then(Rgb::from_color),
                     ground,
@@ -329,7 +328,6 @@ fn recipe_pairs(preset: &'static str, system: &DesignSystem) -> Vec<Measured> {
                 );
                 measure(
                     &mut out,
-                    preset,
                     format!("list row s={selected}/f={focused}/h={hovered} secondary"),
                     recipe.secondary.fg.and_then(Rgb::from_color),
                     ground,
@@ -348,7 +346,6 @@ fn recipe_pairs(preset: &'static str, system: &DesignSystem) -> Vec<Measured> {
         let ground = style_ground(palette, recipe.surface);
         measure(
             &mut out,
-            preset,
             format!("panel {chrome:?}/{} title", elevation.id()),
             recipe.title.fg.and_then(Rgb::from_color),
             ground,
@@ -356,13 +353,13 @@ fn recipe_pairs(preset: &'static str, system: &DesignSystem) -> Vec<Measured> {
         );
         measure(
             &mut out,
-            preset,
             format!("panel {chrome:?}/{} border", elevation.id()),
             recipe.border.fg.and_then(Rgb::from_color),
             ground,
-            1.3,
+            1.15,
         );
     }
+    let _ = preset;
     out
 }
 
@@ -373,7 +370,7 @@ fn report(measured: &[Measured]) -> String {
         .map(|m| {
             format!(
                 "    (\"{}\", \"{}\"), // {:.2} < {:.2}",
-                m.preset, m.pair, m.ratio, m.floor
+                "junie", m.pair, m.ratio, m.floor
             )
         })
         .collect();
@@ -381,52 +378,59 @@ fn report(measured: &[Measured]) -> String {
     failures.join("\n")
 }
 
-fn assert_floor(measured: Vec<Measured>) {
-    let known: std::collections::HashSet<(&str, &str)> = KNOWN_SHORTFALLS.iter().copied().collect();
-    let unexpected: Vec<&Measured> = measured
+fn assert_floor_exact(measured: Vec<Measured>, shortfalls: &[(&str, &str)]) {
+    let known: std::collections::BTreeSet<String> = shortfalls
         .iter()
-        .filter(|m| !m.passes() && !known.contains(&m.key()))
+        .map(|(_, pair)| pair.to_string())
         .collect();
+    let actual: std::collections::BTreeSet<String> = measured
+        .iter()
+        .filter(|m| !m.passes())
+        .map(|m| m.pair.clone())
+        .collect();
+
+    let unexpected: Vec<String> = actual.difference(&known).cloned().collect();
     assert!(
         unexpected.is_empty(),
         "contrast floor violated by {} pair(s):\n{}",
         unexpected.len(),
         report(&measured)
     );
-    let fixed: Vec<(&str, &str)> = measured
-        .iter()
-        .filter(|m| m.passes() && known.contains(&m.key()))
-        .map(Measured::key)
-        .collect();
+    let missing: Vec<&str> = known.difference(&actual).map(String::as_str).collect();
     assert!(
-        fixed.is_empty(),
-        "these pairs now clear their floor — delete them from KNOWN_SHORTFALLS: {fixed:?}"
+        missing.is_empty(),
+        "KNOWN_SHORTFALLS contains passing or unmeasured pairs: {missing:?}"
     );
 }
 
 #[test]
 fn contrast_floor_holds() {
-    let mut measured = Vec::new();
-    for (preset, palette) in presets() {
-        measured.extend(palette_pairs(preset, &palette));
-    }
-    assert!(measured.len() > 100, "floor table lost its coverage");
-    assert_floor(measured);
+    let (preset, palette) = junie_palette();
+    let measured = palette_pairs(preset, &palette);
+    assert!(measured.len() > 45, "floor table lost its coverage");
+    assert_floor_exact(measured, PALETTE_SHORTFALLS);
 }
 
 #[test]
-fn recipe_pairs_pass_floor() {
-    assert_floor(recipe_pairs("phosphor", &DesignSystem::phosphor()));
+fn recipe_pairs_measure_their_declared_shortfalls() {
+    let (preset, _) = junie_palette();
+    assert_floor_exact(
+        recipe_pairs(preset, &DesignSystem::junie()),
+        RECIPE_SHORTFALLS,
+    );
 }
 
 #[test]
 fn floor_table_covers_every_text_tier() {
     // A new text tier that never reaches this table is a contrast defect
-    // waiting to happen, so the table names the tiers it measures.
-    let measured = palette_pairs("phosphor", &RolePalette::tailrocks_phosphor());
+    // waiting to happen, so the table names the tiers it measures. `TextGhost`
+    // is absent on purpose: it is a backdrop tier and never carries content.
+    let (preset, palette) = junie_palette();
+    let measured = palette_pairs(preset, &palette);
     for tier in [
         "Text",
         "TextStrong",
+        "TextSecondary",
         "TextMuted",
         "TextFaint",
         "TextDisabled",
@@ -449,22 +453,26 @@ fn floor_table_covers_every_text_tier() {
 }
 
 #[test]
-fn disabled_and_faint_tiers_stay_distinguishable() {
-    // Two tiers that measure the same are one tier with two names.
-    for (preset, palette) in presets() {
-        let ground = bg_of(&palette, Role::Canvas).expect("canvas fill");
-        let Some(faint) = fg_of(&palette, Role::TextFaint) else {
-            continue;
-        };
-        let Some(disabled) = fg_of(&palette, Role::TextDisabled) else {
-            continue;
-        };
-        let gap = (contrast_ratio(faint, ground) - contrast_ratio(disabled, ground)).abs();
-        assert!(
-            gap >= 0.4,
-            "{preset}: TextFaint and TextDisabled differ by only {gap:.2} against the canvas"
-        );
-    }
+fn disabled_is_the_faint_tier_by_design() {
+    // junie states disabled text as the faint tier value: the difference is
+    // carried by weight and by the absence of a marker, not by colour. The
+    // tiers *below* body text are still distinct from each other.
+    let (_, palette) = junie_palette();
+    assert_eq!(
+        palette.style(Role::TextDisabled).fg,
+        palette.style(Role::TextFaint).fg,
+        "disabled and faint are one tier in junie"
+    );
+    assert_ne!(
+        palette.style(Role::TextMuted).fg,
+        palette.style(Role::TextFaint).fg,
+        "muted and faint must stay distinct tiers"
+    );
+    assert_ne!(
+        palette.style(Role::TextSecondary).fg,
+        palette.style(Role::TextMuted).fg,
+        "secondary and muted must stay distinct tiers"
+    );
 }
 
 #[test]

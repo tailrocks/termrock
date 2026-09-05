@@ -17,23 +17,23 @@ use termrock::{
     interaction::Outcome,
     keymap::{KeyBinding, KeyChord, Keymap, Visibility},
     osc::{PointerShape, Request, encode},
-    style::{Density, DesignSystem, Role, RolePalette},
+    style::{DesignSystem, Role, RolePalette},
     widgets::{
-        Action, ActionBar, ActionBarState, ActivationOutcome, Anchor, Button, ButtonState,
-        CellAlignment, ChoiceDialog, ChoiceDialogState, Column, ColumnWidth, CommandEntry,
-        CommandPalette, CommandPaletteOutcome, CommandPaletteSize, CommandPaletteState, Dialog,
-        DialogSize, InitiatorKind, List, ListRow, ListState, ModeIndicator, ModelIndicator,
-        PermissionAction, PermissionOutcome, PermissionPromptState, PermissionProvenance,
-        PermissionRequest, PermissionRisk, PromptComposer, PromptComposerOutcome,
-        PromptComposerState, ProvenanceHop, Severity, Table, TableRow, TableState, Toast,
-        VirtualWindow, data_view_bench, place_command_palette, place_dialog,
+        Action, ActionBar, ActionBarState, ActionVariant, ActivationOutcome, Anchor, Button,
+        ButtonState, CellAlignment, ChoiceDialog, ChoiceDialogState, Column, ColumnWidth,
+        CommandEntry, CommandPalette, CommandPaletteOutcome, CommandPaletteSize,
+        CommandPaletteState, Dialog, DialogSize, InitiatorKind, List, ListRow, ListState,
+        ModeIndicator, ModelIndicator, PermissionAction, PermissionOutcome, PermissionPromptState,
+        PermissionProvenance, PermissionRequest, PermissionRisk, PromptComposer,
+        PromptComposerOutcome, PromptComposerState, ProvenanceHop, Severity, Table, TableRow,
+        TableState, Toast, VirtualWindow, data_view_bench, place_command_palette, place_dialog,
     },
 };
 
 #[test]
 fn toast_documentation_example() {
     let theme = RolePalette::default();
-    let system = DesignSystem::from_palette(theme.clone());
+    let system = DesignSystem::new(theme.clone());
     let toast = Toast::new(&system, "Saved", Severity::Success)
         .anchor(Anchor::BottomRight)
         .margins(1, 1);
@@ -57,10 +57,10 @@ fn list_documentation_example() {
 #[test]
 fn handbook_button_action_bar_example() {
     let theme = RolePalette::default();
-    let system = DesignSystem::from_palette(theme.clone());
+    let system = DesignSystem::new(theme.clone());
     let tokens = DesignSystem::default();
     // Flagship Button (handbook basic + interactive)
-    let button = Button::new("Save", &tokens).primary(true);
+    let button = Button::new("Save", &tokens).variant(termrock::widgets::ButtonVariant::Primary);
     let mut button_state = ButtonState::new();
     button_state.activation.set_accepts_input(true);
     let out = button_state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
@@ -79,13 +79,13 @@ fn handbook_button_action_bar_example() {
             id: "save",
             label: "Save",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Primary,
         },
         Action {
             id: "cancel",
             label: "Cancel",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Secondary,
         },
     ];
     let bar = ActionBar::new(&actions, &system);
@@ -136,13 +136,13 @@ fn handbook_dialog_examples() {
             id: "ok",
             label: "OK",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Primary,
         },
         Action {
             id: "cancel",
             label: "Cancel",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Secondary,
         },
     ];
     let choice = ChoiceDialog::new(
@@ -178,8 +178,8 @@ fn handbook_command_palette_example() {
 #[test]
 fn handbook_prompt_composer_example() {
     let theme = RolePalette::default();
-    let system = DesignSystem::from_palette(theme.clone());
-    let tokens = DesignSystem::new(theme.clone(), Density::Comfortable);
+    let system = DesignSystem::new(theme.clone());
+    let tokens = DesignSystem::new(theme.clone());
     let mut state = PromptComposerState::new();
     state.set_placeholder("Ask anything…");
     state.set_mode(Some(ModeIndicator {
@@ -238,7 +238,7 @@ fn handbook_permission_prompt_example() {
 #[test]
 fn theme_documentation_example() {
     let theme = RolePalette::default().with_role(Role::Accent, Style::new().fg(Color::Cyan));
-    let system = DesignSystem::from_palette(theme.clone());
+    let system = DesignSystem::new(theme.clone());
     assert_eq!(theme.style(Role::Accent).fg, Some(Color::Cyan));
 }
 

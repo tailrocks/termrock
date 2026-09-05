@@ -13,7 +13,6 @@
 //! [`PasswordInput`] for any real credential.
 //!
 //! Research: secure CLI prompts, password managers, desktop secret fields.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::fmt;
 
@@ -25,7 +24,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
-    style::{DesignSystem, Role},
+    style::{ButtonRecipeVariant, ControlState, DesignSystem, MASK_CELLS, Role},
     text::take_display_cols,
 };
 
@@ -288,21 +287,29 @@ impl PasswordInputState {
     #[must_use]
     pub fn with_secret(secret: impl Into<String>) -> Self {
         let mut state = Self::new();
-        let mut editor = TextInputState::new(secret).with_allow_empty(true);
-        editor.set_enabled(true);
-        editor.set_focused(false);
-        state.editor = editor;
+        state.editor.set_enabled(true);
+        state.editor.set_focused(false);
+        state.editor = state.editor.reseed(secret);
         state
+    }
+
+    /// Live typing. [`Self::new`] stays idle (`editing: false`).
+    #[must_use]
+    pub fn with_editing(mut self) -> Self {
+        self.editor.begin_edit();
+        self
+    }
+
+    /// Start the insert session (Junie Enter on an idle field).
+    pub fn begin_edit(&mut self) {
+        self.editor.begin_edit();
     }
 
     /// Max graphemes.
     #[must_use]
     pub fn with_max_graphemes(mut self, max: usize) -> Self {
-        self.editor = std::mem::replace(
-            &mut self.editor,
-            TextInputState::new("").with_allow_empty(true),
-        )
-        .with_max_graphemes(max);
+        let editor = std::mem::replace(&mut self.editor, TextInputState::new(""));
+        self.editor = editor.with_max_graphemes(max);
         self
     }
 
@@ -509,6 +516,7 @@ impl PasswordInputState {
         if matches!(self.clipboard, ClipboardPolicy::DenyAll) {
             return PasswordInputOutcome::ClipboardDenied;
         }
+        self.editor.begin_edit();
         match self.editor.insert_str(text) {
             TextInputOutcome::Changed => PasswordInputOutcome::Changed,
             _ => PasswordInputOutcome::Ignored,
@@ -541,7 +549,7 @@ impl PasswordInputState {
             }
         }
 
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return PasswordInputOutcome::Ignored;
         }
 
@@ -592,10 +600,21 @@ impl PasswordInputState {
             }
         }
 
+        if key.code == KeyCode::Esc && key.modifiers.is_empty() {
+            if self.editor.is_editing() {
+                let _ = self.editor.handle_key(key);
+            }
+            return PasswordInputOutcome::Cancelled;
+        }
+
         // Submit without embedding secret
         if matches!(key.code, KeyCode::Enter)
             || (ctrl && matches!(key.code, KeyCode::Char('m' | 'M')))
         {
+            if !self.editor.is_editing() {
+                self.editor.begin_edit();
+                return PasswordInputOutcome::Changed;
+            }
             if !self.editor.is_valid() {
                 return PasswordInputOutcome::Ignored;
             }
@@ -625,7 +644,10 @@ impl PasswordInputState {
         }
         match intent {
             UiIntent::Submit | UiIntent::Activate => {
-                if self.editor.is_valid() {
+                if !self.editor.is_editing() {
+                    self.editor.begin_edit();
+                    PasswordInputOutcome::Changed
+                } else if self.editor.is_valid() {
                     PasswordInputOutcome::Submitted
                 } else {
                     PasswordInputOutcome::Ignored
@@ -725,12 +747,13 @@ impl PasswordConfirmState {
 pub struct PasswordInput<'a> {
     label: &'a str,
     placeholder: &'a str,
+    show_optional: bool,
+    help: &'a str,
     validation: Validation<'a>,
     system: &'a DesignSystem,
     mask: char,
     strength: PasswordStrengthHint,
     show_reveal: bool,
-    ascii: bool,
 }
 
 /// Hit geometry.
@@ -753,12 +776,13 @@ impl<'a> PasswordInput<'a> {
         Self {
             label,
             placeholder: "",
+            show_optional: false,
+            help: "",
             validation: Validation::Valid,
             system,
-            mask: '*',
+            mask: '●',
             strength: PasswordStrengthHint::None,
             show_reveal: true,
-            ascii: false,
         }
     }
 
@@ -769,6 +793,20 @@ impl<'a> PasswordInput<'a> {
         self
     }
 
+    /// Paint the optional suffix when it fits beside the label.
+    #[must_use]
+    pub const fn optional(mut self, on: bool) -> Self {
+        self.show_optional = on;
+        self
+    }
+
+    /// Helper text painted below the field.
+    #[must_use]
+    pub const fn help(mut self, help: &'a str) -> Self {
+        self.help = help;
+        self
+    }
+
     /// Validation projection.
     #[must_use]
     pub const fn validation(mut self, validation: Validation<'a>) -> Self {
@@ -776,7 +814,7 @@ impl<'a> PasswordInput<'a> {
         self
     }
 
-    /// Mask grapheme (default `*`).
+    /// Mask grapheme (default `●`). Length is never tracked; paint uses [`MASK_CELLS`].
     #[must_use]
     pub const fn mask(mut self, mask: char) -> Self {
         self.mask = mask;
@@ -799,14 +837,6 @@ impl<'a> PasswordInput<'a> {
 
     /// ASCII-safe mask.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        if on {
-            self.mask = '*';
-        }
-        self
-    }
-
     /// Paint (masked unless revealed).
     pub fn paint(
         &self,
@@ -815,7 +845,7 @@ impl<'a> PasswordInput<'a> {
         state: &mut PasswordInputState,
     ) -> PasswordInputParts {
         state.sync_editor_gates();
-        let mask = if self.ascii { '*' } else { self.mask };
+        let mask = { self.mask };
         let revealed = state.is_revealed();
 
         let show_reveal = self.show_reveal
@@ -829,6 +859,8 @@ impl<'a> PasswordInput<'a> {
 
         let input = TextInput::new(self.label, self.system)
             .placeholder(self.placeholder)
+            .optional(self.show_optional)
+            .help(self.help)
             .validation(self.validation)
             .secret(!revealed)
             .secret_mask(mask);
@@ -848,34 +880,40 @@ impl<'a> PasswordInput<'a> {
                     crate::style::Glyph::Mask
                 })
                 .text;
+            let reveal_recipe = self.system.button_recipe(
+                ButtonRecipeVariant::Quiet,
+                if !state.enabled {
+                    ControlState::Disabled
+                } else if state.pending {
+                    ControlState::Loading
+                } else if state.focused {
+                    ControlState::Focused
+                } else {
+                    ControlState::Default
+                },
+                self.system.junie_theme().surface,
+            );
             buffer.set_stringn(
                 rx,
                 ry,
                 mark,
                 1,
-                self.system.style(if state.focused {
-                    Role::Accent
-                } else {
-                    Role::TextMuted
-                }),
+                reveal_recipe.fill.patch(reveal_recipe.label),
             );
         }
 
-        if area.height >= 3 {
+        if ti_parts.field.y.saturating_add(1) < area.bottom() {
             let status = if state.pending {
                 PasswordStrengthHint::Pending.label()
             } else {
                 self.strength.label()
             };
             if !status.is_empty() && !matches!(self.validation, Validation::Invalid(_)) {
-                let y = area
-                    .y
-                    .saturating_add(2)
-                    .min(area.bottom().saturating_sub(1));
+                let y = ti_parts.field.y.saturating_add(1);
                 let meter = if state.pending {
                     String::new()
                 } else {
-                    self.strength.meter(self.system.glyphs.is_ascii())
+                    self.strength.meter(false)
                 };
                 let mut x = area.x;
                 if !meter.is_empty() {
@@ -972,7 +1010,7 @@ impl StatefulWidget for PasswordInput<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::style::RolePalette;
+    use crate::style::{MASK_CELLS, RolePalette};
 
     #[test]
     fn debug_never_contains_secret() {
@@ -988,6 +1026,7 @@ mod tests {
     fn outcome_submitted_has_no_secret_payload() {
         let mut state = PasswordInputState::with_secret("abc");
         state.set_focused(true);
+        state.begin_edit();
         let out = state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
         assert_eq!(out, PasswordInputOutcome::Submitted);
         let s = format!("{out:?}");
@@ -1038,21 +1077,46 @@ mod tests {
 
     #[test]
     fn paint_masks_secret() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let mut state = PasswordInputState::with_secret("hunter2");
         state.set_focused(true);
         let area = Rect::new(0, 0, 24, 2);
         let mut buf = Buffer::empty(area);
-        let _ = PasswordInput::new("Password", &system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
+        let _ = PasswordInput::new("Password", &system).paint(area, &mut buf, &mut state);
         let mut row = String::new();
         for x in 0..area.width {
             row.push_str(buf[(x, 1)].symbol());
         }
         assert!(!row.contains('h'), "painted secret: {row:?}");
         assert!(!row.contains("hunter"), "painted secret: {row:?}");
-        assert!(row.contains('*'), "expected mask glyphs: {row:?}");
+        assert!(
+            row.contains(&"●".repeat(MASK_CELLS)),
+            "expected {MASK_CELLS} mask glyphs: {row:?}"
+        );
+        assert!(
+            !row.contains(&"●".repeat(MASK_CELLS + 1)),
+            "mask must not track secret length: {row:?}"
+        );
+    }
+
+    #[test]
+    fn masked_paint_is_field_plane_and_eight_dots() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let mut state = PasswordInputState::with_secret("hunter2");
+        state.set_focused(true);
+        let area = Rect::new(0, 0, 28, 3);
+        let mut buf = Buffer::empty(area);
+        let _ = PasswordInput::new("Password", &system).paint(area, &mut buf, &mut state);
+        let field_y = 1u16;
+        assert_eq!(buf[(0, field_y)].symbol(), "▎");
+        assert_eq!(buf[(0, field_y)].fg, theme.accent);
+        assert_eq!(buf[(0, field_y)].bg, theme.field);
+        let row: String = (0..area.width)
+            .map(|x| buf[(x, field_y)].symbol().to_string())
+            .collect();
+        assert!(row.contains(&"●".repeat(MASK_CELLS)), "{row:?}");
+        assert!(!row.contains('h'), "{row:?}");
     }
 
     #[test]
@@ -1080,6 +1144,30 @@ mod tests {
         assert!(!state.is_revealed());
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Char('r'), KeyModifiers::ALT)),
+            PasswordInputOutcome::RevealChanged { revealed: true }
+        );
+        assert!(state.is_revealed());
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            PasswordInputOutcome::Cancelled
+        );
+    }
+
+    #[test]
+    fn mouse_reveal_uses_explicit_policy_and_exact_hit_region() {
+        let mut state =
+            PasswordInputState::with_secret("ab").with_reveal_policy(RevealPolicy::Explicit);
+        let reveal = Rect::new(12, 3, 2, 1);
+        assert_eq!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: ratatui_core::layout::Position::new(reveal.x, reveal.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                Rect::new(0, 3, 12, 1),
+                Some(reveal),
+            ),
             PasswordInputOutcome::RevealChanged { revealed: true }
         );
         assert!(state.is_revealed());
@@ -1142,6 +1230,7 @@ mod tests {
     fn read_only_allows_nav_not_insert() {
         let mut state = PasswordInputState::with_secret("ab");
         state.set_focused(true);
+        state.begin_edit();
         state.set_read_only(true);
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE)),
@@ -1178,6 +1267,7 @@ mod tests {
     fn unicode_fuzz_keeps_boundary() {
         let mut state = PasswordInputState::with_secret("e\u{301}東京");
         state.set_focused(true);
+        state.begin_edit();
         let keys = [
             KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE),
             KeyEvent::new(KeyCode::Left, KeyModifiers::NONE),

@@ -20,25 +20,23 @@
 //!
 //! Research: LSP completion UIs, prompt-toolkit, terminal editors, Grok Build
 //! prompt completion.
-
 #![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::Style,
-    widgets::StatefulWidget,
+    style::{Modifier, Style},
+    widgets::{StatefulWidget, Widget},
 };
+use ratatui_widgets::{block::Block, borders::Borders};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         NavigationMove, OverlayId, OverlayKind, OverlayOutcome, OverlayPolicy, OverlaySize,
         OverlaySpec, OverlayStack, PageMove, SemanticNode, SemanticRole, SemanticScene,
         SemanticState, UiIntent, place_overlay,
     },
-    style::{DesignSystem, Role},
+    style::{DesignSystem, ListRowVisualState, Role, VisualState},
     text::{display_cols, take_display_cols},
 };
 
@@ -52,11 +50,7 @@ pub const COMPLETION_FULLSCREEN_MAX_HEIGHT: u16 = 10;
 pub const COMPLETION_DOCS_DEFAULT_WIDTH: u16 = 28;
 
 /// Default "still fetching" copy, and its ASCII twin.
-///
-/// Two constants rather than one gated literal so a host-supplied message
-/// survives the ASCII profile: only the *default* is swapped.
 const LOADING_MESSAGE: &str = "Loading…";
-const LOADING_MESSAGE_ASCII: &str = "Loading...";
 
 // ── Model ───────────────────────────────────────────────────────────────────
 
@@ -335,10 +329,10 @@ impl From<CompletionMenuSize> for OverlaySize {
 /// Does **not** map printable characters (those may be commit chars or editor typing).
 #[must_use]
 pub fn default_completion_intent(key: KeyEvent) -> Option<UiIntent> {
-    if key.kind == KeyEventKind::Release {
+    if key.is_release() {
         return None;
     }
-    let is_press = key.kind == KeyEventKind::Press;
+    let is_press = key.is_press();
     if key.modifiers.contains(KeyModifiers::CONTROL) || key.modifiers.contains(KeyModifiers::ALT) {
         return None;
     }
@@ -346,8 +340,8 @@ pub fn default_completion_intent(key: KeyEvent) -> Option<UiIntent> {
         KeyCode::Tab if is_press && key.modifiers.is_empty() => Some(UiIntent::Activate),
         KeyCode::Enter if is_press => Some(UiIntent::Activate),
         KeyCode::Esc if is_press => Some(UiIntent::Cancel),
-        KeyCode::Up | KeyCode::Char('k' | 'K') => Some(UiIntent::Move(NavigationMove::Previous)),
-        KeyCode::Down | KeyCode::Char('j' | 'J') => Some(UiIntent::Move(NavigationMove::Next)),
+        KeyCode::Up => Some(UiIntent::Move(NavigationMove::Previous)),
+        KeyCode::Down => Some(UiIntent::Move(NavigationMove::Next)),
         KeyCode::Home => Some(UiIntent::Move(NavigationMove::First)),
         KeyCode::End => Some(UiIntent::Move(NavigationMove::Last)),
         KeyCode::PageUp => Some(UiIntent::Page(PageMove::Backward)),
@@ -519,6 +513,12 @@ impl<Id> CompletionMenuState<Id> {
     pub fn set_open(&mut self, open: bool) {
         self.open = open;
         if !open {
+            if self.pending_generation.is_some() {
+                // Closing cancels the in-flight request. Invalidate its token
+                // before dropping the pending marker so a late result cannot
+                // repopulate this menu after it is reopened.
+                self.generation = self.generation.saturating_add(1);
+            }
             self.hovered = None;
             self.hits.clear();
             self.pending_generation = None;
@@ -702,15 +702,55 @@ impl<Id: Clone + PartialEq> CompletionMenuState<Id> {
             return;
         };
         let height = self.viewport_height.max(1);
-        if index < self.offset {
-            self.offset = index;
-        } else if index >= self.offset.saturating_add(height) {
-            self.offset = index.saturating_add(1).saturating_sub(height);
+        let start = self.offset.min(index);
+        if Self::candidate_is_visible(candidates, start, index, height) {
+            self.offset = start;
+            return;
         }
-        let max_offset = candidates.len().saturating_sub(height);
-        if self.offset > max_offset {
-            self.offset = max_offset;
+
+        // Group headers consume painted rows but not candidate indexes. Move
+        // the candidate start forward until the selected row is actually in
+        // the painted viewport rather than trusting row-count arithmetic.
+        for offset in start..=index {
+            if Self::candidate_is_visible(candidates, offset, index, height) {
+                self.offset = offset;
+                return;
+            }
         }
+        self.offset = index;
+    }
+
+    fn candidate_is_visible(
+        candidates: &[CompletionCandidate<'_, Id>],
+        offset: usize,
+        target: usize,
+        height: usize,
+    ) -> bool {
+        let mut y = 0usize;
+        let mut index = offset.min(candidates.len());
+        let mut last_group = index
+            .checked_sub(1)
+            .and_then(|i| candidates.get(i))
+            .and_then(|c| c.group);
+
+        while y < height {
+            let Some(candidate) = candidates.get(index) else {
+                return false;
+            };
+            if candidate.group.is_some()
+                && candidate.group != last_group
+                && y.saturating_add(1) < height
+            {
+                y = y.saturating_add(1);
+            }
+            last_group = candidate.group;
+            if index == target {
+                return true;
+            }
+            y = y.saturating_add(1);
+            index = index.saturating_add(1);
+        }
+        false
     }
 
     /// Move selection by `delta` enabled candidates.
@@ -768,11 +808,11 @@ impl<Id: Clone + PartialEq> CompletionMenuState<Id> {
         key: KeyEvent,
         candidates: &[CompletionCandidate<'_, Id>],
     ) -> CompletionMenuOutcome<Id> {
-        if !self.open || !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.open || !self.accepts_input || key.is_release() {
             return CompletionMenuOutcome::Ignored;
         }
         // Commit characters (Press only).
-        if key.kind == KeyEventKind::Press
+        if key.is_press()
             && key.modifiers.is_empty()
             && let KeyCode::Char(ch) = key.code
             && self.commit_characters.contains(ch)
@@ -787,7 +827,7 @@ impl<Id: Clone + PartialEq> CompletionMenuState<Id> {
         let Some(intent) = default_completion_intent(key) else {
             return CompletionMenuOutcome::Ignored;
         };
-        if matches!(intent, UiIntent::Activate) && key.kind != KeyEventKind::Press {
+        if matches!(intent, UiIntent::Activate) && !key.is_press() {
             return CompletionMenuOutcome::Ignored;
         }
         self.handle_intent(candidates, intent)
@@ -952,7 +992,6 @@ pub struct CompletionMenu<'a, Id> {
     bounds: Rect,
     anchor: Rect,
     preferred: CompletionMenuSize,
-    ascii: bool,
     colorless: bool,
     focused: bool,
     /// When set, paint into this rect instead of re-placing (stack geometry).
@@ -979,7 +1018,6 @@ impl<'a, Id> CompletionMenu<'a, Id> {
                 width: 32,
                 height: 8,
             },
-            ascii: false,
             colorless: false,
             force_area: None,
         }
@@ -1001,17 +1039,11 @@ impl<'a, Id> CompletionMenu<'a, Id> {
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Whether the menu itself owns focus.
     ///
     /// Defaults to `false`: a completion menu floats under an editor that
     /// keeps the keyboard, and only the interaction owner wears the focused
     /// border.
-    #[must_use]
     pub const fn focused(mut self, focused: bool) -> Self {
         self.focused = focused;
         self
@@ -1061,43 +1093,44 @@ impl<'a, Id> CompletionMenu<'a, Id> {
             0
         };
 
+        // junie: 24–48 wide, up to 8 item rows; chrome is rows+2.
+        let max_items = preferred.height.max(1).min(8);
         if self.candidates.is_empty()
             || matches!(
                 state.status,
                 CompletionStatus::Loading | CompletionStatus::Empty
             )
         {
-            preferred.height = preferred.height.min(3).max(1);
+            preferred.height = 3;
         } else {
-            preferred.height = preferred.height.min(
-                u16::try_from(self.candidates.len())
-                    .unwrap_or(u16::MAX)
-                    .max(1),
-            );
+            let items = u16::try_from(self.candidates.len())
+                .unwrap_or(u16::MAX)
+                .max(1)
+                .min(max_items);
+            preferred.height = items.saturating_add(2);
         }
 
-        let content_width = self
+        // Source Completion: `(label_w + detail_w + 8).clamp(24, 48)`.
+        let label_w = self
             .candidates
             .iter()
-            .map(|c| {
-                let kind = c.kind.map(display_cols).unwrap_or(0);
-                let glyph = c.kind_glyph.map(display_cols).unwrap_or(0);
-                let detail = c.detail.map(display_cols).unwrap_or(0);
-                display_cols(c.label)
-                    .saturating_add(if kind == 0 { 0 } else { kind + 2 })
-                    .saturating_add(if glyph == 0 { 0 } else { glyph + 1 })
-                    .saturating_add(if detail == 0 { 0 } else { detail + 2 })
-            })
+            .map(|c| display_cols(c.label))
             .max()
-            .unwrap_or(display_cols(self.empty_message))
-            .saturating_add(2);
-        preferred.width = preferred
-            .width
-            .max(
-                u16::try_from(content_width)
-                    .unwrap_or(u16::MAX)
-                    .min(preferred.width.max(12)),
-            )
+            .unwrap_or(4);
+        let detail_w = self
+            .candidates
+            .iter()
+            .map(|c| c.detail.map(display_cols).unwrap_or(0))
+            .max()
+            .unwrap_or(0);
+        let content_width = if self.candidates.is_empty() {
+            display_cols(self.empty_message).saturating_add(8)
+        } else {
+            label_w.saturating_add(detail_w).saturating_add(8)
+        };
+        preferred.width = u16::try_from(content_width)
+            .unwrap_or(48)
+            .clamp(24, 48)
             .saturating_add(docs_w);
 
         let menu = if let Some(forced) = self.force_area {
@@ -1136,17 +1169,18 @@ impl<'a, Id> CompletionMenu<'a, Id> {
         } else {
             0
         };
+        // Inner sits inside the elevated rounded frame (rows + 2 chrome).
         let list_body = Rect {
-            x: list_area.x,
-            y: list_area.y,
-            width: list_area.width,
-            height: list_area.height.saturating_sub(status_h),
+            x: list_area.x.saturating_add(1),
+            y: list_area.y.saturating_add(1),
+            width: list_area.width.saturating_sub(2),
+            height: list_area.height.saturating_sub(2).saturating_sub(status_h),
         };
         state.slots.status = if status_h > 0 {
             Rect::new(
-                list_area.x,
-                list_area.bottom().saturating_sub(1),
-                list_area.width,
+                list_body.x,
+                list_area.bottom().saturating_sub(2),
+                list_body.width,
                 1,
             )
         } else {
@@ -1156,24 +1190,26 @@ impl<'a, Id> CompletionMenu<'a, Id> {
         state.viewport_height = usize::from(list_body.height.max(1));
         state.reconcile(self.candidates);
 
-        // The menu declares itself non-focusable — the editor keeps focus — so
-        // it must not wear the focused border. A host that gives the menu its
-        // own focus says so with `focused(true)` (plans/009 Step 4).
-        let border = if self.focused && !self.colorless {
-            self.system.style(Role::BorderFocused)
-        } else {
-            self.system.style(Role::Border)
-        };
+        // Source `popup::surface()`: elevated fill, focused colour, no bold.
+        let theme = self.system.junie_theme();
         super::Surface::new(self.system)
             .recipe(super::SurfaceRecipe::Overlay)
-            .bordered(true)
-            .border_style(border)
+            .bordered(false)
             .padding(0, 0)
             .paint(menu, buffer);
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(
+                self.system
+                    .style(Role::BorderFocused)
+                    .bg(theme.surface_elevated),
+            )
+            .border_set(self.system.border_set())
+            .render(menu, buffer);
 
         // Loading / empty full-body messages
         if matches!(state.status, CompletionStatus::Loading) && self.candidates.is_empty() {
-            let msg = loading_copy(self.ascii, state);
+            let msg = loading_copy(state);
             paint_centered_msg(buffer, list_body, msg, self.system.style(Role::TextMuted));
             paint_status_line(self, buffer, state);
             return;
@@ -1197,10 +1233,7 @@ impl<'a, Id> CompletionMenu<'a, Id> {
         }
 
         // Group-aware paint: reserve header rows by walking from offset.
-        let max_offset = self
-            .candidates
-            .len()
-            .saturating_sub(usize::from(list_body.height.max(1)));
+        let max_offset = self.candidates.len().saturating_sub(1);
         if state.offset > max_offset {
             state.offset = max_offset;
         }
@@ -1218,119 +1251,140 @@ impl<'a, Id> CompletionMenu<'a, Id> {
         while y < list_body.bottom() && i < self.candidates.len() {
             let candidate = &self.candidates[i];
             // Group header when group changes
-            if let Some(g) = candidate.group {
-                if last_group != Some(g) {
-                    let header =
-                        take_display_cols(g, usize::from(list_body.width.saturating_sub(2)));
-                    buffer.set_stringn(
-                        list_body.x.saturating_add(1),
-                        y,
-                        header,
-                        usize::from(list_body.width.saturating_sub(2)),
-                        self.system.style(Role::TextMuted),
-                    );
-                    y = y.saturating_add(1);
-                    last_group = Some(g);
-                    if y >= list_body.bottom() {
-                        break;
-                    }
+            if let Some(g) = candidate.group
+                && last_group != Some(g)
+                && y.saturating_add(1) < list_body.bottom()
+            {
+                let header = take_display_cols(g, usize::from(list_body.width.saturating_sub(2)));
+                buffer.set_stringn(
+                    list_body.x.saturating_add(1),
+                    y,
+                    header,
+                    usize::from(list_body.width.saturating_sub(2)),
+                    self.system.style(Role::TextMuted),
+                );
+                y = y.saturating_add(1);
+                if y >= list_body.bottom() {
+                    break;
                 }
-            } else {
-                last_group = None;
             }
+            last_group = candidate.group;
 
             let row_rect = Rect::new(list_body.x, y, list_body.width, 1);
-            state.hits.push((candidate.id.clone(), row_rect));
+            // Hit region includes the frame column so a click on `▎` commits.
+            let hit = Rect::new(list_area.x, y, list_area.width.max(1), 1);
+            state.hits.push((candidate.id.clone(), hit));
 
-            let selected = state.selected.as_ref() == Some(&candidate.id);
+            let cursor = state.selected.as_ref() == Some(&candidate.id);
             let hovered = state.hovered.as_ref() == Some(&candidate.id);
-            let style = row_style(
-                self.system,
-                candidate.enabled,
-                selected,
+            // Source completion sets `state.focused` on the cursor row only.
+            // `selected && focused` would wash accent_bg; junie uses the gutter
+            // bar, not a membership tint.
+            let visual = ListRowVisualState {
+                selected: false,
+                focused: cursor,
                 hovered,
-                self.colorless,
+                enabled: candidate.enabled,
+                ..ListRowVisualState::default()
+            };
+            let chrome = super::row_chrome::RowChrome::resolve(self.system, visual)
+                .colorless(self.colorless);
+            let theme = self.system.junie_theme();
+            let row_bg = theme.surface_elevated;
+            let mut style = self.system.row(
+                VisualState {
+                    focused: cursor,
+                    hovered,
+                    selected: false,
+                    disabled: !candidate.enabled,
+                    ..VisualState::default()
+                },
+                row_bg,
+            );
+            style = chrome.label_style(style);
+            buffer.set_style(row_rect, style);
+            let vis = VisualState {
+                focused: cursor,
+                hovered,
+                selected: false,
+                disabled: !candidate.enabled,
+                ..VisualState::default()
+            };
+            buffer.set_stringn(
+                row_rect.x,
+                y,
+                self.system.glyphs.selection_gutter(),
+                1,
+                self.system.gutter(vis, row_bg, false),
             );
 
-            let mut x = list_body.x.saturating_add(1);
-            let right = list_body.right().saturating_sub(1);
-
-            // Selection gutter
-            if selected {
-                let mark = self.system.glyphs.selection_gutter();
-                if let Some(cell) = buffer.cell_mut((list_body.x, y)) {
-                    cell.set_symbol(mark);
-                    cell.set_style(style);
-                }
-            }
-
-            // Kind glyph
-            if let Some(glyph) = candidate.kind_glyph {
-                let g = take_display_cols(glyph, 2);
-                let gw = display_cols(&g) as u16;
-                buffer.set_stringn(x, y, &g, 2, self.system.style(Role::TextMuted));
-                x = x.saturating_add(gw.saturating_add(1));
-            }
-
-            // Kind + detail budgets from right
-            let kind_cols = candidate.kind.map(display_cols).unwrap_or(0);
-            let detail_cols = candidate.detail.map(display_cols).unwrap_or(0);
-            let right_budget = kind_cols
-                .saturating_add(if kind_cols == 0 { 0 } else { 1 })
-                .saturating_add(detail_cols)
-                .saturating_add(if detail_cols == 0 { 0 } else { 1 });
-            let label_budget = usize::from(right.saturating_sub(x)).saturating_sub(right_budget);
-            let label_area = Rect::new(x, y, u16::try_from(label_budget).unwrap_or(0), 1);
-
-            if let Some(ranges) = candidate.match_ranges {
-                use crate::widgets::{HighlightVisual, HighlightedText, MatchTruncate};
-                let visual = if selected {
-                    HighlightVisual::Selected
-                } else if !candidate.enabled {
-                    HighlightVisual::Inactive
-                } else {
-                    HighlightVisual::Normal
-                };
-                let _ = HighlightedText::new(candidate.label, ranges, self.system)
-                    .visual(visual)
-                    .truncate(MatchTruncate::KeepFirstMatch)
-                    .paint(label_area, buffer);
-            } else {
-                let label = take_display_cols(candidate.label, label_budget);
-                buffer.set_stringn(x, y, label, label_budget, style);
-            }
-
-            // Detail then kind from right
-            let mut rx = right;
-            if let Some(kind) = candidate.kind {
-                let kind_text = take_display_cols(kind, kind_cols.min(12));
-                let kw = display_cols(&kind_text) as u16;
-                rx = rx.saturating_sub(kw);
-                buffer.set_stringn(
-                    rx,
-                    y,
-                    &kind_text,
-                    usize::from(kw),
-                    if candidate.enabled {
-                        self.system.style(Role::TextMuted)
+            // List anatomy: `▎ kind label … detail`
+            let glyph = candidate.kind_glyph.unwrap_or(" ");
+            let g = take_display_cols(glyph, 1);
+            buffer.set_stringn(
+                row_rect.x.saturating_add(1),
+                y,
+                &g,
+                1,
+                style
+                    .fg(if cursor {
+                        theme.text_primary
                     } else {
-                        style
-                    },
-                );
-                rx = rx.saturating_sub(1);
-            }
-            if let Some(detail) = candidate.detail {
-                let dtext = take_display_cols(detail, detail_cols.min(16));
+                        theme.text_muted
+                    })
+                    .remove_modifier(Modifier::BOLD),
+            );
+
+            let detail_cols = candidate.detail.map(display_cols).unwrap_or(0);
+            let kind_cols = candidate.kind.map(display_cols).unwrap_or(0);
+            let label_x = row_rect.x.saturating_add(3);
+            // Source: `avail = row.width - 3`, show detail when
+            // `avail > label + detail + 2`.
+            let avail = usize::from(row_rect.width.saturating_sub(3));
+            let show_detail = candidate.detail.is_some()
+                && avail > display_cols(candidate.label) + detail_cols + 2;
+            let right_reserve = if show_detail { detail_cols + 2 } else { 0 }
+                + if kind_cols == 0 || candidate.kind_glyph.is_some() {
+                    0
+                } else {
+                    kind_cols + 1
+                };
+            let label_budget = avail.saturating_sub(right_reserve);
+            let shown = take_display_cols(candidate.label, label_budget).to_string();
+            paint_matched_label(
+                buffer,
+                label_x,
+                y,
+                &shown,
+                candidate.label,
+                candidate.match_ranges.unwrap_or(&[]),
+                style,
+                cursor,
+            );
+
+            let detail_style = style.fg(theme.text_muted).remove_modifier(Modifier::BOLD);
+            if show_detail && let Some(detail) = candidate.detail {
+                let dtext = take_display_cols(detail, detail_cols);
                 let dw = display_cols(&dtext) as u16;
-                rx = rx.saturating_sub(dw);
-                if rx > x {
-                    buffer.set_stringn(
-                        rx,
-                        y,
-                        &dtext,
-                        usize::from(dw),
-                        self.system.style(Role::TextMuted),
-                    );
+                let right_reserve = if self.candidates.len() > state.viewport_height {
+                    2
+                } else {
+                    1
+                };
+                let dx = row_rect
+                    .right()
+                    .saturating_sub(dw.saturating_add(right_reserve));
+                if dx >= label_x {
+                    buffer.set_stringn(dx, y, &dtext, usize::from(dw), detail_style);
+                }
+            } else if let Some(kind) = candidate.kind {
+                if candidate.kind_glyph.is_none() {
+                    let kind_text = take_display_cols(kind, kind_cols.min(12));
+                    let kw = display_cols(&kind_text) as u16;
+                    let kx = row_rect.right().saturating_sub(1).saturating_sub(kw);
+                    if kx >= label_x {
+                        buffer.set_stringn(kx, y, &kind_text, usize::from(kw), detail_style);
+                    }
                 }
             }
 
@@ -1341,7 +1395,7 @@ impl<'a, Id> CompletionMenu<'a, Id> {
         // Docs panel
         if !docs_area.is_empty() {
             if docs_area.width >= 1 {
-                let sep = if self.ascii { "|" } else { "│" };
+                let sep = { "│" };
                 for yy in docs_area.y..docs_area.bottom() {
                     buffer.set_stringn(docs_area.x, yy, sep, 1, self.system.style(Role::Border));
                 }
@@ -1363,18 +1417,13 @@ impl<'a, Id> CompletionMenu<'a, Id> {
 
         // The right margin the rows already reserve doubles as the scroll
         // gutter: a menu that scrolls says so (plans/022 Step 2).
-        crate::scroll::paint_scrolled_region(
+        crate::scroll::paint_overflow_scrollbar(
             buffer,
-            list_body,
-            Rect::new(
-                list_body.right().saturating_sub(1),
-                list_body.y,
-                1,
-                list_body.height,
-            ),
+            crate::scroll::gutter_column(list_body),
             self.candidates.len(),
             state.viewport_height,
             u16::try_from(state.offset).unwrap_or(u16::MAX),
+            self.focused,
             self.system,
         );
 
@@ -1443,12 +1492,8 @@ impl<Id: Clone + PartialEq> StatefulWidget for CompletionMenu<'_, Id> {
 ///
 /// A host-supplied message is painted as written; only the default carries an
 /// ASCII twin, so overriding the copy never loses it on a degraded terminal.
-fn loading_copy<'a, Id>(ascii: bool, state: &'a CompletionMenuState<Id>) -> &'a str {
-    if ascii && state.loading_message == LOADING_MESSAGE {
-        LOADING_MESSAGE_ASCII
-    } else {
-        state.loading_message.as_str()
-    }
+fn loading_copy<'a, Id>(state: &'a CompletionMenuState<Id>) -> &'a str {
+    state.loading_message.as_str()
 }
 
 fn paint_status_line<Id>(
@@ -1461,7 +1506,7 @@ fn paint_status_line<Id>(
         return;
     }
     let msg = match state.status {
-        CompletionStatus::Loading => loading_copy(menu.ascii, state),
+        CompletionStatus::Loading => loading_copy(state),
         CompletionStatus::Stale => state.stale_message.as_str(),
         _ => return,
     };
@@ -1512,31 +1557,30 @@ fn paint_docs(buffer: &mut Buffer, area: Rect, docs: &str, scroll: u16, system: 
     }
 }
 
-fn row_style(
-    system: &DesignSystem,
-    enabled: bool,
+fn paint_matched_label(
+    buffer: &mut Buffer,
+    mut x: u16,
+    y: u16,
+    shown: &str,
+    full: &str,
+    ranges: &[crate::widgets::MatchRange],
+    style: Style,
     selected: bool,
-    hovered: bool,
-    colorless: bool,
-) -> Style {
-    if colorless {
-        if !enabled {
-            system.style(Role::TextMuted)
-        } else if selected {
-            system.style(Role::TextStrong)
-        } else {
-            system.style(Role::Text)
+) {
+    // Byte indices in `shown` match `full` while we truncate from the end.
+    let _ = full;
+    for (bi, ch) in shown.char_indices() {
+        let mut cs = style;
+        let matched = ranges.iter().any(|r| bi >= r.start && bi < r.end);
+        if matched {
+            cs = cs.add_modifier(Modifier::BOLD);
+        } else if !selected {
+            cs = cs.remove_modifier(Modifier::BOLD);
         }
-    } else if !enabled {
-        system.style(Role::TextDisabled)
-    } else if selected {
-        system
-            .style(Role::TextStrong)
-            .patch(system.style(Role::SelectionTint))
-    } else if hovered {
-        system.style(Role::TextStrong)
-    } else {
-        system.style(Role::Text)
+        let g = ch.to_string();
+        let w = display_cols(&g) as u16;
+        buffer.set_stringn(x, y, &g, usize::from(w.max(1)), cs);
+        x = x.saturating_add(w);
     }
 }
 
@@ -1728,6 +1772,21 @@ mod tests {
     }
 
     #[test]
+    fn closing_invalidates_pending_generation() {
+        let mut state = CompletionMenuState::<&str>::new(None);
+        let generation = state.begin_async();
+        state.set_open(false);
+
+        assert!(matches!(
+            state.apply_results(generation, &candidates(&["late"])),
+            CompletionMenuOutcome::GenerationStale { generation: stale }
+                if stale == generation
+        ));
+        state.set_open(true);
+        assert_eq!(state.selected(), None);
+    }
+
+    #[test]
     fn reconcile_keeps_id_then_falls_back() {
         let mut state = CompletionMenuState::new(Some("beta"));
         state.reconcile(&candidates(&["alpha", "beta", "gamma"]));
@@ -1797,6 +1856,33 @@ mod tests {
             "{text}"
         );
         assert!(!state.slots().list.is_empty());
+    }
+
+    #[test]
+    fn grouped_selection_is_painted_and_hittable() {
+        let system = DesignSystem::default();
+        let items = [
+            CompletionCandidate::new("a", "alpha").group("First"),
+            CompletionCandidate::new("b", "beta").group("First"),
+            CompletionCandidate::new("c", "gamma").group("Second"),
+        ];
+        let mut state = CompletionMenuState::new(Some("c"));
+        state.set_show_docs(false);
+        let area = Rect::new(0, 0, 60, 12);
+        let mut buf = Buffer::empty(area);
+        CompletionMenu::new(&items, &system, area, Rect::new(2, 1, 1, 1))
+            .preferred_size(CompletionMenuSize {
+                width: 40,
+                height: 8,
+            })
+            .paint(area, &mut buf, &mut state);
+
+        assert_eq!(state.selected().copied(), Some("c"));
+        assert!(
+            state.hits.iter().any(|(id, _)| *id == "c"),
+            "selected grouped candidate must have a painted hit region: {:?}",
+            state.hits
+        );
     }
 
     #[test]
@@ -1924,6 +2010,69 @@ mod tests {
             .collect();
         assert_eq!(text1, text2);
         assert!(text1.contains("alpha"));
+    }
+
+    #[test]
+    fn rows_use_list_anatomy_matched_bold_detail_muted() {
+        use crate::widgets::MatchRange;
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        static MATCHES: &[MatchRange] = &[MatchRange::new(0, 3)];
+        let items = [
+            CompletionCandidate::new("sel", "SELECT")
+                .kind_glyph("K")
+                .detail("keyword")
+                .matches(MATCHES),
+            CompletionCandidate::new("frm", "FROM")
+                .kind_glyph("K")
+                .detail("keyword"),
+        ];
+        let mut state = CompletionMenuState::new(Some("sel"));
+        let area = Rect::new(0, 0, 48, 12);
+        let mut buf = Buffer::empty(area);
+        CompletionMenu::new(&items, &system, area, Rect::new(2, 1, 1, 1))
+            .preferred_size(CompletionMenuSize {
+                width: 32,
+                height: 8,
+            })
+            .paint(area, &mut buf, &mut state);
+
+        let list = state.slots().list;
+        assert!(
+            list.width >= 24 && list.width <= 48 + 4,
+            "anchored 24–48, got {}",
+            list.width
+        );
+        // Inner row: ▎ kind label
+        let y = list.y + 1;
+        let bar = buf[(list.x + 1, y)].symbol();
+        assert_eq!(bar, system.glyphs.selection_gutter());
+        let sel_s = buf[(list.x + 4, y)].symbol();
+        assert_eq!(sel_s, "S");
+        assert!(
+            buf[(list.x + 4, y)]
+                .style()
+                .add_modifier
+                .contains(Modifier::BOLD),
+            "matched characters are bold"
+        );
+        // Detail is muted and not bold on the focused row.
+        let row: String = (list.x..list.right())
+            .map(|x| buf[(x, y)].symbol().to_string())
+            .collect();
+        assert!(row.contains("keyword"), "{row}");
+        let detail_x = (list.x..list.right())
+            .rev()
+            .find(|&x| buf[(x, y)].symbol() == "d")
+            .or_else(|| {
+                (list.x..list.right())
+                    .rev()
+                    .find(|&x| buf[(x, y)].symbol() == "k")
+            });
+        if let Some(dx) = detail_x {
+            assert_eq!(buf[(dx, y)].fg, theme.text_muted);
+            assert!(!buf[(dx, y)].style().add_modifier.contains(Modifier::BOLD));
+        }
     }
 
     #[test]

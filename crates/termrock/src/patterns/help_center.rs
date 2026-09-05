@@ -31,7 +31,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -547,8 +546,6 @@ pub struct HelpCenterState {
     /// Live this frame: diagnostics pane is laid out (findings or component ids).
     /// Synced from doctor/component surfaces in handle_key and render.
     pub diagnostics_live: bool,
-    /// ASCII.
-    pub ascii: bool,
     /// Colorless.
     pub colorless: bool,
     last_panes: Vec<PaneGeom>,
@@ -592,7 +589,6 @@ impl HelpCenterState {
             context_label: None,
             show_diagnostics: true,
             diagnostics_live: false,
-            ascii: false,
             colorless: false,
             last_panes: Vec::new(),
             last_area_width: None,
@@ -771,17 +767,17 @@ impl HelpCenterState {
     #[must_use]
     pub fn status_slots(&self) -> Vec<StatusSlot<'static, &'static str>> {
         let mut slots = vec![
-            StatusSlot::context("mode", self.mode.id()).priority(10),
-            StatusSlot::focus_zone("focus", self.focus).priority(20),
+            StatusSlot::context("mode", self.mode.id()).priority(50),
+            StatusSlot::focus_zone("focus", self.focus).priority(70),
             StatusSlot::shortcut(
                 "keys",
                 "enter open · / search · k keys · d doctor · esc close",
             )
-            .priority(90),
+            .priority(10),
         ];
         if let Some(ctx) = &self.context_label {
             let _ = ctx; // content is &'static in StatusSlot — use fixed label
-            slots.push(StatusSlot::context("ctx", "context").priority(30));
+            slots.push(StatusSlot::context("ctx", "context").priority(40));
         }
         slots
     }
@@ -796,13 +792,13 @@ impl HelpCenterState {
         doctor: Option<&DoctorReport>,
         component_ids: &[String],
     ) -> HelpCenterOutcome {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return HelpCenterOutcome::Ignored;
         }
         // Keep focus cycle / clamp aligned with painted diagnostics pane.
         self.sync_diagnostics_live(doctor, component_ids);
         self.ensure_keyboard_map_modal();
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         if is_press {
             match key.code {
@@ -879,7 +875,7 @@ impl HelpCenterState {
         let q = self.search.query().to_string();
         let filtered = filter_help_topics(topics, &q);
         let rows = help_topic_rows(&filtered);
-        if key.kind == KeyEventKind::Press && key.code == KeyCode::Enter {
+        if key.is_press() && key.code == KeyCode::Enter {
             if let Some(id) = self
                 .nav
                 .selected()
@@ -974,7 +970,7 @@ impl HelpCenterState {
         let owned: Vec<CommandEntry<String>> = filtered.into_iter().cloned().collect();
         let rows = command_list_rows(&owned);
 
-        if key.kind == KeyEventKind::Press {
+        if key.is_press() {
             match key.code {
                 KeyCode::Enter => {
                     if let Some(id) = self
@@ -1049,7 +1045,7 @@ impl HelpCenterState {
         // Safety: blocks borrow from `md` which borrows from `topics` parameter — valid for this call
         let out = if blocks.is_empty() {
             // Still allow anchor jump chords without body
-            if key.kind == KeyEventKind::Press {
+            if key.is_press() {
                 if let KeyCode::Char('g') = key.code {
                     if let Some(t) = topic {
                         if let Some(a) = t.anchors.first() {
@@ -1067,7 +1063,7 @@ impl HelpCenterState {
         match out {
             MarkdownOutcome::Ignored => {
                 // Anchor jump: g then first anchor, or explicit
-                if key.kind == KeyEventKind::Press && key.code == KeyCode::Char('g') {
+                if key.is_press() && key.code == KeyCode::Char('g') {
                     if let Some(t) = topic {
                         if let Some(a) = t.anchors.first() {
                             return HelpCenterOutcome::AnchorJumped { anchor: a.clone() };
@@ -1106,7 +1102,7 @@ impl HelpCenterState {
         doctor: Option<&DoctorReport>,
         component_ids: &[String],
     ) -> HelpCenterOutcome {
-        if key.kind == KeyEventKind::Press {
+        if key.is_press() {
             match key.code {
                 KeyCode::Char('i') if key.modifiers.is_empty() => {
                     // Only component registry ids — not DoctorFinding codes.
@@ -1472,7 +1468,6 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
         state.keyboard.set_accepts_input(focused);
         KeyboardHelp::new(&filtered_help, system)
             .title("Keyboard")
-            .ascii(state.ascii)
             .colorless(state.colorless)
             .paint(r, buffer, &mut state.keyboard);
     }
@@ -1642,11 +1637,18 @@ pub fn example_help_center_commands(system: &DesignSystem) -> Vec<CommandEntry<S
     command_entries_from_help(&example_help_entries(system))
 }
 
-/// Sample doctor report for projection (real build_doctor_report).
+/// Sample doctor report for projection (real build_doctor_report over a pure
+/// fixture detection — never the process environment, so renders are portable).
 #[must_use]
 pub fn example_help_doctor_report() -> DoctorReport {
-    use crate::capability::{CapabilityOverrides, build_doctor_report};
-    build_doctor_report(None, CapabilityOverrides::default())
+    use crate::capability::{
+        CapabilityOverrides, DetectionReport, EnvHints, build_doctor_report_from_detection,
+    };
+    let detection = DetectionReport {
+        env: EnvHints::fixture("xterm-256color", Some("truecolor"), false),
+        warnings: Vec::new(),
+    };
+    build_doctor_report_from_detection(detection, None, CapabilityOverrides::default())
 }
 
 /// Burst topics for paint stress.

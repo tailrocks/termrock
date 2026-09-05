@@ -19,7 +19,6 @@ tiny-skia.workspace = true
 unicode-width.workspace = true
 
 [dev-dependencies]
-termrock-lookbook = { version = "0.11.0", path = "../termrock-lookbook", default-features = false }
 sha2.workspace = true
 hex.workspace = true
 

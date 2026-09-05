@@ -8,7 +8,6 @@
 //! [`HintSpan`] sequences from the same table. Divergence between handled keys and
 //! advertised keys is therefore structurally impossible for [`Visibility::Shown`] and
 //! [`Visibility::HiddenAlias`] bindings.
-
 use std::borrow::Cow;
 
 use crate::input::{KeyCode, KeyModifiers};
@@ -654,6 +653,31 @@ pub fn chord_glyph(chord: Option<KeyChord>) -> &'static str {
         KeyCode::PageDown => "PgDn",
         KeyCode::Backspace => "⌫",
         KeyCode::Delete => "Del",
+        KeyCode::F(1) => "F1",
+        KeyCode::F(2) => "F2",
+        KeyCode::F(3) => "F3",
+        KeyCode::F(4) => "F4",
+        KeyCode::F(5) => "F5",
+        KeyCode::F(6) => "F6",
+        KeyCode::F(7) => "F7",
+        KeyCode::F(8) => "F8",
+        KeyCode::F(9) => "F9",
+        KeyCode::F(10) => "F10",
+        KeyCode::F(11) => "F11",
+        KeyCode::F(12) => "F12",
+        KeyCode::F(13) => "F13",
+        KeyCode::F(14) => "F14",
+        KeyCode::F(15) => "F15",
+        KeyCode::F(16) => "F16",
+        KeyCode::F(17) => "F17",
+        KeyCode::F(18) => "F18",
+        KeyCode::F(19) => "F19",
+        KeyCode::F(20) => "F20",
+        KeyCode::F(21) => "F21",
+        KeyCode::F(22) => "F22",
+        KeyCode::F(23) => "F23",
+        KeyCode::F(24) => "F24",
+        KeyCode::F(_) => "F?",
         // Other modifier combos on Char (e.g. Alt-Shift-Arrow converted as Char)
         // are not in the common-shortcut set — callers must supply an explicit glyph.
         KeyCode::Char(_) => "?",

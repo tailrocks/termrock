@@ -26,17 +26,16 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
-    style::{Density, DesignSystem, PanelChrome, Role},
+    style::{DesignSystem, PanelChrome, Role},
     text::take_display_cols,
     widgets::{
         NavItem, Panel, PanelVariant, Sidebar, SidebarOutcome, SidebarPresentation, SidebarState,
-        example_sectioned_sidebar_nav, filter_nav_collapsed,
+        filter_nav_collapsed,
     },
 };
 
@@ -195,7 +194,7 @@ impl<Id> AppDashboardState<Id> {
     where
         Id: Clone + PartialEq,
     {
-        if !self.accepts_input || key.kind != KeyEventKind::Press {
+        if !self.accepts_input || !key.is_press() {
             return AppDashboardOutcome::Ignored;
         }
 
@@ -238,7 +237,7 @@ impl<Id> AppDashboardState<Id> {
 
 fn map_sidebar<Id>(out: SidebarOutcome<Id>) -> AppDashboardOutcome<Id> {
     match out {
-        SidebarOutcome::Selected(id) => AppDashboardOutcome::RouteSelected { id },
+        SidebarOutcome::RouteChanged { id } => AppDashboardOutcome::RouteSelected { id },
         other => AppDashboardOutcome::Sidebar(other),
     }
 }
@@ -264,7 +263,6 @@ pub struct AppDashboardSlots {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AppDashboardLayout {
     /// Density.
-    pub density: Density,
     /// Sidebar width.
     pub sidebar_width: u16,
     /// Metrics height (`0` hides).
@@ -278,7 +276,6 @@ pub struct AppDashboardLayout {
 impl Default for AppDashboardLayout {
     fn default() -> Self {
         Self {
-            density: Density::Dashboard,
             sidebar_width: 24,
             metrics_height: 3,
             header_height: 1,
@@ -294,7 +291,6 @@ pub fn layout_app_dashboard(area: Rect, config: AppDashboardLayout) -> AppDashbo
         area,
         AppShellConfig {
             recipe: AppShellRecipe::Workbench,
-            density: config.density,
             header_height: config.header_height,
             sidebar_width: config.sidebar_width.max(4),
             inspector_width: 0,
@@ -367,7 +363,26 @@ pub struct AppDashboardSurfaces<'a, Id> {
 /// Example nav for dashboard demos (sectioned).
 #[must_use]
 pub fn example_dashboard_nav() -> Vec<NavItem<&'static str>> {
-    example_sectioned_sidebar_nav()
+    vec![
+        NavItem::section("workspace", "Workspace")
+            .has_children(true)
+            .expanded(true),
+        NavItem::new("overview", "Overview").depth(1).icon("◇"),
+        NavItem::new("deployments", "Deployments")
+            .depth(1)
+            .icon("↑")
+            .badge("2"),
+        NavItem::new("services", "Services").depth(1).icon("▦"),
+        NavItem::section("operations", "Operations")
+            .has_children(true)
+            .expanded(true),
+        NavItem::new("jobs", "Jobs").depth(1).icon("▷").badge("4"),
+        NavItem::new("alerts", "Alerts")
+            .depth(1)
+            .icon("!")
+            .badge("1"),
+        NavItem::new("settings", "Settings").icon("⚙"),
+    ]
 }
 
 /// Paint shell chrome + sidebar; main shows placeholder (host overlays data).
@@ -382,7 +397,6 @@ pub fn render_app_dashboard<Id: Clone + PartialEq>(
     let system = surfaces.system;
     let state = surfaces.state;
     // The glyph profile is the design system's answer, not a hardcoded true.
-    let ascii = system.glyphs.is_ascii();
     let layout = AppDashboardLayout {
         sidebar_width: state.sidebar_width,
         metrics_height: if state.show_metrics { 3 } else { 0 },
@@ -421,7 +435,6 @@ pub fn render_app_dashboard<Id: Clone + PartialEq>(
         let _ = rail;
         Sidebar::new(surfaces.nav, system)
             .focused(state.pane == AppDashboardPane::Sidebar)
-            .ascii(ascii)
             .show_panel(false)
             .paint(nav_area, buffer, &mut state.sidebar);
     }
@@ -473,7 +486,7 @@ pub fn render_app_dashboard<Id: Clone + PartialEq>(
 
     // Footer hint
     if !slots.footer.is_empty() {
-        let hint = "Tab panes · [ rail · sidebar keys · host main";
+        let hint = "Tab panes · [ rail · ↑↓ select · Enter open · C-k commands";
         system.paint_row(
             buffer,
             Rect::new(slots.footer.x, slots.footer.y, slots.footer.width, 1),
@@ -605,7 +618,9 @@ mod tests {
         assert!(
             matches!(
                 out,
-                AppDashboardOutcome::Sidebar(SidebarOutcome::ToggleRail { expanded: false })
+                AppDashboardOutcome::Sidebar(SidebarOutcome::PresentationChanged {
+                    presentation: SidebarPresentation::Rail
+                })
             ),
             "{out:?}"
         );
@@ -631,7 +646,7 @@ mod tests {
     #[test]
     fn paint_smoke() {
         let system = DesignSystem::default();
-        let mut st = AppDashboardState::new(Some("intro"));
+        let mut st = AppDashboardState::new(Some("overview"));
         let nav = example_dashboard_nav();
         // collapse filter still works on fixture
         assert!(filter_nav_collapsed(&nav).len() < nav.len() || !nav.is_empty());
@@ -663,5 +678,15 @@ mod tests {
                 || sample.contains('N'),
             "{sample:?}"
         );
+    }
+
+    #[test]
+    fn reference_nav_is_an_application_fixture_not_documentation_placeholder() {
+        let nav = example_dashboard_nav();
+        let labels: Vec<_> = nav.iter().map(|item| item.label.as_str()).collect();
+        assert!(labels.contains(&"Overview"), "{labels:?}");
+        assert!(labels.contains(&"Deployments"), "{labels:?}");
+        assert!(labels.contains(&"Alerts"), "{labels:?}");
+        assert!(!labels.contains(&"Introduction"), "{labels:?}");
     }
 }

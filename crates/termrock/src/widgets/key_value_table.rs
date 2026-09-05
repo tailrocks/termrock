@@ -16,7 +16,6 @@
 //! - [`super::ObjectInspector`] — nested structure paths (uses KV leaves later).
 //!
 //! Research: inspector panels, HTTP clients, cloud consoles, TermRock DetailTable.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeSet;
 
@@ -32,11 +31,11 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{Density, DesignSystem, Glyph, ListRowVisualState, MASK_CELLS, Role},
+    style::{DesignSystem, Glyph, ListRowVisualState, MASK_CELLS, Role},
     text::{display_cols, take_display_cols, wrap_display_cols},
     widgets::{
         data_view::LoadState,
-        key_value_list::{KvLayout, KvStatus, kv_group_gap, kv_stack_below},
+        key_value_list::{KvLayout, KvStatus, kv_stack_below},
     },
 };
 
@@ -393,8 +392,6 @@ pub struct KeyValueTableState<Id: Clone + PartialEq> {
     pub copied: Option<Id>,
     /// Presentation mode.
     pub mode: KvtMode,
-    /// Density.
-    pub density: Density,
     /// Layout override (Auto still contracts).
     pub layout: KvLayout,
     /// Load chrome.
@@ -410,8 +407,6 @@ pub struct KeyValueTableState<Id: Clone + PartialEq> {
     /// Hit regions.
     pub regions: Vec<KvtRegion<Id>>,
     painted: Rect,
-    /// Map display-row → field index for scroll sync.
-    row_map_len: u16,
 }
 
 impl<Id: Clone + PartialEq + Ord> Default for KeyValueTableState<Id> {
@@ -432,7 +427,6 @@ impl<Id: Clone + PartialEq + Ord> KeyValueTableState<Id> {
             revealed: BTreeSet::new(),
             copied: None,
             mode: KvtMode::View,
-            density: Density::Compact,
             layout: KvLayout::Auto,
             load: LoadState::Ready { count: 0 },
             filter: None,
@@ -441,7 +435,6 @@ impl<Id: Clone + PartialEq + Ord> KeyValueTableState<Id> {
             accepts_input: true,
             regions: Vec::new(),
             painted: Rect::default(),
-            row_map_len: 0,
         }
     }
 
@@ -568,7 +561,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
     fn resolved_layout(&self, width: u16, state: &KeyValueTableState<Id>) -> KvLayout {
         match state.layout {
             KvLayout::Auto => {
-                if width < kv_stack_below(state.density) {
+                if width < kv_stack_below() {
                     KvLayout::Stacked
                 } else {
                     KvLayout::Columns
@@ -608,10 +601,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
         state: &KeyValueTableState<Id>,
     ) -> String {
         if field.secret && !state.is_revealed(&field.id) {
-            return Glyph::Mask
-                .resolve(self.system.glyphs)
-                .text
-                .repeat(MASK_CELLS);
+            return Glyph::Mask.resolve().text.repeat(MASK_CELLS);
         }
         if state.editing && state.cursor.as_ref() == Some(&field.id) {
             return state.edit_draft.clone();
@@ -673,7 +663,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
         }
         match field.kind {
             KvtRowKind::Separator => 1,
-            KvtRowKind::Group => 1u16.saturating_add(kv_group_gap(state.density)),
+            KvtRowKind::Group => 1u16,
             KvtRowKind::Field => {
                 let value = self.display_value(field, state);
                 match layout {
@@ -725,10 +715,10 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
         state: &mut KeyValueTableState<Id>,
         key: KeyEvent,
     ) -> KeyValueTableOutcome<Id> {
-        if !state.accepts_input || key.kind == KeyEventKind::Release {
+        if !state.accepts_input || key.is_release() {
             return KeyValueTableOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         if matches!(
             state.load,
@@ -837,7 +827,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
         state: &mut KeyValueTableState<Id>,
         key: KeyEvent,
     ) -> KeyValueTableOutcome<Id> {
-        if key.kind != KeyEventKind::Press {
+        if !key.is_press() {
             return KeyValueTableOutcome::Ignored;
         }
         match key.code {
@@ -1063,15 +1053,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                     body.x,
                     body.y,
                     body.width,
-                    &format!(
-                        "{}{}",
-                        if self.system.glyphs.is_ascii() {
-                            "[ ] "
-                        } else {
-                            "∅ "
-                        },
-                        message.as_deref().unwrap_or("No fields")
-                    ),
+                    &format!("{}{}", "∅ ", message.as_deref().unwrap_or("No fields")),
                     self.system.style(Role::TextMuted),
                 );
                 self.paint_footer(area, buffer, state, None);
@@ -1083,15 +1065,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                     body.x,
                     body.y,
                     body.width,
-                    &format!(
-                        "{}{}",
-                        if self.system.glyphs.is_ascii() {
-                            "... "
-                        } else {
-                            "… "
-                        },
-                        message.as_deref().unwrap_or("Loading…")
-                    ),
+                    &format!("{}{}", "… ", message.as_deref().unwrap_or("Loading…")),
                     self.system.style(Role::TextMuted),
                 );
                 self.paint_footer(area, buffer, state, None);
@@ -1123,25 +1097,24 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
         let view = self.filtered(state);
         let key_w = self.key_col_w(&view.iter().map(|f| (*f).clone()).collect::<Vec<_>>());
 
-        // Build display row map
-        let mut row_map: Vec<(usize, u16)> = Vec::new();
-        for (vi, field) in view.iter().enumerate() {
-            let h = self.measure_field_h(
-                field,
-                body.width,
-                paint_layout,
-                state,
-                show_type,
-                show_source,
-                compare,
-            );
-            for sub in 0..h {
-                row_map.push((vi, sub));
-            }
-        }
-        state.total_rows = u16::try_from(row_map.len()).unwrap_or(u16::MAX);
+        // Field heights in display order; row positions derive
+        // arithmetically instead of materializing a per-row map each frame.
+        let heights: Vec<u16> = view
+            .iter()
+            .map(|field| {
+                self.measure_field_h(
+                    field,
+                    body.width,
+                    paint_layout,
+                    state,
+                    show_type,
+                    show_source,
+                    compare,
+                )
+            })
+            .collect();
+        state.total_rows = heights.iter().fold(0u16, |a, h| a.saturating_add(*h));
         state.viewport_rows = body.height;
-        state.row_map_len = state.total_rows;
         state.clamp_scroll();
 
         // Ensure cursor exists
@@ -1157,7 +1130,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
 
         for row in 0..body.height {
             let idx = first.saturating_add(usize::from(row));
-            let Some(&(vi, sub)) = row_map.get(idx) else {
+            let Some((vi, sub)) = walk_field_rows(&heights, idx) else {
                 break;
             };
             let y = body.y.saturating_add(row);
@@ -1240,8 +1213,9 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
         if let Some(m) = validation_msg {
             parts.push(m.to_string());
         }
-        parts.push("c copy · e edit · r reveal · d compare · / filter".into());
-        let line = parts.join(" · ");
+        let separator = " · ";
+        parts.push(["c copy", "e edit", "r reveal", "d compare", "/ filter"].join(separator));
+        let line = parts.join(separator);
         paint_line(
             buffer,
             area.x,
@@ -1293,17 +1267,14 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                 for x in area.x..area.right() {
                     buffer.set_stringn(x, area.y, rule, 1, self.system.style(Role::Border));
                 }
+                paint_kv_row_chrome(&chrome, sub, buffer, area);
                 return;
             }
             KvtRowKind::Group => {
                 if sub == 0 {
                     let indent = u16::from(field.depth) * 2;
                     let x = area.x.saturating_add(GUTTER).saturating_add(indent);
-                    let mark = if self.system.glyphs.is_ascii() {
-                        "# "
-                    } else {
-                        "▸ "
-                    };
+                    let mark = "▸ ";
                     let line = format!("{mark}{}", field.key);
                     paint_line(
                         buffer,
@@ -1316,6 +1287,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                             .add_modifier(Modifier::BOLD),
                     );
                 }
+                paint_kv_row_chrome(&chrome, sub, buffer, area);
                 return;
             }
             KvtRowKind::Field => {}
@@ -1369,6 +1341,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                                 value_style,
                             );
                         }
+                        paint_kv_row_chrome(&chrome, sub, buffer, area);
                         return;
                     }
                     line_idx += vlines.len() as u16;
@@ -1378,11 +1351,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                             if sub < line_idx + clines.len() as u16 {
                                 let i = usize::from(sub.saturating_sub(line_idx));
                                 if let Some(l) = clines.get(i) {
-                                    let prefix = if self.system.glyphs.is_ascii() {
-                                        "~ "
-                                    } else {
-                                        "↔ "
-                                    };
+                                    let prefix = "↔ ";
                                     paint_line(
                                         buffer,
                                         origin,
@@ -1392,6 +1361,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                                         self.system.style(Role::Warning),
                                     );
                                 }
+                                paint_kv_row_chrome(&chrome, sub, buffer, area);
                                 return;
                             }
                             line_idx += clines.len() as u16;
@@ -1440,6 +1410,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                             value_style,
                         );
                     }
+                    paint_kv_row_chrome(&chrome, sub, buffer, area);
                     return;
                 }
                 let mut x = origin;
@@ -1537,6 +1508,32 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                 }
             }
         }
+        paint_kv_row_chrome(&chrome, sub, buffer, area);
+    }
+}
+
+/// Absolute display row `idx` as `(field, sub_row)`, from field heights.
+fn walk_field_rows(heights: &[u16], idx: usize) -> Option<(usize, u16)> {
+    let mut seen = 0usize;
+    for (vi, h) in heights.iter().enumerate() {
+        let h = usize::from(*h);
+        if idx < seen.saturating_add(h) {
+            return Some((vi, u16::try_from(idx - seen).unwrap_or(u16::MAX)));
+        }
+        seen = seen.saturating_add(h);
+    }
+    None
+}
+
+fn paint_kv_row_chrome(
+    chrome: &crate::widgets::row_chrome::RowChrome,
+    continuation: u16,
+    buffer: &mut Buffer,
+    area: Rect,
+) {
+    chrome.paint_wash(buffer, area);
+    if continuation == 0 {
+        chrome.paint_gutter(buffer, area);
     }
 }
 
@@ -1546,7 +1543,7 @@ fn st_role(status: KvStatus) -> Role {
         KvStatus::Success => Role::Success,
         KvStatus::Warning => Role::Warning,
         KvStatus::Danger => Role::Danger,
-        KvStatus::Info => Role::Info,
+        KvStatus::Info => Role::TextSecondary,
     }
 }
 
@@ -1586,7 +1583,7 @@ mod tests {
 
     #[test]
     fn separator_comes_from_the_shared_key_value_token() {
-        let system = crate::style::DesignSystem::phosphor();
+        let system = crate::style::DesignSystem::junie();
         let fields = sample();
         assert_eq!(
             KeyValueTable::new(&fields, &system).separator,
@@ -1713,7 +1710,6 @@ mod tests {
         let fields = sample();
         let table = KeyValueTable::new(&fields, &system);
         let mut state = KeyValueTableState::new();
-        state.density = Density::Compact;
         state.layout = KvLayout::Auto;
         let layout = table.resolved_layout(30, &state);
         assert_eq!(layout, KvLayout::Stacked);

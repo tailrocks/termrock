@@ -15,7 +15,6 @@
 //! rows are in memory; prefer Pagination when the host must fetch page N.
 //!
 //! Research: shadcn Pagination, database clients, API result browsers.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -552,7 +551,7 @@ impl PaginationState {
 
     /// Key adapter.
     pub fn handle_key(&mut self, key: KeyEvent) -> PaginationOutcome {
-        if key.kind == KeyEventKind::Release || !self.enabled {
+        if key.is_release() || !self.enabled {
             return PaginationOutcome::Ignored;
         }
         if !self.focused {
@@ -832,7 +831,6 @@ impl PaginationState {
 #[derive(Debug, Clone, Copy)]
 pub struct Pagination<'a> {
     system: &'a DesignSystem,
-    ascii: bool,
     show_summary: bool,
     show_page_size: bool,
 }
@@ -843,7 +841,6 @@ impl<'a> Pagination<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             system,
-            ascii: false,
             show_summary: true,
             show_page_size: true,
         }
@@ -851,13 +848,7 @@ impl<'a> Pagination<'a> {
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Show item summary.
-    #[must_use]
     pub const fn show_summary(mut self, on: bool) -> Self {
         self.show_summary = on;
         self
@@ -890,10 +881,10 @@ impl<'a> Pagination<'a> {
         };
         state.visible_pages = state.compute_visible_pages(max_buttons);
 
-        let first = if self.ascii { "|<" } else { "«" };
-        let prev = if self.ascii { "<" } else { "‹" };
-        let next = if self.ascii { ">" } else { "›" };
-        let last = if self.ascii { ">|" } else { "»" };
+        let first = { "«" };
+        let prev = { "‹" };
+        let next = { "›" };
+        let last = { "»" };
 
         let mut x = area.x;
         let y = area.y;
@@ -918,11 +909,10 @@ impl<'a> Pagination<'a> {
             let style = if !enabled {
                 system.style(Role::TextDisabled)
             } else if focused_part {
-                system
-                    .style(Role::Focus)
-                    .add_modifier(Modifier::REVERSED | Modifier::BOLD)
+                // Focus is the accent tone and weight, never a reversal.
+                system.style(Role::Focus).add_modifier(Modifier::BOLD)
             } else if active {
-                // The current page is the bold one; the focused page reverses.
+                // The current page is the bold one.
                 system.style(Role::TextStrong).add_modifier(Modifier::BOLD)
             } else {
                 system.style(Role::Text)
@@ -934,11 +924,7 @@ impl<'a> Pagination<'a> {
             *x = (*x).saturating_add(w).saturating_add(1);
         };
 
-        let loading = if state.loading {
-            if self.ascii { " ..." } else { " …" }
-        } else {
-            ""
-        };
+        let loading = if state.loading { " …" } else { "" };
 
         match state.presentation {
             PaginationPresentation::Minimal => {
@@ -1143,9 +1129,7 @@ impl<'a> Pagination<'a> {
                     if avail > 0 {
                         let w = w.min(avail);
                         let style = if state.focused && matches!(state.part, PaginationPart::Jump) {
-                            self.system
-                                .style(Role::Focus)
-                                .add_modifier(Modifier::REVERSED)
+                            self.system.style(Role::Focus).add_modifier(Modifier::BOLD)
                         } else {
                             self.system.style(Role::TextMuted)
                         };
@@ -1317,6 +1301,58 @@ mod tests {
     }
 
     #[test]
+    fn escape_closes_only_the_jump_entry_layer() {
+        let mut state = PaginationState::new(4, 10, PageTotal::Known(100));
+        state.set_focused(true);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE)),
+            PaginationOutcome::JumpStarted
+        );
+        let _ = state.handle_key(KeyEvent::new(KeyCode::Char('8'), KeyModifiers::NONE));
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            PaginationOutcome::JumpCancelled
+        );
+        assert_eq!(state.page(), 4);
+    }
+
+    #[test]
+    fn disabled_state_rejects_keyboard_mouse_and_registers_semantics() {
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 72, 1);
+        let mut buffer = Buffer::empty(area);
+        let mut state = PaginationState::new(3, 10, PageTotal::Known(100));
+        state.set_focused(true);
+        Pagination::new(&system).paint(area, &mut buffer, &mut state);
+        let next = state
+            .hits
+            .iter()
+            .find(|(part, _)| matches!(part, PaginationPart::Next))
+            .map(|(_, region)| *region)
+            .expect("painted next region");
+
+        state.set_enabled(false);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::NONE)),
+            PaginationOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_mouse(MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position::new(next.x, next.y),
+                modifiers: KeyModifiers::NONE,
+            }),
+            PaginationOutcome::Ignored
+        );
+
+        let mut scene = SemanticScene::<&str, ()>::default();
+        Pagination::new(&system).register_semantic(&mut scene, "pagination", area, &state);
+        let node = scene.nodes().first().expect("pagination semantic node");
+        assert!(node.disabled);
+        assert!(!node.focusable);
+    }
+
+    #[test]
     fn keys_bracket_nav() {
         let mut s = PaginationState::new(2, 10, PageTotal::Known(50));
         s.set_focused(true);
@@ -1356,14 +1392,12 @@ mod tests {
 
     #[test]
     fn paint_full_and_mouse() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let mut state = PaginationState::new(3, 10, PageTotal::Known(100));
         state.set_focused(true);
         let area = Rect::new(0, 0, 72, 1);
         let mut buf = Buffer::empty(area);
-        Pagination::new(&system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
+        Pagination::new(&system).paint(area, &mut buf, &mut state);
         assert!(!state.hits.is_empty());
         // click next if present
         if let Some((_, rect)) = state
@@ -1392,9 +1426,7 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 18, 1);
         let mut buf = Buffer::empty(area);
-        Pagination::new(&system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
+        Pagination::new(&system).paint(area, &mut buf, &mut state);
         assert_eq!(state.presentation(), PaginationPresentation::Minimal);
     }
 
@@ -1425,7 +1457,7 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 64, 1);
         let mut buf = Buffer::empty(area);
-        let w = Pagination::new(&system).ascii(true);
+        let w = Pagination::new(&system);
         for _ in 0..50 {
             w.paint(area, &mut buf, &mut state);
         }

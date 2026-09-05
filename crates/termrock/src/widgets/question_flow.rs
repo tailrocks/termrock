@@ -14,19 +14,16 @@
 //! **vs [`super::PermissionPrompt`].** Trust gate, not interview.
 //!
 //! Research: Grok Build question view, form wizards, conversational agent prompts.
-
 use std::collections::BTreeSet;
 
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
-    style::{DesignSystem, PanelChrome, Role},
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    style::{ControlState, DesignSystem, ListRowVisualState, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::panel::Panel,
-    widgets::{Hint, HintBar},
+    widgets::{Hint, HintBar, PanelVariant},
 };
 
 /// Overlay id for fullscreen question flow.
@@ -543,6 +540,7 @@ pub struct QuestionFlowState {
     /// Focused.
     pub focused: bool,
     accepts_input: bool,
+    enabled: bool,
     /// Last validation error for paint.
     pub last_error: Option<String>,
     /// Option hit regions (id, rect).
@@ -569,6 +567,7 @@ impl QuestionFlowState {
             presentation: QuestionFlowPresentation::Steps,
             focused: true,
             accepts_input: true,
+            enabled: true,
             last_error: None,
             option_hits: Vec::new(),
         }
@@ -583,6 +582,20 @@ impl QuestionFlowState {
     /// Gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
+    }
+
+    /// Enables navigation, answer mutation, and submission.
+    pub fn set_enabled(&mut self, on: bool) {
+        self.enabled = on;
+        if !on {
+            self.focused = false;
+        }
+    }
+
+    /// Whether the flow can accept interaction.
+    #[must_use]
+    pub const fn is_enabled(&self) -> bool {
+        self.enabled
     }
 
     /// Focus.
@@ -752,7 +765,7 @@ impl QuestionFlowState {
 
     /// Keys.
     pub fn handle_key(&mut self, key: KeyEvent) -> QuestionFlowOutcome {
-        if !self.accepts_input || !self.focused || key.kind != KeyEventKind::Press {
+        if !self.enabled || !self.accepts_input || !self.focused || !key.is_press() {
             return QuestionFlowOutcome::Ignored;
         }
         if self.set.is_none() {
@@ -1008,7 +1021,7 @@ impl QuestionFlowState {
 
     /// Mouse on options.
     pub fn handle_mouse(&mut self, event: MouseEvent) -> QuestionFlowOutcome {
-        if !self.accepts_input || !self.focused {
+        if !self.enabled || !self.accepts_input || !self.focused {
             return QuestionFlowOutcome::Ignored;
         }
         if event.kind != MouseEventKind::Down(MouseButton::Left) {
@@ -1053,7 +1066,6 @@ impl QuestionFlowState {
 #[derive(Debug, Clone, Copy)]
 pub struct QuestionFlow<'a> {
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -1097,20 +1109,13 @@ impl<'a> QuestionFlow<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             system,
-            ascii: false,
             colorless: false,
         }
     }
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -1124,6 +1129,7 @@ impl<'a> QuestionFlow<'a> {
         }
         let Some(set) = state.set.as_ref() else {
             let panel = Panel::new(self.system)
+                .variant(PanelVariant::Bordered)
                 .overlay(true)
                 .title("Questions")
                 .emphasis(PanelChrome::Normal);
@@ -1131,7 +1137,7 @@ impl<'a> QuestionFlow<'a> {
             use ratatui_core::widgets::Widget;
             Widget::render(&panel, area, buffer);
             if !inner.is_empty() {
-                let m = if self.ascii { "[ ] idle" } else { "∅ idle" };
+                let m = { "∅ idle" };
                 buffer.set_stringn(
                     inner.x,
                     inner.y,
@@ -1154,6 +1160,7 @@ impl<'a> QuestionFlow<'a> {
             PanelChrome::Normal
         };
         let panel = Panel::new(self.system)
+            .variant(PanelVariant::Bordered)
             .overlay(true)
             .title(title.as_str())
             .emphasis(emphasis);
@@ -1200,11 +1207,9 @@ impl<'a> QuestionFlow<'a> {
                         s.push(' ');
                     }
                     let mark = if i == state.step_index {
-                        if self.ascii { "*" } else { "●" }
+                        "●"
                     } else if state.answers.get(&q.id).is_some() {
-                        if self.ascii { "+" } else { "✓" }
-                    } else if self.ascii {
-                        "o"
+                        "✓"
                     } else {
                         "○"
                     };
@@ -1247,30 +1252,53 @@ impl<'a> QuestionFlow<'a> {
             y = y.saturating_add(1);
         }
 
-        if let Some(err) = &state.last_error {
-            if y < max_y {
-                buffer.set_stringn(
-                    inner.x,
-                    y,
-                    take_display_cols(err, w),
-                    w,
-                    self.system.style(Role::Danger),
+        // Reserve one inline-validation row in every state so an error never
+        // pushes the answer control or option columns downward.
+        if y < max_y {
+            if let Some(err) = &state.last_error {
+                crate::widgets::field_message::paint_field_message(
+                    buffer,
+                    Rect::new(inner.x, y, inner.width, 1),
+                    self.system,
+                    crate::widgets::label::DescriptionKind::Error,
+                    err,
                 );
-                y = y.saturating_add(1);
             }
+            y = y.saturating_add(1);
         }
 
         match q.kind {
             QuestionKind::FreeText => {
                 if y < max_y {
-                    let line = format!("> {}", st.text);
-                    buffer.set_stringn(
-                        inner.x,
-                        y,
-                        take_display_cols(&line, w),
-                        w,
-                        self.system.style(Role::Input),
+                    let recipe = self.system.input_recipe(
+                        if state.focused {
+                            ControlState::Focused
+                        } else {
+                            ControlState::Default
+                        },
+                        state.last_error.is_some(),
+                        false,
                     );
+                    let row = Rect::new(inner.x, y, inner.width, 1);
+                    buffer.set_style(row, recipe.fill);
+                    if let Some((glyph, style)) = recipe.prompt {
+                        buffer.set_stringn(inner.x, y, glyph, 1, style);
+                    }
+                    let value_x = inner.x.saturating_add(1).min(inner.right());
+                    let value_width = inner.width.saturating_sub(1);
+                    buffer.set_stringn(
+                        value_x,
+                        y,
+                        take_display_cols(&st.text, usize::from(value_width)),
+                        usize::from(value_width),
+                        recipe.value,
+                    );
+                    if state.focused && value_width > 0 {
+                        let caret_x = value_x
+                            .saturating_add(u16::try_from(display_cols(&st.text)).unwrap_or(0))
+                            .min(row.right().saturating_sub(1));
+                        buffer.set_style(Rect::new(caret_x, y, 1, 1), recipe.cursor);
+                    }
                 }
             }
             QuestionKind::SingleChoice | QuestionKind::MultiChoice => {
@@ -1287,31 +1315,31 @@ impl<'a> QuestionFlow<'a> {
                         && st.multi_selected.contains(&opt.id);
                     let mark = if matches!(q.kind, QuestionKind::MultiChoice) {
                         if checked {
-                            if self.ascii { "[x]" } else { "[✓]" }
-                        } else if self.ascii {
-                            "[ ]"
+                            crate::style::Glyph::Success.resolve().text
                         } else {
-                            "[ ]"
+                            " "
                         }
                     } else if on {
-                        if self.ascii { ">" } else { "›" }
+                        crate::style::Glyph::SelectionMarker.resolve().text
                     } else {
                         " "
                     };
                     let other = if opt.is_other { "…" } else { "" };
                     let line = format!("{mark} {}{other}", opt.label);
-                    let style = if on {
-                        if self.colorless {
-                            self.system
-                                .style(Role::Text)
-                                .add_modifier(Modifier::REVERSED)
-                        } else {
-                            self.system.style(Role::Focus)
-                        }
-                    } else {
-                        self.system.style(Role::Text)
-                    };
-                    buffer.set_stringn(inner.x, y, take_display_cols(&line, w), w, style);
+                    let row = Rect::new(inner.x, y, inner.width, 1);
+                    let recipe = self.system.resolve_list_row(ListRowVisualState {
+                        selected: checked,
+                        focused: on && state.focused && state.enabled,
+                        hovered: false,
+                        enabled: state.enabled,
+                        loading: false,
+                        checked,
+                        ..ListRowVisualState::default()
+                    });
+                    if recipe.use_tint {
+                        buffer.set_style(row, recipe.tint);
+                    }
+                    buffer.set_stringn(inner.x, y, take_display_cols(&line, w), w, recipe.label);
                     state.option_hits.push((
                         opt.id.clone(),
                         Rect {
@@ -1324,12 +1352,28 @@ impl<'a> QuestionFlow<'a> {
                     y = y.saturating_add(1);
                 }
                 if st.text_mode && y < max_y {
+                    let recipe = self.system.input_recipe(
+                        if state.focused {
+                            ControlState::Focused
+                        } else {
+                            ControlState::Default
+                        },
+                        state.last_error.is_some(),
+                        true,
+                    );
+                    let row = Rect::new(inner.x, y, inner.width, 1);
+                    buffer.set_style(row, recipe.fill);
+                    if let Some((glyph, style)) = recipe.prompt {
+                        buffer.set_stringn(inner.x, y, glyph, 1, style);
+                    }
+                    let value_x = inner.x.saturating_add(1).min(inner.right());
+                    let value_width = inner.width.saturating_sub(1);
                     buffer.set_stringn(
-                        inner.x,
+                        value_x,
                         y,
-                        take_display_cols(&format!("other> {}", st.text), w),
-                        w,
-                        self.system.style(Role::Input),
+                        take_display_cols(&st.text, usize::from(value_width)),
+                        usize::from(value_width),
+                        recipe.value,
                     );
                 }
             }
@@ -1351,10 +1395,11 @@ impl<'a> QuestionFlow<'a> {
     fn paint_review(&self, area: Rect, buffer: &mut Buffer, state: &QuestionFlowState) {
         let mut y = area.y;
         let w = usize::from(area.width);
+        let review_hint = { "Review answers · Enter submit · Esc edit" };
         buffer.set_stringn(
             area.x,
             y,
-            take_display_cols("Review answers · Enter submit · Esc edit", w),
+            take_display_cols(review_hint, w),
             w,
             self.system.style(Role::TextMuted),
         );
@@ -1384,9 +1429,10 @@ impl<'a> QuestionFlow<'a> {
                 .unwrap_or_else(|| "—".into());
             let mark = if i == state.step_index { ">" } else { " " };
             let line = format!(
-                "{mark}{}. {} → {}",
+                "{mark}{}. {} {} {}",
                 i + 1,
                 take_display_cols(&q.prompt, 20),
+                { "→" },
                 ans
             );
             buffer.set_stringn(
@@ -1633,6 +1679,31 @@ mod tests {
     }
 
     #[test]
+    fn mouse_selects_only_painted_question_options() {
+        let system = DesignSystem::default();
+        let mut state = QuestionFlowState::new();
+        state.open_set(example_question_set());
+        let area = Rect::new(0, 0, 48, 16);
+        let mut buffer = Buffer::empty(area);
+        QuestionFlow::new(&system).paint(area, &mut buffer, &mut state);
+        let (id, hit) = state.option_hits[1].clone();
+
+        let outcome = state.handle_mouse(MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: ratatui_core::layout::Position::new(hit.x, hit.y),
+            modifiers: KeyModifiers::NONE,
+        });
+
+        assert!(matches!(
+            outcome,
+            QuestionFlowOutcome::Answered {
+                answer: QuestionAnswer::Single { option_id, .. },
+                ..
+            } if option_id == id
+        ));
+    }
+
+    #[test]
     fn accepts_input_gate() {
         let mut st = QuestionFlowState::new();
         st.open_set(example_question_set());
@@ -1641,6 +1712,56 @@ mod tests {
             st.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
             QuestionFlowOutcome::Ignored
         ));
+    }
+
+    #[test]
+    fn multi_choice_membership_is_check_not_checkbox_well() {
+        let system = DesignSystem::junie();
+        let mut st = QuestionFlowState::new();
+        st.open_set(example_question_set());
+        let _ = st.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+        let _ = st.handle_key(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE));
+        let area = Rect::new(0, 0, 48, 16);
+        let mut buf = Buffer::empty(area);
+        QuestionFlow::new(&system).paint(area, &mut buf, &mut st);
+        let mut text = String::new();
+        for y in 0..area.height {
+            for x in 0..area.width {
+                text.push_str(buf[(x, y)].symbol());
+            }
+        }
+        assert!(
+            !text.contains("[✓]") && !text.contains("[ ]"),
+            "checkbox wells leaked: {text:?}"
+        );
+        assert!(text.contains('✓'), "membership ✓ missing: {text:?}");
+    }
+
+    #[test]
+    fn disabled_flow_blocks_keys_mouse_and_paints_disabled_options() {
+        let system = DesignSystem::default();
+        let mut state = QuestionFlowState::new();
+        state.open_set(example_question_set());
+        state.set_enabled(false);
+        assert!(!state.is_enabled());
+        let area = Rect::new(0, 0, 48, 16);
+        let mut buffer = Buffer::empty(area);
+        QuestionFlow::new(&system).paint(area, &mut buffer, &mut state);
+        let (_, option) = state.option_hits[0].clone();
+
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            QuestionFlowOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_mouse(MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: ratatui_core::layout::Position::new(option.x, option.y),
+                modifiers: KeyModifiers::NONE,
+            }),
+            QuestionFlowOutcome::Ignored
+        );
+        assert_eq!(state.step_index, 0);
     }
 
     #[test]

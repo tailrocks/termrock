@@ -6,22 +6,35 @@
 //! most one status hue and at most one accent survive; everything else reads
 //! as metadata — and it drops by stated priority rather than by whatever
 //! happened to be last in the vector.
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    style::{Color, Modifier, Style},
+};
 
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Style};
-
-use crate::style::{DesignSystem, Role};
+use crate::style::{DesignSystem, GlyphSet, Role};
 use crate::text::display_cols;
 use crate::widgets::tiered_row::TieredRow;
+
+use super::SemanticStatus;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum StatusSegmentTone {
+    Metadata,
+    Quiet,
+    Strong,
+    Focus,
+    Semantic(SemanticStatus),
+}
 
 /// One fact in a status strip.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StatusSegment<'a> {
     /// Segment text, already worded by the host.
     pub text: &'a str,
-    /// Semantic role the segment asks for.
-    pub role: Role,
     /// Survival priority: higher survives longer under width pressure.
     pub priority: u8,
+    tone: StatusSegmentTone,
 }
 
 impl<'a> StatusSegment<'a> {
@@ -30,15 +43,36 @@ impl<'a> StatusSegment<'a> {
     pub const fn new(text: &'a str) -> Self {
         Self {
             text,
-            role: Role::TextMuted,
             priority: 50,
+            tone: StatusSegmentTone::Metadata,
         }
     }
 
-    /// States the role the segment asks for.
+    /// Typed lifecycle state. The strip supplies the canonical glyph and tone.
     #[must_use]
-    pub const fn role(mut self, role: Role) -> Self {
-        self.role = role;
+    pub const fn semantic(mut self, semantic: SemanticStatus) -> Self {
+        self.tone = StatusSegmentTone::Semantic(semantic);
+        self
+    }
+
+    /// Quiet metadata (lower contrast than the default metadata tier).
+    #[must_use]
+    pub const fn quiet(mut self) -> Self {
+        self.tone = StatusSegmentTone::Quiet;
+        self
+    }
+
+    /// Strong metadata without spending a semantic hue.
+    #[must_use]
+    pub const fn strong(mut self) -> Self {
+        self.tone = StatusSegmentTone::Strong;
+        self
+    }
+
+    /// The one focused/actionable segment.
+    #[must_use]
+    pub const fn focus(mut self) -> Self {
+        self.tone = StatusSegmentTone::Focus;
         self
     }
 
@@ -48,13 +82,32 @@ impl<'a> StatusSegment<'a> {
         self.priority = priority;
         self
     }
+
+    fn role(&self) -> Role {
+        match self.tone {
+            StatusSegmentTone::Metadata => Role::TextMuted,
+            StatusSegmentTone::Quiet => Role::TextFaint,
+            StatusSegmentTone::Strong => Role::TextStrong,
+            StatusSegmentTone::Focus => Role::Accent,
+            StatusSegmentTone::Semantic(status) => status.role(),
+        }
+    }
+
+    fn display_text(&self, _glyphs: GlyphSet) -> String {
+        match self.tone {
+            StatusSegmentTone::Semantic(status) => {
+                format!("{} {}", status.glyph(), self.text)
+            }
+            _ => self.text.to_string(),
+        }
+    }
 }
 
 /// Whether a role counts against the strip's colour budget.
 fn is_status_hue(role: Role) -> bool {
     matches!(
         role,
-        Role::Success | Role::Warning | Role::Danger | Role::Info
+        Role::Success | Role::Warning | Role::Danger | Role::TextSecondary
     )
 }
 
@@ -131,7 +184,7 @@ impl<'a> StatusStrip<'a> {
         let mut kept: Vec<usize> = Vec::new();
         let mut used = 0usize;
         for i in order {
-            let cols = display_cols(self.segments[i].text);
+            let cols = display_cols(&self.segments[i].display_text(self.system.glyphs));
             let with_separator = if kept.is_empty() {
                 cols
             } else {
@@ -162,7 +215,7 @@ impl<'a> StatusStrip<'a> {
         let mut spent_accent = false;
         for (position, &index) in kept.iter().enumerate() {
             let segment = &self.segments[index];
-            let mut role = segment.role;
+            let mut role = segment.role();
             // One status hue, one accent. A strip that spends more is a
             // dashboard pretending to be a status line.
             if self.colorless {
@@ -184,7 +237,10 @@ impl<'a> StatusStrip<'a> {
                     spent_accent = true;
                 }
             }
-            tiers.push(segment.text, self.system.style(role));
+            tiers.push(
+                &segment.display_text(self.system.glyphs),
+                self.system.style(role),
+            );
         }
         if let Some(hint) = self.overflow_hint
             && dropped > 0
@@ -205,6 +261,152 @@ impl<'a> StatusStrip<'a> {
     }
 }
 
+/// One identity-strip fact. Source `segments::Segment`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LineSegment<'a> {
+    text: &'a str,
+    role: Role,
+    bold: bool,
+    /// Higher survives longer when the line is short.
+    priority: u8,
+    /// Source clickable: paint ` {text} ` one cell into the neighbouring gap.
+    clickable: bool,
+}
+
+impl<'a> LineSegment<'a> {
+    /// Normal-tone fact, priority 5.
+    #[must_use]
+    pub const fn new(text: &'a str) -> Self {
+        Self {
+            text,
+            role: Role::Text,
+            bold: false,
+            priority: 5,
+            clickable: false,
+        }
+    }
+
+    /// Foreground tone (source `Segment` `Tone`).
+    #[must_use]
+    pub const fn tone(mut self, role: Role) -> Self {
+        self.role = role;
+        self
+    }
+
+    /// Bold copy (source `Segment::bold`).
+    #[must_use]
+    pub const fn bold(mut self) -> Self {
+        self.bold = true;
+        self
+    }
+
+    /// Survival priority (higher stays longer).
+    #[must_use]
+    pub const fn priority(mut self, priority: u8) -> Self {
+        self.priority = priority;
+        self
+    }
+
+    /// Pad ` {text} ` into the two-cell gap (source `Segment::clickable`).
+    #[must_use]
+    pub const fn clickable(mut self) -> Self {
+        self.clickable = true;
+        self
+    }
+}
+
+const SEGMENT_GAP: u16 = 2;
+
+/// Source `segments::render`: left-packed then right-packed, two-cell gap.
+pub fn paint_line_segments(
+    area: Rect,
+    buffer: &mut Buffer,
+    system: &DesignSystem,
+    left: &[LineSegment<'_>],
+    right: &[LineSegment<'_>],
+    bg: Color,
+) {
+    let area = area.intersection(*buffer.area());
+    if area.is_empty() {
+        return;
+    }
+    let width_of = |s: &LineSegment<'_>| u16::try_from(display_cols(s.text)).unwrap_or(0);
+    let mut keep_l = vec![true; left.len()];
+    let mut keep_r = vec![true; right.len()];
+    let total = |kl: &[bool], kr: &[bool]| -> u16 {
+        let l: u16 = left
+            .iter()
+            .zip(kl)
+            .filter(|(_, k)| **k)
+            .map(|(s, _)| width_of(s) + SEGMENT_GAP)
+            .sum();
+        let r: u16 = right
+            .iter()
+            .zip(kr)
+            .filter(|(_, k)| **k)
+            .map(|(s, _)| width_of(s) + SEGMENT_GAP)
+            .sum();
+        l + r + 2
+    };
+    while total(&keep_l, &keep_r) > area.width {
+        let mut best: Option<(u8, bool, usize)> = None;
+        for (i, s) in left.iter().enumerate() {
+            if keep_l[i] && best.is_none_or(|b| s.priority < b.0) {
+                best = Some((s.priority, true, i));
+            }
+        }
+        for (i, s) in right.iter().enumerate() {
+            if keep_r[i] && best.is_none_or(|b| s.priority <= b.0) {
+                best = Some((s.priority, false, i));
+            }
+        }
+        match best {
+            Some((_, true, i)) => keep_l[i] = false,
+            Some((_, false, i)) => keep_r[i] = false,
+            None => break,
+        }
+    }
+    let paint = |buffer: &mut Buffer, x: u16, s: &LineSegment<'_>| {
+        let mut st = system.style(s.role);
+        st.bg = Some(bg);
+        if s.bold {
+            st = st.add_modifier(Modifier::BOLD);
+        }
+        let owned;
+        let text = if s.clickable {
+            owned = format!(" {} ", s.text);
+            owned.as_str()
+        } else {
+            s.text
+        };
+        buffer.set_stringn(x, area.y, text, display_cols(text), st);
+    };
+    let mut x = area.x.saturating_add(1);
+    for (s, k) in left.iter().zip(&keep_l) {
+        if !*k {
+            continue;
+        }
+        let start = if s.clickable { x.saturating_sub(1) } else { x };
+        paint(buffer, start, s);
+        x = x.saturating_add(width_of(s)).saturating_add(SEGMENT_GAP);
+    }
+    let mut rx = area.right().saturating_sub(1);
+    for (s, k) in right.iter().zip(&keep_r).rev() {
+        if !*k {
+            continue;
+        }
+        let sw = width_of(s);
+        rx = rx.saturating_sub(sw);
+        let start = if s.clickable {
+            rx.saturating_sub(1)
+        } else {
+            rx
+        };
+        paint(buffer, start, s);
+        rx = rx.saturating_sub(SEGMENT_GAP);
+    }
+}
+
 /// The quiet tier a segment falls back to when the budget is spent.
 const fn role_quiet(role: Role) -> Role {
     match role {
@@ -220,15 +422,43 @@ mod tests {
     fn segments() -> Vec<StatusSegment<'static>> {
         vec![
             StatusSegment::new("running")
-                .role(Role::Success)
+                .semantic(SemanticStatus::Running)
                 .priority(100),
             StatusSegment::new("offline")
-                .role(Role::Danger)
+                .semantic(SemanticStatus::Offline)
                 .priority(90),
             StatusSegment::new("opus-5").priority(60),
-            StatusSegment::new("q:3").role(Role::Warning).priority(80),
+            StatusSegment::new("queue 3")
+                .semantic(SemanticStatus::Warning)
+                .priority(80),
             StatusSegment::new("$0.42").priority(10),
         ]
+    }
+
+    #[test]
+    fn line_segments_use_two_cell_gap_and_no_status_glyph() {
+        let system = DesignSystem::junie();
+        let left = [
+            LineSegment::new("▪").tone(Role::Success).priority(9),
+            LineSegment::new("Acme").bold().priority(9),
+        ];
+        let right = [LineSegment::new("? help").tone(Role::TextMuted).priority(3)];
+        let area = Rect::new(0, 0, 40, 1);
+        let mut buffer = Buffer::empty(area);
+        paint_line_segments(
+            area,
+            &mut buffer,
+            &system,
+            &left,
+            &right,
+            system.junie_theme().surface,
+        );
+        let row: String = (0..area.width)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(row.starts_with(" ▪  Acme"), "{row:?}");
+        assert!(!row.contains('✓'), "{row:?}");
+        assert!(row.contains("? help"), "{row:?}");
     }
 
     #[test]
@@ -239,7 +469,12 @@ mod tests {
         let mut buffer = Buffer::empty(area);
         StatusStrip::new(&segments, &system).paint(area, &mut buffer);
 
-        let hues = [Role::Success, Role::Danger, Role::Warning, Role::Info];
+        let hues = [
+            Role::Success,
+            Role::Danger,
+            Role::Warning,
+            Role::TextSecondary,
+        ];
         let spent = hues
             .iter()
             .filter(|role| {
@@ -304,7 +539,12 @@ mod tests {
         StatusStrip::new(&segments, &system)
             .colorless(true)
             .paint(area, &mut buffer);
-        for role in [Role::Success, Role::Danger, Role::Warning, Role::Info] {
+        for role in [
+            Role::Success,
+            Role::Danger,
+            Role::Warning,
+            Role::TextSecondary,
+        ] {
             let fg = system.style(role).fg;
             assert!(
                 !(0..area.width).any(|x| {
@@ -312,6 +552,44 @@ mod tests {
                     !cell.symbol().trim().is_empty() && Some(cell.fg) == fg
                 }),
                 "colorless strips must not paint {role:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn resize_cjk_combining_and_ascii_safe() {
+        let segments = [
+            StatusSegment::new("本番 🛰 Cafe\u{301}")
+                .strong()
+                .priority(100),
+            StatusSegment::new("failed")
+                .semantic(SemanticStatus::Failed)
+                .priority(90),
+        ];
+        let system = DesignSystem::default();
+        for width in [32, 12, 1, 0] {
+            let area = Rect::new(0, 0, width, 1);
+            let mut buffer = Buffer::empty(area);
+            StatusStrip::new(&segments, &system).paint(area, &mut buffer);
+            if width == 32 {
+                let text: String = buffer.content().iter().map(|cell| cell.symbol()).collect();
+                assert!(text.contains('本'), "{text:?}");
+                assert!(text.contains('🛰'), "{text:?}");
+                assert!(text.contains("Cafe\u{301}"), "{text:?}");
+            }
+        }
+    }
+
+    #[test]
+    fn status_segment_public_api_has_no_raw_role_escape_hatch() {
+        let public = include_str!("status_strip.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .expect("public source");
+        for forbidden in ["pub role:", "pub fn role(", "pub const fn role("] {
+            assert!(
+                !public.contains(forbidden),
+                "raw role API leaked: {forbidden}"
             );
         }
     }

@@ -2,7 +2,6 @@
 //!
 //! Component-local packing: [`Stack`] / [`Inline`] / [`layout_stack`].
 //! Multi-pane shells: [`WorkSurface`] / [`Workspace`].
-
 mod center;
 mod dialog;
 mod grid;
@@ -17,7 +16,7 @@ use ratatui_core::layout::Rect;
 pub use crate::interaction::HitRegion;
 pub use center::{
     Center, CenterAxis, CenterLayout, CenterSpec, ModalSpec, center_block_y, center_line_x,
-    centered_rect, layout_center, modal_rect,
+    layout_center, modal_rect,
 };
 pub use dialog::{render_dialog_shell, render_scrollable_dialog_body};
 pub use grid::{
@@ -278,11 +277,14 @@ mod tests {
     }
 
     #[test]
-    fn centered_rect_stays_inside_tiny_and_large_inputs() {
+    fn dialog_center_stays_inside_tiny_and_large_inputs() {
         let outer = Rect::new(7, 11, 20, 10);
-        assert_eq!(centered_rect(8, 4, outer), Rect::new(13, 14, 8, 4));
+        assert_eq!(
+            Center::dialog(8, 4).layout(outer).child,
+            Rect::new(13, 14, 8, 4)
+        );
         for (width, height) in [(0, 0), (1, 1), (2, 2), (u16::MAX, u16::MAX)] {
-            let rect = centered_rect(width, height, outer);
+            let rect = Center::dialog(width, height).layout(outer).child;
             assert!(rect.x >= outer.x && rect.y >= outer.y);
             assert!(rect.right() <= outer.right());
             assert!(rect.bottom() <= outer.bottom());

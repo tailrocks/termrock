@@ -12,13 +12,12 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 use ratatui_core::layout::Rect;
 
 use crate::layout::{RegionId, RegionSize, SurfaceAxis, WorkSurface};
 use ratatui_core::{buffer::Buffer, widgets::StatefulWidget, widgets::Widget};
 
-use crate::style::{Density, DesignSystem, PanelChrome, Role};
+use crate::style::{DesignSystem, PanelChrome, Role};
 use crate::widgets::{
     DesignInspector, DesignInspectorFrame, InspectorPanel, Panel, StatusBar, StatusBarState,
     StatusSlot,
@@ -42,8 +41,6 @@ pub struct StudioShellSlots {
 /// Layout knobs for [`layout_studio_shell`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StudioShellLayout {
-    /// Density.
-    pub density: Density,
     /// Inspector height (bottom band).
     pub inspector_height: u16,
     /// Knobs width (right rail); 0 hides knobs.
@@ -55,7 +52,6 @@ pub struct StudioShellLayout {
 impl Default for StudioShellLayout {
     fn default() -> Self {
         Self {
-            density: Density::Compact,
             inspector_height: 4,
             knobs_width: 24,
             status_height: 1,
@@ -70,7 +66,6 @@ pub fn layout_studio_shell(area: Rect, config: StudioShellLayout) -> StudioShell
         area,
         AppShellConfig {
             recipe: AppShellRecipe::Workbench,
-            density: config.density,
             header_height: 0,
             sidebar_width: 0,
             inspector_width: config.knobs_width,
@@ -98,7 +93,6 @@ pub fn layout_studio_shell(area: Rect, config: StudioShellLayout) -> StudioShell
         .max(1);
     let rows = WorkSurface::new()
         .axis(SurfaceAxis::Vertical)
-        .density(config.density)
         .regions([
             crate::layout::RegionSpec {
                 id: RegionId::from_static("preview"),
@@ -204,7 +198,7 @@ mod tests {
 
         let system = DesignSystem::default();
         let hints = [StatusSlot::new("tab", "tab panel")];
-        let knobs = [("density", "compact"), ("theme", "phosphor")];
+        let knobs = [("density", "compact"), ("theme", "junie")];
         let view = StudioShellView {
             preview_title: "Button",
             frame: DesignInspectorFrame::default(),

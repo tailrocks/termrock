@@ -1,0 +1,10 @@
+[package]
+name = "termrock-contract-audit"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+termrock-catalog = { path = "../../crates/termrock-catalog", default-features = false }

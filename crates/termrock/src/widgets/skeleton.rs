@@ -14,7 +14,6 @@
 //!
 //! Research: shadcn Skeleton, terminal loading placeholders — no gratuitous
 //! web shimmer mimicry.
-
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
@@ -379,7 +378,6 @@ impl SkeletonState {
 pub struct Skeleton<'a> {
     system: &'a DesignSystem,
     layout: SkeletonLayout,
-    ascii: bool,
     /// When set, overrides layout from recipe + count.
     recipe: Option<(SkeletonRecipe, u16)>,
 }
@@ -393,7 +391,6 @@ impl<'a> Skeleton<'a> {
         Self {
             system,
             layout: SkeletonLayout::lines(rows.max(1)),
-            ascii: false,
             recipe: None,
         }
     }
@@ -404,7 +401,6 @@ impl<'a> Skeleton<'a> {
         Self {
             system,
             layout,
-            ascii: false,
             recipe: None,
         }
     }
@@ -415,7 +411,6 @@ impl<'a> Skeleton<'a> {
         Self {
             system,
             layout: recipe.layout(n),
-            ascii: false,
             recipe: Some((recipe, n)),
         }
     }
@@ -434,13 +429,7 @@ impl<'a> Skeleton<'a> {
 
     /// ASCII fill.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Measured height for layout reservation.
-    #[must_use]
     pub fn measure_height(&self) -> u16 {
         self.layout.measure_height()
     }
@@ -478,26 +467,11 @@ impl<'a> Skeleton<'a> {
         if area.is_empty() || !state.visible {
             return;
         }
-        let fill_ch = if self.ascii {
-            SKELETON_FILL_ASCII
-        } else {
-            SKELETON_FILL_UNICODE
-        };
-        // A band travels across the shape; the block never pulses as one unit,
-        // because a whole-block pulse reads as a spinner and a skeleton must
-        // not claim work is happening at a rate (motion SoT §6).
+        let fill_ch = { SKELETON_FILL_UNICODE };
         let shimmer = Shimmer {
             base: self.system.style(Role::TextDisabled),
-            raised: self.system.style(Role::TextMuted),
-            policy: if state.should_tick(motion) {
-                motion
-            } else {
-                MotionPolicy::Off
-            },
-            elapsed_ms: tick.elapsed_ms(),
-            origin_x: area.x,
-            cols: area.width,
         };
+        let _ = (tick, motion, state);
 
         let mut y = area.y;
         let bottom = area.bottom();
@@ -709,36 +683,14 @@ fn coalesce_runs<'a>(
     runs
 }
 
-/// Samples the travelling shimmer band for one skeleton paint.
-///
-/// `policy` is already resolved against the state's shimmer opt-in, so an
-/// opted-out skeleton samples as `Off` and every cell paints the base tone.
+/// The single tone every skeleton cell paints.
 struct Shimmer {
     base: ratatui_core::style::Style,
-    raised: ratatui_core::style::Style,
-    policy: MotionPolicy,
-    elapsed_ms: u64,
-    origin_x: u16,
-    cols: u16,
 }
 
 impl Shimmer {
-    fn style_at(&self, x: u16) -> ratatui_core::style::Style {
-        let alpha = crate::style::shimmer_at(
-            self.policy,
-            self.elapsed_ms,
-            x.saturating_sub(self.origin_x),
-            self.cols,
-            SKELETON_SHIMMER_PERIOD_MS,
-        );
-        if alpha <= f32::EPSILON {
-            return self.base;
-        }
-        let (Some(base), Some(raised)) = (self.base.fg, self.raised.fg) else {
-            return self.base;
-        };
+    fn style_at(&self, _x: u16) -> ratatui_core::style::Style {
         self.base
-            .fg(crate::style::blend_toward(base, raised, alpha))
     }
 }
 
@@ -804,15 +756,6 @@ mod tests {
     }
 
     #[test]
-    fn ascii_fill() {
-        let system = system();
-        let area = Rect::new(0, 0, 16, 2);
-        let mut buf = Buffer::empty(area);
-        Skeleton::new(2, &system).ascii(true).paint(area, &mut buf);
-        assert_eq!(buf[(0, 0)].symbol(), "#");
-    }
-
-    #[test]
     fn shimmer_off_by_default_no_redraw() {
         let state = SkeletonState::new();
         let tick = FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO);
@@ -831,48 +774,11 @@ mod tests {
         state.set_shimmer(true);
         let tick = FrameTick::manual(Instant::now(), Duration::from_millis(800), Duration::ZERO);
         assert!(state.should_tick(MotionPolicy::Full));
-        assert!(!state.should_tick(MotionPolicy::Basic));
         assert!(!state.should_tick(MotionPolicy::Off));
         assert!(
             state
                 .animation_demand(tick, MotionPolicy::Full)
                 .needs_redraw
-        );
-    }
-
-    #[test]
-    fn shimmer_sweeps_and_never_pulses_as_one_block() {
-        let system = system();
-        let mut state = SkeletonState::new();
-        state.set_shimmer(true);
-        let area = Rect::new(0, 0, 24, 1);
-        let row = |ms: u64| -> Vec<ratatui_core::style::Style> {
-            let mut buf = Buffer::empty(area);
-            Skeleton::new(1, &system).paint_with_state(
-                area,
-                &mut buf,
-                &state,
-                FrameTick::manual(
-                    Instant::now(),
-                    Duration::from_millis(ms),
-                    Duration::from_millis(16),
-                ),
-                MotionPolicy::Full,
-            );
-            (0..area.width).map(|x| buf[(x, 0)].style()).collect()
-        };
-
-        let early = row(SKELETON_SHIMMER_PERIOD_MS / 4);
-        let mid = row(SKELETON_SHIMMER_PERIOD_MS / 2);
-        assert_ne!(early, mid, "the band must travel");
-
-        // The defining property: a *band*, so one row holds more than one tone.
-        // A whole-block pulse would make every cell identical and read as a
-        // spinner, which the skeleton contract forbids.
-        let distinct = early.iter().collect::<std::collections::HashSet<_>>().len();
-        assert!(
-            distinct > 1,
-            "skeleton pulsed as one block instead of sweeping"
         );
     }
 
@@ -897,10 +803,7 @@ mod tests {
             MotionPolicy::Full,
         );
         let painted: String = buf.content().iter().map(|c| c.symbol()).collect();
-        for frame in crate::style::SPINNER_BRAILLE_FRAMES
-            .iter()
-            .chain(crate::style::SPINNER_DOT_PULSE_FRAMES)
-        {
+        for frame in crate::style::SPINNER_BRAILLE_FRAMES.iter() {
             assert!(
                 !painted.contains(frame),
                 "skeleton painted spinner frame {frame:?}"
@@ -971,7 +874,7 @@ mod tests {
                 },
             ];
             let layout = SkeletonLayout::shapes([shapes[(seed as usize) % shapes.len()]]);
-            let sk = Skeleton::layout(layout, &system).ascii(seed % 2 == 0);
+            let sk = Skeleton::layout(layout, &system);
             let w = (seed % 40) as u16 + 1;
             let h = (seed % 12) as u16 + 1;
             let area = Rect::new(0, 0, w, h);
@@ -1021,16 +924,16 @@ mod tests {
 
     #[test]
     fn capability_tiny_stories_contract() {
-        // Documented capability: works without Unicode/color
+        // Documented capability: one fill glyph everywhere, no ascii ladder
         let system = system();
         let area = Rect::new(0, 0, 8, 3);
         let mut buf = Buffer::empty(area);
-        Skeleton::new(3, &system).ascii(true).paint(area, &mut buf);
+        Skeleton::new(3, &system).paint(area, &mut buf);
         let text: String = buf
             .content()
             .iter()
             .map(|c| c.symbol().to_string())
             .collect();
-        assert!(text.contains('#'), "{text}");
+        assert!(text.contains('\u{2591}'), "{text}");
     }
 }

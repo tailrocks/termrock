@@ -1,0 +1,50 @@
+ ▪  TablePro  Production  ◆ production  acme_prod › public  safe                                                                     truecolor · 160×50  ? help
+
+ ▎≡ Query 1 ×   ▎T orders ×                                                                                                                                 +
+ ────────────────━━━━━━━━━━━───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ ╭─ Explorer ───────────────── public ─╮ ╭─ public › orders ──────────────────────────────────────────────────────────────────────────────────────── 14 cols ─╮
+ │                                     │ │  ▎Data   ▎Structure                                                                                                │
+ │ ▎ Filter objects                    │ │  ─━━━━━─────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+ │ ▎▾ D acme_prod                      │ │                                                                                                                    │
+ │ ▎  ▾ S public                       │ │   match all ▾  ▎status = 'pending' ×   ▎+ Add filter                                                               │
+ │ ▎    ▾ Tables                    7  │ │                                                                                                                    │
+ │ ▎      ▸ T organizations     1.2 k  │ │   ‹1      order_number  customer_id                           organization_id                       status ∇  9›   │
+ │ ▎      ▸ T customers        48.9 k  │ │  ▎    1          10001  1b3a6759-b804-4ed8-b95a-9b742856481→  a1cc5725-426b-4be8-b1d5-b4c2d5a36aa→  pending      ┃ │
+ │ ▎      ▸ T products            312  │ │  ▎    2          10002  64e6f4de-3e02-4ca0-9a5a-c2456513255→  45e4f51f-21b8-4d1a-bf0a-f43208da892→  pending      ┃ │
+ │ ▎      ▸ T orders            1.2 M  │ │  ▎    3          10003  32143a01-1da3-4ac1-b997-7c607525437→  216371dc-bcdb-491e-8162-5d0cc6d4df3→  pending      ┃ │
+ │ ▎      ▸ T order_items       3.8 M  │ │  ▎    4          10008  fb78dd25-a96f-4296-b51a-61c3440148c→  e420b1cb-f102-48d9-9449-cc74d87ca6b→  pending      │ │
+ │ ▎      ▸ T payments          1.2 M  │ │  ▎    5          10009  dd2c444c-7d3a-4a51-94f3-9e11c0218d6→  cbc419eb-5897-4d5d-84be-5b4e319a287→  pending      │ │
+ │ ▎      ▸ T subscriptions     1.1 k  │ │  ▎    6          10016  e0ada9f0-d147-4112-8007-32d482f763e→  856eb1ff-ef23-4b8b-b3e6-18c43bcce08→  pending      │ │
+ │ ▎    ▸ Views                     2  │ │  ▎    7          10017  b6d7e92a-e7c9-49f9-9025-5c684f35e13→  c180d977-7033-43c3-9a45-60779d6c73e→  pending      │ │
+ │ ▎    ▸ Functions                 1  │ │  ▎    8          10019  33ba912f-50d1-46c2-8879-fed0e88c032→  e20af405-1eec-458e-bc5b-86fa0b0d0c1→  pending      │ │
+ │ ▎    ▸ Sequences                 1  │ │  ▎    9          10025  2a817425-9c74-4067-ab9e-90fbe5c51c0→  d996d5c1-c0bd-4756-b097-0c45666fd5f→  pending      │ │
+ │ ▎  ▸ S analytics                    │ │  ▎   10          10029  96788054-d189-4781-bf02-c11236d1bc3→  96d494e2-5a1f-40bc-9417-d0b50fa931a→  pending      │ │
+ │ ▎  ▸ S audit                        │ │  ▎   11          10031  29133d87-5162-4dbe-a534-5f8a93fd6f8→  b5ef3cdf-d4e1-4a95-bbd6-db1708c5160→  pending      │ │
+ │                                     │ │  ▎   12          10033  f936ac92-9fc2-4e6b-9a33-aac1b78bc2b→  9ba3e636-bf30-41c0-8a70-5e692c00d1e→  pending      │ │
+ │                                     │ │  ▎   13          10040  14075dfb-fe9d-49c8-9223-a642b580a24→  ca9a3ac6-98b7-4e4a-8de8-29c6d1a04db→  pending      │ │
+ │                                     │ │  ▎   14          10041  c2244d61-d50f-4efe-bb03-bfc5a011cee→  dc0b4dcd-7bbb-4a73-9800-294e6ec156e→  pending      │ │
+ │                                     │ │  ▎   15          10042  aadffcd7-b527-485f-99c4-0486b007a01→  778238b8-2a2c-4c37-b0a3-b6e2a7a51b3→  pending      │ │
+ │                                     │ │  ▎   16          10048  730e3123-c392-4337-93a8-273d3deacea→  0581d8f3-10f1-450a-8996-2d3d360be7a→  pending      │ │
+ │                                     │ │  ▎   17          10052  77e6ed22-4315-4b26-80a7-6c8ad22a2d7→  302b8bef-1996-4187-b295-880428c76d2→  pending      │ │
+ │                                     │ │  ▎   18          10064  fb3511cd-704d-4b80-8c9a-54b2b55cf97→  a5ef8dce-dd43-4dd2-9a9b-35e35424caf→  pending      │ │
+ │                                     │ │  ▎   19          10077  d288d519-4a36-448b-b46d-3c36faa49f4→  9de52c20-bd5e-487f-8efc-e37563b6e70→  pending      │ │
+ │                                     │ │  ▎   20          10081  8f61c64f-00c0-4b9f-8839-a7531b484fe→  ac7c8125-9365-4e12-8daf-7f2fdc77b1a→  pending      │ │
+ │                                     │ │  ▎   21          10082  67215086-10ba-462a-b643-03f4879104c→  0fa002f2-a491-4fcd-94ae-64f7f811c58→  pending      │ │
+ │                                     │ │  ▎   22          10084  54044c8d-5bb7-4fbf-ad48-d5010c65e4f→  9d69e684-9902-4a77-99b4-a21ef0e7891→  pending      │ │
+ │                                     │ │  ▎   23          10086  dd4df3b2-92a7-4891-9a1e-88ff882e16a→  a8d713e0-d629-43dc-b7f3-9e21516d599→  pending      │ │
+ │                                     │ │  ▎   24          10095  5f1927e7-5ca7-45d7-b2df-38aff739329→  9b91367d-74f0-4767-8ab1-7253f850d1c→  pending      │ │
+ │                                     │ │  ▎   25          10113  dc1ce93d-e513-4a2a-ac52-30bee12d286→  2c91f501-5e31-49e7-955c-1cac00592e4→  pending      │ │
+ │                                     │ │  ▎   26          10120  424ff0c9-51ca-451b-91d1-ed9c500f0df→  5bd292af-da9c-4823-9cff-7eae2d5ae4d→  pending      │ │
+ │                                     │ │  ▎   27          10133  c6b2b625-c56c-4b29-b6f9-2c95860f59d→  48734fa5-c645-4fe4-a451-d1b4890fb01→  pending      │ │
+ │                                     │ │  ▎   28          10134  9e36315f-caa2-4892-a396-e7da58a5cf9→  84954642-a604-41f8-b710-7b483065833→  pending      │ │
+ │                                     │ │  ▎   29          10152  83ee5aad-23f5-4a82-b52f-8b429eff3c7→  170f8b5b-0f41-4b38-b5bf-b1c46b84a6b→  pending      │ │
+ │                                     │ │  ▎   30          10154  f745bd5b-1ad4-45d7-9bb1-7c6f21591fc→  c21facc0-fb82-4326-984a-153a19d0242→  pending      │ │
+ │                                     │ │  ▎   31          10155  8e3b55ec-1465-4d4d-b352-e458e27aee3→  9c03a488-0349-4585-bc8d-919c6da4634→  pending      │ │
+ │                                     │ │  ▎   32          10159  162d67dc-6bca-4479-a662-59ed068674c→  91671570-772a-4205-8563-7dd3de9b8ff→  pending      │ │
+ │                                     │ │  ▎   33          10169  f8f69d3e-32fa-4a39-92c4-7a26c447cce→  b47210dc-b0b7-4dc1-ac44-d1c9a13f1f5→  pending      │ │
+ │                                     │ │  ▎   34          10170  30a60449-9a5d-499e-aa81-1869819c84a→  86fff943-2ee6-4b7c-89f1-966e55c8c03→  pending      │ │
+ │                                     │ │  ▎   35          10171  342b234e-4a87-4a09-8d6a-0d6fec02a1a→  60930a8a-5bcb-43b1-bca6-e126f26e27f→  pending      │ │
+ │                                     │ │   filtered (1) · rows 1–35 of 335 loaded · ~201,559 total · cols 2–5 of 14                                         │
+ ╰─────────────────────────────────────╯ ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+ ↑↓←→ Cell  Enter Edit  s Sort  f Filter  Space Select row  Tab Next                                                                           1 filter applied

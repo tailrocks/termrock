@@ -1,0 +1,37 @@
+---
+title: Customization
+description: Customize TermRock through semantic roles, density, glyph capability, motion, and contrast policy.
+---
+
+Customize the shared design system instead of restyling individual widgets.
+Components consume semantic roles and capability policy from the same source,
+so focus, status, selection, and responsive contraction remain consistent.
+
+## Start from a complete system
+
+```rust
+use termrock::style::{Density, DesignSystem};
+
+let system = DesignSystem::phosphor()
+    .density(Density::Compact)
+    .ascii();
+```
+
+Use `Comfortable` for forms and agent conversations, `Compact` for workspaces,
+and `Dashboard` only where maximum information density is intentional.
+
+## Adapt to capability
+
+- Use ASCII glyph policy when Unicode symbols are unavailable.
+- Preserve non-color markers when reducing the palette or honoring `NO_COLOR`.
+- Pass a motion policy that keeps functional deadlines while reducing decorative
+  transitions.
+- Keep focus and selection distinct; color is reinforcement, not the only cue.
+
+## Customize product language in your application
+
+TermRock roles describe reusable UI meaning. Product names, commands, warning
+copy, permissions, and domain-specific status remain caller-owned inputs.
+
+Continue with [Component API](/docs/components), [Advanced composition](/docs/advanced-composition),
+or [Interaction architecture](/docs/interaction).

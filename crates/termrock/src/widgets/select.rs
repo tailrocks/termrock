@@ -17,14 +17,14 @@
 //! Tiny terminals set [`SelectPresentation::Fullscreen`].
 //!
 //! Research: Radix Select, Huh select, Textual Select, terminal pickers.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
-    layout::{Position, Rect},
-    style::Modifier,
-    widgets::StatefulWidget,
+    layout::{Margin, Position, Rect},
+    style::{Modifier, Style},
+    widgets::{StatefulWidget, Widget},
 };
+use ratatui_widgets::{block::Block, borders::Borders};
 
 use crate::{
     input::{
@@ -34,11 +34,11 @@ use crate::{
         CollectionItem, CollectionOutcome, CollectionState, SemanticNode, SemanticRole,
         SemanticScene, SemanticState, UiIntent,
     },
-    style::{DesignSystem, ListRowVisualState, Role},
-    text::{display_cols, take_display_cols},
+    style::{ControlState, DesignSystem, Glyph, ListRowVisualState, Role, VisualState},
+    text::{display_cols, take_display_cols, truncate_cols},
 };
 
-use super::{Panel, PanelChrome, TextInput, TextInputOutcome, TextInputState, Validation};
+use super::{Surface, SurfaceRecipe, TextInput, TextInputOutcome, TextInputState, Validation};
 
 /// Width under which open list prefers fullscreen.
 pub const SELECT_FULLSCREEN_MAX_WIDTH: u16 = 28;
@@ -463,6 +463,28 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
         out
     }
 
+    fn filtered_collection_items(
+        options: &[SelectOption<Id>],
+        query: &str,
+    ) -> Vec<CollectionItem<Id>> {
+        if query.trim().is_empty() {
+            return Self::collection_items(options);
+        }
+        Self::filter_options(options, query)
+            .into_iter()
+            .filter(|o| o.is_option())
+            .map(|o| CollectionItem::new(o.id.clone(), o.label.clone()).enabled(!o.disabled))
+            .collect()
+    }
+
+    fn current_collection_items(&self, options: &[SelectOption<Id>]) -> Vec<CollectionItem<Id>> {
+        if self.searchable {
+            Self::filtered_collection_items(options, self.search.value())
+        } else {
+            Self::collection_items(options)
+        }
+    }
+
     /// Choose presentation for terminal size.
     #[must_use]
     pub fn presentation_for_bounds(bounds: Rect, force_fullscreen: bool) -> SelectPresentation {
@@ -474,6 +496,41 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
         } else {
             SelectPresentation::Popover
         }
+    }
+
+    /// Cycle the committed value while closed (junie Up/Left Down/Right).
+    fn cycle_closed_value(&mut self, options: &[SelectOption<Id>], delta: i16) -> SelectOutcome<Id>
+    where
+        Id: Clone + PartialEq,
+    {
+        if !self.enabled {
+            return SelectOutcome::Ignored;
+        }
+        let enabled: Vec<Id> = options
+            .iter()
+            .filter(|option| option.is_option() && !option.disabled)
+            .map(|option| option.id.clone())
+            .collect();
+        if enabled.is_empty() {
+            return SelectOutcome::Ignored;
+        }
+        let current = self
+            .value
+            .as_ref()
+            .and_then(|id| enabled.iter().position(|candidate| candidate == id));
+        let next = match current {
+            Some(index) if delta < 0 => index.saturating_sub(1),
+            Some(index) => (index + 1).min(enabled.len() - 1),
+            None if delta < 0 => enabled.len() - 1,
+            None => 0,
+        };
+        let id = enabled[next].clone();
+        if self.value.as_ref() == Some(&id) {
+            return SelectOutcome::Ignored;
+        }
+        self.value = Some(id.clone());
+        self.collection.set_active(Some(id.clone()));
+        SelectOutcome::ValueChanged { id }
     }
 
     /// Open list.
@@ -494,6 +551,7 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
         if self.searchable {
             self.search.set_focused(true);
             self.search.set_enabled(true);
+            self.search.set_editing(true);
         }
         self.focused = true;
         SelectOutcome::Opened { presentation }
@@ -506,6 +564,7 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
         }
         self.presentation = SelectPresentation::Closed;
         self.search.set_focused(false);
+        self.search.set_editing(false);
         let _ = self.search.clear();
         // Restore collection active to value for next open
         self.collection.set_active(self.value.clone());
@@ -520,22 +579,14 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
         self.value = Some(id.clone());
         self.presentation = SelectPresentation::Closed;
         self.search.set_focused(false);
+        self.search.set_editing(false);
         let _ = self.search.clear();
         SelectOutcome::ValueChanged { id }
     }
 
     /// Reconcile after option list changes while open.
     pub fn reconcile_options(&mut self, options: &[SelectOption<Id>]) {
-        let items = if self.searchable && !self.search.value().is_empty() {
-            let filtered = Self::filter_options(options, self.search.value());
-            filtered
-                .into_iter()
-                .filter(|o| o.is_option())
-                .map(|o| CollectionItem::new(o.id.clone(), o.label.clone()).enabled(!o.disabled))
-                .collect()
-        } else {
-            Self::collection_items(options)
-        };
+        let items = self.current_collection_items(options);
         let _ = self.collection.reconcile(&items);
     }
 
@@ -546,7 +597,7 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
         options: &[SelectOption<Id>],
         bounds: Rect,
     ) -> SelectOutcome<Id> {
-        if key.kind == KeyEventKind::Release || !self.enabled {
+        if key.is_release() || !self.enabled {
             return SelectOutcome::Ignored;
         }
 
@@ -571,7 +622,12 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
             {
                 self.open(bounds, options)
             }
-            KeyCode::Down if key.modifiers.is_empty() => self.open(bounds, options),
+            KeyCode::Down | KeyCode::Right if key.modifiers.is_empty() => {
+                self.cycle_closed_value(options, 1)
+            }
+            KeyCode::Up | KeyCode::Left if key.modifiers.is_empty() => {
+                self.cycle_closed_value(options, -1)
+            }
             KeyCode::Esc => SelectOutcome::Ignored,
             // typeahead open + first char
             KeyCode::Char(c)
@@ -643,15 +699,7 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
             }
         }
 
-        let items = if self.searchable && !self.search.value().is_empty() {
-            Self::filter_options(options, self.search.value())
-                .into_iter()
-                .filter(|o| o.is_option())
-                .map(|o| CollectionItem::new(o.id.clone(), o.label.clone()).enabled(!o.disabled))
-                .collect::<Vec<_>>()
-        } else {
-            Self::collection_items(options)
-        };
+        let items = self.current_collection_items(options);
 
         // Page / arrows via collection
         match self.collection.handle_key(key, &items) {
@@ -690,7 +738,7 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
                 }
             }
             other if self.is_open() => {
-                let items = Self::collection_items(options);
+                let items = self.current_collection_items(options);
                 match self.collection.handle_intent(other, &items) {
                     CollectionOutcome::ActiveChanged { to, .. } => {
                         SelectOutcome::HighlightChanged { id: to }
@@ -770,8 +818,8 @@ pub struct Select<'a, Id> {
     system: &'a DesignSystem,
     placeholder: &'a str,
     label: &'a str,
+    help: &'a str,
     validation: Validation<'a>,
-    ascii: bool,
 }
 
 impl<'a, Id> Select<'a, Id> {
@@ -781,10 +829,10 @@ impl<'a, Id> Select<'a, Id> {
         Self {
             options,
             system,
-            placeholder: "Select…",
+            placeholder: "Select",
             label: "",
+            help: "",
             validation: Validation::Valid,
-            ascii: false,
         }
     }
 
@@ -802,17 +850,17 @@ impl<'a, Id> Select<'a, Id> {
         self
     }
 
+    /// Muted help under the trigger (source Select `help`, origin `area.x + 2`).
+    #[must_use]
+    pub const fn help(mut self, help: &'a str) -> Self {
+        self.help = help;
+        self
+    }
+
     /// Validation.
     #[must_use]
     pub const fn validation(mut self, validation: Validation<'a>) -> Self {
         self.validation = validation;
-        self
-    }
-
-    /// ASCII chevrons.
-    #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
         self
     }
 }
@@ -839,59 +887,92 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
         }
 
         let mut y = area.y;
-        let formish = matches!(state.recipe, SelectRecipe::Form) || !self.label.is_empty();
+        let formish = !matches!(state.recipe, SelectRecipe::Compact)
+            && (matches!(state.recipe, SelectRecipe::Form) || !self.label.is_empty());
         if formish && area.height >= 2 && !self.label.is_empty() {
-            let mut style = self.system.style(if state.focused {
-                Role::Focus
+            // Source `Theme::label(focused)`: secondary idle, title when focused.
+            let theme = self.system.junie_theme();
+            let mut style = if !state.enabled {
+                Style::new().fg(theme.text_faint)
+            } else if state.focused || state.is_open() {
+                theme.title()
             } else {
-                Role::Text
-            });
+                theme.secondary()
+            };
             if state.focused {
                 style = style.add_modifier(Modifier::BOLD);
             }
+            // Source Select: label at `area.x + 2` (gutter column stays empty).
             buffer.set_stringn(
-                area.x,
+                area.x.saturating_add(2),
                 y,
-                take_display_cols(self.label, usize::from(area.width)),
-                usize::from(area.width),
+                take_display_cols(self.label, usize::from(area.width.saturating_sub(2))),
+                usize::from(area.width.saturating_sub(2)),
                 style,
             );
             y = y.saturating_add(1);
         }
 
-        let trigger_h = if matches!(state.recipe, SelectRecipe::Compact) {
-            1
-        } else {
-            1
-        };
         let trigger = Rect::new(
             area.x,
             y.min(area.bottom().saturating_sub(1)),
             area.width,
-            trigger_h.min(area.height.saturating_sub(y.saturating_sub(area.y))),
+            1.min(area.height.saturating_sub(y.saturating_sub(area.y))),
         );
         state.trigger = trigger;
         self.paint_trigger(trigger, buffer, state);
 
-        if state.is_open() && !list_area.is_empty() {
-            state.panel = list_area;
-            self.paint_list(list_area, buffer, state);
-        } else {
-            state.panel = Rect::default();
+        // Help sits under the field. Source then paints the popup on top of
+        // the rest of the screen (`place(Below)`), covering the help row.
+        if trigger.y.saturating_add(1) < area.bottom() && !state.is_open() {
+            match self.validation {
+                Validation::Invalid(msg) => {
+                    crate::widgets::field_message::paint_field_message(
+                        buffer,
+                        Rect::new(area.x, trigger.y.saturating_add(1), area.width, 1),
+                        self.system,
+                        crate::widgets::label::DescriptionKind::Error,
+                        msg,
+                    );
+                }
+                _ if !self.help.is_empty() => {
+                    let help_x = area.x.saturating_add(2);
+                    let help_w = area.width.saturating_sub(2);
+                    let help = truncate_cols(
+                        self.help,
+                        usize::from(help_w),
+                        self.system.glyphs.ellipsis(),
+                    );
+                    buffer.set_stringn(
+                        help_x,
+                        trigger.y.saturating_add(1),
+                        help.as_ref(),
+                        usize::from(help_w),
+                        self.system.style(Role::TextMuted),
+                    );
+                }
+                _ => {}
+            }
         }
 
-        // Validation directly under the trigger — not pinned to the bottom
-        // edge, where it drifted away from the field it describes.
-        if area.height >= 3
-            && let Validation::Invalid(msg) = self.validation
-        {
-            crate::widgets::field_message::paint_field_message(
-                buffer,
-                Rect::new(area.x, area.y.saturating_add(2), area.width, 1),
-                self.system,
-                crate::widgets::label::DescriptionKind::Error,
-                msg,
-            );
+        if state.is_open() {
+            let n = self.options.iter().filter(|o| o.is_option()).count() as u16;
+            let h = n.saturating_add(2).min(10);
+            let w = trigger.width.clamp(12, 40);
+            let screen = *buffer.area();
+            let pa = if matches!(state.presentation, SelectPresentation::Fullscreen)
+                && !list_area.is_empty()
+            {
+                list_area
+            } else {
+                place_below(screen, trigger, w, h)
+            };
+            if !pa.is_empty() {
+                state.panel = pa;
+                self.paint_list(pa, buffer, state);
+            }
+        } else {
+            state.panel = Rect::default();
         }
     }
 
@@ -901,11 +982,8 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
             self.paint(area, Rect::default(), buffer, state);
             return;
         }
-        let trigger_h = if !self.label.is_empty() && area.height >= 3 {
-            2
-        } else {
-            1
-        };
+        // Closed select is three rows (label, field, help) unless compact.
+        let trigger_h = closed_select_height(state.recipe, !self.label.is_empty(), area.height);
         let trigger_area = Rect::new(area.x, area.y, area.width, trigger_h.min(area.height));
         let list = Rect::new(
             area.x,
@@ -926,14 +1004,16 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
         // it — the box stopped looking like something you type into at the one
         // moment it mattered.
         let control_state = if !state.enabled {
-            crate::style::ControlState::Disabled
+            ControlState::Disabled
         } else if state.focused || state.is_open() {
-            crate::style::ControlState::Focused
+            ControlState::Focused
         } else {
-            crate::style::ControlState::Default
+            ControlState::Default
         };
-        let recipe = self.system.input_recipe(control_state, invalid);
+        let recipe = self.system.input_recipe(control_state, invalid, false);
         buffer.set_style(area, recipe.fill);
+        // Prompt column is reserved in every state so the value does not shift
+        // when focus arrives. Idle paints ▎ with fg=bg; focus makes it visible.
         if let Some((glyph, style)) = recipe.prompt
             && area.width > 0
         {
@@ -951,48 +1031,66 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
             })
             .unwrap_or(self.placeholder);
 
-        let chev = if self.ascii {
-            if state.is_open() { "^" } else { "v" }
-        } else if state.is_open() {
-            "▴"
-        } else {
-            "▾"
-        };
-        let text_w = area.width.saturating_sub(2);
+        let chev = self
+            .system
+            .glyphs
+            .resolve(if state.is_open() {
+                Glyph::ChevronUp
+            } else {
+                Glyph::ChevronDown
+            })
+            .text;
+        // Source Select: gutter, pad, value, chevron at `right-2`.
+        let text_x = area.x.saturating_add(2).min(area.right());
+        let text_w = area.width.saturating_sub(5);
         let muted = state.value.is_none();
         buffer.set_stringn(
-            area.x,
+            text_x,
             area.y,
             take_display_cols(value_label, usize::from(text_w)),
             usize::from(text_w),
-            self.system.style(if muted {
-                Role::TextMuted
-            } else if state.focused {
-                Role::TextStrong
+            if muted {
+                recipe.placeholder
             } else {
-                Role::Text
-            }),
+                recipe.value
+            },
         );
-        if area.width > 0 {
+        if area.width > 1 {
+            let theme = self.system.junie_theme();
+            let chev_fg = if !state.enabled {
+                theme.disabled
+            } else {
+                theme.text_secondary
+            };
+            let chev_bg = recipe.fill.bg.unwrap_or(theme.field);
             buffer.set_stringn(
-                area.right().saturating_sub(1),
+                area.right().saturating_sub(2),
                 area.y,
                 chev,
                 1,
-                self.system.style(Role::TextMuted),
+                Style::new().fg(chev_fg).bg(chev_bg),
             );
         }
+        apply_field_underline(buffer, area, &recipe);
     }
 
     fn paint_list(&self, area: Rect, buffer: &mut Buffer, state: &mut SelectState<Id>) {
-        let panel = Panel::new(self.system).emphasis(if state.focused {
-            PanelChrome::Focused
+        let popover =
+            matches!(state.presentation, SelectPresentation::Popover) && !state.searchable;
+        let inner = if popover {
+            paint_junie_popup_surface(buffer, area, self.system)
         } else {
-            PanelChrome::Normal
-        });
-        let inner = panel.inner(area);
-        use ratatui_core::widgets::Widget;
-        Widget::render(&panel, area, buffer);
+            let recipe = if state.focused {
+                SurfaceRecipe::OverlayFocused
+            } else {
+                SurfaceRecipe::Overlay
+            };
+            Surface::new(self.system)
+                .recipe(recipe)
+                .bordered(true)
+                .content_inset()
+                .paint(area, buffer)
+        };
         if inner.is_empty() {
             return;
         }
@@ -1002,9 +1100,11 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
             let search_row = Rect::new(inner.x, inner.y, inner.width, 1);
             state.search_region = Some(search_row);
             state.search.set_focused(true);
-            let _ = TextInput::new("", self.system)
-                .placeholder("Filter…")
-                .paint(search_row, buffer, &mut state.search);
+            let _ = TextInput::new("", self.system).placeholder("Filter").paint(
+                search_row,
+                buffer,
+                &mut state.search,
+            );
             list_top = list_top.saturating_add(1);
         }
 
@@ -1017,21 +1117,24 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
         if full_list.is_empty() {
             return;
         }
-        // Reserve the scroll gutter whether or not it is painted, so rows do
-        // not reflow the moment the list grows past its viewport
-        // (plans/022 Step 2).
+        // Source Select popup has no scroll gutter. Reserve one only for
+        // searchable/fullscreen lists.
         let gutter = Rect::new(
             full_list.right().saturating_sub(1),
             full_list.y,
             1,
             full_list.height,
         );
-        let list_area = Rect::new(
-            full_list.x,
-            full_list.y,
-            full_list.width.saturating_sub(1),
-            full_list.height,
-        );
+        let list_area = if popover {
+            full_list
+        } else {
+            Rect::new(
+                full_list.x,
+                full_list.y,
+                full_list.width.saturating_sub(1),
+                full_list.height,
+            )
+        };
         if list_area.is_empty() {
             return;
         }
@@ -1044,11 +1147,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
             };
 
         // Flatten for collection viewport among options only
-        let coll_items: Vec<CollectionItem<Id>> = visible_opts
-            .iter()
-            .filter(|o| o.is_option())
-            .map(|o| CollectionItem::new(o.id.clone(), o.label.clone()).enabled(!o.disabled))
-            .collect();
+        let coll_items = state.current_collection_items(self.options);
         let vp = usize::from(list_area.height).max(1);
         state
             .collection
@@ -1108,46 +1207,33 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
                     let rect = Rect::new(list_area.x, row_y, list_area.width, 1);
                     let is_hi = state.collection.active() == Some(&opt.id);
                     let is_val = state.value.as_ref() == Some(&opt.id);
-                    let recipe = self.system.resolve_list_row(ListRowVisualState {
-                        selected: is_hi,
-                        focused: is_hi && state.focused,
-                        hovered: state.hovered.as_ref() == Some(&opt.id),
-                        enabled: !opt.disabled,
-                        loading: false,
-                        checked: is_val,
-                    });
-                    if recipe.use_fill {
-                        buffer.set_style(rect, recipe.label);
-                    } else if recipe.use_tint {
-                        buffer.set_style(rect, recipe.tint);
-                    }
-                    let mut style = if opt.disabled {
-                        self.system.style(Role::TextDisabled)
-                    } else if is_hi {
-                        recipe.label
-                    } else {
-                        self.system.style(Role::Text)
-                    };
-                    if is_val && !is_hi {
-                        style = self.system.style(Role::TextStrong);
-                    }
-                    let mark = if is_val {
-                        if self.ascii { "*" } else { "✓" }
-                    } else {
-                        " "
-                    };
                     let label = if let Some(desc) = &opt.description {
-                        format!("{mark} {} — {desc}", opt.label)
+                        format!("{} {} {desc}", opt.label, { "—" })
                     } else {
-                        format!("{mark} {}", opt.label)
+                        opt.label.clone()
                     };
-                    buffer.set_stringn(
-                        rect.x,
-                        rect.y,
-                        take_display_cols(&label, usize::from(rect.width)),
-                        usize::from(rect.width),
-                        style,
-                    );
+                    if popover {
+                        paint_junie_select_row(
+                            buffer,
+                            rect,
+                            self.system,
+                            is_hi && state.focused,
+                            is_val,
+                            !opt.disabled,
+                            &label,
+                        );
+                    } else {
+                        let visual = ListRowVisualState {
+                            selected: is_hi,
+                            focused: is_hi && state.focused,
+                            hovered: state.hovered.as_ref() == Some(&opt.id),
+                            enabled: !opt.disabled,
+                            loading: false,
+                            checked: is_val,
+                            ..ListRowVisualState::default()
+                        };
+                        paint_list_anatomy_row(buffer, rect, self.system, visual, is_val, &label);
+                    }
                     if !opt.disabled {
                         state.option_regions.push((opt.id.clone(), rect));
                     }
@@ -1157,15 +1243,17 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
             }
         }
 
-        crate::scroll::paint_scrolled_region(
-            buffer,
-            list_area,
-            gutter,
-            coll_items.len(),
-            vp,
-            u16::try_from(state.collection.offset()).unwrap_or(u16::MAX),
-            self.system,
-        );
+        if !popover {
+            crate::scroll::paint_overflow_scrollbar(
+                buffer,
+                gutter,
+                coll_items.len(),
+                vp,
+                u16::try_from(state.collection.offset()).unwrap_or(u16::MAX),
+                state.focused,
+                self.system,
+            );
+        }
     }
 
     /// Semantic registration for trigger.
@@ -1222,6 +1310,141 @@ impl<Id: Clone + PartialEq + std::fmt::Display> StatefulWidget for Select<'_, Id
 
 // Touch display_cols for measure helpers
 const _: fn(&str) -> usize = display_cols;
+
+/// Closed select occupies three rows (label, field, help) except compact.
+fn closed_select_height(recipe: SelectRecipe, has_label: bool, available: u16) -> u16 {
+    if matches!(recipe, SelectRecipe::Compact) {
+        return 1.min(available);
+    }
+    if has_label && available >= 3 {
+        3
+    } else if available >= 3 {
+        2
+    } else {
+        1.min(available)
+    }
+}
+
+/// Source `ui/popup.rs` `surface()`: elevated fill, focused colour, no bold.
+fn paint_junie_popup_surface(buffer: &mut Buffer, area: Rect, system: &DesignSystem) -> Rect {
+    if area.is_empty() {
+        return area;
+    }
+    let theme = system.junie_theme();
+    buffer.set_style(area, Style::new().bg(theme.surface_elevated));
+    Block::default()
+        .borders(Borders::ALL)
+        .border_style(system.style(Role::BorderFocused).bg(theme.surface_elevated))
+        .border_set(system.border_set())
+        .render(area, buffer);
+    area.inner(Margin::new(1, 1))
+}
+
+/// Source Select popup row: `▎› label` (gutter + selected marker + text).
+fn paint_junie_select_row(
+    buffer: &mut Buffer,
+    row: Rect,
+    system: &DesignSystem,
+    focused: bool,
+    selected: bool,
+    enabled: bool,
+    label: &str,
+) {
+    if row.is_empty() {
+        return;
+    }
+    let theme = system.junie_theme();
+    let vis = VisualState {
+        focused,
+        selected,
+        disabled: !enabled,
+        ..VisualState::default()
+    };
+    let st = system.row(vis, theme.surface_elevated);
+    buffer.set_style(row, st);
+    buffer.set_stringn(
+        row.x,
+        row.y,
+        system.glyphs.selection_gutter(),
+        1,
+        system.gutter(vis, st.bg.unwrap_or(theme.surface_elevated), false),
+    );
+    if selected && row.width > 1 {
+        buffer.set_stringn(row.x.saturating_add(1), row.y, "›", 1, st.fg(theme.accent));
+    }
+    let text_x = row.x.saturating_add(3).min(row.right());
+    let text_w = row.right().saturating_sub(text_x);
+    if text_w > 0 {
+        buffer.set_stringn(
+            text_x,
+            row.y,
+            take_display_cols(label, usize::from(text_w)),
+            usize::from(text_w),
+            st,
+        );
+    }
+}
+
+/// Source `ui/popup.rs` `place(..., Placement::Below)`.
+fn place_below(screen: Rect, anchor: Rect, width: u16, height: u16) -> Rect {
+    let width = width.min(screen.width).max(1);
+    let height = height.min(screen.height).max(1);
+    let below = anchor.bottom();
+    let room_below = screen.bottom().saturating_sub(below);
+    let y = if room_below >= height {
+        below
+    } else if anchor.y >= screen.y.saturating_add(height) {
+        anchor.y.saturating_sub(height)
+    } else {
+        screen.bottom().saturating_sub(height)
+    };
+    let x = anchor
+        .x
+        .min(screen.right().saturating_sub(width))
+        .max(screen.x);
+    Rect::new(x, y, width, height)
+}
+
+fn apply_field_underline(buffer: &mut Buffer, field: Rect, recipe: &crate::style::InputRecipe) {
+    if field.is_empty() {
+        return;
+    }
+    let mut underline = Style::new().add_modifier(recipe.border.add_modifier);
+    if let Some(color) = recipe.border.underline_color {
+        underline = underline.underline_color(color);
+    }
+    buffer.set_style(field, underline);
+}
+
+/// List anatomy: `▎` in col0 (keyboard), `›` in col1 (chosen). Never `› ` as a gutter.
+fn paint_list_anatomy_row(
+    buffer: &mut Buffer,
+    row: Rect,
+    system: &DesignSystem,
+    visual: ListRowVisualState,
+    chosen: bool,
+    label: &str,
+) {
+    if row.is_empty() {
+        return;
+    }
+    let chrome = super::row_chrome::RowChrome::resolve(system, visual);
+    let recipe = system.resolve_list_row(visual);
+    let style = chrome.label_style(recipe.label);
+    chrome.paint(buffer, row);
+    let _ = chosen;
+    let text_x = row.x.saturating_add(3).min(row.right());
+    let text_w = row.right().saturating_sub(text_x);
+    if text_w > 0 {
+        buffer.set_stringn(
+            text_x,
+            row.y,
+            take_display_cols(label, usize::from(text_w)),
+            usize::from(text_w),
+            style,
+        );
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -1329,6 +1552,28 @@ mod tests {
     }
 
     #[test]
+    fn semantic_navigation_stays_inside_filtered_options() {
+        let opts = sample_options();
+        let bounds = Rect::new(0, 0, 80, 24);
+        let mut state = SelectState::new().with_searchable(true);
+        state.set_focused(true);
+        let _ = state.open(bounds, &opts);
+        let _ = state.search.insert_str("car");
+        state.reconcile_options(&opts);
+
+        assert_eq!(state.highlight(), Some(&"carrot"));
+        assert_eq!(
+            state.handle_intent(
+                UiIntent::Move(crate::interaction::NavigationMove::Next),
+                &opts,
+                bounds,
+            ),
+            SelectOutcome::Ignored
+        );
+        assert_eq!(state.highlight(), Some(&"carrot"));
+    }
+
+    #[test]
     fn tiny_bounds_fullscreen() {
         let tiny = Rect::new(0, 0, 20, 8);
         assert_eq!(
@@ -1369,7 +1614,7 @@ mod tests {
 
     #[test]
     fn mouse_select_option() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let opts = sample_options();
         let mut state = SelectState::new();
         state.set_focused(true);
@@ -1411,6 +1656,67 @@ mod tests {
                 .paint_stacked(area, &mut buf, &mut state);
             assert!(!state.trigger.is_empty());
         }
+    }
+
+    #[test]
+    fn focused_trigger_reserves_prompt_before_value() {
+        let system = DesignSystem::default();
+        let opts = sample_options();
+        let mut state = SelectState::new().with_value("apple");
+        state.set_focused(true);
+        let area = Rect::new(0, 0, 16, 1);
+        let mut buffer = Buffer::empty(area);
+
+        Select::new(&opts, &system).paint(area, Rect::default(), &mut buffer, &mut state);
+
+        assert_ne!(buffer[(area.x, area.y)].symbol(), "A");
+        assert_eq!(buffer[(area.x + 1, area.y)].symbol(), " ");
+        assert_eq!(buffer[(area.x + 2, area.y)].symbol(), "A");
+    }
+
+    #[test]
+    fn form_label_and_value_use_source_inset() {
+        let system = DesignSystem::junie();
+        let opts = sample_options();
+        let mut state = SelectState::new()
+            .with_recipe(SelectRecipe::Form)
+            .with_value("apple");
+        let area = Rect::new(0, 0, 24, 3);
+        let mut buffer = Buffer::empty(area);
+        Select::new(&opts, &system)
+            .label("Fruit")
+            .help("Applies to the next query")
+            .paint(area, Rect::default(), &mut buffer, &mut state);
+        assert_eq!(buffer[(0, 0)].symbol(), " ");
+        assert_eq!(buffer[(2, 0)].symbol(), "F");
+        assert_eq!(buffer[(2, 1)].symbol(), "A");
+        assert_eq!(buffer[(area.right() - 2, 1)].symbol(), "▾");
+        assert_eq!(buffer[(2, 2)].symbol(), "A");
+        assert_eq!(buffer[(3, 2)].symbol(), "p");
+    }
+
+    #[test]
+    fn validation_does_not_move_the_open_menu() {
+        let system = DesignSystem::default();
+        let opts = sample_options();
+        let area = Rect::new(0, 0, 24, 10);
+
+        let mut valid = SelectState::new();
+        valid.set_focused(true);
+        let _ = valid.open(area, &opts);
+        let mut valid_buffer = Buffer::empty(area);
+        Select::new(&opts, &system).paint_stacked(area, &mut valid_buffer, &mut valid);
+
+        let mut invalid = SelectState::new();
+        invalid.set_focused(true);
+        let _ = invalid.open(area, &opts);
+        let mut invalid_buffer = Buffer::empty(area);
+        Select::new(&opts, &system)
+            .validation(Validation::Invalid("required"))
+            .paint_stacked(area, &mut invalid_buffer, &mut invalid);
+
+        assert_eq!(valid.panel.y, invalid.panel.y);
+        assert_eq!(valid.panel.height, invalid.panel.height);
     }
 
     #[test]
@@ -1474,5 +1780,163 @@ mod tests {
             &state,
         );
         assert!(scene.get(&"s").is_some());
+    }
+
+    fn row_text(buffer: &Buffer, y: u16, width: u16) -> String {
+        (0..width)
+            .map(|x| buffer[(x, y)].symbol().to_string())
+            .collect()
+    }
+
+    #[test]
+    fn closed_select_is_three_rows_with_disclosure() {
+        let system = DesignSystem::default();
+        let opts = sample_options();
+        let mut state = SelectState::new()
+            .with_recipe(SelectRecipe::Form)
+            .with_value("apple");
+        state.set_focused(true);
+        let area = Rect::new(0, 0, 24, 3);
+        let mut buffer = Buffer::empty(area);
+        Select::new(&opts, &system)
+            .label("Fruit")
+            .paint_stacked(area, &mut buffer, &mut state);
+        assert_eq!(state.trigger.height, 1);
+        assert_eq!(state.trigger.y, 1);
+        let field = row_text(&buffer, 1, area.width);
+        assert!(
+            field.contains('▾') || field.contains(system.glyphs.resolve(Glyph::ChevronDown).text),
+            "closed disclosure: {field:?}"
+        );
+        assert_eq!(
+            buffer[(state.trigger.x, state.trigger.y)].symbol(),
+            system.glyphs.selection_gutter()
+        );
+        assert!(
+            !buffer[(state.trigger.x + 1, state.trigger.y)]
+                .style()
+                .add_modifier
+                .contains(Modifier::UNDERLINED),
+            "closed focused select is not editing"
+        );
+    }
+
+    #[test]
+    fn closed_select_down_cycles_value_without_opening() {
+        let opts = sample_options();
+        let mut state = SelectState::new().with_value("apple");
+        state.set_focused(true);
+        let bounds = Rect::new(0, 0, 80, 24);
+        assert_eq!(
+            state.handle_key(
+                KeyEvent::new(KeyCode::Down, KeyModifiers::NONE),
+                &opts,
+                bounds
+            ),
+            SelectOutcome::ValueChanged { id: "banana" }
+        );
+        assert!(!state.is_open());
+        assert_eq!(state.value(), Some(&"banana"));
+        assert_eq!(
+            state.handle_key(
+                KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+                &opts,
+                bounds
+            ),
+            SelectOutcome::Opened {
+                presentation: SelectPresentation::Popover
+            }
+        );
+        assert!(state.is_open());
+    }
+
+    #[test]
+    fn overflowing_select_uses_overflow_thumb() {
+        let system = DesignSystem::default();
+        let opts: Vec<SelectOption<usize>> = (0..24)
+            .map(|i| SelectOption::option(i, format!("opt-{i:02}")))
+            .collect();
+        let mut state = SelectState::new().with_value(0);
+        state.set_focused(true);
+        let area = Rect::new(0, 0, 32, 14);
+        let _ = state.open(area, &opts);
+        // Source popover has no scroll gutter. Thumb lives on fullscreen lists.
+        state.set_presentation(SelectPresentation::Fullscreen);
+        let mut buffer = Buffer::empty(area);
+        Select::new(&opts, &system).paint_stacked(area, &mut buffer, &mut state);
+        let thumb = crate::scroll::ScrollbarStyle::Line.vertical_thumb();
+        let mut sb_x = None;
+        for y in 0..area.height {
+            for x in 0..area.width {
+                if buffer[(x, y)].symbol() == thumb {
+                    sb_x = Some(x);
+                }
+            }
+        }
+        let sb_x = sb_x.expect("overflowing select paints a thumb");
+        let track = crate::scroll::SCROLLBAR_TRACK;
+        let track_ys: Vec<u16> = (1..area.height.saturating_sub(1))
+            .filter(|y| {
+                let symbol = buffer[(sb_x, *y)].symbol();
+                symbol == thumb || symbol == track
+            })
+            .collect();
+        let viewport = track_ys.len();
+        let (start, len) = crate::scroll::overflow_thumb(24, viewport, viewport, 0)
+            .expect("24 options overflow the list viewport");
+        let thumbs: Vec<u16> = track_ys
+            .iter()
+            .copied()
+            .filter(|y| buffer[(sb_x, *y)].symbol() == thumb)
+            .collect();
+        assert_eq!(thumbs.len(), len);
+        assert_eq!(thumbs[0], track_ys[start]);
+    }
+
+    #[test]
+    fn open_popup_uses_list_anatomy_and_closes_outside() {
+        let system = DesignSystem::default();
+        let opts = sample_options();
+        let mut state = SelectState::new().with_value("apple");
+        state.set_focused(true);
+        let area = Rect::new(0, 0, 32, 14);
+        let mut buffer = Buffer::empty(area);
+        let _ = state.open(area, &opts);
+        Select::new(&opts, &system).paint_stacked(area, &mut buffer, &mut state);
+        assert!(!state.option_regions.is_empty());
+        let (_, rect) = state
+            .option_regions
+            .iter()
+            .find(|(id, _)| *id == "apple")
+            .cloned()
+            .expect("chosen option painted");
+        assert_eq!(
+            buffer[(rect.x, rect.y)].symbol(),
+            system.glyphs.selection_gutter(),
+            "col0 is the focus bar"
+        );
+        assert_eq!(
+            buffer[(rect.x + 1, rect.y)].symbol(),
+            "›",
+            "committed value is selected marker ›"
+        );
+        let field = row_text(&buffer, state.trigger.y, area.width);
+        assert!(
+            field.contains('▴') || field.contains(system.glyphs.resolve(Glyph::ChevronUp).text),
+            "open disclosure: {field:?}"
+        );
+        assert_eq!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(80, 40),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &opts,
+                area,
+            ),
+            SelectOutcome::Closed
+        );
+        assert!(!state.is_open());
     }
 }

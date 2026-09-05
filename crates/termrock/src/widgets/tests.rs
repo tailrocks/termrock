@@ -8,7 +8,7 @@ use ratatui_core::{
 };
 
 use super::*;
-use crate::style::{Density, DesignSystem, Role, RolePalette};
+use crate::style::{DesignSystem, Role, RolePalette};
 
 #[cfg(feature = "serde")]
 #[test]
@@ -33,8 +33,8 @@ fn areas() -> [Rect; 5] {
 #[test]
 fn leaf_widgets_render_at_tiny_and_off_origin_areas() {
     let theme = RolePalette::default();
-    let system = crate::style::DesignSystem::from_palette(theme.clone());
-    let panel_tokens = DesignSystem::new(theme.clone(), Density::default());
+    let system = crate::style::DesignSystem::new(theme.clone());
+    let panel_tokens = DesignSystem::new(theme.clone());
     let panel = Panel::new(&panel_tokens)
         .title("Title")
         .emphasis(PanelChrome::Focused);
@@ -46,7 +46,7 @@ fn leaf_widgets_render_at_tiny_and_off_origin_areas() {
     }];
     let hint_bar = HintBar::new(&hints, &system).separator(" · ");
     let toast = Toast::new(&system, "Updated", Severity::Success).anchor(Anchor::TopRight);
-    let backdrop = Backdrop::new().symbol(' ').style(Style::new().dim());
+    let backdrop = Backdrop::new(&system);
     for area in areas() {
         let mut buffer = Buffer::empty(Rect::new(0, 0, 100, 30));
         (&panel).render(area, &mut buffer);
@@ -57,48 +57,33 @@ fn leaf_widgets_render_at_tiny_and_off_origin_areas() {
 }
 
 #[test]
-fn focused_panel_preserves_plain_border_glyphs() {
+fn focused_quiet_panel_remains_borderless() {
     let theme = RolePalette::default();
-    let system = crate::style::DesignSystem::from_palette(theme.clone());
-    let panel_tokens = DesignSystem::new(theme.clone(), Density::default());
+    let system = crate::style::DesignSystem::new(theme.clone());
+    let panel_tokens = DesignSystem::new(theme.clone());
     let area = Rect::new(0, 0, 10, 3);
     let mut buffer = Buffer::empty(area);
     let panel = Panel::new(&panel_tokens).emphasis(PanelChrome::Focused);
     (&panel).render(area, &mut buffer);
-    assert_panel_border(&buffer, area, theme.style(Role::BorderFocused));
+    assert_quiet_panel_has_no_box(&buffer, area);
 }
 
 #[test]
-fn inactive_panel_preserves_plain_gray_border() {
+fn inactive_quiet_panel_remains_borderless() {
     let theme = RolePalette::default();
-    let system = crate::style::DesignSystem::from_palette(theme.clone());
-    let panel_tokens = DesignSystem::new(theme.clone(), Density::default());
+    let system = crate::style::DesignSystem::new(theme.clone());
+    let panel_tokens = DesignSystem::new(theme.clone());
     let area = Rect::new(0, 0, 10, 3);
     let mut buffer = Buffer::empty(area);
     Panel::new(&panel_tokens).render(area, &mut buffer);
-    assert_panel_border(&buffer, area, theme.style(Role::Border));
+    assert_quiet_panel_has_no_box(&buffer, area);
 }
 
-fn assert_panel_border(buffer: &Buffer, area: Rect, expected: Style) {
-    assert_eq!(buffer[(area.left(), area.top())].symbol(), "\u{250c}");
-    assert_eq!(buffer[(area.right() - 1, area.top())].symbol(), "┐");
-    assert_eq!(buffer[(area.left(), area.bottom() - 1)].symbol(), "└");
-    assert_eq!(buffer[(area.right() - 1, area.bottom() - 1)].symbol(), "┘");
-    for x in area.left() + 1..area.right() - 1 {
-        assert_eq!(buffer[(x, area.top())].symbol(), "─");
-        assert_eq!(buffer[(x, area.bottom() - 1)].symbol(), "─");
-    }
-    for y in area.top() + 1..area.bottom() - 1 {
-        assert_eq!(buffer[(area.left(), y)].symbol(), "│");
-        assert_eq!(buffer[(area.right() - 1, y)].symbol(), "│");
-    }
-    for x in area.left()..area.right() {
-        assert_eq!(buffer[(x, area.top())].fg, expected.fg.unwrap());
-        assert_eq!(buffer[(x, area.bottom() - 1)].fg, expected.fg.unwrap());
-    }
-    for y in area.top() + 1..area.bottom() - 1 {
-        assert_eq!(buffer[(area.left(), y)].fg, expected.fg.unwrap());
-        assert_eq!(buffer[(area.right() - 1, y)].fg, expected.fg.unwrap());
+fn assert_quiet_panel_has_no_box(buffer: &Buffer, area: Rect) {
+    for y in area.top()..area.bottom() {
+        for x in area.left()..area.right() {
+            assert_eq!(buffer[(x, y)].symbol(), " ");
+        }
     }
 }
 
@@ -115,7 +100,6 @@ fn stable_ids_survive_reordering() {
             badge: None,
             shortcut: None,
             actions: None,
-            trailing: None,
             custom: None,
             role: RowRole::Item,
             enabled: true,
@@ -130,7 +114,6 @@ fn stable_ids_survive_reordering() {
             badge: None,
             shortcut: None,
             actions: None,
-            trailing: None,
             custom: None,
             role: RowRole::Item,
             enabled: true,
@@ -180,7 +163,6 @@ fn disabled_and_separator_rows_have_no_hit_regions() {
             badge: None,
             shortcut: None,
             actions: None,
-            trailing: None,
             custom: None,
             role: RowRole::Item,
             enabled: false,
@@ -195,7 +177,6 @@ fn disabled_and_separator_rows_have_no_hit_regions() {
             badge: None,
             shortcut: None,
             actions: None,
-            trailing: None,
             custom: None,
             role: RowRole::Separator,
             enabled: true,
@@ -210,7 +191,6 @@ fn disabled_and_separator_rows_have_no_hit_regions() {
             badge: None,
             shortcut: None,
             actions: None,
-            trailing: None,
             custom: None,
             role: RowRole::Item,
             enabled: true,
@@ -248,19 +228,19 @@ fn text_input_edits_extended_graphemes_atomically() {
 #[test]
 fn action_and_status_regions_match_painted_geometry() {
     let theme = RolePalette::default();
-    let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let system = crate::style::DesignSystem::new(theme.clone());
     let actions = [
         Action {
             id: "save",
             label: "Save",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Secondary,
         },
         Action {
             id: "cancel",
             label: "Cancel",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Secondary,
         },
     ];
     let mut action_state = ActionBarState::default();
@@ -286,7 +266,7 @@ fn action_and_status_regions_match_painted_geometry() {
 }
 
 #[test]
-fn viewport_clamps_scroll_and_paints_a_full_cell_thumb() {
+fn viewport_clamps_scroll_and_paints_an_overflow_thumb() {
     let lines = [
         Line::from("zero"),
         Line::from("one"),
@@ -294,7 +274,7 @@ fn viewport_clamps_scroll_and_paints_a_full_cell_thumb() {
         Line::from("three"),
     ];
     let theme = RolePalette::default();
-    let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let system = crate::style::DesignSystem::new(theme.clone());
     let viewport = Viewport::new(&lines, &system).title(" Log ");
     let area = Rect::new(0, 0, 12, 4);
     let mut buffer = Buffer::empty(area);
@@ -308,7 +288,9 @@ fn viewport_clamps_scroll_and_paints_a_full_cell_thumb() {
 
     assert_eq!(state.scroll_y, 1);
     assert_eq!(buffer[(1, 1)].symbol(), "o");
-    assert_eq!(buffer[(11, 1)].symbol(), "·");
+    let (start, len) = crate::scroll::overflow_thumb(4, 2, 2, 1).expect("4 lines overflow 2");
+    assert_eq!((start, len), (1, 1));
+    assert_eq!(buffer[(11, 1)].symbol(), "│");
     assert_eq!(buffer[(11, 2)].symbol(), "┃");
     assert_eq!(buffer[(0, 0)].fg, theme.style(Role::Border).fg.unwrap());
 }
@@ -317,7 +299,7 @@ fn viewport_clamps_scroll_and_paints_a_full_cell_thumb() {
 fn viewport_emphasis_focused_uses_border_focused_role() {
     let lines = [Line::from("row")];
     let theme = RolePalette::default();
-    let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let system = crate::style::DesignSystem::new(theme.clone());
     let viewport = Viewport::new(&lines, &system)
         .title("Active")
         .emphasis(PanelChrome::Focused);
@@ -343,14 +325,13 @@ fn theme_override_reaches_active_tab_cells() {
     use ratatui_core::style::Color;
 
     let theme = RolePalette::default().with_role(Role::TabActive, Style::new().bg(Color::Blue));
-    let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let system = crate::style::DesignSystem::new(theme.clone());
     let tabs = [Tab {
         id: "active",
         label: "Active",
         glyph: None,
         badge: None,
         status: TabStatus::None,
-        active: true,
         enabled: true,
         closable: false,
     }];
@@ -361,14 +342,18 @@ fn theme_override_reaches_active_tab_cells() {
 
     (&widget).render(area, &mut buffer, &mut state);
 
-    assert_eq!(buffer[(0, 0)].bg, Color::Blue);
+    assert_eq!(
+        buffer[(1, 1)].fg,
+        system.junie_theme().accent,
+        "active document tab states itself with the accent rule, not a fill"
+    );
 }
 
 #[test]
 fn owned_panel_render_matches_borrowed_render() {
     let theme = RolePalette::default();
-    let system = crate::style::DesignSystem::from_palette(theme.clone());
-    let panel_tokens = DesignSystem::new(theme.clone(), Density::default());
+    let system = crate::style::DesignSystem::new(theme.clone());
+    let panel_tokens = DesignSystem::new(theme.clone());
     let area = Rect::new(0, 0, 12, 3);
     let mut owned = Buffer::empty(area);
     let mut borrowed = Buffer::empty(area);

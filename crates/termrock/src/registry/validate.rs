@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Contract validation (design lint + structural CI).
-
 use super::contract::{CONTRACT_SCHEMA, ComponentContract, ContractFileRole, RegistryItemKind};
 
 /// Severity of a validation issue.

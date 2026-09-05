@@ -1,5 +1,9 @@
 # TermRock documentation redesign — terminal experience in the browser
 
+> **Archived research snapshot.** This predates the generated catalog and the
+> current site shell. Current counts and routes come only from
+> `termrock-lookbook inventory --format json` via `docs/scripts/generate-catalog.ts`.
+
 > Research deliverable for the directive: *redesign the docs to be "more terminal
 > experience in the browser, modern, stylish, high-contrast, high-quality designer
 > aesthetics."* Grounded in (a) a read of the current `docs/` site code,
@@ -25,7 +29,7 @@ docs site with embedded terminals.
 |---------|------|----------------------------|
 | Live preview host | `docs/src/components/TerminalPreview.tsx` | Ghostty-class canvas: truecolor RGB24 cell paint, vector-stroked box/block glyphs, continuous underlines, integer cell metrics, `imageRendering:pixelated`. Real Rust WASM demos with key/pointer/wheel/paste/resize/tick dispatch, focus ring (`#39ff14`), traffic-light titlebar ("Ghostty · TermRock — {story}"), live status footer (`● live`/`◐ timed`/`○ static`), outcome readout, hover cell-probe, hints, zen, reset, preview↔code toggle, variant switcher, poster fallback. This is direction-3 (ASCII as material) + direction-4 (control room) executed at award-winner quality. |
 | Pattern gallery | `docs/src/components/PatternGallery.tsx` | Phosphor poster cards, search filter, grouped sections (Applications / Composites / Layout helpers), `{n} of {m} patterns` count. Control-room language. |
-| Content depth | `docs/content/docs/` | 48 components, 35 patterns, interaction/runtime/migrations — huge, well-structured catalog. |
+| Content depth | generated catalog | Exact component and pattern pages come from the typed Rust inventory; interaction/runtime/migrations share that authority. |
 | Catalog component | `crates/termrock/.../CommandPalette` | "Flagship universal command surface: fuzzy search, groups, recent/contextual, nested pages, args, async gates, history, fullscreen." **The docs site does not dogfood it.** |
 
 ### What is generic — the redesign targets
@@ -36,7 +40,7 @@ docs site with embedded terminals.
 | Root shell | `docs/src/routes/__root.tsx:24-41` | Fumadocs `RootProvider`, search **disabled**, system theme **off**, forced `.dark`. | No custom chrome: no status bar, no telemetry rail, no command-palette hook. The nav is Fumadocs default. |
 | Theme tokens | `docs/src/styles/app.css:6-24` | Only **5 custom tokens**; rest is `fumadocs-ui/css/neutral.css` preset. Light tokens (`#2563eb` blue, `#faf8f5` cream) are **dead** (site is dark-locked) and are not even terminal-derived. | No shared design-token layer. Hex is hardcoded inline in every component (see below). |
 | Inline hex | `PatternGallery.tsx`, `TerminalPreview.tsx` | `#39ff14`, `#090c09`, `#d8ffd8`, `#91a091`, `#334033` repeated as string literals. | Palette cannot change in one place. Every terminal island reinvents the same 8 colors. |
-| Search | `__root.tsx:33`, `layout.shared.tsx:7` | `searchToggle:{enabled:false}`, `search:{enabled:false}`. | No discoverability surface at all — no search, no palette. A 48-component catalog with no findability. |
+| Search | archived shell snapshot | Search was disabled. | Historical defect; the current generated catalog owns search documents. |
 | Typography | `app.css:1,12` | JetBrains Mono only (mono). Prose = Fumadocs default sans. | No typographic hierarchy between "terminal metadata" register and "prose" register (the mono+grotesk split the website-directions research demands). |
 | Light theme | `app.css:6-15` | Blue primary, cream bg — unused, and not terminal. | No coherent second register; if a light mode ever ships it would be a non-terminal blue. |
 
@@ -102,7 +106,7 @@ terminal?"*
   direction-3 (ASCII as living material) and it is *free* because the runtime
   already exists.
 - A **status bar** strip (D4) across the hero: `TermRock · Rust · Ratatui`,
-  version/revision, build date, live clock, "48 components · 35 patterns".
+  version/revision, build date, live clock, and generated component/pattern counts.
 - A single phosphor CTA ("Browse the catalog") + a `⌘K` hint ("press ⌘K to
   command").
 - The live preview of one flagship component (CommandPalette or a workbench)
@@ -128,7 +132,7 @@ ships `CommandPalette`; the docs should use the concept for navigation.
 - Every palette result is also a clickable nav entry; the palette never replaces
   conventional navigation, it accelerates it.
 
-**Why.** A 48-component, 35-pattern catalog with `search.enabled:false` has a
+**Why.** A large generated catalog without search has a
 real findability problem. The command palette solves it *and* demonstrates the
 flagship widget dogfooding-style. This is the "less core, more plugins /
 dogfood the public surface" thesis (plugin research, S1) applied to the docs.
@@ -234,7 +238,7 @@ entered and framed:
 Operator Environment (site shell: status bar + ⌘K palette + terminal chrome)
 ├── /                         live WASM hero + status + flagship demo
 ├── /docs                     index (existing) — framed as "system overview"
-├── /docs/components          catalog (48) — each page = one "process" with
+├── /docs/components          catalog (generated) — each page = one "process" with
 │   └── /:component             live preview + contract + API + recipe
 ├── /docs/patterns            gallery (35) — each pattern = one "application"
 │   └── /patterns/:slug         assembled from building blocks

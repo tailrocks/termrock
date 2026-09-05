@@ -1,0 +1,30 @@
+ ▪  TablePro  Production  ◆ production  acme_prod › public  safe         truecolor · 100×30  ? help
+
+ ▎≡ Query 1 ×   ▎T orders ×                                                                     +
+ ────────────────━━━━━━━━━━━───────────────────────────────────────────────────────────────────────
+ ╭─ public › orders ──────────────────────────────────────────────────────────────────── 14 cols ─╮
+ │  ▎Data   ▎Structure                                                                            │
+ │  ─━━━━━─────────────────────────────────────────────────────────────────────────────────────── │
+ │                                                                                                │
+ │   ‹3    organization_id                       status ▴     total_amount  currency         7›   │
+ │  ▎    1 2beeba6e-17fa-465c-b939-f117497e7f9→  cancelled         1050.75  USD                 ┃ │
+ │  ▎    2 3126689d-fa5f-413d-8359-fccce612ed1→  cancelled         2402.17  USD                 │ │
+ │  ▎    3 7a82cdfc-6725-4dd7-8639-71275040081→  cancelled         1103.87  USD                 │ │
+ │  ▎    4 3c565a32-1994-4ac4-83a9-bbeeb48eab7→  cancelled         1524.94  GBP                 │ │
+ │  ▎    5 76bcdd61-37a0-418c-8141-15d2202aa3f→  cancelled         1778.07  GBP                 │ │
+ │  ▎    6 39b8610b-31b9-4775-a243-3cffd093d1e→  cancelled         2247.25  USD                 │ │
+ │  ▎    7 d18c894c-3499-4f49-9be7-62183b9f490→  cancelled         1072.29  GBP                 │ │
+ │  ▎    8 d67b7ffa-66ca-43f2-bb3d-6cf19f436a0→  cancelled          364.02  USD                 │ │
+ │  ▎    9 7331078e-f8a6-465f-9ba8-e20b2aa11bd→  cancelled          402.72  EUR                 │ │
+ │  ▎   10 516d5998-9e21-47f3-9541-7f576b72bf7→  cancelled          231.74  GBP                 │ │
+ │  ▎   11 32728fe0-444a-40f5-98e6-fff15d5f3d8→  cancelled          259.15  USD                 │ │
+ │  ▎   12 bc158bf7-e907-40d4-ad34-e3b49442eb3→  cancelled         1062.40  GBP                 │ │
+ │  ▎   13 a0af4f50-d9f2-4493-bac4-d0f7552e76e→  cancelled         1965.61  USD                 │ │
+ │  ▎   14 c3ba11f2-7fe2-43af-8181-00bd5153441→  cancelled         2034.41  EUR                 │ │
+ │  ▎   15 dd03b014-0dcb-4b74-b0f7-da067682275→  cancelled          364.55  USD                 │ │
+ │  ▎   16 4c7d71e4-d793-4bd9-937f-c782f6126e5→  cancelled          940.54  USD                 │ │
+ │  ▎   17 77e722f5-421b-4096-92b6-91b38fa6b05→  cancelled         1177.41  USD                 │ │
+ │   sort status ▴ · rows 1–17 of 500 loaded · 1,203,338 total · cols 4–7 of 14                   │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+ ↑↓←→ Cell  Enter Edit  s Sort  f Filter  Space Select row  Tab Next     Sorted by status ascending

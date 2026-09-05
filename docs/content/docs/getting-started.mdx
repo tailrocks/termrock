@@ -1,0 +1,50 @@
+---
+title: Getting Started
+description: Render one stateful TermRock component while keeping domain state and effects in your application.
+---
+
+Start with one screen and one stable identity. TermRock consumes a projection of
+your data, owns terminal interaction state, and returns typed outcomes. Your
+application decides what those outcomes mean.
+
+## 1. Add TermRock
+
+Follow [Installation](/docs/installation) and pin the revision you reviewed.
+
+## 2. Project domain data
+
+This minimal list uses stable string IDs. The labels are borrowed render data;
+the application remains free to filter or reorder its source model.
+
+```rust
+use ratatui_core::text::Line;
+use termrock::{
+    style::DesignTokens,
+    widgets::{List, ListRow, ListState},
+};
+
+let tokens = DesignTokens::default();
+let rows = [
+    ListRow::item("build", Line::from("Build release")),
+    ListRow::item("test", Line::from("Run checks")),
+];
+let list = List::new(&rows, &tokens);
+let mut state = ListState::new(Some("build"));
+let _ = (list, &mut state);
+```
+
+## 3. Keep effects outside the component
+
+Selection, scroll, hover, and painted hit regions belong to component state.
+Opening a file, starting a process, or persisting a setting belongs to your
+application after it receives an activation outcome.
+
+## 4. Choose the next guide
+
+- Browse [Components](/docs/components) when you know the terminal job.
+- Browse [Application patterns](/docs/patterns) when you need composition proof.
+- Read [Advanced composition](/docs/advanced-composition) when several component
+  families must become one workflow.
+- Read [Interaction architecture](/docs/interaction) before adding overlays.
+- Read [Runtime integration](/docs/runtime) when your event loop needs keymaps,
+  deadlines, or managed Crossterm lifecycle.

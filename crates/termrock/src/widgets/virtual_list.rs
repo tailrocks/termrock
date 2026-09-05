@@ -15,7 +15,6 @@
 //! O(viewport) paint/semantics.
 //!
 //! Research: Textual virtual lists, VisiData, log tails, TermRock Virtualizer.
-
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -24,12 +23,12 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyEvent, KeyEventKind},
+    input::KeyEvent,
     interaction::{
         HitRegion, NavigationMove, Outcome, PageMove, SemanticNode, SemanticRole, SemanticScene,
         SemanticState, UiIntent, default_list_intent,
     },
-    style::{Density, DesignSystem, Role},
+    style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -113,7 +112,7 @@ impl<'a, Id> VirtualListItem<'a, Id> {
     pub fn placeholder(logical_index: u64, id: Id) -> Self {
         Self {
             logical_index,
-            row: ListRow::item(id, Line::from("…")).loading(),
+            row: ListRow::item(id, Line::from("loading")).loading(),
         }
     }
 }
@@ -358,7 +357,7 @@ impl<Id> VirtualListState<Id> {
     /// Measure/overscan slice (what host should project).
     #[must_use]
     pub fn measure_slice(&self) -> VirtSlice {
-        self.virt.measure_slice()
+        self.virt.visible_slice()
     }
 
     /// Indices the host should project this frame (sticky + measure window).
@@ -367,7 +366,7 @@ impl<Id> VirtualListState<Id> {
     pub fn projection_indices(&self, out: &mut Vec<u64>) {
         out.clear();
         self.virt.sticky_indices(out);
-        let m = self.virt.measure_slice();
+        let m = self.virt.visible_slice();
         for i in m.measure_start..m.measure_end {
             if !out.contains(&i) {
                 out.push(i);
@@ -513,7 +512,7 @@ impl<Id> VirtualListState<Id> {
     where
         Id: Clone + PartialEq,
     {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return Outcome::Ignored;
         }
         if let Some(intent) = default_list_intent(key) {
@@ -562,7 +561,6 @@ fn projected_rows<'a, Id: Clone>(projected: &'a [VirtualListItem<'a, Id>]) -> Ve
 pub struct VirtualList<'a, Id> {
     projected: &'a [VirtualListItem<'a, Id>],
     system: &'a DesignSystem,
-    density: Density,
     empty_message: Option<&'a str>,
     show_diagnostics: bool,
     focused: bool,
@@ -575,18 +573,10 @@ impl<'a, Id> VirtualList<'a, Id> {
         Self {
             projected,
             system,
-            density: Density::Compact,
             empty_message: None,
             show_diagnostics: false,
             focused: true,
         }
-    }
-
-    /// Density.
-    #[must_use]
-    pub const fn density(mut self, d: Density) -> Self {
-        self.density = d;
-        self
     }
 
     /// Focused surface.
@@ -627,13 +617,13 @@ impl<'a, Id> VirtualList<'a, Id> {
         // Filter / page chrome
         if let Some(q) = state.filter_query.as_ref() {
             let n = state.filter_match_count.unwrap_or(state.virt.logical_len());
-            let line = format!("filter:{q} · {n} matches");
+            let line = format!("filter:{q}{}{n} matches", " · ");
             buffer.set_stringn(
                 area.x,
                 y,
                 &take_display_cols(&line, usize::from(area.width)),
                 usize::from(area.width),
-                self.system.style(Role::Info),
+                self.system.style(Role::TextSecondary),
             );
             y = y.saturating_add(1);
             h = h.saturating_sub(1);
@@ -763,9 +753,7 @@ impl<'a, Id> VirtualList<'a, Id> {
                 .set_virtual_window(0, usize::try_from(body_total).unwrap_or(usize::MAX));
             // Keep list offset at 0 — Virtualizer owns scroll
             // Selection still works on projected ids
-            let list = List::new(&body_rows, self.system)
-                .focused(self.focused)
-                .density(self.density);
+            let list = List::new(&body_rows, self.system).focused(self.focused);
             StatefulWidget::render(&list, list_area, buffer, &mut state.list);
             // Capture hit regions (adjust? List uses list_area coords — already absolute)
             state.regions = state.list.regions().to_vec();
@@ -1059,25 +1047,6 @@ mod tests {
         let sem = state.virtualizer().semantic_count();
         assert!(sem < 50);
         assert!(sem * 10_000 < VIRTUAL_LIST_BENCH_ROWS); // much less than 1M
-    }
-
-    #[test]
-    fn async_placeholder_and_loading() {
-        let system = system();
-        let mut state = VirtualListState::<u64>::new();
-        state.set_logical_len(1000);
-        state.set_viewport_extent(8);
-        state.set_page_status(VirtualPageStatus::Loading);
-        let mut idx = Vec::new();
-        state.projection_indices(&mut idx);
-        let projected: Vec<_> = idx
-            .iter()
-            .map(|&i| VirtualListItem::placeholder(i, i))
-            .collect();
-        let area = Rect::new(0, 0, 40, 12);
-        let mut buf = Buffer::empty(area);
-        VirtualList::new(&projected, &system).paint(area, &mut buf, &mut state);
-        assert_eq!(state.page_status(), VirtualPageStatus::Loading);
     }
 
     #[test]

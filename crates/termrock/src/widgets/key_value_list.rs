@@ -13,7 +13,6 @@
 //! contraction, and redaction. Prefer KeyValueList for new settings/summary UI.
 //!
 //! Research: system-info TUIs, detail panels, shadcn DescriptionList patterns.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -26,23 +25,13 @@ use crate::interaction::{
     EventResult, NavigationMove, PageMove, SemanticNode, SemanticRole, SemanticScene,
     SemanticState, UiIntent, default_list_intent,
 };
-use crate::style::{Density, DesignSystem, Role};
+use crate::style::{DesignSystem, Role};
 use crate::text::{display_cols, take_display_cols, wrap_display_cols};
 
-pub(crate) const fn kv_group_gap(density: Density) -> u16 {
-    if matches!(density, Density::Comfortable) {
-        1
-    } else {
-        0
-    }
-}
+const ROW_GUTTER: u16 = 2;
 
-pub(crate) const fn kv_stack_below(density: Density) -> u16 {
-    if matches!(density, Density::Comfortable) {
-        48
-    } else {
-        36
-    }
+pub(crate) const fn kv_stack_below() -> u16 {
+    36
 }
 
 /// Column vs stacked anatomy.
@@ -106,7 +95,7 @@ impl KvStatus {
             Self::Success => Role::Success,
             Self::Warning => Role::Warning,
             Self::Danger => Role::Danger,
-            Self::Info => Role::Info,
+            Self::Info => Role::TextSecondary,
         }
     }
 }
@@ -394,7 +383,6 @@ pub enum KeyValueListOutcome<Id> {
 pub struct KeyValueList<'a, Id> {
     entries: &'a [KvEntry<'a, Id>],
     system: &'a DesignSystem,
-    density: Density,
     layout: KvLayout,
     /// Fixed key column width (0 = auto max key).
     key_width: u16,
@@ -409,7 +397,6 @@ impl<'a, Id> KeyValueList<'a, Id> {
         Self {
             entries,
             system,
-            density: Density::Comfortable,
             layout: KvLayout::Auto,
             key_width: 0,
             separator: system.kv_separator().text(),
@@ -419,27 +406,13 @@ impl<'a, Id> KeyValueList<'a, Id> {
     /// Dense recipe (settings drawers).
     #[must_use]
     pub const fn dense(entries: &'a [KvEntry<'a, Id>], system: &'a DesignSystem) -> Self {
-        Self {
-            entries,
-            system,
-            density: Density::Compact,
-            layout: KvLayout::Auto,
-            key_width: 0,
-            separator: system.kv_separator().text(),
-        }
+        Self::new(entries, system)
     }
 
     /// Reading recipe (docs / summaries).
     #[must_use]
     pub const fn reading(entries: &'a [KvEntry<'a, Id>], system: &'a DesignSystem) -> Self {
         Self::new(entries, system)
-    }
-
-    /// Density override.
-    #[must_use]
-    pub const fn density(mut self, density: Density) -> Self {
-        self.density = density;
-        self
     }
 
     /// Layout override.
@@ -468,7 +441,7 @@ impl<'a, Id> KeyValueList<'a, Id> {
     pub fn resolved_layout(&self, width: u16) -> KvLayout {
         match self.layout {
             KvLayout::Auto => {
-                if width < kv_stack_below(self.density) {
+                if width < kv_stack_below() {
                     KvLayout::Stacked
                 } else {
                     KvLayout::Columns
@@ -498,11 +471,7 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
     #[must_use]
     pub fn display_value(&self, entry: &KvEntry<'a, Id>, state: &KeyValueListState<Id>) -> String {
         if entry.secret && !state.is_revealed(&entry.id) {
-            return if self.system.glyphs.is_ascii() {
-                "********".into()
-            } else {
-                "••••••••".into()
-            };
+            return "••••••••".into();
         }
         entry.value.to_string()
     }
@@ -520,14 +489,19 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
             return 0;
         }
         if entry.group {
-            return 1u16.saturating_add(kv_group_gap(self.density));
+            return 1u16;
         }
         let value = self.display_value(entry, state);
         let show_ann = entry.annotation.is_some_and(|a| !a.is_empty());
         match layout {
             KvLayout::Stacked | KvLayout::Auto => {
                 // Auto resolved already
-                let value_w = usize::from(width.saturating_sub(u16::from(entry.depth) * 2).max(1));
+                let value_w = usize::from(
+                    width
+                        .saturating_sub(ROW_GUTTER)
+                        .saturating_sub(u16::from(entry.depth) * 2)
+                        .max(1),
+                );
                 let vh = wrap_display_cols(&value, value_w).len().max(1);
                 let ah = if show_ann {
                     // annotation only if primary fits somewhat
@@ -542,7 +516,7 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
                 let sep_w = display_cols(self.separator);
                 let indent = usize::from(entry.depth).saturating_mul(2);
                 let value_w = usize::from(width)
-                    .saturating_sub(indent + key_w + sep_w)
+                    .saturating_sub(usize::from(ROW_GUTTER) + indent + key_w + sep_w)
                     .max(1);
                 // Prefer primary value; annotation only if remaining room on last line
                 let body = if show_ann {
@@ -606,15 +580,14 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
             KvLayout::Columns
         };
 
-        // Build row map: (entry_index, sub_row)
-        let mut row_map: Vec<(usize, u16)> = Vec::new();
-        for (ei, entry) in self.entries.iter().enumerate() {
-            let h = self.measure_entry_height(entry, area.width, paint_layout, state);
-            for sub in 0..h {
-                row_map.push((ei, sub));
-            }
-        }
-        let total = u16::try_from(row_map.len()).unwrap_or(u16::MAX);
+        // Entry heights in document order; row positions derive
+        // arithmetically instead of materializing a per-row map each frame.
+        let heights: Vec<u16> = self
+            .entries
+            .iter()
+            .map(|entry| self.measure_entry_height(entry, area.width, paint_layout, state))
+            .collect();
+        let total = heights.iter().fold(0u16, |a, h| a.saturating_add(*h));
         state.total_rows = total;
         state.viewport_rows = area.height;
         state.clamp();
@@ -627,7 +600,7 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
 
         for row in 0..area.height {
             let idx = first.saturating_add(usize::from(row));
-            let Some(&(ei, sub)) = row_map.get(idx) else {
+            let Some((ei, sub)) = walk_entry_rows(&heights, idx) else {
                 break;
             };
             let y = area.y.saturating_add(row);
@@ -690,8 +663,18 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
         if area.is_empty() {
             return;
         }
-        let selected = state.cursor.as_ref() == Some(&entry.id) && state.focused;
+        let selected = state.cursor.as_ref() == Some(&entry.id);
         let hovered = state.hovered.as_ref() == Some(&entry.id);
+        let chrome = crate::widgets::row_chrome::RowChrome::resolve(
+            self.system,
+            crate::style::ListRowVisualState {
+                selected,
+                focused: selected && state.focused,
+                hovered,
+                enabled: true,
+                ..Default::default()
+            },
+        );
 
         if entry.group {
             if sub == 0 {
@@ -700,16 +683,35 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
                 let clipped = take_display_cols(&title, usize::from(area.width));
                 let mut style = self.system.style(Role::TextStrong);
                 style = style.add_modifier(Modifier::BOLD);
-                buffer.set_stringn(area.x, area.y, &clipped, usize::from(area.width), style);
+                let content = Rect::new(
+                    area.x.saturating_add(ROW_GUTTER),
+                    area.y,
+                    area.width.saturating_sub(ROW_GUTTER),
+                    1,
+                );
+                buffer.set_stringn(
+                    content.x,
+                    content.y,
+                    &clipped,
+                    usize::from(content.width),
+                    style,
+                );
             }
             // gap rows blank
+            paint_entry_chrome(&chrome, sub, buffer, area);
             return;
         }
 
         let value = self.display_value(entry, state);
         let indent_cols = u16::from(entry.depth).saturating_mul(2);
-        let x0 = area.x.saturating_add(indent_cols);
-        let w0 = area.width.saturating_sub(indent_cols);
+        let x0 = area
+            .x
+            .saturating_add(ROW_GUTTER)
+            .saturating_add(indent_cols);
+        let w0 = area
+            .width
+            .saturating_sub(ROW_GUTTER)
+            .saturating_sub(indent_cols);
 
         match layout {
             KvLayout::Stacked => {
@@ -813,28 +815,7 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
                 }
             }
         }
-        if selected {
-            // The selected row washes and carries the gutter; each cell keeps
-            // its own foreground so key/value tones survive.
-            let wash = self.system.style(Role::SelectionTint).bg;
-            for x in area.x..area.x.saturating_add(area.width) {
-                let cell = &mut buffer[(x, area.y)];
-                let mut s = cell.style();
-                if let Some(bg) = wash {
-                    s = s.bg(bg);
-                }
-                cell.set_style(s);
-            }
-            if area.width > 0 {
-                let cell = &mut buffer[(area.x, area.y)];
-                let mut marked = cell.style().patch(self.system.style(Role::Accent));
-                if let Some(bg) = wash {
-                    marked = marked.bg(bg);
-                }
-                cell.set_symbol(self.system.glyphs.selection_gutter());
-                cell.set_style(marked);
-            }
-        }
+        paint_entry_chrome(&chrome, sub, buffer, area);
     }
 
     fn value_style(
@@ -875,34 +856,18 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
         }
         let mark = if entry.secret {
             if state.is_revealed(&entry.id) {
-                if self.system.glyphs.is_ascii() {
-                    " hide"
-                } else {
-                    " ◉"
-                }
-            } else if self.system.glyphs.is_ascii() {
-                " show"
+                " ◉"
             } else {
                 " •••"
             }
         } else if entry.copyable {
             if state.copied.as_ref() == Some(&entry.id) {
-                if self.system.glyphs.is_ascii() {
-                    " ok"
-                } else {
-                    " ✓"
-                }
-            } else if self.system.glyphs.is_ascii() {
-                " cpy"
+                " ✓"
             } else {
                 " ⧉"
             }
         } else if entry.href.is_some() {
-            if self.system.glyphs.is_ascii() {
-                " ^"
-            } else {
-                " ↗"
-            }
+            " ↗"
         } else {
             return;
         };
@@ -923,7 +888,7 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
         state: &mut KeyValueListState<Id>,
         key: KeyEvent,
     ) -> KeyValueListOutcome<Id> {
-        if !state.focused || key.kind != KeyEventKind::Press {
+        if !state.focused || !key.is_press() {
             return KeyValueListOutcome::Ignored;
         }
         // copy
@@ -1233,6 +1198,31 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
     }
 }
 
+/// Absolute display row `idx` as `(entry, sub_row)`, from entry heights.
+fn walk_entry_rows(heights: &[u16], idx: usize) -> Option<(usize, u16)> {
+    let mut seen = 0usize;
+    for (ei, h) in heights.iter().enumerate() {
+        let h = usize::from(*h);
+        if idx < seen.saturating_add(h) {
+            return Some((ei, u16::try_from(idx - seen).unwrap_or(u16::MAX)));
+        }
+        seen = seen.saturating_add(h);
+    }
+    None
+}
+
+fn paint_entry_chrome(
+    chrome: &crate::widgets::row_chrome::RowChrome,
+    continuation: u16,
+    buffer: &mut Buffer,
+    area: Rect,
+) {
+    chrome.paint_wash(buffer, area);
+    if continuation == 0 {
+        chrome.paint_gutter(buffer, area);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1240,7 +1230,7 @@ mod tests {
 
     #[test]
     fn separator_comes_from_the_shared_key_value_token() {
-        let system = crate::style::DesignSystem::phosphor();
+        let system = crate::style::DesignSystem::junie();
         let entries = sample_entries();
         assert_eq!(
             KeyValueList::new(&entries, &system).separator,

@@ -15,12 +15,11 @@
 //! [`StepperNavPolicy`].
 //!
 //! Research: shadcn-style steppers, installers, CI pipeline views.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::Modifier,
+    style::{Modifier, Style},
     widgets::StatefulWidget,
 };
 
@@ -32,7 +31,7 @@ use crate::{
         CollectionItem, CollectionState, NavigationMove, RovingOrientation, SemanticNode,
         SemanticRole, SemanticScene, SemanticState, UiIntent,
     },
-    style::{DesignSystem, Role},
+    style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -81,24 +80,18 @@ impl StepStatus {
         }
     }
 
-    /// Non-color mark (always paired with style roles).
+    /// Non-color mark (always paired with style roles). One junie vocabulary.
+    ///
+    /// Progress marks, not checkbox wells: `[✓]` / `[ ]` belong to Checkbox.
     #[must_use]
-    pub const fn mark(self, ascii: bool) -> &'static str {
-        match (self, ascii) {
-            (Self::Complete, true) => "[x]",
-            (Self::Complete, false) => "[✓]",
-            (Self::Current, true) => "[>]",
-            (Self::Current, false) => "[›]",
-            (Self::Error, true) => "[!]",
-            (Self::Error, false) => "[!]",
-            (Self::Disabled, true) => "[#]",
-            (Self::Disabled, false) => "[⊘]",
-            (Self::Optional, true) => "[?]",
-            (Self::Optional, false) => "[◦]",
-            (Self::Skipped, true) => "[-]",
-            (Self::Skipped, false) => "[–]",
-            (Self::Future, true) => "[ ]",
-            (Self::Future, false) => "[ ]",
+    pub const fn mark(self) -> &'static str {
+        match self {
+            Self::Complete => Glyph::Success.resolve().text,
+            Self::Current => Glyph::SelectionMarker.resolve().text,
+            Self::Error => Glyph::Error.resolve().text,
+            Self::Disabled | Self::Skipped => Glyph::Remove.resolve().text,
+            // Optional is a `◦` suffix on the title in horizontal paint, not a well.
+            Self::Optional | Self::Future => " ",
         }
     }
 
@@ -330,6 +323,9 @@ pub struct StepperState {
     hits: Vec<(usize, Rect)>,
     menu_hit: Rect,
     root: Rect,
+    vertical_scroll: usize,
+    vertical_viewport: usize,
+    vertical_show_descriptions: bool,
 }
 
 impl Default for StepperState {
@@ -357,6 +353,9 @@ impl StepperState {
             hits: Vec::new(),
             menu_hit: Rect::default(),
             root: Rect::default(),
+            vertical_scroll: 0,
+            vertical_viewport: 0,
+            vertical_show_descriptions: true,
         }
     }
 
@@ -391,7 +390,7 @@ impl StepperState {
     #[must_use]
     pub fn orientation(mut self, o: StepperOrientation) -> Self {
         self.orientation = o;
-        self.collection = self.collection.clone().orientation(match o {
+        self.collection = std::mem::take(&mut self.collection).orientation(match o {
             StepperOrientation::Horizontal => RovingOrientation::Horizontal,
             StepperOrientation::Vertical => RovingOrientation::Vertical,
         });
@@ -401,7 +400,7 @@ impl StepperState {
     /// Set orientation.
     pub fn set_orientation(&mut self, o: StepperOrientation) {
         self.orientation = o;
-        self.collection = CollectionState::new().orientation(match o {
+        self.collection = self.collection.clone().orientation(match o {
             StepperOrientation::Horizontal => RovingOrientation::Horizontal,
             StepperOrientation::Vertical => RovingOrientation::Vertical,
         });
@@ -441,11 +440,17 @@ impl StepperState {
     /// Enable.
     pub fn set_enabled(&mut self, on: bool) {
         self.enabled = on;
+        if !on {
+            self.menu_open = false;
+        }
     }
 
     /// Input gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
+        if !on {
+            self.menu_open = false;
+        }
     }
 
     /// Domain current index.
@@ -458,6 +463,14 @@ impl StepperState {
     #[must_use]
     pub fn cursor(&self) -> usize {
         self.collection.active().copied().unwrap_or(0)
+    }
+
+    fn selected_index(&self, len: usize) -> usize {
+        self.collection
+            .active()
+            .copied()
+            .unwrap_or(self.current)
+            .min(len.saturating_sub(1))
     }
 
     /// Statuses.
@@ -544,8 +557,75 @@ impl StepperState {
         }
     }
 
+    fn interaction_enabled(&self) -> bool {
+        self.enabled && self.accepts_input
+    }
+
     fn live(&self) -> bool {
-        self.enabled && self.accepts_input && self.focused
+        self.interaction_enabled() && self.focused
+    }
+
+    fn control_state(&self, status: StepStatus) -> ControlState {
+        if !self.interaction_enabled() || matches!(status, StepStatus::Disabled) {
+            ControlState::Disabled
+        } else if self.focused {
+            ControlState::Focused
+        } else {
+            ControlState::Default
+        }
+    }
+
+    fn uses_vertical_viewport(&self) -> bool {
+        matches!(self.orientation, StepperOrientation::Vertical)
+            && matches!(
+                self.presentation,
+                StepperPresentation::Expanded | StepperPresentation::Compact
+            )
+    }
+
+    fn vertical_rows_to_cursor(&self, items: &[StepItem], start: usize, cursor: usize) -> usize {
+        let expanded = matches!(self.presentation, StepperPresentation::Expanded);
+        let mut rows = 0usize;
+        for index in start..=cursor {
+            rows = rows.saturating_add(1);
+            if expanded && self.vertical_show_descriptions && items[index].description.is_some() {
+                rows = rows.saturating_add(1);
+            }
+            if expanded && index < cursor && index + 1 < items.len() {
+                rows = rows.saturating_add(1);
+            }
+        }
+        rows
+    }
+
+    fn ensure_vertical_cursor_visible(&mut self, items: &[StepItem]) {
+        if !self.uses_vertical_viewport() || items.is_empty() {
+            self.vertical_scroll = 0;
+            return;
+        }
+        let Some(cursor) = self.collection.active().copied() else {
+            self.vertical_scroll = 0;
+            return;
+        };
+        self.vertical_scroll = self.vertical_scroll.min(items.len().saturating_sub(1));
+        if cursor < self.vertical_scroll {
+            self.vertical_scroll = cursor;
+        }
+        let capacity = self.vertical_viewport.max(1);
+        while self.vertical_scroll < cursor
+            && self.vertical_rows_to_cursor(items, self.vertical_scroll, cursor) > capacity
+        {
+            self.vertical_scroll = self.vertical_scroll.saturating_add(1);
+        }
+    }
+
+    fn configure_vertical_viewport(&mut self, items: &[StepItem], rows: usize) {
+        if self.uses_vertical_viewport() {
+            self.vertical_viewport = rows.max(1);
+            self.ensure_vertical_cursor_visible(items);
+        } else {
+            self.vertical_scroll = 0;
+        }
     }
 
     fn entries(items: &[StepItem], statuses: &[StepStatus]) -> Vec<CollectionItem<usize>> {
@@ -596,6 +676,7 @@ impl StepperState {
         }
         let id = items[index].id.clone();
         self.collection.set_active(Some(index));
+        self.ensure_vertical_cursor_visible(items);
         if self.menu_open {
             self.menu_open = false;
         }
@@ -604,11 +685,12 @@ impl StepperState {
 
     /// Keyboard.
     pub fn handle_key(&mut self, key: KeyEvent, items: &[StepItem]) -> StepperOutcome {
-        if !self.live() || items.is_empty() || key.kind == KeyEventKind::Release {
+        if !self.live() || items.is_empty() || key.is_release() {
             return StepperOutcome::Ignored;
         }
         let entries = Self::entries(items, &self.statuses);
         let _ = self.collection.reconcile(&entries);
+        self.ensure_vertical_cursor_visible(items);
 
         if matches!(self.presentation, StepperPresentation::Menu) && !self.menu_open {
             if matches!(
@@ -655,6 +737,7 @@ impl StepperState {
         }
         let entries = Self::entries(items, &self.statuses);
         let _ = self.collection.reconcile(&entries);
+        self.ensure_vertical_cursor_visible(items);
         match intent {
             UiIntent::Move(
                 NavigationMove::Next
@@ -668,6 +751,7 @@ impl StepperState {
             ) => {
                 let out = self.collection.handle_intent(intent, &entries);
                 if out.active_changed() {
+                    self.ensure_vertical_cursor_visible(items);
                     StepperOutcome::CursorMoved {
                         index: self.cursor(),
                     }
@@ -688,7 +772,7 @@ impl StepperState {
 
     /// Mouse.
     pub fn handle_mouse(&mut self, event: MouseEvent, items: &[StepItem]) -> StepperOutcome {
-        if !self.enabled || !self.accepts_input || items.is_empty() {
+        if !self.interaction_enabled() || items.is_empty() {
             return StepperOutcome::Ignored;
         }
         if !matches!(event.kind, MouseEventKind::Down(MouseButton::Left)) {
@@ -741,10 +825,10 @@ fn rect_contains(rect: Rect, pos: Position) -> bool {
 /// Default intent map.
 #[must_use]
 pub fn default_stepper_intent(key: KeyEvent, orientation: StepperOrientation) -> Option<UiIntent> {
-    if key.kind == KeyEventKind::Release {
+    if key.is_release() {
         return None;
     }
-    let is_press = key.kind == KeyEventKind::Press;
+    let is_press = key.is_press();
     match (orientation, key.code) {
         (_, KeyCode::Home) => Some(UiIntent::Move(NavigationMove::First)),
         (_, KeyCode::End) => Some(UiIntent::Move(NavigationMove::Last)),
@@ -777,7 +861,6 @@ pub fn default_stepper_intent(key: KeyEvent, orientation: StepperOrientation) ->
 pub struct Stepper<'a> {
     items: &'a [StepItem],
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
     show_descriptions: bool,
 }
@@ -792,7 +875,6 @@ impl<'a> Stepper<'a> {
             // Seeded from the system: a widget that defaults to false is
             // claiming the terminal has Unicode and colour before anyone
             // asked it. Builders below still force either way.
-            ascii: system.ascii_glyphs(),
             colorless: system.mono(),
             show_descriptions: true,
         }
@@ -800,13 +882,7 @@ impl<'a> Stepper<'a> {
 
     /// ASCII marks.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Reduced color.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -833,6 +909,8 @@ impl<'a> Stepper<'a> {
         let _ = state.sync_presentation(area);
         let entries = StepperState::entries(self.items, &state.statuses);
         let _ = state.collection.reconcile(&entries);
+        state.vertical_show_descriptions = self.show_descriptions;
+        state.configure_vertical_viewport(self.items, usize::from(area.height));
 
         match state.presentation {
             StepperPresentation::Numeric => self.paint_numeric(area, buffer, state),
@@ -846,48 +924,54 @@ impl<'a> Stepper<'a> {
         }
     }
 
-    fn style_for(
-        &self,
-        status: StepStatus,
-        active_cursor: bool,
-        focused: bool,
-    ) -> ratatui_core::style::Style {
+    fn status_style(&self, status: StepStatus, base: Style, enabled: bool) -> Style {
+        if !enabled {
+            return base;
+        }
         if self.colorless {
             return match status {
-                StepStatus::Current if focused => self
-                    .system
-                    .style(Role::TextStrong)
-                    .add_modifier(Modifier::REVERSED | Modifier::BOLD),
-                StepStatus::Complete => self.system.style(Role::TextStrong),
-                StepStatus::Error => self
-                    .system
-                    .style(Role::TextStrong)
-                    .add_modifier(Modifier::BOLD),
-                StepStatus::Disabled | StepStatus::Skipped | StepStatus::Future => {
-                    self.system.style(Role::TextMuted)
+                StepStatus::Current | StepStatus::Complete | StepStatus::Error => {
+                    base.add_modifier(Modifier::BOLD)
                 }
-                StepStatus::Optional => self.system.style(Role::Text),
-                StepStatus::Current => self.system.style(Role::TextStrong),
+                _ => base,
             };
         }
-        let mut style = match status {
+        match status {
             // The current step is stated by its glyph and its weight, not by a
             // reversed slab — a solid block reads as a selection the operator
             // made, not as where they are (plans/008 Step 4).
-            StepStatus::Current => self
-                .system
-                .style(Role::TextStrong)
-                .add_modifier(Modifier::BOLD),
-            StepStatus::Complete => self.system.style(Role::Success),
-            StepStatus::Error => self.system.style(Role::Danger),
-            StepStatus::Disabled => self.system.style(Role::TextDisabled),
-            StepStatus::Skipped | StepStatus::Future => self.system.style(Role::TextMuted),
-            StepStatus::Optional => self.system.style(Role::Text),
-        };
-        if active_cursor && focused && !matches!(status, StepStatus::Current) {
-            style = style.add_modifier(Modifier::BOLD);
+            StepStatus::Current => base.add_modifier(Modifier::BOLD),
+            StepStatus::Complete => base.patch(self.system.style(Role::Success)),
+            StepStatus::Error => base.patch(self.system.style(Role::Danger)),
+            _ => base,
         }
-        style
+    }
+
+    fn paint_step_row(
+        &self,
+        rect: Rect,
+        buffer: &mut Buffer,
+        status: StepStatus,
+        cursor: bool,
+        focused: bool,
+        enabled: bool,
+        interaction_enabled: bool,
+    ) -> Style {
+        let row_enabled = interaction_enabled && !matches!(status, StepStatus::Disabled);
+        let visual_enabled = enabled && !matches!(status, StepStatus::Disabled);
+        let recipe = self.system.resolve_list_row(ListRowVisualState {
+            selected: cursor,
+            focused: cursor && focused && row_enabled,
+            hovered: false,
+            enabled: row_enabled,
+            loading: false,
+            checked: matches!(status, StepStatus::Complete),
+            ..ListRowVisualState::default()
+        });
+        if recipe.use_tint {
+            buffer.set_style(rect, recipe.tint);
+        }
+        self.status_style(status, recipe.label, visual_enabled)
     }
 
     fn paint_horizontal(&self, area: Rect, buffer: &mut Buffer, state: &mut StepperState) {
@@ -896,31 +980,51 @@ impl<'a> Stepper<'a> {
         let mut x = area.x;
         let y = area.y;
         let cursor = state.cursor();
-        let surface = state.focused && state.accepts_input;
+        let interaction_enabled = state.interaction_enabled();
         for (i, step) in self.items.iter().enumerate() {
             if x >= area.right() {
                 break;
             }
             let status = state.statuses.get(i).copied().unwrap_or_default();
-            let mark = status.mark(self.ascii);
+            let mark = status.mark();
             let title = take_display_cols(&step.title, max_title);
-            let opt = if step.optional && !compact {
-                if self.ascii { "?" } else { "◦" }
-            } else {
-                ""
-            };
+            let opt = if step.optional && !compact { "◦" } else { "" };
+            let content = format!("{mark} {opt}{title}");
+            let remaining = area.right().saturating_sub(x);
+            if remaining == 0 {
+                break;
+            }
+            let content_w = display_cols(&content) as u16;
+            // Join lives between steps. Do not paint a dangling ` · ` when the
+            // next title cannot start (separator consumed the leftover cells).
             let sep = if i + 1 < self.items.len() {
-                if self.ascii { " > " } else { " → " }
+                self.system.glyphs.meta_join()
             } else {
                 ""
             };
-            let cell = format!("{mark}{opt}{title}{sep}");
-            let w = (display_cols(&cell) as u16).min(area.right().saturating_sub(x));
+            let sep_w = display_cols(sep) as u16;
+            let cell = if content_w < remaining
+                && !sep.is_empty()
+                && content_w.saturating_add(sep_w) < remaining
+            {
+                format!("{content}{sep}")
+            } else {
+                content
+            };
+            let w = (display_cols(&cell) as u16).min(remaining);
             if w == 0 {
                 break;
             }
             let rect = Rect::new(x, y, w, 1);
-            let style = self.style_for(status, cursor == i, surface);
+            let style = self.paint_step_row(
+                rect,
+                buffer,
+                status,
+                cursor == i,
+                state.focused,
+                state.enabled,
+                interaction_enabled,
+            );
             buffer.set_stringn(
                 rect.x,
                 rect.y,
@@ -936,18 +1040,26 @@ impl<'a> Stepper<'a> {
     fn paint_vertical(&self, area: Rect, buffer: &mut Buffer, state: &mut StepperState) {
         let compact = matches!(state.presentation, StepperPresentation::Compact);
         let cursor = state.cursor();
-        let surface = state.focused && state.accepts_input;
+        let interaction_enabled = state.interaction_enabled();
         let mut y = area.y;
-        for (i, step) in self.items.iter().enumerate() {
+        for (i, step) in self.items.iter().enumerate().skip(state.vertical_scroll) {
             if y >= area.bottom() {
                 break;
             }
             let status = state.statuses.get(i).copied().unwrap_or_default();
-            let mark = status.mark(self.ascii);
+            let mark = status.mark();
             let title = take_display_cols(&step.title, usize::from(area.width.saturating_sub(6)));
             let line = format!("{mark} {title}");
             let rect = Rect::new(area.x, y, area.width, 1);
-            let style = self.style_for(status, cursor == i, surface);
+            let style = self.paint_step_row(
+                rect,
+                buffer,
+                status,
+                cursor == i,
+                state.focused,
+                state.enabled,
+                interaction_enabled,
+            );
             buffer.set_stringn(
                 rect.x,
                 rect.y,
@@ -973,13 +1085,17 @@ impl<'a> Stepper<'a> {
                     y,
                     &take_display_cols(&d, usize::from(area.width)),
                     usize::from(area.width),
-                    self.system.style(Role::TextMuted),
+                    if state.enabled {
+                        self.system.style(Role::TextMuted)
+                    } else {
+                        self.system.style(Role::TextDisabled)
+                    },
                 );
                 y = y.saturating_add(1);
             }
             // connector
             if i + 1 < self.items.len() && !compact && y < area.bottom() {
-                let conn = if self.ascii { " |" } else { " │" };
+                let conn = { " │" };
                 buffer.set_stringn(area.x, y, conn, 2, self.system.style(Role::Border));
                 y = y.saturating_add(1);
             }
@@ -988,23 +1104,34 @@ impl<'a> Stepper<'a> {
 
     fn paint_numeric(&self, area: Rect, buffer: &mut Buffer, state: &mut StepperState) {
         let n = self.items.len().max(1);
-        let cur = state.current.saturating_add(1).min(n);
+        let selected = state.selected_index(self.items.len());
+        let cur = selected.saturating_add(1).min(n);
         let status = state
             .statuses
-            .get(state.current)
+            .get(selected)
             .copied()
             .unwrap_or(StepStatus::Current);
-        let mark = status.mark(self.ascii);
+        let mark = status.mark();
         let title = self
             .items
-            .get(state.current)
+            .get(selected)
             .map(|s| s.title.as_str())
             .unwrap_or("");
         let line = format!(
             "{mark} {cur}/{n} {}",
             take_display_cols(title, usize::from(area.width.saturating_sub(12)))
         );
-        let style = self.style_for(status, true, state.focused);
+        let recipe = self.system.button_recipe(
+            ButtonRecipeVariant::Quiet,
+            state.control_state(status),
+            self.system.junie_theme().surface,
+        );
+        buffer.set_style(Rect::new(area.x, area.y, area.width, 1), recipe.fill);
+        let style = self.status_style(
+            status,
+            recipe.label,
+            state.enabled && !matches!(status, StepStatus::Disabled),
+        );
         buffer.set_stringn(
             area.x,
             area.y,
@@ -1014,32 +1141,38 @@ impl<'a> Stepper<'a> {
         );
         state
             .hits
-            .push((state.current, Rect::new(area.x, area.y, area.width, 1)));
+            .push((selected, Rect::new(area.x, area.y, area.width, 1)));
     }
 
     fn paint_menu(&self, area: Rect, buffer: &mut Buffer, state: &mut StepperState) {
         let n = self.items.len().max(1);
-        let cur = state.current.saturating_add(1).min(n);
+        let selected = state.selected_index(self.items.len());
+        let cur = selected.saturating_add(1).min(n);
         let title = self
             .items
-            .get(state.current)
+            .get(selected)
             .map(|s| s.title.as_str())
             .unwrap_or("Step");
         let status = state
             .statuses
-            .get(state.current)
+            .get(selected)
             .copied()
             .unwrap_or(StepStatus::Current);
-        let mark = status.mark(self.ascii);
-        let chev = if state.menu_open {
-            if self.ascii { "v" } else { "▾" }
-        } else if self.ascii {
-            ">"
-        } else {
-            "▸"
-        };
+        let mark = status.mark();
+        let menu_open = state.menu_open && state.interaction_enabled();
+        let chev = if menu_open { "▾" } else { "▸" };
         let line = format!("{mark} {cur}/{n} {title} {chev}");
-        let style = self.style_for(status, true, state.focused);
+        let recipe = self.system.button_recipe(
+            ButtonRecipeVariant::Quiet,
+            state.control_state(status),
+            self.system.junie_theme().surface,
+        );
+        buffer.set_style(Rect::new(area.x, area.y, area.width, 1), recipe.fill);
+        let style = self.status_style(
+            status,
+            recipe.label,
+            state.enabled && !matches!(status, StepStatus::Disabled),
+        );
         buffer.set_stringn(
             area.x,
             area.y,
@@ -1048,9 +1181,9 @@ impl<'a> Stepper<'a> {
             style,
         );
         state.menu_hit = Rect::new(area.x, area.y, area.width, 1);
-        state.hits.push((state.current, state.menu_hit));
+        state.hits.push((selected, state.menu_hit));
 
-        if state.menu_open && area.height > 1 {
+        if menu_open && area.height > 1 {
             let mut y = area.y.saturating_add(1);
             let cursor = state.cursor();
             for (i, step) in self.items.iter().enumerate() {
@@ -1058,14 +1191,22 @@ impl<'a> Stepper<'a> {
                     break;
                 }
                 let st = state.statuses.get(i).copied().unwrap_or_default();
-                let m = st.mark(self.ascii);
+                let m = st.mark();
                 let row = format!(
                     "{} {}",
                     m,
                     take_display_cols(&step.title, usize::from(area.width.saturating_sub(5)))
                 );
                 let rect = Rect::new(area.x, y, area.width, 1);
-                let style = self.style_for(st, cursor == i, state.focused);
+                let style = self.paint_step_row(
+                    rect,
+                    buffer,
+                    st,
+                    cursor == i,
+                    state.focused,
+                    state.enabled,
+                    state.interaction_enabled(),
+                );
                 buffer.set_stringn(
                     rect.x,
                     rect.y,
@@ -1105,11 +1246,11 @@ impl<'a> Stepper<'a> {
                 .role(SemanticRole::Control)
                 .label("stepper")
                 .description(desc)
-                .focusable(state.enabled)
+                .focusable(state.interaction_enabled())
                 .disabled(!state.enabled)
                 .state(SemanticState {
-                    selected: state.focused,
-                    expanded: state.menu_open,
+                    selected: state.interaction_enabled() && state.focused,
+                    expanded: state.interaction_enabled() && state.menu_open,
                     ..Default::default()
                 }),
         );
@@ -1175,12 +1316,51 @@ mod tests {
         s
     }
 
+    fn assert_disabled_cell(buffer: &Buffer, x: u16, y: u16, system: &DesignSystem, context: &str) {
+        let cell = &buffer[(x, y)];
+        assert_eq!(
+            cell.fg,
+            system.style(Role::TextDisabled).fg.unwrap(),
+            "{context}: disabled content must use the faint foreground"
+        );
+        assert!(
+            !cell.modifier.contains(Modifier::BOLD),
+            "{context}: disabled content must not retain focus/status weight"
+        );
+        assert_ne!(
+            cell.bg,
+            system.style(Role::SelectionTint).bg.unwrap(),
+            "{context}: disabled content must not retain selection tint"
+        );
+    }
+
     #[test]
     fn marks_non_color() {
-        assert_eq!(StepStatus::Complete.mark(true), "[x]");
-        assert_eq!(StepStatus::Error.mark(false), "[!]");
-        assert_eq!(StepStatus::Disabled.mark(true), "[#]");
-        assert_eq!(StepStatus::Future.mark(true), "[ ]");
+        assert_eq!(StepStatus::Complete.mark(), Glyph::Success.resolve().text);
+        assert_eq!(
+            StepStatus::Current.mark(),
+            Glyph::SelectionMarker.resolve().text
+        );
+        assert_eq!(StepStatus::Error.mark(), Glyph::Error.resolve().text);
+        assert_eq!(StepStatus::Disabled.mark(), Glyph::Remove.resolve().text);
+        assert_eq!(StepStatus::Skipped.mark(), Glyph::Remove.resolve().text);
+        assert_eq!(StepStatus::Optional.mark(), " ");
+        assert_eq!(StepStatus::Future.mark(), " ");
+        for status in [
+            StepStatus::Complete,
+            StepStatus::Current,
+            StepStatus::Error,
+            StepStatus::Disabled,
+            StepStatus::Optional,
+            StepStatus::Skipped,
+            StepStatus::Future,
+        ] {
+            assert!(
+                !status.mark().contains('[') && !status.mark().contains(']'),
+                "checkbox well leaked from {status:?}: {:?}",
+                status.mark()
+            );
+        }
     }
 
     #[test]
@@ -1233,6 +1413,21 @@ mod tests {
     }
 
     #[test]
+    fn orientation_change_preserves_cursor_for_relative_movement() {
+        let items = steps();
+        let mut state = focused_linear(items.len()).policy(StepperNavPolicy::Free);
+        state.set_current(2, items.len(), false);
+
+        state.set_orientation(StepperOrientation::Vertical);
+
+        assert_eq!(state.cursor(), 2);
+        assert_eq!(
+            state.handle_intent(UiIntent::Move(NavigationMove::Next), &items),
+            StepperOutcome::CursorMoved { index: 3 }
+        );
+    }
+
+    #[test]
     fn menu_toggle_and_activate() {
         let items = steps();
         let mut s = focused_linear(items.len()).policy(StepperNavPolicy::Host);
@@ -1247,6 +1442,176 @@ mod tests {
             s.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items),
             StepperOutcome::StepActivated { .. }
         ));
+        let _ = s.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items);
+        assert!(matches!(
+            s.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &items),
+            StepperOutcome::MenuToggled { open: false }
+        ));
+    }
+
+    #[test]
+    fn numeric_paint_and_mouse_follow_roving_cursor() {
+        let system = DesignSystem::default();
+        let items = steps();
+        let mut state = focused_linear(items.len()).policy(StepperNavPolicy::Host);
+        state.set_presentation_override(Some(StepperPresentation::Numeric));
+        let area = Rect::new(0, 0, 28, 1);
+        let widget = Stepper::new(&items, &system);
+
+        let mut buffer = Buffer::empty(area);
+        widget.paint(area, &mut buffer, &mut state);
+        assert_eq!(
+            state.handle_intent(UiIntent::Move(NavigationMove::Next), &items),
+            StepperOutcome::CursorMoved { index: 1 }
+        );
+
+        let mut buffer = Buffer::empty(area);
+        widget.paint(area, &mut buffer, &mut state);
+        let text: String = buffer
+            .content()
+            .iter()
+            .map(|cell| cell.symbol().to_string())
+            .collect();
+        assert!(text.contains("2/4 Region"), "{text}");
+        assert_eq!(state.hits()[0].0, 1);
+        let hit = state.hits()[0].1;
+        assert_eq!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(hit.x, hit.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &items,
+            ),
+            StepperOutcome::StepActivated {
+                index: 1,
+                id: items[1].id.clone(),
+            }
+        );
+        assert_eq!(state.current(), 0);
+    }
+
+    #[test]
+    fn menu_paint_and_header_hit_follow_roving_cursor() {
+        let system = DesignSystem::default();
+        let items = steps();
+        let mut state = focused_linear(items.len()).policy(StepperNavPolicy::Host);
+        state.set_presentation_override(Some(StepperPresentation::Menu));
+        state.menu_open = true;
+        let area = Rect::new(0, 0, 28, 5);
+        let widget = Stepper::new(&items, &system);
+
+        let mut buffer = Buffer::empty(area);
+        widget.paint(area, &mut buffer, &mut state);
+        assert_eq!(
+            state.handle_intent(UiIntent::Move(NavigationMove::Next), &items),
+            StepperOutcome::CursorMoved { index: 1 }
+        );
+
+        let mut buffer = Buffer::empty(area);
+        widget.paint(area, &mut buffer, &mut state);
+        let text: String = buffer
+            .content()
+            .iter()
+            .map(|cell| cell.symbol().to_string())
+            .collect();
+        assert!(text.contains("2/4 Region"), "{text}");
+        assert_eq!(state.hits()[0].0, 1);
+        let hit = state.hits()[0].1;
+        assert_eq!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(hit.x, hit.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &items,
+            ),
+            StepperOutcome::StepActivated {
+                index: 1,
+                id: items[1].id.clone(),
+            }
+        );
+        assert_eq!(state.current(), 0);
+    }
+
+    #[test]
+    fn disabled_expanded_row_has_disabled_style_without_focus() {
+        let system = DesignSystem::default();
+        let items = steps();
+        let mut state = focused_linear(items.len()).policy(StepperNavPolicy::Host);
+        state.set_status(0, StepStatus::Future);
+        state.set_enabled(false);
+        state.set_presentation_override(Some(StepperPresentation::Expanded));
+
+        let area = Rect::new(0, 0, 72, 3);
+        let mut buffer = Buffer::empty(area);
+        Stepper::new(&items, &system).paint(area, &mut buffer, &mut state);
+
+        let expected = system
+            .resolve_list_row(ListRowVisualState {
+                selected: true,
+                enabled: false,
+                ..ListRowVisualState::default()
+            })
+            .label;
+        assert_eq!(buffer[(0, 0)].style().fg, expected.fg);
+        assert_eq!(buffer[(0, 0)].style().bg, expected.bg);
+        assert!(!buffer[(0, 0)].style().add_modifier.contains(Modifier::BOLD));
+        assert_eq!(
+            state.handle_intent(UiIntent::Move(NavigationMove::Next), &items),
+            StepperOutcome::Ignored
+        );
+    }
+
+    #[test]
+    fn disabled_numeric_control_has_disabled_style_without_focus() {
+        let system = DesignSystem::default();
+        let items = steps();
+        let mut state = focused_linear(items.len()).policy(StepperNavPolicy::Host);
+        state.set_status(0, StepStatus::Future);
+        state.set_enabled(false);
+        state.set_presentation_override(Some(StepperPresentation::Numeric));
+
+        let area = Rect::new(0, 0, 28, 1);
+        let mut buffer = Buffer::empty(area);
+        Stepper::new(&items, &system).paint(area, &mut buffer, &mut state);
+
+        let expected = system
+            .button_recipe(
+                ButtonRecipeVariant::Quiet,
+                ControlState::Disabled,
+                system.junie_theme().surface,
+            )
+            .label;
+        assert_eq!(buffer[(0, 0)].style().fg, expected.fg);
+        assert!(!buffer[(0, 0)].style().add_modifier.contains(Modifier::BOLD));
+    }
+
+    #[test]
+    fn disabled_menu_control_has_disabled_style_without_focus() {
+        let system = DesignSystem::default();
+        let items = steps();
+        let mut state = focused_linear(items.len()).policy(StepperNavPolicy::Host);
+        state.set_status(0, StepStatus::Future);
+        state.set_enabled(false);
+        state.set_presentation_override(Some(StepperPresentation::Menu));
+        state.menu_open = true;
+
+        let area = Rect::new(0, 0, 28, 5);
+        let mut buffer = Buffer::empty(area);
+        Stepper::new(&items, &system).paint(area, &mut buffer, &mut state);
+
+        let expected = system
+            .button_recipe(
+                ButtonRecipeVariant::Quiet,
+                ControlState::Disabled,
+                system.junie_theme().surface,
+            )
+            .label;
+        assert_eq!(buffer[(0, 0)].style().fg, expected.fg);
+        assert!(!buffer[(0, 0)].style().add_modifier.contains(Modifier::BOLD));
     }
 
     #[test]
@@ -1272,32 +1637,135 @@ mod tests {
         s.set_current(1, items.len(), true);
         let area = Rect::new(0, 0, 72, 3);
         let mut buf = Buffer::empty(area);
-        Stepper::new(&items, &system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut s);
+        Stepper::new(&items, &system).paint(area, &mut buf, &mut s);
         let text: String = buf
             .content()
             .iter()
             .map(|c| c.symbol().to_string())
             .collect();
         assert!(
-            text.contains("Account") || text.contains("[x]") || text.contains("Region"),
+            text.contains("Account") || text.contains("Region"),
             "{text}"
+        );
+        assert!(
+            text.contains(Glyph::Success.resolve().text) && text.contains(" Account"),
+            "complete is catalog success with a space before the title: {text}"
+        );
+        assert!(
+            text.contains(&format!("{} Region", Glyph::SelectionMarker.resolve().text))
+                || text.contains(&format!(
+                    "{} ◦Region",
+                    Glyph::SelectionMarker.resolve().text
+                )),
+            "current is catalog selection marker with a space before the title: {text}"
+        );
+        assert!(
+            text.contains(system.glyphs.meta_join()),
+            "horizontal steps join with catalog meta_join: {text}"
+        );
+        assert!(
+            !text.contains("[✓]")
+                && !text.contains("[›]")
+                && !text.contains("[ ]")
+                && !text.contains(" → "),
+            "invented wells / arrows leaked: {text}"
         );
 
         let mut s2 = focused_linear(items.len());
         s2.set_orientation(StepperOrientation::Vertical);
-        let area2 = Rect::new(0, 0, 24, 12);
+        // Wider than STEPPER_NARROW_MAX_WIDTH so this is a vertical list, not numeric.
+        let area2 = Rect::new(0, 0, 56, 16);
         let mut buf2 = Buffer::empty(area2);
-        Stepper::new(&items, &system)
-            .ascii(true)
-            .paint(area2, &mut buf2, &mut s2);
+        Stepper::new(&items, &system).paint(area2, &mut buf2, &mut s2);
         let t2: String = buf2
             .content()
             .iter()
             .map(|c| c.symbol().to_string())
             .collect();
-        assert!(t2.contains("Account") || t2.contains("[>]"), "{t2}");
+        assert!(
+            t2.contains("Account")
+                && t2.contains(&format!(
+                    "{} Account",
+                    Glyph::SelectionMarker.resolve().text
+                )),
+            "{t2}"
+        );
+        assert!(
+            !t2.contains("[✓]") && !t2.contains("[›]") && !t2.contains("[ ]"),
+            "invented wells leaked: {t2}"
+        );
+    }
+
+    #[test]
+    fn vertical_navigation_reveals_the_active_step() {
+        let system = DesignSystem::default();
+        let items = steps();
+        let mut state = focused_linear(items.len()).policy(StepperNavPolicy::Free);
+        state.set_orientation(StepperOrientation::Vertical);
+        state.set_presentation_override(Some(StepperPresentation::Expanded));
+
+        let area = Rect::new(0, 0, 48, 6);
+        let mut buffer = Buffer::empty(area);
+        Stepper::new(&items, &system).paint(area, &mut buffer, &mut state);
+        for _ in 0..3 {
+            assert!(matches!(
+                state.handle_intent(UiIntent::Move(NavigationMove::Next), &items,),
+                StepperOutcome::CursorMoved { .. }
+            ));
+        }
+
+        let mut buffer = Buffer::empty(area);
+        Stepper::new(&items, &system).paint(area, &mut buffer, &mut state);
+        assert!(state.vertical_scroll > 0);
+        let (_, hit) = state
+            .hits
+            .iter()
+            .find(|(index, _)| *index == 3)
+            .copied()
+            .expect("active step must remain clickable after scrolling");
+        let text: String = buffer
+            .content()
+            .iter()
+            .map(|cell| cell.symbol().to_string())
+            .collect();
+        assert!(text.contains("Review"), "{text}");
+        assert!(matches!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(hit.x, hit.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &items,
+            ),
+            StepperOutcome::StepActivated { index: 3, .. }
+        ));
+    }
+
+    #[test]
+    fn mouse_activates_only_painted_step_hit() {
+        let system = DesignSystem::default();
+        let items = steps();
+        let mut state = focused_linear(items.len()).policy(StepperNavPolicy::Free);
+        let area = Rect::new(0, 0, 72, 3);
+        let mut buffer = Buffer::empty(area);
+        Stepper::new(&items, &system).paint(area, &mut buffer, &mut state);
+        let (index, hit) = state.hits[1];
+
+        assert_eq!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(hit.x, hit.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &items,
+            ),
+            StepperOutcome::StepActivated {
+                index,
+                id: items[index].id.clone()
+            }
+        );
     }
 
     #[test]
@@ -1309,7 +1777,6 @@ mod tests {
         let area = Rect::new(0, 0, 60, 2);
         let mut buf = Buffer::empty(area);
         Stepper::new(&items, &system)
-            .ascii(true)
             .colorless(true)
             .paint(area, &mut buf, &mut s);
         let text: String = buf
@@ -1317,7 +1784,11 @@ mod tests {
             .iter()
             .map(|c| c.symbol().to_string())
             .collect();
-        assert!(text.contains("[!]"), "{text}");
+        assert!(
+            text.contains(Glyph::Error.resolve().text),
+            "colorless error still uses catalog error mark: {text}"
+        );
+        assert!(!text.contains("[!]"), "invented error well leaked: {text}");
     }
 
     #[test]
@@ -1372,5 +1843,226 @@ mod tests {
             s.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items),
             StepperOutcome::Ignored
         ));
+    }
+
+    #[test]
+    fn disabled_whole_stepper_is_faint_and_not_focused_in_every_presentation() {
+        let system = DesignSystem::default();
+        let items = steps();
+        let cases = [
+            (
+                "expanded-horizontal",
+                StepperOrientation::Horizontal,
+                StepperPresentation::Expanded,
+                Rect::new(0, 0, 72, 3),
+            ),
+            (
+                "compact-horizontal",
+                StepperOrientation::Horizontal,
+                StepperPresentation::Compact,
+                Rect::new(0, 0, 40, 2),
+            ),
+            (
+                "numeric",
+                StepperOrientation::Horizontal,
+                StepperPresentation::Numeric,
+                Rect::new(0, 0, 28, 1),
+            ),
+            (
+                "menu",
+                StepperOrientation::Horizontal,
+                StepperPresentation::Menu,
+                Rect::new(0, 0, 28, 5),
+            ),
+            (
+                "expanded-vertical",
+                StepperOrientation::Vertical,
+                StepperPresentation::Expanded,
+                Rect::new(0, 0, 56, 16),
+            ),
+        ];
+
+        for (name, orientation, presentation, area) in cases {
+            let mut state = focused_linear(items.len()).policy(StepperNavPolicy::Free);
+            state.set_orientation(orientation);
+            state.set_presentation_override(Some(presentation));
+            // Error exercises the status colour path; the whole-widget
+            // disabled state must still win over danger/bold styling.
+            state.set_status(0, StepStatus::Error);
+            state.set_enabled(false);
+            state.set_focused(true);
+
+            let mut buffer = Buffer::empty(area);
+            Stepper::new(&items, &system).paint(area, &mut buffer, &mut state);
+            assert_disabled_cell(&buffer, 0, 0, &system, name);
+            if matches!(orientation, StepperOrientation::Vertical)
+                && matches!(presentation, StepperPresentation::Expanded)
+            {
+                assert_disabled_cell(&buffer, 4, 1, &system, name);
+            }
+            if matches!(presentation, StepperPresentation::Menu) {
+                assert_eq!(
+                    state.hits().len(),
+                    1,
+                    "{name}: disabled menu must stay closed"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn disabled_stepper_rejects_input_and_is_outside_semantic_focus_ring() {
+        let system = DesignSystem::default();
+        let items = steps();
+        let mut state = focused_linear(items.len()).policy(StepperNavPolicy::Host);
+        state.set_presentation_override(Some(StepperPresentation::Menu));
+        state.set_enabled(false);
+        state.set_focused(true);
+
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items),
+            StepperOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_intent(UiIntent::Activate, &items),
+            StepperOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(0, 0),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &items,
+            ),
+            StepperOutcome::Ignored
+        );
+
+        let mut scene = SemanticScene::<&str, ()>::default();
+        Stepper::new(&items, &system).register_semantic(
+            &mut scene,
+            "stepper",
+            Rect::new(0, 0, 28, 1),
+            &state,
+        );
+        let node = &scene.nodes()[0];
+        assert!(!node.focusable);
+        assert!(node.disabled);
+        assert!(!node.state.selected);
+        assert!(!node.state.expanded);
+    }
+
+    #[test]
+    fn accepts_input_revocation_closes_stale_menu_and_removes_focus_state() {
+        let system = DesignSystem::default();
+        let items = steps();
+        let mut state = focused_linear(items.len()).policy(StepperNavPolicy::Host);
+        state.set_presentation_override(Some(StepperPresentation::Menu));
+
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items),
+            StepperOutcome::MenuToggled { open: true }
+        );
+        state.set_accepts_input(false);
+        assert!(!state.menu_open(), "revoking input must close an open menu");
+
+        // Exercise the paint/semantic guards even if a stale owner restores
+        // the old open bit after input was revoked.
+        state.menu_open = true;
+        let area = Rect::new(0, 0, 28, 5);
+        let mut buffer = Buffer::empty(area);
+        Stepper::new(&items, &system).paint(area, &mut buffer, &mut state);
+        let text: String = buffer
+            .content()
+            .iter()
+            .map(|cell| cell.symbol().to_string())
+            .collect();
+        assert!(
+            text.contains("▸"),
+            "revoked input must show a closed header: {text}"
+        );
+        assert!(
+            !text.contains("▾"),
+            "revoked input must not show an open header: {text}"
+        );
+        assert_eq!(
+            state.hits().len(),
+            1,
+            "revoked input must not paint menu rows"
+        );
+
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &items),
+            StepperOutcome::Ignored
+        );
+        let mut scene = SemanticScene::<&str, ()>::default();
+        Stepper::new(&items, &system).register_semantic(&mut scene, "stepper", area, &state);
+        let node = &scene.nodes()[0];
+        assert!(
+            !node.focusable,
+            "input-revoked stepper is outside the focus ring"
+        );
+        assert!(
+            !node.disabled,
+            "input revocation is distinct from whole-widget disablement"
+        );
+        assert!(!node.state.selected);
+        assert!(!node.state.expanded);
+    }
+
+    #[test]
+    fn accepts_input_off_preserves_unfocused_status_colors() {
+        let system = DesignSystem::default();
+        let items = steps();
+        let mut state = focused_linear(items.len()).policy(StepperNavPolicy::Free);
+        state.set_orientation(StepperOrientation::Vertical);
+        state.set_presentation_override(Some(StepperPresentation::Expanded));
+        state.set_focused(false);
+        state.set_accepts_input(false);
+        state.set_status(0, StepStatus::Complete);
+        state.set_status(1, StepStatus::Error);
+
+        let area = Rect::new(0, 0, 60, 3);
+        let mut buffer = Buffer::empty(area);
+        Stepper::new(&items, &system)
+            .show_descriptions(false)
+            .paint(area, &mut buffer, &mut state);
+
+        assert_eq!(
+            buffer[(0, 0)].fg,
+            system.style(Role::Success).fg.unwrap(),
+            "completed status color must survive an input gate"
+        );
+        assert_eq!(
+            buffer[(0, 2)].fg,
+            system.style(Role::Danger).fg.unwrap(),
+            "error status color must survive an input gate"
+        );
+        assert_ne!(
+            buffer[(0, 0)].fg,
+            system.style(Role::TextDisabled).fg.unwrap()
+        );
+        assert_ne!(
+            buffer[(0, 2)].fg,
+            system.style(Role::TextDisabled).fg.unwrap()
+        );
+    }
+
+    #[test]
+    fn empty_stepper_is_safe_and_never_activates() {
+        let system = DesignSystem::default();
+        let items: [StepItem; 0] = [];
+        let mut state = StepperState::with_len(0);
+        state.set_focused(true);
+        let area = Rect::new(0, 0, 1, 1);
+        let mut buffer = Buffer::empty(area);
+
+        Stepper::new(&items, &system).paint(area, &mut buffer, &mut state);
+
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items),
+            StepperOutcome::Ignored
+        );
     }
 }

@@ -127,7 +127,7 @@ Detailed matrix: `pre-1.0-api-redesign.md`.
 | Sole `UiContext` per frame | P0 | design + caps + keymap + scene + overlays + clock |
 | `FocusGraph` (zones + roving + spatial) | P1 | evolve Scene beyond linear tab |
 | Universal `EventResult<M>` | P1 | consumed/message/redraw/focus/overlay requests |
-| Complete `ComponentRecipes` map | P1 | Button/MenuItem/Tab/Dialog parts |
+| Complete `ComponentRecipes` map | P1 | Button/DropdownMenu/Tab/Dialog parts |
 | SpacingScale enforcement in paint | P1 | not optional metadata |
 | Semantic scene query API | P1 | jump, hints, Studio, a11y export |
 | Headless behavior cores | P1 | CollectionState, ChoiceState, SelectionModel separated from chrome |

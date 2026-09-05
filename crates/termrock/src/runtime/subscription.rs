@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Immediately-ready one-shot subscription for runtime adapters and tests.
-
 /// Result of polling a [`ReadySubscription`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]

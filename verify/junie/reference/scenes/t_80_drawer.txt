@@ -1,0 +1,24 @@
+ ▪  TablePro  Production  ◆ production  acme_prod › public  safe         ? help
+
+ ▎≡ Query 1 ×                                                               +
+ ─━━━━━━━━━━━━─────────────────────────────────────────────────────────────────
+ ╭─ Explorer ──────────────────────────────────────────────────────── public ─╮
+ │                                                                            │
+ │ ▎ Filter objects                                                           │
+ │ ▎▾ D acme_prod                                                           ┃ │
+ │ ▎  ▾ S public                                                            ┃ │
+ │ ▎    ▾ Tables                                                          7 ┃ │
+ │ ▎      ▸ T organizations                                           1.2 k ┃ │
+ │ ▎      ▸ T customers                                              48.9 k ┃ │
+ │ ▎      ▸ T products                                                  312 ┃ │
+ │ ▎      ▸ T orders                                                  1.2 M ┃ │
+ │ ▎      ▸ T order_items                                             3.8 M ┃ │
+ │ ▎      ▸ T payments                                                1.2 M ┃ │
+ │ ▎      ▸ T subscriptions                                           1.1 k ┃ │
+ │ ▎    ▸ Views                                                           2 ┃ │
+ │ ▎    ▸ Functions                                                       1 ┃ │
+ │ ▎    ▸ Sequences                                                       1 ┃ │
+ │ ▎  ▸ S analytics                                                         │ │
+ ╰────────────────────────────────────────────────────────────────────────────╯
+
+ ↑ ↓ Move  Enter Open  → Expand  / Filter               Connected to Production

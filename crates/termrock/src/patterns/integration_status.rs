@@ -28,7 +28,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -44,7 +43,7 @@ use crate::{
     style::{DesignSystem, Glyph, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::Panel,
-    widgets::{EmptyKind, EmptyState},
+    widgets::{EmptyKind, EmptyState, SemanticStatus, StatusIndicator},
 };
 
 /// Overlay id for full integration panel.
@@ -201,13 +200,17 @@ impl IntegrationHealth {
         }
     }
 
-    fn role(self) -> Role {
+    /// Shared lifecycle projection for recipe-owned status paint.
+    #[must_use]
+    pub const fn semantic(self) -> SemanticStatus {
         match self {
-            Self::Connected => Role::Success,
-            Self::Disconnected | Self::Disabled => Role::TextMuted,
-            Self::Starting | Self::UpdateAvailable => Role::Info,
-            Self::PermissionRequired | Self::Degraded => Role::Warning,
-            Self::Error => Role::Danger,
+            Self::Connected => SemanticStatus::Online,
+            Self::Disconnected => SemanticStatus::Offline,
+            Self::Starting => SemanticStatus::Running,
+            Self::Error => SemanticStatus::Failed,
+            Self::PermissionRequired => SemanticStatus::Waiting,
+            Self::UpdateAvailable | Self::Degraded => SemanticStatus::Warning,
+            Self::Disabled => SemanticStatus::Paused,
         }
     }
 
@@ -860,7 +863,7 @@ impl IntegrationStatusState {
 
     /// Keyboard.
     pub fn handle_key(&mut self, key: KeyEvent) -> IntegrationStatusOutcome {
-        if !self.focused || !self.accepts_input || key.kind != KeyEventKind::Press {
+        if !self.focused || !self.accepts_input || !key.is_press() {
             return IntegrationStatusOutcome::Ignored;
         }
         if self.entries.is_empty() {
@@ -1019,7 +1022,6 @@ impl IntegrationStatusState {
 #[derive(Debug, Clone, Copy)]
 pub struct IntegrationStatus<'a> {
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -1042,20 +1044,13 @@ impl<'a> IntegrationStatus<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             system,
-            ascii: false,
             colorless: false,
         }
     }
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -1076,26 +1071,18 @@ impl<'a> IntegrationStatus<'a> {
     }
 
     fn paint_badge(&self, area: Rect, buffer: &mut Buffer, state: &IntegrationStatusState) {
-        let _w = usize::from(area.width);
-        let (text, role) = if let Some(e) = state.current() {
-            let g = e.health.glyph(self.ascii);
-            let k = e.kind.glyph(self.ascii);
-            let line = format!("{k}{g} {} · {}", e.name, e.health.label());
-            let role = if self.colorless {
-                Role::Text
-            } else {
-                e.health.role()
-            };
-            (line, role)
+        let (semantic, text) = if let Some(e) = state.current() {
+            (
+                e.health.semantic(),
+                format!("{}: {} · {}", e.health.label(), e.kind.label(), e.name),
+            )
         } else {
-            (state.aggregate_badge(), Role::TextMuted)
+            (SemanticStatus::Idle, state.aggregate_badge())
         };
-        self.system.paint_row(
-            buffer,
-            Rect::new(area.x, area.y, area.width, 1),
-            &text,
-            self.system.style(role),
-        );
+        StatusIndicator::new(semantic, self.system)
+            .label(&text)
+            .colorless(self.colorless)
+            .paint(Rect::new(area.x, area.y, area.width, 1), buffer);
     }
 
     fn paint_list(&self, area: Rect, buffer: &mut Buffer, state: &mut IntegrationStatusState) {
@@ -1137,35 +1124,42 @@ impl<'a> IntegrationStatus<'a> {
                 break;
             }
             let selected = i == state.cursor;
-            let mark = if selected {
-                if self.ascii { ">" } else { "›" }
-            } else {
-                " "
-            };
-            let kg = e.kind.glyph(self.ascii);
-            let hg = e.health.glyph(self.ascii);
+            let mark = if selected { "›" } else { " " };
+            let kg = e.kind.glyph(false);
+            let indicator = StatusIndicator::new(e.health.semantic(), self.system)
+                .label(e.health.label())
+                .colorless(self.colorless);
+            let status_text = indicator.text(None);
             let party = if e.provenance.third_party { "3p" } else { "1p" };
             // Egress is a fact worth a glyph, and the glyph has to survive an
             // ASCII terminal (plans/013 Step 2).
             let egress = if e.may_egress() {
-                format!(" {}", self.system.glyphs.resolve(Glyph::ArrowUp).text)
+                format!(" ↑")
             } else {
                 String::new()
             };
-            let text = format!(
-                "{mark}{kg}{hg} {} · {} · {party}{egress}",
-                e.name,
-                e.health.label()
-            );
-            let style = if selected {
+            let text = format!("{mark}{kg}{status_text} {} · {party}{egress}", e.name);
+            let style = if selected && !self.colorless {
                 self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
-            } else if self.colorless {
-                self.system.style(Role::Text)
+            } else if selected {
+                // Mono selection is the explicit reversal pair (D5).
+                self.system.reversed()
             } else {
-                self.system.style(e.health.role())
+                self.system.style(Role::Text)
             };
             self.system
                 .paint_row(buffer, Rect::new(inner.x, y, inner.width, 1), &text, style);
+            if inner.width > 2 {
+                indicator.paint(
+                    Rect::new(
+                        inner.x.saturating_add(2),
+                        y,
+                        inner.width.saturating_sub(2),
+                        1,
+                    ),
+                    buffer,
+                );
+            }
             state.row_hits.push((
                 e.id.clone(),
                 Rect {
@@ -1255,12 +1249,11 @@ impl<'a> IntegrationStatus<'a> {
         // Egress warning
         if let Some(eg) = e.egress_line() {
             if y < max_y {
-                self.system.paint_row(
-                    buffer,
-                    Rect::new(inner.x, y, inner.width, 1),
-                    &format!("! {eg}"),
-                    self.system.style(Role::Warning),
-                );
+                let warning = format!("warning: {eg}");
+                StatusIndicator::new(SemanticStatus::Warning, self.system)
+                    .label(&warning)
+                    .colorless(self.colorless)
+                    .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
                 y = y.saturating_add(1);
             }
         }
@@ -1268,17 +1261,15 @@ impl<'a> IntegrationStatus<'a> {
         let content_bottom = max_y.saturating_sub(1);
         match state.tab {
             IntegrationDetailTab::Overview => {
+                if y < content_bottom {
+                    StatusIndicator::new(e.health.semantic(), self.system)
+                        .label(e.health.label())
+                        .colorless(self.colorless)
+                        .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
+                    y = y.saturating_add(1);
+                }
                 let lines = [
-                    format!(
-                        "status: {} {}",
-                        e.health.glyph(self.ascii),
-                        e.health.label()
-                    ),
                     e.summary.clone().unwrap_or_default(),
-                    e.last_error
-                        .as_ref()
-                        .map(|err| format!("last error: {err}"))
-                        .unwrap_or_default(),
                     format!(
                         "caps: {} · perms: {}/{}",
                         e.capabilities.len(),
@@ -1297,6 +1288,15 @@ impl<'a> IntegrationStatus<'a> {
                         self.system.style(Role::Text),
                     );
                     y = y.saturating_add(1);
+                }
+                if let Some(err) = e.last_error.as_ref()
+                    && y < content_bottom
+                {
+                    let failure = format!("last error: {err}");
+                    StatusIndicator::new(SemanticStatus::Failed, self.system)
+                        .label(&failure)
+                        .colorless(self.colorless)
+                        .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
                 }
             }
             IntegrationDetailTab::Capabilities => {
@@ -1416,14 +1416,10 @@ impl<'a> IntegrationStatus<'a> {
         if row.y >= bottom {
             return;
         }
-        self.system.paint_row(
-            buffer,
-            row,
-            &note,
-            self.system
-                .style(Role::TextMuted)
-                .add_modifier(Modifier::DIM),
-        );
+        // The note is metadata: the muted tone alone. A held-back count is
+        // de-emphasised by the ladder, never by a dim modifier (D5).
+        self.system
+            .paint_row(buffer, row, &note, self.system.style(Role::TextMuted));
     }
 
     fn paint_actions(
@@ -1740,7 +1736,6 @@ mod tests {
             for tab in IntegrationDetailTab::cycle() {
                 st.tab = *tab;
                 IntegrationStatus::new(&system)
-                    .ascii(true)
                     .colorless(true)
                     .paint(area, &mut buf, &mut st);
             }
@@ -1808,21 +1803,30 @@ mod tests {
     }
 
     #[test]
-    fn unicode_names() {
+    fn resize_cjk_combining_and_ascii_safe() {
         let system = DesignSystem::default();
-        let mut st = IntegrationStatusState::new();
-        st.set_entries(vec![
-            IntegrationEntry::new("u1", "検査 MCP 🔍", IntegrationKind::McpServer)
-                .health(IntegrationHealth::Connected)
-                .provenance(IntegrationProvenance::third_party(
-                    "発行者",
-                    "pkg:日本語",
-                    "1.0",
-                )),
-        ]);
-        let area = Rect::new(0, 0, 40, 10);
-        let mut buf = Buffer::empty(area);
-        IntegrationStatus::new(&system).paint(area, &mut buf, &mut st);
+        for _ascii in [false, true] {
+            for (width, height) in [(40, 10), (20, 4), (1, 1), (0, 0)] {
+                let mut st = IntegrationStatusState::new();
+                st.set_entries(vec![
+                    IntegrationEntry::new("u1", "検査 MCP Cafe\u{301}", IntegrationKind::McpServer)
+                        .health(IntegrationHealth::Connected)
+                        .provenance(IntegrationProvenance::third_party(
+                            "発行者",
+                            "pkg:日本語",
+                            "1.0",
+                        )),
+                ]);
+                let area = Rect::new(0, 0, width, height);
+                let mut buf = Buffer::empty(area);
+                IntegrationStatus::new(&system).paint(area, &mut buf, &mut st);
+                if width == 40 {
+                    let text: String = buf.content().iter().map(|cell| cell.symbol()).collect();
+                    assert!(text.contains('検'), "{text:?}");
+                    assert!(text.contains("Cafe\u{301}"), "{text:?}");
+                }
+            }
+        }
     }
 
     #[test]

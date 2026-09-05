@@ -1,0 +1,40 @@
+ ▪  TablePro  Production  ◆ production  acme_prod › public  safe                             truecolor · 120×40  ? help
+
+ ▎≡ Query 1 ×                                                                                                       +
+ ─━━━━━━━━━━━━─────────────────────────────────────────────────────────────────────────────────────────────────────────
+ ╭─ Explorer ─────── public ─╮ ╭─ Query 1 ───────────────────────────────────────────────────────────────────── 2 ms ─╮
+ │                           │ │  ▎   ! SELECT nope FROM orders                                                       │
+ │ ▎ Filter objects          │ │                                                                                      │
+ │ ▎▾ D acme_prod            │ │                                                                                      │
+ │ ▎  ▾ S public             │ │                                                                                      │
+ │ ▎    ▾ Tables          7  │ │                                                                                      │
+ │ ▎      ▸ T organizations  │ │                                                                                      │
+ │ ▎      ▸ T customers      │ │                                                                                      │
+ │ ▎      ▸ T products  312  │ │                                                                                      │
+ │ ▎      ▸ T orders         │ │                                                                                      │
+ │ ▎      ▸ T order_items    │ │                                                                                      │
+ │ ▎      ▸ T payments       │ │   column "nope" does not exist                                      ln 1/1 · col 24  │
+ │ ▎      ▸ T subscriptions  │ │                                                                                      │
+ │ ▎    ▸ Views           2  │ │  ▎Error 1 ! ×                                                                        │
+ │ ▎    ▸ Functions       1  │ │  ─━━━━━━━━━━━━────────────────────────────────────────────────────────────────────── │
+ │ ▎    ▸ Sequences       1  │ │   ERROR: column "nope" does not exist                                                │
+ │ ▎  ▸ S analytics          │ │    Error                                                                             │
+ │ ▎  ▸ S audit              │ │                                                                                      │
+ │                           │ │    ! column "nope" does not exist                                                    │
+ │                           │ │      Perhaps you meant one of: id, order_number, customer_id, organization_id,       │
+ │                           │ │      status, total_amount, currency, shipping_address, notes, shipped_at, …          │
+ │                           │ │      Enter on the result tab jumps to the statement                                  │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ ╰───────────────────────────╯ ╰──────────────────────────────────────────────────────────────────────────────────────╯
+
+  EDIT   Ctrl+R Run  Alt+R Run all  Ctrl+Space Complete  Esc Done                               Connected to Production

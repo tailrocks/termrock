@@ -30,11 +30,10 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     style::{DesignSystem, Glyph, PanelChrome, Role},
     widgets::{
         Button, ButtonState, ButtonVariant, Callout, CalloutTone, Checkbox, CheckboxOutcome,
@@ -260,9 +259,15 @@ impl AuthEntryState {
     }
 
     fn blank(mode: AuthEntryMode) -> Self {
-        let mut identity = TextInputState::new("").with_allow_empty(true);
+        let mut identity = TextInputState::new("")
+            .with_allow_empty(true)
+            .with_editing();
         identity.set_focused(true);
         let mut secrets = PasswordConfirmState::new();
+        // AuthEntry is a live composite input, so its secret fields must opt
+        // into editing explicitly now that PasswordConfirmState::new() is idle.
+        secrets.password.begin_edit();
+        secrets.confirm.begin_edit();
         secrets.password.set_focused(false);
         secrets.confirm.set_focused(false);
         let mut terms = CheckboxState::new(false);
@@ -526,7 +531,7 @@ impl AuthEntryState {
 
     /// Keys.
     pub fn handle_key(&mut self, key: KeyEvent) -> AuthEntryOutcome {
-        if !self.accepts_input || !self.shell_focused || key.kind != KeyEventKind::Press {
+        if !self.accepts_input || !self.shell_focused || !key.is_press() {
             return AuthEntryOutcome::Ignored;
         }
         if self.pending {
@@ -732,11 +737,8 @@ pub fn auth_entry_form_width(total: u16, has_aside: bool) -> u16 {
 ///
 /// One mask glyph for every masked field in the library; the width is fixed so
 /// an empty field never advertises how long the real secret is.
-fn mask_placeholder(system: &DesignSystem) -> String {
-    Glyph::Mask
-        .resolve(system.glyphs)
-        .text
-        .repeat(crate::style::MASK_CELLS)
+fn mask_placeholder() -> String {
+    Glyph::Mask.resolve().text.repeat(crate::style::MASK_CELLS)
 }
 
 /// Paint auth entry panel.
@@ -788,7 +790,6 @@ pub fn render_auth_entry(buffer: &mut Buffer, area: Rect, surfaces: AuthEntrySur
         let height = 1u16.max(1).min(bottom.saturating_sub(y));
         Callout::new(err, system)
             .tone(CalloutTone::Danger)
-            .ascii(system.glyphs.is_ascii())
             .paint(Rect::new(x, y, w, height), buffer);
         y = y.saturating_add(height).saturating_add(1);
     }
@@ -846,7 +847,7 @@ pub fn render_auth_entry(buffer: &mut Buffer, area: Rect, surfaces: AuthEntrySur
             Validation::Valid
         };
         let _ = PasswordInput::new(surfaces.password_label, system)
-            .placeholder(&mask_placeholder(system))
+            .placeholder(&mask_placeholder())
             .validation(val)
             .paint(fa, buffer, &mut state.secrets.password);
         y = y.saturating_add(field_h.saturating_add(1));
@@ -863,7 +864,7 @@ pub fn render_auth_entry(buffer: &mut Buffer, area: Rect, surfaces: AuthEntrySur
                 Validation::Valid
             };
             let _ = PasswordInput::new(surfaces.confirm_label, system)
-                .placeholder(&mask_placeholder(system))
+                .placeholder(&mask_placeholder())
                 .validation(val)
                 .paint(fa, buffer, &mut state.secrets.confirm);
             y = y.saturating_add(field_h.saturating_add(1));

@@ -1540,10 +1540,33 @@ dependencies = [
  "serde",
  "serde_json",
  "stats_alloc",
+ "syn 2.0.119",
  "tui-scrollbar",
  "unicode-segmentation",
  "unicode-width",
  "web-time",
+]
+
+[[package]]
+name = "termrock-catalog"
+version = "0.11.0"
+dependencies = [
+ "ratatui",
+ "serde",
+ "serde_json",
+ "termrock",
+ "termrock-raster",
+ "unicode-segmentation",
+ "unicode-width",
+]
+
+[[package]]
+name = "termrock-catalog-web"
+version = "0.11.0"
+dependencies = [
+ "serde_json",
+ "termrock-catalog",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -1558,26 +1581,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "termrock-lookbook"
-version = "0.11.0"
-dependencies = [
- "ratatui",
- "serde",
- "serde_json",
- "termrock",
- "termrock-raster",
-]
-
-[[package]]
-name = "termrock-lookbook-web"
-version = "0.11.0"
-dependencies = [
- "serde_json",
- "termrock-lookbook",
- "wasm-bindgen",
-]
-
-[[package]]
 name = "termrock-raster"
 version = "0.11.0"
 dependencies = [
@@ -1586,17 +1589,8 @@ dependencies = [
  "sha2 0.11.0",
  "swash",
  "termrock",
- "termrock-lookbook",
  "tiny-skia",
  "unicode-width",
-]
-
-[[package]]
-name = "termrock-showcase"
-version = "0.11.0"
-dependencies = [
- "ratatui-core",
- "termrock",
 ]
 
 [[package]]

@@ -36,12 +36,11 @@ revisions; crates.io publication is not part of the initial migration.
 The **design** baseline is latest stable Rust (1.97.1+) on Linux and macOS with truecolor terminals
 in the Ghostty class. Optional requests cover OSC 8 hyperlinks, OSC 22 pointer
 shapes, and OSC 52 clipboard writes. **Runtime progressive enhancement** is
-supported via `ColorCapability` (including `NO_COLOR` → monochrome),
-`Appearance` detection, `GlyphSet::Ascii`, and `Motion` reduction—not
-truecolor-only forever.
+`ColorCapability` (including `NO_COLOR` → monochrome) and `MotionPolicy`
+reduction. One glyph vocabulary (junie Unicode). No Ascii profile.
 
 ```toml
-termrock = { git = "https://github.com/tailrocks/termrock.git", rev = "FULL_COMMIT_SHA" }
+termrock = { git = "https://github.com/tailrocks/termrock.git", rev = "5283c2acf9154d0cfcd37b1ffe821c00faf90ea2" }
 ```
 
 Default features are empty. Enable `crossterm` only for its event, backend, and scoped-session adapters.

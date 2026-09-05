@@ -8,7 +8,6 @@
 //! [`CapabilityBoundary`] for widgets, and never read env vars in paint paths.
 //!
 //! See `docs/design/terminal-capability-architecture.md`.
-
 mod boundary;
 mod detect;
 mod doctor;
@@ -20,7 +19,8 @@ pub use detect::{
     CapabilitySource, DetectionReport, EnvHints, detect_environment, detect_from_hints,
 };
 pub use doctor::{
-    DoctorFinding, DoctorReport, DoctorSeverity, build_doctor_report, format_doctor_text,
+    DoctorFinding, DoctorReport, DoctorSeverity, build_doctor_report,
+    build_doctor_report_from_detection, format_doctor_text,
 };
 pub use profile::{
     CapabilityOverrides, CapabilityProfile, EffectiveCapabilities, SessionFlags,

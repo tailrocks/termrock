@@ -10,7 +10,6 @@
 //! horizontal scrolling and clipping, and remembers where each fact sits so
 //! the tones can be put back on afterwards. The geometry stays exactly what it
 //! was; only the voice changes.
-
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style};
 
 use crate::text::display_cols;

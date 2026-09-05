@@ -18,7 +18,6 @@
 //! should fire product effects.
 //!
 //! Research: delta, lazygit, GitUI, review tools, TermRock DiffView/DiffReview.
-
 #![allow(unused_variables, unused_mut)] // unit-test fixtures
 use std::collections::BTreeSet;
 
@@ -30,9 +29,7 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
@@ -50,6 +47,9 @@ pub enum DiffKind {
     Added,
     /// Deletion.
     Removed,
+    /// Changed in place — dirty content that is neither a pure add nor a pure
+    /// remove. Carries the warning tone and the `•` change glyph.
+    Modified,
     /// File header (`diff --git`, `--- a/…`, `+++ b/…`).
     FileHeader,
     /// Hunk header (`@@ … @@`).
@@ -66,6 +66,7 @@ impl DiffKind {
             Self::Context => "context",
             Self::Added => "added",
             Self::Removed => "removed",
+            Self::Modified => "modified",
             Self::FileHeader => "file_header",
             Self::HunkHeader => "hunk_header",
             Self::Meta => "meta",
@@ -79,6 +80,7 @@ impl DiffKind {
             Self::Context => ' ',
             Self::Added => '+',
             Self::Removed => '-',
+            Self::Modified => '•',
             Self::FileHeader | Self::HunkHeader | Self::Meta => ' ',
         }
     }
@@ -90,6 +92,7 @@ impl DiffKind {
             Self::Context => Role::Text,
             Self::Added => Role::DiffAdded,
             Self::Removed => Role::DiffRemoved,
+            Self::Modified => Role::Warning,
             Self::FileHeader => Role::TextStrong,
             Self::HunkHeader | Self::Meta => Role::TextMuted,
         }
@@ -385,6 +388,12 @@ impl<'a> DiffLine<'a> {
         Self::new(id, DiffKind::Removed, text)
     }
 
+    /// Changed-in-place (dirty) line.
+    #[must_use]
+    pub const fn modified(id: &'a str, text: &'a str) -> Self {
+        Self::new(id, DiffKind::Modified, text)
+    }
+
     /// Hunk header line.
     #[must_use]
     pub const fn hunk_header(id: &'a str, text: &'a str) -> Self {
@@ -546,8 +555,6 @@ pub struct DiffViewState {
     anchor_hunk: Option<String>,
     /// Hit regions.
     pub regions: Vec<DiffRegion>,
-    /// ASCII glyphs.
-    pub ascii: bool,
     /// Colorless paint preference (also on widget).
     pub colorless: bool,
     content_width: u16,
@@ -560,9 +567,6 @@ impl Default for DiffViewState {
         Self::new()
     }
 }
-
-/// Backward-compatible alias for [`DiffViewState`].
-pub type DiffState = DiffViewState;
 
 impl DiffViewState {
     /// Fresh viewer (Auto mode, line numbers on, word diff on).
@@ -587,7 +591,6 @@ impl DiffViewState {
             anchor_id: None,
             anchor_hunk: None,
             regions: Vec::new(),
-            ascii: false,
             colorless: false,
             content_width: 0,
             h_offset: 0,
@@ -672,7 +675,7 @@ impl DiffViewState {
                 self.hunk_cursor = i;
             }
         }
-        self.ensure_cursor_visible(lines.len());
+        self.scroll.reveal_row(self.cursor);
     }
 
     fn sync_metrics(&mut self, total: u16, viewport: u16) {
@@ -683,41 +686,15 @@ impl DiffViewState {
         self.scroll.clamp();
     }
 
-    fn ensure_cursor_visible(&mut self, len: usize) {
-        if len == 0 || self.body_rows == 0 {
-            return;
-        }
-        let vh = usize::from(self.body_rows);
-        let start = usize::from(self.scroll.offset_y());
-        let end = start.saturating_add(vh);
-        if self.cursor < start {
-            self.scroll.set_offset_y_quiet(self.cursor as u16);
-        } else if self.cursor >= end {
-            let next = self.cursor.saturating_add(1).saturating_sub(vh);
-            self.scroll.set_offset_y_quiet(next as u16);
-        }
-        self.scroll.clamp();
-    }
-
     fn ensure_hunk_visible(&mut self, hunks: &[DiffHunk]) {
-        if hunks.is_empty() || self.body_rows == 0 {
+        if hunks.is_empty() {
             return;
         }
         self.hunk_cursor = self.hunk_cursor.min(hunks.len() - 1);
         let Some(hunk) = hunks.get(self.hunk_cursor) else {
             return;
         };
-        let vh = usize::from(self.body_rows);
-        let start = usize::from(self.scroll.offset_y());
-        let end = start.saturating_add(vh);
-        if hunk.start < start {
-            self.scroll
-                .set_offset_y_quiet(hunk.start.min(u16::MAX as usize) as u16);
-        } else if hunk.start >= end {
-            let next = hunk.start.saturating_add(1).saturating_sub(vh);
-            self.scroll
-                .set_offset_y_quiet(next.min(u16::MAX as usize) as u16);
-        }
+        self.scroll.reveal_row(hunk.start);
         self.cursor = hunk.start.min(self.line_count.saturating_sub(1) as usize);
     }
 
@@ -746,10 +723,10 @@ impl DiffViewState {
         lines: &[DiffLine<'_>],
         hunks: &[DiffHunk],
     ) -> DiffViewOutcome {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return DiffViewOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
         let view = filter_diff_lines(lines, self.search.as_deref().unwrap_or(""), self);
 
         // Search
@@ -887,7 +864,7 @@ impl DiffViewState {
             UiIntent::Move(NavigationMove::Next) => {
                 if len > 0 && self.cursor + 1 < len {
                     self.cursor += 1;
-                    self.ensure_cursor_visible(len);
+                    self.scroll.reveal_row(self.cursor);
                     sync_hunk_from_cursor(self, lines, hunks);
                     return DiffViewOutcome::CursorMoved { index: self.cursor };
                 }
@@ -901,7 +878,7 @@ impl DiffViewState {
             UiIntent::Move(NavigationMove::Previous) => {
                 if len > 0 && self.cursor > 0 {
                     self.cursor -= 1;
-                    self.ensure_cursor_visible(len);
+                    self.scroll.reveal_row(self.cursor);
                     sync_hunk_from_cursor(self, lines, hunks);
                     return DiffViewOutcome::CursorMoved { index: self.cursor };
                 }
@@ -939,7 +916,7 @@ impl DiffViewState {
                 }
                 if len > 0 {
                     self.cursor = len - 1;
-                    self.ensure_cursor_visible(len);
+                    self.scroll.reveal_row(self.cursor);
                 }
                 DiffViewOutcome::CursorMoved { index: self.cursor }
             }
@@ -1135,7 +1112,7 @@ pub fn escape_diff_text(raw: &str) -> String {
 
 /// Visible whitespace marker for trailing spaces/tabs.
 fn ws_marker(ascii: bool) -> &'static str {
-    if ascii { "~" } else { "·" }
+    "·"
 }
 
 /// High-quality read-only diff paint.
@@ -1146,7 +1123,6 @@ pub struct DiffView<'a> {
     files: &'a [DiffFile<'a>],
     system: &'a DesignSystem,
     focused: bool,
-    ascii: bool,
     colorless: bool,
     title: Option<&'a str>,
 }
@@ -1161,7 +1137,6 @@ impl<'a> DiffView<'a> {
             files: &[],
             system,
             focused: true,
-            ascii: false,
             colorless: false,
             title: None,
         }
@@ -1197,13 +1172,7 @@ impl<'a> DiffView<'a> {
 
     /// ASCII prefixes / empty marks.
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
     /// Reduced-color paint.
-    #[must_use]
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
         self
@@ -1216,8 +1185,7 @@ impl<'a> DiffView<'a> {
             state.body_rows = 0;
             return;
         }
-        let ascii = self.ascii || state.ascii;
-        let colorless = self.colorless || state.colorless;
+        let colorless = self.colorless || state.colorless || self.system.mono();
         state.origin = (area.x, area.y);
 
         let view = filter_diff_lines(self.lines, state.search.as_deref().unwrap_or(""), state);
@@ -1271,7 +1239,7 @@ impl<'a> DiffView<'a> {
             .min(area.bottom().saturating_sub(chip_h));
 
         if view.is_empty() {
-            let mark = if ascii { "[ ] " } else { "∅ " };
+            let mark = "∅ ";
             let msg = if tiny {
                 format!("{mark}empty")
             } else {
@@ -1310,7 +1278,7 @@ impl<'a> DiffView<'a> {
                             state,
                             self.system,
                             surface,
-                            ascii,
+                            false,
                             colorless,
                             tiny,
                             narrow,
@@ -1326,7 +1294,7 @@ impl<'a> DiffView<'a> {
                             state,
                             self.system,
                             surface,
-                            ascii,
+                            false,
                             colorless,
                             cursor,
                             in_hunk,
@@ -1345,18 +1313,13 @@ impl<'a> DiffView<'a> {
 
         if chip_h > 0 {
             let chip_y = area.bottom().saturating_sub(1);
+            let separator = " · ";
             let mode = match effective {
-                DiffEffectiveMode::Unified => {
-                    if ascii {
-                        "unified"
-                    } else {
-                        "unified"
-                    }
-                }
+                DiffEffectiveMode::Unified => "unified",
                 DiffEffectiveMode::Split => "split",
             };
             let mut chip = format!(
-                "{mode} · hunk {}/{}",
+                "{mode}{separator}hunk {}/{}",
                 if self.hunks.is_empty() {
                     0
                 } else {
@@ -1365,16 +1328,18 @@ impl<'a> DiffView<'a> {
                 self.hunks.len()
             );
             if let Some(q) = &state.search {
-                chip.push_str(&format!(" · /{q}"));
+                chip.push_str(&format!("{separator}/{q}"));
             }
             if !state.folded_hunks.is_empty() {
-                chip.push_str(&format!(" · fold {}", state.folded_hunks.len()));
+                chip.push_str(&format!("{separator}fold {}", state.folded_hunks.len()));
             }
             if state.word_diff {
-                chip.push_str(" · words");
+                chip.push_str(separator);
+                chip.push_str("words");
             }
             if !state.show_line_numbers {
-                chip.push_str(" · no#");
+                chip.push_str(separator);
+                chip.push_str("no#");
             }
             let style = if surface {
                 self.system.style(Role::TextMuted)
@@ -1409,6 +1374,17 @@ fn apply_hunk_fold_fallback<'a>(
     view
 }
 
+/// A deleted row is `#4d4d4d` + `CROSSED_OUT` — the one legal strikethrough in
+/// the system, and the same treatment the reference grid gives a deleted row.
+/// The change glyph keeps the `DiffRemoved` tone; the row does not.
+fn deleted_row_style(system: &DesignSystem, style: Style) -> Style {
+    Style {
+        fg: system.style(Role::TextFaint).fg,
+        ..style
+    }
+    .add_modifier(Modifier::CROSSED_OUT) // the one legal strike: a deleted row
+}
+
 fn kind_style(
     system: &DesignSystem,
     kind: DiffKind,
@@ -1416,7 +1392,7 @@ fn kind_style(
     surface: bool,
     emphasize: bool,
 ) -> Style {
-    if colorless {
+    let style = if colorless {
         match kind {
             DiffKind::Added | DiffKind::Removed if surface || emphasize => {
                 system.style(Role::TextStrong).add_modifier(Modifier::BOLD)
@@ -1431,6 +1407,11 @@ fn kind_style(
         // A cursored line is still an added / removed / context line: the
         // selection speaks through the row chrome, not by repainting the tone.
         system.style(kind.role())
+    };
+    if kind == DiffKind::Removed {
+        deleted_row_style(system, style)
+    } else {
+        style
     }
 }
 
@@ -1468,13 +1449,16 @@ fn paint_unified_line(
         cursor || in_hunk,
     ));
     if !colorless && matches!(line.kind, DiffKind::Added | DiffKind::Removed) {
-        buffer.set_style(area, system.style(line.kind.role()));
+        buffer.set_style(
+            area,
+            kind_style(system, line.kind, colorless, surface, false),
+        );
     }
     // The cursor's own column is stamped by the shared chrome below.
     let gutter = if cursor && surface {
         " "
     } else if in_hunk {
-        if ascii { "." } else { "·" }
+        "·"
     } else {
         " "
     };
@@ -1501,7 +1485,7 @@ fn paint_unified_line(
 
     let mut composed = format!("{gutter}{nums}{prefix}{body}");
     if state.show_whitespace && line.trailing_ws {
-        composed.push_str(ws_marker(ascii));
+        composed.push_str(ws_marker(false));
     }
 
     // Word-level: paint base then overlay is complex without multi-span set_string;
@@ -1514,7 +1498,7 @@ fn paint_unified_line(
                     composed.push_str(&escape_diff_text(w.text));
                 }
                 if state.show_whitespace && line.trailing_ws {
-                    composed.push_str(ws_marker(ascii));
+                    composed.push_str(ws_marker(false));
                 }
             }
         }
@@ -1537,7 +1521,7 @@ fn paint_unified_line(
                     surface,
                     style,
                     line.trailing_ws && state.show_whitespace,
-                    ascii,
+                    false,
                 );
                 chrome.paint(buffer, area);
                 return;
@@ -1565,7 +1549,7 @@ fn paint_word_line(
     let mut x = area.x;
     let max_x = area.x.saturating_add(area.width);
     let lead_t = take_display_cols(lead, usize::from(area.width));
-    buffer.set_stringn(x, area.y, &lead_t, lead_t.chars().count().max(1), base);
+    buffer.set_stringn(x, area.y, &lead_t, display_cols(&lead_t).max(1), base);
     x = x.saturating_add(display_cols(&lead_t) as u16);
 
     for w in words {
@@ -1575,21 +1559,21 @@ fn paint_word_line(
         let st = if colorless {
             match w.kind {
                 DiffWordKind::Equal => base,
-                DiffWordKind::Insert | DiffWordKind::Delete => {
-                    system.style(Role::TextStrong).add_modifier(Modifier::BOLD)
-                }
+                // Ladder, not weight: a moved span reads through its step on
+                // the text ladder plus the line's own `+` / `−` glyph.
+                DiffWordKind::Insert => system.style(Role::TextSecondary),
+                DiffWordKind::Delete => system.style(Role::TextMuted),
             }
         } else {
             match w.kind {
                 DiffWordKind::Equal => base,
-                // The word tints already carry their own ground; weight marks
-                // which words inside the line actually moved.
-                DiffWordKind::Insert => system.style(Role::DiffAdded).add_modifier(Modifier::BOLD),
-                DiffWordKind::Delete => {
-                    system.style(Role::DiffRemoved).add_modifier(Modifier::BOLD)
-                }
+                DiffWordKind::Insert => system.style(Role::DiffAdded),
+                DiffWordKind::Delete => system.style(Role::DiffRemoved),
             }
-        };
+        }
+        // A deleted row's strikethrough belongs to the row; an inserted span
+        // inside it is new content and must not inherit the strike.
+        .remove_modifier(Modifier::CROSSED_OUT);
         let remain = max_x.saturating_sub(x);
         let t = take_display_cols(&escape_diff_text(w.text), usize::from(remain));
         let wcols = display_cols(&t) as u16;
@@ -1598,7 +1582,7 @@ fn paint_word_line(
         let _ = surface;
     }
     if trailing_ws && x < max_x {
-        let m = ws_marker(ascii);
+        let m = ws_marker(false);
         buffer.set_stringn(x, area.y, m, 1, system.style(Role::Warning));
     }
 }
@@ -1619,7 +1603,10 @@ fn paint_split_line(
         return;
     }
     if !colorless && matches!(line.kind, DiffKind::Added | DiffKind::Removed) {
-        buffer.set_style(area, system.style(line.kind.role()));
+        buffer.set_style(
+            area,
+            kind_style(system, line.kind, colorless, surface, false),
+        );
     }
     let mid = area.width / 2;
     let left = Rect::new(area.x, area.y, mid.saturating_sub(1).max(1), 1);
@@ -1631,9 +1618,9 @@ fn paint_split_line(
     );
 
     let gutter = if cursor && surface {
-        if ascii { ">" } else { "›" }
+        "›"
     } else if in_hunk {
-        if ascii { "." } else { "·" }
+        "·"
     } else {
         " "
     };
@@ -1655,10 +1642,16 @@ fn paint_split_line(
             let t = strip_diff_prefix(line.text, DiffKind::Context);
             (t, DiffKind::Context, t, DiffKind::Context)
         }
+        DiffKind::Modified => {
+            // A changed-in-place line occupies both sides: the same dirty body,
+            // carrying the warning tone and the `•` change glyph on each side.
+            let t = strip_diff_prefix(line.text, DiffKind::Modified);
+            (t, DiffKind::Modified, t, DiffKind::Modified)
+        }
         DiffKind::FileHeader | DiffKind::HunkHeader | DiffKind::Meta => {
             // Span full width in split for headers
             paint_unified_line(
-                buffer, area, line, state, system, surface, ascii, colorless, false, false, cursor,
+                buffer, area, line, state, system, surface, false, colorless, false, false, cursor,
                 in_hunk,
             );
             return;
@@ -1716,7 +1709,7 @@ fn paint_split_line(
         buffer.set_stringn(
             area.x.saturating_add(mid.saturating_sub(1)),
             area.y,
-            if ascii { "|" } else { "│" },
+            "│",
             1,
             system.style(Role::Border),
         );

@@ -15,9 +15,13 @@
 //! empty draft removes the previous token.
 //!
 //! Research: email recipient fields, token inputs, agent attachment/mention chips.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    style::{Modifier, Style},
+    widgets::StatefulWidget,
+};
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{
@@ -25,7 +29,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
-    style::{DesignSystem, Role},
+    style::{ControlState, DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -319,6 +323,18 @@ impl<Id> TokenFieldState<Id> {
     pub const fn with_max_visible(mut self, n: usize) -> Self {
         self.max_visible = n;
         self
+    }
+
+    /// Live typing. [`Self::new`] stays idle (`editing: false`).
+    #[must_use]
+    pub fn with_editing(mut self) -> Self {
+        self.draft.begin_edit();
+        self
+    }
+
+    /// Start the insert session (Junie Enter on an idle field).
+    pub fn begin_edit(&mut self) {
+        self.draft.begin_edit();
     }
 
     /// Tokens.
@@ -620,7 +636,7 @@ impl TokenFieldState<String> {
 impl TokenFieldState<String> {
     /// Key adapter (String token ids).
     pub fn handle_key(&mut self, key: KeyEvent) -> TokenFieldOutcome<String> {
-        if key.kind == KeyEventKind::Release || !self.enabled {
+        if key.is_release() || !self.enabled {
             return TokenFieldOutcome::Ignored;
         }
         self.sync_draft_focus();
@@ -707,6 +723,10 @@ impl TokenFieldState<String> {
         // Enter / separator commit
         if !self.read_only {
             if matches!(key.code, KeyCode::Enter) && !ctrl {
+                if !self.draft.is_editing() {
+                    self.draft.begin_edit();
+                    return TokenFieldOutcome::DraftChanged;
+                }
                 if self.draft.value().trim().is_empty() {
                     return TokenFieldOutcome::Submitted;
                 }
@@ -922,7 +942,6 @@ pub struct TokenField<'a> {
     placeholder: &'a str,
     system: &'a DesignSystem,
     validation: Validation<'a>,
-    ascii: bool,
     gap: u16,
 }
 
@@ -932,10 +951,9 @@ impl<'a> TokenField<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             label: "",
-            placeholder: "Add…",
+            placeholder: "Add",
             system,
             validation: Validation::Valid,
-            ascii: false,
             gap: 1,
         }
     }
@@ -963,13 +981,7 @@ impl<'a> TokenField<'a> {
 
     /// ASCII chrome.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Gap between tokens.
-    #[must_use]
     pub const fn gap(mut self, gap: u16) -> Self {
         self.gap = gap;
         self
@@ -992,14 +1004,22 @@ impl<'a> TokenField<'a> {
                 overflow: None,
             };
         }
+        let invalid = matches!(self.validation, Validation::Invalid(_));
+        let recipe = self.system.input_recipe(
+            if !state.enabled {
+                ControlState::Disabled
+            } else if state.focused {
+                ControlState::Focused
+            } else {
+                ControlState::Default
+            },
+            invalid,
+            state.draft.is_editing() && matches!(state.zone, TokenFieldZone::Draft),
+        );
 
         let mut y = area.y;
         if area.height >= 2 && !self.label.is_empty() {
-            let mut style = self.system.style(if state.focused {
-                Role::Focus
-            } else {
-                Role::Text
-            });
+            let mut style = recipe.value;
             if state.focused {
                 style = style.add_modifier(Modifier::BOLD);
             }
@@ -1019,6 +1039,7 @@ impl<'a> TokenField<'a> {
             area.width,
             1,
         );
+        buffer.set_style(row, recipe.fill);
         let mut x = row.x;
         let mut token_rects = Vec::new();
         let mut overflow = None;
@@ -1081,12 +1102,13 @@ impl<'a> TokenField<'a> {
             let ow = u16::try_from(display_cols(&label).saturating_add(2)).unwrap_or(4);
             let ox = row.right().saturating_sub(ow);
             let rect = Rect::new(ox, row.y, ow.min(row.width), 1);
+            let gutter = self.system.glyphs.selection_gutter();
             buffer.set_stringn(
                 rect.x,
                 rect.y,
-                &format!("[{label}]"),
+                &take_display_cols(&format!("{gutter}{label}"), usize::from(rect.width)),
                 usize::from(rect.width),
-                self.system.style(Role::TextMuted),
+                recipe.placeholder,
             );
             overflow = Some(rect);
         }
@@ -1102,6 +1124,7 @@ impl<'a> TokenField<'a> {
             .placeholder(self.placeholder)
             .validation(self.validation);
         let _ = input.paint(draft, buffer, &mut state.draft);
+        apply_field_underline(buffer, row, &recipe);
 
         // Validation row
         if area.height >= 3
@@ -1166,6 +1189,17 @@ impl<'a> TokenField<'a> {
                 }),
         );
     }
+}
+
+fn apply_field_underline(buffer: &mut Buffer, field: Rect, recipe: &crate::style::InputRecipe) {
+    if field.is_empty() {
+        return;
+    }
+    let mut underline = Style::new().add_modifier(recipe.border.add_modifier);
+    if let Some(color) = recipe.border.underline_color {
+        underline = underline.underline_color(color);
+    }
+    buffer.set_style(field, underline);
 }
 
 fn measure_token_width(tok: &FieldToken<String>, system: &DesignSystem) -> u16 {
@@ -1347,6 +1381,20 @@ mod tests {
     }
 
     #[test]
+    fn escape_cancels_without_discarding_tokens_or_draft() {
+        let mut state = TokenFieldState::new();
+        state.set_focused(true);
+        assert!(state.push_token(FieldToken::new("1".into(), "alice")));
+        let _ = state.draft.insert_str("bob");
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            TokenFieldOutcome::Cancelled
+        );
+        assert_eq!(state.labels(), vec!["alice"]);
+        assert_eq!(state.draft(), "bob");
+    }
+
+    #[test]
     fn apply_suggestion() {
         let mut state = TokenFieldState::new();
         assert!(matches!(
@@ -1358,7 +1406,7 @@ mod tests {
 
     #[test]
     fn paint_tokens_and_draft() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let mut state = TokenFieldState::new();
         state.set_focused(true);
         let _ = state.push_token(FieldToken::new("1".into(), "alice"));
@@ -1367,10 +1415,41 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let parts = TokenField::new(&system)
             .label("To")
-            .ascii(true)
             .paint(area, &mut buf, &mut state);
         assert!(!parts.token_rects.is_empty());
         assert!(!parts.draft.is_empty());
+    }
+
+    #[test]
+    fn mouse_focuses_only_painted_token_or_draft_regions() {
+        let system = DesignSystem::default();
+        let mut state = TokenFieldState::new().with_multi_select(true);
+        assert!(state.push_token(FieldToken::new("1".into(), "alice")));
+        let area = Rect::new(0, 0, 48, 2);
+        let mut buffer = Buffer::empty(area);
+        let parts = TokenField::new(&system).paint(area, &mut buffer, &mut state);
+        let token = parts.token_rects[0];
+
+        assert!(matches!(
+            state.handle_mouse(MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: ratatui_core::layout::Position::new(token.x, token.y),
+                modifiers: KeyModifiers::NONE,
+            }),
+            TokenFieldOutcome::SelectionChanged {
+                id,
+                selected: true
+            } if id == "1"
+        ));
+        assert!(matches!(
+            state.handle_mouse(MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: ratatui_core::layout::Position::new(parts.draft.x, parts.draft.y),
+                modifiers: KeyModifiers::NONE,
+            }),
+            TokenFieldOutcome::FocusMoved | TokenFieldOutcome::DraftChanged
+        ));
+        assert!(matches!(state.zone(), TokenFieldZone::Draft));
     }
 
     #[test]
@@ -1426,5 +1505,36 @@ mod tests {
         let mut state: TokenFieldState<String> = TokenFieldState::new();
         assert!(state.push_token(FieldToken::new("1".into(), "東京🧪")));
         assert_eq!(state.tokens()[0].label.graphemes(true).count(), 3);
+    }
+
+    #[test]
+    fn focused_without_editing_is_not_underlined() {
+        let system = DesignSystem::junie();
+        let mut state = TokenFieldState::new();
+        state.set_focused(true);
+        assert!(!state.draft.is_editing(), "TokenFieldState::new is idle");
+        let area = Rect::new(0, 0, 32, 3);
+        let mut buffer = Buffer::empty(area);
+        let _ = TokenField::new(&system)
+            .label("To")
+            .paint(area, &mut buffer, &mut state);
+        let underlined = buffer
+            .content()
+            .iter()
+            .any(|cell| cell.style().add_modifier.contains(Modifier::UNDERLINED));
+        assert!(
+            !underlined,
+            "nav-focus token field is not an editing underline"
+        );
+        state.begin_edit();
+        let mut buffer = Buffer::empty(area);
+        let _ = TokenField::new(&system)
+            .label("To")
+            .paint(area, &mut buffer, &mut state);
+        let underlined = buffer
+            .content()
+            .iter()
+            .any(|cell| cell.style().add_modifier.contains(Modifier::UNDERLINED));
+        assert!(underlined, "editing token field underlines the draft");
     }
 }

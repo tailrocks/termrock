@@ -17,13 +17,12 @@
 //!
 //! **v1 law (AD-1):** nested StatefulWidgets inside the viewport are out of
 //! scope. Host expands tools / opens overlays on [`MessageThreadOutcome::Activated`].
-
 use std::collections::BTreeSet;
 
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseEvent},
     style::DesignSystem,
     text::{display_cols, take_display_cols},
     widgets::transcript::{
@@ -416,6 +415,17 @@ pub fn project_message_thread(
     expanded_ids: &BTreeSet<String>,
     force_collapsed: &BTreeSet<String>,
 ) -> (Vec<ProjectedEntryMeta>, Vec<Vec<String>>) {
+    project_message_thread_profile(entries, zoom, search, expanded_ids, force_collapsed, false)
+}
+
+fn project_message_thread_profile(
+    entries: &[MessageEntry],
+    zoom: MessageZoom,
+    search: Option<&str>,
+    expanded_ids: &BTreeSet<String>,
+    force_collapsed: &BTreeSet<String>,
+    _ascii: bool,
+) -> (Vec<ProjectedEntryMeta>, Vec<Vec<String>>) {
     let q = search
         .map(|s| s.trim().to_ascii_lowercase())
         .filter(|s| !s.is_empty());
@@ -467,7 +477,7 @@ pub fn project_message_thread(
             }
         };
 
-        let lines = project_entry_lines(e, zoom, folded);
+        let lines = project_entry_lines(e, zoom, folded, false);
         bufs.push(lines);
         meta.push(ProjectedEntryMeta {
             id: e.id.clone(),
@@ -482,7 +492,12 @@ pub fn project_message_thread(
     (meta, bufs)
 }
 
-fn project_entry_lines(e: &MessageEntry, zoom: MessageZoom, folded: bool) -> Vec<String> {
+fn project_entry_lines(
+    e: &MessageEntry,
+    zoom: MessageZoom,
+    folded: bool,
+    _ascii: bool,
+) -> Vec<String> {
     if folded {
         let mut s = String::new();
         if let Some(t) = &e.timestamp {
@@ -495,7 +510,7 @@ fn project_entry_lines(e: &MessageEntry, zoom: MessageZoom, folded: bool) -> Vec
         }
         if let Some(c) = e.status_letter {
             s.push('[');
-            s.push(c);
+            s.push(if false && !c.is_ascii() { '*' } else { c });
             s.push(']');
             s.push(' ');
         }
@@ -528,7 +543,7 @@ fn project_entry_lines(e: &MessageEntry, zoom: MessageZoom, folded: bool) -> Vec
             head.push(' ');
         }
         head.push('[');
-        head.push(c);
+        head.push(if false && !c.is_ascii() { '*' } else { c });
         head.push(']');
     }
     if e.checkpoint {
@@ -552,8 +567,10 @@ fn project_entry_lines(e: &MessageEntry, zoom: MessageZoom, folded: bool) -> Vec
         out.push(line.clone());
     }
     if e.lines.len() > body_take {
+        let ellipsis = "…";
+        let separator = " · ";
         out.push(format!(
-            "… +{} lines · open detail",
+            "{ellipsis} +{} lines{separator}open detail",
             e.lines.len() - body_take
         ));
     }
@@ -626,6 +643,25 @@ impl ThreadProjection {
     ) -> Self {
         let (meta, bufs) =
             project_message_thread(entries, zoom, search, expanded_ids, force_collapsed);
+        Self { meta, bufs }
+    }
+
+    fn project_profile(
+        entries: &[MessageEntry],
+        zoom: MessageZoom,
+        search: Option<&str>,
+        expanded_ids: &BTreeSet<String>,
+        force_collapsed: &BTreeSet<String>,
+        _ascii: bool,
+    ) -> Self {
+        let (meta, bufs) = project_message_thread_profile(
+            entries,
+            zoom,
+            search,
+            expanded_ids,
+            force_collapsed,
+            false,
+        );
         Self { meta, bufs }
     }
 
@@ -865,6 +901,17 @@ impl MessageThreadState {
         )
     }
 
+    fn projection_profile(&self, entries: &[MessageEntry], _ascii: bool) -> ThreadProjection {
+        ThreadProjection::project_profile(
+            entries,
+            self.zoom,
+            self.search.as_deref(),
+            &self.expanded,
+            &self.force_collapsed,
+            false,
+        )
+    }
+
     /// Map transcript outcome + local chords.
     pub fn handle_key(
         &mut self,
@@ -872,7 +919,7 @@ impl MessageThreadState {
         entries: &[MessageEntry],
         blocks: &[TranscriptBlock<'_, String>],
     ) -> MessageThreadOutcome {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return MessageThreadOutcome::Ignored;
         }
         // Search mode
@@ -1009,7 +1056,6 @@ impl MessageThreadState {
 pub struct MessageThread<'a> {
     entries: &'a [MessageEntry],
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
     focused: bool,
 }
@@ -1021,7 +1067,6 @@ impl<'a> MessageThread<'a> {
         Self {
             entries,
             system,
-            ascii: false,
             colorless: false,
             focused: true,
         }
@@ -1029,13 +1074,7 @@ impl<'a> MessageThread<'a> {
 
     /// ASCII prefixes.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -1062,14 +1101,14 @@ impl<'a> MessageThread<'a> {
             body.height = area.height.saturating_sub(footer_h);
         }
 
-        let proj = state.projection(self.entries);
+        let colorless = self.colorless || self.system.mono();
+        let proj = state.projection_profile(self.entries, false);
         let mut line_ptrs: Vec<Vec<&str>> = Vec::new();
         let blocks = proj.blocks(&mut line_ptrs);
 
         let transcript = Transcript::new(&blocks, self.system)
             .focused(self.focused)
-            .ascii(self.ascii)
-            .colorless(self.colorless)
+            .colorless(colorless)
             .empty_label("No messages yet");
         StatefulWidget::render(&transcript, body, buffer, &mut state.transcript);
 
@@ -1104,11 +1143,6 @@ impl<'a> MessageThread<'a> {
             }
         }
         let _ = display_cols;
-    }
-
-    /// Render alias.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut MessageThreadState) {
-        self.paint(area, buffer, state);
     }
 }
 

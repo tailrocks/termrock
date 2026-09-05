@@ -18,7 +18,6 @@
 //! Does not steal focus while closed. High-volume ingest uses dedup keys.
 //!
 //! Research: desktop notification centers, CI dashboards, task histories.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::time::Duration;
 
@@ -527,11 +526,12 @@ pub struct NotificationCenterState {
     /// Cursor into **filtered** view by item id.
     cursor: Option<String>,
     scroll: usize,
+    /// Visible list rows, written by paint so event-time reveal matches.
+    viewport_rows: usize,
     capacity: usize,
     slots: NotificationCenterSlots,
     /// Filter chrome: cycling presets.
     filter_cycle: usize,
-    ascii: bool,
     /// When true, clear-all / dismiss only apply to filtered view.
     scope_to_filter: bool,
 }
@@ -557,10 +557,10 @@ impl NotificationCenterState {
             items: Vec::new(),
             cursor: None,
             scroll: 0,
+            viewport_rows: 0,
             capacity: NOTIFICATION_CENTER_DEFAULT_CAPACITY,
             slots: NotificationCenterSlots::empty(),
             filter_cycle: 0,
-            ascii: false,
             scope_to_filter: true,
         }
     }
@@ -647,10 +647,6 @@ impl NotificationCenterState {
     }
 
     /// ASCII.
-    pub fn set_ascii(&mut self, on: bool) {
-        self.ascii = on;
-    }
-
     /// Open center.
     pub fn open(&mut self) -> NotificationCenterOutcome {
         if !self.enabled {
@@ -808,10 +804,10 @@ impl NotificationCenterState {
         {
             self.cursor = ids.first().cloned();
         }
-        self.reveal_cursor(ids.len());
+        self.reveal_cursor();
     }
 
-    fn reveal_cursor(&mut self, filtered_len: usize) {
+    fn reveal_cursor(&mut self) {
         let Some(ref c) = self.cursor else {
             return;
         };
@@ -823,13 +819,22 @@ impl NotificationCenterState {
         let Some(idx) = ids.iter().position(|id| *id == c.as_str()) else {
             return;
         };
-        let page = 8usize; // approximate; paint uses real height
+        // Paint writes the real viewport height; before the first paint the
+        // reveal is a no-op and paint performs it with the real page size.
+        self.reveal_index(idx, self.viewport_rows);
+    }
+
+    /// One reveal policy: scroll the minimal amount so row `idx` is visible
+    /// within `page` rows. Shared by the event path and paint.
+    fn reveal_index(&mut self, idx: usize, page: usize) {
+        if page == 0 {
+            return;
+        }
         if idx < self.scroll {
             self.scroll = idx;
         } else if idx >= self.scroll.saturating_add(page) {
             self.scroll = idx.saturating_sub(page.saturating_sub(1));
         }
-        let _ = filtered_len;
     }
 
     /// Mark one read.
@@ -942,7 +947,7 @@ impl NotificationCenterState {
             (cur + delta as usize).min(ids.len() - 1)
         };
         self.cursor = Some(ids[next].clone());
-        self.reveal_cursor(ids.len());
+        self.reveal_cursor();
         NotificationCenterOutcome::SelectionChanged {
             id: self.cursor.clone(),
         }
@@ -953,11 +958,10 @@ impl NotificationCenterState {
         if !self.open || !self.enabled || !self.accepts_input || !self.focused {
             return NotificationCenterOutcome::Ignored;
         }
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return NotificationCenterOutcome::Ignored;
         }
-        let press = matches!(key.kind, KeyEventKind::Press | KeyEventKind::Repeat);
-        if !press {
+        if !key.is_insert() {
             return NotificationCenterOutcome::Ignored;
         }
 
@@ -984,7 +988,7 @@ impl NotificationCenterState {
                 let ids = self.filtered_indices();
                 if let Some(i) = ids.last().and_then(|i| self.items.get(*i)) {
                     self.cursor = Some(i.id.clone());
-                    self.reveal_cursor(ids.len());
+                    self.reveal_cursor();
                     NotificationCenterOutcome::SelectionChanged {
                         id: self.cursor.clone(),
                     }
@@ -1147,7 +1151,6 @@ impl NotificationCenterState {
 #[derive(Debug, Clone, Copy)]
 pub struct NotificationCenter<'a> {
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -1157,20 +1160,13 @@ impl<'a> NotificationCenter<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             system,
-            ascii: false,
             colorless: false,
         }
     }
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -1183,7 +1179,6 @@ impl<'a> NotificationCenter<'a> {
             return;
         }
 
-        let ascii = self.ascii || state.ascii;
         let panel = match state.recipe {
             NotificationRecipe::FullPage => area,
             NotificationRecipe::Drawer => {
@@ -1197,16 +1192,24 @@ impl<'a> NotificationCenter<'a> {
         }
         state.slots.root = panel;
 
-        let border = if state.focused && !self.colorless {
-            Role::BorderFocused
+        let recipe = if state.focused {
+            super::SurfaceRecipe::OverlayFocused
         } else {
-            Role::Border
+            super::SurfaceRecipe::Overlay
         };
-        let bs = self.system.style(border);
-        let inner = super::Surface::new(self.system)
-            .recipe(super::SurfaceRecipe::Overlay)
+        let colorless_system;
+        let surface_system = if self.colorless {
+            colorless_system = self
+                .system
+                .clone()
+                .capability(crate::style::ColorCapability::Monochrome);
+            &colorless_system
+        } else {
+            self.system
+        };
+        let inner = super::Surface::new(surface_system)
+            .recipe(recipe)
             .bordered(true)
-            .border_style(bs)
             .content_inset()
             .paint(panel, buffer);
         if inner.is_empty() {
@@ -1278,27 +1281,23 @@ impl<'a> NotificationCenter<'a> {
         state.slots.list = Rect::new(inner.x, y, inner.width, list_h);
         let indices = state.filtered_indices();
         let page = list_h as usize;
+        state.viewport_rows = page;
         // Clamp scroll
         if state.scroll >= indices.len() && !indices.is_empty() {
             state.scroll = indices.len().saturating_sub(1);
         }
-        // Reveal cursor with real page size
+        // Reveal cursor with the real page size
         if let Some(ref c) = state.cursor {
             if let Some(idx) = indices
                 .iter()
                 .position(|&i| state.items.get(i).is_some_and(|it| it.id == *c))
             {
-                if idx < state.scroll {
-                    state.scroll = idx;
-                } else if idx >= state.scroll.saturating_add(page) {
-                    state.scroll = idx.saturating_sub(page.saturating_sub(1));
-                }
+                state.reveal_index(idx, page);
             }
         }
 
         if indices.is_empty() {
             super::EmptyState::new("No notifications", self.system)
-                .inline()
                 .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
         } else {
             for (row, &item_idx) in indices.iter().skip(state.scroll).take(page).enumerate() {
@@ -1310,16 +1309,8 @@ impl<'a> NotificationCenter<'a> {
                     break;
                 }
                 let selected = state.cursor.as_ref() == Some(&item.id);
-                let glyph = if ascii {
-                    item.kind.glyph_ascii()
-                } else {
-                    item.kind.glyph_unicode()
-                };
-                let unread_mark = if item.unread {
-                    if ascii { "*" } else { "●" }
-                } else {
-                    " "
-                };
+                let glyph = { item.kind.glyph_unicode() };
+                let unread_mark = if item.unread { "●" } else { " " };
                 let coalesce = if item.coalesce_count > 1 {
                     format!(" ×{}", item.coalesce_count)
                 } else {
@@ -1687,6 +1678,27 @@ mod tests {
                 action
             } if id == "1" && action == "undo"
         ));
+    }
+
+    #[test]
+    fn mouse_row_hit_selects_and_marks_read() {
+        let mut state = NotificationCenterState::new();
+        state.replace_items(vec![
+            NotificationItem::new("n1", "new", ToastKind::Info).unread(true),
+        ]);
+        let _ = state.open();
+        state.slots.list = Rect::new(2, 3, 24, 4);
+        assert_eq!(
+            state.handle_mouse(MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: ratatui_core::layout::Position::new(2, 3),
+                modifiers: KeyModifiers::NONE,
+            }),
+            NotificationCenterOutcome::SelectionChanged {
+                id: Some("n1".into())
+            }
+        );
+        assert!(!state.items()[0].unread);
     }
 
     #[test]

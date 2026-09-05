@@ -1,52 +1,39 @@
 ---
-title: Settings Screen
-description: 'Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned.'
-pattern: SettingsScreen
-demo: settings-screen/basic
-interaction: activation
+title: "Settings Screen"
+description: "Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned."
+catalogId: SettingsScreen
 source: crates/termrock/src/patterns/settings_screen.rs
 classification: application
+tags:
+  - "application"
+  - "Form"
+  - "KeybindingRecorder"
+  - "KeyboardHelp"
+aliases: []
+uses:
+  - "Form"
+  - "KeybindingRecorder"
+  - "KeyboardHelp"
+  - "Panel"
+  - "SearchInput"
+  - "Sidebar"
+  - "StatusBar"
+  - "ThemePicker"
+supportingTypes:
+  - "Field"
+  - "FieldStatus"
+  - "Fieldset"
+  - "HelpEntry"
+  - "NavItem"
+  - "SidebarPresentation"
+  - "StatefulWidget"
+  - "StatusSlot"
+  - "ThemePreset"
+  - "Widget"
 ---
-
-This is an example composite from `termrock::patterns`, not a first-class widget. Copy the recipe, keep its reusable parts, and replace its sample domain model with your own.
-
-## Live application preview
-
-<TerminalPreview story="settings-screen/basic" interactive caption="Settings Screen · shared Rust demo" />
-
-## Classification and composition
-
-**application** · default grid 100×28
-
-Composed public building blocks: `Field`, `FieldStatus`, `Fieldset`, `Form`, `HelpEntry`, `KeybindingRecorder`, `KeyboardHelp`, `NavItem`, `Panel`, `SearchInput`, `Sidebar`, `SidebarPresentation`, `StatefulWidget`, `StatusBar`, `StatusSlot`, `ThemePicker`, `ThemePreset`, `Widget`.
-
-## Workflow
-
-- `Tab cycle regions`: move visible focus, selection, pane, or hierarchy state for the next action.
-- `↑↓ select/edit`: focus the real field and edit its persistent Unicode-safe draft.
-- `/ search`: focus the real field and edit its persistent Unicode-safe draft.
-- `Ctrl+B drawer`: forward this normalized action to the mounted public pattern state.
-- `Ctrl+S save`: forward this normalized action to the mounted public pattern state.
-- `? help`: forward this normalized action to the mounted public pattern state.
-
-Accepted actions update the same persistent pattern instance in web docs and native Lookbook. Typed requests appear in the status line; the fixtures never authenticate, connect, execute, persist, or mutate external state.
-
-## Ownership
-
-TermRock owns composition, focus geometry, responsive layout, and reusable state transitions. The consuming application owns records, commands, persistence, secrets, authorization, and side effects.
-
-## Source
-
-- Pattern recipe: [`crates/termrock/src/patterns/settings_screen.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/patterns/settings_screen.rs)
-- Demo: `settings-screen/basic`
-
-## Migrated handbook guidance
-
-# SettingsScreen
 
 Source-owned application block for a complete settings experience. Composes
 public TermRock widgets only (migration `0237`).
-
 
 ## When to use
 
@@ -82,38 +69,3 @@ public TermRock widgets only (migration `0237`).
 │ modified · Ctrl+S save · ? help        │
 └────────────────────────────────────────┘
 ```
-
-## Minimal host loop
-
-```rust
-use termrock::patterns::{
-    SettingsScreenState, SettingsScreenSurfaces, render_settings_screen,
-    example_settings_categories, example_settings_appearance_fields,
-};
-use termrock::widgets::{Fieldset, BUILTIN_THEME_PRESETS};
-
-let mut state = SettingsScreenState::new();
-let nav = example_settings_categories();
-let fields = example_settings_appearance_fields();
-let fieldsets = [Fieldset::new("Appearance", &fields)];
-
-render_settings_screen(buf, area, SettingsScreenSurfaces {
-    system: &system,
-    state: &mut state,
-    nav: &nav,
-    fieldsets: &fieldsets,
-    theme_presets: BUILTIN_THEME_PRESETS,
-    theme_paint: Some(&system),
-    status_slots: &[],
-    status_state: &mut status,
-    section_title: "Appearance",
-});
-```
-
-## Stories
-
-`settings-screen/{basic,search,validation,conflicts,theme,keybinding,narrow,tiny,no-results,help}`
-
-## Related
-
-Sidebar · SearchInput · Form · ThemePicker · KeybindingRecorder · KeyboardHelp · migration `0237`

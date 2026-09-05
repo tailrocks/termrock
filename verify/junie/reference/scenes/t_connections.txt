@@ -1,0 +1,40 @@
+ ▪  TablePro  Connections  6 saved                                                           truecolor · 120×40  ? help
+
+ ╭─ Connections ─────────────────── 6 ─╮    Local PostgreSQL
+ │                                     │
+ │ ▎ Filter connections                │    Engine       PostgreSQL
+ │ ▎▾ Personal                         │    Host         localhost:5432
+ │ ▎    · Local PostgreSQL         pg  │    Database     acme_dev
+ │ ▎    · Scratch              sqlite  │    User         postgres
+ │ ▎▾ Acme                             │    Environment  local
+ │ ▎    · Development              pg  │    Safe Mode    Silent · Writes run without asking. DROP, TRUNCATE
+ │ ▎    ◇ Staging                  pg  │                 and DELETE without WHERE still confirm.
+ │ ▎    ◆ Analytics             mysql  │    SSL / SSH    off / off
+ │ ▎    ◆ Production               pg  │    Last used    2 minutes ago
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │    ▎Connect   ▎Edit   ▎Duplicate   ▎Delete…
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ │                                     │
+ ╰─────────────────────────────────────╯
+
+ ↑ ↓ Move  Enter Connect  / Filter  Ctrl+N New  Tab Next

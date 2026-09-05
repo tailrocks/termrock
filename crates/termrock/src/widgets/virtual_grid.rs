@@ -4,7 +4,6 @@
 //! Callers own data fetching, editing, sort/filter policy, and page models.
 //! The grid never allocates the full data set; render cost is bounded by the
 //! painted viewport.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -18,7 +17,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     style::{DesignSystem, Role, RolePalette},
-    text::{display_cols, take_display_cols},
+    text::take_display_cols,
     widgets::virtualizer::Virtualizer2D,
 };
 
@@ -220,11 +219,13 @@ pub struct VirtualGridState<RowId, ColId> {
     /// Shared row/col virtualizer (offset, capacity, overscan, anchors).
     virt: Virtualizer2D,
     column_widths: Vec<u16>,
+    column_widths_policy: Vec<GridColumnWidth>,
+    column_widths_available: Option<u16>,
+    column_widths_explicit: bool,
     body_rows: u16,
     body_cols_visible: usize,
     total_rows: Option<u64>,
     total_cols: usize,
-    painted_area: Rect,
     /// Exact body cell regions from the latest render.
     pub cell_regions: Vec<GridCellRegion<RowId, ColId>>,
     /// Exact header regions from the latest render.
@@ -240,11 +241,13 @@ impl<RowId, ColId> Default for VirtualGridState<RowId, ColId> {
             anchor: None,
             virt: Virtualizer2D::fixed_cells(),
             column_widths: Vec::new(),
+            column_widths_policy: Vec::new(),
+            column_widths_available: None,
+            column_widths_explicit: false,
             body_rows: 0,
             body_cols_visible: 0,
             total_rows: None,
             total_cols: 0,
-            painted_area: Rect::default(),
             cell_regions: Vec::new(),
             header_regions: Vec::new(),
             gutter_width: 0,
@@ -309,6 +312,9 @@ impl<RowId, ColId> VirtualGridState<RowId, ColId> {
     /// Replaces column widths (caller-owned persistence).
     pub fn set_column_widths(&mut self, widths: Vec<u16>) {
         self.column_widths = widths;
+        self.column_widths_policy.clear();
+        self.column_widths_available = None;
+        self.column_widths_explicit = true;
     }
 
     /// Clears range selection anchor.
@@ -401,6 +407,29 @@ impl<RowId, ColId> VirtualGridState<RowId, ColId> {
         }
         widths
     }
+
+    fn fill_visible_columns(
+        &self,
+        content_width: u16,
+        gap_width: u16,
+        out: &mut Vec<(usize, u16)>,
+    ) {
+        out.clear();
+        let mut used = 0u16;
+        for (index, width) in self.column_widths.iter().enumerate().skip(self.first_col()) {
+            let gap = if out.is_empty() { 0 } else { gap_width };
+            if used.saturating_add(gap) >= content_width {
+                break;
+            }
+            used = used.saturating_add(gap);
+            if used >= content_width {
+                break;
+            }
+            let take = (*width).min(content_width.saturating_sub(used)).max(1);
+            out.push((index, take));
+            used = used.saturating_add(take);
+        }
+    }
 }
 
 /// Resolves a resident row by absolute index.
@@ -441,7 +470,7 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
         columns: &[GridColumn<'_, ColId>],
         rows: &[GridRow<'_, RowId>],
     ) -> VirtualGridOutcome<RowId, ColId> {
-        if event.kind == KeyEventKind::Release {
+        if event.is_release() {
             return VirtualGridOutcome::Ignored;
         }
         let extend = event.modifiers.contains(KeyModifiers::SHIFT);
@@ -449,9 +478,7 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
         let before = (self.first_row(), self.first_col());
         // Prefer universal intents for shared collection actions.
         if !control && let Some(intent) = crate::interaction::default_table_intent(event) {
-            if matches!(intent, crate::interaction::UiIntent::Activate)
-                && event.kind != KeyEventKind::Press
-            {
+            if matches!(intent, crate::interaction::UiIntent::Activate) && !event.is_press() {
                 return VirtualGridOutcome::Ignored;
             }
             // Page/Activate/Cancel/vertical Move via intent; Left/Right not in table map.
@@ -612,40 +639,35 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
         if columns.is_empty() {
             return VirtualGridOutcome::Ignored;
         }
+        if let Some(delta) = crate::scroll::mouse_scroll_delta_with_step(
+            event.kind,
+            event.modifiers,
+            crate::scroll::ScrollAxes {
+                vertical: true,
+                horizontal: true,
+            },
+            1,
+        ) {
+            self.sync_virt_bounds();
+            let changed = match delta.axis {
+                crate::scroll::ScrollAxis::Vertical => {
+                    self.virt.rows.scroll_by(i64::from(delta.amount))
+                }
+                crate::scroll::ScrollAxis::Horizontal => {
+                    self.virt.cols.scroll_by(i64::from(delta.amount))
+                }
+            };
+            return if changed {
+                VirtualGridOutcome::ViewportChanged {
+                    first_row: self.first_row(),
+                    first_col: self.first_col(),
+                }
+            } else {
+                VirtualGridOutcome::Ignored
+            };
+        }
         let position = event.position;
         match event.kind {
-            MouseEventKind::ScrollDown => {
-                self.sync_virt_bounds();
-                let _ = self.virt.rows.scroll_by(1);
-                VirtualGridOutcome::ViewportChanged {
-                    first_row: self.first_row(),
-                    first_col: self.first_col(),
-                }
-            }
-            MouseEventKind::ScrollUp => {
-                self.sync_virt_bounds();
-                let _ = self.virt.rows.scroll_by(-1);
-                VirtualGridOutcome::ViewportChanged {
-                    first_row: self.first_row(),
-                    first_col: self.first_col(),
-                }
-            }
-            MouseEventKind::ScrollRight => {
-                self.sync_virt_bounds();
-                let _ = self.virt.cols.scroll_by(1);
-                VirtualGridOutcome::ViewportChanged {
-                    first_row: self.first_row(),
-                    first_col: self.first_col(),
-                }
-            }
-            MouseEventKind::ScrollLeft => {
-                self.sync_virt_bounds();
-                let _ = self.virt.cols.scroll_by(-1);
-                VirtualGridOutcome::ViewportChanged {
-                    first_row: self.first_row(),
-                    first_col: self.first_col(),
-                }
-            }
             MouseEventKind::Down(MouseButton::Left) => {
                 let Some(region) = self
                     .cell_regions
@@ -909,7 +931,6 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
     type State = VirtualGridState<RowId, ColId>;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        state.painted_area = area;
         state.cell_regions.clear();
         state.header_regions.clear();
         state.total_rows = self.total_rows;
@@ -937,49 +958,41 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
         let content_x = area.x.saturating_add(state.gutter_width);
         let content_width = area.width.saturating_sub(state.gutter_width);
 
-        if state.column_widths.len() != self.columns.len() {
+        let explicit_widths =
+            state.column_widths_explicit && state.column_widths.len() == self.columns.len();
+        let policy_changed = state.column_widths_policy.len() != self.columns.len()
+            || state
+                .column_widths_policy
+                .iter()
+                .zip(self.columns)
+                .any(|(current, column)| *current != column.width);
+        if !explicit_widths
+            && (state.column_widths.len() != self.columns.len()
+                || state.column_widths_available != Some(content_width)
+                || policy_changed)
+        {
             state.column_widths = VirtualGridState::<RowId, ColId>::resolve_widths_from_policy(
                 self.columns,
                 content_width,
             );
+            state.column_widths_policy = self.columns.iter().map(|column| column.width).collect();
+            state.column_widths_available = Some(content_width);
+            state.column_widths_explicit = false;
         }
 
         // Visible column window from virtualizer first_col.
         let mut visible: Vec<(usize, u16)> = Vec::new();
-        let mut used = 0u16;
-        for (index, width) in state
-            .column_widths
-            .iter()
-            .enumerate()
-            .skip(state.first_col())
-        {
-            if used >= content_width {
-                break;
-            }
-            let take = (*width).min(content_width.saturating_sub(used)).max(1);
-            visible.push((index, take));
-            used = used.saturating_add(take);
-        }
+        state.fill_visible_columns(content_width, self.system.spacing.column_gap, &mut visible);
         state.body_cols_visible = visible.len();
+        let first_col = state.first_col();
         state.sync_virt_bounds();
         state.clamp_cursor();
+
         state.ensure_cursor_visible();
 
-        // Recompute visible after clamp may have changed first_col.
-        visible.clear();
-        used = 0;
-        for (index, width) in state
-            .column_widths
-            .iter()
-            .enumerate()
-            .skip(state.first_col())
-        {
-            if used >= content_width {
-                break;
-            }
-            let take = (*width).min(content_width.saturating_sub(used)).max(1);
-            visible.push((index, take));
-            used = used.saturating_add(take);
+        // Recompute only when revealing the cursor moved the horizontal window.
+        if state.first_col() != first_col {
+            state.fill_visible_columns(content_width, self.system.spacing.column_gap, &mut visible);
         }
         state.body_cols_visible = visible.len();
 
@@ -989,9 +1002,8 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
         // reversing but keeps its gutter marker, so the position is never
         // invisible — losing focus must not lose your place.
         let cursor_style = if self.focused {
-            self.system
-                .style(Role::TextStrong)
-                .add_modifier(Modifier::REVERSED)
+            // The cursor cell is the explicit reversal pair.
+            self.system.reversed()
         } else {
             self.system.style(Role::TextStrong)
         };
@@ -1000,7 +1012,11 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
 
         if self.show_header && area.height > 0 {
             let mut x = content_x;
-            for &(col_index, width) in &visible {
+            let gap = self.system.spacing.column_gap;
+            for (visible_index, &(col_index, width)) in visible.iter().enumerate() {
+                if visible_index > 0 {
+                    x = x.saturating_add(gap);
+                }
                 let column = &self.columns[col_index];
                 let region = Rect {
                     x,
@@ -1066,7 +1082,11 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
                 }
             }
             let mut x = content_x;
-            for &(col_index, width) in &visible {
+            let gap = self.system.spacing.column_gap;
+            for (visible_index, &(col_index, width)) in visible.iter().enumerate() {
+                if visible_index > 0 {
+                    x = x.saturating_add(gap);
+                }
                 let region = Rect {
                     x,
                     y,
@@ -1102,7 +1122,6 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
                     }
                 }
                 buffer.set_stringn(x, y, &label, usize::from(width), style);
-                let _ = display_cols(&label);
                 state.cell_regions.push(GridCellRegion {
                     row_id: resident.map(|row| row.id.clone()),
                     row_index: abs_row,
@@ -1137,7 +1156,7 @@ mod tests {
     #[test]
     fn empty_and_min_rect_do_not_panic() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let columns = columns();
         let rows: [GridRow<'_, u64>; 0] = [];
         let grid = VirtualGrid::new(&columns, &rows, &system).total_rows(0);
@@ -1159,7 +1178,7 @@ mod tests {
     #[test]
     fn keyboard_moves_cursor_and_viewport() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let columns = columns();
         let cell_store = cells("1", "2", "3");
         let rows = [GridRow::new(0, 0, &cell_store)];
@@ -1198,6 +1217,152 @@ mod tests {
     }
 
     #[test]
+    fn offscreen_horizontal_cursor_reveals_header_and_cell_regions() {
+        let system = DesignSystem::default();
+        let columns = [
+            GridColumn::fixed(0, "A", 3),
+            GridColumn::fixed(1, "B", 5),
+            GridColumn::fixed(2, "C", 2),
+            GridColumn::fixed(3, "D", 4),
+            GridColumn::fixed(4, "E", 3),
+        ];
+        let cells = [
+            GridCell::text("a"),
+            GridCell::text("b"),
+            GridCell::text("c"),
+            GridCell::text("d"),
+            GridCell::text("e"),
+        ];
+        let rows = [GridRow::new(0, 0, &cells)];
+        let grid = VirtualGrid::new(&columns, &rows, &system)
+            .total_rows(1)
+            .gutter(false);
+        let area = Rect::new(0, 0, 12, 2);
+        let mut buffer = Buffer::empty(area);
+        let mut state = VirtualGridState::new();
+        state.cursor_col = 4;
+
+        StatefulWidget::render(&grid, area, &mut buffer, &mut state);
+
+        assert_eq!(state.first_col(), 3);
+        assert_eq!(state.body_cols_visible, 2);
+        assert_eq!(
+            state
+                .header_regions
+                .iter()
+                .map(|region| region.index)
+                .collect::<Vec<_>>(),
+            vec![3, 4]
+        );
+        assert_eq!(
+            state
+                .cell_regions
+                .iter()
+                .map(|region| region.col_index)
+                .collect::<Vec<_>>(),
+            vec![3, 4]
+        );
+    }
+
+    #[test]
+    fn column_count_shrink_reprojects_after_offset_clamp() {
+        let system = DesignSystem::default();
+        let columns = [
+            GridColumn::fixed(0, "A", 3),
+            GridColumn::fixed(1, "B", 5),
+            GridColumn::fixed(2, "C", 2),
+            GridColumn::fixed(3, "D", 4),
+            GridColumn::fixed(4, "E", 3),
+            GridColumn::fixed(5, "F", 4),
+        ];
+        let cells = [
+            GridCell::text("a"),
+            GridCell::text("b"),
+            GridCell::text("c"),
+            GridCell::text("d"),
+            GridCell::text("e"),
+            GridCell::text("f"),
+        ];
+        let rows = [GridRow::new(0, 0, &cells)];
+        let area = Rect::new(0, 0, 12, 2);
+        let mut state = VirtualGridState::new();
+        let initial_grid = VirtualGrid::new(&columns, &rows, &system)
+            .total_rows(1)
+            .gutter(false);
+        let mut buffer = Buffer::empty(area);
+        StatefulWidget::render(&initial_grid, area, &mut buffer, &mut state);
+
+        state.virtualizer_mut().cols.set_viewport_extent(1);
+        state.virtualizer_mut().cols.set_offset(5);
+        let shrunken_columns = &columns[..4];
+        let shrunken_cells = &cells[..4];
+        let shrunken_rows = [GridRow::new(0, 0, shrunken_cells)];
+        let shrunken_grid = VirtualGrid::new(shrunken_columns, &shrunken_rows, &system)
+            .total_rows(1)
+            .gutter(false);
+        StatefulWidget::render(&shrunken_grid, area, &mut buffer, &mut state);
+
+        assert_eq!(state.first_col(), 3);
+        assert_eq!(state.body_cols_visible, 1);
+        assert_eq!(
+            state
+                .header_regions
+                .iter()
+                .map(|region| region.index)
+                .collect::<Vec<_>>(),
+            vec![3]
+        );
+        assert_eq!(
+            state
+                .cell_regions
+                .iter()
+                .map(|region| region.col_index)
+                .collect::<Vec<_>>(),
+            vec![3]
+        );
+    }
+
+    #[test]
+    fn same_count_width_policy_change_recomputes_auto_layout() {
+        let system = DesignSystem::default();
+        let initial_columns = [GridColumn::fixed(0, "A", 3), GridColumn::fixed(1, "B", 5)];
+        let updated_columns = [GridColumn::fixed(0, "A", 6), GridColumn::fixed(1, "B", 2)];
+        let cells = [GridCell::text("a"), GridCell::text("b")];
+        let rows = [GridRow::new(0, 0, &cells)];
+        let area = Rect::new(0, 0, 12, 2);
+        let mut state = VirtualGridState::new();
+        let mut buffer = Buffer::empty(area);
+
+        StatefulWidget::render(
+            &VirtualGrid::new(&initial_columns, &rows, &system)
+                .total_rows(1)
+                .gutter(false),
+            area,
+            &mut buffer,
+            &mut state,
+        );
+        assert_eq!(state.column_widths, [3, 5]);
+
+        StatefulWidget::render(
+            &VirtualGrid::new(&updated_columns, &rows, &system)
+                .total_rows(1)
+                .gutter(false),
+            area,
+            &mut buffer,
+            &mut state,
+        );
+        assert_eq!(state.column_widths, [6, 2]);
+        assert_eq!(
+            state
+                .header_regions
+                .iter()
+                .map(|region| region.area.width)
+                .collect::<Vec<_>>(),
+            vec![6, 2]
+        );
+    }
+
+    #[test]
     fn shift_extends_range_and_escape_clears() {
         let columns = columns();
         let rows: [GridRow<'_, u64>; 0] = [];
@@ -1226,7 +1391,7 @@ mod tests {
     #[test]
     fn mouse_click_selects_painted_cell() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let columns = columns();
         let cell0 = cells("x", "y", "z");
         let cell1 = cells("p", "q", "r");
@@ -1264,9 +1429,64 @@ mod tests {
     }
 
     #[test]
+    fn shifted_wheel_scrolls_columns_and_edge_wheel_is_ignored() {
+        let system = DesignSystem::default();
+        let columns = [
+            GridColumn::fixed("a", "A", 8),
+            GridColumn::fixed("b", "B", 8),
+            GridColumn::fixed("c", "C", 8),
+        ];
+        let cell0 = cells("a", "b", "c");
+        let cell1 = cells("d", "e", "f");
+        let cell2 = cells("g", "h", "i");
+        let rows = [
+            GridRow::new(10, 0, &cell0),
+            GridRow::new(11, 1, &cell1),
+            GridRow::new(12, 2, &cell2),
+        ];
+        let grid = VirtualGrid::new(&columns, &rows, &system).total_rows(10);
+        let mut state = VirtualGridState::new();
+        let area = Rect::new(0, 0, 20, 4);
+        let mut buffer = Buffer::empty(area);
+        StatefulWidget::render(&grid, area, &mut buffer, &mut state);
+        assert_eq!(state.first_col(), 0);
+
+        let position = Position::new(8, 2);
+        let edge = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::ScrollLeft,
+                position,
+                modifiers: KeyModifiers::NONE,
+            },
+            &columns,
+            &rows,
+        );
+        assert_eq!(edge, VirtualGridOutcome::Ignored);
+
+        let shifted = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::ScrollDown,
+                position,
+                modifiers: KeyModifiers::SHIFT,
+            },
+            &columns,
+            &rows,
+        );
+        assert_eq!(
+            shifted,
+            VirtualGridOutcome::ViewportChanged {
+                first_row: 0,
+                first_col: 1,
+            }
+        );
+        assert_eq!(state.first_row(), 0);
+        assert_eq!(state.first_col(), 1);
+    }
+
+    #[test]
     fn pending_cells_render_without_panic() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let columns = columns();
         let pending = [
             GridCell::pending(),
@@ -1289,7 +1509,7 @@ mod tests {
     #[test]
     fn unicode_header_and_cell_width_is_safe() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let columns = [GridColumn::fixed("u", "日本語", 6)];
         let cells = [GridCell::text("🚀ok")];
         let rows = [GridRow::new(0, 0, &cells)];
@@ -1304,9 +1524,37 @@ mod tests {
     }
 
     #[test]
+    fn adjacent_columns_keep_a_stable_blank_gap() {
+        let system = DesignSystem::default();
+        let columns = [
+            GridColumn::fixed("a", "Alpha", 5),
+            GridColumn::fixed("b", "Beta", 4),
+        ];
+        let cells = [GridCell::text("aaaaa"), GridCell::text("bbbb")];
+        let rows = [GridRow::new(7, 0, &cells)];
+        let grid = VirtualGrid::new(&columns, &rows, &system)
+            .total_rows(1)
+            .gutter(false);
+        let area = Rect::new(0, 0, 12, 3);
+        let mut buffer = Buffer::empty(area);
+        let mut state = VirtualGridState::new();
+        StatefulWidget::render(&grid, area, &mut buffer, &mut state);
+
+        let first = &state.cell_regions[0];
+        let second = &state.cell_regions[1];
+        let gap = system.spacing.column_gap;
+        assert_eq!(second.area.x, first.area.right().saturating_add(gap));
+        assert_eq!(buffer[(first.area.right(), 1)].symbol(), " ");
+        assert_eq!(
+            state.header_regions[1].area.x,
+            state.header_regions[0].area.right().saturating_add(gap)
+        );
+    }
+
+    #[test]
     fn zero_total_has_no_body_hits_and_enter_ignored() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let columns = columns();
         let rows: [GridRow<'_, u64>; 0] = [];
         let grid = VirtualGrid::new(&columns, &rows, &system).total_rows(0);
@@ -1332,7 +1580,7 @@ mod tests {
     #[test]
     fn short_total_paints_only_existing_rows() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let columns = columns();
         let cell0 = cells("a", "b", "c");
         let cell1 = cells("d", "e", "f");
@@ -1358,7 +1606,7 @@ mod tests {
     #[test]
     fn disabled_resident_rows_cannot_be_selected_or_activated() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let columns = columns();
         let cell0 = cells("a", "b", "c");
         let cell1 = cells("d", "e", "f");
@@ -1424,7 +1672,7 @@ mod tests {
     #[test]
     fn range_paint_uses_anchor_to_cursor_rectangle() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let columns = columns();
         let shared = cells("x", "y", "z");
         let rows = [

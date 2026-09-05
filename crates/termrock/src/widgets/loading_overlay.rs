@@ -18,7 +18,6 @@
 //! blocking is a last resort.
 //!
 //! Research: async UI boundaries, Textual workers, agent tool execution.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -389,7 +388,7 @@ impl BusyBoundaryState {
         if !self.active {
             return BusyRoute::Deliver;
         }
-        if key.kind != KeyEventKind::Press {
+        if !key.is_press() {
             return if self.mode.blocks_input() {
                 BusyRoute::Blocked
             } else {
@@ -458,7 +457,6 @@ pub struct LoadingOverlay<'a> {
     label: &'a str,
     unavailable: Option<&'a str>,
     cancel_hint: Option<&'a str>,
-    force_ascii: bool,
     system: &'a DesignSystem,
 }
 
@@ -471,7 +469,6 @@ impl<'a> LoadingOverlay<'a> {
             label,
             unavailable: None,
             cancel_hint: None,
-            force_ascii: false,
             system,
         }
     }
@@ -488,7 +485,6 @@ impl<'a> LoadingOverlay<'a> {
             } else {
                 None
             },
-            force_ascii: false,
             system,
         }
     }
@@ -512,17 +508,6 @@ impl<'a> LoadingOverlay<'a> {
     pub const fn cancel_hint(mut self, hint: &'a str) -> Self {
         self.cancel_hint = Some(hint);
         self
-    }
-
-    /// Force ASCII wash/spinner path.
-    #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.force_ascii = on;
-        self
-    }
-
-    fn use_ascii(&self) -> bool {
-        self.force_ascii || matches!(self.system.glyphs, GlyphSet::Ascii)
     }
 
     /// Paint using boundary policy (wash only when `state.should_show_wash()`).
@@ -553,11 +538,8 @@ impl<'a> LoadingOverlay<'a> {
     }
 
     fn paint_wash(&self, area: Rect, buffer: &mut Buffer) {
-        let ascii = self.use_ascii();
-        let symbol = if ascii { '.' } else { '░' };
-        let style = Style::new().add_modifier(Modifier::DIM);
-        // Prefer DesignSystem muted if we can — use set_style on cells
-        let role_style = self.system.style(Role::TextDisabled);
+        let symbol = '░';
+        let style = self.system.style(Role::TextDisabled);
         for y in area.top()..area.bottom() {
             for x in area.left()..area.right() {
                 // Preserve some readability: only dim fg, keep symbol if non-space for stale-ish
@@ -565,7 +547,7 @@ impl<'a> LoadingOverlay<'a> {
                 if matches!(self.mode, BusyMode::Blocking | BusyMode::Cancellable) {
                     // Soft wash: overwrite with dim glyph
                     cell.set_char(symbol);
-                    cell.set_style(style.patch(role_style));
+                    cell.set_style(style);
                 }
             }
         }
@@ -612,7 +594,7 @@ impl<'a> LoadingOverlay<'a> {
             area.y,
             take_display_cols(&text, usize::from(w)).as_str(),
             usize::from(w),
-            self.system.style(Role::Info),
+            self.system.style(Role::TextSecondary),
         );
     }
 
@@ -626,7 +608,7 @@ impl<'a> LoadingOverlay<'a> {
     ) {
         let glyph = state.spinner.frame_glyph(tick, motion);
         let mut lines: Vec<(String, Role, bool)> = Vec::new();
-        lines.push((format!("{glyph} {}", self.label), Role::Info, true));
+        lines.push((format!("{glyph} {}", self.label), Role::TextSecondary, true));
         if let Some(u) = self.unavailable {
             lines.push((u.to_string(), Role::TextMuted, false));
         } else if matches!(self.mode, BusyMode::StaleContent) {

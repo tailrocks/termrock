@@ -30,11 +30,10 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     layout::{
         PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
     },
@@ -553,8 +552,6 @@ pub struct FileManagerState {
     pub entry_count: u64,
     /// Selected path chrome.
     pub selected_path: Option<String>,
-    /// ASCII.
-    pub ascii: bool,
     /// Colorless.
     pub colorless: bool,
     /// Last panes.
@@ -605,7 +602,6 @@ impl FileManagerState {
             drawer_open: false,
             entry_count: 0,
             selected_path: None,
-            ascii: false,
             colorless: false,
             last_panes: Vec::new(),
             last_area_width: None,
@@ -730,9 +726,9 @@ impl FileManagerState {
     #[must_use]
     pub fn status_slots(&self) -> Vec<StatusSlot<'static, &'static str>> {
         let mut slots = vec![
-            StatusSlot::context("cwd", "cwd").priority(10),
-            StatusSlot::context("entries", "entries").priority(20),
-            StatusSlot::focus_zone("focus", self.focus).priority(30),
+            StatusSlot::context("cwd", "cwd").priority(60),
+            StatusSlot::context("entries", "entries").priority(40),
+            StatusSlot::focus_zone("focus", self.focus).priority(70),
             // Every pointer action needs a keyboard path, and this slot is
             // where they are advertised — parity outranks the hint budget
             // (docs/design/web-premium-tui-law.md §4.2).
@@ -740,13 +736,13 @@ impl FileManagerState {
                 "keys",
                 "y yank · x cut · v paste · d del · r ren · n new · p preview · C-o open",
             )
-            .priority(90),
+            .priority(10),
         ];
         if !self.clipboard.is_empty() {
             slots.push(
                 StatusSlot::new("clip", self.clipboard_mode_label())
                     .region(StatusRegion::Left)
-                    .priority(40),
+                    .priority(50),
             );
         }
         let running = matches!(
@@ -757,8 +753,9 @@ impl FileManagerState {
         if running {
             slots.push(
                 StatusSlot::new("conflict", "conflict")
+                    .semantic(crate::widgets::SemanticStatus::Warning)
                     .region(StatusRegion::Left)
-                    .priority(5),
+                    .priority(100),
             );
         }
         slots
@@ -914,10 +911,10 @@ impl FileManagerState {
         ops: &[FileOpItem],
         quick_open_items: &[QuickOpenItem<String>],
     ) -> FileManagerOutcome {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return FileManagerOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         // Modal dialogs first
         match &self.dialog {
@@ -1123,7 +1120,7 @@ impl FileManagerState {
         key: KeyEvent,
         entries: &[FileTreeEntry<'_, String>],
     ) -> FileManagerOutcome {
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         // While rename draft, filter typing, or inline delete confirm is active,
         // FileTree owns the keyboard — do not steal x/v/p for cut/paste/preview.
@@ -1274,7 +1271,7 @@ impl FileManagerState {
     }
 
     fn handle_queue_key(&mut self, key: KeyEvent, ops: &[FileOpItem]) -> FileManagerOutcome {
-        if key.kind != KeyEventKind::Press {
+        if !key.is_press() {
             return FileManagerOutcome::Ignored;
         }
         let rows = Self::queue_rows(ops);
@@ -1540,7 +1537,6 @@ pub fn render_file_manager(buffer: &mut Buffer, area: Rect, surfaces: FileManage
     state.clamp_focus_to_density(density);
     state.apply_focus_gates();
     state.entry_count = entries.len() as u64;
-    state.tree.ascii = state.ascii;
 
     // Breadcrumbs
     if let Some(r) = pane_area(&panes, "breadcrumbs") {

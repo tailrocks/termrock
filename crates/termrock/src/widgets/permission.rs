@@ -20,7 +20,6 @@
 //!
 //! Research: Grok Build permissions, Amp plugin prompts, browser permissions,
 //! sudo, security review UIs.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -33,9 +32,9 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack},
-    style::{Density, DesignSystem, Role, RolePalette},
+    style::{DesignSystem, Role, RolePalette},
     text::{display_cols, take_display_cols},
-    widgets::{Action, ActionBar, ActionBarState, Panel, PanelChrome},
+    widgets::{Action, ActionBar, ActionBarState, ActionVariant, Panel, PanelChrome, PanelVariant},
 };
 
 /// Overlay id for agent permission / trust surfaces (`OverlayStack`).
@@ -185,7 +184,7 @@ impl PermissionRisk {
     #[must_use]
     pub const fn role(self) -> Role {
         match self {
-            Self::Low => Role::Info,
+            Self::Low => Role::TextSecondary,
             Self::Medium => Role::Warning,
             Self::High | Self::Critical => Role::Danger,
         }
@@ -965,13 +964,6 @@ impl PermissionPromptState {
         self.action_cursor
     }
 
-    /// Deprecated name for [`Self::action_cursor`].
-    #[deprecated(note = "use action_cursor")]
-    #[must_use]
-    pub fn selected(&self) -> PermissionAction {
-        self.action_cursor
-    }
-
     /// Selected grant scope.
     #[must_use]
     pub const fn scope(&self) -> PermissionScope {
@@ -1052,10 +1044,10 @@ impl PermissionPromptState {
 
     /// Keyboard routing.
     pub fn handle_key(&mut self, key: KeyEvent) -> PermissionOutcome {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return PermissionOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         if matches!(
             self.mode,
@@ -1251,13 +1243,11 @@ impl PermissionPromptState {
                 self.mode = SurfaceMode::Navigate;
                 self.confirm_with_edit(generation, edited)
             }
-            KeyCode::Backspace if is_press || key.kind == KeyEventKind::Repeat => {
+            KeyCode::Backspace if key.is_insert() => {
                 self.edit_buffer.pop();
                 PermissionOutcome::EditChanged
             }
-            KeyCode::Char(c)
-                if !c.is_control() && (is_press || key.kind == KeyEventKind::Repeat) =>
-            {
+            KeyCode::Char(c) if !c.is_control() && (key.is_insert()) => {
                 self.edit_buffer.push(c);
                 PermissionOutcome::EditChanged
             }
@@ -1399,8 +1389,6 @@ pub enum DangerChrome {
 #[derive(Debug, Clone, Copy)]
 pub struct PermissionPrompt<'a> {
     system: &'a DesignSystem,
-    /// Use ASCII risk markers.
-    ascii: bool,
     /// Reduced-color paint.
     colorless: bool,
     /// Scene/overlay surface focus chrome.
@@ -1415,7 +1403,6 @@ impl<'a> PermissionPrompt<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             system,
-            ascii: false,
             colorless: false,
             focused: true,
             danger_chrome: DangerChrome::Quiet,
@@ -1433,13 +1420,7 @@ impl<'a> PermissionPrompt<'a> {
 
     /// Prefer ASCII risk markers.
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
     /// Reduced-color paint (non-color risk still has glyphs).
-    #[must_use]
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
         self
@@ -1461,10 +1442,11 @@ impl StatefulWidget for &PermissionPrompt<'_> {
         if area.is_empty() {
             return;
         }
-        let tokens = self.system.clone().density(Density::Compact);
+        let tokens = self.system.clone();
         let surface = self.focused && state.accepts_input();
         let Some(req) = state.queue.head() else {
             let panel = Panel::new(&tokens)
+                .variant(PanelVariant::Bordered)
                 .overlay(true)
                 .title("Permission")
                 .emphasis(if surface {
@@ -1475,7 +1457,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
             Widget::render(&panel, area, buffer);
             let inner = panel.inner(area);
             if !inner.is_empty() {
-                let mark = if self.ascii { "[ ] " } else { "∅ " };
+                let mark = { "∅ " };
                 let msg = format!("{mark}No pending permissions");
                 buffer.set_stringn(
                     inner.x,
@@ -1491,9 +1473,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
         let risk = req.risk;
         let title = format!(
             "{} {} · {}",
-            if self.ascii {
-                risk.glyph()
-            } else {
+            {
                 match risk {
                     PermissionRisk::Low => "ℹ",
                     PermissionRisk::Medium => "!",
@@ -1515,6 +1495,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
         };
         let content_area = area;
         let panel = Panel::new(&tokens)
+            .variant(PanelVariant::Bordered)
             .overlay(true)
             .title(title.as_str())
             .emphasis(emphasis);
@@ -1677,7 +1658,14 @@ impl StatefulWidget for &PermissionPrompt<'_> {
             && y < inner.bottom()
         {
             let p = format!("prior: {} ({})", prior.summary, prior.scope.label());
-            paint_line(buffer, inner.x, y, w, &p, self.system.style(Role::Info));
+            paint_line(
+                buffer,
+                inner.x,
+                y,
+                w,
+                &p,
+                self.system.style(Role::TextSecondary),
+            );
             y = y.saturating_add(1);
         }
 
@@ -1775,8 +1763,13 @@ impl StatefulWidget for &PermissionPrompt<'_> {
                     id: *action,
                     label: action.label(),
                     enabled: true,
-                    style: (action.grants() && risk.is_destructive())
-                        .then(|| self.system.style(Role::Danger)),
+                    variant: if action.grants() && risk.is_destructive() {
+                        ActionVariant::Destructive
+                    } else if action.grants() {
+                        ActionVariant::Primary
+                    } else {
+                        ActionVariant::Secondary
+                    },
                 })
                 .collect();
             let mut action_state = ActionBarState {
@@ -1786,7 +1779,6 @@ impl StatefulWidget for &PermissionPrompt<'_> {
             let action_area = Rect::new(inner.x, start_y, inner.width, action_rows);
             StatefulWidget::render(
                 &ActionBar::new(&actions, self.system)
-                    .ascii(self.ascii)
                     .colorless(self.colorless)
                     .vertical(narrow),
                 action_area,
@@ -2077,7 +2069,7 @@ mod tests {
 
     #[test]
     fn y_is_not_bound_to_allow_on_permission_prompt() {
-        // Trust surface must not grant on 'y' (legacy dual chrome used to).
+        // Trust surface must not grant on 'y'; only the focused action can commit.
         let mut state = PermissionPromptState::new();
         state.enqueue(destructive_shell());
         let out = state.handle_key(press(KeyCode::Char('y')));
@@ -2160,7 +2152,7 @@ mod tests {
         use ratatui_core::{backend::TestBackend, terminal::Terminal};
 
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let prompt = PermissionPrompt::new(&system);
         let mut state = PermissionPromptState::new();
         state.enqueue(low_read());
@@ -2528,7 +2520,7 @@ mod tests {
     #[test]
     fn collapsed_frame_keeps_safety_and_moves_detail_behind_d() {
         use ratatui_core::{backend::TestBackend, terminal::Terminal};
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let prompt = PermissionPrompt::new(&system);
         let mut state = PermissionPromptState::new();
         state.enqueue(
@@ -2578,7 +2570,7 @@ mod tests {
     #[test]
     fn paint_covers_checklist_fields() {
         use ratatui_core::{backend::TestBackend, terminal::Terminal};
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let prompt = PermissionPrompt::new(&system);
         let mut state = PermissionPromptState::new();
         state.enqueue(
@@ -2715,7 +2707,7 @@ mod tests {
 
     #[test]
     fn paint_perf_smoke() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let prompt = PermissionPrompt::new(&system);
         let area = Rect::new(0, 0, 64, 18);
         let mut buf = Buffer::empty(area);

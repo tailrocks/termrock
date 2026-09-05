@@ -21,7 +21,6 @@
 //! **Composition.** Projects into [`MarkdownView`](crate::widgets::MarkdownView)
 //! / plain lines for [`MessageThread`](crate::widgets::MessageThread). Host
 //! owns network; TermRock owns buffer split, provisional parse, paint.
-
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
@@ -507,13 +506,13 @@ impl StreamingMarkdownState {
                         lines.push(l.to_string());
                     }
                     if b.incomplete && matches!(self.phase, StreamPhase::Streaming) {
-                        lines.push("▌".into());
+                        lines.push(crate::style::Glyph::SelectionGutter.resolve().text.into());
                     }
                 }
             }
         }
         if lines.is_empty() && matches!(self.phase, StreamPhase::Streaming) {
-            lines.push("▌".into());
+            lines.push(crate::style::Glyph::SelectionGutter.resolve().text.into());
         }
         lines
     }
@@ -746,7 +745,6 @@ pub enum StreamingMarkdownOutcome {
 #[derive(Debug, Clone, Copy)]
 pub struct StreamingMarkdown<'a> {
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -756,20 +754,13 @@ impl<'a> StreamingMarkdown<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             system,
-            ascii: false,
             colorless: false,
         }
     }
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -847,11 +838,8 @@ impl<'a> StreamingMarkdown<'a> {
             blocks.push(b);
         }
 
-        let mut view = MarkdownView::new(&blocks, self.system);
-        if self.ascii {
-            view = view.compact_headings(true);
-        }
-        let _ = self.colorless;
+        let view = MarkdownView::new(&blocks, self.system);
+        let colorless = self.colorless || self.system.mono();
 
         // follow stream scroll
         if state.follow_stream && matches!(state.phase, StreamPhase::Streaming) {
@@ -863,15 +851,19 @@ impl<'a> StreamingMarkdown<'a> {
 
         // caret / failed strip
         if state.show_caret && matches!(state.phase, StreamPhase::Streaming) && area.height > 0 {
-            // Not `▌`: that bar means "this row is selected".
-            let cue = if self.ascii { "|" } else { "▍" };
+            // Not `▎`: that bar means "this row is selected".
+            let cue = "▍";
             let y = area.bottom().saturating_sub(1);
             buffer.set_stringn(
                 area.x.saturating_add(area.width.saturating_sub(2)),
                 y,
                 cue,
                 1,
-                self.system.style(Role::Accent),
+                self.system.style(if colorless {
+                    Role::TextStrong
+                } else {
+                    Role::Accent
+                }),
             );
         }
         if matches!(state.phase, StreamPhase::Failed) {
@@ -887,11 +879,6 @@ impl<'a> StreamingMarkdown<'a> {
             }
         }
         let _ = wrap_display_cols;
-    }
-
-    /// Render alias.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut StreamingMarkdownState) {
-        self.paint(area, buffer, state);
     }
 }
 
@@ -1018,7 +1005,7 @@ mod tests {
             lines.iter().any(|l| l.contains("println")
                 || l.contains("```")
                 || l.contains("…")
-                || l.contains("▌")),
+                || l.contains("▎")),
             "{lines:?}"
         );
         st.push_delta(fixtures::mid_fence_close());
@@ -1059,9 +1046,9 @@ mod tests {
                 let view = crate::widgets::MarkdownView::new(blocks, &system);
                 for width in [12u16, 24, 80] {
                     assert_eq!(
-                        usize::from(view.measure_height(width)),
-                        view.row_map(width).len(),
-                        "row map drifted from the measured height at {width} cols"
+                        view.measure_height(width),
+                        view.block_start_row(usize::MAX, width),
+                        "row count drifted between the two measure paths at {width} cols"
                     );
                 }
             });

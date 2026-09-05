@@ -9,14 +9,13 @@
 //! hiding each command's identity.
 //!
 //! **vs [`ActionBar`](crate::widgets::ActionBar).** ActionBar remains a simple
-//! paint + hit strip (legacy dialog footers). Prefer ButtonGroup when overflow,
+//! paint + hit strip for simple dialog footers. Prefer ButtonGroup when overflow,
 //! variants, default submit, or roving semantics matter.
 //!
 //! **vs [`Toolbar`](crate::widgets::Toolbar).** Toolbar owns rich item kinds and
 //! command catalogs; ButtonGroup is a focused action cluster (OK/Cancel/Delete).
 //!
 //! Research: shadcn button groups, desktop dialog action bars, terminal prompt rows.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -25,14 +24,22 @@ use ratatui_core::{
     widgets::Widget,
 };
 
-use crate::input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
+use crate::input::{KeyCode, KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
     EventResult, NavigationMove, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome,
     SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
 };
-use crate::style::{DesignSystem, Role};
+use crate::style::{ButtonRecipeVariant, ControlState, DesignSystem, Role};
 use crate::text::{display_cols, take_display_cols};
 use crate::widgets::{Button, ButtonState, ButtonVariant};
+
+fn default_button_group_intent(key: KeyEvent) -> Option<UiIntent> {
+    let intent = default_button_intent(key)?;
+    match (intent, key.code) {
+        (UiIntent::Activate, KeyCode::Enter) => Some(UiIntent::Submit),
+        (intent, _) => Some(intent),
+    }
+}
 
 // ── Recipe / layout ─────────────────────────────────────────────────────────
 
@@ -633,7 +640,7 @@ impl<'a, Id: Clone + PartialEq> ButtonGroup<'a, Id> {
             }
             ButtonGroupOrientation::Horizontal => {
                 let gap = self.recipe.inter_cols();
-                let sep = self.recipe.separator_glyph(self.system.glyphs.is_ascii());
+                let sep = self.recipe.separator_glyph(false);
                 let mut x = area.x;
                 let mut first = true;
                 // Paint in source order among visible
@@ -695,17 +702,16 @@ impl<'a, Id: Clone + PartialEq> ButtonGroup<'a, Id> {
                     if tw > 0 {
                         let rect = Rect::new(x, area.y, tw, 1.min(area.height));
                         let focused = state.overflow_open;
-                        // Ground first, then a legible foreground over it:
-                        // patching the tint over `ActionFocused` left black
-                        // ink on a dark tint (plans/007).
-                        let mut style =
-                            self.system
-                                .style(Role::SelectionTint)
-                                .patch(self.system.style(if focused {
-                                    Role::TextStrong
-                                } else {
-                                    Role::TextMuted
-                                }));
+                        let recipe = self.system.button_recipe(
+                            ButtonRecipeVariant::Quiet,
+                            if focused {
+                                ControlState::Focused
+                            } else {
+                                ControlState::Default
+                            },
+                            self.system.junie_theme().surface,
+                        );
+                        let mut style = recipe.fill.patch(recipe.label);
                         style = style.add_modifier(Modifier::BOLD);
                         let label = take_display_cols(self.overflow_label, usize::from(tw));
                         buffer.set_stringn(rect.x, rect.y, &label, usize::from(tw), style);
@@ -757,7 +763,7 @@ impl<'a, Id: Clone + PartialEq> ButtonGroup<'a, Id> {
         state: &mut ButtonGroupState<Id>,
         key: KeyEvent,
     ) -> ButtonGroupOutcome<Id> {
-        if !state.surface_focused || key.kind != KeyEventKind::Press {
+        if !state.surface_focused || !key.is_press() {
             return ButtonGroupOutcome::Ignored;
         }
 
@@ -790,17 +796,13 @@ impl<'a, Id: Clone + PartialEq> ButtonGroup<'a, Id> {
         }
 
         // Enter/Submit → default action (dialog convention). Space → cursor command.
-        if let Some(intent) = default_button_intent(key) {
+        if let Some(intent) = default_button_group_intent(key) {
             match intent {
                 UiIntent::Activate | UiIntent::Submit => {
                     if state.overflow_open {
                         return ButtonGroupOutcome::Ignored;
                     }
-                    let is_enter = matches!(
-                        key.code,
-                        crate::input::KeyCode::Enter | crate::input::KeyCode::Char('\n')
-                    ) || matches!(intent, UiIntent::Submit);
-                    if is_enter {
+                    if matches!(intent, UiIntent::Submit) {
                         if let Some(d) = self.default_id() {
                             return ButtonGroupOutcome::Activated { id: d };
                         }
@@ -1194,6 +1196,13 @@ mod tests {
                 ButtonGroupOutcome::Activated { .. } | ButtonGroupOutcome::OverflowActivate { .. }
             ));
         }
+        state.set_surface_focused(true);
+        state.overflow_open = true;
+        assert!(matches!(
+            g.handle_key(&mut state, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            ButtonGroupOutcome::OverflowClosed
+        ));
+        assert!(!state.overflow_open);
     }
 
     #[test]
@@ -1293,25 +1302,6 @@ mod tests {
             let _ = g.paint(area, &mut buf, &mut state);
         }
         assert!(state.parts.is_some());
-    }
-
-    #[test]
-    fn ascii_glyphs_paint_connected() {
-        // Visual / non-color path: ASCII glyph set still paints separators.
-        let system = DesignSystem::default().glyphs(crate::style::GlyphSet::Ascii);
-        let items = [
-            ButtonGroupItem::quiet("a", "A"),
-            ButtonGroupItem::quiet("b", "B"),
-        ];
-        let g = ButtonGroup::new(&items, &system).connected();
-        let mut state = ButtonGroupState::new();
-        let mut buf = Buffer::empty(Rect::new(0, 0, 20, 1));
-        let parts = g.paint(Rect::new(0, 0, 20, 1), &mut buf, &mut state);
-        assert_eq!(parts.items.iter().filter(|i| !i.overflowed).count(), 2);
-        // Separator cell between faces when both fit
-        let a = parts.items.iter().find(|i| i.id == "a").unwrap().area;
-        let b = parts.items.iter().find(|i| i.id == "b").unwrap().area;
-        assert!(b.x >= a.x + a.width);
     }
 
     #[test]

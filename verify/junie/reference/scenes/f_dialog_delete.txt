@@ -1,0 +1,40 @@
+ ▪ Junie Design system / Components / Dialogs                                truecolor · 120×40   i Inspector   ? Help
+
+   Foundations            Dialogs  Focus is trapped, the page dims, Esc always cancels
+▎  Overview
+                            Open a dialog
+   Components
+▎  Buttons                  ▎Confirm run   ▎Rename task…   ▎Three choices…   ▎Delete branch…
+▎  Inputs
+▎  Text areas               Confirm: primary action focused first · y / n answer directly
+▎  Forms                    Prompt: editing inside a modal, Enter submits, validation blocks
+▎  Lists                    Destructive: Cancel focused first, action in danger style
+▎  Trees                    Task: Migrate sessions table
+▎  Tables
+▎  Editable tables
+▎  Panels                   Results
+▎  Sidebars                      ╭────────────────────────────────────────────────────╮
+▎› Dialogs                  Nothi│                                                    │
+▎  Progress                      │  Delete branch?                                    │
+▎  Scrolling                     │                                                    │
+▎  Code editor                   │  feat/rate-limit has 14 commits that are not on    │
+▎  Data grid                     │  main. This cannot be undone.                      │
+▎  Chips & selects               │                                                    │
+▎  Pickers                       │                          ▎Cancel  ▎Delete branch   │
+                                 │                                                    │
+   Screens                       ╰────────────────────────────────────────────────────╯
+▎  Settings
+▎  Task runner
+
+
+
+
+
+
+
+
+
+
+
+
+ ← → Choose  Enter Confirm  Esc Cancel  y / n Quick answer

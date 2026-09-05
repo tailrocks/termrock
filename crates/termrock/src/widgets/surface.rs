@@ -6,7 +6,7 @@
 //! **One Surface per region.** Compose siblings (AppShell slots, stacks) rather
 //! than nesting Surfaces inside Surfaces ("box soup"). [`Panel`] builds title
 //! chrome on top of Surface geometry; focus weight stays on semantic borders
-//! only ([`Role::BorderFocused`]), never glyph weight.
+//! only ([`Role::BorderFocused`]), with border weight as a monochrome cue.
 //!
 //! ## Clipping
 //!
@@ -18,16 +18,15 @@
 //!
 //! [`SurfaceParts::hit`] is the mouse/hit-test region. Interactive recipes use
 //! the full outer rect (including border); passive fills use the content rect.
-
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
-    style::{Color, Modifier, Style},
+    style::{Modifier, Style},
     widgets::Widget,
 };
 use ratatui_widgets::block::Block;
 
-use crate::style::{ColorCapability, DesignSystem, Role};
+use crate::style::{ColorCapability, DesignSystem, RecipeFamily, Role};
 
 /// Surface visual recipe (elevation + interactive/state chrome).
 ///
@@ -36,7 +35,7 @@ use crate::style::{ColorCapability, DesignSystem, Role};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum SurfaceRecipe {
-    /// Terminal underlay. Prefers terminal-default background (`Color::Reset`).
+    /// Terminal underlay. Junie canvas `#000000`, never `Color::Reset`.
     Canvas,
     /// Recessed / ordinary component surface (default).
     #[default]
@@ -47,6 +46,8 @@ pub enum SurfaceRecipe {
     Raised,
     /// Overlay host (dialog, popover body) above backdrop.
     Overlay,
+    /// Anchored menu host on the canonical popover plane.
+    MenuPopover,
     /// Overlay host that owns interaction — elevated fill, focused border.
     OverlayFocused,
     /// Destructive overlay host — elevated fill, danger border.
@@ -73,6 +74,7 @@ impl SurfaceRecipe {
             Self::Sunken => "sunken",
             Self::Raised => "raised",
             Self::Overlay => "overlay",
+            Self::MenuPopover => "menu-popover",
             Self::OverlayFocused => "overlay-focused",
             Self::OverlayDanger => "overlay-danger",
             Self::Interactive => "interactive",
@@ -94,6 +96,7 @@ impl SurfaceRecipe {
                 | Self::Warning
                 | Self::Destructive
                 | Self::Overlay
+                | Self::MenuPopover
                 | Self::OverlayFocused
                 | Self::OverlayDanger
         )
@@ -106,6 +109,7 @@ impl SurfaceRecipe {
             self,
             Self::Raised
                 | Self::Overlay
+                | Self::MenuPopover
                 | Self::OverlayFocused
                 | Self::OverlayDanger
                 | Self::Interactive
@@ -114,6 +118,20 @@ impl SurfaceRecipe {
                 | Self::Warning
                 | Self::Destructive
         )
+    }
+
+    /// Semantic family that governs this surface recipe.
+    #[must_use]
+    pub const fn family(self) -> RecipeFamily {
+        match self {
+            Self::Canvas | Self::Inset | Self::Sunken | Self::Raised => RecipeFamily::Layout,
+            Self::Overlay | Self::MenuPopover | Self::OverlayFocused | Self::OverlayDanger => {
+                RecipeFamily::Overlay
+            }
+            Self::Interactive | Self::Focused => RecipeFamily::Action,
+            Self::Selected => RecipeFamily::Collection,
+            Self::Warning | Self::Destructive => RecipeFamily::Status,
+        }
     }
 }
 
@@ -124,7 +142,7 @@ pub enum SurfaceFill {
     /// Recipe + capability driven (default).
     #[default]
     Auto,
-    /// Always use terminal default background (`Color::Reset`).
+    /// Junie canvas ground (`Role::Canvas` / `#000000`).
     TerminalDefault,
     /// Never paint background (transparent over existing buffer cells).
     Transparent,
@@ -143,6 +161,8 @@ pub struct SurfacePaintPlan {
     pub pad_y: u16,
     /// Named recipe that produced this plan.
     pub recipe: SurfaceRecipe,
+    /// Semantic family that governs the plan.
+    pub family: RecipeFamily,
 }
 
 /// Named geometry parts for one laid-out Surface (no nested Surfaces).
@@ -175,49 +195,12 @@ impl SurfaceParts {
     }
 }
 
-/// Elevation ladder kept as a thin map onto [`SurfaceRecipe`] for older call sites.
-///
-/// Prefer [`SurfaceRecipe`] directly. Mapping:
-/// - [`SurfaceElevation::Canvas`] → [`SurfaceRecipe::Canvas`]
-/// - [`SurfaceElevation::Base`] → [`SurfaceRecipe::Inset`]
-/// - [`SurfaceElevation::Elevated`] → [`SurfaceRecipe::Raised`]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-#[non_exhaustive]
-pub enum SurfaceElevation {
-    /// Default surface ([`SurfaceRecipe::Inset`]).
-    #[default]
-    Base,
-    /// Raised ([`SurfaceRecipe::Raised`]).
-    Elevated,
-    /// Canvas under panels ([`SurfaceRecipe::Canvas`]).
-    Canvas,
-}
-
-impl SurfaceElevation {
-    /// Maps elevation onto the modern recipe set.
-    #[must_use]
-    pub const fn recipe(self) -> SurfaceRecipe {
-        match self {
-            Self::Base => SurfaceRecipe::Inset,
-            Self::Elevated => SurfaceRecipe::Raised,
-            Self::Canvas => SurfaceRecipe::Canvas,
-        }
-    }
-}
-
-impl From<SurfaceElevation> for SurfaceRecipe {
-    fn from(value: SurfaceElevation) -> Self {
-        value.recipe()
-    }
-}
-
 /// Lowest-level visual ownership primitive.
 #[derive(Debug, Clone, Copy)]
 pub struct Surface<'a> {
     system: &'a DesignSystem,
     recipe: SurfaceRecipe,
     bordered: Option<bool>,
-    border_style: Option<Style>,
     fill: SurfaceFill,
     pad_x: Option<u16>,
     pad_y: Option<u16>,
@@ -234,7 +217,6 @@ impl<'a> Surface<'a> {
             system,
             recipe: SurfaceRecipe::Inset,
             bordered: None,
-            border_style: None,
             fill: SurfaceFill::Auto,
             pad_x: None,
             pad_y: None,
@@ -250,24 +232,10 @@ impl<'a> Surface<'a> {
         self
     }
 
-    /// Elevation ladder (maps onto [`SurfaceRecipe`]).
-    #[must_use]
-    pub const fn elevation(mut self, elevation: SurfaceElevation) -> Self {
-        self.recipe = elevation.recipe();
-        self
-    }
-
     /// Force border on/off (overrides recipe default).
     #[must_use]
     pub const fn bordered(mut self, bordered: bool) -> Self {
         self.bordered = Some(bordered);
-        self
-    }
-
-    /// Override semantic border style while preserving shared geometry.
-    #[must_use]
-    pub const fn border_style(mut self, style: Style) -> Self {
-        self.border_style = Some(style);
         self
     }
 
@@ -340,7 +308,7 @@ impl<'a> Surface<'a> {
         }
         plan.fill = match self.fill {
             SurfaceFill::Auto => plan.fill,
-            SurfaceFill::TerminalDefault => Some(Style::default().bg(Color::Reset)),
+            SurfaceFill::TerminalDefault => Some(self.system.style(Role::Canvas)),
             SurfaceFill::Transparent => None,
         };
         let bordered = self.bordered.unwrap_or(self.recipe.default_bordered());
@@ -349,16 +317,14 @@ impl<'a> Surface<'a> {
         } else if plan.border.is_none() {
             plan.border = Some(self.system.style(Role::Border));
         }
-        if bordered && let Some(style) = self.border_style {
-            plan.border = Some(style);
-        }
         // No-color / monochrome: never rely on chromatic fill alone.
         if matches!(self.system.capability, ColorCapability::Monochrome)
             && matches!(self.fill, SurfaceFill::Auto)
         {
             plan.fill = match self.recipe {
-                SurfaceRecipe::Canvas | SurfaceRecipe::Inset | SurfaceRecipe::Sunken => {
-                    Some(Style::default().bg(Color::Reset))
+                SurfaceRecipe::Canvas => Some(self.system.style(Role::Canvas)),
+                SurfaceRecipe::Inset | SurfaceRecipe::Sunken => {
+                    Some(self.system.style(Role::Canvas))
                 }
                 // Keep modifier cues on border; skip solid fill soup.
                 _ => None,
@@ -369,6 +335,7 @@ impl<'a> Surface<'a> {
                     SurfaceRecipe::Focused
                         | SurfaceRecipe::OverlayFocused
                         | SurfaceRecipe::Selected
+                        | SurfaceRecipe::Warning
                         | SurfaceRecipe::Destructive
                         | SurfaceRecipe::OverlayDanger
                 )
@@ -479,13 +446,17 @@ fn fill_rect(buffer: &mut Buffer, area: Rect, style: Style) {
     for y in area.y..area.bottom() {
         for x in area.x..area.right() {
             if let Some(cell) = buffer.cell_mut((x, y)) {
+                // Source `fill` writes a space and replaces the cell. Style-only
+                // patches leave glyphs and modifiers from the surface below.
+                cell.reset();
+                cell.set_symbol(" ");
                 cell.set_style(style);
             }
         }
     }
 }
 
-/// Skip empty styles so phosphor terminal-default surfaces do not force Reset soup.
+/// Skip empty styles so an unfilled recipe does not stamp Reset soup.
 fn nonempty_fill(style: Style) -> Option<Style> {
     if style.bg.is_some() || style.fg.is_some() || style.add_modifier != Modifier::empty() {
         Some(style)
@@ -499,41 +470,55 @@ impl DesignSystem {
     /// Resolves fill, border, and density padding for a [`SurfaceRecipe`].
     #[must_use]
     pub fn surface_recipe(&self, recipe: SurfaceRecipe) -> SurfacePaintPlan {
+        let family = recipe.family();
+        let contract = self.family_recipe(family);
         let (fill_role, border_role, bordered) = match recipe {
-            SurfaceRecipe::Canvas => (None, None, false),
+            SurfaceRecipe::Canvas => (Some(Role::Canvas), None, false),
             SurfaceRecipe::Inset => (Some(Role::Surface), None, false),
             SurfaceRecipe::Sunken => (Some(Role::Sunken), None, false),
             // The ladder only reads as a ladder if each rung has its own role:
             // in-flow cards sit on `Raised`, overlays keep `Elevated`.
-            SurfaceRecipe::Raised => (Some(Role::Raised), Some(Role::Border), true),
-            SurfaceRecipe::Overlay => (Some(Role::Elevated), Some(Role::Border), true),
+            SurfaceRecipe::Raised => (Some(Role::Elevated), Some(contract.border), true),
+            SurfaceRecipe::Overlay => (Some(contract.surface), Some(contract.border), true),
+            SurfaceRecipe::MenuPopover => (Some(Role::Popover), Some(Role::Border), true),
             SurfaceRecipe::OverlayFocused => {
-                (Some(Role::Elevated), Some(Role::BorderFocused), true)
+                (Some(contract.surface), Some(Role::BorderFocused), true)
             }
-            SurfaceRecipe::OverlayDanger => (Some(Role::Elevated), Some(Role::Danger), true),
-            SurfaceRecipe::Interactive => (Some(Role::Surface), Some(Role::Border), true),
-            SurfaceRecipe::Focused => (Some(Role::Surface), Some(Role::BorderFocused), true),
+            SurfaceRecipe::OverlayDanger => (Some(contract.surface), Some(Role::Danger), true),
+            SurfaceRecipe::Interactive => (Some(contract.surface), Some(contract.border), true),
+            SurfaceRecipe::Focused => (Some(contract.surface), Some(Role::BorderFocused), true),
             // Membership is a wash, not a slab: `Role::Selection` is a saturated
             // fill meant for one row, never for a whole panel.
-            SurfaceRecipe::Selected => (Some(Role::SelectionTint), Some(Role::Border), true),
+            SurfaceRecipe::Selected => (Some(Role::SelectionTint), Some(contract.border), true),
             SurfaceRecipe::Warning => (Some(Role::Surface), Some(Role::Warning), true),
             SurfaceRecipe::Destructive => (Some(Role::Surface), Some(Role::Danger), true),
         };
-        let fill = match recipe {
-            SurfaceRecipe::Canvas => Some(Style::default().bg(Color::Reset)),
-            _ => fill_role.map(|r| self.style(r)).and_then(nonempty_fill),
-        };
-        let border = if bordered {
+        let fill = fill_role.map(|r| self.style(r)).and_then(nonempty_fill);
+        let mut border = if bordered {
             border_role.map(|r| self.style(r))
         } else {
             None
         };
+        if let Some(style) = border.as_mut()
+            && matches!(
+                recipe,
+                SurfaceRecipe::Focused
+                    | SurfaceRecipe::OverlayFocused
+                    | SurfaceRecipe::Selected
+                    | SurfaceRecipe::Warning
+                    | SurfaceRecipe::Destructive
+                    | SurfaceRecipe::OverlayDanger
+            )
+        {
+            *style = style.add_modifier(Modifier::BOLD);
+        }
         SurfacePaintPlan {
             fill,
             border,
-            pad_x: self.spacing.pad_x,
-            pad_y: self.spacing.pad_y,
+            pad_x: self.spacing.card_inset,
+            pad_y: 1,
             recipe,
+            family,
         }
     }
 }
@@ -541,13 +526,15 @@ impl DesignSystem {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::style::{ColorCapability, DesignSystem};
+    use crate::style::{ColorCapability, DesignSystem, Role};
+    use ratatui_core::style::Color;
 
     #[test]
-    fn canvas_uses_terminal_default_fill() {
-        let system = DesignSystem::default();
+    fn canvas_uses_junie_canvas_fill() {
+        let system = DesignSystem::junie();
         let plan = Surface::new(&system).recipe(SurfaceRecipe::Canvas).plan();
-        assert_eq!(plan.fill, Some(Style::default().bg(Color::Reset)));
+        assert_eq!(plan.fill, Some(system.style(Role::Canvas)));
+        assert_eq!(plan.fill.and_then(|s| s.bg), Some(Color::Rgb(0, 0, 0)));
         assert!(plan.border.is_none());
     }
 
@@ -557,12 +544,50 @@ mod tests {
         let focused = system.surface_recipe(SurfaceRecipe::Focused);
         let normal = system.surface_recipe(SurfaceRecipe::Interactive);
         assert_ne!(focused.border, normal.border);
-        assert_eq!(focused.border, Some(system.style(Role::BorderFocused)));
+        let border = focused.border.expect("focused surface has a border");
+        assert_eq!(border.fg, system.style(Role::BorderFocused).fg);
+        assert!(border.add_modifier.contains(Modifier::BOLD));
+        assert_eq!(focused.family, RecipeFamily::Action);
+    }
+
+    #[test]
+    fn selected_surface_joins_collection_membership_contract() {
+        let system = DesignSystem::default();
+        let selected = system.surface_recipe(SurfaceRecipe::Selected);
+        assert_eq!(selected.family, RecipeFamily::Collection);
+        assert_eq!(
+            system.family_recipe(selected.family).non_color_cue,
+            crate::style::NonColorCue::SelectionGlyph,
+            "selected membership needs a family selection cue"
+        );
+    }
+
+    #[test]
+    fn warning_surface_paints_a_non_color_border_cue() {
+        let system = DesignSystem::default().no_color();
+        let area = Rect::new(0, 0, 8, 3);
+        let mut buffer = Buffer::empty(area);
+        Surface::new(&system)
+            .recipe(SurfaceRecipe::Warning)
+            .paint(area, &mut buffer);
+
+        let plan = system.surface_recipe(SurfaceRecipe::Warning);
+        assert_eq!(plan.family, RecipeFamily::Status);
+        assert!(
+            plan.border
+                .expect("warning surface is bordered")
+                .add_modifier
+                .contains(Modifier::BOLD)
+        );
+        assert!(
+            buffer[(area.x, area.y)].modifier.contains(Modifier::BOLD),
+            "warning border must remain structurally visible without hue"
+        );
     }
 
     #[test]
     fn layout_content_inside_border_and_pad() {
-        let system = DesignSystem::default().density(crate::style::Density::Comfortable);
+        let system = DesignSystem::default();
         let s = Surface::new(&system)
             .recipe(SurfaceRecipe::Raised)
             .padding(1, 1);
@@ -607,10 +632,13 @@ mod tests {
     }
 
     #[test]
-    fn elevation_maps_to_recipe() {
-        assert_eq!(SurfaceElevation::Base.recipe(), SurfaceRecipe::Inset);
-        assert_eq!(SurfaceElevation::Elevated.recipe(), SurfaceRecipe::Raised);
-        assert_eq!(SurfaceElevation::Canvas.recipe(), SurfaceRecipe::Canvas);
+    fn monochrome_inset_sunken_use_canvas_not_reset() {
+        let system = DesignSystem::default().capability(ColorCapability::Monochrome);
+        for recipe in [SurfaceRecipe::Inset, SurfaceRecipe::Sunken] {
+            let plan = Surface::new(&system).recipe(recipe).plan();
+            assert_eq!(plan.fill, Some(system.style(Role::Canvas)));
+            assert_ne!(plan.fill.and_then(|style| style.bg), Some(Color::Reset));
+        }
     }
 
     #[test]
@@ -628,6 +656,7 @@ mod tests {
     fn recipe_ids_stable() {
         assert_eq!(SurfaceRecipe::Focused.id(), "focused");
         assert_eq!(SurfaceRecipe::Destructive.id(), "destructive");
+        assert_eq!(SurfaceRecipe::MenuPopover.id(), "menu-popover");
     }
 
     #[test]
@@ -638,6 +667,7 @@ mod tests {
             SurfaceRecipe::Inset,
             SurfaceRecipe::Raised,
             SurfaceRecipe::Overlay,
+            SurfaceRecipe::MenuPopover,
             SurfaceRecipe::Interactive,
             SurfaceRecipe::Focused,
             SurfaceRecipe::Selected,
@@ -665,52 +695,76 @@ mod tests {
 
     #[test]
     fn paint_with_explicit_fill_sets_bg() {
-        let system = DesignSystem::from_palette(crate::style::RolePalette::slate());
+        let system = DesignSystem::new(crate::style::RolePalette::junie());
         let mut buf = Buffer::empty(Rect::new(0, 0, 8, 4));
         Surface::new(&system)
             .recipe(SurfaceRecipe::Raised)
             .bordered(false)
             .padding(0, 0)
             .paint(Rect::new(0, 0, 8, 4), &mut buf);
-        let raised = system.style(Role::Raised);
-        assert!(raised.bg.is_some(), "slate Raised must carry bg");
+        let raised = system.style(Role::Elevated);
+        assert!(raised.bg.is_some(), "junie elevated must carry bg");
         assert_eq!(buf[(3, 1)].style().bg, raised.bg);
     }
 
     #[test]
-    fn phosphor_surface_ladder_is_populated() {
+    fn junie_surface_ladder_is_populated() {
         let system = DesignSystem::default();
         for role in [
             Role::Canvas,
             Role::Surface,
-            Role::Raised,
             Role::Elevated,
             Role::Sunken,
+            Role::Popover,
             Role::StatusBar,
             Role::SelectionTint,
-            Role::HoverTint,
         ] {
             assert!(system.style(role).bg.is_some(), "{role:?} must carry bg");
         }
     }
 
     #[test]
-    fn phosphor_raised_fill_is_painted() {
+    fn inset_is_surface_fill_without_a_border() {
+        let system = DesignSystem::default();
+        let plan = system.surface_recipe(SurfaceRecipe::Inset);
+        assert!(plan.border.is_none());
+        assert_eq!(plan.fill, Some(system.style(Role::Surface)));
+        assert_eq!(plan.pad_x, system.spacing.card_inset);
+        let area = Rect::new(0, 0, 12, 5);
+        let mut buffer = Buffer::empty(area);
+        Surface::new(&system)
+            .recipe(SurfaceRecipe::Inset)
+            .paint(area, &mut buffer);
+        assert_eq!(buffer[(0, 0)].symbol(), " ");
+        assert_eq!(buffer[(0, 0)].bg, system.style(Role::Surface).bg.unwrap());
+    }
+
+    #[test]
+    fn junie_surfaces_keep_semantic_elevation() {
         let system = DesignSystem::default();
         let plan = system.surface_recipe(SurfaceRecipe::Raised);
-        assert_eq!(plan.fill, Some(system.style(Role::Raised)));
+        assert_eq!(plan.fill, Some(system.style(Role::Elevated)));
         assert!(plan.border.is_some());
 
         // Overlays own the top rung, and a focused overlay keeps it.
         let overlay = system.surface_recipe(SurfaceRecipe::Overlay);
+        let menu = system.surface_recipe(SurfaceRecipe::MenuPopover);
         let focused_overlay = system.surface_recipe(SurfaceRecipe::OverlayFocused);
         assert_eq!(overlay.fill, Some(system.style(Role::Elevated)));
-        assert_eq!(focused_overlay.fill, overlay.fill);
-        assert_eq!(
-            focused_overlay.border,
-            Some(system.style(Role::BorderFocused))
+        assert_eq!(menu.fill, Some(system.style(Role::Popover)));
+        assert_eq!(menu.border, Some(system.style(Role::Border)));
+        assert_ne!(
+            menu.fill, overlay.fill,
+            "menus have their own popover plane"
         );
-        assert_ne!(plan.fill, overlay.fill);
+        assert_eq!(focused_overlay.fill, overlay.fill);
+        let focused_border = focused_overlay
+            .border
+            .expect("focused overlay carries a border");
+        assert_eq!(focused_border.fg, system.style(Role::BorderFocused).fg);
+        assert!(focused_border.add_modifier.contains(Modifier::BOLD));
+        assert_eq!(plan.family, RecipeFamily::Layout);
+        assert_eq!(overlay.family, RecipeFamily::Overlay);
 
         // Wells recess: a sunken surface fills below the ordinary surface.
         let sunken = system.surface_recipe(SurfaceRecipe::Sunken);

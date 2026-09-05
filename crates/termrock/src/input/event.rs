@@ -1,5 +1,4 @@
 //! Backend-neutral key and mouse event vocabulary.
-
 use core::ops::{BitOr, BitOrAssign};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -35,11 +34,12 @@ pub enum KeyCode {
     Delete,
     /// The esc key.
     Esc,
+    /// A function key (`F1` through `F24`, depending on the backend).
+    F(u8),
     /// The char key.
     Char(char),
-    /// A key the neutral vocabulary does not model (function keys, media
-    /// keys, lock keys, and similar keys). Widgets and keymaps must treat it
-    /// as non-actionable.
+    /// A key the neutral vocabulary does not model (media keys, lock keys,
+    /// and similar keys). Widgets and keymaps must treat it as non-actionable.
     Unknown,
 }
 
@@ -165,6 +165,36 @@ impl KeyEvent {
             state: KeyEventState::NONE,
         }
     }
+
+    /// A single, unrepeated press (`Press` only).
+    ///
+    /// Gates actions that must fire exactly once per physical press
+    /// (activate, submit, dismiss, mode switches). Repeat is rejected.
+    #[must_use]
+    pub const fn is_press(&self) -> bool {
+        matches!(self.kind, KeyEventKind::Press)
+    }
+
+    /// A key repeat (`Repeat`).
+    #[must_use]
+    pub const fn is_repeat(&self) -> bool {
+        matches!(self.kind, KeyEventKind::Repeat)
+    }
+
+    /// A text-entry phase (`Press` or `Repeat`).
+    ///
+    /// Gates character insertion and held-key motion: an operator holding a
+    /// key expects it to keep typing or scrolling, but never to double-submit.
+    #[must_use]
+    pub const fn is_insert(&self) -> bool {
+        matches!(self.kind, KeyEventKind::Press | KeyEventKind::Repeat)
+    }
+
+    /// A key release (`Release`); equivalent to `!`[`Self::is_insert`].
+    #[must_use]
+    pub const fn is_release(&self) -> bool {
+        matches!(self.kind, KeyEventKind::Release)
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -279,6 +309,7 @@ mod adapter {
                 crossterm::event::KeyCode::BackTab => Self::BackTab,
                 crossterm::event::KeyCode::Delete => Self::Delete,
                 crossterm::event::KeyCode::Esc => Self::Esc,
+                crossterm::event::KeyCode::F(number) => Self::F(number),
                 crossterm::event::KeyCode::Char(c) => Self::Char(c),
                 _ => Self::Unknown,
             }
@@ -352,5 +383,32 @@ mod adapter {
                 _ => Self::Unknown,
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod kind_predicates {
+    use super::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+
+    fn key(kind: KeyEventKind) -> KeyEvent {
+        let mut event = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
+        event.kind = kind;
+        event
+    }
+
+    #[test]
+    fn press_gates_actions_repeat_gates_entry() {
+        assert!(key(KeyEventKind::Press).is_press());
+        assert!(!key(KeyEventKind::Repeat).is_press());
+        assert!(!key(KeyEventKind::Release).is_press());
+
+        // Held-key entry: press and repeat type, release does not.
+        assert!(key(KeyEventKind::Press).is_insert());
+        assert!(key(KeyEventKind::Repeat).is_insert());
+        assert!(!key(KeyEventKind::Release).is_insert());
+        assert!(key(KeyEventKind::Release).is_release());
+        assert!(!key(KeyEventKind::Repeat).is_release());
+        assert!(key(KeyEventKind::Repeat).is_repeat());
+        assert!(!key(KeyEventKind::Press).is_repeat());
     }
 }

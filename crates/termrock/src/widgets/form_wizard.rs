@@ -14,7 +14,6 @@
 //! embeds it for paint and maps [`WizardStepStatus`] = [`StepStatus`].
 //!
 //! Research: Huh forms, installers, cloud CLIs, onboarding wizards.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -28,13 +27,13 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
-    style::{DesignSystem, Role},
+    style::{ButtonRecipeVariant, ControlState, DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
 
 use super::{
-    Panel, PanelChrome, StepItem, StepStatus, Stepper, StepperNavPolicy, StepperOrientation,
-    StepperPresentation, StepperState,
+    Panel, PanelChrome, PanelVariant, StepItem, StepStatus, Stepper, StepperNavPolicy,
+    StepperOrientation, StepperPresentation, StepperState,
 };
 
 /// Width under which stepper collapses to title-only / single-step layout.
@@ -793,7 +792,7 @@ impl FormWizardState {
 
     /// Key adapter.
     pub fn handle_key(&mut self, key: KeyEvent) -> FormWizardOutcome {
-        if key.kind == KeyEventKind::Release || !self.enabled {
+        if key.is_release() || !self.enabled {
             return FormWizardOutcome::Ignored;
         }
         if !self.focused {
@@ -891,7 +890,6 @@ impl FormWizardState {
 pub struct FormWizard<'a> {
     system: &'a DesignSystem,
     title: &'a str,
-    ascii: bool,
     show_stepper: bool,
     show_nav: bool,
 }
@@ -903,7 +901,6 @@ impl<'a> FormWizard<'a> {
         Self {
             system,
             title: "Setup",
-            ascii: false,
             show_stepper: true,
             show_nav: true,
         }
@@ -915,7 +912,6 @@ impl<'a> FormWizard<'a> {
         Self {
             system,
             title: label,
-            ascii: false,
             show_stepper: true,
             show_nav: true,
         }
@@ -930,13 +926,7 @@ impl<'a> FormWizard<'a> {
 
     /// ASCII marks.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Show stepper row.
-    #[must_use]
     pub const fn show_stepper(mut self, on: bool) -> Self {
         self.show_stepper = on;
         self
@@ -968,6 +958,7 @@ impl<'a> FormWizard<'a> {
         }
 
         let panel = Panel::new(self.system)
+            .variant(PanelVariant::Bordered)
             .overlay(true)
             .emphasis(if state.focused {
                 PanelChrome::Focused
@@ -1035,7 +1026,7 @@ impl<'a> FormWizard<'a> {
                             .unwrap_or("Fix errors to continue"),
                         Role::Danger,
                     )),
-                    WizardGate::Pending => Some(("Checking…", Role::TextMuted)),
+                    WizardGate::Pending => Some(({ "Checking…" }, Role::TextMuted)),
                     WizardGate::Valid => state
                         .current_step()
                         .and_then(|s| s.description.as_deref())
@@ -1043,15 +1034,27 @@ impl<'a> FormWizard<'a> {
                 },
             };
             if let Some((text, role)) = banner {
-                buffer.set_stringn(
-                    inner.x,
-                    y,
-                    take_display_cols(text, usize::from(inner.width)),
-                    usize::from(inner.width),
-                    self.system.style(role),
-                );
-                y = y.saturating_add(1);
+                if matches!(role, Role::Danger) {
+                    super::field_message::paint_field_message(
+                        buffer,
+                        Rect::new(inner.x, y, inner.width, 1),
+                        self.system,
+                        super::DescriptionKind::Error,
+                        text,
+                    );
+                } else {
+                    buffer.set_stringn(
+                        inner.x,
+                        y,
+                        take_display_cols(text, usize::from(inner.width)),
+                        usize::from(inner.width),
+                        self.system.style(role),
+                    );
+                }
             }
+            // Gate feedback owns a permanent inline row. Pending/invalid
+            // transitions therefore cannot move host fields or navigation.
+            y = y.saturating_add(1);
         }
 
         // Nav row at bottom
@@ -1105,9 +1108,7 @@ impl<'a> FormWizard<'a> {
         };
         st.set_presentation_override(override_pres);
         let area = Rect::new(inner.x, y, inner.width, 1);
-        Stepper::new(&state.steps, self.system)
-            .ascii(self.ascii)
-            .paint(area, buffer, &mut st);
+        Stepper::new(&state.steps, self.system).paint(area, buffer, &mut st);
         state.stepper_hits = st.hits().to_vec();
         y.saturating_add(1)
     }
@@ -1129,7 +1130,7 @@ impl<'a> FormWizard<'a> {
                 break;
             }
             let st = state.statuses.get(i).copied().unwrap_or_default();
-            let line = format!("{} {} — {}", st.mark(self.ascii), step.title, st.id());
+            let line = format!("{} {} {} {}", st.mark(), step.title, { "—" }, st.id());
             buffer.set_stringn(
                 area.x,
                 y,
@@ -1159,24 +1160,24 @@ impl<'a> FormWizard<'a> {
         }
         let mut x = area.x;
         // Back
-        let back = if self.ascii { "< Back" } else { "← Back" };
+        let back = { "← Back" };
         let bw = display_cols(back) as u16 + 1;
         let back_enabled = match state.phase {
             WizardPhase::Step => state.index > 0,
             WizardPhase::Review | WizardPhase::Failed => true,
         };
         let br = Rect::new(x, area.y, bw.min(area.right().saturating_sub(x)), 1);
-        buffer.set_stringn(
-            br.x,
-            br.y,
-            back,
-            usize::from(br.width),
-            self.system.style(if back_enabled {
-                Role::Text
+        let back_recipe = self.system.button_recipe(
+            ButtonRecipeVariant::Quiet,
+            if back_enabled {
+                ControlState::Default
             } else {
-                Role::TextMuted
-            }),
+                ControlState::Disabled
+            },
+            self.system.junie_theme().surface,
         );
+        buffer.set_style(br, back_recipe.fill);
+        buffer.set_stringn(br.x, br.y, back, usize::from(br.width), back_recipe.label);
         if back_enabled {
             state.nav_back = br;
         }
@@ -1186,87 +1187,81 @@ impl<'a> FormWizard<'a> {
         let can_skip = state.allow_skip
             && matches!(state.phase, WizardPhase::Step)
             && state.current_step().is_some_and(|s| s.optional);
-        if can_skip && x < area.right() {
+        if x < area.right() {
             let skip = "Skip";
             let sw = display_cols(skip) as u16 + 1;
             let sr = Rect::new(x, area.y, sw.min(area.right().saturating_sub(x)), 1);
-            buffer.set_stringn(
-                sr.x,
-                sr.y,
-                skip,
-                usize::from(sr.width),
-                self.system.style(Role::TextMuted),
-            );
-            state.nav_skip = sr;
+            if can_skip {
+                let recipe = self.system.button_recipe(
+                    ButtonRecipeVariant::Quiet,
+                    ControlState::Default,
+                    self.system.junie_theme().surface,
+                );
+                buffer.set_style(sr, recipe.fill);
+                buffer.set_stringn(sr.x, sr.y, skip, usize::from(sr.width), recipe.label);
+                state.nav_skip = sr;
+            }
+            // Keep this slot even on required steps; Cancel never jumps when
+            // optionality changes.
             x = x.saturating_add(sw).saturating_add(1);
         }
 
         // Cancel far left-ish already have back; cancel on far right start
         // Next / Finish / Retry on right
-        let next_label =
-            match state.phase {
-                WizardPhase::Failed => {
-                    if self.ascii {
-                        "Retry"
-                    } else {
-                        "Retry ↵"
-                    }
-                }
-                WizardPhase::Review => {
-                    if self.ascii {
-                        "Finish"
-                    } else {
-                        "Finish ↵"
-                    }
-                }
-                WizardPhase::Step
-                    if state.index + 1 >= state.steps.len() && !state.review_enabled =>
-                {
-                    if self.ascii { "Finish" } else { "Finish ↵" }
-                }
-                WizardPhase::Step if state.index + 1 >= state.steps.len() => {
-                    if self.ascii {
-                        "Review"
-                    } else {
-                        "Review →"
-                    }
-                }
-                WizardPhase::Step => {
-                    if self.ascii {
-                        "Next"
-                    } else {
-                        "Next →"
-                    }
-                }
-            };
-        let nw = display_cols(next_label) as u16;
-        let nx = area.right().saturating_sub(nw).saturating_sub(1);
-        let nr = Rect::new(nx.max(x), area.y, nw, 1);
-        let next_style = match state.phase {
-            WizardPhase::Step if !state.current_gate().allows_advance() => Role::TextMuted,
-            _ => Role::Focus,
+        let next_label = match state.phase {
+            WizardPhase::Failed => "Retry ↵",
+            WizardPhase::Review => "Finish ↵",
+            WizardPhase::Step if state.index + 1 >= state.steps.len() && !state.review_enabled => {
+                "Finish ↵"
+            }
+            WizardPhase::Step if state.index + 1 >= state.steps.len() => "Review →",
+            WizardPhase::Step => "Next →",
         };
+        let nw = (display_cols(next_label) as u16).max(10);
+        let nx = area.right().saturating_sub(nw).saturating_sub(1);
+        let nr = Rect::new(
+            nx.max(x),
+            area.y,
+            nw.min(area.right().saturating_sub(nx.max(x))),
+            1,
+        );
+        let next_enabled = match state.phase {
+            WizardPhase::Step => state.current_gate().allows_advance(),
+            _ => true,
+        };
+        let next_recipe = self.system.button_recipe(
+            ButtonRecipeVariant::Primary,
+            if next_enabled {
+                ControlState::Default
+            } else {
+                ControlState::Disabled
+            },
+            self.system.junie_theme().surface,
+        );
+        buffer.set_style(nr, next_recipe.fill);
         buffer.set_stringn(
             nr.x,
             nr.y,
             next_label,
             usize::from(nr.width),
-            self.system.style(next_style).add_modifier(Modifier::BOLD),
+            next_recipe.label.add_modifier(Modifier::BOLD),
         );
-        state.nav_next = nr;
+        if next_enabled {
+            state.nav_next = nr;
+        }
 
         // Cancel at end of left cluster
         if x < nr.x.saturating_sub(8) {
             let cancel = "Esc";
             let cw = 3u16;
             let cr = Rect::new(x, area.y, cw, 1);
-            buffer.set_stringn(
-                cr.x,
-                cr.y,
-                cancel,
-                usize::from(cr.width),
-                self.system.style(Role::TextMuted),
+            let recipe = self.system.button_recipe(
+                ButtonRecipeVariant::Quiet,
+                ControlState::Default,
+                self.system.junie_theme().surface,
             );
+            buffer.set_style(cr, recipe.fill);
+            buffer.set_stringn(cr.x, cr.y, cancel, usize::from(cr.width), recipe.label);
             state.nav_cancel = cr;
         }
     }
@@ -1515,14 +1510,13 @@ mod tests {
 
     #[test]
     fn paint_and_mouse_nav() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let mut state = three_steps();
         state.set_focused(true);
         let area = Rect::new(0, 0, 60, 14);
         let mut buf = Buffer::empty(area);
         FormWizard::new(&system)
             .title("Connect")
-            .ascii(true)
             .paint(area, &mut buf, &mut state);
         assert!(!state.body_area.is_empty());
         assert!(!state.stepper_hits.is_empty());
@@ -1573,7 +1567,7 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 56, 12);
         let mut buf = Buffer::empty(area);
-        let w = FormWizard::new(&system).ascii(true);
+        let w = FormWizard::new(&system);
         for _ in 0..50 {
             w.paint(area, &mut buf, &mut state);
         }

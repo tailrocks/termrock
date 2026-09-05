@@ -10,7 +10,6 @@
 //!
 //! [`data_view::VirtualWindow`] remains the fixed unit-slot facade used by
 //! DataTable; it is equivalent to `Virtualizer::fixed(1)`.
-
 use std::collections::BTreeMap;
 
 use crate::perf::{ScrollAnchor, ScrollAnchorKind};
@@ -339,7 +338,7 @@ impl Virtualizer {
 
     /// Drop measures outside `[measure_start - pad, measure_end + pad)`.
     pub fn forget_measured_outside(&mut self, pad: u64) {
-        let slice = self.measure_slice();
+        let slice = self.visible_slice();
         let lo = slice.measure_start.saturating_sub(pad);
         let hi = slice.measure_end.saturating_add(pad);
         self.measured.retain(|&k, _| k >= lo && k < hi);
@@ -525,12 +524,6 @@ impl Virtualizer {
             measure_start,
             measure_end,
         }
-    }
-
-    /// Alias for hosts that name the prefetch window explicitly.
-    #[must_use]
-    pub fn measure_slice(&self) -> VirtSlice {
-        self.visible_slice()
     }
 
     /// Sticky indices that must stay in the semantic set (leading then trailing).
@@ -752,7 +745,7 @@ mod tests {
             .with_viewport(40)
             .with_overscan(2);
         v.set_offset(10_000);
-        let m = v.measure_slice();
+        let m = v.visible_slice();
         for i in m.measure_start..m.measure_end {
             // Simulate host measuring only the prefetch window.
             v.note_measured(i, if i % 2 == 0 { 1 } else { 3 });

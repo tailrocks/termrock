@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Structured report for `termrock doctor` (CLI or embed).
-
-use super::profile::{CapabilityOverrides, CapabilityProfile, TerminalCapabilities};
-use super::resolve_capabilities;
+use super::detect::DetectionReport;
+use super::profile::{
+    CapabilityOverrides, CapabilityProfile, TerminalCapabilities, resolve_from_detection,
+};
 use super::set::{CapabilityKind, fallback_policies};
 
 /// Severity of a doctor finding.
@@ -51,7 +52,17 @@ pub fn build_doctor_report(
     preferred_profile: Option<CapabilityProfile>,
     overrides: CapabilityOverrides,
 ) -> DoctorReport {
-    let effective = resolve_capabilities(preferred_profile, overrides);
+    build_doctor_report_from_detection(super::detect_environment(), preferred_profile, overrides)
+}
+
+/// Build a doctor report from an injected detection report (pure — no process env).
+#[must_use]
+pub fn build_doctor_report_from_detection(
+    detection: DetectionReport,
+    preferred_profile: Option<CapabilityProfile>,
+    overrides: CapabilityOverrides,
+) -> DoctorReport {
+    let effective = resolve_from_detection(detection, preferred_profile, overrides);
     let mut capabilities = Vec::new();
     for kind in CapabilityKind::ALL {
         let on = effective.set.enabled(kind);
@@ -89,15 +100,6 @@ pub fn build_doctor_report(
             effective.set.color, effective.color_source
         ),
     });
-    findings.push(DoctorFinding {
-        severity: DoctorSeverity::Info,
-        code: "glyphs".into(),
-        message: format!(
-            "glyphs={:?} source={:?}",
-            effective.set.glyphs, effective.glyph_source
-        ),
-    });
-
     if effective.set.ssh && effective.set.clipboard {
         findings.push(DoctorFinding {
             severity: DoctorSeverity::Warning,
@@ -140,12 +142,10 @@ pub fn build_doctor_report(
     }
     recommended_env.push("# TERMROCK_PROFILE=modern|compatible|minimal|inline|headless".into());
     recommended_env.push("# TERMROCK_COLOR=truecolor|256|16|mono".into());
-    recommended_env.push("# TERMROCK_GLYPHS=unicode|ascii".into());
 
     let sample_hint = format!(
-        "sample: color={:?} glyphs={:?} mouse={} alt_screen={} paste={}",
+        "sample: color={:?} mouse={} alt_screen={} paste={}",
         effective.set.color,
-        effective.set.glyphs,
         effective.set.mouse,
         effective.set.alternate_screen,
         effective.set.bracketed_paste

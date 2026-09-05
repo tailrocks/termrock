@@ -4,7 +4,6 @@
 //! Best-effort environment detection (no terminal queries required).
 //!
 //! Interactive DA queries (DECRQM, XTGETTCAP, …) are host-owned and optional.
-
 use crate::style::ColorCapability;
 
 /// How a capability fact was obtained.
@@ -43,7 +42,6 @@ pub struct EnvHints {
     /// `TERMROCK_COLOR` override raw if any.
     pub color_override: Option<String>,
     /// `TERMROCK_GLYPHS` override raw if any.
-    pub glyphs_override: Option<String>,
     /// `TERMROCK_PROFILE` raw if any.
     pub profile_override: Option<String>,
     /// Detected color capability from env (before profile).
@@ -177,7 +175,6 @@ pub fn detect_environment() -> DetectionReport {
         color_override: std::env::var("TERMROCK_COLOR")
             .ok()
             .or_else(|| std::env::var("COLORTERM_FORCE").ok()),
-        glyphs_override: std::env::var("TERMROCK_GLYPHS").ok(),
         profile_override: std::env::var("TERMROCK_PROFILE").ok(),
         ssh: std::env::var_os("SSH_CONNECTION").is_some() || std::env::var_os("SSH_TTY").is_some(),
         windows_conpty: cfg!(windows)

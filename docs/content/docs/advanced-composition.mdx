@@ -1,0 +1,84 @@
+---
+title: Advanced composition
+description: Choose component families, project host data, and combine them into resilient terminal workflows.
+---
+
+Composition starts with projection, not layout. Decide what the host owns,
+project the smallest stable view model, then choose the component that expresses
+the user's job. Application patterns are proof of composition, not runtimes or
+domain frameworks.
+
+## Project before composing
+
+1. Keep provider objects, secrets, process handles, and persistence in the host.
+2. Project stable IDs, bounded labels, semantic status, and display-safe detail.
+3. Let components own local focus, selection, scrolling, and expansion.
+4. Translate typed outcomes into host policy and effects.
+
+If a component needs a full domain object to paint one row, the boundary is too
+wide. If the host duplicates row focus or hit geometry, the boundary is too
+narrow.
+
+## Compose an agent conversation
+
+| User job | Start with |
+| --- | --- |
+| Browse a long conversation | [MessageThread](/docs/components/message-thread) |
+| Paint incrementally arriving prose | [StreamingMarkdown](/docs/components/streaming-markdown) |
+| Cite one source in context | [SourceCitation](/docs/components/source-citation) |
+| Review a source collection | [CitationList](/docs/components/citation-list) |
+| Inspect or control a tool run | [ToolCallCard](/docs/components/tool-call-card) |
+| Assemble the complete workspace | [Agent Workbench](/docs/patterns/agent-workbench) |
+
+The host owns provider messages, tool execution, permission policy, cancellation,
+and retry semantics. TermRock owns presentation state and returns requests. Do
+not encode one vendor's protocol in reusable thread or tool-card state.
+
+## Build a prompt composer
+
+Choose tokens by editing behavior, not by visual resemblance.
+
+| Content | Component |
+| --- | --- |
+| File, image, URL, or code attachment | [AttachmentChip](/docs/components/attachment-chip) |
+| Collapsed large paste | [PasteChip](/docs/components/paste-chip) |
+| Atomic inline file, symbol, agent, or tool reference | [InlineMention](/docs/components/inline-mention) |
+| Filtered command completion | [SlashCommandMenu](/docs/components/slash-command-menu) |
+| Model choice with bounded metadata | [ModelSelector](/docs/components/model-selector) |
+| Safety or autonomy choice | [AgentModeSelector](/docs/components/agent-mode-selector) |
+| Context or token budget | [ContextMeter](/docs/components/context-meter) |
+
+Keep attachment and paste bodies in host storage. Project a safe label, kind,
+size, and status. Mentions behave as atomic draft tokens; completion replaces
+only its active trigger range so unrelated draft text survives.
+
+## Choose a data view by question
+
+| Question | Component family |
+| --- | --- |
+| Trend over ordered numeric samples | [Chart](/docs/components/chart) or [Sparkline](/docs/components/sparkline) |
+| One value against a range | [Gauge](/docs/components/gauge) |
+| Distribution across buckets | [Histogram](/docs/components/histogram) |
+| General hierarchy | [Tree](/docs/components/tree) |
+| Filesystem navigation and file actions | [FileTree](/docs/components/file-tree) |
+| Moderate dependency DAG | [DependencyGraph](/docs/components/dependency-graph) |
+| Nested operation latency | [TraceWaterfall](/docs/components/trace-waterfall) |
+| Structured issue list | [DiagnosticView](/docs/components/diagnostic-view) |
+| One issue anchored in source | [CodeFrame](/docs/components/code-frame) |
+
+Visualizations need a narrow-terminal fallback: summary values, a table, or a
+scrollable hierarchy. Dense or very large dependency graphs need a host-chosen
+filtered view rather than unreadable compression. Encode series, severity, and
+span status with labels or glyphs as well as color.
+
+## Promote to an application pattern deliberately
+
+Use a pattern when several component families repeat as one workflow with
+shared responsive behavior. Keep the pattern host-neutral: it may coordinate
+component state and typed requests, but not fetch, execute, authorize, or
+persist.
+
+Browse [Application patterns](/docs/patterns) for composition proofs. Read
+[Interaction architecture](/docs/interaction) before combining focus scopes or
+floating layers, and [Customization](/docs/customization) before overriding
+individual component appearance.

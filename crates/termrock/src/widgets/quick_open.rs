@@ -22,7 +22,6 @@
 //! - JumpMode: [`QuickOpenOutcome::JumpModeRequested`] + [`quick_open_jump_targets`].
 //!
 //! Research: fzf, television, VS Code Quick Open, Yazi, launchers.
-
 use std::collections::HashMap;
 
 use ratatui_core::{
@@ -33,19 +32,18 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         CollectionItem, CollectionState, NavigationMove, OverlayId, OverlayKind, OverlayOutcome,
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PageMove, RovingOrientation,
-        SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, place_overlay,
+        SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_palette_intent,
+        place_overlay,
     },
     style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
     widgets::{
         HighlightVisual, HighlightedText, JumpTarget, MatchRanges, MatchTruncate, Panel,
-        PanelChrome, TextInput, TextInputOutcome, TextInputState, fuzzy_match_label,
+        PanelChrome, PanelVariant, TextInput, TextInputOutcome, TextInputState, fuzzy_match_label,
     },
 };
 
@@ -134,18 +132,35 @@ pub fn quick_open_presentation_for_bounds(bounds: Rect) -> QuickOpenPresentation
     }
 }
 
-/// Place using CommandPalette-class center policy (may fullscreen-promote).
+/// Place using CommandPalette-class center policy (upper third; may fullscreen).
 #[must_use]
 pub fn place_quick_open(bounds: Rect, preferred: QuickOpenSize) -> Rect {
     if bounds.is_empty() || preferred.width == 0 || preferred.height == 0 {
         return Rect::default();
     }
-    // Reuse command-palette policy (center + dim + narrow fullscreen).
-    place_overlay(
-        bounds,
-        None,
-        OverlaySize::from(preferred),
-        OverlayPolicy::for_kind(OverlayKind::CommandPalette),
+    if bounds.width <= QUICK_OPEN_FULLSCREEN_MAX_WIDTH
+        || bounds.height <= QUICK_OPEN_FULLSCREEN_MAX_HEIGHT
+    {
+        return place_overlay(
+            bounds,
+            None,
+            OverlaySize::from(preferred),
+            OverlayPolicy::for_kind(OverlayKind::CommandPalette),
+        );
+    }
+    let width = preferred.width.min(bounds.width.saturating_sub(4)).max(28);
+    let height = preferred.height.min(bounds.height.saturating_sub(2)).max(8);
+    let x = bounds
+        .x
+        .saturating_add(bounds.width.saturating_sub(width) / 2);
+    let y = bounds
+        .y
+        .saturating_add((bounds.height.saturating_sub(height) / 3).max(1));
+    Rect::new(
+        x,
+        y.min(bounds.bottom().saturating_sub(height)),
+        width,
+        height,
     )
 }
 
@@ -620,7 +635,9 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            query: TextInputState::new("").with_allow_empty(true),
+            query: TextInputState::new("")
+                .with_allow_empty(true)
+                .with_editing(),
             collection: CollectionState::new().orientation(RovingOrientation::Vertical),
             generation: 0,
             applied_generation: 0,
@@ -762,6 +779,22 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         self.accepts_input && self.focused
     }
 
+    fn collection_items(visible: &[QuickOpenItem<Id>]) -> Vec<CollectionItem<usize>>
+    where
+        Id: Clone,
+    {
+        visible
+            .iter()
+            .enumerate()
+            .map(|(i, it)| CollectionItem {
+                id: i,
+                enabled: true,
+                label: it.label.clone(),
+                parent: None,
+            })
+            .collect()
+    }
+
     fn bump_generation(&mut self) -> u64 {
         let prev = self.generation;
         self.generation = self.generation.saturating_add(1);
@@ -791,11 +824,15 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
 
     fn restore_memory(&mut self, provider_id: &str) {
         if let Some(mem) = self.memory.get(provider_id).cloned() {
-            self.query = TextInputState::new(&mem.query).with_allow_empty(true);
+            self.query = TextInputState::new(&mem.query)
+                .with_allow_empty(true)
+                .with_editing();
             self.scroll = mem.scroll;
             self.collection.set_active(Some(mem.cursor));
         } else {
-            self.query = TextInputState::new("").with_allow_empty(true);
+            self.query = TextInputState::new("")
+                .with_allow_empty(true)
+                .with_editing();
             self.scroll = 0;
             self.collection.set_active(Some(0));
         }
@@ -840,16 +877,7 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         self.applied_generation = generation;
         self.stream_complete = complete;
         self.total_hint = total_hint;
-        let entries: Vec<CollectionItem<usize>> = visible
-            .iter()
-            .enumerate()
-            .map(|(i, it)| CollectionItem {
-                id: i,
-                enabled: true,
-                label: it.label.clone(),
-                parent: None,
-            })
-            .collect();
+        let entries = Self::collection_items(visible);
         let _ = self.collection.reconcile(&entries);
         // Prefer remembered label when present for this generation's provider.
         if let Some(mem) = self.memory.values().find(|m| m.selected_label.is_some()) {
@@ -950,7 +978,7 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         providers: &[QuickOpenProvider],
         visible: &[QuickOpenItem<Id>],
     ) -> QuickOpenOutcome<Id> {
-        if !self.live() || key.kind == KeyEventKind::Release {
+        if !self.live() || key.is_release() {
             return QuickOpenOutcome::Ignored;
         }
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
@@ -992,7 +1020,9 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         // Esc cancel
         if key.code == KeyCode::Esc {
             if !self.query_text().is_empty() {
-                self.query = TextInputState::new("").with_allow_empty(true);
+                self.query = TextInputState::new("")
+                    .with_allow_empty(true)
+                    .with_editing();
                 return self.request_search(providers);
             }
             // Cancel in-flight
@@ -1027,7 +1057,7 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         {
             // Ctrl+J reserved for jump when alone — already handled.
             if !(ctrl && matches!(key.code, KeyCode::Char('j' | 'J'))) {
-                if let Some(intent) = default_quick_open_intent(key) {
+                if let Some(intent) = default_palette_intent(key) {
                     let out = self.handle_intent(intent, providers, visible);
                     if !matches!(out, QuickOpenOutcome::Ignored) {
                         return out;
@@ -1058,7 +1088,7 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
                 }
             }
             TextInputOutcome::Ignored => {
-                if let Some(intent) = default_quick_open_intent(key) {
+                if let Some(intent) = default_palette_intent(key) {
                     self.handle_intent(intent, providers, visible)
                 } else {
                     QuickOpenOutcome::Ignored
@@ -1101,16 +1131,7 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         if !self.live() {
             return QuickOpenOutcome::Ignored;
         }
-        let entries: Vec<CollectionItem<usize>> = visible
-            .iter()
-            .enumerate()
-            .map(|(i, it)| CollectionItem {
-                id: i,
-                enabled: true,
-                label: it.label.clone(),
-                parent: None,
-            })
-            .collect();
+        let entries = Self::collection_items(visible);
         match intent {
             UiIntent::Move(
                 NavigationMove::Next
@@ -1162,7 +1183,9 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
             }
             UiIntent::Cancel | UiIntent::Close => {
                 if !self.query_text().is_empty() {
-                    self.query = TextInputState::new("").with_allow_empty(true);
+                    self.query = TextInputState::new("")
+                        .with_allow_empty(true)
+                        .with_editing();
                     self.request_search(providers)
                 } else {
                     QuickOpenOutcome::Cancelled
@@ -1244,29 +1267,6 @@ fn rect_contains(rect: Rect, pos: Position) -> bool {
         && pos.y < rect.y.saturating_add(rect.height)
 }
 
-/// Default intents for result list.
-#[must_use]
-pub fn default_quick_open_intent(key: KeyEvent) -> Option<UiIntent> {
-    if key.kind == KeyEventKind::Release {
-        return None;
-    }
-    let is_press = key.kind == KeyEventKind::Press;
-    let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
-    match key.code {
-        KeyCode::Down => Some(UiIntent::Move(NavigationMove::Next)),
-        KeyCode::Up => Some(UiIntent::Move(NavigationMove::Previous)),
-        KeyCode::Char('j' | 'J') if ctrl => Some(UiIntent::Move(NavigationMove::Next)),
-        KeyCode::Char('k' | 'K') if ctrl => Some(UiIntent::Move(NavigationMove::Previous)),
-        KeyCode::PageDown => Some(UiIntent::Page(PageMove::Forward)),
-        KeyCode::PageUp => Some(UiIntent::Page(PageMove::Backward)),
-        KeyCode::Home if ctrl => Some(UiIntent::Move(NavigationMove::First)),
-        KeyCode::End if ctrl => Some(UiIntent::Move(NavigationMove::Last)),
-        KeyCode::Enter if is_press => Some(UiIntent::Activate),
-        KeyCode::Esc if is_press => Some(UiIntent::Cancel),
-        _ => None,
-    }
-}
-
 /// Build [`JumpTarget`]s from last painted result hits (JumpMode integration).
 #[must_use]
 pub fn quick_open_jump_targets<Id: Clone>(
@@ -1293,7 +1293,6 @@ pub struct QuickOpen<'a, Id> {
     items: &'a [QuickOpenItem<Id>],
     system: &'a DesignSystem,
     focused: bool,
-    ascii: bool,
     colorless: bool,
     footer_hint: Option<&'a str>,
     empty_message: &'a str,
@@ -1318,7 +1317,6 @@ impl<'a, Id> QuickOpen<'a, Id> {
             // Seeded from the system: a widget that defaults to false is
             // claiming the terminal has Unicode and colour before anyone
             // asked it. Builders below still force either way.
-            ascii: system.ascii_glyphs(),
             colorless: system.mono(),
             footer_hint: Some("↑↓ open · enter · @provider · C-n/C-p switch · C-j jump · esc"),
             empty_message: "Type to search resources",
@@ -1344,13 +1342,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -1404,7 +1396,11 @@ impl<'a, Id> QuickOpen<'a, Id> {
         } else {
             PanelChrome::Normal
         };
-        let panel = Panel::new(self.system).title(self.title).emphasis(emphasis);
+        let panel = Panel::new(self.system)
+            .variant(PanelVariant::Bordered)
+            .overlay(true)
+            .title(self.title)
+            .emphasis(emphasis);
         let inner = panel.inner(area);
         ratatui_core::widgets::Widget::render(&panel, area, buffer);
         if inner.is_empty() {
@@ -1460,11 +1456,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
 
         // Separator
         if y < bottom {
-            let line = if self.ascii {
-                "-".repeat(usize::from(inner.width))
-            } else {
-                "─".repeat(usize::from(inner.width))
-            };
+            let line = { "─".repeat(usize::from(inner.width)) };
             buffer.set_stringn(
                 inner.x,
                 y,
@@ -1500,13 +1492,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
         if let Some(pa) = preview_area {
             let vx = pa.x.saturating_sub(1);
             for row in y..bottom {
-                buffer.set_stringn(
-                    vx,
-                    row,
-                    if self.ascii { "|" } else { "│" },
-                    1,
-                    self.system.style(Role::Border),
-                );
+                buffer.set_stringn(vx, row, "│", 1, self.system.style(Role::Border));
             }
             self.paint_preview(pa, buffer, state);
         }
@@ -1604,7 +1590,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
         }
 
         if state.loading && self.items.is_empty() {
-            let msg = if self.ascii && self.loading_message == QUICK_OPEN_SEARCHING {
+            let msg = if false && self.loading_message == QUICK_OPEN_SEARCHING {
                 QUICK_OPEN_SEARCHING_ASCII
             } else {
                 self.loading_message
@@ -1621,16 +1607,15 @@ impl<'a, Id> QuickOpen<'a, Id> {
         }
 
         if self.items.is_empty() {
-            let (glyph, msg) = if state.query_text().is_empty() {
-                (if self.ascii { "[ ]" } else { "∅" }, self.empty_message)
+            let msg = if state.query_text().is_empty() {
+                self.empty_message
             } else {
-                (if self.ascii { "[x]" } else { "∅" }, self.no_result_message)
+                self.no_result_message
             };
-            let line = format!("{glyph} {msg}");
             buffer.set_stringn(
                 area.x,
                 area.y,
-                &take_display_cols(&line, usize::from(area.width)),
+                &take_display_cols(msg, usize::from(area.width)),
                 usize::from(area.width),
                 self.system.style(Role::TextMuted),
             );
@@ -1663,24 +1648,29 @@ impl<'a, Id> QuickOpen<'a, Id> {
                 enabled: true,
                 loading: false,
                 checked: false,
+                ..ListRowVisualState::default()
             });
-            if recipe.use_fill {
-                buffer.set_style(row, recipe.label);
-            } else if recipe.use_tint {
+            if recipe.use_tint {
                 buffer.set_style(row, recipe.tint);
             }
 
-            let gutter = if active {
-                if self.ascii { "> " } else { "› " }
-            } else {
-                "  "
+            let visual = ListRowVisualState {
+                selected: active,
+                focused: active,
+                hovered: state.hovered == Some(i),
+                enabled: true,
+                loading: false,
+                checked: false,
+                ..ListRowVisualState::default()
             };
-            let mut x = area.x;
+            let chrome = super::row_chrome::RowChrome::resolve(self.system, visual);
+            chrome.paint(buffer, row);
+            let mut x = area.x.saturating_add(3);
             let base = if self.colorless {
                 if active {
                     self.system
                         .style(Role::TextStrong)
-                        .add_modifier(Modifier::REVERSED)
+                        .add_modifier(Modifier::BOLD)
                 } else {
                     self.system.style(Role::Text)
                 }
@@ -1689,20 +1679,14 @@ impl<'a, Id> QuickOpen<'a, Id> {
             } else {
                 self.system.style(Role::Text)
             };
-            buffer.set_stringn(x, y, gutter, 2, base);
-            x = x.saturating_add(2);
 
             if item.recent {
-                let mark = if self.ascii { "* " } else { "↻ " };
+                let mark = { "↻ " };
                 buffer.set_stringn(x, y, mark, 2, self.system.style(Role::TextMuted));
                 x = x.saturating_add(2);
             }
             if let Some(k) = &item.kind {
-                let badge = if self.ascii {
-                    format!("[{k}] ")
-                } else {
-                    format!("{k} ")
-                };
+                let badge = { format!("{k} ") };
                 let bw = display_cols(&badge) as u16;
                 buffer.set_stringn(
                     x,
@@ -1779,7 +1763,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
             return;
         }
         let item = self.items.get(state.cursor_index());
-        let header = if self.ascii { "Preview" } else { "Preview" };
+        let header = { "Preview" };
         buffer.set_stringn(
             area.x,
             area.y,
@@ -1820,11 +1804,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
             }
             Some(QuickOpenPreview::HostManaged) => {
                 if y < area.bottom() {
-                    let msg = if self.ascii {
-                        "(host preview)"
-                    } else {
-                        "⋯ host preview"
-                    };
+                    let msg = { "⋯ host preview" };
                     buffer.set_stringn(
                         area.x,
                         y,
@@ -2067,7 +2047,9 @@ mod tests {
     fn provider_switch_preserves_query() {
         let mut s = focused();
         let p = providers();
-        *s.query_mut() = TextInputState::new("main").with_allow_empty(true);
+        *s.query_mut() = TextInputState::new("main")
+            .with_allow_empty(true)
+            .with_editing();
         let items = filter_quick_open_items(&example_quick_open_files(), "main");
         let _ = s.apply_results(s.generation(), &items, true, None);
         // switch to symbols
@@ -2083,7 +2065,9 @@ mod tests {
         // symbols memory empty → query cleared
         assert_eq!(s.query_text(), "");
         // type on symbols
-        *s.query_mut() = TextInputState::new("paint").with_allow_empty(true);
+        *s.query_mut() = TextInputState::new("paint")
+            .with_allow_empty(true)
+            .with_editing();
         let sym = filter_quick_open_items(&example_quick_open_symbols(), "paint");
         let _ = s.apply_results(s.generation(), &sym, true, None);
         // back to files — restores "main"
@@ -2288,6 +2272,29 @@ mod tests {
                 &items
             ),
             QuickOpenOutcome::Ignored
+        ));
+    }
+
+    #[test]
+    fn mouse_result_hit_activates_the_canonical_provider_item() {
+        let providers = providers();
+        let visible = example_quick_open_files();
+        let mut state = focused();
+        state.hits = vec![(0, Rect::new(5, 6, 20, 1))];
+        assert!(matches!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(5, 6),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &providers,
+                &visible,
+            ),
+            QuickOpenOutcome::Activated {
+                provider_id,
+                id: "main"
+            } if provider_id == providers[0].id
         ));
     }
 }

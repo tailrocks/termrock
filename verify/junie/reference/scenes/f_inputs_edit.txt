@@ -1,0 +1,40 @@
+ ▪ Junie Design system / Components / Inputs                                 truecolor · 120×40   i Inspector   ? Help
+
+   Foundations            Inputs  Focus is a bar; editing is a cursor. Enter to edit, Esc to revert.
+▎  Overview
+                            Playground                                     Enter Edit · Esc Cancel · Tab Commit + next
+   Components
+▎  Buttons                    Project name *                                 Branch  optional
+▎› Inputs                   ▎ payments-gateway                             ▎ feat/…
+▎  Text areas                 Used as the working directory name             Leave empty to work on a detached checko…
+▎  Forms                      Owner email *                                  API token  optional
+▎  Lists                    ▎ mira@example                           !     ▎ jb_live_••••••••••••
+▎  Trees                      Enter a valid email address                    Managed by the organization
+▎  Tables                     Search files  optional
+▎  Editable tables          ▎ Type a path or symbol…
+▎  Panels                     Selection: Shift+← →  ·  words: Ctrl+← →  ·  clear: Ctrl+U
+▎  Sidebars
+▎  Dialogs
+▎  Progress
+▎  Scrolling                State reference                                                                     static
+▎  Code editor
+▎  Data grid                default         ▎ payments-gateway
+▎  Chips & selects          placeholder     ▎ (feat/…)
+▎  Pickers                  hover           ▎ payments-gateway
+                            focused         ▎ payments-gateway
+   Screens                  editing         ▎ payments-gateway
+▎  Settings                 error           ▎ mira@example                  !
+▎  Task runner              error + focus   ▎ mira@example                  !
+                            disabled        ▎ jb_live_••••
+
+
+
+
+
+
+
+
+
+
+
+  EDIT   Enter Commit  Esc Cancel  Shift+← → Select  Ctrl+U Clear

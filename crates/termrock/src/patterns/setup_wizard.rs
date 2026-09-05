@@ -24,7 +24,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -260,8 +259,6 @@ pub struct SetupWizardState {
     pub permission: PermissionPromptState,
     /// Safe-cancel confirmation open.
     pub cancel_confirm: bool,
-    /// ASCII paint.
-    pub ascii: bool,
     /// Colorless preference (reserved for child chrome).
     pub colorless: bool,
     /// Title override.
@@ -299,7 +296,6 @@ impl SetupWizardState {
             keybinding: KeybindingRecorderState::new("setup.action", "Setup action"),
             permission: PermissionPromptState::new(),
             cancel_confirm: false,
-            ascii: false,
             colorless: false,
             title: "Setup".into(),
             show_all_summary: false,
@@ -413,7 +409,7 @@ impl SetupWizardState {
         fieldsets: &[Fieldset<'_, &'static str>],
         theme_presets: &[ThemePreset],
     ) -> SetupWizardOutcome {
-        if key.kind != KeyEventKind::Press && key.kind != KeyEventKind::Repeat {
+        if key.is_release() {
             return SetupWizardOutcome::Ignored;
         }
 
@@ -675,7 +671,6 @@ pub fn render_setup_wizard(buffer: &mut Buffer, area: Rect, surfaces: SetupWizar
     let title = state.title.as_str();
     FormWizard::new(system)
         .title(title)
-        .ascii(state.ascii)
         .show_stepper(!matches!(state.mode, SetupWizardMode::Inline) || frame.width >= 40)
         .paint(frame, buffer, &mut state.wizard);
 
@@ -697,7 +692,7 @@ pub fn render_setup_wizard(buffer: &mut Buffer, area: Rect, surfaces: SetupWizar
                 .paint(body, buffer);
         }
         SetupStepKind::Capability => {
-            paint_capability_list(buffer, body, system, capabilities, state.ascii);
+            paint_capability_list(buffer, body, system, capabilities, false);
         }
         SetupStepKind::Account
         | SetupStepKind::Connection
@@ -710,7 +705,7 @@ pub fn render_setup_wizard(buffer: &mut Buffer, area: Rect, surfaces: SetupWizar
                     body,
                     system,
                     "Host form fields for this step",
-                    state.ascii,
+                    false,
                 );
             } else {
                 StatefulWidget::render(
@@ -755,7 +750,7 @@ pub fn render_setup_wizard(buffer: &mut Buffer, area: Rect, surfaces: SetupWizar
                 system,
                 summary_lines,
                 state.show_all_summary,
-                state.ascii,
+                false,
             );
         }
         SetupStepKind::Recovery => {
@@ -1062,7 +1057,7 @@ pub fn example_setup_summary_lines() -> Vec<SetupSummaryLine<'static>> {
     vec![
         SetupSummaryLine::edited("Account", "Ada <ada@example>"),
         SetupSummaryLine::edited("Endpoint", "https://api.example"),
-        SetupSummaryLine::untouched("Theme", "phosphor"),
+        SetupSummaryLine::untouched("Theme", "junie"),
         SetupSummaryLine::untouched("Trust", "default-deny tools"),
     ]
 }

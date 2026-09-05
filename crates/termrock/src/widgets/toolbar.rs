@@ -14,7 +14,6 @@
 //!
 //! Behavioral references: desktop toolbars, Radix Toolbar (roving), adapted to
 //! terminal cells and [`UiIntent`].
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 #![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{
@@ -28,7 +27,7 @@ use crate::interaction::{
     EventResult, HitRegion, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome,
     UiIntent, default_button_intent,
 };
-use crate::style::{DesignSystem, GlyphSet, Role};
+use crate::style::{ButtonRecipeVariant, ControlState, DesignSystem, GlyphSet, RecipeFamily, Role};
 use crate::text::{display_cols, take_display_cols};
 
 /// Layout orientation.
@@ -347,7 +346,6 @@ pub struct Toolbar<'a, Id> {
     variant: ToolbarVariant,
     /// Synthetic id for the overflow "More" chip (required for overflow UX).
     overflow_id: Option<Id>,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -364,7 +362,6 @@ impl<'a, Id> Toolbar<'a, Id> {
             // Seeded from the system: a widget that defaults to false is
             // claiming the terminal has Unicode and colour before anyone
             // asked it. Builders below still force either way.
-            ascii: system.ascii_glyphs(),
             colorless: system.mono(),
         }
     }
@@ -406,13 +403,7 @@ impl<'a, Id> Toolbar<'a, Id> {
 
     /// ASCII cursor brackets.
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
     /// No-color emphasis (strong text instead of ActionFocused bg).
-    #[must_use]
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
         self
@@ -433,6 +424,11 @@ impl<Id: Clone + PartialEq> Toolbar<'_, Id> {
         )
     }
 
+    /// Paint the toolbar into `buffer`.
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut ToolbarState<Id>) {
+        StatefulWidget::render(self, area, buffer, state);
+    }
+
     /// Key path: requires surface focus. Roving + Activate.
     pub fn handle_key(
         &self,
@@ -440,7 +436,7 @@ impl<Id: Clone + PartialEq> Toolbar<'_, Id> {
         key: KeyEvent,
         area: Rect,
     ) -> ToolbarOutcome<Id> {
-        if !state.surface_focused || key.kind != KeyEventKind::Press {
+        if !state.surface_focused || !key.is_press() {
             return ToolbarOutcome::Ignored;
         }
         let plan = self.plan(area);
@@ -822,9 +818,12 @@ fn item_main_size<Id>(
             .sum::<u16>()
             .saturating_add((parts.len().saturating_sub(1) as u16).min(2))
     };
-    // Toggle brackets
+    // Mark (+ following space) already lives in format_label; do not add
+    // checkbox-bracket extras on top.
     let toggle_extra = match item.kind {
-        ToolbarItemKind::Toggle { .. } => 2,
+        ToolbarItemKind::Toggle { pressed } => {
+            u16::try_from(display_cols(toolbar_toggle_mark(pressed)).saturating_add(1)).unwrap_or(0)
+        }
         _ => 0,
     };
     inner
@@ -833,13 +832,17 @@ fn item_main_size<Id>(
         .max(1)
 }
 
+/// Junie switch face copied from standalone Toggle paint. Not `[inner]` wells.
+fn toolbar_toggle_mark(pressed: bool) -> &'static str {
+    if pressed { "──●" } else { "○──" }
+}
+
 fn format_label<Id>(
     item: &ToolbarItem<'_, Id>,
     on_cursor: bool,
     surface_focused: bool,
-    ascii: bool,
     variant: ToolbarVariant,
-    glyphs: GlyphSet,
+    _glyphs: GlyphSet,
 ) -> String {
     let mut s = String::new();
     if let Some(icon) = item.icon {
@@ -857,12 +860,7 @@ fn format_label<Id>(
     if show_label {
         match item.kind {
             ToolbarItemKind::Toggle { pressed } => {
-                let mark = if pressed {
-                    glyphs.check_on()
-                } else {
-                    glyphs.check_off()
-                };
-                s.push_str(mark);
+                s.push_str(toolbar_toggle_mark(pressed));
                 s.push(' ');
                 s.push_str(item.label);
             }
@@ -877,15 +875,8 @@ fn format_label<Id>(
             s.push(')');
         }
     }
-    if on_cursor && surface_focused {
-        if ascii {
-            format!("[{s}]")
-        } else {
-            format!(" {s} ")
-        }
-    } else {
-        format!(" {s} ")
-    }
+    let _ = (on_cursor, surface_focused);
+    format!(" {s} ")
 }
 
 impl<Id: Clone + PartialEq> StatefulWidget for &Toolbar<'_, Id> {
@@ -1067,7 +1058,6 @@ fn paint_item<Id: Clone + PartialEq>(
         item,
         on_cursor,
         state.surface_focused,
-        bar.ascii,
         bar.variant,
         bar.system.glyphs,
     );
@@ -1079,17 +1069,26 @@ fn paint_item<Id: Clone + PartialEq>(
         height: 1.min(slot.height),
     };
     let style = if matches!(item.kind, ToolbarItemKind::Label) {
-        bar.system.style(Role::TextMuted)
-    } else if !item.enabled {
-        bar.system.style(Role::ActionDisabled)
-    } else if on_cursor && state.surface_focused {
-        if bar.colorless || bar.ascii {
-            bar.system.style(Role::TextStrong)
-        } else {
-            bar.system.style(Role::ActionFocused)
-        }
+        let contract = bar.system.family_recipe(RecipeFamily::Action);
+        bar.system.style(contract.secondary)
     } else {
-        bar.system.style(Role::Text)
+        let control_state = if !item.enabled {
+            ControlState::Disabled
+        } else if on_cursor && state.surface_focused {
+            ControlState::Focused
+        } else {
+            ControlState::Default
+        };
+        let recipe = bar.system.button_recipe(
+            ButtonRecipeVariant::Quiet,
+            control_state,
+            bar.system.junie_theme().surface,
+        );
+        let mut style = recipe.fill.patch(recipe.label);
+        if matches!(item.kind, ToolbarItemKind::Toggle { pressed: true }) {
+            style = style.add_modifier(ratatui_core::style::Modifier::BOLD);
+        }
+        style
     };
     let clipped = take_display_cols(&label, usize::from(rect.width));
     buffer.set_stringn(rect.x, rect.y, &clipped, usize::from(rect.width), style);
@@ -1113,11 +1112,7 @@ fn paint_overflow_chip<Id: Clone + PartialEq>(
     }
     let g = bar.system.glyphs.ellipsis();
     let on = state.roving.active() == Some(id);
-    let label = if on && state.surface_focused && bar.ascii {
-        format!("[{g}]")
-    } else {
-        format!(" {g} ")
-    };
+    let label = format!(" {g} ");
     let need = (display_cols(&label) as u16).min(slot.width).max(1);
     let rect = Rect {
         x: slot.x,
@@ -1125,15 +1120,17 @@ fn paint_overflow_chip<Id: Clone + PartialEq>(
         width: need,
         height: 1.min(slot.height),
     };
-    let style = if on && state.surface_focused {
-        if bar.colorless || bar.ascii {
-            bar.system.style(Role::TextStrong)
+    let recipe = bar.system.button_recipe(
+        ButtonRecipeVariant::Quiet,
+        if on && state.surface_focused {
+            ControlState::Focused
         } else {
-            bar.system.style(Role::ActionFocused)
-        }
-    } else {
-        bar.system.style(Role::TextMuted)
-    };
+            ControlState::Default
+        },
+        bar.system.junie_theme().surface,
+    );
+    let mut style = recipe.fill.patch(recipe.label);
+    style = style.add_modifier(ratatui_core::style::Modifier::BOLD);
     buffer.set_stringn(
         rect.x,
         rect.y,
@@ -1328,6 +1325,29 @@ mod tests {
     }
 
     #[test]
+    fn toggle_paints_switch_glyphs_not_checkbox_wells() {
+        let system = DesignSystem::junie();
+        let items = [
+            ToolbarItem::toggle("on", "Wrap", true),
+            ToolbarItem::toggle("off", "Line", false),
+        ];
+        let tb = Toolbar::new(&items, &system);
+        let mut state = ToolbarState::horizontal();
+        let area = Rect::new(0, 0, 48, 1);
+        let mut buf = Buffer::empty(area);
+        StatefulWidget::render(&tb, area, &mut buf, &mut state);
+        let text: String = (0..area.width)
+            .map(|x| buf[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(
+            !text.contains("[✓]") && !text.contains("[ ]"),
+            "checkbox wells leaked: {text:?}"
+        );
+        assert!(text.contains("──●"), "pressed switch missing: {text:?}");
+        assert!(text.contains("○──"), "idle switch missing: {text:?}");
+    }
+
+    #[test]
     fn vertical_paints() {
         let system = DesignSystem::default();
         let items = [ToolbarItem::action("a", "A"), ToolbarItem::action("b", "B")];
@@ -1362,6 +1382,15 @@ mod tests {
         );
         assert!(matches!(out, ToolbarOutcome::OverflowOpened));
         assert!(state.overflow_open);
+        assert!(matches!(
+            tb.handle_key(
+                &mut state,
+                KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE),
+                area,
+            ),
+            ToolbarOutcome::OverflowClosed
+        ));
+        assert!(!state.overflow_open);
     }
 
     #[test]
@@ -1386,5 +1415,19 @@ mod tests {
         // content selection would live elsewhere — toolbar does not clear it.
         assert!(!state.surface_focused);
         assert_eq!(state.cursor(), Some(&"a"));
+    }
+
+    #[test]
+    fn empty_toolbar_is_safe_and_publishes_no_targets() {
+        let system = DesignSystem::default();
+        let items: [ToolbarItem<'_, &str>; 0] = [];
+        let mut state = ToolbarState::<&str>::horizontal();
+        let area = Rect::new(0, 0, 1, 1);
+        let mut buffer = Buffer::empty(area);
+
+        StatefulWidget::render(Toolbar::new(&items, &system), area, &mut buffer, &mut state);
+
+        assert!(state.regions.is_empty());
+        assert!(state.overflow_indices.is_empty());
     }
 }

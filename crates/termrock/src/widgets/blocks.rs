@@ -3,7 +3,6 @@
 
 //! Generic block chrome helper (paint tokens). Product recipes live in
 //! [`crate::patterns`].
-
 use crate::style::DesignSystem;
 
 /// Marker type for block chrome that needs tokens (paint lives in consumer/story).

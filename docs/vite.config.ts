@@ -12,8 +12,11 @@ export default defineConfig({
     tanstackStart({
       spa: {
         enabled: true,
-        prerender: { enabled: true, crawlLinks: true },
+        // Keep the shell request distinct from the real `/` prerender.
+        maskPath: '/?__spa_shell',
+        prerender: { enabled: true, outputPath: '/404' },
       },
+      prerender: { enabled: true, crawlLinks: true },
       pages: [{ path: '/' }, { path: '/docs' }, { path: '/docs/components' }],
     }),
     react(),

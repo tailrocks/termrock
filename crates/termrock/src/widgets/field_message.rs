@@ -7,18 +7,18 @@
 //! the bottom edge, all of them colour-only. A red line with no glyph says
 //! nothing on a monochrome terminal, and a message that moves between widgets
 //! makes the reader hunt for it. The message sits directly under the field, in
-//! every widget, and leads with the glyph that names its kind.
-
+//! every widget. An error is the error tone; the bold `!` lives on the field.
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style};
 
 use crate::style::{DesignSystem, Glyph, Role};
-use crate::text::take_display_cols;
+use crate::text::truncate_cols;
 
 use super::label::DescriptionKind;
 
 /// Glyph that names a description kind, when the kind is an event.
 fn kind_glyph(kind: DescriptionKind, system: &DesignSystem) -> Option<&'static str> {
     let glyph = match kind {
+        // `!` is the error mark. `•` is modified/pending — never an error.
         DescriptionKind::Error => Glyph::Error,
         DescriptionKind::Warning => Glyph::Warning,
         // Help and meta are not events; they need no mark.
@@ -29,17 +29,18 @@ fn kind_glyph(kind: DescriptionKind, system: &DesignSystem) -> Option<&'static s
 
 /// Tone a description kind speaks in.
 fn kind_style(kind: DescriptionKind, system: &DesignSystem) -> Style {
-    system.style(match kind {
-        DescriptionKind::Error => Role::Danger,
-        DescriptionKind::Warning => Role::Warning,
-        DescriptionKind::Help | DescriptionKind::Meta => Role::TextFaint,
-    })
+    let theme = system.junie_theme();
+    match kind {
+        DescriptionKind::Error => theme.error_fg(),
+        DescriptionKind::Warning => system.style(Role::Warning),
+        DescriptionKind::Help | DescriptionKind::Meta => theme.muted(),
+    }
 }
 
-/// Paints one field message across `row`, glyph first.
+/// Paints one field message across `row`.
 ///
-/// The glyph carries the kind so the row survives `NO_COLOR`; the words stay
-/// readable rather than being dyed by severity.
+/// Help is muted copy with no mark. An error is the error tone; the trailing
+/// bold `!` lives on the field row, not here — this line is the words.
 pub(crate) fn paint_field_message(
     buffer: &mut Buffer,
     row: Rect,
@@ -51,18 +52,27 @@ pub(crate) fn paint_field_message(
         return;
     }
     let style = kind_style(kind, system);
-    let text = match kind_glyph(kind, system) {
-        Some(glyph) => format!("{glyph} {message}"),
-        None => message.to_string(),
+    let text = match kind {
+        DescriptionKind::Error => message.to_string(),
+        DescriptionKind::Warning => match kind_glyph(kind, system) {
+            Some(glyph) => format!("{glyph} {message}"),
+            None => message.to_string(),
+        },
+        DescriptionKind::Help | DescriptionKind::Meta => message.to_string(),
     };
-    let painted = take_display_cols(&text, usize::from(row.width));
-    buffer.set_stringn(row.x, row.y, &painted, usize::from(row.width), style);
+    let painted = truncate_cols(&text, usize::from(row.width), system.glyphs.ellipsis());
+    buffer.set_stringn(
+        row.x,
+        row.y,
+        painted.as_ref(),
+        usize::from(row.width),
+        style,
+    );
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::style::GlyphSet;
 
     fn render(kind: DescriptionKind, system: &DesignSystem) -> String {
         let row = Rect::new(0, 0, 20, 1);
@@ -74,38 +84,65 @@ mod tests {
     }
 
     #[test]
-    fn errors_lead_with_a_glyph_so_they_survive_no_color() {
-        let system = DesignSystem::phosphor().glyphs(GlyphSet::Ascii);
-        let line = render(DescriptionKind::Error, &system);
-        let mark = system.glyphs.resolve(Glyph::Error).text;
-        assert!(
-            line.starts_with(mark),
-            "an error must be readable without colour, got {line:?}"
-        );
-        assert!(line.contains("too short"));
-    }
-
-    #[test]
     fn help_is_quiet_and_unmarked() {
-        let system = DesignSystem::phosphor();
+        let system = DesignSystem::junie();
         let line = render(DescriptionKind::Help, &system);
         assert!(line.starts_with("too short"), "help carries no event glyph");
     }
 
     #[test]
+    fn overflow_help_uses_ellipsis_not_hard_clip() {
+        let system = DesignSystem::junie();
+        let row = Rect::new(0, 0, 12, 1);
+        let mut buffer = Buffer::empty(row);
+        paint_field_message(
+            &mut buffer,
+            row,
+            &system,
+            DescriptionKind::Help,
+            "Leave empty to work on a detached checkout",
+        );
+        let line: String = (0..row.width)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(
+            line.contains(system.glyphs.ellipsis()),
+            "overflow help must mark the cut, got {line:?}"
+        );
+        assert!(
+            !line.contains("checkout"),
+            "overflow help must not hard-clip the tail, got {line:?}"
+        );
+    }
+
+    #[test]
     fn each_kind_speaks_in_its_own_tone() {
-        let system = DesignSystem::phosphor();
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
         assert_eq!(
             kind_style(DescriptionKind::Error, &system),
-            system.style(Role::Danger)
+            theme.error_fg()
         );
         assert_eq!(
             kind_style(DescriptionKind::Warning, &system),
             system.style(Role::Warning)
         );
-        assert_eq!(
-            kind_style(DescriptionKind::Help, &system),
-            system.style(Role::TextFaint)
+        assert_eq!(kind_style(DescriptionKind::Help, &system), theme.muted());
+    }
+
+    #[test]
+    fn error_uses_bang_not_bullet() {
+        let system = DesignSystem::junie();
+        assert_eq!(kind_glyph(DescriptionKind::Error, &system), Some("!"));
+        assert_ne!(kind_glyph(DescriptionKind::Error, &system), Some("•"));
+        let line = render(DescriptionKind::Error, &system);
+        assert!(
+            line.starts_with("too short"),
+            "help-row error is the words; `!` lives on the field, got {line:?}"
+        );
+        assert!(
+            !line.contains('•'),
+            "error copy must not use the modified/pending bullet, got {line:?}"
         );
     }
 }

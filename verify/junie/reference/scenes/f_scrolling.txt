@@ -1,0 +1,40 @@
+ ▪ Junie Design system / Components / Scrolling                              truecolor · 120×40   i Inspector   ? Help
+
+   Foundations            Scrolling  Wheel under the pointer, keys on the focused container, thumb shows where you are
+▎  Overview
+                            Wrapped text   1–31 of 120      Long list      1–31 of 120     ▎Log
+   Components
+▎  Buttons                  Junie works through a    ┃      ▎  Row 001               ┃       142.82s  info   Compil… │
+▎  Inputs                   task the way a careful   ┃      ▎  Row 002               ┃       143.19s  info   Compil… │
+▎  Text areas               engineer would: it reads ┃      ▎  Row 003               ┃       143.56s  warn   unused… │
+▎  Forms                    the relevant code, forms ┃      ▎  Row 004               ┃       143.93s  info   Compil… │
+▎  Lists                    a plan, makes focused    ┃      ▎  Row 005               ┃       144.30s  info   Runnin… │
+▎  Trees                    changes, runs the tests, ┃      ▎  Row 006               ┃       144.67s  info   test a… │
+▎  Tables                   and reports back with a  ┃      ▎  Row 007       flagged ┃       145.04s  info   test d… │
+▎  Editable tables          summary you can review   ┃      ▎  Row 008               ┃       145.41s  error  test c… │
+▎  Panels                   before anything is       │      ▎  Row 009               │       145.78s  info   test w… │
+▎  Sidebars                 merged.                  │      ▎  Row 010               │       146.15s  info   Linkin… │
+▎  Dialogs                                           │      ▎  Row 011               │       146.52s  info   Resolv… │
+▎  Progress                 Each step is visible.    │      ▎  Row 012               │       146.89s  info   Fetchi… │
+▎› Scrolling                You can pause, redirect, │      ▎  Row 013               │       147.26s  info   Compil… │
+▎  Code editor              or take over at any      │      ▎  Row 014       flagged │       147.63s  info   Compil… │
+▎  Data grid                point, and every change  │      ▎  Row 015               │       148.00s  warn   unused… │
+▎  Chips & selects          lands as an ordinary     │      ▎  Row 016               │       148.37s  info   Compil… │
+▎  Pickers                  diff in your working     │      ▎  Row 017               │       148.74s  info   Runnin… │
+                            tree.                    │      ▎  Row 018               │       149.11s  info   test a… │
+   Screens                                           │      ▎  Row 019               │       149.48s  info   test d… │
+▎  Settings                 The design system in     │      ▎  Row 020               │       149.85s  error  test c… │
+▎  Task runner              this prototype exists so │      ▎  Row 021       flagged │       150.22s  info   test w… │
+                            that the terminal        │      ▎  Row 022               │       150.59s  info   Linkin… │
+                            version of that          │      ▎  Row 023               │       150.96s  info   Resolv… │
+                            experience feels as      │      ▎  Row 024               │       151.33s  info   Fetchi… │
+                            deliberate as the web    │      ▎  Row 025               │       151.70s  info   Compil… │
+                            version: quiet surfaces, │      ▎  Row 026               │       152.07s  info   Compil… │
+                            one accent, clear focus, │      ▎  Row 027               │       152.44s  warn   unused… │
+                            and no decoration that   │      ▎  Row 028       flagged │       152.81s  info   Compil… │
+                            does not carry           │      ▎  Row 029               │       153.18s  info   Runnin… │
+                            information.             │      ▎  Row 030               │       153.55s  info   test a… ┃
+                                                     │      ▎  Row 031               │       153.92s  info   test d… ┃
+
+
+ ↑ ↓ Scroll  f Follow  G End  Tab Next

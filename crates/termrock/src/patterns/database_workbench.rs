@@ -30,7 +30,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -39,7 +38,7 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     layout::{
         ModalSpec, PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode,
         WorkspaceState, modal_rect,
@@ -452,8 +451,6 @@ pub struct DatabaseWorkbenchState {
     pub tx_status: DatabaseTxStatus,
     /// Last error message (status / banner).
     pub last_error: Option<String>,
-    /// ASCII paint.
-    pub ascii: bool,
     /// Colorless paint.
     pub colorless: bool,
     /// History overlay open.
@@ -530,7 +527,6 @@ impl DatabaseWorkbenchState {
             conn_gate: gate,
             tx_status: DatabaseTxStatus::None,
             last_error: None,
-            ascii: false,
             colorless: false,
             history_open: false,
             connections_open: false,
@@ -864,7 +860,7 @@ impl DatabaseWorkbenchState {
         result_rows_len: usize,
         inspect_fields: &[InspectorField<'_>],
     ) -> DatabaseWorkbenchOutcome {
-        if key.kind != KeyEventKind::Press {
+        if !key.is_press() {
             return DatabaseWorkbenchOutcome::Ignored;
         }
 
@@ -1194,8 +1190,23 @@ impl DatabaseWorkbenchState {
             DatabaseConnGate::AuthRequired => "auth",
             DatabaseConnGate::Error => "error",
         };
+        let conn_status = match self.conn_gate {
+            DatabaseConnGate::Connected => crate::widgets::SemanticStatus::Online,
+            DatabaseConnGate::Disconnected | DatabaseConnGate::Offline => {
+                crate::widgets::SemanticStatus::Offline
+            }
+            DatabaseConnGate::Reconnecting => crate::widgets::SemanticStatus::Running,
+            DatabaseConnGate::AuthRequired => crate::widgets::SemanticStatus::Warning,
+            DatabaseConnGate::Error => crate::widgets::SemanticStatus::Failed,
+        };
         let run = self.query.run.id();
         let tx = self.tx_status.label();
+        let tx_status = match self.tx_status {
+            DatabaseTxStatus::None => crate::widgets::SemanticStatus::Idle,
+            DatabaseTxStatus::Open => crate::widgets::SemanticStatus::Waiting,
+            DatabaseTxStatus::Active => crate::widgets::SemanticStatus::Running,
+            DatabaseTxStatus::Failed => crate::widgets::SemanticStatus::Failed,
+        };
         let tab = self
             .active_tab()
             .map(|t| t.title.as_str())
@@ -1203,19 +1214,24 @@ impl DatabaseWorkbenchState {
         // StatusSlot wants 'static content — use stable static labels for gate/run/tx;
         // tab title may not be static so use focus zone for dynamic-ish info.
         let mut slots = vec![
-            StatusSlot::connection("conn", conn).priority(10),
-            StatusSlot::mode("tx", tx).priority(20),
-            StatusSlot::context("run", run).priority(30),
-            StatusSlot::focus_zone("focus", self.focus).priority(40),
-            StatusSlot::shortcut("keys", "C-↵ run · C-e export · C-p cmd · tab focus").priority(90),
+            StatusSlot::connection("conn", conn)
+                .semantic(conn_status)
+                .priority(90),
+            StatusSlot::mode("tx", tx).semantic(tx_status).priority(60),
+            StatusSlot::context("run", run)
+                .semantic(self.query.run.semantic())
+                .priority(50),
+            StatusSlot::focus_zone("focus", self.focus).priority(70),
+            StatusSlot::shortcut("keys", "C-↵ run · C-e export · C-p cmd · tab focus").priority(10),
         ];
         let _ = tab;
         if self.last_error.is_some() {
             slots.insert(
                 0,
                 StatusSlot::new("err", "error")
+                    .semantic(crate::widgets::SemanticStatus::Failed)
                     .region(StatusRegion::Left)
-                    .priority(5),
+                    .priority(100),
             );
         }
         slots
@@ -1469,7 +1485,7 @@ pub fn render_database_workbench(
     if state.conn_gate.is_offline_like() {
         if let Some(c) = state.connections.current() {
             let rs = connection_to_reconnecting_state(c);
-            let line = rs.banner_line(state.ascii);
+            let line = rs.banner_line(false);
             // paint into top of query pane if present, else area top
             if let Some(qa) = pane_area(&panes, "query") {
                 if qa.height > 0 {
@@ -1496,7 +1512,6 @@ pub fn render_database_workbench(
         let inner = panel.inner(r);
         Widget::render(&panel, r, buffer);
         ConnectionManager::new(system)
-            .ascii(state.ascii)
             .colorless(state.colorless)
             .list_only(true)
             .paint(inner, buffer, &mut state.connections);
@@ -1504,10 +1519,9 @@ pub fn render_database_workbench(
 
     if let Some(r) = pane_area(&panes, "schema") {
         let focused = state.focus == "schema";
-        SchemaBrowser::new(schema_entries, system)
+        let _ = SchemaBrowser::new(schema_entries, system)
             .title("Schema")
             .focused(focused)
-            .ascii(state.ascii)
             .render(r, buffer, &mut state.schema);
     }
 
@@ -1550,20 +1564,18 @@ pub fn render_database_workbench(
                 .active_tab()
                 .map(|t| t.title.clone())
                 .unwrap_or_else(|| "Query".into());
-            QueryEditor::new(system)
+            let _ = QueryEditor::new(system)
                 .title(tab_title.as_str())
                 .focused(focused)
-                .ascii(state.ascii)
                 .render(editor_area, buffer, &mut state.query);
         }
     }
 
     if let Some(r) = pane_area(&panes, "results") {
         let focused = state.focus == "results";
-        ResultGrid::new(system, result_columns, result_rows)
+        let _ = ResultGrid::new(system, result_columns, result_rows)
             .title("Results")
             .focused(focused)
-            .ascii(state.ascii)
             .render(r, buffer, &mut state.results);
     }
 
@@ -1571,7 +1583,6 @@ pub fn render_database_workbench(
         let focused = state.focus == "inspector";
         ObjectInspector::new(inspect_fields, system)
             .focused(focused)
-            .ascii(state.ascii)
             .colorless(state.colorless)
             .render(r, buffer, &mut state.inspector);
     }
@@ -1589,15 +1600,11 @@ pub fn render_database_workbench(
     // Overlays
     if state.palette_open {
         let m = centered_modal(area);
-        CommandPalette::new("Commands", commands, system)
-            .ascii(state.ascii)
-            .paint(m, buffer, &mut state.palette);
+        CommandPalette::new("Commands", commands, system).paint(m, buffer, &mut state.palette);
     }
     if state.history_open {
         let m = centered_modal(area);
-        HistoryPicker::new(history, system)
-            .ascii(state.ascii)
-            .paint(m, buffer, &mut state.history);
+        HistoryPicker::new(history, system).paint(m, buffer, &mut state.history);
     }
 }
 

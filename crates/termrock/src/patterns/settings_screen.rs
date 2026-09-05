@@ -27,7 +27,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -217,8 +216,6 @@ pub struct SettingsScreenState<SectionId: Clone + PartialEq> {
     pub has_conflicts: bool,
     /// Host: at least one restart-required dirty value.
     pub restart_required: bool,
-    /// ASCII paint preference.
-    pub ascii: bool,
     /// Colorless paint preference.
     pub colorless: bool,
     /// Focused form field id (host/scene; block tracks for Form paint).
@@ -237,7 +234,7 @@ impl<SectionId: Clone + PartialEq> SettingsScreenState<SectionId> {
     pub fn new() -> Self {
         Self {
             sidebar: SidebarState::new(None),
-            search: SearchInputState::new(),
+            search: SearchInputState::new().with_editing(),
             form: FormState::new(),
             theme: ThemePickerState::default(),
             keybinding: KeybindingRecorderState::new("action", "Action"),
@@ -250,7 +247,6 @@ impl<SectionId: Clone + PartialEq> SettingsScreenState<SectionId> {
             dirty: false,
             has_conflicts: false,
             restart_required: false,
-            ascii: false,
             colorless: false,
             focused_field: None,
         }
@@ -337,7 +333,7 @@ impl<SectionId: Clone + PartialEq> SettingsScreenState<SectionId> {
         fieldsets: &[Fieldset<'_, &'static str>],
         theme_presets: &[ThemePreset],
     ) -> SettingsScreenOutcome<SectionId, &'static str> {
-        if key.kind != KeyEventKind::Press && key.kind != KeyEventKind::Repeat {
+        if key.is_release() {
             return SettingsScreenOutcome::Ignored;
         }
 
@@ -413,7 +409,7 @@ impl<SectionId: Clone + PartialEq> SettingsScreenState<SectionId> {
                 let out = self.sidebar.handle_key(key, nav);
                 match out {
                     SidebarOutcome::Ignored => SettingsScreenOutcome::Ignored,
-                    SidebarOutcome::Selected(id) => {
+                    SidebarOutcome::RouteChanged { id } => {
                         self.region = SettingsRegion::Body;
                         self.drawer_open = false;
                         self.sync_region_focus_flags();
@@ -716,7 +712,6 @@ pub fn render_settings_screen<SectionId: Clone + PartialEq>(
             Sidebar::new(nav, system)
                 .title("Settings")
                 .focused(focused)
-                .ascii(state.ascii)
                 .paint(nav_area, buffer, &mut state.sidebar);
         }
     }
@@ -744,7 +739,6 @@ pub fn render_settings_screen<SectionId: Clone + PartialEq>(
         };
         let mut callout = Callout::new(title, system)
             .tone(CalloutTone::Warning)
-            .ascii(state.ascii)
             .colorless(state.colorless);
         if let Some(description) = description {
             callout = callout.description(description);
@@ -773,7 +767,7 @@ pub fn render_settings_screen<SectionId: Clone + PartialEq>(
                         &mut state.form,
                     );
                 } else if !inner.is_empty() {
-                    paint_no_results(buffer, inner, system, state.search.query(), state.ascii);
+                    paint_no_results(buffer, inner, system, state.search.query(), false);
                 }
             }
             SettingsBodyMode::Theme => {
@@ -786,20 +780,14 @@ pub fn render_settings_screen<SectionId: Clone + PartialEq>(
                 );
             }
             SettingsBodyMode::Keybinding => {
-                KeybindingRecorder::new(system).ascii(state.ascii).paint(
+                let _ = KeybindingRecorder::new(system).paint(
                     slots.body,
                     buffer,
                     &mut state.keybinding,
                 );
             }
             SettingsBodyMode::NoResults => {
-                paint_no_results(
-                    buffer,
-                    slots.body,
-                    system,
-                    state.search.query(),
-                    state.ascii,
-                );
+                paint_no_results(buffer, slots.body, system, state.search.query(), false);
             }
         }
     }
@@ -857,7 +845,6 @@ pub fn render_settings_screen<SectionId: Clone + PartialEq>(
             Sidebar::new(nav, system)
                 .title("Settings")
                 .focused(true)
-                .ascii(state.ascii)
                 .paint(inner, buffer, &mut state.sidebar);
         }
     }
@@ -1014,7 +1001,7 @@ pub fn settings_query_matches(fieldsets: &[Fieldset<'_, &'static str>], query: &
 #[must_use]
 pub fn example_settings_appearance_fields() -> [Field<'static, &'static str>; 3] {
     [
-        Field::new("theme", "Theme", "phosphor")
+        Field::new("theme", "Theme", "junie")
             .description("restart required to apply system chrome")
             .dirty(true)
             .touched(true)

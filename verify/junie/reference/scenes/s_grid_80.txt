@@ -1,0 +1,24 @@
+ ▪ Junie Design system / Components / Data grid           i Inspector   ? Help
+
+▎  Overview          Data grid  Typed cells, a pending-change queue, paging an…
+▎  Buttons
+▎  Inputs             ▎customers
+▎  Text areas
+▎  Forms                     ⚷ id       customer                          6›
+▎  Lists               ▎   1 1001       Northwind Traders                    ┃
+▎  Trees               ▎   2 1002       Blue Yonder Airlines                 ┃
+▎  Tables              ▎   3 1003       Contoso Pharmaceuticals              ┃
+▎  Editable tables     ▎   4 1004       Fabrikam Robotics                    ┃
+▎  Panels              ▎   5 1005       Litware Analytics                    │
+▎  Sidebars            ▎   6 1006       Tailspin Toys                        │
+▎  Dialogs             ▎   7 1007       Wide World Importers                 │
+▎  Progress            ▎   8 1008       Adventure Works                      │
+▎  Scrolling           ▎   9 1009       Proseware Studio                     │
+▎  Code editor         ▎  10 1010       Woodgrove Bank                       │
+▎› Data grid           ▎  11 1011       Alpine Ski House                     │
+▎  Chips & selects     ▎  12 1012       Coho Winery                          │
+▎  Pickers             ▎  13 1013       Lucerne Publishing                   │
+▎  Settings            ▎  14 1014       Margie's Travel                      │
+▎  Task runner
+
+ ↑↓←→ Cell  Enter Edit  s Sort  Space Select row

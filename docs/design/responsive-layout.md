@@ -425,4 +425,4 @@ Widget tests: list/tree/table narrow, form responsive, progress narrow, data_vie
 
 - Design tokens / density: [`terminal-design-system.md`](./terminal-design-system.md)  
 - Overlay narrow: [`overlay-stack.md`](./overlay-stack.md)  
-- Visual calm under contraction: [`phosphor-obsidian-visual-direction.md`](./phosphor-obsidian-visual-direction.md)
+- Visual calm under contraction: historical phosphor-obsidian notes; current grammar in [`DESIGN.md`](../../DESIGN.md)

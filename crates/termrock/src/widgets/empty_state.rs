@@ -1,23 +1,14 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! **EmptyState** — useful empty and first-run surfaces (not blank boxes).
+//! **EmptyState** — a quiet title, an optional hint, never a big glyph.
 //!
-//! **Mission.** Title, explanation, primary/secondary actions, example,
-//! shortcut, illustration glyph, and contextual details. Differentiates
-//! first-use, no-data, no-results, filtered-out, and permission-limited.
-//! Contracts to a concise inline form inside small panes. Primary action stays
-//! dominant and safe (never destructive-by-default).
-//!
-//! **Recipes.** Table, logs, sessions, projects, and search examples.
-//!
-//! Research: shadcn empty patterns, IDE welcome screens, polished CLI onboarding.
-
+//! junie: centred muted title, one blank row, faint wrapped hint that names
+//! the key which fills it (`Ctrl+N creates one`). No illustration glyphs.
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::Modifier,
     widgets::Widget,
 };
 
@@ -28,10 +19,10 @@ use crate::{
     interaction::{
         SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
     },
-    layout::{Center, CenterAxis, FlexSize, Stack, center_line_x},
-    style::{Density, DesignSystem, GlyphSet, Role},
-    text::{display_cols, take_display_cols},
-    widgets::{Button, ButtonState, ButtonVariant, Surface, SurfaceRecipe},
+    layout::center_line_x,
+    style::{DesignSystem, Role},
+    text::{display_cols, take_display_cols, wrap_display_cols},
+    widgets::ButtonState,
 };
 
 /// Width under which Full density collapses toward Inline.
@@ -41,7 +32,7 @@ pub const EMPTY_STATE_INLINE_MAX_HEIGHT: u16 = 4;
 
 // ── Kind ────────────────────────────────────────────────────────────────────
 
-/// Why the surface is empty (drives default glyph + tone).
+/// Why the surface is empty (drives title tone).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum EmptyKind {
@@ -71,40 +62,6 @@ impl EmptyKind {
         }
     }
 
-    /// Default illustration glyph (Unicode).
-    #[must_use]
-    pub const fn glyph_unicode(self) -> &'static str {
-        match self {
-            Self::FirstUse => "★",
-            Self::NoData => "○",
-            Self::NoResults => "∅",
-            Self::FilteredOut => "▽",
-            Self::PermissionLimited => "⊘",
-        }
-    }
-
-    /// Default illustration glyph (ASCII).
-    #[must_use]
-    pub const fn glyph_ascii(self) -> &'static str {
-        match self {
-            Self::FirstUse => "*",
-            Self::NoData => "o",
-            Self::NoResults => "0",
-            Self::FilteredOut => "v",
-            Self::PermissionLimited => "x",
-        }
-    }
-
-    /// Glyph for capability.
-    #[must_use]
-    pub const fn glyph(self, ascii: bool) -> &'static str {
-        if ascii {
-            self.glyph_ascii()
-        } else {
-            self.glyph_unicode()
-        }
-    }
-
     /// Title role (permission stays warning-toned; others muted title emphasis).
     #[must_use]
     pub const fn title_role(self) -> Role {
@@ -113,13 +70,6 @@ impl EmptyKind {
             Self::FirstUse => Role::TextStrong,
             _ => Role::TextStrong,
         }
-    }
-}
-
-const fn empty_density_id(density: Density) -> &'static str {
-    match density {
-        Density::Comfortable => "full",
-        Density::Compact | Density::Dashboard => "inline",
     }
 }
 
@@ -238,15 +188,12 @@ pub struct EmptyState<'a> {
     secondary: Option<EmptyAction<'a>>,
     example: Option<&'a str>,
     shortcut: Option<&'a str>,
-    illustration: Option<&'a str>,
     context: Option<&'a str>,
-    density: Density,
-    force_ascii: bool,
     system: &'a DesignSystem,
 }
 
 impl<'a> EmptyState<'a> {
-    /// Title + system (defaults: [`EmptyKind::NoData`], Full density, kind glyph).
+    /// Title + system (defaults: [`EmptyKind::NoData`]).
     #[must_use]
     pub const fn new(title: &'a str, system: &'a DesignSystem) -> Self {
         Self {
@@ -257,10 +204,7 @@ impl<'a> EmptyState<'a> {
             secondary: None,
             example: None,
             shortcut: None,
-            illustration: None,
             context: None,
-            density: Density::Comfortable,
-            force_ascii: false,
             system,
         }
     }
@@ -276,13 +220,6 @@ impl<'a> EmptyState<'a> {
     #[must_use]
     pub const fn explanation(mut self, text: &'a str) -> Self {
         self.explanation = Some(text);
-        self
-    }
-
-    /// Alias for [`Self::explanation`] (legacy call sites).
-    #[must_use]
-    pub const fn detail(mut self, detail: &'a str) -> Self {
-        self.explanation = Some(detail);
         self
     }
 
@@ -314,45 +251,10 @@ impl<'a> EmptyState<'a> {
         self
     }
 
-    /// Override illustration glyph (non-color cue).
-    #[must_use]
-    pub const fn glyph(mut self, glyph: &'a str) -> Self {
-        self.illustration = Some(glyph);
-        self
-    }
-
-    /// Alias for [`Self::glyph`].
-    #[must_use]
-    pub const fn illustration(mut self, glyph: &'a str) -> Self {
-        self.illustration = Some(glyph);
-        self
-    }
-
     /// Contextual details (filter summary, path, permission scope).
     #[must_use]
     pub const fn context(mut self, context: &'a str) -> Self {
         self.context = Some(context);
-        self
-    }
-
-    /// Density override.
-    #[must_use]
-    pub const fn density(mut self, density: Density) -> Self {
-        self.density = density;
-        self
-    }
-
-    /// Concise inline form.
-    #[must_use]
-    pub const fn inline(mut self) -> Self {
-        self.density = Density::Compact;
-        self
-    }
-
-    /// Force ASCII glyphs.
-    #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.force_ascii = on;
         self
     }
 
@@ -362,67 +264,25 @@ impl<'a> EmptyState<'a> {
         self.kind
     }
 
-    fn use_ascii(&self) -> bool {
-        self.force_ascii || matches!(self.system.glyphs, GlyphSet::Ascii)
-    }
-
-    /// Illustration glyph for current capability.
-    #[must_use]
-    pub fn resolved_glyph(&self) -> &'a str {
-        if let Some(g) = self.illustration {
-            return g;
-        }
-        // Leak-free: return static from kind
-        // SAFETY: kind glyphs are 'static; we re-borrow as 'a via transmute not needed —
-        // store as &'static and cast through lifetime is fine for statics.
-        let g: &'static str = self.kind.glyph(self.use_ascii());
-        g
-    }
-
-    fn effective_density(&self, area: Rect) -> Density {
-        if matches!(self.density, Density::Compact)
-            || area.width <= EMPTY_STATE_INLINE_MAX_WIDTH
-            || area.height <= EMPTY_STATE_INLINE_MAX_HEIGHT
-        {
-            Density::Compact
-        } else {
-            Density::Comfortable
-        }
-    }
-
-    /// Rows needed for Full density (host layout).
+    /// Rows needed: title, plus a blank row and wrapped hint when present.
     #[must_use]
     pub fn measure_height(&self, width: u16) -> u16 {
         if width == 0 {
             return 0;
         }
-        if width <= EMPTY_STATE_INLINE_MAX_WIDTH || matches!(self.density, Density::Compact) {
-            return if self.primary.is_some() && self.explanation.is_some() {
-                2
-            } else {
-                1
-            };
+        let hint = self.hint_text();
+        if hint.is_none() {
+            return 1;
         }
-        let mut h = 2u16; // illustration + title
-        if self.explanation.is_some() {
-            h = h.saturating_add(1);
-        }
-        if self.context.is_some() {
-            h = h.saturating_add(1);
-        }
-        if self.example.is_some() {
-            h = h.saturating_add(1);
-        }
-        if self.primary.is_some() {
-            h = h.saturating_add(1);
-        }
-        if self.secondary.is_some() {
-            h = h.saturating_add(1);
-        }
-        if self.shortcut.is_some() {
-            h = h.saturating_add(1);
-        }
-        h
+        let wrap_w = usize::from(width.saturating_sub(4)).max(8);
+        1 + 1 + u16::try_from(wrap_words(hint.unwrap_or(""), wrap_w).len()).unwrap_or(1)
+    }
+
+    /// Hint copy: explanation, else the shortcut that fills the surface.
+    fn hint_text(&self) -> Option<&str> {
+        self.explanation
+            .or(self.shortcut)
+            .or(self.primary.and_then(|a| a.shortcut))
     }
 
     /// Passive paint (no interaction state).
@@ -433,194 +293,30 @@ impl<'a> EmptyState<'a> {
 
     /// Paint with optional action focus.
     pub fn paint_with_state(&self, area: Rect, buffer: &mut Buffer, state: &mut EmptyStateState) {
-        if area.is_empty() {
-            return;
-        }
-        match self.effective_density(area) {
-            Density::Compact | Density::Dashboard => self.paint_inline(area, buffer, state),
-            Density::Comfortable => self.paint_full(area, buffer, state),
-        }
-    }
-
-    fn paint_inline(&self, area: Rect, buffer: &mut Buffer, state: &mut EmptyStateState) {
-        let g = self.resolved_glyph();
-        let mut line = format!("{g} {}", self.title);
-        if let Some(ex) = self.explanation {
-            if area.height >= 2 {
-                // title on first, explanation + primary on second
-                self.paint_centered(
-                    area,
-                    buffer,
-                    area.y,
-                    &line,
-                    self.system
-                        .style(self.kind.title_role())
-                        .add_modifier(Modifier::BOLD),
-                );
-                let mut second = ex.to_string();
-                if let Some(p) = self.primary {
-                    second = format!("{second} · {}", p.label);
-                }
-                self.paint_centered(
-                    area,
-                    buffer,
-                    area.y.saturating_add(1),
-                    &second,
-                    self.system.style(Role::TextMuted),
-                );
-                return;
-            }
-            line = format!("{line} — {ex}");
-        }
-        if let Some(p) = self.primary {
-            line = format!("{line} · {}", p.label);
-        }
-        let style = self
-            .system
-            .style(self.kind.title_role())
-            .add_modifier(Modifier::BOLD);
-        self.paint_centered(area, buffer, area.y, &line, style);
         let _ = state;
-    }
-
-    fn paint_full(&self, area: Rect, buffer: &mut Buffer, state: &mut EmptyStateState) {
-        let area = if area.width >= 24 && area.height >= 6 {
-            let frame = Center::new(area.width.min(56), area.height.min(12))
-                .layout(area)
-                .child;
-            Surface::new(self.system)
-                .recipe(SurfaceRecipe::Inset)
-                .bordered(true)
-                .paint(frame, buffer)
-        } else {
-            area
-        };
-        // Build ordered rows: glyph, title, explanation, context, example, primary, secondary, shortcut
-        let g = self.resolved_glyph();
-        let mut rows: Vec<(String, Role, bool)> = Vec::with_capacity(8);
-        rows.push((g.to_string(), Role::TextMuted, false));
-        rows.push((self.title.to_string(), self.kind.title_role(), true));
-        if let Some(ex) = self.explanation {
-            rows.push((ex.to_string(), Role::TextMuted, false));
-        }
-        if let Some(ctx) = self.context {
-            rows.push((ctx.to_string(), Role::TextDisabled, false));
-        }
-        if let Some(ex) = self.example {
-            rows.push((format!("e.g. {ex}"), Role::TextDisabled, false));
-        }
-        // Actions painted separately so primary is dominant Button chrome when width allows.
-        let action_rows = u16::from(self.primary.is_some()) + u16::from(self.secondary.is_some());
-        let shortcut_row = u16::from(self.shortcut.is_some());
-        let content_rows = rows.len() as u16;
-        let gap_rows = u16::from(rows.len() > 2 && area.height >= 8) * self.system.spacing.gap;
-        let total = content_rows
-            .saturating_add(action_rows)
-            .saturating_add(shortcut_row)
-            .saturating_add(gap_rows)
-            .max(1);
-
-        let block = Center::new(area.width, total)
-            .axis(CenterAxis::Vertical)
-            .layout(area)
-            .child;
-        let sizes: Vec<FlexSize> = (0..total).map(|_| FlexSize::Fixed(1)).collect();
-        let stack = Stack::new().layout(block, &sizes);
-
-        let mut idx = 0usize;
-        for (text, role, bold) in &rows {
-            if let Some(r) = stack.get(idx) {
-                let mut style = self.system.style(*role);
-                if *bold {
-                    style = style.add_modifier(Modifier::BOLD);
-                }
-                self.paint_centered(
-                    Rect::new(area.x, r.y, area.width, 1),
-                    buffer,
-                    r.y,
-                    text,
-                    style,
-                );
-            }
-            idx += 1;
-            if idx == 2 {
-                idx = idx.saturating_add(usize::from(gap_rows));
-            }
-        }
-
-        if let Some(p) = self.primary {
-            if let Some(r) = stack.get(idx) {
-                self.paint_action(
-                    Rect::new(area.x, r.y, area.width, 1),
-                    buffer,
-                    p,
-                    true,
-                    matches!(state.focus, EmptyFocus::Primary),
-                    &mut state.primary,
-                );
-            }
-            idx += 1;
-        }
-        if let Some(s) = self.secondary {
-            if let Some(r) = stack.get(idx) {
-                self.paint_action(
-                    Rect::new(area.x, r.y, area.width, 1),
-                    buffer,
-                    s,
-                    false,
-                    matches!(state.focus, EmptyFocus::Secondary),
-                    &mut state.secondary,
-                );
-            }
-            idx += 1;
-        }
-        if let Some(sc) = self.shortcut {
-            if let Some(r) = stack.get(idx) {
-                self.paint_centered(
-                    Rect::new(area.x, r.y, area.width, 1),
-                    buffer,
-                    r.y,
-                    sc,
-                    self.system.style(Role::TextDisabled),
-                );
-            }
-        }
-    }
-
-    fn paint_action(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        action: EmptyAction<'_>,
-        primary: bool,
-        focused: bool,
-        btn_state: &mut ButtonState,
-    ) {
         if area.is_empty() {
             return;
         }
-        // Primary is always Primary variant (safe dominant); secondary Quiet.
-        // Never Destructive here — host must opt into danger elsewhere.
-        let variant = if primary {
-            ButtonVariant::Primary
+        let theme = self.system.junie_theme();
+        let hint = self.hint_text();
+        let wrap_w = usize::from(area.width.saturating_sub(4)).max(8);
+        let hint_lines: Vec<String> = hint.map(|h| wrap_words(h, wrap_w)).unwrap_or_default();
+        let total = 1 + if hint_lines.is_empty() {
+            0
         } else {
-            ButtonVariant::Quiet
+            hint_lines.len() as u16 + 1
         };
-        let trailing = action.shortcut;
-        let mut btn = Button::new(action.label, self.system)
-            .variant(variant)
-            .ascii(self.use_ascii());
-        if let Some(sc) = trailing {
-            btn = btn.trailing(sc);
+        let y0 = area.y + area.height.saturating_sub(total) / 2;
+        self.paint_centered(area, buffer, y0, self.title, theme.muted());
+        for (i, line) in hint_lines.iter().enumerate() {
+            self.paint_centered(
+                area,
+                buffer,
+                y0.saturating_add(2).saturating_add(i as u16),
+                line,
+                theme.faint(),
+            );
         }
-        let measure = display_cols(action.label)
-            .saturating_add(trailing.map(display_cols).unwrap_or(0))
-            .saturating_add(6)
-            .min(usize::from(area.width)) as u16;
-        let x = center_line_x(area, measure.max(1));
-        let hit = Rect::new(x, area.y, measure.max(1), 1);
-        btn_state.activation.set_accepts_input(focused || primary);
-        let _ = btn.paint(hit, buffer, btn_state);
     }
 
     fn paint_centered(
@@ -632,7 +328,7 @@ impl<'a> EmptyState<'a> {
         style: ratatui_core::style::Style,
     ) {
         let width = display_cols(text).min(usize::from(area.width));
-        if width == 0 {
+        if width == 0 || y >= area.bottom() {
             return;
         }
         let clipped = take_display_cols(text, width);
@@ -642,7 +338,7 @@ impl<'a> EmptyState<'a> {
 
     /// Handle keyboard when actions are present.
     pub fn handle_key(&self, key: KeyEvent, state: &mut EmptyStateState) -> EmptyStateOutcome {
-        if key.kind != KeyEventKind::Press {
+        if !key.is_press() {
             return EmptyStateOutcome::Ignored;
         }
         if self.primary.is_none() && self.secondary.is_none() {
@@ -753,10 +449,9 @@ impl<'a> EmptyState<'a> {
         }
         let focus = state.map(|s| s.focus).unwrap_or(EmptyFocus::None);
         let desc = format!(
-            "empty-state kind={} title={} density={} primary={} secondary={} focus={}",
+            "empty-state kind={} title={} primary={} secondary={} focus={}",
             self.kind.id(),
             self.title,
-            empty_density_id(self.effective_density(area)),
             self.primary.map(|a| a.label).unwrap_or("-"),
             self.secondary.map(|a| a.label).unwrap_or("-"),
             match focus {
@@ -793,6 +488,53 @@ impl Widget for EmptyState<'_> {
     }
 }
 
+/// Word-wrap with a hard fallback, matching junie `ui::text::wrap`.
+fn wrap_words(s: &str, width: usize) -> Vec<String> {
+    let width = width.max(1);
+    let mut lines = Vec::new();
+    for para in s.split('\n') {
+        let mut line = String::new();
+        let mut used = 0usize;
+        for word in para.split(' ') {
+            let ww = display_cols(word);
+            if used == 0 {
+                if ww <= width {
+                    line.push_str(word);
+                    used = ww;
+                } else {
+                    for part in wrap_display_cols(word, width) {
+                        if !line.is_empty() {
+                            lines.push(std::mem::take(&mut line));
+                        }
+                        line = part;
+                        used = display_cols(&line);
+                    }
+                }
+            } else if used + 1 + ww <= width {
+                line.push(' ');
+                line.push_str(word);
+                used += 1 + ww;
+            } else {
+                lines.push(std::mem::take(&mut line));
+                if ww <= width {
+                    line.push_str(word);
+                    used = ww;
+                } else {
+                    for part in wrap_display_cols(word, width) {
+                        if !line.is_empty() {
+                            lines.push(std::mem::take(&mut line));
+                        }
+                        line = part;
+                        used = display_cols(&line);
+                    }
+                }
+            }
+        }
+        lines.push(line);
+    }
+    lines
+}
+
 // ── Domain recipes ──────────────────────────────────────────────────────────
 
 /// Table body empty (no rows).
@@ -800,11 +542,8 @@ impl Widget for EmptyState<'_> {
 pub fn example_empty_table(system: &DesignSystem) -> EmptyState<'_> {
     EmptyState::new("No rows", system)
         .kind(EmptyKind::NoData)
-        .explanation("This table has no data yet.")
+        .explanation("a creates one")
         .primary(EmptyAction::with_shortcut("Add row", "a"))
-        .secondary(EmptyAction::new("Import CSV"))
-        .example("paste cells or open a file")
-        .shortcut("a add · i import")
 }
 
 /// Log stream empty.
@@ -812,10 +551,8 @@ pub fn example_empty_table(system: &DesignSystem) -> EmptyState<'_> {
 pub fn example_empty_logs(system: &DesignSystem) -> EmptyState<'_> {
     EmptyState::new("No log lines", system)
         .kind(EmptyKind::NoData)
-        .explanation("Waiting for output from the process.")
+        .explanation("Enter starts the process")
         .primary(EmptyAction::with_shortcut("Start", "enter"))
-        .context("stream: stdout + stderr")
-        .shortcut("enter start · c clear filters")
 }
 
 /// Session list empty / first-run.
@@ -823,11 +560,8 @@ pub fn example_empty_logs(system: &DesignSystem) -> EmptyState<'_> {
 pub fn example_empty_sessions(system: &DesignSystem) -> EmptyState<'_> {
     EmptyState::new("No sessions yet", system)
         .kind(EmptyKind::FirstUse)
-        .explanation("Start a session to resume work later.")
+        .explanation("n creates one")
         .primary(EmptyAction::with_shortcut("New session", "n"))
-        .secondary(EmptyAction::new("Open folder"))
-        .example("n  new session")
-        .shortcut("n new · o open")
 }
 
 /// Projects empty.
@@ -835,11 +569,8 @@ pub fn example_empty_sessions(system: &DesignSystem) -> EmptyState<'_> {
 pub fn example_empty_projects(system: &DesignSystem) -> EmptyState<'_> {
     EmptyState::new("No projects", system)
         .kind(EmptyKind::FirstUse)
-        .explanation("Create a project or clone a repository.")
+        .explanation("n creates one")
         .primary(EmptyAction::with_shortcut("New project", "n"))
-        .secondary(EmptyAction::new("Clone…"))
-        .example("termrock init")
-        .shortcut("n new · g clone")
 }
 
 /// Search / filter no results.
@@ -847,12 +578,8 @@ pub fn example_empty_projects(system: &DesignSystem) -> EmptyState<'_> {
 pub fn example_empty_search(system: &DesignSystem) -> EmptyState<'_> {
     EmptyState::new("No results", system)
         .kind(EmptyKind::NoResults)
-        .explanation("Try another query or clear filters.")
+        .explanation("Esc clears filters")
         .primary(EmptyAction::with_shortcut("Clear filters", "esc"))
-        .secondary(EmptyAction::new("Edit query"))
-        .context("filters: status=running")
-        .example("status:failed agent:*")
-        .shortcut("esc clear · / edit")
 }
 
 /// Permission-limited surface.
@@ -860,11 +587,8 @@ pub fn example_empty_search(system: &DesignSystem) -> EmptyState<'_> {
 pub fn example_empty_permission(system: &DesignSystem) -> EmptyState<'_> {
     EmptyState::new("Access limited", system)
         .kind(EmptyKind::PermissionLimited)
-        .explanation("You do not have permission to view this resource.")
+        .explanation("r requests access")
         .primary(EmptyAction::with_shortcut("Request access", "r"))
-        .secondary(EmptyAction::new("Go back"))
-        .context("scope: org/private-repo")
-        .shortcut("r request · esc back")
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────
@@ -893,7 +617,7 @@ mod tests {
     }
 
     #[test]
-    fn kinds_have_distinct_glyphs() {
+    fn kinds_have_distinct_ids() {
         let mut set = std::collections::BTreeSet::new();
         for k in [
             EmptyKind::FirstUse,
@@ -902,53 +626,83 @@ mod tests {
             EmptyKind::FilteredOut,
             EmptyKind::PermissionLimited,
         ] {
-            set.insert(k.glyph_unicode());
+            set.insert(k.id());
             assert!(!k.id().is_empty());
-            assert!(!k.glyph_ascii().is_empty());
         }
-        assert!(set.len() >= 5);
+        assert_eq!(set.len(), 5);
     }
 
     #[test]
-    fn legacy_new_detail_glyph_still_works() {
+    fn explanation_renders_without_pictogram() {
         let system = system();
         let text = painted(Rect::new(0, 0, 40, 5), |a, b| {
             EmptyState::new("No results", &system)
-                .detail("Try another query")
-                .glyph("○")
+                .explanation("Try another query")
                 .paint(a, b);
         });
         assert!(text.contains("No results"), "{text}");
         assert!(text.contains("Try another"), "{text}");
-        assert!(text.contains('○') || text.contains('o'), "{text}");
+        assert!(!text.contains('★'), "{text}");
+        assert!(!text.contains('○'), "{text}");
+        assert!(!text.contains('∅'), "{text}");
+        assert!(!text.contains('▽'), "{text}");
+        assert!(!text.contains('⊘'), "{text}");
     }
 
     #[test]
-    fn full_paints_primary_dominant() {
+    fn full_paints_title_and_hint_not_actions() {
         let system = system();
         let text = painted(Rect::new(0, 0, 48, 12), |a, b| {
             EmptyState::new("No rows", &system)
                 .kind(EmptyKind::NoData)
-                .explanation("Add data to continue")
+                .explanation("a creates one")
                 .primary(EmptyAction::new("Add row"))
                 .secondary(EmptyAction::new("Import"))
                 .example("csv path")
                 .paint(a, b);
         });
         assert!(text.contains("No rows"), "{text}");
-        assert!(text.contains("Add row"), "{text}");
-        assert!(text.contains("Import"), "{text}");
-        assert!(text.contains("csv") || text.contains("e.g."), "{text}");
+        assert!(text.contains("a creates one"), "{text}");
+        assert!(!text.contains("Add row"), "{text}");
+        assert!(!text.contains("Import"), "{text}");
     }
 
     #[test]
-    fn empty_state_paints_inset_surface() {
+    fn empty_state_is_centred_muted_title_blank_row_faint_hint() {
         let system = system();
         let area = Rect::new(0, 0, 32, 8);
         let mut buffer = Buffer::empty(area);
-        EmptyState::new("No rows", &system).paint(area, &mut buffer);
-        assert_eq!(buffer[(1, 1)].bg, system.style(Role::Surface).bg.unwrap());
-        assert_eq!(buffer[(0, 0)].fg, system.style(Role::Border).fg.unwrap());
+        EmptyState::new("No rows", &system)
+            .explanation("Ctrl+N creates one")
+            .paint(area, &mut buffer);
+        let theme = system.junie_theme();
+        let rows: Vec<String> = (0..area.height)
+            .map(|y| {
+                (0..area.width)
+                    .map(|x| buffer[(x, y)].symbol())
+                    .collect::<String>()
+            })
+            .collect();
+        let title_y = rows
+            .iter()
+            .position(|r| r.contains("No rows"))
+            .expect("title");
+        let hint_y = rows
+            .iter()
+            .position(|r| r.contains("Ctrl+N creates one"))
+            .expect("hint");
+        assert_eq!(hint_y, title_y + 2, "{rows:?}");
+        let title_x = rows[title_y].find("No rows").unwrap() as u16;
+        assert_eq!(
+            buffer[(title_x, title_y as u16)].fg,
+            theme.muted().fg.unwrap()
+        );
+        let hint_x = rows[hint_y].find("Ctrl+N creates one").unwrap() as u16;
+        assert_eq!(
+            buffer[(hint_x, hint_y as u16)].fg,
+            theme.faint().fg.unwrap()
+        );
+        assert_eq!(buffer[(0, 0)].symbol(), " ");
     }
 
     #[test]
@@ -966,10 +720,13 @@ mod tests {
     }
 
     #[test]
-    fn force_inline_density() {
+    fn inline_measure_height() {
         let system = system();
-        let e = EmptyState::new("X", &system).inline();
-        assert_eq!(e.density, Density::Compact);
+        let e = EmptyState::new("X", &system);
+        assert_eq!(
+            e.measure_height(crate::widgets::empty_state::EMPTY_STATE_INLINE_MAX_WIDTH),
+            1
+        );
         assert_eq!(e.measure_height(80), 1);
     }
 
@@ -1070,15 +827,6 @@ mod tests {
         let mut buf = Buffer::empty(Rect::new(0, 0, 8, 2));
         EmptyState::new("X", &system).paint(Rect::new(0, 0, 1, 1), &mut buf);
         EmptyState::new("X", &system).paint(Rect::new(0, 0, 0, 0), &mut buf);
-    }
-
-    #[test]
-    fn ascii_capability() {
-        let system = system();
-        let e = EmptyState::new("Empty", &system)
-            .kind(EmptyKind::NoResults)
-            .ascii(true);
-        assert_eq!(e.resolved_glyph(), "0");
     }
 
     #[test]

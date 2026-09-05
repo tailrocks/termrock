@@ -11,7 +11,6 @@
 //! Nothing here touches a terminal — the presenter decides *whether* to draw
 //! and *when to wake*; the backend adapter performs the draw. That keeps the
 //! policy testable without a TTY and backend-neutral by construction.
-
 use std::time::Duration;
 
 use ratatui_core::backend::{Backend, ClearType, WindowSize};

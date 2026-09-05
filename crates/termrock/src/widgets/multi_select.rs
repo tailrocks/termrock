@@ -13,13 +13,12 @@
 //! popover/fullscreen list chrome (host places overlays).
 //!
 //! Research: modern multi-selects, Huh, terminal fuzzy pickers.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::Modifier,
-    widgets::{StatefulWidget, Widget},
+    style::{Modifier, Style},
+    widgets::StatefulWidget,
 };
 
 use crate::{
@@ -30,13 +29,13 @@ use crate::{
         CollectionItem, CollectionOutcome, CollectionState, SemanticNode, SemanticRole,
         SemanticScene, SemanticState, UiIntent,
     },
-    style::{DesignSystem, ListRowVisualState, Role},
+    style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
 };
 
 use super::{
-    Panel, PanelChrome, SELECT_FULLSCREEN_MAX_HEIGHT, SELECT_FULLSCREEN_MAX_WIDTH, SelectOption,
-    SelectPresentation, SelectRecipe, SelectRowKind, Selection, TextInput, TextInputOutcome,
+    SELECT_FULLSCREEN_MAX_HEIGHT, SELECT_FULLSCREEN_MAX_WIDTH, SelectOption, SelectPresentation,
+    SelectRecipe, SelectRowKind, Selection, Surface, SurfaceRecipe, TextInput, TextInputOutcome,
     TextInputState, Validation,
 };
 
@@ -143,7 +142,9 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
     /// Empty multi-select.
     #[must_use]
     pub fn new() -> Self {
-        let mut search = TextInputState::new("").with_allow_empty(true);
+        let mut search = TextInputState::new("")
+            .with_allow_empty(true)
+            .with_editing();
         search.set_focused(false);
         Self {
             selection: Selection::new(),
@@ -249,6 +250,14 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         self.search.value()
     }
 
+    fn effective_query(&self) -> &str {
+        if self.searchable {
+            self.search.value()
+        } else {
+            ""
+        }
+    }
+
     /// Focused.
     #[must_use]
     pub const fn is_focused(&self) -> bool {
@@ -330,7 +339,35 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         self.presentation = presentation;
     }
 
-    fn collection_items(options: &[SelectOption<Id>]) -> Vec<CollectionItem<Id>> {
+    fn filtered_options<'a>(
+        options: &'a [SelectOption<Id>],
+        query: &str,
+    ) -> Vec<&'a SelectOption<Id>> {
+        let q = query.trim().to_ascii_lowercase();
+        if q.is_empty() {
+            return options.iter().collect();
+        }
+
+        let mut out = Vec::new();
+        let mut pending_group: Option<&SelectOption<Id>> = None;
+        for option in options {
+            match option.kind {
+                SelectRowKind::Group => pending_group = Some(option),
+                SelectRowKind::Separator => {}
+                SelectRowKind::Option => {
+                    if option.label.to_ascii_lowercase().contains(&q) {
+                        if let Some(group) = pending_group.take() {
+                            out.push(group);
+                        }
+                        out.push(option);
+                    }
+                }
+            }
+        }
+        out
+    }
+
+    fn collection_items_from_projection(options: &[&SelectOption<Id>]) -> Vec<CollectionItem<Id>> {
         options
             .iter()
             .filter(|o| o.is_option())
@@ -339,16 +376,8 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
     }
 
     fn filtered_items(options: &[SelectOption<Id>], query: &str) -> Vec<CollectionItem<Id>> {
-        if query.trim().is_empty() {
-            return Self::collection_items(options);
-        }
-        // Reuse Select filter logic inline
-        let q = query.trim().to_ascii_lowercase();
-        options
-            .iter()
-            .filter(|o| o.is_option() && o.label.to_ascii_lowercase().contains(&q))
-            .map(|o| CollectionItem::new(o.id.clone(), o.label.clone()).enabled(!o.disabled))
-            .collect()
+        let visible = Self::filtered_options(options, query);
+        Self::collection_items_from_projection(&visible)
     }
 
     fn presentation_for_bounds(bounds: Rect) -> SelectPresentation {
@@ -376,7 +405,7 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         }
         let presentation = Self::presentation_for_bounds(bounds);
         self.presentation = presentation;
-        let items = Self::collection_items(options);
+        let items = Self::filtered_items(options, self.effective_query());
         let _ = self.collection.reconcile(&items);
         // Prefer highlight first selected, else first enabled
         if let Some(first) = self.selection.checked().first() {
@@ -416,7 +445,7 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
 
     /// Select all enabled options in current filter.
     pub fn select_all_visible(&mut self, options: &[SelectOption<Id>]) -> MultiSelectOutcome<Id> {
-        let ids = Self::navigable_ids(options, self.search.value());
+        let ids = Self::navigable_ids(options, self.effective_query());
         if ids.is_empty() {
             return MultiSelectOutcome::Ignored;
         }
@@ -456,7 +485,7 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
 
     /// Apply range check from anchor to `to` (inclusive among navigable ids).
     fn apply_range(&mut self, options: &[SelectOption<Id>], to: &Id) -> MultiSelectOutcome<Id> {
-        let nav = Self::navigable_ids(options, self.search.value());
+        let nav = Self::navigable_ids(options, self.effective_query());
         let Some(anchor) = self.range_anchor.clone() else {
             self.range_anchor = Some(to.clone());
             return self.try_toggle(to);
@@ -490,7 +519,7 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
 
     /// Reconcile after option changes.
     pub fn reconcile_options(&mut self, options: &[SelectOption<Id>]) {
-        let items = Self::filtered_items(options, self.search.value());
+        let items = Self::filtered_items(options, self.effective_query());
         let valid: Vec<Id> = options
             .iter()
             .filter(|o| o.is_option())
@@ -507,7 +536,7 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         options: &[SelectOption<Id>],
         bounds: Rect,
     ) -> MultiSelectOutcome<Id> {
-        if key.kind == KeyEventKind::Release || !self.enabled {
+        if key.is_release() || !self.enabled {
             return MultiSelectOutcome::Ignored;
         }
         if !self.is_open() {
@@ -612,7 +641,7 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
             }
         }
 
-        let items = Self::filtered_items(options, self.search.value());
+        let items = Self::filtered_items(options, self.effective_query());
 
         // Space / Enter toggles highlight (Enter can also close with Ctrl)
         if matches!(key.code, KeyCode::Char(' ')) && key.modifiers.is_empty() {
@@ -684,7 +713,7 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
                 }
             }
             other if self.is_open() => {
-                let items = Self::filtered_items(options, self.search.value());
+                let items = Self::filtered_items(options, self.effective_query());
                 match self.collection.handle_intent(other, &items) {
                     CollectionOutcome::ActiveChanged { to, .. } => {
                         MultiSelectOutcome::HighlightChanged { id: to }
@@ -778,7 +807,6 @@ pub struct MultiSelect<'a, Id> {
     placeholder: &'a str,
     label: &'a str,
     validation: Validation<'a>,
-    ascii: bool,
     show_clear: bool,
 }
 
@@ -789,10 +817,9 @@ impl<'a, Id> MultiSelect<'a, Id> {
         Self {
             options,
             system,
-            placeholder: "Select…",
+            placeholder: "Select",
             label: "",
             validation: Validation::Valid,
-            ascii: false,
             show_clear: true,
         }
     }
@@ -820,13 +847,7 @@ impl<'a, Id> MultiSelect<'a, Id> {
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Clear affordance on trigger.
-    #[must_use]
     pub const fn show_clear(mut self, on: bool) -> Self {
         self.show_clear = on;
         self
@@ -840,11 +861,16 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
             self.paint_trigger_only(area, buffer, state);
             return;
         }
-        let trigger_h = if !self.label.is_empty() && area.height >= 3 {
+        let trigger_h = if matches!(state.recipe, SelectRecipe::Compact) {
+            1
+        } else if !self.label.is_empty() && area.height >= 3 {
+            3
+        } else if area.height >= 3 {
             2
         } else {
             1
-        };
+        }
+        .min(area.height);
         let trigger_area = Rect::new(area.x, area.y, area.width, trigger_h.min(area.height));
         let list = Rect::new(
             area.x,
@@ -884,16 +910,24 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
         buffer: &mut Buffer,
         state: &mut MultiSelectState<Id>,
     ) {
+        let invalid = matches!(self.validation, Validation::Invalid(_));
+        let recipe = self.system.input_recipe(
+            if !state.enabled {
+                ControlState::Disabled
+            } else if state.focused || state.is_open() {
+                ControlState::Focused
+            } else {
+                ControlState::Default
+            },
+            invalid,
+            false,
+        );
         let mut y = area.y;
         if (matches!(state.recipe, SelectRecipe::Form) || !self.label.is_empty())
             && area.height >= 2
             && !self.label.is_empty()
         {
-            let mut style = self.system.style(if state.focused {
-                Role::Focus
-            } else {
-                Role::Text
-            });
+            let mut style = recipe.value;
             if state.focused {
                 style = style.add_modifier(Modifier::BOLD);
             }
@@ -917,51 +951,60 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
             return;
         }
 
-        let invalid = matches!(self.validation, Validation::Invalid(_));
-        let role = if !state.enabled {
-            Role::TextDisabled
-        } else if invalid {
-            Role::InputInvalid
-        } else if state.focused || state.is_open() {
-            Role::Focus
-        } else {
-            Role::Input
-        };
-        buffer.set_style(trigger, self.system.style(role));
+        buffer.set_style(trigger, recipe.fill);
+        if let Some((glyph, style)) = recipe.prompt {
+            buffer.set_stringn(trigger.x, trigger.y, glyph, 1, style);
+        }
 
-        let checked = state.selection.checked();
-        let mut x = trigger.x;
-        let mut right = trigger.right();
-
-        // clear
-        if self.show_clear && state.enabled && !checked.is_empty() && trigger.width > 6 {
-            right = right.saturating_sub(2);
-            state.clear_region = Some(Rect::new(right.saturating_add(1), trigger.y, 1, 1));
-            buffer.set_stringn(
-                right.saturating_add(1),
-                trigger.y,
-                "×",
-                1,
-                self.system.style(Role::TextMuted),
+        if let Validation::Invalid(message) = self.validation
+            && trigger.y.saturating_add(1) < area.bottom()
+        {
+            crate::widgets::field_message::paint_field_message(
+                buffer,
+                Rect::new(area.x, trigger.y.saturating_add(1), area.width, 1),
+                self.system,
+                crate::widgets::label::DescriptionKind::Error,
+                message,
             );
         }
 
-        let chev = if self.ascii {
-            if state.is_open() { "^" } else { "v" }
-        } else if state.is_open() {
-            "▴"
-        } else {
-            "▾"
-        };
+        let checked = state.selection.checked();
+        let mut x = trigger.x.saturating_add(1).min(trigger.right());
+        let mut right = trigger.right();
+
+        // clear
+        let show_clear = state.enabled && !checked.is_empty();
+        if self.show_clear && trigger.width > 6 {
+            right = right.saturating_sub(2);
+            if show_clear {
+                state.clear_region = Some(Rect::new(right.saturating_add(1), trigger.y, 1, 1));
+                let clear_recipe = self.system.button_recipe(
+                    ButtonRecipeVariant::Quiet,
+                    ControlState::Default,
+                    self.system.junie_theme().surface,
+                );
+                buffer.set_stringn(
+                    right.saturating_add(1),
+                    trigger.y,
+                    self.system.glyphs.resolve(Glyph::Close).text,
+                    1,
+                    clear_recipe.fill.patch(clear_recipe.label),
+                );
+            }
+        }
+
+        let chev = self
+            .system
+            .glyphs
+            .resolve(if state.is_open() {
+                Glyph::ChevronUp
+            } else {
+                Glyph::ChevronDown
+            })
+            .text;
         if right > x {
             right = right.saturating_sub(1);
-            buffer.set_stringn(
-                right,
-                trigger.y,
-                chev,
-                1,
-                self.system.style(Role::TextMuted),
-            );
+            buffer.set_stringn(right, trigger.y, chev, 1, recipe.placeholder);
         }
 
         if checked.is_empty() {
@@ -970,8 +1013,9 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
                 trigger.y,
                 take_display_cols(self.placeholder, usize::from(right.saturating_sub(x))),
                 usize::from(right.saturating_sub(x).max(1)),
-                self.system.style(Role::TextMuted),
+                recipe.placeholder,
             );
+            apply_field_underline(buffer, trigger, &recipe);
             return;
         }
 
@@ -986,7 +1030,8 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
                 .find(|o| o.is_option() && &o.id == id)
                 .map(|o| o.label.as_str())
                 .unwrap_or("?");
-            let chip = format!("[{label}]");
+            let gutter = self.system.glyphs.selection_gutter();
+            let chip = format!("{gutter}{label}");
             let w = display_cols(&chip) as u16;
             if x.saturating_add(w) >= right {
                 break;
@@ -996,9 +1041,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
                 trigger.y,
                 &take_display_cols(&chip, usize::from(w)),
                 usize::from(w),
-                self.system
-                    .style(Role::Focus)
-                    .add_modifier(Modifier::REVERSED),
+                recipe.value,
             );
             x = x.saturating_add(w).saturating_add(1);
         }
@@ -1009,21 +1052,23 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
                 trigger.y,
                 &ov,
                 usize::from(right.saturating_sub(x)),
-                self.system.style(Role::TextMuted),
+                recipe.placeholder,
             );
         }
+        apply_field_underline(buffer, trigger, &recipe);
     }
 
     fn paint_list(&self, area: Rect, buffer: &mut Buffer, state: &mut MultiSelectState<Id>) {
-        let panel = Panel::new(self.system)
-            .overlay(true)
-            .emphasis(if state.focused {
-                PanelChrome::Focused
-            } else {
-                PanelChrome::Normal
-            });
-        let inner = panel.inner(area);
-        Widget::render(&panel, area, buffer);
+        let recipe = if state.focused {
+            SurfaceRecipe::OverlayFocused
+        } else {
+            SurfaceRecipe::Overlay
+        };
+        let inner = Surface::new(self.system)
+            .recipe(recipe)
+            .bordered(true)
+            .content_inset()
+            .paint(area, buffer);
         if inner.is_empty() {
             return;
         }
@@ -1031,11 +1076,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
         let mut list_top = inner.y;
         // toolbar: select all / clear hints
         if inner.height >= 2 {
-            let hint = if self.ascii {
-                "Space toggle  ^A all  ^D clear  Enter done"
-            } else {
-                "Space toggle · ^A all · ^D clear · Enter done"
-            };
+            let hint = { "Space toggle · ^A all · ^D clear · Enter done" };
             buffer.set_stringn(
                 inner.x,
                 list_top,
@@ -1050,9 +1091,11 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
             let search_row = Rect::new(inner.x, list_top, inner.width, 1);
             state.search_region = Some(search_row);
             state.search.set_focused(true);
-            let _ = TextInput::new("", self.system)
-                .placeholder("Filter…")
-                .paint(search_row, buffer, &mut state.search);
+            let _ = TextInput::new("", self.system).placeholder("Filter").paint(
+                search_row,
+                buffer,
+                &mut state.search,
+            );
             list_top = list_top.saturating_add(1);
         }
 
@@ -1066,31 +1109,10 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
             return;
         }
 
-        let query = state.search.value().to_owned();
-        let visible: Vec<&SelectOption<Id>> = if state.searchable && !query.is_empty() {
-            let q = query.to_ascii_lowercase();
-            let mut out = Vec::new();
-            let mut pending_group: Option<&SelectOption<Id>> = None;
-            for o in self.options {
-                match o.kind {
-                    SelectRowKind::Group => pending_group = Some(o),
-                    SelectRowKind::Separator => {}
-                    SelectRowKind::Option => {
-                        if o.label.to_ascii_lowercase().contains(&q) {
-                            if let Some(g) = pending_group.take() {
-                                out.push(g);
-                            }
-                            out.push(o);
-                        }
-                    }
-                }
-            }
-            out
-        } else {
-            self.options.iter().collect()
-        };
+        let query = state.effective_query().to_owned();
+        let visible = MultiSelectState::filtered_options(self.options, &query);
 
-        let coll_items = MultiSelectState::filtered_items(self.options, &query);
+        let coll_items = MultiSelectState::collection_items_from_projection(&visible);
         let vp = usize::from(list_area.height).max(1);
         state
             .collection
@@ -1142,48 +1164,21 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
                     let rect = Rect::new(list_area.x, row_y, list_area.width, 1);
                     let is_hi = state.collection.active() == Some(&opt.id);
                     let is_on = state.selection.is_checked(&opt.id);
-                    let recipe = self.system.resolve_list_row(ListRowVisualState {
+                    let visual = ListRowVisualState {
                         selected: is_hi,
                         focused: is_hi && state.focused,
                         hovered: state.hovered.as_ref() == Some(&opt.id),
                         enabled: !opt.disabled,
                         loading: false,
                         checked: is_on,
-                    });
-                    if recipe.use_fill {
-                        buffer.set_style(rect, recipe.label);
-                    } else if recipe.use_tint {
-                        buffer.set_style(rect, recipe.tint);
-                    }
-                    let mark = if self.ascii {
-                        if is_on { "[x]" } else { "[ ]" }
-                    } else if is_on {
-                        "[✓]"
-                    } else {
-                        "[ ]"
-                    };
-                    // Highlight = reverse focus; checked mark independent
-                    let style = if opt.disabled {
-                        self.system.style(Role::TextDisabled)
-                    } else if is_hi {
-                        recipe.label
-                    } else if is_on {
-                        self.system.style(Role::TextStrong)
-                    } else {
-                        self.system.style(Role::Text)
+                        ..ListRowVisualState::default()
                     };
                     let label = if let Some(desc) = &opt.description {
-                        format!("{mark} {} — {desc}", opt.label)
+                        format!("{} {} {desc}", opt.label, { "—" })
                     } else {
-                        format!("{mark} {}", opt.label)
+                        opt.label.clone()
                     };
-                    buffer.set_stringn(
-                        rect.x,
-                        rect.y,
-                        take_display_cols(&label, usize::from(rect.width)),
-                        usize::from(rect.width),
-                        style,
-                    );
+                    paint_multi_select_row(buffer, rect, self.system, visual, is_on, &label);
                     if !opt.disabled {
                         state.option_regions.push((opt.id.clone(), rect));
                     }
@@ -1230,6 +1225,75 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
                     expanded: state.is_open(),
                     ..Default::default()
                 }),
+        );
+    }
+}
+
+fn apply_field_underline(buffer: &mut Buffer, field: Rect, recipe: &crate::style::InputRecipe) {
+    if field.is_empty() {
+        return;
+    }
+    let mut underline = Style::new().add_modifier(recipe.border.add_modifier);
+    if let Some(color) = recipe.border.underline_color {
+        underline = underline.underline_color(color);
+    }
+    buffer.set_style(field, underline);
+}
+
+/// List anatomy: `▎` col0 (keyboard) + `✓` col1 (checked). Never `› ` as a gutter.
+fn paint_multi_select_row(
+    buffer: &mut Buffer,
+    row: Rect,
+    system: &DesignSystem,
+    visual: ListRowVisualState,
+    checked: bool,
+    label: &str,
+) {
+    if row.is_empty() {
+        return;
+    }
+    let chrome = super::row_chrome::RowChrome::resolve(system, visual);
+    chrome.paint_wash(buffer, row);
+    let recipe = system.resolve_list_row(visual);
+    let style = chrome.label_style(recipe.label);
+    if row.width > 0 {
+        buffer.set_stringn(row.x, row.y, " ", 1, style);
+    }
+    if visual.focused && row.width > 0 {
+        let mut gutter = Style::new().fg(system
+            .style(Role::Focus)
+            .fg
+            .unwrap_or(system.junie_theme().focus));
+        if let Some(bg) = chrome.wash().or(recipe.tint.bg) {
+            gutter = gutter.bg(bg);
+        }
+        buffer.set_stringn(row.x, row.y, system.glyphs.selection_gutter(), 1, gutter);
+    }
+    if row.width > 1 {
+        let mark = if checked {
+            system.glyphs.resolve(Glyph::Success).text
+        } else {
+            " "
+        };
+        let mut marker = if checked && (visual.focused || visual.hovered) {
+            style.patch(system.style(Role::Accent))
+        } else {
+            style.patch(system.style(Role::TextSecondary))
+        };
+        if let Some(bg) = chrome.wash() {
+            marker = marker.bg(bg);
+        }
+        buffer.set_stringn(row.x.saturating_add(1), row.y, mark, 1, marker);
+    }
+    let text_x = row.x.saturating_add(3).min(row.right());
+    let text_w = row.right().saturating_sub(text_x);
+    if text_w > 0 {
+        buffer.set_stringn(
+            text_x,
+            row.y,
+            take_display_cols(label, usize::from(text_w)),
+            usize::from(text_w),
+            style,
         );
     }
 }
@@ -1412,7 +1476,7 @@ mod tests {
 
     #[test]
     fn summary_chips_paint() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let options = opts();
         let mut state = MultiSelectState::new()
             .with_selected(["rs", "go", "ts"])
@@ -1422,7 +1486,6 @@ mod tests {
         let mut buf = Buffer::empty(area);
         MultiSelect::new(&options, &system)
             .label("Filters")
-            .ascii(true)
             .paint_stacked(area, &mut buf, &mut state);
         assert!(!state.trigger.is_empty());
         let mut row = String::new();
@@ -1474,6 +1537,141 @@ mod tests {
         assert!(!items.iter().any(|i| i.id == "rs"));
     }
 
+    fn painted_row_text(buffer: &Buffer, row: Rect) -> String {
+        let mut text = String::new();
+        for x in row.x..row.right() {
+            text.push_str(buffer[(x, row.y)].symbol());
+        }
+        text
+    }
+
+    #[test]
+    fn padded_search_keeps_collection_paint_and_hit_regions_aligned() {
+        let system = DesignSystem::default();
+        let options = opts();
+        let area = Rect::new(0, 0, 48, 16);
+        let mut state = MultiSelectState::new();
+        let _ = state.search.insert_str(" GO ");
+        state.set_focused(true);
+        let _ = state.open(area, &options);
+
+        assert_eq!(state.search_query(), " GO ");
+        assert_eq!(state.collection().total_len(), 1);
+        assert_eq!(state.highlight(), Some(&"go"));
+
+        let mut buffer = Buffer::empty(area);
+        MultiSelect::new(&options, &system).paint_stacked(area, &mut buffer, &mut state);
+        let ids: Vec<&str> = state.option_regions.iter().map(|(id, _)| *id).collect();
+        assert_eq!(ids, ["go"]);
+
+        let (id, rect) = state.option_regions[0];
+        assert!(painted_row_text(&buffer, rect).contains("Go"));
+        let group_row = Rect::new(rect.x, rect.y.saturating_sub(1), rect.width, 1);
+        assert!(painted_row_text(&buffer, group_row).contains("Lang"));
+        assert!(matches!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(rect.x, rect.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &options,
+                area,
+            ),
+            MultiSelectOutcome::Toggled { id: tid, checked: true } if tid == id
+        ));
+    }
+
+    #[test]
+    fn non_searchable_stale_query_remains_unfiltered() {
+        let system = DesignSystem::default();
+        let options = opts();
+        let area = Rect::new(0, 0, 48, 16);
+        let mut state = MultiSelectState::new();
+        let _ = state.search.insert_str("go");
+        state.searchable = false;
+        state.set_focused(true);
+        let _ = state.open(area, &options);
+        state.reconcile_options(&options);
+
+        assert_eq!(state.search_query(), "go");
+        assert_eq!(state.collection().total_len(), 4);
+        assert_eq!(
+            state.select_all_visible(&options),
+            MultiSelectOutcome::SelectAll { count: 3 }
+        );
+
+        let mut buffer = Buffer::empty(area);
+        MultiSelect::new(&options, &system).paint_stacked(area, &mut buffer, &mut state);
+        let ids: Vec<&str> = state.option_regions.iter().map(|(id, _)| *id).collect();
+        assert_eq!(ids, ["rs", "go", "ts"]);
+    }
+
+    #[test]
+    fn padded_search_projection_matches_paint_and_focus() {
+        let system = DesignSystem::default();
+        let options = opts();
+        let mut state = MultiSelectState::new().with_searchable(true);
+        let bounds = Rect::new(0, 0, 48, 16);
+        let _ = state.open(bounds, &options);
+        let _ = state.search.insert_str(" go ");
+        state.reconcile_options(&options);
+
+        assert_eq!(state.highlight(), Some(&"go"));
+        assert!(matches!(
+            state.handle_intent(UiIntent::Activate, &options, bounds),
+            MultiSelectOutcome::Toggled {
+                id: "go",
+                checked: true
+            }
+        ));
+
+        let mut buf = Buffer::empty(bounds);
+        MultiSelect::new(&options, &system).paint_stacked(bounds, &mut buf, &mut state);
+        assert_eq!(
+            state
+                .option_regions
+                .iter()
+                .map(|(id, _)| *id)
+                .collect::<Vec<_>>(),
+            vec!["go"]
+        );
+    }
+
+    #[test]
+    fn whitespace_search_matches_empty_projection() {
+        let system = DesignSystem::default();
+        let options = opts();
+        let mut state = MultiSelectState::new().with_searchable(true);
+        let bounds = Rect::new(0, 0, 48, 16);
+        let _ = state.open(bounds, &options);
+        let _ = state.search.insert_str("   ");
+        state.reconcile_options(&options);
+
+        assert_eq!(state.search_query(), "   ");
+        assert_eq!(state.collection().total_len(), 4);
+
+        let mut buf = Buffer::empty(bounds);
+        MultiSelect::new(&options, &system).paint_stacked(bounds, &mut buf, &mut state);
+        let ids: Vec<&str> = state.option_regions.iter().map(|(id, _)| *id).collect();
+        assert_eq!(ids, ["rs", "go", "ts"]);
+
+        let (id, rect) = state.option_regions[0];
+        assert!(painted_row_text(&buf, rect).contains("Rust"));
+        assert!(matches!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(rect.x, rect.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &options,
+                bounds,
+            ),
+            MultiSelectOutcome::Toggled { id: tid, checked: true } if tid == id
+        ));
+    }
+
     #[test]
     fn fuzz_open() {
         let options = opts();
@@ -1502,7 +1700,7 @@ mod tests {
         let area = Rect::new(0, 0, 50, 14);
         let mut buf = Buffer::empty(area);
         let _ = state.open(area, &options);
-        let w = MultiSelect::new(&options, &system).ascii(true);
+        let w = MultiSelect::new(&options, &system);
         for _ in 0..80 {
             w.paint_stacked(area, &mut buf, &mut state);
         }

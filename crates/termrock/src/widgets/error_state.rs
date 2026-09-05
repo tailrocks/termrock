@@ -16,7 +16,6 @@
 //! For compiler/build diagnostics, project into [`super::Diagnostic`] /
 //! [`super::CodeFrame`] and feed plain text via
 //! [`super::format_diagnostics_plain`] into recovery copy-diagnostics.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -517,12 +516,8 @@ pub struct ErrorState<'a> {
     recovery: Recovery<'a>,
     recipe: ErrorRecipe,
     illustration: Option<&'a str>,
-    force_ascii: bool,
     system: &'a DesignSystem,
 }
-
-/// Legacy name for [`ErrorState`] (call sites and Panel body).
-pub type ErrorView<'a> = ErrorState<'a>;
 
 impl<'a> ErrorState<'a> {
     /// Summary + system (generic kind, pane recipe, no recovery).
@@ -537,7 +532,6 @@ impl<'a> ErrorState<'a> {
             recovery: Recovery::none(),
             recipe: ErrorRecipe::Pane,
             illustration: None,
-            force_ascii: false,
             system,
         }
     }
@@ -553,13 +547,6 @@ impl<'a> ErrorState<'a> {
     #[must_use]
     pub const fn explanation(mut self, text: &'a str) -> Self {
         self.explanation = Some(text);
-        self
-    }
-
-    /// Legacy alias for [`Self::explanation`].
-    #[must_use]
-    pub const fn detail(mut self, detail: &'a str) -> Self {
-        self.explanation = Some(detail);
         self
     }
 
@@ -619,13 +606,6 @@ impl<'a> ErrorState<'a> {
         self
     }
 
-    /// Force ASCII glyphs.
-    #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.force_ascii = on;
-        self
-    }
-
     /// Summary text.
     #[must_use]
     pub const fn summary(self) -> &'a str {
@@ -645,7 +625,7 @@ impl<'a> ErrorState<'a> {
     }
 
     fn use_ascii(&self) -> bool {
-        self.force_ascii || matches!(self.system.glyphs, GlyphSet::Ascii)
+        false
     }
 
     /// Resolved illustration.
@@ -908,9 +888,7 @@ impl<'a> ErrorState<'a> {
         } else {
             ButtonVariant::Quiet
         };
-        let mut btn = Button::new(action.label, self.system)
-            .variant(variant)
-            .ascii(self.use_ascii());
+        let mut btn = Button::new(action.label, self.system).variant(variant);
         if let Some(sc) = action.shortcut {
             btn = btn.trailing(sc);
         }
@@ -983,7 +961,7 @@ impl<'a> ErrorState<'a> {
 
     /// Keyboard handling.
     pub fn handle_key(&self, key: KeyEvent, state: &mut ErrorStateState) -> ErrorStateOutcome {
-        if key.kind != KeyEventKind::Press {
+        if !key.is_press() {
             return ErrorStateOutcome::Ignored;
         }
         // Toggle details
@@ -1289,7 +1267,6 @@ pub fn example_error_unsupported(system: &DesignSystem) -> ErrorState<'_> {
                 .with_alternative(RecoveryAction::new("Use text preview"))
                 .with_retry_safety(RetrySafety::Unsafe),
         )
-        .inline()
 }
 
 /// Dialog-sized network error.
@@ -1342,11 +1319,11 @@ mod tests {
     }
 
     #[test]
-    fn legacy_new_detail_still_works() {
+    fn explanation_renders_summary_and_detail() {
         let system = system();
         let text = painted(Rect::new(0, 0, 40, 5), |a, b| {
-            ErrorView::new("Failed", &system)
-                .detail("Timed out")
+            ErrorState::new("Failed", &system)
+                .explanation("Timed out")
                 .paint(a, b);
         });
         assert!(text.contains("Failed"), "{text}");
@@ -1532,15 +1509,6 @@ mod tests {
         let mut buf = Buffer::empty(Rect::new(0, 0, 8, 2));
         ErrorState::new("E", &system).paint(Rect::new(0, 0, 1, 1), &mut buf);
         ErrorState::new("E", &system).paint(Rect::new(0, 0, 0, 0), &mut buf);
-    }
-
-    #[test]
-    fn ascii_capability() {
-        let system = system();
-        let e = ErrorState::new("E", &system)
-            .kind(ErrorKind::Crash)
-            .ascii(true);
-        assert_eq!(e.resolved_glyph(), "x");
     }
 
     #[test]

@@ -1,105 +1,13 @@
 ---
-title: PromptComposer
-description: 'Flagship agent prompt composer with chips, policy, and completion overlays.'
-component: PromptComposer
-demo: prompt-composer/basic
-interaction: editor-form
-actions:
-  - "click to focus"
-  - "type to edit"
-  - "paste"
-  - "arrow keys"
-expectedOutcomes:
-  - "Activation changes the mounted state and exposes the public typed request in the preview status."
-  - "Editing changes the visible Unicode-safe draft and reports the public typed edit outcome."
-  - "Navigation moves visible focus or selection and preserves it for the next event."
+title: "Prompt Composer"
+description: "Flagship agent prompt composer with chips, policy, and completion overlays."
+catalogId: PromptComposer
 source: crates/termrock/src/widgets/prompt_composer.rs
+tags:
+  - "input"
+  - "widget"
+aliases: []
 ---
-
-## Live terminal (Ghostty-class)
-
-This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
-
-<TerminalPreview story="prompt-composer/basic" interactive caption="PromptComposer · Prompt composer — live shared Rust state" />
-
-## Try it
-
-- `click to focus`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
-- `type to edit`: Focus the editable field, then type or paste Unicode text; the draft remains visible.
-- `paste`: Focus the editable field, then type or paste Unicode text; the draft remains visible.
-- `arrow keys`: Move through the real focus/selection model; the next action uses the new target.
-
-Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The demo owns ephemeral widget state between events. The widget owns painted geometry, focus/selection mechanics, and typed outcomes. The host owns domain effects and decides what an emitted outcome means to the application.
-
-## Interaction contract
-
-| Axis | Status |
-|---|---|
-| Keyboard | covered |
-| Mouse | covered |
-| Focus | covered |
-| Cursor / caret | covered |
-| Narrow terminal | covered |
-| Unicode | covered |
-| Non-color cues | covered |
-| Motion / time | not-applicable in primary demo |
-
-## Configuration and variants
-
-Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
-
-| Demo | Configuration | Input |
-|---|---|---|
-| `prompt-composer/basic` | Prompt composer | interactive |
-| `prompt-composer/busy-queue` | Prompt composer busy | paint-only |
-| `prompt-composer/compact` | Prompt composer compact | paint-only |
-| `prompt-composer/disconnected` | Prompt composer disconnected | paint-only |
-| `prompt-composer/fullscreen` | Prompt composer fullscreen | paint-only |
-| `prompt-composer/in-app` | In application | interactive |
-| `prompt-composer/narrow` | Narrow PromptComposer | paint-only |
-| `prompt-composer/paste-chip` | Prompt composer paste chip | paint-only |
-| `prompt-composer/unicode` | Unicode PromptComposer | paint-only |
-
-## Usage
-
-The Code view above and this source excerpt use the exact paint setup registered for `prompt-composer/basic`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
-
-```rust
-use ratatui::prelude::*;
-use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
-
-// Exact paint setup used by the shared catalog story.
-fn prompt_composer_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{ComposerChip, ContextEstimate, ModeIndicator, ModelIndicator};
-    let tokens = system
-        .clone()
-        .density(termrock::style::Density::Comfortable);
-    let mut state = PromptComposerState::new();
-    state.set_placeholder("Ask anything…");
-    state.set_text("Explain this module");
-    state.set_mode(Some(ModeIndicator {
-        label: "EDIT".into(),
-        warning: false,
-    }));
-    state.set_model(Some(ModelIndicator {
-        label: "grok".into(),
-    }));
-    state.set_context(ContextEstimate {
-        used: 24_000,
-        limit: 128_000,
-    });
-    state.add_chip(ComposerChip::file("a", "lib.rs"));
-    frame.render_stateful_widget(&PromptComposer::new(&tokens), area, &mut state);
-}
-```
-
-## Migrated handbook guidance
-
-# PromptComposer
 
 The editor uses a semantic sunken surface with the catalog-owned `❯` prompt
 mark; the muted information line remains separate from editable content.
@@ -107,7 +15,6 @@ mark; the muted information line remains separate from editable content.
 Primary human → agent input: grapheme-safe multiline editing, attachments,
 slash/@/# completion, mode/model chrome, queue while busy — without embedding
 provider SDKs or clearing the draft when permission/plan overlays take input.
-
 
 ## When to use / when not
 
@@ -170,53 +77,6 @@ Product chords (Ctrl+Z/Y, history, attach) stay on `handle_key`.
 - Panel Focused only when `accepts_input`
 - Status always worded (`BUSY`, `offline`, `queue:N`)
 
-## Basic example
-
-```rust
-use termrock::{
-    style::{Density, DesignSystem, RolePalette},
-    widgets::{ModeIndicator, ModelIndicator, PromptComposer, PromptComposerState},
-};
-
-let theme = RolePalette::default();
-let system = DesignSystem::new(theme, Density::Comfortable);
-let mut state = PromptComposerState::new();
-state.set_placeholder("Ask anything…");
-state.set_mode(Some(ModeIndicator {
-    label: "EDIT".into(),
-    warning: false,
-}));
-state.set_model(Some(ModelIndicator {
-    label: "model".into(),
-}));
-let _composer = PromptComposer::new(&system);
-```
-
-## Interactive example
-
-```rust
-use termrock::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
-    widgets::{PromptComposerOutcome, PromptComposerState},
-};
-
-let mut state = PromptComposerState::new();
-state.set_text("ship it");
-let out = state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
-assert!(matches!(
-    out,
-    PromptComposerOutcome::Submit { ref text, .. } if text == "ship it"
-));
-// Overlay takeover: draft preserved
-state.set_text("keep");
-state.set_accepts_input(false);
-assert_eq!(state.text(), "keep");
-assert!(matches!(
-    state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
-    PromptComposerOutcome::Ignored
-));
-```
-
 ## Public API
 
 | API | Why |
@@ -229,46 +89,3 @@ assert!(matches!(
 | `submit_history` / `submit_history_to_entries` | HistoryPicker bridge |
 | `prompt_composer_help_entries` | KeyboardHelp seed |
 | Overlay helpers | Completion + fullscreen |
-
-## Related
-
-[AttachmentChip](/docs/interaction-notes) ·
-[PasteChip](/docs/interaction-notes) · PermissionPrompt · OverlayStack ·
-AgentWorkbench · TextArea · migrations `0211` / `0212` · design `prompt-composer.md`
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `prompt-composer/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
-
-## Stories
-
-Lookbook coverage for this component. Only the **primary** story is embedded above;
-use the interactive preview (and Studio lookbook) to explore transitions instead of
-a static multi-image gallery.
-
-| Story | Title | Focus |
-|---|---|---|
-| `prompt-composer/basic` | Prompt composer | **Primary (live preview)** |
-| `prompt-composer/busy-queue` | Prompt composer busy | busy queue |
-| `prompt-composer/compact` | Prompt composer compact | Compact density |
-| `prompt-composer/disconnected` | Prompt composer disconnected | disconnected |
-| `prompt-composer/fullscreen` | Prompt composer fullscreen | fullscreen |
-| `prompt-composer/narrow` | Narrow PromptComposer | Narrow terminal |
-| `prompt-composer/paste-chip` | Prompt composer paste chip | paste chip |
-| `prompt-composer/unicode` | Unicode PromptComposer | Unicode / wide glyphs |
-
-## Source and related material
-
-- Rust source: [`crates/termrock/src/widgets/prompt_composer.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/prompt_composer.rs)
-- Native preview: `cargo run -p termrock-lookbook -- terminal`
-- Demo id: `prompt-composer/basic`
-
-## Seen in applications
-
-<SeenInApplications component="PromptComposer" />

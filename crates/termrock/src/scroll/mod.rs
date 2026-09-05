@@ -10,19 +10,17 @@
 //!
 //! `TailScroll` + the `is_scrollable` / `max_line_width` / `max_offset`
 //! helpers are reimplemented from the donor compatibility layer and owned here.
-
 mod render;
 
 pub use render::{
-    SCROLL_EDGE_FADE_ROWS, SCROLLBAR_HORIZONTAL_THUMB, SCROLLBAR_TRACK, ScrollbarGeometry,
-    ScrollbarSpec, ScrollbarStyle, apply_scroll_delta, apply_scroll_delta_unclamped,
-    apply_term_width_scroll_delta, clamp_scroll_offset, horizontal_scrollbar_area,
-    paint_list_scrollbar, paint_scroll_edges, paint_scrolled_region,
+    SCROLLBAR_HORIZONTAL_THUMB, SCROLLBAR_TRACK, ScrollbarGeometry, ScrollbarSpec, ScrollbarStyle,
+    apply_scroll_delta, apply_scroll_delta_unclamped, apply_term_width_scroll_delta,
+    clamp_scroll_offset, horizontal_scrollbar_area, paint_overflow_scrollbar,
     render_line_with_fixed_prefix_scroll, render_lines_with_offset_in_area, render_scrollbar,
     scrollbar_offset_for_track_position, vertical_scrollbar_area, viewport_height, viewport_width,
 };
 
-use ratatui_core::text::Line;
+use ratatui_core::{layout::Rect, text::Line};
 use tui_scrollbar::{SUBCELL, ScrollLengths, ScrollMetrics};
 
 use crate::input::{KeyModifiers, MouseEventKind};
@@ -159,6 +157,55 @@ pub fn max_line_width(lines: &[Line<'_>]) -> usize {
 /// Returns whether content exceeds a non-empty viewport.
 pub const fn is_scrollable(content_len: usize, viewport_len: usize) -> bool {
     viewport_len > 0 && content_len > viewport_len
+}
+
+/// Returns the final column of an area as its reserved vertical gutter.
+#[must_use]
+pub const fn gutter_column(area: Rect) -> Rect {
+    Rect::new(area.right().saturating_sub(1), area.y, 1, area.height)
+}
+
+/// Full-cell overflow thumb matching junie `ScrollState::thumb`.
+///
+/// `len = (viewport * track) / content`. Returns `None` when content fits, so a
+/// reserved gutter stays blank. Line widgets (framed panel, picker) must use
+/// this geometry; [`full_cell_thumb`] is the subcell `tui-scrollbar` rounding
+/// used by other surfaces.
+#[must_use]
+pub const fn overflow_thumb(
+    content_len: usize,
+    viewport_len: usize,
+    track_len: usize,
+    offset: usize,
+) -> Option<(usize, usize)> {
+    if !is_scrollable(content_len, viewport_len) || track_len == 0 {
+        return None;
+    }
+    let len = match viewport_len
+        .saturating_mul(track_len)
+        .checked_div(content_len)
+    {
+        Some(value) if value > 0 => value,
+        _ => 1,
+    };
+    let len = if len > track_len { track_len } else { len };
+    let max_off = content_len - viewport_len;
+    let travel = track_len - len;
+    let start = if max_off == 0 {
+        0
+    } else {
+        match offset
+            .saturating_mul(travel)
+            .saturating_add(max_off / 2)
+            .checked_div(max_off)
+        {
+            Some(value) => value,
+            None => 0,
+        }
+    };
+    let max_start = track_len - len;
+    let start = if start > max_start { max_start } else { start };
+    Some((start, len))
 }
 
 #[must_use]

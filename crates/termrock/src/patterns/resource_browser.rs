@@ -11,18 +11,17 @@
 //! rail, a detail pane, and an optional preview.
 //!
 //! Composes: [`crate::widgets::ScrollAreaState`],
-//! [`crate::widgets::SidebarItem`], [`crate::widgets::SidebarOutcome`],
+//! [`crate::widgets::NavItem`], [`crate::widgets::SidebarOutcome`],
 //! [`crate::widgets::SidebarState`].
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::layout::Rect;
 
 use ratatui_core::{buffer::Buffer, widgets::StatefulWidget};
 
-use crate::style::{CapabilityPreviewHost, Density, DesignSystem, Role};
+use crate::style::{CapabilityPreviewHost, DesignSystem, Role};
 use crate::widgets::{
     DetailRow, DetailTable, DetailTableState, Panel, StatusBar, StatusBarState, StatusSlot, Tree,
     TreeNode, TreeState,
@@ -47,7 +46,6 @@ pub struct ResourceBrowserSlots {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ResourceBrowserLayout {
     /// Density.
-    pub density: Density,
     /// Left rail width.
     pub rail_width: u16,
     /// Right preview width; 0 hides preview.
@@ -59,7 +57,6 @@ pub struct ResourceBrowserLayout {
 impl Default for ResourceBrowserLayout {
     fn default() -> Self {
         Self {
-            density: Density::Compact,
             rail_width: 28,
             preview_width: 32,
             status_height: 1,
@@ -74,7 +71,6 @@ pub fn layout_resource_browser(area: Rect, config: ResourceBrowserLayout) -> Res
         area,
         AppShellConfig {
             recipe: AppShellRecipe::Workbench,
-            density: config.density,
             header_height: 0,
             sidebar_width: config.rail_width.max(1),
             inspector_width: config.preview_width,
@@ -352,7 +348,7 @@ mod tests {
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind},
-    widgets::{ScrollAreaState, SidebarItem, SidebarOutcome, SidebarState},
+    widgets::{NavItem, ScrollAreaState, SidebarOutcome, SidebarState},
 };
 
 // ── ResourceBrowser ─────────────────────────────────────────────────────────
@@ -397,11 +393,11 @@ impl<Id: Clone + PartialEq> ResourceBrowserState<Id> {
     pub fn handle_key(
         &mut self,
         key: KeyEvent,
-        items: &[crate::widgets::SidebarItem<Id>],
+        items: &[NavItem<Id>],
     ) -> ResourceBrowserOutcome<Id> {
         let out = self.sidebar.handle_key(key, items);
         match out {
-            SidebarOutcome::Selected(id) => {
+            SidebarOutcome::RouteChanged { id } => {
                 self.selection_generation = self.selection_generation.saturating_add(1);
                 ResourceBrowserOutcome::LoadRequested(id)
             }
@@ -420,12 +416,12 @@ impl<Id: Clone + PartialEq> Default for ResourceBrowserState<Id> {
 mod state_tests {
     use super::*;
     use crate::input::{KeyCode, KeyEvent, KeyModifiers};
-    use crate::widgets::SidebarItem;
+    use crate::widgets::NavItem;
 
     #[test]
     fn resource_load_on_select() {
         let mut state = ResourceBrowserState::new();
-        let items = [SidebarItem::new("a", "A")];
+        let items = [NavItem::new("a", "A")];
         let out = state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items);
         assert!(matches!(out, ResourceBrowserOutcome::LoadRequested("a")));
         assert_eq!(state.selection_generation, 1);

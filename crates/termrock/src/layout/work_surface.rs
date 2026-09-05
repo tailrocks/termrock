@@ -2,10 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Multi-region work surface layout (lazygit/k9s class shells).
-
 use ratatui_core::layout::Rect;
-
-use crate::style::Density;
 
 /// Named region identity for focus and hit registration.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -64,7 +61,6 @@ pub struct RegionLayout {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WorkSurface {
     axis: SurfaceAxis,
-    density: Density,
     regions: Vec<RegionSpec>,
 }
 
@@ -74,7 +70,6 @@ impl WorkSurface {
     pub const fn new() -> Self {
         Self {
             axis: SurfaceAxis::Vertical,
-            density: Density::Comfortable,
             regions: Vec::new(),
         }
     }
@@ -83,13 +78,6 @@ impl WorkSurface {
     #[must_use]
     pub const fn axis(mut self, axis: SurfaceAxis) -> Self {
         self.axis = axis;
-        self
-    }
-
-    /// Sets density (affects gaps between regions).
-    #[must_use]
-    pub const fn density(mut self, density: Density) -> Self {
-        self.density = density;
         self
     }
 
@@ -114,12 +102,17 @@ impl WorkSurface {
                 .collect();
         }
 
-        let gap = self.density.gap();
+        let gap = crate::style::SpacingScale::junie().gap;
         let primary = match self.axis {
             SurfaceAxis::Vertical => area.height,
             SurfaceAxis::Horizontal => area.width,
         };
-        let gaps = gap.saturating_mul(self.regions.len().saturating_sub(1) as u16);
+        let visible_regions = self
+            .regions
+            .iter()
+            .filter(|region| !matches!(region.size, RegionSize::Collapsed))
+            .count();
+        let gaps = gap.saturating_mul(visible_regions.saturating_sub(1) as u16);
         let mut fixed = 0u16;
         let mut weight_sum = 0u32;
         for region in &self.regions {
@@ -160,8 +153,13 @@ impl WorkSurface {
             SurfaceAxis::Horizontal => area.x,
         };
         let mut out = Vec::with_capacity(self.regions.len());
+        let mut seen_visible = false;
         for (index, region) in self.regions.iter().enumerate() {
             let size = sizes[index];
+            let visible = !matches!(region.size, RegionSize::Collapsed);
+            if visible && seen_visible {
+                cursor = cursor.saturating_add(gap);
+            }
             let rect = match self.axis {
                 SurfaceAxis::Vertical => Rect::new(area.x, cursor, area.width, size),
                 SurfaceAxis::Horizontal => Rect::new(cursor, area.y, size, area.height),
@@ -170,9 +168,9 @@ impl WorkSurface {
                 id: region.id.clone(),
                 area: rect,
             });
-            cursor = cursor.saturating_add(size);
-            if index + 1 != self.regions.len() {
-                cursor = cursor.saturating_add(gap);
+            if visible {
+                cursor = cursor.saturating_add(size);
+                seen_visible = true;
             }
         }
         out
@@ -191,7 +189,7 @@ mod tests {
 
     #[test]
     fn vertical_fixed_and_weight_fill_height() {
-        let surface = WorkSurface::new().density(Density::Dashboard).regions([
+        let surface = WorkSurface::new().regions([
             RegionSpec {
                 id: RegionId::from_static("header"),
                 size: RegionSize::Fixed(2),
@@ -207,13 +205,13 @@ mod tests {
         ]);
         let layout = surface.layout(Rect::new(0, 0, 40, 20));
         assert_eq!(layout[0].area, Rect::new(0, 0, 40, 2));
-        assert_eq!(layout[1].area, Rect::new(0, 2, 40, 17));
+        assert_eq!(layout[1].area, Rect::new(0, 4, 40, 13));
         assert_eq!(layout[2].area, Rect::new(0, 19, 40, 1));
     }
 
     #[test]
     fn collapsed_region_is_zero_sized() {
-        let surface = WorkSurface::new().density(Density::Dashboard).regions([
+        let surface = WorkSurface::new().regions([
             RegionSpec {
                 id: RegionId::from_static("side"),
                 size: RegionSize::Collapsed,
@@ -225,6 +223,6 @@ mod tests {
         ]);
         let layout = surface.layout(Rect::new(0, 0, 10, 10));
         assert_eq!(layout[0].area.height, 0);
-        assert_eq!(layout[1].area.height, 10);
+        assert_eq!(layout[1].area, Rect::new(0, 0, 10, 10));
     }
 }

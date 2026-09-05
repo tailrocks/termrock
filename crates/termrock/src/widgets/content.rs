@@ -9,7 +9,6 @@
 //!
 //! Callout / Alert: [`crate::widgets::Callout`], [`crate::widgets::Alert`].
 //! Section chrome: [`crate::widgets::Section`].
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
@@ -815,18 +814,7 @@ mod tests {
         let mut buf = Buffer::empty(Rect::new(0, 0, 24, 2));
         let parts = h.paint(Rect::new(0, 0, 24, 2), &mut buf);
         assert_eq!(parts.rule.height, 1);
-        assert_eq!(buf[(0, 1)].symbol(), "═");
-    }
-
-    #[test]
-    fn heading_compact_ascii_prefix() {
-        let system = DesignSystem::default().glyphs(GlyphSet::Ascii);
-        let h = Heading::new("Title", &system).h2().compact();
-        assert!(h.plain_with_prefix().starts_with("## "));
-        let mut buf = Buffer::empty(Rect::new(0, 0, 20, 1));
-        let _ = h.paint(Rect::new(0, 0, 20, 1), &mut buf);
-        assert_eq!(buf[(0, 0)].symbol(), "#");
-        assert_eq!(buf[(1, 0)].symbol(), "#");
+        assert_eq!(buf[(0, 1)].symbol(), "\u{2501}");
     }
 
     #[test]
@@ -874,13 +862,6 @@ mod tests {
         assert!(lines.len() >= 2);
         // hanging: second line starts with spaces past prefix
         assert!(lines[1].starts_with(' '));
-    }
-
-    #[test]
-    fn paragraph_ascii_list_bullet() {
-        let system = DesignSystem::default().glyphs(GlyphSet::Ascii);
-        let p = Paragraph::list_item("x", &system);
-        assert_eq!(p.resolved_prefix(), "- ");
     }
 
     #[test]

@@ -11,7 +11,6 @@
 //! essential persistent slots.
 //!
 //! Behavioral references: Zellij mode bar, Vim/Helix status lines, btop footers.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -22,9 +21,14 @@ use ratatui_core::{
 
 use crate::{
     interaction::{HitRegion, Outcome},
-    style::{DesignSystem, Glyph, GlyphSet, Role, RolePalette, faded},
+    style::{DesignSystem, Glyph, GlyphSet, Role},
     text::{display_cols, take_display_cols},
 };
+
+use super::semantic_status::SemanticStatus;
+
+/// Footer status sentence lifetime. junie showcase default: 4 seconds.
+pub const STATUS_DEFAULT_TTL_MS: u64 = 4_000;
 
 /// Which band a slot belongs to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -96,12 +100,12 @@ impl StatusKind {
         use crate::style::Glyph;
         let g = match self {
             Self::Mode => Some(Glyph::ModeDot),
-            Self::Connection => Some(Glyph::Connection),
-            Self::Selection => Some(Glyph::SelectionMark),
+            Self::Connection => Some(Glyph::ModeDot),
+            Self::Selection => Some(Glyph::SelectionMarker),
             Self::Context => Some(Glyph::DisclosureClosed),
             Self::Shortcut | Self::Text => None,
-            Self::FocusZone => Some(Glyph::FocusDiamond),
-            Self::Transient => Some(Glyph::Ellipsis),
+            Self::FocusZone => Some(Glyph::DiamondFilled),
+            Self::Transient => None,
         };
         match g {
             Some(glyph) => glyphs.resolve(glyph).text,
@@ -111,18 +115,18 @@ impl StatusKind {
 
     /// Default role when slot style is unset / default.
     #[must_use]
-    pub const fn default_role(self) -> Role {
+    const fn default_role(self) -> Role {
         match self {
             // Mode is context, not the operator's current intent: accent is
             // spent on the one live thing, never on a permanent band
             // (plans/007).
             Self::Mode => Role::TextStrong,
-            Self::Connection => Role::Success,
+            Self::Connection => Role::TextStrong,
             Self::Selection => Role::TextMuted,
             Self::Context => Role::TextMuted,
             Self::Shortcut => Role::HintKey,
             Self::FocusZone => Role::TextStrong,
-            Self::Transient => Role::Warning,
+            Self::Transient => Role::TextSecondary,
             Self::Text => Role::StatusBar,
         }
     }
@@ -179,18 +183,15 @@ pub struct StatusSlot<'a, Id> {
     pub min_width: u16,
     /// Whether this item is enabled.
     pub enabled: bool,
-    /// Explicit paint style (overrides kind role when non-default / always used if set via builder).
-    pub style: Style,
-    /// Optional style override while the slot is hovered.
-    pub hover_style: Option<Style>,
     /// Region band (default Left for backward-compat constructors).
     pub region: StatusRegion,
     /// Semantic kind.
     pub kind: StatusKind,
     /// Optional non-color glyph (defaults from kind when None and kind has glyph).
     pub glyph: Option<&'a str>,
-    /// When true, use `style` as-is; when false, merge kind role if style is empty-ish.
-    pub style_explicit: bool,
+    /// Optional typed lifecycle status. This owns semantic glyph and tone;
+    /// callers cannot bypass the recipe with a raw paint style.
+    semantic: Option<SemanticStatus>,
 }
 
 impl<'a, Id> StatusSlot<'a, Id> {
@@ -203,12 +204,10 @@ impl<'a, Id> StatusSlot<'a, Id> {
             priority: 50,
             min_width: 0,
             enabled: true,
-            style: Style::new(),
-            hover_style: None,
             region: StatusRegion::Left,
             kind: StatusKind::Text,
             glyph: None,
-            style_explicit: false,
+            semantic: None,
         }
     }
 
@@ -227,6 +226,7 @@ impl<'a, Id> StatusSlot<'a, Id> {
     pub fn connection(id: Id, content: &'a str) -> Self {
         Self::new(id, content)
             .kind(StatusKind::Connection)
+            .semantic(SemanticStatus::Online)
             .priority(90)
             .region(StatusRegion::Right)
             .min_width(3)
@@ -305,25 +305,17 @@ impl<'a, Id> StatusSlot<'a, Id> {
         self
     }
 
-    /// Explicit style.
-    #[must_use]
-    pub const fn style(mut self, style: Style) -> Self {
-        self.style = style;
-        self.style_explicit = true;
-        self
-    }
-
-    /// Hover style.
-    #[must_use]
-    pub const fn hover_style(mut self, style: Style) -> Self {
-        self.hover_style = Some(style);
-        self
-    }
-
     /// Glyph override.
     #[must_use]
     pub const fn glyph(mut self, glyph: &'a str) -> Self {
         self.glyph = Some(glyph);
+        self
+    }
+
+    /// Typed status projection. Its glyph and semantic role are recipe-owned.
+    #[must_use]
+    pub const fn semantic(mut self, semantic: SemanticStatus) -> Self {
+        self.semantic = Some(semantic);
         self
     }
 }
@@ -368,6 +360,9 @@ pub struct StatusBarState<Id> {
     /// bar cross-fades instead (plans/014 Step 3b).
     previous_mode: Option<String>,
     mode_changed_at_ms: u64,
+    transient_set_at_ms: Option<u64>,
+    /// Lifetime of a timed status sentence. Default [`STATUS_DEFAULT_TTL_MS`].
+    pub transient_ttl_ms: u64,
 }
 
 impl<Id> StatusBarState<Id> {
@@ -403,6 +398,8 @@ impl<Id> Default for StatusBarState<Id> {
             transient: None,
             previous_mode: None,
             mode_changed_at_ms: 0,
+            transient_set_at_ms: None,
+            transient_ttl_ms: STATUS_DEFAULT_TTL_MS,
         }
     }
 }
@@ -417,6 +414,23 @@ impl<Id: Clone> StatusBarState<Id> {
     /// Sets or clears transient text (host-owned lifetime).
     pub fn set_transient(&mut self, message: Option<impl Into<String>>) {
         self.transient = message.map(Into::into);
+        self.transient_set_at_ms = None;
+    }
+
+    /// Sets a timed status sentence. Past tense, no period: `Cell saved`.
+    pub fn set_transient_at(&mut self, message: Option<impl Into<String>>, elapsed_ms: u64) {
+        self.transient = message.map(Into::into);
+        self.transient_set_at_ms = Some(elapsed_ms);
+    }
+
+    /// Drops an expired status sentence. Default TTL is 4 seconds.
+    pub fn expire_transient(&mut self, elapsed_ms: u64) {
+        if let Some(at) = self.transient_set_at_ms {
+            if elapsed_ms.saturating_sub(at) >= self.transient_ttl_ms {
+                self.transient = None;
+                self.transient_set_at_ms = None;
+            }
+        }
     }
 
     /// Updates hover state from the current pointer position and painted hit regions.
@@ -440,9 +454,6 @@ impl<Id: Clone> StatusBarState<Id> {
             })
     }
 }
-
-/// How long a mode change takes to settle.
-const MODE_FADE_MS: u64 = 120;
 
 /// A one-row collection of prioritized status slots.
 #[derive(Debug, Clone, Copy)]
@@ -803,55 +814,40 @@ impl<Id: Clone> StatusBar<'_, Id> {
         let Some(text) = text.filter(|t| !t.is_empty()) else {
             return;
         };
-        let glyph = self
-            .transient
-            .and_then(|t| t.glyph)
-            .unwrap_or_else(|| StatusKind::Transient.default_glyph(self.system.glyphs));
+        let glyph = self.transient.and_then(|t| t.glyph).unwrap_or("");
 
-        // Free span: between max left edge and min right edge
-        let left_edge = placements
-            .iter()
-            .filter(|p| p.side == Side::Left)
-            .map(|p| p.area.right())
-            .max()
-            .unwrap_or(area.x);
-        let right_edge = placements
-            .iter()
-            .filter(|p| p.side == Side::Right)
-            .map(|p| p.area.x)
-            .min()
-            .unwrap_or(area.right());
-        // Also avoid permanent center slots
-        let center_used_right = placements
-            .iter()
-            .filter(|p| p.side == Side::Center)
-            .map(|p| p.area.right())
-            .max()
-            .unwrap_or(left_edge);
-        let start = left_edge.max(center_used_right);
-        if start >= right_edge {
-            return;
-        }
-        let avail = right_edge.saturating_sub(start);
+        // junie: status wins the right edge, text-secondary, `right - w - 1`.
         let mut label = String::new();
         if !glyph.is_empty() {
             label.push_str(glyph);
             label.push(' ');
         }
         label.push_str(text);
-        let need = (display_cols(&label) as u16 + 2).min(avail);
-        if need == 0 {
+        let w = display_cols(&label) as u16;
+        if area.width <= w + 2 {
             return;
         }
-        let pad = avail.saturating_sub(need) / 2;
-        let x = start.saturating_add(pad);
-        let shown = take_display_cols(&label, usize::from(need));
+        let occupied_right = placements
+            .iter()
+            .filter(|p| p.side == Side::Right)
+            .map(|p| p.area.x)
+            .min()
+            .unwrap_or(area.right());
+        if occupied_right <= area.x + w + 1 {
+            return;
+        }
+        let x = area.right().saturating_sub(w).saturating_sub(1);
+        let shown = take_display_cols(&label, usize::from(w));
         buffer.set_stringn(
             x,
             area.y,
             &shown,
-            usize::from(need),
-            apply_alpha(self.system, self.system.style(Role::Warning), self.alpha),
+            usize::from(w),
+            apply_alpha(
+                self.system,
+                self.system.junie_theme().secondary(),
+                self.alpha,
+            ),
         );
     }
 }
@@ -903,26 +899,13 @@ impl<Id: Clone + PartialEq> StatefulWidget for &StatusBar<'_, Id> {
             );
             // Slot words read as one band; the slot's own glyph carries its
             // state (plans/007).
-            let mut body = if slot.style_explicit {
-                style
+            let body = if hovered {
+                self.system
+                    .style(Role::Focus)
+                    .add_modifier(ratatui_core::style::Modifier::BOLD)
             } else {
                 self.system.style(Role::StatusBar)
             };
-            // A mode chip that swaps in one frame reads as a flash; it fades
-            // in from the canvas instead (plans/014 Step 3b).
-            if matches!(slot.kind, StatusKind::Mode) && self.system.motion.allows_transitions() {
-                let settled = state.mode_fade(self.system.elapsed_ms(), MODE_FADE_MS);
-                if settled < 1.0 {
-                    body = crate::style::fade_style(
-                        body,
-                        settled,
-                        self.system
-                            .style(Role::Canvas)
-                            .bg
-                            .unwrap_or(ratatui_core::style::Color::Reset),
-                    );
-                }
-            }
             buffer.set_stringn(
                 content_area.x,
                 content_area.y,
@@ -931,9 +914,11 @@ impl<Id: Clone + PartialEq> StatefulWidget for &StatusBar<'_, Id> {
                 apply_alpha(self.system, body, self.alpha),
             );
             let glyph = slot
-                .glyph
+                .semantic
+                .map(|status| status.glyph())
+                .or(slot.glyph)
                 .unwrap_or_else(|| slot.kind.default_glyph(self.system.glyphs));
-            if !glyph.is_empty() && !slot.style_explicit {
+            if !glyph.is_empty() {
                 crate::widgets::row_chrome::paint_status_glyph(
                     buffer,
                     content_area,
@@ -961,7 +946,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for StatusBar<'_, Id> {
 
 fn format_slot_content<Id>(slot: &StatusSlot<'_, Id>, glyphs: GlyphSet) -> String {
     let g = slot
-        .glyph
+        .semantic
+        .map(|status| status.glyph())
+        .or(slot.glyph)
         .unwrap_or_else(|| slot.kind.default_glyph(glyphs));
     if g.is_empty() {
         slot.content.to_string()
@@ -972,25 +959,14 @@ fn format_slot_content<Id>(slot: &StatusSlot<'_, Id>, glyphs: GlyphSet) -> Strin
 
 fn resolve_style<Id>(slot: &StatusSlot<'_, Id>, hovered: bool, system: &DesignSystem) -> Style {
     if hovered {
-        if let Some(h) = slot.hover_style {
-            return h;
-        }
+        return system
+            .style(Role::Focus)
+            .add_modifier(ratatui_core::style::Modifier::BOLD);
     }
-    if slot.style_explicit {
-        return slot.style;
-    }
-    // Prefer kind role; allow slot.style to add modifiers if any set
-    let mut base = system.style(slot.kind.default_role());
-    if slot.style.fg.is_some() {
-        base.fg = slot.style.fg;
-    }
-    if slot.style.bg.is_some() {
-        base.bg = slot.style.bg;
-    }
-    if slot.style.add_modifier != ratatui_core::style::Modifier::empty() {
-        base = base.add_modifier(slot.style.add_modifier);
-    }
-    base
+    system.style(
+        slot.semantic
+            .map_or_else(|| slot.kind.default_role(), SemanticStatus::role),
+    )
 }
 
 fn allocation<Id: Clone>(
@@ -1041,44 +1017,33 @@ const fn side_rank(side: Side) -> u8 {
     }
 }
 
-fn apply_alpha(system: &DesignSystem, style: Style, alpha: f32) -> Style {
-    let canvas = system
-        .style(Role::Canvas)
-        .bg
-        .unwrap_or(ratatui_core::style::Color::Black);
-    crate::style::fade_style(style, alpha, canvas)
+/// junie has no blend vocabulary: the status bar paints at full strength and
+/// carries state with glyphs and words, not opacity.
+fn apply_alpha(_system: &DesignSystem, style: Style, _alpha: f32) -> Style {
+    style
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::style::RolePalette;
     use ratatui_core::style::Color;
 
-    fn legacy_slot(
+    fn slot(
         id: &'static str,
         content: &'static str,
         priority: u8,
         min_width: u16,
     ) -> StatusSlot<'static, &'static str> {
-        StatusSlot {
-            id,
-            content,
-            priority,
-            min_width,
-            enabled: true,
-            style: Style::new().fg(Color::Rgb(100, 50, 20)),
-            hover_style: Some(Style::new().fg(Color::Rgb(200, 100, 40))),
-            region: StatusRegion::Left,
-            kind: StatusKind::Text,
-            glyph: None,
-            style_explicit: true,
-        }
+        StatusSlot::new(id, content)
+            .priority(priority)
+            .min_width(min_width)
     }
 
     #[test]
     fn status_bar_paints_band() {
         let system = DesignSystem::default();
-        let left = [legacy_slot("mode", "NORMAL", 1, 4)];
+        let left = [slot("mode", "NORMAL", 1, 4)];
         let bar = StatusBar::new(&left, &[], &system);
         let area = Rect::new(0, 0, 20, 1);
         let mut state = StatusBarState::default();
@@ -1093,11 +1058,11 @@ mod tests {
     #[test]
     fn priority_and_minimum_width_control_narrow_layout() {
         let theme = RolePalette::default();
-        let system = DesignSystem::from_palette(theme.clone());
-        let left = [legacy_slot("activity", " activity ", 10, 4)];
+        let system = DesignSystem::new(theme.clone());
+        let left = [slot("activity", " activity ", 10, 4)];
         let right = [
-            legacy_slot("usage", " usage-long ", 1, 0),
-            legacy_slot("run", " run ", 20, 0),
+            slot("usage", " usage-long ", 1, 0),
+            slot("run", " run ", 20, 0),
         ];
         // Fix region on right slots for legacy constructor
         let mut right = right;
@@ -1135,34 +1100,10 @@ mod tests {
     }
 
     #[test]
-    fn hover_and_activation_follow_only_painted_regions() {
-        let left = [legacy_slot("activity", " activity ", 1, 4)];
-        let theme = RolePalette::default()
-            .with_role(Role::StatusBar, Style::new().bg(Color::Rgb(80, 80, 80)));
-        let system = DesignSystem::from_palette(theme.clone());
-        let bar = StatusBar::new(&left, &[], &system).alpha(0.5);
-        let area = Rect::new(4, 3, 6, 1);
-        let mut state = StatusBarState::default();
-        let mut buffer = Buffer::empty(area);
-        (&bar).render(area, &mut buffer, &mut state);
-        assert_eq!(state.regions.len(), 1);
-        let position = Position::new(area.x, area.y);
-        assert_eq!(state.hover(position), Some(&"activity"));
-        (&bar).render(area, &mut buffer, &mut state);
-        assert_eq!(state.click(position), Outcome::Activated("activity"));
-        let expected = crate::style::blend_toward(
-            Color::Rgb(80, 80, 80),
-            system.style(Role::Canvas).bg.unwrap(),
-            0.5,
-        );
-        assert_eq!(buffer[(area.x, area.y)].bg, expected);
-    }
-
-    #[test]
     fn unicode_truncation_never_paints_half_a_wide_grapheme() {
-        let left = [legacy_slot("wide", " 🧪🔬🧭 ", 1, 3)];
+        let left = [slot("wide", " 🧪🔬🧭 ", 1, 3)];
         let theme = RolePalette::default();
-        let system = DesignSystem::from_palette(theme.clone());
+        let system = DesignSystem::new(theme.clone());
         let bar = StatusBar::new(&left, &[], &system);
         let area = Rect::new(0, 0, 3, 1);
         let mut state = StatusBarState::default();
@@ -1170,6 +1111,24 @@ mod tests {
         (&bar).render(area, &mut buffer, &mut state);
         assert_eq!(state.regions[0].area.width, 3);
         assert_ne!(buffer[(2, 0)].symbol(), "\0");
+    }
+
+    #[test]
+    fn resize_cjk_combining_and_ascii_safe() {
+        let left = [slot("unicode", " 東京 Cafe\u{301} ", 10, 1)];
+        let system = DesignSystem::default();
+        let bar = StatusBar::new(&left, &[], &system);
+        for width in [32, 12, 1, 0] {
+            let area = Rect::new(0, 0, width, 1);
+            let mut state = StatusBarState::default();
+            let mut buffer = Buffer::empty(area);
+            (&bar).render(area, &mut buffer, &mut state);
+            if width == 32 {
+                let text: String = buffer.content().iter().map(|cell| cell.symbol()).collect();
+                assert!(text.contains('東'), "{text:?}");
+                assert!(text.contains("Cafe\u{301}"), "{text:?}");
+            }
+        }
     }
 
     #[test]
@@ -1246,15 +1205,37 @@ mod tests {
     }
 
     #[test]
-    fn ascii_glyphs_for_mode() {
-        let system = DesignSystem::default().glyphs(GlyphSet::Ascii);
-        let left = [StatusSlot::mode("m", "NOR")];
+    fn semantic_status_owns_glyph_over_custom_slot_glyph() {
+        let system = DesignSystem::default();
+        let left = [StatusSlot::new("failure", "failed")
+            .glyph("Z")
+            .semantic(SemanticStatus::Failed)];
         let bar = StatusBar::new(&left, &[], &system);
         let area = Rect::new(0, 0, 20, 1);
         let mut state = StatusBarState::default();
-        let mut buf = Buffer::empty(area);
-        (&bar).render(area, &mut buf, &mut state);
-        assert_eq!(buf[(0, 0)].symbol(), "*");
+        let mut buffer = Buffer::empty(area);
+        (&bar).render(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(0, 0)].symbol(), "\u{2717}");
+    }
+
+    #[test]
+    fn status_slot_public_api_has_no_raw_style_escape_hatch() {
+        let public = include_str!("status_bar.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .expect("public source");
+        for forbidden in [
+            "pub style:",
+            "pub hover_style:",
+            "pub fn style(",
+            "pub const fn style(",
+            "style_explicit",
+        ] {
+            assert!(
+                !public.contains(forbidden),
+                "raw style API leaked: {forbidden}"
+            );
+        }
     }
 
     #[test]
@@ -1292,5 +1273,37 @@ mod tests {
     fn kind_ids_stable() {
         assert_eq!(StatusKind::FocusZone.id(), "focus-zone");
         assert_eq!(StatusBarRecipe::Minimal.id(), "minimal");
+    }
+
+    #[test]
+    fn transient_is_right_edge_text_secondary() {
+        let system = DesignSystem::default();
+        let left = [StatusSlot::mode("m", "NOR")];
+        let msg = TransientStatus::new("Cell saved");
+        let bar = StatusBar::new(&left, &[], &system).transient(&msg);
+        let mut state = StatusBarState::default();
+        let area = Rect::new(0, 0, 40, 1);
+        let mut buf = Buffer::empty(area);
+        (&bar).render(area, &mut buf, &mut state);
+        let row: String = (0..area.width).map(|x| buf[(x, 0)].symbol()).collect();
+        assert!(row.contains("Cell saved"), "{row}");
+        assert!(row.trim_end().ends_with("Cell saved"), "{row}");
+        let start = row.find("Cell saved").unwrap() as u16;
+        assert_eq!(
+            buf[(start, 0)].fg,
+            system.junie_theme().secondary().fg.unwrap()
+        );
+        assert!(!row.contains('.'), "{row}");
+    }
+
+    #[test]
+    fn default_ttl_is_4s() {
+        assert_eq!(STATUS_DEFAULT_TTL_MS, 4_000);
+        let mut state = StatusBarState::<&str>::new();
+        state.set_transient_at(Some("Cell saved"), 0);
+        state.expire_transient(3_999);
+        assert_eq!(state.transient.as_deref(), Some("Cell saved"));
+        state.expire_transient(4_000);
+        assert!(state.transient.is_none());
     }
 }

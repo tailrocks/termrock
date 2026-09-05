@@ -1,94 +1,85 @@
 ---
-title: TermRock
-description: Composable terminal UI components for Rust — browse the catalog with real TUI-matched previews.
+title: Documentation
+description: From first install to advanced terminal interaction, follow one deliberate path through TermRock.
 ---
 
-# TermRock
+<div className="docs-home not-prose">
 
-<TerminalPreview
-  story="agent-workbench/basic"
-  interactive
-  caption="An agent workbench, live — the same Rust state machine a native app runs"
-/>
+<p className="docs-home__lead">Install and pin the reviewed revision first. Then build one useful screen, learn the ownership boundary, and add customization only when the product requires it.</p>
 
-**TermRock is the ecosystem UI capability layer for building terminal interfaces
-quickly.** It is a Rust crate of product-neutral widgets, interaction kernels,
-and design tokens for [Ratatui](https://ratatui.rs/) apps — inspired by the open
-code and strong-default ideas of [shadcn/ui](https://ui.shadcn.com/docs), adapted
-to terminal geometry, focus, and Unicode safety.
+<section aria-labelledby="docs-home-path">
 
-## What you get
+<h2 id="docs-home-path">Start here</h2>
 
-| Layer | Role |
-|-------|------|
-| **Widgets** | List, Table, Dialog, PromptComposer, PermissionPrompt, Tree, … with stable IDs and borrowed render data |
-| **Interaction** | `InteractionScene`, `OverlayStack`, `UiIntent`, keymaps — Esc law and focus traps |
-| **Design system** | Semantic `Role` palette, density, glyphs, recipes (phosphor default) |
-| **Lookbook** | Persistent native and browser demos driven by the same Rust state machines and Ratatui paint path |
+<ol className="docs-home__path">
+  <li>
+    <a href="/docs/installation">
+      <span>01</span>
+      <strong>Installation</strong>
+      <small>Add the Git dependency and pin a reviewed revision.</small>
+    </a>
+  </li>
+  <li>
+    <a href="/docs/getting-started">
+      <span>02</span>
+      <strong>Getting Started</strong>
+      <small>Render a stateful component and handle its outcome.</small>
+    </a>
+  </li>
+  <li>
+    <a href="/docs/customization">
+      <span>03</span>
+      <strong>Customization</strong>
+      <small>Choose roles, density, glyphs, motion, and capability.</small>
+    </a>
+  </li>
+  <li>
+    <a href="/docs/components">
+      <span>04</span>
+      <strong>API</strong>
+      <small>Inspect canonical components and exact public identities.</small>
+    </a>
+  </li>
+  <li>
+    <a href="/docs/advanced-composition">
+      <span>05</span>
+      <strong>Advanced</strong>
+      <small>Compose public components into product-owned application screens.</small>
+    </a>
+  </li>
+</ol>
 
-TermRock owns reusable rendering, layout, theme roles, focus/navigation, hit
-geometry, narrow-terminal behavior, and non-color cues. **Your app owns** domain
-state, wording, effects, secrets, process policy, and projections into widgets.
+</section>
 
-## Browse the catalog
+<section className="docs-home__layers" aria-labelledby="docs-home-layers">
 
-1. **[Components](/docs/components)** — one canonical page per component with
-   a live terminal demo, public API, behavior recipe, and interaction contract.
-2. **[Application patterns](/docs/patterns)** — all 35 repository recipes as
-   complete terminal applications composed from public building blocks.
-3. **[Interaction](/docs/interaction)** — scene, overlays, and session lifecycle.
-4. **[Quality & migrations](/docs/quality-migrations)** — contracts and breaking-change index.
+<h2 id="docs-home-layers">Choose the right layer</h2>
 
-Previews on this site are **not mockups, slides, or SVGs**. The browser loads
-the shared Rust Lookbook runtime as WebAssembly, mounts persistent state, sends
-real keyboard/pointer/paste/resize/time events, and paints returned truecolor
-Ratatui cells. Run the same catalog natively with:
+<div>
+  <a href="/docs/components">
+    <strong>Components</strong>
+    <span>Product-neutral rendering and interaction with stable IDs and typed outcomes.</span>
+  </a>
+  <a href="/docs/patterns">
+    <strong>Application patterns</strong>
+    <span>Complete compositions that demonstrate public building blocks without owning your domain.</span>
+  </a>
+</div>
 
-```bash
-cargo run -p termrock-lookbook -- terminal
-```
+</section>
 
-When WebAssembly is unavailable, the host displays one static fallback poster
-without claiming interactivity. It never substitutes precomputed state tours.
+<section className="docs-home__contract" aria-labelledby="docs-home-contract">
 
-## Quick start
+<h2 id="docs-home-contract">Keep the boundary clear</h2>
 
-```toml
-# Cargo.toml — pin an exact git revision (API is pre-stable)
-termrock = { git = "https://github.com/tailrocks/termrock", rev = "…" }
-```
+TermRock owns terminal geometry, interaction mechanics, focus, semantic paint,
+Unicode behavior, and capability fallbacks. Your application owns domain state,
+language, persistence, networking, permissions, and effects.
 
-```rust
-use termrock::style::DesignTokens;
-use termrock::widgets::{List, ListRow, ListState, RowRole};
-use ratatui_core::text::Line;
+Continue with [interaction conventions](/docs/interaction) when a screen adds
+overlays or composite focus. Use [quality and migrations](/docs/quality-migrations)
+before upgrading a pinned revision.
 
-let tokens = DesignTokens::default();
-let rows = [ListRow {
-    id: "a",
-    label: Line::from("Alpha"),
-    leading: None,
-    secondary: None,
-    badge: None,
-    shortcut: None,
-    trailing: None,
-    role: RowRole::Item,
-    enabled: true,
-    loading: false,
-}];
-let mut state = ListState::new(Some("a"));
-// List::new(&rows, &tokens) in your frame draw
-```
+</section>
 
-## Design references
-
-| Doc | Purpose |
-|-----|---------|
-| [Architecture foundation](/docs/quality-migrations) | Hybrid kernel + progressive capability |
-| Design notes under `docs/design/` | Anatomy, registry, Studio, agent pack (source tree) |
-
-## Contributing
-
-All work is on `main` with Conventional Commits and DCO. Breaking public changes
-add a sequential file under `migrations/` and an index row in `MIGRATING.md`.
-See [CONTRIBUTING.md](https://github.com/tailrocks/termrock/blob/main/CONTRIBUTING.md).
+</div>

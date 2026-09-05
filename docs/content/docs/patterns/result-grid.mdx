@@ -1,51 +1,31 @@
 ---
-title: Result Grid
-description: 'Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned.'
-pattern: ResultGrid
-demo: result-grid/basic
-interaction: activation
+title: "Result Grid"
+description: "Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned."
+catalogId: ResultGrid
 source: crates/termrock/src/patterns/result_grid.rs
 classification: composite
+tags:
+  - "composite"
+  - "DataTable"
+aliases: []
+uses:
+  - "DataTable"
+supportingTypes:
+  - "ColumnModel"
+  - "ColumnPin"
+  - "CopyPayload"
+  - "DataColumn"
+  - "DataColumnWidth"
+  - "DataTableToolbar"
+  - "FilterSpec"
+  - "InspectorField"
+  - "SortSpec"
+  - "StatefulWidget"
 ---
-
-This is an example composite from `termrock::patterns`, not a first-class widget. Copy the recipe, keep its reusable parts, and replace its sample domain model with your own.
-
-## Live application preview
-
-<TerminalPreview story="result-grid/basic" interactive caption="Result Grid · shared Rust demo" />
-
-## Classification and composition
-
-**composite** · default grid 80×14
-
-Composed public building blocks: `ColumnModel`, `ColumnPin`, `CopyPayload`, `DataColumn`, `DataColumnWidth`, `DataTable`, `DataTableToolbar`, `FilterSpec`, `InspectorField`, `SortSpec`, `StatefulWidget`.
-
-## Workflow
-
-- `arrows select cell`: move visible focus, selection, pane, or hierarchy state for the next action.
-- `Enter edit`: focus the real field and edit its persistent Unicode-safe draft.
-- `C copy`: forward this normalized action to the mounted public pattern state.
-- `E export`: forward this normalized action to the mounted public pattern state.
-
-Accepted actions update the same persistent pattern instance in web docs and native Lookbook. Typed requests appear in the status line; the fixtures never authenticate, connect, execute, persist, or mutate external state.
-
-## Ownership
-
-TermRock owns composition, focus geometry, responsive layout, and reusable state transitions. The consuming application owns records, commands, persistence, secrets, authorization, and side effects.
-
-## Source
-
-- Pattern recipe: [`crates/termrock/src/patterns/result_grid.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/patterns/result_grid.rs)
-- Demo: `result-grid/basic`
-
-## Migrated handbook guidance
-
-# ResultGrid
 
 Database / query result component built on [DataTable](/docs/components/data-table).
 Host projects a **visible window** of typed cells; TermRock paints safe display,
 status/stats chrome, and emits export / inspect / page / edit **requests**.
-
 
 ## When to use / when not
 
@@ -73,15 +53,6 @@ Timestamp · Uuid · Secret · Other.
 Binary never dumps raw bytes by default (`blob(N B)`). Secrets render as
 `••••` until host allows `ResultRedaction::RevealSecrets`.
 
-## QueryEditor integration
-
-```rust
-// After QueryEditor paint:
-ResultGrid::new(&system, &schema, &page)
-    .render(query_state.slots.results, buf, &mut grid);
-query_state.set_results(grid.query_summary());
-```
-
 ## ObjectInspector bridge
 
 `result_row_to_inspector_fields(schema, row, redaction, ascii)` projects a row
@@ -94,7 +65,3 @@ into inspector fields for cell detail panels.
 - Page next/prev · Refresh · Retry
 - Edit start/commit · Sort · Stats focus
 - Reveal secrets toggle
-
-## Related
-
-DataTable · QueryEditor · ObjectInspector · migration `0205`

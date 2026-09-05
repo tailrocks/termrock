@@ -1,8 +1,8 @@
-# TermRock 48-component designer audit — web-premium redesign
+# Archived TermRock 48-surface designer audit — web-premium redesign
 
 | Field | Value |
 |-------|-------|
-| **Status** | Professional designer audit + redesign, all 48 components, against the web-premium bar. |
+| **Status** | Archived 2026-08 snapshot. Not component inventory or current coverage authority; use the Rust inventory and generated docs catalog. |
 | **Date** | 2026-08-14 |
 | **Bar** | [`web-premium-tui-law.md`](./web-premium-tui-law.md) — "feels like it's NOT a terminal" (Kimi/Grok/Amp/Claude.ai) under phosphor. Properties P1–P15, rules §4, vocab §5, composer §6, toast §7. |
 | **Feeds** | the `plans/` execution system. Foundations first, then per-widget, then decisions. |
@@ -156,7 +156,7 @@ discipline applied.
 
 ---
 
-## 2. Per-component audit (all 48)
+## 2. Historical per-surface audit
 
 Format: **Defect** (`file:line`) → **Redesign** → **P**riority. Dense by design.
 

@@ -19,7 +19,6 @@
 //! **vs [`CommandPalette`](crate::widgets::CommandPalette).** Palette is a global
 //! centered command surface. SlashCommandMenu is **caret-anchored**, draft-aware,
 //! and `/`-token scoped for PromptComposer.
-
 #![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
@@ -1189,11 +1188,6 @@ impl<'a> SlashCommandMenu<'a> {
             .force_area(area)
             .paint(area, buffer, &mut state.menu);
     }
-
-    /// Convenience render alias.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut SlashCommandMenuState) {
-        self.paint(area, buffer, state);
-    }
 }
 
 // ── Bench ───────────────────────────────────────────────────────────────────
@@ -1213,7 +1207,7 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::{KeyCode, KeyEvent, KeyModifiers};
+    use crate::input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
     use crate::style::DesignSystem;
 
     #[test]
@@ -1379,6 +1373,15 @@ mod tests {
         }
         st.set_status(CompletionStatus::Ready);
         SlashCommandMenu::new(&cat, &system, area, anchor).paint(area, &mut buf, &mut st);
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
+        assert!(
+            text.contains("plan") || text.contains("▎"),
+            "slash menu reuses completion list anatomy, got {text}"
+        );
     }
 
     #[test]
@@ -1471,6 +1474,43 @@ mod tests {
         assert!(matches!(
             out,
             SlashCommandMenuOutcome::SelectionChanged { .. } | SlashCommandMenuOutcome::Ignored
+        ));
+    }
+
+    #[test]
+    fn mouse_uses_completion_menu_painted_hit_regions() {
+        let system = DesignSystem::default();
+        let catalog = example_slash_catalog();
+        let mut state = SlashCommandMenuState::new();
+        state.sync_from_draft("/p", 2);
+        let visible = state.visible_commands(&catalog);
+        let area = Rect::new(0, 0, 40, 12);
+        let mut buffer = Buffer::empty(area);
+        SlashCommandMenu::new(&catalog, &system, area, Rect::new(0, 0, 1, 1)).paint(
+            area,
+            &mut buffer,
+            &mut state,
+        );
+
+        let mut outcome = SlashCommandMenuOutcome::Ignored;
+        for y in area.y..area.bottom() {
+            let probe = state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: ratatui_core::layout::Position::new(area.x, y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &catalog,
+                &visible,
+            );
+            if !matches!(probe, SlashCommandMenuOutcome::Ignored) {
+                outcome = probe;
+                break;
+            }
+        }
+        assert!(matches!(
+            outcome,
+            SlashCommandMenuOutcome::CommandCommitted { .. }
         ));
     }
 

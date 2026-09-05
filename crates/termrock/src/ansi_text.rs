@@ -13,7 +13,6 @@
 //! emulator modes (cursor save, alternate screen, DECCKM, …).
 //!
 //! References: terminal emulators, ansi-to-tui, Rich, agent command panes.
-
 use std::collections::VecDeque;
 
 use anstyle_parse::{DefaultCharAccumulator, Params, Parser, Perform};
@@ -25,7 +24,7 @@ use ratatui_core::{
     widgets::Widget,
 };
 
-use crate::style::{ColorCapability, DesignSystem, Role};
+use crate::style::{ColorCapability, DesignSystem, Role, quantize_color};
 use crate::text::{display_cols, expand_tabs, take_display_cols};
 
 // ── Public free functions (preserved) ───────────────────────────────────────
@@ -1068,10 +1067,21 @@ impl<'a> AnsiText<'a> {
                 style = self.system.style(Role::Text);
             }
             if seg.href.is_some() {
-                style = style
-                    .fg(self.system.style(Role::Link).fg.unwrap_or(Color::Blue))
-                    .add_modifier(Modifier::UNDERLINED);
+                // A link is an affordance: the ladder's secondary step plus the
+                // underline. Never a raw palette hue.
+                style = self.system.style(Role::Link);
             }
+            // Embedded output is data, not a theme escape hatch. Preserve the
+            // source hue as closely as the named terminal palette permits,
+            // but never let RGB or indexed colors bypass the ANSI-16 runtime
+            // contract at the paint edge.
+            style = if matches!(self.mode, AnsiTextMode::NoColor)
+                || matches!(self.system.capability, ColorCapability::Monochrome)
+            {
+                monochrome_style(&self.system, style, seg.style)
+            } else {
+                ansi16_style(style)
+            };
             let remaining = usize::from(width.saturating_sub(col));
             let clipped = take_display_cols(&seg.text, remaining);
             let used = u16::try_from(display_cols(&clipped))
@@ -1081,6 +1091,45 @@ impl<'a> AnsiText<'a> {
             col = col.saturating_add(used);
         }
     }
+}
+
+fn ansi16_style(mut style: Style) -> Style {
+    if let Some(fg) = style.fg {
+        style.fg = Some(quantize_color(fg, ColorCapability::Ansi16));
+    }
+    if let Some(bg) = style.bg {
+        style.bg = Some(quantize_color(bg, ColorCapability::Ansi16));
+    }
+    style
+}
+
+fn monochrome_style(system: &DesignSystem, mut style: Style, source: Style) -> Style {
+    style.fg = None;
+    style.bg = None;
+    if source
+        .bg
+        .is_some_and(|background| background != Color::Reset)
+    {
+        // Monochrome cannot carry the source plane, so the cell states it with
+        // the explicit reversal pair — `fg(canvas).bg(text_primary)` — never a
+        // swap modifier that would re-invert whatever the cell already held
+        // (D5). The source underline is an affordance and survives it.
+        let underline = style.add_modifier.contains(Modifier::UNDERLINED);
+        let reversed = system.reversed();
+        return if underline {
+            reversed.add_modifier(Modifier::UNDERLINED)
+        } else {
+            reversed
+        };
+    }
+    if source
+        .fg
+        .is_some_and(|foreground| foreground != Color::Reset)
+        && style.add_modifier == Modifier::empty()
+    {
+        style = style.add_modifier(Modifier::BOLD);
+    }
+    style
 }
 
 impl Widget for &AnsiText<'_> {

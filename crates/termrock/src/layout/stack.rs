@@ -15,10 +15,9 @@
 //! responsive direction are explicit. When children exceed the main axis the
 //! active [`OverflowPolicy`] decides shrink/clip behavior; `StackLayout::overflowed`
 //! is set for Studio and hosts.
-
 use ratatui_core::layout::Rect;
 
-use crate::style::{Density, DesignSystem, SpacingScale};
+use crate::style::{DesignSystem, SpacingScale};
 
 /// Soft cap for stack-allocated main-size scratch (above → heap `Vec`).
 const INLINE_SCRATCH: usize = 64;
@@ -284,21 +283,12 @@ impl StackSpec {
         }
     }
 
-    /// Density-driven gap + padding.
-    #[must_use]
-    pub const fn with_density(mut self, density: Density) -> Self {
-        self.gap = density.gap();
-        self.pad_x = density.padding_x();
-        self.pad_y = density.padding_y();
-        self
-    }
-
     /// Spacing scale from design system.
     #[must_use]
     pub const fn with_spacing(mut self, spacing: SpacingScale) -> Self {
         self.gap = spacing.gap;
-        self.pad_x = spacing.pad_x;
-        self.pad_y = spacing.pad_y;
+        self.pad_x = spacing.card_inset;
+        self.pad_y = 1;
         self
     }
 
@@ -427,14 +417,6 @@ impl Stack {
         }
     }
 
-    /// Vertical + density spacing.
-    #[must_use]
-    pub const fn with_density(density: Density) -> Self {
-        Self {
-            spec: StackSpec::vertical().with_density(density),
-        }
-    }
-
     /// Main-axis direction (for responsive flip without rebuilding).
     #[must_use]
     pub const fn direction(mut self, direction: StackDirection) -> Self {
@@ -521,14 +503,6 @@ impl Inline {
     pub const fn new() -> Self {
         Self {
             spec: StackSpec::horizontal(),
-        }
-    }
-
-    /// Horizontal + density spacing.
-    #[must_use]
-    pub const fn with_density(density: Density) -> Self {
-        Self {
-            spec: StackSpec::horizontal().with_density(density),
         }
     }
 
@@ -1275,20 +1249,10 @@ mod tests {
         ];
         let area = Rect::new(0, 0, 80, 40);
         let mut buf = Vec::with_capacity(8);
-        let spec = StackSpec::vertical().with_density(Density::Compact);
+        let spec = StackSpec::vertical();
         for _ in 0..50_000 {
             layout_stack_into(area, &spec, &children, &mut buf);
         }
-    }
-
-    #[test]
-    fn density_gap_comfortable() {
-        let layout = Stack::with_density(Density::Comfortable).layout(
-            Rect::new(0, 0, 10, 10),
-            &[FlexSize::Weight(1), FlexSize::Weight(1)],
-        );
-        assert_eq!(layout.content.height, 8);
-        assert_eq!(layout.children[0].height + layout.children[1].height, 7);
     }
 
     #[test]

@@ -30,7 +30,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 #![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{
@@ -183,6 +182,17 @@ impl ObservabilityLiveState {
             Self::Offline => "offline",
         }
     }
+
+    /// Shared lifecycle projection for status chrome.
+    #[must_use]
+    pub const fn semantic(self) -> crate::widgets::SemanticStatus {
+        match self {
+            Self::Live => crate::widgets::SemanticStatus::Running,
+            Self::Paused => crate::widgets::SemanticStatus::Paused,
+            Self::Reconnecting => crate::widgets::SemanticStatus::Waiting,
+            Self::Offline => crate::widgets::SemanticStatus::Failed,
+        }
+    }
 }
 
 /// Workbench outcomes — requests only; host owns acquisition.
@@ -320,8 +330,6 @@ pub struct ObservabilityDashboardState {
     pub event_count: u64,
     /// Host-projected alert count (status chrome).
     pub alert_count: u64,
-    /// ASCII.
-    pub ascii: bool,
     /// Colorless.
     pub colorless: bool,
     /// Last panes.
@@ -342,7 +350,7 @@ impl ObservabilityDashboardState {
     /// Fresh live dashboard.
     #[must_use]
     pub fn new() -> Self {
-        let mut search = SearchInputState::new();
+        let mut search = SearchInputState::new().with_editing();
         search.set_focused(false);
         Self {
             workspace: WorkspaceState::new(),
@@ -361,7 +369,6 @@ impl ObservabilityDashboardState {
             log_count: 0,
             event_count: 0,
             alert_count: 0,
-            ascii: false,
             colorless: false,
             last_panes: Vec::new(),
             last_area_width: None,
@@ -603,22 +610,25 @@ impl ObservabilityDashboardState {
     pub fn status_slots(&self) -> Vec<StatusSlot<'static, &'static str>> {
         let live = self.live.label();
         let mut slots = vec![
-            StatusSlot::connection("live", live).priority(10),
-            StatusSlot::context("logs", "logs").priority(20),
-            StatusSlot::context("events", "events").priority(30),
-            StatusSlot::focus_zone("focus", self.focus).priority(40),
+            StatusSlot::connection("live", live)
+                .semantic(self.live.semantic())
+                .priority(90),
+            StatusSlot::context("logs", "logs").priority(50),
+            StatusSlot::context("events", "events").priority(40),
+            StatusSlot::focus_zone("focus", self.focus).priority(70),
             StatusSlot::shortcut(
                 "keys",
                 "space live · m bookmark · a ack drop · C-r reconnect · tab",
             )
-            .priority(90),
+            .priority(10),
         ];
         if self.logs.dropped > 0 || self.events.dropped() > 0 {
             slots.insert(
                 0,
                 StatusSlot::new("dropped", "dropped")
+                    .semantic(crate::widgets::SemanticStatus::Warning)
                     .region(StatusRegion::Left)
-                    .priority(5),
+                    .priority(95),
             );
         }
         if matches!(
@@ -628,16 +638,18 @@ impl ObservabilityDashboardState {
             slots.insert(
                 0,
                 StatusSlot::new("fail", "acquisition")
+                    .semantic(crate::widgets::SemanticStatus::Failed)
                     .region(StatusRegion::Left)
-                    .priority(4),
+                    .priority(100),
             );
         }
         if self.alert_count > 0 && !self.open_panes.alerts {
             slots.insert(
                 0,
                 StatusSlot::new("alerts", "alerts")
+                    .semantic(crate::widgets::SemanticStatus::Warning)
                     .region(StatusRegion::Left)
-                    .priority(6),
+                    .priority(92),
             );
         }
         let _ = (self.log_count, self.event_count);
@@ -654,7 +666,7 @@ impl ObservabilityDashboardState {
         alerts: &[MetricAlert<'_>],
         inspect_fields: &[InspectorField<'_>],
     ) -> ObservabilityDashboardOutcome {
-        if key.kind != KeyEventKind::Press {
+        if !key.is_press() {
             return ObservabilityDashboardOutcome::Ignored;
         }
 
@@ -1161,12 +1173,11 @@ pub fn render_observability_dashboard(
     if let Some(r) = pane_area(&panes, "metrics") {
         let focused = state.focus == "metrics";
         let shown_alerts: &[MetricAlert<'_>] = if state.open_panes.alerts { alerts } else { &[] };
-        MetricsDashboard::new(tiles, shown_alerts, system)
+        let _ = MetricsDashboard::new(tiles, shown_alerts, system)
             .title("Metrics")
             .focused(focused)
             // The shell's status bar is the frame's one hint row.
             .hints(false)
-            .ascii(state.ascii)
             .render(r, buffer, &mut state.metrics);
     }
 
@@ -1175,7 +1186,6 @@ pub fn render_observability_dashboard(
         LogStream::new(logs, system)
             .title("Logs")
             .focused(focused)
-            .ascii(state.ascii)
             .colorless(state.colorless)
             .render(r, buffer, &mut state.logs);
     }
@@ -1184,7 +1194,6 @@ pub fn render_observability_dashboard(
         let focused = state.focus == "events";
         EventStream::with_events(events, system)
             .focused(focused)
-            .ascii(state.ascii)
             .colorless(state.colorless)
             .render(r, buffer, &mut state.events);
     }
@@ -1213,7 +1222,6 @@ pub fn render_observability_dashboard(
         } else {
             ObjectInspector::new(inspect_fields, system)
                 .focused(focused)
-                .ascii(state.ascii)
                 .colorless(state.colorless)
                 .render(inner, buffer, &mut state.inspector);
         }

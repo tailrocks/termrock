@@ -1,7 +1,7 @@
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use crate::{
-    style::{DesignSystem, Role, RolePalette},
-    text::{CellAlignment, LinePlacement, paint_line_overflow},
+    style::{BadgeKind, DesignSystem, Role, RolePalette},
+    text::{CellAlignment, LinePlacement, display_cols, paint_line_overflow, truncate_cols},
 };
 use ratatui_core::{
     buffer::Buffer,
@@ -81,6 +81,8 @@ pub struct HintBar<'a> {
     leading_spacer: bool,
     alignment: CellAlignment,
     system: &'a DesignSystem,
+    /// Status sentence pinned to the right edge (text-secondary).
+    right: Option<&'a str>,
 }
 
 impl<'a> HintBar<'a> {
@@ -93,7 +95,15 @@ impl<'a> HintBar<'a> {
             leading_spacer: false,
             alignment: CellAlignment::Left,
             system,
+            right: None,
         }
+    }
+
+    /// Status sentence on the footer's right edge.
+    #[must_use]
+    pub const fn right(mut self, right: &'a str) -> Self {
+        self.right = Some(right);
+        self
     }
 
     #[must_use]
@@ -121,75 +131,89 @@ impl<'a> HintBar<'a> {
     }
 
     /// Returns the rows required to paint this bar at `width`.
+    ///
+    /// Footer hints are one row; overflow drops from the right.
     #[must_use]
-    pub fn measured_height(&self, width: u16) -> u16 {
-        let rows = u16::try_from(self.lines(width).len()).unwrap_or(u16::MAX);
-        rows.saturating_add(u16::from(self.leading_spacer))
+    pub fn measured_height(&self, _width: u16) -> u16 {
+        1u16.saturating_add(u16::from(self.leading_spacer))
     }
 
-    fn lines(&self, width: u16) -> Vec<Line<'a>> {
-        let limit = usize::from(width);
-        let separator_width = UnicodeWidthStr::width(self.separator);
-        let mut lines = Vec::new();
-        let mut spans = Vec::new();
-        let mut row_width = 0usize;
-
-        for hint in self.hints.iter().filter(|hint| hint.visible) {
-            let hint_width = UnicodeWidthStr::width(hint.chord)
+    /// Hints that fit, most important first, dropping from the right.
+    fn fitted(&self, width: u16) -> Vec<&'a Hint<'a>> {
+        let mut hints: Vec<&Hint<'a>> = self.hints.iter().filter(|hint| hint.visible).collect();
+        hints.sort_by_key(|h| h.priority);
+        let right_w = self
+            .right
+            .map(|r| (UnicodeWidthStr::width(r) as u16).saturating_add(3))
+            .unwrap_or(0);
+        let mut x = 1u16;
+        let mut out = Vec::new();
+        for hint in hints {
+            let w = (UnicodeWidthStr::width(hint.chord) as u16)
                 .saturating_add(1)
-                .saturating_add(UnicodeWidthStr::width(hint.label));
-            let joined_width = row_width
-                .saturating_add(separator_width)
-                .saturating_add(hint_width);
-            if !spans.is_empty() && joined_width > limit {
-                lines.push(Line::from(std::mem::take(&mut spans)));
-                row_width = 0;
+                .saturating_add(UnicodeWidthStr::width(hint.label) as u16)
+                .saturating_add(2);
+            if x.saturating_add(w).saturating_add(right_w) > width {
+                break;
             }
-            if !spans.is_empty() {
-                spans.push(Span::styled(
-                    self.separator,
-                    self.system.style(Role::HintSeparator),
-                ));
-                row_width = row_width.saturating_add(separator_width);
-            }
-            spans.push(Span::styled(hint.chord, self.system.style(Role::HintKey)));
-            spans.push(Span::styled(" ", self.system.style(Role::HintText)));
-            spans.push(Span::styled(hint.label, self.system.style(Role::HintText)));
-            row_width = row_width.saturating_add(hint_width);
+            out.push(hint);
+            x = x.saturating_add(w);
         }
-        if !spans.is_empty() {
-            lines.push(Line::from(spans));
-        }
-        if lines.is_empty() {
-            lines.push(Line::raw(""));
-        }
-        lines
+        out
     }
 }
 
 impl Widget for &HintBar<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
+        if area.is_empty() {
+            return;
+        }
         let spacer_rows = u16::from(self.leading_spacer).min(area.height);
         if spacer_rows > 0 {
             for x in area.left()..area.right() {
                 buffer[(x, area.top())]
                     .set_symbol(" ")
-                    .set_style(self.system.style(Role::HintText));
+                    .set_style(self.system.key_hint_action());
             }
         }
-        let body = Rect::new(
-            area.x,
-            area.y.saturating_add(spacer_rows),
-            area.width,
-            area.height.saturating_sub(spacer_rows),
-        );
-        paint_hint_lines(
-            buffer,
-            body,
-            &self.lines(area.width),
-            self.alignment,
-            self.system,
-        );
+        let y = area.y.saturating_add(spacer_rows);
+        if y >= area.bottom() {
+            return;
+        }
+        // junie: hints start at x+1; status wins the right edge.
+        let mut right_w = 0u16;
+        if let Some(right) = self.right {
+            let w = UnicodeWidthStr::width(right) as u16;
+            if area.width > w + 2 {
+                buffer.set_string(
+                    area.right().saturating_sub(w).saturating_sub(1),
+                    y,
+                    right,
+                    self.system.junie_theme().secondary(),
+                );
+                right_w = w + 3;
+            }
+        }
+        let mut x = area.x.saturating_add(1);
+        for hint in self.fitted(area.width) {
+            let kw = UnicodeWidthStr::width(hint.chord) as u16;
+            let w = kw
+                .saturating_add(1)
+                .saturating_add(UnicodeWidthStr::width(hint.label) as u16)
+                .saturating_add(2);
+            if x.saturating_add(w).saturating_add(right_w) > area.right() {
+                break;
+            }
+            buffer.set_string(x, y, hint.chord, self.system.key_hint_key());
+            buffer.set_string(
+                x.saturating_add(kw).saturating_add(1),
+                y,
+                hint.label,
+                self.system.key_hint_action(),
+            );
+            x = x.saturating_add(w);
+        }
+        let _ = self.alignment;
     }
 }
 
@@ -216,7 +240,7 @@ fn paint_hint_lines(
             buffer,
             row,
             line,
-            system.style(Role::HintText),
+            system.key_hint_action(),
             placement,
             &mut scratch,
         );
@@ -256,8 +280,8 @@ pub fn styled_hint_spans(
     system: &DesignSystem,
     remap: impl Fn(Color) -> Color,
 ) -> Vec<Span<'static>> {
-    let key = remap_style(system.style(Role::HintKey), &remap);
-    let text = remap_style(system.style(Role::HintText), &remap);
+    let key = remap_style(system.key_hint_key(), &remap);
+    let text = remap_style(system.key_hint_action(), &remap);
     let dim = remap_style(system.style(Role::HintDim), &remap);
     let sep = remap_style(system.style(Role::HintSeparator), &remap);
     let mut out = Vec::with_capacity(spans.len());
@@ -408,7 +432,7 @@ mod tests {
     }
 
     #[test]
-    fn measured_height_decreases_as_width_grows() {
+    fn measured_height_is_one_row() {
         let system = crate::style::DesignSystem::default();
         let hints = [
             Hint {
@@ -431,9 +455,8 @@ mod tests {
             },
         ];
         let bar = HintBar::new(&hints, &system);
-        let heights = [20, 40, 80].map(|width| bar.measured_height(width));
-        assert!(heights.windows(2).all(|pair| pair[0] >= pair[1]));
-        assert_eq!(heights[2], 1);
+        assert_eq!(bar.measured_height(20), 1);
+        assert_eq!(bar.measured_height(80), 1);
     }
 
     #[test]
@@ -452,6 +475,90 @@ mod tests {
         let mut buffer = Buffer::filled(area, ratatui_core::buffer::Cell::new("x"));
         (&bar).render(area, &mut buffer);
         assert!((area.left()..area.right()).all(|x| buffer[(x, area.top())].symbol() == " "));
-        assert_eq!(buffer[(0, 1)].symbol(), "E");
+        assert_eq!(buffer[(1, 1)].symbol(), "E");
+    }
+
+    #[test]
+    fn drops_from_the_right_keeps_most_important() {
+        let system = crate::style::DesignSystem::default();
+        let hints = [
+            Hint {
+                chord: "Esc",
+                label: "Cancel",
+                priority: 1,
+                visible: true,
+            },
+            Hint {
+                chord: "Enter",
+                label: "Confirm",
+                priority: 2,
+                visible: true,
+            },
+            Hint {
+                chord: "?",
+                label: "Help",
+                priority: 3,
+                visible: true,
+            },
+        ];
+        let bar = HintBar::new(&hints, &system);
+        let area = Rect::new(0, 0, 18, 1);
+        let mut buffer = Buffer::empty(area);
+        (&bar).render(area, &mut buffer);
+        let row: String = (0..area.width).map(|x| buffer[(x, 0)].symbol()).collect();
+        assert!(row.contains("Esc"), "{row}");
+        assert!(row.contains("Cancel"), "{row}");
+        assert!(!row.contains("Help"), "{row}");
+    }
+
+    #[test]
+    fn key_is_bold_primary_action_is_muted() {
+        let system = crate::style::DesignSystem::default();
+        let hints = [Hint {
+            chord: "Esc",
+            label: "Cancel",
+            priority: 1,
+            visible: true,
+        }];
+        let bar = HintBar::new(&hints, &system);
+        let area = Rect::new(0, 0, 20, 1);
+        let mut buffer = Buffer::empty(area);
+        (&bar).render(area, &mut buffer);
+        assert_eq!(buffer[(1, 0)].symbol(), "E");
+        assert_eq!(buffer[(1, 0)].fg, system.key_hint_key().fg.unwrap());
+        assert!(
+            buffer[(1, 0)]
+                .modifier
+                .contains(ratatui_core::style::Modifier::BOLD)
+        );
+        let action_x = 1 + 4; // "Esc" + space
+        assert_eq!(buffer[(action_x, 0)].symbol(), "C");
+        assert_eq!(
+            buffer[(action_x, 0)].fg,
+            system.key_hint_action().fg.unwrap()
+        );
+    }
+
+    #[test]
+    fn right_status_wins_the_edge() {
+        let system = crate::style::DesignSystem::default();
+        let hints = [Hint {
+            chord: "Esc",
+            label: "Cancel",
+            priority: 1,
+            visible: true,
+        }];
+        let bar = HintBar::new(&hints, &system).right("Cell saved");
+        let area = Rect::new(0, 0, 40, 1);
+        let mut buffer = Buffer::empty(area);
+        (&bar).render(area, &mut buffer);
+        let row: String = (0..area.width).map(|x| buffer[(x, 0)].symbol()).collect();
+        assert!(row.contains("Cell saved"), "{row}");
+        assert!(row.trim_end().ends_with("Cell saved"), "{row}");
+        let start = row.find("Cell saved").unwrap() as u16;
+        assert_eq!(
+            buffer[(start, 0)].fg,
+            system.junie_theme().secondary().fg.unwrap()
+        );
     }
 }

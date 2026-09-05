@@ -1,0 +1,40 @@
+ ▪  TablePro  Production  ◆ production  acme_prod › public  safe                             truecolor · 120×40  ? help
+
+ ▎≡ Query 1 ×   ▎T orders ×                                                                                         +
+ ────────────────━━━━━━━━━━━───────────────────────────────────────────────────────────────────────────────────────────
+ ╭─ Explorer ─────── public ─╮ ╭─ public › orders ────────────────────────────────────────────────────────── 14 cols ─╮
+ │                           │ │  ▎Data   ▎Structure                                                                  │
+ │ ▎ Filter objects          │ │  ─────────━━━━━━━━━━──────────────────────────────────────────────────────────────── │
+ │ ▎▾ D acme_prod            │ │                                                                                      │
+ │ ▎  ▾ S public             │ │  ▎Columns   ▎Indexes   ▎Foreign keys   ▎Constraints   ▎Triggers   ▎DDL               │
+ │ ▎    ▾ Tables          7  │ │  ─━━━━━━━━────────────────────────────────────────────────────────────────────────── │
+ │ ▎      ▸ T organizations  │ │                                                                                      │
+ │ ▎      ▸ T customers      │ │     Name                  Type            Nullable  Default                 Key      │
+ │ ▎      ▸ T products  312  │ │  ▎  id                    uuid            no        gen_random_uuid()       PK       │
+ │ ▎      ▸ T orders         │ │  ▎  order_number          integer         no        nextval('orders_numbe…           │
+ │ ▎      ▸ T order_items    │ │  ▎  customer_id           uuid            no        —                       FK       │
+ │ ▎      ▸ T payments       │ │  ▎  organization_id       uuid            no        —                       FK       │
+ │ ▎      ▸ T subscriptions  │ │  ▎  status                text            no        'pending'                        │
+ │ ▎    ▸ Views           2  │ │  ▎  total_amount          numeric(12,2)   no        —                                │
+ │ ▎    ▸ Functions       1  │ │  ▎  currency              text            no        'USD'                            │
+ │ ▎    ▸ Sequences       1  │ │  ▎  shipping_address      jsonb           yes       —                                │
+ │ ▎  ▸ S analytics          │ │  ▎  notes                 text            yes       —                                │
+ │ ▎  ▸ S audit              │ │  ▎  shipped_at            timestamptz     yes       —                                │
+ │                           │ │  ▎  delivered_at          date            yes       —                                │
+ │                           │ │  ▎  is_gift               boolean         no        false                            │
+ │                           │ │  ▎  created_at            timestamptz     no        now()                            │
+ │                           │ │  ▎  updated_at            timestamptz     yes       —                                │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │   14 columns · read from the catalog · changes are queued until Save                 │
+ ╰───────────────────────────╯ ╰──────────────────────────────────────────────────────────────────────────────────────╯
+
+ ← → Switch  Ctrl+T New query  x Close  Ctrl+G Tab list  z Zoom  Tab Next                       Connected to Production

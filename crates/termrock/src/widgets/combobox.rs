@@ -19,7 +19,6 @@
 //! the field + policy and embeds menu state.
 //!
 //! Research: Radix Combobox, prompt-toolkit completion, editor menus, palettes.
-
 use std::collections::VecDeque;
 
 use ratatui_core::{
@@ -30,9 +29,7 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         OverlayStack, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
     },
@@ -163,7 +160,7 @@ pub enum ComboboxOutcome<Id> {
 
 // ── State ───────────────────────────────────────────────────────────────────
 
-/// Runtime state for [`Combobox`] / [`Autocomplete`].
+/// Runtime state for [`Combobox`] in select or autocomplete mode.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ComboboxState<Id: Clone + PartialEq> {
     mode: ComboMode,
@@ -276,6 +273,18 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
     pub fn with_draft(mut self, text: impl Into<String>) -> Self {
         self.set_draft(text);
         self
+    }
+
+    /// Live typing. [`Self::new`] stays idle (`editing: false`).
+    #[must_use]
+    pub fn with_editing(mut self) -> Self {
+        self.draft.begin_edit();
+        self
+    }
+
+    /// Start the insert session (Junie Enter on an idle field).
+    pub fn begin_edit(&mut self) {
+        self.draft.begin_edit();
     }
 
     /// Draft text.
@@ -397,11 +406,10 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
     /// Controlled draft (does not bump generation unless `notify`).
     pub fn set_draft(&mut self, text: impl Into<String>) {
         let text = text.into();
-        let mut d = TextInputState::new(text).with_allow_empty(true);
-        d.set_focused(self.focused);
-        d.set_enabled(self.enabled);
-        d.set_read_only(self.read_only);
-        self.draft = d;
+        self.draft.set_focused(self.focused);
+        self.draft.set_enabled(self.enabled);
+        self.draft.set_read_only(self.read_only);
+        self.draft = self.draft.reseed(text);
     }
 
     /// Set committed value without changing draft.
@@ -551,7 +559,7 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
         key: KeyEvent,
         candidates: &[CompletionCandidate<'_, Id>],
     ) -> ComboboxOutcome<Id> {
-        if key.kind == KeyEventKind::Release || !self.enabled {
+        if key.is_release() || !self.enabled {
             return ComboboxOutcome::Ignored;
         }
         self.draft.set_focused(self.focused);
@@ -643,6 +651,13 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
 
         // Enter
         if key.code == KeyCode::Enter && key.modifiers.is_empty() {
+            if !self.draft.is_editing() {
+                self.draft.begin_edit();
+                return ComboboxOutcome::DraftChanged {
+                    text: self.draft.value().to_owned(),
+                    generation: self.generation,
+                };
+            }
             if self.menu.is_open() && self.menu.selected().is_some() && !candidates.is_empty() {
                 return self.commit_active(candidates);
             }
@@ -712,7 +727,13 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
         }
         match intent {
             UiIntent::Activate | UiIntent::Submit => {
-                if self.menu.is_open() && self.menu.selected().is_some() {
+                if !self.draft.is_editing() {
+                    self.draft.begin_edit();
+                    ComboboxOutcome::DraftChanged {
+                        text: self.draft.value().to_owned(),
+                        generation: self.generation,
+                    }
+                } else if self.menu.is_open() && self.menu.selected().is_some() {
                     self.commit_active(candidates)
                 } else if self.creatable {
                     self.commit_created()
@@ -766,6 +787,7 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
         if !self.enabled || self.read_only {
             return ComboboxOutcome::Ignored;
         }
+        self.draft.begin_edit();
         match self.draft.insert_str(text) {
             TextInputOutcome::Changed => {
                 let request_gen = self.bump_generation();
@@ -872,9 +894,6 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
     }
 }
 
-/// Autocomplete is Combobox with autocomplete defaults.
-pub type AutocompleteState<Id> = ComboboxState<Id>;
-
 // ── Widget ──────────────────────────────────────────────────────────────────
 
 /// Combobox / Autocomplete field chrome (menu painted via [`CompletionMenu`]).
@@ -884,7 +903,6 @@ pub struct Combobox<'a> {
     placeholder: &'a str,
     system: &'a DesignSystem,
     validation: Validation<'a>,
-    ascii: bool,
 }
 
 impl<'a> Combobox<'a> {
@@ -893,10 +911,9 @@ impl<'a> Combobox<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             label: "",
-            placeholder: "Type…",
+            placeholder: "Type",
             system,
             validation: Validation::Valid,
-            ascii: false,
         }
     }
 
@@ -923,11 +940,6 @@ impl<'a> Combobox<'a> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Paint field only; host paints [`CompletionMenu`] in placed rect.
     pub fn paint<Id: Clone + PartialEq>(
         &self,
@@ -939,13 +951,24 @@ impl<'a> Combobox<'a> {
         if area.is_empty() {
             return area;
         }
+        let invalid = matches!(self.validation, Validation::Invalid(_))
+            || matches!(state.status, SuggestionStatus::Error);
+        let recipe = self.system.input_recipe(
+            if !state.enabled {
+                crate::style::ControlState::Disabled
+            } else if matches!(state.status, SuggestionStatus::Loading) {
+                crate::style::ControlState::Loading
+            } else if state.focused {
+                crate::style::ControlState::Focused
+            } else {
+                crate::style::ControlState::Default
+            },
+            invalid,
+            state.draft.is_editing(),
+        );
         let mut y = area.y;
         if area.height >= 2 && !self.label.is_empty() {
-            let mut style = self.system.style(if state.focused {
-                Role::Focus
-            } else {
-                Role::Text
-            });
+            let mut style = recipe.value;
             if state.focused {
                 style = style.add_modifier(Modifier::BOLD);
             }
@@ -962,31 +985,26 @@ impl<'a> Combobox<'a> {
         let mut right = area.right();
         // status cue
         let status = match state.status {
-            SuggestionStatus::Loading => {
-                if self.ascii {
-                    "..."
-                } else {
-                    "…"
-                }
-            }
+            SuggestionStatus::Loading => "…",
             SuggestionStatus::Error => "!",
             SuggestionStatus::Empty if state.menu.is_open() => "0",
             _ => "",
         };
-        if !status.is_empty() && area.width > 4 {
+        if area.width > 4 {
             right = right.saturating_sub(2);
-            buffer.set_stringn(
-                right.saturating_add(1),
-                y.min(area.bottom().saturating_sub(1)),
-                status,
-                1,
-                self.system
-                    .style(if matches!(state.status, SuggestionStatus::Error) {
-                        Role::Danger
+            if !status.is_empty() {
+                buffer.set_stringn(
+                    right.saturating_add(1),
+                    y.min(area.bottom().saturating_sub(1)),
+                    status,
+                    1,
+                    if matches!(state.status, SuggestionStatus::Error) {
+                        recipe.placeholder.patch(self.system.style(Role::Danger))
                     } else {
-                        Role::TextMuted
-                    }),
-            );
+                        recipe.placeholder
+                    },
+                );
+            }
         }
 
         let field = Rect::new(
@@ -997,8 +1015,6 @@ impl<'a> Combobox<'a> {
         );
         state.field = field;
         state.draft.set_focused(state.focused);
-        let invalid = matches!(self.validation, Validation::Invalid(_))
-            || matches!(state.status, SuggestionStatus::Error);
         // A suggestion-source error is a validation failure: it reaches the
         // field instead of being computed and dropped. Owning the message
         // locally keeps it alive past the borrow of `state.draft`
@@ -1028,30 +1044,30 @@ impl<'a> Combobox<'a> {
                 crate::style::Glyph::ChevronDown
             });
             buffer.set_stringn(
-                field.right().saturating_sub(1),
+                right.saturating_add(1),
                 field.y,
                 chevron.text,
                 1,
-                self.system.style(Role::TextMuted),
+                recipe.placeholder,
             );
         }
 
-        if area.height >= 3 {
+        if field.y.saturating_add(1) < area.bottom() {
             if let Validation::Invalid(msg) = self.validation {
-                buffer.set_stringn(
-                    area.x,
-                    area.y.saturating_add(2),
-                    take_display_cols(msg, usize::from(area.width)),
-                    usize::from(area.width),
-                    self.system.style(Role::Danger),
+                crate::widgets::field_message::paint_field_message(
+                    buffer,
+                    Rect::new(area.x, field.y.saturating_add(1), area.width, 1),
+                    self.system,
+                    crate::widgets::label::DescriptionKind::Error,
+                    msg,
                 );
             } else if let Some(msg) = &state.error_message {
-                buffer.set_stringn(
-                    area.x,
-                    area.y.saturating_add(2),
-                    take_display_cols(msg, usize::from(area.width)),
-                    usize::from(area.width),
-                    self.system.style(Role::Danger),
+                crate::widgets::field_message::paint_field_message(
+                    buffer,
+                    Rect::new(area.x, field.y.saturating_add(1), area.width, 1),
+                    self.system,
+                    crate::widgets::label::DescriptionKind::Error,
+                    msg,
                 );
             }
         }
@@ -1066,11 +1082,14 @@ impl<'a> Combobox<'a> {
         state: &mut ComboboxState<Id>,
         candidates: &[CompletionCandidate<'_, Id>],
     ) {
-        let field_h = if !self.label.is_empty() && area.height >= 3 {
+        let base_field_h: u16 = if !self.label.is_empty() && area.height >= 3 {
             2
         } else {
             1
         };
+        // Reserve the message row in every state. Validation appearing must
+        // not move the menu or steal a candidate row only after an error.
+        let field_h = base_field_h.saturating_add(1).min(area.height);
         let field_area = Rect::new(area.x, area.y, area.width, field_h.min(area.height));
         let _ = self.paint(field_area, buffer, state);
         if state.menu.is_open() {
@@ -1144,9 +1163,6 @@ impl<'a> Combobox<'a> {
     }
 }
 
-/// Autocomplete chrome is [`Combobox`].
-pub type Autocomplete<'a> = Combobox<'a>;
-
 const _: fn(u16, u16) -> Position = Position::new;
 const _: &str = COMPLETION_OVERLAY_ID;
 
@@ -1164,11 +1180,47 @@ mod tests {
     }
 
     #[test]
+    fn focused_without_editing_is_not_underlined() {
+        let system = DesignSystem::junie();
+        let mut state: ComboboxState<&'static str> = ComboboxState::new();
+        state.set_focused(true);
+        assert!(
+            !state.draft.is_editing(),
+            "ComboboxState::new is idle like TextInput"
+        );
+        let area = Rect::new(0, 0, 24, 3);
+        let mut buffer = Buffer::empty(area);
+        let _ = Combobox::new(&system)
+            .label("Lang")
+            .paint(area, &mut buffer, &mut state);
+        let field_y = area.y.saturating_add(1);
+        let underlined = |buffer: &Buffer| {
+            (0..area.width).any(|x| {
+                buffer[(x, field_y)]
+                    .style()
+                    .add_modifier
+                    .contains(Modifier::UNDERLINED)
+            })
+        };
+        assert!(
+            !underlined(&buffer),
+            "nav-focus combobox is gutter, not an editing underline"
+        );
+        state.draft.set_editing(true);
+        let mut buffer = Buffer::empty(area);
+        let _ = Combobox::new(&system)
+            .label("Lang")
+            .paint(area, &mut buffer, &mut state);
+        assert!(underlined(&buffer), "editing combobox underlines the field");
+    }
+
+    #[test]
     fn draft_active_value_separate() {
         let mut state: ComboboxState<&'static str> = ComboboxState::new()
             .with_creatable(true)
             .with_exact_required(false);
         state.set_focused(true);
+        state.begin_edit();
         let c = cands();
         let out = state.handle_key(KeyEvent::new(KeyCode::Char('R'), KeyModifiers::NONE), &c);
         match out {
@@ -1196,6 +1248,7 @@ mod tests {
     fn stale_generation_ignored() {
         let mut state: ComboboxState<&'static str> = ComboboxState::new();
         state.set_focused(true);
+        state.begin_edit();
         let c = cands();
         let _ = state.handle_key(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE), &[]);
         assert_eq!(state.suggestion_generation(), 1);
@@ -1312,7 +1365,7 @@ mod tests {
 
     #[test]
     fn paint_field_and_menu() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let mut state: ComboboxState<&'static str> = ComboboxState::new().with_draft("Ru");
         state.set_focused(true);
         let c = cands();
@@ -1322,15 +1375,42 @@ mod tests {
         let mut buf = Buffer::empty(area);
         Combobox::new(&system)
             .label("Lang")
-            .ascii(true)
             .paint_with_menu(area, &mut buf, &mut state, &c);
         assert!(!state.field.is_empty());
+    }
+
+    #[test]
+    fn mouse_focuses_field_and_opens_menu_from_painted_geometry() {
+        let system = DesignSystem::default();
+        let candidates = cands();
+        let mut state: ComboboxState<&'static str> = ComboboxState::new();
+        let area = Rect::new(0, 0, 40, 8);
+        let mut buffer = Buffer::empty(area);
+        Combobox::new(&system).paint_with_menu(area, &mut buffer, &mut state, &candidates);
+
+        let outcome = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position::new(state.field.x, state.field.y),
+                modifiers: KeyModifiers::NONE,
+            },
+            &candidates,
+            Rect::default(),
+        );
+
+        assert!(state.is_focused());
+        assert!(state.is_menu_open());
+        assert!(matches!(
+            outcome,
+            ComboboxOutcome::MenuOpened { .. } | ComboboxOutcome::DraftChanged { .. }
+        ));
     }
 
     #[test]
     fn race_sequence_out_of_order() {
         let mut state: ComboboxState<&'static str> = ComboboxState::new();
         state.set_focused(true);
+        state.begin_edit();
         // type a
         let _ = state.handle_key(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE), &[]);
         let g1 = state.suggestion_generation();
@@ -1353,6 +1433,7 @@ mod tests {
     fn fuzz_keys() {
         let mut state: ComboboxState<&'static str> = ComboboxState::autocomplete();
         state.set_focused(true);
+        state.begin_edit();
         let c = cands();
         let keys = [
             KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE),
@@ -1381,7 +1462,7 @@ mod tests {
         let _ = state.apply_suggestions(1, &c);
         let area = Rect::new(0, 0, 36, 8);
         let mut buf = Buffer::empty(area);
-        let w = Combobox::new(&system).ascii(true);
+        let w = Combobox::new(&system);
         for _ in 0..100 {
             w.paint_with_menu(area, &mut buf, &mut state, &c);
         }

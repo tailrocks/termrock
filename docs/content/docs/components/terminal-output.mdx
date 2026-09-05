@@ -1,108 +1,17 @@
 ---
-title: TerminalOutput
+title: "Terminal Output"
 description: "Live follow-tail command pane with stdout/stderr."
-component: TerminalOutput
-demo: terminal-output/running
-interaction: scrolling-virtualization
-actions:
-  - "↑↓ move"
-  - "wheel scroll"
-  - "F follow"
-  - "C cancel"
-  - "Y copy command"
-  - "click stream filter"
-expectedOutcomes:
-  - "The \"↑↓ move\" action updates visible mounted state and reports its typed outcome."
-  - "Scrolling changes the mounted viewport while preserving selection and surrounding page position."
-  - "The \"F follow\" action updates visible mounted state and reports its typed outcome."
-  - "Cancel or close removes the transient state without performing a host-owned effect."
-  - "The \"Y copy command\" action updates visible mounted state and reports its typed outcome."
-  - "Editing changes the visible Unicode-safe draft and reports the public typed edit outcome."
+catalogId: TerminalOutput
 source: crates/termrock/src/widgets/terminal_output.rs
+tags:
+  - "data"
+  - "widget"
+aliases: []
 ---
-
-## Live terminal (Ghostty-class)
-
-This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
-
-<TerminalPreview story="terminal-output/running" interactive caption="TerminalOutput · TerminalOutput running — live shared Rust state" />
-
-## Try it
-
-- `↑↓ move`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
-- `wheel scroll`: Scroll over the preview; its own viewport moves while the docs page stays put.
-- `F follow`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
-- `C cancel`: Open the transient state first, then cancel it; focus and the underlying state are preserved.
-- `Y copy command`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
-- `click stream filter`: Focus the editable field, then type or paste Unicode text; the draft remains visible.
-
-Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
-
-## Interaction contract
-
-| Axis | Status |
-|---|---|
-| Keyboard | covered |
-| Mouse | covered |
-| Focus | covered |
-| Cursor / caret | not-applicable in primary demo |
-| Narrow terminal | covered |
-| Unicode | covered |
-| Non-color cues | covered |
-| Motion / time | not-applicable in primary demo |
-
-## Configuration and variants
-
-Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
-
-| Demo | Configuration | Input |
-|---|---|---|
-| `terminal-output/ascii` | TerminalOutput ASCII | paint-only |
-| `terminal-output/compact` | TerminalOutput compact | paint-only |
-| `terminal-output/empty` | TerminalOutput empty | paint-only |
-| `terminal-output/env` | TerminalOutput env | paint-only |
-| `terminal-output/failed` | TerminalOutput failed | paint-only |
-| `terminal-output/in-app` | In application | interactive |
-| `terminal-output/narrow` | TerminalOutput narrow | paint-only |
-| `terminal-output/pinned` | TerminalOutput pinned | paint-only |
-| `terminal-output/running` | TerminalOutput running | interactive |
-
-## Usage
-
-The Code view above and this source excerpt use the exact paint setup registered for `terminal-output/running`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
-
-```rust
-use ratatui::prelude::*;
-use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
-
-// Exact paint setup used by the shared catalog story.
-fn terminal_output_running(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let meta = TerminalCommandMeta::new("cargo test -p termrock --lib")
-        .cwd("/Users/dev/termrock")
-        .status(TerminalRunStatus::Running)
-        .duration_ms(3400)
-        .pid(4242);
-    let lines = terminal_output_sample_lines();
-    let mut state = TerminalOutputState::new();
-    state.on_append(lines.len() as u16, area.height.saturating_sub(4));
-    TerminalOutput::new(&meta, &lines, system)
-        .title("build")
-        .render(area, frame.buffer_mut(), &mut state);
-}
-```
-
-## Migrated handbook guidance
-
-# TerminalOutput
 
 Presents one projected command run: metadata chrome, streaming stdout/stderr,
 follow/pause, and typed control **requests**. TermRock never spawns or kills
 processes.
-
 
 ## When to use / when not
 
@@ -146,61 +55,3 @@ re-follows. `on_append` updates unread while pinned.
 | d | Detach process |
 | e | Env panel |
 | m / p | Paint mode / recipe |
-
-## Example
-
-```rust
-use termrock::widgets::{
-    TerminalOutput, TerminalOutputState, TerminalCommandMeta,
-    TerminalLine, TerminalRunStatus,
-};
-
-let meta = TerminalCommandMeta::new("cargo test")
-    .status(TerminalRunStatus::Running)
-    .duration_ms(500);
-let lines = [TerminalLine::stdout("1", "ok")];
-let mut state = TerminalOutputState::new();
-// TerminalOutput::new(&meta, &lines, &system).render(area, buf, &mut state);
-let _ = (meta, lines, state);
-```
-
-## Related
-
-AnsiText · ToolCard · LogStream · migration `0199`
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `terminal-output/running`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
-
-## Stories
-
-Lookbook coverage for this component. Only the **primary** story is embedded above;
-use the interactive preview (and Studio lookbook) to explore transitions instead of
-a static multi-image gallery.
-
-| Story | Title | Focus |
-|---|---|---|
-| `terminal-output/running` | TerminalOutput running | **Primary (live preview)** |
-| `terminal-output/ascii` | TerminalOutput ASCII | ASCII / low capability |
-| `terminal-output/compact` | TerminalOutput compact | Compact density |
-| `terminal-output/empty` | TerminalOutput empty | Empty state |
-| `terminal-output/env` | TerminalOutput env | env |
-| `terminal-output/failed` | TerminalOutput failed | Failed |
-| `terminal-output/narrow` | TerminalOutput narrow | Narrow terminal |
-| `terminal-output/pinned` | TerminalOutput pinned | pinned |
-
-## Source and related material
-
-- Rust source: [`crates/termrock/src/widgets/terminal_output.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/terminal_output.rs)
-- Native preview: `cargo run -p termrock-lookbook -- terminal`
-- Demo id: `terminal-output/running`
-
-## Seen in applications
-
-<SeenInApplications component="TerminalOutput" />
