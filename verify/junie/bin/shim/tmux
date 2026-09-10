@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Private-socket tmux shim. ref_capture.sh puts this dir first on PATH so that
+# the reference repo's tools/capture.sh never touches the user's tmux server
+# (capture.sh mutates `default-terminal` globally, which would otherwise leak).
+# Resolves the real tmux by absolute path: `exec tmux` would re-resolve PATH and
+# recurse into this very script.
+set -euo pipefail
+for cand in /opt/homebrew/bin/tmux /usr/local/bin/tmux /usr/bin/tmux /bin/tmux; do
+  [ -x "$cand" ] && exec "$cand" -L jrverify "$@"
+done
+# fall back to whatever `type -a` reports that is not this script
+while read -r p; do
+  [ "$p" -ef "$0" ] && continue
+  exec "$p" -L jrverify "$@"
+done < <(type -ap tmux)
+echo "tmux shim: no real tmux binary found" >&2
+exit 127
