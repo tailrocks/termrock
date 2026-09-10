@@ -25,7 +25,7 @@ def read_records(stream):
         scene, bin_name, cols, rows = fields[i : i + 4]
         i += 4
         groups = []
-        for _ in range(3):
+        for _ in range(4):
             n = int(fields[i])
             i += 1
             groups.append(fields[i : i + n])
@@ -38,6 +38,7 @@ def read_records(stream):
             "args": groups[0],
             "keys": groups[1],
             "mouse": groups[2],
+            "events": groups[3],
         }
 
 
@@ -55,6 +56,9 @@ def main():
             a.script, "--bin", p["bin"], "--cols", str(p["cols"]), "--rows", str(p["rows"]),
             "--args", repr_json(p["args"]), "--out", a.out, "--scenarios", a.scenarios,
             "--no-build",
+            # The ordered grammar drives the replay and is recorded verbatim as
+            # the scene's provenance; keys/mouse remain for manual captures.
+            "--events-json", repr_json(p["events"]),
         ]
         for k in p["keys"]:
             cmd += ["--key", k]

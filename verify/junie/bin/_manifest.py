@@ -5,7 +5,7 @@ Records the exact capture command, the reference commit it came from, tmux
 version and content digests — everything needed to tell a stale artifact from a
 nondeterministic one.
 
-Usage: _manifest.py MANIFEST OUT_DIR NAME BIN COLS ROWS ARGS_JSON KEYS_JSON MOUSE_JSON
+Usage: _manifest.py MANIFEST OUT_DIR NAME BIN COLS ROWS ARGS_JSON EVENTS_JSON
 """
 import datetime
 import hashlib
@@ -37,10 +37,10 @@ def tmux_version():
 
 
 def main():
-    if len(sys.argv) < 7:
+    if len(sys.argv) < 9:
         print(
             "usage: _manifest.py MANIFEST OUT_DIR NAME BIN COLS ROWS "
-            "[ARGS_JSON] [KEYS_JSON] [MOUSE_JSON]",
+            "ARGS_JSON EVENTS_JSON",
             file=sys.stderr,
         )
         return 2
@@ -49,9 +49,10 @@ def main():
     out_dir = Path(sys.argv[2])
     name, bin_name, cols, rows = sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6]
     try:
-        args = json.loads(sys.argv[7]) if len(sys.argv) > 7 else []
-        keys = json.loads(sys.argv[8]) if len(sys.argv) > 8 else []
-        mouse = json.loads(sys.argv[9]) if len(sys.argv) > 9 else []
+        args = json.loads(sys.argv[7])
+        # The verbatim ordered event grammar is the recorded provenance for
+        # this scene; it must describe what was actually replayed.
+        events = json.loads(sys.argv[8])
     except json.JSONDecodeError as error:
         print(f"manifest: invalid event JSON: {error}", file=sys.stderr)
         return 2
@@ -125,7 +126,7 @@ def main():
         "junie_dirty": dirty,
         "tmux": tmux_version(),
         "captured_at": captured_at,
-        "events": previous.get("events", []),
+        "events": events,
         "evidence": previous.get("evidence", "capture from pinned source commit"),
         "sha256": sha256,
     }

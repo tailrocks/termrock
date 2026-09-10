@@ -23,7 +23,13 @@
 #   bin/ref_capture.sh --bin showcase --page Buttons --cols 120 --rows 40 showcase_buttons_120x40
 #   bin/ref_capture.sh --bin tablepro --args '["--connect","Local PostgreSQL"]' tablepro_local_120x40
 #   bin/ref_capture.sh --key Tab --key Enter --mouse 'move|60,7' --mouse 'click|60,7' NAME
+#   bin/ref_capture.sh --events-json '["Tab","type SELECT 1","ticks:64"]' NAME
 #   bin/ref_capture.sh --all [--out DIR] [--no-build]     # every scenario in scenarios.json5
+#
+# The ordered event grammar is the replay authority: `--key`/`--mouse` remain
+# for ad-hoc manual captures, but an `--events-json` plan replays keys, mouse,
+# typed text, tick waits and resizes in exactly the recorded order, and the
+# same grammar is written to the manifest as the scene's provenance.
 #
 # Env: JUNIE_REPO (optional canonical source checkout; a sibling checkout is
 # discovered when unset). JUNIE_CAPTURE_SOURCE_DIR is an internal inherited
@@ -44,6 +50,7 @@ COLS=120
 ROWS=40
 KEYS=()
 MOUSE=()
+EVENTS_JSON="[]"
 NAME=""
 ALL=0
 BUILD=1
@@ -55,6 +62,16 @@ OWN_TEMP=0
 
 die() { echo "ref_capture: $*" >&2; exit 2; }
 command -v python3 >/dev/null 2>&1 || die "python3 is required"
+
+# Typed-text replay talks to the capture tmux server directly (capture.sh has
+# no `type` subcommand). Resolve the real tmux by absolute path; relying on
+# PATH would recurse into bin/shim/tmux, which forces its own socket.
+TMUX_BIN=""
+for cand in /opt/homebrew/bin/tmux /usr/local/bin/tmux /usr/bin/tmux /bin/tmux; do
+  if [ -x "$cand" ]; then TMUX_BIN="$cand"; break; fi
+done
+[ -n "$TMUX_BIN" ] || TMUX_BIN="$(type -ap tmux | head -1 || true)"
+[ -n "$TMUX_BIN" ] || die "no tmux binary found; typed-text replay is unavailable"
 
 if [ -z "$JUNIE" ]; then
   for candidate in \
@@ -143,11 +160,12 @@ while [ $# -gt 0 ]; do
     --rows) ROWS="$2"; shift 2 ;;
     --key) KEYS+=("$2"); shift 2 ;;
     --mouse) MOUSE+=("$2"); shift 2 ;;
+    --events-json) EVENTS_JSON="$2"; shift 2 ;;
     --out) OUT="$2"; MANIFEST="$2/manifest.json"; shift 2 ;;
     --scenarios) SCENARIOS="$2"; shift 2 ;;
     --all) ALL=1; shift ;;
     --no-build) BUILD=0; shift ;;
-    -h|--help) sed -n '2,29p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,36p' "$0"; exit 0 ;;
     -*) die "unknown flag $1" ;;
     *) NAME="$1"; shift ;;
   esac
@@ -172,12 +190,13 @@ if [ "$OUT" = "$ROOT/reference/scenes" ]; then
   die "--out is required; immutable reference/scenes cannot be overwritten by capture"
 fi
 
+if [ "$BUILD" -eq 1 ]; then
+  echo "building reference (release) ..."
+  (cd "$ISOLATED" && cargo build --release --quiet) ||
+    die "cargo build --release failed in isolated source copy $ISOLATED"
+fi
+
 if [ "$ALL" -eq 1 ]; then
-  if [ "$BUILD" -eq 1 ]; then
-    echo "building reference (release) ..."
-    (cd "$ISOLATED" && cargo build --release --quiet) ||
-      die "cargo build --release failed in isolated source copy $ISOLATED"
-  fi
   # (no `exec` here: inside a pipeline it only replaces the subshell, and the
   #  script would fall through into single-scene mode)
   python3 "$ROOT/bin/run.py" --print-capture-plan --scenarios "$SCENARIOS" |
@@ -189,18 +208,90 @@ mkdir -p "$OUT"
 [ -n "$NAME" ] || die "a scene name is required (or use --all)"
 [ -n "$BIN_NAME" ] || die "--bin showcase|tablepro is required"
 [ -x "$ISOLATED/target/release/$BIN_NAME" ] ||
-  die "$ISOLATED/target/release/$BIN_NAME missing (run without --no-build or use --all)"
+  die "$ISOLATED/target/release/$BIN_NAME missing (run without --no-build)"
+
+# The documented `--page PAGE` form prepends the page argument to --args.
+if [ -n "$PAGE" ]; then
+  JSON_ARGS="$(python3 -c 'import json,sys; print(json.dumps(["--page", sys.argv[1]] + json.loads(sys.argv[2])))' "$PAGE" "$JSON_ARGS")"
+fi
 
 ARGS="$(python3 -c 'import json,shlex,sys; a=json.loads(sys.argv[1]); print(" ".join(shlex.quote(x) for x in a))' "$JSON_ARGS")"
 
+export CAPTURE_SESSION="$CAP"
+export CAPTURE_SOCKET="termrock_ref_capture"
 BIN="$ISOLATED/target/release/$BIN_NAME" ARGS="$ARGS" \
   "$ISOLATED/tools/capture.sh" start "$COLS" "$ROWS" >/dev/null
 
-for k in "${KEYS[@]+"${KEYS[@]}"}"; do "$ISOLATED/tools/capture.sh" keys "$k" >/dev/null; done
-for m in "${MOUSE[@]+"${MOUSE[@]}"}"; do
-  KIND="${m%%|*}"; XY="${m#*|}"
-  "$ISOLATED/tools/capture.sh" mouse "${XY%%,*}" "${XY##*,}" "$KIND" >/dev/null
-done
+# Replay the ordered event grammar when a plan supplies it; otherwise project
+# the ad-hoc --key/--mouse flags into the same grammar so the manifest always
+# records what was actually sent.
+if [ "$EVENTS_JSON" != "[]" ]; then
+  PLAN="$EVENTS_JSON"
+else
+  PLAN="$(
+    {
+      for k in "${KEYS[@]+"${KEYS[@]}"}"; do printf '%s\n' "$k"; done
+      for m in "${MOUSE[@]+"${MOUSE[@]}"}"; do printf '%s\n' "$m"; done
+    } | python3 -c 'import sys, json; print(json.dumps([l.rstrip("\n").replace("Ctrl-", "C-").replace("|", " ", 1) for l in sys.stdin]))'
+  )"
+fi
+
+REPLAY="$(python3 - "$PLAN" <<'PY'
+import json
+import sys
+
+
+def esc(value):
+    return value.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n")
+
+
+for event in json.loads(sys.argv[1]):
+    if not isinstance(event, str) or not event:
+        continue
+    if event.startswith("ticks:"):
+        print("W\t" + esc(event[len("ticks:"):].strip()))
+    elif event.startswith("type "):
+        print("T\t" + esc(event[len("type "):]))
+    elif event.startswith("resize "):
+        xy = event[len("resize "):].strip().split(",", 1)
+        if len(xy) == 2:
+            print("R\t" + esc(xy[0].strip()) + "\t" + esc(xy[1].strip()))
+    else:
+        parts = event.split(" ", 1)
+        if len(parts) == 2 and parts[0] in {
+            "move", "click", "rclick", "down", "up", "drag", "wheelup", "wheeldown",
+        }:
+            xy = parts[1].strip().split(",", 1)
+            if len(xy) == 2:
+                print("M\t" + esc(xy[0].strip()) + "\t" + esc(xy[1].strip()) + "\t" + parts[0])
+        else:
+            print("K\t" + esc(event))
+PY
+)"
+
+while IFS= read -r record; do
+  [ -n "$record" ] || continue
+  action=${record%%$'\t'*}
+  rest=${record#*$'\t'}
+  rest=$(printf '%b' "$rest")
+  case "$action" in
+    K) "$ISOLATED/tools/capture.sh" keys "$rest" >/dev/null ;;
+    T)
+      "$TMUX_BIN" -L "$CAPTURE_SOCKET" send-keys -t "=${CAP}:" -l -- "$rest"
+      sleep 0.15
+      ;;
+    W) python3 -c 'import sys, time; time.sleep(float(sys.argv[1]) * 0.08)' "$rest" ;;
+    M)
+      x=${rest%%$'\t'*}; rest2=${rest#*$'\t'}
+      y=${rest2%%$'\t'*}; kind=${rest2#*$'\t'}
+      "$ISOLATED/tools/capture.sh" mouse "$x" "$y" "$kind" >/dev/null
+      ;;
+    R)
+      "$ISOLATED/tools/capture.sh" resize "${rest%%$'\t'*}" "${rest#*$'\t'}" >/dev/null
+      ;;
+    *) die "unknown replay action: $action" ;;
+  esac
+done < <(printf '%s\n' "$REPLAY")
 
 "$ISOLATED/tools/capture.sh" shot "$CAP" >/dev/null
 for ext in ansi txt cursor html png; do
@@ -211,8 +302,6 @@ for ext in ansi txt cursor html png; do
   cp "$ISOLATED/shots/$CAP.$ext" "$OUT/$NAME.$ext"
 done
 
-KEYS_JSON="$(python3 -c 'import json,sys; sys.stdout.write(json.dumps(sys.argv[1:]))' "${KEYS[@]+"${KEYS[@]}"}")"
-MOUSE_JSON="$(python3 -c 'import json,sys; sys.stdout.write(json.dumps(sys.argv[1:]))' "${MOUSE[@]+"${MOUSE[@]}"}")"
 python3 "$ROOT/bin/_manifest.py" "$MANIFEST" "$OUT" "$NAME" \
-  "$BIN_NAME" "$COLS" "$ROWS" "$JSON_ARGS" "$KEYS_JSON" "$MOUSE_JSON"
+  "$BIN_NAME" "$COLS" "$ROWS" "$JSON_ARGS" "$PLAN"
 echo "captured $NAME (${COLS}x${ROWS})"

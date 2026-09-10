@@ -108,6 +108,9 @@ def load_scenarios(path=None):
         for scenario in data:
             reference = scenario.setdefault("reference", {})
             events = manifest.get("scenes", {}).get(scenario.get("scene"), {}).get("events", [])
+            # The verbatim ordered grammar is what captures must replay and
+            # record; keys/mouse are replayable projections of it.
+            reference.setdefault("events", events)
             reference.setdefault("keys", event_keys(events))
             reference.setdefault("mouse", event_mouse(events))
     return data
@@ -464,12 +467,12 @@ def main():
         return
 
     if opts.print_capture_plan:
-        # name, bin, cols, rows, args, keys, mouse — NUL-separated, count-prefixed,
-        # consumed by bin/_capture_all.py
+        # name, bin, cols, rows, args, keys, mouse, events — NUL-separated,
+        # count-prefixed, consumed by bin/_capture_all.py
         for s in scenarios:
             r = s["reference"]
             _emit(s["scene"], r["bin"], r["cols"], r["rows"], r.get("args", []),
-                  r.get("keys", []), r.get("mouse", []))
+                  r.get("keys", []), r.get("mouse", []), r.get("events", []))
         return
 
     layers = set(opts.layer) if opts.layer else {"text", "color", "pixel"}
@@ -545,14 +548,14 @@ def main():
     sys.exit(1 if report["failed"] else 0)
 
 
-def _emit(scene, bin_name, cols, rows, args, keys, mouse):
+def _emit(scene, bin_name, cols, rows, args, keys, mouse, events):
     """One capture-plan record: name, bin, cols, rows, then n/items per group.
 
     Fields are NUL-separated and counts are ASCII, so spaces and quotes survive
     without any shell quoting. Consumed by bin/_capture_all.py.
     """
     fields = [scene, bin_name, str(cols), str(rows)]
-    for group in (args, keys, mouse):
+    for group in (args, keys, mouse, events):
         fields.append(str(len(group)))
         fields.extend(str(x) for x in group)
     sys.stdout.write("\0".join(fields) + "\0")

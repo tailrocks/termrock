@@ -1,5 +1,13 @@
 # HANDOFF — Junie showcase golden parity loop
 
+> **ARCHIVED.** This is the historical operating manual of the golden-loop
+> campaign, preserved verbatim when its WIP branches were merged into main as
+> the adjudicated loser (the shipped catalog in #50–#52 won every content
+> conflict). The restart prompt below refers to the removed `/tmp/termrock-verify`
+> worktree and the already-merged PR #50; do not follow it on the current
+> repository. The capture tooling it describes lives in `verify/junie/bin/` and
+> is documented in `research/junie-campaign/verification-infra.md`.
+
 Status snapshot lives in `PROGRESS.md`. This file is the complete operating
 manual for whoever (or whatever session) picks the work up.
 
