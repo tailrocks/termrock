@@ -1,23 +1,13 @@
 schema = 1
+
 [generator]
 repository = "tailrocks/termrock"
 revision = "e05aee6de1d1614d752b4d1b1d26a49ac2c5ef91"
-[scan]
-exclude = ["crates/termrock/src/lib.rs"]
+
 [workflow]
 runners = "both"
-automatic = "both"
-default_dispatch_runner = "github"
 automatic_lanes = "github"
+default_dispatch_runner = "github"
 github_runner = "ubuntu-24.04"
 velnor_labels = ["self-hosted", "velnor-target-mvp"]
 default_branch = "main"
-[[declare]]
-primitive = "release"
-file = "release.yml"
-[declare.args]
-kind = "rust-binary"
-package = "termrock"
-binary = "termrock"
-targets = ["x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu"]
-source_repository = "tailrocks/termrock"
