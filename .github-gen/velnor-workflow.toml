@@ -2,7 +2,7 @@ schema = 1
 
 [generator]
 repository = "tailrocks/termrock"
-revision = "92a2b13b4d0fe9e4862c0145999d9ca2ae6450b4"
+revision = "541d8926737213542156ee32e420010817f8a323"
 
 [workflow]
 runners = "both"
@@ -11,3 +11,7 @@ default_dispatch_runner = "github"
 github_runner = "ubuntu-24.04"
 velnor_labels = ["self-hosted", "velnor-target-mvp"]
 default_branch = "main"
+
+[policy]
+ruleset_required_status_checks = ["ci-required"]
+ruleset_external_status_checks = ["DCO"]
