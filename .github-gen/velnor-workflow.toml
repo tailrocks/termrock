@@ -1,17 +1,18 @@
-schema = 1
+schema = 2
 
 [generator]
 repository = "tailrocks/termrock"
-revision = "b9c3156cdb88e63c11b9e595a3e694b02238c09a"
+revision = "be61acbbbfb71db6b51337e547e39de049d4fc15"
 
+# Public repo: GitHub-hosted singleton (no velnor lanes).
 [workflow]
-runners = "both"
-automatic_lanes = "github"
-default_dispatch_runner = "github"
-github_runner = "ubuntu-24.04"
-velnor_labels = ["self-hosted", "velnor-target-mvp"]
+providers = ["github-hosted"]
+automatic_providers = ["github-hosted"]
 default_branch = "main"
 
+[workflow.selectors.github-hosted]
+runs_on = ["ubuntu-24.04"]
+
 [policy]
-ruleset_required_status_checks = ["ci-required"]
+ruleset_required_status_checks = ["ci-required", "Policy"]
 ruleset_external_status_checks = ["DCO"]
