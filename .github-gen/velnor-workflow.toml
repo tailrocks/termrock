@@ -16,3 +16,9 @@ runs_on = ["ubuntu-24.04"]
 [policy]
 ruleset_required_status_checks = ["ci-required", "Policy"]
 ruleset_external_status_checks = ["DCO"]
+
+# docs `bun run build` shells to wasm-pack (build:preview-runtime);
+# provision it from the repo mise lock (binstall-backed, no compile).
+[[units]]
+id = "bun-termrock-docs"
+mise_tools = ["cargo:wasm-pack"]
