@@ -69,10 +69,9 @@ fn cell_complete(cell: &FrameCell) -> bool {
         cell.italic,
         cell.strike,
     );
-    cell.fg
-        .iter()
-        .chain(cell.bg.iter())
-        .all(|channel| *channel <= u8::MAX)
+    // FrameCell stores resolved u8 channels, so any comparison against
+    // u8::MAX is vacuous; iterating still pins the host struct shape.
+    cell.fg.iter().chain(cell.bg.iter()).all(|_| true)
 }
 
 fn ascii_chrome_safe(frame: &TerminalFrame) -> bool {
