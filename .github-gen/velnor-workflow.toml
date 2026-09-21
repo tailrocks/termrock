@@ -19,8 +19,8 @@ ruleset_external_status_checks = ["DCO"]
 
 # docs `bun run build` shells to wasm-pack (build:preview-runtime);
 # provision it from the repo mise lock (binstall-backed, no compile).
-# cargo-binstall rides along: the cargo backend refuses to install
-# without its configured binstall dependency present.
+# cargo-binstall + rust ride along: the cargo backend refuses to install
+# without its configured binstall dependency and rust toolchain present.
 [[units]]
 id = "bun-termrock-docs"
-mise_tools = ["cargo-binstall", "cargo:wasm-pack"]
+mise_tools = ["cargo-binstall", "rust", "cargo:wasm-pack"]
