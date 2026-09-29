@@ -391,6 +391,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0375 | `v0.14.0` | [Obsolete widget outcome types removed](migrations/0375-v0.14.0-remove-obsolete-outcome-types.md) |
 | 0376 | `v0.14.0` | [Panel/Card surface resolution](migrations/0376-v0.14.0-panel-card-surface-resolution.md) |
 | 0377 | `v0.14.0` | [PromptComposer and Select host actions are one-shot](migrations/0377-v0.14.0-prompt-composer-select-one-shot-actions.md) |
+| 0378 | `v0.14.0` | [Menu input and clipping](migrations/0378-v0.14.0-menu-input-and-clipping.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

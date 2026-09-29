@@ -30,8 +30,8 @@ use crate::{
     },
     interaction::{
         CollectionItem, CollectionState, NavigationMove, OverlayId, OverlayKind, OverlayOutcome,
-        OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, RovingOrientation, SemanticNode,
-        SemanticRole, SemanticScene, SemanticState, UiIntent, place_overlay,
+        OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PageMove, RovingOrientation,
+        SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, place_overlay,
     },
     style::{DesignSystem, Glyph, Role, VisualState},
     text::{display_cols, take_display_cols},
@@ -440,8 +440,6 @@ pub struct DropdownMenuState {
     preview_hits: Vec<(usize, usize, Rect)>,
     /// Root panel origin for mouse.
     origin: (u16, u16),
-    /// Typeahead buffer (also on collection; mirrored for diagnostics).
-    typeahead: String,
 }
 
 impl Default for DropdownMenuState {
@@ -468,7 +466,6 @@ impl DropdownMenuState {
             hovered: None,
             preview_hits: Vec::new(),
             origin: (0, 0),
-            typeahead: String::new(),
         }
     }
 
@@ -525,7 +522,9 @@ impl DropdownMenuState {
     /// Typeahead buffer.
     #[must_use]
     pub fn typeahead_buffer(&self) -> &str {
-        &self.typeahead
+        self.cascade
+            .last()
+            .map_or("", |frame| frame.collection.roving().typeahead_buffer())
     }
 
     /// Custom-preview hits after paint: (depth, item_index, rect).
@@ -570,6 +569,38 @@ impl DropdownMenuState {
 
     fn live(&self) -> bool {
         self.enabled && self.accepts_input && self.focused
+    }
+
+    fn clear_current_typeahead(&mut self) {
+        if let Some(frame) = self.cascade.last_mut() {
+            frame.collection.clear_typeahead();
+        }
+    }
+
+    fn has_horizontal_cascade_transition<Id: Clone>(
+        &self,
+        key: KeyEvent,
+        root: &[MenuNode<Id>],
+    ) -> bool {
+        if !(key.modifiers.is_empty() || key.modifiers == KeyModifiers::NONE) {
+            return false;
+        }
+        match key.code {
+            KeyCode::Left | KeyCode::Char('h' | 'H') => self.cascade.len() > 1,
+            KeyCode::Right | KeyCode::Char('l' | 'L') => self
+                .current_items(root)
+                .and_then(|items| {
+                    self.cascade
+                        .last()
+                        .and_then(|frame| items.get(frame.cursor()))
+                })
+                .is_some_and(|node| {
+                    node.is_activatable()
+                        && matches!(node.kind, MenuRowKind::Submenu)
+                        && !node.children.is_empty()
+                }),
+            _ => false,
+        }
     }
 
     fn panel_entries<Id>(items: &[MenuNode<Id>]) -> Vec<CollectionItem<usize>> {
@@ -623,7 +654,6 @@ impl DropdownMenuState {
     pub fn close_all(&mut self) {
         self.cascade.clear();
         self.open_path.clear();
-        self.typeahead.clear();
     }
 
     /// Open root from a trigger; may emit PreferCommandPalette.
@@ -652,7 +682,6 @@ impl DropdownMenuState {
         let _ = frame.collection.reconcile(&entries);
         self.cascade = vec![frame];
         self.open_path.clear();
-        self.typeahead.clear();
         DropdownMenuOutcome::Opened { trigger }
     }
 
@@ -753,7 +782,6 @@ impl DropdownMenuState {
         let entries = Self::panel_entries(&children);
         let _ = child.collection.reconcile(&entries);
         self.cascade.push(child);
-        self.typeahead.clear();
         DropdownMenuOutcome::SubmenuOpened { id }
     }
 
@@ -765,7 +793,7 @@ impl DropdownMenuState {
         if !self.open_path.is_empty() {
             self.open_path.pop();
         }
-        self.typeahead.clear();
+        self.clear_current_typeahead();
         if self.cascade.is_empty() {
             self.open_path.clear();
             DropdownMenuOutcome::Closed
@@ -826,9 +854,31 @@ impl DropdownMenuState {
         if !self.is_open() {
             return DropdownMenuOutcome::Ignored;
         }
+
+        // Menu activation and dismissal are physical press actions. Filter
+        // them before reconciliation so an ignored repeat cannot mutate the
+        // active frame as a side effect.
+        if !key.is_press() && matches!(key.code, KeyCode::Enter | KeyCode::Esc | KeyCode::Char(' '))
+        {
+            return DropdownMenuOutcome::Ignored;
+        }
+
+        // Horizontal cascade transitions are also one-shot. Keep `h`/`l`
+        // available for typeahead when the focused row cannot transition.
+        if !key.is_press() && self.has_horizontal_cascade_transition(key, root) {
+            return DropdownMenuOutcome::Ignored;
+        }
+
         let Some(entries) = self.ensure_top_frame(root) else {
             return DropdownMenuOutcome::Ignored;
         };
+
+        // Reconciliation can repair a stale active id. Recheck so a repeated
+        // horizontal key cannot become a cascade transition only because the
+        // frame changed while it was being reconciled.
+        if !key.is_press() && self.has_horizontal_cascade_transition(key, root) {
+            return DropdownMenuOutcome::Ignored;
+        }
 
         // Left/Right for cascade (beyond default_menu_intent).
         if key.modifiers.is_empty() || key.modifiers == KeyModifiers::NONE {
@@ -848,7 +898,12 @@ impl DropdownMenuState {
             }
         }
 
-        if let Some(intent) = crate::interaction::default_menu_intent(key) {
+        let intent = match key.code {
+            KeyCode::PageUp => Some(UiIntent::Page(PageMove::Backward)),
+            KeyCode::PageDown => Some(UiIntent::Page(PageMove::Forward)),
+            _ => crate::interaction::default_menu_intent(key),
+        };
+        if let Some(intent) = intent {
             let out = self.handle_intent_after_ensure(intent, root, &entries);
             if !matches!(out, DropdownMenuOutcome::Ignored) {
                 return out;
@@ -881,7 +936,6 @@ impl DropdownMenuState {
             KeyEvent::new(KeyCode::Char(ch), KeyModifiers::NONE),
             entries,
         );
-        self.typeahead.push(ch);
         if out.active_changed() || frame.cursor() != before {
             DropdownMenuOutcome::TypeaheadMatched
         } else {
@@ -891,6 +945,11 @@ impl DropdownMenuState {
     }
 
     /// Intent routing.
+    ///
+    /// This consumes semantic commands and has no physical key phase. Hosts
+    /// translating raw [`KeyEvent`] values must preserve the Press gate for
+    /// one-shot activation, dismissal, and cascade commands; use
+    /// [`Self::handle_key`] when the state owns raw keyboard lifecycle.
     pub fn handle_intent<Id: Clone>(
         &mut self,
         intent: UiIntent,
@@ -919,13 +978,14 @@ impl DropdownMenuState {
                 | NavigationMove::Last
                 | NavigationMove::Up
                 | NavigationMove::Down,
-            ) => {
+            )
+            | UiIntent::Page(PageMove::Forward | PageMove::Backward) => {
                 let frame = match self.cascade.last_mut() {
                     Some(f) => f,
                     None => return DropdownMenuOutcome::Ignored,
                 };
                 let out = frame.collection.handle_intent(intent, entries);
-                self.typeahead.clear();
+                self.clear_current_typeahead();
                 if out.active_changed() {
                     DropdownMenuOutcome::CursorMoved
                 } else {
@@ -941,7 +1001,7 @@ impl DropdownMenuState {
                 }
             }
             UiIntent::Activate | UiIntent::Submit | UiIntent::Toggle => {
-                self.typeahead.clear();
+                self.clear_current_typeahead();
                 self.activate_cursor(root)
             }
             UiIntent::Cancel | UiIntent::Close => self.close_one_layer(),
@@ -1455,7 +1515,13 @@ fn format_mnemonic_label(label: &str, mnemonic: Option<char>, _ascii: bool) -> S
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
+    use crate::input::{KeyEventKind, KeyModifiers};
+
+    fn key_with_kind(code: KeyCode, kind: KeyEventKind) -> KeyEvent {
+        let mut key = KeyEvent::new(code, KeyModifiers::NONE);
+        key.kind = kind;
+        key
+    }
 
     fn sample_tree() -> Vec<MenuNode<&'static str>> {
         vec![
@@ -1542,6 +1608,238 @@ mod tests {
             state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &root),
             DropdownMenuOutcome::Closed
         ));
+    }
+
+    #[test]
+    fn repeated_lifecycle_and_cascade_actions_are_ignored() {
+        let root = sample_tree();
+        let mut state = DropdownMenuState::new();
+        let _ = state.open_from_keyboard(&root, Rect::new(0, 0, 80, 24));
+        state.cascade[0].set_cursor(7); // Export submenu.
+
+        for code in [KeyCode::Enter, KeyCode::Esc, KeyCode::Char(' ')] {
+            for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
+                let before = state.clone();
+                assert_eq!(
+                    state.handle_key(key_with_kind(code, kind), &root),
+                    DropdownMenuOutcome::Ignored
+                );
+                assert_eq!(state, before, "{code:?} {kind:?} mutated menu state");
+            }
+        }
+
+        for code in [KeyCode::Right, KeyCode::Char('l')] {
+            for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
+                assert_eq!(
+                    state.handle_key(key_with_kind(code, kind), &root),
+                    DropdownMenuOutcome::Ignored
+                );
+                assert_eq!(state.depth(), 1);
+            }
+        }
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('l'), KeyModifiers::NONE), &root),
+            DropdownMenuOutcome::SubmenuOpened { id: "export" }
+        ));
+        assert_eq!(state.depth(), 2);
+
+        for code in [KeyCode::Left, KeyCode::Char('h')] {
+            for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
+                assert_eq!(
+                    state.handle_key(key_with_kind(code, kind), &root),
+                    DropdownMenuOutcome::Ignored
+                );
+                assert_eq!(state.depth(), 2);
+            }
+        }
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('h'), KeyModifiers::NONE), &root),
+            DropdownMenuOutcome::LayerClosed
+        );
+        assert_eq!(state.depth(), 1);
+    }
+
+    #[test]
+    fn repeated_cascade_gate_rechecks_reconciled_cursor() {
+        let initial = vec![
+            MenuNode::command("a", "A"),
+            MenuNode::command("target", "Target"),
+        ];
+        let current = vec![
+            MenuNode::command("a", "A"),
+            MenuNode::command("disabled", "Disabled").enabled(false),
+            MenuNode::submenu("nested", "Nested", vec![MenuNode::command("leaf", "Leaf")]),
+        ];
+        let mut state = DropdownMenuState::new();
+        let _ = state.open_from_keyboard(&initial, Rect::new(0, 0, 80, 24));
+        state.cascade[0].set_cursor(1);
+
+        assert_eq!(
+            state.handle_key(
+                key_with_kind(KeyCode::Right, KeyEventKind::Repeat),
+                &current
+            ),
+            DropdownMenuOutcome::Ignored
+        );
+        assert_eq!(state.depth(), 1);
+        assert_eq!(state.cursor_index(), 2);
+    }
+
+    #[test]
+    fn repeatable_navigation_and_typeahead_remain_repeatable() {
+        let root = vec![
+            MenuNode::command("a", "Alpha"),
+            MenuNode::command("b", "Beta"),
+            MenuNode::command("g", "Gamma"),
+        ];
+        let mut state = DropdownMenuState::new();
+        let _ = state.open_from_keyboard(&root, Rect::new(0, 0, 80, 24));
+
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &root),
+            DropdownMenuOutcome::CursorMoved
+        );
+        assert_eq!(
+            state.handle_key(key_with_kind(KeyCode::Down, KeyEventKind::Repeat), &root),
+            DropdownMenuOutcome::CursorMoved
+        );
+        assert_eq!(state.cursor_index(), 2);
+
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE), &root),
+            DropdownMenuOutcome::TypeaheadMatched
+        );
+        assert_eq!(
+            state.handle_key(
+                key_with_kind(KeyCode::Char('b'), KeyEventKind::Repeat),
+                &root
+            ),
+            DropdownMenuOutcome::TypeaheadMatched
+        );
+        assert_eq!(state.cursor_index(), 1);
+        assert_eq!(state.typeahead_buffer(), "b");
+        assert_eq!(
+            state.handle_key(
+                key_with_kind(KeyCode::Char('g'), KeyEventKind::Release),
+                &root
+            ),
+            DropdownMenuOutcome::Ignored
+        );
+        assert_eq!(state.typeahead_buffer(), "b");
+    }
+
+    #[test]
+    fn typeahead_is_scoped_to_active_cascade_frame() {
+        let root = sample_tree();
+        let mut state = DropdownMenuState::new();
+        let _ = state.open_from_keyboard(&root, Rect::new(0, 0, 80, 24));
+        state.cascade[0].set_cursor(7); // Export submenu.
+
+        let _ = state.handle_key(KeyEvent::new(KeyCode::Char('e'), KeyModifiers::NONE), &root);
+        assert_eq!(state.typeahead_buffer(), "e");
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::NONE), &root),
+            DropdownMenuOutcome::SubmenuOpened { id: "export" }
+        ));
+        assert_eq!(state.typeahead_buffer(), "");
+
+        let _ = state.handle_key(KeyEvent::new(KeyCode::Char('p'), KeyModifiers::NONE), &root);
+        assert_eq!(state.typeahead_buffer(), "p");
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Left, KeyModifiers::NONE), &root),
+            DropdownMenuOutcome::LayerClosed
+        );
+        assert_eq!(state.typeahead_buffer(), "");
+    }
+
+    #[test]
+    fn page_navigation_uses_collection_page_intents() {
+        let root: Vec<MenuNode<String>> = (0..8)
+            .map(|i| MenuNode::command(format!("item-{i}"), format!("Item {i}")))
+            .collect();
+        let mut state = DropdownMenuState::new();
+        let _ = state.open_from_keyboard(&root, Rect::new(0, 0, 80, 24));
+        state.set_presentation_override(Some(DropdownMenuPresentation::Cascading));
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 80, 6);
+        let mut buffer = Buffer::empty(area);
+        DropdownMenu::new(&root, &system).paint(area, &mut buffer, &mut state);
+
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::PageDown, KeyModifiers::NONE), &root),
+            DropdownMenuOutcome::CursorMoved
+        );
+        let first_page_cursor = state.cursor_index();
+        assert_ne!(first_page_cursor, 0);
+        assert_eq!(
+            state.handle_key(
+                key_with_kind(KeyCode::PageDown, KeyEventKind::Repeat),
+                &root
+            ),
+            DropdownMenuOutcome::CursorMoved
+        );
+        assert_ne!(state.cursor_index(), first_page_cursor);
+        assert_eq!(
+            state.handle_key(key_with_kind(KeyCode::PageUp, KeyEventKind::Release), &root),
+            DropdownMenuOutcome::Ignored
+        );
+    }
+
+    #[test]
+    fn public_menu_intent_bridge_pages_the_active_collection() {
+        let root: Vec<MenuNode<String>> = (0..8)
+            .map(|i| MenuNode::command(format!("item-{i}"), format!("Item {i}")))
+            .collect();
+        let mut state = DropdownMenuState::new();
+        let _ = state.open_from_keyboard(&root, Rect::new(0, 0, 80, 24));
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 80, 6);
+        let mut buffer = Buffer::empty(area);
+        DropdownMenu::new(&root, &system).paint(area, &mut buffer, &mut state);
+
+        let page_down = crate::interaction::default_menu_intent(KeyEvent::new(
+            KeyCode::PageDown,
+            KeyModifiers::NONE,
+        ))
+        .expect("PageDown menu bridge");
+        assert_eq!(
+            page_down,
+            UiIntent::Page(PageMove::Forward),
+            "public menu bridge must preserve page movement"
+        );
+        assert_eq!(
+            state.handle_intent(page_down, &root),
+            DropdownMenuOutcome::CursorMoved
+        );
+        let after_press = state.cursor_index();
+        assert_ne!(after_press, 0);
+
+        let mut repeat = key_with_kind(KeyCode::PageDown, KeyEventKind::Repeat);
+        assert_eq!(
+            crate::interaction::default_menu_intent(repeat),
+            Some(UiIntent::Page(PageMove::Forward))
+        );
+        assert_eq!(
+            state.handle_intent(
+                crate::interaction::default_menu_intent(repeat).expect("PageDown repeat bridge"),
+                &root,
+            ),
+            DropdownMenuOutcome::CursorMoved
+        );
+        assert_ne!(state.cursor_index(), after_press);
+
+        repeat.code = KeyCode::PageUp;
+        assert_eq!(
+            crate::interaction::default_menu_intent(repeat),
+            Some(UiIntent::Page(PageMove::Backward))
+        );
+        assert_eq!(
+            state.handle_intent(
+                crate::interaction::default_menu_intent(repeat).expect("PageUp repeat bridge"),
+                &root,
+            ),
+            DropdownMenuOutcome::CursorMoved
+        );
     }
 
     #[test]
