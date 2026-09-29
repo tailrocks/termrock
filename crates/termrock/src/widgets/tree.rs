@@ -1323,7 +1323,7 @@ fn paint_tree_row<Id: Clone + PartialEq>(
         selected,
         focused: row_focused,
         hovered: hovered && interactive,
-        enabled: interactive,
+        enabled: node.enabled,
         loading: busy,
         checked,
         error: matches!(node.status, TreeNodeStatus::Error),
@@ -1337,7 +1337,7 @@ fn paint_tree_row<Id: Clone + PartialEq>(
         TreeNodeStatus::Loading | TreeNodeStatus::Lazy => tokens.style(Role::TextSecondary),
         TreeNodeStatus::Error => tokens.style(Role::Danger),
     };
-    if !interactive {
+    if !node.enabled {
         body = tokens.style(Role::TextDisabled);
     }
     let body = chrome.label_style(body);
