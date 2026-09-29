@@ -285,7 +285,7 @@ impl ViewportState {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 /// A scrollable view over borrowed terminal lines.
 pub struct Viewport<'a> {
     lines: &'a [Line<'a>],

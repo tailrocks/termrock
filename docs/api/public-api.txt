@@ -91435,6 +91435,7 @@ impl<'a> core::clone::Clone for termrock::widgets::Viewport<'a>
 pub fn termrock::widgets::Viewport<'a>::clone(&self) -> termrock::widgets::Viewport<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::Viewport<'a>
 pub fn termrock::widgets::Viewport<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::Viewport<'a>
 impl<'a> core::marker::Freeze for termrock::widgets::Viewport<'a>
 impl<'a> core::marker::Send for termrock::widgets::Viewport<'a>
 impl<'a> core::marker::Sync for termrock::widgets::Viewport<'a>
