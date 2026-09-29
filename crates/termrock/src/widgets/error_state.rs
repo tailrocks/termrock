@@ -821,7 +821,6 @@ impl<'a> ErrorState<'a> {
                     true, // dominant primary-like
                     matches!(state.focus, ErrorFocus::Retry),
                     &mut state.retry_btn,
-                    false, // never destructive
                 );
             }
             idx += 1;
@@ -835,7 +834,6 @@ impl<'a> ErrorState<'a> {
                     false,
                     matches!(state.focus, ErrorFocus::Alternative),
                     &mut state.alt_btn,
-                    false,
                 );
             }
             idx += 1;
@@ -849,7 +847,6 @@ impl<'a> ErrorState<'a> {
                     false,
                     matches!(state.focus, ErrorFocus::CopyDiagnostics),
                     &mut state.copy_btn,
-                    false,
                 );
             }
             idx += 1;
@@ -863,7 +860,6 @@ impl<'a> ErrorState<'a> {
                     false,
                     matches!(state.focus, ErrorFocus::ReportIssue),
                     &mut state.report_btn,
-                    false,
                 );
             }
         }
@@ -877,7 +873,6 @@ impl<'a> ErrorState<'a> {
         primary: bool,
         focused: bool,
         btn_state: &mut ButtonState,
-        _destructive: bool,
     ) {
         if area.is_empty() {
             return;

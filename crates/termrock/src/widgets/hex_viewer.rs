@@ -1261,7 +1261,6 @@ impl<'a> HexViewer<'a> {
                     state,
                     self.system,
                     surface,
-                    false,
                     colorless,
                     tiny,
                 );
@@ -1305,7 +1304,6 @@ fn paint_hex_row(
     state: &HexViewerState,
     system: &DesignSystem,
     surface: bool,
-    _ascii: bool,
     colorless: bool,
     tiny: bool,
 ) {

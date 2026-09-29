@@ -952,7 +952,7 @@ impl<'a> ActivityShelf<'a> {
                     .paint(Rect::new(area.x, area.y, area.width, 1), buffer);
             }
             ActivityShelfPresentation::Chips | ActivityShelfPresentation::IconsOnly => {
-                self.paint_chips(area, buffer, state, &sorted, &plan, false);
+                self.paint_chips(area, buffer, state, &sorted, &plan);
             }
         }
     }
@@ -964,7 +964,6 @@ impl<'a> ActivityShelf<'a> {
         state: &mut ActivityShelfState,
         sorted: &[&ActivityItem],
         plan: &ActivityShelfPlan,
-        _ascii: bool,
     ) {
         let icons = matches!(plan.presentation, ActivityShelfPresentation::IconsOnly);
         let vertical = matches!(state.orientation, ActivityShelfOrientation::Vertical);
