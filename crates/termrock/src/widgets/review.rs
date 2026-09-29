@@ -622,12 +622,6 @@ impl DiffReviewState {
         self.view.set_accepts_input(accepts);
     }
 
-    /// Whether host granted input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Hunk cursor (DiffView).
     #[must_use]
     pub const fn hunk_cursor(&self) -> usize {

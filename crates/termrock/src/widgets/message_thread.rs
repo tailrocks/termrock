@@ -805,12 +805,6 @@ impl MessageThreadState {
         }
     }
 
-    /// Accepts input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Gate (does not clear selection / unread).
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;

@@ -617,12 +617,6 @@ impl HexViewerState {
         self.accepts_input = accepts;
     }
 
-    /// Accepts input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Vertical row offset.
     #[must_use]
     pub const fn row_offset(&self) -> u16 {

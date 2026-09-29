@@ -410,12 +410,6 @@ impl<Id> FormState<Id> {
         self.hovered.as_ref()
     }
 
-    /// Accepts interaction.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Enable/disable surface.
     pub const fn set_accepts_input(&mut self, accepts: bool) {
         self.accepts_input = accepts;

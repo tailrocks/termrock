@@ -734,12 +734,6 @@ impl ProcessTableState {
         self.accepts_input = on;
     }
 
-    /// Accepts input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Selected process key.
     #[must_use]
     pub const fn selected(&self) -> Option<ProcessKey> {

@@ -757,12 +757,6 @@ impl SlashCommandMenuState {
         self.open
     }
 
-    /// Accepts input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Host gate — **does not** clear draft or query history.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;

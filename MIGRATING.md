@@ -396,6 +396,18 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0380 | `v0.14.0` | [Viewport owns persistent selection state](migrations/0380-v0.14.0-viewport-state-selection.md) |
 | 0381 | `v0.14.0` | [Tree uses absolute virtual-window geometry](migrations/0381-v0.14.0-tree-absolute-virtual-window.md) |
 | 0382 | `v0.14.0` | [QuickOpen returns borrowed match rows](migrations/0382-v0.14.0-quick-open-borrowed-matches.md) |
+| 0383 | `v0.14.0` | [StatusBar spacing and collision-safe contraction](migrations/0383-v0.14.0-status-bar-spacing-and-collision.md) |
+| 0384 | `v0.14.0` | [TreeTable hierarchy action guards](migrations/0384-v0.14.0-tree-table-hierarchy-action-guards.md) |
+| 0385 | `v0.14.0` | [TreeTable projected movement safety](migrations/0385-v0.14.0-tree-table-projection-movement-safety.md) |
+| 0386 | `v0.14.0` | [TreeTable empty projection movement](migrations/0386-v0.14.0-tree-table-empty-projection-movement.md) |
+| 0387 | `v0.14.0` | [TreeTable virtual selection and activation identity](migrations/0387-v0.14.0-tree-table-virtual-selection-activation.md) |
+| 0388 | `v0.14.0` | [TreeTable row geometry lifecycle](migrations/0388-v0.14.0-tree-table-row-geometry-lifecycle.md) |
+| 0389 | `v0.14.0` | [TreeTable empty intent routing](migrations/0389-v0.14.0-tree-table-empty-intent-routing.md) |
+| 0390 | `v0.14.0` | [TreeTable load and navigation state](migrations/0390-v0.14.0-tree-table-load-and-navigation-state.md) |
+| 0391 | `v0.14.0` | [TreeTable shifted page routing](migrations/0391-v0.14.0-tree-table-shifted-page-routing.md) |
+| 0392 | `v0.14.0` | [List one-shot intent repeat gates](migrations/0392-v0.14.0-list-intent-repeat-gates.md) |
+| 0393 | `v0.14.0` | [Picker exposes a host-owned secondary action](migrations/0393-v0.14.0-picker-secondary-action.md) |
+| 0394 | `v0.14.0` | [Remove mirrored input and enabled getters](migrations/0394-v0.14.0-remove-mirrored-state-getters.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

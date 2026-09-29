@@ -357,12 +357,6 @@ impl<Id> SelectState<Id> {
         self.focused
     }
 
-    /// Enabled.
-    #[must_use]
-    pub const fn is_enabled(&self) -> bool {
-        self.enabled
-    }
-
     /// Recipe.
     #[must_use]
     pub const fn recipe(&self) -> SelectRecipe {

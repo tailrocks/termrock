@@ -353,12 +353,6 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
         self.focused
     }
 
-    /// Enabled.
-    #[must_use]
-    pub const fn is_enabled(&self) -> bool {
-        self.enabled
-    }
-
     /// Field rect (anchor).
     #[must_use]
     pub const fn field_area(&self) -> Rect {

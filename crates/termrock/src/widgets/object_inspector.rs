@@ -570,12 +570,6 @@ impl ObjectInspectorState {
         self.accepts_input = accepts;
     }
 
-    /// Whether host granted input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Whether path is expanded.
     #[must_use]
     pub fn is_expanded(&self, path: &str) -> bool {

@@ -261,7 +261,7 @@ fn action_and_status_regions_match_painted_geometry() {
         .region(crate::widgets::StatusRegion::Right)];
     let status = StatusBar::new(&left, &right, &system).alpha(1.0);
     let regions = status.regions(area);
-    assert_eq!(regions[1].area.right(), area.right());
+    assert_eq!(regions[1].area.right(), area.right() - 1);
     (&status).render(area, &mut buffer, &mut StatusBarState::default());
 }
 

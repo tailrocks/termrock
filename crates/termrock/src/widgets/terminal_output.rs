@@ -576,12 +576,6 @@ impl TerminalOutputState {
         self.accepts_input = accepts;
     }
 
-    /// Accepts input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Following tail.
     #[must_use]
     pub const fn is_following(&self) -> bool {
