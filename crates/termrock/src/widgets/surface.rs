@@ -369,6 +369,7 @@ impl<'a> Surface<'a> {
 
     /// Paint fill + optional border; returns content rect for children.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer) -> Rect {
+        let area = area.intersection(*buffer.area());
         let plan = self.plan();
         let parts = self.layout(area);
         if area.is_empty() {
@@ -476,8 +477,9 @@ impl DesignSystem {
             SurfaceRecipe::Canvas => (Some(Role::Canvas), None, false),
             SurfaceRecipe::Inset => (Some(Role::Surface), None, false),
             SurfaceRecipe::Sunken => (Some(Role::Sunken), None, false),
-            // The ladder only reads as a ladder if each rung has its own role:
-            // in-flow cards sit on `Raised`, overlays keep `Elevated`.
+            // Explicit raised surfaces use the elevated role. Panel/Card
+            // resolvers choose their in-flow plane separately; overlays also
+            // use `Elevated` with distinct chrome.
             SurfaceRecipe::Raised => (Some(Role::Elevated), Some(contract.border), true),
             SurfaceRecipe::Overlay => (Some(contract.surface), Some(contract.border), true),
             SurfaceRecipe::MenuPopover => (Some(Role::Popover), Some(Role::Border), true),
@@ -650,6 +652,25 @@ mod tests {
             .paint(Rect::new(0, 0, 2, 1), &mut buf);
         // Tiny: content may be empty after border.
         let _ = content;
+    }
+
+    #[test]
+    fn paint_clips_returned_content_to_buffer() {
+        let system = DesignSystem::default();
+        let buffer_area = Rect::new(10, 10, 8, 4);
+        let mut buffer = Buffer::empty(buffer_area);
+        let content = Surface::new(&system)
+            .recipe(SurfaceRecipe::Inset)
+            .padding(1, 0)
+            .paint(Rect::new(8, 9, 14, 6), &mut buffer);
+
+        assert_eq!(content, Rect::new(11, 10, 6, 4));
+        assert_eq!(content.intersection(buffer_area), content);
+
+        let before = buffer.clone();
+        let outside = Surface::new(&system).paint(Rect::new(0, 0, 5, 3), &mut buffer);
+        assert!(outside.is_empty());
+        assert_eq!(buffer, before);
     }
 
     #[test]

@@ -688,7 +688,7 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
             schema: CONTRACT_SCHEMA,
             id: "Card".into(),
             title: "Card".into(),
-            description: "Raised Panel composition with description band for metrics/tool cards.".into(),
+            description: "Filled Panel composition with description band for metrics/tool cards.".into(),
             kind: RegistryItemKind::Primitive,
             license: "Apache-2.0".into(),
             module: Some("termrock::widgets::Card".into()),
@@ -804,7 +804,7 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
                 },
                 VariantRef {
                     id: "raised".into(),
-                    description: "Card / elevated".into(),
+                    description: "Explicit elevated surface; cards use filled Surface, framed panels use Canvas, overlays use Elevated.".into(),
                 },
                 VariantRef {
                     id: "focused".into(),
