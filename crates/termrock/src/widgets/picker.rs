@@ -131,6 +131,8 @@ pub enum PickerOutcome<Id> {
     ActivatedAlt(Id),
     /// Tab: host should cycle the picker scope (junie `NextScope`).
     NextScope,
+    /// Delete: host-owned secondary action for the selected visible identity.
+    Secondary(Id),
     /// Escape was pressed while the query was already empty.
     Cancelled,
 }
@@ -171,12 +173,6 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
     /// Host input gate (overlay top / scene ownership).
     pub fn set_accepts_input(&mut self, accepts: bool) {
         self.accepts_input = accepts;
-    }
-
-    /// Whether host granted input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
     }
 
     /// Whether printable keys edit the query (junie `searchable`; default true).
@@ -285,8 +281,10 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
     ///
     /// Searchable (default): printable including `j`/`k`/Space edit the query;
     /// arrows / Ctrl+n/p/j/k move the list; Tab is [`PickerOutcome::NextScope`];
+    /// Delete is [`PickerOutcome::Secondary`] for the selected row;
     /// Alt+Enter is [`PickerOutcome::ActivatedAlt`]. Choice pickers
-    /// (`searchable: false`) use `j`/`k` as list motion.
+    /// (`searchable: false`) use `j`/`k` as list motion. The host owns the
+    /// secondary action and decides what it does with the stable identity.
     pub fn handle_key(&mut self, visible: &[ListRow<'_, Id>], key: KeyEvent) -> PickerOutcome<Id> {
         if !self.accepts_input || key.is_release() {
             return PickerOutcome::Ignored;
@@ -306,6 +304,15 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
             KeyCode::PageDown => self.handle_intent(visible, UiIntent::Page(PageMove::Forward)),
             KeyCode::PageUp => self.handle_intent(visible, UiIntent::Page(PageMove::Backward)),
             KeyCode::Tab => PickerOutcome::NextScope,
+            KeyCode::Delete if key.is_press() && key.modifiers.is_empty() => {
+                let selected = self.list.selected().and_then(|selected| {
+                    visible
+                        .iter()
+                        .find(|row| row.enabled && row.role.is_navigable() && &row.id == selected)
+                        .map(|row| row.id.clone())
+                });
+                selected.map_or(PickerOutcome::Ignored, PickerOutcome::Secondary)
+            }
             KeyCode::Backspace if self.searchable && !ctrl && !alt => self.route_query(key),
             KeyCode::Char('n' | 'j') if ctrl => {
                 self.handle_intent(visible, UiIntent::Move(NavigationMove::Next))
@@ -1093,12 +1100,83 @@ mod tests {
     }
 
     #[test]
+    fn delete_emits_secondary_for_selected_row_without_mutating_state() {
+        let visible = rows(&["alpha", "beta"]);
+        let mut state = PickerState::new(Some("alpha"));
+        assert_eq!(
+            state.handle_key(&visible, KeyEvent::new(KeyCode::Delete, KeyModifiers::NONE),),
+            PickerOutcome::Secondary("alpha")
+        );
+        assert_eq!(state.list().selected(), Some(&"alpha"));
+        assert_eq!(state.query_text(), "");
+    }
+
+    #[test]
+    fn delete_without_selection_is_ignored() {
+        let visible = rows(&["alpha", "beta"]);
+        let mut state = PickerState::new(None);
+        assert_eq!(
+            state.handle_key(&visible, KeyEvent::new(KeyCode::Delete, KeyModifiers::NONE),),
+            PickerOutcome::Ignored
+        );
+    }
+
+    #[test]
+    fn delete_ignores_stale_or_non_navigable_selection() {
+        let visible = rows(&["alpha"]);
+        let mut state = PickerState::new(Some("removed"));
+        assert_eq!(
+            state.handle_key(&visible, KeyEvent::new(KeyCode::Delete, KeyModifiers::NONE)),
+            PickerOutcome::Ignored
+        );
+
+        let mut disabled = ListRow::item("alpha", Line::from("alpha"));
+        disabled.enabled = false;
+        let visible = [disabled];
+        state.list_mut().select(Some("alpha"));
+        assert_eq!(
+            state.handle_key(&visible, KeyEvent::new(KeyCode::Delete, KeyModifiers::NONE)),
+            PickerOutcome::Ignored
+        );
+    }
+
+    #[test]
+    fn delete_ignores_repeat_release_and_modified_keys() {
+        let visible = rows(&["alpha"]);
+        let mut state = PickerState::new(Some("alpha"));
+
+        let mut repeat = KeyEvent::new(KeyCode::Delete, KeyModifiers::NONE);
+        repeat.kind = KeyEventKind::Repeat;
+        assert_eq!(state.handle_key(&visible, repeat), PickerOutcome::Ignored);
+
+        let mut release = KeyEvent::new(KeyCode::Delete, KeyModifiers::NONE);
+        release.kind = KeyEventKind::Release;
+        assert_eq!(state.handle_key(&visible, release), PickerOutcome::Ignored);
+
+        for modifiers in [
+            KeyModifiers::CONTROL,
+            KeyModifiers::ALT,
+            KeyModifiers::SHIFT,
+        ] {
+            assert_eq!(
+                state.handle_key(&visible, KeyEvent::new(KeyCode::Delete, modifiers),),
+                PickerOutcome::Ignored
+            );
+        }
+        assert_eq!(state.list().selected(), Some(&"alpha"));
+    }
+
+    #[test]
     fn accepts_input_gate() {
         let visible = rows(&["alpha"]);
         let mut state = PickerState::new(Some("alpha"));
         state.set_accepts_input(false);
         assert_eq!(
             state.handle_key(&visible, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            PickerOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_key(&visible, KeyEvent::new(KeyCode::Delete, KeyModifiers::NONE),),
             PickerOutcome::Ignored
         );
     }
