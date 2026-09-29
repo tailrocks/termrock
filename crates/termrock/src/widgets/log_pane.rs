@@ -87,6 +87,7 @@ impl LogPaneState {
     /// Appends a line, evicting the oldest line when bounded history is full.
     pub fn append(&mut self, line: impl Into<Line<'static>>) {
         let visible_before = self.len();
+        self.viewport.note_content_append();
         self.content_revision = self.content_revision.wrapping_add(1);
         if self.content_revision == u64::MAX {
             self.content_revision = 0;
@@ -290,6 +291,7 @@ impl PartialEq for LogPaneState {
             && self.viewport_height == other.viewport_height
             && self.scroll_indicator == other.scroll_indicator
             && self.viewport.scroll == other.viewport.scroll
+            && self.viewport.same_interaction(&other.viewport)
     }
 }
 
@@ -354,11 +356,11 @@ impl<'a> LogPane<'a> {
 impl StatefulWidget for &LogPane<'_> {
     type State = LogPaneState;
 
-    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+    fn render(self, requested_area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        let area = requested_area.intersection(buffer.area);
         state.viewport_height = usize::from(area.height.saturating_sub(2));
         state.clamp_tail();
         let top = state.tail.to_top_offset(state.len(), state.viewport_height);
-        state.viewport.scroll.scroll_x = 0;
         state.viewport.scroll.scroll_y = u16::try_from(top).unwrap_or(u16::MAX);
         let lines = &state.lines[state.history_start..];
         let viewport = Viewport::new(lines, self.system).content_revision(state.content_revision);
@@ -480,7 +482,7 @@ mod tests {
     }
 
     #[test]
-    fn bounded_eviction_rebases_viewport_selection() {
+    fn bounded_eviction_clears_selection_when_its_line_is_removed() {
         let system = crate::style::DesignSystem::default();
         let pane = LogPane::new(&system);
         let area = Rect::new(0, 0, 24, 4);
@@ -502,10 +504,92 @@ mod tests {
         (&pane).render(area, &mut Buffer::empty(area), &mut state);
         let lines = state.lines().to_vec();
         let viewport = Viewport::new(&lines, &system);
+        assert!(viewport.selected_text(&state.viewport).is_none());
+        assert!(!viewport.has_anchor(&state.viewport));
+    }
+
+    #[test]
+    fn bounded_eviction_rebases_surviving_selection() {
+        let system = crate::style::DesignSystem::default();
+        let pane = LogPane::new(&system);
+        let area = Rect::new(0, 0, 24, 4);
+        let mut state = LogPaneState::new().with_max_lines(2);
+        state.append("one");
+        state.append("two");
+
+        (&pane).render(area, &mut Buffer::empty(area), &mut state);
+        let lines = state.lines().to_vec();
+        let viewport = Viewport::new(&lines, &system);
+        viewport.on_click(&mut state.viewport, Position::new(1, 2));
+        viewport.on_drag(&mut state.viewport, Position::new(5, 2));
         assert_eq!(
             viewport.selected_text(&state.viewport).as_deref(),
             Some("two")
         );
+
+        state.append("new");
+        (&pane).render(area, &mut Buffer::empty(area), &mut state);
+        let lines = state.lines().to_vec();
+        let viewport = Viewport::new(&lines, &system);
+        assert_eq!(
+            viewport.selected_text(&state.viewport).as_deref(),
+            Some("two")
+        );
+        assert!(viewport.has_anchor(&state.viewport));
+    }
+
+    #[test]
+    fn horizontal_viewport_scroll_survives_log_pane_render() {
+        let system = crate::style::DesignSystem::default();
+        let pane = LogPane::new(&system);
+        let area = Rect::new(0, 0, 12, 4);
+        let mut state = LogPaneState::new();
+        state.append("0123456789abcdef");
+        let mut buffer = Buffer::empty(area);
+        (&pane).render(area, &mut buffer, &mut state);
+        assert_eq!(state.viewport.scroll.scroll_x, 0);
+
+        assert_eq!(
+            pane.handle_mouse(
+                &mut state,
+                MouseEvent {
+                    kind: MouseEventKind::ScrollRight,
+                    position: Position::new(1, 1),
+                    modifiers: KeyModifiers::NONE,
+                },
+            ),
+            Outcome::Changed
+        );
+        let scrolled_x = state.viewport.scroll.scroll_x;
+        assert!(scrolled_x > 0);
+
+        (&pane).render(area, &mut buffer, &mut state);
+        assert_eq!(state.viewport.scroll.scroll_x, scrolled_x);
+        assert_eq!(buffer[(1, 1)].symbol(), "4");
+    }
+
+    #[test]
+    fn equality_includes_viewport_selection_and_anchor() {
+        let system = crate::style::DesignSystem::default();
+        let pane = LogPane::new(&system);
+        let area = Rect::new(0, 0, 24, 4);
+        let mut state = LogPaneState::new();
+        state.append("one");
+        (&pane).render(area, &mut Buffer::empty(area), &mut state);
+        let mut selected = state.clone();
+
+        assert_eq!(
+            pane.handle_mouse(
+                &mut selected,
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(1, 1),
+                    modifiers: KeyModifiers::NONE,
+                },
+            ),
+            Outcome::Changed
+        );
+        assert_ne!(state, selected);
     }
 
     #[test]

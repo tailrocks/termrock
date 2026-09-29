@@ -1,16 +1,17 @@
 use ratatui_core::{
-    buffer::Buffer,
-    layout::{Position, Rect},
+    buffer::{Buffer, CellWidth},
+    layout::{Alignment, Position, Rect},
     style::Style,
     text::Line,
     widgets::StatefulWidget,
 };
+use std::collections::{BTreeMap, hash_map::DefaultHasher};
+use std::hash::{Hash, Hasher};
 use unicode_segmentation::UnicodeSegmentation;
-use unicode_width::UnicodeWidthStr;
 
 use crate::{
     interaction::Outcome,
-    scroll::{DialogScroll, UNCACHED_REVISION, max_line_width},
+    scroll::{DialogScroll, UNCACHED_REVISION},
     style::{DesignSystem, Role},
 };
 
@@ -35,11 +36,21 @@ pub enum ViewportEvent {
     SelectionChanged,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 struct ViewportCell {
-    symbol: String,
+    span: Option<usize>,
+    start: usize,
+    end: usize,
     width: usize,
     style: Style,
+}
+
+#[derive(Debug, Clone)]
+struct ViewportLine {
+    cells: Vec<ViewportCell>,
+    width: usize,
+    alignment: Option<Alignment>,
+    content_hash: u64,
 }
 
 /// Persistent interaction and layout state for [`Viewport`].
@@ -54,11 +65,16 @@ pub struct ViewportState {
     area: Rect,
     selection: Option<(CellPos, CellPos)>,
     drag_anchor: Option<CellPos>,
-    cells: Vec<Vec<ViewportCell>>,
+    cells: Vec<ViewportLine>,
+    cached_start: usize,
     cached_len: usize,
     cached_revision: u64,
+    cached_width: usize,
+    cached_widths: BTreeMap<usize, usize>,
     cached_base_style: Style,
     cache_valid: bool,
+    pending_appends: usize,
+    preserve_selection_on_change: bool,
 }
 
 impl ViewportState {
@@ -71,10 +87,15 @@ impl ViewportState {
             selection: None,
             drag_anchor: None,
             cells: Vec::new(),
+            cached_start: 0,
             cached_len: 0,
             cached_revision: UNCACHED_REVISION,
+            cached_width: 0,
+            cached_widths: BTreeMap::new(),
             cached_base_style: Style::new(),
             cache_valid: false,
+            pending_appends: 0,
+            preserve_selection_on_change: false,
         }
     }
 
@@ -83,82 +104,261 @@ impl ViewportState {
         if removed == 0 {
             return;
         }
-        if let Some((start, end)) = self.selection.as_mut() {
-            start.line = start.line.saturating_sub(removed);
-            end.line = end.line.saturating_sub(removed);
+        if let Some((start, end)) = self.selection {
+            if start.line < removed || end.line < removed {
+                self.selection = None;
+            } else {
+                self.selection = Some((
+                    CellPos {
+                        line: start.line - removed,
+                        col: start.col,
+                    },
+                    CellPos {
+                        line: end.line - removed,
+                        col: end.col,
+                    },
+                ));
+            }
         }
-        if let Some(anchor) = self.drag_anchor.as_mut() {
-            anchor.line = anchor.line.saturating_sub(removed);
+        if let Some(anchor) = self.drag_anchor {
+            if anchor.line < removed {
+                self.drag_anchor = None;
+            } else {
+                self.drag_anchor = Some(CellPos {
+                    line: anchor.line - removed,
+                    col: anchor.col,
+                });
+            }
+        }
+
+        if self.cache_valid {
+            if removed >= self.cached_len {
+                self.clear_cached_cells();
+            } else {
+                for index in 0..removed {
+                    let width = self.cells[self.cached_start + index].width;
+                    self.remove_cached_width(width);
+                }
+                self.cached_start = self.cached_start.saturating_add(removed);
+                self.cached_len = self.cached_len.saturating_sub(removed);
+                if self.cached_start >= 1_024 {
+                    self.compact_cached_prefix();
+                }
+                self.cached_width = self
+                    .cached_widths
+                    .last_key_value()
+                    .map_or(0, |(width, _)| *width);
+            }
         }
     }
 
-    fn ensure_cells(&mut self, lines: &[Line<'_>], base_style: Style, revision: u64) {
-        if revision != UNCACHED_REVISION
-            && self.cache_valid
-            && self.cached_len == lines.len()
-            && self.cached_revision == revision
-            && self.cached_base_style == base_style
-        {
+    /// Preserve selection coordinates when a host appends lines in place.
+    pub(crate) fn note_content_append(&mut self) {
+        self.pending_appends = self.pending_appends.saturating_add(1);
+        self.preserve_selection_on_change = true;
+    }
+
+    pub(crate) fn same_interaction(&self, other: &Self) -> bool {
+        self.selection == other.selection && self.drag_anchor == other.drag_anchor
+    }
+
+    fn build_line(line: &Line<'_>, base_style: Style) -> ViewportLine {
+        let line_style = base_style.patch(line.style);
+        let mut column = 0;
+        let mut cells = Vec::new();
+        let mut hasher = DefaultHasher::new();
+        for (span_index, span) in line.spans.iter().enumerate() {
+            let style = line_style.patch(span.style);
+            for (start, grapheme) in span.content.as_ref().grapheme_indices(true) {
+                for byte in grapheme.as_bytes() {
+                    byte.hash(&mut hasher);
+                }
+                let end = start + grapheme.len();
+                if grapheme == "\t" {
+                    let tab_spaces = 4 - (column % 4);
+                    for _ in 0..tab_spaces {
+                        cells.push(ViewportCell {
+                            span: None,
+                            start: 0,
+                            end: 0,
+                            width: 1,
+                            style,
+                        });
+                        column += 1;
+                    }
+                    continue;
+                }
+                if grapheme.contains(char::is_control) {
+                    continue;
+                }
+                let width = usize::from(grapheme.cell_width());
+                if width == 0 {
+                    continue;
+                }
+                cells.push(ViewportCell {
+                    span: Some(span_index),
+                    start,
+                    end,
+                    width,
+                    style,
+                });
+                column += width;
+            }
+        }
+        ViewportLine {
+            cells,
+            width: column,
+            alignment: line.alignment,
+            content_hash: hasher.finish(),
+        }
+    }
+
+    fn build_lines(lines: &[Line<'_>], base_style: Style) -> Vec<ViewportLine> {
+        lines
+            .iter()
+            .map(|line| Self::build_line(line, base_style))
+            .collect()
+    }
+
+    fn active_cells(&self) -> &[ViewportLine] {
+        let end = self.cached_start.saturating_add(self.cached_len);
+        self.cells.get(self.cached_start..end).unwrap_or_default()
+    }
+
+    fn clear_cached_cells(&mut self) {
+        self.cells.clear();
+        self.cached_start = 0;
+        self.cached_len = 0;
+        self.cached_width = 0;
+        self.cached_widths.clear();
+        self.cache_valid = false;
+    }
+
+    fn add_cached_width(&mut self, width: usize) {
+        *self.cached_widths.entry(width).or_default() += 1;
+    }
+
+    fn remove_cached_width(&mut self, width: usize) {
+        if let Some(count) = self.cached_widths.get_mut(&width) {
+            *count = count.saturating_sub(1);
+            if *count == 0 {
+                self.cached_widths.remove(&width);
+            }
+        }
+    }
+
+    fn compact_cached_prefix(&mut self) {
+        if self.cached_start == 0 {
             return;
         }
+        self.cells.drain(..self.cached_start);
+        self.cached_start = 0;
+    }
 
-        self.cells = lines
-            .iter()
-            .map(|line| {
-                let line_style = base_style.patch(line.style);
-                line.spans
-                    .iter()
-                    .flat_map(move |span| {
-                        let style = line_style.patch(span.style);
-                        span.content
-                            .as_ref()
-                            .graphemes(true)
-                            .flat_map(move |grapheme| {
-                                if grapheme == "\t" {
-                                    return (0..4)
-                                        .map(|_| ViewportCell {
-                                            symbol: " ".to_owned(),
-                                            width: 1,
-                                            style,
-                                        })
-                                        .collect::<Vec<_>>();
-                                }
-                                if grapheme.contains(char::is_control) {
-                                    return Vec::new();
-                                }
-                                let width = UnicodeWidthStr::width(grapheme);
-                                if width == 0 {
-                                    Vec::new()
-                                } else {
-                                    vec![ViewportCell {
-                                        symbol: grapheme.to_owned(),
-                                        width,
-                                        style,
-                                    }]
-                                }
-                            })
-                    })
-                    .collect()
-            })
-            .collect();
+    fn content_matches(&self, lines: &[ViewportLine]) -> bool {
+        self.cached_len == lines.len()
+            && self
+                .active_cells()
+                .iter()
+                .zip(lines)
+                .all(|(old, new)| old.content_hash == new.content_hash)
+    }
+
+    fn finish_cache_metadata(&mut self, lines: &[Line<'_>], base_style: Style, revision: u64) {
         self.cached_len = lines.len();
         self.cached_revision = revision;
         self.cached_base_style = base_style;
-        self.cache_valid = revision != UNCACHED_REVISION;
+        self.cache_valid = true;
+        self.pending_appends = 0;
+        self.preserve_selection_on_change = false;
+        self.cached_width = self
+            .cached_widths
+            .last_key_value()
+            .map_or(0, |(width, _)| *width);
+    }
 
-        let line_count = self.cells.len();
+    fn validate_interaction(&mut self) {
+        let line_count = self.cached_len;
         if line_count == 0 {
             self.selection = None;
             self.drag_anchor = None;
-        } else {
-            if let Some((start, end)) = self.selection.as_mut() {
-                start.line = start.line.min(line_count - 1);
-                end.line = end.line.min(line_count - 1);
-            }
-            if let Some(anchor) = self.drag_anchor.as_mut() {
-                anchor.line = anchor.line.min(line_count - 1);
-            }
+            return;
         }
+        let invalid_selection = self.selection.is_some_and(|(start, end)| {
+            start.line >= line_count
+                || end.line >= line_count
+                || start.col > self.line_width(start.line)
+                || end.col > self.line_width(end.line)
+        });
+        if invalid_selection {
+            self.selection = None;
+        } else if let Some((start, end)) = self.selection.as_mut() {
+            start.line = start.line.min(line_count - 1);
+            end.line = end.line.min(line_count - 1);
+        }
+        let invalid_anchor = self.drag_anchor.is_some_and(|anchor| {
+            anchor.line >= line_count || anchor.col > self.line_width(anchor.line)
+        });
+        if invalid_anchor {
+            self.drag_anchor = None;
+        } else if let Some(anchor) = self.drag_anchor.as_mut() {
+            anchor.line = anchor.line.min(line_count - 1);
+        }
+    }
+
+    fn try_append_cells(&mut self, lines: &[Line<'_>], base_style: Style, revision: u64) -> bool {
+        if !self.cache_valid
+            || revision == UNCACHED_REVISION
+            || self.pending_appends == 0
+            || self.cached_base_style != base_style
+            || self.cached_len.saturating_add(self.pending_appends) != lines.len()
+        {
+            return false;
+        }
+        let appended = Self::build_lines(&lines[self.cached_len..], base_style);
+        for line in &appended {
+            self.add_cached_width(line.width);
+        }
+        self.cells.extend(appended);
+        self.finish_cache_metadata(lines, base_style, revision);
+        self.validate_interaction();
+        true
+    }
+
+    fn ensure_cells(&mut self, lines: &[Line<'_>], base_style: Style, revision: u64) {
+        if self.try_append_cells(lines, base_style, revision) {
+            return;
+        }
+        let cache_matches = self.cache_valid
+            && revision != UNCACHED_REVISION
+            && self.cached_len == lines.len()
+            && self.cached_revision == revision
+            && self.cached_base_style == base_style;
+        if cache_matches {
+            return;
+        }
+
+        let rebuilt = Self::build_lines(lines, base_style);
+        let uncached_content_changed = revision == UNCACHED_REVISION
+            && self.cache_valid
+            && (self.selection.is_some() || self.drag_anchor.is_some())
+            && !self.content_matches(&rebuilt);
+        let content_changed =
+            revision != UNCACHED_REVISION && self.cache_valid && !self.content_matches(&rebuilt);
+        if (uncached_content_changed || content_changed) && !self.preserve_selection_on_change {
+            self.selection = None;
+            self.drag_anchor = None;
+        }
+
+        self.cells = rebuilt;
+        self.cached_start = 0;
+        self.cached_widths.clear();
+        for index in 0..self.cells.len() {
+            let width = self.cells[index].width;
+            self.add_cached_width(width);
+        }
+        self.finish_cache_metadata(lines, base_style, revision);
+        self.validate_interaction();
     }
 
     fn normalized_selection(&self) -> Option<(CellPos, CellPos)> {
@@ -167,52 +367,132 @@ impl ViewportState {
     }
 
     fn line_width(&self, line: usize) -> usize {
-        self.cells
+        self.active_cells()
             .get(line)
-            .map(|cells| cells.iter().map(|cell| cell.width).sum())
+            .map(|line| line.width)
             .unwrap_or(0)
     }
 
     fn max_line_width(&self) -> usize {
-        self.cells
-            .iter()
-            .map(|cells| cells.iter().map(|cell| cell.width).sum())
-            .max()
-            .unwrap_or(0)
+        self.cached_width
     }
 
     fn column_of(&self, line: usize, cell: usize) -> usize {
-        self.cells
+        self.active_cells()
             .get(line)
-            .map(|cells| cells.iter().take(cell).map(|c| c.width).sum())
+            .map(|line| line.cells.iter().take(cell).map(|cell| cell.width).sum())
             .unwrap_or(0)
     }
 
     fn cell_at(&self, line: usize, column: usize) -> usize {
-        let Some(cells) = self.cells.get(line) else {
+        let Some(line) = self.active_cells().get(line) else {
             return 0;
         };
         let mut current: usize = 0;
-        for (index, cell) in cells.iter().enumerate() {
+        for (index, cell) in line.cells.iter().enumerate() {
             if current.saturating_add(cell.width) > column {
                 return index;
             }
             current += cell.width;
         }
-        cells.len()
+        line.cells.len()
     }
 
-    fn pos_at(&self, position: Position) -> Option<CellPos> {
-        if self.area.is_empty() || self.cells.is_empty() || !self.area.contains(position) {
+    fn line_alignment(&self, line: usize) -> Alignment {
+        self.active_cells()
+            .get(line)
+            .and_then(|line| line.alignment)
+            .unwrap_or(Alignment::Left)
+    }
+
+    fn line_scroll(&self, line: usize) -> usize {
+        if self.line_alignment(line) == Alignment::Left
+            || self.line_width(line) > usize::from(self.area.width)
+        {
+            usize::from(self.scroll.scroll_x)
+        } else {
+            0
+        }
+    }
+
+    fn line_offset(&self, line: usize) -> usize {
+        let Some(line) = self.active_cells().get(line) else {
+            return 0;
+        };
+        let viewport_width = usize::from(self.area.width);
+        if line.width > viewport_width {
+            return 0;
+        }
+        match line.alignment.unwrap_or(Alignment::Left) {
+            Alignment::Center => viewport_width.saturating_sub(line.width) / 2,
+            Alignment::Right => viewport_width.saturating_sub(line.width),
+            Alignment::Left => 0,
+        }
+    }
+
+    fn raw_column_at(&self, position: Position, line: usize) -> usize {
+        let visual_column = usize::from(position.x.saturating_sub(self.area.x));
+        let offset = self.line_offset(line);
+        let relative = visual_column.saturating_sub(offset);
+        let horizontal = self.line_scroll(line);
+        relative
+            .saturating_add(horizontal)
+            .min(self.line_width(line))
+    }
+
+    fn cell_index_at(&self, position: Position) -> Option<(usize, usize)> {
+        if self.area.is_empty() || self.cached_len == 0 || !self.area.contains(position) {
             return None;
         }
         let row = usize::from(position.y.saturating_sub(self.area.y))
             .saturating_add(usize::from(self.scroll.scroll_y))
-            .min(self.cells.len() - 1);
-        let raw_column = usize::from(position.x.saturating_sub(self.area.x))
-            .saturating_add(usize::from(self.scroll.scroll_x))
-            .min(self.line_width(row));
+            .min(self.cached_len - 1);
+        let visual_column = usize::from(position.x.saturating_sub(self.area.x));
+        let offset = self.line_offset(row);
+        if visual_column < offset {
+            return None;
+        }
+        let relative = visual_column - offset;
+        let horizontal = self.line_scroll(row);
+        let visible_width = self
+            .line_width(row)
+            .saturating_sub(horizontal)
+            .min(usize::from(self.area.width));
+        if relative >= visible_width {
+            return None;
+        }
+        let raw_column = self.raw_column_at(position, row);
         let cell = self.cell_at(row, raw_column);
+        if self.column_of(row, cell) < horizontal {
+            return None;
+        }
+        (cell < self.active_cells()[row].cells.len()).then_some((row, cell))
+    }
+
+    fn pos_at(&self, position: Position) -> Option<CellPos> {
+        if self.area.is_empty() || self.cached_len == 0 || !self.area.contains(position) {
+            return None;
+        }
+        let row = usize::from(position.y.saturating_sub(self.area.y))
+            .saturating_add(usize::from(self.scroll.scroll_y))
+            .min(self.cached_len - 1);
+        let visual_column = usize::from(position.x.saturating_sub(self.area.x));
+        let offset = self.line_offset(row);
+        if visual_column < offset {
+            return None;
+        }
+        let relative = visual_column - offset;
+        if self.line_alignment(row) != Alignment::Left
+            && self.line_width(row) <= usize::from(self.area.width)
+            && relative >= self.line_width(row)
+        {
+            return None;
+        }
+        let raw_column = self.raw_column_at(position, row);
+        let cell = self.cell_at(row, raw_column);
+        if self.column_of(row, cell) < self.line_scroll(row) {
+            return None;
+        }
         let cell_start = self.column_of(row, cell);
         let cell_end = self.column_of(row, cell.saturating_add(1));
         let column = if raw_column.saturating_sub(cell_start).saturating_mul(2)
@@ -230,8 +510,7 @@ impl ViewportState {
 
     fn max_scroll_y(&self) -> u16 {
         u16::try_from(
-            self.cells
-                .len()
+            self.cached_len
                 .saturating_sub(usize::from(self.area.height)),
         )
         .unwrap_or(u16::MAX)
@@ -239,7 +518,7 @@ impl ViewportState {
 
     fn scroll_axes(&self) -> crate::scroll::ScrollAxes {
         crate::scroll::ScrollAxes {
-            vertical: crate::scroll::is_scrollable(self.cells.len(), usize::from(self.area.height)),
+            vertical: crate::scroll::is_scrollable(self.cached_len, usize::from(self.area.height)),
             horizontal: crate::scroll::is_scrollable(
                 self.max_line_width(),
                 usize::from(self.area.width),
@@ -300,6 +579,10 @@ pub struct Viewport<'a> {
 impl<'a> Viewport<'a> {
     #[must_use]
     /// Creates a viewport over borrowed lines with zero scroll offset.
+    ///
+    /// Line alignment applies while a line fits the content width. Overlong
+    /// lines use the shared horizontal scroll offset. Raw tabs expand to the
+    /// next four-column terminal stop, matching TermRock's text renderers.
     pub const fn new(lines: &'a [Line<'a>], system: &'a DesignSystem) -> Self {
         Self {
             lines,
@@ -346,10 +629,13 @@ impl<'a> Viewport<'a> {
         self
     }
 
-    /// Enables measurement reuse for unchanged content.
+    /// Enables layout reuse for unchanged content.
     ///
-    /// Bump `revision` whenever line contents change. Length changes invalidate
-    /// the cache automatically. Omitting this builder measures every frame.
+    /// Bump `revision` monotonically whenever borrowed line text, styles,
+    /// alignment, or layout-affecting content changes. Explicit revisions let
+    /// the state reuse its cell layout and support incremental append updates.
+    /// The default uncached revision rebuilds layout on every call so recreated
+    /// or mutated borrowed storage cannot reuse stale cell metadata.
     #[must_use]
     pub const fn content_revision(mut self, revision: u64) -> Self {
         self.content_revision = revision;
@@ -365,6 +651,17 @@ impl<'a> Viewport<'a> {
         state.ensure_cells(self.lines, self.base_content_style(), self.content_revision);
     }
 
+    fn cell_symbol(&self, line: usize, cell: &ViewportCell) -> &str {
+        let Some(span_index) = cell.span else {
+            return " ";
+        };
+        self.lines
+            .get(line)
+            .and_then(|line| line.spans.get(span_index))
+            .and_then(|span| span.content.as_ref().get(cell.start..cell.end))
+            .unwrap_or("")
+    }
+
     /// Lays out the selectable body for pointer/key routing.
     ///
     /// Rendering calls this automatically. Hosts that route an event before
@@ -372,6 +669,10 @@ impl<'a> Viewport<'a> {
     pub fn set_area(&self, area: Rect, state: &mut ViewportState) {
         self.ensure_interaction_layout(state);
         state.area = area;
+        if area.is_empty() {
+            state.drag_anchor = None;
+            return;
+        }
         state.scroll.clamp(
             self.lines.len(),
             usize::from(area.height),
@@ -419,7 +720,8 @@ impl<'a> Viewport<'a> {
         let (start, end) = state.normalized_selection()?;
         let mut text = String::new();
         for line in start.line..=end.line {
-            let cells = state.cells.get(line)?;
+            let line_layout = state.active_cells().get(line)?;
+            let cells = &line_layout.cells;
             let from = if line == start.line {
                 state.cell_at(line, start.col)
             } else {
@@ -430,11 +732,9 @@ impl<'a> Viewport<'a> {
             } else {
                 cells.len()
             };
-            let line_text: String = cells[from.min(cells.len())..to.min(cells.len())]
-                .iter()
-                .map(|cell| cell.symbol.as_str())
-                .collect();
-            text.push_str(&line_text);
+            for cell in &cells[from.min(cells.len())..to.min(cells.len())] {
+                text.push_str(self.cell_symbol(line, cell));
+            }
             if line != end.line {
                 text.push('\n');
             }
@@ -470,6 +770,10 @@ impl<'a> Viewport<'a> {
         let Some(anchor) = state.drag_anchor else {
             return Outcome::Ignored;
         };
+        if state.area.is_empty() {
+            state.drag_anchor = None;
+            return Outcome::Changed;
+        }
         let before_scroll_y = state.scroll.scroll_y;
         let before_selection = state.selection;
         if position.y < state.area.y {
@@ -503,22 +807,22 @@ impl<'a> Viewport<'a> {
     /// Double-click: select the word under the pointer.
     pub fn select_word_at(&self, state: &mut ViewportState, position: Position) -> Outcome<()> {
         self.ensure_interaction_layout(state);
-        let Some(position) = state.pos_at(position) else {
+        let Some((line, index)) = state.cell_index_at(position) else {
             return Outcome::Ignored;
         };
-        let Some(cells) = state.cells.get(position.line) else {
+        let Some(cells) = state.active_cells().get(line).map(|line| &line.cells) else {
             return Outcome::Ignored;
         };
         if cells.is_empty() {
             return Outcome::Ignored;
         }
-        let index = state
-            .cell_at(position.line, position.col)
-            .min(cells.len().saturating_sub(1));
         let is_word = |cell: &ViewportCell| {
-            cell.symbol.chars().all(|character| {
-                character.is_alphanumeric() || matches!(character, '_' | '-' | '/' | '.')
-            })
+            self.cell_symbol(line, cell)
+                .chars()
+                .next()
+                .is_some_and(|character| {
+                    character.is_alphanumeric() || matches!(character, '_' | '-' | '/' | '.')
+                })
         };
         if !is_word(&cells[index]) {
             return self.clear_selection(state);
@@ -533,12 +837,12 @@ impl<'a> Viewport<'a> {
         }
         state.selection = Some((
             CellPos {
-                line: position.line,
-                col: state.column_of(position.line, start),
+                line,
+                col: state.column_of(line, start),
             },
             CellPos {
-                line: position.line,
-                col: state.column_of(position.line, end),
+                line,
+                col: state.column_of(line, end),
             },
         ));
         state.drag_anchor = None;
@@ -661,7 +965,13 @@ impl<'a> Viewport<'a> {
 impl StatefulWidget for &Viewport<'_> {
     type State = ViewportState;
 
-    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+    fn render(self, requested_area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        let area = requested_area.intersection(buffer.area);
+        if area.is_empty() {
+            state.area = Rect::ZERO;
+            state.drag_anchor = None;
+            return;
+        }
         let pad_x = if self.padded_content {
             self.system.spacing.card_inset
         } else {
@@ -686,20 +996,9 @@ impl StatefulWidget for &Viewport<'_> {
             surface_content.width.saturating_sub(pad_x),
             surface_content.height,
         );
-        let viewport_width = usize::from(content.width);
         let viewport_height = usize::from(content.height);
-        let (content_width, _) = state.scroll.measurement.get_or_measure(
-            self.lines.len(),
-            self.content_revision,
-            || (max_line_width(self.lines), self.lines.len()),
-        );
-        state.scroll.clamp(
-            self.lines.len(),
-            viewport_height,
-            content_width,
-            viewport_width,
-        );
         self.set_area(content, state);
+        buffer.set_style(content, self.base_content_style());
         if let Some(title) = self.title {
             let budget = usize::from(area.width.saturating_sub(2));
             let clipped = crate::text::truncate_cols(
@@ -718,32 +1017,35 @@ impl StatefulWidget for &Viewport<'_> {
         }
         // Paint only visible logical lines and cells. This keeps the hot path
         // proportional to the viewport while allowing selection backgrounds.
-        self.ensure_interaction_layout(state);
         let selection = state.normalized_selection();
-        let start = usize::from(state.scroll.scroll_y).min(self.lines.len());
-        for (row, line) in state.cells[start..]
+        let start = usize::from(state.scroll.scroll_y).min(state.cached_len);
+        for (row, line) in state
+            .active_cells()
             .iter()
+            .skip(start)
             .take(viewport_height)
             .enumerate()
         {
             let line_index = start + row;
             let mut column: usize = 0;
-            for cell in line {
+            let horizontal = state.line_scroll(line_index);
+            let offset = state.line_offset(line_index);
+            for cell in &line.cells {
                 let cell_end = column.saturating_add(cell.width);
-                if cell_end <= usize::from(state.scroll.scroll_x) {
+                if cell_end <= horizontal {
                     column = cell_end;
                     continue;
                 }
-                let visible_column = column.saturating_sub(usize::from(state.scroll.scroll_x));
+                if column < horizontal {
+                    column = cell_end;
+                    continue;
+                }
+                let visible_column = offset.saturating_add(column.saturating_sub(horizontal));
                 let x = content
                     .x
                     .saturating_add(u16::try_from(visible_column).unwrap_or(u16::MAX));
                 if x >= content.right() {
                     break;
-                }
-                if column < usize::from(state.scroll.scroll_x) {
-                    column = cell_end;
-                    continue;
                 }
                 let selected = selection.is_some_and(|(a, b)| {
                     let position = CellPos {
@@ -759,24 +1061,25 @@ impl StatefulWidget for &Viewport<'_> {
                 } else {
                     cell.style
                 };
+                let symbol = self.cell_symbol(line_index, cell);
                 buffer.set_stringn(
                     x,
                     content
                         .y
                         .saturating_add(u16::try_from(row).unwrap_or(u16::MAX)),
-                    &cell.symbol,
+                    symbol,
                     usize::from(content.right().saturating_sub(x)),
                     style,
                 );
                 column = cell_end;
             }
-            let horizontal = usize::from(state.scroll.scroll_x);
             if let Some((a, b)) = selection
                 && line_index >= a.line
                 && line_index < b.line
                 && horizontal < state.line_width(line_index)
             {
-                let tail = state.line_width(line_index).saturating_sub(horizontal);
+                let tail =
+                    offset.saturating_add(state.line_width(line_index).saturating_sub(horizontal));
                 let tail_x = content
                     .x
                     .saturating_add(u16::try_from(tail).unwrap_or(u16::MAX));
@@ -864,5 +1167,48 @@ mod tests {
             "b",
             "rows stay flush on Y — no rhythm row is inserted"
         );
+    }
+
+    #[test]
+    fn appended_content_extends_cached_layout_without_rebuilding_prefix() {
+        let initial = vec![Line::from("alpha"), Line::from("beta")];
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 20, 5);
+        let mut state = ViewportState::default();
+        {
+            let viewport = Viewport::new(&initial, &system).content_revision(1);
+            viewport.render(area, &mut Buffer::empty(area), &mut state);
+        }
+        let prefix_cells = state.active_cells()[0].cells.as_ptr();
+        state.note_content_append();
+
+        let appended = vec![initial[0].clone(), initial[1].clone(), Line::from("gamma")];
+        let viewport = Viewport::new(&appended, &system).content_revision(2);
+        viewport.render(area, &mut Buffer::empty(area), &mut state);
+
+        assert_eq!(state.active_cells().len(), 3);
+        assert_eq!(state.active_cells()[0].cells.as_ptr(), prefix_cells);
+    }
+
+    #[test]
+    fn evicted_prefix_is_rebased_without_rebuilding_surviving_layout() {
+        let initial = vec![Line::from("alpha"), Line::from("beta"), Line::from("gamma")];
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 20, 5);
+        let mut state = ViewportState::default();
+        {
+            let viewport = Viewport::new(&initial, &system).content_revision(1);
+            viewport.render(area, &mut Buffer::empty(area), &mut state);
+        }
+        let surviving_cells = state.active_cells()[1].cells.as_ptr();
+        state.note_content_append();
+        state.rebase_lines(1);
+
+        let appended = vec![initial[1].clone(), initial[2].clone(), Line::from("delta")];
+        let viewport = Viewport::new(&appended, &system).content_revision(2);
+        viewport.render(area, &mut Buffer::empty(area), &mut state);
+
+        assert_eq!(state.active_cells().len(), 3);
+        assert_eq!(state.active_cells()[0].cells.as_ptr(), surviving_cells);
     }
 }

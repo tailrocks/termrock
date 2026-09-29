@@ -4,7 +4,8 @@ use std::{alloc::System, hint::black_box};
 
 use ratatui_core::{
     buffer::Buffer,
-    layout::{Position, Rect},
+    layout::{Alignment, Position, Rect},
+    style::{Color, Style},
     text::Line,
 };
 use stats_alloc::{INSTRUMENTED_SYSTEM, Region, StatsAlloc};
@@ -275,9 +276,9 @@ fn selectable_cells_preserve_tabs_wide_graphemes_and_trailing_spaces() {
 
     viewport.on_click(&mut state, Position::new(1, 1));
     viewport.on_drag(&mut state, Position::new(10, 1));
-    assert_eq!(viewport.selected_text(&state).as_deref(), Some("a    界  "));
+    assert_eq!(viewport.selected_text(&state).as_deref(), Some("a   界  "));
 
-    viewport.on_click(&mut state, Position::new(6, 1));
+    viewport.on_click(&mut state, Position::new(5, 1));
     viewport.on_drag(&mut state, Position::new(7, 1));
     assert_eq!(viewport.selected_text(&state).as_deref(), Some("界"));
 
@@ -288,4 +289,314 @@ fn selectable_cells_preserve_tabs_wide_graphemes_and_trailing_spaces() {
     );
     assert_eq!(outcome, Outcome::Ignored);
     assert!(event.is_none());
+}
+
+#[test]
+fn tabs_expand_to_four_column_stops() {
+    let lines = Box::leak(
+        vec![
+            Line::from("a\tb"),
+            Line::from("ab\tc"),
+            Line::from("abcde\tf"),
+        ]
+        .into_boxed_slice(),
+    );
+    let system = Box::leak(Box::new(DesignSystem::default()));
+    let viewport = Viewport::new(lines, system);
+    let mut state = ViewportState::default();
+    let area = Rect::new(0, 0, 32, 6);
+    viewport.render(area, &mut Buffer::empty(area), &mut state);
+
+    for (row, (end_x, expected)) in [(6, "a   b"), (6, "ab  c"), (10, "abcde   f")]
+        .into_iter()
+        .enumerate()
+    {
+        viewport.on_click(&mut state, Position::new(1, row as u16 + 1));
+        viewport.on_drag(&mut state, Position::new(end_x, row as u16 + 1));
+        assert_eq!(viewport.selected_text(&state).as_deref(), Some(expected));
+    }
+}
+
+#[test]
+fn aligned_lines_keep_their_paragraph_positions() {
+    let lines = Box::leak(
+        vec![
+            Line::from("left"),
+            Line::from("odd").alignment(Alignment::Center),
+            Line::from("right").alignment(Alignment::Right),
+        ]
+        .into_boxed_slice(),
+    );
+    let system = Box::leak(Box::new(DesignSystem::default()));
+    let viewport = Viewport::new(lines, system);
+    let area = Rect::new(0, 0, 12, 6);
+    let mut buffer = Buffer::empty(area);
+    let mut state = ViewportState::default();
+    viewport.render(area, &mut buffer, &mut state);
+
+    // The body is ten cells wide: x=1..11. Ratatui's center offset is
+    // (10 - 3) / 2 = 3, so the three-cell line starts at x=4.
+    assert_eq!(buffer[(1, 1)].symbol(), "l");
+    assert_eq!(buffer[(4, 2)].symbol(), "o");
+    assert_eq!(buffer[(6, 3)].symbol(), "r");
+    assert_eq!(
+        viewport
+            .pos_at(&state, Position::new(4, 2))
+            .map(|p| (p.line, p.col)),
+        Some((1, 0))
+    );
+    assert_eq!(
+        viewport
+            .pos_at(&state, Position::new(6, 3))
+            .map(|p| (p.line, p.col)),
+        Some((2, 0))
+    );
+    assert!(viewport.pos_at(&state, Position::new(3, 2)).is_none());
+    assert!(viewport.pos_at(&state, Position::new(7, 2)).is_none());
+    assert!(viewport.pos_at(&state, Position::new(5, 3)).is_none());
+}
+
+#[test]
+fn overflowing_centered_and_right_aligned_lines_use_horizontal_scroll() {
+    let lines = Box::leak(
+        vec![
+            Line::from("abcdefghij").alignment(Alignment::Center),
+            Line::from("klmnopqrst").alignment(Alignment::Right),
+        ]
+        .into_boxed_slice(),
+    );
+    let system = Box::leak(Box::new(DesignSystem::default()));
+    let viewport = Viewport::new(lines, system);
+    let mut state = ViewportState::default();
+    state.scroll.scroll_x = 2;
+    let area = Rect::new(0, 0, 8, 5);
+    let mut buffer = Buffer::empty(area);
+    viewport.render(area, &mut buffer, &mut state);
+
+    assert_eq!(buffer[(1, 1)].symbol(), "c");
+    assert_eq!(buffer[(1, 2)].symbol(), "m");
+    assert_eq!(
+        viewport
+            .pos_at(&state, Position::new(1, 1))
+            .map(|p| (p.line, p.col)),
+        Some((0, 2))
+    );
+    assert_eq!(
+        viewport
+            .pos_at(&state, Position::new(1, 2))
+            .map(|p| (p.line, p.col)),
+        Some((1, 2))
+    );
+}
+
+#[test]
+fn horizontal_scroll_does_not_draw_or_hit_test_a_partial_wide_grapheme() {
+    let lines = Box::leak(vec![Line::from("界abc")].into_boxed_slice());
+    let system = Box::leak(Box::new(DesignSystem::default()));
+    let viewport = Viewport::new(lines, system);
+    let mut state = ViewportState::default();
+    state.scroll.scroll_x = 1;
+    let area = Rect::new(0, 0, 6, 4);
+    let mut buffer = Buffer::empty(area);
+    viewport.render(area, &mut buffer, &mut state);
+
+    assert_eq!(buffer[(1, 1)].symbol(), " ");
+    assert_eq!(buffer[(2, 1)].symbol(), "a");
+    assert_eq!(viewport.pos_at(&state, Position::new(1, 1)), None);
+}
+
+#[test]
+fn render_clips_partial_nonzero_origin_buffers() {
+    let lines = Box::leak(vec![Line::from("visible")].into_boxed_slice());
+    let system = Box::leak(Box::new(DesignSystem::default()));
+    let viewport = Viewport::new(lines, system);
+    let buffer_area = Rect::new(5, 5, 8, 4);
+    let mut buffer = Buffer::empty(buffer_area);
+
+    viewport.render(
+        Rect::new(2, 2, 20, 20),
+        &mut buffer,
+        &mut ViewportState::default(),
+    );
+}
+
+#[test]
+fn explicit_content_revision_bump_invalidates_stale_selection_coordinates() {
+    let mut lines = vec![Line::from("abcdef")];
+    let system = Box::leak(Box::new(DesignSystem::default()));
+    let area = Rect::new(0, 0, 16, 4);
+    let mut state = ViewportState::default();
+    {
+        let viewport = Viewport::new(&lines, system).content_revision(1);
+        viewport.render(area, &mut Buffer::empty(area), &mut state);
+        viewport.on_click(&mut state, Position::new(1, 1));
+        viewport.on_drag(&mut state, Position::new(7, 1));
+        assert_eq!(viewport.selected_text(&state).as_deref(), Some("abcdef"));
+    }
+
+    lines[0] = Line::from("uvwxyz");
+    let viewport = Viewport::new(&lines, system).content_revision(2);
+    viewport.render(area, &mut Buffer::empty(area), &mut state);
+
+    assert!(!viewport.has_selection(&state));
+    assert!(!viewport.has_anchor(&state));
+}
+
+#[test]
+fn style_only_revision_preserves_selection_and_copy() {
+    let mut lines = vec![Line::from("abcdef")];
+    let system = Box::leak(Box::new(DesignSystem::default()));
+    let area = Rect::new(0, 0, 16, 4);
+    let mut state = ViewportState::default();
+    let viewport = Viewport::new(&lines, system).content_revision(1);
+    viewport.render(area, &mut Buffer::empty(area), &mut state);
+    viewport.on_click(&mut state, Position::new(1, 1));
+    viewport.on_drag(&mut state, Position::new(7, 1));
+    assert_eq!(viewport.copy_selection(&state).as_deref(), Some("abcdef"));
+
+    lines[0] = Line::from("abcdef").style(Style::default().fg(Color::Red));
+    let styled = Viewport::new(&lines, system).content_revision(2);
+    styled.render(area, &mut Buffer::empty(area), &mut state);
+
+    assert_eq!(styled.copy_selection(&state).as_deref(), Some("abcdef"));
+    assert!(styled.has_selection(&state));
+}
+
+#[test]
+fn drag_after_empty_resize_clears_anchor_without_panicking() {
+    let lines = Box::leak(vec![Line::from("abcdef")].into_boxed_slice());
+    let system = Box::leak(Box::new(DesignSystem::default()));
+    let viewport = Viewport::new(lines, system);
+    let area = Rect::new(0, 0, 16, 4);
+    let mut state = ViewportState::default();
+    viewport.render(area, &mut Buffer::empty(area), &mut state);
+    viewport.on_click(&mut state, Position::new(1, 1));
+    assert!(viewport.has_anchor(&state));
+
+    let empty = Rect::new(8, 8, 0, 0);
+    viewport.render(empty, &mut Buffer::empty(empty), &mut state);
+    assert!(!viewport.has_anchor(&state));
+    assert_eq!(
+        viewport.on_drag(&mut state, Position::new(8, 8)),
+        Outcome::Ignored
+    );
+}
+
+#[test]
+fn uncached_revision_rebuilds_reused_storage_for_both_width_changes() {
+    let mut lines = vec![Line::from("x")];
+    let system = Box::leak(Box::new(DesignSystem::default()));
+    let area = Rect::new(0, 0, 16, 4);
+    let mut state = ViewportState::default();
+    let viewport = Viewport::new(&lines, system);
+    let mut first = Buffer::empty(area);
+    viewport.render(area, &mut first, &mut state);
+    assert_eq!(first[(1, 1)].symbol(), "x");
+    assert_eq!(
+        viewport.select_word_at(&mut state, Position::new(1, 1)),
+        Outcome::Changed
+    );
+    assert_eq!(viewport.copy_selection(&state).as_deref(), Some("x"));
+
+    let source = lines.as_ptr();
+    lines[0] = Line::from("界");
+    assert_eq!(
+        lines.as_ptr(),
+        source,
+        "the Vec storage is intentionally reused"
+    );
+
+    let changed = Viewport::new(&lines, system);
+    let mut fresh = Buffer::empty(area);
+    changed.render(area, &mut fresh, &mut state);
+    assert_eq!(fresh[(1, 1)].symbol(), "界");
+    assert!(!changed.has_selection(&state));
+    assert_eq!(
+        changed.pos_at(&state, Position::new(2, 1)),
+        Some(termrock::widgets::CellPos { line: 0, col: 2 })
+    );
+    assert_eq!(
+        changed.select_word_at(&mut state, Position::new(2, 1)),
+        Outcome::Changed
+    );
+    assert_eq!(changed.copy_selection(&state).as_deref(), Some("界"));
+
+    lines[0] = Line::from("x");
+    let narrowed = Viewport::new(&lines, system);
+    narrowed.render(area, &mut Buffer::empty(area), &mut state);
+    assert!(!narrowed.has_selection(&state));
+    assert_eq!(
+        narrowed.pos_at(&state, Position::new(1, 1)),
+        Some(termrock::widgets::CellPos { line: 0, col: 0 })
+    );
+    assert_eq!(
+        narrowed.select_word_at(&mut state, Position::new(1, 1)),
+        Outcome::Changed
+    );
+    assert_eq!(narrowed.copy_selection(&state).as_deref(), Some("x"));
+}
+
+#[test]
+fn halfwidth_sound_marks_use_ratatui_cell_width() {
+    let lines = Box::leak(vec![Line::from("ﾞ"), Line::from("ｶﾞ")].into_boxed_slice());
+    let system = Box::leak(Box::new(DesignSystem::default()));
+    let viewport = Viewport::new(lines, system);
+    let area = Rect::new(0, 0, 16, 4);
+    let mut state = ViewportState::default();
+    let mut buffer = Buffer::empty(area);
+    viewport.render(area, &mut buffer, &mut state);
+
+    assert_eq!(buffer[(1, 1)].symbol(), "ﾞ");
+    assert_eq!(buffer[(1, 2)].symbol(), "ｶﾞ");
+    assert_eq!(
+        viewport.pos_at(&state, Position::new(2, 2)),
+        Some(termrock::widgets::CellPos { line: 1, col: 2 })
+    );
+
+    viewport.on_click(&mut state, Position::new(1, 1));
+    viewport.on_drag(&mut state, Position::new(2, 1));
+    assert_eq!(viewport.copy_selection(&state).as_deref(), Some("ﾞ"));
+
+    viewport.on_click(&mut state, Position::new(1, 2));
+    viewport.on_drag(&mut state, Position::new(3, 2));
+    assert_eq!(viewport.copy_selection(&state).as_deref(), Some("ｶﾞ"));
+}
+
+#[test]
+fn wide_grapheme_word_selection_works_on_both_terminal_cells() {
+    let lines = Box::leak(vec![Line::from("界 ")].into_boxed_slice());
+    let system = Box::leak(Box::new(DesignSystem::default()));
+    let viewport = Viewport::new(lines, system);
+    let area = Rect::new(0, 0, 20, 4);
+    let mut state = ViewportState::default();
+    viewport.render(area, &mut Buffer::empty(area), &mut state);
+
+    assert_eq!(
+        viewport.select_word_at(&mut state, Position::new(1, 1)),
+        Outcome::Changed
+    );
+    assert_eq!(viewport.selected_text(&state).as_deref(), Some("界"));
+    assert_eq!(
+        viewport.select_word_at(&mut state, Position::new(2, 1)),
+        Outcome::Changed
+    );
+    assert_eq!(viewport.selected_text(&state).as_deref(), Some("界"));
+}
+
+#[test]
+fn tab_stops_and_content_style_cover_blank_cells() {
+    let lines = Box::leak(vec![Line::from("a\tb")].into_boxed_slice());
+    let system = Box::leak(Box::new(DesignSystem::default()));
+    let style = Style::default().bg(Color::Blue);
+    let viewport = Viewport::new(lines, system).content_style(style);
+    let area = Rect::new(0, 0, 16, 4);
+    let mut buffer = Buffer::empty(area);
+    viewport.render(area, &mut buffer, &mut ViewportState::default());
+
+    assert_eq!(buffer[(1, 1)].symbol(), "a");
+    assert_eq!(buffer[(2, 1)].symbol(), " ");
+    assert_eq!(buffer[(3, 1)].symbol(), " ");
+    assert_eq!(buffer[(4, 1)].symbol(), " ");
+    assert_eq!(buffer[(5, 1)].symbol(), "b");
+    assert_eq!(buffer[(6, 1)].bg, Color::Blue);
 }
