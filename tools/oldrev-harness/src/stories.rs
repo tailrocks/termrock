@@ -536,12 +536,23 @@ fn viewport(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     ];
     let border_style = theme.style(Role::BorderFocused);
     let theme = theme.clone().with_role(Role::Border, border_style);
-    let mut state = DialogScroll::default();
+    // This story deliberately renders OLD_REV. That pinned API still takes
+    // DialogScroll; current-head consumers migrate to ViewportState (see
+    // migration 0380) and are covered by the compile contract below.
+    let mut old_state = DialogScroll::default();
     frame.render_stateful_widget(
         &Viewport::new(&lines, &theme)
             .title("Viewport")
             .content_style(Style::new()),
         area,
-        &mut state,
+        &mut old_state,
     );
+}
+
+#[cfg(test)]
+mod current_head_viewport_contract {
+    #[test]
+    fn current_head_exports_persistent_viewport_state() {
+        let _state = termrock_head::widgets::ViewportState::default();
+    }
 }
