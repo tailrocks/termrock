@@ -980,6 +980,15 @@ impl PromptComposerState {
             return PromptComposerOutcome::Ignored;
         }
 
+        // Escape peels exactly one composer layer only for a bare physical
+        // press. Reject other phases/modifiers before TextArea sees them;
+        // TextArea's raw Escape path otherwise treats them as edit-finish.
+        let bare_escape_press =
+            key.code == KeyCode::Esc && key.is_press() && key.modifiers.is_empty();
+        if key.code == KeyCode::Esc && !bare_escape_press {
+            return PromptComposerOutcome::Ignored;
+        }
+
         // Bare Enter/Esc via intent map (modifiers still use product paths below).
         if key.modifiers.is_empty()
             && let Some(intent) = crate::interaction::default_prompt_composer_intent(key)
@@ -997,7 +1006,7 @@ impl PromptComposerState {
         }
 
         // Completion open: Esc closes one layer; navigation left to consumer list.
-        if self.completion.kind != CompletionKind::None && key.code == KeyCode::Esc {
+        if self.completion.kind != CompletionKind::None && bare_escape_press {
             return self.close_completion();
         }
 
@@ -1065,7 +1074,7 @@ impl PromptComposerState {
             }
         }
 
-        if key.code == KeyCode::Esc {
+        if bare_escape_press {
             if self.completion.kind != CompletionKind::None {
                 return self.close_completion();
             }
@@ -2031,10 +2040,156 @@ impl StatefulWidget for PromptComposer<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
+    use crate::input::{KeyEventKind, KeyModifiers};
 
     fn press(code: KeyCode) -> KeyEvent {
         KeyEvent::new(code, KeyModifiers::NONE)
+    }
+
+    fn escape_event(kind: KeyEventKind, modifiers: KeyModifiers) -> KeyEvent {
+        let mut key = KeyEvent::new(KeyCode::Esc, modifiers);
+        key.kind = kind;
+        key
+    }
+
+    fn escape_cases() -> [(&'static str, KeyEventKind, KeyModifiers, bool); 6] {
+        [
+            ("bare press", KeyEventKind::Press, KeyModifiers::NONE, true),
+            (
+                "bare repeat",
+                KeyEventKind::Repeat,
+                KeyModifiers::NONE,
+                false,
+            ),
+            (
+                "bare release",
+                KeyEventKind::Release,
+                KeyModifiers::NONE,
+                false,
+            ),
+            (
+                "shift press",
+                KeyEventKind::Press,
+                KeyModifiers::SHIFT,
+                false,
+            ),
+            (
+                "control press",
+                KeyEventKind::Press,
+                KeyModifiers::CONTROL,
+                false,
+            ),
+            ("alt press", KeyEventKind::Press, KeyModifiers::ALT, false),
+        ]
+    }
+
+    #[test]
+    fn escape_closes_completion_only_on_bare_press() {
+        for (label, kind, modifiers, peels) in escape_cases() {
+            let mut state = PromptComposerState::new();
+            state.set_accepts_input(true);
+            state.set_completion(CompletionQuery {
+                kind: CompletionKind::Slash,
+                query: "he".into(),
+                trigger_byte: 0,
+                cursor_byte: 3,
+            });
+
+            let out = state.handle_key(escape_event(kind, modifiers));
+            assert_eq!(
+                out,
+                if peels {
+                    PromptComposerOutcome::CompletionClosed
+                } else {
+                    PromptComposerOutcome::Ignored
+                },
+                "{label}"
+            );
+            assert_eq!(
+                state.completion().kind,
+                if peels {
+                    CompletionKind::None
+                } else {
+                    CompletionKind::Slash
+                },
+                "{label}"
+            );
+        }
+    }
+
+    #[test]
+    fn escape_exits_fullscreen_only_on_bare_press() {
+        for (label, kind, modifiers, peels) in escape_cases() {
+            let mut state = PromptComposerState::new();
+            state.set_accepts_input(true);
+            assert_eq!(
+                state.request_fullscreen(),
+                PromptComposerOutcome::FullscreenRequested
+            );
+
+            let out = state.handle_key(escape_event(kind, modifiers));
+            assert_eq!(
+                out,
+                if peels {
+                    PromptComposerOutcome::FullscreenDismissed
+                } else {
+                    PromptComposerOutcome::Ignored
+                },
+                "{label}"
+            );
+            assert_eq!(
+                state.presentation,
+                if peels {
+                    ComposerPresentation::Normal
+                } else {
+                    ComposerPresentation::Fullscreen
+                },
+                "{label}"
+            );
+        }
+    }
+
+    #[test]
+    fn escape_clears_selection_only_on_bare_press() {
+        for (label, kind, modifiers, peels) in escape_cases() {
+            let mut state = PromptComposerState::new();
+            state.set_accepts_input(true);
+            state.set_text("draft");
+            state.select_anchor = Some(TextCursor { line: 0, byte: 0 });
+
+            let out = state.handle_key(escape_event(kind, modifiers));
+            assert_eq!(
+                out,
+                if peels {
+                    PromptComposerOutcome::Changed
+                } else {
+                    PromptComposerOutcome::Ignored
+                },
+                "{label}"
+            );
+            assert_eq!(state.has_selection(), !peels, "{label}");
+        }
+    }
+
+    #[test]
+    fn escape_dismisses_only_on_bare_press() {
+        for (label, kind, modifiers, peels) in escape_cases() {
+            let mut state = PromptComposerState::new();
+            state.set_accepts_input(true);
+            state.set_text("draft");
+
+            let out = state.handle_key(escape_event(kind, modifiers));
+            assert_eq!(
+                out,
+                if peels {
+                    PromptComposerOutcome::DismissRequest
+                } else {
+                    PromptComposerOutcome::Ignored
+                },
+                "{label}"
+            );
+            assert_eq!(state.text(), "draft", "{label}");
+        }
     }
 
     #[test]

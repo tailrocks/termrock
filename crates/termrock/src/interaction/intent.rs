@@ -421,7 +421,7 @@ pub fn default_text_area_intent(key: KeyEvent) -> Option<UiIntent> {
         KeyCode::End => Some(UiIntent::Move(NavigationMove::Last)),
         KeyCode::PageUp => Some(UiIntent::Page(PageMove::Backward)),
         KeyCode::PageDown => Some(UiIntent::Page(PageMove::Forward)),
-        KeyCode::Esc => Some(UiIntent::Cancel),
+        KeyCode::Esc if key.is_press() => Some(UiIntent::Cancel),
         KeyCode::Left if key.modifiers.is_empty() => Some(UiIntent::Move(NavigationMove::Previous)),
         KeyCode::Right if key.modifiers.is_empty() => Some(UiIntent::Move(NavigationMove::Next)),
         _ => None,
@@ -573,6 +573,31 @@ mod tests {
         assert_eq!(
             default_text_area_intent(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
             Some(UiIntent::Cancel)
+        );
+    }
+
+    #[test]
+    fn default_text_area_intent_cancel_is_press_only_and_preserves_modifiers() {
+        assert_eq!(
+            default_text_area_intent(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            Some(UiIntent::Cancel)
+        );
+
+        let mut repeat = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
+        repeat.kind = KeyEventKind::Repeat;
+        assert_eq!(default_text_area_intent(repeat), None);
+
+        let mut release = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
+        release.kind = KeyEventKind::Release;
+        assert_eq!(default_text_area_intent(release), None);
+
+        assert_eq!(
+            default_text_area_intent(KeyEvent::new(KeyCode::Esc, KeyModifiers::SHIFT)),
+            Some(UiIntent::Cancel)
+        );
+        assert_eq!(
+            default_text_area_intent(KeyEvent::new(KeyCode::Esc, KeyModifiers::CONTROL)),
+            None
         );
     }
 
