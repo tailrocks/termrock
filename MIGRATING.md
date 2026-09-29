@@ -395,6 +395,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0379 | `v0.14.0` | [HintBar alignment is honored](migrations/0379-v0.14.0-hint-bar-alignment.md) |
 | 0380 | `v0.14.0` | [Viewport owns persistent selection state](migrations/0380-v0.14.0-viewport-state-selection.md) |
 | 0381 | `v0.14.0` | [Tree uses absolute virtual-window geometry](migrations/0381-v0.14.0-tree-absolute-virtual-window.md) |
+| 0382 | `v0.14.0` | [QuickOpen returns borrowed match rows](migrations/0382-v0.14.0-quick-open-borrowed-matches.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
