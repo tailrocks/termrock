@@ -1522,7 +1522,7 @@ fn paint_tree_row<Id: Clone + PartialEq>(
     } else {
         body
     };
-    if !interactive {
+    if !node.enabled {
         label_style = chrome.label_style(tokens.style(Role::TextDisabled));
     }
 
