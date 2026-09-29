@@ -984,53 +984,43 @@ pub fn substring_ranges(source: &str, query: &str) -> MatchRanges {
     ranges.prepare(source)
 }
 
-/// Case-insensitive substring matches (ASCII-oriented; Unicode lowercases per char).
+/// Case-insensitive substring matches (Unicode-aware via per-char `char::to_lowercase`).
 #[must_use]
 pub fn substring_ranges_ignore_ascii_case(source: &str, query: &str) -> MatchRanges {
     if query.is_empty() {
         return MatchRanges::new();
     }
     let q: String = query.chars().flat_map(char::to_lowercase).collect();
-    let mut ranges = MatchRanges::new();
-    let mut byte = 0;
-    let lower_source: String = source.chars().flat_map(char::to_lowercase).collect();
-    // Map lower_source indices carefully — for ASCII-heavy labels only.
-    // Safer approach: walk source graphemes
-    let _ = lower_source;
-    let ql = q.len();
-    while byte < source.len() {
-        let rest = &source[byte..];
-        if let Some(rel) = rest.to_lowercase().find(&q) {
-            // find byte offset: walk chars in rest
-            let mut abs = byte;
-            let mut skipped = 0usize;
-            for (i, c) in rest.char_indices() {
-                if skipped == rel {
-                    abs = byte + i;
-                    break;
-                }
-                skipped += c.to_lowercase().next().map(|x| x.len_utf8()).unwrap_or(1);
+    let lower: String = source.chars().flat_map(char::to_lowercase).collect();
+    // Fold once, then map each lowercased byte offset back to the complete
+    // source scalar that emitted it. A lowercase expansion such as `İ` →
+    // `i` + COMBINING DOT must remain matchable when the query covers only
+    // part of the folded expansion.
+    let mut start_map = Vec::with_capacity(lower.len() + 1);
+    let mut end_map = Vec::with_capacity(lower.len() + 1);
+    end_map.push(0);
+    let mut si = 0usize;
+    for c in source.chars() {
+        let source_end = si + c.len_utf8();
+        for lower_c in c.to_lowercase() {
+            let bytes = lower_c.len_utf8();
+            start_map.extend(std::iter::repeat_n(si, bytes));
+            for _ in 0..bytes {
+                end_map.push(source_end);
             }
-            // end: walk query length in lower space — approximate by taking query.chars count from abs
-            let end = {
-                let mut e = abs;
-                let mut need = ql;
-                for c in source[abs..].chars() {
-                    let lw: String = c.to_lowercase().collect();
-                    if need < lw.len() {
-                        break;
-                    }
-                    need -= lw.len();
-                    e += c.len_utf8();
-                    if need == 0 {
-                        break;
-                    }
-                }
-                e
-            };
-            ranges.push(MatchRange::new(abs, end).snap_graphemes(source));
-            byte = end.max(abs + 1);
-        } else {
+        }
+        si = source_end;
+    }
+    start_map.push(source.len());
+    let mut ranges = MatchRanges::new();
+    let mut start = 0usize;
+    while let Some(rel) = lower[start..].find(&q) {
+        let abs_l = start + rel;
+        let abs = start_map[abs_l];
+        let end = end_map[abs_l + q.len()];
+        ranges.push(MatchRange::new(abs, end).snap_graphemes(source));
+        start = abs_l + q.len().max(1);
+        if start >= lower.len() {
             break;
         }
     }
@@ -1048,6 +1038,64 @@ mod tests {
         let mid = s.find('👍').unwrap() + 1;
         let r = MatchRange::new(mid, mid + 1).snap_graphemes(s);
         assert_eq!(r.slice(s), "👍");
+    }
+
+    #[test]
+    fn substring_ignore_case_maps_multibyte_lowercase_bytes() {
+        let source = "xéy";
+        let ranges = substring_ranges_ignore_ascii_case(source, "É");
+
+        assert_eq!(ranges.as_slice(), &[MatchRange::new(1, 3)]);
+        assert_eq!(ranges.as_slice()[0].slice(source), "é");
+    }
+
+    #[test]
+    fn substring_ignore_case_maps_lowercase_expansion() {
+        let source = "AİB";
+        let ranges = substring_ranges_ignore_ascii_case(source, "i\u{307}b");
+
+        assert_eq!(ranges.as_slice(), &[MatchRange::new(1, 4)]);
+        assert_eq!(ranges.as_slice()[0].slice(source), "İB");
+    }
+
+    #[test]
+    fn substring_ignore_case_maps_partial_lowercase_expansion() {
+        let source = "İ";
+        let ranges = substring_ranges_ignore_ascii_case(source, "i");
+
+        assert_eq!(ranges.as_slice(), &[MatchRange::new(0, 2)]);
+        assert_eq!(ranges.as_slice()[0].slice(source), "İ");
+    }
+
+    #[test]
+    fn substring_ignore_case_maps_each_partial_lowercase_expansion() {
+        let source = "İİ";
+        let ranges = substring_ranges_ignore_ascii_case(source, "i");
+
+        assert_eq!(ranges.as_slice(), &[MatchRange::new(0, 4)]);
+        assert_eq!(
+            ranges
+                .as_slice()
+                .iter()
+                .map(|range| range.slice(source))
+                .collect::<Vec<_>>(),
+            ["İİ"]
+        );
+    }
+
+    #[test]
+    fn substring_ignore_case_preserves_ascii_matches() {
+        let source = "Foo foo";
+        let ranges = substring_ranges_ignore_ascii_case(source, "FOO");
+
+        assert_eq!(
+            ranges
+                .as_slice()
+                .iter()
+                .map(|range| range.slice(source))
+                .collect::<Vec<_>>(),
+            ["Foo", "foo"]
+        );
     }
 
     #[test]
