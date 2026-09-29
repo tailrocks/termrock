@@ -381,6 +381,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0365 | `v0.14.0` | [TreeTable reconciliation removes invalid checked rows](migrations/0365-v0.14.0-tree-table-selection-reconciliation.md) |
 | 0366 | `v0.14.0` | [Virtual collection windows preserve off-window active IDs](migrations/0366-v0.14.0-collection-window-active-identity.md) |
 | 0367 | `v0.14.0` | [Overlay pointer routing honors input ownership](migrations/0367-v0.14.0-overlay-pointer-input-ownership.md) |
+| 0368 | `v0.14.0` | [Progress painting clips to its buffer](migrations/0368-v0.14.0-progress-buffer-clipping.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
