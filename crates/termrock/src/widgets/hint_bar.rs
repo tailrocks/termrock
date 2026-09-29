@@ -177,9 +177,9 @@ impl<'a> HintBar<'a> {
         let mut spans = Vec::with_capacity(hints.len().saturating_mul(4) + usize::from(truncated));
         for hint in hints {
             spans.push(Span::styled(hint.chord, self.system.key_hint_key()));
-            spans.push(Span::styled(" ", self.system.key_hint_action()));
+            spans.push(Span::raw(" "));
             spans.push(Span::styled(hint.label, self.system.key_hint_action()));
-            spans.push(Span::styled("  ", self.system.key_hint_action()));
+            spans.push(Span::raw("  "));
         }
         if truncated {
             spans.push(Span::styled(
@@ -308,14 +308,7 @@ fn paint_hint_lines(
             area.width,
             1,
         );
-        paint_line_overflow(
-            buffer,
-            row,
-            line,
-            system.key_hint_action(),
-            placement,
-            &mut scratch,
-        );
+        paint_line_overflow(buffer, row, line, Style::default(), placement, &mut scratch);
     }
 }
 
@@ -628,6 +621,35 @@ mod tests {
     }
 
     #[test]
+    fn separator_and_trailing_gaps_keep_existing_base_style() {
+        let system = crate::style::DesignSystem::default();
+        let hints = [Hint {
+            chord: "Esc",
+            label: "Cancel",
+            priority: 1,
+            visible: true,
+        }];
+        let bar = HintBar::new(&hints, &system);
+        let area = Rect::new(0, 0, 20, 1);
+        let base = system.junie_theme().base();
+        let mut buffer = Buffer::filled(area, ratatui_core::buffer::Cell::new(" "));
+        buffer.set_style(area, base);
+
+        (&bar).render(area, &mut buffer);
+
+        let separator_x = 1 + UnicodeWidthStr::width("Esc") as u16;
+        let trailing_x = separator_x + 1 + UnicodeWidthStr::width("Cancel") as u16;
+        for x in [separator_x, trailing_x, trailing_x + 1] {
+            assert_eq!(buffer[(x, 0)].fg, base.fg.unwrap());
+            assert_eq!(buffer[(x, 0)].bg, base.bg.unwrap());
+        }
+        assert_eq!(
+            buffer[(separator_x + 1, 0)].fg,
+            system.key_hint_action().fg.unwrap()
+        );
+    }
+
+    #[test]
     fn right_status_wins_the_edge() {
         let system = crate::style::DesignSystem::default();
         let hints = [Hint {
@@ -700,6 +722,30 @@ mod tests {
             "E"
         );
         assert_eq!(buffer[(status_x - 1, area.y)].symbol(), " ");
+    }
+
+    #[test]
+    fn centered_hints_reserve_right_status_region() {
+        let system = crate::style::DesignSystem::default();
+        let hints = [Hint {
+            chord: "Esc",
+            label: "Cancel",
+            priority: 1,
+            visible: true,
+        }];
+        let bar = HintBar::new(&hints, &system)
+            .alignment(CellAlignment::Center)
+            .right("saved");
+        let area = Rect::new(10, 1, 40, 1);
+        let mut buffer = Buffer::empty(area);
+
+        (&bar).render(area, &mut buffer);
+
+        // Canonical 0434 placement centers the fitted block in the row, then
+        // clamps it before the status-owned interval.
+        assert_eq!(buffer[(24, area.y)].symbol(), "E");
+        assert_eq!(buffer[(44, area.y)].symbol(), "s");
+        assert_eq!(buffer[(43, area.y)].symbol(), " ");
     }
 
     #[test]
