@@ -11,8 +11,8 @@ use termrock::registry::PublicUiId;
 use termrock::runtime::FrameTick;
 use termrock::style::{JunieTheme, MotionPolicy};
 use termrock::widgets::{
-    Badge, Callout, EmptyKind, EmptyState, Kbd, Label, ProgressBar, ProgressKind, ProgressStatus,
-    SemanticStatus, Separator, Skeleton, Spinner, SpinnerState, StatusIndicator,
+    Badge, Callout, EmptyKind, EmptyState, Kbd, Label, Lockup, ProgressBar, ProgressKind,
+    ProgressStatus, SemanticStatus, Separator, Skeleton, Spinner, SpinnerState, StatusIndicator,
 };
 
 use crate::catalog::PageId;
@@ -151,6 +151,9 @@ fn paint_demo(
         }
         PublicUiId::Label => {
             Label::<()>::new("Label", system).paint(inner, buf);
+        }
+        PublicUiId::Lockup => {
+            Lockup::new("TR", system).paint(inner, buf);
         }
         _ => {
             buf.set_string(

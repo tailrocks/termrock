@@ -79,12 +79,6 @@ impl Default for NumberConstraints {
 }
 
 impl NumberConstraints {
-    /// Unbounded with step 1.
-    #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     /// Min and max inclusive.
     #[must_use]
     pub fn bounded(min: f64, max: f64, step: f64) -> Self {
@@ -371,12 +365,6 @@ impl NumberInputState {
     #[must_use]
     pub const fn is_focused(&self) -> bool {
         self.focused
-    }
-
-    /// Enabled.
-    #[must_use]
-    pub const fn is_enabled(&self) -> bool {
-        self.enabled
     }
 
     /// Read-only.

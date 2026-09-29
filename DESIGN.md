@@ -907,8 +907,8 @@ Tab still reaches them.
   a faint hint row at the bottom.
 - **Keys**: typing filters; `Esc` clears the query, then cancels; `Enter`
   chooses, `Alt+Enter` the alternate action; `Tab` cycles scope;
-  `Ctrl+N/P`, `Ctrl+J/K`, page keys move. Junie also maps `Delete` to a
-  secondary action; TermRock does not.
+  `Ctrl+N/P`, `Ctrl+J/K`, page keys move. `Delete` emits
+  `PickerOutcome::Secondary` for the selected row; the host owns that action.
 - **Rule**: the owner ranks and supplies rows on every query change.
 
 #### Dialog

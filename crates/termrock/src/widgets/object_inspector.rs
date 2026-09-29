@@ -570,12 +570,6 @@ impl ObjectInspectorState {
         self.accepts_input = accepts;
     }
 
-    /// Whether host granted input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Whether path is expanded.
     #[must_use]
     pub fn is_expanded(&self, path: &str) -> bool {
@@ -1397,7 +1391,7 @@ impl<'a> ObjectInspector<'a> {
                 usize::from(area.width),
                 self.system.style(Role::TextMuted),
             );
-            self.paint_footer(area, buffer, state, false);
+            self.paint_footer(area, buffer, state);
             return;
         }
 
@@ -1528,16 +1522,10 @@ impl<'a> ObjectInspector<'a> {
             y = y.saturating_add(1);
         }
 
-        self.paint_footer(area, buffer, state, false);
+        self.paint_footer(area, buffer, state);
     }
 
-    fn paint_footer(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &ObjectInspectorState,
-        _ascii: bool,
-    ) {
+    fn paint_footer(&self, area: Rect, buffer: &mut Buffer, state: &ObjectInspectorState) {
         let y = area.bottom().saturating_sub(1);
         if y < area.y {
             return;

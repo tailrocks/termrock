@@ -261,7 +261,7 @@ fn action_and_status_regions_match_painted_geometry() {
         .region(crate::widgets::StatusRegion::Right)];
     let status = StatusBar::new(&left, &right, &system).alpha(1.0);
     let regions = status.regions(area);
-    assert_eq!(regions[1].area.right(), area.right());
+    assert_eq!(regions[1].area.right(), area.right() - 1);
     (&status).render(area, &mut buffer, &mut StatusBarState::default());
 }
 
@@ -278,7 +278,8 @@ fn viewport_clamps_scroll_and_paints_an_overflow_thumb() {
     let viewport = Viewport::new(&lines, &system).title(" Log ");
     let area = Rect::new(0, 0, 12, 4);
     let mut buffer = Buffer::empty(area);
-    let mut state = crate::scroll::DialogScroll {
+    let mut state = crate::widgets::ViewportState::default();
+    state.scroll = crate::scroll::DialogScroll {
         scroll_x: 0,
         scroll_y: 1,
         ..crate::scroll::DialogScroll::default()
@@ -286,7 +287,7 @@ fn viewport_clamps_scroll_and_paints_an_overflow_thumb() {
 
     StatefulWidget::render(&viewport, area, &mut buffer, &mut state);
 
-    assert_eq!(state.scroll_y, 1);
+    assert_eq!(state.scroll.scroll_y, 1);
     assert_eq!(buffer[(1, 1)].symbol(), "o");
     let (start, len) = crate::scroll::overflow_thumb(4, 2, 2, 1).expect("4 lines overflow 2");
     assert_eq!((start, len), (1, 1));
@@ -305,7 +306,7 @@ fn viewport_emphasis_focused_uses_border_focused_role() {
         .emphasis(PanelChrome::Focused);
     let area = Rect::new(0, 0, 16, 4);
     let mut buffer = Buffer::empty(area);
-    let mut state = crate::scroll::DialogScroll::default();
+    let mut state = crate::widgets::ViewportState::default();
 
     StatefulWidget::render(&viewport, area, &mut buffer, &mut state);
 

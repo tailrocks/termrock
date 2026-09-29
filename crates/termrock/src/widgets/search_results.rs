@@ -619,12 +619,6 @@ impl SearchResultsState {
         self.accepts_input = on;
     }
 
-    /// Accepts input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Enable multi-check.
     pub fn enable_multi_select(&mut self) {
         self.multi = true;

@@ -8,3 +8,14 @@ tags:
   - "widget"
 aliases: []
 ---
+
+## Key outcomes
+
+`Delete` on a selected row emits `PickerOutcome::Secondary(id)` on the
+initial press with no modifiers. The picker keeps the selected stable identity
+and leaves the secondary action to the host. A missing, stale, disabled, or
+non-navigable selection, repeat, release, or modified Delete produces
+`PickerOutcome::Ignored`.
+
+Hosts should route `Secondary(id)` to the row-level action appropriate for the
+picker. The picker does not remove rows or close resources itself.

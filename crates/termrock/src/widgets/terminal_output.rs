@@ -576,12 +576,6 @@ impl TerminalOutputState {
         self.accepts_input = accepts;
     }
 
-    /// Accepts input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Following tail.
     #[must_use]
     pub const fn is_following(&self) -> bool {
@@ -1115,7 +1109,6 @@ impl<'a> TerminalOutput<'a> {
                 state,
                 self.system,
                 surface,
-                false,
                 colorless,
                 tiny,
                 narrow,
@@ -1157,7 +1150,6 @@ impl<'a> TerminalOutput<'a> {
                     state.paint_mode,
                     self.system,
                     surface,
-                    false,
                     colorless,
                     cursor,
                     tiny,
@@ -1220,7 +1212,6 @@ fn paint_header(
     state: &TerminalOutputState,
     system: &DesignSystem,
     surface: bool,
-    _ascii: bool,
     colorless: bool,
     tiny: bool,
     narrow: bool,
@@ -1357,7 +1348,6 @@ fn paint_line(
     paint_mode: TerminalPaintMode,
     system: &DesignSystem,
     surface: bool,
-    _ascii: bool,
     colorless: bool,
     cursor: bool,
     tiny: bool,

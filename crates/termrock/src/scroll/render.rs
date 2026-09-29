@@ -49,10 +49,6 @@ impl ScrollbarStyle {
             Self::Block => "█",
         }
     }
-
-    const fn vertical_thumb_for(self, _ascii: bool) -> &'static str {
-        self.vertical_thumb()
-    }
 }
 
 #[must_use]
@@ -362,7 +358,7 @@ impl Widget for Scrollbar<'_> {
                 scroll::ScrollAxis::Vertical => (
                     area.x,
                     area.y + index as u16,
-                    self.spec.style.vertical_thumb_for(false),
+                    self.spec.style.vertical_thumb(),
                 ),
             };
             let in_thumb = thumb_range.contains(&index);

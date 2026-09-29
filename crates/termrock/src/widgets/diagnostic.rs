@@ -1004,12 +1004,6 @@ impl DiagnosticState {
         self.accepts_input = accepts;
     }
 
-    /// Accepts input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Offset.
     #[must_use]
     pub const fn offset(&self) -> u16 {
@@ -1385,7 +1379,7 @@ impl<'a> DiagnosticView<'a> {
             DiagnosticRecipe::Inline => {
                 // Single item or cursor item
                 let d = self.items.get(state.cursor).unwrap_or(&self.items[0]);
-                paint_inline(buffer, area, d, self.system, surface, false, colorless);
+                paint_inline(buffer, area, d, self.system, surface, colorless);
                 state.regions.push(DiagnosticRegion {
                     id: d.id.to_string(),
                     index: state.cursor.min(self.items.len() - 1),
@@ -1416,7 +1410,6 @@ impl<'a> DiagnosticView<'a> {
                         self.source_lines,
                         self.system,
                         surface,
-                        false,
                         colorless,
                         cursor,
                         expanded,
@@ -1440,7 +1433,6 @@ fn paint_inline(
     d: &Diagnostic<'_>,
     system: &DesignSystem,
     surface: bool,
-    _ascii: bool,
     colorless: bool,
 ) {
     let g = d.severity.glyph(false);
@@ -1470,7 +1462,6 @@ fn paint_list_item(
     source_lines: &[CodeFrameLine<'_>],
     system: &DesignSystem,
     surface: bool,
-    _ascii: bool,
     colorless: bool,
     cursor: bool,
     expanded: bool,

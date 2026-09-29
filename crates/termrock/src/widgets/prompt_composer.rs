@@ -979,6 +979,43 @@ impl PromptComposerState {
         if !self.accepts_input || key.is_release() {
             return PromptComposerOutcome::Ignored;
         }
+        let is_press = key.is_press();
+
+        // Escape peels exactly one composer layer only for a bare physical
+        // press. Reject other phases/modifiers before TextArea sees them;
+        // TextArea's raw Escape path otherwise treats them as edit-finish.
+        let bare_escape_press = key.code == KeyCode::Esc && is_press && key.modifiers.is_empty();
+        if key.code == KeyCode::Esc && !bare_escape_press {
+            return PromptComposerOutcome::Ignored;
+        }
+
+        // A focused chip owns its activation and focus-clear keys before the
+        // composer-wide Enter/Escape intents. Repeat/release are still
+        // ignored by the chip handler, so they cannot submit or dismiss.
+        if self.chip_cursor.is_some()
+            && key.modifiers.is_empty()
+            && matches!(key.code, KeyCode::Enter | KeyCode::Esc)
+            && let Some(out) = self.handle_chip_keys(&key)
+        {
+            return out;
+        }
+
+        // Host-facing chords and chip removal are physical one-shot actions.
+        // Reject repeats before they can fall through to TextArea or the chip
+        // strip, while ordinary editing and caret motion remain repeatable.
+        let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
+        let alt = key.modifiers.contains(KeyModifiers::ALT);
+        let shift = key.modifiers.contains(KeyModifiers::SHIFT);
+        let busy_cancel =
+            self.busy && (matches!(key.code, KeyCode::Char('u' | 'U') | KeyCode::Backspace));
+        let one_shot_ctrl = ctrl
+            && !alt
+            && (matches!(key.code, KeyCode::Char('c' | 'C' | 'e' | 'E'))
+                || (shift && matches!(key.code, KeyCode::Char('o' | 'O' | 'f' | 'F')))
+                || busy_cancel);
+        if !is_press && one_shot_ctrl {
+            return PromptComposerOutcome::Ignored;
+        }
 
         // Bare Enter/Esc via intent map (modifiers still use product paths below).
         if key.modifiers.is_empty()
@@ -997,14 +1034,12 @@ impl PromptComposerState {
         }
 
         // Completion open: Esc closes one layer; navigation left to consumer list.
-        if self.completion.kind != CompletionKind::None && key.code == KeyCode::Esc {
+        if self.completion.kind != CompletionKind::None && bare_escape_press {
             return self.close_completion();
         }
 
         // Ctrl chords: undo/redo, interrupt/cancel, external editor, select-all, attach
-        if key.modifiers.contains(KeyModifiers::CONTROL)
-            && !key.modifiers.contains(KeyModifiers::ALT)
-        {
+        if ctrl && !alt {
             match key.code {
                 KeyCode::Char('z') | KeyCode::Char('Z') => return self.undo(),
                 KeyCode::Char('y') | KeyCode::Char('Y') => return self.redo(),
@@ -1046,8 +1081,19 @@ impl PromptComposerState {
             }
         }
 
+        // Bare Enter submits or queues only on its physical press. When the
+        // default submit policy is active, do not leak a held repeat into the
+        // editor as a newline after the press has been handled.
+        if key.code == KeyCode::Enter
+            && !is_press
+            && self.policy.submit_on_enter
+            && key.modifiers.is_empty()
+        {
+            return PromptComposerOutcome::Ignored;
+        }
+
         // Submit / newline policy
-        if key.code == KeyCode::Enter && key.is_press() {
+        if key.code == KeyCode::Enter && is_press {
             let mod_newline = self.policy.newline_chord
                 && (key.modifiers.contains(KeyModifiers::ALT)
                     || key.modifiers.contains(KeyModifiers::CONTROL)
@@ -1065,7 +1111,7 @@ impl PromptComposerState {
             }
         }
 
-        if key.code == KeyCode::Esc {
+        if bare_escape_press {
             if self.completion.kind != CompletionKind::None {
                 return self.close_completion();
             }
@@ -1534,11 +1580,22 @@ impl PromptComposerState {
         // Focus chips with Shift+Tab from empty? Keep simple: when chip_cursor set.
         let Some(idx) = self.chip_cursor else {
             if key.code == KeyCode::BackTab {
+                if !key.is_press() {
+                    return Some(PromptComposerOutcome::Ignored);
+                }
                 self.chip_cursor = Some(self.chips.len() - 1);
                 return Some(PromptComposerOutcome::Changed);
             }
             return None;
         };
+        if !key.is_press()
+            && matches!(
+                key.code,
+                KeyCode::Backspace | KeyCode::Delete | KeyCode::Enter | KeyCode::Esc
+            )
+        {
+            return Some(PromptComposerOutcome::Ignored);
+        }
         match key.code {
             KeyCode::Left => {
                 self.chip_cursor = Some(idx.saturating_sub(1));
@@ -2031,10 +2088,162 @@ impl StatefulWidget for PromptComposer<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
+    use crate::input::{KeyEventKind, KeyModifiers};
 
     fn press(code: KeyCode) -> KeyEvent {
         KeyEvent::new(code, KeyModifiers::NONE)
+    }
+
+    fn escape_event(kind: KeyEventKind, modifiers: KeyModifiers) -> KeyEvent {
+        let mut key = KeyEvent::new(KeyCode::Esc, modifiers);
+        key.kind = kind;
+        key
+    }
+
+    fn key_with_kind(code: KeyCode, modifiers: KeyModifiers, kind: KeyEventKind) -> KeyEvent {
+        let mut key = KeyEvent::new(code, modifiers);
+        key.kind = kind;
+        key
+    }
+
+    fn escape_cases() -> [(&'static str, KeyEventKind, KeyModifiers, bool); 6] {
+        [
+            ("bare press", KeyEventKind::Press, KeyModifiers::NONE, true),
+            (
+                "bare repeat",
+                KeyEventKind::Repeat,
+                KeyModifiers::NONE,
+                false,
+            ),
+            (
+                "bare release",
+                KeyEventKind::Release,
+                KeyModifiers::NONE,
+                false,
+            ),
+            (
+                "shift press",
+                KeyEventKind::Press,
+                KeyModifiers::SHIFT,
+                false,
+            ),
+            (
+                "control press",
+                KeyEventKind::Press,
+                KeyModifiers::CONTROL,
+                false,
+            ),
+            ("alt press", KeyEventKind::Press, KeyModifiers::ALT, false),
+        ]
+    }
+
+    #[test]
+    fn escape_closes_completion_only_on_bare_press() {
+        for (label, kind, modifiers, peels) in escape_cases() {
+            let mut state = PromptComposerState::new();
+            state.set_accepts_input(true);
+            state.set_completion(CompletionQuery {
+                kind: CompletionKind::Slash,
+                query: "he".into(),
+                trigger_byte: 0,
+                cursor_byte: 3,
+            });
+
+            let out = state.handle_key(escape_event(kind, modifiers));
+            assert_eq!(
+                out,
+                if peels {
+                    PromptComposerOutcome::CompletionClosed
+                } else {
+                    PromptComposerOutcome::Ignored
+                },
+                "{label}"
+            );
+            assert_eq!(
+                state.completion().kind,
+                if peels {
+                    CompletionKind::None
+                } else {
+                    CompletionKind::Slash
+                },
+                "{label}"
+            );
+        }
+    }
+
+    #[test]
+    fn escape_exits_fullscreen_only_on_bare_press() {
+        for (label, kind, modifiers, peels) in escape_cases() {
+            let mut state = PromptComposerState::new();
+            state.set_accepts_input(true);
+            assert_eq!(
+                state.request_fullscreen(),
+                PromptComposerOutcome::FullscreenRequested
+            );
+
+            let out = state.handle_key(escape_event(kind, modifiers));
+            assert_eq!(
+                out,
+                if peels {
+                    PromptComposerOutcome::FullscreenDismissed
+                } else {
+                    PromptComposerOutcome::Ignored
+                },
+                "{label}"
+            );
+            assert_eq!(
+                state.presentation,
+                if peels {
+                    ComposerPresentation::Normal
+                } else {
+                    ComposerPresentation::Fullscreen
+                },
+                "{label}"
+            );
+        }
+    }
+
+    #[test]
+    fn escape_clears_selection_only_on_bare_press() {
+        for (label, kind, modifiers, peels) in escape_cases() {
+            let mut state = PromptComposerState::new();
+            state.set_accepts_input(true);
+            state.set_text("draft");
+            state.select_anchor = Some(TextCursor { line: 0, byte: 0 });
+
+            let out = state.handle_key(escape_event(kind, modifiers));
+            assert_eq!(
+                out,
+                if peels {
+                    PromptComposerOutcome::Changed
+                } else {
+                    PromptComposerOutcome::Ignored
+                },
+                "{label}"
+            );
+            assert_eq!(state.has_selection(), !peels, "{label}");
+        }
+    }
+
+    #[test]
+    fn escape_dismisses_only_on_bare_press() {
+        for (label, kind, modifiers, peels) in escape_cases() {
+            let mut state = PromptComposerState::new();
+            state.set_accepts_input(true);
+            state.set_text("draft");
+
+            let out = state.handle_key(escape_event(kind, modifiers));
+            assert_eq!(
+                out,
+                if peels {
+                    PromptComposerOutcome::DismissRequest
+                } else {
+                    PromptComposerOutcome::Ignored
+                },
+                "{label}"
+            );
+            assert_eq!(state.text(), "draft", "{label}");
+        }
     }
 
     #[test]
@@ -2294,6 +2503,281 @@ mod tests {
         assert_eq!(state.text(), "keep");
         let out = state.handle_key(KeyEvent::new(KeyCode::Char('u'), KeyModifiers::CONTROL));
         assert_eq!(out, PromptComposerOutcome::Cancel);
+    }
+
+    #[test]
+    fn repeated_prompt_host_actions_and_chip_mutations_are_ignored() {
+        let repeat = |code, modifiers| {
+            let mut key = KeyEvent::new(code, modifiers);
+            key.kind = KeyEventKind::Repeat;
+            key
+        };
+
+        let mut state = PromptComposerState::new();
+        state.set_accepts_input(true);
+        state.set_busy(true);
+        state.set_text("keep");
+        for (code, modifiers) in [
+            (KeyCode::Char('c'), KeyModifiers::CONTROL),
+            (KeyCode::Char('e'), KeyModifiers::CONTROL),
+            (KeyCode::Char('u'), KeyModifiers::CONTROL),
+            (KeyCode::Backspace, KeyModifiers::CONTROL),
+            (
+                KeyCode::Char('o'),
+                KeyModifiers::CONTROL | KeyModifiers::SHIFT,
+            ),
+            (
+                KeyCode::Char('f'),
+                KeyModifiers::CONTROL | KeyModifiers::SHIFT,
+            ),
+        ] {
+            let before = state.clone();
+            assert_eq!(
+                state.handle_key(repeat(code, modifiers)),
+                PromptComposerOutcome::Ignored,
+                "repeat of {code:?} with {modifiers:?} must be ignored"
+            );
+            assert_eq!(state, before);
+        }
+
+        let mut chips = PromptComposerState::new();
+        chips.set_accepts_input(true);
+        chips.add_chip(ComposerChip::file("file", "main.rs"));
+        chips.chip_cursor = Some(0);
+        assert_eq!(
+            chips.handle_key(repeat(KeyCode::Delete, KeyModifiers::NONE)),
+            PromptComposerOutcome::Ignored
+        );
+        assert_eq!(chips.chips().len(), 1);
+
+        let mut focus = PromptComposerState::new();
+        focus.set_accepts_input(true);
+        focus.add_chip(ComposerChip::file("file", "main.rs"));
+        assert_eq!(
+            focus.handle_key(repeat(KeyCode::BackTab, KeyModifiers::NONE)),
+            PromptComposerOutcome::Ignored
+        );
+        assert_eq!(focus.chip_cursor, None);
+        assert_eq!(
+            focus.handle_key(KeyEvent::new(KeyCode::BackTab, KeyModifiers::NONE)),
+            PromptComposerOutcome::Changed
+        );
+        assert_eq!(focus.chip_cursor, Some(0));
+    }
+
+    #[test]
+    fn prompt_host_actions_are_press_only_while_text_repeats() {
+        let assert_one_shot = |code, modifiers, expected: PromptComposerOutcome| {
+            let mut pressed = PromptComposerState::new();
+            assert_eq!(
+                pressed.handle_key(key_with_kind(code, modifiers, KeyEventKind::Press)),
+                expected
+            );
+
+            for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
+                let mut held = PromptComposerState::new();
+                let before = held.clone();
+                assert_eq!(
+                    held.handle_key(key_with_kind(code, modifiers, kind)),
+                    PromptComposerOutcome::Ignored,
+                    "{code:?} must ignore {kind:?}"
+                );
+                assert_eq!(held, before, "{code:?} changed state on {kind:?}");
+            }
+        };
+
+        let mut copied = PromptComposerState::new();
+        copied.set_text("copy me");
+        copied.select_all();
+        assert_eq!(
+            copied.handle_key(key_with_kind(
+                KeyCode::Char('c'),
+                KeyModifiers::CONTROL,
+                KeyEventKind::Press,
+            )),
+            PromptComposerOutcome::SelectionCopied {
+                text: "copy me".into()
+            }
+        );
+        for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
+            let mut held = PromptComposerState::new();
+            held.set_text("copy me");
+            held.select_all();
+            let before = held.clone();
+            assert_eq!(
+                held.handle_key(key_with_kind(
+                    KeyCode::Char('c'),
+                    KeyModifiers::CONTROL,
+                    kind,
+                )),
+                PromptComposerOutcome::Ignored,
+                "Ctrl-C must ignore {kind:?}"
+            );
+            assert_eq!(held, before, "Ctrl-C changed state on {kind:?}");
+        }
+
+        let mut busy = PromptComposerState::new();
+        busy.set_busy(true);
+        assert_one_shot(
+            KeyCode::Char('c'),
+            KeyModifiers::CONTROL,
+            PromptComposerOutcome::Ignored,
+        );
+        assert_eq!(
+            busy.handle_key(key_with_kind(
+                KeyCode::Char('c'),
+                KeyModifiers::CONTROL,
+                KeyEventKind::Press,
+            )),
+            PromptComposerOutcome::Interrupt
+        );
+
+        assert_one_shot(
+            KeyCode::Char('e'),
+            KeyModifiers::CONTROL,
+            PromptComposerOutcome::ExternalEditor,
+        );
+        assert_one_shot(
+            KeyCode::Char('f'),
+            KeyModifiers::CONTROL | KeyModifiers::SHIFT,
+            PromptComposerOutcome::FullscreenRequested,
+        );
+        assert_one_shot(
+            KeyCode::Char('o'),
+            KeyModifiers::CONTROL | KeyModifiers::SHIFT,
+            PromptComposerOutcome::AttachRequest,
+        );
+
+        let mut typing = PromptComposerState::new();
+        assert_eq!(
+            typing.handle_key(key_with_kind(
+                KeyCode::Char('x'),
+                KeyModifiers::NONE,
+                KeyEventKind::Press,
+            )),
+            PromptComposerOutcome::Changed
+        );
+        assert_eq!(
+            typing.handle_key(key_with_kind(
+                KeyCode::Char('x'),
+                KeyModifiers::NONE,
+                KeyEventKind::Repeat,
+            )),
+            PromptComposerOutcome::Changed
+        );
+        assert_eq!(typing.text(), "xx");
+        assert_eq!(
+            typing.handle_key(key_with_kind(
+                KeyCode::Char('x'),
+                KeyModifiers::NONE,
+                KeyEventKind::Release,
+            )),
+            PromptComposerOutcome::Ignored
+        );
+        assert_eq!(typing.text(), "xx");
+    }
+
+    #[test]
+    fn repeated_submit_enter_does_not_insert_a_newline() {
+        let mut state = PromptComposerState::new();
+        state.set_accepts_input(true);
+        state.set_text("send me");
+        assert!(matches!(
+            state.handle_key(key_with_kind(
+                KeyCode::Enter,
+                KeyModifiers::NONE,
+                KeyEventKind::Press,
+            )),
+            PromptComposerOutcome::Submit { .. }
+        ));
+        assert!(state.text().is_empty());
+
+        assert_eq!(
+            state.handle_key(key_with_kind(
+                KeyCode::Enter,
+                KeyModifiers::NONE,
+                KeyEventKind::Repeat,
+            )),
+            PromptComposerOutcome::Ignored
+        );
+        assert!(state.text().is_empty());
+    }
+
+    #[test]
+    fn focused_chip_owns_enter_and_escape_on_press_only() {
+        let mut activate = PromptComposerState::new();
+        activate.set_accepts_input(true);
+        activate.add_chip(ComposerChip::file("file", "main.rs"));
+        activate.chip_cursor = Some(0);
+        assert_eq!(
+            activate.handle_key(key_with_kind(
+                KeyCode::Enter,
+                KeyModifiers::NONE,
+                KeyEventKind::Press,
+            )),
+            PromptComposerOutcome::ChipActivated { id: "file".into() }
+        );
+        assert_eq!(activate.chip_cursor, Some(0));
+        for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
+            let before = activate.clone();
+            assert_eq!(
+                activate.handle_key(key_with_kind(KeyCode::Enter, KeyModifiers::NONE, kind,)),
+                PromptComposerOutcome::Ignored,
+                "chip Enter must ignore {kind:?}"
+            );
+            assert_eq!(activate, before);
+        }
+
+        let mut clear = PromptComposerState::new();
+        clear.set_accepts_input(true);
+        clear.add_chip(ComposerChip::file("file", "main.rs"));
+        clear.chip_cursor = Some(0);
+        assert_eq!(
+            clear.handle_key(key_with_kind(
+                KeyCode::Esc,
+                KeyModifiers::NONE,
+                KeyEventKind::Press,
+            )),
+            PromptComposerOutcome::Changed
+        );
+        assert_eq!(clear.chip_cursor, None);
+        clear.chip_cursor = Some(0);
+        for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
+            let before = clear.clone();
+            assert_eq!(
+                clear.handle_key(key_with_kind(KeyCode::Esc, KeyModifiers::NONE, kind)),
+                PromptComposerOutcome::Ignored,
+                "chip Escape must ignore {kind:?}"
+            );
+            assert_eq!(clear, before);
+        }
+    }
+
+    #[test]
+    fn focused_chip_does_not_capture_modified_enter_newline() {
+        for modifiers in [
+            KeyModifiers::CONTROL,
+            KeyModifiers::ALT,
+            KeyModifiers::SHIFT,
+        ] {
+            let mut state = PromptComposerState::new();
+            state.set_accepts_input(true);
+            state.set_text("draft");
+            state.add_chip(ComposerChip::file("file", "main.rs"));
+            state.chip_cursor = Some(0);
+
+            assert_eq!(
+                state.handle_key(key_with_kind(
+                    KeyCode::Enter,
+                    modifiers,
+                    KeyEventKind::Press,
+                )),
+                PromptComposerOutcome::Changed,
+                "modified Enter must remain the editor newline chord"
+            );
+            assert_eq!(state.text(), "draft\n");
+            assert_eq!(state.chip_cursor, Some(0));
+        }
     }
 
     #[test]

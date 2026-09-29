@@ -350,6 +350,64 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0334 | `v0.14.0` | [SegmentedControl selection authority](migrations/0334-v0.14.0-segmented-control-selection-authority.md) |
 | 0335 | `v0.14.0` | [KeyEvent phase predicates](migrations/0335-v0.14.0-key-event-phase-predicates.md) |
 | 0336 | `v0.14.0` | [Scrolled-region gutter contract](migrations/0336-v0.14.0-scrolled-region-gutter-contract.md) |
+| 0337 | `v0.14.0` | [Toast pause freezes timed presence](migrations/0337-v0.14.0-toast-pause-freezes-timed-presence.md) |
+| 0338 | `v0.14.0` | [Bounded runner event draining](migrations/0338-v0.14.0-bounded-runner-event-drain.md) |
+| 0339 | `v0.14.0` | [Select intents use the filtered collection](migrations/0339-v0.14.0-select-filtered-intent-projection.md) |
+| 0340 | `v0.14.0` | [One line-cell scrollbar painter](migrations/0340-v0.14.0-one-scrollbar-painter.md) |
+| 0341 | `v0.14.0` | [VirtualGrid width-policy freshness](migrations/0341-v0.14.0-virtual-grid-width-policy-freshness.md) |
+| 0342 | `v0.14.0` | [DataTable projected cells keep source-column identity](migrations/0342-v0.14.0-data-table-projected-cell-index.md) |
+| 0343 | `v0.14.0` | [DataTable pinned columns own physical edge geometry](migrations/0343-v0.14.0-data-table-pinned-geometry.md) |
+| 0344 | `v0.14.0` | [DataTable focus chrome requires both authorities](migrations/0344-v0.14.0-data-table-focus-authority.md) |
+| 0345 | `v0.14.0` | [DataTable pointer input follows painted body geometry](migrations/0345-v0.14.0-data-table-painted-body-hit-boundary.md) |
+| 0346 | `v0.14.0` | [DataTable editing follows projected row and column availability](migrations/0346-v0.14.0-data-table-edit-projection-boundary.md) |
+| 0347 | `v0.14.0` | [DataTable edit mode owns semantic intents](migrations/0347-v0.14.0-data-table-edit-intent-ownership.md) |
+| 0348 | `v0.14.0` | [DataTable cursor and selection focus stay in logical space](migrations/0348-v0.14.0-data-table-cursor-focus-sync.md) |
+| 0349 | `v0.14.0` | [DataTable render-time window clamps refresh logical focus](migrations/0349-v0.14.0-data-table-render-window-focus-sync.md) |
+| 0350 | `v0.14.0` | [DataTable zero-visible-column focus is canonical](migrations/0350-v0.14.0-data-table-zero-column-focus.md) |
+| 0351 | `v0.14.0` | [Workspace membership matches the canonical catalog](migrations/0351-v0.14.0-workspace-remove-deleted-lookbook.md) |
+| 0352 | `v0.14.0` | [DataTable cell selection follows host column identity](migrations/0352-v0.14.0-data-table-cell-column-identity.md) |
+| 0353 | `v0.14.0` | [DataTable cursor and hits follow the responsive projection](migrations/0353-v0.14.0-data-table-responsive-cursor-ordinal.md) |
+| 0354 | `v0.14.0` | [DataTable cell navigation reveals its cursor](migrations/0354-v0.14.0-data-table-cell-navigation-reveal.md) |
+| 0355 | `v0.14.0` | [TreeTable rejects toggles on disabled rows](migrations/0355-v0.14.0-tree-table-disabled-toggle.md) |
+| 0356 | `v0.14.0` | [TreeTable keeps group rows out of cursor selection](migrations/0356-v0.14.0-tree-table-group-hit-eligibility.md) |
+| 0357 | `v0.14.0` | [TreeTable focus chrome requires both authorities](migrations/0357-v0.14.0-tree-table-focus-authority.md) |
+| 0358 | `v0.14.0` | [TreeTable cursor follows responsive paint projection](migrations/0358-v0.14.0-tree-table-responsive-cursor.md) |
+| 0359 | `v0.14.0` | [TreeTable retains the hierarchy column](migrations/0359-v0.14.0-tree-table-retain-hierarchy-column.md) |
+| 0360 | `v0.14.0` | [TreeTable pinned columns share physical geometry](migrations/0360-v0.14.0-tree-table-pinned-column-geometry.md) |
+| 0361 | `v0.14.0` | [TreeTable reveals projected rows in absolute window space](migrations/0361-v0.14.0-tree-table-absolute-window-reveal.md) |
+| 0362 | `v0.14.0` | [TreeTable hover follows painted row geometry](migrations/0362-v0.14.0-tree-table-hover-lifecycle.md) |
+| 0363 | `v0.14.0` | [TreeTable hierarchy entry skips non-selectable rows](migrations/0363-v0.14.0-tree-table-hierarchy-selection-invariant.md) |
+| 0364 | `v0.14.0` | [TreeTable header hits follow painted column geometry](migrations/0364-v0.14.0-tree-table-header-hit-lifecycle.md) |
+| 0365 | `v0.14.0` | [TreeTable reconciliation removes invalid checked rows](migrations/0365-v0.14.0-tree-table-selection-reconciliation.md) |
+| 0366 | `v0.14.0` | [Virtual collection windows preserve off-window active IDs](migrations/0366-v0.14.0-collection-window-active-identity.md) |
+| 0367 | `v0.14.0` | [Overlay pointer routing honors input ownership](migrations/0367-v0.14.0-overlay-pointer-input-ownership.md) |
+| 0368 | `v0.14.0` | [Progress painting clips to its buffer](migrations/0368-v0.14.0-progress-buffer-clipping.md) |
+| 0369 | `v0.14.0` | [Escape cancellation is one-shot](migrations/0369-v0.14.0-one-shot-cancel-intent.md) |
+| 0370 | `v0.14.0` | [HistoryPicker cancellation is one-shot](migrations/0370-v0.14.0-history-picker-one-shot-cancel.md) |
+| 0371 | `v0.14.0` | [DatabaseWorkbench preserves HistoryPicker state](migrations/0371-v0.14.0-database-workbench-history-lifecycle.md) |
+| 0372 | `v0.14.0` | [TextArea host actions run once per physical key press](migrations/0372-v0.14.0-text-area-one-shot-host-actions.md) |
+| 0373 | `v0.14.0` | [Non-searchable Select reserves j/k for list navigation](migrations/0373-v0.14.0-select-jk-navigation.md) |
+| 0374 | `v0.14.0` | [Reusable host supplied Lockup](migrations/0374-v0.14.0-lockup-brand-mark.md) |
+| 0375 | `v0.14.0` | [Obsolete widget outcome types removed](migrations/0375-v0.14.0-remove-obsolete-outcome-types.md) |
+| 0376 | `v0.14.0` | [Panel/Card surface resolution](migrations/0376-v0.14.0-panel-card-surface-resolution.md) |
+| 0377 | `v0.14.0` | [PromptComposer and Select host actions are one-shot](migrations/0377-v0.14.0-prompt-composer-select-one-shot-actions.md) |
+| 0378 | `v0.14.0` | [Menu input and clipping](migrations/0378-v0.14.0-menu-input-and-clipping.md) |
+| 0379 | `v0.14.0` | [HintBar alignment is honored](migrations/0379-v0.14.0-hint-bar-alignment.md) |
+| 0380 | `v0.14.0` | [Viewport owns persistent selection state](migrations/0380-v0.14.0-viewport-state-selection.md) |
+| 0381 | `v0.14.0` | [Tree uses absolute virtual-window geometry](migrations/0381-v0.14.0-tree-absolute-virtual-window.md) |
+| 0382 | `v0.14.0` | [QuickOpen returns borrowed match rows](migrations/0382-v0.14.0-quick-open-borrowed-matches.md) |
+| 0383 | `v0.14.0` | [StatusBar spacing and collision-safe contraction](migrations/0383-v0.14.0-status-bar-spacing-and-collision.md) |
+| 0384 | `v0.14.0` | [TreeTable hierarchy action guards](migrations/0384-v0.14.0-tree-table-hierarchy-action-guards.md) |
+| 0385 | `v0.14.0` | [TreeTable projected movement safety](migrations/0385-v0.14.0-tree-table-projection-movement-safety.md) |
+| 0386 | `v0.14.0` | [TreeTable empty projection movement](migrations/0386-v0.14.0-tree-table-empty-projection-movement.md) |
+| 0387 | `v0.14.0` | [TreeTable virtual selection and activation identity](migrations/0387-v0.14.0-tree-table-virtual-selection-activation.md) |
+| 0388 | `v0.14.0` | [TreeTable row geometry lifecycle](migrations/0388-v0.14.0-tree-table-row-geometry-lifecycle.md) |
+| 0389 | `v0.14.0` | [TreeTable empty intent routing](migrations/0389-v0.14.0-tree-table-empty-intent-routing.md) |
+| 0390 | `v0.14.0` | [TreeTable load and navigation state](migrations/0390-v0.14.0-tree-table-load-and-navigation-state.md) |
+| 0391 | `v0.14.0` | [TreeTable shifted page routing](migrations/0391-v0.14.0-tree-table-shifted-page-routing.md) |
+| 0392 | `v0.14.0` | [List one-shot intent repeat gates](migrations/0392-v0.14.0-list-intent-repeat-gates.md) |
+| 0393 | `v0.14.0` | [Picker exposes a host-owned secondary action](migrations/0393-v0.14.0-picker-secondary-action.md) |
+| 0394 | `v0.14.0` | [Remove mirrored input and enabled getters](migrations/0394-v0.14.0-remove-mirrored-state-getters.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

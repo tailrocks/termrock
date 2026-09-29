@@ -847,12 +847,6 @@ impl DependencyGraphState {
         self.accepts_input = on;
     }
 
-    /// Accepts input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Selected.
     #[must_use]
     pub fn selected(&self) -> Option<&str> {
@@ -1217,7 +1211,6 @@ impl<'a> DependencyGraph<'a> {
                     buffer,
                     self.system,
                     state,
-                    false,
                     self.focused,
                 );
             }
@@ -1229,7 +1222,6 @@ impl<'a> DependencyGraph<'a> {
                     buffer,
                     self.system,
                     state,
-                    false,
                     self.focused,
                     matches!(view, DependencyGraphView::Tree),
                 );
@@ -1245,7 +1237,6 @@ fn paint_graph(
     buffer: &mut Buffer,
     system: &DesignSystem,
     state: &mut DependencyGraphState,
-    _ascii: bool,
     focused: bool,
 ) {
     if nodes.is_empty() {
@@ -1398,7 +1389,6 @@ fn paint_list_or_tree(
     buffer: &mut Buffer,
     system: &DesignSystem,
     state: &mut DependencyGraphState,
-    _ascii: bool,
     focused: bool,
     tree: bool,
 ) {

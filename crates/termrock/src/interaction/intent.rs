@@ -171,6 +171,7 @@ pub fn default_list_intent(key: KeyEvent) -> Option<UiIntent> {
     if !key.is_insert() {
         return None;
     }
+    let is_press = key.is_press();
     // Ignore pure-modifier noise; list defaults ignore most modifiers.
     if !key.modifiers.is_empty()
         && !matches!(key.code, KeyCode::Char(_))
@@ -190,9 +191,9 @@ pub fn default_list_intent(key: KeyEvent) -> Option<UiIntent> {
         KeyCode::End => Some(UiIntent::Move(NavigationMove::Last)),
         KeyCode::PageUp => Some(UiIntent::Page(PageMove::Backward)),
         KeyCode::PageDown => Some(UiIntent::Page(PageMove::Forward)),
-        KeyCode::Enter => Some(UiIntent::Activate),
-        KeyCode::Char(' ') => Some(UiIntent::Toggle),
-        KeyCode::Esc => Some(UiIntent::Cancel),
+        KeyCode::Enter if is_press => Some(UiIntent::Activate),
+        KeyCode::Char(' ') if is_press => Some(UiIntent::Toggle),
+        KeyCode::Esc if is_press => Some(UiIntent::Cancel),
         _ => None,
     }
 }
@@ -267,6 +268,8 @@ pub fn default_menu_intent(key: KeyEvent) -> Option<UiIntent> {
         KeyCode::Up | KeyCode::Char('k' | 'K') => Some(UiIntent::Move(NavigationMove::Previous)),
         KeyCode::Home => Some(UiIntent::Move(NavigationMove::First)),
         KeyCode::End => Some(UiIntent::Move(NavigationMove::Last)),
+        KeyCode::PageUp => Some(UiIntent::Page(PageMove::Backward)),
+        KeyCode::PageDown => Some(UiIntent::Page(PageMove::Forward)),
         KeyCode::Enter if is_press => Some(UiIntent::Activate),
         KeyCode::Char(' ') if is_press => Some(UiIntent::Toggle),
         KeyCode::Esc if is_press => Some(UiIntent::Cancel),
@@ -421,7 +424,7 @@ pub fn default_text_area_intent(key: KeyEvent) -> Option<UiIntent> {
         KeyCode::End => Some(UiIntent::Move(NavigationMove::Last)),
         KeyCode::PageUp => Some(UiIntent::Page(PageMove::Backward)),
         KeyCode::PageDown => Some(UiIntent::Page(PageMove::Forward)),
-        KeyCode::Esc => Some(UiIntent::Cancel),
+        KeyCode::Esc if key.is_press() => Some(UiIntent::Cancel),
         KeyCode::Left if key.modifiers.is_empty() => Some(UiIntent::Move(NavigationMove::Previous)),
         KeyCode::Right if key.modifiers.is_empty() => Some(UiIntent::Move(NavigationMove::Next)),
         _ => None,
@@ -577,6 +580,31 @@ mod tests {
     }
 
     #[test]
+    fn default_text_area_intent_cancel_is_press_only_and_preserves_modifiers() {
+        assert_eq!(
+            default_text_area_intent(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            Some(UiIntent::Cancel)
+        );
+
+        let mut repeat = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
+        repeat.kind = KeyEventKind::Repeat;
+        assert_eq!(default_text_area_intent(repeat), None);
+
+        let mut release = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
+        release.kind = KeyEventKind::Release;
+        assert_eq!(default_text_area_intent(release), None);
+
+        assert_eq!(
+            default_text_area_intent(KeyEvent::new(KeyCode::Esc, KeyModifiers::SHIFT)),
+            Some(UiIntent::Cancel)
+        );
+        assert_eq!(
+            default_text_area_intent(KeyEvent::new(KeyCode::Esc, KeyModifiers::CONTROL)),
+            None
+        );
+    }
+
+    #[test]
     fn default_button_intent_maps_activate() {
         assert_eq!(
             default_button_intent(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
@@ -609,6 +637,30 @@ mod tests {
             default_list_intent(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE)),
             None
         );
+    }
+
+    #[test]
+    fn default_list_intent_gates_one_shot_actions_on_press() {
+        for code in [KeyCode::Enter, KeyCode::Char(' '), KeyCode::Esc] {
+            let mut repeat = KeyEvent::new(code, KeyModifiers::NONE);
+            repeat.kind = KeyEventKind::Repeat;
+            assert_eq!(default_list_intent(repeat), None);
+
+            let mut release = KeyEvent::new(code, KeyModifiers::NONE);
+            release.kind = KeyEventKind::Release;
+            assert_eq!(default_list_intent(release), None);
+        }
+
+        let mut repeat = KeyEvent::new(KeyCode::Down, KeyModifiers::NONE);
+        repeat.kind = KeyEventKind::Repeat;
+        assert_eq!(
+            default_list_intent(repeat),
+            Some(UiIntent::Move(NavigationMove::Next))
+        );
+
+        let mut release = KeyEvent::new(KeyCode::Down, KeyModifiers::NONE);
+        release.kind = KeyEventKind::Release;
+        assert_eq!(default_list_intent(release), None);
     }
 
     #[test]

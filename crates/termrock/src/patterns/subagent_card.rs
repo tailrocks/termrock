@@ -837,7 +837,7 @@ impl<'a> SubagentCard<'a> {
         let phase = run.phase();
 
         if matches!(state.presentation, SubagentPresentation::CompactRow) {
-            self.paint_row(area, buffer, state, false);
+            self.paint_row(area, buffer, state);
             return;
         }
 
@@ -1017,13 +1017,7 @@ impl<'a> SubagentCard<'a> {
         let _ = display_cols;
     }
 
-    fn paint_row(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut SubagentCardState,
-        _ascii: bool,
-    ) {
+    fn paint_row(&self, area: Rect, buffer: &mut Buffer, state: &mut SubagentCardState) {
         let run = self.run;
         let rail_role = if self.colorless {
             Role::TextStrong

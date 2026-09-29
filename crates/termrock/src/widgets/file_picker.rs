@@ -222,12 +222,6 @@ pub struct FilePreview {
 }
 
 impl FilePreview {
-    /// Empty.
-    #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     /// Title + lines.
     #[must_use]
     pub fn text(title: impl Into<String>, lines: impl IntoIterator<Item = String>) -> Self {

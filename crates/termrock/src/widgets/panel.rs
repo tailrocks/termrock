@@ -35,9 +35,9 @@ use crate::widgets::view_state::LoadingView;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum PanelVariant {
-    /// Single-line border + surface fill.
+    /// Single-line border on the Canvas plane.
     Bordered,
-    /// No border; density padding only (quiet region, default).
+    /// Filled card surface with density padding and no border (default).
     #[default]
     Quiet,
     /// Top/bottom divider rules only (no side borders).
@@ -46,6 +46,13 @@ pub enum PanelVariant {
     Interactive,
     /// Selected membership chrome (distinct from focus).
     Selected,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct PanelSurfacePlan {
+    recipe: SurfaceRecipe,
+    elevation: Elevation,
+    fill: SurfaceFill,
 }
 
 impl PanelVariant {
@@ -248,6 +255,12 @@ impl PanelState {
             parts: None,
             action_hits: Vec::new(),
         }
+    }
+
+    /// Drops paint-derived geometry before an area is skipped.
+    pub(crate) fn clear_cached_geometry(&mut self) {
+        self.parts = None;
+        self.action_hits.clear();
     }
 
     /// Sets collapse.
@@ -491,7 +504,7 @@ pub struct Panel<'a> {
     variant: PanelVariant,
     body: PanelBody,
     collapsible: bool,
-    /// Prefer elevated fill underlay (cards).
+    /// Preserve the filled card plane; DividerOnly opts in when true.
     raised: bool,
     overlay: bool,
     /// Header actions (dropped under narrow width before badge).
@@ -653,7 +666,11 @@ impl<'a> Panel<'a> {
         self
     }
 
-    /// Use elevated fill (card underlay) when the palette defines one.
+    /// Selects the filled card plane for DividerOnly.
+    ///
+    /// Quiet panels are filled by default. For DividerOnly, `true` opts into
+    /// the ordinary Surface fill without adding a frame or changing overlay
+    /// precedence; `false` keeps the divider transparent.
     #[must_use]
     pub const fn raised(mut self, raised: bool) -> Self {
         self.raised = raised;
@@ -662,8 +679,8 @@ impl<'a> Panel<'a> {
 
     /// Marks this panel as an overlay host (dialog, picker, sheet body).
     ///
-    /// Overlay panels fill with `Role::Elevated` so the content they cover
-    /// recedes; in-flow panels keep the ordinary surface.
+    /// Non-divider overlays use `Role::Elevated` and a frame; DividerOnly
+    /// keeps its divider precedence. In-flow framed panels remain on Canvas.
     #[must_use]
     pub const fn overlay(mut self, overlay: bool) -> Self {
         self.overlay = overlay;
@@ -712,11 +729,15 @@ impl<'a> Panel<'a> {
     /// Resolves the panel recipe for current emphasis.
     #[must_use]
     pub fn recipe(&self) -> PanelRecipe {
+        let plan = self.surface_plan();
         self.tokens
-            .panel_recipe(self.resolved_chrome(), self.elevation())
+            .panel_recipe(self.resolved_chrome(), plan.elevation)
     }
 
-    /// Fill rung this panel paints on.
+    /// Legacy requested fill rung retained for source compatibility.
+    ///
+    /// Rendered pixels use [`Self::surface_recipe`] so variant, overlay, and
+    /// transparency policy cannot disagree with the panel recipe.
     #[must_use]
     pub const fn elevation(&self) -> Elevation {
         if self.overlay {
@@ -742,8 +763,8 @@ impl<'a> Panel<'a> {
             PanelChrome::Focused => PanelChrome::Focused,
             PanelChrome::Normal => {
                 if matches!(self.variant, PanelVariant::Selected) {
-                    // Selected uses Selection fill via Surface; border stays Normal
-                    // so focus remains a distinct BorderFocused cue.
+                    // Selection membership is a gutter cue; the resolved plane
+                    // remains the in-flow canvas for framed panels.
                     PanelChrome::Normal
                 } else {
                     PanelChrome::Normal
@@ -759,59 +780,86 @@ impl<'a> Panel<'a> {
         self.slots.for_width(width.saturating_sub(4))
     }
 
-    /// Maps panel emphasis + variant onto the Surface recipe set.
+    /// Resolves the panel plane once for recipe inspection and painting.
+    ///
+    /// Focus and danger are chrome states. They do not replace the in-flow
+    /// plane: cards stay on `Surface`, while framed variants stay on `Canvas`.
+    /// Divider-only owns precedence over overlay framing. Its ordinary form
+    /// leaves the existing buffer untouched; the retained `raised(true)` API
+    /// explicitly opts it into the ordinary filled card plane.
+    #[must_use]
+    const fn surface_plan(&self) -> PanelSurfacePlan {
+        if matches!(self.variant, PanelVariant::DividerOnly) {
+            return if self.raised {
+                PanelSurfacePlan {
+                    recipe: SurfaceRecipe::Inset,
+                    elevation: Elevation::Surface,
+                    fill: SurfaceFill::Auto,
+                }
+            } else {
+                PanelSurfacePlan {
+                    recipe: SurfaceRecipe::Canvas,
+                    elevation: Elevation::Canvas,
+                    fill: SurfaceFill::Transparent,
+                }
+            };
+        }
+
+        if self.overlay {
+            let recipe = match self.emphasis {
+                PanelChrome::Danger => SurfaceRecipe::OverlayDanger,
+                PanelChrome::Focused => SurfaceRecipe::OverlayFocused,
+                PanelChrome::Normal => SurfaceRecipe::Overlay,
+            };
+            return PanelSurfacePlan {
+                recipe,
+                elevation: Elevation::Overlay,
+                fill: SurfaceFill::Auto,
+            };
+        }
+
+        if self.has_box_border() {
+            PanelSurfacePlan {
+                recipe: SurfaceRecipe::Canvas,
+                elevation: Elevation::Canvas,
+                fill: SurfaceFill::Auto,
+            }
+        } else {
+            PanelSurfacePlan {
+                recipe: SurfaceRecipe::Inset,
+                elevation: Elevation::Surface,
+                fill: SurfaceFill::Auto,
+            }
+        }
+    }
+
+    /// Named surface recipe for callers that need the panel's resolved plane.
     #[must_use]
     pub const fn surface_recipe(&self) -> SurfaceRecipe {
-        if matches!(self.emphasis, PanelChrome::Danger) {
-            return if self.overlay {
-                SurfaceRecipe::OverlayDanger
-            } else {
-                SurfaceRecipe::Destructive
-            };
-        }
-        if matches!(self.emphasis, PanelChrome::Focused) {
-            return if self.overlay {
-                SurfaceRecipe::OverlayFocused
-            } else {
-                SurfaceRecipe::Focused
-            };
-        }
-        if self.overlay {
-            return SurfaceRecipe::Overlay;
-        }
-        match self.variant {
-            PanelVariant::Selected => SurfaceRecipe::Selected,
-            PanelVariant::Interactive => {
-                if self.raised {
-                    SurfaceRecipe::Raised
-                } else {
-                    SurfaceRecipe::Interactive
-                }
-            }
-            PanelVariant::Quiet | PanelVariant::DividerOnly => {
-                if self.raised {
-                    SurfaceRecipe::Raised
-                } else {
-                    SurfaceRecipe::Inset
-                }
-            }
-            PanelVariant::Bordered => {
-                if self.raised {
-                    SurfaceRecipe::Raised
-                } else {
-                    SurfaceRecipe::Inset
-                }
-            }
-        }
+        self.surface_plan().recipe
+    }
+
+    /// Actual fill selected by the panel plane, including capability policy.
+    pub(crate) fn surface_fill(&self) -> Option<Style> {
+        let plan = self.surface_plan();
+        Surface::new(self.tokens)
+            .recipe(plan.recipe)
+            .fill(plan.fill)
+            .bordered(false)
+            .padding(0, 0)
+            .plan()
+            .fill
     }
 
     /// Whether a full single-line box border is painted.
     #[must_use]
     pub const fn has_box_border(&self) -> bool {
-        match self.variant {
-            PanelVariant::Quiet | PanelVariant::DividerOnly => false,
-            PanelVariant::Bordered | PanelVariant::Interactive | PanelVariant::Selected => true,
-        }
+        !matches!(self.variant, PanelVariant::DividerOnly)
+            && (self.overlay
+                || matches!(
+                    self.variant,
+                    PanelVariant::Bordered | PanelVariant::Interactive | PanelVariant::Selected
+                ))
     }
 
     /// Contracts a title or footer to the cells the chrome can spare.
@@ -834,7 +882,6 @@ impl<'a> Panel<'a> {
         &self,
         spec: PanelTitleSpec<'a>,
         collapsed: Option<bool>,
-        _budget: u16,
         title_style: Style,
     ) -> Line<'static> {
         let live_glyph = self
@@ -857,7 +904,7 @@ impl<'a> Panel<'a> {
             prefix.push(warning.to_string());
         }
         let prefix = prefix.join(" ");
-        // Overflow is one rule: `paint_border_label` ellipsizes the full
+        // Overflow is one rule: the bounded title painters ellipsize the full
         // multi-span line. Pre-truncating here ate the ellipsis (pad + Clip).
         let mut spans = vec![Span::raw(" ")];
         if !prefix.is_empty() {
@@ -972,12 +1019,11 @@ impl<'a> Panel<'a> {
             };
             (header, body, footer)
         } else {
-            let pad_x = if area.width >= spacing.card_inset.saturating_mul(2).saturating_add(4) {
-                spacing.card_inset
-            } else {
-                0
-            };
-            let pad_y: u16 = if area.height >= 3 { 1 } else { 0 };
+            // The canonical card inset is unconditional. Geometry below
+            // saturates at zero for tiny cards instead of silently removing
+            // the inset and changing the meaning of a narrow panel.
+            let pad_x = spacing.card_inset;
+            let pad_y: u16 = 1;
             let header = if has_title && area.height > 0 {
                 Some(Rect {
                     x: area.x.saturating_add(pad_x),
@@ -1010,7 +1056,8 @@ impl<'a> Panel<'a> {
                     body_bottom.saturating_sub(body_y)
                 },
             };
-            let footer = if footer_rows > 0 && !collapsed {
+            let header_rows = u16::from(has_title && area.height > 0);
+            let footer = if footer_rows > 0 && !collapsed && area.height > header_rows {
                 Some(Rect {
                     x: body.x,
                     y: footer_y,
@@ -1093,7 +1140,11 @@ impl<'a> Panel<'a> {
 
     /// Paint panel chrome + optional built-in body; returns body rect.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: Option<&mut PanelState>) -> Rect {
+        let area = area.intersection(*buffer.area());
         if area.is_empty() {
+            if let Some(state) = state {
+                state.clear_cached_geometry();
+            }
             return area;
         }
         let collapsed = state
@@ -1101,30 +1152,22 @@ impl<'a> Panel<'a> {
             .is_some_and(|s| s.collapsed && self.collapsible);
         let focused = state.as_ref().is_some_and(|s| s.focused);
         let parts = self.layout(area, state.as_ref().map(|s| &**s));
+        let surface_plan = self.surface_plan();
 
         // Surface fill (variant-aware).
         let focused_chrome = focused
             || matches!(self.emphasis, PanelChrome::Focused)
             || (self.is_focusable() && focused);
-        if self.has_box_border() {
-            // Framed pane: canvas fill, rounded edge, border-subtle / border-strong.
-            // Overlay hosts lift to elevated so the page recedes.
-            let fill_recipe = if self.overlay {
-                if matches!(self.emphasis, PanelChrome::Danger) {
-                    SurfaceRecipe::OverlayDanger
-                } else if focused_chrome {
-                    SurfaceRecipe::OverlayFocused
-                } else {
-                    SurfaceRecipe::Overlay
-                }
-            } else {
-                SurfaceRecipe::Canvas
-            };
-            let _ = Surface::new(self.tokens)
-                .recipe(fill_recipe)
+        let panel_fill = if self.has_box_border() {
+            // Framed pane: the resolved plan supplies canvas or overlay fill;
+            // the panel owns the rounded edge and its focus/danger chrome.
+            let surface = Surface::new(self.tokens)
+                .recipe(surface_plan.recipe)
                 .bordered(false)
-                .padding(0, 0)
-                .paint(area, buffer);
+                .fill(surface_plan.fill)
+                .padding(0, 0);
+            let panel_fill = surface.plan().fill;
+            let _ = surface.paint(area, buffer);
             let theme = self.tokens.junie_theme();
             let border = if matches!(self.emphasis, PanelChrome::Danger) {
                 self.tokens.style(Role::Danger)
@@ -1133,26 +1176,20 @@ impl<'a> Panel<'a> {
             };
             ratatui_widgets::block::Block::default()
                 .borders(ratatui_widgets::borders::Borders::ALL)
-                .border_style(border)
+                .border_style(with_surface_background(border, panel_fill))
                 .border_set(self.tokens.border_set())
                 .render(area, buffer);
+            panel_fill
         } else {
-            let fill_policy = if self.raised {
-                SurfaceFill::Auto
-            } else {
-                SurfaceFill::Transparent
-            };
-            let _ = Surface::new(self.tokens)
-                .recipe(if self.raised {
-                    SurfaceRecipe::Inset
-                } else {
-                    self.surface_recipe()
-                })
+            let surface = Surface::new(self.tokens)
+                .recipe(surface_plan.recipe)
                 .bordered(false)
-                .fill(fill_policy)
-                .padding(0, 0)
-                .paint(area, buffer);
-        }
+                .fill(surface_plan.fill)
+                .padding(0, 0);
+            let panel_fill = surface.plan().fill;
+            let _ = surface.paint(area, buffer);
+            panel_fill
+        };
 
         // Surface owns the box. Panel only places semantic chrome onto it.
         if self.has_box_border() {
@@ -1160,7 +1197,7 @@ impl<'a> Panel<'a> {
             if focused && self.is_focusable() {
                 emphasis = PanelChrome::Focused;
             }
-            let recipe = self.tokens.panel_recipe(emphasis, self.elevation());
+            let recipe = self.tokens.panel_recipe(emphasis, surface_plan.elevation);
             let slots = self.slots_for_width(area.width);
             // Reserve right band for header actions so title does not collide.
             let action_reserve = parts
@@ -1171,14 +1208,22 @@ impl<'a> Panel<'a> {
             let mut title_slots = slots;
             title_slots.trailing = None;
             let title = if let Some(spec) = self.title_spec {
-                Some(self.title_spec_line(spec, Some(collapsed), budget, recipe.title))
+                Some(self.title_spec_line(spec, Some(collapsed), recipe.title))
             } else if let Some(title) = self.title_line(title_slots, Some(collapsed)) {
                 Some(Line::from(Span::styled(format!(" {title} "), recipe.title)))
             } else {
                 None
             };
             if let Some(title) = title {
-                paint_border_label(area, true, &title, recipe.title, buffer, self.tokens);
+                paint_border_label(
+                    area,
+                    true,
+                    &title,
+                    with_surface_background(recipe.title, panel_fill),
+                    budget,
+                    buffer,
+                    self.tokens,
+                );
             }
             if let Some(meta) = slots.trailing.filter(|m| !m.is_empty()) {
                 let theme = self.tokens.junie_theme();
@@ -1191,10 +1236,12 @@ impl<'a> Panel<'a> {
                         area.y,
                         &text,
                         usize::from(tw),
-                        theme
-                            .faint()
-                            .bg(theme.canvas)
-                            .remove_modifier(ratatui_core::style::Modifier::BOLD),
+                        with_surface_background(
+                            theme
+                                .faint()
+                                .remove_modifier(ratatui_core::style::Modifier::BOLD),
+                            panel_fill,
+                        ),
                     );
                 }
             } else if (slots.trailing.is_some() || self.vertical_scroll.is_some()) && area.width > 4
@@ -1206,17 +1253,35 @@ impl<'a> Panel<'a> {
                     area.y,
                     "  ",
                     2,
-                    theme.faint().bg(theme.canvas),
+                    with_surface_background(theme.faint(), panel_fill),
                 );
             }
             if let Some(footer) = slots.footer {
                 let line = Line::from(Span::styled(format!(" {footer} "), recipe.title));
-                paint_border_label(area, false, &line, recipe.title, buffer, self.tokens);
+                paint_border_label(
+                    area,
+                    false,
+                    &line,
+                    with_surface_background(recipe.title, panel_fill),
+                    area.width.saturating_sub(4),
+                    buffer,
+                    self.tokens,
+                );
             }
         } else if matches!(self.variant, PanelVariant::DividerOnly) {
             paint_divider_only(area, buffer, self.tokens);
             if let Some(header) = parts.header {
-                paint_header_line(self, header, buffer, collapsed, focused);
+                paint_header_line(
+                    self,
+                    header,
+                    parts
+                        .actions
+                        .map_or(0, |actions| actions.width.saturating_add(1)),
+                    buffer,
+                    collapsed,
+                    focused,
+                    panel_fill,
+                );
             }
             if let Some(footer) = parts.footer {
                 if let Some(text) = self.slots_for_width(area.width).footer {
@@ -1226,13 +1291,23 @@ impl<'a> Panel<'a> {
                         footer.y,
                         &t,
                         usize::from(footer.width),
-                        self.tokens.style(Role::TextMuted),
+                        with_surface_background(self.tokens.style(Role::TextMuted), panel_fill),
                     );
                 }
             }
         } else if matches!(self.variant, PanelVariant::Quiet) {
             if let Some(header) = parts.header {
-                paint_header_line(self, header, buffer, collapsed, focused);
+                paint_header_line(
+                    self,
+                    header,
+                    parts
+                        .actions
+                        .map_or(0, |actions| actions.width.saturating_add(1)),
+                    buffer,
+                    collapsed,
+                    focused,
+                    panel_fill,
+                );
             }
             if let Some(footer) = parts.footer {
                 if let Some(text) = self.slots_for_width(area.width).footer {
@@ -1242,7 +1317,7 @@ impl<'a> Panel<'a> {
                         footer.y,
                         &t,
                         usize::from(footer.width),
-                        self.tokens.style(Role::TextMuted),
+                        with_surface_background(self.tokens.style(Role::TextMuted), panel_fill),
                     );
                 }
             }
@@ -1290,18 +1365,21 @@ impl<'a> Panel<'a> {
                 area.y.saturating_add(area.height / 2),
                 g,
                 1,
-                self.tokens.style(Role::Accent),
+                with_surface_background(self.tokens.style(Role::Accent), panel_fill),
             );
         }
 
         // Header actions (right band) + hit targets.
         let mut action_hits = Vec::new();
         if let Some(band) = parts.actions {
-            let style = self.tokens.style(if focused {
-                Role::ActionFocused
-            } else {
-                Role::TextMuted
-            });
+            let style = with_surface_background(
+                self.tokens.style(if focused {
+                    Role::ActionFocused
+                } else {
+                    Role::TextMuted
+                }),
+                panel_fill,
+            );
             let mut x = band.x;
             for action in self.header_actions {
                 let label = format!("[{}]", action.label.trim());
@@ -1399,9 +1477,11 @@ impl Widget for Panel<'_> {
 fn paint_header_line(
     panel: &Panel<'_>,
     header: Rect,
+    action_reserve: u16,
     buffer: &mut Buffer,
     collapsed: bool,
     focused: bool,
+    panel_fill: Option<Style>,
 ) {
     let slots = panel.slots_for_width(header.width.saturating_add(4));
     let theme = panel.tokens.junie_theme();
@@ -1411,6 +1491,11 @@ fn paint_header_line(
     } else {
         theme.secondary()
     };
+    let style = with_surface_background(style, panel_fill);
+    let title_area = Rect {
+        width: header.width.saturating_sub(action_reserve),
+        ..header
+    };
     if focused && header.x >= 1 {
         // Card focus: ▎ in the padding column, bold title.
         buffer.set_stringn(
@@ -1418,15 +1503,15 @@ fn paint_header_line(
             header.y,
             panel.tokens.glyphs.selection_gutter(),
             1,
-            theme.accent_fg(),
+            with_surface_background(theme.accent_fg(), panel_fill),
         );
     }
     if let Some(spec) = panel.title_spec {
-        let line = panel.title_spec_line(spec, Some(collapsed), header.width, style);
+        let line = panel.title_spec_line(spec, Some(collapsed), style);
         let mut scratch = String::new();
         crate::text::paint_line_overflow(
             buffer,
-            header,
+            title_area,
             &line,
             style,
             crate::text::LinePlacement {
@@ -1447,6 +1532,10 @@ fn paint_header_line(
         });
         left.push(' ');
     }
+    if let Some(prefix) = panel.recipe().title_prefix {
+        left.push_str(prefix);
+        left.push(' ');
+    }
     if let Some(leading) = slots.leading {
         left.push_str(leading.trim());
         left.push(' ');
@@ -1461,17 +1550,39 @@ fn paint_header_line(
         left.push_str("· ");
         left.push_str(subtitle.trim());
     }
-    let t = panel.chrome_label(&left, header.width);
-    buffer.set_stringn(header.x, header.y, &t, usize::from(header.width), style);
-    let mut right = header.right();
+    let t = panel.chrome_label(&left, title_area.width);
+    buffer.set_stringn(
+        title_area.x,
+        title_area.y,
+        &t,
+        usize::from(title_area.width),
+        style,
+    );
+    let mut right = title_area.right();
     if let Some(meta) = slots.trailing {
         let text = meta.trim();
         let tw = display_cols(text) as u16;
-        if right > header.x.saturating_add(tw.saturating_add(1)) {
+        if right > title_area.x.saturating_add(tw.saturating_add(1)) {
             right = right.saturating_sub(tw);
-            buffer.set_stringn(right, header.y, text, usize::from(tw), theme.faint());
+            buffer.set_stringn(
+                right,
+                header.y,
+                text,
+                usize::from(tw),
+                with_surface_background(theme.faint(), panel_fill),
+            );
         }
     }
+}
+
+/// Apply only the background that the current Surface actually painted.
+///
+/// Transparent divider panels return `None`, so their chrome never opts them
+/// back into a filled card plane.
+fn with_surface_background(style: Style, panel_fill: Option<Style>) -> Style {
+    panel_fill
+        .and_then(|fill| fill.bg)
+        .map_or(style, |background| style.bg(background))
 }
 
 fn paint_border_label(
@@ -1479,6 +1590,7 @@ fn paint_border_label(
     top: bool,
     line: &Line<'_>,
     style: Style,
+    budget: u16,
     buffer: &mut Buffer,
     system: &DesignSystem,
 ) {
@@ -1490,7 +1602,7 @@ fn paint_border_label(
         .iter()
         .map(|span| display_cols(span.content.as_ref()))
         .sum::<usize>();
-    let budget = usize::from(area.width.saturating_sub(4));
+    let budget = usize::from(budget.min(area.width.saturating_sub(4)));
     if budget == 0 || line_w == 0 {
         return;
     }
@@ -1644,7 +1756,77 @@ mod tests {
     }
 
     #[test]
-    fn default_panel_is_quiet_and_explicit_border_reserves_chrome() {
+    fn danger_quiet_header_paints_the_title_prefix() {
+        let system = DesignSystem::junie().no_color();
+        let area = Rect::new(0, 0, 24, 5);
+        let panel = Panel::new(&system)
+            .title("Delete branch")
+            .emphasis(PanelChrome::Danger);
+        let mut buffer = Buffer::empty(area);
+
+        panel.paint(area, &mut buffer, None);
+
+        let prefix = system.glyphs.resolve(crate::style::Glyph::Error).text;
+        let row: String = (0..area.width)
+            .map(|x| buffer[(x, area.y)].symbol())
+            .collect();
+        assert!(
+            row.contains(prefix),
+            "plain quiet headers must paint the danger prefix, got {row:?}"
+        );
+    }
+
+    #[test]
+    fn quiet_overlay_is_framed_and_uses_the_elevated_fill() {
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 20, 6);
+        let panel = Panel::new(&system).overlay(true);
+
+        assert!(panel.has_box_border());
+        assert_eq!(panel.surface_recipe(), SurfaceRecipe::Overlay);
+        assert_eq!(panel.recipe().surface, system.style(Role::Elevated));
+        assert_eq!(panel.inner(area), Rect::new(3, 1, 15, 4));
+
+        let mut buffer = Buffer::empty(area);
+        panel.paint(area, &mut buffer, None);
+        assert_eq!(buffer[(0, 0)].symbol(), system.border_set().top_left);
+        assert_eq!(
+            buffer[(4, 2)].bg,
+            system.style(Role::Elevated).bg.unwrap(),
+            "quiet overlays paint their elevated plane inside the frame"
+        );
+    }
+
+    #[test]
+    fn divider_only_keeps_seeded_interior_and_reports_canvas_plane() {
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 20, 6);
+        let mut buffer = Buffer::empty(area);
+        let seeded = Style::default().bg(ratatui_core::style::Color::Rgb(1, 2, 3));
+        buffer.set_style(Rect::new(0, 1, 20, 4), seeded);
+        let before = buffer.clone();
+        let panel = Panel::new(&system)
+            .variant(PanelVariant::DividerOnly)
+            .overlay(true);
+
+        assert!(!panel.has_box_border());
+        assert_eq!(panel.surface_recipe(), SurfaceRecipe::Canvas);
+        assert_eq!(panel.recipe().surface, system.style(Role::Canvas));
+
+        panel.paint(area, &mut buffer, None);
+        for y in area.y.saturating_add(1)..area.bottom().saturating_sub(1) {
+            for x in area.x..area.right() {
+                assert_eq!(
+                    buffer[(x, y)],
+                    before[(x, y)],
+                    "divider-only panel changed interior cell ({x}, {y})"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn default_panel_is_filled_card_and_explicit_border_reserves_chrome() {
         let area = Rect::new(0, 0, 20, 10);
         let system = DesignSystem::default();
         let mut quiet_buffer = Buffer::empty(area);
@@ -1660,6 +1842,11 @@ mod tests {
         assert!(!Panel::new(&DesignSystem::default()).has_box_border());
         assert_eq!(quiet_buffer[(0, 0)].symbol(), " ");
         assert_eq!(
+            quiet_buffer[(4, 2)].bg,
+            system.style(Role::Surface).bg.unwrap(),
+            "the default panel is a filled card surface"
+        );
+        assert_eq!(
             bordered_buffer[(0, 0)].symbol(),
             system.border_set().top_left
         );
@@ -1668,7 +1855,15 @@ mod tests {
         assert_eq!(bordered, Rect::new(3, 1, 15, 8));
         assert_eq!(
             Panel::new(&DesignSystem::default()).inner(Rect::new(0, 0, 5, 2)),
-            Rect::new(0, 0, 5, 2)
+            Rect::new(2, 1, 1, 0)
+        );
+        let expected_fill = system.style(Role::Surface).bg.unwrap();
+        assert!(
+            quiet_buffer
+                .content()
+                .iter()
+                .all(|cell| cell.bg == expected_fill),
+            "the full quiet allocation is the card plane"
         );
     }
 
@@ -1682,6 +1877,189 @@ mod tests {
             .emphasis(PanelChrome::Focused)
             .title("T");
         assert_eq!(panel.recipe().border, focused.border);
+    }
+
+    #[test]
+    fn panel_plane_resolver_matches_variant_and_paint() {
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 20, 6);
+        let cases = [
+            (Panel::new(&system), SurfaceRecipe::Inset, Role::Surface),
+            (
+                Panel::new(&system).variant(PanelVariant::Bordered),
+                SurfaceRecipe::Canvas,
+                Role::Canvas,
+            ),
+            (
+                Panel::new(&system).variant(PanelVariant::Interactive),
+                SurfaceRecipe::Canvas,
+                Role::Canvas,
+            ),
+            (
+                Panel::new(&system).variant(PanelVariant::Selected),
+                SurfaceRecipe::Canvas,
+                Role::Canvas,
+            ),
+            (
+                Panel::new(&system).overlay(true),
+                SurfaceRecipe::Overlay,
+                Role::Elevated,
+            ),
+        ];
+
+        for (panel, expected_recipe, expected_role) in cases {
+            assert_eq!(panel.surface_recipe(), expected_recipe);
+            assert_eq!(panel.recipe().surface, system.style(expected_role));
+
+            let mut buffer = Buffer::empty(area);
+            panel.paint(area, &mut buffer, None);
+            assert_eq!(
+                buffer[(4, 2)].bg,
+                system.style(expected_role).bg.unwrap(),
+                "painted plane disagrees for {expected_recipe:?}"
+            );
+            if matches!(expected_recipe, SurfaceRecipe::Canvas)
+                && panel.variant == PanelVariant::Selected
+            {
+                assert_eq!(
+                    buffer[(area.x, area.y + area.height / 2)].symbol(),
+                    system.glyphs.selection_gutter()
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn recipe_surface_is_semantic_and_fill_follows_capability() {
+        let system = DesignSystem::default().no_color();
+        let quiet = Panel::new(&system);
+        assert_eq!(quiet.surface_recipe(), SurfaceRecipe::Inset);
+        assert_eq!(quiet.recipe().surface, system.style(Role::Surface));
+        assert_eq!(quiet.surface_fill(), Some(system.style(Role::Canvas)));
+
+        let overlay = Panel::new(&system).overlay(true);
+        assert_eq!(overlay.surface_recipe(), SurfaceRecipe::Overlay);
+        assert_eq!(overlay.recipe().surface, system.style(Role::Elevated));
+        assert!(overlay.surface_fill().is_none());
+
+        let divider = Panel::new(&system).variant(PanelVariant::DividerOnly);
+        assert_eq!(divider.surface_recipe(), SurfaceRecipe::Canvas);
+        assert_eq!(divider.recipe().surface, system.style(Role::Canvas));
+        assert!(divider.surface_fill().is_none());
+    }
+
+    #[test]
+    fn divider_only_precedes_raised_overlay_combinations() {
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 20, 6);
+        let divider = Panel::new(&system)
+            .variant(PanelVariant::DividerOnly)
+            .overlay(true);
+        assert!(!divider.has_box_border());
+        assert_eq!(divider.surface_recipe(), SurfaceRecipe::Canvas);
+        assert!(divider.surface_fill().is_none());
+
+        let mut transparent = Buffer::empty(area);
+        let seeded = Style::default().bg(ratatui_core::style::Color::Rgb(1, 2, 3));
+        transparent.set_style(Rect::new(0, 1, 20, 4), seeded);
+        divider.paint(area, &mut transparent, None);
+        assert_eq!(transparent[(4, 2)].bg, seeded.bg.unwrap());
+
+        let raised = Panel::new(&system)
+            .variant(PanelVariant::DividerOnly)
+            .raised(true)
+            .overlay(true);
+        assert!(!raised.has_box_border());
+        assert_eq!(raised.surface_recipe(), SurfaceRecipe::Inset);
+        assert_eq!(raised.recipe().surface, system.style(Role::Surface));
+        let mut filled = Buffer::empty(area);
+        raised.paint(area, &mut filled, None);
+        assert_eq!(filled[(4, 2)].bg, system.style(Role::Surface).bg.unwrap());
+    }
+
+    #[test]
+    fn focus_and_danger_change_chrome_not_in_flow_plane() {
+        let system = DesignSystem::default();
+        for variant in [
+            PanelVariant::Quiet,
+            PanelVariant::Bordered,
+            PanelVariant::Interactive,
+            PanelVariant::Selected,
+        ] {
+            let normal = Panel::new(&system).variant(variant);
+            let focused = normal.clone().emphasis(PanelChrome::Focused);
+            let danger = normal.clone().emphasis(PanelChrome::Danger);
+
+            assert_eq!(focused.surface_recipe(), normal.surface_recipe());
+            assert_eq!(danger.surface_recipe(), normal.surface_recipe());
+            assert_eq!(focused.recipe().surface, normal.recipe().surface);
+            assert_eq!(danger.recipe().surface, normal.recipe().surface);
+        }
+    }
+
+    #[test]
+    fn paint_clips_partial_offset_and_out_of_buffer_areas() {
+        let system = DesignSystem::default();
+        let panel = Panel::new(&system).title("Clipped");
+        let mut buffer = Buffer::empty(Rect::new(10, 10, 8, 4));
+
+        let body = panel.paint(Rect::new(8, 9, 14, 6), &mut buffer, None);
+
+        assert_eq!(body, Rect::new(12, 12, 4, 1));
+        assert!(
+            buffer
+                .content()
+                .iter()
+                .all(|cell| cell.bg == system.style(Role::Surface).bg.unwrap()),
+            "the clipped intersection is fully owned by the card plane"
+        );
+
+        let before = buffer.clone();
+        let outside = panel.paint(Rect::new(0, 0, 5, 3), &mut buffer, None);
+        assert!(outside.is_empty());
+        assert_eq!(buffer, before, "an out-of-buffer panel does not paint");
+
+        let empty = panel.paint(Rect::new(18, 14, 4, 2), &mut buffer, None);
+        assert!(empty.is_empty());
+        assert_eq!(buffer, before, "an empty intersection does not paint");
+    }
+
+    #[test]
+    fn disjoint_paint_clears_cached_panel_geometry() {
+        let system = DesignSystem::default();
+        let actions = [PanelAction::new("open", "Open")];
+        let panel = Panel::new(&system)
+            .title("Actions")
+            .header_actions(&actions);
+        let area = Rect::new(0, 0, 40, 6);
+        let mut buffer = Buffer::empty(area);
+        let mut state = PanelState::new();
+
+        panel.paint(area, &mut buffer, Some(&mut state));
+        assert!(state.parts.is_some());
+        assert!(!state.action_hits.is_empty());
+
+        let before = buffer.clone();
+        let outside = panel.paint(Rect::new(80, 80, 8, 4), &mut buffer, Some(&mut state));
+
+        assert!(outside.is_empty());
+        assert!(state.parts.is_none());
+        assert!(state.action_hits.is_empty());
+        assert_eq!(buffer, before);
+    }
+
+    #[test]
+    fn owned_and_borrowed_panel_widget_rendering_remains_available() {
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 12, 3);
+        let mut owned = Buffer::empty(area);
+        let mut borrowed = Buffer::empty(area);
+
+        Widget::render(Panel::new(&system).title("Panel"), area, &mut owned);
+        let panel = Panel::new(&system).title("Panel");
+        Widget::render(&panel, area, &mut borrowed);
+
+        assert_eq!(owned, borrowed);
     }
 
     #[test]
@@ -1800,6 +2178,46 @@ mod tests {
     }
 
     #[test]
+    fn title_spec_reserves_action_band_in_bordered_and_quiet_headers() {
+        let tokens = DesignSystem::default();
+        let actions = [PanelAction::new("open", "Open")];
+        let spec = PanelTitleSpec::new("Diagnostics")
+            .scope("crates/termrock/src/widgets")
+            .count(1234)
+            .filter("unresolved import")
+            .live(true);
+        let area = Rect::new(0, 0, 48, 4);
+
+        for variant in [PanelVariant::Bordered, PanelVariant::Quiet] {
+            let panel = Panel::new(&tokens)
+                .variant(variant)
+                .title_spec(spec)
+                .header_actions(&actions);
+            let parts = panel.layout(area, None);
+            let header = parts.header.expect("title spec has a header");
+            let action_band = parts.actions.expect("wide panels show actions");
+            let mut buffer = Buffer::empty(area);
+            panel.paint(area, &mut buffer, None);
+
+            let title_before_actions: String = (header.x..action_band.x)
+                .map(|x| buffer[(x, header.y)].symbol())
+                .collect();
+            assert!(
+                title_before_actions.contains(tokens.glyphs.ellipsis()),
+                "{variant:?} title should contract before actions: {title_before_actions:?}"
+            );
+
+            let action_text: String = (action_band.x..action_band.right())
+                .map(|x| buffer[(x, action_band.y)].symbol())
+                .collect();
+            assert!(
+                action_text.starts_with("[Open]"),
+                "{variant:?} action band was not preserved: {action_text:?}"
+            );
+        }
+    }
+
+    #[test]
     fn actions_hidden_when_narrow() {
         assert!(!Panel::actions_visible(20));
         assert!(Panel::actions_visible(28));
@@ -1828,12 +2246,12 @@ mod tests {
         let selected = Panel::new(&tokens)
             .variant(PanelVariant::Selected)
             .title("S");
-        assert_eq!(selected.surface_recipe(), SurfaceRecipe::Selected);
+        assert_eq!(selected.surface_recipe(), SurfaceRecipe::Canvas);
         assert_eq!(selected.resolved_chrome(), PanelChrome::Normal);
         let focused = Panel::new(&tokens)
             .emphasis(PanelChrome::Focused)
             .title("F");
-        assert_eq!(focused.surface_recipe(), SurfaceRecipe::Focused);
+        assert_eq!(focused.surface_recipe(), SurfaceRecipe::Inset);
     }
 
     #[test]
@@ -1843,6 +2261,57 @@ mod tests {
         assert!(!p.has_box_border());
         let parts = p.layout(Rect::new(0, 0, 20, 6), None);
         assert!(parts.body.width > 0);
+    }
+
+    #[test]
+    fn unframed_footer_requires_an_available_row() {
+        let system = DesignSystem::default();
+        for variant in [PanelVariant::Quiet, PanelVariant::DividerOnly] {
+            let panel = Panel::new(&system)
+                .variant(variant)
+                .title("Header")
+                .footer("Footer");
+
+            let zero = Rect::new(2, 3, 34, 0);
+            let zero_parts = panel.layout(zero, None);
+            assert!(zero_parts.header.is_none());
+            assert!(zero_parts.footer.is_none());
+
+            let one = Rect::new(2, 3, 34, 1);
+            let one_parts = panel.layout(one, None);
+            assert!(one_parts.header.is_some());
+            assert!(one_parts.footer.is_none());
+
+            let mut buffer = Buffer::empty(one);
+            let mut state = PanelState::new();
+            panel.paint(one, &mut buffer, Some(&mut state));
+            assert_eq!(state.parts.and_then(|parts| parts.footer), None);
+
+            let footer_only = Panel::new(&system).variant(variant).footer("Footer");
+            assert!(footer_only.layout(one, None).footer.is_some());
+        }
+    }
+
+    #[test]
+    fn tiny_quiet_geometry_keeps_the_card_inset_without_underflow() {
+        let system = DesignSystem::default();
+        let panel = Panel::new(&system);
+        for area in [
+            Rect::new(0, 0, 1, 1),
+            Rect::new(0, 0, 2, 1),
+            Rect::new(0, 0, 3, 2),
+            Rect::new(0, 0, 5, 2),
+            Rect::new(0, 0, 6, 3),
+        ] {
+            let parts = panel.layout(area, None);
+            assert_eq!(parts.body.x, area.x.saturating_add(2));
+            assert_eq!(parts.body.y, area.y.saturating_add(1));
+            assert_eq!(parts.body.width, area.width.saturating_sub(4));
+            assert!(parts.body.height <= area.height);
+
+            let mut buffer = Buffer::empty(area);
+            let _ = panel.paint(area, &mut buffer, None);
+        }
     }
 
     #[test]

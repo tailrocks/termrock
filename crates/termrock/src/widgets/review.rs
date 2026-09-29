@@ -622,12 +622,6 @@ impl DiffReviewState {
         self.view.set_accepts_input(accepts);
     }
 
-    /// Whether host granted input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Hunk cursor (DiffView).
     #[must_use]
     pub const fn hunk_cursor(&self) -> usize {
@@ -1541,7 +1535,6 @@ impl<'a> DiffReview<'a> {
                 state,
                 self.system,
                 surface,
-                false,
                 colorless,
             );
         }
@@ -1564,7 +1557,6 @@ impl<'a> DiffReview<'a> {
             self.hunks,
             state,
             self.system,
-            false,
             colorless,
         );
 
@@ -1640,7 +1632,6 @@ fn paint_file_tree(
     state: &mut DiffReviewState,
     system: &DesignSystem,
     surface: bool,
-    _ascii: bool,
     colorless: bool,
 ) {
     if area.is_empty() {
@@ -1721,7 +1712,6 @@ fn paint_review_marks(
     hunks: &[DiffHunk],
     state: &DiffReviewState,
     system: &DesignSystem,
-    _ascii: bool,
     colorless: bool,
 ) {
     // Use DiffView regions if present

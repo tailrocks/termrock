@@ -617,12 +617,6 @@ impl HexViewerState {
         self.accepts_input = accepts;
     }
 
-    /// Accepts input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Vertical row offset.
     #[must_use]
     pub const fn row_offset(&self) -> u16 {
@@ -1261,7 +1255,6 @@ impl<'a> HexViewer<'a> {
                     state,
                     self.system,
                     surface,
-                    false,
                     colorless,
                     tiny,
                 );
@@ -1305,7 +1298,6 @@ fn paint_hex_row(
     state: &HexViewerState,
     system: &DesignSystem,
     surface: bool,
-    _ascii: bool,
     colorless: bool,
     tiny: bool,
 ) {

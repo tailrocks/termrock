@@ -519,12 +519,6 @@ impl PathInputState {
         self.focused
     }
 
-    /// Enabled.
-    #[must_use]
-    pub const fn is_enabled(&self) -> bool {
-        self.enabled
-    }
-
     /// Read-only.
     #[must_use]
     pub const fn is_read_only(&self) -> bool {

@@ -466,11 +466,11 @@ impl<'a> AvatarGlyph<'a> {
             }
             AvatarFace::RoleGlyph => {
                 let g = self.system.glyphs.resolve(self.role.glyph());
-                fit_glyph_text(g.text, cols, ascii)
+                fit_glyph_text(g.text, cols)
             }
             AvatarFace::Glyph(glyph) => {
                 let g = self.system.glyphs.resolve(glyph);
-                fit_glyph_text(g.text, cols, ascii)
+                fit_glyph_text(g.text, cols)
             }
         };
         if self.bracketed || (ascii && matches!(self.face, AvatarFace::Initials) && cols >= 2) {
@@ -615,7 +615,7 @@ impl Widget for AvatarGlyph<'_> {
     }
 }
 
-fn fit_glyph_text(text: &str, cols: usize, _ascii: bool) -> String {
+fn fit_glyph_text(text: &str, cols: usize) -> String {
     let t = take_display_cols(text, cols);
     let mut out = t;
     while display_cols(&out) < cols {

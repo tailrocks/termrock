@@ -2210,6 +2210,7 @@ impl App {
                 Route::Changed
             }
             PickerOutcome::CursorMoved => Route::Changed,
+            PickerOutcome::Secondary(_) => Route::Consumed,
             PickerOutcome::Ignored => Route::Consumed,
             PickerOutcome::QueryChanged
             | PickerOutcome::ActivatedAlt(_)

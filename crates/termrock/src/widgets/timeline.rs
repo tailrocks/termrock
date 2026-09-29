@@ -939,7 +939,7 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
                 usize::from(area.width),
                 self.system.style(Role::TextMuted),
             );
-            self.paint_footer(area, buffer, state, false);
+            self.paint_footer(area, buffer, state);
             return;
         }
 
@@ -954,7 +954,7 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
             let cursor = idx == state.cursor;
 
             if matches!(event.kind, TimelineRowKind::Group) {
-                self.paint_group(area, row_y, buffer, event, false);
+                self.paint_group(area, row_y, buffer, event);
                 y = row_y;
                 continue;
             }
@@ -989,7 +989,7 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
             );
             let style = chrome.label_style(style);
 
-            let line = self.format_line(event, area.width, false, colorless);
+            let line = self.format_line(event, area.width, colorless);
             buffer.set_stringn(area.x, row_y, " ", 1, style);
             buffer.set_stringn(area.x.saturating_add(1), row_y, " ", 1, style);
             let body = format!("{marker} {line}");
@@ -1022,16 +1022,10 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
             y = row_y;
         }
         let _ = y;
-        self.paint_footer(area, buffer, state, false);
+        self.paint_footer(area, buffer, state);
     }
 
-    fn format_line(
-        &self,
-        event: &TimelineEvent<'a, Id>,
-        width: u16,
-        _ascii: bool,
-        colorless: bool,
-    ) -> String {
+    fn format_line(&self, event: &TimelineEvent<'a, Id>, width: u16, colorless: bool) -> String {
         let narrow = width < 36;
         let tiny = width < 22;
         match self.recipe {
@@ -1080,14 +1074,7 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
         }
     }
 
-    fn paint_group(
-        &self,
-        area: Rect,
-        y: u16,
-        buffer: &mut Buffer,
-        event: &TimelineEvent<'a, Id>,
-        _ascii: bool,
-    ) {
+    fn paint_group(&self, area: Rect, y: u16, buffer: &mut Buffer, event: &TimelineEvent<'a, Id>) {
         let mark = "▸ ";
         let line = format!("{mark}{}", event.when);
         buffer.set_stringn(
@@ -1101,13 +1088,7 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
         );
     }
 
-    fn paint_footer(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &TimelineState<Id>,
-        _ascii: bool,
-    ) {
+    fn paint_footer(&self, area: Rect, buffer: &mut Buffer, state: &TimelineState<Id>) {
         let y = area.bottom().saturating_sub(1);
         if y < area.y {
             return;

@@ -767,27 +767,27 @@ Every component below uses sections **1–24**:
 ## StatusBar
 
 1. **Purpose:** Persistent status slots with priority.  
-2. **Anatomy:** `root` · `slot[]` · optional `separator`  
+2. **Anatomy:** elevated `root` · left/center/right `slot[]` · optional transient
 3. **Public properties:** slots (`id`, content, priority, interactive?), `design`  
 4. **State:** optional focus slot if interactive.  
 5. **Variants:** `default`  
 6. **Sizes/density:** always 1 row.  
-7. **Visual states:** slot tones (ok/warn/error).  
+7. **Visual states:** elevated plane, neutral labels, glyph/rail status tone, hover lift.
 8. **Interaction states:** activate interactive slot.  
 9. **Keyboard:** optional Left/Right + Enter if interactive slots.  
 10. **Mouse:** click interactive slot.  
 11. **Focus:** only if any slot interactive.  
 12. **Disabled:** N/A.  
 13. **Loading:** spinner slot.  
-14. **Error:** danger tone slot.  
-15. **Narrow:** drop low-priority slots first.  
-16. **Tiny:** single highest-priority slot.  
-17. **Unicode/ASCII:** slot glyphs.  
-18. **Colorless:** danger/warn prefixes.  
+14. **Error:** danger glyph/rail slot.
+15. **Narrow:** drop low-priority slots first; preserve one strongest/essential survivor.
+16. **Tiny:** single globally strongest/essential slot.
+17. **Unicode/ASCII:** one-cell glyphs and grapheme-safe truncation.
+18. **Colorless:** glyph/rail shape plus readable neutral text.
 19. **Composition:** workbench south/status.  
 20. **Outcomes:** `Activated(Id)` optional.  
 21. **Stories:** `status-bar/priority`, `status-bar/interactive`  
-22. **Snapshots:** priority drop.  
+22. **Snapshots:** spacing, priority drop, truncation, and transient collision.
 23. **Interaction tests:** activate interactive.  
 24. **Perf:** O(slots).
 
@@ -2146,7 +2146,7 @@ Every component below uses sections **1–24**:
 3. **Public properties:** `SlashCommand` (name, aliases, args, shortcut, source, disabled, recent).  
 4. **State:** `SlashCommandMenuState` + nested `CompletionMenuState`; query phase Command/Argument.  
 5. **Variants:** composer / global / plugin sources; nested arg completion.  
-6–10. j/k select; Enter commit; Esc dismiss (draft kept); space commit-char into args.  
+6–10. Printable input, including j/k, edits the host draft/query; arrows and Ctrl+N/P/J/K move the list; Enter commits; Esc dismisses while keeping the draft; space is a commit character in argument completion.
 11–14. Host catalogs + execute; `apply_slash_insert` range-only; async generation gates.  
 15–18. Compact list vs fullscreen presentation from bounds.  
 19. **Composition:** CompletionMenu paint; CommandEntry bridge; PromptComposer slash.  

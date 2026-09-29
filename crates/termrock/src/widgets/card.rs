@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Card — raised content container composed from [`Panel`] + [`Surface`].
+//! Card — filled content container composed from [`Panel`] + [`Surface`].
 //!
 //! shadcn-style anatomy without nested box soup:
 //! `root` · `header` · `title` · `description` · `body` · `footer`.
@@ -45,7 +45,7 @@ impl From<PanelParts> for CardParts {
     }
 }
 
-/// Raised card container (Panel + Elevated surface recipe).
+/// Filled card container (Panel + Surface recipe).
 #[derive(Debug, Clone)]
 pub struct Card<'a> {
     system: &'a DesignSystem,
@@ -67,7 +67,7 @@ pub struct Card<'a> {
 }
 
 impl<'a> Card<'a> {
-    /// Empty raised card.
+    /// Empty card.
     #[must_use]
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
@@ -220,7 +220,6 @@ impl<'a> Card<'a> {
             })
             .body(self.body)
             .collapsible(self.collapsible)
-            .raised(true)
             .header_actions(self.header_actions);
         if let Some(t) = self.title {
             p = p.title(t);
@@ -278,14 +277,20 @@ impl<'a> Card<'a> {
         self.layout(area, None).body
     }
 
-    /// Paint raised card chrome + description; returns body rect.
+    /// Paint card chrome + description; returns body rect.
     pub fn paint(
         &self,
         area: Rect,
         buffer: &mut Buffer,
         mut state: Option<&mut PanelState>,
     ) -> Rect {
+        // Panel::paint clips its own writes; the description is painted here
+        // afterward and must use the same writable intersection.
+        let area = area.intersection(*buffer.area());
         if area.is_empty() {
+            if let Some(state) = state {
+                state.clear_cached_geometry();
+            }
             return area;
         }
         let panel = self.panel();
@@ -302,11 +307,23 @@ impl<'a> Card<'a> {
                 desc_rect.y,
                 &t,
                 usize::from(desc_rect.width),
-                self.system.style(Role::TextMuted),
+                self.description_style(&panel),
             );
             return card.body;
         }
         body_after_panel
+    }
+
+    /// Description text must use the same effective plane as its Panel.
+    ///
+    /// Transparent divider panels preserve seeded buffer cells; filled cards
+    /// carry their resolved surface background into the description row.
+    fn description_style(&self, panel: &Panel<'a>) -> ratatui_core::style::Style {
+        let text = self.system.style(Role::TextMuted);
+        panel
+            .surface_fill()
+            .and_then(|fill| fill.bg)
+            .map_or(text, |background| text.bg(background))
     }
 }
 
@@ -378,6 +395,28 @@ mod tests {
         assert!(body.width > 0);
         assert!(!state.action_hits.is_empty());
         assert_eq!(state.action_hits[0].0, "open");
+    }
+
+    #[test]
+    fn disjoint_paint_clears_panel_geometry() {
+        let system = DesignSystem::default();
+        let actions = [PanelAction::new("open", "Open")];
+        let card = Card::new(&system).title("Metric").header_actions(&actions);
+        let area = Rect::new(0, 0, 40, 8);
+        let mut buffer = Buffer::empty(area);
+        let mut state = PanelState::new();
+
+        card.paint(area, &mut buffer, Some(&mut state));
+        assert!(state.parts.is_some());
+        assert!(!state.action_hits.is_empty());
+
+        let before = buffer.clone();
+        let outside = card.paint(Rect::new(80, 80, 8, 4), &mut buffer, Some(&mut state));
+
+        assert!(outside.is_empty());
+        assert!(state.parts.is_none());
+        assert!(state.action_hits.is_empty());
+        assert_eq!(buffer, before);
     }
 
     #[test]
@@ -468,5 +507,71 @@ mod tests {
                 .modifier
                 .contains(ratatui_core::style::Modifier::BOLD)
         );
+    }
+
+    #[test]
+    fn description_paint_clips_requested_area_to_buffer() {
+        let system = DesignSystem::default();
+        let card = Card::new(&system)
+            .title("Card")
+            .description("Description outside the requested buffer");
+        let buffer_area = Rect::new(10, 10, 12, 5);
+        let mut buffer = Buffer::empty(buffer_area);
+
+        let body = card.paint(Rect::new(8, 9, 18, 7), &mut buffer, None);
+
+        assert_eq!(body, Rect::new(12, 13, 8, 1));
+        assert_eq!(body.intersection(buffer_area), body);
+    }
+
+    #[test]
+    fn description_paint_keeps_truecolor_surface_background() {
+        let system = DesignSystem::default();
+        let card = Card::new(&system).title("Card").description("Description");
+        let area = Rect::new(0, 0, 32, 8);
+        let description = card.layout(area, None).description.unwrap();
+        let mut buffer = Buffer::empty(area);
+
+        card.paint(area, &mut buffer, None);
+
+        let cell = &buffer[(description.x, description.y)];
+        assert_eq!(cell.bg, system.style(Role::Surface).bg.unwrap());
+        assert_eq!(cell.fg, system.style(Role::TextMuted).fg.unwrap());
+    }
+
+    #[test]
+    fn description_paint_tracks_monochrome_surface_plan() {
+        let system = DesignSystem::default().no_color();
+        let card = Card::new(&system).title("Card").description("Description");
+        let area = Rect::new(0, 0, 32, 8);
+        let description = card.layout(area, None).description.unwrap();
+        let mut buffer = Buffer::empty(area);
+
+        card.paint(area, &mut buffer, None);
+
+        assert_eq!(
+            buffer[(description.x, description.y)].bg,
+            system.style(Role::Canvas).bg.unwrap()
+        );
+    }
+
+    #[test]
+    fn transparent_description_preserves_seeded_background() {
+        use ratatui_core::style::{Color, Style};
+
+        let system = DesignSystem::default();
+        let card = Card::new(&system)
+            .variant(PanelVariant::DividerOnly)
+            .title("Card")
+            .description("Description");
+        let area = Rect::new(0, 0, 32, 8);
+        let description = card.layout(area, None).description.unwrap();
+        let seeded = Color::Rgb(1, 2, 3);
+        let mut buffer = Buffer::empty(area);
+        buffer.set_style(description, Style::default().bg(seeded));
+
+        card.paint(area, &mut buffer, None);
+
+        assert_eq!(buffer[(description.x, description.y)].bg, seeded);
     }
 }

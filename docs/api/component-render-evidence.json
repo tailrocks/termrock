@@ -3822,6 +3822,46 @@
       }
     },
     {
+      "id": "Lockup",
+      "story": "lockup/basic",
+      "source": "crates/termrock/src/widgets/brand.rs",
+      "renderKind": "widget",
+      "family": "content",
+      "interactive": true,
+      "interactionKind": "interactive-component",
+      "checks": {
+        "canonicalNonempty": true,
+        "responsive": true,
+        "tinyTerminal": true,
+        "resize": true,
+        "panicSafety": true,
+        "colorLadder": true,
+        "noColor": true,
+        "asciiFallback": false,
+        "keyboard": true,
+        "mouse": false,
+        "focus": false,
+        "escape": false
+      },
+      "characterStories": {
+        "unicode": [
+          "lockup/basic"
+        ],
+        "cjk": [],
+        "combining": [],
+        "emoji": []
+      },
+      "stateStories": {
+        "disabled": [],
+        "loading": [],
+        "empty": [],
+        "error": [],
+        "streaming": [],
+        "largeData": [],
+        "overlay": []
+      }
+    },
+    {
       "id": "LogPane",
       "story": "log-pane/follow",
       "source": "crates/termrock/src/widgets/log_pane.rs",

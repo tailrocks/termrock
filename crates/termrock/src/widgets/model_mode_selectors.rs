@@ -796,12 +796,6 @@ impl ModelSelectorState {
         self.highlight.as_deref()
     }
 
-    /// Accepts input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Gate (does not clear selection).
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;

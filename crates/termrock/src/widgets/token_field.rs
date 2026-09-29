@@ -366,12 +366,6 @@ impl<Id> TokenFieldState<Id> {
         self.focused
     }
 
-    /// Enabled.
-    #[must_use]
-    pub const fn is_enabled(&self) -> bool {
-        self.enabled
-    }
-
     /// Parts.
     #[must_use]
     pub const fn parts(&self) -> Option<&TokenFieldParts> {

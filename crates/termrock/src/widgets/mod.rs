@@ -25,6 +25,7 @@ mod alert_dialog;
 mod attachment_chips;
 mod badge;
 mod blocks;
+mod brand;
 mod breadcrumbs;
 mod button_group;
 mod callout;
@@ -299,14 +300,14 @@ pub use attachment_chips::{
     paste_semantic_summary,
 };
 pub use badge::{Badge, BadgeCount, BadgeFill, BadgeOutcome, BadgeParts, BadgeState, BadgeVariant};
+pub use brand::{Lockup, LockupParts, LockupState};
 pub use breadcrumbs::{
     BREADCRUMBS_COLLAPSE_MAX_WIDTH, BreadcrumbHit, BreadcrumbItem, BreadcrumbSeparator,
     BreadcrumbStatus, Breadcrumbs, BreadcrumbsMode, BreadcrumbsOutcome, BreadcrumbsPresentation,
     BreadcrumbsState, crumbs_from_labels,
 };
 pub use callout::{
-    Alert, AlertOutcome, AlertState, Callout, CalloutOutcome, CalloutRecipe, CalloutSlots,
-    CalloutTone,
+    Alert, AlertOutcome, AlertState, Callout, CalloutRecipe, CalloutSlots, CalloutTone,
 };
 pub use card::{Card, CardParts};
 pub use carousel::{
@@ -381,8 +382,8 @@ pub use data_table::{
 pub use data_view::bench as data_view_bench;
 pub use data_view::{
     CellCoord, ColumnKind, ColumnModel, ColumnPin, CopyPayload, DataColumn, DataColumnWidth,
-    DataViewOutcome, ExpandState, FilterSpec, GroupHeader, LoadState, SelectionMode,
-    SelectionModel, SortSpec, VirtualWindow,
+    ExpandState, FilterSpec, GroupHeader, LoadState, SelectionMode, SelectionModel, SortSpec,
+    VirtualWindow,
 };
 pub use date_time_picker::{
     CivilDate, CivilDateRange, CivilDateTime, CivilTime, DATE_TIME_PICKER_FULLSCREEN_MAX_HEIGHT,
@@ -687,12 +688,12 @@ pub use props::{Prop, render as render_props};
 pub use quick_open::{
     ParsedQuickOpenQuery, QUICK_OPEN_DEFAULT_LIMIT, QUICK_OPEN_FULLSCREEN_MAX_HEIGHT,
     QUICK_OPEN_FULLSCREEN_MAX_WIDTH, QUICK_OPEN_OVERLAY_ID, QUICK_OPEN_PROVIDER_STRIP_COMPACT_MAX,
-    QuickOpen, QuickOpenItem, QuickOpenOutcome, QuickOpenPresentation, QuickOpenPreview,
-    QuickOpenProvider, QuickOpenSearchRequest, QuickOpenSize, QuickOpenState,
-    dismiss_quick_open_overlay, example_quick_open_files, example_quick_open_providers,
-    example_quick_open_symbols, filter_quick_open_items, open_quick_open_fullscreen,
-    open_quick_open_overlay, parse_quick_open_query, place_quick_open, quick_open_jump_targets,
-    quick_open_presentation_for_bounds,
+    QuickOpen, QuickOpenItem, QuickOpenMatch, QuickOpenOutcome, QuickOpenPresentation,
+    QuickOpenPreview, QuickOpenProvider, QuickOpenRow, QuickOpenSearchRequest, QuickOpenSize,
+    QuickOpenState, dismiss_quick_open_overlay, example_quick_open_files,
+    example_quick_open_providers, example_quick_open_symbols, filter_quick_open_items,
+    open_quick_open_fullscreen, open_quick_open_overlay, parse_quick_open_query, place_quick_open,
+    quick_open_jump_targets, quick_open_presentation_for_bounds,
 };
 pub use resizable_panel_group::{
     PanelDock, PanelGroupRecipe, PanelId, PanelLayoutPreset, PanelRect, ResizablePanelGroup,
@@ -774,8 +775,8 @@ pub use streaming_markdown::bench as streaming_markdown_bench;
 pub use streaming_markdown::fixtures as streaming_markdown_fixtures;
 pub use streaming_markdown::{
     STREAM_COALESCE_CHARS, STREAM_COALESCE_DELTAS, STREAM_HOT_FULL_REPARSE_BUDGET, STREAM_TAIL_MAX,
-    StreamCitation, StreamInsertion, StreamPhase, StreamingMarkdown, StreamingMarkdownOutcome,
-    StreamingMarkdownState, has_open_fence, streaming_stable_prefix_len,
+    StreamCitation, StreamInsertion, StreamPhase, StreamingMarkdown, StreamingMarkdownState,
+    has_open_fence, streaming_stable_prefix_len,
 };
 pub use surface::{Surface, SurfaceFill, SurfacePaintPlan, SurfaceParts, SurfaceRecipe};
 pub use table::{
@@ -852,7 +853,7 @@ pub use tree_table::{
     filter_tree_table_with_ancestors,
 };
 pub use view_state::{Banner, LoadingView};
-pub use viewport::Viewport;
+pub use viewport::{CellPos, Viewport, ViewportEvent, ViewportState};
 pub use virtual_grid::{
     GridCell, GridCellRegion, GridColumn, GridColumnWidth, GridHeaderRegion, GridRow, VirtualGrid,
     VirtualGridOutcome, VirtualGridState,

@@ -638,7 +638,7 @@ impl Page for PickersPage {
                         };
                         return Route::Changed;
                     }
-                    if matches!(key.code, KeyCode::Delete | KeyCode::Backspace)
+                    if key.code == KeyCode::Backspace
                         && kind == Kind::Tabs
                         && key.modifiers.is_empty()
                     {
@@ -696,6 +696,17 @@ impl Page for PickersPage {
                             self.picker = None;
                             Route::Changed
                         }
+                        PickerOutcome::Secondary(i)
+                            if kind == Kind::Tabs
+                                && ranked.iter().any(|(id, ..)| *id == i)
+                                && i < self.tabs.len()
+                                && self.tabs.len() > 1 =>
+                        {
+                            let name = self.tabs.remove(i);
+                            cx.status(format!("Closed {name}"));
+                            Route::Changed
+                        }
+                        PickerOutcome::Secondary(_) => Route::Changed,
                         PickerOutcome::Ignored if alt => Route::Changed,
                         PickerOutcome::Ignored => Route::Changed,
                         _ => Route::Changed,
@@ -792,5 +803,90 @@ impl Page for PickersPage {
 
     fn capture_cursor(&self) -> Option<Position> {
         self.capture_cursor
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::page::Request;
+    use termrock::input::KeyEvent;
+
+    fn dispatch_key(page: &mut PickersPage, key: KeyEvent) -> (Route, Vec<Request>) {
+        let mut focus = None;
+        let mut cx = crate::page::PageCtx {
+            focus: &mut focus,
+            requests: Vec::new(),
+        };
+        let route = page.handle(&PageEvent::Key(key), &mut cx);
+        (route, cx.requests)
+    }
+
+    #[test]
+    fn tabs_delete_routes_secondary_to_close_selected_tab() {
+        let mut page = PickersPage::new();
+        page.open(Kind::Tabs);
+        page.picker
+            .as_mut()
+            .expect("tabs picker")
+            .state
+            .list_mut()
+            .select(Some(1));
+
+        let (route, requests) = dispatch_key(
+            &mut page,
+            KeyEvent::new(KeyCode::Delete, KeyModifiers::NONE),
+        );
+
+        assert_eq!(route, Route::Changed);
+        assert_eq!(page.tabs, vec!["Query 1", "order_items", "History"]);
+        assert!(matches!(
+            requests.as_slice(),
+            [Request::Status(message)] if message == "Closed orders"
+        ));
+    }
+
+    #[test]
+    fn tabs_delete_rejects_selected_identity_missing_from_projection() {
+        let mut page = PickersPage::new();
+        page.open(Kind::Tabs);
+        let picker = page.picker.as_mut().expect("tabs picker");
+        let _ = picker.state.query_mut().insert_str("orders");
+        picker.state.list_mut().select(Some(0));
+        let before = page.tabs.clone();
+
+        let (route, requests) = dispatch_key(
+            &mut page,
+            KeyEvent::new(KeyCode::Delete, KeyModifiers::NONE),
+        );
+
+        assert_eq!(route, Route::Changed);
+        assert_eq!(page.tabs, before);
+        assert!(requests.is_empty());
+    }
+
+    #[test]
+    fn tabs_delete_preserves_nonempty_query() {
+        let mut page = PickersPage::new();
+        page.open(Kind::Tabs);
+        let picker = page.picker.as_mut().expect("tabs picker");
+        let _ = picker.state.query_mut().insert_str("ord");
+        picker.state.list_mut().select(Some(1));
+
+        let (route, _) = dispatch_key(
+            &mut page,
+            KeyEvent::new(KeyCode::Delete, KeyModifiers::NONE),
+        );
+
+        assert_eq!(route, Route::Changed);
+        assert_eq!(
+            page.picker
+                .as_ref()
+                .expect("picker remains open")
+                .state
+                .query_text(),
+            "ord"
+        );
+        assert_eq!(page.tabs, vec!["Query 1", "order_items", "History"]);
     }
 }

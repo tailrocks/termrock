@@ -346,7 +346,7 @@ fn disabled_loading_and_error_rows_have_explicit_semantic_styles() {
         },
         TreeNode {
             id: 1,
-            label: Line::from("pending"),
+            label: Line::from("loading row"),
             leading: None,
             secondary: None,
             badge: None,

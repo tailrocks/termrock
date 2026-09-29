@@ -1004,12 +1004,6 @@ impl ResultGridState {
         self.table.set_accepts_input(on);
     }
 
-    /// Accepts input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Set schema.
     pub fn set_schema(&mut self, schema: Vec<ResultColumn>) {
         self.schema = schema;

@@ -791,7 +791,7 @@ impl BackgroundTaskPanelState {
             .collect()
     }
 
-    fn list_rows(&self, tasks: &[BackgroundTask], _ascii: bool) -> Vec<ListRow<'static, String>> {
+    fn list_rows(&self, tasks: &[BackgroundTask]) -> Vec<ListRow<'static, String>> {
         let vis = self.visible_tasks(tasks);
         vis.into_iter()
             .map(|t| {
@@ -908,7 +908,7 @@ impl BackgroundTaskPanelState {
             _ => {}
         }
 
-        let rows = self.list_rows(tasks, false);
+        let rows = self.list_rows(tasks);
         use crate::interaction::Outcome;
         match self.list.handle_key(&rows, key) {
             Outcome::Activated(id) => BackgroundTaskPanelOutcome::Opened { id },
@@ -1099,7 +1099,7 @@ impl<'a> BackgroundTaskPanel<'a> {
 
         if matches!(state.presentation, BackgroundTaskPresentation::CompactRail) || area.height <= 3
         {
-            self.paint_rail(area, buffer, state, false);
+            self.paint_rail(area, buffer, state);
             return;
         }
 
@@ -1151,7 +1151,7 @@ impl<'a> BackgroundTaskPanel<'a> {
         };
         let foot_y = inner.bottom().saturating_sub(1);
 
-        let rows = state.list_rows(self.tasks, false);
+        let rows = state.list_rows(self.tasks);
         StatefulWidget::render(
             &List::new(&rows, self.system).focused(state.focused && state.accepts_input),
             list_area,
@@ -1165,7 +1165,7 @@ impl<'a> BackgroundTaskPanel<'a> {
                 .selected_id()
                 .and_then(|id| self.tasks.iter().find(|t| t.id == id))
             {
-                self.paint_detail(detail_area, buffer, state, task, false);
+                self.paint_detail(detail_area, buffer, state, task);
             } else {
                 EmptyState::new("Pick a task", self.system)
                     .kind(EmptyKind::NoData)
@@ -1182,14 +1182,8 @@ impl<'a> BackgroundTaskPanel<'a> {
         );
     }
 
-    fn paint_rail(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut BackgroundTaskPanelState,
-        _ascii: bool,
-    ) {
-        let rows = state.list_rows(self.tasks, false);
+    fn paint_rail(&self, area: Rect, buffer: &mut Buffer, state: &mut BackgroundTaskPanelState) {
+        let rows = state.list_rows(self.tasks);
         let emphasis = if state.focused {
             PanelChrome::Focused
         } else {
@@ -1215,7 +1209,6 @@ impl<'a> BackgroundTaskPanel<'a> {
         buffer: &mut Buffer,
         state: &mut BackgroundTaskPanelState,
         task: &BackgroundTask,
-        _ascii: bool,
     ) {
         let mut y = area.y;
         let max_y = area.bottom();

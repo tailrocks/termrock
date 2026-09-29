@@ -24,7 +24,10 @@ use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
     input::{KeyEvent, MouseEvent},
-    interaction::{OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack},
+    interaction::{
+        NavigationMove, OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec,
+        OverlayStack, UiIntent,
+    },
     style::DesignSystem,
     widgets::{
         MatchRanges,
@@ -754,12 +757,6 @@ impl SlashCommandMenuState {
         self.open
     }
 
-    /// Accepts input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Host gate — **does not** clear draft or query history.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
@@ -920,7 +917,14 @@ impl SlashCommandMenuState {
             }
             None => return SlashCommandMenuOutcome::Ignored,
         };
-        let out = self.menu.handle_key(key, &candidates);
+        // Slash command menus are a non-editor host, so their local j/k
+        // affordance must not change CompletionMenu's generic printable-key
+        // contract. Keep the mapping at this boundary and retain the shared
+        // menu's repeat, disabled-item, and wrapping behavior.
+        let out = match slash_navigation_intent(key) {
+            Some(intent) => self.menu.handle_intent(&candidates, intent),
+            None => self.menu.handle_key(key, &candidates),
+        };
         self.map_commit(out, catalog, visible)
     }
 
@@ -1057,6 +1061,23 @@ impl SlashCommandMenuState {
         opener: Option<FocusId>,
     ) -> OverlayOutcome<FocusId> {
         open_slash_command_overlay(stack, bounds, anchor, opener)
+    }
+}
+
+/// Slash-only vim navigation. Generic completion hosts keep j/k as editor
+/// input; Ctrl/Alt remain reserved for host keymaps while Shift carries an
+/// uppercase character from terminal backends.
+fn slash_navigation_intent(key: KeyEvent) -> Option<UiIntent> {
+    if key.is_release()
+        || key.modifiers.contains(crate::input::KeyModifiers::CONTROL)
+        || key.modifiers.contains(crate::input::KeyModifiers::ALT)
+    {
+        return None;
+    }
+    match key.code {
+        crate::input::KeyCode::Char('j' | 'J') => Some(UiIntent::Move(NavigationMove::Next)),
+        crate::input::KeyCode::Char('k' | 'K') => Some(UiIntent::Move(NavigationMove::Previous)),
+        _ => None,
     }
 }
 
@@ -1207,8 +1228,17 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
+    use crate::input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    };
     use crate::style::DesignSystem;
+    use crate::widgets::{TextAreaOutcome, TextAreaState};
+
+    fn key_with_kind(code: KeyCode, modifiers: KeyModifiers, kind: KeyEventKind) -> KeyEvent {
+        let mut key = KeyEvent::new(code, modifiers);
+        key.kind = kind;
+        key
+    }
 
     #[test]
     fn detect_slash_command_prefix() {
@@ -1475,6 +1505,129 @@ mod tests {
             out,
             SlashCommandMenuOutcome::SelectionChanged { .. } | SlashCommandMenuOutcome::Ignored
         ));
+    }
+
+    #[test]
+    fn slash_jk_navigation_handles_repeat_modifiers_disabled_and_wrap() {
+        let catalog = vec![
+            SlashCommand::new("alpha", "alpha"),
+            SlashCommand::new("disabled", "disabled").disabled("offline"),
+            SlashCommand::new("beta", "beta"),
+        ];
+        let mut state = SlashCommandMenuState::new();
+        state.sync_from_draft("/", 1);
+        let visible = state.visible_commands(&catalog);
+        let candidates = slash_commands_to_candidates(&visible);
+        state.menu.reconcile(&candidates);
+        assert_eq!(state.menu.selected().map(String::as_str), Some("alpha"));
+
+        // j/k move through enabled rows only, and CompletionMenu supplies wrap.
+        assert!(matches!(
+            state.handle_key(
+                key_with_kind(KeyCode::Char('j'), KeyModifiers::NONE, KeyEventKind::Press),
+                &catalog,
+                &visible,
+            ),
+            SlashCommandMenuOutcome::SelectionChanged { ref id } if id == "beta"
+        ));
+        assert!(matches!(
+            state.handle_key(
+                key_with_kind(KeyCode::Char('J'), KeyModifiers::NONE, KeyEventKind::Repeat),
+                &catalog,
+                &visible,
+            ),
+            SlashCommandMenuOutcome::SelectionChanged { ref id } if id == "alpha"
+        ));
+        assert!(matches!(
+            state.handle_key(
+                key_with_kind(KeyCode::Char('k'), KeyModifiers::NONE, KeyEventKind::Press),
+                &catalog,
+                &visible,
+            ),
+            SlashCommandMenuOutcome::SelectionChanged { ref id } if id == "beta"
+        ));
+        // A terminal may report uppercase input with Shift; it remains local
+        // slash navigation while Ctrl/Alt remain reserved for host keymaps.
+        assert!(matches!(
+            state.handle_key(
+                key_with_kind(KeyCode::Char('K'), KeyModifiers::SHIFT, KeyEventKind::Press),
+                &catalog,
+                &visible,
+            ),
+            SlashCommandMenuOutcome::SelectionChanged { ref id } if id == "alpha"
+        ));
+
+        let before = state.menu.selected().cloned();
+        for modifiers in [
+            KeyModifiers::CONTROL,
+            KeyModifiers::ALT,
+            KeyModifiers::CONTROL | KeyModifiers::SHIFT,
+            KeyModifiers::ALT | KeyModifiers::SHIFT,
+        ] {
+            assert_eq!(
+                state.handle_key(
+                    key_with_kind(KeyCode::Char('j'), modifiers, KeyEventKind::Press),
+                    &catalog,
+                    &visible,
+                ),
+                SlashCommandMenuOutcome::Ignored
+            );
+            assert_eq!(state.menu.selected().cloned(), before);
+        }
+        assert_eq!(
+            state.handle_key(
+                key_with_kind(
+                    KeyCode::Char('j'),
+                    KeyModifiers::NONE,
+                    KeyEventKind::Release
+                ),
+                &catalog,
+                &visible,
+            ),
+            SlashCommandMenuOutcome::Ignored
+        );
+        assert_eq!(state.menu.selected().cloned(), before);
+    }
+
+    #[test]
+    fn generic_completion_keeps_printable_jk_for_editor_hosts() {
+        let candidates = vec![
+            CompletionCandidate::new("alpha", "alpha"),
+            CompletionCandidate::new("beta", "beta"),
+        ];
+        let mut menu = CompletionMenuState::new(Some("alpha"));
+
+        for code in ['j', 'k', 'J', 'K'] {
+            for kind in [
+                KeyEventKind::Press,
+                KeyEventKind::Repeat,
+                KeyEventKind::Release,
+            ] {
+                assert_eq!(
+                    menu.handle_key(
+                        key_with_kind(KeyCode::Char(code), KeyModifiers::NONE, kind),
+                        &candidates,
+                    ),
+                    CompletionMenuOutcome::Ignored
+                );
+            }
+        }
+        assert_eq!(menu.selected().copied(), Some("alpha"));
+    }
+
+    #[test]
+    fn editor_text_area_keeps_plain_jk_as_input() {
+        let mut editor = TextAreaState::new("");
+        editor.set_accepts_input(true);
+        editor.set_editing(true);
+
+        for code in ['j', 'k'] {
+            assert_eq!(
+                editor.handle_key(KeyEvent::new(KeyCode::Char(code), KeyModifiers::NONE)),
+                TextAreaOutcome::Changed
+            );
+        }
+        assert_eq!(editor.text(), "jk");
     }
 
     #[test]
