@@ -969,6 +969,10 @@ impl<'a, Id> Tabs<'a, Id> {
     where
         Id: Clone + PartialEq,
     {
+        // Downstream painters and hit regions must stay inside the target
+        // buffer, including when callers provide a partially out-of-bounds
+        // rectangle.
+        let area = area.intersection(*buffer.area());
         state.regions.clear();
         state.close_regions.clear();
         state.overflow_trigger = None;
@@ -1579,6 +1583,34 @@ mod tests {
         ]
     }
 
+    fn assert_rect_inside(outer: Rect, inner: Rect) {
+        assert!(
+            inner.x >= outer.x
+                && inner.y >= outer.y
+                && inner.right() <= outer.right()
+                && inner.bottom() <= outer.bottom(),
+            "{inner:?} escapes buffer {outer:?}"
+        );
+    }
+
+    fn assert_tabs_controls_inside<Id>(state: &TabsState<Id>, buffer_area: Rect) {
+        if !state.root.is_empty() {
+            assert_rect_inside(buffer_area, state.root);
+        }
+        for region in &state.regions {
+            assert_rect_inside(buffer_area, region.area);
+        }
+        for (_, region) in &state.close_regions {
+            assert_rect_inside(buffer_area, *region);
+        }
+        if let Some(region) = state.overflow_trigger {
+            assert_rect_inside(buffer_area, region);
+        }
+        if let Some(region) = state.overflow_left {
+            assert_rect_inside(buffer_area, region);
+        }
+    }
+
     #[test]
     fn default_rule_and_hit_regions_share_two_row_geometry() {
         let tabs = [
@@ -1834,6 +1866,54 @@ mod tests {
             state.presentation(),
             TabsPresentation::Overflow | TabsPresentation::Scrolling | TabsPresentation::Select
         ));
+    }
+
+    #[test]
+    fn paint_clips_partial_and_out_of_bounds_areas() {
+        let tabs = sample_tabs();
+        let system = DesignSystem::junie();
+        let buffer_area = Rect::new(5, 4, 12, 2);
+        let requested = Rect::new(3, 3, 12, 3);
+        let mut state = TabsState::new().with_selected("overview");
+        let mut buffer = Buffer::empty(buffer_area);
+
+        Tabs::new(&tabs, &system).paint(requested, &mut buffer, &mut state);
+
+        assert_eq!(state.root, requested.intersection(buffer_area));
+        assert!(state.overflow_trigger.is_some());
+        assert_tabs_controls_inside(&state, buffer_area);
+
+        let closable = [Tab::new("logs", "Logs").closable(true)];
+        let partial_area = Rect::new(7, 8, 16, 2);
+        let partial_request = Rect::new(4, 7, 24, 3);
+        let mut partial_state = TabsState::new().with_selected("logs");
+        let mut partial_buffer = Buffer::empty(partial_area);
+
+        Tabs::new(&closable, &system).paint(
+            partial_request,
+            &mut partial_buffer,
+            &mut partial_state,
+        );
+
+        assert_eq!(
+            partial_state.root,
+            partial_request.intersection(partial_area)
+        );
+        assert!(!partial_state.close_regions.is_empty());
+        assert_tabs_controls_inside(&partial_state, partial_area);
+
+        let outside = Rect::new(0, 0, 4, 2);
+        let mut outside_state = TabsState::new().with_selected("overview");
+        let mut outside_buffer = Buffer::empty(buffer_area);
+        Tabs::new(&tabs, &system).paint(outside, &mut outside_buffer, &mut outside_state);
+
+        assert!(outside_state.root.is_empty());
+        assert!(outside_state.regions.is_empty());
+        assert!(outside_state.close_regions.is_empty());
+        assert!(outside_state.overflow_trigger.is_none());
+        assert!(outside_state.overflow_left.is_none());
+        assert!(outside_state.overflow_ids.is_empty());
+        assert_tabs_controls_inside(&outside_state, buffer_area);
     }
 
     #[test]
