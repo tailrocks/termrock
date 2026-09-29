@@ -384,6 +384,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0368 | `v0.14.0` | [Progress painting clips to its buffer](migrations/0368-v0.14.0-progress-buffer-clipping.md) |
 | 0369 | `v0.14.0` | [Escape cancellation is one-shot](migrations/0369-v0.14.0-one-shot-cancel-intent.md) |
 | 0370 | `v0.14.0` | [HistoryPicker cancellation is one-shot](migrations/0370-v0.14.0-history-picker-one-shot-cancel.md) |
+| 0371 | `v0.14.0` | [DatabaseWorkbench preserves HistoryPicker state](migrations/0371-v0.14.0-database-workbench-history-lifecycle.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
