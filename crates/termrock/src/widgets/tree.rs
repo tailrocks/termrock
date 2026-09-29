@@ -489,7 +489,10 @@ impl<Id> TreeState<Id> {
     }
 
     #[must_use]
-    /// Returns the zero-based first visible node index.
+    /// Returns the first visible logical node index.
+    ///
+    /// For a virtual projection this is the index in the host's full
+    /// collection, not the first index in the resident `nodes` slice.
     pub const fn offset(&self) -> usize {
         self.offset
     }
@@ -557,11 +560,33 @@ impl<Id> TreeState<Id> {
     }
 
     /// Virtual window into a larger flat list (host projects only the window).
+    ///
+    /// `window_start` is the logical index of the first resident row. It may
+    /// equal `total_len` when the host has an empty tail window. Reasserting
+    /// the same window preserves the user's current scroll offset.
     pub fn set_virtual_window(&mut self, window_start: usize, total_len: usize) {
-        self.virtual_window_start = window_start;
+        if total_len == 0 {
+            self.offset = 0;
+            self.clear_virtual_geometry();
+            // Keep active focus and typeahead while dropping only the
+            // projection metadata.
+            self.collection.clear_virtual_window();
+            return;
+        }
+
+        let window_start = window_start.min(total_len);
+        let same_window =
+            self.virtual_total == total_len && self.virtual_window_start == window_start;
         self.virtual_total = total_len;
+        // Keep the supplied resident origin independent from the scroll
+        // offset. Virtualizer::set_offset clamps against the current
+        // viewport, but the host's resident ids still begin at this origin.
+        self.virtual_window_start = window_start;
         self.virt.set_len(total_len as u64);
-        self.virt.set_offset(window_start as u64);
+        if !same_window {
+            self.virt.set_offset(self.virtual_window_start as u64);
+        }
+        self.offset = self.virt.offset() as usize;
     }
 
     /// Borrow virtualizer (anchors / overscan).
@@ -576,6 +601,11 @@ impl<Id> TreeState<Id> {
     }
 
     /// Sticky region for virtualized trees (headers).
+    ///
+    /// Tree does not synthesize or pin sticky rows. Hosts must project a
+    /// contiguous resident body window, with `window_start` matching its
+    /// first logical row; sticky rows, if shown, are painted by the host.
+    /// The sticky counts still constrain virtual scroll bounds and anchors.
     pub fn set_sticky(&mut self, sticky: StickyRegion) {
         self.virt.set_sticky(sticky);
     }
@@ -594,6 +624,13 @@ impl<Id> TreeState<Id> {
         }
     }
 
+    fn clear_virtual_geometry(&mut self) {
+        self.virtual_total = 0;
+        self.virtual_window_start = 0;
+        self.virt.set_len(0);
+        self.virt.set_offset(0);
+    }
+
     /// Disables multi-selection and discards checked identities.
     pub fn disable_multi_select(&mut self) {
         self.selection = None;
@@ -610,10 +647,38 @@ impl<Id> TreeState<Id> {
         self.selection.as_mut()
     }
 
+    fn virtual_offset_max(&self) -> usize {
+        if self.virtual_total == 0 {
+            return 0;
+        }
+        usize::try_from(self.virt.max_offset()).unwrap_or(usize::MAX)
+    }
+
+    fn clamp_virtual_offset(&mut self) {
+        let maximum = self.virtual_offset_max();
+        self.offset = self.offset.min(maximum);
+        self.virt.set_offset(self.offset as u64);
+        self.offset = self.virt.offset() as usize;
+    }
+
     /// Moves the scroll position by a signed delta and clamps it to valid content.
     pub fn scroll_by(&mut self, delta: isize, node_count: usize) -> bool {
         let before = self.offset;
-        let maximum = max_offset(node_count, self.viewport_height);
+        let content_len = if self.virtual_total > 0 {
+            self.virtual_total
+        } else {
+            node_count
+        };
+        let viewport_height = if self.virtual_total > 0 {
+            self.viewport_height.max(1)
+        } else {
+            self.viewport_height
+        };
+        let maximum = if self.virtual_total > 0 {
+            self.virtual_offset_max()
+        } else {
+            max_offset(content_len, viewport_height)
+        };
         self.offset = if delta.is_negative() {
             self.offset.saturating_sub(delta.unsigned_abs())
         } else {
@@ -621,6 +686,11 @@ impl<Id> TreeState<Id> {
                 .saturating_add(delta.unsigned_abs())
                 .min(maximum)
         };
+        self.offset = self.offset.min(maximum);
+        if self.virtual_total > 0 {
+            self.virt.set_offset(self.offset as u64);
+            self.offset = self.virt.offset() as usize;
+        }
         self.follow_selection = false;
         before != self.offset
     }
@@ -633,12 +703,21 @@ impl<Id> TreeState<Id> {
         if !area.contains(position) {
             return false;
         }
+        let content_len = if self.virtual_total > 0 {
+            self.virtual_total
+        } else {
+            node_count
+        };
         self.offset = crate::scroll::offset_for_track_position(
-            node_count,
+            content_len,
             self.viewport_height,
             area.height,
             usize::from(position.y.saturating_sub(area.y)),
         );
+        if self.virtual_total > 0 {
+            self.virt.set_offset(self.offset as u64);
+            self.offset = self.virt.offset() as usize;
+        }
         self.follow_selection = false;
         true
     }
@@ -651,6 +730,14 @@ impl<Id> TreeState<Id> {
 }
 
 impl<Id: Clone + PartialEq> TreeState<Id> {
+    fn clear_virtual_projection(&mut self) {
+        self.clear_virtual_geometry();
+        // Do not call set_active/reconcile here: both can discard an active
+        // typeahead buffer while the host changes from a resident window to a
+        // full projection.
+        self.collection.clear_virtual_window();
+    }
+
     /// Routes navigation, disclosure, checking, activation, filter, and typeahead.
     ///
     /// Prefer intents via [`crate::interaction::default_tree_intent`]. Printable
@@ -753,8 +840,13 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         let partial = self.virtual_total > nodes.len();
         let had_cursor = self.cursor.is_some();
 
+        if partial {
+            self.clamp_virtual_offset();
+        }
+
         if self.collection.active() != self.cursor.as_ref() {
-            self.collection.set_active(self.cursor.clone());
+            self.collection
+                .set_active_preserving_typeahead(self.cursor.clone());
         }
 
         if had_cursor {
@@ -770,7 +862,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
                     .find(|node| node.is_interactive())
                     .map(|node| node.id.clone());
                 self.cursor = repaired.clone();
-                self.collection.set_active(repaired);
+                self.collection.set_active_preserving_typeahead(repaired);
                 self.follow_selection = self.cursor.is_some();
             }
         }
@@ -794,19 +886,15 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
                 self.viewport_height,
             );
             if self.cursor.is_none() {
-                self.collection.set_active(None);
+                self.collection.set_active_preserving_typeahead(None);
             }
         } else {
-            if self.virtual_total != 0 || self.virtual_window_start != 0 {
-                self.virtual_total = 0;
-                self.virtual_window_start = 0;
-                self.virt.set_len(nodes.len() as u64);
-                self.virt.set_offset(self.offset as u64);
-            }
-            self.collection
-                .set_viewport(self.offset, self.viewport_height, nodes.len());
-            if self.collection.active() != self.cursor.as_ref() {
-                self.collection.set_active(self.cursor.clone());
+            let had_virtual_projection = self.virtual_total != 0 || self.virtual_window_start != 0;
+            if had_virtual_projection {
+                self.clear_virtual_projection();
+            } else {
+                self.collection
+                    .set_viewport(self.offset, self.viewport_height, nodes.len());
             }
         }
     }
@@ -1538,6 +1626,27 @@ fn paint_tree_row<Id: Clone + PartialEq>(
     }
 }
 
+/// Converts a logical scrollbar geometry to the legacy `u16` painter range.
+///
+/// Tree offsets are `usize` because virtualized collections can be very large.
+/// Scale the complete geometry before narrowing so a large offset keeps its
+/// position on the track instead of saturating at `u16::MAX`.
+fn scrollbar_geometry(total: usize, viewport: usize, offset: usize) -> (usize, usize, u16) {
+    let max = usize::from(u16::MAX);
+    if total <= max {
+        let max_offset = total.saturating_sub(viewport.min(total));
+        return (total, viewport, offset.min(max_offset) as u16);
+    }
+
+    let scaled_total = max;
+    let scaled_viewport = ((viewport as u128 * max as u128) / total as u128)
+        .max(1)
+        .min(max as u128) as usize;
+    let scaled_offset = ((offset as u128 * max as u128) / total as u128)
+        .min(scaled_total.saturating_sub(scaled_viewport) as u128) as usize;
+    (scaled_total, scaled_viewport, scaled_offset as u16)
+}
+
 impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
     type State = TreeState<Id>;
 
@@ -1547,7 +1656,11 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
         state.check_regions.clear();
         state.scrollbar_region = None;
         if area.is_empty() {
-            state.offset = 0;
+            if state.virtual_total > 0 {
+                state.clamp_virtual_offset();
+            } else {
+                state.offset = 0;
+            }
             state.viewport_height = 0;
             state.reconcile_projection(self.nodes);
             state.hovered = None;
@@ -1580,7 +1693,11 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             return;
         }
         if self.nodes.is_empty() {
-            state.offset = 0;
+            if state.virtual_total > 0 {
+                state.clamp_virtual_offset();
+            } else {
+                state.offset = 0;
+            }
             state.hovered = None;
             if let Some(message) = self.empty_message {
                 let style = self.tokens.style(Role::TextMuted);
@@ -1589,19 +1706,24 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             return;
         }
 
-        let node_count = if state.virtual_total > 0 {
+        let virtualized = state.virtual_total > 0;
+        let content_len = if virtualized {
             state.virtual_total
         } else {
             self.nodes.len()
         };
-        if state.virtual_total > 0 {
-            state.virt.set_len(state.virtual_total as u64);
+        if virtualized {
+            state.virt.set_len(content_len as u64);
         }
 
         if state.follow_selection
             && let Some(selected) = state.cursor_index(self.nodes)
         {
-            // selected is index in projected window
+            let selected = if virtualized {
+                selected.saturating_add(state.virtual_window_start)
+            } else {
+                selected
+            };
             if selected < state.offset {
                 state.offset = selected;
             } else if selected >= state.offset.saturating_add(usize::from(body.height)) {
@@ -1609,22 +1731,17 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             }
         }
         state.follow_selection = false;
-        let paint_len = if state.virtual_total > 0 {
-            self.nodes.len()
+        state.offset = state.offset.min(if virtualized {
+            state.virtual_offset_max()
         } else {
-            self.nodes.len()
-        };
-        state.offset = state
-            .offset
-            .min(max_offset(paint_len, usize::from(body.height)));
-        let scroll_len = if state.virtual_total > 0 {
-            state.virtual_total
-        } else {
-            self.nodes.len()
-        };
-        let _ = node_count;
+            max_offset(content_len, usize::from(body.height))
+        });
+        if virtualized {
+            state.virt.set_offset(state.offset as u64);
+            state.offset = state.virt.offset() as usize;
+        }
         let show_scrollbar =
-            crate::scroll::is_scrollable(scroll_len, usize::from(body.height)) && body.width > 1;
+            crate::scroll::is_scrollable(content_len, usize::from(body.height)) && body.width > 1;
         let content_area = Rect {
             x: body.x,
             y: body.y,
@@ -1632,7 +1749,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             height: body.height,
         };
         let paint_offset = if state.virtual_total > 0 {
-            0
+            // `offset` is absolute in the full logical list; resident nodes
+            // begin at `virtual_window_start`.
+            state.offset.saturating_sub(state.virtual_window_start)
         } else {
             state.offset
         };
@@ -1686,17 +1805,14 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
         if show_scrollbar {
             let scrollbar = Rect::new(body.right().saturating_sub(1), body.y, 1, body.height);
             state.scrollbar_region = Some(scrollbar);
-            let thumb_total = if state.virtual_total > 0 {
-                state.virtual_total
-            } else {
-                self.nodes.len()
-            };
+            let (scrollbar_total, scrollbar_viewport, scrollbar_offset) =
+                scrollbar_geometry(content_len, usize::from(body.height), state.offset);
             crate::scroll::paint_overflow_scrollbar(
                 buffer,
                 scrollbar,
-                thumb_total,
-                usize::from(body.height),
-                u16::try_from(state.offset).unwrap_or(u16::MAX),
+                scrollbar_total,
+                scrollbar_viewport,
+                scrollbar_offset,
                 self.focused,
                 self.tokens,
             );
@@ -1999,7 +2115,269 @@ mod tests {
 
         assert_eq!(state.virtual_total, 0);
         assert_eq!(state.virtual_window_start, 0);
-        assert_eq!(state.virtualizer().logical_len(), 4);
+        assert_eq!(state.virtualizer().logical_len(), 0);
+    }
+
+    #[test]
+    fn entering_virtual_window_seeds_absolute_offset() {
+        let mut state = TreeState::<usize>::new(Some(50));
+
+        state.set_virtual_window(50, 100);
+
+        assert_eq!(state.offset(), 50);
+        assert_eq!(state.virtual_window_start, 50);
+        assert_eq!(state.virtual_total, 100);
+        assert_eq!(state.virtualizer().offset(), 50);
+    }
+
+    #[test]
+    fn reasserting_same_virtual_window_preserves_user_scroll() {
+        let mut state = TreeState::<usize>::new(Some(50));
+        state.set_virtual_window(50, 100);
+        assert!(state.scroll_by(7, 5));
+        assert_eq!(state.offset(), 57);
+
+        state.set_virtual_window(50, 100);
+
+        assert_eq!(state.offset(), 57);
+        assert_eq!(state.virtualizer().offset(), 57);
+    }
+
+    #[test]
+    fn virtual_window_allows_empty_tail_origin() {
+        let mut state = TreeState::<usize>::default();
+        state.virt.set_viewport_extent(3);
+        state.set_virtual_window(100, 100);
+
+        assert_eq!(state.virtual_window_start, 100);
+        assert_eq!(state.virtual_total, 100);
+        assert_eq!(state.offset(), 97);
+    }
+
+    #[test]
+    fn virtual_follow_selection_translates_projected_index_to_absolute_offset() {
+        let tokens = DesignSystem::default();
+        let nodes: Vec<_> = (50..55)
+            .map(|id| TreeNode::new(id, Line::from(format!("node {id}")), 0))
+            .collect();
+        let area = Rect::new(0, 0, 24, 3);
+        let mut state = TreeState::new(Some(54));
+        state.set_virtual_window(50, 100);
+        let mut buffer = Buffer::empty(area);
+
+        Tree::new(&nodes, &tokens).render(area, &mut buffer, &mut state);
+
+        assert_eq!(state.offset(), 52);
+        assert_eq!(state.virtualizer().offset(), 52);
+        let visible: Vec<_> = state.regions().iter().map(|region| region.id).collect();
+        assert_eq!(visible, vec![52, 53, 54]);
+        assert_eq!(state.click(Position::new(4, 2)), TreeOutcome::Activated(54));
+    }
+
+    #[test]
+    fn virtual_origin_survives_clamp_with_sticky_leading_rows() {
+        let tokens = DesignSystem::default();
+        let nodes: Vec<_> = (95..100)
+            .map(|id| TreeNode::new(id, Line::from(format!("node {id}")), 0))
+            .collect();
+        let area = Rect::new(0, 0, 24, 3);
+        let mut state = TreeState::new(Some(99));
+        // Simulate the previous frame's ten-row viewport before the window is
+        // replaced. The requested origin must remain 95 even though that
+        // viewport clamps the initial scroll offset to 90.
+        state.virt.set_viewport_extent(10);
+        state.set_sticky(StickyRegion {
+            leading: 2,
+            trailing: 0,
+        });
+        state.set_virtual_window(95, 100);
+        assert_eq!(state.virtual_window_start, 95);
+        assert_eq!(state.offset(), 90);
+
+        let mut buffer = Buffer::empty(area);
+        Tree::new(&nodes, &tokens).render(area, &mut buffer, &mut state);
+
+        assert_eq!(state.virtual_window_start, 95);
+        assert_eq!(state.offset(), 97);
+        let visible: Vec<_> = state.regions().iter().map(|region| region.id).collect();
+        assert_eq!(visible, vec![97, 98, 99]);
+    }
+
+    #[test]
+    fn virtual_offset_clamps_against_virtual_total() {
+        let tokens = DesignSystem::default();
+        let nodes: Vec<_> = (50..55)
+            .map(|id| TreeNode::new(id, Line::from(format!("node {id}")), 0))
+            .collect();
+        let area = Rect::new(0, 0, 24, 3);
+        let mut state = TreeState::new(Some(50));
+        state.set_virtual_window(50, 100);
+
+        assert!(state.scroll_by(isize::MAX, nodes.len()));
+        assert_eq!(state.offset(), 99);
+        state.follow_selection = false;
+        let mut buffer = Buffer::empty(area);
+
+        Tree::new(&nodes, &tokens).render(area, &mut buffer, &mut state);
+
+        let expected = max_offset(100, 3);
+        assert_eq!(state.offset(), expected);
+        assert_eq!(state.virtualizer().offset(), expected as u64);
+    }
+
+    #[test]
+    fn virtual_scrollbar_uses_logical_content_length() {
+        let tokens = DesignSystem::default();
+        let nodes: Vec<_> = (50..55)
+            .map(|id| TreeNode::new(id, Line::from(format!("node {id}")), 0))
+            .collect();
+        let area = Rect::new(0, 0, 24, 3);
+        let mut state = TreeState::new(Some(50));
+        state.set_virtual_window(50, 100);
+        state.follow_selection = false;
+        let mut buffer = Buffer::empty(area);
+
+        Tree::new(&nodes, &tokens).render(area, &mut buffer, &mut state);
+
+        let scrollbar = state.scrollbar_region.expect("virtual scrollbar");
+        assert!(state.scroll_to_position(
+            Position::new(scrollbar.x, scrollbar.bottom().saturating_sub(1)),
+            nodes.len()
+        ));
+        assert!(state.offset() > nodes.len());
+    }
+
+    #[test]
+    fn large_virtual_scrollbar_scales_offset_before_narrowing() {
+        let tokens = DesignSystem::default();
+        let nodes: Vec<_> = (900_000..900_005)
+            .map(|id| TreeNode::new(id, Line::from(format!("node {id}")), 0))
+            .collect();
+        let area = Rect::new(0, 0, 24, 10);
+        let mut state = TreeState::new(Some(900_000));
+        state.set_virtual_window(900_000, 1_000_000);
+        state.follow_selection = false;
+        let mut buffer = Buffer::empty(area);
+
+        Tree::new(&nodes, &tokens).render(area, &mut buffer, &mut state);
+
+        let gutter = state.scrollbar_region.expect("large virtual scrollbar");
+        let thumb = crate::scroll::ScrollbarStyle::Line.vertical_thumb();
+        let thumb_rows: Vec<_> = (0..gutter.height)
+            .filter(|row| buffer[(gutter.x, gutter.y + *row)].symbol() == thumb)
+            .collect();
+        let scaled_offset =
+            scrollbar_geometry(1_000_000, usize::from(area.height), 900_000).2 as usize;
+        let (start, len) =
+            crate::scroll::overflow_thumb(65_535, 1, usize::from(gutter.height), scaled_offset)
+                .expect("scaled geometry overflows");
+        assert_eq!(thumb_rows.len(), len);
+        assert_eq!(thumb_rows[0], start as u16);
+        assert!((7..=9).contains(&thumb_rows[0]));
+    }
+
+    #[test]
+    fn zero_virtual_total_clears_scroll_geometry() {
+        let mut state = TreeState::<usize>::new(Some(50));
+        state.set_sticky(StickyRegion {
+            leading: 2,
+            trailing: 0,
+        });
+        state.set_virtual_window(50, 100);
+        assert!(state.scroll_by(7, 5));
+
+        state.set_virtual_window(99, 0);
+
+        assert_eq!(state.offset(), 0);
+        assert_eq!(state.virtual_total, 0);
+        assert_eq!(state.virtual_window_start, 0);
+        assert_eq!(state.virtualizer().logical_len(), 0);
+        assert_eq!(state.virtualizer().offset(), 0);
+        assert_eq!(state.collection.total_len(), 0);
+        assert_eq!(state.collection.offset(), 0);
+    }
+
+    #[test]
+    fn returning_to_full_projection_clears_virtual_geometry_atomically() {
+        let tokens = DesignSystem::default();
+        let window: Vec<_> = (50..55)
+            .map(|id| TreeNode::new(id, Line::from(format!("node {id}")), 0))
+            .collect();
+        let full: Vec<_> = (0..100)
+            .map(|id| TreeNode::new(id, Line::from(format!("node {id}")), 0))
+            .collect();
+        let area = Rect::new(0, 0, 24, 3);
+        let mut state = TreeState::new(Some(54));
+        state.set_virtual_window(50, 100);
+        let mut buffer = Buffer::empty(area);
+        Tree::new(&window, &tokens).render(area, &mut buffer, &mut state);
+        assert_eq!(state.offset(), 52);
+
+        Tree::new(&full, &tokens).render(area, &mut buffer, &mut state);
+
+        assert_eq!(state.virtual_total, 0);
+        assert_eq!(state.virtual_window_start, 0);
+        assert_eq!(state.collection.total_len(), 0);
+        assert_eq!(state.collection.offset(), 0);
+        assert_eq!(state.virtualizer().logical_len(), 0);
+        assert_eq!(state.virtualizer().offset(), 0);
+        assert_eq!(state.offset(), 52);
+    }
+
+    #[test]
+    fn typeahead_survives_virtual_to_full_projection_transition() {
+        let tokens = DesignSystem::default();
+        let full = [
+            TreeNode::new("a", Line::from("Alpha"), 0),
+            TreeNode::new("b", Line::from("Beta"), 0),
+            TreeNode::new("c", Line::from("Charlie"), 0),
+        ];
+        let partial = [
+            TreeNode::new("b", Line::from("Beta"), 0),
+            TreeNode::new("c", Line::from("Charlie"), 0),
+        ];
+        let area = Rect::new(0, 0, 24, 2);
+        let mut state = TreeState::new(Some("a"));
+        assert_eq!(
+            state.handle_key(&full, KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE)),
+            TreeOutcome::SelectionChanged("b")
+        );
+        assert_eq!(state.typeahead_buffer(), "b");
+
+        state.set_virtual_window(1, 3);
+        let mut buffer = Buffer::empty(area);
+        Tree::new(&partial, &tokens).render(area, &mut buffer, &mut state);
+        Tree::new(&full, &tokens).render(area, &mut buffer, &mut state);
+
+        assert_eq!(state.typeahead_buffer(), "b");
+        assert_eq!(state.cursor(), Some(&"b"));
+    }
+
+    #[test]
+    fn typeahead_survives_virtual_to_empty_projection_transition() {
+        let tokens = DesignSystem::default();
+        let full = [
+            TreeNode::new("a", Line::from("Alpha"), 0),
+            TreeNode::new("b", Line::from("Beta"), 0),
+        ];
+        let empty: [TreeNode<'_, &str>; 0] = [];
+        let area = Rect::new(0, 0, 24, 2);
+        let mut state = TreeState::new(Some("a"));
+        assert_eq!(
+            state.handle_key(&full, KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE)),
+            TreeOutcome::SelectionChanged("b")
+        );
+        assert_eq!(state.typeahead_buffer(), "b");
+
+        state.set_virtual_window(1, 2);
+        let mut buffer = Buffer::empty(area);
+        Tree::new(&empty, &tokens).render(area, &mut buffer, &mut state);
+        assert_eq!(state.typeahead_buffer(), "b");
+
+        state.set_virtual_window(0, 0);
+        Tree::new(&empty, &tokens).render(area, &mut buffer, &mut state);
+        assert_eq!(state.typeahead_buffer(), "b");
+        assert_eq!(state.cursor(), None);
     }
 
     #[test]

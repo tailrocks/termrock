@@ -394,6 +394,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0378 | `v0.14.0` | [Menu input and clipping](migrations/0378-v0.14.0-menu-input-and-clipping.md) |
 | 0379 | `v0.14.0` | [HintBar alignment is honored](migrations/0379-v0.14.0-hint-bar-alignment.md) |
 | 0380 | `v0.14.0` | [Viewport owns persistent selection state](migrations/0380-v0.14.0-viewport-state-selection.md) |
+| 0381 | `v0.14.0` | [Tree uses absolute virtual-window geometry](migrations/0381-v0.14.0-tree-absolute-virtual-window.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

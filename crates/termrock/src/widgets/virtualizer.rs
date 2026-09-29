@@ -389,6 +389,11 @@ impl Virtualizer {
 
     /// Clamp offset into the scrollable body.
     pub fn clamp(&mut self) {
+        if self.logical_len == 0 {
+            self.offset = 0;
+            self.measured.clear();
+            return;
+        }
         if self.viewport_extent == 0 {
             self.viewport_extent = 1;
         }

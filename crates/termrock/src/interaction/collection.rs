@@ -185,12 +185,24 @@ impl<Id> CollectionState<Id> {
     pub fn clear_typeahead(&mut self) {
         self.roving.clear_typeahead();
     }
+
+    /// Drops virtual-window metadata without changing active focus or typeahead.
+    pub(crate) fn clear_virtual_window(&mut self) {
+        self.window_start = None;
+        self.offset = 0;
+        self.total_len = 0;
+    }
 }
 
 impl<Id: Clone + PartialEq> CollectionState<Id> {
     /// Sets active / current id (clears typeahead).
     pub fn set_active(&mut self, id: Option<Id>) {
         self.roving.set_active(id);
+    }
+
+    /// Sets active / current id while retaining an in-progress typeahead.
+    pub(crate) fn set_active_preserving_typeahead(&mut self, id: Option<Id>) {
+        self.roving.set_active_preserving_typeahead(id);
     }
 
     /// Alias of [`Self::set_active`].

@@ -161,6 +161,11 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
         self.typeahead.clear();
     }
 
+    /// Sets active id while retaining an in-progress typeahead sequence.
+    pub(crate) fn set_active_preserving_typeahead(&mut self, id: Option<Id>) {
+        self.active = id;
+    }
+
     /// Enabled entries only, in list order.
     fn enabled_indices(entries: &[RovingEntry<Id>]) -> Vec<usize> {
         entries

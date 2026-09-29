@@ -2286,6 +2286,24 @@ mod tests {
     }
 
     #[test]
+    fn virtual_list_viewport_update_preserves_window_origin() {
+        let rows = [
+            ListRow::item("50", Line::from("fifty")),
+            ListRow::item("51", Line::from("fifty-one")),
+        ];
+        let mut state = ListState::new(Some("50"));
+        state.set_virtual_window(50, 200);
+        state.reconcile_collection(&rows);
+
+        state.collection_mut().set_viewport(50, 2, 200);
+        let items = collection_items_from_rows(&rows);
+        let _ = state.collection_mut().move_first(&items);
+
+        assert_eq!(state.collection().offset(), 50);
+        assert_eq!(state.collection().total_len(), 200);
+    }
+
+    #[test]
     fn narrow_drop_order_documented() {
         assert_eq!(LIST_NARROW_DROP_ORDER[0], "shortcut");
         assert_eq!(*LIST_NARROW_DROP_ORDER.last().unwrap(), "primary");
