@@ -380,6 +380,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0364 | `v0.14.0` | [TreeTable header hits follow painted column geometry](migrations/0364-v0.14.0-tree-table-header-hit-lifecycle.md) |
 | 0365 | `v0.14.0` | [TreeTable reconciliation removes invalid checked rows](migrations/0365-v0.14.0-tree-table-selection-reconciliation.md) |
 | 0366 | `v0.14.0` | [Virtual collection windows preserve off-window active IDs](migrations/0366-v0.14.0-collection-window-active-identity.md) |
+| 0367 | `v0.14.0` | [Overlay pointer routing honors input ownership](migrations/0367-v0.14.0-overlay-pointer-input-ownership.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
