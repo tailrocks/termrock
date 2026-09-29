@@ -485,6 +485,25 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
         }
     }
 
+    /// Returns the direction for a plain Vim-style j/k event.
+    ///
+    /// Crossterm reports an uppercase character with `SHIFT` still present;
+    /// accept that canonical representation while keeping synthetic lowercase
+    /// `SHIFT+j/k` events on the modified/typeahead path.
+    fn plain_jk_direction(key: KeyEvent) -> Option<isize> {
+        let direction = match key.code {
+            KeyCode::Char('j' | 'J') => 1,
+            KeyCode::Char('k' | 'K') => -1,
+            _ => return None,
+        };
+        let uppercase = matches!(key.code, KeyCode::Char('J' | 'K'));
+        if key.modifiers.is_empty() || (uppercase && key.modifiers == KeyModifiers::SHIFT) {
+            Some(direction)
+        } else {
+            None
+        }
+    }
+
     /// Choose presentation for terminal size.
     #[must_use]
     pub fn presentation_for_bounds(bounds: Rect, force_fullscreen: bool) -> SelectPresentation {
@@ -646,10 +665,14 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
         if !self.focused {
             return SelectOutcome::Ignored;
         }
+        if !key.is_press()
+            && key.modifiers.is_empty()
+            && matches!(key.code, KeyCode::Enter | KeyCode::Char(' '))
+        {
+            return SelectOutcome::Ignored;
+        }
         match key.code {
-            KeyCode::Enter | KeyCode::Char(' ')
-                if key.modifiers.is_empty() || key.modifiers == KeyModifiers::NONE =>
-            {
+            KeyCode::Enter | KeyCode::Char(' ') if key.is_press() && key.modifiers.is_empty() => {
                 self.open(bounds, options)
             }
             KeyCode::Down | KeyCode::Right if key.modifiers.is_empty() => {
@@ -661,7 +684,7 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
             KeyCode::Esc => SelectOutcome::Ignored,
             // Plain j/k are list navigation only after the select opens.
             KeyCode::Char('j' | 'k' | 'J' | 'K')
-                if !self.searchable && key.modifiers.is_empty() =>
+                if !self.searchable && Self::plain_jk_direction(key).is_some() =>
             {
                 SelectOutcome::Ignored
             }
@@ -694,13 +717,23 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
         options: &[SelectOption<Id>],
         bounds: Rect,
     ) -> SelectOutcome<Id> {
+        if !key.is_press()
+            && key.modifiers.is_empty()
+            && (key.code == KeyCode::Enter || (!self.searchable && key.code == KeyCode::Char(' ')))
+        {
+            return SelectOutcome::Ignored;
+        }
+
         // Esc close
         if key.code == KeyCode::Esc && key.modifiers.is_empty() {
+            if !key.is_press() {
+                return SelectOutcome::Ignored;
+            }
             return self.close();
         }
 
         // Enter commit
-        if key.code == KeyCode::Enter && key.modifiers.is_empty() {
+        if key.code == KeyCode::Enter && key.is_press() && key.modifiers.is_empty() {
             return self.commit_highlight();
         }
 
@@ -740,14 +773,8 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
         // Plain j/k navigate a non-searchable list without wrapping. Keep
         // the collection's configured wrap policy for other navigation.
         if !self.searchable
-            && key.modifiers.is_empty()
-            && matches!(key.code, KeyCode::Char('j' | 'k' | 'J' | 'K'))
+            && let Some(direction) = Self::plain_jk_direction(key)
         {
-            let direction = if matches!(key.code, KeyCode::Char('j' | 'J')) {
-                1
-            } else {
-                -1
-            };
             return match self.move_by_without_wrapping(&items, direction) {
                 CollectionOutcome::ActiveChanged { to, .. } => {
                     SelectOutcome::HighlightChanged { id: to }
@@ -765,7 +792,10 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
             CollectionOutcome::Scrolled => SelectOutcome::Changed,
             CollectionOutcome::Ignored => {
                 // Space commits like Enter when open
-                if matches!(key.code, KeyCode::Char(' ')) && key.modifiers.is_empty() {
+                if key.is_press()
+                    && matches!(key.code, KeyCode::Char(' '))
+                    && key.modifiers.is_empty()
+                {
                     return self.commit_highlight();
                 }
                 SelectOutcome::Ignored
@@ -1577,6 +1607,55 @@ mod tests {
     }
 
     #[test]
+    fn uppercase_jk_with_shift_match_crossterm_plain_navigation() {
+        let opts = sample_options();
+        let bounds = Rect::new(0, 0, 80, 24);
+        let mut closed = SelectState::new().with_value("apple");
+        closed.set_focused(true);
+
+        for code in ['J', 'K'] {
+            assert_eq!(
+                closed.handle_key(
+                    key_with_kind(
+                        KeyCode::Char(code),
+                        KeyModifiers::SHIFT,
+                        KeyEventKind::Press,
+                    ),
+                    &opts,
+                    bounds,
+                ),
+                SelectOutcome::Ignored,
+                "shifted uppercase {code} must not open a non-searchable select"
+            );
+        }
+        assert!(!closed.is_open());
+
+        let mut open = SelectState::new().with_value("apple");
+        open.set_focused(true);
+        let _ = open.open(bounds, &opts);
+        assert_eq!(
+            open.handle_key(
+                key_with_kind(
+                    KeyCode::Char('J'),
+                    KeyModifiers::SHIFT,
+                    KeyEventKind::Repeat,
+                ),
+                &opts,
+                bounds,
+            ),
+            SelectOutcome::HighlightChanged { id: Some("banana") }
+        );
+        assert_eq!(
+            open.handle_key(
+                key_with_kind(KeyCode::Char('K'), KeyModifiers::SHIFT, KeyEventKind::Press,),
+                &opts,
+                bounds,
+            ),
+            SelectOutcome::HighlightChanged { id: Some("apple") }
+        );
+    }
+
+    #[test]
     fn open_non_searchable_plain_jk_repeat_and_boundaries_do_not_wrap() {
         let opts = sample_options();
         let bounds = Rect::new(0, 0, 80, 24);
@@ -1692,6 +1771,19 @@ mod tests {
             ),
             SelectOutcome::Ignored
         );
+
+        let mut shifted = SelectState::new().with_searchable(true);
+        shifted.set_focused(true);
+        assert_eq!(
+            shifted.handle_key(
+                key_with_kind(KeyCode::Char('J'), KeyModifiers::SHIFT, KeyEventKind::Press,),
+                &opts,
+                bounds,
+            ),
+            SelectOutcome::SearchChanged {
+                query: "J".to_owned()
+            }
+        );
     }
 
     #[test]
@@ -1730,6 +1822,80 @@ mod tests {
             SelectOutcome::Opened { .. }
         ));
         assert!(closed.is_open());
+    }
+
+    #[test]
+    fn enter_and_space_activation_are_press_only() {
+        let opts = sample_options();
+        let bounds = Rect::new(0, 0, 80, 24);
+
+        for code in [KeyCode::Enter, KeyCode::Char(' ')] {
+            let mut closed = SelectState::new().with_value("apple");
+            closed.set_focused(true);
+            for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
+                assert_eq!(
+                    closed.handle_key(key_with_kind(code, KeyModifiers::NONE, kind), &opts, bounds),
+                    SelectOutcome::Ignored,
+                    "closed {code:?} must ignore {kind:?}"
+                );
+                assert!(!closed.is_open());
+            }
+            assert!(matches!(
+                closed.handle_key(
+                    key_with_kind(code, KeyModifiers::NONE, KeyEventKind::Press),
+                    &opts,
+                    bounds,
+                ),
+                SelectOutcome::Opened { .. }
+            ));
+
+            for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
+                assert_eq!(
+                    closed.handle_key(key_with_kind(code, KeyModifiers::NONE, kind), &opts, bounds),
+                    SelectOutcome::Ignored,
+                    "open {code:?} must ignore {kind:?}"
+                );
+                assert!(closed.is_open());
+            }
+        }
+    }
+
+    #[test]
+    fn escape_close_is_press_only() {
+        let opts = sample_options();
+        let bounds = Rect::new(0, 0, 80, 24);
+
+        for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
+            let mut state = SelectState::new().with_value("apple");
+            state.set_focused(true);
+            let _ = state.open(bounds, &opts);
+
+            assert_eq!(
+                state.handle_key(
+                    key_with_kind(KeyCode::Esc, KeyModifiers::NONE, kind),
+                    &opts,
+                    bounds
+                ),
+                SelectOutcome::Ignored,
+                "open Select Escape must ignore {kind:?}"
+            );
+            assert!(state.is_open());
+            assert_eq!(state.value(), Some(&"apple"));
+        }
+
+        let mut state = SelectState::new().with_value("apple");
+        state.set_focused(true);
+        let _ = state.open(bounds, &opts);
+        assert_eq!(
+            state.handle_key(
+                key_with_kind(KeyCode::Esc, KeyModifiers::NONE, KeyEventKind::Press),
+                &opts,
+                bounds,
+            ),
+            SelectOutcome::Closed
+        );
+        assert!(!state.is_open());
+        assert_eq!(state.value(), Some(&"apple"));
     }
 
     #[test]
