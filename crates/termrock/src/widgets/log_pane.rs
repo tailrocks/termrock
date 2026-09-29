@@ -16,14 +16,14 @@ use std::fmt::Write as _;
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind},
+    input::{KeyCode, KeyEvent, KeyEventKind, MouseEvent},
     interaction::Outcome,
-    scroll::{DialogScroll, TailScroll, max_offset},
+    scroll::{TailScroll, max_offset},
     style::{DesignSystem, Role, RolePalette},
     text::display_cols,
 };
 
-use super::Viewport;
+use super::{Viewport, ViewportEvent, ViewportState};
 
 /// Default maximum number of retained log lines.
 pub const DEFAULT_LOG_HISTORY_LINES: usize = 10_000;
@@ -39,6 +39,8 @@ pub struct LogPaneState {
     max_lines: Option<usize>,
     viewport_height: usize,
     scroll_indicator: String,
+    viewport: ViewportState,
+    content_revision: u64,
 }
 
 impl Default for LogPaneState {
@@ -60,6 +62,8 @@ impl LogPaneState {
             max_lines: Some(DEFAULT_LOG_HISTORY_LINES),
             viewport_height: 0,
             scroll_indicator: String::new(),
+            viewport: ViewportState::new(),
+            content_revision: 0,
         }
     }
 
@@ -82,11 +86,21 @@ impl LogPaneState {
 
     /// Appends a line, evicting the oldest line when bounded history is full.
     pub fn append(&mut self, line: impl Into<Line<'static>>) {
+        let visible_before = self.len();
+        self.content_revision = self.content_revision.wrapping_add(1);
+        if self.content_revision == u64::MAX {
+            self.content_revision = 0;
+            self.viewport = ViewportState::default();
+        }
         self.lines.push(line.into());
         if !self.follow {
             self.tail.scroll_by(self.max_tail_offset(), 1);
         }
         self.enforce_history_limit();
+        let removed = self.max_lines.map_or(0, |max_lines| {
+            visible_before.saturating_add(1).saturating_sub(max_lines)
+        });
+        self.viewport.rebase_lines(removed);
         self.clamp_tail();
     }
 
@@ -98,6 +112,8 @@ impl LogPaneState {
         self.follow = true;
         self.pending_oldest = false;
         self.scroll_indicator.clear();
+        self.viewport = ViewportState::default();
+        self.content_revision = 0;
     }
 
     #[must_use]
@@ -222,6 +238,15 @@ impl LogPaneState {
         max_offset(self.len(), self.viewport_height)
     }
 
+    fn sync_tail_from_viewport(&mut self) {
+        let maximum = self.max_tail_offset();
+        let top = usize::from(self.viewport.scroll.scroll_y).min(maximum);
+        self.tail = TailScroll::new(maximum.saturating_sub(top));
+        self.follow = false;
+        self.pending_oldest = false;
+        self.refresh_scroll_indicator();
+    }
+
     fn clamp_tail(&mut self) {
         if self.follow {
             self.tail = TailScroll::new(0);
@@ -264,6 +289,7 @@ impl PartialEq for LogPaneState {
             && self.max_lines == other.max_lines
             && self.viewport_height == other.viewport_height
             && self.scroll_indicator == other.scroll_indicator
+            && self.viewport.scroll == other.viewport.scroll
     }
 }
 
@@ -292,6 +318,37 @@ impl<'a> LogPane<'a> {
         self.title = Some(title);
         self
     }
+
+    /// Routes pointer scrolling and text selection to the persistent viewport.
+    ///
+    /// Render once before routing events so the state contains the current
+    /// body geometry. Scroll changes are mirrored into LogPane's tail-relative
+    /// history state before the next render.
+    pub fn handle_mouse(&self, state: &mut LogPaneState, event: MouseEvent) -> Outcome<()> {
+        let lines = &state.lines[state.history_start..];
+        let viewport = Viewport::new(lines, self.system).content_revision(state.content_revision);
+        let before = state.viewport.scroll.scroll_y;
+        let outcome = viewport.on_mouse(&mut state.viewport, event);
+        if state.viewport.scroll.scroll_y != before {
+            state.sync_tail_from_viewport();
+        }
+        outcome
+    }
+
+    /// Routes copy and selection-clear keys, retaining LogPane tail navigation.
+    pub fn handle_key(
+        &self,
+        state: &mut LogPaneState,
+        key: KeyEvent,
+    ) -> (Outcome<()>, Option<ViewportEvent>) {
+        if matches!(key.code, KeyCode::Char('y') | KeyCode::Esc) {
+            let lines = &state.lines[state.history_start..];
+            let viewport =
+                Viewport::new(lines, self.system).content_revision(state.content_revision);
+            return viewport.on_key(&mut state.viewport, key);
+        }
+        (state.handle_key(key), None)
+    }
 }
 
 impl StatefulWidget for &LogPane<'_> {
@@ -301,18 +358,16 @@ impl StatefulWidget for &LogPane<'_> {
         state.viewport_height = usize::from(area.height.saturating_sub(2));
         state.clamp_tail();
         let top = state.tail.to_top_offset(state.len(), state.viewport_height);
-        let mut scroll = DialogScroll {
-            scroll_x: 0,
-            scroll_y: u16::try_from(top).unwrap_or(u16::MAX),
-            ..DialogScroll::default()
-        };
-        let viewport = Viewport::new(state.lines(), self.system);
+        state.viewport.scroll.scroll_x = 0;
+        state.viewport.scroll.scroll_y = u16::try_from(top).unwrap_or(u16::MAX);
+        let lines = &state.lines[state.history_start..];
+        let viewport = Viewport::new(lines, self.system).content_revision(state.content_revision);
         let viewport = if let Some(title) = self.title {
             viewport.title(title)
         } else {
             viewport
         };
-        (&viewport).render(area, buffer, &mut scroll);
+        (&viewport).render(area, buffer, &mut state.viewport);
 
         if area.height > 0 {
             let indicator = if state.follow {
@@ -350,10 +405,11 @@ impl StatefulWidget for LogPane<'_> {
 
 #[cfg(test)]
 mod tests {
+    use ratatui_core::layout::Position;
     use ratatui_core::widgets::StatefulWidget;
 
     use super::*;
-    use crate::input::KeyModifiers;
+    use crate::input::{KeyModifiers, MouseButton, MouseEventKind};
 
     fn key(code: KeyCode) -> KeyEvent {
         KeyEvent::new(code, KeyModifiers::NONE)
@@ -421,6 +477,73 @@ mod tests {
         assert_eq!(state.history_start, 0);
         assert_eq!(state.lines.len(), DEFAULT_LOG_HISTORY_LINES);
         assert_eq!(state.len(), DEFAULT_LOG_HISTORY_LINES);
+    }
+
+    #[test]
+    fn bounded_eviction_rebases_viewport_selection() {
+        let system = crate::style::DesignSystem::default();
+        let pane = LogPane::new(&system);
+        let area = Rect::new(0, 0, 24, 4);
+        let mut state = LogPaneState::new().with_max_lines(2);
+        state.append("one");
+        state.append("two");
+
+        (&pane).render(area, &mut Buffer::empty(area), &mut state);
+        let lines = state.lines().to_vec();
+        let viewport = Viewport::new(&lines, &system);
+        viewport.on_click(&mut state.viewport, Position::new(1, 1));
+        viewport.on_drag(&mut state.viewport, Position::new(5, 1));
+        assert_eq!(
+            viewport.selected_text(&state.viewport).as_deref(),
+            Some("one")
+        );
+
+        state.append("new");
+        (&pane).render(area, &mut Buffer::empty(area), &mut state);
+        let lines = state.lines().to_vec();
+        let viewport = Viewport::new(&lines, &system);
+        assert_eq!(
+            viewport.selected_text(&state.viewport).as_deref(),
+            Some("two")
+        );
+    }
+
+    #[test]
+    fn public_log_pane_routes_viewport_selection_and_copy() {
+        let system = crate::style::DesignSystem::default();
+        let pane = LogPane::new(&system);
+        let area = Rect::new(0, 0, 24, 4);
+        let mut state = LogPaneState::new();
+        state.append("one");
+        state.append("two");
+        (&pane).render(area, &mut Buffer::empty(area), &mut state);
+
+        assert_eq!(
+            pane.handle_mouse(
+                &mut state,
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: ratatui_core::layout::Position::new(1, 1),
+                    modifiers: KeyModifiers::NONE,
+                },
+            ),
+            Outcome::Changed
+        );
+        pane.handle_mouse(
+            &mut state,
+            MouseEvent {
+                kind: MouseEventKind::Drag(MouseButton::Left),
+                position: ratatui_core::layout::Position::new(4, 1),
+                modifiers: KeyModifiers::NONE,
+            },
+        );
+
+        let (outcome, event) = pane.handle_key(
+            &mut state,
+            KeyEvent::new(KeyCode::Char('y'), KeyModifiers::NONE),
+        );
+        assert_eq!(outcome, Outcome::Changed);
+        assert_eq!(event, Some(ViewportEvent::Copy("one".into())));
     }
 
     #[test]

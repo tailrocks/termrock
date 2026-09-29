@@ -306,7 +306,9 @@ pub use breadcrumbs::{
     BreadcrumbStatus, Breadcrumbs, BreadcrumbsMode, BreadcrumbsOutcome, BreadcrumbsPresentation,
     BreadcrumbsState, crumbs_from_labels,
 };
-pub use callout::{Alert, AlertOutcome, AlertState, Callout, CalloutRecipe, CalloutSlots, CalloutTone};
+pub use callout::{
+    Alert, AlertOutcome, AlertState, Callout, CalloutRecipe, CalloutSlots, CalloutTone,
+};
 pub use card::{Card, CardParts};
 pub use carousel::{
     Carousel, CarouselOutcome, CarouselSlide, CarouselState, example_carousel_slides,
@@ -851,7 +853,7 @@ pub use tree_table::{
     filter_tree_table_with_ancestors,
 };
 pub use view_state::{Banner, LoadingView};
-pub use viewport::Viewport;
+pub use viewport::{CellPos, Viewport, ViewportEvent, ViewportState};
 pub use virtual_grid::{
     GridCell, GridCellRegion, GridColumn, GridColumnWidth, GridHeaderRegion, GridRow, VirtualGrid,
     VirtualGridOutcome, VirtualGridState,
