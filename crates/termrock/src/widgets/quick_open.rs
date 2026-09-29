@@ -984,6 +984,23 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let alt = key.modifiers.contains(KeyModifiers::ALT);
 
+        // Confirmation, cancellation, result focus traversal, provider-cycle,
+        // jump-mode entry, and presentation toggles are one-shot actions.
+        // Consume repeats before TextInputState can submit or cancel the query
+        // draft.
+        if !key.is_press()
+            && (matches!(
+                key.code,
+                KeyCode::Enter | KeyCode::Esc | KeyCode::Tab | KeyCode::BackTab
+            ) || (ctrl
+                && matches!(
+                    key.code,
+                    KeyCode::Char('j' | 'J' | 'p' | 'P' | 'n' | 'N' | 'm' | 'M' | '\\')
+                )))
+        {
+            return QuickOpenOutcome::Ignored;
+        }
+
         // Ctrl+P / Ctrl+N — provider cycle (VS Code-ish) when Alt not held.
         if ctrl && !alt && matches!(key.code, KeyCode::Char('p' | 'P')) {
             return self.cycle_provider(providers, -1, visible);
@@ -1965,7 +1982,7 @@ pub fn example_quick_open_symbols() -> Vec<QuickOpenItem<&'static str>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
+    use crate::input::{KeyEventKind, KeyModifiers};
 
     fn providers() -> Vec<QuickOpenProvider> {
         example_quick_open_providers()
@@ -1976,6 +1993,12 @@ mod tests {
         s.set_focused(true);
         s.set_accepts_input(true);
         s
+    }
+
+    fn key_with_kind(code: KeyCode, modifiers: KeyModifiers, kind: KeyEventKind) -> KeyEvent {
+        let mut key = KeyEvent::new(code, modifiers);
+        key.kind = kind;
+        key
     }
 
     #[test]
@@ -2093,6 +2116,142 @@ mod tests {
                 id: "main"
             } if provider_id == "files"
         ));
+    }
+
+    #[test]
+    fn provider_cycle_is_press_only() {
+        let p = providers();
+        let items = example_quick_open_files();
+        let cases = [
+            (KeyCode::Char('n'), KeyModifiers::CONTROL, 1),
+            (KeyCode::Char('p'), KeyModifiers::CONTROL, 3),
+            (KeyCode::Tab, KeyModifiers::CONTROL, 1),
+            (KeyCode::Tab, KeyModifiers::CONTROL | KeyModifiers::SHIFT, 3),
+        ];
+
+        for (code, modifiers, expected_index) in cases {
+            let mut pressed = focused();
+            assert!(matches!(
+                pressed.handle_key(
+                    key_with_kind(code, modifiers, KeyEventKind::Press),
+                    &p,
+                    &items
+                ),
+                QuickOpenOutcome::ProviderChanged { .. }
+            ));
+            assert_eq!(pressed.provider_index(), expected_index);
+
+            for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
+                let mut non_press = focused();
+                assert_eq!(
+                    non_press.handle_key(key_with_kind(code, modifiers, kind), &p, &items),
+                    QuickOpenOutcome::Ignored,
+                    "{kind:?} provider cycle must not switch providers"
+                );
+                assert_eq!(non_press.provider_index(), 0);
+            }
+        }
+    }
+
+    #[test]
+    fn activation_is_press_only() {
+        let p = providers();
+        let items = example_quick_open_files();
+
+        let mut pressed = focused();
+        assert!(matches!(
+            pressed.handle_key(
+                key_with_kind(KeyCode::Enter, KeyModifiers::NONE, KeyEventKind::Press),
+                &p,
+                &items
+            ),
+            QuickOpenOutcome::Activated { id: "main", .. }
+        ));
+
+        for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
+            let mut non_press = focused();
+            assert_eq!(
+                non_press.handle_key(
+                    key_with_kind(KeyCode::Enter, KeyModifiers::NONE, kind),
+                    &p,
+                    &items
+                ),
+                QuickOpenOutcome::Ignored,
+                "{kind:?} Enter must not activate a result"
+            );
+        }
+    }
+
+    #[test]
+    fn ctrl_m_submit_is_press_only() {
+        let p = providers();
+        let items = example_quick_open_files();
+
+        for modifiers in [
+            KeyModifiers::CONTROL,
+            KeyModifiers::CONTROL | KeyModifiers::ALT,
+        ] {
+            let mut pressed = focused();
+            assert!(matches!(
+                pressed.handle_key(
+                    key_with_kind(KeyCode::Char('m'), modifiers, KeyEventKind::Press),
+                    &p,
+                    &items
+                ),
+                QuickOpenOutcome::Activated { id: "main", .. }
+            ));
+
+            for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
+                let mut non_press = focused();
+                assert_eq!(
+                    non_press.handle_key(
+                        key_with_kind(KeyCode::Char('M'), modifiers, kind),
+                        &p,
+                        &items
+                    ),
+                    QuickOpenOutcome::Ignored,
+                    "{kind:?} Ctrl+M submit must not activate a result"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn dismissal_and_mode_transitions_are_press_only() {
+        let p = providers();
+        let items = example_quick_open_files();
+        let one_shots = [
+            (KeyCode::Esc, KeyModifiers::NONE),
+            (KeyCode::Char('j'), KeyModifiers::CONTROL),
+            (KeyCode::Char('\\'), KeyModifiers::CONTROL),
+        ];
+
+        for (code, modifiers) in one_shots {
+            let mut pressed = focused();
+            let press_outcome = pressed.handle_key(
+                key_with_kind(code, modifiers, KeyEventKind::Press),
+                &p,
+                &items,
+            );
+            assert!(
+                matches!(
+                    press_outcome,
+                    QuickOpenOutcome::Cancelled
+                        | QuickOpenOutcome::JumpModeRequested
+                        | QuickOpenOutcome::PresentationChanged { .. }
+                ),
+                "Press {code:?} must perform its one-shot action: {press_outcome:?}"
+            );
+
+            for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
+                let mut non_press = focused();
+                assert_eq!(
+                    non_press.handle_key(key_with_kind(code, modifiers, kind), &p, &items),
+                    QuickOpenOutcome::Ignored,
+                    "{kind:?} {code:?} must not perform a one-shot action"
+                );
+            }
+        }
     }
 
     #[test]
