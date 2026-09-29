@@ -406,6 +406,45 @@ fn horizontal_scroll_does_not_draw_or_hit_test_a_partial_wide_grapheme() {
 }
 
 #[test]
+fn right_clipped_wide_grapheme_is_not_painted_or_hit_testable() {
+    let lines = Box::leak(vec![Line::from("abc界")].into_boxed_slice());
+    let system = Box::leak(Box::new(DesignSystem::default()));
+    let viewport = Viewport::new(lines, system);
+    let mut state = ViewportState::default();
+    let area = Rect::new(0, 0, 6, 4);
+    let mut buffer = Buffer::empty(area);
+    viewport.render(area, &mut buffer, &mut state);
+
+    // The body is four cells wide; the wide grapheme begins in its last cell
+    // and is omitted because both terminal cells cannot fit.
+    assert_eq!(buffer[(4, 1)].symbol(), " ");
+    assert_eq!(viewport.pos_at(&state, Position::new(4, 1)), None);
+    assert_eq!(
+        viewport.select_word_at(&mut state, Position::new(4, 1)),
+        Outcome::Ignored
+    );
+    assert!(!viewport.has_selection(&state));
+}
+
+#[test]
+fn horizontally_scrolled_tail_padding_does_not_map_to_line_end() {
+    let lines = Box::leak(vec![Line::from("long line"), Line::from("x")].into_boxed_slice());
+    let system = Box::leak(Box::new(DesignSystem::default()));
+    let viewport = Viewport::new(lines, system);
+    let mut state = ViewportState::default();
+    state.scroll.scroll_x = 4;
+    let area = Rect::new(0, 0, 8, 5);
+    viewport.render(area, &mut Buffer::empty(area), &mut state);
+
+    assert!(viewport.pos_at(&state, Position::new(1, 2)).is_none());
+    assert_eq!(
+        viewport.on_click(&mut state, Position::new(1, 2)),
+        Outcome::Ignored
+    );
+    assert!(!viewport.has_anchor(&state));
+}
+
+#[test]
 fn render_clips_partial_nonzero_origin_buffers() {
     let lines = Box::leak(vec![Line::from("visible")].into_boxed_slice());
     let system = Box::leak(Box::new(DesignSystem::default()));

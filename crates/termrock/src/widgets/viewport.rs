@@ -463,7 +463,11 @@ impl ViewportState {
         }
         let raw_column = self.raw_column_at(position, row);
         let cell = self.cell_at(row, raw_column);
-        if self.column_of(row, cell) < horizontal {
+        let cell_start = self.column_of(row, cell);
+        let cell_end = self.column_of(row, cell.saturating_add(1));
+        if cell_start < horizontal
+            || cell_end.saturating_sub(horizontal) > usize::from(self.area.width)
+        {
             return None;
         }
         (cell < self.active_cells()[row].cells.len()).then_some((row, cell))
@@ -482,19 +486,26 @@ impl ViewportState {
             return None;
         }
         let relative = visual_column - offset;
-        if self.line_alignment(row) != Alignment::Left
-            && self.line_width(row) <= usize::from(self.area.width)
-            && relative >= self.line_width(row)
-        {
+        let horizontal = self.line_scroll(row);
+        let line_width = self.line_width(row);
+        let visible_width = line_width
+            .saturating_sub(horizontal)
+            .min(usize::from(self.area.width));
+        let rejects_padding = horizontal > 0
+            || (self.line_alignment(row) != Alignment::Left
+                && line_width <= usize::from(self.area.width));
+        if rejects_padding && relative >= visible_width {
             return None;
         }
         let raw_column = self.raw_column_at(position, row);
         let cell = self.cell_at(row, raw_column);
-        if self.column_of(row, cell) < self.line_scroll(row) {
-            return None;
-        }
         let cell_start = self.column_of(row, cell);
         let cell_end = self.column_of(row, cell.saturating_add(1));
+        if cell_start < horizontal
+            || cell_end.saturating_sub(horizontal) > usize::from(self.area.width)
+        {
+            return None;
+        }
         let column = if raw_column.saturating_sub(cell_start).saturating_mul(2)
             >= cell_end.saturating_sub(cell_start)
         {
