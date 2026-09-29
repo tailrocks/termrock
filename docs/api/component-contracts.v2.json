@@ -52266,6 +52266,471 @@
     },
     {
       "schema": 2,
+      "id": "Lockup",
+      "entryKind": "component",
+      "complete": false,
+      "axes": {
+        "visual_states": {
+          "applicability": "required",
+          "status": "partial",
+          "evidence": {
+            "stories": [
+              "lockup/basic"
+            ],
+            "tests": [
+              "crates/termrock-catalog/src/catalog.rs#representative_scenarios_cover_component_and_pattern_registries"
+            ],
+            "recordings": [],
+            "benches": [],
+            "posters": [
+              "docs/public/preview-posters/lockup-basic.json"
+            ],
+            "sources": [
+              "crates/termrock/src/widgets/brand.rs"
+            ],
+            "checks": [
+              "docs/scripts/export-preview-posters.ts#validate"
+            ]
+          },
+          "reason": "Canonical source, mounted story, exact poster, and exhaustive identity test prove one representative state; remaining visual states are unproven."
+        },
+        "keyboard": {
+          "applicability": "required",
+          "status": "partial",
+          "evidence": {
+            "stories": [
+              "lockup/basic"
+            ],
+            "tests": [],
+            "recordings": [],
+            "benches": [],
+            "sources": [
+              "crates/termrock/src/widgets/brand.rs"
+            ],
+            "checks": [
+              "docs/scripts/audit-render-contracts.ts#runRenderAudit"
+            ]
+          },
+          "reason": "Exact mounted representative changed state or emitted an outcome through keyboard; alternate states and paths remain unproven."
+        },
+        "mouse": {
+          "applicability": "conditional",
+          "status": "not_applicable",
+          "evidence": {
+            "stories": [
+              "lockup/basic"
+            ],
+            "tests": [],
+            "recordings": [],
+            "benches": [],
+            "sources": [
+              "crates/termrock/src/widgets/brand.rs"
+            ],
+            "checks": [
+              "docs/scripts/audit-render-contracts.ts#runRenderAudit"
+            ]
+          },
+          "reason": "Typed interaction hints declare no pointer, drag, or wheel ownership."
+        },
+        "focus": {
+          "applicability": "required",
+          "status": "missing",
+          "evidence": {
+            "stories": [
+              "lockup/basic"
+            ],
+            "tests": [],
+            "recordings": [],
+            "benches": [],
+            "sources": [
+              "crates/termrock/src/widgets/brand.rs"
+            ],
+            "checks": [
+              "docs/scripts/audit-render-contracts.ts#runRenderAudit"
+            ]
+          },
+          "reason": "Exact mounted representative produced no observable focus outcome in the exhaustive host-event probe."
+        },
+        "disabled": {
+          "applicability": "conditional",
+          "status": "not_applicable",
+          "evidence": {
+            "stories": [
+              "lockup/basic"
+            ],
+            "tests": [],
+            "recordings": [],
+            "benches": [],
+            "sources": [
+              "crates/termrock/src/widgets/brand.rs"
+            ],
+            "checks": [
+              "docs/scripts/audit-render-contracts.ts#runRenderAudit"
+            ]
+          },
+          "reason": "Typed family, interaction kind, and exact owner story set declare no disabled state ownership."
+        },
+        "loading": {
+          "applicability": "conditional",
+          "status": "not_applicable",
+          "evidence": {
+            "stories": [
+              "lockup/basic"
+            ],
+            "tests": [],
+            "recordings": [],
+            "benches": [],
+            "sources": [
+              "crates/termrock/src/widgets/brand.rs"
+            ],
+            "checks": [
+              "docs/scripts/audit-render-contracts.ts#runRenderAudit"
+            ]
+          },
+          "reason": "Typed family, interaction kind, and exact owner story set declare no loading state ownership."
+        },
+        "error": {
+          "applicability": "conditional",
+          "status": "not_applicable",
+          "evidence": {
+            "stories": [
+              "lockup/basic"
+            ],
+            "tests": [],
+            "recordings": [],
+            "benches": [],
+            "sources": [
+              "crates/termrock/src/widgets/brand.rs"
+            ],
+            "checks": [
+              "docs/scripts/audit-render-contracts.ts#runRenderAudit"
+            ]
+          },
+          "reason": "Typed family, interaction kind, and exact owner story set declare no error state ownership."
+        },
+        "empty": {
+          "applicability": "conditional",
+          "status": "not_applicable",
+          "evidence": {
+            "stories": [
+              "lockup/basic"
+            ],
+            "tests": [],
+            "recordings": [],
+            "benches": [],
+            "sources": [
+              "crates/termrock/src/widgets/brand.rs"
+            ],
+            "checks": [
+              "docs/scripts/audit-render-contracts.ts#runRenderAudit"
+            ]
+          },
+          "reason": "Typed family, interaction kind, and exact owner story set declare no empty state ownership."
+        },
+        "overlay": {
+          "applicability": "conditional",
+          "status": "not_applicable",
+          "evidence": {
+            "stories": [
+              "lockup/basic"
+            ],
+            "tests": [],
+            "recordings": [],
+            "benches": [],
+            "sources": [
+              "crates/termrock/src/widgets/brand.rs"
+            ],
+            "checks": [
+              "docs/scripts/audit-render-contracts.ts#runRenderAudit"
+            ]
+          },
+          "reason": "Typed family, interaction kind, and exact owner story set declare no overlay state ownership."
+        },
+        "escape": {
+          "applicability": "conditional",
+          "status": "not_applicable",
+          "evidence": {
+            "stories": [
+              "lockup/basic"
+            ],
+            "tests": [],
+            "recordings": [],
+            "benches": [],
+            "sources": [
+              "crates/termrock/src/widgets/brand.rs"
+            ],
+            "checks": [
+              "docs/scripts/audit-render-contracts.ts#runRenderAudit"
+            ]
+          },
+          "reason": "Typed interaction kind does not own this dismissal path."
+        },
+        "responsive": {
+          "applicability": "required",
+          "status": "partial",
+          "evidence": {
+            "stories": [
+              "lockup/basic"
+            ],
+            "tests": [],
+            "recordings": [],
+            "benches": [],
+            "sources": [
+              "crates/termrock/src/widgets/brand.rs"
+            ],
+            "checks": [
+              "docs/scripts/audit-render-contracts.ts#runRenderAudit"
+            ]
+          },
+          "reason": "Exhaustive representative-story audit exercises exact responsive projection; full state space remains unproven."
+        },
+        "tiny_terminal": {
+          "applicability": "required",
+          "status": "partial",
+          "evidence": {
+            "stories": [
+              "lockup/basic"
+            ],
+            "tests": [],
+            "recordings": [],
+            "benches": [],
+            "sources": [
+              "crates/termrock/src/widgets/brand.rs"
+            ],
+            "checks": [
+              "docs/scripts/audit-render-contracts.ts#runRenderAudit"
+            ]
+          },
+          "reason": "Exhaustive representative-story audit exercises exact tiny_terminal projection; full state space remains unproven."
+        },
+        "unicode": {
+          "applicability": "required",
+          "status": "partial",
+          "evidence": {
+            "stories": [
+              "lockup/basic"
+            ],
+            "tests": [],
+            "recordings": [],
+            "benches": [],
+            "sources": [
+              "crates/termrock/src/widgets/brand.rs"
+            ],
+            "checks": [
+              "docs/scripts/audit-render-contracts.ts#runRenderAudit"
+            ]
+          },
+          "reason": "Exact owner story set renders unicode cells without panic; editing, clipping, and alternate states remain unproven."
+        },
+        "cjk": {
+          "applicability": "required",
+          "status": "missing",
+          "evidence": {
+            "stories": [
+              "lockup/basic"
+            ],
+            "tests": [],
+            "recordings": [],
+            "benches": [],
+            "sources": [
+              "crates/termrock/src/widgets/brand.rs"
+            ],
+            "checks": [
+              "docs/scripts/audit-render-contracts.ts#runRenderAudit"
+            ]
+          },
+          "reason": "No exact owner story renders cjk content; support remains unproven."
+        },
+        "combining": {
+          "applicability": "required",
+          "status": "missing",
+          "evidence": {
+            "stories": [
+              "lockup/basic"
+            ],
+            "tests": [],
+            "recordings": [],
+            "benches": [],
+            "sources": [
+              "crates/termrock/src/widgets/brand.rs"
+            ],
+            "checks": [
+              "docs/scripts/audit-render-contracts.ts#runRenderAudit"
+            ]
+          },
+          "reason": "No exact owner story renders combining content; support remains unproven."
+        },
+        "emoji": {
+          "applicability": "required",
+          "status": "missing",
+          "evidence": {
+            "stories": [
+              "lockup/basic"
+            ],
+            "tests": [],
+            "recordings": [],
+            "benches": [],
+            "sources": [
+              "crates/termrock/src/widgets/brand.rs"
+            ],
+            "checks": [
+              "docs/scripts/audit-render-contracts.ts#runRenderAudit"
+            ]
+          },
+          "reason": "No exact owner story renders emoji content; support remains unproven."
+        },
+        "ascii_fallback": {
+          "applicability": "required",
+          "status": "missing",
+          "evidence": {
+            "stories": [
+              "lockup/basic"
+            ],
+            "tests": [],
+            "recordings": [],
+            "benches": [],
+            "sources": [
+              "crates/termrock/src/widgets/brand.rs"
+            ],
+            "checks": [
+              "docs/scripts/audit-render-contracts.ts#runRenderAudit"
+            ]
+          },
+          "reason": "Exact representative failed the ascii_fallback render audit."
+        },
+        "no_color": {
+          "applicability": "required",
+          "status": "partial",
+          "evidence": {
+            "stories": [
+              "lockup/basic"
+            ],
+            "tests": [],
+            "recordings": [],
+            "benches": [],
+            "sources": [
+              "crates/termrock/src/widgets/brand.rs"
+            ],
+            "checks": [
+              "docs/scripts/audit-render-contracts.ts#runRenderAudit"
+            ]
+          },
+          "reason": "Exhaustive representative-story audit exercises exact no_color projection; full state space remains unproven."
+        },
+        "color_ladder": {
+          "applicability": "required",
+          "status": "partial",
+          "evidence": {
+            "stories": [
+              "lockup/basic"
+            ],
+            "tests": [],
+            "recordings": [],
+            "benches": [],
+            "sources": [
+              "crates/termrock/src/widgets/brand.rs"
+            ],
+            "checks": [
+              "docs/scripts/audit-render-contracts.ts#runRenderAudit"
+            ]
+          },
+          "reason": "Exhaustive representative-story audit exercises exact color_ladder projection; full state space remains unproven."
+        },
+        "streaming": {
+          "applicability": "conditional",
+          "status": "not_applicable",
+          "evidence": {
+            "stories": [
+              "lockup/basic"
+            ],
+            "tests": [],
+            "recordings": [],
+            "benches": [],
+            "sources": [
+              "crates/termrock/src/widgets/brand.rs"
+            ],
+            "checks": [
+              "docs/scripts/audit-render-contracts.ts#runRenderAudit"
+            ]
+          },
+          "reason": "Typed family, interaction kind, and exact owner story set declare no streaming state ownership."
+        },
+        "large_data": {
+          "applicability": "conditional",
+          "status": "not_applicable",
+          "evidence": {
+            "stories": [
+              "lockup/basic"
+            ],
+            "tests": [],
+            "recordings": [],
+            "benches": [],
+            "sources": [
+              "crates/termrock/src/widgets/brand.rs"
+            ],
+            "checks": [
+              "docs/scripts/audit-render-contracts.ts#runRenderAudit"
+            ]
+          },
+          "reason": "Typed family, interaction kind, and exact owner story set declare no large_data state ownership."
+        },
+        "resize": {
+          "applicability": "required",
+          "status": "partial",
+          "evidence": {
+            "stories": [
+              "lockup/basic"
+            ],
+            "tests": [],
+            "recordings": [],
+            "benches": [],
+            "sources": [
+              "crates/termrock/src/widgets/brand.rs"
+            ],
+            "checks": [
+              "docs/scripts/audit-render-contracts.ts#runRenderAudit"
+            ]
+          },
+          "reason": "Exhaustive representative-story audit exercises exact resize projection; full state space remains unproven."
+        },
+        "panic_safety": {
+          "applicability": "required",
+          "status": "partial",
+          "evidence": {
+            "stories": [
+              "lockup/basic"
+            ],
+            "tests": [],
+            "recordings": [],
+            "benches": [],
+            "sources": [
+              "crates/termrock/src/widgets/brand.rs"
+            ],
+            "checks": [
+              "docs/scripts/audit-render-contracts.ts#runRenderAudit"
+            ]
+          },
+          "reason": "Exhaustive representative-story audit exercises exact panic_safety projection; full state space remains unproven."
+        }
+      },
+      "lints": {
+        "color_only_state": "not_run",
+        "invisible_keyboard_focus": "not_run",
+        "primary_clipped_before_secondary": "not_run",
+        "interactive_without_semantic_role": "not_run",
+        "mouse_without_keyboard": "not_run",
+        "unpredictable_overlay_dismiss": "not_run",
+        "hardcoded_key_handling": "pass",
+        "missing_ascii_fallback": "not_run",
+        "focus_selection_indistinguishable": "not_run",
+        "idle_animation_redraw": "not_run",
+        "zero_area_panic": "not_run",
+        "missing_contract_evidence": "fail",
+        "stale_contract_component": "pass"
+      }
+    },
+    {
+      "schema": 2,
       "id": "LogPane",
       "entryKind": "component",
       "complete": false,
@@ -105637,7 +106102,7 @@
         "interactive_without_semantic_role": "not_run",
         "mouse_without_keyboard": "not_run",
         "unpredictable_overlay_dismiss": "not_run",
-        "hardcoded_key_handling": "pass",
+        "hardcoded_key_handling": "fail",
         "missing_ascii_fallback": "not_run",
         "focus_selection_indistinguishable": "not_run",
         "idle_animation_redraw": "not_run",

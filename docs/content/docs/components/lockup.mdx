@@ -1,0 +1,40 @@
+---
+title: "Lockup"
+description: "Product-neutral accent-filled mark with host-owned text and painted semantic geometry."
+catalogId: Lockup
+source: crates/termrock/src/widgets/brand.rs
+tags:
+  - "content"
+  - "widget"
+aliases: []
+---
+
+**Purpose.** Paint a compact or padded identity mark while leaving the mark text
+and activation behavior with the host.
+
+## Paint once, register the same parts
+
+`paint` returns [`LockupParts`], including the cells that were actually painted.
+Pass that value to semantic registration so the hit region follows the visible
+mark after clipping.
+
+```text
+let lockup = Lockup::new(mark, system);
+let parts = lockup.paint(area, buffer);
+lockup.register_semantic(scene, id, parts, interactive);
+```
+
+For hover and pressed visuals, use `paint_with_state` and pass the same state to
+`register_semantic_with_state`. Hover changes paint only; pressed state is
+projected to interactive semantic nodes.
+
+## Geometry and ownership
+
+- `Lockup::new(mark, system)` adds one cell of outer padding. `.compact()` drops
+  that padding for tight strips.
+- `mark` is supplied by the host. The host also owns the action associated with
+  an interactive lockup.
+- Painting is clipped to the requested area and the buffer area at display-cell
+  boundaries. A wide grapheme is omitted when it cannot fit completely.
+- Empty or fully clipped content returns empty `LockupParts::content`; no
+  semantic node is registered for that frame.

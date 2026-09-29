@@ -131,6 +131,17 @@ fn extras_pages_paint_owned_component_names() {
 }
 
 #[test]
+fn structure_page_paints_lockup_story() {
+    let mut app = App::new(CatalogProfile::TermRock, ColorCapability::Truecolor);
+    app.goto(PageId::STRUCTURE);
+    let text = draw(&mut app, 120, 400);
+    assert!(
+        text.contains(" TR "),
+        "Lockup story did not paint its host mark:\n{text}"
+    );
+}
+
+#[test]
 fn every_mapped_page_renders() {
     let nav = nav_entries(CatalogProfile::TermRock);
     for e in nav {
