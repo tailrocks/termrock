@@ -695,7 +695,7 @@ impl TextAreaState {
         let plain = key.modifiers.is_empty();
         if !self.editing || self.read_only {
             return match key.code {
-                KeyCode::Enter if plain && !self.read_only => {
+                KeyCode::Enter if plain && !self.read_only && key.is_press() => {
                     self.editing = true;
                     TextAreaOutcome::Changed
                 }
@@ -747,6 +747,20 @@ impl TextAreaState {
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let alt = key.modifiers.contains(KeyModifiers::ALT);
         let shift = key.modifiers.contains(KeyModifiers::SHIFT);
+
+        // Host-facing callbacks are physical one-shots. Keep ordinary text
+        // insertion and caret motion repeatable while preventing held keys
+        // from repeating clipboard/editor/fullscreen requests.
+        let host_one_shot = (ctrl
+            && !alt
+            && matches!(
+                key.code,
+                KeyCode::Char('c' | 'C' | 'x' | 'X' | 'v' | 'V' | 'e' | 'E')
+            ))
+            || (ctrl && shift && !alt && matches!(key.code, KeyCode::Char('f' | 'F')));
+        if !key.is_press() && host_one_shot {
+            return TextAreaOutcome::Ignored;
+        }
 
         // Host hooks / clipboard / undo (Emacs-style default adapter)
         if ctrl && !alt {
@@ -2672,6 +2686,104 @@ mod tests {
                     "{} selection cleared",
                     case.name
                 );
+            }
+        }
+    }
+
+    #[test]
+    fn physical_one_shot_actions_ignore_repeat_and_release() {
+        let event = |code, modifiers, kind| KeyEvent {
+            code,
+            modifiers,
+            kind,
+            state: KeyEventState::NONE,
+        };
+
+        let mut idle = TextAreaState::new("ab");
+        idle.set_accepts_input(true);
+        for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
+            assert_eq!(
+                idle.handle_key(event(KeyCode::Enter, KeyModifiers::NONE, kind)),
+                TextAreaOutcome::Ignored,
+                "idle Enter must be press-only for {kind:?}"
+            );
+            assert!(!idle.is_editing());
+        }
+        assert_eq!(
+            idle.handle_key(event(
+                KeyCode::Enter,
+                KeyModifiers::NONE,
+                KeyEventKind::Press
+            )),
+            TextAreaOutcome::Changed
+        );
+        assert!(idle.is_editing());
+
+        let mut editing = TextAreaState::new("");
+        editing.set_accepts_input(true);
+        editing.set_editing(true);
+        assert_eq!(
+            editing.handle_key(event(
+                KeyCode::Char('x'),
+                KeyModifiers::NONE,
+                KeyEventKind::Repeat
+            )),
+            TextAreaOutcome::Changed,
+            "ordinary text remains repeatable"
+        );
+        assert_eq!(editing.text(), "x");
+
+        let actions = [
+            ("copy", KeyCode::Char('c'), KeyModifiers::CONTROL),
+            ("cut", KeyCode::Char('x'), KeyModifiers::CONTROL),
+            ("paste", KeyCode::Char('v'), KeyModifiers::CONTROL),
+            ("external editor", KeyCode::Char('e'), KeyModifiers::CONTROL),
+            (
+                "fullscreen",
+                KeyCode::Char('f'),
+                KeyModifiers::CONTROL | KeyModifiers::SHIFT,
+            ),
+        ];
+
+        for (name, code, modifiers) in actions {
+            for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
+                let mut state = TextAreaState::new("abc");
+                state.set_accepts_input(true);
+                state.set_editing(true);
+                state.select_all();
+                let before = state.clone();
+                assert_eq!(
+                    state.handle_key(event(code, modifiers, kind)),
+                    TextAreaOutcome::Ignored,
+                    "{name} must ignore {kind:?}"
+                );
+                assert_eq!(state, before, "{name} changed state on {kind:?}");
+            }
+
+            let mut state = TextAreaState::new("abc");
+            state.set_accepts_input(true);
+            state.set_editing(true);
+            state.select_all();
+            let outcome = state.handle_key(event(code, modifiers, KeyEventKind::Press));
+            match code {
+                KeyCode::Char('c') => assert_eq!(
+                    outcome,
+                    TextAreaOutcome::ClipboardCopy { text: "abc".into() }
+                ),
+                KeyCode::Char('x') => assert_eq!(
+                    outcome,
+                    TextAreaOutcome::ClipboardCut { text: "abc".into() }
+                ),
+                KeyCode::Char('v') => {
+                    assert_eq!(outcome, TextAreaOutcome::ClipboardPasteRequest)
+                }
+                KeyCode::Char('e') => {
+                    assert_eq!(outcome, TextAreaOutcome::ExternalEditorRequested)
+                }
+                KeyCode::Char('f') => {
+                    assert_eq!(outcome, TextAreaOutcome::FullscreenRequested)
+                }
+                _ => unreachable!("test table only contains host actions"),
             }
         }
     }
