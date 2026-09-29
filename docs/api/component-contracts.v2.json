@@ -84292,7 +84292,7 @@
         "interactive_without_semantic_role": "not_run",
         "mouse_without_keyboard": "not_run",
         "unpredictable_overlay_dismiss": "not_run",
-        "hardcoded_key_handling": "pass",
+        "hardcoded_key_handling": "fail",
         "missing_ascii_fallback": "not_run",
         "focus_selection_indistinguishable": "not_run",
         "idle_animation_redraw": "not_run",
@@ -87141,7 +87141,20 @@
               "status-bar/basic"
             ],
             "tests": [
-              "crates/termrock-catalog/src/catalog.rs#representative_scenarios_cover_component_and_pattern_registries"
+              "crates/termrock-catalog/src/catalog.rs#representative_scenarios_cover_component_and_pattern_registries",
+              "crates/termrock/src/widgets/status_bar.rs#same_side_slots_use_plane_spacing_without_separator",
+              "crates/termrock/src/widgets/status_bar.rs#transient_stops_before_occupied_right_group",
+              "crates/termrock/src/widgets/status_bar.rs#transient_keeps_one_cell_right_edge_without_right_group",
+              "crates/termrock/src/widgets/status_bar.rs#canonical_priority_ties_drop_center_then_right_and_keep_left",
+              "crates/termrock/src/widgets/status_bar.rs#narrow_right_only_layout_keeps_strongest_slot",
+              "crates/termrock/src/widgets/status_bar.rs#narrow_center_only_layout_keeps_strongest_slot",
+              "crates/termrock/src/widgets/status_bar.rs#narrow_boundaries_keep_regions_inside_the_bar",
+              "crates/termrock/src/widgets/status_bar.rs#strongest_left_item_truncates_with_unicode_ellipsis",
+              "crates/termrock/src/widgets/status_bar.rs#wide_custom_glyph_cannot_escape_its_one_cell_slot",
+              "crates/termrock/src/widgets/status_bar.rs#semantic_status_tone_stays_on_glyph_over_elevated_plane",
+              "crates/termrock/src/widgets/status_bar.rs#mode_fade_api_remains_available_and_monotonic",
+              "crates/termrock/src/widgets/status_bar.rs#render_clips_to_buffer_before_layout_and_paint",
+              "crates/termrock/src/widgets/status_bar.rs#resize_cjk_combining_and_ascii_safe"
             ],
             "recordings": [],
             "benches": [],
@@ -87155,7 +87168,7 @@
               "docs/scripts/export-preview-posters.ts#validate"
             ]
           },
-          "reason": "Canonical source, mounted story, exact poster, and exhaustive identity test prove one representative state; remaining visual states are unproven."
+          "reason": "Owner-local behavior proves one visual_states path; alternate paths remain unproven."
         },
         "keyboard": {
           "applicability": "required",
@@ -87342,6 +87355,18 @@
               "status-bar/basic"
             ],
             "tests": [
+              "crates/termrock/src/widgets/status_bar.rs#same_side_slots_use_plane_spacing_without_separator",
+              "crates/termrock/src/widgets/status_bar.rs#transient_stops_before_occupied_right_group",
+              "crates/termrock/src/widgets/status_bar.rs#transient_keeps_one_cell_right_edge_without_right_group",
+              "crates/termrock/src/widgets/status_bar.rs#canonical_priority_ties_drop_center_then_right_and_keep_left",
+              "crates/termrock/src/widgets/status_bar.rs#narrow_right_only_layout_keeps_strongest_slot",
+              "crates/termrock/src/widgets/status_bar.rs#narrow_center_only_layout_keeps_strongest_slot",
+              "crates/termrock/src/widgets/status_bar.rs#narrow_boundaries_keep_regions_inside_the_bar",
+              "crates/termrock/src/widgets/status_bar.rs#strongest_left_item_truncates_with_unicode_ellipsis",
+              "crates/termrock/src/widgets/status_bar.rs#wide_custom_glyph_cannot_escape_its_one_cell_slot",
+              "crates/termrock/src/widgets/status_bar.rs#semantic_status_tone_stays_on_glyph_over_elevated_plane",
+              "crates/termrock/src/widgets/status_bar.rs#mode_fade_api_remains_available_and_monotonic",
+              "crates/termrock/src/widgets/status_bar.rs#render_clips_to_buffer_before_layout_and_paint",
               "crates/termrock/src/widgets/status_bar.rs#resize_cjk_combining_and_ascii_safe"
             ],
             "recordings": [],
@@ -87363,6 +87388,18 @@
               "status-bar/basic"
             ],
             "tests": [
+              "crates/termrock/src/widgets/status_bar.rs#same_side_slots_use_plane_spacing_without_separator",
+              "crates/termrock/src/widgets/status_bar.rs#transient_stops_before_occupied_right_group",
+              "crates/termrock/src/widgets/status_bar.rs#transient_keeps_one_cell_right_edge_without_right_group",
+              "crates/termrock/src/widgets/status_bar.rs#canonical_priority_ties_drop_center_then_right_and_keep_left",
+              "crates/termrock/src/widgets/status_bar.rs#narrow_right_only_layout_keeps_strongest_slot",
+              "crates/termrock/src/widgets/status_bar.rs#narrow_center_only_layout_keeps_strongest_slot",
+              "crates/termrock/src/widgets/status_bar.rs#narrow_boundaries_keep_regions_inside_the_bar",
+              "crates/termrock/src/widgets/status_bar.rs#strongest_left_item_truncates_with_unicode_ellipsis",
+              "crates/termrock/src/widgets/status_bar.rs#wide_custom_glyph_cannot_escape_its_one_cell_slot",
+              "crates/termrock/src/widgets/status_bar.rs#semantic_status_tone_stays_on_glyph_over_elevated_plane",
+              "crates/termrock/src/widgets/status_bar.rs#mode_fade_api_remains_available_and_monotonic",
+              "crates/termrock/src/widgets/status_bar.rs#render_clips_to_buffer_before_layout_and_paint",
               "crates/termrock/src/widgets/status_bar.rs#resize_cjk_combining_and_ascii_safe"
             ],
             "recordings": [],
@@ -87384,6 +87421,18 @@
               "status-bar/basic"
             ],
             "tests": [
+              "crates/termrock/src/widgets/status_bar.rs#same_side_slots_use_plane_spacing_without_separator",
+              "crates/termrock/src/widgets/status_bar.rs#transient_stops_before_occupied_right_group",
+              "crates/termrock/src/widgets/status_bar.rs#transient_keeps_one_cell_right_edge_without_right_group",
+              "crates/termrock/src/widgets/status_bar.rs#canonical_priority_ties_drop_center_then_right_and_keep_left",
+              "crates/termrock/src/widgets/status_bar.rs#narrow_right_only_layout_keeps_strongest_slot",
+              "crates/termrock/src/widgets/status_bar.rs#narrow_center_only_layout_keeps_strongest_slot",
+              "crates/termrock/src/widgets/status_bar.rs#narrow_boundaries_keep_regions_inside_the_bar",
+              "crates/termrock/src/widgets/status_bar.rs#strongest_left_item_truncates_with_unicode_ellipsis",
+              "crates/termrock/src/widgets/status_bar.rs#wide_custom_glyph_cannot_escape_its_one_cell_slot",
+              "crates/termrock/src/widgets/status_bar.rs#semantic_status_tone_stays_on_glyph_over_elevated_plane",
+              "crates/termrock/src/widgets/status_bar.rs#mode_fade_api_remains_available_and_monotonic",
+              "crates/termrock/src/widgets/status_bar.rs#render_clips_to_buffer_before_layout_and_paint",
               "crates/termrock/src/widgets/status_bar.rs#resize_cjk_combining_and_ascii_safe"
             ],
             "recordings": [],
@@ -87405,6 +87454,18 @@
               "status-bar/basic"
             ],
             "tests": [
+              "crates/termrock/src/widgets/status_bar.rs#same_side_slots_use_plane_spacing_without_separator",
+              "crates/termrock/src/widgets/status_bar.rs#transient_stops_before_occupied_right_group",
+              "crates/termrock/src/widgets/status_bar.rs#transient_keeps_one_cell_right_edge_without_right_group",
+              "crates/termrock/src/widgets/status_bar.rs#canonical_priority_ties_drop_center_then_right_and_keep_left",
+              "crates/termrock/src/widgets/status_bar.rs#narrow_right_only_layout_keeps_strongest_slot",
+              "crates/termrock/src/widgets/status_bar.rs#narrow_center_only_layout_keeps_strongest_slot",
+              "crates/termrock/src/widgets/status_bar.rs#narrow_boundaries_keep_regions_inside_the_bar",
+              "crates/termrock/src/widgets/status_bar.rs#strongest_left_item_truncates_with_unicode_ellipsis",
+              "crates/termrock/src/widgets/status_bar.rs#wide_custom_glyph_cannot_escape_its_one_cell_slot",
+              "crates/termrock/src/widgets/status_bar.rs#semantic_status_tone_stays_on_glyph_over_elevated_plane",
+              "crates/termrock/src/widgets/status_bar.rs#mode_fade_api_remains_available_and_monotonic",
+              "crates/termrock/src/widgets/status_bar.rs#render_clips_to_buffer_before_layout_and_paint",
               "crates/termrock/src/widgets/status_bar.rs#resize_cjk_combining_and_ascii_safe"
             ],
             "recordings": [],
@@ -87426,6 +87487,18 @@
               "status-bar/basic"
             ],
             "tests": [
+              "crates/termrock/src/widgets/status_bar.rs#same_side_slots_use_plane_spacing_without_separator",
+              "crates/termrock/src/widgets/status_bar.rs#transient_stops_before_occupied_right_group",
+              "crates/termrock/src/widgets/status_bar.rs#transient_keeps_one_cell_right_edge_without_right_group",
+              "crates/termrock/src/widgets/status_bar.rs#canonical_priority_ties_drop_center_then_right_and_keep_left",
+              "crates/termrock/src/widgets/status_bar.rs#narrow_right_only_layout_keeps_strongest_slot",
+              "crates/termrock/src/widgets/status_bar.rs#narrow_center_only_layout_keeps_strongest_slot",
+              "crates/termrock/src/widgets/status_bar.rs#narrow_boundaries_keep_regions_inside_the_bar",
+              "crates/termrock/src/widgets/status_bar.rs#strongest_left_item_truncates_with_unicode_ellipsis",
+              "crates/termrock/src/widgets/status_bar.rs#wide_custom_glyph_cannot_escape_its_one_cell_slot",
+              "crates/termrock/src/widgets/status_bar.rs#semantic_status_tone_stays_on_glyph_over_elevated_plane",
+              "crates/termrock/src/widgets/status_bar.rs#mode_fade_api_remains_available_and_monotonic",
+              "crates/termrock/src/widgets/status_bar.rs#render_clips_to_buffer_before_layout_and_paint",
               "crates/termrock/src/widgets/status_bar.rs#resize_cjk_combining_and_ascii_safe"
             ],
             "recordings": [],
@@ -87466,6 +87539,18 @@
               "status-bar/basic"
             ],
             "tests": [
+              "crates/termrock/src/widgets/status_bar.rs#same_side_slots_use_plane_spacing_without_separator",
+              "crates/termrock/src/widgets/status_bar.rs#transient_stops_before_occupied_right_group",
+              "crates/termrock/src/widgets/status_bar.rs#transient_keeps_one_cell_right_edge_without_right_group",
+              "crates/termrock/src/widgets/status_bar.rs#canonical_priority_ties_drop_center_then_right_and_keep_left",
+              "crates/termrock/src/widgets/status_bar.rs#narrow_right_only_layout_keeps_strongest_slot",
+              "crates/termrock/src/widgets/status_bar.rs#narrow_center_only_layout_keeps_strongest_slot",
+              "crates/termrock/src/widgets/status_bar.rs#narrow_boundaries_keep_regions_inside_the_bar",
+              "crates/termrock/src/widgets/status_bar.rs#strongest_left_item_truncates_with_unicode_ellipsis",
+              "crates/termrock/src/widgets/status_bar.rs#wide_custom_glyph_cannot_escape_its_one_cell_slot",
+              "crates/termrock/src/widgets/status_bar.rs#semantic_status_tone_stays_on_glyph_over_elevated_plane",
+              "crates/termrock/src/widgets/status_bar.rs#mode_fade_api_remains_available_and_monotonic",
+              "crates/termrock/src/widgets/status_bar.rs#render_clips_to_buffer_before_layout_and_paint",
               "crates/termrock/src/widgets/status_bar.rs#resize_cjk_combining_and_ascii_safe"
             ],
             "recordings": [],
@@ -87565,6 +87650,18 @@
               "status-bar/basic"
             ],
             "tests": [
+              "crates/termrock/src/widgets/status_bar.rs#same_side_slots_use_plane_spacing_without_separator",
+              "crates/termrock/src/widgets/status_bar.rs#transient_stops_before_occupied_right_group",
+              "crates/termrock/src/widgets/status_bar.rs#transient_keeps_one_cell_right_edge_without_right_group",
+              "crates/termrock/src/widgets/status_bar.rs#canonical_priority_ties_drop_center_then_right_and_keep_left",
+              "crates/termrock/src/widgets/status_bar.rs#narrow_right_only_layout_keeps_strongest_slot",
+              "crates/termrock/src/widgets/status_bar.rs#narrow_center_only_layout_keeps_strongest_slot",
+              "crates/termrock/src/widgets/status_bar.rs#narrow_boundaries_keep_regions_inside_the_bar",
+              "crates/termrock/src/widgets/status_bar.rs#strongest_left_item_truncates_with_unicode_ellipsis",
+              "crates/termrock/src/widgets/status_bar.rs#wide_custom_glyph_cannot_escape_its_one_cell_slot",
+              "crates/termrock/src/widgets/status_bar.rs#semantic_status_tone_stays_on_glyph_over_elevated_plane",
+              "crates/termrock/src/widgets/status_bar.rs#mode_fade_api_remains_available_and_monotonic",
+              "crates/termrock/src/widgets/status_bar.rs#render_clips_to_buffer_before_layout_and_paint",
               "crates/termrock/src/widgets/status_bar.rs#resize_cjk_combining_and_ascii_safe"
             ],
             "recordings": [],

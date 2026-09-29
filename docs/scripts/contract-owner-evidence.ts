@@ -75,6 +75,21 @@ const crateRoot = (file: string, symbol: string): string => `crates/termrock/src
 const integration = (file: string, symbol: string): string => `crates/termrock/tests/${file}#${symbol}`
 const pattern = (file: string, symbol: string): string => `crates/termrock/src/patterns/${file}#${symbol}`
 const scroll = (file: string, symbol: string): string => `crates/termrock/src/scroll/${file}#${symbol}`
+const statusBarContractTests = [
+  widget('status_bar.rs', 'same_side_slots_use_plane_spacing_without_separator'),
+  widget('status_bar.rs', 'transient_stops_before_occupied_right_group'),
+  widget('status_bar.rs', 'transient_keeps_one_cell_right_edge_without_right_group'),
+  widget('status_bar.rs', 'canonical_priority_ties_drop_center_then_right_and_keep_left'),
+  widget('status_bar.rs', 'narrow_right_only_layout_keeps_strongest_slot'),
+  widget('status_bar.rs', 'narrow_center_only_layout_keeps_strongest_slot'),
+  widget('status_bar.rs', 'narrow_boundaries_keep_regions_inside_the_bar'),
+  widget('status_bar.rs', 'strongest_left_item_truncates_with_unicode_ellipsis'),
+  widget('status_bar.rs', 'wide_custom_glyph_cannot_escape_its_one_cell_slot'),
+  widget('status_bar.rs', 'semantic_status_tone_stays_on_glyph_over_elevated_plane'),
+  widget('status_bar.rs', 'mode_fade_api_remains_available_and_monotonic'),
+  widget('status_bar.rs', 'render_clips_to_buffer_before_layout_and_paint'),
+  widget('status_bar.rs', 'resize_cjk_combining_and_ascii_safe'),
+] as const
 
 export const ownerEvidence: readonly OwnerEvidence[] = [
   behavior('FocusGraph', [
@@ -570,6 +585,11 @@ export const ownerEvidence: readonly OwnerEvidence[] = [
   specific('StatusBar', [widget('status_bar.rs', 'semantic_status_owns_glyph_over_custom_slot_glyph')], {
     loading: 'na', error: 'r', streaming: 'na', disabled: 'na',
   }),
+  specific('StatusBar', statusBarContractTests, {
+    visual_states: 'rp',
+    responsive: 'r', tiny_terminal: 'r', unicode: 'r', cjk: 'r', combining: 'r',
+    ascii_fallback: 'r', resize: 'r',
+  }),
   specific('StatusIndicator', [
     widget('status_indicator.rs', 'all_kinds_have_glyph_label_role'),
     widget('status_indicator.rs', 'paint_includes_non_color_glyph'),
@@ -587,7 +607,6 @@ export const ownerEvidence: readonly OwnerEvidence[] = [
     ['ConnectionManager', pattern('connection_manager.rs', 'resize_cjk_combining_and_ascii_safe')],
     ['IntegrationStatus', pattern('integration_status.rs', 'resize_cjk_combining_and_ascii_safe')],
     ['ProgressSteps', widget('progress_steps.rs', 'summary_contracts_on_narrow')],
-    ['StatusBar', widget('status_bar.rs', 'resize_cjk_combining_and_ascii_safe')],
     ['StatusIndicator', widget('status_indicator.rs', 'resize_cjk_combining_and_ascii_safe')],
     ['StatusStrip', widget('status_strip.rs', 'resize_cjk_combining_and_ascii_safe')],
     ['TaskRail', pattern('task_rail.rs', 'resize_cjk_combining_and_ascii_safe')],

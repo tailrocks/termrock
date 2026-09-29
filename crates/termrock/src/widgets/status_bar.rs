@@ -7,11 +7,10 @@
 //! **Regions:** left · center · right, each with priority-ordered slots.
 //! **Recipes:** minimal · compact · rich filter which kinds paint.
 //! **Semantics:** prefer glyph + role text over color-only meaning.
-//! **Transient:** optional message occupies center overflow without removing
-//! essential persistent slots.
+//! **Transient:** optional message owns the right-edge overflow without
+//! removing essential persistent slots.
 //!
 //! Behavioral references: Zellij mode bar, Vim/Helix status lines, btop footers.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -21,8 +20,8 @@ use ratatui_core::{
 
 use crate::{
     interaction::{HitRegion, Outcome},
-    style::{DesignSystem, Glyph, GlyphSet, Role},
-    text::{display_cols, take_display_cols},
+    style::{DesignSystem, GlyphSet, Role},
+    text::{TruncateMode, display_cols, take_display_cols, truncate_display_cols},
 };
 
 use super::semantic_status::SemanticStatus;
@@ -37,7 +36,7 @@ pub enum StatusRegion {
     /// Leading cluster (mode, primary context).
     #[default]
     Left,
-    /// Center band (path, focus zone, transient).
+    /// Center band (path, focus zone).
     Center,
     /// Trailing cluster (selection, connection, clock, hints).
     Right,
@@ -188,6 +187,7 @@ pub struct StatusSlot<'a, Id> {
     /// Semantic kind.
     pub kind: StatusKind,
     /// Optional non-color glyph (defaults from kind when None and kind has glyph).
+    /// The rendered glyph is clipped to one display cell.
     pub glyph: Option<&'a str>,
     /// Optional typed lifecycle status. This owns semantic glyph and tone;
     /// callers cannot bypass the recipe with a raw paint style.
@@ -351,7 +351,7 @@ pub struct StatusBarState<Id> {
     pub hovered: Option<Id>,
     /// Hit regions produced by the most recent render.
     pub regions: Vec<HitRegion<Id>>,
-    /// Optional transient message (not a slot id — painted via center band).
+    /// Optional transient message (not a slot id — painted at the right edge).
     pub transient: Option<String>,
     /// The mode label the bar is leaving, and when the change started.
     ///
@@ -559,6 +559,11 @@ enum Side {
     Right,
 }
 
+/// Canonical status-bar breathing room: one edge cell and three plane cells
+/// between adjacent items or groups. Separators are spacing, never glyphs.
+const STATUS_EDGE: u16 = 1;
+const STATUS_GAP: u16 = 3;
+
 #[derive(Debug, Clone)]
 struct Allocation<Id> {
     id: Id,
@@ -568,7 +573,6 @@ struct Allocation<Id> {
     full_width: u16,
     priority: u8,
     essential: bool,
-    separator: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -578,7 +582,6 @@ struct Placement<Id> {
     index: usize,
     area: Rect,
     is_transient: bool,
-    separator: bool,
 }
 
 impl<Id: Clone> StatusBar<'_, Id> {
@@ -625,7 +628,8 @@ impl<Id: Clone> StatusBar<'_, Id> {
             }
         }
 
-        // Reserve center budget for transient without dropping essentials.
+        // Reserve budget for the right-edge transient without dropping
+        // essential persistent slots.
         let has_transient = self
             .transient
             .map(|t| !t.text.is_empty())
@@ -661,29 +665,97 @@ impl<Id: Clone> StatusBar<'_, Id> {
                 .then_with(|| left.index.cmp(&right.index))
         });
 
-        let mut remaining = area.width.saturating_sub(transient_reserve);
+        // Keep one globally strongest/essential persistent item as the
+        // canonical truncation anchor. Ties prefer the left band, then source
+        // order, so left-only, center-only, and right-only bars all retain one
+        // meaningful item under pressure.
+        let survivor = candidates
+            .iter()
+            .enumerate()
+            .max_by(|(left_position, left), (right_position, right)| {
+                left.essential
+                    .cmp(&right.essential)
+                    .then_with(|| left.priority.cmp(&right.priority))
+                    .then_with(|| side_rank(right.side).cmp(&side_rank(left.side)))
+                    .then_with(|| right.index.cmp(&left.index))
+                    .then_with(|| right_position.cmp(left_position))
+            })
+            .map(|(position, _)| position);
 
-        let mut included = Vec::new();
-        for mut candidate in candidates {
-            let minimum = if candidate.width == 0 {
+        // Canonical responsive policy: remove the lowest-priority item first;
+        // equal priorities leave center, then right, then left. The strongest
+        // persistent item is the sole non-droppable item and truncates if
+        // necessary.
+        let mut keep = vec![true; candidates.len()];
+        let persistent_width = area.width.saturating_sub(transient_reserve);
+        let edge = if persistent_width >= 2 * STATUS_EDGE + 1 {
+            STATUS_EDGE
+        } else {
+            0
+        };
+        let required_width = |candidate: &Allocation<Id>| {
+            if candidate.width == 0 {
                 candidate.full_width
             } else {
                 candidate.width
+            }
+        };
+        let needed = |keep: &[bool]| {
+            let mut total = 2 * edge;
+            let mut count = 0u16;
+            for (candidate, kept) in candidates.iter().zip(keep) {
+                if *kept && required_width(candidate) > 0 {
+                    total = total.saturating_add(required_width(candidate));
+                    count = count.saturating_add(1);
+                }
+            }
+            total.saturating_add(count.saturating_sub(1) * STATUS_GAP)
+        };
+        while needed(&keep) > persistent_width {
+            let victim = candidates
+                .iter()
+                .enumerate()
+                .filter(|(position, _)| keep[*position] && Some(*position) != survivor)
+                .min_by_key(|(_, candidate)| {
+                    (
+                        candidate.priority,
+                        drop_side_rank(candidate.side),
+                        std::cmp::Reverse(candidate.index),
+                    )
+                })
+                .map(|(position, _)| position);
+            let Some(victim) = victim else {
+                break;
             };
+            keep[victim] = false;
+        }
+
+        // Keep local min-width semantics while reserving canonical spacing.
+        // Any remaining width grows retained items toward their full content
+        // width, in priority order, without spending the gap cells.
+        let mut remaining = persistent_width.saturating_sub(2 * edge);
+        let mut included = Vec::new();
+        for (position, (mut candidate, kept)) in candidates.into_iter().zip(keep).enumerate() {
+            if !kept {
+                continue;
+            }
+            let minimum = required_width(&candidate);
             if minimum == 0 {
                 continue;
             }
-            if minimum > remaining {
-                // Essentials may still take remaining if anything left
-                if candidate.essential && remaining > 0 {
-                    candidate.width = remaining.min(candidate.full_width).max(1);
+            let gap = if included.is_empty() { 0 } else { STATUS_GAP };
+            let required = minimum.saturating_add(gap);
+            if required > remaining {
+                let is_survivor = Some(position) == survivor;
+                if is_survivor && remaining > gap {
+                    candidate.width = remaining.saturating_sub(gap).max(1);
                     remaining = 0;
                     included.push(candidate);
                 }
                 continue;
             }
             candidate.width = minimum;
-            remaining = remaining.saturating_sub(minimum);
+            remaining = remaining.saturating_sub(required);
             included.push(candidate);
         }
         // Grow toward full width
@@ -696,34 +768,9 @@ impl<Id: Clone> StatusBar<'_, Id> {
             remaining = remaining.saturating_sub(growth);
         }
 
-        // Reserve the ` · ` divider's columns for every same-side slot past
-        // the first (in paint order) while budget remains, so the separator
-        // never eats a slot's content. Paint carves exactly what was
-        // reserved here; under scarcity no separator paints.
-        for side in [Side::Left, Side::Center, Side::Right] {
-            let mut order = included
-                .iter()
-                .enumerate()
-                .filter(|(_, a)| a.side == side)
-                .map(|(position, _)| position)
-                .collect::<Vec<_>>();
-            match side {
-                Side::Right => order.sort_by_key(|&p| std::cmp::Reverse(included[p].index)),
-                Side::Left | Side::Center => order.sort_by_key(|&p| included[p].index),
-            }
-            for &p in order.iter().skip(1) {
-                if remaining < 3 {
-                    break;
-                }
-                included[p].width = included[p].width.saturating_add(3);
-                included[p].separator = true;
-                remaining -= 3;
-            }
-        }
-
         // Place left LTR, right RTL, center in leftover middle.
         let mut placements = Vec::with_capacity(included.len() + 1);
-        let mut left_x = area.x;
+        let mut left_x = area.x.saturating_add(edge);
         let mut left = included
             .iter()
             .filter(|a| a.side == Side::Left)
@@ -740,12 +787,16 @@ impl<Id: Clone> StatusBar<'_, Id> {
                 index: allocation.index,
                 area: Rect::new(left_x, area.y, width, 1),
                 is_transient: false,
-                separator: allocation.separator,
             });
-            left_x = left_x.saturating_add(width);
+            left_x = left_x.saturating_add(width).saturating_add(STATUS_GAP);
         }
+        let left_end = if placements.iter().any(|p| p.side == Side::Left) {
+            left_x.saturating_sub(STATUS_GAP)
+        } else {
+            area.x.saturating_add(edge)
+        };
 
-        let mut right_x = area.right();
+        let mut right_x = area.right().saturating_sub(edge);
         let mut right = included
             .iter()
             .filter(|a| a.side == Side::Right)
@@ -762,21 +813,51 @@ impl<Id: Clone> StatusBar<'_, Id> {
                 index: allocation.index,
                 area: Rect::new(start, area.y, right_x.saturating_sub(start), 1),
                 is_transient: false,
-                separator: allocation.separator,
             });
-            right_x = start;
+            right_x = start.saturating_sub(STATUS_GAP);
         }
+        let right_start = placements
+            .iter()
+            .filter(|p| p.side == Side::Right)
+            .map(|p| p.area.x)
+            .min()
+            .unwrap_or_else(|| area.right().saturating_sub(edge));
 
         // Center band between left_x and right_x (persistent center slots only).
-        let center_start = left_x;
-        let center_end = right_x;
+        let center_start = if placements.iter().any(|p| p.side == Side::Left) {
+            left_end.saturating_add(STATUS_GAP)
+        } else {
+            area.x.saturating_add(edge)
+        };
+        let center_end = if placements.iter().any(|p| p.side == Side::Right) {
+            right_start.saturating_sub(STATUS_GAP)
+        } else {
+            area.right().saturating_sub(edge)
+        };
         if center_end > center_start {
-            let mut cx = center_start;
             let mut center = included
                 .iter()
                 .filter(|a| a.side == Side::Center)
                 .collect::<Vec<_>>();
             center.sort_by_key(|a| a.index);
+            let center_width = center
+                .iter()
+                .map(|allocation| allocation.width)
+                .sum::<u16>()
+                .saturating_add(
+                    center
+                        .len()
+                        .saturating_sub(1)
+                        .try_into()
+                        .unwrap_or(u16::MAX)
+                        .saturating_mul(STATUS_GAP),
+                );
+            let mut cx = center_start.saturating_add(
+                center_end
+                    .saturating_sub(center_start)
+                    .saturating_sub(center_width)
+                    / 2,
+            );
             for allocation in center {
                 let avail = center_end.saturating_sub(cx);
                 let width = allocation.width.min(avail);
@@ -789,13 +870,11 @@ impl<Id: Clone> StatusBar<'_, Id> {
                     index: allocation.index,
                     area: Rect::new(cx, area.y, width, 1),
                     is_transient: false,
-                    separator: allocation.separator,
                 });
-                cx = cx.saturating_add(width);
+                cx = cx.saturating_add(width).saturating_add(STATUS_GAP);
             }
         }
         // Transient is painted separately in paint_transient (no hit region / no id).
-        let _ = has_transient;
 
         placements
     }
@@ -816,7 +895,8 @@ impl<Id: Clone> StatusBar<'_, Id> {
         };
         let glyph = self.transient.and_then(|t| t.glyph).unwrap_or("");
 
-        // junie: status wins the right edge, text-secondary, `right - w - 1`.
+        // Junie: status owns the right edge, text-secondary, with one plane
+        // cell between the sentence and any persistent right group.
         let mut label = String::new();
         if !glyph.is_empty() {
             label.push_str(glyph);
@@ -824,7 +904,7 @@ impl<Id: Clone> StatusBar<'_, Id> {
         }
         label.push_str(text);
         let w = display_cols(&label) as u16;
-        if area.width <= w + 2 {
+        if area.width <= w + 2 * STATUS_EDGE {
             return;
         }
         let occupied_right = placements
@@ -832,11 +912,19 @@ impl<Id: Clone> StatusBar<'_, Id> {
             .filter(|p| p.side == Side::Right)
             .map(|p| p.area.x)
             .min()
-            .unwrap_or(area.right());
-        if occupied_right <= area.x + w + 1 {
+            .unwrap_or_else(|| area.right());
+        let Some(x) = occupied_right.checked_sub(w.saturating_add(STATUS_EDGE)) else {
+            return;
+        };
+        let occupied_left = placements
+            .iter()
+            .filter(|p| p.side != Side::Right)
+            .map(|p| p.area.right())
+            .max()
+            .unwrap_or(area.x);
+        if x < area.x || x < occupied_left {
             return;
         }
-        let x = area.right().saturating_sub(w).saturating_sub(1);
         let shown = take_display_cols(&label, usize::from(w));
         buffer.set_stringn(
             x,
@@ -856,13 +944,14 @@ impl<Id: Clone + PartialEq> StatefulWidget for &StatusBar<'_, Id> {
     type State = StatusBarState<Id>;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        let area = area.intersection(*buffer.area());
         if area.is_empty() {
             state.regions.clear();
             return;
         }
         buffer.set_style(
             area,
-            apply_alpha(self.system, self.system.style(Role::StatusBar), self.alpha),
+            apply_alpha(self.system, self.system.style(Role::Elevated), self.alpha),
         );
         state.regions.clear();
         let placements = self.placements(area, Some(state));
@@ -873,58 +962,41 @@ impl<Id: Clone + PartialEq> StatefulWidget for &StatusBar<'_, Id> {
             }
             let slot = self.slot_ref(placement.side, placement.index);
             let hovered = state.hovered.as_ref() == Some(&slot.id);
-            let style = resolve_style(slot, hovered, self.system);
+            let style = resolve_style(hovered, self.system);
             let painted = format_slot_content(slot, self.system.glyphs);
-            let mut content_area = placement.area;
-            if placement.separator && placement.area.width > 3 {
-                // Symmetric ` · `: the separator sits between two facts, so it
-                // gets the same breathing space on both sides. Its columns
-                // were reserved during allocation, never taken from content.
-                let separator = self.system.glyphs.meta_separator();
-                buffer.set_stringn(
-                    placement.area.x.saturating_add(1),
-                    placement.area.y,
-                    separator,
-                    1,
-                    apply_alpha(self.system, self.system.style(Role::TextMuted), self.alpha),
-                );
-                content_area.x = content_area.x.saturating_add(3);
-                content_area.width = content_area.width.saturating_sub(3);
-            }
+            let painted = truncate_display_cols(
+                &painted,
+                usize::from(placement.area.width),
+                TruncateMode::End,
+                "…",
+            );
             crate::text::display_cols_slice_into(
                 &painted,
                 0,
-                usize::from(content_area.width),
+                usize::from(placement.area.width),
                 &mut content,
             );
-            // Slot words read as one band; the slot's own glyph carries its
-            // state (plans/007).
-            let body = if hovered {
-                self.system
-                    .style(Role::Focus)
-                    .add_modifier(ratatui_core::style::Modifier::BOLD)
-            } else {
-                self.system.style(Role::StatusBar)
-            };
+            // Slot words stay neutral on the elevated plane; the glyph carries
+            // the typed status tone for color and monochrome use.
             buffer.set_stringn(
-                content_area.x,
-                content_area.y,
+                placement.area.x,
+                placement.area.y,
                 &content,
-                usize::from(content_area.width),
-                apply_alpha(self.system, body, self.alpha),
+                usize::from(placement.area.width),
+                apply_alpha(self.system, style, self.alpha),
             );
-            let glyph = slot
-                .semantic
-                .map(|status| status.glyph())
-                .or(slot.glyph)
-                .unwrap_or_else(|| slot.kind.default_glyph(self.system.glyphs));
+            let glyph = slot_glyph(slot, self.system.glyphs);
             if !glyph.is_empty() {
                 crate::widgets::row_chrome::paint_status_glyph(
                     buffer,
-                    content_area,
+                    placement.area,
                     0,
-                    glyph,
-                    apply_alpha(self.system, style, self.alpha),
+                    &glyph,
+                    apply_alpha(
+                        self.system,
+                        resolve_glyph_style(slot, hovered, self.system),
+                        self.alpha,
+                    ),
                 );
             }
             state.regions.push(HitRegion {
@@ -945,11 +1017,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for StatusBar<'_, Id> {
 }
 
 fn format_slot_content<Id>(slot: &StatusSlot<'_, Id>, glyphs: GlyphSet) -> String {
-    let g = slot
-        .semantic
-        .map(|status| status.glyph())
-        .or(slot.glyph)
-        .unwrap_or_else(|| slot.kind.default_glyph(glyphs));
+    let g = slot_glyph(slot, glyphs);
     if g.is_empty() {
         slot.content.to_string()
     } else {
@@ -957,16 +1025,49 @@ fn format_slot_content<Id>(slot: &StatusSlot<'_, Id>, glyphs: GlyphSet) -> Strin
     }
 }
 
-fn resolve_style<Id>(slot: &StatusSlot<'_, Id>, hovered: bool, system: &DesignSystem) -> Style {
+fn slot_glyph<Id>(slot: &StatusSlot<'_, Id>, glyphs: GlyphSet) -> String {
+    let glyph = slot
+        .semantic
+        .map(|status| status.glyph())
+        .or(slot.glyph)
+        .unwrap_or_else(|| slot.kind.default_glyph(glyphs));
+    take_display_cols(glyph, 1)
+}
+
+fn resolve_style(hovered: bool, system: &DesignSystem) -> Style {
+    let theme = system.junie_theme();
+    // Status meaning belongs to the glyph/rail. Keep slot words neutral.
+    let mut style = system.style(Role::StatusBar);
+    style = style.bg(theme.surface_elevated);
     if hovered {
-        return system
-            .style(Role::Focus)
+        style = style
+            .fg(theme.text_primary)
+            .bg(theme.lift(theme.surface_elevated))
             .add_modifier(ratatui_core::style::Modifier::BOLD);
     }
-    system.style(
-        slot.semantic
-            .map_or_else(|| slot.kind.default_role(), SemanticStatus::role),
-    )
+    style
+}
+
+fn resolve_glyph_style<Id>(
+    slot: &StatusSlot<'_, Id>,
+    hovered: bool,
+    system: &DesignSystem,
+) -> Style {
+    let theme = system.junie_theme();
+    let role = slot
+        .semantic
+        .map_or_else(|| slot.kind.default_role(), SemanticStatus::role);
+    let mut style = system.style(role).bg(if hovered {
+        theme.lift(theme.surface_elevated)
+    } else {
+        theme.surface_elevated
+    });
+    if hovered {
+        style = style
+            .fg(theme.text_primary)
+            .add_modifier(ratatui_core::style::Modifier::BOLD);
+    }
+    style
 }
 
 fn allocation<Id: Clone>(
@@ -1005,7 +1106,6 @@ fn allocation<Id: Clone>(
         full_width,
         priority: slot.priority,
         essential,
-        separator: false,
     })
 }
 
@@ -1014,6 +1114,14 @@ const fn side_rank(side: Side) -> u8 {
         Side::Left => 0,
         Side::Center => 1,
         Side::Right => 2,
+    }
+}
+
+const fn drop_side_rank(side: Side) -> u8 {
+    match side {
+        Side::Center => 0,
+        Side::Right => 1,
+        Side::Left => 2,
     }
 }
 
@@ -1027,7 +1135,6 @@ fn apply_alpha(_system: &DesignSystem, style: Style, _alpha: f32) -> Style {
 mod tests {
     use super::*;
     use crate::style::RolePalette;
-    use ratatui_core::style::Color;
 
     fn slot(
         id: &'static str,
@@ -1049,10 +1156,7 @@ mod tests {
         let mut state = StatusBarState::default();
         let mut buffer = Buffer::empty(area);
         (&bar).render(area, &mut buffer, &mut state);
-        assert_eq!(
-            buffer[(19, 0)].bg,
-            system.style(Role::StatusBar).bg.unwrap()
-        );
+        assert_eq!(buffer[(19, 0)].bg, system.style(Role::Elevated).bg.unwrap());
     }
 
     #[test]
@@ -1069,7 +1173,7 @@ mod tests {
         right[0].region = StatusRegion::Right;
         right[1].region = StatusRegion::Right;
         let bar = StatusBar::new(&left, &right, &system);
-        let regions = bar.regions(Rect::new(3, 2, 10, 1));
+        let regions = bar.regions(Rect::new(3, 2, 14, 1));
         assert!(regions.iter().any(|region| region.id == "run"));
         assert!(regions.iter().any(|region| region.id == "activity"));
         assert!(!regions.iter().any(|region| region.id == "usage"));
@@ -1077,7 +1181,7 @@ mod tests {
     }
 
     #[test]
-    fn same_side_separator_never_eats_slot_content() {
+    fn same_side_slots_use_plane_spacing_without_separator() {
         let system = DesignSystem::default();
         let right = [
             StatusSlot::new("container", " 2y0t4aw6 "),
@@ -1088,6 +1192,16 @@ mod tests {
         let mut state = StatusBarState::new();
         let mut buffer = Buffer::empty(area);
         (&bar).render(area, &mut buffer, &mut state);
+        let container = state
+            .regions
+            .iter()
+            .find(|region| region.id == "container")
+            .expect("container region");
+        let run = state
+            .regions
+            .iter()
+            .find(|region| region.id == "run")
+            .expect("run region");
         let row = (0..area.width)
             .map(|x| buffer[(x, 0)].symbol())
             .collect::<String>();
@@ -1096,7 +1210,10 @@ mod tests {
             "container slot truncated: {row:?}"
         );
         assert!(row.contains("jk-run-c46709"), "run slot truncated: {row:?}");
-        assert!(row.contains('·'), "separator should paint: {row:?}");
+        assert_eq!(container.area.right() + STATUS_GAP, run.area.x);
+        assert_eq!(run.area.right() + STATUS_EDGE, area.right());
+        assert!(!row.contains('·'), "structural separator painted: {row:?}");
+        assert!(!row.contains('│'), "structural separator painted: {row:?}");
     }
 
     #[test]
@@ -1105,7 +1222,7 @@ mod tests {
         let theme = RolePalette::default();
         let system = DesignSystem::new(theme.clone());
         let bar = StatusBar::new(&left, &[], &system);
-        let area = Rect::new(0, 0, 3, 1);
+        let area = Rect::new(0, 0, 5, 1);
         let mut state = StatusBarState::default();
         let mut buffer = Buffer::empty(area);
         (&bar).render(area, &mut buffer, &mut state);
@@ -1148,6 +1265,14 @@ mod tests {
         let conn_x = regions.iter().find(|r| r.id == "conn").unwrap().area.x;
         assert!(mode_x <= ctx_x);
         assert!(ctx_x <= conn_x);
+
+        let mode = regions.iter().find(|r| r.id == "mode").unwrap().area;
+        let ctx = regions.iter().find(|r| r.id == "ctx").unwrap().area;
+        let conn = regions.iter().find(|r| r.id == "conn").unwrap().area;
+        let span_start = mode.right() + STATUS_GAP;
+        let span_end = conn.x - STATUS_GAP;
+        let expected = span_start + (span_end - span_start - ctx.width) / 2;
+        assert_eq!(ctx.x, expected);
     }
 
     #[test]
@@ -1164,6 +1289,158 @@ mod tests {
         assert!(state.regions.iter().any(|r| r.id == "mode"));
         // transient paints somewhere without a hit region for itself
         assert!(!state.regions.iter().any(|r| r.id == "saved"));
+    }
+
+    #[test]
+    fn transient_stops_before_occupied_right_group() {
+        let system = DesignSystem::default();
+        let right = [StatusSlot::new("right", "RIGHT")];
+        let message = TransientStatus::new("saved");
+        let bar = StatusBar::new(&[], &right, &system).transient(&message);
+        let area = Rect::new(0, 0, 30, 1);
+        let mut state = StatusBarState::default();
+        let mut buffer = Buffer::empty(area);
+        (&bar).render(area, &mut buffer, &mut state);
+
+        let right_area = state
+            .regions
+            .iter()
+            .find(|region| region.id == "right")
+            .expect("right region")
+            .area;
+        let row: String = (0..area.width).map(|x| buffer[(x, 0)].symbol()).collect();
+        let transient_x = row.find("saved").expect("transient message") as u16;
+        assert_eq!(transient_x + 5 + STATUS_EDGE, right_area.x);
+        assert!(row.contains("RIGHT"), "right slot was overwritten: {row:?}");
+    }
+
+    #[test]
+    fn transient_keeps_one_cell_right_edge_without_right_group() {
+        let system = DesignSystem::default();
+        let message = TransientStatus::new("saved");
+        let empty: &[StatusSlot<'_, &str>] = &[];
+        let bar = StatusBar::new(empty, empty, &system).transient(&message);
+        let area = Rect::new(0, 0, 20, 1);
+        let mut state = StatusBarState::default();
+        let mut buffer = Buffer::empty(area);
+        (&bar).render(area, &mut buffer, &mut state);
+
+        let row: String = (0..area.width).map(|x| buffer[(x, 0)].symbol()).collect();
+        let transient_x = row.find("saved").expect("transient message") as u16;
+        assert_eq!(transient_x + 5 + STATUS_EDGE, area.right());
+    }
+
+    #[test]
+    fn canonical_priority_ties_drop_center_then_right_and_keep_left() {
+        let system = DesignSystem::default();
+        let left = [StatusSlot::new("left", "LEFT").priority(1)];
+        let center = [StatusSlot::new("center", "CENTER").priority(1)];
+        let right = [StatusSlot::new("right", "RIGHT").priority(1)];
+        let bar = StatusBar::with_center(&left, &center, &right, &system);
+
+        // Left + right plus their canonical gap fit; all three do not.
+        let regions = bar.regions(Rect::new(0, 0, 15, 1));
+        assert!(regions.iter().any(|region| region.id == "left"));
+        assert!(regions.iter().any(|region| region.id == "right"));
+        assert!(!regions.iter().any(|region| region.id == "center"));
+    }
+
+    #[test]
+    fn narrow_right_only_layout_keeps_strongest_slot() {
+        let system = DesignSystem::default();
+        let right = [
+            StatusSlot::new("weak", "weak").priority(10),
+            StatusSlot::new("strong", "strong").priority(100),
+        ];
+        let bar = StatusBar::new(&[], &right, &system);
+        let regions = bar.regions(Rect::new(0, 0, 7, 1));
+
+        assert_eq!(regions.len(), 1);
+        assert_eq!(regions[0].id, "strong");
+        assert!(regions[0].area.width > 0);
+    }
+
+    #[test]
+    fn narrow_center_only_layout_keeps_strongest_slot() {
+        let system = DesignSystem::default();
+        let center = [
+            StatusSlot::new("weak", "weak").priority(10),
+            StatusSlot::new("strong", "strong").priority(100),
+        ];
+        let empty: &[StatusSlot<'_, &str>] = &[];
+        let bar = StatusBar::with_center(empty, &center, empty, &system);
+        let regions = bar.regions(Rect::new(0, 0, 7, 1));
+
+        assert_eq!(regions.len(), 1);
+        assert_eq!(regions[0].id, "strong");
+        assert!(regions[0].area.width > 0);
+    }
+
+    #[test]
+    fn narrow_boundaries_keep_regions_inside_the_bar() {
+        let system = DesignSystem::default();
+        let left = [StatusSlot::new("mode", "NORMAL").priority(100)];
+        let bar = StatusBar::new(&left, &[], &system);
+
+        for width in 0..=4 {
+            let area = Rect::new(3, 2, width, 1);
+            let regions = bar.regions(area);
+            assert!(regions.iter().all(|region| {
+                region.area.x >= area.x
+                    && region.area.right() <= area.right()
+                    && region.area.width > 0
+            }));
+            if width > 0 {
+                assert_eq!(regions.len(), 1, "width {width}");
+                if width >= 3 {
+                    assert_eq!(regions[0].area.x, area.x + STATUS_EDGE);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn strongest_left_item_truncates_with_unicode_ellipsis() {
+        let system = DesignSystem::default();
+        let left = [StatusSlot::new("left", "abcdef").priority(1)];
+        let bar = StatusBar::new(&left, &[], &system);
+        let area = Rect::new(0, 0, 4, 1);
+        let mut state = StatusBarState::default();
+        let mut buffer = Buffer::empty(area);
+        (&bar).render(area, &mut buffer, &mut state);
+
+        assert_eq!(state.regions[0].area, Rect::new(1, 0, 2, 1));
+        assert_eq!(buffer[(1, 0)].symbol(), "a");
+        assert_eq!(buffer[(2, 0)].symbol(), "…");
+        assert_eq!(buffer[(3, 0)].symbol(), " ");
+    }
+
+    #[test]
+    fn intentional_middle_dot_content_is_not_stripped() {
+        let system = DesignSystem::default();
+        let left = [StatusSlot::new("work", "PR #482 · title")];
+        let bar = StatusBar::new(&left, &[], &system);
+        let area = Rect::new(0, 0, 30, 1);
+        let mut state = StatusBarState::default();
+        let mut buffer = Buffer::empty(area);
+        (&bar).render(area, &mut buffer, &mut state);
+        let row: String = (0..area.width).map(|x| buffer[(x, 0)].symbol()).collect();
+        assert!(row.contains("PR #482 · title"), "{row:?}");
+    }
+
+    #[test]
+    fn wide_custom_glyph_cannot_escape_its_one_cell_slot() {
+        let system = DesignSystem::default();
+        let left = [StatusSlot::new("wide", "body").glyph("界").priority(100)];
+        let bar = StatusBar::new(&left, &[], &system);
+        let area = Rect::new(0, 0, 12, 1);
+        let mut state = StatusBarState::default();
+        let mut buffer = Buffer::empty(area);
+        (&bar).render(area, &mut buffer, &mut state);
+
+        let row: String = (0..area.width).map(|x| buffer[(x, 0)].symbol()).collect();
+        assert!(!row.contains('界'), "wide glyph escaped its slot: {row:?}");
+        assert!(row.contains("body"), "label disappeared: {row:?}");
     }
 
     #[test]
@@ -1205,6 +1482,17 @@ mod tests {
     }
 
     #[test]
+    fn mode_fade_api_remains_available_and_monotonic() {
+        let mut state = StatusBarState::<&str>::default();
+        assert_eq!(state.mode_fade(0, 250), 1.0);
+        state.set_mode("INSERT", 100);
+        assert_eq!(state.mode_fade(100, 250), 0.0);
+        assert_eq!(state.mode_fade(225, 250), 0.5);
+        assert_eq!(state.mode_fade(350, 250), 1.0);
+        assert_eq!(state.mode_fade(100, 0), 1.0);
+    }
+
+    #[test]
     fn semantic_status_owns_glyph_over_custom_slot_glyph() {
         let system = DesignSystem::default();
         let left = [StatusSlot::new("failure", "failed")
@@ -1215,7 +1503,31 @@ mod tests {
         let mut state = StatusBarState::default();
         let mut buffer = Buffer::empty(area);
         (&bar).render(area, &mut buffer, &mut state);
-        assert_eq!(buffer[(0, 0)].symbol(), "\u{2717}");
+        assert_eq!(buffer[(STATUS_EDGE, 0)].symbol(), "\u{2717}");
+    }
+
+    #[test]
+    fn semantic_status_tone_stays_on_glyph_over_elevated_plane() {
+        let system = DesignSystem::default();
+        let left = [StatusSlot::new("running", "working").semantic(SemanticStatus::Running)];
+        let bar = StatusBar::new(&left, &[], &system);
+        let area = Rect::new(0, 0, 20, 1);
+        let mut state = StatusBarState::default();
+        let mut buffer = Buffer::empty(area);
+        (&bar).render(area, &mut buffer, &mut state);
+
+        assert_eq!(
+            buffer[(STATUS_EDGE, 0)].bg,
+            system.style(Role::Elevated).bg.unwrap()
+        );
+        assert_eq!(
+            buffer[(STATUS_EDGE, 0)].fg,
+            system.style(Role::Success).fg.unwrap()
+        );
+        assert_eq!(
+            buffer[(STATUS_EDGE + 2, 0)].fg,
+            system.style(Role::StatusBar).fg.unwrap()
+        );
     }
 
     #[test]
@@ -1247,6 +1559,31 @@ mod tests {
         let mut buf = Buffer::empty(Rect::new(0, 0, 1, 1));
         (&bar).render(Rect::new(0, 0, 0, 0), &mut buf, &mut state);
         assert!(state.regions.is_empty());
+    }
+
+    #[test]
+    fn render_clips_to_buffer_before_layout_and_paint() {
+        let system = DesignSystem::default();
+        let left = [StatusSlot::new("left", "LEFT")];
+        let right = [StatusSlot::new("right", "RIGHT")];
+        let bar = StatusBar::new(&left, &right, &system);
+        let buffer_area = Rect::new(5, 3, 20, 1);
+        let mut buffer = Buffer::empty(buffer_area);
+        let mut state = StatusBarState::default();
+
+        (&bar).render(Rect::new(0, 3, 40, 1), &mut buffer, &mut state);
+
+        assert!(state.regions.iter().all(|region| {
+            region.area.x >= buffer_area.x
+                && region.area.right() <= buffer_area.right()
+                && region.area.y == buffer_area.y
+                && region.area.height <= buffer_area.height
+        }));
+        let row: String = (buffer_area.x..buffer_area.right())
+            .map(|x| buffer[(x, buffer_area.y)].symbol())
+            .collect();
+        assert!(row.contains("LEFT"), "{row:?}");
+        assert!(row.contains("RIGHT"), "{row:?}");
     }
 
     #[test]
