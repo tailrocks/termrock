@@ -306,10 +306,7 @@ pub use breadcrumbs::{
     BreadcrumbStatus, Breadcrumbs, BreadcrumbsMode, BreadcrumbsOutcome, BreadcrumbsPresentation,
     BreadcrumbsState, crumbs_from_labels,
 };
-pub use callout::{
-    Alert, AlertOutcome, AlertState, Callout, CalloutOutcome, CalloutRecipe, CalloutSlots,
-    CalloutTone,
-};
+pub use callout::{Alert, AlertOutcome, AlertState, Callout, CalloutRecipe, CalloutSlots, CalloutTone};
 pub use card::{Card, CardParts};
 pub use carousel::{
     Carousel, CarouselOutcome, CarouselSlide, CarouselState, example_carousel_slides,
@@ -383,8 +380,8 @@ pub use data_table::{
 pub use data_view::bench as data_view_bench;
 pub use data_view::{
     CellCoord, ColumnKind, ColumnModel, ColumnPin, CopyPayload, DataColumn, DataColumnWidth,
-    DataViewOutcome, ExpandState, FilterSpec, GroupHeader, LoadState, SelectionMode,
-    SelectionModel, SortSpec, VirtualWindow,
+    ExpandState, FilterSpec, GroupHeader, LoadState, SelectionMode, SelectionModel, SortSpec,
+    VirtualWindow,
 };
 pub use date_time_picker::{
     CivilDate, CivilDateRange, CivilDateTime, CivilTime, DATE_TIME_PICKER_FULLSCREEN_MAX_HEIGHT,
@@ -776,8 +773,8 @@ pub use streaming_markdown::bench as streaming_markdown_bench;
 pub use streaming_markdown::fixtures as streaming_markdown_fixtures;
 pub use streaming_markdown::{
     STREAM_COALESCE_CHARS, STREAM_COALESCE_DELTAS, STREAM_HOT_FULL_REPARSE_BUDGET, STREAM_TAIL_MAX,
-    StreamCitation, StreamInsertion, StreamPhase, StreamingMarkdown, StreamingMarkdownOutcome,
-    StreamingMarkdownState, has_open_fence, streaming_stable_prefix_len,
+    StreamCitation, StreamInsertion, StreamPhase, StreamingMarkdown, StreamingMarkdownState,
+    has_open_fence, streaming_stable_prefix_len,
 };
 pub use surface::{Surface, SurfaceFill, SurfacePaintPlan, SurfaceParts, SurfaceRecipe};
 pub use table::{

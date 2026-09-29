@@ -34,7 +34,7 @@
 │ data_view kits (compose; no mega-trait)                      │
 │  VirtualWindow · ColumnModel · SelectionModel · LoadState    │
 │  DataDensity · SortSpec · FilterSpec · CopyPayload           │
-│  ExpandState · GroupHeader · CellCoord · DataViewOutcome     │
+│  ExpandState · GroupHeader · CellCoord                       │
 │  bench::{ROWS_10, ROWS_10K, ROWS_1M, COLS_WIDE, …}           │
 └────────────────────────────┬─────────────────────────────────┘
                              │ used by
@@ -119,9 +119,9 @@ Focus row/col **separate** from selection set. Multi never invents unloaded ids 
 | `ExpandState` | Detail / tree expand ids |
 | `GroupHeader` | Group rows in projected stream |
 
-### 3.7 `DataViewOutcome`
+### 3.7 Surface outcomes
 
-Shared vocabulary (`Scrolled`, `SortRequested`, `Copy`, `EditStarted`, …). Surfaces may use their own enums that **map** to these; do not force one enum on all widgets.
+Each surface owns the outcome enum that matches its interaction contract. Shared value types such as `CopyPayload`, `FilterSpec`, and `SortSpec` carry data between a surface and its consumer; no shared outcome enum is forced across widgets.
 
 ### 3.8 Bench constants (`data_view::bench`)
 

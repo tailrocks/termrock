@@ -388,6 +388,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0372 | `v0.14.0` | [TextArea host actions run once per physical key press](migrations/0372-v0.14.0-text-area-one-shot-host-actions.md) |
 | 0373 | `v0.14.0` | [Non-searchable Select reserves j/k for list navigation](migrations/0373-v0.14.0-select-jk-navigation.md) |
 | 0374 | `v0.14.0` | [Reusable host supplied Lockup](migrations/0374-v0.14.0-lockup-brand-mark.md) |
+| 0375 | `v0.14.0` | [Obsolete widget outcome types removed](migrations/0375-v0.14.0-remove-obsolete-outcome-types.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
