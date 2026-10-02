@@ -1740,7 +1740,7 @@ jobs:
           NODE_AUTH_TOKEN: ""
           NPM_TOKEN: ""
           RUSTUP_TOOLCHAIN: 1.98.1
-          VELNOR_DOWNSTREAM_TASK_IDS: stack/rust/docs/contract-audit/build/default,stack/rust/docs/contract-audit/nextest/default,stack/rust/docs/contract-audit/doc/default
+          VELNOR_DOWNSTREAM_TASK_IDS: stack/rust/docs/contract-audit/build/default,stack/rust/docs/contract-audit/doc/default
           VELNOR_MATRIX_ID: stack:rust|task:stack/rust/docs/contract-audit/clippy/default
           VELNOR_MATRIX_KEY: m-a06d491771d29cde
           VELNOR_TASK_DIGEST: b3-63cf31c61ada162dbcc8245221d6d57842f3ca6bf25866d1f95fb04ab51c34d4
@@ -1769,41 +1769,12 @@ jobs:
           NODE_AUTH_TOKEN: ""
           NPM_TOKEN: ""
           RUSTUP_TOOLCHAIN: 1.98.1
-          VELNOR_DOWNSTREAM_TASK_IDS: stack/rust/docs/contract-audit/nextest/default,stack/rust/docs/contract-audit/doc/default
+          VELNOR_DOWNSTREAM_TASK_IDS: stack/rust/docs/contract-audit/doc/default
           VELNOR_MATRIX_ID: stack:rust|task:stack/rust/docs/contract-audit/build/default
           VELNOR_MATRIX_KEY: m-495a30f8374e301f
           VELNOR_TASK_DIGEST: b3-69f00788d6c24b0bc602305c79f9de0ac1f0e102f408ce5ac2ac620048af4bc9
           VELNOR_TASK_ID: stack/rust/docs/contract-audit/build/default
         run: "sh -c 'unset ACTIONS_ID_TOKEN_REQUEST_TOKEN ACTIONS_ID_TOKEN_REQUEST_URL ACTIONS_RUNTIME_TOKEN GITHUB_TOKEN MISE_GITHUB_TOKEN GH_TOKEN GH_HOST GH_CONFIG_DIR; date +%s%3N > \"$RUNNER_TEMP/velnor/start-m-495a30f8374e301f\"; mise --no-config --no-env --no-hooks exec rust@1.98.1 aqua:nextest-rs/nextest/cargo-nextest@0.9.146 -- cargo build --locked --offline --manifest-path docs/contract-audit/Cargo.toml --package termrock-contract-audit; code=$?; read -r start_ms rest < \"$RUNNER_TEMP/velnor/start-m-495a30f8374e301f\"; VELNOR_EXIT_CODE=\"$code\" VELNOR_START_MS=\"$start_ms\" VELNOR_INTERNAL_OP=write-task-report-v1 \"$RUNNER_TEMP/velnor/bin/velnor-actions-0.1.0\"; helper_code=$?; if [ \"$code\" -ne 0 ]; then exit \"$code\"; fi; exit \"$helper_code\"'"
-      - name: Unit and integration tests
-        if: "!contains(needs.plan.outputs.covered_tasks, ',stack/rust/docs/contract-audit/nextest/default,')"
-        env:
-          ACTIONS_ID_TOKEN_REQUEST_TOKEN: ""
-          ACTIONS_ID_TOKEN_REQUEST_URL: ""
-          ACTIONS_RUNTIME_TOKEN: ""
-          CARGO_REGISTRY_TOKEN: ""
-          GH_CONFIG_DIR: ""
-          GH_HOST: ""
-          GH_TOKEN: ""
-          GITHUB_TOKEN: ""
-          MISE_AUTO_INSTALL: "false"
-          MISE_CARGO_HOME: ${{ runner.temp }}/velnor/cargo
-          MISE_EXEC_AUTO_INSTALL: "false"
-          MISE_GITHUB_TOKEN: ""
-          MISE_LOCKFILE: "0"
-          MISE_NO_CONFIG: "1"
-          MISE_NO_ENV: "1"
-          MISE_NO_HOOKS: "1"
-          MISE_RUSTUP_HOME: ${{ runner.temp }}/velnor/rustup
-          NODE_AUTH_TOKEN: ""
-          NPM_TOKEN: ""
-          RUSTUP_TOOLCHAIN: 1.98.1
-          VELNOR_DOWNSTREAM_TASK_IDS: stack/rust/docs/contract-audit/doc/default
-          VELNOR_MATRIX_ID: stack:rust|task:stack/rust/docs/contract-audit/nextest/default
-          VELNOR_MATRIX_KEY: m-8ce233f88baf84de
-          VELNOR_TASK_DIGEST: b3-6434cf020aedfbb55afbb59bb6d169737fe2900c90d6018166ca47a76ee92394
-          VELNOR_TASK_ID: stack/rust/docs/contract-audit/nextest/default
-        run: "sh -c 'unset ACTIONS_ID_TOKEN_REQUEST_TOKEN ACTIONS_ID_TOKEN_REQUEST_URL ACTIONS_RUNTIME_TOKEN GITHUB_TOKEN MISE_GITHUB_TOKEN GH_TOKEN GH_HOST GH_CONFIG_DIR; date +%s%3N > \"$RUNNER_TEMP/velnor/start-m-8ce233f88baf84de\"; mise --no-config --no-env --no-hooks exec rust@1.98.1 aqua:nextest-rs/nextest/cargo-nextest@0.9.146 -- cargo nextest run --profile default --locked --offline --manifest-path docs/contract-audit/Cargo.toml --package termrock-contract-audit --no-tests fail; code=$?; read -r start_ms rest < \"$RUNNER_TEMP/velnor/start-m-8ce233f88baf84de\"; VELNOR_EXIT_CODE=\"$code\" VELNOR_START_MS=\"$start_ms\" VELNOR_INTERNAL_OP=write-task-report-v1 \"$RUNNER_TEMP/velnor/bin/velnor-actions-0.1.0\"; helper_code=$?; if [ \"$code\" -ne 0 ]; then exit \"$code\"; fi; exit \"$helper_code\"'"
       - name: Documentation
         if: "!contains(needs.plan.outputs.covered_tasks, ',stack/rust/docs/contract-audit/doc/default,')"
         env:
