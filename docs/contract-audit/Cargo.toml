@@ -6,5 +6,11 @@ publish = false
 
 [workspace]
 
+[[bin]]
+name = "termrock-contract-audit"
+path = "src/main.rs"
+test = false
+
 [dependencies]
 termrock-catalog = { path = "../../crates/termrock-catalog", default-features = false }
+
