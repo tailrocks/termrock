@@ -1,0 +1,40 @@
+---
+title: AnsiText
+description: 'Safe ANSI parse and paint — SGR, CR/BS, OSC-8, streaming, no-color.'
+---
+## Live terminal (Ghostty-class)
+
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
+
+<TerminalPreview story="ansi-text/basic" interactive caption="AnsiText · ansi-text/basic — focus surface; keys/click for states" />
+
+## Usage
+
+```rust
+use termrock::widgets::{
+    AnsiStream, AnsiText, AnsiTextState, AnsiParseOptions, lines_for_log, parse_lines,
+};
+
+// Streaming tool / PTY output
+let mut stream = AnsiStream::new(AnsiParseOptions::for_system(&system))
+    .with_max_lines(10_000);
+stream.feed(bytes);
+stream.drain_into_lines(|line| log_pane.append(line));
+
+// Paint pre-parsed lines
+let lines = parse_lines(src, &AnsiParseOptions::for_system(&system));
+let mut state = AnsiTextState::new();
+AnsiText::lines(&lines, &system).paint(area, buf, &mut state);
+```
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `ansi-text/basic` | AnsiText SGR | **Primary (live preview)** |
+| `ansi-text/no-color` | AnsiText no-color | no color |
+| `ansi-text/cr-bs` | AnsiText CR/BS | cr bs |
+| `ansi-text/hyperlink` | AnsiText OSC-8 | hyperlink |
+| `ansi-text/narrow` | Narrow AnsiText | narrow |
+| `ansi-text/unicode` | Unicode AnsiText | unicode |

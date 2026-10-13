@@ -1,0 +1,200 @@
+---
+title: DataTable
+description: 'Scalable table chrome; SelectAll is request-only over projected rows.'
+component: DataTable
+demo: data-table/toolbar
+interaction: selection-navigation
+actions:
+  - "↑↓←→ move cell"
+  - "Enter activate row"
+  - "Space select"
+  - "click cell"
+  - "wheel scroll"
+expectedOutcomes:
+  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+source: crates/termrock/src/widgets/data_table.rs
+---
+
+
+## Live terminal (Ghostty-class)
+
+This preview mounts one persistent Rust component instance. Use the listed keyboard and pointer actions; each accepted action updates the same state and reports its typed outcome.
+
+<TerminalPreview story="data-table/toolbar" interactive caption="DataTable · DataTable — persistent Rust preview; available actions appear below" />
+
+## Usage
+
+```rust
+use termrock::{style::DesignSystem, widgets::{ColumnModel, DataColumn, DataColumnWidth, DataTable, DataTableState}};
+
+let system = DesignSystem::default();
+let columns = ColumnModel::new(vec![DataColumn::new("c", "C", DataColumnWidth::Min(4))]);
+let rows: [(u64, &[&str]); 0] = [];
+let mut state = DataTableState::<u64, &str>::new();
+let table = DataTable::new(&system, &columns, &rows);
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered |
+| Mouse | covered |
+| Focus | covered |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+Lookbook coverage for this component. Only the **primary** story is embedded above;
+use the interactive preview (and Studio lookbook) to explore transitions instead of
+a static multi-image gallery.
+
+| Story | Title | Focus |
+|---|---|---|
+| `data-table/toolbar` | DataTable | **Primary (live preview)** |
+| `data-table/cjk` | DataTable CJK | cjk |
+| `data-table/combining` | DataTable combining | combining |
+| `data-table/edit` | DataTable inline edit | edit |
+| `data-table/empty` | Empty data table | Empty state |
+| `data-table/error` | DataTable error | Error |
+| `data-table/groups` | DataTable groups | groups |
+| `data-table/loading` | DataTable loading | Loading state |
+| `data-table/narrow` | Narrow DataTable | Narrow terminal |
+| `data-table/narrow-priority` | DataTable narrow priority | narrow priority |
+| `data-table/range` | DataTable range select | range |
+| `data-table/rows-10` | DataTable 10 rows | rows 10 |
+| `data-table/rows-10k` | DataTable 10k virtual | rows 10k |
+| `data-table/rows-1m-virtual` | DataTable 1M virtual | rows 1m virtual |
+| `data-table/stream-partial` | DataTable streaming | stream partial |
+| `data-table/unicode` | Unicode DataTable | Unicode / wide glyphs |
+| `data-table/visidata` | DataTable VisiData | visidata |
+| `data-table/wide-64` | DataTable wide | wide 64 |
+
+
+## Try it
+
+- Use the actions shown beside the terminal; mouse, keyboard, paste, drag, and resize are forwarded only when the component supports them.
+- Confirm the visual state and typed outcome, then use **Reset** to mount a fresh instance.
+
+Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `data-table/toolbar`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/data_table.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/data_table.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `data-table/toolbar`
+
+## Migrated handbook guidance
+
+# DataTable
+
+Raised muted headers and recipe-owned selection/hover washes keep dense data
+scannable without neon slabs or ad-hoc row focus colors.
+
+**Purpose.** Multi-column interactive grids at professional scale: sort/filter
+chrome, pin/resize/reorder hooks, row/cell/range selection, inline edit, copy,
+context actions, and 1M-row logical datasets without allocating the universe.
+
+TermRock owns chrome and interaction geometry. You own query, sort execution,
+filter execution, and `project(start..end)`.
+
+For static / moderate-size presentation without virtualization kits, use
+[Table](/docs/components/table).
+
+
+## When to use / when not
+
+| Use DataTable | Prefer |
+|---------------|--------|
+| DB results, k8s/ops tables, large lists | — |
+| Sort/filter/resize/edit outcomes | Host executes |
+| 10k–1M logical rows | `VirtualWindow` projection only |
+| Simple vertical nav | [List](/docs/components/list) |
+| Moderate static grid | [Table](/docs/components/table) |
+| Hierarchy | Tree |
+
+## Installation
+
+```toml
+termrock = { git = "https://github.com/tailrocks/termrock.git", rev = "PIN" }
+```
+
+Design: `docs/design/data-presentation.md`. Migration `0189`.
+
+## Source files
+
+`termrock::widgets::{DataTable, DataTableState, DataTableOutcome, DataTableNavMode,
+ColumnModel, DataColumn, VirtualWindow, LoadState, SelectionModel, …}`
+
+## Projection law
+
+```rust
+use termrock::widgets::{DataTableState, VirtualWindow, data_view_bench};
+
+let mut state = DataTableState::<u64, &str>::new();
+state.set_logical_rows(data_view_bench::ROWS_1M);
+state.window.viewport = 40;
+let (start, end) = state.window.visible_range();
+// project ONLY [start, end) — never Vec of 1M
+assert!(end - start <= 40);
+```
+
+## Basic paint
+
+```rust
+use termrock::{
+    style::DesignSystem,
+    widgets::{
+        ColumnModel, DataColumn, DataColumnWidth, DataTable, DataTableState, LoadState,
+    },
+};
+
+let system = DesignSystem::default();
+let columns = ColumnModel::new(vec![
+    DataColumn::new("id", "ID", DataColumnWidth::Fixed(6)).priority(100).sortable(),
+    DataColumn::new("name", "Name", DataColumnWidth::Min(12)).priority(80).editable(),
+]);
+let cells: &[&str] = &["1", "alpha"];
+let rows = [(1u64, cells)];
+let mut state = DataTableState::new();
+state.load = LoadState::Ready { count: 1 };
+DataTable::new(&system, &columns, &rows)
+    .focused(true)
+    .render(/* area, buf, &mut state */);
+```
+
+## Nav modes
+
+| Mode | Keys |
+|------|------|
+| `Cell` (default) | Arrows move cell; edges h-scroll |
+| `Row` | Vertical row focus; ←/→ h-scroll |
+| `Range` | Shift-extend rectangular selection |
+
+Cycle with `\`. Fullscreen promotion: `Ctrl+F` → `FullscreenRequested`.
+
+## Anatomy
+
+`toolbar?` · **sticky header** (sort + resize handles) · pin-start \| scroll body \| pin-end ·
+selection gutter · group bands · footer (count / partial / filter / nav / edit)
+
+## Related
+
+- [Table](/docs/components/table) — display-only moderate tables
+- Migration `0189-v0.13.0-data-table-interactive`

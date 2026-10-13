@@ -1,0 +1,27 @@
+---
+title: Breadcrumbs
+description: Ancestor trail with collapse, overflow, editable path, and one Tab stop.
+---
+
+# Breadcrumbs
+
+**Purpose.** Location context for files, routes, schemas, object paths.
+
+## One Tab stop
+
+Host Tab focuses the control once. **Left/Right** move among segments (and
+ellipsis). Avoids a Tab stop per crumb.
+
+## Collapse
+
+When narrow and `len > 3`: **first · … · current**. Middle ids available via
+`OpenOverflow`.
+
+## Editable mode
+
+Optional path draft (`with_editable(true)`). Enter/Ctrl+E/`/` on current starts
+edit; Enter commits; Esc cancels.
+
+## Compose
+
+FilePicker · SchemaBrowser · master-detail headers · migration `0155`

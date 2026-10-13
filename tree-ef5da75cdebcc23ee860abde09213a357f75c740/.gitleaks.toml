@@ -1,0 +1,9 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Ignore design prose about unused tokens"
+condition = "AND"
+regexTarget = "line"
+regexes = ['''tokens are dead code, density/glyphs''']
+paths = ['''^docs/design/shadcn-quality-roadmap\.md$''']

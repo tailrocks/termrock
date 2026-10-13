@@ -1,0 +1,39 @@
+---
+title: Auth Entry
+description: 'Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned.'
+pattern: AuthEntry
+demo: auth-entry/basic
+interaction: activation
+source: crates/termrock/src/patterns/auth_entry.rs
+classification: application
+---
+
+This is an example composite from `termrock::patterns`, not a first-class widget. Copy the recipe, keep its reusable parts, and replace its sample domain model with your own.
+
+## Live application preview
+
+<TerminalPreview story="auth-entry/basic" interactive caption="Auth Entry · shared Rust demo" />
+
+## Classification and composition
+
+**application** · default grid 64×20
+
+Composed public building blocks: `Checkbox`, `Panel`, `PanelVariant`, `PasswordInput`, `TextInput`, `Validation`.
+
+## Workflow
+
+- `Enter open action` or `click trigger` opens a real ChoiceDialog; confirm/cancel produce different outcomes.
+- `S toggle sidebar region` changes the visible application chrome.
+- `↑↓/wheel select row` changes the persistent row selection.
+- `/ filter` focuses a real TextInput; type or paste, then Enter applies or Escape cancels.
+
+The preview and native Lookbook instantiate the same Rust story and state machine. Outcomes appear in the preview status line.
+
+## Ownership
+
+TermRock owns composition, focus geometry, responsive layout, and reusable state transitions. The consuming application owns records, commands, persistence, secrets, authorization, and side effects.
+
+## Source
+
+- Pattern recipe: [`crates/termrock/src/patterns/auth_entry.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/patterns/auth_entry.rs)
+- Demo: `auth-entry/basic`

@@ -1,0 +1,62 @@
+---
+title: ResultGrid
+description: Typed query result grid on DataTable with safe null/binary/secret display.
+---
+
+# ResultGrid
+
+Database / query result component built on [DataTable](/docs/handbook/data-table).
+Host projects a **visible window** of typed cells; TermRock paints safe display,
+status/stats chrome, and emits export / inspect / page / edit **requests**.
+
+## When to use / when not
+
+| Use ResultGrid | Prefer |
+|----------------|--------|
+| SQL / analytics query results | — |
+| Generic interactive grid | [DataTable](/docs/handbook/data-table) |
+| Display-only moderate table | [Table](/docs/handbook/table) |
+| Structured object tree | [ObjectInspector](/docs/handbook/object-inspector) |
+
+## Ownership
+
+| Concern | Owner |
+|---------|--------|
+| Execute query, page, decode types | Host |
+| Safe null / binary / secret display | ResultGrid format helpers |
+| Selection, sort chrome, virtual window | Embedded `DataTableState` |
+| Clipboard / file export | Host via outcomes |
+
+## Typed cells
+
+`ResultCellKind`: Null · Bool · Integer · Float · Text · Binary · Json ·
+Timestamp · Uuid · Secret · Other.
+
+Binary never dumps raw bytes by default (`blob(N B)`). Secrets render as
+`••••` until host allows `ResultRedaction::RevealSecrets`.
+
+## QueryEditor integration
+
+```rust
+// After QueryEditor paint:
+ResultGrid::new(&system, &schema, &page)
+    .render(query_state.slots.results, buf, &mut grid);
+query_state.set_results(grid.query_summary());
+```
+
+## ObjectInspector bridge
+
+`result_row_to_inspector_fields(schema, row, redaction, ascii)` projects a row
+into inspector fields for cell detail panels.
+
+## Outcomes (requests)
+
+- Export (CSV/TSV/JSON/Markdown) · Copy
+- Inspect · Cell detail
+- Page next/prev · Refresh · Retry
+- Edit start/commit · Sort · Stats focus
+- Reveal secrets toggle
+
+## Related
+
+DataTable · QueryEditor · ObjectInspector · migration `0205`

@@ -1,0 +1,11 @@
+name: Docs
+on: [push, pull_request]
+permissions: { contents: read }
+jobs:
+  docs-required:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - run: RUSTDOCFLAGS='-D warnings' cargo doc --workspace --all-features --no-deps --locked
+      - run: cargo run -p termrock-lookbook -- check --dir docs/public/component-previews

@@ -1,0 +1,78 @@
+---
+title: Activity Shelf
+description: 'Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned.'
+pattern: ActivityShelf
+demo: activity-shelf/statuses
+interaction: activation
+source: crates/termrock/src/patterns/activity_shelf.rs
+classification: composite
+---
+
+This is an example composite from `termrock::patterns`, not a first-class widget. Copy the recipe, keep its reusable parts, and replace its sample domain model with your own.
+
+## Live application preview
+
+<TerminalPreview story="activity-shelf/statuses" interactive caption="Activity Shelf · shared Rust demo" />
+
+## Classification and composition
+
+**composite** · default grid 72×2
+
+Composed public building blocks: `NotificationItem`, `SemanticStatus`, `StatusRegion`, `StatusSlot`, `ToastPriority`.
+
+## Workflow
+
+- `Enter open action` or `click trigger` opens a real ChoiceDialog; confirm/cancel produce different outcomes.
+- `S toggle sidebar region` changes the visible application chrome.
+- `↑↓/wheel select row` changes the persistent row selection.
+- `/ filter` focuses a real TextInput; type or paste, then Enter applies or Escape cancels.
+
+The preview and native Lookbook instantiate the same Rust story and state machine. Outcomes appear in the preview status line.
+
+## Ownership
+
+TermRock owns composition, focus geometry, responsive layout, and reusable state transitions. The consuming application owns records, commands, persistence, secrets, authorization, and side effects.
+
+## Source
+
+- Pattern recipe: [`crates/termrock/src/patterns/activity_shelf.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/patterns/activity_shelf.rs)
+- Demo: `activity-shelf/statuses`
+
+## Migrated handbook guidance
+
+# ActivityShelf
+
+Glanceable strip of live/blocked operations. Prioritizes action-required and
+blocked chips. Narrow widths collapse to summary or badge. Not a TaskRail.
+
+
+## When to use / when not
+
+| Use ActivityShelf | Prefer |
+|-------------------|--------|
+| Persistent active ops under transcript | — |
+| Full task/subagent inventory | TaskRail / List |
+| Ephemeral toasts only | Toast / NotificationCenter |
+| Mode/connection chrome only | StatusBar slots |
+
+## Density
+
+| Width | Presentation |
+|-------|----------------|
+| ≥ 56 | Chips (glyph + title) |
+| 36–55 | Icons only |
+| 18–35 | One-line summary |
+| < 18 | Badge count |
+
+## Integration
+
+- `project_activities_for_status_bar` → StatusSlot content
+- `activities_to_notifications` → NotificationCenter ingest for blocked/action/failed
+
+## Keys
+
+←/→ select · Enter open · x dismiss · o overflow
+
+## Related
+
+TaskRail · StatusBar · NotificationCenter · SemanticStatus · migration `0221`

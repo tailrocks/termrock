@@ -1,0 +1,97 @@
+---
+title: Table
+description: Polished columnar presentation — headers, selection, recipes, and responsive priorities without owning your data.
+---
+
+# Table
+
+**Purpose.** Present moderate-size relational data as a readable grid: headers,
+alignment, widths, truncation, row selection, optional cell focus, and empty /
+loading / error body states. TermRock owns layout, chrome, and interaction
+geometry; the host owns rows, sort execution, wording, and effects.
+
+For interactive 1M-row kits (cursor, filter execution, virtual windows), use
+[DataTable](/docs/handbook/data-table).
+
+## When to use / when not
+
+| Use Table | Prefer |
+|-----------|--------|
+| Process lists, settings matrices, modest query results | — |
+| Static or host-sorted projections | — |
+| Huge virtual grids / filter kits | [DataTable](/docs/handbook/data-table) |
+| Single-column navigation | [List](/docs/handbook/list) |
+| Hierarchies | Tree |
+
+## Installation
+
+```toml
+termrock = { git = "https://github.com/tailrocks/termrock.git", rev = "PIN" }
+```
+
+## Source files
+
+`termrock::widgets::{Table, TableRow, TableState, Column, TableRecipe, TableBodyState}`
+
+## Basic example
+
+```rust
+use ratatui_core::text::Line;
+use termrock::{
+    style::DesignSystem,
+    widgets::{Column, ColumnWidth, Table, TableRow, TableState},
+};
+
+let system = DesignSystem::default();
+let columns = [
+    Column::new("name", "Name", ColumnWidth::Min(12)).priority(100),
+    Column::new("cpu", "CPU", ColumnWidth::Fixed(6))
+        .alignment(termrock::widgets::CellAlignment::Right)
+        .priority(80),
+];
+let cells = [
+    [Line::from("termrock"), Line::from("12%")],
+    [Line::from("cargo"), Line::from("4%")],
+];
+let rows = [
+    TableRow::new("r1", &cells[0]),
+    TableRow::new("r2", &cells[1]),
+];
+let table = Table::new(&columns, &rows, &system)
+    .empty_message(Line::from("No processes"));
+let mut state = TableState::new(Some("r1"));
+let _ = (table, &mut state);
+```
+
+## Recipes
+
+| Recipe | Chrome |
+|--------|--------|
+| `Quiet` (default) | Gutter selection, no grid lines |
+| `Bordered` | `│` between columns + rule under header |
+| `Striped` | Alternate-row muted text |
+| `Compact` | Gap 1 |
+
+## Body states
+
+`TableBodyState::Ready` (default), `Loading`, `Error` — sticky header remains;
+body shows host `loading_message` / `error_message` / `empty_message`.
+
+## Responsive columns
+
+Set `Column::priority` (higher kept longer). Under width pressure, lowest
+priority columns drop first; equal priority still collapses rightmost.
+
+Horizontal overflow after layout uses `TableState::h_offset` / `scroll_horizontal`.
+Left/Right keys move cell focus when a row is selected, else scroll horizontally.
+
+## Anatomy
+
+`gutter` · **sticky header** · body rows · each cell: alignment + overflow  
+Selection: design-system `SelectionChrome` (gutter glyph / tint / fill)
+
+## Related
+
+- [DataTable](/docs/handbook/data-table) — interactive virtual kit
+- [List](/docs/handbook/list) — single-column collections
+- Migration `0188-v0.13.0-table-presentation`

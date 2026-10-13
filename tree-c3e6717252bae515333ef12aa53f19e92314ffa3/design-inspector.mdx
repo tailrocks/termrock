@@ -1,0 +1,94 @@
+---
+title: DesignInspector
+description: 'Studio debug strip for focus, layer, density, and color capability.'
+component: DesignInspector
+demo: design-inspector/basic
+interaction: activation
+actions:
+  - 'arrow keys'
+  - 'Enter activate'
+  - 'click'
+expectedOutcomes:
+  - 'The preview status reports the typed Rust outcome after each accepted action.'
+source: crates/termrock/src/widgets/design_inspector.rs
+---
+
+
+## Live terminal (Ghostty-class)
+
+This preview is a persistent Rust demo. Focus it, then use the exact actions shown below; Reset remounts fresh state.
+
+<TerminalPreview story="design-inspector/basic" interactive caption="DesignInspector · Design inspector — persistent Rust preview; available actions appear below" />
+
+## Usage
+
+```rust
+use termrock::{style::{ColorCapability, DesignSystem}, widgets::{DesignInspector, DesignInspectorFrame}};
+
+let system = DesignSystem::default();
+let frame = DesignInspectorFrame {
+    focused: Some("list"),
+    layer: Some("root"),
+    capability: ColorCapability::Truecolor,
+    density: "comfortable",
+    layers: &[],
+    recipes: &[],
+    selection_chrome: "gutter",
+};
+let _inspector = DesignInspector::new(frame, &system);
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | not-applicable |
+| Mouse | not-applicable |
+| Focus | not-applicable |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+Lookbook coverage for this component. Only the **primary** story is embedded above;
+use the interactive preview (and Studio lookbook) to explore transitions instead of
+a static multi-image gallery.
+
+| Story | Title | Focus |
+|---|---|---|
+| `design-inspector/basic` | Design inspector | **Primary (live preview)** |
+| `capability/color-ladder` | Capability color ladder | color ladder |
+| `capability/headless` | Capability headless doctor | headless |
+| `capability/no-color` | Capability no-color | no color |
+| `design-inspector/narrow` | Narrow DesignInspector | Narrow terminal |
+| `design-inspector/unicode` | Unicode DesignInspector | Unicode / wide glyphs |
+
+
+## Try it
+
+- `arrow keys`: dispatches through the public TermRock interaction API.
+- `Enter activate`: dispatches through the public TermRock interaction API.
+- `click`: dispatches through the public TermRock interaction API.
+
+Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The demo owns ephemeral widget state between events. The widget owns painted geometry, focus/selection mechanics, and typed outcomes. The host owns domain effects and decides what an emitted outcome means to the application.
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `design-inspector/basic`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/design_inspector.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/design_inspector.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `design-inspector/basic`

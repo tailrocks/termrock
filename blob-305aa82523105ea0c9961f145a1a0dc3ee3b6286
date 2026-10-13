@@ -1,0 +1,72 @@
+name: Rust
+on: [push, pull_request]
+permissions: { contents: read }
+jobs:
+  rust-required:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v4
+        with: { install: false }
+      - run: mise install rust cargo-binstall
+      - run: mise install
+      - uses: Swatinem/rust-cache@v2
+      - run: rustup component add rustfmt clippy
+      - run: gitleaks detect --no-banner --redact --source .
+      - run: actionlint
+      - run: mise run docs-quality
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - run: cargo deny check advisories bans licenses sources
+      - run: cargo nextest run --workspace --all-features --locked
+      - run: cargo test --doc --workspace --locked
+      - run: cargo check -p termrock --no-default-features --locked
+      - run: cargo check --workspace --examples --locked
+      - run: cargo check --workspace --examples --features crossterm --locked
+      - run: cargo hack check --workspace --feature-powerset --all-targets --locked
+      - run: cargo shear
+      - run: reuse lint
+      - run: RUSTDOCFLAGS='-D warnings' cargo doc --workspace --all-features --no-deps --locked
+      - run: cargo package -p termrock --locked --allow-dirty
+  latest-toolchain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo check -p termrock --all-features --locked
+      - run: cargo check -p termrock --no-default-features --locked
+  crossterm-platform:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v4
+        with: { install: false }
+      - run: mise install rust
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo check -p termrock --features crossterm --all-targets --locked
+      - run: cargo test -p termrock --features crossterm --locked
+  semver-candidate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with: { fetch-depth: 0 }
+      - uses: jdx/mise-action@v4
+        with: { install: false }
+      - run: mise install rust
+      - uses: Swatinem/rust-cache@v2
+      - run: mise install cargo-binstall
+      - run: mise install cargo:cargo-semver-checks
+      # Breaking changes fail while the crate version still matches the latest
+      # release. A deliberate version bump authorizes the declared boundary.
+      - name: Compare with the previous release tag
+        run: |
+          baseline=$(git describe --tags --abbrev=0 2>/dev/null || true)
+          if [ -n "$baseline" ]; then
+            cargo semver-checks check-release -p termrock --baseline-rev "$baseline"
+          else
+            echo 'no baseline tag yet'
+          fi

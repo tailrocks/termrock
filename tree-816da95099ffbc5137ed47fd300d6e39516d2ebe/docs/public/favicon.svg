@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="TermRock">
+  <rect width="64" height="64" fill="#0a0c0a"/>
+  <rect x="7" y="7" width="50" height="50" fill="#121612" stroke="#00ff41" stroke-width="4"/>
+  <path d="M18 21l12 11-12 11M34 43h13" fill="none" stroke="#b4ffb4" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
+</svg>

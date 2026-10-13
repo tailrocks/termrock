@@ -1,0 +1,39 @@
+---
+title: Error Recovery
+description: 'Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned.'
+pattern: ErrorRecovery
+demo: error-recovery/basic
+interaction: activation
+source: crates/termrock/src/patterns/error_recovery.rs
+classification: composite
+---
+
+This is an example composite from `termrock::patterns`, not a first-class widget. Copy the recipe, keep its reusable parts, and replace its sample domain model with your own.
+
+## Live application preview
+
+<TerminalPreview story="error-recovery/basic" interactive caption="Error Recovery · shared Rust demo" />
+
+## Classification and composition
+
+**composite** · default grid 100×32
+
+Composed public building blocks: `ErrorRecipe`, `HistoryRedaction`, `List`, `ListRow`, `Panel`, `Recovery`, `RecoveryAction`, `RetrySafety`, `StatefulWidget`, `StatusBar`, `StatusSlot`, `Widget`.
+
+## Workflow
+
+- `Enter open action` or `click trigger` opens a real ChoiceDialog; confirm/cancel produce different outcomes.
+- `S toggle sidebar region` changes the visible application chrome.
+- `↑↓/wheel select row` changes the persistent row selection.
+- `/ filter` focuses a real TextInput; type or paste, then Enter applies or Escape cancels.
+
+The preview and native Lookbook instantiate the same Rust story and state machine. Outcomes appear in the preview status line.
+
+## Ownership
+
+TermRock owns composition, focus geometry, responsive layout, and reusable state transitions. The consuming application owns records, commands, persistence, secrets, authorization, and side effects.
+
+## Source
+
+- Pattern recipe: [`crates/termrock/src/patterns/error_recovery.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/patterns/error_recovery.rs)
+- Demo: `error-recovery/basic`

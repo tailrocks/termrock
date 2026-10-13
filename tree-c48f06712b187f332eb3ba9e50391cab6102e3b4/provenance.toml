@@ -1,0 +1,33 @@
+schema = 1
+donor_repository = "https://github.com/jackin-project/jackin.git"
+frozen_donor_revision = "33896a504e19ef13adb8692550c1845cb86a9504"
+imported_history_boundary = "d8006e707b42f5edc27a424fcd21dc0ded60d52b"
+license = "Apache-2.0"
+attribution = "Inherited authorship, timestamps, LICENSE, NOTICE, and file history are preserved."
+filter_command = "git-filter-repo --force --path crates/jackin-tui --path crates/jackin-tui-lookbook --path docs/content/docs/reference/tui/lookbook --path docs/public/tui-lookbook --path LICENSE --path NOTICE"
+retained_paths = [
+  "crates/jackin-tui",
+  "crates/jackin-tui-lookbook",
+  "docs/content/docs/reference/tui/lookbook",
+  "docs/public/tui-lookbook",
+  "LICENSE",
+  "NOTICE",
+]
+
+[[reimplemented]]
+item = "TailScroll, is_scrollable, max_line_width, max_offset"
+source = "crates/jackin-core/src/tui_widgets.rs"
+donor_revision = "33896a504e19ef13adb8692550c1845cb86a9504"
+meaningful_source_commit = "33896a504e19ef13adb8692550c1845cb86a9504"
+
+[[reimplemented]]
+item = "BOTTOM_CHROME_ROWS, BottomChromeAreas, bottom_chrome_areas, DialogBodyScroll, StatusFooterHover"
+source = "crates/jackin-core/src/tui_widgets.rs"
+donor_revision = "33896a504e19ef13adb8692550c1845cb86a9504"
+meaningful_source_commit = "33896a504e19ef13adb8692550c1845cb86a9504"
+
+[[reimplemented]]
+item = "POINTER_DEFAULT, POINTER_HAND, encode_osc52_clipboard_write"
+source = "crates/jackin-core/src/ansi_tokens.rs"
+donor_revision = "33896a504e19ef13adb8692550c1845cb86a9504"
+meaningful_source_commit = "33896a504e19ef13adb8692550c1845cb86a9504"

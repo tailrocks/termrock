@@ -1,0 +1,36 @@
+---
+title: AgentStatusHeader
+description: Compact agent/session status — actionable first, contracts to StatusBar.
+---
+
+# AgentStatusHeader
+
+Top-level chrome for project/session, branch, mode/model, connection, work
+status, context, cost/time, and action-required. **Provider-neutral.**
+
+## When to use / when not
+
+| Use AgentStatusHeader | Prefer |
+|-----------------------|--------|
+| Agent workbench header | — |
+| Generic L/C/R slots | [StatusBar](/docs/handbook) if documented |
+| Full token budget UI | [ContextMeter](/docs/handbook/context-meter) |
+
+## Presentation
+
+| Form | When |
+|------|------|
+| Header (1–2 rows) | Wide (≥56 cols default) |
+| StatusBar | Narrow auto-contract |
+
+## Priority
+
+Action-required / connection issues paint before decorative cost/time.
+
+## Quick actions
+
+Sessions · Model · Tasks · Help (+ Acknowledge when attention needed)
+
+## Related
+
+StatusBar · ModeRibbon · ContextMeter · migration `0232`

@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "demo-block",
+  "version": "0.1.0",
+  "description": "Offline demo block fixture",
+  "license": "Apache-2.0",
+  "kernel": "0.11.0",
+  "files": [
+    {
+      "source": "src/lib.rs",
+      "dest": "src/ui/demo_block.rs",
+      "sha256": "1183b63bda60f0a4b2611e1bca798a8a000fde77f456c7afd4ea94d8d444c272"
+    }
+  ]
+}

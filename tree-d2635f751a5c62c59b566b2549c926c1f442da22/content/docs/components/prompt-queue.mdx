@@ -1,0 +1,52 @@
+---
+title: PromptQueue
+description: 'Editable queue of prompts waiting behind busy agent work.'
+---
+## Live terminal (Ghostty-class)
+
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
+
+<TerminalPreview story="prompt-queue/compact" interactive caption="PromptQueue · prompt-queue/compact — focus surface; keys/click for states" />
+
+## Usage
+
+```rust
+use termrock::widgets::{
+    example_prompt_queue, AgentBusyState, PromptQueue, PromptQueueOutcome,
+    PromptQueuePresentation, PromptQueueState,
+};
+
+let mut state = PromptQueueState::new();
+state.set_items(example_prompt_queue());
+state.set_agent(AgentBusyState::Busy);
+state.presentation = PromptQueuePresentation::Expanded;
+PromptQueue::new(&system).paint(area, buf, &mut state);
+
+match state.handle_key(key) {
+    PromptQueueOutcome::SendNext { id } => { let _ = id; }
+    PromptQueueOutcome::InterruptAndSend { id } => { let _ = id; }
+    _ => {}
+}
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered |
+| Mouse | covered |
+| Focus | covered |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `prompt-queue/compact` | PromptQueue compact | **Primary (live preview)** |
+| `prompt-queue/expanded` | PromptQueue expanded | expanded |
+| `prompt-queue/failed` | PromptQueue failed held | failed |
+| `prompt-queue/narrow` | Narrow PromptQueue | narrow |
+| `prompt-queue/unicode` | Unicode PromptQueue | unicode |

@@ -1,0 +1,31 @@
+---
+title: Sheet
+description: 'Bottom-edge drawer (shadcn Sheet metaphor) — same engine as Drawer with DrawerEdge::Bottom default.'
+---
+
+## Live terminal (Ghostty-class)
+
+One focused interactive surface. Variants are listed in **Stories** — interactivity
+replaces multi-image galleries.
+
+<TerminalPreview story="drawer/sheet" interactive caption="Sheet · drawer/sheet — focus surface; keys/click for states" />
+
+## Usage
+
+```rust
+use termrock::widgets::{Sheet, DrawerState};
+
+let mut state = DrawerState::sheet();
+state.open();
+Sheet::new("Actions", &system).paint(area, buf, &mut state);
+```
+
+## Interaction contract
+
+Same as [Drawer](/docs/components/drawer) with bottom-edge placement.
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `drawer/sheet` | Sheet bottom | **Primary (live preview)** |

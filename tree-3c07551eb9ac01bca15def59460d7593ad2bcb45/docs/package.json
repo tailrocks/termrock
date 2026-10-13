@@ -1,0 +1,27 @@
+{
+  "name": "termrock-docs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "postinstall": "fumadocs-mdx",
+    "types:check": "fumadocs-mdx && tsc --noEmit",
+    "check:catalog": "bun run scripts/check-catalog.ts",
+    "build": "fumadocs-mdx && bun run check:catalog"
+  },
+  "dependencies": {
+    "@tanstack/react-start": "^1.168.16",
+    "@vitejs/plugin-react": "^6.0.2",
+    "fumadocs-core": "^16.9.2",
+    "fumadocs-mdx": "^15.0.9",
+    "fumadocs-ui": "^16.9.2",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "vite": "^8.0.14"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.14",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^7.0.2"
+  }
+}

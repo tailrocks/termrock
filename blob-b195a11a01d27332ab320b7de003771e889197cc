@@ -1,0 +1,79 @@
+---
+title: SettingsScreen
+description: Searchable settings block — Sidebar, SearchInput, Form, theme preview, keybindings; host owns persistence and restart.
+---
+
+# SettingsScreen
+
+Source-owned application block for a complete settings experience. Composes
+public TermRock widgets only (migration `0237`).
+
+## When to use
+
+| Use SettingsScreen | Prefer |
+|--------------------|--------|
+| Multi-category settings with search | Standalone Form / Sidebar |
+| Theme + keybinding surfaces in one shell | ThemePicker / KeybindingRecorder alone |
+| App settings with dirty / restart banners | Custom Workspace layout |
+
+## Canonical chrome
+
+| Concern | Type |
+|---------|------|
+| Categories | `Sidebar` / `NavItem` |
+| Search | `SearchInput` |
+| Fields | `Form` / `Field` / `Fieldset` |
+| Theme | `ThemePicker` body mode |
+| Keybindings | `KeybindingRecorder` body mode |
+| Help | `KeyboardHelp` overlay |
+| Density | `SettingsDensity` Normal / Narrow / Tiny |
+
+**Host owns:** persistence, restart application, domain values, conflict resolution.
+
+## Anatomy
+
+```
+┌ Categories ─┬ Search ──────────────────┐
+│ General     │ [restart / conflicts]    │
+│ · Profile   ├ Form / Theme / Keys ─────┤
+│ · Appearance│                          │
+│ Agent       │                          │
+├─────────────┴──────────────────────────┤
+│ modified · Ctrl+S save · ? help        │
+└────────────────────────────────────────┘
+```
+
+## Minimal host loop
+
+```rust
+use termrock::patterns::{
+    SettingsScreenState, SettingsScreenSurfaces, render_settings_screen,
+    example_settings_categories, example_settings_appearance_fields,
+};
+use termrock::widgets::{Fieldset, BUILTIN_THEME_PRESETS};
+
+let mut state = SettingsScreenState::new();
+let nav = example_settings_categories();
+let fields = example_settings_appearance_fields();
+let fieldsets = [Fieldset::new("Appearance", &fields)];
+
+render_settings_screen(buf, area, SettingsScreenSurfaces {
+    system: &system,
+    state: &mut state,
+    nav: &nav,
+    fieldsets: &fieldsets,
+    theme_presets: BUILTIN_THEME_PRESETS,
+    theme_paint: Some(&system),
+    status_slots: &[],
+    status_state: &mut status,
+    section_title: "Appearance",
+});
+```
+
+## Stories
+
+`settings-screen/{basic,search,validation,conflicts,theme,keybinding,narrow,tiny,no-results,help}`
+
+## Related
+
+Sidebar · SearchInput · Form · ThemePicker · KeybindingRecorder · KeyboardHelp · migration `0237`

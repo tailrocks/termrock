@@ -1,0 +1,58 @@
+---
+title: AnsiText
+description: 'Safe ANSI parse and paint — SGR, CR/BS, OSC-8, streaming, no-color.'
+---
+
+## Previews
+
+### `ansi-text/basic`
+
+![Basic](/component-previews/ansi-text-basic.svg)
+
+### `ansi-text/no-color`
+
+![No color](/component-previews/ansi-text-no-color.svg)
+
+### `ansi-text/cr-bs`
+
+![CR/BS](/component-previews/ansi-text-cr-bs.svg)
+
+### `ansi-text/hyperlink`
+
+![Hyperlink](/component-previews/ansi-text-hyperlink.svg)
+
+### `ansi-text/narrow`
+
+![Narrow](/component-previews/ansi-text-narrow.svg)
+
+### `ansi-text/unicode`
+
+![Unicode](/component-previews/ansi-text-unicode.svg)
+
+## Usage
+
+```rust
+use termrock::widgets::{
+    AnsiStream, AnsiText, AnsiTextState, AnsiParseOptions, lines_for_log, parse_lines,
+};
+
+// Streaming tool / PTY output
+let mut stream = AnsiStream::new(AnsiParseOptions::for_system(&system))
+    .with_max_lines(10_000);
+stream.feed(bytes);
+stream.drain_into_lines(|line| log_pane.append(line));
+
+// Paint pre-parsed lines
+let lines = parse_lines(src, &AnsiParseOptions::for_system(&system));
+let mut state = AnsiTextState::new();
+AnsiText::lines(&lines, &system).paint(area, buf, &mut state);
+```
+
+## Safety
+
+Escape sequences are never painted. Only ratatui styles/text reach the host
+frame. OSC 8 URLs are scheme-validated.
+
+## Migration
+
+See `migrations/0124-v0.13.0-ansi-text.md`.

@@ -1,0 +1,84 @@
+---
+title: Link
+description: 'Link widget.'
+component: Link
+demo: link/basic
+interaction: activation
+actions:
+  - "hover"
+  - "click open"
+  - "Enter open"
+  - "C copy destination"
+expectedOutcomes:
+  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+source: crates/termrock/src/widgets/link.rs
+---
+
+
+## Live terminal (Ghostty-class)
+
+This preview mounts one persistent Rust component instance. Use the listed keyboard and pointer actions; each accepted action updates the same state and reports its typed outcome.
+
+<TerminalPreview story="link/basic" interactive caption="Link · Link external — persistent Rust preview; available actions appear below" />
+
+## Usage
+
+```rust
+use termrock::widgets::Link;
+
+// See handbook / lookbook story link/basic.
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered |
+| Mouse | covered |
+| Focus | covered |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+Lookbook coverage for this component. Only the **primary** story is embedded above;
+use the interactive preview (and Studio lookbook) to explore transitions instead of
+a static multi-image gallery.
+
+| Story | Title | Focus |
+|---|---|---|
+| `link/basic` | Link external | **Primary (live preview)** |
+| `link/app-route` | Link app route | app route |
+| `link/narrow` | Narrow Link | Narrow terminal |
+| `link/no-color` | Link no-color | no color |
+| `link/no-hyperlink` | Link no-hyperlink | no hyperlink |
+| `link/unicode` | Unicode Link | Unicode / wide glyphs |
+
+
+## Try it
+
+- Use the actions shown beside the terminal; mouse, keyboard, paste, drag, and resize are forwarded only when the component supports them.
+- Confirm the visual state and typed outcome, then use **Reset** to mount a fresh instance.
+
+Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `link/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/link.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/link.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `link/basic`

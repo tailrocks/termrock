@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "resource-browser",
+  "version": "0.1.0",
+  "description": "ResourceBrowser source-owned block",
+  "license": "Apache-2.0",
+  "kernel": "0.11.0",
+  "files": [
+    {
+      "source": "src/lib.rs",
+      "dest": "src/ui/blocks/resource_browser.rs",
+      "sha256": "759916da8ede1ae98ea4fe126ff4a4449fa37de2f91fbbbe9d282d653c5e0b29"
+    }
+  ]
+}

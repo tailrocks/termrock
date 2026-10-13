@@ -1,0 +1,28 @@
+---
+title: MultiSelect
+description: Searchable multi-choice with chip summary, select-all, and highlight≠checked.
+---
+
+# MultiSelect
+
+**Purpose.** Filters, permissions, task pickers — multi membership with a compact
+closed summary and an open checklist.
+
+## Check vs highlight
+
+| | Meaning |
+|--|---------|
+| `selected()` / `is_checked` | Ordered membership |
+| `highlight()` | Keyboard cursor in open list |
+
+Space toggles check; reverse video is highlight only.
+
+## Keys (open)
+
+- **Space** — toggle · **Enter** — done/close · **Esc** — close keep checks  
+- **Ctrl+A** — select all visible · **Ctrl+D** — clear  
+- **Shift+↑/↓** — range check · type — search  
+
+## Related
+
+Select · Selection · TokenField · migration `0146`

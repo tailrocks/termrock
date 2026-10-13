@@ -1,0 +1,45 @@
+---
+title: Center
+description: 'Axis-aware constrained centering for empty states, dialogs, onboarding, and failure screens.'
+---
+## Live terminal (Ghostty-class)
+
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
+
+<TerminalPreview story="center/both" interactive caption="Center · center/both — focus surface; keys/click for states" />
+
+## Usage
+
+```rust
+use termrock::layout::{Center, CenterAxis, centered_rect};
+
+let child = Center::new(40, 12).layout(area).child;
+
+// dialog = safe 1-cell margin when room
+let child = centered_rect(52, 9, area);
+
+// recipes
+let hero = Center::onboarding(48, 10).layout(area).child;
+let fail = Center::failure(40, 8).layout(area).child;
+
+// caps
+let child = Center::new(100, 20)
+    .max(48, 16)
+    .min(12, 4)
+    .layout(area)
+    .child;
+```
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `center/both` | Center both axes | **Primary (live preview)** |
+| `center/dialog` | Center dialog safe margin | dialog |
+| `center/horizontal` | Center horizontal only | horizontal |
+| `center/vertical` | Center vertical only | vertical |
+| `center/max` | Center max-width | max |
+| `center/onboarding` | Center onboarding recipe | onboarding |
+| `center/failure` | Center failure recipe | failure |
+| `center/tiny` | Center tiny terminal | tiny |

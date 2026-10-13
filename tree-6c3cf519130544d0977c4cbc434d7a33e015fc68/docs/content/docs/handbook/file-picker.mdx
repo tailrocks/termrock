@@ -1,0 +1,66 @@
+---
+title: FilePicker
+description: FS-agnostic file/directory browser with host listings, breadcrumbs, multi-select, and preview.
+---
+
+# FilePicker
+
+**Purpose.** Reusable open/save browser for files and directories. Built from
+PathInput, CollectionState list focus, Selection multi-check, and optional
+OverlayStack dialogs. TermRock never calls the filesystem.
+
+## Ownership
+
+| Concern | Owner |
+|---------|--------|
+| List / preview I/O, cancel, permissions | Host |
+| Entry projection (kind, hidden, size, mtime labels) | Host |
+| Hidden filter, name filter, sort, multi, crumbs | FilePicker |
+| Path field typing | Embedded PathInput |
+| Modal place / dismiss | OverlayStack helpers |
+
+## Host loop
+
+```rust
+match state.handle_key(key) {
+    FilePickerOutcome::ListRequested { path, generation } => {
+        host.cancel_list();
+        host.list_dir(path, generation); // async
+    }
+    FilePickerOutcome::PreviewRequested { path, generation } => {
+        host.preview(path, generation);
+    }
+    FilePickerOutcome::Confirmed { paths } => host.accept(paths),
+    FilePickerOutcome::Cancelled => host.close_picker(),
+    FilePickerOutcome::FilterChanged => {
+        // e.g. Ctrl+H hidden — re-list if host omitted hidden rows
+        let _ = state.request_list(state.cwd().to_owned());
+    }
+    _ => {}
+}
+
+// when list returns:
+if state.apply_listing(generation, cwd, entries, None) {
+    // applied
+}
+// stale generation → false, ignored
+```
+
+## Modes
+
+- `OpenFile` / `SaveFile` — files selectable; dirs navigate  
+- `OpenDirectory` — dirs selectable  
+- `OpenAny` — both  
+
+## Presentation
+
+`presentation_for_bounds` / auto paint: narrow terminals prefer Fullscreen and
+drop the preview column. Overlay id: `FILE_PICKER_OVERLAY_ID`.
+
+## Stories
+
+- Unix · Windows · SSH-like remote · no-preview multi  
+
+## Related
+
+PathInput · Picker · CollectionState · Selection · OverlayStack · migration `0148`

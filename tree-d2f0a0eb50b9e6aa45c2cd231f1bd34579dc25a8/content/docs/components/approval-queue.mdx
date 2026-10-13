@@ -1,0 +1,65 @@
+---
+title: ApprovalQueue
+description: 'Unified pending decisions inbox — Open default, no bulk high-risk.'
+---
+
+## Previews
+
+### `approval-queue/basic`
+
+![ApprovalQueue — basic](/component-previews/approval-queue-basic.svg)
+
+### `approval-queue/badge`
+
+![ApprovalQueue — badge](/component-previews/approval-queue-badge.svg)
+
+### `approval-queue/drawer`
+
+![ApprovalQueue — drawer](/component-previews/approval-queue-drawer.svg)
+
+### `approval-queue/narrow`
+
+![ApprovalQueue — narrow](/component-previews/approval-queue-narrow.svg)
+
+### `approval-queue/unicode`
+
+![ApprovalQueue — unicode](/component-previews/approval-queue-unicode.svg)
+
+## Usage
+
+```rust
+use termrock::widgets::{
+    example_approval_queue, ApprovalQueue, ApprovalQueueOutcome, ApprovalQueueState,
+};
+
+let mut state = ApprovalQueueState::new();
+state.set_items(example_approval_queue());
+ApprovalQueue::new(&system).paint(area, buf, &mut state);
+
+match state.handle_key(key) {
+    ApprovalQueueOutcome::Open { id, kind, generation } => {
+        let _ = (id, kind, generation);
+    }
+    ApprovalQueueOutcome::BulkApproveDenied { .. } => {}
+    _ => {}
+}
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered |
+| Mouse | covered |
+| Focus | covered |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+- `approval-queue/basic`
+- `approval-queue/badge`
+- `approval-queue/drawer`
+- `approval-queue/narrow`
+- `approval-queue/unicode`

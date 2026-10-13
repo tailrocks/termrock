@@ -1,0 +1,128 @@
+<!--
+SPDX-FileCopyrightText: 2026 Alexey Zhokhov
+SPDX-License-Identifier: Apache-2.0
+-->
+
+# 0325 — Departures, edges, and acknowledgements
+
+**Version:** `v0.14.0`
+**Kind:** breaking (toast lifecycle signatures, one removed helper) + additive
+
+Plan 014 left four motion seams open and plan 021 left one. All five are
+closed here: three built, two decided against with the measurement that
+settles them.
+
+## 1. A toast leaves instead of vanishing
+
+```rust
+// Before
+state.advance(tick);
+queue.advance(tick);
+state.is_visible(tick)
+
+// After — the tier travels with the frame
+state.advance(tick, system.motion);
+queue.advance(tick, system.motion);
+state.is_visible(tick, system.motion)
+```
+
+`ToastState::advance` passed `MotionPolicy::Off` to `Presence::advance`, which
+takes the instant-hide branch. `PresencePhase::Exiting` was therefore
+**structurally unreachable** for toasts no matter what the design system said —
+the exit phase shipped in migration 0289 and nothing could ever enter it.
+
+`Presence::toast` and `Presence::persistent` now carry a `TOAST_EXIT_MS`
+(120 ms) exit, and a leaving toast holds its row while it fades, so the toasts
+beneath it do not jump to fill a gap that is still occupied. `ToastState::is_leaving`
+reports the phase. `MotionPolicy::Off` collapses it back to an instant hide.
+
+`paint_alpha` checks the exit **first**: a leaving toast has no `shown_at`
+(presence has left `Visible`), so every arrival rule below it — including "an
+error never fades in" — had nothing to measure from and returned `1.0`. An
+error still arrives at full strength; it fades on the way out like anything
+else, because "read me now" is not "stay after you are gone".
+
+## 2. A scrolled region says it continues
+
+`scroll::paint_scroll_edges` is the continuation-cue authority.
+`scroll::paint_scrolled_region(buffer, content, gutter, total, viewport, offset, system)`
+combines it with the standard list scrollbar. `Tree`, `Select`, `Viewport`,
+`CompletionMenu` and `Form` use the combined call; `List` and `ScrollArea`
+pair the edge authority with `render_scrollbar` because they supply custom
+`ScrollbarSpec`s. `design_gate.rs::a_scrolled_region_says_it_continues` fails
+the build when any widget paints either scrollbar path without the edge
+authority.
+
+A scrollbar answers *where you are*. It does not answer whether the row under
+your eye is the end of the content or the end of the pane. The fade answers
+that in the one channel a terminal has resolution to spare in — colour.
+
+The helper subtracts the gutter from the faded columns itself, so no caller can
+dim the scrollbar thumb at the very edge the thumb is reporting on.
+
+## 3. A copy says it happened
+
+`style::ActionFlash` is the shared acknowledgement: `fire(elapsed_ms)`,
+`is_lit`, `alpha`, `next_deadline_ms`, over `ACTION_FLASH_MS` (1 s). Wired into
+`CodeBlockState::copied` (mark at the header's trailing edge) and
+`SourceCitationState::copied`.
+
+Nothing on screen changes when text reaches the clipboard, so without a mark
+the operator cannot tell a successful copy from a swallowed keystroke and
+presses again. Reduced motion **keeps** the mark and drops only the fade: the
+mark is a statement of fact, not an animation.
+
+A copy site with a header or chip flashes there. A site with nowhere to put a
+mark returns its `Copy` outcome and the host raises a toast — that is the host's
+effect to own, not the widget's.
+
+## 4. A running step breathes like a running status
+
+`TimelineStatus::channel()` returns `MotionChannel::Live` for `Running`,
+`Wait` for `Pending`, and `Static` for every terminal state — the same channels
+and periods `SemanticStatus::channel()` already uses. The marker cell breathes;
+the label never does. Plan 014 called the running rail "a design call about the
+accent budget"; it needs no new wave, because a running step and a running
+status indicator are the same fact and now say so identically.
+
+## 5. Two things deliberately not built
+
+**The scroll `target_offset`/`display_offset` tween.** Plan 014 deferred it as
+blocked on a 16 ms clock; that blocker is gone (`DesignSystem::at(tick)` reaches
+every widget). It is not built because it cannot work: terminal scroll position
+is **cell-quantised**. A display offset lagging the target renders only at whole
+rows, so an 80–200 ms ease produces *nothing, then a jump, then a jump* — delay,
+not smoothing. A colour cross-fade has 24 bits of resolution to travel through;
+a row position has one. `WheelAccumulator` fails the same test: crossterm's
+wheel events are already row-quantised and the runtime already coalesces
+redraws per frame, so there is nothing sub-row to accumulate.
+
+`scroll_ease_duration`, `SCROLL_EASE_MIN` and `SCROLL_EASE_MAX` are **removed**.
+They were public API with zero consumers whose only purpose was timing that
+tween.
+
+**The collections filter fade.** Fading rows in after a filter edit dims the
+list during exactly the keystrokes the operator is reading it to choose the
+next one. The count and the query already ride `PanelTitleSpec` (`[7] /err`),
+which states the change without hiding the content.
+
+## Consumer edits
+
+```rust
+// Toast lifecycle takes the tier.
+queue.advance(tick, system.motion);
+if state.is_visible(tick, system.motion) { /* … */ }
+
+// Scrolled surfaces call one function.
+termrock::scroll::paint_scrolled_region(buffer, body, gutter, total, viewport, offset, system);
+
+// Copy sites stamp the acknowledgement.
+state.copied.fire(system.elapsed_ms());
+```
+
+## Validation
+
+```sh
+cargo nextest run -p termrock --all-features
+mise run check
+```

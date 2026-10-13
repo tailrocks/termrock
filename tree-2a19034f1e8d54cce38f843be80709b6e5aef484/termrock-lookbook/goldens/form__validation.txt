@@ -1,0 +1,17 @@
+form/validation 46x16 (story 44x14)
+                                              
+ Errors                                     ┃ 
+ • Email: invalid email                     ┃ 
+ Security                                   ┃ 
+                                            ┃ 
+ ▌ * Email    bad                           ┃ 
+                                            ┃ 
+ invalid email                              ┃ 
+                                            ┃ 
+   * Token    ●●●●●●●●                      ┃ 
+                                            ┃ 
+ … checking…                                · 
+                                            · 
+   * Region   required                      · 
+                                            · 
+                                              

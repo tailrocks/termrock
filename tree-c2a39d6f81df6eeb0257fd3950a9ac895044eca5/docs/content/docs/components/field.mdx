@@ -1,0 +1,49 @@
+---
+title: Field
+description: 'Single form field projection — label, value, status, dirty/touched.'
+---
+## Live terminal (Ghostty-class)
+
+One focused interactive surface. Variants are listed in **Stories** — interactivity
+replaces multi-image galleries.
+
+<TerminalPreview story="text-input/basic" interactive caption="Field · text-input/basic — focus surface; keys/click for states" />
+
+## Usage
+
+```rust
+use termrock::widgets::{Field, FieldStatus};
+
+Field::new("email", "Email", value)
+    .required(true)
+    .help("Work address")
+    .error("invalid")      // or .warning / .pending
+    .dirty(true)
+    .touched(true);
+```
+
+## Status
+
+| Variant | Meaning |
+|---------|---------|
+| `Help` | Neutral help |
+| `Warning` | Non-blocking |
+| `Error` | Blocking validation |
+| `Pending` | Async validation |
+
+Compose inside [`Fieldset`](./fieldset) / [`Form`](./form). Caption-only chrome without a value row: [`FieldCaption`](./label) (Label + Description).
+
+## Migration
+
+See `migrations/0137-v0.13.0-form-field-fieldset.md`.
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `text-input/basic` | Text input | **Primary (live preview)** |
+| `text-input/unicode` | Unicode text input | unicode |
+| `text-input/narrow` | Narrow TextInput | narrow |
+| `text-input/secret` | TextInput secret | secret |
+| `text-input/invalid` | TextInput invalid | invalid |
+| `text-input/prefix` | TextInput prefix/suffix | prefix |

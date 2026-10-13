@@ -1,0 +1,27 @@
+{
+  "title": "Components",
+  "pagesIndex": "../components",
+  "defaultOpen": true,
+  "pages": [
+    "action-bar",
+    "backdrop",
+    "choice-dialog",
+    "detail-table",
+    "dialog",
+    "diff-view",
+    "form",
+    "hint-bar",
+    "list",
+    "log-pane",
+    "message-dialog",
+    "panel",
+    "progress",
+    "split-pane",
+    "status-bar",
+    "tabs",
+    "text-input",
+    "toast",
+    "tree",
+    "viewport"
+  ]
+}

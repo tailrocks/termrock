@@ -1,0 +1,145 @@
+//! Responsive layout specifications and caller-defined bottom slots.
+
+mod dialog;
+
+pub use dialog::{
+    DIALOG_HORIZONTAL_SCROLL_STEP, DialogBodyScroll, DialogBorder, ScrollAxes, ScrollAxis,
+    dialog_inner_chunks, dialog_inner_height, dialog_scroll_axes, mouse_scroll_delta,
+    render_dialog_shell, render_scrollable_dialog_body, scroll_hint_spans,
+};
+
+use ratatui_core::layout::Rect;
+
+pub use crate::interaction::HitRegion;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Placement {
+    Centered,
+    Top,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DialogSpec {
+    pub min_width: u16,
+    pub preferred_width: u16,
+    pub max_width: u16,
+    pub min_height: u16,
+    pub preferred_height: u16,
+    pub max_height: u16,
+    pub horizontal_margin: u16,
+    pub vertical_margin: u16,
+    pub placement: Placement,
+}
+
+/// Resolve a dialog specification inside `outer` without assuming a rendering backend.
+#[must_use]
+pub fn resolve_dialog(outer: Rect, spec: DialogSpec) -> Rect {
+    let available_width = outer.width.saturating_sub(spec.horizontal_margin);
+    let available_height = outer.height.saturating_sub(spec.vertical_margin);
+    let width = spec
+        .preferred_width
+        .clamp(spec.min_width, spec.max_width.max(spec.min_width))
+        .min(available_width.max(spec.min_width));
+    let height = spec
+        .preferred_height
+        .clamp(spec.min_height, spec.max_height.max(spec.min_height))
+        .min(available_height.max(spec.min_height));
+    let x = outer
+        .x
+        .saturating_add(outer.width.saturating_sub(width) / 2);
+    let y = match spec.placement {
+        Placement::Centered => outer
+            .y
+            .saturating_add(outer.height.saturating_sub(height) / 2),
+        Placement::Top => outer.y,
+    };
+    Rect::new(x, y, width, height)
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Slots {
+    pub body: Rect,
+    pub bottom: Rect,
+}
+
+impl Slots {
+    #[must_use]
+    pub const fn bottom(area: Rect, rows: u16) -> Self {
+        let bottom_height = if area.height < rows {
+            area.height
+        } else {
+            rows
+        };
+        Self {
+            body: Rect::new(area.x, area.y, area.width, area.height - bottom_height),
+            bottom: Rect::new(
+                area.x,
+                area.y.saturating_add(area.height - bottom_height),
+                area.width,
+                bottom_height,
+            ),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dialog_resolution_centers_and_honors_margins() {
+        let rect = resolve_dialog(
+            Rect::new(10, 5, 100, 30),
+            DialogSpec {
+                min_width: 40,
+                preferred_width: 60,
+                max_width: 80,
+                min_height: 8,
+                preferred_height: 20,
+                max_height: 24,
+                horizontal_margin: 4,
+                vertical_margin: 4,
+                placement: Placement::Centered,
+            },
+        );
+        assert_eq!(rect, Rect::new(30, 10, 60, 20));
+    }
+
+    #[test]
+    fn top_dialog_keeps_the_outer_origin() {
+        let rect = resolve_dialog(
+            Rect::new(7, 3, 20, 10),
+            DialogSpec {
+                min_width: 8,
+                preferred_width: 12,
+                max_width: 16,
+                min_height: 4,
+                preferred_height: 6,
+                max_height: 8,
+                horizontal_margin: 0,
+                vertical_margin: 0,
+                placement: Placement::Top,
+            },
+        );
+        assert_eq!(rect, Rect::new(11, 3, 12, 6));
+    }
+
+    #[test]
+    fn dialog_margins_are_axis_independent() {
+        let rect = resolve_dialog(
+            Rect::new(0, 0, 20, 10),
+            DialogSpec {
+                min_width: 0,
+                preferred_width: 20,
+                max_width: 20,
+                min_height: 0,
+                preferred_height: 10,
+                max_height: 10,
+                horizontal_margin: 4,
+                vertical_margin: 0,
+                placement: Placement::Centered,
+            },
+        );
+        assert_eq!(rect, Rect::new(2, 0, 16, 10));
+    }
+}

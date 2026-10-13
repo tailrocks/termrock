@@ -1,0 +1,1 @@
+{"cellHeightPx":18,"cellWidthPx":9,"component":"Progress","defaultSize":"40x8","interactive":true,"padCells":1,"sizes":["28x6","40x8","56x12","72x16","80x24"],"stepKey":null,"steps":6,"storyId":"progress/determinate","title":"Progress","tour":["progress/determinate","progress/narrow","progress/unicode","progress/failed","progress/multi-line","progress/detailed"]}

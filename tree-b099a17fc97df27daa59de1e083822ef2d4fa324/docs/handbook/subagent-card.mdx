@@ -1,0 +1,34 @@
+---
+title: SubagentCard
+description: Delegated agent work — live vs artifact, nested provenance, request-only control.
+---
+
+# SubagentCard
+
+Card/row for nested agent runs. Shows role, task, provenance, status, model/mode,
+context, progress, summary, and preview. Outcomes request steer/message/cancel/…
+— TermRock never runs agents.
+
+## When to use / when not
+
+| Use SubagentCard | Prefer |
+|------------------|--------|
+| Detail for one subagent run | — |
+| Inventory of all tasks | [TaskRail](/docs/handbook/task-rail) |
+| Tool invocation | [ToolCallCard](/docs/handbook/tool-call-card) |
+| Glanceable actives | [ActivityShelf](/docs/handbook/activity-shelf) |
+
+## Phases
+
+| Phase | Meaning |
+|-------|---------|
+| Live | Work in flight |
+| Artifact | Completed result (promote/retry) |
+
+## Keys
+
+Enter expand · s steer · m message · i inspect · c cancel · r retry · d detach · p promote · f fullscreen · u parent
+
+## Related
+
+TaskRail · ActivityModel · ToolCallCard · migration `0223`

@@ -1,0 +1,58 @@
+---
+title: Stack / Inline
+description: 'Stateless vertical and horizontal packing with FlexSize, gap, align, justify, wrap, overflow policy, and responsive direction.'
+---
+## Live terminal (Ghostty-class)
+
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
+
+<TerminalPreview story="stack/vertical" interactive caption="Stack / Inline · stack/vertical — focus surface; keys/click for states" />
+
+## Usage
+
+```rust
+use termrock::layout::{
+    Stack, Inline, FlexSize, Align, Justify, OverflowPolicy, direction_for_width,
+};
+
+let layout = Stack::new().gap(1).layout(area, &[
+    FlexSize::Fixed(2),
+    FlexSize::fill(),
+    FlexSize::Fixed(1),
+]);
+let body = layout.get(1).unwrap();
+
+let chips = Inline::new().wrap(true).gap(1).layout(area, &[
+    FlexSize::Fixed(6),
+    FlexSize::Fixed(6),
+]);
+
+// Responsive: stack when narrow, inline when wide
+let layout = Stack::new()
+    .responsive(area.width, 60)
+    .gap(1)
+    .layout(area, &[FlexSize::fill(), FlexSize::fill()]);
+
+// Clip tail under pressure
+let tight = Stack::new()
+    .overflow(OverflowPolicy::ClipTail)
+    .layout(area, &[FlexSize::Fixed(3), FlexSize::Fixed(3), FlexSize::Fixed(3)]);
+
+// Intrinsic cross-axis size (non-stretch)
+let row = Inline::new()
+    .align(Align::Center)
+    .layout_with_cross(area, &[FlexSize::Fixed(8)], &[1]);
+```
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `stack/vertical` | Stack vertical | **Primary (live preview)** |
+| `stack/inline` | Inline horizontal | inline |
+| `stack/wrap` | Inline wrap | wrap |
+| `stack/responsive` | Stack responsive direction | responsive |
+| `stack/narrow` | Stack narrow overflow | narrow |
+| `stack/overflow-clip` | Stack overflow clip-tail | overflow clip |
+| `stack/justify` | Inline space-around | justify |

@@ -1,0 +1,87 @@
+---
+title: IconButton
+description: 'Compact glyph action with mandatory accessible label and hit slop.'
+component: IconButton
+demo: button/icon
+interaction: activation
+actions:
+  - "hover"
+  - "click toggle"
+  - "Enter/Space toggle"
+expectedOutcomes:
+  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+source: crates/termrock/src/widgets/primitives.rs
+---
+## Live terminal (Ghostty-class)
+
+This preview mounts one persistent Rust component instance. Use the listed keyboard and pointer actions; each accepted action updates the same state and reports its typed outcome.
+
+<TerminalPreview story="button/icon" interactive caption="IconButton · shared Rust demo" />
+
+## Usage
+
+```rust
+use termrock::widgets::{IconButton, IconButtonState, toolbar_icon_action};
+
+let mut state = IconButtonState::new();
+state.activation.set_accepts_input(true);
+
+IconButton::new("×", "Close", &system)
+    .help("Close the dialog (Esc)")
+    .ascii_glyph("x")
+    .paint(area, buf, &mut state);
+
+// Tooltip host: Tooltip::new(btn.help_text())
+// Toolbar: toolbar_icon_action(id, "×", "Close")
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | not-applicable |
+| Mouse | not-applicable |
+| Focus | not-applicable |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `button/icon` | Icon button | **Primary (live preview)** |
+| `icon-button/toolbar` | IconButton toolbar | toolbar |
+| `icon-button/destructive` | IconButton destructive | destructive |
+| `icon-button/loading` | IconButton loading | loading |
+| `icon-button/row` | IconButton data row | row |
+| `icon-button/narrow` | Narrow IconButton | narrow |
+| `icon-button/unicode` | Unicode IconButton | unicode |
+
+
+## Try it
+
+- Use the actions shown beside the terminal; mouse, keyboard, paste, drag, and resize are forwarded only when the component supports them.
+- Confirm the visual state and typed outcome, then use **Reset** to mount a fresh instance.
+
+Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `button/icon`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/primitives.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/primitives.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `button/icon`

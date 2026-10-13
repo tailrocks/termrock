@@ -1,0 +1,422 @@
+[
+  {
+    "source": "handbook/activity-shelf.mdx",
+    "kind": "pattern",
+    "destination": "/docs/patterns/activity-shelf"
+  },
+  {
+    "source": "handbook/agent-mode-selector.mdx",
+    "kind": "concept",
+    "destination": "/docs/interaction-notes"
+  },
+  {
+    "source": "handbook/agent-parity.mdx",
+    "kind": "concept",
+    "destination": "/docs/interaction-notes"
+  },
+  {
+    "source": "handbook/agent-status-header.mdx",
+    "kind": "component",
+    "destination": "/docs/components/agent-status-header"
+  },
+  {
+    "source": "handbook/agent-workbench.mdx",
+    "kind": "pattern",
+    "destination": "/docs/patterns/agent-workbench"
+  },
+  {
+    "source": "handbook/approval-queue.mdx",
+    "kind": "component",
+    "destination": "/docs/components/approval-queue"
+  },
+  {
+    "source": "handbook/attachment-chip.mdx",
+    "kind": "concept",
+    "destination": "/docs/interaction-notes"
+  },
+  {
+    "source": "handbook/background-task-panel.mdx",
+    "kind": "pattern",
+    "destination": "/docs/patterns/background-task-panel"
+  },
+  {
+    "source": "handbook/breadcrumbs.mdx",
+    "kind": "component",
+    "destination": "/docs/components/breadcrumbs"
+  },
+  {
+    "source": "handbook/button.mdx",
+    "kind": "component",
+    "destination": "/docs/components/button"
+  },
+  {
+    "source": "handbook/charts.mdx",
+    "kind": "concept",
+    "destination": "/docs/interaction-notes"
+  },
+  {
+    "source": "handbook/checkpoint-timeline.mdx",
+    "kind": "component",
+    "destination": "/docs/components/checkpoint-timeline"
+  },
+  {
+    "source": "handbook/citation-list.mdx",
+    "kind": "concept",
+    "destination": "/docs/interaction-notes"
+  },
+  {
+    "source": "handbook/combobox.mdx",
+    "kind": "component",
+    "destination": "/docs/components/combobox"
+  },
+  {
+    "source": "handbook/command-palette.mdx",
+    "kind": "component",
+    "destination": "/docs/components/command-palette"
+  },
+  {
+    "source": "handbook/context-meter.mdx",
+    "kind": "concept",
+    "destination": "/docs/interaction-notes"
+  },
+  {
+    "source": "handbook/data-table.mdx",
+    "kind": "component",
+    "destination": "/docs/components/data-table"
+  },
+  {
+    "source": "handbook/date-time-picker.mdx",
+    "kind": "component",
+    "destination": "/docs/components/date-time-picker"
+  },
+  {
+    "source": "handbook/dependency-graph.mdx",
+    "kind": "concept",
+    "destination": "/docs/interaction-notes"
+  },
+  {
+    "source": "handbook/diagnostic.mdx",
+    "kind": "concept",
+    "destination": "/docs/interaction-notes"
+  },
+  {
+    "source": "handbook/dialog.mdx",
+    "kind": "component",
+    "destination": "/docs/components/dialog"
+  },
+  {
+    "source": "handbook/diff-review.mdx",
+    "kind": "component",
+    "destination": "/docs/components/diff-review"
+  },
+  {
+    "source": "handbook/diff-view.mdx",
+    "kind": "component",
+    "destination": "/docs/components/diff-view"
+  },
+  {
+    "source": "handbook/entity-mention.mdx",
+    "kind": "concept",
+    "destination": "/docs/interaction-notes"
+  },
+  {
+    "source": "handbook/event-stream.mdx",
+    "kind": "component",
+    "destination": "/docs/components/event-stream"
+  },
+  {
+    "source": "handbook/file-mention.mdx",
+    "kind": "concept",
+    "destination": "/docs/interaction-notes"
+  },
+  {
+    "source": "handbook/file-picker.mdx",
+    "kind": "component",
+    "destination": "/docs/components/file-picker"
+  },
+  {
+    "source": "handbook/file-tree.mdx",
+    "kind": "concept",
+    "destination": "/docs/interaction-notes"
+  },
+  {
+    "source": "handbook/form-wizard.mdx",
+    "kind": "component",
+    "destination": "/docs/components/form-wizard"
+  },
+  {
+    "source": "handbook/form.mdx",
+    "kind": "component",
+    "destination": "/docs/components/form"
+  },
+  {
+    "source": "handbook/hex-viewer.mdx",
+    "kind": "component",
+    "destination": "/docs/components/hex-viewer"
+  },
+  {
+    "source": "handbook/host-frame.mdx",
+    "kind": "concept",
+    "destination": "/docs/interaction-notes"
+  },
+  {
+    "source": "handbook/index.mdx",
+    "kind": "concept",
+    "destination": "/docs/interaction-notes"
+  },
+  {
+    "source": "handbook/integration-status.mdx",
+    "kind": "component",
+    "destination": "/docs/components/integration-status"
+  },
+  {
+    "source": "handbook/key-value-table.mdx",
+    "kind": "component",
+    "destination": "/docs/components/key-value-table"
+  },
+  {
+    "source": "handbook/keybinding-recorder.mdx",
+    "kind": "component",
+    "destination": "/docs/components/keybinding-recorder"
+  },
+  {
+    "source": "handbook/list.mdx",
+    "kind": "component",
+    "destination": "/docs/components/list"
+  },
+  {
+    "source": "handbook/log-stream.mdx",
+    "kind": "component",
+    "destination": "/docs/components/log-stream"
+  },
+  {
+    "source": "handbook/menu.mdx",
+    "kind": "component",
+    "destination": "/docs/components/menu"
+  },
+  {
+    "source": "handbook/message-thread.mdx",
+    "kind": "concept",
+    "destination": "/docs/interaction-notes"
+  },
+  {
+    "source": "handbook/metrics-dashboard.mdx",
+    "kind": "pattern",
+    "destination": "/docs/patterns/metrics-dashboard"
+  },
+  {
+    "source": "handbook/model-selector.mdx",
+    "kind": "concept",
+    "destination": "/docs/interaction-notes"
+  },
+  {
+    "source": "handbook/multi-select.mdx",
+    "kind": "component",
+    "destination": "/docs/components/multi-select"
+  },
+  {
+    "source": "handbook/number-input.mdx",
+    "kind": "component",
+    "destination": "/docs/components/number-input"
+  },
+  {
+    "source": "handbook/object-inspector.mdx",
+    "kind": "component",
+    "destination": "/docs/components/object-inspector"
+  },
+  {
+    "source": "handbook/overlay-stack.mdx",
+    "kind": "concept",
+    "destination": "/docs/interaction-notes"
+  },
+  {
+    "source": "handbook/pagination.mdx",
+    "kind": "component",
+    "destination": "/docs/components/pagination"
+  },
+  {
+    "source": "handbook/password-input.mdx",
+    "kind": "component",
+    "destination": "/docs/components/password-input"
+  },
+  {
+    "source": "handbook/paste-chip.mdx",
+    "kind": "concept",
+    "destination": "/docs/interaction-notes"
+  },
+  {
+    "source": "handbook/path-input.mdx",
+    "kind": "component",
+    "destination": "/docs/components/path-input"
+  },
+  {
+    "source": "handbook/permission-prompt.mdx",
+    "kind": "component",
+    "destination": "/docs/components/permission-prompt"
+  },
+  {
+    "source": "handbook/plan-review.mdx",
+    "kind": "component",
+    "destination": "/docs/components/plan-review"
+  },
+  {
+    "source": "handbook/process-table.mdx",
+    "kind": "pattern",
+    "destination": "/docs/patterns/process-table"
+  },
+  {
+    "source": "handbook/prompt-composer.mdx",
+    "kind": "component",
+    "destination": "/docs/components/prompt-composer"
+  },
+  {
+    "source": "handbook/prompt-queue.mdx",
+    "kind": "component",
+    "destination": "/docs/components/prompt-queue"
+  },
+  {
+    "source": "handbook/query-editor.mdx",
+    "kind": "pattern",
+    "destination": "/docs/patterns/query-editor"
+  },
+  {
+    "source": "handbook/question-flow.mdx",
+    "kind": "component",
+    "destination": "/docs/components/question-flow"
+  },
+  {
+    "source": "handbook/result-grid.mdx",
+    "kind": "pattern",
+    "destination": "/docs/patterns/result-grid"
+  },
+  {
+    "source": "handbook/schema-browser.mdx",
+    "kind": "pattern",
+    "destination": "/docs/patterns/schema-browser"
+  },
+  {
+    "source": "handbook/search-input.mdx",
+    "kind": "component",
+    "destination": "/docs/components/search-input"
+  },
+  {
+    "source": "handbook/search-results.mdx",
+    "kind": "concept",
+    "destination": "/docs/interaction-notes"
+  },
+  {
+    "source": "handbook/select.mdx",
+    "kind": "component",
+    "destination": "/docs/components/select"
+  },
+  {
+    "source": "handbook/session-picker.mdx",
+    "kind": "component",
+    "destination": "/docs/components/session-picker"
+  },
+  {
+    "source": "handbook/settings-screen.mdx",
+    "kind": "pattern",
+    "destination": "/docs/patterns/settings-screen"
+  },
+  {
+    "source": "handbook/setup-wizard.mdx",
+    "kind": "pattern",
+    "destination": "/docs/patterns/setup-wizard"
+  },
+  {
+    "source": "handbook/sidebar.mdx",
+    "kind": "component",
+    "destination": "/docs/components/sidebar"
+  },
+  {
+    "source": "handbook/slash-command-menu.mdx",
+    "kind": "concept",
+    "destination": "/docs/interaction-notes"
+  },
+  {
+    "source": "handbook/source-citation.mdx",
+    "kind": "concept",
+    "destination": "/docs/interaction-notes"
+  },
+  {
+    "source": "handbook/streaming-markdown.mdx",
+    "kind": "concept",
+    "destination": "/docs/interaction-notes"
+  },
+  {
+    "source": "handbook/subagent-card.mdx",
+    "kind": "pattern",
+    "destination": "/docs/patterns/subagent-card"
+  },
+  {
+    "source": "handbook/table.mdx",
+    "kind": "component",
+    "destination": "/docs/components/table"
+  },
+  {
+    "source": "handbook/tabs.mdx",
+    "kind": "component",
+    "destination": "/docs/components/tabs"
+  },
+  {
+    "source": "handbook/task-rail.mdx",
+    "kind": "component",
+    "destination": "/docs/components/task-rail"
+  },
+  {
+    "source": "handbook/terminal-output.mdx",
+    "kind": "component",
+    "destination": "/docs/components/terminal-output"
+  },
+  {
+    "source": "handbook/terminal-run-card.mdx",
+    "kind": "pattern",
+    "destination": "/docs/patterns/terminal-run-card"
+  },
+  {
+    "source": "handbook/text-area.mdx",
+    "kind": "component",
+    "destination": "/docs/components/text-area"
+  },
+  {
+    "source": "handbook/timeline.mdx",
+    "kind": "component",
+    "destination": "/docs/components/timeline"
+  },
+  {
+    "source": "handbook/token-field.mdx",
+    "kind": "component",
+    "destination": "/docs/components/token-field"
+  },
+  {
+    "source": "handbook/tool-call-card.mdx",
+    "kind": "concept",
+    "destination": "/docs/interaction-notes"
+  },
+  {
+    "source": "handbook/trace-waterfall.mdx",
+    "kind": "concept",
+    "destination": "/docs/interaction-notes"
+  },
+  {
+    "source": "handbook/transcript.mdx",
+    "kind": "component",
+    "destination": "/docs/components/transcript"
+  },
+  {
+    "source": "handbook/tree-navigation.mdx",
+    "kind": "component",
+    "destination": "/docs/components/tree-navigation"
+  },
+  {
+    "source": "handbook/tree-table.mdx",
+    "kind": "component",
+    "destination": "/docs/components/tree-table"
+  },
+  {
+    "source": "handbook/working-state-card.mdx",
+    "kind": "component",
+    "destination": "/docs/components/working-state-card"
+  }
+]

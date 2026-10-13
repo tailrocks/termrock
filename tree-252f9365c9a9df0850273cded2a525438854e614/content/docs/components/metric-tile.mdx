@@ -1,0 +1,90 @@
+---
+title: MetricTile
+description: "One measured number with health and trend context."
+component: MetricTileView
+demo: metric-tile/basic
+interaction: passive-paint
+actions: []
+expectedOutcomes: []
+source: crates/termrock/src/widgets/metric_tile.rs
+---
+
+## Live terminal (Ghostty-class)
+
+This preview is deterministic paint only. It traps no keyboard or pointer input; resize the page to inspect responsive rendering.
+
+<TerminalPreview story="metric-tile/basic" interactive caption="MetricTileView · Metric tile — paint-only shared Rust frame" />
+
+## Try it
+
+- No component input. Resize the host and compare its narrow-terminal, Unicode, and non-color rendering contracts.
+
+The docs page remains fully navigable because this demo does not invent focus, a cursor, or activation.
+
+## State and typed outcomes
+
+`MetricTile` borrows its label, value, optional unit, delta, and samples. `MetricTileHealth` describes semantic health; the widget emits no outcomes.
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | not-applicable in primary demo |
+| Mouse | not-applicable in primary demo |
+| Focus | not-applicable in primary demo |
+| Cursor / caret | not-applicable in primary demo |
+| Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
+
+## Configuration and variants
+
+This component has one canonical catalog setup. Resize the live host to exercise its responsive contract; **Reset** remounts the same configuration.
+
+## Usage
+
+The Code view above and this source excerpt use the exact paint setup registered for `metric-tile/basic`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
+
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
+
+// Exact paint setup used by the shared catalog story.
+fn metric_tile_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    const SAMPLES: &[f64] = &[38.0, 41.0, 39.0, 44.0, 47.0, 46.0, 52.0];
+    MetricTile::new("latency", "p95 latency", "52ms")
+        .delta("+8%", true)
+        .samples(SAMPLES)
+        .health(MetricTileHealth::Warning)
+        .view(system)
+        .paint(area, frame.buffer_mut());
+}
+```
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not put dashboard, alert-routing, or refresh policy into the tile.
+- Do not encode health with color alone; use `MetricTileHealth` so glyph and style cues agree.
+- Do not duplicate the tile paint inside a composite; compose this public building block.
+
+## Test recipe
+
+Render card and row presentations at narrow and regular widths. Assert the value, health cue, and sample trend remain deterministic under Unicode and ASCII glyph profiles.
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `metric-tile/basic` | Metric tile | **Primary (live preview)** |
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/metric_tile.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/metric_tile.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `metric-tile/basic`
+
+## Seen in applications
+
+<SeenInApplications component="MetricTileView" />

@@ -1,0 +1,86 @@
+---
+title: RadioGroup
+description: 'Single-choice group — roving focus, FollowFocus policy, descriptions.'
+---
+
+## Previews
+
+### `radio-group/basic`
+
+![Basic](/component-previews/radio-group-basic.svg)
+
+### `radio-group/horizontal`
+
+![Horizontal](/component-previews/radio-group-horizontal.svg)
+
+### `radio-group/disabled`
+
+![Disabled](/component-previews/radio-group-disabled.svg)
+
+### `radio-group/badges`
+
+![Badges](/component-previews/radio-group-badges.svg)
+
+### `radio-group/narrow`
+
+![Narrow](/component-previews/radio-group-narrow.svg)
+
+### `radio-group/unicode`
+
+![Unicode](/component-previews/radio-group-unicode.svg)
+
+## Usage
+
+```rust
+use termrock::widgets::{
+    RadioGroup, RadioOption, RadioState, RadioSelectionPolicy,
+};
+
+let options = [
+    RadioOption::new("plan", "Plan").description("Read-only"),
+    RadioOption::new("build", "Build").badge("default"),
+    RadioOption::new("ask", "Ask"),
+];
+let mut state = RadioState::new(Some("build"));
+state.set_surface_focused(true);
+
+RadioGroup::new(&options, &system)
+    .legend("Workbench mode")
+    .paint(area, buf, &mut state);
+
+// Destructive / review: move without commit
+state.set_policy(RadioSelectionPolicy::ActivateToSelect);
+```
+
+## Selection policy
+
+| Policy | Movement | Activate |
+|--------|----------|----------|
+| **FollowFocus** (default) | Commits selection | Commits |
+| **ActivateToSelect** | Cursor only | Commits |
+
+Native desktop radios and Radix use FollowFocus. Prefer ActivateToSelect when
+browsing options must not change the value until confirmation.
+
+## Contract
+
+| Concern | Rule |
+|---------|------|
+| Keys | ↑↓←→ Home/End move; Space/Enter select; typeahead |
+| Disabled | Skipped; muted |
+| ASCII | `(*)` selected · `( )` idle |
+| Narrow | Horizontal → vertical under `stack_below` |
+| Outcomes | `Selected(Id)` · `CursorMoved { id }` |
+
+## Not for
+
+| Need | Use |
+|------|-----|
+| Toolbar sticky multi tools | ToggleGroup |
+| Content panels | Tabs |
+| Agent modes strip | ModeRibbon |
+| Boolean form field | Checkbox |
+
+## Migration
+
+See `migrations/0133-v0.13.0-radio-group.md`.

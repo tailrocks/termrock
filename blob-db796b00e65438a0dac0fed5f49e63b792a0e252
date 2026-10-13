@@ -1,0 +1,16 @@
+version = 1
+SPDX-PackageName = "termrock"
+SPDX-PackageSupplier = "Alexey Zhokhov <alexey@zhokhov.com>"
+SPDX-PackageDownloadLocation = "https://github.com/tailrocks/termrock"
+
+[[annotations]]
+path = ["**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Alexey Zhokhov"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = ["crates/termrock-raster/assets/fonts/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)"
+SPDX-License-Identifier = "OFL-1.1"

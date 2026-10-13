@@ -1,0 +1,48 @@
+---
+title: AgentStatusHeader
+description: 'Compact agent/session status with StatusBar contraction.'
+---
+## Live terminal (Ghostty-class)
+
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
+
+<TerminalPreview story="agent-status-header/basic" interactive caption="AgentStatusHeader · agent-status-header/basic — focus surface; keys/click for states" />
+
+## Usage
+
+```rust
+use termrock::widgets::{
+    example_agent_status, AgentStatusHeader, AgentStatusHeaderOutcome,
+    AgentStatusHeaderState, AgentStatusAction,
+};
+
+let mut state = AgentStatusHeaderState::new();
+state.set_snapshot(example_agent_status());
+AgentStatusHeader::new(&system).paint(area, buf, &mut state);
+
+match state.handle_key(key) {
+    AgentStatusHeaderOutcome::Action(AgentStatusAction::Sessions) => {}
+    _ => {}
+}
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered |
+| Mouse | covered |
+| Focus | covered |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `agent-status-header/basic` | AgentStatusHeader | **Primary (live preview)** |
+| `agent-status-header/idle` | AgentStatusHeader idle | idle |
+| `agent-status-header/narrow` | AgentStatusHeader narrow | narrow |
+| `agent-status-header/unicode` | Unicode AgentStatusHeader | unicode |

@@ -1,0 +1,28 @@
+name: Docs
+on: [push, pull_request]
+permissions: { contents: read }
+jobs:
+  docs-required:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+        with: { install: false }
+      - run: mise install rust
+      - uses: Swatinem/rust-cache@v2
+      - run: mise install bun
+      - run: mise install cargo-binstall cargo:cargo-public-api
+      - working-directory: docs
+        run: bun install --frozen-lockfile
+      - working-directory: docs
+        run: bun run types:check
+      - run: |
+          mise x -- cargo public-api -p termrock --all-features > /tmp/public-api-fresh.txt
+          diff -u docs/api/public-api.txt /tmp/public-api-fresh.txt
+      - working-directory: docs
+        run: bun run build
+      - run: cargo run -p termrock-lookbook -- check --dir docs/public/component-previews
+      - run: rm -rf target/render-a target/render-b
+      - run: cargo run -p termrock-lookbook -- render --out target/render-a >/dev/null
+      - run: cargo run -p termrock-lookbook -- render --out target/render-b >/dev/null
+      - run: diff -r target/render-a target/render-b

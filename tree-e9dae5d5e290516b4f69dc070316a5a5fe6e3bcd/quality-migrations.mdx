@@ -1,0 +1,25 @@
+---
+title: Quality migrations
+---
+
+## Display-column measurement
+
+Widget geometry now measures Unicode display columns instead of scalar-value counts. CJK, combining marks, emoji sequences, and regional indicators no longer drift from painted hit regions.
+
+This closes `WIDTH-HINT`, `WIDTH-LIST`, `WIDTH-STATUS`, and `WIDTH-ERROR`. Consumers need no API change; labels may wrap or reveal horizontal scrolling at different columns when their scalar count differs from their terminal width.
+
+## Focused panel styling
+
+Focused panels preserve the established single-line border glyphs and use the semantic focus color for emphasis. Caller style overrides continue to take precedence without changing border geometry.
+
+## Typed terminal overlays
+
+This closes `RAW-OVERLAYS`. Error dialogs expose layout-derived hyperlink regions; consumers decide how and when to emit OSC requests. The raw post-frame byte-vector helper was removed.
+
+## Canonical palette adapters
+
+This closes `COLOR-LAYERS`. Ratatui colors derive from the canonical RGB tokens, and the SVG encoder serializes arbitrary Ratatui RGB values instead of maintaining a second semantic palette table.
+
+## Canonical foundation namespaces
+
+Dialog geometry lives in `termrock::layout`; focus, hover, and modal lifecycle live in `termrock::interaction`; scroll geometry and rendering live in `termrock::scroll`; and the opaque modal backdrop is `termrock::widgets::ModalBackdrop`. The donor-shaped foundation submodules under `termrock::components` are no longer public. Consumers update imports without changing terminal behavior.

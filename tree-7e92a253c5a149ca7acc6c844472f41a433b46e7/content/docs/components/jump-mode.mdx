@@ -1,0 +1,48 @@
+---
+title: JumpMode
+description: 'Easymotion-style jump navigation over SemanticScene regions with prefix-free multi-key labels, role/action filters, and OverlayStack Esc restore.'
+---
+## Live terminal (Ghostty-class)
+
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
+
+<TerminalPreview story="jump-mode/multi" interactive caption="JumpMode · jump-mode/multi — focus surface; keys/click for states" />
+
+## Usage
+
+```rust
+use termrock::widgets::{
+    JumpFilter, JumpOverlay, JumpOverlayState, assign_jump_labels_from_semantics,
+};
+use termrock::interaction::SemanticRole;
+
+let targets = assign_jump_labels_from_semantics(
+    &scene,
+    &JumpFilter::new().roles([SemanticRole::Button]),
+);
+let mut state = JumpOverlayState::new();
+state.open_on_stack(&mut stack, bounds, Some(focus_id));
+// handle_key → Activated / Prefix / Dismissed
+JumpOverlay::from_state(&targets, &system, &state).render(area, buf);
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered |
+| Mouse | covered |
+| Multi-key prefix | covered |
+| Role/action filter | covered |
+| Non-color cues | covered |
+| Deterministic labels | covered |
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `jump-mode/multi` | JumpMode multi-key | **Primary (live preview)** |
+| `jump-mode/filter` | JumpMode role filter | filter |
+| `jump-mode/ascii` | JumpMode ASCII | ascii |
+| `jump-overlay/basic` | Jump overlay | basic |

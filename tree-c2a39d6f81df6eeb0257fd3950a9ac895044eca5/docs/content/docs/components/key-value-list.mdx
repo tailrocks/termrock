@@ -1,0 +1,35 @@
+---
+title: KeyValueList
+description: 'Metadata list — aligned keys, stacked narrow, secrets, status, links.'
+---
+## Live terminal (Ghostty-class)
+
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
+
+<TerminalPreview story="key-value-list/basic" interactive caption="KeyValueList · key-value-list/basic — focus surface; keys/click for states" />
+
+## Usage
+
+```rust
+use termrock::widgets::{KeyValueList, KeyValueListState, KvEntry, KvStatus};
+
+let entries = [
+    KvEntry::group_header("g", "Network"),
+    KvEntry::pair("host", "Host", "localhost").copyable(),
+    KvEntry::pair("tls", "TLS", "required").status(KvStatus::Warning),
+];
+let mut state = KeyValueListState::new();
+KeyValueList::dense(&entries, &system).paint(area, buf, &mut state);
+```
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `key-value-list/basic` | KeyValueList reading | **Primary (live preview)** |
+| `key-value-list/dense` | KeyValueList dense | dense |
+| `key-value-list/stacked` | KeyValueList stacked | stacked |
+| `key-value-list/secret` | KeyValueList secret | secret |
+| `key-value-list/narrow` | Narrow KeyValueList | narrow |
+| `key-value-list/unicode` | Unicode KeyValueList | unicode |

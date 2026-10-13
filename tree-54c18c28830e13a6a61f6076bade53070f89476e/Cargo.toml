@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: 2026 Alexey Zhokhov
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name = "termrock-raster"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Deterministic ratatui Buffer + RolePalette to PNG rasterizer for TermRock baselines"
+publish = false
+
+[dependencies]
+termrock = { version = "0.11.0", path = "../termrock" }
+ratatui = { workspace = true, default-features = false }
+swash.workspace = true
+tiny-skia.workspace = true
+unicode-width.workspace = true
+
+[dev-dependencies]
+termrock-lookbook = { version = "0.11.0", path = "../termrock-lookbook", default-features = false }
+sha2.workspace = true
+hex.workspace = true
+
+[lints]
+workspace = true

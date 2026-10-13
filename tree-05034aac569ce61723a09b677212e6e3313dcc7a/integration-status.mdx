@@ -1,0 +1,35 @@
+---
+title: IntegrationStatus
+description: MCP/plugin/extension health — provenance, egress language, management requests.
+---
+
+# IntegrationStatus
+
+Inventory and diagnostics for MCP servers, plugins, extensions, tools, and
+external integrations. **Host owns** start/stop, grants, and log streaming.
+
+## When to use / when not
+
+| Use IntegrationStatus | Prefer |
+|-----------------------|--------|
+| Multi-integration health/settings | — |
+| Single remote target reconnect | [Connectivity](/docs/handbook) Offline surfaces |
+| One-shot trust gate | [PermissionPrompt](/docs/handbook/permission-prompt) |
+
+## Presentations
+
+| Form | Role |
+|------|------|
+| Badge | One-line compact status |
+| CompactList | Multi-row inventory |
+| Panel | Diagnostic tabs (overview/caps/perms/logs) |
+
+## Safety
+
+- Third-party provenance always labeled
+- Egress capabilities call out **may send data outside workspace**
+- Outcomes never auto-grant permissions
+
+## Related
+
+PermissionPrompt · connectivity · migration `0233`

@@ -1,0 +1,100 @@
+---
+title: Result Grid
+description: 'Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned.'
+pattern: ResultGrid
+demo: result-grid/basic
+interaction: activation
+source: crates/termrock/src/patterns/result_grid.rs
+classification: composite
+---
+
+This is an example composite from `termrock::patterns`, not a first-class widget. Copy the recipe, keep its reusable parts, and replace its sample domain model with your own.
+
+## Live application preview
+
+<TerminalPreview story="result-grid/basic" interactive caption="Result Grid · shared Rust demo" />
+
+## Classification and composition
+
+**composite** · default grid 80×14
+
+Composed public building blocks: `ColumnModel`, `ColumnPin`, `CopyPayload`, `DataColumn`, `DataColumnWidth`, `DataTable`, `DataTableToolbar`, `FilterSpec`, `InspectorField`, `SortSpec`, `StatefulWidget`.
+
+## Workflow
+
+- `Enter open action` or `click trigger` opens a real ChoiceDialog; confirm/cancel produce different outcomes.
+- `S toggle sidebar region` changes the visible application chrome.
+- `↑↓/wheel select row` changes the persistent row selection.
+- `/ filter` focuses a real TextInput; type or paste, then Enter applies or Escape cancels.
+
+The preview and native Lookbook instantiate the same Rust story and state machine. Outcomes appear in the preview status line.
+
+## Ownership
+
+TermRock owns composition, focus geometry, responsive layout, and reusable state transitions. The consuming application owns records, commands, persistence, secrets, authorization, and side effects.
+
+## Source
+
+- Pattern recipe: [`crates/termrock/src/patterns/result_grid.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/patterns/result_grid.rs)
+- Demo: `result-grid/basic`
+
+## Migrated handbook guidance
+
+# ResultGrid
+
+Database / query result component built on [DataTable](/docs/components/data-table).
+Host projects a **visible window** of typed cells; TermRock paints safe display,
+status/stats chrome, and emits export / inspect / page / edit **requests**.
+
+
+## When to use / when not
+
+| Use ResultGrid | Prefer |
+|----------------|--------|
+| SQL / analytics query results | — |
+| Generic interactive grid | [DataTable](/docs/components/data-table) |
+| Display-only moderate table | [Table](/docs/components/table) |
+| Structured object tree | [ObjectInspector](/docs/components/object-inspector) |
+
+## Ownership
+
+| Concern | Owner |
+|---------|--------|
+| Execute query, page, decode types | Host |
+| Safe null / binary / secret display | ResultGrid format helpers |
+| Selection, sort chrome, virtual window | Embedded `DataTableState` |
+| Clipboard / file export | Host via outcomes |
+
+## Typed cells
+
+`ResultCellKind`: Null · Bool · Integer · Float · Text · Binary · Json ·
+Timestamp · Uuid · Secret · Other.
+
+Binary never dumps raw bytes by default (`blob(N B)`). Secrets render as
+`••••` until host allows `ResultRedaction::RevealSecrets`.
+
+## QueryEditor integration
+
+```rust
+// After QueryEditor paint:
+ResultGrid::new(&system, &schema, &page)
+    .render(query_state.slots.results, buf, &mut grid);
+query_state.set_results(grid.query_summary());
+```
+
+## ObjectInspector bridge
+
+`result_row_to_inspector_fields(schema, row, redaction, ascii)` projects a row
+into inspector fields for cell detail panels.
+
+## Outcomes (requests)
+
+- Export (CSV/TSV/JSON/Markdown) · Copy
+- Inspect · Cell detail
+- Page next/prev · Refresh · Retry
+- Edit start/commit · Sort · Stats focus
+- Reveal secrets toggle
+
+## Related
+
+DataTable · QueryEditor · ObjectInspector · migration `0205`

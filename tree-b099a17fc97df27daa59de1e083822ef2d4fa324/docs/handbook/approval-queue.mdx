@@ -1,0 +1,36 @@
+---
+title: ApprovalQueue
+description: Unified inbox for permissions, questions, plans, diffs — no bulk high-risk approve.
+---
+
+# ApprovalQueue
+
+Multi-type human-decision inbox. High-risk items **only Open** into
+PermissionPrompt / QuestionFlow / PlanReview / DiffReview — never one-click bulk.
+
+## When to use / when not
+
+| Use ApprovalQueue | Prefer |
+|-------------------|--------|
+| Mixed pending decisions list | — |
+| Single permission interaction | [PermissionPrompt](/docs/handbook/permission-prompt) |
+| Full Q&A / plan / diff | QuestionFlow · PlanReview · DiffReview |
+
+## Presentations
+
+Badge · Drawer · Full
+
+## Safety
+
+- Default action: **Open**
+- High/Critical: no quick/bulk approve
+- Protocol FIFO for permission/question chains
+- `y` unbound
+
+## Integrations
+
+`approval_items_to_notifications` · `approval_items_to_activity_models` (TaskRail)
+
+## Related
+
+PermissionPrompt · migration `0235`

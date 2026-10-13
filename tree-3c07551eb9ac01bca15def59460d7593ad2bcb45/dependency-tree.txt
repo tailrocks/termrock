@@ -1,0 +1,149 @@
+termrock v0.7.0 (/Users/donbeave/Projects/jackin-project/jackin/.termrock/crates/termrock)
+├── anstyle-parse v0.2.7
+│   └── utf8parse v0.2.2
+├── base64 v0.22.1
+├── crossterm v0.29.0
+│   ├── bitflags v2.13.1
+│   ├── derive_more v2.1.1
+│   │   └── derive_more-impl v2.1.1 (proc-macro)
+│   │       ├── convert_case v0.10.0
+│   │       │   └── unicode-segmentation v1.13.3
+│   │       ├── proc-macro2 v1.0.106
+│   │       │   └── unicode-ident v1.0.24
+│   │       ├── quote v1.0.46
+│   │       │   └── proc-macro2 v1.0.106 (*)
+│   │       └── syn v2.0.119
+│   │           ├── proc-macro2 v1.0.106 (*)
+│   │           ├── quote v1.0.46 (*)
+│   │           └── unicode-ident v1.0.24
+│   │       [build-dependencies]
+│   │       └── rustc_version v0.4.1
+│   │           └── semver v1.0.28
+│   ├── document-features v0.2.12 (proc-macro)
+│   │   └── litrs v1.0.0
+│   ├── mio v1.2.2
+│   │   ├── libc v0.2.186
+│   │   └── log v0.4.33
+│   ├── parking_lot v0.12.5
+│   │   ├── lock_api v0.4.14
+│   │   │   └── scopeguard v1.2.0
+│   │   └── parking_lot_core v0.9.12
+│   │       ├── cfg-if v1.0.4
+│   │       ├── libc v0.2.186
+│   │       └── smallvec v1.15.2
+│   ├── rustix v1.1.4
+│   │   ├── bitflags v2.13.1
+│   │   └── linux-raw-sys v0.12.1
+│   ├── signal-hook v0.3.18
+│   │   ├── libc v0.2.186
+│   │   └── signal-hook-registry v1.4.8
+│   │       ├── errno v0.3.14
+│   │       │   └── libc v0.2.186
+│   │       └── libc v0.2.186
+│   └── signal-hook-mio v0.2.5
+│       ├── libc v0.2.186
+│       ├── mio v1.2.2 (*)
+│       └── signal-hook v0.3.18 (*)
+├── ratatui-core v0.1.2
+│   ├── bitflags v2.13.1
+│   ├── compact_str v0.9.1
+│   │   ├── castaway v0.2.4
+│   │   │   └── rustversion v1.0.23 (proc-macro)
+│   │   ├── cfg-if v1.0.4
+│   │   ├── itoa v1.0.18
+│   │   ├── rustversion v1.0.23 (proc-macro)
+│   │   ├── ryu v1.0.23
+│   │   └── static_assertions v1.1.0
+│   ├── critical-section v1.2.0
+│   ├── hashbrown v0.17.1
+│   │   ├── allocator-api2 v0.2.21
+│   │   ├── equivalent v1.0.2
+│   │   └── foldhash v0.2.0
+│   ├── itertools v0.14.0
+│   │   └── either v1.16.0
+│   ├── kasuari v0.4.12
+│   │   ├── hashbrown v0.16.1
+│   │   │   ├── allocator-api2 v0.2.21
+│   │   │   ├── equivalent v1.0.2
+│   │   │   └── foldhash v0.2.0
+│   │   └── thiserror v2.0.18
+│   │       └── thiserror-impl v2.0.18 (proc-macro)
+│   │           ├── proc-macro2 v1.0.106 (*)
+│   │           ├── quote v1.0.46 (*)
+│   │           └── syn v2.0.119 (*)
+│   ├── lru v0.18.1
+│   │   └── hashbrown v0.17.1 (*)
+│   ├── strum v0.28.0
+│   │   └── strum_macros v0.28.0 (proc-macro)
+│   │       ├── heck v0.5.0
+│   │       ├── proc-macro2 v1.0.106 (*)
+│   │       ├── quote v1.0.46 (*)
+│   │       └── syn v2.0.119 (*)
+│   ├── thiserror v2.0.18 (*)
+│   ├── unicode-segmentation v1.13.3
+│   ├── unicode-truncate v2.0.1
+│   │   ├── itertools v0.14.0 (*)
+│   │   ├── unicode-segmentation v1.13.3
+│   │   └── unicode-width v0.2.2
+│   └── unicode-width v0.2.2
+├── ratatui-crossterm v0.1.2
+│   ├── cfg-if v1.0.4
+│   ├── crossterm v0.29.0 (*)
+│   ├── instability v0.3.12 (proc-macro)
+│   │   ├── darling v0.23.0
+│   │   │   ├── darling_core v0.23.0
+│   │   │   │   ├── ident_case v1.0.1
+│   │   │   │   ├── proc-macro2 v1.0.106 (*)
+│   │   │   │   ├── quote v1.0.46 (*)
+│   │   │   │   ├── strsim v0.11.1
+│   │   │   │   └── syn v2.0.119 (*)
+│   │   │   └── darling_macro v0.23.0 (proc-macro)
+│   │   │       ├── darling_core v0.23.0 (*)
+│   │   │       ├── quote v1.0.46 (*)
+│   │   │       └── syn v2.0.119 (*)
+│   │   ├── indoc v2.0.7 (proc-macro)
+│   │   │   [build-dependencies]
+│   │   │   └── rustversion v1.0.23 (proc-macro)
+│   │   ├── proc-macro2 v1.0.106 (*)
+│   │   ├── quote v1.0.46 (*)
+│   │   └── syn v2.0.119 (*)
+│   └── ratatui-core v0.1.2 (*)
+├── ratatui-widgets v0.3.2
+│   ├── bitflags v2.13.1
+│   ├── hashbrown v0.17.1 (*)
+│   ├── indoc v2.0.7 (proc-macro) (*)
+│   ├── instability v0.3.12 (proc-macro) (*)
+│   ├── itertools v0.14.0 (*)
+│   ├── line-clipping v0.3.7
+│   │   └── bitflags v2.13.1
+│   ├── ratatui-core v0.1.2 (*)
+│   ├── strum v0.28.0 (*)
+│   ├── time v0.3.53
+│   │   ├── deranged v0.5.8
+│   │   ├── libc v0.2.186
+│   │   ├── num-conv v0.2.2
+│   │   ├── num_threads v0.1.7
+│   │   ├── powerfmt v0.2.0
+│   │   └── time-core v0.1.9
+│   ├── unicode-segmentation v1.13.3
+│   └── unicode-width v0.2.2
+├── similar v2.7.0
+├── tui-scrollbar v0.2.7
+│   ├── document-features v0.2.12 (proc-macro) (*)
+│   └── ratatui-core v0.1.2 (*)
+├── unicode-segmentation v1.13.3
+└── unicode-width v0.2.2
+[dev-dependencies]
+└── stats_alloc v0.1.10
+
+termrock-lookbook v0.7.0 (/Users/donbeave/Projects/jackin-project/jackin/.termrock/crates/termrock-lookbook)
+├── crossterm v0.29.0 (*)
+├── ratatui v0.30.2
+│   ├── instability v0.3.12 (proc-macro) (*)
+│   ├── ratatui-core v0.1.2 (*)
+│   ├── ratatui-crossterm v0.1.2 (*)
+│   ├── ratatui-macros v0.7.2
+│   │   ├── ratatui-core v0.1.2 (*)
+│   │   └── ratatui-widgets v0.3.2 (*)
+│   └── ratatui-widgets v0.3.2 (*)
+└── termrock v0.7.0 (/Users/donbeave/Projects/jackin-project/jackin/.termrock/crates/termrock) (*)

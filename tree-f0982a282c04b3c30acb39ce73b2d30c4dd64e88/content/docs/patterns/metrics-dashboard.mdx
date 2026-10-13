@@ -1,0 +1,96 @@
+---
+title: Metrics Dashboard
+description: 'Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned.'
+pattern: MetricsDashboard
+demo: metrics-dashboard/basic
+interaction: activation
+source: crates/termrock/src/patterns/metrics_dashboard.rs
+classification: application
+---
+
+This is an example composite from `termrock::patterns`, not a first-class widget. Copy the recipe, keep its reusable parts, and replace its sample domain model with your own.
+
+## Live application preview
+
+<TerminalPreview story="metrics-dashboard/basic" interactive caption="Metrics Dashboard · shared Rust demo" />
+
+## Classification and composition
+
+**application** · default grid 88×20
+
+Composed public building blocks: `CommandEntry`, `Gauge`, `Sparkline`, `VizGlyphSet`, `Widget`.
+
+## Workflow
+
+- `Enter open action` or `click trigger` opens a real ChoiceDialog; confirm/cancel produce different outcomes.
+- `S toggle sidebar region` changes the visible application chrome.
+- `↑↓/wheel select row` changes the persistent row selection.
+- `/ filter` focuses a real TextInput; type or paste, then Enter applies or Escape cancels.
+
+The preview and native Lookbook instantiate the same Rust story and state machine. Outcomes appear in the preview status line.
+
+## Ownership
+
+TermRock owns composition, focus geometry, responsive layout, and reusable state transitions. The consuming application owns records, commands, persistence, secrets, authorization, and side effects.
+
+## Source
+
+- Pattern recipe: [`crates/termrock/src/patterns/metrics_dashboard.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/patterns/metrics_dashboard.rs)
+- Demo: `metrics-dashboard/basic`
+
+## Migrated handbook guidance
+
+# MetricsDashboard
+
+Reusable observability dashboard block. Host projects metric tiles and alerts;
+TermRock lays out a responsive grid (or narrow summary), paints via public
+`Sparkline` / `Gauge` APIs, and emits refresh / drill-down / time-range
+**requests**.
+
+
+## When to use / when not
+
+| Use MetricsDashboard | Prefer |
+|----------------------|--------|
+| Ops / SRE metric overview | — |
+| Table + log ops shell | `OpsDashboardState` / `layout_ops_dashboard` |
+| Single chart | [Charts](/docs/interaction-notes) |
+| Process list | [ProcessTable](/docs/patterns/process-table) |
+
+## Ownership
+
+| Concern | Owner |
+|---------|--------|
+| Scrape, query, aggregation | Host |
+| Layout, focus, time/comparison chrome | `MetricsDashboardState` |
+| Sparkline/Gauge raster | Public chart widgets |
+
+## Partial failure
+
+Each `MetricTile` has `MetricTileHealth` (`Ok` / `Warning` / `Danger` /
+`Loading` / `Failed` / `Stale`). One failed tile does not blank the dashboard.
+
+## Narrow terminals
+
+Width ≤ 48 → `MetricsDashboardLayoutMode::Summary`: one line per metric
+(`letter title value delta`).
+
+## Command palette
+
+```rust
+metrics_dashboard_commands() // CommandEntry list
+apply_metrics_command(&mut state, "metrics.refresh", &tiles)
+```
+
+## Keys
+
+| Key | Action |
+|-----|--------|
+| Tab · hjkl | Zones · spatial tiles |
+| Enter | Drill-down |
+| Ctrl+R · Ctrl+T · Ctrl+D | Refresh · time · compare |
+| Ctrl+K | Palette request |
+
+## Related
+
+Sparkline · Gauge · OpsDashboard · CommandPalette · migration `0208`

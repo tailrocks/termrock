@@ -1,0 +1,193 @@
+---
+title: List
+description: Scrollable rows with stable IDs — selection, activation, and contraction without owning your data.
+---
+
+# List
+
+**Purpose.** Present a vertical collection where each row has a **stable identity**
+for selection, activation, and hits — without TermRock owning filtering, sorting,
+or domain models. Ideal for navigation, pickers’ result bodies, and task lists.
+
+## When to use / when not
+
+| Use List | Prefer |
+|----------|--------|
+| Navigation, pickers’ results, task lists | — |
+| Rows with primary + optional meta | ComposedRow contraction |
+| Multi-column relational data | [Table](/docs/handbook/table) / [DataTable](/docs/handbook/data-table) |
+| Hierarchical data | Tree |
+| Fuzzy query + results | Picker / [Command palette](/docs/handbook/command-palette) |
+
+## Installation
+
+```toml
+termrock = { git = "https://github.com/tailrocks/termrock.git", rev = "PIN" }
+```
+
+## Source files
+
+`termrock::widgets::{List, ListRow, ListState, RowRole}` · composed-row kits in style/tokens
+
+## Basic example
+
+```rust
+use ratatui_core::text::Line;
+use termrock::{
+    style::DesignTokens,
+    widgets::{List, ListRow, ListState},
+};
+
+let tokens = DesignTokens::default();
+let rows = [
+    ListRow::item("alpha", Line::from("Alpha")),
+    ListRow::item("beta", Line::from("Beta")),
+];
+let list = List::new(&rows, &tokens);
+let mut state = ListState::new(Some("alpha"));
+let _ = (list, &mut state);
+```
+
+## Interactive example
+
+```rust
+use ratatui_core::text::Line;
+use termrock::{
+    input::{KeyCode, KeyEvent, KeyModifiers},
+    interaction::Outcome,
+    style::DesignTokens,
+    widgets::{List, ListRow, ListState},
+};
+
+let tokens = DesignTokens::default();
+let rows = [
+    ListRow::item("a", Line::from("A")),
+    ListRow::item("b", Line::from("B")),
+];
+let _list = List::new(&rows, &tokens);
+let mut state = ListState::new(Some("a"));
+let outcome = state.handle_key(&rows, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
+assert!(matches!(outcome, Outcome::Changed));
+assert_eq!(state.selected(), Some(&"b"));
+```
+
+## Anatomy
+
+`viewport` · `row[]` · each row: `leading` · **primary label** · `secondary` ·
+`badge` · `shortcut` · selection gutter  
+
+Under width pressure, drop order is shortcut → badge → secondary → leading →
+**primary last** (`ComposedRow`).
+
+## Public API
+
+| API | Why |
+|-----|-----|
+| `ListRow::item` | Fast path for primary-only rows |
+| `List::new(&[rows], &tokens)` | Borrowed projection — no clone of domain data |
+| `ListState::new(selected)` | Selection + scroll owned by state |
+| `handle_key` / mouse | Typed `Outcome` only |
+
+## State ownership
+
+| TermRock | Consumer |
+|----------|----------|
+| Selected id, offset, hover, hits | Row data, filter, sort |
+| Contraction of row parts | Labels, enablement, loading flags |
+| | Navigation side effects on Activate |
+
+## Typed outcomes
+
+`Outcome::{Ignored, Changed, Activated(id), …}` — activation means “user chose
+this id”; open a file or run a tool **outside** the list.
+
+## Variants
+
+- **RowRole** item vs section headers.  
+- **Loading** rows show busy leading.  
+- **Disabled** rows skip activation and focus cycle.  
+- **Multi-select** when mode enabled (stable ids only).
+
+## Sizes
+
+Min useful ~3 rows + chrome. Prefer filling a pane; fullscreen N/A (use overlay
+host for modal lists).
+
+## Density
+
+Tokens pad; default **one line per row** for virtualization-friendly paint.
+
+## Keyboard
+
+Move / page / home-end via collection intents or `handle_key`. Enter →
+`Activated`. Esc is usually host/overlay (caller-owned).
+
+## Mouse
+
+Wheel scrolls; click selects/activates. Hit regions track painted rows only.
+
+## Focus
+
+List is one screen target; **selection** is the within-list focus. Blur keeps
+selected id.
+
+## Responsive
+
+Stories: `list/narrow`. Drop meta before primary identity.
+
+## Accessibility / colorless
+
+Gutter marker for selection (`›` / `*`), not fill color alone. Disabled uses
+`TextDisabled`.
+
+## Unicode
+
+Stories: `list/unicode`. CJK/wide labels use display width; ASCII glyph set
+available via tokens.
+
+## Composition
+
+Sidebar, TaskRail, Picker results, SessionPicker body, CommandPalette body.
+
+## Theming
+
+`Role::Selection`, `Role::Text`, `Role::TextMuted`, `Role::TextDisabled`,
+`Role::Focus`.
+
+## Custom recipe
+
+Use `DesignTokens` density + `GlyphSet::Ascii` under Minimal profile; avoid
+per-row RGB for selection.
+
+## Common mistakes
+
+- Rebuilding ids every frame (breaks selection).  
+- Cloning the full dataset into the list each paint.  
+- Secondary meta that must survive when primary is clipped (wrong priority).
+
+## Performance
+
+Paint O(visible rows). For 10k+ keep only the viewport projection; see
+`docs/design/streaming-performance.md` and `data_view` VirtualWindow patterns.
+
+## Testing
+
+- Stories: `list/selection`, `list/narrow`, `list/unicode`, `list/ascii`  
+- `documentation_examples::list_documentation_example`  
+- Contract axes: keyboard / mouse / focus / nonColor / unicode / narrow  
+
+## Migration
+
+Multiselect alignment: `migrations/0023`. Prefer stable ids always.
+
+## Related
+
+Tree · Table / DataTable · Picker · TaskRail · ComposedRow · CommandPalette  
+
+## Complete application example
+
+```text
+filter domain → project visible ListRow[] → List::render
+on Activated(id) → open detail / start tool
+on resize → keep selected id, clamp scroll
+```

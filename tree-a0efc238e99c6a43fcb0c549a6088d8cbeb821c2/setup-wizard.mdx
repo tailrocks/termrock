@@ -1,0 +1,107 @@
+---
+title: Setup Wizard
+description: 'Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned.'
+pattern: SetupWizard
+demo: setup-wizard/welcome
+interaction: activation
+source: crates/termrock/src/patterns/setup_wizard.rs
+classification: application
+---
+
+This is an example composite from `termrock::patterns`, not a first-class widget. Copy the recipe, keep its reusable parts, and replace its sample domain model with your own.
+
+## Live application preview
+
+<TerminalPreview story="setup-wizard/welcome" interactive caption="Setup Wizard · shared Rust demo" />
+
+## Classification and composition
+
+**application** · default grid 80×22
+
+Composed public building blocks: `Field`, `Fieldset`, `Form`, `FormWizard`, `PermissionPrompt`, `StatefulWidget`, `StepChangeReason`, `ThemePicker`, `ThemePreset`, `Widget`, `WizardGate`, `WizardPhase`, `WizardProgress`, `WizardStep`.
+
+## Workflow
+
+- `Enter open action` or `click trigger` opens a real ChoiceDialog; confirm/cancel produce different outcomes.
+- `S toggle sidebar region` changes the visible application chrome.
+- `↑↓/wheel select row` changes the persistent row selection.
+- `/ filter` focuses a real TextInput; type or paste, then Enter applies or Escape cancels.
+
+The preview and native Lookbook instantiate the same Rust story and state machine. Outcomes appear in the preview status line.
+
+## Ownership
+
+TermRock owns composition, focus geometry, responsive layout, and reusable state transitions. The consuming application owns records, commands, persistence, secrets, authorization, and side effects.
+
+## Source
+
+- Pattern recipe: [`crates/termrock/src/patterns/setup_wizard.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/patterns/setup_wizard.rs)
+- Demo: `setup-wizard/welcome`
+
+## Migrated handbook guidance
+
+# SetupWizard
+
+Source-owned onboarding block (migration `0238`). Composes **FormWizard** +
+**Stepper** with step-kind body paint. Domain values and auth stay host-owned.
+
+
+## When to use
+
+| Use SetupWizard | Prefer |
+|-----------------|--------|
+| First-run product setup | Single-step Form / Dialog |
+| Multi-phase onboarding with resume | FormWizard alone for generic multi-step |
+| Inline setup in a pane | Fullscreen app root mode |
+
+## Step kinds
+
+Welcome · Capability · Account · Connection · Choices · Validation · Permission · Theme · Summary · Recovery · Custom
+
+## Modes
+
+- **Fullscreen** — root first-run with small safe margin  
+- **Inline** — fill host pane  
+
+## Laws
+
+| Law | Detail |
+|-----|--------|
+| Safe cancel | Esc → confirm strip; never one-shot leave |
+| Resume | `WizardProgress` chrome only |
+| Keyboard-only | Enter/n next · p back · s skip · Ctrl+S save progress |
+| No marketing splash | One-line welcome detail |
+
+## Minimal host loop
+
+```rust
+use termrock::patterns::{
+    SetupWizardState, SetupWizardSurfaces, example_setup_steps,
+    example_capability_lines, render_setup_wizard,
+};
+use termrock::widgets::BUILTIN_THEME_PRESETS;
+
+let mut state = SetupWizardState::from_steps(example_setup_steps())
+    .with_title("First run");
+
+render_setup_wizard(buf, area, SetupWizardSurfaces {
+    system: &system,
+    state: &mut state,
+    fieldsets: &fieldsets_for_step,
+    capabilities: &example_capability_lines(),
+    summary_lines: &summary,
+    welcome_title: "Setup",
+    welcome_detail: "Configure once. Keyboard-first.",
+    theme_presets: BUILTIN_THEME_PRESETS,
+    theme_paint: Some(&system),
+    permission: None,
+});
+```
+
+## Stories
+
+`setup-wizard/{welcome,capability,account,permission,theme,summary,recovery,inline,resume,cancel-confirm}`
+
+## Related
+
+FormWizard · Stepper · Form · ThemePicker · PermissionPrompt · EmptyState · migration `0238`

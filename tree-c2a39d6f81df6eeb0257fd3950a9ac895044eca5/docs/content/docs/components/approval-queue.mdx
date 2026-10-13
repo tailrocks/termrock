@@ -1,0 +1,51 @@
+---
+title: ApprovalQueue
+description: 'Unified pending decisions inbox — Open default, no bulk high-risk.'
+---
+## Live terminal (Ghostty-class)
+
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
+
+<TerminalPreview story="approval-queue/basic" interactive caption="ApprovalQueue · approval-queue/basic — focus surface; keys/click for states" />
+
+## Usage
+
+```rust
+use termrock::widgets::{
+    example_approval_queue, ApprovalQueue, ApprovalQueueOutcome, ApprovalQueueState,
+};
+
+let mut state = ApprovalQueueState::new();
+state.set_items(example_approval_queue());
+ApprovalQueue::new(&system).paint(area, buf, &mut state);
+
+match state.handle_key(key) {
+    ApprovalQueueOutcome::Open { id, kind, generation } => {
+        let _ = (id, kind, generation);
+    }
+    ApprovalQueueOutcome::BulkApproveDenied { .. } => {}
+    _ => {}
+}
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered |
+| Mouse | covered |
+| Focus | covered |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `approval-queue/basic` | ApprovalQueue | **Primary (live preview)** |
+| `approval-queue/badge` | ApprovalQueue badge | badge |
+| `approval-queue/drawer` | ApprovalQueue drawer | drawer |
+| `approval-queue/narrow` | Narrow ApprovalQueue | narrow |
+| `approval-queue/unicode` | Unicode ApprovalQueue | unicode |

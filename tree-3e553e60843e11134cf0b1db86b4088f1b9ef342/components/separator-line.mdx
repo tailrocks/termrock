@@ -1,0 +1,47 @@
+---
+title: SeparatorLine
+description: 'Horizontal or vertical separator rule using border role paint.'
+---
+## Live terminal (Ghostty-class)
+
+One focused interactive surface. Variants are listed in **Stories** — interactivity
+replaces multi-image galleries.
+
+<TerminalPreview story="separator/basic" interactive caption="SeparatorLine · separator/basic — focus surface; keys/click for states" />
+
+## `separator/basic`
+
+Separator
+
+## Usage
+
+```rust
+use termrock::{style::DesignTokens, widgets::SeparatorLine};
+
+let tokens = DesignTokens::default();
+let sep = SeparatorLine::horizontal(&tokens);
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | not-applicable |
+| Mouse | not-applicable |
+| Focus | not-applicable |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `separator/basic` | Separator quiet | **Primary (live preview)** |
+| `separator/narrow` | Narrow SeparatorLine | narrow |
+| `separator/unicode` | Unicode SeparatorLine | unicode |
+| `separator/strong` | Separator strong | strong |
+| `separator/labeled` | Separator labeled | labeled |
+| `separator/section-break` | Separator section break | section break |
+| `separator/vertical` | Separator vertical | vertical |
+| `separator/focus-zone` | Separator focus zone | focus zone |

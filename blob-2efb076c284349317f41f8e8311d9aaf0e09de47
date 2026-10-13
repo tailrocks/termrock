@@ -1,0 +1,142 @@
+# 0284 — Graphite role ladder: text tiers, accent de-collapse, retired tab-underline roles
+
+The default phosphor palette spent one `#00ff41` on thirteen roles: focused
+borders, focus, accent, the scroll thumb, both tab-underline roles, diff-added
+text, the selection fill, and focused actions all resolved to the same green,
+while body text was pure white and "muted" text was *also* green. This
+migration installs the graphite foreground ladder from
+`docs/design/termrock-design-language.md` §4.1, spends brand green on two roles
+only, and retires the tab-underline roles that the underline-free focus grammar
+(§5, binding) forbids.
+
+Every preset is now built from a name-matched `RolePalette::from_fn(|role|
+match role { … })` instead of a 63-entry positional array, so inserting a role
+can no longer shift every value below it.
+
+## Removed roles
+
+`Role::TabUnderlineFocused` and `Role::TabUnderlineUnfocused` are gone. Tabs no
+longer paint a `━` rule row under the active tab; the active tab is a **bold
+label on a quiet `SelectionTint` wash** (a themed `Role::TabActive` background
+still wins, so a consumer that fills its tab strip keeps that fill).
+
+```rust
+// Before
+let rule = theme.style(Role::TabUnderlineFocused);
+// After — there is no rule row; style the active tab itself
+let active = theme.style(Role::TabActive); // bold FgStrong, no bg by default
+let wash = theme.style(Role::SelectionTint); // bg the active label sits on
+```
+
+## New roles
+
+| Role | Meaning | Phosphor value |
+|------|---------|----------------|
+| `Role::TextFaint` | Meta text (timestamps, counts) — one tier below `TextMuted` | `#5e6d5e` + `DIM` |
+| `Role::BackdropWash` | Bg-carrying modal dim: canvas blended ~60% | canvas → 40% toward black |
+
+`ROLE_COUNT` stays **63** (two roles removed, two added), but the positional
+order changed: `TextFaint` and `BackdropWash` are the last two variants, and
+every variant after the retired tab roles shifted down by two. Code that
+persisted `role as usize` indices, or that built a palette from a positional
+array, must be rebuilt against `RolePalette::roles()`.
+
+```rust
+// Before — positional construction breaks silently on any role change
+let palette = /* [Style; ROLE_COUNT] in enum order */;
+// After — the compiler checks every role by name
+let palette = RolePalette::from_fn(|role| match role {
+    Role::Canvas => Style::new().bg(my_canvas),
+    Role::TextFaint => Style::new().fg(my_faint).add_modifier(Modifier::DIM),
+    Role::BackdropWash => Style::new().bg(my_scrim),
+    _ => Style::new(),
+});
+```
+
+Consumers that `match` on `Role` need arms for `TextFaint` and `BackdropWash`
+(`Role` is `#[non_exhaustive]`, so a wildcard arm keeps compiling).
+
+## Changed phosphor defaults
+
+| Role | Before | After |
+|------|--------|-------|
+| `Text` | `#ffffff` | `#d6e0d6` |
+| `TextStrong` | `#ffffff` bold | `#f0f5f0` bold |
+| `TextMuted` | `#008c1e` (phosphor dim — green) | `#7a8a7a` |
+| `TextDisabled` | `#505050` | `#526052` |
+| `Border` | `#505050` | `#303a32` |
+| `Focus` | `#00ff41` | `#33ff6a` |
+| `Success` | `#3ddc5a` | `#5dffa0` |
+| `Link` | `#00c8c8` (teal — collided with `Info`) | `#5ec8ff` |
+| `LinkHover` | `#82f0f0` | `#8fd8ff` |
+| `Input` | `#141816` (its own gray) | `#0d100d` (= `Sunken`) |
+| `InputInvalid` | `#141816` bg | `#0d100d` bg |
+| `ScrollTrack` | `#005012` (dark phosphor) | `#161b16` |
+| `ScrollThumb` | `#00ff41` | `#303a32` |
+| `TabActive` | `#ffffff` on `#2a2a2a` | `#f0f5f0` bold, no bg |
+| `TabInactive` | `#ffffff` on `#1e1e1e` | `#7a8a7a`, no bg |
+| `TabActiveHovered` / `TabInactiveHovered` | white on gray chips | same fg + `HoverTint` bg |
+| `HintKey` | `#ffffff` bold | `#f0f5f0` bold |
+| `HintText` / `HintDim` | phosphor dim green | `#7a8a7a` / `#526052` |
+| `ActionDisabled` | phosphor dim green | `#526052` |
+| `StatusBar` | `#ffffff` on surface | `#d6e0d6` on surface |
+| `DiffAdded` | `#00ff41` on `#143214` | `#5dffa0` on `#143214` |
+| `SyntaxComment` | phosphor dim green | `#7a8a7a` |
+
+`BorderFocused`, `Accent`, `ActionFocused`, and the `Selection` fill keep
+`#00ff41`: brand green now marks the focused owner and deliberate accent only.
+
+Other presets moved too: `slate` quiets its tab chips and gains `TextFaint`;
+`paper` gets a blue `SelectionTint`, a warm `HoverTint`, and a sunken `Input`;
+`ansi` splits `HoverTint` from `SelectionTint`, raises `Elevated`, and aligns
+`Accent` with `Focus`/`BorderFocused`; `high_contrast` gains a real text ladder
+(`#e6e6e6` body, `#ffffff` strong, `#c0c0c0` muted, `#a6a6a6` faint, `#969696`
+disabled) and trades its white selection slab for teal `#005050`.
+
+Four tones sit slightly lighter than the targets in
+`docs/design/termrock-design-language.md` §4.1 (`TextDisabled` `#526052` not
+`#4a574a`, `TextFaint` `#5e6d5e` not `#4a574a`, `Border`/`ScrollThumb`
+`#303a32` not `#2a332c`, high-contrast disabled `#969696` not `#8a8a8a`).
+Each is the nearest value in the same family that clears the measured contrast
+floor from migration 0283: disabled labels need 2.5:1 on a button fill, faint
+needs 3.0:1 on canvas, `Border` needs 1.3:1 against `Elevated`, and the
+high-contrast preset holds a 7.0:1 floor. Six pre-002 entries left
+`KNOWN_SHORTFALLS` as a result (both `TextMuted` pairs, both phosphor
+`TextDisabled` pairs, and both disabled-input value pairs).
+
+## Light appearance now resolves a light palette (bug fix)
+
+`Appearance::Light` mapped to `slate`, whose canvas is `#0f172a` — a dark navy.
+Light terminals got a dark theme.
+
+```rust
+// Before
+AppearanceThemeMap::default().light == "slate";
+palette_for_appearance(Appearance::Light) == RolePalette::slate();
+// After
+AppearanceThemeMap::default().light == "paper";
+palette_for_appearance(Appearance::Light) == RolePalette::paper();
+```
+
+Consumers that relied on the old mapping should pass an explicit
+`AppearanceThemeMap { dark: "phosphor", light: "slate" }`.
+
+`Appearance::detect()` is memoized in a `OnceLock` (it can shell out to
+`defaults` on macOS). Call it once at startup; use the new
+`Appearance::detect_fresh()` when the host must re-read a changed environment.
+
+## Internal constants (not public API)
+
+`INPUT_BG_DIM`, `DIALOG_SCROLL_THUMB`, `DIALOG_SCROLL_TRACK`, `TAB_BG_*`, and
+`PHOSPHOR_DIM` are removed; `BOLD_WHITE`/`DIM` become `STRONG`/`MUTED`; new
+`TEXT_BODY`, `TEXT_STRONG`, `TEXT_MUTED`, `TEXT_DISABLED`, `FOCUS_GREEN`, and
+`SCROLL_TRACK` carry the ladder. `SUCCESS_GREEN`, `BORDER_GRAY`, `LINK_FG`, and
+`LINK_FG_HOVER` changed value.
+
+## Validation
+
+```sh
+cargo nextest run -p termrock style::
+mise run check
+mise run gate
+```

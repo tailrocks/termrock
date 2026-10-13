@@ -1,0 +1,36 @@
+---
+title: Chip
+description: 'Selectable filter tokens with optional remove, error, and loading status.'
+---
+## Live terminal (Ghostty-class)
+
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
+
+<TerminalPreview story="chip/filter" interactive caption="Chip · chip/filter — focus surface; keys/click for states" />
+
+## Usage
+
+```rust
+use termrock::widgets::{Chip, ChipState, TokenStrip, TokenItem, TokenStripState};
+
+let chip = Chip::new("rust", "rust", &system).removable(true);
+let mut state = ChipState::new(false);
+state.set_focused(true);
+// Space toggles selection; Delete removes when removable
+
+let items = [
+    TokenItem::chip("a", "rust").selected(true),
+    TokenItem::tag("b", "file.rs").removable(true),
+];
+let strip = TokenStrip::new(&items, &system).wrap().max_visible(6);
+```
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `chip/filter` | Chip filter | **Primary (live preview)** |
+| `chip/error-loading` | Chip error and loading | error loading |
+| `token-strip/wrap` | Token strip wrap | wrap |
+| `token-strip/overflow` | Token strip overflow | overflow |

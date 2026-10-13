@@ -1,0 +1,49 @@
+---
+title: Progress
+description: 'Determinate/indeterminate progress with percentage, units, rate, ETA, phases, and status recipes for task/transfer models.'
+---
+## Live terminal (Ghostty-class)
+
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
+
+<TerminalPreview story="progress/determinate" interactive caption="Progress · progress/determinate — focus surface; keys/click for states" />
+
+## Usage
+
+```rust
+use termrock::widgets::{Progress, ProgressBar, ProgressBarState, ProgressKind, ProgressRecipe};
+
+Progress::new(ProgressKind::Determinate { fraction: 0.72 }, &system)
+    .label("Indexing")
+    .paint(area, buf);
+
+let mut state = ProgressBarState::transfer(12_000_000, 30_000_000);
+state.set_label("Download");
+state.set_rate(Some(2_000_000.0));
+state.recompute_eta();
+state.set_recipe(ProgressRecipe::Detailed);
+ProgressBar::paint_state(&system, area, buf, &mut state, tick, motion);
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | caller-owned |
+| Mouse | caller-owned |
+| Focus | covered (never focusable) |
+| Non-color cues | covered (glyphs + %) |
+| Unicode | covered |
+| Narrow terminal | covered (% elided under 16 cols) |
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `progress/determinate` | Progress | **Primary (live preview)** |
+| `progress/detailed` | ProgressBar detailed | detailed |
+| `progress/multi-line` | ProgressBar multi-line | multi line |
+| `progress/failed` | ProgressBar failed | failed |
+| `progress/narrow` | Narrow progress | narrow |
+| `progress/unicode` | Unicode progress labels | unicode |

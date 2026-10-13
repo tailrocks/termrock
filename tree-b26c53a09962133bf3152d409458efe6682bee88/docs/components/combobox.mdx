@@ -1,0 +1,47 @@
+---
+title: Combobox
+description: 'An editable input with CompletionMenu suggestions, async generation gating, and separate draft/active/value.'
+---
+## Live terminal (Ghostty-class)
+
+One focused interactive surface. Variants are listed in **Stories** — interactivity
+replaces multi-image galleries.
+
+<TerminalPreview story="combobox/basic" interactive caption="Combobox · combobox/basic — focus surface; keys/click for states" />
+
+## `combobox/basic`
+
+Combobox
+
+## Usage
+
+```rust
+use termrock::style::DesignSystem;
+use termrock::widgets::{Combobox, ComboboxState, CompletionCandidate};
+
+let system = DesignSystem::default();
+let mut state: ComboboxState<&str> = ComboboxState::new();
+state.set_focused(true);
+// DraftChanged { generation } → host fetch → apply_suggestions(generation, …)
+let _ = Combobox::new(&system).label("Language");
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered |
+| Mouse | covered |
+| Focus | covered |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `combobox/basic` | Combobox | **Primary (live preview)** |
+| `combobox/open` | Combobox open | open |
+| `combobox/loading` | Combobox loading | loading |
+| `autocomplete/basic` | Autocomplete | basic |

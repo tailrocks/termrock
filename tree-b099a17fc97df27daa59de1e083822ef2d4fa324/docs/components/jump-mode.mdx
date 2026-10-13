@@ -1,0 +1,59 @@
+---
+title: JumpMode
+description: 'Easymotion-style jump navigation over SemanticScene regions with prefix-free multi-key labels, role/action filters, and OverlayStack Esc restore.'
+---
+
+## Previews
+
+### `jump-mode/multi`
+
+JumpMode multi-key
+
+![JumpMode — multi-key](/component-previews/jump-mode-multi.svg)
+
+### `jump-mode/filter`
+
+JumpMode role filter
+
+![JumpMode — filter](/component-previews/jump-mode-filter.svg)
+
+### `jump-mode/ascii`
+
+JumpMode ASCII
+
+![JumpMode — ASCII](/component-previews/jump-mode-ascii.svg)
+
+### `jump-overlay/basic`
+
+Jump overlay
+
+![JumpOverlay — basic](/component-previews/jump-overlay-basic.svg)
+
+## Usage
+
+```rust
+use termrock::widgets::{
+    JumpFilter, JumpOverlay, JumpOverlayState, assign_jump_labels_from_semantics,
+};
+use termrock::interaction::SemanticRole;
+
+let targets = assign_jump_labels_from_semantics(
+    &scene,
+    &JumpFilter::new().roles([SemanticRole::Button]),
+);
+let mut state = JumpOverlayState::new();
+state.open_on_stack(&mut stack, bounds, Some(focus_id));
+// handle_key → Activated / Prefix / Dismissed
+JumpOverlay::from_state(&targets, &system, &state).render(area, buf);
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered |
+| Mouse | covered |
+| Multi-key prefix | covered |
+| Role/action filter | covered |
+| Non-color cues | covered |
+| Deterministic labels | covered |

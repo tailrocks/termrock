@@ -1,0 +1,11 @@
+{
+  "pages": [
+    "index",
+    "components",
+    "patterns",
+    "runtime",
+    "interaction",
+    "interaction-notes",
+    "quality-migrations"
+  ]
+}

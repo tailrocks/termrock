@@ -1,0 +1,161 @@
+---
+title: TerminalOutput
+description: 'TerminalOutput widget.'
+component: TerminalOutput
+demo: terminal-output/running
+interaction: scrolling-virtualization
+actions:
+  - "↑↓ move"
+  - "wheel scroll"
+  - "F follow"
+  - "C cancel"
+  - "Y copy command"
+  - "click stream filter"
+expectedOutcomes:
+  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+source: crates/termrock/src/widgets/terminal_output.rs
+---
+
+
+## Live terminal (Ghostty-class)
+
+This preview mounts one persistent Rust component instance. Use the listed keyboard and pointer actions; each accepted action updates the same state and reports its typed outcome.
+
+<TerminalPreview story="terminal-output/running" interactive caption="TerminalOutput · TerminalOutput running — persistent Rust preview; available actions appear below" />
+
+## Usage
+
+```rust
+use termrock::widgets::TerminalOutput;
+
+// See handbook / lookbook story terminal-output/basic.
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered |
+| Mouse | covered |
+| Focus | covered |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+Lookbook coverage for this component. Only the **primary** story is embedded above;
+use the interactive preview (and Studio lookbook) to explore transitions instead of
+a static multi-image gallery.
+
+| Story | Title | Focus |
+|---|---|---|
+| `terminal-output/running` | TerminalOutput running | **Primary (live preview)** |
+| `terminal-output/ascii` | TerminalOutput ASCII | ASCII / low capability |
+| `terminal-output/compact` | TerminalOutput compact | Compact density |
+| `terminal-output/empty` | TerminalOutput empty | Empty state |
+| `terminal-output/env` | TerminalOutput env | env |
+| `terminal-output/failed` | TerminalOutput failed | Failed |
+| `terminal-output/narrow` | TerminalOutput narrow | Narrow terminal |
+| `terminal-output/pinned` | TerminalOutput pinned | pinned |
+
+
+## Try it
+
+- Use the actions shown beside the terminal; mouse, keyboard, paste, drag, and resize are forwarded only when the component supports them.
+- Confirm the visual state and typed outcome, then use **Reset** to mount a fresh instance.
+
+Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `terminal-output/running`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/terminal_output.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/terminal_output.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `terminal-output/running`
+
+## Migrated handbook guidance
+
+# TerminalOutput
+
+Presents one projected command run: metadata chrome, streaming stdout/stderr,
+follow/pause, and typed control **requests**. TermRock never spawns or kills
+processes.
+
+
+## When to use / when not
+
+| Use TerminalOutput | Prefer |
+|--------------------|--------|
+| Agent/build command panes | — |
+| Compact tool summary only | [ToolCard](/docs/components/tool-card) |
+| Multi-source logs | [LogStream](/docs/components/log-stream) |
+| Owned append buffer | [LogPane](/docs/components/log-pane) |
+
+## Safety
+
+- No `Command::new`, no PTY in this widget
+- Outcomes: `CancelRequested`, `RetryRequested`, `DetachProcessRequested`, `Copy*`, …
+- Host owns process policy and secrets redaction (helpers assist display only)
+
+## Follow / scroll
+
+`ScrollAreaState` is sole follow authority. Scrolling away detaches; chip or `f`
+re-follows. `on_append` updates unread while pinned.
+
+## Recipes
+
+| Recipe | Layout |
+|--------|--------|
+| `Compact` | Short header + few body rows |
+| `Pane` (default) | Status, command, cwd, body, follow chip |
+| `Fullscreen` | Extra key hints |
+
+## Paint modes
+
+`Ansi` · `NoColor` · `Plain` · `Raw` (escaped sequences for inspection)
+
+## Keys
+
+| Key | Action |
+|-----|--------|
+| f | Follow toggle |
+| c / C-c | Cancel (running) / copy output |
+| r | Retry |
+| d | Detach process |
+| e | Env panel |
+| m / p | Paint mode / recipe |
+
+## Example
+
+```rust
+use termrock::widgets::{
+    TerminalOutput, TerminalOutputState, TerminalCommandMeta,
+    TerminalLine, TerminalRunStatus,
+};
+
+let meta = TerminalCommandMeta::new("cargo test")
+    .status(TerminalRunStatus::Running)
+    .duration_ms(500);
+let lines = [TerminalLine::stdout("1", "ok")];
+let mut state = TerminalOutputState::new();
+// TerminalOutput::new(&meta, &lines, &system).render(area, buf, &mut state);
+let _ = (meta, lines, state);
+```
+
+## Related
+
+AnsiText · ToolCard · LogStream · migration `0199`

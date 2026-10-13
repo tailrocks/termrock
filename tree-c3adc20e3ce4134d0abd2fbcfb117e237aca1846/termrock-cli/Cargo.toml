@@ -1,0 +1,28 @@
+# SPDX-FileCopyrightText: 2026 Alexey Zhokhov
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name = "termrock-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Offline-safe TermRock source registry CLI (add/diff/plan)"
+readme = "README.md"
+
+[[bin]]
+name = "termrock"
+path = "src/main.rs"
+
+[dependencies]
+termrock = { path = "../termrock", version = "0.11.0", default-features = false }
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+sha2.workspace = true
+hex.workspace = true
+
+[dev-dependencies]
+
+[lints]
+workspace = true

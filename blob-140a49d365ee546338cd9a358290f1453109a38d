@@ -1,0 +1,34 @@
+---
+title: Sidebar & NavigationList
+description: Primary app navigation with route≠focus, hierarchy, and rail/drawer collapse.
+---
+
+# Sidebar & NavigationList
+
+**Purpose.** AppShell start-dock navigation. **Route** (active destination) is
+separate from **focus** (keyboard cursor). Host owns real routing and expansion
+projection.
+
+## NavigationList
+
+Core list: sections, groups, badges, status, filter (`/`), expand hooks,
+contextual actions, optional `command` ids for semantic commands.
+
+## Sidebar
+
+Chrome around NavigationList: panel title, rail toggle (`[`), width auto-rail,
+drawer/palette outcomes for narrow shells.
+
+## Examples
+
+- `example_settings_nav`
+- `example_database_nav`
+- `example_agent_workbench_nav`
+
+## AppShell
+
+Paint into `AppShellSlots` start/sidebar region from `layout_app_shell`.
+
+## Related
+
+Tabs · Tree · Menu · AppShell · migration `0153`

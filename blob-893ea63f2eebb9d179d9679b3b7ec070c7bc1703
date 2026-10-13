@@ -1,0 +1,83 @@
+# 0152 — Tabs
+
+## Mission
+
+Composable tab strip for views, documents, and question groups: roving focus,
+manual/automatic activation, badges/status, close + reorder hooks, and narrow
+contraction (scroll → overflow → Select). **Panel content stays host-owned** by
+tab id (Tabs never stores panel widgets).
+
+## Preserve / migrate / split / delete
+
+| Surface | Fate |
+|---------|------|
+| `TAB_GAP`, `TabCell`, `lay_out_tabs`, `tab_at_column` | **Preserved** |
+| `Tab` / `Tabs` / `TabsState` names | **Preserved** (fields expanded) |
+| Paint-only strip without `handle_key` | **Migrated** — full interaction |
+| `Tab.active` | **Preserved** as paint fallback when `selected` is `None` |
+| `TabsState.{selected,hovered,focused,regions}` | **Preserved** (public) |
+| `TabsActivation`, `TabsOrientation`, `TabsPresentation`, `TabStatus`, `TabsOutcome` | **Added** |
+| `SegmentedControl` | **Preserved** — mode switch, not multi-panel Tabs |
+
+## Consumer edits
+
+```diff
+  let tabs = [
+-     Tab { id: "a", label: "A", glyph: None, active: true, enabled: true },
++     Tab::new("a", "A").status(TabStatus::Success).closable(true),
++     // or struct update with badge/status/closable fields
+  ];
+- let mut state = TabsState { selected: Some("a"), focused: true, ..Default::default() };
++ let mut state = TabsState::new().with_selected("a");
++ state.set_focused(true);
++ // optional: .with_activation(TabsActivation::Manual)
++ // optional: .with_orientation(TabsOrientation::Vertical)
+
+- // host only re-rendered on click hacks
++ match state.handle_key(key, &tabs) {
++     TabsOutcome::SelectionChanged { id } => host.show_panel(id),
++     TabsOutcome::CloseRequested { id } => host.close_panel(id),
++     TabsOutcome::OverflowOpened { overflow_ids } => host.menu(overflow_ids),
++     TabsOutcome::ReorderRequested { from, to } => host.reorder(from, to),
++     _ => {}
++ }
++ // Panel state: host HashMap<Id, PanelState> — not inside TabsState
+
+  Tabs::new(&tabs, &system).gap(1).paint(area, buf, &mut state);
+```
+
+### vs SegmentedControl
+
+| | Tabs | SegmentedControl |
+|--|------|------------------|
+| Content | Separate panels per id | One surface mode |
+| Close / dirty | Yes | No |
+| Overflow | Scroll / `…` / Select | Priority `…` / collapse |
+
+### Activation
+
+| Mode | Behavior |
+|------|----------|
+| Automatic (default) | Arrow focus also selects |
+| Manual | Arrows focus; Enter/click select |
+
+### Narrow
+
+| Width | Presentation |
+|-------|----------------|
+| Fits all | Expanded |
+| Wide but overflow | Scrolling |
+| Medium | Overflow `…` |
+| Very narrow multi-tab | Select trigger |
+
+### Stories
+
+- `tabs/status`, `tabs/narrow`, `tabs/unicode` (migrated)
+- `tabs/overflow`, `tabs/vertical`, `tabs/manual`, `tabs/closable`
+
+## Validation
+
+```bash
+rustup run 1.97.1 cargo test -p termrock --lib widgets::tabs
+rustup run 1.97.1 cargo run -p termrock-lookbook -- check --dir docs/public/component-previews
+```

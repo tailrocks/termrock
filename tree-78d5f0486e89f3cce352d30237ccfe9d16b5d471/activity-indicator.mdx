@@ -1,0 +1,41 @@
+---
+title: ActivityIndicator
+description: 'Activity line with phase spinner, required verb, and optional detail (reconnect attempts, targets).'
+---
+
+## Previews
+
+### `activity-indicator/basic`
+
+ActivityIndicator
+
+![ActivityIndicator — basic](/component-previews/activity-indicator-basic.svg)
+
+## Usage
+
+```rust
+use termrock::style::{DesignSystem, Motion};
+use termrock::widgets::{ActivityIndicator, SpinnerState, ActivityPhase};
+
+let system = DesignSystem::default();
+let mut state = SpinnerState::new();
+state.set_phase(ActivityPhase::Reconnecting);
+ActivityIndicator::new("Reconnecting to agent", &system)
+    .detail("attempt 2/5")
+    .paint(area, buf, &state, tick, Motion::Full);
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | caller-owned |
+| Mouse | caller-owned |
+| Focus | covered (never focusable) |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+- `activity-indicator/basic`

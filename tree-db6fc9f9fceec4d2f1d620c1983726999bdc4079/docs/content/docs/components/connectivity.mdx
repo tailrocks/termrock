@@ -1,0 +1,60 @@
+---
+title: Offline / ReconnectingState
+description: 'Connectivity for remote sessions — banner, full recovery, StatusBar and NotificationCenter projection.'
+---
+## Live terminal (Ghostty-class)
+
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
+
+<TerminalPreview story="connectivity/banner" interactive caption="Offline / ReconnectingState · connectivity/banner — focus surface; keys/click for states" />
+
+## Usage
+
+```rust
+use termrock::widgets::{
+    ReconnectingState, OfflineBanner, OfflineSurface, ConnectivityPresentation,
+    StatusSlot, StatusBar,
+};
+
+let mut conn = ReconnectingState::new("agent://prod-1");
+conn.begin_reconnect(3);
+conn.set_now_secs(now);
+conn.set_last_success_secs(Some(last_ok));
+
+// StatusBar
+let label = conn.status_bar_content();
+let right = [conn.status_slot_template("c", &label)];
+
+// Banner
+OfflineBanner::new(&conn, &system).paint(banner_row, buf);
+
+// Full recovery
+conn.set_presentation(ConnectivityPresentation::Full);
+OfflineSurface::new(&system).paint(area, buf, &mut conn);
+
+// Notifications
+center.ingest_item(conn.to_notification_item("conn-1"));
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered (r/a/o/q, Tab, Esc, Enter) |
+| Mouse | covered (banner click, action bands) |
+| Focus | covered (full surface actions) |
+| Non-color cues | covered (glyph + labels) |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `connectivity/banner` | Offline banner | **Primary (live preview)** |
+| `connectivity/reconnecting` | Reconnecting full | reconnecting |
+| `connectivity/auth` | Auth required | auth |
+| `connectivity/unavailable` | Server unavailable | unavailable |
+| `connectivity/status-bar` | Connectivity StatusBar | status bar |
+| `connectivity/notification` | Connectivity notification | notification |

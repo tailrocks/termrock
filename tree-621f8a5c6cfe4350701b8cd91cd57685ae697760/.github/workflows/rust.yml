@@ -1,0 +1,48 @@
+name: Rust
+on: [push, pull_request]
+permissions: { contents: read }
+jobs:
+  rust-required:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+        with: { install: false }
+      - run: mise install rust
+      - run: rustup component add rustfmt clippy
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - run: cargo test --workspace --all-features --locked
+      - run: cargo check -p termrock --no-default-features --locked
+      - run: cargo check --workspace --examples --locked
+      - run: cargo check --workspace --examples --features crossterm --locked
+      - run: RUSTDOCFLAGS='-D warnings' cargo doc --workspace --all-features --no-deps --locked
+      - run: cargo package -p termrock --locked --allow-dirty
+  crossterm-platform:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+        with: { install: false }
+      - run: mise install rust
+      - run: cargo check -p termrock --features crossterm --all-targets --locked
+      - run: cargo test -p termrock --features crossterm --locked
+  semver-candidate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: jdx/mise-action@v2
+        with: { install: false }
+      - run: mise install rust
+      - run: mise install cargo:cargo-semver-checks
+      - name: Compare with the first API baseline
+        run: |
+          if git rev-parse --verify refs/tags/v0.6.0 >/dev/null 2>&1; then
+            cargo semver-checks check-release -p termrock --baseline-rev v0.6.0
+          else
+            echo 'v0.6.0 baseline is created after the final bootstrap checkpoint'
+          fi

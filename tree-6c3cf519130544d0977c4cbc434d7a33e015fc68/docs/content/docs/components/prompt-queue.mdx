@@ -1,0 +1,66 @@
+---
+title: PromptQueue
+description: 'Editable queue of prompts waiting behind busy agent work.'
+---
+
+## Previews
+
+### `prompt-queue/compact`
+
+![PromptQueue — compact](/component-previews/prompt-queue-compact.svg)
+
+### `prompt-queue/expanded`
+
+![PromptQueue — expanded](/component-previews/prompt-queue-expanded.svg)
+
+### `prompt-queue/failed`
+
+![PromptQueue — failed](/component-previews/prompt-queue-failed.svg)
+
+### `prompt-queue/narrow`
+
+![PromptQueue — narrow](/component-previews/prompt-queue-narrow.svg)
+
+### `prompt-queue/unicode`
+
+![PromptQueue — unicode](/component-previews/prompt-queue-unicode.svg)
+
+## Usage
+
+```rust
+use termrock::widgets::{
+    example_prompt_queue, AgentBusyState, PromptQueue, PromptQueueOutcome,
+    PromptQueuePresentation, PromptQueueState,
+};
+
+let mut state = PromptQueueState::new();
+state.set_items(example_prompt_queue());
+state.set_agent(AgentBusyState::Busy);
+state.presentation = PromptQueuePresentation::Expanded;
+PromptQueue::new(&system).paint(area, buf, &mut state);
+
+match state.handle_key(key) {
+    PromptQueueOutcome::SendNext { id } => { let _ = id; }
+    PromptQueueOutcome::InterruptAndSend { id } => { let _ = id; }
+    _ => {}
+}
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered |
+| Mouse | covered |
+| Focus | covered |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+- `prompt-queue/compact`
+- `prompt-queue/expanded`
+- `prompt-queue/failed`
+- `prompt-queue/narrow`
+- `prompt-queue/unicode`

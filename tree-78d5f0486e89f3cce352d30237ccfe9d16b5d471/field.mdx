@@ -1,0 +1,32 @@
+---
+title: Field
+description: 'Single form field projection — label, value, status, dirty/touched.'
+---
+
+## Usage
+
+```rust
+use termrock::widgets::{Field, FieldStatus};
+
+Field::new("email", "Email", value)
+    .required(true)
+    .help("Work address")
+    .error("invalid")      // or .warning / .pending
+    .dirty(true)
+    .touched(true);
+```
+
+## Status
+
+| Variant | Meaning |
+|---------|---------|
+| `Help` | Neutral help |
+| `Warning` | Non-blocking |
+| `Error` | Blocking validation |
+| `Pending` | Async validation |
+
+Compose inside [`Fieldset`](./fieldset) / [`Form`](./form). Caption-only chrome without a value row: [`FieldCaption`](./label) (Label + Description).
+
+## Migration
+
+See `migrations/0137-v0.13.0-form-field-fieldset.md`.

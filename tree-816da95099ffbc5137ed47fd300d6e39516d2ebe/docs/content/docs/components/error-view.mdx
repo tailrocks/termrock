@@ -1,0 +1,63 @@
+---
+title: ErrorView / ErrorState
+description: 'Structured recoverable failure — summary, details (collapsed), recovery, retry safety.'
+---
+## Live terminal (Ghostty-class)
+
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
+
+<TerminalPreview story="error-view/basic" interactive caption="ErrorView / ErrorState · error-view/basic — focus surface; keys/click for states" />
+
+## Usage
+
+```rust
+use termrock::style::DesignSystem;
+use termrock::widgets::{
+    ErrorState, ErrorKind, Recovery, RecoveryAction, RetrySafety,
+    ErrorStateState, example_error_network,
+};
+
+let system = DesignSystem::default();
+let err = ErrorState::new("Request failed", &system)
+    .kind(ErrorKind::Network)
+    .explanation("Could not reach the API")
+    .technical("timeout after 30s")
+    .source("jobs-service")
+    .recovery(
+        Recovery::none()
+            .with_retry(RecoveryAction::with_shortcut("Retry", "r"))
+            .with_retry_safety(RetrySafety::Safe)
+            .with_copy_diagnostics(true)
+            .with_work_preserved(true, Some("Draft retained")),
+    );
+
+let mut state = ErrorStateState::new(); // technical collapsed
+err.paint_with_state(area, buf, &mut state);
+// ErrorView is a type alias for ErrorState
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered (Tab, Enter, r/c/d, recovery) |
+| Mouse | covered (action bands, details) |
+| Focus | covered (when recovery/details present) |
+| Non-color cues | covered (glyph + labels + safety line) |
+| Unicode | covered |
+| Narrow terminal | covered (inline contraction) |
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `error-view/basic` | Error view | **Primary (live preview)** |
+| `error-state/validation` | ErrorState validation | validation |
+| `error-state/permission` | ErrorState permission | permission |
+| `error-state/details` | ErrorState technical details | details |
+| `error-state/inline` | ErrorState inline | inline |
+| `error-state/dialog` | ErrorState dialog | dialog |
+| `error-state/fullscreen` | ErrorState full-screen | fullscreen |
+| `error-view/narrow` | Narrow ErrorView | narrow |
+| `error-view/unicode` | Unicode ErrorView | unicode |

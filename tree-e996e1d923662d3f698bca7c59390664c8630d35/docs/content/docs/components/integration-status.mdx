@@ -1,0 +1,50 @@
+---
+title: IntegrationStatus
+description: 'MCP/plugin/extension health with provenance and egress language.'
+---
+## Live terminal (Ghostty-class)
+
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
+
+<TerminalPreview story="integration-status/list" interactive caption="IntegrationStatus · integration-status/list — focus surface; keys/click for states" />
+
+## Usage
+
+```rust
+use termrock::widgets::{
+    example_integrations, IntegrationStatus, IntegrationStatusOutcome,
+    IntegrationStatusState,
+};
+
+let mut state = IntegrationStatusState::new();
+state.set_entries(example_integrations());
+IntegrationStatus::new(&system).paint(area, buf, &mut state);
+
+match state.handle_key(key) {
+    IntegrationStatusOutcome::PermissionRequested { id, .. } => { let _ = id; }
+    IntegrationStatusOutcome::RestartRequested { id } => { let _ = id; }
+    _ => {}
+}
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered |
+| Mouse | covered |
+| Focus | covered |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `integration-status/list` | IntegrationStatus list | **Primary (live preview)** |
+| `integration-status/panel` | IntegrationStatus panel | panel |
+| `integration-status/badge` | IntegrationStatus badge | badge |
+| `integration-status/narrow` | Narrow IntegrationStatus | narrow |
+| `integration-status/unicode` | Unicode IntegrationStatus | unicode |

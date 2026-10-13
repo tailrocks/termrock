@@ -1,0 +1,44 @@
+---
+title: RadioGroup
+description: 'Single-choice group — roving focus, FollowFocus policy, descriptions.'
+---
+## Live terminal (Ghostty-class)
+
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
+
+<TerminalPreview story="radio-group/basic" interactive caption="RadioGroup · radio-group/basic — focus surface; keys/click for states" />
+
+## Usage
+
+```rust
+use termrock::widgets::{
+    RadioGroup, RadioOption, RadioState, RadioSelectionPolicy,
+};
+
+let options = [
+    RadioOption::new("plan", "Plan").description("Read-only"),
+    RadioOption::new("build", "Build").badge("default"),
+    RadioOption::new("ask", "Ask"),
+];
+let mut state = RadioState::new(Some("build"));
+state.set_surface_focused(true);
+
+RadioGroup::new(&options, &system)
+    .legend("Workbench mode")
+    .paint(area, buf, &mut state);
+
+// Destructive / review: move without commit
+state.set_policy(RadioSelectionPolicy::ActivateToSelect);
+```
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `radio-group/basic` | RadioGroup basic | **Primary (live preview)** |
+| `radio-group/horizontal` | RadioGroup horizontal | horizontal |
+| `radio-group/disabled` | RadioGroup disabled option | disabled |
+| `radio-group/badges` | RadioGroup badges | badges |
+| `radio-group/narrow` | Narrow RadioGroup | narrow |
+| `radio-group/unicode` | Unicode RadioGroup | unicode |

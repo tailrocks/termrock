@@ -1,0 +1,55 @@
+---
+title: PlanReview
+description: 'Agent plan document review — Markdown, comments, safe approve paths.'
+---
+## Live terminal (Ghostty-class)
+
+One focused interactive surface. Variants are listed in **Stories** — interactivity
+replaces multi-image galleries.
+
+<TerminalPreview story="plan-review/basic" interactive caption="PlanReview · plan-review/basic — focus surface; keys/click for states" />
+
+## `plan-review/basic`
+
+Plan review
+
+## Usage
+
+```rust
+use termrock::widgets::{
+    example_plan_document, PlanReview, PlanReviewOutcome, PlanReviewState,
+};
+
+let mut state = PlanReviewState::new();
+state.open(example_plan_document());
+PlanReview::new(&system).paint(area, buf, &mut state);
+
+match state.handle_key(key) {
+    PlanReviewOutcome::Approved => {}
+    PlanReviewOutcome::RevisionRequested { feedback } => { let _ = feedback; }
+    PlanReviewOutcome::Cancelled => {}
+    _ => {}
+}
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered |
+| Mouse | covered |
+| Focus | covered |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `plan-review/basic` | Plan review | **Primary (live preview)** |
+| `plan-review/high-risk` | PlanReview high risk | high risk |
+| `plan-review/diff` | PlanReview version diff | diff |
+| `plan-review/comments` | PlanReview comments | comments |
+| `plan-review/narrow` | Narrow PlanReview | narrow |
+| `plan-review/unicode` | Unicode PlanReview | unicode |

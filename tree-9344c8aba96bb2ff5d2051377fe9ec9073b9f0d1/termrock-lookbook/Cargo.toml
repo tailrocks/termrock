@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: 2026 Alexey Zhokhov
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name = "termrock-lookbook"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Interactive and generated component catalog for TermRock"
+
+[[bin]]
+name = "termrock-lookbook"
+path = "src/main.rs"
+
+[dependencies]
+termrock = { path = "../termrock" }
+ratatui.workspace = true
+crossterm.workspace = true
+
+[lints]
+workspace = true

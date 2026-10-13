@@ -1,0 +1,45 @@
+---
+title: ContextMenu
+description: 'Pointer/context-key command menu at origin with nested cascade, same item model as DropdownMenu, OverlayKind::ContextMenu placement.'
+---
+## Live terminal (Ghostty-class)
+
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
+
+<TerminalPreview story="context-menu/basic" interactive caption="ContextMenu · context-menu/basic — focus surface; keys/click for states" />
+
+## Usage
+
+```rust
+use termrock::widgets::{
+    ContextMenu, DropdownMenuState, MenuNode, open_context_menu_overlay, measure_menu_panel,
+};
+
+let nodes = vec![
+    MenuNode::command("copy", "Copy").shortcut("C-c"),
+    MenuNode::command("delete", "Delete").destructive(true),
+];
+let mut state = DropdownMenuState::context();
+let _ = state.open_from_context_pointer(&nodes, bounds);
+// open_context_menu_overlay(&mut stack, bounds, origin, size, opener);
+// ContextMenu::new(&nodes, &system).paint(rect, buf, &mut state);
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered |
+| Mouse | covered (right-click open host-driven; outside dismiss) |
+| Focus | covered |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `context-menu/basic` | ContextMenu basic | **Primary (live preview)** |
+| `context-menu/nested` | ContextMenu nested | nested |

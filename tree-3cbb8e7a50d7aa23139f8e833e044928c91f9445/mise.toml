@@ -1,0 +1,8 @@
+[tools]
+actionlint = "1.7.12"
+rust = "1.97.0"
+"cargo:cargo-deny" = "0.20.0"
+"cargo:cargo-hack" = "0.6.45"
+"cargo:cargo-nextest" = "0.9.136"
+"cargo:cargo-shear" = "1.13.0"
+"ubi:gitleaks/gitleaks" = "8.28.0"

@@ -1,0 +1,28 @@
+---
+title: OverlayStack
+description: Sole overlay / modal z-order and Esc authority.
+---
+
+# OverlayStack
+
+**Sole** public authority for floating UI: dialogs, palettes, completion, drawers, tooltips, permission traps.
+
+## Law
+
+- Escape peels **exactly one** conceptual layer (top).
+- Trap kinds (`AlertDialog`, high-risk permission) return `Ignored` — host must cancel domain state separately.
+- Outside-click follows per-kind policy (`Dismissible` vs `Trap`).
+- Paint backdrop only when `backdrop_policy() != None` via `render_backdrop`.
+
+## Do not use
+
+- `ModalStack` (removed from public API — migration `0065`)
+- Ad-hoc modal paint without `stack.open`
+
+## Open helpers
+
+`open_dialog_overlay`, `open_command_palette_overlay`, `open_completion_overlay`, permission `open_overlay`, drawer/popover/tooltip/jump helpers.
+
+## Related
+
+InteractionScene · PermissionPrompt · CommandPalette · Dialog · AgentWorkbench

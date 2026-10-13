@@ -1,0 +1,85 @@
+---
+title: Chip
+description: 'Selectable filter tokens with optional remove, error, and loading status.'
+component: Chip
+demo: chip/filter
+interaction: activation
+actions:
+  - "Enter/Space toggle"
+  - "←→ choose remove"
+  - "Delete remove"
+  - "click"
+expectedOutcomes:
+  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+source: crates/termrock/src/widgets/tag_chip.rs
+---
+## Live terminal (Ghostty-class)
+
+This preview mounts one persistent Rust component instance. Use the listed keyboard and pointer actions; each accepted action updates the same state and reports its typed outcome.
+
+<TerminalPreview story="chip/filter" interactive caption="Chip · shared Rust demo" />
+
+## Usage
+
+```rust
+use termrock::widgets::{Chip, ChipState, TokenStrip, TokenItem, TokenStripState};
+
+let chip = Chip::new("rust", "rust", &system).removable(true);
+let mut state = ChipState::new(false);
+state.set_focused(true);
+// Space toggles selection; Delete removes when removable
+
+let items = [
+    TokenItem::chip("a", "rust").selected(true),
+    TokenItem::tag("b", "file.rs").removable(true),
+];
+let strip = TokenStrip::new(&items, &system).wrap().max_visible(6);
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | not-applicable |
+| Mouse | not-applicable |
+| Focus | not-applicable |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `chip/filter` | Chip filter | **Primary (live preview)** |
+| `chip/error-loading` | Chip error and loading | error loading |
+| `token-strip/wrap` | Token strip wrap | wrap |
+| `token-strip/overflow` | Token strip overflow | overflow |
+
+
+## Try it
+
+- Use the actions shown beside the terminal; mouse, keyboard, paste, drag, and resize are forwarded only when the component supports them.
+- Confirm the visual state and typed outcome, then use **Reset** to mount a fresh instance.
+
+Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `chip/filter`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/tag_chip.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/tag_chip.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `chip/filter`

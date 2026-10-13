@@ -1,0 +1,54 @@
+---
+title: ToolCallCard
+description: Compact-to-expanded agent tool execution with redaction and typed outcomes.
+---
+
+# ToolCallCard
+
+Interactive tool-call chrome for agent transcripts: full lifecycle status, verb,
+actor, args/result, risk/egress, inline expand, and fullscreen zoom. Host owns
+execution, cancel, and permission policy. Never binds a provider protocol.
+
+## When to use / when not
+
+| Use ToolCallCard | Prefer |
+|------------------|--------|
+| Interactive tool rows in agent UI | — |
+| Paint-only one-shot summary | [ToolCard](/docs/components/tool-card) if present / thin Card |
+| Full command stdout chrome | [TerminalOutput](/docs/handbook/terminal-output) |
+| Permission grant UI | [Permission prompt](/docs/handbook/permission-prompt) |
+
+## Status lifecycle
+
+`Queued` · `Preparing` · `Running` · `WaitingInput` · `WaitingPermission` ·
+`Streaming` · `Success` · `Warning` · `Failed` · `Cancelled` · `Detached`
+
+## Safety
+
+- `redact_tool_secrets` on copy/paint paths (host should still pre-redact)
+- Egress note paints with warning role when present
+- Outcomes are **requests only** — no process spawn/kill
+
+## Keys
+
+Enter expand · `c` cancel · `r` retry · `p` permission · `f` fullscreen · Esc exit zoom · Ctrl+A/C copy
+
+## Example
+
+```rust
+use termrock::widgets::{
+    ToolCall, ToolCallCard, ToolCallCardState, ToolStatus, ToolRisk,
+};
+
+let call = ToolCall::new("t1", "bash", "ran tests")
+    .status(ToolStatus::Success)
+    .args_summary("cargo test")
+    .risk(ToolRisk::Read);
+let mut st = ToolCallCardState::new();
+// ToolCallCard::new(&call, &system).paint(area, buf, &mut st);
+let _ = (call, st);
+```
+
+## Related
+
+ToolCard · TerminalOutput · PermissionPrompt · MessageThread · migration `0219`

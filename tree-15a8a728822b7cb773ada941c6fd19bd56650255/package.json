@@ -1,0 +1,51 @@
+{
+  "name": "termrock-docs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "postinstall": "bunx --bun fumadocs-mdx",
+    "dev": "bunx --bun vite dev",
+    "preview": "bunx --bun vite preview",
+    "build:preview-runtime": "wasm-pack build ../crates/termrock-lookbook-web --target web --out-dir ../../docs/src/generated/termrock-preview --release",
+    "build:preview-posters": "bun run scripts/export-preview-posters.ts",
+    "generate:demo-code": "bun run scripts/generate-demo-code.ts",
+    "sync:pattern-actions": "bun run scripts/sync-pattern-actions.ts",
+    "sync:component-contracts": "bun run scripts/sync-component-contracts.ts",
+    "types:check": "bun run build:preview-runtime && bunx --bun fumadocs-mdx && bunx --bun tsc --noEmit",
+    "scaffold:component": "bun run scripts/scaffold-component-page.ts",
+    "check:components": "bun run scripts/check-component-pages.ts",
+    "check:patterns": "bun run scripts/check-pattern-pages.ts",
+    "check:snippets": "bun run scripts/generate-demo-code.ts --check && bun run scripts/check-component-snippets.ts",
+    "check:catalog": "bun run scripts/check-catalog.ts",
+    "check:preview-metrics": "bun run scripts/check-preview-metrics.ts",
+    "test:preview": "playwright test tests/preview",
+    "test:patterns": "playwright test tests/patterns",
+    "test:visual": "playwright test tests/visual",
+    "test:browser": "playwright test",
+    "finalize:site": "bun run scripts/finalize-static-site.ts",
+    "check:site": "bun run scripts/check-static-site.ts",
+    "build": "bun run build:preview-runtime && bun run check:components && bun run check:patterns && bun run check:snippets && bun run check:preview-metrics && bunx --bun fumadocs-mdx && bun run check:catalog && bunx --bun vite build && bun run finalize:site && bun run check:site"
+  },
+  "dependencies": {
+    "@tanstack/react-router": "^1.170.18",
+    "@tanstack/react-start": "^1.168.28",
+    "@tanstack/start-static-server-functions": "^1.167.19",
+    "@vitejs/plugin-react": "^6.0.3",
+    "fumadocs-core": "^16.11.5",
+    "fumadocs-mdx": "^15.2.0",
+    "fumadocs-ui": "^16.11.5",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "vite": "^8.1.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/bun": "^1.3.14",
+    "@types/mdx": "^2.0.14",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2"
+  }
+}

@@ -1,0 +1,49 @@
+---
+title: FileMention
+description: Inline file/path/symbol mention tokens with completion and disambiguation.
+---
+
+# FileMention
+
+Inline structured tokens for **files, directories, and symbols**. Host projects
+paths and ranks completion candidates; TermRock owns atomic draft cursor chrome,
+inline paint, disambiguation UI, and semantic summaries — never filesystem or
+LSP lookup.
+
+## When to use / when not
+
+| Use FileMention | Prefer |
+|-----------------|--------|
+| `@` path / symbol in agent prompts | — |
+| Agents / tools / sessions | [EntityMention](/docs/handbook/entity-mention) |
+| Attachment chips (not inline) | [AttachmentChip](/docs/handbook/attachment-chip) |
+| Generic completion list only | [CompletionMenu](/docs/components/completion-menu) |
+
+## Ownership
+
+| Concern | Owner |
+|---------|--------|
+| Path resolve, fuzzy rank, LSP | Host |
+| Validity (missing/stale/ambiguous) | Host projection |
+| Atomic cursor · paint · outcomes | FileMention / MentionDraft / InlineMention |
+| Candidate rows | Host → `MentionCandidate` → CompletionMenu |
+
+## Atomic draft
+
+`MentionDraft` stores text segments and mention tokens. Left/Right and Backspace
+treat a mention as one unit — caret never sits “inside” a token label.
+
+## Completion
+
+```rust
+let mut st = FileMentionState::new();
+st.sync_from_draft(&text, cursor);
+if let Some(q) = &st.query {
+    let hits = filter_mention_candidates(&cands, &q.query, Some(MentionFamily::File));
+    let next = apply_mention_insert(&text, q, &hits[0].insert_markup());
+}
+```
+
+## Related
+
+EntityMention · CompletionMenu · PromptComposer · migration `0213`

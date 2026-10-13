@@ -1,0 +1,117 @@
+---
+title: Stack / Inline
+description: 'Stateless vertical and horizontal packing with FlexSize, gap, align, justify, wrap, overflow policy, and responsive direction.'
+---
+
+## Previews
+
+### `stack/vertical`
+
+![Stack vertical](/component-previews/stack-vertical.svg)
+
+### `stack/inline`
+
+![Inline](/component-previews/stack-inline.svg)
+
+### `stack/wrap`
+
+![Wrap](/component-previews/stack-wrap.svg)
+
+### `stack/responsive`
+
+![Responsive](/component-previews/stack-responsive.svg)
+
+### `stack/narrow`
+
+![Narrow overflow (shrink-from-end)](/component-previews/stack-narrow.svg)
+
+### `stack/overflow-clip`
+
+![Clip-tail overflow](/component-previews/stack-overflow-clip.svg)
+
+### `stack/justify`
+
+![Space-around](/component-previews/stack-justify.svg)
+
+## Anatomy
+
+`content` (padded) · `children[]` (stable index) · `overflowed` · `content_main` · `direction`
+
+## Usage
+
+```rust
+use termrock::layout::{
+    Stack, Inline, FlexSize, Align, Justify, OverflowPolicy, direction_for_width,
+};
+
+let layout = Stack::new().gap(1).layout(area, &[
+    FlexSize::Fixed(2),
+    FlexSize::fill(),
+    FlexSize::Fixed(1),
+]);
+let body = layout.get(1).unwrap();
+
+let chips = Inline::new().wrap(true).gap(1).layout(area, &[
+    FlexSize::Fixed(6),
+    FlexSize::Fixed(6),
+]);
+
+// Responsive: stack when narrow, inline when wide
+let layout = Stack::new()
+    .responsive(area.width, 60)
+    .gap(1)
+    .layout(area, &[FlexSize::fill(), FlexSize::fill()]);
+
+// Clip tail under pressure
+let tight = Stack::new()
+    .overflow(OverflowPolicy::ClipTail)
+    .layout(area, &[FlexSize::Fixed(3), FlexSize::Fixed(3), FlexSize::Fixed(3)]);
+
+// Intrinsic cross-axis size (non-stretch)
+let row = Inline::new()
+    .align(Align::Center)
+    .layout_with_cross(area, &[FlexSize::Fixed(8)], &[1]);
+```
+
+## FlexSize
+
+| Spec | Main-axis claim |
+|------|-----------------|
+| `Fixed(n)` | Exact `n` (clamped under overflow) |
+| `Weight(w)` / `fill()` | Share residual after fixed/preferred |
+| `Preferred { min, preferred, max }` | Ideal clamp; may grow to max when free residual |
+| `Collapsed` | Zero main; keeps stable index |
+
+## Overflow
+
+| Policy | Behavior |
+|--------|----------|
+| `ShrinkFromEnd` (default) | From the end: `min(claim, remaining)` |
+| `ClipTail` | Keep head; tail → 0 |
+| `EqualShare` | Peel cells from the end until fit |
+
+`StackLayout::overflowed` is set when any fixed/preferred child falls below `min_main`.
+
+## Hits & semantics
+
+```rust
+let hits = layout.hit_regions(); // Vec<HitRegion<usize>>
+layout.register_semantic_group(&mut scene, "g", "stack", |i| format!("c{i}"));
+```
+
+## vs WorkSurface / Grid
+
+Use **Stack/Inline** for component-local anatomy (card body, callout lines, chip rows).  
+Use **WorkSurface/Workspace** for named multi-pane app chrome.  
+Use **Grid** for 2D tracks/spans.
+
+## Common mistakes
+
+- Nesting Stack for padding only — use `padding()` once
+- Using WorkSurface for two-line title/body — prefer Stack
+- Ignoring `overflowed` on tiny terminals
+- Expecting retained flex tree — layout is pure geometry per frame
+
+## Migration
+
+See `migrations/0104-v0.13.0-stack-inline-premium.md` (extends 0097).

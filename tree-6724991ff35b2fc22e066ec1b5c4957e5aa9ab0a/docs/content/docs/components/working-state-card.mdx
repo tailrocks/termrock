@@ -1,0 +1,52 @@
+---
+title: WorkingStateCard
+description: 'Privacy-safe current agent work summary with ActivityShelf collapse.'
+---
+## Live terminal (Ghostty-class)
+
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
+
+<TerminalPreview story="working-state-card/basic" interactive caption="WorkingStateCard · working-state-card/basic — focus surface; keys/click for states" />
+
+## Usage
+
+```rust
+use termrock::widgets::{
+    example_working_state, WorkingStateCard, WorkingStateCardState,
+    WorkingStateOutcome,
+};
+
+let mut state = WorkingStateCardState::new();
+state.set_work(Some(example_working_state()));
+WorkingStateCard::new(&system).paint(area, buf, &mut state);
+
+match state.handle_key(key) {
+    WorkingStateOutcome::CancelRequested { id } => { let _ = id; }
+    WorkingStateOutcome::Collapsed => {
+        let _ = state.to_activity_item(); // ActivityShelf
+    }
+    _ => {}
+}
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered |
+| Mouse | covered |
+| Focus | covered |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `working-state-card/basic` | WorkingStateCard | **Primary (live preview)** |
+| `working-state-card/waiting` | WorkingStateCard waiting | waiting |
+| `working-state-card/collapsed` | WorkingStateCard collapsed | collapsed |
+| `working-state-card/narrow` | Narrow WorkingStateCard | narrow |
+| `working-state-card/unicode` | Unicode WorkingStateCard | unicode |

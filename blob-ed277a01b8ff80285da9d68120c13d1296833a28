@@ -1,0 +1,35 @@
+---
+title: Fieldset
+description: 'Grouped form fields with legend and optional description.'
+---
+## Live terminal (Ghostty-class)
+
+One focused interactive surface. Variants are listed in **Stories** — interactivity
+replaces multi-image galleries.
+
+<TerminalPreview story="form/responsive" interactive caption="Fieldset · form/responsive — focus surface; keys/click for states" />
+
+## Usage
+
+```rust
+use termrock::widgets::{Field, Fieldset};
+
+let fields = [Field::new("a", "A", "1"), Field::new("b", "B", "2")];
+Fieldset::new("Network", &fields).description("Connectivity");
+```
+
+Historical alias: `FormSection`.
+
+## Migration
+
+See `migrations/0137-v0.13.0-form-field-fieldset.md`.
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `form/responsive` | Responsive form | **Primary (live preview)** |
+| `form/compact` | Form compact | compact |
+| `form/validation` | Form validation | validation |
+| `form/narrow` | Narrow form | narrow |
+| `form/unicode` | Unicode Form | unicode |

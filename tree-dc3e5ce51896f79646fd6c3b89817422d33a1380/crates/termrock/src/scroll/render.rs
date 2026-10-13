@@ -1,0 +1,460 @@
+// SPDX-FileCopyrightText: 2026 Alexey Zhokhov
+// SPDX-License-Identifier: Apache-2.0
+
+//! Scrollbar painting and the fixed-prefix line primitive.
+
+use ratatui_core::{buffer::Buffer, layout::Rect, terminal::Frame, text::Line, widgets::Widget};
+use ratatui_widgets::paragraph::Paragraph;
+
+use crate::{
+    scroll,
+    style::{DesignSystem, Role},
+    text::{display_cols, fixed_prefix_scroll_segments},
+};
+
+/// Rows at each edge that dim when the content keeps going past them.
+///
+/// Two rows: one is a hard line, three eats a screenful on a short pane.
+pub const SCROLL_EDGE_FADE_ROWS: u16 = 2;
+
+/// Fades the rows a scrolled region is cut at, so the cut reads as "more".
+///
+/// A scrollbar answers *where* you are; it does not answer whether the row
+/// under your eye is the end of the content or the end of the pane. The edge
+/// fade answers that in the one channel a terminal has to spare — colour —
+/// because position is cell-quantised and cannot express a partial row.
+///
+/// `above` and `below` say whether content continues past that edge. Reduced
+/// motion is not consulted: this is a static gradient, not a transition, and a
+/// tier that forbids animation still wants to know the list continues.
+pub fn paint_scroll_edges(
+    buffer: &mut Buffer,
+    area: Rect,
+    system: &DesignSystem,
+    above: bool,
+    below: bool,
+) {
+    if area.is_empty() || (!above && !below) {
+        return;
+    }
+    let canvas = system
+        .style(Role::Canvas)
+        .bg
+        .unwrap_or(ratatui_core::style::Color::Reset);
+    let rows = SCROLL_EDGE_FADE_ROWS.min(area.height / 2).max(1);
+    for step in 0..rows {
+        // The outermost row fades hardest; `edge_fade` gives the ramp its
+        // shape so every fading edge in the library agrees on the curve.
+        let alpha = crate::style::edge_fade(step, rows.saturating_mul(2), rows);
+        if above {
+            fade_row(buffer, area, area.y.saturating_add(step), alpha, canvas);
+        }
+        if below {
+            let y = area.bottom().saturating_sub(1).saturating_sub(step);
+            fade_row(buffer, area, y, alpha, canvas);
+        }
+    }
+}
+
+/// Blends one painted row toward the canvas.
+fn fade_row(
+    buffer: &mut Buffer,
+    area: Rect,
+    y: u16,
+    alpha: f32,
+    canvas: ratatui_core::style::Color,
+) {
+    if y < area.y || y >= area.bottom() {
+        return;
+    }
+    for x in area.x..area.right() {
+        let cell = &mut buffer[(x, y)];
+        let faded = crate::style::fade_style(
+            ratatui_core::style::Style::default()
+                .fg(cell.fg)
+                .bg(cell.bg)
+                .add_modifier(cell.modifier),
+            alpha,
+            canvas,
+        );
+        if let Some(fg) = faded.fg {
+            cell.set_fg(fg);
+        }
+        if let Some(bg) = faded.bg {
+            cell.set_bg(bg);
+        }
+    }
+}
+
+/// Dim track glyph shared by every scrollbar.
+pub const SCROLLBAR_TRACK: &str = "·";
+/// Heavy horizontal scrollbar thumb glyph.
+pub const SCROLLBAR_HORIZONTAL_THUMB: &str = "━";
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+/// Visual weight of the vertical scrollbar thumb.
+pub enum ScrollbarStyle {
+    /// Thin heavy-line thumb.
+    #[default]
+    Line,
+    /// Solid block thumb.
+    Block,
+}
+
+impl ScrollbarStyle {
+    #[must_use]
+    /// Return the vertical thumb glyph.
+    pub const fn vertical_thumb(self) -> &'static str {
+        match self {
+            Self::Line => "┃",
+            Self::Block => "█",
+        }
+    }
+}
+
+#[must_use]
+/// Width inside a one-cell bordered block.
+pub const fn viewport_width(area: Rect) -> usize {
+    area.width.saturating_sub(2) as usize
+}
+
+#[must_use]
+/// Height inside a one-cell bordered block.
+pub const fn viewport_height(area: Rect) -> usize {
+    area.height.saturating_sub(2) as usize
+}
+
+/// Clamp and store a `u16` scroll offset.
+pub const fn clamp_scroll_offset(content_len: usize, viewport: usize, offset: &mut u16) -> u16 {
+    scroll::clamp_offset_u16(content_len, viewport, offset)
+}
+
+/// Apply an unclamped signed delta.
+pub const fn apply_scroll_delta_unclamped(value: &mut u16, delta: i16) {
+    scroll::apply_delta_unclamped_u16(value, delta);
+}
+
+/// Apply a signed delta and clamp to content.
+pub fn apply_scroll_delta(value: &mut u16, delta: i16, viewport: usize, content_len: usize) {
+    scroll::apply_delta_u16(content_len, viewport, value, isize::from(delta));
+}
+
+/// Apply horizontal scrolling using a bordered terminal width.
+pub fn apply_term_width_scroll_delta(
+    value: &mut u16,
+    delta: i16,
+    term_width: u16,
+    content_width: usize,
+) {
+    apply_scroll_delta(
+        value,
+        delta,
+        usize::from(term_width.saturating_sub(2)),
+        content_width,
+    );
+}
+
+/// Map a pointer position on a scrollbar track to a content offset.
+pub fn scrollbar_offset_for_track_position(
+    content_length: usize,
+    viewport: usize,
+    track_len: usize,
+    track_position: usize,
+) -> u16 {
+    scroll::offset_for_track_position_u16(content_length, viewport, track_len, track_position)
+}
+
+/// Paint a line whose prefix remains fixed while its suffix scrolls.
+pub fn render_line_with_fixed_prefix_scroll(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    row: u16,
+    line: Line<'static>,
+    fixed_prefix_cols: usize,
+    scroll_x: usize,
+) {
+    let mut fill_style = line.style;
+    let mut styled_spans = Vec::new();
+    let mut base_col = 0usize;
+    for span in line.spans {
+        let style = line.style.patch(span.style);
+        if fill_style.bg.is_none() && style.bg.is_some() {
+            fill_style = style;
+        }
+        let span_width = display_cols(&span.content);
+        styled_spans.push((span.content.into_owned(), style, base_col));
+        base_col += span_width;
+    }
+    let width = usize::from(area.width);
+    for col in 0..width {
+        frame
+            .buffer_mut()
+            .set_string(area.x + col as u16, area.y + row, " ", fill_style);
+    }
+    for (text, style, base_col) in styled_spans {
+        for segment in
+            fixed_prefix_scroll_segments(&text, base_col, fixed_prefix_cols, scroll_x, width)
+        {
+            frame.buffer_mut().set_string(
+                area.x + segment.target_col as u16,
+                area.y + row,
+                &text[segment.start_byte..segment.end_byte],
+                style,
+            );
+            for col in segment.target_col..segment.target_col + segment.display_cols {
+                frame.buffer_mut()[(area.x + col as u16, area.y + row)].set_style(style);
+            }
+        }
+    }
+}
+
+#[must_use]
+/// Horizontal track inside the bottom border.
+pub const fn horizontal_scrollbar_area(block_area: Rect) -> Rect {
+    Rect::new(
+        block_area.x + 1,
+        block_area.y + block_area.height.saturating_sub(1),
+        block_area.width.saturating_sub(2),
+        1,
+    )
+}
+
+#[must_use]
+/// Vertical track inside the right border.
+pub const fn vertical_scrollbar_area(block_area: Rect) -> Rect {
+    Rect::new(
+        block_area.x + block_area.width.saturating_sub(1),
+        block_area.y + 1,
+        1,
+        block_area.height.saturating_sub(2),
+    )
+}
+
+/// Content and viewport dimensions used to size a scrollbar thumb.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ScrollbarGeometry {
+    content_length: usize,
+    viewport_length: usize,
+    offset: u16,
+}
+
+impl ScrollbarGeometry {
+    /// Creates explicit scrollbar geometry.
+    #[must_use]
+    pub const fn new(content_length: usize, viewport_length: usize, offset: u16) -> Self {
+        Self {
+            content_length,
+            viewport_length,
+            offset,
+        }
+    }
+}
+
+/// Declarative scrollbar paint request for an explicit track rectangle.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ScrollbarSpec {
+    axis: scroll::ScrollAxis,
+    geometry: ScrollbarGeometry,
+    style: ScrollbarStyle,
+}
+
+impl ScrollbarSpec {
+    /// Creates a line-style scrollbar request.
+    #[must_use]
+    pub const fn new(axis: scroll::ScrollAxis, geometry: ScrollbarGeometry) -> Self {
+        Self {
+            axis,
+            geometry,
+            style: ScrollbarStyle::Line,
+        }
+    }
+
+    /// Sets the vertical thumb glyph style.
+    #[must_use]
+    pub const fn style(mut self, style: ScrollbarStyle) -> Self {
+        self.style = style;
+        self
+    }
+}
+
+/// Paints the list-family scrollbar into a reserved gutter column.
+///
+/// This is the one sanctioned entry point for scroll indication: menus,
+/// pickers, viewports, and text areas all reach the canonical `·` track /
+/// `┃` thumb language through it instead of re-deriving thumb math. Nothing
+/// is painted when the content already fits, so a reserved gutter stays blank
+/// rather than showing a full-height thumb.
+pub fn paint_list_scrollbar(
+    buffer: &mut Buffer,
+    gutter: Rect,
+    total: usize,
+    viewport: usize,
+    offset: u16,
+    system: &DesignSystem,
+) {
+    if gutter.is_empty() || !scroll::is_scrollable(total, viewport) {
+        return;
+    }
+    render_scrollbar(
+        buffer,
+        gutter,
+        ScrollbarSpec::new(
+            scroll::ScrollAxis::Vertical,
+            ScrollbarGeometry::new(total, viewport, offset),
+        ),
+        system,
+    );
+}
+
+/// Paints one scrolled region: faded cut edges plus the gutter scrollbar.
+///
+/// Every scrolled surface in the library goes through here, so "there is more
+/// above" and "there is more below" are stated the same way everywhere instead
+/// of each widget deciding whether to say it at all (plans/014 Step 3b,
+/// plans/022 Step 5).
+pub fn paint_scrolled_region(
+    buffer: &mut Buffer,
+    content: Rect,
+    gutter: Rect,
+    total: usize,
+    viewport: usize,
+    offset: u16,
+    system: &DesignSystem,
+) {
+    if scroll::is_scrollable(total, viewport) {
+        let offset = usize::from(offset);
+        paint_scroll_edges(
+            buffer,
+            content_without_gutter(content, gutter),
+            system,
+            offset > 0,
+            offset.saturating_add(viewport) < total,
+        );
+    }
+    paint_list_scrollbar(buffer, gutter, total, viewport, offset, system);
+}
+
+/// The content columns, with the scroll gutter taken back out.
+///
+/// Callers hand in the rectangle they painted rows into, and for most widgets
+/// that rectangle already contains the gutter column. Fading it would dim the
+/// scrollbar's own thumb at exactly the edge the thumb is reporting.
+fn content_without_gutter(content: Rect, gutter: Rect) -> Rect {
+    if gutter.width == 0 || gutter.right() < content.right() || gutter.x <= content.x {
+        return content;
+    }
+    Rect::new(
+        content.x,
+        content.y,
+        content.width.saturating_sub(gutter.width),
+        content.height,
+    )
+}
+
+/// Paints a themed full-cell scrollbar into an explicit track rectangle.
+pub fn render_scrollbar(
+    buffer: &mut Buffer,
+    area: Rect,
+    spec: ScrollbarSpec,
+    system: &DesignSystem,
+) {
+    Scrollbar { spec, system }.render(area, buffer);
+}
+
+#[derive(Debug, Clone, Copy)]
+struct Scrollbar<'a> {
+    spec: ScrollbarSpec,
+    system: &'a DesignSystem,
+}
+
+/// Render borrowed lines into a rectangle with a vertical offset and optional
+/// list-edge scrollbar.
+pub fn render_lines_with_offset_in_area(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    lines: &[Line<'_>],
+    offset: u16,
+    system: &DesignSystem,
+) {
+    let viewport = usize::from(area.height);
+    let total = lines.len();
+    let clamped = scroll::effective_offset(total, viewport, offset);
+    let visible: Vec<Line<'_>> = lines
+        .iter()
+        .skip(usize::from(clamped))
+        .take(viewport)
+        .cloned()
+        .collect();
+    frame.render_widget(
+        Paragraph::new(visible).style(system.style(Role::Text)),
+        area,
+    );
+    if scroll::is_scrollable(total, viewport) {
+        render_scrollbar(
+            frame.buffer_mut(),
+            vertical_list_scrollbar_area(area),
+            ScrollbarSpec::new(
+                scroll::ScrollAxis::Vertical,
+                ScrollbarGeometry::new(total, viewport, clamped),
+            ),
+            system,
+        );
+    }
+}
+
+const fn vertical_list_scrollbar_area(area: Rect) -> Rect {
+    Rect {
+        x: area.x + area.width.saturating_sub(1),
+        y: area.y,
+        width: 1,
+        height: area.height,
+    }
+}
+
+impl Widget for Scrollbar<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        let track_len = match self.spec.axis {
+            scroll::ScrollAxis::Horizontal => usize::from(area.width),
+            scroll::ScrollAxis::Vertical => usize::from(area.height),
+        };
+        let Some(thumb) = scroll::full_cell_thumb(
+            self.spec.geometry.content_length,
+            self.spec.geometry.viewport_length,
+            u16::try_from(track_len).unwrap_or(u16::MAX),
+            usize::from(self.spec.geometry.offset),
+        ) else {
+            return;
+        };
+        let thumb_range = usize::from(thumb.start)..usize::from(thumb.start + thumb.len);
+        for index in 0..track_len {
+            let (x, y, thumb_symbol) = match self.spec.axis {
+                scroll::ScrollAxis::Horizontal => {
+                    (area.x + index as u16, area.y, SCROLLBAR_HORIZONTAL_THUMB)
+                }
+                scroll::ScrollAxis::Vertical => (
+                    area.x,
+                    area.y + index as u16,
+                    self.spec.style.vertical_thumb(),
+                ),
+            };
+            let in_thumb = thumb_range.contains(&index);
+            buffer.set_string(
+                x,
+                y,
+                if in_thumb {
+                    thumb_symbol
+                } else {
+                    SCROLLBAR_TRACK
+                },
+                if in_thumb {
+                    self.system.style(Role::ScrollThumb)
+                } else {
+                    self.system.style(Role::ScrollTrack)
+                },
+            );
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests;

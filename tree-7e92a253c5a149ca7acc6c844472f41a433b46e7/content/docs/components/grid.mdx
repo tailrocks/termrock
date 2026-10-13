@@ -1,0 +1,45 @@
+---
+title: Grid
+description: '2D track grid for dashboards, forms, settings, and card collections — fixed/fr/content/minmax, gaps, spans, overflow policy.'
+---
+## Live terminal (Ghostty-class)
+
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
+
+<TerminalPreview story="grid/columns" interactive caption="Grid · grid/columns — focus surface; keys/click for states" />
+
+## Usage
+
+```rust
+use termrock::layout::{
+    Grid, TrackSize, GridAutoFlow, OverflowPolicy,
+    form_grid_template, dashboard_grid_template, settings_grid_template,
+    grid_neighbor_2d,
+};
+
+let layout = Grid::columns(3)
+    .gaps(1, 1)
+    .auto_row(TrackSize::Fixed(4))
+    .layout_flow(area, 6, GridAutoFlow::Row);
+
+let form = form_grid_template(area.width);
+let dash = dashboard_grid_template(area.width, 3, 18, 1);
+let settings = settings_grid_template(area.width, 18, 2);
+
+// Studio
+let _ = layout.debug_summary();
+```
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `grid/columns` | Grid columns | **Primary (live preview)** |
+| `grid/span` | Grid span | span |
+| `grid/dashboard` | Grid dashboard template | dashboard |
+| `grid/form` | Grid form template | form |
+| `grid/settings` | Grid settings template | settings |
+| `grid/narrow` | Grid narrow | narrow |
+| `grid/overflow` | Grid overflow clip-tail | overflow |
+| `grid/nav` | Grid spatial neighbor | nav |

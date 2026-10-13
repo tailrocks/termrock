@@ -1,0 +1,65 @@
+---
+title: ProcessTable
+description: Process and task monitor with tree/flat modes and safe signal requests.
+---
+
+# ProcessTable
+
+Process / task monitoring table (btop/htop/procs class). Host projects
+`ProcessRow` snapshots; TermRock paints, navigates, sorts/filters, and emits
+**signal / refresh / details requests** — never enumerates processes or
+sends signals itself.
+
+## When to use / when not
+
+| Use ProcessTable | Prefer |
+|------------------|--------|
+| Live process / task monitor | — |
+| Generic multi-column hierarchy | [TreeTable](/docs/components/tree-table) |
+| Flat data grid | [DataTable](/docs/handbook/data-table) |
+| Log / output streams | [LogStream](/docs/handbook/log-stream) / [TerminalOutput](/docs/handbook/terminal-output) |
+
+## Ownership
+
+| Concern | Owner |
+|---------|--------|
+| Enumerate processes, metrics, kill/signal | Host |
+| Cursor, multi-check, filter, sort, confirm chrome | `ProcessTableState` |
+| Stable identity across PID reuse | Host supplies `ProcessKey` (pid + start marker) |
+
+## Stable identity
+
+Selection and multi-check key on `ProcessKey { pid, start_ms }`, **never PID
+alone**. When a process exits and its PID is recycled, the start marker differs
+so selection does not silently retarget.
+
+On host refresh, call `state.reconcile(&live_rows)`: matching keys are kept;
+missing selection falls to nearest-neighbor; checked set drops dead keys.
+
+## Outcomes (requests)
+
+- `SelectionChanged` · `CheckToggled` · `ExpandToggled`
+- `DetailsRequested` · `SortChanged` · `ViewModeChanged`
+- `FilterChanged` · user/status filters
+- `SignalRequested { keys, signal }` (after confirm when destructive/multi)
+- `ConfirmRequired` / `ConfirmCancelled`
+- `RefreshRequested` · `CopyCommand` · `Scrolled`
+
+## Keys
+
+| Key | Action |
+|-----|--------|
+| j/k · arrows · page · home/end | Navigate |
+| `/` | Filter |
+| `s` / `S` | Sort key / direction |
+| `t` | Flat ↔ tree |
+| `r` | Refresh |
+| `x` · `K` · `C-9` | TERM / KILL (confirm) |
+| `i` · Enter | Details |
+| `y` | Copy command |
+| Space | Multi-check |
+| `+` / `-` | Refresh cadence chrome |
+
+## Related
+
+TreeTable · DataTable · VirtualWindow · migration `0203`

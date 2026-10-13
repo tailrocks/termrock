@@ -1,0 +1,2300 @@
+// SPDX-FileCopyrightText: 2026 Alexey Zhokhov
+// SPDX-License-Identifier: Apache-2.0
+
+//! Product-neutral stories rendered through TermRock's public widget API.
+
+use std::num::NonZeroU16;
+
+use ratatui::{
+    Frame,
+    layout::{Constraint, Layout, Rect},
+    style::Style,
+    text::{Line, Span},
+    widgets::Paragraph,
+};
+use termrock::{
+    Density, Theme,
+    scroll::DialogScroll,
+    style::ColorCapability,
+    style::DesignTokens,
+    style::Role,
+    widgets::{
+        Action, ActionBar, ActionBarState, Anchor, ApprovalCard, ApprovalCardState, ApprovalRisk,
+        BUILTIN_THEME_PRESETS, Backdrop, Banner, BarDatum, BarSeries, CellAlignment, ChoiceDialog,
+        ChoiceDialogState, CodeBlock, Column, ColumnWidth, CommandPalette, CommandPaletteState,
+        CompletionCandidate, CompletionMenu, CompletionMenuSize, CompletionMenuState,
+        DesignInspector, DesignInspectorFrame, DetailCapability, DetailRow, DetailTable,
+        DetailTableState, Dialog, DiffKind, DiffLine, DiffState, DiffView, EmptyState, ErrorView,
+        Form, FormField, FormSection, FormState, GridCell, GridColumn, GridRow, Hint, HintBar,
+        ImageMeta, ImageProtocol, ImageSurface, JumpOverlay, JumpTarget, List, ListRow, ListState,
+        LoadingView, LogPane, LogPaneState, MarkdownBlock, MarkdownBlockKind, MarkdownView,
+        MessageDialog, MeterSegment, Panel, PanelEmphasis, Picker, PickerState, Progress,
+        ProgressKind, PromptBox, PromptBoxState, RowRole, SegmentedMeter, Severity, Skeleton,
+        SortDirection, Sparkline, SplitDirection, SplitPane, SplitPaneState, SplitRatio, StatusBar,
+        StatusBarState, StatusSlot, StreamItem, StreamItemKind, StreamView, Tab, Table, TableRow,
+        TableState, Tabs, TabsState, TextArea, TextAreaState, TextCursor, TextInput,
+        TextInputState, ThemePicker, ThemePickerState, ThinkingBlock, Timeline, TimelineEvent,
+        Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock, TranscriptKind,
+        TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation, Viewport,
+        VirtualGrid, VirtualGridState,
+    },
+};
+
+use crate::interactors::{
+    ApprovalCardInteractor, ChoiceDialogInteractor, CommandPaletteInteractor,
+    DesignInspectorInteractor, FormInteractor, ListInteractor, LogPaneInteractor, PickerInteractor,
+    PromptBoxInteractor, SplitPaneInteractor, StaticStory, StoryInteraction, TableInteractor,
+    TabsInteractor, TextAreaInteractor, ThemePickerInteractor, ToastInteractor,
+    TranscriptInteractor, TreeInteractor, VirtualGridInteractor,
+};
+
+type RenderFn = fn(&mut Frame<'_>, Rect, &Theme);
+type InteractorFactory = fn(RenderFn) -> Box<dyn StoryInteraction>;
+
+pub(crate) const SPLIT_PANE_MIN: u16 = 12;
+pub(crate) const SPLIT_PANE_MAX: u16 = 16;
+
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct Story {
+    pub id: &'static str,
+    pub title: &'static str,
+    pub component: &'static str,
+    pub description: &'static str,
+    pub width: u16,
+    pub height: u16,
+    render: RenderFn,
+    interactor: InteractorFactory,
+}
+
+impl Story {
+    pub(crate) const fn new(
+        id: &'static str,
+        title: &'static str,
+        component: &'static str,
+        description: &'static str,
+        width: u16,
+        height: u16,
+        render: RenderFn,
+    ) -> Self {
+        Self {
+            id,
+            title,
+            component,
+            description,
+            width,
+            height,
+            render,
+            interactor: static_interactor,
+        }
+    }
+    const fn with_interactor(mut self, interactor: InteractorFactory) -> Self {
+        self.interactor = interactor;
+        self
+    }
+    pub(crate) fn render(self, frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+        (self.render)(frame, area, theme);
+    }
+    pub(crate) fn make_interactor(&self) -> Box<dyn StoryInteraction> {
+        (self.interactor)(self.render)
+    }
+}
+
+fn static_interactor(render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(StaticStory {
+        render_fn: render,
+        theme: Theme::default(),
+    })
+}
+
+fn tree_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(TreeInteractor::new())
+}
+
+fn form_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(FormInteractor::new())
+}
+
+fn split_pane_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(SplitPaneInteractor::new())
+}
+
+fn choice_dialog_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(ChoiceDialogInteractor::new())
+}
+
+fn list_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(ListInteractor::new())
+}
+
+fn picker_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(PickerInteractor::new())
+}
+
+fn log_pane_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(LogPaneInteractor::new())
+}
+
+fn toast_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(ToastInteractor::new())
+}
+
+fn text_area_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(TextAreaInteractor::new())
+}
+
+fn tabs_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(TabsInteractor::new())
+}
+
+fn table_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(TableInteractor::new())
+}
+
+fn theme_picker_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(ThemePickerInteractor::new())
+}
+
+fn command_palette_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(CommandPaletteInteractor::new())
+}
+
+fn approval_card_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(ApprovalCardInteractor::new())
+}
+
+fn design_inspector_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(DesignInspectorInteractor::new())
+}
+
+fn transcript_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(TranscriptInteractor::new())
+}
+
+fn prompt_box_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(PromptBoxInteractor::new())
+}
+
+fn virtual_grid_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(VirtualGridInteractor::new())
+}
+
+pub(crate) fn stories() -> Vec<Story> {
+    vec![
+        Story::new(
+            "panel/focused",
+            "Focused panel",
+            "Panel",
+            "A semantically focused bordered panel.",
+            48,
+            7,
+            panel,
+        ),
+        Story::new(
+            "action-bar/basic",
+            "Action bar",
+            "ActionBar",
+            "Stable-ID caller-defined actions.",
+            48,
+            2,
+            action_bar,
+        ),
+        Story::new(
+            "tabs/status",
+            "Tabs",
+            "Tabs",
+            "Tabs with styled per-item glyphs and state.",
+            52,
+            2,
+            tabs,
+        )
+        .with_interactor(tabs_interactor),
+        Story::new(
+            "hint-bar/wrapped",
+            "Hint bar",
+            "HintBar",
+            "Prioritized caller-defined hints.",
+            42,
+            2,
+            hint_bar,
+        ),
+        Story::new(
+            "list/selection",
+            "List",
+            "List",
+            "Stable-ID rows with checks and aligned metadata.",
+            42,
+            6,
+            list,
+        )
+        .with_interactor(list_interactor),
+        Story::new(
+            "tree/navigation",
+            "Tree navigation",
+            "Tree",
+            "Stable-ID hierarchy with checks, metadata, disclosure, and status.",
+            42,
+            7,
+            tree,
+        )
+        .with_interactor(tree_interactor),
+        Story::new(
+            "progress/determinate",
+            "Progress",
+            "Progress",
+            "Caller-ticked determinate and indeterminate progress.",
+            42,
+            2,
+            progress,
+        ),
+        Story::new(
+            "progress/narrow",
+            "Narrow progress",
+            "Progress",
+            "Percentage elision and custom ASCII frames in fourteen columns.",
+            14,
+            2,
+            progress_narrow,
+        ),
+        Story::new(
+            "progress/unicode",
+            "Unicode progress labels",
+            "Progress",
+            "Wide CJK and emoji labels clipped on grapheme boundaries.",
+            34,
+            2,
+            progress_unicode,
+        ),
+        Story::new(
+            "log-pane/follow",
+            "Following log pane",
+            "LogPane",
+            "Tail-following output; scroll up to freeze and End to resume.",
+            52,
+            8,
+            log_pane,
+        )
+        .with_interactor(log_pane_interactor),
+        Story::new(
+            "log-pane/scrolled",
+            "Frozen log scrollback",
+            "LogPane",
+            "Scrolled-back distance plus wide CJK and emoji output.",
+            52,
+            8,
+            log_pane_scrolled,
+        ),
+        Story::new(
+            "form/responsive",
+            "Responsive form",
+            "Form",
+            "Sections, validation, disabled state, and stable-ID focus.",
+            68,
+            12,
+            form,
+        )
+        .with_interactor(form_interactor),
+        Story::new(
+            "split-pane/horizontal",
+            "Horizontal split pane",
+            "SplitPane",
+            "Bounded resizable panes with focus, drag, and collapse.",
+            68,
+            10,
+            split_pane,
+        )
+        .with_interactor(split_pane_interactor),
+        Story::new(
+            "picker/basic",
+            "Filterable picker",
+            "Picker",
+            "Caller-filtered rows with stable selection and semantic activation.",
+            42,
+            7,
+            picker_basic,
+        )
+        .with_interactor(picker_interactor),
+        Story::new(
+            "picker/empty",
+            "Empty picker",
+            "Picker",
+            "Product-neutral empty-result cue.",
+            30,
+            4,
+            picker_empty,
+        ),
+        Story::new(
+            "picker/narrow-unicode",
+            "Narrow Unicode picker",
+            "Picker",
+            "Wide and combining labels clipped in a narrow result list.",
+            22,
+            5,
+            picker_narrow_unicode,
+        ),
+        Story::new(
+            "detail-table/basic",
+            "Detail table",
+            "DetailTable",
+            "Neutral label/value rows with capabilities.",
+            54,
+            5,
+            detail_table,
+        ),
+        Story::new(
+            "completion-menu/basic",
+            "Completion menu",
+            "CompletionMenu",
+            "Popup candidates with stable IDs, kind annotations, and anchor clamp.",
+            48,
+            12,
+            completion_menu_basic,
+        ),
+        Story::new(
+            "completion-menu/edge",
+            "Completion menu edge flip",
+            "CompletionMenu",
+            "Bottom-right anchor flips above and clamps inside bounds.",
+            40,
+            12,
+            completion_menu_edge,
+        ),
+        Story::new(
+            "completion-menu/narrow",
+            "Completion menu narrow",
+            "CompletionMenu",
+            "Unicode candidates remain bounded in a narrow popup.",
+            22,
+            8,
+            completion_menu_basic,
+        ),
+        Story::new(
+            "completion-menu/unicode",
+            "Completion menu Unicode",
+            "CompletionMenu",
+            "Display-width clipping preserves complete Unicode candidates.",
+            32,
+            8,
+            completion_menu_basic,
+        ),
+        Story::new(
+            "virtual-grid/basic",
+            "Virtual grid",
+            "VirtualGrid",
+            "Two-axis virtualized grid with resident window and pending cells.",
+            72,
+            12,
+            virtual_grid_basic,
+        )
+        .with_interactor(virtual_grid_interactor),
+        Story::new(
+            "virtual-grid/million",
+            "Virtual grid million-row window",
+            "VirtualGrid",
+            "Viewport over a synthetic 1_000_000-row corpus (windowed only).",
+            72,
+            14,
+            virtual_grid_million,
+        ),
+        Story::new(
+            "virtual-grid/narrow",
+            "Virtual grid narrow",
+            "VirtualGrid",
+            "Column clipping stays bounded in a narrow viewport.",
+            28,
+            8,
+            virtual_grid_basic,
+        ),
+        Story::new(
+            "virtual-grid/unicode",
+            "Virtual grid Unicode",
+            "VirtualGrid",
+            "Headers and cells preserve Unicode display-column boundaries.",
+            48,
+            10,
+            virtual_grid_basic,
+        ),
+        Story::new(
+            "table/basic",
+            "Data table",
+            "Table",
+            "Stable-ID columnar data with selection and headers.",
+            68,
+            8,
+            table_basic,
+        )
+        .with_interactor(table_interactor),
+        Story::new(
+            "table/sorted",
+            "Sorted table",
+            "Table",
+            "Caller-owned descending sort projection.",
+            68,
+            8,
+            table_sorted,
+        ),
+        Story::new(
+            "table/narrow",
+            "Narrow table",
+            "Table",
+            "Deterministic rightmost-column collapse.",
+            20,
+            6,
+            table_narrow,
+        ),
+        Story::new(
+            "table/unicode",
+            "Unicode table",
+            "Table",
+            "Styled CJK and emoji cells clip at display boundaries.",
+            42,
+            6,
+            table_unicode,
+        ),
+        Story::new(
+            "table/disabled",
+            "Disabled table row",
+            "Table",
+            "Disabled rows remain visible but non-interactive.",
+            52,
+            6,
+            table_disabled,
+        ),
+        Story::new(
+            "table/empty",
+            "Empty table",
+            "Table",
+            "Header-only rendering with no domain empty-state wording.",
+            42,
+            3,
+            table_empty,
+        ),
+        Story::new(
+            "text-area/basic",
+            "Text area",
+            "TextArea",
+            "Multi-line editing with caller-owned submission policy.",
+            52,
+            9,
+            text_area_basic,
+        )
+        .with_interactor(text_area_interactor),
+        Story::new(
+            "text-area/narrow",
+            "Narrow text area",
+            "TextArea",
+            "Horizontal viewport clips only complete graphemes.",
+            18,
+            7,
+            text_area_narrow,
+        ),
+        Story::new(
+            "text-area/unicode",
+            "Unicode text area",
+            "TextArea",
+            "Combining, CJK, emoji, and remembered goal-column content.",
+            38,
+            8,
+            text_area_unicode,
+        ),
+        Story::new(
+            "text-area/empty",
+            "Empty text area",
+            "TextArea",
+            "Product-neutral placeholder in an empty document.",
+            38,
+            6,
+            text_area_empty,
+        ),
+        Story::new(
+            "text-area/scrolled",
+            "Scrolled text area",
+            "TextArea",
+            "Two-axis cursor-follow viewport over logical lines.",
+            34,
+            7,
+            text_area_scrolled,
+        ),
+        Story::new(
+            "status-bar/basic",
+            "Status bar",
+            "StatusBar",
+            "Caller-owned left and right status slots.",
+            60,
+            1,
+            status_bar,
+        ),
+        Story::new(
+            "design-inspector/basic",
+            "Design inspector",
+            "DesignInspector",
+            "Studio focus/layer/capability strip.",
+            48,
+            4,
+            design_inspector,
+        )
+        .with_interactor(design_inspector_interactor),
+        Story::new(
+            "dialog/message",
+            "Message dialog",
+            "Dialog",
+            "Responsive neutral dialog shell.",
+            48,
+            7,
+            dialog,
+        ),
+        Story::new(
+            "choice-dialog/basic",
+            "Choice dialog",
+            "ChoiceDialog",
+            "Caller-owned stable actions in a neutral dialog shell.",
+            48,
+            7,
+            choice_dialog,
+        )
+        .with_interactor(choice_dialog_interactor),
+        Story::new(
+            "message-dialog/details",
+            "Detailed message dialog",
+            "MessageDialog",
+            "Caller-owned detail rows composed into a neutral message shell.",
+            52,
+            8,
+            message_dialog,
+        ),
+        Story::new(
+            "diff/basic",
+            "Diff view",
+            "DiffView",
+            "Borrowed projected diff lines.",
+            54,
+            6,
+            diff,
+        ),
+        Story::new(
+            "toast/success",
+            "Toast",
+            "Toast",
+            "Caller-owned transient message.",
+            34,
+            4,
+            toast,
+        )
+        .with_interactor(toast_interactor),
+        Story::new(
+            "backdrop/basic",
+            "Backdrop",
+            "Backdrop",
+            "Neutral modal backdrop policy.",
+            34,
+            4,
+            backdrop,
+        ),
+        Story::new(
+            "viewport/both-axes",
+            "Scrollable viewport",
+            "Viewport",
+            "Borrowed lines with bounded horizontal and vertical scroll state.",
+            44,
+            7,
+            viewport,
+        ),
+        Story::new(
+            "list/narrow",
+            "Narrow list",
+            "List",
+            "Narrow-terminal clipping and metadata priority.",
+            14,
+            6,
+            list,
+        ),
+        Story::new(
+            "tabs/narrow",
+            "Narrow tabs",
+            "Tabs",
+            "Narrow-terminal tab clipping and selection cues.",
+            16,
+            2,
+            tabs,
+        ),
+        Story::new(
+            "form/narrow",
+            "Narrow form",
+            "Form",
+            "Responsive single-column form at narrow width.",
+            24,
+            12,
+            form,
+        ),
+        Story::new(
+            "status-bar/narrow",
+            "Narrow status bar",
+            "StatusBar",
+            "Priority-based slot elision at narrow width.",
+            20,
+            1,
+            status_bar,
+        ),
+        Story::new(
+            "dialog/narrow",
+            "Narrow dialog",
+            "Dialog",
+            "Responsive dialog shell at narrow width.",
+            20,
+            7,
+            dialog,
+        ),
+        Story::new(
+            "toast/narrow",
+            "Narrow toast",
+            "Toast",
+            "Bounded transient message at narrow width.",
+            16,
+            4,
+            toast,
+        ),
+        Story::new(
+            "list/unicode",
+            "Unicode list",
+            "List",
+            "CJK, emoji, and combining-mark row geometry.",
+            28,
+            5,
+            list_unicode,
+        ),
+        Story::new(
+            "text-input/unicode",
+            "Unicode text input",
+            "TextInput",
+            "Wide and combining graphemes with a mid-string cursor.",
+            28,
+            1,
+            text_input_unicode,
+        ),
+        Story::new(
+            "detail-table/unicode",
+            "Unicode detail table",
+            "DetailTable",
+            "CJK labels and emoji values under wrapping.",
+            30,
+            6,
+            detail_table_unicode,
+        ),
+        Story::new(
+            "empty-state/basic",
+            "Empty state",
+            "EmptyState",
+            "Centered empty surface with non-color glyph.",
+            36,
+            5,
+            empty_state,
+        ),
+        Story::new(
+            "loading-view/basic",
+            "Loading view",
+            "LoadingView",
+            "Centered loading label with spinner frame.",
+            36,
+            3,
+            loading_view,
+        ),
+        Story::new(
+            "error-view/basic",
+            "Error view",
+            "ErrorView",
+            "Centered failure surface with danger glyph.",
+            36,
+            5,
+            error_view,
+        ),
+        Story::new(
+            "banner/basic",
+            "Banner",
+            "Banner",
+            "Single-line severity banner.",
+            40,
+            1,
+            banner,
+        ),
+        Story::new(
+            "skeleton/basic",
+            "Skeleton",
+            "Skeleton",
+            "Placeholder loading lines.",
+            32,
+            4,
+            skeleton,
+        ),
+        Story::new(
+            "jump-overlay/basic",
+            "Jump overlay",
+            "JumpOverlay",
+            "Letter badges over target regions.",
+            40,
+            6,
+            jump_overlay,
+        ),
+        Story::new(
+            "command-palette/basic",
+            "Command palette",
+            "CommandPalette",
+            "Filterable command list in focused chrome.",
+            42,
+            10,
+            command_palette,
+        )
+        .with_interactor(command_palette_interactor),
+        Story::new(
+            "code-block/basic",
+            "Code block",
+            "CodeBlock",
+            "Source listing with line numbers.",
+            40,
+            5,
+            code_block,
+        ),
+        Story::new(
+            "markdown-view/basic",
+            "Markdown view",
+            "MarkdownView",
+            "Projected markdown blocks.",
+            40,
+            6,
+            markdown_view,
+        ),
+        Story::new(
+            "sparkline/basic",
+            "Sparkline",
+            "Sparkline",
+            "One-row density chart.",
+            32,
+            1,
+            sparkline,
+        ),
+        Story::new(
+            "bar-series/basic",
+            "Bar series",
+            "BarSeries",
+            "Labeled horizontal bars.",
+            36,
+            3,
+            bar_series,
+        ),
+        Story::new(
+            "segmented-meter/basic",
+            "Segmented meter",
+            "SegmentedMeter",
+            "Proportional stacked meter.",
+            36,
+            1,
+            segmented_meter,
+        ),
+        Story::new(
+            "token-meter/basic",
+            "Token meter",
+            "TokenMeter",
+            "Usage meter with threshold roles.",
+            36,
+            1,
+            token_meter,
+        ),
+        Story::new(
+            "thinking-block/basic",
+            "Thinking block",
+            "ThinkingBlock",
+            "Collapsible reasoning chrome.",
+            40,
+            3,
+            thinking_block,
+        ),
+        Story::new(
+            "tool-card/basic",
+            "Tool card",
+            "ToolCard",
+            "Streaming tool invocation card.",
+            44,
+            4,
+            tool_card,
+        ),
+        Story::new(
+            "approval-card/basic",
+            "Approval card",
+            "ApprovalCard",
+            "Permission card with safe Deny default.",
+            48,
+            6,
+            approval_card,
+        )
+        .with_interactor(approval_card_interactor),
+        Story::new(
+            "approval-card/narrow",
+            "Approval card narrow",
+            "ApprovalCard",
+            "Selected decision remains visible at narrow widths.",
+            24,
+            6,
+            approval_card,
+        ),
+        Story::new(
+            "approval-card/tiny",
+            "Approval card tiny",
+            "ApprovalCard",
+            "Selected-only fallback with non-color nav cue.",
+            18,
+            4,
+            approval_card,
+        ),
+        Story::new(
+            "approval-card/unicode",
+            "Approval card Unicode",
+            "ApprovalCard",
+            "CJK and emoji permission copy remains cell-safe.",
+            40,
+            6,
+            approval_card_unicode,
+        ),
+        Story::new(
+            "stream-view/basic",
+            "Stream view",
+            "StreamView",
+            "Conversation stream items.",
+            48,
+            6,
+            stream_view,
+        ),
+        Story::new(
+            "transcript/basic",
+            "Transcript",
+            "Transcript",
+            "Variable-height multi-block transcript viewport.",
+            48,
+            10,
+            transcript_basic,
+        )
+        .with_interactor(transcript_interactor),
+        Story::new(
+            "transcript/narrow",
+            "Transcript narrow",
+            "Transcript",
+            "Transcript contraction at narrow widths.",
+            24,
+            8,
+            transcript_basic,
+        ),
+        Story::new(
+            "transcript/unicode",
+            "Transcript unicode",
+            "Transcript",
+            "Grapheme-safe multi-block transcript lines.",
+            48,
+            8,
+            transcript_basic,
+        ),
+        Story::new(
+            "timeline/basic",
+            "Timeline",
+            "Timeline",
+            "Activity timeline events.",
+            40,
+            4,
+            timeline,
+        ),
+        Story::new(
+            "prompt-box/basic",
+            "Prompt box",
+            "PromptBox",
+            "Agent prompt editor chrome.",
+            48,
+            5,
+            prompt_box,
+        )
+        .with_interactor(prompt_box_interactor),
+        Story::new(
+            "theme-picker/basic",
+            "Theme picker",
+            "ThemePicker",
+            "Live theme preset selection list.",
+            36,
+            6,
+            theme_picker,
+        )
+        .with_interactor(theme_picker_interactor),
+        Story::new(
+            "image-surface/basic",
+            "Image surface",
+            "ImageSurface",
+            "Placeholder image frame with protocol label.",
+            28,
+            8,
+            image_surface,
+        ),
+    ]
+}
+
+/// Interactive-gallery entries, including compile-proven design prototypes.
+/// Catalog generation deliberately uses [`stories`] instead.
+pub(crate) fn gallery_stories() -> Vec<Story> {
+    stories()
+}
+
+fn panel(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let panel_tokens = DesignTokens::new(theme.clone(), Density::default());
+    frame.render_widget(
+        Panel::new(&panel_tokens)
+            .title("Summary")
+            .emphasis(PanelEmphasis::Focused),
+        area,
+    );
+    if area.width > 2 && area.height > 2 {
+        frame.render_widget(
+            Paragraph::new("State   Ready\nMode    Interactive"),
+            Rect::new(area.x + 1, area.y + 1, area.width - 2, area.height - 2),
+        );
+    }
+}
+
+fn progress(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let determinate = Rect::new(area.x, area.y, area.width, area.height.min(1));
+    frame.render_widget(
+        Progress::new(ProgressKind::Determinate { fraction: 0.62 }, theme).label("Processing"),
+        determinate,
+    );
+    if area.height > 1 {
+        frame.render_widget(
+            Progress::new(ProgressKind::Indeterminate { tick: 3 }, theme).label("Waiting"),
+            Rect::new(area.x, area.y.saturating_add(1), area.width, 1),
+        );
+    }
+}
+
+fn progress_narrow(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    const ASCII_FRAMES: [&str; 4] = ["|", "/", "-", "\\"];
+    let [bar, spinner] =
+        Layout::vertical([Constraint::Length(1), Constraint::Length(1)]).areas(area);
+    frame.render_widget(
+        Progress::new(ProgressKind::Determinate { fraction: 0.62 }, theme).label("Build"),
+        bar,
+    );
+    frame.render_widget(
+        Progress::new(ProgressKind::Indeterminate { tick: 3 }, theme)
+            .frames(&ASCII_FRAMES)
+            .label("Waiting"),
+        spinner,
+    );
+}
+
+fn progress_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let [bar, spinner] =
+        Layout::vertical([Constraint::Length(1), Constraint::Length(1)]).areas(area);
+    frame.render_widget(
+        Progress::new(ProgressKind::Determinate { fraction: 0.5 }, theme).label("東京を処理中 🪨"),
+        bar,
+    );
+    frame.render_widget(
+        Progress::new(ProgressKind::Indeterminate { tick: 6 }, theme).label("検証中 ✓"),
+        spinner,
+    );
+}
+
+fn log_pane(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let mut state = LogPaneState::new().with_max_lines(200);
+    for line in [
+        "[12:04:01] resolving workspace",
+        "[12:04:02] compiling termrock",
+        "[12:04:03] running 205 tests",
+        "[12:04:04] result: ok ✓",
+    ] {
+        state.append(line);
+    }
+    frame.render_stateful_widget(&LogPane::new(theme).title("Build log"), area, &mut state);
+}
+
+fn log_pane_scrolled(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let mut state = LogPaneState::new();
+    for line in [
+        "[12:04:01] resolving workspace",
+        "[12:04:02] 東京 worker ready 🪨",
+        "[12:04:03] compiling termrock",
+        "[12:04:04] running tests",
+        "[12:04:05] rendering previews",
+        "[12:04:06] result: ok ✓",
+        "[12:04:07] waiting for changes",
+    ] {
+        state.append(line);
+    }
+    let pane = LogPane::new(theme).title("Frozen build log");
+    state.scroll_to_oldest();
+    frame.render_stateful_widget(&pane, area, &mut state);
+}
+
+fn action_bar(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let actions = [
+        Action {
+            id: "accept",
+            label: "Accept",
+            enabled: true,
+            style: None,
+        },
+        Action {
+            id: "cancel",
+            label: "Cancel",
+            enabled: true,
+            style: None,
+        },
+    ];
+    let mut state = ActionBarState {
+        focused: Some("accept"),
+        ..ActionBarState::default()
+    };
+    frame.render_stateful_widget(&ActionBar::new(&actions, theme).gap("  "), area, &mut state);
+}
+
+pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
+    vec![
+        TreeNode {
+            id: "workspace",
+            label: Line::from("Workspace"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
+            trailing: Some(Line::from("4 items")),
+            depth: 0,
+            branch: true,
+            expanded: true,
+            enabled: true,
+            status: TreeNodeStatus::Ready,
+        },
+        TreeNode {
+            id: "documents",
+            label: Line::from("Documents"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
+            trailing: Some(Line::from("2 items")),
+            depth: 1,
+            branch: true,
+            expanded: false,
+            enabled: true,
+            status: TreeNodeStatus::Ready,
+        },
+        TreeNode {
+            id: "loading",
+            label: Line::from("Remote items"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
+            trailing: None,
+            depth: 1,
+            branch: true,
+            expanded: false,
+            enabled: false,
+            status: TreeNodeStatus::Loading,
+        },
+        TreeNode {
+            id: "notes",
+            label: Line::from("Wide 🧪 notes"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
+            trailing: Some(Line::from("12 KiB")),
+            depth: 1,
+            branch: false,
+            expanded: false,
+            enabled: true,
+            status: TreeNodeStatus::Ready,
+        },
+    ]
+}
+
+pub(crate) fn form_fields() -> Vec<FormField<'static, &'static str>> {
+    vec![
+        FormField::new("name", Line::from("Name"), Line::from("Example profile"))
+            .help(Line::from("A recognizable display name"))
+            .required(true),
+        FormField::new("endpoint", Line::from("Endpoint"), Line::from("localhost"))
+            .error(Line::from("Enter a reachable address"))
+            .required(true),
+        FormField::new(
+            "mode",
+            Line::from("Managed mode"),
+            Line::from("Unavailable"),
+        )
+        .enabled(false),
+    ]
+}
+
+fn form(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let fields = form_fields();
+    let sections = [FormSection {
+        title: Line::from("General"),
+        fields: &fields,
+    }];
+    let mut state = FormState::new(Some("name"));
+    frame.render_stateful_widget(&Form::new(&sections, theme), area, &mut state);
+}
+
+pub(crate) fn render_split_pane(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    state: &mut SplitPaneState,
+    theme: &Theme,
+) {
+    let split = SplitPane::new(
+        SplitDirection::Horizontal,
+        SPLIT_PANE_MIN,
+        SPLIT_PANE_MAX,
+        theme,
+    );
+    let layout = split.layout(area, state);
+    if !layout.first.is_empty() {
+        frame.render_widget(
+            Paragraph::new("First pane\nCaller-owned content"),
+            layout.first,
+        );
+    }
+    if !layout.second.is_empty() {
+        frame.render_widget(
+            Paragraph::new("Second pane\nDrag the divider"),
+            layout.second,
+        );
+    }
+    frame.render_stateful_widget(&split, area, state);
+}
+
+fn split_pane(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let mut state = SplitPaneState::new(SplitRatio::from_percent(38));
+    state.set_focused(true);
+    render_split_pane(frame, area, &mut state, theme);
+}
+
+fn tree(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
+    let nodes = tree_nodes();
+    let mut state = TreeState::new(Some("workspace"));
+    state.enable_multi_select();
+    state.selection_mut().unwrap().toggle(&"notes");
+    frame.render_stateful_widget(&Tree::new(&nodes, &tokens), area, &mut state);
+}
+
+fn tabs(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let items = [
+        Tab {
+            id: "overview",
+            label: "Overview",
+            glyph: Some(Span::styled("●", theme.style(Role::Success))),
+            active: true,
+            enabled: true,
+        },
+        Tab {
+            id: "details",
+            label: "Details",
+            glyph: None,
+            active: false,
+            enabled: true,
+        },
+    ];
+    let mut state = TabsState {
+        selected: Some("overview"),
+        focused: true,
+        ..TabsState::default()
+    };
+    frame.render_stateful_widget(&Tabs::new(&items, theme).gap(1), area, &mut state);
+}
+
+fn hint_bar(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let theme = if *theme == Theme::tailrocks_phosphor() {
+        theme
+            .clone()
+            .with_role(Role::HintKey, Style::new().bold())
+            .with_role(Role::HintText, Style::new())
+            .with_role(Role::HintDim, Style::new())
+            .with_role(Role::HintSeparator, Style::new())
+    } else {
+        theme.clone()
+    };
+    let hints = [
+        Hint {
+            chord: "↑↓",
+            label: "navigate",
+            priority: 1,
+            visible: true,
+        },
+        Hint {
+            chord: "Enter",
+            label: "choose",
+            priority: 1,
+            visible: true,
+        },
+        Hint {
+            chord: "Esc",
+            label: "close",
+            priority: 2,
+            visible: true,
+        },
+    ];
+    frame.render_widget(HintBar::new(&hints, &theme).separator("  "), area);
+}
+
+fn list(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
+    let rows = list_rows();
+    let mut state = ListState::new(Some("beta"));
+    state.enable_multi_select();
+    state.selection_mut().unwrap().toggle(&"alpha");
+    frame.render_stateful_widget(&List::new(&rows, &tokens), area, &mut state);
+}
+
+fn list_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
+    let rows = [
+        ListRow {
+            id: "cjk",
+            label: Line::from("東京 設定"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
+            trailing: Some(Line::from("日本語")),
+            role: RowRole::Item,
+            enabled: true,
+            loading: false,
+        },
+        ListRow {
+            id: "emoji",
+            label: Line::from("🧪 Laboratory"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
+            trailing: Some(Line::from("✅")),
+            role: RowRole::Item,
+            enabled: true,
+            loading: false,
+        },
+        ListRow {
+            id: "combining",
+            label: Line::from("Cafe\u{301} profile"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
+            trailing: Some(Line::from("e\u{301}")),
+            role: RowRole::Item,
+            enabled: true,
+            loading: false,
+        },
+    ];
+    let mut state = ListState::new(Some("cjk"));
+    frame.render_stateful_widget(&List::new(&rows, &tokens), area, &mut state);
+}
+
+pub(crate) fn list_rows() -> [ListRow<'static, &'static str>; 4] {
+    [
+        ListRow {
+            id: "section",
+            label: Line::from("Workspace"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
+            trailing: Some(Line::from("3 entries")),
+            role: RowRole::Separator,
+            enabled: true,
+            loading: false,
+        },
+        ListRow {
+            id: "alpha",
+            label: Line::from("Alpha"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
+            trailing: Some(Line::from("12 ms")),
+            role: RowRole::Item,
+            enabled: true,
+            loading: false,
+        },
+        ListRow {
+            id: "beta",
+            label: Line::from("Beta"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
+            trailing: Some(Line::from("28 ms")),
+            role: RowRole::Item,
+            enabled: true,
+            loading: false,
+        },
+        ListRow {
+            id: "gamma",
+            label: Line::from("Gamma"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
+            trailing: None,
+            role: RowRole::Item,
+            enabled: false,
+            loading: false,
+        },
+    ]
+}
+
+fn picker_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
+    let rows = picker_rows("");
+    let mut state = PickerState::new(Some("alpha"));
+    frame.render_stateful_widget(&Picker::new(&rows, &tokens), area, &mut state);
+}
+
+fn picker_empty(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
+    let mut state = PickerState::<&str>::new(None);
+    frame.render_stateful_widget(&Picker::new(&[], &tokens), area, &mut state);
+}
+
+fn picker_narrow_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
+    let rows = [
+        ListRow {
+            id: "tokyo",
+            label: Line::from("東京デプロイ 🧪"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
+            trailing: Some(Line::from("操作")),
+            role: RowRole::Item,
+            enabled: true,
+            loading: false,
+        },
+        ListRow {
+            id: "cafe",
+            label: Line::from("Cafe\u{301} logs"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
+            trailing: Some(Line::from("表示")),
+            role: RowRole::Item,
+            enabled: true,
+            loading: false,
+        },
+    ];
+    let mut state = PickerState::new(Some("tokyo"));
+    let _ = state.query_mut().insert_str("東");
+    frame.render_stateful_widget(&Picker::new(&rows, &tokens), area, &mut state);
+}
+
+fn text_input_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let mut state = TextInputState::new("東京🧪 Cafe\u{301}");
+    assert!(state.set_cursor_byte("東京".len()));
+    frame.render_stateful_widget(
+        &TextInput::new("Query", theme).validation(Validation::Valid),
+        area,
+        &mut state,
+    );
+}
+
+pub(crate) fn picker_rows(query: &str) -> Vec<ListRow<'static, &'static str>> {
+    let query = query.to_ascii_lowercase();
+    [
+        ("alpha", "Alpha project", "workspace"),
+        ("beta", "Beta release", "command"),
+        ("gamma", "Gamma logs", "view"),
+        ("delta", "Delta settings", "command"),
+    ]
+    .into_iter()
+    .filter(|(_, label, _)| label.to_ascii_lowercase().contains(&query))
+    .map(|(id, label, kind)| {
+        let mut row = ListRow::item(id, Line::from(label));
+        row.trailing = Some(Line::from(kind));
+        row
+    })
+    .collect()
+}
+
+fn detail_table(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let _tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
+    let rows = [
+        DetailRow {
+            id: "state",
+            label: "State",
+            value: "Ready",
+            href: None,
+            capability: DetailCapability::Copy,
+            emphasis: true,
+            style: None,
+        },
+        DetailRow {
+            id: "link",
+            label: "Reference",
+            value: "https://example.invalid",
+            href: Some("https://example.invalid"),
+            capability: DetailCapability::CopyAndLink,
+            emphasis: false,
+            style: None,
+        },
+    ];
+    let mut state = DetailTableState::default();
+    frame.render_stateful_widget(
+        &DetailTable::new(&rows, theme).label_width(14).wrap(true),
+        area,
+        &mut state,
+    );
+}
+
+fn detail_table_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let _tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
+    let rows = [
+        DetailRow {
+            id: "region",
+            label: "地域",
+            value: "東京 🇯🇵",
+            href: None,
+            capability: DetailCapability::None,
+            emphasis: true,
+            style: None,
+        },
+        DetailRow {
+            id: "status",
+            label: "状態",
+            value: "準備完了 ✅ Cafe\u{301}",
+            href: None,
+            capability: DetailCapability::Copy,
+            emphasis: false,
+            style: None,
+        },
+    ];
+    let mut state = DetailTableState::default();
+    frame.render_stateful_widget(
+        &DetailTable::new(&rows, theme).label_width(8).wrap(true),
+        area,
+        &mut state,
+    );
+}
+
+#[derive(Clone, Copy)]
+enum TableVariant {
+    Basic,
+    Sorted,
+    Narrow,
+    Unicode,
+    Disabled,
+    Empty,
+}
+
+fn completion_menu_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let panel_tokens = DesignTokens::new(theme.clone(), Density::default());
+    frame.render_widget(Panel::new(&panel_tokens).title("Editor"), area);
+    let candidates = [
+        CompletionCandidate::new("select", "SELECT").kind("keyword"),
+        CompletionCandidate::new("from", "FROM").kind("keyword"),
+        CompletionCandidate::new("users", "users").kind("table"),
+        CompletionCandidate::new("orders", "orders").kind("table"),
+        CompletionCandidate::new("where", "WHERE").kind("keyword"),
+    ];
+    let anchor = Rect::new(area.x.saturating_add(4), area.y.saturating_add(2), 1, 1);
+    let mut state = CompletionMenuState::new(Some("select"));
+    frame.render_stateful_widget(
+        &CompletionMenu::new(&candidates, theme, area, anchor).preferred_size(CompletionMenuSize {
+            width: 28,
+            height: 6,
+        }),
+        area,
+        &mut state,
+    );
+}
+
+fn completion_menu_edge(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let panel_tokens = DesignTokens::new(theme.clone(), Density::default());
+    frame.render_widget(Panel::new(&panel_tokens).title("Edge"), area);
+    let candidates = [
+        CompletionCandidate::new("alpha", "αlpha-wide-label"),
+        CompletionCandidate::new("beta", "βeta"),
+        CompletionCandidate::new("gamma", "γamma").kind("fn"),
+    ];
+    // Anchor near bottom-right so the menu must flip and clamp.
+    let anchor = Rect::new(
+        area.x.saturating_add(area.width.saturating_sub(2)),
+        area.y.saturating_add(area.height.saturating_sub(2)),
+        1,
+        1,
+    );
+    let mut state = CompletionMenuState::new(Some("beta"));
+    frame.render_stateful_widget(
+        &CompletionMenu::new(&candidates, theme, area, anchor).preferred_size(CompletionMenuSize {
+            width: 24,
+            height: 5,
+        }),
+        area,
+        &mut state,
+    );
+}
+
+fn virtual_grid_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    render_virtual_grid(frame, area, theme, 20);
+}
+
+fn virtual_grid_million(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    render_virtual_grid(frame, area, theme, 1_000_000);
+}
+
+fn render_virtual_grid(frame: &mut Frame<'_>, area: Rect, theme: &Theme, total_rows: u64) {
+    let columns = [
+        GridColumn::fixed("id", "id", 8),
+        GridColumn::fixed("name", "name", 16),
+        GridColumn::min("value", "value", 10),
+        GridColumn::fixed("flag", "flag", 6),
+    ];
+    let cells0 = [
+        GridCell::text("0"),
+        GridCell::text("alpha"),
+        GridCell::text("1"),
+        GridCell::text("y"),
+    ];
+    let cells1 = [
+        GridCell::text("1"),
+        GridCell::text("beta"),
+        GridCell::pending(),
+        GridCell::text("n"),
+    ];
+    let cells2 = [
+        GridCell::text("2"),
+        GridCell::text("gamma"),
+        GridCell::text("3"),
+        GridCell::text("y"),
+    ];
+    let cells3 = [
+        GridCell::text("3"),
+        GridCell::text("delta"),
+        GridCell::text("4"),
+        GridCell::text("y"),
+    ];
+    let cells4 = [
+        GridCell::text("4"),
+        GridCell::text("eps"),
+        GridCell::pending(),
+        GridCell::text("n"),
+    ];
+    let cells5 = [
+        GridCell::text("5"),
+        GridCell::text("zeta"),
+        GridCell::text("6"),
+        GridCell::text("y"),
+    ];
+    let rows = [
+        GridRow::new(0u64, 0, &cells0),
+        GridRow::new(1, 1, &cells1),
+        GridRow::new(2, 2, &cells2),
+        GridRow::new(3, 3, &cells3),
+        GridRow::new(4, 4, &cells4),
+        GridRow::new(5, 5, &cells5),
+    ];
+    let grid = VirtualGrid::new(&columns, &rows, theme).total_rows(total_rows);
+    let mut state = VirtualGridState::new();
+    state.set_focused(true);
+    frame.render_stateful_widget(&grid, area, &mut state);
+}
+
+fn table_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    render_table(frame, area, theme, TableVariant::Basic);
+}
+fn table_sorted(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    render_table(frame, area, theme, TableVariant::Sorted);
+}
+fn table_narrow(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    render_table(frame, area, theme, TableVariant::Narrow);
+}
+fn table_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    render_table(frame, area, theme, TableVariant::Unicode);
+}
+fn table_disabled(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    render_table(frame, area, theme, TableVariant::Disabled);
+}
+fn table_empty(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    render_table(frame, area, theme, TableVariant::Empty);
+}
+
+fn render_table(frame: &mut Frame<'_>, area: Rect, theme: &Theme, variant: TableVariant) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
+    let sorted = matches!(variant, TableVariant::Sorted);
+    let columns = [
+        Column {
+            id: "pid",
+            title: Line::from("PID"),
+            width: ColumnWidth::Fixed(7),
+            alignment: CellAlignment::Right,
+            sortable: true,
+            sort: None,
+        },
+        Column {
+            id: "process",
+            title: Line::from("Process"),
+            width: ColumnWidth::Fill(NonZeroU16::new(2).unwrap()),
+            alignment: CellAlignment::Left,
+            sortable: true,
+            sort: None,
+        },
+        Column {
+            id: "region",
+            title: Line::from("Region"),
+            width: ColumnWidth::Min(10),
+            alignment: CellAlignment::Center,
+            sortable: false,
+            sort: None,
+        },
+        Column {
+            id: "cpu",
+            title: Line::from("CPU"),
+            width: ColumnWidth::Fixed(8),
+            alignment: CellAlignment::Right,
+            sortable: true,
+            sort: sorted.then_some(SortDirection::Descending),
+        },
+        Column {
+            id: "state",
+            title: Line::from("State"),
+            width: ColumnWidth::Fill(NonZeroU16::new(1).unwrap()),
+            alignment: CellAlignment::Center,
+            sortable: false,
+            sort: None,
+        },
+    ];
+    let cells = [
+        [
+            Line::from("101"),
+            Line::from(Span::styled("termrock", theme.style(Role::Accent))),
+            Line::from("東京🧪alpha"),
+            Line::from("82.4%"),
+            Line::from("run"),
+        ],
+        [
+            Line::from("208"),
+            Line::from("cargo-nextest"),
+            Line::from("eu-west"),
+            Line::from("31.0%"),
+            Line::from("run"),
+        ],
+        [
+            Line::from("317"),
+            Line::from("rust-analyzer"),
+            Line::from("local"),
+            Line::from("17.8%"),
+            Line::from("idle"),
+        ],
+        [
+            Line::from("422"),
+            Line::from("bun-docs"),
+            Line::from("us-east"),
+            Line::from("9.2%"),
+            Line::from("wait"),
+        ],
+        [
+            Line::from("509"),
+            Line::from("shell"),
+            Line::from("東京"),
+            Line::from("4.4%"),
+            Line::from("done"),
+        ],
+        [
+            Line::from("612"),
+            Line::from("indexer"),
+            Line::from("ap-south"),
+            Line::from("2.7%"),
+            Line::from("idle"),
+        ],
+        [
+            Line::from("734"),
+            Line::from("preview-worker"),
+            Line::from("eu-north"),
+            Line::from("1.8%"),
+            Line::from("run"),
+        ],
+    ];
+    let rows = cells
+        .iter()
+        .enumerate()
+        .map(|(index, cells)| TableRow {
+            id: index,
+            cells,
+            leading: None,
+            badge: None,
+            enabled: !(matches!(variant, TableVariant::Disabled) && index == 2),
+            emphasis: index == 0 && matches!(variant, TableVariant::Unicode),
+            style: None,
+        })
+        .collect::<Vec<_>>();
+    let visible = if matches!(variant, TableVariant::Empty) {
+        &rows[..0]
+    } else {
+        &rows
+    };
+    let mut state = TableState::new((!visible.is_empty()).then_some(
+        if matches!(variant, TableVariant::Disabled) {
+            1
+        } else {
+            3
+        },
+    ));
+    state.set_focused(true);
+    frame.render_stateful_widget(&Table::new(&columns, visible, &tokens), area, &mut state);
+}
+
+fn text_area_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    render_text_area(
+        frame,
+        area,
+        theme,
+        "Compose",
+        "First line\nSecond line\nThird line",
+        None,
+    );
+}
+fn text_area_narrow(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    render_text_area(
+        frame,
+        area,
+        theme,
+        "Narrow",
+        "prefix 東京🧪 trailing content",
+        None,
+    );
+}
+fn text_area_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    render_text_area(
+        frame,
+        area,
+        theme,
+        "Unicode",
+        "e\u{301} cafe\n東京 region\n👩\u{200d}💻 builds",
+        None,
+    );
+}
+fn text_area_empty(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    render_text_area(frame, area, theme, "Notes", "", Some("Write a note…"));
+}
+fn text_area_scrolled(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let text = "zero\none\ntwo\nthree\nfour\nfive: deliberately wide content beyond the viewport";
+    let mut state = TextAreaState::new(text);
+    state.set_focused(true);
+    state.set_cursor(TextCursor {
+        line: 5,
+        byte: text.lines().last().unwrap().len(),
+    });
+    frame.render_stateful_widget(&TextArea::new(theme).title("Scrolled"), area, &mut state);
+}
+fn render_text_area(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    theme: &Theme,
+    title: &str,
+    text: &str,
+    placeholder: Option<&str>,
+) {
+    let mut state = TextAreaState::new(text);
+    state.set_focused(true);
+    let mut widget = TextArea::new(theme).title(title);
+    if let Some(placeholder) = placeholder {
+        widget = widget.placeholder(placeholder);
+    }
+    frame.render_stateful_widget(&widget, area, &mut state);
+}
+
+fn status_bar(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let left = [StatusSlot {
+        id: "state",
+        content: " Ready ",
+        priority: 1,
+        min_width: 0,
+        enabled: true,
+        style: Style::new().reversed(),
+        hover_style: Some(Style::new().bold().reversed()),
+    }];
+    let right = [StatusSlot {
+        id: "position",
+        content: " 3/12 ",
+        priority: 1,
+        min_width: 0,
+        enabled: true,
+        style: Style::new().dim(),
+        hover_style: Some(Style::new().bold()),
+    }];
+    let mut state = StatusBarState::default();
+    frame.render_stateful_widget(
+        &StatusBar::new(&left, &right, theme).alpha(1.0),
+        area,
+        &mut state,
+    );
+}
+
+fn design_inspector(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let layers = ["root"];
+    let recipes = ["list_row", "panel"];
+    let snap = DesignInspectorFrame {
+        focused: Some("list"),
+        layer: Some("root"),
+        capability: ColorCapability::Truecolor,
+        density: "comfortable",
+        layers: &layers,
+        recipes: &recipes,
+        selection_chrome: "gutter",
+    };
+    frame.render_widget(DesignInspector::new(snap, theme), area);
+}
+
+fn dialog(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    frame.render_widget(
+        Dialog::new(
+            "Notice",
+            Line::from("The operation completed.").into(),
+            theme,
+        )
+        .style(Style::new())
+        .emphasis(termrock::widgets::PanelEmphasis::Focused),
+        area,
+    );
+}
+
+fn choice_dialog(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let mut state = ChoiceDialogState::new(Some("continue"));
+    render_choice_dialog(frame, area, &mut state, theme);
+}
+
+pub(crate) fn choice_actions() -> [Action<'static, &'static str>; 2] {
+    [
+        Action {
+            id: "continue",
+            label: "Continue",
+            enabled: true,
+            style: None,
+        },
+        Action {
+            id: "cancel",
+            label: "Cancel",
+            enabled: true,
+            style: Some(Style::new().bold()),
+        },
+    ]
+}
+
+pub(crate) fn render_choice_dialog(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    state: &mut ChoiceDialogState<&'static str>,
+    theme: &Theme,
+) {
+    let actions = choice_actions();
+    frame.render_stateful_widget(
+        &ChoiceDialog::new(
+            Dialog::new(
+                "Choose",
+                Line::from("Continue with this operation?").into(),
+                theme,
+            )
+            .style(Style::new())
+            .emphasis(termrock::widgets::PanelEmphasis::Focused),
+            &actions,
+        )
+        .gap(" "),
+        area,
+        state,
+    );
+}
+
+fn message_dialog(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let details = [
+        DetailRow {
+            id: "state",
+            label: "State",
+            value: "Ready",
+            href: None,
+            capability: DetailCapability::None,
+            emphasis: false,
+            style: None,
+        },
+        DetailRow {
+            id: "reference",
+            label: "Reference",
+            value: "example-42",
+            href: None,
+            capability: DetailCapability::Copy,
+            emphasis: false,
+            style: None,
+        },
+    ];
+    let mut state = DetailTableState::default();
+    frame.render_stateful_widget(
+        &MessageDialog::new(
+            Dialog::new(
+                "Result",
+                Line::from("The operation completed.").into(),
+                theme,
+            )
+            .style(Style::new())
+            .emphasis(termrock::widgets::PanelEmphasis::Focused),
+            &details,
+            theme,
+        )
+        .label_width(14)
+        .wrap(true),
+        area,
+        &mut state,
+    );
+}
+
+fn diff(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let theme = if *theme == Theme::tailrocks_phosphor() {
+        theme
+            .clone()
+            .with_role(Role::DiffAdded, Style::new().bold())
+            .with_role(Role::DiffRemoved, Style::new().dim())
+    } else {
+        theme.clone()
+    };
+    let lines = [
+        DiffLine {
+            text: " context",
+            kind: DiffKind::Context,
+        },
+        DiffLine {
+            text: "-before",
+            kind: DiffKind::Removed,
+        },
+        DiffLine {
+            text: "+after",
+            kind: DiffKind::Added,
+        },
+    ];
+    frame.render_stateful_widget(
+        &DiffView::new(&lines, &theme),
+        area,
+        &mut DiffState::default(),
+    );
+}
+
+fn toast(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    frame.render_widget(
+        Toast::new(theme, "Updated", Severity::Success).anchor(Anchor::TopRight),
+        area,
+    );
+}
+fn backdrop(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let style = if *theme == Theme::tailrocks_phosphor() {
+        Style::new().dim()
+    } else {
+        theme.style(Role::Backdrop)
+    };
+    frame.render_widget(Backdrop::new().symbol('░').style(style), area);
+}
+
+fn viewport(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let lines = [
+        Line::from("alpha: short"),
+        Line::from("beta: a deliberately wide borrowed row for horizontal scrolling"),
+        Line::from("gamma: 🧪 Unicode"),
+        Line::from("delta: fourth row"),
+        Line::from("epsilon: fifth row"),
+        Line::from("zeta: sixth row"),
+    ];
+    let border_style = theme.style(Role::BorderFocused);
+    let theme = theme.clone().with_role(Role::Border, border_style);
+    let mut state = DialogScroll::default();
+    frame.render_stateful_widget(
+        &Viewport::new(&lines, &theme)
+            .title("Viewport")
+            .content_style(Style::new()),
+        area,
+        &mut state,
+    );
+}
+
+fn empty_state(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    frame.render_widget(
+        EmptyState::new("No results", theme).detail("Try another query"),
+        area,
+    );
+}
+
+fn loading_view(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    frame.render_widget(LoadingView::new("Loading…", "⠋", theme), area);
+}
+
+fn error_view(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    frame.render_widget(
+        ErrorView::new("Request failed", theme).detail("Timed out"),
+        area,
+    );
+}
+
+fn banner(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    frame.render_widget(
+        Banner::new("Deployed successfully", Severity::Success, theme),
+        area,
+    );
+}
+
+fn skeleton(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    frame.render_widget(Skeleton::new(4, theme), area);
+}
+
+fn jump_overlay(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let panel_tokens = DesignTokens::new(theme.clone(), Density::default());
+    frame.render_widget(
+        Panel::new(&panel_tokens)
+            .title("Jump targets")
+            .emphasis(PanelEmphasis::Normal),
+        area,
+    );
+    let targets = [
+        JumpTarget {
+            id: "files",
+            area: Rect::new(area.x.saturating_add(2), area.y.saturating_add(1), 12, 1),
+            badge: 'f',
+        },
+        JumpTarget {
+            id: "main",
+            area: Rect::new(area.x.saturating_add(2), area.y.saturating_add(3), 12, 1),
+            badge: 'm',
+        },
+    ];
+    frame.render_widget(JumpOverlay::new(&targets, theme), area);
+}
+
+fn command_palette(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let rows = [
+        ListRow::item("theme", Line::from("Toggle theme")),
+        ListRow::item("quit", Line::from("Quit")),
+    ];
+    let mut state = CommandPaletteState::new(Some("theme"));
+    frame.render_stateful_widget(
+        &CommandPalette::new("Commands", &rows, &tokens),
+        area,
+        &mut state,
+    );
+}
+
+fn code_block(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let lines = ["fn main() {", "    println!(\"hi\");", "}"];
+    frame.render_widget(
+        CodeBlock::new(&lines, theme)
+            .language("rust")
+            .line_numbers(true),
+        area,
+    );
+}
+
+fn markdown_view(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let blocks = [
+        MarkdownBlock {
+            kind: MarkdownBlockKind::Heading,
+            text: "Plan",
+        },
+        MarkdownBlock {
+            kind: MarkdownBlockKind::ListItem,
+            text: "Implement widgets",
+        },
+        MarkdownBlock {
+            kind: MarkdownBlockKind::Paragraph,
+            text: "Ship the PR.",
+        },
+        MarkdownBlock {
+            kind: MarkdownBlockKind::Code,
+            text: "cargo test -p termrock",
+        },
+    ];
+    frame.render_widget(MarkdownView::new(&blocks, theme), area);
+}
+
+fn sparkline(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let samples = [0.1, 0.3, 0.2, 0.7, 0.9, 0.5, 0.8, 0.4];
+    frame.render_widget(Sparkline::new(&samples, theme), area);
+}
+
+fn bar_series(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let bars = [
+        BarDatum {
+            label: "cpu",
+            fraction: 0.72,
+        },
+        BarDatum {
+            label: "mem",
+            fraction: 0.41,
+        },
+        BarDatum {
+            label: "disk",
+            fraction: 0.88,
+        },
+    ];
+    frame.render_widget(BarSeries::new(&bars, theme), area);
+}
+
+fn segmented_meter(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let segments = [
+        MeterSegment {
+            label: "used",
+            weight: 3.0,
+            role: Role::Success,
+        },
+        MeterSegment {
+            label: "cache",
+            weight: 1.0,
+            role: Role::Info,
+        },
+        MeterSegment {
+            label: "free",
+            weight: 2.0,
+            role: Role::TextDisabled,
+        },
+    ];
+    frame.render_widget(SegmentedMeter::new(&segments, theme), area);
+}
+
+fn token_meter(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    frame.render_widget(TokenMeter::new(128_000, 200_000, theme), area);
+}
+
+fn thinking_block(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    frame.render_widget(
+        ThinkingBlock::new("Planning edits", theme)
+            .frame("·")
+            .expanded(true)
+            .body("Inspect contracts, then implement."),
+        area,
+    );
+}
+
+fn tool_card(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    frame.render_widget(
+        ToolCard::new(
+            "shell",
+            "cargo test -p termrock",
+            ToolStatus::Running,
+            theme,
+        )
+        .expanded(true)
+        .detail("running suite…"),
+        area,
+    );
+}
+
+fn approval_card(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let mut state = ApprovalCardState::new();
+    frame.render_stateful_widget(
+        &ApprovalCard::new(
+            "Permission",
+            "Run cargo publish?",
+            ApprovalRisk::High,
+            theme,
+        ),
+        area,
+        &mut state,
+    );
+}
+
+fn approval_card_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let mut state = ApprovalCardState::new();
+    frame.render_stateful_widget(
+        &ApprovalCard::new("権限 🔐", "本番へ公開しますか？", ApprovalRisk::High, theme),
+        area,
+        &mut state,
+    );
+}
+
+fn transcript_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let user = ["Run the suite", "with unicode: 日本語 🚀"];
+    let assistant = [
+        "Sure — preparing the environment.",
+        "Running tests…",
+        "All green.",
+    ];
+    let tool = ["cargo test — passed"];
+    let blocks = [
+        TranscriptBlock::new("u1", TranscriptKind::User, &user),
+        TranscriptBlock::new("a1", TranscriptKind::Assistant, &assistant),
+        TranscriptBlock::new("t1", TranscriptKind::Tool, &tool).folded(false),
+    ];
+    let mut state = TranscriptState::new();
+    frame.render_stateful_widget(&Transcript::new(&blocks, theme), area, &mut state);
+}
+
+fn stream_view(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let items = [
+        StreamItem {
+            id: "u1",
+            kind: StreamItemKind::User,
+            text: "Add stream widgets",
+            folded: false,
+        },
+        StreamItem {
+            id: "a1",
+            kind: StreamItemKind::Assistant,
+            text: "Implementing agent kit…",
+            folded: false,
+        },
+        StreamItem {
+            id: "t1",
+            kind: StreamItemKind::Tool,
+            text: "shell · cargo test",
+            folded: false,
+        },
+        StreamItem {
+            id: "th1",
+            kind: StreamItemKind::Thinking,
+            text: "Check catalog gates",
+            folded: true,
+        },
+    ];
+    frame.render_widget(StreamView::new(&items, theme), area);
+}
+
+fn timeline(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let events = [
+        TimelineEvent {
+            when: "12:01",
+            text: "Started",
+            active: false,
+        },
+        TimelineEvent {
+            when: "12:02",
+            text: "Running tests",
+            active: true,
+        },
+        TimelineEvent {
+            when: "12:03",
+            text: "Open PR",
+            active: false,
+        },
+    ];
+    frame.render_widget(Timeline::new(&events, theme), area);
+}
+
+fn prompt_box(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let mut state = PromptBoxState::new();
+    frame.render_stateful_widget(
+        &PromptBox::new(theme).placeholder("Message…"),
+        area,
+        &mut state,
+    );
+}
+
+fn theme_picker(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let mut state = ThemePickerState::new(0);
+    frame.render_stateful_widget(
+        &ThemePicker::new(BUILTIN_THEME_PRESETS, theme),
+        area,
+        &mut state,
+    );
+}
+
+fn image_surface(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let mut meta = ImageMeta::new("preview.png", ImageProtocol::Kitty);
+    meta.pixel_width = Some(128);
+    meta.pixel_height = Some(96);
+    frame.render_widget(ImageSurface::new(meta, theme), area);
+}

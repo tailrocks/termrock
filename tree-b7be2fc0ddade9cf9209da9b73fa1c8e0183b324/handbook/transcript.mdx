@@ -1,0 +1,49 @@
+---
+title: Transcript
+description: Sole variable-height agent conversation surface (StreamView deleted).
+---
+
+# Transcript
+
+Flagship conversation viewport. **Only** public stream widget after migration `0064`.
+
+## When to use
+
+| Use Transcript | Prefer |
+|----------------|--------|
+| Agent / chat multi-block stream | LogPane for machine logs |
+| Variable-height blocks + follow | List for flat selectable rows |
+| Folded tool summaries | DetailTable for key/value |
+
+## Anatomy
+
+- Kind prefix (glyph or ASCII) — non-color cue  
+- Optional fold marker  
+- Selection gutter when focused  
+- Follow-tail + stable block anchor across append/resize  
+- Empty label when no blocks  
+
+## API sketch
+
+```rust
+use termrock::widgets::{Transcript, TranscriptBlock, TranscriptKind, TranscriptState};
+use termrock::style::DesignSystem;
+
+let system = DesignSystem::default();
+let lines = ["hello"];
+let blocks = [TranscriptBlock::new("1", TranscriptKind::User, &lines)];
+let mut state = TranscriptState::new();
+let _ = Transcript::new(&blocks, &system).focused(true).ascii(false);
+```
+
+## Intents
+
+`default_transcript_intent` → `handle_intent`: Move, Page, Activate, Toggle fold, Expand/Collapse, Cancel.
+
+## Stories
+
+`transcript/basic`, `narrow`, `unicode`, `empty`, `folded-follow`, `ascii-colorless`, `tiny`.
+
+## Related
+
+AgentWorkbench · PromptComposer · PermissionPrompt · Stream coalesce kits (perf)

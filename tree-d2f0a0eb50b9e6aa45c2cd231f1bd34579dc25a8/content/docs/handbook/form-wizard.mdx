@@ -1,0 +1,46 @@
+---
+title: FormWizard
+description: Multi-step form flow with gates, optional steps, review, async checks, and resume.
+---
+
+# FormWizard
+
+**Purpose.** Setup, onboarding, connections, migrations — multi-step chrome
+with validation gates. Domain values stay in the host; paint fields into
+`body_area()` after wizard chrome.
+
+## Ownership
+
+| Concern | Owner |
+|---------|--------|
+| Step titles, optional flags, progress ids | WizardStep / state |
+| Field values, validation messages | Host Form / fields |
+| Submit / async I/O / persistence | Host via outcomes |
+| Side effects | **Never** in TermRock |
+
+## Host loop
+
+```rust
+match state.handle_key(key) {
+    FormWizardOutcome::StepChanged { .. } => {
+        let _ = state.request_focus_field();
+    }
+    FormWizardOutcome::AsyncCheckRequested { generation, .. } => {
+        host.validate_async(generation);
+    }
+    FormWizardOutcome::SubmitRequested => host.submit(),
+    FormWizardOutcome::ProgressSaved { progress } => host.save(progress),
+    FormWizardOutcome::Cancelled => host.close(),
+    _ => {}
+}
+// resume:
+state.restore_progress(&saved);
+```
+
+## Narrow layout
+
+Width `< 36` → single-step title (no full stepper strip).
+
+## Related
+
+Form · Field · migration `0151`

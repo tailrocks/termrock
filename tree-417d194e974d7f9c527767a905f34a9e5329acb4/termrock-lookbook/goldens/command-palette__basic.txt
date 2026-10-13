@@ -1,0 +1,17 @@
+command-palette/basic 50x16 (story 48x14)
+                                                  
+ ┌─Commands─────────────────────────────────────┐ 
+ │ ❯Type a command                              │ 
+ │ ──────────────────────────────────────────── │ 
+ │ Appearance                                   │ 
+ │ › ↻ Toggle status bar                        │ 
+ │ Navigation                                   │ 
+ │   ◎ Go to line…                         C-g  │ 
+ │ App                                          │ 
+ │   ⊘ Deploy (unavailable)                     │ 
+ │ Help                                         │ 
+ │   ▸ Keyboard shortcuts                       │ 
+ │                                              │ 
+ │ ↑↓ move · enter run · C-p history            │ 
+ └──────────────────────────────────────────────┘ 
+                                                  

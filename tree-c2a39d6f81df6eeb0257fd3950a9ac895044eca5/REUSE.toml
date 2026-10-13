@@ -1,0 +1,10 @@
+version = 1
+SPDX-PackageName = "termrock"
+SPDX-PackageSupplier = "Alexey Zhokhov <alexey@zhokhov.com>"
+SPDX-PackageDownloadLocation = "https://github.com/tailrocks/termrock"
+
+[[annotations]]
+path = ["**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Alexey Zhokhov"
+SPDX-License-Identifier = "Apache-2.0"

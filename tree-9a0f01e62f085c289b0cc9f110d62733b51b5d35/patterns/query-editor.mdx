@@ -1,0 +1,108 @@
+---
+title: Query Editor
+description: 'Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned.'
+pattern: QueryEditor
+demo: query-editor/basic
+interaction: activation
+source: crates/termrock/src/patterns/query_editor.rs
+classification: composite
+---
+
+This is an example composite from `termrock::patterns`, not a first-class widget. Copy the recipe, keep its reusable parts, and replace its sample domain model with your own.
+
+## Live application preview
+
+<TerminalPreview story="query-editor/basic" interactive caption="Query Editor · shared Rust demo" />
+
+## Classification and composition
+
+**composite** · default grid 72×18
+
+Composed public building blocks: `CodeFrame`, `CodeFrameLine`, `Diagnostic`, `DiagnosticSeverity`, `HelpEntry`, `HistoryEntry`, `SourceLabel`, `SourceRange`, `SpanStyle`, `StatefulWidget`, `TextArea`, `TextCursor`, `TextWrap`.
+
+## Workflow
+
+- `Enter open action` or `click trigger` opens a real ChoiceDialog; confirm/cancel produce different outcomes.
+- `S toggle sidebar region` changes the visible application chrome.
+- `↑↓/wheel select row` changes the persistent row selection.
+- `/ filter` focuses a real TextInput; type or paste, then Enter applies or Escape cancels.
+
+The preview and native Lookbook instantiate the same Rust story and state machine. Outcomes appear in the preview status line.
+
+## Ownership
+
+TermRock owns composition, focus geometry, responsive layout, and reusable state transitions. The consuming application owns records, commands, persistence, secrets, authorization, and side effects.
+
+## Source
+
+- Pattern recipe: [`crates/termrock/src/patterns/query_editor.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/patterns/query_editor.rs)
+- Demo: `query-editor/basic`
+
+## Migrated handbook guidance
+
+# QueryEditor
+
+Multiline query workbench for SQL, logs, search DSLs, and structured queries.
+TermRock owns draft editing, focus zones, run/stop chrome, parameters, and
+typed **requests**. Host owns language services, execution, formatting, and
+result grids.
+
+
+## When to use / when not
+
+| Use QueryEditor | Prefer |
+|-----------------|--------|
+| DB / log / metrics query pane | — |
+| Agent chat prompt | [PromptComposer](/docs/components/prompt-composer) |
+| Plain notes / forms | [TextArea](/docs/components/text-area) |
+| Result table only | [DataTable](/docs/components/data-table) (future ResultGrid) |
+
+## Ownership
+
+| Concern | Owner |
+|---------|--------|
+| Draft, cursor, selection, undo | `TextAreaState` inside `QueryEditorState` |
+| Completer, parser, formatter, executor | Host |
+| Result rows / types / paging | Host DataTable (or ResultGrid) in `slots.results` |
+| Persist history / saved queries | Host via outcomes |
+
+## Draft survival
+
+Moving focus to **Results** / **Diagnostics** / **Parameters** never clears
+the draft or cursor. Only `accepts_input` and `focus` change. Same rule for
+completion overlays and help modals.
+
+## Outcomes (requests)
+
+- `RunRequested` · `StopRequested`
+- `FormatRequested` · `SaveQueryRequested` · `OpenSavedQueries`
+- `OpenHistory` · `HistoryApplied`
+- `CompletionRequested` · `CompletionCommitted` · `CompletionClosed`
+- `JumpToDiagnostic` · `ParameterEditRequested`
+- `OpenKeyboardHelp` · `FocusChanged` · `ModeChanged` · fullscreen
+
+## Integrate
+
+| Piece | How |
+|-------|-----|
+| CompletionMenu | On `CompletionRequested`, host opens menu; commit → insert |
+| CodeFrame / Diagnostic | Pass diagnostics to paint; jump via labels |
+| KeyboardHelp | Seed with `query_editor_help_entries()` + live keymap |
+| HistoryPicker | `OpenHistory` / `saved_queries_to_history` |
+| DataTable | Paint into `state.slots.results` after workbench render |
+
+## Keys
+
+| Key | Action |
+|-----|--------|
+| Ctrl+R / Ctrl+Enter | Run |
+| Ctrl+Shift+S | Stop |
+| Ctrl+F · Ctrl+S · Ctrl+H | Format · save · history |
+| Ctrl+Space | Completion |
+| Ctrl+J · Ctrl+1..4 | Focus zones |
+| Ctrl+M · Ctrl+Shift+F | Mode · fullscreen |
+| Ctrl+? | Help |
+
+## Related
+
+TextArea · CompletionMenu · Diagnostic · KeyboardHelp · HistoryPicker · DataTable · migration `0204`

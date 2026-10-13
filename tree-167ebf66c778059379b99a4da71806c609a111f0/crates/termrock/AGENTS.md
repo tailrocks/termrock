@@ -1,0 +1,2 @@
+- Backend-neutral by default: token types, component state, immutable `FrameTick`, and render helpers stay free of a specific backend. Crossterm integration lives behind the `crossterm` feature; downstream loops use `runtime::run` instead of forking terminal-session, event-conversion, timing, or restoration logic. Effects and process policy remain consumer-owned.
+- Cross-cutting TUI behavior is documented: focusability, navigation, color, modal sizing, and hints live in the matching guide; a behavior change ships the matching documentation in the same commit.

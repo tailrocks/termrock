@@ -1,0 +1,187 @@
+---
+title: FilePicker
+description: 'A host-driven file/directory browser with breadcrumbs, multi-select, path entry, and optional preview — no filesystem I/O in TermRock.'
+component: FilePicker
+demo: file-picker/unix
+interaction: disclosure-overlay
+actions:
+  - "↑↓ select"
+  - "Enter open/choose"
+  - "Tab change pane"
+  - "/ filter"
+  - "click item"
+expectedOutcomes:
+  - "Navigation moves visible focus or selection and preserves it for the next event."
+  - "Activation changes the mounted state and exposes the public typed request in the preview status."
+  - "Editing changes the visible Unicode-safe draft and reports the public typed edit outcome."
+source: crates/termrock/src/widgets/file_picker.rs
+---
+
+## Live terminal (Ghostty-class)
+
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
+
+<TerminalPreview story="file-picker/unix" interactive caption="FilePicker · FilePicker Unix — live shared Rust state" />
+
+## Try it
+
+- `↑↓ select`: Move through the real focus/selection model; the next action uses the new target.
+- `Enter open/choose`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
+- `Tab change pane`: Move through the real focus/selection model; the next action uses the new target.
+- `/ filter`: Focus the editable field, then type or paste Unicode text; the draft remains visible.
+- `click item`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
+
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered |
+| Mouse | covered |
+| Focus | covered |
+| Cursor / caret | not-applicable in primary demo |
+| Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
+
+## Configuration and variants
+
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
+
+| Demo | Configuration | Input |
+|---|---|---|
+| `file-picker/no-preview` | FilePicker no preview | paint-only |
+| `file-picker/ssh` | FilePicker SSH | paint-only |
+| `file-picker/unix` | FilePicker Unix | interactive |
+| `file-picker/windows` | FilePicker Windows | paint-only |
+
+## Usage
+
+The Code view above and this source excerpt use the exact paint setup registered for `file-picker/unix`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
+
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
+
+// Exact paint setup used by the shared catalog story.
+fn file_picker_unix_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = FilePickerState::new("/home/u/proj")
+        .with_mode(FilePickerMode::OpenFile)
+        .with_preview(true)
+        .with_path_style(PathStyle::Unix);
+    state.set_focused(true);
+    file_picker_seed(&mut state, "/home/u/proj", file_picker_unix_entries());
+    state.apply_preview(FilePreview::text(
+        "README.md",
+        [
+            "# proj".into(),
+            "".into(),
+            "Hello from Unix FS host.".into(),
+        ],
+    ));
+    FilePicker::new(system)
+        .title("Open file")
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+```
+
+## Migrated handbook guidance
+
+# FilePicker
+
+**Purpose.** Reusable open/save browser for files and directories. Built from
+PathInput, CollectionState list focus, Selection multi-check, and optional
+OverlayStack dialogs. TermRock never calls the filesystem.
+
+
+## Ownership
+
+| Concern | Owner |
+|---------|--------|
+| List / preview I/O, cancel, permissions | Host |
+| Entry projection (kind, hidden, size, mtime labels) | Host |
+| Hidden filter, name filter, sort, multi, crumbs | FilePicker |
+| Path field typing | Embedded PathInput |
+| Modal place / dismiss | OverlayStack helpers |
+
+## Host loop
+
+```rust
+match state.handle_key(key) {
+    FilePickerOutcome::ListRequested { path, generation } => {
+        host.cancel_list();
+        host.list_dir(path, generation); // async
+    }
+    FilePickerOutcome::PreviewRequested { path, generation } => {
+        host.preview(path, generation);
+    }
+    FilePickerOutcome::Confirmed { paths } => host.accept(paths),
+    FilePickerOutcome::Cancelled => host.close_picker(),
+    FilePickerOutcome::FilterChanged => {
+        // e.g. Ctrl+H hidden — re-list if host omitted hidden rows
+        let _ = state.request_list(state.cwd().to_owned());
+    }
+    _ => {}
+}
+
+// when list returns:
+if state.apply_listing(generation, cwd, entries, None) {
+    // applied
+}
+// stale generation → false, ignored
+```
+
+## Modes
+
+- `OpenFile` / `SaveFile` — files selectable; dirs navigate  
+- `OpenDirectory` — dirs selectable  
+- `OpenAny` — both  
+
+## Presentation
+
+`presentation_for_bounds` / auto paint: narrow terminals prefer Fullscreen and
+drop the preview column. Overlay id: `FILE_PICKER_OVERLAY_ID`.
+
+## Related
+
+PathInput · Picker · CollectionState · Selection · OverlayStack · migration `0148`
+
+## Stories
+
+- Unix · Windows · SSH-like remote · no-preview multi
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `file-picker/unix`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
+
+## Stories
+
+Lookbook coverage for this component. Only the **primary** story is embedded above;
+use the interactive preview (and Studio lookbook) to explore transitions instead of
+a static multi-image gallery.
+
+| Story | Title | Focus |
+|---|---|---|
+| `file-picker/unix` | FilePicker Unix | **Primary (live preview)** |
+| `file-picker/no-preview` | FilePicker no preview | no preview |
+| `file-picker/ssh` | FilePicker SSH | ssh |
+| `file-picker/windows` | FilePicker Windows | windows |
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/file_picker.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/file_picker.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `file-picker/unix`

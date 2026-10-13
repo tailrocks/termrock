@@ -1,0 +1,51 @@
+---
+title: Chip
+description: 'Selectable filter tokens with optional remove, error, and loading status.'
+---
+
+## Previews
+
+### `chip/filter`
+
+![Filter chips](/component-previews/chip-filter.svg)
+
+### `chip/error-loading`
+
+![Status](/component-previews/chip-error-loading.svg)
+
+### `token-strip/wrap`
+
+![Strip wrap](/component-previews/token-strip-wrap.svg)
+
+### `token-strip/overflow`
+
+![Overflow](/component-previews/token-strip-overflow.svg)
+
+## Usage
+
+```rust
+use termrock::widgets::{Chip, ChipState, TokenStrip, TokenItem, TokenStripState};
+
+let chip = Chip::new("rust", "rust", &system).removable(true);
+let mut state = ChipState::new(false);
+state.set_focused(true);
+// Space toggles selection; Delete removes when removable
+
+let items = [
+    TokenItem::chip("a", "rust").selected(true),
+    TokenItem::tag("b", "file.rs").removable(true),
+];
+let strip = TokenStrip::new(&items, &system).wrap().max_visible(6);
+```
+
+## vs Tag / Badge
+
+| | Chip | Tag | Badge |
+|--|------|-----|-------|
+| Select | yes | no | optional |
+| Remove | optional | optional | no |
+| Use | filters | attachments | status labels |
+
+## Migration
+
+See `migrations/0119-v0.13.0-tag-chip.md`.

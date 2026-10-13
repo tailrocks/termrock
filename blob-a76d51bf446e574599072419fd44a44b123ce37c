@@ -1,0 +1,51 @@
+---
+title: ContextMenu
+description: 'Pointer/context-key command menu at origin with nested cascade, same item model as DropdownMenu, OverlayKind::ContextMenu placement.'
+---
+
+## Previews
+
+### `context-menu/basic`
+
+ContextMenu basic
+
+![ContextMenu — basic](/component-previews/context-menu-basic.svg)
+
+### `context-menu/nested`
+
+ContextMenu nested
+
+![ContextMenu — nested](/component-previews/context-menu-nested.svg)
+
+## Usage
+
+```rust
+use termrock::widgets::{
+    ContextMenu, DropdownMenuState, MenuNode, open_context_menu_overlay, measure_menu_panel,
+};
+
+let nodes = vec![
+    MenuNode::command("copy", "Copy").shortcut("C-c"),
+    MenuNode::command("delete", "Delete").destructive(true),
+];
+let mut state = DropdownMenuState::context();
+let _ = state.open_from_context_pointer(&nodes, bounds);
+// open_context_menu_overlay(&mut stack, bounds, origin, size, opener);
+// ContextMenu::new(&nodes, &system).paint(rect, buf, &mut state);
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered |
+| Mouse | covered (right-click open host-driven; outside dismiss) |
+| Focus | covered |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+- `context-menu/basic`
+- `context-menu/nested`

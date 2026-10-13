@@ -1,0 +1,40 @@
+---
+title: ActivityShelf
+description: Compact concurrent activity strip with StatusBar and notification projection.
+---
+
+# ActivityShelf
+
+Glanceable strip of live/blocked operations. Prioritizes action-required and
+blocked chips. Narrow widths collapse to summary or badge. Not a TaskRail.
+
+## When to use / when not
+
+| Use ActivityShelf | Prefer |
+|-------------------|--------|
+| Persistent active ops under transcript | — |
+| Full task/subagent inventory | TaskRail / List |
+| Ephemeral toasts only | Toast / NotificationCenter |
+| Mode/connection chrome only | StatusBar slots |
+
+## Density
+
+| Width | Presentation |
+|-------|----------------|
+| ≥ 56 | Chips (glyph + title) |
+| 36–55 | Icons only |
+| 18–35 | One-line summary |
+| < 18 | Badge count |
+
+## Integration
+
+- `project_activities_for_status_bar` → StatusSlot content
+- `activities_to_notifications` → NotificationCenter ingest for blocked/action/failed
+
+## Keys
+
+←/→ select · Enter open · x dismiss · o overflow
+
+## Related
+
+TaskRail · StatusBar · NotificationCenter · SemanticStatus · migration `0221`

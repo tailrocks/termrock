@@ -1,0 +1,39 @@
+---
+title: IconButton
+description: 'Compact glyph action with mandatory accessible label and hit slop.'
+---
+## Live terminal (Ghostty-class)
+
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
+
+<TerminalPreview story="button/icon" interactive caption="IconButton · button/icon — focus surface; keys/click for states" />
+
+## Usage
+
+```rust
+use termrock::widgets::{IconButton, IconButtonState, toolbar_icon_action};
+
+let mut state = IconButtonState::new();
+state.activation.set_accepts_input(true);
+
+IconButton::new("×", "Close", &system)
+    .help("Close the dialog (Esc)")
+    .ascii_glyph("x")
+    .paint(area, buf, &mut state);
+
+// Tooltip host: Tooltip::new(btn.help_text())
+// Toolbar: toolbar_icon_action(id, "×", "Close")
+```
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `button/icon` | Icon button | **Primary (live preview)** |
+| `icon-button/toolbar` | IconButton toolbar | toolbar |
+| `icon-button/destructive` | IconButton destructive | destructive |
+| `icon-button/loading` | IconButton loading | loading |
+| `icon-button/row` | IconButton data row | row |
+| `icon-button/narrow` | Narrow IconButton | narrow |
+| `icon-button/unicode` | Unicode IconButton | unicode |

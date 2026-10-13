@@ -1,0 +1,65 @@
+---
+title: ObjectInspector
+description: Expandable typed inspector for JSON, YAML, logs, and application trees.
+---
+
+# ObjectInspector
+
+**Purpose.** Inspect structured trees without loading the entire document into
+the paint path. Host projects a **flattened visible** node list; state owns
+cursor, expansion-by-path, search, and secret reveal.
+
+## When to use
+
+| Use ObjectInspector | Prefer |
+|--------------------|--------|
+| JSON / YAML / TOML trees | — |
+| Structured log objects | — |
+| Rust debug / tool payloads | — |
+| Flat key/value metadata | [KeyValueTable](/docs/handbook/key-value-table) |
+| Single-column hierarchy only | Tree |
+
+## Projection law
+
+```rust
+// Expand set lives on state (stable paths)
+state.set_expanded("spec.containers", true);
+// Host builds only visible expanded nodes for paint
+let fields: Vec<InspectorField> = project(doc, state.expanded_paths());
+state.reconcile(&fields); // sticky cursor path
+```
+
+## Example
+
+```rust
+use termrock::widgets::{
+    InspectKind, InspectorField, ObjectInspector, ObjectInspectorState,
+};
+
+let fields = [
+    InspectorField::container("spec", "spec", InspectKind::Object)
+        .child_count(2)
+        .expanded(),
+    InspectorField::new("image", "ghcr.io/app:1.2")
+        .path("spec.image")
+        .depth(1)
+        .kind(InspectKind::String),
+    InspectorField::new("token", "sk-…")
+        .path("spec.token")
+        .depth(1)
+        .secret(),
+];
+let mut state = ObjectInspectorState::new();
+state.set_expanded("spec", true);
+// c value · y path · e edit · r secret · / find · ←/→ expand
+ObjectInspector::new(&fields, &system).render(area, buf, &mut state);
+```
+
+## Safety
+
+- Values pass through `escape_inspect_value` (control chars → `\n` / `\u{…}`).
+- Secrets paint redacted until `r` reveal; copy still uses host-provided plaintext.
+
+## Related
+
+- Migration `0192-v0.13.0-object-inspector`

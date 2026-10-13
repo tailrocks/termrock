@@ -1,0 +1,44 @@
+# SPDX-FileCopyrightText: 2026 Alexey Zhokhov
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name = "termrock"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Ratatui components and terminal interaction foundations for Tailrocks applications"
+readme = "README.md"
+
+[lib]
+name = "termrock"
+
+[features]
+default = []
+crossterm = ["dep:crossterm", "dep:ratatui-crossterm"]
+
+[dependencies]
+anstyle-parse.workspace = true
+base64.workspace = true
+crossterm = { workspace = true, optional = true }
+ratatui-core.workspace = true
+ratatui-crossterm = { workspace = true, optional = true }
+ratatui-widgets.workspace = true
+tui-scrollbar.workspace = true
+unicode-segmentation.workspace = true
+unicode-width.workspace = true
+
+[dev-dependencies]
+stats_alloc.workspace = true
+
+[lints]
+workspace = true
+
+[[example]]
+name = "crossterm_manual"
+required-features = ["crossterm"]
+
+[[example]]
+name = "crossterm_managed"
+required-features = ["crossterm"]

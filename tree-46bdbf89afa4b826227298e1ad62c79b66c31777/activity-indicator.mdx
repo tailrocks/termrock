@@ -1,0 +1,42 @@
+---
+title: ActivityIndicator
+description: 'Activity line with phase spinner, required verb, and optional detail (reconnect attempts, targets).'
+---
+
+## Live terminal (Ghostty-class)
+
+One focused interactive surface. Variants are listed in **Stories** — interactivity
+replaces multi-image galleries.
+
+<TerminalPreview story="activity-indicator/basic" interactive caption="ActivityIndicator · activity-indicator/basic — focus surface; keys/click for states" />
+
+## Usage
+
+```rust
+use termrock::style::{DesignSystem, Motion};
+use termrock::widgets::{ActivityIndicator, SpinnerState, ActivityPhase};
+
+let system = DesignSystem::default();
+let mut state = SpinnerState::new();
+state.set_phase(ActivityPhase::Reconnecting);
+ActivityIndicator::new("Reconnecting to agent", &system)
+    .detail("attempt 2/5")
+    .paint(area, buf, &state, tick, Motion::Full);
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | caller-owned |
+| Mouse | caller-owned |
+| Focus | covered (never focusable) |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `activity-indicator/basic` | ActivityIndicator | **Primary (live preview)** |

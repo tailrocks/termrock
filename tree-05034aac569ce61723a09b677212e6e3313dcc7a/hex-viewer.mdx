@@ -1,0 +1,61 @@
+---
+title: HexViewer
+description: Virtualized binary inspector with host paging and non-color selection.
+---
+
+# HexViewer
+
+Binary inspector over a **host-projected page** (`HexWindow`). TermRock owns
+row virtualization metrics from `total_len`, cursor/selection in absolute
+offsets, and chrome — never file I/O.
+
+## When to use / when not
+
+| Use HexViewer | Prefer |
+|---------------|--------|
+| Binary / blob inspection | — |
+| Text source files | [CodeBlock](/docs/components/code-block) |
+| Structured logs | [LogStream](/docs/handbook/log-stream) |
+
+## Paging contract
+
+```text
+Host projects: base_offset + data[] + total_len
+Scroll/cursor use absolute offsets
+PageNeeded { offset } → host re-reads page containing offset
+```
+
+## Non-color selection
+
+- Cursor: `›` / `>` gutter + `⟨XX⟩` / `[XX]` around active byte
+- Selection: `{XX}` braces
+- Bookmarks: `★` / `*`
+
+## Inspector
+
+Endian-aware `u8`/`u16`/`u32`/`u64` at cursor (`e` toggles LE/BE).
+
+## Keys
+
+| Key | Action |
+|-----|--------|
+| hjkl / arrows | Navigate |
+| / n N | Search |
+| b e a w | Bookmark · endian · ascii mode · bpr |
+| c x y | Copy hex · ASCII · export |
+
+## Example
+
+```rust
+use termrock::widgets::{HexViewer, HexViewerState, HexWindow};
+
+let data: &[u8] = &[0xde, 0xad, 0xbe, 0xef];
+let win = HexWindow::new(0, data, 4);
+let mut state = HexViewerState::new();
+// HexViewer::new(win, &system).title("x.bin").render(area, buf, &mut state);
+let _ = (win, state);
+```
+
+## Related
+
+CodeBlock · FullscreenViewer · migration `0200`

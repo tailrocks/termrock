@@ -1,0 +1,91 @@
+---
+title: TextInput
+description: 'A single-line, grapheme-safe input with validation and semantic outcomes.'
+component: TextInput
+demo: text-input/basic
+interaction: editor-form
+actions:
+  - "type Unicode"
+  - "paste"
+  - "←→ move caret"
+  - "click place caret"
+expectedOutcomes:
+  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+source: crates/termrock/src/widgets/text_input.rs
+---
+
+
+## Live terminal (Ghostty-class)
+
+This preview owns a persistent `TextInputState`. Type or paste Unicode, move the caret, and click to place it; Reset clears the draft.
+
+<TerminalPreview story="text-input/basic" interactive caption="TextInput · Type, paste, move, and place the real caret" />
+
+## Usage
+
+```rust
+use termrock::{style::DesignSystem, widgets::{EditAction, TextInput, TextInputState, Validation}};
+
+let system = DesignSystem::default();
+let input = TextInput::new("Filter", &system)
+    .placeholder("type to filter")
+    .validation(Validation::Valid);
+let mut state = TextInputState::new("").with_max_graphemes(80);
+let changed = state.apply(EditAction::Insert('a'));
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered |
+| Mouse | caller-owned |
+| Focus | covered |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+Lookbook coverage for this component. Only the **primary** story is embedded above;
+use the interactive preview (and Studio lookbook) to explore transitions instead of
+a static multi-image gallery.
+
+| Story | Title | Focus |
+|---|---|---|
+| `text-input/unicode` | Unicode text input | Unicode / wide glyphs |
+| `text-input/basic` | Text input | **Primary (live preview)** |
+| `text-input/invalid` | TextInput invalid | invalid |
+| `text-input/narrow` | Narrow TextInput | Narrow terminal |
+| `text-input/prefix` | TextInput prefix/suffix | prefix |
+| `text-input/secret` | TextInput secret | secret |
+
+
+## Try it
+
+- `type Unicode`: insert browser text through the backend-neutral key event.
+- `paste`: dispatch `Event::Paste` into the same Rust state.
+- `←→ move caret`: move by grapheme, not byte.
+- `click place caret`: use widget hit geometry to reposition the caret.
+
+Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+`TextInputState` owns the draft, grapheme-safe caret, selection, and validation. The host owns submission effects. The browser paints only the caret emitted by the Rust widget buffer.
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `text-input/basic`, dispatch Unicode typing, paste, caret movement, and pointer placement, then assert both state outcomes and changed Ratatui cells.
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/text_input.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/text_input.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `text-input/basic`

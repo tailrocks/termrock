@@ -1,0 +1,101 @@
+[settings]
+idiomatic_version_file_enable_tools = ["rust"]
+cargo.binstall_only = true
+cargo.binstall_quickinstall = true
+lockfile = true
+
+[tools]
+actionlint = "1.7.12"
+bun = "1.3.14"
+python = "3.14"
+uv = "0.11.29"
+cargo-binstall = "1.21.0"
+"cargo:cargo-deny" = "0.20.2"
+"cargo:cargo-hack" = "0.6.45"
+"aqua:nextest-rs/nextest/cargo-nextest" = "0.9.140"
+"cargo:cargo-shear" = "1.13.1"
+"cargo:cargo-semver-checks" = "0.48.0"
+"cargo:wasm-pack" = "0.15.0"
+"cargo:git-cliff" = "2.13.1"
+"pipx:reuse" = { version = "6.2.0", extras = "charset-normalizer", depends = ["python"] }
+"github:gitleaks/gitleaks" = "8.30.1"
+
+[tasks.check]
+description = "Fast pre-commit check: fmt, clippy, all-feature nextest"
+run = """
+mise run docs-quality
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+cargo nextest run --workspace --all-features --locked
+"""
+
+[tasks.ci]
+depends = ["check"]
+
+[tasks.test]
+run = "cargo nextest run --workspace --all-features --locked"
+
+[tasks.lint]
+run = "cargo clippy --workspace --all-targets --all-features --locked -- -D warnings"
+
+[tasks.fmt]
+run = "cargo fmt --all -- --check"
+
+[tasks.gate]
+description = "Full pre-push gate mirroring rust-required + policy checks"
+run = """
+mise run docs-quality
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+cargo nextest run --workspace --all-features --locked
+mise run preview-goldens
+cargo check -p termrock --no-default-features --locked
+cargo check --workspace --examples --locked
+cargo check --workspace --examples --features crossterm --locked
+cargo check -p termrock-lookbook-web --target wasm32-unknown-unknown --locked
+RUSTDOCFLAGS='-D warnings' cargo doc --workspace --all-features --no-deps --locked
+mkdir -p target
+rustup toolchain install nightly --profile minimal
+mise x cargo:cargo-public-api@0.52.0 -- cargo public-api -p termrock --all-features > target/public-api-fresh.txt
+diff -u docs/api/public-api.txt target/public-api-fresh.txt
+cargo hack check --workspace --feature-powerset --all-targets --locked
+cargo deny check advisories bans licenses sources
+cargo shear
+cargo package -p termrock --locked --allow-dirty
+(cd docs && bun run build:preview-posters)
+(cd docs && bun install --frozen-lockfile && bun run build)
+"""
+
+[tasks.bless-previews]
+description = "Regenerate the flagship preview baselines after an intended paint change"
+run = "TERMROCK_BLESS_PREVIEWS=1 cargo nextest run -p termrock-lookbook --all-features --test goldens --no-capture"
+
+[tasks.preview-goldens]
+description = "Diff the flagship previews against their committed baselines"
+run = "cargo nextest run -p termrock-lookbook --all-features --test goldens --locked"
+
+[tasks.docs-quality]
+description = "Placeholder rustdoc ban + component quality contracts (v2)"
+run = """
+if grep -rEn 'Documentation for `|Performs the `[a-z_]+` operation|Selects the `[A-Za-z]+` behavior|Creates a new value with canonical defaults|Data carried by `|Available `[A-Za-z]+` choices|The `[A-Za-z]+ \\{|Returns whether `[a-z_]+`[.]|Handles the `[a-z_]+` interaction[.]|Sets `[a-z_]+`[.]|Creates a value from `[a-z_]+`[.]|Returns this value with `[a-z_]+` configured[.]|The `[A-Z_]+` constant[.]|The `[A-Za-z_]+;` value produced by this contract[.]|Reports [a-z][a-z ]+[.]|Renders `[a-z_]+` output[.]|Styles [a-z][a-z ]+ content[.]' crates/ --include='*.rs'; then
+  echo 'placeholder rustdoc phrasing is forbidden' >&2
+  exit 1
+fi
+if grep -rEn 'Removes every checked identity[.]' crates/ --include='*.rs'; then
+  echo 'copied rustdoc phrasing is forbidden' >&2
+  exit 1
+fi
+bun run docs/scripts/check-contracts.ts
+"""
+
+[tasks.contracts]
+description = "Validate component quality contracts (v2 schema rules + evidence)"
+run = """
+bun run docs/scripts/check-contracts.ts
+"""
+
+[tasks.export-preview-posters]
+description = "Export one static fallback poster for each live docs demo"
+run = """
+(cd docs && bun run build:preview-posters)
+"""
