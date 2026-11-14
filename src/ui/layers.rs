@@ -115,10 +115,8 @@ impl<R: From<LayerResult> + 'static, W: ?Sized + 'static> Layer<R, W> for Dialog
     }
 }
 
-fn picker_event(p: &mut Picker, ev: Option<PickerAction>) {
-    if let Some(ev) = ev {
-        p.pending = Some(ev);
-    }
+fn picker_events(p: &mut Picker, actions: impl IntoIterator<Item = PickerAction>) {
+    p.pending.extend(actions);
 }
 
 impl<R: From<LayerResult> + 'static, W: ?Sized + 'static> Layer<R, W> for Picker {
@@ -133,7 +131,7 @@ impl<R: From<LayerResult> + 'static, W: ?Sized + 'static> Layer<R, W> for Picker
     }
     fn on_key(&mut self, key: &Key, _: &mut LayerCx<'_, W>) -> Outcome {
         let (o, ev) = Picker::on_key(self, key);
-        picker_event(self, ev);
+        picker_events(self, ev);
         o.or(Outcome::Consumed)
     }
 
@@ -142,14 +140,14 @@ impl<R: From<LayerResult> + 'static, W: ?Sized + 'static> Layer<R, W> for Picker
             return Outcome::Ignored;
         }
         let mut r = MouseTarget::pointer(self, ev);
-        let ev = r.take_action();
-        picker_event(self, ev);
+        let actions = r.take_actions();
+        picker_events(self, actions);
         r.outcome()
     }
     fn on_click(&mut self, id: WidgetId, _: Position, _: &mut LayerCx<'_, W>) -> Outcome {
         let ev = Picker::on_click(self, id);
         let changed = ev.is_some();
-        picker_event(self, ev);
+        picker_events(self, ev);
         if changed {
             Outcome::Changed
         } else {
@@ -161,15 +159,18 @@ impl<R: From<LayerResult> + 'static, W: ?Sized + 'static> Layer<R, W> for Picker
     }
     fn on_paste(&mut self, text: &str) -> Outcome {
         let (o, ev) = Picker::on_paste(self, text);
-        picker_event(self, ev);
+        picker_events(self, ev);
         o
     }
     fn on_dismiss(&mut self, reason: DismissReason) {
-        let ev = Overlay::on_dismiss(self, reason).into_action();
-        picker_event(self, ev);
+        let actions = Overlay::on_dismiss(self, reason).into_actions();
+        picker_events(self, actions);
     }
     fn take_result(&mut self) -> Option<LayerOut<R>> {
-        let ev = self.pending.take()?;
+        if self.pending.is_empty() {
+            return None;
+        }
+        let ev = self.pending.remove(0);
         let closes = matches!(
             ev,
             PickerAction::Chosen(_)
@@ -193,31 +194,29 @@ impl<R: From<LayerResult> + 'static, W: ?Sized + 'static> Layer<R, W> for Contex
     }
     fn on_key(&mut self, key: &Key, _: &mut LayerCx<'_, W>) -> Outcome {
         let (o, ev) = ContextMenu::on_key(self, key);
-        if ev.is_some() {
-            self.pending = ev;
-        }
+        self.pending.extend(ev);
         o.or(Outcome::Consumed)
     }
     fn pointer(&mut self, ev: &PointerEvent, _: &mut LayerCx<'_, W>) -> Outcome {
         let mut r = MouseTarget::pointer(self, ev);
-        if let Some(ev) = r.take_action() {
-            self.pending = Some(ev);
-        }
+        let actions = r.take_actions();
+        self.pending.extend(actions);
         r.outcome()
     }
     fn on_click(&mut self, id: WidgetId, _: Position, _: &mut LayerCx<'_, W>) -> Outcome {
-        if let Some(ev) = ContextMenu::on_click(self, id) {
-            self.pending = Some(ev);
-        }
+        let action = ContextMenu::on_click(self, id);
+        self.pending.extend(action);
         Outcome::Changed
     }
     fn on_dismiss(&mut self, reason: DismissReason) {
-        self.pending = Overlay::on_dismiss(self, reason).into_action();
+        let actions = Overlay::on_dismiss(self, reason).into_actions();
+        self.pending.extend(actions);
     }
     fn take_result(&mut self) -> Option<LayerOut<R>> {
-        self.pending
-            .take()
-            .map(|ev| out(LayerResult::Menu(ev), true))
+        if self.pending.is_empty() {
+            return None;
+        }
+        Some(out(LayerResult::Menu(self.pending.remove(0)), true))
     }
 }
 
