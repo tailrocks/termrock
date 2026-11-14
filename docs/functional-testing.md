@@ -393,6 +393,16 @@ Velnor generates the workflows; change its configuration and run
 `required = true`, so the aggregate `Required` check needs
 `suite-functional`. `Required` is the check to require in branch protection.
 
+The push filters and the `head_branch` predicates of the follow-up workflows
+(`state-seal`, `cache-prune`) come from `[workflow].default_branch`. That
+value must equal the repository's actual default branch, so check it offline
+with `python3 scripts/check_default_branch.py --expected <branch>` (exit 0
+match, 1 mismatch, 2 invalid config). `tests/ci_default_branch.rs` runs the
+same check. To change the branch, edit the source value, run
+`mise exec -- velnor-actions generate` from the repository root, and confirm a
+second generation leaves no diff. After the change merges, record one real
+push run on that branch in the Actions tab before closing the issue.
+
 On a failure, read the action trace and the last frame first. Classify the
 failure as an incorrect locator/precondition, input-mode/routing failure,
 product regression, stale visual reference, or infrastructure timeout. Fix
