@@ -7,6 +7,7 @@ use crate::core::event::{Key, Outcome};
 use crate::core::id::{ItemKey, WidgetId};
 use crate::core::keymap::{Nav, NavKeys};
 use crate::core::list::{Cursor, Moved, Navigable, RowSource};
+use crate::core::refusal::Reason;
 use crate::theme::CursorStyle;
 use crate::ui::ctx::RenderCtx;
 use crate::ui::popup::{Dismiss, Placement, backdrop_id, place_with, surface_for};
@@ -216,7 +217,8 @@ impl Completion {
         // whole. `menu::reason_room` leaves 8 columns of chrome around it. It may
         // widen the popup past the `popup_width` maximum (that bounds the label and
         // detail columns; `Reason::TEXT_MAX` is 60, so 68 columns), but never past the
-        // screen: `place_with` clamps, and `paint_reason` then ellipsizes.
+        // screen: `place_with` clamps, and `paint_reason` then ellipsizes. `Item::reason`
+        // does not enforce `TEXT_MAX`, so the widening is capped at `TEXT_MAX + 8`.
         let reason_w = self
             .items
             .iter()
@@ -224,7 +226,7 @@ impl Completion {
             .filter_map(|i| i.reason.as_deref())
             .map(width)
             .max()
-            .map_or(0, |w| w + 8);
+            .map_or(0, |w| w.min(Reason::TEXT_MAX) + 8);
         let (min_w, max_w) = self.list.width;
         let w = (label_w + detail_w + 8)
             .clamp(min_w as usize, max_w as usize)

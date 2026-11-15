@@ -459,3 +459,37 @@ fn issue294_completion_reason_wider_than_the_popup_cap_fits_whole_when_the_scree
         "the popup stays on the screen: {border:?}"
     );
 }
+
+#[test]
+fn issue294_completion_reason_widening_stops_at_text_max_plus_chrome() {
+    // `Item::reason` takes any text, so a 130-column reason must not stretch the
+    // popup to the screen. The cap is `Reason::TEXT_MAX` (60) plus 8 columns of chrome.
+    let reason = "x".repeat(130);
+    let mut c = Completion::new(WidgetId::of("t.completion294cap"));
+    c.open(
+        vec![
+            Item::new("url").reason(reason.as_str()),
+            Item::new("fetch("),
+        ],
+        Rect::new(2, 2, 1, 1),
+        0,
+    );
+    c.list.cursor.index = 0;
+    let rows = drawn_on(&mut c, Rect::new(0, 0, 200, 20));
+    let border = rows
+        .iter()
+        .find(|l| l.contains('╰'))
+        .unwrap_or_else(|| panic!("no bottom border:\n{}", rows.join("\n")));
+    let left = border.chars().position(|ch| ch == '╰').unwrap();
+    let right = border.chars().position(|ch| ch == '╯').unwrap();
+    let popup_w = right - left + 1;
+    assert_eq!(
+        popup_w,
+        60 + 8,
+        "popup is exactly TEXT_MAX + 8 columns wide: {border:?}"
+    );
+    assert!(
+        border.contains('…') && !border.contains(&reason),
+        "the over-long reason is ellipsized: {border:?}"
+    );
+}
