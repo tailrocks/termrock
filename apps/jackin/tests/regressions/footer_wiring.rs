@@ -182,6 +182,15 @@ fn assert_footer(shown: &Painted, screen: (u16, u16), actions: &[Action]) -> Vec
     rows
 }
 
+/// Row of the bottom border of the Workspaces card, which sits at column 1 of
+/// the manager screen. The detail pane's action footer ends one row above it.
+fn card_bottom_row(buf: &Buffer) -> u16 {
+    (0..buf.area.height)
+        .rev()
+        .find(|&y| buf[(1, y)].symbol() == "╰")
+        .expect("Workspaces card bottom border at column 1")
+}
+
 fn assert_contiguous(rows: &[u16], count: usize, what: &str) {
     assert_eq!(rows.len(), count, "{what}: footer rows {rows:?}");
     assert!(
@@ -253,9 +262,19 @@ fn manager_wrapped_action_on_the_second_row_responds_to_a_click() {
     let before = screen_at(&mut app, MANAGER.0, MANAGER.1);
     click(&mut app, purge.area.x + 2, purge.area.y);
     let after = screen_at(&mut app, MANAGER.0, MANAGER.1);
-    assert_ne!(
-        before, after,
-        "clicking the second-row Purge… changed nothing"
+    assert!(
+        !before.contains("▎Purge…"),
+        "Purge… is focused before the click:\n{before}"
+    );
+    assert!(
+        after.contains("▎Purge…") && after.contains("Enter Purge…"),
+        "clicking the second-row Purge… did not focus it:\n{after}"
+    );
+    press(&mut app, "enter");
+    let asked = screen_at(&mut app, MANAGER.0, MANAGER.1);
+    assert!(
+        asked.contains("Purge instance"),
+        "Enter on the focused Purge… did not open the purge confirm dialog:\n{asked}"
     );
 }
 
@@ -266,6 +285,12 @@ fn manager_footer_keeps_every_action_when_the_terminal_is_short() {
     let shown = paint(&mut app, size);
     let rows = assert_footer(&shown, size, &manager_actions());
     assert_contiguous(&rows, 2, "manager at 160x22");
+    let card_bottom = card_bottom_row(&shown.buf);
+    assert_eq!(
+        rows,
+        vec![card_bottom - 2, card_bottom - 1],
+        "footer is not the two rows above the card's bottom border at row {card_bottom}"
+    );
 }
 
 #[test]
