@@ -2,6 +2,7 @@ use crate::core::event::{Key, Outcome};
 use crate::core::focus::{Focus, FocusRing};
 use crate::core::hints::{HasHints, HintCx};
 use crate::core::id::WidgetId;
+use crate::core::intent::DismissReason;
 use crate::core::keymap::{Nav, NavKeys};
 use crate::core::scroll::{ScrollPane, Scrollable};
 use crate::theme::{Strings, Tone};
@@ -227,6 +228,11 @@ impl FormDialog {
         self
     }
 
+    pub fn dismiss(mut self, dismiss: crate::ui::popup::Dismiss) -> Self {
+        self.dismiss = dismiss;
+        self
+    }
+
     pub fn new(id: WidgetId, title: &str, fields: Vec<FormField>) -> Self {
         Self {
             dismiss: crate::ui::popup::Dismiss::ESCAPE,
@@ -396,16 +402,18 @@ impl FormDialog {
             .any(|f| matches!(&f.kind, FormFieldKind::Select(s) if s.open))
     }
 
+    fn dismiss_escape(&mut self) -> Outcome {
+        crate::ui::layer::dismiss(self, DismissReason::Esc)
+            .map_or(Outcome::Consumed, |response| response.outcome())
+    }
+
     pub fn on_key(&mut self, key: &Key, focus: &mut Focus, ring: &FocusRing) -> Outcome {
         let cur = focus.current();
         let editing = self.is_editing();
         let open = self.any_open_select();
         if !editing && !open {
             match key.code {
-                KeyCode::Esc => {
-                    self.events.push(FormAction::Cancel);
-                    return Outcome::Changed;
-                }
+                KeyCode::Esc => return self.dismiss_escape(),
                 KeyCode::Tab => {
                     focus.next(ring);
                     return Outcome::Changed;
@@ -548,10 +556,7 @@ impl FormDialog {
                 Outcome::Changed
             }
 
-            KeyCode::Esc if self.dismiss.escape => {
-                self.events.push(FormAction::Cancel);
-                Outcome::Changed
-            }
+            KeyCode::Esc => self.dismiss_escape(),
             _ => Outcome::Consumed,
         }
     }
@@ -1032,5 +1037,46 @@ impl FormDialog {
                 .into(),
             _ => Response::ignored(),
         }
+    }
+}
+
+#[cfg(test)]
+mod issue35_tests {
+    use std::cell::Cell;
+    use std::rc::Rc;
+
+    use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+
+    use super::*;
+    use crate::core::event::Key;
+    use crate::core::focus::{Focus, FocusRing};
+    use crate::core::id::WidgetId;
+    use crate::widgets::input::TextInput;
+
+    #[test]
+    fn issue35_form_save_blocked_by_required_before_custom() {
+        let id = WidgetId::of("issue35.form");
+        let calls = Rc::new(Cell::new(0));
+        let counter = calls.clone();
+        let name = TextInput::new(id.sub("name"), "Name")
+            .required(true)
+            .required_message("Name is required")
+            .validator(move |_| {
+                counter.set(counter.get() + 1);
+                None
+            });
+        let mut form = FormDialog::new(id, "Account", vec![FormField::input("name", name)]);
+        let mut focus = Focus::default();
+        focus.set(Some(form.save.id));
+        let enter = Key {
+            code: KeyCode::Enter,
+            mods: KeyModifiers::NONE,
+        };
+
+        form.on_key(&enter, &mut focus, &FocusRing::default());
+
+        assert!(!form.events.iter().any(|e| matches!(e, FormAction::Save)));
+        assert_eq!(focus.current(), Some(id.sub("name")));
+        assert_eq!(calls.get(), 0);
     }
 }

@@ -467,7 +467,7 @@ impl Overlay for ChoiceDialog {
         LayerSpec::modal(self.dismiss).initial_focus(self.initial_focus())
     }
     fn on_dismiss(&mut self, _: DismissReason) -> Response<Option<usize>> {
-        self.result = Some(None);
+        self.cancel_implicit();
         Response::emit(None)
     }
     fn close_button(&self) -> Option<&IconButton> {

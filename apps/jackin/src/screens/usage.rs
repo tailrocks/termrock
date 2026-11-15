@@ -24,7 +24,6 @@ use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
 
 use super::{Cx, Go, Screen};
-use crate::backend::Effect;
 use crate::domain::account::{Account, AccountId, IssueCode, Lifecycle};
 use crate::domain::agent::UsageSurface;
 use crate::domain::usage::{Freshness, OverallSummary, QuotaStatus};
@@ -210,16 +209,7 @@ impl UsageScreen {
             .map(|a| a.id.clone())
             .collect();
         for (i, id) in ids.iter().enumerate() {
-            if let Some(a) = w.accounts.get_mut(id)
-                && a.usage.freshness.phase != Freshness::Refreshing
-            {
-                a.usage.freshness.phase = Freshness::Refreshing;
-                let source = a.source.clone();
-                w.perform(Effect::RefreshAccount {
-                    account: id.clone(),
-                    source,
-                    stagger_ms: i as i64 * 120,
-                });
+            if w.refresh_account(id, i as i64 * 120).is_some() {
                 n += 1;
             }
         }
