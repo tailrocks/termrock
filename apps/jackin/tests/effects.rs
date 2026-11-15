@@ -991,7 +991,10 @@ fn first_window_pct(w: &World, id: &str) -> Option<u8> {
 /// the first window reads 40% used, whatever it read before.
 fn refresh_account(effect: &Effect, world: &World) -> Option<Msg> {
     let Effect::RefreshAccount {
-        account, source, ..
+        ticket,
+        account,
+        source,
+        ..
     } = effect
     else {
         return None;
@@ -1001,6 +1004,7 @@ fn refresh_account(effect: &Effect, world: &World) -> Option<Msg> {
     usage.freshness = FreshnessInfo::current(now);
     usage.windows[0].used_pct = Some(40);
     Some(Msg::AccountRefreshed {
+        ticket: *ticket,
         account: account.clone(),
         source: Box::new(source.clone()),
         result: Ok(Box::new(Refresh {

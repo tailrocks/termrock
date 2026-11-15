@@ -109,6 +109,7 @@ pub struct ChoiceEdit {
     pub row: usize,
     pub col: usize,
     pub editor: ChoiceEditor,
+    generation: u64,
 }
 
 #[derive(Debug, Clone)]
@@ -117,6 +118,7 @@ pub struct EditState {
     pub col: usize,
 
     pub field: EditField,
+    generation: u64,
 }
 
 impl crate::ui::measure::Measure for DataTable {
@@ -232,6 +234,7 @@ pub struct DataTable {
     typeahead: crate::core::typeahead::TypeAhead,
 
     pub choice: Option<ChoiceEdit>,
+    structural_generation: u64,
 
     pub editor_config: EditorConfig,
 }
@@ -315,6 +318,7 @@ impl DataTable {
             type_ahead_precedence: None,
             typeahead: Default::default(),
             choice: None,
+            structural_generation: 0,
             editor_config: EditorConfig::default(),
         }
     }
@@ -493,6 +497,7 @@ impl DataTable {
             return;
         }
         let cursor_src = self.order.get(self.cursor_row).copied();
+        self.structural_change();
         self.rows[src] = cells;
         if let Some((c, d)) = self.sort {
             self.apply_sort(c, d);
@@ -504,11 +509,18 @@ impl DataTable {
     }
 
     pub fn remove_rows(&mut self, srcs: &[usize]) {
-        let gone: BTreeSet<usize> = srcs.iter().copied().collect();
+        let gone: BTreeSet<usize> = srcs
+            .iter()
+            .copied()
+            .filter(|&r| r < self.rows.len())
+            .collect();
+        if gone.is_empty() {
+            return;
+        }
         let map = |r: usize| (!gone.contains(&r)).then(|| r - gone.range(..r).count());
         let cursor_src = self.order.get(self.cursor_row).copied();
         let len = self.rows.len();
-        self.edit = None;
+        self.structural_change();
         self.selection.remap(map);
         self.disabled = self.disabled.iter().filter_map(|&r| map(r)).collect();
         self.selected = self.selected.and_then(map);
@@ -825,8 +837,7 @@ impl DataTable {
     }
 
     pub fn set_rows(&mut self, rows: Vec<Vec<Cell>>) {
-        self.edit = None;
-        self.choice = None;
+        self.structural_change();
         self.selected = None;
         self.selection.clear();
         self.disabled.retain(|&r| r < rows.len());
@@ -925,6 +936,7 @@ impl DataTable {
                 row: src,
                 col,
                 editor,
+                generation: self.structural_generation,
             });
             return (Outcome::Changed, None);
         }
@@ -934,6 +946,7 @@ impl DataTable {
             row: src,
             col,
             field,
+            generation: self.structural_generation,
         });
         (Outcome::Changed, None)
     }
@@ -965,7 +978,11 @@ impl DataTable {
             ChoiceResult::Commit(v) => (v, None),
             ChoiceResult::CommitAndTab { value, backward } => (value, Some(backward)),
         };
-        let (src, col) = self.choice.as_ref().map(|c| (c.row, c.col))?;
+        let (src, col, generation) = self.choice.as_ref().map(|c| (c.row, c.col, c.generation))?;
+        if !self.session_target_live(src, col, generation) {
+            self.choice = None;
+            return Some(TableAction::Cancelled);
+        }
         match self.apply_value(src, col, value) {
             Ok(ev) => {
                 self.choice = None;
@@ -1027,6 +1044,9 @@ impl DataTable {
     pub fn commit_edit(&mut self) -> Option<TableAction> {
         let mut e = self.edit.take()?;
         let src = e.row;
+        if !self.session_target_live(src, e.col, e.generation) {
+            return Some(TableAction::Cancelled);
+        }
         if !e.field.validate() {
             self.edit = Some(e);
             return None;
@@ -1050,10 +1070,23 @@ impl DataTable {
     }
 
     pub fn cancel_edit(&mut self) -> Option<TableAction> {
-        if self.choice.take().is_some() {
-            return Some(TableAction::Cancelled);
-        }
-        self.edit.take().map(|_| TableAction::Cancelled)
+        self.cancel_sessions().then_some(TableAction::Cancelled)
+    }
+
+    fn cancel_sessions(&mut self) -> bool {
+        let text_closed = self.edit.take().is_some();
+        let choice_closed = self.choice.take().is_some();
+        text_closed || choice_closed
+    }
+
+    fn structural_change(&mut self) {
+        self.cancel_sessions();
+        self.structural_generation = self.structural_generation.wrapping_add(1);
+    }
+
+    fn session_target_live(&self, row: usize, col: usize, generation: u64) -> bool {
+        generation == self.structural_generation
+            && self.rows.get(row).is_some_and(|r| col < r.len())
     }
 
     pub fn on_blur(&mut self) -> Option<TableAction> {

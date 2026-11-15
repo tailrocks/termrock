@@ -320,6 +320,7 @@ pub struct EditState {
     pub col: usize,
 
     pub field: EditField,
+    generation: u64,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -553,6 +554,7 @@ pub struct DataGrid {
     pub width_sample_rows: usize,
 
     pub choice: Option<GridChoice>,
+    structural_generation: u64,
 
     pub editor_config: EditorConfig,
 }
@@ -562,6 +564,7 @@ pub struct GridChoice {
     pub row: usize,
     pub col: usize,
     pub editor: ChoiceEditor,
+    generation: u64,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -722,6 +725,7 @@ impl DataGrid {
             type_ahead_precedence: None,
             typeahead: Default::default(),
             choice: None,
+            structural_generation: 0,
             editor_config: EditorConfig::default(),
         }
     }
@@ -800,7 +804,11 @@ impl DataGrid {
             ChoiceResult::Commit(v) => (v, None),
             ChoiceResult::CommitAndTab { value, backward } => (value, Some(backward)),
         };
-        let (src, col) = self.choice.as_ref().map(|c| (c.row, c.col))?;
+        let (src, col, generation) = self.choice.as_ref().map(|c| (c.row, c.col, c.generation))?;
+        if !self.session_target_live(src, col, generation) {
+            self.choice = None;
+            return None;
+        }
         match self.apply_choice(src, col, value) {
             Ok(ev) => {
                 self.choice = None;
@@ -1087,11 +1095,6 @@ impl DataGrid {
         !self.pending.is_empty() || !self.undo.is_empty()
     }
 
-    fn close_sessions(&mut self) {
-        self.edit = None;
-        self.choice = None;
-    }
-
     pub fn set_rows(&mut self, data: GridRows) {
         let keys = self.alloc_keys(data.rows.len());
         self.install_rows(data, keys);
@@ -1137,7 +1140,7 @@ impl DataGrid {
         self.row_errors.clear();
         self.selection.clear();
         self.anchor = None;
-        self.close_sessions();
+        self.structural_change();
         self.cursor.0 = self.cursor.0.min(self.rows.len().saturating_sub(1));
         self.sample_widths();
         self.rebuild_order();
@@ -1357,6 +1360,7 @@ impl DataGrid {
                 row: src,
                 col,
                 editor,
+                generation: self.structural_generation,
             });
             return (Outcome::Changed, None);
         }
@@ -1399,12 +1403,16 @@ impl DataGrid {
             row: src,
             col,
             field,
+            generation: self.structural_generation,
         });
         (Outcome::Changed, None)
     }
 
     pub fn commit_edit(&mut self) -> Option<GridAction> {
         let mut e = self.edit.take()?;
+        if !self.session_target_live(e.row, e.col, e.generation) {
+            return None;
+        }
         let parsed = parse_cell(&self.validator, &self.columns[e.col], e.field.text());
         match parsed {
             Ok(v) => {
@@ -1423,7 +1431,24 @@ impl DataGrid {
     }
 
     pub fn cancel_edit(&mut self) -> bool {
-        self.edit.take().is_some()
+        self.cancel_sessions()
+    }
+
+    fn cancel_sessions(&mut self) -> bool {
+        let text_closed = self.edit.take().is_some();
+        let choice_closed = self.choice.take().is_some();
+        text_closed || choice_closed
+    }
+
+    fn structural_change(&mut self) {
+        self.cancel_sessions();
+        self.structural_generation = self.structural_generation.wrapping_add(1);
+    }
+
+    fn session_target_live(&self, row: usize, col: usize, generation: u64) -> bool {
+        generation == self.structural_generation
+            && col < self.columns.len()
+            && self.rows.get(row).is_some_and(|r| col < r.len())
     }
 
     pub fn on_blur(&mut self) -> (Outcome, Option<GridAction>) {
@@ -1485,7 +1510,7 @@ impl DataGrid {
             return Some(GridAction::RowDeleted(src));
         }
         let revision = self.next_revision(false, true);
-        self.close_sessions();
+        self.cancel_sessions();
         let was_deleted = self.pending.deleted.remove(&key);
         if !was_deleted {
             self.pending.deleted.insert(key);
@@ -1550,7 +1575,7 @@ impl DataGrid {
         if removed.is_empty() {
             return;
         }
-        self.close_sessions();
+        self.structural_change();
         let cursor_key = self.view_key(self.cursor.0, self.cursor.1);
         let anchor_key = self.anchor.and_then(|(d, c)| self.view_key(d, c));
         let map = |i: usize| match removed.binary_search(&i) {
@@ -1587,7 +1612,7 @@ impl DataGrid {
     }
 
     fn restore_removed(&mut self, row: RemovedDraftRow) {
-        self.close_sessions();
+        self.structural_change();
         let RemovedDraftRow {
             key,
             position,
@@ -1683,7 +1708,7 @@ impl DataGrid {
     fn push_inserted(&mut self, row: Vec<CellValue>) -> usize {
         let revision = self.next_revision(false, true);
         let key = self.alloc_key();
-        self.close_sessions();
+        self.cancel_sessions();
         let src = self.rows.len();
         self.rows.push(row);
         self.row_keys.push(key);
@@ -1721,7 +1746,7 @@ impl DataGrid {
         }
         let revision = self.next_revision(false, true);
         let action = self.undo.pop()?;
-        self.close_sessions();
+        self.cancel_sessions();
         let undone = match action {
             UndoAction::Cell { key, col, before } => {
                 let src = self.source_index(key);
@@ -1780,7 +1805,7 @@ impl DataGrid {
         match result {
             Ok(()) => {
                 let revision = self.next_revision(true, self.draft_open());
-                self.close_sessions();
+                self.structural_change();
                 let changed = !self.pending.is_empty();
                 let cursor_key = self.view_key(self.cursor.0, self.cursor.1);
                 let anchor_key = self.anchor.and_then(|(d, c)| self.view_key(d, c));
@@ -1847,7 +1872,7 @@ impl DataGrid {
             .filter_map(|&key| self.source_index(key))
             .collect();
         inserted.sort_unstable();
-        self.close_sessions();
+        self.structural_change();
         self.remove_rows(&inserted);
         self.pending = PendingChanges::default();
         self.undo.clear();
