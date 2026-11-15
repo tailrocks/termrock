@@ -10,7 +10,7 @@ use std::time::Duration;
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, JACKIN, Launch, Point, row_text, text, try_launch};
+use crate::support::{App, JACKIN, Launch, Point, button, row_text, text, try_launch};
 
 const DIRECTORY: &str = "Current directory";
 const INTRO: &str = "Stand up, operator";
@@ -184,12 +184,8 @@ fn open_settings(app: &App) -> TerminalSnapshot {
     app.wait_screen("settings general", clean_general)
 }
 
-fn button_on(app: &App, label: &str, row_ok: impl Fn(&str) -> bool) -> Point {
-    app.wait_button(label, row_ok)
-}
-
 fn leave_button(app: &App, label: &str) -> Point {
-    button_on(app, label, |row| {
+    button(app, label, |row| {
         row.contains(CANCEL)
             && row.contains(DISCARD)
             && row.contains(SAVE)
@@ -198,7 +194,7 @@ fn leave_button(app: &App, label: &str) -> Point {
 }
 
 fn preview_button(app: &App, label: &str) -> Point {
-    button_on(app, label, |row| {
+    button(app, label, |row| {
         row.contains(CANCEL)
             && row.contains(SAVE)
             && row.contains('│')

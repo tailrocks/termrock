@@ -7,8 +7,7 @@
 use tui_test::{SnapshotColor, TerminalSnapshot};
 
 use crate::support::{
-    App, Launch, Point, TABLEPRO, find, find_all, flash_settle_stepped as flash_settle, row_text,
-    text, try_launch,
+    App, Launch, Point, TABLEPRO, find, find_all, flash_settle, row_text, text, try_launch,
 };
 
 const HOST: &str = "dev-db.internal.acme.io";
@@ -341,7 +340,11 @@ fn drag_seam(app: &App, seam: Point, delta: (i16, i16), thin: char, heavy: char)
     );
 
     app.up(end);
-    let released = app.settle();
+    // A quiet terminal is not a handled release: a slow app is quiet until it
+    // gets to the button-up. Wait for the seam to lose its accent instead.
+    let released = app.wait_screen("seam released", |screen| {
+        accent_cells(screen, heavy).is_empty()
+    });
     assert!(
         accent_cells(&released, heavy).is_empty(),
         "release kept the accent seam\n{}",
@@ -438,10 +441,7 @@ fn quit_unsaved(app: &App) {
     app.key("ctrl+q");
     let quit = app.wait_text("Quit TablePro?");
     see(&quit, &["unsaved", "Quit"], &["Query history"]);
-    app.key("right");
-    app.key("enter");
-    app.wait_exit("tablepro stayed up after confirming quit");
-    app.expect_exited(0);
+    app.confirm_quit();
 }
 
 #[test]

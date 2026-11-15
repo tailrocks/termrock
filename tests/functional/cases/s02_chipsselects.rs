@@ -986,8 +986,14 @@ fn selects_choose_dismiss_and_disabled() {
     let engine = app.settle();
     expect(&engine, &["PostgreSQL"], &["Engine →", "▴"]);
     app.click_text("States");
+    app.wait_text(CAP_STATES);
     app.click_text("Playground");
-    app.wait_text("created_at");
+    // The states gallery repeats created_at, so that text does not say which
+    // page is drawn. The caption does.
+    app.wait_screen("playground drawn", |screen| {
+        let visible = text(screen);
+        visible.contains(CAP_PLAY) && visible.contains("created_at")
+    });
 
     click_top_main(&app, "created_at");
     let opened = app.wait_text("▴");
@@ -1602,11 +1608,14 @@ fn option_stress_filters_and_long_label() {
             "chipsselects.stress=65k label",
         ],
     );
-    // The 65,536-cell chip cannot fit the bar, so it sits behind the +5 marker
-    // with the four demo filters instead of wrapping to a zero-width chip.
-    let screen = label.wait_text("+5");
+    // The 65,536-cell chip comes after the demo filters, so the cursor starts on
+    // a chip that fits. The chip and the demo filter that no longer fits sit
+    // behind the +2 marker instead of wrapping to a zero-width chip.
+    let screen = label.wait_text("+2");
     assert!(
-        text(&screen).contains("match all") && !text(&screen).contains("long label"),
+        text(&screen).contains("match all")
+            && text(&screen).contains("status = 'pending'")
+            && !text(&screen).contains("long label"),
         "long chip should be behind the marker\n{}",
         text(&screen)
     );

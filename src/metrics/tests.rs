@@ -19,6 +19,24 @@ fn metrics_delta_counts_units_between_snapshots() {
 }
 
 #[test]
+fn metrics_suspended_drops_work_and_resumes_after_a_panic() {
+    let (_, delta) = measure(|| {
+        record_work!(SegmentedLines, 1usize);
+        suspended(|| {
+            record_work!(SegmentedLines, 10usize);
+            suspended(|| record_work!(SegmentedLines, 100usize));
+            record_work!(SegmentedLines, 1000usize);
+        });
+        let unwound = std::panic::catch_unwind(|| {
+            suspended(|| panic!("a reference computation failed"));
+        });
+        assert!(unwound.is_err());
+        record_work!(SegmentedLines, 2usize);
+    });
+    assert_eq!(delta.get(Metric::SegmentedLines), 3);
+}
+
+#[test]
 fn metrics_measure_returns_the_value_and_its_work() {
     let (value, delta) = measure(|| {
         record_work!(LabelsNormalized, 2usize);

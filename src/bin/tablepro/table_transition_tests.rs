@@ -173,7 +173,11 @@ fn answer_guard(app: &mut App, action: usize) {
     assert_eq!(app.top_kind(), Some("dialog"), "the guard's dialog is up");
     match action {
         1 => {
-            // Arrow keys step only over buttons the last frame placed.
+            // A button joins the focus ring only when a frame places it, and an arrow key
+            // steps over ring members. Without this draw the ring is empty and the key
+            // moves nothing, so Enter would pick the default button.
+            // The runtime draws after every input that changes the screen, so a real session
+            // never sends the arrow before the frame; the test has to supply it.
             draw(app);
             press(app, KeyCode::Left);
             press(app, KeyCode::Enter);

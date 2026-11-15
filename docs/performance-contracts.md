@@ -40,17 +40,18 @@ the macro.
 | `ProjectionRebuilds`, `RankRowsVisited` | rebuilds, items | Holla Finder rebuild and ranking pass; Jackin Manager row build, Accounts row build, roster index build and account index build (the account sort counts its accounts as ranked rows) |
 | `PrefixRollbackProbes`, `NulBytesProbed`, `Utf8BytesValidated`, `TextBytesSanitized`, `LineCharsCounted` | probes, bytes, bytes, bytes, characters | Holla `Fs::preview`: the UTF-8 boundary rollback at the cap, the NUL probe (stops at the first NUL), the UTF-8 validation, the control-character sanitizing of each line and the character count for the line cap. Each pass is counted apart, so a repeated pass shows |
 | `SchedulingRecordsVisited`, `SchedulingPolls` | records, polls | Jackin daemon traversal and pane polls, Holla activity and plan scheduling |
-| `TextBytesHashed` | bytes | `CodeEditor` change-detection hash, once per frame |
-| `AnnotationQueries` | calls | `CodeEditor` highlighter (on a changed hash) and block segmenter (every frame) |
-| `IdentityComparisons` | comparisons | `Picker::set_visible_items` key lookup and cursor re-find, `Picker::replace_items` cursor re-find |
+| `AnnotationQueries` | calls | `CodeEditor` highlighter and block segmenter, once per cache miss (a new text revision or provider generation) |
+| `IdentityComparisons` | comparisons | linear key scans; none are left in `Picker`, which restores its cursor through a key map |
 
 `TextViewport`, `ScrollView` and the width helper are shared, so every app that
 uses them is counted. `VisibleRowsPainted` does not count `TextViewport` or
 `TerminalViewport` paint. `PayloadBytesCloned` counts text bytes only: a
 `Select` or `Completion` overlay also clones its `OptionList`, and the count
-does not include that. `IdentityComparisons` counts only the `Picker` lookups
-above; other key scans (`Picker` `retain`, `TreeView`, `ViewportOps`) are not
-counted.
+does not include that. `IdentityComparisons` counts linear key scans. `Picker`
+has none: `set_visible_items`, `set_visible_keys` and `replace_items` find the
+cursor item through the key index or the new projection's key map, so the count
+is 0 at any cursor position. Other key scans (`Picker` `retain`, `TreeView`,
+`ViewportOps`) are not counted.
 
 ## Budgets
 
@@ -99,22 +100,23 @@ list, table, grid and tree widget in the frame.
 | `TreeView` | filter change | 1k / 10k / 100k | labels normalized = n, label bytes 7,890 / 88,890 / 988,890 |
 | `Picker` | `set_items` | 1k / 10k / 100k items of 17 text bytes | none cloned |
 | `Picker` | settled frame | 1k / 10k / 100k | rows painted 12, width calls 3n + 264, width bytes 17n + 264 |
-| `Picker` | `set_visible_items` of 20 of n items | 1k / 10k / 100k | nothing cloned, no identity comparison |
+| `Picker` | `set_visible_items` of 20 of n items | 1k / 10k / 100k | nothing cloned, identity comparisons 0 |
 | `Picker` | frame over those 20 items | 1k / 10k / 100k | rows painted 12, width calls 324, width bytes 604, independent of n |
-| `Picker` | `replace_items` | 1k / 10k / 100k | nothing cloned, no identity comparison |
+| `Picker` | `replace_items` | 1k / 10k / 100k | nothing cloned, identity comparisons 0 |
+| `Picker` | `set_visible_items` or `replace_items` with the cursor on item 0, item 19 or the middle item | 1k / 10k / 100k | nothing cloned, identity comparisons 0 at every cursor position |
 | `Select` | closed frame | 1k / 10k / 100k options | width calls 1, width bytes 6 |
 | `Select` | open frame | 1k / 10k / 100k | payload bytes cloned 104, rows painted 8, width calls 1, independent of n |
 | `Completion` | open frame | 1k / 10k / 100k items of 15 text bytes | payload bytes cloned 120, rows painted 8, width calls 240, width bytes 360, independent of n |
-| `CodeEditor` | first focused frame | 1k / 10k / 100k lines | nothing cloned or hashed, annotation queries 2, rows painted 29, width calls 30, width bytes 67 / 68 / 69 |
+| `CodeEditor` | first focused frame | 1k / 10k / 100k lines | nothing cloned, annotation queries 2, rows painted 29, width calls 30, width bytes 67 / 68 / 69 |
 | `CodeEditor` | settled frame | same | rows painted 29, width calls 30, no annotation query |
 | `CodeEditor` | first keystroke, then second of the run | same | payload bytes cloned L, then none |
-| `CodeEditor` | frame after the edit | same | annotation queries 2, rows painted 29, nothing cloned or hashed |
+| `CodeEditor` | frame after the edit | same | annotation queries 2, rows painted 29, nothing cloned |
 | `TextArea` | first focused frame | 1k / 10k / 100k lines | payload bytes cloned L, rows painted 10, width calls 3 (L is 32n - 1) |
 | `TextArea` | settled frame | same | no clone, rows painted 10, width calls 3 |
 | `TextArea` | first keystroke, then second of the run | same | payload bytes cloned L, then none |
-| Holla Finder | settled tick | 106 items, 5 activities, 0 plans | no projection rebuild, scheduling 10, width calls 758 |
+| Holla Finder | settled tick | 106 items, 5 activities, 0 plans | no projection rebuild, scheduling 10, width calls 706 |
 | Holla Finder | unrelated world field, then tick | same | same as the settled tick |
-| Holla Finder | query change | same | projection rebuilds 1, ranked 106, width calls 1,673 |
+| Holla Finder | query change | same | projection rebuilds 1, ranked 106, width calls 1,621 |
 | Holla Files preview | open the Files page on a 1 MiB text file | 1 MiB (prefix cut at 256 KiB) | rollback probes 1, NUL probe 262,144, UTF-8 validated 262,144, sanitized 78,000, line chars 78,000, cloned 0; segmented 2,000, reflowed 4,000, index rebuilds 2, width calls 90,111, width bytes 90,868 |
 | Holla Files preview | same, 16 MiB text and 16 MiB bytes | 16 MiB | the same, width bytes 90,871 (only the size label differs); a settled tick after it repeats no pass |
 | Holla Files preview | one 262,143-byte line whose last scalar straddles the cap | 1 MiB + 256 KiB | rollback probes 2, NUL probe, validation, sanitizing and line chars 262,143 each; segmented 1 |
@@ -156,6 +158,17 @@ list, table, grid and tree widget in the frame.
   background scenario). Streamed activity output, and any change while the
   Finder sits on a hidden tab, rebuild nothing; the hidden page catches up
   with one rebuild when it is activated.
+- The Holla Finder counts are the product path only. In test builds, a settled
+  `FinderPage::ensure_projection` also rebuilds a reference page and compares
+  it (`assert_matches_reference`), which measures 26 width calls and bytes per
+  run (the 26 `clip` calls of the custom-item digests in the catalog build).
+  That oracle runs under `projection::uncounted`, which suspends the library
+  counters as well, so none of it lands in these rows. Before this, the
+  counters included it: 52 calls in a settled tick (two oracle runs) and 26 in
+  the query-change frame, which became 52 once the Finder's `on_key` also ran
+  `ensure_projection` (#283). That, not plan rows (the fixture has none), was
+  the +26 of the 1,647 to 1,673 re-baseline. The rows above are 758 - 52 = 706
+  and 1,673 - 52 = 1,621.
 - Holla's file preview does work bounded by the 256 KiB cap and the 2,000-line
   cap, not by the file: every pass counts the same for a 1 MiB and a 16 MiB
   file, and nothing is cloned from the file (#82). Laying out the 2,000 capped
@@ -182,7 +195,7 @@ list, table, grid and tree widget in the frame.
 - An open `Select` or `Completion` frame clones only the painted rows into its
   overlay snapshot, and `Completion` sizes its popup from cached widths.
 - A `CodeEditor` frame reads cached text and annotation results, so a settled
-  frame copies, hashes and segments nothing. A `TextArea` frame measures only
+  frame copies and segments nothing. A `TextArea` frame measures only
   its visible lines. The first keystroke of an undo run copies the whole text
   in both. Later keystrokes of the run do not.
 

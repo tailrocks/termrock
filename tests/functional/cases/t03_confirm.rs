@@ -8,8 +8,7 @@
 use tui_test::TerminalSnapshot;
 
 use crate::support::{
-    App, Launch, TABLEPRO, cell_bg, find_all, flash_settle_stepped as flash_settle, row_text, text,
-    try_launch,
+    App, Launch, TABLEPRO, cell_bg, find_all, flash_settle, row_text, text, try_launch,
 };
 
 const CONNECTED: &str = "Connected to Development";
@@ -376,10 +375,7 @@ fn quit_dirty(app: &App) {
     app.key("ctrl+q");
     let quit = app.wait_text("Quit TablePro?");
     see(&quit, &[LOST, "Quit"], &[TITLE]);
-    app.key("right");
-    app.key("enter");
-    app.wait_exit("tablepro stayed up after confirming quit");
-    app.expect_exited(0);
+    app.confirm_quit();
 }
 
 #[test]

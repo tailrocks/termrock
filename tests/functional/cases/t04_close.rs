@@ -6,10 +6,7 @@
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{
-    App, Launch, TABLEPRO, find_all, flash_settle_stepped as flash_settle, row_text, text,
-    try_launch,
-};
+use crate::support::{App, Launch, TABLEPRO, find_all, flash_settle, row_text, text, try_launch};
 
 const HOST: &str = "dev-db.internal.acme.io";
 const DATABASE: &str = "acme_dev";
@@ -224,10 +221,7 @@ fn leave_editor(app: &App, still: &str) {
 fn confirm_quit(app: &App) {
     app.key("ctrl+q");
     app.wait_text("Quit TablePro?");
-    app.key("right");
-    app.key("enter");
-    app.wait_exit("tablepro stayed up after confirming quit");
-    app.expect_exited(0);
+    app.confirm_quit();
 }
 
 #[test]

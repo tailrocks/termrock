@@ -18,6 +18,14 @@ use ratatui::crossterm::event::KeyCode;
 use crate::app::App;
 use crate::scenario::Scenario;
 
+// Counts are the product path only. A settled `FinderPage::ensure_projection`
+// also rebuilds a reference page to compare against (test builds only,
+// `assert_matches_reference`); that oracle runs under `projection::uncounted`,
+// which suspends the library counters, so it adds nothing to these numbers. It
+// once did: 26 width calls and bytes per run, so 52 in a settled tick, and in a
+// key frame 26, then 52 after #283 made `on_key` run `ensure_projection` too.
+// That was the whole +26 that 989f13c4 blamed on "new plan rows".
+
 const VIEWPORT: (u16, u16) = (120, 40);
 const SCENARIO: &str = "holla_finder";
 
@@ -65,8 +73,8 @@ fn work_contract_holla_idle_and_source_update() {
         "settled tick",
         &[
             (Metric::SchedulingRecordsVisited, 2 * activities + plans),
-            (Metric::IntrinsicWidthCalls, 758),
-            (Metric::TextBytesMeasured, 3_272),
+            (Metric::IntrinsicWidthCalls, 706),
+            (Metric::TextBytesMeasured, 3_220),
             (Metric::FitVisits, 19),
         ],
     );
@@ -98,8 +106,8 @@ fn work_contract_holla_idle_and_source_update() {
         "unrelated field then tick",
         &[
             (Metric::SchedulingRecordsVisited, 2 * activities + plans),
-            (Metric::IntrinsicWidthCalls, 758),
-            (Metric::TextBytesMeasured, 3_272),
+            (Metric::IntrinsicWidthCalls, 706),
+            (Metric::TextBytesMeasured, 3_220),
             (Metric::FitVisits, 19),
         ],
     );
@@ -124,8 +132,8 @@ fn work_contract_holla_idle_and_source_update() {
         &[
             (Metric::ProjectionRebuilds, 1),
             (Metric::RankRowsVisited, items),
-            (Metric::IntrinsicWidthCalls, 1_673),
-            (Metric::TextBytesMeasured, 8_466),
+            (Metric::IntrinsicWidthCalls, 1_621),
+            (Metric::TextBytesMeasured, 8_414),
             (Metric::FitVisits, 13),
         ],
     );
