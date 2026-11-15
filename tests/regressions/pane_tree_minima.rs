@@ -1,118 +1,24 @@
-use junie_tui::core::event::{Mouse, MouseKind, Outcome};
-use junie_tui::core::focus::{Focus, FocusRing};
-use junie_tui::core::hit::HitRegistry;
+use junie_tui::core::event::Outcome;
 use junie_tui::core::id::WidgetId;
-use junie_tui::core::pointer::{PointerEvent, PointerHost, PointerParts, PointerRouter};
-use junie_tui::core::response::Response;
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
 use junie_tui::ui::layout::{Split, SplitDir};
 use junie_tui::ui::pane_tree::{Direction, Frames, PaneId, PaneNode, PaneRefusal, PaneTree};
-use ratatui::buffer::Buffer;
 use ratatui::layout::{Position, Rect};
 
+use crate::pane_rig::Rig;
+
 const ID: WidgetId = WidgetId::of("t.pane.minima");
-
-struct Rig {
-    tree: PaneTree,
-    area: Rect,
-    hits: HitRegistry,
-    focus: Focus,
-    ring: FocusRing,
-    router: PointerRouter,
-    inner: Vec<(PaneId, Rect)>,
-}
-
-impl PointerHost for Rig {
-    fn pointer_parts(&mut self) -> PointerParts<'_> {
-        PointerParts {
-            router: &mut self.router,
-            hits: &self.hits,
-            focus: &mut self.focus,
-            ring: &self.ring,
-        }
-    }
-
-    fn layer_open(&self) -> bool {
-        false
-    }
-
-    fn now_ms(&self) -> u64 {
-        0
-    }
-
-    fn deliver(&mut self, ev: &PointerEvent) -> Response<()> {
-        self.tree.on_pointer(ev).unwrap_or(Outcome::Ignored).into()
-    }
-}
-
-impl Rig {
-    fn new(tree: PaneTree, area: Rect) -> Self {
-        let mut rig = Self {
-            tree,
-            area,
-            hits: HitRegistry::default(),
-            focus: Focus::default(),
-            ring: FocusRing::default(),
-            router: PointerRouter::default(),
-            inner: Vec::new(),
-        };
-        rig.render();
-        rig
-    }
-
-    fn render(&mut self) {
-        let theme = Theme::for_level(ColorLevel::TrueColor);
-        let mut buf = Buffer::empty(Rect::new(0, 0, self.area.right(), self.area.bottom()));
-        self.hits = HitRegistry::default();
-        let mut ring = FocusRing::default();
-        let interaction = Interaction {
-            hover: self.router.hover,
-            pressed: self.router.pressed,
-            ..Default::default()
-        };
-        let mut ctx = RenderCtx::new(&theme, interaction, &mut self.hits, &mut ring);
-        self.inner = self
-            .tree
-            .render(self.area, &mut buf, &mut ctx, theme.canvas, &|p| {
-                format!("pane {p}")
-            });
-    }
-
-    fn mouse(&mut self, kind: MouseKind, pos: Position) -> Outcome {
-        PointerRouter::route(self, Mouse::new(kind, pos))
-    }
-
-    fn handle_origin(&self, i: usize) -> Position {
-        let h = self.tree.seams()[i].handle;
-        Position::new(h.x, h.y)
-    }
-
-    fn drag_seam(&mut self, i: usize, to: Position) {
-        let from = self.handle_origin(i);
-        self.mouse(MouseKind::Down, from);
-        self.mouse(MouseKind::Drag, to);
-        self.mouse(MouseKind::Up, to);
-        self.render();
-    }
-
-    fn double_click_seam(&mut self, i: usize) {
-        let at = self.handle_origin(i);
-        for _ in 0..2 {
-            self.mouse(MouseKind::Down, at);
-            self.mouse(MouseKind::Up, at);
-        }
-        self.render();
-    }
-
-    fn rects(&self) -> Vec<Rect> {
-        self.tree.panes().iter().map(|(_, r)| *r).collect()
-    }
-}
 
 fn two(dir: SplitDir, min: (u16, u16)) -> PaneTree {
     let mut tree = PaneTree::new(ID, 1).min_size(min.0, min.1);
     tree.split(1, 2, dir, false);
+    tree.focused = 1;
+    tree
+}
+
+fn nested(min: (u16, u16)) -> PaneTree {
+    let mut tree = PaneTree::new(ID, 1).min_size(min.0, min.1);
+    tree.split(1, 2, SplitDir::Horizontal, false);
+    tree.split(2, 3, SplitDir::Horizontal, false);
     tree.focused = 1;
     tree
 }
@@ -192,14 +98,7 @@ fn pane_pointer_respects_outer_leaf_minimum() {
 #[test]
 fn pane_nested_minimum_includes_descendants_and_seams() {
     let min = (12, 3);
-    let nested = || {
-        let mut tree = PaneTree::new(ID, 1).min_size(min.0, min.1);
-        tree.split(1, 2, SplitDir::Horizontal, false);
-        tree.split(2, 3, SplitDir::Horizontal, false);
-        tree.focused = 1;
-        tree
-    };
-    let mut rig = Rig::new(nested(), Rect::new(0, 0, 80, 10));
+    let mut rig = Rig::new(nested(min), Rect::new(0, 0, 80, 10));
     let y = rig.handle_origin(0).y;
     rig.drag_seam(0, Position::new(79, y));
 
@@ -212,7 +111,7 @@ fn pane_nested_minimum_includes_descendants_and_seams() {
         "the parent stops at 2 * leaf minimum + the nested seam"
     );
 
-    let mut keys = Rig::new(nested(), Rect::new(0, 0, 80, 10));
+    let mut keys = Rig::new(nested(min), Rect::new(0, 0, 80, 10));
     assert_eq!(
         keys.tree.resize(Direction::Right, 500),
         Ok(Outcome::Changed)
@@ -260,14 +159,7 @@ fn pane_frames_do_not_change_minimum_definition() {
 #[test]
 fn pane_infeasible_terminal_freezes_resize_and_recovers() {
     let min = (12, 3);
-    let nested = || {
-        let mut tree = PaneTree::new(ID, 1).min_size(min.0, min.1);
-        tree.split(1, 2, SplitDir::Horizontal, false);
-        tree.split(2, 3, SplitDir::Horizontal, false);
-        tree.focused = 1;
-        tree
-    };
-    let mut rig = Rig::new(nested(), Rect::new(0, 0, 80, 10));
+    let mut rig = Rig::new(nested(min), Rect::new(0, 0, 80, 10));
     rig.area = Rect::new(0, 0, 30, 10);
     rig.render();
     let frozen = rig.tree.root.clone();
