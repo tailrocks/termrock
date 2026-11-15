@@ -87,7 +87,7 @@ fn large_overflow_chip_prefix_work_is_linear() {
     });
     assert_linear("ChipBar::render", 1, 1, 2, |n| {
         let mut bar = ChipBar::new(ID);
-        bar.chips = (0..n).map(|_| Chip::new("x")).collect();
+        bar.set_chips((0..n).map(|_| Chip::new("x")).collect());
         frame(80, 1, |buf, ctx| {
             let bg = ctx.theme.canvas;
             work::measure(|| bar.render(Rect::new(0, 0, 80, 1), buf, ctx, bg)).1
