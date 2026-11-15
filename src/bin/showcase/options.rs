@@ -1376,7 +1376,11 @@ pub static FORMS: &[Opt] = &[
 
 pub static SIDEBARS: &[Opt] = &[
     Opt::new("sidebars.collapsed", "Collapsed (icons)", OFF_ON),
-    Opt::new("sidebars.width", "Open width", &["24", "20", "30"]),
+    Opt::new(
+        "sidebars.width",
+        "Open width",
+        &["24", "20", "30", "12", "8"],
+    ),
     Opt::new(
         "sidebars.collapsed_width",
         "Collapsed width",
@@ -1392,7 +1396,11 @@ pub static SIDEBARS: &[Opt] = &[
     Opt::new(
         "sidebars.rail_label",
         "Rail label",
-        &["Navigation", "Explorer"],
+        &[
+            "Navigation",
+            "Explorer",
+            "Cafe\u{301} 界面 👨\u{200d}👩\u{200d}👧",
+        ],
     )
     .needs(&[("sidebars.hidden", "on")]),
 ];
