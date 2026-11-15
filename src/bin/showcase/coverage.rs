@@ -150,7 +150,7 @@ pub const PICKER_COVERAGE: &[(&str, &str)] = &[
 ];
 
 pub const TEXT_INPUT_COVERAGE: &[(&str, &str)] =
-    &[("widgets::input::TextInput::set_value", "dialogkinds")];
+    &[("widgets::input::TextInput::set_value", "selectable")];
 pub const GRID_EDIT_COVERAGE: &[(&str, &str)] = &[
     ("widgets::grid::DataGrid::try_edit_text", "grid"),
     ("widgets::grid::DataGrid::finish_edit_session", "grid"),
@@ -1559,6 +1559,15 @@ mod tests {
                 "declared id is not a catalog capability: {id}"
             );
             assert!(!page.is_empty(), "coverage entry names no page: {id}");
+            let method = id.rsplit("::").next().expect("a capability id has a name");
+            let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+            let source =
+                std::fs::read_to_string(root.join(format!("src/bin/showcase/pages/{page}.rs")))
+                    .unwrap_or_else(|e| panic!("coverage page {page} has no source: {e}"));
+            assert!(
+                source.contains(&format!(".{method}(")),
+                "page {page} never calls {method}: {id}"
+            );
         }
     }
 
