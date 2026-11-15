@@ -319,5 +319,23 @@ variant of these enums stays a breaking change and is recorded here.
   holds a draft or an open editor. Showcase's Grid page asks the same guard before
   Reload drops a draft. See
   [the audit note](audits/2026-11-15-guarded-table-transitions.md).
+- A saved TablePro change lasts for the connection session. One `SessionStore`
+  per `Workbench` keeps sparse overlays (replaced rows, deleted baseline keys,
+  inserted rows) over the lazy seed generator, so a table with millions of seed
+  rows holds only what a save changed. Every SELECT reads it: table load,
+  refresh, sort, filter, close and reopen, the query editor, and EXPLAIN row
+  counts. Rows carry store keys that never derive from the primary key, and each
+  table has a revision. A save is prepared whole and checked (revision, schema,
+  before images, kinds, NULL, enum, defaults) before it is applied, so a refused
+  batch changes neither the store nor the draft. The default simulator resolves
+  `gen_random_uuid()` (a version 8 id from the insert counter), `identity` and
+  `nextval('orders_number_seq')`, `now()` (one frozen clock reading per save) and
+  literals. Other views of the table refresh when clean, keep their draft and
+  open editor and show `source changed` when not, and query results stay
+  snapshots with the same mark. Filtered totals stay estimates, scaled from a
+  bounded sample plus the exact inserted matches. A new connection starts from
+  the seed again. Nothing is written to disk, and foreign keys, unique indexes
+  and CHECK constraints are not enforced. See
+  [the audit note](audits/2026-11-15-tablepro-session-store.md).
 - The `visual-baseline` git tag is frozen historical evidence. It is
   never moved, and it is not a substitute for the current design.

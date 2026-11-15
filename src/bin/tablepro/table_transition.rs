@@ -166,12 +166,12 @@ impl App {
 
     /// The table a transition names, if it is still the table and view the
     /// request was made against.
-    fn transition_target(&mut self, tr: &TableTransition) -> Option<(&mut TableTab, &Catalog)> {
+    fn transition_target(&mut self, tr: &TableTransition) -> Option<(&mut TableTab, Source<'_>)> {
         if tr.connection_generation != self.connection_generation {
             return None;
         }
-        let (t, cat) = self.workbench.as_mut()?.table_mut(tr.change.tab)?;
-        (t.view_revision() == tr.change.expected_view_revision).then_some((t, cat))
+        let (t, src) = self.workbench.as_mut()?.table_mut(tr.change.tab)?;
+        (t.view_revision() == tr.change.expected_view_revision).then_some((t, src))
     }
 
     pub(super) fn request_table_change(&mut self, change: TableChange, review: Review) {
@@ -265,12 +265,12 @@ impl App {
     /// Reads the next view, then installs it and the rows together. A failure at
     /// either step leaves the rows, the draft and the controls as they were.
     fn apply_transition(&mut self, tr: &TableTransition) -> Result<Option<String>, String> {
-        let Some((t, cat)) = self.transition_target(tr) else {
+        let Some((t, src)) = self.transition_target(tr) else {
             return Err(STALE_NOTICE.into());
         };
         let next = tr.change.next.clone();
         let loaded = t
-            .prepare_load(cat, &next)
+            .prepare_load(src, &next)
             .map_err(|e| format!("Cannot load the rows: {} · nothing was changed", e.message))?;
         t.install_load(loaded, next).map_err(|e| match e {
             junie_tui::widgets::grid::GridDataError::Busy => SAVING_NOTICE.to_owned(),

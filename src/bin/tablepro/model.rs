@@ -1,5 +1,6 @@
 use crate::db::{Catalog, ColType, Table, Value};
 use crate::sql::{FUNCTIONS, KEYWORDS, TokKind, tokenize};
+use crate::store::Source;
 use junie_tui::core::id::ItemKey;
 use junie_tui::ui::text::fuzzy;
 use junie_tui::widgets::grid::{CellValue, GridChangeSet};
@@ -665,7 +666,8 @@ pub fn tables_in_statement<'a>(cat: &'a Catalog, stmt: &str) -> Vec<(&'a Table, 
     out
 }
 
-pub fn complete(cat: &Catalog, src: &str, cursor: usize) -> (Vec<Completion>, usize) {
+pub fn complete(source: Source, src: &str, cursor: usize) -> (Vec<Completion>, usize) {
+    let cat = source.catalog;
     let (word, clause, qualifier) = context(src, cursor);
     let stmt = crate::sql::statement_at(src, cursor)
         .map(|(a, b)| &src[a..b])
@@ -711,7 +713,11 @@ pub fn complete(cat: &Catalog, src: &str, cursor: usize) -> (Vec<Completion>, us
                     push(
                         kind_of(t),
                         &t.name,
-                        format!("{} · {}", t.schema, crate::sql::fmt_rows(t.row_count)),
+                        format!(
+                            "{} · {}",
+                            t.schema,
+                            crate::sql::fmt_rows(source.row_count(t))
+                        ),
                         None,
                         0,
                     );
@@ -733,7 +739,11 @@ pub fn complete(cat: &Catalog, src: &str, cursor: usize) -> (Vec<Completion>, us
                     push(
                         kind_of(t),
                         &t.name,
-                        format!("{} · {} rows", t.schema, crate::sql::fmt_rows(t.row_count)),
+                        format!(
+                            "{} · {} rows",
+                            t.schema,
+                            crate::sql::fmt_rows(source.row_count(t))
+                        ),
                         insert,
                         boost,
                     );
