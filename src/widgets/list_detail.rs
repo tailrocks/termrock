@@ -7,7 +7,7 @@ use crate::theme::{ButtonKind, StatusKind, Tone};
 use crate::ui::ctx::{RenderCtx, fill, legible_on_fill};
 use crate::ui::layout::Split;
 use crate::ui::master_detail::{MasterDetail, Mode};
-use crate::ui::text::{fit, truncate, width, wrap};
+use crate::ui::text::{fit, paint_clipped, paint_truncated, truncate, width, wrap};
 use crate::widgets::button::{Button, ButtonRow, RowOverflow};
 use crate::widgets::keyhint::{Hint, hint};
 use crate::widgets::notice::Notice;
@@ -22,10 +22,32 @@ use ratatui::style::{Modifier, Style};
 
 const COLUMN_GAP: u16 = 2;
 
+fn cells(text: &str) -> u16 {
+    u16::try_from(width(text)).unwrap_or(u16::MAX)
+}
+
+/// Paints `text` on `row` starting at absolute column `x`, clipped to `row`.
+fn put(buf: &mut Buffer, row: Rect, x: u16, text: &str, style: Style) {
+    if let Some(col) = x.checked_sub(row.x) {
+        paint_clipped(buf, row, usize::from(col), text, style);
+    }
+}
+
+/// `inner` clipped to `area`, collapsed to an empty rectangle at `area`'s
+/// origin when nothing is left, so no child is placed beside its parent.
+fn within(inner: Rect, area: Rect) -> Rect {
+    let clipped = inner.intersection(area);
+    if clipped.is_empty() {
+        Rect::new(area.x, area.y, 0, 0)
+    } else {
+        clipped
+    }
+}
+
 fn columns(rest: u16, detail: u16, meta: u16) -> (u16, u16) {
     let both = detail > 0 && meta > 0;
     let gap = if both { COLUMN_GAP } else { 0 };
-    let (mut d, mut m) = if detail + gap + meta <= rest {
+    let (mut d, mut m) = if detail.saturating_add(gap).saturating_add(meta) <= rest {
         (detail, meta)
     } else if detail <= meta {
         let d = detail.min(rest);
@@ -437,6 +459,12 @@ impl ListDetail {
             .collect();
         self.md.detail_owns = self.buttons.iter().map(|b| b.id).collect();
         self.clamp(frame.rows.len());
+        let area = area.intersection(*buf.area());
+        if area.is_empty() {
+            self.scroll.set_viewport(0);
+            self.detail_scroll.set_viewport(0);
+            return;
+        }
         let l = self.md.layout(area, buf, ctx, t.canvas);
         if !l.master.is_empty() {
             self.draw_list(l.master, buf, ctx, frame);
@@ -451,6 +479,11 @@ impl ListDetail {
 
     fn draw_list(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, frame: &Frame) {
         let t = ctx.theme;
+        let area = area.intersection(*buf.area());
+        if area.is_empty() {
+            self.scroll.set_viewport(0);
+            return;
+        }
         let focused = ctx.interaction.focused(self.master);
         let pos = scrollbar::position_label(&self.scroll);
         let meta = if pos.is_empty() {
@@ -458,7 +491,7 @@ impl ListDetail {
         } else {
             format!("{} · {pos}", frame.meta)
         };
-        let over = u16::from(!frame.head.is_empty());
+        let over = u16::from(!frame.head.is_empty() && area.height > 0);
         let under_lines = frame
             .under
             .map(|u| wrap(u, area.width.saturating_sub(2).max(8) as usize))
@@ -485,6 +518,8 @@ impl ListDetail {
             .focused(focused)
             .meta(&meta)
             .render(framed, buf, t);
+        let inner = within(inner, area);
+        let lead = inner.x.saturating_sub(1).max(area.x);
         let bg = t.canvas;
         self.scroll.set_content(frame.rows.len());
         self.scroll.set_viewport(inner.height as usize);
@@ -501,7 +536,7 @@ impl ListDetail {
             .unwrap_or(8)
             .clamp(8, 22);
         let (detail_w, meta_w) = frame.rows.iter().fold((0, 0), |(d, m), r| {
-            (d.max(width(&r.detail) as u16), m.max(width(&r.meta) as u16))
+            (d.max(cells(&r.detail)), m.max(cells(&r.meta)))
         });
         for (k, i) in self.scroll.visible_range().enumerate() {
             let y = inner.y + k as u16;
@@ -511,20 +546,27 @@ impl ListDetail {
             s.focused = focused && self.cursor == i;
             s.selected = self.cursor == i;
             let st = t.row(s, bg);
-            let rect = Rect::new(inner.x - 1, y, row_w + 1, 1);
-            fill(buf, rect, st);
-            buf.set_string(
-                rect.x,
+            let rect = Rect::new(
+                lead,
                 y,
+                row_w.saturating_add(inner.x.saturating_sub(lead)),
+                1,
+            )
+            .intersection(area);
+            fill(buf, rect, st);
+            put(
+                buf,
+                rect,
+                rect.x,
                 t.gutter_symbol(s),
                 t.gutter(s, st.bg.unwrap_or(bg), false),
             );
-            let mut x = rect.x + 2;
+            let mut x = rect.x.saturating_add(2);
             if let Some(kind) = row.mark {
                 let (glyph, gs) = t.status_at(kind, ctx.interaction.tick);
-                buf.set_string(x, y, glyph, gs.bg(st.bg.unwrap_or(bg)));
+                put(buf, rect, x, glyph, gs.bg(st.bg.unwrap_or(bg)));
             }
-            x += 2;
+            x = x.saturating_add(2);
             let right = rect.right().saturating_sub(1);
             let lw = (label_w as u16).min(right.saturating_sub(x));
             let label_style = if row.faint {
@@ -534,40 +576,46 @@ impl ListDetail {
             } else {
                 st
             };
-            buf.set_string(
+            put(
+                buf,
+                rect,
                 x,
-                y,
-                fit(&truncate(&row.label, lw as usize), lw as usize),
+                &fit(&truncate(&row.label, lw as usize), lw as usize),
                 label_style,
             );
-            let dx = x + lw + COLUMN_GAP;
+            let dx = x.saturating_add(lw).saturating_add(COLUMN_GAP);
             let (detail_col, meta_col) = columns(right.saturating_sub(dx), detail_w, meta_w);
             if !row.detail.is_empty() && detail_col > 0 {
-                buf.set_string(
+                put(
+                    buf,
+                    rect,
                     dx,
-                    y,
-                    truncate(&row.detail, detail_col as usize),
+                    &truncate(&row.detail, detail_col as usize),
                     st.fg(t.text_muted).remove_modifier(Modifier::BOLD),
                 );
             }
             if !row.meta.is_empty() && meta_col > 0 {
                 let meta = truncate(&row.meta, meta_col as usize);
-                buf.set_string(
-                    right - width(&meta) as u16,
-                    y,
+                put(
+                    buf,
+                    rect,
+                    right.saturating_sub(cells(&meta)),
                     &meta,
                     st.fg(t.tone(row.meta_tone)).remove_modifier(Modifier::BOLD),
                 );
             }
             legible_on_fill(buf, rect, t, bg);
-            ctx.clickable(rid, rect);
+            if !rect.is_empty() {
+                ctx.clickable(rid, rect);
+            }
         }
         if has_sb {
             scrollbar::render_with_fade(inner, buf, ctx, self.master, &self.scroll, focused);
         }
         for (k, text) in under_lines.iter().take(under as usize).enumerate() {
             let y = area.bottom() - under + k as u16;
-            buf.set_string(area.x + 1, y, text, t.faint().bg(t.canvas));
+            let line = Rect::new(area.x, y, area.width, 1);
+            paint_clipped(buf, line, 1, text, t.faint().bg(t.canvas));
         }
     }
 
@@ -618,6 +666,11 @@ impl ListDetail {
         as_drawer: bool,
     ) {
         let t = ctx.theme;
+        let area = area.intersection(*buf.area());
+        if area.is_empty() {
+            self.detail_scroll.set_viewport(0);
+            return;
+        }
         let focused =
             ctx.interaction.focused(self.detail) || self.actions_focused(ctx.interaction.focus);
         let inner = if as_drawer {
@@ -636,22 +689,26 @@ impl ListDetail {
                 .meta(&frame.detail_meta)
                 .render(area, buf, t)
         };
+        let inner = within(inner, area);
         let bg = if as_drawer { t.canvas } else { t.surface };
+        let lead = inner.x.saturating_sub(1).max(area.x);
+        let wide = inner.width.saturating_add(inner.x.saturating_sub(lead));
         let row = ButtonRow::new().overflow(RowOverflow::Wrap);
-        let action_rows = row.rows(inner.width + 1, &self.buttons, t);
+        let action_rows = row.rows(wide, &self.buttons, t);
         let body_h = inner.height.saturating_sub(1 + action_rows);
         let mut body = Rect::new(inner.x, inner.y, inner.width, body_h);
-        let label_w: u16 = frame
+        let label_w = frame
             .lines
             .iter()
             .map(|l| match l {
-                Line::Prop(k, _, _) => width(k) as u16,
+                Line::Prop(k, _, _) => width(k),
                 _ => 0,
             })
             .max()
             .unwrap_or(13)
             .clamp(13, 22)
             + 1;
+        let label_w = u16::try_from(label_w).unwrap_or(u16::MAX).min(body.width);
         let mut rendered = self.rendered(&frame.lines, body, label_w);
         if rendered.len() > body_h as usize {
             body.width = inner
@@ -671,40 +728,53 @@ impl ListDetail {
         self.detail_had_focus = detail_focused;
         for (k, i) in self.detail_scroll.visible_range().enumerate() {
             let y = body.y + k as u16;
+            let line = Rect::new(body.x, y, body.width, 1);
             match &rendered[i] {
                 Rendered::Prop(label, value, tone) => {
-                    buf.set_string(body.x, y, label, t.muted().bg(bg));
-                    let vx = body.x + label_w;
-                    buf.set_string(
-                        vx,
+                    let key = Rect::new(body.x, y, label_w.saturating_sub(1), 1);
+                    paint_truncated(buf, key, 0, label, t.muted().bg(bg));
+                    let value_room = Rect::new(
+                        body.x.saturating_add(label_w),
                         y,
-                        crate::ui::reveal::cut(
-                            Rect::new(vx, y, body.width.saturating_sub(label_w), 1),
-                            value,
-                        ),
+                        body.width.saturating_sub(label_w),
+                        1,
+                    );
+                    paint_clipped(
+                        buf,
+                        value_room,
+                        0,
+                        &crate::ui::reveal::cut(value_room, value),
                         Style::new().fg(t.tone(*tone)).bg(bg),
                     );
                 }
                 Rendered::Text(text, tone) => {
-                    buf.set_string(
-                        body.x,
-                        y,
-                        crate::ui::reveal::cut(Rect::new(body.x, y, body.width, 1), text),
+                    paint_clipped(
+                        buf,
+                        line,
+                        0,
+                        &crate::ui::reveal::cut(line, text),
                         Style::new().fg(t.tone(*tone)).bg(bg),
                     );
                 }
                 Rendered::Heading(h, meta) => {
-                    buf.set_string(
-                        body.x,
-                        y,
+                    paint_truncated(
+                        buf,
+                        line,
+                        0,
                         h,
                         t.secondary().bg(bg).add_modifier(Modifier::BOLD),
                     );
-                    let room = body.width.saturating_sub(width(h) as u16 + 3) as usize;
+                    let room = usize::from(body.width).saturating_sub(width(h) + 3);
                     let meta = truncate(meta, room);
-                    let mw = width(&meta) as u16;
+                    let mw = width(&meta);
                     if mw > 0 && room >= 8 {
-                        buf.set_string(body.right() - mw, y, &meta, t.faint().bg(bg));
+                        paint_clipped(
+                            buf,
+                            line,
+                            usize::from(body.width) - mw,
+                            &meta,
+                            t.faint().bg(bg),
+                        );
                     }
                 }
                 Rendered::Item(n, item_no) => {
@@ -716,20 +786,22 @@ impl ListDetail {
                     s.focused = detail_focused && self.item_cursor == *item_no;
                     s.selected = self.item_cursor == *item_no;
                     let st = t.row(s, bg);
-                    let rect = Rect::new(body.x - 1, y, body.width + 1, 1);
+                    let rect =
+                        Rect::new(lead, y, body.right().saturating_sub(lead), 1).intersection(area);
                     fill(buf, rect, st);
-                    buf.set_string(
+                    put(
+                        buf,
+                        rect,
                         rect.x,
-                        y,
                         t.gutter_symbol(s),
                         t.gutter(s, st.bg.unwrap_or(bg), false),
                     );
-                    let mut x = rect.x + 2;
+                    let mut x = rect.x.saturating_add(2);
                     if let Some(kind) = mark {
                         let (glyph, gs) = t.status(*kind);
-                        buf.set_string(x, y, glyph, gs.bg(st.bg.unwrap_or(bg)));
+                        put(buf, rect, x, glyph, gs.bg(st.bg.unwrap_or(bg)));
                     }
-                    x += 2;
+                    x = x.saturating_add(2);
                     let avail = rect.right().saturating_sub(x) as usize;
                     let c0 = 11usize.min(avail);
                     let wide = |n: usize| {
@@ -745,18 +817,28 @@ impl ListDetail {
                     };
                     let room = (body.width as usize).saturating_sub(c0 + wide(2) + 5);
                     let c1 = wide(1).min(room).max(12).min(avail.saturating_sub(c0 + 2));
-                    buf.set_string(x, y, fit(&truncate(&cols[0], c0), c0), st);
-                    buf.set_string(
-                        x + c0 as u16 + 1,
-                        y,
-                        fit(&truncate(&cols[1], c1), c1),
+                    let at = |n: usize| u16::try_from(usize::from(x) + n).unwrap_or(u16::MAX);
+                    put(buf, rect, x, &fit(&truncate(&cols[0], c0), c0), st);
+                    put(
+                        buf,
+                        rect,
+                        at(c0 + 1),
+                        &fit(&truncate(&cols[1], c1), c1),
                         st.fg(t.tone(*tone)),
                     );
-                    let x2 = x + (c0 + c1 + 2) as u16;
-                    let room = rect.right().saturating_sub(x2 + 1) as usize;
-                    buf.set_string(x2, y, truncate(&cols[2], room), st.fg(t.text_muted));
+                    let x2 = at(c0 + c1 + 2);
+                    let room = usize::from(rect.right().saturating_sub(x2.saturating_add(1)));
+                    put(
+                        buf,
+                        rect,
+                        x2,
+                        &truncate(&cols[2], room),
+                        st.fg(t.text_muted),
+                    );
                     legible_on_fill(buf, rect, t, bg);
-                    ctx.clickable(id, rect);
+                    if !rect.is_empty() {
+                        ctx.clickable(id, rect);
+                    }
                 }
                 Rendered::Notice(n, h) => {
                     if let Line::Notice(notice) = &frame.lines[*n] {
@@ -778,10 +860,10 @@ impl ListDetail {
                 ctx.interaction.focused(self.detail),
             );
         }
-        let ay = inner.bottom().saturating_sub(action_rows);
+        let footer = action_rows.min(inner.height);
         row.render(
             self.detail,
-            Rect::new(inner.x - 1, ay, inner.width + 1, action_rows),
+            Rect::new(lead, inner.bottom() - footer, wide, footer),
             &mut self.buttons,
             buf,
             ctx,
@@ -791,12 +873,20 @@ impl ListDetail {
 
     fn draw_summary(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, frame: &Frame) {
         let t = ctx.theme;
+        let area = area.intersection(*buf.area());
+        if area.is_empty() {
+            return;
+        }
         let bg = t.surface;
         let inner = Panel::card(Some(&frame.detail_title))
             .meta(&format!("{} · Tab details", frame.detail_meta))
             .render(area, buf, t);
+        let inner = within(inner, area);
         let mut y = inner.y;
         for line in &frame.lines {
+            if y >= inner.bottom() {
+                break;
+            }
             let text = match line {
                 Line::Prop(k, v, tone) if !k.is_empty() => Some((format!("{k}  {v}"), *tone)),
                 Line::Text(v, tone) => Some((v.clone(), *tone)),
@@ -804,16 +894,15 @@ impl ListDetail {
                 _ => None,
             };
             if let Some((text, tone)) = text {
-                buf.set_string(
-                    inner.x,
-                    y,
-                    crate::ui::reveal::cut(Rect::new(inner.x, y, inner.width, 1), &text),
+                let row = Rect::new(inner.x, y, inner.width, 1);
+                paint_clipped(
+                    buf,
+                    row,
+                    0,
+                    &crate::ui::reveal::cut(row, &text),
                     Style::new().fg(t.tone(tone)).bg(bg),
                 );
                 y += 1;
-            }
-            if y >= inner.bottom() {
-                break;
             }
         }
         ctx.clickable(self.detail, area);

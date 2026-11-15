@@ -1757,6 +1757,11 @@ pub static FIXED_DIALOGS: &[Opt] = &[Opt::new(
 pub static LIST_DETAIL: &[Opt] = &[
     Opt::new("listdetail.data", "Jobs", &["five", "none"]),
     Opt::new("listdetail.actions", "Actions", &["shown", "hidden"]),
+    Opt::new(
+        "listdetail.width",
+        "Allocated width",
+        &["full", "60", "30", "12"],
+    ),
 ];
 
 pub static TERMINAL_PANE: &[Opt] = &[
