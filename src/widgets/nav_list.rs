@@ -388,7 +388,7 @@ impl NavList {
             &self.scroll,
             focused,
         );
-        if !ctx.inert {
+        if !ctx.inert && row_w > 0 {
             ctx.ring.register(self.id);
         }
     }
