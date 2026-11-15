@@ -2724,7 +2724,8 @@ impl crate::core::focus::BlurTarget for DataTable {
     fn blur(&mut self) -> Outcome {
         let editing = self.edit.is_some();
         // `BlurTarget` reports only an outcome; hosts that need the commit
-        // action call `DataTable::on_blur` directly.
+        // action call `DataTable::on_blur` directly, or
+        // `DataTable::on_blur_edit_source` for keyed tables.
         let _ = self.on_blur();
         if editing && self.edit.is_none() {
             Outcome::Changed
