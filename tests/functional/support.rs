@@ -138,7 +138,8 @@ impl App {
         launch.cols = cols;
         launch.rows = rows;
         launch.color = Some(color.to_string());
-        // Only jackin overrides `advance_clock` (src/bin/jackin/app.rs). Elsewhere the
+        // `App::new` enables the clock for jackin only. TablePro also steps its clock
+        // (src/bin/tablepro/app.rs) and opts in through `Launch::clock`. Elsewhere the
         // paste falls through to `on_input` (src/shell/app.rs), so the clock stays off.
         launch.clock = Path::new(bin)
             .file_name()
