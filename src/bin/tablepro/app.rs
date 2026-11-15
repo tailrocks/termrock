@@ -8,7 +8,7 @@ use junie_tui::clock::{Clock, WallClock};
 use junie_tui::core::event::{Input, Key, Outcome};
 use junie_tui::core::focus::FocusChange;
 
-use junie_tui::core::id::WidgetId;
+use junie_tui::core::id::{ItemKey, WidgetId};
 use junie_tui::core::intent::Phase;
 use junie_tui::core::pointer::{
     MouseTarget, PointerEvent, PointerHost, PointerParts, PointerRouter,
@@ -1902,7 +1902,7 @@ impl App {
                 let menu = context::on_secondary(w, &cfg, ev);
 
                 if let Some(WorkTab::History(h)) = w.active_tab_mut() {
-                    h.sync_detail_public(&self.history);
+                    h.sync_detail(&self.history);
                 }
                 menu
             }
@@ -1958,6 +1958,9 @@ impl App {
         let Some(key) = key else {
             return Outcome::Changed;
         };
+        if let context::Target::History { owner, entry } = target {
+            return self.history_chosen(owner, entry, key);
+        }
         match target {
             context::Target::Connection(row) => self.connections.select_row(row),
             _ => {
@@ -1967,6 +1970,27 @@ impl App {
             }
         }
         self.shell.focus.focus(owner);
+        shell::KeyRouter::replay(self, &key).or(Outcome::Changed)
+    }
+
+    fn history_chosen(&mut self, owner: WidgetId, entry: ItemKey, key: Key) -> Outcome {
+        if let Some(cmd) = context::history_command(&key) {
+            let (o, reqs) = self
+                .shell
+                .deliver(true, |cx| match self.workbench.as_ref() {
+                    Some(w) => w.history_action(owner, entry, cmd, &self.history, cx),
+                    None => Outcome::Ignored,
+                });
+            return self.apply_requests(reqs).or(o).or(Outcome::Changed);
+        }
+        let list = match self.workbench.as_ref().and_then(|w| w.active_tab()) {
+            Some(WorkTab::History(h)) if h.id == owner => h.list.id,
+            _ => {
+                self.set_status("The history tab is no longer available".into());
+                return Outcome::Changed;
+            }
+        };
+        self.shell.focus.focus(list);
         shell::KeyRouter::replay(self, &key).or(Outcome::Changed)
     }
 

@@ -7,7 +7,7 @@ use ratatui::style::Modifier;
 
 use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::hit::Axis;
-use junie_tui::core::id::WidgetId;
+use junie_tui::core::id::{ItemKey, WidgetId};
 use junie_tui::core::keymap::hint_key;
 use junie_tui::core::pointer::{MouseTarget, PointerEvent};
 use junie_tui::theme::{StatusKind, SyntaxTone, Tone};
@@ -2384,6 +2384,31 @@ fn execute(
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HistoryCommand {
+    Open,
+    Rerun,
+    Copy,
+}
+
+/// Row to select after a refresh. A selection that is still listed keeps its
+/// entry. A hidden or deleted one moves to the nearest entry after it in the
+/// previous order that is still listed, then the nearest before it, then the
+/// row at its old position, and an empty list selects nothing.
+fn reselect(before: &[ItemKey], at: usize, key: ItemKey, now: &[ItemKey]) -> Option<usize> {
+    let rows: std::collections::HashMap<ItemKey, usize> =
+        now.iter().enumerate().map(|(i, k)| (*k, i)).collect();
+    if let Some(row) = rows.get(&key) {
+        return Some(*row);
+    }
+    let after = before.get(at + 1..).unwrap_or_default().iter();
+    let ahead = before.get(..at).unwrap_or_default().iter().rev();
+    after
+        .chain(ahead)
+        .find_map(|k| rows.get(k).copied())
+        .or_else(|| now.len().checked_sub(1).map(|last| at.min(last)))
+}
+
 pub struct HistoryTab {
     pub id: WidgetId,
     pub list: ListBox,
@@ -2393,7 +2418,8 @@ pub struct HistoryTab {
     pub failed_only: bool,
 
     pub slow_ms: u32,
-    pub filtered: Vec<usize>,
+    pub filtered: Vec<ItemKey>,
+    detail_loaded: Option<(ItemKey, String)>,
     pub open_btn: Button,
     pub rerun_btn: Button,
     pub copy_btn: Button,
@@ -2423,6 +2449,7 @@ impl HistoryTab {
             failed_only: false,
             slow_ms: 1000,
             filtered: vec![],
+            detail_loaded: None,
 
             open_btn: Button::primary(id.sub("open"), "Open in new tab")
                 .tooltip("Open the selected query in a new tab")
@@ -2450,24 +2477,33 @@ impl HistoryTab {
             },
             self.failed_only,
         );
-        self.filtered = matches.iter().map(|e| e.id).collect();
+        let before = std::mem::replace(
+            &mut self.filtered,
+            matches.iter().map(|e| e.key()).collect(),
+        );
+        let (cursor, offset, viewport) = (
+            self.list.cursor,
+            self.list.scroll.offset,
+            self.list.scroll.viewport_len,
+        );
+        let selected = before.get(cursor).copied();
+        let kept = selected.map_or_else(
+            || (!self.filtered.is_empty()).then_some(0),
+            |key| reselect(&before, cursor, key, &self.filtered),
+        );
+
         let items: Vec<ListItem> = matches
             .iter()
             .map(|e| {
-                let mut label = e.first_line();
-                if !e.ok() {
-                    label = label.to_string();
-                }
+                let label = e.first_line();
                 let meta = format!("{} · {}", e.when(), e.duration());
                 let mut it = ListItem::new(&junie_tui::ui::text::truncate(&label, 90)).meta(&meta);
                 if e.duration_ms.is_some_and(|ms| ms > self.slow_ms) {
                     it = it.meta_tone(Tone::Warning);
                 }
-                it.disabled = false;
                 it
             })
             .collect();
-        let cursor = self.list.cursor;
         self.list = ListBox::new(self.id.sub("list"), items, SelectMode::Single).empty_text(
             if q.is_empty() {
                 "No query history"
@@ -2475,28 +2511,69 @@ impl HistoryTab {
                 "No matching queries"
             },
         );
-        self.list.cursor = cursor.min(self.filtered.len().saturating_sub(1));
-        self.list.chosen = if self.filtered.is_empty() {
-            None
-        } else {
-            Some(self.list.cursor)
-        };
+        self.list.cursor = kept.unwrap_or(0);
+        self.list.chosen = kept;
+        if let Some(row) = kept
+            && viewport > 0
+        {
+            self.list.scroll.set_viewport(viewport);
+            let below_top = cursor.saturating_sub(offset).min(viewport - 1);
+            self.list.scroll.scroll_to(row.saturating_sub(below_top));
+        }
         self.sync_detail(history);
     }
 
-    pub fn current_entry<'a>(&self, history: &'a History) -> Option<&'a HistoryEntry> {
-        let id = *self.filtered.get(self.list.cursor)?;
-        history.entries.iter().find(|e| e.id == id)
+    pub fn selected_key(&self) -> Option<ItemKey> {
+        self.filtered.get(self.list.cursor).copied()
     }
 
-    fn sync_detail(&mut self, history: &History) {
-        let text = self
-            .current_entry(history)
-            .map(|e| e.sql.clone())
-            .unwrap_or_default();
-        if self.detail.text() != text {
-            self.detail.set_text(&text);
+    pub fn current_entry<'a>(&self, history: &'a History) -> Option<&'a HistoryEntry> {
+        history.get(self.selected_key()?)
+    }
+
+    pub fn row_of(&self, key: ItemKey) -> Option<usize> {
+        self.filtered.iter().position(|k| *k == key)
+    }
+
+    pub fn run_selected(&self, cmd: HistoryCommand, history: &History, cx: &mut Cx) -> Outcome {
+        match self.selected_key() {
+            Some(key) => self.run(key, cmd, history, cx),
+            None => Outcome::Changed,
         }
+    }
+
+    pub fn run(
+        &self,
+        key: ItemKey,
+        cmd: HistoryCommand,
+        history: &History,
+        cx: &mut Cx,
+    ) -> Outcome {
+        let Some(e) = history.get(key) else {
+            cx.status("That history entry is no longer available");
+            return Outcome::Changed;
+        };
+        match cmd {
+            HistoryCommand::Open => cx.go(crate::app::Act::OpenQuery(e.sql.clone(), false)),
+            HistoryCommand::Rerun => cx.go(crate::app::Act::OpenQuery(e.sql.clone(), true)),
+            HistoryCommand::Copy => cx.copy_as(e.sql.clone(), "query"),
+        }
+        Outcome::Changed
+    }
+
+    pub fn sync_detail(&mut self, history: &History) {
+        let shown = self.current_entry(history);
+        let loaded = match (&self.detail_loaded, shown) {
+            (Some((key, sql)), Some(e)) => *key == e.key() && *sql == e.sql,
+            (None, None) => true,
+            _ => false,
+        };
+        if loaded {
+            return;
+        }
+        self.detail_loaded = shown.map(|e| (e.key(), e.sql.clone()));
+        let text = shown.map_or("", |e| e.sql.as_str());
+        self.detail.set_text(text);
     }
 
     pub fn hints(&self, focus: Option<WidgetId>) -> Vec<Hint> {
@@ -2583,7 +2660,7 @@ impl HistoryTab {
         let entries: Vec<&HistoryEntry> = self
             .filtered
             .iter()
-            .filter_map(|id| history.entries.iter().find(|e| e.id == *id))
+            .filter_map(|key| history.get(*key))
             .collect();
         for (k, i) in self.list.scroll.visible_range().enumerate() {
             let y = l.y + k as u16;

@@ -1,5 +1,6 @@
 use crate::db::{Catalog, ColType, Table, Value};
 use crate::sql::{FUNCTIONS, KEYWORDS, TokKind, tokenize};
+use junie_tui::core::id::ItemKey;
 use junie_tui::ui::text::fuzzy;
 use junie_tui::widgets::grid::{CellValue, DataGrid};
 
@@ -221,6 +222,9 @@ pub struct HistoryEntry {
 }
 
 impl HistoryEntry {
+    pub fn key(&self) -> ItemKey {
+        ItemKey::num(u64::try_from(self.id).expect("history ids fit in u64"))
+    }
     pub fn ok(&self) -> bool {
         self.error.is_none()
     }
@@ -445,6 +449,10 @@ impl History {
         e.id = self.next_id;
         self.entries.insert(0, e);
         self.entries.truncate(10_000);
+    }
+
+    pub fn get(&self, key: ItemKey) -> Option<&HistoryEntry> {
+        self.entries.iter().find(|e| e.key() == key)
     }
 
     pub fn search<'a>(
