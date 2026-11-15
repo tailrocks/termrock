@@ -274,3 +274,20 @@ fn navlist_set_items_repairs_indices_and_ignores_equal_replacement() {
     let (_, action) = nav.on_key(&key(KeyCode::Enter));
     assert_eq!(action, Some(NavAction::Activated(0)));
 }
+
+#[test]
+fn navlist_filling_an_empty_list_starts_on_the_first_enabled_item() {
+    let mut nav = NavList::new(ID, vec![]);
+
+    assert!(nav.set_items(vec![
+        NavItem::new("off").disabled(true),
+        NavItem::new("on"),
+        NavItem::new("more"),
+    ]));
+
+    assert_eq!((nav.cursor, nav.current), (1, 1));
+    let buf = render_focused(&mut nav);
+    assert_eq!(gutter_rows(&buf), vec![AREA.y + 1]);
+    let (_, action) = nav.on_key(&key(KeyCode::Enter));
+    assert_eq!(action, Some(NavAction::Activated(1)));
+}
