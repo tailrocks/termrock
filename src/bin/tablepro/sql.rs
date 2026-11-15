@@ -1408,7 +1408,6 @@ fn like_match(pat: &[char], s: &[char]) -> bool {
     true
 }
 
-
 /// Orders numbers by value, so `-0.0` equals `0.0`. NaN, which has no value
 /// order, keeps its place from `total_cmp`.
 fn num_cmp(a: f64, b: f64) -> std::cmp::Ordering {
