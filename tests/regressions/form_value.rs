@@ -1,9 +1,7 @@
-mod common;
-
 use std::cell::Cell;
 use std::rc::Rc;
 
-use common::{chord, key, row};
+use crate::common::{chord, key, row};
 use junie_tui::core::edit::{EditEntry, FieldKeys};
 use junie_tui::core::focus::{BlurAction, Focus, FocusRing};
 use junie_tui::core::hit::HitRegistry;
