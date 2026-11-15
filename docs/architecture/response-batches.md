@@ -62,6 +62,16 @@ Single-result helpers such as `DataTable::commit_edit` keep `Option`.
 | Tab into a checkbox, bool, JSON or long-text cell | focus only; Enter, Space or click still activates |
 | Tree `BranchAction::Both` on a collapsed lazy branch | `Expand`, then `Activate` for the same path |
 
+### See it in Showcase
+
+- **Editable tables, Options tab, "Tab at the last cell".** `commit`, `no-op` and `invalid`
+  start the table on its last editable cell. The page lists the keys to press under the
+  table. The table card shows the batch the last input produced (`last Committed →
+  LeaveForward`, `last LeaveForward`, `last none`), and the hint bar names what Tab does.
+- **Trees, Options tab, "Enter on a branch" = `both`.** Enter on a lazy connection reads
+  `last TreeAction: Expand(orders-db) → Activate(orders-db)`, and the Enter hint says
+  "Expand, then open".
+
 ## Layer result queue
 
 `Picker` and `ContextMenu` queue every action one input emits and release them one per

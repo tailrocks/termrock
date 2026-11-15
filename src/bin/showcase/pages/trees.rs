@@ -622,7 +622,14 @@ impl Page for TreesPage {
         if t.nav.arrows {
             hints.push(("←→", "Fold / unfold"));
         }
-        hints.push(("Enter", "Open"));
+        hints.push((
+            "Enter",
+            if matches!(t.branch_activate, BranchAction::Both) {
+                "Expand, then open"
+            } else {
+                "Open"
+            },
+        ));
         if let Some(k) = t.nav.ends_hint(t.type_ahead) {
             hints.push((k, "Ends"));
         }
@@ -690,5 +697,19 @@ mod tests {
         let _ = page.handle(&enter, &mut cx);
 
         assert_eq!(page.last, "Expand(orders-db) → Activate(orders-db)");
+    }
+
+    #[test]
+    fn branch_activate_both_is_hinted_on_the_enter_key() {
+        let mut page = TreesPage::new();
+        let enter = |p: &TreesPage| {
+            p.hints(Some(CONNECTIONS))
+                .into_iter()
+                .find(|(k, _)| *k == "Enter")
+                .map(|(_, v)| v)
+        };
+        assert_eq!(enter(&page), Some("Open"));
+        page.set_option("trees.branch", 2);
+        assert_eq!(enter(&page), Some("Expand, then open"));
     }
 }

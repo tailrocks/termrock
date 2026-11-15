@@ -965,6 +965,44 @@ fn option_branch_activate() {
 }
 
 #[test]
+fn option_branch_both() {
+    let app = option_screen("s04-both", "trees.branch=both");
+    assert_readout(
+        &app.screen(),
+        &["branch"],
+        "branch_activate Both",
+        "branch_activate Toggle",
+    );
+    let screen = app.wait_text("orders-db");
+    let lazy = find_all(&screen, "orders-db")
+        .into_iter()
+        .filter(|hit| hit.x >= 72)
+        .min_by_key(|hit| hit.y)
+        .unwrap_or_else(|| panic!("no lazy connection row\n{}", text(&screen)));
+    app.click(lazy);
+    let focused = app.wait_text("Expand, then open");
+    see(
+        &focused,
+        &["Enter Expand, then open", "last TreeAction: —"],
+        &["Opened orders-db", "Activate(", "Enter Open"],
+    );
+    app.key("enter");
+    let both = app.wait_text("Expand(orders-db) → Activate(orders-db)");
+    see(
+        &both,
+        &[
+            "last TreeAction: Expand(orders-db) → Activate(orders-db)",
+            "Opened orders-db",
+        ],
+        &["last TreeAction: —"],
+    );
+    confirm_control(&app, |screen| {
+        assert_select(screen, "Enter on a branch", "both", &["toggle", "activate"]);
+    });
+    app.finish();
+}
+
+#[test]
 fn option_click_single() {
     let app = option_screen("s04-click", "trees.click=single");
     assert_readout(&app.screen(), &["click"], "click Single", "click Double");

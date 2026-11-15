@@ -747,6 +747,11 @@ static EDITABLE: &[Opt] = &[
         "Header menu labels",
         &["default", "custom"],
     ),
+    Opt::new(
+        "editable.tab_walkthrough",
+        "Tab at the last cell",
+        &["free", "commit", "no-op", "invalid"],
+    ),
 ];
 
 static DATA_GRID: &[Opt] = &[
