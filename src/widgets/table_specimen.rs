@@ -57,8 +57,7 @@ impl Specimen for DataTable {
         let mut t = self.clone();
         let rows: Vec<_> = t.rows.iter().take(SAMPLE_ROWS).cloned().collect();
         t.set_rows(rows);
-        t.edit = None;
-        t.choice = None;
+        t.cancel_edit();
         t.selected = None;
         t.sort = None;
         t.selection.clear();
