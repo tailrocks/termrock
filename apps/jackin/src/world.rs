@@ -1070,13 +1070,19 @@ impl World {
         backend.due(self)
     }
 
-    /// Drains the pane of a wake. Whether it has anything new to draw.
+    /// Drains the pane of a wake and, when that changed it, republishes the
+    /// daemon summary the way a tick does. Whether it has anything new to draw.
     pub fn wake_pane(&mut self, instance: &InstanceId, pane: PaneId) -> bool {
         let now = self.now_ms();
-        self.daemons
+        let changed = self
+            .daemons
             .get_mut(instance)
             .and_then(|d| d.pane_mut(pane))
-            .is_some_and(|p| p.body.tick(now))
+            .is_some_and(|p| p.body.tick(now));
+        if changed {
+            refresh_snapshot(self, instance);
+        }
+        changed
     }
 
     pub fn workspace(&self, id: WorkspaceId) -> Option<&Workspace> {

@@ -12,10 +12,10 @@ mod product_support;
 use capsule_support::*;
 use common::app_with;
 use jackin_console::app::Remote;
-use jackin_console::domain::instance::{DaemonSnapshot, InstanceEntry, InstanceId};
+use jackin_console::domain::instance::{AgentState, DaemonSnapshot, InstanceEntry, InstanceId};
 use jackin_console::fixtures::{Scenario, world_for};
 use jackin_console::panes::{
-    EndKind, FailNext, LinkEvent, LinkFault, LinkStatus, PaneBody, PaneEffect, PaneId,
+    EndKind, FailNext, Lease, LinkEvent, LinkFault, LinkStatus, PaneBody, PaneEffect, PaneId,
 };
 use jackin_console::sim::{self, SimBackend};
 use jackin_console::world::{Msg, World};
@@ -106,6 +106,218 @@ fn a_wake_for_nothing_changes_nothing() {
         "a stray wake drains no pane"
     );
     assert_eq!(wake(&mut rig, pane), Outcome::Changed);
+}
+
+fn projected(rig: &Rig) -> DaemonSnapshot {
+    rig.app
+        .world
+        .instance(&InstanceId::simulated(INSTANCE))
+        .expect("record")
+        .daemon
+        .clone()
+}
+
+fn projected_states(rig: &Rig) -> Vec<AgentState> {
+    match projected(rig) {
+        DaemonSnapshot::Tabs(tabs) => tabs
+            .iter()
+            .flat_map(|t| t.panes.iter().map(|p| p.state))
+            .collect(),
+        other => panic!("{other:?}"),
+    }
+}
+
+fn body_states(rig: &Rig) -> Vec<AgentState> {
+    rig.daemon().panes.iter().map(|p| p.body.state()).collect()
+}
+
+/// Wipes the projection, so a later rebuild is visible.
+fn blank_projection(rig: &mut Rig) {
+    rig.app
+        .world
+        .instance_mut(&InstanceId::simulated(INSTANCE))
+        .expect("record")
+        .daemon = DaemonSnapshot::Unavailable;
+}
+
+fn open_second_tab(rig: &mut Rig) {
+    rig.press("ctrl+b c");
+    rig.typed("Shell");
+    rig.press("enter");
+    rig.advance(80);
+    let n = rig.bench.opened() - 1;
+    rig.bench.push(n, LinkEvent::Attached);
+    rig.bench.push(n, LinkEvent::Lease(Lease::Owner));
+    rig.advance(900);
+}
+
+#[test]
+fn wake_exit_updates_daemon_projection_before_next_tick() {
+    let mut rig = Rig::new();
+    rig.attach();
+    let pane = first_pane(&rig);
+    assert_eq!(projected_states(&rig), [AgentState::Unknown]);
+
+    rig.bench.push(0, LinkEvent::Exited(Some(0)));
+    assert_eq!(wake(&mut rig, pane), Outcome::Changed);
+    assert_eq!(body_states(&rig), [AgentState::Done]);
+    assert_eq!(
+        projected_states(&rig),
+        [AgentState::Done],
+        "the roster agrees before any tick"
+    );
+
+    rig.advance(400);
+    assert_eq!(body_states(&rig), [AgentState::Done]);
+    assert_eq!(
+        projected_states(&rig),
+        [AgentState::Done],
+        "empty ticks do not undo it"
+    );
+}
+
+#[test]
+fn wake_background_attention_updates_manager_row() {
+    let mut rig = Rig::new();
+    rig.attach();
+    open_second_tab(&mut rig);
+    let pane = first_pane(&rig);
+    assert_eq!(
+        projected_states(&rig),
+        [AgentState::Unknown, AgentState::Unknown]
+    );
+
+    rig.bench.output(0, b"\x07");
+    assert_eq!(wake(&mut rig, pane), Outcome::Changed);
+    assert_eq!(
+        body_states(&rig),
+        [AgentState::Blocked, AgentState::Unknown]
+    );
+    assert_eq!(
+        projected_states(&rig),
+        [AgentState::Blocked, AgentState::Unknown],
+        "a wake carries the bell to the roster"
+    );
+
+    rig.press("ctrl+b d");
+    let manager = rig.flat();
+    let mut ticked = Rig::new();
+    ticked.attach();
+    open_second_tab(&mut ticked);
+    ticked.bench.output(0, b"\x07");
+    ticked.advance(80);
+    ticked.press("ctrl+b d");
+    assert_eq!(projected_states(&ticked), projected_states(&rig));
+    assert_eq!(
+        manager,
+        ticked.flat(),
+        "the Manager reads the same after a wake as after a tick"
+    );
+}
+
+#[test]
+fn wake_failure_matches_tick_projection() {
+    let refused = |rig: &mut Rig| {
+        rig.advance(80);
+        let fault = LinkFault::new("the gateway is unreachable").then(FailNext::RunDoctor);
+        rig.bench.push(0, LinkEvent::Ended(EndKind::Refused(fault)));
+    };
+    let mut woken = Rig::new();
+    refused(&mut woken);
+    let pane = first_pane(&woken);
+    assert_eq!(wake(&mut woken, pane), Outcome::Changed);
+
+    let mut ticked = Rig::new();
+    refused(&mut ticked);
+    ticked.advance(80);
+
+    assert_eq!(body_states(&woken), [AgentState::Blocked]);
+    assert_eq!(body_states(&woken), body_states(&ticked));
+    assert_eq!(projected(&woken), projected(&ticked));
+    assert_eq!(
+        woken.daemon().panes[0].body.note(&words()),
+        ticked.daemon().panes[0].body.note(&words())
+    );
+}
+
+#[test]
+fn empty_wake_does_not_rebuild_projection() {
+    let mut rig = Rig::new();
+    rig.attach();
+    let pane = first_pane(&rig);
+    rig.bench.push(0, LinkEvent::Exited(Some(0)));
+    assert_eq!(wake(&mut rig, pane), Outcome::Changed);
+    assert_eq!(projected_states(&rig), [AgentState::Done]);
+
+    blank_projection(&mut rig);
+    for _ in 0..100 {
+        assert_eq!(wake(&mut rig, pane), Outcome::Ignored);
+    }
+    assert_eq!(
+        projected(&rig),
+        DaemonSnapshot::Unavailable,
+        "an empty wake rebuilt nothing"
+    );
+}
+
+#[test]
+fn wake_missing_target_is_ignored() {
+    let mut rig = Rig::new();
+    rig.attach();
+    let pane = first_pane(&rig);
+    rig.bench.push(0, LinkEvent::Exited(Some(0)));
+    blank_projection(&mut rig);
+
+    assert_eq!(wake_of(&mut rig, "jk-nobody", pane), Outcome::Ignored);
+    assert_eq!(wake(&mut rig, pane + 99), Outcome::Ignored);
+    assert_eq!(body_states(&rig), [AgentState::Unknown]);
+    assert_eq!(projected(&rig), DaemonSnapshot::Unavailable);
+
+    assert_eq!(wake(&mut rig, pane), Outcome::Changed);
+    assert_eq!(projected_states(&rig), [AgentState::Done]);
+}
+
+#[test]
+fn a_wake_pumps_only_its_pane() {
+    let mut rig = Rig::new();
+    rig.attach();
+    open_second_tab(&mut rig);
+    let panes: Vec<PaneId> = rig.daemon().panes.iter().map(|p| p.id).collect();
+    let drains = |rig: &Rig, n: usize| rig.bench.log(n).lock().expect("log").drains.len();
+    let (first, second) = (drains(&rig, 0), drains(&rig, 1));
+
+    rig.bench.push(0, LinkEvent::Exited(Some(1)));
+    assert_eq!(wake(&mut rig, panes[0]), Outcome::Changed);
+    assert_eq!(
+        drains(&rig, 0),
+        first + 1,
+        "the addressed pane drained once"
+    );
+    assert_eq!(drains(&rig, 1), second, "its neighbour did not");
+    assert_eq!(
+        projected_states(&rig),
+        [AgentState::Blocked, AgentState::Unknown]
+    );
+}
+
+#[test]
+fn wake_replay_expiry_preserves_changed_without_summary_change() {
+    let mut rig = Rig::new();
+    rig.advance(80);
+    rig.bench.push(0, LinkEvent::Attached);
+    rig.bench.push(0, LinkEvent::Lease(Lease::Owner));
+    rig.advance(20);
+    rig.bench.output(0, b"replayed canary");
+    rig.advance(20);
+    let pane = first_pane(&rig);
+    assert!(!rig.screen().contains("replayed canary"));
+    let before = projected(&rig);
+
+    rig.app.world.clock.advance(900);
+    assert_eq!(wake(&mut rig, pane), Outcome::Changed);
+    assert!(rig.screen().contains("replayed canary"), "{}", rig.screen());
+    assert_eq!(projected(&rig), before, "the summary did not change");
+    assert_eq!(wake(&mut rig, pane), Outcome::Ignored);
 }
 
 #[test]
