@@ -1047,6 +1047,14 @@ mod tests {
     }
 
     #[test]
+    fn issue42_malformed_input_option_is_reachable_but_not_listed() {
+        let listed = crate::options::visible_options(crate::app::PageId::Grid);
+        assert!(listed.iter().all(|o| o.key != "datagrid.malformed"));
+        let opt = crate::options::find("datagrid.malformed").expect("--opt accepts it");
+        assert_eq!(opt.index_of("long"), Some(2));
+    }
+
+    #[test]
     fn issue42_long_row_shows_the_data_error() {
         let text = with_malformed(2);
         assert!(text.contains("Rows rejected before display"), "{text}");

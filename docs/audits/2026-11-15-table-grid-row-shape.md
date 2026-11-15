@@ -34,11 +34,13 @@ whose `max_width` is zero or below its `min_width` before it installs anything.
 
 ## Showcase demonstration
 
-The Grid and Tables pages have a `Malformed input` option, off by default so the
-approved captures do not change. On Tables, a short or long row sent to the empty
-Checks table is rejected and the `DataError` text replaces the empty message. On
-Grid, a long row rejects the whole batch and the error shows as the empty state,
-while a short row is padded with `NULL` and displayed.
+The Grid and Tables pages have a `Malformed input` option, off by default. It is
+a hidden option, reachable with `--opt datagrid.malformed=long` but not drawn
+on the Options tab, so the approved Options captures do not change. On Tables, a
+short or long row sent to the empty Checks table is rejected and the `DataError`
+text replaces the empty message. On Grid, a long row rejects the whole batch and
+the error shows as the empty state, while a short row is padded with `NULL` and
+displayed.
 
 ## Left out on purpose
 

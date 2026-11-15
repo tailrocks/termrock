@@ -5,7 +5,7 @@ use ratatui::layout::Rect;
 use ratatui::style::Color;
 
 use crate::app::PageId;
-use crate::options::{Group, OptSet, OptionsView, SHELL, page_options};
+use crate::options::{Group, OptSet, OptionsView, SHELL, visible_options};
 use crate::pages::{Cx, Hint, PageEvent};
 use junie_tui::core::event::{Input, Outcome};
 use junie_tui::core::id::WidgetId;
@@ -56,7 +56,7 @@ fn view(page: PageId) -> OptionsView {
         &[
             Group {
                 heading,
-                opts: page_options(page),
+                opts: visible_options(page),
                 empty: "No page options yet",
             },
             Group {

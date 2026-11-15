@@ -1936,7 +1936,7 @@ impl App {
         let i = shown.index();
         let page = self.pages[i].as_mut();
 
-        let opts = crate::options::page_options(shown);
+        let opts = crate::options::visible_options(shown);
         if !opts.is_empty() {
             let values: Vec<usize> = opts
                 .iter()
