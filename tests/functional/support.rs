@@ -30,6 +30,10 @@ const TIMEOUT: Duration = Duration::from_secs(10);
 // A quitting app flushes state and restores the terminal, so under load it
 // needs more than a screen wait.
 const EXIT_TIMEOUT: Duration = Duration::from_secs(20);
+/// How long the output must hold still for a resize redraw to count as whole.
+const REDRAW_QUIET: Duration = Duration::from_millis(60);
+/// The longest [`App::resize`] waits for an app that keeps drawing.
+const REDRAW_CAP: Duration = Duration::from_secs(1);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Point {
@@ -604,11 +608,15 @@ impl App {
     ///
     /// The emulator reports the new cols and rows at once but keeps the old
     /// frame until the app handles the resize and redraws. A read or click
-    /// taken in that gap sees the previous layout. So the wait is for output
-    /// that lands after the resize. The terminal's visual revision counts
-    /// every output chunk, and the resize itself adds one, so the app's frame
-    /// is the first revision past `before + 1`. The base is read before the
-    /// resize because the frame can land before a read taken after it.
+    /// taken in that gap sees the previous layout, and one taken while the
+    /// redraw is still arriving sees a mix of both. So the wait has two
+    /// steps. First, output that lands after the resize: the terminal's
+    /// visual revision counts every output chunk, and the resize itself adds
+    /// one, so the app's first chunk is the first revision past `before + 1`.
+    /// Second, the redraw has to finish: a full repaint is written in several
+    /// chunks, so the revision has to hold still for [`REDRAW_QUIET`]. An app
+    /// that never stops drawing is given [`REDRAW_CAP`] and then read as is,
+    /// where [`App::settle`] would fail it.
     pub fn resize(&self, cols: u16, rows: u16) {
         self.log(format!("resize {cols}x{rows}"));
         let before = self.screen();
@@ -621,9 +629,23 @@ impl App {
         if !changed {
             return;
         }
-        self.wait_screen(&format!("frame drawn at {cols}x{rows}"), |screen| {
-            (screen.cols(), screen.rows()) == wanted && screen.metadata().revision >= frame
-        });
+        let mut seen = self
+            .wait_screen(&format!("frame drawn at {cols}x{rows}"), |screen| {
+                (screen.cols(), screen.rows()) == wanted && screen.metadata().revision >= frame
+            })
+            .metadata()
+            .revision;
+        let cap = Instant::now() + REDRAW_CAP;
+        let mut held = Instant::now();
+        while held.elapsed() < REDRAW_QUIET && Instant::now() < cap {
+            std::thread::sleep(Duration::from_millis(10));
+            self.assert_running("redraw");
+            let now = self.screen().metadata().revision;
+            if now != seen {
+                seen = now;
+                held = Instant::now();
+            }
+        }
     }
 
     /// [`App::resize`], then the screen at the new size.
