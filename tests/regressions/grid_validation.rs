@@ -1,9 +1,7 @@
-mod common;
-
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use common::*;
+use crate::common::*;
 use junie_tui::core::event::Outcome;
 use junie_tui::core::focus::BlurAction;
 use junie_tui::core::id::WidgetId;

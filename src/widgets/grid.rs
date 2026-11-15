@@ -890,7 +890,9 @@ impl DataGrid {
     fn edit_blocked(&self, src: usize, col: usize) -> bool {
         !self.editable
             || src >= self.rows.len()
-            || self.row_key(src).is_none_or(|key| self.pending.is_deleted(key))
+            || self
+                .row_key(src)
+                .is_none_or(|key| self.pending.is_deleted(key))
             || self.columns.get(col).is_none_or(|c| c.read_only)
     }
 
