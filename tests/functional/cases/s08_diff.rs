@@ -1189,8 +1189,8 @@ fn inspect_changes_keeps_the_selected_file_through_shrink_grow_and_resets_on_bac
     let reset = app.wait_text("Inspect changes asked to go back");
     see(
         &reset,
-        &["Inspect changes in 94×29", "advanced"],
-        &["compact · unified"],
+        &["Inspect changes in 94×29", "Tab tree / diff"],
+        &["compact · unified", "m advanced view"],
     );
     app.finish();
 }

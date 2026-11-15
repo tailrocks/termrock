@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 
@@ -406,13 +408,13 @@ impl Page for DiffPage {
             return h;
         }
         if self.inspecting() {
-            vec![
-                ("Tab", "Tree / diff"),
-                ("↑↓", "File"),
-                ("m", "Compact / advanced"),
-                ("v", "Unified / review"),
-                ("Esc", "Close"),
-            ]
+            Layer::<InspectOutcome, ()>::hints(&self.inspect, focus)
+                .iter()
+                .filter_map(|h| match (&h.key, &h.action) {
+                    (Cow::Borrowed(key), Cow::Borrowed(action)) => Some((*key, *action)),
+                    _ => None,
+                })
+                .collect()
         } else if focus == Some(self.view.id()) {
             vec![
                 ("↑↓", "Scroll"),
@@ -457,5 +459,42 @@ impl Page for DiffPage {
 
     fn template_mut(&mut self) -> Option<&mut Template> {
         Some(&mut self.template)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn inspecting(mode: &str) -> DiffPage {
+        let mut page = DiffPage::new();
+        let at = page_options(PageId::Diff)
+            .iter()
+            .find(|o| o.key == "diff.inspect")
+            .and_then(|o| o.values.iter().position(|v| *v == mode))
+            .expect("an inspect value");
+        page.set_option("diff.inspect", at);
+        page
+    }
+
+    fn keys(page: &DiffPage) -> Vec<&'static str> {
+        page.hints(Some(INSPECT))
+            .into_iter()
+            .map(|(k, _)| k)
+            .collect()
+    }
+
+    #[test]
+    fn the_inspector_hints_follow_its_mode() {
+        let compact = keys(&inspecting("compact"));
+        assert!(
+            !compact.contains(&"Tab"),
+            "compact mode consumes Tab without acting: {compact:?}"
+        );
+        assert!(compact.contains(&"Enter"), "{compact:?}");
+
+        let advanced = keys(&inspecting("advanced"));
+        assert!(advanced.contains(&"Tab"), "{advanced:?}");
+        assert!(!advanced.contains(&"Enter"), "{advanced:?}");
     }
 }
