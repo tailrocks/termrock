@@ -48,6 +48,8 @@ impl Completion {
         self
     }
 
+    /// Bounds the popup width from its labels and details. A disabled entry's
+    /// reason may widen it past `max` so the reason shows whole, up to the screen.
     pub fn popup_width(mut self, min: u16, max: u16) -> Self {
         self.list = self.list.width(min, max);
         self
@@ -210,7 +212,11 @@ impl Completion {
             return;
         }
         let (label_w, detail_w) = self.aggregate_widths();
-        // Every reason must fit whole: `menu::reason_room` leaves 8 columns of chrome.
+        // A disabled entry's reason is why it cannot be accepted, so it must fit
+        // whole. `menu::reason_room` leaves 8 columns of chrome around it. It may
+        // widen the popup past the `popup_width` maximum (that bounds the label and
+        // detail columns; `Reason::TEXT_MAX` is 60, so 68 columns), but never past the
+        // screen: `place_with` clamps, and `paint_reason` then ellipsizes.
         let reason_w = self
             .items
             .iter()
@@ -221,8 +227,9 @@ impl Completion {
             .map_or(0, |w| w + 8);
         let (min_w, max_w) = self.list.width;
         let w = (label_w + detail_w + 8)
+            .clamp(min_w as usize, max_w as usize)
             .max(reason_w)
-            .clamp(min_w as usize, max_w as usize) as u16;
+            .min(usize::from(screen.width)) as u16;
         let rows = (self.items.len() as u16).min(self.list.max_rows);
         let h = rows + 2;
         let area = place_with(
