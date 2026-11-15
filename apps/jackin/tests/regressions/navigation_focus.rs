@@ -2,11 +2,8 @@
 //! its panes at once: a program that is no longer on screen neither counts
 //! as watched nor may write to the clipboard.
 
-mod capsule_support;
-mod pane_support;
-mod product_support;
-
-use capsule_support::*;
+use crate::capsule_support::*;
+use crate::pane_support::*;
 use jackin_console::app::Remote;
 use jackin_console::domain::agent::Agent;
 use jackin_console::domain::instance::{AgentState, InstanceEntry, InstanceId, InstanceStatus};
@@ -15,7 +12,6 @@ use jackin_console::screens::Go;
 use jackin_console::world::Msg;
 use junie_tui::core::event::{External, Input};
 use junie_tui::runtime::Application;
-use pane_support::*;
 
 const OTHER: &str = "jk-zzz";
 const FOCUS_OUT: &[u8] = b"\x1b[O";
