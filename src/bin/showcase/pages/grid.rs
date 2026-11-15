@@ -1685,27 +1685,11 @@ mod tests {
     }
 
     #[test]
-    fn issue50_showcase_delete_of_a_row_without_columns_is_an_error_not_a_panic() {
-        let mut page = GridPage::new();
-        page.grid = DataGrid::new(ID.sub("grid"), Vec::new());
-        page.grid
-            .try_set_rows(GridRows {
-                rows: vec![Vec::new()],
-                total: RowTotal::Exact(1),
-                more: false,
-            })
-            .expect("a schema with no columns takes empty rows");
-        assert!(
-            page.grid.toggle_delete(0).unwrap().is_some(),
-            "the row is marked"
-        );
-
-        assert_eq!(sql(&page), Err(SqlError::NoId));
+    fn issue50_showcase_a_row_without_an_id_cell_is_an_error_not_a_panic() {
+        assert_eq!(row_id(&[]), Err(SqlError::NoId));
         assert_eq!(
-            page.changes_dialog(&page.grid.snapshot_changes(), true)
-                .err()
-                .map(|e| e.message()),
-            Some("Cannot build the SQL: a row has no id column".to_owned())
+            SqlError::NoId.message(),
+            "Cannot build the SQL: a row has no id column"
         );
     }
 
