@@ -8,18 +8,17 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Barrier, Mutex};
 use std::thread;
 
-use ratatui::backend::CrosstermBackend;
 use ratatui::layout::Rect;
-use ratatui::{DefaultTerminal, Terminal, TerminalOptions, Viewport};
+use ratatui::{Terminal, TerminalOptions, Viewport};
 
-use super::TerminalSession;
 use super::isolated::child_case;
 use super::job_control;
 use super::panic_bridge::RestoreGate;
+use super::{MeteredBackend, SessionTerminal, TerminalSession};
 
-fn fixed_terminal() -> io::Result<DefaultTerminal> {
+fn fixed_terminal() -> io::Result<SessionTerminal> {
     Terminal::with_options(
-        CrosstermBackend::new(io::stdout()),
+        MeteredBackend::new(io::stdout()),
         TerminalOptions {
             viewport: Viewport::Fixed(Rect::new(0, 0, 10, 3)),
         },

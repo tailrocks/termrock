@@ -230,6 +230,7 @@ impl TerminalViewport {
         }
         let back = scrolled.saturating_sub(line).min(history);
         let row = line - (scrolled - back);
+        crate::record_work!(SourceRowsRead, 1usize);
         Some((
             self.state.view(usize::try_from(back).ok()?),
             u16::try_from(row).ok()?,
