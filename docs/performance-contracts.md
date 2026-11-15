@@ -111,9 +111,9 @@ list, table, grid and tree widget in the frame.
 | `TextArea` | first focused frame | 1k / 10k / 100k lines | payload bytes cloned L, rows painted 10, width calls 3 (L is 32n - 1) |
 | `TextArea` | settled frame | same | no clone, rows painted 10, width calls 3 |
 | `TextArea` | first keystroke, then second of the run | same | payload bytes cloned L, then none |
-| Holla Finder | settled tick | 106 items, 5 activities, 0 plans | no projection rebuild, scheduling 10, width calls 758 |
+| Holla Finder | settled tick | 106 items, 5 activities, 0 plans | no projection rebuild, scheduling 10, width calls 706 |
 | Holla Finder | unrelated world field, then tick | same | same as the settled tick |
-| Holla Finder | query change | same | projection rebuilds 1, ranked 106, width calls 1,673 |
+| Holla Finder | query change | same | projection rebuilds 1, ranked 106, width calls 1,621 |
 | TablePro grid | settled tick | 312 rows | rows painted 41, width calls 233 |
 | TablePro grid | one Down key | 312 | same as the settled tick |
 | TablePro grid | one keyed draft edit | 312 | rows painted 39, width calls 268 |
@@ -140,6 +140,17 @@ list, table, grid and tree widget in the frame.
   layer rebuilds only for its own dependency (#62). A query change still
   re-ranks the whole catalog. A relevant source revision change has no
   scenario here.
+- The Holla Finder counts are the product path only. In test builds, a settled
+  `FinderPage::ensure_projection` also rebuilds a reference page and compares
+  it (`assert_matches_reference`), which measures 26 width calls and bytes per
+  run (the 26 `clip` calls of the custom-item digests in the catalog build).
+  That oracle runs under `projection::uncounted`, which suspends the library
+  counters as well, so none of it lands in these rows. Before this, the
+  counters included it: 52 calls in a settled tick (two oracle runs) and 26 in
+  the query-change frame, which became 52 once the Finder's `on_key` also ran
+  `ensure_projection` (#283). That, not plan rows (the fixture has none), was
+  the +26 of the 1,647 to 1,673 re-baseline. The rows above are 758 - 52 = 706
+  and 1,673 - 52 = 1,621.
 - The Jackin capsule primes every pane's viewport after each tick and input
   (`CapsuleScreen::sync_all`), so its idle frame draws prepared views. Before
   #249 the sync skipped script panes, and every idle frame cloned 80,059
