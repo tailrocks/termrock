@@ -810,3 +810,41 @@ fn editor_measure_uses_the_line_index() {
     assert!(bytes < 256, "measure allocates {bytes} bytes");
     assert_eq!(text_work::snapshot(), warm);
 }
+
+#[test]
+fn editor_caret_keys_do_not_copy_the_document() {
+    let id = WidgetId::of("code-test");
+    let mut per_size = Vec::new();
+    for lines in [1_000usize, 10_000, 100_000] {
+        let mut frame = Frame::new(100, 24);
+        let mut e = editor(lines);
+        frame.paint(&mut e, focused(id));
+        let revision = e.field.buffer.revision();
+        let mut worst = 0;
+        for code in [
+            KeyCode::Down,
+            KeyCode::Right,
+            KeyCode::Left,
+            KeyCode::Up,
+            KeyCode::End,
+            KeyCode::Home,
+        ] {
+            let ((), bytes) = test_alloc::measure(|| {
+                e.on_key(&key(code));
+                frame.paint(&mut e, focused(id));
+            });
+            worst = worst.max(bytes);
+        }
+        assert_eq!(
+            e.field.buffer.revision(),
+            revision,
+            "caret keys are not edits"
+        );
+        per_size.push((lines, worst));
+    }
+    let (_, small) = per_size[0];
+    assert!(
+        per_size.iter().all(|(_, bytes)| *bytes <= small + 4096),
+        "a caret key and its frame must not allocate with the document: {per_size:?}"
+    );
+}

@@ -39,7 +39,7 @@ fn normalize_owned(text: String, multiline: bool) -> String {
 
 #[derive(Debug, Clone)]
 pub struct TextBuffer {
-    text: String,
+    text: Arc<String>,
 
     cursor: usize,
 
@@ -77,7 +77,7 @@ impl TextBuffer {
     fn build(text: String, multiline: bool) -> Self {
         Self {
             cursor: text.len(),
-            text,
+            text: Arc::new(text),
             anchor: None,
             multiline,
             revision: fresh_text_revision(),
@@ -141,7 +141,7 @@ impl TextBuffer {
         if self.text[range.clone()] == *with {
             return;
         }
-        self.text.replace_range(range, with);
+        Arc::make_mut(&mut self.text).replace_range(range, with);
         self.content_changed();
     }
 
@@ -188,7 +188,7 @@ impl TextBuffer {
         let at = Self::floor_boundary(&self.text, at);
         let s = normalized_text(s, self.multiline);
         if !s.is_empty() {
-            self.text.insert_str(at, &s);
+            Arc::make_mut(&mut self.text).insert_str(at, &s);
             self.content_changed();
         }
         if self.cursor >= at {
@@ -226,8 +226,8 @@ impl TextBuffer {
 
     pub fn set_text(&mut self, text: impl Into<String>) {
         let text = normalize_owned(text.into(), self.multiline);
-        if text != self.text {
-            self.text = text;
+        if text != *self.text {
+            self.text = Arc::new(text);
             self.content_changed();
         }
         self.cursor = self.text.len();
@@ -560,7 +560,7 @@ impl TextBuffer {
             self.replace_text(r, &s);
         } else {
             if !s.is_empty() {
-                self.text.insert_str(self.cursor, &s);
+                Arc::make_mut(&mut self.text).insert_str(self.cursor, &s);
                 self.content_changed();
             }
             self.cursor += s.len();

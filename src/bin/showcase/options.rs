@@ -1654,7 +1654,11 @@ pub static CODE_EDITOR: &[Opt] = &[
     Opt::new("codeeditor.indent", "Indent", &["4", "2"]),
     Opt::new("codeeditor.highlighter", "Syntax tones", OFF_ON).default(1),
     Opt::new("codeeditor.segmenter", "Blocks", OFF_ON).default(1),
-    Opt::new("codeeditor.document", "Document", &["sample", "empty"]),
+    Opt::new(
+        "codeeditor.document",
+        "Document",
+        &["sample", "empty", "large"],
+    ),
     Opt::new(
         "codeeditor.horizontal",
         "Horizontal scroll",

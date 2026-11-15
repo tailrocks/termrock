@@ -1427,6 +1427,18 @@ fn option_document_empty() {
 }
 
 #[test]
+fn option_document_large() {
+    let app = page("s08-large", Some("codeeditor.document=large"), 120, 40);
+    app.wait_text(FETCH);
+    confirm_options(&app, "Document", |screen| {
+        assert_select(screen, "Document", "large", &["sample", "empty"]);
+    });
+    let screen = app.settle();
+    see(&screen, &[FETCH, "1–21 of 20001"], &[RANGE, "Type code"]);
+    app.finish();
+}
+
+#[test]
 fn option_horizontal_off() {
     let app = page("s08-hscroll", Some("codeeditor.horizontal=off"), 120, 40);
     app.wait_text(RANGE_TALL);
