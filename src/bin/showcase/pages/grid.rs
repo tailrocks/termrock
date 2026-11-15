@@ -264,6 +264,7 @@ fn strict(spec: &ColumnSpec, text: &str) -> Result<CellValue, String> {
         ("customer", CellValue::Text(s)) if s.trim().len() < 3 => {
             Err("A customer name has at least 3 letters".into())
         }
+        ("active", CellValue::Bool(false)) => Err("Accounts are deactivated by support".into()),
         _ => Ok(parsed),
     }
 }
