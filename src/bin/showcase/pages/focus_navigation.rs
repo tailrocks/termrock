@@ -707,7 +707,7 @@ impl Page for FocusNavPage {
                             return r.outcome();
                         }
                         cx.focus.focus(id);
-                        if r.into_action().is_some() {
+                        if r.has_actions() {
                             self.open_layer(demo, cx);
                         }
                         return Outcome::Changed;
