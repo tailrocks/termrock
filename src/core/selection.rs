@@ -373,6 +373,12 @@ impl RowSelection {
         }
     }
 
+    /// Replaces the selected rows and the range anchor in one step.
+    pub fn replace(&mut self, rows: impl IntoIterator<Item = usize>, anchor: Option<usize>) {
+        self.rows = rows.into_iter().collect();
+        self.set_anchor(anchor);
+    }
+
     pub fn retain(&mut self, keep: impl Fn(usize) -> bool) {
         self.rows.retain(|&s| keep(s));
         self.base.retain(|&s| keep(s));

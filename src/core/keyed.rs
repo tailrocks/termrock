@@ -660,3 +660,58 @@ impl<T: KeyedRecord> KeyedRowSource for KeyedVec<T> {
         self.rows[source_index].0
     }
 }
+
+/// Index-space views. A widget whose engine addresses rows by view position
+/// mirrors this state into indices for one call, then adopts the result.
+impl KeyedState {
+    pub fn cursor_view(&self) -> Option<usize> {
+        self.cursor.and_then(|key| self.visible_index(key))
+    }
+
+    /// Moves the cursor to the key shown at `index`. Disabled and out-of-range
+    /// rows are refused, like [`KeyedState::set_cursor`].
+    pub fn adopt_cursor_view(&mut self, index: usize) -> bool {
+        self.visible_key(index).is_some_and(|key| self.set_cursor(key))
+    }
+
+    /// Visible selected rows as view positions, ascending.
+    pub fn selected_view(&self) -> Vec<usize> {
+        let mut rows: Vec<usize> = self
+            .selected
+            .iter()
+            .filter_map(|key| self.positions.get(key).copied())
+            .collect();
+        rows.sort_unstable();
+        rows
+    }
+
+    pub fn anchor_view(&self) -> Option<usize> {
+        self.anchor.and_then(|key| self.visible_index(key))
+    }
+
+    /// Replaces the visible part of the selection with the rows at `rows`,
+    /// keeping selected keys a filter currently hides. Disabled rows are not
+    /// selected. Returns whether the selection changed.
+    pub fn adopt_selection_view(
+        &mut self,
+        rows: impl IntoIterator<Item = usize>,
+        anchor: Option<usize>,
+    ) -> bool {
+        let mut next: BTreeSet<ItemKey> = self
+            .selected
+            .iter()
+            .copied()
+            .filter(|key| !self.positions.contains_key(key))
+            .collect();
+        next.extend(
+            rows.into_iter()
+                .filter_map(|index| self.visible_key(index))
+                .filter(|key| self.enabled.contains(key)),
+        );
+        let changed = next != self.selected;
+        self.selected = next;
+        let hidden_anchor = self.anchor.filter(|key| !self.positions.contains_key(key));
+        self.anchor = anchor.and_then(|index| self.visible_key(index)).or(hidden_anchor);
+        changed
+    }
+}
