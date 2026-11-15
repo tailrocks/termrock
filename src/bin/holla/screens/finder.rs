@@ -625,6 +625,16 @@ impl FinderPage {
         }
     }
 
+    /// Moves the cursor and rewinds the preview only when the previewed item
+    /// changes, so re-selecting the current item keeps the reader's place.
+    fn select_row(&mut self, row: usize) {
+        let before = self.current_id();
+        self.cursor = row;
+        if self.current_id() != before {
+            self.preview_scroll.jump_start();
+        }
+    }
+
     fn step(&mut self, delta: isize) {
         if self.rows.is_empty() {
             return;
@@ -637,8 +647,7 @@ impl FinderPage {
                 return;
             }
             if selectable(&self.rows[c as usize]) {
-                self.cursor = c as usize;
-                self.preview_scroll.jump_start();
+                self.select_row(c as usize);
                 self.scroll.ensure_visible(self.cursor);
 
                 if self.cursor > 0
@@ -1350,17 +1359,19 @@ impl FinderPage {
         }
         if let Some((_, _, ci)) = self.explore_areas.iter().find(|(cid, _, _)| *cid == id) {
             if let Some(r) = self.rows.iter().position(|r| matches!(r, Row::Explore(_))) {
+                let before = self.current_id();
                 self.cursor = r;
                 self.explore_cursor = *ci;
-                self.preview_scroll.jump_start();
+                if self.current_id() != before {
+                    self.preview_scroll.jump_start();
+                }
             }
             cx.focus.focus(FINDER);
             return self.activate_current(cx);
         }
         if let Some(i) = self.locate_row(id) {
             if selectable(&self.rows[i]) {
-                self.cursor = i;
-                self.preview_scroll.jump_start();
+                self.select_row(i);
             }
             cx.focus.focus(FINDER);
             return Outcome::Changed;
@@ -1463,14 +1474,12 @@ impl ShellPage<Holla> for FinderPage {
                 Outcome::Changed
             }
             KeyCode::Home => {
-                self.cursor = self.first_selectable();
-                self.preview_scroll.jump_start();
+                self.select_row(self.first_selectable());
                 self.scroll.jump_start();
                 Outcome::Changed
             }
             KeyCode::End => {
-                self.cursor = self.rows.iter().rposition(selectable).unwrap_or(0);
-                self.preview_scroll.jump_start();
+                self.select_row(self.rows.iter().rposition(selectable).unwrap_or(0));
                 self.scroll.ensure_visible(self.cursor);
                 Outcome::Changed
             }
@@ -1568,8 +1577,7 @@ impl ShellPage<Holla> for FinderPage {
                     && matches!(self.rows[i], Row::Item(..))
                     && ClickPolicy::DATA.activates(ev.count(), self.cursor == i)
                 {
-                    self.cursor = i;
-                    self.preview_scroll.jump_start();
+                    self.select_row(i);
                     return self.activate_current(cx);
                 }
                 self.click(id, pos, w, cx)
@@ -1580,8 +1588,7 @@ impl ShellPage<Holla> for FinderPage {
                     && let Some(item) = self.items.get(*ix).map(|it| it.id.clone())
                 {
                     if cx.context.moves_cursor {
-                        self.cursor = i;
-                        self.preview_scroll.jump_start();
+                        self.select_row(i);
                     }
                     cx.focus.focus(FINDER);
 

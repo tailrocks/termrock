@@ -291,3 +291,32 @@ fn holla_projection_homebrew_cache_window_matches_full_rebuild() {
     );
     assert_eq!(measure(|| settle(&mut page, &w)), Work::default());
 }
+
+#[test]
+fn finder_reselecting_the_current_row_keeps_preview_scroll() {
+    let w = world(Scenario::RustDirty);
+    let mut page = FinderPage::new(None);
+    settle(&mut page, &w);
+    let first = page.first_selectable();
+    let other = (first + 1..page.rows.len())
+        .find(|&i| selectable(&page.rows[i]))
+        .expect("a second selectable row");
+    page.select_row(first);
+    page.preview_scroll.set_content(100);
+    page.preview_scroll.set_viewport(5);
+    page.preview_scroll.scroll_by(3);
+    assert_eq!(page.preview_scroll.offset, 3);
+
+    page.select_row(first);
+    assert_eq!(
+        page.preview_scroll.offset, 3,
+        "the previewed item did not change"
+    );
+
+    page.select_row(other);
+    assert_ne!(page.current_id(), None);
+    assert_eq!(
+        page.preview_scroll.offset, 0,
+        "a new item starts at the top"
+    );
+}
