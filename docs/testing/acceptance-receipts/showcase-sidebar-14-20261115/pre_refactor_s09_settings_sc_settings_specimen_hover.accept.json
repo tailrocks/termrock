@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s09_settings/sc_settings_specimen_hover",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s09_settings__sc_settings_specimen_hover.tui.pb"
+  },
+  "candidate_sha256": "49858cdca807dc374c188c722eb137ddb40f657682adc2f1ec1cf5ddc739cc44",
+  "baseline_sha256": "49858cdca807dc374c188c722eb137ddb40f657682adc2f1ec1cf5ddc739cc44",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s09_settings/sc_settings_specimen_hover.tui.pb"
+  },
+  "error_code": null
+}

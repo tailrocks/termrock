@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-alt_keys-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__S01.shell__opt-shell-alt_keys-boundary.tui.pb"
+  },
+  "candidate_sha256": "c197149905b2ca85e44347ea4855b75fb6286c03f0c161705df3bdc08ce909b3",
+  "baseline_sha256": "c197149905b2ca85e44347ea4855b75fb6286c03f0c161705df3bdc08ce909b3",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-alt_keys-boundary.tui.pb"
+  },
+  "error_code": null
+}

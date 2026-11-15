@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s03_datagrid/opt_datagrid_track_click",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s03_datagrid__opt_datagrid_track_click.tui.pb"
+  },
+  "candidate_sha256": "48d2e2c2e6334ec0383f832d604e2c1feb009cc61616d5fc5ae60f211227fcfd",
+  "baseline_sha256": "48d2e2c2e6334ec0383f832d604e2c1feb009cc61616d5fc5ae60f211227fcfd",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s03_datagrid/opt_datagrid_track_click.tui.pb"
+  },
+  "error_code": null
+}

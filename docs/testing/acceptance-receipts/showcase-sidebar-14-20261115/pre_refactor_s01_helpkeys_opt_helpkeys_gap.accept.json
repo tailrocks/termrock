@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s01_helpkeys/opt_helpkeys_gap",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s01_helpkeys__opt_helpkeys_gap.tui.pb"
+  },
+  "candidate_sha256": "42b82db50bf3123272bc79eed8121dbdd4e6df10a5bc84477a61e91f22d0494e",
+  "baseline_sha256": "42b82db50bf3123272bc79eed8121dbdd4e6df10a5bc84477a61e91f22d0494e",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s01_helpkeys/opt_helpkeys_gap.tui.pb"
+  },
+  "error_code": null
+}

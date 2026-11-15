@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s05_dialogkinds/opt_dialogkinds_choice_buttons",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s05_dialogkinds__opt_dialogkinds_choice_buttons.tui.pb"
+  },
+  "candidate_sha256": "d30559468d14fe51a51aac3c31407adf4404e7df75410101ced6ee01fa1db875",
+  "baseline_sha256": "d30559468d14fe51a51aac3c31407adf4404e7df75410101ced6ee01fa1db875",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s05_dialogkinds/opt_dialogkinds_choice_buttons.tui.pb"
+  },
+  "error_code": null
+}

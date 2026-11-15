@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "functional/showcase_datagrid_wheel",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/functional__showcase_datagrid_wheel.tui.pb"
+  },
+  "candidate_sha256": "a15f0cdfb78de3e470f490492a421acd93046e31b930c12b7a7648145c1beb91",
+  "baseline_sha256": "a15f0cdfb78de3e470f490492a421acd93046e31b930c12b7a7648145c1beb91",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/functional/showcase_datagrid_wheel.tui.pb"
+  },
+  "error_code": null
+}

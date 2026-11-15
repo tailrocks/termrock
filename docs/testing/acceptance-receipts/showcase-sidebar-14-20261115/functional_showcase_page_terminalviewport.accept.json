@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "functional/showcase_page_terminalviewport",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/functional__showcase_page_terminalviewport.tui.pb"
+  },
+  "candidate_sha256": "62d06863017e0352fd7f33936a648ac75c5e92e8648c1f5ee04c6ead6e536ef4",
+  "baseline_sha256": "62d06863017e0352fd7f33936a648ac75c5e92e8648c1f5ee04c6ead6e536ef4",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/functional/showcase_page_terminalviewport.tui.pb"
+  },
+  "error_code": null
+}

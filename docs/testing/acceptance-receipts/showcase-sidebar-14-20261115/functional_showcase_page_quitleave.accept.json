@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "functional/showcase_page_quitleave",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/functional__showcase_page_quitleave.tui.pb"
+  },
+  "candidate_sha256": "f1b24625948cd2db93cd2508f005384179ef5d6489bc07198c6d4d5714770609",
+  "baseline_sha256": "f1b24625948cd2db93cd2508f005384179ef5d6489bc07198c6d4d5714770609",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/functional/showcase_page_quitleave.tui.pb"
+  },
+  "error_code": null
+}

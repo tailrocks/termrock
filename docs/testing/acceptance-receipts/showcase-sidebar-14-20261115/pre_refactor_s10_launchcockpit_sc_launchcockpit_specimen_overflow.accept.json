@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s10_launchcockpit/sc_launchcockpit_specimen_overflow",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s10_launchcockpit__sc_launchcockpit_specimen_overflow.tui.pb"
+  },
+  "candidate_sha256": "7c1c1ce99b94910e95e459f1f970083d0ef8265954acfd201a5eb31db37fc40d",
+  "baseline_sha256": "7c1c1ce99b94910e95e459f1f970083d0ef8265954acfd201a5eb31db37fc40d",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s10_launchcockpit/sc_launchcockpit_specimen_overflow.tui.pb"
+  },
+  "error_code": null
+}

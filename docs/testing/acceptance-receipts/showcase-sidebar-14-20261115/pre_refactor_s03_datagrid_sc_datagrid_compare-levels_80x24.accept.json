@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s03_datagrid/sc_datagrid_compare-levels_80x24",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s03_datagrid__sc_datagrid_compare-levels_80x24.tui.pb"
+  },
+  "candidate_sha256": "a6d88a577ea38cdbc607ce3b04defdc93c475de2fb8ea7eabc8f48c71e612046",
+  "baseline_sha256": "a6d88a577ea38cdbc607ce3b04defdc93c475de2fb8ea7eabc8f48c71e612046",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s03_datagrid/sc_datagrid_compare-levels_80x24.tui.pb"
+  },
+  "error_code": null
+}

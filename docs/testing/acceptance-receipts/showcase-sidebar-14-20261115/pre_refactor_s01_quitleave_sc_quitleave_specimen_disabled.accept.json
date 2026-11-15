@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s01_quitleave/sc_quitleave_specimen_disabled",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s01_quitleave__sc_quitleave_specimen_disabled.tui.pb"
+  },
+  "candidate_sha256": "86fd5e0fcfd052560719fa9c4a449d1b3bf96464da6152c69d4ce77c2c40313a",
+  "baseline_sha256": "86fd5e0fcfd052560719fa9c4a449d1b3bf96464da6152c69d4ce77c2c40313a",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s01_quitleave/sc_quitleave_specimen_disabled.tui.pb"
+  },
+  "error_code": null
+}

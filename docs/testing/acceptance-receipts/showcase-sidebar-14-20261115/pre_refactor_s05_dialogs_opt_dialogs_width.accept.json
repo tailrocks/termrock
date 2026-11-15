@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s05_dialogs/opt_dialogs_width",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s05_dialogs__opt_dialogs_width.tui.pb"
+  },
+  "candidate_sha256": "63a708caa53f37d8138639a9864cde843d4fa79ff7e43d2cb0423b60075d076d",
+  "baseline_sha256": "63a708caa53f37d8138639a9864cde843d4fa79ff7e43d2cb0423b60075d076d",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s05_dialogs/opt_dialogs_width.tui.pb"
+  },
+  "error_code": null
+}

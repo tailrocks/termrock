@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-inactive-selection-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__S01.shell__opt-shell-inactive-selection-boundary.tui.pb"
+  },
+  "candidate_sha256": "e228c9d6769a2d05e0bc9b51a0d8fc9100cc29f75cd7f4e5d635bae7a20a9b1d",
+  "baseline_sha256": "e228c9d6769a2d05e0bc9b51a0d8fc9100cc29f75cd7f4e5d635bae7a20a9b1d",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-inactive-selection-boundary.tui.pb"
+  },
+  "error_code": null
+}

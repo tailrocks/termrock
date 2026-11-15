@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s07_panels/opt_panels_pad_x",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s07_panels__opt_panels_pad_x.tui.pb"
+  },
+  "candidate_sha256": "1600e930941efb8b016e5e3b715973166b6f602ccba6194486e8fcc9824f67d6",
+  "baseline_sha256": "1600e930941efb8b016e5e3b715973166b6f602ccba6194486e8fcc9824f67d6",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s07_panels/opt_panels_pad_x.tui.pb"
+  },
+  "error_code": null
+}

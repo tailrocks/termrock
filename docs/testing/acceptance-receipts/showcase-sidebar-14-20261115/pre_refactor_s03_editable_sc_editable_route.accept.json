@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s03_editable/sc_editable_route",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s03_editable__sc_editable_route.tui.pb"
+  },
+  "candidate_sha256": "7ec3871cdaf0f2c5359c581a488dfb24fac6430efcba963770dd54c396dfc6ab",
+  "baseline_sha256": "7ec3871cdaf0f2c5359c581a488dfb24fac6430efcba963770dd54c396dfc6ab",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s03_editable/sc_editable_route.tui.pb"
+  },
+  "error_code": null
+}

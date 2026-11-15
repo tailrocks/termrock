@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s04_menus/opt_menus_hide_owner_focus",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s04_menus__opt_menus_hide_owner_focus.tui.pb"
+  },
+  "candidate_sha256": "4d6240b1de903b314e11c7b20ea755d2bb29eb3ab3aeb03dbf8aae8b5642486b",
+  "baseline_sha256": "4d6240b1de903b314e11c7b20ea755d2bb29eb3ab3aeb03dbf8aae8b5642486b",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s04_menus/opt_menus_hide_owner_focus.tui.pb"
+  },
+  "error_code": null
+}

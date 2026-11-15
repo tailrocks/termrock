@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s05_dialogkinds/sc_dialogkinds_options_120x40",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s05_dialogkinds__sc_dialogkinds_options_120x40.tui.pb"
+  },
+  "candidate_sha256": "77f4901192d03591542ae8726eec69cba0809c01cf785e5c264d18dd500849b3",
+  "baseline_sha256": "77f4901192d03591542ae8726eec69cba0809c01cf785e5c264d18dd500849b3",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s05_dialogkinds/sc_dialogkinds_options_120x40.tui.pb"
+  },
+  "error_code": null
+}

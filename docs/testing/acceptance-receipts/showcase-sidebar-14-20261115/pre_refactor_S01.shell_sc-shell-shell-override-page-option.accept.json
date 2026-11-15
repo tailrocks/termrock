@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "sc-shell-shell-override-page-option",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__S01.shell__sc-shell-shell-override-page-option.tui.pb"
+  },
+  "candidate_sha256": "5af7c5e8ccc9e505b6ab9f1dec358ba225c5d6fdcf9cec05600f42bb4cb6381a",
+  "baseline_sha256": "5af7c5e8ccc9e505b6ab9f1dec358ba225c5d6fdcf9cec05600f42bb4cb6381a",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/S01.shell/sc-shell-shell-override-page-option.tui.pb"
+  },
+  "error_code": null
+}

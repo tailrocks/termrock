@@ -1,0 +1,77 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3-target/debug/showcase",
+  "binary_sha256": "c2ed189e03b11c22298c203b7561871ee950aa47282e70284cdba4686bf6f5d0",
+  "fixture_args": [
+    "--page",
+    "buttons",
+    "--opt",
+    "buttons.row_align=end"
+  ],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "07a09666e5b31d34cd6ae94a11c594aa763a0178aa8af02f25f402fc2b01728e",
+  "expect_baseline": "f673e8f0fb06cc660c5e40f6cfbdf816093049d9c558cc20893206b8beb09b09",
+  "precondition": "",
+  "session": null,
+  "expected_test_id": "pre_refactor/s02_buttons/opt_buttons_row_align",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/pre_refactor_s02_buttons_opt_buttons_row_align.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/pre_refactor_s02_buttons_opt_buttons_row_align.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/superseded/pre_refactor/s02_buttons/opt_buttons_row_align.tui.pb",
+  "test_id": "pre_refactor/s02_buttons/opt_buttons_row_align",
+  "acceptance": {
+    "expected_baseline_sha256": "f673e8f0fb06cc660c5e40f6cfbdf816093049d9c558cc20893206b8beb09b09",
+    "accepted_baseline_sha256": "07a09666e5b31d34cd6ae94a11c594aa763a0178aa8af02f25f402fc2b01728e",
+    "candidate_sha256": "07a09666e5b31d34cd6ae94a11c594aa763a0178aa8af02f25f402fc2b01728e",
+    "transaction_receipt": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/pre_refactor_s02_buttons_opt_buttons_row_align.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "f673e8f0fb06cc660c5e40f6cfbdf816093049d9c558cc20893206b8beb09b09"
+  },
+  "candidate": {
+    "sha256": "07a09666e5b31d34cd6ae94a11c594aa763a0178aa8af02f25f402fc2b01728e",
+    "path": "tests/functional/baselines/pre_refactor/s02_buttons/opt_buttons_row_align.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/superseded/pre_refactor/s02_buttons/opt_buttons_row_align.tui.pb",
+    "superseded_baseline_sha256": "f673e8f0fb06cc660c5e40f6cfbdf816093049d9c558cc20893206b8beb09b09"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/s02_buttons/opt_buttons_row_align.tui.pb",
+    "candidate_sha256": "07a09666e5b31d34cd6ae94a11c594aa763a0178aa8af02f25f402fc2b01728e",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3-target/debug/showcase",
+    "binary_sha256": "c2ed189e03b11c22298c203b7561871ee950aa47282e70284cdba4686bf6f5d0",
+    "note": "Candidate-mode refresh for #14: the five formerly hidden pages join the sidebar, so the Components count and the expanded groups change."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s02_buttons/opt_buttons_row_align",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/tmp/final/pre_refactor__s02_buttons__opt_buttons_row_align.tui.pb"
+    },
+    "candidate_sha256": "07a09666e5b31d34cd6ae94a11c594aa763a0178aa8af02f25f402fc2b01728e",
+    "baseline_sha256": "07a09666e5b31d34cd6ae94a11c594aa763a0178aa8af02f25f402fc2b01728e",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s02_buttons/opt_buttons_row_align.tui.pb"
+    },
+    "error_code": null
+  }
+}

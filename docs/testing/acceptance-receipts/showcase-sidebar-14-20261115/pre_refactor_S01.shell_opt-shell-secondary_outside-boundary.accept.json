@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-secondary_outside-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__S01.shell__opt-shell-secondary_outside-boundary.tui.pb"
+  },
+  "candidate_sha256": "9e3b9839e30a52447de2a3ec5a84f891d922c3492da0f70b702bdb1a275ddcf7",
+  "baseline_sha256": "9e3b9839e30a52447de2a3ec5a84f891d922c3492da0f70b702bdb1a275ddcf7",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-secondary_outside-boundary.tui.pb"
+  },
+  "error_code": null
+}

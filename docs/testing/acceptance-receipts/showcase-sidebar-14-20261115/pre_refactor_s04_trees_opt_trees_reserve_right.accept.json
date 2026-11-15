@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s04_trees/opt_trees_reserve_right",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s04_trees__opt_trees_reserve_right.tui.pb"
+  },
+  "candidate_sha256": "9071f73f8519e2bae86033d6c9e68dc224c33a5012d23955c91f4c69e143143f",
+  "baseline_sha256": "9071f73f8519e2bae86033d6c9e68dc224c33a5012d23955c91f4c69e143143f",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s04_trees/opt_trees_reserve_right.tui.pb"
+  },
+  "error_code": null
+}

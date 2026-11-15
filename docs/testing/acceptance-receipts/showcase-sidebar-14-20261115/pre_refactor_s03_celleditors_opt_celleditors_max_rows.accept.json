@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s03_celleditors/opt_celleditors_max_rows",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s03_celleditors__opt_celleditors_max_rows.tui.pb"
+  },
+  "candidate_sha256": "846165703ec79348ae16280192261962aee816425e052a19286296da45ba5691",
+  "baseline_sha256": "846165703ec79348ae16280192261962aee816425e052a19286296da45ba5691",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s03_celleditors/opt_celleditors_max_rows.tui.pb"
+  },
+  "error_code": null
+}

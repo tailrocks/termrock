@@ -1,0 +1,77 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3-target/debug/showcase",
+  "binary_sha256": "c2ed189e03b11c22298c203b7561871ee950aa47282e70284cdba4686bf6f5d0",
+  "fixture_args": [
+    "--page",
+    "datagrid",
+    "--opt",
+    "datagrid.labels=custom"
+  ],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "ea79b13b166b8379616c8f983ecf87ce16f69206ea74c8a66ed691459d6d2adc",
+  "expect_baseline": "43200eed686f4137dce2d548358211ea16ee4c300e4947439ac1347a5cd2ffc2",
+  "precondition": "",
+  "session": null,
+  "expected_test_id": "pre_refactor/s03_datagrid/opt_datagrid_labels",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/pre_refactor_s03_datagrid_opt_datagrid_labels.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/pre_refactor_s03_datagrid_opt_datagrid_labels.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/superseded/pre_refactor/s03_datagrid/opt_datagrid_labels.tui.pb",
+  "test_id": "pre_refactor/s03_datagrid/opt_datagrid_labels",
+  "acceptance": {
+    "expected_baseline_sha256": "43200eed686f4137dce2d548358211ea16ee4c300e4947439ac1347a5cd2ffc2",
+    "accepted_baseline_sha256": "ea79b13b166b8379616c8f983ecf87ce16f69206ea74c8a66ed691459d6d2adc",
+    "candidate_sha256": "ea79b13b166b8379616c8f983ecf87ce16f69206ea74c8a66ed691459d6d2adc",
+    "transaction_receipt": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/pre_refactor_s03_datagrid_opt_datagrid_labels.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "43200eed686f4137dce2d548358211ea16ee4c300e4947439ac1347a5cd2ffc2"
+  },
+  "candidate": {
+    "sha256": "ea79b13b166b8379616c8f983ecf87ce16f69206ea74c8a66ed691459d6d2adc",
+    "path": "tests/functional/baselines/pre_refactor/s03_datagrid/opt_datagrid_labels.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/superseded/pre_refactor/s03_datagrid/opt_datagrid_labels.tui.pb",
+    "superseded_baseline_sha256": "43200eed686f4137dce2d548358211ea16ee4c300e4947439ac1347a5cd2ffc2"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/s03_datagrid/opt_datagrid_labels.tui.pb",
+    "candidate_sha256": "ea79b13b166b8379616c8f983ecf87ce16f69206ea74c8a66ed691459d6d2adc",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3-target/debug/showcase",
+    "binary_sha256": "c2ed189e03b11c22298c203b7561871ee950aa47282e70284cdba4686bf6f5d0",
+    "note": "Candidate-mode refresh for #14: the five formerly hidden pages join the sidebar, so the Components count and the expanded groups change."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s03_datagrid/opt_datagrid_labels",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/tmp/final/pre_refactor__s03_datagrid__opt_datagrid_labels.tui.pb"
+    },
+    "candidate_sha256": "ea79b13b166b8379616c8f983ecf87ce16f69206ea74c8a66ed691459d6d2adc",
+    "baseline_sha256": "ea79b13b166b8379616c8f983ecf87ce16f69206ea74c8a66ed691459d6d2adc",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s03_datagrid/opt_datagrid_labels.tui.pb"
+    },
+    "error_code": null
+  }
+}

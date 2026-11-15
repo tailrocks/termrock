@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s03_datagrid/opt_datagrid_horizontal",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s03_datagrid__opt_datagrid_horizontal.tui.pb"
+  },
+  "candidate_sha256": "05b9c893a35dee7383add22344217ef7d74f775f436751cd71a980621c1749a0",
+  "baseline_sha256": "05b9c893a35dee7383add22344217ef7d74f775f436751cd71a980621c1749a0",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s03_datagrid/opt_datagrid_horizontal.tui.pb"
+  },
+  "error_code": null
+}

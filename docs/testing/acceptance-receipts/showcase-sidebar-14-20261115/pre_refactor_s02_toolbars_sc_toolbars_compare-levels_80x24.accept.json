@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s02_toolbars/sc_toolbars_compare-levels_80x24",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s02_toolbars__sc_toolbars_compare-levels_80x24.tui.pb"
+  },
+  "candidate_sha256": "0aaf8bff6587ab23363ed2ca26276aa27567cbab2003499ac47255702832b814",
+  "baseline_sha256": "0aaf8bff6587ab23363ed2ca26276aa27567cbab2003499ac47255702832b814",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s02_toolbars/sc_toolbars_compare-levels_80x24.tui.pb"
+  },
+  "error_code": null
+}

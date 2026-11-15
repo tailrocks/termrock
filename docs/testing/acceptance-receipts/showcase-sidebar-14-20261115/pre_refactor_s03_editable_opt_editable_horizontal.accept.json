@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s03_editable/opt_editable_horizontal",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s03_editable__opt_editable_horizontal.tui.pb"
+  },
+  "candidate_sha256": "364d380a8240dacd0c0b7406952184a5f0824eb3aba96f891c94c5cead7da830",
+  "baseline_sha256": "364d380a8240dacd0c0b7406952184a5f0824eb3aba96f891c94c5cead7da830",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s03_editable/opt_editable_horizontal.tui.pb"
+  },
+  "error_code": null
+}

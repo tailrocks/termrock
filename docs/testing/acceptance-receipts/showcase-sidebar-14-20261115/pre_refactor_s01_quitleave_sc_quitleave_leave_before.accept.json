@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s01_quitleave/sc_quitleave_leave_before",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s01_quitleave__sc_quitleave_leave_before.tui.pb"
+  },
+  "candidate_sha256": "bd082b089c8cf457a43b3c5e8c75b43a3adb92b659e354bda4ee7241e396c3aa",
+  "baseline_sha256": "bd082b089c8cf457a43b3c5e8c75b43a3adb92b659e354bda4ee7241e396c3aa",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s01_quitleave/sc_quitleave_leave_before.tui.pb"
+  },
+  "error_code": null
+}

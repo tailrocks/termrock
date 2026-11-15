@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s01_focusnavigation/sc_focusnavigation_compare-levels_80x24",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s01_focusnavigation__sc_focusnavigation_compare-levels_80x24.tui.pb"
+  },
+  "candidate_sha256": "d9f64869b809ca7c1c6a74b79c6e7021f10366c5c51d533584781318249af94a",
+  "baseline_sha256": "d9f64869b809ca7c1c6a74b79c6e7021f10366c5c51d533584781318249af94a",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s01_focusnavigation/sc_focusnavigation_compare-levels_80x24.tui.pb"
+  },
+  "error_code": null
+}

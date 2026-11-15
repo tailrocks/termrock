@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s10_activity/sc_activity_compare-levels_120x40",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s10_activity__sc_activity_compare-levels_120x40.tui.pb"
+  },
+  "candidate_sha256": "ec65ac0f324bb269bf5c65427bc738a894c268386eecb87b73b903fa0f65442f",
+  "baseline_sha256": "ec65ac0f324bb269bf5c65427bc738a894c268386eecb87b73b903fa0f65442f",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s10_activity/sc_activity_compare-levels_120x40.tui.pb"
+  },
+  "error_code": null
+}

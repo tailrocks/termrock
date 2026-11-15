@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s09_finder/sc_finder_options",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s09_finder__sc_finder_options.tui.pb"
+  },
+  "candidate_sha256": "a640e1a1460b1f18138f326b5342bc03b5ab183a6a801bdcb23c0a6d5c950f83",
+  "baseline_sha256": "a640e1a1460b1f18138f326b5342bc03b5ab183a6a801bdcb23c0a6d5c950f83",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s09_finder/sc_finder_options.tui.pb"
+  },
+  "error_code": null
+}
