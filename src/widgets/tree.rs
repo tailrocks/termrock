@@ -2127,9 +2127,7 @@ impl TreeView {
                 Ok(Response::ignored())
             }
             Some(Phase::Click) => {
-                if self.keyed.pressed().is_some()
-                    && !self.keyed.release_press(key, self.layout_generation)
-                {
+                if !self.keyed.release_click(key, self.layout_generation) {
                     return Ok(Response::consumed());
                 }
                 let Some(row) = self.keyed.visible_index(key) else {
