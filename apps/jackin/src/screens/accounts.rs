@@ -542,20 +542,9 @@ impl AccountsScreen {
         }
         let mut started = 0;
         for (i, id) in ids.iter().enumerate() {
-            let Some(a) = w.account_mut(id) else {
-                continue;
-            };
-            if a.usage.freshness.phase == Freshness::Refreshing {
-                continue;
+            if w.refresh_account(id, i as i64 * 160).is_some() {
+                started += 1;
             }
-            a.usage.freshness.phase = Freshness::Refreshing;
-            let source = a.source.clone();
-            w.perform(Effect::RefreshAccount {
-                account: id.clone(),
-                source,
-                stagger_ms: i as i64 * 160,
-            });
-            started += 1;
         }
         if started == 0 {
             cx.status("Refresh already running");
@@ -2499,6 +2488,7 @@ impl Page<Jackin> for AccountsScreen {
                 account,
                 source,
                 result,
+                ..
             } => {
                 if let Some(a) = w.accounts.get(account).filter(|a| a.source == **source) {
                     match result {

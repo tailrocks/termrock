@@ -224,6 +224,8 @@ pub enum Msg {
         result: Result<Box<Snapshot>, String>,
     },
     AccountRefreshed {
+        /// The `ticket` of the `Effect::RefreshAccount` this answers.
+        ticket: Ticket,
         account: AccountId,
         source: Box<CredentialSource>,
         result: Result<Box<Refresh>, String>,
@@ -378,6 +380,12 @@ pub struct HealthView {
     pub at_secs: i64,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct PendingRefresh {
+    ticket: Ticket,
+    source: CredentialSource,
+}
+
 pub struct World {
     pub clock: SimClock,
     pub time: TimeSource,
@@ -406,6 +414,14 @@ pub struct World {
     pub surfaces: Surfaces,
 
     pub tickets: Ticket,
+
+    /// The usage refresh each account is waiting on. World owns request
+    /// identity; `Freshness::Refreshing` only shows it. An entry lives from
+    /// `refresh_account` until its reply is absorbed or `apply` finds the
+    /// account gone or its credential source changed. A host that mutates
+    /// `accounts` or a source outside `apply` must call
+    /// `reconcile_pending_refreshes` before the next reply is absorbed.
+    pub(crate) pending_refreshes: BTreeMap<AccountId, PendingRefresh>,
 
     pub snapshots_applied: u64,
     pub refresh_from: Option<u64>,
@@ -560,6 +576,7 @@ impl World {
             discovery_pending: false,
             surfaces,
             tickets: 0,
+            pending_refreshes: BTreeMap::new(),
             snapshots_applied: 0,
             refresh_from: None,
             refresh_started_secs: 0,
@@ -698,6 +715,80 @@ impl World {
     pub fn next_ticket(&mut self) -> Ticket {
         self.tickets += 1;
         self.tickets
+    }
+
+    /// Starts a usage refresh of `id` unless one is already out for its
+    /// current credential source. The ticket of the request sent, or `None`
+    /// when the account is missing or already refreshing (nothing changes
+    /// then). The reply is accepted only while it echoes that ticket.
+    pub fn refresh_account(&mut self, id: &str, stagger_ms: i64) -> Option<Ticket> {
+        let source = self.accounts.get(id)?.source.clone();
+        if self
+            .pending_refreshes
+            .get(id)
+            .is_some_and(|pending| pending.source == source)
+        {
+            return None;
+        }
+        self.pending_refreshes.remove(id);
+        let ticket = self.next_ticket();
+        self.account_mut(id)?.usage.freshness.phase = Freshness::Refreshing;
+        self.pending_refreshes.insert(
+            id.to_owned(),
+            PendingRefresh {
+                ticket,
+                source: source.clone(),
+            },
+        );
+        self.perform(Effect::RefreshAccount {
+            ticket,
+            account: id.to_owned(),
+            source,
+            stagger_ms,
+        });
+        Some(ticket)
+    }
+
+    /// Gives every account that is already marked `Refreshing` a pending
+    /// refresh of its current source, so the marker keeps its single-flight
+    /// meaning. For a world built from accounts caught mid-refresh (the demo
+    /// fixtures). It sends no effect: nothing answers the entry until the host
+    /// delivers a reply with the ticket `refresh_pending` reports.
+    pub fn adopt_refreshing(&mut self) {
+        let marked: Vec<(AccountId, CredentialSource)> = self
+            .accounts
+            .accounts
+            .iter()
+            .filter(|a| a.usage.freshness.phase == Freshness::Refreshing)
+            .filter(|a| !self.pending_refreshes.contains_key(&a.id))
+            .map(|a| (a.id.clone(), a.source.clone()))
+            .collect();
+        for (id, source) in marked {
+            let ticket = self.next_ticket();
+            self.pending_refreshes
+                .insert(id, PendingRefresh { ticket, source });
+        }
+    }
+
+    /// The ticket of the refresh `id` is waiting on, if one is out.
+    pub fn refresh_pending(&self, id: &str) -> Option<Ticket> {
+        self.pending_refreshes.get(id).map(|p| p.ticket)
+    }
+
+    /// Drops the pending requests whose account is gone or whose credential
+    /// source changed, so a later account of the same id or source cannot
+    /// inherit them, and marks the survivors as refreshing again. `apply`
+    /// calls it after every registry replacement.
+    pub fn reconcile_pending_refreshes(&mut self) {
+        let accounts = &self.accounts;
+        self.pending_refreshes
+            .retain(|id, p| accounts.get(id).is_some_and(|a| a.source == p.source));
+        let pending: Vec<AccountId> = self.pending_refreshes.keys().cloned().collect();
+        for id in &pending {
+            if let Some(a) = self.account_mut(id) {
+                a.usage.freshness.phase = Freshness::Refreshing;
+            }
+        }
     }
 
     pub fn refresh(&mut self) -> bool {
@@ -858,6 +949,7 @@ impl World {
         self.instances = instances;
         self.global = global;
         self.accounts = accounts;
+        self.reconcile_pending_refreshes();
         let doctor_state = self.surfaces.doctor.take().map(|d| d.state);
         self.surfaces = surfaces;
         if let (Some(doctor), Some(state)) = (self.surfaces.doctor.as_mut(), doctor_state) {
@@ -948,17 +1040,25 @@ impl World {
             }
             Msg::LaunchCancelled { instance } => self.admit_entry((**instance).clone()),
             Msg::AccountRefreshed {
+                ticket,
                 account,
                 source,
                 result,
             } => {
-                let now = self.now_secs();
-                if let Some(a) = self
+                let owns = self
                     .accounts
-                    .get_mut(account)
-                    .filter(|a| a.source == **source)
-                {
-                    self.projection.epochs.bump_accounts();
+                    .get(account)
+                    .is_some_and(|a| a.source == **source)
+                    && self
+                        .pending_refreshes
+                        .get(account)
+                        .is_some_and(|p| p.ticket == *ticket && p.source == **source);
+                if !owns {
+                    return Absorbed::Stale;
+                }
+                self.pending_refreshes.remove(account);
+                let now = self.now_secs();
+                if let Some(a) = self.account_mut(account) {
                     match result {
                         Ok(refresh) => {
                             a.usage = refresh.usage.clone();

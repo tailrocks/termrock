@@ -729,12 +729,12 @@ impl App {
     }
 
     fn dispatch_reply(&mut self, m: &Msg) -> Outcome {
-        self.tell_forms_of_reply(m);
         let absorbed = self.world.absorb(m);
         self.show_committed_save_warning();
         if absorbed == Absorbed::Stale {
             return Outcome::Ignored;
         }
+        self.tell_forms_of_reply(m);
         let ended = m
             .job()
             .is_some_and(|job| !self.job_continues(m) && self.shell.status.end_job(job));

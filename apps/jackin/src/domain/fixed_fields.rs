@@ -357,6 +357,7 @@ pub fn world_fixed(w: &World) -> FixedFields {
         discovery_pending: _,
         surfaces,
         tickets: _,
+        pending_refreshes: _,
         snapshots_applied: _,
         refresh_from: _,
         refresh_started_secs: _,

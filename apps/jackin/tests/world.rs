@@ -652,9 +652,13 @@ mod projection_work {
         let source = world.accounts.accounts[0].source.clone();
         let other = world.accounts.accounts[1].source.clone();
         assert_ne!(source, other);
+        let refresh_ticket = world
+            .refresh_account(&account, 0)
+            .expect("a refresh ticket");
         let base = world.epochs();
 
-        let refreshed = |source: &_, result| Msg::AccountRefreshed {
+        let refreshed = |ticket, source: &_, result| Msg::AccountRefreshed {
+            ticket,
             account: account.clone(),
             source: Box::new(Clone::clone(source)),
             result,
@@ -673,7 +677,7 @@ mod projection_work {
             }))
         };
 
-        world.absorb(&refreshed(&other, refresh()));
+        world.absorb(&refreshed(refresh_ticket, &other, refresh()));
         world.absorb(&validated(&other, Err("late".into())));
         assert_eq!(
             world.epochs(),
@@ -681,7 +685,7 @@ mod projection_work {
             "a reply for a replaced source is dropped"
         );
 
-        world.absorb(&refreshed(&source, refresh()));
+        world.absorb(&refreshed(refresh_ticket, &source, refresh()));
         let a = world.epochs();
         assert_eq!(
             (a.membership, a.roster, a.accounts),
@@ -689,11 +693,16 @@ mod projection_work {
             "an accepted refresh"
         );
 
-        world.absorb(&refreshed(&source, Err("down".into())));
+        let refresh_ticket = world
+            .refresh_account(&account, 0)
+            .expect("a refresh ticket");
+        let started = world.epochs();
+        assert_eq!(started.accounts, a.accounts + 1, "a refresh start");
+        world.absorb(&refreshed(refresh_ticket, &source, Err("down".into())));
         let b = world.epochs();
         assert_eq!(
             b.accounts,
-            a.accounts + 1,
+            started.accounts + 1,
             "a failed refresh still changes the account"
         );
 

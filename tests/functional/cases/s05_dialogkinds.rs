@@ -267,6 +267,7 @@ fn assert_defaults_except(screen: &TerminalSnapshot, changed: &[(&str, &str, boo
         ("Choice tones", "on", true),
         ("Choice stepper", "on", true),
         ("Choice buttons", "two", false),
+        ("Dismiss", "default", false),
     ];
     for (label, value, toggle) in defaults {
         if let Some((_, next, _)) = changed.iter().find(|(name, _, _)| *name == label) {
@@ -490,6 +491,7 @@ fn sections_narrow_then_wide() {
             "truecolor",
             "Add connection",
             "Choice buttons",
+            "Dismiss",
         ],
     );
     assert_option(&narrow_opt, "Width", "auto", false);
@@ -505,7 +507,7 @@ fn sections_narrow_then_wide() {
     shot(
         &app,
         "sc.dialogkinds.options.80x24",
-        "options at 80 by 24 before the terminal grows, with the visible controls and their default values; Choice buttons stays below the fold",
+        "options at 80 by 24 before the terminal grows, with the visible controls and their default values; Choice buttons and Dismiss stay below the fold",
         &args,
     );
 
@@ -601,6 +603,7 @@ fn sections_narrow_then_wide() {
             "Page options",
             "Choice buttons",
             "two",
+            "Dismiss",
         ],
         &[
             CAP_PLAY,
@@ -615,7 +618,7 @@ fn sections_narrow_then_wide() {
     shot(
         &app,
         "sc.dialogkinds.options.120x40",
-        "options caption and every default value at 120 by 40, including Choice buttons two",
+        "options caption and every default value at 120 by 40, including Choice buttons two and the Dismiss row set to default",
         &args,
     );
     shot(
@@ -1151,6 +1154,95 @@ fn option_choice_buttons_three() {
     );
     let options = option_page(&app);
     assert_defaults_except(&options, &[("Choice buttons", "three", false)]);
+    app.finish();
+}
+
+/// With Dismiss "never" Escape is refused in all three dialogs while their
+/// explicit Cancel and Close buttons still resolve them.
+fn assert_escape_refused_buttons_work(app: &crate::support::App) {
+    click_page(app, "Release channel");
+    clear_flash(app, 120, 40, "Switch");
+    let dialog = app.wait_text("Switch");
+    see(
+        &dialog,
+        &["Release channel", "Stable", "Cancel", "Switch"],
+        &["Esc Cancel", "Choice · None"],
+    );
+    app.key("escape");
+    let refused = app.settle();
+    see(
+        &refused,
+        &["Release channel", "Stable", "Cancel", "Switch"],
+        &["Choice · None", "Choice · Some"],
+    );
+    click_page(app, "Cancel");
+    let closed = app.wait_text("Choice · None");
+    see(&closed, &["Choice · None"], &["Switch"]);
+
+    click_page(app, "Server info");
+    let info = app.wait_text("Open logs");
+    see(&info, &["Server info", "Close"], &["Esc Close"]);
+    app.key("escape");
+    let refused_info = app.settle();
+    see(
+        &refused_info,
+        &["Server info", "Open logs"],
+        &["Info · Closed"],
+    );
+    click_page(app, "Close");
+    app.wait_text("Info · Closed");
+
+    click_page(app, "Add connection");
+    let form = app.wait_text("Test connection");
+    see(&form, &["Add connection", "Cancel"], &["Form · Cancel"]);
+    app.key("escape");
+    let refused_form = app.settle();
+    see(
+        &refused_form,
+        &["Add connection", "Test connection"],
+        &["Form · Cancel"],
+    );
+    click_page(app, "Cancel");
+    app.wait_text("Form · Cancel");
+}
+
+#[test]
+fn option_dismiss_never_refuses_escape_keeps_buttons() {
+    let args = [
+        "--page",
+        "dialogkinds",
+        "--opt",
+        "dialogkinds.dismiss=never",
+    ];
+    let app = open("s05-opt-dismiss", 120, 40, &args);
+    app.wait_text("Nothing yet");
+    assert_escape_refused_buttons_work(&app);
+    let options = option_page(&app);
+    assert_defaults_except(&options, &[("Dismiss", "never", false)]);
+    app.finish();
+}
+
+#[test]
+fn options_tab_dismiss_never_refuses_escape() {
+    let args = ["--page", "dialogkinds"];
+    let app = open("s05-ui-dismiss", 120, 40, &args);
+    let options = option_page(&app);
+    assert_defaults_except(&options, &[]);
+    let label = locate(&app, "Dismiss", |hit| hit.x >= 24 && hit.y > 4);
+    app.click(Point {
+        x: label.x + 2,
+        y: label.y + 1,
+    });
+    app.wait_text("escape");
+    click_where(&app, "never", |hit| hit.x >= 24 && hit.y > label.y + 1);
+    let chosen = app.wait_screen("Dismiss never chosen", |screen| {
+        let visible = text(screen);
+        !visible.contains("escape") && visible.contains("never")
+    });
+    assert_defaults_except(&chosen, &[("Dismiss", "never", false)]);
+    click_tab(&app, "Playground");
+    app.wait_text("Nothing yet");
+    assert_escape_refused_buttons_work(&app);
     app.finish();
 }
 
