@@ -6,6 +6,7 @@
 
 mod button_row_focus;
 mod chip_add_hotkey;
+mod chip_hidden_cursor;
 mod collection_edit_lifecycle;
 mod collection_menu_lifecycle;
 #[path = "../common/mod.rs"]

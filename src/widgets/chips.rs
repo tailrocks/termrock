@@ -670,6 +670,17 @@ impl ChipBar {
                     } else {
                         buf.set_string(x, y, m, t.muted().bg(bg));
                     }
+                    if focused && self.cursor >= i && self.cursor < self.chips.len() {
+                        // The cursor chip is hidden: the marker stands in for it.
+                        let mut s = ctx.state(self.more_id());
+                        s.focused = true;
+                        s.selected = false;
+                        let it = t.interactive(Kind::Chip, s, plane);
+                        buf.set_string(x, y, m, it.style);
+                        if x > area.x {
+                            buf.set_string(x - 1, y, it.gutter, it.gutter_style);
+                        }
+                    }
                     x += width(m) as u16 + 1;
                 }
                 break;
