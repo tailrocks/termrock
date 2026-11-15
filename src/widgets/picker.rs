@@ -116,7 +116,7 @@ pub struct Picker {
 
     pub reveal: Option<crate::ui::reveal::Reveal>,
 
-    pub(crate) pending: Vec<PickerAction>,
+    pub(crate) pending: crate::ui::layer::ResultQueue<PickerAction>,
 
     pub delete_is_secondary: bool,
     multi: bool,
@@ -239,7 +239,7 @@ impl Picker {
             empty: None,
             area: Rect::ZERO,
             reveal: None,
-            pending: Vec::new(),
+            pending: crate::ui::layer::ResultQueue::default(),
             delete_is_secondary: true,
             multi: false,
             choose_hint: std::borrow::Cow::Borrowed("Choose"),

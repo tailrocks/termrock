@@ -187,7 +187,7 @@ impl EditMenu {
         let mut settled = (out, None);
         for action in actions {
             let (o, cmd) = self.settle(out, Some(action));
-            settled = (o, settled.1.or(cmd));
+            settled = (settled.0.or(o), settled.1.or(cmd));
         }
         Some(settled)
     }

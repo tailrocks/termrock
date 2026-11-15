@@ -294,9 +294,7 @@ impl<A> Response<A> {
     /// Folds `other` after `self`: flow and invalidation take the maximum and
     /// the actions keep their order.
     pub fn merge(mut self, other: Self) -> Self {
-        self.flow = self.flow.max(other.flow);
-        self.invalidate = self.invalidate.max(other.invalidate);
-        self.actions.append(other.actions);
+        self |= other;
         self
     }
 

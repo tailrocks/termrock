@@ -1166,14 +1166,16 @@ impl App {
         Some(self.settle_layer(out))
     }
 
-    fn settle_layer(&mut self, mut out: Outcome) -> Outcome {
-        while let Some(taken) = self.layers.take(&mut self.shell.focus) {
-            out = match taken {
-                Taken::Event(r) => self.layer_event(r).or(out),
-                Taken::Closed(entry, r) => self.layer_closed(entry, r).or(out),
-            };
-        }
-        out
+    fn settle_layer(&mut self, out: Outcome) -> Outcome {
+        Layers::settle(
+            self,
+            |app| (&mut app.layers, &mut app.shell.focus),
+            out,
+            |app, taken| match taken {
+                Taken::Event(r) => app.layer_event(r),
+                Taken::Closed(entry, r) => app.layer_closed(entry, r),
+            },
+        )
     }
 
     fn layer_event(&mut self, r: LayerRes) -> Outcome {

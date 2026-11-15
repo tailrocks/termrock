@@ -62,5 +62,19 @@ Single-result helpers such as `DataTable::commit_edit` keep `Option`.
 | Tab into a checkbox, bool, JSON or long-text cell | focus only; Enter, Space or click still activates |
 | Tree `BranchAction::Both` on a collapsed lazy branch | `Expand`, then `Activate` for the same path |
 
-Layer wrappers (`ui::layers`) queue every action a widget emits and release them one
-per `take_result`, so a closing action never hides an earlier event.
+## Layer result queue
+
+`Picker` and `ContextMenu` queue every action one input emits and release them one per
+`take_result`. Three rules keep that lossless:
+
+- **One drain loop.** A host never takes once. It calls `ModalStack::settle`, which
+  re-reads the stack before every take, hands each `Taken` to the host's handler and
+  folds the outcomes. TablePro, Holla, Showcase and Jackin all call it.
+- **The close is last.** Queued events are released first, in order, and the closing
+  result (`Chosen`, `ChosenAlt`, `ChosenMany`, `Cancelled`, or a menu result) follows, so
+  removing the layer cannot drop an event queued beside it. A second closing result in the
+  same batch is redundant and is dropped with the layer.
+- **Dismiss is Cancelled.** `ModalStack::dismiss` calls `Layer::on_dismiss`, which
+  replaces the queue with the cancel result, so a dismissed picker always resolves to
+  `Cancelled` and a menu to `Dismissed`. Results still queued when the user dismisses
+  belong to the abandoned interaction and are discarded.

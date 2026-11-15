@@ -223,6 +223,110 @@ fn grid_tab_edge_emits_change_then_leave() {
     );
 }
 
+fn choice_grid(kinds: &[CellKind]) -> DataGrid {
+    let cols = kinds
+        .iter()
+        .enumerate()
+        .map(|(i, k)| {
+            let spec = ColumnSpec::new(&format!("c{i}"), *k);
+            if *k == CellKind::Enum {
+                spec.editor(ColumnEditor::Select(Options::values(&["a", "b", "c"])))
+            } else {
+                spec
+            }
+        })
+        .collect();
+    let mut g = DataGrid::new(ID, cols).editable(true);
+    g.set_rows(GridRows {
+        rows: vec![
+            kinds
+                .iter()
+                .map(|k| match k {
+                    CellKind::Enum => CellValue::Text("a".into()),
+                    _ => CellValue::Text("x".into()),
+                })
+                .collect(),
+        ],
+        total: RowTotal::Exact(1),
+        more: false,
+    });
+    g
+}
+
+/// A valid edit that leaves the value as it was must not block traversal:
+/// Tab at the edge still reports the leave and closes the editor. (Whether the
+/// no-op also reports `CellChanged` is #48's equality rule, so only the
+/// movement is asserted.)
+#[test]
+fn grid_tab_valid_noop_edge_still_leaves() {
+    let mut g = grid(&[CellKind::Text], vec![CellValue::Text("a".into())]);
+    let _ = g.begin_edit();
+    let got = actions(g.on_key(&key(KeyCode::Tab)));
+    assert_eq!(got.last(), Some(&GridAction::LeaveForward));
+    assert!(got.len() <= 2, "at most the commit and the leave: {got:?}");
+    assert!(!g.is_editing(), "the editor closed");
+    assert_eq!(*g.value(0, 0), CellValue::Text("a".into()), "value kept");
+}
+
+/// A valid no-op edit between two cells moves on and opens the next editor.
+#[test]
+fn grid_tab_valid_noop_moves_to_next_cell_and_edits() {
+    let mut g = grid(
+        &[CellKind::Text, CellKind::Text],
+        vec![CellValue::Text("a".into()), CellValue::Text("b".into())],
+    );
+    let _ = g.begin_edit();
+    let got = actions(g.on_key(&key(KeyCode::Tab)));
+    assert!(!got.contains(&GridAction::LeaveForward), "{got:?}");
+    assert_eq!(g.cursor.1, 1, "focus moved");
+    assert!(g.is_editing(), "the next cell is open for editing");
+}
+
+#[test]
+fn grid_choice_tab_emits_change_then_leave() {
+    let mut g = choice_grid(&[CellKind::Enum]);
+    let _ = g.begin_edit();
+    let _ = g.on_key(&key(KeyCode::Down));
+    let r = g.on_key(&key(KeyCode::Tab));
+    assert_eq!(
+        actions(r),
+        vec![
+            GridAction::CellChanged { row: 0, col: 0 },
+            GridAction::LeaveForward
+        ]
+    );
+    assert_eq!(*g.value(0, 0), CellValue::Text("b".into()));
+}
+
+#[test]
+fn grid_choice_shift_tab_emits_change_then_leave_backward() {
+    let mut g = choice_grid(&[CellKind::Enum]);
+    let _ = g.begin_edit();
+    let _ = g.on_key(&key(KeyCode::Down));
+    let r = g.on_key(&chord(
+        KeyCode::BackTab,
+        ratatui::crossterm::event::KeyModifiers::SHIFT,
+    ));
+    assert_eq!(
+        actions(r),
+        vec![
+            GridAction::CellChanged { row: 0, col: 0 },
+            GridAction::LeaveBackward
+        ]
+    );
+}
+
+#[test]
+fn grid_choice_tab_into_next_cell_reports_only_the_commit() {
+    let mut g = choice_grid(&[CellKind::Enum, CellKind::Text]);
+    let _ = g.begin_edit();
+    let _ = g.on_key(&key(KeyCode::Down));
+    let r = g.on_key(&key(KeyCode::Tab));
+    assert_eq!(actions(r), vec![GridAction::CellChanged { row: 0, col: 0 }]);
+    assert_eq!(g.cursor.1, 1, "focus moved to the text cell");
+    assert!(g.is_editing(), "the next editor opened");
+}
+
 #[test]
 fn grid_invalid_tab_emits_no_leave() {
     let mut g = grid(&[CellKind::Number], vec![CellValue::Int(1)]);

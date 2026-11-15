@@ -119,6 +119,16 @@ fn picker_events(p: &mut Picker, actions: impl IntoIterator<Item = PickerAction>
     p.pending.extend(actions);
 }
 
+fn picker_closes(ev: &PickerAction) -> bool {
+    matches!(
+        ev,
+        PickerAction::Chosen(_)
+            | PickerAction::ChosenAlt(_)
+            | PickerAction::ChosenMany(_)
+            | PickerAction::Cancelled
+    )
+}
+
 impl<R: From<LayerResult> + 'static, W: ?Sized + 'static> Layer<R, W> for Picker {
     fn hints(&self, focused: Option<WidgetId>) -> Vec<Hint> {
         HasHints::hints(self, &HintCx::new(focused))
@@ -164,21 +174,13 @@ impl<R: From<LayerResult> + 'static, W: ?Sized + 'static> Layer<R, W> for Picker
     }
     fn on_dismiss(&mut self, reason: DismissReason) {
         let actions = Overlay::on_dismiss(self, reason).into_actions();
+        self.pending.clear();
         picker_events(self, actions);
     }
     fn take_result(&mut self) -> Option<LayerOut<R>> {
-        if self.pending.is_empty() {
-            return None;
-        }
-        let ev = self.pending.remove(0);
-        let closes = matches!(
-            ev,
-            PickerAction::Chosen(_)
-                | PickerAction::ChosenAlt(_)
-                | PickerAction::ChosenMany(_)
-                | PickerAction::Cancelled
-        );
-        Some(out(LayerResult::Picker(ev), closes))
+        let next = self.pending.next(picker_closes)?;
+        let closes = next.closes();
+        Some(out(LayerResult::Picker(next.into_inner()), closes))
     }
 }
 
@@ -210,13 +212,12 @@ impl<R: From<LayerResult> + 'static, W: ?Sized + 'static> Layer<R, W> for Contex
     }
     fn on_dismiss(&mut self, reason: DismissReason) {
         let actions = Overlay::on_dismiss(self, reason).into_actions();
+        self.pending.clear();
         self.pending.extend(actions);
     }
     fn take_result(&mut self) -> Option<LayerOut<R>> {
-        if self.pending.is_empty() {
-            return None;
-        }
-        Some(out(LayerResult::Menu(self.pending.remove(0)), true))
+        let next = self.pending.next(|_| true)?;
+        Some(out(LayerResult::Menu(next.into_inner()), true))
     }
 }
 

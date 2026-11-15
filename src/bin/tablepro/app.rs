@@ -1439,11 +1439,15 @@ impl App {
     }
 
     fn take_layer(&mut self) -> Outcome {
-        match self.layers.take(&mut self.shell.focus) {
-            None => Outcome::Ignored,
-            Some(Taken::Event(r)) => self.layer_event(r),
-            Some(Taken::Closed(entry, r)) => self.layer_closed(entry, r),
-        }
+        Layers::settle(
+            self,
+            |app| (&mut app.layers, &mut app.shell.focus),
+            Outcome::Ignored,
+            |app, taken| match taken {
+                Taken::Event(r) => app.layer_event(r),
+                Taken::Closed(entry, r) => app.layer_closed(entry, r),
+            },
+        )
     }
 
     fn dismiss_layer(&mut self, reason: DismissReason) -> Outcome {

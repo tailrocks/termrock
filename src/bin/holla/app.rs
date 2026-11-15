@@ -988,11 +988,15 @@ impl App {
     }
 
     fn settle_layer(&mut self, out: Outcome) -> Outcome {
-        match self.modals.take(&mut self.shell.focus) {
-            None => out,
-            Some(Taken::Event(r)) => self.on_layer_event(r).or(out),
-            Some(Taken::Closed(entry, r)) => self.on_layer_result(entry, r),
-        }
+        Layers::settle(
+            self,
+            |app| (&mut app.modals, &mut app.shell.focus),
+            out,
+            |app, taken| match taken {
+                Taken::Event(r) => app.on_layer_event(r),
+                Taken::Closed(entry, r) => app.on_layer_result(entry, r),
+            },
+        )
     }
 
     fn dismiss_layer(&mut self, reason: DismissReason) -> Outcome {

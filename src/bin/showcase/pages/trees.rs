@@ -662,3 +662,33 @@ impl Page for TreesPage {
         Some(&mut self.template)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use junie_tui::core::event::Key;
+    use junie_tui::core::focus::{Focus, FocusRing};
+    use ratatui::crossterm::event::KeyModifiers;
+
+    /// With `branch_activate: both`, Enter on a collapsed lazy branch reports
+    /// the expansion request and then the activation, each once, in order.
+    #[test]
+    fn branch_activate_both_lists_expand_then_activate() {
+        let mut page = TreesPage::new();
+        page.set_option("trees.branch", 2);
+        let mut ring = FocusRing::default();
+        ring.register(CONNECTIONS);
+        let mut focus = Focus::default();
+        focus.focus(CONNECTIONS);
+        let mut cx = Cx::new(&mut focus, &ring);
+
+        page.conns.cursor = 1;
+        let enter = PageEvent::Key(Key {
+            code: KeyCode::Enter,
+            mods: KeyModifiers::NONE,
+        });
+        let _ = page.handle(&enter, &mut cx);
+
+        assert_eq!(page.last, "Expand(orders-db) → Activate(orders-db)");
+    }
+}

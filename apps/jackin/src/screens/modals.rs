@@ -657,14 +657,14 @@ impl OpFlow {
             o
         };
         for act in actions {
-            result = match act {
+            result = result.or(match act {
                 PickerAction::Chosen(i) => self.choose(i, op),
                 PickerAction::Cancelled if self.dismiss.outside_click => {
                     self.dismissed = true;
                     Outcome::Changed
                 }
                 _ => Outcome::Consumed,
-            };
+            });
         }
         result
     }

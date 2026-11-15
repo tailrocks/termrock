@@ -501,4 +501,69 @@ mod tests {
         );
         assert_eq!(cx.focus.current(), Some(after), "focus left the table");
     }
+
+    struct Rig {
+        page: EditablePage,
+        after: WidgetId,
+        ring: FocusRing,
+        focus: Focus,
+    }
+
+    fn rig() -> Rig {
+        let page = EditablePage::new();
+        let after = WidgetId::of("editable.after");
+        let mut ring = FocusRing::default();
+        ring.register(page.table.id);
+        ring.register(after);
+        let mut focus = Focus::default();
+        focus.focus(page.table.id);
+        Rig {
+            page,
+            after,
+            ring,
+            focus,
+        }
+    }
+
+    fn saved(cx: &Cx) -> bool {
+        cx.requests
+            .iter()
+            .any(|r| matches!(r, Request::Status(s, _) if s == "Cell saved"))
+    }
+
+    /// An unchanged valid edit at the last cell is a no-op commit: focus still
+    /// moves on, but the host must not be told a cell was saved.
+    #[test]
+    fn edge_tab_without_a_change_leaves_without_saving() {
+        let mut r = rig();
+        let mut cx = Cx::new(&mut r.focus, &r.ring);
+        r.page.table.cursor_col = 5;
+        let _ = r.page.handle(&key(KeyCode::Enter), &mut cx);
+        assert!(r.page.table.is_editing());
+        let _ = r.page.handle(&key(KeyCode::Tab), &mut cx);
+
+        assert_eq!(r.page.edits, 0, "nothing was committed");
+        assert!(!saved(&cx), "no Cell saved indicator");
+        assert!(!r.page.table.is_editing());
+        assert_eq!(cx.focus.current(), Some(r.after), "focus left the table");
+    }
+
+    /// An invalid edit blocks Tab: the editor stays open on its error, nothing
+    /// is saved and focus does not move.
+    #[test]
+    fn invalid_tab_keeps_editing_and_reports_nothing() {
+        let mut r = rig();
+        let table_id = r.page.table.id;
+        let mut cx = Cx::new(&mut r.focus, &r.ring);
+        r.page.table.cursor_col = 4;
+        let _ = r.page.handle(&key(KeyCode::Enter), &mut cx);
+        let _ = r.page.handle(&key(KeyCode::Char(' ')), &mut cx);
+        let _ = r.page.handle(&key(KeyCode::Tab), &mut cx);
+
+        assert!(r.page.table.is_editing(), "the editor stays open");
+        assert!(r.page.table.edit_error().is_some(), "the error is shown");
+        assert_eq!(r.page.edits, 0);
+        assert!(!saved(&cx), "no Cell saved indicator");
+        assert_eq!(cx.focus.current(), Some(table_id), "focus did not move");
+    }
 }

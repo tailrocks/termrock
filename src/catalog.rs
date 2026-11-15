@@ -1129,6 +1129,7 @@ pub static CAPABILITIES: &[Capability] = &[
     Capability::function("ui::modal::ModalStack::pointer"),
     Capability::function("ui::modal::ModalStack::open"),
     Capability::function("ui::modal::ModalStack::take"),
+    Capability::function("ui::modal::ModalStack::settle"),
     Capability::function("ui::modal::ModalStack::dismiss"),
     Capability::function("ui::modal::ModalStack::on_blur"),
     Capability::function("ui::modal::ModalStack::hides_page_focus"),
