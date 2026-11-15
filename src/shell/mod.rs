@@ -29,7 +29,7 @@ pub fn run(app: &mut impl Application) -> std::io::Result<()> {
     if let Some(delay) = start_delay() {
         std::thread::sleep(delay);
     }
-    let _ = crate::runtime::drain_pending_input();
+    let _ = crate::runtime::drain_pending_input_bounded(app.raw_input_policy().event_limit());
     crate::runtime::run(app)
 }
 
