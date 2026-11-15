@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StepState {
     Ready,
@@ -177,6 +179,12 @@ pub struct Plan {
     pub drift_consumed: bool,
 
     pub follow_ups: Vec<(String, String)>,
+
+    /// Step ids whose simulated effects were already applied during this arm.
+    /// Scoped to one full arm: retry keeps it, arm clears it.
+    applied_steps: BTreeSet<String>,
+    /// Whether the docker cleanup usage metric was already counted for this arm.
+    completion_counted: bool,
 }
 
 impl Plan {
@@ -198,6 +206,8 @@ impl Plan {
             drift: None,
             drift_consumed: false,
             follow_ups: vec![],
+            applied_steps: BTreeSet::new(),
+            completion_counted: false,
         };
         p.recompute();
         p
@@ -466,7 +476,64 @@ impl Plan {
         self.recompute();
     }
 
-    pub fn arm(&mut self, tick: u64) {
+    /// Stops the whole plan: every live included step becomes terminal and the
+    /// plan is Done. Unlike [`Plan::cancel_remaining`], running steps do not get
+    /// to finish. Returns false (and changes nothing) unless the plan is Running.
+    pub fn stop(&mut self, tick: u64) -> bool {
+        if self.phase != PlanPhase::Running {
+            return false;
+        }
+        for step in &mut self.steps {
+            if step.included
+                && matches!(
+                    step.state,
+                    StepState::Ready | StepState::Waiting | StepState::Running
+                )
+            {
+                let started = step.state == StepState::Running;
+                step.state = StepState::Cancelled;
+                step.because = "stopped by user".into();
+                step.ended_tick = Some(tick);
+                step.exit = started.then_some(130);
+                if started {
+                    step.output.push("cancelled by user".into());
+                }
+            }
+        }
+        self.phase = PlanPhase::Done;
+        self.ended_tick = Some(tick);
+        true
+    }
+
+    /// Succeeded steps whose effects were not yet applied in this arm.
+    pub(crate) fn unapplied_successful_step_ids(&self) -> BTreeSet<String> {
+        self.steps
+            .iter()
+            .filter(|step| {
+                step.state == StepState::Succeeded && !self.applied_steps.contains(&step.id)
+            })
+            .map(|step| step.id.clone())
+            .collect()
+    }
+
+    pub(crate) fn mark_step_effects_applied(&mut self, ids: &BTreeSet<String>) {
+        self.applied_steps.extend(ids.iter().cloned());
+    }
+
+    /// True once per arm, and only after some step effect was applied.
+    pub(crate) fn count_completion_once(&mut self) -> bool {
+        if self.completion_counted || self.applied_steps.is_empty() {
+            return false;
+        }
+        self.completion_counted = true;
+        true
+    }
+
+    /// Starts a full run. A running plan is left untouched.
+    pub fn arm(&mut self, tick: u64) -> bool {
+        if self.phase == PlanPhase::Running {
+            return false;
+        }
         for s in &mut self.steps {
             s.state = StepState::Ready;
             s.started_tick = None;
@@ -474,9 +541,187 @@ impl Plan {
             s.exit = None;
             s.output.clear();
         }
+        self.applied_steps.clear();
+        self.completion_counted = false;
         self.phase = PlanPhase::Running;
         self.started_tick = Some(tick);
         self.ended_tick = None;
         self.recompute();
+        true
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn running_plan() -> Plan {
+        let steps = vec![
+            Step::new("a", "A", &["a"], "/").ticks(5),
+            Step::new("b", "B", &["b"], "/").ticks(50),
+            Step::new("c", "C", &["c"], "/").after(&[1]),
+            Step::new("d", "D", &["d"], "/").after(&[0]),
+        ];
+        let mut p = Plan::new("p", "P", "intent", "host", steps);
+        p.arm(3);
+        p
+    }
+
+    fn start(p: &mut Plan, i: usize, tick: u64) {
+        p.steps[i].state = StepState::Running;
+        p.steps[i].started_tick = Some(tick);
+    }
+
+    #[test]
+    fn plan_stop_finalizes_running_and_waiting_steps() {
+        let mut p = running_plan();
+        start(&mut p, 0, 3);
+        start(&mut p, 1, 3);
+        p.steps[1].output.push("partial".into());
+        assert_eq!(p.steps[2].state, StepState::Waiting);
+
+        assert!(p.stop(9));
+
+        assert_eq!(p.phase, PlanPhase::Done);
+        assert_eq!(p.ended_tick, Some(9));
+        assert!(
+            p.steps.iter().all(|s| !matches!(
+                s.state,
+                StepState::Ready | StepState::Waiting | StepState::Running
+            )),
+            "no live step remains: {:?}",
+            p.steps.iter().map(|s| s.state).collect::<Vec<_>>()
+        );
+        let b = &p.steps[1];
+        assert_eq!(b.state, StepState::Cancelled);
+        assert_eq!(b.because, "stopped by user");
+        assert_eq!(
+            (b.started_tick, b.ended_tick, b.exit),
+            (Some(3), Some(9), Some(130))
+        );
+        assert_eq!(
+            b.output,
+            vec!["partial".to_owned(), "cancelled by user".to_owned()]
+        );
+        let c = &p.steps[2];
+        assert_eq!(c.state, StepState::Cancelled);
+        assert_eq!(
+            (c.started_tick, c.ended_tick, c.exit),
+            (None, Some(9), None)
+        );
+        assert!(c.output.is_empty(), "unstarted step gets no output line");
+    }
+
+    #[test]
+    fn plan_stop_preserves_existing_terminal_outcomes() {
+        let steps = vec![
+            Step::new("ok", "Ok", &["x"], "/"),
+            Step::new("bad", "Bad", &["x"], "/"),
+            Step::new("skip", "Skip", &["x"], "/").optional(),
+            Step::new("blocked", "Blocked", &["x"], "/").after(&[1]),
+            Step::new("off", "Off", &["x"], "/").excluded(),
+            Step::new("live", "Live", &["x"], "/"),
+        ];
+        let mut p = Plan::new("p", "P", "i", "h", steps);
+        p.arm(0);
+        p.steps[0].state = StepState::Succeeded;
+        p.steps[0].ended_tick = Some(1);
+        p.steps[0].exit = Some(0);
+        p.steps[0].output.push("done".into());
+        p.steps[1].state = StepState::Failed;
+        p.steps[1].exit = Some(1);
+        p.steps[2].state = StepState::Skipped;
+        p.recompute();
+        assert_eq!(p.steps[3].state, StepState::Blocked);
+        assert_eq!(p.steps[4].state, StepState::Excluded);
+        let before = p.steps.clone();
+        start(&mut p, 5, 2);
+
+        assert!(p.stop(7));
+
+        assert_eq!(p.steps[..5], before[..5], "terminal steps unchanged");
+        assert_eq!(p.steps[5].state, StepState::Cancelled);
+        assert_eq!(p.steps[5].exit, Some(130));
+    }
+
+    #[test]
+    fn plan_stop_is_idempotent_and_refuses_non_running_phases() {
+        let mut p = running_plan();
+        start(&mut p, 1, 3);
+        assert!(p.stop(9));
+        let after = p.clone();
+        assert!(!p.stop(20));
+        assert_eq!(p, after);
+
+        let steps = vec![Step::new("a", "A", &["a"], "/")];
+        let mut review = Plan::new("p", "P", "i", "h", steps);
+        let before = review.clone();
+        assert!(!review.stop(1));
+        assert_eq!(review, before);
+    }
+
+    #[test]
+    fn plan_cancel_remaining_still_allows_running_work_to_finish() {
+        let mut p = running_plan();
+        start(&mut p, 1, 3);
+        p.cancel_remaining();
+        assert_eq!(p.steps[1].state, StepState::Running);
+        assert_eq!(p.phase, PlanPhase::Running);
+        assert_eq!(p.steps[2].state, StepState::Cancelled);
+        assert_eq!(p.steps[3].state, StepState::Cancelled);
+    }
+
+    #[test]
+    fn plan_arm_while_running_is_noop() {
+        let mut p = running_plan();
+        start(&mut p, 1, 3);
+        p.steps[1].output.push("line".into());
+        p.steps[0].state = StepState::Succeeded;
+        p.mark_step_effects_applied(&BTreeSet::from(["a".to_owned()]));
+        let before = p.clone();
+
+        assert!(!p.arm(40));
+
+        assert_eq!(p, before);
+    }
+
+    #[test]
+    fn plan_stop_effect_tracking_survives_retry_and_resets_on_arm() {
+        let mut p = running_plan();
+        p.steps[0].state = StepState::Succeeded;
+        p.steps[1].state = StepState::Failed;
+        assert_eq!(
+            p.unapplied_successful_step_ids(),
+            BTreeSet::from(["a".to_owned()])
+        );
+        p.mark_step_effects_applied(&p.unapplied_successful_step_ids());
+        assert!(p.unapplied_successful_step_ids().is_empty());
+        assert!(p.count_completion_once());
+        assert!(!p.count_completion_once());
+        p.phase = PlanPhase::Done;
+
+        assert!(p.retry(1));
+        p.steps[1].state = StepState::Succeeded;
+        assert_eq!(
+            p.unapplied_successful_step_ids(),
+            BTreeSet::from(["b".to_owned()]),
+            "retry keeps the applied id and makes the retried step eligible"
+        );
+        assert!(!p.count_completion_once(), "retry never recounts");
+
+        p.phase = PlanPhase::Done;
+        assert!(p.arm(50));
+        p.steps[0].state = StepState::Succeeded;
+        assert_eq!(
+            p.unapplied_successful_step_ids(),
+            BTreeSet::from(["a".to_owned()]),
+            "arm clears the applied ids"
+        );
+        assert!(
+            !p.count_completion_once(),
+            "nothing applied yet in this arm"
+        );
+        p.mark_step_effects_applied(&p.unapplied_successful_step_ids());
+        assert!(p.count_completion_once(), "arm clears the completion count");
     }
 }

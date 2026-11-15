@@ -11,6 +11,7 @@ use junie_tui::core::intent::Phase;
 use junie_tui::core::keymap::{Actions, KeyBinding, KeyMap, NavKeys, hint_key, label_for};
 use junie_tui::core::pointer::{MouseTarget, PointerEvent};
 use junie_tui::core::scroll::{HScroll, ScrollbarVisibility, TrackClick};
+use junie_tui::theme::Tone;
 use junie_tui::ui::columns::HeaderLabels;
 use junie_tui::ui::ctx::RenderCtx;
 use junie_tui::ui::layout::StackChild;
@@ -125,13 +126,44 @@ fn page(from: usize, total: RowTotal, cols: usize) -> GridRows {
     }
 }
 
-fn literal(v: &CellValue) -> String {
-    match v {
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct NonFinite {
+    row: usize,
+    column: String,
+}
+
+impl NonFinite {
+    fn message(&self) -> String {
+        format!(
+            "Cannot build the SQL: row {} · {} is not a finite number",
+            self.row + 1,
+            self.column
+        )
+    }
+}
+
+/// SQL projection of a pending cell. A finite number prints the shortest text
+/// that parses back to the stored `f64`, never the two-decimal display text.
+fn literal(row: usize, column: &str, v: &CellValue) -> Result<String, NonFinite> {
+    Ok(match v {
         CellValue::Null => "NULL".into(),
         CellValue::Default => "DEFAULT".into(),
         CellValue::Text(s) | CellValue::Json(s) => format!("'{}'", s.replace('\'', "''")),
+        CellValue::Num(n) if !n.is_finite() => {
+            return Err(NonFinite {
+                row,
+                column: column.to_owned(),
+            });
+        }
+        CellValue::Num(n) => {
+            let mut text = n.to_string();
+            if !text.contains(['.', 'e', 'E']) {
+                text.push_str(".0");
+            }
+            text
+        }
         other => other.text(),
-    }
+    })
 }
 
 fn tiers() -> Options {
@@ -523,7 +555,7 @@ impl GridPage {
         }
     }
 
-    fn statements(&self) -> Vec<String> {
+    fn statements(&self) -> Result<Vec<String>, NonFinite> {
         let mut out = Vec::new();
         let mut cells: Vec<_> = self.grid.pending.cells.iter().collect();
         cells.sort_by_key(|((r, c), _)| (*r, *c));
@@ -531,10 +563,10 @@ impl GridPage {
             if self.grid.pending.inserted.contains(r) {
                 continue;
             }
+            let name = &self.grid.columns[*c].name;
             out.push(format!(
-                "UPDATE {TABLE} SET {} = {} WHERE id = {};",
-                self.grid.columns[*c].name,
-                literal(v),
+                "UPDATE {TABLE} SET {name} = {} WHERE id = {};",
+                literal(*r, name, v)?,
                 self.grid.value(*r, 0).text()
             ));
         }
@@ -550,14 +582,19 @@ impl GridPage {
             if cols.is_empty() {
                 out.push(format!("INSERT INTO {TABLE} DEFAULT VALUES;"));
             } else {
-                let vals: Vec<String> = self
+                let vals = self
                     .grid
                     .columns
                     .iter()
                     .enumerate()
-                    .filter_map(|(c, _)| self.grid.pending.cells.get(&(*r, c)))
-                    .map(literal)
-                    .collect();
+                    .filter_map(|(c, col)| {
+                        self.grid
+                            .pending
+                            .cells
+                            .get(&(*r, c))
+                            .map(|v| literal(*r, &col.name, v))
+                    })
+                    .collect::<Result<Vec<String>, NonFinite>>()?;
                 out.push(format!(
                     "INSERT INTO {TABLE} ({}) VALUES ({});",
                     cols.join(", "),
@@ -571,11 +608,11 @@ impl GridPage {
                 self.grid.value(*r, 0).text()
             ));
         }
-        out
+        Ok(out)
     }
 
-    fn changes_dialog(&self, review: bool) -> Dialog {
-        let code = self.statements();
+    fn changes_dialog(&self, review: bool) -> Result<Dialog, NonFinite> {
+        let code = self.statements()?;
         let (changed, inserted, deleted) = self.grid.pending.counts();
         let facts = vec![
             Prop::new("Statements", code.len().to_string()),
@@ -585,7 +622,7 @@ impl GridPage {
             ),
             Prop::new("Target", TABLE),
         ];
-        if review {
+        Ok(if review {
             Dialog::facts(
                 REVIEW,
                 "Save changes",
@@ -603,6 +640,13 @@ impl GridPage {
                 None,
                 Button::primary(PREVIEW.sub("ok"), "Copy SQL"),
             )
+        })
+    }
+
+    fn open_changes(&self, review: bool, cx: &mut Cx) {
+        match self.changes_dialog(review) {
+            Ok(dialog) => cx.open_dialog(dialog),
+            Err(e) => cx.status_in(e.message(), Tone::Error),
         }
     }
 
@@ -693,7 +737,7 @@ impl GridPage {
                 if self.grid.pending.is_empty() {
                     cx.status("Nothing to save");
                 } else {
-                    cx.open_dialog(self.changes_dialog(true));
+                    self.open_changes(true, cx);
                 }
             }
             Some(GridAction::DiscardRequested) => {
@@ -702,7 +746,7 @@ impl GridPage {
             }
             Some(GridAction::PreviewSql) => {
                 if self.settle_edit(cx) {
-                    cx.open_dialog(self.changes_dialog(false));
+                    self.open_changes(false, cx);
                 }
             }
             Some(GridAction::Copy(s)) => cx.status(format!("Copied {} chars", s.len())),
@@ -1038,7 +1082,8 @@ impl Page for GridPage {
             PageEvent::DialogClosed { id, result, .. }
                 if *id == PREVIEW && *result == DialogResult::Action(1) =>
             {
-                cx.status(format!("Copied {} statements", self.statements().len()));
+                let copied = self.statements().map_or(0, |s| s.len());
+                cx.status(format!("Copied {copied} statements"));
                 Outcome::Changed
             }
             PageEvent::DialogClosed { id, result, .. }
@@ -1098,5 +1143,75 @@ impl Page for GridPage {
 
     fn template_mut(&mut self) -> Option<&mut Template> {
         Some(&mut self.template)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const MRR: usize = 4;
+    const SEATS: usize = 3;
+
+    #[test]
+    fn issue49_showcase_preview_preserves_numeric_precision() {
+        let mut page = GridPage::new();
+        page.grid
+            .pending
+            .cells
+            .insert((0, MRR), CellValue::Num(0.001));
+        page.grid
+            .pending
+            .cells
+            .insert((1, MRR), CellValue::Num(1.234_567));
+        page.grid
+            .pending
+            .cells
+            .insert((2, MRR), CellValue::Num(100.0));
+        let insert = page.grid.len();
+        page.grid.pending.inserted.insert(insert);
+        page.grid
+            .pending
+            .cells
+            .insert((insert, SEATS), CellValue::Int(5));
+        page.grid
+            .pending
+            .cells
+            .insert((insert, MRR), CellValue::Num(-0.000_25));
+
+        assert_eq!(
+            page.statements().unwrap(),
+            vec![
+                "UPDATE customers SET mrr = 0.001 WHERE id = 1001;".to_owned(),
+                "UPDATE customers SET mrr = 1.234567 WHERE id = 1002;".to_owned(),
+                "UPDATE customers SET mrr = 100.0 WHERE id = 1003;".to_owned(),
+                "INSERT INTO customers (seats, mrr) VALUES (5, -0.00025);".to_owned(),
+            ]
+        );
+        assert!(page.changes_dialog(false).is_ok());
+        assert!(page.changes_dialog(true).is_ok());
+    }
+
+    #[test]
+    fn issue49_showcase_preview_rejects_nonfinite_numbers_entirely() {
+        for bad in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            let mut page = GridPage::new();
+            page.grid
+                .pending
+                .cells
+                .insert((0, MRR), CellValue::Num(2.5));
+            page.grid
+                .pending
+                .cells
+                .insert((1, MRR), CellValue::Num(bad));
+            let want = NonFinite {
+                row: 1,
+                column: "mrr".into(),
+            };
+            assert_eq!(page.statements(), Err(want.clone()));
+            assert_eq!(page.changes_dialog(false).err(), Some(want.clone()));
+            assert_eq!(page.changes_dialog(true).err(), Some(want));
+            assert_eq!(page.grid.pending.cells.len(), 2, "the draft is kept");
+        }
     }
 }
