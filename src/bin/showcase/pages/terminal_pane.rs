@@ -17,7 +17,7 @@ use junie_tui::terminal::{Modes, TerminalState, TerminalView, encode_key};
 use junie_tui::theme::Tone;
 use junie_tui::ui::ctx::RenderCtx;
 use junie_tui::ui::specimen::{Specimen, SpecimenState, StateGrid};
-use junie_tui::widgets::button::{Button, row_layout};
+use junie_tui::widgets::button::{Button, row_layout, row_lines};
 use junie_tui::widgets::panel::Panel;
 use junie_tui::widgets::props::{self, Prop};
 
@@ -448,8 +448,16 @@ impl TerminalPanePage {
         let focused = self.opts.on("terminalpane.focused")
             && (ctx.interaction.focused(PANE) || self.capturing);
         let colour = self.opts.on("terminalpane.colour");
+        let shown: Vec<usize> = (0..self.session_controls.len())
+            .filter(|&i| self.session_visible(self.session_controls[i].0))
+            .collect();
+        let widths: Vec<u16> = shown
+            .iter()
+            .map(|&i| self.session_controls[i].1.width())
+            .collect();
+        let control_rows = row_lines(area.width, &widths, 2);
         let controls_h = if area.height > CONTROLS_MIN_AREA {
-            2
+            1 + control_rows
         } else {
             0
         };
@@ -461,21 +469,15 @@ impl TerminalPanePage {
         let lines = demo.log_lines();
 
         let controls_y = frame.bottom() + 1;
-        if controls_y < area.bottom() {
-            let shown: Vec<usize> = (0..self.session_controls.len())
-                .filter(|&i| self.session_visible(self.session_controls[i].0))
-                .collect();
-            let widths: Vec<u16> = shown
-                .iter()
-                .map(|&i| self.session_controls[i].1.width())
-                .collect();
-            let rects = row_layout(Rect::new(area.x, controls_y, area.width, 1), &widths, 2);
-            for (rect, &i) in rects.iter().zip(&shown) {
+        let controls = Rect::new(area.x, controls_y, area.width, control_rows);
+        let rects = row_layout(controls, &widths, 2);
+        for (rect, &i) in rects.iter().zip(&shown) {
+            if rect.y < area.bottom() {
                 self.session_controls[i].1.render(*rect, buf, ctx, t.canvas);
             }
         }
         for (offset, (line, tone)) in lines.iter().enumerate() {
-            let y = controls_y + 2 + offset as u16;
+            let y = controls_y + control_rows + 1 + offset as u16;
             if y < area.bottom() {
                 buf.set_string(
                     area.x,
@@ -790,6 +792,10 @@ impl Page for TerminalPanePage {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use junie_tui::core::focus::FocusRing;
+    use junie_tui::core::hit::HitRegistry;
+    use junie_tui::theme::{ColorLevel, Theme};
+    use junie_tui::ui::ctx::Interaction;
 
     const HOST: usize = 1;
 
@@ -798,6 +804,33 @@ mod tests {
         page.set_option("terminalpane.host", HOST);
         page.set_option("terminalpane.script", script);
         page
+    }
+
+    fn rows(page: &mut TerminalPanePage, width: u16, height: u16) -> Vec<String> {
+        let theme = Theme::for_level(ColorLevel::TrueColor);
+        let area = Rect::new(0, 0, width, height);
+        let mut buf = Buffer::empty(area);
+        let mut hits = HitRegistry::default();
+        let mut ring = FocusRing::default();
+        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        page.render_session(area, &mut buf, &mut ctx);
+        (0..height)
+            .map(|y| {
+                (0..width)
+                    .map(|x| buf[(x, y)].symbol())
+                    .collect::<String>()
+                    .trim_end()
+                    .to_owned()
+            })
+            .collect()
+    }
+
+    fn visible_labels(page: &TerminalPanePage) -> Vec<&'static str> {
+        SESSION_CONTROLS
+            .iter()
+            .filter(|(action, _)| page.session_visible(*action))
+            .map(|(_, label)| *label)
+            .collect()
     }
 
     #[test]
@@ -818,5 +851,37 @@ mod tests {
             hints(&session)
         );
         assert!(hints(&session).iter().any(|(keys, _)| *keys == "Enter"));
+    }
+
+    #[test]
+    fn wrapped_session_controls_leave_the_log_lines_intact() {
+        let mut page = session_page(0);
+        let width = 36;
+        let widths: Vec<u16> = page
+            .session_controls
+            .iter()
+            .map(|(_, b)| b.width())
+            .collect();
+        assert!(
+            row_lines(width, &widths, 2) >= 3,
+            "the width must wrap the controls onto three rows"
+        );
+        let screen = rows(&mut page, width, 40);
+        for label in visible_labels(&page) {
+            assert!(
+                screen.iter().any(|row| row.contains(label)),
+                "control {label:?} was overdrawn:\n{}",
+                screen.join("\n")
+            );
+        }
+        let log = page.session.as_ref().expect("session").log_lines();
+        for (line, _) in log {
+            let line = junie_tui::ui::text::truncate(&line, usize::from(width));
+            assert!(
+                screen.contains(&line),
+                "log line {line:?} was overdrawn:\n{}",
+                screen.join("\n")
+            );
+        }
     }
 }
