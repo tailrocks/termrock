@@ -488,6 +488,104 @@ fn issue51_failed_save_changes_neither_store_nor_draft() {
 }
 
 #[test]
+fn issue51_ending_a_refused_save_does_not_advance_the_content_revision() {
+    let mut app = connected();
+    let key = open(&mut app, "products");
+    let w = app.workbench.as_mut().expect("connected");
+    let (op, _) = w.ws.begin_operation(key).expect("the tab is idle");
+    let before = w.ws.revision(key);
+
+    app.end_save_operation(SaveOperation::Task(op));
+
+    let w = app.workbench.as_ref().expect("connected");
+    assert_eq!(
+        w.ws.revision(key),
+        before,
+        "a save that wrote nothing changes no content"
+    );
+    assert_eq!(w.ws.running(key), None, "the operation ended");
+}
+
+/// Makes the products draft one the store refuses (`sku` is required), then
+/// asks to close the tab, so a close token waits at the draft's revision.
+fn refusable_draft_with_pending_close(app: &mut App, key: ItemKey) -> CloseToken {
+    edit(app, key, 0, SKU, CellValue::Null);
+    let w = app.workbench.as_mut().expect("connected");
+    let mut tokens = w.request_close(key).expect("the tab may ask to close");
+    assert_eq!(tokens.len(), 1, "a dirty tab waits for a decision");
+    tokens.remove(0)
+}
+
+#[test]
+fn issue11_refused_save_keeps_a_pending_close_valid() {
+    let mut app = connected();
+    let key = open(&mut app, "products");
+    let token = refusable_draft_with_pending_close(&mut app, key);
+    let revision = app.workbench.as_ref().and_then(|w| w.ws.revision(key));
+
+    confirm_save(&mut app, key);
+
+    assert!(status(&app).contains("sku is required"), "{}", status(&app));
+    let w = app.workbench.as_mut().expect("connected");
+    assert_eq!(
+        w.ws.revision(key),
+        revision,
+        "a refused save changes no content"
+    );
+    assert_eq!(w.ws.pending_close(key), Some(token));
+    assert!(
+        w.ws.resolve_close(token, CloseDecision::Cancel).is_ok(),
+        "the close token that waited through the refused save is still valid"
+    );
+}
+
+#[test]
+fn issue11_refused_close_save_keeps_its_prompt_answerable() {
+    let mut app = connected();
+    let key = open(&mut app, "products");
+    edit(&mut app, key, 0, SKU, CellValue::Null);
+    app.request_close_tab(key);
+    app.dialog_closed(CLOSE_GUARD_DIALOG, DialogResult::Action(2));
+    let w = app.workbench.as_ref().expect("connected");
+    let close =
+        w.ws.pending_close(key)
+            .expect("the close waits for the save");
+    let revision = w.ws.revision(key);
+
+    app.dialog_closed(COMMIT_DIALOG, DialogResult::Action(1));
+    ticks(&mut app, 6);
+
+    assert!(status(&app).contains("sku is required"), "{}", status(&app));
+    let w = app.workbench.as_mut().expect("connected");
+    assert!(!w.ws.save_locked(key), "the failed save released the tab");
+    assert_eq!(w.ws.revision(key), revision, "nothing changed in the tab");
+    assert!(
+        w.ws.resolve_close(close, CloseDecision::Cancel).is_ok(),
+        "the prompt's own close token survives the refusal"
+    );
+}
+
+#[test]
+fn issue11_refused_review_keeps_a_pending_close_valid() {
+    let mut app = connected();
+    let key = open(&mut app, "products");
+    let token = refusable_draft_with_pending_close(&mut app, key);
+    app.workbench
+        .as_mut()
+        .expect("connected")
+        .connection
+        .safe_mode = SafeMode::ReadOnly;
+    let revision = app.workbench.as_ref().and_then(|w| w.ws.revision(key));
+
+    app.begin_commit_for(Some(key));
+
+    assert!(status(&app).contains("read-only"), "{}", status(&app));
+    let w = app.workbench.as_mut().expect("connected");
+    assert_eq!(w.ws.revision(key), revision);
+    assert!(w.ws.resolve_close(token, CloseDecision::Cancel).is_ok());
+}
+
+#[test]
 fn issue51_null_in_defaulted_column_offers_the_default_hint() {
     let mut app = connected();
     let key = open(&mut app, "products");
