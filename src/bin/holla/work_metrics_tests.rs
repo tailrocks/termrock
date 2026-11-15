@@ -124,8 +124,8 @@ fn work_contract_holla_idle_and_source_update() {
         &[
             (Metric::ProjectionRebuilds, 1),
             (Metric::RankRowsVisited, items),
-            (Metric::IntrinsicWidthCalls, 1_647),
-            (Metric::TextBytesMeasured, 8_440),
+            (Metric::IntrinsicWidthCalls, 1_673),
+            (Metric::TextBytesMeasured, 8_466),
             (Metric::FitVisits, 13),
         ],
     );

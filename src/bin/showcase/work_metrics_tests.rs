@@ -117,16 +117,17 @@ fn work_contract_showcase_idle_and_switch() {
         before,
         "a settled tick leaves the frame unchanged"
     );
-    // The Finder page paints a detail card that sizes itself in a scratch
-    // buffer on every frame: 1440 cells allocated per frame today.
+    // The Finder runs on the shared SearchDetail (#257), whose detail card no
+    // longer sizes itself in a scratch buffer, and its master rows paint
+    // through the clipping grapheme painter, which measures each cell run.
     assert_exact(
         &finder,
         "finder settled tick",
         &[
-            (Metric::AllocatedBufferCells, 1_440),
-            (Metric::VisibleRowsPainted, 24),
-            (Metric::IntrinsicWidthCalls, 220),
-            (Metric::TextBytesMeasured, 1_202),
+            (Metric::AllocatedBufferCells, 0),
+            (Metric::VisibleRowsPainted, 21),
+            (Metric::IntrinsicWidthCalls, 422),
+            (Metric::TextBytesMeasured, 1_135),
             (Metric::FitVisits, 5),
         ],
     );
@@ -151,10 +152,10 @@ fn work_contract_showcase_idle_and_switch() {
         &unrelated,
         "unrelated page option then tick",
         &[
-            (Metric::AllocatedBufferCells, 1_440),
-            (Metric::VisibleRowsPainted, 24),
-            (Metric::IntrinsicWidthCalls, 220),
-            (Metric::TextBytesMeasured, 1_202),
+            (Metric::AllocatedBufferCells, 0),
+            (Metric::VisibleRowsPainted, 21),
+            (Metric::IntrinsicWidthCalls, 422),
+            (Metric::TextBytesMeasured, 1_135),
             (Metric::FitVisits, 5),
         ],
     );
