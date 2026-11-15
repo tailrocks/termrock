@@ -75,6 +75,12 @@ pub struct Step {
     pub ended_tick: Option<u64>,
     pub exit: Option<i32>,
 
+    /// Run number of this step: 0 before the first arm, 1 after arm, +1 per retry.
+    pub attempt: u32,
+    /// Template lines the current attempt has already emitted. Counts only
+    /// template lines, never history markers, so it is per attempt.
+    emitted_template_lines: usize,
+
     pub output: Vec<String>,
 }
 
@@ -100,6 +106,8 @@ impl Step {
             started_tick: None,
             ended_tick: None,
             exit: None,
+            attempt: 0,
+            emitted_template_lines: 0,
             output: vec![],
         }
     }
@@ -143,6 +151,21 @@ impl Step {
     pub fn fails(mut self) -> Self {
         self.fails = true;
         self
+    }
+
+    /// Appends the template lines up to `want` that this attempt has not
+    /// emitted yet, and returns how many were appended. Progress comes only
+    /// from the attempt's own cursor, so history markers in `output` do not
+    /// shift which template line comes next.
+    pub fn append_attempt_output(&mut self, template: &[String], want: usize) -> usize {
+        let end = want.min(template.len());
+        let start = self.emitted_template_lines.min(template.len());
+        if end <= start {
+            return 0;
+        }
+        self.output.extend(template[start..end].iter().cloned());
+        self.emitted_template_lines = end;
+        end - start
     }
 }
 
@@ -436,11 +459,13 @@ impl Plan {
         if s.state != StepState::Failed {
             return false;
         }
+        s.attempt = s.attempt.checked_add(1).expect("attempt count overflow");
         s.state = StepState::Ready;
         s.fails = false;
         s.started_tick = None;
         s.ended_tick = None;
         s.exit = None;
+        s.emitted_template_lines = 0;
         s.output.push("retrying…".into());
         let deps = self.dependents(i);
         for d in deps {
@@ -539,6 +564,8 @@ impl Plan {
             s.started_tick = None;
             s.ended_tick = None;
             s.exit = None;
+            s.attempt = 1;
+            s.emitted_template_lines = 0;
             s.output.clear();
         }
         self.applied_steps.clear();
@@ -723,5 +750,79 @@ mod tests {
         );
         p.mark_step_effects_applied(&p.unapplied_successful_step_ids());
         assert!(p.count_completion_once(), "arm clears the completion count");
+    }
+
+    fn template(lines: &[&str]) -> Vec<String> {
+        lines.iter().map(|l| (*l).to_owned()).collect()
+    }
+
+    #[test]
+    fn plan_retry_output_cursor_ignores_external_history_markers() {
+        let mut step = Step::new("a", "A", &["a"], "/");
+        let lines = template(&["one", "two", "three"]);
+        assert_eq!(step.append_attempt_output(&lines, 1), 1);
+        step.output.insert(0, "status: running".into());
+        step.output.push("exit status 1".into());
+
+        assert_eq!(step.append_attempt_output(&lines, 3), 2);
+        assert_eq!(
+            step.output,
+            template(&["status: running", "one", "exit status 1", "two", "three"])
+        );
+    }
+
+    #[test]
+    fn plan_retry_no_progress_clones_no_template_lines() {
+        let mut step = Step::new("a", "A", &["a"], "/");
+        let lines: Vec<String> = (0..100_000).map(|i| format!("line {i}")).collect();
+        assert_eq!(step.append_attempt_output(&lines, 40_000), 40_000);
+        let before = step.output.len();
+
+        assert_eq!(step.append_attempt_output(&lines, 40_000), 0);
+        assert_eq!(step.append_attempt_output(&lines, 10), 0);
+        assert_eq!(step.output.len(), before);
+        assert_eq!(step.append_attempt_output(&lines, 40_001), 1);
+    }
+
+    #[test]
+    fn plan_retry_rejected_target_changes_no_attempt_state() {
+        let mut p = running_plan();
+        p.steps[0].state = StepState::Succeeded;
+        p.steps[0].output.push("kept".into());
+        p.steps[1].state = StepState::Succeeded;
+        p.steps[1].fails = true;
+        let before = p.clone();
+
+        assert!(!p.retry(0), "a succeeded step is not retried");
+        assert!(!p.retry(9), "an unknown step is not retried");
+        assert_eq!(p, before);
+        assert_eq!(p.steps[0].attempt, 1);
+    }
+
+    #[test]
+    fn plan_retry_multiple_attempts_advance_each_cursor_from_zero() {
+        let mut p = running_plan();
+        assert!(
+            p.steps.iter().all(|s| s.attempt == 1),
+            "arm starts attempt 1"
+        );
+        p.steps[0].state = StepState::Failed;
+        assert!(p.retry(0));
+        assert_eq!(p.steps[0].attempt, 2);
+        p.steps[0].state = StepState::Failed;
+        assert!(p.retry(0));
+        assert_eq!(p.steps[0].attempt, 3);
+        assert_eq!(p.steps[1].attempt, 1, "a sibling keeps its attempt");
+
+        p.steps[0].output.clear();
+        let lines = template(&["x", "y"]);
+        assert_eq!(p.steps[0].append_attempt_output(&lines, 2), 2);
+        p.steps[0].state = StepState::Failed;
+        assert!(p.retry(0));
+        assert_eq!(
+            p.steps[0].append_attempt_output(&template(&["fresh"]), 1),
+            1,
+            "a retry starts its own cursor at zero"
+        );
     }
 }
