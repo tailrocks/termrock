@@ -1,4 +1,4 @@
-use crate::screens::Holla;
+use crate::screens::{DetailRewind, Holla};
 use junie_tui::shell::Page as ShellPage;
 use junie_tui::widgets::page_header::{Heading, PageHeader};
 use std::collections::BTreeSet;
@@ -437,30 +437,8 @@ impl CleanupPage {
         );
     }
 
-    /// The item the detail panel describes, so its scroll rewinds only when this changes.
-    fn detail_target(&self) -> Option<(&'static str, Option<String>)> {
-        match self.rows.get(self.cursor)? {
-            Row::Category(ci) => Some((self.cats.get(*ci)?.category.id, None)),
-            Row::Candidate(ci, ki) => {
-                let cat = self.cats.get(*ci)?;
-                Some((cat.category.id, Some(cat.candidates.get(*ki)?.path.clone())))
-            }
-            _ => None,
-        }
-    }
-
-    fn rewind_detail_if_moved(&mut self, before: Option<(&'static str, Option<String>)>) {
-        if self.detail_target() != before {
-            self.detail_scroll.jump_start();
-        }
-    }
-
-    /// Moves the cursor and rewinds the detail only when the described item
-    /// changes, so re-selecting the current item keeps the reader's place.
     fn select_row(&mut self, row: usize) {
-        let before = self.detail_target();
-        self.cursor = row;
-        self.rewind_detail_if_moved(before);
+        self.track_detail(|p| p.cursor = row);
     }
 
     fn step(&mut self, delta: isize) {
@@ -1344,6 +1322,25 @@ impl CleanupPage {
     }
 }
 
+impl DetailRewind for CleanupPage {
+    type Item = Option<(&'static str, Option<String>)>;
+
+    fn described_item(&self) -> Self::Item {
+        match self.rows.get(self.cursor)? {
+            Row::Category(ci) => Some((self.cats.get(*ci)?.category.id, None)),
+            Row::Candidate(ci, ki) => {
+                let cat = self.cats.get(*ci)?;
+                Some((cat.category.id, Some(cat.candidates.get(*ki)?.path.clone())))
+            }
+            _ => None,
+        }
+    }
+
+    fn detail_scroll_mut(&mut self) -> &mut ScrollState {
+        &mut self.detail_scroll
+    }
+}
+
 impl ShellPage<Holla> for CleanupPage {
     fn on_key(&mut self, key: &Key, w: &mut World, cx: &mut Cx) -> Outcome {
         self.ensure_projection(w);
@@ -1422,15 +1419,15 @@ impl ShellPage<Holla> for CleanupPage {
                             self.toggle_candidate(ci, ki, cx);
                             self.rebuild_rows();
                         } else if key.code == KeyCode::Left {
-                            let before = self.detail_target();
-                            self.set_open(ci, false);
-                            self.rebuild_rows();
-                            self.cursor = self
-                                .rows
-                                .iter()
-                                .position(|r| matches!(r, Row::Category(c) if *c == ci))
-                                .unwrap_or(0);
-                            self.rewind_detail_if_moved(before);
+                            self.track_detail(|p| {
+                                p.set_open(ci, false);
+                                p.rebuild_rows();
+                                p.cursor = p
+                                    .rows
+                                    .iter()
+                                    .position(|r| matches!(r, Row::Category(c) if *c == ci))
+                                    .unwrap_or(0);
+                            });
                         }
                     }
                     _ => {}
