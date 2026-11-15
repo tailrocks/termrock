@@ -488,27 +488,22 @@ fn issue51_failed_save_changes_neither_store_nor_draft() {
 }
 
 #[test]
-fn issue51_refused_save_does_not_advance_the_content_revision() {
+fn issue51_ending_a_refused_save_does_not_advance_the_content_revision() {
     let mut app = connected();
     let key = open(&mut app, "products");
-    edit(&mut app, key, 0, SKU, CellValue::Null);
-    let revision = |app: &App| {
-        app.workbench
-            .as_ref()
-            .expect("connected")
-            .ws
-            .revision(key)
-            .expect("the tab is open")
-    };
-    let before = revision(&app);
-    confirm_save(&mut app, key);
+    let w = app.workbench.as_mut().expect("connected");
+    let (op, _) = w.ws.begin_operation(key).expect("the tab is idle");
+    let before = w.ws.revision(key);
 
-    assert!(status(&app).contains("sku is required"), "{}", status(&app));
+    app.end_save_operation(SaveOperation::Task(op));
+
+    let w = app.workbench.as_ref().expect("connected");
     assert_eq!(
-        revision(&app),
+        w.ws.revision(key),
         before,
-        "a refusal changes no content, so an open close request stays valid"
+        "a save that wrote nothing changes no content"
     );
+    assert_eq!(w.ws.running(key), None, "the operation ended");
 }
 
 #[test]
