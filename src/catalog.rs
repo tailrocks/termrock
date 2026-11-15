@@ -2155,6 +2155,7 @@ pub static CAPABILITIES: &[Capability] = &[
     Capability::function("widgets::grid::DataGrid::try_set_rows"),
     Capability::function("widgets::grid::DataGrid::try_append_rows"),
     Capability::function("widgets::grid::DataGrid::try_set_model"),
+    Capability::function("widgets::grid::DataGrid::update_column"),
     Capability::ty("widgets::grid::GridDataError"),
     Capability::variant("widgets::grid::GridDataError::Shape"),
     Capability::variant("widgets::grid::GridDataError::ColumnWidth"),

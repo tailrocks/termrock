@@ -44,6 +44,21 @@ text replaces the empty message. On Grid, a long row rejects the whole batch and
 the error shows as the empty state, while a short row is padded with `NULL` and
 displayed.
 
+## Column update
+
+`DataGrid::update_column(index, FnOnce(&mut ColumnSpec)) -> Result<bool, GridEditError>`
+edits a clone of the column and installs it only after the checks pass. It
+refuses with `Busy` before the closure runs while a save is reviewed or
+submitted, including for a width-only change, and with `InvalidTarget` for a
+missing column. A candidate with `max_width == 0` or `min_width > max_width` is
+`Validation`. An equal result is `Ok(false)` and changes nothing. A change to
+any field other than the width range bumps `GridRevision.source` once and closes
+an editor open on that column; an editor on another column stays. A width-only
+change keeps the revision and the editor, drops that column's manual width and
+resamples the automatic widths. A rejected call leaves the columns, revision,
+editor and draft as they were. The closure sees only one `ColumnSpec`, so it
+cannot add, remove or reorder columns.
+
 ## Left out on purpose
 
 - `DataGrid::try_set_model_keyed` and `try_set_rows_keyed` move to #33. The tree
@@ -51,9 +66,6 @@ displayed.
   keys to #33. #33 adds `GridDataError::Keys` and runs its count and uniqueness
   check in the same validation phase as the shape check. This corrects the
   unconditional statement in #42 section 5.
-- The Busy half of the column-mutation lock belongs to #11.
-- `GridRevision.source` assertions on a column update belong to #33, which
-  introduces the revision counters.
 - `DataGrid::new` keeps its infallible signature, so only `try_set_model`
   validates column widths.
 
