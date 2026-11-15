@@ -32,6 +32,8 @@ pub struct Opt {
     pub effect: Effect,
 
     pub needs: &'static [(&'static str, &'static str)],
+
+    pub listed: bool,
 }
 
 impl Opt {
@@ -43,7 +45,12 @@ impl Opt {
             default: 0,
             effect: Effect::Frame,
             needs: &[],
+            listed: true,
         }
+    }
+    const fn unlisted(mut self) -> Self {
+        self.listed = false;
+        self
     }
     const fn default(mut self, i: usize) -> Self {
         self.default = i;
@@ -1169,6 +1176,12 @@ pub static DIALOG_KINDS: &[Opt] = &[
         "Choice buttons",
         &["two", "three"],
     ),
+    Opt::new(
+        "dialogkinds.dismiss",
+        "Dismiss",
+        &["default", "light", "escape", "never"],
+    )
+    .unlisted(),
 ];
 
 pub static POPUPS_TOOLTIPS: &[Opt] = &[
@@ -1925,7 +1938,7 @@ impl OptionsView {
             if g.opts.is_empty() {
                 rows.push(Row::Note(g.empty));
             }
-            for opt in g.opts {
+            for opt in g.opts.iter().filter(|o| o.listed) {
                 let cid = id.sub(opt.key);
                 let control = if opt.is_toggle() {
                     Control::Toggle(Toggle::new(cid, opt.label, opt.default == 1))

@@ -1155,6 +1155,63 @@ fn option_choice_buttons_three() {
 }
 
 #[test]
+fn option_dismiss_never_refuses_escape_keeps_buttons() {
+    let args = [
+        "--page",
+        "dialogkinds",
+        "--opt",
+        "dialogkinds.dismiss=never",
+    ];
+    let app = open("s05-opt-dismiss", 120, 40, &args);
+    app.wait_text("Nothing yet");
+    click_page(&app, "Release channel");
+    clear_flash(&app, 120, 40, "Switch");
+    let dialog = app.wait_text("Switch");
+    see(
+        &dialog,
+        &["Release channel", "Stable", "Cancel", "Switch"],
+        &["Esc Cancel", "Choice · None"],
+    );
+    app.key("escape");
+    let refused = app.settle();
+    see(
+        &refused,
+        &["Release channel", "Stable", "Cancel", "Switch"],
+        &["Choice · None", "Choice · Some"],
+    );
+    click_page(&app, "Cancel");
+    let closed = app.wait_text("Choice · None");
+    see(&closed, &["Choice · None"], &["Switch"]);
+
+    click_page(&app, "Server info");
+    let info = app.wait_text("Open logs");
+    see(&info, &["Server info", "Close"], &["Esc Close"]);
+    app.key("escape");
+    let refused_info = app.settle();
+    see(
+        &refused_info,
+        &["Server info", "Open logs"],
+        &["Info · Closed"],
+    );
+    click_page(&app, "Close");
+    app.wait_text("Info · Closed");
+
+    click_page(&app, "Add connection");
+    let form = app.wait_text("Test connection");
+    see(&form, &["Add connection", "Cancel"], &["Form · Cancel"]);
+    app.key("escape");
+    let refused_form = app.settle();
+    see(
+        &refused_form,
+        &["Add connection", "Test connection"],
+        &["Form · Cancel"],
+    );
+    click_page(&app, "Cancel");
+    app.wait_text("Form · Cancel");
+    app.finish();
+}
+
+#[test]
 fn kinds_chooser_save_cancel_choice_info_help() {
     let args = ["--page", "dialogkinds"];
     let app = open("s05-kinds", 120, 40, &args);
