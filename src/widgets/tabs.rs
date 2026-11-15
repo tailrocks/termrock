@@ -77,9 +77,9 @@ impl crate::ui::measure::Measure for Tabs {
         _avail: ratatui::layout::Size,
         _ctx: &crate::ui::ctx::RenderCtx,
     ) -> ratatui::layout::Size {
-        let tabs: u16 = self.items.iter().map(|it| self.tab_width(it) + 1).sum();
         let new = if self.allow_new { 4 } else { 0 };
-        ratatui::layout::Size::new(tabs + new, 2)
+        let total = self.intrinsic_total().saturating_add(new);
+        ratatui::layout::Size::new(crate::ui::measure::terminal_extent(total), 2)
     }
 
     fn min_width(&self, _avail: ratatui::layout::Size, _ctx: &crate::ui::ctx::RenderCtx) -> u16 {
@@ -89,8 +89,12 @@ impl crate::ui::measure::Measure for Tabs {
             .map(|it| self.tab_width(it))
             .max()
             .unwrap_or(0);
-        let more = 3 + self.items.len().to_string().len() as u16;
-        widest + 1 + 8 + more + if self.allow_new { 4 } else { 0 }
+        let more = 3 + self.items.len().to_string().len();
+        crate::ui::measure::terminal_extent(
+            widest
+                .saturating_add(1 + 8 + more)
+                .saturating_add(if self.allow_new { 4 } else { 0 }),
+        )
     }
 }
 
@@ -713,21 +717,29 @@ impl Tabs {
         (Outcome::Ignored, None)
     }
 
-    fn tab_width(&self, it: &TabItem) -> u16 {
-        let mut w = 1 + crate::ui::text::width(&it.label) as u16 + 2;
+    fn tab_width(&self, it: &TabItem) -> usize {
+        let text = crate::ui::text::width;
+        let mut w = 1usize.saturating_add(text(&it.label)).saturating_add(2);
         if let Some(p) = &it.prefix {
-            w += crate::ui::text::width(p) as u16 + 1;
+            w = w.saturating_add(text(p)).saturating_add(1);
         }
         if let Some(x) = &it.suffix {
-            w += crate::ui::text::width(x) as u16 + 1;
+            w = w.saturating_add(text(x)).saturating_add(1);
         }
         if it.dirty || it.busy || it.error || it.done {
-            w += 2;
+            w = w.saturating_add(2);
         }
         if it.closable {
-            w += 2;
+            w = w.saturating_add(2);
         }
         w
+    }
+
+    fn intrinsic_total(&self) -> usize {
+        self.items
+            .iter()
+            .map(|it| self.tab_width(it).saturating_add(1))
+            .fold(0usize, usize::saturating_add)
     }
 
     pub fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, bg: Color) {
@@ -762,9 +774,9 @@ impl Tabs {
         let new_w: u16 = if self.allow_new { 4 } else { 0 };
         let mut x = area.x;
 
-        let widths: Vec<u16> = self.items.iter().map(|it| self.tab_width(it)).collect();
-        let total: u16 = widths.iter().map(|w| w + 1).sum();
-        let overflow = total + new_w > area.width;
+        let widths: Vec<usize> = self.items.iter().map(|it| self.tab_width(it)).collect();
+        let total = self.intrinsic_total();
+        let overflow = total.saturating_add(usize::from(new_w)) > usize::from(area.width);
 
         let left_w: u16 = if overflow { 4 } else { 0 };
         let right_w: u16 = if overflow { 4 } else { 0 };
@@ -774,12 +786,13 @@ impl Tabs {
         } else {
             0
         };
-        let avail = area.width.saturating_sub(left_w + right_w + more_w + new_w);
+        let avail =
+            usize::from(area.width).saturating_sub(usize::from(left_w + right_w + more_w + new_w));
 
         self.max_first = {
-            let mut used = 0u16;
+            let mut used = 0usize;
             let mut f = self.items.len();
-            while f > 0 && used + widths[f - 1] < avail {
+            while f > 0 && used.saturating_add(widths[f - 1]) < avail {
                 used += widths[f - 1] + 1;
                 f -= 1;
             }
@@ -799,9 +812,9 @@ impl Tabs {
         }
         loop {
             fit = 0;
-            let mut used = 0u16;
+            let mut used = 0usize;
             for w in widths.iter().skip(self.first) {
-                if used + w + 1 > avail {
+                if used.saturating_add(*w).saturating_add(1) > avail {
                     break;
                 }
                 used += w + 1;
@@ -840,9 +853,10 @@ impl Tabs {
         for i in self.first..(self.first + fit).min(self.items.len()) {
             let it = &self.items[i];
             let w = widths[i];
-            if x + w > area.right() {
+            if w > usize::from(area.right().saturating_sub(x)) {
                 break;
             }
+            let w = crate::ui::measure::terminal_extent(w);
             let r = Rect::new(x, y, w, 1);
             self.areas[i] = r;
             let tid = self.tab_id(i);

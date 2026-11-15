@@ -5,6 +5,7 @@ use ratatui::style::{Color, Modifier};
 use crate::core::id::WidgetId;
 use crate::theme::Tone;
 use crate::ui::ctx::RenderCtx;
+use crate::ui::measure::terminal_extent;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Segment {
@@ -55,23 +56,35 @@ impl Segment {
     }
 }
 
+const SEP: usize = 2;
+
+/// Natural width of both segment groups, saturating at `u16::MAX`.
 pub fn width(left: &[Segment], right: &[Segment], t: &crate::theme::Theme) -> u16 {
-    let sep = 2u16;
-    let w: u16 = left
-        .iter()
-        .chain(right)
-        .map(|s| crate::ui::text::width(&s.shown()) as u16 + sep)
-        .sum();
-    w.saturating_sub(sep) + 2 * t.spacing.chrome_edge
+    terminal_extent(intrinsic_width(left, right, t))
 }
 
+fn intrinsic_width(left: &[Segment], right: &[Segment], t: &crate::theme::Theme) -> usize {
+    left.iter()
+        .chain(right)
+        .map(|s| crate::ui::text::width(&s.shown()).saturating_add(SEP))
+        .fold(0usize, usize::saturating_add)
+        .saturating_sub(SEP)
+        .saturating_add(2 * usize::from(t.spacing.chrome_edge))
+}
+
+/// Narrowest width that still shows the strongest segment, saturating at
+/// `u16::MAX`.
 pub fn min_width(left: &[Segment], right: &[Segment], t: &crate::theme::Theme) -> u16 {
     let strongest = left
         .iter()
         .chain(right)
         .max_by_key(|s| s.priority)
-        .map_or(0, |s| crate::ui::text::width(&s.shown()) as u16);
-    strongest + 2 + 1 + 2 * t.spacing.chrome_edge
+        .map_or(0, |s| crate::ui::text::width(&s.shown()));
+    terminal_extent(
+        strongest
+            .saturating_add(2 + 1)
+            .saturating_add(2 * usize::from(t.spacing.chrome_edge)),
+    )
 }
 
 pub fn render(
@@ -87,33 +100,31 @@ pub fn render(
         return;
     }
     let t = ctx.theme;
-    let sep = 2u16;
+    let sep = SEP as u16;
 
     let edge = t.spacing.chrome_edge;
-    let w = |s: &Segment| crate::ui::text::width(&s.shown()) as u16;
+    let w = |s: &Segment| crate::ui::text::width(&s.shown());
 
     let mut keep_l: Vec<bool> = vec![true; left.len()];
     let mut keep_r: Vec<bool> = vec![true; right.len()];
-    let total = |kl: &[bool], kr: &[bool]| -> u16 {
-        let l: u16 = left
-            .iter()
-            .zip(kl)
-            .filter(|(_, k)| **k)
-            .map(|(s, _)| w(s) + sep)
-            .sum();
-        let r: u16 = right
-            .iter()
-            .zip(kr)
-            .filter(|(_, k)| **k)
-            .map(|(s, _)| w(s) + sep)
-            .sum();
-
+    let total = |kl: &[bool], kr: &[bool]| -> usize {
+        let kept = |segs: &[Segment], keep: &[bool]| {
+            segs.iter()
+                .zip(keep)
+                .filter(|(_, k)| **k)
+                .map(|(s, _)| w(s).saturating_add(SEP))
+                .fold(0usize, usize::saturating_add)
+        };
         let gone = kl.iter().chain(kr).any(|k| !k);
-        let more = if gone { 1 + sep } else { 0 };
+        let more = if gone { 1 + SEP } else { 0 };
 
-        (l + r + more).saturating_sub(sep) + 2 * edge
+        kept(left, kl)
+            .saturating_add(kept(right, kr))
+            .saturating_add(more)
+            .saturating_sub(SEP)
+            .saturating_add(2 * usize::from(edge))
     };
-    while total(&keep_l, &keep_r) > area.width {
+    while total(&keep_l, &keep_r) > usize::from(area.width) {
         let mut best: Option<(u8, bool, usize)> = None;
         for (i, s) in left.iter().enumerate() {
             if keep_l[i] && best.is_none_or(|b| s.priority < b.0) {
@@ -173,7 +184,7 @@ pub fn render(
         if !k {
             continue;
         }
-        let sw = w(s) + if s.id.is_some() { 2 } else { 0 };
+        let sw = terminal_extent(w(s)) + if s.id.is_some() { 2 } else { 0 };
         let start = if s.id.is_some() {
             x.saturating_sub(1)
         } else {
@@ -187,7 +198,7 @@ pub fn render(
         if !k {
             continue;
         }
-        let sw = w(s);
+        let sw = terminal_extent(w(s));
         rx = rx.saturating_sub(sw);
         let start = if s.id.is_some() {
             rx.saturating_sub(1)

@@ -5,6 +5,7 @@ use ratatui::style::Style;
 use crate::core::id::WidgetId;
 use crate::theme::{ButtonKind, Kind, Plane, Theme};
 use crate::ui::ctx::{RenderCtx, VisualState};
+use crate::ui::measure::terminal_extent;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Lockup {
@@ -36,8 +37,9 @@ impl Lockup {
         }
     }
 
+    /// Natural width of the lockup, saturating at `u16::MAX`.
     pub fn width(&self) -> u16 {
-        crate::ui::text::width(&self.label()) as u16
+        terminal_extent(crate::ui::text::width(&self.label()))
     }
 
     pub fn style(t: &Theme) -> Style {
@@ -52,7 +54,7 @@ impl Lockup {
     pub fn render(&self, x: u16, y: u16, buf: &mut Buffer, t: &Theme) -> u16 {
         let label = self.label();
         buf.set_string(x, y, &label, Self::style(t));
-        crate::ui::text::width(&label) as u16
+        terminal_extent(crate::ui::text::width(&label))
     }
 
     pub fn render_clickable(
@@ -69,8 +71,8 @@ impl Lockup {
         s.focused = false;
         let st = Self::state_style(t, s);
         buf.set_string(x, y, &label, st);
-        let w = crate::ui::text::width(&label) as u16;
-        ctx.clickable(id, Rect::new(x, y, w, 1));
+        let w = terminal_extent(crate::ui::text::width(&label));
+        ctx.clickable(id, Rect::new(x, y, w, 1).intersection(*buf.area()));
         w
     }
 }

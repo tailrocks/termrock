@@ -222,8 +222,11 @@ impl ScrollView {
     pub fn fit(&self, area: Size, measure: impl Fn(Size) -> Size) -> Size {
         let size = measure(area);
         let pad = self.padding;
-        let (pad_w, pad_h) = (pad.left + pad.right, pad.top + pad.bottom);
-        let room = 1 + self.scrollbar_gap;
+        let (pad_w, pad_h) = (
+            pad.left.saturating_add(pad.right),
+            pad.top.saturating_add(pad.bottom),
+        );
+        let room = 1u16.saturating_add(self.scrollbar_gap);
         let bar = self.axes.vertical
             && self.bars != ScrollbarVisibility::Never
             && area.width > room
@@ -250,7 +253,7 @@ impl ScrollView {
             .saturating_add(pad.bottom);
         let shows = self.bars != ScrollbarVisibility::Never;
         let always = self.bars == ScrollbarVisibility::Always;
-        let v_room = 1 + self.scrollbar_gap;
+        let v_room = 1u16.saturating_add(self.scrollbar_gap);
         let (mut v, mut h) = (false, false);
         for _ in 0..3 {
             let vw = area.width.saturating_sub(if v { v_room } else { 0 });
@@ -282,8 +285,8 @@ impl ScrollView {
         let inner = Rect::new(
             content.x.saturating_add(pad.left),
             content.y.saturating_add(pad.top),
-            cw.saturating_sub(pad.left + pad.right),
-            ch.saturating_sub(pad.top + pad.bottom),
+            cw.saturating_sub(pad.left.saturating_add(pad.right)),
+            ch.saturating_sub(pad.top.saturating_add(pad.bottom)),
         );
         let v_track = v.then(|| Rect::new(area.right() - 1, area.y, 1, vh));
         let h_track = h.then(|| Rect::new(area.x, area.bottom() - 1, area.width - u16::from(v), 1));
