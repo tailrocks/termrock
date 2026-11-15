@@ -2858,3 +2858,101 @@ fn jackin_manager_multi_launch_reverse_order_and_cancel_second_picker() {
     app.wait_text("Current directory");
     app.finish();
 }
+
+fn wait_for_exit(app: &App) {
+    let deadline = std::time::Instant::now() + Duration::from_secs(10);
+    while app.child_running() {
+        assert!(
+            std::time::Instant::now() < deadline,
+            "application kept running after the test clock passed its exit delay:\n{}",
+            text(&app.screen())
+        );
+        std::thread::sleep(Duration::from_millis(50));
+    }
+}
+
+#[test]
+fn jackin_launch_handoff_lands_on_the_capsule_at_full_motion_on_the_test_clock() {
+    let app = jackin("jackin-launch-handoff-full", "full");
+    app.wait_text("Current directory");
+    app.key("enter");
+    app.wait_text("Launch · choose Agent");
+    app.key("space");
+    app.key("enter");
+    app.wait_text("Loading the-architect into workspace payments-platform");
+
+    app.advance_clock(30_000);
+    let capsule = app.wait_screen("launch handoff lands on capsule", |s| {
+        let t = text(s);
+        t.contains("Claude Code v2.1.14") && t.contains("Ctrl+B Pane commands")
+    });
+    assert!(!text(&capsule).contains("Launch failed"));
+
+    // Keys only reach the capsule once the handoff has finished, so a stalled
+    // handoff would leave the detach unanswered.
+    app.key("ctrl+b");
+    app.wait_text("prefix…");
+    app.key("d");
+    app.wait_text("Detached · payments-platform keeps running");
+    app.finish();
+}
+
+#[test]
+fn jackin_unknown_exit_returns_to_host_then_quits_after_the_test_clock_passes_2500_ms() {
+    let app = App::new(
+        "jackin-exit-status-clock",
+        JACKIN,
+        &[
+            "--scenario",
+            "hard-cases",
+            "--motion",
+            "full",
+            "--frame",
+            "40",
+        ],
+        120,
+        40,
+        "truecolor",
+    );
+    app.wait_text("Current directory");
+    app.key("down");
+    app.key("right");
+    app.key("down");
+    app.key("enter");
+    app.wait_text("Ctrl+B Pane commands");
+
+    // The index is unreadable, so leaving the capsule takes the exit delay
+    // path: a status line, then quit once 2.5 s of sim time has passed.
+    app.key("ctrl+q");
+    app.wait_text("Unsaved work — quit?");
+    app.key("down");
+    app.key("down");
+    app.key("enter");
+    let returned = app.wait_text("returning to host without the outro");
+    assert!(
+        text(&returned).contains("Could not confirm remaining instances"),
+        "{}",
+        text(&returned)
+    );
+
+    // Wall time must not count toward the 2.5 s delay.
+    std::thread::sleep(Duration::from_millis(3_000));
+    assert!(
+        app.child_running(),
+        "application quit on wall time under the test clock:\n{}",
+        text(&app.screen())
+    );
+
+    // Stepping 2 s stays inside the delay, so the process is still up.
+    app.advance_clock(2_000);
+    std::thread::sleep(Duration::from_millis(300));
+    assert!(
+        app.child_running(),
+        "application quit before 2.5 s of sim time:\n{}",
+        text(&app.screen())
+    );
+
+    app.advance_clock(600);
+    wait_for_exit(&app);
+    app.assert_restored_exit();
+}
