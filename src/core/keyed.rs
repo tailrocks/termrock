@@ -61,6 +61,9 @@ pub struct KeyedState {
     expanded_revision: u64,
     edit: Option<EditTarget>,
     press: Option<PressTarget>,
+    /// A capture was dropped by reconciliation or a layout change and its
+    /// click has not arrived yet.
+    press_lost: bool,
 }
 
 struct Projection {
@@ -138,6 +141,7 @@ impl KeyedState {
             self.expanded_revision += 1;
             out.edit_cancelled = self.edit.take().is_some();
             out.pointer_cancelled = self.press.take().is_some();
+            self.press_lost |= out.pointer_cancelled;
         }
         if let Some(authoritative) = next.authoritative {
             self.authoritative = authoritative;
@@ -175,6 +179,7 @@ impl KeyedState {
                 && self.positions.get(&press.key) == Some(&press.visible_index);
             if !alive {
                 self.press = None;
+                self.press_lost = true;
                 out.pointer_cancelled = true;
             }
         }
@@ -382,6 +387,7 @@ impl KeyedState {
     }
 
     pub fn capture_press(&mut self, key: ItemKey, layout_generation: u64) -> bool {
+        self.press_lost = false;
         let Some(&visible_index) = self.positions.get(&key) else {
             return false;
         };
@@ -412,6 +418,17 @@ impl KeyedState {
             && self.positions.get(&key) == Some(&press.visible_index)
     }
 
+    /// Decides a click. A click that follows a press must land on the pressed
+    /// row, so it is refused when that press was dropped meanwhile (the source
+    /// was reordered, replaced or the layout moved). A click with no press at
+    /// all, such as one that is not pointer-driven, is accepted.
+    pub(crate) fn release_click(&mut self, key: ItemKey, layout_generation: u64) -> bool {
+        if self.press.is_some() {
+            return self.release_press(key, layout_generation);
+        }
+        !std::mem::take(&mut self.press_lost)
+    }
+
     /// Cancels a capture made under another layout generation. Resizing moves
     /// hit regions without changing the source, so `reconcile` cannot see it.
     pub fn invalidate_layout(&mut self, generation: u64) -> bool {
@@ -420,6 +437,7 @@ impl KeyedState {
             .is_some_and(|press| press.layout_generation != generation)
         {
             self.press = None;
+            self.press_lost = true;
             return true;
         }
         false

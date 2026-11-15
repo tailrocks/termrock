@@ -620,6 +620,32 @@ mod widgets {
     }
 
     #[test]
+    fn keyed_list_click_after_a_source_swap_is_consumed() {
+        let first = items(&[(1, "alpha"), (2, "bravo")]);
+        let mut list =
+            list(SelectMode::Single).click(junie_tui::core::selection::ClickPolicy::NAVIGATION);
+        let frame = draw_list(&mut list, &first);
+        let at = Position::new(6, 1);
+        let id = frame.id_at(list.id, Part::ROW, at);
+        let _ = list
+            .on_pointer_source(&frame.event(Phase::Press, id, at), &first)
+            .expect("valid");
+        assert_eq!(list.keyed().pressed(), Some(k(2)));
+
+        // Another provider instance that happens to reuse the same keys.
+        let second = items(&[(1, "one"), (2, "two")]);
+        let after = draw_list(&mut list, &second);
+        let id = after.id_at(list.id, Part::ROW, at);
+        let out = list
+            .on_pointer_source(&after.event(Phase::Click, id, at), &second)
+            .expect("valid");
+        assert!(
+            out.actions().next().is_none(),
+            "the press belonged to the old source"
+        );
+    }
+
+    #[test]
     fn keyed_list_click_activates_the_clicked_key() {
         let store = items(&[(1, "alpha"), (2, "bravo")]);
         let mut list =
@@ -907,6 +933,29 @@ mod widgets {
         assert!(out.actions().next().is_none());
         assert_eq!(t.keyed().pressed(), None);
         assert_eq!(store.len(), 3);
+    }
+
+    #[test]
+    fn keyed_table_click_after_a_source_swap_is_consumed() {
+        let mut store = table_store();
+        let mut t = table();
+        let frame = draw_table(&mut t, &mut store);
+        let at = Position::new(8, 2);
+        let id = frame.id_at(t.id, Part::CELL, at);
+        let _ = t
+            .on_pointer_edit_source(&frame.event(Phase::Press, id, at), &mut store)
+            .expect("valid");
+        assert_eq!(t.keyed().pressed(), Some(k(2)));
+        let cursor = t.keyed().cursor();
+
+        let mut second = table_store();
+        let after = draw_table(&mut t, &mut second);
+        let id = after.id_at(t.id, Part::CELL, at);
+        let out = t
+            .on_pointer_edit_source(&after.event(Phase::Click, id, at), &mut second)
+            .expect("valid");
+        assert!(out.is_consumed() && out.actions().next().is_none());
+        assert_eq!(t.keyed().cursor(), cursor, "the old press moved nothing");
     }
 
     #[test]
