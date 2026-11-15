@@ -149,17 +149,24 @@ impl FormField {
         }
     }
 
-    fn end_interaction(&mut self) {
+    /// Ends a hidden field's transient interaction. Returns true when an
+    /// input's uncommitted edit survives as the field's value, so the caller
+    /// reports it like any other committed change.
+    fn end_interaction(&mut self) -> bool {
         match &mut self.kind {
             FormFieldKind::Input(i) if i.editing || i.field.pressed() || i.edit_menu.is_open() => {
+                let typed = i.is_dirty().then(|| i.text().to_owned());
+                let _ = i.on_blur();
                 let text = i.text().to_owned();
                 i.set_value(&text);
+                typed.is_some_and(|typed| typed == text)
             }
             FormFieldKind::Select(s) => {
                 s.close();
                 let _ = s.on_release(Position::ORIGIN);
+                false
             }
-            _ => {}
+            _ => false,
         }
     }
 
@@ -327,8 +334,14 @@ impl FormDialog {
     }
 
     fn reconcile_hidden_interactions(&mut self) {
+        let mut changed = Vec::new();
         for f in self.fields.iter_mut().filter(|f| !f.visible) {
-            f.end_interaction();
+            if f.end_interaction() {
+                changed.push(f.name.clone());
+            }
+        }
+        for name in changed {
+            self.changed_field(name);
         }
         let hidden = |id: WidgetId| {
             self.fields
