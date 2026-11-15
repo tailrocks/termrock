@@ -10,8 +10,13 @@ use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::focus::{Focus, FocusRing};
 use junie_tui::core::hit::Axis;
 use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::{ItemKey, WidgetId};
+use junie_tui::core::id::{ItemKey, Part, WidgetId};
+use junie_tui::core::intent::Phase;
+use junie_tui::core::keyed::KeyedSourceError;
+use junie_tui::core::list::{KeyedRowSource, RowSource, SourceStamp};
+use junie_tui::core::pointer::PointerEvent;
 use junie_tui::core::refusal::{Reason, clear_refusal, take_refusal};
+use junie_tui::core::selection::ClickPolicy;
 use junie_tui::terminal::{TerminalState, TerminalViewport};
 use junie_tui::theme::{ColorLevel, Theme};
 use junie_tui::ui::ctx::{Interaction, RenderCtx};
@@ -21,13 +26,24 @@ use junie_tui::widgets::choice::Checkbox;
 use junie_tui::widgets::dialog::{Dialog, DialogResult};
 use junie_tui::widgets::edit::{EditField, Validator};
 use junie_tui::widgets::input::TextInput;
+use junie_tui::widgets::list::{
+    ListAction, ListBox, ListItem, ListItemRef, ListSource, SelectMode,
+};
 use junie_tui::widgets::list_detail::{Action, Event, Frame, Line, ListDetail, ListRow};
+use junie_tui::widgets::nav_list::{NavItem, NavList};
 use junie_tui::widgets::option_list::Item;
 use junie_tui::widgets::picker::{Picker, PickerAction, PickerItemsError, VisibleKey};
+use junie_tui::widgets::table::{
+    Cell, CellRef, Column, DataTable, KeyedTable, KeyedTableError, TableAction, TableEditSource,
+    TableSource,
+};
+use junie_tui::widgets::tree::{
+    KeyedTree, KeyedTreeNode, TreeAction, TreeNodeRef, TreeSource, TreeView,
+};
 use junie_tui::widgets::viewport_ops::ViewportOps;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
-use ratatui::layout::{Position, Rect};
+use ratatui::layout::{Constraint, Position, Rect};
 
 use super::super::coverage::ScenarioId;
 
@@ -48,6 +64,14 @@ pub const CASES: &[ScenarioCase] = &[
     ScenarioCase { id: ScenarioId::FixedControlsPolicy, run: fixed_controls_policy },
     ScenarioCase { id: ScenarioId::FixedDialogsPolicy, run: fixed_dialogs_policy },
     ScenarioCase { id: ScenarioId::ListDetailNavigation, run: list_detail_navigation },
+    ScenarioCase { id: ScenarioId::KeyedListSource, run: keyed_list_source },
+    ScenarioCase { id: ScenarioId::NavItemReplacement, run: nav_item_replacement },
+    ScenarioCase { id: ScenarioId::TableModelUpdates, run: table_model_updates },
+    ScenarioCase { id: ScenarioId::KeyedTableStore, run: keyed_table_store },
+    ScenarioCase { id: ScenarioId::KeyedTableSource, run: keyed_table_source },
+    ScenarioCase { id: ScenarioId::KeyedTableEdit, run: keyed_table_edit },
+    ScenarioCase { id: ScenarioId::KeyedTreeStore, run: keyed_tree_store },
+    ScenarioCase { id: ScenarioId::KeyedTreeView, run: keyed_tree_view },
 ];
 
 fn key(code: KeyCode) -> Key {
@@ -72,14 +96,41 @@ fn text_of(buf: &Buffer) -> String {
 }
 
 fn paint(area: Rect, draw: impl FnOnce(Rect, &mut Buffer, &mut RenderCtx)) -> Buffer {
+    paint_hits(area, draw).buf
+}
+
+/// One painted frame with the hit regions it registered, so a scenario can
+/// aim a pointer event at what is on screen.
+struct Painted {
+    buf: Buffer,
+    hits: HitRegistry,
+}
+
+impl Painted {
+    fn event(&self, phase: Phase, owner: WidgetId, part: Part, at: Position) -> PointerEvent {
+        let id = self
+            .hits
+            .regions()
+            .iter()
+            .rev()
+            .find(|r| r.owner == owner && r.part.part == part && r.area.contains(at))
+            .map(|r| r.id)
+            .expect("a hit region at the position");
+        PointerEvent::new(&self.hits, phase, id, at, 1, KeyModifiers::NONE)
+    }
+}
+
+fn paint_hits(area: Rect, draw: impl FnOnce(Rect, &mut Buffer, &mut RenderCtx)) -> Painted {
     let theme = Theme::for_level(ColorLevel::TrueColor);
     let mut buf = Buffer::empty(area);
     let mut hits = HitRegistry::default();
     let mut ring = FocusRing::default();
-    let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
-    draw(area, &mut buf, &mut ctx);
-    ctx.flush_overlays(&mut buf);
-    buf
+    {
+        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        draw(area, &mut buf, &mut ctx);
+        ctx.flush_overlays(&mut buf);
+    }
+    Painted { buf, hits }
 }
 
 fn lettered(labels: &[&str]) -> Vec<Item> {
@@ -405,6 +456,584 @@ fn list_detail_navigation() {
     list.open_detail(&mut focus);
     list.close_detail(&mut focus);
     let _ = Position::new(0, 0);
+}
+
+/// Records the list reads in place and identifies by label, never by position.
+struct Records {
+    items: Vec<ListItem>,
+    reversed: bool,
+}
+
+impl Records {
+    fn new(labels: &[&str]) -> Self {
+        Self {
+            items: labels.iter().map(|label| ListItem::new(label)).collect(),
+            reversed: false,
+        }
+    }
+
+    fn at(&self, visible: usize) -> usize {
+        if self.reversed {
+            self.items.len() - 1 - visible
+        } else {
+            visible
+        }
+    }
+}
+
+impl RowSource for Records {
+    fn len(&self) -> usize {
+        self.items.len()
+    }
+
+    fn enabled(&self, i: usize) -> bool {
+        !self.items[self.at(i)].disabled
+    }
+
+    fn label(&self, i: usize) -> &str {
+        &self.items[self.at(i)].label
+    }
+
+    fn key(&self, i: usize) -> ItemKey {
+        ItemKey::text(self.label(i))
+    }
+}
+
+impl KeyedRowSource for Records {
+    fn stamp(&self) -> SourceStamp {
+        SourceStamp {
+            instance: ItemKey::text("scenario.records"),
+            data: 0,
+            view: u64::from(self.reversed),
+        }
+    }
+
+    fn source_len(&self) -> usize {
+        self.items.len()
+    }
+
+    fn source_key(&self, source_index: usize) -> ItemKey {
+        ItemKey::text(&self.items[source_index].label)
+    }
+}
+
+impl ListSource for Records {
+    fn item(&self, visible: usize) -> ListItemRef<'_> {
+        self.items[self.at(visible)].borrowed()
+    }
+}
+
+fn keyed_list_source() {
+    const AREA: Rect = Rect::new(0, 0, 40, 10);
+    let beta = ItemKey::text("Beta");
+    let mut source = Records::new(&["Alpha", "Beta", "Gamma", "Delta"]);
+    let mut list = ListBox::new(
+        WidgetId::of("scenario.keyed.list"),
+        vec![],
+        SelectMode::Single,
+    )
+    .click(ClickPolicy::NAVIGATION);
+    let draw = |list: &mut ListBox, source: &Records| {
+        paint_hits(AREA, |area, buf, ctx| {
+            list.render_source(area, source, buf, ctx, ctx.theme.canvas)
+                .expect("unique keys are a valid source");
+        })
+    };
+    assert!(text_of(&draw(&mut list, &source).buf).contains("Alpha"));
+
+    let _ = list
+        .on_key_source(&key(KeyCode::Down), &source)
+        .expect("valid source");
+    let out = list
+        .on_key_source(&key(KeyCode::Enter), &source)
+        .expect("valid source");
+    assert_eq!(
+        out.actions().copied().collect::<Vec<_>>(),
+        vec![ListAction::Activated(beta), ListAction::SelectionChanged],
+        "Enter reports the chosen row by key, then the changed selection"
+    );
+    assert_eq!(list.keyed().selected().collect::<Vec<_>>(), vec![beta]);
+
+    source.reversed = true;
+    let frame = draw(&mut list, &source);
+    assert_eq!(list.keyed().cursor(), Some(beta));
+    assert_eq!(
+        list.chosen,
+        Some(2),
+        "the choice follows its key to the new row"
+    );
+    assert!(text_of(&frame.buf).contains("Delta"));
+
+    let at = Position::new(6, 0);
+    let press = frame.event(Phase::Press, list.id, Part::ROW, at);
+    let _ = list
+        .on_pointer_source(&press, &source)
+        .expect("valid source");
+    let click = frame.event(Phase::Click, list.id, Part::ROW, at);
+    let out = list
+        .on_pointer_source(&click, &source)
+        .expect("valid source");
+    assert!(
+        out.actions()
+            .any(|a| *a == ListAction::Activated(ItemKey::text("Delta"))),
+        "a click activates the row under the pointer, by key"
+    );
+
+    let mut multi = ListBox::new(
+        WidgetId::of("scenario.keyed.multi"),
+        vec![],
+        SelectMode::Multi,
+    );
+    draw(&mut multi, &source);
+    let out = multi
+        .on_key_source(&key(KeyCode::Char(' ')), &source)
+        .expect("valid source");
+    assert!(out.actions().any(|a| *a == ListAction::SelectionChanged));
+    assert_eq!(multi.keyed().selected().count(), 1);
+}
+
+fn nav_item_replacement() {
+    let items = |labels: &[&str]| labels.iter().map(|l| NavItem::new(l)).collect::<Vec<_>>();
+    let mut nav = NavList::new(
+        WidgetId::of("scenario.nav"),
+        items(&["Tasks", "Runs", "Logs"]),
+    );
+    nav.on_key(&key(KeyCode::End));
+    assert_eq!(nav.cursor, 2);
+    assert!(
+        nav.set_items(items(&["Tasks", "Runs"])),
+        "a new set replaces the old"
+    );
+    assert_eq!(nav.cursor, 1, "the cursor is repaired to the last row left");
+    assert!(
+        !nav.set_items(items(&["Tasks", "Runs"])),
+        "an equal set leaves all state untouched"
+    );
+    assert!(nav.set_items(vec![]));
+    assert!(nav.items.is_empty());
+    assert!(nav.set_items(items(&["Home", "Search"])));
+    assert_eq!(
+        (nav.cursor, nav.current),
+        (0, 0),
+        "an empty list starts on its first row"
+    );
+    let buf = paint(Rect::new(0, 0, 30, 8), |area, buf, ctx| {
+        nav.render(area, buf, ctx, ctx.theme.canvas)
+    });
+    assert!(text_of(&buf).contains("Search"));
+}
+
+fn cells(texts: &[&str]) -> Vec<Cell> {
+    texts.iter().map(|text| Cell::new(*text)).collect()
+}
+
+fn two_columns() -> Vec<Column> {
+    vec![
+        Column::new("Task", Constraint::Min(12)),
+        Column::new("Owner", Constraint::Length(8)),
+    ]
+}
+
+fn table_model_updates() {
+    use junie_tui::core::data::DataError;
+    let mut table = DataTable::try_new(
+        WidgetId::of("scenario.table"),
+        two_columns(),
+        vec![cells(&["lint", "ana"]), cells(&["build", "kai"])],
+    )
+    .expect("rectangular rows");
+    assert_eq!((table.columns().len(), table.rows().len()), (2, 2));
+    assert!(
+        DataTable::try_new(
+            WidgetId::of("scenario.bad"),
+            two_columns(),
+            vec![cells(&["x"])]
+        )
+        .is_err(),
+        "a short row is refused at construction"
+    );
+
+    table
+        .try_set_rows(vec![
+            cells(&["lint", "ana"]),
+            cells(&["build", "kai"]),
+            cells(&["ship", "mira"]),
+        ])
+        .expect("rectangular rows");
+    assert_eq!(table.rows().len(), 3);
+    assert!(table.try_set_rows(vec![cells(&["x"])]).is_err());
+    assert_eq!(
+        table.rows().len(),
+        3,
+        "a refused replacement changes nothing"
+    );
+
+    table
+        .try_set_row(1, cells(&["build", "sofia"]))
+        .expect("a full row replaces row 1");
+    assert_eq!(table.rows()[1][1].text, "sofia");
+    assert_eq!(
+        table.try_set_row(7, cells(&["a", "b"])),
+        Err(DataError::MissingRow(7))
+    );
+    assert!(table.try_set_row(0, cells(&["a"])).is_err());
+
+    assert!(table.update_cell(0, 1, |cell| cell.text = "jonas".into()));
+    assert_eq!(table.rows()[0][1].text, "jonas");
+    assert!(
+        !table.update_cell(9, 0, |_| {}),
+        "a missing cell is refused"
+    );
+
+    assert_eq!(
+        table.update_column(0, |column| column.title = "Summary".into()),
+        Ok(true)
+    );
+    assert_eq!(
+        table.update_column(0, |_| {}),
+        Ok(false),
+        "no change reports false"
+    );
+    assert_eq!(table.update_column(7, |_| {}), Err(7));
+    let frame = paint(Rect::new(0, 0, 40, 8), |area, buf, ctx| {
+        table.render(area, buf, ctx, ctx.theme.canvas)
+    });
+    assert!(text_of(&frame).contains("Summary"));
+
+    table
+        .try_set_model(
+            vec![Column::new("Name", Constraint::Min(10))],
+            vec![cells(&["lint"]), cells(&["build"])],
+        )
+        .expect("the new model is rectangular");
+    assert_eq!((table.columns().len(), table.rows().len()), (1, 2));
+    assert!(
+        table
+            .try_set_model(
+                vec![Column::new("Name", Constraint::Min(10))],
+                vec![cells(&["a", "b"])]
+            )
+            .is_err()
+    );
+    assert_eq!(table.columns().len(), 1, "a refused model changes nothing");
+}
+
+fn tasks_store() -> KeyedTable {
+    let k = ItemKey::num;
+    KeyedTable::try_new(
+        vec![
+            Column::new("Task", Constraint::Length(12)).editable(),
+            Column::new("Owner", Constraint::Length(10)).editable(),
+        ],
+        [
+            (k(1), cells(&["alpha", "ann"])),
+            (k(2), cells(&["bravo", "bob"])),
+            (k(3), cells(&["charlie", "cy"])),
+        ],
+    )
+    .expect("rectangular, unique rows")
+}
+
+fn keyed_table_store() {
+    let k = ItemKey::num;
+    let mut store = tasks_store();
+    assert!(!store.is_empty());
+    assert_eq!(store.len(), 3);
+    assert_eq!(store.row_keys().collect::<Vec<_>>(), vec![k(1), k(2), k(3)]);
+    assert_eq!(
+        store.row(k(2)).map(|row| row[0].text.as_str()),
+        Some("bravo")
+    );
+
+    store
+        .insert(1, k(9), cells(&["delta", "dee"]))
+        .expect("a new key in a full row");
+    assert_eq!(
+        store.row_keys().collect::<Vec<_>>(),
+        vec![k(1), k(9), k(2), k(3)]
+    );
+    assert_eq!(
+        store.insert(0, k(1), cells(&["dup", "x"])),
+        Err(KeyedTableError::Key(
+            KeyedSourceError::DuplicateAuthoritative { key: k(1) }
+        ))
+    );
+    assert!(matches!(
+        store.insert(0, k(8), cells(&["short"])),
+        Err(KeyedTableError::Shape(_))
+    ));
+    assert_eq!(store.len(), 4, "a refused insert changes nothing");
+
+    assert!(store.move_row(k(3), 0));
+    assert_eq!(store.row_keys().next(), Some(k(3)));
+    assert!(store.update_cell(k(2), 0, |cell| cell.text = "bravo!".into()));
+    assert!(
+        !store.update_cell(k(2), 5, |_| {}),
+        "a missing column is refused"
+    );
+    assert_eq!(
+        store.remove(k(9)).map(|row| row[0].text.clone()),
+        Some("delta".to_owned())
+    );
+    assert!(store.remove(k(9)).is_none());
+
+    store
+        .replace_rows([
+            (k(7), cells(&["one", "uno"])),
+            (k(8), cells(&["two", "dos"])),
+        ])
+        .expect("rectangular, unique rows");
+    assert_eq!(store.row_keys().collect::<Vec<_>>(), vec![k(7), k(8)]);
+    assert!(store.replace_rows([(k(1), cells(&["x"]))]).is_err());
+
+    let borrowed: CellRef<'_> = TableSource::cell(&store, 1, 0);
+    assert_eq!(borrowed.text, "two");
+    let owned = Cell::new("note");
+    assert_eq!(owned.borrowed().text, "note");
+}
+
+fn keyed_table_source() {
+    const AREA: Rect = Rect::new(0, 0, 40, 10);
+    let k = ItemKey::num;
+    let mut store = tasks_store();
+    let mut table = DataTable::try_new(WidgetId::of("scenario.keyed.table"), vec![], vec![])
+        .expect("an empty table");
+    let draw = |table: &mut DataTable, store: &KeyedTable| {
+        paint_hits(AREA, |area, buf, ctx| {
+            table
+                .render_source(area, store, buf, ctx, ctx.theme.canvas)
+                .expect("unique keys are a valid source");
+        })
+    };
+    assert!(text_of(&draw(&mut table, &store).buf).contains("bravo"));
+
+    let _ = table
+        .on_key_source(&key(KeyCode::Down), &store)
+        .expect("valid source");
+    assert_eq!(table.keyed().cursor(), Some(k(2)));
+    let out = table
+        .on_key_source(&key(KeyCode::Enter), &store)
+        .expect("valid source");
+    assert!(
+        out.actions().any(|a| *a == TableAction::Activated(k(2))),
+        "Enter activates the row under the cursor, by key"
+    );
+
+    store.move_row(k(2), 0);
+    let frame = draw(&mut table, &store);
+    assert_eq!(
+        table.keyed().cursor(),
+        Some(k(2)),
+        "the cursor follows its row"
+    );
+
+    let at = Position::new(8, 2);
+    let press = frame.event(Phase::Press, table.id, Part::CELL, at);
+    let _ = table
+        .on_pointer_source(&press, &store)
+        .expect("valid source");
+    assert_eq!(
+        table.keyed().pressed(),
+        Some(k(1)),
+        "the press is held by key"
+    );
+    let click = frame.event(Phase::Click, table.id, Part::CELL, at);
+    let _ = table
+        .on_pointer_source(&click, &store)
+        .expect("valid source");
+    assert_eq!(table.keyed().cursor(), Some(k(1)));
+}
+
+fn keyed_table_edit() {
+    const AREA: Rect = Rect::new(0, 0, 40, 10);
+    let k = ItemKey::num;
+    let mut store = tasks_store();
+    let mut table = DataTable::try_new(WidgetId::of("scenario.keyed.edit"), vec![], vec![])
+        .expect("an empty table")
+        .cell_nav(true);
+    let draw = |table: &mut DataTable, store: &mut KeyedTable| {
+        paint_hits(AREA, |area, buf, ctx| {
+            table
+                .render_edit_source(area, store, buf, ctx, ctx.theme.canvas)
+                .expect("unique keys are a valid source");
+        })
+    };
+    draw(&mut table, &mut store);
+    let _ = table
+        .on_key_edit_source(&key(KeyCode::Down), &mut store)
+        .expect("valid source");
+    let _ = table
+        .on_key_edit_source(&key(KeyCode::Enter), &mut store)
+        .expect("valid source");
+    assert_eq!(
+        table.keyed().edit_key(),
+        Some(k(2)),
+        "the edit starts on the row's key"
+    );
+
+    store.move_row(k(2), 0);
+    draw(&mut table, &mut store);
+    assert_eq!(
+        table.keyed().edit_key(),
+        Some(k(2)),
+        "a reorder keeps the edit target"
+    );
+    let _ = table
+        .on_key_edit_source(&key(KeyCode::Char('!')), &mut store)
+        .expect("valid source");
+    let out = table
+        .on_key_edit_source(&key(KeyCode::Enter), &mut store)
+        .expect("valid source");
+    assert_eq!(
+        out.actions().copied().collect::<Vec<_>>(),
+        vec![TableAction::Committed { row: k(2), col: 0 }],
+        "the commit names the edited row by key"
+    );
+    assert_eq!(
+        store.row(k(2)).map(|row| row[0].text.as_str()),
+        Some("bravo!")
+    );
+    assert_eq!(
+        store.row(k(1)).map(|row| row[0].text.as_str()),
+        Some("alpha")
+    );
+
+    assert_eq!(store.set_cell(k(1), 1, "zed".into()), Ok(()));
+    assert!(
+        store.set_cell(k(99), 0, "x".into()).is_err(),
+        "a removed row is refused"
+    );
+
+    let frame = draw(&mut table, &mut store);
+    let at = Position::new(8, 2);
+    let press = frame.event(Phase::Press, table.id, Part::CELL, at);
+    let _ = table
+        .on_pointer_edit_source(&press, &mut store)
+        .expect("valid source");
+    let click = frame.event(Phase::Click, table.id, Part::CELL, at);
+    let _ = table
+        .on_pointer_edit_source(&click, &mut store)
+        .expect("valid source");
+    assert_eq!(
+        table.keyed().pressed(),
+        None,
+        "the click consumed the press"
+    );
+}
+
+fn project_store() -> KeyedTree {
+    let k = ItemKey::num;
+    let mut tree = KeyedTree::new();
+    assert!(tree.is_empty());
+    tree.insert(None, 0, k(1), KeyedTreeNode::new("src"))
+        .expect("a root");
+    tree.insert(
+        Some(k(1)),
+        0,
+        k(11),
+        KeyedTreeNode::new("main.rs").meta("1.2 KB").glyph("◆"),
+    )
+    .expect("a child");
+    tree.insert(Some(k(1)), 1, k(12), KeyedTreeNode::new("lib.rs"))
+        .expect("a child");
+    tree.insert(None, 1, k(2), KeyedTreeNode::lazy("target"))
+        .expect("a lazy root");
+    tree
+}
+
+fn keyed_tree_store() {
+    let k = ItemKey::num;
+    let mut tree = project_store();
+    assert_eq!((tree.len(), tree.is_empty()), (4, false));
+    assert_eq!(
+        tree.get(k(1)).map(|node| node.children().to_vec()),
+        Some(vec![k(11), k(12)])
+    );
+    assert!(tree.get(k(2)).is_some_and(|node| node.lazy));
+
+    assert_eq!(
+        tree.insert(None, 0, k(11), KeyedTreeNode::new("dup")),
+        Err(KeyedSourceError::DuplicateAuthoritative { key: k(11) })
+    );
+    assert_eq!(
+        tree.insert(Some(k(99)), 0, k(5), KeyedTreeNode::new("orphan")),
+        Err(KeyedSourceError::MissingNode { key: k(99) })
+    );
+    assert!(tree.update(k(11), |node| node.label = "app.rs".into()));
+    assert!(!tree.update(k(99), |_| {}));
+    let src: TreeNodeRef<'_> = TreeSource::node(&tree, k(1)).expect("a served node");
+    assert_eq!((src.label, src.children.len()), ("src", 2));
+    let app = TreeSource::node(&tree, k(11)).expect("a served node");
+    assert_eq!(
+        (app.label, app.meta, app.glyph),
+        ("app.rs", Some("1.2 KB"), Some("◆"))
+    );
+    assert_eq!(tree.root_count(), 2);
+
+    assert!(tree.remove(k(1)), "removing a folder removes its subtree");
+    assert_eq!(tree.len(), 1);
+    assert!(tree.get(k(11)).is_none());
+    assert!(!tree.remove(k(1)));
+}
+
+fn keyed_tree_view() {
+    const AREA: Rect = Rect::new(0, 0, 40, 10);
+    let k = ItemKey::num;
+    let mut store = project_store();
+    let mut view = TreeView::new(WidgetId::of("scenario.keyed.tree"), vec![])
+        .select_follows_cursor(true)
+        .show_selection(false);
+    let draw = |view: &mut TreeView, store: &KeyedTree| {
+        paint_hits(AREA, |area, buf, ctx| {
+            view.render_source(area, store, buf, ctx, ctx.theme.canvas)
+                .expect("a valid keyed tree");
+        })
+    };
+    assert!(text_of(&draw(&mut view, &store).buf).contains("main.rs"));
+    assert!(view.keyed().is_expanded(k(1)), "roots start open");
+
+    let _ = view
+        .on_key_source(&key(KeyCode::Down), &store)
+        .expect("valid source");
+    assert_eq!(view.keyed().cursor(), Some(k(11)));
+    assert!(
+        view.keyed().is_selected(k(11)),
+        "select_follows_cursor selects the leaf the cursor lands on"
+    );
+    let out = view
+        .on_key_source(&key(KeyCode::Enter), &store)
+        .expect("valid source");
+    assert!(out.actions().any(|a| *a == TreeAction::Activate(k(11))));
+
+    assert!(view.set_cursor_source(k(12), &store).expect("valid source"));
+    assert!(!view.set_cursor_source(k(99), &store).expect("valid source"));
+    assert!(view.select_source(k(12), &store).expect("valid source"));
+    assert!(!view.select_source(k(99), &store).expect("valid source"));
+    assert_eq!(view.keyed().selected().collect::<Vec<_>>(), vec![k(12)]);
+
+    store
+        .insert(None, 0, k(9), KeyedTreeNode::new("aaa"))
+        .expect("an earlier sibling");
+    draw(&mut view, &store);
+    assert_eq!(
+        view.keyed().cursor(),
+        Some(k(12)),
+        "an earlier sibling moves no cursor"
+    );
+    assert!(view.keyed().is_expanded(k(1)));
+
+    view.expand_all_source(&store).expect("valid source");
+    let frame = draw(&mut view, &store);
+    let at = Position::new(6, 1);
+    let press = frame.event(Phase::Press, view.id, Part::ROW, at);
+    let _ = view
+        .on_pointer_source(&press, &store)
+        .expect("valid source");
+    let click = frame.event(Phase::Click, view.id, Part::ROW, at);
+    let _ = view
+        .on_pointer_source(&click, &store)
+        .expect("valid source");
+    assert_eq!(view.keyed().pressed(), None, "the click consumed the press");
 }
 
 #[test]

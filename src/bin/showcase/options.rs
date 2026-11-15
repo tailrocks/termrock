@@ -898,6 +898,32 @@ static BASIC_TABLE: &[Opt] = &[
         "Malformed input",
         &["off", "short", "long"],
     ),
+    Opt::new(
+        "basictable.source",
+        "Row source",
+        &["owned", "keyed", "keyed edit"],
+    ),
+    Opt::new(
+        "basictable.rows",
+        "Keyed store",
+        &[
+            "loaded",
+            "moved",
+            "inserted",
+            "removed",
+            "replaced",
+            "updated cell",
+            "duplicate key",
+            "short row",
+        ],
+    )
+    .needs(&[("basictable.source", "keyed")]),
+    Opt::new(
+        "basictable.update",
+        "Owned update",
+        &["off", "cell", "row", "column", "model"],
+    )
+    .needs(&[("basictable.source", "owned")]),
 ];
 
 static CHROME: &[Opt] = &[
@@ -1059,6 +1085,11 @@ static LISTS: &[Opt] = &[
     Opt::new("lists.keymap", "Key map", &["default", "custom"]),
     Opt::new("lists.empty", "Empty", &["text", "state"]),
     Opt::new("lists.content", "Content", &["ready", "loading", "error"]),
+    Opt::new(
+        "lists.source",
+        "Row source",
+        &["owned", "keyed", "keyed reversed"],
+    ),
 ];
 
 static TREES: &[Opt] = &[
@@ -1080,6 +1111,28 @@ static TREES: &[Opt] = &[
     Opt::new("trees.keymap", "Key map", &["default", "custom"]),
     Opt::new("trees.marker", "Selected marker", &["none", "chevron"]),
     Opt::new("trees.filter", "Filter connections", &["off", "orders"]),
+    Opt::new("trees.source", "Project source", &["owned", "keyed"]),
+    Opt::new(
+        "trees.edit",
+        "Keyed edit",
+        &["none", "insert before", "rename", "remove"],
+    )
+    .needs(&[("trees.source", "keyed")]),
+    Opt::new(
+        "trees.jump",
+        "Jump to node",
+        &[
+            "none",
+            "expand all",
+            "tests/auth_flow.rs",
+            "src/api/webhooks/retry.rs",
+        ],
+    )
+    .needs(&[("trees.source", "keyed")]),
+    Opt::new("trees.follow", "Select follows cursor", OFF_ON).needs(&[("trees.source", "keyed")]),
+    Opt::new("trees.show_selection", "Show selection", OFF_ON)
+        .default(1)
+        .needs(&[("trees.source", "keyed")]),
 ];
 
 static OVERVIEW: &[Opt] = &[

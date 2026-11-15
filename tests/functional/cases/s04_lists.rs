@@ -1289,3 +1289,93 @@ fn option_content_error() {
     );
     app.finish();
 }
+
+#[test]
+fn option_source_keyed_reports_actions_by_key() {
+    let args = opt_args("lists.source=keyed");
+    let app = open("s04-keyed", 120, 72, &args);
+    let before = app.wait_text("source keyed (ListSource)");
+    see(
+        &before,
+        &[
+            "Language",
+            "TypeScript",
+            "src/api/auth.rs",
+            "last ListAction: —",
+            "0 selected",
+        ],
+        &["Chosen: Rust", TWO],
+    );
+
+    click_language(&app, "TypeScript");
+    press(&app, "enter");
+    let chosen = app.wait_text("Chosen: TypeScript");
+    assert_current(&chosen, "TypeScript", true);
+    see(
+        &chosen,
+        &["last ListAction: Activated(TypeScript) → SelectionChanged"],
+        &["Chosen: Rust"],
+    );
+
+    click_file(&app, "tests/checkout.rs");
+    let only = app.wait_text("1 selected");
+    assert_mark(&only, "tests/checkout.rs", true);
+    assert_mark(&only, "src/api/auth.rs", false);
+    see(&only, &["last ListAction: SelectionChanged"], &[TWO]);
+
+    press(&app, "down");
+    press(&app, " ");
+    let two = app.wait_text("2 selected");
+    assert_mark(&two, "docs/webhooks.md", true);
+    assert_mark(&two, "tests/checkout.rs", true);
+    see(&two, &["cursor by key: TypeScript / docs/webhooks.md"], &[]);
+
+    click_tab(&app, "Options");
+    let options = app.wait_text("Page options");
+    assert_select(&options, "Row source", "keyed", &["owned", "reversed"]);
+    shot(
+        &app,
+        "opt.lists.source",
+        "keyed source reports activation and selection changes by key",
+        &args,
+    );
+    app.finish();
+}
+
+#[test]
+fn option_source_keyed_reversed_lists_rows_from_the_other_end() {
+    let args = opt_args("lists.source=keyed reversed");
+    let app = open("s04-reversed", 120, 72, &args);
+    let before = app.wait_text("source keyed reversed (ListSource)");
+    let language = |label: &str| {
+        let rows: Vec<String> = (0..before.rows()).map(|row| row_text(&before, row)).collect();
+        rows.iter()
+            .position(|line| line.contains(label) && !line.contains("Chosen:"))
+            .unwrap_or_else(|| panic!("row {label:?} missing\n{}", text(&before)))
+    };
+    assert!(
+        language("Erlang") < language("Clojure") && language("Clojure") < language("OCaml"),
+        "the language rows run from the last record to the first\n{}",
+        text(&before)
+    );
+    assert!(
+        language("src/db/pool.rs") < language("src/main.rs"),
+        "the file rows are reversed too\n{}",
+        text(&before)
+    );
+    click_language(&app, "Erlang");
+    press(&app, "enter");
+    let chosen = app.wait_text("Chosen: Erlang");
+    see(
+        &chosen,
+        &["last ListAction: Activated(Erlang) → SelectionChanged"],
+        &["Chosen: Rust"],
+    );
+    shot(
+        &app,
+        "opt.lists.source_reversed",
+        "a reversed keyed view lists the records from the end and still reports by key",
+        &args,
+    );
+    app.finish();
+}
