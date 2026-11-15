@@ -2715,7 +2715,7 @@ mod tests {
         assert_eq!(shape(q), [(false, "rows"), (false, "cancelled")]);
         assert_eq!(q.active_result, 1, "the cancelled marker is active");
         assert_eq!(
-            q.result_tabs.items.len(),
+            q.result_tabs.items().len(),
             2,
             "the strip matches the results"
         );
@@ -2775,7 +2775,7 @@ mod tests {
             assert!(!keys[i + 1..].contains(k), "result keys are unique");
         }
         assert_eq!(q.active_result, 3);
-        assert_eq!(q.result_tabs.items.len(), 4);
+        assert_eq!(q.result_tabs.items().len(), 4);
         assert_eq!(
             app.history.entries.len(),
             mid + 2,
@@ -2799,7 +2799,7 @@ mod tests {
         let q = query(&mut app);
         assert_eq!(shape(q), [(false, "rows"), (false, "cancelled")]);
         assert_eq!(q.active_result, 1);
-        assert_eq!(q.result_tabs.items.len(), 2);
+        assert_eq!(q.result_tabs.items().len(), 2);
         assert_eq!(q.last_status, Some(("cancelled".into(), false)));
         assert_eq!(app.history.entries.len(), base + 1);
         assert_eq!(status(&app), "", "a repeated cancel reports nothing");
@@ -2812,7 +2812,7 @@ mod tests {
         run_batch(&mut app);
         tick_until_history(&mut app, base + 3);
         assert!(!query(&mut app).is_running());
-        assert_eq!(query(&mut app).result_tabs.items.len(), 3);
+        assert_eq!(query(&mut app).result_tabs.items().len(), 3);
         query(&mut app).toggle_pin(1);
         let pinned_label = query(&mut app).results[0].label.clone();
 
@@ -2820,8 +2820,8 @@ mod tests {
         for _ in 0..3 {
             let q = query(&mut app);
             assert_eq!(q.results.len(), 1, "only the pinned result is retained");
-            assert_eq!(q.result_tabs.items.len(), 1, "no stale tab while waiting");
-            assert_eq!(q.result_tabs.items[0].label, pinned_label);
+            assert_eq!(q.result_tabs.items().len(), 1, "no stale tab while waiting");
+            assert_eq!(q.result_tabs.items()[0].label, pinned_label);
             assert_eq!(q.active_result, 0);
             app.advance();
         }
@@ -2834,7 +2834,7 @@ mod tests {
         let q = query(&mut app);
         assert!(q.results.is_empty());
         assert!(
-            q.result_tabs.items.is_empty(),
+            q.result_tabs.items().is_empty(),
             "an empty strip while only the placeholder shows"
         );
     }
