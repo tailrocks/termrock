@@ -2136,6 +2136,11 @@ impl DataGrid {
             .filter_map(|src| self.row_key(src))
             .filter(|key| !saved.contains(key))
             .collect();
+        let appended_anchor = self
+            .selection
+            .anchor()
+            .and_then(|src| self.row_key(src))
+            .filter(|key| appended.contains(key));
         let at = position.min(self.rows.len());
         let shift = |i: usize| if i >= at { i + 1 } else { i };
         self.cell_errors = std::mem::take(&mut self.cell_errors)
@@ -2167,10 +2172,15 @@ impl DataGrid {
                 .get(old)
                 .and_then(|k| self.source_index(*k))
         });
-        for key in appended {
-            if let Some(src) = self.source_index(key) {
-                selection.set(src, true);
-            }
+        if !appended.is_empty() {
+            let anchor = appended_anchor
+                .and_then(|key| self.source_index(key))
+                .or(selection.anchor());
+            let rows = selection
+                .iter()
+                .chain(appended.iter().filter_map(|&key| self.source_index(key)))
+                .collect::<Vec<_>>();
+            selection.replace(rows, anchor);
         }
         self.selection = selection;
         self.scroll.set_content(self.content_rows());
