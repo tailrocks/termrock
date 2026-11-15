@@ -671,6 +671,44 @@ impl Drop for App {
     }
 }
 
+/// Ends the 140ms press flash on the stepped clock, then redraws once. See [`redraw_after_flash`].
+pub fn flash_settle_stepped(app: &App) {
+    app.settle_flash();
+    redraw_after_flash(app);
+}
+
+/// Waits out the 140ms press flash on the wall clock, then redraws once. For apps that run
+/// without the stepped test clock, so it needs no [`App::advance_clock`]. See [`redraw_after_flash`].
+pub fn flash_settle(app: &App) {
+    std::thread::sleep(Duration::from_millis(200));
+    redraw_after_flash(app);
+}
+
+/// Forces one redraw after the press flash deadline has passed. A same-size resize does not
+/// force a frame, so the width is nudged by one column and restored. Below about 100 columns
+/// the header omits the size chip, so the nudge waits on the terminal size instead. The redraw
+/// also leaves the hidden terminal cursor in a fixed place.
+fn redraw_after_flash(app: &App) {
+    let screen = app.screen();
+    let cols = u16::try_from(screen.cols()).expect("cols");
+    let rows = u16::try_from(screen.rows()).expect("rows");
+    let nudged = cols + 1;
+    app.resize(nudged, rows);
+    if cols >= 100 {
+        app.wait_text(&format!("{nudged}×{rows}"));
+        app.resize(cols, rows);
+        app.wait_text(&format!("{cols}×{rows}"));
+    } else {
+        app.wait_screen("narrow nudge", |screen| {
+            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
+        });
+        app.resize(cols, rows);
+        app.wait_screen("narrow restored", |screen| {
+            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
+        });
+    }
+}
+
 fn bin_name(bin: &str) -> Option<&str> {
     Path::new(bin).file_name().and_then(|file| file.to_str())
 }

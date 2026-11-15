@@ -6,7 +6,10 @@
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, TABLEPRO, find_all, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, TABLEPRO, find_all, flash_settle_stepped as flash_settle, row_text, text,
+    try_launch,
+};
 
 const SECRET: &str = "qx7T01advSECRET";
 const MASK: &str = "•••••••••••••••";
@@ -163,32 +166,6 @@ fn no_secret(screen: &TerminalSnapshot) {
         "plaintext password is visible\n{}",
         text(screen)
     );
-}
-
-/// The 140ms press flash stays painted while motion is reduced, so a shot
-/// after a released click has to redraw once the deadline has passed. Below
-/// about 100 columns the header omits the size chip, and the narrow nudge
-/// waits on the terminal size instead.
-fn flash_settle(app: &App) {
-    app.settle_flash();
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
 }
 
 fn shot(app: &App, case_id: &str) {

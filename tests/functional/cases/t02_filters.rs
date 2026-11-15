@@ -8,7 +8,9 @@ use std::time::{Duration, Instant};
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, TABLEPRO, find_all, text, try_launch};
+use crate::support::{
+    App, Launch, TABLEPRO, find_all, flash_settle_stepped as flash_settle, text, try_launch,
+};
 
 const WIDE_ID: &str = "pre_refactor/t02_filters/t02_filters_filters_120x40";
 const NARROW_ID: &str = "pre_refactor/t02_filters/t02_filters_filters_narrow";
@@ -72,28 +74,6 @@ fn launch(name: &str) -> App {
     let app = try_launch(launch).unwrap_or_else(|error| panic!("{error}"));
     app.wait_text("Filter connections");
     app
-}
-
-fn flash_settle(app: &App) {
-    app.settle_flash();
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
 }
 
 fn click_list(app: &App, name: &str) {
