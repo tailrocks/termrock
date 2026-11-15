@@ -37,4 +37,5 @@ mod search_detail;
 mod search_detail_view;
 mod smoke;
 mod tabs_overflow_mutation;
+mod tiny_dialogs;
 mod work_budgets;
