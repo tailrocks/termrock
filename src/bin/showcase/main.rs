@@ -73,6 +73,8 @@ fn main() -> std::io::Result<()> {
         coverage::PICKER_ALLOWLIST,
         coverage::TEXT_INPUT_COVERAGE,
         coverage::KEYMAP_ALLOWLIST,
+        coverage::INSPECT_CHANGES_COVERAGE,
+        coverage::INSPECT_CHANGES_ALLOWLIST,
     );
     let cli: Cli = junie_tui::cli::parse(cli_after_help());
     let motion = cli.common.motion(NO_MOTION_ENV);

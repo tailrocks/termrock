@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use syn::visit::Visit;
 use syn::{Expr, ImplItem, Item, Pat, Type, Visibility};
 
+#[allow(dead_code)]
 #[path = "../src/bin/showcase/coverage.rs"]
 mod coverage;
 

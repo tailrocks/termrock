@@ -268,6 +268,55 @@ pub const KEYMAP_ALLOWLIST: &[(&str, &str)] = &[
     ),
 ];
 
+pub const INSPECT_CHANGES_COVERAGE: &[(&str, &str)] = &[
+    ("widgets::inspect_changes::ChangeSet", "diff"),
+    ("widgets::inspect_changes::ChangeWords", "diff"),
+    ("widgets::inspect_changes::InspectOutcome", "diff"),
+    ("widgets::inspect_changes::InspectOutcome::Close", "diff"),
+    ("widgets::inspect_changes::InspectOutcome::Back", "diff"),
+    ("widgets::inspect_changes::InspectMode", "diff"),
+    ("widgets::inspect_changes::InspectMode::Compact", "diff"),
+    ("widgets::inspect_changes::InspectMode::Advanced", "diff"),
+    ("widgets::inspect_changes::InspectChanges", "diff"),
+    ("widgets::inspect_changes::InspectChanges::new", "diff"),
+    (
+        "widgets::inspect_changes::InspectChanges::returns_to_exit",
+        "diff",
+    ),
+    ("widgets::inspect_changes::InspectChanges::words", "diff"),
+];
+
+pub const INSPECT_CHANGES_ALLOWLIST: &[(&str, &str)] = &[
+    (
+        "widgets::inspect_changes::ChangeSet::additions",
+        "The inspector draws the added-line total in its summary line; the page does not read it separately.",
+    ),
+    (
+        "widgets::inspect_changes::ChangeSet::deletions",
+        "The inspector draws the removed-line total in its summary line; the page does not read it separately.",
+    ),
+    (
+        "widgets::inspect_changes::ChangeSet::is_empty",
+        "The inspector draws its empty state itself; the page always supplies a change set that has files.",
+    ),
+    (
+        "widgets::inspect_changes::ChangeSet::summary",
+        "The inspector draws this summary in its header; the page shows it through the widget rather than calling it.",
+    ),
+    (
+        "widgets::inspect_changes::InspectMode::label",
+        "The inspector draws the mode label in its header; the page shows it through the widget rather than calling it.",
+    ),
+    (
+        "widgets::inspect_changes::InspectChanges::wheel_at",
+        "Wheel events reach the inspector through its layer pointer route, which the page forwards pointer events to.",
+    ),
+    (
+        "widgets::inspect_changes::InspectChanges::initial_focus",
+        "The widget's layer spec applies its initial focus; the page leaves keyboard focus where the user put it.",
+    ),
+];
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -1,5 +1,9 @@
 mod common;
 
+#[allow(dead_code)]
+#[path = "../src/bin/showcase/coverage.rs"]
+mod coverage;
+
 use common::*;
 use junie_tui::core::focus::{Focus, FocusRing};
 use junie_tui::core::hit::HitRegistry;
@@ -354,5 +358,186 @@ fn inspect_composite_stacked_body_of_one_row_stays_in_the_frame() {
                 r.area
             );
         }
+    }
+}
+
+mod showcase_coverage {
+    use std::collections::{BTreeMap, BTreeSet};
+
+    use syn::{ImplItem, Item, Type, Visibility};
+
+    use super::coverage;
+
+    const MODULE: &str = "widgets::inspect_changes";
+
+    fn exported_api(source: &str) -> BTreeSet<String> {
+        let file = syn::parse_file(source).expect("inspect_changes source parses");
+        let public = |vis: &Visibility| matches!(vis, Visibility::Public(_));
+        let mut ids = BTreeSet::new();
+        let mut types = BTreeSet::new();
+        for item in &file.items {
+            match item {
+                Item::Enum(item) if public(&item.vis) => {
+                    let root = format!("{MODULE}::{}", item.ident);
+                    ids.extend(
+                        item.variants
+                            .iter()
+                            .map(|variant| format!("{root}::{}", variant.ident)),
+                    );
+                    ids.insert(root);
+                    types.insert(item.ident.to_string());
+                }
+                Item::Struct(item) if public(&item.vis) => {
+                    ids.insert(format!("{MODULE}::{}", item.ident));
+                    types.insert(item.ident.to_string());
+                }
+                Item::Fn(item) if public(&item.vis) => {
+                    ids.insert(format!("{MODULE}::{}", item.sig.ident));
+                }
+                _ => {}
+            }
+        }
+        for item in &file.items {
+            let Item::Impl(item) = item else { continue };
+            let Type::Path(path) = &*item.self_ty else {
+                continue;
+            };
+            let Some(ty) = path.path.segments.last().map(|s| s.ident.to_string()) else {
+                continue;
+            };
+            if item.trait_.is_some() || !types.contains(&ty) {
+                continue;
+            }
+            for member in &item.items {
+                if let ImplItem::Fn(method) = member
+                    && public(&method.vis)
+                {
+                    ids.insert(format!("{MODULE}::{ty}::{}", method.sig.ident));
+                }
+            }
+        }
+        ids
+    }
+
+    fn catalog_ids(source: &str) -> BTreeSet<String> {
+        let marker = format!("\"{MODULE}::");
+        source
+            .lines()
+            .filter_map(|line| {
+                let start = line.find(&marker)? + 1;
+                let end = start + line[start..].find('"')?;
+                Some(line[start..end].to_owned())
+            })
+            .collect()
+    }
+
+    fn words(source: &str) -> BTreeSet<&str> {
+        source
+            .split(|c: char| !(c.is_alphanumeric() || c == '_'))
+            .filter(|word| !word.is_empty())
+            .collect()
+    }
+
+    fn used_by_page(id: &str, page: &str, page_words: &BTreeSet<&str>) -> bool {
+        let tail: Vec<&str> = id.rsplit("::").take(2).collect();
+        match tail.as_slice() {
+            [name, owner] if owner.chars().next().is_some_and(char::is_uppercase) => {
+                page.contains(&format!("{owner}::{name}")) || page.contains(&format!(".{name}("))
+            }
+            [name, ..] => page_words.contains(name),
+            [] => false,
+        }
+    }
+
+    fn validate(widget: &str, catalog: &str, page: &str) -> Vec<String> {
+        let exported = exported_api(widget);
+        let cataloged = catalog_ids(catalog);
+        let page_words = words(page);
+        let claimed: BTreeSet<String> = coverage::INSPECT_CHANGES_COVERAGE
+            .iter()
+            .map(|(id, _)| (*id).to_owned())
+            .collect();
+        let allowed: BTreeMap<&str, &str> = coverage::INSPECT_CHANGES_ALLOWLIST
+            .iter()
+            .copied()
+            .collect();
+        let mut errors = Vec::new();
+        for id in exported.difference(&cataloged) {
+            errors.push(format!("exported API is missing from catalog: {id}"));
+        }
+        for id in cataloged.difference(&exported) {
+            errors.push(format!("catalog names an API that is not exported: {id}"));
+        }
+        for id in &claimed {
+            if !exported.contains(id) {
+                errors.push(format!("coverage claims an API that is not exported: {id}"));
+            } else if !used_by_page(id, page, &page_words) {
+                errors.push(format!("coverage claim has no page usage: {id}"));
+            }
+            if allowed.contains_key(id.as_str()) {
+                errors.push(format!("API is both showcased and allowlisted: {id}"));
+            }
+        }
+        for (id, reason) in &allowed {
+            if reason.trim().is_empty() {
+                errors.push(format!("allowlist entry has no reason: {id}"));
+            }
+            if !exported.contains(*id) {
+                errors.push(format!("allowlist entry is not exported: {id}"));
+            }
+        }
+        for id in &exported {
+            if !claimed.contains(id) && !allowed.contains_key(id.as_str()) {
+                errors.push(format!("exported API lacks coverage or a reason: {id}"));
+            }
+        }
+        errors
+    }
+
+    fn sources() -> (String, String, String) {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let read = |path: &str| {
+            std::fs::read_to_string(root.join(path)).unwrap_or_else(|e| panic!("{path}: {e}"))
+        };
+        (
+            read("src/widgets/inspect_changes.rs"),
+            read("src/catalog.rs"),
+            read("src/bin/showcase/pages/diff.rs"),
+        )
+    }
+
+    #[test]
+    fn inspect_changes_api_is_cataloged_and_demonstrated_or_excused() {
+        let (widget, catalog, page) = sources();
+        let errors = validate(&widget, &catalog, &page);
+        assert!(errors.is_empty(), "{}", errors.join("\n"));
+    }
+
+    #[test]
+    fn inspect_changes_coverage_rejects_a_removed_page_demonstration() {
+        let (widget, catalog, page) = sources();
+        let broken = page.replace(".returns_to_exit(true)", "");
+        assert_ne!(broken, page, "page mutation matched source");
+        let errors = validate(&widget, &catalog, &broken);
+        assert!(
+            errors.iter().any(|e| e.contains(
+                "no page usage: widgets::inspect_changes::InspectChanges::returns_to_exit"
+            )),
+            "removed demonstration unexpectedly passed: {errors:?}"
+        );
+    }
+
+    #[test]
+    fn inspect_changes_coverage_rejects_a_removed_catalog_line() {
+        let (widget, catalog, page) = sources();
+        let line = "    Capability::function(\"widgets::inspect_changes::InspectChanges::new\"),\n";
+        let broken = catalog.replace(line, "");
+        assert_ne!(broken, catalog, "catalog mutation matched source");
+        let errors = validate(&widget, &broken, &page);
+        assert!(
+            errors.iter().any(|e| e
+                .contains("missing from catalog: widgets::inspect_changes::InspectChanges::new")),
+            "removed catalog line unexpectedly passed: {errors:?}"
+        );
     }
 }

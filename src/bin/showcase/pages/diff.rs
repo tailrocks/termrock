@@ -10,14 +10,19 @@ use junie_tui::core::id::{Part, WidgetId};
 use junie_tui::core::intent::Phase;
 use junie_tui::core::pointer::MouseTarget;
 use junie_tui::ui::ctx::RenderCtx;
+use junie_tui::ui::layer::{Layer, LayerCx};
 use junie_tui::ui::specimen::{SpecimenState, StateGrid};
 use junie_tui::widgets::button::{Button, row_layout};
 use junie_tui::widgets::diff::{DiffFile, DiffHunk, DiffLine, DiffMode, DiffStatus, DiffView};
+use junie_tui::widgets::inspect_changes::{
+    ChangeSet, ChangeWords, InspectChanges, InspectMode, InspectOutcome,
+};
 use junie_tui::widgets::list::{ListBox, ListItem, SelectMode};
 use junie_tui::widgets::panel::Panel;
 use junie_tui::widgets::viewport::ViewportAction;
 
 const ID: WidgetId = WidgetId::of("diff");
+const INSPECT: WidgetId = ID.sub("inspect");
 
 const LIST_W: u16 = 38;
 
@@ -29,6 +34,8 @@ pub struct DiffPage {
     review: Button,
     empty: Button,
     copied: Option<String>,
+    inspect: InspectChanges,
+    inspect_area: Rect,
 }
 
 fn sample() -> DiffFile {
@@ -52,6 +59,34 @@ fn sample() -> DiffFile {
             })
             .collect(),
     }
+}
+
+fn inspect_changes(mode: InspectMode) -> InspectChanges {
+    let set = ChangeSet {
+        files: changes(),
+        unpushed: 2,
+        omitted: 3,
+        unread: Vec::new(),
+    };
+    InspectChanges::new(INSPECT, "Inspect changes", set, mode)
+        .returns_to_exit(true)
+        .words(ChangeWords {
+            omitted: "{count} more files not listed".into(),
+            unread: "not read".into(),
+        })
+}
+
+fn inspect_mode(value: &str) -> InspectMode {
+    match value {
+        "compact" => InspectMode::Compact,
+        _ => InspectMode::Advanced,
+    }
+}
+
+fn fixed_extent(value: &str, available: u16) -> u16 {
+    value
+        .parse::<u16>()
+        .map_or(available, |cells| cells.min(available))
 }
 
 fn changes() -> Vec<DiffFile> {
@@ -117,6 +152,8 @@ impl DiffPage {
             review: Button::toggle(ID.sub("review"), "Review", false),
             empty: Button::toggle(ID.sub("empty"), "Empty", false),
             copied: None,
+            inspect: inspect_changes(InspectMode::Advanced),
+            inspect_area: Rect::ZERO,
         };
         page.update_controls();
         page
@@ -137,7 +174,66 @@ impl DiffPage {
         self.copied = None;
     }
 
+    fn inspecting(&self) -> bool {
+        self.opts.value("diff.inspect") != "off"
+    }
+
+    fn inspect_focused(&self, focus: Option<WidgetId>) -> bool {
+        focus.is_some_and(|id| [INSPECT, INSPECT.sub("tree"), INSPECT.sub("diff")].contains(&id))
+    }
+
+    fn render_inspect(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
+        let room = Rect::new(
+            area.x,
+            area.y.saturating_add(2).min(area.bottom()),
+            area.width,
+            area.height.saturating_sub(2),
+        );
+        let alloc = Rect::new(
+            room.x,
+            room.y,
+            fixed_extent(self.opts.value("diff.inspect_width"), room.width),
+            fixed_extent(self.opts.value("diff.inspect_height"), room.height),
+        );
+        let caption = format!(
+            "Inspect changes in {}×{} of {}×{} cells",
+            alloc.width, alloc.height, room.width, room.height
+        );
+        buf.set_string(
+            area.x,
+            area.y,
+            &caption,
+            ctx.theme.muted().bg(ctx.theme.canvas),
+        );
+        self.inspect_area = alloc;
+        Layer::<InspectOutcome, ()>::render(&mut self.inspect, alloc, buf, ctx, &());
+    }
+
+    fn inspect_input(
+        &mut self,
+        cx: &mut Cx,
+        drive: impl FnOnce(&mut InspectChanges, &mut LayerCx<'_, ()>) -> Outcome,
+    ) -> Outcome {
+        let mut layer_cx = LayerCx {
+            focus: &mut *cx.focus,
+            ring: cx.ring,
+            app: &(),
+        };
+        let out = drive(&mut self.inspect, &mut layer_cx);
+        if let Some(done) = Layer::<InspectOutcome, ()>::take_result(&mut self.inspect) {
+            match done.into_inner() {
+                InspectOutcome::Back => cx.status("Inspect changes asked to go back"),
+                InspectOutcome::Close => cx.status("Inspect changes closed"),
+            }
+            self.inspect = inspect_changes(inspect_mode(self.opts.value("diff.inspect")));
+        }
+        out
+    }
+
     fn render_playground(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
+        if self.inspecting() {
+            return self.render_inspect(area, buf, ctx);
+        }
         let controls = Rect::new(area.x, area.y, area.width, area.height.min(1));
         let rects = row_layout(controls, &[self.review.width(), self.empty.width()], 2);
         self.review.render(rects[0], buf, ctx, ctx.theme.canvas);
@@ -221,6 +317,19 @@ impl Page for DiffPage {
         if self.template.section() != Section::Playground {
             return Outcome::Ignored;
         }
+        if self.inspecting() {
+            return match ev {
+                PageEvent::Key(key) if self.inspect_focused(cx.focus.current()) => self
+                    .inspect_input(cx, |inspect, layer_cx| {
+                        Layer::<InspectOutcome, ()>::on_key(inspect, key, layer_cx)
+                    }),
+                PageEvent::Pointer(pointer) if self.inspect_area.contains(pointer.pos()) => self
+                    .inspect_input(cx, |inspect, layer_cx| {
+                        Layer::<InspectOutcome, ()>::pointer(inspect, pointer, layer_cx)
+                    }),
+                _ => Outcome::Ignored,
+            };
+        }
         match ev {
             PageEvent::Key(key) => {
                 if cx.focus.is(self.review.id) || cx.focus.is(self.empty.id) {
@@ -296,7 +405,15 @@ impl Page for DiffPage {
         if let Some(h) = self.template.hints(focus) {
             return h;
         }
-        if focus == Some(self.view.id()) {
+        if self.inspecting() {
+            vec![
+                ("Tab", "Tree / diff"),
+                ("↑↓", "File"),
+                ("m", "Compact / advanced"),
+                ("v", "Unified / review"),
+                ("Esc", "Close"),
+            ]
+        } else if focus == Some(self.view.id()) {
             vec![
                 ("↑↓", "Scroll"),
                 ("←→", "Pan"),
@@ -322,6 +439,9 @@ impl Page for DiffPage {
         if self.opts.set(key, value) {
             if key == "diff.mode" {
                 self.review.on = Some(self.opts.value("diff.mode") == "review");
+            }
+            if key == "diff.inspect" {
+                self.inspect = inspect_changes(inspect_mode(self.opts.value("diff.inspect")));
             }
             self.update_controls();
         }

@@ -1721,6 +1721,21 @@ pub static DIFF: &[Opt] = &[
     Opt::new("diff.mode", "Mode", &["unified", "review"]),
     Opt::new("diff.file", "File", &["changes", "none"]),
     Opt::new("diff.width", "Page width", &["full", "narrow"]),
+    Opt::new(
+        "diff.inspect",
+        "Inspect changes",
+        &["off", "advanced", "compact"],
+    ),
+    Opt::new(
+        "diff.inspect_width",
+        "Inspect width",
+        &["full", "120", "80", "50", "30", "14"],
+    ),
+    Opt::new(
+        "diff.inspect_height",
+        "Inspect height",
+        &["full", "30", "16", "8", "4", "1"],
+    ),
 ];
 
 pub static TERMINAL: &[Opt] = &[
