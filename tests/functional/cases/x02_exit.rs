@@ -8,9 +8,12 @@
 //! that already exited uses `expect_exited`. `finish` is the mode check, and
 //! only while the process is still running.
 //!
-//! The Showcase guard and the Holla running-activities guard launch on the
-//! test clock. Showcase expires its `Export running` status after five wall
-//! seconds, which a loaded run outlasts before the narrow capture. Holla
+//! The Showcase guard, the TablePro guard and the Holla running-activities guard
+//! launch on the test clock. TablePro expires `Connected to Development` after
+//! five wall seconds, and the cancelled-quit check still reads it, so a slow
+//! frame made that check time out. Showcase expires its `Export running`
+//! status after five wall seconds, which a loaded run outlasts before the
+//! narrow capture. Holla
 //! cancels its activities on simulated ticks, so on wall time the process
 //! can exit between the `stopping` frame and the next assertion.
 
@@ -74,7 +77,7 @@ fn open_showcase(name: &str, args: &[&str], clock: bool) -> App {
 }
 
 fn open_tablepro(name: &str) -> App {
-    let app = open_bin(name, TABLEPRO, &[], false);
+    let app = open_bin(name, TABLEPRO, &[], true);
     app.wait_text("Filter connections");
     app
 }
@@ -123,20 +126,26 @@ fn await_exit(app: &App, reason: &str) {
     app.expect_exited(0);
 }
 
+/// The emulator grid changes the moment a resize is sent and keeps the old cells,
+/// so a wait on the size alone can pass before the app has repainted, and the
+/// stored frame then carries the cursor parked by an older draw. Where the
+/// header has the size chip (120 columns), the nudge waits for the chip the app
+/// drew at the nudged size and again at the restored size.
 fn flash_settle(app: &App) {
     std::thread::sleep(Duration::from_millis(200));
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");
     let nudged = cols + 1;
+    let drawn = move |screen: &TerminalSnapshot, cols: u16| {
+        screen.cols() == u32::from(cols)
+            && screen.rows() == u32::from(rows)
+            && (cols < 100 || text(screen).contains(&format!("{cols}×{rows}")))
+    };
     app.resize(nudged, rows);
-    app.wait_screen("nudge", |screen| {
-        screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-    });
+    app.wait_screen("nudge", move |screen| drawn(screen, nudged));
     app.resize(cols, rows);
-    app.wait_screen("nudge restored", |screen| {
-        screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-    });
+    app.wait_screen("nudge restored", move |screen| drawn(screen, cols));
 }
 
 fn guard_open(screen: &TerminalSnapshot) -> bool {
