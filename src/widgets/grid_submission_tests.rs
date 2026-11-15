@@ -34,7 +34,7 @@ fn grid(n: usize) -> DataGrid {
             ColumnSpec::new("note", CellKind::Text),
         ],
     );
-    g.set_rows(page(n)).unwrap();
+    g.try_set_rows(page(n)).unwrap();
     g
 }
 
@@ -45,7 +45,8 @@ fn edited(n: usize) -> DataGrid {
 }
 
 fn press(g: &mut DataGrid, code: KeyCode, mods: KeyModifiers) -> (Outcome, Option<GridAction>) {
-    g.on_key(&Key { code, mods })
+    let (outcome, actions) = g.on_key(&Key { code, mods }).into_parts();
+    (outcome, actions.into_iter().next())
 }
 
 fn read_only(action: Option<GridAction>) -> bool {
@@ -153,8 +154,8 @@ fn issue11_review_locks_exact_draft() {
     assert_eq!(g.duplicate_row(), Err(GridEditError::Busy));
     assert_eq!(g.undo(), Err(GridEditError::Busy));
     assert_eq!(g.discard(), Err(GridEditError::Busy));
-    assert_eq!(g.set_rows(page(1)), Err(GridDataError::Busy));
-    assert_eq!(g.append_rows(page(1)), Err(GridDataError::Busy));
+    assert_eq!(g.try_set_rows(page(1)), Err(GridDataError::Busy));
+    assert_eq!(g.try_append_rows(page(1)), Err(GridDataError::Busy));
     assert_eq!(
         g.try_set_rows_keyed(page(1), vec![ItemKey::num(7)]),
         Err(GridDataError::Busy)
@@ -256,7 +257,7 @@ fn issue11_begin_submission_checks_the_capture() {
 
     let mut nan = grid(1);
     nan.columns[0] = ColumnSpec::new("n", CellKind::Number);
-    nan.set_rows(GridRows {
+    nan.try_set_rows(GridRows {
         rows: vec![vec![CellValue::Num(1.0), text("x")]],
         total: RowTotal::Exact(1),
         more: false,

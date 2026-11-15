@@ -217,7 +217,7 @@ pub const GRID_CHANGE_ALLOWLIST: &[(&str, &str)] = &[
         "The Grid page prints the refusal through Display in its status line and never branches on the variant; src/widgets/grid_undo_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
     ),
     (
-        "widgets::grid::GridDataError::Keys",
+        "widgets::grid::GridDataError::Key",
         "The Grid page prints the refusal through Display in its status line and never branches on the variant; src/widgets/grid_undo_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
     ),
     (

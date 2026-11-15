@@ -1335,7 +1335,7 @@ mod tests {
             ColumnSpec::new("note", CellKind::Text),
         ];
         let mut grid = DataGrid::new(WidgetId::of("issue50"), specs);
-        grid.set_rows(GridRows {
+        grid.try_set_rows(GridRows {
             total: RowTotal::Exact(rows.len()),
             rows,
             more: false,

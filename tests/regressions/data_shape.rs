@@ -193,7 +193,7 @@ fn issue42_empty_schema_is_inert() {
     paint_grid(&mut g);
     assert_eq!(g.begin_edit().outcome(), Outcome::Consumed);
     assert!(
-        g.insert_row().is_none(),
+        g.insert_row().unwrap().is_none(),
         "no phantom row in an empty schema"
     );
     assert!(g.is_empty());
@@ -235,7 +235,7 @@ fn issue42_grid_sparse_rows_normalize_to_null() {
     let _ = g.begin_edit();
     assert!(g.is_editing(), "a padded cell opens the editor");
     g.cancel_edit();
-    assert!(g.duplicate_row().is_some());
+    assert!(g.duplicate_row().unwrap().is_some());
     assert!(g.rows().iter().all(|r| r.len() == 2));
 
     assert_eq!(
