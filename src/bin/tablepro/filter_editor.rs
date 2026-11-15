@@ -449,11 +449,13 @@ impl Layer<ModalResult> for FilterEditor {
 #[cfg(test)]
 mod issue10_tests {
     use super::*;
+    use crate::tabs::TableTab;
 
     fn editor(col_i: usize, op: FilterOp, value: &str, value2: &str) -> FilterEditor {
         let columns = vec![
             ("notes".to_owned(), ColType::Text),
             ("order_number".to_owned(), ColType::Int),
+            ("is_gift".to_owned(), ColType::Bool),
         ];
         FilterEditor::new(None, false, columns, col_i, op, value, value2)
     }
@@ -499,5 +501,155 @@ mod issue10_tests {
         assert!(editor.value.field.error.is_none());
         assert_eq!(focus.current(), Some(editor.value2.id));
         assert_eq!((editor.value.text(), editor.value2.text()), ("5", "1"));
+    }
+
+    type Case = (
+        &'static str,
+        FilterOp,
+        &'static str,
+        &'static str,
+        bool,
+        &'static str,
+    );
+
+    /// Column, operator, typed text, whether the upper field is at fault, and
+    /// the start of the message the editor must show.
+    const REJECTED: [Case; 8] = [
+        (
+            "order_number",
+            FilterOp::Gt,
+            "abc",
+            "",
+            false,
+            "Enter a whole number",
+        ),
+        (
+            "order_number",
+            FilterOp::Between,
+            "1",
+            "x",
+            true,
+            "Enter a whole number",
+        ),
+        (
+            "order_number",
+            FilterOp::Between,
+            "5",
+            "1",
+            true,
+            "The upper bound is below",
+        ),
+        (
+            "is_gift",
+            FilterOp::Eq,
+            "yes",
+            "",
+            false,
+            "Enter true or false",
+        ),
+        (
+            "is_gift",
+            FilterOp::In,
+            "true, maybe",
+            "",
+            false,
+            "Enter true or false",
+        ),
+        (
+            "notes",
+            FilterOp::In,
+            "paid,,x",
+            "",
+            false,
+            "List items cannot be empty",
+        ),
+        (
+            "notes",
+            FilterOp::Regex,
+            "(",
+            "",
+            false,
+            "invalid regular expression",
+        ),
+        ("notes", FilterOp::Eq, "", "", false, "A value is required"),
+    ];
+
+    fn at(columns: &[(String, ColType)], name: &str) -> usize {
+        columns.iter().position(|c| c.0 == name).expect(name)
+    }
+
+    #[test]
+    fn issue10_invalid_regex_and_operand_preserve_view() {
+        let cat = crate::db::Catalog::acme_prod();
+        let table = cat.find(Some("public"), "orders").expect("orders fixture");
+        let mut tab = TableTab::new(WidgetId::of("issue10-view"), &cat, table, false);
+        tab.filters.push(Filter {
+            column: "status".into(),
+            op: FilterOp::Eq,
+            value: "paid".into(),
+            value2: String::new(),
+            enabled: true,
+        });
+        tab.load(&cat);
+        let view = |t: &TableTab| {
+            (
+                t.filters.clone(),
+                t.chips.chips.clone(),
+                t.grid.rows().to_vec(),
+                t.total,
+            )
+        };
+        let before = view(&tab);
+        assert!(!before.2.is_empty(), "the applied filter shows rows");
+
+        for (column, op, value, value2, upper, message) in REJECTED {
+            let col_i = at(&tab.columns, column);
+            let mut editor =
+                FilterEditor::new(None, false, tab.columns.clone(), col_i, op, value, value2);
+            let mut focus = Focus::default();
+            editor.submit(&mut focus);
+            assert!(
+                editor.done.is_none(),
+                "{op:?} {value:?} must not close the editor"
+            );
+            assert!(Layer::<ModalResult>::take_result(&mut editor).is_none());
+            let (at_fault, other) = if upper {
+                (&editor.value2, &editor.value)
+            } else {
+                (&editor.value, &editor.value2)
+            };
+            let error = at_fault
+                .field
+                .error
+                .as_deref()
+                .expect("error on the field at fault");
+            assert!(error.starts_with(message), "{op:?} {value:?}: {error}");
+            assert!(
+                other.field.error.is_none(),
+                "{op:?} {value:?}: only one field fails"
+            );
+            assert_eq!(focus.current(), Some(at_fault.id));
+            assert_eq!((editor.value.text(), editor.value2.text()), (value, value2));
+            assert_eq!(view(&tab), before, "{op:?} {value:?} left the view alone");
+        }
+    }
+
+    #[test]
+    fn issue10_corrected_operands_close_the_editor_with_the_filter() {
+        for (col_i, op, value, value2) in [
+            (1, FilterOp::Gt, "3", ""),
+            (1, FilterOp::Between, "1", "5"),
+            (2, FilterOp::Eq, "TRUE", ""),
+            (0, FilterOp::In, "paid, x", ""),
+        ] {
+            let mut editor = editor(col_i, op, value, value2);
+            editor.submit(&mut Focus::default());
+            let Some(LayerOut::Close(ModalResult::Filter(Some((None, filter))))) =
+                Layer::<ModalResult>::take_result(&mut editor)
+            else {
+                panic!("{op:?} {value:?} should close the editor");
+            };
+            assert_eq!((filter.op, filter.value.as_str()), (op, value));
+        }
     }
 }

@@ -3541,6 +3541,266 @@ mod issue10_tests {
         r[col(t, "is_gift")] == Value::Bool(true)
     }
 
+    /// One row per id: text `notes`, integer `order_number`, boolean `is_gift`.
+    /// Every other column is NULL.
+    type Fixture = (
+        &'static str,
+        Option<&'static str>,
+        Option<i64>,
+        Option<bool>,
+    );
+
+    const ROWS: [Fixture; 8] = [
+        ("r1", Some("paid"), Some(1), Some(true)),
+        ("r2", Some("Paid"), Some(2), Some(false)),
+        ("r3", Some("unpaid"), Some(3), Some(true)),
+        ("r4", Some("a_b%"), Some(4), None),
+        ("r5", Some("axbc"), Some(5), Some(false)),
+        ("r6", Some(""), Some(10), Some(true)),
+        ("r7", None, None, None),
+        ("r8", Some("shipped"), Some(20), Some(false)),
+    ];
+
+    fn fixture_rows(table: &Table) -> Vec<(&'static str, Vec<Value>)> {
+        ROWS.iter()
+            .map(|&(id, notes, number, gift)| {
+                let mut row = vec![Value::Null; table.columns.len()];
+                if let Some(t) = notes {
+                    row[col(table, "notes")] = Value::Text(t.into());
+                }
+                if let Some(n) = number {
+                    row[col(table, "order_number")] = Value::Int(n);
+                }
+                if let Some(b) = gift {
+                    row[col(table, "is_gift")] = Value::Bool(b);
+                }
+                (id, row)
+            })
+            .collect()
+    }
+
+    /// The ids the operator admits, through the same expression the tab runs.
+    fn admitted(table: &Table, f: &Filter) -> Vec<&'static str> {
+        let prepared = sql::prepare(table, &f.expression()).expect("fixture filter prepares");
+        fixture_rows(table)
+            .into_iter()
+            .filter(|(_, row)| prepared.admits(row))
+            .map(|(id, _)| id)
+            .collect()
+    }
+
+    /// Operator, column, value, value2, admitted ids, and why.
+    type OpCase = (
+        FilterOp,
+        &'static str,
+        &'static str,
+        &'static str,
+        &'static [&'static str],
+        &'static str,
+    );
+
+    #[test]
+    fn issue10_all_filter_operators_match_expected_rows() {
+        use FilterOp::*;
+        assert_eq!(FilterOp::ALL.len(), 18, "a new operator needs a row here");
+        let cases: [OpCase; 24] = [
+            (
+                Eq,
+                "notes",
+                "PAID",
+                "",
+                &["r1", "r2"],
+                "text equality ignores case",
+            ),
+            (
+                Ne,
+                "notes",
+                "paid",
+                "",
+                &["r3", "r4", "r5", "r6", "r8"],
+                "Ne drops both cases of paid and NULL",
+            ),
+            (
+                Contains,
+                "notes",
+                "a_b%",
+                "",
+                &["r4"],
+                "wildcard characters are literal",
+            ),
+            (
+                NotContains,
+                "notes",
+                "a_b%",
+                "",
+                &["r1", "r2", "r3", "r5", "r6", "r8"],
+                "negation drops the match and NULL",
+            ),
+            (
+                StartsWith,
+                "notes",
+                "a_",
+                "",
+                &["r4"],
+                "an underscore is not one-character wildcard",
+            ),
+            (
+                EndsWith,
+                "notes",
+                "b%",
+                "",
+                &["r4"],
+                "a percent is not a trailing wildcard",
+            ),
+            (
+                Gt,
+                "order_number",
+                "4",
+                "",
+                &["r5", "r6", "r8"],
+                "Gt excludes the bound",
+            ),
+            (
+                Ge,
+                "order_number",
+                "5",
+                "",
+                &["r5", "r6", "r8"],
+                "Ge includes the bound",
+            ),
+            (
+                Lt,
+                "order_number",
+                "3",
+                "",
+                &["r1", "r2"],
+                "Lt excludes the bound",
+            ),
+            (
+                Le,
+                "order_number",
+                "3",
+                "",
+                &["r1", "r2", "r3"],
+                "Le includes the bound",
+            ),
+            (IsNull, "notes", "", "", &["r7"], "only the NULL row"),
+            (
+                IsNotNull,
+                "notes",
+                "",
+                "",
+                &["r1", "r2", "r3", "r4", "r5", "r6", "r8"],
+                "empty text is not NULL",
+            ),
+            (
+                IsEmpty,
+                "notes",
+                "",
+                "",
+                &["r6"],
+                "empty text only, not NULL",
+            ),
+            (
+                IsNotEmpty,
+                "notes",
+                "",
+                "",
+                &["r1", "r2", "r3", "r4", "r5", "r8"],
+                "non-empty text only, not NULL",
+            ),
+            (
+                In,
+                "notes",
+                "paid , shipped",
+                "",
+                &["r1", "r2", "r8"],
+                "members are trimmed and case-insensitive",
+            ),
+            (
+                NotIn,
+                "notes",
+                "paid , shipped",
+                "",
+                &["r3", "r4", "r5", "r6"],
+                "NotIn drops members and NULL",
+            ),
+            (
+                Between,
+                "order_number",
+                "2",
+                "5",
+                &["r2", "r3", "r4", "r5"],
+                "both ends are inclusive",
+            ),
+            (
+                Regex,
+                "notes",
+                "^pa.d$",
+                "",
+                &["r1"],
+                "anchored and case-sensitive",
+            ),
+            (
+                Regex,
+                "notes",
+                "^PAID$",
+                "",
+                &[],
+                "regex does not ignore case",
+            ),
+            (
+                Regex,
+                "notes",
+                "paid",
+                "",
+                &["r1", "r3"],
+                "an unanchored pattern finds a substring",
+            ),
+            (
+                Eq,
+                "is_gift",
+                "true",
+                "",
+                &["r1", "r3", "r6"],
+                "boolean equality",
+            ),
+            (
+                Ne,
+                "is_gift",
+                "true",
+                "",
+                &["r2", "r5", "r8"],
+                "boolean Ne drops NULL",
+            ),
+            (
+                Gt,
+                "order_number",
+                "9007199254740993",
+                "",
+                &[],
+                "no row exceeds a large bound",
+            ),
+            (
+                In,
+                "order_number",
+                "3,20",
+                "",
+                &["r3", "r8"],
+                "integer membership",
+            ),
+        ];
+        let cat = Catalog::acme_prod();
+        let table = orders(&cat);
+        for (op, column, value, value2, want, why) in cases {
+            let f = filter(column, op, value, value2);
+            assert_eq!(admitted(table, &f), want, "{op:?} {value:?}: {why}");
+        }
+        for op in FilterOp::ALL {
+            assert!(cases.iter().any(|case| case.0 == op), "{op:?} has no rows");
+        }
+    }
+
     #[test]
     fn issue10_match_any_returns_the_union_of_enabled_filters() {
         let cat = Catalog::acme_prod();
