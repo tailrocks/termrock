@@ -222,5 +222,16 @@ variant of these enums stays a breaking change and is recorded here.
   keeps the draft. Digits discarded before the model stored a number cannot
   be recovered, and arbitrary-precision decimals are not supported. See
   [the audit note](audits/2026-11-15-exact-sql-literals.md).
+- `DataTable` and `DataGrid` close an open text or choice editor before they
+  structurally replace or remove rows: `set_rows`, `set_row`, `remove_rows`
+  (when it removes at least one existing row), and on the grid `discard`,
+  an accepted `apply_commit_result`, and removing or undoing an inserted row.
+  Appending rows, sorting and staging a cell value keep the editor. Each
+  session records a private structural generation, and a commit whose
+  generation or target cell no longer exists closes the session as a
+  cancellation and changes no data, so a session restored through the public
+  `edit` or `choice` fields cannot write into replacement data. A value the
+  parser rejects still keeps its session. `DataGrid::cancel_edit` closes both
+  kinds and never discards staged pending edits.
 - The `visual-baseline` git tag is frozen historical evidence. It is
   never moved, and it is not a substitute for the current design.

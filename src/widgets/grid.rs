@@ -243,6 +243,7 @@ pub struct EditState {
     pub col: usize,
 
     pub field: EditField,
+    generation: u64,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -450,6 +451,7 @@ pub struct DataGrid {
     pub width_sample_rows: usize,
 
     pub choice: Option<GridChoice>,
+    structural_generation: u64,
 
     pub editor_config: EditorConfig,
 }
@@ -459,6 +461,7 @@ pub struct GridChoice {
     pub row: usize,
     pub col: usize,
     pub editor: ChoiceEditor,
+    generation: u64,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -615,6 +618,7 @@ impl DataGrid {
             type_ahead_precedence: None,
             typeahead: Default::default(),
             choice: None,
+            structural_generation: 0,
             editor_config: EditorConfig::default(),
         }
     }
@@ -693,7 +697,11 @@ impl DataGrid {
             ChoiceResult::Commit(v) => (v, None),
             ChoiceResult::CommitAndTab { value, backward } => (value, Some(backward)),
         };
-        let (src, col) = self.choice.as_ref().map(|c| (c.row, c.col))?;
+        let (src, col, generation) = self.choice.as_ref().map(|c| (c.row, c.col, c.generation))?;
+        if !self.session_target_live(src, col, generation) {
+            self.choice = None;
+            return None;
+        }
         match self.apply_choice(src, col, value) {
             Ok(ev) => {
                 self.choice = None;
@@ -918,6 +926,7 @@ impl DataGrid {
     }
 
     pub fn set_rows(&mut self, data: GridRows) {
+        self.structural_change();
         self.rows = data.rows;
         self.total = data.total;
         self.more = data.more;
@@ -928,7 +937,6 @@ impl DataGrid {
         self.row_errors.clear();
         self.selection.clear();
         self.anchor = None;
-        self.edit = None;
         self.cursor.0 = self.cursor.0.min(self.rows.len().saturating_sub(1));
         self.sample_widths();
         if self.local_sort
@@ -1102,6 +1110,7 @@ impl DataGrid {
                 row: src,
                 col,
                 editor,
+                generation: self.structural_generation,
             });
             return (Outcome::Changed, None);
         }
@@ -1144,12 +1153,16 @@ impl DataGrid {
             row: src,
             col,
             field,
+            generation: self.structural_generation,
         });
         (Outcome::Changed, None)
     }
 
     pub fn commit_edit(&mut self) -> Option<GridAction> {
         let mut e = self.edit.take()?;
+        if !self.session_target_live(e.row, e.col, e.generation) {
+            return None;
+        }
         let parsed = parse_cell(&self.validator, &self.columns[e.col], e.field.text());
         match parsed {
             Ok(v) => {
@@ -1168,7 +1181,24 @@ impl DataGrid {
     }
 
     pub fn cancel_edit(&mut self) -> bool {
-        self.edit.take().is_some()
+        self.cancel_sessions()
+    }
+
+    fn cancel_sessions(&mut self) -> bool {
+        let text_closed = self.edit.take().is_some();
+        let choice_closed = self.choice.take().is_some();
+        text_closed || choice_closed
+    }
+
+    fn structural_change(&mut self) {
+        self.cancel_sessions();
+        self.structural_generation = self.structural_generation.wrapping_add(1);
+    }
+
+    fn session_target_live(&self, row: usize, col: usize, generation: u64) -> bool {
+        generation == self.structural_generation
+            && col < self.columns.len()
+            && self.rows.get(row).is_some_and(|r| col < r.len())
     }
 
     pub fn on_blur(&mut self) -> (Outcome, Option<GridAction>) {
@@ -1240,6 +1270,7 @@ impl DataGrid {
     }
 
     fn remove_inserted(&mut self, src: usize) {
+        self.structural_change();
         self.rows.remove(src);
         self.order = (0..self.rows.len()).collect();
         self.pending.inserted.remove(&src);
@@ -1347,6 +1378,7 @@ impl DataGrid {
     pub fn apply_commit_result(&mut self, result: Result<(), (usize, String)>) {
         match result {
             Ok(()) => {
+                self.structural_change();
                 for ((r, c), v) in self.pending.cells.drain() {
                     if let Some(row) = self.rows.get_mut(r)
                         && let Some(cell) = row.get_mut(c)
@@ -1377,6 +1409,7 @@ impl DataGrid {
     }
 
     pub fn discard(&mut self) {
+        self.structural_change();
         let inserted: Vec<usize> = self.pending.inserted.iter().copied().collect();
         for src in inserted.into_iter().rev() {
             self.remove_inserted(src);
