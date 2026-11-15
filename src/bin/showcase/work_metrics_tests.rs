@@ -244,6 +244,8 @@ fn stress_case(case: &Stress, change: &[(Metric, u64)], settled: &[(Metric, u64)
 //   column. That is a fourth pass over the bar (the page measures at three
 //   widths and then renders), one more N than before the clamp left room for
 //   the card insets. The card now holds four filter chips and `+19996`.
+//   In the label scene the 65,536-cell chip comes last, so the bar shows the
+//   four demo filters and `+1`: 643 widths, 266,497 bytes and 35 visits.
 //
 // A fitter that rescans survivors per removal would add a factor of N to the
 // visits or the widths and fail these exact counts.
@@ -463,16 +465,16 @@ fn work_contract_stress_chips_label() {
             value: "65k label",
             operation: "chips_label_settled",
             records: 1,
-            shows: "+5  + Add filter",
+            shows: "'abc' ×   +1",
         },
         &[
             (Metric::AllocatedBufferCells, 6_440),
             (Metric::BufferCellsFilled, 4_368),
             (Metric::BufferCellsCopied, 12_096),
             (Metric::VisibleRowsPainted, 17),
-            (Metric::IntrinsicWidthCalls, 631),
-            (Metric::TextBytesMeasured, 266_419),
-            (Metric::FitVisits, 39),
+            (Metric::IntrinsicWidthCalls, 643),
+            (Metric::TextBytesMeasured, 266_497),
+            (Metric::FitVisits, 35),
             (Metric::FitCompares, 28),
         ],
         &[
@@ -480,9 +482,9 @@ fn work_contract_stress_chips_label() {
             (Metric::BufferCellsFilled, 4_368),
             (Metric::BufferCellsCopied, 12_096),
             (Metric::VisibleRowsPainted, 17),
-            (Metric::IntrinsicWidthCalls, 631),
-            (Metric::TextBytesMeasured, 266_419),
-            (Metric::FitVisits, 39),
+            (Metric::IntrinsicWidthCalls, 643),
+            (Metric::TextBytesMeasured, 266_497),
+            (Metric::FitVisits, 35),
             (Metric::FitCompares, 28),
         ],
     );

@@ -81,14 +81,16 @@ fn default_filters() -> Vec<Chip> {
 }
 
 /// The filter bar holds the demo filters, or the stress data when it is set.
+/// The long label goes last, so the cursor the bar starts on is a chip that fits.
 fn stress_filters(mode: Mode) -> Vec<Chip> {
     match mode {
         Mode::Off => default_filters(),
         Mode::Items => stress::numbered("filter")
             .map(|label| Chip::new(&label))
             .collect(),
-        Mode::Label => std::iter::once(Chip::new(&stress::long_label()))
-            .chain(default_filters())
+        Mode::Label => default_filters()
+            .into_iter()
+            .chain(std::iter::once(Chip::new(&stress::long_label())))
             .collect(),
     }
 }
@@ -783,6 +785,11 @@ fn render_below(l: Rect, r: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
 
 #[cfg(test)]
 mod tests {
+    use junie_tui::core::focus::FocusRing;
+    use junie_tui::core::hit::HitRegistry;
+    use junie_tui::theme::{ColorLevel, Theme};
+    use junie_tui::ui::ctx::{Interaction, RenderCtx};
+
     use super::*;
     use crate::pages::stress::testing::{index, measuring};
 
@@ -794,5 +801,25 @@ mod tests {
             let size = measuring(|ctx| page.measure(Size::new(120, 40), ctx));
             assert!(size.width <= 120, "{value}: measured {} cells", size.width);
         }
+    }
+
+    #[test]
+    fn the_long_label_leaves_the_first_chip_visible() {
+        let mut page = ChipsPage::new();
+        page.set_option("chipsselects.stress", index("65k label"));
+        assert_eq!(page.filters.cursor, 0);
+
+        let theme = Theme::for_level(ColorLevel::TrueColor);
+        let area = Rect::new(0, 0, 100, 1);
+        let mut buf = Buffer::empty(area);
+        let mut hits = HitRegistry::default();
+        let mut ring = FocusRing::default();
+        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        page.filters.render(area, &mut buf, &mut ctx, theme.canvas);
+        let row: String = (0..area.width).map(|x| buf[(x, 0)].symbol()).collect();
+        assert!(
+            row.contains("status = 'pending'"),
+            "the chip under the starting cursor is drawn: {row:?}"
+        );
     }
 }
