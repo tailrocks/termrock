@@ -77,6 +77,9 @@ pub struct SearchSession {
     column: usize,
     context_intent: Option<ItemKey>,
     press_was_selected: bool,
+    /// A paint moved the selection off a cell it left out. The composition
+    /// reports it with the next response.
+    relocated: bool,
 }
 
 impl SearchSession {
@@ -95,6 +98,7 @@ impl SearchSession {
             column: 0,
             context_intent: None,
             press_was_selected: false,
+            relocated: false,
         }
     }
 
@@ -142,6 +146,11 @@ impl SearchSession {
 
     /// Records which cells of `row` the paint placed. A cell it left out is
     /// skipped by navigation and cannot run until a later paint places it.
+    ///
+    /// Placement is part of what the selection may rest on. When the paint
+    /// leaves out the selected cell, the selection moves to the nearest placed
+    /// cell, or clears when none is placed, so no key or detail action can
+    /// reach a cell the user cannot see.
     pub(super) fn place_cells(&mut self, row: usize, placed: &[usize]) {
         let Some(accepted) = self.accepted.as_mut() else {
             return;
@@ -151,6 +160,34 @@ impl SearchSession {
         for slot in &mut accepted.slots[start..end] {
             slot.placed = placed.contains(&slot.cell);
         }
+        let Some(at) = self
+            .state
+            .cursor()
+            .and_then(|key| self.state.visible_index(key))
+            .filter(|&at| (start..end).contains(&at) && !accepted.slots[at].placed)
+        else {
+            return;
+        };
+        let target = projection::nearest_selectable(&accepted.slots, at);
+        let moved = match target {
+            Some(to) => {
+                let slot = accepted.slots[to];
+                self.column = slot.cell;
+                self.state.set_cursor(slot.key)
+            }
+            None => self.state.clear_cursor(),
+        };
+        self.relocated |= moved;
+        self.drop_stale_intent();
+    }
+
+    /// Whether a paint moved the selection since the last response.
+    pub(super) fn take_relocation(&mut self) -> bool {
+        std::mem::take(&mut self.relocated)
+    }
+
+    pub(super) fn has_relocation(&self) -> bool {
+        self.relocated
     }
 
     /// The selected key, when it may act: displayed results that answer the
@@ -369,9 +406,7 @@ impl SearchSession {
 
     fn drop_stale_intent(&mut self) {
         let key = self.context_intent;
-        let alive = key.is_some_and(|key| {
-            self.state.cursor() == Some(key) && self.is_interactive() && self.slot(key).is_some()
-        });
+        let alive = key.is_some_and(|key| self.actionable() == Some(key));
         if !alive {
             self.context_intent = None;
         }
@@ -640,8 +675,8 @@ impl SearchSession {
     /// [`ContextConfig`](crate::ui::context::ContextConfig)'s, applied by the
     /// composition.
     pub fn begin_context(&mut self) -> Reply {
-        match self.state.cursor() {
-            Some(key) if self.is_interactive() => {
+        match self.actionable() {
+            Some(key) => {
                 self.context_intent = Some(key);
                 Response::changed()
             }

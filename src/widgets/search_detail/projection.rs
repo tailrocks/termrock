@@ -165,6 +165,21 @@ fn pick(slots: &[Slot], start: usize, end: usize, column: usize) -> Option<usize
         .min_by_key(|&i| (slots[i].cell.abs_diff(column), slots[i].cell))
 }
 
+/// The selectable slot nearest to slot `at`: the same row first, by cell
+/// distance, then the nearest row. `None` when no slot is selectable.
+pub(super) fn nearest_selectable(slots: &[Slot], at: usize) -> Option<usize> {
+    let from = slots[at];
+    (0..slots.len())
+        .filter(|&i| slots[i].selectable())
+        .min_by_key(|&i| {
+            (
+                slots[i].row.abs_diff(from.row),
+                slots[i].cell.abs_diff(from.cell),
+                slots[i].cell,
+            )
+        })
+}
+
 /// The first row at or after slot `from` that has an enabled slot.
 fn scan_forward(slots: &[Slot], mut from: usize, column: usize) -> Option<usize> {
     while from < slots.len() {
