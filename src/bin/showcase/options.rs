@@ -1486,6 +1486,7 @@ pub static ACTIVITY: &[Opt] = &[
     Opt::new("activity.digit_toggles", "Digits toggle streams", OFF_ON)
         .default(1)
         .behaviour(),
+    Opt::new("activity.feed", "Log feed", &["simulated", "channel"]),
 ];
 
 pub static WORKSPACES: &[Opt] = &[

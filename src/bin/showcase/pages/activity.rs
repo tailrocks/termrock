@@ -2,12 +2,16 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Rect, Size};
 
 use crate::app::PageId;
+use crate::feed::{Feed, FeedLine};
 use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
+use junie_tui::core::event::{External, Outcome};
 use junie_tui::core::id::WidgetId;
 use junie_tui::core::pointer::MouseTarget;
+use junie_tui::runtime::{
+    ExternalPolicy, ExternalReceiver, ExternalSender, bounded_external_channel,
+};
 use junie_tui::theme::Tone;
 use junie_tui::ui::ctx::RenderCtx;
 use junie_tui::ui::measure::Measure;
@@ -65,6 +69,17 @@ const LINE_TICKS: u32 = 3;
 
 const STOP_TICKS: u32 = 6;
 
+const FEED_CAPACITY: usize = 32;
+
+const FEED_BURST: usize = 96;
+
+const FEED_PAUSE: std::time::Duration = std::time::Duration::from_millis(400);
+
+const FEED_POLICY: ExternalPolicy = ExternalPolicy {
+    max_messages: 16,
+    max_duration: ExternalPolicy::DEFAULT_MAX_DURATION,
+};
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 enum Run {
     Running,
@@ -95,6 +110,11 @@ pub struct ActivityPage {
 
     next: usize,
     exit: Option<i32>,
+
+    feed_rx: ExternalReceiver,
+    feed_tx: ExternalSender,
+    feed: Option<Feed>,
+    fed: u64,
 }
 
 fn service_line(svc: usize, text: &str) -> Line {
@@ -124,6 +144,8 @@ impl ActivityPage {
                 ..Chip::new(name)
             })
             .collect();
+        let capacity = std::num::NonZeroUsize::new(FEED_CAPACITY).expect("nonzero capacity");
+        let (feed_tx, feed_rx) = bounded_external_channel(capacity, FEED_POLICY);
         let mut p = Self {
             template: Template::new(ID, states_grid()),
             opts,
@@ -141,6 +163,10 @@ impl ActivityPage {
             stopping: 0,
             next: 0,
             exit: None,
+            feed_rx,
+            feed_tx,
+            feed: None,
+            fed: 0,
         };
         p.rebuild();
         p.start();
@@ -226,6 +252,24 @@ impl ActivityPage {
         let (svc, text) = CHATTER[self.next % CHATTER.len()];
         self.next += 1;
         self.push(Some(svc), service_line(svc, text));
+    }
+
+    fn fed_line(&mut self, seq: u64) {
+        let (svc, text) = CHATTER[self.next % CHATTER.len()];
+        self.next += 1;
+        self.fed += 1;
+        self.push(
+            Some(svc),
+            service_line(svc, &format!("{text} · feed #{seq}")),
+        );
+    }
+
+    fn set_feed(&mut self, on: bool) {
+        if on == self.feed.is_some() {
+            return;
+        }
+        self.fed = 0;
+        self.feed = on.then(|| Feed::start(self.feed_tx.clone(), FEED_BURST, FEED_PAUSE));
     }
 
     fn finish(&mut self, run: Run, code: i32) {
@@ -429,7 +473,7 @@ impl ActivityPage {
     }
 
     fn run_facts(&self) -> Vec<Prop> {
-        vec![
+        let mut facts = vec![
             Prop::new("Command", "mise run dev"),
             Prop::new("Scope", "here · ~/work/acme"),
             Prop::new("Host", "mbp · local"),
@@ -440,7 +484,15 @@ impl ActivityPage {
                     Tone::Normal
                 },
             ),
-        ]
+        ];
+        if let Some(feed) = &self.feed {
+            facts.extend([
+                Prop::new("Feed sent", feed.sent().to_string()),
+                Prop::new("Handled", self.fed.to_string()),
+                Prop::new("Full retries", feed.full().to_string()).tone(Tone::Warning),
+            ]);
+        }
+        facts
     }
 
     fn failure(&self) -> Option<Notice> {
@@ -704,7 +756,7 @@ impl Page for ActivityPage {
             match self.run {
                 Run::Running => {
                     self.tick += 1;
-                    if self.tick.is_multiple_of(LINE_TICKS) {
+                    if self.feed.is_none() && self.tick.is_multiple_of(LINE_TICKS) {
                         self.chatter();
                     }
                 }
@@ -813,6 +865,20 @@ impl Page for ActivityPage {
         vec![("Enter", "Activate")]
     }
 
+    fn external(&self) -> Option<&ExternalReceiver> {
+        self.feed.as_ref().map(|_| &self.feed_rx)
+    }
+
+    fn on_external(&mut self, message: &External, _cx: &mut Cx) -> Outcome {
+        match message.downcast_ref::<FeedLine>() {
+            Some(line) if self.feed.is_some() && self.run == Run::Running => {
+                self.fed_line(line.seq);
+                Outcome::Changed
+            }
+            _ => Outcome::Ignored,
+        }
+    }
+
     fn option_value(&self, key: &str) -> Option<usize> {
         self.opts.get(key)
     }
@@ -822,6 +888,10 @@ impl Page for ActivityPage {
             self.rebuild();
             if key == "activity.state" {
                 self.start();
+            }
+            if key == "activity.feed" {
+                let channel = self.opts.value("activity.feed") == "channel";
+                self.set_feed(channel);
             }
         }
     }

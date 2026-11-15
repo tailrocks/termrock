@@ -67,43 +67,273 @@ pub trait Application {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct ExternalSender(std::sync::mpsc::Sender<External>);
+/// Bounds one runtime turn's external-message work.
+///
+/// The runtime hands the application at most `max_messages` external messages
+/// per turn and stops early once `max_duration` has elapsed, measured from the
+/// start of the turn and checked between messages. A turn always handles one
+/// message when one is queued, so a zero duration or zero count still makes
+/// progress. Queued messages stay in order and are not lost: the next turn
+/// resumes where this one stopped, after the runtime has checked terminal
+/// input, resize and tick.
+///
+/// The bound counts messages and time between handlers. It cannot interrupt
+/// one handler that blocks or runs for a long time.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ExternalPolicy {
+    /// Messages handled per turn. Zero is treated as one.
+    pub max_messages: usize,
+    /// Time charged from the turn start, including handler time.
+    pub max_duration: Duration,
+}
 
-impl ExternalSender {
-    pub fn send<T: std::any::Any + Send + Sync>(&self, message: T) -> bool {
-        self.0.send(External::new(message)).is_ok()
+impl ExternalPolicy {
+    pub const DEFAULT_MAX_MESSAGES: usize = 64;
+    pub const DEFAULT_MAX_DURATION: Duration = Duration::from_millis(2);
+
+    fn normalized(self) -> Self {
+        Self {
+            max_messages: self.max_messages.max(1),
+            ..self
+        }
     }
 }
 
+impl Default for ExternalPolicy {
+    fn default() -> Self {
+        Self {
+            max_messages: Self::DEFAULT_MAX_MESSAGES,
+            max_duration: Self::DEFAULT_MAX_DURATION,
+        }
+    }
+}
+
+/// A rejected [`ExternalSender::try_send`]. Both variants return the message,
+/// so the producer can retry it or merge it into its own pending state.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ExternalSendError {
+    /// The bounded queue is at capacity. Retry later.
+    Full(External),
+    /// The receiver was dropped. No retry will succeed.
+    Closed(External),
+}
+
+impl std::fmt::Display for ExternalSendError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Full(_) => "external queue is full",
+            Self::Closed(_) => "external queue is closed",
+        })
+    }
+}
+
+impl std::error::Error for ExternalSendError {}
+
+#[derive(Debug, Clone)]
+enum ExternalQueue {
+    Unbounded(std::sync::mpsc::Sender<External>),
+    Bounded(std::sync::mpsc::SyncSender<External>),
+}
+
+/// The producer half of an external-message channel. Clone it for each
+/// producer thread.
+#[derive(Debug, Clone)]
+pub struct ExternalSender(ExternalQueue);
+
+impl ExternalSender {
+    /// Queues `message` without blocking.
+    ///
+    /// A bounded channel answers [`ExternalSendError::Full`] at capacity. An
+    /// unbounded channel never reports `Full`. Either way the rejected message
+    /// comes back in the error, so a retry sends the same payload.
+    pub fn try_send(&self, message: External) -> Result<(), ExternalSendError> {
+        use std::sync::mpsc::TrySendError;
+        match &self.0 {
+            ExternalQueue::Unbounded(tx) => {
+                tx.send(message).map_err(|e| ExternalSendError::Closed(e.0))
+            }
+            ExternalQueue::Bounded(tx) => tx.try_send(message).map_err(|e| match e {
+                TrySendError::Full(m) => ExternalSendError::Full(m),
+                TrySendError::Disconnected(m) => ExternalSendError::Closed(m),
+            }),
+        }
+    }
+
+    /// Wraps `message` and queues it, returning whether it was accepted.
+    ///
+    /// This is the lossy convenience: on a full or closed queue the message is
+    /// dropped and the caller learns only `false`. A producer that must keep
+    /// the payload calls [`try_send`](Self::try_send) with an [`External`] it
+    /// retains and retries on [`ExternalSendError::Full`].
+    pub fn send<T: std::any::Any + Send + Sync>(&self, message: T) -> bool {
+        self.try_send(External::new(message)).is_ok()
+    }
+}
+
+/// The runtime half of an external-message channel, owned by the application
+/// and returned from [`Application::external`].
 #[derive(Debug)]
 pub struct ExternalReceiver {
     queue: std::sync::mpsc::Receiver<External>,
     latency: Duration,
+    policy: ExternalPolicy,
 }
 
 impl ExternalReceiver {
     pub const DEFAULT_LATENCY: Duration = Duration::from_millis(10);
+
+    fn new(queue: std::sync::mpsc::Receiver<External>, policy: ExternalPolicy) -> Self {
+        Self {
+            queue,
+            latency: Self::DEFAULT_LATENCY,
+            policy: policy.normalized(),
+        }
+    }
 
     pub fn latency(mut self, latency: Duration) -> Self {
         self.latency = latency;
         self
     }
 
+    /// The per-turn bound the runtime applies to this receiver.
+    pub fn policy(&self) -> ExternalPolicy {
+        self.policy
+    }
+
+    /// Replaces the per-turn bound, normalising a zero message count to one.
+    pub fn set_policy(&mut self, policy: ExternalPolicy) {
+        self.policy = policy.normalized();
+    }
+
+    pub fn with_policy(mut self, policy: ExternalPolicy) -> Self {
+        self.set_policy(policy);
+        self
+    }
+
+    /// Takes the oldest queued message, if any. An empty or disconnected
+    /// queue both read as no message.
+    pub fn try_recv(&self) -> Option<External> {
+        self.queue.try_recv().ok()
+    }
+
+    /// Takes every queued message at once.
+    ///
+    /// The runtime never calls this. It is unbounded: a producer that keeps
+    /// refilling the queue keeps it from returning, and the whole backlog is
+    /// allocated at once. Read incrementally with [`try_recv`](Self::try_recv).
+    #[deprecated(note = "unbounded; read incrementally with `try_recv`")]
     pub fn drain(&self) -> Vec<External> {
         self.queue.try_iter().collect()
     }
 }
 
+/// Creates an unbounded channel with the default [`ExternalPolicy`].
+///
+/// The queue can grow without limit while the application is busy, so this
+/// suits a low-rate producer. The runtime still handles at most one policy's
+/// worth of messages per turn. Prefer [`bounded_external_channel`] for a
+/// producer that can outrun the application.
 pub fn external_channel() -> (ExternalSender, ExternalReceiver) {
     let (tx, rx) = std::sync::mpsc::channel();
     (
-        ExternalSender(tx),
-        ExternalReceiver {
-            queue: rx,
-            latency: ExternalReceiver::DEFAULT_LATENCY,
-        },
+        ExternalSender(ExternalQueue::Unbounded(tx)),
+        ExternalReceiver::new(rx, ExternalPolicy::default()),
     )
+}
+
+/// Creates a channel that holds at most `capacity` queued messages.
+///
+/// [`ExternalSender::try_send`] never blocks: at capacity it returns
+/// [`ExternalSendError::Full`] with the message, and the producer decides
+/// whether to retry, merge or drop. 256 is a reasonable capacity for a UI
+/// background feed.
+pub fn bounded_external_channel(
+    capacity: std::num::NonZeroUsize,
+    policy: ExternalPolicy,
+) -> (ExternalSender, ExternalReceiver) {
+    let (tx, rx) = std::sync::mpsc::sync_channel(capacity.get());
+    (
+        ExternalSender(ExternalQueue::Bounded(tx)),
+        ExternalReceiver::new(rx, policy),
+    )
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+struct ExternalTurn {
+    changed: bool,
+    exhausted: bool,
+}
+
+/// Hands the application one bounded group of queued external messages.
+///
+/// The receiver is read again before every message, so a handler may replace
+/// or remove it. `exhausted` means the bound stopped the turn and more work
+/// may be queued, so the caller schedules another turn without waiting.
+fn pump_external(
+    app: &mut impl Application,
+    policy: ExternalPolicy,
+    elapsed: impl Fn() -> Duration,
+) -> ExternalTurn {
+    let mut turn = ExternalTurn::default();
+    for count in 0..policy.normalized().max_messages {
+        if app.should_quit() {
+            return turn;
+        }
+        if count > 0 && elapsed() >= policy.max_duration {
+            turn.exhausted = true;
+            return turn;
+        }
+        let Some(message) = app.external().and_then(ExternalReceiver::try_recv) else {
+            return turn;
+        };
+        turn.changed |= app.handle(Input::External(message)) == Outcome::Changed;
+        if app.should_quit() {
+            return turn;
+        }
+    }
+    turn.exhausted = true;
+    turn
+}
+
+/// What one loop iteration does after terminal input: a bounded external
+/// group, then the resize check, then the tick. The order and the quit checks
+/// between them are the fairness contract between those sources.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+struct ServiceTurn {
+    changed: bool,
+    quit: bool,
+    ticked: bool,
+}
+
+fn service_turn(
+    app: &mut impl Application,
+    external_pending: &mut bool,
+    elapsed: impl Fn() -> Duration,
+    resize: impl FnOnce() -> Option<Input>,
+    tick_due: impl FnOnce() -> bool,
+) -> ServiceTurn {
+    let mut turn = ServiceTurn::default();
+    match app.external().map(ExternalReceiver::policy) {
+        Some(policy) => {
+            let external = pump_external(app, policy, elapsed);
+            turn.changed |= external.changed;
+            *external_pending = external.exhausted;
+        }
+        None => *external_pending = false,
+    }
+    if app.should_quit() {
+        turn.quit = true;
+        return turn;
+    }
+    if let Some(resize) = resize() {
+        turn.changed |= app.handle(resize) == Outcome::Changed;
+    }
+    if tick_due() {
+        turn.ticked = true;
+        turn.changed |= app.handle(Input::Tick) == Outcome::Changed;
+        turn.quit = app.should_quit();
+    }
+    turn
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -678,6 +908,7 @@ fn event_loop(session: &mut TerminalSession, app: &mut impl Application) -> std:
     let mut hover_due: Option<(u64, Instant)> = None;
     let mut first_poll_delay = first_poll_delay();
     let mut sizes = SizeWatch::new(terminal_size(&session.terminal));
+    let mut external_pending = false;
     let mut raw_pending = false;
     loop {
         #[cfg(unix)]
@@ -730,7 +961,7 @@ fn event_loop(session: &mut TerminalSession, app: &mut impl Application) -> std:
         if let Some(external) = app.external() {
             wait = wait.min(external.latency);
         }
-        wait = turn_wait(wait, raw_pending || dirty);
+        wait = turn_wait(wait, raw_pending || external_pending || dirty);
 
         if raw_pending || pump.has_pending() || poll_uninterrupted(wait)? {
             let changed = input_turn(
@@ -754,33 +985,26 @@ fn event_loop(session: &mut TerminalSession, app: &mut impl Application) -> std:
             dirty = true;
         }
 
-        let external = app.external().map(ExternalReceiver::drain);
-        for message in external.into_iter().flatten() {
-            if app.handle(Input::External(message)) == Outcome::Changed {
-                dirty = true;
-            }
-        }
-        if app.should_quit() {
-            return Ok(());
-        }
-
-        if let Some(size) = terminal_size(terminal)
-            && let Some(resize) = sizes.check(size)
-            && app.handle(resize) == Outcome::Changed
-        {
-            dirty = true;
-        }
-        if last_tick.elapsed() >= interval {
-            last_tick = Instant::now();
-            if app.handle(Input::Tick) == Outcome::Changed {
-                dirty = true;
-            }
-            if app.should_quit() {
-                if dirty {
-                    draw_frame(terminal, app, suppress_colors, &mut dirty)?;
+        let started = Instant::now();
+        let turn = service_turn(
+            app,
+            &mut external_pending,
+            || started.elapsed(),
+            || terminal_size(terminal).and_then(|size| sizes.check(size)),
+            || {
+                let due = last_tick.elapsed() >= interval;
+                if due {
+                    last_tick = Instant::now();
                 }
-                return Ok(());
+                due
+            },
+        );
+        dirty |= turn.changed;
+        if turn.quit {
+            if turn.ticked && dirty {
+                draw_frame(terminal, app, suppress_colors, &mut dirty)?;
             }
+            return Ok(());
         }
     }
 }
@@ -1744,6 +1968,356 @@ mod raw_input_tests {
         assert_eq!(default.max_events, 256);
         assert_eq!(default.max_duration, Duration::from_millis(2));
         assert_eq!(policy(0, Duration::ZERO).event_limit(), 1);
+    }
+}
+
+#[cfg(test)]
+mod external_tests {
+    use super::*;
+    use std::num::NonZeroUsize;
+
+    const LONG: Duration = Duration::from_secs(3600);
+
+    fn policy(max_messages: usize) -> ExternalPolicy {
+        ExternalPolicy {
+            max_messages,
+            max_duration: LONG,
+        }
+    }
+
+    fn zero_clock() -> Duration {
+        Duration::ZERO
+    }
+
+    #[derive(Default)]
+    struct Fixture {
+        receiver: Option<ExternalReceiver>,
+        seen: Vec<String>,
+        quit_on: Option<u32>,
+        refill: Option<ExternalSender>,
+        remove_on: Option<u32>,
+        quit: bool,
+    }
+
+    impl Fixture {
+        fn over(receiver: ExternalReceiver) -> Self {
+            Self {
+                receiver: Some(receiver),
+                ..Self::default()
+            }
+        }
+
+        fn numbers(&self) -> Vec<u32> {
+            self.seen
+                .iter()
+                .filter_map(|s| s.strip_prefix('e')?.parse().ok())
+                .collect()
+        }
+    }
+
+    impl Application for Fixture {
+        fn handle(&mut self, input: Input) -> Outcome {
+            match input {
+                Input::External(message) => {
+                    let n = *message.downcast_ref::<u32>().expect("u32 payload");
+                    self.seen.push(format!("e{n}"));
+                    if self.quit_on == Some(n) {
+                        self.quit = true;
+                    }
+                    if self.remove_on == Some(n) {
+                        self.receiver = None;
+                    }
+                    if let Some(tx) = &self.refill {
+                        assert!(tx.send(n + 1000));
+                    }
+                    Outcome::Changed
+                }
+                Input::Resize(..) => {
+                    self.seen.push("r".into());
+                    Outcome::Changed
+                }
+                Input::Tick => {
+                    self.seen.push("t".into());
+                    Outcome::Ignored
+                }
+                Input::Key(_) => {
+                    self.seen.push("k".into());
+                    Outcome::Changed
+                }
+                _ => Outcome::Ignored,
+            }
+        }
+        fn render(&mut self, _frame: &mut Frame) {}
+        fn should_quit(&self) -> bool {
+            self.quit
+        }
+        fn tick_interval(&self) -> Duration {
+            Duration::from_millis(100)
+        }
+        fn external(&self) -> Option<&ExternalReceiver> {
+            self.receiver.as_ref()
+        }
+    }
+
+    fn loaded(count: u32, policy: ExternalPolicy) -> (Fixture, ExternalSender) {
+        let (tx, rx) = external_channel();
+        for n in 0..count {
+            assert!(tx.send(n));
+        }
+        (Fixture::over(rx.with_policy(policy)), tx)
+    }
+
+    fn pump(app: &mut Fixture) -> ExternalTurn {
+        let policy = app.external().expect("receiver").policy();
+        pump_external(app, policy, zero_clock)
+    }
+
+    fn rest(app: &Fixture) -> Vec<u32> {
+        std::iter::from_fn(|| app.external()?.try_recv())
+            .map(|m| *m.downcast_ref::<u32>().expect("u32 payload"))
+            .collect()
+    }
+
+    #[test]
+    fn external_turn_stops_at_count_and_keeps_fifo() {
+        let (mut app, _tx) = loaded(10, policy(3));
+
+        let first = pump(&mut app);
+        assert_eq!(app.numbers(), [0, 1, 2]);
+        assert!(first.changed && first.exhausted);
+
+        let second = pump(&mut app);
+        assert_eq!(app.numbers(), [0, 1, 2, 3, 4, 5]);
+        assert!(second.exhausted);
+
+        assert_eq!(rest(&app), [6, 7, 8, 9], "no extra dequeue, order intact");
+    }
+
+    #[test]
+    fn external_turn_normalizes_a_zero_count_to_one_message() {
+        let (mut app, _tx) = loaded(4, policy(0));
+        assert_eq!(app.external().unwrap().policy().max_messages, 1);
+        pump(&mut app);
+        assert_eq!(app.numbers(), [0]);
+    }
+
+    #[test]
+    fn external_turn_charges_handler_time() {
+        let (mut app, _tx) = loaded(
+            5,
+            ExternalPolicy {
+                max_messages: 64,
+                max_duration: Duration::from_millis(2),
+            },
+        );
+        let policy = app.external().unwrap().policy();
+        let spent = pump_external(&mut app, policy, || Duration::from_millis(3));
+        assert_eq!(app.numbers(), [0], "one handler consumed the budget");
+        assert!(spent.exhausted);
+        assert_eq!(rest(&app), [1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn external_turn_zero_duration_handles_one_then_yields() {
+        let (mut app, _tx) = loaded(
+            3,
+            ExternalPolicy {
+                max_messages: 64,
+                max_duration: Duration::ZERO,
+            },
+        );
+        let turn = pump(&mut app);
+        assert_eq!(app.numbers(), [0]);
+        assert!(turn.exhausted);
+    }
+
+    #[test]
+    fn external_turn_quit_stops_immediately() {
+        let (mut app, _tx) = loaded(6, policy(64));
+        app.quit_on = Some(0);
+        let turn = pump(&mut app);
+        assert_eq!(app.numbers(), [0]);
+        assert!(!turn.exhausted);
+        assert_eq!(rest(&app), [1, 2, 3, 4, 5], "later messages stay queued");
+    }
+
+    #[test]
+    fn external_turn_replenished_queue_yields() {
+        let (mut app, tx) = loaded(1, policy(5));
+        app.refill = Some(tx);
+        let turn = pump(&mut app);
+        assert_eq!(
+            app.numbers().len(),
+            5,
+            "a refilling queue cannot hold the turn"
+        );
+        assert!(turn.exhausted);
+    }
+
+    #[test]
+    fn external_turn_receiver_removed_by_handler() {
+        let (mut app, _tx) = loaded(4, policy(64));
+        app.remove_on = Some(1);
+        let turn = pump(&mut app);
+        assert_eq!(app.numbers(), [0, 1]);
+        assert!(!turn.exhausted);
+        assert!(app.external().is_none());
+        let mut pending = true;
+        service_turn(&mut app, &mut pending, zero_clock, || None, || false);
+        assert!(!pending);
+    }
+
+    #[test]
+    fn external_turn_empty_queue_is_not_pending() {
+        let (mut app, _tx) = loaded(2, policy(8));
+        let mut pending = true;
+        service_turn(&mut app, &mut pending, zero_clock, || None, || false);
+        assert_eq!(app.numbers(), [0, 1]);
+        assert!(!pending, "the queue emptied inside the bound");
+    }
+
+    #[test]
+    fn external_turn_exact_count_costs_one_empty_turn() {
+        let (mut app, _tx) = loaded(3, policy(3));
+        let mut pending = false;
+        service_turn(&mut app, &mut pending, zero_clock, || None, || false);
+        assert!(pending, "conservatively pending at the bound");
+        service_turn(&mut app, &mut pending, zero_clock, || None, || false);
+        assert!(!pending);
+        assert_eq!(app.numbers(), [0, 1, 2]);
+    }
+
+    #[test]
+    fn external_backlog_allows_input_resize_and_tick() {
+        let (mut app, _tx) = loaded(10, policy(3));
+        let mut pending = false;
+
+        let mut keys = vec![Input::Key(Key {
+            code: KeyCode::Char('a'),
+            mods: KeyModifiers::NONE,
+        })]
+        .into_iter();
+        drain_ready_inputs(&mut app, || Ok(keys.next())).expect("input drains");
+        let first = service_turn(
+            &mut app,
+            &mut pending,
+            zero_clock,
+            || Some(Input::Resize(80, 24)),
+            || true,
+        );
+        assert!(first.ticked && !first.quit);
+        assert_eq!(app.seen, ["k", "e0", "e1", "e2", "r", "t"]);
+        assert_eq!(
+            turn_wait(Duration::from_millis(50), pending),
+            Duration::ZERO
+        );
+
+        service_turn(&mut app, &mut pending, zero_clock, || None, || false);
+        assert_eq!(app.seen[6..], ["e3", "e4", "e5"]);
+    }
+
+    #[test]
+    fn external_backlog_quit_skips_resize_and_tick() {
+        let (mut app, _tx) = loaded(5, policy(64));
+        app.quit_on = Some(1);
+        let mut pending = false;
+        let turn = service_turn(
+            &mut app,
+            &mut pending,
+            zero_clock,
+            || Some(Input::Resize(80, 24)),
+            || true,
+        );
+        assert!(turn.quit && !turn.ticked);
+        assert_eq!(app.seen, ["e0", "e1"]);
+    }
+
+    #[test]
+    fn turn_wait_is_immediate_only_while_pending() {
+        let wait = Duration::from_millis(40);
+        assert_eq!(turn_wait(wait, false), wait);
+        assert_eq!(turn_wait(wait, true), Duration::ZERO);
+    }
+
+    fn capacity(n: usize) -> NonZeroUsize {
+        NonZeroUsize::new(n).expect("nonzero")
+    }
+
+    #[test]
+    fn bounded_external_full_and_closed_preserve_payload() {
+        let (tx, rx) = bounded_external_channel(capacity(1), ExternalPolicy::default());
+        assert!(tx.send(1_u32));
+        let second = External::new(2_u32);
+        let Err(ExternalSendError::Full(back)) = tx.try_send(second.clone()) else {
+            panic!("a full queue answers Full");
+        };
+        assert_eq!(back, second, "the same payload comes back");
+        assert!(!tx.send(3_u32), "send reports rejection as false");
+
+        let first = rx.try_recv().expect("queued first");
+        assert_eq!(first.downcast_ref::<u32>(), Some(&1));
+        assert_eq!(tx.try_send(back), Ok(()), "the retry is accepted");
+        let again = rx.try_recv().expect("queued retry");
+        assert_eq!(again, second);
+
+        let kept = External::new(4_u32);
+        drop(rx);
+        assert_eq!(
+            tx.try_send(kept.clone()),
+            Err(ExternalSendError::Closed(kept)),
+        );
+        assert!(!tx.send(5_u32));
+    }
+
+    #[test]
+    fn bounded_external_unbounded_sender_reports_closed_with_payload() {
+        let (tx, rx) = external_channel();
+        drop(rx);
+        let kept = External::new(7_u32);
+        assert_eq!(
+            tx.try_send(kept.clone()),
+            Err(ExternalSendError::Closed(kept))
+        );
+    }
+
+    #[test]
+    fn bounded_external_empty_and_dropped_sender_read_as_no_message() {
+        let (tx, rx) = bounded_external_channel(capacity(2), ExternalPolicy::default());
+        assert!(rx.try_recv().is_none());
+        drop(tx);
+        assert!(rx.try_recv().is_none());
+    }
+
+    #[test]
+    fn bounded_external_producers_share_one_capacity_and_keep_order() {
+        let (tx, rx) = bounded_external_channel(capacity(3), ExternalPolicy::default());
+        let other = tx.clone();
+        assert!(tx.send(0_u32));
+        assert!(other.send(1_u32));
+        assert!(tx.send(2_u32));
+        assert!(matches!(
+            other.try_send(External::new(3_u32)),
+            Err(ExternalSendError::Full(_))
+        ));
+        let order: Vec<u32> = std::iter::from_fn(|| rx.try_recv())
+            .map(|m| *m.downcast_ref::<u32>().expect("u32"))
+            .collect();
+        assert_eq!(order, [0, 1, 2]);
+    }
+
+    #[test]
+    fn bounded_external_policy_is_receiver_local_and_normalized() {
+        let (_tx, rx) = bounded_external_channel(capacity(4), policy(0));
+        assert_eq!(rx.policy().max_messages, 1);
+        let mut rx = rx.with_policy(policy(9));
+        assert_eq!(rx.policy(), policy(9));
+        rx.set_policy(ExternalPolicy::default());
+        assert_eq!(rx.policy(), ExternalPolicy::default());
+        assert_eq!(ExternalPolicy::default().max_messages, 64);
+        assert_eq!(
+            ExternalPolicy::default().max_duration,
+            Duration::from_millis(2)
+        );
     }
 }
 
