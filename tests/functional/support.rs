@@ -585,6 +585,17 @@ impl App {
         }
     }
 
+    /// Sends a wheel step and waits for the page to show its effect. `settle`
+    /// only waits for 150 ms without output, which a loaded app outlasts, so a
+    /// loop that reads `settle` after `wheel` can read the frame from before the
+    /// step and send another one. Use this where every step is known to move
+    /// the page, and `wheel` where the loop is looking for the end of the scroll.
+    pub fn wheel_applied(&self, point: Point, down: bool, amount: usize) -> TerminalSnapshot {
+        let before = text(&self.screen());
+        self.wheel(point, down, amount);
+        self.wait_screen("wheel applied", |screen| text(screen) != before)
+    }
+
     pub fn resize(&self, cols: u16, rows: u16) {
         self.log(format!("resize {cols}x{rows}"));
         self.session
