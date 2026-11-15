@@ -3283,7 +3283,7 @@ impl shell::KeyHost for App {
 
     fn layer_paste(&mut self, text: &str) -> Option<Outcome> {
         let top = self.modals.top_mut()?;
-        let out = top.layer.on_paste(text);
+        let out = top.layer.on_paste_focused(text, &self.shell.focus);
         Some(self.settle_layer(out.or(Outcome::Consumed)))
     }
 

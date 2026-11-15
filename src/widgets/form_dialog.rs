@@ -136,6 +136,33 @@ impl FormField {
         }
     }
 
+    fn owns(&self, id: WidgetId) -> bool {
+        match &self.kind {
+            FormFieldKind::Input(i) => i.id == id,
+            FormFieldKind::Select(s) => s.contains_id(id),
+            FormFieldKind::Check(c) => c.id == id,
+            FormFieldKind::Radio(r) => {
+                r.id == id || (0..r.options.len()).any(|i| r.option_id(i) == id)
+            }
+            FormFieldKind::Chooser { button, .. } => button.id == id,
+            FormFieldKind::Note(_) => false,
+        }
+    }
+
+    fn end_interaction(&mut self) {
+        match &mut self.kind {
+            FormFieldKind::Input(i) if i.editing || i.field.pressed() || i.edit_menu.is_open() => {
+                let text = i.text().to_owned();
+                i.set_value(&text);
+            }
+            FormFieldKind::Select(s) => {
+                s.close();
+                let _ = s.on_release(Position::ORIGIN);
+            }
+            _ => {}
+        }
+    }
+
     fn tab_stop(&self) -> Option<WidgetId> {
         let disabled = match &self.kind {
             FormFieldKind::Input(i) => i.disabled,
@@ -296,6 +323,45 @@ impl FormDialog {
         if let Some(f) = self.field_mut(name) {
             f.visible = v;
         }
+        self.reconcile_hidden_interactions();
+    }
+
+    fn reconcile_hidden_interactions(&mut self) {
+        for f in self.fields.iter_mut().filter(|f| !f.visible) {
+            f.end_interaction();
+        }
+        let hidden = |id: WidgetId| {
+            self.fields
+                .iter()
+                .any(|f| !f.visible && f.focus_id() == Some(id))
+        };
+        if self.kept.is_some_and(hidden) {
+            self.kept = None;
+        }
+        if let Some(name) = &self.reveal
+            && self.field(name).is_some_and(|f| !f.visible)
+        {
+            self.reveal = None;
+        }
+    }
+
+    fn resolve_hidden_focus(&self, focus: &mut Focus) {
+        let Some(cur) = focus.current() else {
+            return;
+        };
+        let Some(at) = self.fields.iter().position(|f| !f.visible && f.owns(cur)) else {
+            return;
+        };
+        let next = self.fields[at + 1..]
+            .iter()
+            .filter(|f| f.visible)
+            .find_map(FormField::tab_stop)
+            .unwrap_or(self.save.id);
+        focus.focus(next);
+    }
+
+    fn is_hidden_target(&self, id: WidgetId) -> bool {
+        self.fields.iter().any(|f| !f.visible && f.owns(id))
     }
 
     pub fn text(&self, name: &str) -> String {
@@ -369,7 +435,7 @@ impl FormDialog {
     pub fn is_editing(&self) -> bool {
         self.fields
             .iter()
-            .any(|f| matches!(&f.kind, FormFieldKind::Input(i) if i.editing))
+            .any(|f| f.visible && matches!(&f.kind, FormFieldKind::Input(i) if i.editing))
     }
 
     fn save_event(&self) -> FormAction {
@@ -400,7 +466,7 @@ impl FormDialog {
     fn any_open_select(&self) -> bool {
         self.fields
             .iter()
-            .any(|f| matches!(&f.kind, FormFieldKind::Select(s) if s.open))
+            .any(|f| f.visible && matches!(&f.kind, FormFieldKind::Select(s) if s.open))
     }
 
     fn dismiss_escape(&mut self) -> Outcome {
@@ -409,6 +475,8 @@ impl FormDialog {
     }
 
     pub fn on_key(&mut self, key: &Key, focus: &mut Focus, ring: &FocusRing) -> Outcome {
+        self.reconcile_hidden_interactions();
+        self.resolve_hidden_focus(focus);
         let cur = focus.current();
         let editing = self.is_editing();
         let open = self.any_open_select();
@@ -564,13 +632,17 @@ impl FormDialog {
     }
 
     fn inputs(&mut self) -> impl Iterator<Item = &mut TextInput> {
-        self.fields.iter_mut().filter_map(|f| match &mut f.kind {
-            FormFieldKind::Input(i) => Some(i),
-            _ => None,
-        })
+        self.fields
+            .iter_mut()
+            .filter(|f| f.visible)
+            .filter_map(|f| match &mut f.kind {
+                FormFieldKind::Input(i) => Some(i),
+                _ => None,
+            })
     }
 
     pub fn on_press(&mut self, id: WidgetId, pos: Position, count: u8) -> Outcome {
+        self.reconcile_hidden_interactions();
         if let Some(s) = self.select_owning(id) {
             return s.on_press(id, pos);
         }
@@ -580,6 +652,7 @@ impl FormDialog {
     }
 
     pub fn on_drag(&mut self, pressed: WidgetId, pos: Position) -> Outcome {
+        self.reconcile_hidden_interactions();
         if scrollbar::is_bar_of(pressed, self.id) {
             return match self.pane().bar_of(pressed) {
                 Some(bar) => self.bar_input(&bar, pos, false).outcome(),
@@ -595,7 +668,8 @@ impl FormDialog {
     }
 
     pub fn on_release(&mut self, pressed: WidgetId, pos: Position) -> Outcome {
-        for f in self.fields.iter_mut() {
+        self.reconcile_hidden_interactions();
+        for f in self.fields.iter_mut().filter(|f| f.visible) {
             if let FormFieldKind::Select(s) = &mut f.kind
                 && s.contains_id(pressed)
             {
@@ -611,10 +685,13 @@ impl FormDialog {
     }
 
     fn select_owning(&mut self, id: WidgetId) -> Option<&mut Select> {
-        self.fields.iter_mut().find_map(|f| match &mut f.kind {
-            FormFieldKind::Select(s) if s.contains_id(id) => Some(s),
-            _ => None,
-        })
+        self.fields
+            .iter_mut()
+            .filter(|f| f.visible)
+            .find_map(|f| match &mut f.kind {
+                FormFieldKind::Select(s) if s.contains_id(id) => Some(s),
+                _ => None,
+            })
     }
 
     pub fn on_click(&mut self, id: WidgetId, pos: Position, focus: &mut Focus) -> Outcome {
@@ -628,10 +705,15 @@ impl FormDialog {
         count: u8,
         focus: &mut Focus,
     ) -> Outcome {
+        self.reconcile_hidden_interactions();
+        self.resolve_hidden_focus(focus);
         if scrollbar::is_bar_of(id, self.id) {
             return self.bar_press(pos).outcome().or(Outcome::Consumed);
         }
-        for f in self.fields.iter_mut() {
+        if self.is_hidden_target(id) {
+            return Outcome::Consumed;
+        }
+        for f in self.fields.iter_mut().filter(|f| f.visible) {
             let name = f.name.clone();
             match &mut f.kind {
                 FormFieldKind::Input(i) if i.id == id => {
@@ -712,7 +794,8 @@ impl FormDialog {
     }
 
     pub fn on_blur(&mut self, ch: crate::core::focus::FocusChange) -> Outcome {
-        for f in self.fields.iter_mut() {
+        self.reconcile_hidden_interactions();
+        for f in self.fields.iter_mut().filter(|f| f.visible) {
             match &mut f.kind {
                 FormFieldKind::Input(i) if i.id == ch.from => {
                     return match i.on_blur() {
@@ -732,10 +815,13 @@ impl FormDialog {
         Outcome::Ignored
     }
 
-    pub fn on_paste(&mut self, text: &str) -> Outcome {
-        for f in self.fields.iter_mut() {
+    pub fn on_paste(&mut self, text: &str, focus: &Focus) -> Outcome {
+        self.reconcile_hidden_interactions();
+        let cur = focus.current();
+        for f in self.fields.iter_mut().filter(|f| f.visible) {
             if let FormFieldKind::Input(i) = &mut f.kind
                 && i.editing
+                && cur == Some(i.id)
             {
                 return i.on_paste(text);
             }
@@ -757,6 +843,7 @@ impl FormDialog {
     }
 
     pub fn render(&mut self, screen: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
+        self.reconcile_hidden_interactions();
         self.scroll.begin(ctx.track_click);
         let s = ctx.theme.strings;
         let old = std::mem::replace(&mut self.strings, s);
@@ -1007,7 +1094,9 @@ impl FormDialog {
         use crate::core::intent::Phase;
         use crate::core::pointer::MouseTarget;
         use crate::core::response::Response;
-        for f in self.fields.iter_mut() {
+        self.reconcile_hidden_interactions();
+        self.resolve_hidden_focus(focus);
+        for f in self.fields.iter_mut().filter(|f| f.visible) {
             match &mut f.kind {
                 FormFieldKind::Select(s) => {
                     let Some(mut r) = s.route(ev) else {

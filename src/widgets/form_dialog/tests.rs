@@ -4,6 +4,8 @@ use crate::core::hit::HitRegistry;
 use crate::core::refusal::{Reason, clear_refusal, take_refusal};
 use crate::theme::{ColorLevel, Theme};
 use crate::ui::ctx::{Interaction, RenderCtx};
+use crate::widgets::input::TextInput;
+use crate::widgets::select::Select;
 use ratatui::crossterm::event::KeyModifiers;
 
 const FORM: WidgetId = WidgetId::of("t.form");
@@ -58,9 +60,13 @@ struct Rig {
 
 impl Rig {
     fn new() -> Self {
+        Self::with(form())
+    }
+
+    fn with(form: FormDialog) -> Self {
         clear_refusal();
         let mut rig = Self {
-            form: form(),
+            form,
             focus: Focus::default(),
             hits: HitRegistry::default(),
         };
@@ -79,6 +85,7 @@ impl Rig {
         };
         let mut ctx = RenderCtx::new(&theme, interaction, &mut self.hits, &mut ring);
         self.form.render(SCREEN, &mut buf, &mut ctx);
+        ctx.flush_overlays(&mut buf);
     }
 
     fn click(&mut self, id: WidgetId) -> Outcome {
@@ -258,4 +265,276 @@ fn form_change_dirty_form_refusal_stays_dirty() {
     rig.key(check_id("fixed"), KeyCode::Char(' '));
     assert!(rig.form.dirty, "a refusal never cleans a dirty form");
     assert!(rig.form.events.is_empty(), "and adds no semantic event");
+}
+
+fn secret() -> WidgetId {
+    FORM.sub("secret")
+}
+
+fn driver() -> WidgetId {
+    FORM.sub("driver")
+}
+
+fn source_form() -> FormDialog {
+    FormDialog::new(
+        FORM,
+        "Source",
+        vec![
+            FormField::input(
+                "secret",
+                TextInput::new(secret(), "Secret")
+                    .value("hunter2")
+                    .masked()
+                    .reveal_tail(2)
+                    .required(true)
+                    .required_message("A secret is required")
+                    .validator(|s| s.contains("bad").then(|| "No bad secrets".to_owned())),
+            ),
+            FormField::select(
+                "driver",
+                Select::new(driver(), "Driver", &["pg", "mysql", "sqlite"], 0),
+            ),
+            FormField::input("host", TextInput::new(FORM.sub("host"), "Host").value("db")),
+        ],
+    )
+}
+
+impl Rig {
+    fn input(&self, name: &str) -> &TextInput {
+        match &self.form.field(name).expect("field").kind {
+            FormFieldKind::Input(i) => i,
+            _ => panic!("not an input"),
+        }
+    }
+
+    fn input_mut(&mut self, name: &str) -> &mut TextInput {
+        match &mut self.form.field_mut(name).expect("field").kind {
+            FormFieldKind::Input(i) => i,
+            _ => panic!("not an input"),
+        }
+    }
+
+    fn select(&self) -> &Select {
+        match &self.form.field("driver").expect("field").kind {
+            FormFieldKind::Select(s) => s,
+            _ => panic!("not a select"),
+        }
+    }
+
+    fn paste(&mut self, text: &str) -> Outcome {
+        self.form.on_paste(text, &self.focus)
+    }
+
+    fn edit_secret(&mut self) {
+        self.focus.focus(secret());
+        self.draw();
+        self.input_mut("secret").begin_edit();
+        let field = &mut self.input_mut("secret").field;
+        field.press(0, 1, false);
+        field.drag(3);
+        assert!(self.input("secret").editing && self.input("secret").field.pressed());
+    }
+
+    fn open_driver(&mut self) {
+        self.click(driver());
+        assert!(self.select().open, "the click opens the popup");
+        self.draw();
+    }
+
+    fn popup_regions(&self) -> usize {
+        let s = self.select();
+        self.hits
+            .regions()
+            .iter()
+            .filter(|r| s.contains_id(r.id) && r.id != s.id)
+            .count()
+    }
+}
+
+#[test]
+fn form_hidden_input_rejects_paste_and_drag() {
+    let mut rig = Rig::with(source_form());
+    rig.edit_secret();
+    rig.form.set_visible("secret", false);
+
+    assert!(!rig.form.is_editing(), "hiding ends the edit session");
+    assert!(
+        !rig.input("secret").field.pressed(),
+        "and the pointer capture"
+    );
+    assert_eq!(rig.input("secret").text(), "hunter2", "the text is kept");
+
+    rig.paste("PASTED");
+    rig.form.on_press(secret(), Position::new(3, 0), 1);
+    rig.form.on_drag(secret(), Position::new(6, 0));
+    rig.form.on_release(secret(), Position::new(6, 0));
+    let o = rig.click_direct(secret());
+    assert!(o.consumed(), "a stale click on a hidden field is swallowed");
+
+    assert_eq!(rig.input("secret").text(), "hunter2");
+    assert!(!rig.input("secret").field.buffer.has_selection());
+    assert!(!rig.input("secret").editing);
+    assert_ne!(
+        rig.focus.current(),
+        Some(secret()),
+        "a click on a hidden field never focuses it"
+    );
+    rig.untouched();
+}
+
+#[test]
+fn form_hidden_select_closes_and_ignores_release() {
+    let mut rig = Rig::with(source_form());
+    rig.open_driver();
+    assert!(rig.popup_regions() > 0, "the popup rows are hit regions");
+    let row = rig.select().option_id(2);
+
+    rig.form.set_visible("driver", false);
+    assert!(!rig.select().open, "hiding closes the popup");
+    rig.draw();
+    assert_eq!(rig.popup_regions(), 0, "no popup hit region remains");
+    assert!(
+        rig.hits.regions().iter().all(|r| r.id != driver()),
+        "the hidden select owns no hit region"
+    );
+
+    rig.form.on_press(row, Position::new(0, 0), 1);
+    rig.form.on_release(row, Position::new(0, 0));
+    let o = rig.click_direct(row);
+    assert!(o.consumed());
+    assert_eq!(rig.select().selected, 0, "the stale row chose nothing");
+    assert!(!rig.select().open);
+    rig.untouched();
+}
+
+#[test]
+fn form_hidden_direct_field_mutation_reconciles() {
+    let mut rig = Rig::with(source_form());
+    rig.edit_secret();
+    rig.form.field_mut("secret").expect("field").visible = false;
+    rig.paste("PASTED");
+    assert_eq!(rig.input("secret").text(), "hunter2", "paste is refused");
+    assert!(
+        !rig.input("secret").editing,
+        "the next event ended the edit"
+    );
+    rig.untouched();
+
+    let mut rig = Rig::with(source_form());
+    rig.open_driver();
+    rig.form.field_mut("driver").expect("field").visible = false;
+    assert!(!rig.form.any_open_select(), "a hidden popup is not open");
+    rig.draw();
+    assert!(!rig.select().open, "the next render closed the popup");
+    assert_eq!(rig.popup_regions(), 0);
+
+    let mut rig = Rig::with(source_form());
+    rig.edit_secret();
+    rig.form.field_mut("secret").expect("field").visible = false;
+    rig.draw();
+    assert!(!rig.input("secret").editing, "render reconciles an input");
+    assert!(!rig.input("secret").field.pressed());
+    rig.untouched();
+}
+
+#[test]
+fn form_hidden_reveal_preserves_value_and_policy() {
+    let mut rig = Rig::with(source_form());
+    rig.edit_secret();
+    rig.input_mut("secret").set_error(Some("stale".into()));
+    rig.open_driver();
+    rig.form.set_visible("secret", false);
+    rig.form.set_visible("driver", false);
+    rig.draw();
+
+    let values = rig.form.values();
+    assert!(
+        values.contains(&("secret".into(), FieldValue::Text("hunter2".into()))),
+        "hidden values stay in FormValues"
+    );
+    assert!(values.contains(&("driver".into(), FieldValue::Choice(0))));
+
+    rig.form.set_visible("secret", true);
+    rig.form.set_visible("driver", true);
+    rig.draw();
+    let i = rig.input("secret");
+    assert_eq!(i.text(), "hunter2");
+    assert!(i.masked && i.required && i.reveal_tail == 2);
+    assert!(!i.editing, "no restored edit session");
+    assert!(!rig.select().open, "no restored popup");
+    assert_eq!(rig.popup_regions(), 0);
+
+    let i = rig.input_mut("secret");
+    i.set_value("a bad one");
+    assert!(!i.validate(), "the validator survived hide and reveal");
+    assert_eq!(i.error(), Some("No bad secrets"));
+    rig.untouched();
+}
+
+#[test]
+fn form_hidden_focus_falls_back_and_escape_works() {
+    let mut rig = Rig::with(source_form());
+    rig.edit_secret();
+    rig.form.set_visible("secret", false);
+    assert_eq!(
+        rig.focus.current(),
+        Some(secret()),
+        "focus still points at it"
+    );
+
+    rig.key(secret(), KeyCode::Esc);
+    assert_eq!(
+        rig.form.events,
+        vec![FormAction::Cancel],
+        "an idle form dismisses on Escape"
+    );
+    assert_eq!(
+        rig.focus.current(),
+        Some(driver()),
+        "focus moved to the next visible field"
+    );
+
+    let mut rig = Rig::with(source_form());
+    rig.focus.focus(driver());
+    rig.form.set_visible("driver", false);
+    rig.form.set_visible("host", false);
+    rig.key(driver(), KeyCode::Tab);
+    assert!(
+        rig.focus.current() != Some(driver()) && rig.focus.current() != Some(FORM.sub("host")),
+        "no hidden field keeps focus"
+    );
+}
+
+#[test]
+fn form_hidden_layer_paste_has_one_focused_owner() {
+    use crate::ui::layer::Layer;
+    use crate::ui::layers::LayerResult;
+    type L = dyn Layer<LayerResult, ()>;
+
+    let mut rig = Rig::with(source_form());
+    rig.focus.focus(secret());
+    rig.draw();
+    rig.input_mut("secret").begin_edit();
+
+    let layer: &mut L = &mut rig.form;
+    assert!(layer.on_paste("legacy").consumed());
+    assert_eq!(
+        rig.input("secret").text(),
+        "hunter2",
+        "focusless paste is inert"
+    );
+
+    rig.focus.focus(FORM.sub("host"));
+    rig.paste("elsewhere");
+    assert_eq!(rig.input("secret").text(), "hunter2", "focus is elsewhere");
+
+    rig.focus.focus(secret());
+    let focus = rig.focus.clone();
+    let layer: &mut L = &mut rig.form;
+    layer.on_paste_focused("-x", &focus);
+    assert!(
+        rig.input("secret").text().contains("-x"),
+        "the focused input owns it"
+    );
+    rig.untouched();
 }
