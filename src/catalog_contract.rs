@@ -58,6 +58,10 @@ const EXPANSIONS: &[Expansion] = &[Expansion {
     ],
 }];
 
+/// The most APIs `coverage_debt.txt` may ever list. Lower it when the list
+/// shrinks; raising it means the gate was loosened and needs a reviewer's eye.
+const DEBT_CEILING: usize = 4166;
+
 /// Specimen states are not API: they stay catalog-only.
 const STATE_KIND: &str = "state";
 
@@ -69,8 +73,9 @@ struct Sources {
     cases: String,
     app: String,
     debt: String,
+    debt_baseline: String,
     showcase: Vec<(String, String)>,
-    tests: BTreeSet<String>,
+    tests: BTreeMap<String, bool>,
 }
 
 fn root() -> &'static Path {
@@ -91,6 +96,7 @@ impl Sources {
             cases: read("src/bin/showcase/app_tests_catalog.rs"),
             app: read("src/bin/showcase/app.rs"),
             debt: read("src/bin/showcase/coverage_debt.txt"),
+            debt_baseline: read("src/bin/showcase/coverage_debt_baseline.txt"),
             showcase: showcase
                 .files
                 .into_iter()
@@ -188,7 +194,7 @@ struct Report {
     proofs: usize,
     exceptions: usize,
     inherited: usize,
-    evidence: usize,
+    named: usize,
     debt: usize,
     scenarios: usize,
 }
@@ -343,10 +349,14 @@ fn validate(rows: &[(&'static str, Inventory)], s: &Sources) -> (Vec<String>, Re
             .get("regression_test")
             .and_then(Value::str)
             .unwrap_or_default();
-        if !s.tests.contains(test) {
-            errors.push(format!(
-                "exception test does not exist: {api} names `{test}`, which is no #[test] fn in the repository"
-            ));
+        match s.tests.get(test) {
+            None => errors.push(format!(
+                "exception test does not exist: {api} names `{test}`, which is no #[test] fn at that `path/to/file.rs::name`"
+            )),
+            Some(true) => errors.push(format!(
+                "exception test is ignored: {api} names `{test}`, which never runs"
+            )),
+            Some(false) => {}
         }
         let tracked = matches!(record.get("tracking_issue"), Some(Value::Some(_)));
         if reason.starts_with("Deferred") && !tracked {
@@ -359,7 +369,9 @@ fn validate(rows: &[(&'static str, Inventory)], s: &Sources) -> (Vec<String>, Re
     report.exceptions = exceptions.len();
 
     let tokens: Vec<BTreeSet<String>> = s.showcase.iter().map(|(_, text)| idents(text)).collect();
-    let evidence = |id: &str| -> bool {
+    // Informational only: a name match is never proof of behavior, so it never
+    // satisfies the disposition rule below.
+    let named_on_a_page = |id: &str| -> bool {
         let (owner, member) = owner_and_member(id, superset);
         let member = member.trim_end_matches('!');
         tokens.iter().any(|file| {
@@ -382,9 +394,8 @@ fn validate(rows: &[(&'static str, Inventory)], s: &Sources) -> (Vec<String>, Re
         }
         let proof = proofs.contains_key(*id);
         let exception = exceptions.contains_key(*id);
-        let shown = evidence(id);
         let owed = debt.contains(id);
-        if owed && (proof || exception || shown) {
+        if owed && (proof || exception) {
             errors.push(format!(
                 "debt entry is stale, the API now has a disposition (delete the line): {id}"
             ));
@@ -392,19 +403,40 @@ fn validate(rows: &[(&'static str, Inventory)], s: &Sources) -> (Vec<String>, Re
         if proof || exception {
             continue;
         }
-        if shown {
-            report.evidence += 1;
-        } else if owed {
+        if owed {
             report.debt += 1;
+            if named_on_a_page(id) {
+                report.named += 1;
+            }
         } else {
             errors.push(format!(
-                "API has no disposition: {id}: show it on a Showcase page, add a CapabilityProof with a callable scenario, or add a CapabilityException"
+                "API has no disposition: {id}: add a CapabilityProof with a callable scenario or a CapabilityException; a Showcase page that merely names it is not proof"
             ));
         }
     }
     for id in &debt_list {
         if !exports.contains_key(id.as_str()) {
             errors.push(format!("debt entry is stale (not an exported API): {id}"));
+        }
+    }
+    let baseline: BTreeSet<String> = debt_ids(&s.debt_baseline).into_iter().collect();
+    if baseline.len() != DEBT_CEILING {
+        errors.push(format!(
+            "coverage_debt_baseline.txt lists {} APIs but DEBT_CEILING is {DEBT_CEILING}; the baseline is frozen",
+            baseline.len()
+        ));
+    }
+    if debt_list.len() > DEBT_CEILING {
+        errors.push(format!(
+            "debt list grew: {} entries exceed DEBT_CEILING {DEBT_CEILING}; the list only shrinks",
+            debt_list.len()
+        ));
+    }
+    for id in &debt_list {
+        if !baseline.contains(id) {
+            errors.push(format!(
+                "debt entry was never in the recorded baseline (a new API needs a proof or exception, not a debt line): {id}"
+            ));
         }
     }
     (errors, report)
@@ -452,12 +484,12 @@ fn catalog_reports_the_proof_layers_separately() {
         .unwrap_or(0);
     let all = &rows.last().expect("rows").1;
     eprintln!(
-        "[source coverage] {} exports ({:?}); {} inherit their owner; {} show on a page; {} owe a disposition (shrink only, see coverage_debt.txt); {} exceptions",
+        "[source coverage] {} exports ({:?}); {} inherit their owner; {} owe a disposition (shrink only, see coverage_debt.txt; {} of them are named on a page, which is not proof); {} exceptions",
         all.exports.len(),
         report.exports,
         report.inherited,
-        report.evidence,
         report.debt,
+        report.named,
         report.exceptions
     );
     eprintln!(
@@ -682,6 +714,139 @@ fn catalog_rejects_nonexistent_exception_test() {
         1,
     );
     expect_error(&check(&s), "names `no_such_test_anywhere`");
+}
+
+const PROBE: &str = "\npub fn undeclared_probe() {}\n";
+
+fn with_probe(s: &mut Sources) {
+    let clock = std::path::PathBuf::from("src/clock.rs");
+    s.tree
+        .files
+        .get_mut(&clock)
+        .expect("clock.rs")
+        .push_str(PROBE);
+    s.catalog = replaced(
+        &s.catalog,
+        "static MEMBERS: &[Capability] = &[",
+        "static MEMBERS: &[Capability] = &[\n    Capability::function(\"clock::undeclared_probe\"),",
+    );
+}
+
+#[test]
+fn catalog_name_match_is_not_a_disposition() {
+    let mut s = Sources::load();
+    let clock = std::path::PathBuf::from("src/clock.rs");
+    s.tree
+        .files
+        .get_mut(&clock)
+        .expect("clock.rs")
+        .push_str("\npub fn render() {}\npub fn area() {}\n");
+    s.catalog = replaced(
+        &s.catalog,
+        "static MEMBERS: &[Capability] = &[",
+        "static MEMBERS: &[Capability] = &[\n    Capability::function(\"clock::render\"),\n    Capability::function(\"clock::area\"),",
+    );
+    let text = s
+        .showcase
+        .iter()
+        .map(|(_, t)| idents(t))
+        .collect::<Vec<_>>();
+    assert!(
+        text.iter()
+            .any(|t| t.contains("render") && t.contains("area") && t.contains("Clock")),
+        "the probe names must collide with Showcase text for this mutation to mean anything"
+    );
+    let errors = check(&s);
+    expect_error(&errors, "API has no disposition: clock::render");
+    expect_error(&errors, "API has no disposition: clock::area");
+}
+
+#[test]
+fn catalog_debt_cannot_grow() {
+    let mut s = Sources::load();
+    with_probe(&mut s);
+    s.debt.push_str("\nclock::undeclared_probe\n");
+    let errors = check(&s);
+    expect_error(&errors, "debt list grew");
+    expect_error(&errors, "never in the recorded baseline");
+    expect_error(&errors, "clock::undeclared_probe");
+}
+
+#[test]
+fn catalog_debt_baseline_is_frozen() {
+    let mut s = Sources::load();
+    with_probe(&mut s);
+    s.debt.push_str("\nclock::undeclared_probe\n");
+    s.debt_baseline.push_str("\nclock::undeclared_probe\n");
+    let errors = check(&s);
+    expect_error(&errors, "the baseline is frozen");
+    expect_error(&errors, "debt list grew");
+}
+
+#[test]
+fn catalog_debt_may_shrink() {
+    let mut s = Sources::load();
+    let first = debt_ids(&s.debt).into_iter().next().expect("a debt line");
+    s.debt = s.debt.replacen(&format!("{first}\n"), "", 1);
+    let errors = check(&s);
+    assert!(
+        errors
+            .iter()
+            .all(|e| e.starts_with("API has no disposition")),
+        "{errors:?}"
+    );
+    expect_error(&errors, &first);
+}
+
+#[test]
+fn catalog_rejects_an_exception_test_in_another_file() {
+    let mut s = Sources::load();
+    s.coverage = replaced(
+        &s.coverage,
+        "tests/forward_policy.rs::one_line_is_sent_and_many_lines_ask_first",
+        "tests/terminal.rs::one_line_is_sent_and_many_lines_ask_first",
+    );
+    expect_error(&check(&s), "which is no #[test] fn at that");
+    let mut s = Sources::load();
+    s.coverage = replaced(
+        &s.coverage,
+        "tests/forward_policy.rs::one_line_is_sent_and_many_lines_ask_first",
+        "one_line_is_sent_and_many_lines_ask_first",
+    );
+    expect_error(&check(&s), "which is no #[test] fn at that");
+}
+
+#[test]
+fn catalog_rejects_an_ignored_exception_test() {
+    let mut s = Sources::load();
+    s.tests.insert(
+        "tests/forward_policy.rs::one_line_is_sent_and_many_lines_ask_first".into(),
+        true,
+    );
+    expect_error(&check(&s), "which never runs");
+}
+
+#[test]
+fn catalog_test_scan_sees_ignore_and_the_owning_file() {
+    let mut found = BTreeMap::new();
+    api_inventory::scan_tests(
+        "a.rs",
+        "#[test] fn live() {}\n#[test] #[ignore] fn off() {}\n#[test] #[ignore = \"slow\"] fn off_why() {}\n#[cfg_attr(unix, ignore)] #[test] fn off_unix() {}\nmod m { #[test] fn nested() {} }\nfn plain() {}\n",
+        &mut found,
+    );
+    api_inventory::scan_tests("b.rs", "#[test] fn live() {}", &mut found);
+    let got: Vec<_> = found.iter().map(|(k, v)| (k.as_str(), *v)).collect();
+    assert_eq!(
+        got,
+        [
+            ("a.rs::live", false),
+            ("a.rs::nested", false),
+            ("a.rs::off", true),
+            ("a.rs::off_unix", true),
+            ("a.rs::off_why", true),
+            ("b.rs::live", false),
+        ]
+    );
 }
 
 #[test]
