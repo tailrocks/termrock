@@ -2556,6 +2556,71 @@ mod tests {
     }
 
     #[test]
+    fn a_click_cannot_choose_the_item_that_replaced_the_pressed_row() {
+        use crate::core::pointer::MouseTarget;
+        use crate::widgets::picker::VisibleKey;
+
+        let area = Rect::new(0, 0, 100, 30);
+        let (a, b, c) = (ItemKey::text("a"), ItemKey::text("b"), ItemKey::text("c"));
+        let mut picker = Picker::new(WidgetId::of("picker-press"), "Choose")
+            .searchable(false)
+            .expect("disabling search is valid");
+        picker
+            .set_items(vec![
+                Item::new("A").key(a),
+                Item::new("B").key(b),
+                Item::new("C").key(c),
+            ])
+            .expect("valid items");
+        let theme = Theme::for_level(ColorLevel::TrueColor);
+        let mut ring = FocusRing::default();
+        let mut draw = |picker: &mut Picker| {
+            let mut buffer = Buffer::empty(area);
+            let mut hits = HitRegistry::default();
+            let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+            picker.draw(area, &mut buffer, &mut ctx);
+            ctx.flush_overlays(&mut buffer);
+            hits
+        };
+        let pointer = |picker: &mut Picker, hits: &HitRegistry, phase| {
+            let ev = PointerEvent::new(
+                hits,
+                phase,
+                picker.row_id(1),
+                Position::new(1, 1),
+                1,
+                KeyModifiers::NONE,
+            );
+            picker.pointer(&ev).into_parts().1.into_iter().next()
+        };
+
+        let hits = draw(&mut picker);
+        assert_eq!(pointer(&mut picker, &hits, Phase::Press), None);
+        picker
+            .set_visible_keys(vec![
+                VisibleKey::new(c),
+                VisibleKey::new(a),
+                VisibleKey::new(b),
+            ])
+            .expect("known keys");
+        let hits = draw(&mut picker);
+        assert_eq!(
+            pointer(&mut picker, &hits, Phase::Click),
+            None,
+            "row 1 now holds another item"
+        );
+
+        let hits = draw(&mut picker);
+        assert_eq!(pointer(&mut picker, &hits, Phase::Press), None);
+        let hits = draw(&mut picker);
+        assert_eq!(
+            pointer(&mut picker, &hits, Phase::Click),
+            Some(PickerAction::Chosen(1)),
+            "a press and release on the same item still choose it"
+        );
+    }
+
+    #[test]
     fn picker_layer_pointer_toggle_repaints_stays_open_and_skips_disabled_rows() {
         let area = Rect::new(0, 0, 100, 30);
         let mut picker = Picker::new(WidgetId::of("picker-test"), "Choose")
