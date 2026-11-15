@@ -793,7 +793,6 @@ pub static MEMBERS: &[Capability] = &[
     Capability::variant("metrics::Metric::SchedulingPolls"),
     Capability::variant("metrics::Metric::SchedulingRecordsVisited"),
     Capability::variant("metrics::Metric::SegmentedLines"),
-    Capability::variant("metrics::Metric::TextBytesHashed"),
     Capability::variant("metrics::Metric::TextBytesMeasured"),
     Capability::variant("metrics::Metric::VisibleRowsPainted"),
     Capability::function("metrics::Metric::name"),
@@ -875,6 +874,7 @@ pub static MEMBERS: &[Capability] = &[
     Capability::function("metrics::report::ScenarioReport::write_in"),
     Capability::function("metrics::reset"),
     Capability::function("metrics::snapshot"),
+    Capability::function("metrics::suspended"),
 ];
 
 pub fn find(id: &str) -> Option<&'static Capability> {

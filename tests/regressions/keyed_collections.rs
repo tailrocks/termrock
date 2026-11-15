@@ -4,7 +4,7 @@
 use std::collections::HashSet;
 
 use junie_tui::core::id::ItemKey;
-use junie_tui::core::keyed::{KeyedRecord, KeyedSourceError, KeyedState, KeyedVec};
+use junie_tui::core::keyed::{KeyedRecord, KeyedSourceError, KeyedState, KeyedVec, Reconcile};
 use junie_tui::core::list::{KeyedRowSource, RowSource, SourceStamp};
 
 pub fn k(n: u64) -> ItemKey {
@@ -359,6 +359,64 @@ impl KeyedRecord for Row {
     fn enabled(&self) -> bool {
         !self.off
     }
+}
+
+#[test]
+fn keyed_vec_serves_keyed_records_and_a_state_reconciles_them() {
+    fn label_of<T: KeyedRecord>(record: &T) -> &str {
+        record.label()
+    }
+    let mut store = KeyedVec::<Row>::new();
+    assert!(store.is_empty());
+    store
+        .replace([(k(1), Row::new("a")), (k(2), Row::new("b"))])
+        .expect("unique keys");
+    assert!(!store.is_empty());
+    assert_eq!(store.get(k(2)).map(label_of), Some("b"));
+    assert_eq!(store.value_at(0).map(label_of), Some("a"));
+    assert!(store.get(k(9)).is_none() && store.value_at(2).is_none());
+    assert_eq!(
+        store.replace([(k(3), Row::new("c")), (k(3), Row::new("dup"))]),
+        Err(KeyedSourceError::DuplicateAuthoritative { key: k(3) })
+    );
+    assert_eq!(store.len(), 2, "a refused replace keeps the rows");
+
+    let mut state = KeyedState::new();
+    assert_eq!(
+        state.visible_len(),
+        0,
+        "nothing is visible before a reconcile"
+    );
+    let first: Reconcile = state.reconcile(&store).expect("valid source");
+    assert!(first.data_changed && first.view_changed, "{first:?}");
+    assert_eq!(state.visible_len(), 2);
+    let quiet = state.reconcile(&store).expect("valid source");
+    assert_eq!(
+        quiet,
+        Reconcile::default(),
+        "an unchanged stamp reports nothing"
+    );
+
+    assert!(state.begin_edit(k(1)));
+    assert!(state.cancel_edit(), "an open edit is cancelled");
+    assert!(
+        !state.cancel_edit(),
+        "a second cancel has nothing to cancel"
+    );
+    assert_eq!(state.edit_key(), None);
+}
+
+#[test]
+fn row_selection_replace_swaps_the_rows_and_the_anchor_in_one_step() {
+    use junie_tui::core::selection::RowSelection;
+    let mut selection = RowSelection::new();
+    selection.replace([4, 2], Some(2));
+    assert_eq!(selection.len(), 2);
+    assert!(selection.contains(4) && selection.contains(2));
+    assert_eq!(selection.anchor(), Some(2));
+    selection.replace([7], None);
+    assert_eq!(selection.to_vec(), [7], "the earlier rows are gone");
+    assert_eq!(selection.anchor(), None);
 }
 
 #[test]
@@ -960,6 +1018,50 @@ mod widgets {
     }
 
     #[test]
+    fn keyed_table_lists_its_row_keys_and_edits_one_cell_by_key() {
+        let mut store = table_store();
+        assert!(!store.is_empty());
+        assert_eq!(store.row_keys().collect::<Vec<_>>(), [k(1), k(2), k(3)]);
+        let before = store.stamp();
+        assert!(store.update_cell(k(2), 1, |cell| *cell = Cell::new("zed")));
+        assert!(
+            store.stamp().data > before.data,
+            "an edit advances the data revision"
+        );
+        assert!(
+            !store.update_cell(k(2), 9, |_| ()) && !store.update_cell(k(99), 0, |_| ()),
+            "an unknown column or key edits nothing"
+        );
+        let empty = KeyedTable::try_new(columns(), []).expect("no rows");
+        assert!(empty.is_empty() && empty.row_keys().next().is_none());
+    }
+
+    #[test]
+    fn data_table_and_list_box_paint_borrowed_rows_through_render_source() {
+        let mut store = table_store();
+        let mut t = table();
+        let frame = paint(|buf, ctx| {
+            t.render_source(AREA, &store, buf, ctx, ctx.theme.canvas)
+                .expect("valid source");
+        });
+        assert!(frame.text().contains("alpha") && frame.text().contains("charlie"));
+        store.update_cell(k(1), 0, |cell| *cell = Cell::new("omega"));
+        let frame = paint(|buf, ctx| {
+            t.render_source(AREA, &store, buf, ctx, ctx.theme.canvas)
+                .expect("valid source");
+        });
+        assert!(frame.text().contains("omega"), "a changed cell repaints");
+
+        let names = items(&[(1, "one"), (2, "two")]);
+        let mut l = list(SelectMode::Single);
+        let frame = paint(|buf, ctx| {
+            l.render_source(AREA, &names, buf, ctx, ctx.theme.canvas)
+                .expect("valid source");
+        });
+        assert!(frame.text().contains("one") && frame.text().contains("two"));
+    }
+
+    #[test]
     fn keyed_table_validates_shape_and_keys() {
         use junie_tui::core::data::DataError;
         use junie_tui::widgets::table::KeyedTableError;
@@ -1429,6 +1531,70 @@ mod trees {
     }
 
     #[test]
+    fn keyed_tree_nodes_carry_meta_and_glyph_and_serve_a_tree_view() {
+        let mut store = KeyedTree::new();
+        assert!(store.is_empty());
+        store
+            .insert(
+                None,
+                0,
+                k(1),
+                KeyedTreeNode::new("src").meta("2 files").glyph("*"),
+            )
+            .expect("root");
+        store
+            .insert(Some(k(1)), 0, k(11), KeyedTreeNode::new("main.rs"))
+            .expect("child");
+        assert!(!store.is_empty());
+        let node = store.get(k(1)).expect("the root node");
+        assert_eq!(node.children(), [k(11)]);
+        assert_eq!(node.meta.as_deref(), Some("2 files"));
+        assert_eq!(node.glyph.as_deref(), Some("*"));
+        assert!(store.get(k(99)).is_none());
+
+        fn serves<S: TreeSource + ?Sized>(source: &S, key: ItemKey) -> Option<TreeNodeRef<'_>> {
+            source.node(key)
+        }
+        let served: TreeNodeRef<'_> = serves(&store, k(1)).expect("served as a TreeSource node");
+        assert_eq!((served.meta, served.glyph), (Some("2 files"), Some("*")));
+        assert_eq!(served.children, [k(11)]);
+
+        let mut view = TreeView::new(WidgetId::of("kt"), vec![]).show_selection(false);
+        let frame = draw(&mut view, &store);
+        assert!(
+            frame.text().contains("src") && frame.text().contains("2 files"),
+            "{}",
+            frame.text()
+        );
+    }
+
+    #[test]
+    fn select_follows_cursor_moves_the_selection_with_the_cursor() {
+        let store = tree();
+        let mut following = TreeView::new(WidgetId::of("kt"), vec![]).select_follows_cursor(true);
+        draw(&mut following, &store);
+        let _ = following
+            .on_key_source(&key(KeyCode::Down), &store)
+            .expect("valid");
+        assert_eq!(
+            following.keyed().selected().collect::<Vec<_>>(),
+            following.keyed().cursor().into_iter().collect::<Vec<_>>(),
+            "the selection is the cursor's node"
+        );
+
+        let mut apart = TreeView::new(WidgetId::of("kt"), vec![]);
+        draw(&mut apart, &store);
+        let _ = apart
+            .on_key_source(&key(KeyCode::Down), &store)
+            .expect("valid");
+        assert_eq!(
+            apart.keyed().selected().count(),
+            0,
+            "without it the cursor moves and nothing is selected"
+        );
+    }
+
+    #[test]
     fn keyed_tree_select_source_refuses_an_unknown_key_without_mutation() {
         let store = tree();
         let mut view = TreeView::new(WidgetId::of("kt"), vec![]);
@@ -1511,11 +1677,22 @@ mod trees {
 mod details {
     use super::widgets::paint;
     use super::*;
+    use junie_tui::core::event::Outcome;
     use junie_tui::core::focus::Focus;
+    use junie_tui::core::focus::FocusRing;
+    use junie_tui::core::hit::HitRegistry;
     use junie_tui::core::id::WidgetId;
+    use junie_tui::core::intent::Phase;
+    use junie_tui::theme::{ColorLevel, Theme};
+    use junie_tui::ui::ctx::{Interaction, RenderCtx};
     use junie_tui::ui::layout::Split;
-    use junie_tui::widgets::list_detail::{Event, ListDetail, ListRow, SourceFrame};
-    use ratatui::layout::Rect;
+    use junie_tui::widgets::list_detail::{
+        DetailPane, Event, ListDetail, ListDetailSource, ListRow, ListRowRef, MasterRow, PaneHost,
+        SourceFrame,
+    };
+    use ratatui::buffer::Buffer;
+    use ratatui::crossterm::event::KeyCode;
+    use ratatui::layout::{Position, Rect};
 
     const AREA: Rect = Rect::new(0, 0, 40, 10);
     const MASTER: WidgetId = WidgetId::of("kd.m");
@@ -1543,6 +1720,197 @@ mod details {
             ld.render_source(AREA, store, &frame, buf, ctx)
                 .expect("valid source");
         })
+    }
+
+    const WIDE: Rect = Rect::new(0, 0, 120, 10);
+
+    fn paint_in(area: Rect, f: impl FnOnce(&mut Buffer, &mut RenderCtx)) -> super::widgets::Frame {
+        let theme = Theme::for_level(ColorLevel::TrueColor);
+        let mut buf = Buffer::empty(area);
+        let mut hits = HitRegistry::default();
+        let mut ring = FocusRing::default();
+        {
+            let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+            f(&mut buf, &mut ctx);
+        }
+        super::widgets::Frame { buf, hits }
+    }
+
+    fn plain_frame() -> SourceFrame<'static> {
+        SourceFrame {
+            title: "Rows",
+            meta: "3",
+            head: &[],
+            under: None,
+            detail_title: "Detail",
+            detail_meta: "",
+            lines: &[],
+            actions: &[],
+        }
+    }
+
+    /// A host that paints nothing and records what it was handed.
+    #[derive(Default)]
+    struct ScrollHost {
+        offsets: Vec<usize>,
+    }
+
+    impl PaneHost for ScrollHost {
+        fn row(&mut self, _row: MasterRow, _buf: &mut Buffer, _ctx: &mut RenderCtx) {}
+
+        fn empty(&mut self, _area: Rect, _buf: &mut Buffer, _ctx: &mut RenderCtx) {}
+
+        fn detail(&mut self, pane: DetailPane<'_>, _buf: &mut Buffer, _ctx: &mut RenderCtx) {
+            self.offsets.push(pane.scroll.offset);
+            pane.scroll.set_content(100);
+            pane.scroll.set_viewport(5);
+        }
+
+        fn summary(&mut self, _area: Rect, _buf: &mut Buffer, _ctx: &mut RenderCtx) {}
+    }
+
+    fn scrolled_to(ld: &mut ListDetail, host: &mut ScrollHost) -> super::widgets::Frame {
+        paint_in(WIDE, |buf, ctx| {
+            ld.render_hosted(WIDE, 3, |i| k(i as u64 + 1), Some(1), buf, ctx, host);
+        })
+    }
+
+    #[test]
+    fn hosted_list_detail_hands_rows_and_the_detail_pane_to_its_pane_host() {
+        /// Records what the list-detail handed the host.
+        #[derive(Default)]
+        struct Probe {
+            rows: Vec<(usize, ItemKey, bool)>,
+            details: Vec<(bool, WidgetId)>,
+            summaries: usize,
+        }
+
+        impl PaneHost for Probe {
+            fn row(&mut self, row: MasterRow, _buf: &mut Buffer, _ctx: &mut RenderCtx) {
+                self.rows.push((row.index, row.key, row.selected));
+            }
+
+            fn empty(&mut self, _area: Rect, _buf: &mut Buffer, _ctx: &mut RenderCtx) {}
+
+            fn detail(&mut self, pane: DetailPane<'_>, _buf: &mut Buffer, _ctx: &mut RenderCtx) {
+                self.details.push((pane.drawer, pane.id));
+            }
+
+            fn summary(&mut self, _area: Rect, _buf: &mut Buffer, _ctx: &mut RenderCtx) {
+                self.summaries += 1;
+            }
+        }
+
+        fn hosted<H: PaneHost>(ld: &mut ListDetail, area: Rect, host: &mut H) {
+            paint_in(area, |buf, ctx| {
+                ld.render_hosted(area, 3, |i| k(i as u64 + 1), Some(1), buf, ctx, host);
+            });
+        }
+
+        let mut ld = ListDetail::new(MASTER, DETAIL, Split::new(50, 36, 40));
+        let mut host = Probe::default();
+        hosted(&mut ld, WIDE, &mut host);
+        assert_eq!(
+            host.rows,
+            [(0, k(1), false), (1, k(2), true), (2, k(3), false)],
+            "every visible row arrives with its key and the frame's selection"
+        );
+        assert_eq!(
+            host.details,
+            [(false, DETAIL)],
+            "a wide area splits beside the master"
+        );
+        assert_eq!(ld.master_offset(), 0);
+        assert!(ld.master_page() >= 1);
+        assert!(!ld.drawer_open());
+
+        // A narrow area collapses to the master and a summary; opening the
+        // detail turns it into a drawer the host paints over the master.
+        let mut narrow = Probe::default();
+        hosted(&mut ld, AREA, &mut narrow);
+        assert!(narrow.details.is_empty() && narrow.summaries == 1);
+        let mut focus = Focus::default();
+        ld.open_detail(&mut focus);
+        assert!(ld.drawer_open());
+        let mut drawer = Probe::default();
+        hosted(&mut ld, AREA, &mut drawer);
+        assert_eq!(drawer.details.len(), 1);
+        assert!(drawer.details[0].0, "the pane reports it is a drawer");
+    }
+
+    #[test]
+    fn detail_keys_wheel_and_reset_drive_the_hosted_detail_scroll() {
+        let mut ld = ListDetail::new(MASTER, DETAIL, Split::new(50, 36, 40));
+        let mut host = ScrollHost::default();
+        let frame = scrolled_to(&mut ld, &mut host);
+        let mut focus = Focus::default();
+        focus.focus(DETAIL);
+
+        let response = ld.on_detail_key(&crate::common::key(KeyCode::PageDown), &mut focus);
+        assert_eq!(response.outcome(), Outcome::Changed);
+        let wheel = frame.event(Phase::Move, DETAIL, Position::new(100, 3));
+        assert_eq!(ld.wheel_event(&wheel, 2), Outcome::Changed);
+        let mut scrolled = ScrollHost::default();
+        scrolled_to(&mut ld, &mut scrolled);
+        assert!(scrolled.offsets[0] > 0, "{:?}", scrolled.offsets);
+
+        ld.reset_detail();
+        let mut reset = ScrollHost::default();
+        scrolled_to(&mut ld, &mut reset);
+        assert_eq!(reset.offsets[0], 0, "a reset returns the detail to its top");
+    }
+
+    #[test]
+    fn list_detail_source_rows_are_painted_by_a_caller_closure_without_touching_the_list() {
+        let store = store();
+        let mut ld = ListDetail::new(MASTER, DETAIL, Split::new(50, 36, 40));
+        let frame = plain_frame();
+        let mut seen: Vec<(String, ItemKey, bool)> = Vec::new();
+        paint_in(WIDE, |buf, ctx| {
+            ld.render_source_selected_with(
+                WIDE,
+                &store,
+                &frame,
+                Some(2),
+                buf,
+                ctx,
+                |source, row: MasterRow, _buf, _ctx| {
+                    let shown: ListRowRef<'_> = ListDetailSource::row(source, row.index);
+                    seen.push((shown.label.to_owned(), row.key, row.selected));
+                },
+            );
+        });
+        assert_eq!(
+            seen,
+            [
+                ("alpha".to_owned(), k(1), false),
+                ("bravo".to_owned(), k(2), false),
+                ("charlie".to_owned(), k(3), true)
+            ]
+        );
+        assert_eq!(ld.cursor, 0);
+        assert_eq!(
+            ld.selected_key(),
+            None,
+            "the list's own keyed state is untouched"
+        );
+    }
+
+    #[test]
+    fn bind_source_adopts_the_moved_cursor_without_painting() {
+        let mut store = store();
+        let mut ld = ListDetail::new(MASTER, DETAIL, Split::new(50, 36, 40));
+        ld.bind_source(&store).expect("valid source");
+        assert_eq!(ld.selected_key(), Some(k(1)));
+        ld.select(2);
+        store.move_to(k(3), 0);
+        ld.bind_source(&store).expect("valid source");
+        assert_eq!(
+            ld.selected_key(),
+            Some(k(3)),
+            "the cursor was adopted by key, then followed it"
+        );
+        assert_eq!(ld.cursor, 0);
     }
 
     #[test]

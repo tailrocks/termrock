@@ -40,3 +40,17 @@ fn plus_is_ignored_when_the_bar_has_no_add_action() {
     assert_eq!(action, None, "+ must not emit Add without an add action");
     assert_eq!(outcome, Outcome::Ignored, "+ is not consumed");
 }
+
+#[test]
+fn the_lead_label_is_read_back_and_set_lead_reports_a_change() {
+    let mut cb = ChipBar::new(CHIPS);
+    assert_eq!(cb.lead(), None, "a fresh bar has no lead");
+    assert!(cb.set_lead(Some("Filters".to_owned())));
+    assert_eq!(cb.lead(), Some("Filters"));
+    assert!(
+        !cb.set_lead(Some("Filters".to_owned())),
+        "an equal lead is no change"
+    );
+    assert!(cb.set_lead(None));
+    assert_eq!(cb.lead(), None);
+}

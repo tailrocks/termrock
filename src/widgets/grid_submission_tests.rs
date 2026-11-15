@@ -616,3 +616,29 @@ fn issue11_receipt_removes_the_deleted_row_when_an_insert_reuses_its_key() {
     assert_eq!(g.row_key(2), Some(keys[1]));
     assert_eq!(g.source_index(keys[1]), Some(2));
 }
+
+#[test]
+fn a_commit_token_names_its_grid_and_an_exhausted_nonce_refuses_the_lock() {
+    let mut g = grid(2);
+    g.record_cell(0, 0, text("one")).unwrap();
+    let id: GridInstanceId = g.instance_id();
+    assert_ne!(grid(1).instance_id(), id, "every grid has its own id");
+
+    let token: GridCommitToken = g.begin_submission(g.snapshot_changes()).expect("locks");
+    assert_eq!(token.origin(), id);
+    assert_eq!(token.revision(), g.revision());
+    g.cancel_submission(token)
+        .expect("the token unlocks its own grid");
+    assert!(!g.submission_pending());
+
+    g.submission.next_nonce = u64::MAX;
+    assert_eq!(
+        g.begin_submission(g.snapshot_changes()),
+        Err(GridCommitError::Exhausted),
+        "a nonce that cannot advance never issues a token"
+    );
+    assert!(
+        !g.submission_pending(),
+        "the refusal leaves the grid unlocked"
+    );
+}

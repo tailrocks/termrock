@@ -900,3 +900,25 @@ fn highlighter_fn_returns_the_installed_provider() {
     let colored = CodeEditor::new(id, "SELECT 1;\n").highlighter(keywords);
     assert!(colored.highlighter_fn().is_some());
 }
+
+#[test]
+fn invalidate_highlighter_makes_the_next_paint_recompute_unchanged_text() {
+    reset();
+    let mut frame = Frame::new(100, 12);
+    let mut e = CodeEditor::new(WidgetId::of("code-test"), "SELECT 1;\n").highlighter(keywords);
+    frame.paint(&mut e, Interaction::default());
+    let after_first = count(&HIGHLIGHTS);
+    frame.paint(&mut e, Interaction::default());
+    assert_eq!(
+        count(&HIGHLIGHTS),
+        after_first,
+        "an unchanged frame reuses the scan"
+    );
+
+    e.invalidate_highlighter();
+    frame.paint(&mut e, Interaction::default());
+    assert!(
+        count(&HIGHLIGHTS) > after_first,
+        "invalidate_highlighter drops the cached scan, so the provider runs again"
+    );
+}

@@ -3,7 +3,7 @@ use super::*;
 
 #[test]
 fn metrics_delta_counts_units_between_snapshots() {
-    let before = snapshot();
+    let before: WorkSnapshot = snapshot();
     record_work!(SegmentedLines, 3usize);
     record_work!(SegmentedLines, 4usize);
     record_work!(BufferCellsFilled, 10usize);
@@ -240,5 +240,80 @@ fn harness_frames_do_not_depend_on_the_host_platform() {
         crate::core::event::ClientPlatform::current(),
         host,
         "dropping the harness restores the host platform"
+    );
+}
+
+struct CountingApp {
+    handled: usize,
+    frames: usize,
+}
+
+impl crate::runtime::Application for CountingApp {
+    fn handle(&mut self, _: crate::core::event::Input) -> crate::core::event::Outcome {
+        self.handled += 1;
+        crate::core::event::Outcome::Changed
+    }
+
+    fn render(&mut self, _frame: &mut ratatui::Frame) {
+        self.frames += 1;
+    }
+
+    fn should_quit(&self) -> bool {
+        false
+    }
+
+    fn tick_interval(&self) -> std::time::Duration {
+        std::time::Duration::from_millis(100)
+    }
+}
+
+#[test]
+fn harness_send_draws_after_every_input_and_warm_runs_that_many_ticks() {
+    let mut h = harness::Harness::new(
+        CountingApp {
+            handled: 0,
+            frames: 0,
+        },
+        (10, 1),
+    );
+    h.warm(3);
+    assert_eq!(
+        (h.app.handled, h.app.frames),
+        (3, 3),
+        "each warm tick handles and draws"
+    );
+    h.send(crate::core::event::Input::Tick);
+    assert_eq!(
+        (h.app.handled, h.app.frames),
+        (4, 4),
+        "send is one input and one frame"
+    );
+}
+
+#[test]
+fn harness_assert_at_most_accepts_a_ceiling_and_names_the_metric_over_it() {
+    let mut delta = WorkDelta::ZERO;
+    delta.0[Metric::SegmentedLines as usize] = 5;
+    harness::assert_at_most(&delta, "within", &[(Metric::SegmentedLines, 5)]);
+    harness::assert_at_most(&delta, "below the ceiling", &[(Metric::SegmentedLines, 9)]);
+    let over = std::panic::catch_unwind(|| {
+        harness::assert_at_most(&delta, "over", &[(Metric::SegmentedLines, 4)]);
+    })
+    .expect_err("a count above its ceiling panics");
+    let message = over.downcast_ref::<String>().cloned().unwrap_or_default();
+    assert!(
+        message.contains("over") && message.contains("segmented_lines"),
+        "{message}"
+    );
+}
+
+#[test]
+fn metrics_identity_comparisons_count_linear_key_scans() {
+    let (_, delta) = measure(|| record_work!(IdentityComparisons, 6usize));
+    assert_eq!(delta.get(Metric::IdentityComparisons), 6);
+    assert_eq!(
+        delta.get(Metric::SegmentedLines),
+        0,
+        "only the named metric moved"
     );
 }
