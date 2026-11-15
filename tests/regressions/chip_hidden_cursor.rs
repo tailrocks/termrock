@@ -1,4 +1,5 @@
 use crate::common::*;
+use junie_tui::core::event::Outcome;
 use junie_tui::core::id::WidgetId;
 use junie_tui::theme::{ColorLevel, Theme};
 use junie_tui::widgets::chips::{Chip, ChipAction, ChipBar};
@@ -240,4 +241,48 @@ fn batched_rights_with_no_render_between_never_activate_a_hidden_chip() {
     let (_, ev) = cb.on_key(&key(KeyCode::Enter));
 
     assert_eq!(ev, Some(ChipAction::Activate(shown - 1)));
+}
+
+#[test]
+fn keys_before_the_first_render_do_not_reach_a_hidden_chip() {
+    let mut cb = add_bar(false, false);
+    for _ in 0..8 {
+        let (outcome, _) = cb.on_key(&key(KeyCode::Right));
+        assert_eq!(
+            outcome,
+            Outcome::Ignored,
+            "nothing is drawn, so Right is unhandled"
+        );
+    }
+    assert_eq!(cb.cursor, 0, "nothing is known to be drawn yet");
+    let (_, ev) = cb.on_key(&key(KeyCode::Enter));
+    assert_eq!(ev, Some(ChipAction::Activate(0)));
+
+    let (shown, _) = drawn(&render(&mut cb, Some(CHIPS)));
+    assert!(shown < NAMES.len(), "the bar overflows");
+    for _ in 0..8 {
+        cb.on_key(&key(KeyCode::Right));
+    }
+    let (_, ev) = cb.on_key(&key(KeyCode::Enter));
+    assert_eq!(ev, Some(ChipAction::Activate(shown - 1)));
+}
+
+#[test]
+fn a_lead_set_after_a_render_keeps_navigation_off_the_hidden_chips() {
+    let mut cb = add_bar(false, false);
+    let (shown, _) = drawn(&render(&mut cb, Some(CHIPS)));
+    assert!(shown < NAMES.len(), "the bar overflows");
+
+    assert!(cb.set_lead(Some("Lead".to_owned())));
+    for _ in 0..8 {
+        let (outcome, _) = cb.on_key(&key(KeyCode::Right));
+        assert_eq!(
+            outcome,
+            Outcome::Ignored,
+            "no render has laid out the new lead"
+        );
+    }
+    assert_eq!(cb.cursor, 0, "the cursor stays on a chip that is drawn");
+    let (_, ev) = cb.on_key(&key(KeyCode::Enter));
+    assert_eq!(ev, Some(ChipAction::Activate(0)));
 }

@@ -564,6 +564,11 @@ impl ChipBar {
             _ => {}
         }
         if let Some(nav) = self.nav.action(key).filter(|_| key.plain()) {
+            // No render has laid out the current chips, so no stop is known to
+            // be drawn. Hidden chips must not take navigation keys.
+            if !self.layout_current() {
+                return (Outcome::Ignored, None);
+            }
             let stops = self.stops();
             let at = (0..stops.len())
                 .min_by_key(|&k| stops[k].abs_diff(self.cursor))
