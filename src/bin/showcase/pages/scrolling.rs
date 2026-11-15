@@ -11,7 +11,7 @@ use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
 use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::hit::Axis;
-use junie_tui::core::id::{ItemKey, Part, PartRef, WidgetId};
+use junie_tui::core::id::{Part, PartRef, WidgetId};
 use junie_tui::core::intent::Phase;
 use junie_tui::core::keymap::NavKeys;
 use junie_tui::core::list::{
@@ -44,6 +44,24 @@ const OVER: WidgetId = ID.sub("over");
 const NEST_OUTER: WidgetId = ID.sub("nest_outer");
 const NEST_INNER: WidgetId = ID.sub("nest_inner");
 const VIRTUAL: WidgetId = ID.sub("virtual");
+
+pub struct VirtualRows(Vec<String>);
+
+impl VirtualRows {
+    fn new(len: usize) -> Self {
+        Self((1..=len).map(|i| format!("Row {i:05}")).collect())
+    }
+}
+
+impl RowSource for VirtualRows {
+    fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    fn label(&self, i: usize) -> &str {
+        &self.0[i]
+    }
+}
 
 fn retired(i: usize) -> bool {
     i % 10 == 9
@@ -102,6 +120,7 @@ pub struct ScrollingPage {
     pub nest_inner: ScrollView,
 
     pub virtual_rows: ScrollView,
+    pub virtual_source: VirtualRows,
     pub virtual_cursor: usize,
     pub virtual_painted: usize,
 
@@ -140,6 +159,7 @@ impl ScrollingPage {
             nest_outer: ScrollView::new(NEST_OUTER).axes(Axes::VERTICAL),
             nest_inner: ScrollView::new(NEST_INNER).axes(Axes::VERTICAL),
             virtual_rows: ScrollView::new(VIRTUAL).axes(Axes::VERTICAL),
+            virtual_source: VirtualRows::new(0),
             virtual_cursor: 0,
             virtual_painted: 0,
             region: Select::new(ID.sub("region"), "Region", REGIONS, 5),
@@ -579,7 +599,7 @@ impl ScrollingPage {
     }
 
     fn virtual_len(&self) -> usize {
-        self.opts.number("scrolling.window").map_or(0, usize::from)
+        self.virtual_source.len()
     }
 
     fn render_virtual(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
@@ -598,7 +618,8 @@ impl ScrollingPage {
         let content = Size::new(inner.width, u16::try_from(rows).unwrap_or(u16::MAX));
         let mut painted = 0;
         let state = ctx.state(VIRTUAL);
-        self.virtual_rows.render_window(
+        let (view, source) = (&mut self.virtual_rows, &self.virtual_source);
+        view.render_window(
             screen,
             inner,
             content,
@@ -628,14 +649,12 @@ impl ScrollingPage {
                     if index == cursor {
                         buf.set_string(rect.x, rect.y, look.gutter, look.gutter_style);
                     }
-                    let label = truncate(
-                        &format!("Row {:05}", index + 1),
-                        rect.width.saturating_sub(2) as usize,
-                    );
+                    let label =
+                        truncate(source.label(index), rect.width.saturating_sub(2) as usize);
                     buf.set_string(rect.x + 2, rect.y, label, style);
                     ctx.hits.register_part(
                         VIRTUAL,
-                        PartRef::item(Part::ROW, ItemKey::index(index)),
+                        PartRef::item(Part::ROW, source.key(index)),
                         rect,
                     );
                 }
@@ -1061,9 +1080,10 @@ impl Page for ScrollingPage {
     }
 
     fn set_option(&mut self, key: &str, value: usize) {
-        let rows = self.virtual_len();
         if self.opts.set(key, value) {
-            if self.virtual_len() != rows {
+            let rows = self.opts.number("scrolling.window").map_or(0, usize::from);
+            if rows != self.virtual_len() {
+                self.virtual_source = VirtualRows::new(rows);
                 self.virtual_cursor = 0;
                 self.virtual_rows.reset();
             }
