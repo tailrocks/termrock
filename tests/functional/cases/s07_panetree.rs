@@ -1276,3 +1276,51 @@ fn option_hit_pad_3() {
     shot(&app, "opt.panetree.hit_pad");
     app.finish();
 }
+
+#[test]
+fn seam_release_outside_returns_the_seam_to_rest() {
+    let app = page("s07-seam-release", None, 120, 40);
+    app.wait_text(META);
+    flash_settle(&app);
+    let before = app.settle();
+    let (x, top) = seam_at(&before);
+    assert_eq!(x, SEAM_X, "rest seam");
+    let y = top + 2;
+
+    app.down(Point { x, y });
+    let end = Point { x: x + 6, y };
+    app.drag_to(end);
+    app.up(Point { x: end.x, y: 0 });
+    flash_settle(&app);
+    let released = app.settle();
+
+    let (kept, kept_top) = seam_at(&released);
+    assert_eq!(kept, x + 6, "the release outside kept the dragged ratio");
+    assert_eq!(
+        cell(&released, kept, kept_top),
+        "│",
+        "a release outside the seam's own line left the seam pressed"
+    );
+
+    let next_y = kept_top + 2;
+    app.down(Point { x: kept, y: next_y });
+    let next_end = Point {
+        x: kept + 4,
+        y: next_y,
+    };
+    app.drag_to(next_end);
+    let regrab = app.settle();
+    let (moved, moved_top) = seam_at(&regrab);
+    assert_eq!(
+        moved,
+        kept + 4,
+        "the next gesture moved the seam from its press"
+    );
+    assert_eq!(
+        cell(&regrab, moved, moved_top),
+        "┃",
+        "the next gesture draws the seam pressed while held"
+    );
+    app.up(next_end);
+    app.finish();
+}

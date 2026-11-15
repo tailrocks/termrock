@@ -163,6 +163,11 @@ impl Splitter {
         }
     }
 
+    /// Drops the grab without touching the split. Returns whether a grab was held.
+    pub fn cancel_drag(&mut self) -> bool {
+        self.grab.take().is_some()
+    }
+
     pub fn on_click(&mut self, split: &mut Split, count: u8) -> Outcome {
         self.grab = None;
         if count != 2 {
@@ -214,5 +219,24 @@ impl crate::ui::specimen::Specimen for Splitter {
         };
         let mut s = *self;
         s.render(strip, buf, ctx, bg);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn splitter_cancel_drag_is_idempotent() {
+        let mut seam = Splitter::new(WidgetId::of("t.seam"), SplitDir::Horizontal);
+        let mut split = Split::new(40, 1, 1);
+        let container = Rect::new(0, 0, 40, 5);
+        seam.on_press(&split, container, 1, Position::new(20, 2));
+        seam.on_drag(&mut split, container, 1, Position::new(25, 2));
+        let dragged = split;
+
+        assert!(seam.cancel_drag(), "the held grab is dropped");
+        assert!(!seam.cancel_drag(), "a second cancel finds nothing to drop");
+        assert_eq!(split, dragged, "cancelling never touches the split ratio");
     }
 }
