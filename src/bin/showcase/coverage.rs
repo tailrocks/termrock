@@ -310,7 +310,7 @@ pub const INSPECT_CHANGES_ALLOWLIST: &[(&str, &str)] = &[
     ),
     (
         "widgets::inspect_changes::InspectChanges::initial_focus",
-        "The widget's layer spec applies its initial focus; the page leaves keyboard focus where the user put it.",
+        "The Diff page renders the inspector inline and never pushes its layer, so the layer spec's initial focus does not apply there; the user reaches the inspector with Tab twice, as the PTY tests do.",
     ),
 ];
 
