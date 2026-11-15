@@ -6,6 +6,7 @@ use junie_tui::runtime::Application;
 use junie_tui::shell::{App, Shell, render};
 use junie_tui::theme::{ColorLevel, Theme};
 use junie_tui::ui::ctx::RenderCtx;
+use junie_tui::widgets::code::CodeEditor;
 use junie_tui::widgets::input::TextInput;
 use junie_tui::widgets::textarea::TextArea;
 use junie_tui::widgets::too_small::TooSmall;
@@ -19,6 +20,7 @@ const FIELD: WidgetId = WidgetId::of("focus_edit.field");
 enum Field {
     Line(Box<TextInput>),
     Area(Box<TextArea>),
+    Code(Box<CodeEditor>),
 }
 
 impl Field {
@@ -26,6 +28,7 @@ impl Field {
         match self {
             Self::Line(f) => f.editing,
             Self::Area(f) => f.editing,
+            Self::Code(f) => f.editing,
         }
     }
 }
@@ -111,6 +114,7 @@ impl App for Badge {
         match &mut self.field {
             Field::Line(f) => f.render(area, buf, ctx, bg),
             Field::Area(f) => f.render(area, buf, ctx, bg),
+            Field::Code(f) => f.render(area, buf, ctx, bg),
         }
     }
 }
@@ -149,5 +153,13 @@ fn text_input_focus_edit_is_visible_to_widgets_drawn_before_it() {
 fn text_area_focus_edit_is_visible_to_widgets_drawn_before_it() {
     assert_frame_matches_settled_state(Badge::new(Field::Area(Box::new(TextArea::new(
         FIELD, "Notes", 2,
+    )))));
+}
+
+#[test]
+fn code_editor_focus_edit_is_visible_to_widgets_drawn_before_it() {
+    assert_frame_matches_settled_state(Badge::new(Field::Code(Box::new(CodeEditor::new(
+        FIELD,
+        "let x = 1;",
     )))));
 }
