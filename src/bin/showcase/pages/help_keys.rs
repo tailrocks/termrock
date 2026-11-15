@@ -1,5 +1,4 @@
 use ratatui::buffer::Buffer;
-use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Rect, Size};
 
 use crate::app::PageId;
@@ -124,19 +123,12 @@ impl HelpKeysPage {
         table[i].values[self.opts[i]]
     }
 
-    /// The narrow example: the overlay at its smallest share of the screen,
-    /// so its body falls to one column and the footer shares a few cells.
-    fn narrow_help(&self) -> HelpOverlay {
-        HelpOverlay::new(HELP, "Editor", sections()).max_percent(20)
-    }
-
-    /// The empty example: a section list with no rows at all.
-    fn empty_help(&self) -> HelpOverlay {
-        HelpOverlay::new(HELP, "Editor", Vec::new())
-    }
-
     pub fn build_help(&self) -> HelpOverlay {
-        let mut h = HelpOverlay::new(HELP, "Editor", sections())
+        let content = match self.opt("helpkeys.content") {
+            "none" => Vec::new(),
+            _ => sections(),
+        };
+        let mut h = HelpOverlay::new(HELP, "Editor", content)
             .max_percent(self.opt("helpkeys.max_percent").parse().unwrap_or(80))
             .nav(match self.opt("helpkeys.nav") {
                 "vim" => NavKeys::VIM,
@@ -344,16 +336,6 @@ impl Page for HelpKeysPage {
             return o;
         }
         let open = match ev {
-            PageEvent::Key(key) if cx.focus.is(OPEN) && key.code == KeyCode::Char('n') => {
-                cx.focus.focus(OPEN);
-                cx.open_help(self.narrow_help());
-                return Outcome::Changed;
-            }
-            PageEvent::Key(key) if cx.focus.is(OPEN) && key.code == KeyCode::Char('e') => {
-                cx.focus.focus(OPEN);
-                cx.open_help(self.empty_help());
-                return Outcome::Changed;
-            }
             PageEvent::Key(key) if cx.focus.is(OPEN) => {
                 let (o, act) = self.open.on_key(key);
                 if !act {

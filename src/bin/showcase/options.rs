@@ -934,7 +934,12 @@ static HELP_KEYS: &[Opt] = &[
     ),
     Opt::new("helpkeys.gap", "Column gap", &["3", "6"]),
     Opt::new("helpkeys.title", "Overlay title", &["default", "custom"]),
-    Opt::new("helpkeys.max_percent", "Overlay size", &["80", "60", "100"]),
+    Opt::new(
+        "helpkeys.max_percent",
+        "Overlay size",
+        &["80", "60", "100", "20"],
+    ),
+    Opt::new("helpkeys.content", "Help content", &["full", "none"]),
     Opt::new("helpkeys.nav", "Scroll keys", &["default", "vim"]),
     Opt::new("helpkeys.keymap", "Close keys", &["default", "f1"]),
     Opt::new("helpkeys.dismiss", "Dismiss", &["light", "escape"]),

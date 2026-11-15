@@ -5,7 +5,7 @@
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, SHOWCASE, find_all, row_text, text, try_launch};
+use crate::support::{App, Launch, Point, SHOWCASE, find_all, row_text, text, try_launch};
 
 const BLURB: &str = "HelpOverlay and KeyReference: sections, columns, scrolling, hanging wrap";
 const PAGE: &str = "App shell › Help & keys";
@@ -843,6 +843,7 @@ fn assert_option_defaults_except(screen: &TerminalSnapshot, changed: &str, value
         ("Column gap", "3"),
         ("Overlay title", "default"),
         ("Overlay size", "80"),
+        ("Help content", "full"),
         ("Scroll keys", "default"),
         ("Close keys", "default"),
         ("Dismiss", "light"),
@@ -1131,32 +1132,95 @@ fn option_boundaries_keep_siblings() {
     );
 }
 
+fn choose_option(app: &App, label: &str, wanted: &str) {
+    let screen = app.settle();
+    let at = find_all(&screen, label)
+        .into_iter()
+        .find(|point| point.y >= 4)
+        .unwrap_or_else(|| panic!("no option {label:?}\n{}", text(&screen)));
+    app.click(Point {
+        x: at.x,
+        y: at.y + 1,
+    });
+    let popup = app.wait_text("Esc Close");
+    let choice = find_all(&popup, wanted)
+        .into_iter()
+        .filter(|point| point.y > at.y + 1 && !row_text(&popup, u32::from(point.y)).contains('×'))
+        .min_by_key(|point| (point.y, point.x))
+        .unwrap_or_else(|| panic!("no choice {wanted:?}\n{}", text(&popup)));
+    app.click(choice);
+    app.wait_screen("option chosen", |screen| {
+        !text(screen).contains("Esc Close") && option_value(screen, label) == wanted
+    });
+}
+
+fn open_playground_help(app: &App) -> TerminalSnapshot {
+    click_text(app, "Playground");
+    app.wait_text("Open help overlay");
+    click_text(app, "Open help overlay");
+    app.wait_text("Done")
+}
+
+fn assert_help_frame_on_screen(screen: &TerminalSnapshot, why: &str) {
+    let rows: Vec<String> = (0..screen.rows())
+        .map(|row| row_text(screen, row))
+        .collect();
+    let bottom = rows
+        .iter()
+        .rposition(|line| line.contains('╰'))
+        .unwrap_or_else(|| panic!("{why}: no bottom edge\n{}", text(screen)));
+    let top = rows
+        .iter()
+        .position(|line| line.contains('╭'))
+        .unwrap_or_else(|| panic!("{why}: no top edge\n{}", text(screen)));
+    let done = rows
+        .iter()
+        .rposition(|line| line.contains("Done"))
+        .unwrap_or_else(|| panic!("{why}: no Done\n{}", text(screen)));
+    assert!(
+        top < done && done < bottom,
+        "{why}: Done row {done} is outside the frame rows {top}..{bottom}\n{}",
+        text(screen)
+    );
+}
+
 #[test]
 fn help_overlay_narrow_and_empty_examples_stay_on_screen() {
     let args = ["--page", "helpkeys"];
     let app = open("s01-helpkeys-narrow-empty", 120, 40, &args);
     app.wait_text(WIDTH_DEFAULT);
-    click_text(&app, "Open help overlay");
-    app.wait_text("Navigation");
-    app.key("esc");
-    app.wait_absent("Ctrl+P");
+    click_text(&app, "Options");
+    let defaults = app.wait_text("Help content");
+    assert_option_defaults_except(&defaults, "", "");
 
-    app.key("n");
-    let narrow = app.wait_text("Done");
+    choose_option(&app, "Help content", "none");
+    let empty = open_playground_help(&app);
+    assert_help_frame_on_screen(&empty, "empty help");
     assert!(
-        text(&narrow).contains("Done") && text(&narrow).contains("╰"),
-        "narrow example should keep its footer and bottom edge on screen\n{}",
-        text(&narrow)
+        text(&empty).contains("Editor") && !text(&empty).contains("Ctrl+P"),
+        "empty help should show the frame and Done without any section\n{}",
+        text(&empty)
     );
     app.key("esc");
     app.wait_absent("Done");
 
-    app.key("e");
-    let empty = app.wait_text("Done");
+    click_text(&app, "Options");
+    app.wait_text("Help content");
+    choose_option(&app, "Overlay size", "20");
+    let narrow_empty = open_playground_help(&app);
+    assert_help_frame_on_screen(&narrow_empty, "narrow empty help");
+    app.key("esc");
+    app.wait_absent("Done");
+
+    click_text(&app, "Options");
+    app.wait_text("Help content");
+    choose_option(&app, "Help content", "full");
+    let narrow = open_playground_help(&app);
+    assert_help_frame_on_screen(&narrow, "narrow help");
     assert!(
-        text(&empty).contains("Editor") && !text(&empty).contains("Ctrl+P"),
-        "empty example should show the frame and Done without any section\n{}",
-        text(&empty)
+        text(&narrow).contains("Navigation"),
+        "narrow help should still list its sections\n{}",
+        text(&narrow)
     );
     app.key("esc");
     app.wait_absent("Done");

@@ -9,7 +9,7 @@ use junie_tui::ui::ctx::{Interaction, RenderCtx};
 use junie_tui::widgets::help::HelpOverlay;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
-use ratatui::layout::Rect;
+use ratatui::layout::{Position, Rect};
 
 const ID: WidgetId = WidgetId::of("t.help");
 const SENTINEL: &str = "#";
@@ -141,20 +141,26 @@ fn help_empty_frame_clears_old_geometry() {
 
 #[test]
 fn help_resize_restores_scroll_and_close() {
-    let canvas = Rect::new(0, 0, 80, 24);
+    let short = Rect::new(0, 0, 80, 10);
+    let narrow = Rect::new(0, 0, 10, 10);
     let mut help = overlay();
 
-    let mut buf = sentinel_buffer(canvas);
-    paint(&mut help, canvas, &mut buf);
+    let mut buf = sentinel_buffer(short);
+    paint(&mut help, short, &mut buf);
+    assert!(
+        help.scroll.v.max_offset() > 0,
+        "content must overflow at {short:?} for the scroll check to mean anything"
+    );
     for _ in 0..3 {
         help.on_key(&key(KeyCode::Down));
     }
+    assert!(help.scroll.v.offset > 0, "Down did not scroll");
 
-    let mut narrow = sentinel_buffer(Rect::new(0, 0, 10, 10));
-    paint(&mut help, Rect::new(0, 0, 10, 10), &mut narrow);
+    let mut buf = sentinel_buffer(narrow);
+    paint(&mut help, narrow, &mut buf);
 
-    let mut buf = sentinel_buffer(canvas);
-    paint(&mut help, canvas, &mut buf);
+    let mut buf = sentinel_buffer(short);
+    let hits = paint(&mut help, short, &mut buf);
     assert!(
         help.scroll.v.offset <= help.scroll.v.max_offset(),
         "scroll offset {} outside content after restore",
@@ -162,18 +168,26 @@ fn help_resize_restores_scroll_and_close() {
     );
     assert!(!help.done.area.is_empty(), "Done not restored after resize");
 
-    let done = help.done.id;
-    help.on_click(done);
+    help.on_key(&key(KeyCode::Esc));
+    assert!(help.closed, "Esc did not close the restored overlay");
+
+    help.closed = false;
+    let mut buf = sentinel_buffer(short);
+    let hits_again = paint(&mut help, short, &mut buf);
+    assert_eq!(
+        hits.regions().len(),
+        hits_again.regions().len(),
+        "repaint changed the registered regions"
+    );
+    let done = help.done.area;
+    let clicked = hits_again
+        .resolve(Position::new(done.x + done.width / 2, done.y))
+        .expect("Done is registered at its painted area");
+    help.on_click(clicked.owner);
     assert!(
         help.closed,
-        "clicking restored Done did not close the overlay"
+        "clicking the registered Done region did not close the restored overlay"
     );
-
-    let mut help = overlay();
-    let mut buf = sentinel_buffer(canvas);
-    paint(&mut help, canvas, &mut buf);
-    help.on_key(&key(KeyCode::Esc));
-    assert!(help.closed, "Esc did not close after a narrow render");
 }
 
 #[test]
