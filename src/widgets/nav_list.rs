@@ -208,6 +208,9 @@ impl NavList {
                 }
             }
         }
+        if self.cursor != before.0 {
+            self.reveal_cursor();
+        }
         before != (self.cursor, self.current)
     }
 
