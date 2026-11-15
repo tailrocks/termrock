@@ -968,6 +968,9 @@ impl FileBrowser {
             .dismiss(self.dismiss)
             .render(screen, buf, ctx);
         self.area = area;
+        if inner.is_empty() {
+            return;
+        }
         let t = ctx.theme;
         let bg = t.surface_elevated;
         let mut y = inner.y;
