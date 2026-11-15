@@ -231,37 +231,41 @@ impl TabsPage {
     }
 
     /// `d` toggles the active tab's dirty mark. `[` and `]` move it left or
-    /// right. The keys stay out of the hint bar so the approved captures hold.
+    /// right. Both show in the hint bar. A refused move still consumes the key,
+    /// so `[` and `]` do not leak to page navigation at the strip's ends.
     fn edit_active_tab(&mut self, key: &Key, cx: &mut Cx) -> Option<Outcome> {
         if !key.plain() {
             return None;
         }
         let active = self.editor.active;
+        let label = self.editor.items().get(active)?.label.clone();
         let changed = match key.code {
             KeyCode::Char('d') => {
-                let label = self.editor.items().get(active)?.label.clone();
                 let changed = self.editor.update_item(active, |it| it.dirty = !it.dirty);
-                self.last = format!("Toggled unsaved mark on {label}");
+                if changed {
+                    self.last = format!("Toggled unsaved mark on {label}");
+                }
                 changed
             }
-            KeyCode::Char('[') | KeyCode::Char(']') => {
-                let to = match key.code {
-                    KeyCode::Char('[') => active.checked_sub(1)?,
-                    _ => active + 1,
+            KeyCode::Char(c @ ('[' | ']')) => {
+                let to = if c == '[' {
+                    active.saturating_sub(1)
+                } else {
+                    active + 1
                 };
-                let label = self.editor.items().get(active)?.label.clone();
                 let changed = self.editor.reorder(active, to);
-                self.last = format!("Moved {label} to position {}", to + 1);
+                if changed {
+                    self.last = format!("Moved {label} to position {}", to + 1);
+                }
                 changed
             }
             _ => return None,
         };
+        if !changed {
+            return Some(Outcome::Consumed);
+        }
         cx.status(self.last.clone());
-        Some(if changed {
-            Outcome::Changed
-        } else {
-            Outcome::Ignored
-        })
+        Some(Outcome::Changed)
     }
 
     fn facts(&self) -> Vec<Prop> {
@@ -580,6 +584,8 @@ impl Page for TabsPage {
                 {
                     h.push((k, "New tab"));
                 }
+                h.push(("d", "Dirty"));
+                h.push(("[ ]", "Move"));
                 h
             }
             Some(f) if f == self.outer.id || f == self.sub.id => {
