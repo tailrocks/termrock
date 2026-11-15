@@ -717,3 +717,293 @@ fn issue43_try_edit_text_is_the_same_gateway() {
         "ineligible targets never reach the parser"
     );
 }
+
+fn number_grid(values: Vec<CellValue>, nullable: bool, log: &Log) -> DataGrid {
+    let mut col = ColumnSpec::new("n", CellKind::Number);
+    col.nullable = nullable;
+    grid_with(
+        vec![col],
+        values.into_iter().map(|v| vec![v]).collect(),
+        log,
+        &[],
+    )
+}
+
+fn seed(grid: &DataGrid) -> String {
+    grid.edit
+        .as_ref()
+        .expect("an open text editor")
+        .field
+        .text()
+        .to_owned()
+}
+
+fn bits(grid: &DataGrid, row: usize) -> u64 {
+    match grid.value(row, 0) {
+        CellValue::Num(n) => n.to_bits(),
+        other => panic!("expected Num, found {other:?}"),
+    }
+}
+
+const FINITE: [f64; 9] = [
+    1.2345,
+    1.005,
+    0.001,
+    -123.456_789_012_345_6,
+    f64::MIN_POSITIVE,
+    5e-324,
+    f64::MAX,
+    1.0,
+    1e21,
+];
+
+#[test]
+fn issue48_unchanged_num_roundtrips() {
+    for v in FINITE {
+        for finish in ["enter", "tab", "blur"] {
+            let seen = log();
+            let mut grid = number_grid(vec![CellValue::Num(v)], false, &seen);
+            press(&mut grid, KeyCode::Enter);
+            let (_, action) = match finish {
+                "enter" => press(&mut grid, KeyCode::Enter),
+                "tab" => press(&mut grid, KeyCode::Tab),
+                _ => grid.on_blur(),
+            };
+            assert!(
+                !matches!(action, Some(GridAction::CellChanged { .. })),
+                "{v:e} {finish}: no CellChanged, got {action:?}"
+            );
+            assert_eq!(bits(&grid, 0), v.to_bits(), "{v:e} {finish}: exact bits");
+            assert_eq!(calls(&seen).len(), 1, "{v:e} {finish}: parser ran once");
+            untouched(&mut grid);
+        }
+    }
+}
+
+#[test]
+fn issue48_edit_text_is_lossless_and_display_is_not() {
+    for v in FINITE {
+        let text = CellValue::Num(v).edit_text();
+        assert_eq!(
+            text.parse::<f64>().unwrap().to_bits(),
+            v.to_bits(),
+            "{text}"
+        );
+        assert_eq!(
+            default_validator(&ColumnSpec::new("n", CellKind::Number), &text),
+            Ok(CellValue::Num(v)),
+            "{text} keeps the Num variant"
+        );
+    }
+    assert_eq!(CellValue::Num(1.0).edit_text(), "1.0");
+    assert_eq!(CellValue::Int(i64::MAX).edit_text(), i64::MAX.to_string());
+
+    let shown = |grid: &mut DataGrid| {
+        let buf = draw_grid(grid);
+        (0..8).map(|y| row(&buf, y)).collect::<Vec<_>>().join("\n")
+    };
+    let seen = log();
+    let mut grid = number_grid(vec![CellValue::Num(1.2345)], false, &seen);
+    let display = shown(&mut grid);
+    assert!(
+        display.contains("1.23") && !display.contains("1.2345"),
+        "{display}"
+    );
+    press(&mut grid, KeyCode::Enter);
+    assert_eq!(seed(&grid), "1.2345");
+    press(&mut grid, KeyCode::Esc);
+    let display = shown(&mut grid);
+    assert!(
+        display.contains("1.23") && !display.contains("1.2345"),
+        "{display}"
+    );
+}
+
+#[test]
+fn issue48_untouched_null_default_preserve_type() {
+    for (value, token) in [(CellValue::Null, "NULL"), (CellValue::Default, "DEFAULT")] {
+        for kind in [CellKind::Text, CellKind::Number] {
+            let seen = log();
+            let mut col = ColumnSpec::new("c", kind);
+            col.nullable = true;
+            let mut grid = grid_with(vec![col], vec![vec![value.clone()]], &seen, &[]);
+            press(&mut grid, KeyCode::Enter);
+            assert_eq!(seed(&grid), token, "{kind:?}");
+            let (_, action) = press(&mut grid, KeyCode::Enter);
+            assert_eq!(action, None);
+            assert_eq!(calls(&seen), vec![token.to_owned()], "parser ran once");
+            assert_eq!(*grid.value(0, 0), value, "{kind:?} keeps the sentinel");
+            untouched(&mut grid);
+        }
+    }
+
+    let seen = log();
+    let mut grid = grid_with(
+        vec![ColumnSpec::new("c", CellKind::Number)],
+        vec![vec![CellValue::Null]],
+        &seen,
+        &["NULL"],
+    );
+    press(&mut grid, KeyCode::Enter);
+    press(&mut grid, KeyCode::Enter);
+    assert!(
+        grid.edit.is_some(),
+        "a custom rejection stays authoritative"
+    );
+    untouched(&mut grid);
+}
+
+#[test]
+fn issue48_pending_noop_keeps_history() {
+    let seen = log();
+    let mut grid = number_grid(vec![CellValue::Num(1.2345)], false, &seen);
+    press(&mut grid, KeyCode::Enter);
+    replace_text(&mut grid, 6, "7.5");
+    let (_, action) = press(&mut grid, KeyCode::Enter);
+    assert_eq!(action, Some(GridAction::CellChanged { row: 0, col: 0 }));
+    assert_eq!(bits(&grid, 0), 7.5f64.to_bits());
+
+    press(&mut grid, KeyCode::Enter);
+    assert_eq!(seed(&grid), "7.5");
+    let (_, action) = press(&mut grid, KeyCode::Enter);
+    assert_eq!(action, None);
+    assert_eq!(grid.pending().total(), 1);
+    assert_eq!(bits(&grid, 0), 7.5f64.to_bits());
+
+    assert!(grid.undo().is_some(), "the real edit undoes");
+    assert_eq!(bits(&grid, 0), 1.2345f64.to_bits());
+    assert!(grid.undo().is_none(), "the no-op left no history entry");
+    untouched(&mut grid);
+
+    press(&mut grid, KeyCode::Enter);
+    replace_text(&mut grid, 6, "9.5");
+    press(&mut grid, KeyCode::Enter);
+    press(&mut grid, KeyCode::Enter);
+    replace_text(&mut grid, 3, "1.2345");
+    let (_, action) = press(&mut grid, KeyCode::Enter);
+    assert_eq!(action, Some(GridAction::CellChanged { row: 0, col: 0 }));
+    assert!(grid.pending().is_empty(), "back at the stored value");
+}
+
+#[test]
+fn issue48_signed_zero_and_integer_variants() {
+    let seen = log();
+    let mut grid = number_grid(vec![CellValue::Num(-0.0)], false, &seen);
+    assert_eq!(CellValue::Num(-0.0).edit_text(), "-0.0");
+    press(&mut grid, KeyCode::Enter);
+    press(&mut grid, KeyCode::Enter);
+    assert_eq!(bits(&grid, 0), (-0.0f64).to_bits());
+    untouched(&mut grid);
+    assert_eq!(
+        grid.try_edit_text(0, 0, "0.0"),
+        Ok(CellEditResult::Unchanged)
+    );
+    assert_eq!(
+        bits(&grid, 0),
+        (-0.0f64).to_bits(),
+        "equal zero keeps current bits"
+    );
+    assert_eq!(grid.try_edit_text(0, 0, "0"), Ok(CellEditResult::Changed));
+    assert_eq!(
+        *grid.value(0, 0),
+        CellValue::Int(0),
+        "Int and Num stay distinct"
+    );
+
+    let big = (1i64 << 53) + 1;
+    let seen = log();
+    let mut grid = number_grid(vec![CellValue::Int(big)], false, &seen);
+    press(&mut grid, KeyCode::Enter);
+    assert_eq!(seed(&grid), big.to_string());
+    press(&mut grid, KeyCode::Enter);
+    assert_eq!(*grid.value(0, 0), CellValue::Int(big));
+    untouched(&mut grid);
+    assert_eq!(
+        grid.try_edit_text(0, 0, "9007199254740992.0"),
+        Ok(CellEditResult::Changed),
+        "no f64 cast makes a Num equal to a neighbouring Int"
+    );
+}
+
+#[test]
+fn issue48_custom_parser_still_runs() {
+    let calls_made = Rc::new(RefCell::new(0u32));
+    let build = |transform: bool, reject: bool| {
+        let counter = calls_made.clone();
+        let mut grid = DataGrid::new(
+            WidgetId::of("t.grid"),
+            vec![ColumnSpec::new("n", CellKind::Number)],
+        )
+        .validator(move |spec, text| {
+            *counter.borrow_mut() += 1;
+            if reject {
+                return Err("no".to_owned());
+            }
+            if transform {
+                return Ok(CellValue::Num(1.5));
+            }
+            default_validator(spec, text)
+        });
+        grid.set_rows(GridRows {
+            rows: vec![vec![CellValue::Num(1.2345)]],
+            total: RowTotal::Unknown,
+            more: false,
+        });
+        grid
+    };
+
+    let mut grid = build(false, true);
+    press(&mut grid, KeyCode::Enter);
+    *calls_made.borrow_mut() = 0;
+    press(&mut grid, KeyCode::Enter);
+    assert_eq!(*calls_made.borrow(), 1);
+    assert!(grid.edit.is_some() && grid.edit_error() == Some("no"));
+    untouched(&mut grid);
+
+    let mut grid = build(true, false);
+    press(&mut grid, KeyCode::Enter);
+    *calls_made.borrow_mut() = 0;
+    let (_, action) = press(&mut grid, KeyCode::Enter);
+    assert_eq!(*calls_made.borrow(), 1);
+    assert_eq!(action, Some(GridAction::CellChanged { row: 0, col: 0 }));
+    assert_eq!(bits(&grid, 0), 1.5f64.to_bits());
+}
+
+#[test]
+fn issue48_literal_reserved_words_require_explicit_parser() {
+    let mut text = ColumnSpec::new("t", CellKind::Text);
+    text.nullable = true;
+    assert_eq!(default_validator(&text, "DEFAULT"), Ok(CellValue::Default));
+    assert_eq!(default_validator(&text, "default"), Ok(CellValue::Default));
+    assert_eq!(default_validator(&text, "NULL"), Ok(CellValue::Null));
+
+    let literal = |_: &ColumnSpec, s: &str| Ok(CellValue::Text(s.to_owned()));
+    for word in ["NULL", "DEFAULT"] {
+        let mut grid = DataGrid::new(WidgetId::of("t.grid"), vec![text.clone()]).validator(literal);
+        grid.set_rows(GridRows {
+            rows: vec![vec![CellValue::Text(word.into())]],
+            total: RowTotal::Unknown,
+            more: false,
+        });
+        press(&mut grid, KeyCode::Enter);
+        press(&mut grid, KeyCode::Enter);
+        assert_eq!(*grid.value(0, 0), CellValue::Text(word.into()));
+        untouched(&mut grid);
+    }
+}
+
+#[test]
+fn issue48_nonfinite_import_is_never_silently_replaced() {
+    for v in [f64::INFINITY, f64::NEG_INFINITY, f64::NAN] {
+        let seen = log();
+        let mut grid = number_grid(vec![CellValue::Num(v)], true, &seen);
+        press(&mut grid, KeyCode::Enter);
+        press(&mut grid, KeyCode::Enter);
+        assert_eq!(bits(&grid, 0), v.to_bits(), "{v}");
+        assert!(!matches!(
+            grid.value(0, 0),
+            CellValue::Null | CellValue::Int(0)
+        ));
+        untouched(&mut grid);
+    }
+}

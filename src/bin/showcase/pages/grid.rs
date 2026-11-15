@@ -103,6 +103,7 @@ fn row(i: usize) -> Vec<CellValue> {
             0 | 3 => CellValue::Bool(true),
             _ => CellValue::Bool(false),
         },
+        CellValue::Num(1.0045 + 0.25 * (i % 4) as f64),
     ]
 }
 
@@ -217,6 +218,10 @@ fn columns(strict: bool) -> Vec<ColumnSpec> {
                 .editor(ColumnEditor::Select(tiers()))
                 .type_label("text"),
             ColumnSpec::new("paused", CellKind::Bool).type_label("boolean"),
+            ColumnSpec {
+                min_width: 8,
+                ..ColumnSpec::new("rate", CellKind::Number).type_label("double precision")
+            },
         ]);
     }
     cols

@@ -57,11 +57,45 @@ impl CellValue {
         }
     }
 
+    /// The text an editor is seeded with, distinct from the display text.
+    ///
+    /// `Num` uses the shortest decimal that parses back to the same `f64`
+    /// (with `.0` appended to an integral value so it stays a `Num` under the
+    /// default int-first parser), so opening and committing an editor never
+    /// rounds. `Null` and `Default` seed their reserved tokens `NULL` and
+    /// `DEFAULT`, which the default grammar maps back to the same sentinel.
     pub fn edit_text(&self) -> String {
         match self {
-            CellValue::Null | CellValue::Default => String::new(),
+            CellValue::Num(n) => number_edit_text(*n),
             v => v.text(),
         }
+    }
+}
+
+fn number_edit_text(value: f64) -> String {
+    let mut text = value.to_string();
+    if value.is_finite() && !text.contains(['.', 'e', 'E']) {
+        text.push_str(".0");
+    }
+    text
+}
+
+/// Equality used to decide whether an edit changed a cell.
+///
+/// Finite `Num` values compare numerically, so `0.0` and `-0.0` are the same
+/// value and a no-op keeps whichever bits are stored. NaNs are equal only with
+/// identical bits. `Int` and `Num` are different variants even when their
+/// mathematical values match; integers are never cast to `f64`.
+pub(crate) fn same_edit_value(a: &CellValue, b: &CellValue) -> bool {
+    match (a, b) {
+        (CellValue::Num(x), CellValue::Num(y)) => {
+            if x.is_nan() || y.is_nan() {
+                x.to_bits() == y.to_bits()
+            } else {
+                x == y
+            }
+        }
+        _ => a == b,
     }
 }
 
@@ -542,8 +576,9 @@ pub enum FinishEdit {
 ///
 /// Exact empty text is `Text("")` for Text and Enum columns, NULL for other
 /// nullable columns, and an error otherwise (empty Json is invalid JSON). The
-/// reserved token `null` (any case) is NULL for nullable columns. A literal
-/// text value spelled `null` needs a custom parser; see [`DataGrid::validator`].
+/// reserved token `null` (any case) is NULL for nullable columns and `default`
+/// (any case) is [`CellValue::Default`]. A literal text value spelled `null` or
+/// `default` needs a custom parser; see [`DataGrid::validator`].
 pub fn default_validator(col: &ColumnSpec, text: &str) -> Result<CellValue, String> {
     if text.is_empty() {
         return match col.kind {
@@ -560,6 +595,9 @@ pub fn default_validator(col: &ColumnSpec, text: &str) -> Result<CellValue, Stri
         } else {
             Err(format!("{} is NOT NULL", col.name))
         };
+    }
+    if t.eq_ignore_ascii_case("default") {
+        return Ok(CellValue::Default);
     }
     match col.kind {
         CellKind::Number => {
@@ -985,7 +1023,7 @@ impl DataGrid {
         let value = convert_input(&self.validator, &self.columns[col], input)
             .map_err(GridEditError::Validation)?;
         self.cell_errors.remove(&(src, col));
-        if value == *self.value(src, col) {
+        if same_edit_value(&value, self.value(src, col)) {
             return Ok(CellEditResult::Unchanged);
         }
         self.record_cell(src, col, value);
@@ -1777,13 +1815,13 @@ impl DataGrid {
             return false;
         }
         self.cell_errors.remove(&(src, col));
-        if value == *self.value(src, col) {
+        if same_edit_value(&value, self.value(src, col)) {
             return false;
         }
         let revision = self.next_revision(false, true);
         let before = self.pending.cells.get(&(key, col)).cloned();
         let stored = self.rows[src].get(col).unwrap_or(&CellValue::Null);
-        if value == *stored && !self.pending.is_inserted(key) {
+        if same_edit_value(&value, stored) && !self.pending.is_inserted(key) {
             self.pending.cells.remove(&(key, col));
         } else {
             self.pending.cells.insert((key, col), value);
