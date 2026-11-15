@@ -1161,6 +1161,10 @@ fn option_results_loading_dims_and_blocks_actions() {
     app.key("tab");
     app.key("enter");
     let after = app.settle();
-    see(&after, &["Searching", "Pull"], &["Ran "]);
+    see(
+        &after,
+        &["Searching", "Pull", "Ctrl+O Preview", "Ctrl+F Search"],
+        &["Ran "],
+    );
     app.finish();
 }
