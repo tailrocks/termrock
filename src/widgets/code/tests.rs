@@ -505,6 +505,23 @@ fn editor_block_navigation_reads_the_cached_blocks() {
 }
 
 #[test]
+fn empty_diagnostic_index_does_not_allocate_per_line() {
+    let mut sizes = Vec::new();
+    for lines in [1_000usize, 10_000, 100_000] {
+        let buffer = TextBuffer::multi(document(lines));
+        assert!(buffer.line_count() > lines);
+        let (index, bytes) = test_alloc::measure(|| DiagnosticIndex::build(1, 1, &[], &buffer));
+        assert_eq!(index.gutter(0), None);
+        assert_eq!(index.at(0), None);
+        sizes.push(bytes);
+    }
+    assert!(
+        sizes.iter().all(|b| *b <= sizes[0] + 1024),
+        "an index without diagnostics must not grow with the document: {sizes:?}"
+    );
+}
+
+#[test]
 fn editor_diagnostics_merge_exact_and_range_ordinals() {
     let buffer = TextBuffer::multi("abcdefgh");
     let range_first = vec![

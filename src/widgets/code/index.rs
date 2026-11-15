@@ -141,7 +141,7 @@ pub(super) struct DiagnosticIndex {
     pub revision: u64,
     runs: RunIndex,
     exact: BTreeMap<usize, usize>,
-    gutter: Vec<Option<usize>>,
+    gutter: BTreeMap<usize, usize>,
     nearest: Vec<(usize, usize)>,
 }
 
@@ -157,7 +157,7 @@ impl DiagnosticIndex {
         let runs = RunIndex::build(diagnostics.iter().map(|d| &d.range));
         let mut exact = BTreeMap::new();
         let mut starts: BTreeMap<usize, usize> = BTreeMap::new();
-        let mut gutter = vec![None; buffer.line_count()];
+        let mut gutter = BTreeMap::new();
         for (ordinal, d) in diagnostics.iter().enumerate() {
             if d.range.is_empty() {
                 exact.entry(d.range.start).or_insert(ordinal);
@@ -168,7 +168,7 @@ impl DiagnosticIndex {
                 .line_range(line)
                 .is_some_and(|r| d.range.start <= r.end)
             {
-                gutter[line].get_or_insert(ordinal);
+                gutter.entry(line).or_insert(ordinal);
             }
         }
         Self {
@@ -191,7 +191,7 @@ impl DiagnosticIndex {
     }
 
     pub fn gutter(&self, line: usize) -> Option<usize> {
-        self.gutter.get(line).copied().flatten()
+        self.gutter.get(&line).copied()
     }
 
     pub fn nearest(&self, offset: usize) -> Option<usize> {
