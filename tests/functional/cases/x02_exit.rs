@@ -46,7 +46,7 @@ const HOLLA_QUERY: &str = "Search actions";
 const HOLLA_DISK: &str = "Analyze disk usage";
 const QUIT_HOLLA: &str = "Quit holla";
 const STOP_QUIT: &str = "Stop and quit";
-const HOLLA_RUNNING: &str = "still running";
+const HOLLA_RUNNING: &str = "running. Quitting stops";
 
 const WIDE_ID: &str = "pre_refactor/x02_exit/x02_exit_exit_120x40";
 const NARROW_ID: &str = "pre_refactor/x02_exit/x02_exit_exit_narrow";
@@ -448,8 +448,11 @@ fn holla_guard() {
     });
     see(
         &dialog,
-        &[QUIT_HOLLA, STAY, STOP_QUIT, "detached monitors keep"],
-        &["quitting when every process is gone"],
+        &[QUIT_HOLLA, STAY, STOP_QUIT, HOLLA_RUNNING],
+        &[
+            "detached monitors keep",
+            "quitting when every process is gone",
+        ],
     );
     assert!(app.child_running(), "opening the guard quit holla");
     confirm_focused(&app, STOP_QUIT, STAY, holla_quit);

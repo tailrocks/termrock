@@ -31,7 +31,7 @@ const REMOTE_TITLE: &str = "Quit holla❯ on";
 const STAY: &str = "Stay";
 const LEAVE: &str = "Leave when it settles";
 const STOP_QUIT: &str = "Stop and quit";
-const ACTIVITY_BODY: &str = "still running. Quitting stops what holla started";
+const ACTIVITY_BODY: &str = "is running. Quitting stops it.";
 const SETTLE: &str = "leaving when the cleanup settles · its report and log land first";
 const ALREADY: &str = "Already stopping · the shell leaves when every process is gone";
 const STOPPING: &str = "stopping ";
@@ -560,7 +560,7 @@ fn h06_quit_guard_waits() {
     let (k, t) = running_count(&body);
     assert!(
         body.contains(&format!(
-            "still running and a cleanup is at {k} of {t} items"
+            "A cleanup is at {k} of {t} items; quitting waits for its report and log"
         )),
         "combined guard missing\n{body}"
     );

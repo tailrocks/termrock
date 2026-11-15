@@ -24,7 +24,7 @@ use crate::domain::activity::{
     ActivityKind, ActivityState, InputError, KILL_AFTER_TICKS, LineTone, RETAIN_LINES, key_bytes,
 };
 use crate::screens::{Cx, Go, ModalResult, Screen, StatusBits, open_context, ticks_label};
-use crate::sim::world::World;
+use crate::sim::world::{STOPPING_REFUSAL, World};
 use junie_tui::ui::layer::LayerTag;
 
 pub const VIEW: WidgetId = WidgetId::of("activity.view");
@@ -564,6 +564,10 @@ impl ShellPage<Holla> for ActivityTab {
                 return Outcome::Changed;
             }
             KeyCode::Char('r') if key.plain() => {
+                if w.stopping() {
+                    cx.status(STOPPING_REFUSAL);
+                    return Outcome::Changed;
+                }
                 if let Some(a) = w.activity_mut(&self.id) {
                     if a.state.live() {
                         cx.status("Still running · s stops it first");
