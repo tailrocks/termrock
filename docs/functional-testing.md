@@ -113,6 +113,13 @@ redraw rule, through a minimal `shell::App` in `tests/common/mod.rs`)
 and `status.rs` (the sticky status line). No test of a `junie-tui` type
 lives in `apps/jackin/tests`. These tests add no visual baseline and are
 not journeys: a user-visible flow still needs a functional journey.
+
+Put a new data or regression test in the package's shared `regressions`
+target: `tests/regressions/<topic>.rs` with a `mod <topic>;` line in
+`tests/regressions/main.rs`, and the same under `apps/jackin/tests/` for
+`jackin-console`. Do not add a new top-level `tests/*.rs`: the generated CI
+lists every test target, so each new one changes the generated workflows
+(see [CI](ci.md#test-targets-and-generated-ci)).
 `cargo nextest run --all-features --all-targets` runs them, and so do the
 `Rust / junie-tui` and `Rust / jackin-console` CI jobs
 (`nextest run --profile ci --package <crate> --all-features`); the `functional` suite
