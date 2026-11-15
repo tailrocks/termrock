@@ -2135,6 +2135,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "termrock-holla"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "junie-tui",
+ "ratatui",
+ "serde_json",
+ "unicode-segmentation",
+]
+
+[[package]]
 name = "termwiz"
 version = "0.23.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
