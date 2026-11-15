@@ -2091,8 +2091,12 @@ mod tests {
             <Picker as Layer<LayerResult, ()>>::on_key(&mut picker, &enter, &mut cx)
         };
         assert_eq!(out, Outcome::Changed);
+        // Earlier toggles queue their events; the layer releases them in order.
+        let closed =
+            std::iter::from_fn(|| <Picker as Layer<LayerResult, ()>>::take_result(&mut picker))
+                .find(LayerOut::closes);
         assert!(matches!(
-            <Picker as Layer<LayerResult, ()>>::take_result(&mut picker),
+            closed,
             Some(LayerOut::Close(LayerResult::Picker(PickerAction::ChosenMany(keys))))
                 if keys == [ItemKey::text("alpha"), ItemKey::text("beta")]
         ));

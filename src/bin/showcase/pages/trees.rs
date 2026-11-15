@@ -11,6 +11,7 @@ use junie_tui::core::id::WidgetId;
 use junie_tui::core::intent::Phase;
 use junie_tui::core::keymap::{KeyBinding, NavKeys, hint_key};
 use junie_tui::core::pointer::MouseTarget;
+use junie_tui::core::response::Actions;
 use junie_tui::core::scroll::TrackClick;
 use junie_tui::core::selection::ClickPolicy;
 use junie_tui::theme::Tone;
@@ -23,6 +24,13 @@ use junie_tui::widgets::panel::Panel;
 use junie_tui::widgets::scrollbar;
 use junie_tui::widgets::tree::{BranchAction, TreeAction, TreeCmd, TreeNode, TreeView};
 use ratatui::crossterm::event::KeyCode;
+
+fn push_step(last: &mut String, step: String) {
+    if !last.is_empty() {
+        last.push_str(" → ");
+    }
+    last.push_str(&step);
+}
 
 const ID: WidgetId = WidgetId::of("trees");
 const MENU: WidgetId = WidgetId::of("trees.menu");
@@ -179,8 +187,19 @@ impl TreesPage {
             .find(|t| t.id == id)
     }
 
-    fn on_action(&mut self, id: WidgetId, a: Option<TreeAction>, cx: &mut Cx) {
-        let Some(a) = a else { return };
+    /// Handles one input's whole batch; the readout lists it in order, so
+    /// `branch_activate: Both` shows `Expand(..) → Activate(..)`.
+    fn on_actions(&mut self, id: WidgetId, actions: Actions<TreeAction>, cx: &mut Cx) {
+        if actions.is_empty() {
+            return;
+        }
+        self.last.clear();
+        for a in actions {
+            self.on_action(id, a, cx);
+        }
+    }
+
+    fn on_action(&mut self, id: WidgetId, a: TreeAction, cx: &mut Cx) {
         let t = if id == CONNECTIONS {
             &mut self.conns
         } else {
@@ -190,13 +209,13 @@ impl TreesPage {
             |t: &TreeView, p: &[usize]| t.node(p).map(|n| n.label.clone()).unwrap_or_default();
         match a {
             TreeAction::Expand(p) => {
-                self.last = format!("Expand({})", name(t, &p));
+                push_step(&mut self.last, format!("Expand({})", name(t, &p)));
 
                 t.set_busy(&p, true);
                 self.loading = Some((p, LOAD_TICKS));
             }
             TreeAction::Activate(p) => {
-                self.last = format!("Activate({})", name(t, &p));
+                push_step(&mut self.last, format!("Activate({})", name(t, &p)));
                 cx.status(format!("Opened {}", name(t, &p)));
             }
         }
@@ -549,9 +568,7 @@ impl Page for TreesPage {
                     return Outcome::Ignored;
                 };
                 let (o, actions) = t.on_key(key).into_parts();
-                for a in actions {
-                    self.on_action(id, Some(a), cx);
-                }
+                self.on_actions(id, actions, cx);
                 o
             }
             PageEvent::Pointer(ev) if ev.is(Phase::Secondary) => {
@@ -576,9 +593,7 @@ impl Page for TreesPage {
                         cx.focus.focus(tid);
                     }
                     let (o, actions) = r.into_parts();
-                    for a in actions {
-                        self.on_action(tid, Some(a), cx);
-                    }
+                    self.on_actions(tid, actions, cx);
                     return o;
                 }
                 Outcome::Ignored
