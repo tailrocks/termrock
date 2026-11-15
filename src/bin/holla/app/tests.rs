@@ -72,7 +72,11 @@ fn plan_tab(app: &App, id: &str) -> Option<usize> {
 
 fn confirm_close_dialog(app: &mut App) {
     assert!(!app.modals.is_empty(), "the close dialog is open");
-    // Arrow keys step only over buttons the last frame placed.
+    // A button joins the focus ring only when a frame places it, and an arrow key
+    // steps over ring members. Without this draw the ring is empty and the key
+    // moves nothing, so Enter would pick the default button.
+    // The runtime draws after every input that changes the screen, so a real session
+    // never sends the arrow before the frame; the test has to supply it.
     drawn_text(app);
     app.handle_input(key(KeyCode::Right, KeyModifiers::NONE));
     app.handle_input(key(KeyCode::Enter, KeyModifiers::NONE));
@@ -335,7 +339,11 @@ fn assert_quit_body(app: &App, expected: &str) {
 }
 
 fn confirm_quit(app: &mut App) {
-    // Arrow keys step only over buttons the last frame placed.
+    // A button joins the focus ring only when a frame places it, and an arrow key
+    // steps over ring members. Without this draw the ring is empty and the key
+    // moves nothing, so Enter would pick the default button.
+    // The runtime draws after every input that changes the screen, so a real session
+    // never sends the arrow before the frame; the test has to supply it.
     drawn_text(app);
     app.handle_input(key(KeyCode::Right, KeyModifiers::NONE));
     app.handle_input(key(KeyCode::Enter, KeyModifiers::NONE));
