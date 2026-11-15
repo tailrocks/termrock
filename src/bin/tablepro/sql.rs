@@ -1882,6 +1882,23 @@ mod issue10_sql_tests {
     }
 
     #[test]
+    fn issue10_parsed_where_literal_matches_the_unescaped_value() {
+        let cat = Catalog::acme_prod();
+        let table = orders(&cat);
+        let filter = parsed_filter("SELECT * FROM orders WHERE notes = 'O''Reilly'");
+        assert!(admits(
+            table,
+            &filter,
+            &row_with(table, "notes", Value::Text("O'Reilly".into())),
+        ));
+        assert!(!admits(
+            table,
+            &filter,
+            &row_with(table, "notes", Value::Text("O''Reilly".into())),
+        ));
+    }
+
+    #[test]
     fn issue10_sql_like_and_ui_contains_remain_distinct() {
         let cat = Catalog::acme_prod();
         let table = orders(&cat);
