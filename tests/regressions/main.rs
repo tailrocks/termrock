@@ -15,3 +15,4 @@ mod pane_tree_minima;
 mod pane_tree_pointer;
 mod scroll_view_navigation;
 mod smoke;
+mod tabs_overflow_mutation;
