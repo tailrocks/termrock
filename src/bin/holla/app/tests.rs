@@ -1471,9 +1471,7 @@ fn files_find_enter_publishes_zero_duration_and_absent_index_sources() {
     assert_eq!(published(&mut absent).map(|(_, done)| done), Some(true));
 }
 
-use crate::domain::activity::{Script, ScriptLine};
-use crate::domain::context::ScopeTag;
-use crate::domain::effect::Effect;
+use crate::domain::activity::ScriptLine;
 use crate::domain::projection::{Work, work};
 
 fn settled(scenario: Scenario, history: bool) -> App {
