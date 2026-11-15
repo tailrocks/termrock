@@ -8,6 +8,7 @@ use junie_tui::widgets::chips::ChipAction;
 use junie_tui::widgets::grid::{CellEditResult, FinishEdit};
 
 use crate::tabs::{TableTab, TableViewState};
+use junie_tui::widgets::document_workspace::CloseToken;
 
 /// Shown when a second change arrives while one waits for its answer.
 pub const PENDING_NOTICE: &str = "Finish the open confirmation first";
@@ -137,6 +138,12 @@ pub(super) enum TransitionWait {
         transition: TableTransition,
         token: GridCommitToken,
     },
+    /// The user chose Save in the close prompt: the tab closes once this exact
+    /// save succeeds, under this close token.
+    Close {
+        close: CloseToken,
+        token: GridCommitToken,
+    },
 }
 
 /// Which confirmation a transition with unsaved edits opens.
@@ -166,12 +173,12 @@ impl App {
 
     /// The table a transition names, if it is still the table and view the
     /// request was made against.
-    fn transition_target(&mut self, tr: &TableTransition) -> Option<(&mut TableTab, &Catalog)> {
+    fn transition_target(&self, tr: &TableTransition) -> Option<ItemKey> {
         if tr.connection_generation != self.connection_generation {
             return None;
         }
-        let (t, cat) = self.workbench.as_mut()?.table_mut(tr.change.tab)?;
-        (t.view_revision() == tr.change.expected_view_revision).then_some((t, cat))
+        let t = self.workbench.as_ref()?.table(tr.change.tab)?;
+        (t.view_revision() == tr.change.expected_view_revision).then_some(tr.change.tab)
     }
 
     pub(super) fn request_table_change(&mut self, change: TableChange, review: Review) {
@@ -228,60 +235,85 @@ impl App {
     /// Resolves the target and finishes its editor. The flag says the editor
     /// held an edit that is now part of the draft.
     fn open_gate(&mut self, tr: &TableTransition) -> (Gate, bool) {
-        let Some((t, _)) = self.transition_target(tr) else {
+        let Some(key) = self.transition_target(tr) else {
             return (Gate::Refused(STALE_NOTICE.into()), false);
         };
-        if t.saving() {
-            return (Gate::Refused(SAVING_NOTICE.into()), false);
-        }
-        t.restore_view_controls();
-        let mut edited = false;
-        match t.grid.finish_edit_session() {
-            Err(e) => {
-                return (
-                    Gate::Refused(format!("Fix the open cell first: {e}")),
-                    false,
-                );
-            }
-            Ok(FinishEdit::Accepted {
-                result: CellEditResult::Changed,
-                ..
-            }) => {
-                t.promote();
-                edited = true;
-            }
-            Ok(_) => {}
-        }
-        let gate = if tr.change.reason != TransitionReason::Refresh && tr.change.next == *t.view() {
-            Gate::Unchanged
-        } else if t.dirty_count() == 0 {
-            Gate::Apply
-        } else {
-            Gate::Unsaved(t.dirty_count())
+        let Some(w) = self.workbench.as_mut() else {
+            return (Gate::Refused(STALE_NOTICE.into()), false);
         };
+        let gated = w.modify_table(key, |t, _| {
+            if t.saving() {
+                return (Gate::Refused(SAVING_NOTICE.into()), false);
+            }
+            t.restore_view_controls();
+            let mut edited = false;
+            match t.grid.finish_edit_session() {
+                Err(e) => {
+                    return (
+                        Gate::Refused(format!("Fix the open cell first: {e}")),
+                        false,
+                    );
+                }
+                Ok(FinishEdit::Accepted {
+                    result: CellEditResult::Changed,
+                    ..
+                }) => edited = true,
+                Ok(_) => {}
+            }
+            let gate =
+                if tr.change.reason != TransitionReason::Refresh && tr.change.next == *t.view() {
+                    Gate::Unchanged
+                } else if t.dirty_count() == 0 {
+                    Gate::Apply
+                } else {
+                    Gate::Unsaved(t.dirty_count())
+                };
+            (gate, edited)
+        });
+        let Some((gate, edited)) = gated else {
+            let notice = if w.ws.save_locked(key) {
+                SAVING_NOTICE
+            } else {
+                STALE_NOTICE
+            };
+            return (Gate::Refused(notice.into()), false);
+        };
+        if edited {
+            let resp = w.ws.promote(key);
+            let _ = w.settle(resp);
+        }
         (gate, edited)
     }
 
     /// Reads the next view, then installs it and the rows together. A failure at
     /// either step leaves the rows, the draft and the controls as they were.
     fn apply_transition(&mut self, tr: &TableTransition) -> Result<Option<String>, String> {
-        let Some((t, cat)) = self.transition_target(tr) else {
+        let Some(key) = self.transition_target(tr) else {
+            return Err(STALE_NOTICE.into());
+        };
+        let Some(w) = self.workbench.as_mut() else {
             return Err(STALE_NOTICE.into());
         };
         let next = tr.change.next.clone();
-        let loaded = t
-            .prepare_load(cat, &next)
-            .map_err(|e| format!("Cannot load the rows: {} · nothing was changed", e.message))?;
-        t.install_load(loaded, next).map_err(|e| match e {
-            junie_tui::widgets::grid::GridDataError::Busy => SAVING_NOTICE.to_owned(),
-            other => format!("Cannot install the rows: {other} · nothing was changed"),
-        })?;
+        let applied = w.modify_table(key, |t, cat| -> Result<(), String> {
+            let loaded = t.prepare_load(cat, &next).map_err(|e| {
+                format!("Cannot load the rows: {} · nothing was changed", e.message)
+            })?;
+            t.install_load(loaded, next).map_err(|e| match e {
+                junie_tui::widgets::grid::GridDataError::Busy => SAVING_NOTICE.to_owned(),
+                other => format!("Cannot install the rows: {other} · nothing was changed"),
+            })
+        });
+        match applied {
+            Some(result) => result?,
+            None if w.ws.save_locked(key) => return Err(SAVING_NOTICE.into()),
+            None => return Err(STALE_NOTICE.into()),
+        }
         if tr.change.reason == TransitionReason::Filters {
-            t.promote();
+            let resp = w.ws.promote(key);
+            let _ = w.settle(resp);
         }
-        if let Some(w) = self.workbench.as_mut() {
-            w.sync_strip();
-        }
+        w.sync_strip();
         Ok(tr.change.notice.clone())
     }
 
@@ -344,6 +376,24 @@ impl App {
         }
     }
 
+    /// The close token a save waits to complete, without taking it.
+    pub(super) fn close_wait(&self, token: GridCommitToken) -> Option<CloseToken> {
+        match &self.transition_wait {
+            Some(TransitionWait::Close {
+                close,
+                token: waiting,
+            }) if *waiting == token => Some(*close),
+            _ => None,
+        }
+    }
+
+    /// The close a save waits for, taken so the save's end retires the wait.
+    pub(super) fn take_close_wait(&mut self, token: GridCommitToken) -> Option<CloseToken> {
+        let close = self.close_wait(token)?;
+        self.transition_wait = None;
+        Some(close)
+    }
+
     /// Runs the transition a successful save was waiting for and reports both.
     pub(super) fn finish_save_transition(&mut self, saved: &str, tr: &TableTransition) {
         match self.apply_transition(tr) {
@@ -402,9 +452,8 @@ impl App {
         let stale = target.connection_generation != self.connection_generation;
         let found = self
             .workbench
-            .as_mut()
-            .and_then(|w| w.table_mut(target.tab))
-            .map(|(t, _)| t)
+            .as_ref()
+            .and_then(|w| w.table(target.tab))
             .filter(|t| !stale && t.view_revision() == target.view_revision);
         let Some(t) = found else {
             self.set_status_as(

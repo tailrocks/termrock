@@ -4,6 +4,7 @@
 
 use super::*;
 use junie_tui::core::event::Key;
+use junie_tui::widgets::document_workspace::CloseDecision;
 use junie_tui::widgets::grid::{CellEditResult, GridChangeSet, GridRevision, PendingChanges};
 use junie_tui::widgets::table::SortDir;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
@@ -24,15 +25,38 @@ fn connected() -> App {
 
 fn open(app: &mut App, table: &str, preview: bool) -> ItemKey {
     let w = app.workbench.as_mut().expect("connected");
-    let i = w.open_table("public", table, preview).expect("opens");
-    w.tabs[i].key()
+    w.open_table("public", table, preview).expect("opens")
 }
 
-fn tab(app: &mut App, key: ItemKey) -> &mut TableTab {
-    match app.workbench.as_mut().and_then(|w| w.tab_mut(key)) {
-        Some(WorkTab::Table(t)) => t,
-        _ => panic!("{key:?} is a table tab"),
+fn tab(app: &App, key: ItemKey) -> &TableTab {
+    app.workbench
+        .as_ref()
+        .and_then(|w| w.table(key))
+        .unwrap_or_else(|| panic!("{key:?} is a table tab"))
+}
+
+/// Mutates a table the way the app does, through the workspace's gateway.
+fn with_tab<R>(app: &mut App, key: ItemKey, f: impl FnOnce(&mut TableTab) -> R) -> R {
+    app.workbench
+        .as_mut()
+        .and_then(|w| w.modify_table(key, |t, _| f(t)))
+        .unwrap_or_else(|| panic!("{key:?} is a table tab no save holds"))
+}
+
+/// Closes `key` the way a confirmed Discard does.
+fn force_close(app: &mut App, key: ItemKey) {
+    let w = app.workbench.as_mut().expect("connected");
+    for token in w.request_close(key).expect("the tab may close") {
+        let resp =
+            w.ws.resolve_close(token, CloseDecision::Discard)
+                .expect("a fresh token");
+        let _ = w.settle(resp);
     }
+    assert!(w.tab(key).is_none(), "the tab closed");
+}
+
+fn is_preview(app: &App, key: ItemKey) -> bool {
+    app.workbench.as_ref().expect("connected").is_preview(key)
 }
 
 fn press(app: &mut App, code: KeyCode) {
@@ -79,9 +103,11 @@ fn filter(column: &str, value: &str, enabled: bool) -> Filter {
 /// Shows `view` on a clean table the way a finished transition does.
 fn show(app: &mut App, key: ItemKey, view: TableViewState) {
     let w = app.workbench.as_mut().expect("connected");
-    let (t, cat) = w.table_mut(key).expect("a table");
-    let loaded = t.prepare_load(cat, &view).expect("the view reads");
-    t.install_load(loaded, view).expect("installs");
+    w.modify_table(key, |t, cat| {
+        let loaded = t.prepare_load(cat, &view).expect("the view reads");
+        t.install_load(loaded, view).expect("installs");
+    })
+    .expect("a table");
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -92,19 +118,21 @@ enum Draft {
 }
 
 fn stage(app: &mut App, key: ItemKey, draft: Draft) {
-    let g = &mut tab(app, key).grid;
-    match draft {
-        Draft::Update => {
-            g.record_cell(0, NAME, CellValue::Text("staged".into()))
-                .expect("edit");
+    with_tab(app, key, |t| {
+        let g = &mut t.grid;
+        match draft {
+            Draft::Update => {
+                g.record_cell(0, NAME, CellValue::Text("staged".into()))
+                    .expect("edit");
+            }
+            Draft::Insert => {
+                g.insert_row().expect("insert");
+            }
+            Draft::Delete => {
+                g.toggle_delete(0).expect("delete");
+            }
         }
-        Draft::Insert => {
-            g.insert_row().expect("insert");
-        }
-        Draft::Delete => {
-            g.toggle_delete(0).expect("delete");
-        }
-    }
+    });
 }
 
 #[derive(Debug, PartialEq)]
@@ -154,9 +182,7 @@ fn answer_guard(app: &mut App, action: usize) {
 }
 
 fn activate(app: &mut App, key: ItemKey) {
-    let w = app.workbench.as_mut().expect("connected");
-    let index = w.tabs.iter().position(|t| t.key() == key).expect("open");
-    w.set_active(index);
+    assert!(app.workbench.as_mut().expect("connected").activate(key));
 }
 
 /// Every gesture that asks for a new view, driven the way a user drives it.
@@ -195,7 +221,7 @@ fn do_gesture(app: &mut App, key: ItemKey, gesture: Gesture) {
     match gesture {
         Gesture::SortKey => {
             focus_grid(app, key);
-            tab(app, key).grid.cursor = (0, NAME);
+            with_tab(app, key, |t| t.grid.cursor = (0, NAME));
             press(app, KeyCode::Char('s'));
         }
         Gesture::RefreshKey => {
@@ -266,13 +292,13 @@ fn issue12_sort_with_pending_edit_discard_installs_view_and_rows_once() {
     let mut app = connected();
     let key = open(&mut app, "products", false);
     stage(&mut app, key, Draft::Update);
-    let revision = tab(&mut app, key).view_revision();
+    let revision = tab(&app, key).view_revision();
 
     do_gesture(&mut app, key, Gesture::SortKey);
-    assert_eq!(tab(&mut app, key).view_revision(), revision);
+    assert_eq!(tab(&app, key).view_revision(), revision);
     answer_guard(&mut app, 1);
 
-    let t = tab(&mut app, key);
+    let t = tab(&app, key);
     assert_eq!(t.view_revision(), revision + 1, "one install");
     assert_eq!(t.view().sort, Some((NAME, SortDir::Asc)));
     assert_eq!(t.grid.sort, t.view().sort, "the marker follows the view");
@@ -289,7 +315,7 @@ fn issue12_clean_table_transitions_without_asking() {
     let key = open(&mut app, "products", false);
     do_gesture(&mut app, key, Gesture::SortKey);
     assert!(!guard_open(&mut app));
-    assert_eq!(tab(&mut app, key).view().sort, Some((NAME, SortDir::Asc)));
+    assert_eq!(tab(&app, key).view().sort, Some((NAME, SortDir::Asc)));
 }
 
 #[test]
@@ -303,7 +329,7 @@ fn issue12_discard_prepares_before_mutating() {
     let mut broken = two_filters();
     broken.filters.push(filter("no_such_column", "x", true));
     let change = {
-        let t = tab(&mut app, key);
+        let t = tab(&app, key);
         TableChange::filters(t, broken, None)
     };
     app.request_table_change(change, Review::Guard);
@@ -323,7 +349,7 @@ fn issue12_discard_prepares_before_mutating() {
 
     do_gesture(&mut app, key, Gesture::ChipClearAll);
     answer_guard(&mut app, 1);
-    let t = tab(&mut app, key);
+    let t = tab(&app, key);
     assert_eq!(t.view_revision(), before.view_revision + 1);
     assert!(t.view().filters.is_empty());
     assert!(t.grid.pending().is_empty());
@@ -337,20 +363,22 @@ fn issue12_install_rejection_after_prepare_preserves_draft() {
     let before = checkpoint(&mut app, key);
 
     let w = app.workbench.as_mut().expect("connected");
-    let (t, cat) = w.table_mut(key).expect("a table");
-    let mut next = t.view().clone();
-    next.sort = Some((NAME, SortDir::Desc));
-    let loaded = t.prepare_load(cat, &next).expect("the view reads");
-    let snapshot = t.grid.snapshot_changes();
-    let token = t.grid.begin_submission(snapshot).expect("locks");
-    assert_eq!(
-        t.install_load(loaded, next),
-        Err(junie_tui::widgets::grid::GridDataError::Busy)
-    );
-    t.grid.cancel_submission(token).expect("unlocks");
+    w.modify_table(key, |t, cat| {
+        let mut next = t.view().clone();
+        next.sort = Some((NAME, SortDir::Desc));
+        let loaded = t.prepare_load(cat, &next).expect("the view reads");
+        let snapshot = t.grid.snapshot_changes();
+        let token = t.grid.begin_submission(snapshot).expect("locks");
+        assert_eq!(
+            t.install_load(loaded, next),
+            Err(junie_tui::widgets::grid::GridDataError::Busy)
+        );
+        t.grid.cancel_submission(token).expect("unlocks");
+    })
+    .expect("a table");
 
     assert_eq!(checkpoint(&mut app, key), before);
-    assert!(!tab(&mut app, key).grid.is_editing());
+    assert!(!tab(&app, key).grid.is_editing());
 }
 
 #[test]
@@ -381,7 +409,7 @@ fn issue12_second_request_while_reviewing_is_refused() {
     assert!(guard_open(&mut app));
 
     let change = {
-        let t = tab(&mut app, key);
+        let t = tab(&app, key);
         TableChange::sort(t, Some((1, SortDir::Desc)))
     };
     app.request_table_change(change, Review::Guard);
@@ -389,7 +417,7 @@ fn issue12_second_request_while_reviewing_is_refused() {
 
     answer_guard(&mut app, 1);
     assert_eq!(
-        tab(&mut app, key).view().sort,
+        tab(&app, key).view().sort,
         Some((NAME, SortDir::Asc)),
         "the reviewed destination was kept"
     );
@@ -416,7 +444,7 @@ fn issue12_save_then_transition_uses_request_owner() {
         app.advance();
     }
 
-    let t = tab(&mut app, a);
+    let t = tab(&app, a);
     assert!(t.grid.pending().is_empty(), "A saved");
     assert_eq!(
         t.view().sort,
@@ -477,39 +505,39 @@ fn issue12_save_refused_keeps_draft_and_drops_the_transition() {
 fn issue12_dirty_preview_promotes_and_survives() {
     let mut app = connected();
     let a = open(&mut app, "products", true);
-    assert!(tab(&mut app, a).preview);
+    assert!(is_preview(&app, a));
     focus_grid(&mut app, a);
-    tab(&mut app, a).grid.cursor = (0, NAME);
+    with_tab(&mut app, a, |t| t.grid.cursor = (0, NAME));
 
     press(&mut app, KeyCode::Enter);
     press(&mut app, KeyCode::Enter);
     assert!(
-        tab(&mut app, a).preview,
+        is_preview(&app, a),
         "an edit that changes nothing does not promote"
     );
-    assert_eq!(tab(&mut app, a).dirty_count(), 0);
+    assert_eq!(tab(&app, a).dirty_count(), 0);
 
     press(&mut app, KeyCode::Enter);
     type_str(&mut app, "x");
     press(&mut app, KeyCode::Enter);
-    assert_eq!(tab(&mut app, a).dirty_count(), 1);
-    assert!(!tab(&mut app, a).preview, "the first real edit promotes");
+    assert_eq!(tab(&app, a).dirty_count(), 1);
+    assert!(!is_preview(&app, a), "the first real edit promotes");
 
     let b = open(&mut app, "customers", true);
     assert_ne!(a, b, "the new preview is a new key");
-    let t = tab(&mut app, a);
+    let t = tab(&app, a);
     assert_eq!(t.dirty_count(), 1, "A keeps its draft");
-    assert!(!t.preview);
-    assert!(tab(&mut app, b).preview);
+    assert!(!is_preview(&app, a));
+    assert!(is_preview(&app, b));
 
-    tab(&mut app, a).grid.discard().expect("discards");
-    assert!(!tab(&mut app, a).preview, "promotion outlives the draft");
+    with_tab(&mut app, a, |t| t.grid.discard().expect("discards"));
+    assert!(!is_preview(&app, a), "promotion outlives the draft");
 
     let c = open(&mut app, "orders", true);
     assert_ne!(c, b, "a clean preview is replaced by a new key");
-    let w = app.workbench.as_mut().expect("connected");
-    assert!(w.tab_mut(b).is_none(), "the clean preview was replaced");
-    assert!(w.tab_mut(a).is_some());
+    let w = app.workbench.as_ref().expect("connected");
+    assert!(w.tab(b).is_none(), "the clean preview was replaced");
+    assert!(w.tab(a).is_some());
 }
 
 #[test]
@@ -517,27 +545,30 @@ fn issue12_open_table_never_replaces_a_dirty_preview() {
     let mut app = connected();
     let a = open(&mut app, "products", true);
     stage(&mut app, a, Draft::Update);
-    assert!(tab(&mut app, a).preview, "staged without a UI edit event");
+    assert!(
+        !is_preview(&app, a),
+        "the workspace promotes a preview the moment a mutation leaves it dirty"
+    );
 
     let b = open(&mut app, "customers", true);
 
     assert_ne!(a, b);
-    assert_eq!(tab(&mut app, a).dirty_count(), 1, "the draft survived");
-    assert!(!tab(&mut app, a).preview, "the dirty preview was promoted");
-    assert!(tab(&mut app, b).preview);
+    assert_eq!(tab(&app, a).dirty_count(), 1, "the draft survived");
+    assert!(!is_preview(&app, a), "the dirty preview stays pinned");
+    assert!(is_preview(&app, b));
 }
 
 #[test]
 fn issue12_read_only_refusal_does_not_promote() {
     let mut app = connected();
     let a = open(&mut app, "products", true);
-    tab(&mut app, a).grid.editable = false;
+    with_tab(&mut app, a, |t| t.grid.editable = false);
     focus_grid(&mut app, a);
-    tab(&mut app, a).grid.cursor = (0, NAME);
+    with_tab(&mut app, a, |t| t.grid.cursor = (0, NAME));
     press(&mut app, KeyCode::Enter);
     type_str(&mut app, "x");
     press(&mut app, KeyCode::Enter);
-    assert!(tab(&mut app, a).preview);
+    assert!(is_preview(&app, a));
 }
 
 #[test]
@@ -562,9 +593,7 @@ fn issue12_filter_modal_stale_owner_rejected() {
 
     // The tab closes and the table reopens: the answer cannot find it.
     app.act(Act::EditFilter(None));
-    let w = app.workbench.as_mut().expect("connected");
-    let index = w.tabs.iter().position(|t| t.key() == a).expect("open");
-    assert!(w.close_tab(index));
+    force_close(&mut app, a);
     let b = open(&mut app, "products", false);
     assert_ne!(a, b);
     let b_before = checkpoint(&mut app, b);
@@ -600,7 +629,7 @@ fn issue12_filter_answer_applies_to_the_table_it_was_opened_on() {
 
     app.apply_filter(None, filter("name", "a", true));
 
-    assert_eq!(tab(&mut app, a).view().filters.len(), 1, "A got the filter");
+    assert_eq!(tab(&app, a).view().filters.len(), 1, "A got the filter");
     assert_eq!(checkpoint(&mut app, b), b_before, "B did not");
 }
 
@@ -617,24 +646,23 @@ fn issue12_equal_view_finishes_editor_without_reload() {
         },
     );
     focus_grid(&mut app, key);
-    {
-        let g = &mut tab(&mut app, key).grid;
-        g.cursor = (0, NAME);
-        let _ = g.begin_edit();
-    }
+    with_tab(&mut app, key, |t| {
+        t.grid.cursor = (0, NAME);
+        let _ = t.grid.begin_edit();
+    });
     type_str(&mut app, "live");
     let (view_revision, source) = {
-        let t = tab(&mut app, key);
+        let t = tab(&app, key);
         (t.view_revision(), t.grid.revision().source)
     };
 
     let change = {
-        let t = tab(&mut app, key);
+        let t = tab(&app, key);
         TableChange::sort(t, Some((NAME, SortDir::Asc)))
     };
     app.request_table_change(change, Review::Guard);
 
-    let t = tab(&mut app, key);
+    let t = tab(&app, key);
     assert!(!t.grid.is_editing(), "the valid edit was recorded");
     assert_eq!(t.grid.pending().total(), 1, "recorded once");
     assert_eq!(t.view_revision(), view_revision, "no view was installed");
@@ -642,7 +670,7 @@ fn issue12_equal_view_finishes_editor_without_reload() {
     assert!(!guard_open(&mut app), "no leave dialog");
     assert!(app.layers.is_empty());
     assert_eq!(
-        tab(&mut app, key).grid.value(0, NAME),
+        tab(&app, key).grid.value(0, NAME),
         &CellValue::Text("Cable traylive".into())
     );
 }
@@ -652,22 +680,22 @@ fn issue12_invalid_live_edit_stops_the_request_and_stays_open() {
     let mut app = connected();
     let key = open(&mut app, "products", false);
     focus_grid(&mut app, key);
-    {
-        let g = &mut tab(&mut app, key).grid;
+    with_tab(&mut app, key, |t| {
+        let g = &mut t.grid;
         g.validator = junie_tui::widgets::grid::cell_validator(|_, _| Err("no".to_owned()));
         g.cursor = (0, NAME);
         let _ = g.begin_edit();
-    }
+    });
     type_str(&mut app, "bad");
-    let revision = tab(&mut app, key).view_revision();
+    let revision = tab(&app, key).view_revision();
 
     let change = {
-        let t = tab(&mut app, key);
+        let t = tab(&app, key);
         TableChange::sort(t, Some((NAME, SortDir::Asc)))
     };
     app.request_table_change(change, Review::Guard);
 
-    let t = tab(&mut app, key);
+    let t = tab(&app, key);
     assert!(t.grid.is_editing(), "the input is kept");
     assert_eq!(t.view_revision(), revision);
     assert!(!guard_open(&mut app));
@@ -756,7 +784,7 @@ fn issue12_pointer_sort_and_match_mode_ask_before_replacing_a_draft() {
     let before = checkpoint(&mut app, key);
     draw(&mut app);
 
-    let header = tab(&mut app, key).grid.header_id(NAME);
+    let header = tab(&app, key).grid.header_id(NAME);
     click_widget(&mut app, header);
     assert!(
         guard_open(&mut app),
@@ -768,7 +796,7 @@ fn issue12_pointer_sort_and_match_mode_ask_before_replacing_a_draft() {
     assert_eq!(checkpoint(&mut app, key), before, "Cancel keeps the draft");
 
     draw(&mut app);
-    let lead = tab(&mut app, key).chips.lead_id();
+    let lead = tab(&app, key).chips.lead_id();
     click_widget(&mut app, lead);
     assert!(
         guard_open(&mut app),
@@ -777,7 +805,7 @@ fn issue12_pointer_sort_and_match_mode_ask_before_replacing_a_draft() {
     );
     assert_eq!(checkpoint(&mut app, key), before);
     answer_guard(&mut app, 1);
-    let t = tab(&mut app, key);
+    let t = tab(&app, key);
     assert!(!t.view().match_all, "Discard installed the new match mode");
     assert!(t.grid.pending().is_empty());
 }

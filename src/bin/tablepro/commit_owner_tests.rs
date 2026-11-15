@@ -4,12 +4,13 @@
 
 use super::*;
 use junie_tui::core::event::Key;
+use junie_tui::widgets::document_workspace::CloseDecision;
 use junie_tui::widgets::grid::{CellEditResult, FinishEdit, GridEditError, cell_validator};
 
 const PRODUCT_NAME: usize = 2;
 const CUSTOMER_NAME: usize = 3;
 
-fn app_with_two_tables() -> (App, usize, usize) {
+fn app_with_two_tables() -> (App, ItemKey, ItemKey) {
     let mut app = App::new(Theme::junie());
     let key = app
         .connections
@@ -22,19 +23,34 @@ fn app_with_two_tables() -> (App, usize, usize) {
     (app, products, customers)
 }
 
-fn grid_at(app: &mut App, index: usize) -> &mut DataGrid {
-    match app.workbench.as_mut().and_then(|w| w.tabs.get_mut(index)) {
-        Some(WorkTab::Table(t)) => &mut t.grid,
-        _ => panic!("tab {index} is a table"),
+fn with_grid<R>(app: &mut App, key: ItemKey, f: impl FnOnce(&mut DataGrid) -> R) -> R {
+    app.workbench
+        .as_mut()
+        .and_then(|w| w.modify_table(key, |t, _| f(&mut t.grid)))
+        .expect("a table tab that no save holds")
+}
+
+fn edit(app: &mut App, key: ItemKey, col: usize, to: &str) {
+    let _ = with_grid(app, key, |g| {
+        g.record_cell(0, col, CellValue::Text(to.into()))
+    });
+}
+
+/// Closes `key` the way a confirmed Discard does: a close request, then its
+/// token resolved.
+fn force_close(app: &mut App, key: ItemKey) {
+    let w = app.workbench.as_mut().expect("connected");
+    for token in w.request_close(key).expect("the tab may close") {
+        let resp =
+            w.ws.resolve_close(token, CloseDecision::Discard)
+                .expect("a fresh token");
+        let _ = w.settle(resp);
     }
+    assert!(w.tab(key).is_none(), "the tab closed");
 }
 
-fn edit(app: &mut App, index: usize, col: usize, to: &str) {
-    let _ = grid_at(app, index).record_cell(0, col, CellValue::Text(to.into()));
-}
-
-fn activate(app: &mut App, index: usize) {
-    app.workbench.as_mut().expect("connected").set_active(index);
+fn activate(app: &mut App, key: ItemKey) {
+    assert!(app.workbench.as_mut().expect("connected").activate(key));
 }
 
 fn confirm(app: &mut App) {
@@ -97,9 +113,12 @@ fn issue11_save_completion_targets_submitted_tab() {
     activate(&mut app, customers);
     ticks(&mut app, 5);
 
-    assert!(grid_at(&mut app, products).pending().is_empty(), "A saved");
+    assert!(
+        with_grid(&mut app, products, |g| g.pending().is_empty()),
+        "A saved"
+    );
     assert_eq!(
-        grid_at(&mut app, customers).pending().total(),
+        with_grid(&mut app, customers, |g| g.pending().total()),
         1,
         "the active tab's draft was not saved or discarded"
     );
@@ -131,7 +150,7 @@ fn issue11_edit_after_review_cannot_expand_the_save() {
     );
     assert_eq!(reviewed.len(), 1);
     assert!(
-        grid_at(&mut app, products).pending().is_empty(),
+        with_grid(&mut app, products, |g| g.pending().is_empty()),
         "nothing outside the review was left behind"
     );
 }
@@ -143,18 +162,19 @@ fn issue11_close_target_while_submitted_is_refused() {
     activate(&mut app, products);
     app.begin_commit();
     confirm(&mut app);
-    let open = app.workbench.as_ref().expect("connected").tabs.len();
+    let open = app.workbench.as_ref().expect("connected").tab_count();
 
-    app.dialog_closed(CLOSE_DIALOG.child(products), DialogResult::Action(1));
+    app.request_close_tab(products);
     assert_eq!(
-        app.workbench.as_ref().expect("connected").tabs.len(),
+        app.workbench.as_ref().expect("connected").tab_count(),
         open,
         "the saving tab stays open"
     );
+    assert_eq!(status(&app), SAVING_NOTICE, "{}", status(&app));
 
     activate(&mut app, customers);
     ticks(&mut app, 5);
-    assert!(grid_at(&mut app, products).pending().is_empty());
+    assert!(with_grid(&mut app, products, |g| g.pending().is_empty()));
     assert_eq!(saved_sql(&app).len(), 1);
 }
 
@@ -177,7 +197,7 @@ fn issue11_stale_connection_and_request_ignored() {
     ticks(&mut app, 8);
 
     assert_eq!(
-        grid_at(&mut app, fresh).pending().total(),
+        with_grid(&mut app, fresh, |g| g.pending().total()),
         1,
         "the old save never touched the new connection's draft"
     );
@@ -192,11 +212,15 @@ fn issue11_review_cancel_unlocks_and_keeps_the_draft() {
     activate(&mut app, products);
     app.begin_commit();
     assert!(
-        grid_at(&mut app, products).submission_pending(),
+        with_grid(&mut app, products, |g| g.submission_pending()),
         "review locks"
     );
     assert_eq!(
-        grid_at(&mut app, products).record_cell(0, 1, CellValue::Text("x".into())),
+        with_grid(&mut app, products, |g| g.record_cell(
+            0,
+            1,
+            CellValue::Text("x".into())
+        )),
         Err(GridEditError::Busy)
     );
 
@@ -209,11 +233,18 @@ fn issue11_review_cancel_unlocks_and_keeps_the_draft() {
 
     app.dialog_closed(COMMIT_DIALOG, DialogResult::Cancelled);
     assert!(app.commit.is_none());
-    let g = grid_at(&mut app, products);
-    assert!(!g.submission_pending());
-    assert_eq!(g.pending().total(), 1, "the draft was not lost");
+    assert!(!with_grid(&mut app, products, |g| g.submission_pending()));
     assert_eq!(
-        g.record_cell(0, 1, CellValue::Text("again".into())),
+        with_grid(&mut app, products, |g| g.pending().total()),
+        1,
+        "the draft was not lost"
+    );
+    assert_eq!(
+        with_grid(&mut app, products, |g| g.record_cell(
+            0,
+            1,
+            CellValue::Text("again".into())
+        )),
         Ok(CellEditResult::Changed)
     );
     ticks(&mut app, 8);
@@ -230,42 +261,44 @@ fn issue11_unrelated_tab_stays_editable_while_saving() {
 
     activate(&mut app, customers);
     assert_eq!(
-        grid_at(&mut app, customers).record_cell(0, CUSTOMER_NAME, CellValue::Text("free".into())),
+        with_grid(&mut app, customers, |g| g.record_cell(
+            0,
+            CUSTOMER_NAME,
+            CellValue::Text("free".into())
+        )),
         Ok(CellEditResult::Changed)
     );
     ticks(&mut app, 5);
-    assert_eq!(grid_at(&mut app, customers).pending().total(), 1);
+    assert_eq!(with_grid(&mut app, customers, |g| g.pending().total()), 1);
 }
 
 #[test]
 fn issue11_close_reopen_never_reuses_target() {
     let (mut app, products, customers) = app_with_two_tables();
-    let w = app.workbench.as_mut().expect("connected");
-    let key_products = w.tabs[products].key();
-    let key_customers = w.tabs[customers].key();
+    let (key_products, key_customers) = (products, customers);
     assert_ne!(key_products, key_customers);
+    let w = app.workbench.as_ref().expect("connected");
     let ids: Vec<WidgetId> = w
-        .tabs
-        .iter()
+        .tabs()
         .filter_map(|t| match t {
             WorkTab::Table(t) => Some(t.id),
             _ => None,
         })
         .collect();
 
-    assert!(w.close_tab(products));
+    force_close(&mut app, products);
+    let w = app.workbench.as_mut().expect("connected");
     assert!(
-        w.tab_mut(key_products).is_none(),
+        w.tab(key_products).is_none(),
         "the closed key resolves nothing"
     );
-    let reopened = w.open_table("public", "products", false).expect("opens");
-    let key_reopened = w.tabs[reopened].key();
+    let key_reopened = w.open_table("public", "products", false).expect("opens");
     assert_ne!(
         key_reopened, key_products,
         "a reopened table is a new document"
     );
     assert_ne!(key_reopened, key_customers);
-    let WorkTab::Table(t) = &w.tabs[reopened] else {
+    let Some(WorkTab::Table(t)) = w.tab(key_reopened) else {
         panic!("a table tab");
     };
     assert!(
@@ -273,10 +306,7 @@ fn issue11_close_reopen_never_reuses_target() {
         "its render id collides with no earlier tab"
     );
     assert_eq!(w.active_key(), Some(key_reopened));
-    assert!(
-        w.tab_mut(key_customers).is_some(),
-        "other tabs keep their keys"
-    );
+    assert!(w.tab(key_customers).is_some(), "other tabs keep their keys");
 }
 
 #[test]
@@ -286,24 +316,30 @@ fn issue11_stale_completion_after_close_reopen_has_no_effect() {
     activate(&mut app, products);
     app.begin_commit();
     confirm(&mut app);
-    let Some(CommitState::Submitted { request, token, .. }) = app.commit.clone() else {
+    let Some(CommitState::Submitted {
+        request,
+        token,
+        operation,
+        ..
+    }) = app.commit.clone()
+    else {
         panic!("the save is submitted");
     };
 
     app.commit = None;
-    grid_at(&mut app, products)
-        .cancel_submission(token)
-        .expect("the lock is released");
+    with_grid(&mut app, products, |g| {
+        g.cancel_submission(token).expect("the lock is released")
+    });
+    force_close(&mut app, products);
     let w = app.workbench.as_mut().expect("connected");
-    assert!(w.close_tab(products));
     let reopened = w.open_table("public", "products", false).expect("opens");
     edit(&mut app, reopened, PRODUCT_NAME, "new document");
     let history = app.history.entries.len();
     let note = status(&app);
 
-    app.complete_commit(request, token);
+    app.complete_commit(request, token, operation);
 
-    assert_eq!(grid_at(&mut app, reopened).pending().total(), 1);
+    assert_eq!(with_grid(&mut app, reopened, |g| g.pending().total()), 1);
     assert_eq!(
         app.history.entries.len(),
         history,
@@ -319,22 +355,28 @@ fn issue11_duplicate_completion_has_no_second_effect() {
     activate(&mut app, products);
     app.begin_commit();
     confirm(&mut app);
-    let Some(CommitState::Submitted { request, token, .. }) = app.commit.clone() else {
+    let Some(CommitState::Submitted {
+        request,
+        token,
+        operation,
+        ..
+    }) = app.commit.clone()
+    else {
         panic!("the save is submitted");
     };
     ticks(&mut app, 5);
     let (history, note, revision) = (
         app.history.entries.len(),
         status(&app),
-        grid_at(&mut app, products).revision(),
+        with_grid(&mut app, products, |g| g.revision()),
     );
     assert!(note.starts_with("Saved"), "{note}");
 
-    app.complete_commit(request, token);
+    app.complete_commit(request, token, operation);
 
     assert_eq!(app.history.entries.len(), history);
     assert_eq!(status(&app), note);
-    assert_eq!(grid_at(&mut app, products).revision(), revision);
+    assert_eq!(with_grid(&mut app, products, |g| g.revision()), revision);
 }
 
 #[test]
@@ -350,15 +392,17 @@ fn issue11_invalid_receipt_keeps_the_lock_until_cancelled() {
     let mut broken = request.changes.identity_receipt();
     broken.rows.clear();
 
-    let outcome = grid_at(&mut app, products).complete_submission(token, Ok(broken));
+    let outcome = with_grid(&mut app, products, |g| {
+        g.complete_submission(token, Ok(broken))
+    });
     assert!(outcome.is_err());
     app.commit_failed_receipt(request, token, "missing rows".into());
 
     assert!(
-        grid_at(&mut app, products).submission_pending(),
+        with_grid(&mut app, products, |g| g.submission_pending()),
         "still locked"
     );
-    assert_eq!(grid_at(&mut app, products).pending().total(), 1);
+    assert_eq!(with_grid(&mut app, products, |g| g.pending().total()), 1);
     ticks(&mut app, 8);
     assert!(saved_sql(&app).is_empty(), "no ticking and no save");
     assert!(
@@ -368,9 +412,9 @@ fn issue11_invalid_receipt_keeps_the_lock_until_cancelled() {
 
     app.dialog_closed(COMMIT_FAILED_DIALOG, DialogResult::Cancelled);
     assert!(app.commit.is_none());
-    assert!(!grid_at(&mut app, products).submission_pending());
+    assert!(!with_grid(&mut app, products, |g| g.submission_pending()));
     assert_eq!(
-        grid_at(&mut app, products).pending().total(),
+        with_grid(&mut app, products, |g| g.pending().total()),
         1,
         "draft retained"
     );
@@ -382,20 +426,21 @@ fn issue11_save_finishes_live_editor_once() {
     activate(&mut app, products);
     let parsed = std::rc::Rc::new(std::cell::Cell::new(0));
     let seen = parsed.clone();
-    let g = grid_at(&mut app, products);
-    g.validator = cell_validator(move |spec, text| {
-        seen.set(seen.get() + 1);
-        junie_tui::widgets::grid::default_validator(spec, text)
-    });
-    g.cursor = (0, PRODUCT_NAME);
-    let _ = g.begin_edit();
-    for c in "-live".chars() {
-        let _ = g.on_key(&Key {
-            code: ratatui::crossterm::event::KeyCode::Char(c),
-            mods: ratatui::crossterm::event::KeyModifiers::NONE,
+    with_grid(&mut app, products, |g| {
+        g.validator = cell_validator(move |spec, text| {
+            seen.set(seen.get() + 1);
+            junie_tui::widgets::grid::default_validator(spec, text)
         });
-    }
-    assert!(g.is_editing());
+        g.cursor = (0, PRODUCT_NAME);
+        let _ = g.begin_edit();
+        for c in "-live".chars() {
+            let _ = g.on_key(&Key {
+                code: ratatui::crossterm::event::KeyCode::Char(c),
+                mods: ratatui::crossterm::event::KeyModifiers::NONE,
+            });
+        }
+        assert!(g.is_editing());
+    });
     assert_eq!(parsed.get(), 0);
 
     app.begin_commit();
@@ -407,10 +452,10 @@ fn issue11_save_finishes_live_editor_once() {
     );
     let sql = reviewed_sql(&app);
     assert!(sql[0].contains("-live"), "{}", sql[0]);
-    assert!(!grid_at(&mut app, products).is_editing());
-    assert!(grid_at(&mut app, products).submission_pending());
+    assert!(!with_grid(&mut app, products, |g| g.is_editing()));
+    assert!(with_grid(&mut app, products, |g| g.submission_pending()));
     assert_eq!(
-        grid_at(&mut app, products).finish_edit_session(),
+        with_grid(&mut app, products, |g| g.finish_edit_session()),
         Ok(FinishEdit::NoSession)
     );
 }
@@ -419,13 +464,14 @@ fn issue11_save_finishes_live_editor_once() {
 fn issue11_rejected_live_editor_stops_the_review() {
     let (mut app, products, _) = app_with_two_tables();
     activate(&mut app, products);
-    let g = grid_at(&mut app, products);
-    g.validator = cell_validator(|_, _| Err("no".to_owned()));
-    g.cursor = (0, PRODUCT_NAME);
-    let _ = g.begin_edit();
-    let _ = g.on_key(&Key {
-        code: ratatui::crossterm::event::KeyCode::Char('x'),
-        mods: ratatui::crossterm::event::KeyModifiers::NONE,
+    with_grid(&mut app, products, |g| {
+        g.validator = cell_validator(|_, _| Err("no".to_owned()));
+        g.cursor = (0, PRODUCT_NAME);
+        let _ = g.begin_edit();
+        let _ = g.on_key(&Key {
+            code: ratatui::crossterm::event::KeyCode::Char('x'),
+            mods: ratatui::crossterm::event::KeyModifiers::NONE,
+        });
     });
 
     app.begin_commit();
@@ -433,10 +479,10 @@ fn issue11_rejected_live_editor_stops_the_review() {
     assert!(app.layers.top_as::<Dialog>().is_none(), "no review opened");
     assert!(app.commit.is_none());
     assert!(
-        grid_at(&mut app, products).is_editing(),
+        with_grid(&mut app, products, |g| g.is_editing()),
         "the input is kept"
     );
-    assert!(!grid_at(&mut app, products).submission_pending());
+    assert!(!with_grid(&mut app, products, |g| g.submission_pending()));
     assert!(
         status(&app).contains("Fix the open cell first"),
         "{}",
@@ -478,15 +524,15 @@ fn switch_schema(app: &mut App, schema: &str) {
 fn issue11_schema_switch_never_reuses_tab_key() {
     let (mut app, products, customers) = app_with_two_tables();
     let w = app.workbench.as_mut().expect("connected");
-    let query = w.tabs.len();
+    let query = w.tab_count();
     w.new_query("select 1");
-    assert_eq!(w.tabs.len(), query + 1);
+    assert_eq!(w.tab_count(), query + 1);
 
     switch_schema(&mut app, "analytics");
 
     let w = app.workbench.as_mut().expect("connected");
     let opened = w.open_table("analytics", "events", false).expect("opens");
-    let keys: Vec<ItemKey> = w.tabs.iter().map(WorkTab::key).collect();
+    let keys: Vec<ItemKey> = w.tabs().map(WorkTab::key).collect();
     for (i, k) in keys.iter().enumerate() {
         assert!(
             !keys[..i].contains(k),
@@ -507,11 +553,11 @@ fn issue11_schema_switch_never_reuses_tab_key() {
     ticks(&mut app, 8);
 
     assert!(
-        !grid_at(&mut app, opened).submission_pending(),
+        !with_grid(&mut app, opened, |g| g.submission_pending()),
         "the save released the grid: {}",
         status(&app)
     );
-    assert!(grid_at(&mut app, opened).pending().is_empty());
+    assert!(with_grid(&mut app, opened, |g| g.pending().is_empty()));
     assert!(status(&app).starts_with("Saved"), "{}", status(&app));
 }
 
@@ -523,21 +569,24 @@ fn issue11_completion_for_a_mismatched_tab_releases_the_lock() {
     app.begin_commit();
     confirm(&mut app);
     let Some(CommitState::Submitted {
-        mut request, token, ..
+        mut request,
+        token,
+        operation,
+        ..
     }) = app.commit.take()
     else {
         panic!("the save is submitted");
     };
     request.table = "customers".into();
 
-    app.complete_commit(request, token);
+    app.complete_commit(request, token, operation);
 
     assert!(
-        !grid_at(&mut app, products).submission_pending(),
+        !with_grid(&mut app, products, |g| g.submission_pending()),
         "the lock is not stranded"
     );
     assert_eq!(
-        grid_at(&mut app, products).pending().total(),
+        with_grid(&mut app, products, |g| g.pending().total()),
         1,
         "the draft is kept"
     );
