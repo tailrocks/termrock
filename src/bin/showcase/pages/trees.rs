@@ -91,12 +91,19 @@ fn keyed_project() -> KeyedTree {
     let mut tree = KeyedTree::new();
     let files = crate::data::project_tree();
     add(&mut tree, None, "", &files);
-    tree.insert(None, files.len(), TARGET, KeyedTreeNode::lazy("target"))
-        .expect("the demo paths are unique");
+    let src = ItemKey::text("src");
+    let children = tree.get(src).map_or(0, |node| node.children().len());
+    tree.insert(
+        Some(src),
+        children,
+        GENERATED,
+        KeyedTreeNode::lazy("generated"),
+    )
+    .expect("the demo paths are unique");
     tree
 }
 
-const TARGET: ItemKey = ItemKey::text("target");
+const GENERATED: ItemKey = ItemKey::text("src/generated");
 const MAIN: ItemKey = ItemKey::text("src/main.rs");
 const NEW_FILE: ItemKey = ItemKey::text("src/new.rs");
 const FIXTURES: ItemKey = ItemKey::text("tests/fixtures");
@@ -324,28 +331,24 @@ impl TreesPage {
                 let moved = self.tree.set_cursor_source(key, &self.store).expect(KEYED);
                 let picked = self.tree.select_source(key, &self.store).expect(KEYED);
                 format!(
-                    "set_cursor_source({path}) → {moved} · select_source → {picked}{}",
-                    if moved {
-                        ""
-                    } else {
-                        " (the cursor refuses a node inside a closed folder)"
-                    }
+                    "set_cursor_source({path}) → {moved}{} · select_source → {picked}",
+                    if moved { "" } else { " (closed folder)" }
                 )
             }
         };
     }
 
     /// A lazy keyed folder loads its children when it opens.
-    fn load_target(&mut self, key: ItemKey) {
+    fn load_generated(&mut self, key: ItemKey) {
         self.store.update(key, |node| node.lazy = false);
-        for (i, (name, meta)) in [("debug", "212 files"), ("release", "96 files")]
+        for (i, (name, meta)) in [("client.rs", "7.4 KB"), ("schema.rs", "21 KB")]
             .into_iter()
             .enumerate()
         {
-            let child = ItemKey::text(&format!("target/{name}"));
+            let child = ItemKey::text(&format!("src/generated/{name}"));
             self.store
                 .insert(Some(key), i, child, KeyedTreeNode::new(name).meta(meta))
-                .expect("the target folder was empty");
+                .expect("the generated folder was empty");
         }
     }
 
@@ -363,7 +366,7 @@ impl TreesPage {
             match action {
                 TreeAction::Expand(key) => {
                     steps.push(format!("Expand({})", self.label_of(key)));
-                    self.load_target(key);
+                    self.load_generated(key);
                 }
                 TreeAction::Activate(key) => {
                     steps.push(format!("Activate({})", self.label_of(key)));
@@ -453,18 +456,21 @@ impl TreesPage {
             ),
         ];
         if self.keyed() {
-            let notes: Vec<&str> = [self.edit_note.as_str(), self.jump_note.as_str()]
-                .into_iter()
-                .filter(|note| !note.is_empty())
-                .collect();
             lines.push(format!(
-                "Project source keyed (TreeSource: KeyedTree, {} nodes, empty {}) · select_follows_cursor {} · show_selection {} · {}",
+                "Project source keyed (TreeSource: KeyedTree, {} nodes, empty {})",
                 self.store.len(),
                 self.store.is_empty(),
+            ));
+            lines.push(format!(
+                "select_follows_cursor {} · show_selection {}",
                 self.opt("trees.follow") == "on",
                 self.opt("trees.show_selection") == "on",
-                if notes.is_empty() { "no edit or jump".to_owned() } else { notes.join(" · ") },
             ));
+            for (what, note) in [("edit", &self.edit_note), ("jump", &self.jump_note)] {
+                if !note.is_empty() {
+                    lines.push(format!("{what}: {note}"));
+                }
+            }
         }
         lines
     }
@@ -669,7 +675,8 @@ impl TreesPage {
             self.conns.render(inner, buf, ctx, bg);
         }
 
-        for (y, l) in (area.y + self.top_h() + 1..).zip(self.readout_lines(area.width)) {
+        let lines = self.readout_lines(area.width);
+        for (y, l) in (area.y + self.top_h() + 1..area.bottom()).zip(lines) {
             buf.set_string(area.x, y, l, t.faint().bg(t.canvas));
         }
         self.menu.render(area, buf, ctx);

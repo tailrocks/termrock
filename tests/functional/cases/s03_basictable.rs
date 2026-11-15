@@ -1043,7 +1043,10 @@ fn option_rows_refusals_leave_the_store_unchanged() {
         ],
         &["Duplicate of the first task"],
     );
-    assert_eq!(task_ids(&duplicate).first().map(String::as_str), Some("#1040"));
+    assert_eq!(
+        task_ids(&duplicate).first().map(String::as_str),
+        Some("#1040")
+    );
     app.finish();
 
     let app = open_keyed("s03-short", "keyed", "short row");
@@ -1067,12 +1070,7 @@ fn option_rows_refusals_leave_the_store_unchanged() {
 
 #[test]
 fn option_update_model_replaces_columns_and_rows() {
-    let args = [
-        "--page",
-        "basictable",
-        "--opt",
-        "basictable.update=model",
-    ];
+    let args = ["--page", "basictable", "--opt", "basictable.update=model"];
     let app = open("s03-model", 120, 64, &args);
     let play = app.wait_text("DataTable::columns()");
     see(
@@ -1097,9 +1095,17 @@ fn option_update_model_replaces_columns_and_rows() {
 fn option_rows_change_the_store_and_the_table_follows() {
     let inserted = open_keyed("s03-inserted", "keyed", "inserted");
     let play = inserted.wait_text("KeyedTable: 25 rows");
-    see(&play, &["store: insert(1, #100) → Ok", "Prune stale previews"], &[]);
+    see(
+        &play,
+        &["store: insert(1, #100) → Ok", "Prune stale previews"],
+        &[],
+    );
     assert_eq!(
-        task_ids(&play).iter().map(String::as_str).take(2).collect::<Vec<_>>(),
+        task_ids(&play)
+            .iter()
+            .map(String::as_str)
+            .take(2)
+            .collect::<Vec<_>>(),
         ["#1040", "#100 "],
         "the new row sits at position 1\n{}",
         text(&play)
@@ -1122,13 +1128,20 @@ fn option_rows_change_the_store_and_the_table_follows() {
 
     let replaced = open_keyed("s03-replaced", "keyed", "replaced");
     let play = replaced.wait_text("KeyedTable: 4 rows");
-    see(&play, &["store: replace_rows(4 rows) → Ok"], &["#1040", "Add rate limiting"]);
+    see(
+        &play,
+        &["store: replace_rows(4 rows) → Ok"],
+        &["#1040", "Add rate limiting"],
+    );
     replaced.finish();
 
     let updated = open_keyed("s03-updated", "keyed", "updated cell");
     let play = updated.wait_text("update_cell(#1040, Status) → true");
     let row = row_with(&play, "#1040");
-    assert!(row.contains("Failed"), "the status cell was rewritten: {row}");
+    assert!(
+        row.contains("Failed"),
+        "the status cell was rewritten: {row}"
+    );
     shot(
         &updated,
         "opt.basictable.rows_updated_cell",

@@ -472,7 +472,11 @@ impl TablesPage {
             format!("last TableAction: {}", self.last),
             format!(
                 "store: {}",
-                if self.note.is_empty() { "—" } else { &self.note }
+                if self.note.is_empty() {
+                    "—"
+                } else {
+                    &self.note
+                }
             ),
         ]
     }

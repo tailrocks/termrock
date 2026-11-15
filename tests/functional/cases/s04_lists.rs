@@ -1348,7 +1348,9 @@ fn option_source_keyed_reversed_lists_rows_from_the_other_end() {
     let app = open("s04-reversed", 120, 72, &args);
     let before = app.wait_text("source keyed reversed (ListSource)");
     let language = |label: &str| {
-        let rows: Vec<String> = (0..before.rows()).map(|row| row_text(&before, row)).collect();
+        let rows: Vec<String> = (0..before.rows())
+            .map(|row| row_text(&before, row))
+            .collect();
         rows.iter()
             .position(|line| line.contains(label) && !line.contains("Chosen:"))
             .unwrap_or_else(|| panic!("row {label:?} missing\n{}", text(&before)))
