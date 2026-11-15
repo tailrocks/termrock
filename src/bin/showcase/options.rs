@@ -1170,6 +1170,11 @@ pub static DIALOG_KINDS: &[Opt] = &[
         "Choice buttons",
         &["two", "three"],
     ),
+    Opt::new(
+        "dialogkinds.dismiss",
+        "Dismiss",
+        &["default", "light", "escape", "never"],
+    ),
 ];
 
 pub static POPUPS_TOOLTIPS: &[Opt] = &[
