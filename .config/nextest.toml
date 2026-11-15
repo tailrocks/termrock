@@ -25,3 +25,37 @@ path = "functional.xml"
 default-filter = 'not binary(functional)'
 fail-fast = false
 slow-timeout = { period = "60s", terminate-after = 10 }
+
+# The deterministic cost contracts of #56 (docs/performance-contracts.md).
+# Run with the work counters compiled in:
+#   cargo nextest run --profile performance --workspace --all-features --no-tests fail
+# The filter is a union of one operand per required suite. The inventory gate
+# (tests/performance_inventory.rs) parses these operands and fails when a
+# required suite is missing, so a suite cannot drop out of the profile quietly.
+# Keep the operands to `binary_id(=...) & test(...)` terms joined by `|`.
+[profile.performance]
+default-filter = '''
+    binary_id(=junie-tui) & test(/^metrics::/)
+  | binary_id(=junie-tui) & test(/^ui::overflow_work_tests::/)
+  | binary_id(=junie-tui) & test(/^widgets::keyed_cost_tests::/)
+  | binary_id(=junie-tui::regressions) & test(/^work_budgets::/)
+  | binary_id(=junie-tui::bin/holla) & test(/^work_metrics_tests::/)
+  | binary_id(=junie-tui::bin/holla) & test(/holla_projection_/)
+  | binary_id(=junie-tui::bin/tablepro) & test(/^work_metrics_tests::/)
+  | binary_id(=junie-tui::bin/showcase) & test(/^work_metrics_tests::/)
+  | binary_id(=jackin-console::regressions) & test(/^work_budgets::/)
+  | binary_id(=jackin-console::world) & test(/^projection_work::/)
+  | binary_id(=junie-tui::work_measurements) & test(=measurement_edit_samples_are_real_changes)
+  | binary_id(=junie-tui::performance_inventory)
+'''
+fail-fast = false
+slow-timeout = { period = "60s", terminate-after = 10 }
+
+# Elapsed-time measurements. They are #[ignore]d and meaningless in a debug
+# build, so run them only through scripts/measure-performance.sh. One test at a
+# time: parallel tests would time each other.
+[profile.performance-measure]
+default-filter = 'binary_id(=junie-tui::work_measurements) & test(/^measurement_/) & not test(=measurement_edit_samples_are_real_changes)'
+fail-fast = false
+test-threads = 1
+slow-timeout = { period = "120s", terminate-after = 5 }
