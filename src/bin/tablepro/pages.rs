@@ -16,7 +16,6 @@ use crate::workbench::WorkTab;
 use crate::workbench::{EXPLORER, TABSTRIP, Workbench};
 use junie_tui::theme::StatusKind;
 use junie_tui::ui::layout::Maximized;
-use junie_tui::widgets::input::TextInput;
 
 pub struct Tablepro;
 
@@ -158,9 +157,7 @@ impl Page<Tablepro> for Workbench {
             if self.explorer_filter.text().is_empty() {
                 return Outcome::Consumed;
             }
-            self.explorer_filter = TextInput::new(self.explorer_filter.id, "")
-                .placeholder("Filter objects")
-                .plain_label();
+            self.explorer_filter.set_value("");
             self.explorer.set_filter(None);
             return Outcome::Changed;
         }

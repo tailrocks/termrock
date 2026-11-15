@@ -28,8 +28,6 @@ use junie_tui::widgets::button::Button;
 use junie_tui::widgets::dialog::{Dialog, DialogBody, DialogResult};
 use junie_tui::widgets::grid::CellValue;
 
-use junie_tui::widgets::input::TextInput;
-
 use junie_tui::widgets::menu::MenuAction;
 use junie_tui::widgets::option_list::Item;
 use junie_tui::widgets::picker::{Picker, PickerAction};
@@ -1657,9 +1655,7 @@ impl App {
                     }
                     SwitchTarget::Schema(s) => {
                         w.schema = s.clone();
-                        w.explorer_filter = TextInput::new(w.explorer_filter.id, "")
-                            .placeholder("Filter objects")
-                            .plain_label();
+                        w.explorer_filter.set_value("");
                         w.explorer.set_filter(None);
                         let _ = w.explorer.rows();
 
