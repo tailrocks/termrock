@@ -2473,6 +2473,38 @@ fn finder_explore_click_selection_change_resets_preview_scroll() {
 }
 
 #[test]
+fn finder_explore_click_on_the_selected_tile_keeps_preview_scroll() {
+    let mut app = finder_app();
+    app.world.edit_catalog(|w| {
+        w.explore_tiles = long_explore_tiles(&[
+            "explore.system",
+            "explore.tasks",
+            "explore.files",
+            "explore.git",
+            "explore.disk",
+            "explore.services",
+        ]);
+    });
+    tick(&mut app, 1);
+    finder_select_explore(&mut app, "explore.git");
+    drawn_text(&mut app);
+    scroll_preview_down(&mut app, 3);
+    let scrolled = preview_top_word(&mut app);
+    assert_ne!(scrolled, "L000", "preview did not scroll before the click");
+
+    let (x, y) = drawn_tile(&mut app, "Git");
+    click_at(&mut app, x + 1, y);
+    assert_eq!(finder_group(&mut app), Some("Git"));
+    app.handle_input(key(KeyCode::Esc, KeyModifiers::NONE));
+
+    assert_eq!(
+        finder(&mut app).current_id().as_deref(),
+        Some("explore.git")
+    );
+    assert_eq!(preview_top_word(&mut app), scrolled);
+}
+
+#[test]
 fn finder_empty_explore_row_is_not_selectable() {
     let mut app = finder_app();
     finder_select_explore(&mut app, "explore.git");
