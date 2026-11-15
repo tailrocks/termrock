@@ -872,6 +872,21 @@ mod widgets {
     }
 
     #[test]
+    fn keyed_table_rejects_rows_under_an_empty_schema() {
+        use junie_tui::core::data::DataError;
+        use junie_tui::widgets::table::KeyedTableError;
+        let refused = Err(KeyedTableError::Shape(DataError::EmptySchemaWithRows));
+        assert_eq!(
+            KeyedTable::try_new(vec![], [(k(1), vec![])]).map(|_| ()),
+            refused
+        );
+        let mut empty = KeyedTable::try_new(vec![], []).expect("no columns and no rows");
+        assert_eq!(empty.replace_rows([(k(1), vec![])]), refused);
+        assert_eq!(empty.insert(0, k(1), vec![]), refused);
+        assert_eq!(empty.len(), 0, "nothing was stored");
+    }
+
+    #[test]
     fn keyed_table_press_cannot_retarget_after_reorder() {
         let mut store = table_store();
         let mut t = table();
