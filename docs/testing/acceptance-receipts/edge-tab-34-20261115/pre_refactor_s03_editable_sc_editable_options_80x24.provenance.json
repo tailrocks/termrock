@@ -1,0 +1,72 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneG3-target/debug/showcase",
+  "binary_sha256": "72ab16925fb600e6f8f07be24eca5370fe95f22e67ac379114e6a731f57fbd8e",
+  "fixture_args": [],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "040eb35f5ff27866015a1c419a0260cb22ae64c01c5a7a47150eb4696fa11ea3",
+  "expect_baseline": "8dca0708a805703f4617707d09d6cc6b3a82ca25226af117f6330d1028bdb23e",
+  "precondition": "Deliberate visual change for #34: the Showcase Editable tables page now lists the 'Tab at the last cell' option (editable.tab_walkthrough, free by default) on its Options tab. The extra row lengthens the options list. The Playground and States captures are unchanged because the default value draws nothing new.",
+  "session": null,
+  "expected_test_id": "pre_refactor/s03_editable/sc_editable_options_80x24",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/edge-tab-34-20261115/pre_refactor_s03_editable_sc_editable_options_80x24.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/edge-tab-34-20261115/pre_refactor_s03_editable_sc_editable_options_80x24.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/edge-tab-34-20261115/superseded/pre_refactor/s03_editable/sc_editable_options_80x24.tui.pb",
+  "test_id": "pre_refactor/s03_editable/sc_editable_options_80x24",
+  "acceptance": {
+    "expected_baseline_sha256": "8dca0708a805703f4617707d09d6cc6b3a82ca25226af117f6330d1028bdb23e",
+    "accepted_baseline_sha256": "040eb35f5ff27866015a1c419a0260cb22ae64c01c5a7a47150eb4696fa11ea3",
+    "candidate_sha256": "040eb35f5ff27866015a1c419a0260cb22ae64c01c5a7a47150eb4696fa11ea3",
+    "transaction_receipt": "docs/testing/acceptance-receipts/edge-tab-34-20261115/pre_refactor_s03_editable_sc_editable_options_80x24.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "8dca0708a805703f4617707d09d6cc6b3a82ca25226af117f6330d1028bdb23e"
+  },
+  "candidate": {
+    "sha256": "040eb35f5ff27866015a1c419a0260cb22ae64c01c5a7a47150eb4696fa11ea3",
+    "path": "tests/functional/baselines/pre_refactor/s03_editable/sc_editable_options_80x24.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/edge-tab-34-20261115/superseded/pre_refactor/s03_editable/sc_editable_options_80x24.tui.pb",
+    "superseded_baseline_sha256": "8dca0708a805703f4617707d09d6cc6b3a82ca25226af117f6330d1028bdb23e"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/s03_editable/sc_editable_options_80x24.tui.pb",
+    "candidate_sha256": "040eb35f5ff27866015a1c419a0260cb22ae64c01c5a7a47150eb4696fa11ea3",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneG3-target/debug/showcase",
+    "binary_sha256": "72ab16925fb600e6f8f07be24eca5370fe95f22e67ac379114e6a731f57fbd8e",
+    "note": "Live candidate capture of this branch (feat/34-showcase-edge-tab). The Editable tables page gained the Tab at the last cell option on its Options tab; no Reference-mode capture exists for it."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s03_editable/sc_editable_options_80x24",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneG3/target/functional/s03-sections-25040-1794744005519708000-0/check-artifacts/pre_refactor/s03_editable/sc_editable_options_80x24/040eb35f5ff27866015a1c419a0260cb22ae64c01c5a7a47150eb4696fa11ea3/sample.tui.pb"
+    },
+    "candidate_sha256": "040eb35f5ff27866015a1c419a0260cb22ae64c01c5a7a47150eb4696fa11ea3",
+    "baseline_sha256": "040eb35f5ff27866015a1c419a0260cb22ae64c01c5a7a47150eb4696fa11ea3",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneG3/tests/functional/baselines/pre_refactor/s03_editable/sc_editable_options_80x24.tui.pb"
+    },
+    "error_code": null
+  }
+}
