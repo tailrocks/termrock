@@ -1,5 +1,5 @@
 use std::cell::{Cell, RefCell};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, VecDeque};
 use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -131,11 +131,16 @@ impl std::fmt::Display for LaunchError {
 
 impl std::error::Error for LaunchError {}
 
+/// How many of the latest checkpoints keep their full-cell JSON when a test
+/// fails. Every checkpoint keeps its text and its line in the action trace.
+const FAILURE_CELL_CHECKPOINTS: usize = 16;
+
 pub struct App {
     session: Session,
     directory: PathBuf,
     actions: RefCell<Vec<String>>,
     checkpoint: Cell<usize>,
+    recent: RefCell<VecDeque<(usize, TerminalSnapshot)>>,
     clock: bool,
 }
 
@@ -721,12 +726,20 @@ impl App {
             hasher.finish()
         ));
         let path = self.directory.join(format!("{number:03}"));
-        std::fs::write(
-            path.with_extension("json"),
-            serde_json::to_vec(screen).unwrap(),
-        )
-        .expect("save terminal cells");
         std::fs::write(path.with_extension("txt"), text(screen)).expect("save terminal text");
+        let mut recent = self.recent.borrow_mut();
+        if recent.len() == FAILURE_CELL_CHECKPOINTS {
+            recent.pop_front();
+        }
+        recent.push_back((number, screen.clone()));
+    }
+
+    fn save_failure_cells(&self) {
+        for (number, screen) in self.recent.borrow().iter() {
+            if let Ok(json) = serde_json::to_vec(screen) {
+                let _ = std::fs::write(self.directory.join(format!("{number:03}.json")), json);
+            }
+        }
     }
 }
 
@@ -745,6 +758,7 @@ impl Drop for App {
         let _ = self.session.close();
         let _ = std::fs::remove_dir_all(self.directory.join("home"));
         if std::thread::panicking() {
+            self.save_failure_cells();
             eprintln!("functional evidence: {}", self.directory.display());
         }
     }
@@ -854,6 +868,7 @@ pub fn try_launch(launch: Launch) -> Result<App, LaunchError> {
                     launch.clock
                 )]),
                 checkpoint: Cell::new(0),
+                recent: RefCell::new(VecDeque::new()),
                 clock: launch.clock,
             };
             app.persist_actions();
