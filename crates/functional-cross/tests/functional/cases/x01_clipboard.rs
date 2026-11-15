@@ -5,7 +5,6 @@
 //! report, captures 120×40, resizes to 80×24, captures that frame, then
 //! resizes back. `Launch::new` leaves the clock off, including for jackin.
 
-use std::path::PathBuf;
 use std::thread;
 use std::time::{Duration, Instant};
 

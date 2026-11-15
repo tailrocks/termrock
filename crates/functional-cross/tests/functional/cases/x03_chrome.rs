@@ -24,7 +24,6 @@
 //! hard-cases screen is `ManagerScreen`, whose `manager.seam` is drawn by
 //! `MasterDetail::layout` on `t.canvas`.
 
-use std::path::PathBuf;
 use std::thread;
 use std::time::{Duration, Instant};
 

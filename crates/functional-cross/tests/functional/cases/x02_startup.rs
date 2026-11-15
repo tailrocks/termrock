@@ -6,7 +6,6 @@
 //! captures that frame, then resizes back. `Launch::new` leaves the clock off,
 //! including for jackin.
 
-use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
 

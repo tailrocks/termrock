@@ -8,7 +8,6 @@
 //! is what supplies hovered, pressed, and focused. The test reads the cells
 //! the binary paints.
 
-use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use tui_test::terminal::cell::Attrs;

@@ -7,7 +7,6 @@
 //! 80×24, then captures the restored 120×40 frame. `Launch::new` leaves the
 //! clock off, including for jackin.
 
-use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
 

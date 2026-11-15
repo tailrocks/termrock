@@ -1,3 +1,5 @@
+experimental = ["setup-scripts"]
+
 [test-groups]
 
 pty = { max-threads = 8 }
@@ -25,3 +27,11 @@ path = "functional.xml"
 default-filter = 'not binary(functional)'
 fail-fast = false
 slow-timeout = { period = "60s", terminate-after = 10 }
+
+[scripts.setup.app-bins]
+command = ["cargo", "build", "--workspace", "--bins"]
+slow-timeout = { period = "120s", terminate-after = 2 }
+
+[[profile.default.scripts]]
+filter = "package(functional-cross)"
+setup = "app-bins"

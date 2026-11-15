@@ -9,7 +9,6 @@
 //! that has already exited uses `expect_exited` instead. `Launch::new` leaves
 //! the clock off.
 
-use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use tui_test::TerminalSnapshot;

@@ -8,7 +8,6 @@
 //! that already exited uses `expect_exited`. `finish` is the mode check, and
 //! only while the process is still running.
 
-use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use tui_test::TerminalSnapshot;

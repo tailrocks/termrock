@@ -10,7 +10,6 @@
 //! `force_color_output`, so the captured cells stay `SnapshotColor::Default`.
 //! The accent is not RGB. That is the reference paint.
 
-use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use tui_test::{SnapshotColor, TerminalSnapshot};

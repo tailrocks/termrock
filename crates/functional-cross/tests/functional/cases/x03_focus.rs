@@ -19,8 +19,6 @@
 //! painted. `--page focus` is `PageId::FocusNavigation` through `PAGE_ALIASES`
 //! and `parse_page`.
 
-use std::path::PathBuf;
-
 use tui_test::{SnapshotColor, TerminalSnapshot};
 use tuiscotti_latest::check::CheckOutcome;
 

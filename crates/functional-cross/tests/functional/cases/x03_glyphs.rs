@@ -19,8 +19,6 @@
 //! `›` (`TreeView::selected_marker` in `src/bin/showcase/app.rs`), not
 //! `Glyphs::current`.
 
-use std::path::PathBuf;
-
 use tui_test::TerminalSnapshot;
 use tuiscotti_latest::check::CheckOutcome;
 

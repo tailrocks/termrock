@@ -19,7 +19,6 @@
 //! (`src/bin/jackin/app.rs`). The paste is a clock step only when
 //! `clock_steps` is set and motion is paused (`src/shell/app.rs`).
 
-use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use tui_test::TerminalSnapshot;
