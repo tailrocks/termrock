@@ -18,7 +18,7 @@ test_runner = "cargo_nextest"
 
 run_ignored = "default"
 
-# Eight hash shards run concurrently. The functional suite uses PTYs,
+# Four hash shards run concurrently. The functional suite uses PTYs,
 # so eight test threads fill the runner's eight PTY slots.
 allow_empty_test_suite = true
 
@@ -40,8 +40,8 @@ options = ["functional"]
 id = "functional"
 profile = "functional"
 run_ignored = "default"
-partitions = 8
-build = "inline"
+partitions = 4
+build = "archive"
 timeout_minutes = 15
 test_threads = 8
 triggers = ["pull_request", "push", "workflow_dispatch"]
