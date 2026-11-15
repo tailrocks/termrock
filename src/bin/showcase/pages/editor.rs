@@ -830,7 +830,12 @@ impl Page for EditorPage {
             return vec![("Enter", "Activate"), ("Tab", "Next")];
         }
         if self.completion.is_open() {
-            vec![("↑↓", "Move"), ("Enter", "Accept"), ("Esc", "Close")]
+            let mut v = vec![("↑↓", "Move")];
+            if self.completion.has_eligible() {
+                v.push(("Enter", "Accept"));
+            }
+            v.push(("Esc", "Close"));
+            v
         } else if self.editor.editing {
             vec![
                 ("Ctrl+Space", "Complete"),
@@ -895,5 +900,31 @@ impl Page for EditorPage {
 
     fn template_mut(&mut self) -> Option<&mut Template> {
         Some(&mut self.template)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn hints_while_completing(word: &str) -> Vec<Hint> {
+        let mut page = EditorPage::new();
+        page.editor.field.buffer.insert_str(word);
+        page.trigger(true);
+        assert!(page.completion.is_open(), "{word} opens the popup");
+        page.hints(None)
+    }
+
+    #[test]
+    fn accept_hint_follows_whether_a_candidate_is_eligible() {
+        let only_disabled = hints_while_completing("url");
+        assert!(
+            !only_disabled.contains(&("Enter", "Accept")),
+            "{only_disabled:?}"
+        );
+        assert!(only_disabled.contains(&("Esc", "Close")));
+
+        let eligible = hints_while_completing("fet");
+        assert!(eligible.contains(&("Enter", "Accept")), "{eligible:?}");
     }
 }

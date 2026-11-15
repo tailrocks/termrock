@@ -1,5 +1,6 @@
 use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::focus::FocusRing;
+use junie_tui::core::hints::{HasHints, HintCx};
 use junie_tui::core::hit::HitRegistry;
 use junie_tui::core::id::WidgetId;
 use junie_tui::core::intent::Phase;
@@ -344,4 +345,20 @@ fn issue36_disable_during_edit_cancels_commit() {
             assert!(!commits(again), "no second event on a later key");
         }
     }
+}
+
+#[test]
+fn issue36_completion_advertises_accept_only_with_an_eligible_item() {
+    let accepts = |c: &Completion| {
+        c.hints(&HintCx::new(None))
+            .iter()
+            .any(|h| h.action == "Accept")
+    };
+    let blocked = completion(vec![Item::new("blocked").disabled(true)]);
+    assert!(!accepts(&blocked), "nothing can be accepted");
+    assert!(!blocked.has_eligible());
+
+    let mixed = completion(mixed());
+    assert!(accepts(&mixed));
+    assert!(mixed.has_eligible());
 }

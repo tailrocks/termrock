@@ -1637,6 +1637,7 @@ pub static CAPABILITIES: &[Capability] = &[
     Capability::function("widgets::completion::Completion::apply"),
     Capability::function("widgets::completion::Completion::open"),
     Capability::function("widgets::completion::Completion::is_open"),
+    Capability::function("widgets::completion::Completion::has_eligible"),
     Capability::function("widgets::completion::Completion::close"),
     Capability::function("widgets::completion::Completion::current"),
     Capability::function("widgets::completion::Completion::row_id"),
