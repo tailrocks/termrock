@@ -46,7 +46,10 @@ fn grid(n: usize) -> DataGrid {
 }
 
 fn press(g: &mut DataGrid, code: KeyCode, mods: KeyModifiers) -> Option<GridAction> {
-    g.on_key(&Key { code, mods }).1
+    g.on_key(&Key { code, mods })
+        .try_into_single()
+        .unwrap_or_else(|_| panic!("single action expected"))
+        .1
 }
 
 fn undone(g: &mut DataGrid) -> GridUndo {
@@ -217,7 +220,7 @@ fn issue33_removed_insert_restores_complete_row() {
     let before_cursor = g.cursor;
     let before_counts = g.pending().counts();
 
-    assert!(g.begin_edit().1.is_none() && g.is_editing());
+    assert!(g.begin_edit().actions().next().is_none() && g.is_editing());
     g.toggle_delete(3);
     assert!(!g.is_editing(), "removal closes the editor");
     assert_eq!(g.selection.to_vec(), vec![3], "B keeps its mark, shifted");

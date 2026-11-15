@@ -9,6 +9,7 @@ use junie_tui::core::event::Outcome;
 use junie_tui::core::id::WidgetId;
 use junie_tui::core::intent::Phase;
 use junie_tui::core::pointer::{MouseTarget, PointerEvent};
+use junie_tui::core::response::Actions;
 use junie_tui::core::selection::{SelectionMode, TriState};
 use junie_tui::ui::context::ContextRequest;
 use junie_tui::ui::ctx::RenderCtx;
@@ -209,14 +210,17 @@ impl TablesPage {
         match action {
             CellAction::Select => {
                 self.table.cursor_row = cell.0;
-                let (out, tev) = self.table.on_key(&plain(KeyCode::Enter));
-                if let Some(TableAction::Activated(row)) = tev {
-                    cx.status(format!("Selected {}", self.table.rows[row][1].text));
+                let (out, actions) = self.table.on_key(&plain(KeyCode::Enter)).into_parts();
+                for tev in actions {
+                    if let TableAction::Activated(row) = tev {
+                        cx.status(format!("Selected {}", self.table.rows[row][1].text));
+                    }
                 }
                 out
             }
-            CellAction::Sort => self.table.on_click_header(cell.1),
-            CellAction::Edit => self.table.begin_edit(),
+            // This page has no edit consumer, so the commit actions are dropped on purpose.
+            CellAction::Sort => self.table.on_click_header(cell.1).erase().outcome(),
+            CellAction::Edit => self.table.begin_edit().erase().outcome(),
         }
     }
     pub fn new() -> Self {
@@ -271,7 +275,7 @@ pub fn route_table(
     t: &mut DataTable,
     ev: &PointerEvent,
     cx: &mut Cx,
-) -> Option<(Outcome, Option<TableAction>)> {
+) -> Option<(Outcome, Actions<TableAction>)> {
     let (out, action) = t.route(ev)?.into_parts();
     if ev.is(Phase::Click) && ev.bar.is_none() && out != Outcome::Ignored {
         cx.focus.focus(t.id);
@@ -306,8 +310,10 @@ impl TablesPage {
             return Outcome::Changed;
         }
         if let Some((out, tev)) = route_table(&mut self.table, ev, cx) {
-            if let Some(TableAction::Activated(r)) = tev {
-                cx.status(format!("Selected {}", self.table.rows[r][1].text));
+            for action in tev {
+                if let TableAction::Activated(r) = action {
+                    cx.status(format!("Selected {}", self.table.rows[r][1].text));
+                }
             }
             return out;
         }
@@ -490,17 +496,19 @@ impl Page for TablesPage {
                         self.open_menu(req);
                         return Outcome::Changed;
                     }
-                    let (out, tev) = self.table.on_key(key);
-                    if let Some(TableAction::Activated(row)) = tev {
-                        cx.status(format!("Selected {}", self.table.rows[row][1].text));
+                    let (out, actions) = self.table.on_key(key).into_parts();
+                    for tev in actions {
+                        if let TableAction::Activated(row) = tev {
+                            cx.status(format!("Selected {}", self.table.rows[row][1].text));
+                        }
                     }
                     return out;
                 }
                 if cx.focus.is(self.reviewers.id) {
-                    return self.reviewers.on_key(key).0;
+                    return self.reviewers.on_key(key).outcome();
                 }
                 if cx.focus.is(self.empty.id) {
-                    return self.empty.on_key(key).0;
+                    return self.empty.on_key(key).outcome();
                 }
                 Outcome::Ignored
             }

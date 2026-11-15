@@ -116,7 +116,7 @@ pub struct Picker {
 
     pub reveal: Option<crate::ui::reveal::Reveal>,
 
-    pub(crate) pending: Option<PickerAction>,
+    pub(crate) pending: crate::ui::layer::ResultQueue<PickerAction>,
 
     pub delete_is_secondary: bool,
     multi: bool,
@@ -239,7 +239,7 @@ impl Picker {
             empty: None,
             area: Rect::ZERO,
             reveal: None,
-            pending: None,
+            pending: crate::ui::layer::ResultQueue::default(),
             delete_is_secondary: true,
             multi: false,
             choose_hint: std::borrow::Cow::Borrowed("Choose"),
@@ -2102,8 +2102,12 @@ mod tests {
             <Picker as Layer<LayerResult, ()>>::on_key(&mut picker, &enter, &mut cx)
         };
         assert_eq!(out, Outcome::Changed);
+        // Earlier toggles queue their events; the layer releases them in order.
+        let closed =
+            std::iter::from_fn(|| <Picker as Layer<LayerResult, ()>>::take_result(&mut picker))
+                .find(LayerOut::closes);
         assert!(matches!(
-            <Picker as Layer<LayerResult, ()>>::take_result(&mut picker),
+            closed,
             Some(LayerOut::Close(LayerResult::Picker(PickerAction::ChosenMany(keys))))
                 if keys == [ItemKey::text("alpha"), ItemKey::text("beta")]
         ));

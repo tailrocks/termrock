@@ -388,14 +388,11 @@ impl Page for EditablePage {
             if ch.from != self.table.id {
                 return Outcome::Ignored;
             }
-            let tev = self.table.on_blur();
-            let changed = tev.is_some();
-            self.on_event(tev, cx);
-            return if changed {
-                Outcome::Changed
-            } else {
-                Outcome::Ignored
-            };
+            let (out, actions) = self.table.on_blur().into_parts();
+            for tev in actions {
+                self.on_event(Some(tev), cx);
+            }
+            return out;
         }
         if let Some(o) = self.sections.handle(ev) {
             return o;
@@ -405,8 +402,10 @@ impl Page for EditablePage {
                 if !cx.focus.is(self.table.id) {
                     return Outcome::Ignored;
                 }
-                let (out, tev) = self.table.on_key(key);
-                self.on_event(tev, cx);
+                let (out, actions) = self.table.on_key(key).into_parts();
+                for tev in actions {
+                    self.on_event(Some(tev), cx);
+                }
                 out
             }
             PageEvent::Paste(text) => self.table.on_paste(text),
@@ -414,7 +413,9 @@ impl Page for EditablePage {
                 let Some((out, tev)) = route_table(&mut self.table, p, cx) else {
                     return Outcome::Ignored;
                 };
-                self.on_event(tev, cx);
+                for tev in tev {
+                    self.on_event(Some(tev), cx);
+                }
                 out
             }
             _ => Outcome::Ignored,
@@ -454,5 +455,115 @@ impl Page for EditablePage {
 
     fn template_mut(&mut self) -> Option<&mut Template> {
         Some(&mut self.template)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use junie_tui::core::event::Key;
+    use junie_tui::core::focus::{Focus, FocusRing};
+    use junie_tui::shell::Request;
+    use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+
+    fn key(code: KeyCode) -> PageEvent {
+        PageEvent::Key(Key {
+            code,
+            mods: KeyModifiers::NONE,
+        })
+    }
+
+    /// Editing the last column and pressing Tab commits the cell and hands focus
+    /// on. The host must observe both actions, not just the leave.
+    #[test]
+    fn app_dispatch_drains_compound_response() {
+        let mut page = EditablePage::new();
+        let after = WidgetId::of("editable.after");
+        let mut ring = FocusRing::default();
+        ring.register(page.table.id);
+        ring.register(after);
+        let mut focus = Focus::default();
+        focus.focus(page.table.id);
+        let mut cx = Cx::new(&mut focus, &ring);
+
+        page.table.cursor_col = 5;
+        let _ = page.handle(&key(KeyCode::Enter), &mut cx);
+        assert!(page.table.is_editing());
+        let _ = page.handle(&key(KeyCode::Char('7')), &mut cx);
+        let _ = page.handle(&key(KeyCode::Tab), &mut cx);
+
+        assert_eq!(page.edits, 1, "the commit reached the host");
+        assert!(
+            cx.requests
+                .iter()
+                .any(|r| matches!(r, Request::Status(s, _) if s == "Cell saved")),
+            "the saved indicator was raised"
+        );
+        assert_eq!(cx.focus.current(), Some(after), "focus left the table");
+    }
+
+    struct Rig {
+        page: EditablePage,
+        after: WidgetId,
+        ring: FocusRing,
+        focus: Focus,
+    }
+
+    fn rig() -> Rig {
+        let page = EditablePage::new();
+        let after = WidgetId::of("editable.after");
+        let mut ring = FocusRing::default();
+        ring.register(page.table.id);
+        ring.register(after);
+        let mut focus = Focus::default();
+        focus.focus(page.table.id);
+        Rig {
+            page,
+            after,
+            ring,
+            focus,
+        }
+    }
+
+    fn saved(cx: &Cx) -> bool {
+        cx.requests
+            .iter()
+            .any(|r| matches!(r, Request::Status(s, _) if s == "Cell saved"))
+    }
+
+    /// An unchanged valid edit at the last cell is a no-op commit: focus still
+    /// moves on, but the host must not be told a cell was saved.
+    #[test]
+    fn edge_tab_without_a_change_leaves_without_saving() {
+        let mut r = rig();
+        let mut cx = Cx::new(&mut r.focus, &r.ring);
+        r.page.table.cursor_col = 5;
+        let _ = r.page.handle(&key(KeyCode::Enter), &mut cx);
+        assert!(r.page.table.is_editing());
+        let _ = r.page.handle(&key(KeyCode::Tab), &mut cx);
+
+        assert_eq!(r.page.edits, 0, "nothing was committed");
+        assert!(!saved(&cx), "no Cell saved indicator");
+        assert!(!r.page.table.is_editing());
+        assert_eq!(cx.focus.current(), Some(r.after), "focus left the table");
+    }
+
+    /// An invalid edit blocks Tab: the editor stays open on its error, nothing
+    /// is saved and focus does not move.
+    #[test]
+    fn invalid_tab_keeps_editing_and_reports_nothing() {
+        let mut r = rig();
+        let table_id = r.page.table.id;
+        let mut cx = Cx::new(&mut r.focus, &r.ring);
+        r.page.table.cursor_col = 4;
+        let _ = r.page.handle(&key(KeyCode::Enter), &mut cx);
+        let _ = r.page.handle(&key(KeyCode::Char(' ')), &mut cx);
+        let _ = r.page.handle(&key(KeyCode::Tab), &mut cx);
+
+        assert!(r.page.table.is_editing(), "the editor stays open");
+        assert!(r.page.table.edit_error().is_some(), "the error is shown");
+        assert_eq!(r.page.edits, 0);
+        assert!(!saved(&cx), "no Cell saved indicator");
+        assert_eq!(cx.focus.current(), Some(table_id), "focus did not move");
     }
 }

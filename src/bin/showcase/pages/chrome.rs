@@ -705,8 +705,10 @@ impl Page for ChromePage {
 
             PageEvent::Pointer(ev) => {
                 if let Some(r) = self.bar.route(ev) {
-                    let (o, a) = r.into_parts();
-                    self.bar_action(a, cx);
+                    let (o, actions) = r.into_parts();
+                    for a in actions {
+                        self.bar_action(Some(a), cx);
+                    }
                     if o.consumed() || !ev.is(Phase::Click) {
                         return o;
                     }

@@ -467,7 +467,7 @@ impl Page for MetersPage {
                 if let Some(r) = self.refresh.route(ev)
                     && r.outcome() != Outcome::Ignored
                 {
-                    if r.into_action().is_some() {
+                    if r.has_actions() {
                         self.start_refresh(cx);
                     }
                     return Outcome::Changed;
@@ -475,7 +475,7 @@ impl Page for MetersPage {
                 if let Some(r) = self.offline.route(ev)
                     && r.outcome() != Outcome::Ignored
                 {
-                    if r.into_action().is_some() {
+                    if r.has_actions() {
                         self.toggle_offline();
                     }
                     return Outcome::Changed;

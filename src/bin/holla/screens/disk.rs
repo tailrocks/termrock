@@ -1295,8 +1295,11 @@ impl ShellPage<Holla> for DiskPage {
                 if !cx.focus.is(TREE) {
                     return Outcome::Ignored;
                 }
-                let (o, ev) = self.tree.on_key(key);
-                if let Some(TreeAction::Activate(_)) = ev {
+                let (o, actions) = self.tree.on_key(key).into_parts();
+                if actions
+                    .into_iter()
+                    .any(|a| matches!(a, TreeAction::Activate(_)))
+                {
                     return Outcome::Changed;
                 }
                 if o.consumed() {

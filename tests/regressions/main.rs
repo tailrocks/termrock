@@ -8,4 +8,5 @@
 mod common;
 
 mod grid_validation;
+mod response_batches;
 mod smoke;
