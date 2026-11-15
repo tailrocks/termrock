@@ -830,6 +830,66 @@ fn compare_levels_narrows_before_restore() {
 }
 
 #[test]
+fn issue33_undo_walks_back_through_delete_marks_and_removed_inserts() {
+    let args = ["--page", "datagrid"];
+    let app = open("s03-issue33", 120, 40, &args);
+    app.wait_text("Northwind");
+    click_grid(&app);
+    for _ in 0..4 {
+        app.key("right");
+    }
+    app.key("enter");
+    let edited = app.wait_text("1 update");
+    assert!(text(&edited).contains("1 pending"), "{}", text(&edited));
+
+    app.key("-");
+    let queued = app.wait_text(QUEUED);
+    let row = row_with(&queued, "1001");
+    assert!(row.contains(DELETED), "delete mark missing: {row}");
+    see(&queued, &["1 delete"], &["1 update", "no pending changes"]);
+
+    app.key("u");
+    let revived = app.wait_text("Undid a delete mark");
+    let row = row_with(&revived, "1001");
+    assert!(!row.contains(DELETED), "the delete mark stayed: {row}");
+    see(
+        &revived,
+        &["the staged edits are back", "1 update"],
+        &["1 delete", "no pending changes"],
+    );
+
+    app.key("u");
+    let reverted = app.wait_text("Undid a cell edit");
+    see(
+        &reverted,
+        &["no pending changes"],
+        &["1 update", "1 delete"],
+    );
+
+    app.key("+");
+    let inserted = app.wait_text("Row inserted");
+    see(&inserted, &["1 insert"], &["no pending changes"]);
+    app.key("-");
+    let removed = app.wait_text(QUEUED);
+    see(&removed, &["no pending changes"], &["1 insert"]);
+    app.key("u");
+    let restored = app.wait_text("Undid a removed insert");
+    see(
+        &restored,
+        &["the row and its edits are back", "1 insert"],
+        &["no pending changes"],
+    );
+    app.key("u");
+    let gone = app.wait_text("Undid an insert");
+    see(
+        &gone,
+        &["the row is gone", "no pending changes"],
+        &["1 insert"],
+    );
+    app.finish();
+}
+
+#[test]
 fn pending_narrow_then_wide() {
     let args = ["--page", "datagrid"];
     let app = open("s03-pending", 80, 24, &args);

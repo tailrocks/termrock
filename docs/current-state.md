@@ -35,7 +35,7 @@ does not exist in this tree yet.
 
 | Feature | Default | Adds |
 | --- | --- | --- |
-| `cli` | yes | `clap`, the `cli` module and `Motion` as a `clap::ValueEnum`. The four binaries require it; `jackin-console` enables it on its `junie-tui` dependency. |
+| `cli` | yes | `clap`, `serde_json` (Holla's persisted JSON codec, see below), the `cli` module and `Motion` as a `clap::ValueEnum`. The four binaries require it; `jackin-console` enables it on its `junie-tui` dependency. The library itself has no `serde_json` dependency with `--no-default-features`. |
 | `terminal` | yes | `termpane` and the `terminal` module. |
 
 `jackin-console` features (none is a default):
@@ -143,9 +143,51 @@ read it against, because each of its reasons names a Fixed control.
 - Behaviour is overridable in layers: app/profile policy, then
   per-widget setting, then user key remapping.
 - A control with one true value is `Control::Fixed(Reason)` (`core::refusal`): `Checkbox`, `Select`, `Button`, one `RadioGroup` option and one `ListItem` take `.fixed(reason)` or `.control(..)`. It stays in the focus ring, draws the disabled look with the `▎` gutter when focused, and refuses an edit: the value is untouched, the widget returns `Consumed` (`Select`, `Button`: `(Consumed, ..)`) and raises the reason into a thread-local slot (`RefCell<Option<Reason>>`). The call site reads the slot with `take_refusal()` (which clears it) and posts it with `Cx::refused(Reason)`, a neutral status of the reason text alone that lasts 5 s. `shell::handle` clears the slot at the start and at the end of each input, and redraws whenever an input changed the status line (text or tone), so a refusal by key paints at once. `Cx::sticky` posts a neutral status that does not expire and clears on the next key, paste or mouse press (`StatusLine::set_sticky_with`); it is for text a user must read or copy. A `Dialog` routes its mnemonics and its confirm key through `Button::activate`, and every finish (Enter in a prompt field, the typed acknowledgement) through `Button::refuse`, so a fixed action refuses on every route and `Dialog::hints` does not offer it. A fixed `ListItem` keeps its checked state through every selection path. `Reason` limits: text 60 columns, `short` 20 (`Reason::within_limits`); `ContextMenu::reason_room` is the room of the menu border. The showcase page `fixedcontrols` shows it. `Table` rows have no fixed state yet.
+- The showcase Query workbench keeps one `CodeEditor` per document, selected by an authoritative key, not the tab strip. Record: [Query workbench document keys](audits/2026-11-15-query-workbench-document-keys.md).
+- A Query workbench run is bound to its document key, a per-document generation and the SQL captured at run start (`OperationToken`, `RunRequest`). Completion is admitted once, by key and generation; a late edit, a close or a cancel cannot redirect or double-apply it. Record: [Query workbench run identity](audits/2026-11-15-query-workbench-run-identity.md).
 - The showcase demonstrates every library capability; the coverage
   gate is described in
   [shared components plan](architecture/shared-components-plan.md).
+
+## Holla persisted JSON
+
+Holla decodes and encodes every persisted store (`sizes.json`,
+`trusted.json`, `frecency.json`, the ops log) and every discovery input
+(`package.json`, `mise tasks`, `brew services`) with `serde_json`, through
+the single codec in `src/bin/holla/domain/manifest.rs` (`parse_json`,
+`json_str`, `json_u64`, `json_i64`). No store has its own escaping or number
+parser. The policy:
+
+- Strings are exact UTF-8. Quotes, backslashes, newlines, control
+  characters and non-BMP scalars round-trip unchanged, and an escaped
+  surrogate pair decodes to one scalar.
+- Integer fields (sizes, mtimes, timestamps, schema versions, stamps) are
+  read as `u64` or `i64` with no `f64` step. `9007199254740993`, `u64::MAX`
+  and the `i64` limits keep their value. A fraction, an exponent (`1.0`,
+  `1e3`), a negative value for an unsigned field, or an out-of-range value is
+  an invalid field, even when it is mathematically integral.
+- Syntax is strict. Unknown escapes, raw control characters, lone or
+  reversed surrogates, `NaN`, `Infinity` and trailing data are errors. A
+  malformed file is reported as unreadable and the store starts empty.
+- Duplicate object keys keep the last value. Before #63 the first match
+  won.
+- Unknown object fields are ignored. An invalid entry is skipped and its
+  error is recorded as the store's first diagnostic (`sizes.json entry 1
+  invalid: ...`). Valid siblings are kept, and the invalid entry is never
+  filled with a default.
+- Timestamp arithmetic on loaded values saturates, so an extreme stored
+  value cannot panic.
+- One-time loss of legacy caches. Before #63, `sizes.json` escaped only
+  quotes. A path with a bare backslash (for example `\d`) or a raw control
+  character is invalid JSON now, so the file loads empty with a
+  `sizes.json unreadable` diagnostic and rebuilds on the next scan. A
+  backslash that old files wrote unescaped is now read as an escape. `\n`
+  becomes a newline and `\\` becomes one backslash, so that entry misses its
+  real path and is a cache miss. `trusted.json` and `frecency.json` already
+  escaped backslashes and quotes, so only a raw control character in a stored
+  path or item makes them unreadable. Those files start empty, and the next
+  save replaces them. Trust decisions are then asked again, and usage history
+  restarts. No other data changes on upgrade.
 
 ## Testing today
 
@@ -183,8 +225,17 @@ variant of these enums stays a breaking change and is recorded here.
 | `widgets::grid::DataGrid` user edits | Every user-originated cell mutation (text editor, Select/Combo/Radio/Segmented/Tags popups, Checkbox toggle, native Bool cycle, Delete/clear) reaches the configured `validator` exactly once per commit attempt, including the empty string. `default_validator` now owns the empty rule: empty Text/Enum is `Text("")`, empty Json is rejected, empty Number/Id/Timestamp/Bool is NULL only if nullable. The reserved token `null` (any case) stays NULL for nullable columns in the default grammar; a literal text value `null` needs a custom parser. Delete and the nullable Bool cycle are an explicit NULL intent: the parser sees `null` and must return `CellValue::Null`, or the clear is rejected. A rejected attempt records no draft or undo entry and keeps the editor open. A text or popup session shows the rejection on its own field or popup (`edit_error`) and leaves `cell_errors` alone: the open editor already sits on that cell with the input to correct, the message disappears with the session when it is cancelled, and a cell mark would outlive an Esc. `cell_errors` marks only cells with no session open, so an immediate toggle and the Delete clear set it, and the next accepted edit of that cell clears it. `try_edit_text` returns its `GridEditError` and sets nothing, so the host decides where to show it (the showcase marks the cell). An accepted value equal to the current one closes the editor and records nothing (no draft, undo entry or `CellChanged`; Tab still moves on). New: `try_edit_text`, `finish_edit_session` (`FinishEdit`), `CellEditResult`, `GridEditError`. `record_cell` is now documented as trusted model input and no user-event path calls it. |
 | `widgets::grid::CellValue::edit_text` and unchanged commits | The editor seed is lossless and separate from the two-decimal display (`text`, `text_ref`, cell rendering are unchanged). `Num` seeds Rust's shortest round-trip `f64` text, with `.0` appended to an integral finite value so it stays `Num` under the default int-first parser; `Int` seeds its decimal digits. `Null` and `Default` seed the reserved tokens `NULL` and `DEFAULT` instead of empty text, and the default grammar now also maps `default` (any case) to `CellValue::Default`. A literal `Text("NULL")` or `Text("DEFAULT")` therefore needs a custom literal-text parser to survive an unchanged commit. After the configured parser accepts the text (there is no raw-text shortcut), the result is compared with the effective value by one crate-private `same_edit_value`: finite `Num` compares numerically, so `0.0` and `-0.0` are a no-op that keeps the stored bits; NaNs are equal only with identical bits; `Int` and `Num` are different variants and an `Int` is never cast to `f64`. An equal result records nothing (no draft, undo entry or `CellChanged`), and an edit that returns a cell to its stored value removes the draft by the same equality. Scope is finite `f64` storage; arbitrary-precision decimals and nonfinite rejection (#47) are outside this change. |
 | `widgets::table::DataTable` immediate toggle | A Checkbox toggle the table validator rejects sets the target cell's `Cell.error` (shown in the error colour) instead of being dropped. |
+| `terminal::TerminalView`, `TerminalViewport` | Intentional edge-case correction (no API change). A view paints only inside the part of its area that overlaps the buffer, and a wide symbol that does not fit completely in the remaining columns (by Ratatui's `CellWidth`) paints one blank cell with its own style, so no emitted symbol is wider than the pane. A wide glyph's continuation cell that is the first visible column paints a blank. The focused cursor is drawn only when it is inside the buffer. `TerminalViewport::screen_pos` returns `None` for a column in the scroll track, past the pane or past the emulated grid; it used to clamp onto the last emulated column. `context_point` then falls back to the last drawn row of the pane. Showcase's Terminal pane page shows it with the `wide edge` fixture and the `Clip last column` option (off by default). |
 
 ## Known limits
+
+- TablePro's SQL tokenizer (`src/bin/tablepro/sql.rs`) is total over any valid
+  UTF-8 string: every token range starts and ends on a char boundary, and the
+  ranges cover the input exactly. Identifiers accept alphabetic or `_` scalars
+  first and alphanumeric or `_` scalars after; any other scalar (emoji, combining
+  mark, symbol) is one punctuation token. This is a lexical policy, not SQL Unicode
+  identifier support. A doubled quote inside a string or quoted identifier stays
+  in one token.
 
 - `TerminalState::scrolled_off` is exact while the history is below its
   limit (it follows the growth of `scrollback_len`). At the limit, and with
@@ -206,5 +257,24 @@ variant of these enums stays a breaking change and is recorded here.
   [architecture](architecture.md); no part of that split has landed.
 - Applications simulate their backends (PostgreSQL, Docker,
   filesystem). No real external effect is claimed or tested.
+- TablePro's save and preview SQL (`model::preview_sql`) and the Showcase
+  grid's SQL preview serialize a finite number as the shortest text that
+  parses back to the stored `f64` (`1.2345` stays `1.2345`, `1.0` stays
+  `1.0`), in assignments, inserted values and original-row predicates. A
+  null key matches with `IS NULL`. A NaN or infinite number, a `DEFAULT` in a
+  row predicate or a key column missing from the tab aborts the whole
+  preview with the row and column named, opens no dialog, starts no save and
+  keeps the draft. Digits discarded before the model stored a number cannot
+  be recovered, and arbitrary-precision decimals are not supported. See
+  [the audit note](audits/2026-11-15-exact-sql-literals.md).
+- `DataGrid` keeps its drafts and undo history by row identity. Each row has
+  an `ItemKey` (local keys are never reused, provider keys come from
+  `try_set_rows_keyed`), `GridRevision` counts source and draft changes, and
+  `DataGrid::pending()` is a read-only keyed view. Deleting an existing row
+  keeps its staged cells, so undelete and Undo show them again. Removing an
+  inserted row is undoable and restores the row, its edits, errors, selection,
+  cursor and cell range. `undo()` and `GridAction::Undone` report the affected
+  `GridUndo` key. See
+  [the audit note](audits/2026-11-15-grid-keyed-drafts-undo.md).
 - The `visual-baseline` git tag is frozen historical evidence. It is
   never moved, and it is not a substitute for the current design.

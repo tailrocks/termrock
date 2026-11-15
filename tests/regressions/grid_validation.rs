@@ -1,9 +1,7 @@
-mod common;
-
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use common::*;
+use crate::common::*;
 use junie_tui::core::event::Outcome;
 use junie_tui::core::focus::BlurAction;
 use junie_tui::core::id::WidgetId;
@@ -56,8 +54,8 @@ fn press(grid: &mut DataGrid, code: KeyCode) -> (Outcome, Option<GridAction>) {
 }
 
 fn untouched(grid: &mut DataGrid) {
-    assert!(grid.pending.is_empty(), "pending {:?}", grid.pending);
-    assert!(!grid.undo(), "an undo record was pushed");
+    assert!(grid.pending().is_empty(), "pending {:?}", grid.pending());
+    assert!(grid.undo().is_none(), "an undo record was pushed");
 }
 
 fn draw_grid(grid: &mut DataGrid) -> ratatui::buffer::Buffer {
