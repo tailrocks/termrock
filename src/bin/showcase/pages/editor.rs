@@ -777,7 +777,15 @@ impl Page for EditorPage {
                 }
                 o
             }
-            PageEvent::Paste(text) => self.editor.on_paste(text),
+            PageEvent::Paste(text) => {
+                let o = self.editor.on_paste(text);
+                if self.completion.is_open() {
+                    // The paste moved the cursor past the word the popup was
+                    // opened for, so its replace span and rows are stale.
+                    self.trigger(false);
+                }
+                o
+            }
             PageEvent::Pointer(ev) => {
                 if ev.wheel().is_some()
                     && let Some(r) = self.completion.route(ev)
@@ -959,6 +967,35 @@ mod tests {
             Some("return")
         );
         assert!(!drawn(&mut page).contains(why));
+    }
+
+    #[test]
+    fn a_paste_with_the_popup_open_refreshes_what_accept_replaces() {
+        use junie_tui::core::focus::{Focus, FocusRing};
+        let mut page = EditorPage::new();
+        page.editor.field.buffer.insert_str("fet");
+        page.editor.begin_edit();
+        page.trigger(true);
+        assert!(page.completion.is_open());
+        let mut focus = Focus::default();
+        focus.focus(page.editor.id);
+        let ring = FocusRing::default();
+        let mut cx = Cx::new(&mut focus, &ring);
+        page.handle(&PageEvent::Paste("ch".into()), &mut cx);
+        let (_, word) = page.word_before_cursor();
+        assert_eq!(word, "fetch");
+        // Accepting must replace the whole word the user now sees, not the
+        // three characters the popup was opened with.
+        let enter = junie_tui::core::event::Key {
+            code: KeyCode::Enter,
+            mods: ratatui::crossterm::event::KeyModifiers::NONE,
+        };
+        page.handle(&PageEvent::Key(enter), &mut cx);
+        assert!(
+            !page.editor.text().contains("fefetch"),
+            "stale replace span corrupted the word: {:?}",
+            &page.editor.text()[..16.min(page.editor.text().len())]
+        );
     }
 
     #[test]

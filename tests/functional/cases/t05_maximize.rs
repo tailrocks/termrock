@@ -340,7 +340,11 @@ fn drag_seam(app: &App, seam: Point, delta: (i16, i16), thin: char, heavy: char)
     );
 
     app.up(end);
-    let released = app.settle();
+    // A quiet terminal is not a handled release: a slow app is quiet until it
+    // gets to the button-up. Wait for the seam to lose its accent instead.
+    let released = app.wait_screen("seam released", |screen| {
+        accent_cells(screen, heavy).is_empty()
+    });
     assert!(
         accent_cells(&released, heavy).is_empty(),
         "release kept the accent seam\n{}",

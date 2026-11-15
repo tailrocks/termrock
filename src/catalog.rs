@@ -5056,6 +5056,7 @@ pub static CAPABILITIES: &[Capability] = &[
     Capability::function("widgets::table::DataTable::keyed"),
     Capability::function("widgets::table::DataTable::on_key_source"),
     Capability::function("widgets::table::DataTable::on_key_edit_source"),
+    Capability::function("widgets::table::DataTable::on_blur_edit_source"),
     Capability::function("widgets::table::DataTable::on_pointer_source"),
     Capability::function("widgets::table::DataTable::on_pointer_edit_source"),
     Capability::function("widgets::table::DataTable::render_source"),

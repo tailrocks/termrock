@@ -217,6 +217,15 @@ fn wide_ascii(screen: &TerminalSnapshot) -> bool {
         && count(screen, THUMB) == 2
 }
 
+/// The runtime writes the caret shape (`DECSCUSR`, `CaretShape::Bar` by default)
+/// in a second write after the frame, and the emulator does not treat DEC 2026
+/// as a frame boundary. The cells can therefore be on screen while the cursor
+/// still has the emulator's default block shape, and the stored frame records
+/// the shape.
+fn caret_applied(screen: &TerminalSnapshot) -> bool {
+    screen.cursor().shape() == tui_test::SnapshotCursorShape::Bar
+}
+
 fn narrow_ascii(screen: &TerminalSnapshot) -> bool {
     screen.cols() == 80
         && screen.rows() == 24
@@ -475,7 +484,9 @@ fn checkpoint() {
         SHOWCASE,
         &["--page", "textareas", "--glyphs", "ascii"],
     );
-    let wide = app.wait_screen("ascii text areas 120x40", wide_ascii);
+    let wide = app.wait_screen("ascii text areas 120x40", |screen| {
+        wide_ascii(screen) && caret_applied(screen)
+    });
     assert_wide_ascii(&wide);
     app.resize(80, 24);
     let narrow = app.wait_screen("ascii text areas 80x24", narrow_ascii);

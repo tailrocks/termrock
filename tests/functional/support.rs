@@ -142,6 +142,7 @@ pub struct App {
     checkpoint: Cell<usize>,
     recent: RefCell<VecDeque<(usize, TerminalSnapshot)>>,
     clock: bool,
+    fence: bool,
 }
 
 impl App {
@@ -585,11 +586,74 @@ impl App {
         }
     }
 
+    /// Sends a wheel step and waits for the page to show its effect. `settle`
+    /// only waits for 150 ms without output, which a loaded app outlasts, so a
+    /// loop that reads `settle` after `wheel` can read the frame from before the
+    /// step and send another one. Use this where every step is known to move
+    /// the page, and `wheel` where the loop is looking for the end of the scroll.
+    pub fn wheel_applied(&self, point: Point, down: bool, amount: usize) -> TerminalSnapshot {
+        let before = text(&self.screen());
+        self.wheel(point, down, amount);
+        self.wait_screen("wheel applied", |screen| text(screen) != before)
+    }
+
+    /// Resizes the PTY and returns once the app has drawn at the new size.
+    ///
+    /// The emulator reports the new cols and rows at once but keeps the old
+    /// frame until the app handles the resize and redraws, and a full repaint
+    /// arrives in several chunks. A read or click taken before the redraw ends
+    /// sees the previous layout or a mix of both. The fence closes the gap:
+    /// the shell answers it with a BEL queued behind the frame of every
+    /// earlier input, so the bell proves the resize was handled and drawn.
     pub fn resize(&self, cols: u16, rows: u16) {
         self.log(format!("resize {cols}x{rows}"));
         self.session
             .execute(Operation::Resize { cols, rows })
             .expect("resize PTY");
+        self.fence();
+    }
+
+    fn bells(&self) -> u64 {
+        match self
+            .session
+            .execute(Operation::GetBellCount)
+            .expect("bell count")
+        {
+            OperationResult::BellCount(count) => count,
+            _ => panic!("missing bell count"),
+        }
+    }
+
+    /// Waits until the app has handled and drawn everything sent so far. Only
+    /// a candidate Showcase, TablePro, Holla or Jackin answers it (see
+    /// [`fenced`]). A reference build or another program gets no wait.
+    pub fn fence(&self) {
+        if !self.fence {
+            return;
+        }
+        let before = self.bells();
+        self.log("fence".to_string());
+        self.session
+            .paste(TestRequest::FENCE)
+            .expect("fence through bracketed paste");
+        let deadline = Instant::now() + TIMEOUT;
+        while self.bells() == before {
+            self.assert_running("fence");
+            assert!(
+                Instant::now() < deadline,
+                "timed out: fence\n{}",
+                text(&self.screen())
+            );
+            std::thread::sleep(Duration::from_millis(10));
+        }
+    }
+
+    /// [`App::resize`], then the screen at the new size.
+    pub fn wait_size(&self, cols: u16, rows: u16) -> TerminalSnapshot {
+        self.resize(cols, rows);
+        self.wait_screen(&format!("size {cols}x{rows}"), |screen| {
+            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
+        })
     }
 
     /// Wait for the child to exit. The wait ends on the exit itself, so only
@@ -795,6 +859,17 @@ fn redraw_after_flash(app: &App) {
     }
 }
 
+/// A candidate build of an app whose shell answers the fence.
+fn fenced(launch: &Launch) -> bool {
+    launch.mode == SessionMode::Candidate
+        && bin_name(launch.bin.to_str().unwrap_or_default()).is_some_and(|name| {
+            matches!(
+                name,
+                "showcase" | "tablepro" | "holla" | "jackin" | "jackin-preview"
+            )
+        })
+}
+
 fn bin_name(bin: &str) -> Option<&str> {
     Path::new(bin).file_name().and_then(|file| file.to_str())
 }
@@ -863,6 +938,7 @@ pub fn try_launch(launch: Launch) -> Result<App, LaunchError> {
                 checkpoint: Cell::new(0),
                 recent: RefCell::new(VecDeque::new()),
                 clock: launch.clock,
+                fence: fenced(&launch),
             };
             app.persist_actions();
             Ok(app)
@@ -1409,6 +1485,9 @@ fn effective_launch_env(launch: &Launch, home: &Path) -> BTreeMap<String, String
     ]);
     if launch.clock {
         environment.insert("JUNIE_TUI_TEST_CLOCK".to_string(), "1".to_string());
+    }
+    if fenced(launch) {
+        environment.insert(TestRequest::FENCE_ENV.to_string(), "1".to_string());
     }
     if !launch.history {
         environment.insert("HOLLA_NO_HISTORY".to_string(), "1".to_string());

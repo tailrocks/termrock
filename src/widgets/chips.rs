@@ -8,7 +8,7 @@ use crate::core::hit::Axis;
 use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
 use crate::core::keymap::unassigned_chord;
 use crate::core::keymap::{Actions, KeyBinding, KeyMap, NavKeys, lookup};
-use crate::core::list::{Cursor, Navigable, RowSource};
+use crate::core::list::{Cursor, Navigable, RowFn, RowSource};
 use crate::theme::{ButtonKind, Kind};
 use crate::ui::context::ContextConfig;
 use crate::ui::ctx::{RenderCtx, fill};
@@ -114,6 +114,9 @@ pub struct ChipBar {
 
     shown: usize,
 
+    /// Whether the last render drew the add button.
+    add_drawn: bool,
+
     more_area: Rect,
 
     /// The scalar policy the last complete render laid out with. `None` after
@@ -198,6 +201,7 @@ impl ChipBar {
             context: ContextConfig::DEFAULT,
             menu: None,
             shown: 0,
+            add_drawn: false,
             more_area: Rect::ZERO,
             layout: None,
         }
@@ -290,7 +294,7 @@ impl ChipBar {
         self.more_area = Rect::ZERO;
         self.area = Rect::ZERO;
         self.layout = None;
-        self.cursor = self.cursor.min(self.stops().saturating_sub(1));
+        self.cursor = self.cursor.min(self.stop_count().saturating_sub(1));
     }
 
     fn policy(&self) -> BarPolicy {
@@ -479,8 +483,30 @@ impl ChipBar {
         self.id.part(PartRef::of(Part::TITLE))
     }
 
-    fn stops(&self) -> usize {
+    fn stop_count(&self) -> usize {
         self.chips.len() + usize::from(self.add_label.is_some())
+    }
+
+    /// Whether the last render drew stop `i` (a chip index, or `chips.len()`
+    /// for the add button). A hidden chip counts as drawn while the overflow
+    /// marker stands in for it.
+    fn drawn(&self, i: usize, shown: usize, add_drawn: bool) -> bool {
+        if i < self.chips.len() {
+            self.overflow_marker || i < shown
+        } else {
+            add_drawn
+        }
+    }
+
+    /// The stops keyboard navigation may land on: all of them until a render
+    /// of the current policy says which are drawn.
+    fn stops(&self) -> Vec<usize> {
+        let all = 0..self.stop_count();
+        if !self.layout_current() {
+            return all.collect();
+        }
+        all.filter(|&i| self.drawn(i, self.shown, self.add_drawn))
+            .collect()
     }
 
     pub fn on_key(&mut self, key: &Key) -> (Outcome, Option<ChipAction>) {
@@ -489,7 +515,7 @@ impl ChipBar {
             let (o, ev) = menu.on_key(key);
             return (o, self.menu_event(ev));
         }
-        let n = self.stops();
+        let n = self.stop_count();
         if n == 0 {
             return (Outcome::Ignored, None);
         }
@@ -537,13 +563,30 @@ impl ChipBar {
             }
             _ => {}
         }
-        let to = match self.nav.action(key).filter(|_| key.plain()) {
-            Some(nav) => self.cursor().apply(nav, self, 1).index(),
-            None => None,
-        };
-        if let Some(to) = to {
-            self.cursor = to;
-            return (Outcome::Changed, None);
+        if let Some(nav) = self.nav.action(key).filter(|_| key.plain()) {
+            // No render has laid out the current chips, so no stop is known to
+            // be drawn. Hidden chips must not take navigation keys.
+            if !self.layout_current() {
+                return (Outcome::Ignored, None);
+            }
+            let stops = self.stops();
+            let at = (0..stops.len())
+                .min_by_key(|&k| stops[k].abs_diff(self.cursor))
+                .unwrap_or(0);
+            let label = |k: usize| self.label(stops[k]);
+            let rows = RowFn {
+                len: stops.len(),
+                enabled: &|_| true,
+                label: &label,
+            };
+            if let Some(k) = Cursor::new(at)
+                .axis(Axis::Horizontal)
+                .apply(nav, &rows, 1)
+                .index()
+            {
+                self.cursor = stops[k];
+                return (Outcome::Changed, None);
+            }
         }
         match key.code {
             KeyCode::Enter => {
@@ -631,6 +674,27 @@ impl ChipBar {
         let (shown, marker) =
             overflow_run_cells(&widths, usize::from(area.right().saturating_sub(x)), 1);
         self.shown = shown;
+        let marker_cells = marker
+            .as_ref()
+            .filter(|_| self.overflow_marker && shown < self.chips.len())
+            .map_or(0, |m| width(m) + 1);
+        let used = widths[..shown].iter().sum::<usize>() + shown + marker_cells;
+        let add_drawn = self.add_label.as_ref().is_some_and(|a| {
+            width(a).saturating_add(2)
+                <= usize::from(area.right().saturating_sub(x)).saturating_sub(used)
+        });
+        self.add_drawn = add_drawn;
+        // Navigation never lands on an undrawn stop; this only catches a width
+        // change that hid the cursor's item since the last render.
+        if !self.drawn(self.cursor, shown, add_drawn) {
+            let cursor = self.cursor;
+            if let Some(to) = (0..self.stop_count())
+                .filter(|&i| self.drawn(i, shown, add_drawn))
+                .min_by_key(|&i| i.abs_diff(cursor))
+            {
+                self.cursor = to;
+            }
+        }
         if let Some((_, BarMenu::Hidden(rows))) = &self.menu
             && !rows
                 .iter()
@@ -730,7 +794,7 @@ impl ChipBar {
             let it = t.interactive(Kind::Button(ButtonKind::Subtle), s, plane);
             let st = it.style;
             let w = width(add).saturating_add(2);
-            if w <= usize::from(area.right().saturating_sub(x)) {
+            if add_drawn {
                 let w = terminal_extent(w);
                 let r = Rect::new(x, y, w, 1);
                 fill(buf, r, st);
@@ -782,7 +846,7 @@ impl ChipBar {
 
 impl RowSource for ChipBar {
     fn len(&self) -> usize {
-        self.stops()
+        self.stop_count()
     }
     fn label(&self, i: usize) -> &str {
         self.chips.get(i).map_or("", |c| c.label.as_str())

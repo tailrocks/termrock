@@ -4,11 +4,7 @@
 //! `pre_refactor/t05_quit/` and each checkpoint's dots become underscores.
 //! TablePro has no `--page` flag. It opens on Connections.
 
-use std::path::PathBuf;
-use std::time::{Duration, Instant};
-
 use tui_test::TerminalSnapshot;
-use tuiscotti_latest::check::CheckOutcome;
 
 use crate::support::{App, Launch, TABLEPRO, find_all, flash_settle, row_text, text, try_launch};
 
@@ -158,30 +154,6 @@ fn quit_dialog(screen: &TerminalSnapshot) -> bool {
     quit_copy(screen) && text(screen).contains(CONNECTED)
 }
 
-fn check_frame(app: &App, screen: &TerminalSnapshot, test_id: &str) {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines");
-    let sample = tuiscotti_latest::sample::Sample::state(
-        test_id,
-        screen.clone(),
-        tuiscotti_latest::sample::Observation::empty(),
-    )
-    .expect("build Tuiscotti state sample");
-    let bytes = sample.to_bytes().expect("serialize Tuiscotti sample");
-    let artifacts = app.evidence_dir().join("check-artifacts");
-    let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
-        .expect("open Tuiscotti frozen store");
-    let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
-    if let CheckOutcome::Failure(failure) = outcome {
-        panic!(
-            "{test_id} {} sha {} path {} cells {}",
-            failure.reason(),
-            failure.candidate_sha256(),
-            failure.candidate_path().display(),
-            failure.changed_cell_total()
-        );
-    }
-}
-
 fn cancel_focused(screen: &TerminalSnapshot) -> bool {
     row_has(screen, &format!("{FOCUS}{CANCEL}")) && !row_has(screen, &format!("{FOCUS}{QUIT}"))
 }
@@ -200,37 +172,12 @@ fn assert_cancel_focused(screen: &TerminalSnapshot) {
 /// that footer line, and `visual` then locks the cleared toast. Hold the
 /// focused Cancel dialog while the toast is up, and compare that frame.
 fn shot(app: &App, checkpoint: &str, cols: u32, rows: u32) {
-    let test_id = visual_id(checkpoint);
-    let deadline = Instant::now() + Duration::from_secs(8);
-    let mut good: Option<TerminalSnapshot> = None;
-    let mut since: Option<Instant> = None;
-    loop {
-        let screen = app.screen();
-        let ready = screen.cols() == cols
+    app.visual_while(&visual_id(checkpoint), |screen| {
+        screen.cols() == cols
             && screen.rows() == rows
-            && quit_dialog(&screen)
-            && cancel_focused(&screen);
-        if ready {
-            let same = good.as_ref().is_some_and(|prev| prev == &screen);
-            if same && since.expect("hold start").elapsed() >= Duration::from_millis(200) {
-                check_frame(app, &screen, &test_id);
-                return;
-            }
-            if !same {
-                good = Some(screen);
-                since = Some(Instant::now());
-            }
-        } else if let Some(prev) = good.take() {
-            check_frame(app, &prev, &test_id);
-            return;
-        }
-        assert!(
-            Instant::now() < deadline && app.child_running(),
-            "{test_id} frame not seen\n{}",
-            text(&app.screen())
-        );
-        std::thread::sleep(Duration::from_millis(20));
-    }
+            && quit_dialog(screen)
+            && cancel_focused(screen)
+    });
 }
 
 fn editor_left(screen: &TerminalSnapshot) -> bool {

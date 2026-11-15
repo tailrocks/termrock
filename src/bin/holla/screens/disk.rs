@@ -130,7 +130,9 @@ pub struct DiskPage {
     last_revealed: usize,
     last_phase: Option<ScanPhase>,
     generation: u64,
-    seeded_gen: u64,
+    /// Whether a completed scan already preselected this page's candidates.
+    /// Later scans (a finished cleanup rescans the root) keep the reader's ticks.
+    seeded: bool,
 
     pub reviewed: Option<u64>,
 
@@ -162,7 +164,7 @@ impl DiskPage {
             last_revealed: usize::MAX,
             last_phase: None,
             generation: 0,
-            seeded_gen: 0,
+            seeded: false,
             reviewed: None,
             rebuilds: 0,
             menu: PendingMenu::default(),
@@ -285,6 +287,7 @@ impl DiskPage {
         self.rebuilds += 1;
         let tick = w.tick;
         let focused = self.cursor_fs_path();
+        let focused_before = self.described_item();
         let expanded_fs: Vec<String> = self
             .tree
             .expanded
@@ -324,6 +327,7 @@ impl DiskPage {
 
         let live: BTreeSet<&str> = self.paths.iter().map(|(_, f)| f.as_str()).collect();
         self.selected.retain(|s| live.contains(s.as_str()));
+        self.rewind_if_changed(&focused_before);
     }
 
     fn cursor_fs_path(&self) -> Option<String> {
@@ -347,10 +351,10 @@ impl DiskPage {
 
     fn seed_selection(&mut self, w: &World) {
         let Some(scan) = &w.scan else { return };
-        if self.seeded_gen == scan.generation || !scan.completed() {
+        if self.seeded || !scan.completed() {
             return;
         }
-        self.seeded_gen = scan.generation;
+        self.seeded = true;
         for c in &w.disk.candidates {
             if c.default_selected()
                 && c.path.starts_with(&self.path)
@@ -1077,6 +1081,7 @@ impl DiskPage {
         let root = self.path.clone();
         w.start_scan(&root);
         self.selected.clear();
+        self.seeded = false;
         self.reviewed = None;
         self.tree.expanded.clear();
         self.last_revealed = usize::MAX;
@@ -2587,5 +2592,103 @@ mod detail_scroll_tests {
         deliver_click(&mut page, &mut w, &hits, row_cell(1));
         assert_ne!(page.cursor_fs_path(), first);
         assert_eq!(page.detail_scroll.offset, 0, "clicking a new row");
+    }
+
+    #[test]
+    fn a_rescan_that_drops_the_focused_entry_rewinds_the_detail() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        let root = w.location.cwd.clone();
+        w.start_scan(&root);
+        w.tick += 1_000_000;
+        let mut page = DiskPage::new(&root);
+        page.rebuild_tree(&w);
+        page.tree
+            .expanded
+            .extend(page.paths.iter().map(|(p, _)| p.clone()));
+        page.rebuild_tree(&w);
+        let (row, path) = page
+            .tree
+            .rows()
+            .iter()
+            .enumerate()
+            .filter_map(|(i, r)| page.fs_path_of(&r.path).map(|p| (i, p)))
+            .find(|(i, p)| *i > 0 && p.matches('/').count() >= 2 && w.fs.get(p).is_some())
+            .expect("a nested visible entry");
+        page.tree.context_select(row);
+        let before = page.cursor_fs_path();
+        assert_eq!(before.as_deref(), Some(path.as_str()));
+        page.detail_scroll.set_content(100);
+        page.detail_scroll.set_viewport(5);
+        page.detail_scroll.jump_start();
+        page.detail_scroll.scroll_by(3);
+
+        // A cleanup removed the focused entry and the finished job rescanned.
+        w.fs.remove_permanent(&path).expect("removed");
+        w.start_scan(&root);
+        w.tick += 1_000_000;
+        page.rebuild_tree(&w);
+
+        assert_ne!(
+            page.cursor_fs_path(),
+            before,
+            "the pane now describes another entry"
+        );
+        assert_eq!(
+            page.detail_scroll.offset, 0,
+            "a different entry starts its detail at the top"
+        );
+    }
+}
+
+#[cfg(test)]
+mod cleanup_rescan_tests {
+    use super::*;
+    use crate::domain::fixtures::world_for;
+    use crate::scenario::{Motion, Scenario};
+    use crate::sim::world::scan_test_support::run_to_completion;
+    use junie_tui::core::focus::{Focus, FocusRing};
+
+    #[test]
+    fn a_cleanup_rescan_keeps_an_entry_the_reader_deselected_deselected() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        w.clock.running = true;
+        w.disk.scan_ticks = 1;
+        let root = w.location.home.clone();
+        w.start_scan(&root);
+        run_to_completion(&mut w);
+        let mut page = DiskPage::new(&root);
+        page.rebuild_tree(&w);
+        page.seed_selection(&w);
+        let seeded: Vec<String> = page.selected.iter().cloned().collect();
+        assert!(
+            seeded.len() >= 2,
+            "fixture preselects two entries: {seeded:?}"
+        );
+        let (kept_out, removed) = (seeded[0].clone(), seeded[1].clone());
+
+        // The reader unticks one preselected entry and cleans up another one.
+        page.selected.remove(&kept_out);
+        page.selected.retain(|p| *p == removed);
+        let plan = page.build_plan(&w, Mode::Trash, false);
+        crate::screens::cleanup::commit(&plan, &mut w).expect("the plan starts");
+        let mut steps = 0;
+        while w.cleanup_job.is_some() {
+            crate::screens::cleanup::step(&mut w);
+            steps += 1;
+            assert!(steps < 500, "the job finishes");
+        }
+
+        // The finished job rescanned the root. The new scan completes.
+        run_to_completion(&mut w);
+        let mut focus = Focus::default();
+        let ring = FocusRing::default();
+        let mut cx = Cx::new(&mut focus, &ring);
+        page.on_tick(&mut w, &mut cx);
+
+        assert!(
+            !page.selected.contains(&kept_out),
+            "the entry the reader unticked is selected again: {:?}",
+            page.selected
+        );
     }
 }

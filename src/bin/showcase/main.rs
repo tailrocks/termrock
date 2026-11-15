@@ -86,6 +86,7 @@ fn main() -> std::io::Result<()> {
         coverage::EXTERNAL_COVERAGE,
         coverage::EXTERNAL_ALLOWLIST,
         coverage::RUNTIME_ALLOWLIST,
+        coverage::KEYED_TABLE_ALLOWLIST,
         coverage::INSPECT_CHANGES_COVERAGE,
         coverage::INSPECT_CHANGES_ALLOWLIST,
         coverage::SEARCH_SESSION_ALLOWLIST,

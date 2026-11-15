@@ -1,9 +1,25 @@
+//! The Finder page: a demo of how an app composes the shared `SearchDetail`.
+//!
+//! Ownership. The library owns everything generic: the query text and its
+//! edit commands, the request/token lifecycle, keyed selection and cell
+//! navigation, the keymap, click and context routing, preview scroll
+//! retention, layout, hit regions and both painters (the standard one and the
+//! `SearchPaint` hook of the Hosted painter in `finder/hosted.rs`). This page
+//! owns only domain and demo wiring: the `ACTIONS` catalog and its `rank`,
+//! the `Results` projection built once per `QueryRequested`, the scope and
+//! the demo backend (ready, loading, failing), the preview lines, the
+//! alternatives menu and why dialog, and the option tables. It holds no
+//! selection, query or preview-scroll state of its own.
+
+mod hosted;
+
 use std::collections::VecDeque;
 
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Constraint, Rect};
 
+use self::hosted::Hosted;
 use crate::app::PageId;
 use crate::options::{PageValues, page_options};
 use crate::pages::row_menu::{MENU_HINTS, RowMenu};
@@ -12,6 +28,7 @@ use crate::pages::{Cx, Hint, Page, PageEvent};
 use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::id::{ItemKey, WidgetId};
 use junie_tui::core::intent::Phase;
+use junie_tui::core::keymap::{Actions, KeyBinding, KeyMap};
 use junie_tui::core::list::{KeyedRowSource, RowSource, SourceStamp};
 use junie_tui::core::response::Response;
 use junie_tui::core::selection::ClickPolicy;
@@ -31,8 +48,8 @@ use junie_tui::widgets::list_detail::{
 use junie_tui::widgets::menu::{ContextMenu, MenuItem};
 use junie_tui::widgets::props::Prop;
 use junie_tui::widgets::search_detail::{
-    MissingSelection, QueryPasteMode, QueryRequest, ResultRowKind, SearchAction, SearchConfig,
-    SearchDetail, SearchPhase, SearchSource,
+    MissingSelection, QueryPasteMode, QueryRequest, ResultRowKind, SearchAction, SearchCmd,
+    SearchConfig, SearchDetail, SearchFocusMode, SearchPhase, SearchSource,
 };
 use junie_tui::widgets::table::{Cell, Column, DataTable};
 
@@ -483,6 +500,7 @@ pub struct FinderPage {
     scope: usize,
     layout: Layout,
     backend: Backend,
+    hosted: bool,
     answered: bool,
     failed: bool,
     menu: RowMenu<ItemKey>,
@@ -499,6 +517,7 @@ impl FinderPage {
             scope: 0,
             layout: Layout::Rows,
             backend: Backend::Ready,
+            hosted: false,
             answered: false,
             failed: false,
             menu: RowMenu::default(),
@@ -523,6 +542,7 @@ impl FinderPage {
             "failing" => Backend::Failing,
             _ => Backend::Ready,
         };
+        self.hosted = self.opts.value("finder.painter") == "hosted";
         self.search = new_search(&self.opts);
         self.results = Results::empty();
         self.answered = false;
@@ -724,21 +744,38 @@ impl FinderPage {
                 Vec::new(),
             ),
         };
-        let count = self.results.hits.to_string();
         let under = self.status_line();
-        let frame = SourceFrame {
-            title: "Results",
-            meta: &count,
-            head: &[],
-            under: under.as_deref(),
-            detail_title: &title,
-            detail_meta: &meta,
-            lines: &lines,
-            actions: &actions,
-        };
-        let _ = self
-            .search
-            .render_source(area, &self.results, &frame, buf, ctx);
+        if self.hosted {
+            let (body, foot) = match &under {
+                Some(_) if area.height > 2 => (
+                    Rect::new(area.x, area.y, area.width, area.height - 1),
+                    Some(Rect::new(area.x, area.bottom() - 1, area.width, 1)),
+                ),
+                _ => (area, None),
+            };
+            let mut host = Hosted::new(self.scope, selected);
+            let _ = self
+                .search
+                .render_hosted(body, &self.results, buf, ctx, &mut host);
+            if let (Some(foot), Some(line)) = (foot, &under) {
+                buf.set_string(foot.x + 2, foot.y, line, ctx.theme.muted());
+            }
+        } else {
+            let count = self.results.hits.to_string();
+            let frame = SourceFrame {
+                title: "Results",
+                meta: &count,
+                head: &[],
+                under: under.as_deref(),
+                detail_title: &title,
+                detail_meta: &meta,
+                lines: &lines,
+                actions: &actions,
+            };
+            let _ = self
+                .search
+                .render_source(area, &self.results, &frame, buf, ctx);
+        }
         self.menu.render(area, buf, ctx);
         let pending = self.search.emit_pending_context();
         for action in self.settle(pending).1 {
@@ -763,7 +800,7 @@ impl FinderPage {
     }
 
     fn key(&mut self, key: &Key, cx: &mut Cx) -> Outcome {
-        if cx.focus.is(QUERY) && key.alt() {
+        if (cx.focus.is(QUERY) || (self.hosted && cx.focus.is(RESULTS))) && key.alt() {
             match key.code {
                 KeyCode::Up => {
                     self.set_scope(self.scope + 1);
@@ -805,23 +842,60 @@ fn new_search(opts: &PageValues) -> SearchDetail {
     } else {
         SPLIT_FROM
     };
-    SearchDetail::new(
+    let keymap = match opts.value("finder.keys") {
+        "emacs" => emacs_keymap(),
+        _ => SearchCmd::default_keymap(),
+    };
+    let (reset_on_query, keep_on_same_key) = match opts.value("finder.preview_scroll") {
+        "reset on query" => (true, true),
+        "reset on result" => (false, false),
+        _ => (false, true),
+    };
+    let mut config = SearchConfig::default()
+        .keymap(keymap)
+        .click(click)
+        .missing_selection(missing)
+        .paste_mode(paste)
+        .select_first_on_query(opts.on("finder.select_first"))
+        .navigate_while_loading(opts.on("finder.nav_loading"))
+        .reset_preview_on_query(reset_on_query)
+        .preserve_preview_on_same_key(keep_on_same_key);
+    let mut search = SearchDetail::new(
         RESULTS,
         TextInput::new(QUERY, "")
             .placeholder("Search actions, files and tasks")
             .plain_label()
             .readout_link(SCOPE_LINK),
         Split::new(60, 28, 34),
-    )
-    .config(
-        SearchConfig::default()
-            .click(click)
-            .missing_selection(missing)
-            .paste_mode(paste)
-            .select_first_on_query(opts.on("finder.select_first"))
-            .navigate_while_loading(opts.on("finder.nav_loading")),
-    )
-    .collapse_below(split_from)
+    );
+    if opts.value("finder.painter") == "hosted" {
+        // One focus owner for the query and the results, as an app that
+        // draws its own query line has; typing from the preview returns to it.
+        config = config
+            .focus_mode(SearchFocusMode::Combined)
+            .type_to_query_from_detail(true);
+        search = search.detail_share(34, 34, 48).summary_rows(1);
+    }
+    search.config(config).collapse_below(split_from)
+}
+
+/// The arrow keys give way to Ctrl+N/P and Alt+H/L; focus, preview, activation
+/// and paging keep the default keys.
+fn emacs_keymap() -> KeyMap<SearchCmd> {
+    vec![
+        (KeyBinding::ctrl('f'), SearchCmd::FocusQuery),
+        (KeyBinding::key(KeyCode::Tab), SearchCmd::FocusResults),
+        (KeyBinding::ctrl('o'), SearchCmd::OpenDetail),
+        (KeyBinding::key(KeyCode::Enter), SearchCmd::Activate),
+        (KeyBinding::ctrl('p'), SearchCmd::Up),
+        (KeyBinding::ctrl('n'), SearchCmd::Down),
+        (KeyBinding::alt('h'), SearchCmd::Left),
+        (KeyBinding::alt('l'), SearchCmd::Right),
+        (KeyBinding::key(KeyCode::Home), SearchCmd::Home),
+        (KeyBinding::key(KeyCode::End), SearchCmd::End),
+        (KeyBinding::key(KeyCode::PageUp), SearchCmd::PageUp),
+        (KeyBinding::key(KeyCode::PageDown), SearchCmd::PageDown),
+    ]
 }
 
 fn states_grid() -> StateGrid {
@@ -915,14 +989,30 @@ impl Page for FinderPage {
             return MENU_HINTS.to_vec();
         }
         let retry = self.search.phase() == SearchPhase::Failed;
+        let step = if self.opts.value("finder.keys") == "emacs" {
+            "Ctrl+N/P"
+        } else {
+            "↑↓"
+        };
         let mut hints = match focus {
+            Some(f) if f == self.search.id() && self.hosted => vec![
+                ("Type", "Search"),
+                (step, "Move"),
+                ("Enter", "Run"),
+                ("Alt+↑↓", "Scope"),
+                ("Ctrl+O", "Preview"),
+                crate::pages::row_menu::OPEN_HINT,
+            ],
             Some(f) if f == self.search.id() => vec![
-                ("↑↓", "Move"),
+                (step, "Move"),
                 ("Enter", "Run"),
                 ("Ctrl+O", "Preview"),
                 ("Ctrl+F", "Search"),
                 crate::pages::row_menu::OPEN_HINT,
             ],
+            f if self.search.on_detail(f) && self.hosted => {
+                vec![("↑↓", "Scroll"), ("Esc", "Back")]
+            }
             f if self.search.on_detail(f) => {
                 vec![("↑↓", "Scroll"), ("Tab", "Actions"), ("Esc", "Back")]
             }

@@ -544,6 +544,12 @@ impl<F: SessionFault> TerminalSessionController<F> {
         let events = link.drain(now_ms, self.config.feed_budget_bytes);
         let mut changed = !events.is_empty();
         for event in events {
+            // `Exited` and `Ended` drop the link, so nothing behind them in
+            // the same drain may rewrite how the session finished: an exit
+            // followed by a stream close stays an exit.
+            if self.link.is_none() {
+                break;
+            }
             self.handle(event, now_ms);
         }
         if self.link.is_some() && self.replay.tick(now_ms, &self.config.timing) {
