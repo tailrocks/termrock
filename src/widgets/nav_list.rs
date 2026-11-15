@@ -219,6 +219,15 @@ impl NavList {
         }
     }
 
+    /// Outcome for a recognised key that is a no-op on a valid index.
+    fn handled(repaired: bool) -> Outcome {
+        if repaired {
+            Outcome::Changed
+        } else {
+            Outcome::Consumed
+        }
+    }
+
     /// Scrolls the cursor row into view. Returns whether the scroll offset moved.
     fn reveal_cursor(&mut self) -> bool {
         let row = self.row_of(self.cursor);
@@ -295,7 +304,7 @@ impl NavList {
                     self.current = self.cursor;
                     (Outcome::Changed, Some(NavAction::Activated(self.cursor)))
                 }
-                Some(_) => (Outcome::Changed, None),
+                Some(_) => (Self::handled(repaired), None),
                 None => (Self::idle(repaired), None),
             },
             _ => (Self::idle(repaired), None),
