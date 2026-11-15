@@ -1424,3 +1424,22 @@ fn kinds_chooser_save_cancel_choice_info_help() {
     );
     app.finish();
 }
+
+#[test]
+fn test_connection_replaces_the_masked_password_and_keeps_it_masked() {
+    let args = ["--page", "dialogkinds"];
+    let app = open("s05-keychain", 120, 40, &args);
+    click_page(&app, "Add connection");
+    let form = app.wait_text("Test connection");
+    see(&form, &["7731"], &["keychain-rotated", "hunter2"]);
+
+    click_where(&app, "Test connection", |_| true);
+    let filled = app.wait_text("Password refreshed from the keychain");
+    see(
+        &filled,
+        &["still masked", "0042", "Connected in 42 ms"],
+        &["7731", "keychain-rotated", "hunter2", "revealed"],
+    );
+    close_to_page(&app);
+    app.finish();
+}

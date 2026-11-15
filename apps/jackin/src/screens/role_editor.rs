@@ -1614,8 +1614,7 @@ impl Page<Jackin> for RoleEditorScreen {
                     };
                     let file = file.clone();
                     if let Some(input) = self.input_mut(id) {
-                        input.field.buffer.set_text(&file);
-                        input.field.error = None;
+                        input.set_value(&file);
                     }
                     self.sync();
                     cx.focus.focus(id);

@@ -330,3 +330,32 @@ fn form_value_set_value_builder_and_setter_share_one_path() {
     assert!(i.masked && i.required);
     assert!(!i.editing && !i.is_dirty());
 }
+
+#[test]
+fn form_value_clear_keeps_a_live_filter_consumer_in_sync() {
+    use junie_tui::widgets::input::InputAction;
+
+    let id = WidgetId::of("t.filter");
+    let mut filter = TextInput::new(id, "").edit_entry(EditEntry::Immediate);
+    draw_input(&mut filter, Some(id));
+    let mut query = String::new();
+    let mut feed = |i: &mut TextInput, c: char| {
+        let (_, action) = i.on_key(&key(KeyCode::Char(c)));
+        if action == Some(InputAction::Changed) {
+            query = i.text().to_owned();
+        }
+        query.clone()
+    };
+    assert_eq!(feed(&mut filter, 'a'), "a");
+    assert_eq!(feed(&mut filter, 'b'), "ab");
+
+    filter.clear();
+    draw_input(&mut filter, Some(id));
+    assert!(filter.editing, "the filter stays ready for the next key");
+    assert_eq!(
+        feed(&mut filter, 'c'),
+        "c",
+        "the next character reports Changed with only the new text"
+    );
+    assert_eq!(filter.text(), "c");
+}
