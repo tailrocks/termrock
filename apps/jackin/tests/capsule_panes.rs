@@ -673,6 +673,7 @@ fn a_new_pane_is_refused_when_the_chosen_account_became_unusable() {
         .get_mut("acct-a")
         .expect("account")
         .lifecycle = Lifecycle::NeedsLogin;
+    rig.app.world.refresh_from = Some(rig.app.world.authoritative_revision());
     rig.app.deliver(&Msg::Refreshed {
         ticket: rig.app.world.refresh_ticket,
         result: Ok(Box::new(snapshot)),

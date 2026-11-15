@@ -1,8 +1,9 @@
 #![allow(dead_code)]
 
 use jackin_console::app::App;
+use jackin_console::backend::Effect;
 use jackin_console::fixtures::{Scenario, app_for, app_with_world};
-use jackin_console::world::World;
+use jackin_console::world::{Msg, Snapshot, Work, World};
 use junie_tui::core::event::{Input, Key, Mouse, MouseKind};
 use junie_tui::motion::Motion;
 use junie_tui::runtime::Application;
@@ -199,4 +200,34 @@ pub fn the_thumb_follows_the_mouse_cell_for_cell(app: &mut App, size: (u16, u16)
         at(app).start > dragged.start,
         "a press on the bare track below the thumb moves it down"
     );
+}
+
+/// The reply of a roster refresh the world has out, observed now: marks one
+/// outstanding at the current observation, so the reply is the one the world
+/// is waiting for.
+pub fn roster_reply(app: &mut App, snapshot: Snapshot) -> Msg {
+    app.world.refresh_from = Some(app.world.authoritative_revision());
+    Msg::Refreshed {
+        ticket: app.world.refresh_ticket,
+        result: Ok(Box::new(snapshot)),
+    }
+}
+
+pub fn deliver_roster(app: &mut App, snapshot: Snapshot) -> junie_tui::core::event::Outcome {
+    let reply = roster_reply(app, snapshot);
+    app.deliver(&reply)
+}
+
+/// Starts a roster refresh and holds its answer back, the way a slow index
+/// would: the world waits on the returned ticket and nothing replies until the
+/// test delivers one.
+pub fn hold_roster_refresh(app: &mut App) -> u64 {
+    app.world.refresh_now();
+    app.world.jobs.retain(|job| {
+        !matches!(
+            job.work,
+            Work::Settle(Effect::Refresh { .. }) | Work::Msg(Msg::Refreshed { .. })
+        )
+    });
+    app.world.refresh_ticket
 }

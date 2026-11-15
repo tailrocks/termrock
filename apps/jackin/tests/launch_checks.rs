@@ -905,13 +905,10 @@ fn open_two_choice_later_account_picker(world: World, explicit_first: Option<&st
     app
 }
 
-fn snapshot_after(app: &App, change: impl FnOnce(&mut Snapshot)) -> Msg {
+fn snapshot_after(app: &mut App, change: impl FnOnce(&mut Snapshot)) -> Msg {
     let mut snapshot = sim::snapshot(&app.world);
     change(&mut snapshot);
-    Msg::Refreshed {
-        ticket: app.world.refresh_ticket,
-        result: Ok(Box::new(snapshot)),
-    }
+    roster_reply(app, snapshot)
 }
 
 fn select_later_claude_account(app: &mut App, label: &str) {
@@ -1371,7 +1368,7 @@ fn an_automatic_t18_role_binding_change_before_confirmation_launches_nothing() {
     let mut app = started(world);
     press(&mut app, "enter");
     click_picker_option(&mut app, "Launch · choose Agent", "Codex · Z.AI");
-    let reload = snapshot_after(&app, |snapshot| {
+    let reload = snapshot_after(&mut app, |snapshot| {
         snapshot
             .surfaces
             .roles
@@ -1559,7 +1556,7 @@ fn a_blocked_preferred_account_is_not_replaced_by_another_ready_account() {
 fn an_account_collected_before_a_later_picker_is_revalidated_before_dispatch() {
     let mut app = open_two_choice_later_account_picker(automatic_first_account_world(), None);
     let before = app.world.instances.clone();
-    let reload = snapshot_after(&app, |snapshot| {
+    let reload = snapshot_after(&mut app, |snapshot| {
         snapshot
             .accounts
             .get_mut("acct-codex-primary")
@@ -1575,7 +1572,7 @@ fn an_account_collected_before_a_later_picker_is_revalidated_before_dispatch() {
 fn a_collected_tuple_becoming_unsupported_cancels_the_whole_launch() {
     let mut app = open_two_choice_later_account_picker(automatic_first_account_world(), None);
     let before = app.world.instances.clone();
-    let reload = snapshot_after(&app, |snapshot| {
+    let reload = snapshot_after(&mut app, |snapshot| {
         let offer = snapshot
             .surfaces
             .tuples
@@ -1594,7 +1591,7 @@ fn a_collected_tuple_becoming_unsupported_cancels_the_whole_launch() {
 fn a_collected_provider_change_cancels_the_whole_launch() {
     let mut app = open_two_choice_later_account_picker(automatic_first_account_world(), None);
     let before = app.world.instances.clone();
-    let reload = snapshot_after(&app, |snapshot| {
+    let reload = snapshot_after(&mut app, |snapshot| {
         snapshot
             .surfaces
             .tuples
@@ -1614,7 +1611,7 @@ fn a_collected_provider_change_cancels_the_whole_launch() {
 fn a_collected_model_change_cancels_the_whole_launch() {
     let mut app = open_two_choice_later_account_picker(automatic_first_account_world(), None);
     let before = app.world.instances.clone();
-    let reload = snapshot_after(&app, |snapshot| {
+    let reload = snapshot_after(&mut app, |snapshot| {
         let offer = snapshot
             .surfaces
             .tuples
@@ -1633,7 +1630,7 @@ fn a_collected_model_change_cancels_the_whole_launch() {
 fn a_later_account_becoming_unusable_cancels_the_whole_launch() {
     let mut app = open_two_choice_later_account_picker(automatic_first_account_world(), None);
     let before = app.world.instances.clone();
-    let reload = snapshot_after(&app, |snapshot| {
+    let reload = snapshot_after(&mut app, |snapshot| {
         snapshot
             .accounts
             .get_mut("acct-claude-work")
@@ -1649,7 +1646,7 @@ fn a_later_account_becoming_unusable_cancels_the_whole_launch() {
 fn an_automatic_account_binding_change_is_refused_even_when_old_account_stays_ready() {
     let mut app = open_two_choice_later_account_picker(automatic_first_account_world(), None);
     let before = app.world.instances.clone();
-    let reload = snapshot_after(&app, |snapshot| {
+    let reload = snapshot_after(&mut app, |snapshot| {
         snapshot
             .workspaces
             .iter_mut()
@@ -1678,7 +1675,7 @@ fn an_automatic_binding_change_before_confirmation_refuses_the_selected_account(
     press(&mut app, "enter");
     click_picker_option(&mut app, "Launch · choose Agent", "Codex");
     let before = app.world.instances.clone();
-    let reload = snapshot_after(&app, |snapshot| {
+    let reload = snapshot_after(&mut app, |snapshot| {
         snapshot
             .workspaces
             .iter_mut()
@@ -1734,7 +1731,7 @@ fn an_unchanged_automatic_binding_launches_the_selected_account() {
 #[test]
 fn an_explicit_account_remains_selected_after_the_automatic_preference_changes() {
     let mut app = open_two_choice_later_account_picker(two_choice_world(), Some("Primary"));
-    let reload = snapshot_after(&app, |snapshot| {
+    let reload = snapshot_after(&mut app, |snapshot| {
         snapshot
             .workspaces
             .iter_mut()

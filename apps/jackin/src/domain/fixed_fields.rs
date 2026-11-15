@@ -359,6 +359,7 @@ pub fn world_fixed(w: &World) -> FixedFields {
         tickets: _,
         pending_refreshes: _,
         snapshots_applied: _,
+        authoritative_revision: _,
         refresh_from: _,
         refresh_started_secs: _,
         refresh_ticket: _,
