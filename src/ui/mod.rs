@@ -4,6 +4,7 @@ pub mod context;
 pub mod ctx;
 pub mod edit_menu;
 pub mod fade;
+pub(crate) mod fitting;
 #[cfg(test)]
 mod intrinsic_tests;
 #[cfg(test)]
@@ -16,6 +17,10 @@ pub mod list_core;
 pub mod master_detail;
 pub mod measure;
 pub mod modal;
+#[cfg(test)]
+mod overflow_parity_tests;
+#[cfg(test)]
+mod overflow_work_tests;
 pub mod pane_tree;
 pub mod popup;
 pub mod reveal;

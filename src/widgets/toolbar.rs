@@ -381,15 +381,23 @@ impl Toolbar {
         terminal_extent(self.intrinsic_width())
     }
 
-    pub(crate) fn intrinsic_width(&self) -> usize {
+    /// Display width of every item, measured once per layout.
+    fn item_widths(&self) -> Vec<usize> {
+        self.items.iter().map(ToolItem::intrinsic_width).collect()
+    }
+
+    fn total_width(&self, widths: &[usize]) -> usize {
         let gap = usize::from(self.gap);
         let seps = self.items.iter().filter(|i| i.separator_after).count();
-        self.items
+        widths
             .iter()
-            .map(ToolItem::intrinsic_width)
-            .fold(0usize, usize::saturating_add)
+            .fold(0usize, |a, &w| a.saturating_add(w))
             .saturating_add(gap.saturating_mul(self.items.len().saturating_sub(1)))
             .saturating_add(seps.saturating_mul(1 + gap))
+    }
+
+    pub(crate) fn intrinsic_width(&self) -> usize {
+        self.total_width(&self.item_widths())
     }
 
     fn activate(&mut self, i: usize) -> Option<ToolbarAction> {
@@ -522,8 +530,9 @@ impl Toolbar {
             None => self.more_button.with_glyph(t.glyphs.more_titles),
         };
         let more_w = more.width(t);
+        let widths = self.item_widths();
         let overflowing =
-            self.overflow && n > 0 && self.intrinsic_width() > usize::from(area.width);
+            self.overflow && n > 0 && self.total_width(&widths) > usize::from(area.width);
 
         let limit = if overflowing {
             area.right().saturating_sub(more_w.saturating_add(self.gap))
@@ -534,9 +543,8 @@ impl Toolbar {
         let mut x = area.x;
 
         let mut sep_at: Option<u16> = None;
-        for i in 0..n {
+        for (i, w) in widths.iter().copied().enumerate() {
             let it = &self.items[i];
-            let w = it.intrinsic_width();
             if w > usize::from(limit.saturating_sub(x)) {
                 if overflowing {
                     self.hidden.extend(i..n);

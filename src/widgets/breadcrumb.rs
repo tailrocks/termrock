@@ -5,6 +5,7 @@ use ratatui::style::{Color, Modifier};
 use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
 use crate::theme::Kind;
 use crate::ui::ctx::RenderCtx;
+use crate::ui::fitting::work;
 use crate::ui::measure::terminal_extent;
 use crate::ui::text::{truncate, truncate_middle, width};
 
@@ -19,29 +20,45 @@ pub struct Breadcrumb {
     pub areas: Vec<Rect>,
 }
 
+/// Cells the segments `from..n` take: their labels (`labels`, already summed),
+/// a separator between each pair, and the ellipsis lead when earlier segments are
+/// dropped. Exact in `u128` and saturating only into the `usize` result.
+fn suffix_cells(labels: usize, from: usize, n: usize, lead: usize, sep_w: usize) -> usize {
+    let lead = if from > 0 { lead as u128 } else { 0 };
+    let cells = lead + labels as u128 + sep_w as u128 * (n - from - 1) as u128;
+    usize::try_from(cells).unwrap_or(usize::MAX)
+}
+
 impl Breadcrumb {
-    /// Full width of the segments from `from` on, plus the ellipsis lead when
-    /// earlier segments are dropped. Wide so a long path never wraps small.
-    fn suffix_width(&self, from: usize, ellipsis_w: usize, sep_w: usize) -> usize {
-        let lead = if from > 0 {
-            ellipsis_w.saturating_add(sep_w)
-        } else {
-            0
-        };
-        let labels = self.segments[from..]
-            .iter()
-            .map(|s| width(s))
-            .fold(0usize, usize::saturating_add);
-        lead.saturating_add(labels)
-            .saturating_add(sep_w.saturating_mul(self.segments.len() - from - 1))
+    /// Display width of every segment label, measured once per layout.
+    fn label_widths(&self) -> Vec<usize> {
+        self.segments.iter().map(|s| width(s)).collect()
     }
 
     pub(crate) fn intrinsic_width(&self, sep_w: usize) -> usize {
-        if self.segments.is_empty() {
-            0
-        } else {
-            self.suffix_width(0, 0, sep_w)
+        let n = self.segments.len();
+        if n == 0 {
+            return 0;
         }
+        let labels: usize = self.label_widths().iter().sum();
+        suffix_cells(labels, 0, n, 0, sep_w)
+    }
+
+    /// Index of the first segment that shows in `avail` cells. Earlier segments
+    /// collapse into one ellipsis lead and the last segment always stays. One
+    /// pass over the label widths keeps a running suffix total.
+    pub(crate) fn first_shown(&self, ellipsis_w: usize, sep_w: usize, avail: usize) -> usize {
+        let n = self.segments.len();
+        let widths = self.label_widths();
+        let lead = ellipsis_w.saturating_add(sep_w);
+        let mut labels: usize = widths.iter().sum();
+        let mut from = 0;
+        while from + 1 < n && suffix_cells(labels, from, n, lead, sep_w) > avail {
+            work::visit();
+            labels -= widths[from];
+            from += 1;
+        }
+        from
     }
 
     pub fn new(id: WidgetId, segments: Vec<String>) -> Self {
@@ -86,10 +103,7 @@ impl Breadcrumb {
         let ell = t.glyphs.ellipsis;
         let n = self.segments.len();
 
-        let mut from = 0;
-        while from + 1 < n && self.suffix_width(from, width(ell), sep_w) > usize::from(area.width) {
-            from += 1;
-        }
+        let from = self.first_shown(width(ell), sep_w, usize::from(area.width));
         let plane = t.plane_of(bg);
         let mut x = area.x;
         let y = area.y;
