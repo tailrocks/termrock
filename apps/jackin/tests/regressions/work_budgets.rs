@@ -13,10 +13,13 @@
 
 use jackin_console::app::App;
 use jackin_console::fixtures::{Scenario, app_for};
+use junie_tui::core::event::{Input, Key};
 use junie_tui::metrics::harness::{Harness, assert_exact};
 use junie_tui::metrics::{Metric, measure};
 use junie_tui::motion::Motion;
+use junie_tui::runtime::Application;
 use junie_tui::theme::{ColorLevel, Theme};
+use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 
 const VIEWPORT: (u16, u16) = (140, 40);
 
@@ -125,23 +128,20 @@ fn work_contract_jackin_capsule_idle_frame() {
         "a settled tick leaves the frame unchanged"
     );
 
-    // Known gap: every idle capsule frame deep-clones the pane's retained text
-    // (payload_bytes_cloned is recorded only on the unprepared-draw fallback of
-    // `ViewportOps::draw`) and segments and reflows the copy again. These are
-    // the measured counts of today's behaviour, not a bound, and they are exact so
-    // that a change that removes the clone fails here and lowers them; a capsule
-    // that draws a prepared view must bring the cloned bytes, segmented lines
-    // and index rebuilds to zero.
+    // A capsule pane is prepared for its place in the layout whenever its
+    // content or area changes, so an idle frame draws a prepared view: it
+    // clones no history, segments no line and rebuilds no index. The width and
+    // text counts are the menu, strip and status chrome, not pane payload.
     assert_exact(
         &idle,
         "capsule settled tick",
         &[
-            (Metric::SegmentedLines, 2_021),
-            (Metric::ReflowedLines, 4_012),
-            (Metric::IndexRebuilds, 5),
-            (Metric::PayloadBytesCloned, 80_059),
-            (Metric::IntrinsicWidthCalls, 80_161),
-            (Metric::TextBytesMeasured, 81_535),
+            (Metric::PayloadBytesCloned, 0),
+            (Metric::SegmentedLines, 0),
+            (Metric::ReflowedLines, 0),
+            (Metric::IndexRebuilds, 0),
+            (Metric::IntrinsicWidthCalls, 158),
+            (Metric::TextBytesMeasured, 1_476),
             (Metric::SchedulingRecordsVisited, 2),
             (Metric::SchedulingPolls, 6),
         ],
@@ -152,5 +152,31 @@ fn work_contract_jackin_capsule_idle_frame() {
         f.app.world.daemons.len(),
         idle,
         "2 daemons with panes; the frame text is unchanged by the tick",
+    );
+}
+
+#[test]
+fn work_contract_jackin_capsule_frame_after_typing() {
+    let mut f = fixture(Scenario::CapsuleMulti);
+    let before = f.screen();
+    f.app.handle(Input::Key(Key {
+        code: KeyCode::Char('q'),
+        mods: KeyModifiers::NONE,
+    }));
+    let ((), typed) = measure(|| f.draw());
+    assert_ne!(f.screen(), before, "the typed key reaches the pane");
+    assert_exact(
+        &typed,
+        "capsule frame after typing",
+        &[
+            (Metric::PayloadBytesCloned, 0),
+            (Metric::SegmentedLines, 0),
+            (Metric::ReflowedLines, 0),
+            (Metric::IndexRebuilds, 0),
+            (Metric::IntrinsicWidthCalls, 146),
+            (Metric::TextBytesMeasured, 1_416),
+            (Metric::SchedulingRecordsVisited, 0),
+            (Metric::SchedulingPolls, 0),
+        ],
     );
 }
