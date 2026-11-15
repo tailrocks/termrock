@@ -1535,3 +1535,75 @@ fn test_connection_replaces_the_masked_password_and_keeps_it_masked() {
     close_to_page(&app);
     app.finish();
 }
+
+#[test]
+fn form_toggle_hides_an_editing_input_and_reveal_restores_no_session() {
+    let args = ["--page", "dialogkinds"];
+    let app = open("s05-toggle", 120, 40, &args);
+    click_page(&app, "Add connection");
+    app.wait_text("Test connection");
+
+    app.key("tab");
+    app.key("tab");
+    app.type_text("edited-host");
+    app.wait_text("edited-host");
+
+    app.key("ctrl+t");
+    let hidden = app.wait_absent("edited-host");
+    see(&hidden, &["Driver", "Password"], &["Host"]);
+
+    app.key("ctrl+t");
+    app.wait_text("edited-host");
+    app.type_text("zz");
+    let after = app.settle();
+    see(&after, &["edited-host", "zz"], &["edited-hostzz"]);
+    close_to_page(&app);
+    app.finish();
+}
+
+#[test]
+fn form_toggle_hidden_editing_input_does_not_hold_escape() {
+    let args = ["--page", "dialogkinds"];
+    let app = open("s05-toggle-esc", 120, 40, &args);
+    click_page(&app, "Add connection");
+    app.wait_text("Test connection");
+
+    app.key("tab");
+    app.key("tab");
+    app.type_text("edited-host");
+    app.wait_text("edited-host");
+    app.key("ctrl+t");
+    app.wait_absent("edited-host");
+
+    app.key("escape");
+    let closed = app.wait_absent("Test connection");
+    see(&closed, &["Enter Open"], &["edited-host"]);
+    app.finish();
+}
+
+#[test]
+fn form_toggle_hides_an_open_driver_popup_and_keeps_its_choice() {
+    let args = ["--page", "dialogkinds"];
+    let app = open("s05-popup-toggle", 120, 40, &args);
+    click_page(&app, "Add connection");
+    app.wait_text("Test connection");
+
+    app.key("tab");
+    app.key("enter");
+    let popup = app.wait_text("SQLite");
+    see(&popup, &["MySQL", "PostgreSQL"], &[]);
+
+    app.key("ctrl+d");
+    let hidden = app.wait_absent("MySQL");
+    see(&hidden, &["Host"], &["SQLite", "Driver", "Form · Changed"]);
+
+    app.key("ctrl+d");
+    let shown = app.wait_text("Driver");
+    see(
+        &shown,
+        &["PostgreSQL"],
+        &["MySQL", "SQLite", "Form · Changed"],
+    );
+    close_to_page(&app);
+    app.finish();
+}
