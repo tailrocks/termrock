@@ -1,4 +1,5 @@
 use ratatui::buffer::Buffer;
+use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Constraint, Rect};
 
 use crate::pages::layout::{sheet_height, sheet_width};
@@ -9,6 +10,7 @@ use junie_tui::core::event::Outcome;
 use junie_tui::core::focus::BlurAction;
 use junie_tui::core::id::WidgetId;
 use junie_tui::core::keymap::{KeyBinding, KeyMap, NavKeys, hint_key};
+use junie_tui::core::response::Actions;
 use junie_tui::core::scroll::{HScroll, ScrollbarVisibility, TrackClick};
 use junie_tui::ui::columns::HeaderLabels;
 use junie_tui::ui::ctx::RenderCtx;
@@ -67,7 +69,7 @@ fn rows(n: usize) -> Vec<Vec<Cell>> {
         .collect()
 }
 
-const KEYS: [&str; 12] = [
+const KEYS: [&str; 13] = [
     "editable.rows",
     "editable.type_ahead",
     "editable.affordance",
@@ -80,6 +82,7 @@ const KEYS: [&str; 12] = [
     "editable.track_click",
     "editable.blur_action",
     "editable.header_labels",
+    "editable.tab_walkthrough",
 ];
 
 fn custom_keymap() -> KeyMap<TableCmd> {
@@ -89,7 +92,7 @@ fn custom_keymap() -> KeyMap<TableCmd> {
     ]
 }
 
-fn build(k: &[usize; 12]) -> DataTable {
+fn build(k: &[usize; 13]) -> DataTable {
     let [
         rows_k,
         type_ahead,
@@ -103,6 +106,7 @@ fn build(k: &[usize; 12]) -> DataTable {
         track,
         blur,
         labels,
+        walkthrough,
     ] = *k;
     let data = if rows_k == 0 { rows(14) } else { Vec::new() };
     let mut table = DataTable::try_new(ID.sub("table"), columns(), data)
@@ -150,8 +154,39 @@ fn build(k: &[usize; 12]) -> DataTable {
             cell.text = "fix/checkout flake".into();
         });
     }
-    table.cursor_col = 1;
+    table.cursor_col = if walkthrough == 0 { 1 } else { LAST_COL };
     table
+}
+
+/// Tab at the last editable cell hands focus on. The walkthrough starts there.
+const LAST_COL: usize = 5;
+
+/// What one pass through each walkthrough value shows, by option value.
+const WALKTHROUGH: [Option<(&str, &str)>; 4] = [
+    None,
+    Some((
+        "Enter, 7, Tab",
+        "Committed then LeaveForward · the host saves, then focus moves on",
+    )),
+    Some((
+        "Enter, Tab",
+        "LeaveForward only · an unchanged value is a valid no-op commit",
+    )),
+    Some((
+        "Enter, x, Tab",
+        "No action · the editor stays open on its error and focus does not move",
+    )),
+];
+
+fn action_name(a: &TableAction) -> &'static str {
+    match a {
+        TableAction::Committed { .. } => "Committed",
+        TableAction::Cancelled => "Cancelled",
+        TableAction::Activated(_) => "Activated",
+        TableAction::SelectionChanged => "SelectionChanged",
+        TableAction::LeaveForward => "LeaveForward",
+        TableAction::LeaveBackward => "LeaveBackward",
+    }
 }
 
 const EVENTS: &[(&str, &str)] = &[
@@ -220,10 +255,11 @@ fn states_grid() -> StateGrid {
 
 pub struct EditablePage {
     template: Template,
-    knobs: [usize; 12],
+    knobs: [usize; 13],
     pub table: DataTable,
     sections: crate::pages::layout::Sections,
     edits: u32,
+    last: String,
 }
 
 impl EditablePage {
@@ -235,6 +271,7 @@ impl EditablePage {
             knobs,
             sections: crate::pages::layout::Sections::new(ID.sub("page")),
             edits: 0,
+            last: "—".into(),
         }
     }
 
@@ -257,6 +294,24 @@ impl EditablePage {
             .collect()
     }
 
+    fn walkthrough(&self) -> usize {
+        self.knobs[KEYS.len() - 1]
+    }
+
+    /// Hands every action of one input to the host in order. The readout keeps
+    /// the batch, and a Tab that ended an edit without any action says so.
+    fn on_actions(&mut self, actions: Actions<TableAction>, tab_in_edit: bool, cx: &mut Cx) {
+        let names: Vec<&str> = actions.iter().map(action_name).collect();
+        if !names.is_empty() {
+            self.last = names.join(" → ");
+        } else if tab_in_edit {
+            self.last = "none".into();
+        }
+        for tev in actions {
+            self.on_event(Some(tev), cx);
+        }
+    }
+
     fn on_event(&mut self, tev: Option<TableAction>, cx: &mut Cx) {
         match tev {
             Some(TableAction::Committed { .. }) => {
@@ -270,10 +325,20 @@ impl EditablePage {
         }
     }
 
+    fn legend(&self) -> Vec<Prop> {
+        let mut rows = Vec::new();
+        if let Some((keys, shows)) = WALKTHROUGH[self.walkthrough()] {
+            rows.push(Prop::new("Try", keys).wrap());
+            rows.push(Prop::new("Shows", shows).wrap());
+        }
+        rows.extend(legend());
+        rows
+    }
+
     fn heights(&self, width: u16) -> [u16; 4] {
         let cols: Vec<Prop> = self.column_props().into_iter().map(Prop::wrap).collect();
         let events = events();
-        let legend = legend();
+        let legend = self.legend();
         [
             (self.table.len() as u16 + 4).max(8),
             props::measure(&legend, width),
@@ -300,17 +365,24 @@ impl EditablePage {
                 let inner = panel.render(card, buf, t);
                 self.table.render(inner, buf, ctx, bg);
                 let pos = scrollbar::position_label(&self.table.scroll);
-                let meta = match &err {
-                    Some(e) => e.clone(),
-                    None if pos.is_empty() => format!("{} edits", self.edits),
-                    None => format!("{} edits · {pos}", self.edits),
+                let last = WALKTHROUGH[self.walkthrough()].map(|_| format!("last {}", self.last));
+                let counts = if pos.is_empty() {
+                    format!("{} edits", self.edits)
+                } else {
+                    format!("{} edits · {pos}", self.edits)
+                };
+                let meta = match (&err, &last) {
+                    (Some(e), Some(last)) => format!("{e} · {last}"),
+                    (Some(e), None) => e.clone(),
+                    (None, Some(last)) => format!("{last} · {counts}"),
+                    (None, None) => counts,
                 };
                 panel.draw_meta(card, buf, t, &meta);
             }
             None => ctx.focus_stop(self.table.id),
         }
         if let Some(r) = l.slot(1) {
-            props::render(r, buf, t, &legend(), t.canvas);
+            props::render(r, buf, t, &self.legend(), t.canvas);
         }
         for (slot, title, items) in [(2, "Columns", cols), (3, "Events", events)] {
             if let Some(r) = l.slot(slot) {
@@ -352,7 +424,7 @@ impl Page for EditablePage {
         let cols: Vec<Prop> = self.column_props().into_iter().map(Prop::wrap).collect();
         let w = [
             self.table.min_width(ratatui::layout::Size::new(0, 0), ctx) + 4,
-            props::width(&legend()),
+            props::width(&self.legend()),
             sheet_width(&Panel::card(Some("Columns")), &cols),
             sheet_width(&Panel::card(Some("Events")), &events()),
         ]
@@ -393,9 +465,7 @@ impl Page for EditablePage {
                 return Outcome::Ignored;
             }
             let (out, actions) = self.table.on_blur().into_parts();
-            for tev in actions {
-                self.on_event(Some(tev), cx);
-            }
+            self.on_actions(actions, false, cx);
             return out;
         }
         if let Some(o) = self.sections.handle(ev) {
@@ -406,10 +476,10 @@ impl Page for EditablePage {
                 if !cx.focus.is(self.table.id) {
                     return Outcome::Ignored;
                 }
+                let tab_in_edit =
+                    self.table.is_editing() && matches!(key.code, KeyCode::Tab | KeyCode::BackTab);
                 let (out, actions) = self.table.on_key(key).into_parts();
-                for tev in actions {
-                    self.on_event(Some(tev), cx);
-                }
+                self.on_actions(actions, tab_in_edit, cx);
                 out
             }
             PageEvent::Paste(text) => self.table.on_paste(text),
@@ -417,9 +487,7 @@ impl Page for EditablePage {
                 let Some((out, tev)) = route_table(&mut self.table, p, cx) else {
                     return Outcome::Ignored;
                 };
-                for tev in tev {
-                    self.on_event(Some(tev), cx);
-                }
+                self.on_actions(tev, false, cx);
                 out
             }
             _ => Outcome::Ignored,
@@ -435,7 +503,14 @@ impl Page for EditablePage {
             return h;
         }
         if self.table.is_editing() {
-            return vec![("Enter", "Apply"), ("Esc", "Cancel"), ("Tab", "Next cell")];
+            let at_last = self.table.cursor_col == LAST_COL;
+            let tab = match self.walkthrough() {
+                1 if at_last => "Commit, then leave",
+                2 if at_last => "Leave, nothing to save",
+                3 if at_last => "Blocked by an error",
+                _ => "Next cell",
+            };
+            return vec![("Enter", "Apply"), ("Esc", "Cancel"), ("Tab", tab)];
         }
         let mut h = vec![
             ("↑↓←→", "Cell"),
@@ -569,5 +644,59 @@ mod tests {
         assert_eq!(r.page.edits, 0);
         assert!(!saved(&cx), "no Cell saved indicator");
         assert_eq!(cx.focus.current(), Some(table_id), "focus did not move");
+    }
+    fn walk(scenario: usize, typed: Option<char>) -> (Rig, String, bool) {
+        let mut r = rig();
+        r.page.set_option("editable.tab_walkthrough", scenario);
+        let mut cx = Cx::new(&mut r.focus, &r.ring);
+        assert_eq!(r.page.table.cursor_col, LAST_COL, "starts on the last cell");
+        let _ = r.page.handle(&key(KeyCode::Enter), &mut cx);
+        if let Some(c) = typed {
+            let _ = r.page.handle(&key(KeyCode::Char(c)), &mut cx);
+        }
+        let _ = r.page.handle(&key(KeyCode::Tab), &mut cx);
+        let left = cx.focus.current() == Some(r.after);
+        let last = r.page.last.clone();
+        (r, last, left)
+    }
+
+    #[test]
+    fn walkthrough_edge_tab_lists_commit_then_leave() {
+        let (r, last, left) = walk(1, Some('7'));
+        assert_eq!(last, "Committed → LeaveForward");
+        assert_eq!(r.page.edits, 1);
+        assert!(left, "focus left the table");
+    }
+
+    #[test]
+    fn walkthrough_no_op_tab_lists_leave_only() {
+        let (r, last, left) = walk(2, None);
+        assert_eq!(last, "LeaveForward");
+        assert_eq!(r.page.edits, 0);
+        assert!(left, "focus left the table");
+    }
+
+    #[test]
+    fn walkthrough_invalid_tab_lists_no_action_and_stays() {
+        let (r, last, left) = walk(3, Some('x'));
+        assert_eq!(last, "none");
+        assert!(r.page.table.is_editing(), "the editor stays open");
+        assert!(r.page.table.edit_error().is_some());
+        assert!(!left, "focus did not move");
+    }
+
+    #[test]
+    fn walkthrough_is_listed_on_the_options_tab_and_hinted() {
+        let opt = crate::options::find("editable.tab_walkthrough").expect("option");
+        assert_eq!(opt.values, &["free", "commit", "no-op", "invalid"]);
+        let mut page = EditablePage::new();
+        assert_eq!(page.table.cursor_col, 1, "free keeps the default cell");
+        page.set_option("editable.tab_walkthrough", 1);
+        let _ = page.table.begin_edit();
+        let hints = page.hints(None);
+        assert!(hints.contains(&("Tab", "Commit, then leave")), "{hints:?}");
+        page.table.cursor_col = 1;
+        let hints = page.hints(None);
+        assert!(hints.contains(&("Tab", "Next cell")), "{hints:?}");
     }
 }
