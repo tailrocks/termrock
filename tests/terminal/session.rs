@@ -907,3 +907,20 @@ fn session_fault_from_a_stream_closed_before_attach_is_the_source_fault() {
         vec![SessionEffect::Failed(Fault("closed before attach"))],
     );
 }
+
+#[test]
+fn session_controller_viewport_handle_cannot_leave_the_grid_off_the_forwarded_size() {
+    let bench = Bench::new();
+    let mut session = attached(&bench, SessionLease::Owner);
+    assert_eq!(session.viewport().state().size(), (24, 80));
+
+    session.viewport_mut().resize(10, 10);
+    session.sync_size(area(80, 24));
+
+    assert_eq!(
+        session.viewport().state().size(),
+        (24, 80),
+        "the grid follows the size the program has"
+    );
+    assert_eq!(bench.sizes(0), [size(24, 80)], "nothing new is forwarded");
+}
