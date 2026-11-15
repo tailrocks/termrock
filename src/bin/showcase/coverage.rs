@@ -916,6 +916,10 @@ pub const RUNTIME_ALLOWLIST: &[(&str, &str)] = &[
         "A host-level scheduling override with no visible state; the showcase keeps the default and the runtime unit tests drive an application with an explicit policy.",
     ),
     (
+        "runtime::Application::take_render_invalidated",
+        "Event-loop plumbing with no visible state: the shell sets it when a frame is still unsettled after its last pass and the runtime draws again; the runtime unit test render_pending_survives_all_draw_sites pins it.",
+    ),
+    (
         "runtime::drain_pending_input_bounded",
         "Called once by shell::run before the terminal session starts, so no page can show it; the startup_discard_ unit tests pin its bound and raw-mode restoration.",
     ),
@@ -1834,6 +1838,7 @@ mod tests {
         for id in [
             "runtime::RawInputPolicy",
             "runtime::Application::raw_input_policy",
+            "runtime::Application::take_render_invalidated",
             "runtime::drain_pending_input_bounded",
         ] {
             assert!(
