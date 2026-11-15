@@ -470,13 +470,6 @@ fn picker_items(n: usize) -> Vec<Item> {
         .collect()
 }
 
-fn item_bytes(items: &[Item]) -> u64 {
-    items
-        .iter()
-        .map(|i| (i.label.len() + i.detail.len()) as u64)
-        .sum()
-}
-
 fn draw_picker(picker: &mut Picker) -> Buffer {
     frame(|buf, ctx| {
         picker.draw(VIEWPORT, buf, ctx);
@@ -489,7 +482,6 @@ fn draw_picker(picker: &mut Picker) -> Buffer {
 fn work_contract_picker_linear_projection() {
     for n in SIZES {
         let items = picker_items(n);
-        let bytes = item_bytes(&items);
         let mut picker = Picker::new(ID, "Pick");
         let (set, set_work) = measure(|| picker.set_items(items.clone()));
         set.expect("valid items");
@@ -571,7 +563,6 @@ fn work_contract_picker_linear_projection() {
 fn work_contract_select_open_frame() {
     for n in SIZES {
         let labels: Vec<String> = (0..n).map(|i| format!("option {i:06}")).collect();
-        let bytes: u64 = labels.iter().map(|l| l.len() as u64).sum();
         let refs: Vec<&str> = labels.iter().map(String::as_str).collect();
         let mut select = Select::new(ID, "Choice", &refs, 0);
         let area = Rect::new(2, 2, 40, 3);
@@ -630,7 +621,6 @@ fn work_contract_completion_open_frame() {
         let items: Vec<Item> = (0..n)
             .map(|i| Item::new(format!("symbol_{i:06}")).detail("fn"))
             .collect();
-        let bytes = item_bytes(&items);
         let mut completion = Completion::new(ID);
         let draw = |completion: &mut Completion| {
             frame(|buf, ctx| {
