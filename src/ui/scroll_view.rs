@@ -50,8 +50,10 @@ pub enum ScrollCmd {
 
     PageRight,
 
+    /// Resets both axes to the origin when either one overflows.
     Top,
 
+    /// Moves the vertical axis to its end. The horizontal offset is kept.
     Bottom,
 }
 
@@ -470,11 +472,10 @@ impl ScrollView {
         let cmd = crate::core::keymap::lookup(&self.keys, key)?;
         let (v, h) = (&mut self.pane.v, &mut self.pane.h);
         let moved = match cmd {
-            ScrollCmd::PageUp | ScrollCmd::PageDown | ScrollCmd::Top | ScrollCmd::Bottom
-                if !v.overflows() =>
-            {
+            ScrollCmd::PageUp | ScrollCmd::PageDown | ScrollCmd::Bottom if !v.overflows() => {
                 return None;
             }
+            ScrollCmd::Top if !v.overflows() && !h.overflows() => return None,
             ScrollCmd::PageLeft | ScrollCmd::PageRight if !h.overflows() => return None,
             ScrollCmd::PageUp => v.page_up(),
             ScrollCmd::PageDown => v.page_down(),

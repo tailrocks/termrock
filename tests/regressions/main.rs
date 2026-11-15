@@ -8,4 +8,5 @@
 mod common;
 mod form_value;
 mod grapheme_paint;
+mod scroll_view_navigation;
 mod smoke;
