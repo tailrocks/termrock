@@ -986,8 +986,14 @@ fn selects_choose_dismiss_and_disabled() {
     let engine = app.settle();
     expect(&engine, &["PostgreSQL"], &["Engine →", "▴"]);
     app.click_text("States");
+    app.wait_text(CAP_STATES);
     app.click_text("Playground");
-    app.wait_text("created_at");
+    // The states gallery repeats created_at, so that text does not say which
+    // page is drawn. The caption does.
+    app.wait_screen("playground drawn", |screen| {
+        let visible = text(screen);
+        visible.contains(CAP_PLAY) && visible.contains("created_at")
+    });
 
     click_top_main(&app, "created_at");
     let opened = app.wait_text("▴");
