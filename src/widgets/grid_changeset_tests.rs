@@ -28,8 +28,8 @@ fn source_row(i: usize) -> Vec<CellValue> {
         CellValue::Int(100 + i as i64),
         text(&format!("name{i}")),
         CellValue::Num(1.5 + i as f64),
-        CellValue::Bool(i % 2 == 0),
-        if i % 3 == 0 {
+        CellValue::Bool(i.is_multiple_of(2)),
+        if i.is_multiple_of(3) {
             CellValue::Null
         } else {
             text(&format!("note{i}"))

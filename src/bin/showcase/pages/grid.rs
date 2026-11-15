@@ -1235,7 +1235,7 @@ mod tests {
     const PLAN: usize = 2;
 
     fn insert_statement(page: &GridPage) -> String {
-        let statements = sql(&page).expect("the draft serializes");
+        let statements = sql(page).expect("the draft serializes");
         let inserts: Vec<&String> = statements
             .iter()
             .filter(|s| s.starts_with("INSERT"))
