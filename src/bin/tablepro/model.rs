@@ -537,8 +537,18 @@ pub enum Clause {
     Member,
 }
 
-pub fn context(src: &str, cursor: usize) -> (String, Clause, Option<String>) {
-    let cursor = cursor.min(src.len());
+/// The byte cursor a completion request uses: clamped to the text, then
+/// floored to a char boundary so every prefix slice is valid.
+fn completion_cursor(src: &str, requested: usize) -> usize {
+    let mut at = requested.min(src.len());
+    while !src.is_char_boundary(at) {
+        at -= 1;
+    }
+    at
+}
+
+pub fn context(src: &str, requested: usize) -> (String, Clause, Option<String>) {
+    let cursor = completion_cursor(src, requested);
     let before = &src[..cursor];
 
     let word_start = before
@@ -564,13 +574,19 @@ pub fn context(src: &str, cursor: usize) -> (String, Clause, Option<String>) {
         return (word, Clause::Member, qualifier);
     }
 
-    let stmt_start = crate::sql::statement_at(src, cursor)
-        .map(|(a, _)| a)
-        .unwrap_or(0);
+    // The clause comes only from the current statement: the tokens after the
+    // last real `;` before the word. A `;` inside a string or comment is not a
+    // delimiter, and nothing after the cursor takes part.
+    let prefix = &src[..word_start];
+    let tokens = tokenize(prefix);
+    let first = tokens
+        .iter()
+        .rposition(|t| t.kind == TokKind::Punct && &prefix[t.start..t.end] == ";")
+        .map_or(0, |i| i + 1);
     let mut clause = Clause::Start;
-    for t in tokenize(&src[stmt_start..word_start]) {
+    for t in &tokens[first..] {
         if t.kind == TokKind::Keyword {
-            let kw = src[stmt_start + t.start..stmt_start + t.end].to_ascii_uppercase();
+            let kw = prefix[t.start..t.end].to_ascii_uppercase();
             clause = match kw.as_str() {
                 "SELECT" => Clause::SelectList,
                 "FROM" | "JOIN" | "INTO" | "UPDATE" | "TABLE" => Clause::From,
@@ -624,12 +640,31 @@ pub fn tables_in_statement<'a>(cat: &'a Catalog, stmt: &str) -> Vec<(&'a Table, 
     out
 }
 
-pub fn complete(cat: &Catalog, src: &str, cursor: usize) -> (Vec<Completion>, usize) {
+/// The untrimmed text between the last real `;` that ends at or before
+/// `cursor` and the next real `;` that starts at or after it. Whitespace the
+/// user is typing into belongs to the statement, so a cursor after `WHERE `
+/// still sees that statement's tables. A cursor right after a `;` starts the
+/// next segment and never sees the previous statement.
+fn statement_around(src: &str, cursor: usize) -> &str {
+    let (mut start, mut end) = (0, src.len());
+    for t in tokenize(src) {
+        if t.kind != TokKind::Punct || &src[t.start..t.end] != ";" {
+            continue;
+        }
+        if t.end <= cursor {
+            start = t.end;
+        } else {
+            end = t.start;
+            break;
+        }
+    }
+    &src[start..end]
+}
+
+pub fn complete(cat: &Catalog, src: &str, requested: usize) -> (Vec<Completion>, usize) {
+    let cursor = completion_cursor(src, requested);
     let (word, clause, qualifier) = context(src, cursor);
-    let stmt = crate::sql::statement_at(src, cursor)
-        .map(|(a, b)| &src[a..b])
-        .unwrap_or("");
-    let in_stmt = tables_in_statement(cat, stmt);
+    let in_stmt = tables_in_statement(cat, statement_around(src, cursor));
     let mut pool: Vec<Completion> = Vec::new();
     let mut push =
         |kind: CompletionKind, label: &str, detail: String, insert: Option<String>, boost: i32| {
@@ -1003,6 +1038,149 @@ fn group_rank(g: &str) -> u32 {
         "Schemas" => 3,
         "Databases" => 4,
         _ => 5,
+    }
+}
+
+#[cfg(test)]
+mod completion_prefix_tests {
+    use super::*;
+
+    fn cat() -> Catalog {
+        Catalog::acme_prod()
+    }
+
+    #[test]
+    fn completion_prefix_before_first_statement() {
+        let cat = cat();
+        for src in [" SELECT id FROM users", "\n\tSELECT id FROM users"] {
+            let lead = src.len() - src.trim_start().len();
+            for cursor in 0..=lead {
+                let (word, clause, qualifier) = context(src, cursor);
+                assert_eq!(
+                    (word.as_str(), clause, qualifier),
+                    ("", Clause::Start, None)
+                );
+                assert_eq!(complete(&cat, src, cursor).1, 0);
+            }
+        }
+    }
+
+    #[test]
+    fn completion_prefix_invalid_byte_cursor() {
+        let cat = cat();
+        let src = "é中💾 SELECT";
+        for cursor in 0..=src.len() + 2 {
+            let at = completion_cursor(src, cursor);
+            assert!(src.is_char_boundary(at));
+            assert_eq!(context(src, cursor), context(src, at));
+            let (word, _, _) = context(src, cursor);
+            let (_, replace) = complete(&cat, src, cursor);
+            assert_eq!(replace, word.len());
+            assert!(replace <= at);
+        }
+    }
+
+    #[test]
+    fn completion_prefix_after_semicolon_is_start() {
+        let end = |src: &str| context(src, src.len());
+        assert_eq!(
+            end("SELECT id FROM users WHERE x = 1;\n"),
+            (String::new(), Clause::Start, None)
+        );
+        assert_eq!(
+            end("SELECT id FROM users WHERE x = 1;\n;\n"),
+            (String::new(), Clause::Start, None)
+        );
+        assert_eq!(
+            end("SELECT id FROM users WHERE x = 1;\n\nSEL"),
+            ("SEL".to_owned(), Clause::Start, None)
+        );
+    }
+
+    #[test]
+    fn completion_prefix_ignores_semicolons_in_strings_and_comments() {
+        assert_eq!(
+            context("SELECT 'a;b' FROM ", 18).1,
+            Clause::From,
+            "a `;` inside a string is not a delimiter"
+        );
+        assert_eq!(
+            context("-- a;\nSELECT id FROM ", 22).1,
+            Clause::From,
+            "a `;` inside a comment is not a delimiter"
+        );
+    }
+
+    #[test]
+    fn completion_prefix_gap_gets_no_neighbour_aliases() {
+        let cat = cat();
+        let src = "SELECT u.id FROM users u;\n\n";
+        let alone = "\n\n";
+        let labels = |src: &str| {
+            complete(&cat, src, src.len())
+                .0
+                .into_iter()
+                .map(|c| (c.kind, c.label))
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(
+            labels(src),
+            labels(alone),
+            "the previous statement's alias `u` must not change the list"
+        );
+    }
+
+    #[test]
+    fn completion_prefix_trailing_whitespace_keeps_the_statement_sources() {
+        let cat = cat();
+        for src in [
+            "SELECT u.id FROM customers u WHERE ",
+            "SELECT u.id FROM customers u ORDER BY ",
+            "SELECT u.id FROM customers u WHERE \n  ",
+        ] {
+            let (rows, replace) = complete(&cat, src, src.len());
+            assert_eq!(replace, 0, "{src:?}");
+            let columns: Vec<&str> = rows
+                .iter()
+                .filter(|c| c.kind == CompletionKind::Column)
+                .map(|c| c.label.as_str())
+                .collect();
+            assert!(columns.contains(&"email"), "{src:?}: {columns:?}");
+            assert!(
+                columns.iter().all(|l| !l.contains('.')),
+                "{src:?} offered other tables' columns: {columns:?}"
+            );
+            assert!(
+                rows.iter()
+                    .any(|c| c.kind == CompletionKind::Alias && c.label == "u"),
+                "{src:?} lost the alias `u`"
+            );
+        }
+    }
+
+    #[test]
+    fn completion_prefix_cursor_before_next_semicolon_keeps_its_statement() {
+        let cat = cat();
+        let src = "SELECT 1; SELECT u.id FROM customers u WHERE  ; SELECT 2";
+        let cursor = src.find("  ;").unwrap() + 1;
+        let (rows, _) = complete(&cat, src, cursor);
+        assert!(
+            rows.iter()
+                .any(|c| c.kind == CompletionKind::Alias && c.label == "u")
+        );
+    }
+
+    #[test]
+    fn completion_prefix_ordinary_clauses_are_unchanged() {
+        assert_eq!(context("SELECT id FROM users WHERE ", 28).1, Clause::Where);
+        assert_eq!(
+            context("SELECT u.", 9),
+            ("".to_owned(), Clause::Member, Some("u".to_owned()))
+        );
+        assert_eq!(
+            context("SELECT id FROM users u WHERE u.n", 33),
+            ("n".to_owned(), Clause::Member, Some("u".to_owned()))
+        );
     }
 }
 

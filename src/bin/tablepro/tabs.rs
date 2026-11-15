@@ -2731,3 +2731,24 @@ mod issue9_tests {
         assert!(!highlight_sql(sql).is_empty());
     }
 }
+
+#[cfg(test)]
+mod issue84_tests {
+    use super::*;
+    use crate::db::Catalog;
+
+    #[test]
+    fn completion_prefix_editor_home_acceptance() {
+        let cat = Catalog::acme_prod();
+        let original = " SELECT id FROM users";
+        let mut tab = QueryTab::new(WidgetId::of("issue84"), "Query 1", "");
+        tab.editor.set_text(original);
+        assert_eq!(tab.editor.cursor_offset(), 0);
+        tab.trigger_completion(&cat, true);
+        assert!(tab.completion.is_open());
+        tab.accept_completion(0);
+        let text = tab.editor.text();
+        assert!(text.len() > original.len(), "{text:?}");
+        assert!(text.ends_with(original), "{text:?}");
+    }
+}
