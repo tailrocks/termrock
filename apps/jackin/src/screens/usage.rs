@@ -798,6 +798,8 @@ impl Page<Jackin> for UsageScreen {
             w.last_refresh_secs = w.now_secs();
             return Outcome::Changed;
         }
+        // The panel meta carries the broker age whenever nothing refreshes, an
+        // empty registry included, so a second boundary always has text to move.
         if self.animating(w) || self.clock.due(w, true, false) {
             Outcome::Changed
         } else {

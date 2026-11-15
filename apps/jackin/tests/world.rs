@@ -636,4 +636,82 @@ mod projection_work {
         );
         let _ = (CLOCK, HOME, DaemonSnapshot::Unavailable);
     }
+
+    #[test]
+    fn account_replies_move_the_accounts_epoch_only_for_the_source_they_were_made_for() {
+        use jackin_console::backend::{Refresh, Validation};
+        use jackin_console::domain::reason::RefreshOutcome;
+        use jackin_console::domain::usage::AccountUsage;
+
+        let mut world = world_for(Scenario::Returning);
+        assert!(
+            world.accounts.accounts.len() > 1,
+            "two sources to tell apart"
+        );
+        let account = world.accounts.accounts[0].id.clone();
+        let source = world.accounts.accounts[0].source.clone();
+        let other = world.accounts.accounts[1].source.clone();
+        assert_ne!(source, other);
+        let base = world.epochs();
+
+        let refreshed = |source: &_, result| Msg::AccountRefreshed {
+            account: account.clone(),
+            source: Box::new(Clone::clone(source)),
+            result,
+        };
+        let validated = |source: &_, result| Msg::AccountValidated {
+            account: account.clone(),
+            source: Box::new(Clone::clone(source)),
+            result,
+        };
+        let refresh = || {
+            Ok(Box::new(Refresh {
+                usage: AccountUsage::none(),
+                issue: None,
+                last_refresh_secs: 1,
+                outcome: RefreshOutcome::Current,
+            }))
+        };
+
+        world.absorb(&refreshed(&other, refresh()));
+        world.absorb(&validated(&other, Err("late".into())));
+        assert_eq!(
+            world.epochs(),
+            base,
+            "a reply for a replaced source is dropped"
+        );
+
+        world.absorb(&refreshed(&source, refresh()));
+        let a = world.epochs();
+        assert_eq!(
+            (a.membership, a.roster, a.accounts),
+            (base.membership, base.roster, base.accounts + 1),
+            "an accepted refresh"
+        );
+
+        world.absorb(&refreshed(&source, Err("down".into())));
+        let b = world.epochs();
+        assert_eq!(
+            b.accounts,
+            a.accounts + 1,
+            "a failed refresh still changes the account"
+        );
+
+        world.absorb(&validated(&source, Err("rejected".into())));
+        let c = world.epochs();
+        assert_eq!(c.accounts, b.accounts + 1, "an accepted validation");
+        assert_eq!((c.membership, c.roster), (base.membership, base.roster));
+
+        world.absorb(&validated(
+            &source,
+            Ok(Validation::Fingerprint {
+                level: jackin_console::domain::account::ValidationLevel::MaterialDiscovered,
+            }),
+        ));
+        assert_eq!(
+            world.epochs().accounts,
+            c.accounts + 1,
+            "a fingerprint check"
+        );
+    }
 }

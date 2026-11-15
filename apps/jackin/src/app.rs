@@ -167,8 +167,19 @@ pub struct App {
     host_menus: Menus<HostCmd>,
     host_menu_route: Route,
     intro_guard: u8,
-    /// An input changed the screen, so the next tick paints once more: focus
-    /// and hints settle during that paint, which no input follows.
+    /// An input changed the screen, so the next tick paints once more.
+    ///
+    /// Remove this when the shell settle can see widget state that changes
+    /// during render. While a layer is open the page footer is drawn before
+    /// the layers render, and a dialog's confirmation `TextInput` turns
+    /// `editing` on inside its own render (`begin_focus_edit`). The page
+    /// footer of that frame therefore lacks the EDIT badge, and its bold
+    /// residue under the modal footer differs from the settled frame (the
+    /// `j06_exit_exit` baseline). `shell::render` (#17) repaints only when
+    /// focus, hover or press differ after a pass, and here none does, so it
+    /// cannot cover this even once it lands. Until the shell settle gains
+    /// such a signal (follow-up to #17), the next tick repaints. Idle ticks
+    /// never do.
     settle_frame: bool,
     pub clipboard_gen: u32,
     exit_after_status: Option<i64>,

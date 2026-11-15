@@ -65,6 +65,13 @@ impl DoctorScreen {
         w.surfaces.doctor.as_ref().and_then(|d| d.report())
     }
 
+    /// Whether the page on screen holds an age ("checked 3 s ago"). Only the
+    /// report frame does. The empty state, a first failure included, shows
+    /// none, so the clock has nothing to repaint there.
+    fn shows_age(&self, w: &World) -> bool {
+        self.report(w).is_some()
+    }
+
     fn running(&self, w: &World) -> bool {
         w.surfaces.doctor.as_ref().is_some_and(|d| d.running())
     }
@@ -283,7 +290,7 @@ impl Page<Jackin> for DoctorScreen {
     }
 
     fn on_tick(&mut self, w: &mut World, _cx: &mut Cx) -> Outcome {
-        if self.running(w) || self.clock.due(w, true, false) {
+        if self.running(w) || self.clock.due(w, self.shows_age(w), false) {
             Outcome::Changed
         } else {
             Outcome::Ignored
