@@ -5,10 +5,7 @@
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{
-    App, Launch, TABLEPRO, find_all, flash_settle_stepped as flash_settle, row_text, text,
-    try_launch,
-};
+use crate::support::{App, Launch, TABLEPRO, find_all, flash_settle, row_text, text, try_launch};
 
 const ROUTE_ID: &str = "pre_refactor/t02_editors/t02_editors_route_120x40";
 const WIDE_ID: &str = "pre_refactor/t02_editors/t02_editors_types_120x40";
@@ -339,10 +336,7 @@ fn notes_row(app: &App, col: &mut usize) -> usize {
 fn confirm_quit(app: &App) {
     app.key("ctrl+q");
     app.wait_text("Quit TablePro?");
-    app.key("right");
-    app.key("enter");
-    app.wait_exit("tablepro stayed up after confirming quit");
-    app.expect_exited(0);
+    app.confirm_quit();
 }
 
 fn pending_line(screen: &TerminalSnapshot) -> String {

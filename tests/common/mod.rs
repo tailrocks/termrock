@@ -117,6 +117,10 @@ impl Host {
         self.shell.stop_handle()
     }
 
+    pub fn fence_requests(&mut self, on: bool) {
+        self.shell.fence_requests = on;
+    }
+
     pub fn test_requests(&mut self, on: bool) {
         self.shell.test_requests = on;
     }

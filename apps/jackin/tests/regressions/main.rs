@@ -21,4 +21,5 @@ mod common;
 mod navigation_focus;
 mod smoke;
 mod status_priority;
+mod tiny_terminals;
 mod work_budgets;

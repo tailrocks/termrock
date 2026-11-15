@@ -296,6 +296,32 @@ fn issue11_begin_submission_checks_the_capture() {
 }
 
 #[test]
+fn issue32_structural_cancel_keeps_staged_edits() {
+    let mut g = grid(2);
+    g.record_cell(0, 0, text("staged")).unwrap();
+    let (staged, _, _) = g.pending().cells().next().unwrap();
+
+    g.insert_row().unwrap();
+    let inserted = g.cursor.0;
+    g.cursor = (0, 1);
+    let (_, action) = press(&mut g, KeyCode::Enter, KeyModifiers::NONE);
+    assert_eq!(action, None);
+    assert!(g.is_editing());
+
+    g.toggle_delete(inserted).unwrap();
+    assert!(
+        !g.is_editing(),
+        "the structural removal cancels the session"
+    );
+    assert_eq!(
+        g.pending().value(staged, 0),
+        Some(&text("staged")),
+        "a structural cancel keeps the staged pending edit"
+    );
+    assert_eq!(g.value(0, 0), &text("staged"));
+}
+
+#[test]
 fn issue11_save_finishes_live_editor_once() {
     let parsed = Rc::new(Cell::new(0));
     let seen = parsed.clone();

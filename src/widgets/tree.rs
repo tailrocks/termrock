@@ -2051,6 +2051,12 @@ impl TreeView {
         source: &S,
     ) -> Result<bool, KeyedSourceError> {
         self.bind_tree(source)?;
+        let selectable = self.keyed.is_authoritative(key)
+            && source.node(key).is_some_and(|node| !node.note)
+            && (self.keyed.visible_index(key).is_none() || self.keyed.is_enabled(key));
+        if !selectable {
+            return Ok(false);
+        }
         Ok(self.keyed.replace_selection([key]))
     }
 
@@ -2113,6 +2119,7 @@ impl TreeView {
     ) -> Result<Response<TreeAction<ItemKey>>, KeyedSourceError> {
         use crate::core::intent::Phase;
         self.bind_tree(source)?;
+        self.keyed.note_pointer(ev.phase());
         if let Some(r) = crate::core::pointer::scroll_input(self, ev) {
             return Ok(r.lift());
         }
@@ -2130,9 +2137,7 @@ impl TreeView {
                 Ok(Response::ignored())
             }
             Some(Phase::Click) => {
-                if self.keyed.pressed().is_some()
-                    && !self.keyed.release_press(key, self.layout_generation)
-                {
+                if !self.keyed.release_click(key, self.layout_generation) {
                     return Ok(Response::consumed());
                 }
                 let Some(row) = self.keyed.visible_index(key) else {

@@ -10,7 +10,7 @@ use std::time::Duration;
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, JACKIN, Launch, Point, row_text, text, try_launch};
+use crate::support::{App, JACKIN, Launch, Point, button, row_text, step_until, text, try_launch};
 
 const DIRECTORY: &str = "Current directory";
 const PAYMENTS: &str = "payments-platform";
@@ -179,12 +179,6 @@ fn focus_mounts_list(app: &App) {
     });
 }
 
-fn step_until(app: &App, key: &str, marker: &str) {
-    app.press_until(key, marker, 12, focused_line, |screen| {
-        focused_line(screen).contains(marker)
-    });
-}
-
 fn focus_dest(app: &App, marker: &str) {
     step_until(app, "tab", marker);
 }
@@ -211,10 +205,6 @@ fn set_destination(app: &App, marker: &str, value: &str) {
         "destination field\n{}",
         focused_line(&typed)
     );
-}
-
-fn button(app: &App, label: &str, row_ok: impl Fn(&str) -> bool) -> Point {
-    app.wait_button(label, row_ok)
 }
 
 fn form_save(app: &App) -> Point {

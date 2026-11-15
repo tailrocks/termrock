@@ -381,6 +381,9 @@ impl<'a> Frame<'a> {
     }
 
     pub fn render(&self, screen: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) -> (Rect, Rect) {
+        if screen.intersection(*buf.area()).is_empty() {
+            return (Rect::ZERO, Rect::ZERO);
+        }
         let t = ctx.theme;
         if self.backdrop {
             ctx.modal_backdrop_with(buf, screen, self.dim);

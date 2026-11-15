@@ -220,10 +220,7 @@ fn quit_unsaved(app: &App) {
     app.key("ctrl+q");
     let quit = app.wait_text("Quit TablePro?");
     see(&quit, &["unsaved", "Quit"], &[HELP_TITLE]);
-    app.key("right");
-    app.key("enter");
-    app.wait_exit("tablepro stayed up after confirming quit");
-    app.expect_exited(0);
+    app.confirm_quit();
 }
 
 #[test]
