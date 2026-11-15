@@ -1817,6 +1817,29 @@ pub static TERMINAL_PANE: &[Opt] = &[
             "inside a UTF-8 character",
         ],
     ),
+    Opt::new(
+        "terminalpane.host",
+        "Source",
+        &["byte fixture", "session controller"],
+    ),
+    Opt::new(
+        "terminalpane.script",
+        "Session script",
+        &["owner", "viewer", "detaches", "exits", "fails"],
+    )
+    .needs(&[("terminalpane.host", "session controller")]),
+    Opt::new(
+        "terminalpane.area",
+        "Session area",
+        &["fits", "below minimum"],
+    )
+    .needs(&[("terminalpane.host", "session controller")]),
+    Opt::new(
+        "terminalpane.budget",
+        "Drain budget (bytes)",
+        &["65536", "8"],
+    )
+    .needs(&[("terminalpane.host", "session controller")]),
 ];
 
 pub static TERMINAL_VIEWPORT: &[Opt] = &[

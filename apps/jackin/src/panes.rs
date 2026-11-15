@@ -15,6 +15,7 @@ use crate::domain::vocabulary::PaneWords;
 mod clipboard;
 mod link;
 mod policy;
+mod session;
 mod terminal;
 
 pub use link::{
