@@ -820,6 +820,7 @@ impl SnapshotPage {
                         r.outcome,
                         crate::domain::cleanup::Outcome::Removed
                             | crate::domain::cleanup::Outcome::Trashed
+                            | crate::domain::cleanup::Outcome::WouldRemove
                     ) {
                         junie_tui::ui::text::bytes(r.size)
                     } else {
@@ -1605,5 +1606,39 @@ impl Screen for SnapshotPage {
             center: Some(StatusItem::new("snapshot · read-only", Tone::Muted).priority(5)),
             right: vec![],
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::cleanup::{LogRecord, Mode, Outcome};
+    use crate::domain::fixtures::world_for;
+    use crate::scenario::{Motion, Scenario};
+
+    #[test]
+    fn disk_history_shows_the_dry_run_estimate_as_processed() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Reduced);
+        w.ops_log.append(&LogRecord {
+            timestamp_ms: 1_800_000_000_000,
+            mode: Mode::Trash,
+            dry_run: true,
+            path: "/Users/alex/Downloads/estimate-probe".into(),
+            size: 5 * 1024 * 1024,
+            reclaimed_size: Some(0),
+            outcome: Outcome::WouldRemove,
+            error: None,
+        });
+        let page = SnapshotPage::new("disk-history", &w);
+        let row = page
+            .lines
+            .iter()
+            .map(|(line, _)| line)
+            .rfind(|line| line.contains("estimate-probe"))
+            .expect("the dry-run record has a history row");
+        assert!(
+            row.contains("5.0 MiB") && row.contains("would be removed"),
+            "a dry-run row keeps its estimate: {row}"
+        );
     }
 }
