@@ -75,6 +75,7 @@ fn main() -> std::io::Result<()> {
         coverage::KEYMAP_ALLOWLIST,
         coverage::EXTERNAL_COVERAGE,
         coverage::EXTERNAL_ALLOWLIST,
+        coverage::RUNTIME_ALLOWLIST,
     );
     let cli: Cli = junie_tui::cli::parse(cli_after_help());
     let motion = cli.common.motion(NO_MOTION_ENV);

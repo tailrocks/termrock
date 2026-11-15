@@ -297,6 +297,21 @@ pub const EXTERNAL_ALLOWLIST: &[(&str, &str)] = &[
     ),
 ];
 
+pub const RUNTIME_ALLOWLIST: &[(&str, &str)] = &[
+    (
+        "runtime::RawInputPolicy",
+        "Raw terminal event budgets act below the widget layer and draw nothing; pinned by the runtime::tests raw_input_ and startup_discard_ unit tests, and the showcase runs on the default policy.",
+    ),
+    (
+        "runtime::Application::raw_input_policy",
+        "A host-level scheduling override with no visible state; the showcase keeps the default and the runtime unit tests drive an application with an explicit policy.",
+    ),
+    (
+        "runtime::drain_pending_input_bounded",
+        "Called once by shell::run before the terminal session starts, so no page can show it; the startup_discard_ unit tests pin its bound and raw-mode restoration.",
+    ),
+];
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -376,6 +391,33 @@ mod tests {
             "runtime::bounded_external_channel",
         ] {
             assert!(seen.contains(id), "external API lacks a declaration: {id}");
+        }
+    }
+
+    #[test]
+    fn runtime_raw_input_apis_are_declared_with_reasons() {
+        let catalog = catalog_source();
+        let mut seen = std::collections::BTreeSet::new();
+        for (id, reason) in RUNTIME_ALLOWLIST {
+            assert!(
+                catalog.contains(&format!("\"{id}\"")),
+                "declared id is not a catalog capability: {id}"
+            );
+            assert!(
+                !reason.trim().is_empty(),
+                "allowlist entry has no reason: {id}"
+            );
+            assert!(seen.insert(*id), "duplicate allowlist entry: {id}");
+        }
+        for id in [
+            "runtime::RawInputPolicy",
+            "runtime::Application::raw_input_policy",
+            "runtime::drain_pending_input_bounded",
+        ] {
+            assert!(
+                seen.contains(id),
+                "raw input API lacks a coverage declaration: {id}"
+            );
         }
     }
 }
