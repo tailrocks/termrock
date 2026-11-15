@@ -507,7 +507,7 @@ impl ContextMenu {
             area.width.saturating_sub(2),
             area.height.saturating_sub(2),
         );
-        if let Some(title) = &self.title {
+        if let Some(title) = self.title.as_ref().filter(|_| !inner.is_empty()) {
             buf.set_string(
                 inner.x + 2,
                 inner.y,
