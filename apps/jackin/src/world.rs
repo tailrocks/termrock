@@ -823,7 +823,7 @@ impl World {
         let source = self.accounts.get(id)?.source.clone();
         let started_ms = self.clock.now_ms;
         let ticket = self.next_ticket();
-        self.accounts.get_mut(id)?.validation = ValidationState::Validating {
+        self.account_mut(id)?.validation = ValidationState::Validating {
             started_tick: started_ms.max(0) as u64,
         };
         self.pending_validations.insert(
@@ -863,10 +863,15 @@ impl World {
         let accounts = &self.accounts;
         self.pending_validations
             .retain(|id, p| accounts.get(id).is_some_and(|a| a.source == p.source));
-        for (id, p) in &self.pending_validations {
-            if let Some(a) = self.accounts.get_mut(id) {
+        let restart: Vec<(AccountId, i64)> = self
+            .pending_validations
+            .iter()
+            .map(|(id, p)| (id.clone(), p.started_ms))
+            .collect();
+        for (id, started_ms) in restart {
+            if let Some(a) = self.account_mut(&id) {
                 a.validation = ValidationState::Validating {
-                    started_tick: p.started_ms.max(0) as u64,
+                    started_tick: started_ms.max(0) as u64,
                 };
             }
         }
