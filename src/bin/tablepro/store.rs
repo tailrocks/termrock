@@ -160,12 +160,14 @@ pub enum StoreError {
         key: ItemKey,
         column: String,
     },
-    /// `DEFAULT` for a column without a default, which cannot be left empty.
+    /// A value a column cannot be left empty with, for a column that has no
+    /// default: an explicit `NULL`, or `DEFAULT`, has nothing to store.
     Required {
         key: ItemKey,
         column: String,
     },
-    /// An explicit `NULL` for a column that does not accept it.
+    /// An explicit `NULL` for a column that cannot be empty but has a default,
+    /// which `DEFAULT` stores instead.
     NullNotAllowed {
         key: ItemKey,
         column: String,
@@ -708,8 +710,13 @@ fn convert(key: ItemKey, column: &Column, cell: &CellValue) -> Result<Value, Sto
         (CellValue::Null, _) => {
             if column.nullable {
                 Value::Null
-            } else {
+            } else if column.default.is_some() {
                 return Err(StoreError::NullNotAllowed {
+                    key,
+                    column: column.name.clone(),
+                });
+            } else {
+                return Err(StoreError::Required {
                     key,
                     column: column.name.clone(),
                 });

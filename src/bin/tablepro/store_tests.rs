@@ -206,7 +206,7 @@ fn issue51_batch_failure_is_atomic() {
 
     let error = prepare(&store, &products, &id, 0, &bad).expect_err("a later row is invalid");
     assert!(
-        matches!(error, StoreError::NullNotAllowed { ref column, .. } if column == "sku"),
+        matches!(error, StoreError::Required { ref column, .. } if column == "sku"),
         "{error:?}"
     );
     assert!(error.row().is_some(), "the refusal names the row");
@@ -317,11 +317,10 @@ fn issue51_defaults_are_typed_and_transactional() {
     let error = prepare(&store, &orders, &id, 1, &grid.snapshot_changes()).expect_err("NULL total");
     assert_eq!(
         error.to_string(),
-        "total_amount is required (type DEFAULT to use the column default)"
+        "total_amount is required",
+        "no column default to type"
     );
-    assert!(
-        matches!(error, StoreError::NullNotAllowed { ref column, .. } if column == "total_amount")
-    );
+    assert!(matches!(error, StoreError::Required { ref column, .. } if column == "total_amount"));
 
     let mut grid = first_rows(&store, &id, &orders, 1);
     let src = new_order(&mut grid, CellValue::Num(1.0));
