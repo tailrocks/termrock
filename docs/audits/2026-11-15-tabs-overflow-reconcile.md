@@ -25,7 +25,7 @@ separate. Closing a stale menu does not identify a host document.
 
 ## Evidence
 
-`tests/tabs_overflow_mutation.rs` (the `issue44_` tests). On the code before
+`tests/regressions/tabs_overflow_mutation.rs` (the `issue44_` tests, run with `--test regressions -E 'test(/tabs_overflow_mutation::/)'`). On the code before
 this change, the four tests that compile against the old API fail at their
 first assertion that a structural change closes the menu. Tests that call
 `update_item`, `reorder`, `push` or `items()` cannot compile there.
