@@ -1,8 +1,6 @@
-mod common;
-
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
-use common::*;
+use crate::common::*;
 use junie_tui::core::hit::HitRegistry;
 use junie_tui::core::id::WidgetId;
 use junie_tui::core::intent::Phase;

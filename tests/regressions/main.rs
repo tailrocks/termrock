@@ -4,4 +4,7 @@
 //! here. Never add a new top-level `tests/*.rs`: each target changes the
 //! generated CI workflows (see `docs/ci.md`).
 
+mod collection_menu_lifecycle;
+#[path = "../common/mod.rs"]
+mod common;
 mod smoke;
