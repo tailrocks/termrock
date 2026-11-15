@@ -470,9 +470,31 @@ impl<'a> Panel<'a> {
 use ratatui::style::Style;
 
 #[derive(Debug, Clone)]
+struct WrappedCache {
+    revision: u64,
+    width: u16,
+    rows: Vec<String>,
+    source_lines: Vec<usize>,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct WidestCache {
+    revision: u64,
+    cells: usize,
+}
+
+#[cfg(test)]
+#[derive(Debug, Clone, Default)]
+struct Work {
+    wrap_builds: std::cell::Cell<usize>,
+    width_measurements: std::cell::Cell<usize>,
+}
+
+#[derive(Debug, Clone)]
 pub struct ScrollPanel {
     pub id: WidgetId,
-    pub lines: Vec<String>,
+    lines: Vec<String>,
+    content_revision: u64,
 
     pub scroll: ScrollPane,
 
@@ -482,7 +504,10 @@ pub struct ScrollPanel {
     pub wrap: bool,
     pub area: Rect,
 
-    wrapped_cache: (u16, Vec<String>, Vec<usize>),
+    wrapped_cache: Option<WrappedCache>,
+    widest_cache: Option<WidestCache>,
+    #[cfg(test)]
+    work: Work,
 
     pub horizontal: Option<HScroll>,
 
@@ -545,12 +570,16 @@ impl ScrollPanel {
         Self {
             id,
             lines,
+            content_revision: 0,
             scroll: ScrollPane::default(),
             follow: false,
             tail: false,
             wrap: false,
             area: Rect::ZERO,
-            wrapped_cache: (0, vec![], vec![]),
+            wrapped_cache: None,
+            widest_cache: None,
+            #[cfg(test)]
+            work: Work::default(),
             horizontal: None,
             nav: NavKeys::default(),
             keymap: PanelCmd::default_keymap(),
@@ -595,9 +624,134 @@ impl ScrollPanel {
         self
     }
 
+    pub fn lines(&self) -> &[String] {
+        &self.lines
+    }
+
+    /// Replaces every line. Returns false, changing nothing, when `lines`
+    /// equals the current content.
+    pub fn set_lines(&mut self, lines: Vec<String>) -> bool {
+        if self.lines == lines {
+            return false;
+        }
+        self.lines = lines;
+        self.content_changed();
+        true
+    }
+
+    /// Replaces one line. `Err(index)` reports an index past the last line,
+    /// `Ok(false)` an identical line.
+    pub fn replace_line(&mut self, index: usize, line: String) -> Result<bool, usize> {
+        let slot = self.lines.get_mut(index).ok_or(index)?;
+        if *slot == line {
+            return Ok(false);
+        }
+        *slot = line;
+        self.content_changed();
+        Ok(true)
+    }
+
+    /// Appends lines. The iterator is drained before the content changes, so
+    /// a panicking iterator leaves the panel untouched. Returns false for an
+    /// empty iterator.
+    pub fn extend_lines(&mut self, lines: impl IntoIterator<Item = String>) -> bool {
+        let added: Vec<String> = lines.into_iter().collect();
+        if added.is_empty() {
+            return false;
+        }
+        self.append(added);
+        true
+    }
+
+    /// Removes every line. Returns false when there were none.
+    pub fn clear(&mut self) -> bool {
+        if self.lines.is_empty() {
+            return false;
+        }
+        self.lines.clear();
+        self.content_changed();
+        true
+    }
+
     pub fn push(&mut self, line: String) {
-        self.lines.push(line);
-        self.wrapped_cache.0 = 0;
+        self.append(vec![line]);
+    }
+
+    fn append(&mut self, added: Vec<String>) {
+        let widest = self
+            .widest_cache
+            .filter(|c| c.revision == self.content_revision)
+            .map(|c| c.cells.max(self.widest_of(&added)));
+        self.lines.extend(added);
+        self.content_changed();
+        self.widest_cache = widest.map(|cells| WidestCache {
+            revision: self.content_revision,
+            cells,
+        });
+    }
+
+    fn content_changed(&mut self) {
+        match self.content_revision.checked_add(1) {
+            Some(next) => self.content_revision = next,
+            None => {
+                self.content_revision = 0;
+                self.widest_cache = None;
+            }
+        }
+        self.wrapped_cache = None;
+        self.select = TextSelect::default();
+    }
+
+    fn widest_of(&self, lines: &[String]) -> usize {
+        #[cfg(test)]
+        self.work
+            .width_measurements
+            .set(self.work.width_measurements.get() + lines.len());
+        lines
+            .iter()
+            .map(|l| crate::ui::text::width(l))
+            .max()
+            .unwrap_or(0)
+    }
+
+    fn widest(&mut self) -> usize {
+        if let Some(c) = self
+            .widest_cache
+            .filter(|c| c.revision == self.content_revision)
+        {
+            return c.cells;
+        }
+        let cells = self.widest_of(&self.lines);
+        self.widest_cache = Some(WidestCache {
+            revision: self.content_revision,
+            cells,
+        });
+        cells
+    }
+
+    fn ensure_wrapped(&mut self, width: u16) {
+        if self
+            .wrapped_cache
+            .as_ref()
+            .is_some_and(|c| c.revision == self.content_revision && c.width == width)
+        {
+            return;
+        }
+        #[cfg(test)]
+        self.work.wrap_builds.set(self.work.wrap_builds.get() + 1);
+        let mut rows = Vec::new();
+        let mut source_lines = Vec::new();
+        for (i, l) in self.lines.iter().enumerate() {
+            let wrapped = crate::ui::text::wrap(l, width as usize);
+            source_lines.extend(std::iter::repeat_n(i, wrapped.len()));
+            rows.extend(wrapped);
+        }
+        self.wrapped_cache = Some(WrappedCache {
+            revision: self.content_revision,
+            width,
+            rows,
+            source_lines,
+        });
     }
 
     fn settle_follow(&mut self) {
@@ -664,15 +818,8 @@ impl ScrollPanel {
     pub fn measure(&mut self, area: Rect) {
         self.area = area;
         let text_w = area.width.saturating_sub(2);
-        if self.wrap && self.wrapped_cache.0 != text_w {
-            let mut out = Vec::new();
-            let mut src = Vec::new();
-            for (i, l) in self.lines.iter().enumerate() {
-                let rows = crate::ui::text::wrap(l, text_w as usize);
-                src.extend(std::iter::repeat_n(i, rows.len()));
-                out.extend(rows);
-            }
-            self.wrapped_cache = (text_w, out, src);
+        if self.wrap {
+            self.ensure_wrapped(text_w);
         }
 
         if self.select_w != text_w {
@@ -681,21 +828,8 @@ impl ScrollPanel {
             }
             self.select_w = text_w;
         }
-        let len = if self.wrap {
-            self.wrapped_cache.1.len()
-        } else {
-            self.lines.len()
-        };
-
-        let widest = if self.h_enabled() {
-            self.lines
-                .iter()
-                .map(|l| crate::ui::text::width(l))
-                .max()
-                .unwrap_or(0)
-        } else {
-            0
-        };
+        let len = self.rows().len();
+        let widest = if self.h_enabled() { self.widest() } else { 0 };
         self.scroll.h.set_content(widest);
         self.scroll.h.set_viewport(text_w as usize);
         let has_hb =
@@ -747,11 +881,7 @@ impl ScrollPanel {
             .interaction
             .focused_under(self.id, self.edit_menu.is_open());
         let text_w = area.width.saturating_sub(2);
-        let lines: &Vec<String> = if self.wrap {
-            &self.wrapped_cache.1
-        } else {
-            &self.lines
-        };
+        let lines = self.rows();
         ctx.control(self.id, area, false);
         ctx.scrollable(self.id, area);
 
@@ -821,18 +951,16 @@ impl ScrollPanel {
 
 impl ScrollPanel {
     fn rows(&self) -> &[String] {
-        if self.wrap {
-            &self.wrapped_cache.1
-        } else {
-            &self.lines
+        if !self.wrap {
+            return &self.lines;
         }
+        self.wrapped_cache.as_ref().map_or(&[], |c| &c.rows)
     }
 
     fn source_of(&self, row: usize) -> usize {
-        if self.wrap {
-            self.wrapped_cache.2.get(row).copied().unwrap_or(row)
-        } else {
-            row
+        match (&self.wrapped_cache, self.wrap) {
+            (Some(c), true) => c.source_lines.get(row).copied().unwrap_or(row),
+            _ => row,
         }
     }
 
@@ -1076,13 +1204,13 @@ impl crate::ui::specimen::Specimen for ScrollPanel {
         use crate::ui::specimen::SpecimenState::*;
         let mut panel = self.clone();
         match state {
-            Empty => panel.lines.clear(),
+            Empty => {
+                panel.clear();
+            }
 
             Hover | Pressed | Overflow => {
-                let n = panel.lines.len();
-                panel
-                    .lines
-                    .extend((n + 1..=12.max(n)).map(|i| format!("line {i}")));
+                let n = panel.lines().len();
+                panel.extend_lines((n + 1..=12.max(n)).map(|i| format!("line {i}")));
             }
             _ => {}
         }
@@ -1171,3 +1299,6 @@ impl EditMenuHost for ScrollPanel {
         false
     }
 }
+
+#[cfg(test)]
+mod tests;

@@ -797,8 +797,8 @@ impl Page for ScrollingPage {
         }
         match ev {
             PageEvent::Tick => {
-                if self.log.lines.len() < 2000 && self.log.follow {
-                    let n = self.log.lines.len();
+                if self.log.lines().len() < 2000 && self.log.follow {
+                    let n = self.log.lines().len();
                     if let Some(line) = crate::data::log_lines(n + 1).pop() {
                         self.log.push(line);
                     }
@@ -839,7 +839,7 @@ impl Page for ScrollingPage {
     }
 
     fn animating(&self) -> bool {
-        self.log.follow && self.log.lines.len() < 2000
+        self.log.follow && self.log.lines().len() < 2000
     }
 
     fn layer_open(&self) -> bool {

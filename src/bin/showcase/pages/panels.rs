@@ -119,6 +119,28 @@ impl PanelsPage {
             .tail(o.on("panels.tail"))
             .nav(nav)
             .keymap(keymap);
+        match o.value("panels.content") {
+            "edited" => {
+                log.replace_line(2, format!("{:7.2}s  info   Line edited in place", 0.74))
+                    .expect("the generated log has a third line");
+            }
+            "appended" => {
+                log.extend_lines((0..3).map(|i| {
+                    format!(
+                        "{:7.2}s  info   Line appended {}",
+                        22.2 + f64::from(i),
+                        i + 1
+                    )
+                }));
+            }
+            "replaced" => {
+                log.set_lines(crate::data::log_lines(8));
+            }
+            "cleared" => {
+                log.clear();
+            }
+            _ => {}
+        }
         if let Some(c) = click {
             prose = prose.track_click(c);
             log = log.track_click(c);
