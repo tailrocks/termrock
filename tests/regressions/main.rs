@@ -4,4 +4,5 @@
 //! here. Never add a new top-level `tests/*.rs`: each target changes the
 //! generated CI workflows (see `docs/ci.md`).
 
+mod grapheme_paint;
 mod smoke;
