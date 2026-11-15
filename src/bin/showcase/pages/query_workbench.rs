@@ -178,8 +178,15 @@ impl DocView<'_> {
         self.document.install(result);
     }
 
+    /// Whether the editor takes `ev`: input on it or on its open edit menu.
+    /// Anything else, such as a click in the results, is view-only.
+    fn editor_claims(&self, ev: &PointerEvent) -> bool {
+        ev.on(self.document.editor.id) || self.document.editor.edit_menu.owns(ev)
+    }
+
     /// A wheel gesture over the editor. It scrolls; any other pointer input
-    /// can open the edit menu and goes through [`DocumentWorkspace::update`].
+    /// the editor takes can open the edit menu and goes through
+    /// [`DocumentWorkspace::update`].
     fn editor_wheel(&mut self, ev: &PointerEvent) -> Option<Outcome> {
         ev.wheel()?;
         self.document.editor.route(ev).map(|r| r.outcome())
@@ -1309,11 +1316,17 @@ impl QueryWorkbenchPage {
                     .view_mut(key)
                     .ok()
                     .and_then(|mut view| view.editor_wheel(ev))
-            } else {
+            } else if self
+                .workspace
+                .view_mut(key)
+                .is_ok_and(|view| view.editor_claims(ev))
+            {
                 self.workspace
                     .update(key, |doc| doc.editor.route(ev).map(|r| r.outcome()))
                     .ok()
                     .and_then(|(outcome, _)| outcome)
+            } else {
+                None
             };
             if let Some(outcome) = routed {
                 if click && ev.bar.is_none() {
@@ -2603,6 +2616,36 @@ mod tests {
             ["customers"],
             "the second close confirms the first request"
         );
+    }
+
+    #[test]
+    fn query_workbench_results_click_keeps_a_pending_close_valid() {
+        let mut rig = Rig::new();
+        rig.page.set_option("queryworkbench.dirty_close", 1);
+        rig.type_into_editor("-- scratch\n");
+        close(&mut rig, 0);
+        let asked = rig.page.pending_close.expect("a close request is waiting");
+        let key = rig.page.active_key().expect("active");
+        let revision = rig.page.workspace.revision(key);
+
+        let results = results_id(key);
+        let area = rig
+            .hits
+            .area_of(results)
+            .expect("results are hit-registered");
+        let pos = Position::new(area.x + 2, area.y + 2);
+        let id = rig.hits.hit(pos).expect("a hit region under the click");
+        assert_ne!(
+            id,
+            active(&rig.page).editor.id,
+            "the click is not on the editor"
+        );
+        let ev = PointerEvent::new(&rig.hits, Phase::Click, id, pos, 1, KeyModifiers::NONE);
+        rig.send(PageEvent::Pointer(ev));
+
+        assert_eq!(rig.focus.current(), Some(results), "the results took focus");
+        assert_eq!(rig.page.workspace.revision(key), revision);
+        assert_eq!(rig.page.pending_close, Some(asked));
     }
 
     #[test]
