@@ -9,7 +9,7 @@ use crate::core::id::WidgetId;
 use crate::theme::{ColorLevel, Theme};
 use crate::ui::ctx::{Interaction, RenderCtx};
 use crate::widgets::grid::{
-    CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridRows, RowTotal,
+    CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridCommitError, GridRows, RowTotal,
 };
 use crate::widgets::option_editor::{ColumnEditor, Options};
 use crate::widgets::table::{Cell, Column, DataTable, TableAction};
@@ -117,6 +117,7 @@ fn issue32_table_no_op_removal_keeps_editor() {
     t.remove_rows(&[]);
     t.remove_rows(&[7, 9]);
     assert!(t.choice.is_some(), "nothing was removed");
+    let _ = t.on_key(&key(KeyCode::Up));
     assert_eq!(
         t.on_key(&key(KeyCode::Enter))
             .into_actions()
@@ -295,9 +296,16 @@ fn issue32_grid_structural_paths_cancel_choice() {
     assert_eq!(g.rows().len(), 2);
 
     let mut g = grid(&["a", "b"]);
-    let _ = g.on_key(&key(KeyCode::Enter));
+    g.record_cell(0, 0, CellValue::Text("z".into())).unwrap();
+    grid_open_on(&mut g, 1);
+    assert_eq!(
+        g.begin_submission(g.snapshot_changes()),
+        Err(GridCommitError::Editing),
+        "a save cannot start under a live session"
+    );
+    g.finish_edit_session().unwrap();
     commit_ok(&mut g);
-    assert!(g.choice.is_none(), "an accepted commit closes the session");
+    assert!(g.choice.is_none(), "an accepted commit leaves no session");
 
     let mut g = grid(&["a", "b"]);
     g.insert_row().unwrap();
@@ -313,6 +321,7 @@ fn issue32_append_keeps_existing_editor_but_replace_cancels() {
     grid_open_on(&mut g, 1);
     g.try_append_rows(rows(&["c"])).unwrap();
     assert!(g.choice.is_some(), "append does not renumber old rows");
+    let _ = g.on_key(&key(KeyCode::Up));
     assert_eq!(
         g.on_key(&key(KeyCode::Enter))
             .into_actions()
