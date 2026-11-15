@@ -1065,7 +1065,7 @@ impl App {
         let Some(WorkTab::Table(t)) = w.active_tab_mut() else {
             return;
         };
-        if t.grid.pending.is_empty() {
+        if t.grid.pending().is_empty() {
             self.set_status("No pending changes".into());
             return;
         }
@@ -1090,7 +1090,7 @@ impl App {
                 return;
             }
         };
-        let (u, i, d) = t.grid.pending.counts();
+        let (u, i, d) = t.grid.pending().counts();
         let deletes = d;
         let deliberate = level.requires_authentication();
         let mut facts = vec![
@@ -1215,7 +1215,7 @@ impl App {
                 return;
             }
         };
-        let n = t.grid.pending.total();
+        let n = t.grid.pending().total();
         let qualified = t.qualified();
         let schema = t.schema.clone();
         t.grid.apply_commit_result(Ok(()));
@@ -2625,10 +2625,7 @@ mod tests {
     fn issue49_save_review_shows_exact_numbers_and_keeps_the_value() {
         let mut app = app_editing_products();
         let original = grid(&mut app).rows()[0][PRICE].clone();
-        grid(&mut app)
-            .pending
-            .cells
-            .insert((0, PRICE), CellValue::Num(1.234_567));
+        grid(&mut app).record_cell(0, PRICE, CellValue::Num(1.234_567));
         app.begin_commit();
         let code = review_code(&app);
         assert_eq!(code.len(), 1);
@@ -2638,23 +2635,14 @@ mod tests {
             code[0]
         );
         assert_eq!(grid(&mut app).rows()[0][PRICE], original);
-        assert_eq!(
-            grid(&mut app).pending.value(0, PRICE),
-            Some(&CellValue::Num(1.234_567))
-        );
+        assert_eq!(grid(&mut app).value(0, PRICE), &CellValue::Num(1.234_567));
     }
 
     #[test]
     fn issue49_save_and_preview_reject_nonfinite_without_side_effects() {
         let mut app = app_editing_products();
-        grid(&mut app)
-            .pending
-            .cells
-            .insert((0, PRICE), CellValue::Num(2.5));
-        grid(&mut app)
-            .pending
-            .cells
-            .insert((1, PRICE), CellValue::Num(f64::NAN));
+        grid(&mut app).record_cell(0, PRICE, CellValue::Num(2.5));
+        grid(&mut app).record_cell(1, PRICE, CellValue::Num(f64::NAN));
         let history = app.history.entries.len();
 
         app.begin_commit();
@@ -2678,8 +2666,8 @@ mod tests {
             history,
             "nothing reaches history"
         );
-        let pending = &grid(&mut app).pending;
-        assert_eq!(pending.cells.len(), 2, "the draft is kept");
-        assert_eq!(pending.value(0, PRICE), Some(&CellValue::Num(2.5)));
+        let grid = grid(&mut app);
+        assert_eq!(grid.pending().cells().count(), 2, "the draft is kept");
+        assert_eq!(grid.value(0, PRICE), &CellValue::Num(2.5));
     }
 }

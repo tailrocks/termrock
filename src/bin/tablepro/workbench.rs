@@ -886,6 +886,7 @@ impl Workbench {
             GridAction::LeaveBackward => cx.focus_prev(),
             GridAction::ReadOnly { reason } => cx.status(reason),
             GridAction::CellChanged { .. }
+            | GridAction::Undone(_)
             | GridAction::RowInserted(_)
             | GridAction::RowDeleted(_)
             | GridAction::Activated(_) => {}
