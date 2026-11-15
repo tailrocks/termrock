@@ -2,6 +2,7 @@
 //! with. Switching or closing tabs, editing after review or reconnecting cannot
 //! redirect or expand it.
 
+use super::test_support::review_code;
 use super::*;
 use junie_tui::core::event::Key;
 use junie_tui::widgets::grid::{CellEditResult, FinishEdit, GridEditError, cell_validator};
@@ -47,18 +48,6 @@ fn ticks(app: &mut App, n: usize) {
     }
 }
 
-fn reviewed_sql(app: &App) -> Vec<String> {
-    match &app
-        .layers
-        .top_as::<Dialog>()
-        .expect("the review dialog is open")
-        .body
-    {
-        DialogBody::Facts { code, .. } => code.clone(),
-        _ => panic!("the dialog lists statements"),
-    }
-}
-
 /// Row-edit statements saved since the app started, oldest first. The seeded
 /// history holds older entries of the same source, which these never include.
 fn saved_sql(app: &App) -> Vec<String> {
@@ -89,7 +78,7 @@ fn issue11_save_completion_targets_submitted_tab() {
     edit(&mut app, customers, CUSTOMER_NAME, "B edit");
     activate(&mut app, products);
     app.begin_commit();
-    let reviewed = reviewed_sql(&app);
+    let reviewed = review_code(&app);
     assert_eq!(reviewed.len(), 1, "{reviewed:?}");
     assert!(reviewed[0].contains("products"), "{}", reviewed[0]);
     confirm(&mut app);
@@ -118,7 +107,7 @@ fn issue11_edit_after_review_cannot_expand_the_save() {
     edit(&mut app, products, PRODUCT_NAME, "reviewed");
     activate(&mut app, products);
     app.begin_commit();
-    let reviewed = reviewed_sql(&app);
+    let reviewed = review_code(&app);
     confirm(&mut app);
 
     edit(&mut app, products, 1, "sneaked-in");
@@ -405,7 +394,7 @@ fn issue11_save_finishes_live_editor_once() {
         1,
         "the session reached the parser exactly once"
     );
-    let sql = reviewed_sql(&app);
+    let sql = review_code(&app);
     assert!(sql[0].contains("-live"), "{}", sql[0]);
     assert!(!grid_at(&mut app, products).is_editing());
     assert!(grid_at(&mut app, products).submission_pending());

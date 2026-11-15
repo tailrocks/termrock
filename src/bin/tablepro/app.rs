@@ -75,6 +75,10 @@ mod connection_identity_tests;
 #[path = "commit_owner_tests.rs"]
 mod commit_owner_tests;
 
+#[cfg(test)]
+#[path = "test_support.rs"]
+mod test_support;
+
 pub enum Act {
     EditFilter(Option<usize>),
     FilterOnCell(usize, CellValue),
@@ -2851,6 +2855,7 @@ impl shell::KeyHost for App {
 
 #[cfg(test)]
 mod tests {
+    use super::test_support::review_code;
     use super::*;
 
     const PRICE: usize = 4;
@@ -2872,18 +2877,6 @@ mod tests {
         match app.workbench.as_mut().and_then(|w| w.active_tab_mut()) {
             Some(WorkTab::Table(t)) => &mut t.grid,
             _ => panic!("a table tab is active"),
-        }
-    }
-
-    fn review_code(app: &App) -> Vec<String> {
-        match &app
-            .layers
-            .top_as::<Dialog>()
-            .expect("the review dialog is open")
-            .body
-        {
-            DialogBody::Facts { code, .. } => code.clone(),
-            _ => panic!("the dialog lists statements"),
         }
     }
 
