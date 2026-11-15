@@ -169,7 +169,11 @@ impl TreesPage {
         };
         let tree = self.build(TreeView::new(PROJECT, vec![]));
         self.tree = keep(&self.tree, tree);
-        let conns = self.build(TreeView::new(CONNECTIONS, vec![]));
+        let mut conns = self.build(TreeView::new(CONNECTIONS, vec![]));
+        conns.filter = match self.opt("trees.filter") {
+            "orders" => Some("orders".to_owned()),
+            _ => None,
+        };
         self.conns = keep(&self.conns, conns);
     }
 
