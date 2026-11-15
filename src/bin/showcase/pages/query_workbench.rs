@@ -2605,6 +2605,32 @@ mod tests {
     }
 
     #[test]
+    fn query_workbench_results_click_keeps_a_pending_close_valid() {
+        let mut rig = Rig::new();
+        rig.page.set_option("queryworkbench.dirty_close", 1);
+        rig.type_into_editor("-- scratch\n");
+        close(&mut rig, 0);
+        let asked = rig.page.pending_close.expect("a close request is waiting");
+        let key = rig.page.active_key().expect("active");
+        let revision = rig.page.workspace.revision(key);
+
+        let results = results_id(key);
+        let area = rig
+            .hits
+            .area_of(results)
+            .expect("results are hit-registered");
+        let pos = Position::new(area.x + 2, area.y + 2);
+        let id = rig.hits.hit(pos).expect("a hit region under the click");
+        assert_ne!(id, active(&rig.page).editor.id, "the click is not on the editor");
+        let ev = PointerEvent::new(&rig.hits, Phase::Click, id, pos, 1, KeyModifiers::NONE);
+        rig.send(PageEvent::Pointer(ev));
+
+        assert_eq!(rig.focus.current(), Some(results), "the results took focus");
+        assert_eq!(rig.page.workspace.revision(key), revision);
+        assert_eq!(rig.page.pending_close, Some(asked));
+    }
+
+    #[test]
     fn query_workbench_ask_mode_confirmation_targets_the_asked_document() {
         let mut rig = Rig::new();
         rig.page.set_option("queryworkbench.dirty_close", 1);
