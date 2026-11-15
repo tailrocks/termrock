@@ -356,3 +356,29 @@ fn settings_footer_wraps_into_the_reserved_rows_below_the_supported_minimum() {
     );
     assert_contiguous(&rows, 2, "settings at 20x24");
 }
+
+#[test]
+fn manager_actions_never_draw_above_the_detail_panel_on_a_short_terminal() {
+    let mut checked = 0;
+    for h in 6..=19 {
+        let mut app = manager_instance_app();
+        let shown = paint_below_minimum(&mut app, (MANAGER.0, h));
+        let Some(panel) = region_of(&shown.hits, manager::DETAIL) else {
+            continue;
+        };
+        for a in manager_actions() {
+            let Some(region) = region_of(&shown.hits, a.id) else {
+                continue;
+            };
+            checked += 1;
+            assert!(
+                region.area.y >= panel.area.y,
+                "{} at height {h} sits at row {} above the panel top {}",
+                a.label,
+                region.area.y,
+                panel.area.y
+            );
+        }
+    }
+    assert!(checked > 0, "no short terminal showed an action");
+}
