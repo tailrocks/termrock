@@ -396,8 +396,8 @@ impl TerminalPage {
                 y,
                 junie_tui::ui::text::truncate(
                     &format!(
-                        "viewport work: {} lines segmented · {} reflowed",
-                        work.segmented_lines, work.reflowed_lines
+                        "viewport work: {} lines segmented · {} reflowed · {} draw copies",
+                        work.segmented_lines, work.reflowed_lines, work.draw_fallbacks
                     ),
                     inner.width as usize,
                 ),

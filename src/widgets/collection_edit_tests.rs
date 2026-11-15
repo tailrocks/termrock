@@ -234,7 +234,7 @@ fn issue32_grid_replace_cancels_choice() {
                 !matches!(act, Some(GridAction::CellChanged { .. })),
                 "{how:?}: {act:?}"
             );
-            assert!(g.pending.is_empty(), "{how:?}: nothing staged");
+            assert!(g.pending().is_empty(), "{how:?}: nothing staged");
         }
     }
 }
@@ -268,7 +268,7 @@ fn issue32_grid_structural_paths_cancel_choice() {
     g.insert_row();
     g.on_key(&key(KeyCode::Up));
     g.on_key(&key(KeyCode::Enter));
-    assert!(g.undo());
+    assert!(g.undo().is_some());
     assert!(g.choice.is_none(), "undoing an insert closes the session");
 }
 
@@ -294,7 +294,7 @@ fn issue32_append_keeps_existing_editor_but_replace_cancels() {
         "{act:?}"
     );
     assert!(g.choice.is_none());
-    assert!(g.pending.is_empty());
+    assert!(g.pending().is_empty());
 }
 
 fn text_table(texts: &[&str]) -> DataTable {
@@ -403,14 +403,14 @@ fn issue32_grid_text_structural_change_closes_editor() {
     g.set_rows(rows(&["x", "y", "z"]));
     assert!(!g.is_editing(), "set_rows closes the text session");
     assert_eq!(g.commit_edit(), None);
-    assert!(g.pending.is_empty(), "nothing staged on the replacement");
+    assert!(g.pending().is_empty(), "nothing staged on the replacement");
 
     let mut g = grid_text(&["a", "b", "c"]);
     grid_text_open_on(&mut g, 1);
     g.discard();
     assert!(!g.is_editing(), "discard closes the text session");
     assert_eq!(g.commit_edit(), None);
-    assert!(g.pending.is_empty());
+    assert!(g.pending().is_empty());
 
     let mut g = grid_text(&["a", "b"]);
     g.insert_row();
@@ -423,7 +423,7 @@ fn issue32_grid_text_structural_change_closes_editor() {
     );
     assert_eq!(g.commit_edit(), None);
     assert_eq!(g.len(), 2);
-    assert!(g.pending.is_empty());
+    assert!(g.pending().is_empty());
 }
 
 #[test]
@@ -436,7 +436,7 @@ fn issue32_grid_text_stale_session_cannot_commit() {
     assert_eq!(g.commit_edit(), None, "the stale session commits nothing");
     assert!(!g.is_editing(), "a stale session is closed");
     assert!(
-        g.pending.is_empty(),
+        g.pending().is_empty(),
         "no cell is staged on replacement data"
     );
 }
@@ -450,5 +450,5 @@ fn issue32_grid_text_invalid_value_keeps_session() {
     assert_eq!(act, None, "a rejected value commits nothing");
     assert!(g.is_editing(), "the live session stays open");
     assert_eq!(g.edit_error(), Some("no bang"));
-    assert!(g.pending.is_empty());
+    assert!(g.pending().is_empty());
 }
