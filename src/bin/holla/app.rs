@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use junie_tui::clock::Clock;
 use junie_tui::core::event::{Input, Key, Outcome};
 use junie_tui::core::focus::FocusChange;
@@ -118,6 +120,9 @@ pub struct App {
     menu_actions: Vec<AltCmd>,
     pending_gate: Option<GateTarget>,
     pending_confirm: Option<(String, Vec<(String, String)>)>,
+    /// Activity IDs whose "Stop and close" was confirmed while the process
+    /// was still live. The tab closes on the activity's terminal event.
+    pending_activity_closes: BTreeSet<String>,
     pub clipboard_gen: u32,
 
     pub quitting: bool,
@@ -165,6 +170,7 @@ impl App {
             menu_actions: vec![],
             pending_gate: None,
             pending_confirm: None,
+            pending_activity_closes: BTreeSet::new(),
             clipboard_gen: 0,
             quitting: false,
             last_query: None,
@@ -428,6 +434,9 @@ impl App {
                     } else {
                         self.set_status(&format!("{name} failed · exit {exit}"), Tone::Error);
                     }
+                }
+                if self.pending_activity_closes.contains(id) {
+                    self.close_activity_tab_if_finished(id);
                 }
             }
             Msg::BatchDone { id, ok } => {
@@ -1174,10 +1183,16 @@ impl App {
                     action: Some(1), ..
                 } = result
                 {
-                    match tag.key.strip_prefix("plan:") {
-                        Some(id) => self.stop_and_close_plan(id),
-                        None => self.close_tab(self.active(), true),
-                    }
+                    self.stop_and_close_activity(&tag.key);
+                }
+                Outcome::Changed
+            }
+            "close-plan-tab" => {
+                if let ModalResult::Dialog {
+                    action: Some(1), ..
+                } = result
+                {
+                    self.stop_and_close_plan(&tag.key);
                 }
                 Outcome::Changed
             }
@@ -1748,10 +1763,11 @@ impl App {
                 "Stop and close",
             )
             .cancel_label("Keep running");
-            let mut tag = LayerTag::new("close-tab");
-            if let TabKind::Plan(id) = &self.tabs[active].kind {
-                tag = tag.key(format!("plan:{id}"));
-            }
+            let tag = match &self.tabs[active].kind {
+                TabKind::Activity(id) => LayerTag::new("close-tab").key(id.clone()),
+                TabKind::Plan(id) => LayerTag::new("close-plan-tab").key(id.clone()),
+                TabKind::Here => LayerTag::new("close-tab"),
+            };
             self.open_layer(Box::new(d), tag);
         } else {
             self.close_tab(active, false);
@@ -1779,24 +1795,58 @@ impl App {
         }
     }
 
+    /// Stop-and-close for an activity identified when the dialog opened. A
+    /// live process keeps its tab and a recorded close request until its
+    /// terminal event arrives, so switching tabs cannot redirect the close.
+    fn stop_and_close_activity(&mut self, id: &str) {
+        let tick = self.world.tick;
+        match self.world.activity_mut(id) {
+            Some(a) if a.state.live() => {
+                self.pending_activity_closes.insert(id.to_owned());
+                a.stop(tick);
+                if !self.close_activity_tab_if_finished(id) {
+                    self.set_status(
+                        "Stopping · the tab closes once the process is gone",
+                        Tone::Secondary,
+                    );
+                }
+            }
+            _ => {
+                self.close_activity_tab_if_finished(id);
+            }
+        }
+    }
+
+    /// Fulfils a recorded close request for `id` once the activity is no
+    /// longer live. Returns whether a tab was removed. The request is retired
+    /// whenever it can no longer be fulfilled, so it never outlives its tab.
+    fn close_activity_tab_if_finished(&mut self, id: &str) -> bool {
+        let tab = self
+            .tabs
+            .iter()
+            .position(|t| t.kind == TabKind::Activity(id.to_owned()));
+        let Some(tab) = tab else {
+            self.pending_activity_closes.remove(id);
+            return false;
+        };
+        match self.world.activity(id) {
+            Some(a) if a.state.live() => return false,
+            Some(_) => self.close_tab(tab, false),
+            None => {
+                self.remove_presentation_tab(tab);
+                self.set_status("That activity is gone", Tone::Secondary);
+            }
+        }
+        self.pending_activity_closes.remove(id);
+        true
+    }
+
     fn close_tab(&mut self, i: usize, stop: bool) {
         if i == 0 || i >= self.router.tab_count() {
             return;
         }
         match self.tabs[i].kind.clone() {
             TabKind::Activity(id) => {
-                let tick = self.world.tick;
-                if stop
-                    && let Some(a) = self.world.activity_mut(&id)
-                    && a.state.live()
-                {
-                    a.stop(tick);
-                    self.set_status(
-                        "Stopping · the tab closes once the process is gone",
-                        Tone::Secondary,
-                    );
-                    return;
-                }
                 if self.world.activity(&id).is_some_and(|a| a.state.live()) {
                     return;
                 }
@@ -1809,9 +1859,26 @@ impl App {
             }
             TabKind::Here => {}
         }
+        self.remove_presentation_tab(i);
+    }
+
+    /// Removes tab `i` from the strip, router and modal owners together. The
+    /// shown tab stays shown when a background tab closes, and a closed shown
+    /// tab hands over to its predecessor.
+    fn remove_presentation_tab(&mut self, i: usize) {
+        let was_shown = i == self.active();
         self.tabs.remove(i);
         self.router.close_tab(i);
-        self.activate_tab(i.saturating_sub(1).min(self.tabs.len() - 1));
+        for entry in self.modals.iter_mut() {
+            if entry.owner > i || (entry.owner == i && i > 0) {
+                entry.owner -= 1;
+            }
+        }
+        if was_shown {
+            self.activate_tab(i.saturating_sub(1).min(self.tabs.len() - 1));
+        } else {
+            self.strip.set_active(self.active());
+        }
     }
 
     fn find_item(&self, id: &str) -> Option<Item> {
