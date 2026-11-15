@@ -524,6 +524,78 @@ fn holla_cleanup_hardlinks_report_reclaimed_once() {
 }
 
 #[test]
+fn holla_cleanup_dry_run_reports_estimates_and_removes_nothing() {
+    let app = holla("holla-cleanup-dry-run", "parity-cleanup-hardlinks");
+    app.wait_text("Search actions and resources");
+    app.paste("Review cleanup candidates");
+    app.wait_text("▎ Review cleanup candidates");
+    app.key("enter");
+    app.wait_text("Cleanup review");
+    app.key("enter");
+    app.wait_text("110.0 MiB");
+    app.key("down");
+    app.key("down");
+    app.key("space");
+    app.wait_text("2 selected (110.");
+    app.key("down");
+    app.key("space");
+    app.wait_text("3 selected (210.");
+    app.key("down");
+    app.key("space");
+    app.wait_text("2 selected (210.0 MiB)");
+    app.key("m");
+    app.wait_text("mode PERMANENT (cannot be undone)");
+    app.key("n");
+    app.wait_text("dry run: nothing is removed");
+    app.key("d");
+    app.wait_text("gate 1 of 2");
+    app.key("right");
+    app.key("enter");
+    let phrase = "PERMANENTLY DELETE 2 UNDER /Users/alex ON mbp";
+    app.wait_text("gate 2 of 2");
+    app.type_text(phrase);
+    app.key("enter");
+    let report = app.wait_text("Dry run report");
+    let flat = |screen: &tui_test::TerminalSnapshot| {
+        text(screen)
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ")
+    };
+    let report = flat(&report);
+    assert!(
+        report.contains("210.0 MiB would leave the tree · 0 B freed now"),
+        "a dry run totals both estimates and frees nothing\n{report}"
+    );
+
+    app.key("escape");
+    app.wait_text("▎ Review cleanup candidates");
+    app.key("escape");
+    app.wait_text("Search actions and resources");
+    app.paste("Show cleanup history");
+    app.wait_text("▎ Show cleanup history");
+    app.key("enter");
+    let history = flat(&app.wait_text("Cleanup history"));
+    assert!(
+        history.contains("dry run 110.0 MiB would be removed")
+            && history.contains("dry run 100.0 MiB would be removed"),
+        "dry-run history rows keep their estimates\n{history}"
+    );
+
+    app.key("escape");
+    app.wait_text("▎ Show cleanup history");
+    app.key("escape");
+    app.wait_text("Search actions and resources");
+    app.paste("Review cleanup candidates");
+    app.wait_text("▎ Review cleanup candidates");
+    app.key("enter");
+    app.wait_text("Cleanup review");
+    app.key("enter");
+    app.wait_text("110.0 MiB");
+    app.finish();
+}
+
+#[test]
 fn holla_stop_and_close_waits_for_terminal() {
     let app = holla("holla-stop-and-close", "parity-task-input");
     app.wait_text("Search actions and resources");
