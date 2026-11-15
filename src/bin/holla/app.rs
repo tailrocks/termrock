@@ -485,8 +485,10 @@ impl App {
                         .filter(|s| s.state == StepState::Cancelled)
                         .count();
                     let (_, failed, ..) = p.outcome();
-                    let mut text = if cancelled > 0 {
+                    let mut text = if p.stopped {
                         format!("{} stopped · {cancelled} cancelled", p.title)
+                    } else if cancelled > 0 {
+                        format!("{} finished · {cancelled} cancelled", p.title)
                     } else if failed > 0 {
                         format!("{} · {failed} failed", p.title)
                     } else {
