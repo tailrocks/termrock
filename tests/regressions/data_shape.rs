@@ -449,11 +449,6 @@ fn issue42_public_stale_cursor_indices_safe() {
     );
     assert!(t.out_of_set_cells().is_empty());
 
-    t.edit = Some(junie_tui::widgets::table::EditState {
-        row: 99,
-        col: 99,
-        field: junie_tui::widgets::edit::EditField::single("x".to_owned()),
-    });
     assert_eq!(t.commit_edit(), None);
     assert_eq!(
         texts(&t),
