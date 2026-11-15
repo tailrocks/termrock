@@ -79,11 +79,12 @@ fn rules() -> [Rule; 5] {
 }
 
 fn sized_table(resizable: bool, seam_w: u16, min_width: u16, labels: HeaderLabels) -> DataTable {
-    let mut t = DataTable::new(
+    let mut t = DataTable::try_new(
         ID.sub("sized"),
         crate::pages::tables::task_columns(),
         crate::pages::tables::task_rows(),
     )
+    .expect("rectangular fixture")
     .numeric(&[0, 5, 6])
     .resizable_columns(resizable)
     .seam_hit_w(seam_w);
@@ -106,7 +107,8 @@ fn states_grid() -> StateGrid {
             .take(3)
             .map(|r| vec![r[1].clone(), r[2].clone(), r[5].clone()])
             .collect();
-        DataTable::new(id.child(k), cols, rows)
+        DataTable::try_new(id.child(k), cols, rows)
+            .expect("rectangular fixture")
             .numeric(&[2])
             .resizable_columns(resizable)
     };
@@ -145,9 +147,12 @@ impl ColumnsPage {
             seam_w: 1,
             min_width: 0,
             labels: 0,
-            rules: DataTable::new(ID.sub("rules"), Vec::new(), Vec::new()),
-            row: DataTable::new(ID.sub("row"), Vec::new(), Vec::new()),
-            sized: DataTable::new(ID.sub("sized"), Vec::new(), Vec::new()),
+            rules: DataTable::try_new(ID.sub("rules"), Vec::new(), Vec::new())
+                .expect("rectangular fixture"),
+            row: DataTable::try_new(ID.sub("row"), Vec::new(), Vec::new())
+                .expect("rectangular fixture"),
+            sized: DataTable::try_new(ID.sub("sized"), Vec::new(), Vec::new())
+                .expect("rectangular fixture"),
             solved_at: 0,
             header_menu: RowMenu::default(),
             sections: crate::pages::layout::Sections::new(ID.sub("page")),
@@ -203,7 +208,7 @@ impl ColumnsPage {
                 ]
             })
             .collect();
-        self.rules = DataTable::new(
+        self.rules = DataTable::try_new(
             ID.sub("rules"),
             vec![
                 Column::new("Column", Constraint::Length(8)),
@@ -217,6 +222,7 @@ impl ColumnsPage {
             ],
             rows,
         )
+        .expect("rectangular fixture")
         .numeric(&[2, 3, 4, 5, 6, 7])
         .selection_mode(junie_tui::core::selection::SelectionMode::None);
         let (cols, cells): (Vec<Column>, Vec<Cell>) = rules
@@ -230,7 +236,8 @@ impl ColumnsPage {
                 )
             })
             .unzip();
-        self.row = DataTable::new(ID.sub("row"), cols, vec![cells])
+        self.row = DataTable::try_new(ID.sub("row"), cols, vec![cells])
+            .expect("rectangular fixture")
             .selection_mode(junie_tui::core::selection::SelectionMode::None);
     }
 
@@ -257,7 +264,7 @@ impl ColumnsPage {
         let menu = Panel::card(Some("Header menu"));
         [
             12,
-            3 + 1 + self.sized.rows.len() as u16 + 1,
+            3 + 1 + self.sized.rows().len() as u16 + 1,
             sheet_height(&menu, &self.menu_facts(), width),
         ]
     }
@@ -320,7 +327,7 @@ impl ColumnsPage {
 
         if let Some(r) = l.slot(2) {
             let c = self.sized.cursor_col;
-            let title = format!("Header menu · {}", self.sized.columns[c].title);
+            let title = format!("Header menu · {}", self.sized.columns()[c].title);
             let panel = Panel::card(Some(&title));
             let bg = panel.bg(t);
             let inner = panel.render(r, buf, t);
@@ -345,7 +352,7 @@ impl ColumnsPage {
                 .into_iter()
                 .map(|(_, m)| m)
                 .collect();
-            let title = self.sized.columns[c].title.clone();
+            let title = self.sized.columns()[c].title.clone();
             let menu = ContextMenu::new(HEADER_MENU, items)
                 .at(ev.pos())
                 .title(title);

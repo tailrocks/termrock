@@ -105,7 +105,8 @@ fn build(k: &[usize; 12]) -> DataTable {
         labels,
     ] = *k;
     let data = if rows_k == 0 { rows(14) } else { Vec::new() };
-    let mut table = DataTable::new(ID.sub("table"), columns(), data)
+    let mut table = DataTable::try_new(ID.sub("table"), columns(), data)
+        .expect("rectangular fixture")
         .cell_nav(true)
         .numeric(if numeric == 1 { &[0, 5] } else { &[] })
         .validator(validate)
@@ -143,9 +144,11 @@ fn build(k: &[usize; 12]) -> DataTable {
             reset_widths: "Default Widths",
         };
     }
-    if !table.rows.is_empty() {
-        table.rows[2][4].error = Some("Branch names cannot contain spaces".into());
-        table.rows[2][4].text = "fix/checkout flake".into();
+    if !table.rows().is_empty() {
+        table.update_cell(2, 4, |cell| {
+            cell.error = Some("Branch names cannot contain spaces".into());
+            cell.text = "fix/checkout flake".into();
+        });
     }
     table.cursor_col = 1;
     table
@@ -192,7 +195,8 @@ fn states_grid() -> StateGrid {
             .into_iter()
             .map(|r| keep.iter().map(|&c| r[c].clone()).collect())
             .collect();
-        let mut t = DataTable::new(id.child(k), cols, data)
+        let mut t = DataTable::try_new(id.child(k), cols, data)
+            .expect("rectangular fixture")
             .cell_nav(true)
             .numeric(&[0]);
         if owner {
@@ -236,7 +240,7 @@ impl EditablePage {
 
     fn column_props(&self) -> Vec<Prop> {
         self.table
-            .columns
+            .columns()
             .iter()
             .map(|c| {
                 let mut v = vec![match c.align {

@@ -69,7 +69,7 @@ impl EmptyErrorPage {
             ColumnSpec::new("total", CellKind::Number).type_label("numeric"),
         ];
         let mut grid = DataGrid::new(ID.sub("grid"), columns).editable(false);
-        grid.set_rows(GridRows {
+        grid.try_set_rows(GridRows {
             rows: [(1041, "Acme Corp", 1204.5), (1042, "Globex", 88.0)]
                 .into_iter()
                 .map(|(o, c, t)| {
@@ -82,7 +82,8 @@ impl EmptyErrorPage {
                 .collect(),
             total: RowTotal::Exact(2),
             more: false,
-        });
+        })
+        .expect("rectangular fixture");
         let mut page = Self {
             template: Template::new(ID, states_grid()),
             opts: PageValues::new(page_options(PageId::EmptyError)),

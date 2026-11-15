@@ -195,14 +195,15 @@ fn states_grid() -> StateGrid {
     let sample = |k: usize, affordance: Affordance| {
         let full = table();
         let keep = [1, ENV, ROLLOUT];
-        let cols = keep.iter().map(|&c| full.columns[c].clone()).collect();
+        let cols = keep.iter().map(|&c| full.columns()[c].clone()).collect();
         let rows = full
-            .rows
+            .rows()
             .iter()
             .take(3)
             .map(|r| keep.iter().map(|&c| r[c].clone()).collect())
             .collect();
-        let mut t = DataTable::new(id.child(k), cols, rows)
+        let mut t = DataTable::try_new(id.child(k), cols, rows)
+            .expect("rectangular fixture")
             .cell_nav(true)
             .editor_config(EditorConfig {
                 affordance,
@@ -347,7 +348,8 @@ pub fn table() -> DataTable {
             cells
         })
         .collect();
-    let mut t = DataTable::new(ID.sub("table"), columns, rows)
+    let mut t = DataTable::try_new(ID.sub("table"), columns, rows)
+        .expect("rectangular fixture")
         .cell_nav(true)
         .validator(notify_policy);
     t.cursor_col = ENV;
@@ -435,7 +437,7 @@ impl CellEditorsPage {
         if t.cursor_row >= t.len() {
             return None;
         }
-        t.rows[t.source_row(t.cursor_row)]
+        t.rows()[t.source_row(t.cursor_row)]
             .get(t.cursor_col)?
             .error
             .clone()
@@ -490,7 +492,7 @@ impl CellEditorsPage {
 
     fn option_sets(&self) -> Vec<Prop> {
         self.table
-            .columns
+            .columns()
             .iter()
             .filter_map(|c| {
                 let opts = c.editor.options()?;
@@ -587,7 +589,7 @@ impl CellEditorsPage {
         match ev {
             Some(TableAction::Committed { col, .. }) => {
                 self.edits += 1;
-                let name = self.table.columns[col].title.clone();
+                let name = self.table.columns()[col].title.clone();
                 cx.status(format!("{name} saved"));
             }
             Some(TableAction::Cancelled) => cx.status("Edit cancelled"),

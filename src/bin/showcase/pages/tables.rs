@@ -83,7 +83,8 @@ const SELECTION_MODES: [SelectionMode; 3] = [
 ];
 
 fn tasks_table(mode: SelectionMode) -> DataTable {
-    DataTable::new(ID.sub("tasks"), task_columns(), task_rows())
+    DataTable::try_new(ID.sub("tasks"), task_columns(), task_rows())
+        .expect("rectangular fixture")
         .numeric(&[0, 5, 6])
         .selection_mode(mode)
         .selection_column(mode == SelectionMode::Multi)
@@ -103,7 +104,8 @@ fn states_grid() -> StateGrid {
             .take(3)
             .map(|r| vec![r[0].clone(), r[1].clone(), r[3].clone()])
             .collect();
-        DataTable::new(id.child(k), cols, rows)
+        DataTable::try_new(id.child(k), cols, rows)
+            .expect("rectangular fixture")
             .numeric(&[0])
             .selection_mode(mode)
             .selection_column(mode == SelectionMode::Multi)
@@ -132,6 +134,7 @@ pub struct TablesPage {
     template: Template,
 
     selection: usize,
+    malformed: usize,
     pub table: DataTable,
 
     pub reviewers: DataTable,
@@ -162,7 +165,7 @@ impl TablesPage {
         } else {
             select
         };
-        let column = &t.columns[col];
+        let column = &t.columns()[col];
         let name = column.title.to_lowercase();
         let sort = match t.sort {
             Some((c, SortDir::Asc)) if c == col => MenuItem::new(format!("Sort {name} descending")),
@@ -193,7 +196,7 @@ impl TablesPage {
 
     fn open_menu(&mut self, req: ContextRequest<(usize, usize)>) {
         let src = self.table.source_row(req.target.0);
-        let title = self.table.rows[src][1].text.clone();
+        let title = self.table.rows()[src][1].text.clone();
         let items = self
             .cell_items(req.target)
             .into_iter()
@@ -213,7 +216,7 @@ impl TablesPage {
                 let (out, actions) = self.table.on_key(&plain(KeyCode::Enter)).into_parts();
                 for tev in actions {
                     if let TableAction::Activated(row) = tev {
-                        cx.status(format!("Selected {}", self.table.rows[row][1].text));
+                        cx.status(format!("Selected {}", self.table.rows()[row][1].text));
                     }
                 }
                 out
@@ -227,7 +230,7 @@ impl TablesPage {
         let selection = 1;
         let table = tasks_table(SELECTION_MODES[selection]);
 
-        let mut reviewers = DataTable::new(
+        let mut reviewers = DataTable::try_new(
             ID.sub("reviewers"),
             vec![
                 Column::new("Reviewer", Constraint::Min(12)),
@@ -244,23 +247,17 @@ impl TablesPage {
             .map(|(a, b, c)| vec![Cell::new(a), Cell::new(b).tone(Tone::Muted), Cell::new(c)])
             .collect(),
         )
+        .expect("rectangular fixture")
         .numeric(&[2])
         .selection_mode(SelectionMode::Multi)
         .selection_column(true);
         reviewers.toggle_row(0);
         reviewers.toggle_row(2);
-        let empty = DataTable::new(
-            ID.sub("empty"),
-            vec![
-                Column::new("Check", Constraint::Min(12)),
-                Column::new("Result", Constraint::Length(8)),
-            ],
-            vec![],
-        )
-        .empty_text("No checks have run yet");
+        let empty = checks_table(0);
         Self {
             template: Template::new(ID, states_grid()),
             selection,
+            malformed: 0,
             table,
             reviewers,
             empty,
@@ -269,6 +266,29 @@ impl TablesPage {
             header_menu: RowMenu::default(),
         }
     }
+}
+
+fn checks_table(malformed: usize) -> DataTable {
+    let mut table = DataTable::try_new(
+        ID.sub("empty"),
+        vec![
+            Column::new("Check", Constraint::Min(12)),
+            Column::new("Result", Constraint::Length(8)),
+        ],
+        vec![],
+    )
+    .expect("rectangular fixture")
+    .empty_text("No checks have run yet");
+    if malformed > 0 {
+        let mut cells = vec![Cell::new("lint")];
+        if malformed == 2 {
+            cells.extend([Cell::new("ok"), Cell::new("extra")]);
+        }
+        if let Err(e) = table.try_set_rows(vec![cells]) {
+            table.empty_text = format!("Rows rejected · {e}");
+        }
+    }
+    table
 }
 
 pub fn route_table(
@@ -294,7 +314,7 @@ impl TablesPage {
                     .into_iter()
                     .map(|(_, m)| m)
                     .collect();
-                let title = self.table.columns[c].title.clone();
+                let title = self.table.columns()[c].title.clone();
                 let menu = ContextMenu::new(HEADER_MENU, items)
                     .at(ev.pos())
                     .title(title);
@@ -312,7 +332,7 @@ impl TablesPage {
         if let Some((out, tev)) = route_table(&mut self.table, ev, cx) {
             for action in tev {
                 if let TableAction::Activated(r) = action {
-                    cx.status(format!("Selected {}", self.table.rows[r][1].text));
+                    cx.status(format!("Selected {}", self.table.rows()[r][1].text));
                 }
             }
             return out;
@@ -352,7 +372,7 @@ impl TablesPage {
         let sort = match self.table.sort {
             Some((c, d)) => format!(
                 "sorted by {} {}",
-                self.table.columns[c].title.to_lowercase(),
+                self.table.columns()[c].title.to_lowercase(),
                 if d == junie_tui::widgets::table::SortDir::Asc {
                     "▴"
                 } else {
@@ -446,13 +466,24 @@ impl Page for TablesPage {
     }
 
     fn option_value(&self, key: &str) -> Option<usize> {
-        (key == "basictable.selection").then_some(self.selection)
+        match key {
+            "basictable.selection" => Some(self.selection),
+            "basictable.malformed" => Some(self.malformed),
+            _ => None,
+        }
     }
 
     fn set_option(&mut self, key: &str, value: usize) {
-        if key == "basictable.selection" {
-            self.selection = value.min(SELECTION_MODES.len() - 1);
-            self.table = tasks_table(SELECTION_MODES[self.selection]);
+        match key {
+            "basictable.selection" => {
+                self.selection = value.min(SELECTION_MODES.len() - 1);
+                self.table = tasks_table(SELECTION_MODES[self.selection]);
+            }
+            "basictable.malformed" => {
+                self.malformed = value.min(2);
+                self.empty = checks_table(self.malformed);
+            }
+            _ => {}
         }
     }
 
@@ -499,7 +530,7 @@ impl Page for TablesPage {
                     let (out, actions) = self.table.on_key(key).into_parts();
                     for tev in actions {
                         if let TableAction::Activated(row) = tev {
-                            cx.status(format!("Selected {}", self.table.rows[row][1].text));
+                            cx.status(format!("Selected {}", self.table.rows()[row][1].text));
                         }
                     }
                     return out;
@@ -540,5 +571,40 @@ impl Page for TablesPage {
             ("Enter", "Select"),
             OPEN_HINT,
         ]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::pages::page_text;
+
+    fn with_malformed(value: usize) -> String {
+        let mut page = TablesPage::new();
+        page.set_option("basictable.malformed", value);
+        page_text(&mut page, 120, 70)
+    }
+
+    #[test]
+    fn issue42_malformed_input_option_is_off_by_default() {
+        let page = TablesPage::new();
+        assert_eq!(page.option_value("basictable.malformed"), Some(0));
+        let text = page_text(&mut TablesPage::new(), 120, 70);
+        assert!(text.contains("No checks have run yet"), "{text}");
+    }
+
+    #[test]
+    fn issue42_short_and_long_rows_show_the_data_error() {
+        let short = with_malformed(1);
+        assert!(
+            short.contains("Rows rejected · row 0 has 1 cells, expected 2"),
+            "{short}"
+        );
+        let long = with_malformed(2);
+        assert!(
+            long.contains("Rows rejected · row 0 has 3 cells, expected 2"),
+            "{long}"
+        );
+        assert!(!long.contains("No checks have run yet"));
     }
 }

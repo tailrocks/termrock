@@ -80,7 +80,7 @@ fn response_layout_survives_nested_action_dispatch() {
 // ----- DataTable ------------------------------------------------------------
 
 fn table() -> DataTable {
-    let mut t = DataTable::new(
+    let mut t = DataTable::try_new(
         ID,
         vec![
             Column::new("Name", Constraint::Length(12)).editable(),
@@ -88,7 +88,8 @@ fn table() -> DataTable {
                 .editor(ColumnEditor::Select(Options::values(&["a", "b", "c"]))),
         ],
         vec![vec![Cell::new("one"), Cell::new("a")]],
-    );
+    )
+    .expect("rectangular fixture");
     t.cell_nav = true;
     t
 }
@@ -129,7 +130,7 @@ fn table_tab_text_edge_commits_before_leave_and_shift_tab_backward() {
             TableAction::LeaveBackward
         ]
     );
-    assert_eq!(t.rows[0][0].text, "onex");
+    assert_eq!(t.rows()[0][0].text, "onex");
 }
 
 #[test]
@@ -161,7 +162,7 @@ fn table_tab_invalid_edit_stays_and_emits_nothing() {
 
 #[test]
 fn table_tab_into_toggle_cell_does_not_flip_it() {
-    let mut t = DataTable::new(
+    let mut t = DataTable::try_new(
         ID,
         vec![
             Column::new("Name", Constraint::Length(12)).editable(),
@@ -169,7 +170,8 @@ fn table_tab_into_toggle_cell_does_not_flip_it() {
                 .editor(ColumnEditor::Checkbox(Options::values(&["off", "on"]))),
         ],
         vec![vec![Cell::new("one"), Cell::new("off")]],
-    );
+    )
+    .expect("rectangular fixture");
     t.cell_nav = true;
     let _ = t.begin_edit();
     for k in text("x") {
@@ -178,11 +180,16 @@ fn table_tab_into_toggle_cell_does_not_flip_it() {
     let r = t.on_key(&key(KeyCode::Tab));
     assert_eq!(actions(r), vec![TableAction::Committed { row: 0, col: 0 }]);
     assert_eq!(t.cursor_col, 1, "focus moved to the toggle");
-    assert_eq!(t.rows[0][1].text, "off", "traversal never flips the value");
+    assert_eq!(
+        t.rows()[0][1].text,
+        "off",
+        "traversal never flips the value"
+    );
     let r = t.on_key(&key(KeyCode::Enter));
     assert_eq!(actions(r), vec![TableAction::Committed { row: 0, col: 1 }]);
     assert_eq!(
-        t.rows[0][1].text, "on",
+        t.rows()[0][1].text,
+        "on",
         "explicit activation still flips it"
     );
 }
@@ -196,11 +203,12 @@ fn grid(kinds: &[CellKind], row: Vec<CellValue>) -> DataGrid {
         .map(|(i, k)| ColumnSpec::new(&format!("c{i}"), *k))
         .collect();
     let mut g = DataGrid::new(ID, cols).editable(true);
-    g.set_rows(GridRows {
+    g.try_set_rows(GridRows {
         rows: vec![row],
         total: RowTotal::Exact(1),
         more: false,
-    });
+    })
+    .expect("rectangular fixture");
     g
 }
 
@@ -235,7 +243,7 @@ fn choice_grid(kinds: &[CellKind]) -> DataGrid {
         })
         .collect();
     let mut g = DataGrid::new(ID, cols).editable(true);
-    g.set_rows(GridRows {
+    g.try_set_rows(GridRows {
         rows: vec![
             kinds
                 .iter()
@@ -247,7 +255,8 @@ fn choice_grid(kinds: &[CellKind]) -> DataGrid {
         ],
         total: RowTotal::Exact(1),
         more: false,
-    });
+    })
+    .expect("rectangular fixture");
     g
 }
 

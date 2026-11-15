@@ -799,6 +799,11 @@ static DATA_GRID: &[Opt] = &[
         &["default", "strict", "editors"],
     ),
     Opt::new("datagrid.blur_action", "On blur", &["commit", "cancel"]),
+    Opt::new(
+        "datagrid.malformed",
+        "Malformed input",
+        &["off", "short", "long"],
+    ),
 ];
 
 static COLUMNS: &[Opt] = &[
@@ -817,12 +822,19 @@ static COLUMNS: &[Opt] = &[
     ),
 ];
 
-static BASIC_TABLE: &[Opt] = &[Opt::new(
-    "basictable.selection",
-    "Selection",
-    &["none", "single", "multi"],
-)
-.default(1)];
+static BASIC_TABLE: &[Opt] = &[
+    Opt::new(
+        "basictable.selection",
+        "Selection",
+        &["none", "single", "multi"],
+    )
+    .default(1),
+    Opt::new(
+        "basictable.malformed",
+        "Malformed input",
+        &["off", "short", "long"],
+    ),
+];
 
 static CHROME: &[Opt] = &[
     Opt::new("chrome.bar", "Bar width", &["full", "narrow"]),

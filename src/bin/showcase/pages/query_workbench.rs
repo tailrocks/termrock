@@ -329,7 +329,8 @@ fn result_table(id: WidgetId, table: &str, count: usize) -> DataTable {
                 .collect(),
         ),
     };
-    DataTable::new(id, cols, rows)
+    DataTable::try_new(id, cols, rows)
+        .expect("rectangular fixture")
         .numeric(&[0])
         .empty(EmptyState::new("0 rows").hint("The query ran; nothing matched"))
 }
@@ -341,7 +342,7 @@ fn plan_table(id: WidgetId) -> DataTable {
         ("      Index cond: status = 'pending'", "", ""),
         ("      Using orders_created_at_idx", "", ""),
     ];
-    DataTable::new(
+    DataTable::try_new(
         id,
         vec![
             Column::new("Plan node", Constraint::Min(30)),
@@ -358,6 +359,7 @@ fn plan_table(id: WidgetId) -> DataTable {
             })
             .collect(),
     )
+    .expect("rectangular fixture")
 }
 
 fn from_table(sql: &str) -> Option<(String, Range<usize>)> {

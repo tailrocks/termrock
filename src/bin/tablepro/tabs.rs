@@ -428,7 +428,8 @@ impl TableTab {
             sort: None,
             preview,
             structure_tabs,
-            structure: DataTable::new(id.sub("structure"), vec![], vec![]),
+            structure: DataTable::try_new(id.sub("structure"), vec![], vec![])
+                .expect("rectangular fixture"),
             ddl: ScrollPanel::new(id.sub("ddl"), vec![]),
             loading: 3,
             columns,
@@ -484,29 +485,38 @@ impl TableTab {
                     RowTotal::Exact(rs.total)
                 };
                 self.total = rs.total;
-                self.grid.set_rows(GridRows {
+                let loaded = self.grid.try_set_rows(GridRows {
                     rows,
                     total,
                     more: rs.total > sql::ROW_CAP,
                 });
-                self.grid.sort = self.sort;
-                self.grid.filtered_cols = self
-                    .filters
-                    .iter()
-                    .filter(|f| f.enabled)
-                    .filter_map(|f| self.columns.iter().position(|c| c.0 == f.column))
-                    .collect();
+                match loaded {
+                    Ok(()) => {
+                        self.grid.sort = self.sort;
+                        self.grid.filtered_cols = self
+                            .filters
+                            .iter()
+                            .filter(|f| f.enabled)
+                            .filter_map(|f| self.columns.iter().position(|c| c.0 == f.column))
+                            .collect();
+                    }
+                    Err(e) => self.show_load_failure(&e.to_string()),
+                }
             }
-            Err(e) => {
-                self.grid.set_rows(GridRows {
-                    rows: vec![],
-                    total: RowTotal::Exact(0),
-                    more: false,
-                });
-                self.grid.empty = EmptyState::new("Query failed").hint(&e.message);
-            }
+            Err(e) => self.show_load_failure(&e.message),
         }
         self.rebuild_chips();
+    }
+
+    fn show_load_failure(&mut self, message: &str) {
+        self.grid
+            .try_set_rows(GridRows {
+                rows: vec![],
+                total: RowTotal::Exact(0),
+                more: false,
+            })
+            .expect("an empty row set fits any schema");
+        self.grid.empty = EmptyState::new("Query failed").hint(message);
     }
 
     fn rebuild_chips(&mut self) {
@@ -646,7 +656,9 @@ impl TableTab {
             4 => "No triggers",
             _ => "Nothing here",
         };
-        self.structure = DataTable::new(self.id.sub("structure"), cols, rows).empty_text(empty);
+        self.structure = DataTable::try_new(self.id.sub("structure"), cols, rows)
+            .expect("rectangular fixture")
+            .empty_text(empty);
 
         let mut ddl = vec![format!("CREATE TABLE {} (", table.qualified())];
         for (i, c) in table.columns.iter().enumerate() {
@@ -2214,7 +2226,24 @@ fn execute(
                 } else {
                     RowTotal::Exact(rows.len())
                 };
-                grid.set_rows(GridRows { rows, total, more });
+                if let Err(e) = grid.try_set_rows(GridRows { rows, total, more }) {
+                    let message = e.to_string();
+                    entry.error = Some(message.clone());
+                    return (
+                        ResultSet {
+                            label: format!("Error {n}"),
+                            pinned: false,
+                            anchor: range,
+                            duration_ms: 2,
+                            body: ResultBody::Error {
+                                message,
+                                detail: None,
+                                at: None,
+                            },
+                        },
+                        entry,
+                    );
+                }
                 entry.duration_ms = Some(rs.duration_ms);
                 entry.rows = Some(rs.rows.len());
                 (

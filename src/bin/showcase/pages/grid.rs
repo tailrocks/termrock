@@ -241,9 +241,10 @@ struct Knobs {
     horizontal: usize,
     validator: usize,
     blur_action: usize,
+    malformed: usize,
 }
 
-const KEYS: [&str; 17] = [
+const KEYS: [&str; 18] = [
     "datagrid.access",
     "datagrid.rows",
     "datagrid.total",
@@ -261,6 +262,7 @@ const KEYS: [&str; 17] = [
     "datagrid.horizontal",
     "datagrid.validator",
     "datagrid.blur_action",
+    "datagrid.malformed",
 ];
 
 impl Knobs {
@@ -291,7 +293,8 @@ impl Knobs {
             "datagrid.track_click" => &mut self.track_click,
             "datagrid.horizontal" => &mut self.horizontal,
             "datagrid.validator" => &mut self.validator,
-            _ => &mut self.blur_action,
+            "datagrid.blur_action" => &mut self.blur_action,
+            _ => &mut self.malformed,
         }
     }
 
@@ -402,7 +405,7 @@ fn build(k: &Knobs) -> DataGrid {
     grid.row_numbers = k.row_numbers == 1;
     grid.blur_action = [BlurAction::Commit, BlurAction::Cancel][k.blur_action];
     grid.local_sort = true;
-    grid.set_rows(if k.rows == 0 {
+    let mut loaded = if k.rows == 0 {
         page(0, k.total(), width)
     } else {
         GridRows {
@@ -410,8 +413,29 @@ fn build(k: &Knobs) -> DataGrid {
             total: RowTotal::Exact(0),
             more: false,
         }
-    });
+    };
+    if k.rows == 0 && k.malformed > 0 {
+        loaded.rows.insert(0, malformed_row(k.malformed, width));
+    }
+    match grid.try_set_rows(loaded) {
+        Ok(()) => {}
+        Err(e) => {
+            grid.empty = EmptyState::error("Rows rejected before display").hint(&e.to_string());
+        }
+    }
     grid
+}
+
+fn malformed_row(kind: usize, width: usize) -> Vec<CellValue> {
+    match kind {
+        1 => vec![CellValue::Int(1000), CellValue::Text("Short row".into())],
+        _ => {
+            let mut cells = row(0);
+            cells.truncate(width);
+            cells.push(CellValue::Text("one cell too many".into()));
+            cells
+        }
+    }
 }
 
 const COMMANDS: &[(GridCmd, &str)] = &[
@@ -476,25 +500,27 @@ fn states_grid() -> StateGrid {
         more: false,
     };
     let mut clean = DataGrid::new(id.child(0), cols());
-    clean.set_rows(GridRows {
-        rows: (0..3)
-            .map(|i| {
-                let r = row(i);
-                vec![r[0].clone(), r[1].clone(), r[3].clone()]
-            })
-            .collect(),
-        total: RowTotal::Exact(3),
-        more: false,
-    });
+    clean
+        .try_set_rows(GridRows {
+            rows: (0..3)
+                .map(|i| {
+                    let r = row(i);
+                    vec![r[0].clone(), r[1].clone(), r[3].clone()]
+                })
+                .collect(),
+            total: RowTotal::Exact(3),
+            more: false,
+        })
+        .expect("rectangular fixture");
     let mut changed = DataGrid::new(id.child(1), cols());
-    changed.set_rows(rows());
+    changed.try_set_rows(rows()).expect("rectangular fixture");
     changed.record_cell(0, 2, CellValue::Int(40));
     changed.record_cell(1, 2, CellValue::Int(7));
     changed.toggle_delete(1);
     changed.insert_row();
     let mut read_only = DataGrid::new(id.child(2), cols()).editable(false);
     read_only.read_only_reason = READ_ONLY[1].map(str::to_owned);
-    read_only.set_rows(rows());
+    read_only.try_set_rows(rows()).expect("rectangular fixture");
     StateGrid::new(id)
         .rows(&[
             Rest,
@@ -582,7 +608,7 @@ impl GridPage {
             .collect();
         cells.sort_by_key(|(r, c, _)| (*r, *c));
         for (r, c, v) in cells {
-            let name = &self.grid.columns[c].name;
+            let name = &self.grid.columns()[c].name;
             out.push(format!(
                 "UPDATE {TABLE} SET {name} = {} WHERE id = {};",
                 literal(r, name, v)?,
@@ -592,7 +618,7 @@ impl GridPage {
         for (r, key) in in_source_order(&mut pending.inserted()) {
             let cols: Vec<&str> = self
                 .grid
-                .columns
+                .columns()
                 .iter()
                 .enumerate()
                 .filter(|(c, _)| pending.is_dirty(key, *c))
@@ -603,7 +629,7 @@ impl GridPage {
             } else {
                 let vals = self
                     .grid
-                    .columns
+                    .columns()
                     .iter()
                     .enumerate()
                     .filter_map(|(c, col)| pending.value(key, c).map(|v| literal(r, &col.name, v)))
@@ -668,7 +694,7 @@ impl GridPage {
         self.filters.chips = self
             .filter_values
             .iter()
-            .map(|(c, v)| Chip::new(&format!("{} = {}", self.grid.columns[*c].name, v.text())))
+            .map(|(c, v)| Chip::new(&format!("{} = {}", self.grid.columns()[*c].name, v.text())))
             .collect();
     }
 
@@ -735,14 +761,23 @@ impl GridPage {
             Some(GridAction::Undone(undone)) => cx.status(undo_status(undone.kind)),
             Some(GridAction::FetchMore) => {
                 let from = self.grid.len();
-                self.grid
-                    .append_rows(page(from, self.knobs.total(), self.grid.columns.len()));
-                cx.status(format!("Fetched rows {}–{}", from + 1, self.grid.len()));
+                match self.grid.try_append_rows(page(
+                    from,
+                    self.knobs.total(),
+                    self.grid.columns().len(),
+                )) {
+                    Ok(()) => cx.status(format!("Fetched rows {}–{}", from + 1, self.grid.len())),
+                    Err(e) => cx.status(format!("Fetch rejected · {e}")),
+                }
             }
             Some(GridAction::Refresh) => {
-                self.grid
-                    .set_rows(page(0, self.knobs.total(), self.grid.columns.len()));
-                cx.status("Reloaded from the source");
+                match self
+                    .grid
+                    .try_set_rows(page(0, self.knobs.total(), self.grid.columns().len()))
+                {
+                    Ok(()) => cx.status("Reloaded from the source"),
+                    Err(e) => cx.status(format!("Reload rejected · {e}")),
+                }
             }
             Some(GridAction::CommitRequested) => {
                 if !self.settle_edit(cx) {
@@ -766,13 +801,16 @@ impl GridPage {
             Some(GridAction::Copy(s)) => cx.status(format!("Copied {} chars", s.len())),
             Some(GridAction::FollowReference { row, col }) => cx.status(format!(
                 "Follow {} = {} into {}",
-                self.grid.columns[col].name,
+                self.grid.columns()[col].name,
                 self.grid.value(row, col).text(),
-                self.grid.columns[col].references.as_deref().unwrap_or("?")
+                self.grid.columns()[col]
+                    .references
+                    .as_deref()
+                    .unwrap_or("?")
             )),
             Some(GridAction::OpenViewer { row, col }) => cx.status(format!(
                 "Would open the viewer for {} on row {}",
-                self.grid.columns[col].name,
+                self.grid.columns()[col].name,
                 row + 1
             )),
             Some(GridAction::FilterOnCell { col, value }) => {
@@ -825,7 +863,7 @@ impl GridPage {
 
     fn schema(&self) -> Vec<Prop> {
         self.grid
-            .columns
+            .columns()
             .iter()
             .map(|c| {
                 let mut v = vec![format!("{:?}", c.kind), c.type_label.clone()];
@@ -1166,6 +1204,51 @@ impl Page for GridPage {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::pages::page_text;
+
+    fn with_malformed(value: usize) -> String {
+        let mut page = GridPage::new();
+        page.set_option("datagrid.malformed", value);
+        page_text(&mut page, 120, 40)
+    }
+
+    #[test]
+    fn issue42_malformed_input_option_is_off_by_default() {
+        let page = GridPage::new();
+        assert_eq!(page.option_value("datagrid.malformed"), Some(0));
+        let text = page_text(&mut GridPage::new(), 120, 40);
+        assert!(text.contains("Northwind"), "default rows load");
+        assert!(
+            !text.contains("rejected"),
+            "no rejection without the option"
+        );
+    }
+
+    #[test]
+    fn issue42_malformed_input_option_is_listed_on_the_options_tab() {
+        let listed = crate::options::page_options(crate::app::PageId::Grid);
+        let opt = listed
+            .iter()
+            .find(|o| o.key == "datagrid.malformed")
+            .expect("the Options tab lists it");
+        assert_eq!(opt.index_of("long"), Some(2));
+    }
+
+    #[test]
+    fn issue42_long_row_shows_the_data_error() {
+        let text = with_malformed(2);
+        assert!(text.contains("Rows rejected before display"), "{text}");
+        assert!(text.contains("row 0 has 10 cells, expected 9"), "{text}");
+        assert!(!text.contains("Northwind"), "the whole batch is refused");
+    }
+
+    #[test]
+    fn issue42_short_row_is_padded_with_null() {
+        let text = with_malformed(1);
+        assert!(text.contains("Short row"), "{text}");
+        assert!(text.contains("NULL"), "padded cells render as NULL: {text}");
+        assert!(!text.contains("rejected"), "{text}");
+    }
 
     const MRR: usize = 4;
     const SEATS: usize = 3;

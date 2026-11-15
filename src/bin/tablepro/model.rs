@@ -1051,11 +1051,12 @@ mod tests {
             .map(|(name, _)| ColumnSpec::new(name, CellKind::Number))
             .collect();
         let mut grid = DataGrid::new(WidgetId::of("issue49"), specs);
-        grid.set_rows(GridRows {
+        grid.try_set_rows(GridRows {
             total: RowTotal::Exact(rows.len()),
             rows,
             more: false,
-        });
+        })
+        .expect("rectangular fixture");
         (columns, grid)
     }
 

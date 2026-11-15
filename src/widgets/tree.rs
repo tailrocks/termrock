@@ -1700,10 +1700,10 @@ mod tests {
 
         let before = tv.rows_built;
         work::take();
-        tv.toggle(5 * 5);
+        let _ = tv.toggle(5 * 5);
         assert_eq!(tv.rows().len(), 246);
         assert_eq!(tv.rows_built - before, 0, "collapse rebuilds no rows");
-        tv.toggle(5 * 5);
+        let _ = tv.toggle(5 * 5);
         assert_eq!(tv.rows().len(), 250);
         assert_eq!(
             tv.rows_built - before,
