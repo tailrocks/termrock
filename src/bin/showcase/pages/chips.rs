@@ -362,19 +362,21 @@ impl ChipsPage {
         let card =
             |p: Panel, meta: &str, content: u16| p.meta(meta).outer(Size::new(content, 0)).width;
         // A saturated stress bar is cut to its card, so it never widens the page.
-        let bar = |b: &ChipBar| {
+        let bar = |b: &ChipBar, p: &Panel| {
             self.opts
                 .number("chipsselects.bar_width")
-                .unwrap_or_else(|| stress::clamp_saturated(b.measure(any, ctx).width, width))
+                .unwrap_or_else(|| {
+                    let room = p.inner(Size::new(width, 0)).width;
+                    stress::clamp_saturated(b.measure(any, ctx).width, room)
+                })
         };
         let (fp, meta) = self.filters_panel(false);
         let last = w(&format!("last action: {}", self.last));
-        let filters_w = card(fp, &meta, bar(&self.filters).max(last));
-        let streams_w = card(
-            Panel::card(Some("Streams")),
-            self.streams_meta(),
-            bar(&self.streams),
-        );
+        let filters_content = bar(&self.filters, &fp).max(last);
+        let filters_w = card(fp, &meta, filters_content);
+        let streams_panel = Panel::card(Some("Streams"));
+        let streams_content = bar(&self.streams, &streams_panel);
+        let streams_w = card(streams_panel, self.streams_meta(), streams_content);
         let selects_w = card(Panel::card(Some("Selects")), "", 3 * (SELECT_W + 2));
         let (left, right) = strip();
         let strip_w = card(
@@ -777,4 +779,20 @@ fn render_below(l: Rect, r: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
     let bg = panel.bg(t);
     let inner = panel.render(r, buf, t);
     empty::render(inner, buf, t, &empty_state(), bg);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::pages::stress::testing::{index, measuring};
+
+    #[test]
+    fn a_saturated_stress_bar_stays_inside_the_page_width() {
+        for value in ["20k items", "65k label"] {
+            let mut page = ChipsPage::new();
+            page.set_option("chipsselects.stress", index(value));
+            let size = measuring(|ctx| page.measure(Size::new(120, 40), ctx));
+            assert!(size.width <= 120, "{value}: measured {} cells", size.width);
+        }
+    }
 }
