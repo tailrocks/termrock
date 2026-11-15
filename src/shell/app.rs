@@ -11,7 +11,7 @@ use crate::core::id::WidgetId;
 use crate::core::keyboard::KeyboardProtocol;
 use crate::core::pointer::{PointerParts, PointerRouter};
 use crate::motion::Motion;
-use crate::runtime::{Application, Coalesce, ExternalReceiver};
+use crate::runtime::{Application, Coalesce, ExternalReceiver, RawInputPolicy};
 use crate::theme::Theme;
 use crate::ui::ctx::{Interaction, RenderCtx, fill};
 use crate::widgets::hintbar::HintKeys;
@@ -281,6 +281,10 @@ pub trait App {
         InputConfig::default()
     }
 
+    fn raw_input_policy(&self) -> RawInputPolicy {
+        RawInputPolicy::default()
+    }
+
     fn keyboard_protocol(&self) -> KeyboardProtocol {
         KeyboardProtocol::current()
     }
@@ -417,6 +421,9 @@ impl<A: App> Application for A {
     }
     fn input_config(&self) -> InputConfig {
         App::input_config(self)
+    }
+    fn raw_input_policy(&self) -> RawInputPolicy {
+        App::raw_input_policy(self)
     }
     fn keyboard_protocol(&self) -> KeyboardProtocol {
         App::keyboard_protocol(self)
