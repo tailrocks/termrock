@@ -43,6 +43,11 @@ type FooterDrawn = (Vec<Hint>, Vec<(usize, Rect)>);
 
 const RENDER_PASSES: u8 = 2;
 
+/// A focus that arrives after the first pass starts a widget's edit while the
+/// second pass paints, so a second pass that changed widget state gets one
+/// more pass to show it.
+const MUTATION_PASSES: u8 = RENDER_PASSES + 1;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct PaintedInteraction {
     focus: Option<WidgetId>,
@@ -334,12 +339,16 @@ pub fn blur_fan_out<A: App + ?Sized>(app: &mut A) -> Outcome {
     out
 }
 
-/// Paints the frame until its focus and hover settle, at most twice.
+/// Paints the frame until its focus, hover and widget state settle.
 ///
 /// Each pass compares the interaction it painted with the one left after
 /// hit registration, hover refresh, focus upkeep and blur delivery. A
-/// difference repaints once. If the second pass is still unsettled the frame
-/// stays pending and `Application::take_render_invalidated` reports it, so
+/// difference repaints once. So does a widget that changed its own state
+/// while rendering (`RenderCtx::note_render_mutation`), because widgets drawn
+/// before it read the old state. A widget that does so in the second pass,
+/// as a field does when its focus arrived after the first pass, gets a third.
+/// A frame with nothing to correct paints once. If the last pass is still
+/// unsettled the frame stays pending and `Application::take_render_invalidated` reports it, so
 /// the runtime draws again on its next turn instead of looping here.
 pub fn render<A: App + ?Sized>(app: &mut A, frame: &mut Frame) {
     let area = frame.area();
@@ -356,6 +365,7 @@ pub fn render<A: App + ?Sized>(app: &mut A, frame: &mut Frame) {
         let painted = PaintedInteraction::from(interaction);
         let small = app.too_small().applies(area);
         let mut footer_keys = HintKeys::default();
+        let render_mutated;
         {
             let buf = frame.buffer_mut();
             if pass > 0 {
@@ -375,6 +385,7 @@ pub fn render<A: App + ?Sized>(app: &mut A, frame: &mut Frame) {
                 }
             }
             cursor = ctx.cursor;
+            render_mutated = ctx.render_mutated();
         }
         let layer_open = app.layer_open();
         let page = app.page_key();
@@ -390,8 +401,13 @@ pub fn render<A: App + ?Sized>(app: &mut A, frame: &mut Frame) {
         let blurred = blur_fan_out(app);
         pass += 1;
         let settled = PaintedInteraction::from(app.shell().interaction(now_ms, flash_ms, tick));
-        let unsettled = settled != painted || blurred == Outcome::Changed;
-        if !unsettled || pass == RENDER_PASSES {
+        let unsettled = settled != painted || blurred == Outcome::Changed || render_mutated;
+        let cap = if render_mutated {
+            MUTATION_PASSES
+        } else {
+            RENDER_PASSES
+        };
+        if !unsettled || pass >= cap {
             app.shell_mut().render_pending = unsettled;
             break;
         }

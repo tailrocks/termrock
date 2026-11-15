@@ -73,12 +73,16 @@ pub enum Act {
     Refuse(Reason),
 }
 
+pub type Paint = Box<dyn FnMut(&mut Buffer, &mut RenderCtx)>;
+
 pub struct Host {
     shell: Shell<()>,
     pub act: Act,
     pub seen_at_entry: Option<Option<Reason>>,
     pub inputs: usize,
     pub stepped: Vec<u64>,
+    pub draws: usize,
+    paint: Option<Paint>,
 }
 
 impl Host {
@@ -89,6 +93,15 @@ impl Host {
             seen_at_entry: None,
             inputs: 0,
             stepped: Vec::new(),
+            draws: 0,
+            paint: None,
+        }
+    }
+
+    pub fn painting(paint: impl FnMut(&mut Buffer, &mut RenderCtx) + 'static) -> Self {
+        Self {
+            paint: Some(Box::new(paint)),
+            ..Self::new(Act::Nothing)
         }
     }
 
@@ -169,7 +182,12 @@ impl App for Host {
         Duration::from_millis(100)
     }
 
-    fn draw(&mut self, _area: Rect, _buf: &mut Buffer, _ctx: &mut RenderCtx) {}
+    fn draw(&mut self, _area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
+        self.draws += 1;
+        if let Some(paint) = self.paint.as_mut() {
+            paint(buf, ctx);
+        }
+    }
 
     fn advance_clock(&mut self, ms: u64) -> Option<Outcome> {
         self.stepped.push(ms);
