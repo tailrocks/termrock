@@ -1805,7 +1805,7 @@ fn option_row_limits_show_one_status_row_in_every_state() {
 
 #[test]
 fn option_remote_stalls_stays_loading() {
-    let app = page("s05-remote-stalls", Some("pickers.remote=stalls"), 120, 40);
+    let app = row_limit_page("s05-remote-stalls", "12", "stalls", false);
     let screen = app.wait_text("and it stays Loading");
     assert_readout(
         &screen,
@@ -1814,7 +1814,10 @@ fn option_remote_stalls_stays_loading() {
         "Loading, then Ready",
     );
     click_button(&app, "Remote branch");
-    let loading = app.wait_text("Fetching branches from origin");
+    app.wait_text("Fetching branches from origin");
+    // Motion runs: three fetch ticks fit well inside this wait.
+    std::thread::sleep(Duration::from_millis(2_000));
+    let loading = app.screen();
     see(
         &loading,
         &["Fetching branches from origin"],
