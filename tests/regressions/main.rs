@@ -7,4 +7,5 @@
 #[path = "../common/mod.rs"]
 mod common;
 mod form_value;
+mod grapheme_paint;
 mod smoke;
