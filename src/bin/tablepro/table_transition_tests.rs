@@ -173,6 +173,8 @@ fn answer_guard(app: &mut App, action: usize) {
     assert_eq!(app.top_kind(), Some("dialog"), "the guard's dialog is up");
     match action {
         1 => {
+            // Arrow keys step only over buttons the last frame placed.
+            draw(app);
             press(app, KeyCode::Left);
             press(app, KeyCode::Enter);
         }
