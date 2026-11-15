@@ -65,8 +65,9 @@ fn work_contract_holla_idle_and_source_update() {
         "settled tick",
         &[
             (Metric::SchedulingRecordsVisited, 2 * activities + plans),
-            (Metric::IntrinsicWidthCalls, 765),
-            (Metric::TextBytesMeasured, 3_337),
+            (Metric::IntrinsicWidthCalls, 758),
+            (Metric::TextBytesMeasured, 3_272),
+            (Metric::FitVisits, 19),
         ],
     );
     assert_eq!(
@@ -97,8 +98,9 @@ fn work_contract_holla_idle_and_source_update() {
         "unrelated field then tick",
         &[
             (Metric::SchedulingRecordsVisited, 2 * activities + plans),
-            (Metric::IntrinsicWidthCalls, 765),
-            (Metric::TextBytesMeasured, 3_337),
+            (Metric::IntrinsicWidthCalls, 758),
+            (Metric::TextBytesMeasured, 3_272),
+            (Metric::FitVisits, 19),
         ],
     );
     assert_eq!(irrelevant.get(Metric::ProjectionRebuilds), 0);
@@ -122,8 +124,9 @@ fn work_contract_holla_idle_and_source_update() {
         &[
             (Metric::ProjectionRebuilds, 1),
             (Metric::RankRowsVisited, items),
-            (Metric::IntrinsicWidthCalls, 1_654),
-            (Metric::TextBytesMeasured, 8_505),
+            (Metric::IntrinsicWidthCalls, 1_647),
+            (Metric::TextBytesMeasured, 8_440),
+            (Metric::FitVisits, 13),
         ],
     );
     assert_eq!(key.get(Metric::SchedulingRecordsVisited), 0);

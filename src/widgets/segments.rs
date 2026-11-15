@@ -5,7 +5,7 @@ use ratatui::style::{Color, Modifier};
 use crate::core::id::WidgetId;
 use crate::theme::Tone;
 use crate::ui::ctx::RenderCtx;
-use crate::ui::fitting::{removal_order, work};
+use crate::ui::fitting::removal_order;
 use crate::ui::measure::terminal_extent;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -115,7 +115,7 @@ pub(crate) fn plan(left: &[Segment], right: &[Segment], edge: u16, avail: u16) -
     let mut kept: u128 = widths
         .iter()
         .map(|&w| {
-            work::visit();
+            crate::record_work!(FitVisits, 1usize);
             w as u128 + SEP as u128
         })
         .sum();
@@ -138,7 +138,7 @@ pub(crate) fn plan(left: &[Segment], right: &[Segment], edge: u16, avail: u16) -
         )
         .collect();
     for gone in removal_order(&keys) {
-        work::visit();
+        crate::record_work!(FitVisits, 1usize);
         keep[gone] = false;
         kept -= widths[gone] as u128 + SEP as u128;
         if need(kept, true) <= avail {

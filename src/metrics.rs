@@ -97,10 +97,15 @@ metrics! {
     AnnotationQueries => "annotation_queries",
     /// Stable-key comparisons made while matching items to their source.
     IdentityComparisons => "identity_comparisons",
+    /// Elements visited by a responsive-fitting loop (chips, breadcrumb,
+    /// segments, status bar, key hints, toolbar).
+    FitVisits => "fit_visits",
+    /// Key comparisons made while ordering a fitter's removal candidates.
+    FitCompares => "fit_compares",
 }
 
 /// Number of [`Metric`] variants.
-pub const METRIC_COUNT: usize = Metric::IdentityComparisons as usize + 1;
+pub const METRIC_COUNT: usize = Metric::FitCompares as usize + 1;
 
 /// Raw counts of one thread at one instant, tagged so a delta can reject a
 /// snapshot that is not comparable.

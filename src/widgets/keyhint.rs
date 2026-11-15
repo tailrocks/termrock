@@ -8,7 +8,6 @@ use ratatui::style::Style;
 use crate::core::event::ClientPlatform;
 
 use crate::theme::{BadgeKind, HintAlign, HintBarStyle, StatusKind, Theme, Tone};
-use crate::ui::fitting::work;
 use crate::ui::measure::terminal_extent;
 
 pub const UP_DOWN: &str = "↑↓";
@@ -283,7 +282,7 @@ pub(crate) fn fit(hints: &[Hint], room: u16, style: &HintBarStyle) -> (Vec<usize
             .iter()
             .enumerate()
             .map(|(i, c)| {
-                work::visit();
+                crate::record_work!(FitVisits, 1usize);
                 slot(c.cells(compact(i)))
             })
             .sum()
@@ -307,7 +306,7 @@ pub(crate) fn fit(hints: &[Hint], room: u16, style: &HintBarStyle) -> (Vec<usize
         .filter(|&i| !pinned[i])
         .chain((0..hints.len()).rev().filter(|&i| pinned[i]));
     for gone in order {
-        work::visit();
+        crate::record_work!(FitVisits, 1usize);
         keep[gone] = false;
         kept -= slot(cells[gone].cells(false));
         if kept + GAP as u128 <= room {

@@ -71,6 +71,12 @@ impl TabItem {
     }
 }
 
+fn total_of(widths: impl Iterator<Item = usize>) -> usize {
+    widths
+        .map(|w| w.saturating_add(1))
+        .fold(0usize, usize::saturating_add)
+}
+
 impl crate::ui::measure::Measure for Tabs {
     fn measure(
         &self,
@@ -736,10 +742,7 @@ impl Tabs {
     }
 
     fn intrinsic_total(&self) -> usize {
-        self.items
-            .iter()
-            .map(|it| self.tab_width(it).saturating_add(1))
-            .fold(0usize, usize::saturating_add)
+        total_of(self.items.iter().map(|it| self.tab_width(it)))
     }
 
     pub fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, bg: Color) {
@@ -775,7 +778,7 @@ impl Tabs {
         let mut x = area.x;
 
         let widths: Vec<usize> = self.items.iter().map(|it| self.tab_width(it)).collect();
-        let total = self.intrinsic_total();
+        let total = total_of(widths.iter().copied());
         let overflow = total.saturating_add(usize::from(new_w)) > usize::from(area.width);
 
         let left_w: u16 = if overflow { 4 } else { 0 };

@@ -25,7 +25,6 @@ pub fn capitalize(s: &str) -> String {
 }
 
 pub fn width(s: &str) -> usize {
-    crate::ui::fitting::work::width();
     crate::record_work!(IntrinsicWidthCalls, 1usize);
     crate::record_work!(TextBytesMeasured, s.len());
     UnicodeWidthStr::width(s)

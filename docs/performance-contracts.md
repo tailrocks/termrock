@@ -35,6 +35,7 @@ the macro.
 | `BufferCellsFilled`, `BufferCellsCopied` | cells | `ScrollView` canvas fill and `copy_cells` |
 | `VisibleRowsPainted` | rows | `ListBox`, `DataTable`, `DataGrid`, `TreeView`, `OptionList` (the rows of `Picker`, `Select` and `Completion`), `CodeEditor` and `TextArea` paint loops, summed over a frame |
 | `IntrinsicWidthCalls`, `TextBytesMeasured` | calls, bytes | `ui::text::width` |
+| `FitVisits`, `FitCompares` | visits, comparisons | Responsive fitters (`ChipBar`, `Breadcrumb`, `segments`, `StatusBar`, `HintBar`, `Toolbar`): loop visits and removal-order sort comparisons |
 | `LabelsNormalized`, `LabelBytesNormalized` | labels, bytes | `TreeView` filter |
 | `ProjectionRebuilds`, `RankRowsVisited` | rebuilds, items | Holla Finder rebuild and ranking pass |
 | `SchedulingRecordsVisited`, `SchedulingPolls` | records, polls | Jackin daemon traversal and pane polls, Holla activity and plan scheduling |
@@ -110,22 +111,22 @@ list, table, grid and tree widget in the frame.
 | `TextArea` | first focused frame | 1k / 10k / 100k lines | payload bytes cloned L, rows painted 10, width calls 3 (L is 32n - 1) |
 | `TextArea` | settled frame | same | no clone, rows painted 10, width calls 3 |
 | `TextArea` | first keystroke, then second of the run | same | payload bytes cloned L, then none |
-| Holla Finder | settled tick | 106 items, 5 activities, 0 plans | no projection rebuild, scheduling 10, width calls 765 |
+| Holla Finder | settled tick | 106 items, 5 activities, 0 plans | no projection rebuild, scheduling 10, width calls 758 |
 | Holla Finder | unrelated world field, then tick | same | same as the settled tick |
-| Holla Finder | query change | same | projection rebuilds 1, ranked 106, width calls 1,654 |
-| TablePro grid | settled tick | 312 rows | rows painted 41, width calls 239 |
+| Holla Finder | query change | same | projection rebuilds 1, ranked 106, width calls 1,647 |
+| TablePro grid | settled tick | 312 rows | rows painted 41, width calls 233 |
 | TablePro grid | one Down key | 312 | same as the settled tick |
-| TablePro grid | one keyed draft edit | 312 | rows painted 39, width calls 274 |
-| TablePro grid | unrelated history entry, then tick | 312 | rows painted 39, width calls 274 |
-| Showcase Query workbench | settled tick | 2 documents | rows painted 54, width calls 229 |
-| Showcase Query workbench | click the second tab (two frames) | 2 | rows painted 91, width calls 396 |
-| Showcase Finder | settled tick | 12 actions | allocated 1,440, rows painted 24, width calls 223 |
+| TablePro grid | one keyed draft edit | 312 | rows painted 39, width calls 268 |
+| TablePro grid | unrelated history entry, then tick | 312 | rows painted 39, width calls 268 |
+| Showcase Query workbench | settled tick | 2 documents | rows painted 54, width calls 222 |
+| Showcase Query workbench | click the second tab (two frames) | 2 | rows painted 91, width calls 382 |
+| Showcase Finder | settled tick | 12 actions | allocated 1,440, rows painted 24, width calls 220 |
 | Showcase Finder | other page's option, then tick | 12 | same as the settled tick |
 | Jackin roster | settled tick | 9 instances, 4 workspaces, 2 daemons | scheduling records 2, polls 6, width calls 205 |
 | Jackin roster | unrelated workspace policy, then tick | same | same as the settled tick |
 | Jackin roster | workspace rename, then tick | same | width bytes 1,498 instead of 1,466 |
-| Jackin capsule | settled tick | 2 daemons | scheduling records 2, polls 6, width calls 117, width bytes 811; segmented 0, reflowed 0, index rebuilds 0, payload bytes cloned 0 |
-| Jackin capsule | one typed key, then the frame | same | width calls 105, width bytes 751; segmented 0, reflowed 0, index rebuilds 0, payload bytes cloned 0 |
+| Jackin capsule | settled tick | 2 daemons | scheduling records 2, polls 6, width calls 109, width bytes 786; segmented 0, reflowed 0, index rebuilds 0, payload bytes cloned 0 |
+| Jackin capsule | one typed key, then the frame | same | width calls 97, width bytes 726; segmented 0, reflowed 0, index rebuilds 0, payload bytes cloned 0 |
 
 ### What these counts say
 
@@ -172,6 +173,21 @@ Also unmet, and absent from every scenario above:
 - Holla's batch summary loop and `tick_plan` are not counted. A Holla
   scheduling count covers the activity and plan traversal only, so a zero or a
   steady count there says nothing about batches or the work inside a plan.
+- `Tabs` paint work scales with the drawn tabs, not the item count. Painting a
+  drawn tab re-measures its label, calls `close_button.width` once, and
+  measures its prefix and suffix when set. `tabs_render_measures_each_tab_once`
+  pins the plain-label case.
+
+## Fitting work
+
+`FitVisits` and `FitCompares` count the responsive fitters' loop visits and
+removal-order comparisons. Together with `IntrinsicWidthCalls` they show that a
+fit measures each label once and sorts once instead of rescanning survivors.
+The Showcase scenarios `work_contract_stress_*` set each `Stress data` option
+(Toolbars, Breadcrumbs, Chrome, Chips) to 20,000 items and to one 65,536-cell
+label, and assert exact counts for the frame that applies the option and the
+next settled frame. A fitter that goes quadratic changes these counts and
+fails the scenario.
 
 ## Reports
 

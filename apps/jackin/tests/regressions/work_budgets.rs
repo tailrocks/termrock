@@ -54,12 +54,13 @@ fn work_contract_jackin_idle_and_roster_update() {
     // The control tick visits each of the 2 daemons once and polls each pane
     // (6 in all); the roster is drawn without a counted list widget, so only
     // text measurement shows up in the frame.
-    let expected = |text_bytes| {
+    let expected = |widths, text_bytes, fit_visits| {
         [
             (Metric::SchedulingRecordsVisited, 2),
             (Metric::SchedulingPolls, 6),
-            (Metric::IntrinsicWidthCalls, 205),
+            (Metric::IntrinsicWidthCalls, widths),
             (Metric::TextBytesMeasured, text_bytes),
+            (Metric::FitVisits, fit_visits),
         ]
     };
     let before = f.screen();
@@ -69,7 +70,7 @@ fn work_contract_jackin_idle_and_roster_update() {
         before,
         "a settled tick leaves the frame unchanged"
     );
-    assert_exact(&idle, "roster settled tick", &expected(1_466));
+    assert_exact(&idle, "roster settled tick", &expected(205, 1_466, 12));
     f.report(
         "jackin_roster",
         "settled_tick",
@@ -88,7 +89,7 @@ fn work_contract_jackin_idle_and_roster_update() {
     assert_exact(
         &unrelated,
         "unrelated workspace policy then tick",
-        &expected(1_466),
+        &expected(205, 1_466, 12),
     );
     f.report(
         "jackin_roster",
@@ -107,7 +108,11 @@ fn work_contract_jackin_idle_and_roster_update() {
         "the renamed workspace reaches the frame"
     );
     assert!(f.screen().contains(&format!("{name}-renamed")));
-    assert_exact(&rename, "workspace rename then tick", &expected(1_498));
+    assert_exact(
+        &rename,
+        "workspace rename then tick",
+        &expected(205, 1_498, 12),
+    );
     f.report(
         "jackin_roster",
         "workspace_rename_then_tick",
@@ -140,10 +145,12 @@ fn work_contract_jackin_capsule_idle_frame() {
             (Metric::SegmentedLines, 0),
             (Metric::ReflowedLines, 0),
             (Metric::IndexRebuilds, 0),
-            (Metric::IntrinsicWidthCalls, 117),
-            (Metric::TextBytesMeasured, 811),
+            (Metric::IntrinsicWidthCalls, 109),
+            (Metric::TextBytesMeasured, 786),
             (Metric::SchedulingRecordsVisited, 2),
             (Metric::SchedulingPolls, 6),
+            (Metric::FitVisits, 19),
+            (Metric::FitCompares, 18),
         ],
     );
     f.report(
@@ -173,10 +180,12 @@ fn work_contract_jackin_capsule_frame_after_typing() {
             (Metric::SegmentedLines, 0),
             (Metric::ReflowedLines, 0),
             (Metric::IndexRebuilds, 0),
-            (Metric::IntrinsicWidthCalls, 105),
-            (Metric::TextBytesMeasured, 751),
+            (Metric::IntrinsicWidthCalls, 97),
+            (Metric::TextBytesMeasured, 726),
             (Metric::SchedulingRecordsVisited, 0),
             (Metric::SchedulingPolls, 0),
+            (Metric::FitVisits, 19),
+            (Metric::FitCompares, 18),
         ],
     );
 }

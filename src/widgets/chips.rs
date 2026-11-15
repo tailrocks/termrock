@@ -12,7 +12,6 @@ use crate::core::list::{Cursor, Navigable, RowSource};
 use crate::theme::{ButtonKind, Kind};
 use crate::ui::context::ContextConfig;
 use crate::ui::ctx::{RenderCtx, fill};
-use crate::ui::fitting::work;
 use crate::ui::measure::terminal_extent;
 use crate::ui::text::{truncate, width};
 use crate::ui::tooltip::Tip;
@@ -40,14 +39,14 @@ pub(crate) fn overflow_run_cells(
     let (gap, avail) = (gap as u128, avail as u128);
     let mut prefix = 0u128;
     for &w in widths {
-        work::visit();
+        crate::record_work!(FitVisits, 1usize);
         prefix += w as u128 + gap;
     }
     if prefix - if n > 0 { gap } else { 0 } <= avail {
         return (n, None);
     }
     for k in (0..n).rev() {
-        work::visit();
+        crate::record_work!(FitVisits, 1usize);
         prefix -= widths[k] as u128 + gap;
         let hidden = n - k;
         let marker_w = 1 + u128::from(hidden.ilog10() + 1);

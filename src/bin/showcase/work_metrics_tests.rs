@@ -69,8 +69,9 @@ fn work_contract_showcase_idle_and_switch() {
         "query workbench settled tick",
         &[
             (Metric::VisibleRowsPainted, 54),
-            (Metric::IntrinsicWidthCalls, 229),
-            (Metric::TextBytesMeasured, 1_493),
+            (Metric::IntrinsicWidthCalls, 222),
+            (Metric::TextBytesMeasured, 1_448),
+            (Metric::FitVisits, 13),
         ],
     );
     f.report(
@@ -94,9 +95,10 @@ fn work_contract_showcase_idle_and_switch() {
         "document switch (two frames)",
         &[
             (Metric::VisibleRowsPainted, 91),
-            (Metric::IntrinsicWidthCalls, 396),
-            (Metric::TextBytesMeasured, 2_623),
+            (Metric::IntrinsicWidthCalls, 382),
+            (Metric::TextBytesMeasured, 2_533),
             (Metric::AnnotationQueries, 1),
+            (Metric::FitVisits, 24),
         ],
     );
     f.report(
@@ -123,8 +125,9 @@ fn work_contract_showcase_idle_and_switch() {
         &[
             (Metric::AllocatedBufferCells, 1_440),
             (Metric::VisibleRowsPainted, 24),
-            (Metric::IntrinsicWidthCalls, 223),
-            (Metric::TextBytesMeasured, 1_225),
+            (Metric::IntrinsicWidthCalls, 220),
+            (Metric::TextBytesMeasured, 1_202),
+            (Metric::FitVisits, 5),
         ],
     );
     f.report(
@@ -150,8 +153,9 @@ fn work_contract_showcase_idle_and_switch() {
         &[
             (Metric::AllocatedBufferCells, 1_440),
             (Metric::VisibleRowsPainted, 24),
-            (Metric::IntrinsicWidthCalls, 223),
-            (Metric::TextBytesMeasured, 1_225),
+            (Metric::IntrinsicWidthCalls, 220),
+            (Metric::TextBytesMeasured, 1_202),
+            (Metric::FitVisits, 5),
         ],
     );
     f.report(
@@ -160,5 +164,319 @@ fn work_contract_showcase_idle_and_switch() {
         crate::pages::finder::ACTION_COUNT,
         unrelated,
         "the frame text is unchanged by another page's option",
+    );
+}
+
+/// One `Stress data` value on a page.
+struct Stress {
+    page: PageId,
+    key: &'static str,
+    value: &'static str,
+    operation: &'static str,
+    records: usize,
+    /// Text the frame must show once the data is set, so a count cannot pass
+    /// on a page that never rendered it.
+    shows: &'static str,
+}
+
+/// Checks the work of two frames. `change` is the frame that applies the
+/// option (option set, then a tick) and `settled` is the next tick with
+/// nothing changed. Fitting is stateless, so the settled frame repeats the
+/// layout.
+fn stress_case(case: &Stress, change: &[(Metric, u64)], settled: &[(Metric, u64)]) {
+    let Stress {
+        page,
+        key,
+        value,
+        operation,
+        records,
+        shows,
+    } = *case;
+    let mut f = fixture(page);
+    assert!(
+        !f.screen().contains(shows),
+        "{key}=off already shows {shows:?}"
+    );
+    let set = crate::options::parse_opt(&format!("{key}={value}")).expect("a valid option");
+    let ((), applied) = measure(|| {
+        f.app.apply_opt(set);
+        f.tick();
+    });
+    let screen = f.screen();
+    assert!(
+        screen.contains(shows),
+        "{key}={value} does not show {shows:?}:\n{screen}"
+    );
+    assert_exact(&applied, &format!("{key}={value} option frame"), change);
+    let ((), repeat) = measure(|| f.tick());
+    assert!(f.screen().contains(shows), "{key}={value} settled frame");
+    assert_exact(&repeat, &format!("{key}={value} settled frame"), settled);
+    f.report(
+        "showcase_stress_data",
+        operation,
+        records,
+        repeat,
+        &format!("the frame shows {shows:?}"),
+    );
+}
+
+// The four `Stress data` options at 20,000 items (N) and at one 65,536-cell
+// label, through the real page. Each frame counts every fitter on the page, so
+// the totals include the demo bars the page also draws. The per-frame split
+// below is arithmetic on the exact counts, not a separate measurement.
+//
+// - Toolbars: 20,446 widths is one pass over the N items plus the page's own
+//   bars. The 20 visits show the pack loop stops at the first item that does
+//   not fit instead of walking all N.
+// - Breadcrumbs: 60,502 widths is 3N plus 502 and 19,998 visits is N. The page
+//   plans the trail three times a frame (measure, geometry, paint), one width
+//   per label each time.
+// - Chrome: 120,895 widths is 6N plus 895, 240,083 visits is 12N plus 83 and
+//   1,825,650 compares is 6 sorts of about 1.01 N ceil(log2 N). The status bar
+//   is therefore planned six times a frame, each plan linear in N plus one sort
+//   (inferred from the arithmetic).
+// - Chips: 60,496 widths is 3N plus 496 and 40,024 visits is 2N plus 24. The
+//   28 compares equal the stress-off frame: the chip fitter never sorts.
+//
+// A fitter that rescans survivors per removal would add a factor of N to the
+// visits or the widths and fail these exact counts.
+
+#[test]
+fn work_contract_stress_toolbars_items() {
+    stress_case(
+        &Stress {
+            page: PageId::Toolbars,
+            key: "toolbars.stress",
+            value: "20k items",
+            operation: "toolbars_items_settled",
+            records: crate::pages::stress::COUNT,
+            shows: "and 19991 more",
+        },
+        &[
+            (Metric::VisibleRowsPainted, 17),
+            (Metric::IntrinsicWidthCalls, 20_446),
+            (Metric::TextBytesMeasured, 242_551),
+            (Metric::FitVisits, 20),
+        ],
+        &[
+            (Metric::VisibleRowsPainted, 17),
+            (Metric::IntrinsicWidthCalls, 20_540),
+            (Metric::TextBytesMeasured, 242_797),
+            (Metric::FitVisits, 20),
+        ],
+    );
+}
+
+#[test]
+fn work_contract_stress_toolbars_label() {
+    stress_case(
+        &Stress {
+            page: PageId::Toolbars,
+            key: "toolbars.stress",
+            value: "65k label",
+            operation: "toolbars_label_settled",
+            records: 1,
+            shows: "long label long label long l…",
+        },
+        &[
+            (Metric::VisibleRowsPainted, 17),
+            (Metric::IntrinsicWidthCalls, 498),
+            (Metric::TextBytesMeasured, 68_385),
+            (Metric::FitVisits, 19),
+        ],
+        &[
+            (Metric::VisibleRowsPainted, 17),
+            (Metric::IntrinsicWidthCalls, 678),
+            (Metric::TextBytesMeasured, 69_145),
+            (Metric::FitVisits, 19),
+        ],
+    );
+}
+
+#[test]
+fn work_contract_stress_breadcrumbs_items() {
+    stress_case(
+        &Stress {
+            page: PageId::BreadcrumbsRails,
+            key: "breadcrumbsrails.stress",
+            value: "20k items",
+            operation: "breadcrumbs_items_settled",
+            records: crate::pages::stress::COUNT,
+            shows: "Folder 20000",
+        },
+        &[
+            (Metric::AllocatedBufferCells, 6_336),
+            (Metric::BufferCellsFilled, 4_012),
+            (Metric::BufferCellsCopied, 12_320),
+            (Metric::VisibleRowsPainted, 20),
+            (Metric::IntrinsicWidthCalls, 60_502),
+            (Metric::TextBytesMeasured, 722_753),
+            (Metric::FitVisits, 19_998),
+        ],
+        &[
+            (Metric::AllocatedBufferCells, 6_336),
+            (Metric::BufferCellsFilled, 4_012),
+            (Metric::BufferCellsCopied, 12_320),
+            (Metric::VisibleRowsPainted, 20),
+            (Metric::IntrinsicWidthCalls, 60_502),
+            (Metric::TextBytesMeasured, 722_753),
+            (Metric::FitVisits, 19_998),
+        ],
+    );
+}
+
+#[test]
+fn work_contract_stress_breadcrumbs_label() {
+    stress_case(
+        &Stress {
+            page: PageId::BreadcrumbsRails,
+            key: "breadcrumbsrails.stress",
+            value: "65k label",
+            operation: "breadcrumbs_label_settled",
+            records: 1,
+            shows: "… › long label long label",
+        },
+        &[
+            (Metric::AllocatedBufferCells, 6_336),
+            (Metric::BufferCellsFilled, 4_012),
+            (Metric::BufferCellsCopied, 12_320),
+            (Metric::VisibleRowsPainted, 20),
+            (Metric::IntrinsicWidthCalls, 620),
+            (Metric::TextBytesMeasured, 200_088),
+            (Metric::FitVisits, 10),
+        ],
+        &[
+            (Metric::AllocatedBufferCells, 6_336),
+            (Metric::BufferCellsFilled, 4_012),
+            (Metric::BufferCellsCopied, 12_320),
+            (Metric::VisibleRowsPainted, 20),
+            (Metric::IntrinsicWidthCalls, 620),
+            (Metric::TextBytesMeasured, 200_088),
+            (Metric::FitVisits, 10),
+        ],
+    );
+}
+
+#[test]
+fn work_contract_stress_chrome_items() {
+    stress_case(
+        &Stress {
+            page: PageId::Chrome,
+            key: "chrome.stress",
+            value: "20k items",
+            operation: "chrome_items_settled",
+            records: crate::pages::stress::COUNT,
+            shows: "job 00008",
+        },
+        &[
+            (Metric::VisibleRowsPainted, 20),
+            (Metric::IntrinsicWidthCalls, 120_895),
+            (Metric::TextBytesMeasured, 1_084_574),
+            (Metric::FitVisits, 240_083),
+            (Metric::FitCompares, 1_825_650),
+        ],
+        &[
+            (Metric::VisibleRowsPainted, 20),
+            (Metric::IntrinsicWidthCalls, 120_895),
+            (Metric::TextBytesMeasured, 1_084_574),
+            (Metric::FitVisits, 240_083),
+            (Metric::FitCompares, 1_825_650),
+        ],
+    );
+}
+
+#[test]
+fn work_contract_stress_chrome_label() {
+    stress_case(
+        &Stress {
+            page: PageId::Chrome,
+            key: "chrome.stress",
+            value: "65k label",
+            operation: "chrome_label_settled",
+            records: 1,
+            shows: "long label long label long label",
+        },
+        &[
+            (Metric::VisibleRowsPainted, 20),
+            (Metric::IntrinsicWidthCalls, 1_349),
+            (Metric::TextBytesMeasured, 401_772),
+            (Metric::FitVisits, 124),
+            (Metric::FitCompares, 216),
+        ],
+        &[
+            (Metric::VisibleRowsPainted, 20),
+            (Metric::IntrinsicWidthCalls, 1_349),
+            (Metric::TextBytesMeasured, 401_772),
+            (Metric::FitVisits, 124),
+            (Metric::FitCompares, 216),
+        ],
+    );
+}
+
+#[test]
+fn work_contract_stress_chips_items() {
+    stress_case(
+        &Stress {
+            page: PageId::Chips,
+            key: "chipsselects.stress",
+            value: "20k items",
+            operation: "chips_items_settled",
+            records: crate::pages::stress::COUNT,
+            shows: "+19995",
+        },
+        &[
+            (Metric::AllocatedBufferCells, 6_624),
+            (Metric::BufferCellsFilled, 4_602),
+            (Metric::BufferCellsCopied, 11_910),
+            (Metric::VisibleRowsPainted, 17),
+            (Metric::IntrinsicWidthCalls, 60_496),
+            (Metric::TextBytesMeasured, 723_312),
+            (Metric::FitVisits, 40_024),
+            (Metric::FitCompares, 28),
+        ],
+        &[
+            (Metric::AllocatedBufferCells, 6_624),
+            (Metric::BufferCellsFilled, 4_602),
+            (Metric::BufferCellsCopied, 11_910),
+            (Metric::VisibleRowsPainted, 17),
+            (Metric::IntrinsicWidthCalls, 60_496),
+            (Metric::TextBytesMeasured, 723_312),
+            (Metric::FitVisits, 40_024),
+            (Metric::FitCompares, 28),
+        ],
+    );
+}
+
+#[test]
+fn work_contract_stress_chips_label() {
+    stress_case(
+        &Stress {
+            page: PageId::Chips,
+            key: "chipsselects.stress",
+            value: "65k label",
+            operation: "chips_label_settled",
+            records: 1,
+            shows: "+5  + Add filter",
+        },
+        &[
+            (Metric::AllocatedBufferCells, 6_624),
+            (Metric::BufferCellsFilled, 4_602),
+            (Metric::BufferCellsCopied, 11_910),
+            (Metric::VisibleRowsPainted, 17),
+            (Metric::IntrinsicWidthCalls, 492),
+            (Metric::TextBytesMeasured, 199_994),
+            (Metric::FitVisits, 39),
+            (Metric::FitCompares, 28),
+        ],
+        &[
+            (Metric::AllocatedBufferCells, 6_624),
+            (Metric::BufferCellsFilled, 4_602),
+            (Metric::BufferCellsCopied, 11_910),
+            (Metric::VisibleRowsPainted, 17),
+            (Metric::IntrinsicWidthCalls, 492),
+            (Metric::TextBytesMeasured, 199_994),
+            (Metric::FitVisits, 39),
+            (Metric::FitCompares, 28),
+        ],
     );
 }
