@@ -580,7 +580,9 @@ impl ShellPage<Holla> for ActivityTab {
                     cx.status(format!("Restarted {}", a.name));
                 }
                 self.synced = 0;
+                self.synced_dropped = 0;
                 self.synced_last = None;
+                self.input = false;
                 self.view.clear();
                 self.find_matches.clear();
                 return Outcome::Changed;
@@ -1055,7 +1057,7 @@ fn follow_up_supported(label: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::activity::{Activity, ActivityKind, Script};
+    use crate::domain::activity::{Activity, ActivityKind, Script, line};
     use crate::domain::context::ScopeTag;
     use crate::domain::fixtures::world_for;
     use crate::scenario::{Motion, Scenario};
@@ -1166,5 +1168,105 @@ mod tests {
             "one Backspace erases the whole cluster, leaving no bare e"
         );
         assert!(tab.input, "erasing keeps the tab in input mode");
+    }
+
+    fn rendered_text(buf: &Buffer) -> String {
+        let area = buf.area;
+        (area.y..area.bottom())
+            .map(|y| {
+                (area.x..area.right())
+                    .map(|x| buf[(x, y)].symbol())
+                    .collect::<String>()
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    /// `wrong` ends the run, so `body` is only reached by a run that answers
+    /// anything else.
+    fn restartable_script() -> Script {
+        use crate::domain::activity::{Branch, prompt, toned};
+        Script::ending(
+            vec![line(0, "start"), prompt(1, "pw: ", false), line(2, "body")],
+            3,
+            0,
+        )
+        .branches(vec![vec![
+            Branch {
+                matches: Some("wrong".into()),
+                lines: vec![toned(0, "denied", LineTone::Error)],
+                end: Some((1, 1)),
+            },
+            Branch {
+                matches: None,
+                lines: vec![],
+                end: None,
+            },
+        ]])
+    }
+
+    fn tick_world(w: &mut World, tab: &mut ActivityTab, until: impl Fn(&Activity) -> bool) {
+        for _ in 0..20 {
+            if w.activity("act-test").is_some_and(&until) {
+                return;
+            }
+            w.tick();
+            tab.sync(w);
+        }
+        panic!("activity never reached the expected state");
+    }
+
+    fn type_text(tab: &mut ActivityTab, w: &mut World, cx: &mut Cx<'_>, text: &str) {
+        for c in text.chars() {
+            press(tab, w, cx, KeyCode::Char(c));
+        }
+        press(tab, w, cx, KeyCode::Enter);
+    }
+
+    #[test]
+    fn activity_tab_restart_key_resets_view_to_fresh_run() {
+        let mut w = world_for(Scenario::DockerCleanup, Motion::Full);
+        w.clock.running = true;
+        let tick = w.tick;
+        w.activities.push(Activity::new(
+            "act-test",
+            "demo",
+            "test",
+            ActivityKind::Task,
+            ScopeTag::here("/work"),
+            "host",
+            restartable_script(),
+            tick,
+        ));
+        let mut tab = ActivityTab::new("act-test");
+        let mut focus = Focus::default();
+        let ring = FocusRing::default();
+        let mut cx = Cx::new(&mut focus, &ring);
+
+        tick_world(&mut w, &mut tab, |a| a.waiting.is_some());
+        press(&mut tab, &mut w, &mut cx, KeyCode::Char('i'));
+        assert!(tab.input);
+        type_text(&mut tab, &mut w, &mut cx, "wrong");
+        tick_world(&mut w, &mut tab, |a| a.state.finished());
+        assert_eq!(w.activity("act-test").unwrap().state, ActivityState::Failed);
+        assert!(rendered_text(&render_tab(&mut tab, &w)).contains("denied"));
+
+        press(&mut tab, &mut w, &mut cx, KeyCode::Char('r'));
+        assert!(!tab.input, "no input capture survives the restart");
+        assert!(tab.find_matches.is_empty());
+        let fresh = rendered_text(&render_tab(&mut tab, &w));
+        assert!(!fresh.contains("denied"), "no row of the old run stays");
+
+        tick_world(&mut w, &mut tab, |a| a.waiting.is_some());
+        press(&mut tab, &mut w, &mut cx, KeyCode::Char('i'));
+        type_text(&mut tab, &mut w, &mut cx, "ok");
+        tick_world(&mut w, &mut tab, |a| a.state.finished());
+
+        let a = w.activity("act-test").unwrap();
+        assert_eq!(a.state, ActivityState::Succeeded);
+        assert_eq!(a.exit, Some(0));
+        let after = rendered_text(&render_tab(&mut tab, &w));
+        assert!(after.contains("body"), "the original tail runs again");
+        assert!(!after.contains("denied"), "only the second run is shown");
     }
 }
