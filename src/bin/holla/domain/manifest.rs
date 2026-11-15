@@ -37,198 +37,47 @@ impl Discovery {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum Json {
-    Null,
-    Bool(bool),
-    Num(f64),
-    Str(String),
-    Arr(Vec<Json>),
-    Obj(Vec<(String, Json)>),
-}
+/// Holla's JSON syntax, string, and number codec. Every persisted store and
+/// discovery input decodes through serde_json, so escapes, surrogate pairs,
+/// and integers keep their exact meaning.
+pub use serde_json::Value as Json;
 
-impl Json {
-    pub fn get(&self, key: &str) -> Option<&Json> {
-        match self {
-            Json::Obj(kv) => kv.iter().find(|(k, _)| k == key).map(|(_, v)| v),
-            _ => None,
-        }
-    }
-    pub fn as_str(&self) -> Option<&str> {
-        match self {
-            Json::Str(s) => Some(s),
-            _ => None,
-        }
-    }
-}
-
-struct JsonParser<'a> {
-    s: &'a [u8],
-    i: usize,
-}
-
-impl JsonParser<'_> {
-    fn ws(&mut self) {
-        while self.i < self.s.len() && (self.s[self.i] as char).is_ascii_whitespace() {
-            self.i += 1;
-        }
-    }
-    fn peek(&self) -> Option<u8> {
-        self.s.get(self.i).copied()
-    }
-    fn expect(&mut self, b: u8) -> Result<(), String> {
-        self.ws();
-        if self.peek() == Some(b) {
-            self.i += 1;
-            Ok(())
-        } else {
-            Err(format!("expected '{}' at byte {}", b as char, self.i))
-        }
-    }
-    fn value(&mut self) -> Result<Json, String> {
-        self.ws();
-        match self.peek() {
-            None => Err("unexpected end".into()),
-            Some(b'{') => {
-                self.i += 1;
-                let mut kv = vec![];
-                self.ws();
-                if self.peek() == Some(b'}') {
-                    self.i += 1;
-                    return Ok(Json::Obj(kv));
-                }
-                loop {
-                    self.ws();
-                    let k = self.string()?;
-                    self.expect(b':')?;
-                    let v = self.value()?;
-                    kv.push((k, v));
-                    self.ws();
-                    match self.peek() {
-                        Some(b',') => self.i += 1,
-                        Some(b'}') => {
-                            self.i += 1;
-                            return Ok(Json::Obj(kv));
-                        }
-                        _ => return Err(format!("expected ',' or '}}' at byte {}", self.i)),
-                    }
-                }
-            }
-            Some(b'[') => {
-                self.i += 1;
-                let mut v = vec![];
-                self.ws();
-                if self.peek() == Some(b']') {
-                    self.i += 1;
-                    return Ok(Json::Arr(v));
-                }
-                loop {
-                    v.push(self.value()?);
-                    self.ws();
-                    match self.peek() {
-                        Some(b',') => self.i += 1,
-                        Some(b']') => {
-                            self.i += 1;
-                            return Ok(Json::Arr(v));
-                        }
-                        _ => return Err(format!("expected ',' or ']' at byte {}", self.i)),
-                    }
-                }
-            }
-            Some(b'"') => Ok(Json::Str(self.string()?)),
-            Some(b't') if self.s[self.i..].starts_with(b"true") => {
-                self.i += 4;
-                Ok(Json::Bool(true))
-            }
-            Some(b'f') if self.s[self.i..].starts_with(b"false") => {
-                self.i += 5;
-                Ok(Json::Bool(false))
-            }
-            Some(b'n') if self.s[self.i..].starts_with(b"null") => {
-                self.i += 4;
-                Ok(Json::Null)
-            }
-            Some(_) => {
-                let start = self.i;
-                while self.i < self.s.len()
-                    && matches!(
-                        self.s[self.i],
-                        b'-' | b'+' | b'.' | b'e' | b'E' | b'0'..=b'9'
-                    )
-                {
-                    self.i += 1;
-                }
-                std::str::from_utf8(&self.s[start..self.i])
-                    .ok()
-                    .and_then(|t| t.parse().ok())
-                    .map(Json::Num)
-                    .ok_or_else(|| format!("bad number at byte {start}"))
-            }
-        }
-    }
-    fn string(&mut self) -> Result<String, String> {
-        self.ws();
-        if self.peek() != Some(b'"') {
-            return Err(format!("expected string at byte {}", self.i));
-        }
-        self.i += 1;
-        let mut out = String::new();
-        loop {
-            let Some(b) = self.peek() else {
-                return Err("unterminated string".into());
-            };
-            self.i += 1;
-            match b {
-                b'"' => return Ok(out),
-                b'\\' => {
-                    let Some(e) = self.peek() else {
-                        return Err("bad escape".into());
-                    };
-                    self.i += 1;
-                    match e {
-                        b'n' => out.push('\n'),
-                        b't' => out.push('\t'),
-                        b'r' => out.push('\r'),
-                        b'"' => out.push('"'),
-                        b'\\' => out.push('\\'),
-                        b'/' => out.push('/'),
-                        b'u' => {
-                            let hex =
-                                std::str::from_utf8(self.s.get(self.i..self.i + 4).unwrap_or(b""))
-                                    .map_err(|_| "bad \\u".to_owned())?;
-                            let cp =
-                                u32::from_str_radix(hex, 16).map_err(|_| "bad \\u".to_owned())?;
-                            self.i += 4;
-                            out.push(char::from_u32(cp).unwrap_or('\u{fffd}'));
-                        }
-                        _ => out.push(e as char),
-                    }
-                }
-                _ => {
-                    let start = self.i - 1;
-                    let mut end = self.i;
-                    while end < self.s.len() && (self.s[end] & 0b1100_0000) == 0b1000_0000 {
-                        end += 1;
-                    }
-                    out.push_str(std::str::from_utf8(&self.s[start..end]).unwrap_or("\u{fffd}"));
-                    self.i = end;
-                }
-            }
-        }
-    }
-}
-
+/// Owns Holla's strict JSON syntax for stores and discovery input. Escapes
+/// and surrogate pairs decode exactly; unknown escapes, raw control
+/// characters, lone surrogates, NaN, and trailing data are errors. Duplicate
+/// object keys keep the last value. Callers report an error as corruption
+/// and never substitute a guessed value.
 pub fn parse_json(text: &str) -> Result<Json, String> {
-    let mut p = JsonParser {
-        s: text.as_bytes(),
-        i: 0,
-    };
-    let v = p.value()?;
-    p.ws();
-    if p.i != p.s.len() {
-        return Err(format!("trailing data at byte {}", p.i));
+    serde_json::from_str(text).map_err(|error| error.to_string())
+}
+
+pub fn json_str<'a>(value: &'a Json, field: &str) -> Result<&'a str, String> {
+    value
+        .get(field)
+        .and_then(Json::as_str)
+        .ok_or_else(|| format!("{field}: expected string"))
+}
+
+pub fn json_opt_str(value: &Json, field: &str) -> Result<Option<String>, String> {
+    match value.get(field) {
+        None | Some(Json::Null) => Ok(None),
+        Some(Json::String(s)) => Ok(Some(s.clone())),
+        Some(_) => Err(format!("{field}: expected string or null")),
     }
-    Ok(v)
+}
+
+pub fn json_u64(value: &Json, field: &str) -> Result<u64, String> {
+    value
+        .get(field)
+        .and_then(Json::as_u64)
+        .ok_or_else(|| format!("{field}: expected unsigned integer"))
+}
+
+pub fn json_i64(value: &Json, field: &str) -> Result<i64, String> {
+    value
+        .get(field)
+        .and_then(Json::as_i64)
+        .ok_or_else(|| format!("{field}: expected signed integer"))
 }
 
 pub fn node_runner(present: &[&str]) -> &'static str {
@@ -265,7 +114,7 @@ pub fn node_scripts(cwd: &str, package_json: Option<&str>, lockfiles: &[&str]) -
             return d;
         }
     };
-    let Some(Json::Obj(scripts)) = json.get("scripts") else {
+    let Some(scripts) = json.get("scripts").and_then(Json::as_object) else {
         d.diagnostic = Some("package.json has no scripts object".into());
         return d;
     };
@@ -431,7 +280,7 @@ pub fn taskfile_tasks(cwd: &str, file: &str, listing: Result<&str, &str>) -> Dis
             return d;
         }
     };
-    let Some(Json::Arr(tasks)) = json.get("tasks") else {
+    let Some(tasks) = json.get("tasks").and_then(Json::as_array) else {
         d.diagnostic = Some("task --list --json: no tasks array".into());
         return d;
     };
@@ -499,4 +348,133 @@ pub fn mise_tasks(cwd: &str, output: Result<&str, &str>) -> Discovery {
         d.diagnostic = Some("mise tasks ls listed nothing".into());
     }
     d
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn holla_json_surrogate_pair_is_one_scalar() {
+        let json = parse_json(r#"{"k\ud83d\ude80":"\ud83d\ude80"}"#).unwrap();
+        assert_eq!(json.get("k🚀").and_then(|v| v.as_str()), Some("🚀"));
+        assert!(parse_json(r#"{"a":"\ud83d"}"#).is_err());
+        assert!(parse_json(r#"{"a":"\ude80\ud83d"}"#).is_err());
+    }
+
+    #[test]
+    fn holla_json_rejects_unknown_escapes_raw_controls_and_trailing_data() {
+        assert!(parse_json(r#"{"a":"\q"}"#).is_err());
+        assert!(parse_json("{\"a\":\"x\u{1}\"}").is_err());
+        assert!(parse_json("[1] trailing").is_err());
+        assert!(parse_json("NaN").is_err());
+    }
+
+    #[test]
+    fn holla_json_duplicate_keys_use_last_value() {
+        let d = node_scripts(
+            "/w",
+            Some(r#"{"scripts":{"a":"old"},"scripts":{"b":"new"}}"#),
+            &[],
+        );
+        let names: Vec<&str> = d.tasks.iter().map(|t| t.name.as_str()).collect();
+        assert_eq!(names, ["b"]);
+    }
+
+    #[test]
+    fn holla_json_legacy_store_and_manifest_compatibility() {
+        // Exact bytes the pre-#63 writers produced (8063050c). Their format
+        // strings escape quotes (sizes) or quotes and backslashes (trust,
+        // usage), and never escape control characters. Each must load with
+        // no diagnostic.
+        let trust_v1 =
+            crate::domain::custom::TrustStore::load(Some(r#"{"v":1,"hashes":["abc","def"]}"#));
+        assert_eq!(trust_v1.corrupt, None);
+        assert_eq!(
+            trust_v1
+                .entries
+                .iter()
+                .map(|e| e.digest.as_str())
+                .collect::<Vec<_>>(),
+            ["abc", "def"]
+        );
+        let migrated = trust_v1.serialize();
+        assert_eq!(
+            crate::domain::custom::TrustStore::load(Some(&migrated)).entries,
+            trust_v1.entries
+        );
+
+        let trust_v2 = crate::domain::custom::TrustStore::load(Some(
+            r#"{"v":2,"entries":[{"digest":"abc","path":"/w/a\\b","cwd":null}]}"#,
+        ));
+        assert_eq!(trust_v2.corrupt, None);
+        assert_eq!(trust_v2.entries[0].path.as_deref(), Some(r"/w/a\b"));
+
+        let sizes = crate::domain::cleanup::SizeCache::load(
+            Some(
+                r#"{"v":3,"entries":[{"path":"/w/a\"quoted","allocated":4096,"mtime":1700000000,"at":1800000000},{"path":"/w/b","allocated":8192,"mtime":1700000001,"at":1800000000}]}"#,
+            ),
+            1_800_000_000,
+        );
+        assert_eq!(sizes.load_error, None);
+        assert_eq!(sizes.entries.len(), 2);
+        assert_eq!(sizes.entries[0].path, "/w/a\"quoted");
+        assert_eq!(sizes.entries[0].allocated, 4096);
+
+        let usage = crate::domain::usage::UsageStore::load(
+            Some(
+                r#"{"v":1,"actions":[{"item":"fmt","path":null,"host":"h","stamps":[1799999000,1800000000]}],"queries":[{"query":"q","item":"fmt","host":"h","last":1800000000}]}"#,
+            ),
+            1_800_000_000,
+        );
+        assert_eq!(usage.load_error, None);
+        assert_eq!(usage.actions.len(), 1);
+        assert_eq!(usage.queries.len(), 1);
+    }
+
+    #[test]
+    fn holla_json_legacy_raw_control_characters_degrade_to_empty() {
+        // The pre-#63 trust and usage writers left a newline in a stored
+        // string unescaped. That file is invalid now: it loads empty with a
+        // diagnostic instead of guessing the value.
+        let trust = crate::domain::custom::TrustStore::load(Some(
+            "{\"v\":2,\"entries\":[{\"digest\":\"abc\",\"path\":\"/w/a\nb\",\"cwd\":null}]}",
+        ));
+        assert!(trust.entries.is_empty());
+        assert!(
+            trust
+                .corrupt
+                .as_deref()
+                .is_some_and(|e| e.starts_with("trusted.json unreadable"))
+        );
+
+        let usage = crate::domain::usage::UsageStore::load(
+            Some(
+                "{\"v\":1,\"actions\":[{\"item\":\"fmt\nx\",\"path\":null,\"host\":\"h\",\"stamps\":[1]}],\"queries\":[]}",
+            ),
+            1_800_000_000,
+        );
+        assert!(usage.actions.is_empty());
+        assert!(
+            usage
+                .load_error
+                .as_deref()
+                .is_some_and(|e| e.starts_with("frecency.json unreadable"))
+        );
+    }
+
+    #[test]
+    fn holla_json_legacy_discovery_shapes_still_decode() {
+        let d = taskfile_tasks(
+            "/w",
+            "Taskfile.yml",
+            Ok(r#"{"tasks":[{"name":"build"},{"name":"test"}]}"#),
+        );
+        let names: Vec<&str> = d.tasks.iter().map(|t| t.name.as_str()).collect();
+        assert_eq!(names, ["build", "test"]);
+        assert_eq!(
+            crate::domain::catalog::parse_brew_services(r#"{"services":[{"name":"redis"}]}"#),
+            Ok(vec!["redis".to_owned()])
+        );
+    }
 }
