@@ -1141,6 +1141,15 @@ impl DataTable {
         if resized {
             self.sizing.clear(index);
         }
+        if !self.columns[index].sortable && self.sort.is_some_and(|(c, _)| c == index) {
+            let at = self.order.get(self.cursor_row).copied();
+            self.sort = None;
+            self.order = (0..self.rows.len()).collect();
+            if let Some(src) = at {
+                self.cursor_row = src;
+                self.scroll.ensure_visible(src);
+            }
+        }
         if reedits {
             if self.edit.as_ref().is_some_and(|e| e.col == index) {
                 self.edit = None;
