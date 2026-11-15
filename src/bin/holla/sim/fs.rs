@@ -1105,7 +1105,7 @@ pub fn sanitize(s: &str) -> String {
 }
 
 #[cfg(test)]
-mod tests {
+mod link_reclaim_tests {
     use super::*;
 
     fn stats(entry: u64, allocated: u64, reclaimed: u64) -> RemovalStats {
