@@ -260,14 +260,13 @@ pub fn split_statements(src: &str) -> Vec<(usize, usize)> {
     out
 }
 
-fn trim_range(src: &str, mut a: usize, mut b: usize) -> (usize, usize) {
-    while a < b && src.as_bytes()[a].is_ascii_whitespace() {
-        a += 1;
-    }
-    while b > a && src.as_bytes()[b - 1].is_ascii_whitespace() {
-        b -= 1;
-    }
-    (a, b)
+/// Trims by `char::is_whitespace`, the same predicate `tokenize` uses, so a
+/// segment of only no-break spaces is empty instead of an "Empty statement".
+fn trim_range(src: &str, a: usize, b: usize) -> (usize, usize) {
+    let seg = &src[a..b];
+    let head = seg.trim_start();
+    let start = a + (seg.len() - head.len());
+    (start, start + head.trim_end().len())
 }
 
 /// A WHERE condition. `All` and `Any` are the only boolean connectives; each
@@ -2471,6 +2470,17 @@ mod tests {
             .map(|(a, b)| &src[a..b])
             .collect();
         assert_eq!(texts, ["SELECT 'é;中'", "-- 💾\nSELECT \"名\""]);
+    }
+
+    #[test]
+    fn issue9_unicode_whitespace_only_segments_are_dropped() {
+        let src = "SELECT 1;\u{a0};\u{2003}\n; \u{a0}SELECT 2\u{a0};\u{a0}";
+        let texts: Vec<&str> = split_statements(src)
+            .into_iter()
+            .map(|(a, b)| &src[a..b])
+            .collect();
+        assert_eq!(texts, ["SELECT 1", "SELECT 2"]);
+        assert!(split_statements("\u{a0}").is_empty());
     }
 
     #[test]
