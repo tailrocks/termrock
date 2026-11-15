@@ -463,7 +463,7 @@ fn intrinsic_normal_layout_parity() {
 
     let btn = Button::new(ID, "Save", ButtonKind::Primary);
     assert_eq!(btn.width(), 6);
-    let rects = row_layout(Rect::new(2, 3, 20, 1), &[6, 8, 4], 2);
+    let rects = row_layout(Rect::new(2, 3, 20, 2), &[6, 8, 4], 2);
     assert_eq!(
         rects,
         vec![
