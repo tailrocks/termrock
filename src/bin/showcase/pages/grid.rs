@@ -6,7 +6,7 @@ use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, CxExt, Hint, Page, PageEvent};
 use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::focus::BlurAction;
-use junie_tui::core::id::{ItemKey, WidgetId};
+use junie_tui::core::id::WidgetId;
 use junie_tui::core::intent::Phase;
 use junie_tui::core::keymap::{Actions, KeyBinding, KeyMap, NavKeys, hint_key, label_for};
 use junie_tui::core::pointer::{MouseTarget, PointerEvent};
@@ -130,32 +130,40 @@ fn page(from: usize, total: RowTotal, cols: usize) -> GridRows {
     }
 }
 
+/// Why a captured change set cannot become SQL. Rows are named from the
+/// snapshot itself, so building the preview never reads live grid state.
 #[derive(Debug, Clone, PartialEq, Eq)]
-struct NonFinite {
-    row: usize,
-    column: String,
+enum SqlError {
+    NonFinite { row: String, column: String },
+    NoId,
 }
 
-impl NonFinite {
+impl SqlError {
     fn message(&self) -> String {
-        format!(
-            "Cannot build the SQL: row {} · {} is not a finite number",
-            self.row + 1,
-            self.column
-        )
+        match self {
+            Self::NonFinite { row, column } => {
+                format!("Cannot build the SQL: {row} · {column} is not a finite number")
+            }
+            Self::NoId => "Cannot build the SQL: a row has no id column".into(),
+        }
     }
+}
+
+/// The base row's `id`, the value every UPDATE and DELETE matches on.
+fn row_id(before: &[CellValue]) -> Result<String, SqlError> {
+    before.first().map(CellValue::text).ok_or(SqlError::NoId)
 }
 
 /// SQL projection of a pending cell. A finite number prints the shortest text
 /// that parses back to the stored `f64`, never the two-decimal display text.
-fn literal(row: usize, column: &str, v: &CellValue) -> Result<String, NonFinite> {
+fn literal(row: &str, column: &str, v: &CellValue) -> Result<String, SqlError> {
     Ok(match v {
         CellValue::Null => "NULL".into(),
         CellValue::Default => "DEFAULT".into(),
         CellValue::Text(s) | CellValue::Json(s) => format!("'{}'", s.replace('\'', "''")),
         CellValue::Num(n) if !n.is_finite() => {
-            return Err(NonFinite {
-                row,
+            return Err(SqlError::NonFinite {
+                row: row.to_owned(),
                 column: column.to_owned(),
             });
         }
@@ -177,13 +185,13 @@ fn quote_ident(name: &str) -> String {
     format!("\"{}\"", name.replace('"', "\"\""))
 }
 
-fn delete_statement(row: &DeletedRow) -> String {
-    format!(
+fn delete_statement(row: &DeletedRow) -> Result<String, SqlError> {
+    Ok(format!(
         "DELETE FROM {} WHERE {} = {};",
         quote_ident(TABLE),
         quote_ident(KEY_COLUMN),
-        row.before()[0].text()
-    )
+        row_id(row.before())?
+    ))
 }
 
 fn undo_status(kind: GridUndoKind) -> &'static str {
@@ -690,7 +698,7 @@ impl GridPage {
     /// SQL projection of one captured change set. The snapshot owns the rows:
     /// an insert lists every cell that is not `DEFAULT`, an update matches the
     /// base row, and nothing here reads the draft.
-    fn statements(&self, changes: &GridChangeSet) -> Result<Vec<String>, NonFinite> {
+    fn statements(&self, changes: &GridChangeSet) -> Result<Vec<String>, SqlError> {
         let mut out = Vec::new();
         for row in changes.updated() {
             self.update_statements(row, &mut out)?;
@@ -699,31 +707,28 @@ impl GridPage {
             out.push(self.insert_statement(row)?);
         }
         for row in changes.deleted() {
-            out.push(delete_statement(row));
+            out.push(delete_statement(row)?);
         }
         Ok(out)
     }
 
-    fn row_of(&self, key: ItemKey) -> usize {
-        self.grid.source_index(key).unwrap_or_default()
-    }
-
-    fn update_statements(&self, row: &UpdatedRow, out: &mut Vec<String>) -> Result<(), NonFinite> {
+    fn update_statements(&self, row: &UpdatedRow, out: &mut Vec<String>) -> Result<(), SqlError> {
+        let id = row_id(row.before())?;
+        let label = format!("row {id}");
         for change in row.cells() {
             let name = &self.grid.columns()[change.column()].name;
             out.push(format!(
-                "UPDATE {} SET {} = {} WHERE {} = {};",
+                "UPDATE {} SET {} = {} WHERE {} = {id};",
                 quote_ident(TABLE),
                 quote_ident(name),
-                literal(self.row_of(row.key()), name, change.after())?,
+                literal(&label, name, change.after())?,
                 quote_ident(KEY_COLUMN),
-                row.before()[0].text()
             ));
         }
         Ok(())
     }
 
-    fn insert_statement(&self, row: &InsertedRow) -> Result<String, NonFinite> {
+    fn insert_statement(&self, row: &InsertedRow) -> Result<String, SqlError> {
         let mut names = Vec::new();
         let mut values = Vec::new();
         for (col, value) in self.grid.columns().iter().zip(row.values()) {
@@ -731,7 +736,7 @@ impl GridPage {
                 continue;
             }
             names.push(quote_ident(&col.name));
-            values.push(literal(self.row_of(row.key()), &col.name, value)?);
+            values.push(literal("new row", &col.name, value)?);
         }
         Ok(if names.is_empty() {
             format!("INSERT INTO {} DEFAULT VALUES;", quote_ident(TABLE))
@@ -745,7 +750,7 @@ impl GridPage {
         })
     }
 
-    fn changes_dialog(&self, changes: &GridChangeSet, review: bool) -> Result<Dialog, NonFinite> {
+    fn changes_dialog(&self, changes: &GridChangeSet, review: bool) -> Result<Dialog, SqlError> {
         let code = self.statements(changes)?;
         let (changed, inserted, deleted) = changes.counts();
         let facts = vec![
@@ -1610,7 +1615,7 @@ mod tests {
         assert!(rig.page.grid.row_errors.contains_key(&0));
     }
 
-    fn sql(page: &GridPage) -> Result<Vec<String>, NonFinite> {
+    fn sql(page: &GridPage) -> Result<Vec<String>, SqlError> {
         page.statements(&page.grid.snapshot_changes())
     }
 
@@ -1660,8 +1665,8 @@ mod tests {
             let mut page = GridPage::new();
             page.grid.record_cell(0, MRR, CellValue::Num(2.5)).unwrap();
             page.grid.record_cell(1, MRR, CellValue::Num(bad)).unwrap();
-            let want = NonFinite {
-                row: 1,
+            let want = SqlError::NonFinite {
+                row: "row 1002".into(),
                 column: "mrr".into(),
             };
             assert_eq!(sql(&page), Err(want.clone()));
@@ -1678,6 +1683,27 @@ mod tests {
             assert_eq!(page.grid.pending().cells().count(), 2, "the draft is kept");
         }
     }
+
+    #[test]
+    fn issue50_showcase_delete_of_a_row_without_columns_is_an_error_not_a_panic() {
+        let mut page = GridPage::new();
+        page.grid = DataGrid::new(ID.sub("grid"), Vec::new());
+        page.grid.set_rows(GridRows {
+            rows: vec![Vec::new()],
+            total: RowTotal::Exact(1),
+            more: false,
+        });
+        assert!(page.grid.toggle_delete(0).is_some(), "the row is marked");
+
+        assert_eq!(sql(&page), Err(SqlError::NoId));
+        assert_eq!(
+            page.changes_dialog(&page.grid.snapshot_changes(), true)
+                .err()
+                .map(|e| e.message()),
+            Some("Cannot build the SQL: a row has no id column".to_owned())
+        );
+    }
+
     const CUSTOMER: usize = 1;
     const PLAN: usize = 2;
 
@@ -1704,11 +1730,11 @@ mod tests {
             "id and mrr reset to DEFAULT and are omitted: {untouched}"
         );
         assert!(
-            untouched.contains(&literal(0, "customer", &source[CUSTOMER]).unwrap()),
+            untouched.contains(&literal("new row", "customer", &source[CUSTOMER]).unwrap()),
             "{untouched}"
         );
         assert!(
-            untouched.contains(&literal(0, "plan", &source[PLAN]).unwrap()),
+            untouched.contains(&literal("new row", "plan", &source[PLAN]).unwrap()),
             "{untouched}"
         );
 
@@ -1719,7 +1745,7 @@ mod tests {
         let edited = insert_statement(&page);
         assert!(edited.contains(", 99,"), "{edited}");
         assert!(
-            edited.contains(&literal(0, "customer", &source[CUSTOMER]).unwrap()),
+            edited.contains(&literal("new row", "customer", &source[CUSTOMER]).unwrap()),
             "the other copies survive one edit: {edited}"
         );
     }
