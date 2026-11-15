@@ -1164,7 +1164,12 @@ fn a_validation_reply_for_a_replaced_source_does_not_touch_the_edited_account() 
     assert_eq!(*kept, edited);
     let shown = status(&app);
     assert!(!shown.contains(&kept.title()), "{shown}");
-    assert_eq!(shown, "Validation discarded · the account changed");
+    assert_eq!(
+        shown, "",
+        "no progress for a retired request, no old result"
+    );
+    assert_eq!(app.shell.status.job(), None);
+    assert_eq!(app.world.validation_pending(PERSONAL), None);
 }
 
 #[test]
@@ -1261,7 +1266,9 @@ fn a_failed_validation_shows_the_reply_error() {
         .expect("account")
         .source
         .clone();
+    let ticket = app.world.validate_account(PERSONAL).expect("a ticket");
     app.deliver(&Msg::AccountValidated {
+        ticket,
         account: PERSONAL.into(),
         source: Box::new(source),
         result: Err("the provider did not answer".into()),
@@ -3236,8 +3243,10 @@ fn usage_refresh(app: &App, ticket: u64) -> Msg {
     }
 }
 
-fn validation_of_personal(app: &App, result: Result<Validation, String>) -> Msg {
+fn validation_of_personal(app: &mut App, result: Result<Validation, String>) -> Msg {
+    let ticket = app.world.validate_account(PERSONAL).expect("a ticket");
     Msg::AccountValidated {
+        ticket,
         account: PERSONAL.into(),
         source: Box::new(
             app.world
@@ -3483,4 +3492,138 @@ fn a_role_check_advances_the_fence_only_for_a_known_role() {
         .expect("an admin role");
     assert!(world.set_role_check(&known, RoleCheckState::Running));
     assert_eq!(world.authoritative_revision(), start + 1);
+}
+
+const NEXT: &str = "acct-claude-archive";
+
+fn hold_validations(effect: &Effect) -> bool {
+    matches!(effect, Effect::ValidateAccount { .. })
+}
+
+fn validations_held() -> (App, Arc<TestBackend>) {
+    held_in(Scenario::AccountsMixed, hold_validations, |_, _| None)
+}
+
+fn validation_of(app: &App, id: &str) -> ValidationState {
+    app.world
+        .accounts
+        .get(id)
+        .expect("account")
+        .validation
+        .clone()
+}
+
+#[test]
+fn validation_latest_ticket_wins_with_unchanged_source() {
+    let outcomes: [(Result<_, String>, Result<_, String>); 2] = [
+        (Err("B failed".into()), valid_fingerprint()),
+        (valid_fingerprint(), Err("A failed".into())),
+    ];
+    for (b_result, a_result) in outcomes {
+        let (mut app, backend) = validations_held();
+        press(&mut app, "c down down v v");
+        let tickets = validation_tickets(&backend.seen(), PERSONAL);
+        assert_eq!(tickets.len(), 2, "{:?}", backend.seen());
+        let (a, b) = (tickets[0], tickets[1]);
+        assert_ne!(a, b);
+        assert_eq!(app.world.validation_pending(PERSONAL), Some(b));
+
+        let b_failed = b_result.is_err();
+        app.deliver(&validated(&app, b, PERSONAL, b_result));
+        let kept = validation_of(&app, PERSONAL);
+        assert_eq!(
+            matches!(kept, ValidationState::Invalid(_)),
+            b_failed,
+            "{kept:?}"
+        );
+        assert!(
+            !matches!(kept, ValidationState::Validating { .. }),
+            "B's reply ends the validation"
+        );
+        let result_ui = (status(&app), screen(&mut app));
+
+        let older = validated(&app, a, PERSONAL, a_result);
+        assert_eq!(
+            app.world.absorb(&older),
+            jackin_console::world::Absorbed::Stale
+        );
+        assert_eq!(app.deliver(&older), Outcome::Ignored);
+        assert_eq!(validation_of(&app, PERSONAL), kept, "A cannot replace B");
+        assert_eq!(
+            (status(&app), screen(&mut app)),
+            result_ui,
+            "A opens no obsolete result"
+        );
+    }
+}
+
+#[test]
+fn validation_runs_for_distinct_accounts_independently() {
+    let (mut app, backend) = validations_held();
+    press(&mut app, "c down down v");
+    let x = validation_tickets(&backend.seen(), PERSONAL)[0];
+    press(&mut app, "down v");
+    let y_tickets = validation_tickets(&backend.seen(), NEXT);
+    assert_eq!(y_tickets.len(), 1, "{:?}", backend.seen());
+    let y = y_tickets[0];
+    assert_ne!(x, y);
+    assert!(app.world.validation_owns_status(NEXT, y), "Y started last");
+    let progress = status(&app);
+    assert!(progress.starts_with("Validating"), "{progress}");
+
+    app.deliver(&validated(&app, x, PERSONAL, valid_fingerprint()));
+    assert!(matches!(
+        validation_of(&app, PERSONAL),
+        ValidationState::Valid(_)
+    ));
+    assert_eq!(app.world.validation_pending(PERSONAL), None);
+    assert_eq!(app.world.validation_pending(NEXT), Some(y));
+    assert!(matches!(
+        validation_of(&app, NEXT),
+        ValidationState::Validating { .. }
+    ));
+    assert_eq!(
+        status(&app),
+        progress,
+        "X's result does not replace Y's progress"
+    );
+    assert_eq!(
+        app.shell.status.job(),
+        Some(jackin_console::world::job::ACCOUNT_VALIDATE)
+    );
+
+    app.deliver(&validated(&app, y, NEXT, Err("Y failed".into())));
+    assert!(matches!(
+        validation_of(&app, NEXT),
+        ValidationState::Invalid(_)
+    ));
+    assert_eq!(app.world.validation_pending(NEXT), None);
+    assert_eq!(app.shell.status.job(), None);
+    assert!(status(&app).contains("Y failed"), "{}", status(&app));
+}
+
+#[test]
+fn validation_reply_survives_page_change() {
+    let (mut app, backend) = validations_held();
+    press(&mut app, "c down down v");
+    let ticket = validation_tickets(&backend.seen(), PERSONAL)[0];
+    assert!(screen(&mut app).contains("validating…"));
+    app.go(Go::Manager);
+    assert_eq!(app.world.validation_pending(PERSONAL), Some(ticket));
+
+    app.deliver(&validated(&app, ticket, PERSONAL, valid_fingerprint()));
+    assert!(matches!(
+        validation_of(&app, PERSONAL),
+        ValidationState::Valid(_)
+    ));
+    assert_eq!(app.world.validation_pending(PERSONAL), None);
+
+    app.go(Go::Accounts {
+        select: Some(PERSONAL.into()),
+    });
+    let shown = screen(&mut app);
+    assert!(
+        !shown.contains("validating…"),
+        "the Accounts page shows the reply that arrived while it was away:\n{shown}"
+    );
 }

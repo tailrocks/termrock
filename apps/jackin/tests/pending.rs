@@ -13,7 +13,7 @@ use jackin_console::backend::{
 };
 use jackin_console::domain::account::{
     Account, AccountIdentity, AccountOrigin, CredentialSource, DetectedKind, IssueCode,
-    Recoverability, RecoverableIssue,
+    Recoverability, RecoverableIssue, ValidationLevel, ValidationState,
 };
 use jackin_console::domain::agent::Provider;
 use jackin_console::domain::instance::Instance;
@@ -26,8 +26,8 @@ use jackin_console::launch::{LaunchFeed, LaunchTarget};
 use jackin_console::panes::{PaneBody, PaneRequest, PaneSpawn};
 use jackin_console::screens::Go;
 use jackin_console::sim::{SimBackend, provider};
-use jackin_console::world::{Absorbed, Msg, Snapshot, World};
-use junie_tui::core::event::Input;
+use jackin_console::world::{Absorbed, Msg, Snapshot, World, job};
+use junie_tui::core::event::{Input, Outcome};
 use junie_tui::motion::Motion;
 use junie_tui::runtime::Application;
 use junie_tui::theme::{ColorLevel, Theme};
@@ -142,7 +142,8 @@ impl Backend for Held {
             | Effect::ProbeFolder { .. }
             | Effect::ReadChanges { .. }
             | Effect::LoadOp { .. }
-            | Effect::RefreshAccount { .. } => None,
+            | Effect::RefreshAccount { .. }
+            | Effect::ValidateAccount { .. } => None,
             Effect::SaveAccounts { .. } if self.hold_saves => None,
             _ => self.inner.perform(effect, world),
         }
@@ -1520,4 +1521,229 @@ fn refresh_stale_reply_has_no_ui_or_revision_effect() {
         Freshness::Stale,
         "the current error still ends the refresh"
     );
+}
+
+const NEXT: &str = "acct-claude-archive";
+
+fn validation_ticket_of(backend: &Held, id: &str) -> u64 {
+    *validation_tickets(&backend.seen(), id)
+        .last()
+        .unwrap_or_else(|| panic!("no validation of {id}: {:?}", backend.seen()))
+}
+
+fn validations_of(backend: &Held, id: &str) -> usize {
+    validation_tickets(&backend.seen(), id).len()
+}
+
+fn validation_state(app: &App, id: &str) -> ValidationState {
+    app.world
+        .accounts
+        .get(id)
+        .expect("account")
+        .validation
+        .clone()
+}
+
+fn never_validated_roster(app: &App) -> Snapshot {
+    let mut snapshot = idle_roster(app);
+    for account in &mut snapshot.accounts.accounts {
+        account.validation = ValidationState::NeverValidated;
+    }
+    snapshot
+}
+
+#[test]
+fn validation_old_reply_does_not_clear_current_progress() {
+    let (mut app, backend) = held(Scenario::AccountsMixed);
+    press(&mut app, "c down down v v");
+    assert_eq!(validations_of(&backend, PERSONAL), 2);
+    let tickets = validation_tickets(&backend.seen(), PERSONAL);
+    let (a, b) = (tickets[0], tickets[1]);
+    let progress = status(&app);
+    assert!(progress.starts_with("Validating"), "{progress}");
+
+    let old = validated(&app, a, PERSONAL, valid_fingerprint());
+    let before = (screen(&mut app), personal(&app.world).clone());
+    assert_eq!(app.deliver(&old), Outcome::Ignored);
+    assert_eq!(
+        (screen(&mut app), personal(&app.world).clone()),
+        before,
+        "A changes nothing on screen or in the account"
+    );
+    assert!(matches!(
+        validation_state(&app, PERSONAL),
+        ValidationState::Validating { .. }
+    ));
+    assert_eq!(app.world.validation_pending(PERSONAL), Some(b));
+    assert_eq!(status(&app), progress, "B keeps the progress line");
+    assert_eq!(app.shell.status.job(), Some(job::ACCOUNT_VALIDATE));
+
+    app.deliver(&validated(&app, b, PERSONAL, valid_fingerprint()));
+    assert_eq!(
+        validation_state(&app, PERSONAL),
+        ValidationState::Valid(ValidationLevel::QuotaReadable)
+    );
+    assert_eq!(app.shell.status.job(), None);
+}
+
+#[test]
+fn validation_source_replacement_retires_ticket() {
+    let replaced = CredentialSource::HostEnv {
+        var: "OTHER_TOKEN".into(),
+        detected: DetectedKind::ClaudeApiKeyEnv,
+    };
+    for removal in [false, true] {
+        let (mut app, backend) = held(Scenario::AccountsMixed);
+        press(&mut app, "c down down v");
+        let a = validation_ticket_of(&backend, PERSONAL);
+        let old_ok = validated(&app, a, PERSONAL, valid_fingerprint());
+        let old_err = validated(&app, a, PERSONAL, Err("old failure".into()));
+        assert!(status(&app).starts_with("Validating"));
+
+        let mut roster = never_validated_roster(&app);
+        if removal {
+            roster.accounts.remove(PERSONAL);
+        } else {
+            with_source(&mut roster, PERSONAL, replaced.clone());
+        }
+        let msg = roster_reply(&mut app, roster);
+        app.deliver(&msg);
+        assert_eq!(app.world.validation_pending(PERSONAL), None);
+        assert_eq!(app.shell.status.job(), None, "no job left spinning");
+        assert_eq!(status(&app), "", "retiring prints no result");
+
+        screen(&mut app);
+        let before = (
+            app.world.accounts.get(PERSONAL).cloned(),
+            screen(&mut app),
+            status(&app),
+        );
+        for stale in [&old_ok, &old_err] {
+            assert_eq!(app.world.absorb(stale), Absorbed::Stale);
+            assert_eq!(app.deliver(stale), Outcome::Ignored);
+        }
+        let after = (
+            app.world.accounts.get(PERSONAL).cloned(),
+            screen(&mut app),
+            status(&app),
+        );
+        assert_eq!(before, after, "removal: {removal}");
+        assert!(!after.2.contains("old failure"));
+    }
+}
+
+#[test]
+fn validation_duplicate_and_same_source_refresh() {
+    let (mut app, backend) = held(Scenario::AccountsMixed);
+    press(&mut app, "c down down v");
+    let a = validation_ticket_of(&backend, PERSONAL);
+    let progress = status(&app);
+
+    let roster = never_validated_roster(&app);
+    let msg = roster_reply(&mut app, roster);
+    app.deliver(&msg);
+    assert_eq!(app.world.validation_pending(PERSONAL), Some(a));
+    assert!(matches!(
+        validation_state(&app, PERSONAL),
+        ValidationState::Validating { .. }
+    ));
+    assert_eq!(status(&app), progress, "a roster does not end the job");
+    assert_eq!(app.shell.status.job(), Some(job::ACCOUNT_VALIDATE));
+
+    let reply = validated(&app, a, PERSONAL, valid_fingerprint());
+    assert_eq!(app.world.absorb(&reply), Absorbed::Current);
+    assert_eq!(app.world.absorb(&reply), Absorbed::Stale, "accepted once");
+
+    app.world
+        .accounts
+        .get_mut(PERSONAL)
+        .expect("account")
+        .validation = ValidationState::NeverValidated;
+    assert_eq!(app.deliver(&reply), Outcome::Ignored);
+    assert_eq!(
+        validation_state(&app, PERSONAL),
+        ValidationState::NeverValidated,
+        "the duplicate changes nothing"
+    );
+}
+
+#[test]
+fn validation_nonowner_completion_preserves_status_text_and_job() {
+    let (mut app, backend) = held(Scenario::AccountsMixed);
+    press(&mut app, "c down down v down v");
+    let x = validation_ticket_of(&backend, PERSONAL);
+    let y = validation_ticket_of(&backend, NEXT);
+    let progress = status(&app);
+    assert!(progress.starts_with("Validating"), "{progress}");
+    assert!(app.world.validation_owns_status(NEXT, y));
+
+    app.deliver(&validated(&app, x, PERSONAL, valid_fingerprint()));
+    assert_eq!(
+        validation_state(&app, PERSONAL),
+        ValidationState::Valid(ValidationLevel::QuotaReadable)
+    );
+    assert_eq!(status(&app), progress, "Y's progress text stays");
+    assert_eq!(app.shell.status.job(), Some(job::ACCOUNT_VALIDATE));
+    assert!(app.world.validation_owns_status(NEXT, y));
+
+    app.deliver(&validated(&app, y, NEXT, valid_fingerprint()));
+    assert_eq!(app.shell.status.job(), None);
+    assert!(!app.world.validation_owns_status(NEXT, y));
+    let done = status(&app);
+    assert!(
+        done.starts_with("Claude · Archived") && done.ends_with("quota readable"),
+        "Y's own result replaces its progress: {done}"
+    );
+}
+
+#[test]
+fn validation_owner_source_replacement_ends_the_job() {
+    let (mut app, backend) = held(Scenario::AccountsMixed);
+    press(&mut app, "c down down v down v");
+    let x = validation_ticket_of(&backend, PERSONAL);
+    let y = validation_ticket_of(&backend, NEXT);
+    assert!(app.world.validation_owns_status(NEXT, y));
+
+    let mut roster = never_validated_roster(&app);
+    roster.accounts.remove(NEXT);
+    let msg = roster_reply(&mut app, roster);
+    app.deliver(&msg);
+    assert_eq!(
+        app.shell.status.job(),
+        None,
+        "no spinning job for a gone account"
+    );
+    assert_eq!(app.world.validation_pending(NEXT), None);
+    assert_eq!(
+        app.world.validation_pending(PERSONAL),
+        Some(x),
+        "X is unaffected"
+    );
+}
+
+#[test]
+fn validation_snapshot_preserves_original_started_tick() {
+    let (mut app, backend) = held(Scenario::AccountsMixed);
+    press(&mut app, "c down down v");
+    let a = validation_ticket_of(&backend, PERSONAL);
+    let ValidationState::Validating { started_tick } = validation_state(&app, PERSONAL) else {
+        panic!("the validation shows as running");
+    };
+
+    for _ in 0..3 {
+        ticks(&mut app, 5);
+        assert!(
+            app.world.clock.now_ms as u64 > started_tick,
+            "time moved on"
+        );
+        let roster = never_validated_roster(&app);
+        let msg = roster_reply(&mut app, roster);
+        app.deliver(&msg);
+        assert_eq!(
+            validation_state(&app, PERSONAL),
+            ValidationState::Validating { started_tick },
+            "elapsed time counts from the request, not from the roster"
+        );
+    }
+    assert_eq!(app.world.validation_pending(PERSONAL), Some(a));
 }
