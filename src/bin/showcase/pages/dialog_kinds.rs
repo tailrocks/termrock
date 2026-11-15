@@ -6,7 +6,7 @@ use crate::options::{PageValues, page_options};
 use crate::pages::layout::{sheet_height, sheet_width};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent, Report};
-use junie_tui::core::event::Outcome;
+use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::id::WidgetId;
 use junie_tui::core::intent::Phase;
 use junie_tui::core::keymap::{KeyBinding, NavKeys};
@@ -259,7 +259,13 @@ impl DialogKindsPage {
             vec![
                 (
                     "Forms",
-                    vec![("Tab", "Next field"), ("Enter", "Save"), ("Esc", "Cancel")],
+                    vec![
+                        ("Tab", "Next field"),
+                        ("Enter", "Save"),
+                        ("Esc", "Cancel"),
+                        ("Ctrl+T", "Toggle host"),
+                        ("Ctrl+D", "Toggle driver"),
+                    ],
                 ),
                 ("Info", vec![("y", "Copy"), ("q", "Close")]),
                 ("Choices", vec![("↑↓", "Option"), ("←→", "Button")]),
@@ -687,7 +693,13 @@ impl Page for DialogKindsPage {
     fn hints(&self, focus: Option<WidgetId>) -> Vec<Hint> {
         if let Some(kind) = self.open.last() {
             return match *kind {
-                "form" => vec![("Tab", "Next field"), ("Enter", "Save"), ("Esc", "Cancel")],
+                "form" => vec![
+                    ("Tab", "Next field"),
+                    ("Enter", "Save"),
+                    ("Esc", "Cancel"),
+                    ("Ctrl+T", "Toggle host"),
+                    ("Ctrl+D", "Toggle driver"),
+                ],
                 "info" if self.opts.value("dialogkinds.info_keymap") == "ctrl" => {
                     vec![("Ctrl+Y", "Copy"), ("Ctrl+W", "Close")]
                 }
@@ -701,6 +713,28 @@ impl Page for DialogKindsPage {
             return h;
         }
         vec![("Enter", "Open")]
+    }
+
+    /// Runs before the open form sees the key, so the toggle lands while an
+    /// Input is editing or a Select popup is open. Ctrl chords never reach
+    /// an Input as text.
+    fn on_layer_key(&mut self, key: &Key, cx: &mut Cx) -> Outcome {
+        if self.open.last() != Some(&"form") {
+            return Outcome::Ignored;
+        }
+        let field = if key.ctrl_char('t') {
+            "host"
+        } else if key.ctrl_char('d') {
+            "driver"
+        } else {
+            return Outcome::Ignored;
+        };
+        self.log.push(format!("Form · Toggle · {field}"));
+        cx.with_top::<FormDialog>(move |f| {
+            let shown = f.field(field).is_some_and(|x| x.visible);
+            f.set_visible(field, !shown);
+        });
+        Outcome::Changed
     }
 
     fn on_layer(&mut self, tag: &LayerTag, report: Report, cx: &mut Cx) -> Outcome {
