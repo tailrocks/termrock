@@ -247,8 +247,53 @@ mod work {
     }
 }
 
-fn matches(n: &TreeNode, q: &str) -> bool {
-    label_matches(&n.label, q) || n.children.iter().any(|c| matches(c, q))
+#[derive(Clone, Copy, Debug, Default)]
+struct MatchNode {
+    own_match: bool,
+    subtree_match: bool,
+    subtree_end: usize,
+}
+
+fn project_matches(nodes: &[TreeNode], query: &str, out: &mut Vec<MatchNode>) -> bool {
+    let mut any = false;
+    for node in nodes {
+        #[cfg(test)]
+        work::record_projection_node();
+        let ordinal = out.len();
+        let own_match = label_matches(&node.label, query);
+        out.push(MatchNode::default());
+        let descendant = project_matches(&node.children, query, out);
+        let subtree_match = own_match || descendant;
+        out[ordinal] = MatchNode {
+            own_match,
+            subtree_match,
+            subtree_end: out.len(),
+        };
+        any |= subtree_match;
+    }
+    any
+}
+
+fn flat_row(
+    n: &TreeNode,
+    path: &Path,
+    depth: usize,
+    has_children: bool,
+    expanded: bool,
+) -> FlatRow {
+    FlatRow {
+        path: path.clone(),
+        depth,
+        label: n.label.clone(),
+        meta: n.meta.clone(),
+        has_children,
+        expanded,
+        glyph: n.glyph.clone(),
+        glyph_tone: n.glyph_tone,
+        label_tone: n.label_tone,
+        busy: n.busy,
+        note: n.note,
+    }
 }
 
 fn walk(
@@ -256,39 +301,70 @@ fn walk(
     path: &mut Path,
     depth: usize,
     exp: &std::collections::HashSet<Path>,
-    filter: Option<&str>,
     out: &mut Vec<FlatRow>,
 ) {
     for (i, n) in nodes.iter().enumerate() {
-        if let Some(q) = filter
-            && !matches(n, q)
-        {
-            continue;
-        }
         path.push(i);
         let has_children = !n.children.is_empty() || (n.lazy && !n.note);
-
-        let expanded = has_children
-            && (exp.contains(path)
-                || filter.is_some_and(|q| !n.children.is_empty() && !label_matches(&n.label, q)));
-        out.push(FlatRow {
-            path: path.clone(),
-            depth,
-            label: n.label.clone(),
-            meta: n.meta.clone(),
-            has_children,
-            expanded,
-            glyph: n.glyph.clone(),
-            glyph_tone: n.glyph_tone,
-            label_tone: n.label_tone,
-            busy: n.busy,
-            note: n.note,
-        });
+        let expanded = has_children && exp.contains(path);
+        out.push(flat_row(n, path, depth, has_children, expanded));
         if expanded {
-            walk(&n.children, path, depth + 1, exp, filter, out);
+            walk(&n.children, path, depth + 1, exp, out);
         }
         path.pop();
     }
+}
+
+struct FilteredWalk<'a> {
+    matches: &'a [MatchNode],
+    exp: &'a std::collections::HashSet<Path>,
+    ordinal: usize,
+}
+
+impl FilteredWalk<'_> {
+    fn walk(&mut self, nodes: &[TreeNode], path: &mut Path, depth: usize, out: &mut Vec<FlatRow>) {
+        for (i, n) in nodes.iter().enumerate() {
+            let m = self.matches[self.ordinal];
+            if !m.subtree_match {
+                self.ordinal = m.subtree_end;
+                continue;
+            }
+            self.ordinal += 1;
+            path.push(i);
+            let has_children = !n.children.is_empty() || (n.lazy && !n.note);
+            let expanded = has_children
+                && (self.exp.contains(path) || (!n.children.is_empty() && !m.own_match));
+            out.push(flat_row(n, path, depth, has_children, expanded));
+            if expanded {
+                self.walk(&n.children, path, depth + 1, out);
+                debug_assert_eq!(self.ordinal, m.subtree_end);
+            }
+            self.ordinal = m.subtree_end;
+            path.pop();
+        }
+    }
+}
+
+fn build_rows(
+    nodes: &[TreeNode],
+    exp: &std::collections::HashSet<Path>,
+    filter: Option<&str>,
+) -> Vec<FlatRow> {
+    let mut out = Vec::new();
+    let Some(query) = filter else {
+        walk(nodes, &mut Vec::new(), 0, exp, &mut out);
+        return out;
+    };
+    let mut matches = Vec::new();
+    project_matches(nodes, query, &mut matches);
+    let mut filtered = FilteredWalk {
+        matches: &matches,
+        exp,
+        ordinal: 0,
+    };
+    filtered.walk(nodes, &mut Vec::new(), 0, &mut out);
+    debug_assert_eq!(filtered.ordinal, matches.len());
+    out
 }
 
 impl TreeView {
@@ -451,20 +527,12 @@ impl TreeView {
             .and_then(|i| self.rows.get(i))
             .map(|r| r.path.clone());
         let after: Option<Path> = self.rows.get(self.core.cursor + 1).map(|r| r.path.clone());
-        let mut out = Vec::new();
         let filter = self
             .filter
             .as_deref()
             .map(|f| f.trim().to_lowercase())
             .filter(|f| !f.is_empty());
-        walk(
-            &self.nodes,
-            &mut Vec::new(),
-            0,
-            &self.expanded,
-            filter.as_deref(),
-            &mut out,
-        );
+        let out = build_rows(&self.nodes, &self.expanded, filter.as_deref());
         self.rows_built += out.len();
         self.rows = out;
         self.core.cursor = self
@@ -632,7 +700,6 @@ impl TreeView {
                 &mut path,
                 depth + 1,
                 &self.expanded,
-                None,
                 &mut shown,
             );
         }
