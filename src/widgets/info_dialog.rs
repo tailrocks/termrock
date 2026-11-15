@@ -3,6 +3,7 @@ use crate::core::focus::{Focus, FocusRing};
 use crate::core::hints::{HasHints, HintCx, nav_hints};
 use crate::core::hit::Axis;
 use crate::core::id::WidgetId;
+use crate::core::intent::DismissReason;
 use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup};
 use crate::core::response::Response;
 use crate::core::scroll::ScrollPane;
@@ -98,6 +99,11 @@ impl Actions for InfoCmd {
 impl InfoDialog {
     pub fn close_button(mut self, button: crate::widgets::icon_button::IconButton) -> Self {
         self.close_button = button;
+        self
+    }
+
+    pub fn dismiss(mut self, dismiss: crate::ui::popup::Dismiss) -> Self {
+        self.dismiss = dismiss;
         self
     }
 
@@ -277,10 +283,8 @@ impl InfoDialog {
             _ => {}
         }
         match key.code {
-            KeyCode::Esc => {
-                self.result = Some(InfoResult::Closed);
-                Outcome::Changed
-            }
+            KeyCode::Esc => crate::ui::layer::dismiss(self, DismissReason::Esc)
+                .map_or(Outcome::Consumed, |response| response.outcome()),
             KeyCode::Enter => {
                 self.result = Some(InfoResult::Closed);
                 Outcome::Changed
