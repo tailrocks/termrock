@@ -2795,12 +2795,11 @@ impl App {
             return Outcome::Changed;
         };
         match target {
-            context::Target::Connection(_, Some(key)) => {
-                if !self.connections.select_key(key) {
+            context::Target::Connection(node) => {
+                if !self.connections.select_key(node) {
                     return Outcome::Changed;
                 }
             }
-            context::Target::Connection(row, None) => self.connections.select_row(row),
             _ => {
                 if let Some(w) = self.workbench.as_mut() {
                     context::select(w, target);
@@ -3085,7 +3084,7 @@ impl PointerHost for App {
 }
 
 fn tab_index(p: &Picker, i: usize) -> usize {
-    p.items().get(i).map_or(i, |it| it.value)
+    p.visible_item(i).map_or(i, |it| it.item.value)
 }
 
 fn tab_list_items(w: &Workbench, query: &str) -> Vec<Item> {

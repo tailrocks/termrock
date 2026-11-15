@@ -62,3 +62,6 @@ pub mod viewport;
 pub mod viewport_ops;
 mod viewport_specimen;
 pub mod widget_hints;
+
+#[cfg(test)]
+mod keyed_cost_tests;

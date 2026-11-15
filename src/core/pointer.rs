@@ -660,6 +660,14 @@ impl PointerEvent {
         self.hit.part.item.and_then(ItemKey::as_index)
     }
 
+    /// The logical key of the hit item when this event is on `part`.
+    pub fn key_of(&self, part: Part) -> Option<ItemKey> {
+        if self.hit.part.part != part {
+            return None;
+        }
+        self.hit.part.item
+    }
+
     pub fn phase(&self) -> Option<Phase> {
         match self.intent {
             Intent::Pointer { phase, .. } => Some(phase),

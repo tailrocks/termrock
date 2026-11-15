@@ -1142,7 +1142,7 @@ impl App {
                 if let ModalResult::Picked(i) = result {
                     let row = entry
                         .get::<Picker>()
-                        .and_then(|p| p.items().get(i))
+                        .and_then(|p| p.visible_item(i).map(|v| v.item))
                         .and_then(|it| it.key.map(|key| (key, it.group == "plans")));
                     match row {
                         Some((k, true)) => {

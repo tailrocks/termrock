@@ -36,7 +36,7 @@ pub enum Target {
 
     /// A connections-tree row and, for a connection row, the connection it showed
     /// when the menu opened.
-    Connection(usize, Option<ItemKey>),
+    Connection(ItemKey),
 
     Header(usize),
 
@@ -273,12 +273,9 @@ pub fn on_secondary_connections(
     cfg: &ContextConfig,
     ev: &PointerEvent,
 ) -> Option<CtxMenu> {
-    let req = cfg.on_secondary(c.tree_mut(), ev)?;
-    c.select_row(req.target);
-    Some(build_connection(
-        c,
-        req.map(|row| connection_target(c, row)),
-    ))
+    let req = cfg.on_secondary(c, ev)?;
+    c.select_key(req.target);
+    Some(build_connection(c, req.map(Target::Connection)))
 }
 
 pub fn on_key_connections(
@@ -287,34 +284,27 @@ pub fn on_key_connections(
     focus: Option<WidgetId>,
     key: &Key,
 ) -> Option<CtxMenu> {
-    if focus? != c.tree().id {
+    if focus? != c.tree_id() {
         return None;
     }
-    let req = cfg.on_key(c.tree(), key)?;
-    Some(build_connection(
-        c,
-        req.map(|row| connection_target(c, row)),
-    ))
-}
-
-fn connection_target(c: &ConnectionsScreen, row: usize) -> Target {
-    Target::Connection(row, c.key_at_row(row))
+    let req = cfg.on_key(c, key)?;
+    Some(build_connection(c, req.map(Target::Connection)))
 }
 
 fn build_connection(c: &ConnectionsScreen, req: ContextRequest<Target>) -> CtxMenu {
-    let Target::Connection(row, _) = req.target else {
+    let Target::Connection(node) = req.target else {
         unreachable!("a connections menu is about a connection row")
     };
-    let (title, items) = connection_items(c, row);
-    finish(req, title, c.tree().id, items)
+    let (title, items) = connection_items(c, node);
+    finish(req, title, c.tree_id(), items)
 }
 
-fn connection_items(c: &ConnectionsScreen, row: usize) -> (String, Items) {
+fn connection_items(c: &ConnectionsScreen, node: ItemKey) -> (String, Items) {
     let mut items = Items::new();
-    let Some(r) = c.tree().rows().get(row) else {
+    let Some(menu) = c.node_menu(node) else {
         return (String::new(), items);
     };
-    if c.key_at_row(row).is_some() {
+    if menu.group_expanded.is_none() {
         let busy = c.animating().then_some("A connection is in progress");
         cmd(
             &mut items,
@@ -341,8 +331,8 @@ fn connection_items(c: &ConnectionsScreen, row: usize) -> (String, Items) {
             plain(KeyCode::Char('d')),
             None,
         );
-    } else if r.has_children {
-        if r.expanded {
+    } else {
+        if menu.group_expanded == Some(true) {
             cmd(
                 &mut items,
                 MenuItem::new("Collapse").shortcut("←"),
@@ -371,7 +361,7 @@ fn connection_items(c: &ConnectionsScreen, row: usize) -> (String, Items) {
         plain(KeyCode::Char('/')),
         None,
     );
-    (r.label.clone(), items)
+    (menu.label, items)
 }
 
 fn history_items(w: &Workbench, row: usize) -> (String, WidgetId, Items) {

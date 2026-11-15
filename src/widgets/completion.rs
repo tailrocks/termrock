@@ -11,7 +11,7 @@ use crate::theme::CursorStyle;
 use crate::ui::ctx::RenderCtx;
 use crate::ui::popup::{Dismiss, Placement, backdrop_id, place_with, surface_for};
 use crate::ui::text::{truncate, width};
-use crate::widgets::option_list::{Item, OptionList};
+use crate::widgets::option_list::{Item, OptionList, PopupSnapshot};
 
 pub const TEXT_INSET: u16 = 4;
 
@@ -19,7 +19,8 @@ pub const TEXT_INSET: u16 = 4;
 pub struct Completion {
     pub id: WidgetId,
 
-    pub items: Vec<Item>,
+    items: Vec<Item>,
+    widths: Option<(usize, usize)>,
 
     pub list: OptionList,
     pub anchor: Rect,
@@ -63,6 +64,7 @@ impl Completion {
         Self {
             id,
             items: vec![],
+            widths: None,
             list,
             anchor: Rect::ZERO,
             replace_len: 0,
@@ -91,10 +93,22 @@ impl Completion {
     }
 
     pub fn open(&mut self, items: Vec<Item>, anchor: Rect, replace_len: usize) {
-        self.items = items;
+        self.set_items(items);
         self.list.reset(self.items.len());
         self.anchor = anchor;
         self.replace_len = replace_len;
+    }
+
+    /// The completion rows. They change only through [`Completion::open`],
+    /// [`Completion::set_items`] and [`Completion::close`], which keep the
+    /// cached aggregate widths in step.
+    pub fn items(&self) -> &[Item] {
+        &self.items
+    }
+
+    pub fn set_items(&mut self, items: Vec<Item>) {
+        self.items = items;
+        self.widths = None;
     }
 
     pub fn is_open(&self) -> bool {
@@ -103,6 +117,7 @@ impl Completion {
 
     pub fn close(&mut self) {
         self.items.clear();
+        self.widths = None;
     }
 
     pub fn current(&self) -> Option<&Item> {
@@ -174,18 +189,7 @@ impl Completion {
         if !self.is_open() {
             return;
         }
-        let label_w = self
-            .items
-            .iter()
-            .map(|i| width(&i.label))
-            .max()
-            .unwrap_or(4);
-        let detail_w = self
-            .items
-            .iter()
-            .map(|i| width(&i.detail))
-            .max()
-            .unwrap_or(0);
+        let (label_w, detail_w) = self.aggregate_widths();
         let (min_w, max_w) = self.list.width;
         let w = (label_w + detail_w + 8).clamp(min_w as usize, max_w as usize) as u16;
         let rows = (self.items.len() as u16).min(self.list.max_rows);
@@ -205,67 +209,95 @@ impl Completion {
 
         self.list.layout(inner, &self.items[..], ctx);
 
-        let me = self.clone();
-        ctx.overlay(move |buf, ctx| me.paint(area, buf, ctx));
+        let items = &self.items;
+        let snapshot = self.list.snapshot(inner, &items[..], |i| items[i].clone());
+        let (id, dismiss) = (self.id, self.list.dismiss);
+        ctx.overlay(move |buf, ctx| Self::paint(&snapshot, id, dismiss, area, buf, ctx));
     }
 
-    fn paint(&self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
-        let t = ctx.theme;
-        let inner = surface_for(area, buf, ctx, t, Some((self.id, self.list.dismiss)));
-        let bg = t.surface_elevated;
-        let items = &self.items[..];
-        self.list
-            .paint_rows(inner, bg, items, buf, ctx, |i, r, buf, ctx| {
-                let it = &items[i];
-                let (row, y) = (r.area, r.area.y);
-                let st = r.style();
-                let focused = r.state.focused;
-                buf.set_string(
-                    row.x + 1,
-                    y,
-                    &it.glyph,
-                    st.fg(if focused {
-                        t.text_primary
-                    } else {
-                        r.ink(ctx, t.text_muted)
-                    })
-                    .remove_modifier(Modifier::BOLD),
-                );
+    fn aggregate_widths(&mut self) -> (usize, usize) {
+        if let Some(widths) = self.widths {
+            return widths;
+        }
+        #[cfg(test)]
+        crate::core::work::add(crate::core::work::Counter::WidthRows, self.items.len());
+        let label_w = self
+            .items
+            .iter()
+            .map(|i| width(&i.label))
+            .max()
+            .unwrap_or(4);
+        let detail_w = self
+            .items
+            .iter()
+            .map(|i| width(&i.detail))
+            .max()
+            .unwrap_or(0);
+        *self.widths.insert((label_w, detail_w))
+    }
 
-                let mut x = row.x + 3;
-                let avail = row.width.saturating_sub(3) as usize;
-                let show_detail =
-                    !it.detail.is_empty() && avail > width(&it.label) + width(&it.detail) + 2;
-                let label = truncate(
-                    &it.label,
-                    if show_detail {
-                        avail - width(&it.detail) - 2
-                    } else {
-                        avail
-                    },
-                );
-                for (bi, ch) in label.char_indices() {
-                    let mut cs = st;
-                    if it.matched.contains(&bi) {
-                        cs = cs.add_modifier(Modifier::BOLD);
-                    } else if !focused {
-                        cs = cs.remove_modifier(Modifier::BOLD);
-                    }
-                    let g = ch.to_string();
-                    buf.set_string(x, y, &g, cs);
-                    x += width(&g) as u16;
-                }
+    fn paint(
+        snapshot: &PopupSnapshot<Item>,
+        id: WidgetId,
+        dismiss: Dismiss,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+    ) {
+        let t = ctx.theme;
+        let inner = surface_for(area, buf, ctx, t, Some((id, dismiss)));
+        let bg = t.surface_elevated;
+        snapshot.paint_rows(inner, bg, buf, ctx, |pr, r, buf, ctx| {
+            let it = &pr.payload;
+            let (row, y) = (r.area, r.area.y);
+            let st = r.style();
+            let focused = r.state.focused;
+            buf.set_string(
+                row.x + 1,
+                y,
+                &it.glyph,
+                st.fg(if focused {
+                    t.text_primary
+                } else {
+                    r.ink(ctx, t.text_muted)
+                })
+                .remove_modifier(Modifier::BOLD),
+            );
+
+            let mut x = row.x + 3;
+            let avail = row.width.saturating_sub(3) as usize;
+            let show_detail =
+                !it.detail.is_empty() && avail > width(&it.label) + width(&it.detail) + 2;
+            let label = truncate(
+                &it.label,
                 if show_detail {
-                    let dx = row.right().saturating_sub(width(&it.detail) as u16 + 1);
-                    buf.set_string(
-                        dx,
-                        y,
-                        &it.detail,
-                        st.fg(r.ink(ctx, t.text_muted))
-                            .remove_modifier(Modifier::BOLD),
-                    );
+                    avail - width(&it.detail) - 2
+                } else {
+                    avail
+                },
+            );
+            for (bi, ch) in label.char_indices() {
+                let mut cs = st;
+                if it.matched.contains(&bi) {
+                    cs = cs.add_modifier(Modifier::BOLD);
+                } else if !focused {
+                    cs = cs.remove_modifier(Modifier::BOLD);
                 }
-            });
+                let g = ch.to_string();
+                buf.set_string(x, y, &g, cs);
+                x += width(&g) as u16;
+            }
+            if show_detail {
+                let dx = row.right().saturating_sub(width(&it.detail) as u16 + 1);
+                buf.set_string(
+                    dx,
+                    y,
+                    &it.detail,
+                    st.fg(r.ink(ctx, t.text_muted))
+                        .remove_modifier(Modifier::BOLD),
+                );
+            }
+        });
     }
 }
 

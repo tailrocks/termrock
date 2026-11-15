@@ -1,6 +1,5 @@
 pub const PICKER_COVERAGE: &[(&str, &str)] = &[
     ("widgets::picker::Picker::report_item_error", "pickers"),
-    ("widgets::picker::Picker::items", "pickers"),
     ("widgets::picker::Picker::list", "pickers"),
     ("widgets::picker::PickerStatus", "pickers"),
     ("widgets::picker::PickerStatus::Ready", "pickers"),
@@ -47,7 +46,11 @@ pub const PICKER_COVERAGE: &[(&str, &str)] = &[
     ("widgets::picker::Picker::cursor_style", "pickers"),
     ("widgets::picker::Picker::set_items", "pickers"),
     ("widgets::picker::Picker::replace_items", "pickers"),
-    ("widgets::picker::Picker::set_visible_items", "pickers"),
+    ("widgets::picker::Picker::visible_item", "pickers"),
+    ("widgets::picker::Picker::set_visible_keys", "pickers"),
+    ("widgets::picker::VisibleKey", "pickers"),
+    ("widgets::picker::VisibleKey::new", "pickers"),
+    ("widgets::picker::VisibleKey::matched", "pickers"),
     ("widgets::picker::Picker::set_cursor", "pickers"),
 ];
 
@@ -518,6 +521,22 @@ pub const GRID_PARSER_ALLOWLIST: &[(&str, &str)] = &[
 ];
 
 pub const PICKER_ALLOWLIST: &[(&str, &str)] = &[
+    (
+        "widgets::picker::Picker::set_visible_items",
+        "Compatibility ingress that keeps only each item's key and match; the showcase uses set_visible_keys, and tests/regressions/keyed_costs pins the old ingress.",
+    ),
+    (
+        "widgets::picker::Picker::visible_items",
+        "Read-only enumeration of the projection for application code; the showcase reads one row through visible_item.",
+    ),
+    (
+        "widgets::picker::Picker::visible_len",
+        "Read-only count of the projection for application code; the showcase has no counter of visible rows.",
+    ),
+    (
+        "widgets::picker::PickerItemView",
+        "Returned by visible_item and visible_items; pages read its item and matched fields without naming the type.",
+    ),
     (
         "widgets::picker::Picker::wheel",
         "The showcase uses builder configuration and layer-driven interaction; this method serves application or layer plumbing.",
