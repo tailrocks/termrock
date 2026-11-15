@@ -511,6 +511,7 @@ impl Toolbar {
 
     pub fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, bg: Color) {
         let area = area.intersection(*buf.area());
+        self.close_stale_menu();
         let n = self.items.len();
         self.areas = vec![Rect::ZERO; n];
         self.hidden.clear();
@@ -621,6 +622,13 @@ impl Toolbar {
                 );
                 x = x.saturating_add(1).saturating_add(self.gap);
             }
+        }
+        if self
+            .menu
+            .as_ref()
+            .is_some_and(|(_, rows)| *rows != self.hidden)
+        {
+            self.menu = None;
         }
         if self.hidden.is_empty() {
             self.menu = None;
