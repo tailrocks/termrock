@@ -44,7 +44,11 @@ struct Fixture {
 impl Fixture {
     fn new(queries: &[(&str, bool)]) -> Self {
         let mut app = App::new(Theme::junie());
-        app.connect(1);
+        let key = app
+            .connections
+            .resolve_name("Development")
+            .expect("Development is a sample connection");
+        app.connect_key(key);
         app.history = crate::model::History::default();
         let clip = Arc::new(Recorder::default());
         app.shell

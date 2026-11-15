@@ -18,7 +18,8 @@ use clap::{CommandFactory, Parser, error::ErrorKind};
 use junie_tui::cli::CommonArgs;
 
 use crate::app::App;
-use crate::db::Connection;
+use crate::connections::{ConnectionsScreen, NameLookup};
+use junie_tui::core::id::ItemKey;
 
 const NO_MOTION_ENV: &str = "TABLEPRO_NO_MOTION";
 
@@ -45,25 +46,24 @@ fn cli_after_help() -> String {
     )
 }
 
-fn connection_index(connections: &[Connection], name: &str) -> Result<usize, clap::Error> {
-    connections
-        .iter()
-        .position(|c| c.name.eq_ignore_ascii_case(name))
-        .ok_or_else(|| {
-            Cli::command().error(
-                ErrorKind::ValueValidation,
-                format!("no connection named {name:?}"),
-            )
-        })
+fn connection_key(connections: &ConnectionsScreen, name: &str) -> Result<ItemKey, clap::Error> {
+    connections.resolve_name(name).map_err(|why| {
+        let message = match why {
+            NameLookup::NotFound => format!("no connection named {name:?}"),
+            NameLookup::Ambiguous(n) => {
+                format!("{n} connections are named {name:?}; rename one to pick it")
+            }
+        };
+        Cli::command().error(ErrorKind::ValueValidation, message)
+    })
 }
 
 fn main() -> std::io::Result<()> {
     let cli: Cli = junie_tui::cli::parse(cli_after_help());
     let mut app = App::new(cli.common.theme());
     if let Some(name) = cli.connect {
-        let i = connection_index(&app.connections.connections, &name)
-            .unwrap_or_else(|error| error.exit());
-        app.connect(i);
+        let key = connection_key(&app.connections, &name).unwrap_or_else(|error| error.exit());
+        app.connect_key(key);
     }
     app.set_motion(cli.common.motion(NO_MOTION_ENV), cli.common.frame);
     app.shell.set_clipboard(junie_tui::shell::Clipboard::new());

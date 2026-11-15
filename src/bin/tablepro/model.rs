@@ -94,6 +94,14 @@ fn row_predicate(
     Ok(terms.join(" AND "))
 }
 
+fn in_source_order(grid: &DataGrid, keys: impl Iterator<Item = ItemKey>) -> Vec<(usize, ItemKey)> {
+    let mut rows: Vec<(usize, ItemKey)> = keys
+        .filter_map(|key| Some((grid.source_index(key)?, key)))
+        .collect();
+    rows.sort_unstable();
+    rows
+}
+
 /// Complete statement list for the pending changes, or the first
 /// serialization error: a partial list is never returned.
 pub fn preview_sql(
@@ -106,14 +114,13 @@ pub fn preview_sql(
         .iter()
         .map(|c| c.name.as_str())
         .collect();
-    let pending = &grid.pending;
+    let pending = grid.pending();
     let mut out = Vec::new();
-    for r in pending.dirty_rows() {
+    for (r, key) in in_source_order(grid, pending.dirty_rows().into_iter()) {
         let mut cells: Vec<(usize, &CellValue)> = pending
-            .cells
-            .iter()
-            .filter(|((row, _), _)| *row == r)
-            .map(|((_, col), v)| (*col, v))
+            .cells()
+            .filter(|(row, _, _)| *row == key)
+            .map(|(_, col, v)| (col, v))
             .collect();
         cells.sort_by_key(|(c, _)| *c);
         let sets: Vec<String> = cells
@@ -130,11 +137,14 @@ pub fn preview_sql(
             row_predicate(&pk, columns, grid, r)?
         ));
     }
-    for &r in &pending.inserted {
+    for (r, key) in in_source_order(grid, pending.inserted()) {
         let mut names = vec![];
         let mut vals = vec![];
         for (ci, c) in columns.iter().enumerate() {
-            let v = pending.value(r, ci).cloned().unwrap_or(CellValue::Default);
+            let v = pending
+                .value(key, ci)
+                .cloned()
+                .unwrap_or(CellValue::Default);
             if matches!(v, CellValue::Default) {
                 continue;
             }
@@ -152,7 +162,7 @@ pub fn preview_sql(
             ));
         }
     }
-    for &r in &pending.deleted {
+    for (r, _) in in_source_order(grid, pending.deleted()) {
         out.push(format!(
             "DELETE FROM {} WHERE {};",
             table.qualified(),
@@ -1134,9 +1144,9 @@ mod tests {
                 vec![CellValue::Null, CellValue::Num(7.0)],
             ],
         );
-        grid.pending.cells.insert((0, 0), CellValue::Num(9.876_543));
-        grid.pending.cells.insert((0, 1), CellValue::Num(0.001));
-        grid.pending.cells.insert((1, 1), CellValue::Num(8.0));
+        grid.record_cell(0, 0, CellValue::Num(9.876_543));
+        grid.record_cell(0, 1, CellValue::Num(0.001));
+        grid.record_cell(1, 1, CellValue::Num(8.0));
         assert_eq!(
             preview_sql(&t, &columns, &grid).unwrap(),
             vec![
@@ -1145,9 +1155,9 @@ mod tests {
                 "UPDATE public.ledger SET amount = 8.0 WHERE ref IS NULL;".to_owned(),
             ]
         );
-        grid.pending.cells.clear();
-        grid.pending.deleted.insert(0);
-        grid.pending.deleted.insert(1);
+        grid.discard();
+        grid.toggle_delete(0);
+        grid.toggle_delete(1);
         assert_eq!(
             preview_sql(&t, &columns, &grid).unwrap(),
             vec![
@@ -1168,15 +1178,11 @@ mod tests {
                 CellValue::Null,
             ]],
         );
-        grid.pending.cells.insert((0, 2), CellValue::Num(0.001));
-        grid.pending.inserted.insert(1);
-        grid.pending
-            .cells
-            .insert((1, 0), CellValue::Num(1.234_567_8));
-        grid.pending
-            .cells
-            .insert((1, 1), CellValue::Text("it's".into()));
-        grid.pending.cells.insert((1, 2), CellValue::Num(-0.000_1));
+        grid.record_cell(0, 2, CellValue::Num(0.001));
+        grid.insert_row();
+        grid.record_cell(1, 0, CellValue::Num(1.234_567_8));
+        grid.record_cell(1, 1, CellValue::Text("it's".into()));
+        grid.record_cell(1, 2, CellValue::Num(-0.000_1));
         assert_eq!(
             preview_sql(&t, &columns, &grid).unwrap(),
             vec![
@@ -1198,8 +1204,8 @@ mod tests {
                 vec![CellValue::Num(3.5), CellValue::Num(4.5)],
             ],
         );
-        grid.pending.cells.insert((0, 1), CellValue::Num(6.5));
-        grid.pending.cells.insert((1, 1), CellValue::Num(f64::NAN));
+        grid.record_cell(0, 1, CellValue::Num(6.5));
+        grid.record_cell(1, 1, CellValue::Num(f64::NAN));
         let err = preview_sql(&t, &columns, &grid).unwrap_err();
         assert_eq!(
             err,
@@ -1210,11 +1216,9 @@ mod tests {
             }
         );
 
-        grid.pending.cells.remove(&(1, 1));
-        grid.pending.inserted.insert(2);
-        grid.pending
-            .cells
-            .insert((2, 0), CellValue::Num(f64::INFINITY));
+        grid.undo();
+        grid.insert_row();
+        grid.record_cell(2, 0, CellValue::Num(f64::INFINITY));
         let err = preview_sql(&t, &columns, &grid).unwrap_err();
         assert_eq!(err.row, PreviewRow::Source(2));
         assert_eq!(err.column.as_deref(), Some("ref"));
@@ -1230,7 +1234,7 @@ mod tests {
                 vec![CellValue::Default, CellValue::Num(2.5)],
             ],
         );
-        grid.pending.cells.insert((0, 1), CellValue::Num(6.5));
+        grid.record_cell(0, 1, CellValue::Num(6.5));
         assert_eq!(
             preview_sql(&t, &columns, &grid).unwrap_err(),
             PreviewSqlError {
@@ -1241,8 +1245,8 @@ mod tests {
             "an invalid before-image names its own column"
         );
 
-        grid.pending.cells.clear();
-        grid.pending.deleted.insert(1);
+        grid.discard();
+        grid.toggle_delete(1);
         assert_eq!(
             preview_sql(&t, &columns, &grid).unwrap_err(),
             PreviewSqlError {
@@ -1259,7 +1263,7 @@ mod tests {
         let (_, grid) = grid_of(&orphan, vec![vec![CellValue::Int(1), CellValue::Num(1.0)]]);
         let narrow = vec![("amount".to_owned(), ColType::Numeric)];
         let mut grid = grid;
-        grid.pending.deleted.insert(0);
+        grid.toggle_delete(0);
         assert_eq!(
             preview_sql(&orphan, &narrow, &grid).unwrap_err(),
             PreviewSqlError {

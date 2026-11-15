@@ -71,6 +71,8 @@ impl WorkTab {
 
 pub struct Workbench {
     pub connection: Connection,
+    /// The configured connection this session was opened from.
+    pub connection_key: Option<junie_tui::core::id::ItemKey>,
     pub catalog: Catalog,
     pub schema: String,
     pub explorer: TreeView,
@@ -111,6 +113,7 @@ impl Workbench {
     pub fn new(connection: Connection, catalog: Catalog) -> Self {
         let mut wb = Self {
             connection,
+            connection_key: None,
             catalog,
             schema: "public".into(),
             explorer: TreeView::new(EXPLORER, vec![]),
@@ -918,6 +921,7 @@ impl Workbench {
             GridAction::LeaveBackward => cx.focus_prev(),
             GridAction::ReadOnly { reason } => cx.status(reason),
             GridAction::CellChanged { .. }
+            | GridAction::Undone(_)
             | GridAction::RowInserted(_)
             | GridAction::RowDeleted(_)
             | GridAction::Activated(_) => {}

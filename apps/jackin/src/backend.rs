@@ -429,6 +429,9 @@ pub enum Effect {
         ticket: Ticket,
     },
     RefreshAccount {
+        /// The request's identity. `World::refresh_account` allocates it; the
+        /// reply (`Msg::AccountRefreshed`) must echo it unchanged.
+        ticket: Ticket,
         account: AccountId,
         source: CredentialSource,
         stagger_ms: i64,

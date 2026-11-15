@@ -33,9 +33,14 @@ pub enum Target {
 
     Results(usize, usize),
 
-    History { owner: WidgetId, entry: ItemKey },
+    History {
+        owner: WidgetId,
+        entry: ItemKey,
+    },
 
-    Connection(usize),
+    /// A connections-tree row and, for a connection row, the connection it showed
+    /// when the menu opened.
+    Connection(usize, Option<ItemKey>),
 
     Header(usize),
 
@@ -251,7 +256,7 @@ pub fn select(w: &mut Workbench, target: Target) {
                 g.context_select((r, c));
             }
         }
-        Target::History { .. } | Target::Connection(_) | Target::Header(_) | Target::App => {}
+        Target::History { .. } | Target::Connection(..) | Target::Header(_) | Target::App => {}
     }
 }
 
@@ -262,7 +267,10 @@ pub fn on_secondary_connections(
 ) -> Option<CtxMenu> {
     let req = cfg.on_secondary(c.tree_mut(), ev)?;
     c.select_row(req.target);
-    Some(build_connection(c, req.map(Target::Connection)))
+    Some(build_connection(
+        c,
+        req.map(|row| connection_target(c, row)),
+    ))
 }
 
 pub fn on_key_connections(
@@ -275,11 +283,18 @@ pub fn on_key_connections(
         return None;
     }
     let req = cfg.on_key(c.tree(), key)?;
-    Some(build_connection(c, req.map(Target::Connection)))
+    Some(build_connection(
+        c,
+        req.map(|row| connection_target(c, row)),
+    ))
+}
+
+fn connection_target(c: &ConnectionsScreen, row: usize) -> Target {
+    Target::Connection(row, c.key_at_row(row))
 }
 
 fn build_connection(c: &ConnectionsScreen, req: ContextRequest<Target>) -> CtxMenu {
-    let Target::Connection(row) = req.target else {
+    let Target::Connection(row, _) = req.target else {
         unreachable!("a connections menu is about a connection row")
     };
     let (title, items) = connection_items(c, row);
@@ -291,7 +306,7 @@ fn connection_items(c: &ConnectionsScreen, row: usize) -> (String, Items) {
     let Some(r) = c.tree().rows().get(row) else {
         return (String::new(), items);
     };
-    if c.connection_at_row(row).is_some() {
+    if c.key_at_row(row).is_some() {
         let busy = c.animating().then_some("A connection is in progress");
         cmd(
             &mut items,
@@ -437,7 +452,7 @@ fn build(w: &Workbench, req: ContextRequest<Target>) -> CtxMenu {
             _ => (String::new(), w.explorer.id, vec![]),
         },
         Target::History { owner, entry } => history_items(w, owner, entry),
-        Target::Connection(_) | Target::Header(_) | Target::App => {
+        Target::Connection(..) | Target::Header(_) | Target::App => {
             (String::new(), w.explorer.id, vec![])
         }
     };
@@ -556,7 +571,9 @@ fn grid_items(g: &DataGrid, row: usize, col: usize, table: bool) -> (String, Wid
         return (String::new(), g.id, items);
     }
     let src = g.source_row(row);
-    let deleted = g.pending.deleted.contains(&src);
+    let deleted = g
+        .row_key(src)
+        .is_some_and(|key| g.pending().is_deleted(key));
     let read_only = (!g.editable).then_some("Read-only rows");
     let cell_lock = read_only
         .or(spec.read_only.then_some("Read-only column"))
@@ -646,7 +663,7 @@ fn grid_items(g: &DataGrid, row: usize, col: usize, table: bool) -> (String, Wid
     }
     if table {
         group(&mut items);
-        let none = g.pending.is_empty().then_some("No pending changes");
+        let none = g.pending().is_empty().then_some("No pending changes");
         cmd(
             &mut items,
             MenuItem::new("Preview SQL").shortcut("p"),
