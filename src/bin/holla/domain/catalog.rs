@@ -2462,10 +2462,10 @@ fn upgrade_items(w: &World, out: &mut Vec<Item>) {
 pub fn parse_brew_services(text: &str) -> Result<Vec<String>, String> {
     use manifest::{Json, parse_json};
     let json = parse_json(text).map_err(|e| format!("brew services list --json: {e}"))?;
-    let arr = match &json {
-        Json::Arr(a) => a.clone(),
-        Json::Obj(_) => match json.get("services") {
-            Some(Json::Arr(a)) => a.clone(),
+    let arr: &[Json] = match &json {
+        Json::Array(a) => a.as_slice(),
+        Json::Object(_) => match json.get("services") {
+            Some(Json::Array(a)) => a.as_slice(),
             _ => return Err("brew services list --json: no services array".into()),
         },
         _ => return Err("brew services list --json: unexpected shape".into()),

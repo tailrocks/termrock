@@ -1,6 +1,7 @@
 use std::collections::BTreeSet;
 
 use crate::domain::context::Os;
+use crate::domain::manifest::{Json, json_i64, json_str, json_u64, parse_json};
 use crate::sim::fs::{Fs, NodeKind};
 
 pub const CACHE_SCHEMA: u32 = 3;
@@ -811,72 +812,32 @@ pub struct LogRecord {
 
 impl LogRecord {
     pub fn json(&self) -> String {
-        let esc = |s: &str| {
-            s.replace('\\', "\\\\")
-                .replace('"', "\\\"")
-                .replace('\n', "\\n")
-        };
-        format!(
-            "{{\"v\":1,\"timestamp_ms\":{},\"mode\":\"{}\",\"dry_run\":{},\"path\":\"{}\",\"size\":{},\"outcome\":\"{}\"{}}}",
-            self.timestamp_ms,
-            self.mode.label(),
-            self.dry_run,
-            esc(&self.path),
-            self.size,
-            self.outcome.label(),
-            match &self.error {
-                Some(e) => format!(",\"error\":\"{}\"", esc(e)),
-                None => String::new(),
-            }
-        )
+        let mut line = serde_json::json!({
+            "v": 1,
+            "timestamp_ms": self.timestamp_ms,
+            "mode": self.mode.label(),
+            "dry_run": self.dry_run,
+            "path": self.path,
+            "size": self.size,
+            "outcome": self.outcome.label(),
+        });
+        if let Some(error) = &self.error {
+            line["error"] = Json::String(error.clone());
+        }
+        line.to_string()
     }
-}
 
-impl LogRecord {
     pub fn parse(line: &str) -> Option<Self> {
-        fn raw<'a>(line: &'a str, key: &str) -> Option<&'a str> {
-            let k = format!("\"{key}\":");
-            let rest = &line[line.find(&k)? + k.len()..];
-            if let Some(r) = rest.strip_prefix('"') {
-                let b = r.as_bytes();
-                let mut i = 0;
-                while i < b.len() {
-                    match b[i] {
-                        b'\\' => i += 2,
-                        b'"' => return Some(&r[..i]),
-                        _ => i += 1,
-                    }
-                }
-                None
-            } else {
-                Some(&rest[..rest.find([',', '}']).unwrap_or(rest.len())])
-            }
-        }
-        fn unescape(s: &str) -> String {
-            let mut out = String::with_capacity(s.len());
-            let mut chars = s.chars();
-            while let Some(c) = chars.next() {
-                if c != '\\' {
-                    out.push(c);
-                    continue;
-                }
-                match chars.next() {
-                    Some('n') => out.push('\n'),
-                    Some(other) => out.push(other),
-                    None => {}
-                }
-            }
-            out
-        }
-        if raw(line, "v")? != "1" {
+        let value = parse_json(line).ok()?;
+        if value.get("v")?.as_u64()? != 1 {
             return None;
         }
-        let mode = match raw(line, "mode")? {
+        let mode = match value.get("mode")?.as_str()? {
             "trash" => Mode::Trash,
             "permanent" => Mode::Permanent,
             _ => return None,
         };
-        let outcome = match raw(line, "outcome")? {
+        let outcome = match value.get("outcome")?.as_str()? {
             "removed" => Outcome::Removed,
             "trashed" => Outcome::Trashed,
             "would_remove" => Outcome::WouldRemove,
@@ -884,14 +845,19 @@ impl LogRecord {
             "skipped" => Outcome::Skipped,
             _ => return None,
         };
+        let error = match value.get("error") {
+            None | Some(Json::Null) => None,
+            Some(Json::String(e)) => Some(e.clone()),
+            Some(_) => return None,
+        };
         Some(LogRecord {
-            timestamp_ms: raw(line, "timestamp_ms")?.parse().ok()?,
+            timestamp_ms: value.get("timestamp_ms")?.as_i64()?,
             mode,
-            dry_run: raw(line, "dry_run")? == "true",
-            path: unescape(raw(line, "path")?),
-            size: raw(line, "size")?.parse().ok()?,
+            dry_run: value.get("dry_run")?.as_bool()?,
+            path: value.get("path")?.as_str()?.to_owned(),
+            size: value.get("size")?.as_u64()?,
             outcome,
-            error: raw(line, "error").map(unescape),
+            error,
         })
     }
 }
@@ -1237,7 +1203,9 @@ pub struct SizeCache {
 impl SizeCache {
     pub fn hint(&self, path: &str, mtime: i64, now_secs: i64) -> Option<&CacheEntry> {
         self.entries.iter().find(|e| {
-            e.path == path && e.mtime == mtime && now_secs - e.recorded_secs <= CACHE_TTL_SECS
+            e.path == path
+                && e.mtime == mtime
+                && now_secs.saturating_sub(e.recorded_secs) <= CACHE_TTL_SECS
         })
     }
 
@@ -1284,27 +1252,34 @@ impl SizeCache {
     }
 
     pub fn serialize(&self) -> String {
-        let items: Vec<String> = self
+        let entries: Vec<Json> = self
             .entries
             .iter()
             .map(|e| {
-                format!(
-                    "{{\"path\":\"{}\",\"allocated\":{},\"mtime\":{},\"at\":{}}}",
-                    e.path.replace('"', "\\\""),
-                    e.allocated,
-                    e.mtime,
-                    e.recorded_secs
-                )
+                serde_json::json!({
+                    "path": e.path,
+                    "allocated": e.allocated,
+                    "mtime": e.mtime,
+                    "at": e.recorded_secs,
+                })
             })
             .collect();
-        format!("{{\"v\":{CACHE_SCHEMA},\"entries\":[{}]}}", items.join(","))
+        serde_json::json!({ "v": CACHE_SCHEMA, "entries": entries }).to_string()
+    }
+
+    fn parse_entry(e: &Json) -> Result<CacheEntry, String> {
+        Ok(CacheEntry {
+            path: json_str(e, "path")?.to_owned(),
+            allocated: json_u64(e, "allocated")?,
+            mtime: json_i64(e, "mtime")?,
+            recorded_secs: json_i64(e, "at")?,
+        })
     }
 
     pub fn load(text: Option<&str>, now_secs: i64) -> Self {
         let Some(text) = text else {
             return Self::default();
         };
-        use crate::domain::manifest::{Json, parse_json};
         let json = match parse_json(text) {
             Ok(j) => j,
             Err(e) => {
@@ -1314,49 +1289,44 @@ impl SizeCache {
                 };
             }
         };
-        match json.get("v") {
-            Some(Json::Num(n)) if *n as u32 == CACHE_SCHEMA => {}
-            other => {
-                return Self {
-                    load_error: Some(format!(
-                        "sizes.json schema {} ignored",
-                        match other {
-                            Some(Json::Num(n)) => (*n as i64).to_string(),
-                            _ => "missing".into(),
-                        }
-                    )),
-                    ..Default::default()
-                };
-            }
+        if json.get("v").and_then(Json::as_u64) != Some(u64::from(CACHE_SCHEMA)) {
+            return Self {
+                load_error: Some(format!(
+                    "sizes.json schema {} ignored",
+                    json.get("v")
+                        .map_or_else(|| "missing".into(), |v| v.to_string())
+                )),
+                ..Default::default()
+            };
         }
         let mut c = Self::default();
-        if let Some(Json::Arr(es)) = json.get("entries") {
-            for e in es {
-                let (Some(path), Some(Json::Num(a)), Some(Json::Num(m)), Some(Json::Num(at))) = (
-                    e.get("path").and_then(Json::as_str),
-                    e.get("allocated"),
-                    e.get("mtime"),
-                    e.get("at"),
-                ) else {
-                    continue;
-                };
-                if now_secs - (*at as i64) > CACHE_TTL_SECS {
-                    continue;
+        match json.get("entries") {
+            None => {}
+            Some(Json::Array(es)) => {
+                for (i, e) in es.iter().enumerate() {
+                    match Self::parse_entry(e) {
+                        Ok(entry) => {
+                            if now_secs.saturating_sub(entry.recorded_secs) > CACHE_TTL_SECS {
+                                continue;
+                            }
+                            c.entries.push(entry);
+                        }
+                        Err(why) => {
+                            if c.load_error.is_none() {
+                                c.load_error = Some(format!("sizes.json entry {i} invalid: {why}"));
+                            }
+                        }
+                    }
                 }
-                c.entries.push(CacheEntry {
-                    path: path.into(),
-                    allocated: *a as u64,
-                    mtime: *m as i64,
-                    recorded_secs: *at as i64,
-                });
             }
+            Some(_) => c.load_error = Some("sizes.json entries is not an array".into()),
         }
         c
     }
 
     pub fn merge(&mut self, other: &SizeCache, now_secs: i64) {
         for o in &other.entries {
-            if now_secs - o.recorded_secs > CACHE_TTL_SECS {
+            if now_secs.saturating_sub(o.recorded_secs) > CACHE_TTL_SECS {
                 continue;
             }
             match self.entries.iter_mut().find(|e| e.path == o.path) {
@@ -1366,7 +1336,107 @@ impl SizeCache {
             }
         }
         self.entries
-            .retain(|e| now_secs - e.recorded_secs <= CACHE_TTL_SECS);
+            .retain(|e| now_secs.saturating_sub(e.recorded_secs) <= CACHE_TTL_SECS);
         self.entries.sort_by(|a, b| a.path.cmp(&b.path));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const NOW: i64 = 1_800_000_000;
+
+    fn entry(path: &str, allocated: u64, mtime: i64, at: i64) -> CacheEntry {
+        CacheEntry {
+            path: path.into(),
+            allocated,
+            mtime,
+            recorded_secs: at,
+        }
+    }
+
+    #[test]
+    fn holla_json_strings_roundtrip_all_escape_classes() {
+        let cache = SizeCache {
+            entries: vec![entry("/w/a\"b\\nc\nline\ttab\u{1}ctl 🚀", 4096, 10, NOW)],
+            ..Default::default()
+        };
+        let loaded = SizeCache::load(Some(&cache.serialize()), NOW);
+        assert_eq!(loaded.load_error, None);
+        assert_eq!(loaded.entries, cache.entries);
+    }
+
+    #[test]
+    fn holla_json_integer_fields_are_exact_and_checked() {
+        let exact = entry("/exact", u64::MAX, 9_007_199_254_740_993, NOW);
+        let cache = SizeCache {
+            entries: vec![exact.clone()],
+            ..Default::default()
+        };
+        let loaded = SizeCache::load(Some(&cache.serialize()), NOW);
+        assert_eq!(loaded.entries, vec![exact]);
+
+        let text = format!(
+            r#"{{"v":{CACHE_SCHEMA},"entries":[{{"path":"/frac","allocated":1.5,"mtime":1,"at":{NOW}}},{{"path":"/exp","allocated":1e3,"mtime":1,"at":{NOW}}},{{"path":"/neg","allocated":-1,"mtime":1,"at":{NOW}}}]}}"#
+        );
+        let rejected = SizeCache::load(Some(&text), NOW);
+        assert!(rejected.entries.is_empty());
+        assert!(rejected.load_error.is_some());
+    }
+
+    #[test]
+    fn holla_json_invalid_entries_keep_valid_siblings_with_diagnostic() {
+        let text = format!(
+            r#"{{"v":{CACHE_SCHEMA},"entries":[{{"path":"/a","allocated":1,"mtime":1,"at":{NOW}}},{{"path":"/bad","allocated":"x","mtime":1,"at":{NOW}}},{{"path":"/c","allocated":3,"mtime":3,"at":{NOW}}}]}}"#
+        );
+        let loaded = SizeCache::load(Some(&text), NOW);
+        let paths: Vec<&str> = loaded.entries.iter().map(|e| e.path.as_str()).collect();
+        assert_eq!(paths, ["/a", "/c"]);
+        assert!(
+            loaded
+                .load_error
+                .as_deref()
+                .is_some_and(|e| e.contains("entry 1"))
+        );
+    }
+
+    #[test]
+    fn holla_json_extreme_timestamps_do_not_overflow() {
+        let text = format!(
+            r#"{{"v":{CACHE_SCHEMA},"entries":[{{"path":"/old","allocated":1,"mtime":1,"at":{min}}},{{"path":"/future","allocated":1,"mtime":1,"at":{max}}}]}}"#,
+            min = i64::MIN,
+            max = i64::MAX
+        );
+        let mut loaded = SizeCache::load(Some(&text), NOW);
+        let paths: Vec<&str> = loaded.entries.iter().map(|e| e.path.as_str()).collect();
+        assert_eq!(paths, ["/future"]);
+        assert!(loaded.hint("/future", 1, NOW).is_some());
+        let other = SizeCache {
+            entries: vec![entry("/old", 1, 1, i64::MIN)],
+            ..Default::default()
+        };
+        loaded.merge(&other, NOW);
+        assert_eq!(loaded.entries.len(), 1);
+    }
+
+    #[test]
+    fn holla_ops_log_escaped_field_names_are_data() {
+        let record = LogRecord {
+            timestamp_ms: 42,
+            mode: Mode::Trash,
+            dry_run: false,
+            path: "/x/\",\"outcome\":\"failed\",\"size\":7,\"y".into(),
+            size: 9,
+            outcome: Outcome::Removed,
+            error: Some("\"mode\":\"permanent\"\nboom".into()),
+        };
+        assert_eq!(LogRecord::parse(&record.json()), Some(record));
+    }
+
+    #[test]
+    fn holla_ops_log_rejects_non_boolean_dry_run() {
+        let line = r#"{"v":1,"timestamp_ms":42,"mode":"trash","dry_run":"true","path":"/x","size":9,"outcome":"removed"}"#;
+        assert_eq!(LogRecord::parse(line), None);
     }
 }
