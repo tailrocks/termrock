@@ -518,6 +518,10 @@ fn form_hidden_layer_paste_has_one_focused_owner() {
 
     let layer: &mut L = &mut rig.form;
     assert!(layer.on_paste("legacy").consumed());
+    assert!(
+        rig.form.events.is_empty(),
+        "focusless paste emits no change"
+    );
     assert_eq!(
         rig.input("secret").text(),
         "hunter2",
