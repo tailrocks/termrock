@@ -378,16 +378,16 @@ fn structure_tabs_follow_the_open_object_including_an_empty_trigger_list() {
         "6",
         &[
             "DDL",
-            "CREATE TABLE public.customers (",
-            "organization_id uuid NOT NULL",
-            "CONSTRAINT customers_organization_id_fkey FOREIGN KEY (organization_id) …",
-            "CREATE INDEX customers_org_idx ON public.customers USING btree (organization…",
+            "CREATE TABLE \"public\".\"customers\" (",
+            "\"organization_id\" uuid NOT NULL",
+            "CONSTRAINT \"customers_organization_id_fkey\" FOREIGN KEY",
+            "CREATE INDEX \"customers_org_idx\" ON \"public\".\"customers\"",
         ],
         &[
             ORG_TRIGGER,
             CUSTOMER_TRIGGER,
             NO_TRIGGERS,
-            "CREATE TABLE public.products",
+            "CREATE TABLE \"public\".\"products\"",
             CATALOG,
         ],
     );
@@ -409,7 +409,7 @@ fn structure_tabs_follow_the_open_object_including_an_empty_trigger_list() {
             "organization_id",
             "full_name",
             CUSTOMER_TRIGGER,
-            "CREATE TABLE public.customers",
+            "CREATE TABLE \"public\".\"customers\"",
         ],
     );
     section(
@@ -465,12 +465,12 @@ fn structure_tabs_follow_the_open_object_including_an_empty_trigger_list() {
         "6",
         &[
             "DDL",
-            "CREATE TABLE public.products (",
-            "sku text NOT NULL",
-            "unit_price numeric(12,2) NOT NULL",
+            "CREATE TABLE \"public\".\"products\" (",
+            "\"sku\" text NOT NULL",
+            "\"unit_price\" numeric(12,2) NOT NULL",
         ],
         &[
-            "CREATE TABLE public.customers",
+            "CREATE TABLE \"public\".\"customers\"",
             ORG_TRIGGER,
             CUSTOMER_TRIGGER,
             NO_TRIGGERS,
