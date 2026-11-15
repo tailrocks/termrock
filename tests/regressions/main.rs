@@ -15,6 +15,7 @@ mod nav_list_state;
 mod pane_rig;
 mod pane_tree_minima;
 mod pane_tree_pointer;
+mod picker_rows;
 mod scroll_view_navigation;
 mod smoke;
 mod tabs_overflow_mutation;
