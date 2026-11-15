@@ -5,8 +5,6 @@
 //!
 //! `finish_commit` always applies `Ok(())`. This leaf does not invent a failure.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{App, Launch, Point, TABLEPRO, find_all, row_text, text, try_launch};
@@ -57,7 +55,7 @@ fn see(screen: &TerminalSnapshot, present: &[&str], absent: &[&str]) {
 /// columns the header omits the size chip, and the narrow nudge waits on the
 /// terminal size instead.
 fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.settle_flash();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");

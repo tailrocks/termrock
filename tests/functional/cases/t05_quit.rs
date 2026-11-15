@@ -202,7 +202,7 @@ fn assert_cancel_focused(screen: &TerminalSnapshot) {
 /// also leaves the hidden terminal cursor on the redraw, instead of on
 /// whichever footer cell the previous diff wrote last.
 fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.settle_flash();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");

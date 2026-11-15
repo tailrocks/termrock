@@ -62,7 +62,7 @@ fn header_token(screen: &TerminalSnapshot, token: &str) {
 /// columns the header omits the size chip, and the narrow nudge waits on the
 /// terminal size instead.
 fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.settle_flash();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");
@@ -220,6 +220,7 @@ fn dismiss(app: &App) {
 fn deny_key(app: &App, key: &str) -> TerminalSnapshot {
     // The deny status stays for five seconds. A repeat of the same sentence
     // does not change the screen, so wait until the previous one expires.
+    app.expire_status();
     app.wait_screen("deny status clear", |screen| {
         !text(screen).contains("Cannot execute")
     });
@@ -262,8 +263,9 @@ fn set_mode(app: &App, from: usize, to: usize, label: &str) {
 }
 
 fn quiet(app: &App) {
-    // Shell status expires on the wall clock. The checkpoint has to be taken
+    // Shell status expires after its lifetime. The checkpoint has to be taken
     // after that, or the footer changes under the open dialog.
+    app.expire_status();
     app.wait_screen("footer status settled", |screen| {
         let visible = text(screen);
         !visible.contains("Connected to ")
@@ -864,8 +866,9 @@ fn classify_shows_the_safety_decision() {
     );
 
     // A successful read does not replace the shell status, so the previous
-    // deny sentence stays until its wall-clock TTL. Wait it out before
+    // deny sentence stays until its TTL. Wait it out before
     // asserting the read itself is not a denial.
+    app.expire_status();
     app.wait_screen("read-only deny expired", |screen| {
         !text(screen).contains("Cannot execute")
     });

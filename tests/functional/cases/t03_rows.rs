@@ -147,6 +147,7 @@ fn focus_statement(app: &App, needle: &str) {
     click_match(app, needle, |screen, _x, y| {
         row_text(screen, u32::from(y)).contains(needle)
     });
+    app.expire_status();
     app.wait_text("Ctrl+Space");
 }
 
@@ -205,7 +206,7 @@ fn count_line(screen: &TerminalSnapshot, count: &str) -> String {
 /// resize does not force a new frame, so the shot nudges the width and comes
 /// back. Below about 100 columns the header omits the size chip.
 fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.settle_flash();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");

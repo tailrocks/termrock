@@ -104,7 +104,7 @@ fn click_connect(app: &App) {
 /// columns the header omits the size chip, and the narrow nudge waits on the
 /// terminal size instead.
 fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.settle_flash();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");
@@ -408,6 +408,7 @@ fn tablepro_editors_route_opens_orders_and_returns_to_query() {
         text(&opened)
     );
     assert_eq!((opened.cols(), opened.rows()), (120, 40));
+    app.expire_status();
     app.wait_absent(CONNECTED);
     flash_settle(&app);
     app.visual(ROUTE_ID);
@@ -611,6 +612,7 @@ fn tablepro_editors_types_accept_and_reject_each_family() {
     assert!(!text(&settled).contains(NUMBER_BAD));
     assert!(!text(&settled).contains(WHEN_BAD));
     assert!(!text(&settled).contains(JSON_BAD));
+    app.expire_status();
     app.wait_absent(CONNECTED);
     app.wait_absent(READ_ONLY);
     let wide = app.screen();
