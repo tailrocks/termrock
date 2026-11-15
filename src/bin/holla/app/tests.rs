@@ -795,6 +795,51 @@ fn reopening_completed_activity_does_not_restart() {
 }
 
 #[test]
+fn activities_picker_reopens_a_closed_member_with_its_retained_output() {
+    let mut app = app();
+    let ids = start_batch(
+        &mut app,
+        BatchMode::Sequential,
+        vec![
+            member(
+                "first",
+                Script::ending(
+                    vec![crate::domain::activity::line(1, "retained-output-line")],
+                    3,
+                    0,
+                ),
+            ),
+            member("second", Script::ending(vec![], 30, 0)),
+        ],
+    );
+    app.open_activity_tab(&ids[0], true);
+    tick_until(&mut app, "first finishes", |app| {
+        state_of(app, &ids[0]).finished()
+    });
+    close_tab_of(&mut app, &ids[0]);
+    let tabs_before = app.tabs.len();
+
+    app.handle_input(key(KeyCode::Char('g'), KeyModifiers::CONTROL));
+    let picker = drawn_text(&mut app);
+    assert!(picker.contains("Activities"), "{picker}");
+    app.handle_input(key(KeyCode::Enter, KeyModifiers::NONE));
+
+    assert_eq!(
+        activity_tabs(&app, &ids[0]),
+        1,
+        "the picker reopened one tab"
+    );
+    assert_eq!(app.tabs.len(), tabs_before + 1);
+    assert_eq!(
+        app.tabs[app.active()].kind,
+        TabKind::Activity(ids[0].clone())
+    );
+    let shown = drawn_text(&mut app);
+    assert!(shown.contains("retained-output-line"), "{shown}");
+    assert_eq!(state_of(&app, &ids[0]), ActivityState::Succeeded);
+}
+
+#[test]
 fn reopening_completed_activity_does_not_reapply_its_effect() {
     let mut app = app();
     let ids = start_batch(
