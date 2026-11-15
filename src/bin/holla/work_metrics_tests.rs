@@ -458,8 +458,8 @@ fn work_contract_holla_background_updates_keep_projection() {
         &[
             (Metric::ProjectionRebuilds, 1),
             (Metric::RankRowsVisited, items),
-            (Metric::IntrinsicWidthCalls, 521),
-            (Metric::TextBytesMeasured, 2_332),
+            (Metric::IntrinsicWidthCalls, 508),
+            (Metric::TextBytesMeasured, 2_319),
             (Metric::FitVisits, 20),
         ],
     );
@@ -475,8 +475,8 @@ fn work_contract_holla_background_updates_keep_projection() {
         "settled tick after the catch-up",
         &[
             scheduling,
-            (Metric::IntrinsicWidthCalls, 521),
-            (Metric::TextBytesMeasured, 2_332),
+            (Metric::IntrinsicWidthCalls, 495),
+            (Metric::TextBytesMeasured, 2_306),
             (Metric::FitVisits, 20),
         ],
     );
@@ -494,8 +494,8 @@ fn work_contract_holla_background_updates_keep_projection() {
             (Metric::ProjectionRebuilds, 1),
             (Metric::RankRowsVisited, items),
             scheduling,
-            (Metric::IntrinsicWidthCalls, 521),
-            (Metric::TextBytesMeasured, 2_332),
+            (Metric::IntrinsicWidthCalls, 508),
+            (Metric::TextBytesMeasured, 2_319),
             (Metric::FitVisits, 20),
         ],
     );
@@ -511,8 +511,8 @@ fn work_contract_holla_background_updates_keep_projection() {
         "settled tick after the rebuild",
         &[
             scheduling,
-            (Metric::IntrinsicWidthCalls, 521),
-            (Metric::TextBytesMeasured, 2_332),
+            (Metric::IntrinsicWidthCalls, 495),
+            (Metric::TextBytesMeasured, 2_306),
             (Metric::FitVisits, 20),
         ],
     );
