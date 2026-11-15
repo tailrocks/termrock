@@ -1,4 +1,7 @@
-use crate::db::{Catalog, ColType, Table, Value};
+use junie_tui::core::id::ItemKey;
+
+use crate::db::{ColType, Table, Value};
+use crate::store::Source;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TokKind {
@@ -901,6 +904,10 @@ pub struct ResultSet {
     pub duration_ms: u32,
 
     pub editable: bool,
+    /// The store key of each row, in output order. A count has no rows to key.
+    pub row_keys: Option<Vec<ItemKey>>,
+    /// How many saves the source table had accepted when the rows were read.
+    pub source_revision: Option<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -970,8 +977,9 @@ pub fn cmp_values(a: &Value, b: &Value) -> std::cmp::Ordering {
     }
 }
 
-pub fn run_select(cat: &Catalog, sel: &Select) -> Result<ResultSet, ExecError> {
-    let table = cat
+pub fn run_select(src: Source, sel: &Select) -> Result<ResultSet, ExecError> {
+    let table = src
+        .catalog
         .find(sel.schema.as_deref(), &sel.table)
         .ok_or_else(|| ExecError {
             message: format!(
@@ -1049,25 +1057,29 @@ pub fn run_select(cat: &Catalog, sel: &Select) -> Result<ResultSet, ExecError> {
         }
         idx
     };
-    let scan = table.row_count.min(2_000);
-    let mut all = crate::db::rows(table, 0, scan);
-    all.retain(|r| sel.predicates.iter().all(|p| matches(p, table, r)));
+    let table_id = src.table_id(table);
+    let mut scan = src.store.scan(&table_id, table);
+    let source_revision = scan.revision;
+    let mut all = std::mem::take(&mut scan.rows);
+    all.retain(|(_, r)| sel.predicates.iter().all(|p| matches(p, table, r)));
     if let Some((c, asc)) = &sel.order {
         let ci = table
             .columns
             .iter()
             .position(|tc| tc.name.eq_ignore_ascii_case(c))
             .unwrap();
-        all.sort_by(|a, b| {
+        all.sort_by(|(_, a), (_, b)| {
             let o = cmp_values(&a[ci], &b[ci]);
             if *asc { o } else { o.reverse() }
         });
     }
 
+    let live_rows = src.store.row_count(&table_id, table);
     let total = if sel.predicates.is_empty() {
-        table.row_count
+        live_rows
     } else {
-        ((all.len() as f64 / scan as f64) * table.row_count as f64).round() as usize
+        let matched: Vec<ItemKey> = all.iter().map(|(k, _)| *k).collect();
+        scan.estimate_total(&matched)
     };
     if sel.count_only {
         return Ok(ResultSet {
@@ -1075,15 +1087,18 @@ pub fn run_select(cat: &Catalog, sel: &Select) -> Result<ResultSet, ExecError> {
             rows: vec![vec![Value::Int(total as i64)]],
             total: 1,
             source: None,
-            duration_ms: 12 + (table.row_count / 50_000) as u32,
+            duration_ms: 12 + (live_rows / 50_000) as u32,
             editable: false,
+            row_keys: None,
+            source_revision: Some(source_revision),
         });
     }
     let cap = sel.limit.unwrap_or(ROW_CAP).min(ROW_CAP);
     all.truncate(cap);
+    let row_keys: Vec<ItemKey> = all.iter().map(|(k, _)| *k).collect();
     let rows: Vec<Vec<Value>> = all
         .into_iter()
-        .map(|r| proj.iter().map(|&i| r[i].clone()).collect())
+        .map(|(_, r)| proj.iter().map(|&i| r[i].clone()).collect())
         .collect();
     let columns = proj
         .iter()
@@ -1102,6 +1117,8 @@ pub fn run_select(cat: &Catalog, sel: &Select) -> Result<ResultSet, ExecError> {
         source: Some(table.qualified()),
         duration_ms: 3 + (total.min(5_000_000) / 20_000) as u32 + sel.predicates.len() as u32 * 2,
         editable,
+        row_keys: Some(row_keys),
+        source_revision: Some(source_revision),
     })
 }
 
@@ -1118,15 +1135,17 @@ pub struct PlanNode {
     pub children: Vec<PlanNode>,
 }
 
-pub fn explain(cat: &Catalog, sel: &Select, analyze: bool) -> Result<PlanNode, ExecError> {
-    let table = cat
+pub fn explain(src: Source, sel: &Select, analyze: bool) -> Result<PlanNode, ExecError> {
+    let table = src
+        .catalog
         .find(sel.schema.as_deref(), &sel.table)
         .ok_or_else(|| ExecError {
             message: format!("relation \"{}\" does not exist", sel.table),
             detail: None,
             at: None,
         })?;
-    let n = table.row_count as f64;
+    let live_rows = src.row_count(table);
+    let n = live_rows as f64;
     let indexed_pred = sel.predicates.iter().find(|p| {
         table.indexes.iter().any(|i| {
             i.columns
@@ -1210,7 +1229,7 @@ pub fn explain(cat: &Catalog, sel: &Select, analyze: bool) -> Result<PlanNode, E
             warning: expensive.then(|| {
                 format!(
                     "sequential scan over {} rows; consider an index on {}",
-                    fmt_int(table.row_count),
+                    fmt_int(live_rows),
                     sel.predicates
                         .first()
                         .map(|p| p.column.as_str())

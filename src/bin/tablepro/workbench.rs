@@ -21,6 +21,7 @@ use junie_tui::widgets::tree::{TreeAction, TreeNode, TreeView};
 use crate::app::{Cx, TableChange};
 use crate::db::{Catalog, Connection, ObjectKind};
 use crate::model::History;
+use crate::store::{SessionStore, Source};
 use crate::tabs::{HistoryTab, QueryTab, TableTab};
 
 const ID: WidgetId = WidgetId::of("workbench");
@@ -85,6 +86,9 @@ pub struct Workbench {
     /// The configured connection this session was opened from.
     pub connection_key: Option<junie_tui::core::id::ItemKey>,
     pub catalog: Catalog,
+    /// The rows of this connection session. Every tab reads and saves through
+    /// it, and it ends with the connection.
+    pub store: SessionStore,
     pub schema: String,
     pub explorer: TreeView,
     pub explorer_filter: TextInput,
@@ -121,12 +125,22 @@ fn kind_glyph(k: ObjectKind) -> &'static str {
     }
 }
 
+fn row_count_meta(src: Source, table: &crate::db::Table) -> String {
+    let rows = src.row_count(table);
+    if rows > 0 {
+        crate::sql::fmt_rows(rows)
+    } else {
+        String::new()
+    }
+}
+
 impl Workbench {
-    pub fn new(connection: Connection, catalog: Catalog) -> Self {
+    pub fn new(connection: Connection, catalog: Catalog, store: SessionStore) -> Self {
         let mut wb = Self {
             connection,
             connection_key: None,
             catalog,
+            store,
             schema: "public".into(),
             explorer: TreeView::new(EXPLORER, vec![]),
             explorer_filter: TextInput::new(EXPLORER.sub("filter"), "")
@@ -204,11 +218,7 @@ impl Workbench {
             } else {
                 objs.iter()
                     .map(|t| {
-                        let meta = if t.row_count > 0 {
-                            crate::sql::fmt_rows(t.row_count)
-                        } else {
-                            String::new()
-                        };
+                        let meta = self.row_count_meta(t);
                         if kind == ObjectKind::Table || kind == ObjectKind::View {
                             TreeNode::lazy(&t.name).glyph(kind_glyph(kind)).meta(&meta)
                         } else {
@@ -224,6 +234,80 @@ impl Workbench {
             sections.push(section);
         }
         sections
+    }
+
+    fn row_count_meta(&self, table: &crate::db::Table) -> String {
+        row_count_meta(
+            Source {
+                catalog: &self.catalog,
+                store: &self.store,
+            },
+            table,
+        )
+    }
+
+    /// Puts the live row counts on the explorer's loaded tables, leaving its
+    /// expansion and cursor alone.
+    fn refresh_explorer_counts(&mut self) {
+        let src = Source {
+            catalog: &self.catalog,
+            store: &self.store,
+        };
+        if let Some(db) = self.explorer.nodes.first_mut() {
+            for (schema, schema_node) in src.catalog.schemas.iter().zip(&mut db.children) {
+                for node in schema_node
+                    .children
+                    .iter_mut()
+                    .flat_map(|section| section.children.iter_mut())
+                {
+                    if let Some(table) = src.catalog.find(Some(schema), &node.label)
+                        && matches!(table.kind, ObjectKind::Table | ObjectKind::View)
+                    {
+                        node.meta = Some(row_count_meta(src, table));
+                    }
+                }
+            }
+        }
+        self.explorer.flatten();
+    }
+
+    /// Brings every other view of a saved table up to date. A view with no
+    /// draft and no open editor reads the new rows. Any other keeps its draft
+    /// and editor exactly as they are and is marked, so its own save fails
+    /// as a conflict instead of overwriting the saved rows. Query results are
+    /// snapshots and are only marked. Returns how many table views were marked.
+    pub fn table_saved(&mut self, origin: ItemKey, schema: &str, name: &str) -> usize {
+        let Some(table) = self.catalog.find(Some(schema), name) else {
+            return 0;
+        };
+        let src = Source {
+            catalog: &self.catalog,
+            store: &self.store,
+        };
+        let id = src.table_id(table);
+        let revision = self.store.revision(&id);
+        let mut marked = 0;
+        for tab in &mut self.tabs {
+            match tab {
+                WorkTab::Table(t) if t.key != origin && t.schema == schema && t.name == name => {
+                    let idle = t.dirty_count() == 0 && !t.is_editing() && !t.saving();
+                    let view = t.view().clone();
+                    let refreshed = idle
+                        && t.prepare_load(src, &view)
+                            .ok()
+                            .is_some_and(|loaded| t.install_load(loaded, view).is_ok());
+                    if !refreshed {
+                        t.mark_source_changed();
+                        marked += 1;
+                    }
+                }
+                WorkTab::Query(q) => q.table_saved(&id, revision),
+                _ => {}
+            }
+        }
+        self.refresh_explorer_counts();
+        self.sync_strip();
+        marked
     }
 
     fn table_children(&self, t: &crate::db::Table) -> Vec<TreeNode> {
@@ -414,6 +498,9 @@ impl Workbench {
                     WorkTab::Table(tt) => {
                         it.prefix = Some("T".into());
                         it.dirty = tt.dirty_count() > 0;
+                        if tt.source_changed() {
+                            it.suffix = Some("source changed".into());
+                        }
                     }
                     WorkTab::Query(q) => {
                         it.prefix = Some("≡".into());
@@ -472,7 +559,10 @@ impl Workbench {
         let tab = TableTab::new(
             key,
             ID.sub("tab").child(n + 1000),
-            &self.catalog,
+            Source {
+                catalog: &self.catalog,
+                store: &self.store,
+            },
             &table,
             preview,
         );
@@ -569,15 +659,41 @@ impl Workbench {
         (ItemKey::num(n), n as usize)
     }
 
+    /// A second table tab on the table, standing in for another view of the
+    /// same rows. The explorer opens one tab per table, so only tests get here.
+    #[cfg(test)]
+    pub fn open_second_view(&mut self, schema: &str, name: &str) -> Option<ItemKey> {
+        let table = self.catalog.find(Some(schema), name)?.clone();
+        let (key, n) = self.alloc_tab_key();
+        let tab = TableTab::new(
+            key,
+            ID.sub("tab").child(n + 1000),
+            Source {
+                catalog: &self.catalog,
+                store: &self.store,
+            },
+            &table,
+            false,
+        );
+        self.tabs.push(WorkTab::Table(tab));
+        self.sync_strip();
+        Some(key)
+    }
+
     pub fn tab_mut(&mut self, key: ItemKey) -> Option<&mut WorkTab> {
         self.tabs.iter_mut().find(|t| t.key() == key)
     }
 
-    /// The table tab `key` names, with the catalog its rows are read from.
-    pub fn table_mut(&mut self, key: ItemKey) -> Option<(&mut TableTab, &Catalog)> {
+    /// The table tab `key` names, with the catalog and store its rows are read
+    /// from.
+    pub fn table_mut(&mut self, key: ItemKey) -> Option<(&mut TableTab, Source<'_>)> {
+        let src = Source {
+            catalog: &self.catalog,
+            store: &self.store,
+        };
         let tab = self.tabs.iter_mut().find(|t| t.key() == key)?;
         match tab {
-            WorkTab::Table(t) => Some((t, &self.catalog)),
+            WorkTab::Table(t) => Some((t, src)),
             _ => None,
         }
     }
@@ -821,7 +937,14 @@ impl Workbench {
         let db = self.catalog.database.clone();
         match self.tabs.get_mut(self.active) {
             Some(WorkTab::Table(t)) => Self::table_key(t, key, f, cx, cat, &conn, &db, history),
-            Some(WorkTab::Query(q)) => q.on_key(key, cx, cat),
+            Some(WorkTab::Query(q)) => q.on_key(
+                key,
+                cx,
+                Source {
+                    catalog: cat,
+                    store: &self.store,
+                },
+            ),
             Some(WorkTab::History(h)) => Self::history_key(h, key, f, cx, history, &conn),
             None => Outcome::Ignored,
         }

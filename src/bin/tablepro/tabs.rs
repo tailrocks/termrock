@@ -41,6 +41,7 @@ use crate::app::Cx;
 use crate::db::{Catalog, ColType, Table, Value};
 use crate::model::{self, History, HistoryEntry, HistorySource};
 use crate::sql::{self, PlanNode, Statement};
+use crate::store::{Source, TableId};
 
 const ALT_D: junie_tui::core::event::Key = junie_tui::core::event::Key {
     code: KeyCode::Char('d'),
@@ -382,7 +383,9 @@ impl Default for TableViewState {
 /// Rows read for one view, not yet shown. Preparing one touches nothing.
 pub struct LoadedTable {
     rows: GridRows,
+    keys: Vec<ItemKey>,
     total: usize,
+    table_revision: u64,
 }
 
 pub struct TableTab {
@@ -405,10 +408,15 @@ pub struct TableTab {
     pub loading: u32,
     pub columns: Vec<(String, ColType)>,
     pub total: usize,
+    /// How many saves the store had accepted for this table when the shown rows
+    /// were read. It is the table's revision, not the grid's.
+    table_revision: u64,
+    /// Another view saved this table after these rows were read.
+    source_changed: bool,
 }
 
 impl TableTab {
-    pub fn new(key: ItemKey, id: WidgetId, cat: &Catalog, table: &Table, preview: bool) -> Self {
+    pub fn new(key: ItemKey, id: WidgetId, src: Source, table: &Table, preview: bool) -> Self {
         let columns: Vec<(String, ColType)> = table
             .columns
             .iter()
@@ -461,10 +469,12 @@ impl TableTab {
             ddl: ScrollPanel::new(id.sub("ddl"), vec![]),
             loading: 3,
             columns,
-            total: table.row_count,
+            total: src.row_count(table),
+            table_revision: 0,
+            source_changed: false,
         };
         t.rebuild_structure(table);
-        t.load_first(cat);
+        t.load_first(src);
         t
     }
 
@@ -515,6 +525,35 @@ impl TableTab {
         self.view_revision
     }
 
+    /// The store revision of the table when the shown rows were read.
+    pub fn table_revision(&self) -> u64 {
+        self.table_revision
+    }
+
+    /// Whether another view saved this table after these rows were read. The
+    /// rows and any draft stay as they are until the table is reloaded.
+    pub fn source_changed(&self) -> bool {
+        self.source_changed
+    }
+
+    pub fn mark_source_changed(&mut self) {
+        self.source_changed = true;
+    }
+
+    /// Records this tab's own accepted save. The rows are the saved ones, so
+    /// the table revision they were read at is the store's now.
+    pub fn saved(&mut self, revision: u64, live_rows: usize, inserted: usize, deleted: usize) {
+        self.table_revision = revision;
+        self.source_changed = false;
+        if self.view.filters.iter().any(|f| f.enabled) {
+            self.total = self.total.saturating_add(inserted).saturating_sub(deleted);
+            self.grid.total = RowTotal::Estimated(self.total);
+        } else {
+            self.total = live_rows;
+            self.grid.total = RowTotal::Exact(live_rows);
+        }
+    }
+
     /// Ends the preview state for good, so the tab is no longer replaced by the
     /// next preview.
     pub fn promote(&mut self) {
@@ -525,10 +564,10 @@ impl TableTab {
     /// query leaves the rows, draft and controls exactly as they were.
     pub fn prepare_load(
         &self,
-        cat: &Catalog,
+        src: Source,
         view: &TableViewState,
     ) -> Result<LoadedTable, sql::ExecError> {
-        let rs = sql::run_select(cat, &self.select(view))?;
+        let rs = sql::run_select(src, &self.select(view))?;
         let rows: Vec<Vec<CellValue>> = rs
             .rows
             .iter()
@@ -545,7 +584,13 @@ impl TableTab {
                 total,
                 more: rs.total > sql::ROW_CAP,
             },
+            keys: rs
+                .row_keys
+                .expect("a SELECT of every column returns its row keys"),
             total: rs.total,
+            table_revision: rs
+                .source_revision
+                .expect("a SELECT of a table returns its revision"),
         })
     }
 
@@ -561,8 +606,10 @@ impl TableTab {
             .view_revision
             .checked_add(1)
             .expect("table view revisions exhausted");
-        self.grid.try_set_rows(loaded.rows)?;
+        self.grid.try_set_rows_keyed(loaded.rows, loaded.keys)?;
         self.total = loaded.total;
+        self.table_revision = loaded.table_revision;
+        self.source_changed = false;
         self.grid.sort = view.sort;
         self.grid.filtered_cols = view
             .filters
@@ -579,9 +626,9 @@ impl TableTab {
 
     /// The first load of a new tab. With no earlier rows to keep, a failed query
     /// shows an empty error state.
-    fn load_first(&mut self, cat: &Catalog) {
+    fn load_first(&mut self, src: Source) {
         let view = TableViewState::default();
-        match self.prepare_load(cat, &view) {
+        match self.prepare_load(src, &view) {
             Ok(loaded) => self
                 .install_load(loaded, view)
                 .expect("a new table tab is never being saved"),
@@ -1023,6 +1070,10 @@ pub struct ResultSet {
     pub anchor: Range<usize>,
     pub duration_ms: u32,
     pub body: ResultBody,
+    /// The table and revision the rows were read from. The rows stay as they
+    /// were read; a later save only marks them.
+    pub source: Option<(TableId, u64)>,
+    pub source_changed: bool,
 }
 
 pub struct Running {
@@ -1175,6 +1226,8 @@ impl QueryTab {
             self.editor.set_running(None);
             let (_, range) = r.statements[r.current].clone();
             self.results.push(ResultSet {
+                source: None,
+                source_changed: false,
                 label: "Cancelled".into(),
                 pinned: false,
                 anchor: range,
@@ -1188,7 +1241,7 @@ impl QueryTab {
         false
     }
 
-    pub fn tick(&mut self, cat: &Catalog, connection: &str, database: &str) -> Vec<HistoryEntry> {
+    pub fn tick(&mut self, src: Source, connection: &str, database: &str) -> Vec<HistoryEntry> {
         let mut out = vec![];
         let Some(r) = self.running.as_mut() else {
             return out;
@@ -1201,7 +1254,7 @@ impl QueryTab {
         let (sql_text, range) = r.statements[r.current].clone();
         let explain = r.explain;
         let (result, entry) = execute(
-            cat,
+            src,
             &sql_text,
             range.clone(),
             explain,
@@ -1271,6 +1324,24 @@ impl QueryTab {
         out
     }
 
+    /// Marks every result read from `table` before it reached `revision`. The
+    /// rows are a snapshot of the query as it ran and are never rerun.
+    pub fn table_saved(&mut self, table: &TableId, revision: u64) {
+        let mut marked = false;
+        for r in &mut self.results {
+            if r.source
+                .as_ref()
+                .is_some_and(|(t, read_at)| t == table && *read_at < revision)
+            {
+                marked |= !r.source_changed;
+                r.source_changed = true;
+            }
+        }
+        if marked {
+            self.sync_result_tabs();
+        }
+    }
+
     fn sync_result_tabs(&mut self) {
         let items: Vec<TabItem> = self
             .results
@@ -1281,6 +1352,9 @@ impl QueryTab {
                 it.closable = !r.pinned;
                 if r.pinned {
                     it.prefix = Some("▪".into());
+                }
+                if r.source_changed {
+                    it.suffix = Some("source changed".into());
                 }
                 it
             })
@@ -1326,14 +1400,14 @@ impl QueryTab {
         }
     }
 
-    pub fn trigger_completion(&mut self, cat: &Catalog, manual: bool) {
+    pub fn trigger_completion(&mut self, src: Source, manual: bool) {
         let cur = self.editor.cursor_offset();
         let text = self.editor.text();
         if !manual && !model::auto_trigger(text, cur) {
             self.completion.close();
             return;
         }
-        let (items, replace) = model::complete(cat, text, cur);
+        let (items, replace) = model::complete(src, text, cur);
         let anchor = self
             .editor
             .cursor_cell()
@@ -1422,7 +1496,7 @@ impl QueryTab {
         }
     }
 
-    pub fn on_key(&mut self, key: &Key, cx: &mut Cx, cat: &Catalog) -> Outcome {
+    pub fn on_key(&mut self, key: &Key, cx: &mut Cx, src: Source) -> Outcome {
         let Some(f) = cx.focus.current() else {
             return Outcome::Ignored;
         };
@@ -1449,18 +1523,18 @@ impl QueryTab {
                 if !self.editor.editing {
                     self.editor.begin_edit();
                 }
-                self.trigger_completion(cat, true);
+                self.trigger_completion(src, true);
                 return Outcome::Changed;
             }
             let (o, ev) = self.editor.on_key(key);
             match ev {
                 Some(EditorAction::Changed) => {
                     self.editor.diagnostics.clear();
-                    self.trigger_completion(cat, false);
+                    self.trigger_completion(src, false);
                 }
                 Some(EditorAction::CursorMoved) => {
                     if self.completion.is_open() {
-                        self.trigger_completion(cat, false);
+                        self.trigger_completion(src, false);
                     }
                 }
                 Some(EditorAction::Committed) => self.completion.close(),
@@ -2220,7 +2294,7 @@ fn plan_to_tree(node: &PlanNode, nodes: &mut Vec<PlanInfo>, root_total: f64) -> 
 }
 
 fn execute(
-    cat: &Catalog,
+    src: Source,
     text: &str,
     range: Range<usize>,
     explain: Option<bool>,
@@ -2250,6 +2324,8 @@ fn execute(
             entry.error = Some(e.message.clone());
             return (
                 ResultSet {
+                    source: None,
+                    source_changed: false,
                     label: format!("Error {n}"),
                     pinned: false,
                     anchor: range,
@@ -2283,9 +2359,9 @@ fn execute(
         junie_tui::ui::text::truncate(&l, 28)
     };
     match stmt {
-        Statement::Select(sel) => match sql::run_select(cat, &sel) {
+        Statement::Select(sel) => match sql::run_select(src, &sel) {
             Ok(rs) => {
-                let table = cat.find(sel.schema.as_deref(), &sel.table);
+                let table = src.catalog.find(sel.schema.as_deref(), &sel.table);
                 let specs = table
                     .map(|t| column_specs(t, &rs.columns))
                     .unwrap_or_else(|| {
@@ -2316,11 +2392,18 @@ fn execute(
                 } else {
                     RowTotal::Exact(rows.len())
                 };
-                if let Err(e) = grid.try_set_rows(GridRows { rows, total, more }) {
+                let data = GridRows { rows, total, more };
+                let seated = match rs.row_keys.clone() {
+                    Some(keys) => grid.try_set_rows_keyed(data, keys),
+                    None => grid.try_set_rows(data),
+                };
+                if let Err(e) = seated {
                     let message = e.to_string();
                     entry.error = Some(message.clone());
                     return (
                         ResultSet {
+                            source: None,
+                            source_changed: false,
                             label: format!("Error {n}"),
                             pinned: false,
                             anchor: range,
@@ -2334,10 +2417,15 @@ fn execute(
                         entry,
                     );
                 }
+                let source = table
+                    .zip(rs.source_revision)
+                    .map(|(t, rev)| (src.table_id(t), rev));
                 entry.duration_ms = Some(rs.duration_ms);
                 entry.rows = Some(rs.rows.len());
                 (
                     ResultSet {
+                        source,
+                        source_changed: false,
                         label: format!(
                             "{} ({})",
                             label_for("SELECT", Some(&sel.table)),
@@ -2355,6 +2443,8 @@ fn execute(
                 entry.error = Some(e.message.clone());
                 (
                     ResultSet {
+                        source: None,
+                        source_changed: false,
                         label: format!("Error {n}"),
                         pinned: false,
                         anchor: range,
@@ -2370,7 +2460,7 @@ fn execute(
             }
         },
         Statement::Explain { analyze, inner } => match *inner {
-            Statement::Select(sel) => match sql::explain(cat, &sel, analyze) {
+            Statement::Select(sel) => match sql::explain(src, &sel, analyze) {
                 Ok(plan) => {
                     let mut nodes = vec![];
                     let root = plan_to_tree(&plan, &mut nodes, max_total_cost(&plan));
@@ -2389,6 +2479,8 @@ fn execute(
                     entry.rows = Some(nodes.len());
                     (
                         ResultSet {
+                            source: None,
+                            source_changed: false,
                             label: if analyze {
                                 "EXPLAIN ANALYZE".into()
                             } else {
@@ -2413,6 +2505,8 @@ fn execute(
                     entry.error = Some(e.message.clone());
                     (
                         ResultSet {
+                            source: None,
+                            source_changed: false,
                             label: format!("Error {n}"),
                             pinned: false,
                             anchor: range,
@@ -2435,6 +2529,8 @@ fn execute(
                 entry.error = Some(msg.clone());
                 (
                     ResultSet {
+                        source: None,
+                        source_changed: false,
                         label: format!("Error {n}"),
                         pinned: false,
                         anchor: range,
@@ -2451,10 +2547,10 @@ fn execute(
         },
         other => {
             let target = other.target().map(str::to_owned);
-            let table = target.as_deref().and_then(|t| cat.find(None, t));
+            let table = target.as_deref().and_then(|t| src.catalog.find(None, t));
             let (rows, ms) = match &other {
                 Statement::Update { has_where, .. } | Statement::Delete { has_where, .. } => {
-                    let n = table.map(|t| t.row_count).unwrap_or(0);
+                    let n = table.map(|t| src.row_count(t)).unwrap_or(0);
                     if *has_where {
                         ((n / 150).max(1), 12 + (n / 40_000) as u32)
                     } else {
@@ -2462,7 +2558,7 @@ fn execute(
                     }
                 }
                 Statement::Insert { .. } => (1, 4),
-                Statement::Truncate { .. } => (table.map(|t| t.row_count).unwrap_or(0), 30),
+                Statement::Truncate { .. } => (table.map(|t| src.row_count(t)).unwrap_or(0), 30),
                 _ => (0, 25),
             };
             if let Some(t) = target.as_deref()
@@ -2479,6 +2575,8 @@ fn execute(
                 entry.error = Some(msg.clone());
                 return (
                     ResultSet {
+                        source: None,
+                        source_changed: false,
                         label: format!("Error {n}"),
                         pinned: false,
                         anchor: range,
@@ -2496,6 +2594,8 @@ fn execute(
             entry.rows = Some(rows);
             (
                 ResultSet {
+                    source: None,
+                    source_changed: false,
                     label: format!("{} ({})", label_for(other.verb(), target.as_deref()), rows),
                     pinned: false,
                     anchor: range,
