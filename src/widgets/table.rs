@@ -104,6 +104,11 @@ impl Cell {
     }
 }
 
+enum Refused {
+    Ineligible,
+    Invalid(String),
+}
+
 #[derive(Debug, Clone)]
 pub struct ChoiceEdit {
     pub row: usize,
@@ -422,6 +427,12 @@ impl DataTable {
     pub fn set_row_disabled(&mut self, src: usize, disabled: bool) {
         if disabled {
             self.disabled.insert(src);
+            if self.edit.as_ref().is_some_and(|e| e.row == src) {
+                self.edit = None;
+            }
+            if self.choice.as_ref().is_some_and(|c| c.row == src) {
+                self.choice = None;
+            }
             self.selection.retain(|r| r != src);
             if self.selected == Some(src) {
                 self.selected = None;
@@ -907,13 +918,15 @@ impl DataTable {
             return (Outcome::Consumed, None);
         }
         let col = self.cursor_col;
-        if !self.columns[col].editable {
+        let Some(&src) = self.order.get(self.cursor_row) else {
+            return (Outcome::Consumed, None);
+        };
+        if !self.editable_target(src, col) {
             return (Outcome::Consumed, None);
         }
 
         self.scroll.ensure_visible(self.cursor_row);
         self.ensure_col_visible();
-        let src = self.order[self.cursor_row];
         let text = self.rows[src][col].text.clone();
         let editor = &self.columns[col].editor;
         if let Some(next) = editor.toggled(&text) {
@@ -938,9 +951,23 @@ impl DataTable {
         (Outcome::Changed, None)
     }
 
-    fn apply_value(&mut self, src: usize, col: usize, text: String) -> Result<TableAction, String> {
+    fn editable_target(&self, src: usize, col: usize) -> bool {
+        !self.is_disabled(src)
+            && self.columns.get(col).is_some_and(|c| c.editable)
+            && self.rows.get(src).and_then(|row| row.get(col)).is_some()
+    }
+
+    fn apply_value(
+        &mut self,
+        src: usize,
+        col: usize,
+        text: String,
+    ) -> Result<TableAction, Refused> {
+        if !self.editable_target(src, col) {
+            return Err(Refused::Ineligible);
+        }
         if let Some(Err(err)) = self.validator.as_ref().map(|v| v.validate_in(&col, &text)) {
-            return Err(err.into_message());
+            return Err(Refused::Invalid(err.into_message()));
         }
         self.rows[src][col].text = text;
         self.rows[src][col].error = None;
@@ -967,6 +994,10 @@ impl DataTable {
         };
         let (src, col) = self.choice.as_ref().map(|c| (c.row, c.col))?;
         match self.apply_value(src, col, value) {
+            Err(Refused::Ineligible) => {
+                self.choice = None;
+                Some(TableAction::Cancelled)
+            }
             Ok(ev) => {
                 self.choice = None;
                 match tab {
@@ -980,7 +1011,7 @@ impl DataTable {
                     None => Some(ev),
                 }
             }
-            Err(msg) => {
+            Err(Refused::Invalid(msg)) => {
                 if let Some(c) = self.choice.as_mut() {
                     c.editor.error = Some(msg);
                 }
@@ -1026,27 +1057,22 @@ impl DataTable {
 
     pub fn commit_edit(&mut self) -> Option<TableAction> {
         let mut e = self.edit.take()?;
-        let src = e.row;
+        if !self.editable_target(e.row, e.col) {
+            return Some(TableAction::Cancelled);
+        }
         if !e.field.validate() {
             self.edit = Some(e);
             return None;
         }
         let text = e.field.text().to_owned();
-        self.rows[src][e.col].text = text;
-        self.rows[src][e.col].error = None;
-        if let Some((c, d)) = self.sort
-            && c == e.col
-        {
-            self.apply_sort(c, d);
-            if let Some(pos) = self.order.iter().position(|&r| r == src) {
-                self.cursor_row = pos;
-                self.scroll.ensure_visible(pos);
+        match self.apply_value(e.row, e.col, text) {
+            Ok(action) => Some(action),
+            Err(Refused::Ineligible) => Some(TableAction::Cancelled),
+            Err(Refused::Invalid(_)) => {
+                self.edit = Some(e);
+                None
             }
         }
-        Some(TableAction::Committed {
-            row: src,
-            col: e.col,
-        })
     }
 
     pub fn cancel_edit(&mut self) -> Option<TableAction> {
@@ -1090,8 +1116,8 @@ impl DataTable {
                 Some(EditExit::Cancel) => (Outcome::Changed, self.cancel_edit()),
                 Some(EditExit::Tab { backward }) => {
                     let ev = self.commit_edit();
-                    if ev.is_none() {
-                        return (Outcome::Changed, None);
+                    if ev.is_none() || ev == Some(TableAction::Cancelled) {
+                        return (Outcome::Changed, ev);
                     }
 
                     if let Some(leave) = self.tab_to_editable(backward) {
