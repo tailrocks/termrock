@@ -3,7 +3,8 @@ use junie_tui::core::data::{DataError, ShapeError};
 use junie_tui::core::event::Outcome;
 use junie_tui::core::id::WidgetId;
 use junie_tui::widgets::grid::{
-    CellKind, CellValue, ColumnSpec, DataGrid, GridCmd, GridDataError, GridRows, RowTotal,
+    CellKind, CellValue, ColumnSpec, DataGrid, GridCmd, GridDataError, GridEditError, GridRevision,
+    GridRows, RowTotal,
 };
 use junie_tui::widgets::option_editor::{ColumnEditor, Options};
 use junie_tui::widgets::table::{Cell, Column, DataTable, SortDir};
@@ -294,8 +295,8 @@ fn issue42_shape_failure_is_atomic() {
     );
 
     let mut g = grid();
-    g.record_cell(0, 1, text("edited"));
-    g.toggle_delete(1);
+    g.record_cell(0, 1, text("edited")).expect("unlocked");
+    g.toggle_delete(1).expect("unlocked");
     g.cell_errors.insert((0, 0), "kept".into());
     g.cursor = (0, 0);
     let _ = g.begin_edit();
@@ -559,4 +560,158 @@ fn issue42_table_width_only_vs_semantic_column_update() {
         "an editor change is semantic and closes it"
     );
     assert_eq!(t.sizing.user(1), Some(16));
+}
+
+fn editing_grid(col: usize) -> DataGrid {
+    let mut g = grid();
+    g.cursor = (0, col);
+    let _ = g.begin_edit();
+    assert!(g.is_editing(), "editor opened on column {col}");
+    g
+}
+
+fn source_bumped_once(before: GridRevision, after: GridRevision) -> bool {
+    after
+        == GridRevision {
+            source: before.source + 1,
+            ..before
+        }
+}
+
+#[test]
+fn issue42_column_mutation_is_atomic_and_locked() {
+    let mut g = editing_grid(1);
+    let before = (g.columns().to_vec(), g.revision());
+
+    let mut ran = false;
+    assert_eq!(
+        g.update_column(9, |_| ran = true),
+        Err(GridEditError::InvalidTarget)
+    );
+    assert!(!ran, "the closure runs only for a real column");
+
+    for (min, max) in [(9, 3), (4, 0)] {
+        let rejected = g.update_column(1, |c| {
+            c.nullable = false;
+            c.min_width = min;
+            c.max_width = max;
+        });
+        assert!(
+            matches!(rejected, Err(GridEditError::Validation(_))),
+            "width range {min}..={max}: {rejected:?}"
+        );
+        assert_eq!((g.columns().to_vec(), g.revision()), before);
+        assert!(g.is_editing(), "a rejected candidate keeps the editor");
+    }
+    assert_eq!(g.update_column(1, |_| {}), Ok(false), "equal is a no-op");
+    assert_eq!(g.revision(), before.1);
+
+    assert_eq!(g.update_column(0, |c| c.nullable = false), Ok(true));
+    assert!(!g.columns()[0].nullable);
+    assert!(source_bumped_once(before.1, g.revision()));
+    assert!(g.is_editing(), "another column's editor survives");
+    let after_first = g.revision();
+    assert_eq!(g.update_column(1, |c| c.read_only = true), Ok(true));
+    assert!(source_bumped_once(after_first, g.revision()));
+    assert!(!g.is_editing(), "the changed column's editor is closed");
+
+    g.record_cell(0, 0, text("edited")).expect("unlocked");
+    let snapshot = g.snapshot_changes();
+    let token = g.begin_submission(snapshot).expect("review opens");
+    let locked = (
+        g.columns().to_vec(),
+        g.revision(),
+        g.rows().to_vec(),
+        g.pending().clone(),
+    );
+    for change in [
+        (|c: &mut ColumnSpec| c.nullable = !c.nullable) as fn(&mut ColumnSpec),
+        |c| c.read_only = !c.read_only,
+        |c| c.editor = ColumnEditor::Select(Options::values(&["x"])),
+        |c| c.max_width = c.max_width.saturating_add(1),
+    ] {
+        let mut ran = false;
+        assert_eq!(
+            g.update_column(0, |c| {
+                ran = true;
+                change(c);
+            }),
+            Err(GridEditError::Busy)
+        );
+        assert!(!ran, "a locked grid never runs the closure");
+        assert!(g.submission_pending());
+        assert_eq!(
+            (
+                g.columns().to_vec(),
+                g.revision(),
+                g.rows().to_vec(),
+                g.pending().clone()
+            ),
+            locked
+        );
+    }
+    assert_eq!(
+        g.update_column(9, |_| {}),
+        Err(GridEditError::Busy),
+        "the lock is checked before the column"
+    );
+    g.cancel_submission(token).expect("review cancels");
+    assert_eq!(g.update_column(0, |c| c.primary = true), Ok(true));
+}
+
+#[test]
+fn issue42_width_only_vs_semantic_column_revision() {
+    let mut g = editing_grid(1);
+    g.sizing.set(1, 20);
+    assert!(!g.sizing.is_default());
+    let before = g.revision();
+
+    assert_eq!(
+        g.update_column(1, |c| {
+            c.min_width = 6;
+            c.max_width = 14;
+        }),
+        Ok(true)
+    );
+    assert_eq!(g.revision(), before, "a width-only change keeps the data");
+    assert!(g.is_editing(), "a width-only change keeps the editor");
+    assert!(g.sizing.is_default(), "the manual width is dropped");
+    assert_eq!(
+        (g.columns()[1].min_width, g.columns()[1].max_width),
+        (6, 14)
+    );
+    paint_grid(&mut g);
+
+    g.sizing.set(1, 20);
+    assert_eq!(g.update_column(1, |c| c.sortable = !c.sortable), Ok(true));
+    assert!(source_bumped_once(before, g.revision()));
+    assert!(!g.is_editing());
+    assert!(!g.sizing.is_default(), "a semantic change keeps the width");
+
+    let mixed_from = g.revision();
+    assert_eq!(
+        g.update_column(1, |c| {
+            c.nullable = false;
+            c.max_width = 30;
+        }),
+        Ok(true)
+    );
+    assert!(
+        source_bumped_once(mixed_from, g.revision()),
+        "width and semantic together advance the source once"
+    );
+    assert!(g.sizing.is_default());
+    assert_eq!(g.revision().draft, before.draft);
+
+    g.record_cell(0, 0, text("edited")).expect("unlocked");
+    let snapshot = g.snapshot_changes();
+    let token = g.begin_submission(snapshot).expect("review opens");
+    let locked = (g.columns().to_vec(), g.revision());
+    assert_eq!(
+        g.update_column(1, |c| c.max_width = 12),
+        Err(GridEditError::Busy),
+        "a width-only change is refused while a save is reviewed"
+    );
+    assert_eq!((g.columns().to_vec(), g.revision()), locked);
+    g.cancel_submission(token).expect("review cancels");
 }

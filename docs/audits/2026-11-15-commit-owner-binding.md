@@ -76,7 +76,7 @@ returns `Result<(), GridDataError>`. Replace `apply_commit_result(Ok(()))` with
 - `DataGrid::columns`, `edit`, `choice`, `editable` and the error maps are still
   public fields. They are display and configuration, not the draft, and moving
   them behind accessors belongs with the encapsulation work in #33 and #42.
-  There is no `update_column` at this revision to guard.
+  `DataGrid::update_column` (#42) checks the same lock and returns `Busy`.
 - Sort, filter, refresh and discard on a saving table are refused with a status;
   the guarded view transition that lets Save continue into them is #12.
 - Preview promotion of an accepted live edit is #12. A store-backed receipt and

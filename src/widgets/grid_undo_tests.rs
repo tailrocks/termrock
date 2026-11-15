@@ -479,9 +479,9 @@ fn issue33_append_between_remove_and_undo() {
     s.local_sort = true;
     s.sort = Some((0, SortDir::Desc));
     s.try_set_rows(page(2, false)).unwrap();
-    s.insert_row();
+    s.insert_row().unwrap();
     let ka = key_of(&s, 2);
-    s.toggle_delete(2);
+    s.toggle_delete(2).unwrap();
     s.try_append_rows(page(1, false)).unwrap();
     let kc = key_of(&s, 2);
     s.undo().unwrap();

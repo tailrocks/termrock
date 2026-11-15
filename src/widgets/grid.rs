@@ -304,16 +304,21 @@ impl std::fmt::Display for GridDataError {
 
 impl std::error::Error for GridDataError {}
 
+fn width_fault(column: usize, spec: &ColumnSpec) -> Option<GridDataError> {
+    (spec.max_width == 0 || spec.min_width > spec.max_width).then_some(GridDataError::ColumnWidth {
+        column,
+        min_width: spec.min_width,
+        max_width: spec.max_width,
+    })
+}
+
 fn validate_column_widths(columns: &[ColumnSpec]) -> Result<(), GridDataError> {
     match columns
         .iter()
-        .position(|c| c.max_width == 0 || c.min_width > c.max_width)
+        .enumerate()
+        .find_map(|(column, spec)| width_fault(column, spec))
     {
-        Some(column) => Err(GridDataError::ColumnWidth {
-            column,
-            min_width: columns[column].min_width,
-            max_width: columns[column].max_width,
-        }),
+        Some(fault) => Err(fault),
         None => Ok(()),
     }
 }
@@ -1496,6 +1501,69 @@ impl DataGrid {
         let rows = normalize_rows(columns.len(), data.rows, 0)?;
         self.install_model(columns, GridRows { rows, ..data }, keys);
         Ok(())
+    }
+
+    /// Edits one column's spec on a candidate copy and installs it only when
+    /// it is valid. Returns `Ok(true)` when the spec changed and `Ok(false)`
+    /// for an equal result.
+    ///
+    /// Refused with [`GridEditError::Busy`] before `edit` runs while a captured
+    /// save is reviewed or submitted, even for a width-only change. A missing
+    /// column is [`GridEditError::InvalidTarget`]. A candidate whose
+    /// `max_width` is zero or below its `min_width` is
+    /// [`GridEditError::Validation`]. A rejected call changes nothing, so an
+    /// open editor and its draft survive.
+    ///
+    /// Any field other than the width range is semantic: it bumps
+    /// [`GridRevision::source`] once and closes an editor open on this column.
+    /// A width-only change keeps the revision and the editor, drops this
+    /// column's manual width and resamples the automatic widths.
+    pub fn update_column(
+        &mut self,
+        index: usize,
+        edit: impl FnOnce(&mut ColumnSpec),
+    ) -> Result<bool, GridEditError> {
+        self.refuse_when_locked()?;
+        let original = self
+            .columns
+            .get(index)
+            .ok_or(GridEditError::InvalidTarget)?;
+        let mut candidate = original.clone();
+        edit(&mut candidate);
+        if candidate == *original {
+            return Ok(false);
+        }
+        if let Some(fault) = width_fault(index, &candidate) {
+            return Err(GridEditError::Validation(FieldError::new(
+                fault.to_string(),
+            )));
+        }
+        let resized =
+            (candidate.min_width, candidate.max_width) != (original.min_width, original.max_width);
+        let semantic = ColumnSpec {
+            min_width: original.min_width,
+            max_width: original.max_width,
+            ..candidate.clone()
+        } != *original;
+        let revision = self.next_revision(semantic, false);
+        self.columns[index] = candidate;
+        if resized {
+            if self.sizing.dragging() == Some(index) {
+                self.sizing.release();
+            }
+            self.sizing.clear(index);
+        }
+        self.sample_widths();
+        if semantic {
+            self.revision = revision;
+            if self.edit.as_ref().is_some_and(|e| e.col == index) {
+                self.edit = None;
+            }
+            if self.choice.as_ref().is_some_and(|c| c.col == index) {
+                self.choice = None;
+            }
+        }
+        Ok(true)
     }
 
     fn install_model(&mut self, columns: Vec<ColumnSpec>, data: GridRows, keys: Vec<ItemKey>) {
