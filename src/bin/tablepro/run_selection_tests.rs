@@ -61,7 +61,7 @@ fn app_with_selected_statements() -> App {
     app.connect_key(connection);
     draw(&mut app);
 
-    let editor = query_tab(&mut app).editor.id;
+    let editor = query_tab(&app).editor.id;
     app.shell.focus.focus(editor);
     edit_query_tab(&mut app, |q| q.editor.begin_edit());
     app.handle_input(Input::Paste(SQL.into()));
@@ -70,7 +70,7 @@ fn app_with_selected_statements() -> App {
         app.handle_input(key(KeyCode::Right, KeyModifiers::SHIFT));
     }
     assert_eq!(
-        query_tab(&mut app)
+        query_tab(&app)
             .editor
             .selection_or_block()
             .map(|(text, _)| text)
@@ -92,7 +92,7 @@ fn running_statements(app: &App) -> Vec<String> {
 #[test]
 fn run_after_strip_and_toolbar_click_executes_the_retained_selection() {
     let mut app = app_with_selected_statements();
-    let editor = query_tab(&mut app).editor.id;
+    let editor = query_tab(&app).editor.id;
 
     draw(&mut app);
     let strip = app
@@ -116,7 +116,7 @@ fn run_after_strip_and_toolbar_click_executes_the_retained_selection() {
         "the strip click moved focus off the editor"
     );
     assert_eq!(
-        query_tab(&mut app)
+        query_tab(&app)
             .editor
             .selection_or_block()
             .map(|(text, _)| text)
@@ -133,7 +133,7 @@ fn run_after_strip_and_toolbar_click_executes_the_retained_selection() {
     click(&mut app, Position::new(run.x + 1, run.y));
 
     assert_eq!(
-        running_statements(&mut app),
+        running_statements(&app),
         ["SELECT 1", "SELECT 2"],
         "Run executes the selection, not the statement under the caret"
     );

@@ -3538,7 +3538,7 @@ mod tests {
         run_batch(&mut app);
         tick_until_history(&mut app, base + 1);
         let (second_sql, second_range, elapsed) = {
-            let r = query(&mut app).running.as_ref().expect("still running");
+            let r = query(&app).running.as_ref().expect("still running");
             assert_eq!(r.current, 1, "the second statement is pending");
             (
                 r.statements[1].0.clone(),
@@ -3550,7 +3550,7 @@ mod tests {
 
         assert_eq!(esc(&mut app), Outcome::Changed);
 
-        let q = query(&mut app);
+        let q = query(&app);
         assert!(!q.is_running());
         assert_eq!(shape(q), [(false, "rows"), (false, "cancelled")]);
         assert_eq!(q.active_result, 1, "the cancelled marker is active");
@@ -3583,19 +3583,19 @@ mod tests {
         let base = app.history.entries.len();
         run_batch(&mut app);
         tick_until_history(&mut app, base + 1);
-        assert!(!query(&mut app).is_running());
+        assert!(!query(&app).is_running());
         edit(&mut app, |q| q.toggle_pin(0));
-        let pinned_key = query(&mut app).results[0].key;
+        let pinned_key = query(&app).results[0].key;
 
         edit(&mut app, |q| q.editor.set_text(BATCH));
         let mid = app.history.entries.len();
         run_batch(&mut app);
         tick_until_history(&mut app, mid + 2);
-        assert_eq!(query(&mut app).running.as_ref().map(|r| r.current), Some(2));
+        assert_eq!(query(&app).running.as_ref().map(|r| r.current), Some(2));
 
         assert_eq!(click_stop(&mut app), Outcome::Changed);
 
-        let q = query(&mut app);
+        let q = query(&app);
         assert_eq!(
             shape(q),
             [
@@ -3635,7 +3635,7 @@ mod tests {
         assert_ne!(esc(&mut app), Outcome::Changed);
         assert_ne!(click_stop(&mut app), Outcome::Changed);
 
-        let q = query(&mut app);
+        let q = query(&app);
         assert_eq!(shape(q), [(false, "rows"), (false, "cancelled")]);
         assert_eq!(q.active_result, 1);
         assert_eq!(q.result_tabs.items().len(), 2);
@@ -3650,14 +3650,14 @@ mod tests {
         let base = app.history.entries.len();
         run_batch(&mut app);
         tick_until_history(&mut app, base + 3);
-        assert!(!query(&mut app).is_running());
-        assert_eq!(query(&mut app).result_tabs.items().len(), 3);
+        assert!(!query(&app).is_running());
+        assert_eq!(query(&app).result_tabs.items().len(), 3);
         edit(&mut app, |q| q.toggle_pin(1));
-        let pinned_label = query(&mut app).results[0].label.clone();
+        let pinned_label = query(&app).results[0].label.clone();
 
         run_batch(&mut app);
         for _ in 0..3 {
-            let q = query(&mut app);
+            let q = query(&app);
             assert_eq!(q.results.len(), 1, "only the pinned result is retained");
             assert_eq!(q.result_tabs.items().len(), 1, "no stale tab while waiting");
             assert_eq!(q.result_tabs.items()[0].label, pinned_label);
@@ -3670,7 +3670,7 @@ mod tests {
         run_batch(&mut app);
         tick_until_history(&mut app, base + 3);
         run_batch(&mut app);
-        let q = query(&mut app);
+        let q = query(&app);
         assert!(q.results.is_empty());
         assert!(
             q.result_tabs.items().is_empty(),
@@ -3906,7 +3906,7 @@ mod tests {
 
             close_result_via(&mut app, route, 0);
 
-            let q = query(&mut app);
+            let q = query(&app);
             assert_eq!(keys(q), [ks[1], ks[2]], "{route:?}: A is gone");
             assert_eq!(q.active_result, 0, "{route:?}: B moved to index 0");
             assert_eq!(q.results[q.active_result].key, ks[1], "{route:?}");
@@ -3914,7 +3914,7 @@ mod tests {
             assert_marked_grid(&mut app, &format!("{route:?}"));
 
             let term = draw(&mut app);
-            let q = query(&mut app);
+            let q = query(&app);
             let at = q.result_tabs.areas[0];
             assert!(
                 row_text(&term, at.y).contains(&q.results[0].label),
@@ -3931,7 +3931,7 @@ mod tests {
 
             close_result_via(&mut app, route, 2);
 
-            let q = query(&mut app);
+            let q = query(&app);
             assert_eq!(keys(q), [ks[0], ks[1]], "{route:?}");
             assert_eq!(q.active_result, 1, "{route:?}");
             assert_strip_matches(q);
@@ -3945,20 +3945,20 @@ mod tests {
             let (mut app, ks) = three_results(1);
 
             close_result_via(&mut app, route, 1);
-            let q = query(&mut app);
+            let q = query(&app);
             assert_eq!(keys(q), [ks[0], ks[2]], "{route:?}");
             assert_eq!(q.active_result, 1, "{route:?}: C is the successor");
             assert_eq!(q.results[1].key, ks[2]);
             assert_strip_matches(q);
 
             close_result_via(&mut app, route, 1);
-            let q = query(&mut app);
+            let q = query(&app);
             assert_eq!(keys(q), [ks[0]], "{route:?}");
             assert_eq!(q.active_result, 0, "{route:?}: the last result falls back");
             assert_strip_matches(q);
 
             close_result_via(&mut app, route, 0);
-            let q = query(&mut app);
+            let q = query(&app);
             assert!(q.results.is_empty());
             assert_eq!(q.active_result, 0);
             assert!(q.result_tabs.items().is_empty());
@@ -3968,14 +3968,14 @@ mod tests {
     #[test]
     fn result_close_key_closes_the_active_result_and_selects_its_successor() {
         let (mut app, ks) = three_results(1);
-        let id = query(&mut app).result_tabs.id;
+        let id = query(&app).result_tabs.id;
         app.shell.focus.focus(id);
         let x = Key {
             code: KeyCode::Char('x'),
             mods: ratatui::crossterm::event::KeyModifiers::NONE,
         };
         assert_eq!(shell::KeyRouter::route(&mut app, &x), Outcome::Changed);
-        let q = query(&mut app);
+        let q = query(&app);
         assert_eq!(keys(q), [ks[0], ks[2]]);
         assert_eq!(q.active_result, 1);
         assert_strip_matches(q);
@@ -3986,7 +3986,7 @@ mod tests {
         let (mut app, ks) = three_results(2);
         edit(&mut app, |q| q.toggle_pin(0));
         assert_eq!(
-            keys(query(&mut app)),
+            keys(query(&app)),
             [ks[0], ks[1], ks[2]],
             "pinning the first result keeps the order"
         );
@@ -4007,10 +4007,10 @@ mod tests {
         assert_strip_matches(q);
 
         draw(&mut app);
-        let tab = query(&mut app).result_tabs.areas[0];
+        let tab = query(&app).result_tabs.areas[0];
         let at = Position::new(tab.x + 1, tab.y);
         mouse(&mut app, MouseKind::Middle, at);
-        let q = query(&mut app);
+        let q = query(&app);
         assert_eq!(
             (keys(q), q.active_result, q.result_tabs.items().len()),
             before
@@ -4021,7 +4021,7 @@ mod tests {
     fn result_pin_activates_the_toggled_result() {
         let (mut app, ks) = three_results(1);
         edit(&mut app, |q| q.toggle_pin(2));
-        let q = query(&mut app);
+        let q = query(&app);
         assert_eq!(keys(q), [ks[2], ks[0], ks[1]]);
         assert_eq!(q.active_result, 0, "the pinned result is active");
         assert_strip_matches(q);
