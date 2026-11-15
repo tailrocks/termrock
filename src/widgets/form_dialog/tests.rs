@@ -523,6 +523,7 @@ fn form_hidden_layer_paste_has_one_focused_owner() {
         "hunter2",
         "focusless paste is inert"
     );
+    rig.untouched();
 
     rig.focus.focus(FORM.sub("host"));
     rig.paste("elsewhere");
