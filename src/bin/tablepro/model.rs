@@ -1510,21 +1510,22 @@ mod tests {
             .map(|(name, _)| ColumnSpec::new(name, CellKind::Text))
             .collect();
         let mut grid = DataGrid::new(WidgetId::of("issue181"), specs);
-        grid.set_rows(GridRows {
+        grid.try_set_rows(GridRows {
             total: RowTotal::Exact(2),
             rows: vec![
                 vec![CellValue::Int(1), text("a"), text("b")],
                 vec![CellValue::Int(2), text("c"), CellValue::Null],
             ],
             more: false,
-        });
-        grid.record_cell(0, 1, text("x"));
-        grid.record_cell(0, 2, text("y"));
-        grid.toggle_delete(1);
+        })
+        .unwrap();
+        grid.record_cell(0, 1, text("x")).unwrap();
+        grid.record_cell(0, 2, text("y")).unwrap();
+        grid.toggle_delete(1).unwrap();
         grid.insert_row().expect("row inserts");
         let fresh = grid.len() - 1;
-        grid.record_cell(fresh, 0, CellValue::Int(3));
-        grid.record_cell(fresh, 1, text("z"));
+        grid.record_cell(fresh, 0, CellValue::Int(3)).unwrap();
+        grid.record_cell(fresh, 1, text("z")).unwrap();
         assert_eq!(
             preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap(),
             vec![
@@ -1551,12 +1552,13 @@ mod tests {
             .map(|(name, _)| ColumnSpec::new(name, CellKind::Text))
             .collect();
         let mut grid = DataGrid::new(WidgetId::of("issue181b"), specs);
-        grid.set_rows(GridRows {
+        grid.try_set_rows(GridRows {
             total: RowTotal::Exact(1),
             rows: vec![vec![text("a"), CellValue::Null]],
             more: false,
-        });
-        grid.toggle_delete(0);
+        })
+        .unwrap();
+        grid.toggle_delete(0).unwrap();
         assert_eq!(
             preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap(),
             vec![

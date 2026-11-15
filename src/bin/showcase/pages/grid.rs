@@ -1757,8 +1757,9 @@ mod tests {
 
         let mut page = GridPage::new();
         page.grid
-            .record_cell(0, PLAN, CellValue::Text("pro".into()));
-        page.grid.toggle_delete(1);
+            .record_cell(0, PLAN, CellValue::Text("pro".into()))
+            .unwrap();
+        page.grid.toggle_delete(1).unwrap();
         assert_eq!(
             sql(&page).unwrap(),
             vec![

@@ -479,6 +479,6 @@ fn issue11_save_switch_pty() {
     app.key("ctrl+y");
     let history = app.wait_text(HISTORY);
     see(&history, &[HISTORY, UPDATE, VALUE], &[SAVE_TITLE]);
-    same_statement(&statement, &history, "history");
+    same_statement(&statement, &history, "history", true);
     app.finish();
 }
