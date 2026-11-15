@@ -35,7 +35,7 @@ does not exist in this tree yet.
 
 | Feature | Default | Adds |
 | --- | --- | --- |
-| `cli` | yes | `clap`, the `cli` module and `Motion` as a `clap::ValueEnum`. The four binaries require it; `jackin-console` enables it on its `junie-tui` dependency. |
+| `cli` | yes | `clap`, `serde_json` (Holla's persisted JSON codec, see below), the `cli` module and `Motion` as a `clap::ValueEnum`. The four binaries require it; `jackin-console` enables it on its `junie-tui` dependency. The library itself has no `serde_json` dependency with `--no-default-features`. |
 | `terminal` | yes | `termpane` and the `terminal` module. |
 
 `jackin-console` features (none is a default):
@@ -146,6 +146,46 @@ read it against, because each of its reasons names a Fixed control.
 - The showcase demonstrates every library capability; the coverage
   gate is described in
   [shared components plan](architecture/shared-components-plan.md).
+
+## Holla persisted JSON
+
+Holla decodes and encodes every persisted store (`sizes.json`,
+`trusted.json`, `frecency.json`, the ops log) and every discovery input
+(`package.json`, `mise tasks`, `brew services`) with `serde_json`, through
+the single codec in `src/bin/holla/domain/manifest.rs` (`parse_json`,
+`json_str`, `json_u64`, `json_i64`). No store has its own escaping or number
+parser. The policy:
+
+- Strings are exact UTF-8. Quotes, backslashes, newlines, control
+  characters and non-BMP scalars round-trip unchanged, and an escaped
+  surrogate pair decodes to one scalar.
+- Integer fields (sizes, mtimes, timestamps, schema versions, stamps) are
+  read as `u64` or `i64` with no `f64` step. `9007199254740993`, `u64::MAX`
+  and the `i64` limits keep their value. A fraction, an exponent (`1.0`,
+  `1e3`), a negative value for an unsigned field, or an out-of-range value is
+  an invalid field, even when it is mathematically integral.
+- Syntax is strict. Unknown escapes, raw control characters, lone or
+  reversed surrogates, `NaN`, `Infinity` and trailing data are errors. A
+  malformed file is reported as unreadable and the store starts empty.
+- Duplicate object keys keep the last value. Before #63 the first match
+  won.
+- Unknown object fields are ignored. An invalid entry is skipped and its
+  error is recorded as the store's first diagnostic (`sizes.json entry 1
+  invalid: ...`). Valid siblings are kept, and the invalid entry is never
+  filled with a default.
+- Timestamp arithmetic on loaded values saturates, so an extreme stored
+  value cannot panic.
+- One-time loss of legacy caches. Before #63, `sizes.json` escaped only
+  quotes. A path with a bare backslash (for example `\d`) or a raw control
+  character is invalid JSON now, so the file loads empty with a
+  `sizes.json unreadable` diagnostic and rebuilds on the next scan. A
+  backslash that old files wrote unescaped is now read as an escape. `\n`
+  becomes a newline and `\\` becomes one backslash, so that entry misses its
+  real path and is a cache miss. `trusted.json` and `frecency.json` already
+  escaped backslashes and quotes, so only a raw control character in a stored
+  path or item makes them unreadable. Those files start empty, and the next
+  save replaces them. Trust decisions are then asked again, and usage history
+  restarts. No other data changes on upgrade.
 
 ## Testing today
 

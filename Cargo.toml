@@ -22,7 +22,7 @@ tuiscotti-latest = { package = "tuiscotti", git = "https://github.com/tailrocks/
 
 [features]
 default = ["cli", "terminal"]
-cli = ["dep:clap"]
+cli = ["dep:clap", "dep:serde_json"]
 terminal = ["dep:termpane"]
 product = ["terminal"]
 
@@ -58,7 +58,7 @@ termpane = { git = "https://github.com/tailrocks/termpane", rev = "46cc0977d8ee9
 ratatui = { workspace = true }
 unicode-width = "0.2.3"
 unicode-segmentation = "1"
-serde_json = { workspace = true }
+serde_json = { workspace = true, optional = true }
 
 [target.'cfg(unix)'.dependencies]
 
@@ -70,6 +70,7 @@ syn = { version = "3.0.9", features = ["full", "visit"] }
 tui-test = { workspace = true }
 
 tuiscotti-latest = { workspace = true }
+serde_json = { workspace = true }
 sha2 = { workspace = true }
 
 [profile.dev.package."*"]

@@ -42,6 +42,11 @@ impl Discovery {
 /// and integers keep their exact meaning.
 pub use serde_json::Value as Json;
 
+/// Owns Holla's strict JSON syntax for stores and discovery input. Escapes
+/// and surrogate pairs decode exactly; unknown escapes, raw control
+/// characters, lone surrogates, NaN, and trailing data are errors. Duplicate
+/// object keys keep the last value. Callers report an error as corruption
+/// and never substitute a guessed value.
 pub fn parse_json(text: &str) -> Result<Json, String> {
     serde_json::from_str(text).map_err(|error| error.to_string())
 }
@@ -374,6 +379,88 @@ mod tests {
         );
         let names: Vec<&str> = d.tasks.iter().map(|t| t.name.as_str()).collect();
         assert_eq!(names, ["b"]);
+    }
+
+    #[test]
+    fn holla_json_legacy_store_and_manifest_compatibility() {
+        // Exact bytes the pre-#63 writers produced (8063050c). Their format
+        // strings escape quotes (sizes) or quotes and backslashes (trust,
+        // usage), and never escape control characters. Each must load with
+        // no diagnostic.
+        let trust_v1 =
+            crate::domain::custom::TrustStore::load(Some(r#"{"v":1,"hashes":["abc","def"]}"#));
+        assert_eq!(trust_v1.corrupt, None);
+        assert_eq!(
+            trust_v1
+                .entries
+                .iter()
+                .map(|e| e.digest.as_str())
+                .collect::<Vec<_>>(),
+            ["abc", "def"]
+        );
+        let migrated = trust_v1.serialize();
+        assert_eq!(
+            crate::domain::custom::TrustStore::load(Some(&migrated)).entries,
+            trust_v1.entries
+        );
+
+        let trust_v2 = crate::domain::custom::TrustStore::load(Some(
+            r#"{"v":2,"entries":[{"digest":"abc","path":"/w/a\\b","cwd":null}]}"#,
+        ));
+        assert_eq!(trust_v2.corrupt, None);
+        assert_eq!(trust_v2.entries[0].path.as_deref(), Some(r"/w/a\b"));
+
+        let sizes = crate::domain::cleanup::SizeCache::load(
+            Some(
+                r#"{"v":3,"entries":[{"path":"/w/a\"quoted","allocated":4096,"mtime":1700000000,"at":1800000000},{"path":"/w/b","allocated":8192,"mtime":1700000001,"at":1800000000}]}"#,
+            ),
+            1_800_000_000,
+        );
+        assert_eq!(sizes.load_error, None);
+        assert_eq!(sizes.entries.len(), 2);
+        assert_eq!(sizes.entries[0].path, "/w/a\"quoted");
+        assert_eq!(sizes.entries[0].allocated, 4096);
+
+        let usage = crate::domain::usage::UsageStore::load(
+            Some(
+                r#"{"v":1,"actions":[{"item":"fmt","path":null,"host":"h","stamps":[1799999000,1800000000]}],"queries":[{"query":"q","item":"fmt","host":"h","last":1800000000}]}"#,
+            ),
+            1_800_000_000,
+        );
+        assert_eq!(usage.load_error, None);
+        assert_eq!(usage.actions.len(), 1);
+        assert_eq!(usage.queries.len(), 1);
+    }
+
+    #[test]
+    fn holla_json_legacy_raw_control_characters_degrade_to_empty() {
+        // The pre-#63 trust and usage writers left a newline in a stored
+        // string unescaped. That file is invalid now: it loads empty with a
+        // diagnostic instead of guessing the value.
+        let trust = crate::domain::custom::TrustStore::load(Some(
+            "{\"v\":2,\"entries\":[{\"digest\":\"abc\",\"path\":\"/w/a\nb\",\"cwd\":null}]}",
+        ));
+        assert!(trust.entries.is_empty());
+        assert!(
+            trust
+                .corrupt
+                .as_deref()
+                .is_some_and(|e| e.starts_with("trusted.json unreadable"))
+        );
+
+        let usage = crate::domain::usage::UsageStore::load(
+            Some(
+                "{\"v\":1,\"actions\":[{\"item\":\"fmt\nx\",\"path\":null,\"host\":\"h\",\"stamps\":[1]}],\"queries\":[]}",
+            ),
+            1_800_000_000,
+        );
+        assert!(usage.actions.is_empty());
+        assert!(
+            usage
+                .load_error
+                .as_deref()
+                .is_some_and(|e| e.starts_with("frecency.json unreadable"))
+        );
     }
 
     #[test]

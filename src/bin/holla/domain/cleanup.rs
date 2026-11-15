@@ -1368,6 +1368,24 @@ mod tests {
     }
 
     #[test]
+    fn holla_json_legacy_size_cache_with_bare_backslash_degrades_to_empty() {
+        // The pre-#63 writer escaped only quotes, so `\d` reached disk raw and
+        // is an invalid escape now. The cache is regenerable: drop it with a
+        // diagnostic instead of guessing the path.
+        let legacy = format!(
+            r#"{{"v":{CACHE_SCHEMA},"entries":[{{"path":"/w/a\d","allocated":4096,"mtime":1,"at":{NOW}}}]}}"#
+        );
+        let loaded = SizeCache::load(Some(&legacy), NOW);
+        assert!(loaded.entries.is_empty());
+        assert!(
+            loaded
+                .load_error
+                .as_deref()
+                .is_some_and(|e| e.starts_with("sizes.json unreadable"))
+        );
+    }
+
+    #[test]
     fn holla_json_integer_fields_are_exact_and_checked() {
         let exact = entry("/exact", u64::MAX, 9_007_199_254_740_993, NOW);
         let cache = SizeCache {
