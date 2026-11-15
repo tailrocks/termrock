@@ -655,6 +655,9 @@ mod projection_work {
         let refresh_ticket = world
             .refresh_account(&account, 0)
             .expect("a refresh ticket");
+        let validation_ticket = world
+            .validate_account(&account)
+            .expect("a validation ticket");
         let base = world.epochs();
 
         let refreshed = |ticket, source: &_, result| Msg::AccountRefreshed {
@@ -663,7 +666,8 @@ mod projection_work {
             source: Box::new(Clone::clone(source)),
             result,
         };
-        let validated = |source: &_, result| Msg::AccountValidated {
+        let validated = |ticket, source: &_, result| Msg::AccountValidated {
+            ticket,
             account: account.clone(),
             source: Box::new(Clone::clone(source)),
             result,
@@ -678,7 +682,7 @@ mod projection_work {
         };
 
         world.absorb(&refreshed(refresh_ticket, &other, refresh()));
-        world.absorb(&validated(&other, Err("late".into())));
+        world.absorb(&validated(validation_ticket, &other, Err("late".into())));
         assert_eq!(
             world.epochs(),
             base,
@@ -706,12 +710,22 @@ mod projection_work {
             "a failed refresh still changes the account"
         );
 
-        world.absorb(&validated(&source, Err("rejected".into())));
+        world.absorb(&validated(
+            validation_ticket,
+            &source,
+            Err("rejected".into()),
+        ));
         let c = world.epochs();
         assert_eq!(c.accounts, b.accounts + 1, "an accepted validation");
         assert_eq!((c.membership, c.roster), (base.membership, base.roster));
 
+        let validation_ticket = world
+            .validate_account(&account)
+            .expect("a validation ticket");
+        let restarted = world.epochs();
+        assert_eq!(restarted.accounts, c.accounts + 1, "a validation start");
         world.absorb(&validated(
+            validation_ticket,
             &source,
             Ok(Validation::Fingerprint {
                 level: jackin_console::domain::account::ValidationLevel::MaterialDiscovered,
@@ -719,7 +733,7 @@ mod projection_work {
         ));
         assert_eq!(
             world.epochs().accounts,
-            c.accounts + 1,
+            restarted.accounts + 1,
             "a fingerprint check"
         );
     }
