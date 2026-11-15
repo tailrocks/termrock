@@ -2786,6 +2786,7 @@ pub static CAPABILITIES: &[Capability] = &[
     Capability::function("widgets::splitter::Splitter::on_press"),
     Capability::function("widgets::splitter::Splitter::on_drag"),
     Capability::function("widgets::splitter::Splitter::on_click"),
+    Capability::function("widgets::splitter::Splitter::cancel_drag"),
     Capability::ty("widgets::statusbar::Emphasis"),
     Capability::variant("widgets::statusbar::Emphasis::Plain"),
     Capability::variant("widgets::statusbar::Emphasis::Strong"),
