@@ -1421,8 +1421,16 @@ mod tests {
             );
         }
         let screen: String = buf.content().iter().map(|c| c.symbol()).collect();
-        let first = d.editor.text().lines().next().unwrap_or("");
-        let probe: String = first.chars().take(12).collect();
+        let top = d.editor.scroll.v.offset;
+        let line = d.editor.text().lines().nth(top).unwrap_or("");
+        // A horizontal scroll paints an ellipsis in the first column in place
+        // of one character, so the visible text starts one column later.
+        let skip = if d.editor.hscroll > 0 {
+            d.editor.hscroll + 1
+        } else {
+            0
+        };
+        let probe: String = line.chars().skip(skip).take(12).collect();
         assert!(screen.contains(&probe), "screen paints {probe:?}");
     }
 
@@ -1696,6 +1704,12 @@ mod tests {
         rig.type_into_editor("-- a\n");
         let a_key = rig.page.active_key.expect("key");
         let a_state = editor_state(active(&rig.page));
+        rig.paint();
+        let a_area = rig
+            .hits
+            .area_of(editor_id(a_key))
+            .expect("A is hit-registered before the switch");
+        let a_pos = Position::new(a_area.x + 1, a_area.y + 1);
 
         rig.with_cx(|p, cx| {
             p.tree_action(TreeAction::Activate(vec![0, 0, 0, 1]), cx);
@@ -1722,6 +1736,46 @@ mod tests {
             "paste never reaches A"
         );
 
+        // B holds a selection. Drag and Release carrying A's editor id, at A's
+        // old geometry, must not reach A or B. Safety comes from the
+        // key-scoped editor ids: no hit region or focus role names A now.
+        rig.page
+            .active_doc_mut()
+            .expect("active doc")
+            .editor
+            .jump_to(5);
+        for _ in 0..3 {
+            rig.key(KeyCode::Right, KeyModifiers::SHIFT);
+        }
+        let b_before = editor_state(active(&rig.page));
+        assert_eq!(b_before.selection.as_deref(), Some("SEL"));
+        let focus_before = rig.focus.current();
+        for phase in [Phase::Drag, Phase::Release] {
+            let ev = PointerEvent::new(
+                &rig.hits,
+                phase,
+                editor_id(a_key),
+                a_pos,
+                1,
+                KeyModifiers::NONE,
+            );
+            let out = rig.send(PageEvent::Pointer(ev));
+            assert_eq!(out, Outcome::Ignored, "{phase:?} with A's id");
+        }
+        assert_eq!(rig.page.active_key, Some(b_key));
+        assert_eq!(
+            editor_state(active(&rig.page)),
+            b_before,
+            "B text and selection"
+        );
+        assert_eq!(rig.page.docs[0].editor.text(), a_state.text, "A text");
+        assert_eq!(
+            rig.page.docs[0].editor.field.buffer.selected_text(),
+            None,
+            "A has no selection"
+        );
+        assert_eq!(rig.focus.current(), focus_before, "focus unchanged");
+
         rig.with_cx(|p, cx| {
             p.tree_action(TreeAction::Activate(vec![0, 0, 0, 1]), cx);
         });
@@ -1730,5 +1784,89 @@ mod tests {
         });
         assert_eq!(rig.focus.current(), Some(editor_id(a_key)));
         assert_eq!(editor_state(active(&rig.page)), a_state);
+    }
+
+    #[test]
+    fn issue52_tab_click_round_trip_retains_each_document() {
+        let mut rig = Rig::new();
+        rig.focus.focus(active(&rig.page).results.id);
+        for _ in 0..4 {
+            rig.key(KeyCode::Down, KeyModifiers::NONE);
+        }
+        let result_a = (
+            active(&rig.page).results.cursor_row,
+            active(&rig.page).results.scroll.v.offset,
+        );
+
+        let long: String = (0..60)
+            .map(|i| format!("-- line {i} {}\n", "x".repeat(150)))
+            .collect();
+        rig.type_into_editor(&long);
+        rig.page
+            .active_doc_mut()
+            .expect("active doc")
+            .editor
+            .jump_to(10);
+        for _ in 0..3 {
+            rig.key(KeyCode::Right, KeyModifiers::SHIFT);
+        }
+        {
+            let editor = &mut rig.page.active_doc_mut().expect("active doc").editor;
+            editor.scroll.v.scroll_to(5);
+            editor.hscroll = 7;
+        }
+        rig.paint();
+        let a = editor_state(active(&rig.page));
+        assert_eq!(a.selection.as_deref(), Some("xxx"));
+
+        rig.focus.focus(rig.page.tabs.id);
+        rig.paint();
+        rig.click_tab(1);
+        assert_eq!(rig.page.tabs.active, 1);
+        assert_agree(&mut rig);
+
+        enter_edit(&mut rig);
+        rig.send(PageEvent::Paste("-- b\n".into()));
+        let b = editor_state(active(&rig.page));
+
+        rig.focus.focus(rig.page.tabs.id);
+        rig.paint();
+        rig.click_tab(0);
+        assert_eq!(rig.page.tabs.active, 0);
+        assert_agree(&mut rig);
+
+        let a_back = editor_state(active(&rig.page));
+        assert_eq!(a_back.text, a.text, "A's text");
+        assert_eq!(a_back.cursor, a.cursor, "A's caret");
+        assert_eq!(
+            (a_back.v_offset, a_back.h_offset),
+            (a.v_offset, a.h_offset),
+            "A's scroll"
+        );
+        // Known loss, tracked in #105: painting an editor that
+        // lost focus commits it (src/widgets/code.rs, `commit` on unfocused
+        // paint), which clears the selection. Caret, undo and scroll survive.
+        assert_eq!(a_back.selection, None, "A's selection is cleared on blur");
+        assert_eq!(
+            (
+                active(&rig.page).results.cursor_row,
+                active(&rig.page).results.scroll.v.offset
+            ),
+            result_a,
+            "A's result view"
+        );
+
+        rig.click_tab(1);
+        assert_eq!(editor_state(active(&rig.page)), b, "B's state");
+
+        rig.click_tab(0);
+        enter_edit(&mut rig);
+        rig.key(KeyCode::Char('z'), KeyModifiers::CONTROL);
+        assert_eq!(
+            active(&rig.page).editor.text(),
+            FIRST_QUERY,
+            "A's undo history survived the round trip"
+        );
+        assert_eq!(texts(&rig.page)[1], b.text, "B untouched by A's undo");
     }
 }
