@@ -200,3 +200,36 @@ pub fn the_thumb_follows_the_mouse_cell_for_cell(app: &mut App, size: (u16, u16)
         "a press on the bare track below the thumb moves it down"
     );
 }
+
+/// Every ticket the backend was asked to validate `id` under, oldest first.
+pub fn validation_tickets(seen: &[jackin_console::backend::Effect], id: &str) -> Vec<u64> {
+    seen.iter()
+        .filter_map(|e| match e {
+            jackin_console::backend::Effect::ValidateAccount {
+                ticket, account, ..
+            } if account == id => Some(*ticket),
+            _ => None,
+        })
+        .collect()
+}
+
+/// What a backend would answer for the validation `ticket` of `id`.
+pub fn validated(
+    app: &App,
+    ticket: u64,
+    id: &str,
+    result: Result<jackin_console::backend::Validation, String>,
+) -> jackin_console::world::Msg {
+    jackin_console::world::Msg::AccountValidated {
+        ticket,
+        account: id.to_owned(),
+        source: Box::new(app.world.accounts.get(id).expect("account").source.clone()),
+        result,
+    }
+}
+
+pub fn valid_fingerprint() -> Result<jackin_console::backend::Validation, String> {
+    Ok(jackin_console::backend::Validation::Fingerprint {
+        level: jackin_console::domain::account::ValidationLevel::QuotaReadable,
+    })
+}
