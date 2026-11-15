@@ -423,9 +423,8 @@ impl Toolbar {
         let mut x = area.x;
 
         let mut sep_at: Option<u16> = None;
-        for i in 0..n {
+        for (i, w) in widths.iter().copied().enumerate() {
             let it = &self.items[i];
-            let w = widths[i];
             if w > usize::from(limit.saturating_sub(x)) {
                 if overflowing {
                     self.hidden.extend(i..n);

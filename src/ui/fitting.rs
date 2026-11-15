@@ -19,6 +19,29 @@ pub(crate) fn removal_order(keys: &[(u8, u8, usize)]) -> Vec<usize> {
 /// every call to nothing.
 pub(crate) mod work {
     #[cfg(test)]
+    pub(crate) fn width() {
+        counting::bump(|w| w.widths += 1);
+    }
+    #[cfg(test)]
+    pub(crate) fn visit() {
+        counting::bump(|w| w.visits += 1);
+    }
+    #[cfg(test)]
+    pub(crate) fn compare() {
+        counting::bump(|w| w.compares += 1);
+    }
+
+    #[cfg(not(test))]
+    #[inline(always)]
+    pub(crate) fn width() {}
+    #[cfg(not(test))]
+    #[inline(always)]
+    pub(crate) fn visit() {}
+    #[cfg(not(test))]
+    #[inline(always)]
+    pub(crate) fn compare() {}
+
+    #[cfg(test)]
     pub(crate) use counting::{Work, measure};
 
     #[cfg(test)]
@@ -62,27 +85,4 @@ pub(crate) mod work {
             )
         }
     }
-
-    #[cfg(test)]
-    pub(crate) fn width() {
-        counting::bump(|w| w.widths += 1);
-    }
-    #[cfg(test)]
-    pub(crate) fn visit() {
-        counting::bump(|w| w.visits += 1);
-    }
-    #[cfg(test)]
-    pub(crate) fn compare() {
-        counting::bump(|w| w.compares += 1);
-    }
-
-    #[cfg(not(test))]
-    #[inline(always)]
-    pub(crate) fn width() {}
-    #[cfg(not(test))]
-    #[inline(always)]
-    pub(crate) fn visit() {}
-    #[cfg(not(test))]
-    #[inline(always)]
-    pub(crate) fn compare() {}
 }

@@ -717,10 +717,14 @@ fn render_one_wide_label_at_80_cols() {
             .iter()
             .map(|label| render_row(80, |buf, ctx, t| paint(label, buf, ctx, t)))
             .collect();
-        eprintln!("{name}: {:?} {:?} {:?}", rows[0], rows[1], rows[2]);
         assert_eq!(
             rows[0], rows[2],
             "{name}: 65536 and 200000 cells paint alike"
+        );
+        assert_wide_label_row(name, &rows[0].0);
+        assert_eq!(
+            rows[0].1, rows[1].1,
+            "{name}: hit regions follow the fit, not the script"
         );
     }
 }
