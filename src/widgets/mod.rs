@@ -17,6 +17,8 @@ pub mod field_common;
 pub mod file_browser;
 pub mod form_dialog;
 pub mod grid;
+#[cfg(test)]
+mod grid_sort_tests;
 mod grid_specimen;
 pub mod help;
 pub mod hintbar;

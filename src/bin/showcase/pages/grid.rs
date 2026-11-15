@@ -626,7 +626,16 @@ impl GridPage {
             Some(GridAction::FetchMore) => {
                 let from = self.grid.len();
                 self.grid.append_rows(page(from, self.knobs.total()));
-                cx.status(format!("Fetched rows {}–{}", from + 1, self.grid.len()));
+                let kept = if self.grid.sort.is_some() {
+                    " · sort kept"
+                } else {
+                    ""
+                };
+                cx.status(format!(
+                    "Fetched rows {}–{}{kept}",
+                    from + 1,
+                    self.grid.len()
+                ));
             }
             Some(GridAction::Refresh) => {
                 self.grid.set_rows(page(0, self.knobs.total()));
@@ -1007,6 +1016,9 @@ impl Page for GridPage {
         let key = |cmd| hint_key(&self.grid.keymap, cmd);
         if let Some(k) = key(GridCmd::Sort) {
             h.push((k, "Sort"));
+        }
+        if self.grid.local_sort && self.grid.sort.is_some() {
+            h.push(("Sorted", "saved values · new rows last"));
         }
         h.push(("Space", "Select row"));
         if self.grid.editable {

@@ -374,6 +374,11 @@ impl crate::ui::measure::Measure for DataGrid {
     }
 }
 
+#[cfg(test)]
+thread_local! {
+    pub(crate) static ORDER_REBUILDS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
 const GRID_CHROME_W: u16 = 6;
 
 const GRID_MIN_W: u16 = 24;
@@ -931,23 +936,26 @@ impl DataGrid {
         self.edit = None;
         self.cursor.0 = self.cursor.0.min(self.rows.len().saturating_sub(1));
         self.sample_widths();
-        if self.local_sort
-            && let Some((c, d)) = self.sort
-        {
-            self.apply_local_sort(c, d);
-        }
+        self.rebuild_order();
         self.scroll.set_content(self.content_rows());
         self.scroll.ensure_visible(self.cursor.0);
     }
 
     pub fn append_rows(&mut self, data: GridRows) {
-        let start = self.rows.len();
+        let appended = !data.rows.is_empty();
+        let (cursor, anchor) = self.view_srcs();
         self.rows.extend(data.rows);
-        self.order.extend(start..self.rows.len());
         self.total = data.total;
         self.more = data.more;
         self.loading = false;
+        if appended {
+            self.rebuild_order();
+            self.restore_view(cursor, anchor);
+        }
         self.scroll.set_content(self.content_rows());
+        if appended {
+            self.scroll.ensure_visible(self.cursor.0);
+        }
     }
 
     pub fn set_loading(&mut self, on: bool) {
@@ -984,14 +992,45 @@ impl DataGrid {
             .collect();
     }
 
-    fn apply_local_sort(&mut self, col: usize, dir: SortDir) {
-        let rows = &self.rows;
-        self.order.sort_by(|&a, &b| {
-            let va = &rows[a][col];
-            let vb = &rows[b][col];
-            let o = cmp_cells(va, vb).then_with(|| a.cmp(&b));
-            if dir == SortDir::Asc { o } else { o.reverse() }
-        });
+    fn rebuild_order(&mut self) {
+        #[cfg(test)]
+        ORDER_REBUILDS.with(|n| n.set(n.get() + 1));
+        let all = 0..self.rows.len();
+        if !self.local_sort {
+            self.order = all.collect();
+            return;
+        }
+        let (mut order, drafts): (Vec<usize>, Vec<usize>) =
+            all.partition(|src| !self.pending.inserted.contains(src));
+        if let Some((col, dir)) = self.sort.filter(|&(c, _)| c < self.columns.len()) {
+            let rows = &self.rows;
+            let cell = |src: usize| {
+                rows.get(src)
+                    .and_then(|r| r.get(col))
+                    .unwrap_or(&CellValue::Null)
+            };
+            order.sort_by(|&a, &b| {
+                let o = cmp_cells(cell(a), cell(b)).then_with(|| a.cmp(&b));
+                if dir == SortDir::Asc { o } else { o.reverse() }
+            });
+        }
+        order.extend(drafts);
+        self.order = order;
+    }
+
+    fn view_srcs(&self) -> (Option<usize>, Option<usize>) {
+        let src = |display: usize| self.order.get(display).copied();
+        (src(self.cursor.0), self.anchor.and_then(|(d, _)| src(d)))
+    }
+
+    fn restore_view(&mut self, cursor: Option<usize>, anchor: Option<usize>) {
+        let display = |order: &[usize], src: usize| order.iter().position(|&s| s == src);
+        if let Some(d) = cursor.and_then(|s| display(&self.order, s)) {
+            self.cursor.0 = d;
+        }
+        self.anchor = self
+            .anchor
+            .and_then(|(_, c)| Some((display(&self.order, anchor?)?, c)));
     }
 
     pub fn row_state(&self, src: usize) -> RowState {
@@ -1240,8 +1279,16 @@ impl DataGrid {
     }
 
     fn remove_inserted(&mut self, src: usize) {
+        let (cursor, anchor) = self.view_srcs();
+        let map = |s: usize| match s.cmp(&src) {
+            std::cmp::Ordering::Less => Some(s),
+            std::cmp::Ordering::Equal => None,
+            std::cmp::Ordering::Greater => Some(s - 1),
+        };
         self.rows.remove(src);
-        self.order = (0..self.rows.len()).collect();
+        self.order = self.order.iter().filter_map(|&s| map(s)).collect();
+        self.selection.remap(map);
+        self.restore_view(cursor.and_then(map), anchor.and_then(map));
         self.pending.inserted.remove(&src);
         self.pending.cells.retain(|(r, _), _| *r != src);
         let shift = |s: &mut BTreeSet<usize>| {
@@ -1347,6 +1394,9 @@ impl DataGrid {
     pub fn apply_commit_result(&mut self, result: Result<(), (usize, String)>) {
         match result {
             Ok(()) => {
+                let changed = !self.pending.is_empty();
+                let (cursor, anchor) = self.view_srcs();
+                let fallback = self.cursor_after_removal();
                 for ((r, c), v) in self.pending.cells.drain() {
                     if let Some(row) = self.rows.get_mut(r)
                         && let Some(cell) = row.get_mut(c)
@@ -1355,25 +1405,50 @@ impl DataGrid {
                     }
                 }
                 let deleted = std::mem::take(&mut self.pending.deleted);
-                let mut keep: Vec<Vec<CellValue>> = Vec::new();
-                for (i, row) in self.rows.drain(..).enumerate() {
-                    if !deleted.contains(&i) {
-                        keep.push(row);
-                    }
+                let mut map = Vec::with_capacity(self.rows.len());
+                let mut kept = 0;
+                for src in 0..self.rows.len() {
+                    map.push((!deleted.contains(&src)).then(|| {
+                        kept += 1;
+                        kept - 1
+                    }));
                 }
-                self.rows = keep;
-                self.order = (0..self.rows.len()).collect();
+                let mut i = 0;
+                self.rows.retain(|_| {
+                    i += 1;
+                    map[i - 1].is_some()
+                });
+                let to_new = |s: usize| map.get(s).copied().flatten();
                 self.pending = PendingChanges::default();
                 self.undo.clear();
                 self.row_errors.clear();
                 self.cell_errors.clear();
+                if changed {
+                    self.selection.remap(to_new);
+                    self.rebuild_order();
+                    self.restore_view(
+                        cursor.and_then(to_new).or(fallback.and_then(to_new)),
+                        anchor.and_then(to_new),
+                    );
+                }
                 self.scroll.set_content(self.content_rows());
                 self.cursor.0 = self.cursor.0.min(self.rows.len().saturating_sub(1));
+                self.scroll.ensure_visible(self.cursor.0);
             }
             Err((row, msg)) => {
                 self.row_errors.insert(row, msg);
             }
         }
+    }
+
+    fn cursor_after_removal(&self) -> Option<usize> {
+        let at = self.cursor.0.min(self.order.len());
+        let survives = |s: &&usize| !self.pending.deleted.contains(s);
+        self.order[at..]
+            .iter()
+            .find(survives)
+            .or_else(|| self.order[..at].iter().rev().find(survives))
+            .copied()
     }
 
     pub fn discard(&mut self) {
@@ -1803,12 +1878,12 @@ impl DataGrid {
     }
 
     fn request_sort(&mut self, next: Option<(usize, SortDir)>) -> (Outcome, Option<GridAction>) {
+        if next.is_some_and(|(c, _)| c >= self.columns.len()) {
+            return (Outcome::Ignored, None);
+        }
         self.sort = next;
         if self.local_sort {
-            match next {
-                Some((c, d)) => self.apply_local_sort(c, d),
-                None => self.order = (0..self.rows.len()).collect(),
-            }
+            self.rebuild_order();
             (Outcome::Changed, None)
         } else {
             (Outcome::Changed, Some(GridAction::SortRequested(next)))

@@ -222,5 +222,16 @@ variant of these enums stays a breaking change and is recorded here.
   keeps the draft. Digits discarded before the model stored a number cannot
   be recovered, and arbitrary-precision decimals are not supported. See
   [the audit note](audits/2026-11-15-exact-sql-literals.md).
+- `DataGrid` with `local_sort` keeps its active sort after `append_rows` and
+  after a successful `apply_commit_result`. The order compares saved cell
+  values, so a pending edit does not move its row until it is committed. New
+  draft rows stay last, in insertion order, and join the sorted rows once
+  saved. Each real append or accepted commit rebuilds the order once and keeps
+  the cursor, the range anchor and the selected rows on the same records. When
+  the cursor row is deleted, the cursor moves to the next surviving row in the
+  old display order, else the previous one. Typing, a no-op edit, a failed
+  commit, an empty append and an empty success rebuild nothing. With
+  `local_sort` off the grid never sorts: fetched rows keep the host's order. A
+  sort column outside the grid is ignored and leaves source order.
 - The `visual-baseline` git tag is frozen historical evidence. It is
   never moved, and it is not a substitute for the current design.
