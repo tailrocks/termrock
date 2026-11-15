@@ -310,7 +310,14 @@ impl SearchDetail {
     /// preview to its top when the selected key changed.
     fn settle(&mut self, reply: Reply) -> Reply {
         let carried = std::mem::take(&mut self.carried);
-        let reply = carried.merge(reply);
+        let mut reply = carried.merge(reply);
+        if self.session.take_relocation()
+            && !reply
+                .actions()
+                .any(|a| matches!(a, SearchAction::SelectionChanged(_)))
+        {
+            reply.push_action(SearchAction::SelectionChanged(self.session.selected_key()));
+        }
         if reply
             .actions()
             .any(|a| matches!(a, SearchAction::SelectionChanged(_)))
@@ -515,6 +522,15 @@ impl SearchDetail {
     /// once a paint has placed its key. Call it after rendering. It returns
     /// ignored while nothing is waiting or the key is not on screen yet.
     pub fn emit_pending_context(&mut self) -> Reply {
+        let reply = self.pending_context();
+        if self.session.has_relocation() {
+            self.settle(reply)
+        } else {
+            reply
+        }
+    }
+
+    fn pending_context(&mut self) -> Reply {
         let Some(key) = self.session.context_intent() else {
             return Response::ignored();
         };

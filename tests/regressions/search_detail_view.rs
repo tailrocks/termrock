@@ -13,13 +13,13 @@ use junie_tui::core::list::{KeyedRowSource, SourceStamp};
 use junie_tui::core::pointer::PointerEvent;
 use junie_tui::core::response::Response;
 use junie_tui::core::selection::ClickPolicy;
-use junie_tui::theme::{ColorLevel, Theme, Tone};
+use junie_tui::theme::{ButtonKind, ColorLevel, Theme, Tone};
 use junie_tui::ui::context::{ContextAnchor, ContextConfig, ContextSource};
 use junie_tui::ui::ctx::{Interaction, RenderCtx};
 use junie_tui::ui::layout::Split;
 use junie_tui::widgets::input::TextInput;
 use junie_tui::widgets::list_detail::{
-    DetailPane, Line, ListDetailSource, ListRowRef, SourceFrame,
+    Action, DetailPane, Line, ListDetailSource, ListRowRef, SourceFrame,
 };
 use junie_tui::widgets::search_detail::{
     QueryRequest, QueryView, ResultRowKind, RowPaint, SearchAction, SearchConfig, SearchDetail,
@@ -118,6 +118,10 @@ fn frame_lines(n: usize) -> Vec<Line> {
 }
 
 fn detail_frame(lines: &[Line]) -> SourceFrame<'_> {
+    detail_frame_with(lines, &[])
+}
+
+fn detail_frame_with<'a>(lines: &'a [Line], actions: &'a [Action]) -> SourceFrame<'a> {
     SourceFrame {
         title: "Results",
         meta: "",
@@ -126,7 +130,7 @@ fn detail_frame(lines: &[Line]) -> SourceFrame<'_> {
         detail_title: "Preview",
         detail_meta: "",
         lines,
-        actions: &[],
+        actions,
     }
 }
 
@@ -1455,5 +1459,188 @@ fn search_detail_chip_that_does_not_fit_is_not_selectable_or_runnable() {
     assert!(
         ran.iter().any(|item| painted.contains(item)),
         "the chips that are drawn still run: {ran:?}"
+    );
+    selection_never_rests_on_a_chip_that_is_not_drawn();
+}
+
+const ROOMY: Rect = Rect::new(0, 0, 200, 14);
+const CROWDED: Rect = Rect::new(0, 0, 120, 14);
+const WIDE_CHIP: &str = "a chip with a label far too long for the narrowed list pane";
+
+fn long_chips() -> Vec<R> {
+    vec![
+        R::Item(10, "alpha"),
+        R::Cells(
+            3,
+            vec![(30, "one", true), (31, "two", true), (32, WIDE_CHIP, true)],
+        ),
+    ]
+}
+
+fn open_action() -> [Action; 1] {
+    [Action::new("open", "Open", ButtonKind::Primary)]
+}
+
+/// Paints with the standard row painter, which leaves out a chip that does
+/// not fit.
+fn draw_standard(
+    search: &mut SearchDetail,
+    source: &Results,
+    area: Rect,
+    (lines, actions): (&[Line], &[Action]),
+) -> Frame {
+    let theme = Theme::for_level(ColorLevel::TrueColor);
+    let mut buf = Buffer::empty(area);
+    let mut hits = HitRegistry::default();
+    let mut ring = FocusRing::default();
+    let interaction = Interaction {
+        focus: Some(ID),
+        ..Default::default()
+    };
+    {
+        let mut ctx = RenderCtx::new(&theme, interaction, &mut hits, &mut ring);
+        search
+            .render_source(
+                area,
+                source,
+                &detail_frame_with(lines, actions),
+                &mut buf,
+                &mut ctx,
+            )
+            .expect("the accepted source");
+    }
+    Frame { buf, hits }
+}
+
+fn drawn(frame: &Frame, cell: u64) -> bool {
+    frame
+        .hits
+        .regions()
+        .iter()
+        .any(|r| r.owner == ID && r.part.part == Part::CELL && r.part.item == Some(k(cell)))
+}
+
+/// Selects the wide chip while it fits, then narrows the list so the chip is
+/// left out. Returns the frame of the narrowed paint.
+fn narrowed_with_the_wide_chip_selected() -> (SearchDetail, Results, Focus, Frame) {
+    let mut search = new_search(SearchConfig::default());
+    let req = accept(&mut search, 1, long_chips());
+    let source = source_for(&req, long_chips());
+    let mut focus = Focus::default();
+    focus.focus(ID);
+    let actions = open_action();
+    let lines = frame_lines(3);
+    let roomy = draw_standard(&mut search, &source, ROOMY, (&lines, &actions));
+    assert!(
+        drawn(&roomy, 32),
+        "premise: the wide chip fits at 200 columns"
+    );
+    for _ in 0..3 {
+        on_key(&mut search, &source, &mut focus, &key(KeyCode::Down));
+        on_key(&mut search, &source, &mut focus, &key(KeyCode::Right));
+        on_key(&mut search, &source, &mut focus, &key(KeyCode::Right));
+        if search.selected_key() == Some(k(32)) {
+            break;
+        }
+    }
+    assert_eq!(
+        search.selected_key(),
+        Some(k(32)),
+        "premise: wide chip selected"
+    );
+    let narrow = draw_standard(&mut search, &source, CROWDED, (&lines, &actions));
+    assert!(
+        drawn(&narrow, 30) && !drawn(&narrow, 32),
+        "premise: at 120 columns the wide chip is left out: 30={} 32={}\n{}",
+        drawn(&narrow, 30),
+        drawn(&narrow, 32),
+        narrow.text()
+    );
+    (search, source, focus, narrow)
+}
+
+fn assert_rests_on_a_drawn_chip(search: &SearchDetail, frame: &Frame, when: &str) {
+    let at = search.selected_key().expect("a selection");
+    for chip in [30, 31, 32] {
+        assert!(
+            at != k(chip) || drawn(frame, chip),
+            "{when}: the selection rests on chip {chip}, which is not drawn"
+        );
+    }
+}
+
+/// What the chip test checks once the narrowed list has left the selected chip
+/// out: the selection moves to a drawn chip and no key, context request or
+/// preview action reaches the chip that is not drawn.
+fn selection_never_rests_on_a_chip_that_is_not_drawn() {
+    // Narrowing while the wide chip is selected moves the selection and says so.
+    let (mut search, _, _, frame) = narrowed_with_the_wide_chip_selected();
+    assert_rests_on_a_drawn_chip(&search, &frame, "after narrowing");
+    let moved = acts(search.emit_pending_context());
+    assert!(
+        matches!(&moved[..], [SearchAction::SelectionChanged(Some(to))] if *to != k(32)),
+        "the host is told the selection moved: {moved:?}"
+    );
+
+    // Left, Home, End and Right all start from, and end on, a drawn chip.
+    for code in [KeyCode::Left, KeyCode::Home, KeyCode::End, KeyCode::Right] {
+        let (mut search, source, mut focus, frame) = narrowed_with_the_wide_chip_selected();
+        assert_rests_on_a_drawn_chip(&search, &frame, "after narrowing");
+        on_key(&mut search, &source, &mut focus, &key(code));
+        assert_rests_on_a_drawn_chip(&search, &frame, &format!("after {code:?}"));
+    }
+
+    // A context key pressed while the wide chip was out is not run when the
+    // list widens again.
+    let (mut search, source, mut focus, _) = narrowed_with_the_wide_chip_selected();
+    let menu = chord(KeyCode::F(10), KeyModifiers::SHIFT);
+    let pressed = on_key(&mut search, &source, &mut focus, &menu);
+    let actions = open_action();
+    let lines = frame_lines(3);
+    draw_standard(&mut search, &source, ROOMY, (&lines, &actions));
+    let later = acts(search.emit_pending_context());
+    for action in pressed.iter().chain(&later) {
+        assert!(
+            !matches!(action, SearchAction::ContextRequested(r) if r.target == k(32)),
+            "a context request named the chip that was not drawn: {pressed:?} then {later:?}"
+        );
+    }
+
+    // A preview action runs against a drawn chip.
+    let (mut search, source, mut focus, frame) = narrowed_with_the_wide_chip_selected();
+    let text = frame.text();
+    let (y, line) = text
+        .lines()
+        .enumerate()
+        .find(|(_, l)| l.contains("Open"))
+        .expect("the Open button is drawn beside the list");
+    let x = line
+        .char_indices()
+        .find(|&(i, _)| line[i..].starts_with("Open"))
+        .map(|(i, _)| line[..i].chars().count())
+        .expect("column of Open");
+    let at = Position::new(x as u16, y as u16);
+    let button = frame
+        .hits
+        .regions()
+        .iter()
+        .rev()
+        .find(|r| r.area.contains(at))
+        .expect("a hit region under the button")
+        .id;
+    let mut out = Vec::new();
+    for phase in [Phase::Press, Phase::Click] {
+        let ev = PointerEvent::new(&frame.hits, phase, button, at, 1, KeyModifiers::NONE);
+        out.extend(acts(
+            search.pointer(&ev, &source, &mut focus).expect("source"),
+        ));
+    }
+    assert!(
+        matches!(
+            out.iter()
+                .find(|a| matches!(a, SearchAction::DetailAction { .. })),
+            Some(SearchAction::DetailAction { key, name: "open" }) if *key != k(32)
+        ),
+        "the preview action runs against a drawn chip: {out:?}"
     );
 }
