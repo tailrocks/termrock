@@ -10,7 +10,10 @@
 //! - `TerminalBytesWritten`: bytes the writer accepted, escape sequences,
 //!   cursor moves and synchronized-update markers included.
 //!
-//! Without the `work-metrics` feature both records compile away.
+//! The module exists only with the `work-metrics` feature. Without it the
+//! runtime draws through plain `CrosstermBackend` and
+//! [`SessionTerminal`](super::SessionTerminal) is `DefaultTerminal`. The types
+//! are not re-exported: they are reachable only as the backend of that alias.
 
 use std::io::{self, Write};
 

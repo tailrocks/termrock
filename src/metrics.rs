@@ -116,7 +116,9 @@ metrics! {
     /// Bytes the runtime's backend wrote to its terminal writer, escape
     /// sequences included.
     TerminalBytesWritten => "terminal_bytes_written",
-    /// Raw terminal events taken from the reader, filtered ones included.
+    /// Raw terminal events the input turn took from the reader (`scan_next`),
+    /// filtered ones included. The discard of stale events at startup
+    /// (`discard_ready`) is not input work and is not counted.
     RawEventsRead => "raw_events_read",
     /// Raw events dropped before they became an input (focus guard, release
     /// and other unhandled kinds).

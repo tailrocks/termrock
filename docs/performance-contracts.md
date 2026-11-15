@@ -27,8 +27,10 @@ the macro.
 
 ### Terminal output boundary
 
-`TerminalSession::terminal()` returns a `SessionTerminal`, a `ratatui::Terminal`
-over `MeteredBackend<Stdout>`. The backend wraps `ratatui`'s crossterm backend
+`TerminalSession::terminal()` returns a `SessionTerminal`. In a default build
+that is `ratatui::DefaultTerminal`, exactly as before, and nothing is counted.
+With `work-metrics` it is a `ratatui::Terminal` over a `MeteredBackend<Stdout>`
+that the crate does not export. The backend wraps `ratatui`'s crossterm backend
 over a counting writer, so the runtime owns the one place where the diff's
 output and the final bytes can be counted, and it draws and writes exactly what
 `CrosstermBackend` does (`metered_backend_writes_the_bytes_crossterm_writes`).
@@ -66,7 +68,7 @@ Limits that are not hidden:
 | `TerminalBytesFed` | bytes | `TerminalState::feed`, before the feed guard filters the input; every `TerminalViewport`, session controller and pane feed passes through it |
 | `DiffCellsVisited` | cells | `MeteredBackend::draw`: the cells the frame diff handed to the runtime's backend |
 | `TerminalBytesWritten` | bytes | `MeteredWriter::write`: bytes the runtime's terminal writer accepted, escape sequences included |
-| `RawEventsRead`, `RawEventsFiltered` | events | the runtime raw reader (`scan_next`): every event taken, and those dropped by the focus guard or as an unsupported kind |
+| `RawEventsRead`, `RawEventsFiltered` | events | the runtime raw reader (`scan_next`): every event an input turn takes, and those dropped by the focus guard or as an unsupported kind. The startup discard of stale events (`discard_ready`) is not counted |
 | `InputDispatches` | dispatches | every `Application::handle` call the runtime makes: input drains, settled pointer moves, external messages, resize, tick and the resume resize |
 
 `TextViewport`, `ScrollView` and the width helper are shared, so every app that
@@ -148,7 +150,7 @@ list, table, grid and tree widget in the frame.
 | `ScrollPanel` (flat) | push one 13-byte line, then frame | 1k / 10k / 100k | source rows read 1, rows painted 30, width calls 31, width bytes 1,003, independent of n |
 | `ScrollPanel` (wrapping) | first frame | 1k / 10k / 100k | source rows read = n, rows painted 30, width calls 39n + 30, width bytes 61n + 990 |
 | `ScrollPanel` (wrapping) | settled frame | same | rows painted 30, width calls 30, width bytes 990; no source row read |
-| `ScrollPanel` (wrapping) | push one line, then frame | same | source rows read n + 1, width calls 39n + 46, width bytes 61n + 1,014: the append drops the wrapped rows and the frame wraps every line again (a known gap, see below) |
+| `ScrollPanel` (wrapping) | push one line, then frame | same | source rows read n + 1, width calls 39n + 46, width bytes 61n + 1,014: the append drops the wrapped rows and the frame wraps every line again (a known gap, #291, see below) |
 | `TerminalViewport` / `TerminalView` | draw or render at the live tail, or at the oldest history | 30x99 grid over 1k / 10k / 100k lines of scrollback | source rows read 30 for each, independent of the scrollback |
 | `TerminalViewport` | feed 100 lines (3,500 bytes) | same | terminal bytes fed 3,500, no row read |
 | `TerminalViewport` | press, then drag, then copy ten selected rows | same | source rows read 5, then 1, then 19 (one lookup per copied row and one soft-wrap lookup per row boundary), independent of the scrollback |
@@ -208,7 +210,8 @@ list, table, grid and tree widget in the frame.
   rewraps its whole history on the next frame (n + 1 source rows). The flat
   panel extends its widest-line cache by the added lines only. The wrapping
   count is today's behaviour of an unfixed path; an incremental wrap lowers it
-  to n-independent work.
+  to n-independent work. Tracked in
+  [#291](https://github.com/tailrocks/terminal-components-baseline/issues/291).
 - Copying ten terminal rows reads 19 rows: each row is looked up to cut its
   text and once more to ask whether the next row continues it. The count is
   bounded by the selection, not the scrollback.

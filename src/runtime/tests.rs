@@ -14,11 +14,21 @@ use ratatui::{Terminal, TerminalOptions, Viewport};
 use super::isolated::child_case;
 use super::job_control;
 use super::panic_bridge::RestoreGate;
-use super::{MeteredBackend, SessionTerminal, TerminalSession};
+use super::{SessionTerminal, TerminalSession};
+
+#[cfg(feature = "work-metrics")]
+fn stdout_backend() -> super::MeteredBackend<io::Stdout> {
+    super::MeteredBackend::new(io::stdout())
+}
+
+#[cfg(not(feature = "work-metrics"))]
+fn stdout_backend() -> ratatui::backend::CrosstermBackend<io::Stdout> {
+    ratatui::backend::CrosstermBackend::new(io::stdout())
+}
 
 fn fixed_terminal() -> io::Result<SessionTerminal> {
     Terminal::with_options(
-        MeteredBackend::new(io::stdout()),
+        stdout_backend(),
         TerminalOptions {
             viewport: Viewport::Fixed(Rect::new(0, 0, 10, 3)),
         },

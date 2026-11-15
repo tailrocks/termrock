@@ -56,6 +56,16 @@ fn work_contract_runtime_raw_filtered_events_yield() {
     }
 }
 
+#[test]
+fn work_contract_runtime_startup_discard_is_not_input_work() {
+    // The drain of stale events before the first turn is bounded by its own
+    // limit and is not in `RawEventsRead`, which counts input turns only.
+    let mut source = Script::new((0..50).map(|_| press('a')));
+    let (discarded, work) = measure(|| discard_ready(&mut source, 32));
+    assert_eq!(discarded.expect("discard"), 32);
+    assert_exact(&work, "startup discard", &[]);
+}
+
 /// An application that owns an external receiver and ignores what it gets.
 struct Flood {
     receiver: ExternalReceiver,
@@ -128,6 +138,88 @@ fn work_contract_runtime_flood_services_input() {
             &[(Metric::InputDispatches, DRAIN_BUDGET as u64)],
         );
     }
+}
+
+/// An application that reports every input as a change.
+#[derive(Default)]
+struct Eager {
+    seen: Vec<Input>,
+}
+
+impl Application for Eager {
+    fn handle(&mut self, input: Input) -> Outcome {
+        self.seen.push(input);
+        Outcome::Changed
+    }
+    fn render(&mut self, _: &mut Frame) {}
+    fn should_quit(&self) -> bool {
+        false
+    }
+    fn tick_interval(&self) -> Duration {
+        Duration::from_millis(100)
+    }
+}
+
+fn pointer_move(x: u16) -> Input {
+    Input::Mouse(Mouse::new(
+        MouseKind::Move,
+        ratatui::layout::Position::new(x, 1),
+    ))
+}
+
+#[test]
+fn work_contract_runtime_settle_counts_the_settled_pointer_move() {
+    // A burst of pointer moves folds into one dispatch per move the drain
+    // takes, and the last move is delivered once more by `settle` so the
+    // pointer rests on the right cell. That second delivery is a dispatch.
+    for n in [3usize, 30] {
+        let mut app = Eager::default();
+        let mut pump = InputPump::new(Coalesce {
+            max_batch: 64,
+            max_latency: Duration::from_secs(60),
+            ..Coalesce::default()
+        });
+        let mut offered = 0usize;
+        let (changed, drained) = measure(|| {
+            pump.drain(&mut app, || {
+                offered += 1;
+                Ok((offered <= n).then(|| pointer_move(offered as u16)))
+            })
+        });
+        assert!(changed.expect("drain"));
+        assert_exact(
+            &drained,
+            "pointer burst drain",
+            &[(Metric::InputDispatches, n as u64)],
+        );
+
+        let (changed, settled) = measure(|| pump.settle(&mut app));
+        assert!(changed, "the settled move reaches the application");
+        assert_exact(
+            &settled,
+            "settled pointer move",
+            &[(Metric::InputDispatches, 1)],
+        );
+        assert_eq!(app.seen.len(), n + 1);
+        assert_eq!(app.seen.last(), app.seen.get(n - 1), "the last move again");
+
+        let (changed, again) = measure(|| pump.settle(&mut app));
+        assert!(!changed, "a move settles once");
+        assert_exact(&again, "second settle", &[]);
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn work_contract_runtime_resume_resize_is_one_dispatch() {
+    // After a suspend the loop tells the application the new size once, and
+    // records the size so the next size check does not repeat it.
+    let mut app = Eager::default();
+    let mut sizes = SizeWatch::new(Some((80, 24)));
+    let ((), work) = measure(|| deliver_resume_resize(&mut app, &mut sizes, (100, 30)));
+    assert_exact(&work, "resume resize", &[(Metric::InputDispatches, 1)]);
+    assert_eq!(app.seen, [Input::Resize(100, 30)]);
+    assert_eq!(sizes.check((100, 30)), None, "the watch knows the new size");
 }
 
 /// Draws a screen of one repeated glyph, with an optional marker in the

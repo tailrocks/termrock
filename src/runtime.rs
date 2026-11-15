@@ -21,13 +21,23 @@ use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use crate::core::event::{External, Input, InputConfig, Key, Mouse, MouseKind, Outcome};
 use crate::core::keyboard::{self, KeyboardProtocol};
 
+#[cfg(feature = "work-metrics")]
 mod metered;
 mod panic_bridge;
-pub use metered::{MeteredBackend, MeteredWriter};
+#[cfg(feature = "work-metrics")]
+use metered::MeteredBackend;
 use panic_bridge::{RestoreGate, SessionOwner};
 
-/// The terminal a [`TerminalSession`] draws into: crossterm over stdout, with
-/// the cells and bytes of every frame counted under `work-metrics`.
+/// The terminal a [`TerminalSession`] draws into. It is `ratatui`'s
+/// [`DefaultTerminal`](ratatui::DefaultTerminal), crossterm over stdout. With
+/// the `work-metrics` feature the backend counts the cells and bytes of every
+/// frame; the type is then a `ratatui::Terminal` over an unnameable metered
+/// backend, and callers can only use it through `Terminal`'s own methods.
+#[cfg(not(feature = "work-metrics"))]
+pub type SessionTerminal = ratatui::DefaultTerminal;
+
+/// The metered shape of [`SessionTerminal`] (feature `work-metrics`).
+#[cfg(feature = "work-metrics")]
 pub type SessionTerminal = ratatui::Terminal<MeteredBackend<std::io::Stdout>>;
 
 pub trait Application {
@@ -491,7 +501,10 @@ fn open_terminal(protocol: KeyboardProtocol) -> std::io::Result<SessionTerminal>
         out.write_all(push.as_bytes())?;
         out.flush()?;
     }
+    #[cfg(feature = "work-metrics")]
     let backend = MeteredBackend::new(out);
+    #[cfg(not(feature = "work-metrics"))]
+    let backend = ratatui::backend::CrosstermBackend::new(out);
     ratatui::Terminal::new(backend)
 }
 
@@ -910,6 +923,16 @@ mod tty_input {
     }
 }
 
+/// Tells the application the size the terminal has after a suspend, and the
+/// size watch that it was told.
+#[cfg(unix)]
+fn deliver_resume_resize(app: &mut impl Application, sizes: &mut SizeWatch, (w, h): (u16, u16)) {
+    let resize = Input::Resize(w, h);
+    sizes.observe(&resize);
+    crate::record_work!(InputDispatches, 1usize);
+    app.handle(resize);
+}
+
 fn event_loop(session: &mut TerminalSession, app: &mut impl Application) -> std::io::Result<()> {
     let suppress_colors = Colored::ansi_color_disabled_memoized();
     let mut dirty = true;
@@ -926,14 +949,11 @@ fn event_loop(session: &mut TerminalSession, app: &mut impl Application) -> std:
     loop {
         #[cfg(unix)]
         if job_control::take_request() {
-            let (w, h) = session.suspend()?;
+            let size = session.suspend()?;
 
             shapes.forget();
 
-            let resize = Input::Resize(w, h);
-            sizes.observe(&resize);
-            crate::record_work!(InputDispatches, 1usize);
-            app.handle(resize);
+            deliver_resume_resize(app, &mut sizes, size);
             dirty = true;
         }
         let terminal = &mut session.terminal;
