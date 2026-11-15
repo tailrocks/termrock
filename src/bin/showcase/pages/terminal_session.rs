@@ -11,6 +11,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 use junie_tui::core::event::Key;
+use junie_tui::core::hit::Axis;
 use junie_tui::core::id::WidgetId;
 use junie_tui::terminal::{
     SessionClipboardContext, SessionClipboardDecision, SessionClipboardRefusal, SessionCommand,
@@ -485,6 +486,49 @@ impl SessionDemo {
             code: KeyCode::Enter,
             mods: KeyModifiers::NONE,
         });
+    }
+
+    fn sent_count(&self) -> usize {
+        self.commands.lock().expect("commands").len()
+    }
+
+    /// One wheel step up. On the alternate screen it becomes an arrow key
+    /// for the program; elsewhere the viewport would scroll.
+    pub fn wheel_up(&mut self) {
+        let before = self.sent_count();
+        let outcome = self.session.wheel(Axis::Vertical, -1);
+        let sent = self.sent_count() > before;
+        self.collect();
+        self.result = Some(match outcome {
+            None => "wheel → not on the alternate screen, the viewport would scroll".to_owned(),
+            Some(_) if sent => "wheel → up arrow sent to the program".to_owned(),
+            Some(_) => "wheel → consumed, nothing sent".to_owned(),
+        });
+    }
+
+    pub fn redraw(&mut self) {
+        let before = self.sent_count();
+        self.session.redraw();
+        self.collect();
+        self.result = Some(if self.sent_count() > before {
+            "redraw → sent to the link".to_owned()
+        } else {
+            "redraw → no link to take it".to_owned()
+        });
+    }
+
+    pub fn clear_history(&mut self) {
+        self.session.clear();
+        self.collect();
+        self.result = Some("history cleared · no byte sent to the program".to_owned());
+    }
+
+    /// Blanks the host's own screen through the viewport handle. The program
+    /// keeps running and gets no bytes.
+    pub fn hard_reset(&mut self) {
+        self.session.viewport_mut().reset();
+        self.collect();
+        self.result = Some("screen reset here · no byte sent to the program".to_owned());
     }
 
     fn paste_result(&mut self, text: &str, sent: SessionPaste) {
@@ -997,5 +1041,76 @@ mod tests {
         assert!(!demo.held_paste());
         assert_eq!(demo.result.as_deref(), Some("paste → sent to the program"));
         assert_eq!(sent(&demo).len(), before + 1);
+    }
+
+    #[test]
+    fn wheel_up_is_an_arrow_key_only_on_the_alternate_screen() {
+        let mut demo = demo(Script::Owner);
+        demo.play();
+        let before = sent(&demo);
+        demo.wheel_up();
+        assert_eq!(
+            demo.result.as_deref(),
+            Some("wheel → not on the alternate screen, the viewport would scroll")
+        );
+        assert_eq!(sent(&demo), before, "nothing is sent to the program");
+
+        demo.session.viewport_mut().feed(b"\x1b[?1049h");
+        demo.wheel_up();
+        assert_eq!(
+            sent(&demo).last().map(String::as_str),
+            Some("input ESC [ A")
+        );
+        assert_eq!(
+            demo.result.as_deref(),
+            Some("wheel → up arrow sent to the program")
+        );
+    }
+
+    #[test]
+    fn redraw_is_sent_to_a_live_link_and_not_without_one() {
+        let mut failed = demo(Script::Fails);
+        failed.redraw();
+        assert_eq!(
+            failed.result.as_deref(),
+            Some("redraw → no link to take it")
+        );
+        assert!(sent(&failed).is_empty(), "a failed session has no link");
+
+        let mut owner = demo(Script::Owner);
+        owner.redraw();
+        assert_eq!(sent(&owner).last().map(String::as_str), Some("redraw"));
+        assert_eq!(owner.result.as_deref(), Some("redraw → sent to the link"));
+    }
+
+    #[test]
+    fn clear_history_drops_the_scrollback_and_sends_nothing() {
+        let mut demo = demo(Script::Owner);
+        demo.play();
+        let lines: Vec<u8> = (0..40)
+            .flat_map(|i| format!("line {i}\r\n").into_bytes())
+            .collect();
+        demo.session.viewport_mut().feed(&lines);
+        assert!(demo.session.viewport().state().scrollback_len() > 0);
+        let before = sent(&demo);
+        demo.clear_history();
+        assert_eq!(demo.session.viewport().state().scrollback_len(), 0);
+        assert_eq!(sent(&demo), before, "clear sends nothing to the program");
+        assert_eq!(
+            demo.result.as_deref(),
+            Some("history cleared · no byte sent to the program")
+        );
+    }
+
+    #[test]
+    fn hard_reset_blanks_the_screen_and_keeps_the_session() {
+        let mut demo = demo(Script::Owner);
+        demo.play();
+        assert_eq!(row(&demo, 0), "demo$ ls");
+        let before = sent(&demo);
+        demo.hard_reset();
+        assert_eq!(row(&demo, 0), "", "the host's screen is blank");
+        assert_eq!(status(&demo), SessionStatus::Attached(SessionLease::Owner));
+        assert_eq!(sent(&demo), before, "no byte goes to the program");
     }
 }

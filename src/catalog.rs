@@ -3928,8 +3928,6 @@ const HOST_FED: &str = "used by the host that feeds the terminal state (the jack
 
 const TEXT_FILTER: &str = "used by the feed guard that keeps these characters out of every cell and by the jackin console's title filter, and pinned by tests/terminal_guard.rs";
 
-const SESSION_HOST: &str = "transport and host plumbing the Terminal pane session demo has no surface for: the scripted link never reports a full or closed queue, never ends by a lost stream or a refusal, and the page has no wheel, redraw, clear, live policy replacement or permissive clipboard policy; pinned by the session tests in tests/terminal.rs";
-
 pub static ALLOWLIST: &[Allowed] = &[
     Allowed {
         id: "terminal::TerminalState::with_scrollback",
@@ -4053,74 +4051,54 @@ pub static ALLOWLIST: &[Allowed] = &[
     },
     Allowed {
         id: "terminal::PENDING_EFFECTS",
-        reason: SESSION_HOST,
+        reason: "the cap of 16 queued host effects; the page keeps three on screen, so the cap is not visible here. session_controller_effect_queue_keeps_the_newest_sixteen pins it.",
     },
     Allowed {
         id: "terminal::ReplayTiming",
-        reason: SESSION_HOST,
+        reason: "the three numbers that set the replay window; the page keeps the defaults of SessionConfig::new and sets none of its own. session_controller_replay_deadline_follows_output pins the deadlines they produce.",
     },
     Allowed {
         id: "terminal::SessionClipboardDecision::Copy",
-        reason: SESSION_HOST,
+        reason: "the page's DemoPolicy refuses every clipboard write, so it never returns Copy. session_controller_clipboard_decisions_and_refusal_throttle pins the copy path.",
     },
     Allowed {
         id: "terminal::SessionClipboardDecision::Drop",
-        reason: SESSION_HOST,
+        reason: "the page's DemoPolicy refuses every clipboard write and never drops one. session_controller_clipboard_decisions_and_refusal_throttle pins the drop with a 'drop' payload.",
     },
     Allowed {
         id: "terminal::SessionClipboardRefusal::TooLarge",
-        reason: SESSION_HOST,
+        reason: "the page's DemoPolicy reports only Write and Read refusals, never TooLarge. session_controller_clipboard_decisions_and_refusal_throttle pins it with a 'big' payload.",
     },
     Allowed {
         id: "terminal::SessionCommand::Detach",
-        reason: SESSION_HOST,
-    },
-    Allowed {
-        id: "terminal::SessionCommand::Redraw",
-        reason: SESSION_HOST,
+        reason: "the controller never sends Detach. apps/jackin maps it to the pane's own command, and no page control or test sends it.",
     },
     Allowed {
         id: "terminal::SessionDetach::TransportLost",
-        reason: SESSION_HOST,
+        reason: "no page script ends the stream after the attach, so the page cannot reach this status. session_controller_resize_retry_restart_transcript pins it.",
     },
     Allowed {
         id: "terminal::SessionEnd::Failed",
-        reason: SESSION_HOST,
+        reason: "the page's fails script fails inside SessionSource::open, never with this event. session_controller_failed_attach_can_be_refused_by_the_other_side pins the event.",
     },
     Allowed {
         id: "terminal::SessionEnd::Refused",
-        reason: SESSION_HOST,
+        reason: "no page script sends a refusal. session_controller_failed_attach_can_be_refused_by_the_other_side pins it.",
     },
     Allowed {
         id: "terminal::SessionEnd::StreamClosed",
-        reason: SESSION_HOST,
+        reason: "no page script closes the stream. session_controller_resize_retry_restart_transcript pins a close before the attach and a close after it.",
     },
     Allowed {
         id: "terminal::SessionSent::Closed",
-        reason: SESSION_HOST,
+        reason: "the page's scripted link always queues, and no test returns a closed queue.",
     },
     Allowed {
         id: "terminal::SessionSent::Full",
-        reason: SESSION_HOST,
-    },
-    Allowed {
-        id: "terminal::TerminalSessionController::clear",
-        reason: SESSION_HOST,
-    },
-    Allowed {
-        id: "terminal::TerminalSessionController::redraw",
-        reason: SESSION_HOST,
+        reason: "the page's scripted link always queues. session_controller_reply_and_paste_limits pins a full queue.",
     },
     Allowed {
         id: "terminal::TerminalSessionController::set_host_policy",
-        reason: SESSION_HOST,
-    },
-    Allowed {
-        id: "terminal::TerminalSessionController::viewport_mut",
-        reason: SESSION_HOST,
-    },
-    Allowed {
-        id: "terminal::TerminalSessionController::wheel",
-        reason: SESSION_HOST,
+        reason: "apps/jackin swaps its host policy through this call. The page sets its policy once at construction, and no test in this repo swaps one.",
     },
 ];

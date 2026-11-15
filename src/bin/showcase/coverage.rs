@@ -11,6 +11,7 @@ pub const TERMINAL_SESSION_COVERAGE: &[&str] = &[
     "terminal::SessionCommand",
     "terminal::SessionCommand::Input",
     "terminal::SessionCommand::Reply",
+    "terminal::SessionCommand::Redraw",
     "terminal::SessionEnd",
     "terminal::SessionEnd::Detached",
     "terminal::SessionEvent",
@@ -86,6 +87,10 @@ pub const TERMINAL_SESSION_COVERAGE: &[&str] = &[
     "terminal::TerminalSessionController::focus_changed",
     "terminal::TerminalSessionController::close_needs_confirm",
     "terminal::TerminalSessionController::set_config",
+    "terminal::TerminalSessionController::wheel",
+    "terminal::TerminalSessionController::redraw",
+    "terminal::TerminalSessionController::clear",
+    "terminal::TerminalSessionController::viewport_mut",
 ];
 
 pub const PICKER_COVERAGE: &[(&str, &str)] = &[

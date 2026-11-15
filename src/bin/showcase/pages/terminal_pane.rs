@@ -224,10 +224,14 @@ enum SessionAction {
     PasteLines,
     Confirm,
     Enter,
+    Wheel,
+    Redraw,
+    ClearHistory,
+    HardReset,
     Reset,
 }
 
-const SESSION_CONTROLS: [(SessionAction, &str); 8] = [
+const SESSION_CONTROLS: [(SessionAction, &str); 12] = [
     (SessionAction::Advance, "Tick 200 ms"),
     (SessionAction::Play, "Run 1 s"),
     (SessionAction::Type, "Type"),
@@ -235,6 +239,10 @@ const SESSION_CONTROLS: [(SessionAction, &str); 8] = [
     (SessionAction::PasteLines, "Paste 3 lines"),
     (SessionAction::Confirm, "Confirm"),
     (SessionAction::Enter, "Retry"),
+    (SessionAction::Wheel, "Wheel up"),
+    (SessionAction::Redraw, "Redraw"),
+    (SessionAction::ClearHistory, "Clear history"),
+    (SessionAction::HardReset, "Hard reset"),
     (SessionAction::Reset, "Reset"),
 ];
 
@@ -305,6 +313,10 @@ impl TerminalPanePage {
             SessionAction::PasteLines => demo.paste_three_lines(),
             SessionAction::Confirm => demo.confirm_paste(),
             SessionAction::Enter => demo.retry(),
+            SessionAction::Wheel => demo.wheel_up(),
+            SessionAction::Redraw => demo.redraw(),
+            SessionAction::ClearHistory => demo.clear_history(),
+            SessionAction::HardReset => demo.hard_reset(),
             SessionAction::Reset => {}
         }
     }
