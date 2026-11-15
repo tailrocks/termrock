@@ -991,7 +991,10 @@ fn first_window_pct(w: &World, id: &str) -> Option<u8> {
 /// the first window reads 40% used, whatever it read before.
 fn refresh_account(effect: &Effect, world: &World) -> Option<Msg> {
     let Effect::RefreshAccount {
-        account, source, ..
+        ticket,
+        account,
+        source,
+        ..
     } = effect
     else {
         return None;
@@ -1001,6 +1004,7 @@ fn refresh_account(effect: &Effect, world: &World) -> Option<Msg> {
     usage.freshness = FreshnessInfo::current(now);
     usage.windows[0].used_pct = Some(40);
     Some(Msg::AccountRefreshed {
+        ticket: *ticket,
         account: account.clone(),
         source: Box::new(source.clone()),
         result: Ok(Box::new(Refresh {
@@ -3103,12 +3107,12 @@ fn the_usage_screen_refreshes_every_enabled_account_and_shows_the_reply() {
     });
     assert!(screen(&mut app).contains("38%"));
 
-    let idle = app
+    let enabled = app
         .world
         .accounts
         .accounts
         .iter()
-        .filter(|a| a.enabled && a.usage.freshness.phase != Freshness::Refreshing)
+        .filter(|a| a.enabled)
         .count();
     press(&mut app, "r");
     assert!(
@@ -3123,7 +3127,11 @@ fn the_usage_screen_refreshes_every_enabled_account_and_shows_the_reply() {
         .iter()
         .filter(|e| matches!(e, Effect::RefreshAccount { .. }))
         .count();
-    assert_eq!(asked, idle, "one refresh for each enabled idle account");
+    assert_eq!(
+        asked, enabled,
+        "one refresh for each enabled account; the world, not the Refreshing marker the \
+         fixture seeds, says which requests are out"
+    );
     let shown = screen(&mut app);
     assert!(shown.contains("40%"), "{shown}");
 }
