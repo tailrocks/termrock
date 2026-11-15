@@ -132,6 +132,10 @@ impl Completion {
         index < source.len() && source.enabled(index)
     }
 
+    pub fn has_eligible(&self) -> bool {
+        (0..self.items.len()).any(|i| self.can_accept(i))
+    }
+
     fn accepted(&self, index: usize) -> Option<CompletionAction> {
         self.can_accept(index)
             .then_some(CompletionAction::Accept(index))
