@@ -62,6 +62,7 @@ pub mod settings;
 pub mod sidebars;
 pub mod splits_stacks;
 pub mod status_hints;
+pub mod stress;
 pub mod tables;
 pub mod tabs;
 pub mod taskrunner;

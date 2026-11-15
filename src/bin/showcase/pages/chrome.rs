@@ -4,6 +4,7 @@ use ratatui::layout::Rect;
 use crate::app::PageId;
 use crate::options::page_options;
 use crate::pages::row_menu::RowMenu;
+use crate::pages::stress::{self, Mode};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
 use junie_tui::core::event::Outcome;
@@ -276,6 +277,20 @@ impl ChromePage {
         );
         b.right
             .push(StatusItem::new("run 9c41", Tone::Faint).priority(2));
+        match stress::mode(self.opt("chrome.stress")) {
+            Mode::Off => {}
+            Mode::Items => {
+                for (n, label) in stress::numbered("job").enumerate() {
+                    let priority = (n % 8) as u8 + 1;
+                    b.right
+                        .push(StatusItem::new(label, Tone::Muted).priority(priority));
+                }
+            }
+            Mode::Label => b.left.insert(
+                0,
+                StatusItem::new(stress::long_label(), Tone::Muted).priority(9),
+            ),
+        }
         b
     }
 
@@ -408,7 +423,8 @@ impl ChromePage {
     }
 
     fn placed_text(&self, w: u16) -> String {
-        let placed = self.status_bar().layout(Rect::new(0, 0, w, 1));
+        let bar = self.status_bar();
+        let placed = bar.layout(Rect::new(0, 0, w, 1));
         let groups: Vec<String> = [Group::Left, Group::Center, Group::Right]
             .into_iter()
             .map(|g| {
@@ -416,7 +432,8 @@ impl ChromePage {
                 format!("{g:?} {n}")
             })
             .collect();
-        format!("places {} of 8 · {}", placed.len(), groups.join(", "))
+        let total = bar.left.len() + bar.center.len() + bar.right.len();
+        format!("places {} of {total} · {}", placed.len(), groups.join(", "))
     }
 
     fn natural_width(&self, ctx: &RenderCtx) -> u16 {
