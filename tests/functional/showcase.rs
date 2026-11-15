@@ -947,6 +947,42 @@ page_test!(showcase_page_sidebars, "sidebars", "Sidebars");
 page_test!(showcase_page_pickers, "pickers", "Pickers");
 
 #[test]
+fn showcase_layer_focus_policy_keeps_or_restores_focus_on_close() {
+    let app = App::new(
+        "showcase-layer-focus",
+        SHOWCASE,
+        &["--page", "focusnavigation", "--motion", "paused"],
+        120,
+        40,
+        "truecolor",
+    );
+    app.wait_text("Layer focus");
+    app.wheel(app.point("Mailboxes"), true, 10);
+    app.wait_absent("Mailboxes");
+
+    app.click_text("Passive tip");
+    let open = app.wait_text("Opens and closes without moving focus.");
+    let opener = find(&open, "Passive tip");
+    assert!(
+        row_text(&open, opener.y.into()).contains('▎'),
+        "the opener keeps the focus gutter while the tip is open"
+    );
+    app.key("esc");
+    app.wait_text("Layer closed · focus on Passive tip button");
+
+    app.click_text("Restore off");
+    app.wait_text("Closing keeps the focus the layer set.");
+    app.key("enter");
+    app.wait_text("Layer closed · focus on Cancel");
+
+    app.click_text("Restore on");
+    app.wait_text("Closing returns focus to the opener.");
+    app.key("enter");
+    app.wait_text("Layer closed · focus on Restore on button");
+    app.finish();
+}
+
+#[test]
 fn showcase_multi_picker_modes_filter_disabled_and_report_selection() {
     let app = App::new(
         "showcase-multi-pickers",

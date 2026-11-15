@@ -12,7 +12,7 @@ use crate::core::intent::Phase;
 use crate::core::pointer::PointerEvent;
 use crate::core::response::Response;
 use crate::ui::ctx::{Backdrop, RenderCtx};
-use crate::ui::modal::{Modal, ModalStack};
+use crate::ui::modal::{FocusOnOpen, Modal, ModalStack};
 use crate::ui::popup::{Dismiss, Placement};
 use crate::widgets::icon_button::IconButton;
 use crate::widgets::keyhint::Hint;
@@ -365,8 +365,18 @@ impl<R: 'static, W: ?Sized + 'static, O> ModalStack<LayerEntry<R, W, O>> {
         owner: O,
         focus: &mut Focus,
     ) {
-        let initial = layer.spec().initial_focus;
-        self.push(LayerEntry { layer, tag, owner }, focus, initial);
+        let spec = layer.spec();
+        let initial = match (spec.initial_focus, spec.inert_below) {
+            (Some(id), _) => FocusOnOpen::Set(Some(id)),
+            (None, true) => FocusOnOpen::Set(None),
+            (None, false) => FocusOnOpen::Preserve,
+        };
+        self.push_with_focus_policy(
+            LayerEntry { layer, tag, owner },
+            focus,
+            initial,
+            spec.restore_focus,
+        );
     }
 
     pub fn take(&mut self, focus: &mut Focus) -> Option<Taken<R, W, O>> {
