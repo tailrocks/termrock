@@ -6,7 +6,7 @@ Defect: `ScrollPanel` kept its wrapped rows under a width-only key and exposed `
 
 Fix, in `src/widgets/panel.rs`:
 
-- `lines` is private. `lines()` borrows it. `set_lines`, `replace_line`, `extend_lines`, `clear` and `push` are the only writers and each ends in one `content_changed`, which bumps a checked `content_revision`, drops the wrapped rows and resets the selection, the pointer press and the word drag.
+- `lines` is private. `lines()` borrows it. `set_lines`, `replace_line`, `extend_lines`, `clear` and `push` are the only writers and each bumps a checked `content_revision` once and drops the wrapped rows. `set_lines`, `replace_line` and `clear` also reset the selection, the pointer press and the word drag. `push` and `extend_lines` keep them, because an append never changes an existing row and the selection is stored as row and column cells. This keeps drag-selection and Select All alive in a log that appends every tick. Selection that follows logical source text across edits stays with #45.
 - `set_lines`, `replace_line` (same text), `extend_lines` (empty) and `clear` (already empty) return `false` and change nothing: no revision bump, no selection reset, no rebuild. `replace_line` returns `Err(index)` for an index past the last line.
 - `extend_lines` drains the iterator before it touches the content, so a panicking iterator leaves the lines, revision, selection and cache as they were.
 - The wrapped cache is keyed by `(content_revision, text_width)`. Width zero is an ordinary key. The widest logical line (the sideways extent) is cached by revision alone, so a width-only reflow keeps it, and an append updates it from the new lines only. An unchanged frame does no wrapping, no width scan and no comparison of the content.

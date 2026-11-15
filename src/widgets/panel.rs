@@ -683,14 +683,22 @@ impl ScrollPanel {
             .filter(|c| c.revision == self.content_revision)
             .map(|c| c.cells.max(self.widest_of(&added)));
         self.lines.extend(added);
-        self.content_changed();
+        self.revision_bumped();
         self.widest_cache = widest.map(|cells| WidestCache {
             revision: self.content_revision,
             cells,
         });
     }
 
+    /// A replacement can change rows the selection already covers, so it
+    /// drops the selection and any press or drag in progress. An append only
+    /// adds rows after them and goes through `revision_bumped` alone.
     fn content_changed(&mut self) {
+        self.revision_bumped();
+        self.select = TextSelect::default();
+    }
+
+    fn revision_bumped(&mut self) {
         match self.content_revision.checked_add(1) {
             Some(next) => self.content_revision = next,
             None => {
@@ -699,7 +707,6 @@ impl ScrollPanel {
             }
         }
         self.wrapped_cache = None;
-        self.select = TextSelect::default();
     }
 
     fn widest_of(&self, lines: &[String]) -> usize {

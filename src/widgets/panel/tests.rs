@@ -168,6 +168,57 @@ fn issue39_mutation_clears_selection_and_drag() {
 }
 
 #[test]
+fn issue39_append_keeps_selection_and_drag() {
+    for wrap in [true, false] {
+        for extend in [false, true] {
+            let mut panel = ScrollPanel::new(ID, vec![words("alpha"), words("beta")]).wrap(wrap);
+            let frame = paint(&mut panel, 14, 4);
+            frame.pointer(&mut panel, Phase::Press, Position::new(1, 0));
+            frame.pointer(&mut panel, Phase::Drag, Position::new(6, 1));
+            let selection = panel.selection().expect("dragged selection");
+            let text = panel.selected_text().expect("selected text");
+            assert!(panel.select.press.is_some());
+
+            let label = format!("wrap={wrap} extend={extend}");
+            if extend {
+                assert!(
+                    panel.extend_lines(vec![words("gamma"), words("delta")]),
+                    "{label}"
+                );
+            } else {
+                panel.push(words("gamma"));
+            }
+            let frame = paint(&mut panel, 14, 4);
+
+            assert_eq!(panel.selection(), Some(selection), "{label}");
+            assert_eq!(panel.selected_text(), Some(text), "{label}");
+            assert!(panel.select.press.is_some(), "{label}");
+            frame.pointer(&mut panel, Phase::Drag, Position::new(8, 1));
+            assert_ne!(
+                panel.selection(),
+                Some(selection),
+                "{label}: drag continues"
+            );
+        }
+    }
+}
+
+#[test]
+fn issue39_replacement_still_clears_selection_in_unwrapped_panels() {
+    let mut panel = ScrollPanel::new(ID, vec![words("alpha"), words("beta")]);
+    let frame = paint(&mut panel, 14, 4);
+    frame.pointer(&mut panel, Phase::Press, Position::new(1, 0));
+    frame.pointer(&mut panel, Phase::Drag, Position::new(6, 1));
+    assert!(panel.selection().is_some());
+    assert!(panel.set_lines(vec![words("gamma")]));
+    assert!(panel.selection().is_none() && panel.select.press.is_none());
+
+    panel.select_all();
+    assert!(panel.clear());
+    assert!(panel.selection().is_none());
+}
+
+#[test]
 fn issue39_shrink_clamps_follow_and_scroll() {
     let mut tail = ScrollPanel::new(ID, numbered(30)).tail(true);
     paint(&mut tail, 20, 6);
