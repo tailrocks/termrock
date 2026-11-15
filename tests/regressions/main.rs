@@ -23,6 +23,7 @@ mod help_geometry;
 mod item_eligibility;
 mod keyed_collections;
 mod keyed_costs;
+mod loading_label;
 mod master_detail_bounds;
 mod nav_list_state;
 mod pane_rig;
