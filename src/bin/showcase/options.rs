@@ -378,7 +378,14 @@ pub static PANELS: &[Opt] = &[
     Opt::new(
         "panels.content",
         "Log content",
-        &["generated", "edited", "appended", "replaced", "cleared"],
+        &[
+            "generated",
+            "edited",
+            "appended",
+            "replaced",
+            "cleared",
+            "long token",
+        ],
     ),
 ];
 
