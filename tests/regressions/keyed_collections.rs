@@ -1308,6 +1308,20 @@ mod trees {
     }
 
     #[test]
+    fn keyed_tree_select_source_refuses_an_unknown_key_without_mutation() {
+        let store = tree();
+        let mut view = TreeView::new(WidgetId::of("kt"), vec![]);
+        draw(&mut view, &store);
+        assert_eq!(view.select_source(k(2), &store), Ok(true));
+        assert_eq!(view.select_source(k(99), &store), Ok(false));
+        assert_eq!(
+            view.keyed().selected().collect::<Vec<_>>(),
+            vec![k(2)],
+            "a refused key leaves the selection alone"
+        );
+    }
+
+    #[test]
     fn keyed_owned_and_borrowed_trees_conform() {
         let owned_nodes = vec![
             TreeNode::dir(
