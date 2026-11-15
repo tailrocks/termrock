@@ -470,7 +470,7 @@ impl TableTab {
         }
         grid.empty = EmptyState::new("No rows").hint("f changes the filter");
         let mut chips = ChipBar::new(id.sub("chips"));
-        chips.lead = Some("match all ▾".into());
+        chips.set_lead(Some("match all ▾".into()));
 
         let mut mode_tabs = Tabs::new(id.sub("mode"), &["Data", "Structure"]);
         mode_tabs.active = 0;
@@ -595,7 +595,7 @@ impl TableTab {
     }
 
     fn rebuild_chips(&mut self) {
-        self.chips.chips = self
+        let chips = self
             .filters
             .iter()
             .map(|f| {
@@ -604,11 +604,12 @@ impl TableTab {
                 c
             })
             .collect();
-        self.chips.lead = Some(if self.match_all {
+        self.chips.set_chips(chips);
+        self.chips.set_lead(Some(if self.match_all {
             "match all ▾".into()
         } else {
             "match any ▾".into()
-        });
+        }));
     }
 
     fn rebuild_structure(&mut self, table: &Table) {

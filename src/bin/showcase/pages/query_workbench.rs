@@ -587,7 +587,8 @@ impl QueryWorkbenchPage {
     }
 
     fn sync_toolbar(&mut self) {
-        self.toolbar.items = toolbar_items(self.running.is_some());
+        self.toolbar
+            .set_items(toolbar_items(self.running.is_some()));
     }
 
     /// The document that may take `token`'s completion: same key, same
@@ -2069,7 +2070,7 @@ mod tests {
     }
 
     fn toolbar_idle(rig: &Rig) -> bool {
-        let items = &rig.page.toolbar.items;
+        let items = rig.page.toolbar.items();
         !items[0].disabled && !items[1].disabled && items[2].disabled
     }
 
@@ -2315,8 +2316,11 @@ mod tests {
         rig.run();
         assert_eq!(rig.page.running.as_ref(), Some(&pending));
         assert_eq!(rig.statuses, ["A query is already running in customers"]);
-        assert!(rig.page.toolbar.items[0].disabled && rig.page.toolbar.items[1].disabled);
-        assert!(!rig.page.toolbar.items[2].disabled, "Stop stays available");
+        assert!(rig.page.toolbar.items()[0].disabled && rig.page.toolbar.items()[1].disabled);
+        assert!(
+            !rig.page.toolbar.items()[2].disabled,
+            "Stop stays available"
+        );
 
         rig.statuses.clear();
         rig.with_cx(|p, cx| p.stop(cx));

@@ -115,15 +115,17 @@ impl ActivityPage {
     pub fn new() -> Self {
         let opts = PageValues::new(page_options(PageId::Activity));
         let mut chips = ChipBar::new(STREAMS);
-        chips.add_label = None;
-        chips.lead = Some("streams".into());
-        chips.chips = SERVICES
-            .iter()
-            .map(|(name, _)| Chip {
-                removable: false,
-                ..Chip::new(name)
-            })
-            .collect();
+        chips.set_add_label(None);
+        chips.set_lead(Some("streams".into()));
+        chips.set_chips(
+            SERVICES
+                .iter()
+                .map(|(name, _)| Chip {
+                    removable: false,
+                    ..Chip::new(name)
+                })
+                .collect(),
+        );
         let mut p = Self {
             template: Template::new(ID, states_grid()),
             opts,
@@ -216,7 +218,7 @@ impl ActivityPage {
         if self.log.len() > keep {
             self.log.drain(..self.log.len() - keep);
         }
-        if svc.is_none_or(|s| self.chips.chips[s].enabled) {
+        if svc.is_none_or(|s| self.chips.chips()[s].enabled) {
             self.view.push(line);
             self.mark();
         }
@@ -249,7 +251,7 @@ impl ActivityPage {
         let lines = self
             .log
             .iter()
-            .filter(|(s, _)| s.is_none_or(|s| self.chips.chips[s].enabled))
+            .filter(|(s, _)| s.is_none_or(|s| self.chips.chips()[s].enabled))
             .map(|(_, l)| l.clone())
             .collect();
         let follow = self.view.is_at_tail();
@@ -365,7 +367,7 @@ impl ActivityPage {
             )
             .lead("!", Tone::Error),
         };
-        let shown = self.chips.chips.iter().filter(|c| c.enabled).count();
+        let shown = self.chips.chips().iter().filter(|c| c.enabled).count();
         (
             vec![
                 Segment::new("api dev", Tone::Normal).bold().priority(9),
@@ -605,10 +607,10 @@ impl ActivityPage {
 
     fn on_chips(&mut self, a: Option<ChipAction>, cx: &mut Cx) {
         if let Some(ChipAction::Toggle(i) | ChipAction::Activate(i)) = a
-            && let Some(c) = self.chips.chips.get_mut(i)
+            && let Some(c) = self.chips.chips().get(i)
         {
-            c.enabled = !c.enabled;
-            let (name, on) = (c.label.clone(), c.enabled);
+            let (name, on) = (c.label.clone(), !c.enabled);
+            self.chips.update_chip(i, |c| c.enabled = on);
             self.sync_view();
             cx.status(format!("{name} {}", if on { "shown" } else { "hidden" }));
         }
@@ -630,15 +632,17 @@ fn states_grid() -> StateGrid {
         service_line(0, "GET /v1/c/88 404 4 ms"),
     ];
     let mut chips = ChipBar::new(id.child(1));
-    chips.add_label = None;
-    chips.chips = ["api", "worker", "db"]
-        .iter()
-        .map(|n| Chip {
-            removable: false,
-            ..Chip::new(n)
-        })
-        .collect();
-    chips.chips[1].enabled = false;
+    chips.set_add_label(None);
+    chips.set_chips(
+        ["api", "worker", "db"]
+            .iter()
+            .map(|n| Chip {
+                removable: false,
+                ..Chip::new(n)
+            })
+            .collect(),
+    );
+    chips.update_chip(1, |c| c.enabled = false);
     let mut rail = StepRail::new(
         id.child(2),
         ["Resolve", "Install", "Start", "Healthy"]
