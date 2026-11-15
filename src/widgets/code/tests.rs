@@ -522,6 +522,22 @@ fn empty_diagnostic_index_does_not_allocate_per_line() {
 }
 
 #[test]
+fn editor_diagnostics_reads_back_the_diagnostics_in_the_order_they_were_set() {
+    let mut e = CodeEditor::new(WidgetId::of("code-test"), "abcdefgh");
+    assert!(e.diagnostics().is_empty(), "a new editor has none");
+    e.set_diagnostics(vec![
+        diagnostic(4..6, Severity::Warning),
+        diagnostic(1..2, Severity::Error),
+    ]);
+    let got: Vec<_> = e
+        .diagnostics()
+        .iter()
+        .map(|d| (d.range.clone(), d.severity))
+        .collect();
+    assert_eq!(got, [(4..6, Severity::Warning), (1..2, Severity::Error)]);
+}
+
+#[test]
 fn editor_diagnostics_merge_exact_and_range_ordinals() {
     let buffer = TextBuffer::multi("abcdefgh");
     let range_first = vec![

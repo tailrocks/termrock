@@ -1726,6 +1726,37 @@ mod tests {
     }
 
     #[test]
+    fn a_custom_toggle_command_binding_checks_the_cursor_item() {
+        use crate::core::keymap::KeyBinding;
+        use crate::widgets::picker::PickerCmd;
+        let mut picker = Picker::new(WidgetId::of("picker-test"), "Choose")
+            .multi_select(true)
+            .expect("empty picker accepts multi-selection")
+            .searchable(false)
+            .expect("disabling search is valid")
+            .keymap(vec![(KeyBinding::key(KeyCode::Insert), PickerCmd::Toggle)]);
+        picker
+            .set_items(vec![
+                Item::new("Alpha").key(ItemKey::text("alpha")),
+                Item::new("Beta").key(ItemKey::text("beta")),
+            ])
+            .expect("valid picker update");
+        picker.set_cursor(1);
+        let insert = Key {
+            code: KeyCode::Insert,
+            mods: KeyModifiers::NONE,
+        };
+        let (outcome, action) = picker.on_key(&insert);
+        assert_eq!(
+            (outcome, action),
+            (Outcome::Changed, Some(PickerAction::Toggled))
+        );
+        assert_eq!(picker.checked(), &[ItemKey::text("beta")]);
+        picker.on_key(&insert);
+        assert!(picker.checked().is_empty(), "the same binding unchecks it");
+    }
+
+    #[test]
     fn multi_toggle_skips_disabled_items_and_non_search_space_toggles() {
         let mut picker = Picker::new(WidgetId::of("picker-test"), "Choose")
             .multi_select(true)
