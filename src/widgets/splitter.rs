@@ -7,6 +7,7 @@ use crate::core::id::WidgetId;
 use crate::theme::Kind;
 use crate::ui::ctx::{RenderCtx, VisualState};
 use crate::ui::layout::{Split, SplitDir};
+use crate::ui::measure::terminal_extent;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum SeamDoubleClick {
@@ -60,11 +61,23 @@ impl Splitter {
         let r = match self.dir {
             SplitDir::Horizontal => {
                 let x = self.area.x.saturating_sub(p);
-                Rect::new(x, self.area.y, self.area.right() + p - x, self.area.height)
+                let end = usize::from(self.area.right()) + usize::from(p);
+                Rect::new(
+                    x,
+                    self.area.y,
+                    terminal_extent(end - usize::from(x)),
+                    self.area.height,
+                )
             }
             SplitDir::Vertical => {
                 let y = self.area.y.saturating_sub(p);
-                Rect::new(self.area.x, y, self.area.width, self.area.bottom() + p - y)
+                let end = usize::from(self.area.bottom()) + usize::from(p);
+                Rect::new(
+                    self.area.x,
+                    y,
+                    self.area.width,
+                    terminal_extent(end - usize::from(y)),
+                )
             }
         };
         r.intersection(clip)

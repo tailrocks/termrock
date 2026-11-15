@@ -5,8 +5,9 @@ use ratatui::style::{Color, Style};
 use crate::core::id::WidgetId;
 use crate::theme::Tone;
 use crate::ui::ctx::RenderCtx;
+use crate::ui::measure::terminal_extent;
 use crate::ui::text::{truncate, width};
-use crate::widgets::button::{Button, ButtonRow, RowAlign, row_layout, row_layout_right};
+use crate::widgets::button::{Button, ButtonRow, RowAlign, place_lines};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ActionRow {
@@ -55,22 +56,28 @@ impl ActionRow {
         self
     }
 
+    /// Natural width of the buttons and message, saturating at `u16::MAX`.
     pub fn width(&self, buttons: &[&Button]) -> u16 {
-        let n = buttons.len() as u16;
-        let row = buttons.iter().map(|b| b.width()).sum::<u16>() + self.gap * n.saturating_sub(1);
+        terminal_extent(self.intrinsic_width(buttons))
+    }
+
+    pub(crate) fn intrinsic_width(&self, buttons: &[&Button]) -> usize {
+        let gap = usize::from(self.gap);
+        let row = buttons
+            .iter()
+            .map(|b| b.intrinsic_width())
+            .fold(0usize, usize::saturating_add)
+            .saturating_add(gap.saturating_mul(buttons.len().saturating_sub(1)));
         match &self.message {
-            Some((text, _)) => row + self.gap + width(text) as u16,
+            Some((text, _)) => row.saturating_add(gap).saturating_add(width(text)),
             None => row,
         }
     }
 
     pub fn layout(&self, area: Rect, buttons: &[&Button]) -> Vec<Rect> {
-        let widths: Vec<u16> = buttons.iter().map(|b| b.width()).collect();
+        let widths: Vec<usize> = buttons.iter().map(|b| b.intrinsic_width()).collect();
         let row = Rect::new(area.x, area.y, area.width, area.height.min(1));
-        match self.align {
-            RowAlign::End => row_layout_right(row, &widths, self.gap),
-            _ => row_layout(row, &widths, self.gap),
-        }
+        place_lines(row, &widths, self.gap, self.align == RowAlign::End)
     }
 
     pub fn render(
@@ -96,7 +103,7 @@ impl ActionRow {
             match self.align {
                 RowAlign::End => {
                     let left = rects.first().map_or(area.right(), |r| r.x);
-                    let room = left.saturating_sub(area.x + self.gap);
+                    let room = left.saturating_sub(area.x.saturating_add(self.gap));
                     if room > 0 {
                         buf.set_string(area.x, area.y, truncate(text, room as usize), ink);
                     }
@@ -105,7 +112,7 @@ impl ActionRow {
                     let x = rects
                         .iter()
                         .filter(|r| r.width > 0)
-                        .map(|r| r.right() + self.gap)
+                        .map(|r| r.right().saturating_add(self.gap))
                         .max()
                         .unwrap_or(area.x);
                     let room = area.right().saturating_sub(x);

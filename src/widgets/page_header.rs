@@ -3,6 +3,7 @@ use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
 
 use crate::theme::{Theme, Tone};
+use crate::ui::measure::terminal_extent;
 use crate::ui::text::width;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -72,7 +73,8 @@ impl PageHeader {
             return 0;
         }
         let x = area.x + self.inset.min(area.width);
-        let title_w = width(&self.title) as u16;
+        let inset = usize::from(self.inset);
+        let title_w = width(&self.title);
 
         buf.set_stringn(
             x,
@@ -83,18 +85,25 @@ impl PageHeader {
         );
         let mut used = title_w;
         if let Some((status, tone)) = &self.status {
-            let left = area.width.saturating_sub(title_w + 2 * self.inset);
+            let left = usize::from(area.width).saturating_sub(title_w.saturating_add(2 * inset));
             if left > 0 {
-                let s = crate::ui::reveal::cut(Rect::new(x + title_w, area.y, left, 1), status);
-                used += width(&s) as u16;
-                buf.set_string(x + title_w, area.y, s, ink(t, *tone));
+                let sx = x.saturating_add(terminal_extent(title_w));
+                let s =
+                    crate::ui::reveal::cut(Rect::new(sx, area.y, terminal_extent(left), 1), status);
+                used = used.saturating_add(width(&s));
+                buf.set_string(sx, area.y, s, ink(t, *tone));
             }
         }
         if let Some(right) = &self.right {
-            let rw = width(right) as u16;
-            if rw + used + self.right_gap < area.width {
+            let rw = width(right);
+            if rw
+                .saturating_add(used)
+                .saturating_add(usize::from(self.right_gap))
+                < usize::from(area.width)
+            {
                 buf.set_string(
-                    area.right().saturating_sub(rw + self.inset),
+                    area.right()
+                        .saturating_sub(terminal_extent(rw.saturating_add(inset))),
                     area.y,
                     right,
                     t.muted(),
@@ -154,10 +163,10 @@ impl Heading {
             ink,
         );
         if let Some(meta) = &self.meta {
-            let mw = width(meta) as u16;
-            if width(&self.text) as u16 + 2 + mw <= area.width {
+            let mw = width(meta);
+            if width(&self.text).saturating_add(2).saturating_add(mw) <= usize::from(area.width) {
                 buf.set_string(
-                    area.right() - mw,
+                    area.right() - terminal_extent(mw),
                     area.y,
                     meta,
                     Style::new().fg(t.tone_on(Tone::Faint, bg)).bg(bg),
@@ -173,17 +182,23 @@ impl crate::ui::measure::Measure for PageHeader {
         _avail: ratatui::layout::Size,
         _ctx: &crate::ui::ctx::RenderCtx,
     ) -> ratatui::layout::Size {
-        let w = |s: &str| width(s) as u16;
-        let used = w(&self.title) + self.status.as_ref().map_or(0, |(s, _)| w(s));
+        let inset = usize::from(self.inset);
+        let used =
+            width(&self.title).saturating_add(self.status.as_ref().map_or(0, |(s, _)| width(s)));
+        let chrome = used.saturating_add(2 * inset);
         let row = match &self.right {
-            Some(r) => (used + self.right_gap + w(r) + 1).max(used + 2 * self.inset),
-            None => used + 2 * self.inset,
+            Some(r) => used
+                .saturating_add(usize::from(self.right_gap))
+                .saturating_add(width(r))
+                .saturating_add(1)
+                .max(chrome),
+            None => chrome,
         };
         let sub = self
             .subtitle
             .as_ref()
-            .map_or(0, |(s, _)| w(s) + 2 * self.inset);
-        ratatui::layout::Size::new(row.max(sub), self.height())
+            .map_or(0, |(s, _)| width(s).saturating_add(2 * inset));
+        ratatui::layout::Size::new(terminal_extent(row.max(sub)), self.height())
     }
 }
 
@@ -193,8 +208,11 @@ impl crate::ui::measure::Measure for Heading {
         _avail: ratatui::layout::Size,
         _ctx: &crate::ui::ctx::RenderCtx,
     ) -> ratatui::layout::Size {
-        let meta = self.meta.as_deref().map_or(0, |m| 2 + width(m) as u16);
-        ratatui::layout::Size::new(width(&self.text) as u16 + meta, 1)
+        let meta = self
+            .meta
+            .as_deref()
+            .map_or(0, |m| width(m).saturating_add(2));
+        ratatui::layout::Size::new(terminal_extent(width(&self.text).saturating_add(meta)), 1)
     }
 }
 

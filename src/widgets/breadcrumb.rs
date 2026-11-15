@@ -5,6 +5,7 @@ use ratatui::style::{Color, Modifier};
 use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
 use crate::theme::Kind;
 use crate::ui::ctx::RenderCtx;
+use crate::ui::measure::terminal_extent;
 use crate::ui::text::{truncate, truncate_middle, width};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -19,6 +20,30 @@ pub struct Breadcrumb {
 }
 
 impl Breadcrumb {
+    /// Full width of the segments from `from` on, plus the ellipsis lead when
+    /// earlier segments are dropped. Wide so a long path never wraps small.
+    fn suffix_width(&self, from: usize, ellipsis_w: usize, sep_w: usize) -> usize {
+        let lead = if from > 0 {
+            ellipsis_w.saturating_add(sep_w)
+        } else {
+            0
+        };
+        let labels = self.segments[from..]
+            .iter()
+            .map(|s| width(s))
+            .fold(0usize, usize::saturating_add);
+        lead.saturating_add(labels)
+            .saturating_add(sep_w.saturating_mul(self.segments.len() - from - 1))
+    }
+
+    pub(crate) fn intrinsic_width(&self, sep_w: usize) -> usize {
+        if self.segments.is_empty() {
+            0
+        } else {
+            self.suffix_width(0, 0, sep_w)
+        }
+    }
+
     pub fn new(id: WidgetId, segments: Vec<String>) -> Self {
         Self {
             id,
@@ -57,22 +82,12 @@ impl Breadcrumb {
         }
         let t = ctx.theme;
         let sep = format!(" {} ", t.glyphs.overflow_right);
-        let sep_w = width(&sep) as u16;
+        let sep_w = width(&sep);
         let ell = t.glyphs.ellipsis;
         let n = self.segments.len();
-        let seg_w = |s: &String| width(s) as u16;
 
-        let total = |from: usize| -> u16 {
-            let lead = if from > 0 {
-                width(ell) as u16 + sep_w
-            } else {
-                0
-            };
-            lead + self.segments[from..].iter().map(seg_w).sum::<u16>()
-                + sep_w * (n - from - 1) as u16
-        };
         let mut from = 0;
-        while from + 1 < n && total(from) > area.width {
+        while from + 1 < n && self.suffix_width(from, width(ell), sep_w) > usize::from(area.width) {
             from += 1;
         }
         let plane = t.plane_of(bg);
@@ -133,10 +148,8 @@ impl crate::ui::measure::Measure for Breadcrumb {
         if self.segments.is_empty() {
             return ratatui::layout::Size::new(0, 0);
         }
-        let sep = width(&format!(" {} ", ctx.theme.glyphs.overflow_right)) as u16;
-        let labels: u16 = self.segments.iter().map(|s| width(s) as u16).sum();
-        let gaps = sep * (self.segments.len() - 1) as u16;
-        ratatui::layout::Size::new(labels + gaps, 1)
+        let sep = width(&format!(" {} ", ctx.theme.glyphs.overflow_right));
+        ratatui::layout::Size::new(terminal_extent(self.intrinsic_width(sep)), 1)
     }
 }
 
