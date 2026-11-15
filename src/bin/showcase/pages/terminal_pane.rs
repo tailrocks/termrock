@@ -7,6 +7,7 @@ use ratatui::widgets::Widget;
 use crate::app::PageId;
 use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
+use crate::pages::terminal_session::{Script, SessionDemo};
 use crate::pages::{Cx, Hint, Page, PageEvent};
 use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::id::WidgetId;
@@ -21,7 +22,7 @@ use junie_tui::widgets::panel::Panel;
 use junie_tui::widgets::props::{self, Prop};
 
 const ID: WidgetId = WidgetId::of("terminalpane");
-const PANE: WidgetId = WidgetId::of("terminalpane.pane");
+pub(super) const PANE: WidgetId = WidgetId::of("terminalpane.pane");
 const CONTROLS_MIN_AREA: u16 = 6;
 
 struct Fixture {
@@ -97,7 +98,7 @@ fn size_of(value: &str) -> (u16, u16) {
     (rows.parse().unwrap_or(24), cols.parse().unwrap_or(80))
 }
 
-fn caret(bytes: &[u8]) -> String {
+pub(super) fn caret(bytes: &[u8]) -> String {
     bytes
         .iter()
         .map(|b| match b {
@@ -110,7 +111,7 @@ fn caret(bytes: &[u8]) -> String {
         .join(" ")
 }
 
-fn key_name(key: &Key) -> String {
+pub(super) fn key_name(key: &Key) -> String {
     let mut name = String::new();
     if key.mods.contains(KeyModifiers::CONTROL) {
         name.push_str("Ctrl+");
@@ -210,7 +211,32 @@ pub struct TerminalPanePage {
     play: Button,
     replay: Button,
     reset: Button,
+    session: Option<SessionDemo>,
+    session_controls: Vec<(SessionAction, Button)>,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SessionAction {
+    Advance,
+    Play,
+    Type,
+    Paste,
+    PasteLines,
+    Confirm,
+    Enter,
+    Reset,
+}
+
+const SESSION_CONTROLS: [(SessionAction, &str); 8] = [
+    (SessionAction::Advance, "Advance"),
+    (SessionAction::Play, "Play"),
+    (SessionAction::Type, "Type"),
+    (SessionAction::Paste, "Paste"),
+    (SessionAction::PasteLines, "Paste 3 lines"),
+    (SessionAction::Confirm, "Confirm"),
+    (SessionAction::Enter, "Enter"),
+    (SessionAction::Reset, "Reset"),
+];
 
 impl TerminalPanePage {
     pub fn new() -> Self {
@@ -227,9 +253,60 @@ impl TerminalPanePage {
             play: Button::secondary(ID.sub("play"), "Play all"),
             replay: Button::secondary(ID.sub("replay"), "Replay"),
             reset: Button::secondary(ID.sub("reset"), "Reset"),
+            session: None,
+            session_controls: SESSION_CONTROLS
+                .iter()
+                .map(|(action, label)| {
+                    (
+                        *action,
+                        Button::secondary(ID.sub("session").child(*action as usize), label),
+                    )
+                })
+                .collect(),
         };
         page.load();
+        page.load_session();
         page
+    }
+
+    fn session_mode(&self) -> bool {
+        self.opts.value("terminalpane.host") == "session controller"
+    }
+
+    fn load_session(&mut self) {
+        self.session = self.session_mode().then(|| {
+            let (rows, cols) = size_of(self.opts.value("terminalpane.size"));
+            SessionDemo::new(
+                Script::from_option(self.opts.value("terminalpane.script")),
+                rows,
+                cols,
+                self.opts.value("terminalpane.area") == "fits",
+            )
+        });
+    }
+
+    fn run_session(&mut self, action: SessionAction) {
+        if action == SessionAction::Reset {
+            self.load_session();
+            return;
+        }
+        let Some(demo) = self.session.as_mut() else {
+            return;
+        };
+        match action {
+            SessionAction::Advance => demo.advance(),
+            SessionAction::Play => demo.play(),
+            SessionAction::Type => demo.type_key(),
+            SessionAction::Paste => demo.paste_one_line(),
+            SessionAction::PasteLines => demo.paste_three_lines(),
+            SessionAction::Confirm => demo.confirm_paste(),
+            SessionAction::Enter => demo.retry(),
+            SessionAction::Reset => {}
+        }
+    }
+
+    fn session_visible(&self, action: SessionAction) -> bool {
+        action != SessionAction::Confirm || self.session.as_ref().is_some_and(|d| d.held_paste())
     }
 
     fn fixture(&self) -> &'static Fixture {
@@ -339,6 +416,50 @@ impl TerminalPanePage {
         ]
     }
 
+    fn render_session(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
+        let t = ctx.theme;
+        let focused = self.opts.on("terminalpane.focused")
+            && (ctx.interaction.focused(PANE) || self.capturing);
+        let colour = self.opts.on("terminalpane.colour");
+        let controls_h = if area.height > CONTROLS_MIN_AREA {
+            2
+        } else {
+            0
+        };
+        let Some(demo) = self.session.as_mut() else {
+            return;
+        };
+        demo.focus(focused);
+        let frame = demo.render(area, buf, ctx, controls_h, focused, colour);
+        let lines = demo.log_lines();
+
+        let controls_y = frame.bottom() + 1;
+        if controls_y < area.bottom() {
+            let shown: Vec<usize> = (0..self.session_controls.len())
+                .filter(|&i| self.session_visible(self.session_controls[i].0))
+                .collect();
+            let widths: Vec<u16> = shown
+                .iter()
+                .map(|&i| self.session_controls[i].1.width())
+                .collect();
+            let rects = row_layout(Rect::new(area.x, controls_y, area.width, 1), &widths, 2);
+            for (rect, &i) in rects.iter().zip(&shown) {
+                self.session_controls[i].1.render(*rect, buf, ctx, t.canvas);
+            }
+        }
+        for (offset, (line, tone)) in lines.iter().enumerate() {
+            let y = controls_y + 2 + offset as u16;
+            if y < area.bottom() {
+                buf.set_string(
+                    area.x,
+                    y,
+                    junie_tui::ui::text::truncate(line, area.width as usize),
+                    ratatui::style::Style::new().fg(t.tone(*tone)).bg(t.canvas),
+                );
+            }
+        }
+    }
+
     fn render_playground(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
         let t = ctx.theme;
         let (rows, cols) = self.state.size();
@@ -436,6 +557,23 @@ impl TerminalPanePage {
             cx.focus.focus(PANE);
             return Outcome::Changed;
         }
+        if self.session.is_some() {
+            let fired = (0..self.session_controls.len()).find(|&i| {
+                self.session_visible(self.session_controls[i].0)
+                    && self.session_controls[i]
+                        .1
+                        .route(ev)
+                        .and_then(|r| r.into_action())
+                        .is_some()
+            });
+            return match fired {
+                Some(i) => {
+                    self.run_session(self.session_controls[i].0);
+                    Outcome::Changed
+                }
+                None => Outcome::Ignored,
+            };
+        }
         let fired = (0..4).find(|&i| {
             self.button(i)
                 .route(ev)
@@ -482,6 +620,7 @@ impl Page for TerminalPanePage {
     fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
         let body = self.template.render(area, buf, ctx);
         match self.template.section() {
+            Section::Playground if self.session.is_some() => self.render_session(body, buf, ctx),
             Section::Playground => self.render_playground(body, buf, ctx),
             Section::Options => self.template.render_options(body, buf, ctx),
             Section::States => self.template.render_states(body, buf, ctx),
@@ -495,6 +634,8 @@ impl Page for TerminalPanePage {
             if key.ctrl() && key.code == KeyCode::Char('g') {
                 self.capturing = false;
                 cx.status("Keys released");
+            } else if let Some(demo) = self.session.as_mut() {
+                demo.press(key);
             } else {
                 self.press(key);
             }
@@ -514,16 +655,33 @@ impl Page for TerminalPanePage {
                             self.capturing = true;
                             return Outcome::Changed;
                         }
-                        KeyCode::PageUp => {
+                        KeyCode::PageUp if self.session.is_none() => {
                             self.scroll(self.state.size().0 as isize);
                             return Outcome::Changed;
                         }
-                        KeyCode::PageDown => {
+                        KeyCode::PageDown if self.session.is_none() => {
                             self.scroll(-(self.state.size().0 as isize));
                             return Outcome::Changed;
                         }
                         _ => return Outcome::Ignored,
                     }
+                }
+                if self.session.is_some() {
+                    let focused = (0..self.session_controls.len()).find(|&i| {
+                        self.session_visible(self.session_controls[i].0)
+                            && cx.focus.is(self.session_controls[i].1.id)
+                    });
+                    return match focused {
+                        Some(i) => {
+                            let action = self.session_controls[i].0;
+                            let (o, fired) = self.session_controls[i].1.on_key(key);
+                            if fired {
+                                self.run_session(action);
+                            }
+                            o
+                        }
+                        None => Outcome::Ignored,
+                    };
                 }
                 let focused = (0..4).find(|&i| cx.focus.is(self.button(i).id));
                 match focused {
@@ -565,9 +723,19 @@ impl Page for TerminalPanePage {
     }
 
     fn set_option(&mut self, key: &str, value: usize) {
-        if self.opts.set(key, value) && matches!(key, "terminalpane.fixture" | "terminalpane.size")
-        {
-            self.load();
+        if self.opts.set(key, value) {
+            if matches!(key, "terminalpane.fixture" | "terminalpane.size") {
+                self.load();
+            }
+            if matches!(
+                key,
+                "terminalpane.host"
+                    | "terminalpane.size"
+                    | "terminalpane.script"
+                    | "terminalpane.area"
+            ) {
+                self.load_session();
+            }
         }
     }
 
