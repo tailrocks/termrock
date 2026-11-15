@@ -481,6 +481,13 @@ impl SessionDemo {
         });
     }
 
+    pub fn can_retry(&self) -> bool {
+        matches!(
+            self.session.status(),
+            SessionStatus::Detached(_) | SessionStatus::Exited(_) | SessionStatus::Failed(_)
+        )
+    }
+
     pub fn retry(&mut self) {
         self.press(&Key {
             code: KeyCode::Enter,
