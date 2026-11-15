@@ -11,6 +11,7 @@ use crate::core::pointer::PointerEvent;
 use crate::core::response::Response;
 use crate::core::scroll::{ScrollState, TrackClick};
 use crate::ui::ctx::{RenderCtx, VisualState, fill};
+use crate::ui::text::{paint_clipped, paint_truncated};
 use crate::widgets::scrollbar;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -261,29 +262,34 @@ impl NavList {
 
     pub fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, bg: Color) {
         let t = ctx.theme;
-        let focused = ctx.interaction.focused(self.id);
+        let area = area.intersection(*buf.area());
         self.area = area;
         let rows = self.rows();
         self.scroll.set_content(rows.len());
-        self.scroll.set_viewport(area.height as usize);
+        if area.is_empty() {
+            self.scroll.set_viewport(0);
+            return;
+        }
+        self.scroll.set_viewport(usize::from(area.height));
+        let focused = ctx.interaction.focused(self.id);
         let has_sb = self.scroll.overflows();
 
         let row_w = area.width.saturating_sub(1);
         let mut cursor_y = None;
         for (k, ri) in self.scroll.visible_range().enumerate() {
             let y = area.y + k as u16;
+            let row = Rect::new(area.x, y, row_w, 1);
             match rows[ri] {
                 NavRow::Blank => {}
                 NavRow::Section(i) => {
                     if self.collapsed {
-                        buf.set_string(area.x + 1, y, "····", t.faint().bg(bg));
+                        paint_clipped(buf, row, 1, "····", t.faint().bg(bg));
                     } else {
-                        buf.set_string(area.x + 3, y, &self.items[i].section, t.faint().bg(bg));
+                        paint_truncated(buf, row, 3, &self.items[i].section, t.faint().bg(bg));
                     }
                 }
                 NavRow::Item(i) => {
                     let it = &self.items[i];
-                    let row = Rect::new(area.x, y, row_w, 1);
                     let rid = self.item_id(i);
                     let mut s = ctx.state(rid);
                     s.focused = focused && i == self.cursor;
@@ -300,20 +306,16 @@ impl NavList {
                     let current = i == self.current;
                     let st = t.row(s, bg);
                     fill(buf, row, st);
-                    buf.set_string(
-                        row.x,
-                        y,
+                    paint_clipped(
+                        buf,
+                        row,
+                        0,
                         t.gutter_symbol(s),
                         t.gutter(s, st.bg.unwrap_or(bg), false),
                     );
                     if current {
                         let ink = t.chosen_in(VisualState { focused, ..s });
-                        buf.set_string(
-                            row.x + 1,
-                            y,
-                            "›",
-                            st.fg(t.legible(ink, st.bg.unwrap_or(bg))),
-                        );
+                        paint_clipped(buf, row, 1, "›", st.fg(t.legible(ink, st.bg.unwrap_or(bg))));
                     }
                     let label_style = if it.disabled {
                         st
@@ -322,12 +324,14 @@ impl NavList {
                     } else {
                         st.fg(t.text_secondary)
                     };
+                    let icon_cell = Rect::new(row.x.saturating_add(3), y, 2, 1).intersection(row);
                     if self.collapsed {
-                        buf.set_string(row.x + 3, y, &it.icon, label_style);
+                        paint_clipped(buf, row, 3, &it.icon, label_style);
                     } else {
-                        buf.set_string(
-                            row.x + 3,
-                            y,
+                        paint_clipped(
+                            buf,
+                            icon_cell,
+                            0,
                             &it.icon,
                             label_style.fg(if it.disabled {
                                 t.disabled
@@ -335,16 +339,32 @@ impl NavList {
                                 t.text_muted
                             }),
                         );
-                        buf.set_string(row.x + 5, y, &it.label, label_style);
+                        let content = usize::from(row_w).saturating_sub(5);
+                        let badge_w = it.badge.as_deref().map_or(0, crate::ui::text::width);
+                        let label_room = if badge_w > 0 {
+                            content.saturating_sub(badge_w + 2)
+                        } else {
+                            content
+                        };
+                        let label_cell = Rect::new(
+                            row.x.saturating_add(5),
+                            y,
+                            u16::try_from(label_room).unwrap_or(u16::MAX),
+                            1,
+                        )
+                        .intersection(row);
+                        paint_truncated(buf, label_cell, 0, &it.label, label_style);
                         if let Some(b) = &it.badge {
-                            let bx = row
-                                .right()
-                                .saturating_sub(crate::ui::text::width(b) as u16 + 1);
+                            let room = badge_w.min(content.saturating_sub(1));
+                            let room = u16::try_from(room).unwrap_or(u16::MAX);
                             let bs = if it.disabled { st } else { st.fg(t.accent) };
-                            buf.set_string(bx, y, b, bs);
+                            let badge_cell =
+                                Rect::new(row.right().saturating_sub(room + 1), y, room, 1)
+                                    .intersection(row);
+                            paint_truncated(buf, badge_cell, 0, b, bs);
                         }
                     }
-                    if !it.disabled {
+                    if !it.disabled && !row.is_empty() {
                         ctx.register_part(self.id, Self::item_part(i), row);
                     }
                 }
