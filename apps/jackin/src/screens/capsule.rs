@@ -1675,6 +1675,10 @@ impl CapsuleScreen {
         let rects = self.pane_rects.clone();
         let dialog = self.mode() == Mode::Dialog;
         for (pid, r) in &rects {
+            let r = &r.intersection(body);
+            if r.is_empty() {
+                continue;
+            }
             let Some(pane) = d.pane(*pid) else { continue };
             let focused = tab.focused == *pid;
             let inner = if framed {

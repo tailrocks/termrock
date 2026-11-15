@@ -17,10 +17,7 @@
 //!   same screens through `App::draw` at 20 columns, below the supported
 //!   minimum, which is the only place a one-row revert is observable.
 
-#[path = "../common/mod.rs"]
-mod common;
-
-use common::*;
+use crate::common::*;
 use jackin_console::app::App;
 use jackin_console::fixtures::Scenario;
 use jackin_console::screens::{editor, manager, settings};

@@ -1644,6 +1644,9 @@ impl ManagerScreen {
         }
         ctx.control(TREE, inner, false);
         ctx.scrollable(TREE, inner);
+        if inner.is_empty() {
+            return;
+        }
         let has_sb = self.scroll.overflows();
         let row_w = inner.width.saturating_sub(u16::from(has_sb));
         let cursor = self.cursor();
@@ -1841,6 +1844,9 @@ impl ManagerScreen {
         self.detail_area = inner;
         let bg = if as_drawer { t.canvas } else { t.surface };
         ctx.scrollable(DETAIL, inner);
+        if inner.is_empty() {
+            return;
+        }
         let widths: Vec<u16> = self.actions.iter().map(|b| b.width()).collect();
         let action_lines = row_lines(inner.width + 1, &widths, 2);
         let reserve = action_lines.max(2);
@@ -2300,6 +2306,9 @@ impl ManagerScreen {
             .render(area, buf, t);
         let bg = t.surface;
         ctx.control(ROSTER, inner, false);
+        if inner.is_empty() {
+            return;
+        }
         let mut y = inner.y;
         for entry in &running {
             if y + 2 >= inner.bottom() {

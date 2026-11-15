@@ -303,6 +303,9 @@ impl ChoiceDialog {
             .render(screen, buf, ctx);
         ctx.interaction.flash = flash;
         self.area = area;
+        if inner.is_empty() {
+            return;
+        }
         let t = ctx.theme;
         let bg = t.surface_elevated;
         let footer_h = footer_rows.min(inner.height);

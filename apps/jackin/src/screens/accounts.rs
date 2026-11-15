@@ -1583,6 +1583,9 @@ impl AccountsScreen {
         }
         ctx.control(TREE, inner, false);
         ctx.scrollable(TREE, inner);
+        if inner.is_empty() {
+            return;
+        }
         let has_sb = self.scroll.overflows();
         let row_w = inner.width.saturating_sub(u16::from(has_sb));
         let cursor = self.cursor();
@@ -1960,6 +1963,9 @@ impl AccountsScreen {
                 .render(area, buf, t)
         };
         let bg = if as_drawer { t.canvas } else { t.surface };
+        if inner.is_empty() {
+            return;
+        }
 
         let action_row = ButtonRow::new().overflow(RowOverflow::Wrap);
         let action_rows = action_row.rows(inner.width + 1, &self.actions, t);

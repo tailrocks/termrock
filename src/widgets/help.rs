@@ -257,6 +257,9 @@ impl HelpOverlay {
             .overlay(&*self)
             .render(screen, buf, ctx);
         self.area = area;
+        if inner.is_empty() {
+            return;
+        }
         let t = ctx.theme;
         let bg = t.surface_elevated;
 
@@ -270,7 +273,7 @@ impl HelpOverlay {
             .flat_map(|(_, rows)| rows.iter().map(|(k, _)| width(&t.glyphs.key_label(k))))
             .max()
             .unwrap_or(0) as u16;
-        let key_w = widest.clamp(4, col_w * 2 / 5);
+        let key_w = widest.min(col_w * 2 / 5).max(4);
         let action_w = col_w.saturating_sub(key_w + 3).max(8) as usize;
 
         let mut blocks: Vec<Vec<(String, String, bool)>> = vec![];

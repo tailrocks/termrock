@@ -6,5 +6,8 @@
 
 #![cfg(feature = "demo")]
 
+#[path = "../common/mod.rs"]
+mod common;
 mod footer_wiring;
 mod smoke;
+mod tiny_terminals;
