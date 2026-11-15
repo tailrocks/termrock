@@ -356,9 +356,11 @@ impl SelectablePage {
             table,
             name: TextInput::new(ID.sub("name"), "Name")
                 .required(true)
+                .required_message("Enter a name")
                 .validator(name_rule),
             email: TextInput::new(ID.sub("email"), "Email")
                 .required(true)
+                .required_message("Enter a valid email address")
                 .validator(email_rule),
             role: Select::new(ID.sub("role"), "Role", &ROLES, 0),
             status: Select::new(ID.sub("status"), "Status", &STATUSES, 0),

@@ -999,3 +999,205 @@ impl EditMenuHost for TextInput {
         self.field.run(cmd).edited
     }
 }
+
+#[cfg(test)]
+mod issue35_tests {
+    use std::cell::Cell;
+    use std::rc::Rc;
+
+    use ratatui::buffer::Buffer;
+    use ratatui::crossterm::event::KeyCode;
+    use ratatui::layout::Rect;
+
+    use super::*;
+    use crate::core::event::Key;
+    use crate::core::focus::FocusRing;
+    use crate::core::hit::HitRegistry;
+    use crate::theme::{ColorLevel, Theme};
+    use crate::ui::ctx::Interaction;
+
+    const REQUIRED: &str = "Name is required";
+
+    fn key(code: KeyCode) -> Key {
+        Key {
+            code,
+            mods: ratatui::crossterm::event::KeyModifiers::NONE,
+        }
+    }
+
+    fn painted(input: &mut TextInput) -> String {
+        let theme = Theme::for_level(ColorLevel::TrueColor);
+        let mut buf = Buffer::empty(Rect::new(0, 0, 60, 4));
+        let mut hits = HitRegistry::default();
+        let mut ring = FocusRing::default();
+        let interaction = Interaction {
+            focus: Some(input.id),
+            ..Default::default()
+        };
+        let mut ctx = RenderCtx::new(&theme, interaction, &mut hits, &mut ring);
+        input.render(buf.area, &mut buf, &mut ctx, theme.canvas);
+        (0..buf.area.height)
+            .flat_map(|y| (0..buf.area.width).map(move |x| (x, y)))
+            .map(|(x, y)| buf[(x, y)].symbol().to_owned())
+            .collect()
+    }
+
+    #[test]
+    fn issue35_input_required_error_recovers() {
+        for when in [ValidateWhen::AfterError, ValidateWhen::Live] {
+            let calls = Rc::new(Cell::new(0));
+            let counter = calls.clone();
+            let mut input = TextInput::new(WidgetId::of("issue35.name"), "Name")
+                .edit_entry(EditEntry::Explicit)
+                .required(true)
+                .required_message(REQUIRED)
+                .validate_on(ValidateOn::EveryCommit)
+                .validate_when(when)
+                .validator(move |text| {
+                    counter.set(counter.get() + 1);
+                    (text.len() > 40).then(|| "too long".to_owned())
+                });
+
+            input.on_key(&key(KeyCode::Enter));
+            input.on_key(&key(KeyCode::Enter));
+            assert_eq!(input.error(), Some(REQUIRED), "{when:?}");
+            assert_eq!(
+                calls.get(),
+                0,
+                "custom rule must not run on empty required text"
+            );
+            assert!(painted(&mut input).contains(REQUIRED));
+
+            input.on_key(&key(KeyCode::Enter));
+            input.on_key(&key(KeyCode::Char('a')));
+            assert_eq!(
+                input.error(),
+                None,
+                "{when:?} revalidates the corrected value"
+            );
+            assert_eq!(calls.get(), 1, "{when:?}");
+            assert!(!painted(&mut input).contains(REQUIRED));
+        }
+    }
+
+    #[test]
+    fn issue35_required_after_error_uses_current_configuration() {
+        let first = Rc::new(Cell::new(0));
+        let first_calls = first.clone();
+        let mut input = TextInput::new(WidgetId::of("issue35.current"), "Name")
+            .edit_entry(EditEntry::Explicit)
+            .required(true)
+            .required_message("first message")
+            .validate_on(ValidateOn::EveryCommit)
+            .validator(move |_| {
+                first_calls.set(first_calls.get() + 1);
+                None
+            });
+        input.on_key(&key(KeyCode::Enter));
+        input.on_key(&key(KeyCode::Enter));
+        assert_eq!(input.error(), Some("first message"));
+
+        let second = Rc::new(Cell::new(0));
+        let second_calls = second.clone();
+        input.required_message = Some("second message".to_owned());
+        input.field.validator = Some(Validator::check(move |_| {
+            second_calls.set(second_calls.get() + 1);
+            None
+        }));
+
+        input.on_key(&key(KeyCode::Enter));
+        input.on_key(&key(KeyCode::Char('a')));
+        assert_eq!(
+            input.error(),
+            None,
+            "the corrected value clears the prior error"
+        );
+        assert_eq!(
+            second.get(),
+            1,
+            "the current validator runs on the corrected value"
+        );
+
+        input.on_key(&key(KeyCode::Backspace));
+        input.on_key(&key(KeyCode::Enter));
+        assert_eq!(input.error(), Some("second message"));
+        assert_eq!(
+            second.get(),
+            1,
+            "required fires before the current validator"
+        );
+    }
+
+    #[test]
+    fn issue35_input_commit_mode_validates_only_on_commit() {
+        let calls = Rc::new(Cell::new(0));
+        let counter = calls.clone();
+        let mut input = TextInput::new(WidgetId::of("issue35.commit"), "Name")
+            .edit_entry(EditEntry::Explicit)
+            .value("Alice")
+            .required(true)
+            .required_message(REQUIRED)
+            .validate_when(ValidateWhen::Commit)
+            .validator(move |_| {
+                counter.set(counter.get() + 1);
+                None
+            });
+
+        input.on_key(&key(KeyCode::Enter));
+        for _ in 0..5 {
+            input.on_key(&key(KeyCode::Backspace));
+        }
+        assert_eq!(input.text(), "");
+        assert_eq!(calls.get(), 0, "keystrokes must not run the custom rule");
+        assert_eq!(input.error(), None, "no error before commit");
+        assert!(!painted(&mut input).contains(REQUIRED));
+
+        let (_, action) = input.on_key(&key(KeyCode::Enter));
+        assert_eq!(action, Some(InputAction::Committed));
+        assert_eq!(
+            input.error(),
+            Some(REQUIRED),
+            "commit reports the required error"
+        );
+        assert_eq!(
+            calls.get(),
+            0,
+            "required rejection short-circuits the custom rule"
+        );
+        assert!(painted(&mut input).contains(REQUIRED));
+
+        input.on_key(&key(KeyCode::Enter));
+        input.on_key(&key(KeyCode::Char('B')));
+        assert_eq!(calls.get(), 0, "typing a correction does not validate");
+        input.on_key(&key(KeyCode::Enter));
+        assert_eq!(
+            input.error(),
+            None,
+            "the corrected value clears the error on commit"
+        );
+        assert_eq!(calls.get(), 1, "commit runs the custom rule once");
+    }
+
+    #[test]
+    fn issue35_input_cancel_skips_custom_validation() {
+        let calls = Rc::new(Cell::new(0));
+        let counter = calls.clone();
+        let mut input = TextInput::new(WidgetId::of("issue35.cancel"), "Name")
+            .edit_entry(EditEntry::Explicit)
+            .required(true)
+            .required_message(REQUIRED)
+            .validator(move |_| {
+                counter.set(counter.get() + 1);
+                None
+            });
+
+        input.on_key(&key(KeyCode::Enter));
+        input.on_key(&key(KeyCode::Char('x')));
+        let (_, action) = input.on_key(&key(KeyCode::Esc));
+        assert_eq!(action, Some(InputAction::Cancelled));
+        assert!(!input.wants_text_input(), "cancel leaves edit mode");
+        assert_eq!(input.text(), "", "cancel restores the snapshot");
+        assert_eq!(calls.get(), 0, "cancel must not run the custom rule");
+        assert_eq!(input.error(), None, "cancel must not validate");
+    }
+}
