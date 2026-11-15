@@ -1291,6 +1291,7 @@ pub static PICKERS: &[Opt] = &[
     Opt::new("pickers.placeholder", "Placeholder", &["default", "custom"]),
     Opt::new("pickers.hints", "Hint row", &["page", "short"]),
     Opt::new("pickers.remote", "Remote fetch", &["works", "fails"]),
+    Opt::new("pickers.international", "International labels", OFF_ON),
 ];
 
 pub static TABS: &[Opt] = &[
@@ -1407,6 +1408,7 @@ pub static METERS: &[Opt] = &[
     Opt::new("meters.visual", "Quota meter visual", &["block", "line"]),
     Opt::new("meters.offline", "Offline (last-good)", OFF_ON),
     Opt::new("meters.stale_style", "Stale style", &["dashed", "faint"]),
+    Opt::new("meters.international", "International values", OFF_ON),
 ];
 
 pub static FILE_BROWSER: &[Opt] = &[
@@ -1697,6 +1699,11 @@ pub static CODE_EDITOR: &[Opt] = &[
         "codeeditor.completion_nav",
         "Completion keys",
         &["default", "vim"],
+    ),
+    Opt::new(
+        "codeeditor.completion_international",
+        "International completions",
+        OFF_ON,
     ),
 ];
 

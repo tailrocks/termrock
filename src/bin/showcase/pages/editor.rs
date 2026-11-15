@@ -6,6 +6,7 @@ use ratatui::layout::{Rect, Size};
 use ratatui::style::Style;
 
 use crate::app::PageId;
+use crate::data::GRAPHEME_SAMPLES;
 use crate::options::{PageValues, page_options};
 use crate::pages::inputs::{custom_text_keymap, field_keys};
 use crate::pages::template::{Section, Template};
@@ -93,6 +94,13 @@ const CANDIDATES: &[(&str, &str, &str)] = &[
     ("match", "keyword", "k"),
     ("return", "keyword", "k"),
 ];
+
+fn international_candidates() -> Vec<(String, String, &'static str)> {
+    GRAPHEME_SAMPLES
+        .iter()
+        .map(|(kind, sample)| (format!("go_{sample}("), format!("fn () · {kind}"), "ƒ"))
+        .collect()
+}
 
 fn highlight(src: &str) -> Vec<(Range<usize>, SyntaxTone)> {
     let b = src.as_bytes();
@@ -334,15 +342,22 @@ impl EditorPage {
             self.completion.close();
             return;
         }
+        let international = if self.opts.on("codeeditor.completion_international") {
+            international_candidates()
+        } else {
+            Vec::new()
+        };
         let mut ranked: Vec<(u32, Item)> = CANDIDATES
             .iter()
+            .map(|(label, detail, glyph)| (label.to_string(), detail.to_string(), *glyph))
+            .chain(international)
             .filter_map(|(label, detail, glyph)| {
-                let (penalty, matched) = fuzzy(label, &word)?;
+                let (penalty, matched) = fuzzy(&label, &word)?;
                 Some((
                     penalty,
-                    Item::new(*label)
-                        .glyph(*glyph)
-                        .detail(*detail)
+                    Item::new(label)
+                        .glyph(glyph)
+                        .detail(detail)
                         .matched(matched),
                 ))
             })

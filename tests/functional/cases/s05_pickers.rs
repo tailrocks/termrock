@@ -7,7 +7,9 @@ use std::time::Duration;
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, Point, SHOWCASE, find_all, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, Point, SHOWCASE, clusters, find_all, row_text, text, try_launch,
+};
 
 const CRUMB: &str = "Overlays › Pickers";
 const TITLE: &str = "Pickers";
@@ -1646,4 +1648,103 @@ fn option_remote_fails() {
             assert_select(screen, "Width", "auto", &["48", "96"]);
         },
     );
+}
+
+/// The test terminal keeps only the first scalars of a ZWJ or skin-tone
+/// sequence, so those labels are matched by their visible head.
+const INTERNATIONAL_LABELS: &[&str] = &[
+    "cafe\u{301}.md",
+    "界A.md",
+    "שלום.md",
+    "Review 👨\u{200d}",
+    "Review 🇯🇵",
+    "Review 👍",
+];
+
+fn emphasis(screen: &TerminalSnapshot, label: &str, count: usize) -> Vec<(String, u16, bool)> {
+    let at = find_all(screen, label)
+        .into_iter()
+        .next()
+        .unwrap_or_else(|| panic!("label {label:?} missing\n{}", text(screen)));
+    clusters(screen, at, count)
+        .into_iter()
+        .map(|cluster| (cluster.text, cluster.width, cluster.bold))
+        .collect()
+}
+
+fn cluster(text: &str, width: u16, bold: bool) -> (String, u16, bool) {
+    (text.to_string(), width, bold)
+}
+
+#[test]
+fn option_international_labels_paint_whole_clusters() {
+    let app = page("s05-intl", Some("pickers.international=on"), 120, 40);
+    app.wait_text("Open quickly");
+    confirm_control(&app, |screen| {
+        assert_toggle(screen, "International labels", "on");
+        assert_select(screen, "Width", "auto", &["48", "96"]);
+    });
+    click_button(&app, "Open quickly");
+    let opened = app.wait_text("All · Tab scope");
+    see(&opened, INTERNATIONAL_LABELS, &["Cargo.toml", TASK_RATE]);
+    for (label, detail) in [
+        ("cafe\u{301}.md", "combining mark"),
+        ("界A.md", "wide + ASCII"),
+        ("שלום.md", "right-to-left"),
+        ("Review 👨\u{200d}", "ZWJ family"),
+        ("Review 🇯🇵", "flag"),
+        ("Review 👍", "skin tone"),
+    ] {
+        let line = row_with(&opened, label);
+        assert!(
+            line.contains(detail),
+            "the detail {detail:?} was overwritten or pushed off the {label:?} row: {line:?}"
+        );
+    }
+
+    app.type_text("a");
+    let narrowed = app.wait_screen("a narrows the labels", |screen| {
+        !text(screen).contains("Review") && text(screen).contains("界A.md")
+    });
+    assert_eq!(
+        emphasis(&narrowed, "界A.md", 5),
+        [
+            cluster("界", 2, false),
+            cluster("A", 1, true),
+            cluster(".", 1, false),
+            cluster("m", 1, false),
+            cluster("d", 1, false),
+        ],
+        "the A after a wide cluster is painted in the cell after it\n{}",
+        text(&narrowed)
+    );
+
+    app.key("backspace");
+    app.type_text("e");
+    app.wait_screen(
+        "e narrows to the combining label and the reviews",
+        |screen| !text(screen).contains("界A.md") && text(screen).contains("Review"),
+    );
+    app.key("down");
+    let combined = app.settle();
+    assert_eq!(
+        emphasis(&combined, "cafe\u{301}.md", 7),
+        [
+            cluster("c", 1, false),
+            cluster("a", 1, false),
+            cluster("f", 1, false),
+            cluster("e\u{301}", 1, true),
+            cluster(".", 1, false),
+            cluster("m", 1, false),
+            cluster("d", 1, false),
+        ],
+        "a match on the base letter emphasises the whole combining cluster\n{}",
+        text(&combined)
+    );
+    app.key("escape");
+    app.key("escape");
+    app.wait_screen("international picker closed", |screen| {
+        !text(screen).contains("All · Tab scope")
+    });
+    app.finish();
 }
