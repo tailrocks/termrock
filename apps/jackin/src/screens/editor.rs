@@ -207,6 +207,7 @@ impl EditorScreen {
             workspace,
             name: TextInput::new(NAME, "Name")
                 .required(true)
+                .required_message("Name is required")
                 .help("Directory basename by default")
                 .value(&pending.name)
                 .validator(|v| {
