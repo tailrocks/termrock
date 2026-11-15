@@ -3,8 +3,8 @@ use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use crate::core::event::Key;
 use crate::core::id::WidgetId;
 use crate::widgets::grid::{
-    CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridCommitFailure, GridRows,
-    ORDER_REBUILDS, RowTotal,
+    CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridCommitError, GridCommitFailure,
+    GridRows, ORDER_REBUILDS, RowTotal,
 };
 use crate::widgets::table::SortDir;
 
@@ -418,8 +418,12 @@ fn issue46_empty_commit_and_stale_sort_column_are_safe() {
     let mut g = grid(true, &[(Some(2), "two"), (Some(1), "one")]);
     press(&mut g, KeyCode::Char('s'));
     let before = rebuilds();
-    commit_ok(&mut g);
-    assert_eq!(rebuilds(), before, "an empty success does not reorder");
+    assert_eq!(
+        g.begin_submission(g.snapshot_changes()),
+        Err(GridCommitError::Empty),
+        "a save with no draft is refused"
+    );
+    assert_eq!(rebuilds(), before, "a refused empty save does not reorder");
 
     g.sort = Some((9, SortDir::Asc));
     g.try_append_rows(page(&[(Some(0), "zero")], false))
