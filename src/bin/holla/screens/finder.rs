@@ -1,3 +1,15 @@
+//! The Holla Finder page: Holla's use of the shared `SearchDetail`.
+//!
+//! Ownership. The library owns the query text and its edit commands, the
+//! request/token lifecycle, keyed selection and Explore-cell navigation, the
+//! keymap, click and context routing, preview scroll retention, layout and
+//! hit regions. This page owns the domain: the catalog and its ranking,
+//! history and recency, the scope and kind filters, risk gates and
+//! confirmations, command launch, the source stamps built from the catalog
+//! and projection epochs, and the `SearchPaint` painter that keeps Holla's
+//! table, Explore and preview look. It holds no selection, query or
+//! preview-scroll state of its own.
+
 use crate::screens::Holla;
 use junie_tui::core::edit::TextCmd;
 use junie_tui::core::event::{Key, Outcome};

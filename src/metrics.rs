@@ -18,7 +18,7 @@
 #[cfg(feature = "work-metrics")]
 mod state;
 #[cfg(feature = "work-metrics")]
-pub use state::{measure, record, reset, snapshot};
+pub use state::{measure, record, reset, snapshot, suspended};
 
 pub mod measurement;
 
@@ -92,12 +92,12 @@ metrics! {
     SchedulingRecordsVisited => "scheduling_records_visited",
     /// Polls a scheduling traversal issued to a live source.
     SchedulingPolls => "scheduling_polls",
-    /// Text bytes fed through a content hash to detect a change.
-    TextBytesHashed => "text_bytes_hashed",
     /// Calls to an application-supplied annotation provider (highlighter or
     /// block segmenter) over a whole text.
     AnnotationQueries => "annotation_queries",
-    /// Stable-key comparisons made while matching items to their source.
+    /// Stable-key comparisons made by a linear scan for an item. Picker key
+    /// lookups go through a key index and compare nothing, so no widget
+    /// records this today; a scan added later must record it.
     IdentityComparisons => "identity_comparisons",
     /// Elements visited by a responsive-fitting loop (chips, breadcrumb,
     /// segments, status bar, key hints, toolbar).

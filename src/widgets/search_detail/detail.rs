@@ -687,6 +687,7 @@ impl SearchDetail {
         let (query_area, body) = self.split(area);
         self.paint_query_area(query_area, buf, ctx, &mut paint_query);
 
+        let started_on = self.session.selected_key();
         let selected = self.session.selected_cell();
         let stale = !self.session.is_interactive();
         let Self {
@@ -733,6 +734,7 @@ impl SearchDetail {
             );
         }
         self.track_layout(area);
+        self.note_selection_moved_by_paint(started_on, ctx);
         Ok(())
     }
 
@@ -757,6 +759,7 @@ impl SearchDetail {
             host.query(area, view, buf, ctx)
         });
 
+        let started_on = self.session.selected_key();
         let selected = self.session.selected_cell();
         let stale = !self.session.is_interactive();
         let Self {
@@ -799,7 +802,18 @@ impl SearchDetail {
             &mut panes,
         );
         self.track_layout(area);
+        self.note_selection_moved_by_paint(started_on, ctx);
         Ok(())
+    }
+
+    /// Asks the shell to paint the frame again when this paint moved the
+    /// selection off a cell it left out. The host built its preview from the
+    /// selection it read before painting, so without the second pass the
+    /// preview would describe the old cell until the next event.
+    fn note_selection_moved_by_paint(&self, started_on: Option<ItemKey>, ctx: &mut RenderCtx) {
+        if self.session.selected_key() != started_on {
+            ctx.note_render_mutation();
+        }
     }
 
     fn split(&self, area: Rect) -> (Rect, Rect) {

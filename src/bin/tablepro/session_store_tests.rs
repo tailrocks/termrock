@@ -586,6 +586,56 @@ fn issue11_refused_review_keeps_a_pending_close_valid() {
 }
 
 #[test]
+fn issue11_review_with_no_pending_changes_keeps_the_close_state() {
+    let mut app = connected();
+    let key = open(&mut app, "products");
+    let token = refusable_draft_with_pending_close(&mut app, key);
+    with_tab(&mut app, key, |t| t.grid.undo().expect("undo is allowed"));
+    let w = app.workbench.as_ref().expect("connected");
+    assert_eq!(w.ws.pending_close(key), Some(token), "the request waits");
+    let revision = w.ws.revision(key);
+
+    app.begin_commit_for(Some(key));
+
+    assert!(
+        status(&app).contains("No pending changes"),
+        "{}",
+        status(&app)
+    );
+    let w = app.workbench.as_ref().expect("connected");
+    assert_eq!(w.ws.revision(key), revision, "nothing was reviewed");
+    assert_eq!(w.ws.pending_close(key), Some(token));
+}
+
+#[test]
+fn issue11_review_with_a_preview_error_keeps_a_pending_close_valid() {
+    let mut app = connected();
+    let key = open(&mut app, "products");
+    edit(&mut app, key, 0, UNIT_PRICE, CellValue::Num(f64::NAN));
+    let w = app.workbench.as_mut().expect("connected");
+    let mut tokens = w.request_close(key).expect("the tab may ask to close");
+    assert_eq!(tokens.len(), 1, "a dirty tab waits for a decision");
+    let token = tokens.remove(0);
+    let revision = w.ws.revision(key);
+
+    app.begin_commit_for(Some(key));
+
+    assert!(
+        status(&app).contains("not a finite number"),
+        "{}",
+        status(&app)
+    );
+    let w = app.workbench.as_mut().expect("connected");
+    assert_eq!(
+        w.ws.revision(key),
+        revision,
+        "a refused review changes no content"
+    );
+    assert_eq!(w.ws.pending_close(key), Some(token));
+    assert!(w.ws.resolve_close(token, CloseDecision::Cancel).is_ok());
+}
+
+#[test]
 fn issue51_null_in_defaulted_column_offers_the_default_hint() {
     let mut app = connected();
     let key = open(&mut app, "products");

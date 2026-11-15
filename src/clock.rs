@@ -186,6 +186,16 @@ impl TestRequest {
 
     pub const ENV: &'static str = "JUNIE_TUI_TEST_CLOCK";
 
+    /// Answers [`TestRequest::FENCE`] and nothing else. [`TestRequest::ENV`] also
+    /// freezes the status clock, which the frozen baselines of Showcase and Holla
+    /// do not expect, so a harness that only needs the fence sets this one.
+    pub const FENCE_ENV: &'static str = "JUNIE_TUI_TEST_FENCE";
+
+    pub fn fence_opted_in() -> bool {
+        static OPTED_IN: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+        *OPTED_IN.get_or_init(|| std::env::var_os(Self::FENCE_ENV).is_some_and(|v| v == "1"))
+    }
+
     pub fn opted_in() -> bool {
         static OPTED_IN: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
         *OPTED_IN.get_or_init(|| std::env::var_os(Self::ENV).is_some_and(|v| v == "1"))

@@ -253,6 +253,7 @@ raw `scan_started + scan_ticks` clock. A duration of 0 counts as one tick.
 - A failed save leaves the persisted `sizes.json` value unchanged and keeps
   the save error on screen.
 - Only a completed scan preselects cleanup candidates. Cancelled scans do not.
+- Only the first completed scan, or an explicit Rescan, preselects Disk candidates. The rescan a finished cleanup starts keeps the reader's unticked entries.
 - No scan exists before `start_scan`. Nothing else completes a scan.
 
 ## Testing today

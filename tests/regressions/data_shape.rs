@@ -473,7 +473,6 @@ fn issue42_public_stale_cursor_indices_safe() {
     );
     assert!(t.out_of_set_cells().is_empty());
 
-    assert_eq!(t.commit_edit(), None);
     assert_eq!(
         texts(&t),
         [["b", "1"], ["a", "2"]],

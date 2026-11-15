@@ -507,7 +507,7 @@ impl ContextMenu {
             area.width.saturating_sub(2),
             area.height.saturating_sub(2),
         );
-        if let Some(title) = &self.title {
+        if let Some(title) = self.title.as_ref().filter(|_| !inner.is_empty()) {
             buf.set_string(
                 inner.x + 2,
                 inner.y,
@@ -634,19 +634,7 @@ impl ContextMenu {
             ctx.register_part(self.id, PartRef::OVERFLOW_AFTER, marker_row(yb));
         }
 
-        if let Some(reason) = self.list.status(&self.items) {
-            let x = area.x + 2;
-            let room = reason_room(area.width, more_below);
-            if room >= 1 {
-                let text = format!(" {} ", truncate(reason, room));
-                buf.set_string(
-                    x,
-                    area.bottom().saturating_sub(1),
-                    text,
-                    Style::new().fg(t.legible(t.text_muted, bg)).bg(bg),
-                );
-            }
-        }
+        self.list.paint_status(&self.items, area, bg, buf, t);
     }
 }
 

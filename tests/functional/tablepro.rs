@@ -500,10 +500,7 @@ fn tablepro_history_rerun_and_help_and_layout() {
     app.key("ctrl+q");
     let quit = app.wait_text("Quit TablePro?");
     assert!(text(&quit).contains("unsaved"));
-    app.key("right");
-    app.key("enter");
-    app.wait_exit("tablepro stayed up after confirming quit");
-    app.expect_exited(0);
+    app.confirm_quit();
 
     let app = connected("tablepro-help-layout");
     app.key("?");
