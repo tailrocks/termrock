@@ -95,37 +95,37 @@ list, table, grid and tree widget in the frame.
 | `DataTable` | settled frame | 1k / 10k / 100k | rows painted 29, width calls 62, width bytes 108 |
 | `TreeView` | settled frame | 1k / 10k / 100k | rows painted 30, width calls 30, width bytes 200 |
 | `TreeView` | filter change | 1k / 10k / 100k | labels normalized = n, label bytes 7,890 / 88,890 / 988,890 |
-| `Picker` | `set_items` | 1k / 10k / 100k items of 17 text bytes | payload bytes cloned = 17n |
-| `Picker` | settled frame | 1k / 10k / 100k | rows painted 13, width calls 3n + 143, width bytes 17n + 143 |
-| `Picker` | `set_visible_items` of 20 of n items | 1k / 10k / 100k | payload bytes cloned 340, identity comparisons 9,521 / 95,021 / 950,021 (190 x n / 20 + 21) |
-| `Picker` | frame over those 20 items | 1k / 10k / 100k | rows painted 13, width calls 203, width bytes 483, independent of n |
-| `Picker` | `replace_items` | 1k / 10k / 100k | payload bytes cloned = 17n, identity comparisons 1 |
+| `Picker` | `set_items` | 1k / 10k / 100k items of 17 text bytes | none cloned |
+| `Picker` | settled frame | 1k / 10k / 100k | rows painted 12, width calls 3n + 264, width bytes 17n + 264 |
+| `Picker` | `set_visible_items` of 20 of n items | 1k / 10k / 100k | nothing cloned, no identity comparison |
+| `Picker` | frame over those 20 items | 1k / 10k / 100k | rows painted 12, width calls 324, width bytes 604, independent of n |
+| `Picker` | `replace_items` | 1k / 10k / 100k | nothing cloned, no identity comparison |
 | `Select` | closed frame | 1k / 10k / 100k options | width calls 1, width bytes 6 |
-| `Select` | open frame | 1k / 10k / 100k | payload bytes cloned = 13n, rows painted 8, width calls 1 |
-| `Completion` | open frame | 1k / 10k / 100k items of 15 text bytes | payload bytes cloned = 15n, rows painted 8, width calls 2n + 136, width bytes 15n + 256 |
-| `CodeEditor` | first focused frame | 1k / 10k / 100k lines | payload bytes cloned 2L, hashed L, annotation queries 2, rows painted 29, width calls 1,658 / 10,658 / 100,658 (L is the text length: 23,889 / 248,889 / 2,588,889) |
-| `CodeEditor` | settled frame | same | payload bytes cloned L, hashed L, annotation queries 1, rows painted 29 |
+| `Select` | open frame | 1k / 10k / 100k | payload bytes cloned 104, rows painted 8, width calls 1, independent of n |
+| `Completion` | open frame | 1k / 10k / 100k items of 15 text bytes | payload bytes cloned 120, rows painted 8, width calls 240, width bytes 360, independent of n |
+| `CodeEditor` | first focused frame | 1k / 10k / 100k lines | nothing cloned or hashed, annotation queries 2, rows painted 29, width calls 30, width bytes 67 / 68 / 69 |
+| `CodeEditor` | settled frame | same | rows painted 29, width calls 30, no annotation query |
 | `CodeEditor` | first keystroke, then second of the run | same | payload bytes cloned L, then none |
-| `CodeEditor` | frame after the edit | same | payload bytes cloned L + 2, hashed L + 2, annotation queries 2 |
-| `TextArea` | first focused frame | 1k / 10k / 100k lines | payload bytes cloned L, rows painted 10, width calls n + 323 (L is 32n - 1) |
-| `TextArea` | settled frame | same | no clone, rows painted 10, width calls n + 323 |
+| `CodeEditor` | frame after the edit | same | annotation queries 2, rows painted 29, nothing cloned or hashed |
+| `TextArea` | first focused frame | 1k / 10k / 100k lines | payload bytes cloned L, rows painted 10, width calls 3 (L is 32n - 1) |
+| `TextArea` | settled frame | same | no clone, rows painted 10, width calls 3 |
 | `TextArea` | first keystroke, then second of the run | same | payload bytes cloned L, then none |
-| Holla Finder | settled tick | 106 items, 5 activities, 0 plans | projection rebuilds 1, ranked 106, scheduling 10, width calls 716 |
+| Holla Finder | settled tick | 106 items, 5 activities, 0 plans | no projection rebuild, scheduling 10, width calls 765 |
 | Holla Finder | unrelated world field, then tick | same | same as the settled tick |
-| Holla Finder | query change | same | projection rebuilds 1, ranked 106, width calls 1,639 |
-| TablePro grid | settled tick | 312 rows | rows painted 41, width calls 249 |
+| Holla Finder | query change | same | projection rebuilds 1, ranked 106, width calls 1,654 |
+| TablePro grid | settled tick | 312 rows | rows painted 41, width calls 239 |
 | TablePro grid | one Down key | 312 | same as the settled tick |
-| TablePro grid | one keyed draft edit | 312 | rows painted 39, width calls 257 |
-| TablePro grid | unrelated history entry, then tick | 312 | rows painted 39, width calls 257 |
-| Showcase Query workbench | settled tick | 2 documents | rows painted 47, width calls 389 |
-| Showcase Query workbench | click the second tab (two frames) | 2 | rows painted 82, width calls 593 |
-| Showcase Finder | settled tick | 12 actions | allocated 1,440, rows painted 24, width calls 208 |
+| TablePro grid | one keyed draft edit | 312 | rows painted 39, width calls 274 |
+| TablePro grid | unrelated history entry, then tick | 312 | rows painted 39, width calls 274 |
+| Showcase Query workbench | settled tick | 2 documents | rows painted 54, width calls 229 |
+| Showcase Query workbench | click the second tab (two frames) | 2 | rows painted 91, width calls 396 |
+| Showcase Finder | settled tick | 12 actions | allocated 1,440, rows painted 24, width calls 223 |
 | Showcase Finder | other page's option, then tick | 12 | same as the settled tick |
-| Jackin roster | settled tick | 9 instances, 4 workspaces, 2 daemons | scheduling records 2, polls 6, width calls 178 |
+| Jackin roster | settled tick | 9 instances, 4 workspaces, 2 daemons | scheduling records 2, polls 6, width calls 205 |
 | Jackin roster | unrelated workspace policy, then tick | same | same as the settled tick |
-| Jackin roster | workspace rename, then tick | same | width bytes 1,571 instead of 1,531 |
-| Jackin capsule | settled tick | 2 daemons | scheduling records 2, polls 6, width calls 158, width bytes 1,476; segmented 0, reflowed 0, index rebuilds 0, payload bytes cloned 0 |
-| Jackin capsule | one typed key, then the frame | same | width calls 146, width bytes 1,416; segmented 0, reflowed 0, index rebuilds 0, payload bytes cloned 0 |
+| Jackin roster | workspace rename, then tick | same | width bytes 1,498 instead of 1,466 |
+| Jackin capsule | settled tick | 2 daemons | scheduling records 2, polls 6, width calls 117, width bytes 811; segmented 0, reflowed 0, index rebuilds 0, payload bytes cloned 0 |
+| Jackin capsule | one typed key, then the frame | same | width calls 105, width bytes 751; segmented 0, reflowed 0, index rebuilds 0, payload bytes cloned 0 |
 
 ### What these counts say
 
@@ -135,23 +135,24 @@ list, table, grid and tree widget in the frame.
   (#20). Only the copy back to the screen is bounded by the window.
 - Drawing a `TextViewport` through a shared reference after a change, without
   preparing it first, clones the whole history.
-- A Holla Finder tick rebuilds and re-ranks the whole catalog whether or not
-  anything relevant changed (#62). Holla Finder has no source revision yet, so
-  a relevant source revision change has no scenario here.
+- A settled Holla Finder tick rebuilds and re-ranks nothing: each projection
+  layer rebuilds only for its own dependency (#62). A query change still
+  re-ranks the whole catalog. A relevant source revision change has no
+  scenario here.
 - The Jackin capsule primes every pane's viewport after each tick and input
   (`CapsuleScreen::sync_all`), so its idle frame draws prepared views. Before
   #249 the sync skipped script panes, and every idle frame cloned 80,059
   payload bytes and segmented 2,021 lines.
 - A settled `Picker` frame measures the width of every item, so it grows with
   the hidden list. A frame over a 20-item filtered list does not.
-  `Picker::set_visible_items` finds each visible key by scanning the
-  authoritative list: n x m / 2 comparisons.
-- Every open `Select` and `Completion` frame deep-clones all option text into
-  its overlay closure, though 8 rows are painted.
-- Every `CodeEditor` frame copies and hashes the whole text, measures every
-  line, and calls the block segmenter, which is not cached. A settled
-  `TextArea` frame measures every line. The first keystroke of an undo run
-  copies the whole text in both. Later keystrokes of the run do not.
+  `Picker::set_visible_items` and `replace_items` resolve keys through the key
+  index and clone nothing.
+- An open `Select` or `Completion` frame clones only the painted rows into its
+  overlay snapshot, and `Completion` sizes its popup from cached widths.
+- A `CodeEditor` frame reads cached text and annotation results, so a settled
+  frame copies, hashes and segments nothing. A `TextArea` frame measures only
+  its visible lines. The first keystroke of an undo run copies the whole text
+  in both. Later keystrokes of the run do not.
 
 ### Not covered
 

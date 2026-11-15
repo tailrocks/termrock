@@ -56,8 +56,8 @@ fn work_contract_showcase_idle_and_switch() {
 
     // Rows painted is summed over every list, table, grid, tree, option list
     // and editor widget in the frame. The page has two documents; each frame
-    // also paints the Explorer tree. The editor copies and hashes its 151-byte
-    // text on every frame.
+    // also paints the Explorer tree. The editor reads cached text and
+    // annotation results, so a settled frame copies and hashes nothing.
     let ((), idle) = measure(|| f.tick());
     assert_eq!(
         f.screen(),
@@ -68,11 +68,9 @@ fn work_contract_showcase_idle_and_switch() {
         &idle,
         "query workbench settled tick",
         &[
-            (Metric::PayloadBytesCloned, 151),
             (Metric::VisibleRowsPainted, 54),
-            (Metric::IntrinsicWidthCalls, 389),
-            (Metric::TextBytesMeasured, 1_851),
-            (Metric::TextBytesHashed, 151),
+            (Metric::IntrinsicWidthCalls, 229),
+            (Metric::TextBytesMeasured, 1_493),
         ],
     );
     f.report(
@@ -95,11 +93,9 @@ fn work_contract_showcase_idle_and_switch() {
         &switch,
         "document switch (two frames)",
         &[
-            (Metric::PayloadBytesCloned, 186),
             (Metric::VisibleRowsPainted, 91),
-            (Metric::IntrinsicWidthCalls, 593),
-            (Metric::TextBytesMeasured, 3_099),
-            (Metric::TextBytesHashed, 186),
+            (Metric::IntrinsicWidthCalls, 396),
+            (Metric::TextBytesMeasured, 2_623),
             (Metric::AnnotationQueries, 1),
         ],
     );
@@ -127,8 +123,8 @@ fn work_contract_showcase_idle_and_switch() {
         &[
             (Metric::AllocatedBufferCells, 1_440),
             (Metric::VisibleRowsPainted, 24),
-            (Metric::IntrinsicWidthCalls, 208),
-            (Metric::TextBytesMeasured, 1_219),
+            (Metric::IntrinsicWidthCalls, 223),
+            (Metric::TextBytesMeasured, 1_225),
         ],
     );
     f.report(
@@ -154,8 +150,8 @@ fn work_contract_showcase_idle_and_switch() {
         &[
             (Metric::AllocatedBufferCells, 1_440),
             (Metric::VisibleRowsPainted, 24),
-            (Metric::IntrinsicWidthCalls, 208),
-            (Metric::TextBytesMeasured, 1_219),
+            (Metric::IntrinsicWidthCalls, 223),
+            (Metric::TextBytesMeasured, 1_225),
         ],
     );
     f.report(

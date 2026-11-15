@@ -58,7 +58,7 @@ fn work_contract_jackin_idle_and_roster_update() {
         [
             (Metric::SchedulingRecordsVisited, 2),
             (Metric::SchedulingPolls, 6),
-            (Metric::IntrinsicWidthCalls, 178),
+            (Metric::IntrinsicWidthCalls, 205),
             (Metric::TextBytesMeasured, text_bytes),
         ]
     };
@@ -69,7 +69,7 @@ fn work_contract_jackin_idle_and_roster_update() {
         before,
         "a settled tick leaves the frame unchanged"
     );
-    assert_exact(&idle, "roster settled tick", &expected(1_531));
+    assert_exact(&idle, "roster settled tick", &expected(1_466));
     f.report(
         "jackin_roster",
         "settled_tick",
@@ -88,7 +88,7 @@ fn work_contract_jackin_idle_and_roster_update() {
     assert_exact(
         &unrelated,
         "unrelated workspace policy then tick",
-        &expected(1_531),
+        &expected(1_466),
     );
     f.report(
         "jackin_roster",
@@ -107,7 +107,7 @@ fn work_contract_jackin_idle_and_roster_update() {
         "the renamed workspace reaches the frame"
     );
     assert!(f.screen().contains(&format!("{name}-renamed")));
-    assert_exact(&rename, "workspace rename then tick", &expected(1_571));
+    assert_exact(&rename, "workspace rename then tick", &expected(1_498));
     f.report(
         "jackin_roster",
         "workspace_rename_then_tick",
@@ -140,8 +140,8 @@ fn work_contract_jackin_capsule_idle_frame() {
             (Metric::SegmentedLines, 0),
             (Metric::ReflowedLines, 0),
             (Metric::IndexRebuilds, 0),
-            (Metric::IntrinsicWidthCalls, 158),
-            (Metric::TextBytesMeasured, 1_476),
+            (Metric::IntrinsicWidthCalls, 117),
+            (Metric::TextBytesMeasured, 811),
             (Metric::SchedulingRecordsVisited, 2),
             (Metric::SchedulingPolls, 6),
         ],
@@ -173,8 +173,8 @@ fn work_contract_jackin_capsule_frame_after_typing() {
             (Metric::SegmentedLines, 0),
             (Metric::ReflowedLines, 0),
             (Metric::IndexRebuilds, 0),
-            (Metric::IntrinsicWidthCalls, 146),
-            (Metric::TextBytesMeasured, 1_416),
+            (Metric::IntrinsicWidthCalls, 105),
+            (Metric::TextBytesMeasured, 751),
             (Metric::SchedulingRecordsVisited, 0),
             (Metric::SchedulingPolls, 0),
         ],

@@ -47,11 +47,10 @@ fn work_contract_holla_idle_and_source_update() {
     let plans = f.app.world.plans.len() as u64;
     assert_eq!((items, activities, plans), (106, 5, 0), "the fixture size");
 
-    // Today every distinct world tick rebuilds the whole Finder projection
-    // from the catalog, whether or not anything changed (#62 owns that fix).
-    // The counts below are therefore the measured cost of the current page,
-    // not a claim that idle work is bounded: one rebuild, one rank pass over
-    // all 106 items, and two scheduling passes over the 5 retained activities.
+    // The Finder projection rebuilds only for its own dependencies (#62), so a
+    // settled tick does no rebuild and no rank pass. What an idle tick still
+    // costs is two scheduling passes over the 5 retained activities and the
+    // frame's width measurements.
     let before = f.screen_without_spinner();
     let ((), idle) = measure(|| f.tick());
     assert_eq!(
@@ -65,17 +64,15 @@ fn work_contract_holla_idle_and_source_update() {
         &idle,
         "settled tick",
         &[
-            (Metric::ProjectionRebuilds, 1),
-            (Metric::RankRowsVisited, items),
             (Metric::SchedulingRecordsVisited, 2 * activities + plans),
-            (Metric::IntrinsicWidthCalls, 716),
-            (Metric::TextBytesMeasured, 3_358),
+            (Metric::IntrinsicWidthCalls, 765),
+            (Metric::TextBytesMeasured, 3_337),
         ],
     );
     assert_eq!(
         idle.get(Metric::ProjectionRebuilds),
-        1,
-        "an idle tick still rebuilds"
+        0,
+        "an idle tick does not rebuild"
     );
     report(
         &f,
@@ -85,7 +82,7 @@ fn work_contract_holla_idle_and_source_update() {
     );
 
     // An unrelated world field changes, then the next tick runs. The Finder
-    // cannot tell that nothing relevant changed, so it rebuilds again.
+    // reads its own dependency stamps, so it does not rebuild.
     let ((), irrelevant) = measure(|| {
         f.app.world.clipboard = Some("unrelated".to_owned());
         f.tick();
@@ -99,14 +96,12 @@ fn work_contract_holla_idle_and_source_update() {
         &irrelevant,
         "unrelated field then tick",
         &[
-            (Metric::ProjectionRebuilds, 1),
-            (Metric::RankRowsVisited, items),
             (Metric::SchedulingRecordsVisited, 2 * activities + plans),
-            (Metric::IntrinsicWidthCalls, 716),
-            (Metric::TextBytesMeasured, 3_358),
+            (Metric::IntrinsicWidthCalls, 765),
+            (Metric::TextBytesMeasured, 3_337),
         ],
     );
-    assert_eq!(irrelevant.get(Metric::ProjectionRebuilds), 1);
+    assert_eq!(irrelevant.get(Metric::ProjectionRebuilds), 0);
     report(
         &f,
         "irrelevant_source_change_then_tick",
@@ -127,8 +122,8 @@ fn work_contract_holla_idle_and_source_update() {
         &[
             (Metric::ProjectionRebuilds, 1),
             (Metric::RankRowsVisited, items),
-            (Metric::IntrinsicWidthCalls, 1_639),
-            (Metric::TextBytesMeasured, 8_552),
+            (Metric::IntrinsicWidthCalls, 1_654),
+            (Metric::TextBytesMeasured, 8_505),
         ],
     );
     assert_eq!(key.get(Metric::SchedulingRecordsVisited), 0);

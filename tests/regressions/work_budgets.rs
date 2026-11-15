@@ -493,31 +493,29 @@ fn work_contract_picker_linear_projection() {
         let mut picker = Picker::new(ID, "Pick");
         let (set, set_work) = measure(|| picker.set_items(items.clone()));
         set.expect("valid items");
-        // Measured: set_items copies every item into the authoritative list.
-        assert_exact(
-            &set_work,
-            &format!("picker set_items, n={n}"),
-            &[(Metric::PayloadBytesCloned, bytes)],
-        );
+        // Measured: set_items moves the items in and indexes them by key, so
+        // it clones nothing.
+        assert_exact(&set_work, &format!("picker set_items, n={n}"), &[]);
 
         draw_picker(&mut picker);
         let (buf, full) = measure(|| draw_picker(&mut picker));
         assert!(screen_has(&buf, "Item 000000"));
-        // Measured: a settled frame paints 13 rows but measures the width of
-        // every item's label, detail and group (3 calls per item) to size the
-        // columns, so its cost grows with the hidden list.
+        // Measured: a settled frame paints 12 rows (the painted list is capped
+        // at max_rows) but measures the width of every item's label, detail and
+        // group (3 calls per item) to size the columns, so its cost grows with
+        // the hidden list.
         assert_exact(
             &full,
             &format!("picker settled frame, n={n}"),
             &[
-                (Metric::VisibleRowsPainted, 13),
+                (Metric::VisibleRowsPainted, 12),
                 (
                     Metric::IntrinsicWidthCalls,
-                    per_size(n, [3_143, 30_143, 300_143]),
+                    per_size(n, [3_264, 30_264, 300_264]),
                 ),
                 (
                     Metric::TextBytesMeasured,
-                    per_size(n, [17_143, 170_143, 1_700_143]),
+                    per_size(n, [17_264, 170_264, 1_700_264]),
                 ),
             ],
         );
@@ -526,21 +524,10 @@ fn work_contract_picker_linear_projection() {
         let visible: Vec<Item> = (0..20).map(|k| items[k * stride].clone()).collect();
         let (res, project) = measure(|| picker.set_visible_items(visible.clone()));
         res.expect("known keys");
-        // Measured: each of the 20 visible keys is found by a linear scan of
-        // the authoritative list, sum(k * stride + 1) = 190 * stride + 20
-        // comparisons, plus 1 comparison to re-find the cursor item. This is
-        // the O(N x M) projection; only 20 items are cloned.
-        assert_exact(
-            &project,
-            &format!("picker set_visible_items, n={n}"),
-            &[
-                (Metric::PayloadBytesCloned, 340),
-                (
-                    Metric::IdentityComparisons,
-                    per_size(n, [9_521, 95_021, 950_021]),
-                ),
-            ],
-        );
+        // Measured: each visible key resolves through the key index and the
+        // projection stores source positions, so the projection compares no
+        // identity and clones no item at any list size.
+        assert_exact(&project, &format!("picker set_visible_items, n={n}"), &[]);
 
         let (buf, filtered) = measure(|| draw_picker(&mut picker));
         assert!(screen_has(&buf, "Item 000000"));
@@ -550,24 +537,18 @@ fn work_contract_picker_linear_projection() {
             &filtered,
             &format!("picker filtered frame, n={n}"),
             &[
-                (Metric::VisibleRowsPainted, 13),
-                (Metric::IntrinsicWidthCalls, 203),
-                (Metric::TextBytesMeasured, 483),
+                (Metric::VisibleRowsPainted, 12),
+                (Metric::IntrinsicWidthCalls, 324),
+                (Metric::TextBytesMeasured, 604),
             ],
         );
 
         let (res, replace) = measure(|| picker.replace_items(items.clone()));
         res.expect("valid items");
-        // Measured: a full replacement copies every item once and re-finds the
-        // cursor item with one comparison.
-        assert_exact(
-            &replace,
-            &format!("picker replace_items, n={n}"),
-            &[
-                (Metric::PayloadBytesCloned, bytes),
-                (Metric::IdentityComparisons, 1),
-            ],
-        );
+        // Measured: a full replacement moves the items in, rebuilds the key
+        // index and restores the cursor by key, so it clones and compares
+        // nothing.
+        assert_exact(&replace, &format!("picker replace_items, n={n}"), &[]);
 
         publish(
             "picker",
@@ -619,13 +600,14 @@ fn work_contract_select_open_frame() {
         draw(&mut select);
         let (buf, open) = measure(|| draw(&mut select));
         assert!(screen_has(&buf, "option 000007"));
-        // Measured: every open frame paints 8 rows and deep-clones all option
-        // labels into the overlay closure, so the clone grows with the list.
+        // Measured: every open frame paints 8 rows and clones only those 8
+        // option labels into the overlay snapshot, so the clone is the same at
+        // every list size.
         assert_exact(
             &open,
             &format!("select open frame, n={n}"),
             &[
-                (Metric::PayloadBytesCloned, bytes),
+                (Metric::PayloadBytesCloned, 104),
                 (Metric::VisibleRowsPainted, 8),
                 (Metric::IntrinsicWidthCalls, 1),
                 (Metric::TextBytesMeasured, 6),
@@ -665,23 +647,18 @@ fn work_contract_completion_open_frame() {
         draw(&mut completion);
         let (buf, open) = measure(|| draw(&mut completion));
         assert!(screen_has(&buf, "symbol_000000"));
-        // Measured: every open frame paints 8 rows, measures every item's
-        // label and detail to size the popup (2 calls per item), and clones
-        // the whole completion, items included, for the overlay closure.
+        // Measured: every open frame paints 8 rows, sizes the popup from
+        // widths cached until the items change, and clones only the 8 painted
+        // items into the overlay snapshot. The cost is the same at every
+        // list size.
         assert_exact(
             &open,
             &format!("completion open frame, n={n}"),
             &[
-                (Metric::PayloadBytesCloned, bytes),
+                (Metric::PayloadBytesCloned, 120),
                 (Metric::VisibleRowsPainted, 8),
-                (
-                    Metric::IntrinsicWidthCalls,
-                    per_size(n, [2_136, 20_136, 200_136]),
-                ),
-                (
-                    Metric::TextBytesMeasured,
-                    per_size(n, [15_256, 150_256, 1_500_256]),
-                ),
+                (Metric::IntrinsicWidthCalls, 240),
+                (Metric::TextBytesMeasured, 360),
             ],
         );
 
@@ -733,38 +710,28 @@ fn work_contract_editor_prepared_frame() {
 
         let (buf, first) = measure(|| draw(&mut editor));
         assert!(screen_has(&buf, "let value_000000 = 0;"));
-        // Measured: the first focused frame copies the text twice (the
-        // edit-entry snapshot and the per-frame render copy), hashes it once,
-        // and calls both annotation providers.
-        let [w, b] = widths([1_658, 10_658, 100_658], [23_585, 239_586, 2_489_587]);
+        // Measured: the first focused frame paints 29 rows from the cached
+        // line view, copies and hashes no text, and calls both annotation
+        // providers once.
+        let [w, b] = widths([30, 30, 30], [67, 68, 69]);
         assert_exact(
             &first,
             &format!("editor first frame, n={n}"),
             &[
-                (Metric::PayloadBytesCloned, 2 * len),
                 (Metric::VisibleRowsPainted, 29),
                 w,
                 b,
-                (Metric::TextBytesHashed, len),
                 (Metric::AnnotationQueries, 2),
             ],
         );
 
         let (_, settled) = measure(|| draw(&mut editor));
-        // Measured: a settled frame still copies and hashes the whole text,
-        // measures every line, and calls the block segmenter, which is not
-        // cached. Only the highlighter result is cached by the hash.
+        // Measured: a settled frame paints the same rows and calls no
+        // annotation provider: both results are cached by the text revision.
         assert_exact(
             &settled,
             &format!("editor settled frame, n={n}"),
-            &[
-                (Metric::PayloadBytesCloned, len),
-                (Metric::VisibleRowsPainted, 29),
-                w,
-                b,
-                (Metric::TextBytesHashed, len),
-                (Metric::AnnotationQueries, 1),
-            ],
+            &[(Metric::VisibleRowsPainted, 29), w, b],
         );
 
         let (_, first_key) = measure(|| editor.on_key(&key(KeyCode::Char('x'))));
@@ -785,17 +752,14 @@ fn work_contract_editor_prepared_frame() {
         let (buf, after) = measure(|| draw(&mut editor));
         assert!(screen_has(&buf, "xylet value_000000 = 0;"));
         // Measured: the frame after an edit repeats the settled frame's work
-        // and also re-runs the highlighter on the changed hash.
-        let [w, b] = widths([1_660, 10_660, 100_660], [23_589, 239_590, 2_489_591]);
+        // and re-runs both annotation providers on the new text revision.
         assert_exact(
             &after,
             &format!("editor frame after edit, n={n}"),
             &[
-                (Metric::PayloadBytesCloned, len + 2),
                 (Metric::VisibleRowsPainted, 29),
                 w,
                 b,
-                (Metric::TextBytesHashed, len + 2),
                 (Metric::AnnotationQueries, 2),
             ],
         );
@@ -843,41 +807,29 @@ fn work_contract_textarea_prepared_frame() {
             screen_has(&buf, &last),
             "a focused area follows its cursor to the end"
         );
-        // Measured: the first focused frame snapshots the text for edit entry,
-        // paints the 10 visible lines and measures every line's width.
+        // Measured: the first focused frame snapshots the text for edit entry
+        // and paints the 10 visible lines. Only those lines are measured.
         assert_exact(
             &first,
             &format!("textarea first frame, n={n}"),
             &[
                 (Metric::PayloadBytesCloned, len),
                 (Metric::VisibleRowsPainted, 10),
-                (
-                    Metric::IntrinsicWidthCalls,
-                    per_size(n, [1_323, 10_323, 100_323]),
-                ),
-                (
-                    Metric::TextBytesMeasured,
-                    per_size(n, [31_649, 310_653, 3_100_657]),
-                ),
+                (Metric::IntrinsicWidthCalls, 3),
+                (Metric::TextBytesMeasured, per_size(n, [29, 33, 37])),
             ],
         );
 
         let (_, settled) = measure(|| draw(&mut area));
-        // Measured: a settled frame clones nothing but still measures every
-        // hidden line.
+        // Measured: a settled frame clones nothing and measures only the
+        // visible lines.
         assert_exact(
             &settled,
             &format!("textarea settled frame, n={n}"),
             &[
                 (Metric::VisibleRowsPainted, 10),
-                (
-                    Metric::IntrinsicWidthCalls,
-                    per_size(n, [1_323, 10_323, 100_323]),
-                ),
-                (
-                    Metric::TextBytesMeasured,
-                    per_size(n, [31_649, 310_653, 3_100_657]),
-                ),
+                (Metric::IntrinsicWidthCalls, 3),
+                (Metric::TextBytesMeasured, per_size(n, [29, 33, 37])),
             ],
         );
 
@@ -901,14 +853,8 @@ fn work_contract_textarea_prepared_frame() {
             &format!("textarea frame after edit, n={n}"),
             &[
                 (Metric::VisibleRowsPainted, 10),
-                (
-                    Metric::IntrinsicWidthCalls,
-                    per_size(n, [1_325, 10_325, 100_325]),
-                ),
-                (
-                    Metric::TextBytesMeasured,
-                    per_size(n, [31_655, 310_659, 3_100_663]),
-                ),
+                (Metric::IntrinsicWidthCalls, 3),
+                (Metric::TextBytesMeasured, per_size(n, [29, 33, 37])),
             ],
         );
 

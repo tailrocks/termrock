@@ -149,6 +149,16 @@ pub fn work() -> Work {
     WORK.with(Cell::get)
 }
 
+/// Whether work counts now, that is, no reference computation is running. The
+/// #56 metrics follow the same switch as [`record`].
+#[cfg_attr(
+    not(feature = "work-metrics"),
+    allow(dead_code, reason = "read where record_work! is enabled")
+)]
+pub(crate) fn counting() -> bool {
+    UNCOUNTED.with(Cell::get) == 0
+}
+
 pub(crate) fn record(f: impl FnOnce(&mut Work)) {
     if UNCOUNTED.with(Cell::get) > 0 {
         return;

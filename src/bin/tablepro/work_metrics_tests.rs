@@ -87,8 +87,8 @@ fn work_contract_tablepro_idle_and_cell_edit() {
         "settled tick",
         &[
             (Metric::VisibleRowsPainted, 41),
-            (Metric::IntrinsicWidthCalls, 249),
-            (Metric::TextBytesMeasured, 2_514),
+            (Metric::IntrinsicWidthCalls, 239),
+            (Metric::TextBytesMeasured, 2_397),
         ],
     );
     report(
@@ -105,8 +105,8 @@ fn work_contract_tablepro_idle_and_cell_edit() {
         "active-grid navigation",
         &[
             (Metric::VisibleRowsPainted, 41),
-            (Metric::IntrinsicWidthCalls, 249),
-            (Metric::TextBytesMeasured, 2_514),
+            (Metric::IntrinsicWidthCalls, 239),
+            (Metric::TextBytesMeasured, 2_397),
         ],
     );
     report(
@@ -134,8 +134,8 @@ fn work_contract_tablepro_idle_and_cell_edit() {
         "one keyed draft edit",
         &[
             (Metric::VisibleRowsPainted, 39),
-            (Metric::IntrinsicWidthCalls, 257),
-            (Metric::TextBytesMeasured, 2_535),
+            (Metric::IntrinsicWidthCalls, 274),
+            (Metric::TextBytesMeasured, 2_433),
         ],
     );
     report(
@@ -162,8 +162,8 @@ fn work_contract_tablepro_idle_and_cell_edit() {
         "unrelated history entry",
         &[
             (Metric::VisibleRowsPainted, 39),
-            (Metric::IntrinsicWidthCalls, 257),
-            (Metric::TextBytesMeasured, 2_535),
+            (Metric::IntrinsicWidthCalls, 274),
+            (Metric::TextBytesMeasured, 2_433),
         ],
     );
     report(

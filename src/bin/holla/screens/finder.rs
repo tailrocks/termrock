@@ -248,7 +248,9 @@ impl FinderPage {
 
     fn rank_rows(&mut self, w: &World, keep: Option<String>) {
         self.rebuilds += 1;
-        junie_tui::record_work!(ProjectionRebuilds, 1usize);
+        if crate::domain::projection::counting() {
+            junie_tui::record_work!(ProjectionRebuilds, 1usize);
+        }
         let learned = if crate::domain::ranking::Query::parse(self.query.text()).is_empty() {
             None
         } else {
