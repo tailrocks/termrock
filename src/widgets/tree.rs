@@ -2051,6 +2051,12 @@ impl TreeView {
         source: &S,
     ) -> Result<bool, KeyedSourceError> {
         self.bind_tree(source)?;
+        let selectable = self.keyed.is_authoritative(key)
+            && source.node(key).is_some_and(|node| !node.note)
+            && (self.keyed.visible_index(key).is_none() || self.keyed.is_enabled(key));
+        if !selectable {
+            return Ok(false);
+        }
         Ok(self.keyed.replace_selection([key]))
     }
 

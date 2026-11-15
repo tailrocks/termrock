@@ -1264,6 +1264,7 @@ mod trees {
         nodes: HashMap<ItemKey, (String, Vec<ItemKey>)>,
         roots: Vec<ItemKey>,
         data: u64,
+        notes: Vec<ItemKey>,
     }
 
     impl Raw {
@@ -1275,6 +1276,7 @@ mod trees {
                     .map(|(n, c)| (k(*n), (format!("n{n}"), c.iter().map(|x| k(*x)).collect())))
                     .collect(),
                 data: 1,
+                notes: vec![],
             }
         }
     }
@@ -1304,7 +1306,7 @@ mod trees {
                 children,
                 lazy: false,
                 busy: false,
-                note: false,
+                note: self.notes.contains(&key),
             })
         }
     }
@@ -1424,6 +1426,45 @@ mod trees {
             .expect("valid");
         assert_eq!(view.keyed().cursor(), cursor, "the old press moved nothing");
         assert!(view.keyed().selected().next().is_none());
+    }
+
+    #[test]
+    fn keyed_tree_select_source_refuses_an_unknown_key_without_mutation() {
+        let store = tree();
+        let mut view = TreeView::new(WidgetId::of("kt"), vec![]);
+        draw(&mut view, &store);
+        assert_eq!(view.select_source(k(2), &store), Ok(true));
+        assert_eq!(view.select_source(k(99), &store), Ok(false));
+        assert_eq!(
+            view.keyed().selected().collect::<Vec<_>>(),
+            vec![k(2)],
+            "a refused key leaves the selection alone"
+        );
+    }
+
+    #[test]
+    fn keyed_tree_select_source_refuses_note_nodes_hidden_or_visible() {
+        let mut raw = Raw::new(&[1, 5], &[(1, &[2]), (2, &[]), (5, &[])]);
+        raw.notes = vec![k(2)];
+        let mut view = TreeView::new(WidgetId::of("kt"), vec![]);
+        draw(&mut view, &raw);
+        assert_eq!(view.select_source(k(5), &raw), Ok(true));
+
+        assert_eq!(view.select_source(k(2), &raw), Ok(false), "visible note");
+        assert_eq!(view.keyed().selected().collect::<Vec<_>>(), vec![k(5)]);
+
+        assert_eq!(view.set_cursor_source(k(1), &raw), Ok(true));
+        let _ = view
+            .on_key_source(&key(KeyCode::Left), &raw)
+            .expect("valid");
+        draw(&mut view, &raw);
+        assert!(view.keyed().visible_index(k(2)).is_none(), "note is hidden");
+        assert_eq!(view.select_source(k(2), &raw), Ok(false), "hidden note");
+        assert_eq!(
+            view.keyed().selected().collect::<Vec<_>>(),
+            vec![k(5)],
+            "a refused note leaves the selection alone"
+        );
     }
 
     #[test]
