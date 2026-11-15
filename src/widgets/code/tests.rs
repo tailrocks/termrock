@@ -657,6 +657,32 @@ fn editor_diagnostic_gutter_uses_cached_first_ordinal() {
 }
 
 #[test]
+fn closing_find_releases_the_match_runs() {
+    let id = WidgetId::of("code-test");
+    for close_after_enter in [false, true] {
+        let mut frame = Frame::new(100, 24);
+        let mut e = editor(200).edit_entry(EditEntry::Explicit);
+        frame.paint(&mut e, focused(id));
+        e.open_find();
+        for c in "col_1".chars() {
+            e.on_key(&key(KeyCode::Char(c)));
+        }
+        if close_after_enter {
+            e.on_key(&key(KeyCode::Enter));
+        }
+        frame.paint(&mut e, focused(id));
+        assert!(e.find_runs.is_some(), "an open find paints its matches");
+
+        e.on_key(&key(KeyCode::Esc));
+        assert!(e.find.is_none(), "esc closes the find");
+        assert!(
+            e.find_runs.is_none(),
+            "the run index of a closed find is dropped (after enter: {close_after_enter})"
+        );
+    }
+}
+
+#[test]
 fn editor_jump_to_uses_indexed_position_lookup() {
     fn doc(lines: usize) -> String {
         (0..lines)
