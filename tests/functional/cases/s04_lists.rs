@@ -898,6 +898,9 @@ fn option_type_ahead_off() {
     let app = open("s04-type", 120, 40, &args);
     app.wait_text(CHOSEN_RUST);
     click_language(&app, "TypeScript");
+    // The ignored key repaints nothing. Let the flash expire first so its
+    // order against the tick cannot change the settled frame.
+    app.stable_screen();
     press(&app, "p");
     let stayed = app.settle();
     assert_cursor(&stayed, "TypeScript", true);
