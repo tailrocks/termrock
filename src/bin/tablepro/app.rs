@@ -26,7 +26,7 @@ use junie_tui::ui::leave::{Leave, LeaveGuard, Resolved, Stakes};
 
 use junie_tui::widgets::button::Button;
 use junie_tui::widgets::dialog::{Dialog, DialogBody, DialogResult};
-use junie_tui::widgets::grid::CellValue;
+use junie_tui::widgets::grid::{CellValue, DataGrid};
 
 use junie_tui::widgets::input::TextInput;
 
@@ -131,12 +131,16 @@ impl From<LayerResult> for ModalResult {
 
 pub type Layers = ShellLayers<ModalResult>;
 
-fn preview_error_text(e: &crate::model::PreviewSqlError) -> String {
+fn preview_error_text(e: &crate::model::PreviewSqlError, grid: &DataGrid) -> String {
     use crate::model::{PreviewRow, PreviewSqlCause, SqlLiteralError};
-    let PreviewRow::Source(row) = e.row;
+    let PreviewRow::Key(key) = e.row;
+    let row = match grid.source_index(key) {
+        Some(src) => format!("row {}", src + 1),
+        None => "a removed row".to_owned(),
+    };
     let place = match &e.column {
-        Some(column) => format!("row {} · {column}", row + 1),
-        None => format!("row {}", row + 1),
+        Some(column) => format!("{row} · {column}"),
+        None => row,
     };
     let why = match &e.cause {
         PreviewSqlCause::Literal(SqlLiteralError::NonFiniteNumber) => {
@@ -145,6 +149,10 @@ fn preview_error_text(e: &crate::model::PreviewSqlError) -> String {
         PreviewSqlCause::MissingColumn(name) => format!("key column {name} is missing"),
         PreviewSqlCause::InvalidDefaultPredicate => {
             "holds DEFAULT, which cannot identify a row".to_owned()
+        }
+        PreviewSqlCause::GeneratedColumn => "is generated and cannot be changed".to_owned(),
+        PreviewSqlCause::RowShape { expected, actual } => {
+            format!("has {actual} cells where {expected} columns are shown")
         }
     };
     format!("{place} {why}")
@@ -1065,7 +1073,8 @@ impl App {
         let Some(WorkTab::Table(t)) = w.active_tab_mut() else {
             return;
         };
-        if t.grid.pending().is_empty() {
+        let changes = t.grid.snapshot_changes();
+        if changes.is_empty() {
             self.set_status("No pending changes".into());
             return;
         }
@@ -1077,20 +1086,18 @@ impl App {
             );
             return;
         }
-        let sqls = match crate::model::preview_sql(&table, &t.columns, &t.grid) {
+        let sqls = match crate::model::preview_sql(&table, &t.columns, &changes) {
             Ok(sqls) => sqls,
             Err(e) => {
+                let why = preview_error_text(&e, &t.grid);
                 self.set_status_as(
                     StatusKind::Fail,
-                    format!(
-                        "Cannot save: {} · changes kept pending",
-                        preview_error_text(&e)
-                    ),
+                    format!("Cannot save: {why} · changes kept pending"),
                 );
                 return;
             }
         };
-        let (u, i, d) = t.grid.pending().counts();
+        let (u, i, d) = changes.counts();
         let deletes = d;
         let deliberate = level.requires_authentication();
         let mut facts = vec![
@@ -1198,24 +1205,24 @@ impl App {
         let Some(WorkTab::Table(t)) = w.active_tab_mut() else {
             return;
         };
+        let changes = t.grid.snapshot_changes();
         let sqls = match table
             .as_ref()
-            .map(|tb| crate::model::preview_sql(tb, &t.columns, &t.grid))
+            .map(|tb| crate::model::preview_sql(tb, &t.columns, &changes))
             .transpose()
         {
             Ok(sqls) => sqls.unwrap_or_default(),
             Err(e) => {
+                let why = preview_error_text(&e, &t.grid);
                 self.set_status_as(
                     StatusKind::Fail,
-                    format!(
-                        "Cannot save: {} · changes kept pending",
-                        preview_error_text(&e)
-                    ),
+                    format!("Cannot save: {why} · changes kept pending"),
                 );
                 return;
             }
         };
-        let n = t.grid.pending().total();
+        let (u, i, d) = changes.counts();
+        let n = u + i + d;
         let qualified = t.qualified();
         let schema = t.schema.clone();
         t.grid.apply_commit_result(Ok(()));
@@ -1252,12 +1259,13 @@ impl App {
         let Some(table) = w.catalog.find(Some(&t.schema), &t.name) else {
             return;
         };
-        let sqls = match crate::model::preview_sql(table, &t.columns, &t.grid) {
+        let changes = t.grid.snapshot_changes();
+        let sqls = match crate::model::preview_sql(table, &t.columns, &changes) {
             Ok(sqls) => sqls,
             Err(e) => {
                 self.set_status_as(
                     StatusKind::Fail,
-                    format!("Cannot preview SQL: {}", preview_error_text(&e)),
+                    format!("Cannot preview SQL: {}", preview_error_text(&e, &t.grid)),
                 );
                 return;
             }
@@ -2673,5 +2681,60 @@ mod tests {
         let grid = grid(&mut app);
         assert_eq!(grid.pending().cells().count(), 2, "the draft is kept");
         assert_eq!(grid.value(0, PRICE), &CellValue::Num(2.5));
+    }
+    const SKU: usize = 1;
+    const NAME: usize = 2;
+
+    fn quoted(v: &CellValue) -> String {
+        match v {
+            CellValue::Text(s) => format!("'{}'", s.replace('\'', "''")),
+            other => panic!("expected text, got {other:?}"),
+        }
+    }
+
+    fn insert_of(app: &mut App) -> String {
+        app.open_preview();
+        let code = review_code(app);
+        let inserts: Vec<&String> = code.iter().filter(|s| s.starts_with("INSERT")).collect();
+        assert_eq!(inserts.len(), 1, "{code:?}");
+        inserts[0].clone()
+    }
+
+    #[test]
+    fn issue50_untouched_duplicate_previews_every_copied_value() {
+        let mut app = app_editing_products();
+        let source = grid(&mut app).rows()[0].clone();
+        grid(&mut app).duplicate_row().expect("row duplicates");
+        let sql = insert_of(&mut app);
+        assert!(!sql.contains("DEFAULT VALUES"), "{sql}");
+        assert!(
+            sql.starts_with("INSERT INTO public.products (sku, name, "),
+            "the primary key resets to DEFAULT and is omitted: {sql}"
+        );
+        assert!(sql.contains(&quoted(&source[SKU])), "{sql}");
+        assert!(sql.contains(&quoted(&source[NAME])), "{sql}");
+        assert!(sql.contains("unit_price"), "{sql}");
+    }
+
+    #[test]
+    fn issue50_duplicate_with_one_edit_keeps_the_other_copies() {
+        let mut app = app_editing_products();
+        let source = grid(&mut app).rows()[0].clone();
+        grid(&mut app).duplicate_row().expect("row duplicates");
+        let copy = grid(&mut app).len() - 1;
+        grid(&mut app).record_cell(copy, PRICE, CellValue::Num(12.5));
+        let sql = insert_of(&mut app);
+        assert!(sql.contains("12.5"), "{sql}");
+        assert!(sql.contains(&quoted(&source[SKU])), "{sql}");
+        assert!(sql.contains(&quoted(&source[NAME])), "{sql}");
+    }
+
+    #[test]
+    fn issue50_duplicating_an_edited_row_copies_the_pending_value() {
+        let mut app = app_editing_products();
+        grid(&mut app).record_cell(0, NAME, CellValue::Text("edited name".into()));
+        grid(&mut app).duplicate_row().expect("row duplicates");
+        let sql = insert_of(&mut app);
+        assert!(sql.contains("'edited name'"), "{sql}");
     }
 }
