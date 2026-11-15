@@ -574,11 +574,6 @@ impl App {
         } else {
             Outcome::Ignored
         };
-        let now = self.now_ms();
-        if self.shell.pointer.expire_flash(now) {
-            out = Outcome::Changed;
-        }
-
         out = out.or(PointerRouter::tick(self));
         if self.shell.status.expire(self.world.clock.now()) {
             out = Outcome::Changed;

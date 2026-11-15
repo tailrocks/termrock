@@ -425,10 +425,6 @@ impl App {
             }
             out = Outcome::Changed;
         }
-        let now = self.now_ms();
-        if self.shell.pointer.expire_flash(now) {
-            out = Outcome::Changed;
-        }
         if self.shell.status.expire(self.clock.now()) {
             out = Outcome::Changed;
         }

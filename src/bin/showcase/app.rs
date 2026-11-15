@@ -992,10 +992,6 @@ impl App {
             }
             out = Outcome::Changed;
         }
-        let now = self.now_ms();
-        if self.shell.pointer.expire_flash(now) {
-            out = Outcome::Changed;
-        }
         if self.shell.status.expire(self.clock.now()) {
             out = Outcome::Changed;
         }
@@ -1738,10 +1734,6 @@ impl App {
             return Outcome::Changed;
         }
         out
-    }
-
-    fn now_ms(&self) -> u64 {
-        self.clock.now_ms()
     }
 
     fn compute_layout(&self, area: Rect) -> ShellLayout {
