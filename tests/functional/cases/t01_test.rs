@@ -244,6 +244,7 @@ fn testing_paused() {
             && screen.rows() == 40
             && text(screen).contains(FORM)
             && text(screen).contains("Cancel")
+            && text(screen).contains("120×40")
     });
     click_action(&app, "Cancel");
     let returned = app.wait_screen("devtest discarded", |screen| {
