@@ -1834,6 +1834,11 @@ pub static CODE_EDITOR: &[Opt] = &[
         "International completions",
         OFF_ON,
     ),
+    Opt::new(
+        "codeeditor.find_preset",
+        "Find query",
+        &["off", "delay", "delay-3rd", "missing"],
+    ),
 ];
 
 pub static DIFF: &[Opt] = &[
