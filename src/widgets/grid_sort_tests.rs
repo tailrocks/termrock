@@ -146,7 +146,7 @@ fn issue46_commit_reorders_changed_sort_column() {
     assert_eq!(g.value(g.source_row(2), 0), &int(9));
     assert_eq!(cursor_tag(&g), "two", "cursor stays on the edited record");
     assert!(g.selection.contains(g.source_row(2)), "selection follows");
-    assert!(g.pending.is_empty());
+    assert!(g.pending().is_empty());
 }
 
 #[test]
@@ -160,7 +160,7 @@ fn issue46_append_sorts_by_saved_values_not_pending() {
     move_to(&mut g, 1);
     assert_eq!(cursor_tag(&g), "two");
     edit_cursor_cell(&mut g, "9");
-    assert!(!g.pending.is_empty(), "the edit is still pending");
+    assert!(!g.pending().is_empty(), "the edit is still pending");
 
     g.append_rows(page(&[(Some(3), "three")], false));
 
@@ -235,14 +235,15 @@ fn issue46_inserted_drafts_stay_tail_until_commit() {
     let mut g = grid(true, &[(Some(3), "three"), (Some(1), "one")]);
     press(&mut g, KeyCode::Char('s'));
     press(&mut g, KeyCode::Char('+'));
-    assert_eq!(g.pending.inserted.len(), 1);
+    assert_eq!(g.pending().inserted().count(), 1);
     g.cursor.1 = 0;
     edit_cursor_cell(&mut g, "0");
     g.append_rows(page(&[(Some(2), "two")], false));
 
     let draft = g.source_row(3);
     assert!(
-        g.pending.inserted.contains(&draft),
+        g.row_key(draft)
+            .is_some_and(|key| g.pending().is_inserted(key)),
         "draft stays at the tail"
     );
     assert_eq!(
@@ -358,7 +359,10 @@ fn issue46_remote_and_failure_do_not_sort() {
     g.apply_commit_result(Err((0, "rejected".into())));
     assert_eq!(rebuilds(), before, "a failed commit never rebuilds");
     assert_eq!(shown(&g), ["one", "two"]);
-    assert!(!g.pending.is_empty(), "the draft survives a failed commit");
+    assert!(
+        !g.pending().is_empty(),
+        "the draft survives a failed commit"
+    );
 }
 
 #[test]
@@ -394,4 +398,60 @@ fn issue46_empty_commit_and_stale_sort_column_are_safe() {
         ["two", "one", "zero"],
         "stale column keeps source order"
     );
+}
+
+#[test]
+fn issue46_cursor_falls_back_to_previous_survivor_after_reorder() {
+    let mut g = grid(
+        true,
+        &[
+            (Some(2), "two"),
+            (Some(1), "one"),
+            (Some(5), "five"),
+            (Some(3), "three"),
+        ],
+    );
+    press(&mut g, KeyCode::Char('s'));
+    assert_eq!(shown(&g), ["one", "two", "three", "five"]);
+    edit_cursor_cell(&mut g, "9");
+    move_to(&mut g, 3);
+    press(&mut g, KeyCode::Char('-'));
+    assert_eq!(
+        cursor_tag(&g),
+        "five",
+        "cursor rests on the deleted last row"
+    );
+
+    g.apply_commit_result(Ok(()));
+
+    assert_eq!(shown(&g), ["two", "three", "one"]);
+    assert_eq!(
+        cursor_tag(&g),
+        "three",
+        "no next survivor, so the previous one in old display order"
+    );
+}
+
+#[test]
+fn issue46_stale_sort_column_keeps_source_order_both_ways() {
+    for dir in [SortDir::Asc, SortDir::Desc] {
+        let mut g = grid(true, &[(Some(2), "two"), (Some(1), "one")]);
+        g.sort = Some((9, dir));
+        g.append_rows(page(&[(Some(0), "zero")], false));
+        assert_eq!(shown(&g), ["two", "one", "zero"], "{dir:?}");
+    }
+}
+
+#[test]
+fn issue46_short_rows_sort_without_panic() {
+    let mut g = grid(true, &[(Some(2), "two")]);
+    press(&mut g, KeyCode::Char('s'));
+    g.append_rows(GridRows {
+        rows: vec![vec![int(1)], vec![]],
+        total: RowTotal::Exact(3),
+        more: false,
+    });
+    assert_eq!(g.len(), 3);
+    assert_eq!(g.value(g.source_row(0), 0).text(), "1");
+    assert_eq!(g.value(g.source_row(1), 0).text(), "2");
 }

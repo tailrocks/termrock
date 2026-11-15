@@ -20,6 +20,8 @@ pub mod grid;
 #[cfg(test)]
 mod grid_sort_tests;
 mod grid_specimen;
+#[cfg(test)]
+mod grid_undo_tests;
 pub mod help;
 pub mod hintbar;
 pub mod icon_button;

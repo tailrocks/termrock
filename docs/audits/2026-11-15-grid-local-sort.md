@@ -10,8 +10,8 @@ order from source order while the sort header stayed lit.
 
 ## Policy
 
-- The display order is built by one helper, `DataGrid::rebuild_order`. It
-  runs once per real append, once per successful commit that changed
+- The display order is built by one helper, `DataGrid::rebuild_order`, the
+  same one the keyed drafts and undo work (#33) use. It runs once per real append, once per successful commit that changed
   something, and once per `set_rows`.
 - With `local_sort` on and a valid sort column, original rows are
   stable-sorted by their saved (committed) cell values. Asc puts Null last.
@@ -36,17 +36,20 @@ edit exists, anchor following its record on append and commit, commit that
 reorders the changed column, commit that reorders elsewhere, drafts staying
 at the tail, deletion with cursor fallback (including delete and reorder in
 one commit), remote and failed-commit paths, empty append, empty commit, and
-a stale sort column.
+a stale sort column (both directions), a short row, and the previous-survivor cursor fallback.
 
-Three mutations were checked by hand. Each one made a named test fail:
-dropping the anchor remap in `restore_view`, sorting by pending values, and
-removing the cursor fallback in `apply_commit_result`.
+Mutations were checked by hand after the restack onto #166, each applied alone
+and then restored. Each made a named test fail: dropping the anchor remap in
+`restore_view`, sorting by pending values, removing the cursor fallback,
+replacing the append rebuild with a plain extend, dropping the previous-survivor
+fallback, indexing cells without bounds checks, and dropping the stale-column
+filter.
 
 ## Limits
 
-- Identity is the source index, with an explicit old-to-new map on commit.
-  This holds until #33 (keyed rows) lands. #166 then replaces the map with
-  key capture.
+- Cursor and anchor identity is the row key (`view_key`, `display_of`). The
+  cursor fallback after a commit is also captured as a key before rows are
+  removed.
 - Append does not validate incoming rows. That belongs to #42 (checked
   ingress). The comparator reads cells with checked access, so a short row
   does not panic.
