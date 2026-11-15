@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-platform-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/target/functional/s01_platform_other-54787-1794752630053990000-0/check-artifacts/opt-shell-platform-boundary/86d93e64f805828a7719cc30b04a979696a81ef8eabaf86db5446e386a27b58c/sample.tui.pb"
+  },
+  "candidate_sha256": "86d93e64f805828a7719cc30b04a979696a81ef8eabaf86db5446e386a27b58c",
+  "baseline_sha256": "86d93e64f805828a7719cc30b04a979696a81ef8eabaf86db5446e386a27b58c",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-platform-boundary.tui.pb"
+  },
+  "error_code": null
+}

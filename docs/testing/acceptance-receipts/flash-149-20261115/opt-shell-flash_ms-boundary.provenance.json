@@ -1,0 +1,72 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL-target/debug/showcase",
+  "binary_sha256": "94fa1ea20746f9cf4f8464def4666e8ec711cda2a16acc787bf8fa3ba61e8a23",
+  "fixture_args": [],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "ed7e9a8f6a89920bb503349c9238727bd378c82e182d2ed2c8ab176da96603fb",
+  "expect_baseline": "47bd1e66b55df3e4b748c17608dc820c94c6ed08676f56c8f407730cce5dae5c",
+  "precondition": "Deliberate visual change for #149: PointerRouter::tick now expires the press flash while motion is paused, so the frame that stayed painted with the pressed style on the clicked control (10 cells, row 4, cols 101-110) now settles on the resting style. Cell diff: changed fields ['bg']; every changed cell is inside the flashed control.",
+  "session": null,
+  "expected_test_id": "opt-shell-flash_ms-boundary",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/flash-149-20261115/opt-shell-flash_ms-boundary.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/flash-149-20261115/opt-shell-flash_ms-boundary.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/flash-149-20261115/superseded/pre_refactor/S01.shell/opt-shell-flash_ms-boundary.tui.pb",
+  "test_id": "opt-shell-flash_ms-boundary",
+  "acceptance": {
+    "expected_baseline_sha256": "47bd1e66b55df3e4b748c17608dc820c94c6ed08676f56c8f407730cce5dae5c",
+    "accepted_baseline_sha256": "ed7e9a8f6a89920bb503349c9238727bd378c82e182d2ed2c8ab176da96603fb",
+    "candidate_sha256": "ed7e9a8f6a89920bb503349c9238727bd378c82e182d2ed2c8ab176da96603fb",
+    "transaction_receipt": "docs/testing/acceptance-receipts/flash-149-20261115/opt-shell-flash_ms-boundary.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "47bd1e66b55df3e4b748c17608dc820c94c6ed08676f56c8f407730cce5dae5c"
+  },
+  "candidate": {
+    "sha256": "ed7e9a8f6a89920bb503349c9238727bd378c82e182d2ed2c8ab176da96603fb",
+    "path": "tests/functional/baselines/pre_refactor/S01.shell/opt-shell-flash_ms-boundary.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/flash-149-20261115/superseded/pre_refactor/S01.shell/opt-shell-flash_ms-boundary.tui.pb",
+    "superseded_baseline_sha256": "47bd1e66b55df3e4b748c17608dc820c94c6ed08676f56c8f407730cce5dae5c"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/S01.shell/opt-shell-flash_ms-boundary.tui.pb",
+    "candidate_sha256": "ed7e9a8f6a89920bb503349c9238727bd378c82e182d2ed2c8ab176da96603fb",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL-target/debug/showcase",
+    "binary_sha256": "94fa1ea20746f9cf4f8464def4666e8ec711cda2a16acc787bf8fa3ba61e8a23",
+    "note": "Live candidate capture of this branch (fix/149-paused-motion-flash). No Reference-mode capture exists: the pinned reference binaries keep the stale press flash this change removes."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "opt-shell-flash_ms-boundary",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/target/functional/s01_flash_ms-45165-1794752609571949000-0/check-artifacts/opt-shell-flash_ms-boundary/ed7e9a8f6a89920bb503349c9238727bd378c82e182d2ed2c8ab176da96603fb/sample.tui.pb"
+    },
+    "candidate_sha256": "ed7e9a8f6a89920bb503349c9238727bd378c82e182d2ed2c8ab176da96603fb",
+    "baseline_sha256": "ed7e9a8f6a89920bb503349c9238727bd378c82e182d2ed2c8ab176da96603fb",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-flash_ms-boundary.tui.pb"
+    },
+    "error_code": null
+  }
+}

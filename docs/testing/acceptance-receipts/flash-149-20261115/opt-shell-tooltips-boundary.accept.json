@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-tooltips-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/target/functional/s01_tooltips_off-61255-1794752648437747000-0/check-artifacts/opt-shell-tooltips-boundary/f473677a467aec14196b3fc7ea17f99b40eb83f6a8b8dc6c2d12c3c8382ea664/sample.tui.pb"
+  },
+  "candidate_sha256": "f473677a467aec14196b3fc7ea17f99b40eb83f6a8b8dc6c2d12c3c8382ea664",
+  "baseline_sha256": "f473677a467aec14196b3fc7ea17f99b40eb83f6a8b8dc6c2d12c3c8382ea664",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-tooltips-boundary.tui.pb"
+  },
+  "error_code": null
+}

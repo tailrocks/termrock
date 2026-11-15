@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s02_chipsselects/sc_chipsselects_specimen_overflow",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/target/functional/s02-chips-sections-53888-1794756354212571000-0/check-artifacts/pre_refactor/s02_chipsselects/sc_chipsselects_specimen_overflow/e6b804942324faf77a3c321054678d3bf93a6753a2b07b3075efc5b3f0b0bdf7/sample.tui.pb"
+  },
+  "candidate_sha256": "e6b804942324faf77a3c321054678d3bf93a6753a2b07b3075efc5b3f0b0bdf7",
+  "baseline_sha256": "e6b804942324faf77a3c321054678d3bf93a6753a2b07b3075efc5b3f0b0bdf7",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/tests/functional/baselines/pre_refactor/s02_chipsselects/sc_chipsselects_specimen_overflow.tui.pb"
+  },
+  "error_code": null
+}

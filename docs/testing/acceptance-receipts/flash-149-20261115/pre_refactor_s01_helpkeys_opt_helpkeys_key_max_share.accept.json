@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s01_helpkeys/opt_helpkeys_key_max_share",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/target/functional/s01-helpkeys-share-85933-1794752566349447000-0/check-artifacts/pre_refactor/s01_helpkeys/opt_helpkeys_key_max_share/6e9a122f3eb6bec14631e42affdffc30407cca9399c0ca58d8120ca0b36acdb5/sample.tui.pb"
+  },
+  "candidate_sha256": "6e9a122f3eb6bec14631e42affdffc30407cca9399c0ca58d8120ca0b36acdb5",
+  "baseline_sha256": "6e9a122f3eb6bec14631e42affdffc30407cca9399c0ca58d8120ca0b36acdb5",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/tests/functional/baselines/pre_refactor/s01_helpkeys/opt_helpkeys_key_max_share.tui.pb"
+  },
+  "error_code": null
+}

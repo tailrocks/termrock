@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s02_chipsselects/sc_chipsselects_states_120x40",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/target/functional/s02-chips-sections-80760-1794755364903234000-0/check-artifacts/pre_refactor/s02_chipsselects/sc_chipsselects_states_120x40/67b6d5bbe6bba92374f4ae6ef351189ece2c0c42366e8b544c33fe136177cbff/sample.tui.pb"
+  },
+  "candidate_sha256": "67b6d5bbe6bba92374f4ae6ef351189ece2c0c42366e8b544c33fe136177cbff",
+  "baseline_sha256": "67b6d5bbe6bba92374f4ae6ef351189ece2c0c42366e8b544c33fe136177cbff",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/tests/functional/baselines/pre_refactor/s02_chipsselects/sc_chipsselects_states_120x40.tui.pb"
+  },
+  "error_code": null
+}

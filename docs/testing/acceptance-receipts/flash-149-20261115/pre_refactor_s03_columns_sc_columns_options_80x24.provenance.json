@@ -1,0 +1,72 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL-target/debug/showcase",
+  "binary_sha256": "94fa1ea20746f9cf4f8464def4666e8ec711cda2a16acc787bf8fa3ba61e8a23",
+  "fixture_args": [],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "88abfdacddab5962cace78b83af013f93b3f3991a9cc9fc91450c69d37a4e319",
+  "expect_baseline": "b748d2a339bfc2b20a6b97fd46ccefc23efb00ba8ecc3e45f33d2d7338d80407",
+  "precondition": "Deliberate visual change for #149: PointerRouter::tick now expires the press flash while motion is paused, so the frame that stayed painted with the pressed style on the clicked control (10 cells, row 4, cols 35-44) now settles on the resting style. Cell diff: changed fields ['bg']; every changed cell is inside the flashed control.",
+  "session": null,
+  "expected_test_id": "pre_refactor/s03_columns/sc_columns_options_80x24",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/flash-149-20261115/pre_refactor_s03_columns_sc_columns_options_80x24.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/flash-149-20261115/pre_refactor_s03_columns_sc_columns_options_80x24.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/flash-149-20261115/superseded/pre_refactor/s03_columns/sc_columns_options_80x24.tui.pb",
+  "test_id": "pre_refactor/s03_columns/sc_columns_options_80x24",
+  "acceptance": {
+    "expected_baseline_sha256": "b748d2a339bfc2b20a6b97fd46ccefc23efb00ba8ecc3e45f33d2d7338d80407",
+    "accepted_baseline_sha256": "88abfdacddab5962cace78b83af013f93b3f3991a9cc9fc91450c69d37a4e319",
+    "candidate_sha256": "88abfdacddab5962cace78b83af013f93b3f3991a9cc9fc91450c69d37a4e319",
+    "transaction_receipt": "docs/testing/acceptance-receipts/flash-149-20261115/pre_refactor_s03_columns_sc_columns_options_80x24.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "b748d2a339bfc2b20a6b97fd46ccefc23efb00ba8ecc3e45f33d2d7338d80407"
+  },
+  "candidate": {
+    "sha256": "88abfdacddab5962cace78b83af013f93b3f3991a9cc9fc91450c69d37a4e319",
+    "path": "tests/functional/baselines/pre_refactor/s03_columns/sc_columns_options_80x24.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/flash-149-20261115/superseded/pre_refactor/s03_columns/sc_columns_options_80x24.tui.pb",
+    "superseded_baseline_sha256": "b748d2a339bfc2b20a6b97fd46ccefc23efb00ba8ecc3e45f33d2d7338d80407"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/s03_columns/sc_columns_options_80x24.tui.pb",
+    "candidate_sha256": "88abfdacddab5962cace78b83af013f93b3f3991a9cc9fc91450c69d37a4e319",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL-target/debug/showcase",
+    "binary_sha256": "94fa1ea20746f9cf4f8464def4666e8ec711cda2a16acc787bf8fa3ba61e8a23",
+    "note": "Live candidate capture of this branch (fix/149-paused-motion-flash). No Reference-mode capture exists: the pinned reference binaries keep the stale press flash this change removes."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s03_columns/sc_columns_options_80x24",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/target/functional/s03-columns-sections-64983-1794752819726369000-0/check-artifacts/pre_refactor/s03_columns/sc_columns_options_80x24/88abfdacddab5962cace78b83af013f93b3f3991a9cc9fc91450c69d37a4e319/sample.tui.pb"
+    },
+    "candidate_sha256": "88abfdacddab5962cace78b83af013f93b3f3991a9cc9fc91450c69d37a4e319",
+    "baseline_sha256": "88abfdacddab5962cace78b83af013f93b3f3991a9cc9fc91450c69d37a4e319",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/tests/functional/baselines/pre_refactor/s03_columns/sc_columns_options_80x24.tui.pb"
+    },
+    "error_code": null
+  }
+}

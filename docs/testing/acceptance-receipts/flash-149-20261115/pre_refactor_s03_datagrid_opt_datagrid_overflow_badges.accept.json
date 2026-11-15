@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s03_datagrid/opt_datagrid_overflow_badges",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/target/functional/s03-badges-76405-1794752832858875000-0/check-artifacts/pre_refactor/s03_datagrid/opt_datagrid_overflow_badges/33d7b256a61edfde2ad11472f9d6f08aa3de6e85613ab2563b979639f25e2c2b/sample.tui.pb"
+  },
+  "candidate_sha256": "33d7b256a61edfde2ad11472f9d6f08aa3de6e85613ab2563b979639f25e2c2b",
+  "baseline_sha256": "33d7b256a61edfde2ad11472f9d6f08aa3de6e85613ab2563b979639f25e2c2b",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/tests/functional/baselines/pre_refactor/s03_datagrid/opt_datagrid_overflow_badges.tui.pb"
+  },
+  "error_code": null
+}

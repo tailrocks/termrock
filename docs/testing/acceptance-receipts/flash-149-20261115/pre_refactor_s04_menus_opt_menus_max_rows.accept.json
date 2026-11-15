@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s04_menus/opt_menus_max_rows",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/target/functional/s04-menus-max-rows-37980-1794752911959554000-0/check-artifacts/pre_refactor/s04_menus/opt_menus_max_rows/ad7d7f19afa0c33a9738997145d6a469efe0a687ec6c64a34e6be84caa7537c9/sample.tui.pb"
+  },
+  "candidate_sha256": "ad7d7f19afa0c33a9738997145d6a469efe0a687ec6c64a34e6be84caa7537c9",
+  "baseline_sha256": "ad7d7f19afa0c33a9738997145d6a469efe0a687ec6c64a34e6be84caa7537c9",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/tests/functional/baselines/pre_refactor/s04_menus/opt_menus_max_rows.tui.pb"
+  },
+  "error_code": null
+}

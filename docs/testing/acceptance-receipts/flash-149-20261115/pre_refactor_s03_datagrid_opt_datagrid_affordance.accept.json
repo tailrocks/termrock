@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s03_datagrid/opt_datagrid_affordance",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/target/functional/s03-affordance-66081-1794752822740675000-0/check-artifacts/pre_refactor/s03_datagrid/opt_datagrid_affordance/6de7c07e8a321fde083331d2ab3eb2715dc94dfff74fc5ca67d739ea2db30e30/sample.tui.pb"
+  },
+  "candidate_sha256": "6de7c07e8a321fde083331d2ab3eb2715dc94dfff74fc5ca67d739ea2db30e30",
+  "baseline_sha256": "6de7c07e8a321fde083331d2ab3eb2715dc94dfff74fc5ca67d739ea2db30e30",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/tests/functional/baselines/pre_refactor/s03_datagrid/opt_datagrid_affordance.tui.pb"
+  },
+  "error_code": null
+}

@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "functional/showcase_terminal_replay",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/target/functional/showcase-terminal-midstream-24468-1794753073198080000-7/check-artifacts/functional/showcase_terminal_replay/472822bf4e22c7d9e3871c36570f7c1951a8e891c3d34bf37db0016260aa2961/sample.tui.pb"
+  },
+  "candidate_sha256": "472822bf4e22c7d9e3871c36570f7c1951a8e891c3d34bf37db0016260aa2961",
+  "baseline_sha256": "472822bf4e22c7d9e3871c36570f7c1951a8e891c3d34bf37db0016260aa2961",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/tests/functional/baselines/functional/showcase_terminal_replay.tui.pb"
+  },
+  "error_code": null
+}

@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-autoscroll_ms-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/target/functional/s01_autoscroll_ms-19115-1794752588964648000-0/check-artifacts/opt-shell-autoscroll_ms-boundary/2711260f7b2032f74c86c64b8d891bc2675ad812b68377d1ecbd01b248a0a651/sample.tui.pb"
+  },
+  "candidate_sha256": "2711260f7b2032f74c86c64b8d891bc2675ad812b68377d1ecbd01b248a0a651",
+  "baseline_sha256": "2711260f7b2032f74c86c64b8d891bc2675ad812b68377d1ecbd01b248a0a651",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-autoscroll_ms-boundary.tui.pb"
+  },
+  "error_code": null
+}

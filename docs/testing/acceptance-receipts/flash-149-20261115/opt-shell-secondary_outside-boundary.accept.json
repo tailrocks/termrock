@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-secondary_outside-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/target/functional/s01_secondary_ignore-60431-1794752642672608000-0/check-artifacts/opt-shell-secondary_outside-boundary/3aee5b94156735af3e5fa55e6aa50ee99822fb82343295ba772093d4a6eb538e/sample.tui.pb"
+  },
+  "candidate_sha256": "3aee5b94156735af3e5fa55e6aa50ee99822fb82343295ba772093d4a6eb538e",
+  "baseline_sha256": "3aee5b94156735af3e5fa55e6aa50ee99822fb82343295ba772093d4a6eb538e",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-secondary_outside-boundary.tui.pb"
+  },
+  "error_code": null
+}

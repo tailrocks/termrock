@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s03_editable/opt_editable_overflow_marks",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/target/functional/s03-marks-2391-1794752857489077000-0/check-artifacts/pre_refactor/s03_editable/opt_editable_overflow_marks/872c5183c54b89c366c057c553f8c36b21b1212471cca724d5e77126d410f0e3/sample.tui.pb"
+  },
+  "candidate_sha256": "872c5183c54b89c366c057c553f8c36b21b1212471cca724d5e77126d410f0e3",
+  "baseline_sha256": "872c5183c54b89c366c057c553f8c36b21b1212471cca724d5e77126d410f0e3",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/tests/functional/baselines/pre_refactor/s03_editable/opt_editable_overflow_marks.tui.pb"
+  },
+  "error_code": null
+}

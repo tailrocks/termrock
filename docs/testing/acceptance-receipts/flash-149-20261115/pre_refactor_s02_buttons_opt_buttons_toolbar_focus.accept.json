@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s02_buttons/opt_buttons_toolbar_focus",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/target/functional/s02-toolbar-71742-1794752694478598000-0/check-artifacts/pre_refactor/s02_buttons/opt_buttons_toolbar_focus/bab015ce61056b33b6552eb19c37708c1a8261c56008a9beea327c14484612c3/sample.tui.pb"
+  },
+  "candidate_sha256": "bab015ce61056b33b6552eb19c37708c1a8261c56008a9beea327c14484612c3",
+  "baseline_sha256": "bab015ce61056b33b6552eb19c37708c1a8261c56008a9beea327c14484612c3",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneFL/tests/functional/baselines/pre_refactor/s02_buttons/opt_buttons_toolbar_focus.tui.pb"
+  },
+  "error_code": null
+}
