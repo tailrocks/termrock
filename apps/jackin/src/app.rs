@@ -198,13 +198,14 @@ impl App {
             clipboard,
             panes,
         } = options;
-        world.clock.running = motion != Motion::Paused;
         world.pane_policy = Arc::new(panes);
         for daemon in world.daemons.values_mut() {
             daemon.set_policy(&world.pane_policy);
         }
         let mut shell = Shell::new();
         shell.motion = motion;
+        // Under the test clock only `advance_clock` moves the simulated clock.
+        world.clock.running = motion != Motion::Paused && !shell.test_requests;
 
         shell.set_clipboard(match clipboard {
             ClipboardMode::Preview => shell::Clipboard::new().write(false),

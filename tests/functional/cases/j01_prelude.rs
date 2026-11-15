@@ -70,8 +70,9 @@ fn open(name: &str) -> App {
     launch.rows = 40;
     launch.color = Some("truecolor".to_string());
     launch.motion = Some("reduced".to_string());
-    // `Launch::new` leaves the clock off. `App::new` would enable it for jackin.
-    launch.clock = false;
+    // The cancel status lives 5 s of sim time. Wall time must not move it
+    // while the resize checks run under load.
+    launch.clock = true;
     try_launch(launch).unwrap_or_else(|error| panic!("{error}"))
 }
 
@@ -164,7 +165,7 @@ fn duplicate_open(screen: &TerminalSnapshot) -> bool {
 }
 
 /// The reference frame still shows the cancel status. It expires 5 s of sim
-/// time after Esc, and the wizard above outlives that.
+/// time after Esc. The test clock holds sim time, so it stays until stepped.
 fn status_duplicate(screen: &TerminalSnapshot) -> bool {
     duplicate_open(screen) && text(screen).contains(CANCELLED)
 }
@@ -218,14 +219,20 @@ fn nudge(app: &App, quiet_frame: impl Fn(&TerminalSnapshot) -> bool) {
         "nudge left the frame\n{}",
         text(&screen)
     );
+    let before = text(&screen);
     let wider = cols + 1;
     app.resize(wider, rows);
     app.wait_screen("nudged", |screen| {
         screen.cols() == u32::from(wider) && screen.rows() == u32::from(rows) && quiet_frame(screen)
     });
     app.resize(cols, rows);
+    // Under load the PTY reports the old size while the paint is still the
+    // wider layout, so the restored frame must read as the frame before the nudge.
     app.wait_screen("size restored", |screen| {
-        screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows) && quiet_frame(screen)
+        screen.cols() == u32::from(cols)
+            && screen.rows() == u32::from(rows)
+            && quiet_frame(screen)
+            && text(screen) == before
     });
 }
 
@@ -560,6 +567,8 @@ fn j01_prelude_steps() {
         focused_line(&preview)
     );
     app.click(preview_button(&app, CONFIRM));
+    // The sim backend settles a workspace save 900 ms after the request.
+    app.advance_clock(900);
     let saved = app.wait_screen("saved", |screen| {
         let visible = text(screen);
         visible.contains(SAVED)
