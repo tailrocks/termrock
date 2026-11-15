@@ -650,17 +650,23 @@ impl OpFlow {
                 _ => Outcome::Ignored,
             };
         };
-        let (o, act) = r.into_parts();
-        match act {
-            Some(PickerAction::Chosen(i)) => self.choose(i, op),
-            Some(PickerAction::Cancelled) if self.dismiss.outside_click => {
-                self.dismissed = true;
-                Outcome::Changed
-            }
-            Some(_) => Outcome::Consumed,
-            None if ev.is(Phase::Click) => o.or(Outcome::Consumed),
-            None => o,
+        let (o, actions) = r.into_parts();
+        let mut result = if ev.is(Phase::Click) {
+            o.or(Outcome::Consumed)
+        } else {
+            o
+        };
+        for act in actions {
+            result = match act {
+                PickerAction::Chosen(i) => self.choose(i, op),
+                PickerAction::Cancelled if self.dismiss.outside_click => {
+                    self.dismissed = true;
+                    Outcome::Changed
+                }
+                _ => Outcome::Consumed,
+            };
         }
+        result
     }
 
     pub fn hints(&self) -> Vec<Hint> {

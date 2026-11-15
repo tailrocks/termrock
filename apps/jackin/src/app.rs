@@ -1779,11 +1779,11 @@ impl App {
     fn chrome_pointer(&mut self, ev: &PointerEvent) -> Option<Outcome> {
         if Self::is_host(self.route()) {
             if let Some(r) = self.host_menu.route(ev) {
-                let (o, act) = r.into_parts();
-                return Some(match act {
-                    Some(a) => self.host_menu_action(a, o),
-                    None => o,
-                });
+                let (mut o, actions) = r.into_parts();
+                for a in actions {
+                    o = self.host_menu_action(a, o);
+                }
+                return Some(o);
             }
 
             if self.host_menu.is_open() && ev.is(Phase::Click) {

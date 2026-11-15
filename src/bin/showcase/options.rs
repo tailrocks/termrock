@@ -2089,8 +2089,11 @@ impl OptionsView {
                     if p.id == s.id && (p.is(Phase::Press) || p.is(Phase::Click)) {
                         cx.focus.focus(s.id);
                     }
-                    let (o, a) = r.into_parts();
-                    let set = a.and_then(|SelectAction::Changed(i)| changed(opt, i));
+                    let (o, actions) = r.into_parts();
+                    let mut set = None;
+                    for SelectAction::Changed(i) in actions {
+                        set = changed(opt, i).or(set);
+                    }
                     return Some((o, set));
                 }
                 _ => {}

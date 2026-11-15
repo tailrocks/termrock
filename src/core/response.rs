@@ -79,6 +79,28 @@ impl<A> Actions<A> {
     }
 }
 
+impl<A> From<Option<A>> for Actions<A> {
+    fn from(action: Option<A>) -> Self {
+        action.map_or(Self::None, Self::One)
+    }
+}
+
+impl<A> Extend<A> for Actions<A> {
+    fn extend<I: IntoIterator<Item = A>>(&mut self, iter: I) {
+        for action in iter {
+            self.push(action);
+        }
+    }
+}
+
+impl<A> FromIterator<A> for Actions<A> {
+    fn from_iter<I: IntoIterator<Item = A>>(iter: I) -> Self {
+        let mut actions = Self::None;
+        actions.extend(iter);
+        actions
+    }
+}
+
 /// Owning iterator over [`Actions`].
 pub enum ActionsIntoIter<A> {
     Small(std::option::IntoIter<A>),

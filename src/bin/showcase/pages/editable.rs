@@ -388,14 +388,11 @@ impl Page for EditablePage {
             if ch.from != self.table.id {
                 return Outcome::Ignored;
             }
-            let tev = self.table.on_blur();
-            let changed = tev.is_some();
-            self.on_event(tev, cx);
-            return if changed {
-                Outcome::Changed
-            } else {
-                Outcome::Ignored
-            };
+            let (out, actions) = self.table.on_blur().into_parts();
+            for tev in actions {
+                self.on_event(Some(tev), cx);
+            }
+            return out;
         }
         if let Some(o) = self.sections.handle(ev) {
             return o;
@@ -405,8 +402,10 @@ impl Page for EditablePage {
                 if !cx.focus.is(self.table.id) {
                     return Outcome::Ignored;
                 }
-                let (out, tev) = self.table.on_key(key);
-                self.on_event(tev, cx);
+                let (out, actions) = self.table.on_key(key).into_parts();
+                for tev in actions {
+                    self.on_event(Some(tev), cx);
+                }
                 out
             }
             PageEvent::Paste(text) => self.table.on_paste(text),
@@ -414,7 +413,9 @@ impl Page for EditablePage {
                 let Some((out, tev)) = route_table(&mut self.table, p, cx) else {
                     return Outcome::Ignored;
                 };
-                self.on_event(tev, cx);
+                for tev in tev {
+                    self.on_event(Some(tev), cx);
+                }
                 out
             }
             _ => Outcome::Ignored,

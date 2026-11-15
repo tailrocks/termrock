@@ -452,7 +452,7 @@ impl GridPage {
         let Some(r) = self.grid.route(ev) else {
             return Outcome::Ignored;
         };
-        let (o, gev) = r.into_parts();
+        let (o, actions) = r.into_parts();
         if ev.is(Phase::Click) {
             if self.grid.bar_ids().contains(&ev.id) {
                 cx.focus.focus(ev.id);
@@ -460,7 +460,9 @@ impl GridPage {
                 cx.focus.focus(self.grid.id);
             }
         }
-        self.on_event(gev, cx);
+        for gev in actions {
+            self.on_event(Some(gev), cx);
+        }
         o
     }
 
@@ -889,8 +891,10 @@ impl Page for GridPage {
             if ch.from != self.grid.id {
                 return Outcome::Ignored;
             }
-            let (out, gev) = self.grid.on_blur();
-            self.on_event(gev, cx);
+            let (out, actions) = self.grid.on_blur().into_parts();
+            for gev in actions {
+                self.on_event(Some(gev), cx);
+            }
             return out;
         }
         if let Some(o) = self.sections.handle(ev) {
@@ -912,8 +916,10 @@ impl Page for GridPage {
                     return Outcome::Ignored;
                 };
                 if f == self.grid.id {
-                    let (o, ev) = self.grid.on_key(key);
-                    self.on_event(ev, cx);
+                    let (o, actions) = self.grid.on_key(key).into_parts();
+                    for ev in actions {
+                        self.on_event(Some(ev), cx);
+                    }
                     return o;
                 }
                 if self.grid.bar_ids().contains(&f) {

@@ -446,9 +446,9 @@ impl Page for ColumnsPage {
             return o;
         }
         match ev {
-            PageEvent::Key(key) if cx.focus.is(self.sized.id) => self.sized.on_key(key).0,
-            PageEvent::Key(key) if cx.focus.is(self.rules.id) => self.rules.on_key(key).0,
-            PageEvent::Key(key) if cx.focus.is(self.row.id) => self.row.on_key(key).0,
+            PageEvent::Key(key) if cx.focus.is(self.sized.id) => self.sized.on_key(key).outcome(),
+            PageEvent::Key(key) if cx.focus.is(self.rules.id) => self.rules.on_key(key).outcome(),
+            PageEvent::Key(key) if cx.focus.is(self.row.id) => self.row.on_key(key).outcome(),
             PageEvent::Pointer(p) => self.pointer(p, cx),
             _ => Outcome::Ignored,
         }

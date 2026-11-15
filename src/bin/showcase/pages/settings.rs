@@ -601,7 +601,7 @@ impl SettingsPage {
 
 fn clicked(b: &mut Button, ev: &PointerEvent) -> Option<bool> {
     let r = b.route(ev)?;
-    (r.outcome() != Outcome::Ignored).then(|| r.into_action().is_some())
+    (r.outcome() != Outcome::Ignored).then(|| r.has_actions())
 }
 
 impl SettingsPage {
@@ -670,12 +670,14 @@ impl SettingsPage {
                     return o;
                 }
                 if f == self.members.id {
-                    let (o, tev) = self.members.on_key(key);
-                    match tev {
-                        Some(TableAction::Committed { .. }) => cx.status("Member updated"),
-                        Some(TableAction::LeaveForward) => cx.focus_next(),
-                        Some(TableAction::LeaveBackward) => cx.focus_prev(),
-                        _ => {}
+                    let (o, actions) = self.members.on_key(key).into_parts();
+                    for tev in actions {
+                        match tev {
+                            TableAction::Committed { .. } => cx.status("Member updated"),
+                            TableAction::LeaveForward => cx.focus_next(),
+                            TableAction::LeaveBackward => cx.focus_prev(),
+                            _ => {}
+                        }
                     }
                     return o;
                 }

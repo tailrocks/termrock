@@ -622,8 +622,10 @@ impl CellEditorsPage {
             }
             PageEvent::Pointer(p) if self.chooser.as_ref().is_some_and(|c| p.on(c.id)) => {
                 let c = self.chooser.as_mut()?;
-                let (o, r) = c.pointer(p).into_parts();
-                self.on_choice(r, cx);
+                let (o, results) = c.pointer(p).into_parts();
+                for r in results {
+                    self.on_choice(Some(r), cx);
+                }
                 Some(o)
             }
             PageEvent::Pointer(p) if p.is(Phase::Click) && p.on(self.pick.id) => {
@@ -714,13 +716,10 @@ impl Page for CellEditorsPage {
             if ch.from != self.table.id {
                 return Outcome::Ignored;
             }
-            let tev = self.table.on_blur();
-            let out = if tev.is_some() {
-                Outcome::Changed
-            } else {
-                Outcome::Ignored
-            };
-            self.on_event(tev, cx);
+            let (out, actions) = self.table.on_blur().into_parts();
+            for tev in actions {
+                self.on_event(Some(tev), cx);
+            }
             return out;
         }
         match ev {
@@ -728,8 +727,10 @@ impl Page for CellEditorsPage {
                 if !cx.focus.is(self.table.id) {
                     return Outcome::Ignored;
                 }
-                let (out, tev) = self.table.on_key(key);
-                self.on_event(tev, cx);
+                let (out, actions) = self.table.on_key(key).into_parts();
+                for tev in actions {
+                    self.on_event(Some(tev), cx);
+                }
                 out
             }
             PageEvent::Paste(text) => self.table.on_paste(text),
@@ -737,7 +738,9 @@ impl Page for CellEditorsPage {
                 let Some((out, tev)) = route_table(&mut self.table, p, cx) else {
                     return Outcome::Ignored;
                 };
-                self.on_event(tev, cx);
+                for tev in tev {
+                    self.on_event(Some(tev), cx);
+                }
                 out
             }
             _ => Outcome::Ignored,

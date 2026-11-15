@@ -341,8 +341,10 @@ impl Page for EmptyErrorPage {
                     return Outcome::Ignored;
                 };
                 if f == self.grid.id {
-                    let (o, gev) = self.grid.on_key(key);
-                    self.on_grid(gev, cx);
+                    let (o, actions) = self.grid.on_key(key).into_parts();
+                    for gev in actions {
+                        self.on_grid(Some(gev), cx);
+                    }
                     return o;
                 }
                 if f == self.actions.id {
@@ -374,7 +376,7 @@ impl Page for EmptyErrorPage {
                         return r.outcome();
                     }
                     cx.focus.focus(self.actions.id);
-                    if r.into_action().is_some() {
+                    if r.has_actions() {
                         self.open_menu();
                     }
                     return Outcome::Changed;
@@ -386,8 +388,10 @@ impl Page for EmptyErrorPage {
                     cx.focus.focus(self.grid.id);
                 }
                 if let Some(r) = self.grid.route(ev) {
-                    let (o, gev) = r.into_parts();
-                    self.on_grid(gev, cx);
+                    let (o, actions) = r.into_parts();
+                    for gev in actions {
+                        self.on_grid(Some(gev), cx);
+                    }
                     return o;
                 }
                 Outcome::Ignored

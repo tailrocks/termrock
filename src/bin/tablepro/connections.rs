@@ -644,12 +644,14 @@ impl ConnectionsScreen {
                 self.filter.begin_edit();
                 return (Outcome::Changed, None);
             }
-            let (o, ev) = self.tree.on_key(key);
+            let (o, actions) = self.tree.on_key(key).into_parts();
             self.sync_selected_from_cursor();
-            if let Some(TreeAction::Activate(path)) = ev
-                && let Some(i) = self.connection_at_path(&path)
-            {
-                self.start_connect(i);
+            for action in actions {
+                if let TreeAction::Activate(path) = action
+                    && let Some(i) = self.connection_at_path(&path)
+                {
+                    self.start_connect(i);
+                }
             }
             return (o, None);
         }
@@ -1010,13 +1012,15 @@ impl ConnectionsScreen {
             if self.tree.row_at(ev).is_some() {
                 cx.focus.focus(self.tree.id);
             }
-            let (o, act) = self.tree.pointer(ev).into_parts();
+            let (o, actions) = self.tree.pointer(ev).into_parts();
             self.sync_selected_from_cursor();
 
-            if let Some(TreeAction::Activate(path)) = act
-                && let Some(i) = self.connection_at_path(&path)
-            {
-                self.start_connect(i);
+            for action in actions {
+                if let TreeAction::Activate(path) = action
+                    && let Some(i) = self.connection_at_path(&path)
+                {
+                    self.start_connect(i);
+                }
             }
             return (o, None);
         }

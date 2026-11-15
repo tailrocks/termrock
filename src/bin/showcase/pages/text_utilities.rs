@@ -407,8 +407,10 @@ impl Page for TextUtilitiesPage {
                 if ev.is(Phase::Click) {
                     cx.focus.focus(LIST);
                 }
-                let (o, a) = r.into_parts();
-                act(self, a, cx);
+                let (o, actions) = r.into_parts();
+                for a in actions {
+                    act(self, Some(a), cx);
+                }
                 o
             }
             _ => Outcome::Ignored,

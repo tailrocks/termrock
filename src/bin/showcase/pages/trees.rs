@@ -294,8 +294,8 @@ impl TreesPage {
         };
         self.tree.cursor = row;
         match action {
-            RowAction::Open => self.tree.on_key(&plain(KeyCode::Enter)).0,
-            RowAction::Fold => self.tree.toggle(row).0,
+            RowAction::Open => self.tree.on_key(&plain(KeyCode::Enter)).outcome(),
+            RowAction::Fold => self.tree.toggle(row).outcome(),
             RowAction::ExpandAll => {
                 self.tree.expand_all();
                 Outcome::Changed
@@ -548,8 +548,10 @@ impl Page for TreesPage {
                 let Some(t) = self.tree_mut(id) else {
                     return Outcome::Ignored;
                 };
-                let (o, a) = t.on_key(key);
-                self.on_action(id, a, cx);
+                let (o, actions) = t.on_key(key).into_parts();
+                for a in actions {
+                    self.on_action(id, Some(a), cx);
+                }
                 o
             }
             PageEvent::Pointer(ev) if ev.is(Phase::Secondary) => {
@@ -573,8 +575,10 @@ impl Page for TreesPage {
                     if ev.is(Phase::Click) && t.row_at(ev).is_some() {
                         cx.focus.focus(tid);
                     }
-                    let (o, a) = r.into_parts();
-                    self.on_action(tid, a, cx);
+                    let (o, actions) = r.into_parts();
+                    for a in actions {
+                        self.on_action(tid, Some(a), cx);
+                    }
                     return o;
                 }
                 Outcome::Ignored

@@ -1802,10 +1802,11 @@ impl App {
         }
 
         if let Some(r) = self.workbench.as_mut().and_then(|w| w.rail.route(ev)) {
-            return Some(match r.into_action() {
-                Some(a) => self.set_explorer(a == junie_tui::widgets::rail::RailAction::Expand),
-                None => Outcome::Consumed,
-            });
+            let mut out = Outcome::Consumed;
+            for a in r.into_actions() {
+                out = self.set_explorer(a == junie_tui::widgets::rail::RailAction::Expand);
+            }
+            return Some(out);
         }
 
         if let Some(action) = crate::tabs::toolbar_action(id) {

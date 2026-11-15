@@ -1399,14 +1399,16 @@ impl QueryTab {
         };
         match &mut r.body {
             ResultBody::Rows(g) if f == g.id => {
-                let (o, ev) = g.on_key(key);
-                match ev {
-                    Some(GridAction::Copy(s)) => cx.copy(s),
-                    Some(GridAction::SortRequested(_)) => {}
-                    Some(GridAction::LeaveForward) => cx.focus_next(),
-                    Some(GridAction::LeaveBackward) => cx.focus_prev(),
-                    Some(GridAction::ReadOnly { reason }) => cx.status(reason),
-                    _ => {}
+                let (o, actions) = g.on_key(key).into_parts();
+                for ev in actions {
+                    match ev {
+                        GridAction::Copy(s) => cx.copy(s),
+                        GridAction::SortRequested(_) => {}
+                        GridAction::LeaveForward => cx.focus_next(),
+                        GridAction::LeaveBackward => cx.focus_prev(),
+                        GridAction::ReadOnly { reason } => cx.status(reason),
+                        _ => {}
+                    }
                 }
                 o
             }
@@ -1424,7 +1426,7 @@ impl QueryTab {
                     return raw.on_key(key);
                 }
                 if f == tree.id {
-                    return tree.on_key(key).0;
+                    return tree.on_key(key).outcome();
                 }
                 Outcome::Ignored
             }
@@ -1459,14 +1461,17 @@ impl QueryTab {
     }
 
     pub fn middle(&mut self, ev: &PointerEvent) -> Outcome {
-        match self.result_tabs.route(ev).map(|r| r.into_parts()) {
-            Some((_, Some(TabAction::Close(i)))) => {
+        let Some((o, actions)) = self.result_tabs.route(ev).map(|r| r.into_parts()) else {
+            return Outcome::Ignored;
+        };
+        let mut out = o;
+        for action in actions {
+            if let TabAction::Close(i) = action {
                 self.close_result(i);
-                Outcome::Changed
+                out = Outcome::Changed;
             }
-            Some((o, _)) => o,
-            None => Outcome::Ignored,
         }
+        out
     }
 
     pub fn click(&mut self, ev: &PointerEvent, cx: &mut Cx, cat: &Catalog) -> Outcome {
@@ -1476,11 +1481,14 @@ impl QueryTab {
         }
         if self.completion.is_open() {
             match self.completion.route(ev).map(|r| r.into_parts()) {
-                Some((_, Some(CompletionAction::Accept(i)))) => {
-                    self.accept_completion(i);
-                    return Outcome::Changed;
+                Some((_, actions)) => {
+                    for action in actions {
+                        if let CompletionAction::Accept(i) = action {
+                            self.accept_completion(i);
+                            return Outcome::Changed;
+                        }
+                    }
                 }
-                Some(_) => {}
                 None => self.completion.close(),
             }
         }
@@ -1493,11 +1501,13 @@ impl QueryTab {
         }
         if let Some(r) = self.result_tabs.route(ev) {
             cx.focus.focus(self.result_tabs.id);
-            let (o, act) = r.into_parts();
-            match act {
-                Some(TabAction::Activated(i)) => self.set_active_result(i),
-                Some(TabAction::Close(i)) => self.close_result(i),
-                _ => {}
+            let (o, actions) = r.into_parts();
+            for act in actions {
+                match act {
+                    TabAction::Activated(i) => self.set_active_result(i),
+                    TabAction::Close(i) => self.close_result(i),
+                    _ => {}
+                }
             }
             return o;
         }
@@ -1508,9 +1518,11 @@ impl QueryTab {
             ResultBody::Rows(g) => match g.route(ev) {
                 Some(r) => {
                     cx.focus.focus(g.id);
-                    let (o, act) = r.into_parts();
-                    if let Some(GridAction::Copy(s)) = act {
-                        cx.copy(s);
+                    let (o, actions) = r.into_parts();
+                    for act in actions {
+                        if let GridAction::Copy(s) = act {
+                            cx.copy(s);
+                        }
                     }
                     o
                 }
