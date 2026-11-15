@@ -1781,10 +1781,19 @@ pub static TERMINAL_VIEWPORT: &[Opt] = &[
     ),
 ];
 
+/// Options reachable only as `--opt KEY=VALUE`. They stay off the Options
+/// tabs so the approved page captures do not change.
+pub static LAUNCH_ONLY: &[Opt] = &[Opt::new(
+    "focusnavigation.focus_visible",
+    "Focus ring",
+    &["always", "keyboard-only"],
+)];
+
 pub fn all() -> impl Iterator<Item = &'static Opt> {
     SHELL
         .iter()
         .chain(crate::app::entries().flat_map(|e| page_options(e.id).iter()))
+        .chain(LAUNCH_ONLY.iter())
 }
 
 pub fn find(key: &str) -> Option<&'static Opt> {

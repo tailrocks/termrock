@@ -764,3 +764,33 @@ fn option_nav_vim_boundary() {
     );
     app.finish();
 }
+
+#[test]
+fn keyboard_only_focus_returns_on_the_first_no_op_key() {
+    let app = launch(
+        "s01-focusnavigation-keyboard-only",
+        &[
+            "--page",
+            "focusnavigation",
+            "--opt",
+            "focusnavigation.focus_visible=keyboard-only",
+        ],
+        120,
+        40,
+    );
+    app.wait_text("Ada Lovelace");
+    click_at(&app, "Gamma", |hit| hit.x >= 24);
+    let clicked = app.wait_screen("Gamma holds pointer focus without a gutter", |screen| {
+        text(screen).contains("Gamma tag") && gutters(screen) == 0
+    });
+    assert_eq!(focus_value(&clicked), "Gamma tag", "{}", text(&clicked));
+
+    app.key("x");
+    let keyed = app.wait_screen(
+        "the first no-op key paints the keyboard focus gutter",
+        |s| gutters(s) == 1,
+    );
+    assert_one_gutter(&keyed);
+    assert_eq!(focus_value(&keyed), "Gamma tag", "{}", text(&keyed));
+    app.finish();
+}
