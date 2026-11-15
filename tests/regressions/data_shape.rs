@@ -1,5 +1,5 @@
 use crate::common::*;
-use junie_tui::core::data::{DataError, ShapeError};
+use junie_tui::core::data::{DataError, ShapeError, validate_rectangular};
 use junie_tui::core::event::Outcome;
 use junie_tui::core::id::WidgetId;
 use junie_tui::widgets::grid::{
@@ -559,4 +559,24 @@ fn issue42_table_width_only_vs_semantic_column_update() {
         "an editor change is semantic and closes it"
     );
     assert_eq!(t.sizing.user(1), Some(16));
+}
+
+#[test]
+fn issue42_validate_rectangular_accepts_full_width_rows() {
+    let rows = vec![vec!["a", "b"], vec!["c", "d"]];
+    assert_eq!(validate_rectangular(2, &rows), Ok(()));
+    let none: Vec<Vec<u8>> = Vec::new();
+    assert_eq!(validate_rectangular(3, &none), Ok(()));
+}
+
+#[test]
+fn issue42_validate_rectangular_rejects_the_first_ragged_row() {
+    let ragged = vec![vec!["a", "b"], vec!["c"], vec!["d", "e", "f"]];
+    let err = validate_rectangular(2, &ragged).expect_err("row 1 is short");
+    assert_eq!(err, shape(1, 2, 1));
+    assert_eq!(err.to_string(), "row 1 has 1 cells, expected 2");
+    assert_eq!(
+        validate_rectangular(0, &[vec!["x"]]),
+        Err(DataError::EmptySchemaWithRows),
+    );
 }
