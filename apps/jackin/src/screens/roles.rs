@@ -110,16 +110,15 @@ fn check_mark(rec: &RoleRecord, running: bool) -> StatusKind {
     }
 }
 
+const LOCATION_MESSAGE: &str = "Use a directory such as ~/roles/sentinel or a git URL such as https://github.com/owner/role.git.";
+
 fn location_error(v: &str) -> Option<String> {
     let v = v.trim();
     let ok = !v.chars().any(char::is_whitespace)
         && ["/", "~/", "./", "https://", "ssh://", "git@"]
             .iter()
             .any(|p| v.starts_with(p));
-    (!ok).then(|| {
-        "Use a directory such as ~/roles/sentinel or a git URL such as https://github.com/owner/role.git."
-            .to_owned()
-    })
+    (!ok).then(|| LOCATION_MESSAGE.to_owned())
 }
 
 fn chip(rec: &RoleRecord) -> &'static str {
@@ -748,6 +747,7 @@ impl RolesScreen {
             "location",
             TextInput::new(f.sub("location"), "Location")
                 .required(true)
+                .required_message(LOCATION_MESSAGE)
                 .placeholder("~/roles/sentinel or https://github.com/owner/role.git")
                 .validator(location_error)
                 .value(location),

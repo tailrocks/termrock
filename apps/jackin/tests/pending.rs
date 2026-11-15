@@ -9,7 +9,7 @@ use jackin_console::app::App;
 use jackin_console::backend::{
     Backend, ChangeSet, ChangedFile, CheckRow, Completion, DiffLine, DiffStatus, Effect,
     FileSource, FolderProbe, Hunk, OpAccountRow, OpAccountState, OpError, OpListing, OpScope,
-    ValidationOutcome,
+    Refresh, ValidationOutcome,
 };
 use jackin_console::domain::account::{
     Account, AccountIdentity, AccountOrigin, CredentialSource, DetectedKind, IssueCode,
@@ -18,13 +18,15 @@ use jackin_console::domain::account::{
 use jackin_console::domain::agent::Provider;
 use jackin_console::domain::instance::Instance;
 use jackin_console::domain::launch::LaunchContent;
-use jackin_console::domain::reason::{Found, IssueReason};
+use jackin_console::domain::reason::{Found, IssueReason, RefreshOutcome};
+use jackin_console::domain::usage::{Freshness, FreshnessInfo};
 use jackin_console::domain::vocabulary::Vocabulary;
 use jackin_console::fixtures::{Scenario, app_with_world, world_for};
 use jackin_console::launch::{LaunchFeed, LaunchTarget};
 use jackin_console::panes::{PaneBody, PaneRequest, PaneSpawn};
+use jackin_console::screens::Go;
 use jackin_console::sim::{SimBackend, provider};
-use jackin_console::world::{Msg, World};
+use jackin_console::world::{Absorbed, Msg, Snapshot, World};
 use junie_tui::core::event::Input;
 use junie_tui::motion::Motion;
 use junie_tui::runtime::Application;
@@ -70,6 +72,13 @@ impl Held {
             .collect()
     }
 
+    fn refreshes(&self) -> Vec<Effect> {
+        self.seen()
+            .into_iter()
+            .filter(|e| matches!(e, Effect::RefreshAccount { .. }))
+            .collect()
+    }
+
     fn saves(&self) -> usize {
         self.seen()
             .iter()
@@ -77,7 +86,7 @@ impl Held {
             .count()
     }
 
-    fn last_ticket(&self, want: fn(&Effect) -> Option<u64>) -> u64 {
+    fn last_ticket(&self, want: impl Fn(&Effect) -> Option<u64>) -> u64 {
         self.seen().iter().rev().find_map(want).unwrap_or_else(|| {
             panic!(
                 "the request was not sent; the backend saw {:?}",
@@ -132,7 +141,8 @@ impl Backend for Held {
             Effect::CheckSource { .. }
             | Effect::ProbeFolder { .. }
             | Effect::ReadChanges { .. }
-            | Effect::LoadOp { .. } => None,
+            | Effect::LoadOp { .. }
+            | Effect::RefreshAccount { .. } => None,
             Effect::SaveAccounts { .. } if self.hold_saves => None,
             _ => self.inner.perform(effect, world),
         }
@@ -1189,4 +1199,331 @@ fn a_key_with_blanks_around_it_is_trimmed() {
         panic!("one check with a key expected, got {:?}", backend.seen());
     };
     assert_eq!(key.expose(), "sk-ant");
+}
+
+const PERSONAL: &str = "acct-claude-personal";
+
+fn personal(world: &World) -> &Account {
+    world.accounts.get(PERSONAL).expect("personal account")
+}
+
+/// The ticket of the newest refresh the backend was asked to run for `id`.
+fn refresh_ticket_of(backend: &Held, id: &str) -> u64 {
+    backend.last_ticket(|e| match e {
+        Effect::RefreshAccount {
+            ticket, account, ..
+        } if account == id => Some(*ticket),
+        _ => None,
+    })
+}
+
+fn refreshes_of(backend: &Held, id: &str) -> usize {
+    backend
+        .refreshes()
+        .iter()
+        .filter(|e| matches!(e, Effect::RefreshAccount { account, .. } if account == id))
+        .count()
+}
+
+/// What a provider that read 61% used would answer for `ticket`.
+fn refreshed(app: &App, ticket: u64, id: &str, pct: u8) -> Msg {
+    let account = app.world.accounts.get(id).expect("account");
+    let now = app.world.now_secs();
+    let mut usage = account.usage.clone();
+    usage.freshness = FreshnessInfo::current(now);
+    usage.windows[0].used_pct = Some(pct);
+    Msg::AccountRefreshed {
+        ticket,
+        account: id.to_owned(),
+        source: Box::new(account.source.clone()),
+        result: Ok(Box::new(Refresh {
+            usage,
+            issue: None,
+            last_refresh_secs: now,
+            outcome: RefreshOutcome::NeedsAttention,
+        })),
+    }
+}
+
+fn refresh_failed(app: &App, ticket: u64, id: &str, error: &str) -> Msg {
+    Msg::AccountRefreshed {
+        ticket,
+        account: id.to_owned(),
+        source: Box::new(app.world.accounts.get(id).expect("account").source.clone()),
+        result: Err(error.into()),
+    }
+}
+
+/// A roster arriving from the same backend: every account as it is now, the
+/// credential sources untouched, and no account marked as refreshing.
+fn idle_roster(app: &App) -> Snapshot {
+    let mut snapshot = jackin_console::sim::snapshot(&app.world);
+    for account in &mut snapshot.accounts.accounts {
+        account.usage.freshness.phase = Freshness::Current;
+    }
+    snapshot
+}
+
+fn roster_reply(app: &App, snapshot: Snapshot) -> Msg {
+    Msg::Refreshed {
+        ticket: app.world.refresh_ticket,
+        result: Ok(Box::new(snapshot)),
+    }
+}
+
+fn used_pct(app: &App) -> Option<u8> {
+    personal(&app.world).usage.windows.first()?.used_pct
+}
+
+#[test]
+fn refresh_snapshot_preserves_single_flight_across_pages() {
+    let (mut app, backend) = held(Scenario::AccountsMixed);
+    press(&mut app, "c down down r");
+    assert_eq!(refreshes_of(&backend, PERSONAL), 1, "{:?}", backend.seen());
+    let a = refresh_ticket_of(&backend, PERSONAL);
+
+    let roster = roster_reply(&app, idle_roster(&app));
+    app.deliver(&roster);
+    assert_eq!(
+        personal(&app.world).usage.freshness.phase,
+        Freshness::Refreshing,
+        "the roster does not end the refresh in flight"
+    );
+
+    app.go(Go::Usage {
+        select: Some(PERSONAL.into()),
+    });
+    press(&mut app, "r");
+    assert_eq!(
+        refreshes_of(&backend, PERSONAL),
+        1,
+        "the refresh in flight owns the account: {:?}",
+        backend.refreshes()
+    );
+    assert_eq!(app.world.refresh_pending(PERSONAL), Some(a));
+    assert_eq!(
+        personal(&app.world).usage.freshness.phase,
+        Freshness::Refreshing
+    );
+
+    let reply = refreshed(&app, a, PERSONAL, 61);
+    app.deliver(&reply);
+    assert_eq!(app.world.refresh_pending(PERSONAL), None);
+    assert_eq!(used_pct(&app), Some(61));
+    assert_eq!(
+        personal(&app.world).usage.freshness.phase,
+        Freshness::Current
+    );
+}
+
+#[test]
+fn refresh_old_ticket_cannot_overwrite_new_result() {
+    let (mut app, backend) = held(Scenario::AccountsMixed);
+    press(&mut app, "c down down r");
+    let a = refresh_ticket_of(&backend, PERSONAL);
+    let a_ok = refreshed(&app, a, PERSONAL, 61);
+    let a_err = refresh_failed(&app, a, PERSONAL, "old failure");
+    app.deliver(&a_ok);
+    assert_eq!(used_pct(&app), Some(61));
+
+    press(&mut app, "r");
+    let b = refresh_ticket_of(&backend, PERSONAL);
+    assert_ne!(a, b);
+    assert_eq!(refreshes_of(&backend, PERSONAL), 2);
+    let started = status(&app);
+
+    for stale in [&a_ok, &a_err] {
+        assert_eq!(app.world.absorb(stale), Absorbed::Stale);
+        app.deliver(stale);
+        assert_eq!(
+            app.world.refresh_pending(PERSONAL),
+            Some(b),
+            "B keeps its slot"
+        );
+        assert_eq!(
+            personal(&app.world).usage.freshness.phase,
+            Freshness::Refreshing
+        );
+        assert_eq!(status(&app), started);
+    }
+
+    let b_ok = refreshed(&app, b, PERSONAL, 77);
+    app.deliver(&b_ok);
+    assert_eq!(used_pct(&app), Some(77));
+    let finished = status(&app);
+    assert!(
+        finished.starts_with("Refreshed Claude · Personal"),
+        "{finished}"
+    );
+
+    for stale in [&a_ok, &a_err, &b_ok] {
+        app.deliver(stale);
+        assert_eq!(used_pct(&app), Some(77));
+        assert_eq!(
+            personal(&app.world).usage.freshness.phase,
+            Freshness::Current
+        );
+        assert_eq!(personal(&app.world).issue, None);
+        assert_eq!(status(&app), finished);
+    }
+}
+
+fn with_source(snapshot: &mut Snapshot, id: &str, source: CredentialSource) {
+    snapshot.accounts.get_mut(id).expect("account").source = source;
+}
+
+#[test]
+fn refresh_source_change_and_return_does_not_revive_old_request() {
+    let (mut app, backend) = held(Scenario::AccountsMixed);
+    let original = personal(&app.world).source.clone();
+    let other = CredentialSource::HostEnv {
+        var: "OTHER_TOKEN".into(),
+        detected: DetectedKind::ClaudeApiKeyEnv,
+    };
+    press(&mut app, "c down down r");
+    let a = refresh_ticket_of(&backend, PERSONAL);
+    let a_ok = refreshed(&app, a, PERSONAL, 61);
+    let a_err = refresh_failed(&app, a, PERSONAL, "old failure");
+
+    let mut changed = idle_roster(&app);
+    with_source(&mut changed, PERSONAL, other);
+    let msg = roster_reply(&app, changed);
+    app.deliver(&msg);
+    assert_eq!(
+        app.world.refresh_pending(PERSONAL),
+        None,
+        "the source changed"
+    );
+    assert_ne!(
+        personal(&app.world).usage.freshness.phase,
+        Freshness::Refreshing
+    );
+
+    let mut back = idle_roster(&app);
+    with_source(&mut back, PERSONAL, original);
+    let msg = roster_reply(&app, back);
+    app.deliver(&msg);
+    assert_eq!(app.world.refresh_pending(PERSONAL), None, "no revival");
+
+    press(&mut app, "r");
+    let b = refresh_ticket_of(&backend, PERSONAL);
+    assert_ne!(a, b);
+    for stale in [&a_ok, &a_err] {
+        assert_eq!(app.world.absorb(stale), Absorbed::Stale);
+        assert_eq!(app.world.refresh_pending(PERSONAL), Some(b));
+        assert_eq!(
+            personal(&app.world).usage.freshness.phase,
+            Freshness::Refreshing
+        );
+    }
+    app.deliver(&refreshed(&app, b, PERSONAL, 77));
+    assert_eq!(used_pct(&app), Some(77));
+}
+
+#[test]
+fn refresh_removed_and_readded_account_does_not_revive_old_request() {
+    let (mut app, backend) = held(Scenario::AccountsMixed);
+    press(&mut app, "c down down r");
+    let a = refresh_ticket_of(&backend, PERSONAL);
+    let a_ok = refreshed(&app, a, PERSONAL, 61);
+
+    let full = idle_roster(&app);
+    let mut removed = full.clone();
+    removed.accounts.remove(PERSONAL);
+    let msg = roster_reply(&app, removed);
+    app.deliver(&msg);
+    assert_eq!(app.world.refresh_pending(PERSONAL), None);
+    assert_eq!(app.world.absorb(&a_ok), Absorbed::Stale);
+
+    let msg = roster_reply(&app, full);
+    app.deliver(&msg);
+    assert_eq!(app.world.refresh_pending(PERSONAL), None);
+    assert_eq!(app.world.absorb(&a_ok), Absorbed::Stale);
+    assert_eq!(
+        app.world.refresh_account(PERSONAL, 0).map(|t| t != a),
+        Some(true)
+    );
+}
+
+#[test]
+fn refresh_distinct_accounts_progress_independently() {
+    let (mut app, backend) = held(Scenario::AccountsMixed);
+    app.go(Go::Usage {
+        select: Some(PERSONAL.into()),
+    });
+    press(&mut app, "r");
+    let x = PERSONAL;
+    let y = "acct-claude-work";
+    let (tx, ty) = (
+        refresh_ticket_of(&backend, x),
+        refresh_ticket_of(&backend, y),
+    );
+    assert_ne!(tx, ty);
+
+    app.deliver(&refreshed(&app, tx, x, 61));
+    assert_eq!(app.world.refresh_pending(x), None);
+    assert_eq!(app.world.refresh_pending(y), Some(ty));
+    assert_eq!(
+        app.world.accounts.get(y).expect("y").usage.freshness.phase,
+        Freshness::Refreshing
+    );
+
+    app.go(Go::Manager);
+    app.go(Go::Usage { select: None });
+    assert_eq!(app.world.refresh_pending(y), Some(ty));
+    press(&mut app, "r");
+    assert_eq!(refreshes_of(&backend, y), 1, "Y is still in flight");
+    assert_eq!(refreshes_of(&backend, x), 2, "X is idle and starts again");
+
+    app.deliver(&refreshed(&app, ty, y, 70));
+    assert_eq!(app.world.refresh_pending(y), None);
+    assert!(
+        app.world.refresh_pending(x).is_some(),
+        "X's new refresh stays"
+    );
+}
+
+#[test]
+fn refresh_stale_reply_has_no_ui_or_revision_effect() {
+    let (mut app, backend) = held(Scenario::AccountsMixed);
+    press(&mut app, "c down down r");
+    let a = refresh_ticket_of(&backend, PERSONAL);
+    let ok = refreshed(&app, a, PERSONAL, 61);
+    app.deliver(&ok);
+    press(&mut app, "r");
+    let b = refresh_ticket_of(&backend, PERSONAL);
+    assert_ne!(a, b);
+
+    let stale = refresh_failed(&app, a, PERSONAL, "late failure");
+    let before = (
+        screen(&mut app),
+        status(&app),
+        app.world.jobs.len(),
+        app.world.accounts.revision,
+        personal(&app.world).clone(),
+    );
+    assert_eq!(
+        app.deliver(&stale),
+        junie_tui::core::event::Outcome::Ignored
+    );
+    let after = (
+        screen(&mut app),
+        status(&app),
+        app.world.jobs.len(),
+        app.world.accounts.revision,
+        personal(&app.world).clone(),
+    );
+    assert_eq!(before, after);
+    assert!(!after.0.contains("late failure"), "{}", after.0);
+
+    app.deliver(&refresh_failed(&app, b, PERSONAL, "provider is down"));
+    assert!(
+        screen(&mut app).contains("provider is down") || status(&app).contains("provider is down"),
+        "the current reply still reaches the screen"
+    );
+    assert_eq!(
+        personal(&app.world).usage.freshness.phase,
+        Freshness::Stale,
+        "the current error still ends the refresh"
+    );
 }
