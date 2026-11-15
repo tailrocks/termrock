@@ -10,14 +10,13 @@
 //! `force_color_output`, so the captured cells stay `SnapshotColor::Default`.
 //! The accent is not RGB. That is the reference paint.
 
-use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use tui_test::{SnapshotColor, TerminalSnapshot};
 use tuiscotti_latest::check::CheckOutcome;
 
 use crate::support::{
-    App, HOLLA, Launch, SHOWCASE, TABLEPRO, find_all, row_text, text, try_launch,
+    App, Launch, find_all, holla_bin, row_text, showcase_bin, tablepro_bin, text, try_launch,
 };
 
 const IDENTITY: &str = "Tokens and principles behind every component";
@@ -135,7 +134,7 @@ fn showcase_screen(
     env: &[(&str, &str)],
     needle: &str,
 ) -> TerminalSnapshot {
-    let app = open(name, SHOWCASE, args, color, motion, env);
+    let app = open(name, showcase_bin(), args, color, motion, env);
     let screen = wait_for(&app, needle);
     app.kill_child();
     screen
@@ -245,9 +244,15 @@ fn assert_plain_accent(name: &str, bin: &str, ready: &str, accent: SnapshotColor
 }
 
 fn assert_nocolor_each_app() {
-    assert_plain_accent("showcase", SHOWCASE, OVERVIEW, ACCENT, FOCUS);
-    assert_plain_accent("holla", HOLLA, HOLLA_READY, ACCENT, FOCUS);
-    assert_plain_accent("tablepro", TABLEPRO, "Filter connections", ACCENT, FOCUS);
+    assert_plain_accent("showcase", showcase_bin(), OVERVIEW, ACCENT, FOCUS);
+    assert_plain_accent("holla", holla_bin(), HOLLA_READY, ACCENT, FOCUS);
+    assert_plain_accent(
+        "tablepro",
+        tablepro_bin(),
+        "Filter connections",
+        ACCENT,
+        FOCUS,
+    );
 }
 
 fn assert_color_flag_with_nocolor() {
@@ -277,7 +282,7 @@ fn spinner_held(name: &str, motion: Option<&str>, value: Option<&str>) -> bool {
     let env = motion_env("SHOWCASE_NO_MOTION", value);
     let app = open(
         name,
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "progress"],
         Some("truecolor"),
         motion,
@@ -295,7 +300,7 @@ fn spinner_held(name: &str, motion: Option<&str>, value: Option<&str>) -> bool {
 
 fn holla_discovering(name: &str, motion: Option<&str>, value: Option<&str>) -> bool {
     let env = motion_env("HOLLA_NO_MOTION", value);
-    let app = open(name, HOLLA, &[], Some("truecolor"), motion, &env);
+    let app = open(name, holla_bin(), &[], Some("truecolor"), motion, &env);
     let screen = wait_for(&app, HOLLA_READY);
     let discovering = text(&screen).contains(DISCOVERING);
     app.kill_child();
@@ -311,7 +316,7 @@ fn spinner_near(screen: &TerminalSnapshot, label: &str) -> Option<String> {
 
 fn tablepro_spinners(name: &str, motion: Option<&str>, value: Option<&str>) -> Vec<String> {
     let env = motion_env("TABLEPRO_NO_MOTION", value);
-    let app = open(name, TABLEPRO, &[], Some("truecolor"), motion, &env);
+    let app = open(name, tablepro_bin(), &[], Some("truecolor"), motion, &env);
     let listed = app.wait_text("Filter connections");
     let hits: Vec<_> = find_all(&listed, "Development")
         .into_iter()
@@ -416,7 +421,7 @@ fn assert_motion() {
 }
 
 fn check_frame(app: &App, screen: &TerminalSnapshot, test_id: &str) {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines");
+    let root = crate::support::workspace_root().join("tests/functional/baselines");
     let sample = tuiscotti_latest::sample::Sample::state(
         test_id,
         screen.clone(),
@@ -442,7 +447,7 @@ fn check_frame(app: &App, screen: &TerminalSnapshot, test_id: &str) {
 fn assert_checkpoints() {
     let app = open(
         "x01-env-checkpoint",
-        SHOWCASE,
+        showcase_bin(),
         &[],
         Some("truecolor"),
         Some("reduced"),
@@ -479,7 +484,7 @@ fn assert_checkpoints() {
 fn x01_env_route() {
     let app = open(
         "x01-env-route",
-        SHOWCASE,
+        showcase_bin(),
         &[],
         Some("truecolor"),
         Some("reduced"),

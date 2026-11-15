@@ -85,6 +85,10 @@ pub struct Launch {
 
 impl Launch {
     pub fn new(name: &str, bin: &str) -> Self {
+        assert!(
+            !bin.is_empty(),
+            "launch `{name}` has an empty app binary path: this test target has no CARGO_BIN_EXE_<bin> for it. Look the binary up by name (see crates/functional-cross) or run the case from the package that owns the bin."
+        );
         Self {
             name: name.to_string(),
             bin: PathBuf::from(bin),

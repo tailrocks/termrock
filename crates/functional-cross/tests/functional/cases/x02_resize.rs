@@ -7,14 +7,15 @@
 //! 80×24, then captures the restored 120×40 frame. `Launch::new` leaves the
 //! clock off, including for jackin.
 
-use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
 
 use tui_test::TerminalSnapshot;
 use tuiscotti_latest::check::CheckOutcome;
 
-use crate::support::{App, HOLLA, Launch, Point, SHOWCASE, TABLEPRO, find_all, text, try_launch};
+use crate::support::{
+    App, Launch, Point, find_all, holla_bin, showcase_bin, tablepro_bin, text, try_launch,
+};
 
 const TOO_SMALL: &str = "Terminal too small";
 const MIN_WIDTH: u16 = 72;
@@ -130,7 +131,7 @@ fn assert_ui(app: &App, cols: u16, rows: u16, marker: &str) -> TerminalSnapshot 
 }
 
 fn check_frame(app: &App, screen: &TerminalSnapshot, test_id: &str) -> Result<(), String> {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines");
+    let root = crate::support::workspace_root().join("tests/functional/baselines");
     let sample = tuiscotti_latest::sample::Sample::state(
         test_id,
         screen.clone(),
@@ -174,7 +175,11 @@ fn open_quick_picker(app: &App) {
 }
 
 fn picker_checkpoint() {
-    let app = open("x02-resize-checkpoint", SHOWCASE, &["--page", "pickers"]);
+    let app = open(
+        "x02-resize-checkpoint",
+        showcase_bin(),
+        &["--page", "pickers"],
+    );
     open_quick_picker(&app);
     assert_too_small(&app, 71, 20, PICKER_DRAFT);
     assert_too_small(&app, 72, 19, PICKER_DRAFT);
@@ -218,7 +223,7 @@ fn picker_checkpoint() {
 }
 
 fn form_draft_survives() {
-    let app = open("x02-resize-form", SHOWCASE, &["--page", "forms"]);
+    let app = open("x02-resize-form", showcase_bin(), &["--page", "forms"]);
     app.wait_text("Task name");
     click_labeled(&app, "Create task", |hit| hit.x > 24);
     app.wait_text("Fix the highlighted fields");
@@ -249,7 +254,7 @@ fn form_draft_survives() {
 }
 
 fn delete_dialog_survives() {
-    let app = open("x02-resize-delete", SHOWCASE, &["--page", "dialogs"]);
+    let app = open("x02-resize-delete", showcase_bin(), &["--page", "dialogs"]);
     app.wait_text("Confirm run");
     click_labeled(&app, "Delete branch", |hit| hit.x >= 24 && hit.y >= 6);
     let open = app.wait_text(DELETE_TITLE);
@@ -266,7 +271,11 @@ fn delete_dialog_survives() {
 }
 
 fn pipeline_output_survives() {
-    let app = open("x02-resize-pipeline", SHOWCASE, &["--page", "taskrunner"]);
+    let app = open(
+        "x02-resize-pipeline",
+        showcase_bin(),
+        &["--page", "taskrunner"],
+    );
     app.wait_text("Run pipeline");
     click_labeled(&app, "Run pipeline", |hit| hit.y > 4 && hit.x >= 24);
     let started = app.wait_text(PIPELINE);
@@ -313,7 +322,7 @@ fn app_bounds(name: &str, bin: &str, args: &[&str], marker: &str) {
 
 #[test]
 fn x02_resize_route() {
-    let app = open("x02-resize-route", SHOWCASE, &["--page", "pickers"]);
+    let app = open("x02-resize-route", showcase_bin(), &["--page", "pickers"]);
     let screen = app.wait_text("Open quickly");
     require(&screen, "Overlays › Pickers");
     require(&screen, "Open quickly");
@@ -325,10 +334,15 @@ fn x02_resize_route() {
 
 #[test]
 fn x02_resize_resize() {
-    app_bounds("x02-resize-tablepro", TABLEPRO, &[], "Filter connections");
+    app_bounds(
+        "x02-resize-tablepro",
+        tablepro_bin(),
+        &[],
+        "Filter connections",
+    );
     app_bounds(
         "x02-resize-holla",
-        HOLLA,
+        holla_bin(),
         &["--scenario", "first-use"],
         "Analyze disk usage",
     );

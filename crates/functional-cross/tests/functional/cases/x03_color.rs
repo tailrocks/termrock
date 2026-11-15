@@ -8,14 +8,15 @@
 //! is what supplies hovered, pressed, and focused. The test reads the cells
 //! the binary paints.
 
-use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use tui_test::terminal::cell::Attrs;
 use tui_test::{SnapshotColor, SnapshotUnderline, TerminalSnapshot};
 use tuiscotti_latest::check::CheckOutcome;
 
-use crate::support::{App, HOLLA, Launch, Point, SHOWCASE, TABLEPRO, find_all, text, try_launch};
+use crate::support::{
+    App, Launch, Point, find_all, holla_bin, showcase_bin, tablepro_bin, text, try_launch,
+};
 
 const BOLD: u8 = 1;
 const DIM: u8 = 2;
@@ -243,7 +244,7 @@ fn gesture(app: &App, point: Point, rest: Ink, hover: Ink, pressed: Ink) {
 fn showcase_states(color: &str) {
     let app = open(
         &format!("x03-color-showcase-{color}"),
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "buttons"],
         color,
     );
@@ -297,7 +298,12 @@ fn showcase_states(color: &str) {
 }
 
 fn connect_states(color: &str) {
-    let app = open(&format!("x03-color-tablepro-{color}"), TABLEPRO, &[], color);
+    let app = open(
+        &format!("x03-color-tablepro-{color}"),
+        tablepro_bin(),
+        &[],
+        color,
+    );
     let screen = app.wait_text("Filter connections");
     require(&screen, chrome(color));
     require(&screen, "Edit");
@@ -343,7 +349,7 @@ fn stay_ink(color: &str) -> (Ink, Ink, Ink) {
 fn stay_states(color: &str) {
     let app = open(
         &format!("x03-color-holla-{color}"),
-        HOLLA,
+        holla_bin(),
         &["--scenario", "activities-multi"],
         color,
     );
@@ -435,7 +441,7 @@ fn sample_bytes(screen: &TerminalSnapshot, test_id: &str) -> Vec<u8> {
 
 fn check_stored(app: &App, screen: &TerminalSnapshot, test_id: &str) {
     let bytes = sample_bytes(screen, test_id);
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines");
+    let root = crate::support::workspace_root().join("tests/functional/baselines");
     let artifacts = app.evidence_dir().join("check-artifacts");
     let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
         .expect("open Tuiscotti frozen store");
@@ -454,7 +460,7 @@ fn check_stored(app: &App, screen: &TerminalSnapshot, test_id: &str) {
 fn checkpoint() {
     let app = open(
         "x03-color-checkpoint",
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "buttons"],
         "truecolor",
     );
@@ -485,7 +491,7 @@ fn checkpoint() {
 fn x03_color_route() {
     let app = open(
         "x03-color-route",
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "buttons"],
         "truecolor",
     );
