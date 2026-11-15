@@ -19,6 +19,7 @@ const CAP_STATES: &str = "every state, drawn by the widget";
 const WIDE: &str = "120×40";
 const RANGE: &str = "1–13 of 14";
 const TASK: &str = "Add rate limiting";
+const FLASH_ATTEMPTS: usize = 20;
 const GRID_ABSENT: &[&str] = &["focus + hover", "busy", "loading", "selected"];
 
 fn visual_id(case_id: &str) -> String {
@@ -215,6 +216,33 @@ fn focus_task(app: &crate::support::App) {
     app.click(hit);
     app.wait_text("↑↓←→");
     app.move_to(Point { x: 110, y: 1 });
+}
+
+/// The Playground tab after a press: the flash fill, not the selected fill.
+fn playground_flashing(screen: &TerminalSnapshot) -> bool {
+    find_all(screen, "Playground")
+        .into_iter()
+        .find(|hit| hit.y == 4)
+        .is_some_and(|hit| cell_bg(screen, hit) == SnapshotColor::Rgb(0x4a, 0x4a, 0x52))
+}
+
+/// The accepted frame is the hovered task with the Playground tab still in its
+/// press flash. The flash lasts 140 ms of wall clock and, with motion paused,
+/// nothing repaints until the next input, so the tab keeps the flash only if
+/// the hover frame is drawn inside that window. Whether the steps before the
+/// hover finished inside it depends on machine load. Press the tab and hover
+/// back to back, and press again when the frame did not keep the flash. #285
+/// (#149) puts the flash on the test clock, which replaces this.
+fn hover_while_tab_flashes(app: &crate::support::App, hit: Point) -> TerminalSnapshot {
+    for _ in 0..FLASH_ATTEMPTS {
+        click_tab(app, "Playground");
+        app.move_to(hit);
+        let screen = app.settle();
+        if playground_flashing(&screen) {
+            return screen;
+        }
+    }
+    panic!("the hover frame never kept the tab flash in {FLASH_ATTEMPTS} presses");
 }
 
 fn option_page(app: &crate::support::App) -> TerminalSnapshot {
@@ -1196,8 +1224,7 @@ fn option_reveal_off_keeps_the_cut_cell() {
     );
     click_tab(&app, "Playground");
     let hit = task_point(&app);
-    app.move_to(hit);
-    let hovered = app.settle();
+    let hovered = hover_while_tab_flashes(&app, hit);
     let row = row_with(&hovered, "#1040");
     assert!(
         row.contains("mira") && row.contains("end…"),

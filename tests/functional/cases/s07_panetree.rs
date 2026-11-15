@@ -259,7 +259,7 @@ fn wheel_until(app: &App, needle: &str) {
         if text(&app.settle()).contains(needle) {
             return;
         }
-        app.wheel(point, false, 3);
+        app.wheel_applied(point, false, 3);
     }
     app.wait_text(needle);
 }
@@ -788,7 +788,7 @@ fn compare_levels_narrows_before_restore() {
         if visible.contains("no color") {
             break;
         }
-        app.wheel(point, true, 3);
+        app.wheel_applied(point, true, 3);
     }
     let bands = app.settle();
     assert_size(&app, 120, 40);

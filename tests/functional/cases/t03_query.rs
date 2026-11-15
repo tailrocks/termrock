@@ -62,13 +62,6 @@ fn shot(app: &App, checkpoint: &str) {
     app.visual(&visual_id(checkpoint));
 }
 
-fn wait_size(app: &App, cols: u16, rows: u16) -> TerminalSnapshot {
-    app.resize(cols, rows);
-    app.wait_screen(&format!("size {cols}x{rows}"), |screen| {
-        screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-    })
-}
-
 fn list_row(app: &App, label: &str) -> Point {
     let screen = app.screen();
     let hits: Vec<_> = find_all(&screen, label)
@@ -400,7 +393,7 @@ fn classify_silent_shows_the_safety_decision() {
     assert_eq!((dialog.cols(), dialog.rows()), (120, 40));
     shot(&app, "T03.query.classify.120x40");
 
-    wait_size(&app, 80, 24);
+    app.wait_size(80, 24);
     let narrow = app.wait_screen("narrow delete dialog", |screen| {
         let visible = text(screen);
         screen.cols() == 80
@@ -415,7 +408,7 @@ fn classify_silent_shows_the_safety_decision() {
     );
     shot(&app, "T03.query.classify.narrow");
 
-    wait_size(&app, 120, 40);
+    app.wait_size(120, 40);
     let restored = app.wait_screen("delete dialog restored", |screen| {
         let visible = text(screen);
         screen.cols() == 120

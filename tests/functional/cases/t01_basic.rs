@@ -197,23 +197,6 @@ fn submit(app: &App) -> TerminalSnapshot {
     app.settle()
 }
 
-/// Resize, then wait for the app to draw at the new size. The emulator
-/// reports the new size at once but still holds the old frame, so the header
-/// readout of the size is the sign that the new frame has landed.
-fn wait_size(app: &App, cols: u16, rows: u16) -> TerminalSnapshot {
-    app.resize(cols, rows);
-    let readout = format!("{cols}×{rows}");
-    app.wait_screen(&format!("size {cols}x{rows}"), |screen| {
-        let visible = text(screen);
-        screen.cols() == u32::from(cols)
-            && screen.rows() == u32::from(rows)
-            && visible.contains(&readout)
-            && (visible.contains("TablePro")
-                || visible.contains(TITLE)
-                || visible.contains("Filter connections"))
-    })
-}
-
 fn has_token(screen: &TerminalSnapshot, token: &str) -> bool {
     text(screen).split_whitespace().any(|word| word == token)
 }
@@ -393,7 +376,7 @@ fn basic_fields_reject_blank_names_and_invalid_ports() {
     assert_eq!((failed.cols(), failed.rows()), (120, 40));
     app.visual(&visual_id("T01.basic.fields.120x40"));
 
-    wait_size(&app, 80, 24);
+    app.wait_size(80, 24);
     // The resized frame is drawn in more than one pass, and the status line
     // comes last. Wait for it along with the clipped port error.
     let fields_narrow = app.wait_screen("narrow field errors", |screen| {
@@ -423,7 +406,7 @@ fn basic_fields_reject_blank_names_and_invalid_ports() {
         &[SAVED, "65536", "abc"],
     );
     app.visual(&visual_id("T01.basic.fields.narrow"));
-    let fields_back = wait_size(&app, 120, 40);
+    let fields_back = app.wait_size(120, 40);
     assert_eq!((fields_back.cols(), fields_back.rows()), (120, 40));
 
     click_cancel(&app);
@@ -444,7 +427,7 @@ fn basic_fields_reject_blank_names_and_invalid_ports() {
     assert_eq!((reopened.cols(), reopened.rows()), (120, 40));
     app.visual(&visual_id("T01.basic.reopen.120x40"));
 
-    let reopen_narrow = wait_size(&app, 80, 24);
+    let reopen_narrow = app.wait_size(80, 24);
     assert_eq!((reopen_narrow.cols(), reopen_narrow.rows()), (80, 24));
     see(&reopen_narrow, &[TITLE, NAME, HOST, PORT], &[SAVED]);
     assert_eq!(
@@ -460,7 +443,7 @@ fn basic_fields_reject_blank_names_and_invalid_ports() {
         text(&reopen_narrow)
     );
     app.visual(&visual_id("T01.basic.reopen.narrow"));
-    let reopen_back = wait_size(&app, 120, 40);
+    let reopen_back = app.wait_size(120, 40);
     assert_eq!((reopen_back.cols(), reopen_back.rows()), (120, 40));
 
     app.click(form_hit(&app, PORT));

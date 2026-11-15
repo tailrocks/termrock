@@ -562,6 +562,38 @@ fn session_controller_resize_retry_restart_transcript() {
 }
 
 #[test]
+fn session_controller_exit_is_not_overridden_by_a_stream_close_in_the_same_drain() {
+    // A program exits and its stream closes behind it. Whether the two events
+    // come in one drain or in two must not change what the operator sees or
+    // what Enter does.
+    for same_drain in [false, true] {
+        let bench = Bench::new();
+        let mut session = live(&bench, SessionLease::Owner);
+        bench.push(0, SessionEvent::Exited(Some(3)));
+        if same_drain {
+            bench.push(0, SessionEvent::Ended(SessionEnd::StreamClosed));
+        }
+        session.pump(900);
+        if !same_drain {
+            bench.push(0, SessionEvent::Ended(SessionEnd::StreamClosed));
+            session.pump(1_000);
+        }
+        assert_eq!(
+            session.status(),
+            &SessionStatus::Exited(Some(3)),
+            "same_drain={same_drain}"
+        );
+        assert_eq!(session.take_effects(), [], "same_drain={same_drain}");
+        session.key(&key(KeyCode::Enter), 1_100);
+        assert_eq!(
+            bench.restarted(),
+            [1],
+            "same_drain={same_drain}: Enter restarts the program"
+        );
+    }
+}
+
+#[test]
 fn session_controller_failed_attach_can_be_refused_by_the_other_side() {
     let bench = Bench::new();
     let mut session = controller(&bench);

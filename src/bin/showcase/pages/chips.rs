@@ -1,3 +1,5 @@
+use std::cell::Cell;
+
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Rect, Size};
@@ -65,6 +67,11 @@ pub struct ChipsPage {
     engine: Select,
     last: String,
     sections: crate::pages::layout::Sections,
+    /// The natural widths of the filter and stream bars. They do not depend on
+    /// the page width, so the measures of one frame and its render share one
+    /// pass over the chips. Dropped when the render consumes them, and on every
+    /// event or option change that can edit a bar.
+    natural: [Cell<Option<u16>>; 2],
 }
 
 fn default_filters() -> Vec<Chip> {
@@ -122,12 +129,20 @@ impl ChipsPage {
             engine: Select::new(ID.sub("engine"), "Engine", &["PostgreSQL"], 0),
             last: "nothing yet".into(),
             sections: crate::pages::layout::Sections::new(ID.sub("page")),
+            natural: [Cell::new(None), Cell::new(None)],
         };
         page.rebuild();
         page
     }
 
+    fn forget_natural(&self) {
+        for cell in &self.natural {
+            cell.set(None);
+        }
+    }
+
     fn rebuild(&mut self) {
+        self.forget_natural();
         let o = &self.opts;
         let nav = match o.value("chipsselects.chip_nav") {
             "vim" => NavKeys::VIM,
@@ -364,20 +379,25 @@ impl ChipsPage {
         let card =
             |p: Panel, meta: &str, content: u16| p.meta(meta).outer(Size::new(content, 0)).width;
         // A saturated stress bar is cut to its card, so it never widens the page.
-        let bar = |b: &ChipBar, p: &Panel| {
+        let bar = |b: &ChipBar, cache: &Cell<Option<u16>>, p: &Panel| {
             self.opts
                 .number("chipsselects.bar_width")
                 .unwrap_or_else(|| {
                     let room = p.inner(Size::new(width, 0)).width;
-                    stress::clamp_saturated(b.measure(any, ctx).width, room)
+                    let natural = cache.get().unwrap_or_else(|| {
+                        let natural = b.measure(any, ctx).width;
+                        cache.set(Some(natural));
+                        natural
+                    });
+                    stress::clamp_saturated(natural, room)
                 })
         };
         let (fp, meta) = self.filters_panel(false);
         let last = w(&format!("last action: {}", self.last));
-        let filters_content = bar(&self.filters, &fp).max(last);
+        let filters_content = bar(&self.filters, &self.natural[0], &fp).max(last);
         let filters_w = card(fp, &meta, filters_content);
         let streams_panel = Panel::card(Some("Streams"));
-        let streams_content = bar(&self.streams, &streams_panel);
+        let streams_content = bar(&self.streams, &self.natural[1], &streams_panel);
         let streams_w = card(streams_panel, self.streams_meta(), streams_content);
         let selects_w = card(Panel::card(Some("Selects")), "", 3 * (SELECT_W + 2));
         let (left, right) = strip();
@@ -552,9 +572,11 @@ impl Page for ChipsPage {
             Section::Options => self.template.render_options(body, buf, ctx),
             Section::States => self.template.render_states(body, buf, ctx),
         }
+        self.forget_natural();
     }
 
     fn handle(&mut self, ev: &PageEvent, cx: &mut Cx) -> Outcome {
+        self.forget_natural();
         if let Some(o) = self.template.handle(ev, cx) {
             return o;
         }
@@ -804,6 +826,29 @@ mod tests {
     }
 
     #[test]
+    fn an_option_change_replaces_the_measured_bar_width() {
+        let mut page = ChipsPage::new();
+        let size = Size::new(120, 40);
+        measuring(|ctx| page.measure(size, ctx));
+        let plain = page.natural[0].get().expect("the measure kept the width");
+        assert!(plain < u16::MAX);
+        measuring(|ctx| page.measure(size, ctx));
+        assert_eq!(
+            page.natural[0].get(),
+            Some(plain),
+            "a second measure reuses it"
+        );
+
+        page.set_option("chipsselects.stress", index("20k items"));
+        measuring(|ctx| page.measure(size, ctx));
+        assert_eq!(
+            page.natural[0].get(),
+            Some(u16::MAX),
+            "the stress bar is measured again, not read from the plain bar"
+        );
+    }
+
+    #[test]
     fn the_long_label_leaves_the_first_chip_visible() {
         let mut page = ChipsPage::new();
         page.set_option("chipsselects.stress", index("65k label"));
@@ -820,6 +865,33 @@ mod tests {
         assert!(
             row.contains("status = 'pending'"),
             "the chip under the starting cursor is drawn: {row:?}"
+        );
+    }
+
+    #[test]
+    fn an_event_drops_the_measured_bar_width() {
+        use junie_tui::core::event::{Key, Outcome};
+        use junie_tui::core::focus::{Focus, FocusRing};
+        let mut page = ChipsPage::new();
+        let size = Size::new(120, 40);
+        measuring(|ctx| page.measure(size, ctx));
+        assert!(page.natural[0].get().is_some());
+        let mut focus = Focus::default();
+        let ring = FocusRing::default();
+        focus.focus(page.filters.id);
+        let mut cx = Cx::new(&mut focus, &ring);
+        let before = page.filters.chips().len();
+        let key = Key {
+            code: KeyCode::Delete,
+            mods: ratatui::crossterm::event::KeyModifiers::NONE,
+        };
+        let o = page.handle(&PageEvent::Key(key), &mut cx);
+        assert_eq!(o, Outcome::Changed);
+        assert!(page.filters.chips().len() < before, "a chip was removed");
+        assert_eq!(
+            page.natural[0].get(),
+            None,
+            "an event drops the measured width"
         );
     }
 }

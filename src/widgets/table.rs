@@ -169,6 +169,10 @@ trait TableRows {
     fn commit(&mut self, src: usize, col: usize, text: String) -> Result<(), String>;
     /// Marks a cell with a validation error where the provider keeps one.
     fn flag(&mut self, _src: usize, _col: usize, _error: Option<String>) {}
+    /// The provider's current data revision, for rows that accept commits.
+    fn data_revision(&self) -> Option<u64> {
+        None
+    }
 }
 
 struct OwnedRows(Vec<Vec<Cell>>);
@@ -264,6 +268,10 @@ impl<S: TableEditSource + ?Sized> TableRows for EditRows<'_, S> {
             return Err("the table source did not advance its data revision".to_owned());
         }
         Ok(())
+    }
+
+    fn data_revision(&self) -> Option<u64> {
+        Some(self.0.stamp().data)
     }
 }
 
@@ -1580,7 +1588,14 @@ impl DataTable {
         generation == self.structural_generation
     }
 
+    /// Focus left the table. Owned tables apply the blur policy to the open
+    /// editor. A table driven through the `*_source` methods holds no rows, so
+    /// it leaves its editor alone and leaves the commit to
+    /// [`DataTable::on_blur_edit_source`].
     pub fn on_blur(&mut self) -> Response<TableAction> {
+        if self.keyed.stamp().is_some() {
+            return Response::ignored();
+        }
         self.with_rows(|me, rows| me.on_blur_in(rows))
     }
 
@@ -1999,6 +2014,7 @@ impl DataTable {
         &mut self,
         response: Response<TableAction>,
         selected_before: Option<usize>,
+        data: Option<u64>,
     ) -> Response<TableAction<ItemKey>> {
         let n = self.keyed.visible_len();
         if n > 0 {
@@ -2015,6 +2031,12 @@ impl DataTable {
             }
             _ => {}
         }
+        let committed = response
+            .actions()
+            .any(|action| matches!(action, TableAction::Committed { .. }));
+        if committed {
+            self.keyed.finish_edit();
+        }
         if self.edit.is_some() || self.choice.is_some() {
             if self.keyed.edit_key().is_none() {
                 let row = self
@@ -2023,7 +2045,10 @@ impl DataTable {
                     .map(|e| e.row)
                     .or_else(|| self.choice.as_ref().map(|c| c.row));
                 if let Some(key) = row.and_then(|row| self.keyed.visible_key(row)) {
-                    self.keyed.begin_edit(key);
+                    match data.filter(|_| committed) {
+                        Some(data) => self.keyed.begin_edit_at(key, data),
+                        None => self.keyed.begin_edit(key),
+                    };
                 }
             }
         } else {
@@ -2052,7 +2077,7 @@ impl DataTable {
         self.bind(source)?;
         let selected = self.selected;
         let response = self.on_key_in(&mut ReadRows(source), key);
-        Ok(self.adopt(response, selected))
+        Ok(self.adopt(response, selected, None))
     }
 
     /// Keyboard input over a borrowed editable provider. A commit is applied
@@ -2064,8 +2089,9 @@ impl DataTable {
     ) -> Result<Response<TableAction<ItemKey>>, KeyedSourceError> {
         self.bind(&*source)?;
         let selected = self.selected;
-        let response = self.on_key_in(&mut EditRows(source), key);
-        Ok(self.adopt(response, selected))
+        let mut rows = EditRows(source);
+        let response = self.on_key_in(&mut rows, key);
+        Ok(self.adopt(response, selected, rows.data_revision()))
     }
 
     fn pointer_keyed<R: TableRows + ?Sized>(
@@ -2091,7 +2117,7 @@ impl DataTable {
         }
         let selected = self.selected;
         let response = self.pointer_in(rows, ev, true);
-        self.adopt(response, selected)
+        self.adopt(response, selected, rows.data_revision())
     }
 
     /// Pointer input over a borrowed read-only keyed provider. Hit regions
@@ -2113,6 +2139,21 @@ impl DataTable {
     ) -> Result<Response<TableAction<ItemKey>>, KeyedSourceError> {
         self.bind(&*source)?;
         Ok(self.pointer_keyed(&mut EditRows(source), ev))
+    }
+
+    /// Focus left a table over a borrowed editable keyed provider. The blur
+    /// policy decides the open editor's fate: `Commit` applies the typed text
+    /// with `set_cell` to the row captured when the edit began, like an Enter
+    /// commit.
+    pub fn on_blur_edit_source<S: TableEditSource + ?Sized>(
+        &mut self,
+        source: &mut S,
+    ) -> Result<Response<TableAction<ItemKey>>, KeyedSourceError> {
+        self.bind(&*source)?;
+        let selected = self.selected;
+        let mut rows = EditRows(source);
+        let response = self.on_blur_in(&mut rows);
+        Ok(self.adopt(response, selected, rows.data_revision()))
     }
 
     /// Paints rows borrowed from a read-only keyed provider.
@@ -2683,7 +2724,8 @@ impl crate::core::focus::BlurTarget for DataTable {
     fn blur(&mut self) -> Outcome {
         let editing = self.edit.is_some();
         // `BlurTarget` reports only an outcome; hosts that need the commit
-        // action call `DataTable::on_blur` directly.
+        // action call `DataTable::on_blur` directly, or
+        // `DataTable::on_blur_edit_source` for keyed tables.
         let _ = self.on_blur();
         if editing && self.edit.is_none() {
             Outcome::Changed
