@@ -1,7 +1,7 @@
 use junie_tui::core::id::WidgetId;
 use junie_tui::widgets::form_dialog::{FormDialog, FormField};
 use junie_tui::widgets::input::TextInput;
-use ratatui::layout::Rect;
+use ratatui::layout::{Position, Rect};
 
 use crate::common::paint_in;
 
@@ -37,4 +37,46 @@ fn a_form_with_no_room_for_its_body_keeps_its_fields_out_of_the_focus_ring() {
         }
     }
     assert!(empty_bodies > 0, "no screen height left the body empty");
+}
+
+#[test]
+fn fields_scrolled_out_of_the_body_leave_no_hit_regions() {
+    let screen = Rect::new(0, 0, 60, 14);
+    let (mut form, ids) = form();
+    let last = *ids.last().expect("fields");
+    let p = paint_in(screen, None, |buf, ctx| form.render(screen, buf, ctx));
+    let first_area = p
+        .hits
+        .regions()
+        .iter()
+        .find(|r| r.id == ids[0])
+        .map(|r| r.area)
+        .expect("the first field is drawn before scrolling");
+
+    for _ in 0..2 {
+        let p = paint_in(screen, Some(last), |buf, ctx| form.render(screen, buf, ctx));
+        let body = form_body_hits(&p, &ids);
+        assert!(
+            body.iter().any(|(id, _)| *id == last),
+            "the focused last field is scrolled into view"
+        );
+        for (id, area) in &body {
+            let centre = Position::new(area.x, area.y);
+            let top = p.hits.resolve(centre).map(|h| h.owner);
+            assert_eq!(top, Some(*id), "{id:?} claims cells another field paints");
+        }
+        assert!(
+            !body.iter().any(|(id, _)| *id == ids[0]),
+            "the first field scrolled away yet still registers a hit at {first_area:?}"
+        );
+    }
+}
+
+fn form_body_hits(p: &crate::common::Painted, ids: &[WidgetId]) -> Vec<(WidgetId, Rect)> {
+    p.hits
+        .regions()
+        .iter()
+        .filter(|r| ids.contains(&r.id))
+        .map(|r| (r.id, r.area))
+        .collect()
 }
