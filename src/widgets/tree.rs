@@ -202,8 +202,99 @@ impl Actions for TreeCmd {
     }
 }
 
-fn matches(n: &TreeNode, q: &str) -> bool {
-    n.label.to_lowercase().contains(q) || n.children.iter().any(|c| matches(c, q))
+fn label_matches(label: &str, query: &str) -> bool {
+    let lowered = label.to_lowercase();
+    #[cfg(test)]
+    work::record_label_test(lowered.len());
+    lowered.contains(query)
+}
+
+#[cfg(test)]
+mod work {
+    use std::cell::Cell;
+
+    #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+    pub(super) struct MatchWork {
+        pub label_tests: usize,
+        pub label_bytes: usize,
+        pub projection_nodes: usize,
+    }
+
+    thread_local! {
+        static WORK: Cell<MatchWork> = const {
+            Cell::new(MatchWork { label_tests: 0, label_bytes: 0, projection_nodes: 0 })
+        };
+    }
+
+    pub(super) fn take() -> MatchWork {
+        WORK.with(Cell::take)
+    }
+
+    pub(super) fn record_label_test(bytes: usize) {
+        WORK.with(|w| {
+            let mut v = w.get();
+            v.label_tests += 1;
+            v.label_bytes += bytes;
+            w.set(v);
+        });
+    }
+
+    pub(super) fn record_projection_node() {
+        WORK.with(|w| {
+            let mut v = w.get();
+            v.projection_nodes += 1;
+            w.set(v);
+        });
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+struct MatchNode {
+    own_match: bool,
+    subtree_match: bool,
+    subtree_end: usize,
+}
+
+fn project_matches(nodes: &[TreeNode], query: &str, out: &mut Vec<MatchNode>) -> bool {
+    let mut any = false;
+    for node in nodes {
+        #[cfg(test)]
+        work::record_projection_node();
+        let ordinal = out.len();
+        let own_match = label_matches(&node.label, query);
+        out.push(MatchNode::default());
+        let descendant = project_matches(&node.children, query, out);
+        let subtree_match = own_match || descendant;
+        out[ordinal] = MatchNode {
+            own_match,
+            subtree_match,
+            subtree_end: out.len(),
+        };
+        any |= subtree_match;
+    }
+    any
+}
+
+fn flat_row(
+    n: &TreeNode,
+    path: &Path,
+    depth: usize,
+    has_children: bool,
+    expanded: bool,
+) -> FlatRow {
+    FlatRow {
+        path: path.clone(),
+        depth,
+        label: n.label.clone(),
+        meta: n.meta.clone(),
+        has_children,
+        expanded,
+        glyph: n.glyph.clone(),
+        glyph_tone: n.glyph_tone,
+        label_tone: n.label_tone,
+        busy: n.busy,
+        note: n.note,
+    }
 }
 
 fn walk(
@@ -211,41 +302,70 @@ fn walk(
     path: &mut Path,
     depth: usize,
     exp: &std::collections::HashSet<Path>,
-    filter: Option<&str>,
     out: &mut Vec<FlatRow>,
 ) {
     for (i, n) in nodes.iter().enumerate() {
-        if let Some(q) = filter
-            && !matches(n, q)
-        {
-            continue;
-        }
         path.push(i);
         let has_children = !n.children.is_empty() || (n.lazy && !n.note);
-
-        let expanded = has_children
-            && (exp.contains(path)
-                || filter.is_some_and(|q| {
-                    !n.children.is_empty() && !n.label.to_lowercase().contains(q)
-                }));
-        out.push(FlatRow {
-            path: path.clone(),
-            depth,
-            label: n.label.clone(),
-            meta: n.meta.clone(),
-            has_children,
-            expanded,
-            glyph: n.glyph.clone(),
-            glyph_tone: n.glyph_tone,
-            label_tone: n.label_tone,
-            busy: n.busy,
-            note: n.note,
-        });
+        let expanded = has_children && exp.contains(path);
+        out.push(flat_row(n, path, depth, has_children, expanded));
         if expanded {
-            walk(&n.children, path, depth + 1, exp, filter, out);
+            walk(&n.children, path, depth + 1, exp, out);
         }
         path.pop();
     }
+}
+
+struct FilteredWalk<'a> {
+    matches: &'a [MatchNode],
+    exp: &'a std::collections::HashSet<Path>,
+    ordinal: usize,
+}
+
+impl FilteredWalk<'_> {
+    fn walk(&mut self, nodes: &[TreeNode], path: &mut Path, depth: usize, out: &mut Vec<FlatRow>) {
+        for (i, n) in nodes.iter().enumerate() {
+            let m = self.matches[self.ordinal];
+            if !m.subtree_match {
+                self.ordinal = m.subtree_end;
+                continue;
+            }
+            self.ordinal += 1;
+            path.push(i);
+            let has_children = !n.children.is_empty() || (n.lazy && !n.note);
+            let expanded = has_children
+                && (self.exp.contains(path) || (!n.children.is_empty() && !m.own_match));
+            out.push(flat_row(n, path, depth, has_children, expanded));
+            if expanded {
+                self.walk(&n.children, path, depth + 1, out);
+                debug_assert_eq!(self.ordinal, m.subtree_end);
+            }
+            self.ordinal = m.subtree_end;
+            path.pop();
+        }
+    }
+}
+
+fn build_rows(
+    nodes: &[TreeNode],
+    exp: &std::collections::HashSet<Path>,
+    filter: Option<&str>,
+) -> Vec<FlatRow> {
+    let mut out = Vec::new();
+    let Some(query) = filter else {
+        walk(nodes, &mut Vec::new(), 0, exp, &mut out);
+        return out;
+    };
+    let mut matches = Vec::new();
+    project_matches(nodes, query, &mut matches);
+    let mut filtered = FilteredWalk {
+        matches: &matches,
+        exp,
+        ordinal: 0,
+    };
+    filtered.walk(nodes, &mut Vec::new(), 0, &mut out);
+    debug_assert_eq!(filtered.ordinal, matches.len());
+    out
 }
 
 impl TreeView {
@@ -406,20 +526,12 @@ impl TreeView {
             .and_then(|i| self.rows.get(i))
             .map(|r| r.path.clone());
         let after: Option<Path> = self.rows.get(self.core.cursor + 1).map(|r| r.path.clone());
-        let mut out = Vec::new();
         let filter = self
             .filter
             .as_deref()
             .map(|f| f.trim().to_lowercase())
             .filter(|f| !f.is_empty());
-        walk(
-            &self.nodes,
-            &mut Vec::new(),
-            0,
-            &self.expanded,
-            filter.as_deref(),
-            &mut out,
-        );
+        let out = build_rows(&self.nodes, &self.expanded, filter.as_deref());
         self.rows_built += out.len();
         self.rows = out;
         self.core.cursor = self
@@ -587,7 +699,6 @@ impl TreeView {
                 &mut path,
                 depth + 1,
                 &self.expanded,
-                None,
                 &mut shown,
             );
         }
@@ -1260,5 +1371,426 @@ impl crate::core::pointer::MouseTarget for TreeView {
             Some((row, toggle)) => self.on_click_at(row, toggle, ev.mods(), ev.count()),
             None => crate::core::response::Response::ignored(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashSet;
+
+    use super::*;
+
+    const ID: WidgetId = WidgetId::of("tree.filter.tests");
+
+    fn ref_matches(n: &TreeNode, q: &str) -> bool {
+        n.label.to_lowercase().contains(q) || n.children.iter().any(|c| ref_matches(c, q))
+    }
+
+    fn ref_walk(
+        nodes: &[TreeNode],
+        path: &mut Path,
+        depth: usize,
+        exp: &HashSet<Path>,
+        filter: Option<&str>,
+        out: &mut Vec<FlatRow>,
+    ) {
+        for (i, n) in nodes.iter().enumerate() {
+            if let Some(q) = filter
+                && !ref_matches(n, q)
+            {
+                continue;
+            }
+            path.push(i);
+            let has_children = !n.children.is_empty() || (n.lazy && !n.note);
+            let expanded = has_children
+                && (exp.contains(path)
+                    || filter.is_some_and(|q| {
+                        !n.children.is_empty() && !n.label.to_lowercase().contains(q)
+                    }));
+            out.push(FlatRow {
+                path: path.clone(),
+                depth,
+                label: n.label.clone(),
+                meta: n.meta.clone(),
+                has_children,
+                expanded,
+                glyph: n.glyph.clone(),
+                glyph_tone: n.glyph_tone,
+                label_tone: n.label_tone,
+                busy: n.busy,
+                note: n.note,
+            });
+            if expanded {
+                ref_walk(&n.children, path, depth + 1, exp, filter, out);
+            }
+            path.pop();
+        }
+    }
+
+    fn reference_rows(nodes: &[TreeNode], exp: &HashSet<Path>, query: Option<&str>) -> Vec<String> {
+        let filter = query
+            .map(|f| f.trim().to_lowercase())
+            .filter(|f| !f.is_empty());
+        let mut out = Vec::new();
+        ref_walk(nodes, &mut Vec::new(), 0, exp, filter.as_deref(), &mut out);
+        out.iter().map(|r| format!("{r:?}")).collect()
+    }
+
+    fn actual_rows(tv: &TreeView) -> Vec<String> {
+        tv.rows().iter().map(|r| format!("{r:?}")).collect()
+    }
+
+    fn count_nodes(nodes: &[TreeNode]) -> usize {
+        nodes.iter().map(|n| 1 + count_nodes(&n.children)).sum()
+    }
+
+    fn all_paths(nodes: &[TreeNode], prefix: &mut Path, out: &mut Vec<Path>) {
+        for (i, n) in nodes.iter().enumerate() {
+            prefix.push(i);
+            out.push(prefix.clone());
+            all_paths(&n.children, prefix, out);
+            prefix.pop();
+        }
+    }
+
+    fn chain(depth: usize, last: &str) -> Vec<TreeNode> {
+        let mut node = TreeNode::leaf(last);
+        for level in (0..depth - 1).rev() {
+            node = TreeNode::dir(&format!("level {level}"), vec![node]);
+        }
+        vec![node]
+    }
+
+    fn balanced(depth: usize, fanout: usize, tag: &str) -> Vec<TreeNode> {
+        (0..fanout)
+            .map(|i| {
+                let label = format!("{tag}{i}");
+                if depth <= 1 {
+                    TreeNode::leaf(&label)
+                } else {
+                    TreeNode::dir(&label, balanced(depth - 1, fanout, &format!("{tag}{i}.")))
+                }
+            })
+            .collect()
+    }
+
+    fn filtered(nodes: Vec<TreeNode>, query: &str) -> TreeView {
+        let mut tv = TreeView::new(ID, nodes);
+        tv.filter = Some(query.to_owned());
+        work::take();
+        tv.flatten();
+        tv
+    }
+
+    #[test]
+    fn filtered_tree_tests_each_label_once() {
+        for depth in [32usize, 64, 128, 256] {
+            let mut tv = TreeView::new(ID, chain(depth, "needle"));
+            tv.filter = Some("needle".into());
+            work::take();
+            tv.flatten();
+            let spent = work::take();
+
+            assert_eq!(tv.rows().len(), depth, "depth {depth}: every ancestor row");
+            for (k, row) in tv.rows().iter().enumerate() {
+                assert_eq!(row.path, vec![0; k + 1], "depth {depth}: path of row {k}");
+                assert_eq!(row.depth, k);
+            }
+            assert_eq!(
+                spent.label_tests,
+                depth,
+                "depth {depth}: one label test per node, not {} (triangular)",
+                depth * (depth + 1) / 2
+            );
+            assert_eq!(
+                spent.projection_nodes, depth,
+                "depth {depth}: one projection entry per node"
+            );
+        }
+    }
+
+    #[test]
+    fn filtered_tree_tests_each_label_once_on_wide_deep_forest() {
+        let nodes = balanced(5, 3, "n");
+        let total = count_nodes(&nodes);
+        let tv = filtered(nodes, "n2.2.2.2.2");
+        let spent = work::take();
+
+        assert_eq!(spent.label_tests, total);
+        assert_eq!(spent.projection_nodes, total);
+        assert_eq!(tv.rows().len(), 5, "only the matching chain is emitted");
+        assert_eq!(
+            tv.rows().last().map(|r| r.label.as_str()),
+            Some("n2.2.2.2.2")
+        );
+    }
+
+    #[test]
+    fn filtered_tree_collapsed_own_match_reports_full_projection_cost() {
+        let hidden: Vec<TreeNode> = (0..40)
+            .map(|i| TreeNode::leaf(&format!("child {i}")))
+            .collect();
+        let nodes = vec![TreeNode::dir(
+            "root",
+            vec![TreeNode::dir("pkg-core", hidden), TreeNode::leaf("other")],
+        )];
+        let total = count_nodes(&nodes);
+        let tv = filtered(nodes, "pkg");
+        let spent = work::take();
+
+        let labels: Vec<&str> = tv.rows().iter().map(|r| r.label.as_str()).collect();
+        assert_eq!(labels, ["root", "pkg-core"], "own match stays collapsed");
+        assert!(!tv.rows()[1].expanded);
+        assert_eq!(
+            spent.label_tests, total,
+            "projection scans the collapsed subtree too"
+        );
+        assert_eq!(spent.projection_nodes, total);
+        assert!(spent.label_tests > tv.rows().len());
+    }
+
+    #[test]
+    fn filtered_tree_own_match_respects_expansion() {
+        let nodes = vec![TreeNode::dir(
+            "root",
+            vec![
+                TreeNode::dir(
+                    "pkg-core",
+                    vec![TreeNode::leaf("inner"), TreeNode::leaf("pkg-inner")],
+                ),
+                TreeNode::dir(
+                    "lib",
+                    vec![TreeNode::leaf("pkg-util"), TreeNode::leaf("skip")],
+                ),
+            ],
+        )];
+        let mut tv = TreeView::new(ID, nodes);
+        tv.filter = Some("PKG".into());
+        tv.flatten();
+        let shape = |tv: &TreeView| -> Vec<(String, bool)> {
+            tv.rows()
+                .iter()
+                .map(|r| (r.label.clone(), r.expanded))
+                .collect()
+        };
+        assert_eq!(
+            shape(&tv),
+            [
+                ("root".to_owned(), true),
+                ("pkg-core".to_owned(), false),
+                ("lib".to_owned(), true),
+                ("pkg-util".to_owned(), false),
+            ],
+            "own match collapsed, descendant-only parent auto-expanded"
+        );
+
+        tv.expanded.insert(vec![0, 0]);
+        tv.expanded.insert(vec![0, 1]);
+        tv.flatten();
+        assert_eq!(
+            shape(&tv),
+            [
+                ("root".to_owned(), true),
+                ("pkg-core".to_owned(), true),
+                ("pkg-inner".to_owned(), false),
+                ("lib".to_owned(), true),
+                ("pkg-util".to_owned(), false),
+            ],
+            "explicit expansion stays active and children stay filtered"
+        );
+    }
+
+    #[test]
+    fn filtered_tree_query_normalization_and_cursor() {
+        let nodes = vec![TreeNode::dir(
+            "src",
+            vec![
+                TreeNode::leaf("main.rs"),
+                TreeNode::leaf("ÄPFEL.rs"),
+                TreeNode::dir(
+                    "util",
+                    vec![TreeNode::leaf("helper.rs"), TreeNode::leaf("mod.rs")],
+                ),
+            ],
+        )];
+        let mut tv = TreeView::new(ID, nodes);
+        let unfiltered = actual_rows(&tv);
+
+        tv.filter = Some("   ".into());
+        work::take();
+        tv.flatten();
+        assert_eq!(
+            actual_rows(&tv),
+            unfiltered,
+            "whitespace query is no filter"
+        );
+        assert_eq!(
+            work::take(),
+            work::MatchWork::default(),
+            "no matching work without a filter"
+        );
+
+        tv.filter = Some("  äPFEL ".into());
+        tv.flatten();
+        let labels: Vec<&str> = tv.rows().iter().map(|r| r.label.as_str()).collect();
+        assert_eq!(
+            labels,
+            ["src", "ÄPFEL.rs"],
+            "Unicode lowercase and trimming"
+        );
+
+        tv.filter = None;
+        tv.expanded.insert(vec![0, 2]);
+        tv.flatten();
+        tv.core.cursor = tv
+            .rows()
+            .iter()
+            .position(|r| r.label == "helper.rs")
+            .unwrap();
+        tv.filter = Some("main".into());
+        tv.flatten();
+        assert_eq!(
+            tv.cursor_path(),
+            Some(&[0usize][..]),
+            "falls back to the nearest visible ancestor"
+        );
+    }
+
+    #[test]
+    fn filtered_tree_cursor_relocates_to_next_then_previous_sibling() {
+        let build = |labels: [&str; 5]| {
+            let mut tv = TreeView::new(ID, labels.map(TreeNode::leaf).to_vec());
+            tv.core.cursor = 2;
+            tv.filter = Some("x-".into());
+            tv.flatten();
+            tv
+        };
+        let next = build(["x-a", "x-b", "y-c", "x-d", "x-e"]);
+        assert_eq!(next.rows().len(), 4);
+        assert_eq!(
+            next.cursor_path(),
+            Some(&[3usize][..]),
+            "relocates to the row after"
+        );
+        assert_eq!(next.cursor, 2);
+
+        let previous = build(["x-a", "x-b", "y-c", "y-d", "x-e"]);
+        assert_eq!(previous.rows().len(), 3);
+        assert_eq!(
+            previous.cursor_path(),
+            Some(&[1usize][..]),
+            "falls back to the row before"
+        );
+    }
+
+    #[test]
+    fn unfiltered_refold_keeps_branch_local_work() {
+        let nodes: Vec<TreeNode> = (0..50)
+            .map(|i| {
+                TreeNode::dir(
+                    &format!("branch {i}"),
+                    (0..4)
+                        .map(|j| TreeNode::leaf(&format!("leaf {i}.{j}")))
+                        .collect(),
+                )
+            })
+            .collect();
+        let mut tv = TreeView::new(ID, nodes);
+        assert_eq!(tv.rows().len(), 250);
+
+        let before = tv.rows_built;
+        work::take();
+        let _ = tv.toggle(5 * 5);
+        assert_eq!(tv.rows().len(), 246);
+        assert_eq!(tv.rows_built - before, 0, "collapse rebuilds no rows");
+        let _ = tv.toggle(5 * 5);
+        assert_eq!(tv.rows().len(), 250);
+        assert_eq!(
+            tv.rows_built - before,
+            4,
+            "expand rebuilds only that branch"
+        );
+        assert_eq!(work::take(), work::MatchWork::default());
+    }
+
+    struct Lcg(u64);
+
+    impl Lcg {
+        fn below(&mut self, n: u64) -> u64 {
+            self.0 = self
+                .0
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
+            (self.0 >> 33) % n
+        }
+    }
+
+    fn random_forest(rng: &mut Lcg, depth: usize, max_children: u64) -> Vec<TreeNode> {
+        const LABELS: [&str; 10] = [
+            "Alpha",
+            "beta",
+            "GAMMA",
+            "ÄPFEL",
+            "straße",
+            "İstanbul",
+            "ΣΑΣ",
+            "alpha-beta",
+            "node",
+            "",
+        ];
+        (0..rng.below(max_children + 1))
+            .map(|_| {
+                let mut n = TreeNode::leaf(LABELS[rng.below(LABELS.len() as u64) as usize]);
+                match rng.below(8) {
+                    0 => n.lazy = true,
+                    1 => n.note = true,
+                    2 => {
+                        n.lazy = true;
+                        n.note = true;
+                    }
+                    _ => {}
+                }
+                if depth > 1 && rng.below(3) != 0 {
+                    n.children = random_forest(rng, depth - 1, max_children);
+                }
+                n
+            })
+            .collect()
+    }
+
+    #[test]
+    fn filtered_tree_projection_matches_reference() {
+        const QUERIES: [&str; 14] = [
+            "a", "alpha", "BETA", "pha-", "äpfel", "ß", "i\u{307}", "σας", "node", "zzz", " ", "",
+            "  Gamma ", "e",
+        ];
+        let mut rng = Lcg(0x5eed);
+        let mut compared = 0usize;
+        for _ in 0..60 {
+            let nodes = random_forest(&mut rng, 4, 3);
+            let mut paths = Vec::new();
+            all_paths(&nodes, &mut Vec::new(), &mut paths);
+            let expansions: [HashSet<Path>; 4] = [
+                TreeView::new(ID, nodes.clone()).expanded,
+                paths.iter().cloned().collect(),
+                paths.iter().step_by(3).cloned().collect(),
+                HashSet::new(),
+            ];
+            for exp in &expansions {
+                for query in QUERIES.iter().map(|q| Some(*q)).chain([None]) {
+                    let mut tv = TreeView::new(ID, nodes.clone());
+                    tv.expanded = exp.clone();
+                    tv.filter = query.map(str::to_owned);
+                    tv.flatten();
+                    assert_eq!(
+                        actual_rows(&tv),
+                        reference_rows(&nodes, exp, query),
+                        "query {query:?} over {nodes:?} with expanded {exp:?}"
+                    );
+                    compared += 1;
+                }
+            }
+        }
+        assert!(compared > 3000);
     }
 }

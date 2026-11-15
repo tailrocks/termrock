@@ -2749,4 +2749,161 @@ mod tests {
         picker.set_searchable(false).expect("disable search");
         assert_eq!(picker.height(), u16::MAX);
     }
+
+    fn keyed_picker(id: &str, count: usize) -> Picker {
+        let mut picker = Picker::new(WidgetId::of(id), "Rows");
+        picker
+            .set_items(
+                (0..count)
+                    .map(|index| Item::new(format!("Item {index}")).key(ItemKey::Index(index)))
+                    .collect(),
+            )
+            .expect("valid picker update");
+        picker
+    }
+
+    fn statuses_for_rows() -> [PickerStatus; 3] {
+        [
+            PickerStatus::Ready,
+            PickerStatus::Loading("Fetching".into()),
+            PickerStatus::Error {
+                message: "Offline".into(),
+                detail: Some("Retry later".into()),
+            },
+        ]
+    }
+
+    fn draw_picker(picker: &mut Picker, area: Rect) -> (Buffer, HitRegistry) {
+        let theme = Theme::for_level(ColorLevel::TrueColor);
+        let mut buffer = Buffer::empty(area);
+        let mut hits = HitRegistry::default();
+        let mut ring = FocusRing::default();
+        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        picker.draw(area, &mut buffer, &mut ctx);
+        ctx.flush_overlays(&mut buffer);
+        drop(ctx);
+        (buffer, hits)
+    }
+
+    fn row_text(buffer: &Buffer, x: (u16, u16), y: u16) -> String {
+        (x.0..x.1)
+            .map(|column| buffer[(column, y)].symbol())
+            .collect()
+    }
+
+    #[test]
+    fn one_row_limit_status_renders_one_row_and_hits_stay_inside_popup() {
+        let area = Rect::new(3, 2, 60, 14);
+        for searchable in [false, true] {
+            for (status, label) in [
+                (PickerStatus::Loading("Fetching".into()), "Fetching"),
+                (
+                    PickerStatus::Error {
+                        message: "Offline".into(),
+                        detail: Some("Retry later".into()),
+                    },
+                    "Offline",
+                ),
+            ] {
+                let mut picker = keyed_picker("rows-one-status", 5).max_rows(1);
+                picker
+                    .set_searchable(searchable)
+                    .expect("keyed items are searchable");
+                picker.status = status;
+                let (buffer, hits) = draw_picker(&mut picker, area);
+                let popup = picker.area;
+                let columns = (popup.x, popup.right());
+                let rows: Vec<String> = (popup.y..popup.bottom())
+                    .map(|y| row_text(&buffer, columns, y))
+                    .collect();
+                let status_rows = rows.iter().filter(|row| row.contains(label)).count();
+                assert_eq!(status_rows, 1, "searchable={searchable} rows={rows:?}");
+                assert!(
+                    !rows.iter().any(|row| row.contains("Retry later")),
+                    "detail needs a second row and must be omitted: {rows:?}"
+                );
+
+                let backdrop = crate::ui::popup::backdrop_id(picker.id);
+                for region in hits.regions() {
+                    if region.id == backdrop || region.area.is_empty() {
+                        continue;
+                    }
+                    let a = region.area;
+                    assert!(
+                        a.x >= popup.x
+                            && a.y >= popup.y
+                            && a.right() <= popup.right()
+                            && a.bottom() <= popup.bottom(),
+                        "region {:?} escapes popup {popup:?}",
+                        a
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn picker_content_rows_guards_direct_zero_list_limit() {
+        let one_row = picker_with_items("rows-direct-one", 3).max_rows(1).height();
+        let mut picker = picker_with_items("rows-direct-zero", 3);
+        picker.list.max_rows = 0;
+        let area = Rect::new(0, 0, 60, 14);
+        for status in statuses_for_rows() {
+            picker.status = status;
+            assert_eq!(picker.height(), one_row);
+            let (buffer, _) = draw_picker(&mut picker, area);
+            assert_eq!(buffer.area(), &area);
+        }
+    }
+
+    #[test]
+    fn picker_content_rows_helper_matrix_never_panics_and_bounds_height() {
+        const LIMITS: [u16; 5] = [0, 1, 2, 8, u16::MAX];
+        const COUNTS: [usize; 5] = [0, 1, 8, 65_536, usize::MAX];
+        for limit in LIMITS {
+            let max = usize::from(limit.max(1));
+            for status in statuses_for_rows() {
+                let ready = status == PickerStatus::Ready;
+                let floor = if ready { 1 } else { 2.min(max) };
+                for count in COUNTS {
+                    let rows = super::picker_content_rows(count, limit, ready);
+                    assert!(
+                        (floor..=max).contains(&rows),
+                        "limit {limit} count {count} ready {ready}: rows {rows}"
+                    );
+                    if count >= max {
+                        assert_eq!(rows, max, "limit {limit} count {count}");
+                    }
+                    if count <= floor {
+                        assert_eq!(rows, floor, "limit {limit} count {count}");
+                    }
+                    for chrome in [5usize, 7] {
+                        let height = (chrome + rows).min(usize::from(u16::MAX));
+                        assert!(height <= chrome + max);
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn picker_content_rows_helper_matrix_holds_through_public_height() {
+        for count in [0usize, 1, 8, 65_536] {
+            let mut picker = picker_with_items("rows-matrix", count);
+            for limit in [0u16, 1, 2, 8, u16::MAX] {
+                picker.set_max_rows(limit);
+                for status in statuses_for_rows() {
+                    picker.status = status;
+                    let height = usize::from(picker.height());
+                    let chrome = if picker.is_searchable() { 7 } else { 5 };
+                    assert!(height > chrome);
+                    assert!(
+                        height
+                            <= chrome
+                                + usize::from(limit.max(1)).min(usize::from(u16::MAX) - chrome)
+                    );
+                }
+            }
+        }
+    }
 }

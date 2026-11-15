@@ -15,6 +15,7 @@ use junie_tui::theme::Tone;
 use junie_tui::ui::ctx::RenderCtx;
 use junie_tui::ui::layer::LayerTag;
 use junie_tui::ui::layers::LayerResult;
+use junie_tui::ui::popup::Dismiss;
 use junie_tui::ui::specimen::{SpecimenState, StateGrid};
 use junie_tui::ui::text;
 use junie_tui::widgets::button::{Button, ButtonRow, row_layout};
@@ -108,6 +109,15 @@ impl DialogKindsPage {
         }
     }
 
+    fn dismiss(&self, default: Dismiss) -> Dismiss {
+        match self.opts.value("dialogkinds.dismiss") {
+            "light" => Dismiss::LIGHT,
+            "escape" => Dismiss::ESCAPE,
+            "never" => Dismiss::NEVER,
+            _ => default,
+        }
+    }
+
     fn button_row(&self) -> ButtonRow {
         ButtonRow::new().wrap(self.opts.on("dialogkinds.button_wrap"))
     }
@@ -156,6 +166,7 @@ impl DialogKindsPage {
         )
         .width(self.width(62))
         .nav(self.nav())
+        .dismiss(self.dismiss(Dismiss::ESCAPE))
         .close_button(self.close_button())
         .button_row(self.button_row());
         if self.opts.on("dialogkinds.form_meta") {
@@ -191,6 +202,7 @@ impl DialogKindsPage {
         .meta("read-only")
         .width(self.width(66))
         .nav(self.nav())
+        .dismiss(self.dismiss(Dismiss::LIGHT))
         .close_button(self.close_button());
         if self.opts.on("dialogkinds.info_error") {
             d = d.error();
@@ -215,6 +227,7 @@ impl DialogKindsPage {
         .line("Switching applies at the next restart.", Tone::Secondary)
         .width(self.width(54))
         .nav(self.nav())
+        .dismiss(self.dismiss(Dismiss::ESCAPE))
         .close_button(self.close_button())
         .button_row(self.button_row());
         if self.opts.on("dialogkinds.choice_tones") {

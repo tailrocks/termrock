@@ -379,13 +379,17 @@ fn check_rows_are_worded_by_the_vocabulary() {
 
 fn refresh_still_limited(effect: &Effect, world: &World) -> Option<Msg> {
     let Effect::RefreshAccount {
-        account, source, ..
+        ticket,
+        account,
+        source,
+        ..
     } = effect
     else {
         return None;
     };
     let now = world.now_secs();
     Some(Msg::AccountRefreshed {
+        ticket: *ticket,
         account: account.clone(),
         source: Box::new(source.clone()),
         result: Ok(Box::new(Refresh {
