@@ -66,6 +66,10 @@ const LEAVE_DIALOG: WidgetId = WidgetId::of("dialog.quit");
 #[path = "connection_identity_tests.rs"]
 mod connection_identity_tests;
 
+#[cfg(test)]
+#[path = "run_selection_tests.rs"]
+mod run_selection_tests;
+
 pub enum Act {
     EditFilter(Option<usize>),
     FilterOnCell(usize, CellValue),
