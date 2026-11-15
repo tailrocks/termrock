@@ -8,17 +8,14 @@ mod chip_add_hotkey;
 mod collection_menu_lifecycle;
 #[path = "../common/mod.rs"]
 mod common;
+mod file_browser_paths;
 mod form_value;
 mod grapheme_paint;
-mod scroll_view_navigation;
 mod help_geometry;
-mod nav_list_state;
 mod master_detail_bounds;
+mod nav_list_state;
 mod pane_tree_minima;
 mod pane_tree_pointer;
-// Shared support module, kept at the crate root so moved tests can use `crate::common`.
-
-mod file_browser_paths;
-mod collection_menu_lifecycle;
+mod scroll_view_navigation;
 mod smoke;
 mod tabs_overflow_mutation;
