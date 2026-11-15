@@ -2607,8 +2607,9 @@ impl CapsuleScreen {
         Outcome::Changed
     }
 
-    /// Gives every terminal pane the room its place in the layout has now,
-    /// which starts a pane that was waiting for room.
+    /// Gives every pane the room its place in the layout has now, which
+    /// starts a pane that was waiting for room and prepares each viewport, so
+    /// the frame that follows draws it without copying its history.
     fn sync_all(&mut self, w: &mut World) {
         if self.body.is_empty() {
             return;
@@ -2617,13 +2618,7 @@ impl CapsuleScreen {
         self.layout(body, w);
         let ids: Vec<PaneId> = self.pane_rects.iter().map(|(id, _)| *id).collect();
         for pid in ids {
-            let terminal = self
-                .daemon(w)
-                .and_then(|d| d.pane(pid))
-                .is_some_and(|p| p.body.kind() != PaneKindTag::Script);
-            if terminal {
-                self.prime(pid, w);
-            }
+            self.prime(pid, w);
         }
     }
 

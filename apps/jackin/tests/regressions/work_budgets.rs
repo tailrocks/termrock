@@ -13,7 +13,7 @@
 
 use jackin_console::app::App;
 use jackin_console::fixtures::{Scenario, app_for};
-use junie_tui::core::event::Input;
+use junie_tui::core::event::{Input, Key};
 use junie_tui::metrics::report::ScenarioReport;
 use junie_tui::metrics::{Metric, WorkDelta, measure};
 use junie_tui::motion::Motion;
@@ -21,6 +21,7 @@ use junie_tui::runtime::Application;
 use junie_tui::theme::{ColorLevel, Theme};
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
+use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 
 const VIEWPORT: (u16, u16) = (140, 40);
 
@@ -183,30 +184,21 @@ fn work_contract_jackin_capsule_idle_frame() {
         "a settled tick leaves the frame unchanged"
     );
 
-    // Known gap: every idle capsule frame deep-clones the pane's retained text
-    // (payload_bytes_cloned is recorded only on the unprepared-draw fallback of
-    // `ViewportOps::draw`) and segments and reflows the copy again. These are
-    // the measured counts of today's behaviour, not a bound; a capsule that
-    // draws a prepared view must bring the cloned bytes, segmented lines and
-    // index rebuilds to zero.
+    // A capsule pane is prepared for its place in the layout whenever its
+    // content or area changes, so an idle frame draws a prepared view: it
+    // clones no history and segments no line.
     within(
         &idle,
         "capsule settled tick",
         &[
-            (Metric::SegmentedLines, 2_021),
-            (Metric::ReflowedLines, 4_012),
-            (Metric::IndexRebuilds, 5),
-            (Metric::PayloadBytesCloned, 80_059),
-            (Metric::IntrinsicWidthCalls, 80_161),
-            (Metric::TextBytesMeasured, 81_535),
+            (Metric::IntrinsicWidthCalls, 158),
+            (Metric::TextBytesMeasured, 1_476),
             (Metric::SchedulingRecordsVisited, 2),
             (Metric::SchedulingPolls, 6),
         ],
     );
-    assert!(
-        idle.get(Metric::PayloadBytesCloned) > 0,
-        "the clone is the measured cost, so a change that removes it must lower this budget"
-    );
+    assert_eq!(idle.get(Metric::PayloadBytesCloned), 0, "no payload copy");
+    assert_eq!(idle.get(Metric::SegmentedLines), 0, "no line segmented");
     report(
         "jackin_capsule",
         "settled_tick",
@@ -214,4 +206,25 @@ fn work_contract_jackin_capsule_idle_frame() {
         idle,
         "2 daemons with panes; the frame text is unchanged by the tick",
     );
+}
+
+#[test]
+fn work_contract_jackin_capsule_frame_after_typing() {
+    let mut f = Fixture::new(Scenario::CapsuleMulti);
+    let before = f.screen();
+    Application::handle(
+        &mut f.app,
+        Input::Key(Key {
+            code: KeyCode::Char('q'),
+            mods: KeyModifiers::NONE,
+        }),
+    );
+    let ((), typed) = measure(|| f.draw());
+    assert_ne!(f.screen(), before, "the typed key reaches the pane");
+    assert_eq!(
+        typed.get(Metric::PayloadBytesCloned),
+        0,
+        "a pane changed by a key is prepared before the frame, so the frame copies no payload"
+    );
+    assert_eq!(typed.get(Metric::SegmentedLines), 0, "no line segmented");
 }

@@ -93,7 +93,8 @@ list, table, grid and tree widget in the frame.
 | Jackin roster | settled tick | 9 instances, 4 workspaces, 2 daemons | scheduling records 2, polls 6, width calls 178 |
 | Jackin roster | unrelated workspace policy, then tick | same | same as the settled tick |
 | Jackin roster | workspace rename, then tick | same | width bytes 1,571 instead of 1,531 |
-| Jackin capsule | settled tick | 2 daemons | segmented 2,021, reflowed 4,012, index rebuilds 5, payload bytes cloned 80,059, width calls 80,161 |
+| Jackin capsule | settled tick | 2 daemons | scheduling records 2, polls 6, width calls 158, width bytes 1,476; segmented 0, reflowed 0, index rebuilds 0, payload bytes cloned 0 |
+| Jackin capsule | one typed key, then the frame | same | payload bytes cloned 0, segmented 0 |
 
 ### What these counts say
 
@@ -106,8 +107,10 @@ list, table, grid and tree widget in the frame.
 - A Holla Finder tick rebuilds and re-ranks the whole catalog whether or not
   anything relevant changed (#62). Holla Finder has no source revision yet, so
   a relevant source revision change has no scenario here.
-- Every idle Jackin capsule frame takes that clone path and segments the copy
-  again. The scenario records today's counts.
+- The Jackin capsule primes every pane's viewport after each tick and input
+  (`CapsuleScreen::sync_all`), so its idle frame draws prepared views. Before
+  #249 the sync skipped script panes, and every idle frame cloned 80,059
+  payload bytes and segmented 2,021 lines.
 
 ### Not covered
 
