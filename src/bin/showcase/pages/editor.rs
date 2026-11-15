@@ -94,6 +94,8 @@ const CANDIDATES: &[(&str, &str, &str)] = &[
     ("return", "keyword", "k"),
 ];
 
+const UNAVAILABLE: &[(&str, &str)] = &[("url", "Moved into the request above")];
+
 fn highlight(src: &str) -> Vec<(Range<usize>, SyntaxTone)> {
     let b = src.as_bytes();
     let mut out = Vec::new();
@@ -338,13 +340,15 @@ impl EditorPage {
             .iter()
             .filter_map(|(label, detail, glyph)| {
                 let (penalty, matched) = fuzzy(label, &word)?;
-                Some((
-                    penalty,
-                    Item::new(*label)
-                        .glyph(*glyph)
-                        .detail(*detail)
-                        .matched(matched),
-                ))
+                let item = Item::new(*label)
+                    .glyph(*glyph)
+                    .detail(*detail)
+                    .matched(matched);
+                let item = match UNAVAILABLE.iter().find(|(name, _)| name == label) {
+                    Some((_, why)) => item.reason(*why),
+                    None => item,
+                };
+                Some((penalty, item))
             })
             .collect();
         ranked.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.label.cmp(&b.1.label)));
@@ -363,8 +367,9 @@ impl EditorPage {
     }
 
     fn accept(&mut self, i: usize) {
-        self.completion.apply(i, &mut self.editor.field.buffer);
-        self.completion.close();
+        if self.completion.apply(i, &mut self.editor.field.buffer) {
+            self.completion.close();
+        }
     }
 
     fn run(&mut self, cx: &mut Cx) {

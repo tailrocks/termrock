@@ -222,5 +222,10 @@ variant of these enums stays a breaking change and is recorded here.
   keeps the draft. Digits discarded before the model stored a number cannot
   be recovered, and arbitrary-precision decimals are not supported. See
   [the audit note](audits/2026-11-15-exact-sql-literals.md).
+- `Completion` and `DataTable` refuse disabled items: Tab, Enter, a click and
+  `Completion::apply` (now returning `bool`) accept only an enabled item, and
+  a disabled table row opens no editor and cannot commit one, including after
+  it is disabled mid-edit. See
+  [the audit note](audits/2026-11-15-item-eligibility.md).
 - The `visual-baseline` git tag is frozen historical evidence. It is
   never moved, and it is not a substitute for the current design.
