@@ -1936,15 +1936,17 @@ impl App {
         self.remove_presentation_tab(i);
     }
 
-    /// Removes tab `i` from the strip, router and modal owners together. The
+    /// Removes tab `i` from the strip, router and modal owners together. Layers
+    /// the closed tab owns are dismissed, and later owners shift down. The
     /// shown tab stays shown when a background tab closes, and a closed shown
     /// tab hands over to its predecessor.
     fn remove_presentation_tab(&mut self, i: usize) {
         let was_shown = i == self.active();
         self.tabs.remove(i);
         self.router.close_tab(i);
+        self.modals.retain(|entry| entry.owner != i);
         for entry in self.modals.iter_mut() {
-            if entry.owner > i || (entry.owner == i && i > 0) {
+            if entry.owner > i {
                 entry.owner -= 1;
             }
         }

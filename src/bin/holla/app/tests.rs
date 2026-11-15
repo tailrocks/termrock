@@ -969,6 +969,29 @@ fn stop_and_close_removes_activity_tab_after_terminal_event() {
 }
 
 #[test]
+fn stop_and_close_dismisses_layers_owned_by_the_closed_tab() {
+    let mut app = app();
+    let id = start_task(&mut app, "build", Script::running(vec![]));
+    stop_and_close(&mut app, &id);
+    app.open_help();
+    let owner = activity_tab(&app, &id).expect("activity tab");
+    assert_eq!(
+        app.modals.iter().map(|m| m.owner).collect::<Vec<_>>(),
+        vec![owner],
+        "the help layer belongs to the stopping tab"
+    );
+
+    tick_until_tab_closes(&mut app, &id);
+
+    assert!(
+        app.modals.is_empty(),
+        "the closed tab's layer is dismissed, not handed to the predecessor"
+    );
+    assert_eq!(active_kind(&app), TabKind::Here);
+    assert_tabs_consistent(&app);
+}
+
+#[test]
 fn stop_and_close_tracks_id_across_tab_switch() {
     let mut app = app();
     let a = start_task(&mut app, "alpha", Script::running(vec![]));
