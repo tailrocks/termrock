@@ -15,7 +15,7 @@ use junie_tui::ui::layer::{
     DismissReason, Dismissed, Layer, LayerCx, LayerPointer, LayerTag, Taken,
 };
 use junie_tui::ui::leave::{Leave, LeaveGuard, Resolved, Stakes};
-use junie_tui::ui::text::{crumb_fit, truncate, truncate_middle, width};
+use junie_tui::ui::text::{crumb_fit, plural, truncate, truncate_middle, width};
 use junie_tui::widgets::brand::Lockup;
 use junie_tui::widgets::breadcrumb::Breadcrumb;
 use junie_tui::widgets::button::Button;
@@ -53,7 +53,7 @@ use crate::screens::snapshot::SnapshotPage;
 use crate::screens::{
     Cx, GateTarget, Go, Holla, LayerSlot, Layers, ModalResult, Page, Request, Screen,
 };
-use crate::sim::world::{Msg, World};
+use crate::sim::world::{Msg, QuitWork, STOPPING_REFUSAL, World};
 
 pub const BRAND_MARK: &str = "holla❯";
 
@@ -386,31 +386,19 @@ impl App {
         for entry in self.modals.iter_mut() {
             out = out.or(entry.layer.on_tick(&()));
         }
-        if self.quitting {
-            let live = self.world.live_activities();
-            if let Some(job) = &self.world.cleanup_job {
-                let text = format!(
-                    "waiting for the cleanup · {} of {} items · quitting when it settles",
-                    job.exec.completed(),
-                    job.exec.total()
-                );
-                self.set_status(&text, Tone::Secondary);
-            } else if live == 0 {
-                self.shell.quit = true;
-            } else {
-                let text = format!(
-                    "stopping {} · {} still cancelling · quitting when every process is gone",
-                    junie_tui::ui::text::plural(live, "activity", "activities"),
-                    self.world.cancelling()
-                );
-                self.set_status(&text, Tone::Secondary);
-            }
-            out = Outcome::Changed;
-        }
-
         out = out.or(self.deliver_all(|s, w, cx| s.on_tick(w, cx)));
         for m in msgs {
             out = out.or(self.dispatch_msg(m));
+        }
+        if self.quitting {
+            let left = self.world.quit_work();
+            if left.is_empty() {
+                self.shell.quit = true;
+            } else {
+                let text = self.quit_wait_text(left);
+                self.set_status(&text, Tone::Secondary);
+            }
+            out = Outcome::Changed;
         }
         out
     }
@@ -824,13 +812,22 @@ impl App {
     }
 
     pub fn quit_stakes(&self) -> Stakes {
-        let n = self.world.live_activities();
-        if n > 0 || self.world.cleanup_job.is_some() {
-            Stakes::Running {
-                what: junie_tui::ui::text::plural(n.max(1), "activity", "activities"),
-            }
-        } else {
-            Stakes::Clean
+        let work = self.world.quit_work();
+        if work.is_empty() {
+            return Stakes::Clean;
+        }
+        let mut parts = vec![];
+        if work.activities > 0 {
+            parts.push(plural(work.activities, "activity", "activities"));
+        }
+        if work.plans > 0 {
+            parts.push(plural(work.plans, "plan", "plans"));
+        }
+        if work.cleanup {
+            parts.push("a cleanup".to_owned());
+        }
+        Stakes::Running {
+            what: parts.join(" and "),
         }
     }
 
@@ -847,7 +844,7 @@ impl App {
             .shell
             .quit_through(&mut self.leave, &stakes, &self.theme.strings)
         {
-            if self.quit_stakes().is_clean() {
+            if self.world.quit_work().is_empty() {
                 self.open_layer(d, LayerTag::new("quit"));
             } else {
                 self.open_quit_confirm();
@@ -855,25 +852,80 @@ impl App {
         }
     }
 
+    /// Confirmed quit: stop everything running, deliver the completions it
+    /// produced, then leave at once or wait for what cannot stop synchronously.
+    /// True (with a status) while a confirmed quit is stopping work; launch,
+    /// restart and plan-arm entry points return early on it.
+    fn refuse_new_work(&mut self) -> bool {
+        let refused = self.world.stopping();
+        if refused {
+            self.set_status(STOPPING_REFUSAL, Tone::Secondary);
+        }
+        refused
+    }
+
+    fn begin_quit(&mut self) {
+        let msgs = self.world.stop_work_for_quit();
+        for m in msgs {
+            self.dispatch_msg(m);
+        }
+        let left = self.world.quit_work();
+        if left.is_empty() {
+            self.shell.quit = true;
+            return;
+        }
+        self.quitting = true;
+        let text = self.quit_wait_text(left);
+        self.set_status(&text, Tone::Secondary);
+    }
+
+    fn quit_wait_text(&self, left: QuitWork) -> String {
+        if let Some(job) = &self.world.cleanup_job {
+            format!(
+                "waiting for the cleanup · {} of {} items · quitting when it settles",
+                job.exec.completed(),
+                job.exec.total()
+            )
+        } else {
+            format!(
+                "stopping {} · {} still cancelling · quitting when every process is gone",
+                plural(left.activities, "activity", "activities"),
+                self.world.cancelling()
+            )
+        }
+    }
+
     fn open_quit_confirm(&mut self) {
-        let n = self.world.live_activities();
+        let work = self.world.quit_work();
         let cleanup = self
             .world
             .cleanup_job
             .as_ref()
             .map(|j| (j.exec.completed(), j.exec.total()));
-        let body = match (n, cleanup) {
+        let running = work.activities + work.plans;
+        let running_text = {
+            let mut parts = vec![];
+            if work.activities > 0 {
+                parts.push(plural(work.activities, "activity", "activities"));
+            }
+            if work.plans > 0 {
+                parts.push(plural(work.plans, "plan", "plans"));
+            }
+            format!(
+                "{} {} running. Quitting stops {}.",
+                parts.join(" and "),
+                if running == 1 { "is" } else { "are" },
+                if running == 1 { "it" } else { "them" },
+            )
+        };
+        let body = match (running, cleanup) {
             (0, None) => "Nothing is running.".to_owned(),
-            (n, None) => format!(
-                "{} still running. Quitting stops what holla started; detached monitors keep running.",
-                junie_tui::ui::text::plural(n, "activity is", "activities are")
-            ),
+            (_, None) => running_text,
             (0, Some((k, t))) => format!(
                 "A cleanup is running ({k} of {t} items). Committed deletions cannot be stopped; leaving waits for the rest, then quits."
             ),
-            (n, Some((k, t))) => format!(
-                "{} still running and a cleanup is at {k} of {t} items. Quitting stops the activities and waits for the cleanup to settle.",
-                junie_tui::ui::text::plural(n, "activity is", "activities are")
+            (_, Some((k, t))) => format!(
+                "{running_text} A cleanup is at {k} of {t} items; quitting waits for its report and log."
             ),
         };
 
@@ -891,7 +943,7 @@ impl App {
         } else {
             body
         };
-        let d = if n > 0 {
+        let d = if running > 0 {
             Dialog::destructive(WidgetId::of("quit"), &title, &body, "Stop and quit")
                 .cancel_label("Stay")
         } else if cleanup.is_some() {
@@ -1062,25 +1114,7 @@ impl App {
         match tag.kind {
             "quit" => {
                 if let Resolved::Discard(Leave::Quit) = self.leave.resolve(answer(&result)) {
-                    let n = self.world.stop_all();
-                    if n == 0 && self.world.cleanup_job.is_none() {
-                        self.shell.quit = true;
-                    } else if n == 0 {
-                        self.quitting = true;
-                        self.set_status(
-                            "leaving when the cleanup settles · its report and log land first",
-                            Tone::Secondary,
-                        );
-                    } else {
-                        self.quitting = true;
-                        self.set_status(
-                            &format!(
-                                "stopping {} · quitting when every process is gone",
-                                junie_tui::ui::text::plural(n, "activity", "activities")
-                            ),
-                            Tone::Secondary,
-                        );
-                    }
+                    self.begin_quit();
                 }
                 Outcome::Changed
             }
@@ -1549,6 +1583,9 @@ impl App {
                 self.enter_top();
             }
             Go::Exec { label, argv } => {
+                if self.refuse_new_work() {
+                    return;
+                }
                 let scope = crate::domain::context::ScopeTag::here(&self.world.location.cwd);
                 let script = self.world.script_for(None, &argv);
                 let aid = self.world.start_activity(
@@ -2109,6 +2146,10 @@ impl App {
         let Some(target) = self.pending_gate.take() else {
             return;
         };
+        if matches!(target, GateTarget::Plan(_) | GateTarget::Cleanup(_)) && self.refuse_new_work()
+        {
+            return;
+        }
         match target {
             GateTarget::Plan(id) => {
                 let drift = self.world.plan(&id).and_then(|p| {
@@ -2202,6 +2243,13 @@ impl App {
         let Some(it) = self.find_item(id) else {
             return;
         };
+        if matches!(
+            it.launch,
+            Launch::Activity { .. } | Launch::Batch | Launch::Handoff { .. }
+        ) && self.refuse_new_work()
+        {
+            return;
+        }
         self.remember_use(id);
         match it.launch.clone() {
             Launch::Activity { script } => {
@@ -2567,6 +2615,9 @@ impl App {
             .strip_prefix("mise.task.")
             .and_then(|s| s.strip_suffix(".dry"))
         {
+            if self.refuse_new_work() {
+                return;
+            }
             let argv = vec![crate::domain::exec::Command::argv(
                 "mise",
                 &["run", "--dry-run", ns],
@@ -2607,6 +2658,9 @@ impl App {
                 return;
             }
             if let Some(aid) = rest.strip_suffix(".restart") {
+                if self.refuse_new_work() {
+                    return;
+                }
                 if let Some(a) = self.world.activity_mut(aid) {
                     if a.state.live() {
                         self.set_status("Still running · stop it first", Tone::Secondary);

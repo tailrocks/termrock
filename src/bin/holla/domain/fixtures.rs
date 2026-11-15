@@ -1330,6 +1330,7 @@ fn base(scenario: Scenario, motion: Motion, host: Host, location: Location) -> W
         next_activity: 0,
         trusted_now: vec![],
         healed_units: vec![],
+        stopping: false,
     }
 }
 

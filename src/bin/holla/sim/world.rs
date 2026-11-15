@@ -65,6 +65,24 @@ impl Batch {
     }
 }
 
+/// Work that must settle before holla can leave. Counted from the World, never
+/// from open tabs or cached catalog rows.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct QuitWork {
+    pub activities: usize,
+    pub plans: usize,
+    pub cleanup: bool,
+}
+
+impl QuitWork {
+    pub fn is_empty(&self) -> bool {
+        self.activities == 0 && self.plans == 0 && !self.cleanup
+    }
+}
+
+/// Status shown when a launch, restart or plan start is refused during quit.
+pub const STOPPING_REFUSAL: &str = "Already stopping · wait for quit or restart the app";
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Msg {
     ActivityEnded { id: String, ok: bool },
@@ -108,6 +126,10 @@ pub struct World {
     pub trusted_now: Vec<String>,
 
     pub healed_units: Vec<String>,
+
+    /// Set once a confirmed quit has asked running work to stop. New work is
+    /// refused from then on so shutdown cannot be extended.
+    pub(crate) stopping: bool,
 
     pub fs: Fs,
 
@@ -295,6 +317,39 @@ impl World {
 
     pub fn live_activities(&self) -> usize {
         self.activities.iter().filter(|a| a.state.live()).count()
+    }
+
+    pub fn quit_work(&self) -> QuitWork {
+        QuitWork {
+            activities: self.live_activities(),
+            plans: self
+                .plans
+                .iter()
+                .filter(|p| p.phase == PlanPhase::Running)
+                .count(),
+            cleanup: self.cleanup_job.is_some(),
+        }
+    }
+
+    /// Whether a confirmed quit is stopping work, so new work must be refused.
+    pub fn stopping(&self) -> bool {
+        self.stopping
+    }
+
+    /// Asks everything running to stop for a confirmed quit. Plans stop and
+    /// finalize synchronously (their completion messages are returned for normal
+    /// dispatch); activities follow their cancel schedule; a cleanup is never
+    /// stopped. Repeating it changes nothing that was already stopping.
+    pub fn stop_work_for_quit(&mut self) -> Vec<Msg> {
+        self.stopping = true;
+        let running: Vec<String> = self
+            .plans
+            .iter()
+            .filter(|p| p.phase == PlanPhase::Running)
+            .map(|p| p.id.clone())
+            .collect();
+        self.stop_all();
+        running.iter().flat_map(|id| self.stop_plan(id)).collect()
     }
 
     pub fn script_for(&self, key: Option<&str>, argv: &[Command]) -> Script {
@@ -1262,5 +1317,93 @@ mod plan_tests {
             uses + 1,
             "usage counted once per arm"
         );
+    }
+}
+
+#[cfg(test)]
+mod quit_tests {
+    use super::*;
+    use crate::domain::activity::{ActivityKind, Script};
+    use crate::domain::context::ScopeTag;
+    use crate::domain::fixtures::world_for;
+    use crate::scenario::Motion;
+
+    const ALL_STATES: [ActivityState; 7] = [
+        ActivityState::Queued,
+        ActivityState::Running,
+        ActivityState::Cancelling,
+        ActivityState::Succeeded,
+        ActivityState::Failed,
+        ActivityState::Stopped,
+        ActivityState::Detached,
+    ];
+
+    #[test]
+    fn quit_work_counts_every_activity_state_plan_phase_and_cleanup() {
+        let mut w = world_for(Scenario::DockerCleanup, Motion::Full);
+        w.activities.clear();
+        let scope = ScopeTag::here(&w.location.cwd);
+        let id = w.start_activity(
+            vec![],
+            Script::running(vec![]),
+            "a",
+            "a",
+            ActivityKind::Task,
+            scope,
+        );
+        for state in ALL_STATES {
+            w.activity_mut(&id).expect("activity").state = state;
+            let work = w.quit_work();
+            assert_eq!(work.activities, usize::from(state.live()), "{state:?}");
+            assert_eq!(work.plans, 0);
+            assert!(!work.cleanup);
+            assert_eq!(work.is_empty(), !state.live(), "{state:?}");
+        }
+        w.activity_mut(&id).expect("activity").state = ActivityState::Succeeded;
+        for (phase, plans) in [
+            (PlanPhase::Review, 0),
+            (PlanPhase::Running, 1),
+            (PlanPhase::Done, 0),
+        ] {
+            w.plan_mut("docker-cleanup").expect("plan").phase = phase;
+            assert_eq!(w.quit_work().plans, plans, "{phase:?}");
+            assert_eq!(w.quit_work().is_empty(), plans == 0, "{phase:?}");
+        }
+    }
+
+    #[test]
+    fn quit_stop_work_is_idempotent_and_finalizes_every_running_plan() {
+        let mut w = world_for(Scenario::DockerCleanup, Motion::Full);
+        w.clock.running = true;
+        let mut second = w.plan("docker-cleanup").cloned().expect("plan");
+        second.id = "second".into();
+        w.plans.push(second);
+        let tick = w.tick;
+        for id in ["docker-cleanup", "second"] {
+            assert!(w.plan_mut(id).expect("plan").arm(tick));
+        }
+        for _ in 0..3 {
+            w.tick();
+        }
+        assert_eq!(w.quit_work().plans, 2);
+        assert!(!w.stopping());
+
+        let msgs = w.stop_work_for_quit();
+
+        assert_eq!(
+            msgs,
+            vec![
+                Msg::PlanDone {
+                    plan: "docker-cleanup".into()
+                },
+                Msg::PlanDone {
+                    plan: "second".into()
+                },
+            ],
+            "one completion per plan, in plan order"
+        );
+        assert!(w.stopping());
+        assert!(w.quit_work().is_empty());
+        assert!(w.stop_work_for_quit().is_empty());
     }
 }
