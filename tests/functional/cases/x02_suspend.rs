@@ -9,7 +9,7 @@
 //! `Launch::new` leaves the clock off.
 
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use junie_tui::runtime::{TerminalSession, job_control};
 use ratatui::crossterm::event::{self, Event, KeyCode};
@@ -219,14 +219,6 @@ fn suspend_resume_restores_host_handler() {
     app.key("enter");
     app.wait_text("host handler restored, count=1");
     app.key("enter");
-    let deadline = Instant::now() + Duration::from_secs(10);
-    while app.child_running() {
-        assert!(
-            Instant::now() < deadline,
-            "child did not exit\n{}",
-            text(&app.screen())
-        );
-        std::thread::sleep(Duration::from_millis(20));
-    }
+    app.wait_exit("child did not exit");
     app.assert_restored_exit();
 }

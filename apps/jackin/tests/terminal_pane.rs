@@ -4,6 +4,9 @@
 
 mod pane_support;
 
+#[path = "terminal_pane/session_adapter.rs"]
+mod session_adapter;
+
 use std::sync::{Arc, Mutex};
 
 use jackin_console::panes::{

@@ -45,6 +45,7 @@ pub enum Scenario {
     ParityInsights,
     ParityDeleteSafety,
     ParityCleanupResults,
+    ParityCleanupHardlinks,
     ParityPlatforms,
     ParityPlatformsLinux,
 }
@@ -64,7 +65,7 @@ impl Scenario {
         Scenario::HardCases,
     ];
 
-    pub const PARITY: [Scenario; 23] = [
+    pub const PARITY: [Scenario; 24] = [
         Scenario::ParityDiscovery,
         Scenario::ParityHistory,
         Scenario::ParityFiles,
@@ -86,11 +87,12 @@ impl Scenario {
         Scenario::ParityInsights,
         Scenario::ParityDeleteSafety,
         Scenario::ParityCleanupResults,
+        Scenario::ParityCleanupHardlinks,
         Scenario::ParityPlatforms,
         Scenario::ParityPlatformsLinux,
     ];
 
-    pub const ALL: [Scenario; 34] = [
+    pub const ALL: [Scenario; 35] = [
         Scenario::FirstUse,
         Scenario::RustDirty,
         Scenario::MonorepoRoot,
@@ -123,6 +125,7 @@ impl Scenario {
         Scenario::ParityInsights,
         Scenario::ParityDeleteSafety,
         Scenario::ParityCleanupResults,
+        Scenario::ParityCleanupHardlinks,
         Scenario::ParityPlatforms,
         Scenario::ParityPlatformsLinux,
     ];
@@ -161,6 +164,7 @@ impl Scenario {
             Scenario::ParityInsights => "parity-insights",
             Scenario::ParityDeleteSafety => "parity-delete-safety",
             Scenario::ParityCleanupResults => "parity-cleanup-results",
+            Scenario::ParityCleanupHardlinks => "parity-cleanup-hardlinks",
             Scenario::ParityPlatforms => "parity-platforms",
             Scenario::ParityPlatformsLinux => "parity-platforms-linux",
         }

@@ -816,10 +816,11 @@ impl SnapshotPage {
                         }
                         other => (other.label().to_owned(), Tone::Normal),
                     };
-                    let freed = if matches!(
+                    let processed = if matches!(
                         r.outcome,
                         crate::domain::cleanup::Outcome::Removed
                             | crate::domain::cleanup::Outcome::Trashed
+                            | crate::domain::cleanup::Outcome::WouldRemove
                     ) {
                         junie_tui::ui::text::bytes(r.size)
                     } else {
@@ -829,7 +830,7 @@ impl SnapshotPage {
                         r.timestamp_ms.div_euclid(1000),
                         r.path,
                         method,
-                        freed,
+                        processed,
                         outcome,
                         tone,
                     ));
@@ -837,9 +838,9 @@ impl SnapshotPage {
                 rows.sort_by_key(|r| r.0);
                 self.lines.push(m(&format!(
                     "{:<18}{:<44}{:<12}{:>10}   {}",
-                    "when", "target", "method", "freed", "outcome"
+                    "when", "target", "method", "processed", "outcome"
                 )));
-                for (when, target, method, freed, outcome, tone) in rows {
+                for (when, target, method, processed, outcome, tone) in rows {
                     if tone == Tone::Success {
                         self.marks
                             .push((self.lines.len(), 18 + 44 + 12 + 10 + 3, StatusKind::Ok));
@@ -850,7 +851,7 @@ impl SnapshotPage {
                             crate::scenario::CLOCK.stamp(when),
                             truncate(&w.location.short(&target), 42),
                             method,
-                            freed,
+                            processed,
                             outcome
                         ),
                         tone,
@@ -1316,13 +1317,15 @@ impl ShellPage<Holla> for SnapshotPage {
                         .chain(w.custom_global.iter())
                         .find(|c| c.path == path)
                         .map(|c| c.digest.clone());
-                    match digest {
-                        Some(d) if w.trust.revoke(&d) => {
-                            w.persisted.trust = Some(w.trust.serialize());
-                            cx.status("Trust revoked · the file must be reviewed again before anything runs");
-                            self.build(w);
-                        }
-                        _ => cx.status("Nothing to revoke · the file is not trusted"),
+                    let revoked = digest.is_some_and(|d| w.edit_catalog_if(|w| w.trust.revoke(&d)));
+                    if revoked {
+                        w.persisted.trust = Some(w.trust.serialize());
+                        cx.status(
+                            "Trust revoked · the file must be reviewed again before anything runs",
+                        );
+                        self.build(w);
+                    } else {
+                        cx.status("Nothing to revoke · the file is not trusted");
                     }
                     return Outcome::Changed;
                 }
@@ -1603,5 +1606,39 @@ impl Screen for SnapshotPage {
             center: Some(StatusItem::new("snapshot · read-only", Tone::Muted).priority(5)),
             right: vec![],
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::cleanup::{LogRecord, Mode, Outcome};
+    use crate::domain::fixtures::world_for;
+    use crate::scenario::{Motion, Scenario};
+
+    #[test]
+    fn disk_history_shows_the_dry_run_estimate_as_processed() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Reduced);
+        w.ops_log.append(&LogRecord {
+            timestamp_ms: 1_800_000_000_000,
+            mode: Mode::Trash,
+            dry_run: true,
+            path: "/Users/alex/Downloads/estimate-probe".into(),
+            size: 5 * 1024 * 1024,
+            reclaimed_size: Some(0),
+            outcome: Outcome::WouldRemove,
+            error: None,
+        });
+        let page = SnapshotPage::new("disk-history", &w);
+        let row = page
+            .lines
+            .iter()
+            .map(|(line, _)| line)
+            .rfind(|line| line.contains("estimate-probe"))
+            .expect("the dry-run record has a history row");
+        assert!(
+            row.contains("5.0 MiB") && row.contains("would be removed"),
+            "a dry-run row keeps its estimate: {row}"
+        );
     }
 }

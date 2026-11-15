@@ -201,7 +201,11 @@ fn confirm_stop(app: &App) {
     app.key("ctrl+q");
     let dialog = app.wait_screen("quit dialog", stay_focused);
     assert_eq!((dialog.cols(), dialog.rows()), (120, 40));
-    see(&dialog, &[QUIT_TITLE, STOP, STAY, "still running"], &[]);
+    see(
+        &dialog,
+        &[QUIT_TITLE, STOP, STAY, "running. Quitting stops"],
+        &["detached monitors keep running"],
+    );
     assert!(
         stay_focused(&dialog),
         "Stay is not the focused control\n{}",

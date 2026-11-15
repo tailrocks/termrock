@@ -3,6 +3,7 @@ use ratatui::layout::{Rect, Size};
 use ratatui::style::Color;
 
 use crate::ui::ctx::RenderCtx;
+use crate::ui::measure::terminal_extent;
 use crate::ui::text::width;
 
 pub const SPINNER: [&str; 10] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
@@ -48,14 +49,15 @@ impl BarLayout {
     }
 
     fn label(&self, area: Rect, buf: &mut Buffer, ctx: &RenderCtx, label: &str, bg: Color) -> u16 {
-        let label_w = self.label_width.unwrap_or(width(label) as u16);
-        let has_label = label_w > 0 && !label.is_empty() && area.width > label_w + 8;
+        let label_w = self.label_width.map_or_else(|| width(label), usize::from);
+        let has_label =
+            label_w > 0 && !label.is_empty() && usize::from(area.width) > label_w.saturating_add(8);
         if !has_label {
             return area.x;
         }
-        let text = crate::ui::text::truncate(label, label_w as usize);
+        let text = crate::ui::text::truncate(label, label_w);
         buf.set_string(area.x, area.y, text, ctx.theme.primary().bg(bg));
-        area.x + label_w + 2
+        area.x + terminal_extent(label_w) + 2
     }
 }
 
@@ -375,7 +377,7 @@ impl Meter {
             _ => self.value.clone(),
         };
         let ratio = (self.used_pct.unwrap_or(0).min(100) as f64) / 100.0;
-        let vw = width(&value) as u16;
+        let vw = width(&value);
         let text_style = paint.text;
         let mut suffix_style = ratatui::style::Style::new().fg(fill_color).bg(bg);
         if self.tone == MeterTone::Exhausted {
@@ -392,7 +394,8 @@ impl Meter {
         }
         match self.visual {
             MeterVisual::Line => {
-                let track_w = area.width.saturating_sub(vw + 3);
+                let track_w =
+                    terminal_extent(usize::from(area.width).saturating_sub(vw.saturating_add(3)));
                 if track_w < MIN_TRACK {
                     buf.set_string(
                         area.x,
@@ -419,7 +422,7 @@ impl Meter {
                 }
                 let x = area.x + track_w + 1;
                 buf.set_string(x, area.y, &value, text_style);
-                buf.set_string(x + vw, area.y, suffix, suffix_style);
+                buf.set_string(x + terminal_extent(vw), area.y, suffix, suffix_style);
             }
             MeterVisual::Block => {
                 let bar_w = area.width.saturating_sub(2);
@@ -444,12 +447,13 @@ impl Meter {
                 } else {
                     t.text_primary
                 };
-                let text = crate::ui::text::truncate(&value, bar_w.saturating_sub(2) as usize);
-                let chars: Vec<String> = text.chars().map(|c| c.to_string()).collect();
-                for i in 0..bar_w {
+                let cell_style = |i: u16| {
                     let in_fill = i < filled;
-                    let cell_bg = if in_fill { fill_color } else { rest_bg };
-                    let fg = if in_fill { on_fill } else { on_rest };
+                    let (fg, cell_bg) = if in_fill {
+                        (on_fill, fill_color)
+                    } else {
+                        (on_rest, rest_bg)
+                    };
                     let mut st = ratatui::style::Style::new().fg(fg).bg(cell_bg);
                     if in_fill {
                         st = st.add_modifier(ratatui::style::Modifier::BOLD);
@@ -457,14 +461,20 @@ impl Meter {
                     if paint.dashed {
                         st = st.add_modifier(ratatui::style::Modifier::ITALIC);
                     }
-
-                    let sym = if i >= 1 && (i as usize - 1) < chars.len() {
-                        chars[i as usize - 1].as_str()
-                    } else {
-                        " "
-                    };
-                    buf.set_string(area.x + i, area.y, sym, st);
+                    st
+                };
+                for i in 0..bar_w {
+                    buf.set_string(area.x + i, area.y, " ", cell_style(i));
                 }
+                let text_area = Rect::new(area.x + 1, area.y, bar_w - 2, 1);
+                crate::ui::text::paint_graphemes(
+                    buf,
+                    text_area,
+                    (0, 0),
+                    &value,
+                    crate::ui::text::TextClip::Ellipsis,
+                    |_, col| cell_style(1 + col as u16),
+                );
                 buf.set_string(area.x + bar_w, area.y, suffix, suffix_style);
             }
         }
@@ -481,16 +491,16 @@ impl crate::ui::measure::Measure for Meter {
             MeterTone::Unknown if self.value.is_empty() => t.glyphs.none.to_owned(),
             _ => self.value.clone(),
         };
-        let vw = width(&value) as u16;
+        let vw = width(&value);
         let w = if !self.paint(t, t.canvas).has_run {
-            vw + 2
+            vw.saturating_add(2)
         } else {
             match self.visual {
-                MeterVisual::Line => vw + 3 + MIN_TRACK,
-                MeterVisual::Block => vw.max(4) + 2,
+                MeterVisual::Line => vw.saturating_add(3 + usize::from(MIN_TRACK)),
+                MeterVisual::Block => vw.max(4).saturating_add(2),
             }
         };
-        Size::new(w, 1)
+        Size::new(terminal_extent(w), 1)
     }
 }
 
@@ -564,22 +574,26 @@ pub fn render_spinner(area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, label: 
         return;
     }
     let t = ctx.theme;
-    buf.set_string(
-        area.x,
-        area.y,
+    let glyph = crate::ui::text::paint_clipped(
+        buf,
+        area,
+        0,
         t.glyphs.spinner_frame(ctx.interaction.tick),
         ratatui::style::Style::new()
             .fg(t.legible_mark(t.accent, bg))
             .bg(bg),
     );
-    buf.set_string(
-        area.x + 2,
-        area.y,
-        label,
-        ratatui::style::Style::new()
-            .fg(t.legible(t.text_secondary, bg))
-            .bg(bg),
-    );
+    if glyph > 0 {
+        crate::ui::text::paint_truncated(
+            buf,
+            area,
+            glyph + 1,
+            label,
+            ratatui::style::Style::new()
+                .fg(t.legible(t.text_secondary, bg))
+                .bg(bg),
+        );
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

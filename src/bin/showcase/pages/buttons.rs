@@ -370,11 +370,12 @@ impl ButtonsPage {
         let inner = panel.render(area, buf, t);
         let widths: Vec<u16> = self.tools.iter().map(Button::width).collect();
 
-        let rects = row_layout(Rect::new(inner.x, inner.y, inner.width, 1), &widths, 1);
+        let lines = row_lines(inner.width, &widths, 1);
+        let rects = row_layout(Rect::new(inner.x, inner.y, inner.width, lines), &widths, 1);
         for (b, r) in self.tools.iter_mut().zip(rects) {
             b.render(r, buf, ctx, bg);
         }
-        let note_y = inner.y + row_lines(inner.width, &widths, 1) + 1;
+        let note_y = inner.y + lines + 1;
         if note_y < inner.bottom() {
             buf.set_string(
                 inner.x,
@@ -681,11 +682,7 @@ impl Page for ButtonsPage {
             }
             PageEvent::Pointer(ev) if ev.is(Phase::Click) => {
                 if let Some(i) = self.buttons.iter().position(|b| ev.on(b.id)) {
-                    if self.buttons[i]
-                        .route(ev)
-                        .and_then(|r| r.into_action())
-                        .is_some()
-                    {
+                    if self.buttons[i].route(ev).is_some_and(|r| r.has_actions()) {
                         self.activated(i, cx);
                     }
                     return Outcome::Changed;

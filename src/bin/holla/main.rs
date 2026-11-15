@@ -1,4 +1,8 @@
+#[cfg(test)]
+mod alloc_probe;
 mod app;
+#[cfg(all(test, feature = "work-metrics"))]
+mod work_metrics_tests;
 
 mod domain;
 mod scenario;

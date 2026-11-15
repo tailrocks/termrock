@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use junie_tui::clock::Clock;
 use junie_tui::core::event::{Input, Key, Outcome};
 use junie_tui::core::focus::FocusChange;
@@ -15,7 +17,7 @@ use junie_tui::ui::layer::{
     DismissReason, Dismissed, Layer, LayerCx, LayerPointer, LayerTag, Taken,
 };
 use junie_tui::ui::leave::{Leave, LeaveGuard, Resolved, Stakes};
-use junie_tui::ui::text::{crumb_fit, truncate, truncate_middle, width};
+use junie_tui::ui::text::{crumb_fit, plural, truncate, truncate_middle, width};
 use junie_tui::widgets::brand::Lockup;
 use junie_tui::widgets::breadcrumb::Breadcrumb;
 use junie_tui::widgets::button::Button;
@@ -53,7 +55,7 @@ use crate::screens::snapshot::SnapshotPage;
 use crate::screens::{
     Cx, GateTarget, Go, Holla, LayerSlot, Layers, ModalResult, Page, Request, Screen,
 };
-use crate::sim::world::{Msg, World};
+use crate::sim::world::{Msg, QuitWork, STOPPING_REFUSAL, World};
 
 pub const BRAND_MARK: &str = "holla❯";
 
@@ -118,6 +120,9 @@ pub struct App {
     menu_actions: Vec<AltCmd>,
     pending_gate: Option<GateTarget>,
     pending_confirm: Option<(String, Vec<(String, String)>)>,
+    /// Activity IDs whose "Stop and close" was confirmed while the process
+    /// was still live. The tab closes on the activity's terminal event.
+    pending_activity_closes: BTreeSet<String>,
     pub clipboard_gen: u32,
 
     pub quitting: bool,
@@ -165,6 +170,7 @@ impl App {
             menu_actions: vec![],
             pending_gate: None,
             pending_confirm: None,
+            pending_activity_closes: BTreeSet::new(),
             clipboard_gen: 0,
             quitting: false,
             last_query: None,
@@ -187,7 +193,7 @@ impl App {
         match self.scenario {
             Scenario::DockerCleanup => {
                 if let Some(f) = self.finder_mut() {
-                    f.query.set_text("docker clean");
+                    f.set_query("docker clean");
                 }
                 self.enter_top();
             }
@@ -303,11 +309,33 @@ impl App {
 
     fn deliver_all(
         &mut self,
+        f: impl FnMut(&mut Box<dyn Screen>, &mut World, &mut Cx) -> Outcome,
+    ) -> Outcome {
+        self.deliver_tabs(|_| true, f)
+    }
+
+    /// The tick fanout. A hidden tab whose top page only refreshes a
+    /// projection skips its tick and catches up when it is entered.
+    fn deliver_ticks(&mut self) -> Outcome {
+        self.deliver_tabs(|s| s.background_tick(), |s, w, cx| s.on_tick(w, cx))
+    }
+
+    fn deliver_tabs(
+        &mut self,
+        runs_hidden: impl Fn(&dyn Screen) -> bool,
         mut f: impl FnMut(&mut Box<dyn Screen>, &mut World, &mut Cx) -> Outcome,
     ) -> Outcome {
         let mut out = Outcome::Ignored;
         for ti in 0..self.router.tab_count() {
             let shown = ti == self.active();
+            if !shown
+                && self
+                    .router
+                    .top_of(ti)
+                    .is_some_and(|s| !runs_hidden(s.as_ref()))
+            {
+                continue;
+            }
             let (o, reqs) = self.deliver_tab(ti, shown, Outcome::Ignored, &mut f);
             if shown {
                 out = out.or(o).or(self.apply_requests(reqs, ti));
@@ -386,31 +414,20 @@ impl App {
         for entry in self.modals.iter_mut() {
             out = out.or(entry.layer.on_tick(&()));
         }
+        out = out.or(self.deliver_ticks());
+        for m in msgs {
+            out = out.or(self.dispatch_msg(m));
+        }
+        out = out.or(self.close_finished_activity_tabs());
         if self.quitting {
-            let live = self.world.live_activities();
-            if let Some(job) = &self.world.cleanup_job {
-                let text = format!(
-                    "waiting for the cleanup · {} of {} items · quitting when it settles",
-                    job.exec.completed(),
-                    job.exec.total()
-                );
-                self.set_status(&text, Tone::Secondary);
-            } else if live == 0 {
+            let left = self.world.quit_work();
+            if left.is_empty() {
                 self.shell.quit = true;
             } else {
-                let text = format!(
-                    "stopping {} · {} still cancelling · quitting when every process is gone",
-                    junie_tui::ui::text::plural(live, "activity", "activities"),
-                    self.world.cancelling()
-                );
+                let text = self.quit_wait_text(left);
                 self.set_status(&text, Tone::Secondary);
             }
             out = Outcome::Changed;
-        }
-
-        out = out.or(self.deliver_all(|s, w, cx| s.on_tick(w, cx)));
-        for m in msgs {
-            out = out.or(self.dispatch_msg(m));
         }
         out
     }
@@ -428,6 +445,9 @@ impl App {
                     } else {
                         self.set_status(&format!("{name} failed · exit {exit}"), Tone::Error);
                     }
+                }
+                if self.pending_activity_closes.contains(id) {
+                    self.close_activity_tab_if_finished(id);
                 }
             }
             Msg::BatchDone { id, ok } => {
@@ -466,8 +486,10 @@ impl App {
                         .filter(|s| s.state == StepState::Cancelled)
                         .count();
                     let (_, failed, ..) = p.outcome();
-                    let mut text = if cancelled > 0 {
+                    let mut text = if p.stopped {
                         format!("{} stopped · {cancelled} cancelled", p.title)
+                    } else if cancelled > 0 {
+                        format!("{} finished · {cancelled} cancelled", p.title)
                     } else if failed > 0 {
                         format!("{} · {failed} failed", p.title)
                     } else {
@@ -824,13 +846,22 @@ impl App {
     }
 
     pub fn quit_stakes(&self) -> Stakes {
-        let n = self.world.live_activities();
-        if n > 0 || self.world.cleanup_job.is_some() {
-            Stakes::Running {
-                what: junie_tui::ui::text::plural(n.max(1), "activity", "activities"),
-            }
-        } else {
-            Stakes::Clean
+        let work = self.world.quit_work();
+        if work.is_empty() {
+            return Stakes::Clean;
+        }
+        let mut parts = vec![];
+        if work.activities > 0 {
+            parts.push(plural(work.activities, "activity", "activities"));
+        }
+        if work.plans > 0 {
+            parts.push(plural(work.plans, "plan", "plans"));
+        }
+        if work.cleanup {
+            parts.push("a cleanup".to_owned());
+        }
+        Stakes::Running {
+            what: parts.join(" and "),
         }
     }
 
@@ -847,7 +878,7 @@ impl App {
             .shell
             .quit_through(&mut self.leave, &stakes, &self.theme.strings)
         {
-            if self.quit_stakes().is_clean() {
+            if self.world.quit_work().is_empty() {
                 self.open_layer(d, LayerTag::new("quit"));
             } else {
                 self.open_quit_confirm();
@@ -855,25 +886,88 @@ impl App {
         }
     }
 
+    /// Confirmed quit: stop everything running, deliver the completions it
+    /// produced, then leave at once or wait for what cannot stop synchronously.
+    /// True (with a status) while a confirmed quit is stopping work; launch,
+    /// restart and plan-arm entry points return early on it.
+    fn refuse_new_work(&mut self) -> bool {
+        let refused = self.world.stopping();
+        if refused {
+            self.set_status(STOPPING_REFUSAL, Tone::Secondary);
+        }
+        refused
+    }
+
+    fn begin_quit(&mut self) {
+        let stopping = self.world.quit_work().activities;
+        let msgs = self.world.stop_work_for_quit();
+        for m in msgs {
+            self.dispatch_msg(m);
+        }
+        let left = self.world.quit_work();
+        if left.is_empty() {
+            self.shell.quit = true;
+            return;
+        }
+        self.quitting = true;
+        let text = if left.activities == 0 {
+            "leaving when the cleanup settles · its report and log land first".to_string()
+        } else {
+            format!(
+                "stopping {} · quitting when every process is gone",
+                plural(stopping, "activity", "activities")
+            )
+        };
+        self.set_status(&text, Tone::Secondary);
+    }
+
+    fn quit_wait_text(&self, left: QuitWork) -> String {
+        if let Some(job) = &self.world.cleanup_job {
+            format!(
+                "waiting for the cleanup · {} of {} items · quitting when it settles",
+                job.exec.completed(),
+                job.exec.total()
+            )
+        } else {
+            format!(
+                "stopping {} · {} still cancelling · quitting when every process is gone",
+                plural(left.activities, "activity", "activities"),
+                self.world.cancelling()
+            )
+        }
+    }
+
     fn open_quit_confirm(&mut self) {
-        let n = self.world.live_activities();
+        let work = self.world.quit_work();
         let cleanup = self
             .world
             .cleanup_job
             .as_ref()
             .map(|j| (j.exec.completed(), j.exec.total()));
-        let body = match (n, cleanup) {
+        let running = work.activities + work.plans;
+        let running_text = {
+            let mut parts = vec![];
+            if work.activities > 0 {
+                parts.push(plural(work.activities, "activity", "activities"));
+            }
+            if work.plans > 0 {
+                parts.push(plural(work.plans, "plan", "plans"));
+            }
+            format!(
+                "{} {} running. Quitting stops {}.",
+                parts.join(" and "),
+                if running == 1 { "is" } else { "are" },
+                if running == 1 { "it" } else { "them" },
+            )
+        };
+        let body = match (running, cleanup) {
             (0, None) => "Nothing is running.".to_owned(),
-            (n, None) => format!(
-                "{} still running. Quitting stops what holla started; detached monitors keep running.",
-                junie_tui::ui::text::plural(n, "activity is", "activities are")
-            ),
+            (_, None) => running_text,
             (0, Some((k, t))) => format!(
                 "A cleanup is running ({k} of {t} items). Committed deletions cannot be stopped; leaving waits for the rest, then quits."
             ),
-            (n, Some((k, t))) => format!(
-                "{} still running and a cleanup is at {k} of {t} items. Quitting stops the activities and waits for the cleanup to settle.",
-                junie_tui::ui::text::plural(n, "activity is", "activities are")
+            (_, Some((k, t))) => format!(
+                "{running_text} A cleanup is at {k} of {t} items; quitting waits for its report and log."
             ),
         };
 
@@ -891,7 +985,7 @@ impl App {
         } else {
             body
         };
-        let d = if n > 0 {
+        let d = if running > 0 {
             Dialog::destructive(WidgetId::of("quit"), &title, &body, "Stop and quit")
                 .cancel_label("Stay")
         } else if cleanup.is_some() {
@@ -997,11 +1091,15 @@ impl App {
     }
 
     fn settle_layer(&mut self, out: Outcome) -> Outcome {
-        match self.modals.take(&mut self.shell.focus) {
-            None => out,
-            Some(Taken::Event(r)) => self.on_layer_event(r).or(out),
-            Some(Taken::Closed(entry, r)) => self.on_layer_result(entry, r),
-        }
+        Layers::settle(
+            self,
+            |app| (&mut app.modals, &mut app.shell.focus),
+            out,
+            |app, taken| match taken {
+                Taken::Event(r) => app.on_layer_event(r),
+                Taken::Closed(entry, r) => app.on_layer_result(entry, r),
+            },
+        )
     }
 
     fn dismiss_layer(&mut self, reason: DismissReason) -> Outcome {
@@ -1062,25 +1160,7 @@ impl App {
         match tag.kind {
             "quit" => {
                 if let Resolved::Discard(Leave::Quit) = self.leave.resolve(answer(&result)) {
-                    let n = self.world.stop_all();
-                    if n == 0 && self.world.cleanup_job.is_none() {
-                        self.shell.quit = true;
-                    } else if n == 0 {
-                        self.quitting = true;
-                        self.set_status(
-                            "leaving when the cleanup settles · its report and log land first",
-                            Tone::Secondary,
-                        );
-                    } else {
-                        self.quitting = true;
-                        self.set_status(
-                            &format!(
-                                "stopping {} · quitting when every process is gone",
-                                junie_tui::ui::text::plural(n, "activity", "activities")
-                            ),
-                            Tone::Secondary,
-                        );
-                    }
+                    self.begin_quit();
                 }
                 Outcome::Changed
             }
@@ -1125,7 +1205,8 @@ impl App {
                     if alias.is_empty() {
                         self.set_status("No alias set: the field was empty", Tone::Secondary);
                     } else {
-                        self.world.memory.set_alias(&alias, &tag.key);
+                        self.world
+                            .edit_memory(|w| w.memory.set_alias(&alias, &tag.key));
                         self.set_status(
                             &format!("Alias {alias} set · it beats learned ranking from now on"),
                             Tone::Secondary,
@@ -1138,7 +1219,7 @@ impl App {
                 if let ModalResult::Picked(i) = result {
                     let row = entry
                         .get::<Picker>()
-                        .and_then(|p| p.items().get(i))
+                        .and_then(|p| p.visible_item(i).map(|v| v.item))
                         .and_then(|it| it.key.map(|key| (key, it.group == "plans")));
                     match row {
                         Some((k, true)) => {
@@ -1174,10 +1255,16 @@ impl App {
                     action: Some(1), ..
                 } = result
                 {
-                    match tag.key.strip_prefix("plan:") {
-                        Some(id) => self.stop_and_close_plan(id),
-                        None => self.close_tab(self.active(), true),
-                    }
+                    self.stop_and_close_activity(&tag.key);
+                }
+                Outcome::Changed
+            }
+            "close-plan-tab" => {
+                if let ModalResult::Dialog {
+                    action: Some(1), ..
+                } = result
+                {
+                    self.stop_and_close_plan(&tag.key);
                 }
                 Outcome::Changed
             }
@@ -1331,47 +1418,52 @@ impl App {
 
     fn chrome_pointer(&mut self, ev: &PointerEvent) -> Option<Outcome> {
         if let Some(r) = self.crumbs.route(ev) {
-            let (o, level) = r.into_parts();
-            let nav = level.and_then(|_| self.router.crumb_click(&self.crumbs, 0, ev.id));
-            return Some(match nav {
-                Some(nav) => {
+            let (mut out, levels) = r.into_parts();
+            for _ in levels {
+                if let Some(nav) = self.router.crumb_click(&self.crumbs, 0, ev.id) {
                     if self.navigate(nav) {
                         self.enter_top();
                     }
-                    Outcome::Changed
+                    out = Outcome::Changed;
                 }
-                None => o,
-            });
+            }
+            return Some(out);
         }
         if let Some(r) = self.menu.route(ev) {
-            let (o, act) = r.into_parts();
-            return Some(match act {
-                Some(act @ MenuBarAction::Chosen(..)) => match self.menus.command(act) {
-                    Some(cmd) => self.run_cmd(cmd),
-                    None => o,
-                },
-                Some(MenuBarAction::Brand) => {
-                    self.open_about();
-                    Outcome::Changed
-                }
-                _ => o,
-            });
+            let (mut out, actions) = r.into_parts();
+            for act in actions {
+                out = match act {
+                    act @ MenuBarAction::Chosen(..) => match self.menus.command(act) {
+                        Some(cmd) => self.run_cmd(cmd),
+                        None => out,
+                    },
+                    MenuBarAction::Brand => {
+                        self.open_about();
+                        Outcome::Changed
+                    }
+                    _ => out,
+                };
+            }
+            return Some(out);
         }
 
         if let Some(r) = self.strip.route(ev) {
-            let (o, act) = r.into_parts();
-            return Some(match act {
-                Some(TabAction::Activated(i)) => {
-                    self.activate_tab(i);
-                    Outcome::Changed
-                }
-                Some(TabAction::Close(i)) => {
-                    self.router.select(i);
-                    self.go(Go::CloseTab);
-                    Outcome::Changed
-                }
-                _ => o,
-            });
+            let (mut out, actions) = r.into_parts();
+            for act in actions {
+                out = match act {
+                    TabAction::Activated(i) => {
+                        self.activate_tab(i);
+                        Outcome::Changed
+                    }
+                    TabAction::Close(i) => {
+                        self.router.select(i);
+                        self.go(Go::CloseTab);
+                        Outcome::Changed
+                    }
+                    _ => out,
+                };
+            }
+            return Some(out);
         }
         if !ev.is(Phase::Click) {
             return None;
@@ -1403,6 +1495,10 @@ impl App {
             match r {
                 Request::Status(s, tone) => self.set_status(&s, tone),
                 Request::StatusAs(s, kind) => self.set_status(&s, kind.tone()),
+                Request::Notice(s, tone) => {
+                    let now = self.world.clock.now();
+                    self.shell.status.notice_at(s, tone, now);
+                }
                 Request::Sticky(s) => {
                     let now = self.world.clock.now();
                     self.shell.status.sticky_at(s, now);
@@ -1437,7 +1533,7 @@ impl App {
             Go::Run { item, args } => {
                 self.last_query = self
                     .finder_mut()
-                    .map(|f| f.query.text().to_owned())
+                    .map(|f| f.query().to_owned())
                     .filter(|q| !q.trim().is_empty());
                 self.run_item(&item, args)
             }
@@ -1501,7 +1597,10 @@ impl App {
                         .find_item(&then)
                         .map(|i| i.scope.runs_in.clone())
                         .unwrap_or(self.world.location.cwd.clone());
-                    match self.world.trust.approve(&cfg.digest, &cfg.path, &cwd) {
+                    match self
+                        .world
+                        .edit_catalog(|w| w.trust.approve(&cfg.digest, &cfg.path, &cwd))
+                    {
                         Ok(text) => {
                             self.world.persisted.trust = Some(text);
                             self.pop_page();
@@ -1522,7 +1621,8 @@ impl App {
                     return;
                 }
                 if !self.world.trusted_now.contains(&config) {
-                    self.world.trusted_now.push(config.clone());
+                    self.world
+                        .edit_catalog(|w| w.trusted_now.push(config.clone()));
                 }
                 self.pop_page();
                 self.set_status(
@@ -1549,6 +1649,9 @@ impl App {
                 self.enter_top();
             }
             Go::Exec { label, argv } => {
+                if self.refuse_new_work() {
+                    return;
+                }
                 let scope = crate::domain::context::ScopeTag::here(&self.world.location.cwd);
                 let script = self.world.script_for(None, &argv);
                 let aid = self.world.start_activity(
@@ -1615,13 +1718,15 @@ impl App {
             .as_ref()
             .map(|g| g.actions.iter().map(|a| a.id.clone()).collect())
             .unwrap_or_default();
-        self.world.custom_project = Some(crate::domain::custom::parse_config(
+        let reloaded = crate::domain::custom::parse_config(
             &cfg.path,
             cfg.origin,
             &text,
             &builtin_refs,
             &reserved,
-        ));
+        );
+        self.world
+            .edit_catalog(|w| w.custom_project = Some(reloaded));
     }
 
     pub(crate) fn push_page(&mut self, page: Page) {
@@ -1748,10 +1853,11 @@ impl App {
                 "Stop and close",
             )
             .cancel_label("Keep running");
-            let mut tag = LayerTag::new("close-tab");
-            if let TabKind::Plan(id) = &self.tabs[active].kind {
-                tag = tag.key(format!("plan:{id}"));
-            }
+            let tag = match &self.tabs[active].kind {
+                TabKind::Activity(id) => LayerTag::new("close-tab").key(id.clone()),
+                TabKind::Plan(id) => LayerTag::new("close-plan-tab").key(id.clone()),
+                TabKind::Here => LayerTag::new("close-tab"),
+            };
             self.open_layer(Box::new(d), tag);
         } else {
             self.close_tab(active, false);
@@ -1779,28 +1885,74 @@ impl App {
         }
     }
 
+    /// Stop-and-close for an activity identified when the dialog opened. A
+    /// live process keeps its tab and a recorded close request until its
+    /// terminal event arrives, so switching tabs cannot redirect the close.
+    fn stop_and_close_activity(&mut self, id: &str) {
+        let tick = self.world.tick;
+        if self.world.activity(id).is_some_and(|a| a.state.live()) {
+            self.pending_activity_closes.insert(id.to_owned());
+            self.world.edit_activity(id, |a| a.stop(tick));
+            if !self.close_activity_tab_if_finished(id) {
+                self.set_status(
+                    "Stopping · the tab closes once the process is gone",
+                    Tone::Secondary,
+                );
+            }
+        } else {
+            self.close_activity_tab_if_finished(id);
+        }
+    }
+
+    /// Fulfils every recorded close request whose activity is no longer live.
+    /// It runs each tick, because an attached tab can end its activity from a
+    /// key press, which emits no `ActivityEnded`.
+    fn close_finished_activity_tabs(&mut self) -> Outcome {
+        let pending: Vec<String> = self.pending_activity_closes.iter().cloned().collect();
+        let mut out = Outcome::Ignored;
+        for id in pending {
+            if self.close_activity_tab_if_finished(&id) {
+                out = Outcome::Changed;
+            }
+        }
+        out
+    }
+
+    /// Fulfils a recorded close request for `id` once the activity is no
+    /// longer live. Returns whether a tab was removed. The request is retired
+    /// whenever it can no longer be fulfilled, so it never outlives its tab.
+    fn close_activity_tab_if_finished(&mut self, id: &str) -> bool {
+        let tab = self
+            .tabs
+            .iter()
+            .position(|t| t.kind == TabKind::Activity(id.to_owned()));
+        let Some(tab) = tab else {
+            self.pending_activity_closes.remove(id);
+            return false;
+        };
+        match self.world.activity(id) {
+            Some(a) if a.state.live() => return false,
+            Some(_) => self.close_tab(tab, false),
+            None => {
+                self.remove_presentation_tab(tab);
+                self.set_status("That activity is gone", Tone::Secondary);
+            }
+        }
+        self.pending_activity_closes.remove(id);
+        true
+    }
+
     fn close_tab(&mut self, i: usize, stop: bool) {
         if i == 0 || i >= self.router.tab_count() {
             return;
         }
         match self.tabs[i].kind.clone() {
             TabKind::Activity(id) => {
-                let tick = self.world.tick;
-                if stop
-                    && let Some(a) = self.world.activity_mut(&id)
-                    && a.state.live()
-                {
-                    a.stop(tick);
-                    self.set_status(
-                        "Stopping · the tab closes once the process is gone",
-                        Tone::Secondary,
-                    );
-                    return;
-                }
                 if self.world.activity(&id).is_some_and(|a| a.state.live()) {
                     return;
                 }
-                self.world.activities.retain(|a| a.id != id);
+                // The record outlives its tab: batch tallies count members by
+                // ID, so only the tab is removed below.
             }
             TabKind::Plan(id) => {
                 if stop {
@@ -1809,9 +1961,28 @@ impl App {
             }
             TabKind::Here => {}
         }
+        self.remove_presentation_tab(i);
+    }
+
+    /// Removes tab `i` from the strip, router and modal owners together. Layers
+    /// the closed tab owns are dismissed, and later owners shift down. The
+    /// shown tab stays shown when a background tab closes, and a closed shown
+    /// tab hands over to its predecessor.
+    fn remove_presentation_tab(&mut self, i: usize) {
+        let was_shown = i == self.active();
         self.tabs.remove(i);
         self.router.close_tab(i);
-        self.activate_tab(i.saturating_sub(1).min(self.tabs.len() - 1));
+        self.modals.retain(|entry| entry.owner != i);
+        for entry in self.modals.iter_mut() {
+            if entry.owner > i {
+                entry.owner -= 1;
+            }
+        }
+        if was_shown {
+            self.activate_tab(i.saturating_sub(1).min(self.tabs.len() - 1));
+        } else {
+            self.strip.set_active(self.active());
+        }
     }
 
     fn find_item(&self, id: &str) -> Option<Item> {
@@ -1899,7 +2070,8 @@ impl App {
         {
             let host = self.world.host.name.clone();
             let now = self.world.now_secs();
-            self.world.memory.usage.learn_query(&q, id, &host, now);
+            self.world
+                .edit_memory(|w| w.memory.usage.learn_query(&q, id, &host, now));
         }
         self.persist_usage();
     }
@@ -1907,7 +2079,10 @@ impl App {
     fn persist_usage(&mut self) {
         let now = self.world.now_secs();
         let on_disk = self.world.persisted.frecency.clone();
-        match self.world.memory.usage.save(on_disk.as_deref(), now) {
+        let saved = self
+            .world
+            .edit_memory(|w| w.memory.usage.save(on_disk.as_deref(), now));
+        match saved {
             Ok(text) => self.world.persisted.frecency = Some(text),
             Err(e) if self.world.memory.usage.enabled => {
                 self.set_status(&format!("history not saved · {e}"), Tone::Error);
@@ -2109,6 +2284,10 @@ impl App {
         let Some(target) = self.pending_gate.take() else {
             return;
         };
+        if matches!(target, GateTarget::Plan(_) | GateTarget::Cleanup(_)) && self.refuse_new_work()
+        {
+            return;
+        }
         match target {
             GateTarget::Plan(id) => {
                 let drift = self.world.plan(&id).and_then(|p| {
@@ -2202,6 +2381,13 @@ impl App {
         let Some(it) = self.find_item(id) else {
             return;
         };
+        if matches!(
+            it.launch,
+            Launch::Activity { .. } | Launch::Batch | Launch::Handoff { .. }
+        ) && self.refuse_new_work()
+        {
+            return;
+        }
         self.remember_use(id);
         match it.launch.clone() {
             Launch::Activity { script } => {
@@ -2266,7 +2452,7 @@ impl App {
                     kind,
                     it.scope.clone(),
                 );
-                if let Some(a) = self.world.activity_mut(&aid) {
+                self.world.edit_activity(&aid, |a| {
                     if !args.is_empty() {
                         a.insights = args
                             .iter()
@@ -2283,7 +2469,7 @@ impl App {
                     {
                         a.effect = Some(crate::domain::effect::Effect::KillProcess(pid));
                     }
-                }
+                });
                 self.open_activity_tab(&aid, true);
                 self.set_status(
                     &format!(
@@ -2567,6 +2753,9 @@ impl App {
             .strip_prefix("mise.task.")
             .and_then(|s| s.strip_suffix(".dry"))
         {
+            if self.refuse_new_work() {
+                return;
+            }
             let argv = vec![crate::domain::exec::Command::argv(
                 "mise",
                 &["run", "--dry-run", ns],
@@ -2597,9 +2786,7 @@ impl App {
         }
         if let Some(rest) = alt.strip_prefix("activity.") {
             if let Some(aid) = rest.strip_suffix(".stop") {
-                if let Some(a) = self.world.activity_mut(aid) {
-                    a.stop(tick);
-                }
+                self.world.edit_activity(aid, |a| a.stop(tick));
                 self.set_status(
                     "Stop requested · output kept · the state settles once the process is gone",
                     Tone::Secondary,
@@ -2607,14 +2794,17 @@ impl App {
                 return;
             }
             if let Some(aid) = rest.strip_suffix(".restart") {
-                if let Some(a) = self.world.activity_mut(aid) {
-                    if a.state.live() {
-                        self.set_status("Still running · stop it first", Tone::Secondary);
-                        return;
-                    }
+                if self.refuse_new_work() {
+                    return;
+                }
+                if self.world.activity(aid).is_some_and(|a| a.state.live()) {
+                    self.set_status("Still running · stop it first", Tone::Secondary);
+                    return;
+                }
+                self.world.edit_activity(aid, |a| {
                     a.restart(tick);
                     a.advance(tick);
-                }
+                });
                 let aid = aid.to_owned();
                 self.open_activity_tab(&aid, true);
                 self.set_status("Restarted", Tone::Secondary);
@@ -2664,7 +2854,7 @@ impl App {
                 }
             }
             AltCmd::Pin => {
-                let on = self.world.memory.toggle_pin(&cwd, id);
+                let on = self.world.edit_memory(|w| w.memory.toggle_pin(&cwd, id));
                 self.set_status(
                     if on {
                         "Pinned here · it stays near the top in this folder"
@@ -2692,10 +2882,10 @@ impl App {
                     .iter()
                     .any(|(p, i)| p == &cwd && i == id);
                 if hidden {
-                    self.world.memory.restore(&cwd, id);
+                    self.world.edit_memory(|w| w.memory.restore(&cwd, id));
                     self.set_status("Restored here", Tone::Secondary);
                 } else {
-                    self.world.memory.hide(&cwd, id);
+                    self.world.edit_memory(|w| w.memory.hide(&cwd, id));
                     self.set_status(
                         "Hidden here · still reachable by search · Restore from the same menu",
                         Tone::Secondary,
@@ -2704,7 +2894,7 @@ impl App {
                 self.enter_top();
             }
             AltCmd::Reset => {
-                self.world.memory.reset(id);
+                self.world.edit_memory(|w| w.memory.reset(id));
                 self.set_status(
                     "Ranking reset for this row · pins and aliases kept",
                     Tone::Secondary,
@@ -3283,7 +3473,7 @@ impl shell::KeyHost for App {
 
     fn layer_paste(&mut self, text: &str) -> Option<Outcome> {
         let top = self.modals.top_mut()?;
-        let out = top.layer.on_paste(text);
+        let out = top.layer.on_paste_focused(text, &self.shell.focus);
         Some(self.settle_layer(out.or(Outcome::Consumed)))
     }
 

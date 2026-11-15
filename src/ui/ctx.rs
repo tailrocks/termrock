@@ -124,6 +124,8 @@ pub struct RenderCtx<'a> {
     pub peek: Option<String>,
 
     pub(crate) shifts: Vec<Shift>,
+
+    render_mutated: bool,
 }
 
 pub(crate) type Shift = std::rc::Rc<std::cell::Cell<(u16, u16)>>;
@@ -149,7 +151,7 @@ fn shifted(shifts: Vec<Shift>, draw: OverlayFn) -> OverlayFn {
             screen.width,
             screen.height,
         );
-        let mut off = Buffer::empty(view);
+        let mut off = scratch_buffer(view);
         copy_cells(buf, screen, &mut off, view.as_position());
         let mark = ctx.hits.mark();
         let cursor = ctx.cursor;
@@ -171,8 +173,16 @@ fn shifted(shifts: Vec<Shift>, draw: OverlayFn) -> OverlayFn {
     })
 }
 
-pub(crate) fn copy_cells(from: &Buffer, area: Rect, to: &mut Buffer, at: Position) {
+/// An off-screen buffer. Every production scratch allocation goes through here
+/// so `AllocatedBufferCells` counts it.
+pub(crate) fn scratch_buffer(area: Rect) -> Buffer {
+    crate::record_work!(AllocatedBufferCells, area.area());
+    Buffer::empty(area)
+}
+
+pub(crate) fn copy_cells(from: &Buffer, area: Rect, to: &mut Buffer, at: Position) -> usize {
     let area = area.intersection(from.area);
+    let mut copied = 0;
     for y in 0..area.height {
         for x in 0..area.width {
             let (tx, ty) = (at.x as u32 + x as u32, at.y as u32 + y as u32);
@@ -182,9 +192,12 @@ pub(crate) fn copy_cells(from: &Buffer, area: Rect, to: &mut Buffer, at: Positio
             let p = Position::new(tx as u16, ty as u16);
             if to.area.contains(p) {
                 to[(p.x, p.y)] = from[(area.x + x, area.y + y)].clone();
+                copied += 1;
+                crate::record_work!(BufferCellsCopied, 1usize);
             }
         }
     }
+    copied
 }
 
 impl<'a> RenderCtx<'a> {
@@ -209,6 +222,7 @@ impl<'a> RenderCtx<'a> {
             reveal_hint: None,
             peek: None,
             shifts: Vec::new(),
+            render_mutated: false,
             reveal_slot: {
                 crate::ui::reveal::clear_cuts();
                 crate::ui::reveal::begin_frame();
@@ -239,8 +253,20 @@ impl<'a> RenderCtx<'a> {
             reveal_hint: None,
             peek: None,
             shifts: Vec::new(),
+            render_mutated: false,
             reveal_slot: crate::ui::reveal::Slot::default(),
         }
+    }
+
+    /// Records that a widget changed its own state while rendering, after
+    /// widgets drawn earlier in the frame already read the old state. The
+    /// shell settle repaints the frame once when this is set.
+    pub(crate) fn note_render_mutation(&mut self) {
+        self.render_mutated = true;
+    }
+
+    pub(crate) fn render_mutated(&self) -> bool {
+        self.render_mutated
     }
 
     pub fn control(&mut self, id: WidgetId, area: Rect, disabled: bool) {

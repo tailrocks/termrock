@@ -446,7 +446,7 @@ impl Page for ReadOnlyReportPage {
                     if let Some(r) = self.actions[i].route(ev)
                         && r.outcome() != Outcome::Ignored
                     {
-                        if r.into_action().is_some() {
+                        if r.has_actions() {
                             let id = self.actions[i].id;
                             cx.focus.focus(id);
                             self.act(id, cx);
@@ -458,8 +458,10 @@ impl Page for ReadOnlyReportPage {
                     if ev.is(junie_tui::core::intent::Phase::Click) {
                         cx.focus.focus(FACTS);
                     }
-                    let (o, a) = r.into_parts();
-                    self.props_action(a, cx);
+                    let (o, actions) = r.into_parts();
+                    for a in actions {
+                        self.props_action(Some(a), cx);
+                    }
                     return o;
                 }
                 Outcome::Ignored

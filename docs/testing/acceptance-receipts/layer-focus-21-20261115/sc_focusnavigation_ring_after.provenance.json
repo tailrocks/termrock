@@ -1,0 +1,72 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane8-target/debug/showcase",
+  "binary_sha256": "8dbbfbe93658c9df5b2598496d3f421a407d7bd59227777339f580d35038f993",
+  "fixture_args": [],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "0dc1e2dd708635ec51124af0ca70d4b1d7f2f64656432ac07ac354c31c7e1161",
+  "expect_baseline": "cf30d50a1ec972f24350d9b10b428da15e6afd98f538aec1f6962e56d57301bb",
+  "precondition": "Re-pin for #21: the Focus & navigation Playground gains a 'Layer focus' card (Passive tip, Restore on, Restore off buttons) in the bottom row beside Keys and input; captured from the live candidate build of fix/21-layer-restore-focus, diff confined to that card",
+  "session": null,
+  "expected_test_id": "pre_refactor/s01_focusnavigation/sc_focusnavigation_ring_after",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/layer-focus-21-20261115/sc_focusnavigation_ring_after.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/layer-focus-21-20261115/sc_focusnavigation_ring_after.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/layer-focus-21-20261115/superseded/pre_refactor/s01_focusnavigation/sc_focusnavigation_ring_after.tui.pb",
+  "test_id": "pre_refactor/s01_focusnavigation/sc_focusnavigation_ring_after",
+  "acceptance": {
+    "expected_baseline_sha256": "cf30d50a1ec972f24350d9b10b428da15e6afd98f538aec1f6962e56d57301bb",
+    "accepted_baseline_sha256": "0dc1e2dd708635ec51124af0ca70d4b1d7f2f64656432ac07ac354c31c7e1161",
+    "candidate_sha256": "0dc1e2dd708635ec51124af0ca70d4b1d7f2f64656432ac07ac354c31c7e1161",
+    "transaction_receipt": "docs/testing/acceptance-receipts/layer-focus-21-20261115/sc_focusnavigation_ring_after.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "cf30d50a1ec972f24350d9b10b428da15e6afd98f538aec1f6962e56d57301bb"
+  },
+  "candidate": {
+    "sha256": "0dc1e2dd708635ec51124af0ca70d4b1d7f2f64656432ac07ac354c31c7e1161",
+    "path": "tests/functional/baselines/pre_refactor/s01_focusnavigation/sc_focusnavigation_ring_after.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/layer-focus-21-20261115/superseded/pre_refactor/s01_focusnavigation/sc_focusnavigation_ring_after.tui.pb",
+    "superseded_baseline_sha256": "cf30d50a1ec972f24350d9b10b428da15e6afd98f538aec1f6962e56d57301bb"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/s01_focusnavigation/sc_focusnavigation_ring_after.tui.pb",
+    "candidate_sha256": "0dc1e2dd708635ec51124af0ca70d4b1d7f2f64656432ac07ac354c31c7e1161",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane8-target/debug/showcase",
+    "binary_sha256": "8dbbfbe93658c9df5b2598496d3f421a407d7bd59227777339f580d35038f993",
+    "note": "Live candidate capture of this branch; the pinned reference binary predates #21."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s01_focusnavigation/sc_focusnavigation_ring_after",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Library/Caches/mbx/targets/v1/c17d8837971eb8a47b4ca22d30238cb229558fdbba77dc0e3b3f63a7da29665e/functional/s01-focusnavigation-ring-35445-1794711281492080000-0/check-artifacts/pre_refactor/s01_focusnavigation/sc_focusnavigation_ring_after/0dc1e2dd708635ec51124af0ca70d4b1d7f2f64656432ac07ac354c31c7e1161/sample.tui.pb"
+    },
+    "candidate_sha256": "0dc1e2dd708635ec51124af0ca70d4b1d7f2f64656432ac07ac354c31c7e1161",
+    "baseline_sha256": "0dc1e2dd708635ec51124af0ca70d4b1d7f2f64656432ac07ac354c31c7e1161",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane8/tests/functional/baselines/pre_refactor/s01_focusnavigation/sc_focusnavigation_ring_after.tui.pb"
+    },
+    "error_code": null
+  }
+}

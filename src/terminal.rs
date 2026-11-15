@@ -9,10 +9,18 @@ use crate::core::event::Key;
 
 mod forward;
 mod guard;
+mod session;
 mod viewport;
 
 pub use forward::{ForwardPolicy, Paste};
 pub use guard::is_spoofing_format;
+pub use session::{
+    PENDING_EFFECTS, ReplayTiming, SessionClipboardContext, SessionClipboardDecision,
+    SessionClipboardRefusal, SessionCommand, SessionConfig, SessionDetach, SessionEffect,
+    SessionEnd, SessionEvent, SessionFault, SessionHostPolicy, SessionKey, SessionLease,
+    SessionLink, SessionPaste, SessionSent, SessionSize, SessionSource, SessionStatus,
+    TerminalSessionController,
+};
 pub use viewport::TerminalViewport;
 
 pub const SCROLLBACK_ROWS: usize = 1_000;

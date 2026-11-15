@@ -2,6 +2,7 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Rect, Size};
 
 use crate::app::PageId;
+use crate::data::GRAPHEME_SAMPLES;
 use crate::options::{PageValues, page_options};
 use crate::pages::layout::{sheet_height, sheet_width};
 use crate::pages::template::{Section, Template};
@@ -22,7 +23,9 @@ use junie_tui::widgets::button::{Button, row_layout};
 use junie_tui::widgets::empty::EmptyState;
 use junie_tui::widgets::option_list::Item;
 use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::picker::{Picker, PickerAction, PickerKeyProfile, PickerStatus};
+use junie_tui::widgets::picker::{
+    Picker, PickerAction, PickerKeyProfile, PickerStatus, VisibleKey,
+};
 use junie_tui::widgets::props::{self, Prop};
 use junie_tui::widgets::tree::TreeNode;
 
@@ -148,6 +151,30 @@ const BRANCHES: &[&str] = &[
 ];
 
 const FETCH_TICKS: u32 = 3;
+
+fn international_entries() -> Vec<Entry> {
+    GRAPHEME_SAMPLES
+        .iter()
+        .enumerate()
+        .map(|(i, (kind, sample))| {
+            if i < 3 {
+                Entry {
+                    label: format!("{sample}.md"),
+                    detail: format!("docs/{sample}.md · {kind}"),
+                    glyph: "F",
+                    group: "Files",
+                }
+            } else {
+                Entry {
+                    label: format!("Review {sample}"),
+                    detail: format!("#{} · {kind}", 201 + i),
+                    glyph: "T",
+                    group: "Tasks",
+                }
+            }
+        })
+        .collect()
+}
 
 pub struct PickersPage {
     template: Template,
@@ -289,10 +316,12 @@ impl Rows {
                 if kind == Kind::MultiSearch {
                     p.replace_items(items.clone())
                         .unwrap_or_else(|error| p.report_item_error(error));
-                    p.set_visible_items(
+                    p.set_visible_keys(
                         items
-                            .into_iter()
+                            .iter()
                             .filter(|item| fuzzy(&item.label, &q).is_some())
+                            .filter_map(|item| item.key)
+                            .map(|key| VisibleKey::new(key).matched(Vec::new()))
                             .collect(),
                     )
                     .unwrap_or_else(|error| p.report_item_error(error));
@@ -382,7 +411,11 @@ impl PickersPage {
 
     fn rows(&self) -> Rows {
         Rows {
-            entries: self.entries.clone(),
+            entries: if self.opts.on("pickers.international") {
+                international_entries()
+            } else {
+                self.entries.clone()
+            },
             scope: self.scope,
             tabs: self.tabs.clone(),
             level: self.level,
@@ -556,7 +589,10 @@ impl PickersPage {
             PickerAction::QueryChanged => self.refill(kind, cx),
             PickerAction::Chosen(i) | PickerAction::ChosenAlt(i) => {
                 let alt = matches!(ev, PickerAction::ChosenAlt(_));
-                if let Some(it) = picker.as_ref().and_then(|p: &Picker| p.items().get(i)) {
+                if let Some(it) = picker
+                    .as_ref()
+                    .and_then(|p: &Picker| p.visible_item(i).map(|v| v.item))
+                {
                     if kind == Kind::Level {
                         self.level = i;
                     }
@@ -624,6 +660,7 @@ impl PickersPage {
                 self.refill(kind, cx);
                 true
             }
+            Kind::Remote if self.opts.value("pickers.remote") == "stalls" => false,
             Kind::Remote => match self.fetching {
                 Some(n) if n > 1 => {
                     self.fetching = Some(n - 1);
@@ -713,14 +750,11 @@ impl PickersPage {
             Prop::new("Commands", commands),
             Prop::new(
                 "Remote",
-                format!(
-                    "Loading, then {}",
-                    if self.opts.value("pickers.remote") == "fails" {
-                        "Error (r retries)"
-                    } else {
-                        "Ready"
-                    }
-                ),
+                match self.opts.value("pickers.remote") {
+                    "fails" => "Loading, then Error (r retries)",
+                    "stalls" => "Loading, and it stays Loading",
+                    _ => "Loading, then Ready",
+                },
             ),
         ]
     }
@@ -913,7 +947,7 @@ impl Page for PickersPage {
                 if p.is(Phase::Click) {
                     cx.focus.focus(p.id);
                 }
-                if r.action().is_some() {
+                if r.has_actions() {
                     self.open(Kind::ALL[i], cx);
                     return Outcome::Changed;
                 }

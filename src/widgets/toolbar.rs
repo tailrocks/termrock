@@ -10,6 +10,7 @@ use crate::core::keymap::NavKeys;
 use crate::core::list::{Cursor, Navigable, RowFn, RowSource};
 use crate::theme::{ButtonKind, Kind};
 use crate::ui::ctx::RenderCtx;
+use crate::ui::measure::terminal_extent;
 use crate::ui::text::width;
 use crate::ui::tooltip::Tip;
 use crate::widgets::icon_button::IconButton;
@@ -66,13 +67,13 @@ impl ToolItem {
         self
     }
 
-    fn width(&self) -> u16 {
-        let mut w = 1 + width(&self.label) as u16 + 1;
+    fn intrinsic_width(&self) -> usize {
+        let mut w = 1usize.saturating_add(width(&self.label)).saturating_add(1);
         if self.on.is_some() {
-            w += 2;
+            w = w.saturating_add(2);
         }
         if let Some(s) = &self.shortcut {
-            w += width(s) as u16 + 1;
+            w = w.saturating_add(width(s)).saturating_add(1);
         }
         w
     }
@@ -85,10 +86,19 @@ pub enum ToolbarAction {
     Toggled(usize, bool),
 }
 
+/// Scalar fields that shape the rendered geometry or the overflow menu. Direct
+/// writes to these public fields are caught by comparing against the key
+/// captured at render.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct ToolbarPolicy {
+    overflow: bool,
+    gap: u16,
+}
+
 #[derive(Debug, Clone)]
 pub struct Toolbar {
     pub id: WidgetId,
-    pub items: Vec<ToolItem>,
+    items: Vec<ToolItem>,
 
     pub cursor: usize,
 
@@ -113,6 +123,10 @@ pub struct Toolbar {
     hidden: Vec<usize>,
 
     marks: (&'static str, &'static str),
+
+    /// The scalar policy the last complete render laid out with. `None` after
+    /// any collection change, so stale hit targets cannot act.
+    layout: Option<ToolbarPolicy>,
 }
 
 impl Toolbar {
@@ -135,6 +149,7 @@ impl Toolbar {
             more_area: Rect::ZERO,
             hidden: Vec::new(),
             marks: ("●", "○"),
+            layout: None,
         };
         t.cursor = (0..t.items.len())
             .find(|&i| !t.items[i].disabled)
@@ -197,6 +212,94 @@ impl Toolbar {
         self.cursor == self.items.len() && !self.more_area.is_empty()
     }
 
+    pub fn items(&self) -> &[ToolItem] {
+        &self.items
+    }
+
+    /// Replaces every item. Returns `false` when the collection is unchanged,
+    /// which keeps an open menu and the current layout.
+    pub fn set_items(&mut self, items: Vec<ToolItem>) -> bool {
+        if self.items == items {
+            return false;
+        }
+        self.items = items;
+        self.invalidate_items();
+        true
+    }
+
+    /// Inserts at `index`, which may equal the length. Returns `false` for a
+    /// position past the end.
+    pub fn insert_item(&mut self, index: usize, item: ToolItem) -> bool {
+        if index > self.items.len() {
+            return false;
+        }
+        self.items.insert(index, item);
+        self.invalidate_items();
+        true
+    }
+
+    pub fn remove_item(&mut self, index: usize) -> Option<ToolItem> {
+        if index >= self.items.len() {
+            return None;
+        }
+        let item = self.items.remove(index);
+        self.invalidate_items();
+        Some(item)
+    }
+
+    /// Edits a copy of one item and commits it only when the copy differs. A
+    /// panicking `update` leaves the collection untouched.
+    pub fn update_item(&mut self, index: usize, update: impl FnOnce(&mut ToolItem)) -> bool {
+        let Some(current) = self.items.get(index) else {
+            return false;
+        };
+        let mut next = current.clone();
+        update(&mut next);
+        if next == *current {
+            return false;
+        }
+        self.items[index] = next;
+        self.invalidate_items();
+        true
+    }
+
+    /// Drops every target derived from the collection: the open menu, the
+    /// overflow geometry and the hit regions. Only a fresh render re-enables
+    /// them.
+    fn invalidate_items(&mut self) {
+        self.menu = None;
+        self.hidden.clear();
+        self.more_area = Rect::ZERO;
+        self.areas.clear();
+        self.layout = None;
+        // `items.len()` is the More stop, so it stays a valid position.
+        self.cursor = self.cursor.min(self.items.len());
+    }
+
+    fn policy(&self) -> ToolbarPolicy {
+        ToolbarPolicy {
+            overflow: self.overflow,
+            gap: self.gap,
+        }
+    }
+
+    fn layout_current(&self) -> bool {
+        self.layout == Some(self.policy())
+    }
+
+    /// `overflow` and `gap` are public fields, so a direct write can change
+    /// the policy without passing through a checked method. Close the menu on
+    /// the next input rather than acting on its stale rows.
+    fn close_stale_menu(&mut self) {
+        if self.menu.is_some() && !self.layout_current() {
+            self.menu = None;
+        }
+    }
+
+    fn owns(&self, id: WidgetId) -> bool {
+        id == self.more_id() || self.item_at(id).is_some()
+    }
+
     fn stops(&self) -> Vec<usize> {
         let n = self.items.len();
         let drawn = |i: usize| self.areas.get(i).is_none_or(|r| !r.is_empty());
@@ -208,15 +311,15 @@ impl Toolbar {
     }
 
     fn open_menu(&mut self) {
-        if self.hidden.is_empty() {
+        if self.hidden.is_empty() || !self.layout_current() {
             return;
         }
         let (on, off) = self.marks;
-        let rows = self
+        let rows: Option<Vec<MenuItem>> = self
             .hidden
             .iter()
             .map(|&i| {
-                let it = &self.items[i];
+                let it = self.items.get(i)?;
                 let label = match it.on {
                     Some(true) => format!("{on} {}", it.label),
                     Some(false) => format!("{off} {}", it.label),
@@ -233,9 +336,14 @@ impl Toolbar {
                 {
                     m = m.reason(r.clone());
                 }
-                m
+                Some(m)
             })
             .collect();
+        // One missing target abandons the whole menu; a partial row list would
+        // misalign with the parallel `hidden` indices.
+        let Some(rows) = rows else {
+            return;
+        };
         let menu =
             ContextMenu::new(self.menu_id(), rows).anchor_control(self.more_id(), self.more_area);
         self.menu = Some((menu, self.hidden.clone()));
@@ -265,12 +373,31 @@ impl Toolbar {
         self.id.item_of(id, Part::ROW, 0..self.items.len())
     }
 
+    /// Natural width of every item, gap and separator, saturating at `u16::MAX`.
+    ///
+    /// Overflow decisions use the unsaturated intrinsic width, so a saturated result
+    /// never hides the More route.
     pub fn width(&self) -> u16 {
-        let n = self.items.len() as u16;
-        let seps = self.items.iter().filter(|i| i.separator_after).count() as u16;
-        self.items.iter().map(ToolItem::width).sum::<u16>()
-            + self.gap * n.saturating_sub(1)
-            + seps * (1 + self.gap)
+        terminal_extent(self.intrinsic_width())
+    }
+
+    /// Display width of every item, measured once per layout.
+    fn item_widths(&self) -> Vec<usize> {
+        self.items.iter().map(ToolItem::intrinsic_width).collect()
+    }
+
+    fn total_width(&self, widths: &[usize]) -> usize {
+        let gap = usize::from(self.gap);
+        let seps = self.items.iter().filter(|i| i.separator_after).count();
+        widths
+            .iter()
+            .fold(0usize, |a, &w| a.saturating_add(w))
+            .saturating_add(gap.saturating_mul(self.items.len().saturating_sub(1)))
+            .saturating_add(seps.saturating_mul(1 + gap))
+    }
+
+    pub(crate) fn intrinsic_width(&self) -> usize {
+        self.total_width(&self.item_widths())
     }
 
     fn activate(&mut self, i: usize) -> Option<ToolbarAction> {
@@ -279,16 +406,24 @@ impl Toolbar {
             return None;
         }
         self.cursor = i;
-        Some(match it.on.as_mut() {
+        let action = match it.on.as_mut() {
             Some(on) => {
                 *on = !*on;
                 ToolbarAction::Toggled(i, *on)
             }
             None => ToolbarAction::Activated(i),
-        })
+        };
+        // A toggle changes the item's on-mark, so an open menu row and the
+        // rendered geometry both show the old state. The action is already
+        // captured above.
+        if matches!(action, ToolbarAction::Toggled(..)) {
+            self.invalidate_items();
+        }
+        Some(action)
     }
 
     pub fn on_key(&mut self, key: &Key) -> (Outcome, Option<ToolbarAction>) {
+        self.close_stale_menu();
         if let Some((menu, _)) = self.menu.as_mut() {
             let (o, ev) = menu.on_key(key);
             return (o, self.menu_event(ev));
@@ -346,11 +481,15 @@ impl Toolbar {
     }
 
     pub fn on_click(&mut self, id: WidgetId) -> (Outcome, Option<ToolbarAction>) {
+        self.close_stale_menu();
         if let Some((menu, _)) = self.menu.as_mut()
             && menu.contains_id(id)
         {
             let ev = menu.on_click(id);
             return (Outcome::Changed, self.menu_event(ev));
+        }
+        if !self.layout_current() && self.owns(id) {
+            return (Outcome::Consumed, None);
         }
         if id == self.more_id() {
             self.cursor = self.items.len();
@@ -372,10 +511,12 @@ impl Toolbar {
 
     pub fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, bg: Color) {
         let area = area.intersection(*buf.area());
+        self.close_stale_menu();
         let n = self.items.len();
         self.areas = vec![Rect::ZERO; n];
         self.hidden.clear();
         self.more_area = Rect::ZERO;
+        self.layout = None;
         if area.is_empty() {
             self.menu = None;
             return;
@@ -390,30 +531,34 @@ impl Toolbar {
             None => self.more_button.with_glyph(t.glyphs.more_titles),
         };
         let more_w = more.width(t);
-        let overflowing = self.overflow && n > 0 && self.width() > area.width;
+        let widths = self.item_widths();
+        let overflowing =
+            self.overflow && n > 0 && self.total_width(&widths) > usize::from(area.width);
 
         let limit = if overflowing {
-            area.right().saturating_sub(more_w + self.gap)
+            area.right().saturating_sub(more_w.saturating_add(self.gap))
         } else {
             area.right()
         };
         let y = area.y;
-        let mut x = area.x;
 
-        let mut sep_at: Option<u16> = None;
-        for i in 0..n {
+        let fit = self.fit(&widths, area.x, limit);
+        if !self.overflow {
+            self.relocate_unplaced(fit.len());
+        }
+
+        for (i, w) in widths.iter().copied().enumerate() {
             let it = &self.items[i];
-            let w = it.width();
-            if x + w > limit {
+            let Some(&Placed { x, .. }) = fit.get(i) else {
                 if overflowing {
                     self.hidden.extend(i..n);
-                    if let Some(sx) = sep_at {
+                    if let Some(sx) = i.checked_sub(1).and_then(|j| fit[j].sep) {
                         buf.set_string(sx, y, " ", ratatui::style::Style::new().bg(bg));
                     }
                 }
                 break;
-            }
-            sep_at = None;
+            };
+            let w = terminal_extent(w);
             let r = Rect::new(x, y, w, 1);
             self.areas[i] = r;
             let iid = self.item_id(i);
@@ -467,17 +612,21 @@ impl Toolbar {
                 };
                 crate::ui::tooltip::show(ctx, iid, r, &tip, None);
             }
-            x += w + self.gap;
-            if it.separator_after && x < limit {
-                sep_at = Some(x);
+            if let Some(sx) = fit[i].sep {
                 buf.set_string(
-                    x,
+                    sx,
                     y,
                     t.glyphs.divider,
                     ratatui::style::Style::new().fg(t.border_subtle).bg(bg),
                 );
-                x += 1 + self.gap;
             }
+        }
+        if self
+            .menu
+            .as_ref()
+            .is_some_and(|(_, rows)| *rows != self.hidden)
+        {
+            self.menu = None;
         }
         if self.hidden.is_empty() {
             self.menu = None;
@@ -505,8 +654,58 @@ impl Toolbar {
                 buf.set_string(mx, y, t.gutter_symbol(s), t.gutter(s, under, false));
             }
         }
+        self.layout = Some(self.policy());
         if let Some((menu, _)) = self.menu.as_mut() {
             menu.render(*buf.area(), buf, ctx);
+        }
+    }
+}
+
+/// Where `fit` placed one item, and where the divider after it goes.
+struct Placed {
+    x: u16,
+    sep: Option<u16>,
+}
+
+impl Toolbar {
+    /// Lays the items left to right and stops at the first that does not fit
+    /// before `limit`. Paint and cursor relocation both read this one result.
+    fn fit(&self, widths: &[usize], x0: u16, limit: u16) -> Vec<Placed> {
+        let mut x = x0;
+        let mut out = Vec::new();
+        for (i, &w) in widths.iter().enumerate() {
+            crate::record_work!(FitVisits, 1usize);
+            if w > usize::from(limit.saturating_sub(x)) {
+                break;
+            }
+            let at = x;
+            x = x
+                .saturating_add(terminal_extent(w))
+                .saturating_add(self.gap);
+            let sep = (self.items[i].separator_after && x < limit).then_some(x);
+            if sep.is_some() {
+                x = x.saturating_add(1).saturating_add(self.gap);
+            }
+            out.push(Placed { x: at, sep });
+        }
+        out
+    }
+
+    /// Backstop for a width change: with no More button, an item past the room
+    /// is not drawn and a cursor on it would have no mark. Navigation never
+    /// lands on an undrawn item, so this only runs after a resize. Moves the
+    /// cursor to the nearest drawn item, an enabled one when `skip_disabled`.
+    fn relocate_unplaced(&mut self, shown: usize) {
+        if self.cursor < shown {
+            return;
+        }
+        let usable = |i: &usize| !self.skip_disabled || !self.items[*i].disabled;
+        if let Some(to) = (0..shown)
+            .rev()
+            .find(usable)
+            .or_else(|| shown.checked_sub(1))
+        {
+            self.cursor = to;
         }
     }
 }

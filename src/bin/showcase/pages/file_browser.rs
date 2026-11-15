@@ -31,6 +31,7 @@ fn fixture() -> MemorySource {
     let d = |p: &str, meta: &str| FileEntry::dir(&format!("{HOME}{p}")).meta(meta);
     let f = |p: &str, meta: &str| FileEntry::file(&format!("{HOME}{p}")).meta(meta);
     MemorySource::new(vec![
+        FileEntry::dir("/Users").meta("1 item"),
         FileEntry::dir(HOME),
         d("/src", "4 items"),
         d("/design", "2 items"),
@@ -430,7 +431,7 @@ impl Page for FileBrowserPage {
                 if let Some(r) = self.browse.route(ev)
                     && r.outcome() != Outcome::Ignored
                 {
-                    if r.into_action().is_some() {
+                    if r.has_actions() {
                         self.open(cx);
                     }
                     return Outcome::Changed;

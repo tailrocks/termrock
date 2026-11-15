@@ -1,0 +1,72 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane226b-target/debug/showcase",
+  "binary_sha256": "1fcfaf88274e4ca56df799fb862542de1ae5aa6c5844ddf0343e7f3ca01985cc",
+  "fixture_args": [],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "e67833a1fb0bc391b12be6877290f39d762f147cf03bdb562cb5644322607522",
+  "expect_baseline": "7fdde8cdf26944d53c5b47c40b5951f9b2296082a082b757e80fa0a730383b5c",
+  "precondition": "Deliberate visual change for #226: the Showcase Trees page now lists the Filter connections option (trees.filter, off by default) on its Options tab. The extra row lengthens the options list, so the visible scrollbar thumb is shorter.",
+  "session": null,
+  "expected_test_id": "pre_refactor/s04_trees/sc_trees_options_80x24",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/trees-filter-226-20261115/pre_refactor_s04_trees_sc_trees_options_80x24.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/trees-filter-226-20261115/pre_refactor_s04_trees_sc_trees_options_80x24.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/trees-filter-226-20261115/superseded/pre_refactor/s04_trees/sc_trees_options_80x24.tui.pb",
+  "test_id": "pre_refactor/s04_trees/sc_trees_options_80x24",
+  "acceptance": {
+    "expected_baseline_sha256": "7fdde8cdf26944d53c5b47c40b5951f9b2296082a082b757e80fa0a730383b5c",
+    "accepted_baseline_sha256": "e67833a1fb0bc391b12be6877290f39d762f147cf03bdb562cb5644322607522",
+    "candidate_sha256": "e67833a1fb0bc391b12be6877290f39d762f147cf03bdb562cb5644322607522",
+    "transaction_receipt": "docs/testing/acceptance-receipts/trees-filter-226-20261115/pre_refactor_s04_trees_sc_trees_options_80x24.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "7fdde8cdf26944d53c5b47c40b5951f9b2296082a082b757e80fa0a730383b5c"
+  },
+  "candidate": {
+    "sha256": "e67833a1fb0bc391b12be6877290f39d762f147cf03bdb562cb5644322607522",
+    "path": "tests/functional/baselines/pre_refactor/s04_trees/sc_trees_options_80x24.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/trees-filter-226-20261115/superseded/pre_refactor/s04_trees/sc_trees_options_80x24.tui.pb",
+    "superseded_baseline_sha256": "7fdde8cdf26944d53c5b47c40b5951f9b2296082a082b757e80fa0a730383b5c"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/s04_trees/sc_trees_options_80x24.tui.pb",
+    "candidate_sha256": "e67833a1fb0bc391b12be6877290f39d762f147cf03bdb562cb5644322607522",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane226b-target/debug/showcase",
+    "binary_sha256": "1fcfaf88274e4ca56df799fb862542de1ae5aa6c5844ddf0343e7f3ca01985cc",
+    "note": "Live candidate capture of fix/226 branch (feat/55-showcase-trees-filter)."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s04_trees/sc_trees_options_80x24",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane226b/target/functional/s04-sections-83048-1794736467614827000-0/check-artifacts/pre_refactor/s04_trees/sc_trees_options_80x24/e67833a1fb0bc391b12be6877290f39d762f147cf03bdb562cb5644322607522/sample.tui.pb"
+    },
+    "candidate_sha256": "e67833a1fb0bc391b12be6877290f39d762f147cf03bdb562cb5644322607522",
+    "baseline_sha256": "e67833a1fb0bc391b12be6877290f39d762f147cf03bdb562cb5644322607522",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane226b/tests/functional/baselines/pre_refactor/s04_trees/sc_trees_options_80x24.tui.pb"
+    },
+    "error_code": null
+  }
+}

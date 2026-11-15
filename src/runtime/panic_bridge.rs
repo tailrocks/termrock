@@ -3,8 +3,8 @@
 //!
 //! One [`RestoreGate`] decides which actor runs terminal cleanup for an
 //! active interval, and who may claim the terminal next. One atomic word
-//! holds the owner, the active interval, the phase and a deferred-release
-//! bit, so the panic hook and `Drop` never take a lock and never wait.
+//! holds the owner, the active interval, the phase, the setup progress and a
+//! deferred-release bit, so the panic hook and `Drop` never take a lock and never wait.
 //!
 //! [`install_once`] puts one permanent bridge in the process panic hook. It
 //! restores only a session that is active at that moment, then calls the hook
@@ -16,11 +16,13 @@ use std::panic;
 use std::sync::Once;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-const COUNTER_BITS: u32 = 30;
+const COUNTER_BITS: u32 = 29;
 const COUNTER_MAX: u64 = (1 << COUNTER_BITS) - 1;
 const PHASE_MASK: u64 = 0b11;
 const RELEASE_PENDING: u64 = 0b100;
-const INTERVAL_SHIFT: u32 = 4;
+const SETUP_SHIFT: u32 = 3;
+const SETUP_MASK: u64 = 0b11;
+const INTERVAL_SHIFT: u32 = 5;
 const OWNER_SHIFT: u32 = INTERVAL_SHIFT + COUNTER_BITS;
 const ATTEMPTS: usize = 4;
 
@@ -32,6 +34,16 @@ enum Phase {
     Restoring,
 }
 
+/// Whether the interval's terminal setup may still enable modes after a
+/// cleanup already ran. Such a cleanup leaves the interval owing another one.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Setup {
+    Settled,
+    Running,
+    /// Setup finished while a cleanup was still running.
+    FinishedDuringCleanup,
+}
+
 /// The decoded gate word. `Unowned` keeps the last counters so exhaustion is
 /// checked without wrapping into a stale token.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -39,6 +51,7 @@ struct State {
     owner: u64,
     interval: u64,
     phase: Phase,
+    setup: Setup,
     release_pending: bool,
 }
 
@@ -50,12 +63,21 @@ impl State {
             Phase::Active => 2,
             Phase::Restoring => 3,
         };
+        let setup = match self.setup {
+            Setup::Settled => 0,
+            Setup::Running => 1,
+            Setup::FinishedDuringCleanup => 2,
+        };
         let pending = if self.release_pending {
             RELEASE_PENDING
         } else {
             0
         };
-        (self.owner << OWNER_SHIFT) | (self.interval << INTERVAL_SHIFT) | pending | phase
+        (self.owner << OWNER_SHIFT)
+            | (self.interval << INTERVAL_SHIFT)
+            | (setup << SETUP_SHIFT)
+            | pending
+            | phase
     }
 
     fn unpack(word: u64) -> Self {
@@ -65,10 +87,16 @@ impl State {
             2 => Phase::Active,
             _ => Phase::Restoring,
         };
+        let setup = match (word >> SETUP_SHIFT) & SETUP_MASK {
+            0 => Setup::Settled,
+            1 => Setup::Running,
+            _ => Setup::FinishedDuringCleanup,
+        };
         Self {
             owner: word >> OWNER_SHIFT,
             interval: (word >> INTERVAL_SHIFT) & COUNTER_MAX,
             phase,
+            setup,
             release_pending: word & RELEASE_PENDING != 0,
         }
     }
@@ -138,6 +166,7 @@ impl RestoreGate {
             owner: current.owner + 1,
             interval: 0,
             phase: Phase::Inactive,
+            setup: Setup::Settled,
             release_pending: false,
         };
         if self.swap(current, next) {
@@ -154,7 +183,20 @@ impl RestoreGate {
     /// operation that needs cleanup.
     ///
     /// Fails with `WouldBlock` while a cleanup of this owner is running.
+    #[cfg(test)]
     pub(super) fn activate(&self, token: &SessionToken) -> io::Result<()> {
+        self.activate_with(token, Setup::Settled)
+    }
+
+    /// [`activate`](Self::activate) for an interval whose terminal setup is
+    /// still to run. A cleanup that runs before
+    /// [`finish_setup`](Self::finish_setup) leaves the interval active, so
+    /// leave or drop cleans up what setup enables afterwards.
+    pub(super) fn activate_setup(&self, token: &SessionToken) -> io::Result<()> {
+        self.activate_with(token, Setup::Running)
+    }
+
+    fn activate_with(&self, token: &SessionToken, setup: Setup) -> io::Result<()> {
         let current = self.load();
         if current.owner != token.owner {
             return Err(io::Error::other("terminal session token is stale"));
@@ -175,6 +217,7 @@ impl RestoreGate {
         let next = State {
             interval: current.interval + 1,
             phase: Phase::Active,
+            setup,
             ..current
         };
         if self.swap(current, next) {
@@ -184,6 +227,31 @@ impl RestoreGate {
                 io::ErrorKind::WouldBlock,
                 "terminal cleanup is still in progress",
             ))
+        }
+    }
+
+    /// Ends the setup that [`activate_setup`](Self::activate_setup) began.
+    /// Call it once setup stops enabling modes, whether it succeeded or not.
+    ///
+    /// Retries until the exchange succeeds or the setup is already over. A
+    /// failed exchange means another actor changed the word, and each actor's
+    /// transitions are finite, so the loop never waits on a thread. A bounded
+    /// loop could give up and leave `Running` set, which keeps every later
+    /// cleanup of the interval owing another one.
+    pub(super) fn finish_setup(&self, token: &SessionToken) {
+        loop {
+            let current = self.load();
+            if current.owner != token.owner {
+                return;
+            }
+            let setup = match (current.phase, current.setup) {
+                (_, Setup::Settled | Setup::FinishedDuringCleanup) | (Phase::Unowned, _) => return,
+                (Phase::Restoring, Setup::Running) => Setup::FinishedDuringCleanup,
+                (_, Setup::Running) => Setup::Settled,
+            };
+            if self.swap(current, State { setup, ..current }) {
+                return;
+            }
         }
     }
 
@@ -215,15 +283,26 @@ impl RestoreGate {
         self.restore_observed(self.load());
     }
 
-    /// Cleans up when the gate still holds exactly the observed active
-    /// interval. A later interval or owner makes the exchange fail.
+    /// Cleans up the observed active interval. Another actor may change the
+    /// word's setup bits or release flag first, such as `finish_setup`, so a
+    /// failed exchange reloads and retries while the gate still holds the same
+    /// owner and interval in the active phase. A later interval or owner, or
+    /// a cleanup another actor already started, ends the retries.
     fn restore_observed(&self, observed: State) {
-        if observed.phase != Phase::Active {
-            return;
-        }
-        let restoring = observed.in_phase(Phase::Restoring);
-        if self.swap(observed, restoring) {
-            self.run_cleanup(restoring);
+        let mut current = observed;
+        for _ in 0..ATTEMPTS {
+            if current.phase != Phase::Active {
+                return;
+            }
+            let restoring = current.in_phase(Phase::Restoring);
+            if self.swap(current, restoring) {
+                self.run_cleanup(restoring);
+                return;
+            }
+            current = self.load();
+            if (current.owner, current.interval) != (observed.owner, observed.interval) {
+                return;
+            }
         }
     }
 
@@ -246,6 +325,7 @@ impl RestoreGate {
                 Phase::Active => {
                     let restoring = State {
                         phase: Phase::Restoring,
+                        setup: Setup::Settled,
                         release_pending: true,
                         ..current
                     };
@@ -270,15 +350,24 @@ impl RestoreGate {
         }
     }
 
-    fn run_cleanup(&self, restoring: State) {
-        let _finish = Finish {
-            gate: self,
-            restoring,
-        };
-        (self.restore)();
+    fn run_cleanup(&self, mut restoring: State) {
+        loop {
+            let mut finish = Finish {
+                gate: self,
+                restoring: Some(restoring),
+            };
+            (self.restore)();
+            match finish.complete() {
+                Some(again) => restoring = again,
+                None => return,
+            }
+        }
     }
 
-    fn finish(&self, restoring: State) {
+    /// Publishes the end of a cleanup. Returns the state of one more cleanup
+    /// when setup may have enabled modes after this one began and the owner
+    /// is already gone, so nobody else will clean them up.
+    fn finish(&self, restoring: State) -> Option<State> {
         for _ in 0..ATTEMPTS {
             let current = self.load();
             debug_assert_eq!(current.phase, Phase::Restoring);
@@ -286,31 +375,47 @@ impl RestoreGate {
                 (current.owner, current.interval),
                 (restoring.owner, restoring.interval)
             );
+            let (phase, setup) = match (current.release_pending, current.setup) {
+                (true, Setup::Settled) => (Phase::Unowned, Setup::Settled),
+                (true, _) => (Phase::Restoring, Setup::Settled),
+                (false, Setup::Settled) => (Phase::Inactive, Setup::Settled),
+                (false, Setup::Running) => (Phase::Active, Setup::Running),
+                (false, Setup::FinishedDuringCleanup) => (Phase::Active, Setup::Settled),
+            };
             let next = State {
-                phase: if current.release_pending {
-                    Phase::Unowned
-                } else {
-                    Phase::Inactive
-                },
-                release_pending: false,
+                phase,
+                setup,
+                release_pending: phase == Phase::Restoring,
                 ..current
             };
             if self.swap(current, next) {
-                return;
+                return (phase == Phase::Restoring).then_some(next);
             }
         }
+        None
     }
 }
 
 /// Publishes the end of a cleanup even when the restore callback unwinds.
 struct Finish<'a> {
     gate: &'a RestoreGate,
-    restoring: State,
+    restoring: Option<State>,
+}
+
+impl Finish<'_> {
+    fn complete(&mut self) -> Option<State> {
+        self.restoring
+            .take()
+            .and_then(|restoring| self.gate.finish(restoring))
+    }
 }
 
 impl Drop for Finish<'_> {
     fn drop(&mut self) {
-        self.gate.finish(self.restoring);
+        let mut next = self.restoring.take();
+        while let Some(restoring) = next {
+            next = self.gate.finish(restoring);
+        }
     }
 }
 
@@ -330,8 +435,19 @@ impl SessionOwner {
         })
     }
 
+    #[cfg(test)]
     pub(super) fn activate(&self) -> io::Result<()> {
         self.gate.activate(&self.token)
+    }
+
+    /// Activates an interval, runs `setup`, then ends the setup window
+    /// whatever `setup` returned. A cleanup that ran in the meantime, such as
+    /// a panic hook on another thread, no longer ends the interval: leave and
+    /// drop still clean up what `setup` enabled after it.
+    pub(super) fn set_up<T>(&self, setup: impl FnOnce() -> io::Result<T>) -> io::Result<T> {
+        self.gate.activate_setup(&self.token)?;
+        let _settle = SettleSetup(self);
+        setup()
     }
 
     /// Ends the active interval, running the cleanup unless it already ran.
@@ -354,6 +470,15 @@ impl Drop for SessionOwner {
     }
 }
 
+/// Ends the setup window when `setup` returns or unwinds.
+struct SettleSetup<'a>(&'a SessionOwner);
+
+impl Drop for SettleSetup<'_> {
+    fn drop(&mut self) {
+        self.0.gate.finish_setup(&self.0.token);
+    }
+}
+
 static BRIDGE: Once = Once::new();
 
 /// Installs the permanent panic-hook bridge for `gate` the first time it is
@@ -364,6 +489,9 @@ static BRIDGE: Once = Once::new();
 /// replaces the bridge, and the library does not reinstall it. The hook is
 /// never touched from `Drop`, and a thread that is already panicking gets an
 /// error instead of a hook mutation.
+///
+/// The bridge belongs to the first `gate` only. Later calls ignore their
+/// `gate`, so a process has one gate for the library's sessions.
 pub(super) fn install_once(gate: &'static RestoreGate) -> io::Result<()> {
     if BRIDGE.is_completed() {
         return Ok(());

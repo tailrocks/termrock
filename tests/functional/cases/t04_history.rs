@@ -3,7 +3,7 @@
 //! Tuiscotti test ids are `[a-z0-9_-]` segments, so the baseline directory is
 //! `pre_refactor/t04_history/` and each checkpoint's dots become underscores.
 
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use tui_test::TerminalSnapshot;
 
@@ -155,17 +155,7 @@ fn quit_unsaved(app: &App) {
         &["Quit TablePro?", "1 unsaved query will be lost."],
         &[RUNNING, "Execute query?"],
     );
-    app.key("right");
-    app.key("enter");
-    let deadline = Instant::now() + Duration::from_secs(5);
-    while app.child_running() {
-        assert!(
-            Instant::now() < deadline,
-            "tablepro stayed up after confirming quit"
-        );
-        std::thread::sleep(Duration::from_millis(25));
-    }
-    app.expect_exited(0);
+    app.confirm_quit();
 }
 
 #[test]
@@ -322,6 +312,11 @@ fn rerun_uses_the_selected_entry_sql() {
     });
 
     app.key("s");
+    app.wait_screen("failed-only off keeps the selected record", |screen| {
+        scope_is(screen, "Development", "any")
+            && focused_line(screen).contains("SELECT * FROM events")
+    });
+    app.key("up");
     let restored = app.wait_screen("failed-only off restores the entry", |screen| {
         let visible = text(screen);
         scope_is(screen, "Development", "any")
@@ -353,6 +348,7 @@ fn rerun_uses_the_selected_entry_sql() {
         text(&copied)
     );
 
+    app.expire_status();
     app.key("r");
     let rerun = app.wait_screen("rerun finished and the copy status faded", |screen| {
         let visible = text(screen);

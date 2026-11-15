@@ -12,6 +12,7 @@ pub mod manifest;
 pub mod outcomes;
 pub mod parity;
 pub mod plan;
+pub mod projection;
 pub mod ranking;
 pub mod scripts;
 pub mod stack;

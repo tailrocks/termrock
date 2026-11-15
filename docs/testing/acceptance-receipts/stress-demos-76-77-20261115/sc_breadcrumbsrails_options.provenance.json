@@ -1,0 +1,72 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneG5-target/debug/showcase",
+  "binary_sha256": "8b1fe8c37c1e011000cfe708e56c2cf9adaed6eb48201db4b72b0b1a13ab059d",
+  "fixture_args": [],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "41abcfa4b42b03e1616325d2efde87f3aeebe201d73825ae079955306b187018",
+  "expect_baseline": "94ed287e5bdb80438e86b8729564de483e3d22b24852f05ae0cab60fed1b973d",
+  "precondition": "",
+  "session": null,
+  "expected_test_id": "sc_breadcrumbsrails_options",
+  "acceptance_receipt_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneG5/docs/testing/acceptance-receipts/stress-demos-76-77-20261115/sc_breadcrumbsrails_options.accept.json",
+  "provenance_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneG5/docs/testing/acceptance-receipts/stress-demos-76-77-20261115/sc_breadcrumbsrails_options.provenance.json",
+  "previous_archive_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneG5/docs/testing/acceptance-receipts/stress-demos-76-77-20261115/superseded/sc_breadcrumbsrails_options.tui.pb",
+  "test_id": "sc_breadcrumbsrails_options",
+  "acceptance": {
+    "expected_baseline_sha256": "94ed287e5bdb80438e86b8729564de483e3d22b24852f05ae0cab60fed1b973d",
+    "accepted_baseline_sha256": "41abcfa4b42b03e1616325d2efde87f3aeebe201d73825ae079955306b187018",
+    "candidate_sha256": "41abcfa4b42b03e1616325d2efde87f3aeebe201d73825ae079955306b187018",
+    "transaction_receipt": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneG5/docs/testing/acceptance-receipts/stress-demos-76-77-20261115/sc_breadcrumbsrails_options.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "94ed287e5bdb80438e86b8729564de483e3d22b24852f05ae0cab60fed1b973d"
+  },
+  "candidate": {
+    "sha256": "41abcfa4b42b03e1616325d2efde87f3aeebe201d73825ae079955306b187018",
+    "path": "tests/functional/baselines/pre_refactor/S01.breadcrumbsrails/sc_breadcrumbsrails_options.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneG5/docs/testing/acceptance-receipts/stress-demos-76-77-20261115/superseded/sc_breadcrumbsrails_options.tui.pb",
+    "superseded_baseline_sha256": "94ed287e5bdb80438e86b8729564de483e3d22b24852f05ae0cab60fed1b973d"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/S01.breadcrumbsrails/sc_breadcrumbsrails_options.tui.pb",
+    "candidate_sha256": "41abcfa4b42b03e1616325d2efde87f3aeebe201d73825ae079955306b187018",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneG5-target/debug/showcase",
+    "binary_sha256": "8b1fe8c37c1e011000cfe708e56c2cf9adaed6eb48201db4b72b0b1a13ab059d",
+    "note": "Stress data option on the Options tab"
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "sc_breadcrumbsrails_options",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneG5/target/functional/s01-opt-click-22892-1794747025822899000-1/check-artifacts/sc_breadcrumbsrails_options/41abcfa4b42b03e1616325d2efde87f3aeebe201d73825ae079955306b187018/sample.tui.pb"
+    },
+    "candidate_sha256": "41abcfa4b42b03e1616325d2efde87f3aeebe201d73825ae079955306b187018",
+    "baseline_sha256": "41abcfa4b42b03e1616325d2efde87f3aeebe201d73825ae079955306b187018",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneG5/tests/functional/baselines/pre_refactor/S01.breadcrumbsrails/sc_breadcrumbsrails_options.tui.pb"
+    },
+    "error_code": null
+  }
+}

@@ -2,7 +2,7 @@
 
 mod common;
 
-use common::{app_with, click, click_text, press, screen, screen_at};
+use common::{app_with, click, click_text, deliver_roster, press, screen, screen_at};
 use jackin_console::app::{App, Route};
 use jackin_console::arbiter::DiscoveryError;
 use jackin_console::backend::Effect;
@@ -151,10 +151,7 @@ fn refresh_replaces_verified_and_unavailable_entries_without_stale_metadata() {
     let mut unavailable_snapshot = snapshot_of(&app.world);
     unavailable_snapshot.instances[0] = InstanceEntry::Unavailable(unavailable);
     assert_eq!(
-        app.deliver(&Msg::Refreshed {
-            ticket: app.world.refresh_ticket,
-            result: Ok(Box::new(unavailable_snapshot)),
-        }),
+        deliver_roster(&mut app, unavailable_snapshot),
         Outcome::Changed
     );
     assert_eq!(app.world.instances.len(), 1);
@@ -184,10 +181,7 @@ fn refresh_replaces_verified_and_unavailable_entries_without_stale_metadata() {
     let mut verified_snapshot = snapshot_of(&app.world);
     verified_snapshot.instances[0] = InstanceEntry::available(verified.clone());
     assert_eq!(
-        app.deliver(&Msg::Refreshed {
-            ticket: app.world.refresh_ticket,
-            result: Ok(Box::new(verified_snapshot)),
-        }),
+        deliver_roster(&mut app, verified_snapshot),
         Outcome::Changed
     );
     assert_eq!(app.world.instances.len(), 1);
@@ -237,10 +231,7 @@ fn refresh_to_unavailable_keeps_the_attached_capsule_and_reports_the_degradation
     let mut unavailable_snapshot = snapshot_of(&app.world);
     unavailable_snapshot.instances = vec![InstanceEntry::Unavailable(unavailable)];
     assert_eq!(
-        app.deliver(&Msg::Refreshed {
-            ticket: app.world.refresh_ticket,
-            result: Ok(Box::new(unavailable_snapshot)),
-        }),
+        deliver_roster(&mut app, unavailable_snapshot),
         Outcome::Changed
     );
     assert_eq!(app.route(), Route::Capsule);
@@ -266,10 +257,7 @@ fn refresh_to_unavailable_keeps_the_attached_capsule_and_reports_the_degradation
     let mut restored_snapshot = snapshot_of(&app.world);
     restored_snapshot.instances = vec![InstanceEntry::available(verified)];
     assert_eq!(
-        app.deliver(&Msg::Refreshed {
-            ticket: app.world.refresh_ticket,
-            result: Ok(Box::new(restored_snapshot)),
-        }),
+        deliver_roster(&mut app, restored_snapshot),
         Outcome::Changed
     );
     app.go(Go::Attach {
@@ -280,13 +268,7 @@ fn refresh_to_unavailable_keeps_the_attached_capsule_and_reports_the_degradation
 
     let mut absent_snapshot = snapshot_of(&app.world);
     absent_snapshot.instances.clear();
-    assert_eq!(
-        app.deliver(&Msg::Refreshed {
-            ticket: app.world.refresh_ticket,
-            result: Ok(Box::new(absent_snapshot)),
-        }),
-        Outcome::Changed
-    );
+    assert_eq!(deliver_roster(&mut app, absent_snapshot), Outcome::Changed);
     assert_ne!(app.route(), Route::Capsule);
     let status = app.shell.status.text().unwrap_or_default();
     assert!(status.contains("removed elsewhere"), "{status}");

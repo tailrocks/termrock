@@ -1,3 +1,5 @@
+pub mod parsers;
+
 use std::ops::Range;
 use std::rc::Rc;
 
@@ -482,6 +484,10 @@ impl EditField {
             self.buffer.clear_selection();
         }
         self.undo.seal();
+    }
+
+    pub(crate) fn cancel_pointer_selection(&mut self) {
+        self.press = PressState::default();
     }
 
     pub fn pressed(&self) -> bool {

@@ -1,0 +1,72 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneG5-target/debug/showcase",
+  "binary_sha256": "8b1fe8c37c1e011000cfe708e56c2cf9adaed6eb48201db4b72b0b1a13ab059d",
+  "fixture_args": [],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "76aeefc37cfe09e71250b4b492fc9b88f7df1f350546c3efda23acd04f39c5c2",
+  "expect_baseline": "557e945d3923acaeaf8ca6bf8a26ddb55dc6beb6a5af040cce9567e4b431c883",
+  "precondition": "",
+  "session": null,
+  "expected_test_id": "pre_refactor/s02_toolbars/sc_toolbars_options",
+  "acceptance_receipt_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneG5/docs/testing/acceptance-receipts/stress-demos-76-77-20261115/pre_refactor_s02_toolbars_sc_toolbars_options.accept.json",
+  "provenance_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneG5/docs/testing/acceptance-receipts/stress-demos-76-77-20261115/pre_refactor_s02_toolbars_sc_toolbars_options.provenance.json",
+  "previous_archive_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneG5/docs/testing/acceptance-receipts/stress-demos-76-77-20261115/superseded/pre_refactor_s02_toolbars_sc_toolbars_options.tui.pb",
+  "test_id": "pre_refactor/s02_toolbars/sc_toolbars_options",
+  "acceptance": {
+    "expected_baseline_sha256": "557e945d3923acaeaf8ca6bf8a26ddb55dc6beb6a5af040cce9567e4b431c883",
+    "accepted_baseline_sha256": "76aeefc37cfe09e71250b4b492fc9b88f7df1f350546c3efda23acd04f39c5c2",
+    "candidate_sha256": "76aeefc37cfe09e71250b4b492fc9b88f7df1f350546c3efda23acd04f39c5c2",
+    "transaction_receipt": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneG5/docs/testing/acceptance-receipts/stress-demos-76-77-20261115/pre_refactor_s02_toolbars_sc_toolbars_options.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "557e945d3923acaeaf8ca6bf8a26ddb55dc6beb6a5af040cce9567e4b431c883"
+  },
+  "candidate": {
+    "sha256": "76aeefc37cfe09e71250b4b492fc9b88f7df1f350546c3efda23acd04f39c5c2",
+    "path": "tests/functional/baselines/pre_refactor/s02_toolbars/sc_toolbars_options.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneG5/docs/testing/acceptance-receipts/stress-demos-76-77-20261115/superseded/pre_refactor_s02_toolbars_sc_toolbars_options.tui.pb",
+    "superseded_baseline_sha256": "557e945d3923acaeaf8ca6bf8a26ddb55dc6beb6a5af040cce9567e4b431c883"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/s02_toolbars/sc_toolbars_options.tui.pb",
+    "candidate_sha256": "76aeefc37cfe09e71250b4b492fc9b88f7df1f350546c3efda23acd04f39c5c2",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneG5-target/debug/showcase",
+    "binary_sha256": "8b1fe8c37c1e011000cfe708e56c2cf9adaed6eb48201db4b72b0b1a13ab059d",
+    "note": "Stress data option on the Options tab"
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s02_toolbars/sc_toolbars_options",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneG5/target/functional/s02-toolbars-sections-88921-1794747271151783000-0/check-artifacts/pre_refactor/s02_toolbars/sc_toolbars_options/76aeefc37cfe09e71250b4b492fc9b88f7df1f350546c3efda23acd04f39c5c2/sample.tui.pb"
+    },
+    "candidate_sha256": "76aeefc37cfe09e71250b4b492fc9b88f7df1f350546c3efda23acd04f39c5c2",
+    "baseline_sha256": "76aeefc37cfe09e71250b4b492fc9b88f7df1f350546c3efda23acd04f39c5c2",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneG5/tests/functional/baselines/pre_refactor/s02_toolbars/sc_toolbars_options.tui.pb"
+    },
+    "error_code": null
+  }
+}
