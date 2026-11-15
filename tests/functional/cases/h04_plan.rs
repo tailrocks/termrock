@@ -516,12 +516,20 @@ fn h04_plan_plan() {
         text(&apt_after)
     );
     repeat(&app, "down", 4);
-    let mise_after = app.wait_text("retrying");
+    let mise_after = app.wait_text("retrying…");
+    let mise_visible = text(&mise_after);
+    let (before_retry, after_retry) = mise_visible
+        .split_once("retrying…")
+        .expect("retry marker is on screen");
     assert_eq!(
-        occurrences(&mise_after, MISE_CMD),
+        before_retry.matches(MISE_CMD).count(),
         1,
-        "mise command was repeated\n{}",
-        text(&mise_after)
+        "mise command before the retry marker\n{mise_visible}"
+    );
+    assert_eq!(
+        after_retry.matches(MISE_CMD).count(),
+        1,
+        "retried mise command is not re-emitted after the retry marker\n{mise_visible}"
     );
     assert_eq!(
         occurrences(&mise_after, FAIL_LINE),
