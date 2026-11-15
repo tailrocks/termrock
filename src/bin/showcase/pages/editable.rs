@@ -361,14 +361,17 @@ impl EditablePage {
                 let inner = panel.render(card, buf, t);
                 self.table.render(inner, buf, ctx, bg);
                 let pos = scrollbar::position_label(&self.table.scroll);
-                let last = match WALKTHROUGH[self.walkthrough()] {
-                    Some(_) => format!("last {} · ", self.last),
-                    None => String::new(),
+                let last = WALKTHROUGH[self.walkthrough()].map(|_| format!("last {}", self.last));
+                let counts = if pos.is_empty() {
+                    format!("{} edits", self.edits)
+                } else {
+                    format!("{} edits · {pos}", self.edits)
                 };
-                let meta = match &err {
-                    Some(e) => e.clone(),
-                    None if pos.is_empty() => format!("{last}{} edits", self.edits),
-                    None => format!("{last}{} edits · {pos}", self.edits),
+                let meta = match (&err, &last) {
+                    (Some(e), Some(last)) => format!("{e} · {last}"),
+                    (Some(e), None) => e.clone(),
+                    (None, Some(last)) => format!("{last} · {counts}"),
+                    (None, None) => counts,
                 };
                 panel.draw_meta(card, buf, t, &meta);
             }
@@ -496,10 +499,11 @@ impl Page for EditablePage {
             return h;
         }
         if self.table.is_editing() {
+            let at_last = self.table.cursor_col == LAST_COL;
             let tab = match self.walkthrough() {
-                1 => "Commit, then leave",
-                2 => "Leave, nothing to save",
-                3 => "Blocked by an error",
+                1 if at_last => "Commit, then leave",
+                2 if at_last => "Leave, nothing to save",
+                3 if at_last => "Blocked by an error",
                 _ => "Next cell",
             };
             return vec![("Enter", "Apply"), ("Esc", "Cancel"), ("Tab", tab)];
@@ -687,5 +691,8 @@ mod tests {
         let _ = page.table.begin_edit();
         let hints = page.hints(None);
         assert!(hints.contains(&("Tab", "Commit, then leave")), "{hints:?}");
+        page.table.cursor_col = 1;
+        let hints = page.hints(None);
+        assert!(hints.contains(&("Tab", "Next cell")), "{hints:?}");
     }
 }

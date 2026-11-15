@@ -1415,7 +1415,7 @@ fn option_tab_walkthrough_invalid_blocks_the_move() {
     see(
         &blocked,
         &[
-            "Changes must be a whole number",
+            "Changes must be a whole number · last none",
             "Enter Apply",
             "Esc Cancel",
         ],
