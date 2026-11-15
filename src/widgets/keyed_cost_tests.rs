@@ -214,7 +214,7 @@ fn list_detail_unchanged_widths_are_cached() {
     let mut store = KeyedVec::try_from_rows((0..5_000).map(|n| {
         (
             ItemKey::num(n),
-            ListRow::new(&format!("row {n}")).detail("detail"),
+            ListRow::new(format!("row {n}")).detail("detail"),
         )
     }))
     .expect("valid");
@@ -229,7 +229,7 @@ fn list_detail_unchanged_widths_are_cached() {
         lines: &[],
         actions: &[],
     };
-    let mut paint = |detail: &mut ListDetail, store: &KeyedVec<ListRow>| {
+    let paint = |detail: &mut ListDetail, store: &KeyedVec<ListRow>| {
         overlay_frame(|buf, ctx| {
             detail
                 .render_source(SCREEN, store, &frame, buf, ctx)

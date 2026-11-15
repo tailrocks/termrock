@@ -1558,6 +1558,13 @@ struct TreeRecord {
     expanded: bool,
 }
 
+/// A validated source: preorder keys, key positions and parent positions.
+type Validated = (Vec<ItemKey>, HashMap<ItemKey, usize>, Vec<Option<usize>>);
+
+/// A flattening frame: child list (roots when `None`), next index, depth and
+/// parent row.
+type Frame<'a> = (Option<&'a [ItemKey]>, usize, usize, Option<usize>);
+
 /// The keyed flattening of a [`TreeSource`]: only key, depth, parent and
 /// flags per visible row, with labels borrowed from the source at paint.
 #[derive(Debug, Clone, Default)]
@@ -1578,9 +1585,7 @@ impl TreeProjection {
     /// Validates the source once per data revision: positional keys,
     /// duplicates (including a node with two parents), missing nodes and
     /// cycles. The previous projection survives an error.
-    fn validate<S: TreeSource + ?Sized>(
-        source: &S,
-    ) -> Result<(Vec<ItemKey>, HashMap<ItemKey, usize>, Vec<Option<usize>>), KeyedSourceError> {
+    fn validate<S: TreeSource + ?Sized>(source: &S) -> Result<Validated, KeyedSourceError> {
         #[derive(Default)]
         struct Walk {
             order: Vec<ItemKey>,
@@ -1704,8 +1709,7 @@ impl TreeProjection {
         filter: Option<&str>,
     ) {
         let mut rows = Vec::new();
-        let mut stack: Vec<(Option<&[ItemKey]>, usize, usize, Option<usize>)> =
-            vec![(None, 0, 0, None)];
+        let mut stack: Vec<Frame<'_>> = vec![(None, 0, 0, None)];
         while let Some(frame) = stack.last_mut() {
             let (list, next, depth, parent) = (frame.0, frame.1, frame.2, frame.3);
             let key = match list {

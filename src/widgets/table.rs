@@ -1998,12 +1998,11 @@ impl DataTable {
                 Some(Phase::Press) => {
                     self.keyed.capture_press(key, self.layout_generation);
                 }
-                Some(Phase::Click) => {
+                Some(Phase::Click)
                     if self.keyed.pressed().is_some()
-                        && !self.keyed.release_press(key, self.layout_generation)
-                    {
-                        return Response::consumed();
-                    }
+                        && !self.keyed.release_press(key, self.layout_generation) =>
+                {
+                    return Response::consumed();
                 }
                 _ => {}
             }

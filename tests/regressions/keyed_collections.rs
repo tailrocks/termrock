@@ -396,13 +396,12 @@ fn keyed_vec_owns_its_revisions() {
         .iter()
         .map(|(key, row)| (key, row.clone()))
         .collect::<Vec<_>>();
-    assert_eq!(store.replace_if_changed(same).expect("valid"), false);
+    assert!(!store.replace_if_changed(same).expect("valid"));
     assert_eq!(store.stamp(), before);
-    assert_eq!(
+    assert!(
         store
             .replace_if_changed([(k(9), Row::new("n"))])
-            .expect("valid"),
-        true
+            .expect("valid")
     );
     assert_eq!(store.stamp().instance, before.instance);
     assert_eq!(store.len(), 1);
