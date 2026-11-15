@@ -271,19 +271,6 @@ pub enum SearchFocusMode {
     Combined,
 }
 
-/// Who owns the result cursor.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum SelectionOwner {
-    /// The session moves the cursor for keys and clicks.
-    #[default]
-    Session,
-    /// The host's own keyed list moves the cursor and reports it with
-    /// [`SearchSession::set_selection`]. The session still gates actions on it
-    /// and reconciles it when results are accepted, but navigation keys and
-    /// presses never move it.
-    External,
-}
-
 /// How pasted text enters the query.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum QueryPasteMode {
@@ -323,7 +310,6 @@ pub struct SearchConfig {
     /// Whether navigation moves the retained cursor while a request is pending.
     /// Activation, context and detail actions stay disabled either way.
     pub navigate_while_loading: bool,
-    pub selection_owner: SelectionOwner,
     /// Whether a new query returns the preview to its top even when the same
     /// key stays selected. Holla does; the default keeps the scroll.
     pub reset_preview_on_query: bool,
@@ -345,7 +331,6 @@ impl Default for SearchConfig {
             paste_mode: QueryPasteMode::default(),
             type_to_query_from_detail: false,
             navigate_while_loading: false,
-            selection_owner: SelectionOwner::default(),
             reset_preview_on_query: false,
             preserve_preview_on_same_key: true,
         }
@@ -395,11 +380,6 @@ impl SearchConfig {
 
     pub fn navigate_while_loading(mut self, on: bool) -> Self {
         self.navigate_while_loading = on;
-        self
-    }
-
-    pub fn selection_owner(mut self, owner: SelectionOwner) -> Self {
-        self.selection_owner = owner;
         self
     }
 

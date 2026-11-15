@@ -23,7 +23,7 @@ use junie_tui::widgets::list_detail::{
 };
 use junie_tui::widgets::search_detail::{
     QueryRequest, QueryView, ResultRowKind, RowPaint, SearchAction, SearchConfig, SearchDetail,
-    SearchError, SearchFocusMode, SearchPaint, SearchPhase, SelectionOwner, paint_query_default,
+    SearchError, SearchFocusMode, SearchPaint, SearchPhase, paint_query_default,
 };
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
@@ -874,6 +874,23 @@ fn search_detail_separate_query_edits_request_and_results_keys_navigate() {
 }
 
 #[test]
+fn search_detail_tab_on_the_results_is_left_to_the_shell() {
+    let mut search = new_search(SearchConfig::default());
+    let req = accept(&mut search, 1, mixed());
+    let source = source_for(&req, mixed());
+    let mut focus = Focus::default();
+    focus.focus(ID);
+    let reply = search
+        .on_key(&key(KeyCode::Tab), &source, &mut focus)
+        .expect("the accepted source");
+    assert!(
+        !reply.is_consumed(),
+        "Tab on the results must reach the shell's focus ring, not re-focus the results"
+    );
+    assert_eq!(focus.current(), Some(ID));
+}
+
+#[test]
 fn search_detail_narrow_drawer_restores_focus() {
     let lines = frame_lines(40);
     let mut search = new_search(SearchConfig::default());
@@ -984,63 +1001,6 @@ fn search_detail_typing_returns_from_the_preview_only_when_configured() {
 }
 
 #[test]
-fn search_detail_external_owner_never_moves_the_cursor_itself() {
-    let config = SearchConfig::default().selection_owner(SelectionOwner::External);
-    let mut search = new_search(config);
-    let source = accept_with_policy(&mut search, mixed(), None, Some(ClickPolicy::NAVIGATION));
-    let mut focus = Focus::default();
-    focus.focus(ID);
-    let frame = draw(
-        &mut search,
-        &source,
-        WIDE,
-        Some(ID),
-        &[],
-        &mut Seen::default(),
-    );
-    assert_eq!(search.selected_key(), Some(k(10)));
-    assert!(on_key(&mut search, &source, &mut focus, &key(KeyCode::Down)).is_empty());
-    assert_eq!(
-        search.selected_key(),
-        Some(k(10)),
-        "navigation is the host's"
-    );
-
-    let out = press_click(&mut search, &source, &mut focus, &frame, k(31), Part::CELL);
-    assert_eq!(
-        out,
-        [SearchAction::Activate(k(31))],
-        "a click activates without moving the cursor"
-    );
-    assert_eq!(search.selected_key(), Some(k(10)));
-
-    assert!(
-        acts(search.set_selection(k(31))).is_empty(),
-        "no echo of the host's move"
-    );
-    assert_eq!(search.selected_key(), Some(k(31)));
-    assert!(
-        acts(search.set_selection(k(1))).is_empty(),
-        "a heading is refused"
-    );
-    assert_eq!(search.selected_key(), Some(k(31)));
-    assert_eq!(
-        on_key(&mut search, &source, &mut focus, &key(KeyCode::Enter)),
-        [SearchAction::Activate(k(31))]
-    );
-}
-
-#[test]
-fn search_detail_default_selection_owner_is_the_session() {
-    let mut search = new_search(SearchConfig::default());
-    accept(&mut search, 1, list());
-    assert!(
-        acts(search.set_selection(k(12))).is_empty() && search.selected_key() == Some(k(10)),
-        "set_selection is only for an external owner"
-    );
-}
-
-#[test]
 fn search_detail_standard_paint_draws_rows_and_registers_hits() {
     let mut search = new_search(SearchConfig::default());
     let req = accept(&mut search, 1, list());
@@ -1129,11 +1089,10 @@ impl SearchPaint<Results> for Hosted {
 }
 
 fn hosted_search() -> SearchDetail {
-    new_search(SearchConfig::default().focus_mode(SearchFocusMode::Combined)).arrange(|md| {
-        md.detail_share(34, 34, 48)
-            .summary_rows(1)
-            .collapse_below(108)
-    })
+    new_search(SearchConfig::default().focus_mode(SearchFocusMode::Combined))
+        .detail_share(34, 34, 48)
+        .summary_rows(1)
+        .collapse_below(108)
 }
 
 fn draw_hosted(
@@ -1386,4 +1345,115 @@ fn review283_same_key_selection_paths_keep_the_preview_scroll() {
     let frame = draw(&mut search, &source, WIDE, Some(ID), &lines, &mut seen);
     assert_eq!(search.selected_key(), Some(k(30)));
     assert_eq!(scrolled_top(&frame).as_deref(), Some("preview line 00"));
+}
+
+#[test]
+fn search_detail_standard_paint_places_selectable_cells() {
+    let mut search = new_search(SearchConfig::default());
+    let req = accept(&mut search, 1, mixed());
+    let source = source_for(&req, mixed());
+    let theme = Theme::for_level(ColorLevel::TrueColor);
+    let mut buf = Buffer::empty(WIDE);
+    let mut hits = HitRegistry::default();
+    let mut ring = FocusRing::default();
+    {
+        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        search
+            .render_source(WIDE, &source, &detail_frame(&[]), &mut buf, &mut ctx)
+            .expect("source");
+    }
+    let text = (0..WIDE.height)
+        .map(|y| row(&buf, y).trim_end().to_owned())
+        .collect::<Vec<_>>()
+        .join("\n");
+    for label in ["one", "two", "three"] {
+        assert!(text.contains(label), "chip {label} is painted\n{text}");
+    }
+    for cell in [30, 31, 32] {
+        assert!(
+            hits.regions().iter().any(|r| r.owner == ID
+                && r.part.part == Part::CELL
+                && r.part.item == Some(k(cell))),
+            "cell {cell} registers a hit region under its own key"
+        );
+    }
+}
+
+#[test]
+fn search_detail_chip_that_does_not_fit_is_not_selectable_or_runnable() {
+    const TIGHT: Rect = Rect::new(0, 0, 24, 14);
+    let mut search = new_search(SearchConfig::default());
+    let req = accept(&mut search, 1, mixed());
+    let source = source_for(&req, mixed());
+    let theme = Theme::for_level(ColorLevel::TrueColor);
+    let mut buf = Buffer::empty(TIGHT);
+    let mut hits = HitRegistry::default();
+    let mut ring = FocusRing::default();
+    {
+        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        search
+            .render_source(TIGHT, &source, &detail_frame(&[]), &mut buf, &mut ctx)
+            .expect("source");
+    }
+    let painted: Vec<ItemKey> = [30, 31, 32]
+        .into_iter()
+        .map(k)
+        .filter(|&cell| {
+            hits.regions()
+                .iter()
+                .any(|r| r.owner == ID && r.part.part == Part::CELL && r.part.item == Some(cell))
+        })
+        .collect();
+    assert!(
+        !painted.is_empty() && painted.len() < 3,
+        "premise: at this width some chips fit and some do not, painted {painted:?}"
+    );
+    let mut focus = Focus::default();
+    focus.focus(ID);
+    for _ in 0..3 {
+        if search
+            .selected_key()
+            .is_some_and(|sel| [k(30), k(31), k(32)].contains(&sel))
+        {
+            break;
+        }
+        on_key(&mut search, &source, &mut focus, &key(KeyCode::Down));
+    }
+    assert!(
+        search
+            .selected_key()
+            .is_some_and(|sel| [k(30), k(31), k(32)].contains(&sel)),
+        "premise: the cursor is on the chip row, not {:?}",
+        search.selected_key()
+    );
+    let mut reached = Vec::new();
+    let mut ran = Vec::new();
+    for _ in 0..4 {
+        on_key(&mut search, &source, &mut focus, &key(KeyCode::Right));
+        reached.extend(search.selected_key());
+        ran.extend(
+            on_key(&mut search, &source, &mut focus, &key(KeyCode::Enter))
+                .into_iter()
+                .filter_map(|action| match action {
+                    SearchAction::Activate(item) => Some(item),
+                    _ => None,
+                }),
+        );
+    }
+    let hidden =
+        |item: &&ItemKey| [k(30), k(31), k(32)].contains(*item) && !painted.contains(*item);
+    assert_eq!(
+        reached.iter().filter(hidden).count(),
+        0,
+        "Right landed on a chip that is not drawn: {reached:?}"
+    );
+    assert_eq!(
+        ran.iter().filter(hidden).count(),
+        0,
+        "Enter ran a chip that is not drawn: {ran:?}"
+    );
+    assert!(
+        ran.iter().any(|item| painted.contains(item)),
+        "the chips that are drawn still run: {ran:?}"
+    );
 }

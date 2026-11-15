@@ -366,11 +366,9 @@ fn new_search() -> SearchDetail {
                 .reset_preview_on_query(true)
                 .click(ClickPolicy::DATA),
         )
-        .arrange(|md| {
-            md.detail_share(34, 34, 48)
-                .summary_rows(1)
-                .collapse_below(SPLIT_MIN)
-        });
+        .detail_share(34, 34, 48)
+        .summary_rows(1)
+        .collapse_below(SPLIT_MIN);
     let _ = search.configure_query(|field| {
         let mut keys = CMD_TEXT_KEYS.to_vec();
         keys.extend([

@@ -357,6 +357,17 @@ pub static FINDER: &[Opt] = &[
     Opt::new("finder.scope", "Scope", &["here", "project", "everywhere"]),
     Opt::new("finder.risk_column", "Risk column", OFF_ON).default(1),
     Opt::new("finder.preview", "Preview", &["auto", "line"]),
+    Opt::new("finder.rows", "Result rows", &["items", "grouped", "cells"]),
+    Opt::new(
+        "finder.results",
+        "Backend",
+        &["ready", "loading", "failing"],
+    ),
+    Opt::new("finder.click", "Click runs", &["double", "single"]),
+    Opt::new("finder.missing", "Lost selection", &["nearest", "first"]),
+    Opt::new("finder.paste", "Paste newlines", &["strip", "join"]),
+    Opt::new("finder.select_first", "First on new query", OFF_ON).default(1),
+    Opt::new("finder.nav_loading", "Move while loading", OFF_ON),
 ];
 
 pub static PANELS: &[Opt] = &[
