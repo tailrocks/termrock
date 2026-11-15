@@ -917,7 +917,10 @@ impl FormDialog {
             }
             let fh = f.height() as i32;
             let whole = y >= body.y as i32 && y < body.bottom() as i32;
-            if !whole && let Some(id) = f.tab_stop() {
+            if body_h > 0
+                && !whole
+                && let Some(id) = f.tab_stop()
+            {
                 ctx.focus_stop(id);
             }
             if y + fh > body.y as i32 && y < body.bottom() as i32 {

@@ -7,6 +7,7 @@
 mod button_row_focus;
 #[path = "../common/mod.rs"]
 mod common;
+mod form_dialog_geometry;
 mod form_value;
 mod grapheme_paint;
 mod smoke;
