@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "functional/showcase_datagrid_wheel",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "target/functional/showcase-datagrid-wheel-99205-1794711898570449000-0/check-artifacts/functional/showcase_datagrid_wheel/071c893e2286cf8f654c60038891c0dbc2d8f80b95a69ed54b39bb8ebb7c565e/sample.tui.pb"
+  },
+  "candidate_sha256": "071c893e2286cf8f654c60038891c0dbc2d8f80b95a69ed54b39bb8ebb7c565e",
+  "baseline_sha256": "071c893e2286cf8f654c60038891c0dbc2d8f80b95a69ed54b39bb8ebb7c565e",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane14/tests/functional/baselines/functional/showcase_datagrid_wheel.tui.pb"
+  },
+  "error_code": null
+}
