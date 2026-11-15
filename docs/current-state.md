@@ -229,6 +229,29 @@ parser. The policy:
   save replaces them. Trust decisions are then asked again, and usage history
   restarts. No other data changes on upgrade.
 
+## Holla disk scan completion
+
+Holla's disk scan is simulated and advances on the World tick. A scan has
+one phase: `Running`, `Completed` or `Cancelled { revealed }` (`ScanPhase`
+in `src/bin/holla/sim/world.rs`). Each tick reveals at most 4096 entries.
+Completion is the first tick whose reveal covers the last entry, not the
+raw `scan_started + scan_ticks` clock. A duration of 0 counts as one tick.
+
+- A scan completes once. That tick publishes `Msg::ScanDone { generation }`
+  and persists the size cache. A tree with no entries completes on the first
+  tick after start.
+- Cancel freezes the scan at the entries revealed so far. It is refused once
+  the scan has completed. A cancelled scan publishes no completion and writes
+  no size cache.
+- Each `start_scan` takes a new generation. `finish_scan_cache(generation)`
+  writes only the current, completed generation, and at most once. The
+  attempt is recorded before the save, so a repeated call or message never
+  saves again.
+- A failed save leaves the persisted `sizes.json` value unchanged and keeps
+  the save error on screen.
+- Only a completed scan preselects cleanup candidates. Cancelled scans do not.
+- No scan exists before `start_scan`. Nothing else completes a scan.
+
 ## Testing today
 
 - `cargo nextest run --locked -p junie-tui --test functional --profile functional`
