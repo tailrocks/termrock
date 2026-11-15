@@ -316,13 +316,21 @@ impl NavList {
     /// their numbers, clamped to the new length, so a same-length reorder keeps
     /// the row and not the item. Hosts that need a stable selection should find
     /// the new index from their own identity and assign `cursor` and `current`.
-    /// Replacement never emits an action. Returns `false` when `items` is equal
-    /// to the current collection, which leaves all state untouched.
+    /// Filling an empty list starts on the first enabled item, like
+    /// [`NavList::new`]. Replacement never emits an action. Returns `false` when
+    /// `items` is equal to the current collection, which leaves all state
+    /// untouched.
     pub fn set_items(&mut self, items: Vec<NavItem>) -> bool {
         if self.items == items {
             return false;
         }
+        let was_empty = self.items.is_empty();
         self.items = items;
+        if was_empty {
+            let first = self.items.iter().position(|i| !i.disabled).unwrap_or(0);
+            self.cursor = first;
+            self.current = first;
+        }
         self.reconcile_indices();
         true
     }
