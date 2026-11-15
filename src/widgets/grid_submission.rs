@@ -353,13 +353,6 @@ impl DataGrid {
             .map(|(key, col)| (landed_key(key), col));
         let fallback_key = self.key_after_removal().map(landed_key);
         self.pending = super::PendingChanges::default();
-        for row in receipt.rows {
-            if let Some(&src) = self.key_to_source.get(&row.key) {
-                self.rows[src] = row.values;
-                self.row_keys[src] = row.committed_key;
-            }
-        }
-        self.reindex_keys();
         let mut deleted: Vec<usize> = snapshot
             .deleted()
             .iter()
@@ -367,6 +360,13 @@ impl DataGrid {
             .collect();
         deleted.sort_unstable();
         self.remove_rows(&deleted);
+        for row in receipt.rows {
+            if let Some(&src) = self.key_to_source.get(&row.key) {
+                self.rows[src] = row.values;
+                self.row_keys[src] = row.committed_key;
+            }
+        }
+        self.reindex_keys();
         self.undo.clear();
         self.row_errors.clear();
         self.cell_errors.clear();
