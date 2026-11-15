@@ -1750,7 +1750,7 @@ impl DataGrid {
             return Response::consumed();
         }
         if self.submission.is_locked() {
-            return (Outcome::Changed, Some(Self::busy_action()));
+            return Response::from((Outcome::Changed, Some(Self::busy_action())));
         }
         let col = self.cursor.1;
         if let Some(reason) = self.read_only_reason_at_cursor() {

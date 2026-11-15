@@ -39,7 +39,7 @@ fn source_row(i: usize) -> Vec<CellValue> {
 
 fn grid(n: usize) -> DataGrid {
     let mut g = DataGrid::new(WidgetId::of("issue50"), columns());
-    g.set_rows(GridRows {
+    g.try_set_rows(GridRows {
         rows: (0..n).map(source_row).collect(),
         total: RowTotal::Exact(n),
         more: false,
