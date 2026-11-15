@@ -1083,3 +1083,44 @@ fn option_feed_channel_keeps_input_live_and_shows_saturation() {
     see(&screen, &["Log feed"], &["Full retries"]);
     app.finish();
 }
+
+#[test]
+fn option_turn_budget_shows_the_receiver_policy_and_the_library_default() {
+    let app = page("s10-budget-16", Some("activity.feed=channel"), 120, 40);
+    let live = app.wait_text("Turn budget");
+    see(&live, &["Full retries", "16 msgs · 2 ms"], &["64 msgs"]);
+    click_tab(&app, "Options");
+    app.wait_text("Page options");
+    flash_settle(&app);
+    let options = app.settle();
+    let lines: Vec<String> = (0..options.rows())
+        .map(|row| row_text(&options, row))
+        .collect();
+    let label = lines
+        .iter()
+        .position(|line| line.contains("Turn budget"))
+        .unwrap_or_else(|| panic!("Turn budget missing\n{}", text(&options)));
+    assert!(
+        lines[label + 1].contains("16 messages"),
+        "Turn budget starts at the page's own 16-message bound\n{}",
+        text(&options)
+    );
+    app.finish();
+
+    let app = open(
+        "s10-budget-default",
+        120,
+        40,
+        &[
+            "--page",
+            "activity",
+            "--opt",
+            "activity.feed=channel",
+            "--opt",
+            "activity.budget=default",
+        ],
+    );
+    let live = app.wait_text("Turn budget");
+    see(&live, &["64 msgs · 2 ms"], &["16 msgs"]);
+    app.finish();
+}
