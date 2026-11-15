@@ -572,7 +572,7 @@ impl<'a> Words<'a> {
         let t = self.toks.get(self.pos)?;
         if matches!(t.kind, TokKind::Ident | TokKind::Keyword | TokKind::Literal) {
             self.pos += 1;
-            Some(self.src[t.start..t.end].trim_matches('"').to_owned())
+            Some(identifier(&self.src[t.start..t.end]))
         } else {
             None
         }
@@ -724,6 +724,16 @@ pub fn parse(stmt: &str) -> Result<Statement, ParseError> {
     }
 }
 
+/// Strips the delimiters of a quoted identifier and undoes the doubled quotes
+/// inside it. An unterminated identifier loses only its opening quote, and an
+/// unquoted word is returned unchanged.
+fn identifier(tok: &str) -> String {
+    match tok.strip_prefix('"') {
+        Some(rest) => rest.strip_suffix('"').unwrap_or(rest).replace("\"\"", "\""),
+        None => tok.to_owned(),
+    }
+}
+
 /// Strips one pair of SQL quotes and undoes doubled apostrophes inside it.
 fn literal(tok: &str) -> String {
     match tok.strip_prefix('\'').and_then(|t| t.strip_suffix('\'')) {
@@ -773,7 +783,7 @@ fn parse_select(w: &mut Words) -> Result<Select, ParseError> {
         if w.accept("AS") {
             w.next();
         }
-        columns.push(tok.trim_matches('"').to_owned());
+        columns.push(identifier(&tok));
     }
     let (schema, table) = w
         .qualified()
@@ -2131,6 +2141,27 @@ mod issue10_sql_tests {
         assert_eq!(literal("'O''Reilly'"), "O'Reilly");
         assert_eq!(literal("'plain'"), "plain");
         assert_eq!(literal("42"), "42");
+    }
+
+    #[test]
+    fn issue10_quoted_identifier_unescapes_doubled_quotes() {
+        let col = |sql: &str| parsed_filter(sql);
+        assert_eq!(
+            col(r#"SELECT * FROM orders WHERE "Odd""name" IS NULL"#),
+            Expr::All(vec![leaf("Odd\"name", PredicateOp::IsNull)])
+        );
+        assert_eq!(
+            col(r#"SELECT * FROM orders WHERE "a""" IS NULL"#),
+            Expr::All(vec![leaf("a\"", PredicateOp::IsNull)])
+        );
+        assert_eq!(
+            col(r#"SELECT * FROM orders WHERE "plain" IS NULL"#),
+            Expr::All(vec![leaf("plain", PredicateOp::IsNull)])
+        );
+        match parse(r#"SELECT "Odd""name" FROM orders"#).expect("parses") {
+            Statement::Select(sel) => assert_eq!(sel.columns, vec!["Odd\"name".to_string()]),
+            other => panic!("not a select: {other:?}"),
+        }
     }
 
     #[test]
