@@ -525,6 +525,7 @@ impl Workbench {
     /// hands back what only the host can do.
     pub fn settle(&mut self, resp: Response<WorkspaceAction<WorkTab>>) -> Settled {
         let mut settled = Settled::default();
+        let changed_tabs = resp.has_actions();
         for action in resp.into_actions() {
             match action {
                 WorkspaceAction::Activated(key) => {
@@ -544,7 +545,9 @@ impl Workbench {
                 }
             }
         }
-        self.sync_strip();
+        if changed_tabs {
+            self.sync_strip();
+        }
         settled
     }
 
@@ -619,6 +622,7 @@ impl Workbench {
                 resp |= self.ws.promote(key);
             }
             let _ = self.settle(resp);
+            self.sync_strip();
             return Some(key);
         }
         let table = self.catalog.find(Some(schema), name)?.clone();
@@ -670,6 +674,7 @@ impl Workbench {
                 }
             });
             let _ = self.settle(resp);
+            self.sync_strip();
             return key;
         }
         let connection = self.connection.name.clone();
@@ -698,6 +703,7 @@ impl Workbench {
             }
         });
         let _ = self.settle(resp);
+        self.sync_strip();
         true
     }
 
@@ -802,9 +808,6 @@ impl Workbench {
                 let _ = self.ws.finish_operation(token, |_| ());
             }
         }
-        if !entries.is_empty() {
-            self.sync_strip();
-        }
         entries
     }
 
@@ -830,7 +833,6 @@ impl Workbench {
             let _ = self.ws.cancel_operation(key);
             return false;
         }
-        self.sync_strip();
         true
     }
 
@@ -854,8 +856,7 @@ impl Workbench {
             })
             .unwrap_or(false);
         if cancelled {
-            let resp = self.ws.cancel_operation(key);
-            let _ = self.settle(resp);
+            let _ = self.ws.cancel_operation(key);
         }
         cancelled
     }

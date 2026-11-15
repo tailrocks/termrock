@@ -662,7 +662,6 @@ impl QueryWorkbenchPage {
     fn apply_result_option(&mut self) {
         if let (Some(result), Some(key)) = (self.result_option(), self.workspace.active_key()) {
             let _ = self.workspace.update(key, |doc| doc.install(result));
-            self.sync_strip();
         }
     }
 
@@ -2445,5 +2444,113 @@ mod tests {
         rig.with_cx(|p, cx| p.stop(cx));
         assert_eq!(rig.statuses, ["Query cancelled in customers"]);
         assert!(toolbar_idle(&rig));
+    }
+
+    fn titles(p: &QueryWorkbenchPage) -> Vec<String> {
+        p.docs().iter().map(|d| d.title.clone()).collect()
+    }
+
+    fn open_table(rig: &mut Rig, row: usize) {
+        rig.with_cx(|p, cx| p.tree_action(TreeAction::Activate(vec![0, 0, 0, row]), cx));
+    }
+
+    #[test]
+    fn query_workbench_preview_open_replaces_a_clean_preview_and_pins_on_edit() {
+        let mut rig = Rig::new();
+        rig.page.set_option("queryworkbench.explorer_open", 1);
+        open_table(&mut rig, 2);
+        let products = rig.page.active_key().expect("products opened");
+        assert_eq!(rig.page.workspace.preview_key(), Some(products));
+
+        open_table(&mut rig, 3);
+        assert_eq!(
+            titles(&rig.page),
+            ["Query 1", "customers", "orders"],
+            "the clean preview was replaced, not kept"
+        );
+        assert!(rig.page.doc_index(products).is_none());
+        let orders = rig.page.active_key().expect("orders opened");
+        assert_ne!(orders, products, "a replacement is a new document");
+
+        rig.type_into_editor("-- keep this\n");
+        assert_eq!(
+            rig.page.workspace.preview_key(),
+            None,
+            "the first edit pinned the preview"
+        );
+        open_table(&mut rig, 4);
+        assert_eq!(
+            titles(&rig.page),
+            ["Query 1", "customers", "orders", "order_items"],
+            "the edited document survived the next preview"
+        );
+
+        open_table(&mut rig, 4);
+        assert_eq!(
+            rig.page.workspace.preview_key(),
+            None,
+            "opening the active preview again pins it"
+        );
+    }
+
+    #[test]
+    fn query_workbench_close_discards_edits_without_asking_by_default() {
+        let mut rig = Rig::new();
+        rig.type_into_editor("-- scratch\n");
+        close(&mut rig, 0);
+        assert_eq!(titles(&rig.page), ["customers"]);
+        assert!(rig.page.pending_close.is_none());
+    }
+
+    #[test]
+    fn query_workbench_ask_mode_needs_a_second_close_and_an_edit_makes_it_stale() {
+        let mut rig = Rig::new();
+        rig.page.set_option("queryworkbench.dirty_close", 1);
+        rig.type_into_editor("-- scratch\n");
+
+        close(&mut rig, 0);
+        assert_eq!(rig.page.docs().len(), 2, "the first close only asks");
+        let asked = rig.page.pending_close.expect("a close request is waiting");
+        assert!(
+            rig.statuses
+                .last()
+                .is_some_and(|s| s.contains("unsaved changes")),
+            "{:?}",
+            rig.statuses
+        );
+
+        rig.type_into_editor("-- more\n");
+        close(&mut rig, 0);
+        assert_eq!(rig.page.docs().len(), 2, "an edit made the request stale");
+        let again = rig.page.pending_close.expect("asked again");
+        assert_ne!(again, asked, "the new request has its own token");
+
+        rig.focus.focus(rig.page.tabs.id);
+        rig.key(KeyCode::Esc, KeyModifiers::NONE);
+        assert!(rig.page.pending_close.is_none(), "Esc keeps the tab");
+        assert_eq!(rig.page.docs().len(), 2);
+
+        close(&mut rig, 0);
+        close(&mut rig, 0);
+        assert_eq!(titles(&rig.page), ["customers"], "a second close discards");
+    }
+
+    #[test]
+    fn query_workbench_ask_mode_confirmation_targets_the_asked_document() {
+        let mut rig = Rig::new();
+        rig.page.set_option("queryworkbench.dirty_close", 1);
+        rig.type_into_editor("-- scratch\n");
+        let asked = rig.page.active_key().expect("active");
+        close(&mut rig, 0);
+
+        switch(&mut rig, 1);
+        close(&mut rig, 1);
+        assert_eq!(titles(&rig.page), ["Query 1"], "a clean tab closes at once");
+        assert!(rig.page.doc_index(asked).is_some(), "the asked tab waits");
+        close(&mut rig, 0);
+        assert!(
+            rig.page.docs().is_empty(),
+            "the second close confirmed the asked document, the only one left"
+        );
     }
 }

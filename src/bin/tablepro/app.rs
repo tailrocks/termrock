@@ -79,6 +79,10 @@ mod connection_identity_tests;
 #[path = "commit_owner_tests.rs"]
 mod commit_owner_tests;
 
+#[cfg(test)]
+#[path = "workspace_tests.rs"]
+mod workspace_tests;
+
 #[path = "table_transition.rs"]
 mod table_transition;
 pub use table_transition::TableChange;
@@ -2002,7 +2006,7 @@ impl App {
         if discard {
             self.discard_close(token);
         } else {
-            self.keep_tab(token);
+            self.keep_tab(token, false);
         }
     }
 
@@ -2014,20 +2018,21 @@ impl App {
             Resolved::Save(Leave::To(token)) => self.save_then_close(token),
             _ => {
                 if let Some(token) = pending {
-                    self.keep_tab(token);
+                    self.keep_tab(token, true);
                 }
             }
         }
     }
 
-    fn keep_tab(&mut self, token: CloseToken) {
+    fn keep_tab(&mut self, token: CloseToken, announce: bool) {
         if let Some(w) = self.workbench.as_mut()
             && let Ok(resp) = w.ws.resolve_close(token, CloseDecision::Cancel)
         {
-            let settled = w.settle(resp);
-            let _ = settled;
+            let _ = w.settle(resp);
         }
-        self.set_status("Changes kept pending".into());
+        if announce {
+            self.set_status("Changes kept pending".into());
+        }
     }
 
     /// Closes the tab the token names and drops its changes. A token the tab
@@ -3250,7 +3255,10 @@ mod tests {
             "{}",
             code[0]
         );
-        assert_eq!(with_grid(&mut app, |g| g.rows()[0][PRICE].clone()), original);
+        assert_eq!(
+            with_grid(&mut app, |g| g.rows()[0][PRICE].clone()),
+            original
+        );
         assert_eq!(
             with_grid(&mut app, |g| g.value(0, PRICE).clone()),
             CellValue::Num(1.234_567)

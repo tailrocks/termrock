@@ -310,16 +310,6 @@ pub static QUERY_WORKBENCH: &[Opt] = &[
         "Tab close",
         &["always", "hover"],
     ),
-    Opt::new(
-        "queryworkbench.explorer_open",
-        "Explorer opens",
-        &["pinned", "preview"],
-    ),
-    Opt::new(
-        "queryworkbench.dirty_close",
-        "Close with edits",
-        &["discard", "ask"],
-    ),
     Opt::new("queryworkbench.read_only", "Read-only editor", OFF_ON),
     Opt::new(
         "queryworkbench.result",
@@ -330,6 +320,16 @@ pub static QUERY_WORKBENCH: &[Opt] = &[
         "queryworkbench.env",
         "Environment",
         &["production", "staging", "development", "local"],
+    ),
+    Opt::new(
+        "queryworkbench.explorer_open",
+        "Explorer opens",
+        &["pinned", "preview"],
+    ),
+    Opt::new(
+        "queryworkbench.dirty_close",
+        "Close with edits",
+        &["discard", "ask"],
     ),
 ];
 

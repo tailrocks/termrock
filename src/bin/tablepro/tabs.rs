@@ -2811,34 +2811,6 @@ impl HistoryTab {
     }
 }
 
-#[cfg(test)]
-mod issue9_tests {
-    use super::*;
-
-    #[test]
-    fn issue9_query_editor_unicode_paste() {
-        let sql = "SELECT é, 名 FROM 表 WHERE note = '💾;中'; SELECT e\u{301} FROM t";
-        let mut tab = QueryTab::new(ItemKey::num(0), WidgetId::of("issue9"), "Query 1", "");
-        tab.editor.editing = true;
-        assert_eq!(tab.on_paste(sql), Outcome::Changed);
-        assert_eq!(tab.editor.text(), sql);
-
-        let runs = tab.statements_to_run(true);
-        let texts: Vec<&str> = runs.iter().map(|(text, _)| text.as_str()).collect();
-        assert_eq!(
-            texts,
-            [
-                "SELECT é, 名 FROM 表 WHERE note = '💾;中'",
-                "SELECT e\u{301} FROM t"
-            ]
-        );
-        for (text, range) in &runs {
-            assert_eq!(&sql[range.clone()], text.as_str());
-        }
-        assert!(!highlight_sql(sql).is_empty());
-    }
-}
-
 /// Painting and view-only access to one workspace tab. Its field is private,
 /// so a caller of `DocumentWorkspace::view_mut` cannot reach a tab's rows,
 /// draft or text through it. Every operation here moves a cursor, a scroll
@@ -2964,5 +2936,33 @@ impl<'a> WorkTabView<'a> {
             }
             _ => None,
         }
+    }
+}
+
+#[cfg(test)]
+mod issue9_tests {
+    use super::*;
+
+    #[test]
+    fn issue9_query_editor_unicode_paste() {
+        let sql = "SELECT é, 名 FROM 表 WHERE note = '💾;中'; SELECT e\u{301} FROM t";
+        let mut tab = QueryTab::new(ItemKey::num(0), WidgetId::of("issue9"), "Query 1", "");
+        tab.editor.editing = true;
+        assert_eq!(tab.on_paste(sql), Outcome::Changed);
+        assert_eq!(tab.editor.text(), sql);
+
+        let runs = tab.statements_to_run(true);
+        let texts: Vec<&str> = runs.iter().map(|(text, _)| text.as_str()).collect();
+        assert_eq!(
+            texts,
+            [
+                "SELECT é, 名 FROM 表 WHERE note = '💾;中'",
+                "SELECT e\u{301} FROM t"
+            ]
+        );
+        for (text, range) in &runs {
+            assert_eq!(&sql[range.clone()], text.as_str());
+        }
+        assert!(!highlight_sql(sql).is_empty());
     }
 }
