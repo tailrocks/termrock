@@ -1316,13 +1316,15 @@ impl ShellPage<Holla> for SnapshotPage {
                         .chain(w.custom_global.iter())
                         .find(|c| c.path == path)
                         .map(|c| c.digest.clone());
-                    match digest {
-                        Some(d) if w.trust.revoke(&d) => {
-                            w.persisted.trust = Some(w.trust.serialize());
-                            cx.status("Trust revoked · the file must be reviewed again before anything runs");
-                            self.build(w);
-                        }
-                        _ => cx.status("Nothing to revoke · the file is not trusted"),
+                    let revoked = digest.is_some_and(|d| w.edit_catalog_if(|w| w.trust.revoke(&d)));
+                    if revoked {
+                        w.persisted.trust = Some(w.trust.serialize());
+                        cx.status(
+                            "Trust revoked · the file must be reviewed again before anything runs",
+                        );
+                        self.build(w);
+                    } else {
+                        cx.status("Nothing to revoke · the file is not trusted");
                     }
                     return Outcome::Changed;
                 }

@@ -27,6 +27,7 @@ use ratatui::style::{Modifier, Style};
 
 use crate::domain::catalog::{InsightCategory, insight_candidates, observe_process};
 use crate::domain::cleanup::{self, DeleteItem, DeletePlan, Eligibility, Mode, ProcessObservation};
+use crate::domain::projection::{CleanupStamp, Deadline, Seen};
 use crate::screens::{
     Cx, Go, MenuTake, ModalResult, Page, PendingMenu, Screen, StatusBits, open_context, row_anchor,
     scroll_drag, scroll_press,
@@ -101,6 +102,8 @@ pub struct CleanupPage {
 
     pub checked: BTreeSet<String>,
 
+    /// Expanded categories by id, so a fold survives a reorder or a category
+    /// that leaves and returns.
     open: BTreeSet<String>,
     menu: PendingMenu<CleanupContext>,
     pub mode: Mode,
@@ -109,6 +112,8 @@ pub struct CleanupPage {
     md: MasterDetail,
     seeded: bool,
     last_tick: u64,
+    seen: Seen<CleanupStamp>,
+    age_deadline: Deadline,
 
     pub reviewed: Option<u64>,
 }
@@ -137,6 +142,8 @@ impl CleanupPage {
             md: MasterDetail::new(LIST, DETAIL).detail_share(38, 34, 50),
             seeded: false,
             last_tick: u64::MAX,
+            seen: Seen::default(),
+            age_deadline: Deadline::default(),
             reviewed: None,
         }
     }
@@ -198,34 +205,73 @@ impl CleanupPage {
         ))
     }
 
-    fn rebuild(&mut self, w: &World) {
-        let keep = match self.rows.get(self.cursor) {
+    fn is_open(&self, ci: usize) -> bool {
+        self.cats
+            .get(ci)
+            .is_some_and(|c| self.open.contains(c.category.id))
+    }
+
+    fn any_open(&self) -> bool {
+        (0..self.cats.len()).any(|ci| self.is_open(ci))
+    }
+
+    fn set_open(&mut self, ci: usize, open: bool) {
+        let Some(id) = self.cats.get(ci).map(|c| c.category.id) else {
+            return;
+        };
+        if open {
+            self.open.insert(id.to_owned());
+        } else {
+            self.open.remove(id);
+        }
+    }
+
+    fn selected_path(&self) -> Option<String> {
+        match self.rows.get(self.cursor) {
             Some(Row::Candidate(c, i)) => self
                 .cats
                 .get(*c)
                 .and_then(|k| k.candidates.get(*i))
                 .map(|k| k.path.clone()),
             _ => None,
-        };
-        if let Some((sp, cat)) = self.special_category(w) {
-            self.cats = vec![cat];
-            self.special = Some(sp);
-        } else {
-            self.cats = insight_candidates(w);
-            self.special = None;
-            if let Some(f) = &self.filter {
-                self.cats.retain(|c| c.category.id == f);
-            }
         }
+    }
 
-        let live: BTreeSet<&str> = self
-            .cats
-            .iter()
-            .flat_map(|c| c.candidates.iter())
-            .filter(|k| k.eligibility.selectable())
-            .map(|k| k.path.as_str())
-            .collect();
-        self.checked.retain(|p| live.contains(p.as_str()));
+    /// Brings the candidates up to date with the world and returns whether it
+    /// did any work. A cleanup stamp rescans the filesystem once. A day
+    /// boundary refreshes only the cached ages and eligibility. Nothing else
+    /// touches the candidates: folds, checks, mode and dry run rebuild rows.
+    fn ensure_projection(&mut self, w: &World) -> bool {
+        let stamp = w.cleanup_stamp();
+        if self.seen.needs_rebuild(stamp) {
+            self.reload_source(w);
+            self.seen.published(stamp);
+            return true;
+        }
+        if self.age_deadline.due(w.now_secs()) {
+            self.refresh_ages(w);
+            self.rebuild_rows();
+            return true;
+        }
+        #[cfg(test)]
+        self.assert_matches_reference(w);
+        false
+    }
+
+    fn reload_source(&mut self, w: &World) {
+        let keep = self.selected_path();
+        let (cats, special) = if let Some((sp, cat)) = self.special_category(w) {
+            (vec![cat], Some(sp))
+        } else {
+            let mut cats = insight_candidates(w);
+            if let Some(f) = &self.filter {
+                cats.retain(|c| c.category.id == f);
+            }
+            (cats, None)
+        };
+        self.cats = cats;
+        self.special = special;
+        self.reconcile_checked();
         if !self.seeded {
             for c in &self.cats {
                 for k in &c.candidates {
@@ -241,6 +287,63 @@ impl CleanupPage {
             }
             self.seeded = true;
         }
+        self.age_deadline = self.next_age_deadline(w);
+        self.install_rows(keep);
+    }
+
+    /// Re-derives every cached candidate's age and eligibility from its file's
+    /// modification time at the current clock. No scan, no size, no process
+    /// observation: those are source facts the stamp owns.
+    fn refresh_ages(&mut self, w: &World) {
+        let now = w.now_secs();
+        let special = self.special.is_some();
+        for c in &mut self.cats {
+            for k in &mut c.candidates {
+                let age =
+                    w.fs.get(&k.path)
+                        .and_then(|n| cleanup::age_days(n.mtime, now));
+                k.age_days = age;
+                k.eligibility = if special {
+                    Eligibility::Preselected
+                } else {
+                    cleanup::eligibility(c.category, age, &c.process)
+                };
+            }
+        }
+        self.reconcile_checked();
+        self.age_deadline = self.next_age_deadline(w);
+    }
+
+    fn next_age_deadline(&self, w: &World) -> Deadline {
+        let now = w.now_secs();
+        let mtimes = self
+            .cats
+            .iter()
+            .flat_map(|c| c.candidates.iter())
+            .filter_map(|k| w.fs.get(&k.path).map(|n| n.mtime));
+        Deadline::new(now, crate::domain::projection::age_deadline(mtimes, now))
+    }
+
+    /// Keeps only checked paths that are still eligible candidates. A path that
+    /// becomes eligible later is not selected for the user.
+    fn reconcile_checked(&mut self) {
+        let live: BTreeSet<&str> = self
+            .cats
+            .iter()
+            .flat_map(|c| c.candidates.iter())
+            .filter(|k| k.eligibility.selectable())
+            .map(|k| k.path.as_str())
+            .collect();
+        self.checked.retain(|p| live.contains(p.as_str()));
+    }
+
+    fn rebuild_rows(&mut self) {
+        let keep = self.selected_path();
+        self.install_rows(keep);
+    }
+
+    fn install_rows(&mut self, keep: Option<String>) {
+        crate::domain::projection::record(|x| x.cleanup_row_builds += 1);
         let mut rows = vec![];
         if self.cats.is_empty() {
             rows.push(Row::Note(match &self.filter {
@@ -253,7 +356,7 @@ impl CleanupPage {
                 rows.push(Row::Blank);
             }
             rows.push(Row::Category(ci));
-            if self.open.contains(c.category.id) {
+            if self.is_open(ci) {
                 if c.candidates.is_empty() {
                     rows.push(Row::Note("  no candidates · nothing to remove".into()));
                 }
@@ -295,6 +398,26 @@ impl CleanupPage {
                 .unwrap_or(0);
         }
         self.scroll.set_content(self.rows.len());
+    }
+
+    /// The differential check of the cache: a settled page must read exactly
+    /// like a page built from nothing at this instant.
+    #[cfg(test)]
+    pub(crate) fn candidates_signature(&self) -> Vec<String> {
+        let mut v: Vec<String> = self.cats.iter().map(|c| format!("{c:?}")).collect();
+        v.push(format!("{:?}", self.special));
+        v
+    }
+
+    #[cfg(test)]
+    fn assert_matches_reference(&self, w: &World) {
+        let mut reference = CleanupPage::new(self.filter.as_deref());
+        crate::domain::projection::uncounted(|| reference.ensure_projection(w));
+        crate::domain::projection::assert_same_signature(
+            &self.candidates_signature(),
+            &reference.candidates_signature(),
+            "cleanup",
+        );
     }
 
     fn step(&mut self, delta: isize) {
@@ -791,11 +914,7 @@ impl CleanupPage {
                             t.text_muted
                         }),
                     );
-                    let fold = if self.open.contains(c.category.id) {
-                        "▾"
-                    } else {
-                        "▸"
-                    };
+                    let fold = if self.is_open(*ci) { "▾" } else { "▸" };
                     buf.set_string(row.x + 5, y, fold, plain.fg(t.text_secondary));
                     let label = match &self.special {
                         Some(sp) => sp.label.clone(),
@@ -1071,7 +1190,7 @@ impl CleanupPage {
             CleanupAction::SetDryRun(dry_run) => self.set_dry_run(dry_run, cx),
             CleanupAction::Review => return self.review(w, cx),
         }
-        self.rebuild(w);
+        self.rebuild_rows();
         Outcome::Changed
     }
 
@@ -1185,6 +1304,7 @@ impl CleanupPage {
 
 impl ShellPage<Holla> for CleanupPage {
     fn on_key(&mut self, key: &Key, w: &mut World, cx: &mut Cx) -> Outcome {
+        self.ensure_projection(w);
         if let Some(o) = self.md.on_key(key, cx.focus) {
             return o;
         }
@@ -1235,29 +1355,28 @@ impl ShellPage<Holla> for CleanupPage {
                     Some(Row::Candidate(ci, ki)) => self.toggle_candidate(ci, ki, cx),
                     _ => cx.status("Move onto a category or candidate first"),
                 }
-                self.rebuild(w);
+                self.rebuild_rows();
                 Outcome::Changed
             }
             KeyCode::Enter | KeyCode::Right | KeyCode::Left => {
                 match self.rows.get(self.cursor).cloned() {
                     Some(Row::Category(ci)) => {
                         if key.code == KeyCode::Left
-                            || (key.code == KeyCode::Enter
-                                && self.open.contains(self.cats[ci].category.id))
+                            || (key.code == KeyCode::Enter && self.is_open(ci))
                         {
-                            self.open.remove(self.cats[ci].category.id);
+                            self.set_open(ci, false);
                         } else {
-                            self.open.insert(self.cats[ci].category.id.to_owned());
+                            self.set_open(ci, true);
                         }
-                        self.rebuild(w);
+                        self.rebuild_rows();
                     }
                     Some(Row::Candidate(ci, ki)) => {
                         if key.code == KeyCode::Enter {
                             self.toggle_candidate(ci, ki, cx);
-                            self.rebuild(w);
+                            self.rebuild_rows();
                         } else if key.code == KeyCode::Left {
-                            self.open.remove(self.cats[ci].category.id);
-                            self.rebuild(w);
+                            self.set_open(ci, false);
+                            self.rebuild_rows();
                             self.cursor = self
                                 .rows
                                 .iter()
@@ -1272,7 +1391,7 @@ impl ShellPage<Holla> for CleanupPage {
             KeyCode::Char('a') => {
                 let selected = !self.all_eligible_selected();
                 self.set_all_selected(selected, cx);
-                self.rebuild(w);
+                self.rebuild_rows();
                 Outcome::Changed
             }
             KeyCode::Char('m') => {
@@ -1282,13 +1401,13 @@ impl ShellPage<Holla> for CleanupPage {
                     Mode::Permanent
                 };
                 self.set_mode(next, cx);
-                self.rebuild(w);
+                self.rebuild_rows();
                 Outcome::Changed
             }
             KeyCode::Char('n') => {
                 let dry_run = !self.dry_run;
                 self.set_dry_run(dry_run, cx);
-                self.rebuild(w);
+                self.rebuild_rows();
                 Outcome::Changed
             }
             KeyCode::Char('d') | KeyCode::Backspace => self.review(w, cx),
@@ -1303,9 +1422,9 @@ impl ShellPage<Holla> for CleanupPage {
                 Outcome::Changed
             }
             KeyCode::Esc => {
-                if self.filter.is_none() && !self.open.is_empty() {
+                if self.filter.is_none() && self.any_open() {
                     self.open.clear();
-                    self.rebuild(w);
+                    self.rebuild_rows();
                     return Outcome::Changed;
                 }
                 cx.go(Go::Pop);
@@ -1316,6 +1435,7 @@ impl ShellPage<Holla> for CleanupPage {
     }
 
     fn pointer(&mut self, ev: &PointerEvent, w: &mut World, cx: &mut Cx) -> Outcome {
+        self.ensure_projection(w);
         let (id, pos) = (ev.id, ev.pos());
 
         let row = ev.on(LIST).then(|| ev.index_of(Part::ROW)).flatten();
@@ -1366,14 +1486,12 @@ impl ShellPage<Holla> for CleanupPage {
                     cx.focus.focus(LIST);
                     match self.rows.get(i).cloned() {
                         Some(Row::Category(ci)) => {
-                            if !self.open.remove(self.cats[ci].category.id) {
-                                self.open.insert(self.cats[ci].category.id.to_owned());
-                            }
-                            self.rebuild(w);
+                            self.set_open(ci, !self.is_open(ci));
+                            self.rebuild_rows();
                         }
                         Some(Row::Candidate(ci, ki)) => {
                             self.toggle_candidate(ci, ki, cx);
-                            self.rebuild(w);
+                            self.rebuild_rows();
                         }
                         _ => {}
                     }
@@ -1411,30 +1529,20 @@ impl ShellPage<Holla> for CleanupPage {
         }
         self.last_tick = w.tick;
 
-        super::rebuild_on_tick(
-            self,
-            |s| {
-                (
-                    s.cats.clone(),
-                    s.special.clone(),
-                    s.rows.clone(),
-                    s.checked.clone(),
-                    s.cursor,
-                )
-            },
-            |s| s.rebuild(w),
-        )
+        if self.ensure_projection(w) {
+            Outcome::Changed
+        } else {
+            Outcome::Ignored
+        }
     }
 
     fn enter(&mut self, w: &mut World, cx: &mut Cx) {
-        self.rebuild(w);
+        self.ensure_projection(w);
         cx.focus.focus(LIST);
     }
 
     fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, w: &World) {
-        if self.rows.is_empty() {
-            self.rebuild(w);
-        }
+        self.ensure_projection(w);
         let t = ctx.theme;
         let title = match &self.special {
             Some(s) => format!("Cleanup · {}", s.label),
@@ -1541,6 +1649,10 @@ impl ShellPage<Holla> for CleanupPage {
 }
 
 impl Screen for CleanupPage {
+    fn background_tick(&self) -> bool {
+        false
+    }
+
     fn on_context_key(&mut self, _w: &mut World, cx: &mut Cx) -> Outcome {
         if !cx.focus.is(LIST) {
             return Outcome::Ignored;
@@ -1708,18 +1820,26 @@ pub fn commit(plan: &DeletePlan, w: &mut World) -> Result<usize, String> {
         .map(|g| (g.to_owned(), observe_process(w, g)))
         .collect();
     let exec = cleanup::Execution::start(plan, plan.revision, &w.ops_log.path)?;
-    w.reports.push(exec.report().clone());
-    let report_index = w.reports.len() - 1;
-    w.cleanup_job = Some(crate::sim::world::CleanupJob {
-        exec,
-        report_index,
-        processes: procs,
-    });
-    Ok(report_index)
+    Ok(w.edit_cleanup(|w| {
+        w.reports.push(exec.report().clone());
+        let report_index = w.reports.len() - 1;
+        w.cleanup_job = Some(crate::sim::world::CleanupJob {
+            exec,
+            report_index,
+            processes: procs,
+        });
+        report_index
+    }))
 }
 
+/// One tick of a running cleanup job. A running job is real work every tick
+/// (log lines, removals, report progress), so each step is one cleanup edit.
 pub fn step(w: &mut World) -> Option<usize> {
-    let mut job = w.cleanup_job.take()?;
+    let job = w.cleanup_job.take()?;
+    w.edit_cleanup(|w| step_job(w, job))
+}
+
+fn step_job(w: &mut World, mut job: crate::sim::world::CleanupJob) -> Option<usize> {
     let home = w.location.home.clone();
     let os = w.host.os;
     let now = w.now_secs();
@@ -1790,6 +1910,9 @@ fn settle(w: &mut World, idx: usize, report: cleanup::Report) {
         w.start_scan(&root);
     }
 }
+
+#[cfg(test)]
+mod tests;
 
 #[cfg(test)]
 mod context_tests {
@@ -1869,11 +1992,11 @@ mod context_tests {
     /// A page with every category expanded, so each candidate has a row.
     fn expanded_page(w: &World) -> CleanupPage {
         let mut page = CleanupPage::new(None);
-        page.rebuild(w);
+        page.ensure_projection(w);
         for c in &page.cats {
             page.open.insert(c.category.id.to_owned());
         }
-        page.rebuild(w);
+        page.rebuild_rows();
         page
     }
 
@@ -1891,13 +2014,13 @@ mod context_tests {
         let path = page.cats[last].candidates[0].path.clone();
         page.open.clear();
         page.open.insert(page.cats[last].category.id.to_owned());
-        page.rebuild(&w);
+        page.rebuild_rows();
         let row = row_of_candidate(&page, last, 0);
 
         let tag = open_menu(&mut page, &mut w, row);
         // Expanding an earlier category inserts rows above the captured candidate.
         page.open.insert(page.cats[0].category.id.to_owned());
-        page.rebuild(&w);
+        page.rebuild_rows();
         assert_ne!(row_of_candidate(&page, last, 0), row, "the row moved");
 
         let requests = choose(&mut page, &mut w, &tag, 1);
@@ -1919,7 +2042,7 @@ mod context_tests {
         let path = page.cats[last].candidates[0].path.clone();
         page.open.clear();
         page.open.insert(page.cats[last].category.id.to_owned());
-        page.rebuild(&w);
+        page.rebuild_rows();
         let row = row_of_candidate(&page, last, 0);
 
         let hits = render_hits(&mut page, &w);
@@ -1931,7 +2054,7 @@ mod context_tests {
         );
 
         page.open.insert(page.cats[0].category.id.to_owned());
-        page.rebuild(&w);
+        page.rebuild_rows();
         assert_ne!(row_of_candidate(&page, last, 0), row, "the row moved");
 
         let requests = choose(&mut page, &mut w, &tag, 1);
@@ -1978,13 +2101,13 @@ mod context_tests {
 
         // The earlier category starts closed, so opening it later inserts rows above the captured one.
         page.open.remove(page.cats[earlier_ci].category.id);
-        page.rebuild(&w);
+        page.rebuild_rows();
         let row = row_of_category(&page, target_ci);
 
         let tag = open_menu(&mut page, &mut w, row);
         page.open
             .insert(page.cats[earlier_ci].category.id.to_owned());
-        page.rebuild(&w);
+        page.rebuild_rows();
         assert_ne!(row_of_category(&page, target_ci), row, "the row moved");
         assert_eq!(page.cats[target_ci].category.id, captured_id);
 

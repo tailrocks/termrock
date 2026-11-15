@@ -188,7 +188,7 @@ impl junie_tui::shell::PageTypes for Holla {
     type Go = Go;
 }
 
-pub use junie_tui::shell::{open_context, rebuild_on_tick, row_anchor, row_choice};
+pub use junie_tui::shell::{open_context, row_anchor, row_choice};
 
 impl ModalResult {
     pub fn menu_chosen(&self) -> Option<usize> {
@@ -258,6 +258,13 @@ impl<C> PendingMenu<C> {
 }
 
 pub trait Screen: junie_tui::shell::Page<Holla> {
+    /// Whether this page needs its tick while another tab is shown. A page
+    /// whose tick only refreshes a projection of the world returns false: the
+    /// domain keeps running, and the page catches up once when it is entered.
+    fn background_tick(&self) -> bool {
+        true
+    }
+
     fn on_context_key(&mut self, _w: &mut World, _cx: &mut Cx) -> Outcome {
         Outcome::Ignored
     }

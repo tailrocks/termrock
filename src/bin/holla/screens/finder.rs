@@ -25,8 +25,9 @@ use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::{Modifier, Style};
 
-use crate::domain::action::{Confirmation, Freshness, Item, Kind, Launch, Risk};
+use crate::domain::action::{Confirmation, Item, Kind, Launch, Risk};
 use crate::domain::context::Scope;
+use crate::domain::projection::{CatalogStamp, Deadline, Seen};
 use crate::domain::ranking::{Ranked, search};
 use crate::screens::{Cx, Go, Page, Screen, StatusBits, risk_tone, scroll_drag, scroll_press};
 use crate::sim::world::World;
@@ -50,6 +51,26 @@ enum Row {
     Blank,
 }
 
+/// What the ranked rows were built from besides the catalog and memory: the
+/// query, scope and group. Compared by value, so an edit through any public
+/// field is seen without a flag to forget.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ViewKey {
+    query: String,
+    scope: Scope,
+    group: Option<&'static str>,
+}
+
+/// The visible text that changes with time but not with ranking: the data
+/// freshness of the selected item, activity line counts and durations, and the
+/// age of recent rows. A change repaints; it never rebuilds the catalog.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct DisplayStamp {
+    data: Option<String>,
+    activities: Vec<(usize, usize, String)>,
+    ago: Vec<String>,
+}
+
 fn selectable(row: &Row) -> bool {
     match row {
         Row::Item(..) => true,
@@ -62,7 +83,14 @@ pub struct FinderPage {
     pub group: Option<&'static str>,
     pub query: EditField,
     pub scope: Scope,
+    source: Vec<Item>,
+    source_seen: Seen<CatalogStamp>,
+    source_deadline: Deadline,
     items: Vec<Item>,
+    memory_seen: Option<u64>,
+    decor_deadline: Deadline,
+    view_seen: Option<ViewKey>,
+    display_seen: Option<DisplayStamp>,
 
     pub warnings: Vec<String>,
     rows: Vec<Row>,
@@ -78,8 +106,6 @@ pub struct FinderPage {
     preview_area: Rect,
     scope_area: Rect,
     explore_areas: Vec<(WidgetId, Rect, usize)>,
-
-    dirty: bool,
 
     pub rebuilds: u32,
 
@@ -113,7 +139,14 @@ impl FinderPage {
             group,
             query: query_field(),
             scope: Scope::Here,
+            source: vec![],
+            source_seen: Seen::default(),
+            source_deadline: Deadline::default(),
             items: vec![],
+            memory_seen: None,
+            decor_deadline: Deadline::default(),
+            view_seen: None,
+            display_seen: None,
             warnings: vec![],
             rows: vec![],
             cursor: 0,
@@ -128,7 +161,6 @@ impl FinderPage {
             preview_area: Rect::ZERO,
             scope_area: Rect::ZERO,
             explore_areas: vec![],
-            dirty: true,
             rebuilds: 0,
             query_changed: false,
             previewed: None,
@@ -152,15 +184,72 @@ impl FinderPage {
 
     pub fn set_scope(&mut self, s: Scope) {
         self.scope = s;
-        self.dirty = true;
     }
 
-    fn rebuild(&mut self, w: &World) {
-        self.rebuilds += 1;
+    fn view_key(&self) -> ViewKey {
+        ViewKey {
+            query: self.query.text().to_owned(),
+            scope: self.scope,
+            group: self.group,
+        }
+    }
+
+    /// Brings the ranked rows up to date with the world and returns whether it
+    /// did any work. Each layer rebuilds only for its own dependency. A source
+    /// stamp or a source deadline rebuilds the structural catalog. A source
+    /// change, a memory epoch or a memory deadline decorates it again. Any of
+    /// those or a changed query, scope or group reranks. A stamp is published
+    /// only after the whole projection is installed.
+    fn ensure_projection(&mut self, w: &World) -> bool {
+        let now = w.now_secs();
+        let stamp = w.catalog_stamp();
+        let memory = w.memory_epoch();
+        let view = self.view_key();
+        let source_stale = self.source_seen.needs_rebuild(stamp) || self.source_deadline.due(now);
+        let decor_stale =
+            source_stale || self.memory_seen != Some(memory) || self.decor_deadline.due(now);
+        let view_stale = self.view_seen.as_ref() != Some(&view);
+        if !(source_stale || decor_stale || view_stale) {
+            #[cfg(test)]
+            self.assert_matches_reference(w);
+            return false;
+        }
         let keep = self.current_id();
-        let (items, warnings) = crate::domain::catalog::build_with_warnings(w);
-        self.items = items;
-        self.warnings = warnings;
+        let source = source_stale.then(|| crate::domain::catalog::build_sources_with_warnings(w));
+        let decorated = decor_stale.then(|| {
+            crate::domain::catalog::decorate(
+                w,
+                source.as_ref().map_or(self.source.as_slice(), |s| &s.0),
+            )
+        });
+        if let Some((items, warnings)) = source {
+            self.source = items;
+            self.warnings = warnings;
+            self.source_deadline =
+                Deadline::new(now, crate::domain::catalog::source_deadline_secs(w));
+        }
+        if let Some(items) = decorated {
+            self.items = items;
+            self.decor_deadline = Deadline::new(
+                now,
+                crate::domain::projection::memory_deadline(
+                    &w.memory.usage,
+                    &w.location.cwd,
+                    &w.host.name,
+                    now,
+                ),
+            );
+        }
+        self.rank_rows(w, keep);
+        self.source_seen.published(stamp);
+        self.memory_seen = Some(memory);
+        self.view_seen = Some(view);
+        self.display_seen = Some(self.display_stamp(w));
+        true
+    }
+
+    fn rank_rows(&mut self, w: &World, keep: Option<String>) {
+        self.rebuilds += 1;
         let learned = if crate::domain::ranking::Query::parse(self.query.text()).is_empty() {
             None
         } else {
@@ -249,6 +338,7 @@ impl FinderPage {
                 let mut rr = r.clone();
                 if let Some(secs) = self.items[r.index].last_used_secs {
                     rr.reason = w.clock.ago(secs);
+                    rr.ago_secs = Some(secs);
                 }
                 rows.push(Row::Item(r.index, rr));
             }
@@ -361,7 +451,140 @@ impl FinderPage {
             self.preview_scroll.jump_start();
             self.previewed = previewed;
         }
-        self.dirty = false;
+    }
+
+    /// The item as it reads at the world's current tick: the activity text and
+    /// the data freshness are recomputed from the live world, everything else
+    /// stays as cached.
+    fn live_item<'a>(&self, it: &'a Item, w: &World) -> std::borrow::Cow<'a, Item> {
+        let activity = it
+            .id
+            .strip_prefix("activity.")
+            .filter(|_| it.kind == Kind::Activity)
+            .and_then(|id| w.activity(id));
+        let observed = it.freshness.observed_tick();
+        if activity.is_none() && observed.is_none() {
+            return std::borrow::Cow::Borrowed(it);
+        }
+        let mut live = it.clone();
+        if let Some(a) = activity {
+            let display = crate::domain::catalog::activity_display(a, w.tick);
+            live.summary = display.summary;
+            if let Some(r) = live.reasons.first_mut() {
+                r.text = display.reason;
+            }
+        }
+        if let Some(t) = observed {
+            let elapsed = w.tick.saturating_sub(t).min(i64::MAX as u64) as i64;
+            live.freshness = it
+                .freshness
+                .advanced(elapsed.saturating_mul(crate::sim::world::TICK_MS));
+        }
+        std::borrow::Cow::Owned(live)
+    }
+
+    fn row_reason(&self, it: &Item, rk: &Ranked, w: &World) -> String {
+        let reason = match rk.ago_secs {
+            Some(secs) => w.clock.ago(secs),
+            None => match self.live_item(it, w) {
+                std::borrow::Cow::Owned(live) if it.kind == Kind::Activity => {
+                    match (it.reasons.first(), live.reasons.first()) {
+                        (Some(old), Some(new)) => rk.reason.replacen(&old.text, &new.text, 1),
+                        _ => rk.reason.clone(),
+                    }
+                }
+                _ => rk.reason.clone(),
+            },
+        };
+        match &rk.tag {
+            Some(tag) if !reason.starts_with(tag.as_str()) => format!("{tag} · {reason}"),
+            _ => reason,
+        }
+    }
+
+    fn display_stamp(&self, w: &World) -> DisplayStamp {
+        let mut activities = vec![];
+        let mut ago = vec![];
+        for r in &self.rows {
+            let Row::Item(i, rk) = r else { continue };
+            if let Some(secs) = rk.ago_secs {
+                ago.push(w.clock.ago(secs));
+            }
+            let it = &self.items[*i];
+            if it.kind == Kind::Activity
+                && let Some(a) = it
+                    .id
+                    .strip_prefix("activity.")
+                    .and_then(|id| w.activity(id))
+            {
+                activities.push((
+                    a.output.len(),
+                    a.dropped,
+                    crate::screens::ticks_label(a.duration_ticks(w.tick)),
+                ));
+            }
+        }
+        DisplayStamp {
+            data: self
+                .current()
+                .map(|it| self.live_item(it, w).freshness.label()),
+            activities,
+            ago,
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn rebuild_signature(&self, w: &World) -> Vec<String> {
+        let mut v = vec![];
+        for r in &self.rows {
+            v.push(match r {
+                Row::Heading(h) => format!("heading {h}"),
+                Row::Blank => "blank".into(),
+                Row::Explore(c) => format!(
+                    "explore {:?}",
+                    c.iter().map(|i| &self.items[*i].id).collect::<Vec<_>>()
+                ),
+                Row::Item(i, rk) => {
+                    let it = &self.items[*i];
+                    format!(
+                        "item {} {} {:?} {}",
+                        it.id,
+                        rk.score,
+                        rk.matched,
+                        self.row_reason(it, rk, w)
+                    )
+                }
+            });
+        }
+        v.push(format!("warnings {:?}", self.warnings));
+        for it in &self.items {
+            let mut live = self.live_item(it, w).into_owned();
+            live.frecency = crate::domain::ranking::frecency_boost(live.frecency) as f64;
+            live.freshness = crate::domain::action::Freshness::Unavailable(live.freshness.label());
+            v.push(format!("{live:?}"));
+        }
+        v
+    }
+
+    /// The differential check of the whole cache: a settled page must read
+    /// exactly like a page built from nothing at this instant.
+    #[cfg(test)]
+    fn assert_matches_reference(&self, w: &World) {
+        let mut reference = FinderPage::new(self.group);
+        reference.scope = self.scope;
+        reference.query.buffer.set_text(self.query.text());
+        crate::domain::projection::uncounted(|| reference.ensure_projection(w));
+        crate::domain::projection::assert_same_signature(
+            &self.rebuild_signature(w),
+            &reference.rebuild_signature(w),
+            "finder",
+        );
+    }
+
+    #[cfg(test)]
+    pub(crate) fn settle_projection_for_test(&mut self, w: &World) {
+        self.ensure_projection(w);
+        self.ensure_projection(w);
     }
 
     /// Finds an item by its stable id in the rows just built. Returns the row
@@ -434,7 +657,6 @@ impl FinderPage {
     }
 
     fn query_edited(&mut self) {
-        self.dirty = true;
         self.query_changed = true;
         self.scroll.jump_start();
     }
@@ -663,6 +885,7 @@ impl FinderPage {
             ctx.control(PREVIEW, area, false);
             return;
         };
+        let it = self.live_item(&it, w).into_owned();
         let meta = format!("{} · {}", it.kind.label(), it.scope.word);
         let panel = Panel::card(Some(&it.label)).focused(focused).meta(&meta);
         let bg = panel.bg(t);
@@ -992,7 +1215,7 @@ impl FinderPage {
                     );
                     x += scope_w + 2;
                     if show_reason {
-                        let reason = row_reason(rk);
+                        let reason = self.row_reason(it, rk, w);
                         let rs = plain.fg(t.row_ink(
                             &cr,
                             if rk.tag.is_some() {
@@ -1108,9 +1331,7 @@ impl FinderPage {
 
 impl FinderPage {
     fn click(&mut self, id: WidgetId, pos: Position, w: &mut World, cx: &mut Cx) -> Outcome {
-        if self.dirty {
-            self.rebuild(w);
-        }
+        self.ensure_projection(w);
         if id == SCOPE {
             let next = match self.scope {
                 Scope::System => Scope::Children,
@@ -1157,9 +1378,7 @@ impl FinderPage {
 
 impl ShellPage<Holla> for FinderPage {
     fn on_key(&mut self, key: &Key, w: &mut World, cx: &mut Cx) -> Outcome {
-        if self.dirty {
-            self.rebuild(w);
-        }
+        self.ensure_projection(w);
         if cx.focus.is(PREVIEW) {
             let typed = matches!(
                 key.code,
@@ -1378,32 +1597,24 @@ impl ShellPage<Holla> for FinderPage {
             return Outcome::Ignored;
         }
         self.last_tick = w.tick;
-
-        super::rebuild_on_tick(
-            self,
-            |s| {
-                let items: Vec<Item> = s
-                    .items
-                    .iter()
-                    .map(|i| Item {
-                        freshness: Freshness::Unavailable(i.freshness.label()),
-                        ..i.clone()
-                    })
-                    .collect();
-                (items, s.warnings.clone(), s.rows.clone(), s.cursor)
-            },
-            |s| s.rebuild(w),
-        )
+        let rebuilt = self.ensure_projection(w);
+        let stamp = self.display_stamp(w);
+        let repaint = rebuilt || self.display_seen.as_ref() != Some(&stamp);
+        self.display_seen = Some(stamp);
+        if repaint {
+            Outcome::Changed
+        } else {
+            Outcome::Ignored
+        }
     }
 
     fn enter(&mut self, w: &mut World, _cx: &mut Cx) {
-        self.rebuild(w);
+        self.ensure_projection(w);
     }
 
     fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, w: &World) {
-        if self.dirty {
-            self.rebuild(w);
-        }
+        self.ensure_projection(w);
+        self.display_seen = Some(self.display_stamp(w));
         let t = ctx.theme;
         let query = Rect::new(area.x, area.y, area.width, 1);
         self.render_query(query, buf, ctx);
@@ -1505,6 +1716,10 @@ impl ShellPage<Holla> for FinderPage {
 }
 
 impl Screen for FinderPage {
+    fn background_tick(&self) -> bool {
+        false
+    }
+
     fn on_context_key(&mut self, _w: &mut World, cx: &mut Cx) -> Outcome {
         if !cx.focus.is(FINDER) {
             return Outcome::Ignored;
@@ -1610,9 +1825,5 @@ pub fn item_facts(it: &Item, w: &World, theme: &Theme) -> Vec<junie_tui::widgets
     v
 }
 
-fn row_reason(rk: &Ranked) -> String {
-    match &rk.tag {
-        Some(tag) if !rk.reason.starts_with(tag.as_str()) => format!("{tag} · {}", rk.reason),
-        _ => rk.reason.clone(),
-    }
-}
+#[cfg(test)]
+mod tests;
