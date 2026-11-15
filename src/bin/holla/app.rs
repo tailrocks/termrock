@@ -865,6 +865,7 @@ impl App {
     }
 
     fn begin_quit(&mut self) {
+        let stopping = self.world.quit_work().activities;
         let msgs = self.world.stop_work_for_quit();
         for m in msgs {
             self.dispatch_msg(m);
@@ -875,7 +876,14 @@ impl App {
             return;
         }
         self.quitting = true;
-        let text = self.quit_wait_text(left);
+        let text = if left.activities == 0 {
+            "leaving when the cleanup settles · its report and log land first".to_string()
+        } else {
+            format!(
+                "stopping {} · quitting when every process is gone",
+                plural(stopping, "activity", "activities")
+            )
+        };
         self.set_status(&text, Tone::Secondary);
     }
 
