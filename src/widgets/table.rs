@@ -2082,6 +2082,7 @@ impl DataTable {
         ev: &crate::core::pointer::PointerEvent,
     ) -> Response<TableAction<ItemKey>> {
         use crate::core::intent::Phase;
+        self.keyed.note_pointer(ev.phase());
         let hit = [Part::CELL, Part::ROW, Part::MARKER]
             .into_iter()
             .find_map(|part| ev.key_of(part));
@@ -2090,10 +2091,7 @@ impl DataTable {
                 Some(Phase::Press) => {
                     self.keyed.capture_press(key, self.layout_generation);
                 }
-                Some(Phase::Click)
-                    if self.keyed.pressed().is_some()
-                        && !self.keyed.release_press(key, self.layout_generation) =>
-                {
+                Some(Phase::Click) if !self.keyed.release_click(key, self.layout_generation) => {
                     return Response::consumed();
                 }
                 _ => {}
