@@ -44,6 +44,7 @@ pub mod props;
 pub mod rail;
 pub mod row_menu;
 pub mod scrollbar;
+pub mod search_detail;
 pub mod segments;
 pub mod select;
 pub mod splitter;

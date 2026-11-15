@@ -12,4 +12,5 @@ mod grid_validation;
 mod keyed_collections;
 mod keyed_costs;
 mod response_batches;
+mod search_detail;
 mod smoke;
