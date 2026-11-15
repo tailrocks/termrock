@@ -2,6 +2,7 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Rect, Size};
 
 use crate::app::PageId;
+use crate::data::GRAPHEME_SAMPLES;
 use crate::options::{PageValues, page_options};
 use crate::pages::layout::{sheet_height, sheet_width};
 use crate::pages::template::{Section, Template};
@@ -148,6 +149,30 @@ const BRANCHES: &[&str] = &[
 ];
 
 const FETCH_TICKS: u32 = 3;
+
+fn international_entries() -> Vec<Entry> {
+    GRAPHEME_SAMPLES
+        .iter()
+        .enumerate()
+        .map(|(i, (kind, sample))| {
+            if i < 3 {
+                Entry {
+                    label: format!("{sample}.md"),
+                    detail: format!("docs/{sample}.md · {kind}"),
+                    glyph: "F",
+                    group: "Files",
+                }
+            } else {
+                Entry {
+                    label: format!("Review {sample}"),
+                    detail: format!("#{} · {kind}", 201 + i),
+                    glyph: "T",
+                    group: "Tasks",
+                }
+            }
+        })
+        .collect()
+}
 
 pub struct PickersPage {
     template: Template,
@@ -382,7 +407,11 @@ impl PickersPage {
 
     fn rows(&self) -> Rows {
         Rows {
-            entries: self.entries.clone(),
+            entries: if self.opts.on("pickers.international") {
+                international_entries()
+            } else {
+                self.entries.clone()
+            },
             scope: self.scope,
             tabs: self.tabs.clone(),
             level: self.level,

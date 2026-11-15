@@ -7,7 +7,9 @@ use std::time::Duration;
 
 use tui_test::{SnapshotColor, TerminalSnapshot};
 
-use crate::support::{App, Launch, Point, SHOWCASE, find_all, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, Point, SHOWCASE, clusters, find_all, row_text, text, try_launch,
+};
 
 const CRUMB: &str = "Feedback › Meters";
 const TITLE: &str = "Meters";
@@ -1044,5 +1046,77 @@ fn option_stale_style_faint() {
     see(&shown, &[OFFLINE_META, "38%"], &["╍", "▲"]);
     assert!(!italic_at(&shown, "38%"), "faint italic returned");
     shot(&app, "opt.meters.stale_style");
+    app.finish();
+}
+
+/// The test terminal keeps only the first scalars of a ZWJ or skin-tone
+/// sequence, so these checks pin each cluster's width and its neighbours.
+const FAMILY: &str = "👨\u{200d}";
+const SKIN: &str = "👍";
+
+/// Each quota row paints its international value as whole clusters, so the
+/// text after a wide, combining, right-to-left or ZWJ cluster keeps its place.
+#[test]
+fn option_international_values_paint_whole_clusters() {
+    let app = page("s06-intl", &["meters.international=on"], 120, 40);
+    let screen = app.wait_text(PLAN);
+    for (row, value) in [
+        ("Session (5 h)", "cafe\u{301} 38%".to_string()),
+        ("Weekly", "界A 72%".to_string()),
+        ("Opus weekly", "שלום 86%".to_string()),
+        ("Extra credits", format!("{FAMILY} 100%")),
+        ("CPU", "שלום 23%".to_string()),
+        ("Memory", format!("{FAMILY} 68%")),
+        ("Swap", "🇯🇵 4%".to_string()),
+        ("GPU", format!("{SKIN} 91%")),
+    ] {
+        let line = row_with(&screen, row);
+        assert!(
+            line.contains(&value),
+            "the {row:?} meter lost its value {value:?}: {line:?}\n{}",
+            text(&screen)
+        );
+    }
+
+    let weekly = find_all(&screen, "界A 72%")
+        .into_iter()
+        .next()
+        .expect("weekly value");
+    let cells = clusters(&screen, weekly, 6);
+    let texts: Vec<&str> = cells.iter().map(|c| c.text.as_str()).collect();
+    assert_eq!(texts, ["界", "A", " ", "7", "2", "%"]);
+    assert_eq!(cells[0].width, 2, "the wide cluster spans two cells");
+    assert_eq!(
+        cells[0].bg[0], cells[0].bg[1],
+        "the continuation cell takes the cluster's background"
+    );
+    assert_eq!(
+        cells[0].bg[0], cells[1].bg[0],
+        "the A after the wide cluster shares the fill"
+    );
+
+    for (needle, next) in [
+        (format!("{FAMILY} 100%"), " "),
+        (format!("{SKIN} 91%"), " "),
+    ] {
+        let at = find_all(&screen, &needle)
+            .into_iter()
+            .next()
+            .unwrap_or_else(|| panic!("{needle:?} missing\n{}", text(&screen)));
+        let cells = clusters(&screen, at, 2);
+        assert_eq!(cells[0].width, 2, "{needle:?} is one two-cell cluster");
+        assert_eq!(cells[1].text, next, "{needle:?} is followed by its space");
+    }
+
+    assert!(
+        row_with(&screen, "Swap").contains("🇯🇵"),
+        "the flag cluster is missing\n{}",
+        text(&screen)
+    );
+
+    confirm_option(&app, |screen| {
+        assert_toggle(screen, "International values", "on");
+        assert_option_controls(screen, &[]);
+    });
     app.finish();
 }

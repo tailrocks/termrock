@@ -7,7 +7,9 @@ use std::time::Duration;
 
 use tui_test::{SnapshotColor, TerminalSnapshot};
 
-use crate::support::{App, Launch, Point, SHOWCASE, cell_bg, find_all, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, Point, SHOWCASE, cell_bg, clusters, find_all, row_text, text, try_launch,
+};
 
 const CRUMB: &str = "Text & code › Code editor";
 const TITLE: &str = "Code editor";
@@ -1737,4 +1739,106 @@ fn option_completion_nav_vim() {
         text(&stayed)
     );
     finish_option(&app, "opt.codeeditor.completion_nav");
+}
+
+/// The test terminal keeps only the first scalars of a ZWJ or skin-tone
+/// sequence, so those labels are matched by their visible head.
+#[test]
+fn option_completion_international_items_paint_whole_clusters() {
+    let app = page(
+        "s08-intl",
+        Some("codeeditor.completion_international=on"),
+        120,
+        40,
+    );
+    app.wait_text(FETCH);
+    confirm_options(&app, "International completions", |screen| {
+        assert_toggle(screen, "International completions", "on");
+        assert_select(screen, "Completion rows", "8", &["4"]);
+    });
+    click_code(&app, "fn client");
+    flash_settle(&app);
+    app.type_text("go");
+    let popup = app.wait_text("Enter Accept");
+    for (label, kind) in [
+        ("go_cafe\u{301}(", "combining mark"),
+        ("go_界A(", "wide + ASCII"),
+        ("go_שלום(", "right-to-left"),
+        ("go_👨\u{200d}(", "ZWJ family"),
+        ("go_🇯🇵(", "flag"),
+        ("go_👍(", "skin tone"),
+    ] {
+        let line = row_with(&popup, label);
+        assert!(
+            line.contains(kind),
+            "the detail {kind:?} was overwritten or pushed off the {label:?} row: {line:?}\n{}",
+            text(&popup)
+        );
+    }
+    assert!(
+        row_with(&popup, "Completion").contains("6 items"),
+        "the popup should offer the six international items\n{}",
+        text(&popup)
+    );
+
+    for (label, expected) in [
+        (
+            "go_界A(",
+            vec![
+                ("g", 1, true),
+                ("o", 1, true),
+                ("_", 1, false),
+                ("界", 2, false),
+                ("A", 1, false),
+                ("(", 1, false),
+            ],
+        ),
+        (
+            "go_שלום(",
+            vec![
+                ("g", 1, true),
+                ("o", 1, true),
+                ("_", 1, false),
+                ("ש", 1, false),
+                ("ל", 1, false),
+                ("ו", 1, false),
+                ("ם", 1, false),
+                ("(", 1, false),
+            ],
+        ),
+    ] {
+        let at = find_all(&popup, label)
+            .into_iter()
+            .find(|hit| hit.y > 8)
+            .unwrap_or_else(|| panic!("{label:?} missing\n{}", text(&popup)));
+        let cells: Vec<(String, u16, bool)> = clusters(&popup, at, expected.len())
+            .into_iter()
+            .map(|c| (c.text, c.width, c.bold))
+            .collect();
+        let expected: Vec<(String, u16, bool)> = expected
+            .into_iter()
+            .map(|(t, w, b)| (t.to_string(), w, b))
+            .collect();
+        assert_eq!(
+            cells,
+            expected,
+            "{label:?} keeps the typed go emphasised and each cluster whole\n{}",
+            text(&popup)
+        );
+    }
+
+    app.type_text("cafe");
+    app.wait_screen("go_cafe narrows to one item", |screen| {
+        row_with(screen, "Completion").contains("1 items")
+    });
+    app.key("enter");
+    let accepted = app.wait_screen("international completion accepted", |screen| {
+        row_with(screen, "Completion").contains("closed")
+    });
+    assert!(
+        text(&accepted).contains("go_cafe\u{301}("),
+        "accepting inserts the whole cluster\n{}",
+        text(&accepted)
+    );
+    app.finish();
 }

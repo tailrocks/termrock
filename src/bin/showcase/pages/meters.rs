@@ -2,6 +2,7 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Rect, Size};
 
 use crate::app::PageId;
+use crate::data::GRAPHEME_SAMPLES;
 use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
@@ -128,6 +129,12 @@ impl MetersPage {
         }
     }
 
+    fn sample(&self, row: usize) -> Option<&'static str> {
+        self.opts
+            .on("meters.international")
+            .then(|| GRAPHEME_SAMPLES[row % GRAPHEME_SAMPLES.len()].1)
+    }
+
     fn quotas(&self) -> MeterList {
         let visual = match self.opts.value("meters.visual") {
             "line" => MeterVisual::Line,
@@ -135,7 +142,8 @@ impl MetersPage {
         };
         let rows = QUOTAS
             .iter()
-            .map(|(label, pct, tone, detail)| {
+            .enumerate()
+            .map(|(i, (label, pct, tone, detail))| {
                 let pct = pct.map(|p| {
                     if p < 80 {
                         (p + self.epoch * 3).min(79)
@@ -143,10 +151,13 @@ impl MetersPage {
                         p
                     }
                 });
-                let meter = Meter::new(pct)
-                    .value(pct.map(|p| format!("{p:>3}%")).unwrap_or_default())
-                    .tone(*tone)
-                    .visual(visual);
+                let value = pct
+                    .map(|p| match self.sample(i) {
+                        Some(sample) => format!("{sample} {p}%"),
+                        None => format!("{p:>3}%"),
+                    })
+                    .unwrap_or_default();
+                let meter = Meter::new(pct).value(value).tone(*tone).visual(visual);
                 self.row(label, meter, detail)
             })
             .collect();
@@ -176,9 +187,14 @@ impl MetersPage {
     fn host(&self) -> MeterList {
         let rows = HOST
             .iter()
-            .map(|(label, pct, detail)| {
+            .enumerate()
+            .map(|(i, (label, pct, detail))| {
+                let value = match self.sample(i + 2) {
+                    Some(sample) => format!("{sample} {pct}%"),
+                    None => format!("{pct}%"),
+                };
                 let meter = Meter::new(Some(*pct))
-                    .value(format!("{pct}%"))
+                    .value(value)
                     .visual(MeterVisual::Block);
                 self.row(label, meter, detail)
             })
