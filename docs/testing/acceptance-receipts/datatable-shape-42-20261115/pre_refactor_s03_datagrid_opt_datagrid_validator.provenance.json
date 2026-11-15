@@ -1,0 +1,72 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/reloc124-target/debug/showcase",
+  "binary_sha256": "dd7bd1e67a13b4e419a6eaea7be3f0877e4edd5f87a564506e8c7a44191f4b49",
+  "fixture_args": [],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "4565e78fba6b5c4e35bde65588ed4834e534d8bde72063fa25bd37c7a1b813c7",
+  "expect_baseline": "2ee1e70985b4b941df348e35c35fedc60f85c8c2bdbf862ded78963fb922664b",
+  "precondition": "Deliberate visual change for #42: the Showcase Data grid and Basic table pages now list the 'Malformed input' option (off, short, long) on their Options tab, because it demonstrates the library's DataTable/DataGrid shape validation and a capability demo must be discoverable. The extra row lengthens the options list, so the list scrollbar thumb moves, the focused option scrolls one row, or the new row is drawn.",
+  "session": null,
+  "expected_test_id": "pre_refactor/s03_datagrid/opt_datagrid_validator",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/datatable-shape-42-20261115/pre_refactor_s03_datagrid_opt_datagrid_validator.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/datatable-shape-42-20261115/pre_refactor_s03_datagrid_opt_datagrid_validator.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/datatable-shape-42-20261115/superseded/pre_refactor/s03_datagrid/opt_datagrid_validator.tui.pb",
+  "test_id": "pre_refactor/s03_datagrid/opt_datagrid_validator",
+  "acceptance": {
+    "expected_baseline_sha256": "2ee1e70985b4b941df348e35c35fedc60f85c8c2bdbf862ded78963fb922664b",
+    "accepted_baseline_sha256": "4565e78fba6b5c4e35bde65588ed4834e534d8bde72063fa25bd37c7a1b813c7",
+    "candidate_sha256": "4565e78fba6b5c4e35bde65588ed4834e534d8bde72063fa25bd37c7a1b813c7",
+    "transaction_receipt": "docs/testing/acceptance-receipts/datatable-shape-42-20261115/pre_refactor_s03_datagrid_opt_datagrid_validator.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "2ee1e70985b4b941df348e35c35fedc60f85c8c2bdbf862ded78963fb922664b"
+  },
+  "candidate": {
+    "sha256": "4565e78fba6b5c4e35bde65588ed4834e534d8bde72063fa25bd37c7a1b813c7",
+    "path": "tests/functional/baselines/pre_refactor/s03_datagrid/opt_datagrid_validator.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/datatable-shape-42-20261115/superseded/pre_refactor/s03_datagrid/opt_datagrid_validator.tui.pb",
+    "superseded_baseline_sha256": "2ee1e70985b4b941df348e35c35fedc60f85c8c2bdbf862ded78963fb922664b"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/s03_datagrid/opt_datagrid_validator.tui.pb",
+    "candidate_sha256": "4565e78fba6b5c4e35bde65588ed4834e534d8bde72063fa25bd37c7a1b813c7",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/reloc124-target/debug/showcase",
+    "binary_sha256": "dd7bd1e67a13b4e419a6eaea7be3f0877e4edd5f87a564506e8c7a44191f4b49",
+    "note": "Live candidate capture of this branch (fix/42-datatable-shape). No Reference-mode capture exists: the pinned reference binary predates the Malformed input demo option."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s03_datagrid/opt_datagrid_validator",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "target/functional/s03-validator-88346-1794728478455750000-0/check-artifacts/pre_refactor/s03_datagrid/opt_datagrid_validator/4565e78fba6b5c4e35bde65588ed4834e534d8bde72063fa25bd37c7a1b813c7/sample.tui.pb"
+    },
+    "candidate_sha256": "4565e78fba6b5c4e35bde65588ed4834e534d8bde72063fa25bd37c7a1b813c7",
+    "baseline_sha256": "4565e78fba6b5c4e35bde65588ed4834e534d8bde72063fa25bd37c7a1b813c7",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/reloc124/tests/functional/baselines/pre_refactor/s03_datagrid/opt_datagrid_validator.tui.pb"
+    },
+    "error_code": null
+  }
+}

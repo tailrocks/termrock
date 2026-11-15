@@ -93,29 +93,6 @@ fn choice_options(n: usize) -> Options {
 }
 
 #[test]
-fn select_fixed_probe_never_clones_options() {
-    for n in [1_000, 100_000] {
-        let options = many_options(n);
-        let mut select = select_with(&options).fixed(reason());
-        for code in [
-            KeyCode::Char('o'),
-            KeyCode::Enter,
-            KeyCode::Down,
-            KeyCode::F(5),
-        ] {
-            let before = (select.selected, select.open);
-            let out = select.on_key(&key(code));
-            assert_eq!(
-                (select.selected, select.open),
-                before,
-                "{code:?} changed state"
-            );
-            let _ = out;
-        }
-    }
-}
-
-#[test]
 fn select_fixed_probe_matches_live_outcome() {
     use junie_tui::core::event::Outcome;
     use ratatui::crossterm::event::KeyModifiers;

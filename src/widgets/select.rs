@@ -39,7 +39,7 @@ struct Press {
     moved: bool,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Select {
     pub id: WidgetId,
     pub label: String,
@@ -69,6 +69,34 @@ pub struct Select {
 
     label_area: Rect,
     press: Option<Press>,
+}
+
+impl Clone for Select {
+    fn clone(&self) -> Self {
+        #[cfg(test)]
+        crate::core::work::add(crate::core::work::Counter::OptionClones, self.options.len());
+        Self {
+            id: self.id,
+            label: self.label.clone(),
+            options: self.options.clone(),
+            selected: self.selected,
+            open: self.open,
+            disabled: self.disabled,
+            control: self.control.clone(),
+            help: self.help.clone(),
+            area: self.area,
+            list: self.list.clone(),
+            reveal: self.reveal,
+            arrows: self.arrows,
+            tab_in_open: self.tab_in_open,
+            mixed: self.mixed.clone(),
+            type_ahead_precedence: self.type_ahead_precedence,
+            press_drag: self.press_drag,
+            label_hit: self.label_hit,
+            label_area: self.label_area,
+            press: self.press,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -758,7 +786,7 @@ impl RowSource for Select {
         self.options.len()
     }
     fn label(&self, i: usize) -> &str {
-        &self.options[i]
+        <[String] as RowSource>::label(&self.options, i)
     }
 }
 
