@@ -7,10 +7,13 @@ mod pane_support;
 #[path = "terminal_pane/session_adapter.rs"]
 mod session_adapter;
 
+use std::sync::{Arc, Mutex};
+
 use jackin_console::panes::{
-    Lease, LinkEvent, LinkFault, LinkStatus, PaneBody, PaneCommand, PaneKey, PanePolicy,
-    PasteOutcome,
+    Lease, LinkEvent, LinkFault, LinkSource, LinkStatus, PaneBody, PaneCommand, PaneKey, PaneLink,
+    PanePolicy, PaneRequest, PaneSize, PaneTiming, PasteOutcome, Sent, TerminalPane,
 };
+use jackin_console::sim::link::{SimLink, Timed};
 use junie_tui::core::hit::Axis;
 use pane_support::*;
 use ratatui::layout::Rect;
@@ -373,4 +376,142 @@ fn a_link_that_has_not_sent_its_lease_is_not_taken_for_the_owner() {
     bench.output(0, b"\x1b[5n");
     pane.tick(1_100);
     assert_eq!(bench.commands(0), [PaneCommand::Reply(b"\x1b[0n".to_vec())]);
+}
+
+/// Records the output bytes each drain hands the pane, in order. The pane feeds
+/// every byte of one drain within the same tick, so each entry is what one tick
+/// feeds into the grid.
+#[derive(Debug)]
+struct Metered {
+    inner: SimLink,
+    fed: Arc<Mutex<Vec<Vec<u8>>>>,
+}
+
+impl PaneLink for Metered {
+    fn send(&self, command: PaneCommand) -> Sent {
+        self.inner.send(command)
+    }
+
+    fn set_size(&self, size: PaneSize) {
+        self.inner.set_size(size);
+    }
+
+    fn drain(&self, now_ms: i64, output_budget: usize) -> Vec<LinkEvent> {
+        let events = self.inner.drain(now_ms, output_budget);
+        let bytes = events
+            .iter()
+            .filter_map(|event| match event {
+                LinkEvent::Output(chunk) => Some(chunk.as_slice()),
+                _ => None,
+            })
+            .flatten()
+            .copied()
+            .collect();
+        self.fed.lock().expect("fed").push(bytes);
+        events
+    }
+}
+
+/// Hands one prepared link to the pane, which opens it once.
+#[derive(Debug)]
+struct Once(Mutex<Option<Box<dyn PaneLink>>>);
+
+impl LinkSource for Once {
+    fn open(&self, _: &PaneRequest, _: PaneSize) -> Result<Box<dyn PaneLink>, LinkFault> {
+        Ok(self.0.lock().expect("link").take().expect("one open"))
+    }
+
+    fn restart(&self, _: &PaneRequest, _: PaneSize) -> Result<Box<dyn PaneLink>, LinkFault> {
+        Err(LinkFault::new("this script does not restart"))
+    }
+}
+
+/// A pane over a scripted attach that shows `stream`, and the per-drain byte
+/// counts that the pane's ticks are fed.
+fn scripted(stream: Vec<u8>, policy: PanePolicy) -> (TerminalPane, Arc<Mutex<Vec<Vec<u8>>>>) {
+    let fed = Arc::new(Mutex::new(Vec::new()));
+    let link = Metered {
+        inner: SimLink::new(vec![
+            Timed {
+                after_ms: 0,
+                event: LinkEvent::Attached,
+            },
+            Timed {
+                after_ms: 0,
+                event: LinkEvent::Lease(Lease::Owner),
+            },
+            Timed {
+                after_ms: 0,
+                event: LinkEvent::Output(stream),
+            },
+        ]),
+        fed: Arc::clone(&fed),
+    };
+    let boxed: Box<dyn PaneLink> = Box::new(link);
+    let mut pane = TerminalPane::new(
+        1,
+        shell(),
+        Arc::new(Once(Mutex::new(Some(boxed)))),
+        PaneTiming::default(),
+        0,
+    );
+    pane.set_policy(&Arc::new(policy));
+    pane.sync_size(inner(80, 24));
+    (pane, fed)
+}
+
+/// What the user sees: the text of each row, the history above the screen and
+/// the title.
+fn screen(pane: &TerminalPane) -> (Vec<String>, usize, Option<String>) {
+    let (rows, _) = pane.grid().state().size();
+    (
+        (0..rows).map(|r| row(pane, r)).collect(),
+        pane.grid().state().scrollback_len(),
+        pane.title().map(str::to_owned),
+    )
+}
+
+fn script(len: usize) -> Vec<u8> {
+    (1..)
+        .flat_map(|i| format!("line {i:05}\r\n").into_bytes())
+        .take(len)
+        .collect()
+}
+
+#[test]
+fn terminal_pane_script_feed_budget_limits_each_tick() {
+    const BUDGET: usize = 257;
+    const STREAM: usize = 16 * 1024;
+    let stream = script(STREAM);
+
+    let (mut pane, fed) = scripted(
+        stream.clone(),
+        PanePolicy {
+            feed_budget_bytes: BUDGET,
+            ..PanePolicy::default()
+        },
+    );
+    for now in 0..100 {
+        pane.tick(now);
+    }
+    let ticks = fed.lock().expect("fed").clone();
+    let sizes: Vec<usize> = ticks.iter().map(Vec::len).collect();
+    assert!(
+        sizes.iter().all(|&bytes| bytes <= BUDGET),
+        "a tick feeds at most the budget: {sizes:?}"
+    );
+    assert_eq!(sizes.iter().copied().max(), Some(BUDGET));
+    assert_eq!(
+        ticks.concat(),
+        stream,
+        "every byte arrives within 100 ticks, in order"
+    );
+
+    let (mut reference, _) = scripted(stream, PanePolicy::default());
+    reference.tick(0);
+    assert_eq!(
+        screen(&pane),
+        screen(&reference),
+        "the bounded feed shows the same screen as one feed"
+    );
 }

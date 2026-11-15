@@ -9,10 +9,12 @@ use junie_tui::core::event::Key;
 use junie_tui::terminal::{
     Modes, RowWrap, TermEvent, TermView, TerminalState, TerminalView, encode_key,
 };
-use ratatui::buffer::Buffer;
+use ratatui::Terminal;
+use ratatui::backend::TestBackend;
+use ratatui::buffer::{Buffer, CellWidth};
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::Rect;
-use ratatui::style::{Color, Modifier};
+use ratatui::style::{Color, Modifier, Style};
 use ratatui::widgets::Widget;
 
 fn lines(from: u32, to: u32) -> Vec<u8> {
@@ -562,4 +564,205 @@ fn strikethrough_text_is_drawn_crossed_out() {
         );
     }
     assert!(!buf[(5, 0)].modifier.contains(Modifier::CROSSED_OUT));
+}
+
+fn sentinel(area: Rect) -> Buffer {
+    let mut buf = Buffer::empty(area);
+    for cell in &mut buf.content {
+        cell.set_symbol("#")
+            .set_style(Style::new().fg(Color::Magenta));
+    }
+    buf
+}
+
+fn row_symbols(buf: &Buffer, y: u16, from: u16, to: u16) -> Vec<String> {
+    (from..to)
+        .map(|x| buf[(x, y)].symbol().to_owned())
+        .collect()
+}
+
+fn assert_symbols_fit(buf: &Buffer, pane: Rect) {
+    for y in pane.top()..pane.bottom() {
+        for x in pane.left()..pane.right() {
+            let width = buf[(x, y)].symbol().cell_width();
+            assert!(
+                width <= pane.right() - x,
+                "symbol {:?} at ({x}, {y}) is {width} cells wide and leaves the pane",
+                buf[(x, y)].symbol()
+            );
+        }
+    }
+}
+
+#[test]
+fn issue_terminal_wide_edge_is_blank() {
+    let mut state = TerminalState::new(1, 6);
+    state.feed("ab\u{754c}".as_bytes());
+    let pane = Rect::new(2, 1, 3, 1);
+    let mut buf = sentinel(Rect::new(0, 0, 9, 3));
+    let before = buf.clone();
+
+    TerminalView::new(&state).render(pane, &mut buf);
+
+    assert_eq!(row_symbols(&buf, 1, 2, 5), ["a", "b", " "]);
+    assert_symbols_fit(&buf, pane);
+    for y in 0..3 {
+        for x in 0..9 {
+            if !pane.contains((x, y).into()) {
+                assert_eq!(
+                    buf[(x, y)],
+                    before[(x, y)],
+                    "({x}, {y}) is outside the pane"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn issue_terminal_wide_edge_blank_keeps_the_cell_style() {
+    let mut state = TerminalState::new(1, 6);
+    state.feed("a\x1b[41m\u{754c}".as_bytes());
+    let mut buf = Buffer::empty(Rect::new(0, 0, 6, 1));
+
+    TerminalView::new(&state).render(Rect::new(0, 0, 2, 1), &mut buf);
+
+    assert_eq!(buf[(1, 0)].symbol(), " ");
+    assert_eq!(buf[(1, 0)].bg, Color::Indexed(1));
+}
+
+#[test]
+fn issue_terminal_complete_wide_preserves_existing_style() {
+    let mut state = TerminalState::new(1, 6);
+    state.feed("\x1b[41m\u{65e5}\x1b[0me\u{301}\u{2764}\u{fe0f}".as_bytes());
+
+    for width in [4, 6] {
+        let pane = Rect::new(0, 0, width, 1);
+        let mut buf = Buffer::empty(pane);
+        TerminalView::new(&state).render(pane, &mut buf);
+
+        assert_eq!(buf[(0, 0)].symbol(), "\u{65e5}", "width {width}");
+        assert_eq!(buf[(0, 0)].bg, Color::Indexed(1), "width {width}");
+        assert_eq!(buf[(1, 0)].symbol(), " ", "width {width}");
+        assert_eq!(buf[(1, 0)].bg, Color::Reset, "width {width}");
+        assert_eq!(buf[(2, 0)].symbol(), "e\u{301}", "width {width}");
+        assert_symbols_fit(&buf, pane);
+    }
+    let pane = Rect::new(0, 0, 6, 1);
+    let mut buf = Buffer::empty(pane);
+    TerminalView::new(&state).render(pane, &mut buf);
+    assert_eq!(buf[(3, 0)].symbol(), "\u{2764}\u{fe0f}");
+
+    let narrow = Rect::new(0, 0, 4, 1);
+    let mut buf = Buffer::empty(narrow);
+    TerminalView::new(&state).render(narrow, &mut buf);
+    assert_eq!(
+        buf[(3, 0)].symbol(),
+        " ",
+        "the emoji starts in the last column"
+    );
+}
+
+#[test]
+fn issue_terminal_clip_preserves_source_origin() {
+    let mut state = TerminalState::new(3, 8);
+    state.feed("01234567\r\nab\u{754c}cdef\r\nABCDEFGH".as_bytes());
+    let area = Rect::new(0, 0, 8, 3);
+
+    let mut buf = Buffer::empty(Rect::new(2, 1, 5, 2));
+    TerminalView::new(&state).render(area, &mut buf);
+    assert_eq!(row_symbols(&buf, 1, 2, 7), ["\u{754c}", " ", "c", "d", "e"]);
+    assert_eq!(row_symbols(&buf, 2, 2, 7), ["C", "D", "E", "F", "G"]);
+
+    let mut buf = Buffer::empty(Rect::new(3, 1, 4, 1));
+    TerminalView::new(&state).render(area, &mut buf);
+    assert_eq!(
+        row_symbols(&buf, 1, 3, 7),
+        [" ", "c", "d", "e"],
+        "the first visible cell continues a wide glyph that starts offscreen"
+    );
+}
+
+#[test]
+fn issue_terminal_zero_and_disjoint_area() {
+    let mut state = TerminalState::new(3, 6);
+    state.feed(b"abc");
+    let buf = sentinel(Rect::new(0, 0, 6, 4));
+
+    for area in [
+        Rect::new(1, 1, 0, 2),
+        Rect::new(1, 1, 3, 0),
+        Rect::new(20, 20, 3, 3),
+        Rect::new(0, 8, 6, 3),
+    ] {
+        let mut painted = buf.clone();
+        TerminalView::new(&state)
+            .focused(true)
+            .render(area, &mut painted);
+        assert_eq!(painted, buf, "{area:?}");
+    }
+
+    let mut painted = buf.clone();
+    TerminalView::new(&state)
+        .focused(true)
+        .render(Rect::new(0, 0, 6, 8), &mut painted);
+    assert_eq!(row_symbols(&painted, 0, 0, 3), ["a", "b", "c"]);
+}
+
+#[test]
+fn issue_terminal_cursor_outside_the_buffer_is_not_painted() {
+    let mut state = TerminalState::new(2, 8);
+    state.feed(b"abcdef");
+    let mut buf = Buffer::empty(Rect::new(0, 0, 4, 2));
+
+    TerminalView::new(&state)
+        .focused(true)
+        .render(Rect::new(0, 0, 8, 2), &mut buf);
+
+    assert_eq!(row_symbols(&buf, 0, 0, 4), ["a", "b", "c", "d"]);
+    assert!(
+        buf.content
+            .iter()
+            .all(|cell| !cell.modifier.contains(Modifier::REVERSED))
+    );
+}
+
+#[test]
+fn issue_terminal_narrow_redraw_preserves_neighbor() {
+    let mut state = TerminalState::new(1, 6);
+    state.feed("ab\u{754c}cd".as_bytes());
+    let mut terminal = Terminal::new(TestBackend::new(12, 1)).unwrap();
+
+    let frame = |terminal: &mut Terminal<TestBackend>, pane: Rect, neighbor_x: u16| {
+        terminal
+            .draw(|f| {
+                TerminalView::new(&state).render(pane, f.buffer_mut());
+                let neighbor = Rect::new(neighbor_x, 0, 12 - neighbor_x, 1);
+                for (i, ch) in "RIGHT....."
+                    .chars()
+                    .take(neighbor.width as usize)
+                    .enumerate()
+                {
+                    f.buffer_mut()[(neighbor.x + i as u16, 0)].set_char(ch);
+                }
+            })
+            .unwrap();
+        terminal.backend().buffer().clone()
+    };
+
+    let wide = frame(&mut terminal, Rect::new(0, 0, 6, 1), 6);
+    assert_eq!(
+        row_symbols(&wide, 0, 0, 6),
+        ["a", "b", "\u{754c}", " ", "c", "d"]
+    );
+
+    let narrow_pane = Rect::new(0, 0, 3, 1);
+    let narrow = frame(&mut terminal, narrow_pane, 3);
+    assert_eq!(row_symbols(&narrow, 0, 0, 3), ["a", "b", " "]);
+    assert_eq!(row_symbols(&narrow, 0, 3, 8), ["R", "I", "G", "H", "T"]);
+    assert_symbols_fit(&narrow, narrow_pane);
+
+    let cleared = frame(&mut terminal, Rect::new(0, 0, 0, 1), 3);
+    assert_eq!(row_symbols(&cleared, 0, 0, 3), [" ", " ", " "]);
+    assert_eq!(row_symbols(&cleared, 0, 3, 8), ["R", "I", "G", "H", "T"]);
 }
