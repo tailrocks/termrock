@@ -67,6 +67,9 @@ const LEAVE_DIALOG: WidgetId = WidgetId::of("dialog.quit");
 #[cfg(test)]
 #[path = "connection_identity_tests.rs"]
 mod connection_identity_tests;
+#[cfg(test)]
+#[path = "history_keyed_tests.rs"]
+mod history_keyed_tests;
 
 pub enum Act {
     EditFilter(Option<usize>),

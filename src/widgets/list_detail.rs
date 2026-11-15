@@ -46,7 +46,7 @@ fn columns(rest: u16, detail: u16, meta: u16) -> (u16, u16) {
     (d, m)
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ListRow {
     pub mark: Option<StatusKind>,
     pub label: String,
@@ -561,6 +561,20 @@ impl ListDetail {
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
     ) -> Result<(), KeyedSourceError> {
+        self.bind_source(source)?;
+        self.render_in(&SourceRows(source), frame, area, buf, ctx);
+        self.synced_cursor = Some(self.cursor);
+        Ok(())
+    }
+
+    /// Reconciles the selection with `source` without painting: a cursor the
+    /// user moved is adopted by key, then the view index follows the key
+    /// through reorder, filter and deletion. Hosts call it before handling an
+    /// event on rows that may have changed since the last frame.
+    pub fn bind_source<S: ListDetailSource + ?Sized>(
+        &mut self,
+        source: &S,
+    ) -> Result<(), KeyedSourceError> {
         if let Some(synced) = self.synced_cursor
             && self.cursor != synced
         {
@@ -571,8 +585,6 @@ impl ListDetail {
         if first || out.data_changed || out.view_changed || out.cursor_changed {
             self.cursor = self.keyed.cursor_view().unwrap_or(0);
         }
-        self.synced_cursor = Some(self.cursor);
-        self.render_in(&SourceRows(source), frame, area, buf, ctx);
         self.synced_cursor = Some(self.cursor);
         Ok(())
     }

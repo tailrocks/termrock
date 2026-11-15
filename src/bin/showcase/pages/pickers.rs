@@ -22,7 +22,9 @@ use junie_tui::widgets::button::{Button, row_layout};
 use junie_tui::widgets::empty::EmptyState;
 use junie_tui::widgets::option_list::Item;
 use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::picker::{Picker, PickerAction, PickerKeyProfile, PickerStatus};
+use junie_tui::widgets::picker::{
+    Picker, PickerAction, PickerKeyProfile, PickerStatus, VisibleKey,
+};
 use junie_tui::widgets::props::{self, Prop};
 use junie_tui::widgets::tree::TreeNode;
 
@@ -289,10 +291,12 @@ impl Rows {
                 if kind == Kind::MultiSearch {
                     p.replace_items(items.clone())
                         .unwrap_or_else(|error| p.report_item_error(error));
-                    p.set_visible_items(
+                    p.set_visible_keys(
                         items
-                            .into_iter()
+                            .iter()
                             .filter(|item| fuzzy(&item.label, &q).is_some())
+                            .filter_map(|item| item.key)
+                            .map(|key| VisibleKey::new(key).matched(Vec::new()))
                             .collect(),
                     )
                     .unwrap_or_else(|error| p.report_item_error(error));

@@ -7,7 +7,7 @@ use ratatui::style::Modifier;
 
 use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::hit::Axis;
-use junie_tui::core::id::WidgetId;
+use junie_tui::core::id::{ItemKey, WidgetId};
 use junie_tui::core::keymap::hint_key;
 use junie_tui::core::pointer::{MouseTarget, PointerEvent};
 use junie_tui::theme::{StatusKind, SyntaxTone, Tone};
@@ -2435,6 +2435,8 @@ pub struct HistoryTab {
 
     pub slow_ms: u32,
     pub filtered: Vec<usize>,
+    store: junie_tui::core::keyed::KeyedVec<ListItem>,
+    keys: junie_tui::core::keyed::KeyedState,
     pub open_btn: Button,
     pub rerun_btn: Button,
     pub copy_btn: Button,
@@ -2464,6 +2466,8 @@ impl HistoryTab {
             failed_only: false,
             slow_ms: 1000,
             filtered: vec![],
+            store: junie_tui::core::keyed::KeyedVec::new(),
+            keys: junie_tui::core::keyed::KeyedState::new(),
 
             open_btn: Button::primary(id.sub("open"), "Open in new tab")
                 .tooltip("Open the selected query in a new tab")
@@ -2492,7 +2496,7 @@ impl HistoryTab {
             self.failed_only,
         );
         self.filtered = matches.iter().map(|e| e.id).collect();
-        let items: Vec<ListItem> = matches
+        let rows: Vec<(ItemKey, ListItem)> = matches
             .iter()
             .map(|e| {
                 let mut label = e.first_line();
@@ -2505,10 +2509,19 @@ impl HistoryTab {
                     it = it.meta_tone(Tone::Warning);
                 }
                 it.disabled = false;
-                it
+                (ItemKey::num(e.id as u64), it)
             })
             .collect();
-        let cursor = self.list.cursor;
+        let items: Vec<ListItem> = rows.iter().map(|(_, it)| it.clone()).collect();
+        // The selected query follows its history entry id, not its position,
+        // when entries are added, pruned or filtered away above it.
+        self.keys.adopt_cursor_view(self.list.cursor);
+        let cursor = match self.store.replace_if_changed(rows) {
+            Ok(_) if self.keys.reconcile(&self.store).is_ok() => {
+                self.keys.cursor_view().unwrap_or(0)
+            }
+            _ => self.list.cursor,
+        };
         self.list = ListBox::new(self.id.sub("list"), items, SelectMode::Single).empty_text(
             if q.is_empty() {
                 "No query history"

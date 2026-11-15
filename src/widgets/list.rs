@@ -24,7 +24,7 @@ use crate::ui::reveal::{Reveal, RevealLine};
 use crate::ui::row::{MarkKind, RowLook, RowUi};
 use crate::widgets::scrollbar;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ListItem {
     pub label: String,
     pub meta: Option<String>,
