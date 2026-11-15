@@ -419,6 +419,29 @@ fn issue42_table_update_column_is_checked() {
 }
 
 #[test]
+fn issue42_disabling_the_sorted_column_clears_its_sort() {
+    let order = |t: &DataTable| (0..t.len()).map(|d| t.source_row(d)).collect::<Vec<_>>();
+    let mut t = table();
+    t.try_set_rows(vec![full("b", "1"), full("a", "2")])
+        .expect("rectangular");
+    t.sort_by(0);
+    assert_eq!(order(&t), [1, 0]);
+
+    assert_eq!(t.update_column(1, |c| c.sortable = false), Ok(true));
+    assert_eq!(
+        t.sort,
+        Some((0, SortDir::Asc)),
+        "another column keeps its sort"
+    );
+
+    assert_eq!(t.update_column(0, |c| c.sortable = false), Ok(true));
+    assert_eq!(t.sort, None, "the sorted column can no longer sort");
+    assert_eq!(order(&t), [0, 1], "rows return to source order");
+    assert!(t.update_cell(0, 0, |c| c.text = "c".into()));
+    assert_eq!(order(&t), [0, 1], "an edit does not re-sort");
+}
+
+#[test]
 fn issue42_public_stale_cursor_indices_safe() {
     let mut t = table();
     t.cursor_row = 99;
