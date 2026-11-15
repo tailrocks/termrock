@@ -7,6 +7,11 @@
 //! every 80 ms (`App::animating`, `TICK_MS` in `src/bin/holla/sim/world.rs`),
 //! so the frame is taken before Run. Cancel is Esc: `Dismiss::LIGHT` closes
 //! `open_confirm_one` without `execute_item` (`src/bin/holla/app.rs`).
+//!
+//! The Push confirmation preview prints `live · N s ago`, where N counts
+//! simulated ticks (`Freshness::Live` in `src/bin/holla/domain/action.rs`). On
+//! wall ticks a loaded run reaches `1 s ago` before the frame is stored, so the
+//! git Push journey launches on the test clock and steps it to run the command.
 
 use std::time::Duration;
 
@@ -42,6 +47,7 @@ const FRONTEND: &str = "frontend dev";
 const WIDE: &str = "H04.actions.families.120x40";
 const NARROW: &str = "H04.actions.families.narrow";
 const BATCH: &str = "Push 4 repositories to origin and GitLab";
+const RUN_MS: u64 = 5_000;
 
 fn visual_id(checkpoint: &str) -> String {
     format!(
@@ -51,7 +57,16 @@ fn visual_id(checkpoint: &str) -> String {
 }
 
 fn open(name: &str, scenario: &str) -> App {
+    launch(name, scenario, false)
+}
+
+fn open_stepped(name: &str, scenario: &str) -> App {
+    launch(name, scenario, true)
+}
+
+fn launch(name: &str, scenario: &str, clock: bool) -> App {
     let mut launch = Launch::new(name, HOLLA);
+    launch.clock = clock;
     launch.args = ["--scenario", scenario]
         .into_iter()
         .map(str::to_string)
@@ -126,6 +141,12 @@ fn finished(screen: &TerminalSnapshot, marker: &str) -> bool {
 
 fn run_until(app: &App, reason: &str, marker: &str) -> TerminalSnapshot {
     app.key("enter");
+    app.wait_screen(reason, |screen| finished(screen, marker))
+}
+
+fn run_stepped(app: &App, reason: &str, marker: &str) -> TerminalSnapshot {
+    app.key("enter");
+    app.advance_clock(RUN_MS);
     app.wait_screen(reason, |screen| finished(screen, marker))
 }
 
@@ -294,7 +315,7 @@ fn h04_actions_families() {
 }
 
 fn git_push_family() {
-    let app = open("h04-actions-git", "parity-git-current");
+    let app = open_stepped("h04-actions-git", "parity-git-current");
     let row = pick(&app, "Push", "Push", "one confirmation");
     see(
         &row,
@@ -321,7 +342,7 @@ fn git_push_family() {
         screen.cols() == 120 && screen.rows() == 40 && push_ready(screen)
     });
     see(&restored, &[PUSH, SVC], &[REJECTED, CARGO_TEST]);
-    let ran = run_until(&app, "push rejected", FETCH_FIRST);
+    let ran = run_stepped(&app, "push rejected", FETCH_FIRST);
     see(
         &ran,
         &[
