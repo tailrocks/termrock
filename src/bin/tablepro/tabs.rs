@@ -864,7 +864,7 @@ impl TableTab {
                     );
                     let sy = inner.bottom().saturating_sub(1);
                     let n = self.structure.len();
-                    let what = self.structure_tabs.items[self.structure_tabs.active]
+                    let what = self.structure_tabs.items()[self.structure_tabs.active]
                         .label
                         .to_lowercase();
                     buf.set_string(

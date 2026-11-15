@@ -97,7 +97,7 @@ impl crate::ui::measure::Measure for Tabs {
 #[derive(Debug, Clone)]
 pub struct Tabs {
     pub id: WidgetId,
-    pub items: Vec<TabItem>,
+    items: Vec<TabItem>,
     pub active: usize,
     pub cursor: usize,
 
@@ -137,6 +137,8 @@ pub struct Tabs {
     max_first: usize,
 
     revealed: Option<usize>,
+
+    layout_valid: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -236,6 +238,7 @@ impl Tabs {
             fit: 0,
             max_first: 0,
             revealed: None,
+            layout_valid: false,
         }
     }
 
@@ -264,6 +267,7 @@ impl Tabs {
             fit: 0,
             max_first: 0,
             revealed: None,
+            layout_valid: false,
         }
     }
 
@@ -403,8 +407,7 @@ impl Tabs {
             MenuAction::Chosen(k) => {
                 let (_, tabs) = self.menu.take()?;
                 let i = *tabs.get(k)?;
-                self.set_active(i);
-                Some(TabAction::Activated(i))
+                self.activate_index(i)
             }
             MenuAction::Dismissed => {
                 self.menu = None;
@@ -428,12 +431,91 @@ impl Tabs {
         self
     }
 
+    pub fn items(&self) -> &[TabItem] {
+        &self.items
+    }
+
+    /// Replaces the whole collection. An equal replacement changes nothing.
     pub fn set_items(&mut self, items: Vec<TabItem>) {
+        if self.items == items {
+            return;
+        }
         self.items = items;
+        self.invalidate_items();
+    }
+
+    pub fn push(&mut self, item: TabItem) {
+        self.items.push(item);
+        self.invalidate_items();
+    }
+
+    /// Moves the tab at `from` to `to`. `active` and `cursor` follow the moved tab
+    /// or shift with the tabs they pass. Returns `false` when nothing changed.
+    pub fn reorder(&mut self, from: usize, to: usize) -> bool {
+        let len = self.items.len();
+        if from >= len || to >= len || from == to {
+            return false;
+        }
+        let item = self.items.remove(from);
+        self.items.insert(to, item);
+        let moved = |i: usize| {
+            if i == from {
+                to
+            } else if from < to && i > from && i <= to {
+                i - 1
+            } else if from > to && i >= to && i < from {
+                i + 1
+            } else {
+                i
+            }
+        };
+        self.active = moved(self.active);
+        self.cursor = moved(self.cursor);
+        self.invalidate_items();
+        true
+    }
+
+    /// Edits one tab's metadata. The closure runs on a copy, so a panic leaves
+    /// the tab unchanged. Returns `false` when the edit changed nothing.
+    pub fn update_item(&mut self, index: usize, edit: impl FnOnce(&mut TabItem)) -> bool {
+        let Some(current) = self.items.get(index) else {
+            return false;
+        };
+        let mut next = current.clone();
+        edit(&mut next);
+        if next == *current {
+            return false;
+        }
+        self.items[index] = next;
+        self.invalidate_items();
+        true
+    }
+
+    /// Closes any open overflow menu and drops geometry taken from the old
+    /// collection. Pointer hits stay ignored until the next render.
+    fn invalidate_items(&mut self) {
+        self.menu = None;
+        self.areas.clear();
+        self.revealed = None;
+        self.fit = 0;
+        self.max_first = 0;
+        self.layout_valid = false;
         let last = self.items.len().saturating_sub(1);
         self.active = self.active.min(last);
         self.cursor = self.cursor.min(last);
         self.first = self.first.min(last);
+    }
+
+    fn activate_index(&mut self, index: usize) -> Option<TabAction> {
+        if index >= self.items.len() {
+            return None;
+        }
+        self.set_active(index);
+        Some(TabAction::Activated(index))
+    }
+
+    pub(crate) fn layout_valid(&self) -> bool {
+        self.layout_valid
     }
 
     pub fn on_wheel(&mut self, dx: i32, dy: i32) -> Outcome {
@@ -462,7 +544,7 @@ impl Tabs {
     }
 
     pub fn on_middle_click(&self, id: WidgetId) -> Option<TabAction> {
-        if !self.middle_click_closes {
+        if !self.middle_click_closes || !self.layout_valid {
             return None;
         }
         let i = self.tab_of(id).or_else(|| self.close_of(id))?;
@@ -513,16 +595,17 @@ impl Tabs {
     }
 
     pub fn remove(&mut self, i: usize) {
-        if i < self.items.len() {
-            self.items.remove(i);
-            if self.active >= self.items.len() {
-                self.active = self.items.len().saturating_sub(1);
-            } else if self.active > i {
-                self.active -= 1;
-            }
-            self.cursor = self.active;
-            self.first = self.first.min(self.items.len().saturating_sub(1));
+        if i >= self.items.len() {
+            return;
         }
+        self.items.remove(i);
+        if self.active >= self.items.len() {
+            self.active = self.items.len().saturating_sub(1);
+        } else if self.active > i {
+            self.active -= 1;
+        }
+        self.cursor = self.active;
+        self.invalidate_items();
     }
 
     fn ensure_visible(&mut self, i: usize) {
@@ -596,6 +679,9 @@ impl Tabs {
             return (Outcome::Changed, self.menu_event(ev));
         }
         if id == self.more_id() {
+            if !self.layout_valid {
+                return (Outcome::Ignored, None);
+            }
             if self.menu.take().is_none() {
                 self.open_menu();
             }
@@ -605,6 +691,9 @@ impl Tabs {
         self.menu = None;
         if id == self.new_id() {
             return (Outcome::Changed, Some(TabAction::New));
+        }
+        if !self.layout_valid {
+            return (Outcome::Ignored, None);
         }
         if id == self.left_id() {
             self.first = self.first.saturating_sub(1);
@@ -937,6 +1026,7 @@ impl Tabs {
                     Some(tip),
                 );
         }
+        self.layout_valid = true;
         if let Some((menu, _)) = self.menu.as_mut() {
             menu.render(*buf.area(), buf, ctx);
         }

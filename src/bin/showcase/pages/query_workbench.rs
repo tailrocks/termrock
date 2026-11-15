@@ -450,9 +450,11 @@ impl QueryWorkbenchPage {
 
     fn sync_tabs(&mut self) {
         let items = self.tab_items();
-        for (t, it) in self.tabs.items.iter_mut().zip(items) {
-            t.busy = it.busy;
-            t.error = it.error;
+        for (i, it) in items.into_iter().enumerate() {
+            self.tabs.update_item(i, |t| {
+                t.busy = it.busy;
+                t.error = it.error;
+            });
         }
     }
 
