@@ -40,9 +40,9 @@ fn intrinsic_sum_overflow_never_becomes_small_after_gap_subtraction() {
         assert_eq!(shown, 0, "gap {gap}");
         assert_eq!(marker.as_deref(), Some("+3"), "gap {gap}");
     }
-    let lines = wrap_lines(80, &[usize::MAX, 3, usize::MAX], usize::MAX);
+    let lines = wrap_lines(80, &[usize::MAX, 3, usize::MAX], usize::MAX, usize::MAX);
     assert_eq!(lines, vec![vec![0], vec![1], vec![2]]);
-    let fits = wrap_lines(80, &[10, 10, 10], 1);
+    let fits = wrap_lines(80, &[10, 10, 10], 1, usize::MAX);
     assert_eq!(fits, vec![vec![0, 1, 2]]);
 }
 
