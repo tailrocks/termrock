@@ -35,7 +35,7 @@ use ratatui::style::{Modifier, Style};
 use crate::domain::cleanup::{DeleteItem, DeletePlan, Mode, NOISE_NAMES};
 use crate::domain::stack::Spotlight;
 use crate::screens::{
-    Cx, Go, ModalResult, Page, PendingMenu, Screen, StatusBits, open_context, row_anchor,
+    Cx, Go, MenuTake, ModalResult, Page, PendingMenu, Screen, StatusBits, open_context, row_anchor,
     scroll_drag, scroll_press,
 };
 use crate::sim::fs::ScanNode;
@@ -1586,13 +1586,14 @@ impl ShellPage<Holla> for DiskPage {
         w: &mut World,
         cx: &mut Cx,
     ) -> Outcome {
-        let Some((context, index)) = self.menu.take(tag, DISK_ROW, &result) else {
-            return Outcome::Changed;
-        };
-        let Some(action) = context.actions.get(index).cloned() else {
-            return Outcome::Ignored;
-        };
-        self.run_action(&context.target_path, &action, w, cx)
+        match self.menu.take(tag, DISK_ROW, &result) {
+            MenuTake::Stale => Outcome::Ignored,
+            MenuTake::Dismissed => Outcome::Changed,
+            MenuTake::Chosen(context, index) => match context.actions.get(index).cloned() {
+                Some(action) => self.run_action(&context.target_path, &action, w, cx),
+                None => Outcome::Ignored,
+            },
+        }
     }
 
     fn on_tick(&mut self, w: &mut World, _cx: &mut Cx) -> Outcome {
@@ -1948,7 +1949,9 @@ mod context_tests {
     use super::*;
     use crate::domain::fixtures::world_for;
     use crate::scenario::{Motion, Scenario};
+    use crate::screens::pointer_tests::{cell_of, render_hits, secondary_open};
     use junie_tui::core::focus::{Focus, FocusRing};
+    use junie_tui::core::id::{ItemKey, PartRef};
     use junie_tui::shell::Request;
 
     /// Opens the page's menu through the real context-key path, with `focus` on the list or tree.
@@ -1967,17 +1970,46 @@ mod context_tests {
             .expect("the row menu opened")
     }
 
+    fn deliver(
+        page: &mut DiskPage,
+        w: &mut World,
+        tag: &LayerTag,
+        index: usize,
+    ) -> (Outcome, Vec<Request<ModalResult, (), Go>>) {
+        let mut focus = Focus::default();
+        let ring = FocusRing::default();
+        let mut cx = Cx::new(&mut focus, &ring);
+        let outcome = page.on_layer_result(tag, ModalResult::MenuChosen(index), w, &mut cx);
+        (outcome, std::mem::take(&mut cx.requests))
+    }
+
     fn choose(
         page: &mut DiskPage,
         w: &mut World,
         tag: &LayerTag,
         index: usize,
     ) -> Vec<Request<ModalResult, (), Go>> {
-        let mut focus = Focus::default();
-        let ring = FocusRing::default();
-        let mut cx = Cx::new(&mut focus, &ring);
-        page.on_layer_result(tag, ModalResult::MenuChosen(index), w, &mut cx);
-        std::mem::take(&mut cx.requests)
+        deliver(page, w, tag, index).1
+    }
+
+    /// Moves the tree cursor onto the visible row for `path`.
+    fn select_tree_row(page: &mut DiskPage, path: &str) {
+        let row = page
+            .tree
+            .rows()
+            .iter()
+            .position(|r| page.fs_path_of(&r.path).as_deref() == Some(path))
+            .expect("the path is a visible tree row");
+        page.tree.context_select(row);
+    }
+
+    fn overview_row(path: &str) -> OverviewRow {
+        OverviewRow {
+            path: path.into(),
+            label: path.rsplit('/').next().unwrap_or(path).into(),
+            kind: "dir",
+            cached: None,
+        }
     }
 
     #[test]
@@ -2006,6 +2038,182 @@ mod context_tests {
                 .iter()
                 .any(|r| matches!(r, Request::Go(Go::Osc52(p)) if *p == path)),
             "copied the captured path {path}"
+        );
+    }
+
+    #[test]
+    fn disk_context_pointer_menu_keeps_path_after_reveal() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        let mut page = DiskPage::overview();
+        page.rebuild_overview(&w);
+        assert!(page.overview.len() >= 2, "fixture needs two overview rows");
+        let path = page.overview[1].path.clone();
+
+        let hits = render_hits(&mut page, &w);
+        let tag = secondary_open(&mut page, &mut w, &hits, cell_of(&hits, LIST.child(1)));
+
+        page.overview.insert(0, overview_row("/revealed/earlier"));
+        let requests = choose(&mut page, &mut w, &tag, 1);
+        assert!(
+            requests
+                .iter()
+                .any(|r| matches!(r, Request::Go(Go::Osc52(p)) if *p == path)),
+            "the pointer menu copied the captured path {path}"
+        );
+    }
+
+    #[test]
+    fn disk_context_pointer_select_stays_select() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        let root = w.location.cwd.clone();
+        w.start_scan(&root);
+        w.tick += 1_000_000;
+        let mut page = DiskPage::new(&root);
+        page.rebuild_tree(&w);
+        let path = page.paths[0].1.clone();
+        page.selected.remove(&path);
+        select_tree_row(&mut page, &path);
+
+        let hits = render_hits(&mut page, &w);
+        let row = page
+            .tree
+            .rows()
+            .iter()
+            .position(|r| page.fs_path_of(&r.path).as_deref() == Some(path.as_str()))
+            .expect("visible row");
+        let cell = cell_of(
+            &hits,
+            TREE.part(PartRef::item(Part::ROW, ItemKey::index(row))),
+        );
+        let tag = secondary_open(&mut page, &mut w, &hits, cell);
+
+        // The selection changes while the pointer menu is open, so "Select" must stay a select.
+        page.selected.insert(path.clone());
+        choose(&mut page, &mut w, &tag, 0);
+        assert!(page.selected.contains(&path), "Select stays selected");
+    }
+
+    #[test]
+    fn disk_context_missing_target_is_reported() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        let mut page = DiskPage::overview();
+        page.rebuild_overview(&w);
+        assert!(page.overview.len() >= 2, "fixture needs two overview rows");
+        page.cursor = 1;
+        let tag = open_menu(&mut page, &mut w, LIST);
+
+        // A background rebuild removes the captured row before the choice arrives.
+        page.overview.remove(1);
+        let requests = choose(&mut page, &mut w, &tag, 1);
+        assert!(
+            !requests
+                .iter()
+                .any(|r| matches!(r, Request::Go(Go::Osc52(_)))),
+            "nothing is copied for a vanished row"
+        );
+        assert!(
+            requests.iter().any(|r| matches!(
+                r,
+                Request::Status(s, _) if s == NO_LONGER_AVAILABLE
+            )),
+            "the vanished row is reported"
+        );
+    }
+
+    #[test]
+    fn disk_context_newly_ineligible_select_is_refused() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        let root = w.location.cwd.clone();
+        w.start_scan(&root);
+        w.tick += 1_000_000;
+        let mut page = DiskPage::new(&root);
+        page.rebuild_tree(&w);
+        // Expand every folder so the candidates are visible rows.
+        page.tree
+            .expanded
+            .extend(page.paths.iter().map(|(p, _)| p.clone()));
+        page.rebuild_tree(&w);
+        let visible: Vec<String> = page
+            .tree
+            .rows()
+            .iter()
+            .filter_map(|r| page.fs_path_of(&r.path))
+            .collect();
+        let path = visible
+            .iter()
+            .find(|p| {
+                w.disk
+                    .candidates
+                    .iter()
+                    .any(|c| &c.path == *p && c.skip_reason().is_none())
+            })
+            .cloned()
+            .expect("a visible rebuildable candidate");
+        page.selected.remove(&path);
+        select_tree_row(&mut page, &path);
+        let tag = open_menu(&mut page, &mut w, TREE);
+
+        // A guard appears between opening the menu and choosing Select.
+        w.disk
+            .candidates
+            .iter_mut()
+            .find(|c| c.path == path)
+            .expect("candidate")
+            .protected = true;
+        let before = page.selected.clone();
+        let requests = choose(&mut page, &mut w, &tag, 0);
+
+        assert_eq!(page.selected, before, "no other entry changed");
+        assert!(
+            !page.selected.contains(&path),
+            "the guarded entry is not selected"
+        );
+        assert!(
+            requests.iter().any(|r| matches!(
+                r,
+                Request::Status(s, _) if s.starts_with("Cannot select ")
+            )),
+            "the refusal is reported"
+        );
+    }
+
+    #[test]
+    fn disk_context_selected_ancestor_select_is_refused() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        let root = w.location.cwd.clone();
+        w.start_scan(&root);
+        w.tick += 1_000_000;
+        let mut page = DiskPage::new(&root);
+        page.rebuild_tree(&w);
+        let path = page
+            .tree
+            .rows()
+            .iter()
+            .filter_map(|r| page.fs_path_of(&r.path))
+            .find(|p| p.matches('/').count() >= 2 && page.candidate_skip(&w, p).is_none())
+            .expect("a nested visible entry");
+        let ancestor = path.rsplit_once('/').expect("nested path").0.to_owned();
+        page.selected.remove(&path);
+        select_tree_row(&mut page, &path);
+        let tag = open_menu(&mut page, &mut w, TREE);
+
+        // The ancestor is selected while the menu offering "Select" is open.
+        page.selected.insert(ancestor.clone());
+        let before = page.selected.clone();
+        let requests = choose(&mut page, &mut w, &tag, 0);
+
+        assert_eq!(page.selected, before, "the covered entry is not added");
+        assert!(!page.selected.contains(&path));
+        assert!(
+            page.selected.contains(&ancestor),
+            "the ancestor stays selected"
+        );
+        assert!(
+            requests.iter().any(|r| matches!(
+                r,
+                Request::Status(s, _) if s == "Already covered by a selected ancestor"
+            )),
+            "the refusal is reported"
         );
     }
 
@@ -2049,7 +2257,8 @@ mod context_tests {
         page.cursor = 1;
         let second = open_menu(&mut page, &mut w, LIST);
 
-        let stale = choose(&mut page, &mut w, &first, 1);
+        let (outcome, stale) = deliver(&mut page, &mut w, &first, 1);
+        assert_eq!(outcome, Outcome::Ignored, "a superseded result is ignored");
         assert!(
             !stale.iter().any(|r| matches!(r, Request::Go(Go::Osc52(_)))),
             "the superseded menu did nothing"

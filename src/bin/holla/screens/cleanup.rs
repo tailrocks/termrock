@@ -28,7 +28,7 @@ use ratatui::style::{Modifier, Style};
 use crate::domain::catalog::{InsightCategory, insight_candidates, observe_process};
 use crate::domain::cleanup::{self, DeleteItem, DeletePlan, Eligibility, Mode, ProcessObservation};
 use crate::screens::{
-    Cx, Go, ModalResult, Page, PendingMenu, Screen, StatusBits, open_context, row_anchor,
+    Cx, Go, MenuTake, ModalResult, Page, PendingMenu, Screen, StatusBits, open_context, row_anchor,
     scroll_drag, scroll_press,
 };
 use crate::sim::world::World;
@@ -1486,13 +1486,14 @@ impl ShellPage<Holla> for CleanupPage {
         w: &mut World,
         cx: &mut Cx,
     ) -> Outcome {
-        let Some((context, index)) = self.menu.take(tag, CLEANUP_ROW, &result) else {
-            return Outcome::Changed;
-        };
-        let Some(action) = context.actions.get(index).copied() else {
-            return Outcome::Ignored;
-        };
-        self.run_action(&context.target, action, w, cx)
+        match self.menu.take(tag, CLEANUP_ROW, &result) {
+            MenuTake::Stale => Outcome::Ignored,
+            MenuTake::Dismissed => Outcome::Changed,
+            MenuTake::Chosen(context, index) => match context.actions.get(index).copied() {
+                Some(action) => self.run_action(&context.target, action, w, cx),
+                None => Outcome::Ignored,
+            },
+        }
     }
 
     fn hints(&self, focus: Option<WidgetId>, _w: &World) -> Vec<Hint> {
@@ -1795,6 +1796,7 @@ mod context_tests {
     use super::*;
     use crate::domain::fixtures::world_for;
     use crate::scenario::{Motion, Scenario};
+    use crate::screens::pointer_tests::{cell_of, render_hits, secondary_open};
     use junie_tui::core::focus::{Focus, FocusRing};
     use junie_tui::shell::Request;
 
@@ -1819,6 +1821,20 @@ mod context_tests {
             .expect("the row menu opened")
     }
 
+    /// Delivers the menu choice `index` for `tag`, returning the page's outcome and the requests it made.
+    fn deliver(
+        page: &mut CleanupPage,
+        w: &mut World,
+        tag: &LayerTag,
+        index: usize,
+    ) -> (Outcome, Vec<Request<ModalResult, (), Go>>) {
+        let mut focus = Focus::default();
+        let ring = FocusRing::default();
+        let mut cx = Cx::new(&mut focus, &ring);
+        let outcome = page.on_layer_result(tag, ModalResult::MenuChosen(index), w, &mut cx);
+        (outcome, std::mem::take(&mut cx.requests))
+    }
+
     /// Delivers the menu choice `index` for `tag` and returns what the page asked the shell to do.
     fn choose(
         page: &mut CleanupPage,
@@ -1826,11 +1842,7 @@ mod context_tests {
         tag: &LayerTag,
         index: usize,
     ) -> Vec<Request<ModalResult, (), Go>> {
-        let mut focus = Focus::default();
-        let ring = FocusRing::default();
-        let mut cx = Cx::new(&mut focus, &ring);
-        page.on_layer_result(tag, ModalResult::MenuChosen(index), w, &mut cx);
-        std::mem::take(&mut cx.requests)
+        deliver(page, w, tag, index).1
     }
 
     fn status_of(requests: &[Request<ModalResult, (), Go>]) -> Option<String> {
@@ -1894,6 +1906,40 @@ mod context_tests {
                 .iter()
                 .any(|r| matches!(r, Request::Copy(s, _) if *s == path)),
             "copied the captured path {path}, got {:?}",
+            status_of(&requests)
+        );
+    }
+
+    #[test]
+    fn cleanup_context_pointer_menu_keeps_candidate_after_rebuild() {
+        let mut w = world();
+        let mut page = expanded_page(&w);
+        let last = page.cats.len() - 1;
+        assert!(last >= 1, "fixture needs two categories");
+        let path = page.cats[last].candidates[0].path.clone();
+        page.open.clear();
+        page.open.insert(page.cats[last].category.id.to_owned());
+        page.rebuild(&w);
+        let row = row_of_candidate(&page, last, 0);
+
+        let hits = render_hits(&mut page, &w);
+        let tag = secondary_open(
+            &mut page,
+            &mut w,
+            &hits,
+            cell_of(&hits, LIST.part(row_part(row))),
+        );
+
+        page.open.insert(page.cats[0].category.id.to_owned());
+        page.rebuild(&w);
+        assert_ne!(row_of_candidate(&page, last, 0), row, "the row moved");
+
+        let requests = choose(&mut page, &mut w, &tag, 1);
+        assert!(
+            requests
+                .iter()
+                .any(|r| matches!(r, Request::Copy(s, _) if *s == path)),
+            "the pointer menu copied the captured path {path}, got {:?}",
             status_of(&requests)
         );
     }
@@ -2025,7 +2071,8 @@ mod context_tests {
         let second_row = row_of_candidate(&page, second.0, second.1);
         let new_tag = open_menu(&mut page, &mut w, second_row);
 
-        choose(&mut page, &mut w, &old_tag, 0);
+        let (outcome, _) = deliver(&mut page, &mut w, &old_tag, 0);
+        assert_eq!(outcome, Outcome::Ignored, "a stale result is ignored");
         assert!(!page.checked.contains(&first), "the stale menu did nothing");
         assert!(
             !page.checked.contains(&second.2),
