@@ -457,3 +457,48 @@ impl Page for EditablePage {
         Some(&mut self.template)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use junie_tui::core::event::Key;
+    use junie_tui::core::focus::{Focus, FocusRing};
+    use junie_tui::shell::Request;
+    use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+
+    fn key(code: KeyCode) -> PageEvent {
+        PageEvent::Key(Key {
+            code,
+            mods: KeyModifiers::NONE,
+        })
+    }
+
+    /// Editing the last column and pressing Tab commits the cell and hands focus
+    /// on. The host must observe both actions, not just the leave.
+    #[test]
+    fn app_dispatch_drains_compound_response() {
+        let mut page = EditablePage::new();
+        let after = WidgetId::of("editable.after");
+        let mut ring = FocusRing::default();
+        ring.register(page.table.id);
+        ring.register(after);
+        let mut focus = Focus::default();
+        focus.focus(page.table.id);
+        let mut cx = Cx::new(&mut focus, &ring);
+
+        page.table.cursor_col = 5;
+        let _ = page.handle(&key(KeyCode::Enter), &mut cx);
+        assert!(page.table.is_editing());
+        let _ = page.handle(&key(KeyCode::Char('7')), &mut cx);
+        let _ = page.handle(&key(KeyCode::Tab), &mut cx);
+
+        assert_eq!(page.edits, 1, "the commit reached the host");
+        assert!(
+            cx.requests
+                .iter()
+                .any(|r| matches!(r, Request::Status(s, _) if s == "Cell saved")),
+            "the saved indicator was raised"
+        );
+        assert_eq!(cx.focus.current(), Some(after), "focus left the table");
+    }
+}

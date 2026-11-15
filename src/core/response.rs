@@ -32,6 +32,8 @@ pub enum Actions<A> {
     Many(Vec<A>),
 }
 
+// A derive would add an `A: Default` bound that an empty batch does not need.
+#[allow(clippy::derivable_impls)]
 impl<A> Default for Actions<A> {
     fn default() -> Self {
         Self::None
