@@ -1039,3 +1039,44 @@ impl FormDialog {
         }
     }
 }
+
+#[cfg(test)]
+mod issue35_tests {
+    use std::cell::Cell;
+    use std::rc::Rc;
+
+    use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+
+    use super::*;
+    use crate::core::event::Key;
+    use crate::core::focus::{Focus, FocusRing};
+    use crate::core::id::WidgetId;
+    use crate::widgets::input::TextInput;
+
+    #[test]
+    fn issue35_form_save_blocked_by_required_before_custom() {
+        let id = WidgetId::of("issue35.form");
+        let calls = Rc::new(Cell::new(0));
+        let counter = calls.clone();
+        let name = TextInput::new(id.sub("name"), "Name")
+            .required(true)
+            .required_message("Name is required")
+            .validator(move |_| {
+                counter.set(counter.get() + 1);
+                None
+            });
+        let mut form = FormDialog::new(id, "Account", vec![FormField::input("name", name)]);
+        let mut focus = Focus::default();
+        focus.set(Some(form.save.id));
+        let enter = Key {
+            code: KeyCode::Enter,
+            mods: KeyModifiers::NONE,
+        };
+
+        form.on_key(&enter, &mut focus, &FocusRing::default());
+
+        assert!(!form.events.iter().any(|e| matches!(e, FormAction::Save)));
+        assert_eq!(focus.current(), Some(id.sub("name")));
+        assert_eq!(calls.get(), 0);
+    }
+}
