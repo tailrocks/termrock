@@ -315,3 +315,30 @@ fn navlist_replacement_that_moves_the_cursor_scrolls_it_into_view() {
         "the repaired cursor is on screen"
     );
 }
+
+#[test]
+fn navlist_first_render_reveals_a_repaired_cursor() {
+    let mut nav = nav(20);
+    nav.cursor = 500;
+
+    let buf = render_focused(&mut nav);
+
+    assert_eq!(nav.cursor, 19);
+    assert_eq!(
+        gutter_rows(&buf).len(),
+        1,
+        "the repaired cursor is on screen on the very first frame"
+    );
+}
+
+#[test]
+fn navlist_render_with_a_valid_cursor_keeps_a_scrolled_away_offset() {
+    let mut nav = nav(20);
+    render(&mut nav);
+    assert!(nav.scroll.scroll_by(5));
+    let offset = nav.scroll.offset;
+
+    render(&mut nav);
+
+    assert_eq!(nav.scroll.offset, offset);
+}
