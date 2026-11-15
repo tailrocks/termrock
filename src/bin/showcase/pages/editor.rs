@@ -210,6 +210,17 @@ fn large_document() -> String {
     SAMPLE.repeat(LARGE_REPEATS)
 }
 
+fn seed_text(document: &str, previous: &str, current: &str) -> String {
+    match document {
+        "empty" => String::new(),
+        "large" if previous != "large" => large_document(),
+        "sample" if previous == "large" => SAMPLE.to_owned(),
+        "large" if current.is_empty() => large_document(),
+        _ if current.is_empty() => SAMPLE.to_owned(),
+        _ => current.to_owned(),
+    }
+}
+
 pub struct EditorPage {
     template: Template,
     opts: PageValues,
@@ -256,13 +267,7 @@ impl EditorPage {
     fn rebuild(&mut self) {
         let o = &self.opts;
         let document = o.value("codeeditor.document");
-        let text = match document {
-            "empty" => String::new(),
-            "large" if self.document != "large" => large_document(),
-            "sample" if self.document == "large" => SAMPLE.to_owned(),
-            _ if self.editor.text().is_empty() => SAMPLE.to_owned(),
-            _ => self.editor.text().to_owned(),
-        };
+        let text = seed_text(document, self.document, self.editor.text());
         let cursor = if document == self.document {
             self.editor.cursor_offset().min(text.len())
         } else {
@@ -926,5 +931,20 @@ mod tests {
 
         let eligible = hints_while_completing("fet");
         assert!(eligible.contains(&("Enter", "Accept")), "{eligible:?}");
+    }
+
+    #[test]
+    fn a_cleared_large_document_reloads_as_large_not_as_the_sample() {
+        assert_eq!(seed_text("large", "large", ""), large_document());
+        assert_eq!(seed_text("sample", "sample", ""), SAMPLE);
+    }
+
+    #[test]
+    fn switching_documents_loads_the_chosen_one_and_other_options_keep_edits() {
+        assert_eq!(seed_text("large", "sample", "x"), large_document());
+        assert_eq!(seed_text("sample", "large", "x"), SAMPLE);
+        assert_eq!(seed_text("empty", "sample", "x"), "");
+        assert_eq!(seed_text("large", "large", "edited"), "edited");
+        assert_eq!(seed_text("sample", "sample", "edited"), "edited");
     }
 }
