@@ -144,6 +144,7 @@ read it against, because each of its reasons names a Fixed control.
   per-widget setting, then user key remapping.
 - A control with one true value is `Control::Fixed(Reason)` (`core::refusal`): `Checkbox`, `Select`, `Button`, one `RadioGroup` option and one `ListItem` take `.fixed(reason)` or `.control(..)`. It stays in the focus ring, draws the disabled look with the `▎` gutter when focused, and refuses an edit: the value is untouched, the widget returns `Consumed` (`Select`, `Button`: `(Consumed, ..)`) and raises the reason into a thread-local slot (`RefCell<Option<Reason>>`). The call site reads the slot with `take_refusal()` (which clears it) and posts it with `Cx::refused(Reason)`, a neutral status of the reason text alone that lasts 5 s. `shell::handle` clears the slot at the start and at the end of each input, and redraws whenever an input changed the status line (text or tone), so a refusal by key paints at once. `Cx::sticky` posts a neutral status that does not expire and clears on the next key, paste or mouse press (`StatusLine::set_sticky_with`); it is for text a user must read or copy. A `Dialog` routes its mnemonics and its confirm key through `Button::activate`, and every finish (Enter in a prompt field, the typed acknowledgement) through `Button::refuse`, so a fixed action refuses on every route and `Dialog::hints` does not offer it. A fixed `ListItem` keeps its checked state through every selection path. `Reason` limits: text 60 columns, `short` 20 (`Reason::within_limits`); `ContextMenu::reason_room` is the room of the menu border. The showcase page `fixedcontrols` shows it. `Table` rows have no fixed state yet.
 - The showcase Query workbench keeps one `CodeEditor` per document, selected by an authoritative key, not the tab strip. Record: [Query workbench document keys](audits/2026-11-15-query-workbench-document-keys.md).
+- A Query workbench run is bound to its document key, a per-document generation and the SQL captured at run start (`OperationToken`, `RunRequest`). Completion is admitted once, by key and generation; a late edit, a close or a cancel cannot redirect or double-apply it. Record: [Query workbench run identity](audits/2026-11-15-query-workbench-run-identity.md).
 - The showcase demonstrates every library capability; the coverage
   gate is described in
   [shared components plan](architecture/shared-components-plan.md).
@@ -221,6 +222,7 @@ variant of these enums stays a breaking change and is recorded here.
 | `clock::ClockStep`, `Shell::clock_steps` | `ClockStep` (`PREFIX`, `request(ms)`, `parse -> Option<u64>`) became the enum `clock::TestRequest { Advance(ms), Fence }` (`ADVANCE_PREFIX`, `FENCE`, `FENCE_ACK`, `advance(ms)`, `parse -> Option<TestRequest>`). `Shell::clock_steps` became `Shell::test_requests`. Both stay inert unless `JUNIE_TUI_TEST_CLOCK=1`. |
 | `terminal::TerminalState::feed` | Program output passes a guard first (`src/terminal/guard.rs`): a string sequence (OSC, DCS, APC, PM, SOS) over 144 KiB is dropped whole until its end, at most 16 characters join one cell (combining marks, variation selectors, joiners and what a joiner pulls in), and DEL, the bidi controls (U+061C, U+200E, U+200F, U+202A to U+202E, U+2066 to U+2069) and the tag characters (U+E0000 to U+E007F) never reach a cell. A byte that is not valid UTF-8, or a lead byte cut short by the next byte, becomes one U+FFFD and never passes on as it is. `terminal::is_spoofing_format` is that set, and the jackin console's title filter uses it. A 100,000 byte OSC 52 write still fits. |
 | `terminal::encode_key` | Ctrl and Shift on arrows, Home, End, Page, Insert, Delete and F1 to F12 now send the xterm parameter forms (`CSI 1;m X`, `CSI n;m ~`), Ctrl+Backspace sends `0x08`, and Ctrl with `@ \ ] ^ _ /` sends the C0 byte. Alt alone keeps the `ESC` prefix; Shift+Enter stays `\r`. |
+| `terminal::TerminalView`, `TerminalViewport` | Intentional edge-case correction (no API change). A view paints only inside the part of its area that overlaps the buffer, and a wide symbol that does not fit completely in the remaining columns (by Ratatui's `CellWidth`) paints one blank cell with its own style, so no emitted symbol is wider than the pane. A wide glyph's continuation cell that is the first visible column paints a blank. The focused cursor is drawn only when it is inside the buffer. `TerminalViewport::screen_pos` returns `None` for a column in the scroll track, past the pane or past the emulated grid; it used to clamp onto the last emulated column. `context_point` then falls back to the last drawn row of the pane. Showcase's Terminal pane page shows it with the `wide edge` fixture and the `Clip last column` option (off by default). |
 
 ## Known limits
 
@@ -262,5 +264,14 @@ variant of these enums stays a breaking change and is recorded here.
   keeps the draft. Digits discarded before the model stored a number cannot
   be recovered, and arbitrary-precision decimals are not supported. See
   [the audit note](audits/2026-11-15-exact-sql-literals.md).
+- `DataGrid` keeps its drafts and undo history by row identity. Each row has
+  an `ItemKey` (local keys are never reused, provider keys come from
+  `try_set_rows_keyed`), `GridRevision` counts source and draft changes, and
+  `DataGrid::pending()` is a read-only keyed view. Deleting an existing row
+  keeps its staged cells, so undelete and Undo show them again. Removing an
+  inserted row is undoable and restores the row, its edits, errors, selection,
+  cursor and cell range. `undo()` and `GridAction::Undone` report the affected
+  `GridUndo` key. See
+  [the audit note](audits/2026-11-15-grid-keyed-drafts-undo.md).
 - The `visual-baseline` git tag is frozen historical evidence. It is
   never moved, and it is not a substitute for the current design.
