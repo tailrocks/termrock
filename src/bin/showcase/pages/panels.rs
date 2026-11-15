@@ -139,6 +139,12 @@ impl PanelsPage {
             "cleared" => {
                 log.clear();
             }
+            "long token" => {
+                prose.push(
+                    "Copy keeps the source text: 3f9c2a7be41d85c06f1a9e7d2b4c8a0f6e35d1b9c7a2f4e80d6b3a915c7e2f48"
+                        .to_owned(),
+                );
+            }
             _ => {}
         }
         if let Some(c) = click {
