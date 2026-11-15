@@ -13,3 +13,4 @@ mod grapheme_paint;
 mod loading_label;
 mod nav_list_width;
 mod smoke;
+mod tiny_dialogs;
