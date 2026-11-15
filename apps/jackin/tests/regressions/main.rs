@@ -6,4 +6,5 @@
 
 #![cfg(feature = "demo")]
 
+mod footer_wiring;
 mod smoke;
