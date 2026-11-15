@@ -1277,3 +1277,90 @@ mod trees {
         }
     }
 }
+
+mod details {
+    use super::widgets::paint;
+    use super::*;
+    use junie_tui::core::focus::Focus;
+    use junie_tui::core::id::WidgetId;
+    use junie_tui::ui::layout::Split;
+    use junie_tui::widgets::list_detail::{Event, ListDetail, ListRow, SourceFrame};
+    use ratatui::layout::Rect;
+
+    const AREA: Rect = Rect::new(0, 0, 40, 10);
+    const MASTER: WidgetId = WidgetId::of("kd.m");
+    const DETAIL: WidgetId = WidgetId::of("kd.d");
+
+    fn store() -> KeyedVec<ListRow> {
+        KeyedVec::try_from_rows(
+            [(1, "alpha"), (2, "bravo"), (3, "charlie")].map(|(n, l)| (k(n), ListRow::new(l))),
+        )
+        .expect("valid")
+    }
+
+    fn draw(ld: &mut ListDetail, store: &KeyedVec<ListRow>) -> super::widgets::Frame {
+        let frame = SourceFrame {
+            title: "Rows",
+            meta: "3",
+            head: &[],
+            under: None,
+            detail_title: "Detail",
+            detail_meta: "",
+            lines: &[],
+            actions: &[],
+        };
+        paint(|buf, ctx| {
+            ld.render_source(AREA, store, &frame, buf, ctx)
+                .expect("valid source");
+        })
+    }
+
+    #[test]
+    fn keyed_list_detail_selection_follows_the_key_across_reorder() {
+        let mut store = store();
+        let mut ld = ListDetail::new(MASTER, DETAIL, Split::new(50, 36, 40));
+        draw(&mut ld, &store);
+        ld.select(1);
+        draw(&mut ld, &store);
+        assert_eq!(ld.selected_key(), Some(k(2)));
+
+        store.move_to(k(2), 0);
+        let after = draw(&mut ld, &store);
+        assert_eq!(ld.cursor, 0, "the view index follows the key");
+        assert_eq!(ld.selected_key(), Some(k(2)));
+        assert!(after.text().contains("bravo"));
+
+        store.remove(k(2));
+        draw(&mut ld, &store);
+        assert_eq!(
+            ld.selected_key(),
+            Some(k(1)),
+            "successor takes over deterministically"
+        );
+    }
+
+    #[test]
+    fn keyed_list_detail_click_reaches_the_clicked_key() {
+        let mut store = store();
+        let mut ld = ListDetail::new(MASTER, DETAIL, Split::new(50, 36, 40));
+        let frame = draw(&mut ld, &store);
+        let id = frame
+            .hits
+            .regions()
+            .iter()
+            .rev()
+            .find(|r| r.area.contains(ratatui::layout::Position::new(4, 2)) && r.id != MASTER)
+            .map(|r| r.id)
+            .expect("a row hit");
+        store.move_to(k(2), 2);
+        draw(&mut ld, &store);
+        let mut focus = Focus::default();
+        let (_, event) = ld.click_source(id, &mut focus);
+        assert_eq!(event, Some(Event::Row(2)));
+        assert_eq!(
+            ld.selected_key(),
+            Some(k(2)),
+            "the key, not the position, was clicked"
+        );
+    }
+}

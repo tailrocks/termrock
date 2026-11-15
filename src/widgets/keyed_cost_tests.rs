@@ -205,3 +205,52 @@ fn keyed_resize_cancels_capture_without_source_scan() {
     assert_eq!(work.source_rows, 0, "{work:?}");
     assert!(!state.release_press(ItemKey::num(2), 5));
 }
+
+#[test]
+fn list_detail_unchanged_widths_are_cached() {
+    use crate::ui::layout::Split;
+    use crate::widgets::list_detail::{ListDetail, ListRow, SourceFrame};
+
+    let mut store = KeyedVec::try_from_rows((0..5_000).map(|n| {
+        (
+            ItemKey::num(n),
+            ListRow::new(&format!("row {n}")).detail("detail"),
+        )
+    }))
+    .expect("valid");
+    let mut detail = ListDetail::new(WidgetId::of("m"), WidgetId::of("d"), Split::new(50, 36, 40));
+    let frame = SourceFrame {
+        title: "Rows",
+        meta: "",
+        head: &[],
+        under: None,
+        detail_title: "Detail",
+        detail_meta: "",
+        lines: &[],
+        actions: &[],
+    };
+    let mut paint = |detail: &mut ListDetail, store: &KeyedVec<ListRow>| {
+        overlay_frame(|buf, ctx| {
+            detail
+                .render_source(SCREEN, store, &frame, buf, ctx)
+                .expect("valid source");
+        });
+    };
+    let ((), first) = Work::measure(|| paint(&mut detail, &store));
+    assert_eq!(first.width_rows, 5_000, "{first:?}");
+    let ((), again) = Work::measure(|| paint(&mut detail, &store));
+    assert_eq!(
+        again.width_rows, 0,
+        "unchanged stamp measures no row: {again:?}"
+    );
+    assert_eq!(again.source_rows, 0, "{again:?}");
+
+    store.update(ItemKey::num(3), |row| {
+        row.label = "row three, renamed".into()
+    });
+    let ((), changed) = Work::measure(|| paint(&mut detail, &store));
+    assert_eq!(
+        changed.width_rows, 5_000,
+        "a data revision re-measures once: {changed:?}"
+    );
+}
