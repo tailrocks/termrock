@@ -1387,3 +1387,128 @@ fn option_blur_cancel() {
     shot_options_held(&app, "opt.datagrid.blur_action");
     app.finish();
 }
+
+fn click_grid_row(app: &crate::support::App, label: &str) {
+    click_first(app, label, |hit| hit.x > 24 && hit.y < 20);
+}
+
+fn strict_grid_at(name: &str, right: usize) -> crate::support::App {
+    let args = opt_args("datagrid.validator=editors");
+    let app = open(name, 120, 40, &args);
+    app.wait_text("Northwind");
+    click_grid(&app);
+    for _ in 0..right {
+        app.key("right");
+    }
+    app.settle();
+    app
+}
+
+#[test]
+fn issue43_strict_grid_rejects_the_active_toggle() {
+    const WHY: &str = "Accounts are deactivated by support";
+    let app = strict_grid_at("s03-strict-active", 4);
+    app.key("enter");
+    let rejected = app.wait_text(WHY);
+    let row = row_with(&rejected, "Northwind");
+    assert!(
+        row.contains("true") && !row.contains("false"),
+        "the rejected toggle must keep true: {row}"
+    );
+    see(&rejected, &["no pending changes"], &["1 pending"]);
+    app.key("down");
+    let marked = app.settle();
+    let row = row_with(&marked, "Northwind");
+    assert!(row.contains('!'), "the rejected cell keeps its mark: {row}");
+    app.finish();
+}
+
+#[test]
+fn issue43_strict_grid_rejects_the_empty_tier_choice() {
+    const WHY: &str = "A support tier is required: pick one";
+    let app = strict_grid_at("s03-strict-tier", 8);
+    app.key("enter");
+    app.wait_text("(none)");
+    app.key("up");
+    app.settle();
+    app.key("enter");
+    let rejected = app.wait_text(WHY);
+    see(&rejected, &["(none)", "standard"], &["1 pending"]);
+    assert!(
+        text(&rejected).contains("dedicated"),
+        "the popup closed on the rejected choice\n{}",
+        text(&rejected)
+    );
+    app.key("esc");
+    let closed = app.settle();
+    see(&closed, &["no pending changes"], &[WHY, "(none)"]);
+    app.finish();
+}
+
+#[test]
+fn issue43_strict_grid_bool_cycle_reaches_null() {
+    let app = strict_grid_at("s03-strict-paused", 9);
+    let start = app.settle();
+    assert!(
+        row_with(&start, "▎").contains("true"),
+        "paused starts true\n{}",
+        text(&start)
+    );
+    app.key("enter");
+    let off = app.wait_text("1 pending");
+    assert!(
+        row_with(&off, "▎").contains("false"),
+        "first toggle sets false\n{}",
+        text(&off)
+    );
+    app.key("enter");
+    let null = app.settle();
+    assert!(
+        row_with(&null, "▎").contains("NULL"),
+        "second toggle sets NULL\n{}",
+        text(&null)
+    );
+    app.key("U");
+    app.wait_text("no pending changes");
+    app.finish();
+}
+
+#[test]
+fn issue43_save_resolves_the_open_edit_first() {
+    const WHY: &str = "A customer name has at least 3 letters";
+    let app = strict_grid_at("s03-strict-save", 0);
+    app.key("down");
+    app.key("-");
+    app.wait_text(QUEUED);
+    app.key("up");
+    app.key("enter");
+    for _ in 0.."Northwind Traders".len() {
+        app.key("backspace");
+    }
+    app.key("a");
+    app.key("b");
+    app.settle();
+    click_first(&app, "Save", |hit| hit.y > 30);
+    app.wait_text("Fix the open cell first");
+    let blocked = app.settle();
+    see(
+        &blocked,
+        &["EDIT", WHY],
+        &["Save changes", "UPDATE customers"],
+    );
+
+    click_grid_row(&app, "Northwind");
+    app.key("c");
+    app.settle();
+    click_first(&app, "Save", |hit| hit.y > 30);
+    let review = app.wait_text("UPDATE customers");
+    see(
+        &review,
+        &["Save changes", "SET customer = 'cab' WHERE id = 1001"],
+        &["Fix the open cell first"],
+    );
+    app.key("esc");
+    click_first(&app, "Discard", |hit| hit.y > 30);
+    app.wait_text("no pending changes");
+    app.finish();
+}
