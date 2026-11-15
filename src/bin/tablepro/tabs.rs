@@ -3505,4 +3505,25 @@ mod issue84_tests {
         assert!(text.len() > original.len(), "{text:?}");
         assert!(text.ends_with(original), "{text:?}");
     }
+
+    #[test]
+    fn completion_prefix_ctrl_space_at_home_through_on_key() {
+        use junie_tui::core::focus::{Focus, FocusRing};
+
+        let cat = Catalog::acme_prod();
+        let original = " SELECT id FROM users";
+        let mut tab = QueryTab::new(WidgetId::of("issue84-key"), "Query 1", "");
+        tab.editor.set_text(original);
+        assert_eq!(tab.editor.cursor_offset(), 0);
+        let mut focus = Focus::default();
+        focus.set(Some(tab.editor.id));
+        let ring = FocusRing::default();
+        let mut cx = Cx::new(&mut focus, &ring);
+        let ctrl_space = Key {
+            code: KeyCode::Char(' '),
+            mods: ratatui::crossterm::event::KeyModifiers::CONTROL,
+        };
+        assert_eq!(tab.on_key(&ctrl_space, &mut cx, &cat), Outcome::Changed);
+        assert!(tab.completion.is_open());
+    }
 }
