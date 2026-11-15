@@ -191,9 +191,9 @@ impl ToolbarsPage {
         if k < 2
             && let ToolbarAction::Activated(i) = a
         {
-            match i {
-                0 | 1 => self.running = true,
-                2 => self.running = false,
+            match self.bar_mut(k).items()[i].label.as_str() {
+                "Run" | MUTATED => self.running = true,
+                "Stop" => self.running = false,
                 _ => {}
             }
 
@@ -511,4 +511,59 @@ impl Page for ToolbarsPage {
 
 pub fn page() -> Box<dyn Page> {
     Box::new(ToolbarsPage::new())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use junie_tui::core::focus::{Focus, FocusRing};
+
+    /// Activates the narrow bar's item labelled `label` as the » menu would.
+    fn activate(page: &mut ToolbarsPage, label: &str) {
+        let i = page
+            .narrow
+            .items()
+            .iter()
+            .position(|item| item.label == label)
+            .expect("the narrow bar has the item");
+        let mut focus = Focus::default();
+        let ring = FocusRing::default();
+        let mut cx = Cx::new(&mut focus, &ring);
+        page.act(ToolbarAction::Activated(i), 1, &mut cx);
+    }
+
+    fn without_run_all() -> ToolbarsPage {
+        let mut page = ToolbarsPage::new();
+        let at = page
+            .narrow
+            .items()
+            .iter()
+            .position(|item| item.label == MUTATED)
+            .expect("the narrow bar starts with Run all");
+        page.narrow.remove_item(at);
+        page
+    }
+
+    #[test]
+    fn stop_stops_the_run_after_run_all_left_the_bar() {
+        let mut page = without_run_all();
+        page.running = true;
+
+        activate(&mut page, "Stop");
+
+        assert!(
+            !page.running,
+            "Stop stops the run wherever it sits in the bar"
+        );
+    }
+
+    #[test]
+    fn an_item_that_moved_into_the_stop_slot_does_not_stop_the_run() {
+        let mut page = without_run_all();
+        page.running = true;
+
+        activate(&mut page, "Format");
+
+        assert!(page.running, "Format never touches the run");
+    }
 }
