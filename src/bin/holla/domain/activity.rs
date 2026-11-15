@@ -1,6 +1,7 @@
 use crate::domain::context::ScopeTag;
 use crate::domain::effect::Effect;
 use crate::domain::exec::Command;
+use unicode_segmentation::UnicodeSegmentation;
 
 pub const RETAIN_LINES: usize = 4000;
 
@@ -579,12 +580,14 @@ impl Activity {
             }
             return Ok(());
         }
+        let mut echo_dirty = false;
         for &b in bytes {
             match b {
                 0x7f | 0x08 => {
-                    self.pending.pop();
+                    echo_dirty |= erase_last_input(&mut self.pending);
                 }
                 b'\r' | b'\n' => {
+                    echo_dirty = false;
                     if self.waiting.is_some() {
                         let line = String::from_utf8_lossy(&std::mem::take(&mut self.pending))
                             .into_owned();
@@ -595,10 +598,14 @@ impl Activity {
                         self.echo_active = false;
                     }
                 }
-                _ => self.pending.push(b),
+                _ => {
+                    self.pending.push(b);
+                    echo_dirty = true;
+                }
             }
         }
-        if !self.pending.is_empty() {
+        if !self.pending.is_empty() || (echo_dirty && (self.echo_active || self.waiting.is_some()))
+        {
             self.echo_pending(None);
         }
         Ok(())
@@ -702,6 +709,25 @@ impl Activity {
     }
 }
 
+/// Removes one user-perceived character from the end of `pending`. Returns
+/// whether anything was removed. An incomplete trailing UTF-8 scalar goes
+/// first, and a malformed byte goes one byte at a time.
+fn erase_last_input(pending: &mut Vec<u8>) -> bool {
+    if pending.is_empty() {
+        return false;
+    }
+    let keep = match std::str::from_utf8(pending) {
+        Ok(text) => text
+            .grapheme_indices(true)
+            .next_back()
+            .map_or(0, |(offset, _)| offset),
+        Err(error) if error.error_len().is_none() => error.valid_up_to(),
+        Err(_) => pending.len() - 1,
+    };
+    pending.truncate(keep);
+    true
+}
+
 pub fn key_bytes(key: &junie_tui::core::event::Key) -> Option<Vec<u8>> {
     use ratatui::crossterm::event::KeyCode;
     let ctrl = key.ctrl();
@@ -724,4 +750,122 @@ pub fn key_bytes(key: &junie_tui::core::event::Key) -> Option<Vec<u8>> {
         KeyCode::Char(c) if !key.alt() => c.to_string().into_bytes(),
         _ => return None,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn task() -> Activity {
+        Activity::new(
+            "act-test",
+            "demo",
+            "test",
+            ActivityKind::Task,
+            ScopeTag::here("/work"),
+            "host",
+            Script::running(vec![]),
+            0,
+        )
+    }
+
+    fn prompt(text: &str, secret: bool) -> Prompt {
+        Prompt {
+            text: text.into(),
+            secret,
+            since_tick: 0,
+            index: 0,
+        }
+    }
+
+    fn last_text(a: &Activity) -> &str {
+        a.output.last().map_or("", |e| e.1.as_str())
+    }
+
+    fn texts(a: &Activity) -> Vec<&str> {
+        a.output.iter().map(|e| e.1.as_str()).collect()
+    }
+
+    #[test]
+    fn stdin_backspace_removes_unicode_grapheme() {
+        let clusters = ["é", "e\u{301}", "中", "👍🏽", "👨\u{200d}👩\u{200d}👧"];
+        for cluster in clusters {
+            let mut a = task();
+            a.send_input(format!("ab{cluster}").as_bytes(), 1).unwrap();
+            a.send_input(&[0x7f], 2).unwrap();
+            assert_eq!(a.pending, b"ab", "cluster {cluster:?} is erased whole");
+            assert_eq!(last_text(&a), "ab");
+        }
+    }
+
+    #[test]
+    fn stdin_backspace_last_character_clears_echo() {
+        let mut a = task();
+        a.send_input(b"x", 1).unwrap();
+        assert_eq!(last_text(&a), "x");
+        a.send_input(&[0x7f], 2).unwrap();
+        assert!(a.pending.is_empty());
+        assert_eq!(texts(&a), vec![""], "the echo row is blank, not stale");
+    }
+
+    #[test]
+    fn stdin_backspace_empty_is_noop() {
+        let mut a = task();
+        for tick in 1..4 {
+            a.send_input(&[0x7f], tick).unwrap();
+        }
+        assert!(a.pending.is_empty());
+        assert!(a.output.is_empty(), "no blank row for an untouched line");
+    }
+
+    #[test]
+    fn stdin_backspace_fragmented_utf8_discards_incomplete_tail() {
+        let mut a = task();
+        a.send_input(&[b'a', 0xE4, 0xB8], 1).unwrap();
+        a.send_input(&[0x7f], 2).unwrap();
+        assert_eq!(a.pending, b"a", "the incomplete scalar goes, 'a' stays");
+
+        a.send_input(&[0xE4, 0xB8, 0xAD], 3).unwrap();
+        assert_eq!(last_text(&a), "a中");
+    }
+
+    #[test]
+    fn stdin_backspace_malformed_byte_removes_one_byte() {
+        let mut a = task();
+        a.send_input(&[b'a', 0xFF, b'b'], 1).unwrap();
+        a.send_input(&[0x7f], 2).unwrap();
+        assert_eq!(a.pending, [b'a', 0xFF]);
+    }
+
+    #[test]
+    fn stdin_secret_edit_never_displays_input() {
+        let mut a = task();
+        a.output.push((None, "Password: ".into(), LineTone::Normal));
+        a.waiting = Some(prompt("Password: ", true));
+        a.send_input(b"hunter2", 1).unwrap();
+        a.send_input(&[0x7f, 0x7f], 2).unwrap();
+        assert_eq!(a.pending, b"hunte");
+        assert_eq!(last_text(&a), "Password: ");
+        assert!(a.stdin.iter().all(|r| r.secret && r.bytes.is_empty()));
+    }
+
+    #[test]
+    fn stdin_edit_submit_same_chunk_has_one_echo_per_line() {
+        let mut a = task();
+        a.send_input(b"x\ry", 1).unwrap();
+        assert_eq!(texts(&a), vec!["x", "y"]);
+        assert_eq!(a.pending, b"y");
+    }
+
+    #[test]
+    fn stdin_empty_prompt_delete_keeps_prompt_text() {
+        let mut a = task();
+        a.output.push((None, "Name: ".into(), LineTone::Normal));
+        a.waiting = Some(prompt("Name: ", false));
+        a.send_input(b"a", 1).unwrap();
+        assert_eq!(last_text(&a), "Name: a");
+        a.send_input(&[0x7f], 2).unwrap();
+        assert!(a.pending.is_empty());
+        assert_eq!(last_text(&a), "Name: ");
+    }
 }
