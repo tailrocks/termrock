@@ -360,12 +360,18 @@ fn issue48_default_nonfinite_rejected() {
         );
         press(&mut g, KeyCode::Enter);
         let seeded = draft(&g);
+        let revision = g.revision();
         let action = press(&mut g, KeyCode::Enter);
         assert_eq!(action, None, "{bad}: seed {seeded:?} must not commit");
         assert!(g.edit.is_some(), "{bad}: the session stays open");
         assert!(g.edit_error().is_some(), "{bad}: the rejection is visible");
         assert!(g.pending().is_empty());
         assert!(g.undo().unwrap().is_none());
+        assert_eq!(
+            g.revision(),
+            revision,
+            "{bad}: the rejected commit bumped the revision"
+        );
         let kept = g.value(0, 0);
         assert!(
             matches!(kept, CellValue::Num(n) if n.to_bits() == bad.to_bits()),
