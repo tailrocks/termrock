@@ -1351,17 +1351,61 @@ impl Test {
 
 /// SQL LIKE over characters: `%` matches any run, `_` one character, and a
 /// backslash makes the next pattern character literal.
+///
+/// Greedy matching with a single backtrack point, the latest `%`. Giving an
+/// earlier `%` more text never helps once a later one exists, so the work is
+/// bounded by pattern length times text length however many `%` there are.
 fn like_match(pat: &[char], s: &[char]) -> bool {
-    match pat.split_first() {
-        None => s.is_empty(),
-        Some(('%', rest)) => (0..=s.len()).any(|k| like_match(rest, &s[k..])),
-        Some(('_', rest)) => !s.is_empty() && like_match(rest, &s[1..]),
-        Some(('\\', rest)) => match rest.split_first() {
-            Some((c, after)) => s.first() == Some(c) && like_match(after, &s[1..]),
-            None => s.first() == Some(&'\\') && like_match(&[], &s[1..]),
-        },
-        Some((c, rest)) => s.first() == Some(c) && like_match(rest, &s[1..]),
+    enum Elem {
+        Any,
+        One,
+        Lit(char),
     }
+    let elem = |p: usize| match pat[p] {
+        '%' => (Elem::Any, 1),
+        '_' => (Elem::One, 1),
+        '\\' if p + 1 < pat.len() => (Elem::Lit(pat[p + 1]), 2),
+        c => (Elem::Lit(c), 1),
+    };
+    let (mut p, mut i) = (0, 0);
+    let mut resume: Option<(usize, usize)> = None;
+    while i < s.len() {
+        if p < pat.len() {
+            let (e, w) = elem(p);
+            match e {
+                Elem::Any => {
+                    resume = Some((p + w, i));
+                    p += w;
+                    continue;
+                }
+                Elem::One => {
+                    p += w;
+                    i += 1;
+                    continue;
+                }
+                Elem::Lit(c) if c == s[i] => {
+                    p += w;
+                    i += 1;
+                    continue;
+                }
+                Elem::Lit(_) => {}
+            }
+        }
+        let Some((after_any, at)) = resume else {
+            return false;
+        };
+        resume = Some((after_any, at + 1));
+        p = after_any;
+        i = at + 1;
+    }
+    while p < pat.len() {
+        let (e, w) = elem(p);
+        if !matches!(e, Elem::Any) {
+            return false;
+        }
+        p += w;
+    }
+    true
 }
 
 pub fn cmp_values(a: &Value, b: &Value) -> std::cmp::Ordering {
@@ -1943,6 +1987,46 @@ mod issue10_sql_tests {
             &expr,
             &row_with(table, "notes", Value::Text("axbc".into()))
         ));
+    }
+
+    #[test]
+    fn issue10_like_with_many_percents_stays_polynomial() {
+        let pat: Vec<char> = "%a".repeat(12).chars().chain(['b']).collect();
+        let hay: Vec<char> = "a".repeat(24).chars().collect();
+        let started = std::time::Instant::now();
+        assert!(!like_match(&pat, &hay));
+        assert!(
+            started.elapsed() < std::time::Duration::from_secs(1),
+            "like_match took {:?}",
+            started.elapsed()
+        );
+    }
+
+    #[test]
+    fn issue10_like_match_semantics() {
+        let m = |p: &str, s: &str| {
+            let p: Vec<char> = p.chars().collect();
+            let s: Vec<char> = s.chars().collect();
+            like_match(&p, &s)
+        };
+        assert!(m("", ""));
+        assert!(!m("", "a"));
+        assert!(m("%", ""));
+        assert!(m("%%a%%", "xxaxx"));
+        assert!(m("a%b", "ab"));
+        assert!(m("a%b", "axxb"));
+        assert!(!m("a%b", "axxbc"));
+        assert!(m("a_c", "abc"));
+        assert!(!m("a_c", "ac"));
+        assert!(m("%a_%c", "xxabbc"));
+        assert!(m(r"a\%b", "a%b"));
+        assert!(!m(r"a\%b", "axb"));
+        assert!(m(r"a\_", "a_"));
+        assert!(m(r"a\\", r"a\"));
+        assert!(m(r"a\", r"a\"));
+        assert!(m("%é_", "xéy"));
+        assert!(m("%abc", "ababc"));
+        assert!(!m("%abc", "ababd"));
     }
 
     #[test]
