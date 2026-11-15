@@ -582,9 +582,9 @@ impl Fs {
         if node.dataless {
             return Preview::Error(FsError::Dataless(path.into()));
         }
-        let raw: Vec<u8> = match &node.content {
-            Content::Text(t) => t.as_bytes().to_vec(),
-            Content::Bytes(b) => b.clone(),
+        let raw: &[u8] = match &node.content {
+            Content::Text(t) => t.as_bytes(),
+            Content::Bytes(b) => b.as_slice(),
             Content::None => {
                 if node.apparent == 0 {
                     return Preview::Empty;
@@ -995,3 +995,6 @@ pub fn sanitize(s: &str) -> String {
     }
     out
 }
+
+#[cfg(test)]
+mod tests;

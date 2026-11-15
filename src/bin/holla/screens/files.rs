@@ -1827,3 +1827,6 @@ impl FilesPage {
         self.jump_to(target, w, cx)
     }
 }
+
+#[cfg(test)]
+mod tests;

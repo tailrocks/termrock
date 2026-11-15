@@ -1,3 +1,5 @@
+#[cfg(test)]
+mod alloc_probe;
 mod app;
 
 mod domain;
