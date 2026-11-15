@@ -427,7 +427,7 @@ const OPS: &[Op] = &[
     Op {
         downs: 2,
         values: &["Labs"],
-        preview: "name LIKE '%Labs%'",
+        preview: "name ILIKE '%Labs%'",
         chip: CHIP_CONTAINS,
         rows: Rows::Kept {
             allow: &[NORTHWIND],
@@ -437,7 +437,7 @@ const OPS: &[Op] = &[
     Op {
         downs: 3,
         values: &["Jun"],
-        preview: "name LIKE 'Jun%'",
+        preview: "name ILIKE 'Jun%'",
         chip: "name starts with 'Jun'",
         rows: Rows::Kept {
             allow: &[JUNIPER],
@@ -447,7 +447,7 @@ const OPS: &[Op] = &[
     Op {
         downs: 4,
         values: &["Labs"],
-        preview: "name LIKE '%Labs'",
+        preview: "name ILIKE '%Labs'",
         chip: "name ends with 'Labs'",
         rows: Rows::Kept {
             allow: &[NORTHWIND],
@@ -478,9 +478,22 @@ const OPS: &[Op] = &[
     Op {
         downs: 8,
         values: &["Labs"],
-        preview: "name NOT LIKE '%Labs%'",
+        preview: "name NOT ILIKE '%Labs%'",
         chip: "name not contains 'Labs'",
-        rows: Rows::Same,
+        rows: Rows::Kept {
+            allow: &[
+                LUMEN,
+                "Halden & Co",
+                BLUEFIN,
+                ORBIT,
+                "Kestrel Health",
+                "Fjord Analytics",
+                TESSELLATE,
+                JUNIPER,
+                MERIDIAN,
+            ],
+            show: &[TESSELLATE, JUNIPER],
+        },
     },
     Op {
         downs: 9,
@@ -544,7 +557,20 @@ const OPS: &[Op] = &[
         values: &["Tessellate"],
         preview: "name NOT IN ('Tessellate')",
         chip: "name not in list 'Tessellate'",
-        rows: Rows::Same,
+        rows: Rows::Kept {
+            allow: &[
+                NORTHWIND,
+                LUMEN,
+                "Halden & Co",
+                BLUEFIN,
+                ORBIT,
+                "Kestrel Health",
+                "Fjord Analytics",
+                JUNIPER,
+                MERIDIAN,
+            ],
+            show: &[NORTHWIND, JUNIPER],
+        },
     },
     Op {
         downs: 16,
@@ -619,7 +645,7 @@ fn tablepro_filters_change_the_visible_organizations() {
     let contains = Op {
         downs: 2,
         values: &["Labs"],
-        preview: "name LIKE '%Labs%'",
+        preview: "name ILIKE '%Labs%'",
         chip: CHIP_CONTAINS,
         rows: Rows::Kept {
             allow: &[NORTHWIND],
@@ -749,7 +775,7 @@ fn tablepro_filters_change_the_visible_organizations() {
     choose_op(&app, 2);
     app.key("tab");
     app.type_text("Retail");
-    let both_preview = app.wait_text("name LIKE '%Retail%'");
+    let both_preview = app.wait_text("name ILIKE '%Retail%'");
     assert!(text(&both_preview).contains("WHERE "));
     app.key("enter");
     let both = app.wait_screen("two chips", |screen| {
@@ -774,7 +800,7 @@ fn tablepro_filters_change_the_visible_organizations() {
         "match all stayed after m\n{}",
         text(&any)
     );
-    assert_empty(&any);
+    assert_kept(&any, &[NORTHWIND, LUMEN], &[NORTHWIND, LUMEN]);
     clear_filters(&app);
     focus_grid(&app);
     let before_same = focused_org(&app.screen());

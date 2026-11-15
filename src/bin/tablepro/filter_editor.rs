@@ -18,7 +18,7 @@ use junie_tui::widgets::select::{Select, SelectAction};
 
 use crate::app::ModalResult;
 use crate::db::ColType;
-use crate::tabs::{Filter, FilterOp};
+use crate::tabs::{Filter, FilterField, FilterOp};
 
 pub const ID: WidgetId = WidgetId::of("filter-editor");
 
@@ -107,11 +107,6 @@ impl FilterEditor {
         if self.value2.editing {
             self.value2.commit();
         }
-        if op.needs_value() && self.value.text().trim().is_empty() {
-            self.value.field.error = Some("A value is required for this operator".into());
-            focus.focus(self.value.id);
-            return Outcome::Changed;
-        }
         let filter = Filter {
             column: self.columns[self.column.selected].0.clone(),
             op,
@@ -119,6 +114,18 @@ impl FilterEditor {
             value2: self.value2.text().trim().to_owned(),
             enabled: true,
         };
+        // A rejected filter keeps the editor open with its error on the field
+        // at fault, so the view behind it is never replaced.
+        let ty = self.columns[self.column.selected].1;
+        if let Err(e) = filter.check(ty) {
+            let input = match e.field {
+                FilterField::Value => &mut self.value,
+                FilterField::Value2 => &mut self.value2,
+            };
+            input.field.error = Some(e.message.into());
+            focus.focus(input.id);
+            return Outcome::Changed;
+        }
         self.done = Some(Some((self.index, filter)));
         Outcome::Changed
     }

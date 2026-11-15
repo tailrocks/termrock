@@ -58,6 +58,7 @@ termpane = { git = "https://github.com/tailrocks/termpane", rev = "46cc0977d8ee9
 ratatui = { workspace = true }
 unicode-width = "0.2.3"
 unicode-segmentation = "1"
+regex = "1.13"
 
 [target.'cfg(unix)'.dependencies]
 

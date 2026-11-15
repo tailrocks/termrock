@@ -203,5 +203,10 @@ variant of these enums stays a breaking change and is recorded here.
   [architecture](architecture.md); no part of that split has landed.
 - Applications simulate their backends (PostgreSQL, Docker,
   filesystem). No real external effect is claimed or tested.
+- TablePro's simulator evaluates filters with SQL three-valued logic and
+  Rust `regex` syntax, not PostgreSQL's regex dialect or collations. Its
+  query editor does not yet read doubled apostrophes inside string
+  literals; the lexer owns that fix (see
+  [TablePro filter semantics](audits/2026-11-15-tablepro-filter-semantics.md)).
 - The `visual-baseline` git tag is frozen historical evidence. It is
   never moved, and it is not a substitute for the current design.
