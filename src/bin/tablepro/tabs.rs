@@ -705,7 +705,7 @@ impl TableTab {
     }
 
     pub fn dirty_count(&self) -> usize {
-        self.grid.pending.total()
+        self.grid.pending().total()
     }
 
     pub fn hints(&self, focus: Option<WidgetId>) -> Vec<Hint> {
