@@ -203,5 +203,15 @@ variant of these enums stays a breaking change and is recorded here.
   [architecture](architecture.md); no part of that split has landed.
 - Applications simulate their backends (PostgreSQL, Docker,
   filesystem). No real external effect is claimed or tested.
+- TablePro's save and preview SQL (`model::preview_sql`) and the Showcase
+  grid's SQL preview serialize a finite number as the shortest text that
+  parses back to the stored `f64` (`1.2345` stays `1.2345`, `1.0` stays
+  `1.0`), in assignments, inserted values and original-row predicates. A
+  null key matches with `IS NULL`. A NaN or infinite number, a `DEFAULT` in a
+  row predicate or a key column missing from the tab aborts the whole
+  preview with the row and column named, opens no dialog, starts no save and
+  keeps the draft. Digits discarded before the model stored a number cannot
+  be recovered, and arbitrary-precision decimals are not supported. See
+  [the audit note](audits/2026-11-15-exact-sql-literals.md).
 - The `visual-baseline` git tag is frozen historical evidence. It is
   never moved, and it is not a substitute for the current design.

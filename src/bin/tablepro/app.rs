@@ -123,6 +123,25 @@ impl From<LayerResult> for ModalResult {
 
 pub type Layers = ShellLayers<ModalResult>;
 
+fn preview_error_text(e: &crate::model::PreviewSqlError) -> String {
+    use crate::model::{PreviewRow, PreviewSqlCause, SqlLiteralError};
+    let PreviewRow::Source(row) = e.row;
+    let place = match &e.column {
+        Some(column) => format!("row {} · {column}", row + 1),
+        None => format!("row {}", row + 1),
+    };
+    let why = match &e.cause {
+        PreviewSqlCause::Literal(SqlLiteralError::NonFiniteNumber) => {
+            "is not a finite number".to_owned()
+        }
+        PreviewSqlCause::MissingColumn(name) => format!("key column {name} is missing"),
+        PreviewSqlCause::InvalidDefaultPredicate => {
+            "holds DEFAULT, which cannot identify a row".to_owned()
+        }
+    };
+    format!("{place} {why}")
+}
+
 pub struct App {
     pub theme: Theme,
 
@@ -1032,7 +1051,19 @@ impl App {
             );
             return;
         }
-        let sqls = crate::model::preview_sql(&table, &t.columns, &t.grid);
+        let sqls = match crate::model::preview_sql(&table, &t.columns, &t.grid) {
+            Ok(sqls) => sqls,
+            Err(e) => {
+                self.set_status_as(
+                    StatusKind::Fail,
+                    format!(
+                        "Cannot save: {} · changes kept pending",
+                        preview_error_text(&e)
+                    ),
+                );
+                return;
+            }
+        };
         let (u, i, d) = t.grid.pending.counts();
         let deletes = d;
         let deliberate = level.requires_authentication();
@@ -1141,10 +1172,23 @@ impl App {
         let Some(WorkTab::Table(t)) = w.active_tab_mut() else {
             return;
         };
-        let sqls = table
+        let sqls = match table
             .as_ref()
             .map(|tb| crate::model::preview_sql(tb, &t.columns, &t.grid))
-            .unwrap_or_default();
+            .transpose()
+        {
+            Ok(sqls) => sqls.unwrap_or_default(),
+            Err(e) => {
+                self.set_status_as(
+                    StatusKind::Fail,
+                    format!(
+                        "Cannot save: {} · changes kept pending",
+                        preview_error_text(&e)
+                    ),
+                );
+                return;
+            }
+        };
         let n = t.grid.pending.total();
         let qualified = t.qualified();
         let schema = t.schema.clone();
@@ -1182,7 +1226,16 @@ impl App {
         let Some(table) = w.catalog.find(Some(&t.schema), &t.name) else {
             return;
         };
-        let sqls = crate::model::preview_sql(table, &t.columns, &t.grid);
+        let sqls = match crate::model::preview_sql(table, &t.columns, &t.grid) {
+            Ok(sqls) => sqls,
+            Err(e) => {
+                self.set_status_as(
+                    StatusKind::Fail,
+                    format!("Cannot preview SQL: {}", preview_error_text(&e)),
+                );
+                return;
+            }
+        };
         let n = sqls.len();
         let mut d = Dialog::facts(
             PREVIEW_DIALOG,
@@ -2494,5 +2547,110 @@ impl shell::KeyHost for App {
 
     fn request_quit(&mut self) -> Outcome {
         App::request_quit(self)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const PRICE: usize = 4;
+
+    fn app_editing_products() -> App {
+        let mut app = App::new(Theme::junie());
+        app.connect(1);
+        let w = app.workbench.as_mut().expect("connected");
+        w.open_table("public", "products", false)
+            .expect("products opens");
+        app
+    }
+
+    fn grid(app: &mut App) -> &mut junie_tui::widgets::grid::DataGrid {
+        match app.workbench.as_mut().and_then(|w| w.active_tab_mut()) {
+            Some(WorkTab::Table(t)) => &mut t.grid,
+            _ => panic!("a table tab is active"),
+        }
+    }
+
+    fn review_code(app: &App) -> Vec<String> {
+        match &app
+            .layers
+            .top_as::<Dialog>()
+            .expect("the review dialog is open")
+            .body
+        {
+            DialogBody::Facts { code, .. } => code.clone(),
+            _ => panic!("the dialog lists statements"),
+        }
+    }
+
+    fn status(app: &App) -> String {
+        app.shell
+            .status
+            .get()
+            .map(|(text, _)| text.to_owned())
+            .unwrap_or_default()
+    }
+
+    #[test]
+    fn issue49_save_review_shows_exact_numbers_and_keeps_the_value() {
+        let mut app = app_editing_products();
+        let original = grid(&mut app).rows()[0][PRICE].clone();
+        grid(&mut app)
+            .pending
+            .cells
+            .insert((0, PRICE), CellValue::Num(1.234_567));
+        app.begin_commit();
+        let code = review_code(&app);
+        assert_eq!(code.len(), 1);
+        assert!(
+            code[0].contains("SET unit_price = 1.234567 WHERE"),
+            "{}",
+            code[0]
+        );
+        assert_eq!(grid(&mut app).rows()[0][PRICE], original);
+        assert_eq!(
+            grid(&mut app).pending.value(0, PRICE),
+            Some(&CellValue::Num(1.234_567))
+        );
+    }
+
+    #[test]
+    fn issue49_save_and_preview_reject_nonfinite_without_side_effects() {
+        let mut app = app_editing_products();
+        grid(&mut app)
+            .pending
+            .cells
+            .insert((0, PRICE), CellValue::Num(2.5));
+        grid(&mut app)
+            .pending
+            .cells
+            .insert((1, PRICE), CellValue::Num(f64::NAN));
+        let history = app.history.entries.len();
+
+        app.begin_commit();
+        assert!(app.layers.is_empty(), "no review dialog opens");
+        assert_eq!(app.committing, None, "no save timer starts");
+        assert_eq!(
+            status(&app),
+            "Cannot save: row 2 · unit_price is not a finite number · changes kept pending"
+        );
+
+        app.shell.status.clear();
+        app.open_preview();
+        assert!(app.layers.is_empty(), "no partial preview opens");
+        assert_eq!(
+            status(&app),
+            "Cannot preview SQL: row 2 · unit_price is not a finite number"
+        );
+
+        assert_eq!(
+            app.history.entries.len(),
+            history,
+            "nothing reaches history"
+        );
+        let pending = &grid(&mut app).pending;
+        assert_eq!(pending.cells.len(), 2, "the draft is kept");
+        assert_eq!(pending.value(0, PRICE), Some(&CellValue::Num(2.5)));
     }
 }
