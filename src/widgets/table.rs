@@ -1417,7 +1417,7 @@ impl DataTable {
         else {
             return Response::ignored();
         };
-        if !self.session_target_live(rows, src, col, generation) {
+        if !self.session_target_live(generation) {
             self.choice = None;
             return Response::emit(TableAction::Cancelled);
         }
@@ -1527,9 +1527,7 @@ impl DataTable {
     fn commit_edit_in<R: TableRows + ?Sized>(&mut self, rows: &mut R) -> Option<TableAction> {
         let mut e = self.edit.take()?;
         let src = e.row;
-        if !self.session_target_live(rows, e.row, e.col, e.generation)
-            || !self.editable_target(rows, e.row, e.col)
-        {
+        if !self.session_target_live(e.generation) || !self.editable_target(rows, e.row, e.col) {
             return Some(TableAction::Cancelled);
         }
         if !e.field.validate() {
@@ -1578,14 +1576,8 @@ impl DataTable {
         self.structural_generation = self.structural_generation.wrapping_add(1);
     }
 
-    fn session_target_live<R: TableRows + ?Sized>(
-        &self,
-        rows: &R,
-        row: usize,
-        col: usize,
-        generation: u64,
-    ) -> bool {
-        generation == self.structural_generation && rows.cell(row, col).is_some()
+    fn session_target_live(&self, generation: u64) -> bool {
+        generation == self.structural_generation
     }
 
     pub fn on_blur(&mut self) -> Response<TableAction> {
@@ -3043,5 +3035,41 @@ impl<R: TableRows + ?Sized> RowSource for View<'_, R> {
         self.rows
             .cell(self.table.order[d], col)
             .map_or("", |cell| cell.text)
+    }
+}
+
+#[cfg(test)]
+mod stale_session_tests {
+    use super::*;
+
+    /// A text session forged at `row`, bound to the table's current structural
+    /// generation, as one that survived a row-set change would be.
+    fn forge_session(t: &mut DataTable, row: usize, text: &str) {
+        t.edit = Some(EditState {
+            row,
+            col: 0,
+            field: EditField::single(text),
+            generation: t.structural_generation,
+        });
+    }
+
+    #[test]
+    fn commit_refuses_a_session_whose_row_left_the_set() {
+        let mut t = DataTable::try_new(
+            WidgetId::of("t.stale"),
+            vec![Column::new("name", Constraint::Length(10)).editable()],
+            vec![vec![Cell::new("x")], vec![Cell::new("y")]],
+        )
+        .expect("rectangular fixture")
+        .cell_nav(true);
+        t.try_set_rows(vec![vec![Cell::new("x")]])
+            .expect("rectangular");
+        assert!(t.edit.is_none(), "a row-set change closes real sessions");
+        forge_session(&mut t, 1, "phantom");
+
+        assert_eq!(t.commit_edit(), Some(TableAction::Cancelled));
+        assert!(!t.is_editing(), "the stale session is consumed");
+        assert_eq!(t.rows().len(), 1, "no phantom row appears");
+        assert_eq!(t.rows()[0][0].text, "x");
     }
 }
