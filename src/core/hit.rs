@@ -44,6 +44,8 @@ pub struct HitRegistry {
 
     bars: Vec<Bar>,
 
+    logical_bars: Vec<Bar>,
+
     shapes: Vec<(WidgetId, super::shape::PointerShape)>,
 
     autoscroll: Vec<(usize, Rect)>,
@@ -219,6 +221,7 @@ impl HitRegistry {
         }
         self.register_part_as(bar.id, bar.owner, PartRef::of(Part::TRACK), bar.track);
         self.bars.push(bar);
+        self.logical_bars.push(bar);
     }
 
     pub fn register_thumb(&mut self, bar_id: WidgetId, owner: WidgetId, thumb: Rect) {
@@ -250,6 +253,10 @@ impl HitRegistry {
 
     pub fn bar(&self, id: WidgetId) -> Option<Bar> {
         self.bars.iter().rev().find(|b| b.id == id).copied()
+    }
+
+    pub(crate) fn logical_bar(&self, id: WidgetId) -> Option<Bar> {
+        self.logical_bars.iter().rev().find(|b| b.id == id).copied()
     }
 
     pub fn register_backdrop(&mut self, id: WidgetId, area: Rect, pass_through: bool) {
@@ -573,5 +580,123 @@ impl PartMap {
     pub fn cell(&self, id: WidgetId, part: Part) -> Option<(usize, usize)> {
         let e = self.entry(id).filter(|e| e.part.part == part)?;
         Some((e.part.item?.as_index()?, e.col?))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const OWNER: WidgetId = WidgetId::of("hit.tests.owner");
+    const FIRST: WidgetId = WidgetId::of("hit.tests.first");
+    const SECOND: WidgetId = WidgetId::of("hit.tests.second");
+
+    fn vbar(id: WidgetId, track: Rect) -> Bar {
+        Bar {
+            id,
+            owner: OWNER,
+            axis: Axis::Vertical,
+            track,
+        }
+    }
+
+    fn scroll(hits: &mut HitRegistry, mark: HitMark, window: Rect, to: Position) {
+        hits.scroll_since(mark, Rect::new(0, 0, 20, 60), window, to);
+    }
+
+    #[test]
+    fn nested_scrollbar_zero_shift_keeps_both_records_equal() {
+        let mut hits = HitRegistry::default();
+        let mark = hits.mark();
+        let bar = vbar(FIRST, Rect::new(5, 2, 1, 8));
+        hits.register_bar(bar);
+        scroll(
+            &mut hits,
+            mark,
+            Rect::new(0, 0, 20, 20),
+            Position::new(0, 0),
+        );
+        assert_eq!(hits.bar(FIRST), Some(bar));
+        assert_eq!(hits.logical_bar(FIRST), Some(bar));
+        assert_eq!(hits.shift_of(FIRST), (0, 0));
+    }
+
+    #[test]
+    fn nested_scrollbar_clip_to_empty_keeps_logical_record_only() {
+        let mut hits = HitRegistry::default();
+        let mark = hits.mark();
+        let bar = vbar(FIRST, Rect::new(5, 20, 1, 8));
+        hits.register_bar(bar);
+        scroll(
+            &mut hits,
+            mark,
+            Rect::new(0, 0, 20, 10),
+            Position::new(0, 0),
+        );
+        assert_eq!(hits.bar(FIRST), None, "no visible bar to hit");
+        assert_eq!(hits.hit(Position::new(5, 5)), None);
+        assert_eq!(hits.logical_bar(FIRST), Some(bar));
+    }
+
+    #[test]
+    fn nested_scrollbar_thumb_and_track_shift_once() {
+        let mut hits = HitRegistry::default();
+        let mark = hits.mark();
+        let bar = vbar(FIRST, Rect::new(5, 20, 1, 8));
+        hits.register_bar(bar);
+        hits.register_thumb(FIRST, OWNER, Rect::new(5, 20, 1, 2));
+        hits.register_thumb(FIRST, OWNER, Rect::new(5, 20, 1, 2));
+        scroll(
+            &mut hits,
+            mark,
+            Rect::new(0, 15, 20, 10),
+            Position::new(0, 0),
+        );
+        assert_eq!(hits.shift_of(FIRST), (0, 15), "one shift per scroll pass");
+        assert_eq!(
+            hits.bar(FIRST).map(|b| b.track),
+            Some(Rect::new(5, 5, 1, 5))
+        );
+        assert_eq!(hits.logical_bar(FIRST), Some(bar));
+        assert_eq!(
+            hits.local(FIRST, Position::new(5, 7)),
+            Position::new(5, 22),
+            "screen pointer maps into the logical track's space"
+        );
+    }
+
+    #[test]
+    fn nested_scrollbar_pruned_sibling_keeps_pairing() {
+        let mut hits = HitRegistry::default();
+        let mark = hits.mark();
+        let gone = vbar(FIRST, Rect::new(5, 40, 1, 8));
+        let kept = vbar(SECOND, Rect::new(8, 20, 1, 8));
+        hits.register_bar(gone);
+        hits.register_bar(kept);
+        scroll(
+            &mut hits,
+            mark,
+            Rect::new(0, 15, 20, 10),
+            Position::new(0, 0),
+        );
+        assert_eq!(hits.bar(FIRST), None);
+        assert_eq!(
+            hits.bar(SECOND).map(|b| b.track),
+            Some(Rect::new(8, 5, 1, 5))
+        );
+        assert_eq!(hits.logical_bar(SECOND), Some(kept));
+        assert_eq!(hits.logical_bar(FIRST), Some(gone));
+        assert_eq!(hits.shift_of(SECOND), (0, 15));
+    }
+
+    #[test]
+    fn nested_scrollbar_raise_does_not_register_a_second_logical_bar() {
+        let mut hits = HitRegistry::default();
+        let bar = vbar(FIRST, Rect::new(5, 2, 1, 8));
+        hits.register_bar(bar);
+        hits.register_thumb(FIRST, OWNER, Rect::new(5, 2, 1, 2));
+        hits.raise(FIRST);
+        assert_eq!(hits.logical_bars.len(), 1);
+        assert_eq!(hits.logical_bar(FIRST), Some(bar));
     }
 }
