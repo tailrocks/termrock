@@ -12,3 +12,6 @@ pub mod terminal;
 pub mod theme;
 pub mod ui;
 pub mod widgets;
+
+#[cfg(test)]
+mod catalog_contract;

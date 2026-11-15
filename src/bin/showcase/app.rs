@@ -159,36 +159,8 @@ pub const NAV_GROUPS: &[&str] = &[
     "Screens",
 ];
 
-pub const HIDDEN_ENTRIES: &[NavEntry] = &[
-    NavEntry {
-        id: PageId::TerminalPane,
-        label: "Terminal pane",
-        group: "Text & code",
-    },
-    NavEntry {
-        id: PageId::FixedControls,
-        label: "Fixed controls",
-        group: "Inputs & forms",
-    },
-    NavEntry {
-        id: PageId::TerminalViewport,
-        label: "Terminal viewport",
-        group: "Text & code",
-    },
-    NavEntry {
-        id: PageId::ListDetail,
-        label: "List detail",
-        group: "Layout",
-    },
-    NavEntry {
-        id: PageId::FixedDialogs,
-        label: "Fixed dialogs",
-        group: "Overlays",
-    },
-];
-
 pub fn entries() -> impl Iterator<Item = &'static NavEntry> {
-    NAV_ENTRIES.iter().chain(HIDDEN_ENTRIES)
+    NAV_ENTRIES.iter()
 }
 
 pub const NAV_ENTRIES: &[NavEntry] = &[
@@ -260,6 +232,11 @@ pub const NAV_ENTRIES: &[NavEntry] = &[
     NavEntry {
         id: PageId::Toolbars,
         label: "Toolbars",
+        group: "Inputs & forms",
+    },
+    NavEntry {
+        id: PageId::FixedControls,
+        label: "Fixed controls",
         group: "Inputs & forms",
     },
     NavEntry {
@@ -343,6 +320,11 @@ pub const NAV_ENTRIES: &[NavEntry] = &[
         group: "Overlays",
     },
     NavEntry {
+        id: PageId::FixedDialogs,
+        label: "Fixed dialogs",
+        group: "Overlays",
+    },
+    NavEntry {
         id: PageId::Progress,
         label: "Progress",
         group: "Feedback",
@@ -388,6 +370,11 @@ pub const NAV_ENTRIES: &[NavEntry] = &[
         group: "Layout",
     },
     NavEntry {
+        id: PageId::ListDetail,
+        label: "List detail",
+        group: "Layout",
+    },
+    NavEntry {
         id: PageId::Editor,
         label: "Code editor",
         group: "Text & code",
@@ -400,6 +387,16 @@ pub const NAV_ENTRIES: &[NavEntry] = &[
     NavEntry {
         id: PageId::Terminal,
         label: "Terminal",
+        group: "Text & code",
+    },
+    NavEntry {
+        id: PageId::TerminalPane,
+        label: "Terminal pane",
+        group: "Text & code",
+    },
+    NavEntry {
+        id: PageId::TerminalViewport,
+        label: "Terminal viewport",
         group: "Text & code",
     },
     NavEntry {
@@ -513,14 +510,6 @@ impl PageId {
     pub fn nav_path(self) -> Vec<usize> {
         let e = self.entry();
         let roots = nav_roots();
-        if HIDDEN_ENTRIES.iter().any(|h| h.id == self) {
-            return vec![
-                roots
-                    .iter()
-                    .position(|r| *r == NavRoot::Group(e.group))
-                    .unwrap_or(0),
-            ];
-        }
         if e.group.is_empty() {
             return vec![
                 roots
@@ -2378,3 +2367,7 @@ impl shell::KeyHost for App {
         self.set_status(text.into());
     }
 }
+
+#[cfg(test)]
+#[path = "app_tests_catalog.rs"]
+mod app_tests_catalog;

@@ -2129,3 +2129,30 @@ fn showcase_picker_nav_profiles_toggle_with_the_displayed_key() {
         app.finish();
     }
 }
+
+#[test]
+fn showcase_previously_hidden_pages_open_from_the_sidebar() {
+    for (group, label, slug) in [
+        ("Inputs & forms", "Fixed controls", "fixedcontrols"),
+        ("Overlays", "Fixed dialogs", "fixeddialogs"),
+        ("Layout", "List detail", "listdetail"),
+        ("Text & code", "Terminal pane", "terminalpane"),
+        ("Text & code", "Terminal viewport", "terminalviewport"),
+    ] {
+        let app = App::new(
+            &format!("showcase-sidebar-{slug}"),
+            SHOWCASE,
+            &["--motion", "paused"],
+            120,
+            40,
+            "truecolor",
+        );
+        app.wait_text(group);
+        app.click_text(group);
+        app.wait_text(label);
+        app.click_text(label);
+        let crumb = format!("{group} › {label}");
+        app.wait_text(&crumb);
+        app.finish();
+    }
+}

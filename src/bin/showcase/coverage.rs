@@ -1,3 +1,43 @@
+//! What the Showcase proves about the library's declared API (#14).
+//!
+//! `PROOFS` lists the APIs a callable scenario in `app_tests_catalog.rs`
+//! exercises. `EXCEPTIONS` lists APIs with no page demonstration and the exact
+//! test that pins them. `coverage_debt.txt` lists what still owes one of the
+//! two; it may only shrink. `src/catalog_contract.rs` checks all three against
+//! the exported API. One line per record keeps a restack mechanical.
+
+use crate::app::PageId;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum ScenarioId {
+    PickerStableSelection,
+    RequiredCustomValidation,
+    DisabledInputRejection,
+    OverlayDismissPolicy,
+    CollectionReplacement,
+    NarrowLayout,
+    TerminalViewportLifecycle,
+    FixedControlsPolicy,
+    FixedDialogsPolicy,
+    ListDetailNavigation,
+}
+
+#[allow(dead_code)]
+pub struct CapabilityProof {
+    pub api: &'static str,
+    pub route: PageId,
+    pub scenarios: &'static [ScenarioId],
+    pub feature: Option<&'static str>,
+}
+
+#[allow(dead_code)]
+pub struct CapabilityException {
+    pub api: &'static str,
+    pub reason: &'static str,
+    pub regression_test: &'static str,
+    pub tracking_issue: Option<u32>,
+}
+
 pub const PICKER_COVERAGE: &[(&str, &str)] = &[
     ("widgets::picker::Picker::report_item_error", "pickers"),
     ("widgets::picker::Picker::items", "pickers"),
@@ -51,260 +91,157 @@ pub const PICKER_COVERAGE: &[(&str, &str)] = &[
     ("widgets::picker::Picker::set_cursor", "pickers"),
 ];
 
-pub const PICKER_ALLOWLIST: &[(&str, &str)] = &[
-    (
-        "widgets::picker::Picker::wheel",
-        "The showcase uses builder configuration and layer-driven interaction; this method serves application or layer plumbing.",
-    ),
-    (
-        "widgets::picker::Picker::set_chosen",
-        "The showcase uses builder configuration and layer-driven interaction; this method serves application or layer plumbing.",
-    ),
-    (
-        "widgets::picker::Picker::set_placement",
-        "The showcase configures placement through its builder; no concrete app uses this setter.",
-    ),
-    (
-        "widgets::picker::Picker::set_max_rows",
-        "The showcase uses builder configuration and layer-driven interaction; this method serves application or layer plumbing.",
-    ),
-    (
-        "widgets::picker::Picker::set_width",
-        "The showcase uses builder configuration and layer-driven interaction; this method serves application or layer plumbing.",
-    ),
-    (
-        "widgets::picker::PickerItemsError::UnknownVisibleKey",
-        "Invalid item identities are exercised by picker validation tests; the showcase uses valid picker inputs.",
-    ),
-    (
-        "widgets::picker::PickerItemsError::MissingStableKey",
-        "Invalid item identities are exercised by picker validation tests; the showcase uses valid picker inputs.",
-    ),
-    (
-        "widgets::picker::PickerItemsError::DuplicateKey",
-        "Invalid item identities are exercised by picker validation tests; the showcase uses valid picker inputs.",
-    ),
-    (
-        "widgets::picker::PickerItemsError",
-        "Invalid item identities are exercised by picker validation tests; the showcase uses valid picker inputs.",
-    ),
-    (
-        "widgets::picker::DEFAULT_GLYPH",
-        "Every showcase row sets its glyph to show the list style explicitly, so the default glyph is not visible in this page.",
-    ),
-    (
-        "widgets::picker::PickerCmd",
-        "The page demonstrates toggle behavior through picker events and configured profiles; it does not expose the widget command type as a page action.",
-    ),
-    (
-        "widgets::picker::PickerCmd::Toggle",
-        "The page demonstrates toggle behavior through picker events and configured profiles; it does not expose the widget command variant as a page action.",
-    ),
-    (
-        "widgets::picker::PickerKeyProfile::install",
-        "The page configures each picker through its builder and intentionally does not change the thread-local default profile.",
-    ),
-    (
-        "widgets::picker::PickerKeyProfile::current",
-        "The page configures each picker through its builder and intentionally does not read the thread-local default profile.",
-    ),
-    (
-        "widgets::picker::Picker::MAX_ROWS",
-        "The page exposes row limits through the configured builder and does not refer to the widget's default constant directly.",
-    ),
-    (
-        "widgets::picker::Picker::WIDTH",
-        "The page exposes widths through the configured builder and does not refer to the widget's default constant directly.",
-    ),
-    (
-        "widgets::picker::Picker::choose_hint",
-        "The page demonstrates choice labels through its configured hint lines rather than this per-picker label builder.",
-    ),
-    (
-        "widgets::picker::Picker::keymap",
-        "The page demonstrates the supported Desktop and Vim profiles; custom keymaps are not a page configuration option.",
-    ),
-    (
-        "widgets::picker::Picker::toggle_binding",
-        "The page demonstrates the supported Desktop and Vim profiles; custom toggle bindings are not a page configuration option.",
-    ),
-    (
-        "widgets::picker::Picker::searchable",
-        "The page uses the explicit searchable state setter for its nonsearchable examples and does not need the builder form.",
-    ),
-    (
-        "widgets::picker::Picker::is_multi",
-        "The page presents multi-select behavior through the picker layer and its resulting actions, rather than reading widget mode directly.",
-    ),
-    (
-        "widgets::picker::Picker::checked",
-        "The page presents multi-select behavior through the picker layer and its resulting actions, rather than reading the checked-key buffer directly.",
-    ),
-    (
-        "widgets::option_list::OptionList::toggle_checked",
-        "The page drives check state through delivered input events on the picker layer rather than mutating the shared list directly.",
-    ),
-    (
-        "widgets::option_list::OptionList::is_checked",
-        "The page observes selection through rendered check glyphs and picker actions rather than polling the shared list directly.",
-    ),
-    (
-        "widgets::picker::Picker::toggle_checked",
-        "The page presents multi-select behavior through delivered input events rather than manipulating selection state directly.",
-    ),
-    (
-        "widgets::picker::Picker::reset_selection",
-        "Picker layers in the showcase are ephemeral and have no user-facing reset action; the widget state test exercises the reset operation directly.",
-    ),
-    (
-        "widgets::picker::Picker::caret",
-        "The page demonstrates filtering through terminal input and does not inspect the edit caret directly.",
-    ),
-    (
-        "widgets::picker::Picker::set_query",
-        "The page demonstrates filtering through terminal input and does not set the query programmatically.",
-    ),
-    (
-        "widgets::picker::Picker::is_searchable",
-        "The page presents search behavior through visible picker interaction and does not inspect the internal mode flag.",
-    ),
-    (
-        "widgets::picker::Picker::current",
-        "The page presents row selection through the picker layer and does not inspect the selected item directly.",
-    ),
-    (
-        "widgets::picker::Picker::current_key",
-        "The page presents row selection through the picker layer and does not inspect the selected key directly.",
-    ),
-    (
-        "widgets::picker::Picker::eligible",
-        "The page presents disabled-row behavior through visible rows and does not query eligible indices directly.",
-    ),
-    (
-        "widgets::picker::Picker::item_for_key",
-        "The page presents item behavior through visible rows and does not query the backing item map directly.",
-    ),
-    (
-        "widgets::picker::Picker::height",
-        "The page delegates sizing to its layer and layout system rather than calling the widget height helper directly.",
-    ),
-    (
-        "widgets::picker::Picker::on_click_outside",
-        "The page demonstrates dismissal through the layer interaction and does not invoke its low-level outside-click handler.",
-    ),
-    (
-        "widgets::picker::Picker::on_key",
-        "The page demonstrates keyboard behavior through terminal events and does not call the widget event handler directly.",
-    ),
-    (
-        "widgets::picker::Picker::on_click",
-        "The page demonstrates pointer behavior through terminal events and does not call the widget event handler directly.",
-    ),
-    (
-        "widgets::picker::Picker::on_paste",
-        "The page demonstrates filtering through ordinary terminal input and has no paste-specific picker scenario.",
-    ),
-    (
-        "widgets::picker::Picker::row_id",
-        "The page delegates row identity and pointer routing to the picker layer rather than calling the row-id helper directly.",
-    ),
-    (
-        "widgets::picker::Picker::draw",
-        "The page composes pickers through layers and does not draw the widget directly into a buffer.",
-    ),
-    (
-        "widgets::picker::Picker::render",
-        "The page composes pickers through layers and does not call the widget's direct render entry point.",
-    ),
+#[rustfmt::skip]
+pub const PROOFS: &[CapabilityProof] = &[
+    CapabilityProof { api: "widgets::picker::Picker", route: PageId::Pickers, scenarios: &[ScenarioId::PickerStableSelection], feature: None },
+    CapabilityProof { api: "widgets::picker::PickerAction", route: PageId::Pickers, scenarios: &[ScenarioId::PickerStableSelection], feature: None },
+    CapabilityProof { api: "widgets::picker::PickerAction::ChosenMany", route: PageId::Pickers, scenarios: &[ScenarioId::PickerStableSelection], feature: None },
+    CapabilityProof { api: "widgets::picker::Picker::new", route: PageId::Pickers, scenarios: &[ScenarioId::PickerStableSelection], feature: None },
+    CapabilityProof { api: "widgets::picker::Picker::multi_select", route: PageId::Pickers, scenarios: &[ScenarioId::PickerStableSelection], feature: None },
+    CapabilityProof { api: "widgets::picker::Picker::items", route: PageId::Pickers, scenarios: &[ScenarioId::PickerStableSelection], feature: None },
+    CapabilityProof { api: "widgets::picker::Picker::set_cursor", route: PageId::Pickers, scenarios: &[ScenarioId::PickerStableSelection], feature: None },
+    CapabilityProof { api: "widgets::picker::Picker::set_visible_items", route: PageId::Pickers, scenarios: &[ScenarioId::PickerStableSelection], feature: None },
+    CapabilityProof { api: "widgets::picker::Picker::set_items", route: PageId::Pickers, scenarios: &[ScenarioId::PickerStableSelection, ScenarioId::CollectionReplacement], feature: None },
+    CapabilityProof { api: "widgets::picker::Picker::replace_items", route: PageId::Pickers, scenarios: &[ScenarioId::PickerStableSelection, ScenarioId::CollectionReplacement], feature: None },
+    CapabilityProof { api: "widgets::input::TextInput", route: PageId::Inputs, scenarios: &[ScenarioId::RequiredCustomValidation], feature: None },
+    CapabilityProof { api: "widgets::input::TextInput::new", route: PageId::Inputs, scenarios: &[ScenarioId::RequiredCustomValidation], feature: None },
+    CapabilityProof { api: "widgets::input::TextInput::required", route: PageId::Inputs, scenarios: &[ScenarioId::RequiredCustomValidation], feature: None },
+    CapabilityProof { api: "widgets::input::TextInput::validator", route: PageId::Inputs, scenarios: &[ScenarioId::RequiredCustomValidation], feature: None },
+    CapabilityProof { api: "widgets::input::TextInput::validate", route: PageId::Inputs, scenarios: &[ScenarioId::RequiredCustomValidation], feature: None },
+    CapabilityProof { api: "widgets::input::TextInput::error", route: PageId::Inputs, scenarios: &[ScenarioId::RequiredCustomValidation], feature: None },
+    CapabilityProof { api: "widgets::input::TextInput::value", route: PageId::Inputs, scenarios: &[ScenarioId::RequiredCustomValidation], feature: None },
+    CapabilityProof { api: "widgets::edit::EditField", route: PageId::Inputs, scenarios: &[ScenarioId::RequiredCustomValidation], feature: None },
+    CapabilityProof { api: "widgets::edit::EditField::single", route: PageId::Inputs, scenarios: &[ScenarioId::RequiredCustomValidation], feature: None },
+    CapabilityProof { api: "widgets::edit::EditField::validator", route: PageId::Inputs, scenarios: &[ScenarioId::RequiredCustomValidation], feature: None },
+    CapabilityProof { api: "widgets::edit::EditField::validate", route: PageId::Inputs, scenarios: &[ScenarioId::RequiredCustomValidation], feature: None },
+    CapabilityProof { api: "widgets::edit::EditField::error_message", route: PageId::Inputs, scenarios: &[ScenarioId::RequiredCustomValidation], feature: None },
+    CapabilityProof { api: "widgets::edit::EditField::set_text", route: PageId::Inputs, scenarios: &[ScenarioId::RequiredCustomValidation], feature: None },
+    CapabilityProof { api: "widgets::edit::Validator::check", route: PageId::Inputs, scenarios: &[ScenarioId::RequiredCustomValidation], feature: None },
+    CapabilityProof { api: "widgets::input::TextInput::disabled", route: PageId::Inputs, scenarios: &[ScenarioId::DisabledInputRejection], feature: None },
+    CapabilityProof { api: "widgets::input::TextInput::on_key", route: PageId::Inputs, scenarios: &[ScenarioId::DisabledInputRejection], feature: None },
+    CapabilityProof { api: "widgets::input::TextInput::on_paste", route: PageId::Inputs, scenarios: &[ScenarioId::DisabledInputRejection], feature: None },
+    CapabilityProof { api: "widgets::input::TextInput::text", route: PageId::Inputs, scenarios: &[ScenarioId::DisabledInputRejection], feature: None },
+    CapabilityProof { api: "widgets::input::TextInput::begin_edit", route: PageId::Inputs, scenarios: &[ScenarioId::DisabledInputRejection], feature: None },
+    CapabilityProof { api: "ui::popup::Dismiss", route: PageId::Dialogs, scenarios: &[ScenarioId::OverlayDismissPolicy], feature: None },
+    CapabilityProof { api: "ui::popup::Dismiss::LIGHT", route: PageId::Dialogs, scenarios: &[ScenarioId::OverlayDismissPolicy], feature: None },
+    CapabilityProof { api: "ui::popup::Dismiss::ESCAPE", route: PageId::Dialogs, scenarios: &[ScenarioId::OverlayDismissPolicy], feature: None },
+    CapabilityProof { api: "ui::popup::Dismiss::NEVER", route: PageId::Dialogs, scenarios: &[ScenarioId::OverlayDismissPolicy], feature: None },
+    CapabilityProof { api: "widgets::picker::Picker::dismiss", route: PageId::Dialogs, scenarios: &[ScenarioId::OverlayDismissPolicy], feature: None },
+    CapabilityProof { api: "widgets::dialog::Dialog::dismiss", route: PageId::Dialogs, scenarios: &[ScenarioId::OverlayDismissPolicy], feature: None },
+    CapabilityProof { api: "widgets::dialog::Dialog::on_click_outside", route: PageId::Dialogs, scenarios: &[ScenarioId::OverlayDismissPolicy], feature: None },
+    CapabilityProof { api: "widgets::dialog::Dialog::confirm", route: PageId::Dialogs, scenarios: &[ScenarioId::OverlayDismissPolicy], feature: None },
+    CapabilityProof { api: "widgets::dialog::Dialog::on_key", route: PageId::Dialogs, scenarios: &[ScenarioId::OverlayDismissPolicy], feature: None },
+    CapabilityProof { api: "widgets::dialog::Dialog", route: PageId::Dialogs, scenarios: &[ScenarioId::OverlayDismissPolicy], feature: None },
+    CapabilityProof { api: "widgets::dialog::DialogResult", route: PageId::Dialogs, scenarios: &[ScenarioId::OverlayDismissPolicy], feature: None },
+    CapabilityProof { api: "widgets::picker::Picker::width", route: PageId::Pickers, scenarios: &[ScenarioId::NarrowLayout], feature: None },
+    CapabilityProof { api: "widgets::picker::Picker::max_rows", route: PageId::Pickers, scenarios: &[ScenarioId::NarrowLayout], feature: None },
+    CapabilityProof { api: "widgets::picker::Picker::placement", route: PageId::Pickers, scenarios: &[ScenarioId::NarrowLayout], feature: None },
+    CapabilityProof { api: "terminal::TerminalViewport", route: PageId::TerminalViewport, scenarios: &[ScenarioId::TerminalViewportLifecycle], feature: Some("terminal") },
+    CapabilityProof { api: "terminal::TerminalViewport::new", route: PageId::TerminalViewport, scenarios: &[ScenarioId::TerminalViewportLifecycle], feature: Some("terminal") },
+    CapabilityProof { api: "terminal::TerminalViewport::feed", route: PageId::TerminalViewport, scenarios: &[ScenarioId::TerminalViewportLifecycle], feature: Some("terminal") },
+    CapabilityProof { api: "terminal::TerminalViewport::offset", route: PageId::TerminalViewport, scenarios: &[ScenarioId::TerminalViewportLifecycle], feature: Some("terminal") },
+    CapabilityProof { api: "terminal::TerminalViewport::position_label", route: PageId::TerminalViewport, scenarios: &[ScenarioId::TerminalViewportLifecycle], feature: Some("terminal") },
+    CapabilityProof { api: "terminal::TerminalViewport::reset", route: PageId::TerminalViewport, scenarios: &[ScenarioId::TerminalViewportLifecycle], feature: Some("terminal") },
+    CapabilityProof { api: "terminal::TerminalState", route: PageId::TerminalViewport, scenarios: &[ScenarioId::TerminalViewportLifecycle], feature: Some("terminal") },
+    CapabilityProof { api: "terminal::TerminalState::new", route: PageId::TerminalViewport, scenarios: &[ScenarioId::TerminalViewportLifecycle], feature: Some("terminal") },
+    CapabilityProof { api: "widgets::choice::Checkbox", route: PageId::FixedControls, scenarios: &[ScenarioId::FixedControlsPolicy], feature: None },
+    CapabilityProof { api: "widgets::choice::Checkbox::new", route: PageId::FixedControls, scenarios: &[ScenarioId::FixedControlsPolicy], feature: None },
+    CapabilityProof { api: "widgets::choice::Checkbox::fixed", route: PageId::FixedControls, scenarios: &[ScenarioId::FixedControlsPolicy], feature: None },
+    CapabilityProof { api: "widgets::choice::Checkbox::on_key", route: PageId::FixedControls, scenarios: &[ScenarioId::FixedControlsPolicy], feature: None },
+    CapabilityProof { api: "widgets::choice::Checkbox::on_click", route: PageId::FixedControls, scenarios: &[ScenarioId::FixedControlsPolicy], feature: None },
+    CapabilityProof { api: "core::refusal::Reason", route: PageId::FixedControls, scenarios: &[ScenarioId::FixedControlsPolicy], feature: None },
+    CapabilityProof { api: "core::refusal::Reason::new", route: PageId::FixedControls, scenarios: &[ScenarioId::FixedControlsPolicy], feature: None },
+    CapabilityProof { api: "core::refusal::Reason::short", route: PageId::FixedControls, scenarios: &[ScenarioId::FixedControlsPolicy], feature: None },
+    CapabilityProof { api: "core::refusal::take_refusal", route: PageId::FixedControls, scenarios: &[ScenarioId::FixedControlsPolicy], feature: None },
+    CapabilityProof { api: "core::refusal::clear_refusal", route: PageId::FixedControls, scenarios: &[ScenarioId::FixedControlsPolicy], feature: None },
+    CapabilityProof { api: "widgets::button::Button::fixed", route: PageId::FixedDialogs, scenarios: &[ScenarioId::FixedDialogsPolicy], feature: None },
+    CapabilityProof { api: "widgets::list_detail::ListDetail", route: PageId::ListDetail, scenarios: &[ScenarioId::ListDetailNavigation], feature: None },
+    CapabilityProof { api: "widgets::list_detail::ListDetail::new", route: PageId::ListDetail, scenarios: &[ScenarioId::ListDetailNavigation], feature: None },
+    CapabilityProof { api: "widgets::list_detail::ListDetail::select", route: PageId::ListDetail, scenarios: &[ScenarioId::ListDetailNavigation], feature: None },
+    CapabilityProof { api: "widgets::list_detail::ListDetail::clamp", route: PageId::ListDetail, scenarios: &[ScenarioId::ListDetailNavigation], feature: None },
+    CapabilityProof { api: "widgets::list_detail::ListDetail::open_detail", route: PageId::ListDetail, scenarios: &[ScenarioId::ListDetailNavigation], feature: None },
+    CapabilityProof { api: "widgets::list_detail::ListDetail::close_detail", route: PageId::ListDetail, scenarios: &[ScenarioId::ListDetailNavigation], feature: None },
+    CapabilityProof { api: "widgets::list_detail::ListDetail::on_key", route: PageId::ListDetail, scenarios: &[ScenarioId::ListDetailNavigation], feature: None },
+    CapabilityProof { api: "widgets::list_detail::ListDetail::render", route: PageId::ListDetail, scenarios: &[ScenarioId::ListDetailNavigation], feature: None },
+    CapabilityProof { api: "widgets::list_detail::ListRow", route: PageId::ListDetail, scenarios: &[ScenarioId::ListDetailNavigation], feature: None },
+    CapabilityProof { api: "widgets::list_detail::ListRow::new", route: PageId::ListDetail, scenarios: &[ScenarioId::ListDetailNavigation], feature: None },
+    CapabilityProof { api: "widgets::list_detail::Action::new", route: PageId::ListDetail, scenarios: &[ScenarioId::ListDetailNavigation], feature: None },
+    CapabilityProof { api: "widgets::list_detail::Frame", route: PageId::ListDetail, scenarios: &[ScenarioId::ListDetailNavigation], feature: None },
+    CapabilityProof { api: "widgets::list_detail::Event", route: PageId::ListDetail, scenarios: &[ScenarioId::ListDetailNavigation], feature: None },
+    CapabilityProof { api: "widgets::list_detail::Event::Item", route: PageId::ListDetail, scenarios: &[ScenarioId::ListDetailNavigation], feature: None },
+    CapabilityProof { api: "widgets::list_detail::Line", route: PageId::ListDetail, scenarios: &[ScenarioId::ListDetailNavigation], feature: None },
+    CapabilityProof { api: "widgets::list_detail::Line::Item", route: PageId::ListDetail, scenarios: &[ScenarioId::ListDetailNavigation], feature: None },
 ];
 
-pub const KEYMAP_ALLOWLIST: &[(&str, &str)] = &[
-    (
-        "core::keymap::KeyboardCapabilities",
-        "Pages render with the ambient terminal capabilities and never construct a capability set; every hint bar already reflects them.",
-    ),
-    (
-        "core::keymap::KeyboardCapabilities::current",
-        "Showcase pages ask widgets for their hints instead of probing the thread-local capability state themselves.",
-    ),
-    (
-        "core::keymap::KeyBinding::deliverable_with",
-        "Pages observe deliverability through the hint keys that survive rendering, not by calling the capability-aware predicate.",
-    ),
-    (
-        "core::keymap::KeyBinding::matches_with",
-        "Page key handling goes through widget keymaps; no page matches a binding against explicit capabilities.",
-    ),
-    (
-        "core::keymap::lookup_with",
-        "Pages look bindings up through the ambient `lookup` helper, so the capability-carrying overload has no page call site.",
-    ),
-    (
-        "core::keymap::deliverable_binding_for_with",
-        "Pages read the deliverable binding from rendered hint bars, so the capability-aware lookup has no page call site.",
-    ),
-    (
-        "core::keymap::normalized_key_mods",
-        "The widgets own the key normalization; no showcase page asks for the normalized modifiers of a key on its own.",
-    ),
-    (
-        "core::keymap::KeyBinding::normalized_mods",
-        "The widgets own the key normalization; no showcase page asks a binding for its normalized modifiers.",
-    ),
-    (
-        "core::hints::HintCx::current",
-        "Pages draw widgets through the showcase harness, which supplies the hint context; no page builds one from ambient state.",
-    ),
-    (
-        "core::hints::HintCx::with_environment",
-        "No showcase page overrides the hint environment; the harness-rendered hint bars are the demonstration.",
-    ),
-    (
-        "widgets::keyhint::Hint::click_key",
-        "Footer hint clicks are demonstrated through delivered pointer events on rendered hint bars; the stable click-key override is filled in internally by widget hint generators and is not a page configuration option.",
-    ),
+#[rustfmt::skip]
+pub const EXCEPTIONS: &[CapabilityException] = &[
+    CapabilityException { api: "widgets::picker::Picker::render", reason: "The page composes pickers through layers and does not call the widget's direct render entry point.", regression_test: "catalog_picker_setters_and_accessors_behave", tracking_issue: None },
+    CapabilityException { api: "core::hints::HintCx::current", reason: "Pages draw widgets through the showcase harness, which supplies the hint context; no page builds one from ambient state.", regression_test: "searchable_multi_profile_binding_is_visible_exact_and_preserves_space_input", tracking_issue: None },
+    CapabilityException { api: "core::keymap::KeyboardCapabilities", reason: "Pages render with the ambient terminal capabilities and never construct a capability set; every hint bar already reflects them.", regression_test: "custom_multi_hints_follow_the_effective_binding_and_capabilities", tracking_issue: None },
+    CapabilityException { api: "core::keymap::KeyboardCapabilities::current", reason: "Showcase pages ask widgets for their hints instead of probing the thread-local capability state themselves.", regression_test: "custom_multi_hints_follow_the_effective_binding_and_capabilities", tracking_issue: None },
+    CapabilityException { api: "terminal::ForwardPolicy", reason: "used by the host that feeds the terminal state (the jackin Capsule) and pinned by tests/terminal.rs, tests/terminal_viewport.rs and tests/forward_policy.rs; the terminalpane page keeps its approved baseline", regression_test: "ctrl_d_and_ctrl_q_never_reach_the_program", tracking_issue: None },
+    CapabilityException { api: "terminal::ForwardPolicy::confirmed", reason: "used by the host that feeds the terminal state (the jackin Capsule) and pinned by tests/terminal.rs, tests/terminal_viewport.rs and tests/forward_policy.rs; the terminalpane page keeps its approved baseline", regression_test: "a_confirmed_paste_is_sent_as_it_is_without_brackets", tracking_issue: None },
+    CapabilityException { api: "terminal::ForwardPolicy::key", reason: "used by the host that feeds the terminal state (the jackin Capsule) and pinned by tests/terminal.rs, tests/terminal_viewport.rs and tests/forward_policy.rs; the terminalpane page keeps its approved baseline", regression_test: "ctrl_d_and_ctrl_q_never_reach_the_program", tracking_issue: None },
+    CapabilityException { api: "terminal::ForwardPolicy::new", reason: "used by the host that feeds the terminal state (the jackin Capsule) and pinned by tests/terminal.rs, tests/terminal_viewport.rs and tests/forward_policy.rs; the terminalpane page keeps its approved baseline", regression_test: "a_paste_over_the_limit_is_refused_by_its_byte_count", tracking_issue: None },
+    CapabilityException { api: "terminal::ForwardPolicy::paste", reason: "used by the host that feeds the terminal state (the jackin Capsule) and pinned by tests/terminal.rs, tests/terminal_viewport.rs and tests/forward_policy.rs; the terminalpane page keeps its approved baseline", regression_test: "a_paste_drops_control_bytes_but_keeps_tab_and_newline", tracking_issue: None },
+    CapabilityException { api: "terminal::Paste", reason: "used by the host that feeds the terminal state (the jackin Capsule) and pinned by tests/terminal.rs, tests/terminal_viewport.rs and tests/forward_policy.rs; the terminalpane page keeps its approved baseline", regression_test: "one_line_is_sent_and_many_lines_ask_first", tracking_issue: None },
+    CapabilityException { api: "terminal::Paste::NeedsConfirm", reason: "used by the host that feeds the terminal state (the jackin Capsule) and pinned by tests/terminal.rs, tests/terminal_viewport.rs and tests/forward_policy.rs; the terminalpane page keeps its approved baseline", regression_test: "one_line_is_sent_and_many_lines_ask_first", tracking_issue: None },
+    CapabilityException { api: "terminal::Paste::Send", reason: "used by the host that feeds the terminal state (the jackin Capsule) and pinned by tests/terminal.rs, tests/terminal_viewport.rs and tests/forward_policy.rs; the terminalpane page keeps its approved baseline", regression_test: "a_paste_drops_control_bytes_but_keeps_tab_and_newline", tracking_issue: None },
+    CapabilityException { api: "terminal::Paste::TooLarge", reason: "used by the host that feeds the terminal state (the jackin Capsule) and pinned by tests/terminal.rs, tests/terminal_viewport.rs and tests/forward_policy.rs; the terminalpane page keeps its approved baseline", regression_test: "a_paste_over_the_limit_is_refused_by_its_byte_count", tracking_issue: None },
+    CapabilityException { api: "terminal::RowWrap", reason: "used by the host that feeds the terminal state (the jackin Capsule) and pinned by tests/terminal.rs, tests/terminal_viewport.rs and tests/forward_policy.rs; the terminalpane page keeps its approved baseline", regression_test: "view_reports_soft_wraps", tracking_issue: None },
+    CapabilityException { api: "terminal::RowWrap::Hard", reason: "used by the host that feeds the terminal state (the jackin Capsule) and pinned by tests/terminal.rs, tests/terminal_viewport.rs and tests/forward_policy.rs; the terminalpane page keeps its approved baseline", regression_test: "view_reports_soft_wraps", tracking_issue: None },
+    CapabilityException { api: "terminal::RowWrap::Soft", reason: "used by the host that feeds the terminal state (the jackin Capsule) and pinned by tests/terminal.rs, tests/terminal_viewport.rs and tests/forward_policy.rs; the terminalpane page keeps its approved baseline", regression_test: "view_reports_soft_wraps", tracking_issue: None },
+    CapabilityException { api: "terminal::TermEvent", reason: "used by the host that feeds the terminal state (the jackin Capsule) and pinned by tests/terminal.rs, tests/terminal_viewport.rs and tests/forward_policy.rs; the terminalpane page keeps its approved baseline", regression_test: "passthrough_events_map", tracking_issue: None },
+    CapabilityException { api: "terminal::TermEvent::Bell", reason: "used by the host that feeds the terminal state (the jackin Capsule) and pinned by tests/terminal.rs, tests/terminal_viewport.rs and tests/forward_policy.rs; the terminalpane page keeps its approved baseline", regression_test: "passthrough_events_map", tracking_issue: None },
+    CapabilityException { api: "terminal::TermEvent::ClipboardWrite", reason: "used by the host that feeds the terminal state (the jackin Capsule) and pinned by tests/terminal.rs, tests/terminal_viewport.rs and tests/forward_policy.rs; the terminalpane page keeps its approved baseline", regression_test: "passthrough_events_map", tracking_issue: None },
+    CapabilityException { api: "terminal::TermEvent::Cwd", reason: "used by the host that feeds the terminal state (the jackin Capsule) and pinned by tests/terminal.rs, tests/terminal_viewport.rs and tests/forward_policy.rs; the terminalpane page keeps its approved baseline", regression_test: "passthrough_events_map", tracking_issue: None },
+    CapabilityException { api: "terminal::TermEvent::Notification", reason: "used by the host that feeds the terminal state (the jackin Capsule) and pinned by tests/terminal.rs, tests/terminal_viewport.rs and tests/forward_policy.rs; the terminalpane page keeps its approved baseline", regression_test: "passthrough_events_map", tracking_issue: None },
+    CapabilityException { api: "terminal::TermEvent::Reply", reason: "used by the host that feeds the terminal state (the jackin Capsule) and pinned by tests/terminal.rs, tests/terminal_viewport.rs and tests/forward_policy.rs; the terminalpane page keeps its approved baseline", regression_test: "replies_for_queries", tracking_issue: None },
+    CapabilityException { api: "terminal::TermEvent::ScrollbackCleared", reason: "used by the host that feeds the terminal state (the jackin Capsule) and pinned by tests/terminal.rs, tests/terminal_viewport.rs and tests/forward_policy.rs; the terminalpane page keeps its approved baseline", regression_test: "scrollback_cleared_resets", tracking_issue: None },
+    CapabilityException { api: "terminal::TermEvent::Title", reason: "used by the host that feeds the terminal state (the jackin Capsule) and pinned by tests/terminal.rs, tests/terminal_viewport.rs and tests/forward_policy.rs; the terminalpane page keeps its approved baseline", regression_test: "passthrough_events_map", tracking_issue: None },
+    CapabilityException { api: "terminal::TerminalState::clear_scrollback", reason: "used by the host that feeds the terminal state (the jackin Capsule) and pinned by tests/terminal.rs, tests/terminal_viewport.rs and tests/forward_policy.rs; the terminalpane page keeps its approved baseline", regression_test: "clear_scrollback_drops_the_history_and_keeps_the_screen", tracking_issue: None },
+    CapabilityException { api: "terminal::TerminalState::focus_events", reason: "used by the host that feeds the terminal state (the jackin Capsule) and pinned by tests/terminal.rs, tests/terminal_viewport.rs and tests/forward_policy.rs; the terminalpane page keeps its approved baseline", regression_test: "the_program_turns_focus_events_and_mouse_reporting_on_and_off", tracking_issue: None },
+    CapabilityException { api: "terminal::TerminalState::mouse_reporting", reason: "used by the host that feeds the terminal state (the jackin Capsule) and pinned by tests/terminal.rs, tests/terminal_viewport.rs and tests/forward_policy.rs; the terminalpane page keeps its approved baseline", regression_test: "the_program_turns_focus_events_and_mouse_reporting_on_and_off", tracking_issue: None },
+    CapabilityException { api: "terminal::TerminalState::scrolled_off", reason: "used by the host that feeds the terminal state (the jackin Capsule) and pinned by tests/terminal.rs, tests/terminal_viewport.rs and tests/forward_policy.rs; the terminalpane page keeps its approved baseline", regression_test: "scrolled_off_is_exact_after_many_feeds", tracking_issue: None },
+    CapabilityException { api: "terminal::TerminalState::view", reason: "used by the host that feeds the terminal state (the jackin Capsule) and pinned by tests/terminal.rs, tests/terminal_viewport.rs and tests/forward_policy.rs; the terminalpane page keeps its approved baseline", regression_test: "scrolled_view_reads_scrollback", tracking_issue: None },
+    CapabilityException { api: "terminal::TerminalState::with_scrollback", reason: "used by the host that feeds the terminal state (the jackin Capsule) and pinned by tests/terminal.rs, tests/terminal_viewport.rs and tests/forward_policy.rs; the terminalpane page keeps its approved baseline", regression_test: "with_scrollback_limit_is_honoured", tracking_issue: None },
+    CapabilityException { api: "terminal::TerminalViewport::clear_scrollback", reason: "used by the host that feeds the terminal state (the jackin Capsule) and pinned by tests/terminal.rs, tests/terminal_viewport.rs and tests/forward_policy.rs; the terminalpane page keeps its approved baseline", regression_test: "clear_scrollback_drops_the_history_and_keeps_the_screen", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::DEFAULT_GLYPH", reason: "Every showcase row sets its glyph to show the list style explicitly, so the default glyph is not visible in this page.", regression_test: "catalog_picker_setters_and_accessors_behave", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::MAX_ROWS", reason: "The page exposes row limits through the configured builder and does not refer to the widget's default constant directly.", regression_test: "catalog_picker_setters_and_accessors_behave", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::WIDTH", reason: "The page exposes widths through the configured builder and does not refer to the widget's default constant directly.", regression_test: "catalog_picker_setters_and_accessors_behave", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::caret", reason: "The page demonstrates filtering through terminal input and does not inspect the edit caret directly.", regression_test: "catalog_picker_setters_and_accessors_behave", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::checked", reason: "The page presents multi-select behavior through the picker layer and its resulting actions, rather than reading the checked-key buffer directly.", regression_test: "searchable_multi_keeps_hidden_identities_across_filter_and_reorder", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::choose_hint", reason: "The page demonstrates choice labels through its configured hint lines rather than this per-picker label builder.", regression_test: "catalog_picker_setters_and_accessors_behave", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::current", reason: "The page presents row selection through the picker layer and does not inspect the selected item directly.", regression_test: "searchable_multi_profile_binding_is_visible_exact_and_preserves_space_input", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::current_key", reason: "The page presents row selection through the picker layer and does not inspect the selected key directly.", regression_test: "catalog_picker_setters_and_accessors_behave", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::draw", reason: "The page composes pickers through layers and does not draw the widget directly into a buffer.", regression_test: "searchable_multi_keeps_hidden_identities_across_filter_and_reorder", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::eligible", reason: "The page presents disabled-row behavior through visible rows and does not query eligible indices directly.", regression_test: "corrected_items_restore_readiness_after_report_item_error", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::height", reason: "The page delegates sizing to its layer and layout system rather than calling the widget height helper directly.", regression_test: "zero_row_limit_is_one_row_in_every_status", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::is_multi", reason: "The page presents multi-select behavior through the picker layer and its resulting actions, rather than reading widget mode directly.", regression_test: "catalog_picker_setters_and_accessors_behave", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::is_searchable", reason: "The page presents search behavior through visible picker interaction and does not inspect the internal mode flag.", regression_test: "enabling_searchable_multi_rejects_unstable_items", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::item_for_key", reason: "The page presents item behavior through visible rows and does not query the backing item map directly.", regression_test: "explicit_index_picker_keys_survive_reorder", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::keymap", reason: "The page demonstrates the supported Desktop and Vim profiles; custom keymaps are not a page configuration option.", regression_test: "catalog_picker_setters_and_accessors_behave", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::on_click", reason: "The page demonstrates pointer behavior through terminal events and does not call the widget event handler directly.", regression_test: "catalog_picker_setters_and_accessors_behave", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::on_click_outside", reason: "The page demonstrates dismissal through the layer interaction and does not invoke its low-level outside-click handler.", regression_test: "catalog_picker_setters_and_accessors_behave", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::on_key", reason: "The page demonstrates keyboard behavior through terminal events and does not call the widget event handler directly.", regression_test: "searchable_multi_keeps_hidden_identities_across_filter_and_reorder", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::on_paste", reason: "The page demonstrates filtering through ordinary terminal input and has no paste-specific picker scenario.", regression_test: "catalog_picker_setters_and_accessors_behave", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::reset_selection", reason: "Picker layers in the showcase are ephemeral and have no user-facing reset action; the widget state test exercises the reset operation directly.", regression_test: "hidden_deleted_and_disabled_choices_are_pruned_and_restoration_does_not_reselect", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::row_id", reason: "The page delegates row identity and pointer routing to the picker layer rather than calling the row-id helper directly.", regression_test: "picker_layer_pointer_toggle_repaints_stays_open_and_skips_disabled_rows", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::searchable", reason: "The page uses the explicit searchable state setter for its nonsearchable examples and does not need the builder form.", regression_test: "refreshing_a_nonsearch_multi_picker_clears_position_keys", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::set_chosen", reason: "The showcase uses builder configuration and layer-driven interaction; this method serves application or layer plumbing.", regression_test: "catalog_picker_setters_and_accessors_behave", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::set_max_rows", reason: "The showcase uses builder configuration and layer-driven interaction; this method serves application or layer plumbing.", regression_test: "zero_row_limit_is_one_row_in_every_status", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::set_placement", reason: "The showcase configures placement through its builder; no concrete app uses this setter.", regression_test: "catalog_picker_setters_and_accessors_behave", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::set_query", reason: "The page demonstrates filtering through terminal input and does not set the query programmatically.", regression_test: "searchable_layer_routes_edit_menu_enter_before_multi_confirm_and_insert", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::set_width", reason: "The showcase uses builder configuration and layer-driven interaction; this method serves application or layer plumbing.", regression_test: "catalog_picker_setters_and_accessors_behave", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::toggle_binding", reason: "The page demonstrates the supported Desktop and Vim profiles; custom toggle bindings are not a page configuration option.", regression_test: "custom_multi_hints_follow_the_effective_binding_and_capabilities", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::toggle_checked", reason: "The page presents multi-select behavior through delivered input events rather than manipulating selection state directly.", regression_test: "hidden_deleted_and_disabled_choices_are_pruned_and_restoration_does_not_reselect", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::Picker::wheel", reason: "The showcase uses builder configuration and layer-driven interaction; this method serves application or layer plumbing.", regression_test: "catalog_picker_setters_and_accessors_behave", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::PickerCmd", reason: "The page demonstrates toggle behavior through picker events and configured profiles; it does not expose the widget command type as a page action.", regression_test: "catalog_picker_setters_and_accessors_behave", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::PickerCmd::Toggle", reason: "The page demonstrates toggle behavior through picker events and configured profiles; it does not expose the widget command variant as a page action.", regression_test: "multi_toggle_skips_disabled_items_and_non_search_space_toggles", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::PickerItemsError", reason: "Invalid item identities are exercised by picker validation tests; the showcase uses valid picker inputs.", regression_test: "corrected_items_restore_readiness_after_report_item_error", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::PickerItemsError::DuplicateKey", reason: "Invalid item identities are exercised by picker validation tests; the showcase uses valid picker inputs.", regression_test: "duplicate_picker_keys_are_rejected_without_mutation_or_panic", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::PickerItemsError::MissingStableKey", reason: "Invalid item identities are exercised by picker validation tests; the showcase uses valid picker inputs.", regression_test: "enabling_searchable_multi_rejects_unstable_items", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::PickerItemsError::UnknownVisibleKey", reason: "Invalid item identities are exercised by picker validation tests; the showcase uses valid picker inputs.", regression_test: "picker_rejects_ambiguous_and_unknown_keys_atomically", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::PickerKeyProfile::current", reason: "The page configures each picker through its builder and intentionally does not read the thread-local default profile.", regression_test: "searchable_multi_profile_binding_is_visible_exact_and_preserves_space_input", tracking_issue: None },
+    CapabilityException { api: "widgets::picker::PickerKeyProfile::install", reason: "The page configures each picker through its builder and intentionally does not change the thread-local default profile.", regression_test: "catalog_picker_setters_and_accessors_behave", tracking_issue: None },
 ];
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn catalog_source() -> String {
-        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
-        std::fs::read_to_string(root.join("src/catalog.rs")).expect("catalog source reads")
-    }
-
-    #[test]
-    fn capability_aware_keymap_apis_are_declared_with_reasons() {
-        let catalog = catalog_source();
-        let mut seen = std::collections::BTreeSet::new();
-        for (id, reason) in KEYMAP_ALLOWLIST {
-            assert!(
-                catalog.contains(&format!("\"{id}\"")),
-                "declared id is not a catalog capability: {id}"
-            );
-            assert!(
-                !reason.trim().is_empty(),
-                "allowlist entry has no reason: {id}"
-            );
-            assert!(seen.insert(*id), "duplicate allowlist entry: {id}");
-        }
-        for id in [
-            "core::keymap::KeyboardCapabilities",
-            "core::keymap::KeyboardCapabilities::current",
-            "core::keymap::KeyBinding::deliverable_with",
-            "core::keymap::KeyBinding::matches_with",
-            "core::keymap::lookup_with",
-            "core::keymap::deliverable_binding_for_with",
-            "core::keymap::normalized_key_mods",
-            "core::keymap::KeyBinding::normalized_mods",
-            "core::hints::HintCx::current",
-            "core::hints::HintCx::with_environment",
-        ] {
-            assert!(
-                seen.contains(id),
-                "capability-aware keymap API lacks a coverage declaration: {id}"
-            );
-        }
-    }
-}

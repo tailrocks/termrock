@@ -126,11 +126,22 @@ workspaces, Docker, OpenShell, Codex).
   option tables, never drawing, interaction or state logic of their own.
   See the showcase coverage track in
   `docs/architecture/shared-components-plan.md` (§7).
-- The coverage gate is `src/bin/showcase/app_tests_catalog.rs`. New
-  public API gets its line in `src/catalog.rs` (the failing test prints
-  it), then a declaration in `src/bin/showcase/coverage.rs` or an
-  `id | reason | SCn` allowlist line. A step deletes the lines of what
-  it now shows.
+- The declared-API gate has three layers, reported separately. Layer 1 is
+  source coverage in `src/catalog_contract.rs`: an inventory of every public
+  API under the exported module graph (matrix rows minimal, default and
+  all-features) must match `src/catalog.rs` exactly (`CAPABILITIES` plus
+  `MEMBERS`; fields, trait items and trait impls inherit their owner) and
+  every API needs a disposition: a Showcase page that references it, a
+  `CapabilityProof` or `CapabilityException` line in
+  `src/bin/showcase/coverage.rs`, or a line in
+  `src/bin/showcase/coverage_debt.txt`. The debt list only shrinks, so a new
+  public API gets a catalog line and a page, a proof or an exception in the
+  same change. Layer 2 is behavior: a `CapabilityProof` names callable
+  scenarios, and `src/bin/showcase/app_tests_catalog.rs` runs each scenario
+  against real components (`catalog_scenarios_execute`). Layer 3 is the
+  tuiscotti journeys in `tests/functional`. Name matching is never behavioral
+  proof. Run `cargo nextest run -p junie-tui --all-features --no-tests fail -E
+  'test(catalog_)'`; the Rust crate CI job already runs it.
 
 ### Visual states
 
