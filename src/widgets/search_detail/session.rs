@@ -134,9 +134,31 @@ impl SearchSession {
             .map(|accepted| accepted.text.as_str())
     }
 
-    /// Whether `key` is an enabled item or cell of the displayed results.
+    /// Whether `key` is an enabled item or cell of the displayed results that
+    /// the last paint placed.
     pub fn is_selectable(&self, key: ItemKey) -> bool {
-        self.slot(key).is_some_and(|slot| slot.enabled)
+        self.slot(key).is_some_and(|slot| slot.selectable())
+    }
+
+    /// Records which cells of `row` the paint placed. A cell it left out is
+    /// skipped by navigation and cannot run until a later paint places it.
+    pub(super) fn place_cells(&mut self, row: usize, placed: &[usize]) {
+        let Some(accepted) = self.accepted.as_mut() else {
+            return;
+        };
+        let start = accepted.slots.partition_point(|s| s.row < row);
+        let end = accepted.slots.partition_point(|s| s.row <= row);
+        for slot in &mut accepted.slots[start..end] {
+            slot.placed = placed.contains(&slot.cell);
+        }
+    }
+
+    /// The selected key, when it may act: displayed results that answer the
+    /// newest request and a cell or item the last paint placed.
+    fn actionable(&self) -> Option<ItemKey> {
+        self.state
+            .cursor()
+            .filter(|&key| self.is_interactive() && self.is_selectable(key))
     }
 
     pub fn phase(&self) -> SearchPhase {
@@ -534,30 +556,26 @@ impl SearchSession {
     }
 
     fn activate(&mut self) -> Reply {
-        match self.state.cursor() {
-            Some(key) if self.is_interactive() => Response::emit(SearchAction::Activate(key)),
-            _ => Response::consumed(),
+        match self.actionable() {
+            Some(key) => Response::emit(SearchAction::Activate(key)),
+            None => Response::consumed(),
         }
     }
 
     /// Emits a host-named detail action against the selected key, captured now
     /// so it never resolves a position later.
     pub fn detail_action(&mut self, name: &'static str) -> Reply {
-        match self.state.cursor() {
-            Some(key) if self.is_interactive() => {
-                Response::emit(SearchAction::DetailAction { key, name })
-            }
-            _ => Response::consumed(),
+        match self.actionable() {
+            Some(key) => Response::emit(SearchAction::DetailAction { key, name }),
+            None => Response::consumed(),
         }
     }
 
     /// Emits activation of detail item `index` against the selected key.
     pub fn detail_item(&mut self, index: usize) -> Reply {
-        match self.state.cursor() {
-            Some(key) if self.is_interactive() => {
-                Response::emit(SearchAction::DetailItem { key, index })
-            }
-            _ => Response::consumed(),
+        match self.actionable() {
+            Some(key) => Response::emit(SearchAction::DetailItem { key, index }),
+            None => Response::consumed(),
         }
     }
 

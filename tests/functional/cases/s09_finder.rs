@@ -1097,16 +1097,31 @@ fn option_rows_grouped_headings_are_never_selected() {
         &["git", "cargo", "Pull", "Build", "Test"],
         &["Ran ", "No matches"],
     );
+    // Three Tabs reach the results. With two, focus is still in the query,
+    // where Home and End move the caret and Enter runs the first row, so the
+    // heading skipping below would never be exercised.
+    app.key("tab");
     app.key("tab");
     app.key("tab");
     app.key("home");
     app.key("enter");
-    let first = app.wait_text("Ran ");
-    see(&first, &["Ran "], &["Ran git", "Ran cargo"]);
+    let first = app.wait_text("Ran Pull");
+    see(&first, &["Ran Pull"], &["Ran git", "Ran Test"]);
+    for _ in 0..3 {
+        app.key("down");
+    }
+    app.key("enter");
+    let last_of_group = app.wait_text("Ran Pull with rebase");
+    see(&last_of_group, &["Ran Pull with rebase"], &["Ran git"]);
+    // The spacer and the next heading sit between this row and Build.
+    app.key("down");
+    app.key("enter");
+    let across = app.wait_text("Ran Build");
+    see(&across, &["Ran Build"], &["Ran cargo", "Ran Pull"]);
     app.key("end");
     app.key("enter");
-    let last = app.settle();
-    see(&last, &["Ran "], &["Ran git", "Ran cargo", "Ran docker"]);
+    let last = app.wait_text("Ran Test");
+    see(&last, &["Ran Test"], &["Ran cargo", "Ran Build"]);
     app.finish();
 }
 

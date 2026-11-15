@@ -87,7 +87,9 @@ impl<S: SearchSource + ?Sized> RowPaint<'_, S> {
 impl<S: ?Sized> RowPaint<'_, S> {
     /// Reports where cell `cell` of a [`Cells`](super::ResultRowKind::Cells)
     /// row was drawn. The widget registers its hit region under the cell's
-    /// stable key, so the painter only draws.
+    /// stable key, so the painter only draws. A cell the painter does not
+    /// place was not drawn, so keys, clicks and activation skip it until a
+    /// later paint places it.
     pub fn place_cell(&mut self, cell: usize, rect: Rect) {
         self.cells.push((cell, rect));
     }
@@ -625,6 +627,7 @@ impl SearchDetail {
             list,
             anchors,
             scratch,
+            session,
             ..
         } = self;
         anchors.clear();
@@ -644,6 +647,7 @@ impl SearchDetail {
                         selected,
                         stale,
                         (anchors, scratch),
+                        session,
                         &mut paint_row,
                         buf,
                         ctx,
@@ -736,6 +740,7 @@ fn paint_one<S: SearchSource + ?Sized>(
     selected: Option<(usize, usize)>,
     stale: bool,
     (anchors, scratch): (&mut Vec<Anchor>, &mut Vec<(usize, Rect)>),
+    session: &mut SearchSession,
     paint_row: &mut impl FnMut(RowPaint<'_, S>, &mut Buffer, &mut RenderCtx),
     buf: &mut Buffer,
     ctx: &mut RenderCtx,
@@ -768,7 +773,14 @@ fn paint_one<S: SearchSource + ?Sized>(
             rect: master.rect,
         }),
         super::ResultRowKind::Cells => {
-            for &(cell, rect) in scratch.iter().filter(|(c, _)| *c < source.cell_count(row)) {
+            let count = source.cell_count(row);
+            let placed: Vec<usize> = scratch
+                .iter()
+                .map(|&(cell, _)| cell)
+                .filter(|&cell| cell < count)
+                .collect();
+            session.place_cells(row, &placed);
+            for &(cell, rect) in scratch.iter().filter(|(c, _)| *c < count) {
                 let key = source.cell_key(row, cell);
                 let id = ctx.register_part(owner, PartRef::item(Part::CELL, key), rect);
                 anchors.push(Anchor { key, id, rect });
