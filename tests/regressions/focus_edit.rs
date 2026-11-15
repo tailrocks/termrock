@@ -16,6 +16,7 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 
 const FIELD: WidgetId = WidgetId::of("focus_edit.field");
+const NEXT: WidgetId = WidgetId::of("focus_edit.next");
 
 enum Field {
     Line(Box<TextInput>),
@@ -116,6 +117,7 @@ impl App for Badge {
             Field::Area(f) => f.render(area, buf, ctx, bg),
             Field::Code(f) => f.render(area, buf, ctx, bg),
         }
+        ctx.focus_stop(NEXT);
     }
 }
 
@@ -140,6 +142,51 @@ fn assert_frame_matches_settled_state(mut host: Badge) {
     assert_eq!(first, again, "the next frame paints the same pixels");
     assert_eq!(host.draws, 4, "a stable frame draws once");
     assert!(!Application::take_render_invalidated(&mut host));
+}
+
+fn assert_blur_commit_is_visible_to_widgets_drawn_before_it(mut host: Badge) {
+    host.frame();
+    assert!(host.field.editing(), "focusing the field starts its edit");
+
+    host.shell_mut().focus_next();
+    let draws_before = host.draws;
+    let blurred = host.frame();
+    assert!(
+        !host.field.editing(),
+        "moving focus away commits the clean field during render"
+    );
+    assert_eq!(
+        Badge::badge(&blurred),
+        "view",
+        "a widget drawn before the commit shows the committed state in the same frame"
+    );
+    assert_eq!(
+        host.draws - draws_before,
+        2,
+        "the commit repaints once: pass one reads the edit, pass two the commit"
+    );
+    assert!(
+        !Application::take_render_invalidated(&mut host),
+        "the settled frame asks for nothing more"
+    );
+
+    let again = host.frame();
+    assert_eq!(blurred, again, "the next frame paints the same pixels");
+    assert_eq!(host.draws - draws_before, 3, "a stable frame draws once");
+}
+
+#[test]
+fn text_input_blur_commit_is_visible_to_widgets_drawn_before_it() {
+    assert_blur_commit_is_visible_to_widgets_drawn_before_it(Badge::new(Field::Line(Box::new(
+        TextInput::new(FIELD, "Name"),
+    ))));
+}
+
+#[test]
+fn text_area_blur_commit_is_visible_to_widgets_drawn_before_it() {
+    assert_blur_commit_is_visible_to_widgets_drawn_before_it(Badge::new(Field::Area(Box::new(
+        TextArea::new(FIELD, "Notes", 2),
+    ))));
 }
 
 #[test]
