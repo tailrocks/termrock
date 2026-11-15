@@ -670,3 +670,29 @@ fn codex196_undo_keeps_the_appended_row_selection_anchor() {
         "Shift-select extends from the appended row and keeps it"
     );
 }
+
+#[test]
+fn codex196_paste_into_cell_runs_the_edit_gateway() {
+    let mut g = grid(2);
+    let (out, actions) = g.paste_into_cell("pasted").into_parts();
+    assert_eq!(out, crate::core::event::Outcome::Changed);
+    assert!(matches!(
+        actions.into_iter().next(),
+        Some(GridAction::CellChanged { row: 0, col: 0 })
+    ));
+    assert_eq!(g.value(0, 0), &text("pasted"));
+    assert_eq!(g.pending().cells().count(), 1);
+
+    let again = g.paste_into_cell("pasted");
+    assert!(again.into_parts().1.into_iter().next().is_none());
+    assert_eq!(g.pending().cells().count(), 1, "an equal paste is a no-op");
+
+    let snapshot = g.snapshot_changes();
+    let _token = g.begin_submission(snapshot).unwrap();
+    let (_, actions) = g.paste_into_cell("late").into_parts();
+    assert!(matches!(
+        actions.into_iter().next(),
+        Some(GridAction::ReadOnly { .. })
+    ));
+    assert_eq!(g.value(0, 0), &text("pasted"), "a locked grid refuses it");
+}
