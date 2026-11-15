@@ -39,7 +39,7 @@ use ratatui::layout::{Position, Rect};
 use crate::domain::action::{Confirmation, Item, Launch, Risk};
 use crate::domain::activity::{ActivityKind, ActivityState};
 use crate::domain::context::{HostRole, Scope};
-use crate::domain::plan::PlanPhase;
+use crate::domain::plan::{PlanPhase, StepState};
 use crate::scenario::{Motion, Scenario};
 use crate::screens::activity::ActivityTab;
 use crate::screens::cleanup::CleanupPage;
@@ -460,24 +460,33 @@ impl App {
             }
             Msg::PlanDone { plan } => {
                 if let Some(p) = self.world.plan(plan) {
-                    let (ok, failed, excluded, skipped, never) = p.outcome();
+                    let cancelled = p
+                        .steps
+                        .iter()
+                        .filter(|s| s.state == StepState::Cancelled)
+                        .count();
+                    let (_, failed, ..) = p.outcome();
+                    let mut text = if cancelled > 0 {
+                        format!("{} stopped · {cancelled} cancelled", p.title)
+                    } else if failed > 0 {
+                        format!("{} · {failed} failed", p.title)
+                    } else {
+                        format!("{} finished", p.title)
+                    };
+                    if cancelled > 0 && failed > 0 {
+                        text.push_str(&format!(" · {failed} failed"));
+                    }
                     let tone = if failed > 0 {
                         Tone::Error
+                    } else if cancelled > 0 {
+                        Tone::Warning
                     } else {
                         Tone::Secondary
                     };
-                    let _ = (ok, excluded, skipped, never);
-                    self.set_status(
-                        &if failed > 0 {
-                            format!("{} · {failed} failed", p.title)
-                        } else {
-                            format!("{} finished", p.title)
-                        },
-                        tone,
-                    );
+                    self.set_status(&text, tone);
                 }
             }
-            Msg::DiscoveryDone { .. } | Msg::PlanStepEnded { .. } | Msg::ScanDone => {}
+            Msg::DiscoveryDone { .. } | Msg::PlanStepEnded { .. } | Msg::ScanDone { .. } => {}
         }
 
         Outcome::Changed.or(self.deliver_all(|s, w, cx| s.on_msg(&m, w, cx)))
@@ -1165,7 +1174,10 @@ impl App {
                     action: Some(1), ..
                 } = result
                 {
-                    self.close_tab(self.active(), true);
+                    match tag.key.strip_prefix("plan:") {
+                        Some(id) => self.stop_and_close_plan(id),
+                        None => self.close_tab(self.active(), true),
+                    }
                 }
                 Outcome::Changed
             }
@@ -1736,9 +1748,34 @@ impl App {
                 "Stop and close",
             )
             .cancel_label("Keep running");
-            self.open_layer(Box::new(d), LayerTag::new("close-tab"));
+            let mut tag = LayerTag::new("close-tab");
+            if let TabKind::Plan(id) = &self.tabs[active].kind {
+                tag = tag.key(format!("plan:{id}"));
+            }
+            self.open_layer(Box::new(d), tag);
         } else {
             self.close_tab(active, false);
+        }
+    }
+
+    /// Stops a plan through the world and delivers its completion messages
+    /// before any presentation changes.
+    fn stop_plan(&mut self, id: &str) {
+        for m in self.world.stop_plan(id) {
+            self.dispatch_msg(m);
+        }
+    }
+
+    /// Stop-and-close for a plan identified when the dialog opened, so a tab
+    /// selection change cannot redirect it to another plan.
+    fn stop_and_close_plan(&mut self, id: &str) {
+        let tab = self
+            .tabs
+            .iter()
+            .position(|t| matches!(&t.kind, TabKind::Plan(p) if p == id));
+        match tab {
+            Some(i) => self.close_tab(i, true),
+            None => self.stop_plan(id),
         }
     }
 
@@ -1766,9 +1803,8 @@ impl App {
                 self.world.activities.retain(|a| a.id != id);
             }
             TabKind::Plan(id) => {
-                if stop && let Some(p) = self.world.plan_mut(&id) {
-                    p.cancel_remaining();
-                    p.phase = PlanPhase::Done;
+                if stop {
+                    self.stop_plan(&id);
                 }
             }
             TabKind::Here => {}
@@ -2099,16 +2135,19 @@ impl App {
                     return;
                 }
                 let tick = self.world.tick;
-                if let Some(p) = self.world.plan_mut(&id) {
-                    p.arm(tick);
-                }
+                let armed = self.world.plan_mut(&id).is_some_and(|p| p.arm(tick));
                 let title = self
                     .world
                     .plan(&id)
                     .map(|p| p.title.clone())
                     .unwrap_or_default();
                 self.open_plan_tab(&id);
-                self.set_status(&format!("{title} started"), Tone::Secondary);
+                let note = if armed {
+                    "started"
+                } else {
+                    "is already running"
+                };
+                self.set_status(&format!("{title} {note}"), Tone::Secondary);
             }
             GateTarget::Item { item, args } => {
                 if !self.leave_review_pages() {
@@ -3269,3 +3308,6 @@ impl shell::KeyHost for App {
         self.set_status(text, Tone::Secondary);
     }
 }
+
+#[cfg(test)]
+mod tests;
