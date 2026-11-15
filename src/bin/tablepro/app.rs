@@ -2642,7 +2642,7 @@ mod tests {
         let code = review_code(&app);
         assert_eq!(code.len(), 1);
         assert!(
-            code[0].contains("SET unit_price = 1.234567 WHERE"),
+            code[0].contains(r#"SET "unit_price" = 1.234567 WHERE"#),
             "{}",
             code[0]
         );
@@ -2708,12 +2708,12 @@ mod tests {
         let sql = insert_of(&mut app);
         assert!(!sql.contains("DEFAULT VALUES"), "{sql}");
         assert!(
-            sql.starts_with("INSERT INTO public.products (sku, name, "),
+            sql.starts_with(r#"INSERT INTO "public"."products" ("sku", "name", "#),
             "the primary key resets to DEFAULT and is omitted: {sql}"
         );
         assert!(sql.contains(&quoted(&source[SKU])), "{sql}");
         assert!(sql.contains(&quoted(&source[NAME])), "{sql}");
-        assert!(sql.contains("unit_price"), "{sql}");
+        assert!(sql.contains(r#""unit_price""#), "{sql}");
     }
 
     #[test]

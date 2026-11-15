@@ -22,7 +22,9 @@ const SAFE: &str = "runs after this review";
 const KEPT: &str = "Changes kept pending";
 const SAVED: &str = "Saved 1 change to public.organizations";
 const HISTORY: &str = "Query history";
-const UPDATE: &str = "UPDATE public.organizations";
+const UPDATE: &str = r#"UPDATE "public"."organizations""#;
+const UPDATE_HEAD: &str = r#"UPDATE "public"."or"#;
+const NAME_SET: &str = r#""name" = 'AcmeNorth'"#;
 
 fn visual_id(checkpoint: &str) -> String {
     format!(
@@ -189,10 +191,10 @@ fn update_fragments(screen: &TerminalSnapshot) -> Vec<String> {
     for row in 0..screen.rows() {
         let line = row_text(screen, row);
         let mut rest = line.as_str();
-        while let Some(start) = rest.find(UPDATE) {
+        while let Some(start) = rest.find(UPDATE_HEAD) {
             let tail = &rest[start..];
             let mut end = tail.len();
-            for (index, ch) in tail.char_indices().skip(UPDATE.len()) {
+            for (index, ch) in tail.char_indices().skip(UPDATE_HEAD.len()) {
                 if ch == '…' || box_drawing(ch) {
                     end = index;
                     break;
@@ -223,7 +225,7 @@ fn preview_statement(screen: &TerminalSnapshot) -> String {
         text(screen)
     );
     assert!(
-        statement.contains("SET name ="),
+        statement.contains(r#"SET "name" ="#),
         "preview changed a different column {statement:?}\n{}",
         text(screen)
     );
@@ -235,7 +237,9 @@ fn preview_statement(screen: &TerminalSnapshot) -> String {
     statement.clone()
 }
 
-fn same_statement(preview: &str, later: &TerminalSnapshot, where_: &str) {
+/// `wrapped` is for the history detail pane, which wraps the statement at word
+/// boundaries, so `SET` and the assignment land on different lines.
+fn same_statement(preview: &str, later: &TerminalSnapshot, where_: &str, wrapped: bool) {
     let visible = text(later);
     let fragments = update_fragments(later);
     assert!(
@@ -250,20 +254,27 @@ fn same_statement(preview: &str, later: &TerminalSnapshot, where_: &str) {
             text(later)
         );
     }
-    let assignment = format!("SET name = '{VALUE}'");
+    let assignment = format!(r#"SET "name" = '{VALUE}'"#);
     assert!(
         preview.contains(&assignment),
         "preview {preview:?} did not set {VALUE}"
     );
-    assert!(
-        visible.contains(&assignment),
-        "{where_} did not show {assignment}\n{visible}"
-    );
+    let shown: &[&str] = if wrapped {
+        &[r#""public"."organizations" SET"#, NAME_SET]
+    } else {
+        &[assignment.as_str()]
+    };
+    for part in shown {
+        assert!(
+            visible.contains(part),
+            "{where_} did not show {part}\n{visible}"
+        );
+    }
 }
 
-/// First eight hex characters of the preview's `id = '…` predicate.
+/// First eight hex characters of the preview's `"id" = '…` predicate.
 fn id_prefix(preview: &str) -> String {
-    let marker = "id = '";
+    let marker = r#""id" = '"#;
     let start = preview
         .find(marker)
         .unwrap_or_else(|| panic!("preview had no id predicate: {preview}"));
@@ -349,7 +360,7 @@ fn commit_cancel_keeps_pending_and_confirm_records_the_preview() {
         &[SAVE_TITLE, SCOPE, SAFE, "Cancel", "Save", VALUE],
         &[PREVIEW, SAVED, KEPT],
     );
-    same_statement(&statement, &dialog, "save dialog");
+    same_statement(&statement, &dialog, "save dialog", false);
     assert_eq!((dialog.cols(), dialog.rows()), (120, 40));
     shot(&app, "T02.commit.commit.120x40");
 
@@ -361,10 +372,10 @@ fn commit_cancel_keeps_pending_and_confirm_records_the_preview() {
         screen.cols() == 80
             && screen.rows() == 24
             && visible.contains(SAVE_TITLE)
-            && visible.contains("UPDATE public.organizations SET")
+            && visible.contains(r#"UPDATE "public"."organizations" SET"#)
     });
     see(&narrow, &[SAVE_TITLE, SCOPE, SAFE], &[SAVED, KEPT, PREVIEW]);
-    same_statement(&statement, &narrow, "narrow save dialog");
+    same_statement(&statement, &narrow, "narrow save dialog", false);
     shot(&app, "T02.commit.commit.narrow");
 
     wait_size(&app, 120, 40);
@@ -398,10 +409,10 @@ fn commit_cancel_keeps_pending_and_confirm_records_the_preview() {
     let history = app.wait_text(HISTORY);
     see(
         &history,
-        &[HISTORY, UPDATE, VALUE],
+        &[HISTORY, UPDATE_HEAD, VALUE],
         &["1 pending", SAVE_TITLE],
     );
-    same_statement(&statement, &history, "history");
+    same_statement(&statement, &history, "history", true);
     let prefix = id_prefix(&statement);
     assert!(
         text(&history).contains(&prefix),
