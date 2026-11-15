@@ -446,17 +446,7 @@ impl App {
                 }
             }
             if !entries.is_empty() {
-                for e in entries {
-                    self.history.push(e);
-                }
-
-                let hist = &self.history;
-                let conn2 = conn.clone();
-                for t in w.tabs.iter_mut() {
-                    if let WorkTab::History(h) = t {
-                        h.refresh(hist, &conn2);
-                    }
-                }
+                w.record_history(&mut self.history, entries);
                 out = Outcome::Changed;
             }
             if w.running().is_some() {

@@ -21,7 +21,7 @@ use junie_tui::widgets::tree::{TreeAction, TreeNode, TreeView};
 
 use crate::app::Cx;
 use crate::db::{Catalog, Connection, ObjectKind};
-use crate::model::History;
+use crate::model::{History, HistoryEntry};
 use crate::tabs::{HistoryTab, QueryTab, TableTab};
 
 const ID: WidgetId = WidgetId::of("workbench");
@@ -504,6 +504,17 @@ impl Workbench {
         self.active = self.tabs.len() - 1;
         self.sync_strip();
         self.active
+    }
+
+    pub fn record_history(&mut self, history: &mut History, entries: Vec<HistoryEntry>) {
+        for e in entries {
+            history.push(e);
+        }
+        for t in self.tabs.iter_mut() {
+            if let WorkTab::History(h) = t {
+                h.refresh(history, &self.connection.name);
+            }
+        }
     }
 
     pub fn close_tab(&mut self, i: usize) {
