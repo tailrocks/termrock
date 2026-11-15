@@ -437,6 +437,9 @@ pub enum Effect {
         stagger_ms: i64,
     },
     ValidateAccount {
+        /// The request's identity. `World::validate_account` allocates it; the
+        /// reply (`Msg::AccountValidated`) must echo it unchanged.
+        ticket: Ticket,
         account: AccountId,
         source: CredentialSource,
     },

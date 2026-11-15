@@ -224,6 +224,8 @@ pub enum Msg {
         result: Result<Box<Refresh>, String>,
     },
     AccountValidated {
+        /// The `ticket` of the `Effect::ValidateAccount` this answers.
+        ticket: Ticket,
         account: AccountId,
         source: Box<CredentialSource>,
         result: Result<Validation, String>,
@@ -379,6 +381,13 @@ pub(crate) struct PendingRefresh {
     source: CredentialSource,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct PendingValidation {
+    ticket: Ticket,
+    source: CredentialSource,
+    started_ms: i64,
+}
+
 pub struct World {
     pub clock: SimClock,
     pub time: TimeSource,
@@ -415,6 +424,19 @@ pub struct World {
     /// `accounts` or a source outside `apply` must call
     /// `reconcile_pending_refreshes` before the next reply is absorbed.
     pub(crate) pending_refreshes: BTreeMap<AccountId, PendingRefresh>,
+
+    /// The validation each account is waiting on. A new `validate_account`
+    /// replaces the account's entry, so the latest request wins and an
+    /// older reply is stale. Validations of different accounts run side by
+    /// side. Retired like `pending_refreshes`: by its accepted reply, or by
+    /// `reconcile_pending_validations` once the account is gone or its
+    /// credential source changed.
+    pub(crate) pending_validations: BTreeMap<AccountId, PendingValidation>,
+
+    /// The validation whose progress text the status line shows: the one
+    /// started last. Only its reply ends that status; another account's reply
+    /// updates that account and leaves the text alone.
+    pub(crate) displayed_validation: Option<(AccountId, Ticket)>,
 
     pub snapshots_applied: u64,
     pub refresh_from: Option<u64>,
@@ -567,6 +589,8 @@ impl World {
             surfaces,
             tickets: 0,
             pending_refreshes: BTreeMap::new(),
+            pending_validations: BTreeMap::new(),
+            displayed_validation: None,
             snapshots_applied: 0,
             refresh_from: None,
             refresh_started_secs: 0,
@@ -686,6 +710,91 @@ impl World {
                 a.usage.freshness.phase = Freshness::Refreshing;
             }
         }
+    }
+
+    /// Starts a validation of `id`'s credential source and makes it the one
+    /// whose progress the status line shows. A validation already out for the
+    /// account is replaced: only the reply echoing the returned ticket is
+    /// accepted. `None` when the account is missing (nothing changes then).
+    pub fn validate_account(&mut self, id: &str) -> Option<Ticket> {
+        let source = self.accounts.get(id)?.source.clone();
+        let started_ms = self.clock.now_ms;
+        let ticket = self.next_ticket();
+        self.accounts.get_mut(id)?.validation = ValidationState::Validating {
+            started_tick: started_ms.max(0) as u64,
+        };
+        self.pending_validations.insert(
+            id.to_owned(),
+            PendingValidation {
+                ticket,
+                source: source.clone(),
+                started_ms,
+            },
+        );
+        self.displayed_validation = Some((id.to_owned(), ticket));
+        self.perform(Effect::ValidateAccount {
+            ticket,
+            account: id.to_owned(),
+            source,
+        });
+        Some(ticket)
+    }
+
+    /// The ticket of the validation `id` is waiting on, if one is out.
+    pub fn validation_pending(&self, id: &str) -> Option<Ticket> {
+        self.pending_validations.get(id).map(|p| p.ticket)
+    }
+
+    /// Whether the status line's validation progress belongs to this request.
+    pub fn validation_owns_status(&self, id: &str, ticket: Ticket) -> bool {
+        self.displayed_validation
+            .as_ref()
+            .is_some_and(|(account, shown)| account == id && *shown == ticket)
+    }
+
+    /// Drops the pending validations whose account is gone or whose
+    /// credential source changed, and marks the survivors as validating again
+    /// from their original start. Clears the displayed pair when its request
+    /// was dropped. `apply` calls it after every registry replacement.
+    pub fn reconcile_pending_validations(&mut self) {
+        let accounts = &self.accounts;
+        self.pending_validations
+            .retain(|id, p| accounts.get(id).is_some_and(|a| a.source == p.source));
+        for (id, p) in &self.pending_validations {
+            if let Some(a) = self.accounts.get_mut(id) {
+                a.validation = ValidationState::Validating {
+                    started_tick: p.started_ms.max(0) as u64,
+                };
+            }
+        }
+        let pending = &self.pending_validations;
+        if let Some((id, ticket)) = &self.displayed_validation
+            && pending.get(id).is_none_or(|p| p.ticket != *ticket)
+        {
+            self.displayed_validation = None;
+        }
+    }
+
+    /// Accepts a validation reply once: only while it echoes the ticket and
+    /// source of the account's pending validation and the account still has
+    /// that source. Retires the pending entry either way it matches.
+    fn accept_validation(
+        &mut self,
+        account: &str,
+        ticket: Ticket,
+        source: &CredentialSource,
+    ) -> bool {
+        let pending_matches = self
+            .pending_validations
+            .get(account)
+            .is_some_and(|p| p.ticket == ticket && p.source == *source);
+        if !pending_matches {
+            return false;
+        }
+        self.pending_validations.remove(account);
+        self.accounts
+            .get(account)
+            .is_some_and(|a| a.source == *source)
     }
 
     pub fn refresh(&mut self) -> bool {
@@ -846,6 +955,7 @@ impl World {
         self.global = global;
         self.accounts = accounts;
         self.reconcile_pending_refreshes();
+        self.reconcile_pending_validations();
         let doctor_state = self.surfaces.doctor.take().map(|d| d.state);
         self.surfaces = surfaces;
         if let (Some(doctor), Some(state)) = (self.surfaces.doctor.as_mut(), doctor_state) {
@@ -980,16 +1090,16 @@ impl World {
                 }
             }
             Msg::AccountValidated {
+                ticket,
                 account,
                 source,
                 result,
             } => {
+                if !self.accept_validation(account, *ticket, source) {
+                    return Absorbed::Stale;
+                }
                 let now = self.now_secs();
-                if let Some(a) = self
-                    .accounts
-                    .get_mut(account)
-                    .filter(|a| a.source == **source)
-                {
+                if let Some(a) = self.accounts.get_mut(account) {
                     match result {
                         Ok(validation) => match validation {
                             Validation::Fingerprint { level } => {

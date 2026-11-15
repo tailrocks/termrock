@@ -121,6 +121,7 @@ fn samples(world: &World) -> Vec<Effect> {
             stagger_ms: 0,
         },
         Effect::ValidateAccount {
+            ticket: 1,
             account: account.id.clone(),
             source: account.source.clone(),
         },
@@ -236,4 +237,44 @@ fn refresh_simulator_echoes_ticket() {
         panic!("a refresh of an account that is not there fails with its ticket");
     };
     assert_eq!((ticket, id.as_str()), (43, "gone"));
+}
+
+#[test]
+fn validation_simulator_echoes_ticket() {
+    let world = world_for(Scenario::RoleBinding);
+    let sim = SimBackend::shared();
+    let account = world.accounts.accounts.first().expect("an account");
+
+    let ask = |ticket: u64, id: &str| Effect::ValidateAccount {
+        ticket,
+        account: id.to_owned(),
+        source: account.source.clone(),
+    };
+    for ticket in [51, 52] {
+        let Some(Msg::AccountValidated {
+            ticket: echoed,
+            account: id,
+            source,
+            result,
+        }) = sim.settle(&ask(ticket, &account.id), &world)
+        else {
+            panic!("the simulator answers a validation");
+        };
+        assert_eq!(
+            (echoed, id, *source),
+            (ticket, account.id.clone(), account.source.clone())
+        );
+        assert!(result.is_ok());
+    }
+
+    let Some(Msg::AccountValidated {
+        ticket,
+        account: id,
+        result: Err(_),
+        ..
+    }) = sim.settle(&ask(53, "gone"), &world)
+    else {
+        panic!("a validation of an account that is not there fails with its ticket");
+    };
+    assert_eq!((ticket, id.as_str()), (53, "gone"));
 }

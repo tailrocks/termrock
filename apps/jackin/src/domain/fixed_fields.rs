@@ -358,6 +358,8 @@ pub fn world_fixed(w: &World) -> FixedFields {
         surfaces,
         tickets: _,
         pending_refreshes: _,
+        pending_validations: _,
+        displayed_validation: _,
         snapshots_applied: _,
         refresh_from: _,
         refresh_started_secs: _,
