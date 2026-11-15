@@ -2936,3 +2936,49 @@ fn finder_query_edit_on_the_same_result_resets_preview_scroll() {
     );
     assert_eq!(preview_body_word(&mut app), top);
 }
+
+#[test]
+fn finder_preview_follows_a_selection_moved_off_a_chip_that_no_longer_fits() {
+    const LONG: &str = "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW";
+    // The preview title is cut to the pane, so match its start.
+    const TITLE: &str = "WWWWWWWWWW";
+    let mut app = finder_app();
+    let mut tiles = explore_tiles(&[
+        "explore.tasks",
+        "explore.git",
+        "explore.files",
+        "explore.disk",
+    ]);
+    let mut long = explore_tiles(&["explore.services"]).remove(0);
+    long.label = LONG;
+    tiles.push(long);
+    app.world.edit_catalog(|w| w.explore_tiles = tiles.clone());
+    tick(&mut app, 1);
+    finder_select_explore(&mut app, "explore.services");
+    let wide = drawn_text_sized(&mut app, 120);
+    assert!(
+        wide.lines()
+            .any(|l| l.contains(TITLE) && l.contains("explore \u{b7} here")),
+        "premise: the last chip is drawn and the preview describes it\n{wide}"
+    );
+
+    let narrow = drawn_text_sized(&mut app, 110);
+    let now = finder(&mut app).current_id();
+    assert_eq!(
+        now.as_deref(),
+        Some("explore.disk"),
+        "premise: narrowing left the last chip out and the selection moved\n{narrow}"
+    );
+    assert!(
+        narrow
+            .lines()
+            .any(|l| l.contains("Disk") && l.contains("explore \u{b7} here")),
+        "the frame that moved the selection shows the new preview\n{narrow}"
+    );
+    assert!(
+        !narrow
+            .lines()
+            .any(|l| l.contains(TITLE) && l.contains("explore \u{b7} here")),
+        "the preview still describes the chip that is no longer drawn\n{narrow}"
+    );
+}
