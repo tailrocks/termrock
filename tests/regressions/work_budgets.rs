@@ -317,7 +317,7 @@ fn work_contract_settled_frame_paints_only_visible_rows() {
             Column::new("a", Constraint::Length(20)),
             Column::new("b", Constraint::Length(20)),
         ];
-        let mut table = DataTable::new(ID, columns, rows);
+        let mut table = DataTable::try_new(ID, columns, rows).expect("rectangular rows");
         frame(|b, c| table.render(VIEWPORT, b, c, c.theme.canvas));
         let (buf, table_work) =
             measure(|| frame(|b, c| table.render(VIEWPORT, b, c, c.theme.canvas)).0);

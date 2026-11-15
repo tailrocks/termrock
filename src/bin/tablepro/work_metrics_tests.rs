@@ -39,11 +39,25 @@ fn fixture() -> Harness<App> {
     f
 }
 
-fn grid(f: &mut Harness<App>) -> &mut DataGrid {
-    match f.app.workbench.as_mut().and_then(|w| w.active_tab_mut()) {
-        Some(WorkTab::Table(t)) => &mut t.grid,
+fn grid(f: &Harness<App>) -> &DataGrid {
+    match f.app.workbench.as_ref().and_then(|w| w.active_tab()) {
+        Some(WorkTab::Table(t)) => &t.grid,
         _ => panic!("a table tab is active"),
     }
+}
+
+fn edit_grid<R>(f: &mut Harness<App>, edit: impl FnOnce(&mut DataGrid) -> R) -> R {
+    f.app
+        .workbench
+        .as_mut()
+        .and_then(|w| {
+            w.modify_active(|tab| match tab {
+                WorkTab::Table(t) => Some(edit(&mut t.grid)),
+                _ => None,
+            })
+        })
+        .flatten()
+        .expect("a table tab is active")
 }
 
 fn report(f: &mut Harness<App>, operation: &'static str, work: WorkDelta, oracle: &str) {
@@ -54,7 +68,7 @@ fn report(f: &mut Harness<App>, operation: &'static str, work: WorkDelta, oracle
 #[test]
 fn work_contract_tablepro_idle_and_cell_edit() {
     let mut f = fixture();
-    let rows = grid(&mut f).rows().len();
+    let rows = grid(&f).rows().len();
     assert_eq!(rows, 312, "the seeded products table");
 
     // Rows painted is summed over every list, table, grid and tree widget in
@@ -104,7 +118,8 @@ fn work_contract_tablepro_idle_and_cell_edit() {
 
     let before = f.screen();
     let ((), edit) = measure(|| {
-        assert!(grid(&mut f).record_cell(0, PRICE, CellValue::Num(1.5)));
+        edit_grid(&mut f, |g| g.record_cell(0, PRICE, CellValue::Num(1.5)))
+            .expect("the cell takes the edit");
         f.draw();
     });
     assert_ne!(f.screen(), before, "the keyed draft edit reaches the frame");
@@ -112,8 +127,8 @@ fn work_contract_tablepro_idle_and_cell_edit() {
         f.screen().contains("1 pending"),
         "the status bar counts the draft"
     );
-    assert_eq!(grid(&mut f).pending().cells().count(), 1);
-    assert_eq!(grid(&mut f).value(0, PRICE), &CellValue::Num(1.5));
+    assert_eq!(grid(&f).pending().cells().count(), 1);
+    assert_eq!(grid(&f).value(0, PRICE), &CellValue::Num(1.5));
     assert_exact(
         &edit,
         "one keyed draft edit",
