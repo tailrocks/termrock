@@ -309,7 +309,29 @@ pub struct Activity {
     prompts_seen: usize,
 }
 
+/// The part of an activity the Finder catalog reads. Output lines, stdin and
+/// durations are display metadata and are deliberately absent.
+pub type CatalogShape = (
+    ActivityState,
+    String,
+    String,
+    ScopeTag,
+    Vec<Command>,
+    String,
+);
+
 impl Activity {
+    pub fn catalog_shape(&self) -> CatalogShape {
+        (
+            self.state,
+            self.name.clone(),
+            self.origin.clone(),
+            self.scope.clone(),
+            self.argv.clone(),
+            self.host.clone(),
+        )
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: &str,

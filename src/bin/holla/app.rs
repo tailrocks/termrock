@@ -309,11 +309,33 @@ impl App {
 
     fn deliver_all(
         &mut self,
+        f: impl FnMut(&mut Box<dyn Screen>, &mut World, &mut Cx) -> Outcome,
+    ) -> Outcome {
+        self.deliver_tabs(|_| true, f)
+    }
+
+    /// The tick fanout. A hidden tab whose top page only refreshes a
+    /// projection skips its tick and catches up when it is entered.
+    fn deliver_ticks(&mut self) -> Outcome {
+        self.deliver_tabs(|s| s.background_tick(), |s, w, cx| s.on_tick(w, cx))
+    }
+
+    fn deliver_tabs(
+        &mut self,
+        runs_hidden: impl Fn(&dyn Screen) -> bool,
         mut f: impl FnMut(&mut Box<dyn Screen>, &mut World, &mut Cx) -> Outcome,
     ) -> Outcome {
         let mut out = Outcome::Ignored;
         for ti in 0..self.router.tab_count() {
             let shown = ti == self.active();
+            if !shown
+                && self
+                    .router
+                    .top_of(ti)
+                    .is_some_and(|s| !runs_hidden(s.as_ref()))
+            {
+                continue;
+            }
             let (o, reqs) = self.deliver_tab(ti, shown, Outcome::Ignored, &mut f);
             if shown {
                 out = out.or(o).or(self.apply_requests(reqs, ti));
@@ -392,7 +414,7 @@ impl App {
         for entry in self.modals.iter_mut() {
             out = out.or(entry.layer.on_tick(&()));
         }
-        out = out.or(self.deliver_all(|s, w, cx| s.on_tick(w, cx)));
+        out = out.or(self.deliver_ticks());
         for m in msgs {
             out = out.or(self.dispatch_msg(m));
         }
@@ -1176,7 +1198,8 @@ impl App {
                     if alias.is_empty() {
                         self.set_status("No alias set: the field was empty", Tone::Secondary);
                     } else {
-                        self.world.memory.set_alias(&alias, &tag.key);
+                        self.world
+                            .edit_memory(|w| w.memory.set_alias(&alias, &tag.key));
                         self.set_status(
                             &format!("Alias {alias} set · it beats learned ranking from now on"),
                             Tone::Secondary,
@@ -1558,7 +1581,10 @@ impl App {
                         .find_item(&then)
                         .map(|i| i.scope.runs_in.clone())
                         .unwrap_or(self.world.location.cwd.clone());
-                    match self.world.trust.approve(&cfg.digest, &cfg.path, &cwd) {
+                    match self
+                        .world
+                        .edit_catalog(|w| w.trust.approve(&cfg.digest, &cfg.path, &cwd))
+                    {
                         Ok(text) => {
                             self.world.persisted.trust = Some(text);
                             self.pop_page();
@@ -1579,7 +1605,8 @@ impl App {
                     return;
                 }
                 if !self.world.trusted_now.contains(&config) {
-                    self.world.trusted_now.push(config.clone());
+                    self.world
+                        .edit_catalog(|w| w.trusted_now.push(config.clone()));
                 }
                 self.pop_page();
                 self.set_status(
@@ -1675,13 +1702,15 @@ impl App {
             .as_ref()
             .map(|g| g.actions.iter().map(|a| a.id.clone()).collect())
             .unwrap_or_default();
-        self.world.custom_project = Some(crate::domain::custom::parse_config(
+        let reloaded = crate::domain::custom::parse_config(
             &cfg.path,
             cfg.origin,
             &text,
             &builtin_refs,
             &reserved,
-        ));
+        );
+        self.world
+            .edit_catalog(|w| w.custom_project = Some(reloaded));
     }
 
     pub(crate) fn push_page(&mut self, page: Page) {
@@ -1845,20 +1874,17 @@ impl App {
     /// terminal event arrives, so switching tabs cannot redirect the close.
     fn stop_and_close_activity(&mut self, id: &str) {
         let tick = self.world.tick;
-        match self.world.activity_mut(id) {
-            Some(a) if a.state.live() => {
-                self.pending_activity_closes.insert(id.to_owned());
-                a.stop(tick);
-                if !self.close_activity_tab_if_finished(id) {
-                    self.set_status(
-                        "Stopping · the tab closes once the process is gone",
-                        Tone::Secondary,
-                    );
-                }
+        if self.world.activity(id).is_some_and(|a| a.state.live()) {
+            self.pending_activity_closes.insert(id.to_owned());
+            self.world.edit_activity(id, |a| a.stop(tick));
+            if !self.close_activity_tab_if_finished(id) {
+                self.set_status(
+                    "Stopping · the tab closes once the process is gone",
+                    Tone::Secondary,
+                );
             }
-            _ => {
-                self.close_activity_tab_if_finished(id);
-            }
+        } else {
+            self.close_activity_tab_if_finished(id);
         }
     }
 
@@ -2012,7 +2038,8 @@ impl App {
         {
             let host = self.world.host.name.clone();
             let now = self.world.now_secs();
-            self.world.memory.usage.learn_query(&q, id, &host, now);
+            self.world
+                .edit_memory(|w| w.memory.usage.learn_query(&q, id, &host, now));
         }
         self.persist_usage();
     }
@@ -2020,7 +2047,10 @@ impl App {
     fn persist_usage(&mut self) {
         let now = self.world.now_secs();
         let on_disk = self.world.persisted.frecency.clone();
-        match self.world.memory.usage.save(on_disk.as_deref(), now) {
+        let saved = self
+            .world
+            .edit_memory(|w| w.memory.usage.save(on_disk.as_deref(), now));
+        match saved {
             Ok(text) => self.world.persisted.frecency = Some(text),
             Err(e) if self.world.memory.usage.enabled => {
                 self.set_status(&format!("history not saved · {e}"), Tone::Error);
@@ -2390,7 +2420,7 @@ impl App {
                     kind,
                     it.scope.clone(),
                 );
-                if let Some(a) = self.world.activity_mut(&aid) {
+                self.world.edit_activity(&aid, |a| {
                     if !args.is_empty() {
                         a.insights = args
                             .iter()
@@ -2407,7 +2437,7 @@ impl App {
                     {
                         a.effect = Some(crate::domain::effect::Effect::KillProcess(pid));
                     }
-                }
+                });
                 self.open_activity_tab(&aid, true);
                 self.set_status(
                     &format!(
@@ -2724,9 +2754,7 @@ impl App {
         }
         if let Some(rest) = alt.strip_prefix("activity.") {
             if let Some(aid) = rest.strip_suffix(".stop") {
-                if let Some(a) = self.world.activity_mut(aid) {
-                    a.stop(tick);
-                }
+                self.world.edit_activity(aid, |a| a.stop(tick));
                 self.set_status(
                     "Stop requested · output kept · the state settles once the process is gone",
                     Tone::Secondary,
@@ -2737,14 +2765,14 @@ impl App {
                 if self.refuse_new_work() {
                     return;
                 }
-                if let Some(a) = self.world.activity_mut(aid) {
-                    if a.state.live() {
-                        self.set_status("Still running · stop it first", Tone::Secondary);
-                        return;
-                    }
+                if self.world.activity(aid).is_some_and(|a| a.state.live()) {
+                    self.set_status("Still running · stop it first", Tone::Secondary);
+                    return;
+                }
+                self.world.edit_activity(aid, |a| {
                     a.restart(tick);
                     a.advance(tick);
-                }
+                });
                 let aid = aid.to_owned();
                 self.open_activity_tab(&aid, true);
                 self.set_status("Restarted", Tone::Secondary);
@@ -2794,7 +2822,7 @@ impl App {
                 }
             }
             AltCmd::Pin => {
-                let on = self.world.memory.toggle_pin(&cwd, id);
+                let on = self.world.edit_memory(|w| w.memory.toggle_pin(&cwd, id));
                 self.set_status(
                     if on {
                         "Pinned here · it stays near the top in this folder"
@@ -2822,10 +2850,10 @@ impl App {
                     .iter()
                     .any(|(p, i)| p == &cwd && i == id);
                 if hidden {
-                    self.world.memory.restore(&cwd, id);
+                    self.world.edit_memory(|w| w.memory.restore(&cwd, id));
                     self.set_status("Restored here", Tone::Secondary);
                 } else {
-                    self.world.memory.hide(&cwd, id);
+                    self.world.edit_memory(|w| w.memory.hide(&cwd, id));
                     self.set_status(
                         "Hidden here · still reachable by search · Restore from the same menu",
                         Tone::Secondary,
@@ -2834,7 +2862,7 @@ impl App {
                 self.enter_top();
             }
             AltCmd::Reset => {
-                self.world.memory.reset(id);
+                self.world.edit_memory(|w| w.memory.reset(id));
                 self.set_status(
                     "Ranking reset for this row · pins and aliases kept",
                     Tone::Secondary,
