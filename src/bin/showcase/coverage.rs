@@ -221,6 +221,14 @@ pub const GRID_CHANGE_ALLOWLIST: &[(&str, &str)] = &[
         "The Grid page prints the refusal through Display in its status line and never branches on the variant; src/widgets/grid_undo_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
     ),
     (
+        "widgets::grid::GridDataError::Shape",
+        "The Grid page prints the refusal through Display in its status line and never branches on the variant; src/widgets/grid_undo_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
+    ),
+    (
+        "widgets::grid::GridDataError::ColumnWidth",
+        "The Grid page prints the refusal through Display in its status line and never branches on the variant; src/widgets/grid_undo_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
+    ),
+    (
         "widgets::grid::GridCommitToken::origin",
         "A host that holds a token may compare its grid; the page keeps the token private and the tests in src/widgets/grid_submission_tests.rs read it.",
     ),
