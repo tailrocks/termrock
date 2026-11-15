@@ -1062,9 +1062,9 @@ impl Screen for PlanReviewPage {
 }
 
 /// What the output viewport was last built from: the selected step, its
-/// output length, its attempt, and its state and exit. Any change to one of
-/// these rebuilds the viewport, including a zero-line retry that adds no text.
-type RenderStamp = (usize, usize, u32, StepState, Option<i32>);
+/// output length and its attempt. A status change alone leaves the lines, and
+/// the selection and scroll position on them, untouched.
+type RenderStamp = (usize, usize, u32);
 
 pub struct PlanTab {
     pub plan: String,
@@ -1134,7 +1134,7 @@ impl PlanTab {
         }
         let i = self.cursor.min(p.steps.len().saturating_sub(1));
         let s = &p.steps[i];
-        let stamp = (i, s.output.len(), s.attempt, s.state, s.exit);
+        let stamp = (i, s.output.len(), s.attempt);
         if self.rendered != Some(stamp) {
             let lines = s
                 .output
@@ -1900,22 +1900,43 @@ mod tests {
     }
 
     #[test]
-    fn plan_retry_zero_line_script_updates_status() {
-        let (mut w, images) = armed_images_failure(Some(vec![]));
+    fn plan_status_transition_keeps_the_output_selection() {
+        let mut w = world_for(Scenario::DockerCleanup, Motion::Full);
+        w.clock.running = true;
+        let tick = w.tick;
+        assert!(w.plan_mut(ID).expect("plan").arm(tick));
+        let images = w
+            .plan(ID)
+            .expect("plan")
+            .steps
+            .iter()
+            .position(|s| s.id == "images")
+            .expect("step");
+        let template_len = w.step_output["docker-cleanup/images"].len();
         let mut tab = PlanTab::new(ID);
-        tick_until_done(&mut w, &mut tab);
-        assert!(w.plan_mut(ID).expect("plan").retry(images));
-        tab.sync(&w);
-        assert_eq!(tab.cursor, images);
+        tab.cursor = images;
+        for _ in 0..400 {
+            let step = &w.plan(ID).expect("plan").steps[images];
+            if step.state == StepState::Running && step.output.len() >= template_len {
+                break;
+            }
+            w.tick();
+            tab.sync(&w);
+        }
+        let step = &w.plan(ID).expect("plan").steps[images];
+        assert_eq!(
+            step.state,
+            StepState::Running,
+            "all lines out, still running"
+        );
+        tab.view.select_all();
+        assert!(tab.view.has_selection());
 
         tick_until_succeeded(&mut w, &mut tab, images);
 
-        let step = &w.plan(ID).expect("plan").steps[images];
-        assert_eq!(
-            tab.rendered,
-            Some((images, step.output.len(), 2, StepState::Succeeded, Some(0))),
-            "a zero-line success still refreshes the stamp"
+        assert!(
+            tab.view.has_selection(),
+            "finishing the step must not rebuild the viewport"
         );
-        assert_eq!(view_text(&tab), step.output);
     }
 }
