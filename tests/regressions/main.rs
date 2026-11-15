@@ -6,5 +6,6 @@
 
 #[path = "../common/mod.rs"]
 mod common;
+mod document_workspace;
 mod response_batches;
 mod smoke;

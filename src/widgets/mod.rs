@@ -11,6 +11,7 @@ pub mod completion;
 pub mod detail_card;
 pub mod dialog;
 pub mod diff;
+pub mod document_workspace;
 pub mod edit;
 pub mod empty;
 pub mod field_common;
