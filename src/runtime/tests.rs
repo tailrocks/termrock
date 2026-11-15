@@ -212,3 +212,87 @@ fn terminal_session_drop_restores_terminal_before_signal() {
         },
     );
 }
+
+fn caught_panic_on_another_thread() {
+    let worker = thread::spawn(|| std::panic::catch_unwind(|| panic!("worker panic during setup")));
+    assert!(worker.join().expect("worker").is_err());
+}
+
+#[test]
+fn terminal_panic_on_another_thread_during_setup_still_restores_at_leave() {
+    child_case(
+        module_path!(),
+        "terminal_panic_on_another_thread_during_setup_still_restores_at_leave",
+        || {
+            static RESTORES: AtomicUsize = AtomicUsize::new(0);
+            static GATE: RestoreGate = RestoreGate::new(|| {
+                RESTORES.fetch_add(1, Ordering::SeqCst);
+            });
+
+            let mut session = TerminalSession::enter_on(&GATE, || {
+                caught_panic_on_another_thread();
+                fixed_terminal()
+            })
+            .expect("enter");
+            assert_eq!(
+                runs(&RESTORES),
+                1,
+                "the hook restored the half-set-up terminal"
+            );
+
+            session.try_leave().expect("leave");
+            assert_eq!(
+                runs(&RESTORES),
+                2,
+                "leave skipped the modes setup enabled after the hook ran"
+            );
+            drop(session);
+            assert_eq!(runs(&RESTORES), 2, "drop repeated the cleanup");
+        },
+    );
+}
+
+#[test]
+fn terminal_panic_on_another_thread_during_setup_still_restores_at_drop() {
+    child_case(
+        module_path!(),
+        "terminal_panic_on_another_thread_during_setup_still_restores_at_drop",
+        || {
+            static RESTORES: AtomicUsize = AtomicUsize::new(0);
+            static GATE: RestoreGate = RestoreGate::new(|| {
+                RESTORES.fetch_add(1, Ordering::SeqCst);
+            });
+
+            let session = TerminalSession::enter_on(&GATE, || {
+                caught_panic_on_another_thread();
+                fixed_terminal()
+            })
+            .expect("enter");
+            drop(session);
+            assert_eq!(runs(&RESTORES), 2, "drop skipped the post-hook modes");
+        },
+    );
+}
+
+#[test]
+fn terminal_failed_setup_after_a_panic_on_another_thread_still_restores() {
+    child_case(
+        module_path!(),
+        "terminal_failed_setup_after_a_panic_on_another_thread_still_restores",
+        || {
+            static RESTORES: AtomicUsize = AtomicUsize::new(0);
+            static GATE: RestoreGate = RestoreGate::new(|| {
+                RESTORES.fetch_add(1, Ordering::SeqCst);
+            });
+
+            TerminalSession::enter_on(&GATE, || {
+                caught_panic_on_another_thread();
+                Err(io::Error::other("raw mode failed"))
+            })
+            .map(|_| ())
+            .expect_err("setup failure");
+            assert_eq!(runs(&RESTORES), 2, "the failed setup skipped its cleanup");
+            TerminalSession::enter_on(&GATE, fixed_terminal).expect("ownership released");
+        },
+    );
+}

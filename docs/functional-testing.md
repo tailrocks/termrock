@@ -173,9 +173,12 @@ the helper always sets: wall time then never moves the simulated clock (so a
 relative label such as "live · 3 s ago" cannot drift under load), and the
 helper's `advance_clock(ms)` sends its documented bracketed-paste clock
 request to step it. A Holla journey that waits for a task or activity to
-progress calls `advance_clock` first. TablePro steps only its status line
-(the 5 s lifetime of a message) this way; its pointer timers and every
-showcase timer stay on wall time. Do not assume every application
+progress calls `advance_clock` first. So does a Jackin journey that waits for a
+simulated save or for a status line to expire: under the opt-in Jackin starts
+its clock stopped, so only `advance_clock` moves it. TablePro steps only its status line
+(the 5 s lifetime of a message) this way, and Showcase holds it (it does not
+implement `advance_clock`); their pointer timers stay on wall time. A launch
+with `launch.clock` set opts in. Do not assume every application
 implements that clock. Never send clock input as a substitute for a domain
 interaction.
 

@@ -2,6 +2,7 @@ mod app;
 mod coverage;
 
 mod data;
+mod feed;
 mod inspector;
 mod options;
 mod pages;
@@ -72,6 +73,9 @@ fn main() -> std::io::Result<()> {
         coverage::PICKER_COVERAGE,
         coverage::PICKER_ALLOWLIST,
         coverage::KEYMAP_ALLOWLIST,
+        coverage::EXTERNAL_COVERAGE,
+        coverage::EXTERNAL_ALLOWLIST,
+        coverage::RUNTIME_ALLOWLIST,
     );
     let cli: Cli = junie_tui::cli::parse(cli_after_help());
     let motion = cli.common.motion(NO_MOTION_ENV);

@@ -8,7 +8,10 @@ use std::time::{Duration, Instant};
 
 use tui_test::{SnapshotColor, TerminalSnapshot};
 
-use crate::support::{App, Launch, Point, TABLEPRO, find, find_all, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, Point, TABLEPRO, find, find_all, flash_settle_stepped as flash_settle, row_text,
+    text, try_launch,
+};
 
 const HOST: &str = "dev-db.internal.acme.io";
 const DATABASE: &str = "acme_dev";
@@ -180,31 +183,6 @@ fn restored_layout(screen: &TerminalSnapshot) -> bool {
         && visible.contains(RESULTS)
         && !visible.contains("No open tabs")
         && !visible.contains("two'z")
-}
-
-/// The 140ms press flash stays painted until the next frame after the deadline.
-/// A same-size resize does not force that frame, so nudge one column and return.
-/// Below about 100 columns the header omits the size chip.
-fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
 }
 
 fn click_sql(app: &App, sql: &str) {
@@ -571,11 +549,9 @@ fn tablepro_maximize_restores_the_same_layout() {
     app.key("z");
     let maximized = app.wait_screen("editor maximized", editor_max);
     assert_eq!((maximized.cols(), maximized.rows()), (120, 40));
-    // `connect_development` already asserts the connection toast when it appears;
-    // this longer editor journey can outlast the toast's five-second lifetime.
     see(
         &maximized,
-        &[TWO, QUERY_1, QUERY_2],
+        &[TWO, QUERY_1, QUERY_2, CONNECTED],
         &[EXPLORER, RESULTS, "No open tabs", "two'z"],
     );
     shot(&app, WIDE);

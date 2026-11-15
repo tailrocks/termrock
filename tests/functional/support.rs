@@ -6,6 +6,8 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use junie_tui::clock::TestRequest;
+use junie_tui::core::pointer::PointerConfig;
+use junie_tui::shell::StatusLine;
 use tui_test::{
     CheckedMouseAction, KeyAction, LaunchEnvMode, LaunchOptions, MouseOptions, OpenOptions,
     Operation, OperationResult, RunOptions, Session, SnapshotCell, SnapshotScope, TerminalSnapshot,
@@ -62,6 +64,9 @@ impl SessionMode {
 /// sets `NO_COLOR=1`. Any other value is passed as `--color`.
 /// `history`: `false` sets `HOLLA_NO_HISTORY=1`. `true` omits that variable.
 /// `motion`: when set, `--motion` is appended. `clock` enables the test clock.
+/// [`Launch::new`] turns it on for TablePro. The app clock then moves only through
+/// [`App::advance_clock`], so a status toast lives until the journey calls
+/// [`App::expire_status`] and a press flash until [`App::settle_flash`].
 /// `mode`: `Candidate` from [`Launch::new`] and [`App::new`]. `Reference` is
 /// opt-in for captures against binaries named by a reference manifest. A
 /// reference-only manifest override never participates in candidate checks.
@@ -95,7 +100,7 @@ impl Launch {
             platform: "macos".to_string(),
             history: false,
             motion: None,
-            clock: false,
+            clock: bin_name(bin) == Some("tablepro"),
             env: Vec::new(),
             term: "xterm-256color".to_string(),
             mode: SessionMode::Candidate,
@@ -138,12 +143,10 @@ impl App {
         launch.cols = cols;
         launch.rows = rows;
         launch.color = Some(color.to_string());
-        // Only jackin overrides `advance_clock` (src/bin/jackin/app.rs). Elsewhere the
-        // paste falls through to `on_input` (src/shell/app.rs), so the clock stays off.
-        launch.clock = Path::new(bin)
-            .file_name()
-            .and_then(|file| file.to_str())
-            .is_some_and(|name| matches!(name, "jackin" | "jackin-preview"));
+        // `Launch::new` enables the clock for TablePro, `App::new` also for jackin. Elsewhere
+        // the paste falls through to `on_input` (src/shell/app.rs), so the clock stays off.
+        launch.clock = launch.clock
+            || bin_name(bin).is_some_and(|name| matches!(name, "jackin" | "jackin-preview"));
         try_launch(launch).unwrap_or_else(|error| panic!("{error}"))
     }
 
@@ -450,6 +453,16 @@ impl App {
         self.paste(&TestRequest::advance(milliseconds));
     }
 
+    /// Lets every status toast reach the end of its lifetime on the stepped clock.
+    pub fn expire_status(&self) {
+        self.advance_clock(StatusLine::<()>::DEFAULT_TTL_MS);
+    }
+
+    /// Lets the pointer press flash reach its deadline on the stepped clock.
+    pub fn settle_flash(&self) {
+        self.advance_clock(PointerConfig::DEFAULT.flash_ms);
+    }
+
     pub fn move_to(&self, point: Point) {
         self.mouse(CheckedMouseAction::Motion {
             x: point.x,
@@ -656,6 +669,48 @@ impl Drop for App {
             eprintln!("functional evidence: {}", self.directory.display());
         }
     }
+}
+
+/// Ends the 140ms press flash on the stepped clock, then redraws once. See [`redraw_after_flash`].
+pub fn flash_settle_stepped(app: &App) {
+    app.settle_flash();
+    redraw_after_flash(app);
+}
+
+/// Waits out the 140ms press flash on the wall clock, then redraws once. For apps that run
+/// without the stepped test clock, so it needs no [`App::advance_clock`]. See [`redraw_after_flash`].
+pub fn flash_settle(app: &App) {
+    std::thread::sleep(Duration::from_millis(200));
+    redraw_after_flash(app);
+}
+
+/// Forces one redraw after the press flash deadline has passed. A same-size resize does not
+/// force a frame, so the width is nudged by one column and restored. Below about 100 columns
+/// the header omits the size chip, so the nudge waits on the terminal size instead. The redraw
+/// also leaves the hidden terminal cursor in a fixed place.
+fn redraw_after_flash(app: &App) {
+    let screen = app.screen();
+    let cols = u16::try_from(screen.cols()).expect("cols");
+    let rows = u16::try_from(screen.rows()).expect("rows");
+    let nudged = cols + 1;
+    app.resize(nudged, rows);
+    if cols >= 100 {
+        app.wait_text(&format!("{nudged}×{rows}"));
+        app.resize(cols, rows);
+        app.wait_text(&format!("{cols}×{rows}"));
+    } else {
+        app.wait_screen("narrow nudge", |screen| {
+            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
+        });
+        app.resize(cols, rows);
+        app.wait_screen("narrow restored", |screen| {
+            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
+        });
+    }
+}
+
+fn bin_name(bin: &str) -> Option<&str> {
+    Path::new(bin).file_name().and_then(|file| file.to_str())
 }
 
 pub fn try_launch(launch: Launch) -> Result<App, LaunchError> {

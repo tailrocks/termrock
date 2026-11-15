@@ -820,7 +820,7 @@ impl App {
             nav_expand: NavExpand::default(),
             nav_auto: None,
             shell,
-            clock: WallClock::new(),
+            clock: WallClock::for_run(),
             layers: Layers::new(),
             inspector: false,
             insp: Inspector::new(PageId::Overview),
@@ -976,7 +976,19 @@ impl App {
                 shell::KeyRouter::route(self, &key)
             }
             Input::Mouse(m) => PointerRouter::route(self, m),
+            Input::External(message) => self.on_external(&message),
             other => shell::KeyRouter::input(self, other),
+        }
+    }
+
+    fn external_page(&self) -> Option<usize> {
+        self.pages.iter().position(|p| p.external().is_some())
+    }
+
+    fn on_external(&mut self, message: &junie_tui::core::event::External) -> Outcome {
+        match self.external_page() {
+            Some(i) => self.with_page(i, |page, cx| page.on_external(message, cx)),
+            None => Outcome::Ignored,
         }
     }
 
@@ -2218,6 +2230,9 @@ impl shell::App for App {
     }
     fn keyboard_protocol(&self) -> junie_tui::core::keyboard::KeyboardProtocol {
         App::keyboard_protocol(self)
+    }
+    fn external(&self) -> Option<&junie_tui::runtime::ExternalReceiver> {
+        self.pages.iter().find_map(|p| p.external())
     }
 }
 

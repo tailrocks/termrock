@@ -7,7 +7,10 @@ use std::time::{Duration, Instant};
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, Point, TABLEPRO, find_all, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, Point, TABLEPRO, find_all, flash_settle_stepped as flash_settle, row_text, text,
+    try_launch,
+};
 
 const DENY: &str =
     "Cannot execute write queries: TablePro's Safe Mode is set to read-only for this connection";
@@ -55,32 +58,6 @@ fn header_token(screen: &TerminalSnapshot, token: &str) {
         other => header.contains(other),
     };
     assert!(present, "header token {token:?} in {header:?}");
-}
-
-/// The 140ms press flash stays painted while motion is paused, so a shot after
-/// a released click has to redraw once the deadline has passed. Below about 100
-/// columns the header omits the size chip, and the narrow nudge waits on the
-/// terminal size instead.
-fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
 }
 
 fn shot(app: &App, checkpoint: &str) {
@@ -220,6 +197,7 @@ fn dismiss(app: &App) {
 fn deny_key(app: &App, key: &str) -> TerminalSnapshot {
     // The deny status stays for five seconds. A repeat of the same sentence
     // does not change the screen, so wait until the previous one expires.
+    app.expire_status();
     app.wait_screen("deny status clear", |screen| {
         !text(screen).contains("Cannot execute")
     });
@@ -262,8 +240,9 @@ fn set_mode(app: &App, from: usize, to: usize, label: &str) {
 }
 
 fn quiet(app: &App) {
-    // Shell status expires on the wall clock. The checkpoint has to be taken
+    // Shell status expires after its lifetime. The checkpoint has to be taken
     // after that, or the footer changes under the open dialog.
+    app.expire_status();
     app.wait_screen("footer status settled", |screen| {
         let visible = text(screen);
         !visible.contains("Connected to ")
@@ -864,8 +843,9 @@ fn classify_shows_the_safety_decision() {
     );
 
     // A successful read does not replace the shell status, so the previous
-    // deny sentence stays until its wall-clock TTL. Wait it out before
+    // deny sentence stays until its TTL. Wait it out before
     // asserting the read itself is not a denial.
+    app.expire_status();
     app.wait_screen("read-only deny expired", |screen| {
         !text(screen).contains("Cannot execute")
     });

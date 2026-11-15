@@ -2021,37 +2021,50 @@ impl Page<Jackin> for CapsuleScreen {
         Some(PANES)
     }
 
+    /// Only what counts down on its own needs a frame per tick. Output of the
+    /// panes arrives through the world, and an idle pane draws nothing new.
     fn animating(&self, _w: &World) -> bool {
-        true
+        (self.prefix_timeout_ms.is_some() && self.prefix_until.is_some())
+            || self.redraw_flash > 0
+            || self.pending_spawn.is_some()
     }
 
     fn is_editing(&self) -> bool {
         false
     }
 
+    /// Changed only when the tick changed something this page shows: a prefix
+    /// that timed out, the redraw flash, a spawned pane, drained pane effects,
+    /// a pane or focus that moved, or a new dirty count.
     fn on_tick(&mut self, w: &mut World, cx: &mut Cx) -> Outcome {
+        let mut changed = false;
         if let Some(until) = self.prefix_until
             && w.now_ms() >= until
         {
             self.prefix_until = None;
             cx.status("Prefix timed out");
+            changed = true;
         }
         if self.redraw_flash > 0 {
             self.redraw_flash -= 1;
+            changed = true;
         }
         if self.pending_spawn.is_some() {
             self.apply_pending_spawn(w, cx);
+            changed = true;
         }
+        let before = self.control_signature(w);
         self.after_input(w);
-        self.run_effects(w, cx);
+        changed |= self.control_signature(w) != before;
+        changed |= self.run_effects(w, cx);
 
         let touched = self.daemon(w).map(|d| d.touched_files().len()).unwrap_or(0);
-        if touched > 0
-            && let Some(i) = w.instance_mut(&self.instance)
-        {
-            i.uncommitted = i.uncommitted.max(touched);
+        changed |= w.note_touched_files(&self.instance, touched);
+        if changed {
+            Outcome::Changed
+        } else {
+            Outcome::Ignored
         }
-        Outcome::Changed
     }
 
     fn on_msg(&mut self, msg: &Msg, w: &mut World, cx: &mut Cx) -> Outcome {
@@ -2534,10 +2547,7 @@ impl CapsuleScreen {
                     action: Some(1), ..
                 },
             ) => {
-                if let Some(i) = w.instance_mut(&self.instance) {
-                    i.uncommitted = 0;
-                    i.unpushed = 0;
-                }
+                w.clear_instance_changes(&self.instance);
                 cx.status("Changes discarded");
                 self.end_instance(false, cx);
             }
@@ -2659,19 +2669,36 @@ impl CapsuleScreen {
         self.sync_focus(w);
     }
 
-    fn run_effects(&mut self, w: &mut World, cx: &mut Cx) {
+    /// Drains the effects the panes asked for. Whether there were any.
+    fn run_effects(&mut self, w: &mut World, cx: &mut Cx) -> bool {
         let words = &w.surfaces.vocabulary.pane;
         let Some(d) = w.daemons.get_mut(&self.instance) else {
-            return;
+            return false;
         };
+        let mut any = false;
         for pane in &mut d.panes {
             for effect in pane.body.take_effects(words) {
+                any = true;
                 match effect {
                     PaneEffect::Status { text, tone } => cx.status_in(text, tone),
                     PaneEffect::Copy { text, what } => cx.copy_as(text, what),
                 }
             }
         }
+        any
+    }
+
+    /// The small facts a tick of input syncing can change: which panes exist,
+    /// which one has focus and what state each reports. Never the grid.
+    fn control_signature(&self, w: &World) -> (usize, usize, Option<PaneId>, Vec<AgentState>) {
+        self.daemon(w).map_or((0, 0, None, vec![]), |d| {
+            (
+                d.tabs.len(),
+                d.active,
+                d.focused_pane(),
+                d.panes.iter().map(|p| p.body.state()).collect(),
+            )
+        })
     }
 
     fn send_prefix(&mut self, key: &Key, w: &mut World) {

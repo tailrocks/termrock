@@ -34,6 +34,7 @@ use ratatui::layout::{Position, Rect};
 use ratatui::style::{Modifier, Style};
 
 use super::modals::{BrowserResult, FormDialog, FormField, FormValues, OpFlow};
+use super::row_meta::{ClockStamp, Moment, RowMeta, clocks};
 use super::{Cx, Go, LayerTag, ModalResult, Screen};
 use crate::backend::{
     CheckRow, Effect, FolderProbe, PlainKey, Ticket, Validation, ValidationOutcome,
@@ -75,11 +76,19 @@ struct Row {
     star: bool,
     label: String,
     health: Option<(&'static str, Tone)>,
-    meta: String,
+    meta: RowMeta,
     meta_tone: Tone,
     faint: bool,
     expandable: bool,
     expanded: bool,
+}
+
+/// What the cached rows were built from.
+struct RowsStamp {
+    accounts: u64,
+    folded: HashSet<UsageSurface>,
+    filter: Option<String>,
+    selected: Sel,
 }
 
 struct FormCtx {
@@ -180,6 +189,8 @@ pub struct AccountsScreen {
     folded: HashSet<UsageSurface>,
     pub filter: Option<String>,
     rows: Vec<Row>,
+    stamp: Option<RowsStamp>,
+    clock: ClockStamp,
     scroll: ScrollState,
     inspector_scroll: ScrollState,
     tree_area: Rect,
@@ -226,6 +237,8 @@ impl AccountsScreen {
             folded: HashSet::new(),
             filter: None,
             rows: vec![],
+            stamp: None,
+            clock: ClockStamp::default(),
             scroll: ScrollState::default(),
             inspector_scroll: ScrollState::default(),
             tree_area: Rect::ZERO,
@@ -250,14 +263,45 @@ impl AccountsScreen {
         }
     }
 
+    /// Builds the rows again only when something they are made of moved: the
+    /// accounts epoch, the folded surfaces or the filter. Cursor, scroll,
+    /// hover and the clock reuse them.
+    fn ensure_rows(&mut self, w: &World) {
+        let epoch = w.epochs().accounts;
+        let fresh = self.stamp.as_ref().is_some_and(|stamp| {
+            stamp.accounts == epoch && stamp.folded == self.folded && stamp.filter == self.filter
+        });
+        if fresh {
+            if self
+                .stamp
+                .as_ref()
+                .is_some_and(|s| s.selected != self.selected)
+            {
+                self.settle_selection(w);
+                if let Some(stamp) = self.stamp.as_mut() {
+                    stamp.selected = self.selected.clone();
+                }
+            }
+            return;
+        }
+        self.build_rows(w);
+        self.stamp = Some(RowsStamp {
+            accounts: epoch,
+            folded: self.folded.clone(),
+            filter: self.filter.clone(),
+            selected: self.selected.clone(),
+        });
+    }
+
     fn build_rows(&mut self, w: &World) {
+        w.projection.work.count_accounts_build();
         let mut rows = vec![Row {
             sel: Sel::Overview,
             depth: 0,
             star: false,
             label: "Overview".into(),
             health: None,
-            meta: String::new(),
+            meta: RowMeta::plain(""),
             meta_tone: Tone::Muted,
             faint: false,
             expandable: false,
@@ -270,10 +314,8 @@ impl AccountsScreen {
             .filter(|f| !f.is_empty());
         for surface in UsageSurface::ALL {
             let accounts: Vec<&Account> = w
-                .accounts
-                .sorted()
+                .surface_accounts(surface)
                 .into_iter()
-                .filter(|a| a.surface == surface)
                 .filter(|a| match &q {
                     Some(q) => {
                         a.display_name.to_lowercase().contains(q)
@@ -296,7 +338,7 @@ impl AccountsScreen {
                         star: false,
                         label: "Unsupported".into(),
                         health: None,
-                        meta: "sentinel".into(),
+                        meta: RowMeta::plain("sentinel"),
                         meta_tone: Tone::Faint,
                         faint: true,
                         expandable: false,
@@ -318,7 +360,7 @@ impl AccountsScreen {
                         star: false,
                         label: surface.surface_name().into(),
                         health: None,
-                        meta: "not discovered".into(),
+                        meta: RowMeta::plain("not discovered"),
                         meta_tone: Tone::Faint,
                         faint: true,
                         expandable: false,
@@ -355,11 +397,11 @@ impl AccountsScreen {
                 star: false,
                 label: surface.surface_name().into(),
                 health,
-                meta: if accounts.is_empty() {
+                meta: RowMeta::plain(if accounts.is_empty() {
                     "no accounts".into()
                 } else {
                     accounts.len().to_string()
-                },
+                }),
                 meta_tone: Tone::Muted,
                 faint: accounts.is_empty(),
                 expandable: !accounts.is_empty(),
@@ -409,7 +451,7 @@ impl AccountsScreen {
                 star: false,
                 label: "+ Add account…".into(),
                 health: None,
-                meta: String::new(),
+                meta: RowMeta::plain(""),
                 meta_tone: Tone::Muted,
                 faint: false,
                 expandable: false,
@@ -417,6 +459,13 @@ impl AccountsScreen {
             });
         }
         self.rows = rows;
+        self.settle_selection(w);
+        self.scroll.set_content(self.rows.len());
+    }
+
+    /// Keeps the selection on a row that exists: the provider of an account
+    /// that went away, or Overview.
+    fn settle_selection(&mut self, w: &World) {
         if !self.rows.iter().any(|r| r.sel == self.selected) {
             self.selected = match &self.selected {
                 Sel::Account(id) => w
@@ -430,7 +479,20 @@ impl AccountsScreen {
                 self.selected = Sel::Overview;
             }
         }
-        self.scroll.set_content(self.rows.len());
+    }
+
+    /// Whether the clock moved since the last paint in a way the page shows:
+    /// an age crossing a whole second, or a spinner frame. Nothing structural
+    /// is rebuilt for it.
+    fn clock_due(&self, w: &World) -> bool {
+        let (rows_age, spinning) = clocks(
+            self.scroll
+                .visible_range()
+                .filter_map(|i| self.rows.get(i))
+                .map(|r| &r.meta),
+        );
+        let inspector_age = matches!(self.selected, Sel::Account(_));
+        self.clock.due(w, rows_age || inspector_age, spinning)
     }
 
     fn cursor(&self) -> Option<usize> {
@@ -1296,19 +1358,12 @@ impl AccountsScreen {
     }
 
     fn validate_account(&mut self, id: &str, w: &mut World, cx: &mut Cx) {
-        let Some(a) = w.accounts.get_mut(id) else {
+        let Some(title) = w.accounts.get(id).map(Account::title) else {
             return;
         };
-        a.validation = ValidationState::Validating {
-            started_tick: w.clock.now_ms as u64,
-        };
-        let title = a.title();
-        let source = a.source.clone();
-        w.perform(Effect::ValidateAccount {
-            account: id.to_owned(),
-            source,
-        });
-        cx.progress(job::ACCOUNT_VALIDATE, format!("Validating {title}…"));
+        if w.validate_account(id).is_some() {
+            cx.progress(job::ACCOUNT_VALIDATE, format!("Validating {title}…"));
+        }
     }
 
     fn show_validation(
@@ -1537,7 +1592,7 @@ impl AccountsScreen {
                 if !self.folded.remove(s) {
                     self.folded.insert(*s);
                 }
-                self.build_rows(w);
+                self.ensure_rows(w);
                 Outcome::Changed
             }
             _ => self.fire(cmd, w, cx),
@@ -1626,11 +1681,12 @@ impl AccountsScreen {
                 ctx.clickable(TREE.child(i).sub("toggle"), Rect::new(x, y, 2, 1));
             }
             x += 2;
-            let meta_w = if show_meta {
-                width(&row.meta) as u16
+            let meta_text = if show_meta {
+                row.meta.text(w)
             } else {
-                0
+                String::new()
             };
+            let meta_w = width(&meta_text) as u16;
             let avail = rect.right().saturating_sub(x + 1);
             let hw: u16 = if row.health.is_some() { 2 } else { 0 };
             let lw = avail.saturating_sub(if meta_w > 0 { meta_w + 2 } else { 0 } + hw);
@@ -1665,7 +1721,7 @@ impl AccountsScreen {
                 buf.set_string(
                     rect.right().saturating_sub(meta_w + 1),
                     y,
-                    &row.meta,
+                    &meta_text,
                     ms.remove_modifier(Modifier::BOLD),
                 );
             }
@@ -1737,7 +1793,7 @@ impl AccountsScreen {
                 lines.push(Line::Blank);
                 lines.push(Line::Heading("Warnings".into(), String::new()));
                 let mut any = false;
-                for a in w.accounts.sorted() {
+                for a in w.sorted_accounts() {
                     if !a.enabled {
                         continue;
                     }
@@ -1794,7 +1850,7 @@ impl AccountsScreen {
                 ("Overview".into(), format!("{} · {}", plural(w.accounts.accounts.len(), "account", "accounts"), plural(s.counts.providers, "provider", "providers")), lines)
             }
             Sel::Provider(surface) => {
-                let accounts: Vec<&Account> = w.accounts.sorted().into_iter().filter(|a| a.surface == *surface).collect();
+                let accounts: Vec<&Account> = w.surface_accounts(*surface);
                 let p = surface.provider();
                 lines.push(Line::Prop("Provider".into(), p.map(|p| p.label()).unwrap_or("—").into(), Tone::Normal));
                 lines.push(Line::Prop("Agent runtime".into(), p.and_then(|p| p.agent()).map(|a| a.label()).unwrap_or("none").into(), Tone::Normal));
@@ -1818,7 +1874,7 @@ impl AccountsScreen {
                     lines.push(Line::Text("No accounts for this provider".into(), Tone::Muted));
                 }
                 for a in accounts {
-                    lines.push(Line::Heading(a.display_name.clone(), account_meta(a, w).0));
+                    lines.push(Line::Heading(a.display_name.clone(), account_meta(a, w).0.text(w)));
                     for win in a.usage.windows.iter().take(2) {
                         if win.has_meter() {
                             lines.push(Line::Meter(win.label.clone(), win.used_pct.unwrap_or(0), meter_detail(win, w), meter_tone(win, a)));
@@ -2307,50 +2363,40 @@ fn validation_marks(a: &Account) -> (&'static str, &'static str, &'static str) {
     }
 }
 
-fn account_meta(a: &Account, w: &World) -> (String, Tone) {
+fn account_meta(a: &Account, _w: &World) -> (RowMeta, Tone) {
     if !a.enabled {
-        return ("disabled".into(), Tone::Faint);
+        return (RowMeta::plain("disabled"), Tone::Faint);
     }
     match a.usage.freshness.phase {
-        Freshness::Refreshing => (
-            format!("{} refreshing", spinner_frame(w.now_ms() as u64 / 80)),
-            Tone::Secondary,
-        ),
+        Freshness::Refreshing => (RowMeta::spinner("", "refreshing"), Tone::Secondary),
         Freshness::Stale => (
-            format!(
-                "stale {}",
-                a.usage
-                    .freshness
-                    .last_good_secs
-                    .map(|s| w.clock.ago(s).replace(" ago", ""))
-                    .unwrap_or("?".into())
+            RowMeta::timed(
+                "stale ",
+                Moment::AgeOr(a.usage.freshness.last_good_secs, "?"),
+                "",
             ),
             Tone::Warning,
         ),
         Freshness::Failed => (
-            match a.issue.as_ref().map(|i| i.code) {
-                Some(IssueCode::RateLimited) => "rate limited".into(),
-                Some(IssueCode::ProviderUnavailable) => "unavailable".into(),
-                Some(IssueCode::CredentialFileMissing) => "needs secret".into(),
-                Some(IssueCode::Unauthorized) | Some(IssueCode::ApiKeyInvalid) => {
-                    "unauthorized".into()
-                }
-                Some(IssueCode::OpLocked) => "1Password locked".into(),
-                _ => "error".into(),
-            },
+            RowMeta::plain(match a.issue.as_ref().map(|i| i.code) {
+                Some(IssueCode::RateLimited) => "rate limited",
+                Some(IssueCode::ProviderUnavailable) => "unavailable",
+                Some(IssueCode::CredentialFileMissing) => "needs secret",
+                Some(IssueCode::Unauthorized) | Some(IssueCode::ApiKeyInvalid) => "unauthorized",
+                Some(IssueCode::OpLocked) => "1Password locked",
+                _ => "error",
+            }),
             Tone::Error,
         ),
         Freshness::Current => match a.lifecycle {
-            Lifecycle::Unsupported => ("unsupported".into(), Tone::Muted),
-            Lifecycle::NeedsLogin => ("needs login".into(), Tone::Warning),
-            Lifecycle::NeedsSecret => ("needs secret".into(), Tone::Warning),
+            Lifecycle::Unsupported => (RowMeta::plain("unsupported"), Tone::Muted),
+            Lifecycle::NeedsLogin => (RowMeta::plain("needs login"), Tone::Warning),
+            Lifecycle::NeedsSecret => (RowMeta::plain("needs secret"), Tone::Warning),
             _ => (
-                format!(
-                    "current {}",
-                    a.last_refresh_secs
-                        .map(|s| w.clock.ago(s).replace(" ago", ""))
-                        .unwrap_or("now".into())
-                ),
+                match a.last_refresh_secs {
+                    Some(secs) => RowMeta::timed("current ", Moment::AgeBare(secs), ""),
+                    None => RowMeta::plain("current now"),
+                },
                 Tone::Muted,
             ),
         },
@@ -2368,7 +2414,7 @@ impl Account {
 
 impl Page<Jackin> for AccountsScreen {
     fn enter(&mut self, w: &mut World, cx: &mut Cx) {
-        self.build_rows(w);
+        self.ensure_rows(w);
         self.md.close_drawer(cx.focus);
     }
 
@@ -2384,8 +2430,8 @@ impl Page<Jackin> for AccountsScreen {
     }
 
     fn on_tick(&mut self, w: &mut World, _cx: &mut Cx) -> Outcome {
-        self.build_rows(w);
-        if self.animating(w) {
+        self.ensure_rows(w);
+        if self.animating(w) || self.clock_due(w) {
             Outcome::Changed
         } else {
             Outcome::Ignored
@@ -2429,7 +2475,7 @@ impl Page<Jackin> for AccountsScreen {
                     (Err(error), Some(_)) => cx.error(error.clone()),
                     (Err(_), None) => {}
                 }
-                self.build_rows(w);
+                self.ensure_rows(w);
                 Outcome::Changed
             }
             Msg::AccountRefreshed {
@@ -2452,23 +2498,19 @@ impl Page<Jackin> for AccountsScreen {
                         Err(error) => cx.error(error.clone()),
                     }
                 }
-                self.build_rows(w);
+                self.ensure_rows(w);
                 Outcome::Changed
             }
             Msg::AccountValidated {
+                ticket,
                 account,
-                source,
                 result,
+                ..
             } => {
-                if w.accounts
-                    .get(account)
-                    .is_some_and(|a| a.source == **source)
-                {
+                if w.validation_owns_status(account, *ticket) {
                     self.show_validation(account, result, w, cx);
-                } else {
-                    cx.status("Validation discarded · the account changed");
                 }
-                self.build_rows(w);
+                self.ensure_rows(w);
                 Outcome::Changed
             }
             Msg::SourceChecked { ticket, result } => self.source_checked(*ticket, result, w, cx),
@@ -2478,7 +2520,7 @@ impl Page<Jackin> for AccountsScreen {
     }
 
     fn on_key(&mut self, key: &Key, w: &mut World, cx: &mut Cx) -> Outcome {
-        self.build_rows(w);
+        self.ensure_rows(w);
         if self.menu.is_open() {
             let (o, chosen) = self.menu.on_key(key);
             match chosen {
@@ -2608,7 +2650,7 @@ impl Page<Jackin> for AccountsScreen {
                         } else {
                             self.move_cursor(1);
                         }
-                        self.build_rows(w);
+                        self.ensure_rows(w);
                     }
                     return Outcome::Changed;
                 }
@@ -2624,19 +2666,19 @@ impl Page<Jackin> for AccountsScreen {
                         }
                         _ => {}
                     }
-                    self.build_rows(w);
+                    self.ensure_rows(w);
                     return Outcome::Changed;
                 }
                 KeyCode::Char('*') => {
                     self.folded.clear();
-                    self.build_rows(w);
+                    self.ensure_rows(w);
                     return Outcome::Changed;
                 }
                 KeyCode::Char('-') => {
                     for s in UsageSurface::ALL {
                         self.folded.insert(s);
                     }
-                    self.build_rows(w);
+                    self.ensure_rows(w);
                     return Outcome::Changed;
                 }
                 KeyCode::Char(' ') => {
@@ -2645,7 +2687,7 @@ impl Page<Jackin> for AccountsScreen {
                             if !self.folded.remove(&s) {
                                 self.folded.insert(s);
                             }
-                            self.build_rows(w);
+                            self.ensure_rows(w);
                         }
                         Sel::Account(id) => self.set_default(&id, w, cx),
                         _ => {}
@@ -2659,7 +2701,7 @@ impl Page<Jackin> for AccountsScreen {
                             if !self.folded.remove(&s) {
                                 self.folded.insert(s);
                             }
-                            self.build_rows(w);
+                            self.ensure_rows(w);
                         }
                         _ => self.md.open_drawer(cx.focus),
                     }
@@ -2672,7 +2714,7 @@ impl Page<Jackin> for AccountsScreen {
                 KeyCode::Esc => {
                     if self.filter.is_some() {
                         self.filter = None;
-                        self.build_rows(w);
+                        self.ensure_rows(w);
                         cx.status("Filter cleared");
                         return Outcome::Changed;
                     }
@@ -2901,7 +2943,7 @@ impl Page<Jackin> for AccountsScreen {
                         cx,
                     );
                 }
-                self.build_rows(w);
+                self.ensure_rows(w);
                 Outcome::Changed
             }
             (
@@ -2912,7 +2954,7 @@ impl Page<Jackin> for AccountsScreen {
                 },
             ) => {
                 self.filter = text.filter(|t| !t.trim().is_empty());
-                self.build_rows(w);
+                self.ensure_rows(w);
                 Outcome::Changed
             }
             (_, ModalResult::Cancelled)
@@ -2932,7 +2974,8 @@ impl Page<Jackin> for AccountsScreen {
     }
 
     fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, w: &World) {
-        self.build_rows(w);
+        self.ensure_rows(w);
+        self.clock.painted(w);
         let t = ctx.theme;
         self.md.detail_owns = self.actions.iter().map(|b| b.id).collect();
         let l = self.md.layout(area, buf, ctx, t.canvas);
@@ -3104,7 +3147,7 @@ impl Screen for AccountsScreen {
 
 impl AccountsScreen {
     fn click(&mut self, id: WidgetId, w: &mut World, cx: &mut Cx) -> Outcome {
-        self.build_rows(w);
+        self.ensure_rows(w);
         if self.menu.is_open() {
             let (o, chosen) = self.menu.on_click(id);
             return match chosen {
@@ -3119,7 +3162,7 @@ impl AccountsScreen {
                     if !self.folded.remove(&s) {
                         self.folded.insert(s);
                     }
-                    self.build_rows(w);
+                    self.ensure_rows(w);
                 }
                 cx.focus.focus(TREE);
                 return Outcome::Changed;
@@ -3158,7 +3201,7 @@ impl AccountsScreen {
     }
 
     fn secondary(&mut self, id: WidgetId, pos: Position, w: &mut World, cx: &mut Cx) -> Outcome {
-        self.build_rows(w);
+        self.ensure_rows(w);
         let Some(i) = self
             .scroll
             .visible_range()
