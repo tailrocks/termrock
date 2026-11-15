@@ -77,20 +77,15 @@ impl SidebarsPage {
 
     fn apply(&mut self) {
         let o = &self.opts;
-        let (current, cursor) = (self.nav.current, self.nav.cursor);
         let width = o.number("sidebars.width").unwrap_or(24);
         let collapsed_w = o.number("sidebars.collapsed_width").unwrap_or(6);
-        let mut nav = NavList::new(ID.sub("nav"), items(o.on("sidebars.badges")))
-            .current(current)
-            .collapsed(o.on("sidebars.collapsed"))
-            .widths(width, collapsed_w)
-            .nav(match o.value("sidebars.keys") {
-                "desktop" => NavKeys::DEFAULT,
-                _ => NavKeys::VIM,
-            });
-        nav.cursor = cursor;
-        nav.scroll = self.nav.scroll;
-        self.nav = nav;
+        self.nav.set_items(items(o.on("sidebars.badges")));
+        self.nav.collapsed = o.on("sidebars.collapsed");
+        self.nav.widths = (width, collapsed_w);
+        self.nav.nav = match o.value("sidebars.keys") {
+            "desktop" => NavKeys::DEFAULT,
+            _ => NavKeys::VIM,
+        };
         self.rail = SidebarRail::new(ID.sub("rail"), o.value("sidebars.rail_label"))
             .collapsed_rail(o.on("sidebars.collapsed_rail"));
         self.hidden = o.on("sidebars.hidden");
