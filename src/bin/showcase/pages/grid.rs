@@ -665,7 +665,7 @@ impl GridPage {
             SampleTransition::Reload => {
                 match self
                     .grid
-                    .set_rows(page(0, self.knobs.total(), self.grid.columns.len()))
+                    .try_set_rows(page(0, self.knobs.total(), self.grid.columns().len()))
                 {
                     Ok(()) => cx.status("Reloaded from the source"),
                     Err(e) => cx.status(e.to_string()),

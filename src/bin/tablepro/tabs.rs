@@ -606,17 +606,6 @@ impl TableTab {
         self.rebuild_chips();
     }
 
-    fn show_load_failure(&mut self, message: &str) {
-        self.grid
-            .try_set_rows(GridRows {
-                rows: vec![],
-                total: RowTotal::Exact(0),
-                more: false,
-            })
-            .expect("an empty row set fits any schema");
-        self.grid.empty = EmptyState::new("Query failed").hint(message);
-    }
-
     fn rebuild_chips(&mut self) {
         self.chips.chips = self
             .view
