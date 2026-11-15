@@ -1295,7 +1295,11 @@ pub static PICKERS: &[Opt] = &[
     Opt::new("pickers.empty", "No matches", &["text", "state"]),
     Opt::new("pickers.placeholder", "Placeholder", &["default", "custom"]),
     Opt::new("pickers.hints", "Hint row", &["page", "short"]),
-    Opt::new("pickers.remote", "Remote fetch", &["works", "fails"]),
+    Opt::new(
+        "pickers.remote",
+        "Remote fetch",
+        &["works", "fails", "stalls"],
+    ),
 ];
 
 pub static TABS: &[Opt] = &[
