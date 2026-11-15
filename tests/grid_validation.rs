@@ -56,8 +56,8 @@ fn press(grid: &mut DataGrid, code: KeyCode) -> (Outcome, Option<GridAction>) {
 }
 
 fn untouched(grid: &mut DataGrid) {
-    assert!(grid.pending.is_empty(), "pending {:?}", grid.pending);
-    assert!(!grid.undo(), "an undo record was pushed");
+    assert!(grid.pending().is_empty(), "pending {:?}", grid.pending());
+    assert!(grid.undo().is_none(), "an undo record was pushed");
 }
 
 fn draw_grid(grid: &mut DataGrid) -> ratatui::buffer::Buffer {
