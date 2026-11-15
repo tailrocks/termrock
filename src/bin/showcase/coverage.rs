@@ -51,6 +51,9 @@ pub const PICKER_COVERAGE: &[(&str, &str)] = &[
     ("widgets::picker::Picker::set_cursor", "pickers"),
 ];
 
+pub const TEXT_INPUT_COVERAGE: &[(&str, &str)] =
+    &[("widgets::input::TextInput::set_value", "dialogkinds")];
+
 pub const PICKER_ALLOWLIST: &[(&str, &str)] = &[
     (
         "widgets::picker::Picker::wheel",
@@ -272,6 +275,18 @@ mod tests {
     fn catalog_source() -> String {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
         std::fs::read_to_string(root.join("src/catalog.rs")).expect("catalog source reads")
+    }
+
+    #[test]
+    fn text_input_coverage_ids_are_catalog_capabilities() {
+        let catalog = catalog_source();
+        for (id, page) in TEXT_INPUT_COVERAGE {
+            assert!(
+                catalog.contains(&format!("\"{id}\"")),
+                "declared id is not a catalog capability: {id}"
+            );
+            assert!(!page.is_empty(), "coverage entry names no page: {id}");
+        }
     }
 
     #[test]

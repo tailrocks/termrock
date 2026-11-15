@@ -21,7 +21,9 @@ use junie_tui::ui::text;
 use junie_tui::widgets::button::{Button, ButtonRow, row_layout};
 use junie_tui::widgets::choice::{Checkbox, RadioGroup};
 use junie_tui::widgets::choice_dialog::ChoiceDialog;
-use junie_tui::widgets::form_dialog::{FieldValue, FormAction, FormDialog, FormField};
+use junie_tui::widgets::form_dialog::{
+    FieldValue, FormAction, FormDialog, FormField, FormFieldKind,
+};
 use junie_tui::widgets::help::HelpOverlay;
 use junie_tui::widgets::icon_button::IconButton;
 use junie_tui::widgets::info_dialog::{InfoCmd, InfoDialog, InfoResult};
@@ -42,6 +44,7 @@ const KEYS: WidgetId = ID.sub("keys");
 const DRIVERS: &[&str] = &["PostgreSQL", "MySQL", "SQLite"];
 const SSL: &[&str] = &["Disable", "Require", "Verify full"];
 const CHANNELS: &[&str] = &["Stable", "Beta", "Nightly (may break)"];
+const KEYCHAIN_SECRET: &str = "keychain-rotated-0042";
 const KEY_FILES: &[&str] = &["~/.ssh/id_ed25519", "~/.ssh/prod_rsa", "~/keys/staging.pem"];
 
 const OPENERS: &[(&str, &str)] = &[
@@ -325,14 +328,26 @@ impl DialogKindsPage {
                 if name == "test" {
                     cx.with_top::<FormDialog>(|f| {
                         let ok = !f.text("host").trim().is_empty();
-                        f.set_note(
-                            "result",
-                            vec![if ok {
-                                ("✓ Connected in 42 ms".into(), Tone::Success)
-                            } else {
-                                ("✗ Host is required".into(), Tone::Error)
-                            }],
-                        );
+                        let mut lines = vec![if ok {
+                            ("✓ Connected in 42 ms".into(), Tone::Success)
+                        } else {
+                            ("✗ Host is required".into(), Tone::Error)
+                        }];
+                        if ok {
+                            f.set_text("password", KEYCHAIN_SECRET);
+                            let masked = matches!(
+                                f.field("password").map(|x| &x.kind),
+                                Some(FormFieldKind::Input(i)) if i.masked
+                            );
+                            lines.push((
+                                format!(
+                                    "Password refreshed from the keychain · {}",
+                                    if masked { "still masked" } else { "revealed" }
+                                ),
+                                Tone::Muted,
+                            ));
+                        }
+                        f.set_note("result", lines);
                     });
                 }
                 self.log.push(format!("Form · Action({name:?})"));
