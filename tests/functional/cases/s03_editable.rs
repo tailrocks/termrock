@@ -19,6 +19,7 @@ const CAP_STATES: &str = "every state, drawn by the widget";
 const WIDE: &str = "120×40";
 const RANGE: &str = "1–13 of 14";
 const TASK: &str = "Add rate limiting";
+const FLASH_ATTEMPTS: usize = 20;
 const GRID_ABSENT: &[&str] = &["focus + hover", "busy", "loading", "selected"];
 
 fn visual_id(case_id: &str) -> String {
@@ -215,6 +216,33 @@ fn focus_task(app: &crate::support::App) {
     app.click(hit);
     app.wait_text("↑↓←→");
     app.move_to(Point { x: 110, y: 1 });
+}
+
+/// The Playground tab after a press: the flash fill, not the selected fill.
+fn playground_flashing(screen: &TerminalSnapshot) -> bool {
+    find_all(screen, "Playground")
+        .into_iter()
+        .find(|hit| hit.y == 4)
+        .is_some_and(|hit| cell_bg(screen, hit) == SnapshotColor::Rgb(0x4a, 0x4a, 0x52))
+}
+
+/// The accepted frame is the hovered task with the Playground tab still in its
+/// press flash. The flash lasts 140 ms of wall clock and, with motion paused,
+/// nothing repaints until the next input, so the tab keeps the flash only if
+/// the hover frame is drawn inside that window. Whether the steps before the
+/// hover finished inside it depends on machine load. Press the tab and hover
+/// back to back, and press again when the frame did not keep the flash. #285
+/// (#149) puts the flash on the test clock, which replaces this.
+fn hover_while_tab_flashes(app: &crate::support::App, hit: Point) -> TerminalSnapshot {
+    for _ in 0..FLASH_ATTEMPTS {
+        click_tab(app, "Playground");
+        app.move_to(hit);
+        let screen = app.settle();
+        if playground_flashing(&screen) {
+            return screen;
+        }
+    }
+    panic!("the hover frame never kept the tab flash in {FLASH_ATTEMPTS} presses");
 }
 
 fn option_page(app: &crate::support::App) -> TerminalSnapshot {
@@ -1196,8 +1224,7 @@ fn option_reveal_off_keeps_the_cut_cell() {
     );
     click_tab(&app, "Playground");
     let hit = task_point(&app);
-    app.move_to(hit);
-    let hovered = app.settle();
+    let hovered = hover_while_tab_flashes(&app, hit);
     let row = row_with(&hovered, "#1040");
     assert!(
         row.contains("mira") && row.contains("end…"),
@@ -1328,6 +1355,105 @@ fn option_header_labels_custom_still_sorts_from_the_header() {
             "Fit Width",
             "Cell saved",
         ],
+    );
+    app.finish();
+}
+
+/// Opens the walkthrough on the Options tab, then drives the last cell from the keyboard.
+fn walkthrough(name: &str, value: &str) -> crate::support::App {
+    let opt = format!("editable.tab_walkthrough={value}");
+    let args = ["--page", "editable", "--opt", opt.as_str()];
+    let app = open(name, 120, 40, &args);
+    let options = option_page(&app);
+    assert!(line_after(&options, "Tab at the last cell").contains(value));
+    click_tab(&app, "Playground");
+    let shown = app.wait_text(TASK);
+    see(
+        &shown,
+        &["Try", "Shows", "last —", "0 edits"],
+        &["Cell saved"],
+    );
+    for _ in 0..4 {
+        if text(&app.settle()).contains("Enter Edit") {
+            break;
+        }
+        app.key("tab");
+    }
+    app.wait_text("Enter Edit");
+    app.key("enter");
+    app.wait_text("Enter Apply");
+    app
+}
+
+#[test]
+fn option_tab_walkthrough_commit_then_leave() {
+    let app = walkthrough("s03-tab-commit", "commit");
+    let editing = app.screen();
+    see(
+        &editing,
+        &["Tab Commit, then leave", "Enter, 7, Tab"],
+        &["Cell saved"],
+    );
+    app.type_text("7");
+    app.key("tab");
+    let left = app.wait_text("Cell saved");
+    see(
+        &left,
+        &[
+            "last Committed → LeaveForward",
+            "1 edits",
+            "Cell saved",
+            "Tab Into page",
+        ],
+        &["Enter Apply", "Edit cancelled", "last —"],
+    );
+    app.finish();
+}
+
+#[test]
+fn option_tab_walkthrough_no_op_leaves_without_saving() {
+    let app = walkthrough("s03-tab-noop", "no-op");
+    see(
+        &app.screen(),
+        &["Tab Leave, nothing to save", "Enter, Tab"],
+        &["Cell saved"],
+    );
+    app.key("tab");
+    let left = app.wait_text("last LeaveForward");
+    see(
+        &left,
+        &["last LeaveForward", "0 edits", "Tab Into page"],
+        &["Committed", "Cell saved", "Enter Apply", "1 edits"],
+    );
+    app.finish();
+}
+
+#[test]
+fn option_tab_walkthrough_invalid_blocks_the_move() {
+    let app = walkthrough("s03-tab-invalid", "invalid");
+    see(
+        &app.screen(),
+        &["Tab Blocked by an error", "Enter, x, Tab"],
+        &["Cell saved"],
+    );
+    app.type_text("x");
+    app.key("tab");
+    let blocked = app.wait_text("Changes must be a whole number");
+    see(
+        &blocked,
+        &[
+            "Changes must be a whole number · last none",
+            "Enter Apply",
+            "Esc Cancel",
+        ],
+        &["Cell saved", "LeaveForward", "Committed", "Tab Into page"],
+    );
+    app.key("esc");
+    let cancelled = app.wait_text("Edit cancelled");
+    see(
+        &cancelled,
+        &["Edit cancelled", "last Cancelled", "0 edits"],
+        &["Cell saved", "Enter Apply"],
     );
     app.finish();
 }

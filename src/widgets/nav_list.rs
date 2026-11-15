@@ -11,6 +11,7 @@ use crate::core::pointer::PointerEvent;
 use crate::core::response::Response;
 use crate::core::scroll::{ScrollState, TrackClick};
 use crate::ui::ctx::{RenderCtx, VisualState, fill};
+use crate::ui::text::{paint_clipped, paint_truncated};
 use crate::widgets::scrollbar;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -73,10 +74,16 @@ enum NavRow {
 #[derive(Debug, Clone)]
 pub struct NavList {
     pub id: WidgetId,
+    /// Rows by position. Replace the collection with [`NavList::set_items`];
+    /// direct edits are safe because every entry point reconciles the indices.
     pub items: Vec<NavItem>,
 
+    /// Index of the activated item. A stale value is clamped on the next key,
+    /// click or render.
     pub current: usize,
 
+    /// Index of the keyboard cursor. A stale or disabled-only value is repaired
+    /// on the next key, click or render; see `reconcile_indices`.
     pub cursor: usize,
 
     pub collapsed: bool,
@@ -176,10 +183,60 @@ impl NavList {
             .unwrap_or(0)
     }
 
-    fn reveal_cursor(&mut self) {
+    /// Brings `cursor` and `current` back to valid positions after the items
+    /// changed or a public index was set out of range. Returns whether either
+    /// index moved. A valid cursor is kept even when its item is disabled, so
+    /// disabling an item never silently activates another one. An out-of-range
+    /// cursor falls back to the last enabled item, or to the last row when every
+    /// item is disabled (never an activation). The check is O(1) on a valid
+    /// state; the search runs only when an index is invalid.
+    fn reconcile_indices(&mut self) -> bool {
+        let before = (self.cursor, self.current);
+        match self.items.len() {
+            0 => {
+                self.cursor = 0;
+                self.current = 0;
+            }
+            len => {
+                self.current = self.current.min(len - 1);
+                if self.cursor >= len {
+                    self.cursor = self
+                        .items
+                        .iter()
+                        .rposition(|i| !i.disabled)
+                        .unwrap_or(len - 1);
+                }
+            }
+        }
+        if self.cursor != before.0 {
+            self.reveal_cursor();
+        }
+        before != (self.cursor, self.current)
+    }
+
+    /// Outcome for a key that changed nothing except possibly a repaired index.
+    fn idle(repaired: bool) -> Outcome {
+        if repaired {
+            Outcome::Changed
+        } else {
+            Outcome::Ignored
+        }
+    }
+
+    /// Outcome for a recognised key that is a no-op on a valid index.
+    fn handled(repaired: bool) -> Outcome {
+        if repaired {
+            Outcome::Changed
+        } else {
+            Outcome::Consumed
+        }
+    }
+
+    /// Scrolls the cursor row into view. Returns whether the scroll offset moved.
+    fn reveal_cursor(&mut self) -> bool {
         let row = self.row_of(self.cursor);
         self.scroll.set_content(self.rows().len());
-        self.scroll.ensure_visible(row);
+        self.scroll.ensure_visible(row)
     }
 
     fn scrolled(moved: bool) -> Outcome {
@@ -198,7 +255,7 @@ impl NavList {
             let next = if steps < 0 {
                 i.checked_sub(1)
             } else {
-                (i + 1 < self.items.len()).then_some(i + 1)
+                i.checked_add(1).filter(|&n| n < self.items.len())
             };
             let Some(n) = next else { break };
             i = n;
@@ -211,11 +268,13 @@ impl NavList {
     }
 
     pub fn on_key(&mut self, key: &Key) -> (Outcome, Option<NavAction>) {
+        let repaired = self.reconcile_indices();
         if self.items.is_empty() {
-            return (Outcome::Ignored, None);
+            return (Self::idle(repaired), None);
         }
         if let Some(nav) = self.nav.action(key) {
             let page = (self.scroll.viewport_len.max(1) as isize - 1).max(1);
+            let before = self.cursor;
             self.cursor = match nav {
                 Nav::Up => self.step(-1),
                 Nav::Down => self.step(1),
@@ -231,25 +290,56 @@ impl NavList {
                     .iter()
                     .rposition(|i| !i.disabled)
                     .unwrap_or(self.cursor),
-                Nav::Left | Nav::Right => return (Outcome::Ignored, None),
+                Nav::Left | Nav::Right => return (Self::idle(repaired), None),
             };
-            self.reveal_cursor();
-            return (Outcome::Changed, None);
+            let scrolled = self.reveal_cursor();
+            let moved = repaired || self.cursor != before || scrolled;
+            let outcome = if moved {
+                Outcome::Changed
+            } else {
+                Outcome::Consumed
+            };
+            return (outcome, None);
         }
         match key.code {
             ratatui::crossterm::event::KeyCode::Enter
-            | ratatui::crossterm::event::KeyCode::Char(' ') => {
-                if self.items[self.cursor].disabled {
-                    return (Outcome::Changed, None);
+            | ratatui::crossterm::event::KeyCode::Char(' ') => match self.items.get(self.cursor) {
+                Some(item) if !item.disabled => {
+                    self.current = self.cursor;
+                    (Outcome::Changed, Some(NavAction::Activated(self.cursor)))
                 }
-                self.current = self.cursor;
-                (Outcome::Changed, Some(NavAction::Activated(self.cursor)))
-            }
-            _ => (Outcome::Ignored, None),
+                Some(_) => (Self::handled(repaired), None),
+                None => (Self::idle(repaired), None),
+            },
+            _ => (Self::idle(repaired), None),
         }
     }
 
+    /// Replaces the items. Indices are positional: `cursor` and `current` keep
+    /// their numbers, clamped to the new length, so a same-length reorder keeps
+    /// the row and not the item. Hosts that need a stable selection should find
+    /// the new index from their own identity and assign `cursor` and `current`.
+    /// Filling an empty list starts on the first enabled item, like
+    /// [`NavList::new`]. Replacement never emits an action. Returns `false` when
+    /// `items` is equal to the current collection, which leaves all state
+    /// untouched.
+    pub fn set_items(&mut self, items: Vec<NavItem>) -> bool {
+        if self.items == items {
+            return false;
+        }
+        let was_empty = self.items.is_empty();
+        self.items = items;
+        if was_empty {
+            let first = self.items.iter().position(|i| !i.disabled).unwrap_or(0);
+            self.cursor = first;
+            self.current = first;
+        }
+        self.reconcile_indices();
+        true
+    }
+
     pub fn on_click(&mut self, i: usize) -> (Outcome, Option<NavAction>) {
+        self.reconcile_indices();
         if i < self.items.len() && !self.items[i].disabled {
             self.cursor = i;
             self.current = i;
@@ -260,30 +350,42 @@ impl NavList {
     }
 
     pub fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, bg: Color) {
+        let before = self.cursor;
+        self.reconcile_indices();
         let t = ctx.theme;
-        let focused = ctx.interaction.focused(self.id);
+        let area = area.intersection(*buf.area());
         self.area = area;
         let rows = self.rows();
         self.scroll.set_content(rows.len());
-        self.scroll.set_viewport(area.height as usize);
+        if area.is_empty() {
+            self.scroll.set_viewport(0);
+            return;
+        }
+        self.scroll.set_viewport(usize::from(area.height));
+        if self.cursor != before {
+            // A repaired cursor is revealed once the viewport is known; on the
+            // first frame reconciliation ran against a zero-height viewport.
+            self.reveal_cursor();
+        }
+        let focused = ctx.interaction.focused(self.id);
         let has_sb = self.scroll.overflows();
 
         let row_w = area.width.saturating_sub(1);
         let mut cursor_y = None;
         for (k, ri) in self.scroll.visible_range().enumerate() {
             let y = area.y + k as u16;
+            let row = Rect::new(area.x, y, row_w, 1);
             match rows[ri] {
                 NavRow::Blank => {}
                 NavRow::Section(i) => {
                     if self.collapsed {
-                        buf.set_string(area.x + 1, y, "····", t.faint().bg(bg));
+                        paint_clipped(buf, row, 1, "····", t.faint().bg(bg));
                     } else {
-                        buf.set_string(area.x + 3, y, &self.items[i].section, t.faint().bg(bg));
+                        paint_truncated(buf, row, 3, &self.items[i].section, t.faint().bg(bg));
                     }
                 }
                 NavRow::Item(i) => {
                     let it = &self.items[i];
-                    let row = Rect::new(area.x, y, row_w, 1);
                     let rid = self.item_id(i);
                     let mut s = ctx.state(rid);
                     s.focused = focused && i == self.cursor;
@@ -300,20 +402,16 @@ impl NavList {
                     let current = i == self.current;
                     let st = t.row(s, bg);
                     fill(buf, row, st);
-                    buf.set_string(
-                        row.x,
-                        y,
+                    paint_clipped(
+                        buf,
+                        row,
+                        0,
                         t.gutter_symbol(s),
                         t.gutter(s, st.bg.unwrap_or(bg), false),
                     );
                     if current {
                         let ink = t.chosen_in(VisualState { focused, ..s });
-                        buf.set_string(
-                            row.x + 1,
-                            y,
-                            "›",
-                            st.fg(t.legible(ink, st.bg.unwrap_or(bg))),
-                        );
+                        paint_clipped(buf, row, 1, "›", st.fg(t.legible(ink, st.bg.unwrap_or(bg))));
                     }
                     let label_style = if it.disabled {
                         st
@@ -322,12 +420,14 @@ impl NavList {
                     } else {
                         st.fg(t.text_secondary)
                     };
+                    let icon_cell = Rect::new(row.x.saturating_add(3), y, 2, 1).intersection(row);
                     if self.collapsed {
-                        buf.set_string(row.x + 3, y, &it.icon, label_style);
+                        paint_clipped(buf, row, 3, &it.icon, label_style);
                     } else {
-                        buf.set_string(
-                            row.x + 3,
-                            y,
+                        paint_clipped(
+                            buf,
+                            icon_cell,
+                            0,
                             &it.icon,
                             label_style.fg(if it.disabled {
                                 t.disabled
@@ -335,16 +435,32 @@ impl NavList {
                                 t.text_muted
                             }),
                         );
-                        buf.set_string(row.x + 5, y, &it.label, label_style);
+                        let content = usize::from(row_w).saturating_sub(5);
+                        let badge_w = it.badge.as_deref().map_or(0, crate::ui::text::width);
+                        let label_room = if badge_w > 0 {
+                            content.saturating_sub(badge_w + 2)
+                        } else {
+                            content
+                        };
+                        let label_cell = Rect::new(
+                            row.x.saturating_add(5),
+                            y,
+                            u16::try_from(label_room).unwrap_or(u16::MAX),
+                            1,
+                        )
+                        .intersection(row);
+                        paint_truncated(buf, label_cell, 0, &it.label, label_style);
                         if let Some(b) = &it.badge {
-                            let bx = row
-                                .right()
-                                .saturating_sub(crate::ui::text::width(b) as u16 + 1);
+                            let room = badge_w.min(content.saturating_sub(1));
+                            let room = u16::try_from(room).unwrap_or(u16::MAX);
                             let bs = if it.disabled { st } else { st.fg(t.accent) };
-                            buf.set_string(bx, y, b, bs);
+                            let badge_cell =
+                                Rect::new(row.right().saturating_sub(room + 1), y, room, 1)
+                                    .intersection(row);
+                            paint_truncated(buf, badge_cell, 0, b, bs);
                         }
                     }
-                    if !it.disabled {
+                    if !it.disabled && !row.is_empty() {
                         ctx.register_part(self.id, Self::item_part(i), row);
                     }
                 }
@@ -368,7 +484,7 @@ impl NavList {
             &self.scroll,
             focused,
         );
-        if !ctx.inert {
+        if !ctx.inert && row_w > 0 {
             ctx.ring.register(self.id);
         }
     }
@@ -486,11 +602,7 @@ impl crate::core::pointer::MouseTarget for NavList {
         match ev.index_of(Part::ROW) {
             Some(i) if ev.is(Phase::Click) && i < self.items.len() => {
                 let (o, a) = self.on_click(i);
-                let r: Response<NavAction> = o.into();
-                match a {
-                    Some(a) => r.with_action(a),
-                    None => r,
-                }
+                Response::from((o, a))
             }
             _ => Response::ignored(),
         }

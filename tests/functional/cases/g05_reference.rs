@@ -132,6 +132,29 @@ fn read_disposition_sample(path: &Path) -> tuiscotti_latest::sample::Sample {
         .unwrap_or_else(|error| panic!("read disposition sample {}: {error}", path.display()))
 }
 
+/// Decodes every sample and checks that it carries the test ID its record
+/// names. Decoding one sample costs about 10 ms of CPU, and the manifest holds
+/// about two thousand, so one thread needs 20 s of CPU and, on a loaded machine,
+/// outlasts the 90 s nextest terminates a functional test at. The samples are
+/// independent, so they are split across threads, which also gives the test
+/// more than one share of a busy machine.
+fn assert_sample_ids(samples: Vec<(PathBuf, String)>) {
+    let workers = std::thread::available_parallelism()
+        .map_or(4, usize::from)
+        .clamp(4, 16);
+    let chunk = samples.len().div_ceil(workers).max(1);
+    std::thread::scope(|scope| {
+        for part in samples.chunks(chunk) {
+            scope.spawn(move || {
+                for (path, test_id) in part {
+                    let sample = read_disposition_sample(path);
+                    assert_eq!(sample.test_id(), test_id, "{test_id}");
+                }
+            });
+        }
+    });
+}
+
 fn active_baseline_path(root: &Path, test_id: &str) -> PathBuf {
     root.join(format!("{test_id}.tui.pb"))
 }
@@ -639,6 +662,7 @@ fn g05_approved_binary_manifest_matches_active_samples() {
         lines.next(),
         Some("test_id\tbaseline_path\tsha256\treceipt_path\tacceptance_sequence\tsource_lineage")
     );
+    let mut sample_ids: Vec<(PathBuf, String)> = Vec::new();
     let mut ids = std::collections::BTreeSet::new();
     let mut paths = std::collections::BTreeSet::new();
     let mut active_records = std::collections::BTreeMap::new();
@@ -691,8 +715,7 @@ fn g05_approved_binary_manifest_matches_active_samples() {
             path.display()
         );
         assert_eq!(sha256_file(&path), *expected_sha, "{test_id}");
-        let sample = read_disposition_sample(&path);
-        assert_eq!(sample.test_id(), *test_id);
+        sample_ids.push((path.clone(), (*test_id).to_owned()));
         let receipt_relative_path = *receipt_path;
         let receipt_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(receipt_relative_path);
         let receipt: Value = serde_json::from_slice(
@@ -715,7 +738,7 @@ fn g05_approved_binary_manifest_matches_active_samples() {
         );
         count += 1;
     }
-    assert_eq!(count, 105);
+    assert_eq!(count, 109);
     assert!(!ids.contains("functional/tablepro_query_syntax_error"));
     let historical_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("docs/testing/acceptance-receipts/historical-binary-20261108/transactions.jsonl");
@@ -904,8 +927,7 @@ fn g05_approved_binary_manifest_matches_active_samples() {
                 .expect("historical sample")
                 .starts_with(b"TUISCPB\0")
         );
-        let sample = read_disposition_sample(&sample_path);
-        assert_eq!(sample.test_id(), test_id, "{test_id}");
+        sample_ids.push((sample_path, test_id.to_owned()));
 
         let historical_json_relative = PathBuf::from(
             receipt["historical_json"]
@@ -1001,6 +1023,7 @@ fn g05_approved_binary_manifest_matches_active_samples() {
         historical_count += 1;
     }
     assert_eq!(historical_count, 1868);
+    assert_sample_ids(sample_ids);
     assert_eq!(
         refreshed_ids.len(),
         refreshes.len(),

@@ -4,8 +4,6 @@
 //! `pre_refactor/t03_error/` and each checkpoint's dots become underscores.
 //! TablePro has no `--page` flag. It opens on Connections.
 
-use std::time::{Duration, Instant};
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{App, Launch, TABLEPRO, find_all, row_text, text, try_launch};
@@ -204,17 +202,7 @@ fn quit_unsaved(app: &App) {
     app.key("ctrl+q");
     let quit = app.wait_text("Quit TablePro?");
     see(&quit, &["unsaved", "Quit"], &["Query history"]);
-    app.key("right");
-    app.key("enter");
-    let deadline = Instant::now() + Duration::from_secs(5);
-    while app.child_running() {
-        assert!(
-            Instant::now() < deadline,
-            "tablepro stayed up after confirming quit"
-        );
-        std::thread::sleep(Duration::from_millis(25));
-    }
-    app.expect_exited(0);
+    app.confirm_quit();
 }
 
 #[test]
@@ -275,6 +263,7 @@ fn tablepro_error_recover_replaces_the_syntax_error() {
     assert_eq!((after_wide.cols(), after_wide.rows()), (120, 40));
     assert!(recovered(&after_wide), "{}", text(&after_wide));
 
+    app.expire_status();
     app.wait_absent(CONNECTED);
     app.resize(80, 24);
     let narrowed = app.wait_screen("recovered result at 80x24", |screen| {

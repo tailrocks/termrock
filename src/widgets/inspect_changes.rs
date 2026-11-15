@@ -7,7 +7,7 @@ use crate::core::pointer::{MouseTarget, PointerEvent};
 use crate::core::scroll::{ScrollState, TrackClick};
 use crate::ui::ctx::{RenderCtx, fill, legible_on_fill};
 use crate::ui::layout::{Split, SplitDir};
-use crate::ui::text::{fit, truncate_middle, width};
+use crate::ui::text::{fit, paint_clipped, paint_truncated, truncate_middle, width};
 
 use crate::widgets::diff::DiffView;
 use crate::widgets::keyhint::{Hint, hint};
@@ -382,12 +382,14 @@ impl InspectChanges {
         }
         match self.region {
             Region::Tree => {
-                let (o, ev) = self.tree.on_key(key);
-                if let Some(TreeAction::Activate(path)) = ev
-                    && let Some(i) = self.file_of_path(&path)
-                {
-                    self.select_file(i);
-                    return Outcome::Changed;
+                let (o, actions) = self.tree.on_key(key).into_parts();
+                for action in actions {
+                    if let TreeAction::Activate(path) = action
+                        && let Some(i) = self.file_of_path(&path)
+                    {
+                        self.select_file(i);
+                        return Outcome::Changed;
+                    }
                 }
 
                 if o == Outcome::Changed
@@ -407,6 +409,29 @@ impl InspectChanges {
         }
     }
 
+    fn forget_geometry(&mut self) {
+        self.tree_area = Rect::ZERO;
+        self.diff_area = Rect::ZERO;
+        self.container = Rect::ZERO;
+    }
+
+    /// The summary line on `inner`'s first row, with `mode` right-aligned
+    /// when both fit.
+    fn paint_header(buf: &mut Buffer, inner: Rect, summary: &str, mode: &str, ink: (Style, Style)) {
+        let top = Rect::new(inner.x, inner.y, inner.width, 1);
+        paint_truncated(buf, top, 0, summary, ink.0);
+        let mw = width(mode);
+        if usize::from(inner.width) > width(summary) + mw + 3 {
+            paint_clipped(buf, top, usize::from(inner.width) - mw, mode, ink.1);
+        }
+    }
+
+    /// `inner` below its first `rows` rows.
+    fn below(inner: Rect, rows: u16) -> Rect {
+        let rows = rows.min(inner.height);
+        Rect::new(inner.x, inner.y + rows, inner.width, inner.height - rows)
+    }
+
     fn draw_compact(
         &mut self,
         inner: Rect,
@@ -415,57 +440,70 @@ impl InspectChanges {
         bg: ratatui::style::Color,
     ) {
         let t = ctx.theme;
+        self.forget_geometry();
+        let inner = inner.intersection(*buf.area());
+        if inner.is_empty() {
+            self.list_scroll.set_viewport(0);
+            return;
+        }
         if self.open {
             let Some(f) = self.diff.file().cloned() else {
                 return;
             };
             let head = format!("{}  {}", f.header(), f.summary());
-            buf.set_string(
-                inner.x,
-                inner.y,
-                crate::ui::reveal::cut(Rect::new(inner.x, inner.y, inner.width, 1), &head),
+            let top = Rect::new(inner.x, inner.y, inner.width, 1);
+            paint_clipped(
+                buf,
+                top,
+                0,
+                &crate::ui::reveal::cut(top, &head),
                 t.secondary().bg(bg),
             );
             let mode = format!("{} · {VIEW_KEY} switches", self.diff.mode.label());
-            let mw = width(&mode) as u16;
-            if inner.width > width(&head) as u16 + mw + 3 {
-                buf.set_string(inner.right() - mw, inner.y, &mode, t.faint().bg(bg));
+            let mw = width(&mode);
+            if usize::from(inner.width) > width(&head) + mw + 3 {
+                paint_clipped(
+                    buf,
+                    top,
+                    usize::from(inner.width) - mw,
+                    &mode,
+                    t.faint().bg(bg),
+                );
             }
-            let body = Rect::new(
-                inner.x,
-                inner.y + 2,
-                inner.width,
-                inner.height.saturating_sub(2),
-            );
+            let body = Self::below(inner, 2);
             self.diff_area = body;
-            self.diff.render(body, buf, ctx, bg);
+            if !body.is_empty() {
+                self.diff.render(body, buf, ctx, bg);
+            }
             return;
         }
         let summary = self.summary_line();
-        buf.set_string(inner.x, inner.y, &summary, t.secondary().bg(bg));
         let mode = format!("{} · {}", self.mode.label(), self.diff.mode.label());
-        let mw = width(&mode) as u16;
-        if inner.width > width(&summary) as u16 + mw + 3 {
-            buf.set_string(inner.right() - mw, inner.y, &mode, t.faint().bg(bg));
-        }
-        let list = Rect::new(
-            inner.x,
-            inner.y + 2,
-            inner.width,
-            inner.height.saturating_sub(2),
+        Self::paint_header(
+            buf,
+            inner,
+            &summary,
+            &mode,
+            (t.secondary().bg(bg), t.faint().bg(bg)),
         );
+        let list = Self::below(inner, 2);
         let n = self.compact_rows();
         self.list_scroll.set_content(n);
-        self.list_scroll.set_viewport(list.height as usize);
+        self.list_scroll.set_viewport(usize::from(list.height));
+        if list.is_empty() {
+            return;
+        }
         ctx.control(self.id, list, false);
         ctx.scrollable(self.id, list);
         let has_sb = self.list_scroll.overflows();
         let row_w = list.width.saturating_sub(u16::from(has_sb));
         let focused = ctx.interaction.focused(self.id);
         if n == 0 {
-            buf.set_string(
-                list.x + 2,
-                list.y,
+            let first = Rect::new(list.x, list.y, list.width, 1);
+            paint_truncated(
+                buf,
+                first,
+                2,
                 "Working tree clean · nothing to inspect",
                 t.muted().bg(bg),
             );
@@ -479,17 +517,19 @@ impl InspectChanges {
             let st = t.row(s, bg);
             let rect = Rect::new(list.x, y, row_w, 1);
             fill(buf, rect, st);
-            buf.set_string(
-                rect.x,
-                y,
+            paint_clipped(
+                buf,
+                rect,
+                0,
                 t.gutter_symbol(s),
                 t.gutter(s, st.bg.unwrap_or(bg), false),
             );
             if i < self.listed.len() {
                 let f = &self.listed[i];
-                buf.set_string(
-                    rect.x + 2,
-                    y,
+                paint_clipped(
+                    buf,
+                    rect,
+                    2,
                     f.status.marker(),
                     st.fg(t.tone(f.status.tone())).add_modifier(Modifier::BOLD),
                 );
@@ -498,41 +538,46 @@ impl InspectChanges {
                 } else {
                     self.words.unread.clone()
                 };
-                let cw = width(&counts) as u16;
-                let pw = rect.width.saturating_sub(6 + cw + 2) as usize;
+                let cw = width(&counts);
+                let pw = usize::from(rect.width).saturating_sub(6 + cw + 2);
                 let path = match &f.status {
                     DiffStatus::Renamed { from } => format!("{from} → {}", f.path),
                     _ => f.path.clone(),
                 };
-                buf.set_string(
-                    rect.x + 4,
-                    y,
-                    fit(&truncate_middle(&path, pw), pw),
+                paint_clipped(
+                    buf,
+                    rect,
+                    4,
+                    &fit(&truncate_middle(&path, pw), pw),
                     if s.selected {
                         st.fg(t.text_primary)
                     } else {
                         st
                     },
                 );
-                buf.set_string(
-                    rect.right().saturating_sub(cw + 1),
-                    y,
+                paint_clipped(
+                    buf,
+                    rect,
+                    usize::from(rect.width).saturating_sub(cw + 1),
                     &counts,
                     st.fg(t.text_muted).remove_modifier(Modifier::BOLD),
                 );
             } else {
                 let u = self.changes.unpushed;
-                buf.set_string(rect.x + 2, y, "↑", st.fg(t.warning));
-                buf.set_string(
-                    rect.x + 4,
-                    y,
-                    format!("{u} commit{} not pushed", if u == 1 { "" } else { "s" }),
+                paint_clipped(buf, rect, 2, "↑", st.fg(t.warning));
+                paint_truncated(
+                    buf,
+                    rect,
+                    4,
+                    &format!("{u} commit{} not pushed", if u == 1 { "" } else { "s" }),
                     st.fg(t.warning),
                 );
             }
 
             legible_on_fill(buf, rect, t, bg);
-            ctx.clickable(rid, rect);
+            if !rect.is_empty() {
+                ctx.clickable(rid, rect);
+            }
         }
         if has_sb {
             scrollbar::render_with_fade(
@@ -554,49 +599,53 @@ impl InspectChanges {
         bg: ratatui::style::Color,
     ) {
         let t = ctx.theme;
+        self.forget_geometry();
+        let inner = inner.intersection(*buf.area());
+        if inner.is_empty() {
+            return;
+        }
         let summary = self.summary_line();
-        buf.set_string(inner.x, inner.y, &summary, t.secondary().bg(bg));
         let mode = format!(
             "{} · {} · {VIEW_KEY} switches · m compact",
             self.mode.label(),
             self.diff.mode.label()
         );
-        let mw = width(&mode) as u16;
-        if inner.width > width(&summary) as u16 + mw + 3 {
-            buf.set_string(inner.right() - mw, inner.y, &mode, t.faint().bg(bg));
-        }
-        let body = Rect::new(
-            inner.x,
-            inner.y + 2,
-            inner.width,
-            inner.height.saturating_sub(2),
+        Self::paint_header(
+            buf,
+            inner,
+            &summary,
+            &mode,
+            (t.secondary().bg(bg), t.faint().bg(bg)),
         );
+        let body = Self::below(inner, 2);
+        if body.is_empty() {
+            return;
+        }
         self.container = body;
 
         self.stacked = body.width < 90;
-        let (tree_r, diff_r) = if self.stacked {
-            let th = (body.height * 35 / 100).clamp(4, 10);
+        let (tree_r, gap_r, diff_r) = if self.stacked {
+            let (th, gap, dh) = stacked_heights(body.height);
             (
                 Rect::new(body.x, body.y, body.width, th),
-                Rect::new(
-                    body.x,
-                    body.y + th + 1,
-                    body.width,
-                    body.height.saturating_sub(th + 1),
-                ),
+                Rect::new(body.x, body.y + th, body.width, gap),
+                Rect::new(body.x, body.y + th + gap, body.width, dh),
             )
         } else {
-            self.split.horizontal(body, 1)
+            let (tree_r, diff_r) = self.split.horizontal(body, 1);
+            (tree_r, Rect::ZERO, diff_r)
         };
         self.tree_area = tree_r;
         self.diff_area = diff_r;
-        self.tree.render(tree_r, buf, ctx, bg);
+        if !tree_r.is_empty() {
+            self.tree.render(tree_r, buf, ctx, bg);
+        }
         if self.stacked {
-            let y = tree_r.bottom();
-            for x in body.left()..body.right() {
-                buf.set_string(
-                    x,
-                    y,
+            for x in gap_r.left()..gap_r.right() {
+                paint_clipped(
+                    buf,
+                    Rect::new(x, gap_r.y, 1, 1),
+                    0,
                     t.glyphs.h_divider,
                     Style::new().fg(t.border_subtle).bg(bg),
                 );
@@ -605,21 +654,33 @@ impl InspectChanges {
             let handle = self.split.handle(SplitDir::Horizontal, body, 1);
             self.seam.render(handle, buf, ctx, bg);
         }
+        if diff_r.is_empty() {
+            return;
+        }
         self.diff.render(diff_r, buf, ctx, bg);
         if let Some(u) = Some(self.changes.unpushed).filter(|u| *u > 0)
             && diff_r.height > 2
         {
             let text = format!("↑ {u} commit{} not pushed", if u == 1 { "" } else { "s" });
-            let y = diff_r.bottom() - 1;
-            let w = width(&text) as u16;
-            buf.set_string(
-                diff_r.right().saturating_sub(w),
-                y,
-                &text,
-                Style::new().fg(t.warning).bg(bg),
-            );
+            let last = Rect::new(diff_r.x, diff_r.bottom() - 1, diff_r.width, 1);
+            let col = usize::from(diff_r.width).saturating_sub(width(&text));
+            paint_truncated(buf, last, col, &text, Style::new().fg(t.warning).bg(bg));
         }
     }
+}
+
+/// Splits `available` rows into tree, divider and diff heights. The tree
+/// prefers 35% of the rows (4 to 10) but never more than exist. A divider row
+/// follows it when any row is left over and the diff gets what remains.
+fn stacked_heights(available: u16) -> (u16, u16, u16) {
+    if available == 0 {
+        return (0, 0, 0);
+    }
+    let preferred = (u32::from(available) * 35 / 100).clamp(4, 10) as u16;
+    let tree = preferred.min(available);
+    let left = available - tree;
+    let gap = u16::from(left > 0);
+    (tree, gap, left - gap)
 }
 
 fn row_index(tree: &TreeView, i: usize, leaves: &[(Vec<usize>, usize)]) -> Option<usize> {
@@ -754,6 +815,20 @@ impl<R: From<InspectOutcome> + 'static, W: 'static> Layer<R, W> for InspectChang
             return self.wheel_at(axis, delta, pos);
         }
         let click = ev.is(Phase::Click);
+        let dismissal = if id == crate::ui::modal::CLOSE {
+            Some(DismissReason::CloseButton)
+        } else if id == crate::ui::modal::BACKDROP {
+            Some(DismissReason::OutsideClick)
+        } else {
+            None
+        };
+        if click && let Some(reason) = dismissal {
+            if Layer::<R, W>::spec(self).dismiss.allows(reason) {
+                Layer::<R, W>::on_dismiss(self, reason);
+                return Outcome::Changed;
+            }
+            return Outcome::Consumed;
+        }
         if ev.is(Phase::Drag) && id == self.seam.id && !self.stacked {
             return self.seam.on_drag(&mut self.split, self.container, 1, pos);
         }
@@ -770,11 +845,13 @@ impl<R: From<InspectOutcome> + 'static, W: 'static> Layer<R, W> for InspectChang
             if click {
                 self.set_region(Region::Tree, focus);
             }
-            let (o, act) = r.into_parts();
-            if let Some(TreeAction::Activate(path)) = act
-                && let Some(i) = self.file_of_path(&path)
-            {
-                self.select_file(i);
+            let (o, actions) = r.into_parts();
+            for action in actions {
+                if let TreeAction::Activate(path) = action
+                    && let Some(i) = self.file_of_path(&path)
+                {
+                    self.select_file(i);
+                }
             }
             return if click { o.or(Outcome::Changed) } else { o };
         }
@@ -807,8 +884,17 @@ impl<R: From<InspectOutcome> + 'static, W: 'static> Layer<R, W> for InspectChang
     }
 
     fn render(&mut self, screen: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, _w: &W) {
-        let w = (screen.width * 9 / 10).max(MIN_W.min(screen.width.saturating_sub(2)));
-        let h = (screen.height * 9 / 10).max(MIN_H.min(screen.height.saturating_sub(2)));
+        let screen = screen.intersection(*buf.area());
+        if screen.is_empty() {
+            self.area = Rect::ZERO;
+            self.forget_geometry();
+            return;
+        }
+        let share = |extent: u16, min: u16| {
+            let wanted = u32::from(extent) * 9 / 10;
+            u16::try_from(wanted).map_or(extent, |w| w.max(min.min(extent.saturating_sub(2))))
+        };
+        let (w, h) = (share(screen.width, MIN_W), share(screen.height, MIN_H));
         let meta = match self.mode {
             InspectMode::Compact if self.open => "Esc back to the list".to_owned(),
             InspectMode::Compact => "m advanced view".to_owned(),
@@ -868,5 +954,24 @@ impl<R: From<InspectOutcome> + 'static, W: 'static> Layer<R, W> for InspectChang
                 ],
             },
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::stacked_heights;
+
+    #[test]
+    fn inspect_composite_stacked_heights_degrade_inside_the_parent() {
+        for available in 0..=40u16 {
+            let (tree, gap, diff) = stacked_heights(available);
+            assert_eq!(tree + gap + diff, available, "rows add up at {available}");
+            assert!(tree <= available, "the tree never exceeds the parent");
+            assert!(gap <= 1, "one divider row at most");
+        }
+        assert_eq!(stacked_heights(1), (1, 0, 0));
+        assert_eq!(stacked_heights(4), (4, 0, 0));
+        assert_eq!(stacked_heights(5), (4, 1, 0));
+        assert_eq!(stacked_heights(30), (10, 1, 19));
     }
 }

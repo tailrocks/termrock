@@ -3,11 +3,11 @@
 //! Tuiscotti test ids are `[a-z0-9_-]` segments, so the baseline directory is
 //! `pre_refactor/s09_settings/` and each case id's dots become underscores.
 
-use std::time::{Duration, Instant};
-
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, Point, SHOWCASE, find_all, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, Point, SHOWCASE, find_all, flash_settle, row_text, text, try_launch,
+};
 
 const CRUMB: &str = "Screens › Settings";
 const PREV: &str = "Text & code › Text utilities";
@@ -250,32 +250,6 @@ fn assert_size(app: &App, cols: u16, rows: u16) {
     );
 }
 
-/// The 140ms press flash stays painted while motion is paused, so a shot after
-/// a released click has to redraw once the deadline has passed. Below about 85
-/// columns the header omits the size chip, and the narrow nudge waits on the
-/// terminal size instead.
-fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
-}
-
 fn tab_strip(screen: &TerminalSnapshot) -> String {
     (0..screen.rows())
         .map(|row| row_text(screen, row))
@@ -293,15 +267,7 @@ fn discard_quit(app: &App) {
     app.key("ctrl+q");
     app.wait_text("Unsaved changes");
     click_where(app, "Discard", |hit| hit.y > 8 && hit.y < 32);
-    let deadline = Instant::now() + Duration::from_secs(8);
-    while app.child_running() {
-        assert!(
-            Instant::now() < deadline,
-            "discard did not exit\n{}",
-            text(&app.screen())
-        );
-        std::thread::sleep(Duration::from_millis(50));
-    }
+    app.wait_exit("discard did not exit");
     app.expect_exited(0);
 }
 

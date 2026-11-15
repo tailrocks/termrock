@@ -1,7 +1,7 @@
 mod common;
 
 use common::*;
-use junie_tui::core::event::{Mouse, MouseKind, Outcome};
+use junie_tui::core::event::{Key, Mouse, MouseKind, Outcome};
 use junie_tui::core::focus::{Focus, FocusRing};
 use junie_tui::core::hit::HitRegistry;
 use junie_tui::core::id::WidgetId;
@@ -15,7 +15,7 @@ use junie_tui::ui::layout::Split;
 use junie_tui::widgets::list_detail::{Action, Event, Frame, Line, ListDetail, ListRow};
 use junie_tui::widgets::scrollbar;
 use ratatui::buffer::Buffer;
-use ratatui::crossterm::event::KeyCode;
+use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Position, Rect};
 
 const MASTER: WidgetId = WidgetId::of("t.ld.master");
@@ -378,6 +378,30 @@ fn a_press_off_centre_on_the_list_thumb_drags_it_cell_for_cell() {
 }
 
 #[test]
+fn an_empty_allocation_forgets_the_split_so_keys_cannot_resize_it() {
+    let mut rig = Rig::new();
+    let wide = rig.render();
+
+    rig.area = Rect::new(0, 0, 0, AREA.height);
+    rig.render();
+    let nudge = Key {
+        code: KeyCode::Left,
+        mods: KeyModifiers::ALT | KeyModifiers::SHIFT,
+    };
+    for _ in 0..3 {
+        let len = rig.rows.len();
+        rig.ld.on_key(&nudge, &mut rig.focus, len);
+    }
+
+    rig.area = AREA;
+    assert_eq!(
+        rig.render(),
+        wide,
+        "keys sent while nothing was rendered left the split where it was"
+    );
+}
+
+#[test]
 fn the_bottom_of_the_detail_track_reaches_the_end_when_actions_shorten_it() {
     let mut rig = Rig::sized(AREA, 6);
     assert!(find(&rig.render(), "item15").is_none());
@@ -446,5 +470,112 @@ fn a_text_under_the_list_taller_than_the_area_is_cut_to_the_room() {
     assert!(
         rows[0].contains("rule 00"),
         "the first lines of the text fill the room it has: {rows:?}"
+    );
+}
+
+fn long_lines() -> Vec<Line> {
+    vec![
+        Line::Prop(
+            "a very long property key that never fits".into(),
+            "a value that is also long".into(),
+            junie_tui::theme::Tone::Secondary,
+        ),
+        Line::Heading("A heading wider than the pane".into(), "meta text".into()),
+        Line::Item {
+            mark: Some(junie_tui::theme::StatusKind::Ok),
+            cols: [
+                "column zero".into(),
+                "column one".into(),
+                "column two".into(),
+            ],
+            tone: junie_tui::theme::Tone::Secondary,
+        },
+        Line::Text(
+            "plain text that wraps and wraps".into(),
+            junie_tui::theme::Tone::Secondary,
+        ),
+    ]
+}
+
+fn paint_detail(owner: Rect, buttons: usize, outer: Rect) -> Painted {
+    paint_lines(owner, long_lines(), buttons, outer)
+}
+
+fn paint_lines(owner: Rect, lines: Vec<Line>, buttons: usize, outer: Rect) -> Painted {
+    let mut ld = ListDetail::new(MASTER, DETAIL, Split::new(42, 36, 44));
+    let rows = vec![
+        ListRow::new("a label wider than any narrow list"),
+        ListRow::new("second"),
+    ];
+    paint_in(outer, Some(DETAIL), |buf, ctx| {
+        let frame = Frame {
+            title: "A long list title",
+            meta: "meta".into(),
+            head: vec![],
+            rows: &rows,
+            under: Some("an explanation under the list that is long"),
+            detail_title: "A long detail title".into(),
+            detail_meta: "detail meta".into(),
+            lines,
+            actions: ACTIONS[..buttons]
+                .iter()
+                .map(|n| {
+                    Action::new(
+                        n,
+                        &format!("{n} the whole selection"),
+                        ButtonKind::Secondary,
+                    )
+                })
+                .collect(),
+        };
+        ld.render(owner, buf, ctx, &frame);
+    })
+}
+
+#[test]
+fn detail_composite_long_labels_stay_inside() {
+    let outer = Rect::new(0, 0, 60, 20);
+    for buttons in [0, 2] {
+        for w in 0..=8u16 {
+            for (x, h) in [(5u16, 8u16), (0, 3), (20, 1), (30, 0)] {
+                let owner = Rect::new(x, 2, w, h);
+                let p = paint_detail(owner, buttons, outer);
+                let what = format!("buttons {buttons} owner {owner:?}");
+                assert_outside_untouched(&p.buf, owner, &what);
+                assert_hits_inside(&p, owner, &what);
+            }
+        }
+    }
+}
+
+#[test]
+fn detail_composite_normal_geometry_is_compatible() {
+    let outer = Rect::new(0, 0, 120, 20);
+    let lines = vec![Line::Prop(
+        "key".into(),
+        "value".into(),
+        junie_tui::theme::Tone::Secondary,
+    )];
+    let p = paint_lines(outer, lines, 2, outer);
+    let text = |y: u16| row(&p.buf, y);
+    let y = (0..outer.height)
+        .find(|&y| text(y).contains("key"))
+        .expect("the property row");
+    let line = text(y);
+    let key = line.find("key").expect("key");
+    let value = line.find("value").expect("value");
+    assert_eq!(
+        line[key..value].chars().count(),
+        14,
+        "the property column keeps its 14 cell width: {line}"
+    );
+    let actions = (0..outer.height).map(text).collect::<Vec<_>>().join("\n");
+    assert!(
+        actions.contains("alpha") && actions.contains("bravo"),
+        "{actions}"
+    );
+    assert!(
+        p.hits.regions().iter().any(|r| r.id == MASTER.child(0)),
+        "the list rows stay clickable"
     );
 }

@@ -6,10 +6,13 @@ use ratatui::style::Color;
 use crate::core::event::{Key, Outcome};
 use crate::core::hit::Axis;
 use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
+use crate::core::keyed::{KeyedSourceError, KeyedState};
 use crate::core::keymap::{
     Actions, KeyBinding, KeyMap, NavKeys, lookup, select_all_bindings, unassigned_chord,
 };
-use crate::core::list::{Cursor, KeyStep, Moved, Navigable, RowSource, TypeAheadPrecedence};
+use crate::core::list::{
+    Cursor, KeyStep, KeyedRowSource, Moved, Navigable, RowSource, TypeAheadPrecedence,
+};
 use crate::core::refusal::{Control, Reason};
 use crate::core::response::Response;
 use crate::core::scroll::{ScrollPane, Scrollable};
@@ -21,7 +24,7 @@ use crate::ui::reveal::{Reveal, RevealLine};
 use crate::ui::row::{MarkKind, RowLook, RowUi};
 use crate::widgets::scrollbar;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ListItem {
     pub label: String,
     pub meta: Option<String>,
@@ -51,10 +54,6 @@ impl ListItem {
         self.control(Control::fixed(reason))
     }
 
-    fn settable(&self) -> bool {
-        !self.disabled && !self.control.is_fixed()
-    }
-
     pub fn meta(mut self, m: &str) -> Self {
         self.meta = Some(m.to_owned());
         self
@@ -67,6 +66,122 @@ impl ListItem {
     pub fn disabled(mut self, d: bool) -> Self {
         self.disabled = d;
         self
+    }
+}
+
+impl ListItem {
+    /// The borrowed facet the shared list engine reads.
+    pub fn borrowed(&self) -> ListItemRef<'_> {
+        ListItemRef {
+            label: &self.label,
+            meta: self.meta.as_deref(),
+            meta_tone: self.meta_tone,
+            disabled: self.disabled,
+            control: &self.control,
+        }
+    }
+}
+
+impl crate::core::keyed::KeyedRecord for ListItem {
+    fn label(&self) -> &str {
+        &self.label
+    }
+
+    fn enabled(&self) -> bool {
+        !self.disabled
+    }
+}
+
+/// One list row borrowed from its provider.
+#[derive(Debug, Clone, Copy)]
+pub struct ListItemRef<'a> {
+    pub label: &'a str,
+    pub meta: Option<&'a str>,
+    pub meta_tone: Tone,
+    pub disabled: bool,
+    pub control: &'a Control,
+}
+
+/// A keyed provider of list rows. `enabled(i)` must equal `!item(i).disabled`.
+pub trait ListSource: KeyedRowSource {
+    fn item(&self, visible: usize) -> ListItemRef<'_>;
+}
+
+impl ListSource for crate::core::keyed::KeyedVec<ListItem> {
+    fn item(&self, visible: usize) -> ListItemRef<'_> {
+        self.value_at(visible)
+            .expect("visible row within the store")
+            .borrowed()
+    }
+}
+
+/// What a keyed list reports. A single-select list emits `Activated` for the
+/// row an activation chose; any change of the selected key set, including a
+/// multi-select toggle, emits `SelectionChanged`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ListAction {
+    Activated(ItemKey),
+    SelectionChanged,
+}
+
+/// The rows the shared list engine works over: an owned slice or a borrowed
+/// keyed provider.
+trait ListRows: RowSource {
+    fn item(&self, i: usize) -> ListItemRef<'_>;
+
+    /// Identity of the row's hit region.
+    fn hit_key(&self, i: usize) -> ItemKey;
+}
+
+impl ListRows for [ListItem] {
+    fn item(&self, i: usize) -> ListItemRef<'_> {
+        self[i].borrowed()
+    }
+
+    fn hit_key(&self, i: usize) -> ItemKey {
+        ItemKey::index(i)
+    }
+}
+
+struct Borrowed<'a, S: ?Sized>(&'a S);
+
+impl<S: ListSource + ?Sized> RowSource for Borrowed<'_, S> {
+    fn len(&self) -> usize {
+        self.0.len()
+    }
+    fn enabled(&self, i: usize) -> bool {
+        self.0.enabled(i)
+    }
+    fn label(&self, i: usize) -> &str {
+        self.0.label(i)
+    }
+    fn key(&self, i: usize) -> ItemKey {
+        self.0.key(i)
+    }
+}
+
+impl<S: ListSource + ?Sized> ListRows for Borrowed<'_, S> {
+    fn item(&self, i: usize) -> ListItemRef<'_> {
+        self.0.item(i)
+    }
+
+    fn hit_key(&self, i: usize) -> ItemKey {
+        self.0.key(i)
+    }
+}
+
+/// What one engine step did, before it is shaped into an API result.
+struct Step {
+    outcome: Outcome,
+    activated: Option<usize>,
+}
+
+impl From<Outcome> for Step {
+    fn from(outcome: Outcome) -> Self {
+        Self {
+            outcome,
+            activated: None,
+        }
     }
 }
 
@@ -91,6 +206,9 @@ pub struct ListBox {
     pub toggle_mods: KeyModifiers,
 
     pub keymap: KeyMap<ListCmd>,
+
+    keyed: KeyedState,
+    layout_generation: u64,
 }
 
 impl std::ops::Deref for ListBox {
@@ -141,6 +259,8 @@ impl ListBox {
             scrollbar_gap: scrollbar::GAP,
             toggle_mods: SelectGesture::toggle_mods(),
             keymap: ListCmd::default_keymap(),
+            keyed: KeyedState::new(),
+            layout_generation: 0,
         }
     }
 
@@ -194,16 +314,30 @@ impl ListBox {
         self
     }
 
-    fn order(&self) -> Vec<usize> {
-        (0..self.items.len()).collect()
+    /// Runs `f` over the owned items without copying them.
+    fn with_items<T>(&mut self, f: impl FnOnce(&mut Self, &[ListItem]) -> T) -> T {
+        let items = std::mem::take(&mut self.items);
+        let out = f(self, &items);
+        self.items = items;
+        out
+    }
+
+    fn settable<R: ListRows + ?Sized>(rows: &R, i: usize) -> bool {
+        i < rows.len() && {
+            let item = rows.item(i);
+            !item.disabled && !item.control.is_fixed()
+        }
+    }
+
+    fn select_in<R: ListRows + ?Sized>(&mut self, rows: &R, g: SelectGesture, to: usize) -> bool {
+        let order: Vec<usize> = (0..rows.len()).collect();
+        self.core
+            .selection
+            .apply(g, to, &order, |i| Self::settable(rows, i))
     }
 
     pub fn select(&mut self, g: SelectGesture, to: usize) -> bool {
-        let order = self.order();
-        let items = &self.items;
-        self.core.selection.apply(g, to, &order, |i| {
-            items.get(i).is_some_and(ListItem::settable)
-        })
+        self.with_items(|me, rows| me.select_in(rows, g, to))
     }
 
     pub fn remove_rows(&mut self, rows: &[usize]) -> usize {
@@ -266,13 +400,9 @@ impl ListBox {
         self.core.reveal.hint()
     }
 
-    fn label_width(item: &ListItem, text_w: usize) -> (usize, usize) {
+    fn label_width(item: &ListItemRef<'_>, text_w: usize) -> (usize, usize) {
         let label_w = text_w.saturating_sub(2);
-        let meta_w = item
-            .meta
-            .as_ref()
-            .map(|m| crate::ui::text::width(m))
-            .unwrap_or(0);
+        let meta_w = item.meta.map(crate::ui::text::width).unwrap_or(0);
         let meta_w = if label_w.saturating_sub(meta_w + 2) < 12 {
             0
         } else {
@@ -282,19 +412,22 @@ impl ListBox {
         (lw, meta_w)
     }
 
-    fn inline_rows(
+    fn inline_rows<R: ListRows + ?Sized>(
         &mut self,
+        rows: &R,
         ctx: &mut RenderCtx,
         text_w: usize,
         room: u16,
     ) -> Option<Vec<RevealLine>> {
-        let item = self.items.get(self.core.cursor).filter(|it| !it.disabled)?;
-        let (lw, _) = Self::label_width(item, text_w);
-        let rid = self.row_id(self.core.cursor);
-        let label = item.label.clone();
+        let cursor = self.core.cursor;
+        let item = (cursor < rows.len())
+            .then(|| rows.item(cursor))
+            .filter(|it| !it.disabled)?;
+        let (lw, _) = Self::label_width(&item, text_w);
+        let rid = self.hit_id(rows.hit_key(cursor));
         self.core
             .reveal
-            .inline(ctx, rid, lw as u16, &label, true, room)
+            .inline(ctx, rid, lw as u16, item.label, true, room)
     }
 
     pub fn empty(mut self, state: crate::widgets::empty::EmptyState) -> Self {
@@ -318,62 +451,73 @@ impl ListBox {
     }
 
     pub fn row_id(&self, i: usize) -> WidgetId {
-        self.id.part(Self::row_part(i))
+        self.hit_id(ItemKey::index(i))
     }
 
-    fn row_part(i: usize) -> PartRef {
-        PartRef::item(Part::ROW, ItemKey::index(i))
+    fn hit_id(&self, key: ItemKey) -> WidgetId {
+        self.id.part(PartRef::item(Part::ROW, key))
     }
 
     pub fn mark_id(&self, i: usize) -> WidgetId {
-        self.id.part(Self::mark_part(i))
-    }
-
-    fn mark_part(i: usize) -> PartRef {
-        PartRef::item(Part::MARKER, ItemKey::index(i))
+        self.id.part(PartRef::item(Part::MARKER, ItemKey::index(i)))
     }
 
     pub fn checked_count(&self) -> usize {
         self.core.selection.len()
     }
 
-    fn move_cursor(&mut self, to: usize, extend: bool) {
-        let to = to.min(self.items.len().saturating_sub(1));
+    fn move_cursor<R: ListRows + ?Sized>(&mut self, rows: &R, to: usize, extend: bool) {
+        let to = to.min(rows.len().saturating_sub(1));
         let from = self.core.cursor;
         self.core.cursor = to;
         if self.mode == SelectMode::Multi && extend {
-            self.select(SelectGesture::Extend { from }, to);
+            self.select_in(rows, SelectGesture::Extend { from }, to);
         }
         self.core.scroll.ensure_visible(self.core.cursor);
     }
 
-    pub fn activate(&mut self, i: usize) -> Outcome {
-        if i >= self.items.len() || self.items[i].disabled || self.items[i].control.refuse() {
-            return Outcome::Consumed;
+    fn activate_in<R: ListRows + ?Sized>(&mut self, rows: &R, i: usize) -> Step {
+        if i >= rows.len() {
+            return Outcome::Consumed.into();
+        }
+        let item = rows.item(i);
+        if item.disabled || item.control.refuse() {
+            return Outcome::Consumed.into();
         }
         match self.mode {
             SelectMode::Single => self.chosen = Some(i),
             SelectMode::Multi => {
-                self.select(SelectGesture::Toggle, i);
+                self.select_in(rows, SelectGesture::Toggle, i);
             }
         }
-        Outcome::Changed
+        Step {
+            outcome: Outcome::Changed,
+            activated: Some(i),
+        }
+    }
+
+    pub fn activate(&mut self, i: usize) -> Outcome {
+        self.with_items(|me, rows| me.activate_in(rows, i).outcome)
     }
 
     pub fn on_key(&mut self, key: &Key) -> Outcome {
-        if self.items.is_empty() {
-            return Outcome::Ignored;
+        self.with_items(|me, rows| me.on_key_in(rows, key).outcome)
+    }
+
+    fn on_key_in<R: ListRows + ?Sized>(&mut self, rows: &R, key: &Key) -> Step {
+        if rows.len() == 0 {
+            return Outcome::Ignored.into();
         }
         if let Some(o) = self.core.reveal.on_key(key) {
-            return o;
+            return o.into();
         }
         let shift = key.shift();
         if unassigned_chord(key, &self.keymap) {
-            return Outcome::Ignored;
+            return Outcome::Ignored.into();
         }
         if self.mode == SelectMode::Single && lookup(&self.keymap, key) == Some(ListCmd::SelectAll)
         {
-            return Outcome::Ignored;
+            return Outcome::Ignored.into();
         }
 
         if let Some(action) = lookup(&self.keymap, key)
@@ -381,41 +525,40 @@ impl ListBox {
         {
             return match action {
                 ListCmd::ToggleAll => {
-                    let items = &self.items;
                     self.core
                         .selection
-                        .toggle_all(0..items.len(), |i| items[i].settable());
+                        .toggle_all(0..rows.len(), |i| Self::settable(rows, i));
                     Outcome::Changed
                 }
                 ListCmd::SelectAll => {
-                    if self.select(SelectGesture::All, 0) {
+                    if self.select_in(rows, SelectGesture::All, 0) {
                         Outcome::Changed
                     } else {
                         Outcome::Consumed
                     }
                 }
-            };
+            }
+            .into();
         }
-        let items = &self.items[..];
-        match self.core.key_step(key, items) {
+        match self.core.key_step(key, rows) {
             Some((KeyStep::Type(_), moved)) => {
                 if let Moved::To(i) = moved {
-                    self.move_cursor(i, false);
+                    self.move_cursor(rows, i, false);
                 }
-                return moved.outcome();
+                return moved.outcome().into();
             }
             Some((KeyStep::Nav(_), moved)) => {
                 let Some(to) = moved.index() else {
-                    return Outcome::Ignored;
+                    return Outcome::Ignored.into();
                 };
-                self.move_cursor(to, shift);
-                return Outcome::Changed;
+                self.move_cursor(rows, to, shift);
+                return Outcome::Changed.into();
             }
             None => {}
         }
         match key.code {
-            KeyCode::Enter | KeyCode::Char(' ') => self.activate(self.core.cursor),
-            _ => Outcome::Ignored,
+            KeyCode::Enter | KeyCode::Char(' ') => self.activate_in(rows, self.core.cursor),
+            _ => Outcome::Ignored.into(),
         }
     }
 
@@ -434,8 +577,19 @@ impl ListBox {
         mods: KeyModifiers,
         on_box: bool,
     ) -> Outcome {
-        if row >= self.items.len() {
-            return Outcome::Consumed;
+        self.with_items(|me, rows| me.on_click_at_in(rows, row, count, mods, on_box).outcome)
+    }
+
+    fn on_click_at_in<R: ListRows + ?Sized>(
+        &mut self,
+        rows: &R,
+        row: usize,
+        count: u8,
+        mods: KeyModifiers,
+        on_box: bool,
+    ) -> Step {
+        if row >= rows.len() {
+            return Outcome::Consumed.into();
         }
         let from = self.core.cursor;
         let again = from == row;
@@ -445,7 +599,7 @@ impl ListBox {
         match self.mode {
             SelectMode::Single => {
                 if self.core.click.activates(count.max(1), again) {
-                    return self.activate(row);
+                    return self.activate_in(rows, row);
                 }
             }
             SelectMode::Multi => {
@@ -456,16 +610,152 @@ impl ListBox {
                     SelectGesture::from_mods(mods, self.toggle_mods, from)
                 };
 
-                if g == SelectGesture::Only && self.items[row].disabled {
-                    return Outcome::Changed;
+                if g == SelectGesture::Only && rows.item(row).disabled {
+                    return Outcome::Changed.into();
                 }
-                if self.items[row].control.refuse() {
-                    return Outcome::Changed;
+                if rows.item(row).control.refuse() {
+                    return Outcome::Changed.into();
                 }
-                self.select(g, row);
+                self.select_in(rows, g, row);
             }
         }
-        Outcome::Changed
+        Outcome::Changed.into()
+    }
+
+    /// The stable-identity state of a list driven through the `*_source`
+    /// methods: cursor, selection and pointer capture by key.
+    pub fn keyed(&self) -> &KeyedState {
+        &self.keyed
+    }
+
+    fn bind<S: ListSource + ?Sized>(&mut self, source: &S) -> Result<(), KeyedSourceError> {
+        let first = self.keyed.stamp().is_none();
+        let out = self.keyed.reconcile(source)?;
+        if first || out.data_changed || out.view_changed || out.cursor_changed {
+            let n = self.keyed.visible_len();
+            self.core.cursor = self
+                .keyed
+                .cursor_view()
+                .unwrap_or(0)
+                .min(n.saturating_sub(1));
+            let rows = self.keyed.selected_view();
+            match self.mode {
+                SelectMode::Single => self.chosen = rows.first().copied(),
+                SelectMode::Multi => self.core.selection.replace(rows, self.keyed.anchor_view()),
+            }
+            self.core.scroll.ensure_visible(self.core.cursor);
+        }
+        Ok(())
+    }
+
+    /// Writes the engine's view-position state back to keys.
+    fn adopt(&mut self, step: Step, chosen_before: Option<usize>) -> Response<ListAction> {
+        let n = self.keyed.visible_len();
+        if n > 0 {
+            self.keyed.adopt_cursor_view(self.core.cursor);
+        }
+        let key_at = |keyed: &KeyedState, i: usize| keyed.visible_key(i);
+        let selection_changed = match self.mode {
+            SelectMode::Single if self.chosen != chosen_before => {
+                let keys = self.chosen.and_then(|i| key_at(&self.keyed, i));
+                self.keyed.replace_selection(keys)
+            }
+            SelectMode::Single => false,
+            SelectMode::Multi => self
+                .keyed
+                .adopt_selection_view(self.core.selection.iter(), self.core.selection.anchor()),
+        };
+        let mut response: Response<ListAction> = step.outcome.into();
+        if self.mode == SelectMode::Single
+            && let Some(key) = step.activated.and_then(|i| key_at(&self.keyed, i))
+        {
+            response.push_action(ListAction::Activated(key));
+        }
+        if selection_changed {
+            response.push_action(ListAction::SelectionChanged);
+        }
+        response
+    }
+
+    /// Keyboard input over a borrowed keyed provider.
+    ///
+    /// The provider is used for this call only. A source that breaks the keyed
+    /// contract is rejected and leaves the previous state untouched.
+    pub fn on_key_source<S: ListSource + ?Sized>(
+        &mut self,
+        key: &Key,
+        source: &S,
+    ) -> Result<Response<ListAction>, KeyedSourceError> {
+        self.bind(source)?;
+        let chosen = self.chosen;
+        let step = self.on_key_in(&Borrowed(source), key);
+        Ok(self.adopt(step, chosen))
+    }
+
+    /// Pointer input over a borrowed keyed provider. Hit regions carry the row
+    /// key, so a press can only complete on the row it started on.
+    pub fn on_pointer_source<S: ListSource + ?Sized>(
+        &mut self,
+        ev: &crate::core::pointer::PointerEvent,
+        source: &S,
+    ) -> Result<Response<ListAction>, KeyedSourceError> {
+        use crate::core::intent::Phase;
+        self.bind(source)?;
+        self.keyed.note_pointer(ev.phase());
+        if let Some(r) = crate::core::pointer::scroll_input(self, ev) {
+            return Ok(r.lift());
+        }
+        let hit = match (ev.key_of(Part::MARKER), ev.key_of(Part::ROW)) {
+            (Some(key), _) => Some((key, true)),
+            (None, Some(key)) => Some((key, false)),
+            _ => None,
+        };
+        let Some((key, on_box)) = hit.filter(|_| ev.on(self.id)) else {
+            return Ok(Response::ignored());
+        };
+        match ev.phase() {
+            Some(Phase::Press) => {
+                self.keyed.capture_press(key, self.layout_generation);
+                Ok(Response::ignored())
+            }
+            Some(Phase::Click) => {
+                if !self.keyed.release_click(key, self.layout_generation) {
+                    return Ok(Response::consumed());
+                }
+                let Some(row) = self.keyed.visible_index(key) else {
+                    return Ok(Response::consumed());
+                };
+                let chosen = self.chosen;
+                let step = self.on_click_at_in(
+                    &Borrowed(source),
+                    row,
+                    ev.count().max(1),
+                    ev.mods(),
+                    on_box,
+                );
+                Ok(self.adopt(step, chosen))
+            }
+            _ => Ok(Response::ignored()),
+        }
+    }
+
+    /// Paints rows borrowed from a keyed provider.
+    pub fn render_source<S: ListSource + ?Sized>(
+        &mut self,
+        area: Rect,
+        source: &S,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        bg: Color,
+    ) -> Result<(), KeyedSourceError> {
+        self.bind(source)?;
+        let visible = area.intersection(*buf.area());
+        if visible != self.area {
+            self.layout_generation += 1;
+            self.keyed.invalidate_layout(self.layout_generation);
+        }
+        self.render_in(&Borrowed(source), area, buf, ctx, bg);
+        Ok(())
     }
 
     pub fn track_click(mut self, click: crate::core::scroll::TrackClick) -> Self {
@@ -474,6 +764,17 @@ impl ListBox {
     }
 
     pub fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, bg: Color) {
+        self.with_items(|me, rows| me.render_in(rows, area, buf, ctx, bg));
+    }
+
+    fn render_in<R: ListRows + ?Sized>(
+        &mut self,
+        rows: &R,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        bg: Color,
+    ) {
         self.core.scroll.begin(ctx.track_click);
         let area = area.intersection(*buf.area());
         if area.is_empty() {
@@ -483,9 +784,9 @@ impl ListBox {
         let t = ctx.theme;
         let focused = ctx.interaction.focused(self.id);
         self.core.reveal.begin(ctx);
-        self.core.scroll.set_content(self.items.len());
+        self.core.scroll.set_content(rows.len());
         self.core.scroll.set_viewport(area.height as usize);
-        let n = self.items.len();
+        let n = rows.len();
 
         if self.core.is_focus_stop(n, focused) {
             ctx.control(self.id, area, false);
@@ -504,9 +805,9 @@ impl ListBox {
 
         let mut expanded = None;
         if focused {
-            expanded = self.inline_rows(ctx, text_w, area.height);
-            if let Some(rows) = &expanded {
-                let extra = rows.len().saturating_sub(1);
+            expanded = self.inline_rows(rows, ctx, text_w, area.height);
+            if let Some(lines) = &expanded {
+                let extra = lines.len().saturating_sub(1);
                 self.core
                     .scroll
                     .set_viewport((area.height as usize).saturating_sub(extra).max(1));
@@ -515,7 +816,7 @@ impl ListBox {
                     has_sb = self.core.scroll.overflows();
                     sp = scrollbar::split(area, has_sb, self.scrollbar_gap);
                     text_w = sp.content.width.saturating_sub(1) as usize;
-                    expanded = self.inline_rows(ctx, text_w, area.height);
+                    expanded = self.inline_rows(rows, ctx, text_w, area.height);
                 }
             }
         }
@@ -524,16 +825,18 @@ impl ListBox {
             if y >= area.bottom() {
                 break;
             }
-            let item = &self.items[li];
+            crate::record_work!(VisibleRowsPainted, 1usize);
+            let item = rows.item(li);
+            let hit_key = rows.hit_key(li);
             let block = expanded.as_ref().filter(|_| li == self.core.cursor);
             let h = block
                 .map_or(1, |r| r.len() as u16)
                 .clamp(1, area.bottom() - y);
             let row = Rect::new(area.x, y, sp.body.width, h);
-            let rid = self.row_id(li);
+            let rid = self.hit_id(hit_key);
             let mut s = ctx.child_state(self.id, rid, li == self.core.cursor);
             if self.mode == SelectMode::Multi {
-                let mark = self.mark_id(li);
+                let mark = self.id.part(PartRef::item(Part::MARKER, hit_key));
                 s.hovered |= ctx.interaction.hovered(mark);
                 s.pressed |= ctx.interaction.pressed(mark);
             }
@@ -555,18 +858,18 @@ impl ListBox {
                 rp.mark(ctx, buf, row.x + 1, y, kind, focused);
             }
             let label_w = text_w.saturating_sub(2);
-            let (lw, meta_w) = Self::label_width(item, text_w);
-            if let Some(rows) = block {
-                for (k, line) in rows.iter().take(h as usize).enumerate() {
+            let (lw, meta_w) = Self::label_width(&item, text_w);
+            if let Some(lines) = block {
+                for (k, line) in lines.iter().take(h as usize).enumerate() {
                     let ls = if line.more { st.fg(t.text_muted) } else { st };
                     let text = crate::ui::text::fit(&line.text, lw);
                     buf.set_string(row.x + 3, y + k as u16, text, ls);
                 }
             } else {
                 let label = Rect::new(row.x + 3, y, lw as u16, 1);
-                rp.label(ctx, buf, &mut self.core.reveal, rid, label, &item.label, st);
+                rp.label(ctx, buf, &mut self.core.reveal, rid, label, item.label, st);
             }
-            if let Some(m) = &item.meta
+            if let Some(m) = item.meta
                 && meta_w > 0
                 && meta_w + 4 < label_w
             {
@@ -584,10 +887,10 @@ impl ListBox {
                 };
                 buf.set_string(mx, y, m, ms);
             }
-            ctx.register_part(self.id, Self::row_part(li), row);
+            ctx.register_part(self.id, PartRef::item(Part::ROW, hit_key), row);
             if self.mode == SelectMode::Multi {
                 let mark = Rect::new(row.x, row.y, row.width.min(3), row.height);
-                ctx.register_part(self.id, Self::mark_part(li), mark);
+                ctx.register_part(self.id, PartRef::item(Part::MARKER, hit_key), mark);
             }
             y += h;
         }

@@ -15,6 +15,7 @@ use crate::domain::vocabulary::PaneWords;
 mod clipboard;
 mod link;
 mod policy;
+mod session;
 mod terminal;
 
 pub use link::{
@@ -453,6 +454,7 @@ impl Daemon {
     pub fn tick(&mut self, now_ms: i64) -> bool {
         let mut changed = false;
         for p in &mut self.panes {
+            junie_tui::record_work!(SchedulingPolls, 1usize);
             changed |= p.body.tick(now_ms);
         }
         changed

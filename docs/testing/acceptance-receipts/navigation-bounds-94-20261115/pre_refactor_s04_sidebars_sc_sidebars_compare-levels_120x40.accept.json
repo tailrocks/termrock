@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s04_sidebars/sc_sidebars_compare-levels_120x40",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Library/Caches/mbx/targets/v1/3e80569c7bc1f78ba854874d54bebe0a7b9b92fc7e780dd1f5b4c6b8cc90121a/functional/s04-compare-76435-1794724233076788000-0/check-artifacts/pre_refactor/s04_sidebars/sc_sidebars_compare-levels_120x40/00d90a7311646378da412419cb2eca0ccc685a2b18c807399b0541efba04db70/sample.tui.pb"
+  },
+  "candidate_sha256": "00d90a7311646378da412419cb2eca0ccc685a2b18c807399b0541efba04db70",
+  "baseline_sha256": "00d90a7311646378da412419cb2eca0ccc685a2b18c807399b0541efba04db70",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane6/tests/functional/baselines/pre_refactor/s04_sidebars/sc_sidebars_compare-levels_120x40.tui.pb"
+  },
+  "error_code": null
+}

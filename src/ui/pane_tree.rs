@@ -15,6 +15,52 @@ use crate::widgets::splitter::Splitter;
 
 pub type PaneId = u64;
 
+/// Cells between two panes of one split.
+const SEAM: u16 = 1;
+
+/// The smallest outer rectangle a subtree needs. Sums use `usize` so any
+/// `min_size`, including `u16::MAX`, adds up without overflow.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct PaneMinimum {
+    width: usize,
+    height: usize,
+}
+
+impl PaneMinimum {
+    fn of(size: (u16, u16)) -> Self {
+        Self {
+            width: size.0 as usize,
+            height: size.1 as usize,
+        }
+    }
+
+    /// The minimum of a split: sizes add along `dir` plus the seam and the larger one wins across it.
+    fn join(dir: SplitDir, a: Self, b: Self) -> Self {
+        let seam = SEAM as usize;
+        match dir {
+            SplitDir::Horizontal => Self {
+                width: a.width.saturating_add(seam).saturating_add(b.width),
+                height: a.height.max(b.height),
+            },
+            SplitDir::Vertical => Self {
+                width: a.width.max(b.width),
+                height: a.height.saturating_add(seam).saturating_add(b.height),
+            },
+        }
+    }
+
+    fn along(self, dir: SplitDir) -> usize {
+        match dir {
+            SplitDir::Horizontal => self.width,
+            SplitDir::Vertical => self.height,
+        }
+    }
+
+    fn fits(self, area: Rect) -> bool {
+        self.width <= area.width as usize && self.height <= area.height as usize
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PaneNode {
     Leaf(PaneId),
@@ -180,6 +226,44 @@ impl PaneNode {
         }
     }
 
+    fn node_at(&self, path: &[u8]) -> Option<&PaneNode> {
+        let mut cur = self;
+        for p in path {
+            match cur {
+                PaneNode::Split { first, second, .. } => {
+                    cur = if *p == 0 { first } else { second };
+                }
+                PaneNode::Leaf(_) => return None,
+            }
+        }
+        Some(cur)
+    }
+
+    fn minimum(&self, leaf: PaneMinimum) -> PaneMinimum {
+        match self {
+            PaneNode::Leaf(_) => leaf,
+            PaneNode::Split {
+                dir, first, second, ..
+            } => PaneMinimum::join(*dir, first.minimum(leaf), second.minimum(leaf)),
+        }
+    }
+
+    /// Whether every leaf laid out in `area` keeps the outer minimum `leaf`.
+    fn leaves_fit(&self, area: Rect, leaf: PaneMinimum) -> bool {
+        match self {
+            PaneNode::Leaf(_) => leaf.fits(area),
+            PaneNode::Split {
+                dir,
+                split,
+                first,
+                second,
+            } => {
+                let (a, b) = split.layout(*dir, area, SEAM);
+                first.leaves_fit(a, leaf) && second.leaves_fit(b, leaf)
+            }
+        }
+    }
+
     fn unzoom(&mut self) {
         if let PaneNode::Split {
             split,
@@ -219,6 +303,17 @@ pub struct Seam {
     pub container: Rect,
 
     pub handle: Rect,
+}
+
+/// The seam a pointer gesture holds. `index` is the seam's position in the
+/// layout that was current at press time, which is also the number its router
+/// id carries. The rest identifies the split: its path, direction and leaves.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct SeamGrab {
+    index: usize,
+    path: Vec<u8>,
+    dir: SplitDir,
+    leaves: Vec<PaneId>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -264,6 +359,7 @@ pub enum PaneRefusal {
 
     NothingToResize,
 
+    /// The seam cannot move: a pane or the whole area is at its minimum size.
     AtMinimum,
 
     OnePane,
@@ -366,16 +462,27 @@ pub struct PaneTree {
 
     pub split_keys: SplitKeys,
 
+    /// The smallest outer rectangle (columns, rows) a pane may be resized to.
+    ///
+    /// Keyboard resizing, seam dragging and a double-click reset share this
+    /// limit and clamp to the boundary it implies, counting every pane and
+    /// seam below a split. Frames are not added: a framed pane keeps
+    /// `outer.saturating_sub(2)` cells of content. When the area is too small
+    /// for the limits, or the 5% to 95% ratio cannot express the boundary,
+    /// resizing is refused and the split stays as it was until the area grows.
     pub min_size: (u16, u16),
 
     pub frames: Frames,
 
     pub hit_pad: u16,
+    area: Rect,
     rects: Vec<(PaneId, Rect)>,
     seams: Vec<Seam>,
     handles: Vec<Splitter>,
 
-    held: Option<usize>,
+    grab: Option<SeamGrab>,
+
+    dead: Option<WidgetId>,
 }
 
 impl PaneTree {
@@ -389,10 +496,12 @@ impl PaneTree {
             min_size: (12, 3),
             frames: Frames::default(),
             hit_pad: 1,
+            area: Rect::ZERO,
             rects: Vec::new(),
             seams: Vec::new(),
             handles: Vec::new(),
-            held: None,
+            grab: None,
+            dead: None,
         }
     }
 
@@ -453,6 +562,7 @@ impl PaneTree {
         let done = self.root.split_leaf(target, new, dir, new_first);
         if done {
             self.focused = new;
+            self.abandon_seam_drag();
         }
         done
     }
@@ -470,12 +580,14 @@ impl PaneTree {
         if self.focused == target {
             self.focused = self.leaves()[0];
         }
+        self.abandon_seam_drag();
         Ok(())
     }
 
     pub fn toggle_zoom(&mut self) -> PaneResult {
         if self.zoomed().is_some() {
             self.root.unzoom();
+            self.abandon_seam_drag();
             return Ok(Outcome::Changed);
         }
         if self.leaves().len() <= 1 {
@@ -494,7 +606,51 @@ impl PaneTree {
                 });
             }
         }
+        self.abandon_seam_drag();
         Ok(Outcome::Changed)
+    }
+
+    fn seam_grab(&self, index: usize) -> Option<SeamGrab> {
+        let seam = self.seams.get(index)?;
+        let node = self.root.node_at(&seam.path)?;
+        let PaneNode::Split { dir, .. } = node else {
+            return None;
+        };
+        Some(SeamGrab {
+            index,
+            path: seam.path.clone(),
+            dir: *dir,
+            leaves: node.leaves(),
+        })
+    }
+
+    /// Clears the held seam and every handle's grab. Returns whether a seam was held.
+    fn cancel_seam_drag(&mut self) -> bool {
+        let mut changed = self.grab.take().is_some();
+        for h in &mut self.handles {
+            changed |= h.cancel_drag();
+        }
+        changed
+    }
+
+    /// Cancels the held seam when the layout around it changed. The router keeps
+    /// pressing the old seam id until the gesture ends, so that id stays dead
+    /// until the next press or terminal phase. A new seam drawn under the same
+    /// id is then neither resized nor drawn pressed.
+    fn abandon_seam_drag(&mut self) {
+        if let Some(index) = self.grab.as_ref().map(|g| g.index) {
+            self.dead = Some(self.seam_id(index));
+        }
+        self.cancel_seam_drag();
+    }
+
+    fn release_stale_grab(&mut self) {
+        let Some(grab) = &self.grab else {
+            return;
+        };
+        if self.seam_grab(grab.index).as_ref() != Some(grab) {
+            self.abandon_seam_drag();
+        }
     }
 
     pub fn focus_toward(&mut self, dir: Direction) -> PaneResult {
@@ -549,23 +705,64 @@ impl PaneTree {
         let Some(seam) = self.seams.iter().find(|s| s.path == p).cloned() else {
             return Err(PaneRefusal::NothingToResize);
         };
-        let (min_c, min_r) = self.min_size;
-        let Some(PaneNode::Split { split, dir: sd, .. }) = self.root.node_at_mut(&p) else {
-            return Err(PaneRefusal::NothingToResize);
-        };
-        let before = *split;
-        let was = split.layout(*sd, seam.container, 1);
-        split.nudge(*sd, seam.container, 1, delta);
-        let (a, b) = split.layout(*sd, seam.container, 1);
-        let too_small = match sd {
-            SplitDir::Horizontal => a.width < min_c || b.width < min_c,
-            SplitDir::Vertical => a.height < min_r || b.height < min_r,
-        };
-        if too_small || (a, b) == was {
-            *split = before;
-            return Err(PaneRefusal::AtMinimum);
+        let container = seam.container;
+        let moved = self.commit_split_candidate(&p, container, |split, sd| {
+            split.nudge(sd, container, SEAM, delta);
+        });
+        if moved {
+            Ok(Outcome::Changed)
+        } else {
+            Err(PaneRefusal::AtMinimum)
         }
-        Ok(Outcome::Changed)
+    }
+
+    /// The one place a seam moves. `edit` runs on a copy of the split at `path`,
+    /// clamped to the minimum extents of both subtrees, so a drag or key step
+    /// lands on the nearest feasible boundary. The copy then returns to the
+    /// stored minima and is committed only if it moved the seam and every leaf
+    /// below still meets `min_size` when laid out from those stored values.
+    /// Otherwise the tree is untouched, `precise` state included.
+    fn commit_split_candidate(
+        &mut self,
+        path: &[u8],
+        container: Rect,
+        edit: impl FnOnce(&mut Split, SplitDir),
+    ) -> bool {
+        let leaf = PaneMinimum::of(self.min_size);
+        if !self.root.minimum(leaf).fits(self.area) {
+            return false;
+        }
+        let Some(PaneNode::Split {
+            dir,
+            split,
+            first,
+            second,
+        }) = self.root.node_at(path)
+        else {
+            return false;
+        };
+        let dir = *dir;
+        let (first_min, second_min) = (first.minimum(leaf), second.minimum(leaf));
+        if !PaneMinimum::join(dir, first_min, second_min).fits(container) {
+            return false;
+        }
+        let extent = |m: PaneMinimum| u16::try_from(m.along(dir)).unwrap_or(u16::MAX);
+        let stored = *split;
+        let mut candidate = stored;
+        candidate.min_first = extent(first_min);
+        candidate.min_second = extent(second_min);
+        edit(&mut candidate, dir);
+        candidate.min_first = stored.min_first;
+        candidate.min_second = stored.min_second;
+
+        let (a, b) = candidate.layout(dir, container, SEAM);
+        let accepted = (a, b) != stored.layout(dir, container, SEAM)
+            && first.leaves_fit(a, leaf)
+            && second.leaves_fit(b, leaf);
+        if accepted && let Some(PaneNode::Split { split, .. }) = self.root.node_at_mut(path) {
+            *split = candidate;
+        }
+        accepted
     }
 
     pub fn natural_size(&self, content: &dyn Fn(PaneId) -> Size) -> Size {
@@ -581,6 +778,7 @@ impl PaneTree {
     }
 
     pub fn layout(&mut self, area: Rect) {
+        self.area = area;
         self.rects.clear();
         self.seams.clear();
         let mut rects = Vec::new();
@@ -596,6 +794,7 @@ impl PaneTree {
         if zoomed.is_none() {
             self.seams = seams.into_iter().filter(|s| !s.handle.is_empty()).collect();
         }
+        self.release_stale_grab();
     }
 
     pub fn seam_id(&self, i: usize) -> WidgetId {
@@ -625,12 +824,20 @@ impl PaneTree {
         }
         for i in 0..n {
             let s = &self.seams[i];
-            let mut h = Splitter::new(self.seam_id(i), s.dir).hit_pad(self.hit_pad);
+            let id = self.seam_id(i);
+            let mut h = Splitter::new(id, s.dir).hit_pad(self.hit_pad);
             if self.handles[i].dir == s.dir {
                 h = self.handles[i];
                 h.hit_pad = self.hit_pad;
             }
-            h.render_held(s.handle, buf, ctx, bg, self.held == Some(i));
+            let held = self.grab.as_ref().is_some_and(|g| g.index == i);
+            let saved = (ctx.interaction.pressed, ctx.interaction.hover);
+            if self.dead == Some(id) {
+                ctx.interaction.pressed = None;
+                ctx.interaction.hover = None;
+            }
+            h.render_held(s.handle, buf, ctx, bg, held);
+            (ctx.interaction.pressed, ctx.interaction.hover) = saved;
             self.handles[i] = h;
         }
         let mut inner = Vec::with_capacity(self.rects.len());
@@ -690,30 +897,10 @@ impl PaneTree {
     }
 
     pub fn on_pointer(&mut self, ev: &PointerEvent) -> Option<Outcome> {
-        if let Some(i) = (0..self.seams.len()).find(|&i| self.seam_id(i) == ev.id) {
-            let s = self.seams[i].clone();
-            let mut h = self.handles.get(i).copied()?;
-            let Some(PaneNode::Split { split, .. }) = self.root.node_at_mut(&s.path) else {
-                return None;
-            };
-            let o = match ev.phase()? {
-                Phase::Press => {
-                    self.held = Some(i);
-                    h.on_press(split, s.container, 1, ev.pos());
-                    Outcome::Consumed
-                }
-                Phase::Drag => {
-                    self.held = Some(i);
-                    h.on_drag(split, s.container, 1, ev.pos())
-                }
-                Phase::Click => {
-                    self.held = None;
-                    h.on_click(split, ev.count())
-                }
-                _ => return None,
-            };
-            self.handles[i] = h;
-            return Some(o);
+        self.release_stale_grab();
+        let seam = (0..self.seams.len()).find(|&i| self.seam_id(i) == ev.id);
+        if seam.is_some() || self.dead == Some(ev.id) {
+            return self.on_seam_pointer(ev, seam);
         }
         if ev.is(Phase::Click)
             && let Some(&(pid, _)) = self
@@ -725,6 +912,84 @@ impl PaneTree {
             return Some(Outcome::Changed);
         }
         None
+    }
+
+    fn on_seam_pointer(&mut self, ev: &PointerEvent, seam: Option<usize>) -> Option<Outcome> {
+        match ev.phase()? {
+            Phase::Press => {
+                let i = seam?;
+                let grab = self.seam_grab(i)?;
+                let container = self.seams[i].container;
+                let mut h = self.handles.get(i).copied()?;
+                let Some(PaneNode::Split { split, .. }) = self.root.node_at_mut(&grab.path) else {
+                    return None;
+                };
+                self.dead = None;
+                self.grab = Some(grab);
+                h.on_press(split, container, SEAM, ev.pos());
+                self.handles[i] = h;
+                Some(Outcome::Consumed)
+            }
+            Phase::Drag => {
+                let grabbed = seam.filter(|&i| self.grab.as_ref().is_some_and(|g| g.index == i));
+                let Some(i) = grabbed else {
+                    return Some(Outcome::Consumed);
+                };
+                let s = self.seams[i].clone();
+                let mut h = self.handles.get(i).copied()?;
+                let moved = self.commit_split_candidate(&s.path, s.container, |split, _| {
+                    h.on_drag(split, s.container, SEAM, ev.pos());
+                });
+                self.handles[i] = h;
+                Some(if moved {
+                    Outcome::Changed
+                } else {
+                    Outcome::Consumed
+                })
+            }
+            Phase::DragEnd => Some(self.end_seam_gesture()),
+            Phase::Release => {
+                self.dead = None;
+                Some(self.end_seam_gesture())
+            }
+            Phase::Click => {
+                let stale = self.dead.take() == Some(ev.id);
+                let held = self.cancel_seam_drag();
+                if stale {
+                    return Some(if held {
+                        Outcome::Changed
+                    } else {
+                        Outcome::Consumed
+                    });
+                }
+                let i = seam?;
+                let s = self.seams[i].clone();
+                let mut h = self.handles.get(i).copied()?;
+                let moved = self.commit_split_candidate(&s.path, s.container, |split, _| {
+                    h.on_click(split, ev.count());
+                });
+                self.handles[i] = h;
+                let o = if moved {
+                    Outcome::Changed
+                } else {
+                    Outcome::Consumed
+                };
+                Some(if held && o == Outcome::Consumed {
+                    Outcome::Changed
+                } else {
+                    o
+                })
+            }
+            _ => None,
+        }
+    }
+
+    fn end_seam_gesture(&mut self) -> Outcome {
+        if self.cancel_seam_drag() {
+            Outcome::Changed
+        } else {
+            Outcome::Consumed
+        }
     }
 
     pub fn hints(&self) -> Vec<Hint> {

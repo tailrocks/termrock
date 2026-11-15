@@ -13,10 +13,18 @@ use crate::core::selection::SelectGesture;
 use crate::theme::{ColorLevel, Theme};
 use crate::ui::ctx::{Interaction, RenderCtx};
 use crate::widgets::grid::{
-    CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridCmd, GridKeyError, GridRevision,
-    GridRows, GridUndo, GridUndoKind, PendingChanges, RowState, RowTotal,
+    CellEditResult, CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridCmd, GridDataError,
+    GridEditError, GridKeyError, GridRevision, GridRows, GridUndo, GridUndoKind, PendingChanges,
+    RowState, RowTotal,
 };
 use crate::widgets::table::SortDir;
+
+fn commit(g: &mut DataGrid) {
+    let snapshot = g.snapshot_changes();
+    let receipt = snapshot.identity_receipt();
+    let token = g.begin_submission(snapshot).unwrap();
+    g.complete_submission(token, Ok(receipt)).unwrap();
+}
 
 fn text(s: &str) -> CellValue {
     CellValue::Text(s.into())
@@ -41,12 +49,15 @@ fn page(n: usize, more: bool) -> GridRows {
 
 fn grid(n: usize) -> DataGrid {
     let mut g = DataGrid::new(WidgetId::of("issue33"), columns());
-    g.set_rows(page(n, false));
+    g.try_set_rows(page(n, false)).unwrap();
     g
 }
 
 fn press(g: &mut DataGrid, code: KeyCode, mods: KeyModifiers) -> Option<GridAction> {
-    g.on_key(&Key { code, mods }).1
+    g.on_key(&Key { code, mods })
+        .try_into_single()
+        .unwrap_or_else(|_| panic!("single action expected"))
+        .1
 }
 
 fn undone(g: &mut DataGrid) -> GridUndo {
@@ -96,7 +107,7 @@ fn assert_consistent(g: &DataGrid) {
     }
     for (k, c, _) in g.pending().cells() {
         assert!(g.source_index(k).is_some(), "no phantom pending cell");
-        assert!(c < g.columns.len());
+        assert!(c < g.columns().len());
     }
 }
 
@@ -104,9 +115,12 @@ fn assert_consistent(g: &DataGrid) {
 fn issue33_delete_undelete_restores_staged_cells() {
     let mut g = grid(2);
     let k0 = key_of(&g, 0);
-    assert!(g.record_cell(0, 0, text("new")));
+    assert_eq!(
+        g.record_cell(0, 0, text("new")),
+        Ok(CellEditResult::Changed)
+    );
 
-    g.toggle_delete(0);
+    g.toggle_delete(0).unwrap();
     assert_eq!(
         g.pending().counts(),
         (0, 0, 1),
@@ -126,24 +140,30 @@ fn issue33_delete_undelete_restores_staged_cells() {
     assert_eq!(g.pending().counts(), (1, 0, 0));
     assert_eq!(g.value(0, 0), &text("new"), "undo restores the staged cell");
 
-    g.toggle_delete(0);
-    g.toggle_delete(0);
+    g.toggle_delete(0).unwrap();
+    g.toggle_delete(0).unwrap();
     assert_eq!(g.value(0, 0), &text("new"), "delete twice keeps the edit");
     assert_eq!(g.pending().counts(), (1, 0, 0));
 
-    assert_eq!(g.undo().map(|u| u.kind), Some(GridUndoKind::DeleteMark));
-    assert_eq!(g.undo().map(|u| u.kind), Some(GridUndoKind::DeleteMark));
-    assert_eq!(g.undo().map(|u| u.kind), Some(GridUndoKind::Cell));
+    assert_eq!(
+        g.undo().unwrap().map(|u| u.kind),
+        Some(GridUndoKind::DeleteMark)
+    );
+    assert_eq!(
+        g.undo().unwrap().map(|u| u.kind),
+        Some(GridUndoKind::DeleteMark)
+    );
+    assert_eq!(g.undo().unwrap().map(|u| u.kind), Some(GridUndoKind::Cell));
     assert_eq!(g.value(0, 0), &text("name0"));
     assert_eq!(g.pending(), &PendingChanges::default());
-    assert_eq!(g.undo(), None);
+    assert_eq!(g.undo().unwrap(), None);
 }
 
 #[test]
 fn issue33_undo_repaints_staged_value() {
     let mut g = grid(2);
-    g.record_cell(0, 0, text("fresh"));
-    g.toggle_delete(0);
+    g.record_cell(0, 0, text("fresh")).unwrap();
+    g.toggle_delete(0).unwrap();
     let struck = render(&mut g);
     assert!(struck.contains("fresh"), "the struck row shows its draft");
     assert!(struck.contains("1 delete"), "{struck}");
@@ -158,19 +178,19 @@ fn issue33_undo_repaints_staged_value() {
 #[test]
 fn issue33_remove_inserted_before_edited_row() {
     let mut g = grid(2);
-    g.insert_row();
-    g.insert_row();
+    g.insert_row().unwrap();
+    g.insert_row().unwrap();
     let (ka, kb) = (key_of(&g, 2), key_of(&g, 3));
-    assert!(g.record_cell(3, 0, text("b1")));
-    assert!(g.record_cell(3, 0, text("b2")));
+    assert_eq!(g.record_cell(3, 0, text("b1")), Ok(CellEditResult::Changed));
+    assert_eq!(g.record_cell(3, 0, text("b2")), Ok(CellEditResult::Changed));
 
-    g.toggle_delete(2);
+    g.toggle_delete(2).unwrap();
     assert_eq!(g.len(), 3);
     assert_eq!(g.source_index(kb), Some(2), "B shifted but kept its key");
     assert_eq!(g.value(2, 0), &text("b2"));
     assert_consistent(&g);
 
-    let first = g.undo().expect("restores the removed insert");
+    let first = g.undo().unwrap().expect("restores the removed insert");
     assert_eq!(
         first,
         GridUndo {
@@ -181,7 +201,7 @@ fn issue33_remove_inserted_before_edited_row() {
     assert_eq!((g.source_index(ka), g.source_index(kb)), (Some(2), Some(3)));
     assert_eq!(g.value(3, 0), &text("b2"));
 
-    let second = g.undo().expect("undoes the B edit");
+    let second = g.undo().unwrap().expect("undoes the B edit");
     assert_eq!(
         second,
         GridUndo {
@@ -198,12 +218,12 @@ fn issue33_remove_inserted_before_edited_row() {
 fn issue33_removed_insert_restores_complete_row() {
     let mut g = grid(3);
     g.cursor = (0, 0);
-    g.duplicate_row();
+    g.duplicate_row().unwrap();
     let ka = key_of(&g, 3);
-    g.insert_row();
+    g.insert_row().unwrap();
     let kb = key_of(&g, 4);
-    g.record_cell(3, 1, text("dup-note"));
-    g.record_cell(4, 0, text("b"));
+    g.record_cell(3, 1, text("dup-note")).unwrap();
+    g.record_cell(4, 0, text("b")).unwrap();
     g.cell_errors.insert((3, 0), "bad cell".into());
     g.row_errors.insert(3, "bad row".into());
 
@@ -217,13 +237,13 @@ fn issue33_removed_insert_restores_complete_row() {
     let before_cursor = g.cursor;
     let before_counts = g.pending().counts();
 
-    assert!(g.begin_edit().1.is_none() && g.is_editing());
-    g.toggle_delete(3);
+    assert!(g.begin_edit().actions().next().is_none() && g.is_editing());
+    g.toggle_delete(3).unwrap();
     assert!(!g.is_editing(), "removal closes the editor");
     assert_eq!(g.selection.to_vec(), vec![3], "B keeps its mark, shifted");
     assert!(g.cell_errors.is_empty() && g.row_errors.is_empty());
 
-    let u = g.undo().expect("restores");
+    let u = g.undo().unwrap().expect("restores");
     assert_eq!(u.kind, GridUndoKind::RemovedInsert);
     assert!(!g.is_editing(), "undo does not resurrect an editor");
     assert_eq!(g.rows(), &before_rows[..]);
@@ -250,10 +270,11 @@ fn issue33_removed_insert_restores_complete_row() {
 fn issue33_undo_reports_affected_key() {
     let mut g = grid(3);
     let k1 = key_of(&g, 1);
-    assert!(g.record_cell(1, 0, text("x")));
+    assert_eq!(g.record_cell(1, 0, text("x")), Ok(CellEditResult::Changed));
     let draft = g.revision().draft;
-    assert!(
-        !g.record_cell(1, 0, text("x")),
+    assert_eq!(
+        g.record_cell(1, 0, text("x")),
+        Ok(CellEditResult::Unchanged),
         "an unchanged edit is ignored"
     );
     assert_eq!(g.revision().draft, draft, "and does not touch the revision");
@@ -288,7 +309,7 @@ fn issue33_key_revision_lifecycle() {
     );
     let mut seen: HashSet<ItemKey> = (0..2).map(|s| key_of(&g, s)).collect();
 
-    g.append_rows(page(1, false));
+    g.try_append_rows(page(1, false)).unwrap();
     assert_eq!(
         g.revision(),
         GridRevision {
@@ -298,8 +319,8 @@ fn issue33_key_revision_lifecycle() {
     );
     assert!(seen.insert(key_of(&g, 2)), "an appended row gets a new key");
 
-    g.record_cell(0, 0, text("e"));
-    g.insert_row();
+    g.record_cell(0, 0, text("e")).unwrap();
+    g.insert_row().unwrap();
     assert!(seen.insert(key_of(&g, 3)));
     assert_eq!(
         g.revision(),
@@ -309,14 +330,14 @@ fn issue33_key_revision_lifecycle() {
         }
     );
 
-    g.toggle_delete(3);
-    g.insert_row();
+    g.toggle_delete(3).unwrap();
+    g.insert_row().unwrap();
     assert!(
         seen.insert(key_of(&g, 3)),
         "a removed key is never reissued"
     );
-    g.undo();
-    g.undo();
+    g.undo().unwrap();
+    g.undo().unwrap();
     assert_eq!(g.revision().draft, 6);
 
     g.select_rows(SelectGesture::All, 0);
@@ -325,8 +346,8 @@ fn issue33_key_revision_lifecycle() {
     g.run(GridCmd::Sort);
     assert_eq!(g.revision().draft, 6, "view-only changes keep the revision");
 
-    g.record_cell(0, 0, text("again"));
-    g.discard();
+    g.record_cell(0, 0, text("again")).unwrap();
+    g.discard().unwrap();
     assert_eq!(
         g.revision(),
         GridRevision {
@@ -334,11 +355,11 @@ fn issue33_key_revision_lifecycle() {
             draft: 8
         }
     );
-    g.discard();
+    g.discard().unwrap();
     assert_eq!(g.revision().draft, 8, "an empty discard is not a change");
 
-    g.record_cell(1, 0, text("kept"));
-    g.apply_commit_result(Ok(()));
+    g.record_cell(1, 0, text("kept")).unwrap();
+    commit(&mut g);
     assert_eq!(
         g.revision(),
         GridRevision {
@@ -347,8 +368,8 @@ fn issue33_key_revision_lifecycle() {
         }
     );
 
-    g.record_cell(1, 0, text("stale"));
-    g.set_rows(page(2, false));
+    g.record_cell(1, 0, text("stale")).unwrap();
+    g.try_set_rows(page(2, false)).unwrap();
     assert_eq!(
         g.revision(),
         GridRevision {
@@ -359,27 +380,27 @@ fn issue33_key_revision_lifecycle() {
     for s in 0..2 {
         assert!(seen.insert(key_of(&g, s)), "replacement never reuses keys");
     }
-    g.insert_row();
+    g.insert_row().unwrap();
     assert!(seen.insert(key_of(&g, 2)));
 }
 
 #[test]
 fn issue33_keyed_setters_validate_before_install() {
     let mut g = grid(2);
-    g.record_cell(0, 0, text("draft"));
+    g.record_cell(0, 0, text("draft")).unwrap();
     let (rows, revision) = (g.rows().to_vec(), g.revision());
     let k = ItemKey::num(7);
 
     assert_eq!(
         g.try_set_rows_keyed(page(2, false), vec![k]),
-        Err(GridKeyError::KeyCount {
+        Err(GridDataError::Key(GridKeyError::KeyCount {
             expected: 2,
             actual: 1
-        })
+        }))
     );
     assert_eq!(
         g.try_set_rows_keyed(page(2, false), vec![k, k]),
-        Err(GridKeyError::DuplicateKey(k))
+        Err(GridDataError::Key(GridKeyError::DuplicateKey(k)))
     );
     assert_eq!(
         g.try_set_model_keyed(
@@ -387,10 +408,10 @@ fn issue33_keyed_setters_validate_before_install() {
             page(2, false),
             vec![k, k]
         ),
-        Err(GridKeyError::DuplicateKey(k))
+        Err(GridDataError::Key(GridKeyError::DuplicateKey(k)))
     );
     assert_eq!((g.rows(), g.revision()), (&rows[..], revision), "untouched");
-    assert_eq!(g.columns.len(), 2);
+    assert_eq!(g.columns().len(), 2);
     assert_eq!(
         g.pending().counts(),
         (1, 0, 0),
@@ -403,7 +424,7 @@ fn issue33_keyed_setters_validate_before_install() {
     assert_eq!(g.source_index(keys[1]), Some(1));
     assert!(g.pending().is_empty(), "replacement clears the old epoch");
 
-    g.insert_row();
+    g.insert_row().unwrap();
     let local = key_of(&g, 2);
     assert!(!keys.contains(&local), "a local key skips provider keys");
 
@@ -415,24 +436,24 @@ fn issue33_keyed_setters_validate_before_install() {
     };
     g.try_set_model_keyed(model, one, vec![ItemKey::text("solo")])
         .unwrap();
-    assert_eq!(g.columns.len(), 1);
+    assert_eq!(g.columns().len(), 1);
     assert_eq!(g.row_key(0), Some(ItemKey::text("solo")));
 }
 
 #[test]
 fn issue33_append_between_remove_and_undo() {
     let mut g = grid(2);
-    g.insert_row();
+    g.insert_row().unwrap();
     let ka = key_of(&g, 2);
-    g.record_cell(2, 0, text("A"));
-    g.toggle_delete(2);
+    g.record_cell(2, 0, text("A")).unwrap();
+    g.toggle_delete(2).unwrap();
 
-    g.append_rows(page(1, false));
+    g.try_append_rows(page(1, false)).unwrap();
     let kc = key_of(&g, 2);
     g.cell_errors.insert((2, 1), "c broke".into());
     g.select_rows(SelectGesture::Only, 2);
 
-    assert_eq!(g.undo().map(|u| u.key), Some(ka));
+    assert_eq!(g.undo().unwrap().map(|u| u.key), Some(ka));
     assert_eq!(g.len(), 4);
     assert_eq!(g.source_index(ka), Some(2));
     assert_eq!(
@@ -457,13 +478,13 @@ fn issue33_append_between_remove_and_undo() {
     let mut s = grid(2);
     s.local_sort = true;
     s.sort = Some((0, SortDir::Desc));
-    s.set_rows(page(2, false));
-    s.insert_row();
+    s.try_set_rows(page(2, false)).unwrap();
+    s.insert_row().unwrap();
     let ka = key_of(&s, 2);
-    s.toggle_delete(2);
-    s.append_rows(page(1, false));
+    s.toggle_delete(2).unwrap();
+    s.try_append_rows(page(1, false)).unwrap();
     let kc = key_of(&s, 2);
-    s.undo();
+    s.undo().unwrap();
     let by_display: Vec<ItemKey> = (0..4)
         .map(|d| s.row_key(s.source_row(d)).unwrap())
         .collect();
@@ -491,19 +512,19 @@ fn issue33_sorted_repeated_undo_reaches_baseline() {
     let baseline_keys: Vec<ItemKey> = (0..4).map(|s| key_of(&g, s)).collect();
     let baseline_order: Vec<usize> = (0..4).map(|d| g.source_row(d)).collect();
 
-    g.record_cell(1, 0, text("zzz"));
-    g.insert_row();
-    g.record_cell(4, 0, text("ins"));
-    g.toggle_delete(2);
+    g.record_cell(1, 0, text("zzz")).unwrap();
+    g.insert_row().unwrap();
+    g.record_cell(4, 0, text("ins")).unwrap();
+    g.toggle_delete(2).unwrap();
     g.cursor = (0, 0);
-    g.duplicate_row();
+    g.duplicate_row().unwrap();
     g.select_rows(SelectGesture::Toggle, 1);
     g.cell_errors.insert((4, 0), "err".into());
-    g.toggle_delete(4);
-    g.record_cell(3, 1, text("tail"));
+    g.toggle_delete(4).unwrap();
+    g.record_cell(3, 1, text("tail")).unwrap();
     assert_consistent(&g);
 
-    while g.undo().is_some() {
+    while g.undo().unwrap().is_some() {
         assert_consistent(&g);
     }
     assert_eq!(g.rows(), &baseline_rows[..]);
@@ -523,25 +544,35 @@ fn issue33_sorted_repeated_undo_reaches_baseline() {
 fn issue33_invalid_row_mutation_leaves_history_unchanged() {
     let mut g = grid(2);
     let revision = g.revision();
-    assert_eq!(g.toggle_delete(9), None);
-    assert!(!g.record_cell(9, 0, text("x")));
-    assert!(!g.record_cell(0, 9, text("x")));
-    assert_eq!(g.undo(), None);
+    assert_eq!(g.toggle_delete(9), Ok(None));
+    assert_eq!(
+        g.record_cell(9, 0, text("x")),
+        Err(GridEditError::InvalidTarget)
+    );
+    assert_eq!(
+        g.record_cell(0, 9, text("x")),
+        Err(GridEditError::InvalidTarget)
+    );
+    assert_eq!(g.undo().unwrap(), None);
     assert_eq!(g.pending(), &PendingChanges::default());
     assert_eq!(g.revision(), revision);
 
-    g.record_cell(0, 0, text("ok"));
-    assert_eq!(g.toggle_delete(9), None);
-    assert_eq!(g.undo().map(|u| u.kind), Some(GridUndoKind::Cell));
-    assert_eq!(g.undo(), None, "the rejected calls added no history");
+    g.record_cell(0, 0, text("ok")).unwrap();
+    assert_eq!(g.toggle_delete(9), Ok(None));
+    assert_eq!(g.undo().unwrap().map(|u| u.kind), Some(GridUndoKind::Cell));
+    assert_eq!(
+        g.undo().unwrap(),
+        None,
+        "the rejected calls added no history"
+    );
     assert_consistent(&g);
 }
 
 #[test]
 fn issue33_bulk_delete_of_marked_rows_follows_keys() {
     let mut g = grid(2);
-    g.insert_row();
-    g.insert_row();
+    g.insert_row().unwrap();
+    g.insert_row().unwrap();
     let kb = key_of(&g, 3);
     for src in [0, 2, 3] {
         g.selection.set(src, true);
@@ -556,7 +587,9 @@ fn issue33_bulk_delete_of_marked_rows_follows_keys() {
     assert!(g.pending().is_deleted(key_of(&g, 0)));
     assert_eq!(g.source_index(kb), None);
     assert_consistent(&g);
-    let kinds: Vec<_> = (0..3).filter_map(|_| g.undo().map(|u| u.kind)).collect();
+    let kinds: Vec<_> = (0..3)
+        .filter_map(|_| g.undo().unwrap().map(|u| u.kind))
+        .collect();
     assert_eq!(
         kinds,
         vec![
@@ -577,13 +610,13 @@ fn issue33_commit_keeps_keys_and_order_of_survivors() {
     g.run(GridCmd::Sort);
     g.run(GridCmd::Sort);
     let (k0, k2, k3) = (key_of(&g, 0), key_of(&g, 2), key_of(&g, 3));
-    g.record_cell(2, 0, text("saved"));
-    g.record_cell(1, 0, text("gone-draft"));
-    g.toggle_delete(1);
-    g.insert_row();
+    g.record_cell(2, 0, text("saved")).unwrap();
+    g.record_cell(1, 0, text("gone-draft")).unwrap();
+    g.toggle_delete(1).unwrap();
+    g.insert_row().unwrap();
     let kn = key_of(&g, 4);
     g.selection.set(3, true);
-    g.apply_commit_result(Ok(()));
+    commit(&mut g);
 
     assert_eq!(g.len(), 4, "the deleted row left, the inserted row stayed");
     assert_eq!(
@@ -593,7 +626,7 @@ fn issue33_commit_keeps_keys_and_order_of_survivors() {
     assert_eq!(g.value(1, 0), &text("saved"));
     assert_eq!(g.selection.to_vec(), vec![2], "the mark followed its row");
     assert_eq!(g.pending(), &PendingChanges::default());
-    assert_eq!(g.undo(), None);
+    assert_eq!(g.undo().unwrap(), None);
     assert_consistent(&g);
 }
 
@@ -612,4 +645,54 @@ fn issue33_row_source_key_follows_display_order() {
         (0..3).all(|s| key_of(&g, s) != more),
         "the fetch row is no record"
     );
+}
+
+#[test]
+fn codex196_undo_keeps_the_appended_row_selection_anchor() {
+    let mut g = grid(2);
+    g.insert_row().unwrap();
+    let removed = key_of(&g, 2);
+    g.select_rows(SelectGesture::Only, 2);
+    g.toggle_delete(2).unwrap();
+
+    g.try_append_rows(page(1, false)).unwrap();
+    let appended = key_of(&g, 2);
+    g.select_rows(SelectGesture::Only, 2);
+
+    assert_eq!(g.undo().unwrap().map(|u| u.key), Some(removed));
+    let appended_src = g.source_index(appended).unwrap();
+    assert_eq!(g.selection.anchor(), Some(appended_src));
+
+    g.select_rows(SelectGesture::Extend { from: appended_src }, 0);
+    assert_eq!(
+        g.selection.to_vec(),
+        vec![0, 1, 2, 3],
+        "Shift-select extends from the appended row and keeps it"
+    );
+}
+
+#[test]
+fn codex196_paste_into_cell_runs_the_edit_gateway() {
+    let mut g = grid(2);
+    let (out, actions) = g.paste_into_cell("pasted").into_parts();
+    assert_eq!(out, crate::core::event::Outcome::Changed);
+    assert!(matches!(
+        actions.into_iter().next(),
+        Some(GridAction::CellChanged { row: 0, col: 0 })
+    ));
+    assert_eq!(g.value(0, 0), &text("pasted"));
+    assert_eq!(g.pending().cells().count(), 1);
+
+    let again = g.paste_into_cell("pasted");
+    assert!(again.into_parts().1.into_iter().next().is_none());
+    assert_eq!(g.pending().cells().count(), 1, "an equal paste is a no-op");
+
+    let snapshot = g.snapshot_changes();
+    let _token = g.begin_submission(snapshot).unwrap();
+    let (_, actions) = g.paste_into_cell("late").into_parts();
+    assert!(matches!(
+        actions.into_iter().next(),
+        Some(GridAction::ReadOnly { .. })
+    ));
+    assert_eq!(g.value(0, 0), &text("pasted"), "a locked grid refuses it");
 }

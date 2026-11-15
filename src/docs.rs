@@ -98,7 +98,8 @@ pub fn documented() -> Vec<Documented> {
         TreeView::new(ID, vec![TreeNode::leaf("a"), TreeNode::leaf("b")])
     }
     fn table() -> DataTable {
-        DataTable::new(ID, vec![Column::new("Name", Constraint::Fill(1))], vec![])
+        DataTable::try_new(ID, vec![Column::new("Name", Constraint::Fill(1))], vec![])
+            .expect("a table without rows is rectangular")
     }
     fn grid() -> DataGrid {
         DataGrid::new(ID, vec![ColumnSpec::new("name", CellKind::Text)])

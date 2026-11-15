@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s03_datagrid/opt_datagrid_affordance",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "target/functional/s03-affordance-86328-1794728468501165000-0/check-artifacts/pre_refactor/s03_datagrid/opt_datagrid_affordance/8f01eb13044a8f6e586f6bde9a040b0ffbab2fedc3af9ea82bb5bba342c7fd28/sample.tui.pb"
+  },
+  "candidate_sha256": "8f01eb13044a8f6e586f6bde9a040b0ffbab2fedc3af9ea82bb5bba342c7fd28",
+  "baseline_sha256": "8f01eb13044a8f6e586f6bde9a040b0ffbab2fedc3af9ea82bb5bba342c7fd28",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/reloc124/tests/functional/baselines/pre_refactor/s03_datagrid/opt_datagrid_affordance.tui.pb"
+  },
+  "error_code": null
+}

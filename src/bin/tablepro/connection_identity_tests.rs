@@ -8,7 +8,7 @@ use ratatui::backend::TestBackend;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 
 use clap::error::ErrorKind;
-use junie_tui::core::id::ItemKey;
+use junie_tui::core::id::{ItemKey, WidgetId};
 
 use crate::app::{App, Route};
 use crate::connections::{ConnState, ConnectionEntry, ConnectionsScreen};
@@ -381,4 +381,43 @@ fn connection_identity_safe_mode_route_is_atomic_on_exhaustion() {
     );
     assert_eq!(entries(&app), before, "stored connection is unchanged");
     assert!(status(&app).contains("not applied"), "{}", status(&app));
+}
+
+#[test]
+fn connection_selection_follows_the_entry_when_its_group_changes() {
+    let a = conn("A", "host-a");
+    let mut b = conn("B", "host-b");
+    b.group = "Acme".into();
+    let c = conn("C", "host-c");
+    let mut app = app_with(vec![a, b, c]);
+    // Rows: Personal, A, C, Acme, B.
+    select_row(&mut app, 2);
+    let c_key = app.connections.selected_key().expect("C is selected");
+    assert_eq!(
+        app.connections.get(c_key).map(|e| e.value().name.as_str()),
+        Some("C")
+    );
+
+    press(&mut app, KeyCode::Char('e'));
+    draw(&mut app);
+    app.shell
+        .focus
+        .focus(WidgetId::of("connections").sub("form").sub("group"));
+    press(&mut app, KeyCode::Char('A'));
+    ctrl(&mut app, 's');
+    draw(&mut app);
+    assert_eq!(
+        app.connections.selected_key(),
+        Some(c_key),
+        "saving keeps C selected"
+    );
+
+    // Rows are now Personal, A, Acme, B, C. C sits last; the cursor follows it.
+    press(&mut app, KeyCode::Up);
+    let above = app.connections.selected_key().expect("a neighbour");
+    assert_eq!(
+        app.connections.get(above).map(|e| e.value().name.as_str()),
+        Some("B"),
+        "moving up from C reaches B, not whatever now sits at C's old row"
+    );
 }

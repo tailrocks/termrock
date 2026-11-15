@@ -38,6 +38,11 @@ impl Split {
         }
     }
 
+    /// The two minima summed in `usize`, so huge minima never overflow `u16`.
+    fn minimum_sum(&self) -> usize {
+        self.min_first as usize + self.min_second as usize
+    }
+
     pub fn reset(&mut self) {
         self.percent = self.default_percent;
         self.precise = None;
@@ -89,7 +94,7 @@ impl Split {
                 pos.y.saturating_sub(area.y),
             ),
         };
-        if usable < self.min_first + self.min_second || usable == 0 {
+        if (usable as usize) < self.minimum_sum() || usable == 0 {
             return false;
         }
         let first = offset.clamp(self.min_first, usable - self.min_second);
@@ -134,7 +139,7 @@ impl Split {
             Maximized::None => {}
         }
         let fits = |usable: u16| {
-            if usable < self.min_first + self.min_second {
+            if (usable as usize) < self.minimum_sum() {
                 return false;
             }
             let a = self
@@ -155,7 +160,7 @@ impl Split {
             Maximized::Second => (Rect::ZERO, area),
             Maximized::None => {
                 let usable = area.height.saturating_sub(gap);
-                if usable < self.min_first + self.min_second {
+                if (usable as usize) < self.minimum_sum() {
                     return (area, Rect::ZERO);
                 }
                 let mut first = self.first_of(usable);
@@ -174,7 +179,7 @@ impl Split {
             Maximized::Second => (Rect::ZERO, area),
             Maximized::None => {
                 let usable = area.width.saturating_sub(gap);
-                if usable < self.min_first + self.min_second {
+                if (usable as usize) < self.minimum_sum() {
                     return (Rect::ZERO, area);
                 }
                 let mut first = self.first_of(usable);
@@ -617,5 +622,43 @@ impl SplitKeys {
             None => hint_key(&self.keymap, a).or_else(|| hint_key(&self.keymap, b))?,
         };
         Some(crate::widgets::keyhint::hint(key, "Resize"))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn huge() -> Split {
+        Split::new(50, u16::MAX, u16::MAX)
+    }
+
+    #[test]
+    fn split_with_huge_minima_never_overflows() {
+        let area = Rect::new(0, 0, 80, 20);
+        for dir in [SplitDir::Horizontal, SplitDir::Vertical] {
+            let mut split = huge();
+            let before = split;
+            assert!(!split.drag_to(dir, area, 1, Position::new(40, 10)));
+            split.nudge(dir, area, 1, 5);
+            assert_eq!(split, before, "an impossible split does not move");
+            let _ = split.layout(dir, area, 1);
+            let _ = split.handle(dir, area, 1);
+        }
+    }
+
+    #[test]
+    fn split_extent_for_huge_minima_saturates() {
+        assert_eq!(huge().extent_for(1, 1, 1), u16::MAX);
+    }
+
+    #[test]
+    fn split_drag_clamps_to_the_minima_it_is_given() {
+        let area = Rect::new(0, 0, 80, 5);
+        let mut split = Split::new(50, 12, 12);
+        assert!(split.drag_to(SplitDir::Horizontal, area, 1, Position::new(0, 0)));
+        assert_eq!(split.layout(SplitDir::Horizontal, area, 1).0.width, 12);
+        assert!(split.drag_to(SplitDir::Horizontal, area, 1, Position::new(79, 0)));
+        assert_eq!(split.layout(SplitDir::Horizontal, area, 1).1.width, 12);
     }
 }

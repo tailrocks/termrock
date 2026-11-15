@@ -163,7 +163,7 @@ impl TaskRunnerPage {
             tree.expand_all();
         }
         self.tree = tree;
-        self.log = ScrollPanel::new(ID.sub("log"), self.log.lines.clone())
+        self.log = ScrollPanel::new(ID.sub("log"), self.log.lines().to_vec())
             .tail(o.on("taskrunner.follow"))
             .wrap(o.on("taskrunner.wrap"));
     }
@@ -174,7 +174,7 @@ impl TaskRunnerPage {
             t.state = TaskState::Queued;
         }
         self.running = true;
-        self.log.lines.clear();
+        self.log.clear();
         self.log.push("Pipeline started".into());
         self.log.follow = true;
         cx.status("Pipeline running");
@@ -440,7 +440,7 @@ impl Page for TaskRunnerPage {
                     return Outcome::Ignored;
                 };
                 if f == self.tree.id {
-                    return self.tree.on_key(key).0;
+                    return self.tree.on_key(key).outcome();
                 }
                 if f == self.log.id {
                     return self.log.on_key(key);
@@ -479,13 +479,13 @@ impl Page for TaskRunnerPage {
                 }
                 if ev.is(Phase::Click) {
                     if let Some(r) = self.run.route(ev) {
-                        if r.into_action().is_some() {
+                        if r.has_actions() {
                             self.start(cx);
                         }
                         return Outcome::Changed;
                     }
                     if let Some(r) = self.cancel.route(ev) {
-                        if r.into_action().is_some() {
+                        if r.has_actions() {
                             cx.open_dialog(Dialog::destructive(
                                 CANCEL_DLG,
                                 "Cancel pipeline?",

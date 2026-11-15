@@ -5,6 +5,7 @@ use ratatui::style::Style;
 use crate::core::id::{PartRef, WidgetId};
 use crate::theme::Theme;
 use crate::ui::ctx::{RenderCtx, fill};
+use crate::ui::measure::terminal_extent;
 use crate::ui::text::width;
 use crate::ui::tooltip::Tip;
 
@@ -101,8 +102,13 @@ impl IconButton {
         self.glyph.as_deref().unwrap_or(t.glyphs.close)
     }
 
+    /// Glyph plus padding on both sides, saturating at `u16::MAX`.
     pub fn width(&self, t: &Theme) -> u16 {
-        width(self.glyph(t)) as u16 + 2 * self.pad
+        terminal_extent(self.intrinsic_width(t))
+    }
+
+    pub(crate) fn intrinsic_width(&self, t: &Theme) -> usize {
+        width(self.glyph(t)).saturating_add(2 * usize::from(self.pad))
     }
 
     pub fn style(&self, ctx: &RenderCtx, host: Style) -> Style {
@@ -129,7 +135,14 @@ impl IconButton {
     ) -> Rect {
         let plate = Rect::new(x, y, self.width(ctx.theme), 1).intersection(*buf.area());
         fill(buf, plate, host);
-        self.render_in(plate, x + self.pad, buf, ctx, host, default_tip)
+        self.render_in(
+            plate,
+            x.saturating_add(self.pad),
+            buf,
+            ctx,
+            host,
+            default_tip,
+        )
     }
 
     pub fn render_in(
@@ -154,7 +167,9 @@ impl IconButton {
                 }
             }
         }
-        buf.set_string(glyph_x, plate.y, self.glyph(ctx.theme), st);
+        if let Some(col) = glyph_x.checked_sub(plate.x) {
+            crate::ui::text::paint_clipped(buf, plate, usize::from(col), self.glyph(ctx.theme), st);
+        }
         match self.part {
             Some((owner, part)) => {
                 ctx.register_part(owner, part, plate);

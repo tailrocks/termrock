@@ -710,7 +710,9 @@ impl TextViewport {
         let mut work = self.draw_work.get();
         work.fallbacks += 1;
         work.lines += self.lines.len();
-        work.bytes += self.lines.iter().map(|l| l.text.len()).sum::<usize>();
+        let bytes = self.lines.iter().map(|l| l.text.len()).sum::<usize>();
+        work.bytes += bytes;
+        crate::record_work!(PayloadBytesCloned, bytes);
         self.draw_work.set(work);
         self.clone()
     }
@@ -769,6 +771,7 @@ impl TextViewport {
         }
         self.indexed_lines = self.indexed_lines.saturating_sub(drop);
         self.work.index_shifts += 1;
+        crate::record_work!(IndexShifts, 1usize);
         self.scroll.set_content(self.visual.len());
         if !self.follow {
             self.scroll.offset = self.scroll.offset.saturating_sub(gone);
@@ -994,10 +997,12 @@ impl TextViewport {
                 if !l.segmented {
                     l.segment();
                     self.work.segmented_lines += 1;
+                    crate::record_work!(SegmentedLines, 1usize);
                 }
                 if !l.has_rows(key) {
                     l.reflow(text_w, wrap);
                     self.work.reflowed_lines += 1;
+                    crate::record_work!(ReflowedLines, 1usize);
                 }
                 for &(s, e) in self.lines[li].rows_at(key) {
                     self.visual.push(VisualRow {
@@ -1011,6 +1016,7 @@ impl TextViewport {
             self.indexed_lines = self.lines.len();
             if extended {
                 self.work.index_extends += 1;
+                crate::record_work!(IndexExtends, 1usize);
                 self.scroll.set_content(self.visual.len());
                 self.clip_selection();
             }
@@ -1020,10 +1026,12 @@ impl TextViewport {
             if !l.segmented {
                 l.segment();
                 self.work.segmented_lines += 1;
+                crate::record_work!(SegmentedLines, 1usize);
             }
             if !l.has_rows((text_w, wrap)) {
                 l.reflow(text_w, wrap);
                 self.work.reflowed_lines += 1;
+                crate::record_work!(ReflowedLines, 1usize);
             }
         }
         self.layout_width = text_w;
@@ -1047,6 +1055,7 @@ impl TextViewport {
         self.index_valid = true;
         self.indexed_lines = self.lines.len();
         self.work.index_rebuilds += 1;
+        crate::record_work!(IndexRebuilds, 1usize);
         self.scroll.set_content(self.visual.len());
         self.clip_selection();
     }

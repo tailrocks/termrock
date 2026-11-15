@@ -5,11 +5,11 @@
 //! TablePro has no `--page` flag. It opens on Connections. Development starts
 //! in Silent, which runs an ordinary UPDATE with no dialog.
 
-use std::time::{Duration, Instant};
-
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, TABLEPRO, cell_bg, find_all, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, TABLEPRO, cell_bg, find_all, flash_settle, row_text, text, try_launch,
+};
 
 const CONNECTED: &str = "Connected to Development";
 const QUERY: &str = "Query 1";
@@ -93,31 +93,6 @@ fn settled_confirm(app: &App, label: &str, cols: u32, rows: u32) -> TerminalSnap
     app.wait_screen(label, |screen| {
         screen.cols() == cols && screen.rows() == rows && confirm_body(screen)
     })
-}
-
-/// The 140ms press flash stays painted while motion is reduced, so a shot
-/// nudges the width and comes back. Below about 100 columns the header omits
-/// the size chip.
-fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
 }
 
 fn shot(app: &App, checkpoint: &str, cols: u32, rows: u32) {
@@ -259,6 +234,7 @@ fn hide_explorer(app: &App) {
 fn ensure_editing(app: &App) {
     if !text(&app.screen()).contains("Ctrl+Space") {
         app.key("enter");
+        app.expire_status();
         app.wait_text("Ctrl+Space");
     }
 }
@@ -399,18 +375,7 @@ fn quit_dirty(app: &App) {
     app.key("ctrl+q");
     let quit = app.wait_text("Quit TablePro?");
     see(&quit, &[LOST, "Quit"], &[TITLE]);
-    app.key("right");
-    app.key("enter");
-    let deadline = Instant::now() + Duration::from_secs(5);
-    while app.child_running() {
-        assert!(
-            Instant::now() < deadline,
-            "tablepro stayed up after confirming quit\n{}",
-            text(&app.screen())
-        );
-        std::thread::sleep(Duration::from_millis(25));
-    }
-    app.expect_exited(0);
+    app.confirm_quit();
 }
 
 #[test]

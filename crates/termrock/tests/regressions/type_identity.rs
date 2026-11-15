@@ -1,7 +1,7 @@
 use termrock::prelude::{Flow, Invalidate, ItemKey, Response, RowSource, WidgetId};
 
 fn takes_impl_response(response: junie_tui::core::response::Response<u8>) -> u8 {
-    response.action().copied().unwrap_or_default()
+    response.actions().next().copied().unwrap_or_default()
 }
 
 fn takes_impl_key(key: junie_tui::core::id::ItemKey) -> junie_tui::core::id::ItemKey {

@@ -6,6 +6,7 @@ use ratatui::layout::{Rect, Size};
 use ratatui::style::Style;
 
 use crate::app::PageId;
+use crate::data::GRAPHEME_SAMPLES;
 use crate::options::{PageValues, page_options};
 use crate::pages::inputs::{custom_text_keymap, field_keys};
 use crate::pages::template::{Section, Template};
@@ -24,7 +25,9 @@ use junie_tui::ui::popup::{Dismiss, Place, Placement};
 use junie_tui::ui::specimen::{SpecimenState, StateGrid};
 use junie_tui::ui::text::fuzzy;
 use junie_tui::widgets::button::Button;
-use junie_tui::widgets::code::{CodeCmd, CodeEditor, Diagnostic, EditorAction, Severity};
+use junie_tui::widgets::code::{
+    CodeCmd, CodeEditor, Diagnostic, EditorAction, Highlighter, Segmenter, Severity,
+};
 use junie_tui::widgets::completion::{Completion, CompletionAction, TEXT_INSET};
 use junie_tui::widgets::empty::{self, EmptyState};
 use junie_tui::widgets::option_list::Item;
@@ -93,6 +96,14 @@ const CANDIDATES: &[(&str, &str, &str)] = &[
     ("match", "keyword", "k"),
     ("return", "keyword", "k"),
 ];
+
+fn international_candidates() -> Vec<(String, String, &'static str)> {
+    GRAPHEME_SAMPLES
+        .iter()
+        .map(|(kind, sample)| (format!("go_{sample}("), format!("fn () · {kind}"), "ƒ"))
+        .collect()
+}
+const UNAVAILABLE: &[(&str, &str)] = &[("url", "Moved into the request above")];
 
 fn highlight(src: &str) -> Vec<(Range<usize>, SyntaxTone)> {
     let b = src.as_bytes();
@@ -193,9 +204,27 @@ fn blocks(src: &str) -> Vec<Range<usize>> {
     out
 }
 
+const LARGE_REPEATS: usize = 800;
+
+fn large_document() -> String {
+    SAMPLE.repeat(LARGE_REPEATS)
+}
+
+fn seed_text(document: &str, previous: &str, current: &str) -> String {
+    match document {
+        "empty" => String::new(),
+        "large" if previous != "large" => large_document(),
+        "sample" if previous == "large" => SAMPLE.to_owned(),
+        "large" if current.is_empty() => large_document(),
+        _ if current.is_empty() => SAMPLE.to_owned(),
+        _ => current.to_owned(),
+    }
+}
+
 pub struct EditorPage {
     template: Template,
     opts: PageValues,
+    document: &'static str,
     editor: CodeEditor,
     completion: Completion,
     find: Button,
@@ -222,6 +251,7 @@ impl EditorPage {
         let mut page = Self {
             template: Template::new(ID, states_grid()),
             opts: PageValues::new(page_options(PageId::Editor)),
+            document: "sample",
             editor: CodeEditor::new(ID.sub("code"), SAMPLE),
             completion: Completion::new(ID.sub("complete")),
             find: Button::secondary(ID.sub("find"), "Find").shortcut("/"),
@@ -236,14 +266,14 @@ impl EditorPage {
 
     fn rebuild(&mut self) {
         let o = &self.opts;
-        let text = if o.value("codeeditor.document") == "empty" {
-            String::new()
-        } else if self.editor.text().is_empty() {
-            SAMPLE.to_owned()
+        let document = o.value("codeeditor.document");
+        let text = seed_text(document, self.document, self.editor.text());
+        let cursor = if document == self.document {
+            self.editor.cursor_offset().min(text.len())
         } else {
-            self.editor.text().to_owned()
+            0
         };
-        let cursor = self.editor.cursor_offset().min(text.len());
+        self.document = document;
         let keys = field_keys(o, "codeeditor.field_keys");
         let mut e = CodeEditor::new(ID.sub("code"), &text)
             .placeholder("Type code. i edits, Ctrl+R runs the block under the cursor.")
@@ -289,7 +319,7 @@ impl EditorPage {
         }
         e.indent = o.number("codeeditor.indent").unwrap_or(4) as usize;
         e.jump_to(cursor);
-        e.diagnostics = std::mem::take(&mut self.editor.diagnostics);
+        e.set_diagnostics(self.editor.diagnostics().to_vec());
         self.editor = e;
 
         let wide = o.value("codeeditor.completion_width") == "wide";
@@ -334,17 +364,27 @@ impl EditorPage {
             self.completion.close();
             return;
         }
+        let international = if self.opts.on("codeeditor.completion_international") {
+            international_candidates()
+        } else {
+            Vec::new()
+        };
         let mut ranked: Vec<(u32, Item)> = CANDIDATES
             .iter()
+            .map(|(label, detail, glyph)| (label.to_string(), detail.to_string(), *glyph))
+            .chain(international)
             .filter_map(|(label, detail, glyph)| {
-                let (penalty, matched) = fuzzy(label, &word)?;
-                Some((
-                    penalty,
-                    Item::new(*label)
-                        .glyph(*glyph)
-                        .detail(*detail)
-                        .matched(matched),
-                ))
+                let (penalty, matched) = fuzzy(&label, &word)?;
+                let why = UNAVAILABLE.iter().find(|(name, _)| *name == label.as_str());
+                let item = Item::new(label)
+                    .glyph(glyph)
+                    .detail(detail)
+                    .matched(matched);
+                let item = match why {
+                    Some((_, why)) => item.reason(*why),
+                    None => item,
+                };
+                Some((penalty, item))
             })
             .collect();
         ranked.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.label.cmp(&b.1.label)));
@@ -363,8 +403,9 @@ impl EditorPage {
     }
 
     fn accept(&mut self, i: usize) {
-        self.completion.apply(i, &mut self.editor.field.buffer);
-        self.completion.close();
+        if self.completion.apply(i, &mut self.editor.field.buffer) {
+            self.completion.close();
+        }
     }
 
     fn run(&mut self, cx: &mut Cx) {
@@ -387,14 +428,14 @@ impl EditorPage {
         if let Some(block) = self.editor.running.clone() {
             let text = self.editor.text()[block.clone()].to_owned();
             if let Some(p) = text.find(".unwrap()") {
-                self.editor.diagnostics.push(Diagnostic {
+                self.editor.push_diagnostic(Diagnostic {
                     range: block.start + p + 1..block.start + p + 9,
                     severity: Severity::Warning,
                     message: "unwrap() panics on Err; propagate with ? instead".into(),
                 });
             }
             if let Some(p) = text.find("todo!") {
-                self.editor.diagnostics.push(Diagnostic {
+                self.editor.push_diagnostic(Diagnostic {
                     range: block.start + p..block.start + p + 5,
                     severity: Severity::Error,
                     message: "not yet implemented".into(),
@@ -417,8 +458,8 @@ impl EditorPage {
             .position(|b| b.start <= cur && cur <= b.end)
             .map(|i| format!("{} of {}", i + 1, all.len()))
             .unwrap_or_else(|| "between blocks".into());
-        let diags = self.editor.diagnostics.len();
-        let find = match &self.editor.find {
+        let diags = self.editor.diagnostics().len();
+        let find = match self.editor.find_state() {
             None => "closed".to_owned(),
             Some(f) if f.needle.text().is_empty() => "type to find".to_owned(),
             Some(f) if f.matches.is_empty() => format!("“{}” · no matches", f.needle.text()),
@@ -463,7 +504,7 @@ impl EditorPage {
             Prop::new(
                 "Completion",
                 if self.completion.is_open() {
-                    format!("{} items", self.completion.items.len())
+                    format!("{} items", self.completion.items().len())
                 } else {
                     "closed".into()
                 },
@@ -538,10 +579,10 @@ impl EditorPage {
             let panel = Panel::card(Some("Diagnostics"));
             let bg = panel.bg(t);
             let inner = panel.render(Rect::new(r.x, y, r.width, (r.bottom() - y).min(9)), buf, t);
-            if self.editor.diagnostics.is_empty() {
+            if self.editor.diagnostics().is_empty() {
                 empty::render(inner, buf, t, &Self::no_diagnostics(), bg);
             } else {
-                for (i, d) in self.editor.diagnostics.iter().enumerate() {
+                for (i, d) in self.editor.diagnostics().iter().enumerate() {
                     let yy = inner.y + i as u16;
                     if yy >= inner.bottom() {
                         break;
@@ -582,7 +623,7 @@ fn states_grid() -> StateGrid {
     let id = ID.sub("states");
     let src = "let delay = 200;\nretry(delay);";
     let mut warned = CodeEditor::new(id.child(2), src).highlighter(highlight);
-    warned.diagnostics.push(Diagnostic {
+    warned.push_diagnostic(Diagnostic {
         range: 4..9,
         severity: Severity::Warning,
         message: "unused variable".into(),
@@ -716,7 +757,7 @@ impl Page for EditorPage {
                 let (o, ev) = self.editor.on_key(key);
                 match ev {
                     Some(EditorAction::Changed) => {
-                        self.editor.diagnostics.clear();
+                        self.editor.set_diagnostics(Vec::new());
                         self.trigger(false);
                     }
                     Some(EditorAction::CursorMoved) => {
@@ -736,7 +777,15 @@ impl Page for EditorPage {
                 }
                 o
             }
-            PageEvent::Paste(text) => self.editor.on_paste(text),
+            PageEvent::Paste(text) => {
+                let o = self.editor.on_paste(text);
+                if self.completion.is_open() {
+                    // The paste moved the cursor past the word the popup was
+                    // opened for, so its replace span and rows are stale.
+                    self.trigger(false);
+                }
+                o
+            }
             PageEvent::Pointer(ev) => {
                 if ev.wheel().is_some()
                     && let Some(r) = self.completion.route(ev)
@@ -745,11 +794,16 @@ impl Page for EditorPage {
                 }
                 if ev.is(Phase::Click) && self.completion.is_open() {
                     if ev.on(self.completion.id) {
-                        if let Some(CompletionAction::Accept(i)) =
-                            self.completion.route(ev).and_then(|r| r.into_action())
-                        {
-                            self.accept(i);
-                            return Outcome::Changed;
+                        let actions = self
+                            .completion
+                            .route(ev)
+                            .map(|r| r.into_actions())
+                            .unwrap_or_default();
+                        for action in actions {
+                            if let CompletionAction::Accept(i) = action {
+                                self.accept(i);
+                                return Outcome::Changed;
+                            }
                         }
                     } else {
                         self.completion.close();
@@ -757,14 +811,14 @@ impl Page for EditorPage {
                 }
                 if ev.is(Phase::Click) {
                     if let Some(r) = self.find.route(ev) {
-                        if r.into_action().is_some() {
+                        if r.has_actions() {
                             self.open_find(cx);
                         }
                         return Outcome::Changed;
                     }
                     if let Some(r) = self.run_button.route(ev) {
                         cx.focus.focus(self.run_button.id);
-                        if r.into_action().is_some() {
+                        if r.has_actions() {
                             self.run(cx);
                         }
                         return Outcome::Changed;
@@ -789,7 +843,12 @@ impl Page for EditorPage {
             return vec![("Enter", "Activate"), ("Tab", "Next")];
         }
         if self.completion.is_open() {
-            vec![("↑↓", "Move"), ("Enter", "Accept"), ("Esc", "Close")]
+            let mut v = vec![("↑↓", "Move")];
+            if self.completion.has_eligible() {
+                v.push(("Enter", "Accept"));
+            }
+            v.push(("Esc", "Close"));
+            v
         } else if self.editor.editing {
             vec![
                 ("Ctrl+Space", "Complete"),
@@ -828,8 +887,19 @@ impl Page for EditorPage {
     }
 
     fn set_option(&mut self, key: &str, value: usize) {
-        if self.opts.set(key, value) {
-            self.rebuild();
+        if !self.opts.set(key, value) {
+            return;
+        }
+        match key {
+            "codeeditor.highlighter" => {
+                let provider = self.opts.on(key).then_some(highlight as Highlighter);
+                self.editor.set_highlighter(provider);
+            }
+            "codeeditor.segmenter" => {
+                let provider = self.opts.on(key).then_some(blocks as Segmenter);
+                self.editor.set_segmenter(provider);
+            }
+            _ => self.rebuild(),
         }
     }
 
@@ -843,5 +913,116 @@ impl Page for EditorPage {
 
     fn template_mut(&mut self) -> Option<&mut Template> {
         Some(&mut self.template)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn hints_while_completing(word: &str) -> Vec<Hint> {
+        let mut page = EditorPage::new();
+        page.editor.field.buffer.insert_str(word);
+        page.trigger(true);
+        assert!(page.completion.is_open(), "{word} opens the popup");
+        page.hints(None)
+    }
+
+    fn drawn(page: &mut EditorPage) -> String {
+        use junie_tui::core::focus::FocusRing;
+        use junie_tui::core::hit::HitRegistry;
+        use junie_tui::theme::{ColorLevel, Theme};
+        use junie_tui::ui::ctx::Interaction;
+
+        let theme = Theme::for_level(ColorLevel::TrueColor);
+        let area = Rect::new(0, 0, 120, 40);
+        let mut buf = Buffer::empty(area);
+        let mut hits = HitRegistry::default();
+        let mut ring = FocusRing::default();
+        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        page.render(area, &mut buf, &mut ctx);
+        ctx.flush_overlays(&mut buf);
+        buf.content().iter().map(|c| c.symbol()).collect()
+    }
+
+    #[test]
+    fn completion_draws_why_the_highlighted_entry_is_unavailable() {
+        let (_, why) = UNAVAILABLE[0];
+        let mut page = EditorPage::new();
+        page.editor.field.buffer.insert_str("url");
+        drawn(&mut page);
+        page.trigger(true);
+        assert!(drawn(&mut page).contains(why));
+
+        // "url" is listed but disabled, and "return" is enabled. Keyboard
+        // navigation skips disabled rows, so the highlight starts on "return"
+        // and the reason of the unhighlighted "url" must stay undrawn.
+        let mut page = EditorPage::new();
+        page.editor.field.buffer.insert_str("ur");
+        drawn(&mut page);
+        page.trigger(true);
+        assert!(page.completion.items().iter().any(|i| i.label == "url"));
+        assert_eq!(
+            page.completion.current().map(|i| i.label.as_str()),
+            Some("return")
+        );
+        assert!(!drawn(&mut page).contains(why));
+    }
+
+    #[test]
+    fn a_paste_with_the_popup_open_refreshes_what_accept_replaces() {
+        use junie_tui::core::focus::{Focus, FocusRing};
+        let mut page = EditorPage::new();
+        page.editor.field.buffer.insert_str("fet");
+        page.editor.begin_edit();
+        page.trigger(true);
+        assert!(page.completion.is_open());
+        let mut focus = Focus::default();
+        focus.focus(page.editor.id);
+        let ring = FocusRing::default();
+        let mut cx = Cx::new(&mut focus, &ring);
+        page.handle(&PageEvent::Paste("ch".into()), &mut cx);
+        let (_, word) = page.word_before_cursor();
+        assert_eq!(word, "fetch");
+        // Accepting must replace the whole word the user now sees, not the
+        // three characters the popup was opened with.
+        let enter = junie_tui::core::event::Key {
+            code: KeyCode::Enter,
+            mods: ratatui::crossterm::event::KeyModifiers::NONE,
+        };
+        page.handle(&PageEvent::Key(enter), &mut cx);
+        assert!(
+            !page.editor.text().contains("fefetch"),
+            "stale replace span corrupted the word: {:?}",
+            &page.editor.text()[..16.min(page.editor.text().len())]
+        );
+    }
+
+    #[test]
+    fn accept_hint_follows_whether_a_candidate_is_eligible() {
+        let only_disabled = hints_while_completing("url");
+        assert!(
+            !only_disabled.contains(&("Enter", "Accept")),
+            "{only_disabled:?}"
+        );
+        assert!(only_disabled.contains(&("Esc", "Close")));
+
+        let eligible = hints_while_completing("fet");
+        assert!(eligible.contains(&("Enter", "Accept")), "{eligible:?}");
+    }
+
+    #[test]
+    fn a_cleared_large_document_reloads_as_large_not_as_the_sample() {
+        assert_eq!(seed_text("large", "large", ""), large_document());
+        assert_eq!(seed_text("sample", "sample", ""), SAMPLE);
+    }
+
+    #[test]
+    fn switching_documents_loads_the_chosen_one_and_other_options_keep_edits() {
+        assert_eq!(seed_text("large", "sample", "x"), large_document());
+        assert_eq!(seed_text("sample", "large", "x"), SAMPLE);
+        assert_eq!(seed_text("empty", "sample", "x"), "");
+        assert_eq!(seed_text("large", "large", "edited"), "edited");
+        assert_eq!(seed_text("sample", "sample", "edited"), "edited");
     }
 }

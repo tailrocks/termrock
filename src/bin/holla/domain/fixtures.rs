@@ -1299,6 +1299,7 @@ fn base(scenario: Scenario, motion: Motion, host: Host, location: Location) -> W
         scan: None,
         fs_latency: vec![],
         cleanup_job: None,
+        epochs: crate::domain::projection::ProjectionEpochs::default(),
         scenario,
         clock,
         tick: 0,
@@ -1330,6 +1331,7 @@ fn base(scenario: Scenario, motion: Motion, host: Host, location: Location) -> W
         next_activity: 0,
         trusted_now: vec![],
         healed_units: vec![],
+        stopping: false,
     }
 }
 

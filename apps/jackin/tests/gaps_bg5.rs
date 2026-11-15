@@ -10,13 +10,15 @@ mod pane_support;
 mod product_support;
 
 use capsule_support::*;
-use common::app_with;
+use common::{app_with, deliver_roster, hold_roster_refresh};
 use jackin_console::app::Remote;
-use jackin_console::domain::instance::{DaemonSnapshot, InstanceEntry, InstanceId};
+use jackin_console::domain::instance::{AgentState, DaemonSnapshot, InstanceEntry, InstanceId};
 use jackin_console::fixtures::{Scenario, world_for};
 use jackin_console::panes::{
-    EndKind, FailNext, LinkEvent, LinkFault, LinkStatus, PaneBody, PaneEffect, PaneId,
+    EndKind, FailNext, Lease, LinkEvent, LinkFault, LinkStatus, PaneBody, PaneCommand, PaneEffect,
+    PaneId,
 };
+use jackin_console::screens::Go;
 use jackin_console::sim::{self, SimBackend};
 use jackin_console::world::{Msg, World};
 use junie_tui::core::event::{External, Input, Outcome};
@@ -108,6 +110,218 @@ fn a_wake_for_nothing_changes_nothing() {
     assert_eq!(wake(&mut rig, pane), Outcome::Changed);
 }
 
+fn projected(rig: &Rig) -> DaemonSnapshot {
+    rig.app
+        .world
+        .instance(&InstanceId::simulated(INSTANCE))
+        .expect("record")
+        .daemon
+        .clone()
+}
+
+fn projected_states(rig: &Rig) -> Vec<AgentState> {
+    match projected(rig) {
+        DaemonSnapshot::Tabs(tabs) => tabs
+            .iter()
+            .flat_map(|t| t.panes.iter().map(|p| p.state))
+            .collect(),
+        other => panic!("{other:?}"),
+    }
+}
+
+fn body_states(rig: &Rig) -> Vec<AgentState> {
+    rig.daemon().panes.iter().map(|p| p.body.state()).collect()
+}
+
+/// Wipes the projection, so a later rebuild is visible.
+fn blank_projection(rig: &mut Rig) {
+    rig.app
+        .world
+        .instance_mut(&InstanceId::simulated(INSTANCE))
+        .expect("record")
+        .daemon = DaemonSnapshot::Unavailable;
+}
+
+fn open_second_tab(rig: &mut Rig) {
+    rig.press("ctrl+b c");
+    rig.typed("Shell");
+    rig.press("enter");
+    rig.advance(80);
+    let n = rig.bench.opened() - 1;
+    rig.bench.push(n, LinkEvent::Attached);
+    rig.bench.push(n, LinkEvent::Lease(Lease::Owner));
+    rig.advance(900);
+}
+
+#[test]
+fn wake_exit_updates_daemon_projection_before_next_tick() {
+    let mut rig = Rig::new();
+    rig.attach();
+    let pane = first_pane(&rig);
+    assert_eq!(projected_states(&rig), [AgentState::Unknown]);
+
+    rig.bench.push(0, LinkEvent::Exited(Some(0)));
+    assert_eq!(wake(&mut rig, pane), Outcome::Changed);
+    assert_eq!(body_states(&rig), [AgentState::Done]);
+    assert_eq!(
+        projected_states(&rig),
+        [AgentState::Done],
+        "the roster agrees before any tick"
+    );
+
+    rig.advance(400);
+    assert_eq!(body_states(&rig), [AgentState::Done]);
+    assert_eq!(
+        projected_states(&rig),
+        [AgentState::Done],
+        "empty ticks do not undo it"
+    );
+}
+
+#[test]
+fn wake_background_attention_updates_manager_row() {
+    let mut rig = Rig::new();
+    rig.attach();
+    open_second_tab(&mut rig);
+    let pane = first_pane(&rig);
+    assert_eq!(
+        projected_states(&rig),
+        [AgentState::Unknown, AgentState::Unknown]
+    );
+
+    rig.bench.output(0, b"\x07");
+    assert_eq!(wake(&mut rig, pane), Outcome::Changed);
+    assert_eq!(
+        body_states(&rig),
+        [AgentState::Blocked, AgentState::Unknown]
+    );
+    assert_eq!(
+        projected_states(&rig),
+        [AgentState::Blocked, AgentState::Unknown],
+        "a wake carries the bell to the roster"
+    );
+
+    rig.press("ctrl+b d");
+    let manager = rig.flat();
+    let mut ticked = Rig::new();
+    ticked.attach();
+    open_second_tab(&mut ticked);
+    ticked.bench.output(0, b"\x07");
+    ticked.advance(80);
+    ticked.press("ctrl+b d");
+    assert_eq!(projected_states(&ticked), projected_states(&rig));
+    assert_eq!(
+        manager,
+        ticked.flat(),
+        "the Manager reads the same after a wake as after a tick"
+    );
+}
+
+#[test]
+fn wake_failure_matches_tick_projection() {
+    let refused = |rig: &mut Rig| {
+        rig.advance(80);
+        let fault = LinkFault::new("the gateway is unreachable").then(FailNext::RunDoctor);
+        rig.bench.push(0, LinkEvent::Ended(EndKind::Refused(fault)));
+    };
+    let mut woken = Rig::new();
+    refused(&mut woken);
+    let pane = first_pane(&woken);
+    assert_eq!(wake(&mut woken, pane), Outcome::Changed);
+
+    let mut ticked = Rig::new();
+    refused(&mut ticked);
+    ticked.advance(80);
+
+    assert_eq!(body_states(&woken), [AgentState::Blocked]);
+    assert_eq!(body_states(&woken), body_states(&ticked));
+    assert_eq!(projected(&woken), projected(&ticked));
+    assert_eq!(
+        woken.daemon().panes[0].body.note(&words()),
+        ticked.daemon().panes[0].body.note(&words())
+    );
+}
+
+#[test]
+fn empty_wake_does_not_rebuild_projection() {
+    let mut rig = Rig::new();
+    rig.attach();
+    let pane = first_pane(&rig);
+    rig.bench.push(0, LinkEvent::Exited(Some(0)));
+    assert_eq!(wake(&mut rig, pane), Outcome::Changed);
+    assert_eq!(projected_states(&rig), [AgentState::Done]);
+
+    blank_projection(&mut rig);
+    for _ in 0..100 {
+        assert_eq!(wake(&mut rig, pane), Outcome::Ignored);
+    }
+    assert_eq!(
+        projected(&rig),
+        DaemonSnapshot::Unavailable,
+        "an empty wake rebuilt nothing"
+    );
+}
+
+#[test]
+fn wake_missing_target_is_ignored() {
+    let mut rig = Rig::new();
+    rig.attach();
+    let pane = first_pane(&rig);
+    rig.bench.push(0, LinkEvent::Exited(Some(0)));
+    blank_projection(&mut rig);
+
+    assert_eq!(wake_of(&mut rig, "jk-nobody", pane), Outcome::Ignored);
+    assert_eq!(wake(&mut rig, pane + 99), Outcome::Ignored);
+    assert_eq!(body_states(&rig), [AgentState::Unknown]);
+    assert_eq!(projected(&rig), DaemonSnapshot::Unavailable);
+
+    assert_eq!(wake(&mut rig, pane), Outcome::Changed);
+    assert_eq!(projected_states(&rig), [AgentState::Done]);
+}
+
+#[test]
+fn a_wake_pumps_only_its_pane() {
+    let mut rig = Rig::new();
+    rig.attach();
+    open_second_tab(&mut rig);
+    let panes: Vec<PaneId> = rig.daemon().panes.iter().map(|p| p.id).collect();
+    let drains = |rig: &Rig, n: usize| rig.bench.log(n).lock().expect("log").drains.len();
+    let (first, second) = (drains(&rig, 0), drains(&rig, 1));
+
+    rig.bench.push(0, LinkEvent::Exited(Some(1)));
+    assert_eq!(wake(&mut rig, panes[0]), Outcome::Changed);
+    assert_eq!(
+        drains(&rig, 0),
+        first + 1,
+        "the addressed pane drained once"
+    );
+    assert_eq!(drains(&rig, 1), second, "its neighbour did not");
+    assert_eq!(
+        projected_states(&rig),
+        [AgentState::Blocked, AgentState::Unknown]
+    );
+}
+
+#[test]
+fn wake_replay_expiry_preserves_changed_without_summary_change() {
+    let mut rig = Rig::new();
+    rig.advance(80);
+    rig.bench.push(0, LinkEvent::Attached);
+    rig.bench.push(0, LinkEvent::Lease(Lease::Owner));
+    rig.advance(20);
+    rig.bench.output(0, b"replayed canary");
+    rig.advance(20);
+    let pane = first_pane(&rig);
+    assert!(!rig.screen().contains("replayed canary"));
+    let before = projected(&rig);
+
+    rig.app.world.clock.advance(900);
+    assert_eq!(wake(&mut rig, pane), Outcome::Changed);
+    assert!(rig.screen().contains("replayed canary"), "{}", rig.screen());
+    assert_eq!(projected(&rig), before, "the summary did not change");
+    assert_eq!(wake(&mut rig, pane), Outcome::Ignored);
+}
+
 #[test]
 fn the_backend_hears_when_the_operator_leaves_the_capsule() {
     let mut rig = Rig::new();
@@ -129,6 +343,59 @@ fn the_backend_hears_when_the_operator_leaves_the_capsule() {
     assert_eq!(rig.backend.left(), [INSTANCE], "Ctrl+B d leaves");
     rig.advance(400);
     assert_eq!(rig.backend.left(), [INSTANCE], "once, not on every tick");
+}
+
+const FOCUS_OUT: &[u8] = b"\x1b[O";
+
+/// An attached, owned Codex pane whose program asked for focus reports.
+fn reporting_rig() -> Rig {
+    let mut rig = Rig::new();
+    rig.attach();
+    rig.bench.output(0, b"\x1b[?1004h");
+    rig.advance(80);
+    assert_eq!(rig.bench.commands(0), [], "the pane has the focus");
+    rig
+}
+
+#[test]
+fn public_navigation_blurs_departed_capsule_before_callback() {
+    type Destination = (&'static str, fn() -> Go);
+    let destinations: [Destination; 4] = [
+        ("manager", || Go::Manager),
+        ("accounts", || Go::Accounts { select: None }),
+        ("usage", || Go::Usage { select: None }),
+        ("settings", || Go::Settings),
+    ];
+    for (name, destination) in destinations {
+        let mut rig = reporting_rig();
+        rig.app.go(destination());
+        assert_eq!(rig.backend.left(), [INSTANCE], "{name}: one departure");
+        assert_eq!(
+            rig.backend.left_seen(),
+            [vec![vec![PaneCommand::Input(FOCUS_OUT.to_vec())]]],
+            "{name}: the program was told it lost the focus before the backend heard"
+        );
+    }
+}
+
+#[test]
+fn detach_emits_one_focus_out() {
+    let mut rig = reporting_rig();
+    rig.press("ctrl+b d");
+    let out = PaneCommand::Input(FOCUS_OUT.to_vec());
+    assert_eq!(rig.bench.commands(0), std::slice::from_ref(&out));
+    assert_eq!(rig.backend.left(), [INSTANCE]);
+    assert_eq!(rig.backend.left_seen(), [vec![vec![out]]]);
+
+    rig.app.go(Go::Accounts { select: None });
+    rig.app.go(Go::Manager);
+    rig.advance(400);
+    assert_eq!(
+        rig.bench.commands(0),
+        [PaneCommand::Input(FOCUS_OUT.to_vec())],
+        "navigating again says nothing"
+    );
+    assert_eq!(rig.backend.left(), [INSTANCE], "and leaves nothing again");
 }
 
 #[test]
@@ -282,10 +549,7 @@ fn refresh_keeps_open_panes() {
             .all(|i| i.daemon == DaemonSnapshot::Unavailable),
         "the snapshot says nothing about daemons"
     );
-    let outcome = app.deliver(&Msg::Refreshed {
-        ticket: app.world.refresh_ticket,
-        result: Ok(Box::new(snapshot.clone())),
-    });
+    let outcome = deliver_roster(&mut app, snapshot.clone());
     assert_ne!(outcome, Outcome::Ignored);
 
     let after: Vec<(InstanceId, usize, usize)> = app
@@ -327,4 +591,32 @@ fn refresh_keeps_open_panes() {
             .expect("daemon"),
         "a reloaded snapshot keeps them too"
     );
+}
+
+#[test]
+fn terminal_projection_does_not_invalidate_roster_observation() {
+    let mut rig = Rig::new();
+    rig.attach();
+    let pane = first_pane(&rig);
+    let roster = snapshot_without_daemons(&rig.app.world);
+    let ticket = hold_roster_refresh(&mut rig.app);
+    let applied = rig.app.world.snapshots_applied;
+
+    rig.bench.output(0, b"output while the roster is out");
+    assert_eq!(wake(&mut rig, pane), Outcome::Changed);
+    jackin_console::world::refresh_snapshots(&mut rig.app.world);
+    rig.advance(160);
+    let panes = rig.daemon().panes.len();
+
+    let answer = Msg::Refreshed {
+        ticket,
+        result: Ok(Box::new(roster)),
+    };
+    assert_ne!(rig.app.deliver(&answer), Outcome::Ignored);
+    assert_eq!(
+        rig.app.world.snapshots_applied,
+        applied + 1,
+        "the roster applied"
+    );
+    assert_eq!(rig.daemon().panes.len(), panes, "the live panes survive");
 }

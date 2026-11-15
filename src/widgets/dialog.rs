@@ -974,7 +974,11 @@ impl Dialog {
                 self.scroll_code(1)
             }
             (Some(nav @ (Nav::Left | Nav::Right)), _) => {
-                if let Some(id) = self.button_row.step(&self.actions, cur, nav == Nav::Right) {
+                if let Some(id) = self.button_row.step(
+                    self.actions.iter().filter(|b| ring.contains(b.id)),
+                    cur,
+                    nav == Nav::Right,
+                ) {
                     focus.focus(id);
                 }
                 Outcome::Changed
@@ -1171,7 +1175,7 @@ impl Dialog {
             }
             DialogBody::Facts { facts, code, ack } => {
                 let sheet_area = Rect::new(0, 0, inner.width, content);
-                let mut sheet = Buffer::empty(sheet_area);
+                let mut sheet = crate::ui::ctx::scratch_buffer(sheet_area);
                 fill(&mut sheet, sheet_area, ratatui::style::Style::new().bg(bg));
                 crate::widgets::props::render(sheet_area, &mut sheet, t, facts, bg);
                 let facts_h = crate::widgets::props::measure(facts, inner.width);

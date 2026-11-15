@@ -9,6 +9,7 @@ use crate::core::keymap::{Nav, NavKeys};
 use crate::core::list::{Cursor, Navigable, RowSource};
 use crate::core::refusal::{Control, Reason};
 use crate::ui::ctx::RenderCtx;
+use crate::ui::measure::terminal_extent;
 use crate::ui::row::{RowLook, RowUi};
 
 fn row_part(buf: &mut Buffer, row: Rect, offset: u16, text: &str, style: Style) {
@@ -106,8 +107,9 @@ impl Checkbox {
         Outcome::Changed
     }
 
+    /// Natural width of the checkbox row, saturating at `u16::MAX`.
     pub fn width(&self) -> u16 {
-        crate::ui::text::width(&self.label) as u16 + 6
+        terminal_extent(crate::ui::text::width(&self.label).saturating_add(6))
     }
 
     pub fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, bg: Color) {
@@ -263,10 +265,16 @@ impl RadioGroup {
         PartRef::item(Part::ROW, ItemKey::index(i))
     }
 
+    /// Natural width of the group, saturating at `u16::MAX`.
     pub fn width(&self) -> u16 {
-        let w = |t: &str| crate::ui::text::width(t) as u16;
-        let options = self.options.iter().map(|o| w(o) + 6).max().unwrap_or(0);
-        (w(&self.label) + 2).max(options)
+        let w = crate::ui::text::width;
+        let options = self
+            .options
+            .iter()
+            .map(|o| w(o).saturating_add(6))
+            .max()
+            .unwrap_or(0);
+        terminal_extent(w(&self.label).saturating_add(2).max(options))
     }
 
     pub fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, bg: Color) {
@@ -379,8 +387,9 @@ impl Toggle {
         Outcome::Changed
     }
 
+    /// Natural width of the toggle row, saturating at `u16::MAX`.
     pub fn width(&self) -> u16 {
-        crate::ui::text::width(&self.label) as u16 + 10
+        terminal_extent(crate::ui::text::width(&self.label).saturating_add(10))
     }
 
     pub fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, bg: Color) {
