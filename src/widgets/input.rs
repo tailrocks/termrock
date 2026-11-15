@@ -1104,4 +1104,77 @@ mod issue35_tests {
             "required fires before the current validator"
         );
     }
+
+    #[test]
+    fn issue35_input_commit_mode_validates_only_on_commit() {
+        let calls = Rc::new(Cell::new(0));
+        let counter = calls.clone();
+        let mut input = TextInput::new(WidgetId::of("issue35.commit"), "Name")
+            .edit_entry(EditEntry::Explicit)
+            .value("Alice")
+            .required(true)
+            .required_message(REQUIRED)
+            .validate_when(ValidateWhen::Commit)
+            .validator(move |_| {
+                counter.set(counter.get() + 1);
+                None
+            });
+
+        input.on_key(&key(KeyCode::Enter));
+        for _ in 0..5 {
+            input.on_key(&key(KeyCode::Backspace));
+        }
+        assert_eq!(input.text(), "");
+        assert_eq!(calls.get(), 0, "keystrokes must not run the custom rule");
+        assert_eq!(input.error(), None, "no error before commit");
+        assert!(!painted(&mut input).contains(REQUIRED));
+
+        let (_, action) = input.on_key(&key(KeyCode::Enter));
+        assert_eq!(action, Some(InputAction::Committed));
+        assert_eq!(
+            input.error(),
+            Some(REQUIRED),
+            "commit reports the required error"
+        );
+        assert_eq!(
+            calls.get(),
+            0,
+            "required rejection short-circuits the custom rule"
+        );
+        assert!(painted(&mut input).contains(REQUIRED));
+
+        input.on_key(&key(KeyCode::Enter));
+        input.on_key(&key(KeyCode::Char('B')));
+        assert_eq!(calls.get(), 0, "typing a correction does not validate");
+        input.on_key(&key(KeyCode::Enter));
+        assert_eq!(
+            input.error(),
+            None,
+            "the corrected value clears the error on commit"
+        );
+        assert_eq!(calls.get(), 1, "commit runs the custom rule once");
+    }
+
+    #[test]
+    fn issue35_input_cancel_skips_custom_validation() {
+        let calls = Rc::new(Cell::new(0));
+        let counter = calls.clone();
+        let mut input = TextInput::new(WidgetId::of("issue35.cancel"), "Name")
+            .edit_entry(EditEntry::Explicit)
+            .required(true)
+            .required_message(REQUIRED)
+            .validator(move |_| {
+                counter.set(counter.get() + 1);
+                None
+            });
+
+        input.on_key(&key(KeyCode::Enter));
+        input.on_key(&key(KeyCode::Char('x')));
+        let (_, action) = input.on_key(&key(KeyCode::Esc));
+        assert_eq!(action, Some(InputAction::Cancelled));
+        assert!(!input.wants_text_input(), "cancel leaves edit mode");
+        assert_eq!(input.text(), "", "cancel restores the snapshot");
+        assert_eq!(calls.get(), 0, "cancel must not run the custom rule");
+        assert_eq!(input.error(), None, "cancel must not validate");
+    }
 }
