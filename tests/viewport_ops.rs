@@ -777,3 +777,16 @@ fn prepared_draw_does_not_copy_history() {
         );
     }
 }
+
+#[test]
+fn prepared_draw_collapsed_area_copies_no_history() {
+    let mut v = TextViewport::with_lines(ID, wide_lines(1_000));
+    v.set_area(AREA);
+    let frame = shared_frame(&v, Rect::new(0, 0, 0, 0), None, true);
+    assert_eq!(
+        draw_clones(&v),
+        (0, 0, 0),
+        "a collapsed draw copies no history"
+    );
+    assert_eq!(frame.returned, None, "nothing is painted for an empty area");
+}

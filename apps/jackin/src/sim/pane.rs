@@ -393,3 +393,69 @@ impl PaneBody for ScriptPane {
         true
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::instance::InstanceId;
+    use crate::panes::PaneSpawn;
+    use crate::sim::scripts::SimScripts;
+    use junie_tui::core::focus::FocusRing;
+    use junie_tui::core::hit::HitRegistry;
+    use junie_tui::theme::{ColorLevel, Theme};
+    use junie_tui::ui::ctx::{Interaction, RenderCtx};
+    use ratatui::buffer::Buffer;
+
+    const INNER: Rect = Rect::new(0, 0, 80, 24);
+
+    fn synced_pane() -> ScriptPane {
+        let instance = InstanceId::simulated("jk-pane-test");
+        let request = PaneRequest::new(&instance, None, None);
+        let spawn = PaneSpawn {
+            id: 1,
+            workspace: "workspace".into(),
+            now_ms: 0,
+        };
+        let mut pane = ScriptPane::new(&request, &spawn, SimScripts::shared());
+        pane.term.set_lines(
+            (0..1_000)
+                .map(|n| vec![Span::plain(format!("history line {n}"))])
+                .collect(),
+        );
+        pane.sync_size(INNER);
+        pane
+    }
+
+    fn draw_at(pane: &ScriptPane, area: Rect) {
+        let theme = Theme::for_level(ColorLevel::TrueColor);
+        let mut buf = Buffer::empty(INNER);
+        let mut hits = HitRegistry::default();
+        let mut ring = FocusRing::default();
+        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        pane.viewport()
+            .draw(area, &mut buf, &mut ctx, theme.canvas, true);
+    }
+
+    #[test]
+    fn capsule_pane_draw_takes_the_fast_path() {
+        let pane = synced_pane();
+        draw_at(&pane, INNER);
+        assert_eq!(pane.term.work_counters().draw_fallbacks, 0);
+    }
+
+    #[test]
+    fn capsule_pane_draw_fallback_counts_a_different_rect() {
+        let pane = synced_pane();
+        draw_at(&pane, Rect::new(0, 0, 60, 24));
+        assert_eq!(pane.term.work_counters().draw_fallbacks, 1);
+    }
+
+    #[test]
+    fn capsule_pane_collapsed_draw_copies_no_history() {
+        let pane = synced_pane();
+        draw_at(&pane, Rect::new(0, 0, 0, 0));
+        let work = pane.term.work_counters();
+        assert_eq!(work.draw_fallbacks, 0);
+        assert_eq!(work.draw_cloned_lines, 0);
+    }
+}
