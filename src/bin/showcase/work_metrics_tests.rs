@@ -237,19 +237,16 @@ fn stress_case(case: &Stress, change: &[(Metric, u64)], settled: &[(Metric, u64)
 //   1,825,650 compares is 6 sorts of about 1.01 N ceil(log2 N). The status bar
 //   is therefore planned six times a frame, each plan linear in N plus one sort
 //   (inferred from the arithmetic).
-// - Chips: 80,629 widths is 4N plus 629 and 40,025 visits is 2N plus 25. The
+// - Chips: 40,615 widths is 2N plus 615 and 40,025 visits is 2N plus 25. The
 //   28 compares equal the stress-off frame: the chip fitter never sorts. The
 //   bar is cut to its card, so the page fits the viewport width and
 //   `ScrollView::fit` measures it a second time to reserve the scrollbar
-//   column. That is a fourth pass over the bar (the page measures at two
-//   widths, 114 and 112, and then renders), one more N than before the clamp
-//   left room for the card insets. The card now holds four filter chips and `+19996`.
+//   column (the page measures at two widths, 114 and 112, and then renders).
+//   The bar's natural width does not depend on the width, so the page reads
+//   it once per frame: one pass over the bar for all three tilings, and one
+//   for `ChipBar::render`. The card now holds four filter chips and `+19996`.
 //   In the label scene the 65,536-cell chip comes last, so the bar shows the
-//   four demo filters and `+1`: 645 widths, 266,511 bytes and 35 visits.
-//   Two of those widths are `ChipBar::render` measuring the overflow marker and
-//   the add button once per frame to learn which stops it drew, so the cursor
-//   stays on a drawn chip. They cost 14 bytes in the label scene (`+1` and the
-//   add label) and 18 in the items scene (`+19996` and the add label).
+//   four demo filters and `+1`: 621 widths, 135,221 bytes and 35 visits.
 //
 // A fitter that rescans survivors per removal would add a factor of N to the
 // visits or the widths and fail these exact counts.
@@ -442,8 +439,8 @@ fn work_contract_stress_chips_items() {
             (Metric::BufferCellsFilled, 4_368),
             (Metric::BufferCellsCopied, 12_096),
             (Metric::VisibleRowsPainted, 17),
-            (Metric::IntrinsicWidthCalls, 80_629),
-            (Metric::TextBytesMeasured, 964_145),
+            (Metric::IntrinsicWidthCalls, 40_615),
+            (Metric::TextBytesMeasured, 484_051),
             (Metric::FitVisits, 40_025),
             (Metric::FitCompares, 28),
         ],
@@ -452,8 +449,8 @@ fn work_contract_stress_chips_items() {
             (Metric::BufferCellsFilled, 4_368),
             (Metric::BufferCellsCopied, 12_096),
             (Metric::VisibleRowsPainted, 17),
-            (Metric::IntrinsicWidthCalls, 80_629),
-            (Metric::TextBytesMeasured, 964_145),
+            (Metric::IntrinsicWidthCalls, 40_615),
+            (Metric::TextBytesMeasured, 484_051),
             (Metric::FitVisits, 40_025),
             (Metric::FitCompares, 28),
         ],
@@ -476,8 +473,8 @@ fn work_contract_stress_chips_label() {
             (Metric::BufferCellsFilled, 4_368),
             (Metric::BufferCellsCopied, 12_096),
             (Metric::VisibleRowsPainted, 17),
-            (Metric::IntrinsicWidthCalls, 645),
-            (Metric::TextBytesMeasured, 266_511),
+            (Metric::IntrinsicWidthCalls, 621),
+            (Metric::TextBytesMeasured, 135_221),
             (Metric::FitVisits, 35),
             (Metric::FitCompares, 28),
         ],
@@ -486,8 +483,8 @@ fn work_contract_stress_chips_label() {
             (Metric::BufferCellsFilled, 4_368),
             (Metric::BufferCellsCopied, 12_096),
             (Metric::VisibleRowsPainted, 17),
-            (Metric::IntrinsicWidthCalls, 645),
-            (Metric::TextBytesMeasured, 266_511),
+            (Metric::IntrinsicWidthCalls, 621),
+            (Metric::TextBytesMeasured, 135_221),
             (Metric::FitVisits, 35),
             (Metric::FitCompares, 28),
         ],
