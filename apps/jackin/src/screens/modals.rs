@@ -572,7 +572,7 @@ impl OpFlow {
 
     fn choose(&mut self, i: usize, op: &dyn OnePassword) -> Outcome {
         let (Some(row), Some(id)) = (
-            self.picker.items().get(i).cloned(),
+            self.picker.visible_item(i).map(|v| v.item.clone()),
             self.ids.get(i).cloned(),
         ) else {
             return Outcome::Consumed;

@@ -2288,7 +2288,7 @@ impl PointerHost for App {
 }
 
 fn tab_index(p: &Picker, i: usize) -> usize {
-    p.items().get(i).map_or(i, |it| it.value)
+    p.visible_item(i).map_or(i, |it| it.item.value)
 }
 
 fn tab_list_items(w: &Workbench, query: &str) -> Vec<Item> {

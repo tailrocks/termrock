@@ -951,8 +951,8 @@ impl Specimen for crate::widgets::picker::Picker {
         use SpecimenState::*;
         match state {
             Rest | Empty | Loading | Error => true,
-            Hover | Pressed | Disabled => self.items().len() > 1,
-            Overflow => self.items().len() > 3,
+            Hover | Pressed | Disabled => self.visible_len() > 1,
+            Overflow => self.visible_len() > 3,
             Focused | FocusedHover | Selected | Busy | Editing | Narrow => false,
         }
     }
@@ -974,7 +974,7 @@ impl Specimen for crate::widgets::picker::Picker {
         let w = p.list().width.1.min(area.width);
         p.set_width(w);
         let v = state.visual();
-        let row = p.row_id(1.min(p.items().len().saturating_sub(1)));
+        let row = p.row_id(1.min(p.visible_len().saturating_sub(1)));
         ctx.interaction.focus = None;
         ctx.interaction.hover = v.hovered.then_some(row);
         ctx.interaction.pressed = v.pressed.then_some(row);
@@ -993,7 +993,10 @@ fn picker_sample(
     p.backdrop = crate::ui::ctx::Backdrop::FULL;
     match state {
         SpecimenState::Disabled => {
-            let mut items = p.items().to_vec();
+            let mut items: Vec<_> = p
+                .visible_items()
+                .map(|v| v.item.clone().matched(v.matched.to_vec()))
+                .collect();
             if let Some(item) = items.get_mut(1) {
                 item.disabled = true;
             }

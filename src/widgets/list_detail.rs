@@ -493,6 +493,7 @@ impl ListDetail {
         ctx.scrollable(self.master, inner);
         let has_sb = self.scroll.overflows();
         let row_w = inner.width.saturating_sub(u16::from(has_sb));
+        crate::core::work::add(crate::core::work::Counter::WidthRows, frame.rows.len());
         let label_w = frame
             .rows
             .iter()

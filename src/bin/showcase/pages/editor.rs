@@ -463,7 +463,7 @@ impl EditorPage {
             Prop::new(
                 "Completion",
                 if self.completion.is_open() {
-                    format!("{} items", self.completion.items.len())
+                    format!("{} items", self.completion.items().len())
                 } else {
                     "closed".into()
                 },

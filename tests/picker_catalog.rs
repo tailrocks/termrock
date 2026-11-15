@@ -665,19 +665,19 @@ fn typed_picker_closures_respect_shadowing_and_restore_outer_bindings() {
     let has_items = |source: &str| {
         PageUsage::from_source(source, &exported, &catalog)
             .api
-            .contains("widgets::picker::Picker::items")
+            .contains("widgets::picker::Picker::visible_items")
     };
     assert!(has_items(
-        "fn show() { value.map(|p: &Picker| p.items()); }"
+        "fn show() { value.map(|p: &Picker| p.visible_items()); }"
     ));
     assert!(!has_items(
-        "fn show(p: Picker) { value.map(|p: &Other| p.items()); }"
+        "fn show(p: Picker) { value.map(|p: &Other| p.visible_items()); }"
     ));
     assert!(!has_items(
-        "fn show() { value.map(|p: &Other| p.items()); } fn other(p: &Other) { p.items(); }"
+        "fn show() { value.map(|p: &Other| p.visible_items()); } fn other(p: &Other) { p.visible_items(); }"
     ));
     assert!(has_items(
-        "fn show(p: Picker) { value.map(|p: &Other| p.items()); p.items(); }"
+        "fn show(p: Picker) { value.map(|p: &Other| p.visible_items()); p.visible_items(); }"
     ));
 }
 

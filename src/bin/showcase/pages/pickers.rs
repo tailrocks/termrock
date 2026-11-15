@@ -556,7 +556,10 @@ impl PickersPage {
             PickerAction::QueryChanged => self.refill(kind, cx),
             PickerAction::Chosen(i) | PickerAction::ChosenAlt(i) => {
                 let alt = matches!(ev, PickerAction::ChosenAlt(_));
-                if let Some(it) = picker.as_ref().and_then(|p: &Picker| p.items().get(i)) {
+                if let Some(it) = picker
+                    .as_ref()
+                    .and_then(|p: &Picker| p.visible_item(i).map(|v| v.item))
+                {
                     if kind == Kind::Level {
                         self.level = i;
                     }

@@ -18,3 +18,4 @@ pub mod selection;
 pub mod shape;
 pub mod text;
 pub mod typeahead;
+pub mod work;
