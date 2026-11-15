@@ -2613,7 +2613,11 @@ mod tests {
                 1,
                 KeyModifiers::NONE,
             );
-            picker.pointer(&ev).into_parts().1.into_iter().next()
+            MouseTarget::pointer(picker, &ev)
+                .into_parts()
+                .1
+                .into_iter()
+                .next()
         };
 
         let hits = draw(&mut picker);
