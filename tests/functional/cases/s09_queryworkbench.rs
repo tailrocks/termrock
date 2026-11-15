@@ -7,8 +7,9 @@
 //! A paused Ctrl+R stays on "Running…". The 140ms press flash stays painted
 //! while motion is paused, so a shot after a released click has to redraw once
 //! the deadline has passed ([`flash_settle`]). A tab click marks the strip
-//! active before this page reloads the editor, so opening and closing go
-//! through the explorer and the close glyph, which call `load_editor`.
+//! active before it emits `Activated`; the page keeps one editor per document
+//! and activates by document key, so a tab click shows that document's own
+//! editor and result ([`tab_click_activates_that_document`]).
 
 use std::time::Duration;
 
@@ -909,6 +910,37 @@ fn expand_views(app: &App) {
     // The explorer column clips the lazy names to active_custo… and monthly_reve….
     app.wait_text("active_custo");
     app.wait_text("monthly_reve");
+}
+
+#[test]
+fn tab_click_activates_that_document() {
+    let app = page_motion("s09-tab-click-document", None, 120, 40, "full");
+    app.wait_text(FROM_ORDERS);
+    click_where(&app, "customers", |hit| hit.y == 7);
+    let customers = app.wait_text(CUSTOMERS_SQL);
+    see(
+        &customers,
+        &[CUSTOMERS_SQL, "Not run yet", "2 tabs"],
+        &[FROM_ORDERS, PENDING, "Northwind"],
+    );
+
+    // Run belongs to the document the strip shows, not the one loaded before.
+    app.key("ctrl+r");
+    let ran = app.wait_text("✓ 40 rows");
+    see(
+        &ran,
+        &[CUSTOMERS_SQL, "✓ 40 rows"],
+        &[FROM_ORDERS, PENDING, "Not run yet"],
+    );
+
+    click_where(&app, "Query 1", |hit| hit.y == 7);
+    let query1 = app.wait_text(FROM_ORDERS);
+    see(
+        &query1,
+        &[FROM_ORDERS, PENDING, ROWS_META, "2 tabs"],
+        &[CUSTOMERS_SQL],
+    );
+    app.finish();
 }
 
 #[test]
