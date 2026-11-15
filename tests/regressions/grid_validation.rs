@@ -849,12 +849,12 @@ fn issue48_pending_noop_keeps_history() {
     assert_eq!(seed(&grid), "7.5");
     let (_, action) = press(&mut grid, KeyCode::Enter);
     assert_eq!(action, None);
-    assert_eq!(grid.pending.total(), 1);
+    assert_eq!(grid.pending().total(), 1);
     assert_eq!(bits(&grid, 0), 7.5f64.to_bits());
 
-    assert!(grid.undo(), "the real edit undoes");
+    assert!(grid.undo().is_some(), "the real edit undoes");
     assert_eq!(bits(&grid, 0), 1.2345f64.to_bits());
-    assert!(!grid.undo(), "the no-op left no history entry");
+    assert!(grid.undo().is_none(), "the no-op left no history entry");
     untouched(&mut grid);
 
     press(&mut grid, KeyCode::Enter);
@@ -864,7 +864,7 @@ fn issue48_pending_noop_keeps_history() {
     replace_text(&mut grid, 3, "1.2345");
     let (_, action) = press(&mut grid, KeyCode::Enter);
     assert_eq!(action, Some(GridAction::CellChanged { row: 0, col: 0 }));
-    assert!(grid.pending.is_empty(), "back at the stored value");
+    assert!(grid.pending().is_empty(), "back at the stored value");
 }
 
 #[test]
