@@ -497,7 +497,9 @@ impl ChipBar {
             {
                 return (Outcome::Changed, Some(ChipAction::Remove(self.cursor)));
             }
-            Some(ChipCmd::Add) => return (Outcome::Changed, Some(ChipAction::Add)),
+            Some(ChipCmd::Add) if self.add_label.is_some() => {
+                return (Outcome::Changed, Some(ChipAction::Add));
+            }
             Some(ChipCmd::ClearAll) => return (Outcome::Changed, Some(ChipAction::ClearAll)),
             Some(ChipCmd::ShowHidden)
                 if self.overflow_menu && self.overflow_marker && self.shown < self.chips.len() =>
