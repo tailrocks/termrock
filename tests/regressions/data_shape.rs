@@ -294,8 +294,8 @@ fn issue42_shape_failure_is_atomic() {
     );
 
     let mut g = grid();
-    g.record_cell(0, 1, text("edited"));
-    g.toggle_delete(1);
+    g.record_cell(0, 1, text("edited")).unwrap();
+    g.toggle_delete(1).unwrap();
     g.cell_errors.insert((0, 0), "kept".into());
     g.cursor = (0, 0);
     let _ = g.begin_edit();

@@ -209,16 +209,17 @@ fn issue47_numeric_nonfinite_rejected() {
 
 fn grid(column: ColumnSpec, value: CellValue) -> DataGrid {
     let mut grid = DataGrid::new(WidgetId::of("t.grid47"), vec![column]);
-    grid.set_rows(GridRows {
+    grid.try_set_rows(GridRows {
         rows: vec![vec![value]],
         total: RowTotal::Unknown,
         more: false,
-    });
+    })
+    .expect("rectangular fixture");
     grid
 }
 
 fn press(grid: &mut DataGrid, code: KeyCode) -> Option<GridAction> {
-    grid.on_key(&key(code)).1
+    grid.on_key(&key(code)).into_actions().into_iter().next()
 }
 
 fn replace(grid: &mut DataGrid, with: &str) {
@@ -232,7 +233,7 @@ fn replace(grid: &mut DataGrid, with: &str) {
 
 fn untouched(grid: &mut DataGrid, original: &CellValue) {
     assert!(grid.pending().is_empty(), "pending {:?}", grid.pending());
-    assert!(grid.undo().is_none(), "an undo record was pushed");
+    assert!(grid.undo().unwrap().is_none(), "an undo record was pushed");
     assert_eq!(grid.value(0, 0), original, "the effective value moved");
 }
 
@@ -258,7 +259,7 @@ fn issue47_parser_error_through_grid_commit() {
             let action = match how {
                 "enter" => press(&mut g, KeyCode::Enter),
                 "tab" => press(&mut g, KeyCode::Tab),
-                _ => g.on_blur().1,
+                _ => g.on_blur().into_actions().into_iter().next(),
             };
             let ctx = format!("{kind:?} {bad:?} via {how}");
             assert_eq!(action, None, "{ctx}: no CellChanged on rejection");
@@ -364,7 +365,7 @@ fn issue48_default_nonfinite_rejected() {
         assert!(g.edit.is_some(), "{bad}: the session stays open");
         assert!(g.edit_error().is_some(), "{bad}: the rejection is visible");
         assert!(g.pending().is_empty());
-        assert!(g.undo().is_none());
+        assert!(g.undo().unwrap().is_none());
         let kept = g.value(0, 0);
         assert!(
             matches!(kept, CellValue::Num(n) if n.to_bits() == bad.to_bits()),
