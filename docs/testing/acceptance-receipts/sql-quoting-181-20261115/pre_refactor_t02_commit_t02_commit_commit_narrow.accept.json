@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/t02_commit/t02_commit_commit_narrow",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Library/Caches/mbx/targets/v1/b99c0109586920d4303a9df57d68adadc212f0a373e54239cc8302244b943d32/functional/t02-commit-37970-1794726941853709000-0/check-artifacts/pre_refactor/t02_commit/t02_commit_commit_narrow/4dbd0cf0dbe0f1da6f668e7bd42a1fe721ec2abb8c74bafd169ea1ae2d1d6eff/sample.tui.pb"
+  },
+  "candidate_sha256": "4dbd0cf0dbe0f1da6f668e7bd42a1fe721ec2abb8c74bafd169ea1ae2d1d6eff",
+  "baseline_sha256": "4dbd0cf0dbe0f1da6f668e7bd42a1fe721ec2abb8c74bafd169ea1ae2d1d6eff",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane15/tests/functional/baselines/pre_refactor/t02_commit/t02_commit_commit_narrow.tui.pb"
+  },
+  "error_code": null
+}

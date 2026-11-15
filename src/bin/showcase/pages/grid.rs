@@ -40,6 +40,7 @@ const ALL: usize = 96;
 
 const TABLE: &str = "customers";
 const SEATS_COLUMN: usize = 3;
+const KEY_COLUMN: &str = "id";
 
 const NAMES: &[&str] = &[
     "Northwind Traders",
@@ -169,8 +170,20 @@ fn literal(row: usize, column: &str, v: &CellValue) -> Result<String, NonFinite>
     })
 }
 
+/// Showcase is a separate binary and cannot depend on TablePro's SQL mapping,
+/// so the demo carries its own delimited-identifier quoting: `"` around the
+/// name, an embedded `"` doubled.
+fn quote_ident(name: &str) -> String {
+    format!("\"{}\"", name.replace('"', "\"\""))
+}
+
 fn delete_statement(row: &DeletedRow) -> String {
-    format!("DELETE FROM {TABLE} WHERE id = {};", row.before()[0].text())
+    format!(
+        "DELETE FROM {} WHERE {} = {};",
+        quote_ident(TABLE),
+        quote_ident(KEY_COLUMN),
+        row.before()[0].text()
+    )
 }
 
 fn undo_status(kind: GridUndoKind) -> &'static str {
@@ -699,8 +712,11 @@ impl GridPage {
         for change in row.cells() {
             let name = &self.grid.columns()[change.column()].name;
             out.push(format!(
-                "UPDATE {TABLE} SET {name} = {} WHERE id = {};",
+                "UPDATE {} SET {} = {} WHERE {} = {};",
+                quote_ident(TABLE),
+                quote_ident(name),
                 literal(self.row_of(row.key()), name, change.after())?,
+                quote_ident(KEY_COLUMN),
                 row.before()[0].text()
             ));
         }
@@ -714,14 +730,15 @@ impl GridPage {
             if matches!(value, CellValue::Default) {
                 continue;
             }
-            names.push(col.name.as_str());
+            names.push(quote_ident(&col.name));
             values.push(literal(self.row_of(row.key()), &col.name, value)?);
         }
         Ok(if names.is_empty() {
-            format!("INSERT INTO {TABLE} DEFAULT VALUES;")
+            format!("INSERT INTO {} DEFAULT VALUES;", quote_ident(TABLE))
         } else {
             format!(
-                "INSERT INTO {TABLE} ({}) VALUES ({});",
+                "INSERT INTO {} ({}) VALUES ({});",
+                quote_ident(TABLE),
                 names.join(", "),
                 values.join(", ")
             )
@@ -1621,10 +1638,10 @@ mod tests {
         assert_eq!(
             sql(&page).unwrap(),
             vec![
-                "UPDATE customers SET mrr = 0.001 WHERE id = 1001;".to_owned(),
-                "UPDATE customers SET mrr = 1.234567 WHERE id = 1002;".to_owned(),
-                "UPDATE customers SET mrr = 100.0 WHERE id = 1003;".to_owned(),
-                "INSERT INTO customers (customer, plan, seats, mrr, active, renewed_at, account_id, notes) VALUES (NULL, NULL, 5, -0.00025, NULL, NULL, NULL, NULL);".to_owned(),
+                "UPDATE \"customers\" SET \"mrr\" = 0.001 WHERE \"id\" = 1001;".to_owned(),
+                "UPDATE \"customers\" SET \"mrr\" = 1.234567 WHERE \"id\" = 1002;".to_owned(),
+                "UPDATE \"customers\" SET \"mrr\" = 100.0 WHERE \"id\" = 1003;".to_owned(),
+                r#"INSERT INTO "customers" ("customer", "plan", "seats", "mrr", "active", "renewed_at", "account_id", "notes") VALUES (NULL, NULL, 5, -0.00025, NULL, NULL, NULL, NULL);"#.to_owned(),
             ]
         );
         assert!(
@@ -1683,7 +1700,7 @@ mod tests {
         let untouched = insert_statement(&page);
         assert!(!untouched.contains("DEFAULT VALUES"), "{untouched}");
         assert!(
-            untouched.starts_with("INSERT INTO customers (customer, plan, seats, "),
+            untouched.starts_with(r#"INSERT INTO "customers" ("customer", "plan", "seats", "#),
             "id and mrr reset to DEFAULT and are omitted: {untouched}"
         );
         assert!(
@@ -1730,5 +1747,24 @@ mod tests {
                 Ok(CellEditResult::Changed)
             );
         }
+    }
+
+    #[test]
+    fn issue181_showcase_identifiers_are_quoted() {
+        assert_eq!(quote_ident("order"), "\"order\"");
+        assert_eq!(quote_ident("UserId"), "\"UserId\"");
+        assert_eq!(quote_ident("we\"ird"), "\"we\"\"ird\"");
+
+        let mut page = GridPage::new();
+        page.grid
+            .record_cell(0, PLAN, CellValue::Text("pro".into()));
+        page.grid.toggle_delete(1);
+        assert_eq!(
+            sql(&page).unwrap(),
+            vec![
+                r#"UPDATE "customers" SET "plan" = 'pro' WHERE "id" = 1001;"#.to_owned(),
+                r#"DELETE FROM "customers" WHERE "id" = 1002;"#.to_owned(),
+            ]
+        );
     }
 }

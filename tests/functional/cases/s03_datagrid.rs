@@ -1554,17 +1554,20 @@ fn issue43_save_resolves_the_open_edit_first() {
     see(
         &blocked,
         &["EDIT", WHY],
-        &["Save changes", "UPDATE customers"],
+        &["Save changes", r#"UPDATE "customers""#],
     );
 
     click_grid_row(&app, "Northwind");
     app.key("c");
     app.settle();
     click_first(&app, "Save", |hit| hit.y > 30);
-    let review = app.wait_text("UPDATE customers");
+    let review = app.wait_text(r#"UPDATE "customers""#);
     see(
         &review,
-        &["Save changes", "SET customer = 'cab' WHERE id = 1001"],
+        &[
+            "Save changes",
+            r#"SET "customer" = 'cab' WHERE "id" = 1001"#,
+        ],
         &["Fix the open cell first"],
     );
     app.key("esc");

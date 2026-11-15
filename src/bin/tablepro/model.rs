@@ -56,6 +56,21 @@ impl PreviewSqlError {
     }
 }
 
+/// A SQL identifier as a delimited identifier: wrapped in `"` with an embedded
+/// `"` doubled, so reserved words and mixed-case names keep their meaning.
+/// The one place a TablePro statement names a schema, table or column.
+pub fn quote_ident(name: &str) -> String {
+    format!("\"{}\"", name.replace('"', "\"\""))
+}
+
+fn table_ident(table: &Table) -> String {
+    format!(
+        "{}.{}",
+        quote_ident(&table.schema),
+        quote_ident(&table.name)
+    )
+}
+
 /// `DEFAULT` and `NULL` are decided here, before the value reaches the typed
 /// literal serializer, so the two stay distinct.
 fn cell_literal(row: ItemKey, column: &str, value: &CellValue) -> Result<String, PreviewSqlError> {
@@ -115,13 +130,17 @@ fn row_predicate(
     let terms: Vec<String> = keyed
         .into_iter()
         .map(|(ci, name)| match &before[ci] {
-            CellValue::Null => Ok(format!("{name} IS NULL")),
+            CellValue::Null => Ok(format!("{} IS NULL", quote_ident(name))),
             CellValue::Default => Err(PreviewSqlError::at(
                 row,
                 name,
                 PreviewSqlCause::InvalidDefaultPredicate,
             )),
-            other => Ok(format!("{name} = {}", cell_literal(row, name, other)?)),
+            other => Ok(format!(
+                "{} = {}",
+                quote_ident(name),
+                cell_literal(row, name, other)?
+            )),
         })
         .collect::<Result<_, _>>()?;
     Ok(terms.join(" AND "))
@@ -167,14 +186,15 @@ pub fn preview_sql(
                     ));
                 }
                 Ok(format!(
-                    "{name} = {}",
+                    "{} = {}",
+                    quote_ident(name),
                     cell_literal(key, name, change.after())?
                 ))
             })
             .collect::<Result<_, PreviewSqlError>>()?;
         out.push(format!(
             "UPDATE {} SET {} WHERE {};",
-            table.qualified(),
+            table_ident(table),
             sets.join(", "),
             row_predicate(&pk, columns, key, row.before())?
         ));
@@ -189,15 +209,18 @@ pub fn preview_sql(
             if matches!(v, CellValue::Default) || generated(ci) {
                 continue;
             }
-            names.push(name.clone());
+            names.push(quote_ident(name));
             vals.push(cell_literal(key, name, v)?);
         }
         if names.is_empty() {
-            out.push(format!("INSERT INTO {} DEFAULT VALUES;", table.qualified()));
+            out.push(format!(
+                "INSERT INTO {} DEFAULT VALUES;",
+                table_ident(table)
+            ));
         } else {
             out.push(format!(
                 "INSERT INTO {} ({}) VALUES ({});",
-                table.qualified(),
+                table_ident(table),
                 names.join(", "),
                 vals.join(", ")
             ));
@@ -207,7 +230,7 @@ pub fn preview_sql(
         check_width(row.key(), columns, row.before())?;
         out.push(format!(
             "DELETE FROM {} WHERE {};",
-            table.qualified(),
+            table_ident(table),
             row_predicate(&pk, columns, row.key(), row.before())?
         ));
     }
@@ -1195,9 +1218,9 @@ mod tests {
         assert_eq!(
             preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap(),
             vec![
-                "UPDATE public.ledger SET ref = 9.876543, amount = 0.001 WHERE ref = 1.234567;"
+                r#"UPDATE "public"."ledger" SET "ref" = 9.876543, "amount" = 0.001 WHERE "ref" = 1.234567;"#
                     .to_owned(),
-                "UPDATE public.ledger SET amount = 8.0 WHERE ref IS NULL;".to_owned(),
+                r#"UPDATE "public"."ledger" SET "amount" = 8.0 WHERE "ref" IS NULL;"#.to_owned(),
             ]
         );
         grid.discard().unwrap();
@@ -1206,8 +1229,8 @@ mod tests {
         assert_eq!(
             preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap(),
             vec![
-                "DELETE FROM public.ledger WHERE ref = 1.234567;".to_owned(),
-                "DELETE FROM public.ledger WHERE ref IS NULL;".to_owned(),
+                r#"DELETE FROM "public"."ledger" WHERE "ref" = 1.234567;"#.to_owned(),
+                r#"DELETE FROM "public"."ledger" WHERE "ref" IS NULL;"#.to_owned(),
             ]
         );
     }
@@ -1232,9 +1255,9 @@ mod tests {
         assert_eq!(
             preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap(),
             vec![
-                "UPDATE public.ledger SET amount = 0.001 WHERE ref = 1.2345 AND note = 'O''Brien' AND amount IS NULL;"
+                r#"UPDATE "public"."ledger" SET "amount" = 0.001 WHERE "ref" = 1.2345 AND "note" = 'O''Brien' AND "amount" IS NULL;"#
                     .to_owned(),
-                "INSERT INTO public.ledger (ref, note, amount) VALUES (1.2345678, 'it''s', -0.0001);"
+                r#"INSERT INTO "public"."ledger" ("ref", "note", "amount") VALUES (1.2345678, 'it''s', -0.0001);"#
                     .to_owned(),
             ]
         );
@@ -1369,7 +1392,10 @@ mod tests {
         let sql = preview_sql(&notes(), &columns, &grid.snapshot_changes()).unwrap();
         assert_eq!(
             sql,
-            vec!["INSERT INTO public.ledger (name, note) VALUES ('a''b', NULL);".to_owned()],
+            vec![
+                r#"INSERT INTO "public"."ledger" ("name", "note") VALUES ('a''b', NULL);"#
+                    .to_owned()
+            ],
             "the copied text and the copied NULL are written, the generated id is not"
         );
 
@@ -1378,7 +1404,10 @@ mod tests {
         let sql = preview_sql(&notes(), &columns, &grid.snapshot_changes()).unwrap();
         assert_eq!(
             sql,
-            vec!["INSERT INTO public.ledger (name, note) VALUES ('a''b', 'edited');".to_owned()],
+            vec![
+                r#"INSERT INTO "public"."ledger" ("name", "note") VALUES ('a''b', 'edited');"#
+                    .to_owned()
+            ],
             "one edit changes one column and keeps the other copies"
         );
     }
@@ -1392,7 +1421,9 @@ mod tests {
         grid.record_cell(fresh, 1, text("x")).unwrap();
         assert_eq!(
             preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap(),
-            vec!["INSERT INTO public.ledger (name, note) VALUES ('x', NULL);".to_owned()],
+            vec![
+                r#"INSERT INTO "public"."ledger" ("name", "note") VALUES ('x', NULL);"#.to_owned()
+            ],
             "Default is omitted, Null is written"
         );
 
@@ -1401,7 +1432,10 @@ mod tests {
         grid.record_cell(0, 1, CellValue::Null).unwrap();
         assert_eq!(
             preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap(),
-            vec!["UPDATE public.ledger SET name = NULL, note = DEFAULT WHERE id = 7;".to_owned()],
+            vec![
+                r#"UPDATE "public"."ledger" SET "name" = NULL, "note" = DEFAULT WHERE "id" = 7;"#
+                    .to_owned()
+            ],
             "an explicit Default stays DEFAULT, an explicit Null stays NULL"
         );
 
@@ -1413,7 +1447,7 @@ mod tests {
         kgrid.discard().unwrap();
         assert_eq!(
             preview_sql(&keyed, &kcolumns, &captured).unwrap(),
-            vec!["UPDATE public.ledger SET ref = 8.25 WHERE ref = 1.5;".to_owned()],
+            vec![r#"UPDATE "public"."ledger" SET "ref" = 8.25 WHERE "ref" = 1.5;"#.to_owned()],
             "the predicate names the original key and a retained capture needs no grid"
         );
 
@@ -1449,6 +1483,86 @@ mod tests {
             err.row,
             PreviewRow::Key(grid.row_key(0).unwrap()),
             "the error names the row by key"
+        );
+    }
+
+    #[test]
+    fn issue181_quote_ident_delimits_and_doubles_embedded_quotes() {
+        assert_eq!(quote_ident("order"), "\"order\"");
+        assert_eq!(quote_ident("UserId"), "\"UserId\"");
+        assert_eq!(quote_ident("we\"ird"), "\"we\"\"ird\"");
+        assert_eq!(quote_ident("\""), "\"\"\"\"");
+    }
+
+    #[test]
+    fn issue181_statements_quote_schema_table_and_every_column() {
+        let mut t = table(vec![
+            column("UserId", ColType::Int, true),
+            column("order", ColType::Text, false),
+            column("we\"ird", ColType::Text, false),
+        ]);
+        t.schema = "Sales".into();
+        t.name = "group".into();
+        let columns: Vec<(String, ColType)> =
+            t.columns.iter().map(|c| (c.name.clone(), c.ty)).collect();
+        let specs = columns
+            .iter()
+            .map(|(name, _)| ColumnSpec::new(name, CellKind::Text))
+            .collect();
+        let mut grid = DataGrid::new(WidgetId::of("issue181"), specs);
+        grid.set_rows(GridRows {
+            total: RowTotal::Exact(2),
+            rows: vec![
+                vec![CellValue::Int(1), text("a"), text("b")],
+                vec![CellValue::Int(2), text("c"), CellValue::Null],
+            ],
+            more: false,
+        });
+        grid.record_cell(0, 1, text("x"));
+        grid.record_cell(0, 2, text("y"));
+        grid.toggle_delete(1);
+        grid.insert_row().expect("row inserts");
+        let fresh = grid.len() - 1;
+        grid.record_cell(fresh, 0, CellValue::Int(3));
+        grid.record_cell(fresh, 1, text("z"));
+        assert_eq!(
+            preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap(),
+            vec![
+                r#"UPDATE "Sales"."group" SET "order" = 'x', "we""ird" = 'y' WHERE "UserId" = 1;"#
+                    .to_owned(),
+                r#"INSERT INTO "Sales"."group" ("UserId", "order", "we""ird") VALUES (3, 'z', NULL);"#
+                    .to_owned(),
+                r#"DELETE FROM "Sales"."group" WHERE "UserId" = 2;"#.to_owned(),
+            ]
+        );
+    }
+
+    #[test]
+    fn issue181_no_key_predicate_quotes_each_projected_column() {
+        let mut t = table(vec![
+            column("order", ColType::Text, false),
+            column("we\"ird", ColType::Text, false),
+        ]);
+        t.name = "Mixed".into();
+        let columns: Vec<(String, ColType)> =
+            t.columns.iter().map(|c| (c.name.clone(), c.ty)).collect();
+        let specs = columns
+            .iter()
+            .map(|(name, _)| ColumnSpec::new(name, CellKind::Text))
+            .collect();
+        let mut grid = DataGrid::new(WidgetId::of("issue181b"), specs);
+        grid.set_rows(GridRows {
+            total: RowTotal::Exact(1),
+            rows: vec![vec![text("a"), CellValue::Null]],
+            more: false,
+        });
+        grid.toggle_delete(0);
+        assert_eq!(
+            preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap(),
+            vec![
+                r#"DELETE FROM "public"."Mixed" WHERE "order" = 'a' AND "we""ird" IS NULL;"#
+                    .to_owned()
+            ]
         );
     }
 }
