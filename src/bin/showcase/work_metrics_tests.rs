@@ -241,9 +241,9 @@ fn stress_case(case: &Stress, change: &[(Metric, u64)], settled: &[(Metric, u64)
 //   28 compares equal the stress-off frame: the chip fitter never sorts. The
 //   bar is cut to its card, so the page fits the viewport width and
 //   `ScrollView::fit` measures it a second time to reserve the scrollbar
-//   column. That is a fourth pass over the bar (the page measures at three
-//   widths and then renders), one more N than before the clamp left room for
-//   the card insets. The card now holds four filter chips and `+19996`.
+//   column. That is a fourth pass over the bar (the page measures at two
+//   widths, 114 and 112, and then renders), one more N than before the clamp
+//   left room for the card insets. The card now holds four filter chips and `+19996`.
 //   In the label scene the 65,536-cell chip comes last, so the bar shows the
 //   four demo filters and `+1`: 643 widths, 266,497 bytes and 35 visits.
 //

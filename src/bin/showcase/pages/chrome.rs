@@ -239,6 +239,8 @@ impl ChromePage {
     }
 
     fn build_status_bar(&self) -> StatusBar {
+        #[cfg(test)]
+        STATUS_BUILDS.with(|n| n.set(n.get() + 1));
         let mut b = StatusBar::new();
         b.left.push(
             StatusItem::new("payments-platform", Tone::Normal)
@@ -818,12 +820,34 @@ impl Page for ChromePage {
 }
 
 #[cfg(test)]
+thread_local! {
+    static STATUS_BUILDS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
-    use crate::pages::stress::testing::index;
+    use crate::pages::stress::testing::{index, measuring};
 
     fn items(page: &ChromePage) -> usize {
         page.status.left.len() + page.status.center.len() + page.status.right.len()
+    }
+
+    fn builds() -> usize {
+        STATUS_BUILDS.with(|n| n.get())
+    }
+
+    #[test]
+    fn measuring_reads_the_cached_status_bar() {
+        let mut page = ChromePage::new();
+        page.set_option("chrome.stress", index("20k items"));
+        STATUS_BUILDS.with(|n| n.set(0));
+        for _ in 0..3 {
+            measuring(|ctx| page.measure(ratatui::layout::Size::new(0, 1), ctx));
+        }
+        assert_eq!(builds(), 0, "measure rebuilt the status bar");
+        page.set_option("chrome.stress", index("off"));
+        assert_eq!(builds(), 1, "an option change rebuilds it once");
     }
 
     #[test]
