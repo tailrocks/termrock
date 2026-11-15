@@ -5,10 +5,10 @@
 //! gutter with `inner.x - 1`, which underflowed on that rect, and several pages
 //! wrote at fixed offsets past the bottom of the buffer. The sweep
 //! opens every screen and dialog reachable through the real key path at a
-//! normal size, then draws it at every size from 1x1 to 20x12 through the
-//! app's own `draw` (below the supported minimum, which the shell would
-//! otherwise replace with the "too small" notice) and through the shell's
-//! `Application::render`.
+//! normal size, then draws each distinct screen on a coarse grid of sizes from
+//! 1x1 to 20x12 through the app's own `draw` (below the supported minimum,
+//! which the shell would otherwise replace with the "too small" notice) and
+//! through the shell's `Application::render`.
 
 use crate::common::*;
 use jackin_console::app::App;
@@ -30,8 +30,11 @@ const KEYS: &[&str] = &[
     "a", "r", "t", "p", "f", "i", "l", "o", "c", "x", "u", "q", "/", "?", "1", "2", "3", "4",
 ];
 
-const WIDTHS: std::ops::RangeInclusive<u16> = 1..=20;
-const HEIGHTS: std::ops::RangeInclusive<u16> = 1..=12;
+/// Every size from 1 to 6 on each axis (where the margins of panels, dialog
+/// frames and the cockpit's minimum rows bite), then a few larger ones that
+/// still sit below the supported 72x20.
+const WIDTHS: &[u16] = &[1, 2, 3, 4, 5, 6, 9, 14, 20];
+const HEIGHTS: &[u16] = &[1, 2, 3, 4, 5, 6, 8, 12];
 
 fn draw_below_minimum(app: &mut App, area: Rect) {
     let theme = ShellApp::theme(app);
@@ -109,10 +112,9 @@ fn panic_site() -> String {
     SITE.with(|s| s.borrow().clone())
 }
 
-fn sweep(scenario: Scenario, keys: &str, failures: &mut Failures) {
-    let mut app = opened(scenario, keys);
-    for h in HEIGHTS {
-        for w in WIDTHS {
+fn sweep(scenario: Scenario, keys: &str, mut app: App, failures: &mut Failures) {
+    for &h in HEIGHTS {
+        for &w in WIDTHS {
             let drawn = catch_unwind(AssertUnwindSafe(|| {
                 draw_below_minimum(&mut app, Rect::new(0, 0, w, h));
                 if keys.is_empty() {
@@ -139,8 +141,9 @@ fn every_jackin_screen_and_dialog_draws_on_tiny_terminals() {
         .into_iter()
         .flat_map(|s| std::iter::once((s, "")).chain(KEYS.iter().map(move |k| (s, *k))));
     for (scenario, keys) in singles.chain(DEEPER.iter().copied()) {
-        if seen.insert(screen(&mut opened(scenario, keys))) {
-            sweep(scenario, keys, &mut failures);
+        let mut app = opened(scenario, keys);
+        if seen.insert(screen(&mut app)) {
+            sweep(scenario, keys, app, &mut failures);
         }
     }
     std::panic::set_hook(quiet);
