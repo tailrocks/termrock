@@ -11,7 +11,7 @@
 
 use junie_tui::core::event::{Input, Mouse, MouseKind};
 use junie_tui::metrics::harness::{Harness, assert_exact};
-use junie_tui::metrics::{Metric, WorkDelta, measure};
+use junie_tui::metrics::{Metric, measure};
 use junie_tui::motion::Motion;
 use junie_tui::theme::{ColorLevel, Theme};
 use ratatui::layout::Position;
