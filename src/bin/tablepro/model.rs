@@ -168,7 +168,13 @@ pub fn preview_sql(
         .iter()
         .map(|c| c.name.as_str())
         .collect();
-    let generated = |ci: usize| table.column(&columns[ci].0).is_some_and(|c| c.generated);
+    let generated = |ci: usize| {
+        table
+            .columns
+            .iter()
+            .find(|c| c.name == columns[ci].0)
+            .is_some_and(|c| c.generated)
+    };
     let mut out = Vec::new();
     for row in changes.updated() {
         let key = row.key();
@@ -1586,6 +1592,37 @@ mod tests {
 
     fn one_note() -> Vec<Vec<CellValue>> {
         vec![vec![CellValue::Int(7), text("a'b"), CellValue::Null]]
+    }
+
+    #[test]
+    fn issue50_generated_column_lookup_matches_the_exact_name() {
+        let t = table(vec![
+            generated_id("Id"),
+            column("id", ColType::Int, false),
+            column("name", ColType::Text, false),
+        ]);
+        let columns: Vec<(String, ColType)> =
+            t.columns.iter().map(|c| (c.name.clone(), c.ty)).collect();
+        let specs = vec![
+            ColumnSpec::new("Id", CellKind::Id).primary().read_only(),
+            ColumnSpec::new("id", CellKind::Number),
+            ColumnSpec::new("name", CellKind::Text),
+        ];
+        let mut grid = DataGrid::new(WidgetId::of("issue50-case"), specs);
+        let rows = vec![vec![CellValue::Int(7), CellValue::Int(9), text("a")]];
+        grid.try_set_rows(GridRows {
+            total: RowTotal::Exact(rows.len()),
+            rows,
+            more: false,
+        })
+        .unwrap();
+        grid.duplicate_row().expect("row duplicates");
+        let sql = preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap();
+        assert_eq!(
+            sql,
+            vec![r#"INSERT INTO "public"."ledger" ("id", "name") VALUES (9, 'a');"#.to_owned()],
+            "only the column named Id is generated, not the one named id"
+        );
     }
 
     #[test]
