@@ -67,6 +67,21 @@ pub const GRID_EDIT_COVERAGE: &[(&str, &str)] = &[
     ("widgets::grid::FinishEdit::Accepted", "grid"),
 ];
 
+pub const GRID_PARSER_ALLOWLIST: &[(&str, &str)] = &[
+    (
+        "widgets::edit::parsers::json_container",
+        "The grid page demonstrates this grammar through default_validator on its notes (Json) column; no page calls the helper directly.",
+    ),
+    (
+        "widgets::edit::parsers::canonical_uuid",
+        "The grid page demonstrates this grammar through default_validator on its Id columns; no page calls the helper directly.",
+    ),
+    (
+        "widgets::edit::parsers::date_or_timestamp",
+        "The grid page demonstrates this grammar through default_validator on its renewed_at (Timestamp) column; no page calls the helper directly.",
+    ),
+];
+
 pub const PICKER_ALLOWLIST: &[(&str, &str)] = &[
     (
         "widgets::picker::Picker::wheel",
@@ -318,6 +333,30 @@ mod tests {
                 source.contains(&needle),
                 "page {page} never uses {id} (looked for {needle})"
             );
+        }
+    }
+
+    #[test]
+    fn grid_parser_helpers_are_declared_with_reasons() {
+        let catalog = catalog_source();
+        let mut seen = std::collections::BTreeSet::new();
+        for (id, reason) in GRID_PARSER_ALLOWLIST {
+            assert!(
+                catalog.contains(&format!("\"{id}\"")),
+                "declared id is not a catalog capability: {id}"
+            );
+            assert!(
+                !reason.trim().is_empty(),
+                "allowlist entry has no reason: {id}"
+            );
+            assert!(seen.insert(*id), "duplicate allowlist entry: {id}");
+        }
+        for id in [
+            "widgets::edit::parsers::json_container",
+            "widgets::edit::parsers::canonical_uuid",
+            "widgets::edit::parsers::date_or_timestamp",
+        ] {
+            assert!(seen.contains(id), "{id} is neither covered nor allowlisted");
         }
     }
 

@@ -1205,4 +1205,29 @@ mod tests {
             assert_eq!(page.grid.pending().cells().count(), 2, "the draft is kept");
         }
     }
+
+    #[test]
+    fn issue47_showcase_columns_reject_impossible_named_values() {
+        const NOTES: usize = 8;
+        const RENEWED: usize = 6;
+        let mut page = GridPage::new();
+        for (col, bad) in [
+            (RENEWED, "2026-02-30"),
+            (RENEWED, "2026-99-99"),
+            (NOTES, "{not json}"),
+        ] {
+            let got = page.grid.try_edit_text(1, col, bad);
+            assert!(
+                matches!(got, Err(GridEditError::Validation(_))),
+                "{bad:?}: {got:?}"
+            );
+        }
+        assert!(page.grid.pending().is_empty());
+        for (col, good) in [(RENEWED, "2026-02-28"), (NOTES, "{\"owner\": \"kai\"}")] {
+            assert_eq!(
+                page.grid.try_edit_text(1, col, good),
+                Ok(CellEditResult::Changed)
+            );
+        }
+    }
 }

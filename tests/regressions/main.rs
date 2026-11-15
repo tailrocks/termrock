@@ -7,5 +7,6 @@
 #[path = "../common/mod.rs"]
 mod common;
 
+mod grid_parsers;
 mod grid_validation;
 mod smoke;

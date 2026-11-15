@@ -21,7 +21,7 @@ use crate::ui::ctx::{RenderCtx, VisualState, fill};
 use crate::ui::row::{MarkKind, RowLook, RowUi};
 use crate::ui::text::{fit, fit_right, truncate, truncate_middle, wider_than, width, width_capped};
 use crate::widgets::button::{Button, row_layout_right};
-use crate::widgets::edit::{EditExit, EditField, FieldError, Validator};
+use crate::widgets::edit::{EditExit, EditField, FieldError, Validator, parsers};
 use crate::widgets::option_editor::{
     Affordance, ChoiceEditor, ChoiceResult, ColumnEditor, EditorConfig,
 };
@@ -488,9 +488,11 @@ pub fn default_validator(col: &ColumnSpec, text: &str) -> Result<CellValue, Stri
             if let Ok(i) = t.parse::<i64>() {
                 Ok(CellValue::Int(i))
             } else {
-                t.parse::<f64>()
-                    .map(CellValue::Num)
-                    .map_err(|_| "Must be a number".to_owned())
+                match t.parse::<f64>() {
+                    Ok(n) if n.is_finite() => Ok(CellValue::Num(n)),
+                    Ok(_) => Err("Must be a finite number".to_owned()),
+                    Err(_) => Err("Must be a number".to_owned()),
+                }
             }
         }
         CellKind::Bool => match t.to_ascii_lowercase().as_str() {
@@ -498,14 +500,9 @@ pub fn default_validator(col: &ColumnSpec, text: &str) -> Result<CellValue, Stri
             "false" | "f" | "0" | "no" => Ok(CellValue::Bool(false)),
             _ => Err("Must be true or false".into()),
         },
-        CellKind::Json => {
-            if (t.starts_with('{') && t.ends_with('}')) || (t.starts_with('[') && t.ends_with(']'))
-            {
-                Ok(CellValue::Json(t.into()))
-            } else {
-                Err("Must be a JSON object or array".into())
-            }
-        }
+        CellKind::Json => parsers::json_container(t)
+            .map(|()| CellValue::Json(t.into()))
+            .map_err(FieldError::into_message),
         CellKind::Enum if !col.enum_values.is_empty() => {
             if col.enum_values.iter().any(|v| v == t) {
                 Ok(CellValue::Text(t.into()))
@@ -513,20 +510,12 @@ pub fn default_validator(col: &ColumnSpec, text: &str) -> Result<CellValue, Stri
                 Err(format!("Must be one of: {}", col.enum_values.join(", ")))
             }
         }
-        CellKind::Id => {
-            if t.len() == 36 && t.chars().all(|c| c.is_ascii_hexdigit() || c == '-') {
-                Ok(CellValue::Text(t.into()))
-            } else {
-                Err("Must be a UUID".into())
-            }
-        }
-        CellKind::Timestamp => {
-            if t.len() >= 10 && t.as_bytes()[4] == b'-' && t.as_bytes()[7] == b'-' {
-                Ok(CellValue::Text(t.into()))
-            } else {
-                Err("Use YYYY-MM-DD".into())
-            }
-        }
+        CellKind::Id => parsers::canonical_uuid(t)
+            .map(|()| CellValue::Text(t.into()))
+            .map_err(FieldError::into_message),
+        CellKind::Timestamp => parsers::date_or_timestamp(t)
+            .map(|()| CellValue::Text(t.into()))
+            .map_err(FieldError::into_message),
         _ => Ok(CellValue::Text(t.into())),
     }
 }

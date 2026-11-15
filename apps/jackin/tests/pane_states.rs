@@ -299,7 +299,7 @@ fn enter_forwarding_rules() {
     failed.key(&key("enter"), 100);
     assert_eq!(bad.opened(), 1, "state 7 consumes it and tries again");
     assert_eq!(bad.commands(0), []);
-    assert_eq!(bad.restarted(), [], "a retry is not a restart");
+    assert_eq!(bad.restarted(), Vec::<usize>::new(), "a retry is not a restart");
 }
 
 #[test]
