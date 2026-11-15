@@ -284,6 +284,20 @@ impl ChipsPage {
         }
     }
 
+    fn mutates_open_menu(&self) -> bool {
+        self.opts.on("chipsselects.mutate_open") && self.filters.menu_open()
+    }
+
+    /// Flips whether the first filter is removable while a filter menu is
+    /// open, so the menu must close instead of offering a stale Remove.
+    fn mutate_open_menu(&mut self, cx: &mut Cx) {
+        if self.filters.update_chip(0, |c| c.removable = !c.removable) {
+            let c = &self.filters.chips()[0];
+            let state = if c.removable { "removable" } else { "fixed" };
+            cx.status(format!("{} is now {state}; its menu closed", c.label));
+        }
+    }
+
     fn on_stream(&mut self, ev: Option<ChipAction>) {
         if let Some(ChipAction::Toggle(i) | ChipAction::Activate(i)) = ev {
             self.streams.update_chip(i, |c| c.enabled = !c.enabled);
@@ -536,6 +550,10 @@ impl Page for ChipsPage {
                 let Some(f) = cx.focus.current() else {
                     return Outcome::Ignored;
                 };
+                if self.mutates_open_menu() && key.plain() && key.code == KeyCode::Char('m') {
+                    self.mutate_open_menu(cx);
+                    return Outcome::Changed;
+                }
                 if f == self.filters.id {
                     let (o, ev) = self.filters.on_key(key);
                     self.on_chip(ev, cx);
@@ -595,7 +613,14 @@ impl Page for ChipsPage {
         if let Some(h) = self.template.hints(focus) {
             return h;
         }
-        if focus == Some(self.filters.id) {
+        if self.mutates_open_menu() {
+            vec![
+                ("↑↓", "Move"),
+                ("Enter", "Choose"),
+                ("Esc", "Close"),
+                ("m", "Edit chip"),
+            ]
+        } else if focus == Some(self.filters.id) {
             vec![
                 ("←→", "Move"),
                 ("Space", "Toggle"),

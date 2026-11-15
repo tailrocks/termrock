@@ -32,6 +32,9 @@ pub struct Opt {
     pub effect: Effect,
 
     pub needs: &'static [(&'static str, &'static str)],
+
+    /// Set only through `--opt`; the Options tab does not list it.
+    pub hidden: bool,
 }
 
 impl Opt {
@@ -43,6 +46,7 @@ impl Opt {
             default: 0,
             effect: Effect::Frame,
             needs: &[],
+            hidden: false,
         }
     }
     const fn default(mut self, i: usize) -> Self {
@@ -51,6 +55,10 @@ impl Opt {
     }
     const fn behaviour(mut self) -> Self {
         self.effect = Effect::Behaviour;
+        self
+    }
+    const fn hidden(mut self) -> Self {
+        self.hidden = true;
         self
     }
     const fn needs(mut self, needs: &'static [(&'static str, &'static str)]) -> Self {
@@ -622,6 +630,12 @@ pub static CHIPS: &[Opt] = &[
         &["default", "vim"],
     ),
     Opt::new("chipsselects.mixed", "Sort shows mixed", OFF_ON),
+    Opt::new(
+        "chipsselects.mutate_open",
+        "m edits a chip in a menu",
+        OFF_ON,
+    )
+    .hidden(),
 ];
 
 #[derive(Debug, Clone)]
@@ -1047,6 +1061,7 @@ pub static TOOLBARS: &[Opt] = &[
     Opt::new("toolbars.skip_disabled", "Skip disabled", OFF_ON).default(1),
     Opt::new("toolbars.gap", "Gap", &["0", "1", "2"]).default(1),
     Opt::new("toolbars.overflow", "Overflow button", &["»", "…", "off"]),
+    Opt::new("toolbars.mutate_open", "m edits » while open", OFF_ON).hidden(),
 ];
 
 pub static FOCUS_NAV: &[Opt] = &[
@@ -1925,7 +1940,7 @@ impl OptionsView {
             if g.opts.is_empty() {
                 rows.push(Row::Note(g.empty));
             }
-            for opt in g.opts {
+            for opt in g.opts.iter().filter(|o| !o.hidden) {
                 let cid = id.sub(opt.key);
                 let control = if opt.is_toggle() {
                     Control::Toggle(Toggle::new(cid, opt.label, opt.default == 1))

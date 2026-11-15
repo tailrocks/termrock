@@ -283,3 +283,40 @@ fn collection_checked_inserts_and_removes_reject_out_of_range() {
     );
     assert_eq!(cb.chips().len(), 1);
 }
+
+#[test]
+fn chip_cursor_clamps_to_current_stops_on_change() {
+    let mut cb = ChipBar::new(CHIPS);
+    cb.set_chips(vec![Chip::new("a"), Chip::new("b"), Chip::new("c")]);
+
+    cb.cursor = 2;
+    cb.remove_chip(2);
+    assert_eq!(cb.cursor, 2, "the Add stop after the last chip stays valid");
+
+    cb.cursor = 9;
+    cb.set_chips(vec![Chip::new("a")]);
+    assert_eq!(cb.cursor, 1, "a chip and the Add stop leave two stops");
+
+    cb.set_add_label(None);
+    assert_eq!(cb.cursor, 0, "without an add label the last chip is last");
+
+    cb.set_chips(Vec::new());
+    assert_eq!(cb.cursor, 0, "an empty bar has no stop past zero");
+}
+
+#[test]
+fn toolbar_cursor_keeps_the_more_stop_and_clamps_past_it() {
+    let mut tb = Toolbar::new(TOOLBAR, tools(&["A", "B", "C"]));
+
+    tb.cursor = 3;
+    tb.remove_item(0);
+    assert_eq!(tb.cursor, 2, "the More stop follows the shrinking length");
+
+    tb.cursor = 9;
+    tb.remove_item(0);
+    assert_eq!(tb.cursor, 1, "a cursor past the More stop lands on it");
+
+    tb.cursor = 0;
+    tb.insert_item(0, ToolItem::new("Z"));
+    assert_eq!(tb.cursor, 0, "an in-range cursor is not moved");
+}

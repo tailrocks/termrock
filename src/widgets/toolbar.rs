@@ -271,6 +271,8 @@ impl Toolbar {
         self.more_area = Rect::ZERO;
         self.areas.clear();
         self.layout = None;
+        // `items.len()` is the More stop, so it stays a valid position.
+        self.cursor = self.cursor.min(self.items.len());
     }
 
     fn policy(&self) -> ToolbarPolicy {

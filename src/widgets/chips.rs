@@ -265,6 +265,7 @@ impl ChipBar {
         self.more_area = Rect::ZERO;
         self.area = Rect::ZERO;
         self.layout = None;
+        self.cursor = self.cursor.min(self.stops().saturating_sub(1));
     }
 
     fn policy(&self) -> BarPolicy {

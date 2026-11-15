@@ -1459,3 +1459,117 @@ fn option_bottom_boundaries_and_mixed() {
     );
     app.finish();
 }
+
+/// Opt-in page wiring (`chipsselects.mutate_open`): `m` flips whether the first
+/// filter is removable while a filter menu is open.
+#[test]
+fn stale_context_menu_closes_when_a_chip_becomes_fixed() {
+    let app = open(
+        "s02-chips-stale-context",
+        120,
+        40,
+        &[
+            "--page",
+            "chipsselects",
+            "--opt",
+            "chipsselects.mutate_open=on",
+        ],
+    );
+    app.wait_text(NOTHING);
+    app.key("tab");
+    app.key("tab");
+    app.key("shift+f10");
+    let open_menu = app.wait_text("Esc Close");
+    expect(
+        &open_menu,
+        &["╭", "Turn off", "Remove", "m Edit chip"],
+        &["last action: removed", "This filter stays"],
+    );
+
+    app.key("m");
+    let closed = app.wait_text("its menu closed");
+    expect(
+        &closed,
+        &["status = 'pending' is now fixed; its menu closed", NOTHING],
+        &[
+            "╭",
+            "Esc Close",
+            "last action: removed",
+            "status = 'pending' ×",
+        ],
+    );
+
+    app.key("down");
+    app.key("enter");
+    let after = app.wait_text("last action: edit status = 'pending'");
+    expect(
+        &after,
+        &["last action: edit status = 'pending'"],
+        &["╭", "last action: removed", "status = 'pending' ×"],
+    );
+
+    app.key("shift+f10");
+    let reopened = app.wait_text("Esc Close");
+    expect(
+        &reopened,
+        &["╭", "Turn off", "Remove"],
+        &["last action: removed", "status = 'pending' ×"],
+    );
+    app.key("escape");
+    app.finish();
+}
+
+#[test]
+fn stale_overflow_menu_closes_when_a_chip_changes() {
+    let app = open(
+        "s02-chips-stale-overflow",
+        120,
+        40,
+        &[
+            "--page",
+            "chipsselects",
+            "--opt",
+            "chipsselects.bar_width=40",
+            "--opt",
+            "chipsselects.mutate_open=on",
+        ],
+    );
+    let overflow = app.wait_screen("chip overflow marker", |screen| {
+        let body = text(screen);
+        body.contains("+1") || body.contains("+2") || body.contains("+3") || body.contains("+4")
+    });
+    let body = text(&overflow);
+    let hidden = [COUNTRY, "amount > 'abc'", "created_at > '2026-01-01'"]
+        .into_iter()
+        .find(|label| !body.contains(label))
+        .unwrap_or_else(|| panic!("bar width 40 hid no chip\n{body}"));
+    let marker = ["+4", "+3", "+2", "+1"]
+        .into_iter()
+        .find(|marker| body.contains(marker))
+        .expect("overflow marker");
+    click_main(&app, marker);
+    let menu = app.wait_text("Esc Close");
+    expect(
+        &menu,
+        &[hidden, "m Edit chip", NOTHING],
+        &["last action: removed"],
+    );
+
+    app.key("m");
+    let closed = app.wait_text("its menu closed");
+    expect(
+        &closed,
+        &[NOTHING, "is now fixed; its menu closed"],
+        &[hidden, "╭", "Esc Close", "last action: edit"],
+    );
+
+    click_main(&app, marker);
+    let fresh = app.wait_text("Esc Close");
+    expect(
+        &fresh,
+        &[hidden],
+        &["last action: edit", "last action: removed"],
+    );
+    app.key("escape");
+    app.finish();
+}

@@ -1,4 +1,5 @@
 use ratatui::buffer::Buffer;
+use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Rect, Size};
 
 use crate::pages::layout::{sheet_height, sheet_width};
@@ -77,17 +78,20 @@ pub struct ToolbarsPage {
     pub running: bool,
     pub last: String,
 
-    opts: [usize; 5],
+    opts: [usize; 6],
 }
 
-const OPT_KEYS: [&str; 5] = [
+const OPT_KEYS: [&str; 6] = [
     "toolbars.nav",
     "toolbars.wrap",
     "toolbars.skip_disabled",
     "toolbars.gap",
     "toolbars.overflow",
+    "toolbars.mutate_open",
 ];
-const OPT_DEFAULTS: [usize; 5] = [0, 0, 1, 1, 0];
+const OPT_DEFAULTS: [usize; 6] = [0, 0, 1, 1, 0, 0];
+
+const MUTATED: &str = "Run all";
 
 impl ToolbarsPage {
     pub fn new() -> Self {
@@ -105,7 +109,7 @@ impl ToolbarsPage {
     }
 
     fn rebuild(&mut self) {
-        let style = |t: &Toolbar, o: &[usize; 5]| {
+        let style = |t: &Toolbar, o: &[usize; 6]| {
             let cursor = t.cursor;
             let mut n = Toolbar::new(t.id, t.items().to_vec())
                 .nav(if o[0] == 1 {
@@ -133,6 +137,27 @@ impl ToolbarsPage {
             0 => &mut self.query,
             1 => &mut self.narrow,
             _ => &mut self.format,
+        }
+    }
+
+    fn mutates_open_menu(&self) -> bool {
+        self.opts[5] == 1 && self.narrow.menu_open()
+    }
+
+    /// Removes the hidden "Run all" item, or puts it back, while the » menu is
+    /// open, so the menu must close instead of acting on the changed bar.
+    fn mutate_open_menu(&mut self, cx: &mut Cx) {
+        let at = self.narrow.items().iter().position(|i| i.label == MUTATED);
+        match at {
+            Some(i) => {
+                self.narrow.remove_item(i);
+                cx.status(format!("{MUTATED} removed while » was open"));
+            }
+            None => {
+                let item = query_items(self.running).remove(1);
+                self.narrow.insert_item(1, item);
+                cx.status(format!("{MUTATED} restored while » was open"));
+            }
         }
     }
 
@@ -358,6 +383,10 @@ impl Page for ToolbarsPage {
         }
         match ev {
             PageEvent::Key(key) => {
+                if self.mutates_open_menu() && key.plain() && key.code == KeyCode::Char('m') {
+                    self.mutate_open_menu(cx);
+                    return Outcome::Changed;
+                }
                 let f = cx.focus.current();
                 for k in 0..3 {
                     let bar = self.bar_mut(k);
@@ -399,7 +428,11 @@ impl Page for ToolbarsPage {
             return h;
         }
         if self.narrow.menu_open() {
-            return vec![("↑↓", "Move"), ("Enter", "Run"), ("Esc", "Close")];
+            let mut keys = vec![("↑↓", "Move"), ("Enter", "Run"), ("Esc", "Close")];
+            if self.mutates_open_menu() {
+                keys.push(("m", "Edit bar"));
+            }
+            return keys;
         }
         if focus == Some(self.narrow.id) && self.narrow.on_more() {
             return vec![("←→", "Move"), ("Enter / ↓", "Show hidden")];
