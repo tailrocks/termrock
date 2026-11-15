@@ -690,10 +690,11 @@ impl TableTab {
             ));
         }
         if let Some(c) = &table.comment {
+            let literal =
+                model::sql_literal(&Value::Text(c.clone())).expect("text literals serialize");
             ddl.push(format!(
-                "COMMENT ON TABLE {} IS '{}';",
+                "COMMENT ON TABLE {} IS {literal};",
                 model::table_ident(table),
-                c
             ));
         }
         self.ddl = ScrollPanel::new(self.id.sub("ddl"), ddl);
@@ -2794,7 +2795,7 @@ mod issue194_tests {
             }],
             triggers: vec![],
             row_count: 0,
-            comment: Some("note".into()),
+            comment: Some("it's a note".into()),
         };
         let cat = Catalog {
             database: "db".into(),
@@ -2819,7 +2820,7 @@ mod issue194_tests {
         );
         assert_eq!(
             ddl[7],
-            "COMMENT ON TABLE \"public\".\"UserOrders\" IS 'note';"
+            "COMMENT ON TABLE \"public\".\"UserOrders\" IS 'it''s a note';"
         );
     }
 }
