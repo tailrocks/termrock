@@ -488,6 +488,30 @@ fn issue51_failed_save_changes_neither_store_nor_draft() {
 }
 
 #[test]
+fn issue51_refused_save_does_not_advance_the_content_revision() {
+    let mut app = connected();
+    let key = open(&mut app, "products");
+    edit(&mut app, key, 0, SKU, CellValue::Null);
+    let revision = |app: &App| {
+        app.workbench
+            .as_ref()
+            .expect("connected")
+            .ws
+            .revision(key)
+            .expect("the tab is open")
+    };
+    let before = revision(&app);
+    confirm_save(&mut app, key);
+
+    assert!(status(&app).contains("sku is required"), "{}", status(&app));
+    assert_eq!(
+        revision(&app),
+        before,
+        "a refusal changes no content, so an open close request stays valid"
+    );
+}
+
+#[test]
 fn issue51_null_in_defaulted_column_offers_the_default_hint() {
     let mut app = connected();
     let key = open(&mut app, "products");
