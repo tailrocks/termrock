@@ -935,3 +935,345 @@ mod widgets {
         }
     }
 }
+
+mod trees {
+    use super::widgets::{Frame, paint};
+    use super::*;
+    use crate::common::key;
+    use junie_tui::core::id::{Part, WidgetId};
+    use junie_tui::core::intent::Phase;
+    use junie_tui::core::list::SourceStamp;
+    use junie_tui::widgets::tree::{
+        KeyedTree, KeyedTreeNode, TreeAction, TreeNode, TreeNodeRef, TreeSource, TreeView,
+    };
+    use ratatui::crossterm::event::KeyCode;
+    use ratatui::layout::{Position, Rect};
+    use std::collections::HashMap;
+
+    const AREA: Rect = Rect::new(0, 0, 40, 10);
+
+    fn tree() -> KeyedTree {
+        let mut t = KeyedTree::new();
+        t.insert(None, 0, k(1), KeyedTreeNode::new("src"))
+            .expect("root");
+        t.insert(Some(k(1)), 0, k(11), KeyedTreeNode::new("main.rs"))
+            .expect("child");
+        t.insert(Some(k(1)), 1, k(12), KeyedTreeNode::new("lib.rs"))
+            .expect("child");
+        t.insert(None, 1, k(2), KeyedTreeNode::new("docs"))
+            .expect("root");
+        t.insert(Some(k(2)), 0, k(21), KeyedTreeNode::new("guide.md"))
+            .expect("child");
+        t
+    }
+
+    fn draw(view: &mut TreeView, source: &dyn TreeSource) -> Frame {
+        paint(|buf, ctx| {
+            view.render_source(AREA, &Dyn(source), buf, ctx, ctx.theme.canvas)
+                .expect("valid source");
+        })
+    }
+
+    struct Dyn<'a>(&'a dyn TreeSource);
+    impl TreeSource for Dyn<'_> {
+        fn stamp(&self) -> SourceStamp {
+            self.0.stamp()
+        }
+        fn root_count(&self) -> usize {
+            self.0.root_count()
+        }
+        fn root_key(&self, i: usize) -> ItemKey {
+            self.0.root_key(i)
+        }
+        fn node(&self, key: ItemKey) -> Option<TreeNodeRef<'_>> {
+            self.0.node(key)
+        }
+    }
+
+    fn labels(f: &Frame) -> Vec<String> {
+        f.text()
+            .lines()
+            .map(|l| l.trim().to_owned())
+            .filter(|l| !l.is_empty())
+            .collect()
+    }
+
+    #[test]
+    fn keyed_tree_keeps_expansion_after_insert() {
+        let mut store = tree();
+        let mut view = TreeView::new(WidgetId::of("kt"), vec![]);
+        let f = draw(&mut view, &store);
+        assert!(
+            view.keyed().is_expanded(k(1)) && view.keyed().is_expanded(k(2)),
+            "roots open by default"
+        );
+        assert!(labels(&f).iter().any(|l| l.contains("main.rs")));
+
+        let _ = view
+            .on_key_source(&key(KeyCode::Down), &store)
+            .expect("valid");
+        let _ = view
+            .on_key_source(&key(KeyCode::Down), &store)
+            .expect("valid");
+        assert_eq!(view.keyed().cursor(), Some(k(12)));
+        let out = view
+            .on_key_source(&key(KeyCode::Enter), &store)
+            .expect("valid");
+        assert_eq!(
+            out.actions().cloned().collect::<Vec<_>>(),
+            vec![TreeAction::Activate(k(12))]
+        );
+        let _ = view
+            .on_key_source(&key(KeyCode::Up), &store)
+            .expect("valid");
+        let _ = view
+            .on_key_source(&key(KeyCode::Up), &store)
+            .expect("valid");
+        assert_eq!(view.keyed().cursor(), Some(k(1)));
+
+        store
+            .insert(None, 0, k(9), KeyedTreeNode::new("aaa"))
+            .expect("earlier sibling");
+        store
+            .insert(Some(k(1)), 0, k(10), KeyedTreeNode::new("a.rs"))
+            .expect("earlier child");
+        let after = draw(&mut view, &store);
+        assert!(view.keyed().is_expanded(k(1)), "src stays expanded");
+        assert!(view.keyed().is_selected(k(12)));
+        assert_eq!(view.keyed().cursor(), Some(k(1)));
+        assert_eq!(view.cursor, 1, "the view index follows the key");
+        let l = labels(&after);
+        assert!(
+            l.iter().any(|x| x.contains("a.rs")) && l.iter().any(|x| x.contains("lib.rs")),
+            "{l:?}"
+        );
+
+        store.remove(k(1));
+        let _ = draw(&mut view, &store);
+        assert!(!view.keyed().is_expanded(k(1)) && !view.keyed().is_selected(k(12)));
+    }
+
+    #[test]
+    fn keyed_tree_collapse_and_lazy_expand_report_keys() {
+        let mut store = tree();
+        store
+            .insert(Some(k(2)), 1, k(3), KeyedTreeNode::lazy("remote"))
+            .expect("lazy");
+        let mut view = TreeView::new(WidgetId::of("kt"), vec![]);
+        draw(&mut view, &store);
+        let out = view
+            .on_key_source(&key(KeyCode::Right), &store)
+            .expect("valid");
+        assert!(out.actions().next().is_none(), "already open: moves in");
+        let _ = view
+            .on_key_source(&key(KeyCode::Left), &store)
+            .expect("valid");
+        let _ = view
+            .on_key_source(&key(KeyCode::Left), &store)
+            .expect("valid");
+        assert!(
+            !view.keyed().is_expanded(k(1)),
+            "left on an open branch collapses it"
+        );
+        draw(&mut view, &store);
+        for _ in 0..2 {
+            let _ = view
+                .on_key_source(&key(KeyCode::Down), &store)
+                .expect("valid");
+        }
+        while view.keyed().cursor() != Some(k(3)) {
+            let _ = view
+                .on_key_source(&key(KeyCode::Down), &store)
+                .expect("valid");
+        }
+        let out = view
+            .on_key_source(&key(KeyCode::Right), &store)
+            .expect("valid");
+        assert_eq!(
+            out.actions().cloned().collect::<Vec<_>>(),
+            vec![TreeAction::Expand(k(3))]
+        );
+    }
+
+    struct Raw {
+        nodes: HashMap<ItemKey, (String, Vec<ItemKey>)>,
+        roots: Vec<ItemKey>,
+        data: u64,
+    }
+
+    impl Raw {
+        fn new(roots: &[u64], nodes: &[(u64, &[u64])]) -> Self {
+            Self {
+                roots: roots.iter().map(|n| k(*n)).collect(),
+                nodes: nodes
+                    .iter()
+                    .map(|(n, c)| (k(*n), (format!("n{n}"), c.iter().map(|x| k(*x)).collect())))
+                    .collect(),
+                data: 1,
+            }
+        }
+    }
+
+    impl TreeSource for Raw {
+        fn stamp(&self) -> SourceStamp {
+            SourceStamp {
+                instance: ItemKey::num(77),
+                data: self.data,
+                view: 0,
+            }
+        }
+        fn root_count(&self) -> usize {
+            self.roots.len()
+        }
+        fn root_key(&self, i: usize) -> ItemKey {
+            self.roots[i]
+        }
+        fn node(&self, key: ItemKey) -> Option<TreeNodeRef<'_>> {
+            let (label, children) = self.nodes.get(&key)?;
+            Some(TreeNodeRef {
+                label,
+                meta: None,
+                glyph: None,
+                glyph_tone: junie_tui::theme::Tone::Muted,
+                label_tone: None,
+                children,
+                lazy: false,
+                busy: false,
+                note: false,
+            })
+        }
+    }
+
+    #[test]
+    fn keyed_tree_rejects_cycles_duplicates_and_missing_nodes_atomically() {
+        let good = Raw::new(&[1], &[(1, &[2]), (2, &[])]);
+        let mut view = TreeView::new(WidgetId::of("kt"), vec![]);
+        draw(&mut view, &good);
+        let _ = view
+            .on_key_source(&key(KeyCode::Down), &good)
+            .expect("valid");
+        let cursor = view.keyed().cursor();
+
+        let mut cycle = Raw::new(&[1], &[(1, &[2]), (2, &[1])]);
+        cycle.data = 2;
+        let err = view
+            .on_key_source(&key(KeyCode::Down), &cycle)
+            .expect_err("cycle");
+        assert_eq!(err, KeyedSourceError::Cycle { key: k(1) });
+        let mut shared = Raw::new(&[1], &[(1, &[2, 3]), (2, &[4]), (3, &[4]), (4, &[])]);
+        shared.data = 3;
+        assert_eq!(
+            view.on_key_source(&key(KeyCode::Down), &shared)
+                .expect_err("two parents"),
+            KeyedSourceError::DuplicateAuthoritative { key: k(4) }
+        );
+        let mut missing = Raw::new(&[1], &[(1, &[9])]);
+        missing.data = 4;
+        assert_eq!(
+            view.on_key_source(&key(KeyCode::Down), &missing)
+                .expect_err("missing"),
+            KeyedSourceError::MissingNode { key: k(9) }
+        );
+        let mut positional = Raw::new(&[1], &[(1, &[])]);
+        positional.roots = vec![ItemKey::index(0)];
+        positional.data = 5;
+        assert!(matches!(
+            view.on_key_source(&key(KeyCode::Down), &positional),
+            Err(KeyedSourceError::PositionalKey {
+                authoritative: true,
+                ..
+            })
+        ));
+        assert_eq!(
+            view.keyed().cursor(),
+            cursor,
+            "state untouched by rejected sources"
+        );
+        let _ = draw(&mut view, &good);
+    }
+
+    #[test]
+    fn keyed_tree_filter_shows_matching_subtrees() {
+        let store = tree();
+        let mut view = TreeView::new(WidgetId::of("kt"), vec![]);
+        draw(&mut view, &store);
+        view.set_filter(Some("guide"));
+        let f = draw(&mut view, &store);
+        let l = labels(&f);
+        assert!(
+            l.iter().any(|x| x.contains("docs")) && l.iter().any(|x| x.contains("guide.md")),
+            "{l:?}"
+        );
+        assert!(
+            !l.iter().any(|x| x.contains("main.rs") || x.contains("src")),
+            "{l:?}"
+        );
+        view.set_filter(None);
+        let f = draw(&mut view, &store);
+        assert!(labels(&f).iter().any(|x| x.contains("main.rs")));
+    }
+
+    #[test]
+    fn keyed_tree_press_cannot_retarget_after_reorder() {
+        let mut store = tree();
+        let mut view = TreeView::new(WidgetId::of("kt"), vec![]);
+        let frame = draw(&mut view, &store);
+        let at = Position::new(8, 0);
+        let id_a = frame.id_at(view.id, Part::ROW, at);
+        let _ = view
+            .on_pointer_source(&frame.event(Phase::Press, id_a, at), &store)
+            .expect("valid");
+        assert_eq!(view.keyed().pressed(), Some(k(1)));
+        store
+            .insert(None, 0, k(9), KeyedTreeNode::new("zzz"))
+            .expect("new first row");
+        let after = draw(&mut view, &store);
+        let id_b = after.id_at(view.id, Part::ROW, at);
+        assert_ne!(id_a, id_b);
+        let out = view
+            .on_pointer_source(&after.event(Phase::Click, id_b, at), &store)
+            .expect("valid");
+        assert!(out.actions().next().is_none());
+        assert_eq!(view.keyed().pressed(), None);
+    }
+
+    #[test]
+    fn keyed_owned_and_borrowed_trees_conform() {
+        let owned_nodes = vec![
+            TreeNode::dir(
+                "src",
+                vec![TreeNode::leaf("main.rs"), TreeNode::leaf("lib.rs")],
+            ),
+            TreeNode::dir("docs", vec![TreeNode::leaf("guide.md")]),
+        ];
+        let mut owned = TreeView::new(WidgetId::of("kt"), owned_nodes);
+        let store = tree();
+        let mut borrowed = TreeView::new(WidgetId::of("kt"), vec![]);
+        let script = [
+            KeyCode::Down,
+            KeyCode::Down,
+            KeyCode::Down,
+            KeyCode::Left,
+            KeyCode::Left,
+            KeyCode::Down,
+            KeyCode::Right,
+            KeyCode::End,
+            KeyCode::Home,
+            KeyCode::Right,
+            KeyCode::Right,
+            KeyCode::Char('g'),
+        ];
+        let mut a = paint(|buf, ctx| owned.render(AREA, buf, ctx, ctx.theme.canvas));
+        let mut b = draw(&mut borrowed, &store);
+        assert_eq!(a.text(), b.text());
+        for code in script {
+            let o = owned.on_key(&key(code));
+            let r = borrowed.on_key_source(&key(code), &store).expect("valid");
+            assert_eq!(o.outcome(), r.outcome(), "{code:?}");
+            a = paint(|buf, ctx| owned.render(AREA, buf, ctx, ctx.theme.canvas));
+            b = draw(&mut borrowed, &store);
+            assert_eq!(a.text(), b.text(), "after {code:?}");
+            assert_eq!(owned.cursor, borrowed.cursor, "{code:?}");
+        }
+    }
+}

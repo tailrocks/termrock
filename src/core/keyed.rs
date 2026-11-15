@@ -428,7 +428,7 @@ impl KeyedState {
 
 static NEXT_INSTANCE: AtomicU64 = AtomicU64::new(1);
 
-fn fresh_instance() -> ItemKey {
+pub(crate) fn fresh_instance() -> ItemKey {
     let id = NEXT_INSTANCE
         .try_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_add(1))
         .expect("provider instance ids exhausted");
