@@ -1173,6 +1173,7 @@ fn populated(scenario: Scenario, rich: bool) -> World {
     } else {
         accounts_mixed(now)
     };
+    w.adopt_refreshing();
 
     let mut i1 = instance(
         "jk-7f3a",
