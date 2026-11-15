@@ -176,7 +176,7 @@ impl Page for FixedDialogsPage {
             PageEvent::Pointer(ev) => {
                 for i in 0..self.openers.len() {
                     if let Some(r) = self.openers[i].route(ev) {
-                        if ev.is(Phase::Click) && r.into_action().is_some() {
+                        if ev.is(Phase::Click) && r.has_actions() {
                             self.open(i, cx);
                         }
                         return Outcome::Changed;

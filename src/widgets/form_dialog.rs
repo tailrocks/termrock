@@ -990,7 +990,7 @@ impl FormDialog {
         for f in self.fields.iter_mut() {
             match &mut f.kind {
                 FormFieldKind::Select(s) => {
-                    let Some(mut r) = s.route(ev) else {
+                    let Some(r) = s.route(ev) else {
                         continue;
                     };
 
@@ -1000,7 +1000,7 @@ impl FormDialog {
                     if ev.is(Phase::Click) {
                         focus.focus(s.id);
                     }
-                    if r.take_action().is_some() {
+                    if r.has_actions() {
                         self.dirty = true;
                         self.events.push(FormAction::Changed(f.name.clone()));
                     }

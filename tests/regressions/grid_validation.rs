@@ -52,6 +52,8 @@ fn grid_with(
 
 fn press(grid: &mut DataGrid, code: KeyCode) -> (Outcome, Option<GridAction>) {
     grid.on_key(&key(code))
+        .try_into_single()
+        .expect("at most one action")
 }
 
 fn untouched(grid: &mut DataGrid) {
@@ -323,7 +325,10 @@ fn issue43_immediate_rejection_is_visible() {
 
     // A real double click on the cell toggles through the parser.
     let id = grid.cell_id(0, 0);
-    let (out, action) = grid.on_click_with(id, Position::new(8, 2), KeyModifiers::NONE, 2);
+    let (out, action) = grid
+        .on_click_with(id, Position::new(8, 2), KeyModifiers::NONE, 2)
+        .try_into_single()
+        .expect("at most one action");
     assert_eq!(out, Outcome::Changed);
     assert_eq!(action, None);
     assert_eq!(calls(&seen), vec!["no".to_owned()]);
@@ -374,7 +379,10 @@ fn issue43_table_immediate_rejection_is_visible() {
     .cell_nav(true)
     .validator(|_, text| (text == "no").then(|| "no is not allowed".to_owned()));
 
-    let (out, action) = table.on_key(&key(KeyCode::Enter));
+    let (out, action) = table
+        .on_key(&key(KeyCode::Enter))
+        .try_into_single()
+        .expect("at most one action");
     assert_eq!(out, Outcome::Changed);
     assert_eq!(action, None);
     assert_eq!(table.rows()[0][0].text, "yes");
@@ -384,7 +392,7 @@ fn issue43_table_immediate_rejection_is_visible() {
     );
     assert_eq!(table.rows()[1][0].error, None);
 
-    table.on_key(&key(KeyCode::Down));
+    let _ = table.on_key(&key(KeyCode::Down));
     let theme = Theme::for_level(ColorLevel::TrueColor);
     let (buf, _) = draw(None, |buf, ctx| {
         table.render(Rect::new(0, 0, 60, 8), buf, ctx, Color::Reset);
@@ -609,7 +617,10 @@ fn issue43_blur_rejection_retains_choice_and_error() {
     });
     press(&mut grid, KeyCode::Enter);
     press(&mut grid, KeyCode::Down);
-    let (_, action) = grid.on_blur();
+    let (_, action) = grid
+        .on_blur()
+        .try_into_single()
+        .expect("at most one action");
     assert_eq!(action, None);
     assert_eq!(calls(&seen), vec!["b".to_owned()]);
     assert!(grid.choice.is_some(), "focus movement is not acceptance");

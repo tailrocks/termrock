@@ -679,11 +679,7 @@ impl Page for DialogsPage {
                     return Outcome::Ignored;
                 };
                 cx.focus.focus(ev.id);
-                if self.buttons[i]
-                    .route(ev)
-                    .and_then(|r| r.into_action())
-                    .is_some()
-                {
+                if self.buttons[i].route(ev).is_some_and(|r| r.has_actions()) {
                     self.open(i, cx);
                 }
                 Outcome::Changed

@@ -681,11 +681,7 @@ impl Page for ButtonsPage {
             }
             PageEvent::Pointer(ev) if ev.is(Phase::Click) => {
                 if let Some(i) = self.buttons.iter().position(|b| ev.on(b.id)) {
-                    if self.buttons[i]
-                        .route(ev)
-                        .and_then(|r| r.into_action())
-                        .is_some()
-                    {
+                    if self.buttons[i].route(ev).is_some_and(|r| r.has_actions()) {
                         self.activated(i, cx);
                     }
                     return Outcome::Changed;

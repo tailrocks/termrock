@@ -871,13 +871,13 @@ impl Page for ScrollingPage {
                     return self.region.on_key(key).0;
                 }
                 if f == self.tree.id {
-                    return self.tree.on_key(key).0;
+                    return self.tree.on_key(key).outcome();
                 }
                 if f == self.table.id {
-                    return self.table.on_key(key).0;
+                    return self.table.on_key(key).outcome();
                 }
                 if f == self.grid.id {
-                    return self.grid.on_key(key).0;
+                    return self.grid.on_key(key).outcome();
                 }
                 Outcome::Ignored
             }

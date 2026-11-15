@@ -722,13 +722,13 @@ impl Page for AccountsUsagePage {
                     return Outcome::Ignored;
                 };
                 match f {
-                    TREE => self.tree.on_key(key).0,
+                    TREE => self.tree.on_key(key).outcome(),
                     INSPECTOR => {
                         let (o, a) = self.facts.on_key(key);
                         self.props_action(a, cx);
                         o
                     }
-                    USAGE => self.usage.on_key(key).0,
+                    USAGE => self.usage.on_key(key).outcome(),
                     REFRESH | DEFAULT => {
                         let b = if f == REFRESH {
                             &mut self.refresh
@@ -758,7 +758,7 @@ impl Page for AccountsUsagePage {
                     if let Some(r) = b.route(ev)
                         && r.outcome() != Outcome::Ignored
                     {
-                        if r.into_action().is_some() {
+                        if r.has_actions() {
                             cx.focus.focus(id);
                             self.act(id, cx);
                         }
@@ -774,8 +774,10 @@ impl Page for AccountsUsagePage {
                     if ev.is(Phase::Click) {
                         cx.focus.focus(INSPECTOR);
                     }
-                    let (o, a) = r.into_parts();
-                    self.props_action(a, cx);
+                    let (o, actions) = r.into_parts();
+                    for a in actions {
+                        self.props_action(Some(a), cx);
+                    }
                     o
                 } else if let Some((o, _)) =
                     crate::pages::tables::route_table(&mut self.usage, ev, cx)

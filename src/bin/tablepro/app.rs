@@ -1518,11 +1518,15 @@ impl App {
     }
 
     fn take_layer(&mut self) -> Outcome {
-        match self.layers.take(&mut self.shell.focus) {
-            None => Outcome::Ignored,
-            Some(Taken::Event(r)) => self.layer_event(r),
-            Some(Taken::Closed(entry, r)) => self.layer_closed(entry, r),
-        }
+        Layers::settle(
+            self,
+            |app| (&mut app.layers, &mut app.shell.focus),
+            Outcome::Ignored,
+            |app, taken| match taken {
+                Taken::Event(r) => app.layer_event(r),
+                Taken::Closed(entry, r) => app.layer_closed(entry, r),
+            },
+        )
     }
 
     fn dismiss_layer(&mut self, reason: DismissReason) -> Outcome {
@@ -1879,10 +1883,11 @@ impl App {
         }
 
         if let Some(r) = self.workbench.as_mut().and_then(|w| w.rail.route(ev)) {
-            return Some(match r.into_action() {
-                Some(a) => self.set_explorer(a == junie_tui::widgets::rail::RailAction::Expand),
-                None => Outcome::Consumed,
-            });
+            let mut out = Outcome::Consumed;
+            for a in r.into_actions() {
+                out = self.set_explorer(a == junie_tui::widgets::rail::RailAction::Expand);
+            }
+            return Some(out);
         }
 
         if let Some(action) = crate::tabs::toolbar_action(id) {

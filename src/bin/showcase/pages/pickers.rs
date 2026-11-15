@@ -913,7 +913,7 @@ impl Page for PickersPage {
                 if p.is(Phase::Click) {
                     cx.focus.focus(p.id);
                 }
-                if r.action().is_some() {
+                if r.has_actions() {
                     self.open(Kind::ALL[i], cx);
                     return Outcome::Changed;
                 }

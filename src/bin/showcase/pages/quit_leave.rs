@@ -487,7 +487,7 @@ impl Page for QuitLeavePage {
                 };
                 match b.route(ev) {
                     Some(r) if r.outcome() != Outcome::Ignored => {
-                        if r.into_action().is_none() {
+                        if !r.has_actions() {
                             return Outcome::Changed;
                         }
                         id

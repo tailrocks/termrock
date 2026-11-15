@@ -7,6 +7,7 @@ use crate::core::event::{Key, Outcome};
 use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
 use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup, unassigned_chord};
 use crate::core::list::{Cursor, KeyStep, Moved, Navigable, RowSource};
+use crate::core::response::Response;
 use crate::core::scroll::{ScrollPane, Scrollable};
 use crate::core::selection::ClickPolicy;
 use crate::theme::Tone;
@@ -360,21 +361,19 @@ impl TreeView {
         self
     }
 
-    fn branch(&mut self, i: usize) -> (Outcome, Option<TreeAction>) {
+    fn branch(&mut self, i: usize) -> Response<TreeAction> {
         let path = self.rows[i].path.clone();
         match self.branch_activate {
             BranchAction::Toggle => self.toggle(i),
             BranchAction::Activate => {
                 self.selected = Some(path.clone());
-                (Outcome::Changed, Some(TreeAction::Activate(path)))
+                Response::emit(TreeAction::Activate(path))
             }
             BranchAction::Both => {
-                let (o, ev) = self.toggle(i);
+                let mut resp = self.toggle(i);
                 self.selected = Some(path.clone());
-                (
-                    o.or(Outcome::Changed),
-                    ev.or(Some(TreeAction::Activate(path))),
-                )
+                resp.push_action(TreeAction::Activate(path));
+                resp
             }
         }
     }
@@ -536,12 +535,12 @@ impl TreeView {
         self.core.scroll.ensure_visible(self.core.cursor);
     }
 
-    pub fn toggle(&mut self, i: usize) -> (Outcome, Option<TreeAction>) {
+    pub fn toggle(&mut self, i: usize) -> Response<TreeAction> {
         let Some(row) = self.rows.get(i) else {
-            return (Outcome::Consumed, None);
+            return Response::consumed();
         };
         if !row.has_children {
-            return (Outcome::Consumed, None);
+            return Response::consumed();
         }
         let path = row.path.clone();
         if !self.expanded.remove(&path) {
@@ -554,12 +553,12 @@ impl TreeView {
             }
             self.refold(i);
             if lazy {
-                return (Outcome::Changed, Some(TreeAction::Expand(path)));
+                return Response::from((Outcome::Changed, Some(TreeAction::Expand(path))));
             }
-            return (Outcome::Changed, None);
+            return Response::changed();
         }
         self.refold(i);
-        (Outcome::Changed, None)
+        Response::changed()
     }
 
     fn refold(&mut self, i: usize) {
@@ -660,20 +659,20 @@ impl TreeView {
         command_items(&self.keymap, &cmds)
     }
 
-    pub fn run(&mut self, cmd: TreeCmd) -> (Outcome, Option<TreeAction>) {
+    pub fn run(&mut self, cmd: TreeCmd) -> Response<TreeAction> {
         match cmd {
             TreeCmd::ExpandAll => self.expand_all(),
             TreeCmd::CollapseAll => self.collapse_all(),
         }
-        (Outcome::Changed, None)
+        Response::changed()
     }
 
-    pub fn on_key(&mut self, key: &Key) -> (Outcome, Option<TreeAction>) {
+    pub fn on_key(&mut self, key: &Key) -> Response<TreeAction> {
         if self.rows.is_empty() {
-            return (Outcome::Ignored, None);
+            return Response::ignored();
         }
         if unassigned_chord(key, &self.keymap) {
-            return (Outcome::Ignored, None);
+            return Response::ignored();
         }
         if let Some(action) = lookup(&self.keymap, key) {
             return self.run(action);
@@ -684,7 +683,7 @@ impl TreeView {
                 if let Moved::To(i) = moved {
                     self.set_cursor(i);
                 }
-                return (moved.outcome(), None);
+                return Response::from(moved.outcome());
             }
             Some((KeyStep::Nav(nav), moved)) => (nav, moved),
             None => return self.on_plain_key(key),
@@ -726,10 +725,10 @@ impl TreeView {
                 }
             }
         };
-        (out, None)
+        Response::from(out)
     }
 
-    fn on_plain_key(&mut self, key: &Key) -> (Outcome, Option<TreeAction>) {
+    fn on_plain_key(&mut self, key: &Key) -> Response<TreeAction> {
         let out = match key.code {
             KeyCode::Enter | KeyCode::Char(' ') => {
                 let row = &self.rows[self.core.cursor];
@@ -739,46 +738,40 @@ impl TreeView {
                     return self.branch(self.core.cursor);
                 } else {
                     self.selected = Some(row.path.clone());
-                    return (
-                        Outcome::Changed,
-                        Some(TreeAction::Activate(row.path.clone())),
-                    );
+                    return Response::emit(TreeAction::Activate(row.path.clone()));
                 }
             }
             _ => Outcome::Ignored,
         };
-        (out, None)
+        Response::from(out)
     }
 
-    pub fn on_click_row(&mut self, i: usize) -> (Outcome, Option<TreeAction>) {
+    pub fn on_click_row(&mut self, i: usize) -> Response<TreeAction> {
         self.on_click_row_count(i, 1)
     }
 
-    pub fn on_click_row_count(&mut self, i: usize, count: u8) -> (Outcome, Option<TreeAction>) {
+    pub fn on_click_row_count(&mut self, i: usize, count: u8) -> Response<TreeAction> {
         if i >= self.rows.len() {
-            return (Outcome::Consumed, None);
+            return Response::consumed();
         }
         let again = self.core.cursor == i;
         self.core.scroll.pointer_move();
         self.set_cursor(i);
         if self.rows[i].note {
-            return (Outcome::Consumed, None);
+            return Response::consumed();
         }
         if !self.core.click.activates(count.max(1), again) {
-            return (Outcome::Changed, None);
+            return Response::changed();
         }
         if self.rows[i].has_children {
             self.branch(i)
         } else {
             self.selected = Some(self.rows[i].path.clone());
-            (
-                Outcome::Changed,
-                Some(TreeAction::Activate(self.rows[i].path.clone())),
-            )
+            Response::emit(TreeAction::Activate(self.rows[i].path.clone()))
         }
     }
 
-    pub fn on_click_toggle(&mut self, i: usize) -> (Outcome, Option<TreeAction>) {
+    pub fn on_click_toggle(&mut self, i: usize) -> Response<TreeAction> {
         self.core.scroll.pointer_move();
         self.set_cursor(i);
         self.toggle(i)
@@ -789,7 +782,7 @@ impl TreeView {
         i: usize,
         toggle: bool,
         mods: KeyModifiers,
-    ) -> (Outcome, Option<TreeAction>) {
+    ) -> Response<TreeAction> {
         self.on_click_at(i, toggle, mods, 1)
     }
 
@@ -799,7 +792,7 @@ impl TreeView {
         toggle: bool,
         mods: KeyModifiers,
         count: u8,
-    ) -> (Outcome, Option<TreeAction>) {
+    ) -> Response<TreeAction> {
         if self.alt_click_recursive
             && mods.contains(KeyModifiers::ALT)
             && self.rows.get(i).is_some_and(|r| r.has_children && !r.note)
@@ -814,12 +807,12 @@ impl TreeView {
         }
     }
 
-    pub fn toggle_recursive(&mut self, i: usize) -> (Outcome, Option<TreeAction>) {
+    pub fn toggle_recursive(&mut self, i: usize) -> Response<TreeAction> {
         let Some(row) = self.rows.get(i) else {
-            return (Outcome::Consumed, None);
+            return Response::consumed();
         };
         if !row.has_children {
-            return (Outcome::Consumed, None);
+            return Response::consumed();
         }
         let path = row.path.clone();
         let open = !row.expanded;
@@ -858,9 +851,9 @@ impl TreeView {
         }
         self.refold(i);
         if open && lazy {
-            return (Outcome::Changed, Some(TreeAction::Expand(path)));
+            return Response::from((Outcome::Changed, Some(TreeAction::Expand(path))));
         }
-        (Outcome::Changed, None)
+        Response::changed()
     }
 
     pub fn track_click(mut self, click: crate::core::scroll::TrackClick) -> Self {
@@ -1264,7 +1257,7 @@ impl crate::core::pointer::MouseTarget for TreeView {
             _ => ev.index_of(Part::MARKER).map(|row| (row, false)),
         };
         match hit {
-            Some((row, toggle)) => self.on_click_at(row, toggle, ev.mods(), ev.count()).into(),
+            Some((row, toggle)) => self.on_click_at(row, toggle, ev.mods(), ev.count()),
             None => crate::core::response::Response::ignored(),
         }
     }

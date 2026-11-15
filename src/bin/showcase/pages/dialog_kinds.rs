@@ -641,7 +641,7 @@ impl Page for DialogKindsPage {
                 if p.is(Phase::Click) {
                     cx.focus.focus(p.id);
                 }
-                if r.action().is_some() {
+                if r.has_actions() {
                     self.open(i, cx);
                     return Outcome::Changed;
                 }

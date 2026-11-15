@@ -1157,8 +1157,8 @@ impl QueryWorkbenchPage {
             if click && self.explorer.row_at(ev).is_some() {
                 cx.focus.focus(self.explorer.id);
             }
-            let (o, a) = r.into_parts();
-            if let Some(a) = a {
+            let (o, actions) = r.into_parts();
+            for a in actions {
                 self.tree_action(a, cx);
             }
             return o;
@@ -1167,17 +1167,21 @@ impl QueryWorkbenchPage {
             if click {
                 cx.focus.focus(self.tabs.id);
             }
-            let (o, a) = r.into_parts();
-            if let Some(a) = a {
-                self.tab_action(a, cx);
+            let (o, actions) = r.into_parts();
+            if !actions.is_empty() {
+                for a in actions {
+                    self.tab_action(a, cx);
+                }
                 return Outcome::Changed;
             }
             return o;
         }
         if let Some(r) = self.toolbar.route(ev) {
-            let (o, a) = r.into_parts();
-            if let Some(a) = a {
-                self.toolbar_action(a, cx);
+            let (o, actions) = r.into_parts();
+            if !actions.is_empty() {
+                for a in actions {
+                    self.toolbar_action(a, cx);
+                }
                 return Outcome::Changed;
             }
             return o;
@@ -1223,9 +1227,11 @@ impl QueryWorkbenchPage {
             return o;
         }
         if f == self.explorer.id {
-            let (o, a) = self.explorer.on_key(key);
-            if let Some(a) = a {
-                self.tree_action(a, cx);
+            let (o, actions) = self.explorer.on_key(key).into_parts();
+            if !actions.is_empty() {
+                for a in actions {
+                    self.tree_action(a, cx);
+                }
                 return Outcome::Changed;
             }
             return o;
@@ -1260,11 +1266,13 @@ impl QueryWorkbenchPage {
             return o;
         }
         if f == doc.results.id {
-            let (o, a) = doc.results.on_key(key);
-            match a {
-                Some(TableAction::LeaveForward) => cx.focus_next(),
-                Some(TableAction::LeaveBackward) => cx.focus_prev(),
-                _ => {}
+            let (o, actions) = doc.results.on_key(key).into_parts();
+            for a in actions {
+                match a {
+                    TableAction::LeaveForward => cx.focus_next(),
+                    TableAction::LeaveBackward => cx.focus_prev(),
+                    _ => {}
+                }
             }
             return o;
         }

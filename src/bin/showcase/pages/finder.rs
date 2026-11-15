@@ -511,11 +511,13 @@ impl FinderPage {
             if click && !scrollbar::is_bar_of(ev.id, self.results.id) {
                 cx.focus.focus(self.results.id);
             }
-            let (o, a) = r.into_parts();
-            if let Some(TableAction::Activated(_)) = a
-                && let Some(act) = self.current()
-            {
-                self.run(act.name, cx);
+            let (o, actions) = r.into_parts();
+            for a in actions {
+                if let TableAction::Activated(_) = a
+                    && let Some(act) = self.current()
+                {
+                    self.run(act.name, cx);
+                }
             }
             return o;
         }
@@ -526,7 +528,7 @@ impl FinderPage {
                 &mut self.why
             };
             if let Some(r) = button.route(ev) {
-                if r.into_action().is_some() {
+                if r.has_actions() {
                     cx.focus.focus(b);
                     if alt {
                         self.open_alternatives(self.button_anchor());
@@ -572,11 +574,13 @@ impl FinderPage {
                 self.open_alternatives(req.anchor);
                 return Outcome::Changed;
             }
-            let (o, a) = self.results.on_key(key);
-            if let Some(TableAction::Activated(_)) = a
-                && let Some(act) = self.current()
-            {
-                self.run(act.name, cx);
+            let (o, actions) = self.results.on_key(key).into_parts();
+            for a in actions {
+                if let TableAction::Activated(_) = a
+                    && let Some(act) = self.current()
+                {
+                    self.run(act.name, cx);
+                }
             }
             return o;
         }

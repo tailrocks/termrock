@@ -430,7 +430,7 @@ impl Page for FileBrowserPage {
                 if let Some(r) = self.browse.route(ev)
                     && r.outcome() != Outcome::Ignored
                 {
-                    if r.into_action().is_some() {
+                    if r.has_actions() {
                         self.open(cx);
                     }
                     return Outcome::Changed;

@@ -85,7 +85,7 @@ impl Specimen for DataTable {
             SpecimenState::Editing => {
                 if let Some(c) = t.sample_edit_col() {
                     t.cursor_col = c;
-                    t.begin_edit();
+                    let _ = t.begin_edit();
                 }
             }
             SpecimenState::Error => {

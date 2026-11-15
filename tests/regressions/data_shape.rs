@@ -174,12 +174,15 @@ fn issue42_empty_schema_is_inert() {
         KeyCode::Char('x'),
         KeyCode::Char(' '),
     ] {
-        let (out, action) = t.on_key(&key(code));
+        let (out, action) = t
+            .on_key(&key(code))
+            .try_into_single()
+            .expect("at most one action");
         assert_eq!(out, Outcome::Ignored, "{code:?}");
         assert!(action.is_none());
     }
     assert_eq!(t.sort_by(0), Outcome::Consumed);
-    assert_eq!(t.start_edit().0, Outcome::Consumed);
+    assert_eq!(t.start_edit().outcome(), Outcome::Consumed);
     assert!(!t.is_editing());
 
     let mut g = DataGrid::new(WidgetId::of("g"), vec![]);
@@ -188,7 +191,7 @@ fn issue42_empty_schema_is_inert() {
         Err(GridDataError::Shape(DataError::EmptySchemaWithRows)),
     );
     paint_grid(&mut g);
-    assert_eq!(g.begin_edit().0, Outcome::Consumed);
+    assert_eq!(g.begin_edit().outcome(), Outcome::Consumed);
     assert!(
         g.insert_row().is_none(),
         "no phantom row in an empty schema"
@@ -229,7 +232,7 @@ fn issue42_grid_sparse_rows_normalize_to_null() {
     paint_grid(&mut g);
 
     g.cursor = (0, 0);
-    g.begin_edit();
+    let _ = g.begin_edit();
     assert!(g.is_editing(), "a padded cell opens the editor");
     g.cancel_edit();
     assert!(g.duplicate_row().is_some());
@@ -256,7 +259,7 @@ fn issue42_grid_sparse_rows_normalize_to_null() {
 fn issue42_shape_failure_is_atomic() {
     let mut t = table();
     t.cursor_col = 1;
-    t.on_key(&key(KeyCode::Enter));
+    let _ = t.on_key(&key(KeyCode::Enter));
     assert!(t.is_editing());
     let before = texts(&t);
     assert!(
@@ -282,7 +285,7 @@ fn issue42_shape_failure_is_atomic() {
     )
     .expect("rectangular fixture")
     .cell_nav(true);
-    t.on_key(&key(KeyCode::Enter));
+    let _ = t.on_key(&key(KeyCode::Enter));
     assert!(t.choice.is_some(), "choice editor opened");
     assert!(t.try_set_rows(vec![vec![]]).is_err());
     assert!(
@@ -295,7 +298,7 @@ fn issue42_shape_failure_is_atomic() {
     g.toggle_delete(1);
     g.cell_errors.insert((0, 0), "kept".into());
     g.cursor = (0, 0);
-    g.begin_edit();
+    let _ = g.begin_edit();
     assert!(g.is_editing());
     let (pending, rows) = (g.pending().clone(), g.rows().to_vec());
     assert!(
@@ -397,7 +400,7 @@ fn issue42_table_update_column_is_checked() {
         "an equal update is a no-op"
     );
     t.cursor_col = 1;
-    t.on_key(&key(KeyCode::Enter));
+    let _ = t.on_key(&key(KeyCode::Enter));
     assert!(t.is_editing());
     assert_eq!(t.update_column(0, |c| c.title = "renamed".into()), Ok(true));
     assert!(t.is_editing(), "retitling another column keeps the editor");
@@ -424,13 +427,13 @@ fn issue42_public_stale_cursor_indices_safe() {
     ] {
         t.cursor_row = 99;
         t.cursor_col = 99;
-        t.on_key(&key(code));
+        let _ = t.on_key(&key(code));
         t.cancel_edit();
     }
     t.cursor_col = 99;
-    t.start_edit();
+    let _ = t.start_edit();
     t.cancel_edit();
-    t.on_click_header(99);
+    let _ = t.on_click_header(99);
     t.try_set_rows(vec![full("b", "1"), full("a", "2")])
         .expect("rectangular");
     assert_eq!(
@@ -463,7 +466,7 @@ fn issue42_public_stale_cursor_indices_safe() {
         KeyCode::Down,
     ] {
         g.cursor = (99, 99);
-        g.on_key(&key(code));
+        let _ = g.on_key(&key(code));
         g.cancel_edit();
     }
     for cmd in [
@@ -523,7 +526,7 @@ fn issue42_grid_model_rejects_unusable_width_ranges() {
 fn issue42_table_width_only_vs_semantic_column_update() {
     let mut t = table();
     t.cursor_col = 1;
-    t.on_key(&key(KeyCode::Enter));
+    let _ = t.on_key(&key(KeyCode::Enter));
     assert!(t.is_editing());
     t.sizing.set(0, 14);
     t.sizing.set(1, 16);
