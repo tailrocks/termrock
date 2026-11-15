@@ -326,6 +326,21 @@ impl DiskPage {
         self.selected.retain(|s| live.contains(s.as_str()));
     }
 
+    /// The item the detail panel describes, so its scroll rewinds only when this changes.
+    fn detail_target(&self) -> Option<String> {
+        match self.view {
+            View::Tree => self.cursor_fs_path(),
+            View::Overview => self.overview.get(self.cursor).map(|r| r.path.clone()),
+            View::TopFiles => self.top.get(self.cursor).map(|r| r.path.clone()),
+        }
+    }
+
+    fn rewind_detail_if_moved(&mut self, before: Option<String>) {
+        if self.detail_target() != before {
+            self.detail_scroll.jump_start();
+        }
+    }
+
     fn cursor_fs_path(&self) -> Option<String> {
         let p = self.tree.cursor_path()?;
         self.paths
@@ -1452,12 +1467,13 @@ impl ShellPage<Holla> for DiskPage {
                 if !cx.focus.is(TREE) {
                     return Outcome::Ignored;
                 }
+                let before = self.detail_target();
                 let (o, ev) = self.tree.on_key(key);
                 if let Some(TreeAction::Activate(_)) = ev {
                     return Outcome::Changed;
                 }
                 if o.consumed() {
-                    self.detail_scroll.jump_start();
+                    self.rewind_detail_if_moved(before);
                     return o;
                 }
                 Outcome::Ignored
@@ -1470,14 +1486,16 @@ impl ShellPage<Holla> for DiskPage {
                 };
                 match key.code {
                     KeyCode::Up | KeyCode::Char('k') => {
+                        let before = self.detail_target();
                         self.cursor = self.cursor.saturating_sub(1);
-                        self.detail_scroll.jump_start();
+                        self.rewind_detail_if_moved(before);
                         self.list_scroll.ensure_visible(self.cursor);
                         Outcome::Changed
                     }
                     KeyCode::Down | KeyCode::Char('j') => {
+                        let before = self.detail_target();
                         self.cursor = (self.cursor + 1).min(n.saturating_sub(1));
-                        self.detail_scroll.jump_start();
+                        self.rewind_detail_if_moved(before);
                         self.list_scroll.ensure_visible(self.cursor);
                         Outcome::Changed
                     }
@@ -2372,5 +2390,85 @@ mod scan_status_tests {
             page.selected.is_empty(),
             "a cancelled partial scan never preselects"
         );
+    }
+}
+
+#[cfg(test)]
+mod detail_scroll_tests {
+    use super::*;
+    use crate::domain::fixtures::world_for;
+    use crate::scenario::{Motion, Scenario};
+    use junie_tui::core::focus::{Focus, FocusRing};
+    use ratatui::crossterm::event::KeyModifiers;
+
+    fn press(page: &mut DiskPage, w: &mut World, focus: WidgetId, code: KeyCode) {
+        let mut focus_state = Focus::default();
+        focus_state.focus(focus);
+        let ring = FocusRing::default();
+        let mut cx = Cx::new(&mut focus_state, &ring);
+        let key = Key {
+            code,
+            mods: KeyModifiers::NONE,
+        };
+        page.on_key(&key, w, &mut cx);
+    }
+
+    fn scroll_detail_to_three(page: &mut DiskPage) {
+        page.detail_scroll.set_content(100);
+        page.detail_scroll.set_viewport(5);
+        page.detail_scroll.jump_start();
+        page.detail_scroll.scroll_by(3);
+        assert_eq!(page.detail_scroll.offset, 3);
+    }
+
+    #[test]
+    fn list_cursor_keys_reset_detail_scroll_only_when_the_row_changes() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        let mut page = DiskPage::overview();
+        page.rebuild_overview(&w);
+        let last = page.overview.len() - 1;
+        assert!(last >= 1, "fixture needs two overview rows");
+
+        page.cursor = 0;
+        scroll_detail_to_three(&mut page);
+        press(&mut page, &mut w, LIST, KeyCode::Up);
+        assert_eq!(page.cursor, 0);
+        assert_eq!(page.detail_scroll.offset, 3, "Up on the first row");
+
+        press(&mut page, &mut w, LIST, KeyCode::Down);
+        assert_eq!(page.cursor, 1);
+        assert_eq!(page.detail_scroll.offset, 0, "Down onto a new row");
+
+        page.cursor = last;
+        scroll_detail_to_three(&mut page);
+        press(&mut page, &mut w, LIST, KeyCode::Down);
+        assert_eq!(page.cursor, last);
+        assert_eq!(page.detail_scroll.offset, 3, "Down on the last row");
+
+        press(&mut page, &mut w, LIST, KeyCode::Up);
+        assert_eq!(page.cursor, last - 1);
+        assert_eq!(page.detail_scroll.offset, 0, "Up onto a new row");
+    }
+
+    #[test]
+    fn tree_cursor_keys_reset_detail_scroll_only_when_the_row_changes() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        let root = w.location.cwd.clone();
+        w.start_scan(&root);
+        w.tick += 1_000_000;
+        let mut page = DiskPage::new(&root);
+        page.rebuild_tree(&w);
+        assert!(page.tree.rows().len() >= 2, "fixture needs two tree rows");
+
+        page.tree.context_select(0);
+        let first = page.cursor_fs_path();
+        scroll_detail_to_three(&mut page);
+        press(&mut page, &mut w, TREE, KeyCode::Up);
+        assert_eq!(page.cursor_fs_path(), first);
+        assert_eq!(page.detail_scroll.offset, 3, "Up on the first row");
+
+        press(&mut page, &mut w, TREE, KeyCode::Down);
+        assert_ne!(page.cursor_fs_path(), first);
+        assert_eq!(page.detail_scroll.offset, 0, "Down onto a new row");
     }
 }
