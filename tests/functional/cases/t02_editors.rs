@@ -336,10 +336,7 @@ fn notes_row(app: &App, col: &mut usize) -> usize {
 fn confirm_quit(app: &App) {
     app.key("ctrl+q");
     app.wait_text("Quit TablePro?");
-    app.key("right");
-    app.key("enter");
-    app.wait_exit("tablepro stayed up after confirming quit");
-    app.expect_exited(0);
+    app.confirm_quit();
 }
 
 fn pending_line(screen: &TerminalSnapshot) -> String {

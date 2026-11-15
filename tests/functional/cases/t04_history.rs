@@ -155,10 +155,7 @@ fn quit_unsaved(app: &App) {
         &["Quit TablePro?", "1 unsaved query will be lost."],
         &[RUNNING, "Execute query?"],
     );
-    app.key("right");
-    app.key("enter");
-    app.wait_exit("tablepro stayed up after confirming quit");
-    app.expect_exited(0);
+    app.confirm_quit();
 }
 
 #[test]

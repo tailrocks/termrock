@@ -606,6 +606,15 @@ impl App {
         }
     }
 
+    /// Moves to the focused Quit button of the open quit dialog, confirms it and waits for
+    /// TablePro to exit cleanly.
+    pub fn confirm_quit(&self) {
+        self.key("right");
+        self.key("enter");
+        self.wait_exit("tablepro stayed up after confirming quit");
+        self.expect_exited(0);
+    }
+
     pub fn finish(&self) {
         self.assert_running("before Ctrl+Q");
         self.key("ctrl+q");

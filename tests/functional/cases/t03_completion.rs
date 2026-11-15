@@ -334,8 +334,5 @@ fn complete_accepts_the_moved_item_and_dismiss_leaves_sql() {
         &["Quit TablePro?", "1 unsaved query will be lost.", ACCEPTED],
         &["Enter Accept", "BEGINBEGIN"],
     );
-    app.key("right");
-    app.key("enter");
-    app.wait_exit("tablepro stayed up after confirming quit");
-    app.expect_exited(0);
+    app.confirm_quit();
 }

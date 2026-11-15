@@ -285,10 +285,7 @@ fn confirm_quit(app: &App) {
         &["Quit TablePro?", "1 unsaved query will be lost."],
         &["Loading schema", "Execute query?"],
     );
-    app.key("right");
-    app.key("enter");
-    app.wait_exit("tablepro stayed up after confirming quit");
-    app.expect_exited(0);
+    app.confirm_quit();
 }
 
 #[test]
