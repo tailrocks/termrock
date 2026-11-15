@@ -12,10 +12,14 @@
 //! is `Disk overview` (`Launch::Disk` with an empty path). Enter on a home
 //! folder is `Go::Analyze`. `disk-cleanup` pushes the disk page itself at
 //! `~/work` with `842 of 926 GB` and `/Volumes/Backup`.
+//!
+//! Every launch is on the test clock. The scan reveals entries on simulated
+//! ticks (`World::tick`, `TICK_MS`), and the cancel, the spinner glyph and the
+//! status lifetime follow that clock, so wall time under load cannot move the
+//! frozen two-entry banner. `scan_ticks` is 48 for `parity-disk-scan`
+//! (`src/bin/holla/domain/parity.rs`), so one 48-tick step completes a scan.
 
 use std::path::PathBuf;
-use std::time::{Duration, Instant};
-
 use tui_test::TerminalSnapshot;
 use tuiscotti_latest::check::CheckOutcome;
 
@@ -45,6 +49,9 @@ const FINDER: &str = "Search actions";
 const QUIT: &str = "Quit holla";
 const WIDE: &str = "H05.scan.scan.120x40";
 const NARROW: &str = "H05.scan.scan.narrow";
+const TICK_MS: u64 = 80;
+const SCAN_TICKS: u64 = 48;
+const SPINNER_FRAMES: usize = 10;
 
 fn visual_id(checkpoint: &str) -> String {
     format!(
@@ -59,6 +66,7 @@ fn launch(name: &str, scenario: &str) -> App {
     launch.rows = 40;
     launch.color = Some("truecolor".to_string());
     launch.motion = Some("reduced".to_string());
+    launch.clock = true;
     launch.args = vec!["--scenario".to_string(), scenario.to_string()];
     try_launch(launch).unwrap_or_else(|error| panic!("{error}"))
 }
@@ -161,15 +169,6 @@ fn frozen_two(screen: &TerminalSnapshot) -> bool {
         && !visible.contains(COMPLETE)
 }
 
-fn count_before(line: &str, marker: &str) -> Option<u32> {
-    let at = line.find(marker)?;
-    let head = line[..at].trim_end();
-    let start = head
-        .rfind(|c: char| !c.is_ascii_digit())
-        .map_or(0, |index| index + 1);
-    head[start..].parse().ok()
-}
-
 fn scanning_revealed(visible: &str) -> Option<u32> {
     let line = visible.lines().find(|line| line.contains("scanning · "))?;
     let rest = line.split_once("scanning · ")?.1;
@@ -177,101 +176,31 @@ fn scanning_revealed(visible: &str) -> Option<u32> {
     digits.parse().ok()
 }
 
-/// `Some((percent, entries))` from `scan cancelled at P% · N entries`.
-fn cancelled_progress(visible: &str) -> Option<(u32, u32)> {
-    let line = visible
-        .lines()
-        .find(|line| line.contains("scan cancelled at"))?;
-    Some((count_before(line, "%")?, count_before(line, " entries")?))
-}
-
-fn restart_scan(app: &App) {
-    let mut before = screen_text(app);
-    app.key("r");
-    let restarted = Instant::now();
-    loop {
-        let visible = screen_text(app);
-        let revealed = scanning_revealed(&visible);
-        // `r` redraws the new scan at zero revealed before the next tick.
-        let fresh = visible != before
-            && visible.contains(RESCAN)
-            && !visible.contains(PARTIAL)
-            && !visible.contains(COMPLETE);
-        assert!(
-            restarted.elapsed() < Duration::from_secs(3),
-            "scan did not restart\n{visible}"
-        );
-        if fresh && matches!(revealed, Some(0) | Some(2)) {
-            return;
-        }
-        if fresh && matches!(revealed, Some(n) if n > 2) {
-            before = visible;
-            app.key("r");
-        }
-        std::thread::sleep(Duration::from_millis(5));
-    }
-}
-
-/// `scanning · 2 of` is one sim tick. The next tick reveals four entries, and
-/// cancel records whichever count is current. A late `x` stays late, so the
-/// scan starts over and the key is sent again on the two-entry banner.
+/// The test clock holds the scan until a step. One step reveals two entries,
+/// and `x` freezes whatever count is current, so the cancel always lands on
+/// the two-entry banner.
 fn cancel_two(app: &App) -> TerminalSnapshot {
-    let started = Instant::now();
-    loop {
-        assert!(
-            started.elapsed() < Duration::from_secs(20),
-            "scan cancel did not freeze two entries\n{}",
-            screen_text(app)
-        );
-        let screen = app.screen();
-        let visible = text(&screen);
-        if visible.contains(QUIT) {
-            panic!("quit guard during scan cancel\n{visible}");
-        }
-        let revealed = scanning_revealed(&visible);
-        if revealed == Some(2) && !visible.contains(PARTIAL) && !visible.contains(COMPLETE) {
-            see(
-                &screen,
-                &[CRUMB, TITLE, "scanning"],
-                &[COMPLETE, QUIT, BACKUP],
-            );
-            app.key("x");
-            loop {
-                let screen = app.screen();
-                if screen.cols() == 120 && screen.rows() == 40 && frozen_two(&screen) {
-                    return screen;
-                }
-                let visible = text(&screen);
-                let late = visible.contains(COMPLETE)
-                    || matches!(cancelled_progress(&visible), Some((percent, entries)) if (percent, entries) != (3, 2))
-                    || matches!(scanning_revealed(&visible), Some(n) if n > 2);
-                if late {
-                    restart_scan(app);
-                    break;
-                }
-                assert!(
-                    started.elapsed() < Duration::from_secs(20),
-                    "scan cancel did not freeze two entries\n{visible}"
-                );
-                std::thread::sleep(Duration::from_millis(5));
-            }
-            continue;
-        }
-        let missed = visible.contains(COMPLETE)
-            || matches!(cancelled_progress(&visible), Some((percent, entries)) if (percent, entries) != (3, 2))
-            || matches!(revealed, Some(n) if n > 2);
-        if missed {
-            restart_scan(app);
-        } else {
-            std::thread::sleep(Duration::from_millis(5));
-        }
-    }
+    app.wait_screen("scan started", |screen| {
+        scanning_revealed(&text(screen)) == Some(0)
+    });
+    app.advance_clock(TICK_MS);
+    let running = app.wait_screen("two entries revealed", |screen| {
+        scanning_revealed(&text(screen)) == Some(2)
+    });
+    see(
+        &running,
+        &[CRUMB, TITLE, "scanning"],
+        &[PARTIAL, COMPLETE, QUIT, BACKUP],
+    );
+    app.key("x");
+    app.wait_screen("cancel froze two entries", |screen| {
+        screen.cols() == 120 && screen.rows() == 40 && frozen_two(screen)
+    })
 }
 
-/// Busy rows paint `spinner_frame(now_ms / 80)`. Cancel freezes the revealed
-/// count, and the next resize paints whichever frame the clock has reached.
-/// Idle ticks advance that clock without redrawing, so sample resizes until
-/// the frame is the first glyph. A later paint can still replace that glyph.
+/// Busy rows paint `spinner_frame(now_ms / 80)`. The held clock keeps that
+/// frame fixed, and the accepted capture is the first glyph, so a sample
+/// that shows another glyph steps one tick and paints again.
 /// `visual` would lock the replacement, so compare the held first-glyph frame.
 fn first_spinner(screen: &TerminalSnapshot) -> bool {
     let visible = text(screen);
@@ -281,63 +210,9 @@ fn first_spinner(screen: &TerminalSnapshot) -> bool {
             .all(|glyph| !visible.contains(glyph))
 }
 
-fn spinner_frame_ready(
-    screen: &TerminalSnapshot,
-    cols: u16,
-    rows: u16,
-    ready: &impl Fn(&TerminalSnapshot) -> bool,
-) -> bool {
-    screen.cols() == u32::from(cols)
-        && screen.rows() == u32::from(rows)
-        && ready(screen)
-        && first_spinner(screen)
-}
-
-/// The chrome names the size it laid out. A resize can report the new grid
-/// while the previous layout, one column wider, is still on screen.
+/// The chrome names the size it laid out.
 fn labelled_size(screen: &TerminalSnapshot, cols: u16, rows: u16) -> bool {
     text(screen).contains(&format!("{cols}×{rows}"))
-}
-
-/// The accepted paint: first glyph, frozen banner, cancel status, and the
-/// chrome naming this size. A later resize can clear the footer before that
-/// paint is on screen again.
-fn holdable(screen: &TerminalSnapshot, cols: u16, rows: u16) -> bool {
-    spinner_frame_ready(screen, cols, rows, &frozen_two)
-        && labelled_size(screen, cols, rows)
-        && text(screen).contains(CANCELLED)
-}
-
-/// The accepted frame is the first spinner glyph at this size, while the
-/// cancel status is still up. A 200 ms identical hold skips that paint: the
-/// layout corrects, or the glyph advances, and the status then expires.
-fn capture_labelled_spinner(
-    app: &App,
-    cols: u16,
-    rows: u16,
-    ready: &impl Fn(&TerminalSnapshot) -> bool,
-) -> Option<TerminalSnapshot> {
-    let seen = app.screen();
-    if !spinner_frame_ready(&seen, cols, rows, ready) {
-        return None;
-    }
-    if labelled_size(&seen, cols, rows) && text(&seen).contains(CANCELLED) {
-        return Some(seen);
-    }
-    // The grid is already the target size and the glyph is the first one.
-    // Give the chrome one beat to drop the previous size from its status.
-    let started = Instant::now();
-    while started.elapsed() < Duration::from_millis(150) {
-        std::thread::sleep(Duration::from_millis(10));
-        let seen = app.screen();
-        if !spinner_frame_ready(&seen, cols, rows, ready) {
-            return None;
-        }
-        if labelled_size(&seen, cols, rows) && text(&seen).contains(CANCELLED) {
-            return Some(seen);
-        }
-    }
-    None
 }
 
 fn settle_spinner(
@@ -346,34 +221,25 @@ fn settle_spinner(
     rows: u16,
     ready: impl Fn(&TerminalSnapshot) -> bool,
 ) -> TerminalSnapshot {
-    let start = Instant::now();
-    loop {
-        let bumped = cols + 1;
-        app.resize(bumped, rows);
+    for _ in 0..SPINNER_FRAMES {
+        app.resize(cols + 1, rows);
         app.wait_screen("spinner bump", move |screen| {
-            screen.cols() == u32::from(bumped) && screen.rows() == u32::from(rows)
+            screen.cols() == u32::from(cols + 1) && screen.rows() == u32::from(rows)
         });
         app.resize(cols, rows);
         let screen = app.wait_screen("spinner sample", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows) && ready(screen)
+            screen.cols() == u32::from(cols)
+                && screen.rows() == u32::from(rows)
+                && labelled_size(screen, cols, rows)
+                && text(screen).contains(CANCELLED)
+                && ready(screen)
         });
-        if let Some(held) = capture_labelled_spinner(app, cols, rows, &ready) {
-            return held;
+        if first_spinner(&screen) {
+            return screen;
         }
-        // The grid can already be the target size while the footer is still
-        // blank. That paint has the banner and no cancel line. It is not the
-        // status expiring; a complete frame names its size in the chrome.
-        if labelled_size(&screen, cols, rows) && !text(&screen).contains(CANCELLED) {
-            panic!(
-                "cancel status left before the first spinner\n{}",
-                text(&screen)
-            );
-        }
-        if start.elapsed() > Duration::from_secs(12) {
-            panic!("spinner did not reach the first frame\n{}", text(&screen));
-        }
-        std::thread::sleep(Duration::from_millis(40));
+        app.advance_clock(TICK_MS);
     }
+    panic!("spinner never reached the first frame at {cols}x{rows}");
 }
 
 fn check_frame(app: &App, screen: &TerminalSnapshot, test_id: &str) {
@@ -398,22 +264,6 @@ fn check_frame(app: &App, screen: &TerminalSnapshot, test_id: &str) {
             failure.changed_cell_total()
         );
     }
-}
-
-fn nudge(app: &App, ready: impl Fn(&TerminalSnapshot) -> bool) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    app.wait_screen("nudged", |screen| {
-        screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows) && ready(screen)
-    });
-    app.resize(cols, rows);
-    app.wait_screen("size restored", |screen| {
-        screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows) && ready(screen)
-    });
 }
 
 fn shot(app: &App, checkpoint: &str, screen: &TerminalSnapshot) {
@@ -537,32 +387,24 @@ fn h05_scan_scan_cancels_completes_and_changes_root() {
         &[COMPLETE, CLEANUP_METER, BACKUP, QUIT],
     );
 
-    nudge(&app, frozen_two);
     let wide = settle_spinner(&app, 120, 40, frozen_two);
     shot(&app, WIDE, &wide);
 
     app.resize(80, 24);
-    let narrowed = app.wait_screen("narrow cancelled tree", |screen| {
-        screen.cols() == 80 && screen.rows() == 24 && frozen_two(screen)
-    });
+    let narrow = settle_spinner(&app, 80, 24, frozen_two);
     see(
-        &narrowed,
+        &narrow,
         &[PARTIAL, TITLE],
         &[COMPLETE, CLEANUP_METER, BACKUP],
     );
-    // The first 80×24 paint can already be the accepted frame. Nudging it
-    // starts another spinner cycle and the footer is blank until the next draw.
-    let narrow = if holdable(&narrowed, 80, 24) {
-        narrowed
-    } else {
-        nudge(&app, frozen_two);
-        settle_spinner(&app, 80, 24, frozen_two)
-    };
     shot(&app, NARROW, &narrow);
 
     app.resize(120, 40);
     let restored = app.wait_screen("cancelled tree restored", |screen| {
-        screen.cols() == 120 && screen.rows() == 40 && cancelled(screen)
+        screen.cols() == 120
+            && screen.rows() == 40
+            && labelled_size(screen, 120, 40)
+            && cancelled(screen)
     });
     see(
         &restored,
@@ -576,6 +418,7 @@ fn h05_scan_scan_cancels_completes_and_changes_root() {
     });
     see(&rescanning, &[RESCAN, TITLE], &[COMPLETE, PARTIAL]);
 
+    app.advance_clock(SCAN_TICKS * TICK_MS);
     let done = app.wait_screen("scan finished", |screen| {
         let visible = text(screen);
         visible.contains(COMPLETE)
