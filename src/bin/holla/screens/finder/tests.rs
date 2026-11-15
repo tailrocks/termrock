@@ -320,3 +320,115 @@ fn finder_reselecting_the_current_row_keeps_preview_scroll() {
         "a new item starts at the top"
     );
 }
+
+mod selected_row_keeps_preview_scroll {
+    use super::*;
+    use crate::screens::pointer_tests::{cell_of, render_hits};
+    use junie_tui::core::focus::{Focus, FocusRing};
+    use junie_tui::core::hit::HitRegistry;
+    use junie_tui::shell::Request;
+    use ratatui::crossterm::event::KeyModifiers;
+
+    fn settled_page(w: &World) -> FinderPage {
+        let mut page = FinderPage::new(None);
+        settle(&mut page, w);
+        page
+    }
+
+    fn item_rows(page: &FinderPage) -> Vec<usize> {
+        (0..page.rows.len())
+            .filter(|&i| matches!(page.rows[i], Row::Item(..)))
+            .collect()
+    }
+
+    fn scroll_preview_to_three(page: &mut FinderPage) {
+        page.preview_scroll.set_content(100);
+        page.preview_scroll.set_viewport(5);
+        page.preview_scroll.jump_start();
+        page.preview_scroll.scroll_by(3);
+        assert_eq!(page.preview_scroll.offset, 3);
+    }
+
+    fn secondary_click(
+        page: &mut FinderPage,
+        w: &mut World,
+        hits: &HitRegistry,
+        row: usize,
+    ) -> bool {
+        let pos = cell_of(hits, FINDER.child(row));
+        let id = hits.hit(pos).expect("a rendered row is under the pointer");
+        let event = PointerEvent::new(hits, Phase::Secondary, id, pos, 1, KeyModifiers::NONE);
+        let mut focus = Focus::default();
+        let ring = FocusRing::default();
+        let mut cx = Cx::new(&mut focus, &ring);
+        page.pointer(&event, w, &mut cx);
+        cx.requests
+            .iter()
+            .any(|r| matches!(r, Request::Go(Go::Alternatives { .. })))
+    }
+
+    fn press(page: &mut FinderPage, w: &mut World, code: KeyCode) {
+        let mut focus = Focus::default();
+        focus.focus(FINDER);
+        let ring = FocusRing::default();
+        let mut cx = Cx::new(&mut focus, &ring);
+        let key = Key {
+            code,
+            mods: KeyModifiers::NONE,
+        };
+        page.on_key(&key, w, &mut cx);
+    }
+
+    #[test]
+    fn secondary_click_on_the_selected_row_keeps_preview_scroll() {
+        let mut w = world(Scenario::RustDirty);
+        let mut page = settled_page(&w);
+        let rows = item_rows(&page);
+        let (selected, other) = (rows[0], rows[1]);
+        page.select_row(selected);
+        let hits = render_hits(&mut page, &w);
+        scroll_preview_to_three(&mut page);
+
+        assert!(
+            secondary_click(&mut page, &mut w, &hits, selected),
+            "the menu still opens"
+        );
+        assert_eq!(page.cursor, selected);
+        assert_eq!(
+            page.preview_scroll.offset, 3,
+            "the previewed item did not change"
+        );
+
+        assert!(secondary_click(&mut page, &mut w, &hits, other));
+        assert_eq!(page.cursor, other);
+        assert_eq!(
+            page.preview_scroll.offset, 0,
+            "a secondary click on a new row starts its preview at the top"
+        );
+    }
+
+    #[test]
+    fn home_and_end_on_the_selected_row_keep_preview_scroll() {
+        let mut w = world(Scenario::RustDirty);
+        let mut page = settled_page(&w);
+        let first = page.first_selectable();
+        let last = page.rows.iter().rposition(selectable).expect("a last row");
+        assert_ne!(first, last, "the fixture needs two selectable rows");
+
+        page.select_row(first);
+        scroll_preview_to_three(&mut page);
+        press(&mut page, &mut w, KeyCode::Home);
+        assert_eq!(page.cursor, first);
+        assert_eq!(page.preview_scroll.offset, 3, "Home on the first row");
+
+        page.select_row(last);
+        scroll_preview_to_three(&mut page);
+        press(&mut page, &mut w, KeyCode::End);
+        assert_eq!(page.cursor, last);
+        assert_eq!(page.preview_scroll.offset, 3, "End on the last row");
+
+        press(&mut page, &mut w, KeyCode::Home);
+        assert_eq!(page.cursor, first);
+        assert_eq!(page.preview_scroll.offset, 0, "Home onto a new row resets");
+    }
+}
