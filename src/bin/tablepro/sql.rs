@@ -1176,8 +1176,8 @@ impl Operand {
     fn compare(&self, v: &Value) -> std::cmp::Ordering {
         match (v, self.int, self.num) {
             (Value::Int(a), Some(b), _) => a.cmp(&b),
-            (Value::Int(a), None, Some(b)) => (*a as f64).total_cmp(&b),
-            (Value::Num(a), _, Some(b)) => a.total_cmp(&b),
+            (Value::Int(a), None, Some(b)) => num_cmp(*a as f64, b),
+            (Value::Num(a), _, Some(b)) => num_cmp(*a, b),
             _ => v.display().to_lowercase().cmp(&self.lower),
         }
     }
@@ -1415,13 +1415,19 @@ fn like_match(pat: &[char], s: &[char]) -> bool {
     true
 }
 
+/// Orders numbers by value, so `-0.0` equals `0.0`. NaN, which has no value
+/// order, keeps its place from `total_cmp`.
+fn num_cmp(a: f64, b: f64) -> std::cmp::Ordering {
+    a.partial_cmp(&b).unwrap_or_else(|| a.total_cmp(&b))
+}
+
 pub fn cmp_values(a: &Value, b: &Value) -> std::cmp::Ordering {
     match (a, b) {
         (Value::Null, Value::Null) => std::cmp::Ordering::Equal,
         (Value::Null, _) => std::cmp::Ordering::Greater,
         (_, Value::Null) => std::cmp::Ordering::Less,
         _ => match (a.as_f64(), b.as_f64()) {
-            (Some(x), Some(y)) => x.total_cmp(&y),
+            (Some(x), Some(y)) => num_cmp(x, y),
             _ => a.display().to_lowercase().cmp(&b.display().to_lowercase()),
         },
     }
@@ -2262,6 +2268,48 @@ mod issue10_sql_tests {
             &filter,
             &row_with(table, "notes", Value::Text("O''Reilly".into())),
         ));
+    }
+
+    #[test]
+    fn issue10_negative_zero_operand_equals_zero_rows() {
+        let cat = Catalog::acme_prod();
+        let table = orders(&cat);
+        for sql in [
+            "SELECT * FROM orders WHERE total_amount = '-0.0'",
+            "SELECT * FROM orders WHERE total_amount = '-0'",
+            "SELECT * FROM orders WHERE total_amount IN ('-0.0')",
+        ] {
+            let filter = parsed_filter(sql);
+            for zero in [Value::Num(0.0), Value::Num(-0.0), Value::Int(0)] {
+                assert!(
+                    admits(
+                        table,
+                        &filter,
+                        &row_with(table, "total_amount", zero.clone())
+                    ),
+                    "{sql} must admit {zero:?}"
+                );
+            }
+        }
+        let positive = parsed_filter("SELECT * FROM orders WHERE total_amount = '0.0'");
+        assert!(admits(
+            table,
+            &positive,
+            &row_with(table, "total_amount", Value::Num(-0.0))
+        ));
+        let ge = parsed_filter("SELECT * FROM orders WHERE total_amount >= '-0.0'");
+        assert!(admits(
+            table,
+            &ge,
+            &row_with(table, "total_amount", Value::Num(0.0))
+        ));
+        let gt = parsed_filter("SELECT * FROM orders WHERE total_amount > '-0.0'");
+        assert!(!admits(
+            table,
+            &gt,
+            &row_with(table, "total_amount", Value::Num(0.0))
+        ));
+        assert!(cmp_values(&Value::Num(-0.0), &Value::Num(0.0)).is_eq());
     }
 
     #[test]
