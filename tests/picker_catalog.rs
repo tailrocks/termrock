@@ -743,3 +743,15 @@ fn picker_scope_respects_let_else_pattern_shadow() {
         "fn show(p: Picker) { let Some(p) = value else { return; }; p.list(); }"
     ));
 }
+
+#[test]
+fn terminal_session_coverage_declares_catalog_capabilities() {
+    let mut seen = BTreeSet::new();
+    for id in coverage::TERMINAL_SESSION_COVERAGE {
+        assert!(
+            junie_tui::catalog::find(id).is_some(),
+            "declared id is not a catalog capability: {id}"
+        );
+        assert!(seen.insert(*id), "duplicate coverage entry: {id}");
+    }
+}

@@ -1275,6 +1275,144 @@ fn showcase_terminal_play_all_counts_the_leave_chunk() {
     app.finish();
 }
 
+const SESSION: &str = "terminalpane.host=session controller";
+
+fn session_page(name: &str, script: &str, area: &str) -> App {
+    terminal_pane(
+        name,
+        &[
+            SESSION,
+            &format!("terminalpane.script={script}"),
+            &format!("terminalpane.area={area}"),
+        ],
+    )
+}
+
+#[test]
+fn showcase_terminal_session_owner_script() {
+    let app = session_page("showcase-terminal-session-owner", "owner", "fits");
+    app.wait_text("attaching");
+    app.wait_text("Attaching…");
+    app.click_text("Run 1 s");
+    app.wait_text("attached · owner");
+    app.wait_text("demo$ ls");
+    app.click_text("Run 1 s");
+    let screen = app.wait_text("clipboard write refused");
+    assert!(
+        text(&screen).contains("reply ESC [ 3 ; 5 R"),
+        "the owner answers the program's query:\n{}",
+        text(&screen)
+    );
+    app.click_text("Type");
+    app.wait_text("a → sent to the program");
+
+    app.click_text("Paste 3 lines");
+    app.wait_text("paste of 3 lines is held");
+    app.click_text("Confirm");
+    app.wait_text("paste → sent to the program");
+    app.wait_absent("Confirm");
+    app.click_text("Reset");
+    app.wait_text("Attaching…");
+    app.finish();
+}
+
+#[test]
+fn showcase_terminal_session_captured_keys_reach_the_controller() {
+    let app = session_page("showcase-terminal-session-keys", "owner", "fits");
+    let screen = app.wait_text("Attaching…");
+    let pane = find(&screen, "Attaching…");
+    app.click(pane);
+    app.key("enter");
+    app.wait_text("Ctrl+G Release");
+    app.key("x");
+    let typed = app.wait_text("x → sent to the program");
+    assert!(
+        text(&typed).contains("input x"),
+        "the controller forwarded the key to the link:\n{}",
+        text(&typed)
+    );
+    app.key("ctrl+g");
+    app.wait_absent("Ctrl+G Release");
+    app.finish();
+}
+
+#[test]
+fn showcase_terminal_session_viewer_script() {
+    let app = session_page("showcase-terminal-session-viewer", "viewer", "fits");
+    app.click_text("Run 1 s");
+    app.wait_text("attached · viewer");
+    app.wait_text("notice: another client controls this session");
+    app.click_text("Type");
+    app.wait_text("a → sent to the program");
+    app.click_text("Run 1 s");
+    app.click_text("Run 1 s");
+    app.wait_text("attached · owner");
+    app.finish();
+}
+
+#[test]
+fn showcase_terminal_session_detach_exit_and_failure_scripts() {
+    let detaches = session_page("showcase-terminal-session-detaches", "detaches", "fits");
+    detaches.click_text("Run 1 s");
+    detaches.click_text("Run 1 s");
+    detaches.wait_text("detached · operator");
+    detaches.click_text("Retry");
+    detaches.wait_text("Attaching…");
+    detaches.finish();
+
+    let exits = session_page("showcase-terminal-session-exits", "exits", "fits");
+    exits.click_text("Run 1 s");
+    exits.click_text("Run 1 s");
+    exits.wait_text("exited · code 0");
+    exits.click_text("Retry");
+    exits.click_text("Run 1 s");
+    exits.wait_text("restarted");
+    exits.finish();
+
+    let fails = session_page("showcase-terminal-session-fails", "fails", "fits");
+    fails.wait_text("Attach failed");
+    fails.wait_text("no capacity, the host is busy");
+    fails.click_text("Retry");
+    fails.click_text("Run 1 s");
+    fails.wait_text("attached · owner");
+    fails.finish();
+}
+
+#[test]
+fn showcase_terminal_session_drain_budget_option_stretches_the_replay() {
+    let app = terminal_pane(
+        "showcase-terminal-session-budget",
+        &[SESSION, "terminalpane.budget=8"],
+    );
+    app.wait_text("8 bytes");
+    for _ in 0..3 {
+        app.click_text("Tick 200 ms");
+    }
+    app.wait_text("clock at 600 ms");
+    app.wait_text("Attaching…");
+    app.click_text("Tick 200 ms");
+    app.wait_text("attached · owner");
+    app.finish();
+
+    let generous = terminal_pane("showcase-terminal-session-generous", &[SESSION]);
+    for _ in 0..3 {
+        generous.click_text("Tick 200 ms");
+    }
+    generous.wait_text("attached · owner");
+    generous.finish();
+}
+
+#[test]
+fn showcase_terminal_session_below_minimum_waits_for_room() {
+    let app = session_page("showcase-terminal-session-small", "owner", "below minimum");
+    app.wait_text("pending");
+    app.wait_text("Waiting for room");
+    app.wait_text("needs 20x4");
+    app.click_text("Paste 3 lines");
+    app.wait_text("paste → no program to take it");
+    app.finish();
+}
+
 fn small_terminal_keeps_controls(cols: u16, rows: u16) {
     let app = App::new(
         &format!("showcase-terminal-pane-{cols}x{rows}"),
