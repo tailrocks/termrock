@@ -370,6 +370,8 @@ fn custom_keymap() -> KeyMap<GridCmd> {
     map
 }
 
+const TIER_REQUIRED: &str = "A support tier is required: pick one";
+
 fn strict(spec: &ColumnSpec, text: &str) -> Result<CellValue, String> {
     let parsed = junie_tui::widgets::grid::default_validator(spec, text)?;
     match (&*spec.name, &parsed) {
@@ -378,9 +380,8 @@ fn strict(spec: &ColumnSpec, text: &str) -> Result<CellValue, String> {
             Err("A customer name has at least 3 letters".into())
         }
         ("active", CellValue::Bool(false)) => Err("Accounts are deactivated by support".into()),
-        ("tier", CellValue::Text(s)) if s.is_empty() => {
-            Err("A support tier is required: pick one".into())
-        }
+        ("tier", CellValue::Null) => Err(TIER_REQUIRED.into()),
+        ("tier", CellValue::Text(s)) if s.is_empty() => Err(TIER_REQUIRED.into()),
         _ => Ok(parsed),
     }
 }
@@ -1836,6 +1837,33 @@ mod tests {
             rig.page.grid.value(0, SEATS),
             &CellValue::Int(40),
             "a grid without focus ignores a paste"
+        );
+    }
+
+    #[test]
+    fn codex196_tier_editor_rejects_null() {
+        const TIER: usize = 9;
+        let mut rig = Rig::new();
+        rig.page.set_option("datagrid.validator", 2);
+        assert_eq!(rig.page.grid.columns()[TIER].name, "tier");
+        rig.page.grid.cursor = (0, TIER);
+
+        assert!(matches!(
+            rig.page.grid.try_edit_text(0, TIER, "NULL"),
+            Err(GridEditError::Validation(_))
+        ));
+        let _ = rig.page.grid.on_key(&junie_tui::core::event::Key {
+            code: ratatui::crossterm::event::KeyCode::Delete,
+            mods: ratatui::crossterm::event::KeyModifiers::NONE,
+        });
+        assert!(rig.page.grid.pending().is_empty(), "the clear was refused");
+        assert_eq!(
+            rig.page
+                .grid
+                .cell_errors
+                .get(&(0, TIER))
+                .map(String::as_str),
+            Some(TIER_REQUIRED)
         );
     }
 }
