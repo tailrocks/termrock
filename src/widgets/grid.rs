@@ -3027,6 +3027,27 @@ impl DataGrid {
         }
     }
 
+    /// Pastes `text` onto the cursor cell through the same parser, eligibility
+    /// checks and submission lock as an editor commit.
+    ///
+    /// Hosts call it when the grid has focus and [`DataGrid::on_paste`] left
+    /// the paste alone because no editor is open. A rejected value is recorded
+    /// as the cell's error, a refusal comes back as [`GridAction::ReadOnly`],
+    /// and an accepted change comes back as [`GridAction::CellChanged`].
+    pub fn paste_into_cell(&mut self, text: &str) -> Response<GridAction> {
+        if self.is_editing() {
+            return Response::ignored();
+        }
+        let Some(src) = self.cursor_src() else {
+            return Response::ignored();
+        };
+        if let Some(reason) = self.read_only_reason_at_cursor() {
+            return Response::emit(GridAction::ReadOnly { reason });
+        }
+        let col = self.cursor.1;
+        Response::from(self.immediate(src, col, CellInput::Text(text)))
+    }
+
     pub fn position_label(&self) -> String {
         match self.cols_label() {
             Some(c) => format!("{} · {c}", self.rows_label()),

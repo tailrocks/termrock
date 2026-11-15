@@ -109,8 +109,8 @@ impl Page<Tablepro> for Workbench {
         Workbench::pointer(self, ev, cx, h)
     }
 
-    fn on_paste(&mut self, text: &str, _h: &mut History, _cx: &mut Cx) -> Outcome {
-        Workbench::on_paste(self, text)
+    fn on_paste(&mut self, text: &str, _h: &mut History, cx: &mut Cx) -> Outcome {
+        Workbench::on_paste(self, text, cx)
     }
 
     fn on_blur(&mut self, ch: FocusChange, _h: &mut History, _cx: &mut Cx) -> Outcome {
