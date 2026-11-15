@@ -82,7 +82,8 @@ impl EmptyErrorPage {
                 .collect(),
             total: RowTotal::Exact(2),
             more: false,
-        });
+        })
+        .expect("a fresh grid is never being saved");
         let mut page = Self {
             template: Template::new(ID, states_grid()),
             opts: PageValues::new(page_options(PageId::EmptyError)),

@@ -1,6 +1,6 @@
 use super::*;
 use crate::core::id::WidgetId;
-use crate::widgets::grid::{CellKind, ColumnSpec, GridRows, RowTotal};
+use crate::widgets::grid::{CellEditResult, CellKind, ColumnSpec, GridRows, RowTotal};
 use crate::widgets::table::SortDir;
 
 const ID: usize = 0;
@@ -43,7 +43,8 @@ fn grid(n: usize) -> DataGrid {
         rows: (0..n).map(source_row).collect(),
         total: RowTotal::Exact(n),
         more: false,
-    });
+    })
+    .unwrap();
     g
 }
 
@@ -139,7 +140,10 @@ fn issue50_fresh_insert_keeps_null_and_default_distinct() {
 #[test]
 fn issue50_duplicate_override_and_dirty_source() {
     let mut g = grid(2);
-    assert!(g.record_cell(0, NAME, text("edited")));
+    assert_eq!(
+        g.record_cell(0, NAME, text("edited")),
+        Ok(CellEditResult::Changed)
+    );
     g.cursor = (0, NAME);
     g.duplicate_row().expect("the row duplicates");
     let copy = g.len() - 1;
@@ -160,7 +164,10 @@ fn issue50_duplicate_override_and_dirty_source() {
     );
     assert_eq!(update.cells().len(), 1);
 
-    assert!(g.record_cell(copy, QTY, CellValue::Num(9.0)));
+    assert_eq!(
+        g.record_cell(copy, QTY, CellValue::Num(9.0)),
+        Ok(CellEditResult::Changed)
+    );
     let set = g.snapshot_changes();
     let values = set.inserted()[0].values();
     assert_eq!(values[QTY], CellValue::Num(9.0), "the override applies");
@@ -172,15 +179,18 @@ fn issue50_duplicate_override_and_dirty_source() {
 #[test]
 fn issue50_deleted_draft_never_emits_update() {
     let mut g = grid(3);
-    assert!(g.record_cell(1, NAME, text("draft")));
-    g.toggle_delete(1);
+    assert_eq!(
+        g.record_cell(1, NAME, text("draft")),
+        Ok(CellEditResult::Changed)
+    );
+    g.toggle_delete(1).unwrap();
 
     let set = g.snapshot_changes();
     assert_valid(&g, &set);
     assert_eq!(set.counts(), (0, 0, 1));
     assert_eq!(set.deleted()[0].before(), source_row(1).as_slice());
 
-    g.undo().expect("undo the delete mark");
+    g.undo().unwrap().expect("undo the delete mark");
     let set = g.snapshot_changes();
     assert_eq!(set.counts(), (1, 0, 0));
     let change = &set.updated()[0].cells()[0];
@@ -193,15 +203,15 @@ fn issue50_deleted_draft_never_emits_update() {
 fn issue50_removed_inserted_row_is_absent() {
     let mut g = grid(1);
     g.insert_row().expect("the row inserts");
-    g.toggle_delete(1);
+    g.toggle_delete(1).unwrap();
     assert!(g.snapshot_changes().is_empty());
 }
 
 #[test]
 fn issue50_semantic_noop_overrides_produce_no_update() {
     let mut g = grid(1);
-    g.record_cell(0, QTY, CellValue::Num(9.0));
-    g.record_cell(0, QTY, CellValue::Num(1.5));
+    g.record_cell(0, QTY, CellValue::Num(9.0)).unwrap();
+    g.record_cell(0, QTY, CellValue::Num(1.5)).unwrap();
     assert!(g.snapshot_changes().is_empty(), "back at the base value");
 
     let mut g = grid(1);
@@ -229,10 +239,11 @@ fn issue50_snapshot_is_immutable_and_deterministic() {
     let mut g = grid(6);
     for row in [4, 1, 3] {
         for col in [NOTE, QTY, NAME] {
-            g.record_cell(row, col, text(&format!("r{row}c{col}")));
+            g.record_cell(row, col, text(&format!("r{row}c{col}")))
+                .unwrap();
         }
     }
-    g.toggle_delete(5);
+    g.toggle_delete(5).unwrap();
     g.insert_row().expect("the row inserts");
     g.cursor = (0, 0);
     let first = g.snapshot_changes();
@@ -253,8 +264,8 @@ fn issue50_snapshot_is_immutable_and_deterministic() {
     assert_eq!(g.snapshot_changes(), first, "sort and cursor are not draft");
     assert_eq!(g.snapshot_changes().revision(), first.revision());
 
-    g.record_cell(0, NAME, text("later"));
-    g.toggle_delete(2);
+    g.record_cell(0, NAME, text("later")).unwrap();
+    g.toggle_delete(2).unwrap();
     let later = g.snapshot_changes();
     assert_ne!(later, first);
     assert_ne!(later.revision(), first.revision());
@@ -265,7 +276,10 @@ fn issue50_snapshot_is_immutable_and_deterministic() {
 #[test]
 fn issue50_clean_rows_do_not_clone_payloads() {
     let mut g = grid(2_000);
-    assert!(g.record_cell(1_234, QTY, CellValue::Num(-4.0)));
+    assert_eq!(
+        g.record_cell(1_234, QTY, CellValue::Num(-4.0)),
+        Ok(CellEditResult::Changed)
+    );
     COPIED_CELLS.with(|n| n.set(0));
     let set = g.snapshot_changes();
     let copied = COPIED_CELLS.with(|n| n.get());
@@ -279,7 +293,7 @@ fn issue50_clean_rows_do_not_clone_payloads() {
     assert_eq!(set.counts(), (1, 0, 0));
 
     COPIED_CELLS.with(|n| n.set(0));
-    g.discard();
+    g.discard().unwrap();
     assert!(g.snapshot_changes().is_empty());
     assert_eq!(
         COPIED_CELLS.with(|n| n.get()),
@@ -291,7 +305,7 @@ fn issue50_clean_rows_do_not_clone_payloads() {
 #[test]
 fn issue50_clone_gets_a_fresh_origin_with_the_same_draft() {
     let mut g = grid(2);
-    g.record_cell(0, NAME, text("edited"));
+    g.record_cell(0, NAME, text("edited")).unwrap();
     let copy = g.clone();
     assert_ne!(copy.instance_id(), g.instance_id());
     assert_eq!(g.instance_id(), g.instance_id());
@@ -311,7 +325,7 @@ fn issue50_clone_gets_a_fresh_origin_with_the_same_draft() {
 #[test]
 fn issue50_same_capture_is_bit_exact_where_eq_is_not() {
     let mut g = grid(1);
-    g.record_cell(0, QTY, CellValue::Num(f64::NAN));
+    g.record_cell(0, QTY, CellValue::Num(f64::NAN)).unwrap();
     let nan = g.snapshot_changes();
     assert_ne!(nan, nan.clone(), "derived equality keeps NaN != NaN");
     assert!(nan.same_capture(&nan.clone()));
@@ -322,7 +336,7 @@ fn issue50_same_capture_is_bit_exact_where_eq_is_not() {
     assert!(!nan.same_capture(&other_payload), "NaN payloads differ");
 
     let mut g = grid(1);
-    g.record_cell(0, QTY, CellValue::Num(0.25));
+    g.record_cell(0, QTY, CellValue::Num(0.25)).unwrap();
     let plain = g.snapshot_changes();
     let mut zero = plain.clone();
     zero.updated[0].cells[0].before = CellValue::Num(0.0);

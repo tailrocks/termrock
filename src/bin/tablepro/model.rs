@@ -1096,7 +1096,8 @@ mod tests {
             total: RowTotal::Exact(rows.len()),
             rows,
             more: false,
-        });
+        })
+        .unwrap();
         (columns, grid)
     }
 
@@ -1178,9 +1179,9 @@ mod tests {
                 vec![CellValue::Null, CellValue::Num(7.0)],
             ],
         );
-        grid.record_cell(0, 0, CellValue::Num(9.876_543));
-        grid.record_cell(0, 1, CellValue::Num(0.001));
-        grid.record_cell(1, 1, CellValue::Num(8.0));
+        grid.record_cell(0, 0, CellValue::Num(9.876_543)).unwrap();
+        grid.record_cell(0, 1, CellValue::Num(0.001)).unwrap();
+        grid.record_cell(1, 1, CellValue::Num(8.0)).unwrap();
         assert_eq!(
             preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap(),
             vec![
@@ -1189,9 +1190,9 @@ mod tests {
                 "UPDATE public.ledger SET amount = 8.0 WHERE ref IS NULL;".to_owned(),
             ]
         );
-        grid.discard();
-        grid.toggle_delete(0);
-        grid.toggle_delete(1);
+        grid.discard().unwrap();
+        grid.toggle_delete(0).unwrap();
+        grid.toggle_delete(1).unwrap();
         assert_eq!(
             preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap(),
             vec![
@@ -1212,11 +1213,12 @@ mod tests {
                 CellValue::Null,
             ]],
         );
-        grid.record_cell(0, 2, CellValue::Num(0.001));
-        grid.insert_row();
-        grid.record_cell(1, 0, CellValue::Num(1.234_567_8));
-        grid.record_cell(1, 1, CellValue::Text("it's".into()));
-        grid.record_cell(1, 2, CellValue::Num(-0.000_1));
+        grid.record_cell(0, 2, CellValue::Num(0.001)).unwrap();
+        grid.insert_row().unwrap();
+        grid.record_cell(1, 0, CellValue::Num(1.234_567_8)).unwrap();
+        grid.record_cell(1, 1, CellValue::Text("it's".into()))
+            .unwrap();
+        grid.record_cell(1, 2, CellValue::Num(-0.000_1)).unwrap();
         assert_eq!(
             preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap(),
             vec![
@@ -1238,8 +1240,8 @@ mod tests {
                 vec![CellValue::Num(3.5), CellValue::Num(4.5)],
             ],
         );
-        grid.record_cell(0, 1, CellValue::Num(6.5));
-        grid.record_cell(1, 1, CellValue::Num(f64::NAN));
+        grid.record_cell(0, 1, CellValue::Num(6.5)).unwrap();
+        grid.record_cell(1, 1, CellValue::Num(f64::NAN)).unwrap();
         let err = preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap_err();
         assert_eq!(
             err,
@@ -1250,9 +1252,10 @@ mod tests {
             }
         );
 
-        grid.undo();
-        grid.insert_row();
-        grid.record_cell(2, 0, CellValue::Num(f64::INFINITY));
+        grid.undo().unwrap();
+        grid.insert_row().unwrap();
+        grid.record_cell(2, 0, CellValue::Num(f64::INFINITY))
+            .unwrap();
         let err = preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap_err();
         assert_eq!(err.row, PreviewRow::Key(grid.row_key(2).unwrap()));
         assert_eq!(err.column.as_deref(), Some("ref"));
@@ -1268,7 +1271,7 @@ mod tests {
                 vec![CellValue::Default, CellValue::Num(2.5)],
             ],
         );
-        grid.record_cell(0, 1, CellValue::Num(6.5));
+        grid.record_cell(0, 1, CellValue::Num(6.5)).unwrap();
         assert_eq!(
             preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap_err(),
             PreviewSqlError {
@@ -1279,8 +1282,8 @@ mod tests {
             "an invalid before-image names its own column"
         );
 
-        grid.discard();
-        grid.toggle_delete(1);
+        grid.discard().unwrap();
+        grid.toggle_delete(1).unwrap();
         assert_eq!(
             preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap_err(),
             PreviewSqlError {
@@ -1296,7 +1299,7 @@ mod tests {
         ]);
         let projected = table(vec![column("amount", ColType::Numeric, false)]);
         let (narrow, mut grid) = grid_of(&projected, vec![vec![CellValue::Num(1.0)]]);
-        grid.toggle_delete(0);
+        grid.toggle_delete(0).unwrap();
         assert_eq!(
             preview_sql(&orphan, &narrow, &grid.snapshot_changes()).unwrap_err(),
             PreviewSqlError {
@@ -1336,7 +1339,8 @@ mod tests {
             total: RowTotal::Exact(rows.len()),
             rows,
             more: false,
-        });
+        })
+        .unwrap();
         (columns, grid)
     }
 
@@ -1360,7 +1364,7 @@ mod tests {
         );
 
         let copy = grid.len() - 1;
-        grid.record_cell(copy, 2, text("edited"));
+        grid.record_cell(copy, 2, text("edited")).unwrap();
         let sql = preview_sql(&notes(), &columns, &grid.snapshot_changes()).unwrap();
         assert_eq!(
             sql,
@@ -1375,16 +1379,16 @@ mod tests {
         let (columns, mut grid) = notes_grid(one_note());
         grid.insert_row().expect("row inserts");
         let fresh = grid.len() - 1;
-        grid.record_cell(fresh, 1, text("x"));
+        grid.record_cell(fresh, 1, text("x")).unwrap();
         assert_eq!(
             preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap(),
             vec!["INSERT INTO public.ledger (name, note) VALUES ('x', NULL);".to_owned()],
             "Default is omitted, Null is written"
         );
 
-        grid.discard();
-        grid.record_cell(0, 2, CellValue::Default);
-        grid.record_cell(0, 1, CellValue::Null);
+        grid.discard().unwrap();
+        grid.record_cell(0, 2, CellValue::Default).unwrap();
+        grid.record_cell(0, 1, CellValue::Null).unwrap();
         assert_eq!(
             preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap(),
             vec!["UPDATE public.ledger SET name = NULL, note = DEFAULT WHERE id = 7;".to_owned()],
@@ -1394,9 +1398,9 @@ mod tests {
         let keyed = keyed();
         let (kcolumns, mut kgrid) =
             grid_of(&keyed, vec![vec![CellValue::Num(1.5), CellValue::Num(2.0)]]);
-        kgrid.record_cell(0, 0, CellValue::Num(8.25));
+        kgrid.record_cell(0, 0, CellValue::Num(8.25)).unwrap();
         let captured = kgrid.snapshot_changes();
-        kgrid.discard();
+        kgrid.discard().unwrap();
         assert_eq!(
             preview_sql(&keyed, &kcolumns, &captured).unwrap(),
             vec!["UPDATE public.ledger SET ref = 8.25 WHERE ref = 1.5;".to_owned()],
@@ -1404,13 +1408,13 @@ mod tests {
         );
 
         let (orphans, mut grid) = notes_grid(vec![vec![CellValue::Default, text("a"), text("b")]]);
-        grid.toggle_delete(0);
+        grid.toggle_delete(0).unwrap();
         let err = preview_sql(&t, &orphans, &grid.snapshot_changes()).unwrap_err();
         assert_eq!(err.column.as_deref(), Some("id"));
         assert_eq!(err.cause, PreviewSqlCause::InvalidDefaultPredicate);
         let narrow = vec![("name".to_owned(), ColType::Text)];
         let (_, mut grid) = notes_grid(vec![vec![CellValue::Int(1), text("a"), text("b")]]);
-        grid.toggle_delete(0);
+        grid.toggle_delete(0).unwrap();
         let err = preview_sql(&t, &narrow, &grid.snapshot_changes()).unwrap_err();
         assert_eq!(
             err.cause,
@@ -1426,8 +1430,8 @@ mod tests {
     fn issue50_generated_column_update_is_rejected_not_dropped() {
         let t = notes();
         let (columns, mut grid) = notes_grid(one_note());
-        grid.record_cell(0, 0, CellValue::Int(99));
-        grid.record_cell(0, 1, text("kept"));
+        grid.record_cell(0, 0, CellValue::Int(99)).unwrap();
+        grid.record_cell(0, 1, text("kept")).unwrap();
         let err = preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap_err();
         assert_eq!(err.cause, PreviewSqlCause::GeneratedColumn);
         assert_eq!(err.column.as_deref(), Some("id"));

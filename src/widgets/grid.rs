@@ -34,6 +34,9 @@ pub use changes::{
     CellChange, CommittedRow, DeletedRow, GridChangeSet, GridCommitReceipt, GridInstanceId,
     InsertedRow, UpdatedRow,
 };
+#[path = "grid_submission.rs"]
+mod submission;
+pub use submission::{GridCommitError, GridCommitFailure, GridCommitToken, ReceiptFault};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum CellValue {
@@ -239,6 +242,32 @@ impl std::fmt::Display for GridKeyError {
 }
 
 impl std::error::Error for GridKeyError {}
+
+/// Why a source or model replacement did not happen.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GridDataError {
+    /// A captured save is being reviewed or submitted; the grid keeps its rows.
+    Busy,
+    /// The supplied row keys were not usable.
+    Keys(GridKeyError),
+}
+
+impl From<GridKeyError> for GridDataError {
+    fn from(e: GridKeyError) -> Self {
+        Self::Keys(e)
+    }
+}
+
+impl std::fmt::Display for GridDataError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Busy => f.write_str("Saving: the rows are locked"),
+            Self::Keys(e) => e.fmt(f),
+        }
+    }
+}
+
+impl std::error::Error for GridDataError {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GridUndoKind {
@@ -620,6 +649,7 @@ pub struct DataGrid {
     next_local_key: u64,
     revision: GridRevision,
     origin: changes::GridOrigin,
+    submission: submission::Submissions,
     order: Vec<usize>,
     pub total: RowTotal,
     pub more: bool,
@@ -803,6 +833,7 @@ impl DataGrid {
             next_local_key: 0,
             revision: GridRevision::default(),
             origin: changes::GridOrigin::new(),
+            submission: submission::Submissions::default(),
             order: vec![],
             total: RowTotal::Unknown,
             more: false,
@@ -949,17 +980,13 @@ impl DataGrid {
         col: usize,
         input: CellInput<'_>,
     ) -> Result<CellEditResult, GridEditError> {
+        self.refuse_when_locked()?;
         if self.edit_blocked(src, col) {
             return Err(GridEditError::InvalidTarget);
         }
         let value = convert_input(&self.validator, &self.columns[col], input)
             .map_err(GridEditError::Validation)?;
-        self.cell_errors.remove(&(src, col));
-        if same_edit_value(&value, self.value(src, col)) {
-            return Ok(CellEditResult::Unchanged);
-        }
-        self.record_cell(src, col, value);
-        Ok(CellEditResult::Changed)
+        self.record_cell(src, col, value)
     }
 
     /// Applies user-typed text to a cell through the configured parser.
@@ -1063,6 +1090,7 @@ impl DataGrid {
                 self.cell_errors.insert((src, col), e.into_message());
                 (Outcome::Changed, None)
             }
+            Err(GridEditError::Busy) => (Outcome::Changed, Some(Self::busy_action())),
             Err(_) => (Outcome::Consumed, None),
         }
     }
@@ -1338,16 +1366,21 @@ impl DataGrid {
         self.choice = None;
     }
 
-    pub fn set_rows(&mut self, data: GridRows) {
+    /// Replaces the rows with fresh local keys. Refused with
+    /// [`GridDataError::Busy`] while a captured save is reviewed or submitted.
+    pub fn set_rows(&mut self, data: GridRows) -> Result<(), GridDataError> {
+        self.refuse_data_when_locked()?;
         let keys = self.alloc_keys(data.rows.len());
         self.install_rows(data, keys);
+        Ok(())
     }
 
     pub fn try_set_rows_keyed(
         &mut self,
         data: GridRows,
         keys: Vec<ItemKey>,
-    ) -> Result<(), GridKeyError> {
+    ) -> Result<(), GridDataError> {
+        self.refuse_data_when_locked()?;
         validate_row_keys(data.rows.len(), &keys)?;
         self.install_rows(data, keys);
         Ok(())
@@ -1358,7 +1391,8 @@ impl DataGrid {
         columns: Vec<ColumnSpec>,
         data: GridRows,
         keys: Vec<ItemKey>,
-    ) -> Result<(), GridKeyError> {
+    ) -> Result<(), GridDataError> {
+        self.refuse_data_when_locked()?;
         validate_row_keys(data.rows.len(), &keys)?;
         self.sizing.reset();
         self.sort = self.sort.filter(|&(c, _)| c < columns.len());
@@ -1396,7 +1430,8 @@ impl DataGrid {
         self.scroll.ensure_visible(self.cursor.0);
     }
 
-    pub fn append_rows(&mut self, data: GridRows) {
+    pub fn append_rows(&mut self, data: GridRows) -> Result<(), GridDataError> {
+        self.refuse_data_when_locked()?;
         let start = self.rows.len();
         let revision = self.next_revision(true, false);
         let keys = self.alloc_keys(data.rows.len());
@@ -1411,6 +1446,7 @@ impl DataGrid {
         self.more = data.more;
         self.loading = false;
         self.scroll.set_content(self.content_rows());
+        Ok(())
     }
 
     pub fn set_loading(&mut self, on: bool) {
@@ -1501,6 +1537,38 @@ impl DataGrid {
         self.edit.is_some()
     }
 
+    fn refuse_when_locked(&self) -> Result<(), GridEditError> {
+        if self.submission.is_locked() {
+            Err(GridEditError::Busy)
+        } else {
+            Ok(())
+        }
+    }
+
+    fn refuse_data_when_locked(&self) -> Result<(), GridDataError> {
+        if self.submission.is_locked() {
+            Err(GridDataError::Busy)
+        } else {
+            Ok(())
+        }
+    }
+
+    /// The event-adapter form of a refused mutation: the same
+    /// [`GridAction::ReadOnly`] a read-only cell reports, never a data change.
+    fn refusal(e: GridEditError) -> GridAction {
+        GridAction::ReadOnly {
+            reason: e.to_string(),
+        }
+    }
+
+    fn busy_action() -> GridAction {
+        Self::refusal(GridEditError::Busy)
+    }
+
+    fn insert_action(&mut self) -> Option<GridAction> {
+        self.insert_row().unwrap_or_else(|e| Some(Self::refusal(e)))
+    }
+
     fn edit_offset(&self, pos: Position) -> Option<usize> {
         let e = self.edit.as_ref()?;
         let rect = self
@@ -1533,6 +1601,9 @@ impl DataGrid {
         if !self.editable {
             return self.read_only_reason.clone();
         }
+        if self.submission.is_locked() {
+            return Some(GridEditError::Busy.to_string());
+        }
         let spec = self.columns.get(self.cursor.1)?;
         if self.src_deleted(src) {
             Some(self.strings.grid_row_deleted.to_owned())
@@ -1559,6 +1630,9 @@ impl DataGrid {
         };
         if !self.editable {
             return (Outcome::Consumed, None);
+        }
+        if self.submission.is_locked() {
+            return (Outcome::Changed, Some(Self::busy_action()));
         }
         let col = self.cursor.1;
         if let Some(reason) = self.read_only_reason_at_cursor() {
@@ -1666,16 +1740,22 @@ impl DataGrid {
     /// Records an already-typed value as a draft. This is trusted model input
     /// (seeding, previews): it skips the configured parser and eligibility
     /// checks. User edits go through [`DataGrid::try_edit_text`] instead.
-    pub fn record_cell(&mut self, src: usize, col: usize, value: CellValue) -> bool {
+    pub fn record_cell(
+        &mut self,
+        src: usize,
+        col: usize,
+        value: CellValue,
+    ) -> Result<CellEditResult, GridEditError> {
+        self.refuse_when_locked()?;
         let Some(&key) = self.row_keys.get(src) else {
-            return false;
+            return Err(GridEditError::InvalidTarget);
         };
         if col >= self.columns.len() {
-            return false;
+            return Err(GridEditError::InvalidTarget);
         }
         self.cell_errors.remove(&(src, col));
         if same_edit_value(&value, self.value(src, col)) {
-            return false;
+            return Ok(CellEditResult::Unchanged);
         }
         let revision = self.next_revision(false, true);
         let before = self.pending.cells.get(&(key, col)).cloned();
@@ -1687,17 +1767,20 @@ impl DataGrid {
         }
         self.undo.push(UndoAction::Cell { key, col, before });
         self.revision = revision;
-        true
+        Ok(CellEditResult::Changed)
     }
 
-    pub fn toggle_delete(&mut self, src: usize) -> Option<GridAction> {
+    pub fn toggle_delete(&mut self, src: usize) -> Result<Option<GridAction>, GridEditError> {
+        self.refuse_when_locked()?;
         if !self.editable {
-            return None;
+            return Ok(None);
         }
-        let key = self.row_key(src)?;
+        let Some(key) = self.row_key(src) else {
+            return Ok(None);
+        };
         if self.pending.is_inserted(key) {
             self.remove_inserted_recorded(src);
-            return Some(GridAction::RowDeleted(src));
+            return Ok(Some(GridAction::RowDeleted(src)));
         }
         let revision = self.next_revision(false, true);
         self.close_sessions();
@@ -1707,7 +1790,7 @@ impl DataGrid {
         }
         self.undo.push(UndoAction::Delete { key, was_deleted });
         self.revision = revision;
-        Some(GridAction::RowDeleted(src))
+        Ok(Some(GridAction::RowDeleted(src)))
     }
 
     fn remove_inserted_recorded(&mut self, src: usize) {
@@ -1869,9 +1952,10 @@ impl DataGrid {
         self.scroll.ensure_visible(self.cursor.0);
     }
 
-    pub fn insert_row(&mut self) -> Option<GridAction> {
+    pub fn insert_row(&mut self) -> Result<Option<GridAction>, GridEditError> {
+        self.refuse_when_locked()?;
         if !self.editable {
-            return None;
+            return Ok(None);
         }
         let row: Vec<CellValue> = self
             .columns
@@ -1892,7 +1976,7 @@ impl DataGrid {
             .position(|c| !c.primary && !c.read_only)
             .unwrap_or(0);
         self.set_cursor(disp, col, false);
-        Some(GridAction::RowInserted(src))
+        Ok(Some(GridAction::RowInserted(src)))
     }
 
     fn push_inserted(&mut self, row: Vec<CellValue>) -> usize {
@@ -1911,10 +1995,13 @@ impl DataGrid {
         src
     }
 
-    pub fn duplicate_row(&mut self) -> Option<GridAction> {
-        let src = self.cursor_src()?;
+    pub fn duplicate_row(&mut self) -> Result<Option<GridAction>, GridEditError> {
+        self.refuse_when_locked()?;
+        let Some(src) = self.cursor_src() else {
+            return Ok(None);
+        };
         if !self.editable {
-            return None;
+            return Ok(None);
         }
         let mut row: Vec<CellValue> = (0..self.columns.len())
             .map(|c| self.value(src, c).clone())
@@ -1927,10 +2014,15 @@ impl DataGrid {
         let new = self.push_inserted(row);
         let disp = self.order.len() - 1;
         self.set_cursor(disp, self.cursor.1, false);
-        Some(GridAction::RowInserted(new))
+        Ok(Some(GridAction::RowInserted(new)))
     }
 
-    pub fn undo(&mut self) -> Option<GridUndo> {
+    pub fn undo(&mut self) -> Result<Option<GridUndo>, GridEditError> {
+        self.refuse_when_locked()?;
+        Ok(self.undo_last())
+    }
+
+    fn undo_last(&mut self) -> Option<GridUndo> {
         if self.undo.is_empty() {
             return None;
         }
@@ -1991,51 +2083,12 @@ impl DataGrid {
         Some(undone)
     }
 
-    pub fn apply_commit_result(&mut self, result: Result<(), (usize, String)>) {
-        match result {
-            Ok(()) => {
-                let revision = self.next_revision(true, self.draft_open());
-                self.close_sessions();
-                let cursor_key = self.view_key(self.cursor.0, self.cursor.1);
-                let pending = std::mem::take(&mut self.pending);
-                for ((key, col), value) in pending.cells {
-                    if pending.deleted.contains(&key) {
-                        continue;
-                    }
-                    if let Some(&src) = self.key_to_source.get(&key)
-                        && let Some(cell) = self.rows.get_mut(src).and_then(|r| r.get_mut(col))
-                    {
-                        *cell = value;
-                    }
-                }
-                let mut deleted: Vec<usize> = pending
-                    .deleted
-                    .iter()
-                    .filter_map(|&key| self.source_index(key))
-                    .collect();
-                deleted.sort_unstable();
-                self.remove_rows(&deleted);
-                self.undo.clear();
-                self.row_errors.clear();
-                self.cell_errors.clear();
-                self.rebuild_order();
-                self.revision = revision;
-                self.scroll.set_content(self.content_rows());
-                self.cursor.0 = match cursor_key.and_then(|(key, _)| self.display_of(key)) {
-                    Some(display) => display,
-                    None => self.cursor.0.min(self.rows.len().saturating_sub(1)),
-                };
-            }
-            Err((row, msg)) => {
-                if row < self.rows.len() {
-                    self.row_errors.insert(row, msg);
-                }
-            }
-        }
-    }
-
-    pub fn discard(&mut self) {
-        let revision = self.next_revision(false, self.draft_open());
+    /// Drops the staged draft. Returns whether there was one to drop. Refused
+    /// while a captured save is reviewed or submitted.
+    pub fn discard(&mut self) -> Result<bool, GridEditError> {
+        self.refuse_when_locked()?;
+        let had_draft = self.draft_open();
+        let revision = self.next_revision(false, had_draft);
         let mut inserted: Vec<usize> = self
             .pending
             .inserted
@@ -2049,7 +2102,9 @@ impl DataGrid {
         self.undo.clear();
         self.cell_errors.clear();
         self.row_errors.clear();
+        self.submission.clear_failure();
         self.revision = revision;
+        Ok(had_draft)
     }
 
     fn set_cursor(&mut self, row: usize, col: usize, extend: bool) {
@@ -2211,7 +2266,9 @@ impl DataGrid {
         let n_rows = self.content_rows();
         if n_rows == 0 {
             return match lookup(&self.keymap, key) {
-                Some(GridCmd::InsertRow) if self.editable => (Outcome::Changed, self.insert_row()),
+                Some(GridCmd::InsertRow) if self.editable => {
+                    (Outcome::Changed, self.insert_action())
+                }
                 Some(GridCmd::Refresh) => (Outcome::Changed, Some(GridAction::Refresh)),
                 Some(GridCmd::FilterOnCell) => (Outcome::Changed, Some(GridAction::OpenFilters)),
                 Some(GridCmd::ClearFilters) => (Outcome::Changed, Some(GridAction::ClearFilters)),
@@ -2319,7 +2376,9 @@ impl DataGrid {
         use crate::ui::context::{ContextCmd, command_items};
         let row = self.cursor_src();
         let spec = self.columns.get(self.cursor.1);
-        let read_only = (!self.editable).then_some("Read-only rows");
+        let read_only = (!self.editable)
+            .then_some("Read-only rows")
+            .or(self.submission.is_locked().then_some("Saving changes"));
         let no_row = row.is_none().then_some("No row here");
         let clear = read_only.or(no_row).or(match spec {
             Some(s) if s.read_only => Some("Read-only column"),
@@ -2340,7 +2399,12 @@ impl DataGrid {
                 .unless(clear)
                 .group_end(),
             ContextCmd::new(GridCmd::Undo)
-                .unless(self.undo.is_empty().then_some("Nothing to undo"))
+                .unless(
+                    self.undo
+                        .is_empty()
+                        .then_some("Nothing to undo")
+                        .or(self.submission.is_locked().then_some("Saving changes")),
+                )
                 .group_end(),
             ContextCmd::new(GridCmd::FilterOnCell).unless(no_row),
             ContextCmd::new(GridCmd::ClearFilters),
@@ -2371,7 +2435,9 @@ impl DataGrid {
                     let mut last = None;
                     for key in keys {
                         if let Some(src) = self.source_index(key) {
-                            last = self.toggle_delete(src);
+                            last = self
+                                .toggle_delete(src)
+                                .unwrap_or_else(|e| Some(Self::refusal(e)));
                         }
                     }
                     return (Outcome::Changed, last);
@@ -2389,10 +2455,18 @@ impl DataGrid {
                 let Some(src) = self.cursor_src() else {
                     return (Outcome::Consumed, None);
                 };
-                (Outcome::Changed, self.toggle_delete(src))
+                (
+                    Outcome::Changed,
+                    self.toggle_delete(src)
+                        .unwrap_or_else(|e| Some(Self::refusal(e))),
+                )
             }
-            GridCmd::InsertRow => (Outcome::Changed, self.insert_row()),
-            GridCmd::DuplicateRow => (Outcome::Changed, self.duplicate_row()),
+            GridCmd::InsertRow => (Outcome::Changed, self.insert_action()),
+            GridCmd::DuplicateRow => (
+                Outcome::Changed,
+                self.duplicate_row()
+                    .unwrap_or_else(|e| Some(Self::refusal(e))),
+            ),
             GridCmd::Copy => (
                 Outcome::Changed,
                 Some(GridAction::Copy(self.copy_text(false))),
@@ -2428,8 +2502,9 @@ impl DataGrid {
             GridCmd::ClearFilters => (Outcome::Changed, Some(GridAction::ClearFilters)),
             GridCmd::Refresh => (Outcome::Changed, Some(GridAction::Refresh)),
             GridCmd::Undo => match self.undo() {
-                Some(undone) => (Outcome::Changed, Some(GridAction::Undone(undone))),
-                None => (Outcome::Consumed, None),
+                Ok(Some(undone)) => (Outcome::Changed, Some(GridAction::Undone(undone))),
+                Ok(None) => (Outcome::Consumed, None),
+                Err(e) => (Outcome::Changed, Some(Self::refusal(e))),
             },
             GridCmd::Discard => (Outcome::Changed, Some(GridAction::DiscardRequested)),
             GridCmd::SelectAll => {
@@ -2455,6 +2530,9 @@ impl DataGrid {
     }
 
     fn request_sort(&mut self, next: Option<(usize, SortDir)>) -> (Outcome, Option<GridAction>) {
+        if !self.local_sort && self.submission.is_locked() {
+            return (Outcome::Changed, Some(Self::busy_action()));
+        }
         self.sort = next;
         if self.local_sort {
             match next {

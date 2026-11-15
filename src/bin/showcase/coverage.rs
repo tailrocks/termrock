@@ -82,24 +82,31 @@ pub const GRID_EDIT_COVERAGE: &[(&str, &str)] = &[
     ("widgets::grid::GridChangeSet::updated", "grid"),
     ("widgets::grid::GridChangeSet::deleted", "grid"),
     ("widgets::grid::GridChangeSet::counts", "grid"),
+    ("widgets::grid::GridChangeSet::identity_receipt", "grid"),
+    ("widgets::grid::GridCommitToken", "grid"),
+    ("widgets::grid::GridCommitFailure", "grid"),
+    ("widgets::grid::DataGrid::begin_submission", "grid"),
+    ("widgets::grid::DataGrid::cancel_submission", "grid"),
+    ("widgets::grid::DataGrid::complete_submission", "grid"),
+    ("widgets::grid::DataGrid::submission_pending", "grid"),
 ];
 
 pub const GRID_CHANGE_ALLOWLIST: &[(&str, &str)] = &[
     (
         "widgets::grid::DataGrid::instance_id",
-        "A submission-time admission and acknowledgement shape. The Showcase grid has no submission lifecycle yet, so no page can use it; the unit tests in src/widgets/grid_changeset_tests.rs cover it.",
+        "Admission and acknowledgement plumbing. The Grid page's save drives begin_submission and complete_submission, which use it internally, and never names it; src/widgets/grid_changeset_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
     ),
     (
         "widgets::grid::GridInstanceId",
-        "A submission-time admission and acknowledgement shape. The Showcase grid has no submission lifecycle yet, so no page can use it; the unit tests in src/widgets/grid_changeset_tests.rs cover it.",
+        "Admission and acknowledgement plumbing. The Grid page's save drives begin_submission and complete_submission, which use it internally, and never names it; src/widgets/grid_changeset_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
     ),
     (
         "widgets::grid::GridChangeSet::origin",
-        "A submission-time admission and acknowledgement shape. The Showcase grid has no submission lifecycle yet, so no page can use it; the unit tests in src/widgets/grid_changeset_tests.rs cover it.",
+        "Admission and acknowledgement plumbing. The Grid page's save drives begin_submission and complete_submission, which use it internally, and never names it; src/widgets/grid_changeset_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
     ),
     (
         "widgets::grid::GridChangeSet::revision",
-        "A submission-time admission and acknowledgement shape. The Showcase grid has no submission lifecycle yet, so no page can use it; the unit tests in src/widgets/grid_changeset_tests.rs cover it.",
+        "Admission and acknowledgement plumbing. The Grid page's save drives begin_submission and complete_submission, which use it internally, and never names it; src/widgets/grid_changeset_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
     ),
     (
         "widgets::grid::GridChangeSet::is_empty",
@@ -107,27 +114,27 @@ pub const GRID_CHANGE_ALLOWLIST: &[(&str, &str)] = &[
     ),
     (
         "widgets::grid::GridChangeSet::same_capture",
-        "A submission-time admission and acknowledgement shape. The Showcase grid has no submission lifecycle yet, so no page can use it; the unit tests in src/widgets/grid_changeset_tests.rs cover it.",
+        "Admission and acknowledgement plumbing. The Grid page's save drives begin_submission and complete_submission, which use it internally, and never names it; src/widgets/grid_changeset_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
     ),
     (
         "widgets::grid::CommittedRow",
-        "A submission-time admission and acknowledgement shape. The Showcase grid has no submission lifecycle yet, so no page can use it; the unit tests in src/widgets/grid_changeset_tests.rs cover it.",
+        "Admission and acknowledgement plumbing. The Grid page's save drives begin_submission and complete_submission, which use it internally, and never names it; src/widgets/grid_changeset_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
     ),
     (
         "widgets::grid::GridCommitReceipt",
-        "A submission-time admission and acknowledgement shape. The Showcase grid has no submission lifecycle yet, so no page can use it; the unit tests in src/widgets/grid_changeset_tests.rs cover it.",
+        "Admission and acknowledgement plumbing. The Grid page's save drives begin_submission and complete_submission, which use it internally, and never names it; src/widgets/grid_changeset_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
     ),
     (
         "widgets::grid::GridCommitReceipt::new",
-        "A submission-time admission and acknowledgement shape. The Showcase grid has no submission lifecycle yet, so no page can use it; the unit tests in src/widgets/grid_changeset_tests.rs cover it.",
+        "Admission and acknowledgement plumbing. The Grid page's save drives begin_submission and complete_submission, which use it internally, and never names it; src/widgets/grid_changeset_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
     ),
     (
         "widgets::grid::GridCommitReceipt::origin",
-        "A submission-time admission and acknowledgement shape. The Showcase grid has no submission lifecycle yet, so no page can use it; the unit tests in src/widgets/grid_changeset_tests.rs cover it.",
+        "Admission and acknowledgement plumbing. The Grid page's save drives begin_submission and complete_submission, which use it internally, and never names it; src/widgets/grid_changeset_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
     ),
     (
         "widgets::grid::GridCommitReceipt::revision",
-        "A submission-time admission and acknowledgement shape. The Showcase grid has no submission lifecycle yet, so no page can use it; the unit tests in src/widgets/grid_changeset_tests.rs cover it.",
+        "Admission and acknowledgement plumbing. The Grid page's save drives begin_submission and complete_submission, which use it internally, and never names it; src/widgets/grid_changeset_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
     ),
     (
         "widgets::grid::DeletedRow::key",
@@ -136,6 +143,98 @@ pub const GRID_CHANGE_ALLOWLIST: &[(&str, &str)] = &[
     (
         "widgets::grid::CellChange",
         "The page reads a changed cell through its accessors and never names the type.",
+    ),
+    (
+        "widgets::grid::GridCommitError",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::GridCommitError::Busy",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::GridCommitError::Editing",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::GridCommitError::Empty",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::GridCommitError::WrongOrigin",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::GridCommitError::StaleRevision",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::GridCommitError::StaleToken",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::GridCommitError::InvalidReceipt",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::GridCommitError::Exhausted",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::ReceiptFault",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::ReceiptFault::Missing",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::ReceiptFault::Unexpected",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::ReceiptFault::Duplicate",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::ReceiptFault::Width",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::ReceiptFault::UpdatedKeyChanged",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::ReceiptFault::KeyCollision",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::GridDataError",
+        "The Grid page prints the refusal through Display in its status line and never branches on the variant; src/widgets/grid_undo_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
+    ),
+    (
+        "widgets::grid::GridDataError::Busy",
+        "The Grid page prints the refusal through Display in its status line and never branches on the variant; src/widgets/grid_undo_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
+    ),
+    (
+        "widgets::grid::GridDataError::Keys",
+        "The Grid page prints the refusal through Display in its status line and never branches on the variant; src/widgets/grid_undo_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
+    ),
+    (
+        "widgets::grid::GridCommitToken::origin",
+        "A host that holds a token may compare its grid; the page keeps the token private and the tests in src/widgets/grid_submission_tests.rs read it.",
+    ),
+    (
+        "widgets::grid::GridCommitToken::revision",
+        "A host that holds a token may compare its capture revision; the page keeps the token private and the tests in src/widgets/grid_submission_tests.rs read it.",
+    ),
+    (
+        "widgets::grid::DataGrid::validate_submission_receipt",
+        "Used by a host that lets an external store mutate before it completes; the Grid page has no store, and complete_submission runs the same check, which src/widgets/grid_submission_tests.rs asserts.",
+    ),
+    (
+        "widgets::grid::DataGrid::commit_failure",
+        "The Grid page marks the failed row; the grid-level message for a failure that names no row is asserted in src/widgets/grid_submission_tests.rs.",
     ),
     (
         "widgets::grid::CellChange::before",
@@ -431,12 +530,23 @@ mod tests {
                 "GridChangeSet",
                 "CommittedRow",
                 "GridCommitReceipt",
+                "GridCommitToken",
+                "GridCommitError",
+                "GridCommitFailure",
+                "ReceiptFault",
+                "GridDataError",
             ]
             .iter()
             .any(|t| id.starts_with(&format!("widgets::grid::{t}")));
             if change_type
                 || id == "widgets::grid::DataGrid::snapshot_changes"
                 || id == "widgets::grid::DataGrid::instance_id"
+                || id.starts_with("widgets::grid::DataGrid::begin_submission")
+                || id.starts_with("widgets::grid::DataGrid::cancel_submission")
+                || id.starts_with("widgets::grid::DataGrid::complete_submission")
+                || id.starts_with("widgets::grid::DataGrid::validate_submission")
+                || id.starts_with("widgets::grid::DataGrid::submission_pending")
+                || id.starts_with("widgets::grid::DataGrid::commit_failure")
             {
                 assert!(
                     declared(id),

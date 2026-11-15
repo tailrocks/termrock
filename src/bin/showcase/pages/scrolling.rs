@@ -276,7 +276,8 @@ impl ScrollingPage {
                 .collect(),
             total: RowTotal::Exact(SERVICES.len()),
             more: false,
-        });
+        })
+        .unwrap();
         grid.cursor = self.grid.cursor;
         self.grid = grid;
     }

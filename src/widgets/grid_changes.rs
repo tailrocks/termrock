@@ -182,6 +182,30 @@ impl GridChangeSet {
         self.inserted.is_empty() && self.updated.is_empty() && self.deleted.is_empty()
     }
 
+    /// The acknowledgement of a store that accepted exactly these changes and
+    /// resolved nothing: every inserted and updated row comes back under its own
+    /// key with its effective values, `Default` markers kept as they are. A host
+    /// with no authoritative store uses it; one with a store builds its own.
+    pub fn identity_receipt(&self) -> GridCommitReceipt {
+        let updated = self.updated.iter().map(|row| {
+            let mut values = row.before.clone();
+            for cell in &row.cells {
+                values[cell.column] = cell.after.clone();
+            }
+            CommittedRow {
+                key: row.key,
+                committed_key: row.key,
+                values,
+            }
+        });
+        let inserted = self.inserted.iter().map(|row| CommittedRow {
+            key: row.key,
+            committed_key: row.key,
+            values: row.values.clone(),
+        });
+        GridCommitReceipt::new(self, updated.chain(inserted).collect())
+    }
+
     /// Whether `other` is the same capture bit for bit: same grid, same
     /// revision and identical rows, where a `Num` compares by its bits so `NaN`
     /// payloads and the sign of zero count. This is the equality for admitting

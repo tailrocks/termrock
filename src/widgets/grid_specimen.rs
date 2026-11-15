@@ -67,7 +67,8 @@ impl Specimen for DataGrid {
                 rows,
                 total: RowTotal::Exact(SAMPLE_ROWS),
                 more: false,
-            });
+            })
+            .expect("a cloned specimen starts unlocked");
         }
         g.edit = None;
         g.choice = None;
@@ -97,11 +98,13 @@ impl Specimen for DataGrid {
                 g.row_errors
                     .insert(g.source_row(0), "Enter a valid value".into());
             }
-            SpecimenState::Empty => g.set_rows(GridRows {
-                rows: Vec::new(),
-                total: RowTotal::Exact(0),
-                more: false,
-            }),
+            SpecimenState::Empty => g
+                .set_rows(GridRows {
+                    rows: Vec::new(),
+                    total: RowTotal::Exact(0),
+                    more: false,
+                })
+                .expect("a cloned specimen starts unlocked"),
             SpecimenState::Loading => g.set_loading(true),
             SpecimenState::Overflow => {
                 if let Some(c) = g.sample_text_col() {
@@ -114,7 +117,8 @@ impl Specimen for DataGrid {
                         rows,
                         total: RowTotal::Exact(n),
                         more: false,
-                    });
+                    })
+                    .expect("a cloned specimen starts unlocked");
                 }
             }
             _ => {}

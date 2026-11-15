@@ -47,7 +47,8 @@ fn grid_with(
         rows,
         total: RowTotal::Unknown,
         more: false,
-    });
+    })
+    .unwrap();
     grid
 }
 
@@ -57,7 +58,7 @@ fn press(grid: &mut DataGrid, code: KeyCode) -> (Outcome, Option<GridAction>) {
 
 fn untouched(grid: &mut DataGrid) {
     assert!(grid.pending().is_empty(), "pending {:?}", grid.pending());
-    assert!(grid.undo().is_none(), "an undo record was pushed");
+    assert!(grid.undo().unwrap().is_none(), "an undo record was pushed");
 }
 
 fn draw_grid(grid: &mut DataGrid) -> ratatui::buffer::Buffer {
@@ -280,7 +281,8 @@ fn issue43_null_intent_is_not_custom_text() {
         rows: vec![vec![CellValue::Text("x".into())]],
         total: RowTotal::Unknown,
         more: false,
-    });
+    })
+    .unwrap();
     let (_, action) = press(&mut grid, KeyCode::Delete);
     assert_eq!(action, None);
     assert_eq!(grid.value(0, 0), &CellValue::Text("x".into()));
@@ -568,7 +570,8 @@ fn issue43_one_commit_is_one_parser_call() {
             rows: vec![vec![CellValue::Text("a".into())]],
             total: RowTotal::Unknown,
             more: false,
-        });
+        })
+        .unwrap();
         press(&mut grid, KeyCode::Enter);
         if editor.is_some() {
             press(&mut grid, KeyCode::Down);
@@ -854,9 +857,12 @@ fn issue48_pending_noop_keeps_history() {
     assert_eq!(grid.pending().total(), 1);
     assert_eq!(bits(&grid, 0), 7.5f64.to_bits());
 
-    assert!(grid.undo().is_some(), "the real edit undoes");
+    assert!(grid.undo().unwrap().is_some(), "the real edit undoes");
     assert_eq!(bits(&grid, 0), 1.2345f64.to_bits());
-    assert!(grid.undo().is_none(), "the no-op left no history entry");
+    assert!(
+        grid.undo().unwrap().is_none(),
+        "the no-op left no history entry"
+    );
     untouched(&mut grid);
 
     press(&mut grid, KeyCode::Enter);
@@ -932,7 +938,8 @@ fn issue48_custom_parser_still_runs() {
             rows: vec![vec![CellValue::Num(1.2345)]],
             total: RowTotal::Unknown,
             more: false,
-        });
+        })
+        .unwrap();
         grid
     };
 
@@ -968,7 +975,8 @@ fn issue48_literal_reserved_words_require_explicit_parser() {
             rows: vec![vec![CellValue::Text(word.into())]],
             total: RowTotal::Unknown,
             more: false,
-        });
+        })
+        .unwrap();
         press(&mut grid, KeyCode::Enter);
         press(&mut grid, KeyCode::Enter);
         assert_eq!(*grid.value(0, 0), CellValue::Text(word.into()));
