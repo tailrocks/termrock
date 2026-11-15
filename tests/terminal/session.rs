@@ -11,8 +11,8 @@ use junie_tui::core::id::WidgetId;
 use junie_tui::terminal::{
     PENDING_EFFECTS, SessionClipboardContext, SessionClipboardDecision, SessionClipboardRefusal,
     SessionCommand, SessionConfig, SessionDetach, SessionEffect, SessionEnd, SessionEvent,
-    SessionHostPolicy, SessionKey, SessionLease, SessionLink, SessionPaste, SessionSent,
-    SessionSize, SessionSource, SessionStatus, TerminalSessionController,
+    SessionFault, SessionHostPolicy, SessionKey, SessionLease, SessionLink, SessionPaste,
+    SessionSent, SessionSize, SessionSource, SessionStatus, TerminalSessionController,
 };
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::Rect;
@@ -862,5 +862,48 @@ fn session_controller_redraw_and_clear() {
         bench.commands(0).len(),
         1,
         "clear sends nothing to the program"
+    );
+}
+
+/// The fault the controller holds in its status, if the attach failed. The
+/// bound is the host's `SessionFault` contract: the controller stores the
+/// fault unchanged.
+fn failed_fault<F: SessionFault>(session: &TerminalSessionController<F>) -> Option<F> {
+    match session.status() {
+        SessionStatus::Failed(fault) => Some(fault.clone()),
+        _ => None,
+    }
+}
+
+#[test]
+fn session_fault_from_a_refused_open_reaches_status_and_effect() {
+    let bench = Bench::new();
+    bench
+        .refusals
+        .lock()
+        .expect("refusals")
+        .push_back(Fault("no pty"));
+    let mut session = controller(&bench);
+    session.sync_size(area(80, 24));
+    assert_eq!(failed_fault(&session), Some(Fault("no pty")));
+    assert_eq!(session.status(), &SessionStatus::Failed(Fault("no pty")));
+    assert_eq!(bench.opened(), 0, "a refused open leaves no link");
+    assert_eq!(
+        session.take_effects(),
+        vec![SessionEffect::Failed(Fault("no pty"))],
+    );
+}
+
+#[test]
+fn session_fault_from_a_stream_closed_before_attach_is_the_source_fault() {
+    let bench = Bench::new();
+    let mut session = controller(&bench);
+    session.sync_size(area(80, 24));
+    bench.push(0, SessionEvent::Ended(SessionEnd::StreamClosed));
+    session.pump(0);
+    assert_eq!(failed_fault(&session), Some(Fault("closed before attach")),);
+    assert_eq!(
+        session.take_effects(),
+        vec![SessionEffect::Failed(Fault("closed before attach"))],
     );
 }
