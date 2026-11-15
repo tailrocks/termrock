@@ -665,6 +665,7 @@ impl ChoiceEditor {
             .take(list_height)
             .map(|&i| self.choice_row(i))
             .collect();
+        #[cfg(test)]
         crate::core::work::add(crate::core::work::Counter::SnapshotRows, rows.len());
         ChoiceListSnapshot {
             id: self.id,
@@ -699,6 +700,7 @@ impl ChoiceEditor {
     fn shown_cached(&mut self) -> &[usize] {
         let query = self.query.text().trim().to_lowercase();
         if self.shown_cache.as_ref().is_none_or(|c| c.query != query) {
+            #[cfg(test)]
             crate::core::work::add(crate::core::work::Counter::SourceRows, self.options.len());
             let rows = self.filter(&query);
             self.shown_cache = Some(ShownCache { query, rows });
@@ -708,6 +710,7 @@ impl ChoiceEditor {
 
     fn content_width(&mut self) -> u16 {
         *self.content_w.get_or_insert_with(|| {
+            #[cfg(test)]
             crate::core::work::add(crate::core::work::Counter::WidthRows, self.options.len());
             let widest = self
                 .options
@@ -729,6 +732,7 @@ impl ChoiceEditor {
 
     fn strip_width(&mut self) -> u16 {
         *self.strip_w.get_or_insert_with(|| {
+            #[cfg(test)]
             crate::core::work::add(crate::core::work::Counter::WidthRows, self.options.len());
             let labels: usize = self.options.0.iter().map(|o| width(&o.label) + 2).sum();
             let separators = self.options.len().saturating_sub(1);
@@ -775,6 +779,7 @@ impl ChoiceEditor {
             segments.push(self.choice_row(i));
             x += sw + 1;
         }
+        #[cfg(test)]
         crate::core::work::add(crate::core::work::Counter::SnapshotRows, segments.len());
         let snapshot = ChoiceStripSnapshot {
             id: self.id,

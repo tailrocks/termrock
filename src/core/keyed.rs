@@ -10,6 +10,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::core::id::ItemKey;
 use crate::core::list::{KeyedRowSource, RowSource, SourceStamp};
+#[cfg(test)]
 use crate::core::work::{Counter, add};
 
 /// What one reconciliation changed.
@@ -57,6 +58,7 @@ pub struct KeyedState {
     anchor: Option<ItemKey>,
     selected: BTreeSet<ItemKey>,
     expanded: BTreeSet<ItemKey>,
+    expanded_revision: u64,
     edit: Option<EditTarget>,
     press: Option<PressTarget>,
 }
@@ -133,6 +135,7 @@ impl KeyedState {
             self.anchor = None;
             self.selected.clear();
             self.expanded.clear();
+            self.expanded_revision += 1;
             out.edit_cancelled = self.edit.take().is_some();
             out.pointer_cancelled = self.press.take().is_some();
         }
@@ -141,7 +144,11 @@ impl KeyedState {
         }
         let authoritative = &self.authoritative;
         self.selected.retain(|key| authoritative.contains(key));
+        let expanded = self.expanded.len();
         self.expanded.retain(|key| authoritative.contains(key));
+        if self.expanded.len() != expanded {
+            self.expanded_revision += 1;
+        }
         if self.anchor.is_some_and(|key| !authoritative.contains(&key)) {
             self.anchor = None;
         }
@@ -182,6 +189,7 @@ impl KeyedState {
             Some(_) => None,
             None => {
                 let n = source.source_len();
+                #[cfg(test)]
                 add(Counter::SourceRows, n);
                 let mut set = HashSet::with_capacity(n);
                 for index in 0..n {
@@ -201,6 +209,7 @@ impl KeyedState {
         };
         let known = authoritative.as_ref().or(reuse).expect("one set exists");
         let n = source.len();
+        #[cfg(test)]
         add(Counter::SourceRows, n);
         let mut visible = Vec::with_capacity(n);
         let mut positions = HashMap::with_capacity(n);
@@ -326,11 +335,19 @@ impl KeyedState {
         if !self.authoritative.contains(&key) {
             return false;
         }
-        if expanded {
+        let changed = if expanded {
             self.expanded.insert(key)
         } else {
             self.expanded.remove(&key)
-        }
+        };
+        self.expanded_revision += u64::from(changed);
+        changed
+    }
+
+    /// Advances whenever the expanded key set changes, so a projection built
+    /// from it can tell when to rebuild.
+    pub fn expanded_revision(&self) -> u64 {
+        self.expanded_revision
     }
 
     pub fn edit_key(&self) -> Option<ItemKey> {

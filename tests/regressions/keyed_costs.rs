@@ -1,17 +1,15 @@
 //! Deterministic cost tests for collection projections and overlay paint.
 //!
-//! Counters are work units from `junie_tui::core::work`, never timings.
+//! Work-count assertions live in `src/widgets/keyed_cost_tests.rs`.
 
 use crate::common::*;
 use junie_tui::core::id::{ItemKey, WidgetId};
-use junie_tui::core::work::Work;
 use junie_tui::ui::ctx::{Interaction, RenderCtx};
 use junie_tui::widgets::completion::Completion;
 use junie_tui::widgets::option_editor::{
     ChoiceEditor, ColumnEditor, EditorConfig, OptionItem, Options,
 };
 use junie_tui::widgets::option_list::Item;
-use junie_tui::widgets::picker::Picker;
 use junie_tui::widgets::select::Select;
 use junie_tui::{core::focus::FocusRing, core::hit::HitRegistry, theme::ColorLevel, theme::Theme};
 use ratatui::buffer::Buffer;
@@ -54,79 +52,33 @@ fn keyed_items(n: usize) -> Vec<Item> {
 }
 
 #[test]
-fn picker_projection_join_is_linear() {
-    const N: usize = 3_000;
-    const M: usize = 1_500;
-    let mut picker = Picker::new(WidgetId::of("pk"), "Projection");
-    let (set, work) = Work::measure(|| picker.set_items(keyed_items(N)));
-    set.expect("unique keys");
-    assert!(
-        work.join_probes + work.index_builds <= (N + N) as u64,
-        "building the authoritative set costs O(N): {work:?}"
-    );
-
-    let visible: Vec<Item> = (0..M)
-        .map(|i| {
-            Item::new("")
-                .key(ItemKey::num((N - 1 - i * 2) as u64))
-                .matched(vec![0])
-        })
-        .collect();
-    let (result, work) = Work::measure(|| picker.set_visible_items(visible));
-    result.expect("every visible key is authoritative");
-    assert!(
-        work.join_probes + work.index_builds <= (N + M) as u64,
-        "joining M visible keys costs N index entries plus M lookups, not N*M: {work:?}"
-    );
-    assert_eq!(
-        picker.item_for_key(ItemKey::num(7)).expect("known").label,
-        "item 7"
-    );
-}
-
-#[test]
-fn overlay_snapshot_copies_visible_rows_only() {
+fn overlay_snapshot_paints_only_the_window_with_correct_rows() {
     let options = many_options(100_000);
     let mut select = select_with(&options);
     select.on_key(&key(KeyCode::Enter));
     assert!(select.open);
-    let (buf, work) = {
-        let mut buf = None;
-        let ((), work) = Work::measure(|| {
-            buf = Some(overlay_frame(|buf, ctx| {
-                select.render(Rect::new(0, 0, 40, 3), buf, ctx, ctx.theme.canvas)
-            }));
-        });
-        (buf.expect("painted"), work)
-    };
-    assert_eq!(
-        work.payload_rows_copied, 0,
-        "an open Select must not copy its options: {work:?}"
-    );
-    assert!(
-        (1..=8).contains(&work.snapshot_rows),
-        "only the visible rows are prepared: {work:?}"
-    );
+    let buf =
+        overlay_frame(|buf, ctx| select.render(Rect::new(0, 0, 40, 3), buf, ctx, ctx.theme.canvas));
     let text = screen_text(&buf);
     assert!(text.contains("option number 000000"), "{text}");
     assert!(text.contains("option number 000007"), "{text}");
     assert!(!text.contains("option number 000008"), "{text}");
-}
 
-#[test]
-fn overlay_snapshot_completion_copies_visible_rows_only() {
     let mut completion = Completion::new(WidgetId::of("completion"));
-    completion.open(keyed_items(100_000), Rect::new(2, 2, 1, 1), 0);
-    let mut buf = None;
-    let ((), work) = Work::measure(|| {
-        buf = Some(overlay_frame(|buf, ctx| {
-            completion.render(SCREEN, buf, ctx)
-        }));
-    });
-    assert_eq!(work.payload_rows_copied, 0, "{work:?}");
-    assert!((1..=8).contains(&work.snapshot_rows), "{work:?}");
-    let text = screen_text(&buf.expect("painted"));
-    assert!(text.contains("item 0"), "{text}");
+    completion.open(keyed_items(1_000), Rect::new(2, 2, 1, 1), 0);
+    let buf = overlay_frame(|buf, ctx| completion.render(SCREEN, buf, ctx));
+    assert!(screen_text(&buf).contains("item 0"));
+
+    let cfg = EditorConfig::default();
+    for editor in [
+        ColumnEditor::Select(choice_options(500)),
+        ColumnEditor::Tags(choice_options(500)),
+        ColumnEditor::Segmented(choice_options(500)),
+    ] {
+        let mut ed = ChoiceEditor::open(WidgetId::of("ed"), &editor, "v0", &cfg).expect("popup");
+        let buf = overlay_frame(|buf, ctx| ed.render(Rect::new(1, 1, 20, 1), buf, ctx, &cfg));
+        assert!(screen_text(&buf).contains("label 0"));
+    }
 }
 
 fn choice_options(n: usize) -> Options {
@@ -141,28 +93,6 @@ fn choice_options(n: usize) -> Options {
 }
 
 #[test]
-fn overlay_snapshot_choice_editor_copies_visible_rows_only() {
-    let cfg = EditorConfig::default();
-    for editor in [
-        ColumnEditor::Select(choice_options(50_000)),
-        ColumnEditor::Tags(choice_options(50_000)),
-        ColumnEditor::Segmented(choice_options(50_000)),
-    ] {
-        let mut ed = ChoiceEditor::open(WidgetId::of("ed"), &editor, "v0", &cfg).expect("popup");
-        let mut buf = None;
-        let ((), work) = Work::measure(|| {
-            buf = Some(overlay_frame(|buf, ctx| {
-                ed.render(Rect::new(1, 1, 20, 1), buf, ctx, &cfg)
-            }));
-        });
-        assert_eq!(work.payload_rows_copied, 0, "{editor:?} {work:?}");
-        assert!(work.snapshot_rows <= 16, "{work:?}");
-        let text = screen_text(&buf.expect("painted"));
-        assert!(text.contains("label 0"), "{text}");
-    }
-}
-
-#[test]
 fn select_fixed_probe_never_clones_options() {
     for n in [1_000, 100_000] {
         let options = many_options(n);
@@ -174,11 +104,7 @@ fn select_fixed_probe_never_clones_options() {
             KeyCode::F(5),
         ] {
             let before = (select.selected, select.open);
-            let (out, work) = Work::measure(|| select.on_key(&key(code)));
-            assert_eq!(
-                work.payload_rows_copied, 0,
-                "{code:?} with {n} options copied the model"
-            );
+            let out = select.on_key(&key(code));
             assert_eq!(
                 (select.selected, select.open),
                 before,

@@ -115,11 +115,77 @@ pub struct FlatRow {
     pub note: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TreeAction {
-    Expand(Path),
+/// One visible tree row as the shared engine reads it.
+#[derive(Debug, Clone, Copy)]
+struct RowRef<'a> {
+    depth: usize,
+    label: &'a str,
+    meta: Option<&'a str>,
+    glyph: Option<&'a str>,
+    glyph_tone: Tone,
+    label_tone: Option<Tone>,
+    has_children: bool,
+    expanded: bool,
+    busy: bool,
+    note: bool,
+}
 
-    Activate(Path),
+/// The visible rows the shared tree engine works over: owned flattened rows,
+/// or a keyed projection that borrows labels from its source.
+trait TreeRows: RowSource {
+    fn row(&self, i: usize) -> RowRef<'_>;
+    fn hit_key(&self, i: usize) -> ItemKey;
+    /// Visible index of the row's parent, when it has one.
+    fn parent(&self, i: usize) -> Option<usize>;
+}
+
+impl TreeRows for [FlatRow] {
+    fn row(&self, i: usize) -> RowRef<'_> {
+        let r = &self[i];
+        RowRef {
+            depth: r.depth,
+            label: &r.label,
+            meta: r.meta.as_deref(),
+            glyph: r.glyph.as_deref(),
+            glyph_tone: r.glyph_tone,
+            label_tone: r.label_tone,
+            has_children: r.has_children,
+            expanded: r.expanded,
+            busy: r.busy,
+            note: r.note,
+        }
+    }
+
+    fn hit_key(&self, i: usize) -> ItemKey {
+        ItemKey::index(i)
+    }
+
+    fn parent(&self, i: usize) -> Option<usize> {
+        let depth = self[i].depth;
+        if depth == 0 {
+            return None;
+        }
+        self[..i].iter().rposition(|r| r.depth < depth)
+    }
+}
+
+/// What a key or click asks of the tree, before the owning storage applies it.
+enum Plan {
+    Done(Outcome),
+    Command(TreeCmd),
+    Toggle(usize),
+    Recursive(usize),
+    Branch(usize),
+    Leaf(usize),
+}
+
+/// A tree action. Owned trees identify nodes by index [`Path`]; a keyed tree
+/// identifies them by [`ItemKey`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TreeAction<K = Path> {
+    Expand(K),
+
+    Activate(K),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -613,7 +679,7 @@ impl TreeView {
         }
         self.flatten();
         if let Some(i) = self.rows.iter().position(|r| r.path == path) {
-            self.set_cursor(i);
+            self.set_cursor(self.rows.len(), i);
         }
     }
 
@@ -642,8 +708,8 @@ impl TreeView {
         self.core.cursor_model()
     }
 
-    fn set_cursor(&mut self, i: usize) {
-        self.core.cursor = i.min(self.rows.len().saturating_sub(1));
+    fn set_cursor(&mut self, len: usize, i: usize) {
+        self.core.cursor = i.min(len.saturating_sub(1));
         self.core.scroll.ensure_visible(self.core.cursor);
     }
 
@@ -779,56 +845,73 @@ impl TreeView {
     }
 
     pub fn on_key(&mut self, key: &Key) -> Response<TreeAction> {
-        if self.rows.is_empty() {
-            return Response::ignored();
+        let rows = std::mem::take(&mut self.rows);
+        let plan = self.plan_key(&rows[..], key);
+        self.rows = rows;
+        self.apply_plan(plan)
+    }
+
+    fn apply_plan(&mut self, plan: Plan) -> Response<TreeAction> {
+        match plan {
+            Plan::Done(out) => Response::from(out),
+            Plan::Command(cmd) => self.run(cmd),
+            Plan::Toggle(i) => self.toggle(i),
+            Plan::Recursive(i) => self.toggle_recursive(i),
+            Plan::Branch(i) => self.branch(i),
+            Plan::Leaf(i) => {
+                let path = self.rows[i].path.clone();
+                self.selected = Some(path.clone());
+                Response::emit(TreeAction::Activate(path))
+            }
+        }
+    }
+
+    fn plan_key<R: TreeRows + ?Sized>(&mut self, rows: &R, key: &Key) -> Plan {
+        if rows.len() == 0 {
+            return Plan::Done(Outcome::Ignored);
         }
         if unassigned_chord(key, &self.keymap) {
-            return Response::ignored();
+            return Plan::Done(Outcome::Ignored);
         }
         if let Some(action) = lookup(&self.keymap, key) {
-            return self.run(action);
+            return Plan::Command(action);
         }
-        let rows = &self.rows[..];
-        let nav = match self.core.key_step(key, rows) {
+        let (nav, moved) = match self.core.key_step(key, rows) {
             Some((KeyStep::Type(_), moved)) => {
                 if let Moved::To(i) = moved {
-                    self.set_cursor(i);
+                    self.set_cursor(rows.len(), i);
                 }
-                return Response::from(moved.outcome());
+                return Plan::Done(moved.outcome());
             }
             Some((KeyStep::Nav(nav), moved)) => (nav, moved),
-            None => return self.on_plain_key(key),
+            None => return self.plan_plain_key(rows, key),
         };
-        let (nav, moved) = nav;
+        let cursor = self.core.cursor;
         let out = match nav {
             Nav::Up | Nav::Down | Nav::PageUp | Nav::PageDown | Nav::Home | Nav::End => {
                 if let Some(i) = moved.index() {
-                    self.set_cursor(i);
+                    self.set_cursor(rows.len(), i);
                 }
                 Outcome::Changed
             }
             Nav::Right => {
-                let row = &self.rows[self.core.cursor];
+                let row = rows.row(cursor);
                 if row.has_children && !row.expanded {
-                    return self.toggle(self.core.cursor);
+                    return Plan::Toggle(cursor);
                 } else if row.has_children {
-                    self.set_cursor(self.core.cursor + 1);
+                    self.set_cursor(rows.len(), cursor + 1);
                     Outcome::Changed
                 } else {
                     Outcome::Consumed
                 }
             }
             Nav::Left => {
-                let row = &self.rows[self.core.cursor];
+                let row = rows.row(cursor);
                 if row.has_children && row.expanded {
-                    return self.toggle(self.core.cursor);
+                    return Plan::Toggle(cursor);
                 } else if row.depth > 0 {
-                    let depth = row.depth;
-                    if let Some(pi) = self.rows[..self.core.cursor]
-                        .iter()
-                        .rposition(|r| r.depth < depth)
-                    {
-                        self.set_cursor(pi);
+                    if let Some(pi) = rows.parent(cursor) {
+                        self.set_cursor(rows.len(), pi);
                     }
                     Outcome::Changed
                 } else {
@@ -836,25 +919,24 @@ impl TreeView {
                 }
             }
         };
-        Response::from(out)
+        Plan::Done(out)
     }
 
-    fn on_plain_key(&mut self, key: &Key) -> Response<TreeAction> {
-        let out = match key.code {
+    fn plan_plain_key<R: TreeRows + ?Sized>(&mut self, rows: &R, key: &Key) -> Plan {
+        match key.code {
             KeyCode::Enter | KeyCode::Char(' ') => {
-                let row = &self.rows[self.core.cursor];
+                let cursor = self.core.cursor;
+                let row = rows.row(cursor);
                 if row.note {
-                    Outcome::Consumed
+                    Plan::Done(Outcome::Consumed)
                 } else if row.has_children {
-                    return self.branch(self.core.cursor);
+                    Plan::Branch(cursor)
                 } else {
-                    self.selected = Some(row.path.clone());
-                    return Response::emit(TreeAction::Activate(row.path.clone()));
+                    Plan::Leaf(cursor)
                 }
             }
-            _ => Outcome::Ignored,
-        };
-        Response::from(out)
+            _ => Plan::Done(Outcome::Ignored),
+        }
     }
 
     pub fn on_click_row(&mut self, i: usize) -> Response<TreeAction> {
@@ -862,29 +944,36 @@ impl TreeView {
     }
 
     pub fn on_click_row_count(&mut self, i: usize, count: u8) -> Response<TreeAction> {
-        if i >= self.rows.len() {
-            return Response::consumed();
+        let rows = std::mem::take(&mut self.rows);
+        let plan = self.plan_click_row(&rows[..], i, count);
+        self.rows = rows;
+        self.apply_plan(plan)
+    }
+
+    fn plan_click_row<R: TreeRows + ?Sized>(&mut self, rows: &R, i: usize, count: u8) -> Plan {
+        if i >= rows.len() {
+            return Plan::Done(Outcome::Consumed);
         }
         let again = self.core.cursor == i;
         self.core.scroll.pointer_move();
-        self.set_cursor(i);
-        if self.rows[i].note {
-            return Response::consumed();
+        self.set_cursor(rows.len(), i);
+        let row = rows.row(i);
+        if row.note {
+            return Plan::Done(Outcome::Consumed);
         }
         if !self.core.click.activates(count.max(1), again) {
-            return Response::changed();
+            return Plan::Done(Outcome::Changed);
         }
-        if self.rows[i].has_children {
-            self.branch(i)
+        if row.has_children {
+            Plan::Branch(i)
         } else {
-            self.selected = Some(self.rows[i].path.clone());
-            Response::emit(TreeAction::Activate(self.rows[i].path.clone()))
+            Plan::Leaf(i)
         }
     }
 
     pub fn on_click_toggle(&mut self, i: usize) -> Response<TreeAction> {
         self.core.scroll.pointer_move();
-        self.set_cursor(i);
+        self.set_cursor(self.rows.len(), i);
         self.toggle(i)
     }
 
@@ -904,18 +993,35 @@ impl TreeView {
         mods: KeyModifiers,
         count: u8,
     ) -> Response<TreeAction> {
+        let rows = std::mem::take(&mut self.rows);
+        let plan = self.plan_click(&rows[..], i, toggle, mods, count);
+        self.rows = rows;
+        self.apply_plan(plan)
+    }
+
+    fn plan_click<R: TreeRows + ?Sized>(
+        &mut self,
+        rows: &R,
+        i: usize,
+        toggle: bool,
+        mods: KeyModifiers,
+        count: u8,
+    ) -> Plan {
         if self.alt_click_recursive
             && mods.contains(KeyModifiers::ALT)
-            && self.rows.get(i).is_some_and(|r| r.has_children && !r.note)
+            && i < rows.len()
+            && rows.row(i).has_children
+            && !rows.row(i).note
         {
-            self.set_cursor(i);
-            return self.toggle_recursive(i);
+            self.set_cursor(rows.len(), i);
+            return Plan::Recursive(i);
         }
         if toggle {
-            self.on_click_toggle(i)
-        } else {
-            self.on_click_row_count(i, count)
+            self.core.scroll.pointer_move();
+            self.set_cursor(rows.len(), i);
+            return Plan::Toggle(i);
         }
+        self.plan_click_row(rows, i, count)
     }
 
     pub fn toggle_recursive(&mut self, i: usize) -> Response<TreeAction> {
@@ -973,6 +1079,28 @@ impl TreeView {
     }
 
     pub fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, bg: Color) {
+        let rows = std::mem::take(&mut self.rows);
+        let selected = self.selected.clone();
+        self.render_in(
+            &rows[..],
+            |i| selected.as_deref() == Some(rows[i].path.as_slice()),
+            area,
+            buf,
+            ctx,
+            bg,
+        );
+        self.rows = rows;
+    }
+
+    fn render_in<R: TreeRows + ?Sized>(
+        &mut self,
+        rows: &R,
+        is_selected: impl Fn(usize) -> bool,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        bg: Color,
+    ) {
         self.core.scroll.begin(ctx.track_click);
         let area = area.intersection(*buf.area());
         if area.is_empty() {
@@ -982,7 +1110,7 @@ impl TreeView {
         let t = ctx.theme;
         let focused = ctx.interaction.focused(self.id);
         self.core.scroll.set_viewport(area.height as usize);
-        let n = self.rows.len();
+        let n = rows.len();
 
         if self.core.is_focus_stop(n, focused) {
             ctx.control(self.id, area, false);
@@ -1013,13 +1141,13 @@ impl TreeView {
 
         let show_meta = self.show_meta
             && self.core.scroll.visible_range().all(|ri| {
-                let row = &self.rows[ri];
-                let Some(m) = &row.meta else { return true };
+                let row = rows.row(ri);
+                let Some(m) = row.meta else { return true };
                 let need = 1
                     + (row.depth as u16) * self.indent
                     + 2
                     + if row.glyph.is_some() { 2 } else { 0 }
-                    + crate::ui::text::width(&row.label) as u16
+                    + crate::ui::text::width(row.label) as u16
                     + 2
                     + crate::ui::text::width(m) as u16
                     + 1;
@@ -1027,18 +1155,19 @@ impl TreeView {
             });
         for (i, ri) in self.core.scroll.visible_range().enumerate() {
             let y = area.y + i as u16;
-            let row = &self.rows[ri];
+            let row = rows.row(ri);
+            let hit = rows.hit_key(ri);
             let rect = Rect::new(area.x, y, row_w, 1);
 
             let full = Rect::new(area.x, y, full_w, 1);
-            let rid = self.row_id(ri);
+            let rid = self.id.part(PartRef::item(Part::ROW, hit));
             let mut s = ctx.child_state(self.id, rid, ri == self.core.cursor);
-            let tid = self.toggle_id(ri);
+            let tid = self.id.part(PartRef::item(Part::ICON, hit));
 
             s.hovered |= ctx.interaction.hovered(tid);
             s.pressed |= ctx.interaction.pressed(tid);
 
-            let gid = self.glyph_id(ri);
+            let gid = self.id.part(PartRef::item(Part::MARKER, hit));
             s.hovered |= ctx.interaction.hovered(gid);
             s.pressed |= ctx.interaction.pressed(gid);
             if row.note {
@@ -1046,7 +1175,7 @@ impl TreeView {
                 s.pressed = false;
             }
             s.focused = focused && ri == self.core.cursor;
-            s.selected = self.selected.as_ref() == Some(&row.path);
+            s.selected = is_selected(ri);
             s.inactive_selection = self.core.inactive_selection;
             let rp = RowUi::paint(ctx, buf, full, s, RowLook::Bar, bg);
             let st = rp.style();
@@ -1054,7 +1183,7 @@ impl TreeView {
             let mut x = rect.x + 1 + indent;
 
             if !row.note {
-                ctx.register_part(self.id, PartRef::item(Part::ROW, ItemKey::index(ri)), full);
+                ctx.register_part(self.id, PartRef::item(Part::ROW, hit), full);
             }
             if x + 2 >= rect.right() {
                 continue;
@@ -1081,7 +1210,7 @@ impl TreeView {
             if row.has_children {
                 ctx.register_part(
                     self.id,
-                    PartRef::item(Part::ICON, ItemKey::index(ri)),
+                    PartRef::item(Part::ICON, hit),
                     Rect::new(x, y, 2, 1),
                 );
             } else if s.selected
@@ -1091,11 +1220,7 @@ impl TreeView {
                 rp.mark(ctx, buf, x, y, MarkKind::Glyph(m), focused);
             }
             x += 2;
-            let meta_w = row
-                .meta
-                .as_ref()
-                .map(|m| crate::ui::text::width(m))
-                .unwrap_or(0) as u16;
+            let meta_w = row.meta.map(crate::ui::text::width).unwrap_or(0) as u16;
             let avail = rect.right().saturating_sub(x);
 
             let meta_w = if !show_meta || avail.saturating_sub(meta_w + 2) < 10 {
@@ -1119,11 +1244,11 @@ impl TreeView {
                 label_style = st.fg(t.text_muted).remove_modifier(Modifier::BOLD);
             }
             let mut lx = x;
-            if let Some(g) = row.glyph.as_deref() {
+            if let Some(g) = row.glyph {
                 if !row.note {
                     ctx.register_part(
                         self.id,
-                        PartRef::item(Part::MARKER, ItemKey::index(ri)),
+                        PartRef::item(Part::MARKER, hit),
                         Rect::new(lx, y, 2.min(rect.right().saturating_sub(lx)), 1),
                     );
                 }
@@ -1143,10 +1268,10 @@ impl TreeView {
             buf.set_string(
                 lx,
                 y,
-                crate::ui::text::fit(&row.label, (lw as usize).saturating_sub((lx - x) as usize)),
+                crate::ui::text::fit(row.label, (lw as usize).saturating_sub((lx - x) as usize)),
                 label_style,
             );
-            if let Some(m) = &row.meta
+            if let Some(m) = row.meta
                 && meta_w > 0
                 && meta_w + 4 < avail
             {
@@ -1161,7 +1286,7 @@ impl TreeView {
             if row.has_children {
                 ctx.register_part(
                     self.id,
-                    PartRef::item(Part::ICON, ItemKey::index(ri)),
+                    PartRef::item(Part::ICON, hit),
                     Rect::new(rect.x + 1 + indent, y, 2, 1),
                 );
             }

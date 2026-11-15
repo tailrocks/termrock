@@ -19,4 +19,5 @@ pub mod selection;
 pub mod shape;
 pub mod text;
 pub mod typeahead;
-pub mod work;
+#[cfg(test)]
+pub(crate) mod work;

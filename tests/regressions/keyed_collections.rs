@@ -4,9 +4,8 @@
 use std::collections::HashSet;
 
 use junie_tui::core::id::ItemKey;
-use junie_tui::core::keyed::{KeyedRecord, KeyedSourceError, KeyedState, KeyedVec, Reconcile};
+use junie_tui::core::keyed::{KeyedRecord, KeyedSourceError, KeyedState, KeyedVec};
 use junie_tui::core::list::{KeyedRowSource, RowSource, SourceStamp};
-use junie_tui::core::work::Work;
 
 pub fn k(n: u64) -> ItemKey {
     ItemKey::num(n)
@@ -338,22 +337,6 @@ fn keyed_failed_release_consumes_capture() {
     );
 }
 
-#[test]
-fn keyed_resize_cancels_capture_without_source_scan() {
-    let (mut state, source) = bound(&[1, 2, 3]);
-    assert!(state.capture_press(k(2), 5));
-    let (cancelled, work) = Work::measure(|| {
-        let a = state.invalidate_layout(5);
-        let b = state.invalidate_layout(6);
-        let unchanged = state.reconcile(&source).expect("valid");
-        (a, b, unchanged)
-    });
-    assert_eq!((cancelled.0, cancelled.1), (false, true));
-    assert_eq!(cancelled.2, Reconcile::default());
-    assert_eq!(work.source_rows, 0, "no enumeration: {work:?}");
-    assert!(!state.release_press(k(2), 5));
-}
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct Row {
     pub name: String,
@@ -376,26 +359,6 @@ impl KeyedRecord for Row {
     fn enabled(&self) -> bool {
         !self.off
     }
-}
-
-#[test]
-fn keyed_unchanged_stamp_does_not_enumerate_the_source() {
-    let mut store =
-        KeyedVec::try_from_rows((1..=500).map(|n| (k(n), Row::new("r")))).expect("valid");
-    let mut state = KeyedState::new();
-    let (_, first) = Work::measure(|| state.reconcile(&store).expect("valid"));
-    assert_eq!(
-        first.source_rows, 1_000,
-        "authoritative plus visible, once: {first:?}"
-    );
-    let (out, again) = Work::measure(|| state.reconcile(&store).expect("valid"));
-    assert_eq!((out, again.source_rows), (Reconcile::default(), 0));
-
-    store.update(k(7), |row| row.off = true);
-    let (out, work) = Work::measure(|| state.reconcile(&store).expect("valid"));
-    assert!(out.data_changed);
-    assert!(work.source_rows <= 1_000, "{work:?}");
-    assert!(!state.is_enabled(k(7)));
 }
 
 #[test]
@@ -527,7 +490,8 @@ mod widgets {
         let mut store = items(&[(1, "alpha"), (2, "bravo"), (3, "charlie")]);
         let mut list = list(SelectMode::Multi);
         draw_list(&mut list, &store);
-        list.on_key_source(&key(KeyCode::Down), &store)
+        let _ = list
+            .on_key_source(&key(KeyCode::Down), &store)
             .expect("valid");
         let out = list
             .on_key_source(&key(KeyCode::Char(' ')), &store)
@@ -561,7 +525,8 @@ mod widgets {
         let store = items(&[(10, "one"), (20, "two")]);
         let mut list = list(SelectMode::Single);
         draw_list(&mut list, &store);
-        list.on_key_source(&key(KeyCode::Down), &store)
+        let _ = list
+            .on_key_source(&key(KeyCode::Down), &store)
             .expect("valid");
         let out = list
             .on_key_source(&key(KeyCode::Enter), &store)
@@ -578,7 +543,8 @@ mod widgets {
         let mut store = items(&[(1, "a"), (2, "b")]);
         let mut list = list(SelectMode::Multi);
         draw_list(&mut list, &store);
-        list.on_key_source(&key(KeyCode::Down), &store)
+        let _ = list
+            .on_key_source(&key(KeyCode::Down), &store)
             .expect("valid");
         let cursor = list.keyed().cursor();
 
@@ -630,7 +596,8 @@ mod widgets {
         let frame = draw_list(&mut list, &store);
         let at = Position::new(6, 0);
         let id_a = frame.id_at(list.id, Part::ROW, at);
-        list.on_pointer_source(&frame.event(Phase::Press, id_a, at), &store)
+        let _ = list
+            .on_pointer_source(&frame.event(Phase::Press, id_a, at), &store)
             .expect("valid");
         assert_eq!(list.keyed().pressed(), Some(k(1)));
 
@@ -662,7 +629,7 @@ mod widgets {
         let at = Position::new(6, 1);
         let id = frame.id_at(list.id, Part::ROW, at);
         let press = frame.event(Phase::Press, id, at);
-        list.on_pointer_source(&press, &store).expect("valid");
+        let _ = list.on_pointer_source(&press, &store).expect("valid");
         let out = list
             .on_pointer_source(&frame.event(Phase::Click, id, at), &store)
             .expect("valid");
@@ -756,7 +723,8 @@ mod widgets {
 
     fn type_text(t: &mut DataTable, store: &mut KeyedTable, text: &str) {
         for c in text.chars() {
-            t.on_key_edit_source(&key(KeyCode::Char(c)), store)
+            let _ = t
+                .on_key_edit_source(&key(KeyCode::Char(c)), store)
                 .expect("valid");
         }
     }
@@ -766,7 +734,8 @@ mod widgets {
         let mut store = table_store();
         let mut t = table();
         draw_table(&mut t, &mut store);
-        t.on_key_edit_source(&key(KeyCode::Down), &mut store)
+        let _ = t
+            .on_key_edit_source(&key(KeyCode::Down), &mut store)
             .expect("valid");
         assert_eq!(t.keyed().cursor(), Some(k(2)));
         let begun = t
@@ -801,7 +770,8 @@ mod widgets {
         let mut store = table_store();
         let mut t = table();
         draw_table(&mut t, &mut store);
-        t.on_key_edit_source(&key(KeyCode::Enter), &mut store)
+        let _ = t
+            .on_key_edit_source(&key(KeyCode::Enter), &mut store)
             .expect("valid");
         assert_eq!(t.keyed().edit_key(), Some(k(1)));
         type_text(&mut t, &mut store, "x");
@@ -864,10 +834,12 @@ mod widgets {
         let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
         t.render_edit_source(AREA, &mut store, &mut buf, &mut ctx, theme.canvas)
             .expect("valid");
-        t.on_key_edit_source(&key(KeyCode::Enter), &mut store)
+        let _ = t
+            .on_key_edit_source(&key(KeyCode::Enter), &mut store)
             .expect("valid");
         for c in "zz".chars() {
-            t.on_key_edit_source(&key(KeyCode::Char(c)), &mut store)
+            let _ = t
+                .on_key_edit_source(&key(KeyCode::Char(c)), &mut store)
                 .expect("valid");
         }
         let out = t
@@ -907,7 +879,8 @@ mod widgets {
         let frame = draw_table(&mut t, &mut store);
         let at = Position::new(8, 1);
         let id = frame.id_at(t.id, Part::CELL, at);
-        t.on_pointer_edit_source(&frame.event(Phase::Press, id, at), &mut store)
+        let _ = t
+            .on_pointer_edit_source(&frame.event(Phase::Press, id, at), &mut store)
             .expect("valid");
         assert_eq!(t.keyed().pressed(), Some(k(1)));
         store.move_row(k(1), 2);

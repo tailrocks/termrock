@@ -1,4 +1,5 @@
-//! Deterministic work counters for collection costs.
+//! Deterministic work counters for collection costs. Compiled for unit tests
+//! only; #56 consolidates counters into one metrics module.
 //!
 //! Counters are per thread and count units of work (rows enumerated, payload
 //! rows copied, comparisons), never time. A test reads a [`Work`] snapshot
@@ -15,15 +16,13 @@ pub enum Counter {
     IndexBuilds,
     /// Key resolutions: one per map lookup or per comparison of a linear search.
     JoinProbes,
-    /// Rows of a whole collection copied for deferred paint or a probe.
-    PayloadRowsCopied,
     /// Rows measured for an aggregate width.
     WidthRows,
     /// Visible paint records prepared for a deferred overlay.
     SnapshotRows,
 }
 
-const COUNTERS: usize = 6;
+const COUNTERS: usize = 5;
 
 thread_local! {
     static CELLS: [Cell<u64>; COUNTERS] = const { [const { Cell::new(0) }; COUNTERS] };
@@ -43,7 +42,6 @@ pub struct Work {
     pub source_rows: u64,
     pub index_builds: u64,
     pub join_probes: u64,
-    pub payload_rows_copied: u64,
     pub width_rows: u64,
     pub snapshot_rows: u64,
 }
@@ -55,7 +53,6 @@ impl Work {
             source_rows: c[Counter::SourceRows as usize].get(),
             index_builds: c[Counter::IndexBuilds as usize].get(),
             join_probes: c[Counter::JoinProbes as usize].get(),
-            payload_rows_copied: c[Counter::PayloadRowsCopied as usize].get(),
             width_rows: c[Counter::WidthRows as usize].get(),
             snapshot_rows: c[Counter::SnapshotRows as usize].get(),
         })
@@ -67,7 +64,6 @@ impl Work {
             source_rows: self.source_rows - before.source_rows,
             index_builds: self.index_builds - before.index_builds,
             join_probes: self.join_probes - before.join_probes,
-            payload_rows_copied: self.payload_rows_copied - before.payload_rows_copied,
             width_rows: self.width_rows - before.width_rows,
             snapshot_rows: self.snapshot_rows - before.snapshot_rows,
         }

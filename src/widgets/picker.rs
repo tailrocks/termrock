@@ -374,6 +374,7 @@ impl Picker {
     }
 
     fn source_of(&self, key: ItemKey) -> Option<usize> {
+        #[cfg(test)]
         crate::core::work::add(crate::core::work::Counter::JoinProbes, 1);
         self.index.get(&key).copied()
     }
@@ -730,6 +731,7 @@ impl Picker {
                 return Err(PickerItemsError::DuplicateKey(key));
             }
         }
+        #[cfg(test)]
         crate::core::work::add(crate::core::work::Counter::IndexBuilds, items.len());
         Ok(keys)
     }
