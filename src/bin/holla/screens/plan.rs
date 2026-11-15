@@ -1352,15 +1352,16 @@ impl ShellPage<Holla> for PlanTab {
                 action: Some(1), ..
             } = result
         {
-            let tick = w.tick;
+            let mut still_running = false;
             if let Some(p) = w.plan_mut(&self.plan) {
                 p.cancel_remaining();
-                if p.running().is_empty() {
-                    p.phase = PlanPhase::Done;
-                    p.ended_tick = Some(tick);
-                }
+                still_running = !p.running().is_empty();
             }
-            cx.status("Remaining steps cancelled · running steps finish");
+            cx.status(if still_running {
+                "Remaining steps cancelled · running steps finish"
+            } else {
+                "Remaining steps cancelled"
+            });
         }
         Outcome::Changed
     }

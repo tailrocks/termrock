@@ -180,6 +180,10 @@ pub struct Plan {
 
     pub follow_ups: Vec<(String, String)>,
 
+    /// Whether the latest run ended by the user stopping the whole plan, as
+    /// opposed to cancelling only its remaining steps. Cleared by arm and retry.
+    pub stopped: bool,
+
     /// Step ids whose simulated effects were already applied during this arm.
     /// Scoped to one full arm: retry keeps it, arm clears it.
     applied_steps: BTreeSet<String>,
@@ -206,6 +210,7 @@ impl Plan {
             drift: None,
             drift_consumed: false,
             follow_ups: vec![],
+            stopped: false,
             applied_steps: BTreeSet::new(),
             completion_counted: false,
         };
@@ -451,6 +456,7 @@ impl Plan {
         self.recompute();
         self.phase = PlanPhase::Running;
         self.ended_tick = None;
+        self.stopped = false;
         true
     }
 
@@ -502,6 +508,7 @@ impl Plan {
         }
         self.phase = PlanPhase::Done;
         self.ended_tick = Some(tick);
+        self.stopped = true;
         true
     }
 
@@ -543,6 +550,7 @@ impl Plan {
         }
         self.applied_steps.clear();
         self.completion_counted = false;
+        self.stopped = false;
         self.phase = PlanPhase::Running;
         self.started_tick = Some(tick);
         self.ended_tick = None;
@@ -642,6 +650,20 @@ mod tests {
         assert_eq!(p.steps[..5], before[..5], "terminal steps unchanged");
         assert_eq!(p.steps[5].state, StepState::Cancelled);
         assert_eq!(p.steps[5].exit, Some(130));
+    }
+
+    #[test]
+    fn plan_stopped_marks_only_a_whole_plan_stop_until_the_next_run() {
+        let mut p = running_plan();
+        p.cancel_remaining();
+        assert!(!p.stopped, "cancel remaining is not a stop");
+
+        let mut p = running_plan();
+        start(&mut p, 1, 4);
+        assert!(p.stop(9));
+        assert!(p.stopped);
+        assert!(p.arm(10));
+        assert!(!p.stopped, "arm starts a fresh run");
     }
 
     #[test]
