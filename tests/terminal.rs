@@ -1,5 +1,8 @@
 #![cfg(feature = "terminal")]
 
+#[path = "terminal/session.rs"]
+mod session;
+
 use junie_tui::core::event::Key;
 use junie_tui::terminal::{
     Modes, RowWrap, TermEvent, TermView, TerminalState, TerminalView, encode_key,

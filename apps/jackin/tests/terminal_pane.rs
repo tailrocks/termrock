@@ -4,6 +4,9 @@
 
 mod pane_support;
 
+#[path = "terminal_pane/session_adapter.rs"]
+mod session_adapter;
+
 use jackin_console::panes::{
     Lease, LinkEvent, LinkFault, LinkStatus, PaneBody, PaneCommand, PaneKey, PanePolicy,
     PasteOutcome,
