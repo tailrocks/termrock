@@ -366,6 +366,7 @@ pub fn world_fixed(w: &World) -> FixedFields {
         committed_save_warning: _,
         committed_save_status: _,
         pane_policy: _,
+        projection: _,
     } = w;
     collect(workspaces, roles, instances, global, accounts, surfaces)
 }

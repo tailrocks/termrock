@@ -1,5 +1,5 @@
 use std::collections::BTreeMap;
-use std::sync::Arc;
+use std::sync::{Arc, PoisonError};
 
 use crate::arbiter::{Arbiter, DiscoveryError};
 use crate::backend::{
@@ -10,7 +10,7 @@ use crate::domain::account::{
     AccountId, AccountRegistry, CredentialSource, IssueCode, Recoverability, RecoverableIssue,
     ValidationState,
 };
-use crate::domain::agent::{Agent, AuthMode};
+use crate::domain::agent::{Agent, AuthMode, UsageSurface};
 use crate::domain::doctor::{DoctorFailure, DoctorReport};
 use crate::domain::instance::{
     DaemonSnapshot, Instance, InstanceEntry, InstanceId, InstanceStatus, RepoRef,
@@ -29,6 +29,13 @@ use crate::domain::workspace::{
 use crate::panes::{Daemon, PaneId, PanePolicy};
 use junie_tui::clock::SimClock;
 use junie_tui::shell::JobKey;
+
+mod projection;
+
+pub use projection::{
+    AccountIndex, Projection, ProjectionEpochs, RosterIndex, WorkCounters, WorkSnapshot,
+    WorkspaceMembers, WorldTick,
+};
 
 pub const REFRESH_TIMEOUT_SECS: i64 = 30;
 
@@ -428,6 +435,9 @@ pub struct World {
     /// What a program may do through a pane; every daemon the world creates
     /// starts with it.
     pub pane_policy: Arc<PanePolicy>,
+
+    /// Epochs, grouped indices and work counters of the derived views.
+    pub projection: Projection,
 }
 
 pub trait WallSource: std::fmt::Debug + Send + Sync {
@@ -575,6 +585,7 @@ impl World {
             committed_save_warning: None,
             committed_save_status: None,
             pane_policy: Arc::default(),
+            projection: Projection::default(),
         };
         world.sync_arbiter();
         world
@@ -582,6 +593,97 @@ impl World {
 
     pub fn now_secs(&self) -> i64 {
         self.clock.now_secs()
+    }
+
+    pub fn epochs(&self) -> ProjectionEpochs {
+        self.projection.epochs
+    }
+
+    /// Work the derived views have done so far.
+    pub fn work(&self) -> WorkSnapshot {
+        self.projection.work.snapshot()
+    }
+
+    /// For a host that edited `instances` or `workspaces` membership through
+    /// the public fields. Owning methods mark for themselves.
+    pub fn mark_membership_changed(&mut self) {
+        self.projection.epochs.bump_membership();
+    }
+
+    /// For a host edit that changes only what rows and cards show: names,
+    /// counts, daemon summaries.
+    pub fn mark_roster_changed(&mut self) {
+        self.projection.epochs.bump_roster();
+    }
+
+    /// For a host edit of the account registry.
+    pub fn mark_accounts_changed(&mut self) {
+        self.projection.epochs.bump_accounts();
+    }
+
+    /// Instances grouped by workspace, rebuilt only after a membership epoch
+    /// change. A rebuild installs the groups and the running ids together.
+    pub fn roster(&self) -> Arc<RosterIndex> {
+        let epoch = self.projection.epochs.membership;
+        let mut slot = self
+            .projection
+            .roster
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        if slot.built_at() != Some(epoch) {
+            *slot = Arc::new(RosterIndex::build(
+                &self.instances,
+                epoch,
+                &self.projection.work,
+            ));
+        }
+        Arc::clone(&slot)
+    }
+
+    /// The account registry sorted once per accounts epoch.
+    pub fn account_index(&self) -> Arc<AccountIndex> {
+        let epoch = self.projection.epochs.accounts;
+        let mut slot = self
+            .projection
+            .accounts
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        if slot.built_at() != Some(epoch) {
+            *slot = Arc::new(AccountIndex::build(
+                &self.accounts,
+                epoch,
+                &self.projection.work,
+            ));
+        }
+        Arc::clone(&slot)
+    }
+
+    /// Every account in display order, from the index sorted once per accounts
+    /// epoch.
+    pub fn sorted_accounts(&self) -> Vec<&crate::domain::account::Account> {
+        let index = self.account_index();
+        index
+            .sorted()
+            .iter()
+            .filter_map(|at| self.accounts.accounts.get(*at))
+            .collect()
+    }
+
+    /// The accounts of one usage surface in display order, from the same index.
+    pub fn surface_accounts(&self, surface: UsageSurface) -> Vec<&crate::domain::account::Account> {
+        let index = self.account_index();
+        index
+            .surface(surface)
+            .iter()
+            .filter_map(|at| self.accounts.accounts.get(*at))
+            .collect()
+    }
+
+    /// An account for editing; the accounts epoch moves because the caller is
+    /// about to change it.
+    pub fn account_mut(&mut self, id: &str) -> Option<&mut crate::domain::account::Account> {
+        self.projection.epochs.bump_accounts();
+        self.accounts.get_mut(id)
     }
 
     pub fn new_daemon(&self, workspace: &str) -> Daemon {
@@ -630,7 +732,7 @@ impl World {
         }
         self.pending_refreshes.remove(id);
         let ticket = self.next_ticket();
-        self.accounts.get_mut(id)?.usage.freshness.phase = Freshness::Refreshing;
+        self.account_mut(id)?.usage.freshness.phase = Freshness::Refreshing;
         self.pending_refreshes.insert(
             id.to_owned(),
             PendingRefresh {
@@ -681,8 +783,9 @@ impl World {
         let accounts = &self.accounts;
         self.pending_refreshes
             .retain(|id, p| accounts.get(id).is_some_and(|a| a.source == p.source));
-        for id in self.pending_refreshes.keys() {
-            if let Some(a) = self.accounts.get_mut(id) {
+        let pending: Vec<AccountId> = self.pending_refreshes.keys().cloned().collect();
+        for id in &pending {
+            if let Some(a) = self.account_mut(id) {
                 a.usage.freshness.phase = Freshness::Refreshing;
             }
         }
@@ -840,6 +943,7 @@ impl World {
             daemon_health,
         } = snapshot;
         self.snapshots_applied += 1;
+        let before = self.projection.epochs;
         self.workspaces = workspaces;
         self.roles = roles;
         self.instances = instances;
@@ -854,6 +958,7 @@ impl World {
         self.github = github;
         self.daemon_health = daemon_health;
         refresh_snapshots(self);
+        self.projection.epochs.bump_all_from(before);
         self.arbiter.discovery = match index_error {
             Some(error) => Err(error),
             None => Ok(self.running_count()),
@@ -953,7 +1058,7 @@ impl World {
                 }
                 self.pending_refreshes.remove(account);
                 let now = self.now_secs();
-                if let Some(a) = self.accounts.get_mut(account) {
+                if let Some(a) = self.account_mut(account) {
                     match result {
                         Ok(refresh) => {
                             a.usage = refresh.usage.clone();
@@ -990,6 +1095,7 @@ impl World {
                     .get_mut(account)
                     .filter(|a| a.source == **source)
                 {
+                    self.projection.epochs.bump_accounts();
                     match result {
                         Ok(validation) => match validation {
                             Validation::Fingerprint { level } => {
@@ -1031,7 +1137,17 @@ impl World {
         self.committed_save_status = None;
     }
 
+    /// Advances time and delivers the due messages. Hosts that also want to
+    /// know which panes changed use [`World::tick_with_changes`].
     pub fn tick(&mut self, interval_ms: i64) -> Vec<Msg> {
+        self.tick_with_changes(interval_ms).messages
+    }
+
+    /// One poll of every live link. A quiet poll changes nothing and asks for
+    /// nothing: the result names an instance only when its link drained
+    /// something new, and a summary only when the published daemon summary
+    /// differs from the one before.
+    pub fn tick_with_changes(&mut self, interval_ms: i64) -> WorldTick {
         match &self.time {
             TimeSource::Sim => self.clock.advance(interval_ms),
             TimeSource::Wall(source) if self.clock.running => {
@@ -1041,7 +1157,7 @@ impl World {
             TimeSource::Wall(_) => {}
         }
         if !self.clock.running {
-            return vec![];
+            return WorldTick::default();
         }
         let now = self.clock.now_ms;
         if self
@@ -1052,38 +1168,55 @@ impl World {
         {
             self.start_doctor();
         }
-        let mut changed = Vec::new();
+        let roster = self.roster();
+        let mut panes_changed = Vec::new();
         for (id, d) in self.daemons.iter_mut() {
-            if self
-                .instances
-                .iter()
-                .any(|entry| *entry.id() == *id && entry_is_running(entry))
-                && d.tick(now)
-            {
-                changed.push(id.clone());
+            self.projection.work.count_running_lookup();
+            if !roster.is_running(id) {
+                continue;
+            }
+            self.projection.work.count_link_poll();
+            if d.tick(now) {
+                panes_changed.push(id.clone());
             }
         }
-        for id in &changed {
-            refresh_snapshot(self, id);
+        let mut summaries_changed = Vec::new();
+        for id in &panes_changed {
+            if refresh_snapshot(self, id) {
+                summaries_changed.push(id.clone());
+            }
         }
         let backend = self.backend.clone();
-        backend.due(self)
+        WorldTick {
+            messages: backend.due(self),
+            panes_changed,
+            summaries_changed,
+        }
     }
 
-    /// Drains the pane of a wake. Whether it has anything new to draw.
+    /// Drains the pane of a wake and, when that changed it, republishes the
+    /// daemon summary the way a tick does. Whether it has anything new to draw.
     pub fn wake_pane(&mut self, instance: &InstanceId, pane: PaneId) -> bool {
         let now = self.now_ms();
-        self.daemons
+        let changed = self
+            .daemons
             .get_mut(instance)
             .and_then(|d| d.pane_mut(pane))
-            .is_some_and(|p| p.body.tick(now))
+            .is_some_and(|p| p.body.tick(now));
+        if changed {
+            refresh_snapshot(self, instance);
+        }
+        changed
     }
 
     pub fn workspace(&self, id: WorkspaceId) -> Option<&Workspace> {
         self.workspaces.iter().find(|w| w.id == id)
     }
 
+    /// A workspace for editing a label or setting; the roster epoch moves
+    /// because the caller is about to change what its row shows.
     pub fn workspace_mut(&mut self, id: WorkspaceId) -> Option<&mut Workspace> {
+        self.projection.epochs.bump_roster();
         self.workspaces.iter_mut().find(|w| w.id == id)
     }
 
@@ -1119,7 +1252,21 @@ impl World {
             .and_then(InstanceEntry::as_available)
     }
 
+    /// An instance for editing anything, status and workspace included; the
+    /// membership epoch moves because the caller is about to change it.
     pub fn instance_mut(&mut self, id: &InstanceId) -> Option<&mut Instance> {
+        self.projection.epochs.bump_membership();
+        self.instances
+            .iter_mut()
+            .find(|entry| entry.id() == id)
+            .and_then(InstanceEntry::as_available_mut)
+    }
+
+    /// An instance for editing only what its row and card show: dirty counts
+    /// and the daemon summary. Status, workspace and id must stay as they are,
+    /// because only the roster epoch moves.
+    pub fn instance_view_mut(&mut self, id: &InstanceId) -> Option<&mut Instance> {
+        self.projection.epochs.bump_roster();
         self.instances
             .iter_mut()
             .find(|entry| entry.id() == id)
@@ -1144,6 +1291,7 @@ impl World {
         } else {
             self.instances.push(entry);
         }
+        self.projection.epochs.bump_membership();
         self.sync_arbiter();
     }
 
@@ -1489,13 +1637,20 @@ pub fn mask_path(home: &str, path: &str) -> String {
     }
 }
 
-pub fn refresh_snapshot(w: &mut World, id: &InstanceId) {
+/// Republishes one daemon's summary on its instance record. The roster epoch
+/// moves only when the summary differs from the published one, so output that
+/// changes a grid and nothing else costs no projection. Whether it moved.
+pub fn refresh_snapshot(w: &mut World, id: &InstanceId) -> bool {
     let Some(snapshot) = w.daemons.get(id).map(Daemon::snapshot) else {
-        return;
+        return false;
     };
-    if let Some(i) = w.instance_mut(id) {
+    if w.instance(id).is_none_or(|i| i.daemon == snapshot) {
+        return false;
+    }
+    if let Some(i) = w.instance_view_mut(id) {
         i.daemon = snapshot;
     }
+    true
 }
 
 pub fn refresh_snapshots(w: &mut World) {
@@ -1503,11 +1658,17 @@ pub fn refresh_snapshots(w: &mut World) {
     for id in &ids {
         refresh_snapshot(w, id);
     }
+    let mut changed = false;
     for entry in w.instances.iter_mut() {
         if let Some(i) = entry.as_available_mut()
             && i.status != InstanceStatus::Running
+            && i.daemon != DaemonSnapshot::Unavailable
         {
             i.daemon = DaemonSnapshot::Unavailable;
+            changed = true;
         }
+    }
+    if changed {
+        w.projection.epochs.bump_roster();
     }
 }
