@@ -1536,10 +1536,13 @@ fn test_connection_replaces_the_masked_password_and_keeps_it_masked() {
     app.finish();
 }
 
-#[test]
-fn form_toggle_hides_an_editing_input_and_reveal_restores_no_session() {
+/// Opens the form, types into Host and hides it mid-edit, then moves focus to
+/// Driver so no other input is editing. The hide ends the edit session on a
+/// frame that may land after the field disappears, so each frame is judged
+/// only once the terminal is quiet.
+fn hide_host_mid_edit(name: &str) -> crate::support::App {
     let args = ["--page", "dialogkinds"];
-    let app = open("s05-toggle", 120, 40, &args);
+    let app = open(name, 120, 40, &args);
     click_page(&app, "Add connection");
     app.wait_text("Test connection");
 
@@ -1549,35 +1552,70 @@ fn form_toggle_hides_an_editing_input_and_reveal_restores_no_session() {
     app.wait_text("edited-host");
 
     app.key("ctrl+t");
-    let hidden = app.wait_absent("edited-host");
-    see(&hidden, &["Driver", "Password"], &["Host"]);
+    app.wait_absent("Host");
+    let hidden = app.settle();
+    see(
+        &hidden,
+        &["Driver", "Password", "Tab Next field"],
+        &["Host", "▎ edited-host"],
+    );
 
+    app.key("tab");
+    let idle = app.settle();
+    see(
+        &idle,
+        &["Driver", "Tab Next field", "Enter Save"],
+        &["Host", "EDIT", "Enter Apply"],
+    );
+    app
+}
+
+/// Reveals Host again. A restored edit session shows in the hint bar as
+/// EDIT, so the revealed frame must carry the idle form hints instead.
+fn reveal_host(app: &crate::support::App) {
     app.key("ctrl+t");
-    app.wait_text("edited-host");
+    app.wait_text("Host");
+    let shown = app.settle();
+    see(
+        &shown,
+        &["Host", "edited-host", "Tab Next field", "Enter Save"],
+        &["EDIT", "Enter Apply"],
+    );
+}
+
+#[test]
+fn form_toggle_hides_an_editing_input_and_reveal_restores_no_session() {
+    let app = hide_host_mid_edit("s05-toggle");
+    reveal_host(&app);
+
+    // Focus is on Driver, so one Tab reaches Host. A restored session would
+    // trap Tab and keep appending to the old text.
+    app.key("tab");
     app.type_text("zz");
     let after = app.settle();
-    see(&after, &["edited-host", "zz"], &["edited-hostzz"]);
+    see(&after, &["▎ zz"], &["edited-hostzz"]);
     close_to_page(&app);
     app.finish();
 }
 
 #[test]
 fn form_toggle_hidden_editing_input_does_not_hold_escape() {
-    let args = ["--page", "dialogkinds"];
-    let app = open("s05-toggle-esc", 120, 40, &args);
-    click_page(&app, "Add connection");
-    app.wait_text("Test connection");
+    let app = hide_host_mid_edit("s05-toggle-esc");
+    reveal_host(&app);
 
-    app.key("tab");
-    app.key("tab");
-    app.type_text("edited-host");
-    app.wait_text("edited-host");
-    app.key("ctrl+t");
-    app.wait_absent("edited-host");
+    click_where(&app, "edited-host", |hit| hit.x < 40);
+    let focused = app.settle();
+    see(&focused, &["▎ edited-host"], &[]);
 
+    // One Escape closes the form. A restored session would take it to roll
+    // the host back to its value from before the hide, and keep the form.
     app.key("escape");
-    let closed = app.wait_absent("Test connection");
-    see(&closed, &["Enter Open"], &["edited-host"]);
+    let closed = app.settle();
+    see(
+        &closed,
+        &["Enter Open", "Form · Cancel"],
+        &["Test connection", "EDIT", "db.eu-west-1.internal"],
+    );
     app.finish();
 }
 
