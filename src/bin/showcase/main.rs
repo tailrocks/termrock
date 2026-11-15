@@ -70,6 +70,7 @@ fn cli_after_help() -> String {
 fn main() -> std::io::Result<()> {
     let _ = (
         coverage::PICKER_COVERAGE,
+        coverage::TERMINAL_SESSION_COVERAGE,
         coverage::PICKER_ALLOWLIST,
         coverage::KEYMAP_ALLOWLIST,
     );

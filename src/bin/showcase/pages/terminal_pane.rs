@@ -228,13 +228,13 @@ enum SessionAction {
 }
 
 const SESSION_CONTROLS: [(SessionAction, &str); 8] = [
-    (SessionAction::Advance, "Advance"),
-    (SessionAction::Play, "Play"),
+    (SessionAction::Advance, "Tick 200 ms"),
+    (SessionAction::Play, "Run 1 s"),
     (SessionAction::Type, "Type"),
     (SessionAction::Paste, "Paste"),
     (SessionAction::PasteLines, "Paste 3 lines"),
     (SessionAction::Confirm, "Confirm"),
-    (SessionAction::Enter, "Enter"),
+    (SessionAction::Enter, "Retry"),
     (SessionAction::Reset, "Reset"),
 ];
 
@@ -281,6 +281,10 @@ impl TerminalPanePage {
                 rows,
                 cols,
                 self.opts.value("terminalpane.area") == "fits",
+                self.opts
+                    .value("terminalpane.budget")
+                    .parse()
+                    .unwrap_or(64 * 1024),
             )
         });
     }
@@ -554,6 +558,9 @@ impl TerminalPanePage {
 
     fn pointer(&mut self, ev: &PointerEvent, cx: &mut Cx) -> Outcome {
         if ev.id == PANE && ev.is(Phase::Click) {
+            if let Some(demo) = self.session.as_mut() {
+                demo.gesture();
+            }
             cx.focus.focus(PANE);
             return Outcome::Changed;
         }
@@ -733,6 +740,7 @@ impl Page for TerminalPanePage {
                     | "terminalpane.size"
                     | "terminalpane.script"
                     | "terminalpane.area"
+                    | "terminalpane.budget"
             ) {
                 self.load_session();
             }

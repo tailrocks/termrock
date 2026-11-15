@@ -33,7 +33,7 @@ use super::terminal_pane::{caret, key_name};
 /// controller is pumped at each one.
 pub const STEP_MS: i64 = 100;
 
-const ADVANCE_MS: i64 = 250;
+const ADVANCE_MS: i64 = 200;
 const PLAY_MS: i64 = 1_000;
 const KEPT_EFFECTS: usize = 3;
 const KEPT_COMMANDS: usize = 3;
@@ -306,36 +306,35 @@ fn describe(effect: &SessionEffect<DemoFault>) -> String {
     }
 }
 
-fn status_line(status: &SessionStatus<DemoFault>, too_small: bool) -> (String, Tone) {
+fn status_line(status: &SessionStatus<DemoFault>) -> (String, Tone) {
     match status {
-        SessionStatus::Pending if too_small => {
-            ("pending · waiting for room".to_owned(), Tone::Warning)
-        }
-        SessionStatus::Pending => ("pending".to_owned(), Tone::Muted),
-        SessionStatus::Attaching => ("attaching · replay window open".to_owned(), Tone::Secondary),
+        SessionStatus::Pending => ("pending".to_owned(), Tone::Warning),
+        SessionStatus::Attaching => ("attaching".to_owned(), Tone::Secondary),
         SessionStatus::Attached(SessionLease::Owner) => {
             ("attached · owner".to_owned(), Tone::Success)
         }
         SessionStatus::Attached(SessionLease::ReadOnly) => {
-            ("attached · viewer, read only".to_owned(), Tone::Muted)
+            ("attached · viewer".to_owned(), Tone::Muted)
         }
         SessionStatus::Detached(SessionDetach::Operator) => {
-            ("detached · Enter reattaches".to_owned(), Tone::Warning)
+            ("detached · operator".to_owned(), Tone::Warning)
         }
-        SessionStatus::Detached(SessionDetach::TransportLost) => (
-            "detached · transport lost · Enter reattaches".to_owned(),
-            Tone::Warning,
-        ),
-        SessionStatus::Exited(code) => (
-            match code {
-                Some(code) => format!("exited · code {code} · Enter restarts"),
-                None => "exited · Enter restarts".to_owned(),
-            },
-            Tone::Muted,
-        ),
-        SessionStatus::Failed(fault) => {
-            (format!("failed · {} · Enter retries", fault.0), Tone::Error)
+        SessionStatus::Detached(SessionDetach::TransportLost) => {
+            ("detached · transport lost".to_owned(), Tone::Warning)
         }
+        SessionStatus::Exited(Some(code)) => (format!("exited · code {code}"), Tone::Muted),
+        SessionStatus::Exited(None) => ("exited".to_owned(), Tone::Muted),
+        SessionStatus::Failed(_) => ("failed".to_owned(), Tone::Error),
+    }
+}
+
+/// What Enter does in a status: the key that retries, restarts or nothing.
+fn enter_does(status: &SessionStatus<DemoFault>) -> &'static str {
+    match status {
+        SessionStatus::Detached(_) => "reattaches",
+        SessionStatus::Failed(_) => "retries the attach",
+        SessionStatus::Exited(_) => "restarts the program",
+        _ => "goes to the program",
     }
 }
 
@@ -343,10 +342,11 @@ fn status_line(status: &SessionStatus<DemoFault>, too_small: bool) -> (String, T
 fn placeholder(session: &TerminalSessionController<DemoFault>) -> Option<[String; 2]> {
     let min = SessionConfig::MINIMUM;
     match session.status() {
-        SessionStatus::Pending => Some([
+        SessionStatus::Pending if session.too_small() => Some([
             "Waiting for room".to_owned(),
             format!("needs {}x{}", min.cols, min.rows),
         ]),
+        SessionStatus::Pending => Some(["Pending".to_owned(), "no link yet".to_owned()]),
         SessionStatus::Attaching => Some([
             "Attaching…".to_owned(),
             "the screen is replaying".to_owned(),
@@ -363,6 +363,7 @@ pub struct SessionDemo {
     commands: CommandLog,
     rows: u16,
     cols: u16,
+    budget: usize,
     now_ms: i64,
     held_paste: Option<String>,
     effects: Vec<String>,
@@ -372,7 +373,7 @@ pub struct SessionDemo {
 impl SessionDemo {
     /// A demo whose program area is `cols` x `rows`, or one below the
     /// session's minimum when `fits` is false.
-    pub fn new(script: Script, rows: u16, cols: u16, fits: bool) -> Self {
+    pub fn new(script: Script, rows: u16, cols: u16, fits: bool, budget: usize) -> Self {
         let (rows, cols) = if fits {
             (rows, cols)
         } else {
@@ -393,6 +394,10 @@ impl SessionDemo {
             SessionConfig::new(200),
             Arc::new(DemoPolicy),
         );
+        session.set_config(SessionConfig {
+            feed_budget_bytes: budget,
+            ..SessionConfig::new(200)
+        });
         session.sync_size(Rect::new(0, 0, cols + 1, rows));
         if session.live() {
             session.pump(0);
@@ -402,6 +407,7 @@ impl SessionDemo {
             commands,
             rows,
             cols,
+            budget,
             now_ms: 0,
             held_paste: None,
             effects: Vec::new(),
@@ -413,6 +419,11 @@ impl SessionDemo {
 
     pub fn held_paste(&self) -> bool {
         self.held_paste.is_some()
+    }
+
+    /// The operator clicked in the pane.
+    pub fn gesture(&mut self) {
+        self.session.gesture(self.now_ms);
     }
 
     pub fn focus(&mut self, focused: bool) {
@@ -437,12 +448,12 @@ impl SessionDemo {
 
     pub fn advance(&mut self) {
         self.run(ADVANCE_MS);
-        self.result = Some(format!("advanced to {} ms", self.now_ms));
+        self.result = Some(format!("clock at {} ms", self.now_ms));
     }
 
     pub fn play(&mut self) {
         self.run(PLAY_MS);
-        self.result = Some(format!("played to {} ms", self.now_ms));
+        self.result = Some(format!("clock at {} ms", self.now_ms));
     }
 
     pub fn press(&mut self, key: &Key) {
@@ -482,7 +493,7 @@ impl SessionDemo {
             SessionPaste::Sent => "paste → sent to the program".to_owned(),
             SessionPaste::NeedsConfirm { lines } => {
                 self.held_paste = Some(text.to_owned());
-                format!("paste of {lines} lines needs confirmation · Confirm sends it")
+                format!("paste of {lines} lines is held until you confirm it")
             }
             SessionPaste::TooLarge => "paste → too large, nothing sent".to_owned(),
             SessionPaste::Full => "paste → the link's queue is full".to_owned(),
@@ -508,11 +519,12 @@ impl SessionDemo {
     }
 
     fn props(&self) -> Vec<Prop> {
-        let (status, tone) = status_line(self.session.status(), self.session.too_small());
+        let (status, tone) = status_line(self.session.status());
         let commands = self.commands.lock().expect("commands");
         let flag = |on: bool| if on { "on" } else { "off" };
-        vec![
+        let mut props = vec![
             Prop::new("status", status).tone(tone),
+            Prop::new("Enter", enter_does(self.session.status())),
             Prop::new("clock", format!("{} ms", self.now_ms)),
             Prop::new(
                 "replay",
@@ -536,8 +548,21 @@ impl SessionDemo {
                     SessionConfig::MINIMUM.rows
                 ),
             ),
+            Prop::new("drain budget", format!("{} bytes", self.budget)),
             Prop::new("link commands", commands.len().to_string()),
-        ]
+            Prop::new(
+                "closing",
+                if self.session.close_needs_confirm() {
+                    "asks first"
+                } else {
+                    "no question"
+                },
+            ),
+        ];
+        if let SessionStatus::Failed(fault) = self.session.status() {
+            props.push(Prop::new("fault", fault.0).wrap().tone(Tone::Error));
+        }
+        props
     }
 
     /// Draws the frame, the grid or its placeholder and the status sheet.
@@ -619,7 +644,7 @@ impl SessionDemo {
         let result = self
             .result
             .clone()
-            .unwrap_or_else(|| "Advance or Play moves the scripted clock".to_owned());
+            .unwrap_or_else(|| "the scripted clock stands at 0 ms".to_owned());
         let effects = if self.effects.is_empty() {
             "effects  none yet".to_owned()
         } else {
@@ -753,7 +778,56 @@ mod tests {
     }
 
     fn demo(script: Script) -> SessionDemo {
-        SessionDemo::new(script, 12, 40, true)
+        SessionDemo::new(script, 12, 40, true, 64 * 1024)
+    }
+
+    fn session_ids() -> Vec<&'static str> {
+        junie_tui::catalog::CAPABILITIES
+            .iter()
+            .map(|cap| cap.id)
+            .filter(|id| {
+                let name = id.trim_start_matches("terminal::");
+                id.starts_with("terminal::")
+                    && [
+                        "Session",
+                        "TerminalSessionController",
+                        "ReplayTiming",
+                        "PENDING_EFFECTS",
+                    ]
+                    .iter()
+                    .any(|prefix| name.starts_with(prefix))
+            })
+            .collect()
+    }
+
+    #[test]
+    fn showcase_terminal_session_capabilities_are_registered() {
+        use crate::coverage::TERMINAL_SESSION_COVERAGE;
+        use junie_tui::catalog::ALLOWLIST;
+
+        let ids = session_ids();
+        assert!(
+            ids.len() > 90,
+            "the session API is in the catalog: {}",
+            ids.len()
+        );
+        for id in &ids {
+            let shown = TERMINAL_SESSION_COVERAGE.contains(id);
+            let allowed = ALLOWLIST.iter().find(|a| a.id == *id);
+            assert!(
+                shown != allowed.is_some(),
+                "{id} is either shown by the Terminal pane page or allowlisted with a reason, not both and not neither"
+            );
+            if let Some(allowed) = allowed {
+                assert!(!allowed.reason.trim().is_empty(), "{id} has no reason");
+            }
+        }
+        for id in TERMINAL_SESSION_COVERAGE {
+            assert!(
+                ids.contains(id),
+                "declared id is not a catalog capability: {id}"
+            );
+        }
     }
 
     #[test]
@@ -781,6 +855,29 @@ mod tests {
         assert_eq!(demo.effects, ["clipboard write refused"], "deny by default");
         demo.focus(true);
         assert!(!demo.session.attention(), "focus clears the attention");
+    }
+
+    #[test]
+    fn a_small_drain_budget_stretches_the_replay_to_its_cap() {
+        let mut generous = demo(Script::Owner);
+        generous.run(600);
+        assert_eq!(
+            status(&generous),
+            SessionStatus::Attached(SessionLease::Owner)
+        );
+
+        let mut small = SessionDemo::new(Script::Owner, 12, 40, true, 8);
+        small.run(700);
+        assert_eq!(
+            status(&small),
+            SessionStatus::Attaching,
+            "output keeps arriving, so the quiet timer keeps restarting"
+        );
+        assert_eq!(small.session.next_replay_deadline(), Some(800));
+        small.run(100);
+        assert_eq!(status(&small), SessionStatus::Attached(SessionLease::Owner));
+        small.run(300);
+        assert_eq!(row(&small, 0), "demo$ ls", "no byte was lost to the budget");
     }
 
     #[test]
@@ -861,7 +958,7 @@ mod tests {
 
     #[test]
     fn an_area_below_the_minimum_waits_for_room() {
-        let mut demo = SessionDemo::new(Script::Owner, 12, 40, false);
+        let mut demo = SessionDemo::new(Script::Owner, 12, 40, false, 64 * 1024);
         assert_eq!(status(&demo), SessionStatus::Pending);
         assert!(demo.session.too_small());
         demo.play();
