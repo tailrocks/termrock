@@ -154,6 +154,7 @@ fn jackin_editor_cancel_keeps_unsaved_name_and_discard_restores() {
     assert!(!text(&reopened).contains("payments-platform-functional"));
     assert!(!text(&reopened).contains("• 1 change"));
 
+    app.advance_clock(6_000);
     app.wait_absent("Discarded 1 change");
     app.visual("functional/jackin_editor_discard");
     app.finish();
