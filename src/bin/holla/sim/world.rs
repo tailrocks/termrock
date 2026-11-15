@@ -91,7 +91,7 @@ pub enum Msg {
     PlanStepEnded { plan: String, step: usize, ok: bool },
     PlanDone { plan: String },
     DiscoveryDone { source: String },
-    ScanDone,
+    ScanDone { generation: u64 },
 }
 
 pub struct World {
@@ -120,7 +120,6 @@ pub struct World {
     pub step_output: BTreeMap<String, Vec<String>>,
     pub clipboard: Option<String>,
 
-    pub scan_started: Option<u64>,
     pub next_activity: u32,
 
     pub trusted_now: Vec<String>,
@@ -176,6 +175,13 @@ pub struct CleanupJob {
 
 pub type BatchMember = (String, Vec<Command>, Script, Option<Effect>, ScopeTag);
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ScanPhase {
+    Running,
+    Completed,
+    Cancelled { revealed: usize },
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ScanState {
     pub root: String,
@@ -187,29 +193,63 @@ pub struct ScanState {
     pub order: Vec<String>,
 
     pub snapshot: Vec<(String, i64)>,
-    pub cancelled: bool,
     pub include_hidden: bool,
 
     pub batch: usize,
-    pub revealed_at_cancel: usize,
+    phase: ScanPhase,
+    cache_attempted: bool,
 }
 
 impl ScanState {
-    pub fn revealed(&self, tick: u64) -> usize {
-        if self.cancelled {
-            return self.revealed_at_cancel.min(self.order.len());
-        }
-        let elapsed = tick.saturating_sub(self.started);
-        let per_tick = self
-            .order
-            .len()
-            .div_ceil(self.ticks.max(1) as usize)
-            .max(1)
-            .min(self.batch);
-        (elapsed as usize * per_tick).min(self.order.len())
+    pub fn phase(&self) -> ScanPhase {
+        self.phase
     }
-    pub fn done(&self, tick: u64) -> bool {
-        self.cancelled || self.revealed(tick) >= self.order.len()
+    pub fn is_running(&self) -> bool {
+        self.phase == ScanPhase::Running
+    }
+    pub fn completed(&self) -> bool {
+        self.phase == ScanPhase::Completed
+    }
+    pub fn cancelled(&self) -> bool {
+        matches!(self.phase, ScanPhase::Cancelled { .. })
+    }
+    pub fn revealed(&self, tick: u64) -> usize {
+        match self.phase {
+            ScanPhase::Cancelled { revealed } => revealed.min(self.order.len()),
+            ScanPhase::Completed => self.order.len(),
+            ScanPhase::Running => {
+                let elapsed =
+                    usize::try_from(tick.saturating_sub(self.started)).unwrap_or(usize::MAX);
+                let ticks = usize::try_from(self.ticks.max(1)).unwrap_or(usize::MAX);
+                let per_tick = self
+                    .order
+                    .len()
+                    .div_ceil(ticks)
+                    .max(1)
+                    .min(self.batch.max(1));
+                elapsed.saturating_mul(per_tick).min(self.order.len())
+            }
+        }
+    }
+    /// Moves a running scan to `Completed` once the tick reveals its last entry.
+    /// Returns true only on that transition.
+    pub fn advance(&mut self, tick: u64) -> bool {
+        if !self.is_running() || self.revealed(tick) < self.order.len() {
+            return false;
+        }
+        self.phase = ScanPhase::Completed;
+        true
+    }
+    /// Freezes a running scan at the entries revealed by `tick`. Returns false
+    /// when the scan already completed or was cancelled.
+    pub fn cancel(&mut self, tick: u64) -> bool {
+        if !self.is_running() {
+            return false;
+        }
+        self.phase = ScanPhase::Cancelled {
+            revealed: self.revealed(tick),
+        };
+        true
     }
     pub fn progress(&self, tick: u64) -> f64 {
         if self.order.is_empty() {
@@ -500,13 +540,15 @@ impl World {
                 });
             }
         }
-        if let Some(start) = self.scan_started
-            && self.tick == start + self.disk.scan_ticks
-        {
-            msgs.push(Msg::ScanDone);
-            self.finish_scan_cache();
-        }
         let tick = self.tick;
+        let completed = self
+            .scan
+            .as_mut()
+            .and_then(|s| s.advance(tick).then_some(s.generation));
+        if let Some(generation) = completed {
+            self.finish_scan_cache(generation);
+            msgs.push(Msg::ScanDone { generation });
+        }
         let mut effects = vec![];
 
         let ready: Vec<String> = self
@@ -1063,7 +1105,11 @@ impl World {
     }
 
     pub fn start_scan(&mut self, path: &str) {
-        let generation = self.scan.as_ref().map(|s| s.generation + 1).unwrap_or(1);
+        let generation = self.scan.as_ref().map_or(1, |s| {
+            s.generation
+                .checked_add(1)
+                .expect("scan generation overflow")
+        });
         let include_hidden = true;
         let mut skip = vec![];
         if path == "/" {
@@ -1102,41 +1148,42 @@ impl World {
             tree,
             order,
             snapshot,
-            cancelled: false,
             include_hidden,
             batch: 4096,
-            revealed_at_cancel: 0,
+            phase: ScanPhase::Running,
+            cache_attempted: false,
         });
-        self.scan_started = Some(self.tick);
     }
 
     pub fn cancel_scan(&mut self) -> bool {
         let tick = self.tick;
-        match self.scan.as_mut() {
-            Some(s) if !s.done(tick) => {
-                s.revealed_at_cancel = s.revealed(tick);
-                s.cancelled = true;
-                true
-            }
-            _ => false,
-        }
+        self.scan.as_mut().is_some_and(|s| s.cancel(tick))
     }
 
-    pub fn finish_scan_cache(&mut self) {
-        let Some(s) = self.scan.clone() else {
-            return;
+    /// Persists the size cache for the completed scan `generation`. Runs at most
+    /// once per generation, and never for a running, cancelled or replaced scan.
+    /// Returns true only when the cache was written.
+    pub fn finish_scan_cache(&mut self, generation: u64) -> bool {
+        let Some(scan) = self.scan.as_mut() else {
+            return false;
         };
-        if s.cancelled {
-            return;
+        if scan.generation != generation || !scan.completed() || scan.cache_attempted {
+            return false;
         }
+        scan.cache_attempted = true;
+        let root = scan.root.clone();
+        let tree = scan.tree.clone();
+        let snapshot = scan.snapshot.clone();
         let now = self.now_secs();
         let on_disk = crate::domain::cleanup::SizeCache::load(self.persisted.sizes.as_deref(), now);
         self.size_cache.merge(&on_disk, now);
         self.size_cache
-            .record(&s.root, &s.tree, &s.snapshot, &self.fs, now);
-        if self.size_cache.save_error.is_none() {
-            self.persisted.sizes = Some(self.size_cache.serialize());
+            .record(&root, &tree, &snapshot, &self.fs, now);
+        if self.size_cache.save_error.is_some() {
+            return false;
         }
+        self.persisted.sizes = Some(self.size_cache.serialize());
+        true
     }
 
     pub fn items(&self) -> Vec<Item> {
@@ -1407,5 +1454,236 @@ mod quit_tests {
         assert!(w.stopping());
         assert!(w.quit_work().is_empty());
         assert!(w.stop_work_for_quit().is_empty());
+    }
+}
+
+#[cfg(test)]
+pub(crate) mod scan_test_support {
+    use super::*;
+    use crate::domain::fixtures::world_for;
+    use crate::scenario::Motion;
+
+    /// A running scan of `/work/big`, which holds `children` files plus its root.
+    pub fn scan_world(children: usize, scan_ticks: u64) -> World {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        w.clock.running = true;
+        w.fs = Fs::new();
+        w.fs.dir("/work/big", 1);
+        for i in 0..children {
+            w.fs.file(&format!("/work/big/f{i:05}"), 4096, 1);
+        }
+        w.disk.scan_ticks = scan_ticks;
+        w.start_scan("/work/big");
+        w
+    }
+
+    pub fn scan_done_count(msgs: &[Msg]) -> usize {
+        msgs.iter()
+            .filter(|m| matches!(m, Msg::ScanDone { .. }))
+            .count()
+    }
+
+    pub fn scan_generation(w: &World) -> u64 {
+        w.scan.as_ref().expect("scan").generation
+    }
+
+    /// Ticks until the running scan completes and returns every message emitted.
+    pub fn run_to_completion(w: &mut World) -> Vec<Msg> {
+        let mut out = vec![];
+        for _ in 0..200 {
+            out.extend(w.tick());
+            if w.scan.as_ref().is_some_and(|s| s.completed()) {
+                return out;
+            }
+        }
+        panic!("scan never completed");
+    }
+}
+
+#[cfg(test)]
+mod scan_lifecycle_tests {
+    use super::scan_test_support::{
+        run_to_completion, scan_done_count, scan_generation, scan_world,
+    };
+    use super::*;
+    use crate::domain::fixtures::world_for;
+    use crate::scenario::Motion;
+
+    #[test]
+    fn scan_completion_waits_for_actual_last_reveal() {
+        for children in [0usize, 4095, 4096, 12288] {
+            for scan_ticks in [0u64, 1, 3] {
+                let mut w = scan_world(children, scan_ticks);
+                let len = w.scan.as_ref().expect("scan").order.len();
+                assert_eq!(len, children + 1);
+                let mut ticks_run = 0;
+                loop {
+                    ticks_run += 1;
+                    assert!(
+                        ticks_run < 64,
+                        "len {len} ticks {scan_ticks} never completed"
+                    );
+                    let msgs = w.tick();
+                    let scan = w.scan.as_ref().expect("scan");
+                    if !scan.completed() {
+                        assert!(scan.revealed(w.tick) < len);
+                        assert_eq!(scan_done_count(&msgs), 0, "ScanDone before last entry");
+                        assert_eq!(w.persisted.sizes, None, "cache before completion");
+                        continue;
+                    }
+                    assert_eq!(scan.revealed(w.tick), len);
+                    assert_eq!(scan_done_count(&msgs), 1);
+                    assert!(w.persisted.sizes.is_some());
+                    break;
+                }
+                for _ in 0..20 {
+                    assert_eq!(scan_done_count(&w.tick()), 0, "one publication per scan");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn scan_zero_duration_completes_after_normalized_tick() {
+        let mut w = scan_world(2, 0);
+        assert_eq!(scan_done_count(&w.tick()), 1);
+        assert!(w.scan.as_ref().expect("scan").completed());
+        assert!(w.persisted.sizes.is_some());
+    }
+
+    #[test]
+    fn scan_with_empty_traversal_completes_on_first_tick() {
+        let mut w = scan_world(0, 5);
+        w.scan.as_mut().expect("scan").order.clear();
+        assert_eq!(scan_done_count(&w.tick()), 1);
+        assert!(w.scan.as_ref().expect("scan").completed());
+    }
+
+    #[test]
+    fn scan_cancelled_partial_never_publishes_cache() {
+        let mut w = scan_world(4096, 1);
+        w.tick();
+        assert!(w.cancel_scan());
+        let frozen = w.scan.as_ref().expect("scan").revealed(w.tick);
+        assert_eq!(frozen, 4096);
+        assert!(
+            !w.cancel_scan(),
+            "a cancelled scan cannot be cancelled again"
+        );
+        for _ in 0..10 {
+            assert_eq!(scan_done_count(&w.tick()), 0);
+        }
+        let scan = w.scan.as_ref().expect("scan");
+        assert!(scan.cancelled());
+        assert_eq!(scan.revealed(w.tick), frozen);
+        let generation = scan.generation;
+        assert_eq!(w.persisted.sizes, None);
+        assert!(
+            !w.finish_scan_cache(generation),
+            "cancelled scans never cache"
+        );
+        assert_eq!(w.persisted.sizes, None);
+    }
+
+    #[test]
+    fn scan_cancel_after_completion_is_rejected() {
+        let mut w = scan_world(2, 1);
+        run_to_completion(&mut w);
+        assert!(!w.cancel_scan());
+        assert!(w.scan.as_ref().expect("scan").completed());
+    }
+
+    #[test]
+    fn scan_generation_replacement_rejects_old_cache_publication() {
+        let mut w = scan_world(2, 1);
+        let gen1 = scan_generation(&w);
+        w.start_scan("/work/big");
+        let gen2 = scan_generation(&w);
+        assert_eq!(gen2, gen1 + 1);
+        assert!(
+            !w.finish_scan_cache(gen1),
+            "a replaced running scan never caches"
+        );
+        assert_eq!(w.persisted.sizes, None);
+        let msgs = run_to_completion(&mut w);
+        assert_eq!(
+            msgs.iter()
+                .filter(|m| **m == Msg::ScanDone { generation: gen2 })
+                .count(),
+            1
+        );
+        assert!(!w.finish_scan_cache(gen1));
+        assert!(
+            !w.finish_scan_cache(gen2),
+            "the current completion already attempted"
+        );
+
+        w.start_scan("/work/big");
+        let gen3 = scan_generation(&w);
+        assert!(
+            !w.finish_scan_cache(gen2),
+            "a completed scan replaced by gen3 cannot cache"
+        );
+        assert!(!w.scan.as_ref().expect("scan").completed());
+        assert_eq!(gen3, gen2 + 1);
+    }
+
+    #[test]
+    fn scan_repeated_ticks_and_cache_calls_are_idempotent() {
+        let mut w = scan_world(3, 1);
+        let generation = scan_generation(&w);
+        assert_eq!(scan_done_count(&run_to_completion(&mut w)), 1);
+        let written = w.persisted.sizes.clone();
+        assert!(written.is_some());
+        for _ in 0..100 {
+            assert_eq!(scan_done_count(&w.tick()), 0);
+        }
+        assert!(!w.finish_scan_cache(generation));
+        assert_eq!(w.persisted.sizes, written);
+    }
+
+    #[test]
+    fn scan_save_failure_completes_once_with_error_preserved() {
+        let mut w = scan_world(2, 1);
+        let generation = scan_generation(&w);
+        w.size_cache.save_error = Some("disk full".into());
+        assert_eq!(scan_done_count(&run_to_completion(&mut w)), 1);
+        assert!(w.scan.as_ref().expect("scan").completed());
+        assert_eq!(
+            w.persisted.sizes, None,
+            "a failed save leaves the cache unchanged"
+        );
+        assert_eq!(w.size_cache.save_error.as_deref(), Some("disk full"));
+        w.size_cache.save_error = None;
+        assert!(
+            !w.finish_scan_cache(generation),
+            "the failed attempt is not retried"
+        );
+        assert_eq!(w.persisted.sizes, None);
+        for _ in 0..20 {
+            assert_eq!(scan_done_count(&w.tick()), 0);
+        }
+    }
+
+    #[test]
+    fn scan_without_state_has_no_legacy_timer_completion() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        w.clock.running = true;
+        assert!(w.scan.is_none());
+        for _ in 0..200 {
+            assert_eq!(scan_done_count(&w.tick()), 0);
+        }
+        assert_eq!(w.persisted.sizes, None);
+    }
+
+    #[test]
+    fn scan_reveal_large_tick_values_do_not_wrap() {
+        let w = scan_world(2, u64::MAX);
+        let scan = w.scan.as_ref().expect("scan");
+        assert_eq!(scan.revealed(0), 0);
+        assert_eq!(scan.revealed(1), 1);
+        assert_eq!(scan.revealed(u64::MAX), scan.order.len());
+        let w = scan_world(2, 0);
+        assert_eq!(w.scan.as_ref().expect("scan").revealed(1), 3);
     }
 }
