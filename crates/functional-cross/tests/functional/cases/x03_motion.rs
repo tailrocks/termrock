@@ -25,7 +25,9 @@ use std::time::{Duration, Instant};
 use tui_test::TerminalSnapshot;
 use tuiscotti_latest::check::CheckOutcome;
 
-use crate::support::{App, HOLLA, Launch, SHOWCASE, TABLEPRO, find, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, find, holla_bin, row_text, showcase_bin, tablepro_bin, text, try_launch,
+};
 
 const TITLE: &str = "Status & hints";
 const BLURB: &str = "The footer hint bar";
@@ -151,7 +153,7 @@ fn sample_bytes(screen: &TerminalSnapshot, test_id: &str) -> Vec<u8> {
 
 fn check_stored(app: &App, screen: &TerminalSnapshot, test_id: &str) {
     let bytes = sample_bytes(screen, test_id);
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines");
+    let root = crate::support::workspace_root().join("tests/functional/baselines");
     let artifacts = app.evidence_dir().join("check-artifacts");
     let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
         .expect("open Tuiscotti frozen store");
@@ -170,7 +172,7 @@ fn check_stored(app: &App, screen: &TerminalSnapshot, test_id: &str) {
 fn route() {
     let app = open(
         "x03-motion-route",
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "hints", "--frame", "0"],
         "paused",
         false,
@@ -201,7 +203,7 @@ fn route() {
 fn frame_select() {
     let app = open(
         "x03-motion-frame",
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "hints", "--frame", "4"],
         "paused",
         false,
@@ -218,7 +220,7 @@ fn frame_select() {
 fn reduced() {
     let app = open(
         "x03-motion-reduced",
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "hints", "--frame", "0"],
         "reduced",
         false,
@@ -246,7 +248,7 @@ fn reduced() {
 fn full_turns() {
     let app = open(
         "x03-motion-full",
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "hints", "--frame", "0"],
         "full",
         false,
@@ -274,7 +276,7 @@ fn full_turns() {
 }
 
 fn tablepro_rest() {
-    let paused = open("x03-motion-tablepro", TABLEPRO, &[], "paused", false);
+    let paused = open("x03-motion-tablepro", tablepro_bin(), &[], "paused", false);
     let screen = stable(&paused, "tablepro", |screen| {
         text(screen).contains("Filter connections") && spinner_marks(screen).is_empty()
     });
@@ -282,7 +284,7 @@ fn tablepro_rest() {
     kill(&paused);
     let reduced = open(
         "x03-motion-tablepro-reduced",
-        TABLEPRO,
+        tablepro_bin(),
         &[],
         "reduced",
         false,
@@ -296,7 +298,7 @@ fn tablepro_rest() {
 fn holla_sources() {
     let paused = open(
         "x03-motion-holla",
-        HOLLA,
+        holla_bin(),
         &["--scenario", "first-use"],
         "paused",
         false,
@@ -310,7 +312,7 @@ fn holla_sources() {
     kill(&paused);
     let reduced = open(
         "x03-motion-holla-reduced",
-        HOLLA,
+        holla_bin(),
         &["--scenario", "first-use"],
         "reduced",
         false,
@@ -329,7 +331,7 @@ fn holla_sources() {
 fn checkpoint() {
     let app = open(
         "x03-motion-paused",
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "hints", "--frame", "0"],
         "paused",
         false,

@@ -24,7 +24,9 @@ use std::path::PathBuf;
 use tui_test::TerminalSnapshot;
 use tuiscotti_latest::check::CheckOutcome;
 
-use crate::support::{App, HOLLA, Launch, SHOWCASE, TABLEPRO, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, holla_bin, row_text, showcase_bin, tablepro_bin, text, try_launch,
+};
 
 const TITLE: &str = "Text areas";
 const BLURB: &str = "Multi-line editing, Unicode cursor motion, horizontal and vertical scrolling";
@@ -325,7 +327,7 @@ fn sample_bytes(screen: &TerminalSnapshot, test_id: &str) -> Vec<u8> {
 
 fn check_stored(app: &App, screen: &TerminalSnapshot, test_id: &str) {
     let bytes = sample_bytes(screen, test_id);
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines");
+    let root = crate::support::workspace_root().join("tests/functional/baselines");
     let artifacts = app.evidence_dir().join("check-artifacts");
     let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
         .expect("open Tuiscotti frozen store");
@@ -344,7 +346,7 @@ fn check_stored(app: &App, screen: &TerminalSnapshot, test_id: &str) {
 fn route() {
     let app = open(
         "x03-glyphs-route",
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "textareas", "--glyphs", "unicode"],
     );
     let page = app.wait_text(BLURB);
@@ -369,7 +371,7 @@ fn route() {
 fn unicode_textareas() {
     let app = open(
         "x03-glyphs-unicode",
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "textareas", "--glyphs", "unicode"],
     );
     let page = app.wait_screen("unicode text areas", |screen| {
@@ -386,7 +388,7 @@ fn unicode_textareas() {
 fn splits(glyphs: &str) {
     let app = open(
         &format!("x03-glyphs-splits-{glyphs}"),
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "splits", "--glyphs", glyphs],
     );
     let rest = if glyphs == "ascii" { GUTTER } else { RULE };
@@ -420,7 +422,11 @@ fn splits(glyphs: &str) {
 }
 
 fn tablepro() {
-    let app = open("x03-glyphs-tablepro", TABLEPRO, &["--glyphs", "ascii"]);
+    let app = open(
+        "x03-glyphs-tablepro",
+        tablepro_bin(),
+        &["--glyphs", "ascii"],
+    );
     let page = app.wait_screen("tablepro ascii", |screen| {
         text(screen).contains("Filter connections")
             && count(screen, HEAVY) == 0
@@ -445,7 +451,7 @@ fn tablepro() {
 fn holla() {
     let app = open(
         "x03-glyphs-holla",
-        HOLLA,
+        holla_bin(),
         &["--scenario", "activities-multi", "--glyphs", "ascii"],
     );
     let page = app.wait_screen("holla ascii", |screen| {
@@ -472,7 +478,7 @@ fn holla() {
 fn checkpoint() {
     let app = open(
         "x03-glyphs-checkpoint",
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "textareas", "--glyphs", "ascii"],
     );
     let wide = app.wait_screen("ascii text areas 120x40", wide_ascii);

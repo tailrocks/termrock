@@ -13,7 +13,7 @@ use tui_test::TerminalSnapshot;
 use tuiscotti_latest::check::CheckOutcome;
 
 use crate::support::{
-    App, HOLLA, Launch, Point, SHOWCASE, TABLEPRO, find_all, row_text, text, try_launch,
+    App, Launch, Point, find_all, holla_bin, row_text, showcase_bin, tablepro_bin, text, try_launch,
 };
 
 const REPORT: &str = "Copied the report (13 lines)";
@@ -83,7 +83,7 @@ fn ctrl_c_exits(app: &App) {
 }
 
 fn check_frame(app: &App, screen: &TerminalSnapshot, test_id: &str) {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines");
+    let root = crate::support::workspace_root().join("tests/functional/baselines");
     let sample = tuiscotti_latest::sample::Sample::state(
         test_id,
         screen.clone(),
@@ -116,7 +116,7 @@ fn frame_with(app: &App, needle: &str, cols: u32, rows: u32) -> TerminalSnapshot
 fn showcase_quit() {
     let app = open(
         "x01-clipboard-showcase-quit",
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "readonlyreport"],
     );
     app.wait_text("Copy report");
@@ -127,7 +127,7 @@ fn showcase_quit() {
 fn showcase_grid_copy() {
     let app = open(
         "x01-clipboard-showcase-grid",
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "datagrid"],
     );
     app.wait_text("1001");
@@ -148,13 +148,13 @@ fn showcase_grid_copy() {
 }
 
 fn tablepro_quit() {
-    let app = open("x01-clipboard-tablepro-quit", TABLEPRO, &[]);
+    let app = open("x01-clipboard-tablepro-quit", tablepro_bin(), &[]);
     app.wait_text("Filter connections");
     ctrl_c_exits(&app);
 }
 
 fn tablepro_copy() {
-    let app = open("x01-clipboard-tablepro-copy", TABLEPRO, &[]);
+    let app = open("x01-clipboard-tablepro-copy", tablepro_bin(), &[]);
     app.wait_text("Filter connections");
     click_one(&app, "Development", |_, hit| hit.x < 40);
     app.key("enter");
@@ -177,7 +177,7 @@ fn tablepro_copy() {
 fn holla_quit() {
     let app = open(
         "x01-clipboard-holla-quit",
-        HOLLA,
+        holla_bin(),
         &["--scenario", "parity-files"],
     );
     app.wait_text("Search actions");
@@ -198,7 +198,7 @@ fn finder_copy(app: &App) -> TerminalSnapshot {
 fn holla_supported() {
     let app = open(
         "x01-clipboard-holla-on",
-        HOLLA,
+        holla_bin(),
         &["--scenario", "parity-files"],
     );
     let copied = finder_copy(&app);
@@ -211,7 +211,7 @@ fn holla_supported() {
 fn holla_unsupported() {
     let app = open(
         "x01-clipboard-holla-off",
-        HOLLA,
+        holla_bin(),
         &["--scenario", "parity-platforms-linux"],
     );
     let copied = finder_copy(&app);
@@ -224,7 +224,7 @@ fn holla_unsupported() {
 fn holla_too_large() {
     let app = open(
         "x01-clipboard-holla-limit",
-        HOLLA,
+        holla_bin(),
         &["--scenario", "parity-files"],
     );
     app.wait_text("Search actions");
@@ -257,7 +257,7 @@ fn copy_report(app: &App) {
 fn checkpoints() {
     let app = open(
         "x01-clipboard-checkpoint",
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "readonlyreport"],
     );
     copy_report(&app);
@@ -286,7 +286,7 @@ fn checkpoints() {
 fn x01_clipboard_route() {
     let app = open(
         "x01-clipboard-route",
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "readonlyreport"],
     );
     copy_report(&app);

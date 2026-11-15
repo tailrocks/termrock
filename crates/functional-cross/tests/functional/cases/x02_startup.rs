@@ -13,7 +13,9 @@ use std::time::Duration;
 use tui_test::TerminalSnapshot;
 use tuiscotti_latest::check::CheckOutcome;
 
-use crate::support::{App, HOLLA, Launch, Point, SHOWCASE, TABLEPRO, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, Point, holla_bin, row_text, showcase_bin, tablepro_bin, text, try_launch,
+};
 
 const LISTS: &str = "Navigation › Lists";
 const CHOSEN: &str = "Chosen: Rust";
@@ -91,7 +93,7 @@ fn selected(screen: &TerminalSnapshot, label: &str) -> bool {
 }
 
 fn check_frame(app: &App, screen: &TerminalSnapshot, test_id: &str) {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines");
+    let root = crate::support::workspace_root().join("tests/functional/baselines");
     let sample = tuiscotti_latest::sample::Sample::state(
         test_id,
         screen.clone(),
@@ -155,7 +157,7 @@ fn first_down_moves_to_trees(app: &App) -> TerminalSnapshot {
 fn showcase_burst() {
     let app = open(
         "x02-startup-checkpoint",
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "lists"],
         &[],
     );
@@ -245,7 +247,7 @@ fn delay_still_moves(name: &str, delay: Option<&str>) {
         Some(value) => &[("JUNIE_TUI_FIRST_POLL_DELAY_MS", value)],
         None => &[],
     };
-    let app = open(name, SHOWCASE, &["--page", "lists"], env);
+    let app = open(name, showcase_bin(), &["--page", "lists"], env);
     lists_startup(&app);
     let moved = first_down_moves_to_trees(&app);
     require(&moved, TREES);
@@ -254,7 +256,7 @@ fn delay_still_moves(name: &str, delay: Option<&str>) {
 }
 
 fn tablepro_first_key() {
-    let app = open("x02-startup-tablepro", TABLEPRO, &[], &[]);
+    let app = open("x02-startup-tablepro", tablepro_bin(), &[], &[]);
     let start = app.wait_screen("tablepro startup", |screen| {
         text(screen).contains(FILTER)
             && text(screen).contains(LOCAL_HOST)
@@ -280,7 +282,7 @@ fn tablepro_first_key() {
 fn holla_first_key() {
     let app = open(
         "x02-startup-holla",
-        HOLLA,
+        holla_bin(),
         &["--scenario", "first-use"],
         &[],
     );
@@ -301,7 +303,12 @@ fn holla_first_key() {
 
 #[test]
 fn x02_startup_route() {
-    let app = open("x02-startup-route", SHOWCASE, &["--page", "lists"], &[]);
+    let app = open(
+        "x02-startup-route",
+        showcase_bin(),
+        &["--page", "lists"],
+        &[],
+    );
     let screen = lists_startup(&app);
     require(&screen, LISTS);
     require(&screen, CHOSEN);

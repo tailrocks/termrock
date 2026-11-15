@@ -15,7 +15,7 @@ use tui_test::TerminalSnapshot;
 use tuiscotti_latest::check::CheckOutcome;
 
 use crate::support::{
-    App, HOLLA, Launch, SHOWCASE, TABLEPRO, find_all, row_text, text, try_launch,
+    App, Launch, find_all, holla_bin, row_text, showcase_bin, tablepro_bin, text, try_launch,
 };
 
 const PAGE: &str = "Quit & leave";
@@ -63,17 +63,17 @@ fn open_bin(name: &str, bin: &str, args: &[&str]) -> App {
 }
 
 fn open_showcase(name: &str, args: &[&str]) -> App {
-    open_bin(name, SHOWCASE, args)
+    open_bin(name, showcase_bin(), args)
 }
 
 fn open_tablepro(name: &str) -> App {
-    let app = open_bin(name, TABLEPRO, &[]);
+    let app = open_bin(name, tablepro_bin(), &[]);
     app.wait_text("Filter connections");
     app
 }
 
 fn open_holla(name: &str, scenario: &str) -> App {
-    let app = open_bin(name, HOLLA, &["--scenario", scenario]);
+    let app = open_bin(name, holla_bin(), &["--scenario", scenario]);
     app.wait_text(HOLLA_QUERY);
     app
 }
@@ -185,7 +185,7 @@ fn sample_bytes(screen: &TerminalSnapshot, test_id: &str) -> Vec<u8> {
 
 fn check_stored(app: &App, screen: &TerminalSnapshot, test_id: &str) {
     let bytes = sample_bytes(screen, test_id);
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines");
+    let root = crate::support::workspace_root().join("tests/functional/baselines");
     let artifacts = app.evidence_dir().join("check-artifacts");
     let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
         .expect("open Tuiscotti frozen store");

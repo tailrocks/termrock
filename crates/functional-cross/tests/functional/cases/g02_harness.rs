@@ -10,7 +10,7 @@ use tui_test::{
 use tuiscotti_latest::check::{CheckOutcome, MismatchReason};
 
 use crate::support::{
-    App, Launch, Point, SHOWCASE, file_sha256, find_all, find_in, text, try_launch,
+    App, Launch, Point, file_sha256, find_all, find_in, showcase_bin, text, try_launch,
 };
 
 const CHANGING: &str = r#"i=0; while :; do printf '%s\n' "$i"; i=$((i+1)); done"#;
@@ -49,7 +49,7 @@ fn production_baseline_digests() -> Vec<(PathBuf, String)> {
         }
     }
 
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines");
+    let root = crate::support::workspace_root().join("tests/functional/baselines");
     let mut paths = Vec::new();
     collect(&root, &mut paths);
     paths.sort();
@@ -100,7 +100,7 @@ fn temp_root(name: &str) -> PathBuf {
         .duration_since(UNIX_EPOCH)
         .expect("system clock")
         .as_nanos();
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+    let path = crate::support::workspace_root()
         .join("target/functional")
         .join(format!("g02-store-{name}-{}-{nanos}", std::process::id()));
     std::fs::create_dir_all(&path).expect("temp baseline root");
@@ -108,7 +108,7 @@ fn temp_root(name: &str) -> PathBuf {
 }
 
 fn showcase(name: &str) -> App {
-    let mut launch = Launch::new(name, SHOWCASE);
+    let mut launch = Launch::new(name, showcase_bin());
     launch.args = vec![
         "--page".to_string(),
         "overview".to_string(),
