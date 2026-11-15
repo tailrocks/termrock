@@ -376,6 +376,17 @@ impl KeyedState {
         true
     }
 
+    /// Starts an edit of a visible, enabled row against the payload revision
+    /// `data`, for an edit that opens in the same event as a commit that moved
+    /// the provider's revision on purpose.
+    pub(crate) fn begin_edit_at(&mut self, key: ItemKey, data: u64) -> bool {
+        if self.stamp.is_none() || !self.enabled.contains(&key) || self.edit_key() == Some(key) {
+            return false;
+        }
+        self.edit = Some(EditTarget { key, data });
+        true
+    }
+
     pub fn cancel_edit(&mut self) -> bool {
         self.edit.take().is_some()
     }

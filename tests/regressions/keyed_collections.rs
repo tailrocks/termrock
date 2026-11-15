@@ -871,6 +871,41 @@ mod widgets {
     }
 
     #[test]
+    fn borrowed_table_tab_commit_keeps_the_next_cell_editor_open() {
+        let mut store = table_store();
+        let mut t = table();
+        draw_table(&mut t, &mut store);
+        let _ = t
+            .on_key_edit_source(&key(KeyCode::Enter), &mut store)
+            .expect("valid");
+        type_text(&mut t, &mut store, "!");
+        let out = t
+            .on_key_edit_source(&key(KeyCode::Tab), &mut store)
+            .expect("valid");
+        assert_eq!(
+            out.actions().copied().collect::<Vec<_>>(),
+            vec![TableAction::Committed { row: k(1), col: 0 }]
+        );
+        assert_eq!(store.row(k(1)).expect("row")[0].text, "alpha!");
+        assert!(t.is_editing(), "Tab opens the next cell's editor");
+
+        draw_table(&mut t, &mut store);
+        assert!(
+            t.is_editing(),
+            "repainting the frame keeps the editor Tab opened"
+        );
+        type_text(&mut t, &mut store, "?");
+        let out = t
+            .on_key_edit_source(&key(KeyCode::Enter), &mut store)
+            .expect("valid");
+        assert_eq!(
+            out.actions().copied().collect::<Vec<_>>(),
+            vec![TableAction::Committed { row: k(1), col: 1 }]
+        );
+        assert_eq!(store.row(k(1)).expect("row")[1].text, "ann?");
+    }
+
+    #[test]
     fn borrowed_table_cancels_the_edit_when_its_row_is_removed() {
         let mut store = table_store();
         let mut t = table();

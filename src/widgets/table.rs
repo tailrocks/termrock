@@ -169,6 +169,10 @@ trait TableRows {
     fn commit(&mut self, src: usize, col: usize, text: String) -> Result<(), String>;
     /// Marks a cell with a validation error where the provider keeps one.
     fn flag(&mut self, _src: usize, _col: usize, _error: Option<String>) {}
+    /// The provider's current data revision, for rows that accept commits.
+    fn data_revision(&self) -> Option<u64> {
+        None
+    }
 }
 
 struct OwnedRows(Vec<Vec<Cell>>);
@@ -264,6 +268,10 @@ impl<S: TableEditSource + ?Sized> TableRows for EditRows<'_, S> {
             return Err("the table source did not advance its data revision".to_owned());
         }
         Ok(())
+    }
+
+    fn data_revision(&self) -> Option<u64> {
+        Some(self.0.stamp().data)
     }
 }
 
@@ -1999,6 +2007,7 @@ impl DataTable {
         &mut self,
         response: Response<TableAction>,
         selected_before: Option<usize>,
+        data: Option<u64>,
     ) -> Response<TableAction<ItemKey>> {
         let n = self.keyed.visible_len();
         if n > 0 {
@@ -2015,6 +2024,12 @@ impl DataTable {
             }
             _ => {}
         }
+        let committed = response
+            .actions()
+            .any(|action| matches!(action, TableAction::Committed { .. }));
+        if committed {
+            self.keyed.finish_edit();
+        }
         if self.edit.is_some() || self.choice.is_some() {
             if self.keyed.edit_key().is_none() {
                 let row = self
@@ -2023,7 +2038,10 @@ impl DataTable {
                     .map(|e| e.row)
                     .or_else(|| self.choice.as_ref().map(|c| c.row));
                 if let Some(key) = row.and_then(|row| self.keyed.visible_key(row)) {
-                    self.keyed.begin_edit(key);
+                    match data.filter(|_| committed) {
+                        Some(data) => self.keyed.begin_edit_at(key, data),
+                        None => self.keyed.begin_edit(key),
+                    };
                 }
             }
         } else {
@@ -2052,7 +2070,7 @@ impl DataTable {
         self.bind(source)?;
         let selected = self.selected;
         let response = self.on_key_in(&mut ReadRows(source), key);
-        Ok(self.adopt(response, selected))
+        Ok(self.adopt(response, selected, None))
     }
 
     /// Keyboard input over a borrowed editable provider. A commit is applied
@@ -2064,8 +2082,9 @@ impl DataTable {
     ) -> Result<Response<TableAction<ItemKey>>, KeyedSourceError> {
         self.bind(&*source)?;
         let selected = self.selected;
-        let response = self.on_key_in(&mut EditRows(source), key);
-        Ok(self.adopt(response, selected))
+        let mut rows = EditRows(source);
+        let response = self.on_key_in(&mut rows, key);
+        Ok(self.adopt(response, selected, rows.data_revision()))
     }
 
     fn pointer_keyed<R: TableRows + ?Sized>(
@@ -2091,7 +2110,7 @@ impl DataTable {
         }
         let selected = self.selected;
         let response = self.pointer_in(rows, ev, true);
-        self.adopt(response, selected)
+        self.adopt(response, selected, rows.data_revision())
     }
 
     /// Pointer input over a borrowed read-only keyed provider. Hit regions
