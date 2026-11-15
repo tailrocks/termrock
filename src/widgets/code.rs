@@ -524,6 +524,11 @@ impl CodeEditor {
         self.refind();
     }
 
+    fn close_find(&mut self) {
+        self.find = None;
+        self.find_runs = None;
+    }
+
     fn refind(&mut self) {
         let Some(f) = self.find.as_mut() else {
             return;
@@ -584,7 +589,7 @@ impl CodeEditor {
             {
                 match key.code {
                     KeyCode::Esc => {
-                        self.find = None;
+                        self.close_find();
                         return (Outcome::Changed, None);
                     }
                     KeyCode::Enter => {
@@ -791,7 +796,7 @@ impl CodeEditor {
             }
             _ if key.code == KeyCode::Esc => {
                 if self.find.is_some() {
-                    self.find = None;
+                    self.close_find();
                     (Outcome::Changed, None)
                 } else {
                     (Outcome::Ignored, None)
