@@ -1186,6 +1186,24 @@ fn stop_and_close_missing_record_retires_intent() {
     assert_eq!(app.tabs.len(), tabs + 1);
 }
 
+#[test]
+fn stop_and_close_completes_when_an_attached_tab_exits_the_program() {
+    let mut app = app();
+    let id = start_task(&mut app, "build", Script::running(vec![]));
+    app.world.edit_activity(&id, |a| a.attachable = true);
+    stop_and_close(&mut app, &id);
+    assert_eq!(activity_state(&app, &id), ActivityState::Cancelling);
+    app.handle_input(key(KeyCode::Enter, KeyModifiers::NONE));
+    app.handle_input(key(KeyCode::Char('q'), KeyModifiers::NONE));
+    assert_eq!(activity_state(&app, &id), ActivityState::Stopped);
+
+    tick(&mut app, 2);
+
+    assert_eq!(tabs_of_activity(&app, &id), 0, "the pending close fired");
+    assert!(app.pending_activity_closes.is_empty(), "the intent retired");
+    assert_tabs_consistent(&app);
+}
+
 fn tabs_of_activity(app: &App, id: &str) -> usize {
     app.tabs
         .iter()

@@ -418,6 +418,7 @@ impl App {
         for m in msgs {
             out = out.or(self.dispatch_msg(m));
         }
+        out = out.or(self.close_finished_activity_tabs());
         if self.quitting {
             let left = self.world.quit_work();
             if left.is_empty() {
@@ -1888,6 +1889,20 @@ impl App {
         } else {
             self.close_activity_tab_if_finished(id);
         }
+    }
+
+    /// Fulfils every recorded close request whose activity is no longer live.
+    /// It runs each tick, because an attached tab can end its activity from a
+    /// key press, which emits no `ActivityEnded`.
+    fn close_finished_activity_tabs(&mut self) -> Outcome {
+        let pending: Vec<String> = self.pending_activity_closes.iter().cloned().collect();
+        let mut out = Outcome::Ignored;
+        for id in pending {
+            if self.close_activity_tab_if_finished(&id) {
+                out = Outcome::Changed;
+            }
+        }
+        out
     }
 
     /// Fulfils a recorded close request for `id` once the activity is no
