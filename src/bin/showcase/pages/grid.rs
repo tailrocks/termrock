@@ -1720,8 +1720,23 @@ mod tests {
         assert!(text.contains("Num(1) · row 2 · stored"), "{text}");
         assert!(text.contains("1 cells · 1 inserted · 1 deleted"), "{text}");
         assert!(text.contains("source 1 · draft 3"), "{text}");
+        page.grid.cursor = (2, 0);
+        let text = page_text(&mut page, 120, 48);
+        assert!(
+            text.contains("Num(2) · row 3 · marked for deletion"),
+            "{text}"
+        );
         let plain = page_text(&mut GridPage::new(), 120, 48);
         assert!(!plain.contains("Row key"), "off by default");
+    }
+
+    #[test]
+    fn issue298_the_identity_readout_names_an_inserted_row() {
+        let mut page = with("datagrid.identity", 1);
+        page.grid.insert_row().unwrap();
+        let text = page_text(&mut page, 120, 48);
+        assert!(text.contains("· inserted"), "{text}");
+        assert!(!text.contains("· stored"), "{text}");
     }
 
     const MRR: usize = 4;

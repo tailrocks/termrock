@@ -54,7 +54,7 @@
     "candidate_sha256": "d730c934c865c6f9ab72fc4eeff165adafec6df29df26848f9547f33bd1d2fed",
     "binary_path": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-298-target/debug/showcase",
     "binary_sha256": "5bf11529206fb55a9d0fa384a551212ee628c4852f7329af746378c9d6e80c36",
-    "note": "The Data grid Options tab gains three rows (Row source, Host call, Identity readout), so its scrollbar thumb is shorter; only scrollbar cells changed."
+    "note": "The Data grid Options tab gains three rows (Row source, Host call, Identity readout). The Options list now scrolls to its end, so the capture shows the new options at a new scroll offset; this is not scrollbar-only."
   },
   "cli_receipt": {
     "schema": "tuiscotti.cli.v1",
