@@ -444,12 +444,13 @@ impl Meter {
                 } else {
                     t.text_primary
                 };
-                let text = crate::ui::text::truncate(&value, bar_w.saturating_sub(2) as usize);
-                let chars: Vec<String> = text.chars().map(|c| c.to_string()).collect();
-                for i in 0..bar_w {
+                let cell_style = |i: u16| {
                     let in_fill = i < filled;
-                    let cell_bg = if in_fill { fill_color } else { rest_bg };
-                    let fg = if in_fill { on_fill } else { on_rest };
+                    let (fg, cell_bg) = if in_fill {
+                        (on_fill, fill_color)
+                    } else {
+                        (on_rest, rest_bg)
+                    };
                     let mut st = ratatui::style::Style::new().fg(fg).bg(cell_bg);
                     if in_fill {
                         st = st.add_modifier(ratatui::style::Modifier::BOLD);
@@ -457,14 +458,20 @@ impl Meter {
                     if paint.dashed {
                         st = st.add_modifier(ratatui::style::Modifier::ITALIC);
                     }
-
-                    let sym = if i >= 1 && (i as usize - 1) < chars.len() {
-                        chars[i as usize - 1].as_str()
-                    } else {
-                        " "
-                    };
-                    buf.set_string(area.x + i, area.y, sym, st);
+                    st
+                };
+                for i in 0..bar_w {
+                    buf.set_string(area.x + i, area.y, " ", cell_style(i));
                 }
+                let text_area = Rect::new(area.x + 1, area.y, bar_w - 2, 1);
+                crate::ui::text::paint_graphemes(
+                    buf,
+                    text_area,
+                    (0, 0),
+                    &value,
+                    crate::ui::text::TextClip::Ellipsis,
+                    |_, col| cell_style(1 + col as u16),
+                );
                 buf.set_string(area.x + bar_w, area.y, suffix, suffix_style);
             }
         }

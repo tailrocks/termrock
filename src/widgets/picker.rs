@@ -19,7 +19,7 @@ use crate::ui::edit_menu::{
     point_field,
 };
 use crate::ui::popup::{Placement, place_with};
-use crate::ui::text::{truncate, wider_than, width};
+use crate::ui::text::{TextClip, paint_graphemes, truncate, wider_than, width};
 use crate::widgets::edit::EditField;
 use crate::widgets::keyhint::Hint;
 use crate::widgets::option_list::{Item, OptionList};
@@ -1120,27 +1120,27 @@ impl Picker {
                         focused,
                     );
                 }
-                let mut x = row.x + 3;
-                let label = truncate(&it.label, label_col as usize);
+                let label_area = Rect::new(row.x + 3, ry, label_col, 1).intersection(row);
                 let label_cut = !it.disabled
-                    && crate::ui::reveal::truncated(
-                        ctx,
-                        reveal,
-                        rid,
-                        Rect::new(row.x + 3, ry, label_col, 1),
-                        &it.label,
-                    );
-                for (bi, ch) in label.char_indices() {
-                    let mut cs = st;
-                    if it.matched.contains(&bi) {
-                        cs = cs.add_modifier(Modifier::BOLD);
-                    } else if !focused {
-                        cs = cs.remove_modifier(Modifier::BOLD);
-                    }
-                    let g = ch.to_string();
-                    buf.set_string(x, ry, &g, cs);
-                    x += width(&g) as u16;
-                }
+                    && crate::ui::reveal::truncated(ctx, reveal, rid, label_area, &it.label);
+                paint_graphemes(
+                    buf,
+                    label_area,
+                    (0, 0),
+                    &it.label,
+                    TextClip::Ellipsis,
+                    |source, _| {
+                        let matched = source
+                            .is_some_and(|range| it.matched.iter().any(|m| range.contains(m)));
+                        if matched {
+                            st.add_modifier(Modifier::BOLD)
+                        } else if !focused {
+                            st.remove_modifier(Modifier::BOLD)
+                        } else {
+                            st
+                        }
+                    },
+                );
                 let mut rx = row.right();
                 if group_col > 0 {
                     rx = rx.saturating_sub(group_col + 1);
