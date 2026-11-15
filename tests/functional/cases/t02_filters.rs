@@ -772,6 +772,35 @@ fn tablepro_filters_change_the_visible_organizations() {
     focus_chips(&app);
     app.key("+");
     app.wait_text("WHERE ");
+    choose_op(&app, 17);
+    app.key("tab");
+    app.type_text("(");
+    app.key("enter");
+    let rejected = app.wait_text("invalid regular expression");
+    let shown = text(&rejected);
+    assert!(
+        shown.contains("WHERE ") && shown.contains(CHIP_CONTAINS),
+        "editor closed on an invalid regex\n{shown}"
+    );
+    assert!(
+        !shown.contains("matches regex '('"),
+        "an invalid regex became a chip\n{shown}"
+    );
+    app.key("escape");
+    app.key("escape");
+    let kept = app.wait_screen("rejected filter cancelled", |screen| {
+        let visible = text(screen);
+        !visible.contains("WHERE ") && visible.contains(CHIP_CONTAINS)
+    });
+    assert!(
+        !text(&kept).contains("matches regex '('"),
+        "cancelling kept the invalid chip\n{}",
+        text(&kept)
+    );
+    assert_kept(&kept, &[NORTHWIND], &[NORTHWIND]);
+    focus_chips(&app);
+    app.key("+");
+    app.wait_text("WHERE ");
     choose_op(&app, 2);
     app.key("tab");
     app.type_text("Retail");

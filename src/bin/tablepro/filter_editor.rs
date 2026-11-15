@@ -444,3 +444,59 @@ impl Layer<ModalResult> for FilterEditor {
             .map(|d| LayerOut::Close(ModalResult::Filter(d)))
     }
 }
+
+#[cfg(test)]
+mod issue10_tests {
+    use super::*;
+
+    fn editor(col_i: usize, op: FilterOp, value: &str, value2: &str) -> FilterEditor {
+        let columns = vec![
+            ("notes".to_owned(), ColType::Text),
+            ("order_number".to_owned(), ColType::Int),
+        ];
+        FilterEditor::new(None, false, columns, col_i, op, value, value2)
+    }
+
+    #[test]
+    fn issue10_editor_keeps_an_invalid_regex_on_the_value_field() {
+        let mut editor = editor(0, FilterOp::Regex, "(", "");
+        let mut focus = Focus::default();
+        editor.submit(&mut focus);
+        assert!(
+            editor.done.is_none(),
+            "an invalid filter must not close the editor"
+        );
+        assert!(Layer::<ModalResult>::take_result(&mut editor).is_none());
+        let error = editor.value.field.error.as_deref().expect("value error");
+        assert!(error.starts_with("invalid regular expression"), "{error}");
+        assert!(editor.value2.field.error.is_none());
+        assert_eq!(focus.current(), Some(editor.value.id));
+        assert_eq!(editor.value.text(), "(", "the typed text survives");
+
+        editor.value = TextInput::new(ID.sub("value"), "Value").value("^p.id$");
+        editor.submit(&mut focus);
+        let Some(LayerOut::Close(ModalResult::Filter(Some((None, filter))))) =
+            Layer::<ModalResult>::take_result(&mut editor)
+        else {
+            panic!("a valid regex closes the editor with its filter");
+        };
+        assert_eq!(
+            (filter.op, filter.value.as_str()),
+            (FilterOp::Regex, "^p.id$")
+        );
+    }
+
+    #[test]
+    fn issue10_editor_keeps_a_reversed_range_on_the_upper_field() {
+        let mut editor = editor(1, FilterOp::Between, "5", "1");
+        let mut focus = Focus::default();
+        editor.submit(&mut focus);
+        assert!(editor.done.is_none());
+        assert!(Layer::<ModalResult>::take_result(&mut editor).is_none());
+        let error = editor.value2.field.error.as_deref().expect("value2 error");
+        assert_eq!(error, "The upper bound is below the lower bound");
+        assert!(editor.value.field.error.is_none());
+        assert_eq!(focus.current(), Some(editor.value2.id));
+        assert_eq!((editor.value.text(), editor.value2.text()), ("5", "1"));
+    }
+}

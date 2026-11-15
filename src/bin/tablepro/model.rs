@@ -108,14 +108,20 @@ pub fn preview_sql(
     out
 }
 
+/// The one text-literal policy for SQL the app prints: single quotes, with
+/// embedded apostrophes doubled.
+pub fn quote_text(s: &str) -> String {
+    format!("'{}'", s.replace('\'', "''"))
+}
+
 pub fn sql_literal(v: &Value) -> String {
     match v {
         Value::Null => "NULL".into(),
         Value::Int(i) => i.to_string(),
         Value::Num(n) => format!("{n:.2}"),
         Value::Bool(b) => b.to_string(),
-        Value::Text(s) => format!("'{}'", s.replace('\'', "''")),
-        Value::Json(j) => format!("'{}'::jsonb", j.replace('\'', "''")),
+        Value::Text(s) => quote_text(s),
+        Value::Json(j) => format!("{}::jsonb", quote_text(j)),
     }
 }
 

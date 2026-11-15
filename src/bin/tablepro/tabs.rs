@@ -262,14 +262,18 @@ impl Filter {
                 | FilterOp::NotIn
                 | FilterOp::Between
         );
-        if numeric && ordinal {
-            let (msg, parses): (&str, fn(&str) -> bool) = if ty == ColType::Int {
-                ("Enter a whole number", |t| t.parse::<i64>().is_ok())
-            } else {
-                ("Enter a number", |t| {
-                    t.parse::<f64>().is_ok_and(f64::is_finite)
-                })
-            };
+        type Parses = fn(&str) -> bool;
+        let typed: Option<(&str, Parses)> = match ty {
+            ColType::Int => Some(("Enter a whole number", |t| t.parse::<i64>().is_ok())),
+            ColType::Numeric => Some(("Enter a number", |t| {
+                t.parse::<f64>().is_ok_and(f64::is_finite)
+            })),
+            ColType::Bool => Some(("Enter true or false", |t| {
+                t.eq_ignore_ascii_case("true") || t.eq_ignore_ascii_case("false")
+            })),
+            _ => None,
+        };
+        if let (true, Some((msg, parses))) = (ordinal, typed) {
             let operands: Vec<(FilterField, &str)> = match self.op {
                 FilterOp::In | FilterOp::NotIn => self
                     .value
@@ -289,7 +293,12 @@ impl Filter {
             }
         }
         if self.op == FilterOp::Between {
-            let ordered = if numeric {
+            let ordered = if ty == ColType::Int {
+                matches!(
+                    (self.value.parse::<i64>(), self.value2.parse::<i64>()),
+                    (Ok(lo), Ok(hi)) if lo <= hi
+                )
+            } else if numeric {
                 let lo = self.value.parse::<f64>().unwrap_or(f64::NAN);
                 let hi = self.value2.parse::<f64>().unwrap_or(f64::NAN);
                 lo <= hi
@@ -3017,5 +3026,33 @@ mod issue10_tests {
                 .check(ColType::Text)
                 .is_ok()
         );
+    }
+
+    #[test]
+    fn issue10_boolean_filter_rejects_non_boolean_operands() {
+        let gift = |op, value: &str| filter("is_gift", op, value, "");
+        let err = gift(FilterOp::Eq, "yes").check(ColType::Bool).unwrap_err();
+        assert_eq!(err.field, FilterField::Value);
+        assert_eq!(err.message, "Enter true or false");
+        let err = gift(FilterOp::In, "true, maybe")
+            .check(ColType::Bool)
+            .unwrap_err();
+        assert_eq!(err.field, FilterField::Value);
+        assert!(gift(FilterOp::Eq, "true").check(ColType::Bool).is_ok());
+        assert!(gift(FilterOp::Ne, "FALSE").check(ColType::Bool).is_ok());
+        assert!(gift(FilterOp::IsNull, "").check(ColType::Bool).is_ok());
+    }
+
+    #[test]
+    fn issue10_integer_range_order_is_exact() {
+        let err = filter(
+            "order_number",
+            FilterOp::Between,
+            "9007199254740993",
+            "9007199254740992",
+        )
+        .check(ColType::Int)
+        .unwrap_err();
+        assert_eq!(err.field, FilterField::Value2);
     }
 }

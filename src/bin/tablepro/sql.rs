@@ -1,4 +1,5 @@
 use crate::db::{Catalog, ColType, Table, Value};
+use crate::model::quote_text;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TokKind {
@@ -287,8 +288,12 @@ pub enum PredicateOp {
     Contains(String),
     StartsWith(String),
     EndsWith(String),
-    /// SQL LIKE: `%` and `_` are wildcards, `\` escapes the next character.
-    Like(String),
+    /// SQL LIKE and ILIKE: `%` and `_` are wildcards, `\` escapes the next
+    /// character, and only ILIKE ignores case.
+    Like {
+        pattern: String,
+        case_insensitive: bool,
+    },
     In(Vec<String>),
     Regex(String),
 }
@@ -330,6 +335,14 @@ fn join_sql(xs: &[Expr], sep: &str) -> String {
     parts.join(sep)
 }
 
+/// PostgreSQL reserved words the simulator's keyword list leaves out. A column
+/// named like one must be quoted to parse.
+const RESERVED_IDENTS: &[&str] = &["user", "only", "for", "some", "array", "window"];
+
+fn is_reserved_ident(name: &str) -> bool {
+    is_keyword(name) || RESERVED_IDENTS.iter().any(|r| name.eq_ignore_ascii_case(r))
+}
+
 /// Plain lowercase names stay bare, so previews read as typed. Anything else
 /// is double-quoted with embedded quotes doubled.
 fn quote_ident(name: &str) -> String {
@@ -337,15 +350,15 @@ fn quote_ident(name: &str) -> String {
         .chars()
         .enumerate()
         .all(|(i, c)| c == '_' || c.is_ascii_lowercase() || (i > 0 && c.is_ascii_digit()));
-    if plain && !name.is_empty() && !is_keyword(name) {
+    if plain && !name.is_empty() && !is_reserved_ident(name) {
         name.to_owned()
     } else {
         format!("\"{}\"", name.replace('"', "\"\""))
     }
 }
 
-fn quote_lit(v: &str) -> String {
-    format!("'{}'", v.replace('\'', "''"))
+fn like_keyword(case_insensitive: bool) -> &'static str {
+    if case_insensitive { "ILIKE" } else { "LIKE" }
 }
 
 /// Escapes LIKE wildcards so a literal UI value matches itself.
@@ -363,30 +376,37 @@ impl Predicate {
         Some(match &self.op {
             PredicateOp::Contains(v) => format!(
                 "{c} NOT ILIKE {}",
-                quote_lit(&format!("%{}%", escape_like(v)))
+                quote_text(&format!("%{}%", escape_like(v)))
             ),
             PredicateOp::StartsWith(v) => {
                 format!(
                     "{c} NOT ILIKE {}",
-                    quote_lit(&format!("{}%", escape_like(v)))
+                    quote_text(&format!("{}%", escape_like(v)))
                 )
             }
             PredicateOp::EndsWith(v) => {
                 format!(
                     "{c} NOT ILIKE {}",
-                    quote_lit(&format!("%{}", escape_like(v)))
+                    quote_text(&format!("%{}", escape_like(v)))
                 )
             }
-            PredicateOp::Like(p) => format!("{c} NOT LIKE {}", quote_lit(p)),
+            PredicateOp::Like {
+                pattern,
+                case_insensitive,
+            } => format!(
+                "{c} NOT {} {}",
+                like_keyword(*case_insensitive),
+                quote_text(pattern)
+            ),
             PredicateOp::In(items) => format!(
                 "{c} NOT IN ({})",
                 items
                     .iter()
-                    .map(|i| quote_lit(i))
+                    .map(|i| quote_text(i))
                     .collect::<Vec<_>>()
                     .join(", ")
             ),
-            PredicateOp::Regex(p) => format!("{c} !~ {}", quote_lit(p)),
+            PredicateOp::Regex(p) => format!("{c} !~ {}", quote_text(p)),
             _ => return None,
         })
     }
@@ -394,33 +414,40 @@ impl Predicate {
     fn to_sql(&self) -> String {
         let c = quote_ident(&self.column);
         match &self.op {
-            PredicateOp::Eq(v) => format!("{c} = {}", quote_lit(v)),
-            PredicateOp::Ne(v) => format!("{c} != {}", quote_lit(v)),
-            PredicateOp::Gt(v) => format!("{c} > {}", quote_lit(v)),
-            PredicateOp::Ge(v) => format!("{c} >= {}", quote_lit(v)),
-            PredicateOp::Lt(v) => format!("{c} < {}", quote_lit(v)),
-            PredicateOp::Le(v) => format!("{c} <= {}", quote_lit(v)),
+            PredicateOp::Eq(v) => format!("{c} = {}", quote_text(v)),
+            PredicateOp::Ne(v) => format!("{c} != {}", quote_text(v)),
+            PredicateOp::Gt(v) => format!("{c} > {}", quote_text(v)),
+            PredicateOp::Ge(v) => format!("{c} >= {}", quote_text(v)),
+            PredicateOp::Lt(v) => format!("{c} < {}", quote_text(v)),
+            PredicateOp::Le(v) => format!("{c} <= {}", quote_text(v)),
             PredicateOp::IsNull => format!("{c} IS NULL"),
             PredicateOp::IsNotNull => format!("{c} IS NOT NULL"),
             PredicateOp::Contains(v) => {
-                format!("{c} ILIKE {}", quote_lit(&format!("%{}%", escape_like(v))))
+                format!("{c} ILIKE {}", quote_text(&format!("%{}%", escape_like(v))))
             }
             PredicateOp::StartsWith(v) => {
-                format!("{c} ILIKE {}", quote_lit(&format!("{}%", escape_like(v))))
+                format!("{c} ILIKE {}", quote_text(&format!("{}%", escape_like(v))))
             }
             PredicateOp::EndsWith(v) => {
-                format!("{c} ILIKE {}", quote_lit(&format!("%{}", escape_like(v))))
+                format!("{c} ILIKE {}", quote_text(&format!("%{}", escape_like(v))))
             }
-            PredicateOp::Like(p) => format!("{c} LIKE {}", quote_lit(p)),
+            PredicateOp::Like {
+                pattern,
+                case_insensitive,
+            } => format!(
+                "{c} {} {}",
+                like_keyword(*case_insensitive),
+                quote_text(pattern)
+            ),
             PredicateOp::In(items) => format!(
                 "{c} IN ({})",
                 items
                     .iter()
-                    .map(|i| quote_lit(i))
+                    .map(|i| quote_text(i))
                     .collect::<Vec<_>>()
                     .join(", ")
             ),
-            PredicateOp::Regex(p) => format!("{c} ~ {}", quote_lit(p)),
+            PredicateOp::Regex(p) => format!("{c} ~ {}", quote_text(p)),
         }
     }
 }
@@ -776,7 +803,10 @@ fn parse_select(w: &mut Words) -> Result<Select, ParseError> {
                 ">=" => PredicateOp::Ge(next_literal(w)),
                 "<" => PredicateOp::Lt(next_literal(w)),
                 "<=" => PredicateOp::Le(next_literal(w)),
-                "LIKE" | "ILIKE" => PredicateOp::Like(next_literal(w)),
+                "LIKE" | "ILIKE" => PredicateOp::Like {
+                    pattern: next_literal(w),
+                    case_insensitive: op == "ILIKE",
+                },
                 "IS" => {
                     if w.accept("NOT") {
                         w.accept("NULL");
@@ -1106,10 +1136,12 @@ pub enum CmpOp {
 }
 
 /// A comparison operand, lowercased once for text comparison and parsed once
-/// for numeric comparison.
+/// for numeric comparison. Comparison and list membership both go through
+/// `compare`, so `= x` and `IN (x)` always agree.
 #[derive(Debug)]
 pub struct Operand {
     lower: String,
+    int: Option<i64>,
     num: Option<f64>,
 }
 
@@ -1117,7 +1149,19 @@ impl Operand {
     fn new(text: &str) -> Self {
         Self {
             lower: text.to_lowercase(),
-            num: text.parse::<f64>().ok(),
+            int: text.parse::<i64>().ok(),
+            num: text.parse::<f64>().ok().filter(|n| n.is_finite()),
+        }
+    }
+
+    /// Integers compare as i64, so values past 2^53 stay distinct. Other
+    /// numeric pairs compare as f64, and anything else as lowercase text.
+    fn compare(&self, v: &Value) -> std::cmp::Ordering {
+        match (v, self.int, self.num) {
+            (Value::Int(a), Some(b), _) => a.cmp(&b),
+            (Value::Int(a), None, Some(b)) => (*a as f64).total_cmp(&b),
+            (Value::Num(a), _, Some(b)) => a.total_cmp(&b),
+            _ => v.display().to_lowercase().cmp(&self.lower),
         }
     }
 }
@@ -1130,8 +1174,11 @@ pub enum Test {
     Contains(String),
     StartsWith(String),
     EndsWith(String),
-    Like(Vec<char>),
-    In(Vec<String>),
+    Like {
+        pattern: Vec<char>,
+        case_insensitive: bool,
+    },
+    In(Vec<Operand>),
     Regex(regex::Regex),
 }
 
@@ -1208,8 +1255,20 @@ fn prepare_test(op: &PredicateOp) -> Result<Test, ExecError> {
         PredicateOp::Contains(v) => Test::Contains(v.to_lowercase()),
         PredicateOp::StartsWith(v) => Test::StartsWith(v.to_lowercase()),
         PredicateOp::EndsWith(v) => Test::EndsWith(v.to_lowercase()),
-        PredicateOp::Like(p) => Test::Like(p.to_lowercase().chars().collect()),
-        PredicateOp::In(items) => Test::In(items.iter().map(|i| i.to_lowercase()).collect()),
+        PredicateOp::Like {
+            pattern,
+            case_insensitive,
+        } => Test::Like {
+            pattern: if *case_insensitive {
+                pattern.to_lowercase()
+            } else {
+                pattern.clone()
+            }
+            .chars()
+            .collect(),
+            case_insensitive: *case_insensitive,
+        },
+        PredicateOp::In(items) => Test::In(items.iter().map(|i| Operand::new(i)).collect()),
         PredicateOp::Regex(p) => Test::Regex(compile_regex(p).map_err(exec_error)?),
     })
 }
@@ -1236,10 +1295,7 @@ impl Test {
             Test::IsNotNull => Truth::from_bool(*v != Value::Null),
             _ if *v == Value::Null => Truth::Unknown,
             Test::Cmp(op, operand) => {
-                let ord = match (v.as_f64(), operand.num) {
-                    (Some(a), Some(b)) => a.total_cmp(&b),
-                    _ => v.display().to_lowercase().cmp(&operand.lower),
-                };
+                let ord = operand.compare(v);
                 Truth::from_bool(match op {
                     CmpOp::Eq => ord.is_eq(),
                     CmpOp::Ne => !ord.is_eq(),
@@ -1256,14 +1312,19 @@ impl Test {
             Test::EndsWith(suffix) => {
                 Truth::from_bool(v.display().to_lowercase().ends_with(suffix))
             }
-            Test::Like(pattern) => {
-                let text: Vec<char> = v.display().to_lowercase().chars().collect();
+            Test::Like {
+                pattern,
+                case_insensitive,
+            } => {
+                let text = if *case_insensitive {
+                    v.display().to_lowercase()
+                } else {
+                    v.display()
+                };
+                let text: Vec<char> = text.chars().collect();
                 Truth::from_bool(like_match(pattern, &text))
             }
-            Test::In(items) => {
-                let text = v.display().to_lowercase();
-                Truth::from_bool(items.contains(&text))
-            }
+            Test::In(items) => Truth::from_bool(items.iter().any(|item| item.compare(v).is_eq())),
             Test::Regex(re) => Truth::from_bool(re.is_match(&v.display())),
         }
     }
@@ -1477,7 +1538,7 @@ pub fn explain(cat: &Catalog, sel: &Select, analyze: bool) -> Result<PlanNode, E
                 ("Index".into(), index.name.clone()),
                 (
                     "Index Cond".into(),
-                    format!("({} = {})", quote_ident(column), quote_lit(value)),
+                    format!("({} = {})", quote_ident(column), quote_text(value)),
                 ),
             ]
             .into_iter()
@@ -1665,7 +1726,7 @@ pub fn plan_text(node: &PlanNode, depth: usize, out: &mut Vec<String>) {
 #[cfg(test)]
 mod issue10_sql_tests {
     use super::*;
-    use crate::db::{self, Catalog, Table};
+    use crate::db::{Catalog, Table};
     use crate::tabs::{Filter, FilterOp};
 
     fn orders(cat: &Catalog) -> &Table {
@@ -1855,6 +1916,107 @@ mod issue10_sql_tests {
             "{}",
             err.message
         );
-        let _ = db::rows(table, 0, 0);
+    }
+
+    fn filter_on(column: &str, op: FilterOp, value: &str) -> Expr {
+        Filter {
+            column: column.into(),
+            op,
+            value: value.into(),
+            value2: String::new(),
+            enabled: true,
+        }
+        .expression()
+    }
+
+    #[test]
+    fn issue10_numeric_in_uses_the_same_equality_as_eq() {
+        let cat = Catalog::acme_prod();
+        let table = orders(&cat);
+        let row = row_with(table, "total_amount", Value::Num(25.9));
+        let eq = parsed_filter("SELECT * FROM orders WHERE total_amount = 25.9");
+        let list = parsed_filter("SELECT * FROM orders WHERE total_amount IN ('25.9')");
+        let padded = parsed_filter("SELECT * FROM orders WHERE total_amount IN ('25.90', '1')");
+        assert!(admits(table, &eq, &row), "= 25.9");
+        assert!(admits(table, &list, &row), "IN ('25.9')");
+        assert!(admits(table, &padded, &row), "IN ('25.90', '1')");
+        assert!(
+            !admits(
+                table,
+                &filter_on("total_amount", FilterOp::NotIn, "25.9"),
+                &row
+            ),
+            "NOT IN (25.9)"
+        );
+    }
+
+    #[test]
+    fn issue10_integer_comparison_stays_exact_past_2_pow_53() {
+        let cat = Catalog::acme_prod();
+        let table = orders(&cat);
+        let row = row_with(table, "order_number", Value::Int(9_007_199_254_740_993));
+        let near = "9007199254740992";
+        let same = "9007199254740993";
+        assert!(!admits(
+            table,
+            &filter_on("order_number", FilterOp::Eq, near),
+            &row
+        ));
+        assert!(admits(
+            table,
+            &filter_on("order_number", FilterOp::Eq, same),
+            &row
+        ));
+        assert!(!admits(
+            table,
+            &filter_on("order_number", FilterOp::In, near),
+            &row
+        ));
+        assert!(admits(
+            table,
+            &filter_on("order_number", FilterOp::Gt, near),
+            &row
+        ));
+    }
+
+    #[test]
+    fn issue10_ilike_ignores_case_and_like_does_not() {
+        let cat = Catalog::acme_prod();
+        let table = orders(&cat);
+        let row = row_with(table, "notes", Value::Text("gift card".into()));
+        let ilike = parsed_filter("SELECT * FROM orders WHERE notes ILIKE 'GIFT%'");
+        let like = parsed_filter("SELECT * FROM orders WHERE notes LIKE 'GIFT%'");
+        assert!(admits(table, &ilike, &row), "ILIKE matches across case");
+        assert!(!admits(table, &like, &row), "LIKE is case-sensitive");
+        assert_eq!(ilike.to_sql(), "notes ILIKE 'GIFT%'");
+        assert_eq!(like.to_sql(), "notes LIKE 'GIFT%'");
+        let lower = parsed_filter("SELECT * FROM orders WHERE notes LIKE 'gift%'");
+        assert!(admits(table, &lower, &row));
+    }
+
+    #[test]
+    fn issue10_reserved_column_names_are_quoted() {
+        for name in ["user", "only", "for", "some", "array", "window"] {
+            let leaf = Expr::Leaf(Predicate {
+                column: name.into(),
+                op: PredicateOp::IsNull,
+            });
+            assert_eq!(leaf.to_sql(), format!("\"{name}\" IS NULL"), "{name}");
+        }
+    }
+
+    #[test]
+    fn issue10_filter_text_literals_use_the_shared_model_policy() {
+        for value in ["O'Reilly", "''", "back\\slash", "100%_", "naïve ☃"] {
+            let quoted = crate::model::quote_text(value);
+            assert_eq!(
+                quoted,
+                crate::model::sql_literal(&Value::Text(value.into()))
+            );
+            assert_eq!(
+                filter_on("notes", FilterOp::Eq, value).to_sql(),
+                format!("notes = {quoted}")
+            );
+        }
     }
 }
