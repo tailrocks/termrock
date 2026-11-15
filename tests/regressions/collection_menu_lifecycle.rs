@@ -50,12 +50,12 @@ fn click(hits: &HitRegistry, id: WidgetId) -> PointerEvent {
 
 fn toolbar_click(tb: &mut Toolbar, hits: &HitRegistry, id: WidgetId) -> Option<ToolbarAction> {
     tb.route(&click(hits, id))
-        .and_then(|response| response.into_action())
+        .and_then(|response| response.into_actions().into_iter().next())
 }
 
 fn chip_click(cb: &mut ChipBar, hits: &HitRegistry, id: WidgetId) -> Option<ChipAction> {
     cb.route(&click(hits, id))
-        .and_then(|response| response.into_action())
+        .and_then(|response| response.into_actions().into_iter().next())
 }
 
 /// Renders a narrow toolbar and opens its overflow menu from the keyboard.

@@ -158,6 +158,6 @@ fn main() {
 
     let mut tabs = Tabs::new(WidgetId::of("example.strip"), &[]);
     w.sync_tabs(&mut tabs);
-    let labels: Vec<&str> = tabs.items.iter().map(|item| item.label.as_str()).collect();
+    let labels: Vec<&str> = tabs.items().iter().map(|item| item.label.as_str()).collect();
     println!("{:<38} {labels:?}", "the strip projects the order");
 }

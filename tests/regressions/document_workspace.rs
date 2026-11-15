@@ -655,7 +655,7 @@ fn workspace_tabs_projection_translates_events_by_key() {
     let mut tabs = Tabs::new(ID.sub("tabs"), &[]);
     w.sync_tabs(&mut tabs);
     assert_eq!(
-        tabs.items
+        tabs.items()
             .iter()
             .map(|i| i.label.as_str())
             .collect::<Vec<_>>(),
@@ -674,7 +674,7 @@ fn workspace_tabs_projection_translates_events_by_key() {
 
     drop(w.reorder(c, 0));
     w.sync_tabs(&mut tabs);
-    assert_eq!(tabs.items[0].label, "c");
+    assert_eq!(tabs.items()[0].label, "c");
     assert_eq!(
         w.key_at(tabs.active),
         w.active_key(),
@@ -691,9 +691,9 @@ fn workspace_tabs_projection_marks_dirty_and_busy() {
     let (_, _) = w.begin_operation(b).expect("open");
     let mut tabs = Tabs::new(ID.sub("tabs"), &[]);
     w.sync_tabs_with(&mut tabs, |d, item| item.prefix(&d.title.to_uppercase()));
-    assert!(tabs.items[0].dirty && !tabs.items[0].busy);
-    assert!(tabs.items[1].busy && !tabs.items[1].dirty);
-    assert_eq!(tabs.items[1].prefix.as_deref(), Some("B"));
+    assert!(tabs.items()[0].dirty && !tabs.items()[0].busy);
+    assert!(tabs.items()[1].busy && !tabs.items()[1].dirty);
+    assert_eq!(tabs.items()[1].prefix.as_deref(), Some("B"));
 }
 
 #[test]
