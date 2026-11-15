@@ -56,7 +56,7 @@ pub struct ActivityTab {
 impl ActivityTab {
     pub fn new(id: &str) -> Self {
         let mut chips = ChipBar::new(CHIPS);
-        chips.add_label = None;
+        chips.set_add_label(None);
         Self {
             id: id.into(),
             view: TextViewport::new(VIEW).max_lines(RETAIN_LINES).wrap(true),
@@ -103,8 +103,8 @@ impl ActivityTab {
             self.input = false;
         }
         let services = a.services();
-        if self.chips.chips.len() != services.len() || self.synced_services != services {
-            self.chips.chips = services
+        if self.chips.chips().len() != services.len() || self.synced_services != services {
+            let chips = services
                 .iter()
                 .map(|s| {
                     let mut c = Chip::new(s);
@@ -113,10 +113,12 @@ impl ActivityTab {
                     c
                 })
                 .collect();
+            self.chips.set_chips(chips);
             self.synced_services = services.clone();
         } else {
-            for (c, s) in self.chips.chips.iter_mut().zip(&services) {
-                c.enabled = !a.hidden_services.contains(s);
+            for (i, s) in services.iter().enumerate() {
+                let enabled = !a.hidden_services.contains(s);
+                self.chips.update_chip(i, |c| c.enabled = enabled);
             }
         }
         let svc_w = services.iter().map(|s| width(s)).max().unwrap_or(0);
@@ -372,7 +374,7 @@ impl ActivityTab {
     }
 
     fn chip_menu(&self, i: usize, anchor: ContextAnchor, w: &World, cx: &mut Cx) -> Outcome {
-        let Some(chip) = self.chips.chips.get(i) else {
+        let Some(chip) = self.chips.chips().get(i) else {
             return Outcome::Ignored;
         };
         let hidden = w
@@ -487,7 +489,7 @@ impl ShellPage<Holla> for ActivityTab {
             let (o, ev) = self.chips.on_key(key);
             match ev {
                 Some(ChipAction::Toggle(i)) | Some(ChipAction::Activate(i)) => {
-                    let name = self.chips.chips[i].label.clone();
+                    let name = self.chips.chips()[i].label.clone();
                     self.toggle_stream(name, w);
                     return Outcome::Changed;
                 }
@@ -642,7 +644,7 @@ impl ShellPage<Holla> for ActivityTab {
                 if let Some(r) = self.chips.route(ev) {
                     let (o, act) = r.into_parts();
                     if let Some(ChipAction::Activate(i)) | Some(ChipAction::Toggle(i)) = act {
-                        let name = self.chips.chips[i].label.clone();
+                        let name = self.chips.chips()[i].label.clone();
                         self.toggle_stream(name, w);
                     }
                     cx.focus.focus(CHIPS);
@@ -669,7 +671,8 @@ impl ShellPage<Holla> for ActivityTab {
                 if self.is_editing() {
                     return Outcome::Ignored;
                 }
-                if let Some(i) = (0..self.chips.chips.len()).find(|&i| self.chips.chip_id(i) == id)
+                if let Some(i) =
+                    (0..self.chips.chips().len()).find(|&i| self.chips.chip_id(i) == id)
                 {
                     if cx.context.moves_cursor {
                         self.chips.cursor = i;
@@ -828,7 +831,7 @@ impl ShellPage<Holla> for ActivityTab {
             .subtitle(&insight, Tone::Muted)
             .render(area, buf, t);
         let mut y = area.y + 3;
-        if !self.chips.chips.is_empty() {
+        if !self.chips.chips().is_empty() {
             self.chips.render(
                 Rect::new(area.x + 1, y, area.width.saturating_sub(2), 1),
                 buf,

@@ -85,10 +85,19 @@ pub enum ToolbarAction {
     Toggled(usize, bool),
 }
 
+/// Scalar fields that shape the rendered geometry or the overflow menu. Direct
+/// writes to these public fields are caught by comparing against the key
+/// captured at render.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct ToolbarPolicy {
+    overflow: bool,
+    gap: u16,
+}
+
 #[derive(Debug, Clone)]
 pub struct Toolbar {
     pub id: WidgetId,
-    pub items: Vec<ToolItem>,
+    items: Vec<ToolItem>,
 
     pub cursor: usize,
 
@@ -113,6 +122,10 @@ pub struct Toolbar {
     hidden: Vec<usize>,
 
     marks: (&'static str, &'static str),
+
+    /// The scalar policy the last complete render laid out with. `None` after
+    /// any collection change, so stale hit targets cannot act.
+    layout: Option<ToolbarPolicy>,
 }
 
 impl Toolbar {
@@ -135,6 +148,7 @@ impl Toolbar {
             more_area: Rect::ZERO,
             hidden: Vec::new(),
             marks: ("●", "○"),
+            layout: None,
         };
         t.cursor = (0..t.items.len())
             .find(|&i| !t.items[i].disabled)
@@ -197,6 +211,94 @@ impl Toolbar {
         self.cursor == self.items.len() && !self.more_area.is_empty()
     }
 
+    pub fn items(&self) -> &[ToolItem] {
+        &self.items
+    }
+
+    /// Replaces every item. Returns `false` when the collection is unchanged,
+    /// which keeps an open menu and the current layout.
+    pub fn set_items(&mut self, items: Vec<ToolItem>) -> bool {
+        if self.items == items {
+            return false;
+        }
+        self.items = items;
+        self.invalidate_items();
+        true
+    }
+
+    /// Inserts at `index`, which may equal the length. Returns `false` for a
+    /// position past the end.
+    pub fn insert_item(&mut self, index: usize, item: ToolItem) -> bool {
+        if index > self.items.len() {
+            return false;
+        }
+        self.items.insert(index, item);
+        self.invalidate_items();
+        true
+    }
+
+    pub fn remove_item(&mut self, index: usize) -> Option<ToolItem> {
+        if index >= self.items.len() {
+            return None;
+        }
+        let item = self.items.remove(index);
+        self.invalidate_items();
+        Some(item)
+    }
+
+    /// Edits a copy of one item and commits it only when the copy differs. A
+    /// panicking `update` leaves the collection untouched.
+    pub fn update_item(&mut self, index: usize, update: impl FnOnce(&mut ToolItem)) -> bool {
+        let Some(current) = self.items.get(index) else {
+            return false;
+        };
+        let mut next = current.clone();
+        update(&mut next);
+        if next == *current {
+            return false;
+        }
+        self.items[index] = next;
+        self.invalidate_items();
+        true
+    }
+
+    /// Drops every target derived from the collection: the open menu, the
+    /// overflow geometry and the hit regions. Only a fresh render re-enables
+    /// them.
+    fn invalidate_items(&mut self) {
+        self.menu = None;
+        self.hidden.clear();
+        self.more_area = Rect::ZERO;
+        self.areas.clear();
+        self.layout = None;
+        // `items.len()` is the More stop, so it stays a valid position.
+        self.cursor = self.cursor.min(self.items.len());
+    }
+
+    fn policy(&self) -> ToolbarPolicy {
+        ToolbarPolicy {
+            overflow: self.overflow,
+            gap: self.gap,
+        }
+    }
+
+    fn layout_current(&self) -> bool {
+        self.layout == Some(self.policy())
+    }
+
+    /// `overflow` and `gap` are public fields, so a direct write can change
+    /// the policy without passing through a checked method. Close the menu on
+    /// the next input rather than acting on its stale rows.
+    fn close_stale_menu(&mut self) {
+        if self.menu.is_some() && !self.layout_current() {
+            self.menu = None;
+        }
+    }
+
+    fn owns(&self, id: WidgetId) -> bool {
+        id == self.more_id() || self.item_at(id).is_some()
+    }
+
     fn stops(&self) -> Vec<usize> {
         let n = self.items.len();
         let drawn = |i: usize| self.areas.get(i).is_none_or(|r| !r.is_empty());
@@ -208,15 +310,15 @@ impl Toolbar {
     }
 
     fn open_menu(&mut self) {
-        if self.hidden.is_empty() {
+        if self.hidden.is_empty() || !self.layout_current() {
             return;
         }
         let (on, off) = self.marks;
-        let rows = self
+        let rows: Option<Vec<MenuItem>> = self
             .hidden
             .iter()
             .map(|&i| {
-                let it = &self.items[i];
+                let it = self.items.get(i)?;
                 let label = match it.on {
                     Some(true) => format!("{on} {}", it.label),
                     Some(false) => format!("{off} {}", it.label),
@@ -233,9 +335,14 @@ impl Toolbar {
                 {
                     m = m.reason(r.clone());
                 }
-                m
+                Some(m)
             })
             .collect();
+        // One missing target abandons the whole menu; a partial row list would
+        // misalign with the parallel `hidden` indices.
+        let Some(rows) = rows else {
+            return;
+        };
         let menu =
             ContextMenu::new(self.menu_id(), rows).anchor_control(self.more_id(), self.more_area);
         self.menu = Some((menu, self.hidden.clone()));
@@ -279,16 +386,24 @@ impl Toolbar {
             return None;
         }
         self.cursor = i;
-        Some(match it.on.as_mut() {
+        let action = match it.on.as_mut() {
             Some(on) => {
                 *on = !*on;
                 ToolbarAction::Toggled(i, *on)
             }
             None => ToolbarAction::Activated(i),
-        })
+        };
+        // A toggle changes the item's on-mark, so an open menu row and the
+        // rendered geometry both show the old state. The action is already
+        // captured above.
+        if matches!(action, ToolbarAction::Toggled(..)) {
+            self.invalidate_items();
+        }
+        Some(action)
     }
 
     pub fn on_key(&mut self, key: &Key) -> (Outcome, Option<ToolbarAction>) {
+        self.close_stale_menu();
         if let Some((menu, _)) = self.menu.as_mut() {
             let (o, ev) = menu.on_key(key);
             return (o, self.menu_event(ev));
@@ -346,11 +461,15 @@ impl Toolbar {
     }
 
     pub fn on_click(&mut self, id: WidgetId) -> (Outcome, Option<ToolbarAction>) {
+        self.close_stale_menu();
         if let Some((menu, _)) = self.menu.as_mut()
             && menu.contains_id(id)
         {
             let ev = menu.on_click(id);
             return (Outcome::Changed, self.menu_event(ev));
+        }
+        if !self.layout_current() && self.owns(id) {
+            return (Outcome::Consumed, None);
         }
         if id == self.more_id() {
             self.cursor = self.items.len();
@@ -376,6 +495,7 @@ impl Toolbar {
         self.areas = vec![Rect::ZERO; n];
         self.hidden.clear();
         self.more_area = Rect::ZERO;
+        self.layout = None;
         if area.is_empty() {
             self.menu = None;
             return;
@@ -505,6 +625,7 @@ impl Toolbar {
                 buf.set_string(mx, y, t.gutter_symbol(s), t.gutter(s, under, false));
             }
         }
+        self.layout = Some(self.policy());
         if let Some((menu, _)) = self.menu.as_mut() {
             menu.render(*buf.area(), buf, ctx);
         }

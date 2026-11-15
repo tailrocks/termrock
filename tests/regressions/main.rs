@@ -17,5 +17,6 @@ mod pane_tree_pointer;
 // Shared support module, kept at the crate root so moved tests can use `crate::common`.
 
 mod file_browser_paths;
+mod collection_menu_lifecycle;
 mod smoke;
 mod tabs_overflow_mutation;
