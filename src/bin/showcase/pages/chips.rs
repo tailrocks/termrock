@@ -677,7 +677,7 @@ impl Page for ChipsPage {
         if self.opts.set(key, value) {
             if key == "chipsselects.stress" {
                 let mode = stress::mode(self.opts.value(key));
-                self.filters.chips = stress_filters(mode);
+                self.filters.set_chips(stress_filters(mode));
                 self.filters.cursor = 0;
             }
             self.rebuild();

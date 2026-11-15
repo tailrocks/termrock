@@ -96,10 +96,10 @@ pub struct ToolbarsPage {
     pub running: bool,
     pub last: String,
 
-    opts: [usize; 6],
+    opts: [usize; 7],
 }
 
-const OPT_KEYS: [&str; 6] = [
+const OPT_KEYS: [&str; 7] = [
     "toolbars.nav",
     "toolbars.wrap",
     "toolbars.skip_disabled",
@@ -108,10 +108,10 @@ const OPT_KEYS: [&str; 6] = [
     "toolbars.mutate_open",
     "toolbars.stress",
 ];
-const OPT_DEFAULTS: [usize; 6] = [0, 0, 1, 1, 0, 0];
+const OPT_DEFAULTS: [usize; 7] = [0, 0, 1, 1, 0, 0, 0];
 
 const MUTATED: &str = "Run all";
-const STRESS: usize = 5;
+const STRESS: usize = 6;
 
 impl ToolbarsPage {
     pub fn new() -> Self {
@@ -129,7 +129,7 @@ impl ToolbarsPage {
     }
 
     fn rebuild(&mut self) {
-        let style = |t: &Toolbar, o: &[usize; 6]| {
+        let style = |t: &Toolbar, o: &[usize; 7]| {
             let cursor = t.cursor;
             let mut n = Toolbar::new(t.id, t.items().to_vec())
                 .nav(if o[0] == 1 {
@@ -485,7 +485,9 @@ impl Page for ToolbarsPage {
         if let Some(i) = OPT_KEYS.iter().position(|k| *k == key) {
             if i == STRESS {
                 self.opts[i] = value.min(stress::VALUES.len() - 1);
-                self.narrow.items = narrow_items(self.stress_mode(), self.running);
+                let _ = self
+                    .narrow
+                    .set_items(narrow_items(self.stress_mode(), self.running));
                 self.narrow.cursor = 0;
             } else {
                 self.opts[i] = value;
