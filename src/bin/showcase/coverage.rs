@@ -920,6 +920,11 @@ pub const RUNTIME_ALLOWLIST: &[(&str, &str)] = &[
     ),
 ];
 
+pub const KEYED_TABLE_ALLOWLIST: &[(&str, &str)] = &[(
+    "widgets::table::DataTable::on_blur_edit_source",
+    "No showcase page drives a DataTable over a borrowed keyed provider; the table pages own their rows. tests/regressions/keyed_collections pins the keyed blur commit and the Cancel policy.",
+)];
+
 pub const INSPECT_CHANGES_COVERAGE: &[(&str, &str)] = &[
     ("widgets::inspect_changes::ChangeSet", "diff"),
     ("widgets::inspect_changes::ChangeWords", "diff"),
@@ -1830,6 +1835,27 @@ mod tests {
                 "raw input API lacks a coverage declaration: {id}"
             );
         }
+    }
+
+    #[test]
+    fn keyed_table_blur_api_is_declared_with_a_reason() {
+        let catalog = catalog_source();
+        let mut seen = std::collections::BTreeSet::new();
+        for (id, reason) in KEYED_TABLE_ALLOWLIST {
+            assert!(
+                catalog.contains(&format!("\"{id}\"")),
+                "declared id is not a catalog capability: {id}"
+            );
+            assert!(
+                !reason.trim().is_empty(),
+                "allowlist entry has no reason: {id}"
+            );
+            assert!(seen.insert(*id), "duplicate allowlist entry: {id}");
+        }
+        assert!(
+            seen.contains("widgets::table::DataTable::on_blur_edit_source"),
+            "the keyed blur entry point lacks a coverage declaration"
+        );
     }
 
     #[test]

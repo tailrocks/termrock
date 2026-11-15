@@ -1588,7 +1588,14 @@ impl DataTable {
         generation == self.structural_generation
     }
 
+    /// Focus left the table. Owned tables apply the blur policy to the open
+    /// editor. A table driven through the `*_source` methods holds no rows, so
+    /// it leaves its editor alone and leaves the commit to
+    /// [`DataTable::on_blur_edit_source`].
     pub fn on_blur(&mut self) -> Response<TableAction> {
+        if self.keyed.stamp().is_some() {
+            return Response::ignored();
+        }
         self.with_rows(|me, rows| me.on_blur_in(rows))
     }
 
@@ -2132,6 +2139,21 @@ impl DataTable {
     ) -> Result<Response<TableAction<ItemKey>>, KeyedSourceError> {
         self.bind(&*source)?;
         Ok(self.pointer_keyed(&mut EditRows(source), ev))
+    }
+
+    /// Focus left a table over a borrowed editable keyed provider. The blur
+    /// policy decides the open editor's fate: `Commit` applies the typed text
+    /// with `set_cell` to the row captured when the edit began, like an Enter
+    /// commit.
+    pub fn on_blur_edit_source<S: TableEditSource + ?Sized>(
+        &mut self,
+        source: &mut S,
+    ) -> Result<Response<TableAction<ItemKey>>, KeyedSourceError> {
+        self.bind(&*source)?;
+        let selected = self.selected;
+        let mut rows = EditRows(source);
+        let response = self.on_blur_in(&mut rows);
+        Ok(self.adopt(response, selected, rows.data_revision()))
     }
 
     /// Paints rows borrowed from a read-only keyed provider.
