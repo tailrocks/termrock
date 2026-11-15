@@ -8,6 +8,7 @@ use ratatui::style::Style;
 use crate::core::event::ClientPlatform;
 
 use crate::theme::{BadgeKind, HintAlign, HintBarStyle, StatusKind, Theme, Tone};
+use crate::ui::fitting::work;
 use crate::ui::measure::terminal_extent;
 
 pub const UP_DOWN: &str = "↑↓";
@@ -224,14 +225,33 @@ pub fn render_aligned(
 
 const GAP: usize = 2;
 
-fn hint_width(h: &Hint, compact: bool) -> usize {
-    let kw = crate::ui::text::width(&normalize_key(h.key.as_ref()));
-    if compact {
-        kw
-    } else {
-        kw.saturating_add(1)
-            .saturating_add(crate::ui::text::width(&h.action))
+/// Display widths of one hint's key and action, each measured once.
+#[derive(Clone, Copy)]
+struct HintCells {
+    key: usize,
+    action: usize,
+}
+
+impl HintCells {
+    fn of(h: &Hint) -> Self {
+        Self {
+            key: crate::ui::text::width(&normalize_key(h.key.as_ref())),
+            action: crate::ui::text::width(&h.action),
+        }
     }
+
+    /// Cells the hint takes: the key alone when compact, else key, space, action.
+    fn cells(self, compact: bool) -> usize {
+        if compact {
+            self.key
+        } else {
+            self.key.saturating_add(1).saturating_add(self.action)
+        }
+    }
+}
+
+fn hint_width(h: &Hint, compact: bool) -> usize {
+    HintCells::of(h).cells(compact)
 }
 
 /// Full width of the kept hints plus their gaps and the cut marker slot, with
@@ -247,29 +267,54 @@ pub(crate) fn cost(hints: &[Hint], keep: &[usize], compact: &[bool]) -> usize {
     c
 }
 
-fn fit(hints: &[Hint], room: u16, style: &HintBarStyle) -> (Vec<usize>, Vec<bool>) {
-    let room = usize::from(room);
+/// Which hints show in `room` cells, and which of those drop to the key alone.
+///
+/// Every hint is measured once. Full widths are tried first, then compact
+/// non-pinned hints when the style allows it. When compact-all still does not
+/// fit, pruning starts again from full widths: non-pinned hints go last to
+/// first, then pinned ones last to first. A running total and a keep mask
+/// replace a cost and a retain per removal.
+pub(crate) fn fit(hints: &[Hint], room: u16, style: &HintBarStyle) -> (Vec<usize>, Vec<bool>) {
+    let room = usize::from(room) as u128;
+    let cells: Vec<HintCells> = hints.iter().map(HintCells::of).collect();
+    let slot = |w: usize| w as u128 + GAP as u128;
+    let total = |compact: &dyn Fn(usize) -> bool| -> u128 {
+        cells
+            .iter()
+            .enumerate()
+            .map(|(i, c)| {
+                work::visit();
+                slot(c.cells(compact(i)))
+            })
+            .sum()
+    };
     let all: Vec<usize> = (0..hints.len()).collect();
     let full = vec![false; hints.len()];
-    if cost(hints, &all, &full) <= room {
+    let mut kept = total(&|_| false);
+    if kept <= room {
         return (all, full);
     }
     let pinned: Vec<bool> = hints.iter().map(|h| h.is_pinned(style)).collect();
     if style.compact {
         let compact: Vec<bool> = pinned.iter().map(|p| !p).collect();
-        if cost(hints, &all, &compact) <= room {
+        if total(&|i| compact[i]) <= room {
             return (all, compact);
         }
     }
-    let mut keep = all;
-    let mut order: Vec<usize> = (0..hints.len()).rev().filter(|&i| !pinned[i]).collect();
-    order.extend((0..hints.len()).rev().filter(|&i| pinned[i]));
+    let mut keep = vec![true; hints.len()];
+    let order = (0..hints.len())
+        .rev()
+        .filter(|&i| !pinned[i])
+        .chain((0..hints.len()).rev().filter(|&i| pinned[i]));
     for gone in order {
-        if cost(hints, &keep, &full) <= room {
+        work::visit();
+        keep[gone] = false;
+        kept -= slot(cells[gone].cells(false));
+        if kept + GAP as u128 <= room {
             break;
         }
-        keep.retain(|&i| i != gone);
     }
+    let keep: Vec<usize> = (0..hints.len()).filter(|&i| keep[i]).collect();
     (keep, full)
 }
 

@@ -12,6 +12,7 @@ use crate::core::list::{Cursor, Navigable, RowSource};
 use crate::theme::{ButtonKind, Kind};
 use crate::ui::context::ContextConfig;
 use crate::ui::ctx::{RenderCtx, fill};
+use crate::ui::fitting::work;
 use crate::ui::measure::terminal_extent;
 use crate::ui::text::{truncate, width};
 use crate::ui::tooltip::Tip;
@@ -26,27 +27,32 @@ pub fn overflow_run(widths: &[u16], avail: u16, gap: u16) -> (usize, Option<Stri
 /// How many chips of `widths` show in `avail` cells, and the `+N` marker for the
 /// rest. Every width, the gap and the budget stay wide, so a chip wider than any
 /// `u16` never looks like it fits.
+///
+/// One pass sums the widths and a second walks the prefix down from the full
+/// run, so the fit is O(N). The sums are exact in `u128`: a saturated total
+/// could turn falsely small once a trailing gap is subtracted.
 pub(crate) fn overflow_run_cells(
     widths: &[usize],
     avail: usize,
     gap: usize,
 ) -> (usize, Option<String>) {
     let n = widths.len();
-    let total = widths
-        .iter()
-        .fold(0usize, |a, &w| a.saturating_add(w))
-        .saturating_add(gap.saturating_mul(n.saturating_sub(1)));
-    if total <= avail {
+    let (gap, avail) = (gap as u128, avail as u128);
+    let mut prefix = 0u128;
+    for &w in widths {
+        work::visit();
+        prefix += w as u128 + gap;
+    }
+    if prefix - if n > 0 { gap } else { 0 } <= avail {
         return (n, None);
     }
     for k in (0..n).rev() {
-        let marker = format!("+{}", n - k);
-        let used = widths[..k]
-            .iter()
-            .fold(0usize, |a, &w| a.saturating_add(w).saturating_add(gap))
-            .saturating_add(width(&marker));
-        if used <= avail {
-            return (k, Some(marker));
+        work::visit();
+        prefix -= widths[k] as u128 + gap;
+        let hidden = n - k;
+        let marker_w = 1 + u128::from(hidden.ilog10() + 1);
+        if prefix + marker_w <= avail {
+            return (k, Some(format!("+{hidden}")));
         }
     }
     (0, None)
