@@ -35,6 +35,7 @@ the macro.
 | `BufferCellsFilled`, `BufferCellsCopied` | cells | `ScrollView` canvas fill and `copy_cells` |
 | `VisibleRowsPainted` | rows | `ListBox`, `DataTable`, `DataGrid` and `TreeView` paint loops, summed over a frame |
 | `IntrinsicWidthCalls`, `TextBytesMeasured` | calls, bytes | `ui::text::width` |
+| `FitVisits`, `FitCompares` | visits, comparisons | Responsive fitters (`ChipBar`, `Breadcrumb`, `segments`, `StatusBar`, `HintBar`, `Toolbar`): loop visits and removal-order sort comparisons |
 | `LabelsNormalized`, `LabelBytesNormalized` | labels, bytes | `TreeView` filter |
 | `ProjectionRebuilds`, `RankRowsVisited` | rebuilds, items | Holla Finder rebuild and ranking pass |
 | `SchedulingRecordsVisited`, `SchedulingPolls` | records, polls | Jackin daemon traversal and pane polls, Holla activity and plan scheduling |

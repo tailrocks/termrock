@@ -5,7 +5,6 @@ use ratatui::style::{Color, Modifier};
 use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
 use crate::theme::Kind;
 use crate::ui::ctx::RenderCtx;
-use crate::ui::fitting::work;
 use crate::ui::measure::terminal_extent;
 use crate::ui::text::{truncate, truncate_middle, width};
 
@@ -54,7 +53,7 @@ impl Breadcrumb {
         let mut labels: usize = widths.iter().sum();
         let mut from = 0;
         while from + 1 < n && suffix_cells(labels, from, n, lead, sep_w) > avail {
-            work::visit();
+            crate::record_work!(FitVisits, 1usize);
             labels -= widths[from];
             from += 1;
         }

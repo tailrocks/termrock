@@ -11,7 +11,6 @@ use crate::core::hit::HitRegistry;
 use crate::core::id::WidgetId;
 use crate::theme::{ColorLevel, HintBarStyle, Theme, Tone};
 use crate::ui::ctx::{Interaction, RenderCtx};
-use crate::ui::fitting::work;
 use crate::widgets::breadcrumb::Breadcrumb;
 use crate::widgets::chips::{Chip, ChipBar, overflow_run_cells};
 use crate::widgets::hintbar::{HintBar, HintLayer};
@@ -25,7 +24,6 @@ const ID: WidgetId = WidgetId::of("overflow.parity");
 mod reference {
     //! The fitters as they were before #76, with the same inputs and results.
 
-    use crate::ui::fitting::work;
     use crate::ui::text::width;
     use crate::widgets::keyhint::{self, Hint};
     use crate::widgets::segments::Segment;
@@ -44,7 +42,7 @@ mod reference {
             let marker = format!("+{}", n - k);
             let used = widths[..k]
                 .iter()
-                .inspect(|_| work::visit())
+                .inspect(|_| crate::record_work!(FitVisits, 1usize))
                 .fold(0usize, |a, &w| a.saturating_add(w).saturating_add(gap))
                 .saturating_add(width(&marker));
             if used <= avail {
@@ -564,14 +562,14 @@ fn theme() -> Theme {
     Theme::for_level(ColorLevel::TrueColor)
 }
 
+#[cfg(feature = "work-metrics")]
 #[test]
 fn reference_fitters_do_superlinear_work() {
-    let doubled = |small: work::Work, big: work::Work, pick: fn(&work::Work) -> u64| {
-        pick(&big) as f64 / pick(&small) as f64
+    use crate::metrics::{Metric, WorkDelta, measure};
+    let doubled = |small: WorkDelta, big: WorkDelta, metric: Metric| {
+        big.get(metric) as f64 / small.get(metric) as f64
     };
-    let at = |n: usize, run: &dyn Fn(usize)| work::measure(|| run(n)).1;
-    let widths = |w: &work::Work| w.widths;
-    let visits = |w: &work::Work| w.visits;
+    let at = |n: usize, run: &dyn Fn(usize)| measure(|| run(n)).1;
 
     let chips = |n: usize| {
         reference::overflow_run(&vec![1; n], 80, 1);
@@ -600,18 +598,14 @@ fn reference_fitters_do_superlinear_work() {
         let hints: Vec<Hint> = (0..n).map(|_| Hint::new("k", "act")).collect();
         reference::keyhint_fit(&hints, 80, &HintBarStyle::DEFAULT);
     };
-    for (name, run, pick) in [
-        (
-            "chips",
-            &chips as &dyn Fn(usize),
-            visits as fn(&work::Work) -> u64,
-        ),
-        ("breadcrumb", &crumbs, widths),
-        ("segments", &segs, widths),
-        ("statusbar", &status, widths),
-        ("keyhint", &hints, widths),
+    for (name, run, metric) in [
+        ("chips", &chips as &dyn Fn(usize), Metric::FitVisits),
+        ("breadcrumb", &crumbs, Metric::IntrinsicWidthCalls),
+        ("segments", &segs, Metric::IntrinsicWidthCalls),
+        ("statusbar", &status, Metric::IntrinsicWidthCalls),
+        ("keyhint", &hints, Metric::IntrinsicWidthCalls),
     ] {
-        let ratio = doubled(at(250, run), at(500, run), pick);
+        let ratio = doubled(at(250, run), at(500, run), metric);
         assert!(
             ratio > 3.5,
             "{name} reference work grew {ratio}x for 2x items"

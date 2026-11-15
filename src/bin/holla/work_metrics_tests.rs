@@ -68,8 +68,9 @@ fn work_contract_holla_idle_and_source_update() {
             (Metric::ProjectionRebuilds, 1),
             (Metric::RankRowsVisited, items),
             (Metric::SchedulingRecordsVisited, 2 * activities + plans),
-            (Metric::IntrinsicWidthCalls, 716),
-            (Metric::TextBytesMeasured, 3_358),
+            (Metric::IntrinsicWidthCalls, 704),
+            (Metric::TextBytesMeasured, 3_271),
+            (Metric::FitVisits, 19),
         ],
     );
     assert_eq!(
@@ -102,8 +103,9 @@ fn work_contract_holla_idle_and_source_update() {
             (Metric::ProjectionRebuilds, 1),
             (Metric::RankRowsVisited, items),
             (Metric::SchedulingRecordsVisited, 2 * activities + plans),
-            (Metric::IntrinsicWidthCalls, 716),
-            (Metric::TextBytesMeasured, 3_358),
+            (Metric::IntrinsicWidthCalls, 704),
+            (Metric::TextBytesMeasured, 3_271),
+            (Metric::FitVisits, 19),
         ],
     );
     assert_eq!(irrelevant.get(Metric::ProjectionRebuilds), 1);
@@ -127,8 +129,9 @@ fn work_contract_holla_idle_and_source_update() {
         &[
             (Metric::ProjectionRebuilds, 1),
             (Metric::RankRowsVisited, items),
-            (Metric::IntrinsicWidthCalls, 1_639),
-            (Metric::TextBytesMeasured, 8_552),
+            (Metric::IntrinsicWidthCalls, 1_627),
+            (Metric::TextBytesMeasured, 8_473),
+            (Metric::FitVisits, 13),
         ],
     );
     assert_eq!(key.get(Metric::SchedulingRecordsVisited), 0);

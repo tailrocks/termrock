@@ -5,7 +5,7 @@ use ratatui::style::{Modifier, Style};
 use crate::core::id::WidgetId;
 use crate::theme::{Kind, Plane, Tone};
 use crate::ui::ctx::{RenderCtx, VisualState, fill};
-use crate::ui::fitting::{removal_order, work};
+use crate::ui::fitting::removal_order;
 use crate::ui::measure::terminal_extent;
 use crate::ui::text::{truncate, width};
 use crate::widgets::progress::{Meter, MeterTone, MeterVisual};
@@ -240,7 +240,7 @@ impl StatusBar {
         let mut tally = widths.clone().map(|ws| {
             let mut t = Tally::default();
             ws.iter().for_each(|&w| {
-                work::visit();
+                crate::record_work!(FitVisits, 1usize);
                 t.add(w);
             });
             t
@@ -260,7 +260,7 @@ impl StatusBar {
             }
         }
         for v in removal_order(&keys) {
-            work::visit();
+            crate::record_work!(FitVisits, 1usize);
             let (g, i) = victims[v];
             if g == 0 && tally[0].count == 1 {
                 continue;

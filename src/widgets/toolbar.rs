@@ -424,6 +424,7 @@ impl Toolbar {
 
         let mut sep_at: Option<u16> = None;
         for (i, w) in widths.iter().copied().enumerate() {
+            crate::record_work!(FitVisits, 1usize);
             let it = &self.items[i];
             if w > usize::from(limit.saturating_sub(x)) {
                 if overflowing {

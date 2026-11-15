@@ -90,10 +90,15 @@ metrics! {
     SchedulingRecordsVisited => "scheduling_records_visited",
     /// Polls a scheduling traversal issued to a live source.
     SchedulingPolls => "scheduling_polls",
+    /// Elements visited by a responsive-fitting loop (chips, breadcrumb,
+    /// segments, status bar, key hints, toolbar).
+    FitVisits => "fit_visits",
+    /// Key comparisons made while ordering a fitter's removal candidates.
+    FitCompares => "fit_compares",
 }
 
 /// Number of [`Metric`] variants.
-pub const METRIC_COUNT: usize = Metric::SchedulingPolls as usize + 1;
+pub const METRIC_COUNT: usize = Metric::FitCompares as usize + 1;
 
 /// Raw counts of one thread at one instant, tagged so a delta can reject a
 /// snapshot that is not comparable.

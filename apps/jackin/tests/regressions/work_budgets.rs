@@ -51,12 +51,13 @@ fn work_contract_jackin_idle_and_roster_update() {
     // The control tick visits each of the 2 daemons once and polls each pane
     // (6 in all); the roster is drawn without a counted list widget, so only
     // text measurement shows up in the frame.
-    let expected = |text_bytes| {
+    let expected = |widths, text_bytes, fit_visits| {
         [
             (Metric::SchedulingRecordsVisited, 2),
             (Metric::SchedulingPolls, 6),
-            (Metric::IntrinsicWidthCalls, 178),
+            (Metric::IntrinsicWidthCalls, widths),
             (Metric::TextBytesMeasured, text_bytes),
+            (Metric::FitVisits, fit_visits),
         ]
     };
     let before = f.screen();
@@ -66,7 +67,7 @@ fn work_contract_jackin_idle_and_roster_update() {
         before,
         "a settled tick leaves the frame unchanged"
     );
-    assert_exact(&idle, "roster settled tick", &expected(1_531));
+    assert_exact(&idle, "roster settled tick", &expected(157, 1_424, 12));
     f.report(
         "jackin_roster",
         "settled_tick",
@@ -85,7 +86,7 @@ fn work_contract_jackin_idle_and_roster_update() {
     assert_exact(
         &unrelated,
         "unrelated workspace policy then tick",
-        &expected(1_531),
+        &expected(157, 1_424, 12),
     );
     f.report(
         "jackin_roster",
@@ -104,7 +105,11 @@ fn work_contract_jackin_idle_and_roster_update() {
         "the renamed workspace reaches the frame"
     );
     assert!(f.screen().contains(&format!("{name}-renamed")));
-    assert_exact(&rename, "workspace rename then tick", &expected(1_571));
+    assert_exact(
+        &rename,
+        "workspace rename then tick",
+        &expected(157, 1_464, 12),
+    );
     f.report(
         "jackin_roster",
         "workspace_rename_then_tick",
@@ -140,10 +145,12 @@ fn work_contract_jackin_capsule_idle_frame() {
             (Metric::ReflowedLines, 4_012),
             (Metric::IndexRebuilds, 5),
             (Metric::PayloadBytesCloned, 80_059),
-            (Metric::IntrinsicWidthCalls, 80_161),
-            (Metric::TextBytesMeasured, 81_535),
+            (Metric::IntrinsicWidthCalls, 80_120),
+            (Metric::TextBytesMeasured, 80_870),
             (Metric::SchedulingRecordsVisited, 2),
             (Metric::SchedulingPolls, 6),
+            (Metric::FitVisits, 19),
+            (Metric::FitCompares, 18),
         ],
     );
     f.report(

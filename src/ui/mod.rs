@@ -19,7 +19,7 @@ pub mod measure;
 pub mod modal;
 #[cfg(test)]
 mod overflow_parity_tests;
-#[cfg(test)]
+#[cfg(all(test, feature = "work-metrics"))]
 mod overflow_work_tests;
 pub mod pane_tree;
 pub mod popup;

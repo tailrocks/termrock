@@ -8,9 +8,9 @@ use ratatui::layout::Rect;
 use crate::core::focus::FocusRing;
 use crate::core::hit::HitRegistry;
 use crate::core::id::WidgetId;
+use crate::metrics::{Metric, WorkDelta, measure};
 use crate::theme::{ColorLevel, Theme, Tone};
 use crate::ui::ctx::{Interaction, RenderCtx};
-use crate::ui::fitting::work::{self, Work};
 use crate::widgets::breadcrumb::Breadcrumb;
 use crate::widgets::chips::{Chip, ChipBar, overflow_run_cells};
 use crate::widgets::hintbar::{HintBar, HintLayer};
@@ -48,33 +48,33 @@ fn assert_linear(
     collections: u64,
     widths_per_item: u64,
     visits_per_item: u64,
-    run: impl Fn(usize) -> Work,
+    run: impl Fn(usize) -> WorkDelta,
 ) {
-    let runs: Vec<(usize, Work)> = SIZES.iter().map(|&n| (n, run(n))).collect();
+    let runs: Vec<(usize, WorkDelta)> = SIZES.iter().map(|&n| (n, run(n))).collect();
     for pair in runs.windows(2) {
         let ((n1, w1), (n2, w2)) = (pair[0], pair[1]);
         let added = (n2 - n1) as u64 * collections;
         assert_eq!(
-            w2.widths - w1.widths,
+            w2.get(Metric::IntrinsicWidthCalls) - w1.get(Metric::IntrinsicWidthCalls),
             widths_per_item * added,
             "{name}: width evaluations for {n1} -> {n2} items ({w1:?} -> {w2:?})"
         );
         assert!(
-            w2.visits - w1.visits <= visits_per_item * added,
+            w2.get(Metric::FitVisits) - w1.get(Metric::FitVisits) <= visits_per_item * added,
             "{name}: loop visits for {n1} -> {n2} items ({w1:?} -> {w2:?})"
         );
     }
     for &(n, w) in &runs {
         let items = n as u64 * collections;
         assert!(
-            w.compares <= 2 * items * ceil_log2(items as usize),
+            w.get(Metric::FitCompares) <= 2 * items * ceil_log2(items as usize),
             "{name}: {} comparisons for {items} items",
-            w.compares
+            w.get(Metric::FitCompares)
         );
         assert!(
-            w.visits <= visits_per_item * items + 4,
+            w.get(Metric::FitVisits) <= visits_per_item * items + 4,
             "{name}: {} visits for {items} items",
-            w.visits
+            w.get(Metric::FitVisits)
         );
     }
 }
@@ -83,14 +83,14 @@ fn assert_linear(
 fn large_overflow_chip_prefix_work_is_linear() {
     assert_linear("overflow_run_cells", 1, 0, 2, |n| {
         let widths = vec![1usize; n];
-        work::measure(|| overflow_run_cells(&widths, 80, 1)).1
+        measure(|| overflow_run_cells(&widths, 80, 1)).1
     });
     assert_linear("ChipBar::render", 1, 1, 2, |n| {
         let mut bar = ChipBar::new(ID);
         bar.chips = (0..n).map(|_| Chip::new("x")).collect();
         frame(80, 1, |buf, ctx| {
             let bg = ctx.theme.canvas;
-            work::measure(|| bar.render(Rect::new(0, 0, 80, 1), buf, ctx, bg)).1
+            measure(|| bar.render(Rect::new(0, 0, 80, 1), buf, ctx, bg)).1
         })
     });
 }
@@ -101,7 +101,7 @@ fn large_overflow_breadcrumb_work_is_linear() {
         let mut crumbs = Breadcrumb::new(ID, vec!["x".to_owned(); n]);
         frame(80, 1, |buf, ctx| {
             let bg = ctx.theme.canvas;
-            work::measure(|| crumbs.render(Rect::new(0, 0, 80, 1), buf, ctx, bg)).1
+            measure(|| crumbs.render(Rect::new(0, 0, 80, 1), buf, ctx, bg)).1
         })
     });
 }
@@ -114,8 +114,7 @@ fn large_overflow_segments_work_is_linear() {
         let right: Vec<Segment> = (0..n).map(seg).collect();
         frame(80, 1, |buf, ctx| {
             let bg = ctx.theme.canvas;
-            work::measure(|| segments::render(Rect::new(0, 0, 80, 1), buf, ctx, &left, &right, bg))
-                .1
+            measure(|| segments::render(Rect::new(0, 0, 80, 1), buf, ctx, &left, &right, bg)).1
         })
     });
 }
@@ -128,7 +127,7 @@ fn large_overflow_statusbar_work_is_linear() {
         bar.left = (0..n).map(item).collect();
         bar.center = (0..n).map(item).collect();
         bar.right = (0..n).map(item).collect();
-        work::measure(|| bar.layout(Rect::new(0, 0, 80, 1))).1
+        measure(|| bar.layout(Rect::new(0, 0, 80, 1))).1
     });
 }
 
@@ -138,7 +137,7 @@ fn large_overflow_keyhint_work_is_linear() {
         let layer = HintLayer::new((0..n).map(|_| Hint::new("k", "act")).collect());
         let theme = theme();
         let mut buf = Buffer::empty(Rect::new(0, 0, 80, 1));
-        work::measure(|| HintBar::render(Rect::new(0, 0, 80, 1), &mut buf, &theme, &layer)).1
+        measure(|| HintBar::render(Rect::new(0, 0, 80, 1), &mut buf, &theme, &layer)).1
     });
 }
 
@@ -148,7 +147,7 @@ fn large_overflow_toolbar_work_is_linear() {
         let mut bar = Toolbar::new(ID, (0..n).map(|_| ToolItem::new("x")).collect());
         frame(80, 1, |buf, ctx| {
             let bg = ctx.theme.canvas;
-            work::measure(|| bar.render(Rect::new(0, 0, 80, 1), buf, ctx, bg)).1
+            measure(|| bar.render(Rect::new(0, 0, 80, 1), buf, ctx, bg)).1
         })
     });
 }
