@@ -15,8 +15,9 @@ use jackin_console::app::Remote;
 use jackin_console::domain::instance::{DaemonSnapshot, InstanceEntry, InstanceId};
 use jackin_console::fixtures::{Scenario, world_for};
 use jackin_console::panes::{
-    EndKind, FailNext, LinkEvent, LinkFault, LinkStatus, PaneBody, PaneEffect, PaneId,
+    EndKind, FailNext, LinkEvent, LinkFault, LinkStatus, PaneBody, PaneCommand, PaneEffect, PaneId,
 };
+use jackin_console::screens::Go;
 use jackin_console::sim::{self, SimBackend};
 use jackin_console::world::{Msg, World};
 use junie_tui::core::event::{External, Input, Outcome};
@@ -129,6 +130,59 @@ fn the_backend_hears_when_the_operator_leaves_the_capsule() {
     assert_eq!(rig.backend.left(), [INSTANCE], "Ctrl+B d leaves");
     rig.advance(400);
     assert_eq!(rig.backend.left(), [INSTANCE], "once, not on every tick");
+}
+
+const FOCUS_OUT: &[u8] = b"\x1b[O";
+
+/// An attached, owned Codex pane whose program asked for focus reports.
+fn reporting_rig() -> Rig {
+    let mut rig = Rig::new();
+    rig.attach();
+    rig.bench.output(0, b"\x1b[?1004h");
+    rig.advance(80);
+    assert_eq!(rig.bench.commands(0), [], "the pane has the focus");
+    rig
+}
+
+#[test]
+fn public_navigation_blurs_departed_capsule_before_callback() {
+    type Destination = (&'static str, fn() -> Go);
+    let destinations: [Destination; 4] = [
+        ("manager", || Go::Manager),
+        ("accounts", || Go::Accounts { select: None }),
+        ("usage", || Go::Usage { select: None }),
+        ("settings", || Go::Settings),
+    ];
+    for (name, destination) in destinations {
+        let mut rig = reporting_rig();
+        rig.app.go(destination());
+        assert_eq!(rig.backend.left(), [INSTANCE], "{name}: one departure");
+        assert_eq!(
+            rig.backend.left_seen(),
+            [vec![vec![PaneCommand::Input(FOCUS_OUT.to_vec())]]],
+            "{name}: the program was told it lost the focus before the backend heard"
+        );
+    }
+}
+
+#[test]
+fn detach_emits_one_focus_out() {
+    let mut rig = reporting_rig();
+    rig.press("ctrl+b d");
+    let out = PaneCommand::Input(FOCUS_OUT.to_vec());
+    assert_eq!(rig.bench.commands(0), std::slice::from_ref(&out));
+    assert_eq!(rig.backend.left(), [INSTANCE]);
+    assert_eq!(rig.backend.left_seen(), [vec![vec![out]]]);
+
+    rig.app.go(Go::Accounts { select: None });
+    rig.app.go(Go::Manager);
+    rig.advance(400);
+    assert_eq!(
+        rig.bench.commands(0),
+        [PaneCommand::Input(FOCUS_OUT.to_vec())],
+        "navigating again says nothing"
+    );
+    assert_eq!(rig.backend.left(), [INSTANCE], "and leaves nothing again");
 }
 
 #[test]
