@@ -18,6 +18,7 @@ mod grapheme_paint;
 mod grid_parsers;
 mod grid_validation;
 mod help_geometry;
+mod item_eligibility;
 mod keyed_collections;
 mod keyed_costs;
 mod master_detail_bounds;
