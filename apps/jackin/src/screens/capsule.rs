@@ -810,14 +810,14 @@ impl CapsuleScreen {
                 SplitDir::Horizontal => (
                     MIN_PANE_COLS,
                     MIN_PANE_ROWS,
-                    inner.width / 2 - 2,
+                    (inner.width / 2).saturating_sub(2),
                     inner.height.saturating_sub(2),
                 ),
                 SplitDir::Vertical => (
                     MIN_PANE_COLS,
                     MIN_PANE_ROWS,
                     inner.width.saturating_sub(2),
-                    inner.height / 2 - 2,
+                    (inner.height / 2).saturating_sub(2),
                 ),
             };
             if have_c < need_c {
