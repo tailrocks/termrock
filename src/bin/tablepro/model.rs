@@ -1136,6 +1136,18 @@ mod completion_prefix_tests {
         Catalog::acme_prod()
     }
 
+    fn complete_in(cat: &Catalog, src: &str, cursor: usize) -> (Vec<Completion>, usize) {
+        let store = crate::store::SessionStore::new(1);
+        complete(
+            Source {
+                catalog: cat,
+                store: &store,
+            },
+            src,
+            cursor,
+        )
+    }
+
     #[test]
     fn completion_prefix_before_first_statement() {
         let cat = cat();
@@ -1147,7 +1159,7 @@ mod completion_prefix_tests {
                     (word.as_str(), clause, qualifier),
                     ("", Clause::Start, None)
                 );
-                assert_eq!(complete(&cat, src, cursor).1, 0);
+                assert_eq!(complete_in(&cat, src, cursor).1, 0);
             }
         }
     }
@@ -1161,7 +1173,7 @@ mod completion_prefix_tests {
             assert!(src.is_char_boundary(at));
             assert_eq!(context(src, cursor), context(src, at));
             let (word, _, _) = context(src, cursor);
-            let (_, replace) = complete(&cat, src, cursor);
+            let (_, replace) = complete_in(&cat, src, cursor);
             assert_eq!(replace, word.len());
             assert!(replace <= at);
         }
@@ -1204,7 +1216,7 @@ mod completion_prefix_tests {
         let src = "SELECT u.id FROM users u;\n\n";
         let alone = "\n\n";
         let labels = |src: &str| {
-            complete(&cat, src, src.len())
+            complete_in(&cat, src, src.len())
                 .0
                 .into_iter()
                 .map(|c| (c.kind, c.label))
@@ -1225,7 +1237,7 @@ mod completion_prefix_tests {
             "SELECT u.id FROM customers u ORDER BY ",
             "SELECT u.id FROM customers u WHERE \n  ",
         ] {
-            let (rows, replace) = complete(&cat, src, src.len());
+            let (rows, replace) = complete_in(&cat, src, src.len());
             assert_eq!(replace, 0, "{src:?}");
             let columns: Vec<&str> = rows
                 .iter()
@@ -1250,7 +1262,7 @@ mod completion_prefix_tests {
         let cat = cat();
         let src = "SELECT 1; SELECT u.id FROM customers u WHERE  ; SELECT 2";
         let cursor = src.find("  ;").unwrap() + 1;
-        let (rows, _) = complete(&cat, src, cursor);
+        let (rows, _) = complete_in(&cat, src, cursor);
         assert!(
             rows.iter()
                 .any(|c| c.kind == CompletionKind::Alias && c.label == "u")

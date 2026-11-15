@@ -2546,6 +2546,7 @@ fn execute(
                     entry.error = Some(message.clone());
                     return (
                         ResultSet {
+                            key,
                             source: None,
                             source_changed: false,
                             label: format!("Error {n}"),
@@ -3286,7 +3287,7 @@ mod issue194_tests {
             },
             &table,
         );
-        let ddl = &tab.ddl.lines;
+        let ddl = tab.ddl.lines();
 
         assert_eq!(ddl[0], "CREATE TABLE \"public\".\"UserOrders\" (");
         assert_eq!(ddl[1], "    \"order\" integer NOT NULL,");
@@ -3500,10 +3501,18 @@ mod issue10_tests {
     /// Runs the tab's own select (its filters and match mode) through the simulator.
     fn tab_ids(cat: &Catalog, filters: Vec<Filter>, match_all: bool) -> Vec<String> {
         let table = orders(cat);
-        let mut tab = TableTab::new(WidgetId::of("issue10"), cat, table, false);
-        tab.filters = filters;
-        tab.match_all = match_all;
-        let rs = sql::run_select(cat, &tab.select()).expect("filtered select runs");
+        let store = crate::store::SessionStore::new(1);
+        let src = Source {
+            catalog: cat,
+            store: &store,
+        };
+        let tab = TableTab::new(ItemKey::num(0), WidgetId::of("issue10"), src, table);
+        let view = TableViewState {
+            sort: None,
+            filters,
+            match_all,
+        };
+        let rs = sql::run_select(src, &tab.select(&view)).expect("filtered select runs");
         let id = rs
             .columns
             .iter()
@@ -3763,10 +3772,17 @@ mod issue84_tests {
     fn completion_prefix_editor_home_acceptance() {
         let cat = Catalog::acme_prod();
         let original = " SELECT id FROM users";
-        let mut tab = QueryTab::new(WidgetId::of("issue84"), "Query 1", "");
+        let mut tab = QueryTab::new(ItemKey::num(0), WidgetId::of("issue84"), "Query 1", "");
         tab.editor.set_text(original);
         assert_eq!(tab.editor.cursor_offset(), 0);
-        tab.trigger_completion(&cat, true);
+        let store = crate::store::SessionStore::new(1);
+        tab.trigger_completion(
+            Source {
+                catalog: &cat,
+                store: &store,
+            },
+            true,
+        );
         assert!(tab.completion.is_open());
         tab.accept_completion(0);
         let text = tab.editor.text();

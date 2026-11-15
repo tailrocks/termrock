@@ -2734,7 +2734,7 @@ impl App {
 
                 let _ = w.modify_active(|tab| {
                     if let WorkTab::History(h) = tab {
-                        h.sync_detail_public(&self.history);
+                        h.sync_detail(&self.history);
                     }
                 });
                 menu
@@ -3458,11 +3458,24 @@ mod tests {
         app
     }
 
-    fn query(app: &mut App) -> &mut QueryTab {
-        match app.workbench.as_mut().and_then(|w| w.active_tab_mut()) {
+    fn query(app: &App) -> &QueryTab {
+        match app.workbench.as_ref().and_then(|w| w.active_tab()) {
             Some(WorkTab::Query(q)) => q,
             _ => panic!("a query tab is active"),
         }
+    }
+
+    fn edit<R>(app: &mut App, f: impl FnOnce(&mut QueryTab) -> R) -> R {
+        app.workbench
+            .as_mut()
+            .and_then(|w| {
+                w.modify_active(|tab| match tab {
+                    WorkTab::Query(q) => Some(f(q)),
+                    _ => None,
+                })
+            })
+            .flatten()
+            .expect("a query tab is active")
     }
 
     fn run_batch(app: &mut App) {
@@ -3567,11 +3580,10 @@ mod tests {
         run_batch(&mut app);
         tick_until_history(&mut app, base + 1);
         assert!(!query(&mut app).is_running());
-        query(&mut app).toggle_pin(0);
+        edit(&mut app, |q| q.toggle_pin(0));
         let pinned_key = query(&mut app).results[0].key;
 
-        let q = query(&mut app);
-        q.editor.set_text(BATCH);
+        edit(&mut app, |q| q.editor.set_text(BATCH));
         let mid = app.history.entries.len();
         run_batch(&mut app);
         tick_until_history(&mut app, mid + 2);
@@ -3615,7 +3627,7 @@ mod tests {
         assert_eq!(esc(&mut app), Outcome::Changed);
 
         app.shell.status.clear();
-        assert!(!query(&mut app).cancel(), "nothing left to cancel");
+        assert!(!edit(&mut app, |q| q.cancel()), "nothing left to cancel");
         assert_ne!(esc(&mut app), Outcome::Changed);
         assert_ne!(click_stop(&mut app), Outcome::Changed);
 
@@ -3636,7 +3648,7 @@ mod tests {
         tick_until_history(&mut app, base + 3);
         assert!(!query(&mut app).is_running());
         assert_eq!(query(&mut app).result_tabs.items().len(), 3);
-        query(&mut app).toggle_pin(1);
+        edit(&mut app, |q| q.toggle_pin(1));
         let pinned_label = query(&mut app).results[0].label.clone();
 
         run_batch(&mut app);
@@ -3803,17 +3815,18 @@ mod tests {
         let base = app.history.entries.len();
         run_batch(&mut app);
         tick_until_history(&mut app, base + 3);
-        let q = query(&mut app);
-        assert_eq!(q.results.len(), 3);
-        q.set_active_result(retain);
-        let keys = q.results.iter().map(|r| r.key).collect();
+        assert_eq!(query(&app).results.len(), 3);
+        edit(&mut app, |q| q.set_active_result(retain));
+        let keys = query(&app).results.iter().map(|r| r.key).collect();
         (app, keys)
     }
 
     fn mark_active_grid(app: &mut App) {
-        let g = query(app).active_grid_mut().expect("rows result");
-        g.cursor = CURSOR_MARK;
-        assert!(g.select_rows(SelectGesture::Only, 1));
+        edit(app, |q| {
+            let g = q.active_grid_mut().expect("rows result");
+            g.cursor = CURSOR_MARK;
+            assert!(g.select_rows(SelectGesture::Only, 1));
+        });
     }
 
     fn assert_marked_grid(app: &mut App, what: &str) {
@@ -3967,20 +3980,22 @@ mod tests {
     #[test]
     fn result_close_pinned_or_invalid_noop() {
         let (mut app, ks) = three_results(2);
-        query(&mut app).toggle_pin(0);
+        edit(&mut app, |q| q.toggle_pin(0));
         assert_eq!(
             keys(query(&mut app)),
             [ks[0], ks[1], ks[2]],
             "pinning the first result keeps the order"
         );
-        let q = query(&mut app);
-        q.set_active_result(1);
+        edit(&mut app, |q| q.set_active_result(1));
+        let q = query(&app);
         let before = (keys(q), q.active_result, q.result_tabs.items().len());
 
-        q.close_result(0);
-        q.close_result(3);
-        q.close_result(usize::MAX);
-
+        edit(&mut app, |q| {
+            q.close_result(0);
+            q.close_result(3);
+            q.close_result(usize::MAX);
+        });
+        let q = query(&app);
         assert_eq!(
             (keys(q), q.active_result, q.result_tabs.items().len()),
             before
@@ -4001,7 +4016,7 @@ mod tests {
     #[test]
     fn result_pin_activates_the_toggled_result() {
         let (mut app, ks) = three_results(1);
-        query(&mut app).toggle_pin(2);
+        edit(&mut app, |q| q.toggle_pin(2));
         let q = query(&mut app);
         assert_eq!(keys(q), [ks[2], ks[0], ks[1]]);
         assert_eq!(q.active_result, 0, "the pinned result is active");

@@ -1902,6 +1902,8 @@ mod issue10_sql_tests {
     #[test]
     fn issue10_index_scan_needs_a_positive_equality_conjunct() {
         let cat = Catalog::acme_prod();
+        let store = crate::store::SessionStore::new(1);
+        let src_of = |catalog, store| Source { catalog, store };
         let eq = |op| {
             Expr::Leaf(Predicate {
                 column: "customer_id".into(),
@@ -1918,7 +1920,7 @@ mod issue10_sql_tests {
             count_only: false,
         };
         let conjunction = base(Expr::All(vec![eq(PredicateOp::Eq("abc".into()))]));
-        let plan = explain(&cat, &conjunction, false).unwrap();
+        let plan = explain(src_of(&cat, &store), &conjunction, false).unwrap();
         let mut lines = vec![];
         plan_text(&plan, 0, &mut lines);
         assert!(lines.iter().any(|l| l.contains("Index Scan")), "{lines:?}");
@@ -1927,7 +1929,7 @@ mod issue10_sql_tests {
             eq(PredicateOp::Eq("abc".into())),
             eq(PredicateOp::Eq("def".into())),
         ]));
-        let plan = explain(&cat, &disjunction, false).unwrap();
+        let plan = explain(src_of(&cat, &store), &disjunction, false).unwrap();
         let mut lines = vec![];
         plan_text(&plan, 0, &mut lines);
         assert!(!lines.iter().any(|l| l.contains("Index Scan")), "{lines:?}");

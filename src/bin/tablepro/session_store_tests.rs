@@ -302,7 +302,7 @@ fn strip_suffixes(app: &App) -> Vec<Option<String>> {
         .as_ref()
         .expect("connected")
         .strip
-        .items
+        .items()
         .iter()
         .map(|i| i.suffix.clone())
         .collect()

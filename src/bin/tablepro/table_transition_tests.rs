@@ -154,7 +154,7 @@ fn checkpoint(app: &mut App, key: ItemKey) -> Checkpoint {
         view: t.view().clone(),
         view_revision: t.view_revision(),
         sort_marker: t.grid.sort,
-        chips: t.chips.chips.iter().map(|c| format!("{c:?}")).collect(),
+        chips: t.chips.chips().iter().map(|c| format!("{c:?}")).collect(),
         pending: t.grid.pending().clone(),
         changes: t.grid.snapshot_changes(),
         revision: t.grid.revision(),

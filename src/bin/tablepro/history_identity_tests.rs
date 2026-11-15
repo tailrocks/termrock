@@ -184,8 +184,7 @@ impl Fixture {
             .workbench
             .as_ref()
             .expect("connected")
-            .tabs
-            .iter()
+            .tabs()
             .filter_map(|t| match t {
                 WorkTab::Query(q) => Some(q.editor.text().to_owned()),
                 _ => None,
@@ -361,12 +360,14 @@ fn history_identity_context_refuses_a_closed_owner() {
     let mut f = Fixture::new(&FOUR);
     f.open_menu("q2");
     let w = f.app.workbench.as_mut().expect("connected");
-    let at = w
-        .tabs
-        .iter()
-        .position(|t| matches!(t, WorkTab::History(_)))
-        .expect("history tab");
-    w.close_tab(at);
+    let key = w
+        .tab_key_at(
+            w.tabs()
+                .position(|t| matches!(t, WorkTab::History(_)))
+                .expect("history tab"),
+        )
+        .expect("history tab key");
+    let _ = w.request_close(key);
     let tabs_before = f.query_tabs();
     f.choose_menu_item(2);
     assert!(f.copied().is_empty());

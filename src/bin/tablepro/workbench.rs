@@ -695,7 +695,7 @@ impl Workbench {
             }
             item
         });
-        let labels: Vec<String> = self.strip.items.iter().map(|i| i.label.clone()).collect();
+        let labels: Vec<String> = self.strip.items().iter().map(|i| i.label.clone()).collect();
         let qualified: Vec<Option<String>> = self
             .tabs()
             .enumerate()
@@ -706,9 +706,9 @@ impl Workbench {
                 _ => None,
             })
             .collect();
-        for (item, label) in self.strip.items.iter_mut().zip(qualified) {
+        for (i, label) in qualified.into_iter().enumerate() {
             if let Some(label) = label {
-                item.label = label;
+                self.strip.update_item(i, |item| item.label = label);
             }
         }
         self.strip.allow_new = true;
