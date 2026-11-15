@@ -111,7 +111,6 @@ pub struct FinderPage {
 
     query_changed: bool,
 
-    previewed: Option<String>,
     last_tick: u64,
 }
 
@@ -163,7 +162,6 @@ impl FinderPage {
             explore_areas: vec![],
             rebuilds: 0,
             query_changed: false,
-            previewed: None,
             last_tick: u64::MAX,
         }
     }
@@ -431,7 +429,7 @@ impl FinderPage {
         let target = if query_changed {
             None
         } else {
-            keep.and_then(|id| self.locate_item(&id))
+            keep.as_deref().and_then(|id| self.locate_item(id))
         };
         match target {
             Some((row, column)) => {
@@ -446,10 +444,8 @@ impl FinderPage {
         self.scroll.set_content(self.rows.len());
         self.scroll.ensure_visible(self.cursor);
 
-        let previewed = self.current_id();
-        if query_changed || previewed != self.previewed {
+        if query_changed || keep != self.current_id() {
             self.preview_scroll.jump_start();
-            self.previewed = previewed;
         }
     }
 
@@ -1356,6 +1352,7 @@ impl FinderPage {
             if let Some(r) = self.rows.iter().position(|r| matches!(r, Row::Explore(_))) {
                 self.cursor = r;
                 self.explore_cursor = *ci;
+                self.preview_scroll.jump_start();
             }
             cx.focus.focus(FINDER);
             return self.activate_current(cx);
@@ -1467,11 +1464,13 @@ impl ShellPage<Holla> for FinderPage {
             }
             KeyCode::Home => {
                 self.cursor = self.first_selectable();
+                self.preview_scroll.jump_start();
                 self.scroll.jump_start();
                 Outcome::Changed
             }
             KeyCode::End => {
                 self.cursor = self.rows.iter().rposition(selectable).unwrap_or(0);
+                self.preview_scroll.jump_start();
                 self.scroll.ensure_visible(self.cursor);
                 Outcome::Changed
             }
@@ -1482,10 +1481,14 @@ impl ShellPage<Holla> for FinderPage {
                     Row::Explore(c) => c.len(),
                     _ => 0,
                 };
+                let before = self.explore_cursor;
                 if key.code == KeyCode::Left {
                     self.explore_cursor = self.explore_cursor.saturating_sub(1);
                 } else {
                     self.explore_cursor = (self.explore_cursor + 1).min(n.saturating_sub(1));
+                }
+                if self.explore_cursor != before {
+                    self.preview_scroll.jump_start();
                 }
                 Outcome::Changed
             }
@@ -1566,6 +1569,7 @@ impl ShellPage<Holla> for FinderPage {
                     && ClickPolicy::DATA.activates(ev.count(), self.cursor == i)
                 {
                     self.cursor = i;
+                    self.preview_scroll.jump_start();
                     return self.activate_current(cx);
                 }
                 self.click(id, pos, w, cx)
@@ -1577,6 +1581,7 @@ impl ShellPage<Holla> for FinderPage {
                 {
                     if cx.context.moves_cursor {
                         self.cursor = i;
+                        self.preview_scroll.jump_start();
                     }
                     cx.focus.focus(FINDER);
 
