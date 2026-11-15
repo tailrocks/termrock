@@ -1019,6 +1019,34 @@ fn option_size_share() {
     });
 }
 
+fn infeasible_share(name: &str, size: &str) {
+    let app = page(
+        name,
+        &["masterdetail.width=72", "masterdetail.collapse=0", size],
+        120,
+        40,
+    );
+    app.wait_text("Database browser");
+    flash_settle(&app);
+    let screen = app.settle();
+    see(
+        &screen,
+        &["72 cols", "Tables", "orders", "Show details", SUMMARY],
+        &["Open table", "shop.public.orders", "Schema", JOIN],
+    );
+    app.finish();
+}
+
+#[test]
+fn option_share_minimum_too_wide_collapses() {
+    infeasible_share("s07-share-100", "masterdetail.size=share-100");
+}
+
+#[test]
+fn option_master_share_minimum_too_wide_collapses() {
+    infeasible_share("s07-master-100", "masterdetail.size=master-100");
+}
+
 #[test]
 fn option_summary_0_at_width_72() {
     let app = page(

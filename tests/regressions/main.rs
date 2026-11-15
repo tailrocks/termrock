@@ -11,4 +11,5 @@ mod grapheme_paint;
 mod scroll_view_navigation;
 mod help_geometry;
 mod nav_list_state;
+mod master_detail_bounds;
 mod smoke;
