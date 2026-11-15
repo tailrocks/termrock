@@ -180,6 +180,19 @@ impl PaneNode {
         }
     }
 
+    fn node_at(&self, path: &[u8]) -> Option<&PaneNode> {
+        let mut cur = self;
+        for p in path {
+            match cur {
+                PaneNode::Split { first, second, .. } => {
+                    cur = if *p == 0 { first } else { second };
+                }
+                PaneNode::Leaf(_) => return None,
+            }
+        }
+        Some(cur)
+    }
+
     fn unzoom(&mut self) {
         if let PaneNode::Split {
             split,
@@ -219,6 +232,17 @@ pub struct Seam {
     pub container: Rect,
 
     pub handle: Rect,
+}
+
+/// The seam a pointer gesture holds. `index` is the seam's position in the
+/// layout that was current at press time, which is also the number its router
+/// id carries. The rest identifies the split: its path, direction and leaves.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct SeamGrab {
+    index: usize,
+    path: Vec<u8>,
+    dir: SplitDir,
+    leaves: Vec<PaneId>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -375,7 +399,9 @@ pub struct PaneTree {
     seams: Vec<Seam>,
     handles: Vec<Splitter>,
 
-    held: Option<usize>,
+    grab: Option<SeamGrab>,
+
+    dead: Option<WidgetId>,
 }
 
 impl PaneTree {
@@ -392,7 +418,8 @@ impl PaneTree {
             rects: Vec::new(),
             seams: Vec::new(),
             handles: Vec::new(),
-            held: None,
+            grab: None,
+            dead: None,
         }
     }
 
@@ -453,6 +480,7 @@ impl PaneTree {
         let done = self.root.split_leaf(target, new, dir, new_first);
         if done {
             self.focused = new;
+            self.abandon_seam_drag();
         }
         done
     }
@@ -470,12 +498,14 @@ impl PaneTree {
         if self.focused == target {
             self.focused = self.leaves()[0];
         }
+        self.abandon_seam_drag();
         Ok(())
     }
 
     pub fn toggle_zoom(&mut self) -> PaneResult {
         if self.zoomed().is_some() {
             self.root.unzoom();
+            self.abandon_seam_drag();
             return Ok(Outcome::Changed);
         }
         if self.leaves().len() <= 1 {
@@ -494,7 +524,51 @@ impl PaneTree {
                 });
             }
         }
+        self.abandon_seam_drag();
         Ok(Outcome::Changed)
+    }
+
+    fn seam_grab(&self, index: usize) -> Option<SeamGrab> {
+        let seam = self.seams.get(index)?;
+        let node = self.root.node_at(&seam.path)?;
+        let PaneNode::Split { dir, .. } = node else {
+            return None;
+        };
+        Some(SeamGrab {
+            index,
+            path: seam.path.clone(),
+            dir: *dir,
+            leaves: node.leaves(),
+        })
+    }
+
+    /// Clears the held seam and every handle's grab. Returns whether a seam was held.
+    fn cancel_seam_drag(&mut self) -> bool {
+        let mut changed = self.grab.take().is_some();
+        for h in &mut self.handles {
+            changed |= h.cancel_drag();
+        }
+        changed
+    }
+
+    /// Cancels the held seam when the layout around it changed. The router keeps
+    /// pressing the old seam id until the gesture ends, so that id stays dead
+    /// until the next press or terminal phase. A new seam drawn under the same
+    /// id is then neither resized nor drawn pressed.
+    fn abandon_seam_drag(&mut self) {
+        if let Some(index) = self.grab.as_ref().map(|g| g.index) {
+            self.dead = Some(self.seam_id(index));
+        }
+        self.cancel_seam_drag();
+    }
+
+    fn release_stale_grab(&mut self) {
+        let Some(grab) = &self.grab else {
+            return;
+        };
+        if self.seam_grab(grab.index).as_ref() != Some(grab) {
+            self.abandon_seam_drag();
+        }
     }
 
     pub fn focus_toward(&mut self, dir: Direction) -> PaneResult {
@@ -596,6 +670,7 @@ impl PaneTree {
         if zoomed.is_none() {
             self.seams = seams.into_iter().filter(|s| !s.handle.is_empty()).collect();
         }
+        self.release_stale_grab();
     }
 
     pub fn seam_id(&self, i: usize) -> WidgetId {
@@ -625,12 +700,19 @@ impl PaneTree {
         }
         for i in 0..n {
             let s = &self.seams[i];
-            let mut h = Splitter::new(self.seam_id(i), s.dir).hit_pad(self.hit_pad);
+            let id = self.seam_id(i);
+            let mut h = Splitter::new(id, s.dir).hit_pad(self.hit_pad);
             if self.handles[i].dir == s.dir {
                 h = self.handles[i];
                 h.hit_pad = self.hit_pad;
             }
-            h.render_held(s.handle, buf, ctx, bg, self.held == Some(i));
+            let held = self.grab.as_ref().is_some_and(|g| g.index == i);
+            let saved = ctx.interaction.pressed;
+            if self.dead == Some(id) {
+                ctx.interaction.pressed = None;
+            }
+            h.render_held(s.handle, buf, ctx, bg, held);
+            ctx.interaction.pressed = saved;
             self.handles[i] = h;
         }
         let mut inner = Vec::with_capacity(self.rects.len());
@@ -690,30 +772,10 @@ impl PaneTree {
     }
 
     pub fn on_pointer(&mut self, ev: &PointerEvent) -> Option<Outcome> {
-        if let Some(i) = (0..self.seams.len()).find(|&i| self.seam_id(i) == ev.id) {
-            let s = self.seams[i].clone();
-            let mut h = self.handles.get(i).copied()?;
-            let Some(PaneNode::Split { split, .. }) = self.root.node_at_mut(&s.path) else {
-                return None;
-            };
-            let o = match ev.phase()? {
-                Phase::Press => {
-                    self.held = Some(i);
-                    h.on_press(split, s.container, 1, ev.pos());
-                    Outcome::Consumed
-                }
-                Phase::Drag => {
-                    self.held = Some(i);
-                    h.on_drag(split, s.container, 1, ev.pos())
-                }
-                Phase::Click => {
-                    self.held = None;
-                    h.on_click(split, ev.count())
-                }
-                _ => return None,
-            };
-            self.handles[i] = h;
-            return Some(o);
+        self.release_stale_grab();
+        let seam = (0..self.seams.len()).find(|&i| self.seam_id(i) == ev.id);
+        if seam.is_some() || self.dead == Some(ev.id) {
+            return self.on_seam_pointer(ev, seam);
         }
         if ev.is(Phase::Click)
             && let Some(&(pid, _)) = self
@@ -725,6 +787,77 @@ impl PaneTree {
             return Some(Outcome::Changed);
         }
         None
+    }
+
+    fn on_seam_pointer(&mut self, ev: &PointerEvent, seam: Option<usize>) -> Option<Outcome> {
+        match ev.phase()? {
+            Phase::Press => {
+                let i = seam?;
+                let grab = self.seam_grab(i)?;
+                let container = self.seams[i].container;
+                let mut h = self.handles.get(i).copied()?;
+                let Some(PaneNode::Split { split, .. }) = self.root.node_at_mut(&grab.path) else {
+                    return None;
+                };
+                self.dead = None;
+                self.grab = Some(grab);
+                h.on_press(split, container, 1, ev.pos());
+                self.handles[i] = h;
+                Some(Outcome::Consumed)
+            }
+            Phase::Drag => {
+                let grabbed = seam.filter(|&i| self.grab.as_ref().is_some_and(|g| g.index == i));
+                let Some(i) = grabbed else {
+                    return Some(Outcome::Consumed);
+                };
+                let s = self.seams[i].clone();
+                let mut h = self.handles.get(i).copied()?;
+                let Some(PaneNode::Split { split, .. }) = self.root.node_at_mut(&s.path) else {
+                    return None;
+                };
+                let o = h.on_drag(split, s.container, 1, ev.pos());
+                self.handles[i] = h;
+                Some(o)
+            }
+            Phase::DragEnd => Some(self.end_seam_gesture()),
+            Phase::Release => {
+                self.dead = None;
+                Some(self.end_seam_gesture())
+            }
+            Phase::Click => {
+                let stale = self.dead.take() == Some(ev.id);
+                let held = self.cancel_seam_drag();
+                if stale {
+                    return Some(if held {
+                        Outcome::Changed
+                    } else {
+                        Outcome::Consumed
+                    });
+                }
+                let i = seam?;
+                let s = self.seams[i].clone();
+                let mut h = self.handles.get(i).copied()?;
+                let Some(PaneNode::Split { split, .. }) = self.root.node_at_mut(&s.path) else {
+                    return None;
+                };
+                let o = h.on_click(split, ev.count());
+                self.handles[i] = h;
+                Some(if held && o == Outcome::Consumed {
+                    Outcome::Changed
+                } else {
+                    o
+                })
+            }
+            _ => None,
+        }
+    }
+
+    fn end_seam_gesture(&mut self) -> Outcome {
+        if self.cancel_seam_drag() {
+            Outcome::Changed
+        } else {
+            Outcome::Consumed
+        }
     }
 
     pub fn hints(&self) -> Vec<Hint> {

@@ -9,5 +9,6 @@ mod common;
 mod help_geometry;
 mod master_detail_bounds;
 mod nav_list_state;
+mod pane_tree_pointer;
 mod scroll_view_navigation;
 mod smoke;
