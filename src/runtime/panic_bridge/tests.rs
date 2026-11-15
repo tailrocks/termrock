@@ -2,13 +2,15 @@
 //! shared test process. The hook cases replace the process panic hook and
 //! each run in a child process through [`child_case`].
 
-use std::io::ErrorKind;
+use std::io::{self, ErrorKind};
 use std::panic::{self, AssertUnwindSafe};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Barrier, Mutex};
 use std::thread;
 
-use super::{COUNTER_MAX, Phase, RestoreGate, RestoreResult, SessionOwner, State, install_once};
+use super::{
+    COUNTER_MAX, Phase, RestoreGate, RestoreResult, SessionOwner, Setup, State, install_once,
+};
 use crate::runtime::isolated::child_case;
 
 fn leak(restore: fn()) -> &'static RestoreGate {
@@ -135,6 +137,7 @@ fn restore_gate_exhaustion_is_an_error_not_a_wrap() {
             owner: COUNTER_MAX,
             interval: 3,
             phase: Phase::Unowned,
+            setup: Setup::Settled,
             release_pending: false,
         }
         .pack(),
@@ -150,6 +153,7 @@ fn restore_gate_exhaustion_is_an_error_not_a_wrap() {
             owner: token.owner,
             interval: COUNTER_MAX,
             phase: Phase::Inactive,
+            setup: Setup::Settled,
             release_pending: false,
         }
         .pack(),
@@ -250,6 +254,119 @@ fn panic_cleanup_reenter_is_rejected_while_restoring() {
     pausing.store(false, Ordering::SeqCst);
     owner.activate().expect("reenter once cleanup finished");
     assert_eq!(gate.load().phase, Phase::Active);
+}
+
+#[test]
+fn setup_window_keeps_the_interval_active_after_a_hook_restore() {
+    let (gate, restores) = counting_gate!();
+    let owner = SessionOwner::claim(gate).expect("claim");
+    let setup = owner.set_up(|| {
+        gate.restore_current_for_panic();
+        assert_eq!(
+            gate.load().phase,
+            Phase::Active,
+            "hook ended a setup interval"
+        );
+        gate.restore_current_for_panic();
+        Ok(())
+    });
+    setup.expect("setup");
+    assert_eq!(runs(restores), 2, "the hook restores during setup");
+
+    assert_eq!(gate.load().setup, Setup::Settled);
+    owner.restore().expect("leave");
+    assert_eq!(runs(restores), 3, "leave skipped the modes setup enabled");
+    owner.restore().expect("second leave");
+    assert_eq!(runs(restores), 3, "settled interval cleans up once");
+}
+
+#[test]
+fn setup_window_ends_when_setup_fails() {
+    let (gate, restores) = counting_gate!();
+    let owner = SessionOwner::claim(gate).expect("claim");
+    owner
+        .set_up(|| -> io::Result<()> {
+            gate.restore_current_for_panic();
+            Err(io::Error::other("setup failed"))
+        })
+        .expect_err("setup failed");
+    assert_eq!(gate.load().setup, Setup::Settled);
+    drop(owner);
+    assert_eq!(runs(restores), 2, "failed setup skipped its cleanup");
+}
+
+#[test]
+fn setup_window_ends_when_setup_unwinds() {
+    let (gate, restores) = counting_gate!();
+    let owner = SessionOwner::claim(gate).expect("claim");
+    let unwound = panic::catch_unwind(AssertUnwindSafe(|| {
+        let _ = owner.set_up(|| -> io::Result<()> {
+            gate.restore_current_for_panic();
+            panic!("setup panicked")
+        });
+    }));
+    assert!(unwound.is_err());
+    assert_eq!(gate.load().setup, Setup::Settled);
+    drop(owner);
+    assert_eq!(runs(restores), 2, "unwinding setup skipped its cleanup");
+}
+
+#[test]
+fn setup_finished_during_a_cleanup_owes_another_cleanup() {
+    let (gate, restores, pause, pausing) = paused_gate!();
+    let owner = SessionOwner::claim(gate).expect("claim");
+    pausing.store(true, Ordering::SeqCst);
+    let hook = thread::spawn(move || {
+        pause.wait();
+        gate.restore_current_for_panic();
+    });
+    let setup = owner.set_up(|| {
+        pause.wait();
+        pause.wait();
+        assert_eq!(gate.load().phase, Phase::Restoring);
+        Ok(())
+    });
+    setup.expect("setup");
+    assert_eq!(gate.load().setup, Setup::FinishedDuringCleanup);
+    pause.wait();
+    hook.join().expect("hook thread");
+    pausing.store(false, Ordering::SeqCst);
+
+    assert_eq!(gate.load().phase, Phase::Active, "hook ended the interval");
+    assert_eq!(gate.load().setup, Setup::Settled);
+    owner.restore().expect("leave");
+    assert_eq!(
+        runs(restores),
+        2,
+        "leave skipped the cleanup setup still owed"
+    );
+}
+
+#[test]
+fn owner_dropped_during_a_setup_cleanup_cleans_up_again() {
+    let (gate, restores, pause, pausing) = paused_gate!();
+    let owner = SessionOwner::claim(gate).expect("claim");
+    pausing.store(true, Ordering::SeqCst);
+    let hook = thread::spawn(move || {
+        pause.wait();
+        gate.restore_current_for_panic();
+    });
+    let _ = owner.set_up(|| {
+        pause.wait();
+        pause.wait();
+        Ok(())
+    });
+    drop(owner);
+    assert_eq!(gate.load().phase, Phase::Restoring, "drop released early");
+    pause.wait();
+    pause.wait();
+    pause.wait();
+    hook.join().expect("hook thread");
+    pausing.store(false, Ordering::SeqCst);
+
+    assert_eq!(runs(restores), 2, "modes enabled after the hook stayed on");
+    assert_eq!(gate.load().phase, Phase::Unowned);
+    SessionOwner::claim(gate).expect("claim after release");
 }
 
 static HOST: AtomicUsize = AtomicUsize::new(0);

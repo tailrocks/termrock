@@ -195,6 +195,11 @@ fn is_navigation(key: &Key) -> bool {
 /// terminal cleanup from then on. Unwinding still restores the terminal when
 /// the session drops, but under `panic = "abort"` a replacing hook must
 /// restore the terminal itself or wrap the hook it replaced.
+///
+/// A panic caught on another thread while entry or resume is still enabling
+/// modes makes the hook restore a half-set-up terminal. Setup then finishes
+/// and the interval stays owed one more cleanup, so leave or drop restores the
+/// modes setup enabled after the hook ran.
 pub struct TerminalSession {
     terminal: ratatui::DefaultTerminal,
     owner: SessionOwner,
@@ -205,7 +210,8 @@ pub struct TerminalSession {
 static SESSION_GATE: RestoreGate = RestoreGate::new(restore_terminal);
 
 /// Claims `gate`, installs the panic bridge, activates the first interval and
-/// then runs `initialize`. A refused claim runs nothing. Any later failure
+/// then runs `initialize` inside its setup window. A refused claim runs
+/// nothing. Any later failure
 /// cleans up once and releases the claim when the returned owner drops.
 fn claim_and_initialize<T>(
     gate: &'static RestoreGate,
@@ -213,8 +219,8 @@ fn claim_and_initialize<T>(
 ) -> std::io::Result<(T, SessionOwner)> {
     let owner = SessionOwner::claim(gate)?;
     panic_bridge::install_once(gate)?;
-    owner.activate()?;
-    Ok((initialize()?, owner))
+    let value = owner.set_up(initialize)?;
+    Ok((value, owner))
 }
 
 fn open_terminal(protocol: KeyboardProtocol) -> std::io::Result<ratatui::DefaultTerminal> {
@@ -321,8 +327,7 @@ impl TerminalSession {
 
     #[cfg(unix)]
     fn reenter(&mut self) -> std::io::Result<(u16, u16)> {
-        self.owner.activate()?;
-        if let Err(e) = Self::resume_modes() {
+        if let Err(e) = self.owner.set_up(Self::resume_modes) {
             let _ = self.owner.restore();
             return Err(e);
         }
