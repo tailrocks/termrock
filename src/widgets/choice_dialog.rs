@@ -185,6 +185,10 @@ impl ChoiceDialog {
         }
     }
 
+    /// Resolves an allowed implicit dismissal. Sets `fired` to the cancel
+    /// button's index even when that button is disabled, matching keyboard
+    /// Escape; `fired` reports the resolved route and does not claim the
+    /// button was activated.
     pub(crate) fn cancel_implicit(&mut self) {
         self.fired = Some(self.cancel_index);
         self.result = Some(None);
