@@ -16,12 +16,17 @@
 //! * One background operation runs per document. [`DocumentWorkspace::begin_operation`]
 //!   supersedes the previous one, and [`DocumentWorkspace::finish_operation`]
 //!   runs its closure only for the exact generation that is still running.
-//! * Content mutation and view work are separate. [`DocumentWorkspace::update`]
-//!   is the only way to change a document; it advances the content revision.
-//!   [`DocumentWorkspace::view_mut`] hands out [`WorkspaceDocument::View`], a
-//!   facet the document type restricts to painting, scrolling, caret and
-//!   selection movement. It never advances the revision, so painting cannot
-//!   stale a pending close.
+//! * Content mutation and non-content work are separate. A close token is
+//!   invalidated exactly when document content changes.
+//!   [`DocumentWorkspace::update`] changes a document and advances the content
+//!   revision. [`DocumentWorkspace::view_mut`] hands out
+//!   [`WorkspaceDocument::View`], a facet the document type restricts to
+//!   everything that is not content: painting, scrolling, caret and selection
+//!   movement, polling a running operation and view marks such as "unseen".
+//!   It never advances the revision, so none of that can stale a pending
+//!   close. [`DocumentWorkspace::end_operation`] finishes an operation through
+//!   the same facet, and [`DocumentWorkspace::finish_operation`] finishes one
+//!   whose result changes content.
 //! * A dirty or running document is never closed silently. A close request
 //!   yields a [`CloseToken`] naming the document, its content revision and the
 //!   request. Resolving it validates all three. The save-and-close protocol
@@ -144,9 +149,11 @@ impl std::error::Error for WorkspaceError {}
 
 /// What the workspace needs to know about a document.
 pub trait WorkspaceDocument {
-    /// The restricted facet [`DocumentWorkspace::view_mut`] hands out. It
-    /// should expose only painting and view-only navigation, and its fields
-    /// should be private so a caller cannot reach the document through it.
+    /// The restricted facet [`DocumentWorkspace::view_mut`] and
+    /// [`DocumentWorkspace::end_operation`] hand out. It should expose only
+    /// what is not content (painting, view-only navigation, operation progress
+    /// and results, view marks), and its fields should be private so a caller
+    /// cannot reach the document through it.
     type View<'a>
     where
         Self: 'a;
@@ -418,7 +425,8 @@ impl<D: WorkspaceDocument> DocumentWorkspace<D> {
     }
 
     /// The document's restricted view facet. It does not advance the content
-    /// revision and works while a close-save holds the document.
+    /// revision and works while a close-save holds the document. Operation
+    /// polling and view marks go through it, not through [`Self::update`].
     pub fn view_mut(&mut self, key: ItemKey) -> Result<D::View<'_>, WorkspaceError> {
         self.entries
             .get_mut(&key)
@@ -483,15 +491,11 @@ impl<D: WorkspaceDocument> DocumentWorkspace<D> {
         Ok((token, resp))
     }
 
-    /// Applies an operation's result to exactly the document and generation
-    /// that started it. The check precedes the write: a missing document, a
-    /// superseded or cancelled generation, or an already finished one is
-    /// refused without calling `apply`.
-    pub fn finish_operation<R>(
-        &mut self,
-        token: OperationToken,
-        apply: impl FnOnce(&mut D) -> R,
-    ) -> Result<(R, Resp<D>), WorkspaceError> {
+    /// Clears the running mark of the exact generation `token` names and
+    /// returns its entry. The check precedes any write: a missing document, a
+    /// superseded or cancelled generation, an already finished one or a
+    /// close-save's own operation is refused.
+    fn take_running(&mut self, token: OperationToken) -> Result<&mut Entry<D>, WorkspaceError> {
         if !self.entries.contains_key(&token.document) {
             return Err(WorkspaceError::MissingDocument);
         }
@@ -506,11 +510,40 @@ impl<D: WorkspaceDocument> DocumentWorkspace<D> {
             return Err(WorkspaceError::SaveInProgress);
         }
         entry.running = None;
+        Ok(entry)
+    }
+
+    /// Applies an operation's result to exactly the document and generation
+    /// that started it, when the result changes content. The check precedes
+    /// the write: a missing document, a superseded or cancelled generation, or
+    /// an already finished one is refused without calling `apply`. The content
+    /// revision advances and a preview that became dirty is promoted. A result
+    /// that is not content ends through [`Self::end_operation`].
+    pub fn finish_operation<R>(
+        &mut self,
+        token: OperationToken,
+        apply: impl FnOnce(&mut D) -> R,
+    ) -> Result<(R, Resp<D>), WorkspaceError> {
+        let entry = self.take_running(token)?;
         let out = apply(&mut entry.document);
         entry.revision = bump(entry.revision, "content revision");
         let mut resp = Response::changed();
         self.promote_if_dirty(token.document, &mut resp);
         Ok((out, resp))
+    }
+
+    /// Ends an operation whose result is not content, such as a query run
+    /// that only filled its result pane. It has the checks of
+    /// [`Self::finish_operation`], applies through the document's view facet
+    /// and leaves the content revision alone, so a pending close stays valid.
+    pub fn end_operation<R>(
+        &mut self,
+        token: OperationToken,
+        apply: impl FnOnce(D::View<'_>) -> R,
+    ) -> Result<(R, Resp<D>), WorkspaceError> {
+        let entry = self.take_running(token)?;
+        let out = apply(entry.document.view());
+        Ok((out, Response::changed()))
     }
 
     /// Cancels the document's ordinary running operation. A close-save's

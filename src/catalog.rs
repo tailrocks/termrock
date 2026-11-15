@@ -3194,6 +3194,7 @@ pub static CAPABILITIES: &[Capability] = &[
     Capability::function("widgets::document_workspace::DocumentWorkspace::update"),
     Capability::function("widgets::document_workspace::DocumentWorkspace::begin_operation"),
     Capability::function("widgets::document_workspace::DocumentWorkspace::finish_operation"),
+    Capability::function("widgets::document_workspace::DocumentWorkspace::end_operation"),
     Capability::function("widgets::document_workspace::DocumentWorkspace::cancel_operation"),
     Capability::function("widgets::document_workspace::DocumentWorkspace::request_close"),
     Capability::function("widgets::document_workspace::DocumentWorkspace::resolve_close"),

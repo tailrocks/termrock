@@ -529,11 +529,9 @@ impl Workbench {
         for action in resp.into_actions() {
             match action {
                 WorkspaceAction::Activated(key) => {
-                    let _ = self.ws.update(key, |tab| {
-                        if let WorkTab::Query(q) = tab {
-                            q.unseen = false;
-                        }
-                    });
+                    if let Ok(mut view) = self.ws.view_mut(key) {
+                        view.mark_seen();
+                    }
                 }
                 WorkspaceAction::PreviewPromoted(_) => {}
                 WorkspaceAction::CloseRequested(token) => settled.close_requests.push(token),
@@ -697,11 +695,9 @@ impl Workbench {
             return false;
         }
         let resp = self.ws.activate(key);
-        let _ = self.modify(key, |tab| {
-            if let WorkTab::Query(q) = tab {
-                q.unseen = false;
-            }
-        });
+        if let Ok(mut view) = self.ws.view_mut(key) {
+            view.mark_seen();
+        }
         let _ = self.settle(resp);
         self.sync_strip();
         true
@@ -780,9 +776,10 @@ impl Workbench {
         }
     }
 
-    /// Runs `f` on every running query tab and returns the history entries
-    /// the statements made. A run that ends here finishes its workspace
-    /// operation.
+    /// Polls every running query tab and returns the history entries the
+    /// statements made. A run that ends here ends its workspace operation.
+    /// Polling goes through the view facet: it never advances a tab's content
+    /// revision, so a close prompt that is open stays valid.
     pub fn tick_queries(&mut self) -> Vec<crate::model::HistoryEntry> {
         let conn = self.connection.name.clone();
         let db = self.catalog.database.clone();
@@ -795,17 +792,16 @@ impl Workbench {
         let mut entries = vec![];
         for key in running {
             let cat = &self.catalog;
-            let ticked = self.ws.update(key, |tab| match tab {
-                WorkTab::Query(q) => (q.tick(cat, &conn, &db), q.is_running()),
-                _ => (vec![], false),
-            });
-            let Ok(((made, still_running), resp)) = ticked else {
+            let Ok((made, still_running)) = self
+                .ws
+                .view_mut(key)
+                .map(|mut view| view.tick(cat, &conn, &db))
+            else {
                 continue;
             };
             entries.extend(made);
-            let _ = self.settle(resp);
             if !still_running && let Some(token) = self.ws.running(key) {
-                let _ = self.ws.finish_operation(token, |_| ());
+                let _ = self.ws.end_operation(token, |_| ());
             }
         }
         entries

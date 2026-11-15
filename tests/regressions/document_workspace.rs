@@ -20,6 +20,7 @@ const ID: WidgetId = WidgetId::of("t.workspace");
 struct TextDoc {
     title: String,
     dirty: bool,
+    polls: u32,
     editor: CodeEditor,
 }
 
@@ -47,6 +48,10 @@ impl TextView<'_> {
     fn text(&self) -> &str {
         self.doc.editor.text()
     }
+
+    fn poll(&mut self) {
+        self.doc.polls += 1;
+    }
 }
 
 impl WorkspaceDocument for TextDoc {
@@ -73,6 +78,7 @@ fn doc(title: &str, text: &str) -> TextDoc {
     TextDoc {
         title: title.into(),
         dirty: false,
+        polls: 0,
         editor: CodeEditor::new(ID.sub(title), text),
     }
 }
@@ -390,6 +396,79 @@ fn workspace_save_close_is_atomic_and_targeted() {
     assert_eq!(w.ordered_keys(), [b]);
     assert!(w.get(b).is_some_and(|d| d.dirty), "b is unchanged");
     assert_eq!(w.active_key(), Some(b));
+}
+
+#[test]
+fn workspace_operation_progress_keeps_the_close_token_valid() {
+    let mut w = ws();
+    let a = open(&mut w, "a");
+    type_text(&mut w, a, "draft");
+    let (run, _) = w.begin_operation(a).expect("open");
+    let close = close_token(&mut w, a);
+    let revision = w.revision(a);
+
+    for _ in 0..3 {
+        w.view_mut(a).expect("open").poll();
+    }
+    let ((), _) = w
+        .end_operation(run, |mut view| view.poll())
+        .expect("the run is current");
+
+    assert_eq!(w.revision(a), revision, "polling and ending are not edits");
+    assert_eq!(w.get(a).map(|d| d.polls), Some(4));
+    assert!(w.running(a).is_none());
+    assert_eq!(w.pending_close(a), Some(close));
+    let resp = w
+        .resolve_close(close, CloseDecision::Discard)
+        .expect("the token survived");
+    assert_eq!(acts(resp), [format!("closed:{a:?}")]);
+}
+
+#[test]
+fn workspace_content_changes_stale_the_close_token() {
+    let mut w = ws();
+    let a = open(&mut w, "a");
+    type_text(&mut w, a, "draft");
+    let close = close_token(&mut w, a);
+    type_text(&mut w, a, "more");
+    assert_eq!(
+        w.resolve_close(close, CloseDecision::Discard).err(),
+        Some(WorkspaceError::StaleClose),
+        "an edit stales the token"
+    );
+
+    let (run, _) = w.begin_operation(a).expect("open");
+    let close = close_token(&mut w, a);
+    let _ = w
+        .finish_operation(run, |d| d.dirty = false)
+        .expect("the run is current");
+    assert_eq!(
+        w.resolve_close(close, CloseDecision::Discard).err(),
+        Some(WorkspaceError::StaleClose),
+        "a completion that changed content stales the token"
+    );
+}
+
+#[test]
+fn workspace_end_operation_checks_before_it_applies() {
+    let mut w = ws();
+    let a = open(&mut w, "a");
+    let (old, _) = w.begin_operation(a).expect("open");
+    let (new, _) = w.begin_operation(a).expect("supersedes");
+    let called = Cell::new(false);
+
+    assert_eq!(
+        w.end_operation(old, |_| called.set(true)).err(),
+        Some(WorkspaceError::StaleOperation)
+    );
+    assert!(!called.get(), "a superseded run never applies");
+    assert!(w.end_operation(new, |_| called.set(true)).is_ok());
+    assert!(called.get());
+    assert_eq!(
+        w.end_operation(new, |_| ()).err(),
+        Some(WorkspaceError::StaleOperation),
+        "a finished run ends once"
+    );
 }
 
 #[test]

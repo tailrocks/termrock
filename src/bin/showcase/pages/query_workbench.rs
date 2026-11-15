@@ -167,6 +167,24 @@ impl DocView<'_> {
         self.document.editor.editing = false;
     }
 
+    /// Stores a run's outcome. A result is not editor content, so it does not
+    /// stale a pending close.
+    fn install_for(&mut self, result: Outcome2, sql: String, token: Option<OperationToken>) {
+        self.document.install_for(result, sql, token);
+    }
+
+    /// Stores the demonstration outcome for the text now in the editor.
+    fn install(&mut self, result: Outcome2) {
+        self.document.install(result);
+    }
+
+    /// A wheel gesture over the editor. It scrolls; any other pointer input
+    /// can open the edit menu and goes through [`DocumentWorkspace::update`].
+    fn editor_wheel(&mut self, ev: &PointerEvent) -> Option<Outcome> {
+        ev.wheel()?;
+        self.document.editor.route(ev).map(|r| r.outcome())
+    }
+
     fn results_key(&mut self, key: &Key) -> Response<TableAction> {
         self.document.results.on_key(key)
     }
@@ -660,8 +678,10 @@ impl QueryWorkbenchPage {
     /// Installs the demonstration result chosen by the Result option on the
     /// active document, once, when that option changes.
     fn apply_result_option(&mut self) {
-        if let (Some(result), Some(key)) = (self.result_option(), self.workspace.active_key()) {
-            let _ = self.workspace.update(key, |doc| doc.install(result));
+        if let (Some(result), Some(key)) = (self.result_option(), self.workspace.active_key())
+            && let Ok(mut view) = self.workspace.view_mut(key)
+        {
+            view.install(result);
         }
     }
 
@@ -959,7 +979,7 @@ impl QueryWorkbenchPage {
         };
         let Ok(((), resp)) = self
             .workspace
-            .finish_operation(token, |doc| doc.install_for(result, sql, Some(token)))
+            .end_operation(token, |mut view| view.install_for(result, sql, Some(token)))
         else {
             return;
         };
@@ -1281,10 +1301,18 @@ impl QueryWorkbenchPage {
         };
         let (editor, results) = (editor_id(key), results_id(key));
         if !ev.is(Phase::Move) {
-            let routed = self
-                .workspace
-                .update(key, |doc| doc.editor.route(ev).map(|r| r.outcome()));
-            if let Ok((Some(outcome), _)) = routed {
+            let routed = if ev.wheel().is_some() {
+                self.workspace
+                    .view_mut(key)
+                    .ok()
+                    .and_then(|mut view| view.editor_wheel(ev))
+            } else {
+                self.workspace
+                    .update(key, |doc| doc.editor.route(ev).map(|r| r.outcome()))
+                    .ok()
+                    .and_then(|(outcome, _)| outcome)
+            };
+            if let Some(outcome) = routed {
                 if click && ev.bar.is_none() {
                     cx.focus.focus(editor);
                 }
@@ -2533,6 +2561,45 @@ mod tests {
         close(&mut rig, 0);
         close(&mut rig, 0);
         assert_eq!(titles(&rig.page), ["customers"], "a second close discards");
+    }
+
+    #[test]
+    fn query_workbench_editor_wheel_keeps_a_pending_close_valid() {
+        let mut rig = Rig::new();
+        rig.page.set_option("queryworkbench.dirty_close", 1);
+        let long: String = (0..80).map(|i| format!("-- line {i}\n")).collect();
+        rig.type_into_editor(&long);
+        close(&mut rig, 0);
+        let asked = rig.page.pending_close.expect("a close request is waiting");
+        let key = rig.page.active_key().expect("active");
+        let revision = rig.page.workspace.revision(key);
+
+        let editor = active(&rig.page).editor.id;
+        let area = rig.hits.area_of(editor).expect("editor is hit-registered");
+        let before = active(&rig.page).editor.scroll.v.offset;
+        let pos = Position::new(area.x + 2, area.y + 1);
+        let ev = PointerEvent::wheel_on(
+            &rig.hits,
+            editor,
+            junie_tui::core::hit::Axis::Vertical,
+            3,
+            pos,
+            KeyModifiers::NONE,
+        );
+        rig.send(PageEvent::Pointer(ev));
+
+        assert!(
+            active(&rig.page).editor.scroll.v.offset > before,
+            "the wheel scrolled the editor"
+        );
+        assert_eq!(rig.page.workspace.revision(key), revision);
+        assert_eq!(rig.page.pending_close, Some(asked));
+        close(&mut rig, 0);
+        assert_eq!(
+            titles(&rig.page),
+            ["customers"],
+            "the second close confirms the first request"
+        );
     }
 
     #[test]

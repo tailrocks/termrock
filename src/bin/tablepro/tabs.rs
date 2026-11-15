@@ -2840,6 +2840,29 @@ impl<'a> WorkTabView<'a> {
         }
     }
 
+    /// One poll of a running query. It moves the run forward and returns the
+    /// history entries its statements made, and whether the run is still
+    /// going. Run progress and results are not editor text, so this is not a
+    /// content change.
+    pub fn tick(
+        &mut self,
+        cat: &Catalog,
+        connection: &str,
+        database: &str,
+    ) -> (Vec<HistoryEntry>, bool) {
+        match self.document {
+            WorkTab::Query(q) => (q.tick(cat, connection, database), q.is_running()),
+            _ => (vec![], false),
+        }
+    }
+
+    /// Clears a query's "result not seen yet" mark.
+    pub fn mark_seen(&mut self) {
+        if let WorkTab::Query(q) = self.document {
+            q.unseen = false;
+        }
+    }
+
     /// Moves the focused grid's cell cursor or the focused editor's caret for
     /// a plain navigation key. Any other key, including every one that could
     /// type, delete or commit, is refused.

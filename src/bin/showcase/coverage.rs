@@ -223,7 +223,7 @@ pub const DOCUMENT_WORKSPACE_COVERAGE: &[(&str, &str)] = &[
         "queryworkbench",
     ),
     (
-        "widgets::document_workspace::DocumentWorkspace::finish_operation",
+        "widgets::document_workspace::DocumentWorkspace::end_operation",
         "queryworkbench",
     ),
     (
@@ -249,6 +249,10 @@ pub const DOCUMENT_WORKSPACE_COVERAGE: &[(&str, &str)] = &[
 ];
 
 pub const DOCUMENT_WORKSPACE_ALLOWLIST: &[(&str, &str)] = &[
+    (
+        "widgets::document_workspace::DocumentWorkspace::finish_operation",
+        "Only an operation whose result changes content ends here, such as a TablePro grid commit; Showcase runs fill a result pane and end through end_operation. tests/regressions/document_workspace.rs asserts it.",
+    ),
     (
         "widgets::document_workspace::WorkspaceError",
         "The page reports a refusal through its Display text and never matches a variant, so each variant is asserted by tests/regressions/document_workspace.rs instead.",

@@ -348,6 +348,50 @@ fn workspace_running_query_close_cancels_its_own_operation_only() {
 }
 
 #[test]
+fn workspace_running_query_tick_keeps_close_token_valid() {
+    let mut app = connected();
+    let wb = app.workbench.as_mut().expect("connected");
+    let key = wb.new_query("select 1 from products");
+    wb.modify(key, |tab| {
+        if let WorkTab::Query(q) = tab {
+            q.editor.set_text("select 2 from products");
+        }
+    });
+    let statements = match wb.tab(key) {
+        Some(WorkTab::Query(q)) => q.statements_to_run(true),
+        _ => panic!("a query tab"),
+    };
+    assert!(wb.start_query(key, statements, true, None));
+
+    app.request_close_tab(key);
+    let token = app.close_pending.expect("an edited running tab asks first");
+    ticks(&mut app, 12);
+    assert!(
+        w(&app).ws.running(key).is_none(),
+        "the run finished while the prompt was open"
+    );
+    assert_eq!(
+        w(&app).ws.pending_close(key),
+        Some(token),
+        "operation progress is not a content change"
+    );
+    assert_eq!(
+        w(&app).ws.revision(key),
+        Some(token.revision),
+        "polling and finishing a run leave the content revision alone"
+    );
+
+    app.dialog_closed(CLOSE_DIALOG, DialogResult::Action(1));
+
+    assert!(w(&app).tab(key).is_none(), "Close anyway closes the tab");
+    assert!(
+        !status(&app).contains("changed while you decided"),
+        "{}",
+        status(&app)
+    );
+}
+
+#[test]
 fn workspace_preview_open_keeps_a_preview_with_an_open_editor() {
     let mut app = connected();
     let a = open(&mut app, "products", true);
