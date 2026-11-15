@@ -29,6 +29,7 @@ mod picker_rows;
 mod response_batches;
 mod scroll_view_navigation;
 mod search_detail;
+mod search_detail_view;
 mod smoke;
 mod tabs_overflow_mutation;
 mod work_budgets;

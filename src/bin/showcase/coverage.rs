@@ -970,7 +970,7 @@ pub const INSPECT_CHANGES_ALLOWLIST: &[(&str, &str)] = &[
     ),
 ];
 
-const SEARCH_SESSION_REASON: &str = "Headless controller with no layout of its own: no showcase page can draw it until the composed SearchDetail and the Finder migrations land, and tests/regressions/search_detail.rs pins it meanwhile.";
+const SEARCH_SESSION_REASON: &str = "The composed Finder controller is not on a showcase page until the Showcase and Holla Finder migrations (the next PRs of #64) land; tests/regressions/search_detail.rs, tests/regressions/search_detail_view.rs and the work-counter test pin it meanwhile.";
 
 pub const SEARCH_SESSION_ALLOWLIST: &[(&str, &str)] = &[
     (
@@ -1358,10 +1358,6 @@ pub const SEARCH_SESSION_ALLOWLIST: &[(&str, &str)] = &[
         SEARCH_SESSION_REASON,
     ),
     (
-        "widgets::search_detail::SearchSession::context_at",
-        SEARCH_SESSION_REASON,
-    ),
-    (
         "widgets::search_detail::SearchSession::begin_context",
         SEARCH_SESSION_REASON,
     ),
@@ -1373,6 +1369,173 @@ pub const SEARCH_SESSION_ALLOWLIST: &[(&str, &str)] = &[
         "widgets::search_detail::SearchSession::emit_context",
         SEARCH_SESSION_REASON,
     ),
+    (
+        "widgets::search_detail::SearchDetail",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchDetail::new",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchDetail::config",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchDetail::config_mut",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchDetail::id",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchDetail::detail_id",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchDetail::session",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchDetail::query",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchDetail::selected_key",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchDetail::phase",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchDetail::open_detail",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchDetail::close_detail",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchDetail::on_detail",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchDetail::set_query",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchDetail::configure_query",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchDetail::refresh_source",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchDetail::retry",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchDetail::submit",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchDetail::fail",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchDetail::set_selection",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchDetail::on_key",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchDetail::on_paste",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchDetail::pointer",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchDetail::emit_pending_context",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchDetail::render_source",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchDetail::render_source_with",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchDetailSource",
+        SEARCH_SESSION_REASON,
+    ),
+    ("widgets::search_detail::QueryView", SEARCH_SESSION_REASON),
+    ("widgets::search_detail::RowPaint", SEARCH_SESSION_REASON),
+    (
+        "widgets::search_detail::RowPaint::place_cell",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::paint_query_default",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SelectionOwner",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SelectionOwner::Session",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SelectionOwner::External",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchAction::DetailItem",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchConfig::selection_owner",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchConfig::reset_preview_on_query",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchConfig::preserve_preview_on_same_key",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchSession::accepted_query",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchSession::is_selectable",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchSession::set_selection",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchSession::detail_item",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchSession::cancel_press",
+        SEARCH_SESSION_REASON,
+    ),
+    ("widgets::list_detail::MasterRow", SEARCH_SESSION_REASON),
 ];
 
 #[cfg(test)]
