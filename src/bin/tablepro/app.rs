@@ -2587,7 +2587,11 @@ mod tests {
 
     fn app_editing_products() -> App {
         let mut app = App::new(Theme::junie());
-        app.connect(1);
+        let key = app
+            .connections
+            .resolve_name("Development")
+            .expect("Development is a sample connection");
+        app.connect_key(key);
         let w = app.workbench.as_mut().expect("connected");
         w.open_table("public", "products", false)
             .expect("products opens");
