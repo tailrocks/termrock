@@ -1,11 +1,16 @@
 mod common;
 
 use common::*;
+use junie_tui::core::focus::FocusRing;
+use junie_tui::core::hit::HitRegistry;
 use junie_tui::core::hit::{Axis, Bar};
 use junie_tui::core::id::WidgetId;
 use junie_tui::core::scroll::{HScroll, Scrollable, TrackClick};
+use junie_tui::theme::{ColorLevel, Theme};
+use junie_tui::ui::ctx::{Interaction, RenderCtx};
+use junie_tui::ui::edit_menu::edit_menu_key;
 use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::viewport::{CellPos, Line, Span, TextViewport};
+use junie_tui::widgets::viewport::{CellPos, Line, Mark, Span, TextViewport, WorkCounters};
 use junie_tui::widgets::viewport_ops::ViewportOps;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Position, Rect};
@@ -403,4 +408,372 @@ fn the_horizontal_policy_each_text_view_was_drawn_with_decides_its_own_wheel() {
         junie_tui::core::event::Outcome::Changed,
         "the view drawn after it kept the default policy"
     );
+}
+
+struct Frame {
+    buf: Buffer,
+    ctx_cursor: Option<Position>,
+    hits: String,
+    returned: Option<Position>,
+}
+
+fn frame(
+    focus: Option<WidgetId>,
+    paint: impl FnOnce(&mut Buffer, &mut RenderCtx) -> Option<Position>,
+) -> Frame {
+    let theme = Theme::for_level(ColorLevel::TrueColor);
+    let mut buf = Buffer::empty(Rect::new(0, 0, 80, 24));
+    let mut hits = HitRegistry::default();
+    let mut ring = FocusRing::default();
+    let interaction = Interaction {
+        focus,
+        ..Default::default()
+    };
+    let mut ctx = RenderCtx::new(&theme, interaction, &mut hits, &mut ring);
+    let returned = paint(&mut buf, &mut ctx);
+    ctx.flush_overlays(&mut buf);
+    let ctx_cursor = ctx.cursor;
+    drop(ctx);
+    Frame {
+        buf,
+        ctx_cursor,
+        hits: format!("{:?} {:?}", hits.regions(), hits.bars()),
+        returned,
+    }
+}
+
+fn shared_frame(v: &TextViewport, area: Rect, focus: Option<WidgetId>, allowed: bool) -> Frame {
+    frame(focus, |buf, ctx| {
+        v.draw(area, buf, ctx, ctx.theme.canvas, allowed)
+    })
+}
+
+fn mutable_frame(v: &TextViewport, focus: Option<WidgetId>, allowed: bool) -> Frame {
+    let mut copy = v.clone();
+    copy.caret_visible = v.caret_visible && allowed;
+    let mut frame = frame(focus, |buf, ctx| {
+        copy.render(AREA, buf, ctx, ctx.theme.canvas);
+        None
+    });
+    frame.returned = (copy.follow && copy.caret_visible)
+        .then(|| copy.caret.and_then(|at| copy.screen_pos(at)))
+        .flatten();
+    frame
+}
+
+fn assert_same(got: &Frame, want: &Frame, what: &str) {
+    assert_eq!(got.buf, want.buf, "{what}: cells");
+    assert_eq!(got.ctx_cursor, want.ctx_cursor, "{what}: ctx cursor");
+    assert_eq!(got.hits, want.hits, "{what}: hit regions");
+    assert_eq!(got.returned, want.returned, "{what}: hardware cursor");
+}
+
+fn work(v: &TextViewport) -> WorkCounters {
+    v.work_counters()
+}
+
+fn draw_clones(v: &TextViewport) -> (usize, usize, usize) {
+    let w = work(v);
+    (w.draw_fallbacks, w.draw_cloned_lines, w.draw_cloned_bytes)
+}
+
+fn wide_lines(n: usize) -> Vec<Line> {
+    (0..n)
+        .map(|i| {
+            vec![Span::plain(format!(
+                "row {i:03} {}",
+                "wide text ".repeat(9)
+            ))]
+        })
+        .collect()
+}
+
+fn short_lines(n: usize) -> Vec<Line> {
+    (0..n)
+        .map(|i| vec![Span::plain(format!("row {i} of the history"))])
+        .collect()
+}
+
+fn configured(
+    wrap: bool,
+    hoff: isize,
+    selected: bool,
+    marked: bool,
+    menu: bool,
+    follow: bool,
+) -> TextViewport {
+    let mut v = TextViewport::with_lines(ID, wide_lines(60)).wrap(wrap);
+    v.caret = Some(CellPos { line: 59, col: 4 });
+    v.caret_visible = true;
+    v.follow = true;
+    v.set_area(AREA);
+    if !follow {
+        v.set_follow(false);
+        v.scroll.scroll_by(-20);
+    }
+    if hoff > 0 {
+        v.scroll.h.scroll_by(hoff);
+    }
+    if selected {
+        v.on_click(Position::new(4, 1));
+        v.on_drag(Position::new(13, 3));
+        assert!(v.has_selection(), "the matrix really selects");
+    }
+    if marked {
+        let top = v.scroll.offset;
+        v.set_marks(vec![
+            Mark {
+                line: top + 1,
+                range: 4..7,
+                current: true,
+            },
+            Mark {
+                line: top + 2,
+                range: 0..3,
+                current: false,
+            },
+        ]);
+    }
+    if menu {
+        let f10 = chord(
+            ratatui::crossterm::event::KeyCode::F(10),
+            ratatui::crossterm::event::KeyModifiers::SHIFT,
+        );
+        edit_menu_key(&mut v, &f10);
+        assert!(v.edit_menu.is_open(), "the matrix really opens the menu");
+    }
+    if hoff > 0 && !wrap {
+        assert!(v.scroll.h.offset > 0, "the matrix really scrolls sideways");
+    }
+    v
+}
+
+#[test]
+fn prepared_draw_matches_mutable_render() {
+    let mut checked = 0;
+    for bits in 0..256u32 {
+        let on = |n: u32| bits & (1 << n) != 0;
+        let (wrap, h, selected, marked, menu, follow, allowed, focused) =
+            (on(0), on(1), on(2), on(3), on(4), on(5), on(6), on(7));
+        let v = configured(wrap, if h { 5 } else { 0 }, selected, marked, menu, follow);
+        let focus = focused.then_some(ID);
+        let before = draw_clones(&v);
+        let got = shared_frame(&v, AREA, focus, allowed);
+        assert_eq!(
+            draw_clones(&v),
+            before,
+            "wrap={wrap} h={h} sel={selected} marks={marked} menu={menu} follow={follow}: a prepared view is drawn without a clone"
+        );
+        let want = mutable_frame(&v, focus, allowed);
+        assert_same(
+            &got,
+            &want,
+            &format!(
+                "wrap={wrap} h={h} sel={selected} marks={marked} menu={menu} follow={follow} allowed={allowed} focused={focused}"
+            ),
+        );
+        checked += 1;
+    }
+    assert_eq!(checked, 256);
+}
+
+#[test]
+fn prepared_draw_preserves_model_but_notes_frame_policy() {
+    let mut v = wide();
+    v.caret = Some(CellPos { line: 19, col: 2 });
+    v.caret_visible = true;
+    let snapshot = |v: &TextViewport| {
+        (
+            v.revision(),
+            v.follow,
+            v.scroll.offset,
+            v.scroll.h.offset,
+            v.caret_visible,
+            v.caret,
+        )
+    };
+    let before = snapshot(&v);
+
+    draw(None, |buf, ctx| {
+        ctx.track_click = TrackClick::Jump;
+        v.draw(AREA, buf, ctx, ctx.theme.canvas, false);
+    });
+    assert_eq!(snapshot(&v), before, "the draw edits no model state");
+    assert_eq!(
+        draw_clones(&v),
+        (0, 0, 0),
+        "a track-click policy is not a layout input"
+    );
+
+    let top = Position::new(AREA.right() - 1, AREA.y);
+    let bar = vertical_bar(&v);
+    ViewportOps::bar_input(&mut v, &bar, top, true);
+    assert_eq!(
+        v.scroll().offset,
+        0,
+        "the policy noted by the prepared draw reaches the next bar press"
+    );
+
+    draw(None, |buf, ctx| {
+        ctx.hscroll = HScroll::off();
+        v.draw(AREA, buf, ctx, ctx.theme.canvas, false);
+    });
+    assert_eq!(
+        ViewportOps::wheel(&mut v, Axis::Horizontal, 3),
+        junie_tui::core::event::Outcome::Ignored,
+        "the horizontal policy noted by a draw reaches the next wheel"
+    );
+}
+
+#[test]
+fn prepared_draw_mismatch_uses_documented_fallback() {
+    type Change = (&'static str, fn(&mut TextViewport), Rect);
+    let moved = Rect::new(1, 0, 38, 7);
+    let cases: [Change; 4] = [
+        ("area", |_| {}, moved),
+        ("wrap", |v| v.wrap = true, AREA),
+        ("scrollbar gap", |v| v.scrollbar_gap = 4, AREA),
+        (
+            "content",
+            |v| v.push(vec![Span::plain("an appended line")]),
+            AREA,
+        ),
+    ];
+    for (what, change, area) in cases {
+        let mut v = wide();
+        change(&mut v);
+        let got = shared_frame(&v, area, None, true);
+        let w = work(&v);
+        assert_eq!(w.draw_fallbacks, 1, "{what}: one documented fallback");
+        assert_eq!(w.draw_cloned_lines, v.len(), "{what}: every line copied");
+        assert!(w.draw_cloned_bytes > 0, "{what}: source bytes are counted");
+
+        let mut fresh = v.clone();
+        let want = frame(None, |buf, ctx| {
+            fresh.render(area, buf, ctx, ctx.theme.canvas);
+            None
+        });
+        assert_eq!(got.buf, want.buf, "{what}: the fallback is not stale");
+    }
+
+    let v = wide();
+    let got = frame(None, |buf, ctx| {
+        ctx.hscroll = HScroll::off();
+        v.draw(AREA, buf, ctx, ctx.theme.canvas, true)
+    });
+    assert_eq!(work(&v).draw_fallbacks, 1, "horizontal policy: fallback");
+    let mut fresh = v.clone();
+    let want = frame(None, |buf, ctx| {
+        ctx.hscroll = HScroll::off();
+        fresh.render(AREA, buf, ctx, ctx.theme.canvas);
+        None
+    });
+    assert_eq!(got.buf, want.buf, "horizontal policy: not stale");
+}
+
+#[test]
+fn prepared_draw_after_set_area_returns_to_fast_path() {
+    let mut v = wide();
+    v.wrap = true;
+    v.scrollbar_gap = 3;
+    shared_frame(&v, AREA, None, true);
+    assert_eq!(draw_clones(&v).0, 1, "unprepared: one fallback");
+
+    let moved = Rect::new(2, 1, 30, 6);
+    v.set_area(moved);
+    let after = draw_clones(&v);
+    for _ in 0..4 {
+        let got = shared_frame(&v, moved, None, true);
+        let mut expect = v.clone();
+        let want = frame(None, |buf, ctx| {
+            expect.render(moved, buf, ctx, ctx.theme.canvas);
+            None
+        });
+        assert_eq!(got.buf, want.buf);
+    }
+    assert_eq!(draw_clones(&v), after, "prepared frames copy nothing");
+
+    v.push(vec![Span::plain("one more line")]);
+    shared_frame(&v, moved, None, true);
+    assert_eq!(draw_clones(&v).0, after.0 + 1, "an edit needs set_area");
+    v.set_area(moved);
+    let edited = draw_clones(&v);
+    shared_frame(&v, moved, None, true);
+    assert_eq!(draw_clones(&v), edited, "set_area prepares the new content");
+}
+
+#[test]
+fn prepared_draw_context_policy_then_set_area_fast_path() {
+    let mut v = wide();
+    let off = |v: &TextViewport| {
+        frame(None, |buf, ctx| {
+            ctx.hscroll = HScroll::off();
+            v.draw(AREA, buf, ctx, ctx.theme.canvas, true)
+        })
+    };
+    off(&v);
+    assert_eq!(draw_clones(&v).0, 1, "the new policy is a layout input");
+
+    v.set_area(AREA);
+    let prepared = draw_clones(&v);
+    off(&v);
+    off(&v);
+    assert_eq!(
+        draw_clones(&v),
+        prepared,
+        "set_area adopted the noted policy: the next draws take the fast path"
+    );
+}
+
+#[test]
+fn prepared_draw_does_not_copy_history() {
+    for n in [1_000usize, 100_000] {
+        let mut v = TextViewport::with_lines(ID, short_lines(n));
+        v.follow = true;
+        let area = Rect::new(0, 0, 80, 24);
+        v.set_area(area);
+        let setup = work(&v);
+        let revision = v.revision();
+
+        for _ in 0..5 {
+            frame(None, |buf, ctx| {
+                v.draw(area, buf, ctx, ctx.theme.canvas, true)
+            });
+        }
+
+        let after = work(&v);
+        assert_eq!(
+            (
+                after.draw_fallbacks,
+                after.draw_cloned_lines,
+                after.draw_cloned_bytes
+            ),
+            (0, 0, 0),
+            "{n} lines: five unchanged frames copy no history"
+        );
+        assert_eq!(
+            (
+                after.segmented_lines,
+                after.reflowed_lines,
+                after.index_rebuilds
+            ),
+            (
+                setup.segmented_lines,
+                setup.reflowed_lines,
+                setup.index_rebuilds
+            ),
+            "{n} lines: unchanged frames do no layout work"
+        );
+        assert_eq!(v.revision(), revision, "{n} lines: a frame is not an edit");
+
+        v.wrap = true;
+        frame(None, |buf, ctx| {
+            v.draw(area, buf, ctx, ctx.theme.canvas, true)
+        });
+        assert_eq!(
+            draw_clones(&v).1,
+            n,
+            "{n} lines: the unprepared fallback copies every line and says so"
+        );
+    }
 }

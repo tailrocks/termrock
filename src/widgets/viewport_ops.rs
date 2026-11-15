@@ -64,6 +64,13 @@ pub trait ViewportOps {
     /// belongs, if it is shown. `caret_allowed` is the host's say: a dialog,
     /// a drag or another focus turns it off. The view keeps its state, so a
     /// host can draw from a shared reference.
+    ///
+    /// A host prepares the view with `set_area` whenever its area, content,
+    /// wrap, scrollbar gap or horizontal policy changes. A draw of a prepared
+    /// view copies none of its history. A draw of a view that is not prepared
+    /// for `area` still paints correctly, but deep-clones and lays out a copy
+    /// first. `TextViewport::work_counters` reports each such fallback. The
+    /// scroll policy of `ctx` is noted on the view either way.
     fn draw(
         &self,
         area: Rect,
@@ -187,7 +194,11 @@ impl ViewportOps for TextViewport {
         caret_allowed: bool,
     ) -> Option<Position> {
         self.scroll.note_policy(ctx.track_click, ctx.hscroll);
-        let mut view = self.clone();
+        let area = area.intersection(buf.area);
+        if let Some(painted) = self.draw_prepared(area, buf, ctx, bg, caret_allowed) {
+            return painted.hardware_cursor;
+        }
+        let mut view = self.clone_for_draw();
         view.caret_visible = self.caret_visible && caret_allowed;
         view.render(area, buf, ctx, bg);
         if view.follow && view.caret_visible {
