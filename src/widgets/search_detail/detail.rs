@@ -525,7 +525,7 @@ impl SearchDetail {
     ) -> Result<Reply, SearchError> {
         self.verify(source)?;
         if let Some((Axis::Vertical, delta)) = ev.wheel() {
-            let outcome = self.list.wheel(ev.id, delta);
+            let outcome = self.list.wheel_event(ev, delta);
             if outcome != Outcome::Ignored {
                 return Ok(outcome.into());
             }

@@ -592,6 +592,27 @@ impl ListDetail {
             })
     }
 
+    /// Scrolls the pane a wheel event landed on. Besides the pane and scrollbar
+    /// ids, a wheel over a master row or cell (any part owned by the master) or
+    /// over a detail item scrolls that row's own pane.
+    pub fn wheel_event(&mut self, ev: &PointerEvent, delta: i32) -> Outcome {
+        let on_master_row = ev.on(self.master)
+            || self
+                .scroll
+                .visible_range()
+                .any(|i| self.master.child(i) == ev.id);
+        let on_detail_item = ev.on(self.detail)
+            || (0..self.items).any(|i| self.detail.child(i).sub("item") == ev.id);
+        let id = if on_master_row {
+            self.master
+        } else if on_detail_item {
+            self.detail
+        } else {
+            ev.id
+        };
+        self.wheel(id, delta)
+    }
+
     pub fn wheel(&mut self, id: WidgetId, delta: i32) -> Outcome {
         if id == self.master || id == scrollbar::id_for(self.master) {
             self.scroll.scroll_by(delta as isize);

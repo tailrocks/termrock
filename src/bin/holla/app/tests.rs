@@ -2473,6 +2473,38 @@ fn finder_explore_click_selection_change_resets_preview_scroll() {
 }
 
 #[test]
+fn finder_explore_click_on_the_selected_tile_keeps_preview_scroll() {
+    let mut app = finder_app();
+    app.world.edit_catalog(|w| {
+        w.explore_tiles = long_explore_tiles(&[
+            "explore.system",
+            "explore.tasks",
+            "explore.files",
+            "explore.git",
+            "explore.disk",
+            "explore.services",
+        ]);
+    });
+    tick(&mut app, 1);
+    finder_select_explore(&mut app, "explore.git");
+    drawn_text(&mut app);
+    scroll_preview_down(&mut app, 3);
+    let scrolled = preview_top_word(&mut app);
+    assert_ne!(scrolled, "L000", "preview did not scroll before the click");
+
+    let (x, y) = drawn_tile(&mut app, "Git");
+    click_at(&mut app, x + 1, y);
+    assert_eq!(finder_group(&mut app), Some("Git"));
+    app.handle_input(key(KeyCode::Esc, KeyModifiers::NONE));
+
+    assert_eq!(
+        finder(&mut app).current_id().as_deref(),
+        Some("explore.git")
+    );
+    assert_eq!(preview_top_word(&mut app), scrolled);
+}
+
+#[test]
 fn finder_empty_explore_row_is_not_selectable() {
     let mut app = finder_app();
     finder_select_explore(&mut app, "explore.git");
@@ -2682,4 +2714,127 @@ fn search_detail_holla_cell_click_policy_is_exact() {
     click_at(&mut app, x + 1, y);
     assert_eq!(finder_group(&mut app), Some("Git"));
     assert_eq!(app.active(), 0);
+}
+
+/// A Finder whose only result is `scope.system`, with a host name long enough
+/// that the item's preview scrolls. Its preview text is the words `L000..`.
+fn long_preview_result_app() -> App {
+    let mut app = finder_app();
+    let words: Vec<String> = (0..600).map(|i| format!("L{i:03}")).collect();
+    let name: &'static str = Box::leak(words.join(" ").into_boxed_str());
+    app.world.edit_catalog(|w| w.host.name = name.to_owned());
+    tick(&mut app, 1);
+    type_text(&mut app, "L000 L001 L002");
+    tick(&mut app, 1);
+    assert_eq!(
+        finder(&mut app).current_id().as_deref(),
+        Some("scope.system")
+    );
+    app
+}
+
+/// The first `Lnnn` word in the preview body, below its title and rule.
+fn preview_body_word(app: &mut App) -> String {
+    let text = drawn_text(app);
+    let body: Vec<String> = text
+        .lines()
+        .map(|l| l.chars().skip(80).collect::<String>())
+        .skip_while(|l| !l.contains("explore \u{b7} host"))
+        .skip(2)
+        .collect();
+    body.iter()
+        .find_map(|line| {
+            line.split_whitespace()
+                .find(|w| {
+                    w.len() == 4 && w.starts_with('L') && w[1..].bytes().all(|b| b.is_ascii_digit())
+                })
+                .map(str::to_owned)
+        })
+        .expect("preview body word drawn")
+}
+
+/// Scrolls the lone result's preview and returns the word it now starts at.
+fn scrolled_long_preview(app: &mut App) -> String {
+    drawn_text(app);
+    let top = preview_body_word(app);
+    scroll_preview_down(app, 3);
+    let scrolled = preview_body_word(app);
+    assert_ne!(scrolled, top, "preview did not scroll");
+    scrolled
+}
+
+fn result_row_at(app: &mut App) -> (u16, u16) {
+    let y = drawn_text(app)
+        .lines()
+        .position(|l| l.starts_with("  \u{203a} System"))
+        .expect("selected result row drawn");
+    (10, y as u16)
+}
+
+#[test]
+fn finder_reselecting_the_result_by_click_keeps_preview_scroll() {
+    let mut app = long_preview_result_app();
+    let scrolled = scrolled_long_preview(&mut app);
+    let (x, y) = result_row_at(&mut app);
+
+    click_at(&mut app, x, y);
+    assert_eq!(preview_body_word(&mut app), scrolled, "re-click");
+    click_at(&mut app, x, y);
+    assert_eq!(preview_body_word(&mut app), scrolled, "second click");
+}
+
+#[test]
+fn finder_secondary_click_on_the_selected_result_keeps_preview_scroll() {
+    use junie_tui::core::event::{Mouse, MouseKind};
+    let mut app = long_preview_result_app();
+    let scrolled = scrolled_long_preview(&mut app);
+    let (x, y) = result_row_at(&mut app);
+    let at = ratatui::layout::Position::new(x, y);
+
+    app.handle_input(Input::Mouse(Mouse::new(MouseKind::Secondary, at)));
+    app.handle_input(Input::Mouse(Mouse::new(MouseKind::SecondaryUp, at)));
+    assert!(
+        drawn_text(&mut app).contains("Why is this here?"),
+        "the context menu opened"
+    );
+    app.handle_input(key(KeyCode::Esc, KeyModifiers::NONE));
+
+    assert_eq!(
+        finder(&mut app).current_id().as_deref(),
+        Some("scope.system")
+    );
+    assert_eq!(preview_body_word(&mut app), scrolled);
+}
+
+#[test]
+fn finder_home_and_end_on_the_selected_result_keep_preview_scroll() {
+    let mut app = long_preview_result_app();
+    let scrolled = scrolled_long_preview(&mut app);
+
+    app.handle_input(key(KeyCode::Home, KeyModifiers::NONE));
+    assert_eq!(preview_body_word(&mut app), scrolled, "Home");
+    app.handle_input(key(KeyCode::End, KeyModifiers::NONE));
+    assert_eq!(preview_body_word(&mut app), scrolled, "End");
+    assert_eq!(
+        finder(&mut app).current_id().as_deref(),
+        Some("scope.system")
+    );
+}
+
+#[test]
+fn finder_query_edit_on_the_same_result_resets_preview_scroll() {
+    let mut app = long_preview_result_app();
+    drawn_text(&mut app);
+    let top = preview_body_word(&mut app);
+    scrolled_long_preview(&mut app);
+
+    type_text(&mut app, " L003");
+    tick(&mut app, 1);
+
+    assert_eq!(
+        finder(&mut app).current_id().as_deref(),
+        Some("scope.system"),
+        "the query edit kept the same item selected"
+    );
+    assert_eq!(preview_body_word(&mut app), top);
 }

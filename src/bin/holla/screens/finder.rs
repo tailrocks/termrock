@@ -333,7 +333,6 @@ pub struct FinderPage {
     pub explore_overflow_marker: bool,
 
     list_area: Rect,
-    preview_area: Rect,
 
     pub rebuilds: u32,
 
@@ -408,7 +407,6 @@ impl FinderPage {
             pending_query: None,
             explore_overflow_marker: true,
             list_area: Rect::ZERO,
-            preview_area: Rect::ZERO,
             rebuilds: 0,
             last_tick: u64::MAX,
         }
@@ -748,10 +746,6 @@ impl FinderPage {
         rows
     }
 
-    fn live_item<'a>(&self, it: &'a Item, w: &World) -> std::borrow::Cow<'a, Item> {
-        live_item(it, w)
-    }
-
     fn display_stamp(&self, w: &World) -> DisplayStamp {
         let mut activities = vec![];
         let mut ago = vec![];
@@ -777,9 +771,7 @@ impl FinderPage {
             }
         }
         DisplayStamp {
-            data: self
-                .current()
-                .map(|it| self.live_item(it, w).freshness.label()),
+            data: self.current().map(|it| live_item(it, w).freshness.label()),
             activities,
             ago,
         }
@@ -810,7 +802,7 @@ impl FinderPage {
         }
         v.push(format!("warnings {:?}", self.warnings));
         for it in &self.items {
-            let mut live = self.live_item(it, w).into_owned();
+            let mut live = live_item(it, w).into_owned();
             live.frecency = crate::domain::ranking::frecency_boost(live.frecency) as f64;
             live.freshness = crate::domain::action::Freshness::Unavailable(live.freshness.label());
             v.push(format!("{live:?}"));
@@ -1236,7 +1228,6 @@ struct Paint<'a> {
     current: Option<&'a Item>,
     marker: bool,
     list_area: &'a mut Rect,
-    preview_area: &'a mut Rect,
     cols: Columns,
 }
 
@@ -1608,7 +1599,6 @@ impl SearchPaint<Results> for Paint<'_> {
         let area = Rect::new(area.x, area.y, area.width, card_h);
         let inner = panel.render(area, buf, t);
         ctx.control(id, area, false);
-        *self.preview_area = inner;
         ctx.scrollable(id, inner);
         if inner.is_empty() {
             return;
@@ -1766,7 +1756,6 @@ impl ShellPage<Holla> for FinderPage {
             group,
             explore_overflow_marker,
             list_area,
-            preview_area,
             ..
         } = self;
         let query = search.query().to_owned();
@@ -1784,7 +1773,6 @@ impl ShellPage<Holla> for FinderPage {
             current,
             marker: *explore_overflow_marker,
             list_area,
-            preview_area,
             cols: Columns::default(),
         };
         let _ = search.render_hosted(area, results, buf, ctx, &mut paint);

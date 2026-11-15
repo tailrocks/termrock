@@ -163,14 +163,14 @@ fn holla_projection_temporal_deadlines_match_full_rebuild() {
             let cached = page.source.iter().find(|i| &i.id == id).expect("cached");
             let fresh = reference.iter().find(|i| &i.id == id).expect("reference");
             assert_eq!(
-                page.live_item(cached, &w).freshness.label(),
+                super::live_item(cached, &w).freshness.label(),
                 fresh.freshness.label(),
                 "{id} at tick +{ticks}"
             );
         }
         let cached = page.source.iter().find(|i| i.id == fixed).expect("cached");
         assert_eq!(
-            page.live_item(cached, &w).freshness.label(),
+            super::live_item(cached, &w).freshness.label(),
             "live · 0 s ago"
         );
     }
