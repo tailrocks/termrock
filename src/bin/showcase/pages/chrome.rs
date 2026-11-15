@@ -60,6 +60,7 @@ pub struct ChromePage {
     zoomed: bool,
     hint_area: Rect,
 
+    status: StatusBar,
     opts: Vec<usize>,
 }
 
@@ -87,9 +88,11 @@ impl ChromePage {
             action: None,
             zoomed: false,
             hint_area: Rect::ZERO,
+            status: StatusBar::new(),
             opts,
         };
         page.bar = page.build_bar();
+        page.status = page.build_status_bar();
         page
     }
 
@@ -235,7 +238,7 @@ impl ChromePage {
         (left, right)
     }
 
-    fn status_bar(&self) -> StatusBar {
+    fn build_status_bar(&self) -> StatusBar {
         let mut b = StatusBar::new();
         b.left.push(
             StatusItem::new("payments-platform", Tone::Normal)
@@ -423,7 +426,7 @@ impl ChromePage {
     }
 
     fn placed_text(&self, w: u16) -> String {
-        let bar = self.status_bar();
+        let bar = &self.status;
         let placed = bar.layout(Rect::new(0, 0, w, 1));
         let groups: Vec<String> = [Group::Left, Group::Center, Group::Right]
             .into_iter()
@@ -449,7 +452,7 @@ impl ChromePage {
             .width;
         let (left, right) = self.strip(0, t);
 
-        let status = self.status_bar().min_width(any, ctx);
+        let status = self.status.min_width(any, ctx);
         let captions = [
             STRIP_CAPTION.to_owned(),
             format!(
@@ -563,7 +566,7 @@ impl ChromePage {
         segments::render(row, buf, ctx, &left, &right, t.surface);
         y += 3;
 
-        let status = self.status_bar();
+        let status = &self.status;
         for (caption, w) in [
             (
                 format!(
@@ -802,6 +805,7 @@ impl Page for ChromePage {
         self.opts[i] = value.min(table[i].values.len() - 1);
         self.bar.close();
         self.bar = self.build_bar();
+        self.status = self.build_status_bar();
     }
 
     fn template(&self) -> Option<&Template> {
@@ -810,5 +814,27 @@ impl Page for ChromePage {
 
     fn template_mut(&mut self) -> Option<&mut Template> {
         Some(&mut self.template)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::pages::stress::testing::index;
+
+    fn items(page: &ChromePage) -> usize {
+        page.status.left.len() + page.status.center.len() + page.status.right.len()
+    }
+
+    #[test]
+    fn the_status_bar_is_rebuilt_when_the_stress_option_changes() {
+        let mut page = ChromePage::new();
+        let plain = items(&page);
+        page.set_option("chrome.stress", index("20k items"));
+        assert_eq!(items(&page), plain + stress::COUNT);
+        page.set_option("chrome.stress", index("65k label"));
+        assert_eq!(items(&page), plain + 1);
+        page.set_option("chrome.stress", index("off"));
+        assert_eq!(items(&page), plain);
     }
 }
