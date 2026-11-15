@@ -1160,7 +1160,14 @@ impl DataTable {
         if let Some((c, d)) = self.sort
             && c == col
         {
+            let at = self.order.get(self.cursor_row).copied();
             self.apply_sort(c, d);
+            if let Some(src) = at
+                && let Some(pos) = self.order.iter().position(|&r| r == src)
+            {
+                self.cursor_row = pos;
+                self.scroll.ensure_visible(pos);
+            }
         }
         true
     }
