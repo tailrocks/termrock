@@ -1053,6 +1053,9 @@ mod tests {
     use crate::domain::fixtures::world_for;
     use crate::scenario::{Motion, Scenario};
     use junie_tui::core::focus::{Focus, FocusRing};
+    use junie_tui::core::hit::HitRegistry;
+    use junie_tui::theme::Theme;
+    use junie_tui::ui::ctx::Interaction;
 
     fn press(tab: &mut ActivityTab, w: &mut World, cx: &mut Cx<'_>, code: KeyCode) {
         let key = Key {
@@ -1063,16 +1066,8 @@ mod tests {
         tab.sync(w);
     }
 
-    fn rendered_last(tab: &ActivityTab) -> String {
-        tab.view
-            .lines()
-            .last()
-            .map(|l| line_text(l))
-            .unwrap_or_default()
-    }
-
-    #[test]
-    fn activity_tab_unicode_erase_updates_rendered_cells() {
+    /// A typing tab over a running activity, so keys reach its simulated stdin.
+    fn typing_tab() -> (World, ActivityTab) {
         let mut w = world_for(Scenario::DockerCleanup, Motion::Full);
         let tick = w.tick;
         w.activities.push(Activity::new(
@@ -1087,22 +1082,82 @@ mod tests {
         ));
         let mut tab = ActivityTab::new("act-test");
         tab.input = true;
+        (w, tab)
+    }
+
+    /// Renders the tab through its real `Screen::render` path into a cell buffer.
+    fn render_tab(tab: &mut ActivityTab, w: &World) -> Buffer {
+        let area = Rect::new(0, 0, 80, 24);
+        let theme = Theme::junie();
+        let mut buf = Buffer::empty(area);
+        let mut hits = HitRegistry::default();
+        let mut ring = FocusRing::default();
+        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        tab.render(area, &mut buf, &mut ctx, w);
+        buf
+    }
+
+    fn cells_showing(buf: &Buffer, symbol: &str) -> Vec<(u16, u16)> {
+        let area = buf.area;
+        (area.y..area.bottom())
+            .flat_map(|y| (area.x..area.right()).map(move |x| (x, y)))
+            .filter(|&(x, y)| buf[(x, y)].symbol() == symbol)
+            .collect()
+    }
+
+    #[test]
+    fn activity_tab_unicode_erase_updates_rendered_cells() {
+        let (mut w, mut tab) = typing_tab();
         let mut focus = Focus::default();
         let ring = FocusRing::default();
         let mut cx = Cx::new(&mut focus, &ring);
 
         press(&mut tab, &mut w, &mut cx, KeyCode::Char('a'));
         press(&mut tab, &mut w, &mut cx, KeyCode::Char('é'));
-        assert_eq!(rendered_last(&tab), "aé");
+        let buf = render_tab(&mut tab, &w);
+        let glyph = cells_showing(&buf, "é");
+        assert_eq!(glyph.len(), 1, "é is drawn once on the echo row");
+        let (x, y) = glyph[0];
+        assert_eq!(buf[(x - 1, y)].symbol(), "a", "a is drawn before é");
 
         press(&mut tab, &mut w, &mut cx, KeyCode::Backspace);
-        assert_eq!(rendered_last(&tab), "a", "the whole é cell is erased");
+        let buf = render_tab(&mut tab, &w);
+        assert_eq!(buf[(x, y)].symbol(), " ", "the é cell is blank");
+        assert_eq!(buf[(x - 1, y)].symbol(), "a", "a stays after one Backspace");
+        assert!(cells_showing(&buf, "é").is_empty(), "no é cell survives");
+        assert!(tab.input, "erasing keeps the tab in input mode");
 
         press(&mut tab, &mut w, &mut cx, KeyCode::Backspace);
+        let buf = render_tab(&mut tab, &w);
         assert_eq!(
-            rendered_last(&tab),
-            "",
-            "the last glyph leaves no stale cell"
+            buf[(x - 1, y)].symbol(),
+            " ",
+            "the a cell is blank after the second Backspace"
         );
+        assert!(tab.input, "erasing keeps the tab in input mode");
+    }
+
+    #[test]
+    fn activity_tab_combining_mark_erases_whole_cluster() {
+        let (mut w, mut tab) = typing_tab();
+        let mut focus = Focus::default();
+        let ring = FocusRing::default();
+        let mut cx = Cx::new(&mut focus, &ring);
+
+        press(&mut tab, &mut w, &mut cx, KeyCode::Char('e'));
+        press(&mut tab, &mut w, &mut cx, KeyCode::Char('\u{301}'));
+        let buf = render_tab(&mut tab, &w);
+        let cluster = cells_showing(&buf, "e\u{301}");
+        assert_eq!(cluster.len(), 1, "e with its combining accent is one cell");
+        let (x, y) = cluster[0];
+
+        press(&mut tab, &mut w, &mut cx, KeyCode::Backspace);
+        let buf = render_tab(&mut tab, &w);
+        assert_eq!(
+            buf[(x, y)].symbol(),
+            " ",
+            "one Backspace erases the whole cluster, leaving no bare e"
+        );
+        assert!(tab.input, "erasing keeps the tab in input mode");
     }
 }
