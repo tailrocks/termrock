@@ -27,7 +27,6 @@ use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Position, Rect};
 
-type Reply = Response<SearchAction>;
 
 const ID: WidgetId = WidgetId::of("sd");
 const QUERY: WidgetId = WidgetId::of("sd.q");
