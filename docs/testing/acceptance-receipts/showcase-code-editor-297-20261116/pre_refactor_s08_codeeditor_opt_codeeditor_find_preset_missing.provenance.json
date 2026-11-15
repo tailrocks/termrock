@@ -13,7 +13,7 @@
     "host": "aarch64-apple-darwin"
   },
   "binary_path": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-297-target/debug/showcase",
-  "binary_sha256": "cb853b61871543bb6d82901239b73756c67be5a7478fde469f38b6bdb24068ed",
+  "binary_sha256": "e63107aa9809df4888d24b0732f4c5ad552e0532005eb597878d2f405262c2d5",
   "fixture_args": [
     "--page",
     "codeeditor",
@@ -22,35 +22,39 @@
   ],
   "env": {},
   "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
-  "candidate_sha256": "d17204d59e98f9ddb54af3f9581620a1102622ec9aca06b60a9f9cdb7614f9cb",
-  "expect_baseline": "missing",
+  "candidate_sha256": "6893b7cc145a7cb322e04a666c988ad24be0f8524454b3b940ba5f81c74292ee",
+  "expect_baseline": "d17204d59e98f9ddb54af3f9581620a1102622ec9aca06b60a9f9cdb7614f9cb",
   "precondition": "",
   "session": null,
   "expected_test_id": "pre_refactor/s08_codeeditor/opt_codeeditor_find_preset_missing",
   "acceptance_receipt_path": "docs/testing/acceptance-receipts/showcase-code-editor-297-20261116/pre_refactor_s08_codeeditor_opt_codeeditor_find_preset_missing.accept.json",
   "provenance_path": "docs/testing/acceptance-receipts/showcase-code-editor-297-20261116/pre_refactor_s08_codeeditor_opt_codeeditor_find_preset_missing.provenance.json",
-  "previous_archive_path": null,
+  "previous_archive_path": "docs/testing/acceptance-receipts/showcase-code-editor-297-20261116/superseded/pre_refactor/s08_codeeditor/opt_codeeditor_find_preset_missing.tui.pb",
   "test_id": "pre_refactor/s08_codeeditor/opt_codeeditor_find_preset_missing",
   "acceptance": {
-    "expected_baseline_sha256": "missing",
-    "accepted_baseline_sha256": "d17204d59e98f9ddb54af3f9581620a1102622ec9aca06b60a9f9cdb7614f9cb",
-    "candidate_sha256": "d17204d59e98f9ddb54af3f9581620a1102622ec9aca06b60a9f9cdb7614f9cb",
+    "expected_baseline_sha256": "d17204d59e98f9ddb54af3f9581620a1102622ec9aca06b60a9f9cdb7614f9cb",
+    "accepted_baseline_sha256": "6893b7cc145a7cb322e04a666c988ad24be0f8524454b3b940ba5f81c74292ee",
+    "candidate_sha256": "6893b7cc145a7cb322e04a666c988ad24be0f8524454b3b940ba5f81c74292ee",
     "transaction_receipt": "docs/testing/acceptance-receipts/showcase-code-editor-297-20261116/pre_refactor_s08_codeeditor_opt_codeeditor_find_preset_missing.accept.json"
   },
   "previous_baseline": {
-    "sha256": "missing"
+    "sha256": "d17204d59e98f9ddb54af3f9581620a1102622ec9aca06b60a9f9cdb7614f9cb"
   },
   "candidate": {
-    "sha256": "d17204d59e98f9ddb54af3f9581620a1102622ec9aca06b60a9f9cdb7614f9cb",
+    "sha256": "6893b7cc145a7cb322e04a666c988ad24be0f8524454b3b940ba5f81c74292ee",
     "path": "tests/functional/baselines/pre_refactor/s08_codeeditor/opt_codeeditor_find_preset_missing.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/showcase-code-editor-297-20261116/superseded/pre_refactor/s08_codeeditor/opt_codeeditor_find_preset_missing.tui.pb",
+    "superseded_baseline_sha256": "d17204d59e98f9ddb54af3f9581620a1102622ec9aca06b60a9f9cdb7614f9cb"
   },
   "capture": {
     "mode": "candidate",
     "candidate_path": "tests/functional/baselines/pre_refactor/s08_codeeditor/opt_codeeditor_find_preset_missing.tui.pb",
-    "candidate_sha256": "d17204d59e98f9ddb54af3f9581620a1102622ec9aca06b60a9f9cdb7614f9cb",
+    "candidate_sha256": "6893b7cc145a7cb322e04a666c988ad24be0f8524454b3b940ba5f81c74292ee",
     "binary_path": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-297-target/debug/showcase",
-    "binary_sha256": "cb853b61871543bb6d82901239b73756c67be5a7478fde469f38b6bdb24068ed",
-    "note": "New Code editor demo capture for the Find query option and the F5 re-scan key (#297)"
+    "binary_sha256": "e63107aa9809df4888d24b0732f4c5ad552e0532005eb597878d2f405262c2d5",
+    "note": "Code editor State panel gains Line width, Providers and Scans rows (TextBuffer::line_width, CodeEditor::highlighter_fn and segmenter_fn, and a provider-run counter that F5 Re-scan visibly bumps), grows by three rows, and the footer gains F5 Re-scan; the Options list gains a trailing Find query option (#297)"
   },
   "cli_receipt": {
     "schema": "tuiscotti.cli.v1",
@@ -60,10 +64,10 @@
     "reason": null,
     "candidate_path": {
       "encoding": "utf8",
-      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-297/target/functional/s08-findmiss-78439-1794778990720741000-0/check-artifacts/pre_refactor/s08_codeeditor/opt_codeeditor_find_preset_missing/d17204d59e98f9ddb54af3f9581620a1102622ec9aca06b60a9f9cdb7614f9cb/sample.tui.pb"
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-297/target/functional/s08-findmiss-72144-1794781227338616000-0/check-artifacts/pre_refactor/s08_codeeditor/opt_codeeditor_find_preset_missing/6893b7cc145a7cb322e04a666c988ad24be0f8524454b3b940ba5f81c74292ee/sample.tui.pb"
     },
-    "candidate_sha256": "d17204d59e98f9ddb54af3f9581620a1102622ec9aca06b60a9f9cdb7614f9cb",
-    "baseline_sha256": "d17204d59e98f9ddb54af3f9581620a1102622ec9aca06b60a9f9cdb7614f9cb",
+    "candidate_sha256": "6893b7cc145a7cb322e04a666c988ad24be0f8524454b3b940ba5f81c74292ee",
+    "baseline_sha256": "6893b7cc145a7cb322e04a666c988ad24be0f8524454b3b940ba5f81c74292ee",
     "output_path": {
       "encoding": "utf8",
       "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-297/tests/functional/baselines/pre_refactor/s08_codeeditor/opt_codeeditor_find_preset_missing.tui.pb"

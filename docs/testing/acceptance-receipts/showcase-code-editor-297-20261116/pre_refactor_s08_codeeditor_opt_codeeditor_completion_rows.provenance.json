@@ -13,7 +13,7 @@
     "host": "aarch64-apple-darwin"
   },
   "binary_path": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-297-target/debug/showcase",
-  "binary_sha256": "cb853b61871543bb6d82901239b73756c67be5a7478fde469f38b6bdb24068ed",
+  "binary_sha256": "e63107aa9809df4888d24b0732f4c5ad552e0532005eb597878d2f405262c2d5",
   "fixture_args": [
     "--page",
     "codeeditor",
@@ -22,7 +22,7 @@
   ],
   "env": {},
   "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
-  "candidate_sha256": "815f13d467a28577ee43b0ea0e89bffbb0985a8d386699282f61eda67635df13",
+  "candidate_sha256": "a2c1ba5b7cca78696496046f2db6ac01af341e58ba4ddbda131bd9344760f6c3",
   "expect_baseline": "bfff51340b26191ff8368279cafff8ead948c80fd6c9d2feaef09aa5f5660eea",
   "precondition": "",
   "session": null,
@@ -33,15 +33,15 @@
   "test_id": "pre_refactor/s08_codeeditor/opt_codeeditor_completion_rows",
   "acceptance": {
     "expected_baseline_sha256": "bfff51340b26191ff8368279cafff8ead948c80fd6c9d2feaef09aa5f5660eea",
-    "accepted_baseline_sha256": "815f13d467a28577ee43b0ea0e89bffbb0985a8d386699282f61eda67635df13",
-    "candidate_sha256": "815f13d467a28577ee43b0ea0e89bffbb0985a8d386699282f61eda67635df13",
+    "accepted_baseline_sha256": "a2c1ba5b7cca78696496046f2db6ac01af341e58ba4ddbda131bd9344760f6c3",
+    "candidate_sha256": "a2c1ba5b7cca78696496046f2db6ac01af341e58ba4ddbda131bd9344760f6c3",
     "transaction_receipt": "docs/testing/acceptance-receipts/showcase-code-editor-297-20261116/pre_refactor_s08_codeeditor_opt_codeeditor_completion_rows.accept.json"
   },
   "previous_baseline": {
     "sha256": "bfff51340b26191ff8368279cafff8ead948c80fd6c9d2feaef09aa5f5660eea"
   },
   "candidate": {
-    "sha256": "815f13d467a28577ee43b0ea0e89bffbb0985a8d386699282f61eda67635df13",
+    "sha256": "a2c1ba5b7cca78696496046f2db6ac01af341e58ba4ddbda131bd9344760f6c3",
     "path": "tests/functional/baselines/pre_refactor/s08_codeeditor/opt_codeeditor_completion_rows.tui.pb"
   },
   "history": {
@@ -51,10 +51,10 @@
   "capture": {
     "mode": "candidate",
     "candidate_path": "tests/functional/baselines/pre_refactor/s08_codeeditor/opt_codeeditor_completion_rows.tui.pb",
-    "candidate_sha256": "815f13d467a28577ee43b0ea0e89bffbb0985a8d386699282f61eda67635df13",
+    "candidate_sha256": "a2c1ba5b7cca78696496046f2db6ac01af341e58ba4ddbda131bd9344760f6c3",
     "binary_path": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-297-target/debug/showcase",
-    "binary_sha256": "cb853b61871543bb6d82901239b73756c67be5a7478fde469f38b6bdb24068ed",
-    "note": "Code editor State panel gains Line width and Providers rows (TextBuffer::line_width, CodeEditor::highlighter_fn and segmenter_fn), grows by two rows, and the footer gains F5 Re-scan; the Options list gains a trailing Find query option (#297)"
+    "binary_sha256": "e63107aa9809df4888d24b0732f4c5ad552e0532005eb597878d2f405262c2d5",
+    "note": "Code editor State panel gains Line width, Providers and Scans rows (TextBuffer::line_width, CodeEditor::highlighter_fn and segmenter_fn, and a provider-run counter that F5 Re-scan visibly bumps), grows by three rows, and the footer gains F5 Re-scan; the Options list gains a trailing Find query option (#297)"
   },
   "cli_receipt": {
     "schema": "tuiscotti.cli.v1",
@@ -64,10 +64,10 @@
     "reason": null,
     "candidate_path": {
       "encoding": "utf8",
-      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-297/target/functional/s08-rows-69515-1794778893481139000-0/check-artifacts/pre_refactor/s08_codeeditor/opt_codeeditor_completion_rows/815f13d467a28577ee43b0ea0e89bffbb0985a8d386699282f61eda67635df13/sample.tui.pb"
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-297/target/functional/s08-rows-70839-1794781215195303000-0/check-artifacts/pre_refactor/s08_codeeditor/opt_codeeditor_completion_rows/a2c1ba5b7cca78696496046f2db6ac01af341e58ba4ddbda131bd9344760f6c3/sample.tui.pb"
     },
-    "candidate_sha256": "815f13d467a28577ee43b0ea0e89bffbb0985a8d386699282f61eda67635df13",
-    "baseline_sha256": "815f13d467a28577ee43b0ea0e89bffbb0985a8d386699282f61eda67635df13",
+    "candidate_sha256": "a2c1ba5b7cca78696496046f2db6ac01af341e58ba4ddbda131bd9344760f6c3",
+    "baseline_sha256": "a2c1ba5b7cca78696496046f2db6ac01af341e58ba4ddbda131bd9344760f6c3",
     "output_path": {
       "encoding": "utf8",
       "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-297/tests/functional/baselines/pre_refactor/s08_codeeditor/opt_codeeditor_completion_rows.tui.pb"

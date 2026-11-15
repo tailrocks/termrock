@@ -102,6 +102,23 @@ fn row_with(screen: &TerminalSnapshot, needle: &str) -> String {
         .unwrap_or_else(|| panic!("row {needle:?} missing\n{}", text(screen)))
 }
 
+/// The State panel's `Scans  N · M` row: how often the tone and block
+/// providers ran, in the order the Providers row names them.
+fn scan_counts(screen: &TerminalSnapshot) -> (usize, usize) {
+    let row = row_with(screen, "Scans");
+    let counts: Vec<usize> = row
+        .split("Scans")
+        .nth(1)
+        .unwrap_or_default()
+        .split(" · ")
+        .filter_map(|part| part.split_whitespace().next()?.parse().ok())
+        .collect();
+    match counts[..] {
+        [tones, blocks] => (tones, blocks),
+        _ => panic!("no provider-run counters in {row:?}"),
+    }
+}
+
 fn footer(screen: &TerminalSnapshot) -> String {
     row_text(screen, screen.rows().saturating_sub(1))
 }
@@ -1888,9 +1905,17 @@ fn rescan_key_invalidates_the_installed_providers() {
         "both providers are installed by default\n{}",
         text(&state)
     );
+    let (tones_before, blocks_before) = scan_counts(&state);
     focus_editor(&app);
     app.key("f5");
-    let rescanned = app.wait_text("Re-scanned tones and blocks");
+    app.wait_text("Re-scanned tones and blocks");
+    let rescanned = app.settle();
+    let (tones_after, blocks_after) = scan_counts(&rescanned);
+    assert!(
+        tones_after > tones_before && blocks_after > blocks_before,
+        "F5 did not run the providers again: tones {tones_before} -> {tones_after}, blocks {blocks_before} -> {blocks_after}\n{}",
+        text(&rescanned)
+    );
     assert!(
         footer(&rescanned).contains("Re-scanned tones and blocks"),
         "the status line does not say what was re-scanned\n{}",

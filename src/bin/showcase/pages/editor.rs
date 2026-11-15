@@ -1,4 +1,5 @@
 use std::ops::Range;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
@@ -191,6 +192,22 @@ fn find_preset(value: &str) -> Option<(&'static str, usize)> {
     }
 }
 
+/// How often the demo editor's providers have run. The providers are pure,
+/// so these counters are the only place an invalidation shows: the cache
+/// reuses the last result until the text changes or F5 invalidates it.
+static TONE_RUNS: AtomicUsize = AtomicUsize::new(0);
+static BLOCK_RUNS: AtomicUsize = AtomicUsize::new(0);
+
+fn counted_highlight(src: &str) -> Vec<(Range<usize>, SyntaxTone)> {
+    TONE_RUNS.fetch_add(1, Ordering::Relaxed);
+    highlight(src)
+}
+
+fn counted_blocks(src: &str) -> Vec<Range<usize>> {
+    BLOCK_RUNS.fetch_add(1, Ordering::Relaxed);
+    blocks(src)
+}
+
 fn blocks(src: &str) -> Vec<Range<usize>> {
     let mut out = Vec::new();
     let mut start: Option<usize> = None;
@@ -306,10 +323,10 @@ impl EditorPage {
                 _ => TrackClick::Page,
             });
         if o.on("codeeditor.highlighter") {
-            e = e.highlighter(highlight);
+            e = e.highlighter(counted_highlight);
         }
         if o.on("codeeditor.segmenter") {
-            e = e.segmenter(blocks);
+            e = e.segmenter(counted_blocks);
         }
         match o.value("codeeditor.edit_entry") {
             "immediate" => e = e.edit_entry(EditEntry::Immediate),
@@ -545,6 +562,15 @@ impl EditorPage {
                     .unwrap_or_else(|| "—".into()),
             ),
             Prop::new("Providers", providers),
+            // Same order as the Providers row above: tone runs, then block runs.
+            Prop::new(
+                "Scans",
+                format!(
+                    "{} · {}",
+                    TONE_RUNS.load(Ordering::Relaxed),
+                    BLOCK_RUNS.load(Ordering::Relaxed)
+                ),
+            ),
             Prop::new("Diagnostics", diags.to_string()).tone(if diags > 0 {
                 Tone::Warning
             } else {

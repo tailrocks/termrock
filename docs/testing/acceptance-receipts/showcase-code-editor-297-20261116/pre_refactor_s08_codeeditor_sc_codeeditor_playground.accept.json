@@ -6,10 +6,10 @@
   "reason": null,
   "candidate_path": {
     "encoding": "utf8",
-    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-297/target/functional/s08-sections-10845-1794779237465018000-0/check-artifacts/pre_refactor/s08_codeeditor/sc_codeeditor_playground/64b76f33cd1edb3e28bdbb000f2778ebebfbce7c22fee532f6b639db69223b4c/sample.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-297/target/functional/s08-sections-12042-1794781440234710000-0/check-artifacts/pre_refactor/s08_codeeditor/sc_codeeditor_playground/2b63b11c0ddbc93ea87936b72fc9278c24d99e548d76deaeb74b85a548f4565b/sample.tui.pb"
   },
-  "candidate_sha256": "64b76f33cd1edb3e28bdbb000f2778ebebfbce7c22fee532f6b639db69223b4c",
-  "baseline_sha256": "64b76f33cd1edb3e28bdbb000f2778ebebfbce7c22fee532f6b639db69223b4c",
+  "candidate_sha256": "2b63b11c0ddbc93ea87936b72fc9278c24d99e548d76deaeb74b85a548f4565b",
+  "baseline_sha256": "2b63b11c0ddbc93ea87936b72fc9278c24d99e548d76deaeb74b85a548f4565b",
   "output_path": {
     "encoding": "utf8",
     "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-297/tests/functional/baselines/pre_refactor/s08_codeeditor/sc_codeeditor_playground.tui.pb"
