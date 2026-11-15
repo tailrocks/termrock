@@ -6,8 +6,10 @@ use crate::core::id::WidgetId;
 use crate::core::refusal::{Control, Reason};
 use crate::theme::{ButtonKind, Kind};
 use crate::ui::ctx::RenderCtx;
-use crate::ui::text::width;
+use crate::ui::measure::terminal_extent;
+use crate::ui::text::{paint_clipped, width};
 use ratatui::crossterm::event::KeyCode;
+use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(Debug, Clone)]
 pub struct Button {
@@ -105,9 +107,14 @@ impl Button {
         self.control(Control::fixed(reason))
     }
 
+    /// Natural width of the button, saturating at `u16::MAX`.
     pub fn width(&self) -> u16 {
+        terminal_extent(self.intrinsic_width())
+    }
+
+    pub(crate) fn intrinsic_width(&self) -> usize {
         let marker = if self.on.is_some() || self.busy { 2 } else { 0 };
-        (width(&self.label) + 2 + marker) as u16
+        width(&self.label).saturating_add(2 + marker)
     }
 
     pub fn hint(&self) -> crate::widgets::keyhint::Hint {
@@ -202,18 +209,25 @@ impl Button {
             text.push(' ');
         }
         text.push_str(&self.label);
-        let text = crate::ui::text::fit(&text, (w as usize).saturating_sub(2));
-        buf.set_string(area.x, area.y, it.gutter, gutter);
-        buf.set_string(area.x + 1, area.y, &text, style);
+        let content = Rect::new(
+            area.x.saturating_add(1),
+            area.y,
+            w.saturating_sub(2),
+            area.height,
+        );
+        let text = crate::ui::text::fit(&text, usize::from(content.width));
+        paint_clipped(buf, area, 0, it.gutter, gutter);
+        paint_clipped(buf, content, 0, &text, style);
 
         if let Some(on) = self.on
             && !s.disabled
         {
             let ms = style.fg(if on { t.accent } else { t.text_muted });
             let ms = if s.pressed { style } else { ms };
-            buf.set_string(
-                area.x + 1,
-                area.y,
+            paint_clipped(
+                buf,
+                content,
+                0,
                 if on {
                     t.glyphs.dot_on
                 } else {
@@ -223,9 +237,10 @@ impl Button {
             );
         }
         if self.busy {
-            buf.set_string(
-                area.x + 1,
-                area.y,
+            paint_clipped(
+                buf,
+                content,
+                0,
                 t.glyphs.spinner_frame(ctx.interaction.tick),
                 style.fg(if filled { busy_ink } else { t.accent }),
             );
@@ -235,15 +250,38 @@ impl Button {
             && !self.busy
             && self.on.is_none()
             && text == self.label
-            && let Some(c) = self.label.chars().nth(mi)
         {
-            let x = area.x + 1 + width(&self.label.chars().take(mi).collect::<String>()) as u16;
-            if let Some(cell) = buf.cell_mut((x, area.y)) {
-                cell.set_style(style.add_modifier(ratatui::style::Modifier::UNDERLINED));
-                debug_assert_eq!(cell.symbol(), c.to_string());
+            let mut scalars = 0;
+            let mut col = 0;
+            for g in self.label.graphemes(true) {
+                let cells = width(g);
+                scalars += g.chars().count();
+                if mi < scalars {
+                    for dx in 0..cells {
+                        let x = usize::from(content.x) + col + dx;
+                        if let Ok(x) = u16::try_from(x)
+                            && content.contains((x, content.y).into())
+                            && let Some(cell) = buf.cell_mut((x, content.y))
+                        {
+                            cell.set_style(
+                                style.add_modifier(ratatui::style::Modifier::UNDERLINED),
+                            );
+                        }
+                    }
+                    break;
+                }
+                col += cells;
             }
         }
-        buf.set_string(area.x + w - 1, area.y, " ", style);
+        if w >= 2 {
+            paint_clipped(
+                buf,
+                Rect::new(area.right() - 1, area.y, 1, 1),
+                0,
+                " ",
+                style,
+            );
+        }
         if self.focusable {
             ctx.control(self.id, area, self.disabled);
         } else {
@@ -255,9 +293,14 @@ impl Button {
     }
 }
 
-fn wrap_lines(width: u16, widths: &[u16], gap: u16) -> Vec<Vec<usize>> {
+pub(crate) fn wrap_lines(
+    width: usize,
+    widths: &[usize],
+    gap: usize,
+    max_lines: usize,
+) -> Vec<Vec<usize>> {
     let mut lines: Vec<Vec<usize>> = vec![vec![]];
-    let mut used = 0u16;
+    let mut used = 0usize;
     for (i, &w) in widths.iter().enumerate() {
         let line = lines.last_mut().expect("one line");
         let need = if line.is_empty() {
@@ -268,44 +311,96 @@ fn wrap_lines(width: u16, widths: &[u16], gap: u16) -> Vec<Vec<usize>> {
         if line.is_empty() || need <= width {
             line.push(i);
             used = need;
-        } else {
+        } else if lines.len() < max_lines {
             lines.push(vec![i]);
             used = w;
+        } else {
+            break;
         }
     }
     lines
 }
 
+fn wide(widths: &[u16]) -> Vec<usize> {
+    widths.iter().map(|&w| usize::from(w)).collect()
+}
+
+/// Number of lines the buttons wrap onto, saturating at `u16::MAX`.
 pub fn row_lines(width: u16, widths: &[u16], gap: u16) -> u16 {
     if widths.is_empty() {
         return 1;
     }
-    wrap_lines(width, widths, gap).len() as u16
+    terminal_extent(
+        wrap_lines(
+            usize::from(width),
+            &wide(widths),
+            usize::from(gap),
+            usize::MAX,
+        )
+        .len(),
+    )
 }
 
 pub fn row_layout(area: Rect, widths: &[u16], gap: u16) -> Vec<Rect> {
-    place_lines(area, widths, gap, false)
+    place_lines(area, &wide(widths), gap, false)
 }
 
 pub fn row_layout_right(area: Rect, widths: &[u16], gap: u16) -> Vec<Rect> {
-    place_lines(area, widths, gap, true)
+    place_lines(area, &wide(widths), gap, true)
 }
 
-fn place_lines(area: Rect, widths: &[u16], gap: u16, right: bool) -> Vec<Rect> {
-    let mut out = vec![Rect::ZERO; widths.len()];
-    for (k, line) in wrap_lines(area.width, widths, gap).iter().enumerate() {
-        let y = area.y.saturating_add(k as u16);
-        let total = line.iter().map(|&i| widths[i]).sum::<u16>()
-            + gap * line.len().saturating_sub(1) as u16;
-        let mut x = if right {
-            area.right().saturating_sub(total).max(area.x)
-        } else {
-            area.x
-        };
-        for &i in line {
-            let w = widths[i].min(area.right().saturating_sub(x));
-            out[i] = Rect::new(x, y, w, area.height.min(1));
+/// One-cell-high row `row_index` of `area`, or `None` once the allocation has
+/// no such row. `area` must already be normalized to representable bounds.
+fn row_at(area: Rect, row_index: usize) -> Option<Rect> {
+    if area.width == 0 || row_index >= usize::from(area.bottom() - area.y) {
+        return None;
+    }
+    Some(Rect::new(area.x, area.y + row_index as u16, area.width, 1))
+}
+
+/// Places `line` (index, intrinsic width) on row `y` of `area`, aligned to its
+/// start or end. Every returned rectangle is inside `area` or `Rect::ZERO`.
+fn place_line(area: Rect, y: u16, line: &[(usize, usize)], gap: u16, right: bool) -> Vec<Rect> {
+    let total = line
+        .iter()
+        .map(|&(_, w)| w)
+        .fold(0usize, usize::saturating_add)
+        .saturating_add(usize::from(gap).saturating_mul(line.len().saturating_sub(1)));
+    let total = terminal_extent(total).min(area.width);
+    let mut x = if right { area.right() - total } else { area.x };
+    line.iter()
+        .map(|&(_, w)| {
+            let w = terminal_extent(w.min(usize::from(area.right().saturating_sub(x))));
+            let r = if w == 0 {
+                Rect::ZERO
+            } else {
+                Rect::new(x, y, w, 1)
+            };
             x = x.saturating_add(w).saturating_add(gap);
+            r
+        })
+        .collect()
+}
+
+/// Wraps and places buttons from their wide intrinsic widths, so a button wider
+/// than any `u16` allocation never looks like it fits. A button that has no row
+/// or no width left is `Rect::ZERO`.
+pub(crate) fn place_lines(area: Rect, wide: &[usize], gap: u16, right: bool) -> Vec<Rect> {
+    let area = area.intersection(area);
+    let mut out = vec![Rect::ZERO; wide.len()];
+    for (k, line) in wrap_lines(
+        usize::from(area.width),
+        wide,
+        usize::from(gap),
+        usize::from(area.height),
+    )
+    .iter()
+    .enumerate()
+    {
+        let Some(row) = row_at(area, k) else { break };
+        let line: Vec<(usize, usize)> = line.iter().map(|&i| (i, wide[i])).collect();
+        for (&(i, _), r) in line.iter().zip(place_line(area, row.y, &line, gap, right)) {
+            out[i] = r;
         }
     }
     out
@@ -411,21 +506,33 @@ impl ButtonRow {
             .or_else(|| buttons.len().checked_sub(1))
     }
 
-    fn lines(&self, width: u16, widths: &[u16], gap: u16) -> Vec<Vec<usize>> {
-        wrap_lines(width, widths, gap)
+    fn line_count(width: u16, widths: &[usize], gap: u16) -> u16 {
+        terminal_extent(wrap_lines(usize::from(width), widths, usize::from(gap), usize::MAX).len())
     }
 
+    fn intrinsic_widths(buttons: &[Button]) -> Vec<usize> {
+        buttons.iter().map(Button::intrinsic_width).collect()
+    }
+
+    /// Natural width of the whole row, saturating at `u16::MAX`.
     pub fn width(&self, buttons: &[Button], theme: &crate::theme::Theme) -> u16 {
-        let n = buttons.len() as u16;
-        buttons.iter().map(Button::width).sum::<u16>() + self.gap_for(theme) * n.saturating_sub(1)
+        terminal_extent(
+            Self::intrinsic_widths(buttons)
+                .iter()
+                .fold(0usize, |a, w| a.saturating_add(*w))
+                .saturating_add(
+                    usize::from(self.gap_for(theme))
+                        .saturating_mul(buttons.len().saturating_sub(1)),
+                ),
+        )
     }
 
     pub fn rows(&self, width: u16, buttons: &[Button], theme: &crate::theme::Theme) -> u16 {
         match self.overflow {
             RowOverflow::More => 1,
             RowOverflow::Wrap => {
-                let widths: Vec<u16> = buttons.iter().map(Button::width).collect();
-                self.lines(width, &widths, self.gap_for(theme)).len() as u16
+                let widths = Self::intrinsic_widths(buttons);
+                Self::line_count(width, &widths, self.gap_for(theme))
             }
         }
     }
@@ -434,77 +541,68 @@ impl ButtonRow {
         match self.overflow {
             RowOverflow::More => 1,
             RowOverflow::Wrap => {
-                let widths: Vec<u16> = buttons.iter().map(Button::width).collect();
-                self.lines(width, &widths, self.gap.unwrap_or(gap)).len() as u16
+                let widths = Self::intrinsic_widths(buttons);
+                Self::line_count(width, &widths, self.gap.unwrap_or(gap))
             }
         }
     }
 
     pub fn layout(&self, area: Rect, buttons: &[Button], theme: &crate::theme::Theme) -> RowLayout {
         let gap = self.gap_for(theme);
-        let widths: Vec<u16> = buttons.iter().map(Button::width).collect();
+        let widths = Self::intrinsic_widths(buttons);
         let mut out = RowLayout {
             rects: vec![None; buttons.len()],
             ..Default::default()
         };
+        let area = area.intersection(area);
         if area.is_empty() || buttons.is_empty() {
             return out;
         }
-        let place = |line: &[(usize, u16)], y: u16, out: &mut RowLayout| -> Vec<Rect> {
-            let total = line.iter().map(|(_, w)| *w).sum::<u16>()
-                + gap * line.len().saturating_sub(1) as u16;
-            let x = match self.align {
-                RowAlign::Start => area.x,
-                RowAlign::End => area.right().saturating_sub(total).max(area.x),
-            };
-
-            let mut cx = x;
-            let rects: Vec<Rect> = line
-                .iter()
-                .map(|(_, w)| {
-                    let w = (*w).min(area.right().saturating_sub(cx));
-                    let r = Rect::new(cx, y, w, 1);
-                    cx = cx.saturating_add(w).saturating_add(gap);
-                    r
-                })
-                .collect();
-            for ((i, _), r) in line.iter().zip(&rects) {
-                if *i < out.rects.len() {
-                    out.rects[*i] = Some(*r);
-                }
-            }
-            rects
-        };
+        let right = self.align == RowAlign::End;
+        let some = |r: Rect| Some(r).filter(|r| !r.is_empty());
         match self.overflow {
             RowOverflow::Wrap => {
-                for (k, line) in self.lines(area.width, &widths, gap).iter().enumerate() {
-                    let y = area.y + k as u16;
-                    if y >= area.bottom() {
-                        break;
-                    }
-                    let line: Vec<(usize, u16)> = line.iter().map(|&i| (i, widths[i])).collect();
-                    place(&line, y, &mut out);
+                for (i, r) in place_lines(area, &widths, gap, right)
+                    .into_iter()
+                    .enumerate()
+                {
+                    out.rects[i] = some(r);
                 }
             }
             RowOverflow::More => {
-                let total = widths.iter().sum::<u16>() + gap * (widths.len() as u16 - 1);
-                if total <= area.width {
-                    let line: Vec<(usize, u16)> = widths.iter().copied().enumerate().collect();
-                    place(&line, area.y, &mut out);
+                let (gap_w, n) = (usize::from(gap), widths.len());
+                let total = widths
+                    .iter()
+                    .fold(0usize, |a, w| a.saturating_add(*w))
+                    .saturating_add(gap_w.saturating_mul(n - 1));
+                let place = |line: &[(usize, usize)], out: &mut RowLayout| -> Vec<Rect> {
+                    let rects = place_line(area, area.y, line, gap, right);
+                    for (&(i, _), r) in line.iter().zip(&rects) {
+                        if i < out.rects.len() {
+                            out.rects[i] = some(*r);
+                        }
+                    }
+                    rects
+                };
+                if total <= usize::from(area.width) {
+                    let line: Vec<(usize, usize)> = widths.iter().copied().enumerate().collect();
+                    place(&line, &mut out);
                     return out;
                 }
 
                 let primary = Self::primary(buttons).unwrap_or(0);
-                let more_w = (width(theme.glyphs.ellipsis) + 2) as u16;
-                let mut budget = area.width.saturating_sub(widths[primary] + gap + more_w);
+                let more_w = width(theme.glyphs.ellipsis) + 2;
+                let mut budget = usize::from(area.width)
+                    .saturating_sub(widths[primary].saturating_add(gap_w).saturating_add(more_w));
                 let mut keep = vec![false; buttons.len()];
                 keep[primary] = true;
                 for (i, &w) in widths.iter().enumerate() {
                     if i == primary {
                         continue;
                     }
-                    if w + gap <= budget {
-                        budget -= w + gap;
+                    let need = w.saturating_add(gap_w);
+                    if need <= budget {
+                        budget -= need;
                         keep[i] = true;
                     } else {
                         break;
@@ -512,7 +610,7 @@ impl ButtonRow {
                 }
                 out.hidden = (0..buttons.len()).filter(|i| !keep[*i]).collect();
 
-                let mut line: Vec<(usize, u16)> = Vec::new();
+                let mut line: Vec<(usize, usize)> = Vec::new();
                 for (i, &w) in widths.iter().enumerate() {
                     if keep[i] && i != primary {
                         line.push((i, w));
@@ -531,7 +629,7 @@ impl ButtonRow {
                     );
                     line.push((MORE, more_w));
                 }
-                let rects = place(&line, area.y, &mut out);
+                let rects = place(&line, &mut out);
                 out.more = line
                     .iter()
                     .zip(rects)

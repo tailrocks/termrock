@@ -11,6 +11,10 @@ pub struct Ranked {
     pub reason: String,
 
     pub tag: Option<String>,
+
+    /// Set on a "recent here" row: the last-use time its reason is the age of,
+    /// shown as the age at paint time rather than frozen at ranking time.
+    pub ago_secs: Option<i64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -108,6 +112,11 @@ fn word_score(item: &Item, word: &str) -> Option<(u32, Vec<usize>)> {
     best
 }
 
+/// The integer rank contribution of a frecency score.
+pub fn frecency_boost(frecency: f64) -> i64 {
+    (frecency.clamp(0.0, 1.0) * crate::domain::usage::BOOST_CAP * 100_000.0) as i64
+}
+
 pub fn search(items: &[Item], raw: &str, readout: Scope, group: Option<&str>) -> Vec<Ranked> {
     search_with(items, raw, readout, group, None)
 }
@@ -119,12 +128,16 @@ pub fn search_with(
     group: Option<&str>,
     learned: Option<&str>,
 ) -> Vec<Ranked> {
+    crate::domain::projection::record(|w| w.ranks += 1);
     let q = Query::parse(raw);
     let (scope, strict) = effective_scope(readout, q.scope);
     let has_query = !q.is_empty();
     let text = q.text.trim().to_lowercase();
     let words: Vec<&str> = text.split_whitespace().collect();
     let mut out = vec![];
+    if crate::domain::projection::counting() {
+        junie_tui::record_work!(RankRowsVisited, items.len());
+    }
     for (i, item) in items.iter().enumerate() {
         if item.hidden && !has_query {
             continue;
@@ -235,8 +248,7 @@ pub fn search_with(
             reason = format!("remembered for “{}” · {reason}", text);
         }
         if item.frecency > 0.0 {
-            score += (item.frecency.clamp(0.0, 1.0) * crate::domain::usage::BOOST_CAP * 100_000.0)
-                as i64;
+            score += frecency_boost(item.frecency);
         }
         score += tier * 5_000;
         score += (item.used_here.min(50) as i64) * 100;
@@ -254,6 +266,7 @@ pub fn search_with(
             matched,
             reason,
             tag,
+            ago_secs: None,
         });
     }
     out.sort_by(|a, b| {

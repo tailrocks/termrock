@@ -190,20 +190,7 @@ fn until(
     why: &str,
 ) -> TerminalSnapshot {
     app.key(key);
-    let deadline = Instant::now() + Duration::from_secs(3);
-    loop {
-        let screen = app.screen();
-        if pred(&screen) {
-            return screen;
-        }
-        assert!(
-            Instant::now() < deadline,
-            "{why}\npath {}\n{}",
-            path_of(&screen),
-            text(&screen)
-        );
-        std::thread::sleep(Duration::from_millis(25));
-    }
+    app.wait_screen(why, pred)
 }
 
 fn go(app: &App, key: &str, path: &str) {

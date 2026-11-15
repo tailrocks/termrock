@@ -5,6 +5,9 @@ use ratatui::style::Color;
 use crate::core::id::{Part, PartRef, WidgetId};
 use crate::theme::Kind;
 use crate::ui::ctx::RenderCtx;
+use crate::ui::text::{paint_clipped, width};
+use crate::ui::tooltip::Tip;
+use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RailAction {
@@ -56,6 +59,17 @@ impl SidebarRail {
         }
     }
 
+    /// One entry per vertical row: the cluster itself when it is one cell
+    /// wide, `None` for a cluster wider than the column. Zero-width clusters
+    /// take no row.
+    fn rows(&self) -> impl Iterator<Item = Option<&str>> {
+        self.label.graphemes(true).filter_map(|g| match width(g) {
+            0 => None,
+            1 => Some(Some(g)),
+            _ => Some(None),
+        })
+    }
+
     pub fn render_rail(&self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, bg: Color) {
         let area = area.intersection(*buf.area());
         if !self.collapsed_rail || area.is_empty() {
@@ -67,18 +81,28 @@ impl SidebarRail {
             .interactive(Kind::Title, ctx.state(self.id), t.plane_of(bg))
             .style;
         crate::ui::ctx::fill(buf, col, st);
-        buf.set_string(col.x, col.y, t.glyphs.overflow_right, st);
-        for (i, ch) in self.label.chars().enumerate() {
-            let y = col.y + 2 + i as u16;
+        paint_clipped(buf, col, 0, t.glyphs.overflow_right, st);
+        let placeholder = if width(t.glyphs.ellipsis) == 1 {
+            t.glyphs.ellipsis
+        } else {
+            "…"
+        };
+        for (i, cluster) in self.rows().enumerate() {
+            let y = col.y.saturating_add(2 + i as u16);
             if y >= col.bottom() {
                 break;
             }
-            buf.set_string(col.x, y, ch.to_string(), st);
+            let cell = Rect::new(col.x, y, 1, 1);
+            paint_clipped(buf, cell, 0, cluster.unwrap_or(placeholder), st);
         }
         ctx.clickable(self.id, col);
+        if !self.label.is_empty() {
+            crate::ui::tooltip::show(ctx, self.id, col, &Tip::new(&self.label), None);
+        }
     }
 
     pub fn render_collapse(&self, panel: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, bg: Color) {
+        let panel = panel.intersection(*buf.area());
         if panel.width < 12 || panel.height < 2 {
             return;
         }
@@ -89,9 +113,9 @@ impl SidebarRail {
         let st = t
             .interactive(Kind::Title, ctx.state(id), t.plane_of(bg))
             .style;
-        buf.set_string(r.x, r.y, " ", host);
-        buf.set_string(r.x + 1, r.y, t.glyphs.overflow_left, st);
-        buf.set_string(r.x + 2, r.y, " ", host);
+        paint_clipped(buf, r, 0, " ", host);
+        paint_clipped(buf, r, 2, " ", host);
+        paint_clipped(buf, r, 1, t.glyphs.overflow_left, st);
         ctx.register_part(self.id, PartRef::of(Part::ICON), r);
     }
 }
@@ -107,7 +131,7 @@ impl crate::ui::specimen::Specimen for SidebarRail {
     }
 
     fn specimen_height(&self, _state: crate::ui::specimen::SpecimenState) -> u16 {
-        2 + self.label.chars().count() as u16
+        u16::try_from(2 + self.rows().count()).unwrap_or(u16::MAX)
     }
 
     fn specimen(

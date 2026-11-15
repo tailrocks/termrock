@@ -898,6 +898,9 @@ fn option_type_ahead_off() {
     let app = open("s04-type", 120, 40, &args);
     app.wait_text(CHOSEN_RUST);
     click_language(&app, "TypeScript");
+    // Paused motion never redraws when the 140 ms click flash expires, so a
+    // key inside the window would repaint the pressed colour for good.
+    std::thread::sleep(std::time::Duration::from_millis(200));
     press(&app, "p");
     let stayed = app.settle();
     assert_cursor(&stayed, "TypeScript", true);

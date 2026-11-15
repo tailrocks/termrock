@@ -96,6 +96,7 @@ fn tablepro_write_confirmation_cancels_retries_and_executes_only_when_armed() {
     app.click_text("Close anyway");
     app.wait_text("No open tabs");
 
+    app.expire_status();
     app.wait_screen("status flash faded before freeze", |s| {
         let footer = row_text(s, 49);
         !footer.contains("Cancelled")
@@ -296,24 +297,20 @@ fn tablepro_clean_picker_close_is_immediate_and_picker_stays_usable() {
 }
 
 fn action_btn(app: &App, label: &str) -> Point {
-    let screen = app.screen();
-    find_all(&screen, label)
-        .into_iter()
-        .find(|pt| row_text(&screen, u32::from(pt.y)).contains("Duplicate"))
-        .unwrap_or_else(|| {
-            panic!(
-                "action {label} on the detail action row:\n{}",
-                text(&screen)
-            )
-        })
+    app.wait_point(
+        &format!("action {label} on the detail action row"),
+        |screen| {
+            find_all(screen, label)
+                .into_iter()
+                .find(|pt| row_text(screen, u32::from(pt.y)).contains("Duplicate"))
+        },
+    )
 }
 
 fn list_row(app: &App, label: &str) -> Point {
-    let screen = app.screen();
-    find_all(&screen, label)
-        .into_iter()
-        .find(|pt| pt.x < 40)
-        .unwrap_or_else(|| panic!("list row {label}:\n{}", text(&screen)))
+    app.wait_point(&format!("list row {label}"), |screen| {
+        find_all(screen, label).into_iter().find(|pt| pt.x < 40)
+    })
 }
 
 fn close_all_tabs(app: &App) {
@@ -336,6 +333,7 @@ fn close_all_tabs(app: &App) {
 }
 
 fn freeze(app: &App, test_id: &str) {
+    app.expire_status();
     app.wait_absent("\u{2713} Connected to");
     app.visual(test_id);
 }
@@ -473,6 +471,7 @@ fn tablepro_query_select_results_and_error_recovery() {
     let recovered = app.wait_screen("corrected query replaces the syntax error", orders_result);
     assert!(!text(&recovered).contains("syntax error at or near \"SELEC\""));
     assert!(!text(&recovered).contains("SELEC bogus"));
+    app.expire_status();
     app.wait_absent("\u{2713} Connected to");
     app.visual("functional/tablepro_query_recovered");
     close_all_tabs(&app);
@@ -482,6 +481,7 @@ fn tablepro_query_select_results_and_error_recovery() {
 #[test]
 fn tablepro_history_rerun_and_help_and_layout() {
     let app = connected("tablepro-history");
+    app.expire_status();
     app.key("tab");
     app.paste("SELECT * FROM orders;");
     app.key("ctrl+r");
@@ -500,17 +500,7 @@ fn tablepro_history_rerun_and_help_and_layout() {
     app.key("ctrl+q");
     let quit = app.wait_text("Quit TablePro?");
     assert!(text(&quit).contains("unsaved"));
-    app.key("right");
-    app.key("enter");
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
-    while app.child_running() {
-        assert!(
-            std::time::Instant::now() < deadline,
-            "tablepro stayed up after confirming quit"
-        );
-        std::thread::sleep(std::time::Duration::from_millis(25));
-    }
-    app.expect_exited(0);
+    app.confirm_quit();
 
     let app = connected("tablepro-help-layout");
     app.key("?");
@@ -578,4 +568,92 @@ fn issue9_tablepro_query_editor_unicode_paste_keeps_text_and_editor_alive() {
     app.type_text("1");
     let screen = app.wait_text(&format!("{sql}1"));
     assert!(text(&screen).contains(sql), "{}", text(&screen));
+}
+
+fn uuid_in(row: &str) -> Option<&str> {
+    let bytes = row.as_bytes();
+    (0..bytes.len().saturating_sub(35)).find_map(|start| {
+        let window = row.get(start..start + 36)?;
+        let dashes = [8, 13, 18, 23];
+        window
+            .bytes()
+            .enumerate()
+            .all(|(i, b)| {
+                if dashes.contains(&i) {
+                    b == b'-'
+                } else {
+                    b.is_ascii_hexdigit()
+                }
+            })
+            .then_some(window)
+    })
+}
+
+fn row_of(screen: &tui_test::TerminalSnapshot, needle: &str) -> String {
+    (0..screen.rows())
+        .map(|index| row_text(screen, index))
+        .find(|row| row.contains(needle))
+        .unwrap_or_else(|| panic!("no row has {needle:?}\n{}", text(screen)))
+}
+
+#[test]
+fn issue12_guarded_reload_pty() {
+    const EDIT: &str = "GuardEdit";
+    const PENDING: &str = "1 pending";
+    const GUARD: &str = "Unsaved changes";
+
+    let app = connected("tablepro-issue12-guarded-reload");
+    app.key("ctrl+o");
+    app.wait_text("Open Quickly");
+    app.type_text("organizations");
+    app.wait_text("organizations");
+    app.key("enter");
+    let table = app.wait_screen("organizations opened", |s| {
+        text(s).contains("public › organizations") && !text(s).contains("Open Quickly")
+    });
+    let id_row = (0..table.rows())
+        .map(|index| row_text(&table, index))
+        .find(|row| uuid_in(row).is_some())
+        .expect("a data row with an id");
+    let id = uuid_in(&id_row).expect("an id").to_owned();
+
+    app.key("right");
+    app.key("enter");
+    app.wait_text("Apply");
+    app.key("ctrl+l");
+    app.key("backspace");
+    app.type_text(EDIT);
+    app.key("enter");
+    let edited = app.wait_screen("the edit is pending", |s| {
+        text(s).contains(PENDING) && row_of(s, &id).contains(EDIT)
+    });
+    assert!(!text(&edited).contains(GUARD));
+
+    app.key("s");
+    let asked = app.wait_text(GUARD);
+    assert!(
+        row_of(&asked, &id).contains(EDIT),
+        "the draft is still on its row while the guard asks\n{}",
+        text(&asked)
+    );
+    assert!(!text(&asked).contains("Sorted by"), "{}", text(&asked));
+
+    app.key("escape");
+    let kept = app.wait_screen("Cancel keeps the draft and the order", |s| {
+        let visible = text(s);
+        !visible.contains(GUARD) && visible.contains(EDIT) && visible.contains(PENDING)
+    });
+    assert!(row_of(&kept, &id).contains(EDIT), "{}", text(&kept));
+    assert!(!text(&kept).contains("Sorted by"), "{}", text(&kept));
+
+    app.key("s");
+    app.wait_text(GUARD);
+    app.key("left");
+    app.key("enter");
+    let sorted = app.wait_screen("Discard sorts and drops the draft", |s| {
+        let visible = text(s);
+        !visible.contains(GUARD) && !visible.contains(EDIT) && visible.contains("Sorted by")
+    });
+    assert!(!text(&sorted).contains(PENDING), "{}", text(&sorted));
+    app.finish();
 }

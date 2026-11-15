@@ -11,7 +11,7 @@ use std::time::{Duration, Instant};
 use tui_test::TerminalSnapshot;
 
 use crate::support::{
-    App, JACKIN, Launch, Point, SessionMode, file_sha256, find_all, reference_binary_from,
+    App, JACKIN, Launch, Point, SessionMode, button, file_sha256, reference_binary_from,
     reference_digest_from, row_text, text, try_launch,
 };
 
@@ -251,29 +251,9 @@ fn focus_list(app: &App) {
 }
 
 fn step_until(app: &App, key: &str, marker: &str) {
-    for _ in 0..16 {
-        if key_token(&focused_line(&app.screen()), marker) {
-            return;
-        }
-        let before = focused_line(&app.screen());
-        app.key(key);
-        let deadline = std::time::Instant::now() + Duration::from_millis(800);
-        loop {
-            let line = focused_line(&app.screen());
-            if key_token(&line, marker) || line != before || std::time::Instant::now() >= deadline {
-                break;
-            }
-            std::thread::sleep(Duration::from_millis(25));
-        }
-        if key_token(&focused_line(&app.screen()), marker) {
-            return;
-        }
-        if focused_line(&app.screen()) == before {
-            break;
-        }
-    }
-    let screen = app.screen();
-    panic!("never focused {marker} with {key}\n{}", text(&screen));
+    app.press_until(key, marker, 16, focused_line, |screen| {
+        key_token(&focused_line(screen), marker)
+    });
 }
 
 fn focus_key(app: &App, key: &str) {
@@ -292,19 +272,6 @@ fn focus_key(app: &App, key: &str) {
         return;
     }
     step_until(app, "down", key);
-}
-
-fn button(app: &App, label: &str, row_ok: impl Fn(&str) -> bool) -> Point {
-    let screen = app.screen();
-    let hits: Vec<_> = find_all(&screen, label)
-        .into_iter()
-        .filter(|point| row_ok(&row_text(&screen, u32::from(point.y))))
-        .collect();
-    assert_eq!(hits.len(), 1, "one button {label:?}:\n{}", text(&screen));
-    Point {
-        x: hits[0].x + 2,
-        y: hits[0].y,
-    }
 }
 
 fn preview_save(app: &App) -> Point {
@@ -533,7 +500,11 @@ fn submit_form(app: &App) {
     app.key("tab");
     app.key("right");
     let save_focused = app.wait_screen("save focused", |screen| {
-        text(screen).contains("Enter Save") && text(screen).contains(CANCEL)
+        text(screen).contains("Enter Save")
+            && (0..screen.rows()).any(|row| {
+                let line = row_text(screen, row);
+                line.contains(CANCEL) && line.contains("▎Save")
+            })
     });
     assert!(
         text(&save_focused).contains(CONFIRM),

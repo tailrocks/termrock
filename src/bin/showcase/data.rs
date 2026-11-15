@@ -362,3 +362,15 @@ clear focus, and no decoration that does not carry information.\n\n\
 Scroll with the mouse wheel, PageUp/PageDown, or the arrow keys while this panel \
 has focus. The scrollbar on the right shows where you are and how much remains."
 }
+
+/// Text a terminal paints as one cluster but not as one scalar, each with the
+/// kind that names it. Picker labels, Meter Block values and Completion
+/// candidates draw these through the shared grapheme painter.
+pub const GRAPHEME_SAMPLES: [(&str, &str); 6] = [
+    ("combining mark", "cafe\u{301}"),
+    ("wide + ASCII", "界A"),
+    ("right-to-left", "שלום"),
+    ("ZWJ family", "👨‍👩‍👧"),
+    ("flag", "🇯🇵"),
+    ("skin tone", "👍🏽"),
+];

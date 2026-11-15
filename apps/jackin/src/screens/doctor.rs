@@ -16,6 +16,7 @@ use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
 
+use super::row_meta::ClockStamp;
 use super::{Cx, Go, Screen};
 use crate::domain::doctor::{DoctorCheck, DoctorReport};
 use crate::world::{Msg, World, job};
@@ -28,6 +29,7 @@ const RUN: WidgetId = WidgetId::of("doctor.empty.run");
 
 pub struct DoctorScreen {
     ld: ListDetail,
+    clock: ClockStamp,
 }
 
 impl Default for DoctorScreen {
@@ -55,11 +57,19 @@ impl DoctorScreen {
     pub fn new() -> Self {
         Self {
             ld: ListDetail::new(LIST, DETAIL, Split::new(50, 36, 40)),
+            clock: ClockStamp::default(),
         }
     }
 
     fn report<'a>(&self, w: &'a World) -> Option<&'a DoctorReport> {
         w.surfaces.doctor.as_ref().and_then(|d| d.report())
+    }
+
+    /// Whether the page on screen holds an age ("checked 3 s ago"). Only the
+    /// report frame does. The empty state, a first failure included, shows
+    /// none, so the clock has nothing to repaint there.
+    fn shows_age(&self, w: &World) -> bool {
+        self.report(w).is_some()
     }
 
     fn running(&self, w: &World) -> bool {
@@ -280,7 +290,7 @@ impl Page<Jackin> for DoctorScreen {
     }
 
     fn on_tick(&mut self, w: &mut World, _cx: &mut Cx) -> Outcome {
-        if self.running(w) {
+        if self.running(w) || self.clock.due(w, self.shows_age(w), false) {
             Outcome::Changed
         } else {
             Outcome::Ignored
@@ -362,6 +372,7 @@ impl Page<Jackin> for DoctorScreen {
     }
 
     fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, w: &World) {
+        self.clock.painted(w);
         let t = ctx.theme;
         let Some(report) = self.report(w) else {
             ctx.control(LIST, Rect::new(area.x, area.y, 1, 1), false);

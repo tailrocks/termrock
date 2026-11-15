@@ -10,7 +10,7 @@ use std::time::Duration;
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, JACKIN, Launch, Point, find_all, row_text, text, try_launch};
+use crate::support::{App, JACKIN, Launch, Point, button, row_text, text, try_launch};
 
 const DIRECTORY: &str = "Current directory";
 const INTRO: &str = "Stand up, operator";
@@ -170,19 +170,6 @@ fn focus_claude(app: &App) -> TerminalSnapshot {
         let line = focused_line(screen);
         line.contains(CLAUDE) && agent_line(screen, CLAUDE).contains(SYNC)
     })
-}
-
-fn button(app: &App, label: &str, row_ok: impl Fn(&str) -> bool) -> Point {
-    let screen = app.screen();
-    let hits: Vec<_> = find_all(&screen, label)
-        .into_iter()
-        .filter(|point| row_ok(&row_text(&screen, u32::from(point.y))))
-        .collect();
-    assert_eq!(hits.len(), 1, "one button {label:?}:\n{}", text(&screen));
-    Point {
-        x: hits[0].x + 2,
-        y: hits[0].y,
-    }
 }
 
 fn preview_save(app: &App) -> Point {

@@ -1,7 +1,9 @@
 use tui_test::terminal::cell::Attrs;
 use tui_test::{SnapshotColor, TerminalSnapshot};
 
-use super::support::{App, Point, SHOWCASE, cell_bg, crop, find, find_all, row_text, text};
+use super::support::{
+    App, Point, SHOWCASE, cell_bg, crop, find, find_all, flash_settle, row_text, text,
+};
 
 fn inside(point: Point) -> Point {
     Point {
@@ -697,18 +699,14 @@ fn showcase_tree_expand_and_file_selection() {
         gutter_text(s).as_deref() == Some("▎")
     });
 
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(20);
-    loop {
-        if app.try_sustained(std::time::Duration::from_millis(600), |s| settled(s)) {
-            break;
-        }
-        assert!(
-            std::time::Instant::now() < deadline,
-            "tree row must settle without hover"
-        );
-        app.move_to(Point { x: 0, y: 0 });
-        std::thread::sleep(std::time::Duration::from_millis(100));
-    }
+    // The click on `src` armed the 140 ms press flash. Under `--motion paused` no tick
+    // expires it and a moved mouse that changes no hover paints no frame, so a flash that was
+    // still live at the last paint stays on screen. Let it lapse, then redraw once.
+    flash_settle(&app);
+    assert!(
+        app.try_sustained(std::time::Duration::from_millis(600), settled),
+        "tree row must settle without hover"
+    );
     app.visual("functional/showcase_trees");
     app.finish();
 }
@@ -945,6 +943,42 @@ page_test!(showcase_page_celleditors, "celleditors", "Cell editors");
 page_test!(showcase_page_columns, "columns", "Columns");
 page_test!(showcase_page_sidebars, "sidebars", "Sidebars");
 page_test!(showcase_page_pickers, "pickers", "Pickers");
+
+#[test]
+fn showcase_layer_focus_policy_keeps_or_restores_focus_on_close() {
+    let app = App::new(
+        "showcase-layer-focus",
+        SHOWCASE,
+        &["--page", "focusnavigation", "--motion", "paused"],
+        120,
+        40,
+        "truecolor",
+    );
+    app.wait_text("Layer focus");
+    app.wheel(app.point("Mailboxes"), true, 10);
+    app.wait_absent("Mailboxes");
+
+    app.click_text("Passive tip");
+    let open = app.wait_text("Opens and closes without moving focus.");
+    let opener = find(&open, "Passive tip");
+    assert!(
+        row_text(&open, opener.y.into()).contains('▎'),
+        "the opener keeps the focus gutter while the tip is open"
+    );
+    app.key("esc");
+    app.wait_text("Layer closed · focus on Passive tip button");
+
+    app.click_text("Restore off");
+    app.wait_text("Closing keeps the focus the layer set.");
+    app.key("enter");
+    app.wait_text("Layer closed · focus on Cancel");
+
+    app.click_text("Restore on");
+    app.wait_text("Closing returns focus to the opener.");
+    app.key("enter");
+    app.wait_text("Layer closed · focus on Restore on button");
+    app.finish();
+}
 
 #[test]
 fn showcase_multi_picker_modes_filter_disabled_and_report_selection() {
@@ -1236,6 +1270,144 @@ fn showcase_terminal_play_all_counts_the_leave_chunk() {
     app.click_text("Step");
     app.settle();
     app.wait_text("4 of 4 chunks");
+    app.finish();
+}
+
+const SESSION: &str = "terminalpane.host=session controller";
+
+fn session_page(name: &str, script: &str, area: &str) -> App {
+    terminal_pane(
+        name,
+        &[
+            SESSION,
+            &format!("terminalpane.script={script}"),
+            &format!("terminalpane.area={area}"),
+        ],
+    )
+}
+
+#[test]
+fn showcase_terminal_session_owner_script() {
+    let app = session_page("showcase-terminal-session-owner", "owner", "fits");
+    app.wait_text("attaching");
+    app.wait_text("Attaching…");
+    app.click_text("Run 1 s");
+    app.wait_text("attached · owner");
+    app.wait_text("demo$ ls");
+    app.click_text("Run 1 s");
+    let screen = app.wait_text("clipboard write refused");
+    assert!(
+        text(&screen).contains("reply ESC [ 3 ; 5 R"),
+        "the owner answers the program's query:\n{}",
+        text(&screen)
+    );
+    app.click_text("Type");
+    app.wait_text("a → sent to the program");
+
+    app.click_text("Paste 3 lines");
+    app.wait_text("paste of 3 lines is held");
+    app.click_text("Confirm");
+    app.wait_text("paste → sent to the program");
+    app.wait_absent("Confirm");
+    app.click_text("Reset");
+    app.wait_text("Attaching…");
+    app.finish();
+}
+
+#[test]
+fn showcase_terminal_session_captured_keys_reach_the_controller() {
+    let app = session_page("showcase-terminal-session-keys", "owner", "fits");
+    let screen = app.wait_text("Attaching…");
+    let pane = find(&screen, "Attaching…");
+    app.click(pane);
+    app.key("enter");
+    app.wait_text("Ctrl+G Release");
+    app.key("x");
+    let typed = app.wait_text("x → sent to the program");
+    assert!(
+        text(&typed).contains("input x"),
+        "the controller forwarded the key to the link:\n{}",
+        text(&typed)
+    );
+    app.key("ctrl+g");
+    app.wait_absent("Ctrl+G Release");
+    app.finish();
+}
+
+#[test]
+fn showcase_terminal_session_viewer_script() {
+    let app = session_page("showcase-terminal-session-viewer", "viewer", "fits");
+    app.click_text("Run 1 s");
+    app.wait_text("attached · viewer");
+    app.wait_text("notice: another client controls this session");
+    app.click_text("Type");
+    app.wait_text("a → sent to the program");
+    app.click_text("Run 1 s");
+    app.click_text("Run 1 s");
+    app.wait_text("attached · owner");
+    app.finish();
+}
+
+#[test]
+fn showcase_terminal_session_detach_exit_and_failure_scripts() {
+    let detaches = session_page("showcase-terminal-session-detaches", "detaches", "fits");
+    detaches.click_text("Run 1 s");
+    detaches.click_text("Run 1 s");
+    detaches.wait_text("detached · operator");
+    detaches.click_text("Retry");
+    detaches.wait_text("Attaching…");
+    detaches.finish();
+
+    let exits = session_page("showcase-terminal-session-exits", "exits", "fits");
+    exits.click_text("Run 1 s");
+    exits.click_text("Run 1 s");
+    exits.wait_text("exited · code 0");
+    exits.click_text("Retry");
+    exits.click_text("Run 1 s");
+    exits.wait_text("restarted");
+    exits.finish();
+
+    let fails = session_page("showcase-terminal-session-fails", "fails", "fits");
+    fails.wait_text("Attach failed");
+    fails.wait_text("no capacity, the host is busy");
+    fails.click_text("Retry");
+    fails.click_text("Run 1 s");
+    fails.wait_text("attached · owner");
+    fails.finish();
+}
+
+#[test]
+fn showcase_terminal_session_drain_budget_option_stretches_the_replay() {
+    let app = terminal_pane(
+        "showcase-terminal-session-budget",
+        &[SESSION, "terminalpane.budget=8"],
+    );
+    app.wait_text("8 bytes");
+    for _ in 0..3 {
+        app.click_text("Tick 200 ms");
+    }
+    app.wait_text("clock at 600 ms");
+    app.wait_text("Attaching…");
+    app.click_text("Tick 200 ms");
+    app.wait_text("attached · owner");
+    app.finish();
+
+    let generous = terminal_pane("showcase-terminal-session-generous", &[SESSION]);
+    for _ in 0..3 {
+        generous.click_text("Tick 200 ms");
+    }
+    generous.wait_text("attached · owner");
+    generous.finish();
+}
+
+#[test]
+fn showcase_terminal_session_below_minimum_waits_for_room() {
+    let app = session_page("showcase-terminal-session-small", "owner", "below minimum");
+    app.wait_text("pending");
+    app.wait_text("Waiting for room");
+    app.wait_text("needs 20x4");
+    app.click_text("Paste 3 lines");
+    app.wait_text("paste → no program to take it");
     app.finish();
 }
 
@@ -1911,7 +2083,9 @@ fn showcase_fixeddialogs_form_does_not_offer_its_fixed_action() {
     let app = fixed_dialogs("showcase-fixeddialogs-form", &[]);
     app.click_text("Form dialog");
     app.wait_text("Plain text");
-    app.key("tab");
+    for _ in 0..3 {
+        app.key("tab");
+    }
     let on_fixed = app.settle();
     assert!(text(&on_fixed).contains("▎Plain text"));
     assert!(
@@ -1925,6 +2099,70 @@ fn showcase_fixeddialogs_form_does_not_offer_its_fixed_action() {
     assert!(status_row(&on_live).contains("Enter Check"));
     app.key("escape");
     app.wait_absent("Plain text");
+    app.finish();
+}
+
+#[test]
+fn showcase_fixeddialogs_form_refusals_and_repeats_report_no_change() {
+    let app = fixed_dialogs("showcase-fixeddialogs-form-changes", &[]);
+    app.click_text("Form dialog");
+    app.wait_text("Credential source");
+    app.click_text("Keep awake");
+    app.click_text("Typed key");
+    app.click_text("Local folder");
+    let refused = app.settle();
+    assert!(text(&refused).contains("[ ] Keep awake"));
+    assert!(text(&refused).contains("(●) Local folder"));
+    app.key("escape");
+    let closed = app.wait_text("form closed");
+    assert!(
+        text(&closed).contains("form closed · 0 form changes"),
+        "a refused box and option and the selected radio report nothing"
+    );
+
+    app.click_text("Form dialog");
+    app.wait_text("Credential source");
+    app.click_text("Password manager");
+    app.wait_screen("the radio moves", |s| {
+        text(s).contains("(●) Password manager")
+    });
+    app.key("escape");
+    app.wait_screen("one change is reported", |s| {
+        text(s).contains("form closed · 1 form changes")
+    });
+    app.finish();
+}
+
+#[test]
+fn showcase_dialogkinds_sqlite_hides_remote_fields_and_keeps_their_values() {
+    let app = App::new(
+        "showcase-dialogkinds-sqlite",
+        SHOWCASE,
+        &["--page", "dialogkinds", "--motion", "paused"],
+        120,
+        50,
+        "truecolor",
+    );
+    app.wait_text("Add connection");
+    app.click_text("Add connection");
+    let open = app.wait_text("Test connection");
+    assert!(text(&open).contains("Password") && text(&open).contains("Host"));
+    app.click_text("PostgreSQL");
+    app.click_text("SQLite");
+    let file = app.wait_screen("the remote fields are hidden", |s| {
+        !text(s).contains("Password")
+    });
+    assert!(!text(&file).contains("Host"), "{}", text(&file));
+    app.click_text("SQLite");
+    app.click_text("PostgreSQL");
+    let back = app.wait_screen("the remote fields return", |s| text(s).contains("Password"));
+    assert!(
+        text(&back).contains("db.eu-west-1.internal") && text(&back).contains('\u{2022}'),
+        "the masked password is back with its value: {}",
+        text(&back)
+    );
+    app.key("escape");
+    app.wait_absent("Test connection");
     app.finish();
 }
 

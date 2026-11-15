@@ -1,3 +1,5 @@
+use std::cell::Cell;
+
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Rect, Size};
@@ -5,6 +7,7 @@ use ratatui::layout::{Rect, Size};
 use crate::app::PageId;
 use crate::options::{PageValues, page_options};
 use crate::pages::layout::{sheet_height, sheet_width};
+use crate::pages::stress::{self, Mode};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
 use junie_tui::core::event::Outcome;
@@ -64,22 +67,47 @@ pub struct ChipsPage {
     engine: Select,
     last: String,
     sections: crate::pages::layout::Sections,
+    /// The natural widths of the filter and stream bars. They do not depend on
+    /// the page width, so the measures of one frame and its render share one
+    /// pass over the chips. Dropped when the render consumes them, and on every
+    /// event or option change that can edit a bar.
+    natural: [Cell<Option<u16>>; 2],
+}
+
+fn default_filters() -> Vec<Chip> {
+    let mut bad = Chip::new("amount > 'abc'");
+    bad.error = true;
+    let mut chips = vec![
+        Chip::new("status = 'pending'"),
+        Chip::new("total > 100"),
+        Chip::new("country in (DE, FR)"),
+        bad,
+    ];
+    chips[2].enabled = false;
+    chips
+}
+
+/// The filter bar holds the demo filters, or the stress data when it is set.
+/// The long label goes last, so the cursor the bar starts on is a chip that fits.
+fn stress_filters(mode: Mode) -> Vec<Chip> {
+    match mode {
+        Mode::Off => default_filters(),
+        Mode::Items => stress::numbered("filter")
+            .map(|label| Chip::new(&label))
+            .collect(),
+        Mode::Label => default_filters()
+            .into_iter()
+            .chain(std::iter::once(Chip::new(&stress::long_label())))
+            .collect(),
+    }
 }
 
 impl ChipsPage {
     pub fn new() -> Self {
         let mut filters = ChipBar::new(ID.sub("filters"));
-        let mut bad = Chip::new("amount > 'abc'");
-        bad.error = true;
-        filters.chips = vec![
-            Chip::new("status = 'pending'"),
-            Chip::new("total > 100"),
-            Chip::new("country in (DE, FR)"),
-            bad,
-        ];
-        filters.chips[2].enabled = false;
+        filters.set_chips(default_filters());
         let mut streams = ChipBar::new(ID.sub("streams"));
-        streams.chips = ["api", "worker", "db", "cron"]
+        let streams_chips = ["api", "worker", "db", "cron"]
             .iter()
             .map(|l| {
                 let mut c = Chip::new(l);
@@ -87,7 +115,8 @@ impl ChipsPage {
                 c
             })
             .collect();
-        streams.chips[3].enabled = false;
+        streams.set_chips(streams_chips);
+        streams.update_chip(3, |c| c.enabled = false);
         let mut page = Self {
             template: Template::new(ID, states_grid()),
             opts: PageValues::new(page_options(PageId::Chips)),
@@ -100,12 +129,20 @@ impl ChipsPage {
             engine: Select::new(ID.sub("engine"), "Engine", &["PostgreSQL"], 0),
             last: "nothing yet".into(),
             sections: crate::pages::layout::Sections::new(ID.sub("page")),
+            natural: [Cell::new(None), Cell::new(None)],
         };
         page.rebuild();
         page
     }
 
+    fn forget_natural(&self) {
+        for cell in &self.natural {
+            cell.set(None);
+        }
+    }
+
     fn rebuild(&mut self) {
+        self.forget_natural();
         let o = &self.opts;
         let nav = match o.value("chipsselects.chip_nav") {
             "vim" => NavKeys::VIM,
@@ -138,17 +175,17 @@ impl ChipsPage {
             if let Some(w) = o.number("chipsselects.close_target") {
                 n = n.close_target_w(w);
             }
-            n.chips = b.chips.clone();
+            n.set_chips(b.chips().to_vec());
             n.cursor = b.cursor;
-            n.lead = b.lead.clone();
-            n.add_label = b.add_label.clone();
+            n.set_lead(b.lead().map(str::to_owned));
+            n.set_add_label(b.add_label().map(str::to_owned));
             n
         };
         self.filters = bar(&self.filters, ID.sub("filters"));
         self.streams =
             bar(&self.streams, ID.sub("streams")).digit_toggles(o.on("chipsselects.digit_toggles"));
-        self.streams.add_label = None;
-        self.streams.lead = Some("streams".into());
+        self.streams.set_add_label(None);
+        self.streams.set_lead(Some("streams".into()));
 
         let select = |s: &Select| {
             let (min, max) = match o.value("chipsselects.popup_width") {
@@ -232,25 +269,25 @@ impl ChipsPage {
     }
 
     fn sync_lead(&mut self) {
-        self.filters.lead = Some(if self.match_all {
+        self.filters.set_lead(Some(if self.match_all {
             "match all ▾".into()
         } else {
             "match any ▾".into()
-        });
+        }));
     }
 
     fn on_chip(&mut self, ev: Option<ChipAction>, cx: &mut Cx) {
         match ev {
             Some(ChipAction::Activate(i)) => {
-                self.last = format!("edit {}", self.filters.chips[i].label);
+                self.last = format!("edit {}", self.filters.chips()[i].label);
                 cx.status(format!(
                     "Would open the editor for {}",
-                    self.filters.chips[i].label
+                    self.filters.chips()[i].label
                 ));
             }
             Some(ChipAction::Toggle(i)) => {
-                let c = &mut self.filters.chips[i];
-                c.enabled = !c.enabled;
+                self.filters.update_chip(i, |c| c.enabled = !c.enabled);
+                let c = &self.filters.chips()[i];
                 self.last = format!(
                     "{} {}",
                     if c.enabled { "enabled" } else { "disabled" },
@@ -258,18 +295,20 @@ impl ChipsPage {
                 );
             }
             Some(ChipAction::Remove(i)) => {
-                let c = self.filters.chips.remove(i);
-                self.last = format!("removed {}", c.label);
+                if let Some(c) = self.filters.remove_chip(i) {
+                    self.last = format!("removed {}", c.label);
+                }
             }
             Some(ChipAction::Add) => {
                 let label = CANDIDATES[self.next_candidate % CANDIDATES.len()];
                 self.next_candidate += 1;
-                self.filters.chips.push(Chip::new(label));
-                self.filters.cursor = self.filters.chips.len() - 1;
+                let at = self.filters.chips().len();
+                self.filters.insert_chip(at, Chip::new(label));
+                self.filters.cursor = at;
                 self.last = format!("added {label}");
             }
             Some(ChipAction::ClearAll) => {
-                self.filters.chips.clear();
+                self.filters.set_chips(Vec::new());
                 self.last = "cleared all filters".into();
             }
             Some(ChipAction::Lead) => {
@@ -281,10 +320,24 @@ impl ChipsPage {
         }
     }
 
+    fn mutates_open_menu(&self) -> bool {
+        self.opts.on("chipsselects.mutate_open") && self.filters.menu_open()
+    }
+
+    /// Flips whether the first filter is removable while a filter menu is
+    /// open, so the menu must close instead of offering a stale Remove.
+    fn mutate_open_menu(&mut self, cx: &mut Cx) {
+        if self.filters.update_chip(0, |c| c.removable = !c.removable) {
+            let c = &self.filters.chips()[0];
+            let state = if c.removable { "removable" } else { "fixed" };
+            cx.status(format!("{} is now {state}; its menu closed", c.label));
+        }
+    }
+
     fn on_stream(&mut self, ev: Option<ChipAction>) {
         if let Some(ChipAction::Toggle(i) | ChipAction::Activate(i)) = ev {
-            let c = &mut self.streams.chips[i];
-            c.enabled = !c.enabled;
+            self.streams.update_chip(i, |c| c.enabled = !c.enabled);
+            let c = &self.streams.chips()[i];
             self.last = format!(
                 "stream {} {}",
                 c.label,
@@ -304,7 +357,7 @@ impl ChipsPage {
     }
 
     fn filters_panel(&self, focused: bool) -> (Panel<'static>, String) {
-        let active = self.filters.chips.iter().filter(|c| c.enabled).count();
+        let active = self.filters.chips().iter().filter(|c| c.enabled).count();
         (
             Panel::card(Some("Filters")).focused(focused),
             format!("{active} active"),
@@ -325,19 +378,27 @@ impl ChipsPage {
         let w = |s: &str| text::width(s) as u16;
         let card =
             |p: Panel, meta: &str, content: u16| p.meta(meta).outer(Size::new(content, 0)).width;
-        let bar = |b: &ChipBar| {
+        // A saturated stress bar is cut to its card, so it never widens the page.
+        let bar = |b: &ChipBar, cache: &Cell<Option<u16>>, p: &Panel| {
             self.opts
                 .number("chipsselects.bar_width")
-                .unwrap_or_else(|| b.measure(any, ctx).width)
+                .unwrap_or_else(|| {
+                    let room = p.inner(Size::new(width, 0)).width;
+                    let natural = cache.get().unwrap_or_else(|| {
+                        let natural = b.measure(any, ctx).width;
+                        cache.set(Some(natural));
+                        natural
+                    });
+                    stress::clamp_saturated(natural, room)
+                })
         };
         let (fp, meta) = self.filters_panel(false);
         let last = w(&format!("last action: {}", self.last));
-        let filters_w = card(fp, &meta, bar(&self.filters).max(last));
-        let streams_w = card(
-            Panel::card(Some("Streams")),
-            self.streams_meta(),
-            bar(&self.streams),
-        );
+        let filters_content = bar(&self.filters, &self.natural[0], &fp).max(last);
+        let filters_w = card(fp, &meta, filters_content);
+        let streams_panel = Panel::card(Some("Streams"));
+        let streams_content = bar(&self.streams, &self.natural[1], &streams_panel);
+        let streams_w = card(streams_panel, self.streams_meta(), streams_content);
         let selects_w = card(Panel::card(Some("Selects")), "", 3 * (SELECT_W + 2));
         let (left, right) = strip();
         let strip_w = card(
@@ -469,8 +530,8 @@ fn states_grid() -> StateGrid {
     use SpecimenState::*;
     let id = ID.sub("states");
     let mut bar = ChipBar::new(id.child(0));
-    bar.chips = vec![Chip::new("status = 'ok'"), Chip::new("total > 9")];
-    bar.add_label = None;
+    bar.set_chips(vec![Chip::new("status = 'ok'"), Chip::new("total > 9")]);
+    bar.set_add_label(None);
     StateGrid::new(id)
         .column_width(40)
         .rows(&[
@@ -511,9 +572,11 @@ impl Page for ChipsPage {
             Section::Options => self.template.render_options(body, buf, ctx),
             Section::States => self.template.render_states(body, buf, ctx),
         }
+        self.forget_natural();
     }
 
     fn handle(&mut self, ev: &PageEvent, cx: &mut Cx) -> Outcome {
+        self.forget_natural();
         if let Some(o) = self.template.handle(ev, cx) {
             return o;
         }
@@ -533,6 +596,10 @@ impl Page for ChipsPage {
                 let Some(f) = cx.focus.current() else {
                     return Outcome::Ignored;
                 };
+                if self.mutates_open_menu() && key.plain() && key.code == KeyCode::Char('m') {
+                    self.mutate_open_menu(cx);
+                    return Outcome::Changed;
+                }
                 if f == self.filters.id {
                     let (o, ev) = self.filters.on_key(key);
                     self.on_chip(ev, cx);
@@ -558,16 +625,20 @@ impl Page for ChipsPage {
                     if click {
                         cx.focus.focus(self.filters.id);
                     }
-                    let (o, ev) = r.into_parts();
-                    self.on_chip(ev, cx);
+                    let (o, actions) = r.into_parts();
+                    for ev in actions {
+                        self.on_chip(Some(ev), cx);
+                    }
                     return o;
                 }
                 if let Some(r) = self.streams.route(ev) {
                     if click {
                         cx.focus.focus(self.streams.id);
                     }
-                    let (o, ev) = r.into_parts();
-                    self.on_stream(ev);
+                    let (o, actions) = r.into_parts();
+                    for ev in actions {
+                        self.on_stream(Some(ev));
+                    }
                     return o;
                 }
 
@@ -577,8 +648,10 @@ impl Page for ChipsPage {
                         if (click || ev.is(Phase::Press)) && ev.id == sid {
                             cx.focus.focus(sid);
                         }
-                        let (o, a) = r.into_parts();
-                        Self::select_changed(sel, a, cx);
+                        let (o, actions) = r.into_parts();
+                        for a in actions {
+                            Self::select_changed(sel, Some(a), cx);
+                        }
                         return o;
                     }
                 }
@@ -592,7 +665,14 @@ impl Page for ChipsPage {
         if let Some(h) = self.template.hints(focus) {
             return h;
         }
-        if focus == Some(self.filters.id) {
+        if self.mutates_open_menu() {
+            vec![
+                ("↑↓", "Move"),
+                ("Enter", "Choose"),
+                ("Esc", "Close"),
+                ("m", "Edit chip"),
+            ]
+        } else if focus == Some(self.filters.id) {
             vec![
                 ("←→", "Move"),
                 ("Space", "Toggle"),
@@ -621,6 +701,11 @@ impl Page for ChipsPage {
 
     fn set_option(&mut self, key: &str, value: usize) {
         if self.opts.set(key, value) {
+            if key == "chipsselects.stress" {
+                let mode = stress::mode(self.opts.value(key));
+                self.filters.set_chips(stress_filters(mode));
+                self.filters.cursor = 0;
+            }
             self.rebuild();
         }
     }
@@ -718,4 +803,95 @@ fn render_below(l: Rect, r: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
     let bg = panel.bg(t);
     let inner = panel.render(r, buf, t);
     empty::render(inner, buf, t, &empty_state(), bg);
+}
+
+#[cfg(test)]
+mod tests {
+    use junie_tui::core::focus::FocusRing;
+    use junie_tui::core::hit::HitRegistry;
+    use junie_tui::theme::{ColorLevel, Theme};
+    use junie_tui::ui::ctx::{Interaction, RenderCtx};
+
+    use super::*;
+    use crate::pages::stress::testing::{index, measuring};
+
+    #[test]
+    fn a_saturated_stress_bar_stays_inside_the_page_width() {
+        for value in ["20k items", "65k label"] {
+            let mut page = ChipsPage::new();
+            page.set_option("chipsselects.stress", index(value));
+            let size = measuring(|ctx| page.measure(Size::new(120, 40), ctx));
+            assert!(size.width <= 120, "{value}: measured {} cells", size.width);
+        }
+    }
+
+    #[test]
+    fn an_option_change_replaces_the_measured_bar_width() {
+        let mut page = ChipsPage::new();
+        let size = Size::new(120, 40);
+        measuring(|ctx| page.measure(size, ctx));
+        let plain = page.natural[0].get().expect("the measure kept the width");
+        assert!(plain < u16::MAX);
+        measuring(|ctx| page.measure(size, ctx));
+        assert_eq!(
+            page.natural[0].get(),
+            Some(plain),
+            "a second measure reuses it"
+        );
+
+        page.set_option("chipsselects.stress", index("20k items"));
+        measuring(|ctx| page.measure(size, ctx));
+        assert_eq!(
+            page.natural[0].get(),
+            Some(u16::MAX),
+            "the stress bar is measured again, not read from the plain bar"
+        );
+    }
+
+    #[test]
+    fn the_long_label_leaves_the_first_chip_visible() {
+        let mut page = ChipsPage::new();
+        page.set_option("chipsselects.stress", index("65k label"));
+        assert_eq!(page.filters.cursor, 0);
+
+        let theme = Theme::for_level(ColorLevel::TrueColor);
+        let area = Rect::new(0, 0, 100, 1);
+        let mut buf = Buffer::empty(area);
+        let mut hits = HitRegistry::default();
+        let mut ring = FocusRing::default();
+        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        page.filters.render(area, &mut buf, &mut ctx, theme.canvas);
+        let row: String = (0..area.width).map(|x| buf[(x, 0)].symbol()).collect();
+        assert!(
+            row.contains("status = 'pending'"),
+            "the chip under the starting cursor is drawn: {row:?}"
+        );
+    }
+
+    #[test]
+    fn an_event_drops_the_measured_bar_width() {
+        use junie_tui::core::event::{Key, Outcome};
+        use junie_tui::core::focus::{Focus, FocusRing};
+        let mut page = ChipsPage::new();
+        let size = Size::new(120, 40);
+        measuring(|ctx| page.measure(size, ctx));
+        assert!(page.natural[0].get().is_some());
+        let mut focus = Focus::default();
+        let ring = FocusRing::default();
+        focus.focus(page.filters.id);
+        let mut cx = Cx::new(&mut focus, &ring);
+        let before = page.filters.chips().len();
+        let key = Key {
+            code: KeyCode::Delete,
+            mods: ratatui::crossterm::event::KeyModifiers::NONE,
+        };
+        let o = page.handle(&PageEvent::Key(key), &mut cx);
+        assert_eq!(o, Outcome::Changed);
+        assert!(page.filters.chips().len() < before, "a chip was removed");
+        assert_eq!(
+            page.natural[0].get(),
+            None,
+            "an event drops the measured width"
+        );
+    }
 }

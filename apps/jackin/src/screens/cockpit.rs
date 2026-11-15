@@ -51,6 +51,9 @@ pub const CHIP_CONTAINER: WidgetId = WidgetId::of("cockpit.chip.container");
 pub const CHIP_ACTIVITY: WidgetId = WidgetId::of("cockpit.chip.activity");
 pub const CHIP_RUN: WidgetId = WidgetId::of("cockpit.chip.run");
 
+/// The identity block and the activity footer write at fixed rows, so a page
+/// shorter than this paints only its background.
+const MIN_ROWS: u16 = 5;
 const REPORTED_CHARS: usize = 200;
 const TYPED_ORIGIN: &str = "typed key";
 const TYPED_VALIDATION: &str = "kept for this launch only · never stored";
@@ -1053,6 +1056,9 @@ impl Page<Jackin> for CockpitScreen {
     fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, w: &World) {
         let t = ctx.theme;
         fill(buf, area, t.base());
+        if area.height < MIN_ROWS {
+            return;
+        }
 
         let rail_h = (self.content.stages.len() as u16).min(area.height.saturating_sub(9));
         let rail_w = 44u16.min(area.width.saturating_sub(4));
@@ -1161,12 +1167,14 @@ impl Page<Jackin> for CockpitScreen {
         };
         center(buf, ident_y + 3, &progress, t.muted());
 
-        fill(
-            buf,
-            Rect::new(rail.x - 1, rail.y, rail.width + 2, rail.height),
-            t.base(),
-        );
-        self.rail.render(rail, buf, ctx, t.canvas);
+        if !rail.is_empty() {
+            fill(
+                buf,
+                Rect::new(rail.x - 1, rail.y, rail.width + 2, rail.height),
+                t.base(),
+            );
+            self.rail.render(rail, buf, ctx, t.canvas);
+        }
 
         let mut y = rail.bottom() + 1;
         if let Some((origin, val, tone)) = &self.credentials

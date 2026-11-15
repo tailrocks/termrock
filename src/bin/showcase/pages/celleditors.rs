@@ -195,14 +195,15 @@ fn states_grid() -> StateGrid {
     let sample = |k: usize, affordance: Affordance| {
         let full = table();
         let keep = [1, ENV, ROLLOUT];
-        let cols = keep.iter().map(|&c| full.columns[c].clone()).collect();
+        let cols = keep.iter().map(|&c| full.columns()[c].clone()).collect();
         let rows = full
-            .rows
+            .rows()
             .iter()
             .take(3)
             .map(|r| keep.iter().map(|&c| r[c].clone()).collect())
             .collect();
-        let mut t = DataTable::new(id.child(k), cols, rows)
+        let mut t = DataTable::try_new(id.child(k), cols, rows)
+            .expect("rectangular fixture")
             .cell_nav(true)
             .editor_config(EditorConfig {
                 affordance,
@@ -347,9 +348,18 @@ pub fn table() -> DataTable {
             cells
         })
         .collect();
-    let mut t = DataTable::new(ID.sub("table"), columns, rows).cell_nav(true);
+    let mut t = DataTable::try_new(ID.sub("table"), columns, rows)
+        .expect("rectangular fixture")
+        .cell_nav(true)
+        .validator(notify_policy);
     t.cursor_col = ENV;
     t
+}
+
+pub const NOTIFY_LOCKED: &str = "Notify stays on while the service has an on-call owner";
+
+fn notify_policy(col: usize, text: &str) -> Option<String> {
+    (col == NOTIFY && text == "no").then(|| NOTIFY_LOCKED.to_owned())
 }
 
 pub struct CellEditorsPage {
@@ -422,9 +432,24 @@ impl CellEditorsPage {
         }
     }
 
+    fn cursor_cell_error(&self) -> Option<String> {
+        let t = &self.table;
+        if t.cursor_row >= t.len() {
+            return None;
+        }
+        t.rows()[t.source_row(t.cursor_row)]
+            .get(t.cursor_col)?
+            .error
+            .clone()
+    }
+
     fn render_table(&mut self, card: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
         let t = ctx.theme;
-        let err = self.table.edit_error().map(str::to_owned);
+        let err = self
+            .table
+            .edit_error()
+            .map(str::to_owned)
+            .or_else(|| self.cursor_cell_error());
         let panel =
             Panel::card(Some("Deployment targets")).focused(ctx.interaction.focused(self.table.id));
         let bg = panel.bg(t);
@@ -467,7 +492,7 @@ impl CellEditorsPage {
 
     fn option_sets(&self) -> Vec<Prop> {
         self.table
-            .columns
+            .columns()
             .iter()
             .filter_map(|c| {
                 let opts = c.editor.options()?;
@@ -564,7 +589,7 @@ impl CellEditorsPage {
         match ev {
             Some(TableAction::Committed { col, .. }) => {
                 self.edits += 1;
-                let name = self.table.columns[col].title.clone();
+                let name = self.table.columns()[col].title.clone();
                 cx.status(format!("{name} saved"));
             }
             Some(TableAction::Cancelled) => cx.status("Edit cancelled"),
@@ -622,8 +647,10 @@ impl CellEditorsPage {
             }
             PageEvent::Pointer(p) if self.chooser.as_ref().is_some_and(|c| p.on(c.id)) => {
                 let c = self.chooser.as_mut()?;
-                let (o, r) = c.pointer(p).into_parts();
-                self.on_choice(r, cx);
+                let (o, results) = c.pointer(p).into_parts();
+                for r in results {
+                    self.on_choice(Some(r), cx);
+                }
                 Some(o)
             }
             PageEvent::Pointer(p) if p.is(Phase::Click) && p.on(self.pick.id) => {
@@ -714,13 +741,10 @@ impl Page for CellEditorsPage {
             if ch.from != self.table.id {
                 return Outcome::Ignored;
             }
-            let tev = self.table.on_blur();
-            let out = if tev.is_some() {
-                Outcome::Changed
-            } else {
-                Outcome::Ignored
-            };
-            self.on_event(tev, cx);
+            let (out, actions) = self.table.on_blur().into_parts();
+            for tev in actions {
+                self.on_event(Some(tev), cx);
+            }
             return out;
         }
         match ev {
@@ -728,8 +752,10 @@ impl Page for CellEditorsPage {
                 if !cx.focus.is(self.table.id) {
                     return Outcome::Ignored;
                 }
-                let (out, tev) = self.table.on_key(key);
-                self.on_event(tev, cx);
+                let (out, actions) = self.table.on_key(key).into_parts();
+                for tev in actions {
+                    self.on_event(Some(tev), cx);
+                }
                 out
             }
             PageEvent::Paste(text) => self.table.on_paste(text),
@@ -737,7 +763,9 @@ impl Page for CellEditorsPage {
                 let Some((out, tev)) = route_table(&mut self.table, p, cx) else {
                     return Outcome::Ignored;
                 };
-                self.on_event(tev, cx);
+                for tev in tev {
+                    self.on_event(Some(tev), cx);
+                }
                 out
             }
             _ => Outcome::Ignored,

@@ -4,11 +4,11 @@
 //! `pre_refactor/t05_maximize/` and each checkpoint's dots become underscores.
 //! TablePro has no `--page` flag. It opens on Connections.
 
-use std::time::{Duration, Instant};
-
 use tui_test::{SnapshotColor, TerminalSnapshot};
 
-use crate::support::{App, Launch, Point, TABLEPRO, find, find_all, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, Point, TABLEPRO, find, find_all, flash_settle, row_text, text, try_launch,
+};
 
 const HOST: &str = "dev-db.internal.acme.io";
 const DATABASE: &str = "acme_dev";
@@ -182,31 +182,6 @@ fn restored_layout(screen: &TerminalSnapshot) -> bool {
         && !visible.contains("two'z")
 }
 
-/// The 140ms press flash stays painted until the next frame after the deadline.
-/// A same-size resize does not force that frame, so nudge one column and return.
-/// Below about 100 columns the header omits the size chip.
-fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
-}
-
 fn click_sql(app: &App, sql: &str) {
     let screen = app.wait_screen("sql to focus", |screen| statement(screen, sql));
     let hits = find_all(&screen, sql);
@@ -365,7 +340,11 @@ fn drag_seam(app: &App, seam: Point, delta: (i16, i16), thin: char, heavy: char)
     );
 
     app.up(end);
-    let released = app.settle();
+    // A quiet terminal is not a handled release: a slow app is quiet until it
+    // gets to the button-up. Wait for the seam to lose its accent instead.
+    let released = app.wait_screen("seam released", |screen| {
+        accent_cells(screen, heavy).is_empty()
+    });
     assert!(
         accent_cells(&released, heavy).is_empty(),
         "release kept the accent seam\n{}",
@@ -462,17 +441,7 @@ fn quit_unsaved(app: &App) {
     app.key("ctrl+q");
     let quit = app.wait_text("Quit TablePro?");
     see(&quit, &["unsaved", "Quit"], &["Query history"]);
-    app.key("right");
-    app.key("enter");
-    let deadline = Instant::now() + Duration::from_secs(5);
-    while app.child_running() {
-        assert!(
-            Instant::now() < deadline,
-            "tablepro stayed up after confirming quit"
-        );
-        std::thread::sleep(Duration::from_millis(25));
-    }
-    app.expect_exited(0);
+    app.confirm_quit();
 }
 
 #[test]
@@ -571,11 +540,9 @@ fn tablepro_maximize_restores_the_same_layout() {
     app.key("z");
     let maximized = app.wait_screen("editor maximized", editor_max);
     assert_eq!((maximized.cols(), maximized.rows()), (120, 40));
-    // `connect_development` already asserts the connection toast when it appears;
-    // this longer editor journey can outlast the toast's five-second lifetime.
     see(
         &maximized,
-        &[TWO, QUERY_1, QUERY_2],
+        &[TWO, QUERY_1, QUERY_2, CONNECTED],
         &[EXPLORER, RESULTS, "No open tabs", "two'z"],
     );
     shot(&app, WIDE);

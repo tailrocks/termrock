@@ -437,6 +437,8 @@ fn sections_narrow_then_wide() {
             "Wrap long labels off",
             "Hide \"optional\" off",
             "Readout on",
+            "Owner rule",
+            "email",
             "120×40",
         ],
         &[PLAY, STATE, PROJECT, "Compare levels", "Readout off"],
@@ -1312,4 +1314,37 @@ fn edit_checkpoint() {
         &["QQ", HEADER],
         &["Reverted", "saved", PROJECT, "sk-live"],
     );
+}
+
+const OWNER: &str = "mira@example";
+const OWNER_LONG: &str = "Use at most 24 characters";
+
+fn focus_owner(app: &App) {
+    focus_project(app, "Apply");
+    app.key("enter");
+    app.key("tab");
+    app.key("tab");
+    app.wait_screen("owner field", |screen| focus_line(screen).contains(OWNER));
+}
+
+#[test]
+fn option_owner_rule_required_precedes_length_validator() {
+    let app = page(
+        "s02-owner-rule",
+        Some("inputs.owner_rule=max-length"),
+        120,
+        40,
+    );
+    app.wait_text(OWNER);
+    focus_owner(&app);
+    app.key("ctrl+u");
+    app.key("enter");
+    let required = app.wait_text("Required");
+    expect(&required, &["Required"], &[OWNER_LONG, EMAIL]);
+
+    app.key("enter");
+    app.type_text("a-very-long-owner-address@example.com");
+    app.key("enter");
+    let long = app.wait_text(OWNER_LONG);
+    expect(&long, &[OWNER_LONG], &["Required", EMAIL]);
 }

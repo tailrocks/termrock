@@ -189,8 +189,22 @@ impl TextInput {
         self
     }
     pub fn value(mut self, v: &str) -> Self {
-        self.field.buffer.set_text(v);
+        self.set_value(v);
         self
+    }
+
+    /// Replace the authoritative value while keeping every configured policy
+    /// (masking, validation, help, key and entry policy, geometry, id).
+    ///
+    /// The edit session ends, the caret moves to the end with no selection,
+    /// undo history and pointer/menu capture are dropped, the new value
+    /// becomes the cancel baseline and a stale validation error is cleared.
+    /// No validator runs and no [`InputAction`] is reported: this is a
+    /// programmatic replacement, not a user edit.
+    pub fn set_value(&mut self, value: &str) {
+        self.editing = false;
+        self.focus_edit = false;
+        self.reset_value_state(value);
     }
     pub fn disabled(mut self, d: bool) -> Self {
         self.disabled = d;
@@ -357,12 +371,21 @@ impl TextInput {
         }
     }
 
+    /// Empty the value. Unlike [`TextInput::set_value`] this keeps an active
+    /// edit session, so a search field stays ready for the next character.
     pub fn clear(&mut self) {
-        self.field.buffer.set_text("");
-        self.snapshot.clear();
-        self.snapshot_error = None;
+        self.reset_value_state("");
+    }
+
+    fn reset_value_state(&mut self, value: &str) {
+        self.field.set_text(value);
+        self.field.buffer.clear_selection();
         self.field.error = None;
-        self.field.clear_history();
+        self.snapshot = self.field.text().to_owned();
+        self.snapshot_error = None;
+        self.field.cancel_pointer_selection();
+        let _ = self.edit_menu.close();
+        let _ = self.edit_menu.take_edited();
     }
 
     fn display_graphemes(&self, editing: bool, mask: &str) -> Vec<(usize, String, usize)> {
@@ -653,6 +676,9 @@ impl TextInput {
 
         let has_focus = ctx.interaction.has_focus(self.id) && !ctx.inert;
         if has_focus && !self.focus_seen && self.entry == EditEntry::Immediate {
+            if !self.editing && !self.disabled {
+                ctx.note_render_mutation();
+            }
             self.begin_focus_edit();
         } else if !ctx.interaction.has_focus(self.id)
             && self.entry == EditEntry::Immediate
@@ -662,6 +688,7 @@ impl TextInput {
         {
             self.editing = false;
             self.field.buffer.clear_selection();
+            ctx.note_render_mutation();
         }
         self.focus_seen = has_focus;
         let area = area.intersection(*buf.area());

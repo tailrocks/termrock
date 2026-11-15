@@ -1008,6 +1008,9 @@ impl RoleEditorScreen {
             bg,
         );
         let head_y = area.y + used + 1;
+        if head_y >= area.bottom() {
+            return;
+        }
         let n = self.pending.env.len();
         let head = format!("Entries  {n}");
         buf.set_string(
@@ -1440,9 +1443,11 @@ impl Page<Jackin> for RoleEditorScreen {
             return o;
         }
         if let Some(r) = self.tabs.route(ev) {
-            let (o, act) = r.into_parts();
-            if let Some(TabAction::Activated(i)) = act {
-                self.tab = Tab::ALL[i.min(2)];
+            let (o, actions) = r.into_parts();
+            for action in actions {
+                if let TabAction::Activated(i) = action {
+                    self.tab = Tab::ALL[i.min(2)];
+                }
             }
             if !click {
                 return o;
@@ -1619,8 +1624,7 @@ impl Page<Jackin> for RoleEditorScreen {
                     };
                     let file = file.clone();
                     if let Some(input) = self.input_mut(id) {
-                        input.field.buffer.set_text(&file);
-                        input.field.error = None;
+                        input.set_value(&file);
                     }
                     self.sync();
                     cx.focus.focus(id);

@@ -350,6 +350,7 @@ fn close_keeps_each_tabs_own_sql() {
     });
     titles_are(&neighbour, &["Query 3", "Query 4"], &[QUERY_1, "Query 2"]);
     see(&neighbour, &[LAST], &[FIRST, MID, TAIL]);
+    app.expire_status();
     app.wait_absent(CONNECTED);
 
     let wide = app.screen();

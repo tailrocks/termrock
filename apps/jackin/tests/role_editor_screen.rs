@@ -114,13 +114,59 @@ fn typing_in_the_file_chooser_filters_the_files() {
 
     press(&mut app, "enter");
     let chosen = screen(&mut app);
-    let mut lines = chosen.lines().skip_while(|l| !l.contains("Dockerfile *"));
-    let field = lines
-        .by_ref()
+    assert!(
+        dockerfile_value(&chosen).contains("policy.yaml"),
+        "{chosen}"
+    );
+}
+
+fn dockerfile_value(shown: &str) -> String {
+    shown
+        .lines()
+        .skip_while(|l| !l.contains("Dockerfile *"))
         .skip(1)
         .find(|l| !l.trim().is_empty())
-        .expect("the field value");
-    assert!(field.contains("policy.yaml"), "{chosen}");
+        .expect("the field value")
+        .to_owned()
+}
+
+#[test]
+fn a_chosen_file_replaces_the_value_and_its_edit_history() {
+    let mut app = app(Scenario::RoleEditor);
+    click_text(&mut app, "Choose…");
+    press(&mut app, "p o l");
+    press(&mut app, "enter");
+    press(&mut app, "enter");
+    press(&mut app, "z z");
+    press(&mut app, "enter");
+    let typed = screen(&mut app);
+    assert!(dockerfile_value(&typed).contains("zz"), "{typed}");
+
+    click_text(&mut app, "Choose…");
+    press(&mut app, "s e t");
+    press(&mut app, "enter");
+    let chosen = screen(&mut app);
+    assert!(
+        dockerfile_value(&chosen).contains("hooks/setup.sh"),
+        "{chosen}"
+    );
+
+    press(&mut app, "enter");
+    press(&mut app, "ctrl+z");
+    let undone = screen(&mut app);
+    let value = dockerfile_value(&undone);
+    assert!(
+        value.contains("hooks/setup.sh") && !value.contains("zz"),
+        "undo cannot reach the value the chosen file replaced\n{undone}"
+    );
+
+    press(&mut app, "x");
+    press(&mut app, "esc");
+    let cancelled = screen(&mut app);
+    assert!(
+        dockerfile_value(&cancelled).contains("hooks/setup.sh"),
+        "cancel returns to the chosen file\n{cancelled}"
+    );
 }
 
 #[test]

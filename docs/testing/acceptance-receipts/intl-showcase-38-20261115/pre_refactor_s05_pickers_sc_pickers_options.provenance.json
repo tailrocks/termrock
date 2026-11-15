@@ -1,0 +1,72 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneG4-target/debug/showcase",
+  "binary_sha256": "33b4fc887a16bf50bd749706e9d421fc959abc460141d348b9ebaf9307f0890e",
+  "fixture_args": [],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "3ccb39bf1232a58d925993a1a0e76f41ad609b5ea454526636c8bdd7a798c5a9",
+  "expect_baseline": "6a634e6160d9450c6ba2245e586c2eb63652d09a7ba168dfabbb36561b2a73da",
+  "precondition": "Deliberate visual change for #38: the Showcase Pickers Options tab now lists the 'International labels' toggle (pickers.international, off by default) after 'Remote fetch'. The extra row adds one toggle row to the options list.",
+  "session": null,
+  "expected_test_id": "pre_refactor/s05_pickers/sc_pickers_options",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/intl-showcase-38-20261115/pre_refactor_s05_pickers_sc_pickers_options.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/intl-showcase-38-20261115/pre_refactor_s05_pickers_sc_pickers_options.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/intl-showcase-38-20261115/superseded/pre_refactor/s05_pickers/sc_pickers_options.tui.pb",
+  "test_id": "pre_refactor/s05_pickers/sc_pickers_options",
+  "acceptance": {
+    "expected_baseline_sha256": "6a634e6160d9450c6ba2245e586c2eb63652d09a7ba168dfabbb36561b2a73da",
+    "accepted_baseline_sha256": "3ccb39bf1232a58d925993a1a0e76f41ad609b5ea454526636c8bdd7a798c5a9",
+    "candidate_sha256": "3ccb39bf1232a58d925993a1a0e76f41ad609b5ea454526636c8bdd7a798c5a9",
+    "transaction_receipt": "docs/testing/acceptance-receipts/intl-showcase-38-20261115/pre_refactor_s05_pickers_sc_pickers_options.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "6a634e6160d9450c6ba2245e586c2eb63652d09a7ba168dfabbb36561b2a73da"
+  },
+  "candidate": {
+    "sha256": "3ccb39bf1232a58d925993a1a0e76f41ad609b5ea454526636c8bdd7a798c5a9",
+    "path": "tests/functional/baselines/pre_refactor/s05_pickers/sc_pickers_options.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/intl-showcase-38-20261115/superseded/pre_refactor/s05_pickers/sc_pickers_options.tui.pb",
+    "superseded_baseline_sha256": "6a634e6160d9450c6ba2245e586c2eb63652d09a7ba168dfabbb36561b2a73da"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/s05_pickers/sc_pickers_options.tui.pb",
+    "candidate_sha256": "3ccb39bf1232a58d925993a1a0e76f41ad609b5ea454526636c8bdd7a798c5a9",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneG4-target/debug/showcase",
+    "binary_sha256": "33b4fc887a16bf50bd749706e9d421fc959abc460141d348b9ebaf9307f0890e",
+    "note": "Live candidate capture of this branch (feat/38-showcase-international). No Reference-mode capture exists: the pinned reference binary predates the international Showcase options."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s05_pickers/sc_pickers_options",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneG4/target/functional/s05-sections-57139-1794744675392260000-0/check-artifacts/pre_refactor/s05_pickers/sc_pickers_options/3ccb39bf1232a58d925993a1a0e76f41ad609b5ea454526636c8bdd7a798c5a9/sample.tui.pb"
+    },
+    "candidate_sha256": "3ccb39bf1232a58d925993a1a0e76f41ad609b5ea454526636c8bdd7a798c5a9",
+    "baseline_sha256": "3ccb39bf1232a58d925993a1a0e76f41ad609b5ea454526636c8bdd7a798c5a9",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/laneG4/tests/functional/baselines/pre_refactor/s05_pickers/sc_pickers_options.tui.pb"
+    },
+    "error_code": null
+  }
+}

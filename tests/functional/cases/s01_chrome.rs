@@ -847,3 +847,26 @@ fn boundary(
     assert_menu(&screen, bar_has, bar_lacks);
     see(&session, case_id, precondition);
 }
+
+#[test]
+fn option_stress_status_items_and_long_label() {
+    let items = launch(
+        "s01-chrome-stress-items",
+        &["--page", "chrome", "--opt", "chrome.stress=20k items"],
+        120,
+        40,
+    );
+    let screen = items.app.wait_text("of 20008");
+    expect(&screen, &["places", "payments-platform"], &[]);
+    items.app.finish();
+
+    let label = launch(
+        "s01-chrome-stress-label",
+        &["--page", "chrome", "--opt", "chrome.stress=65k label"],
+        120,
+        40,
+    );
+    let screen = label.app.wait_text("of 9 ·");
+    expect(&screen, &["payments-platform", "production"], &[]);
+    label.app.finish();
+}

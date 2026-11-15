@@ -13,11 +13,9 @@
 //! locks the next second, so the wide shot compares the last menu frame that
 //! still reads 1.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, HOLLA, Launch, text, try_launch};
+use crate::support::{App, HOLLA, Launch, flash_settle, text, try_launch};
 
 const SCENARIO: &str = "rust-dirty";
 const SUGGESTED: &str = "Suggested here";
@@ -143,31 +141,6 @@ fn close_alternatives(app: &App) {
     app.key("escape");
     let back = app.wait_screen("alternatives closed on Review", on_review);
     see(&back, &[ROW_B, ROW_B_ALT, SUGGESTED], &[MENU, ROW_A_ALT]);
-}
-
-/// The 140ms press flash stays painted while motion is reduced. A same-size
-/// resize does not force a new frame, so the shot nudges the width and comes
-/// back. Below about 100 columns the header omits the size chip.
-fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
 }
 
 fn shot(app: &App, checkpoint: &str) {

@@ -4,13 +4,9 @@
 //! `pre_refactor/t05_quit/` and each checkpoint's dots become underscores.
 //! TablePro has no `--page` flag. It opens on Connections.
 
-use std::path::PathBuf;
-use std::time::{Duration, Instant};
-
 use tui_test::TerminalSnapshot;
-use tuiscotti_latest::check::CheckOutcome;
 
-use crate::support::{App, Launch, TABLEPRO, find_all, row_text, text, try_launch};
+use crate::support::{App, Launch, TABLEPRO, find_all, flash_settle, row_text, text, try_launch};
 
 const HOST: &str = "dev-db.internal.acme.io";
 const DATABASE: &str = "acme_dev";
@@ -158,30 +154,6 @@ fn quit_dialog(screen: &TerminalSnapshot) -> bool {
     quit_copy(screen) && text(screen).contains(CONNECTED)
 }
 
-fn check_frame(app: &App, screen: &TerminalSnapshot, test_id: &str) {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines");
-    let sample = tuiscotti_latest::sample::Sample::state(
-        test_id,
-        screen.clone(),
-        tuiscotti_latest::sample::Observation::empty(),
-    )
-    .expect("build Tuiscotti state sample");
-    let bytes = sample.to_bytes().expect("serialize Tuiscotti sample");
-    let artifacts = app.evidence_dir().join("check-artifacts");
-    let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
-        .expect("open Tuiscotti frozen store");
-    let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
-    if let CheckOutcome::Failure(failure) = outcome {
-        panic!(
-            "{test_id} {} sha {} path {} cells {}",
-            failure.reason(),
-            failure.candidate_sha256(),
-            failure.candidate_path().display(),
-            failure.changed_cell_total()
-        );
-    }
-}
-
 fn cancel_focused(screen: &TerminalSnapshot) -> bool {
     row_has(screen, &format!("{FOCUS}{CANCEL}")) && !row_has(screen, &format!("{FOCUS}{QUIT}"))
 }
@@ -196,68 +168,16 @@ fn assert_cancel_focused(screen: &TerminalSnapshot) {
     assert!(cancel_focused(screen), "Cancel is not focused\n{visible}");
 }
 
-/// The 140ms press flash stays painted while motion is reduced. A same-size
-/// resize does not force a new frame, so the shot nudges the width and comes
-/// back. Below about 100 columns the header omits the size chip. The nudge
-/// also leaves the hidden terminal cursor on the redraw, instead of on
-/// whichever footer cell the previous diff wrote last.
-fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
-}
-
 /// The connected toast lasts 5s. A resize paint can show the dialog before
 /// that footer line, and `visual` then locks the cleared toast. Hold the
 /// focused Cancel dialog while the toast is up, and compare that frame.
 fn shot(app: &App, checkpoint: &str, cols: u32, rows: u32) {
-    let test_id = visual_id(checkpoint);
-    let deadline = Instant::now() + Duration::from_secs(8);
-    let mut good: Option<TerminalSnapshot> = None;
-    let mut since: Option<Instant> = None;
-    loop {
-        let screen = app.screen();
-        let ready = screen.cols() == cols
+    app.visual_while(&visual_id(checkpoint), |screen| {
+        screen.cols() == cols
             && screen.rows() == rows
-            && quit_dialog(&screen)
-            && cancel_focused(&screen);
-        if ready {
-            let same = good.as_ref().is_some_and(|prev| prev == &screen);
-            if same && since.expect("hold start").elapsed() >= Duration::from_millis(200) {
-                check_frame(app, &screen, &test_id);
-                return;
-            }
-            if !same {
-                good = Some(screen);
-                since = Some(Instant::now());
-            }
-        } else if let Some(prev) = good.take() {
-            check_frame(app, &prev, &test_id);
-            return;
-        }
-        assert!(
-            Instant::now() < deadline && app.child_running(),
-            "{test_id} frame not seen\n{}",
-            text(&app.screen())
-        );
-        std::thread::sleep(Duration::from_millis(20));
-    }
+            && quit_dialog(screen)
+            && cancel_focused(screen)
+    });
 }
 
 fn editor_left(screen: &TerminalSnapshot) -> bool {
@@ -306,14 +226,7 @@ fn confirm_focused_quit(app: &App) {
         &["Save", "Discard", "Filter connections"],
     );
     app.key("enter");
-    let deadline = Instant::now() + Duration::from_secs(5);
-    while app.child_running() {
-        assert!(
-            Instant::now() < deadline,
-            "tablepro stayed up after confirming quit"
-        );
-        std::thread::sleep(Duration::from_millis(25));
-    }
+    app.wait_exit("tablepro stayed up after confirming quit");
     app.expect_exited(0);
 }
 

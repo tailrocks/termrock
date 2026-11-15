@@ -7,11 +7,12 @@ use crate::core::event::{Key, Outcome};
 use crate::core::id::{ItemKey, WidgetId};
 use crate::core::keymap::{Nav, NavKeys};
 use crate::core::list::{Cursor, Moved, Navigable, RowSource};
+use crate::core::refusal::Reason;
 use crate::theme::CursorStyle;
 use crate::ui::ctx::RenderCtx;
 use crate::ui::popup::{Dismiss, Placement, backdrop_id, place_with, surface_for};
-use crate::ui::text::{truncate, width};
-use crate::widgets::option_list::{Item, OptionList};
+use crate::ui::text::{TextClip, paint_graphemes, width};
+use crate::widgets::option_list::{Item, OptionList, PopupSnapshot, paint_reason};
 
 pub const TEXT_INSET: u16 = 4;
 
@@ -19,7 +20,8 @@ pub const TEXT_INSET: u16 = 4;
 pub struct Completion {
     pub id: WidgetId,
 
-    pub items: Vec<Item>,
+    items: Vec<Item>,
+    widths: Option<(usize, usize)>,
 
     pub list: OptionList,
     pub anchor: Rect,
@@ -47,6 +49,8 @@ impl Completion {
         self
     }
 
+    /// Bounds the popup width from its labels and details. A disabled entry's
+    /// reason may widen it past `max` so the reason shows whole, up to the screen.
     pub fn popup_width(mut self, min: u16, max: u16) -> Self {
         self.list = self.list.width(min, max);
         self
@@ -63,6 +67,7 @@ impl Completion {
         Self {
             id,
             items: vec![],
+            widths: None,
             list,
             anchor: Rect::ZERO,
             replace_len: 0,
@@ -91,10 +96,25 @@ impl Completion {
     }
 
     pub fn open(&mut self, items: Vec<Item>, anchor: Rect, replace_len: usize) {
-        self.items = items;
+        self.set_items(items);
         self.list.reset(self.items.len());
+        self.list.cursor.index = (0..self.items.len())
+            .find(|&i| self.can_accept(i))
+            .unwrap_or(0);
         self.anchor = anchor;
         self.replace_len = replace_len;
+    }
+
+    /// The completion rows. They change only through [`Completion::open`],
+    /// [`Completion::set_items`] and [`Completion::close`], which keep the
+    /// cached aggregate widths in step.
+    pub fn items(&self) -> &[Item] {
+        &self.items
+    }
+
+    pub fn set_items(&mut self, items: Vec<Item>) {
+        self.items = items;
+        self.widths = None;
     }
 
     pub fn is_open(&self) -> bool {
@@ -103,16 +123,32 @@ impl Completion {
 
     pub fn close(&mut self) {
         self.items.clear();
+        self.widths = None;
     }
 
     pub fn current(&self) -> Option<&Item> {
         self.items.get(self.list.cursor.index)
     }
 
-    pub fn apply(&self, i: usize, buffer: &mut crate::core::text::TextBuffer) {
-        let Some(item) = self.items.get(i) else {
-            return;
-        };
+    fn can_accept(&self, index: usize) -> bool {
+        let source = &self.items[..];
+        index < source.len() && source.enabled(index)
+    }
+
+    pub fn has_eligible(&self) -> bool {
+        (0..self.items.len()).any(|i| self.can_accept(i))
+    }
+
+    fn accepted(&self, index: usize) -> Option<CompletionAction> {
+        self.can_accept(index)
+            .then_some(CompletionAction::Accept(index))
+    }
+
+    pub fn apply(&self, i: usize, buffer: &mut crate::core::text::TextBuffer) -> bool {
+        if !self.can_accept(i) {
+            return false;
+        }
+        let item = &self.items[i];
         let insert = item.insertion();
         let cur = buffer.cursor_offset();
         buffer.remove_range(cur.saturating_sub(self.replace_len)..cur);
@@ -121,6 +157,7 @@ impl Completion {
             buffer.insert_char(')');
             buffer.move_left(false);
         }
+        true
     }
 
     pub fn row_id(&self, i: usize) -> WidgetId {
@@ -144,10 +181,10 @@ impl Completion {
             return (Outcome::Changed, None);
         }
         match key.code {
-            KeyCode::Tab | KeyCode::Enter => (
-                Outcome::Changed,
-                Some(CompletionAction::Accept(self.list.cursor.index)),
-            ),
+            KeyCode::Tab | KeyCode::Enter => match self.accepted(self.list.cursor.index) {
+                Some(accept) => (Outcome::Changed, Some(accept)),
+                None => (Outcome::Consumed, None),
+            },
             KeyCode::Esc if self.list.dismiss.escape => {
                 self.close();
                 (Outcome::Changed, Some(CompletionAction::Dismiss))
@@ -165,8 +202,9 @@ impl Completion {
             return Some(CompletionAction::Dismiss);
         }
         let i = self.list.row_of(id, self.items.len())?;
+        let accepted = self.accepted(i)?;
         self.list.select(i, &self.items[..]);
-        Some(CompletionAction::Accept(i))
+        Some(accepted)
     }
 
     pub fn render(&mut self, screen: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
@@ -174,20 +212,26 @@ impl Completion {
         if !self.is_open() {
             return;
         }
-        let label_w = self
+        let (label_w, detail_w) = self.aggregate_widths();
+        // A disabled entry's reason is why it cannot be accepted, so it must fit
+        // whole. `menu::reason_room` leaves 8 columns of chrome around it. It may
+        // widen the popup past the `popup_width` maximum (that bounds the label and
+        // detail columns; `Reason::TEXT_MAX` is 60, so 68 columns), but never past the
+        // screen: `place_with` clamps, and `paint_reason` then ellipsizes. `Item::reason`
+        // does not enforce `TEXT_MAX`, so the widening is capped at `TEXT_MAX + 8`.
+        let reason_w = self
             .items
             .iter()
-            .map(|i| width(&i.label))
+            .filter(|i| i.disabled)
+            .filter_map(|i| i.reason.as_deref())
+            .map(width)
             .max()
-            .unwrap_or(4);
-        let detail_w = self
-            .items
-            .iter()
-            .map(|i| width(&i.detail))
-            .max()
-            .unwrap_or(0);
+            .map_or(0, |w| w.min(Reason::TEXT_MAX) + 8);
         let (min_w, max_w) = self.list.width;
-        let w = (label_w + detail_w + 8).clamp(min_w as usize, max_w as usize) as u16;
+        let w = (label_w + detail_w + 8)
+            .clamp(min_w as usize, max_w as usize)
+            .max(reason_w)
+            .min(usize::from(screen.width)) as u16;
         let rows = (self.items.len() as u16).min(self.list.max_rows);
         let h = rows + 2;
         let area = place_with(
@@ -205,67 +249,106 @@ impl Completion {
 
         self.list.layout(inner, &self.items[..], ctx);
 
-        let me = self.clone();
-        ctx.overlay(move |buf, ctx| me.paint(area, buf, ctx));
+        let items = &self.items;
+        let snapshot = self.list.snapshot(inner, &items[..], |i| {
+            crate::record_work!(PayloadBytesCloned, items[i].payload_bytes());
+            items[i].clone()
+        });
+        let (id, dismiss) = (self.id, self.list.dismiss);
+        let reason = self.list.status(&self.items[..]).map(str::to_owned);
+        ctx.overlay(move |buf, ctx| {
+            Self::paint(&snapshot, reason.as_deref(), id, dismiss, area, buf, ctx);
+        });
     }
 
-    fn paint(&self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
-        let t = ctx.theme;
-        let inner = surface_for(area, buf, ctx, t, Some((self.id, self.list.dismiss)));
-        let bg = t.surface_elevated;
-        let items = &self.items[..];
-        self.list
-            .paint_rows(inner, bg, items, buf, ctx, |i, r, buf, ctx| {
-                let it = &items[i];
-                let (row, y) = (r.area, r.area.y);
-                let st = r.style();
-                let focused = r.state.focused;
-                buf.set_string(
-                    row.x + 1,
-                    y,
-                    &it.glyph,
-                    st.fg(if focused {
-                        t.text_primary
-                    } else {
-                        r.ink(ctx, t.text_muted)
-                    })
-                    .remove_modifier(Modifier::BOLD),
-                );
+    fn aggregate_widths(&mut self) -> (usize, usize) {
+        if let Some(widths) = self.widths {
+            return widths;
+        }
+        #[cfg(test)]
+        crate::core::work::add(crate::core::work::Counter::WidthRows, self.items.len());
+        let label_w = self
+            .items
+            .iter()
+            .map(|i| width(&i.label))
+            .max()
+            .unwrap_or(4);
+        let detail_w = self
+            .items
+            .iter()
+            .map(|i| width(&i.detail))
+            .max()
+            .unwrap_or(0);
+        *self.widths.insert((label_w, detail_w))
+    }
 
-                let mut x = row.x + 3;
-                let avail = row.width.saturating_sub(3) as usize;
-                let show_detail =
-                    !it.detail.is_empty() && avail > width(&it.label) + width(&it.detail) + 2;
-                let label = truncate(
-                    &it.label,
-                    if show_detail {
-                        avail - width(&it.detail) - 2
-                    } else {
-                        avail
-                    },
-                );
-                for (bi, ch) in label.char_indices() {
-                    let mut cs = st;
-                    if it.matched.contains(&bi) {
-                        cs = cs.add_modifier(Modifier::BOLD);
+    fn paint(
+        snapshot: &PopupSnapshot<Item>,
+        reason: Option<&str>,
+        id: WidgetId,
+        dismiss: Dismiss,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+    ) {
+        let t = ctx.theme;
+        let inner = surface_for(area, buf, ctx, t, Some((id, dismiss)));
+        let bg = t.surface_elevated;
+        snapshot.paint_rows(inner, bg, buf, ctx, |pr, r, buf, ctx| {
+            let it = &pr.payload;
+            let (row, y) = (r.area, r.area.y);
+            let st = r.style();
+            let focused = r.state.focused;
+            buf.set_string(
+                row.x + 1,
+                y,
+                &it.glyph,
+                st.fg(if focused {
+                    t.text_primary
+                } else {
+                    r.ink(ctx, t.text_muted)
+                })
+                .remove_modifier(Modifier::BOLD),
+            );
+
+            let avail = row.width.saturating_sub(3) as usize;
+            let show_detail =
+                !it.detail.is_empty() && avail > width(&it.label) + width(&it.detail) + 2;
+            let label_w = if show_detail {
+                avail - width(&it.detail) - 2
+            } else {
+                avail
+            };
+            paint_graphemes(
+                buf,
+                Rect::new(row.x + 3, y, label_w as u16, 1).intersection(row),
+                (0, 0),
+                &it.label,
+                TextClip::Ellipsis,
+                |source, _| {
+                    let matched =
+                        source.is_some_and(|range| it.matched.iter().any(|m| range.contains(m)));
+                    if matched {
+                        st.add_modifier(Modifier::BOLD)
                     } else if !focused {
-                        cs = cs.remove_modifier(Modifier::BOLD);
+                        st.remove_modifier(Modifier::BOLD)
+                    } else {
+                        st
                     }
-                    let g = ch.to_string();
-                    buf.set_string(x, y, &g, cs);
-                    x += width(&g) as u16;
-                }
-                if show_detail {
-                    let dx = row.right().saturating_sub(width(&it.detail) as u16 + 1);
-                    buf.set_string(
-                        dx,
-                        y,
-                        &it.detail,
-                        st.fg(r.ink(ctx, t.text_muted))
-                            .remove_modifier(Modifier::BOLD),
-                    );
-                }
-            });
+                },
+            );
+            if show_detail {
+                let dx = row.right().saturating_sub(width(&it.detail) as u16 + 1);
+                buf.set_string(
+                    dx,
+                    y,
+                    &it.detail,
+                    st.fg(r.ink(ctx, t.text_muted))
+                        .remove_modifier(Modifier::BOLD),
+                );
+            }
+        });
+        paint_reason(reason, snapshot.more_below(), area, bg, buf, t);
     }
 }
 

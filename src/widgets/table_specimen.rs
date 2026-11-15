@@ -12,11 +12,11 @@ const SAMPLE_ROWS: usize = 3;
 
 impl DataTable {
     fn sample_edit_col(&self) -> Option<usize> {
-        self.columns.iter().position(|c| c.editable)
+        self.columns().iter().position(|c| c.editable)
     }
 
     fn sample_text_col(&self) -> usize {
-        (0..self.columns.len())
+        (0..self.columns().len())
             .find(|&c| !self.numeric.get(c).copied().unwrap_or(false))
             .unwrap_or(0)
     }
@@ -42,7 +42,7 @@ impl Specimen for DataTable {
         if state == SpecimenState::Empty {
             2
         } else {
-            1 + SAMPLE_ROWS.min(self.rows.len().max(1)) as u16
+            1 + SAMPLE_ROWS.min(self.rows().len().max(1)) as u16
         }
     }
 
@@ -55,17 +55,17 @@ impl Specimen for DataTable {
         bg: Color,
     ) {
         let mut t = self.clone();
-        let rows: Vec<_> = t.rows.iter().take(SAMPLE_ROWS).cloned().collect();
-        t.set_rows(rows);
-        t.edit = None;
-        t.choice = None;
+        let rows: Vec<_> = t.rows().iter().take(SAMPLE_ROWS).cloned().collect();
+        t.try_set_rows(rows)
+            .expect("sample rows keep the schema width");
+        t.cancel_edit();
         t.selected = None;
         t.sort = None;
         t.selection.clear();
         t.disabled.clear();
         t.cursor_row = 0;
 
-        let row = 1.min(t.rows.len().saturating_sub(1));
+        let row = 1.min(t.rows().len().saturating_sub(1));
         let v = state.visual();
         if v.hovered {
             ctx.interaction.hover = Some(t.cell_id(row, t.cursor_col));
@@ -84,21 +84,23 @@ impl Specimen for DataTable {
             SpecimenState::Editing => {
                 if let Some(c) = t.sample_edit_col() {
                     t.cursor_col = c;
-                    t.begin_edit();
+                    let _ = t.begin_edit();
                 }
             }
             SpecimenState::Error => {
                 let c = t.sample_edit_col().unwrap_or_else(|| t.sample_text_col());
-                if let Some(cell) = t.rows.get_mut(0).and_then(|r| r.get_mut(c)) {
+                t.update_cell(0, c, |cell| {
                     cell.error = Some("Enter a valid value".into());
-                }
+                });
             }
-            SpecimenState::Empty => t.set_rows(Vec::new()),
+            SpecimenState::Empty => t
+                .try_set_rows(Vec::new())
+                .expect("an empty row set fits any schema"),
             SpecimenState::Overflow => {
                 let c = t.sample_text_col();
-                if let Some(cell) = t.rows.get_mut(0).and_then(|r| r.get_mut(c)) {
+                t.update_cell(0, c, |cell| {
                     cell.text = format!("{} and a value longer than its column", cell.text);
-                }
+                });
             }
             _ => {}
         }
