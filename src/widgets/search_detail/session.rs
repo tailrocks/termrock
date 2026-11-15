@@ -3,7 +3,7 @@ use ratatui::crossterm::event::KeyCode;
 use super::projection::{self, Move, Selectable, Slot};
 use super::{
     MissingSelection, QueryRequest, QueryToken, SearchAction, SearchCmd, SearchConfig, SearchError,
-    SearchFocusMode, SearchSource, SelectionOwner, fresh_owner,
+    SearchFocusMode, SearchSource, fresh_owner,
 };
 use crate::core::edit::{EditKind, TextCmd};
 use crate::core::event::Key;
@@ -188,26 +188,6 @@ impl SearchSession {
     fn slot(&self, key: ItemKey) -> Option<&Slot> {
         let at = self.state.visible_index(key)?;
         self.accepted.as_ref()?.slots.get(at)
-    }
-
-    fn external(&self) -> bool {
-        self.config.selection_owner == SelectionOwner::External
-    }
-
-    /// Reports the host's own cursor under [`SelectionOwner::External`]. The
-    /// key must be an enabled key of the displayed results. No
-    /// [`SearchAction::SelectionChanged`] comes back: the host moved first.
-    pub fn set_selection(&mut self, key: ItemKey) -> Reply {
-        if !self.external() || !self.is_selectable(key) {
-            return Response::ignored();
-        }
-        let before = self.state.cursor();
-        if !self.state.set_cursor(key) || before == Some(key) {
-            return Response::ignored();
-        }
-        self.column = self.slot(key).map_or(0, |slot| slot.cell);
-        self.drop_stale_intent();
-        Response::changed()
     }
 
     fn can_navigate(&self) -> bool {
@@ -507,9 +487,6 @@ impl SearchSession {
     }
 
     fn navigate(&mut self, mv: Move) -> Reply {
-        if self.external() {
-            return Response::ignored();
-        }
         let from = self
             .state
             .cursor()
@@ -543,9 +520,6 @@ impl SearchSession {
 
     /// Selects `key` if it is an enabled key of the displayed results.
     pub fn select(&mut self, key: ItemKey) -> Reply {
-        if self.external() {
-            return Response::ignored();
-        }
         if !self.can_navigate() {
             return Response::consumed();
         }
@@ -596,9 +570,6 @@ impl SearchSession {
             return Response::ignored();
         }
         self.press_was_selected = self.state.cursor() == Some(key);
-        if self.external() {
-            return Response::consumed();
-        }
         Response::consumed().merge(self.select(key))
     }
 

@@ -294,16 +294,6 @@ impl SearchDetail {
         Ok(self.settle(reply))
     }
 
-    /// Reports the host's own cursor under
-    /// [`SelectionOwner::External`](super::SelectionOwner::External).
-    pub fn set_selection(&mut self, key: ItemKey) -> Reply {
-        let reply = self.session.set_selection(key);
-        if reply.is_consumed() {
-            self.list.reset_detail();
-        }
-        self.settle(reply)
-    }
-
     // ---- keyboard ---------------------------------------------------------
 
     /// Routes one key by focus: the preview and its actions, then context

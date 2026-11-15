@@ -21,7 +21,7 @@ use junie_tui::widgets::input::TextInput;
 use junie_tui::widgets::list_detail::{Line, ListDetailSource, ListRowRef, SourceFrame};
 use junie_tui::widgets::search_detail::{
     QueryRequest, QueryView, ResultRowKind, RowPaint, SearchAction, SearchConfig, SearchDetail,
-    SearchError, SearchFocusMode, SearchPhase, SelectionOwner, paint_query_default,
+    SearchError, SearchFocusMode, SearchPhase, paint_query_default,
 };
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
@@ -979,63 +979,6 @@ fn search_detail_typing_returns_from_the_preview_only_when_configured() {
         let pasted = acts(search.on_paste("p", &mut focus));
         assert_eq!(!pasted.is_empty(), on, "paste follows the same switch");
     }
-}
-
-#[test]
-fn search_detail_external_owner_never_moves_the_cursor_itself() {
-    let config = SearchConfig::default().selection_owner(SelectionOwner::External);
-    let mut search = new_search(config);
-    let source = accept_with_policy(&mut search, mixed(), None, Some(ClickPolicy::NAVIGATION));
-    let mut focus = Focus::default();
-    focus.focus(ID);
-    let frame = draw(
-        &mut search,
-        &source,
-        WIDE,
-        Some(ID),
-        &[],
-        &mut Seen::default(),
-    );
-    assert_eq!(search.selected_key(), Some(k(10)));
-    assert!(on_key(&mut search, &source, &mut focus, &key(KeyCode::Down)).is_empty());
-    assert_eq!(
-        search.selected_key(),
-        Some(k(10)),
-        "navigation is the host's"
-    );
-
-    let out = press_click(&mut search, &source, &mut focus, &frame, k(31), Part::CELL);
-    assert_eq!(
-        out,
-        [SearchAction::Activate(k(31))],
-        "a click activates without moving the cursor"
-    );
-    assert_eq!(search.selected_key(), Some(k(10)));
-
-    assert!(
-        acts(search.set_selection(k(31))).is_empty(),
-        "no echo of the host's move"
-    );
-    assert_eq!(search.selected_key(), Some(k(31)));
-    assert!(
-        acts(search.set_selection(k(1))).is_empty(),
-        "a heading is refused"
-    );
-    assert_eq!(search.selected_key(), Some(k(31)));
-    assert_eq!(
-        on_key(&mut search, &source, &mut focus, &key(KeyCode::Enter)),
-        [SearchAction::Activate(k(31))]
-    );
-}
-
-#[test]
-fn search_detail_default_selection_owner_is_the_session() {
-    let mut search = new_search(SearchConfig::default());
-    accept(&mut search, 1, list());
-    assert!(
-        acts(search.set_selection(k(12))).is_empty() && search.selected_key() == Some(k(10)),
-        "set_selection is only for an external owner"
-    );
 }
 
 #[test]

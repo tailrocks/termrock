@@ -776,10 +776,6 @@ pub const SEARCH_SESSION_ALLOWLIST: &[(&str, &str)] = &[
         SEARCH_SESSION_REASON,
     ),
     (
-        "widgets::search_detail::SearchDetail::set_selection",
-        SEARCH_SESSION_REASON,
-    ),
-    (
         "widgets::search_detail::SearchDetail::on_key",
         SEARCH_SESSION_REASON,
     ),
@@ -818,23 +814,7 @@ pub const SEARCH_SESSION_ALLOWLIST: &[(&str, &str)] = &[
         SEARCH_SESSION_REASON,
     ),
     (
-        "widgets::search_detail::SelectionOwner",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SelectionOwner::Session",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SelectionOwner::External",
-        SEARCH_SESSION_REASON,
-    ),
-    (
         "widgets::search_detail::SearchAction::DetailItem",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchConfig::selection_owner",
         SEARCH_SESSION_REASON,
     ),
     (
@@ -851,10 +831,6 @@ pub const SEARCH_SESSION_ALLOWLIST: &[(&str, &str)] = &[
     ),
     (
         "widgets::search_detail::SearchSession::is_selectable",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchSession::set_selection",
         SEARCH_SESSION_REASON,
     ),
     (
