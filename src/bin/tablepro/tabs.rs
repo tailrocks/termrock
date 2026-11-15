@@ -187,74 +187,145 @@ impl Filter {
         }
     }
 
-    pub fn to_sql(&self) -> String {
-        let c = &self.column;
-        let v = &self.value;
+    /// The one expression that evaluates this filter and renders its SQL.
+    pub fn expression(&self) -> sql::Expr {
+        use sql::{Expr, PredicateOp as P};
+        let leaf = |op: P| {
+            Expr::Leaf(sql::Predicate {
+                column: self.column.clone(),
+                op,
+            })
+        };
+        let v = self.value.clone();
+        let list = || self.value.split(',').map(|s| s.trim().to_owned()).collect();
         match self.op {
-            FilterOp::Eq => format!("{c} = '{v}'"),
-            FilterOp::Ne => format!("{c} != '{v}'"),
-            FilterOp::Contains => format!("{c} LIKE '%{v}%'"),
-            FilterOp::NotContains => format!("{c} NOT LIKE '%{v}%'"),
-            FilterOp::StartsWith => format!("{c} LIKE '{v}%'"),
-            FilterOp::EndsWith => format!("{c} LIKE '%{v}'"),
-            FilterOp::Gt => format!("{c} > '{v}'"),
-            FilterOp::Ge => format!("{c} >= '{v}'"),
-            FilterOp::Lt => format!("{c} < '{v}'"),
-            FilterOp::Le => format!("{c} <= '{v}'"),
-            FilterOp::IsNull => format!("{c} IS NULL"),
-            FilterOp::IsNotNull => format!("{c} IS NOT NULL"),
-            FilterOp::IsEmpty => format!("{c} = ''"),
-            FilterOp::IsNotEmpty => format!("{c} != ''"),
-            FilterOp::In => format!(
-                "{c} IN ({})",
-                v.split(',')
-                    .map(|s| format!("'{}'", s.trim()))
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            ),
-            FilterOp::NotIn => format!(
-                "{c} NOT IN ({})",
-                v.split(',')
-                    .map(|s| format!("'{}'", s.trim()))
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            ),
-            FilterOp::Between => format!("{c} >= '{v}' AND {c} <= '{}'", self.value2),
-            FilterOp::Regex => format!("{c} ~ '{v}'"),
+            FilterOp::Eq => leaf(P::Eq(v)),
+            FilterOp::Ne => leaf(P::Ne(v)),
+            FilterOp::Contains => leaf(P::Contains(v)),
+            FilterOp::NotContains => Expr::Not(Box::new(leaf(P::Contains(v)))),
+            FilterOp::StartsWith => leaf(P::StartsWith(v)),
+            FilterOp::EndsWith => leaf(P::EndsWith(v)),
+            FilterOp::Gt => leaf(P::Gt(v)),
+            FilterOp::Ge => leaf(P::Ge(v)),
+            FilterOp::Lt => leaf(P::Lt(v)),
+            FilterOp::Le => leaf(P::Le(v)),
+            FilterOp::IsNull => leaf(P::IsNull),
+            FilterOp::IsNotNull => leaf(P::IsNotNull),
+            FilterOp::IsEmpty => leaf(P::Eq(String::new())),
+            FilterOp::IsNotEmpty => leaf(P::Ne(String::new())),
+            FilterOp::In => leaf(P::In(list())),
+            FilterOp::NotIn => Expr::Not(Box::new(leaf(P::In(list())))),
+            FilterOp::Between => Expr::All(vec![leaf(P::Ge(v)), leaf(P::Le(self.value2.clone()))]),
+            FilterOp::Regex => leaf(P::Regex(v)),
         }
     }
 
-    pub fn predicates(&self) -> Vec<sql::Predicate> {
-        use sql::Cmp;
-        let p = |cmp: Cmp, value: &str| sql::Predicate {
-            column: self.column.clone(),
-            cmp,
-            value: value.to_owned(),
-        };
-        match self.op {
-            FilterOp::Eq => vec![p(Cmp::Eq, &self.value)],
-            FilterOp::Ne => vec![p(Cmp::Ne, &self.value)],
-            FilterOp::Contains => vec![p(Cmp::Like, &format!("%{}%", self.value))],
-            FilterOp::NotContains => vec![],
-            FilterOp::StartsWith => vec![p(Cmp::Like, &format!("{}%", self.value))],
-            FilterOp::EndsWith => vec![p(Cmp::Like, &format!("%{}", self.value))],
-            FilterOp::Gt => vec![p(Cmp::Gt, &self.value)],
-            FilterOp::Ge => vec![p(Cmp::Ge, &self.value)],
-            FilterOp::Lt => vec![p(Cmp::Lt, &self.value)],
-            FilterOp::Le => vec![p(Cmp::Le, &self.value)],
-            FilterOp::IsNull => vec![p(Cmp::IsNull, "")],
-            FilterOp::IsNotNull => vec![p(Cmp::IsNotNull, "")],
-            FilterOp::IsEmpty => vec![p(Cmp::Eq, "")],
-            FilterOp::IsNotEmpty => vec![p(Cmp::Ne, "")],
-            FilterOp::In => vec![p(
-                Cmp::In(self.value.split(',').map(|s| s.trim().to_owned()).collect()),
-                "",
-            )],
-            FilterOp::NotIn => vec![],
-            FilterOp::Between => vec![p(Cmp::Ge, &self.value), p(Cmp::Le, &self.value2)],
-            FilterOp::Regex => vec![p(Cmp::Like, &format!("%{}%", self.value))],
-        }
+    pub fn to_sql(&self) -> String {
+        self.expression().to_sql()
     }
+
+    /// Rules the editor enforces before a filter can replace the current view.
+    /// Whatever passes here evaluates on every row without a per-row failure.
+    pub fn check(&self, ty: ColType) -> Result<(), FilterError> {
+        let fail = |field, message: &str| {
+            Err(FilterError {
+                field,
+                message: message.into(),
+            })
+        };
+        if self.op.needs_value() && self.value.is_empty() {
+            return fail(FilterField::Value, "A value is required for this operator");
+        }
+        if self.op == FilterOp::Between && self.value2.is_empty() {
+            return fail(FilterField::Value2, "A value is required for this operator");
+        }
+        let is_list = matches!(self.op, FilterOp::In | FilterOp::NotIn);
+        if is_list && self.value.split(',').any(|s| s.trim().is_empty()) {
+            return fail(FilterField::Value, "List items cannot be empty");
+        }
+        if self.op == FilterOp::Regex {
+            sql::compile_regex(&self.value).map_err(|message| FilterError {
+                field: FilterField::Value,
+                message,
+            })?;
+        }
+        let numeric = matches!(ty, ColType::Int | ColType::Numeric);
+        let ordinal = matches!(
+            self.op,
+            FilterOp::Eq
+                | FilterOp::Ne
+                | FilterOp::Gt
+                | FilterOp::Ge
+                | FilterOp::Lt
+                | FilterOp::Le
+                | FilterOp::In
+                | FilterOp::NotIn
+                | FilterOp::Between
+        );
+        type Parses = fn(&str) -> bool;
+        let typed: Option<(&str, Parses)> = match ty {
+            ColType::Int => Some(("Enter a whole number", |t| t.parse::<i64>().is_ok())),
+            ColType::Numeric => Some(("Enter a number", |t| {
+                t.parse::<f64>().is_ok_and(f64::is_finite)
+            })),
+            ColType::Bool => Some(("Enter true or false", |t| {
+                t.eq_ignore_ascii_case("true") || t.eq_ignore_ascii_case("false")
+            })),
+            _ => None,
+        };
+        if let (true, Some((msg, parses))) = (ordinal, typed) {
+            let operands: Vec<(FilterField, &str)> = match self.op {
+                FilterOp::In | FilterOp::NotIn => self
+                    .value
+                    .split(',')
+                    .map(|t| (FilterField::Value, t.trim()))
+                    .collect(),
+                FilterOp::Between => vec![
+                    (FilterField::Value, self.value.as_str()),
+                    (FilterField::Value2, self.value2.as_str()),
+                ],
+                _ => vec![(FilterField::Value, self.value.as_str())],
+            };
+            for (field, text) in operands {
+                if !parses(text) {
+                    return fail(field, msg);
+                }
+            }
+        }
+        if self.op == FilterOp::Between {
+            let ordered = if ty == ColType::Int {
+                matches!(
+                    (self.value.parse::<i64>(), self.value2.parse::<i64>()),
+                    (Ok(lo), Ok(hi)) if lo <= hi
+                )
+            } else if numeric {
+                let lo = self.value.parse::<f64>().unwrap_or(f64::NAN);
+                let hi = self.value2.parse::<f64>().unwrap_or(f64::NAN);
+                lo <= hi
+            } else {
+                self.value.to_lowercase() <= self.value2.to_lowercase()
+            };
+            if !ordered {
+                return fail(
+                    FilterField::Value2,
+                    "The upper bound is below the lower bound",
+                );
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FilterField {
+    Value,
+    Value2,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FilterError {
+    pub field: FilterField,
+    pub message: String,
 }
 
 fn quote(v: &str) -> String {
@@ -452,20 +523,34 @@ impl TableTab {
     }
 
     fn select(&self) -> sql::Select {
-        let mut predicates = Vec::new();
-        for f in self.filters.iter().filter(|f| f.enabled) {
-            predicates.extend(f.predicates());
-        }
         sql::Select {
             columns: vec!["*".into()],
             schema: Some(self.schema.clone()),
             table: self.name.clone(),
-            predicates,
+            filter: self.filter_expr(),
             order: self
                 .sort
                 .map(|(c, d)| (self.columns[c].0.clone(), d == SortDir::Asc)),
             limit: Some(sql::ROW_CAP),
             count_only: false,
+        }
+    }
+
+    /// The WHERE clause for the enabled filters, joined by the tab's match mode.
+    /// With no enabled filter there is no clause at all.
+    pub fn filter_expr(&self) -> Option<sql::Expr> {
+        let children: Vec<sql::Expr> = self
+            .filters
+            .iter()
+            .filter(|f| f.enabled)
+            .map(Filter::expression)
+            .collect();
+        if children.is_empty() {
+            None
+        } else if self.match_all {
+            Some(sql::Expr::All(children))
+        } else {
+            Some(sql::Expr::Any(children))
         }
     }
 
@@ -2247,7 +2332,8 @@ fn execute(
                     tree.expand_all();
                     let mut raw_lines = vec![];
                     sql::plan_text(&plan, 0, &mut raw_lines);
-                    let planning = 0.21 + sel.predicates.len() as f64 * 0.09;
+                    let planning =
+                        0.21 + sel.filter.as_ref().map_or(0, sql::Expr::leaves) as f64 * 0.09;
                     raw_lines.push(format!("Planning Time: {planning:.3} ms"));
                     let exec = analyze.then(|| plan.actual_ms.unwrap_or(0.0) + 0.4);
                     if let Some(e) = exec {
@@ -2701,6 +2787,273 @@ impl HistoryTab {
             self.copy_btn.render(rects[2], buf, ctx, cbg);
         }
         self.detail_view.end(frame, buf, ctx);
+    }
+}
+
+#[cfg(test)]
+mod issue10_tests {
+    use super::*;
+    use crate::db::{self, Value};
+
+    fn orders(cat: &Catalog) -> &Table {
+        cat.find(Some("public"), "orders").expect("orders fixture")
+    }
+
+    fn filter(column: &str, op: FilterOp, value: &str, value2: &str) -> Filter {
+        Filter {
+            column: column.into(),
+            op,
+            value: value.into(),
+            value2: value2.into(),
+            enabled: true,
+        }
+    }
+
+    fn col(table: &Table, name: &str) -> usize {
+        table
+            .columns
+            .iter()
+            .position(|c| c.name == name)
+            .unwrap_or_else(|| panic!("column {name}"))
+    }
+
+    fn text<'a>(table: &Table, row: &'a [Value], name: &str) -> Option<&'a str> {
+        match &row[col(table, name)] {
+            Value::Text(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    fn id_of(table: &Table, row: &[Value]) -> String {
+        row[col(table, "id")].display()
+    }
+
+    /// Runs the tab's own select (its filters and match mode) through the simulator.
+    fn tab_ids(cat: &Catalog, filters: Vec<Filter>, match_all: bool) -> Vec<String> {
+        let table = orders(cat);
+        let mut tab = TableTab::new(WidgetId::of("issue10"), cat, table, false);
+        tab.filters = filters;
+        tab.match_all = match_all;
+        let rs = sql::run_select(cat, &tab.select()).expect("filtered select runs");
+        let id = rs
+            .columns
+            .iter()
+            .position(|c| c.0 == "id")
+            .expect("id column");
+        rs.rows.iter().map(|r| r[id].display()).collect()
+    }
+
+    /// Independent oracle over the same generated rows the simulator scans.
+    fn expected(cat: &Catalog, keep: impl Fn(&Table, &[Value]) -> bool) -> Vec<String> {
+        let table = orders(cat);
+        let scan = table.row_count.min(2_000);
+        db::rows(table, 0, scan)
+            .iter()
+            .filter(|r| keep(table, r))
+            .take(sql::ROW_CAP)
+            .map(|r| id_of(table, r))
+            .collect()
+    }
+
+    fn status_is(t: &Table, r: &[Value], want: &str) -> bool {
+        text(t, r, "status") == Some(want)
+    }
+
+    fn is_gift(t: &Table, r: &[Value]) -> bool {
+        r[col(t, "is_gift")] == Value::Bool(true)
+    }
+
+    #[test]
+    fn issue10_match_any_returns_the_union_of_enabled_filters() {
+        let cat = Catalog::acme_prod();
+        let filters = vec![
+            filter("status", FilterOp::Eq, "paid", ""),
+            filter("is_gift", FilterOp::Eq, "true", ""),
+        ];
+        assert_eq!(
+            tab_ids(&cat, filters, false),
+            expected(&cat, |t, r| status_is(t, r, "paid") || is_gift(t, r)),
+        );
+    }
+
+    #[test]
+    fn issue10_match_all_still_intersects_enabled_filters() {
+        let cat = Catalog::acme_prod();
+        let filters = vec![
+            filter("status", FilterOp::Eq, "paid", ""),
+            filter("is_gift", FilterOp::Eq, "true", ""),
+        ];
+        assert_eq!(
+            tab_ids(&cat, filters, true),
+            expected(&cat, |t, r| status_is(t, r, "paid") && is_gift(t, r)),
+        );
+    }
+
+    #[test]
+    fn issue10_no_enabled_filters_is_unrestricted() {
+        let cat = Catalog::acme_prod();
+        let disabled = Filter {
+            enabled: false,
+            ..filter("status", FilterOp::Eq, "paid", "")
+        };
+        assert_eq!(tab_ids(&cat, vec![], true), expected(&cat, |_, _| true));
+        assert_eq!(
+            tab_ids(&cat, vec![disabled], false),
+            expected(&cat, |_, _| true)
+        );
+    }
+
+    #[test]
+    fn issue10_not_contains_excludes_matches_and_nulls() {
+        let cat = Catalog::acme_prod();
+        let got = tab_ids(
+            &cat,
+            vec![filter("notes", FilterOp::NotContains, "gift", "")],
+            true,
+        );
+        assert_eq!(
+            got,
+            expected(&cat, |t, r| text(t, r, "notes")
+                .is_some_and(|s| !s.to_lowercase().contains("gift"))),
+        );
+    }
+
+    #[test]
+    fn issue10_not_in_excludes_listed_values_and_nulls() {
+        let cat = Catalog::acme_prod();
+        let got = tab_ids(
+            &cat,
+            vec![filter("status", FilterOp::NotIn, "paid, shipped", "")],
+            true,
+        );
+        assert_eq!(
+            got,
+            expected(&cat, |t, r| text(t, r, "status")
+                .is_some_and(|s| s != "paid" && s != "shipped")),
+        );
+    }
+
+    #[test]
+    fn issue10_regex_is_a_pattern_not_a_substring() {
+        let cat = Catalog::acme_prod();
+        let got = tab_ids(
+            &cat,
+            vec![filter("status", FilterOp::Regex, "^p.id$", "")],
+            true,
+        );
+        assert_eq!(got, expected(&cat, |t, r| status_is(t, r, "paid")));
+    }
+
+    #[test]
+    fn issue10_between_stays_one_child_under_match_any() {
+        let cat = Catalog::acme_prod();
+        let filters = vec![
+            filter("order_number", FilterOp::Between, "10000", "10002"),
+            filter("status", FilterOp::Eq, "paid", ""),
+        ];
+        assert_eq!(
+            tab_ids(&cat, filters, false),
+            expected(&cat, |t, r| {
+                let in_range = match r[col(t, "order_number")] {
+                    Value::Int(n) => (10_000..=10_002).contains(&n),
+                    _ => false,
+                };
+                in_range || status_is(t, r, "paid")
+            }),
+        );
+    }
+
+    #[test]
+    fn issue10_is_null_selects_only_null_rows() {
+        let cat = Catalog::acme_prod();
+        let got = tab_ids(&cat, vec![filter("notes", FilterOp::IsNull, "", "")], true);
+        assert_eq!(
+            got,
+            expected(&cat, |t, r| r[col(t, "notes")] == Value::Null)
+        );
+    }
+
+    #[test]
+    fn issue10_editor_rejects_values_that_cannot_evaluate() {
+        let int_filter = |op, value: &str, value2: &str| Filter {
+            column: "order_number".into(),
+            op,
+            value: value.into(),
+            value2: value2.into(),
+            enabled: true,
+        };
+        let text_filter = |op, value: &str| Filter {
+            column: "notes".into(),
+            op,
+            value: value.into(),
+            value2: String::new(),
+            enabled: true,
+        };
+        let err = int_filter(FilterOp::Gt, "abc", "")
+            .check(ColType::Int)
+            .unwrap_err();
+        assert_eq!(err.field, FilterField::Value);
+        assert!(err.message.contains("whole number"), "{}", err.message);
+
+        let err = int_filter(FilterOp::Between, "5", "1")
+            .check(ColType::Int)
+            .unwrap_err();
+        assert_eq!(err.field, FilterField::Value2);
+
+        let err = text_filter(FilterOp::Regex, "(")
+            .check(ColType::Text)
+            .unwrap_err();
+        assert_eq!(err.field, FilterField::Value);
+        assert!(err.message.starts_with("invalid regular expression"));
+
+        let err = text_filter(FilterOp::In, "paid,,shipped")
+            .check(ColType::Enum)
+            .unwrap_err();
+        assert_eq!(err.field, FilterField::Value);
+
+        assert!(
+            int_filter(FilterOp::Gt, "3", "")
+                .check(ColType::Int)
+                .is_ok()
+        );
+        assert!(
+            int_filter(FilterOp::Between, "1", "3")
+                .check(ColType::Int)
+                .is_ok()
+        );
+        assert!(
+            text_filter(FilterOp::Regex, "^p.id$")
+                .check(ColType::Text)
+                .is_ok()
+        );
+    }
+
+    #[test]
+    fn issue10_boolean_filter_rejects_non_boolean_operands() {
+        let gift = |op, value: &str| filter("is_gift", op, value, "");
+        let err = gift(FilterOp::Eq, "yes").check(ColType::Bool).unwrap_err();
+        assert_eq!(err.field, FilterField::Value);
+        assert_eq!(err.message, "Enter true or false");
+        let err = gift(FilterOp::In, "true, maybe")
+            .check(ColType::Bool)
+            .unwrap_err();
+        assert_eq!(err.field, FilterField::Value);
+        assert!(gift(FilterOp::Eq, "true").check(ColType::Bool).is_ok());
+        assert!(gift(FilterOp::Ne, "FALSE").check(ColType::Bool).is_ok());
+        assert!(gift(FilterOp::IsNull, "").check(ColType::Bool).is_ok());
+    }
+
+    #[test]
+    fn issue10_integer_range_order_is_exact() {
+        let err = filter(
+            "order_number",
+            FilterOp::Between,
+            "9007199254740993",
+            "9007199254740992",
+        )
+        .check(ColType::Int)
+        .unwrap_err();
+        assert_eq!(err.field, FilterField::Value2);
     }
 }
 

@@ -1,4 +1,5 @@
 use crate::db::{Catalog, ColType, Table, Value};
+use crate::model::quote_text;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TokKind {
@@ -269,25 +270,198 @@ fn trim_range(src: &str, mut a: usize, mut b: usize) -> (usize, usize) {
     (a, b)
 }
 
+/// A WHERE condition. `All` and `Any` are the only boolean connectives; each
+/// UI filter and each query-editor conjunction becomes one child.
 #[derive(Debug, Clone, PartialEq)]
-pub enum Cmp {
-    Eq,
-    Ne,
-    Gt,
-    Ge,
-    Lt,
-    Le,
-    Like,
-    IsNull,
-    IsNotNull,
-    In(Vec<String>),
+pub enum Expr {
+    All(Vec<Expr>),
+    Any(Vec<Expr>),
+    Not(Box<Expr>),
+    Leaf(Predicate),
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Predicate {
     pub column: String,
-    pub cmp: Cmp,
-    pub value: String,
+    pub op: PredicateOp,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum PredicateOp {
+    Eq(String),
+    Ne(String),
+    Gt(String),
+    Ge(String),
+    Lt(String),
+    Le(String),
+    IsNull,
+    IsNotNull,
+    /// Literal, case-insensitive substring and prefix/suffix tests from the UI.
+    Contains(String),
+    StartsWith(String),
+    EndsWith(String),
+    /// SQL LIKE and ILIKE: `%` and `_` are wildcards, `\` escapes the next
+    /// character, and only ILIKE ignores case.
+    Like {
+        pattern: String,
+        case_insensitive: bool,
+    },
+    In(Vec<String>),
+    Regex(String),
+}
+
+impl Expr {
+    pub fn leaves(&self) -> usize {
+        match self {
+            Expr::All(xs) | Expr::Any(xs) => xs.iter().map(Expr::leaves).sum(),
+            Expr::Not(x) => x.leaves(),
+            Expr::Leaf(_) => 1,
+        }
+    }
+
+    pub fn to_sql(&self) -> String {
+        match self {
+            Expr::All(xs) => join_sql(xs, " AND "),
+            Expr::Any(xs) => join_sql(xs, " OR "),
+            Expr::Not(x) => match x.as_ref() {
+                Expr::Leaf(p) => p
+                    .to_sql_negated()
+                    .unwrap_or_else(|| format!("NOT ({})", p.to_sql())),
+                other => format!("NOT ({})", other.to_sql()),
+            },
+            Expr::Leaf(p) => p.to_sql(),
+        }
+    }
+}
+
+/// Only nested connectives need parentheses. Leaves and NOT bind tighter than
+/// AND and OR, so they print bare.
+fn join_sql(xs: &[Expr], sep: &str) -> String {
+    let parts: Vec<String> = xs
+        .iter()
+        .map(|x| match x {
+            Expr::All(_) | Expr::Any(_) => format!("({})", x.to_sql()),
+            _ => x.to_sql(),
+        })
+        .collect();
+    parts.join(sep)
+}
+
+/// PostgreSQL reserved words the simulator's keyword list leaves out. A column
+/// named like one must be quoted to parse.
+const RESERVED_IDENTS: &[&str] = &["user", "only", "for", "some", "array", "window"];
+
+fn is_reserved_ident(name: &str) -> bool {
+    is_keyword(name) || RESERVED_IDENTS.iter().any(|r| name.eq_ignore_ascii_case(r))
+}
+
+/// Plain lowercase names stay bare, so previews read as typed. Anything else
+/// is double-quoted with embedded quotes doubled.
+fn quote_ident(name: &str) -> String {
+    let plain = name
+        .chars()
+        .enumerate()
+        .all(|(i, c)| c == '_' || c.is_ascii_lowercase() || (i > 0 && c.is_ascii_digit()));
+    if plain && !name.is_empty() && !is_reserved_ident(name) {
+        name.to_owned()
+    } else {
+        format!("\"{}\"", name.replace('"', "\"\""))
+    }
+}
+
+fn like_keyword(case_insensitive: bool) -> &'static str {
+    if case_insensitive { "ILIKE" } else { "LIKE" }
+}
+
+/// Escapes LIKE wildcards so a literal UI value matches itself.
+fn escape_like(v: &str) -> String {
+    v.replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_")
+}
+
+impl Predicate {
+    /// The SQL form of `NOT (predicate)` where SQL has a negated spelling, such
+    /// as `NOT ILIKE` or `NOT IN`. Other operators keep the wrapping form.
+    fn to_sql_negated(&self) -> Option<String> {
+        let c = quote_ident(&self.column);
+        Some(match &self.op {
+            PredicateOp::Contains(v) => format!(
+                "{c} NOT ILIKE {}",
+                quote_text(&format!("%{}%", escape_like(v)))
+            ),
+            PredicateOp::StartsWith(v) => {
+                format!(
+                    "{c} NOT ILIKE {}",
+                    quote_text(&format!("{}%", escape_like(v)))
+                )
+            }
+            PredicateOp::EndsWith(v) => {
+                format!(
+                    "{c} NOT ILIKE {}",
+                    quote_text(&format!("%{}", escape_like(v)))
+                )
+            }
+            PredicateOp::Like {
+                pattern,
+                case_insensitive,
+            } => format!(
+                "{c} NOT {} {}",
+                like_keyword(*case_insensitive),
+                quote_text(pattern)
+            ),
+            PredicateOp::In(items) => format!(
+                "{c} NOT IN ({})",
+                items
+                    .iter()
+                    .map(|i| quote_text(i))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+            PredicateOp::Regex(p) => format!("{c} !~ {}", quote_text(p)),
+            _ => return None,
+        })
+    }
+
+    fn to_sql(&self) -> String {
+        let c = quote_ident(&self.column);
+        match &self.op {
+            PredicateOp::Eq(v) => format!("{c} = {}", quote_text(v)),
+            PredicateOp::Ne(v) => format!("{c} != {}", quote_text(v)),
+            PredicateOp::Gt(v) => format!("{c} > {}", quote_text(v)),
+            PredicateOp::Ge(v) => format!("{c} >= {}", quote_text(v)),
+            PredicateOp::Lt(v) => format!("{c} < {}", quote_text(v)),
+            PredicateOp::Le(v) => format!("{c} <= {}", quote_text(v)),
+            PredicateOp::IsNull => format!("{c} IS NULL"),
+            PredicateOp::IsNotNull => format!("{c} IS NOT NULL"),
+            PredicateOp::Contains(v) => {
+                format!("{c} ILIKE {}", quote_text(&format!("%{}%", escape_like(v))))
+            }
+            PredicateOp::StartsWith(v) => {
+                format!("{c} ILIKE {}", quote_text(&format!("{}%", escape_like(v))))
+            }
+            PredicateOp::EndsWith(v) => {
+                format!("{c} ILIKE {}", quote_text(&format!("%{}", escape_like(v))))
+            }
+            PredicateOp::Like {
+                pattern,
+                case_insensitive,
+            } => format!(
+                "{c} {} {}",
+                like_keyword(*case_insensitive),
+                quote_text(pattern)
+            ),
+            PredicateOp::In(items) => format!(
+                "{c} IN ({})",
+                items
+                    .iter()
+                    .map(|i| quote_text(i))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+            PredicateOp::Regex(p) => format!("{c} ~ {}", quote_text(p)),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -295,7 +469,8 @@ pub struct Select {
     pub columns: Vec<String>,
     pub schema: Option<String>,
     pub table: String,
-    pub predicates: Vec<Predicate>,
+    /// `None` is unrestricted. A present expression is never an empty connective.
+    pub filter: Option<Expr>,
     pub order: Option<(String, bool)>,
     pub limit: Option<usize>,
     pub count_only: bool,
@@ -557,6 +732,18 @@ pub fn parse(stmt: &str) -> Result<Statement, ParseError> {
     }
 }
 
+/// Strips one pair of SQL quotes and undoes doubled apostrophes inside it.
+fn literal(tok: &str) -> String {
+    match tok.strip_prefix('\'').and_then(|t| t.strip_suffix('\'')) {
+        Some(inner) => inner.replace("''", "'"),
+        None => tok.to_owned(),
+    }
+}
+
+fn next_literal(w: &mut Words) -> String {
+    literal(w.next().unwrap_or(""))
+}
+
 fn parse_select(w: &mut Words) -> Result<Select, ParseError> {
     let err = |w: &Words, m: &str| ParseError {
         message: m.to_owned(),
@@ -605,7 +792,7 @@ fn parse_select(w: &mut Words) -> Result<Select, ParseError> {
     {
         w.next();
     }
-    let mut predicates = Vec::new();
+    let mut conjuncts = Vec::new();
     let mut order = None;
     let mut limit = None;
     if w.accept("WHERE") {
@@ -621,21 +808,24 @@ fn parse_select(w: &mut Words) -> Result<Select, ParseError> {
                 .next()
                 .map(|s| s.to_ascii_uppercase())
                 .ok_or_else(|| err(w, "Expected an operator"))?;
-            let (cmp, value) = match op.as_str() {
-                "=" => (Cmp::Eq, w.next().unwrap_or("").to_owned()),
-                "!=" | "<>" => (Cmp::Ne, w.next().unwrap_or("").to_owned()),
-                ">" => (Cmp::Gt, w.next().unwrap_or("").to_owned()),
-                ">=" => (Cmp::Ge, w.next().unwrap_or("").to_owned()),
-                "<" => (Cmp::Lt, w.next().unwrap_or("").to_owned()),
-                "<=" => (Cmp::Le, w.next().unwrap_or("").to_owned()),
-                "LIKE" | "ILIKE" => (Cmp::Like, w.next().unwrap_or("").to_owned()),
+            let op = match op.as_str() {
+                "=" => PredicateOp::Eq(next_literal(w)),
+                "!=" | "<>" => PredicateOp::Ne(next_literal(w)),
+                ">" => PredicateOp::Gt(next_literal(w)),
+                ">=" => PredicateOp::Ge(next_literal(w)),
+                "<" => PredicateOp::Lt(next_literal(w)),
+                "<=" => PredicateOp::Le(next_literal(w)),
+                "LIKE" | "ILIKE" => PredicateOp::Like {
+                    pattern: next_literal(w),
+                    case_insensitive: op == "ILIKE",
+                },
                 "IS" => {
                     if w.accept("NOT") {
                         w.accept("NULL");
-                        (Cmp::IsNotNull, String::new())
+                        PredicateOp::IsNotNull
                     } else {
                         w.accept("NULL");
-                        (Cmp::IsNull, String::new())
+                        PredicateOp::IsNull
                     }
                 }
                 "IN" => {
@@ -646,18 +836,14 @@ fn parse_select(w: &mut Words) -> Result<Select, ParseError> {
                             break;
                         }
                         if t != "," {
-                            items.push(t.trim_matches('\'').to_owned());
+                            items.push(literal(t));
                         }
                     }
-                    (Cmp::In(items), String::new())
+                    PredicateOp::In(items)
                 }
                 _ => return Err(err(w, &format!("Unsupported operator {op}"))),
             };
-            predicates.push(Predicate {
-                column,
-                cmp,
-                value: value.trim_matches('\'').to_owned(),
-            });
+            conjuncts.push(Expr::Leaf(Predicate { column, op }));
             if !w.accept("AND") {
                 break;
             }
@@ -690,7 +876,7 @@ fn parse_select(w: &mut Words) -> Result<Select, ParseError> {
         columns,
         schema,
         table,
-        predicates,
+        filter: (!conjuncts.is_empty()).then_some(Expr::All(conjuncts)),
         order,
         limit,
         count_only,
@@ -903,48 +1089,271 @@ pub struct ExecError {
 
 pub const ROW_CAP: usize = 500;
 
-fn matches(pred: &Predicate, table: &Table, row: &[Value]) -> bool {
-    let Some(ci) = table
-        .columns
-        .iter()
-        .position(|c| c.name.eq_ignore_ascii_case(&pred.column))
-    else {
-        return false;
-    };
-    let v = &row[ci];
-    match &pred.cmp {
-        Cmp::IsNull => *v == Value::Null,
-        Cmp::IsNotNull => *v != Value::Null,
-        Cmp::In(items) => items.iter().any(|i| v.display().eq_ignore_ascii_case(i)),
-        Cmp::Like => {
-            let pat = pred.value.to_lowercase();
-            let s = v.display().to_lowercase();
-            let core = pat.trim_matches('%');
-            match (pat.starts_with('%'), pat.ends_with('%')) {
-                (true, true) => s.contains(core),
-                (true, false) => s.ends_with(core),
-                (false, true) => s.starts_with(core),
-                (false, false) => s == core,
+/// SQL three-valued logic. A row is kept only when its condition is `True`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Truth {
+    False,
+    Unknown,
+    True,
+}
+
+impl Truth {
+    fn from_bool(b: bool) -> Self {
+        if b { Self::True } else { Self::False }
+    }
+
+    pub fn not(self) -> Self {
+        match self {
+            Self::False => Self::True,
+            Self::True => Self::False,
+            Self::Unknown => Self::Unknown,
+        }
+    }
+
+    pub fn and(self, other: Self) -> Self {
+        match (self, other) {
+            (Self::False, _) | (_, Self::False) => Self::False,
+            (Self::Unknown, _) | (_, Self::Unknown) => Self::Unknown,
+            _ => Self::True,
+        }
+    }
+
+    pub fn or(self, other: Self) -> Self {
+        match (self, other) {
+            (Self::True, _) | (_, Self::True) => Self::True,
+            (Self::Unknown, _) | (_, Self::Unknown) => Self::Unknown,
+            _ => Self::False,
+        }
+    }
+}
+
+/// An expression with its columns resolved and its patterns compiled, ready to
+/// test every scanned row.
+#[derive(Debug)]
+pub enum Prepared {
+    All(Vec<Prepared>),
+    Any(Vec<Prepared>),
+    Not(Box<Prepared>),
+    Leaf { col: usize, test: Test },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CmpOp {
+    Eq,
+    Ne,
+    Gt,
+    Ge,
+    Lt,
+    Le,
+}
+
+/// A comparison operand, lowercased once for text comparison and parsed once
+/// for numeric comparison. Comparison and list membership both go through
+/// `compare`, so `= x` and `IN (x)` always agree.
+#[derive(Debug)]
+pub struct Operand {
+    lower: String,
+    int: Option<i64>,
+    num: Option<f64>,
+}
+
+impl Operand {
+    fn new(text: &str) -> Self {
+        Self {
+            lower: text.to_lowercase(),
+            int: text.parse::<i64>().ok(),
+            num: text.parse::<f64>().ok().filter(|n| n.is_finite()),
+        }
+    }
+
+    /// Integers compare as i64, so values past 2^53 stay distinct. Other
+    /// numeric pairs compare as f64, and anything else as lowercase text.
+    fn compare(&self, v: &Value) -> std::cmp::Ordering {
+        match (v, self.int, self.num) {
+            (Value::Int(a), Some(b), _) => a.cmp(&b),
+            (Value::Int(a), None, Some(b)) => (*a as f64).total_cmp(&b),
+            (Value::Num(a), _, Some(b)) => a.total_cmp(&b),
+            _ => v.display().to_lowercase().cmp(&self.lower),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum Test {
+    IsNull,
+    IsNotNull,
+    Cmp(CmpOp, Operand),
+    Contains(String),
+    StartsWith(String),
+    EndsWith(String),
+    Like {
+        pattern: Vec<char>,
+        case_insensitive: bool,
+    },
+    In(Vec<Operand>),
+    Regex(regex::Regex),
+}
+
+/// Compiles a filter pattern once. The message names the regex syntax error
+/// on one line, for the editor and the query error alike.
+pub fn compile_regex(pattern: &str) -> Result<regex::Regex, String> {
+    regex::Regex::new(pattern).map_err(|e| {
+        let text = e.to_string();
+        let last = text.lines().last().unwrap_or("").trim();
+        format!("invalid regular expression: {last}")
+    })
+}
+
+fn exec_error(message: String) -> ExecError {
+    ExecError {
+        message,
+        detail: None,
+        at: None,
+    }
+}
+
+/// Resolves columns and compiles patterns for one load. Errors name the first
+/// unknown column or invalid pattern.
+pub fn prepare(table: &Table, expr: &Expr) -> Result<Prepared, ExecError> {
+    Ok(match expr {
+        Expr::All(xs) => Prepared::All(
+            xs.iter()
+                .map(|x| prepare(table, x))
+                .collect::<Result<_, _>>()?,
+        ),
+        Expr::Any(xs) => Prepared::Any(
+            xs.iter()
+                .map(|x| prepare(table, x))
+                .collect::<Result<_, _>>()?,
+        ),
+        Expr::Not(x) => Prepared::Not(Box::new(prepare(table, x)?)),
+        Expr::Leaf(p) => {
+            let col = table
+                .columns
+                .iter()
+                .position(|c| c.name.eq_ignore_ascii_case(&p.column))
+                .ok_or_else(|| ExecError {
+                    message: format!("column \"{}\" does not exist", p.column),
+                    detail: Some(format!(
+                        "Columns of {}: {}",
+                        table.name,
+                        table
+                            .columns
+                            .iter()
+                            .map(|c| c.name.as_str())
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    )),
+                    at: None,
+                })?;
+            Prepared::Leaf {
+                col,
+                test: prepare_test(&p.op)?,
             }
         }
-        cmp => {
-            if *v == Value::Null {
-                return false;
+    })
+}
+
+fn prepare_test(op: &PredicateOp) -> Result<Test, ExecError> {
+    Ok(match op {
+        PredicateOp::Eq(v) => Test::Cmp(CmpOp::Eq, Operand::new(v)),
+        PredicateOp::Ne(v) => Test::Cmp(CmpOp::Ne, Operand::new(v)),
+        PredicateOp::Gt(v) => Test::Cmp(CmpOp::Gt, Operand::new(v)),
+        PredicateOp::Ge(v) => Test::Cmp(CmpOp::Ge, Operand::new(v)),
+        PredicateOp::Lt(v) => Test::Cmp(CmpOp::Lt, Operand::new(v)),
+        PredicateOp::Le(v) => Test::Cmp(CmpOp::Le, Operand::new(v)),
+        PredicateOp::IsNull => Test::IsNull,
+        PredicateOp::IsNotNull => Test::IsNotNull,
+        PredicateOp::Contains(v) => Test::Contains(v.to_lowercase()),
+        PredicateOp::StartsWith(v) => Test::StartsWith(v.to_lowercase()),
+        PredicateOp::EndsWith(v) => Test::EndsWith(v.to_lowercase()),
+        PredicateOp::Like {
+            pattern,
+            case_insensitive,
+        } => Test::Like {
+            pattern: if *case_insensitive {
+                pattern.to_lowercase()
+            } else {
+                pattern.clone()
             }
-            let ord = match (v.as_f64(), pred.value.parse::<f64>()) {
-                (Some(a), Ok(b)) => a.partial_cmp(&b).unwrap_or(std::cmp::Ordering::Equal),
-                _ => v.display().to_lowercase().cmp(&pred.value.to_lowercase()),
-            };
-            match cmp {
-                Cmp::Eq => ord.is_eq(),
-                Cmp::Ne => !ord.is_eq(),
-                Cmp::Gt => ord.is_gt(),
-                Cmp::Ge => ord.is_ge(),
-                Cmp::Lt => ord.is_lt(),
-                Cmp::Le => ord.is_le(),
-                _ => false,
-            }
+            .chars()
+            .collect(),
+            case_insensitive: *case_insensitive,
+        },
+        PredicateOp::In(items) => Test::In(items.iter().map(|i| Operand::new(i)).collect()),
+        PredicateOp::Regex(p) => Test::Regex(compile_regex(p).map_err(exec_error)?),
+    })
+}
+
+impl Prepared {
+    pub fn truth(&self, row: &[Value]) -> Truth {
+        match self {
+            Prepared::All(xs) => xs.iter().fold(Truth::True, |acc, x| acc.and(x.truth(row))),
+            Prepared::Any(xs) => xs.iter().fold(Truth::False, |acc, x| acc.or(x.truth(row))),
+            Prepared::Not(x) => x.truth(row).not(),
+            Prepared::Leaf { col, test } => test.truth(&row[*col]),
         }
+    }
+
+    pub fn admits(&self, row: &[Value]) -> bool {
+        self.truth(row) == Truth::True
+    }
+}
+
+impl Test {
+    fn truth(&self, v: &Value) -> Truth {
+        match self {
+            Test::IsNull => Truth::from_bool(*v == Value::Null),
+            Test::IsNotNull => Truth::from_bool(*v != Value::Null),
+            _ if *v == Value::Null => Truth::Unknown,
+            Test::Cmp(op, operand) => {
+                let ord = operand.compare(v);
+                Truth::from_bool(match op {
+                    CmpOp::Eq => ord.is_eq(),
+                    CmpOp::Ne => !ord.is_eq(),
+                    CmpOp::Gt => ord.is_gt(),
+                    CmpOp::Ge => ord.is_ge(),
+                    CmpOp::Lt => ord.is_lt(),
+                    CmpOp::Le => ord.is_le(),
+                })
+            }
+            Test::Contains(needle) => Truth::from_bool(v.display().to_lowercase().contains(needle)),
+            Test::StartsWith(prefix) => {
+                Truth::from_bool(v.display().to_lowercase().starts_with(prefix))
+            }
+            Test::EndsWith(suffix) => {
+                Truth::from_bool(v.display().to_lowercase().ends_with(suffix))
+            }
+            Test::Like {
+                pattern,
+                case_insensitive,
+            } => {
+                let text = if *case_insensitive {
+                    v.display().to_lowercase()
+                } else {
+                    v.display()
+                };
+                let text: Vec<char> = text.chars().collect();
+                Truth::from_bool(like_match(pattern, &text))
+            }
+            Test::In(items) => Truth::from_bool(items.iter().any(|item| item.compare(v).is_eq())),
+            Test::Regex(re) => Truth::from_bool(re.is_match(&v.display())),
+        }
+    }
+}
+
+/// SQL LIKE over characters: `%` matches any run, `_` one character, and a
+/// backslash makes the next pattern character literal.
+fn like_match(pat: &[char], s: &[char]) -> bool {
+    match pat.split_first() {
+        None => s.is_empty(),
+        Some(('%', rest)) => (0..=s.len()).any(|k| like_match(rest, &s[k..])),
+        Some(('_', rest)) => !s.is_empty() && like_match(rest, &s[1..]),
+        Some(('\\', rest)) => match rest.split_first() {
+            Some((c, after)) => s.first() == Some(c) && like_match(after, &s[1..]),
+            None => s.first() == Some(&'\\') && like_match(&[], &s[1..]),
+        },
+        Some((c, rest)) => s.first() == Some(c) && like_match(rest, &s[1..]),
     }
 }
 
@@ -981,24 +1390,7 @@ pub fn run_select(cat: &Catalog, sel: &Select) -> Result<ResultSet, ExecError> {
             at: None,
         });
     }
-    for p in &sel.predicates {
-        if table.column(&p.column).is_none() {
-            return Err(ExecError {
-                message: format!("column \"{}\" does not exist", p.column),
-                detail: Some(format!(
-                    "Columns of {}: {}",
-                    table.name,
-                    table
-                        .columns
-                        .iter()
-                        .map(|c| c.name.as_str())
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                )),
-                at: None,
-            });
-        }
-    }
+    let prepared = sel.filter.as_ref().map(|f| prepare(table, f)).transpose()?;
     if let Some((c, _)) = &sel.order
         && table.column(c).is_none()
     {
@@ -1041,7 +1433,9 @@ pub fn run_select(cat: &Catalog, sel: &Select) -> Result<ResultSet, ExecError> {
     };
     let scan = table.row_count.min(2_000);
     let mut all = crate::db::rows(table, 0, scan);
-    all.retain(|r| sel.predicates.iter().all(|p| matches(p, table, r)));
+    if let Some(p) = &prepared {
+        all.retain(|r| p.admits(r));
+    }
     if let Some((c, asc)) = &sel.order {
         let ci = table
             .columns
@@ -1054,7 +1448,7 @@ pub fn run_select(cat: &Catalog, sel: &Select) -> Result<ResultSet, ExecError> {
         });
     }
 
-    let total = if sel.predicates.is_empty() {
+    let total = if sel.filter.is_none() {
         table.row_count
     } else {
         ((all.len() as f64 / scan as f64) * table.row_count as f64).round() as usize
@@ -1090,7 +1484,9 @@ pub fn run_select(cat: &Catalog, sel: &Select) -> Result<ResultSet, ExecError> {
         rows,
         total,
         source: Some(table.qualified()),
-        duration_ms: 3 + (total.min(5_000_000) / 20_000) as u32 + sel.predicates.len() as u32 * 2,
+        duration_ms: 3
+            + (total.min(5_000_000) / 20_000) as u32
+            + sel.filter.as_ref().map_or(0, Expr::leaves) as u32 * 2,
         editable,
     })
 }
@@ -1117,29 +1513,36 @@ pub fn explain(cat: &Catalog, sel: &Select, analyze: bool) -> Result<PlanNode, E
             at: None,
         })?;
     let n = table.row_count as f64;
-    let indexed_pred = sel.predicates.iter().find(|p| {
-        table.indexes.iter().any(|i| {
-            i.columns
-                .first()
-                .is_some_and(|c| c.eq_ignore_ascii_case(&p.column))
-        })
-    });
-    let selectivity = if sel.predicates.is_empty() {
-        1.0
-    } else {
-        0.08_f64.powi(sel.predicates.len() as i32).max(0.0005)
+    let leaves = sel.filter.as_ref().map_or(0, Expr::leaves);
+    // Only a positive equality on an indexed column inside the top-level
+    // conjunction can drive an index scan. Anything under OR or NOT is a filter.
+    let conjuncts: Vec<&Expr> = match &sel.filter {
+        Some(Expr::All(xs)) => xs.iter().collect(),
+        Some(x) => vec![x],
+        None => vec![],
     };
-    let out_rows = ((n * selectivity).round() as usize).max(1);
-    let scan = if let Some(p) = indexed_pred {
-        let index = table
+    let index_hit = conjuncts.iter().enumerate().find_map(|(at, x)| match x {
+        Expr::Leaf(Predicate {
+            column,
+            op: PredicateOp::Eq(value),
+        }) => table
             .indexes
             .iter()
             .find(|i| {
                 i.columns
                     .first()
-                    .is_some_and(|c| c.eq_ignore_ascii_case(&p.column))
+                    .is_some_and(|c| c.eq_ignore_ascii_case(column))
             })
-            .unwrap();
+            .map(|index| (at, index, column, value)),
+        _ => None,
+    });
+    let selectivity = if leaves == 0 {
+        1.0
+    } else {
+        0.08_f64.powi(leaves as i32).max(0.0005)
+    };
+    let out_rows = ((n * selectivity).round() as usize).max(1);
+    let scan = if let Some((at, index, column, value)) = index_hit {
         PlanNode {
             op: "Index Scan".into(),
             relation: Some(table.qualified()),
@@ -1147,20 +1550,16 @@ pub fn explain(cat: &Catalog, sel: &Select, analyze: bool) -> Result<PlanNode, E
                 ("Index".into(), index.name.clone()),
                 (
                     "Index Cond".into(),
-                    format!("({} = '{}')", p.column, p.value),
+                    format!("({} = {})", quote_ident(column), quote_text(value)),
                 ),
             ]
             .into_iter()
             .chain(
-                sel.predicates
+                conjuncts
                     .iter()
-                    .filter(|q| q.column != p.column)
-                    .map(|q| {
-                        (
-                            "Filter".into(),
-                            format!("({} {} '{}')", q.column, cmp_sym(&q.cmp), q.value),
-                        )
-                    }),
+                    .enumerate()
+                    .filter(|(i, _)| *i != at)
+                    .map(|(_, x)| ("Filter".into(), format!("({})", x.to_sql()))),
             )
             .collect(),
             cost: (0.56, 8.4 + out_rows as f64 * 0.012),
@@ -1172,13 +1571,10 @@ pub fn explain(cat: &Catalog, sel: &Select, analyze: bool) -> Result<PlanNode, E
         }
     } else {
         let mut detail = Vec::new();
-        for q in &sel.predicates {
-            detail.push((
-                "Filter".into(),
-                format!("({} {} '{}')", q.column, cmp_sym(&q.cmp), q.value),
-            ));
+        if let Some(f) = &sel.filter {
+            detail.push(("Filter".into(), format!("({})", f.to_sql())));
         }
-        if !sel.predicates.is_empty() {
+        if sel.filter.is_some() {
             detail.push((
                 "Rows Removed by Filter".into(),
                 fmt_int((n - out_rows as f64).max(0.0) as usize),
@@ -1201,10 +1597,7 @@ pub fn explain(cat: &Catalog, sel: &Select, analyze: bool) -> Result<PlanNode, E
                 format!(
                     "sequential scan over {} rows; consider an index on {}",
                     fmt_int(table.row_count),
-                    sel.predicates
-                        .first()
-                        .map(|p| p.column.as_str())
-                        .unwrap_or("the filter column")
+                    first_column(sel.filter.as_ref()).unwrap_or("the filter column")
                 )
             }),
             children: vec![],
@@ -1293,18 +1686,11 @@ pub fn explain(cat: &Catalog, sel: &Select, analyze: bool) -> Result<PlanNode, E
     Ok(root)
 }
 
-fn cmp_sym(c: &Cmp) -> &'static str {
-    match c {
-        Cmp::Eq => "=",
-        Cmp::Ne => "<>",
-        Cmp::Gt => ">",
-        Cmp::Ge => ">=",
-        Cmp::Lt => "<",
-        Cmp::Le => "<=",
-        Cmp::Like => "~~*",
-        Cmp::IsNull => "IS NULL",
-        Cmp::IsNotNull => "IS NOT NULL",
-        Cmp::In(_) => "= ANY",
+fn first_column(e: Option<&Expr>) -> Option<&str> {
+    match e? {
+        Expr::All(xs) | Expr::Any(xs) => xs.iter().find_map(|x| first_column(Some(x))),
+        Expr::Not(x) => first_column(Some(x)),
+        Expr::Leaf(p) => Some(p.column.as_str()),
     }
 }
 
@@ -1346,6 +1732,304 @@ pub fn plan_text(node: &PlanNode, depth: usize, out: &mut Vec<String>) {
     }
     for c in &node.children {
         plan_text(c, depth + 1, out);
+    }
+}
+
+#[cfg(test)]
+mod issue10_sql_tests {
+    use super::*;
+    use crate::db::{Catalog, Table};
+    use crate::tabs::{Filter, FilterOp};
+
+    fn orders(cat: &Catalog) -> &Table {
+        cat.find(Some("public"), "orders").expect("orders fixture")
+    }
+
+    fn row_with(table: &Table, column: &str, value: Value) -> Vec<Value> {
+        let mut row = vec![Value::Null; table.columns.len()];
+        let i = table.columns.iter().position(|c| c.name == column).unwrap();
+        row[i] = value;
+        row
+    }
+
+    fn admits(table: &Table, expr: &Expr, row: &[Value]) -> bool {
+        prepare(table, expr).expect("prepares").admits(row)
+    }
+
+    fn parsed_filter(sql: &str) -> Expr {
+        match parse(sql).expect("parses") {
+            Statement::Select(sel) => sel.filter.expect("has WHERE"),
+            other => panic!("not a select: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn issue10_three_valued_connectives_follow_sql() {
+        use Truth::*;
+        assert_eq!(Unknown.not(), Unknown);
+        assert_eq!(Unknown.and(False), False);
+        assert_eq!(Unknown.and(True), Unknown);
+        assert_eq!(Unknown.or(True), True);
+        assert_eq!(Unknown.or(False), Unknown);
+        assert_eq!(False.or(False), False);
+        assert_eq!(True.and(True), True);
+    }
+
+    #[test]
+    fn issue10_null_rows_pass_only_the_null_tests() {
+        let cat = Catalog::acme_prod();
+        let table = orders(&cat);
+        let null_row = row_with(table, "notes", Value::Null);
+        for op in FilterOp::ALL {
+            let filter = Filter {
+                column: "notes".into(),
+                op,
+                value: "x".into(),
+                value2: "y".into(),
+                enabled: true,
+            };
+            let expected = op == FilterOp::IsNull;
+            assert_eq!(
+                admits(table, &filter.expression(), &null_row),
+                expected,
+                "{op:?} on NULL",
+            );
+        }
+    }
+
+    #[test]
+    fn issue10_negated_filters_do_not_admit_null() {
+        let cat = Catalog::acme_prod();
+        let table = orders(&cat);
+        let null_row = row_with(table, "notes", Value::Null);
+        let not_contains = Filter {
+            column: "notes".into(),
+            op: FilterOp::NotContains,
+            value: "gift".into(),
+            value2: String::new(),
+            enabled: true,
+        };
+        assert!(!admits(table, &not_contains.expression(), &null_row));
+    }
+
+    #[test]
+    fn issue10_contains_escapes_wildcards_and_matches_them_literally() {
+        let cat = Catalog::acme_prod();
+        let table = orders(&cat);
+        let filter = Filter {
+            column: "notes".into(),
+            op: FilterOp::Contains,
+            value: "a_b%".into(),
+            value2: String::new(),
+            enabled: true,
+        };
+        let sql = filter.to_sql();
+        assert!(sql.contains(r"\_") && sql.contains(r"\%"), "{sql}");
+        let expr = filter.expression();
+        assert!(admits(
+            table,
+            &expr,
+            &row_with(table, "notes", Value::Text("xa_b%y".into()))
+        ));
+        assert!(!admits(
+            table,
+            &expr,
+            &row_with(table, "notes", Value::Text("axbc".into()))
+        ));
+    }
+
+    #[test]
+    fn issue10_quotes_in_filter_values_are_doubled_in_sql() {
+        let filter = Filter {
+            column: "notes".into(),
+            op: FilterOp::Eq,
+            value: "O'Reilly".into(),
+            value2: String::new(),
+            enabled: true,
+        };
+        assert_eq!(filter.to_sql(), "notes = 'O''Reilly'");
+        let odd = Expr::Leaf(Predicate {
+            column: "Odd\"name".into(),
+            op: PredicateOp::IsNull,
+        });
+        assert_eq!(odd.to_sql(), r#""Odd""name" IS NULL"#);
+    }
+
+    #[test]
+    fn issue10_quoted_operand_unescapes_once() {
+        assert_eq!(literal("'O''Reilly'"), "O'Reilly");
+        assert_eq!(literal("'plain'"), "plain");
+        assert_eq!(literal("42"), "42");
+    }
+
+    #[test]
+    fn issue10_sql_like_and_ui_contains_remain_distinct() {
+        let cat = Catalog::acme_prod();
+        let table = orders(&cat);
+        let like = parsed_filter("SELECT * FROM orders WHERE notes LIKE 'a_b%'");
+        let contains = Filter {
+            column: "notes".into(),
+            op: FilterOp::Contains,
+            value: "a_b%".into(),
+            value2: String::new(),
+            enabled: true,
+        }
+        .expression();
+        let axbc = row_with(table, "notes", Value::Text("axbc".into()));
+        assert!(admits(table, &like, &axbc), "LIKE wildcard `_` matches x");
+        assert!(!admits(table, &contains, &axbc), "UI Contains is literal");
+    }
+
+    #[test]
+    fn issue10_index_scan_needs_a_positive_equality_conjunct() {
+        let cat = Catalog::acme_prod();
+        let eq = |op| {
+            Expr::Leaf(Predicate {
+                column: "customer_id".into(),
+                op,
+            })
+        };
+        let base = |filter| Select {
+            columns: vec!["*".into()],
+            schema: Some("public".into()),
+            table: "orders".into(),
+            filter: Some(filter),
+            order: None,
+            limit: None,
+            count_only: false,
+        };
+        let conjunction = base(Expr::All(vec![eq(PredicateOp::Eq("abc".into()))]));
+        let plan = explain(&cat, &conjunction, false).unwrap();
+        let mut lines = vec![];
+        plan_text(&plan, 0, &mut lines);
+        assert!(lines.iter().any(|l| l.contains("Index Scan")), "{lines:?}");
+
+        let disjunction = base(Expr::Any(vec![
+            eq(PredicateOp::Eq("abc".into())),
+            eq(PredicateOp::Eq("def".into())),
+        ]));
+        let plan = explain(&cat, &disjunction, false).unwrap();
+        let mut lines = vec![];
+        plan_text(&plan, 0, &mut lines);
+        assert!(!lines.iter().any(|l| l.contains("Index Scan")), "{lines:?}");
+    }
+
+    #[test]
+    fn issue10_invalid_pattern_is_reported_not_compiled_per_row() {
+        let cat = Catalog::acme_prod();
+        let table = orders(&cat);
+        let expr = Expr::Leaf(Predicate {
+            column: "notes".into(),
+            op: PredicateOp::Regex("(".into()),
+        });
+        let err = prepare(table, &expr).unwrap_err();
+        assert!(
+            err.message.starts_with("invalid regular expression:"),
+            "{}",
+            err.message
+        );
+    }
+
+    fn filter_on(column: &str, op: FilterOp, value: &str) -> Expr {
+        Filter {
+            column: column.into(),
+            op,
+            value: value.into(),
+            value2: String::new(),
+            enabled: true,
+        }
+        .expression()
+    }
+
+    #[test]
+    fn issue10_numeric_in_uses_the_same_equality_as_eq() {
+        let cat = Catalog::acme_prod();
+        let table = orders(&cat);
+        let row = row_with(table, "total_amount", Value::Num(25.9));
+        let eq = parsed_filter("SELECT * FROM orders WHERE total_amount = 25.9");
+        let list = parsed_filter("SELECT * FROM orders WHERE total_amount IN ('25.9')");
+        let padded = parsed_filter("SELECT * FROM orders WHERE total_amount IN ('25.90', '1')");
+        assert!(admits(table, &eq, &row), "= 25.9");
+        assert!(admits(table, &list, &row), "IN ('25.9')");
+        assert!(admits(table, &padded, &row), "IN ('25.90', '1')");
+        assert!(
+            !admits(
+                table,
+                &filter_on("total_amount", FilterOp::NotIn, "25.9"),
+                &row
+            ),
+            "NOT IN (25.9)"
+        );
+    }
+
+    #[test]
+    fn issue10_integer_comparison_stays_exact_past_2_pow_53() {
+        let cat = Catalog::acme_prod();
+        let table = orders(&cat);
+        let row = row_with(table, "order_number", Value::Int(9_007_199_254_740_993));
+        let near = "9007199254740992";
+        let same = "9007199254740993";
+        assert!(!admits(
+            table,
+            &filter_on("order_number", FilterOp::Eq, near),
+            &row
+        ));
+        assert!(admits(
+            table,
+            &filter_on("order_number", FilterOp::Eq, same),
+            &row
+        ));
+        assert!(!admits(
+            table,
+            &filter_on("order_number", FilterOp::In, near),
+            &row
+        ));
+        assert!(admits(
+            table,
+            &filter_on("order_number", FilterOp::Gt, near),
+            &row
+        ));
+    }
+
+    #[test]
+    fn issue10_ilike_ignores_case_and_like_does_not() {
+        let cat = Catalog::acme_prod();
+        let table = orders(&cat);
+        let row = row_with(table, "notes", Value::Text("gift card".into()));
+        let ilike = parsed_filter("SELECT * FROM orders WHERE notes ILIKE 'GIFT%'");
+        let like = parsed_filter("SELECT * FROM orders WHERE notes LIKE 'GIFT%'");
+        assert!(admits(table, &ilike, &row), "ILIKE matches across case");
+        assert!(!admits(table, &like, &row), "LIKE is case-sensitive");
+        assert_eq!(ilike.to_sql(), "notes ILIKE 'GIFT%'");
+        assert_eq!(like.to_sql(), "notes LIKE 'GIFT%'");
+        let lower = parsed_filter("SELECT * FROM orders WHERE notes LIKE 'gift%'");
+        assert!(admits(table, &lower, &row));
+    }
+
+    #[test]
+    fn issue10_reserved_column_names_are_quoted() {
+        for name in ["user", "only", "for", "some", "array", "window"] {
+            let leaf = Expr::Leaf(Predicate {
+                column: name.into(),
+                op: PredicateOp::IsNull,
+            });
+            assert_eq!(leaf.to_sql(), format!("\"{name}\" IS NULL"), "{name}");
+        }
+    }
+
+    #[test]
+    fn issue10_filter_text_literals_use_the_shared_model_policy() {
+        for value in ["O'Reilly", "''", "back\\slash", "100%_", "naïve ☃"] {
+            let quoted = crate::model::quote_text(value);
+            assert_eq!(
+                Ok(quoted.clone()),
+                crate::model::sql_literal(&Value::Text(value.into()))
+            );
+            assert_eq!(
+                filter_on("notes", FilterOp::Eq, value).to_sql(),
+                format!("notes = {quoted}")
+            );
+        }
     }
 }
 
