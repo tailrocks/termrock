@@ -144,6 +144,28 @@ read it against, because each of its reasons names a Fixed control.
   per-widget setting, then user key remapping.
 - A control with one true value is `Control::Fixed(Reason)` (`core::refusal`): `Checkbox`, `Select`, `Button`, one `RadioGroup` option and one `ListItem` take `.fixed(reason)` or `.control(..)`. It stays in the focus ring, draws the disabled look with the `▎` gutter when focused, and refuses an edit: the value is untouched, the widget returns `Consumed` (`Select`, `Button`: `(Consumed, ..)`) and raises the reason into a thread-local slot (`RefCell<Option<Reason>>`). The call site reads the slot with `take_refusal()` (which clears it) and posts it with `Cx::refused(Reason)`, a neutral status of the reason text alone that lasts 5 s. `shell::handle` clears the slot at the start and at the end of each input, and redraws whenever an input changed the status line (text or tone), so a refusal by key paints at once. `Cx::sticky` posts a neutral status that does not expire and clears on the next key, paste or mouse press (`StatusLine::set_sticky_with`); it is for text a user must read or copy. A `Dialog` routes its mnemonics and its confirm key through `Button::activate`, and every finish (Enter in a prompt field, the typed acknowledgement) through `Button::refuse`, so a fixed action refuses on every route and `Dialog::hints` does not offer it. A fixed `ListItem` keeps its checked state through every selection path. `Reason` limits: text 60 columns, `short` 20 (`Reason::within_limits`); `ContextMenu::reason_room` is the room of the menu border. The showcase page `fixedcontrols` shows it. `Table` rows have no fixed state yet.
 - The showcase Query workbench keeps one `CodeEditor` per document, selected by an authoritative key, not the tab strip. Record: [Query workbench document keys](audits/2026-11-15-query-workbench-document-keys.md).
+- Holla's Finder and Cleanup pages rebuild from explicit source stamps, never
+  from a per-tick full rebuild (`src/bin/holla/domain/projection.rs`). The
+  `World` owns three private epochs (catalog, cleanup, memory) and `Fs` owns
+  `content_revision()`. A mutation endpoint that really changes catalog, cleanup
+  or memory input moves its epoch once (`World::edit_catalog`, `edit_cleanup`,
+  `edit_memory` and `edit_activity` for runtime edits, and the World methods that
+  bump themselves); a no-op, output-only or clock-only change moves none. The
+  dependency table sits in the module docs. A page keeps the stamp of its last
+  complete projection (`Seen`), caches the structural catalog apart from the
+  memory decoration, and rebuilds a layer only for its own dependency. Time is a
+  separate dependency with narrow deadlines: frecency bucket changes and
+  recent-threshold crossings (`memory_deadline`), whole-day candidate ages
+  (`age_deadline`) and the Homebrew cache window refresh only what they
+  affect. Freshness labels, activity line counts and durations, and recent-row
+  ages are display text recomputed at paint (`Freshness::advanced`,
+  `catalog::activity_display`) and repaint without any rebuild. A page whose tick
+  only refreshes a projection returns `false` from `Screen::background_tick`
+  and skips hidden ticks; `enter` and paint catch it up once. `projection::work()`
+  counts catalog builds, decorations, ranks, candidate scans and cleanup row
+  builds on the calling thread; the work-budget tests read deltas of it.
+  `shell::rebuild_on_tick` stays for small callers and compares the whole view
+  on every tick.
 - The showcase demonstrates every library capability; the coverage
   gate is described in
   [shared components plan](architecture/shared-components-plan.md).
@@ -183,6 +205,15 @@ variant of these enums stays a breaking change and is recorded here.
 | `terminal::encode_key` | Ctrl and Shift on arrows, Home, End, Page, Insert, Delete and F1 to F12 now send the xterm parameter forms (`CSI 1;m X`, `CSI n;m ~`), Ctrl+Backspace sends `0x08`, and Ctrl with `@ \ ] ^ _ /` sends the C0 byte. Alt alone keeps the `ESC` prefix; Shift+Enter stays `\r`. |
 
 ## Known limits
+
+- Holla's projection caches are keyed to the mutation endpoints listed in
+  `src/bin/holla/domain/projection.rs`. A new `World` field the catalog reads
+  needs an endpoint that moves an epoch; the differential check built into
+  `FinderPage` and `CleanupPage` under `cfg(test)` (every settled paint or tick
+  compares the cache with a page built from nothing) fails a test that misses
+  one. The Homebrew provenance text counts the cache age in whole seconds, so a
+  world with a fresh Homebrew cache rebuilds the catalog once a second for the
+  first 300 simulated seconds and never again.
 
 - TablePro's SQL tokenizer (`src/bin/tablepro/sql.rs`) is total over any valid
   UTF-8 string: every token range starts and ends on a char boundary, and the

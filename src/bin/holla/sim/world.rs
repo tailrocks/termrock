@@ -8,6 +8,7 @@ use crate::domain::custom::{CustomConfig, TrustStore};
 use crate::domain::effect::Effect;
 use crate::domain::exec::Command;
 use crate::domain::plan::{Plan, PlanPhase, StepState};
+use crate::domain::projection::{CatalogStamp, CleanupStamp, ProjectionEpochs};
 use crate::domain::stack::{
     AptState, BrewState, CargoState, CleanupRecord, Container, DiskState, DockerState, GitState,
     GithubState, GradleState, MiseState, PgState, Platform, RankingMemory, SshState,
@@ -140,6 +141,8 @@ pub struct World {
     pub fs_latency: Vec<(String, u64)>,
 
     pub cleanup_job: Option<CleanupJob>,
+
+    pub(crate) epochs: ProjectionEpochs,
 }
 
 #[derive(Debug, Clone)]
@@ -281,8 +284,69 @@ impl World {
         self.activities.iter().find(|a| a.id == id)
     }
 
+    /// Raw mutable access for fixtures and tests that build a world before any
+    /// projection exists. Runtime code edits through `edit_activity` so the
+    /// projection epochs see the change.
     pub fn activity_mut(&mut self, id: &str) -> Option<&mut Activity> {
         self.activities.iter_mut().find(|a| a.id == id)
+    }
+
+    pub fn catalog_stamp(&self) -> CatalogStamp {
+        CatalogStamp {
+            catalog: self.epochs.catalog(),
+            fs: self.fs.content_revision(),
+        }
+    }
+
+    pub fn cleanup_stamp(&self) -> CleanupStamp {
+        CleanupStamp {
+            cleanup: self.epochs.cleanup(),
+            fs: self.fs.content_revision(),
+        }
+    }
+
+    pub fn memory_epoch(&self) -> u64 {
+        self.epochs.memory()
+    }
+
+    /// An explicit catalog edit transaction: the epoch moves once when `edit`
+    /// returns. Never call it from a read path or a tick that may find nothing
+    /// to do.
+    pub fn edit_catalog<R>(&mut self, edit: impl FnOnce(&mut Self) -> R) -> R {
+        let out = edit(self);
+        self.epochs.bump_catalog();
+        out
+    }
+
+    /// An edit of provider, process, platform or disk state the cleanup
+    /// candidates read. Also moves the catalog epoch, which embeds their totals.
+    pub fn edit_cleanup<R>(&mut self, edit: impl FnOnce(&mut Self) -> R) -> R {
+        let out = edit(self);
+        self.epochs.bump_cleanup();
+        out
+    }
+
+    pub fn edit_memory<R>(&mut self, edit: impl FnOnce(&mut Self) -> R) -> R {
+        let out = edit(self);
+        self.epochs.bump_memory();
+        out
+    }
+
+    /// Edits one activity and moves the catalog epoch only when the part the
+    /// catalog reads changed. Output lines and stdin are display metadata and
+    /// never bump.
+    pub fn edit_activity<R>(
+        &mut self,
+        id: &str,
+        edit: impl FnOnce(&mut Activity) -> R,
+    ) -> Option<R> {
+        let a = self.activities.iter_mut().find(|a| a.id == id)?;
+        let before = a.catalog_shape();
+        let out = edit(a);
+        if a.catalog_shape() != before {
+            self.epochs.bump_catalog();
+        }
+        Some(out)
     }
 
     pub fn plan(&self, id: &str) -> Option<&Plan> {
@@ -338,6 +402,7 @@ impl World {
         );
         a.advance(self.tick);
         self.activities.push(a);
+        self.epochs.bump_catalog();
         id
     }
 
@@ -399,6 +464,9 @@ impl World {
             members: ids.clone(),
             summarised: false,
         });
+        if !ids.is_empty() {
+            self.epochs.bump_catalog();
+        }
         ids
     }
 
@@ -410,6 +478,9 @@ impl World {
                 a.stop(tick);
                 n += 1;
             }
+        }
+        if n > 0 {
+            self.epochs.bump_catalog();
         }
         n
     }
@@ -427,6 +498,9 @@ impl World {
         let now = self.now_secs();
         self.memory.used(item, Some(&cwd), &host, now);
         self.memory.used(item, None, &host, now);
+        if self.memory.usage.enabled {
+            self.epochs.bump_memory();
+        }
     }
 
     pub fn tick(&mut self) -> Vec<Msg> {
@@ -441,6 +515,7 @@ impl World {
                 msgs.push(Msg::DiscoveryDone {
                     source: s.name.clone(),
                 });
+                self.epochs.bump_catalog();
             }
         }
         if let Some(start) = self.scan_started
@@ -464,13 +539,13 @@ impl World {
             .map(|a| a.id.clone())
             .collect();
         for id in ready {
-            if let Some(a) = self.activity_mut(&id) {
-                a.start(tick);
-            }
+            self.edit_activity(&id, |a| a.start(tick));
         }
+        let mut transitioned = false;
         for a in &mut self.activities {
             let was = a.state;
             a.advance(tick);
+            transitioned |= a.state != was;
             if was.live() && !a.state.live() {
                 let ok = a.state == ActivityState::Succeeded;
                 if ok && let Some(e) = &a.effect {
@@ -481,6 +556,9 @@ impl World {
                     ok,
                 });
             }
+        }
+        if transitioned {
+            self.epochs.bump_catalog();
         }
         for e in &effects {
             self.apply_effect(e);
@@ -617,6 +695,12 @@ impl World {
     }
 
     pub fn apply_effect(&mut self, e: &Effect) {
+        if !matches!(
+            e,
+            Effect::GitFetch(_) | Effect::AmpUpdate | Effect::OmzUpgrade
+        ) {
+            self.epochs.bump_cleanup();
+        }
         match e {
             Effect::DockerRestart(name) => {
                 if let Some(c) = self.docker.containers.iter_mut().find(|c| &c.name == name) {
@@ -878,6 +962,7 @@ impl World {
             return;
         };
         let c = self.disk.candidates.remove(i);
+        self.epochs.bump_cleanup();
         if let Some(fs) = self.disk.filesystems.first_mut() {
             fs.used_gb = fs.used_gb.saturating_sub(c.gb.round() as u32);
         }
@@ -891,6 +976,7 @@ impl World {
     }
 
     fn apply_plan_effects(&mut self, pi: usize) {
+        self.epochs.bump_cleanup();
         let plan = self.plans[pi].clone();
         let newly_succeeded = plan.unapplied_successful_step_ids();
         let ok = |id: &str| newly_succeeded.contains(id);

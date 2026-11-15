@@ -152,7 +152,7 @@ impl UsageStore {
             .stamps
             .iter()
             .map(|s| {
-                let age_days = (now_secs - s).max(0) as f64 / 86_400.0;
+                let age_days = now_secs.saturating_sub(*s).max(0) as f64 / 86_400.0;
                 0.5f64.powf(age_days / HALF_LIFE_DAYS)
             })
             .sum();

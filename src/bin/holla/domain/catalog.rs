@@ -56,13 +56,17 @@ fn freshness(w: &World, source: &str) -> Freshness {
             match source {
                 "github" => Freshness::Cached {
                     age_ms: age_ms + 40_000,
+                    observed_tick: Some(w.tick),
                 },
 
                 "children" if w.disk.partial_reason.is_some() => Freshness::Partial {
                     loaded: w.location.children.len(),
                     total: w.location.children.len() + 2,
                 },
-                _ => Freshness::Live { age_ms },
+                _ => Freshness::Live {
+                    age_ms,
+                    observed_tick: Some(w.tick),
+                },
             }
         }
     }
@@ -176,6 +180,25 @@ pub fn build(w: &World) -> Vec<Item> {
 }
 
 pub fn build_with_warnings(w: &World) -> (Vec<Item>, Vec<String>) {
+    let (items, warnings) = build_sources_with_warnings(w);
+    (
+        items.into_iter().map(|i| apply_memory(w, i)).collect(),
+        warnings,
+    )
+}
+
+/// Memory decoration of a structural catalog. The Finder caches the structural
+/// items at a source stamp and decorates them again when only memory or the
+/// clock moved, without reconstructing any provider.
+pub fn decorate(w: &World, items: &[Item]) -> Vec<Item> {
+    crate::domain::projection::record(|x| x.decorations += 1);
+    items.iter().cloned().map(|i| apply_memory(w, i)).collect()
+}
+
+/// The structural catalog: every provider contribution, deduplicated, with the
+/// warnings, before the memory decoration.
+pub fn build_sources_with_warnings(w: &World) -> (Vec<Item>, Vec<String>) {
+    crate::domain::projection::record(|x| x.catalog_builds += 1);
     let mut items: Vec<Item> = vec![];
     contribute(w, &mut items, true);
     let mut warnings = vec![];
@@ -199,10 +222,7 @@ pub fn build_with_warnings(w: &World) -> (Vec<Item>, Vec<String>) {
     for (name, why) in w.failed_sources() {
         warnings.push(format!("{name}: {why}"));
     }
-    (
-        merged.into_iter().map(|i| apply_memory(w, i)).collect(),
-        warnings,
-    )
+    (merged, warnings)
 }
 
 fn contribute(w: &World, items: &mut Vec<Item>, with_custom: bool) {
@@ -2482,6 +2502,23 @@ pub fn parse_brew_services(text: &str) -> Result<Vec<String>, String> {
     Ok(names)
 }
 
+const BREW_CACHE_TTL_SECS: i64 = 300;
+
+/// The next second at which a time-only change alters the structural catalog.
+/// The Homebrew provenance text counts the whole seconds the cache has aged
+/// until the cache expires, so it needs a catalog source rebuild each second
+/// of that window and none after it.
+pub fn source_deadline_secs(w: &World) -> Option<i64> {
+    let b = w.brew.as_ref()?;
+    if !w.tools.contains("brew") {
+        return None;
+    }
+    let c = b.cache.as_ref()?;
+    let now = w.now_secs();
+    (c.version == 1 && now.saturating_sub(c.fetched_at) <= BREW_CACHE_TTL_SECS)
+        .then(|| now.saturating_add(1))
+}
+
 pub fn brew_service_names(w: &World) -> (Result<Vec<String>, String>, String) {
     let Some(b) = &w.brew else {
         return (Err("brew is not installed".into()), "no brew".into());
@@ -2489,7 +2526,7 @@ pub fn brew_service_names(w: &World) -> (Result<Vec<String>, String>, String) {
     let now = w.now_secs();
     if let Some(c) = &b.cache
         && c.version == 1
-        && now.saturating_sub(c.fetched_at) <= 300
+        && now.saturating_sub(c.fetched_at) <= BREW_CACHE_TTL_SECS
     {
         return (
             Ok(c.services.clone()),
@@ -2945,6 +2982,7 @@ pub fn observe_process(w: &World, name: &str) -> ProcessObservation {
 }
 
 pub fn insight_candidates(w: &World) -> Vec<InsightCategory> {
+    crate::domain::projection::record(|x| x.candidate_scans += 1);
     let home = w.location.home.clone();
     let mut out = vec![];
     for cat in &cleanup::CATEGORIES {
@@ -3563,7 +3601,10 @@ fn custom_items(w: &World, out: &mut Vec<Item>) {
                     total: actions + diags,
                 }
             } else {
-                Freshness::Live { age_ms: 0 }
+                Freshness::Live {
+                    age_ms: 0,
+                    observed_tick: None,
+                }
             })
             .launch(Launch::Config {
                 path: w
@@ -3714,9 +3755,49 @@ fn file_items(w: &World, out: &mut Vec<Item>) {
     );
 }
 
+/// The time-varying text of an activity row: retained-line and drop counts and
+/// the duration. The cached catalog carries it as built; the Finder replaces it
+/// at render from the live activity, so output alone never rebuilds the catalog.
+pub struct ActivityDisplay {
+    pub summary: String,
+    pub reason: String,
+}
+
+pub fn activity_display(a: &crate::domain::activity::Activity, tick: u64) -> ActivityDisplay {
+    use crate::domain::activity::ActivityState;
+    let state = a.state.label();
+    ActivityDisplay {
+        summary: format!(
+            "{} · started by {} · {} lines retained{}",
+            state,
+            a.origin,
+            a.output.len(),
+            if a.dropped > 0 {
+                format!(" · {} dropped", a.dropped)
+            } else {
+                String::new()
+            }
+        ),
+        reason: format!(
+            "{} {state} · {}",
+            match a.state {
+                ActivityState::Running
+                | ActivityState::Detached
+                | ActivityState::Cancelling
+                | ActivityState::Queued => "⠋",
+                ActivityState::Succeeded => "✓",
+                ActivityState::Failed => "!",
+                ActivityState::Stopped => "○",
+            },
+            crate::screens::ticks_label(a.duration_ticks(tick))
+        ),
+    }
+}
+
 fn activity_items(w: &World, out: &mut Vec<Item>) {
     for a in &w.activities {
         let state = a.state.label();
+        let display = activity_display(a, w.tick);
         out.push(
             Item::new(
                 &format!("activity.{}", a.id),
@@ -3725,17 +3806,7 @@ fn activity_items(w: &World, out: &mut Vec<Item>) {
                 ResultType::Resource,
                 a.scope.clone(),
             )
-            .summary(&format!(
-                "{} · started by {} · {} lines retained{}",
-                state,
-                a.origin,
-                a.output.len(),
-                if a.dropped > 0 {
-                    format!(" · {} dropped", a.dropped)
-                } else {
-                    String::new()
-                }
-            ))
+            .summary(&display.summary)
             .exec(a.argv.clone())
             .keywords(&["activity", "running", "tab", &a.name, state])
             .group("Activities")
@@ -3748,19 +3819,7 @@ fn activity_items(w: &World, out: &mut Vec<Item>) {
                 } else {
                     Signal::Default
                 },
-                &format!(
-                    "{} {state} · {}",
-                    match a.state {
-                        crate::domain::activity::ActivityState::Running
-                        | crate::domain::activity::ActivityState::Detached
-                        | crate::domain::activity::ActivityState::Cancelling
-                        | crate::domain::activity::ActivityState::Queued => "⠋",
-                        crate::domain::activity::ActivityState::Succeeded => "✓",
-                        crate::domain::activity::ActivityState::Failed => "!",
-                        crate::domain::activity::ActivityState::Stopped => "○",
-                    },
-                    crate::screens::ticks_label(a.duration_ticks(w.tick))
-                ),
+                &display.reason,
             ),
         );
     }

@@ -221,10 +221,10 @@ impl ActivityTab {
 
     fn send(&mut self, bytes: &[u8], w: &mut World, cx: &mut Cx) -> Outcome {
         let tick = w.tick;
-        let Some(a) = w.activity_mut(&self.id) else {
+        let Some(sent) = w.edit_activity(&self.id, |a| a.send_input(bytes, tick)) else {
             return Outcome::Ignored;
         };
-        match a.send_input(bytes, tick) {
+        match sent {
             Ok(()) => {
                 if bytes == [0x03] {
                     cx.status("Sent ^C · stopping · SIGKILL follows if it lingers");
@@ -247,13 +247,13 @@ impl ActivityTab {
     }
 
     fn toggle_stream(&mut self, name: String, w: &mut World) {
-        if let Some(a) = w.activity_mut(&self.id) {
+        w.edit_activity(&self.id, |a| {
             if a.hidden_services.contains(&name) {
                 a.hidden_services.retain(|s| s != &name);
             } else {
                 a.hidden_services.push(name);
             }
-        }
+        });
     }
 
     fn follow_up(&self, label: &str, w: &World, cx: &mut Cx) {
@@ -402,13 +402,13 @@ impl ShellPage<Holla> for ActivityTab {
                 return Outcome::Changed;
             }
             if key.is_char('q') {
-                if let Some(a) = w.activity_mut(&self.id) {
+                w.edit_activity(&self.id, |a| {
                     a.state = ActivityState::Stopped;
                     a.ended_tick = Some(tick);
                     a.exit = Some(0);
                     a.output
                         .push((None, "program exited".into(), LineTone::Muted));
-                }
+                });
                 self.attached = false;
                 cx.status("Program exited · tab kept with its last screen");
                 return Outcome::Changed;
@@ -508,10 +508,10 @@ impl ShellPage<Holla> for ActivityTab {
                     .activity(&self.id)
                     .map(|a| a.name.clone())
                     .unwrap_or_default();
-                if let Some(a) = w.activity_mut(&self.id)
-                    && a.state == ActivityState::Detached
+                if w.activity(&self.id)
+                    .is_some_and(|a| a.state == ActivityState::Detached)
                 {
-                    a.state = ActivityState::Running;
+                    w.edit_activity(&self.id, |a| a.state = ActivityState::Running);
                 }
                 cx.status(format!("Attached to {tool}"));
                 return Outcome::Changed;
@@ -539,40 +539,38 @@ impl ShellPage<Holla> for ActivityTab {
                 return Outcome::Changed;
             }
             KeyCode::Char('s') if key.plain() => {
-                if let Some(a) = w.activity_mut(&self.id) {
-                    match a.state {
-                        ActivityState::Cancelling => {
-                            let since = a
-                                .cancel
-                                .as_ref()
-                                .map(|c| tick.saturating_sub(c.requested))
-                                .unwrap_or(0);
-                            cx.status(format!(
-                                "Already stopping · SIGTERM sent · SIGKILL in {}",
-                                ticks_label(KILL_AFTER_TICKS.saturating_sub(since))
-                            ));
-                        }
-                        s if s.live() => {
-                            let name = a.name.clone();
-                            a.stop(tick);
-                            cx.status(format!("Stopping {name} · SIGTERM sent · output kept"));
-                        }
-                        _ => cx.status("Already finished"),
+                w.edit_activity(&self.id, |a| match a.state {
+                    ActivityState::Cancelling => {
+                        let since = a
+                            .cancel
+                            .as_ref()
+                            .map(|c| tick.saturating_sub(c.requested))
+                            .unwrap_or(0);
+                        cx.status(format!(
+                            "Already stopping · SIGTERM sent · SIGKILL in {}",
+                            ticks_label(KILL_AFTER_TICKS.saturating_sub(since))
+                        ));
                     }
-                }
+                    s if s.live() => {
+                        let name = a.name.clone();
+                        a.stop(tick);
+                        cx.status(format!("Stopping {name} · SIGTERM sent · output kept"));
+                    }
+                    _ => cx.status("Already finished"),
+                });
                 self.input = false;
                 return Outcome::Changed;
             }
             KeyCode::Char('r') if key.plain() => {
-                if let Some(a) = w.activity_mut(&self.id) {
-                    if a.state.live() {
-                        cx.status("Still running · s stops it first");
-                        return Outcome::Changed;
-                    }
+                if w.activity(&self.id).is_some_and(|a| a.state.live()) {
+                    cx.status("Still running · s stops it first");
+                    return Outcome::Changed;
+                }
+                w.edit_activity(&self.id, |a| {
                     a.restart(tick);
                     a.advance(tick);
                     cx.status(format!("Restarted {}", a.name));
-                }
+                });
                 self.synced = 0;
                 self.synced_last = None;
                 self.view.clear();
@@ -618,9 +616,9 @@ impl ShellPage<Holla> for ActivityTab {
     fn on_paste(&mut self, text: &str, w: &mut World, _cx: &mut Cx) -> Outcome {
         if self.input {
             let tick = w.tick;
-            if let Some(a) = w.activity_mut(&self.id) {
+            w.edit_activity(&self.id, |a| {
                 let _ = a.send_input(text.as_bytes(), tick);
-            }
+            });
             return Outcome::Changed;
         }
         if let Some(q) = self.find_query.as_mut() {

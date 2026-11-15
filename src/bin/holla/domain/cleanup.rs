@@ -496,6 +496,7 @@ pub fn walk_candidates_report(
     root: &str,
     select: &dyn Fn(&str, bool) -> bool,
 ) -> (Vec<String>, Vec<String>) {
+    crate::domain::projection::record(|w| w.candidate_scans += 1);
     let mut out = vec![];
     let mut unreadable = vec![];
     walk_sel(fs, root, 0, select, &mut out, &mut unreadable);

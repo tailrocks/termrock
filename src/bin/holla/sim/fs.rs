@@ -115,6 +115,7 @@ pub struct Volume {
 pub struct Fs {
     nodes: BTreeMap<String, Node>,
     next_inode: u64,
+    content_revision: u64,
     pub trash: Vec<Trashed>,
     pub volumes: Vec<Volume>,
 
@@ -200,6 +201,16 @@ impl Fs {
         Self::default()
     }
 
+    /// Counts the mutations that changed a node. Projection caches compare it
+    /// instead of scanning the tree; a failed or no-op operation never moves it.
+    pub fn content_revision(&self) -> u64 {
+        self.content_revision
+    }
+
+    fn changed(&mut self) {
+        self.content_revision = self.content_revision.wrapping_add(1);
+    }
+
     fn alloc(&mut self) -> u64 {
         self.next_inode += 1;
         self.next_inode
@@ -256,6 +267,7 @@ impl Fs {
             node.inode = self.alloc();
         }
         self.nodes.insert(node.path.clone(), node);
+        self.changed();
     }
 
     pub fn dir(&mut self, path: &str, age_days: i64) -> &mut Self {
@@ -296,8 +308,11 @@ impl Fs {
         age_days: i64,
     ) -> &mut Self {
         self.file(path, apparent, age_days);
-        if let Some(n) = self.nodes.get_mut(path) {
+        if let Some(n) = self.nodes.get_mut(path)
+            && n.allocated != allocated
+        {
             n.allocated = allocated;
+            self.changed();
         }
         self
     }
@@ -306,6 +321,7 @@ impl Fs {
         self.file(path, text.len() as u64, age_days);
         if let Some(n) = self.nodes.get_mut(path) {
             n.content = Content::Text(text.into());
+            self.changed();
         }
         self
     }
@@ -314,6 +330,7 @@ impl Fs {
         self.file(path, bytes.len() as u64, age_days);
         if let Some(n) = self.nodes.get_mut(path) {
             n.content = Content::Bytes(bytes);
+            self.changed();
         }
         self
     }
@@ -372,20 +389,27 @@ impl Fs {
             n.path = path.into();
             self.ensure_parents(path);
             self.nodes.insert(path.into(), n);
+            self.changed();
         }
         self
     }
 
     pub fn unreadable(&mut self, path: &str) -> &mut Self {
-        if let Some(n) = self.nodes.get_mut(path) {
+        if let Some(n) = self.nodes.get_mut(path)
+            && n.readable
+        {
             n.readable = false;
+            self.changed();
         }
         self
     }
 
     pub fn dataless(&mut self, path: &str) -> &mut Self {
-        if let Some(n) = self.nodes.get_mut(path) {
+        if let Some(n) = self.nodes.get_mut(path)
+            && !n.dataless
+        {
             n.dataless = true;
+            self.changed();
         }
         self
     }
@@ -402,7 +426,11 @@ impl Fs {
 
     pub fn touch(&mut self, path: &str, age_days: i64) {
         if let Some(n) = self.nodes.get_mut(path) {
-            n.mtime = EPOCH_SECS - age_days * 86_400;
+            let mtime = EPOCH_SECS - age_days * 86_400;
+            if n.mtime != mtime {
+                n.mtime = mtime;
+                self.changed();
+            }
         }
     }
 
@@ -853,6 +881,7 @@ impl Fs {
         match node.kind {
             NodeKind::Symlink { .. } => {
                 self.nodes.remove(path);
+                self.changed();
                 Ok(0)
             }
             NodeKind::Dir => {
@@ -866,10 +895,12 @@ impl Fs {
                     self.nodes.remove(&p);
                 }
                 self.nodes.remove(path);
+                self.changed();
                 Ok(bytes)
             }
             _ => {
                 self.nodes.remove(path);
+                self.changed();
                 Ok(node.allocated)
             }
         }
