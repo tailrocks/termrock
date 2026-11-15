@@ -9,6 +9,7 @@ mod common;
 
 mod data_shape;
 mod grid_validation;
+mod keyed_collections;
 mod keyed_costs;
 mod response_batches;
 mod smoke;
