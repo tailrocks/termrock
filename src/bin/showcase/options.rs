@@ -1081,6 +1081,11 @@ pub static FOCUS_NAV: &[Opt] = &[
         "Tab in a field",
         &["moves", "stays"],
     ),
+    Opt::new(
+        "focusnavigation.focus_visible",
+        "Focus ring",
+        &["always", "keyboard-only"],
+    ),
 ];
 
 pub static MENUS: &[Opt] = &[
