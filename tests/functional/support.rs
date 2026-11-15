@@ -25,6 +25,9 @@ pub const HOLLA: &str = match option_env!("CARGO_BIN_EXE_holla") {
     None => "",
 };
 const TIMEOUT: Duration = Duration::from_secs(10);
+// A quitting app flushes state and restores the terminal, so under load it
+// needs more than a screen wait.
+const EXIT_TIMEOUT: Duration = Duration::from_secs(20);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Point {
@@ -399,6 +402,76 @@ impl App {
         })
     }
 
+    /// Wait until `find` locates a point on the screen, then return it.
+    ///
+    /// Use it in place of a one-shot `screen()` lookup, which fails when the
+    /// frame that holds the target is still being painted.
+    pub fn wait_point(
+        &self,
+        reason: &str,
+        find: impl Fn(&TerminalSnapshot) -> Option<Point>,
+    ) -> Point {
+        let found = RefCell::new(None);
+        self.wait_screen(reason, |screen| {
+            *found.borrow_mut() = find(screen);
+            found.borrow().is_some()
+        });
+        found
+            .into_inner()
+            .expect("wait_screen returned with a point")
+    }
+
+    /// The point two columns into the one `label` whose row `row_ok`
+    /// accepts. It waits for that row to be painted.
+    pub fn wait_button(&self, label: &str, row_ok: impl Fn(&str) -> bool) -> Point {
+        self.wait_point(&format!("one button {label:?}"), |screen| {
+            let hits: Vec<_> = find_all(screen, label)
+                .into_iter()
+                .filter(|point| row_ok(&row_text(screen, u32::from(point.y))))
+                .collect();
+            (hits.len() == 1).then(|| Point {
+                x: hits[0].x + 2,
+                y: hits[0].y,
+            })
+        })
+    }
+
+    /// Press `key` until `reached` accepts the screen.
+    ///
+    /// After each press it waits for `watch(screen)` to change or for
+    /// `reached` to hold. The wait ends on that state, not on a short
+    /// deadline, so a loaded machine slows the walk and cannot cut it off. A
+    /// press that moves nothing within the harness timeout is a dead end and
+    /// fails with the screen. `max_presses` bounds a walk that keeps moving
+    /// without arriving.
+    pub fn press_until<W: PartialEq>(
+        &self,
+        key: &str,
+        goal: &str,
+        max_presses: usize,
+        watch: impl Fn(&TerminalSnapshot) -> W,
+        reached: impl Fn(&TerminalSnapshot) -> bool,
+    ) -> TerminalSnapshot {
+        for _ in 0..max_presses {
+            let screen = self.screen();
+            if reached(&screen) {
+                return screen;
+            }
+            let before = watch(&screen);
+            self.key(key);
+            self.wait_screen(&format!("{key} moves toward {goal}"), |screen| {
+                reached(screen) || watch(screen) != before
+            });
+        }
+        let screen = self.screen();
+        assert!(
+            reached(&screen),
+            "never reached {goal} with {max_presses} x {key}\n{}",
+            text(&screen)
+        );
+        screen
+    }
+
     pub fn wait_absent(&self, needle: &str) -> TerminalSnapshot {
         self.wait_screen(&format!("absent {needle}"), |screen| {
             !text(screen).contains(needle)
@@ -516,6 +589,20 @@ impl App {
             .expect("resize PTY");
     }
 
+    /// Wait for the child to exit. The wait ends on the exit itself, so only
+    /// an app that never quits runs out the budget.
+    pub fn wait_exit(&self, reason: &str) {
+        let deadline = Instant::now() + EXIT_TIMEOUT;
+        while self.child_running() {
+            assert!(
+                Instant::now() < deadline,
+                "{reason}\n{}",
+                text(&self.screen())
+            );
+            std::thread::sleep(Duration::from_millis(25));
+        }
+    }
+
     pub fn finish(&self) {
         self.assert_running("before Ctrl+Q");
         self.key("ctrl+q");
@@ -570,15 +657,7 @@ impl App {
                 name: "KILL".to_string(),
             })
             .expect("kill child");
-        let deadline = Instant::now() + Duration::from_secs(2);
-        while self.child_running() {
-            assert!(
-                Instant::now() < deadline,
-                "child survived Session::kill {}",
-                self.directory.display()
-            );
-            std::thread::sleep(Duration::from_millis(20));
-        }
+        self.wait_exit("child survived Session::kill");
     }
 
     fn assert_running(&self, reason: &str) {

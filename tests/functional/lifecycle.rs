@@ -1,6 +1,5 @@
 use std::io::Write;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::{Duration, Instant};
 
 use junie_tui::runtime::TerminalSession;
 use ratatui::crossterm::event::{self, Event, KeyCode};
@@ -197,15 +196,7 @@ fn launch_session_child(name: &str, test: &str, mode: &str) -> App {
 }
 
 fn await_exit(app: &App) {
-    let deadline = Instant::now() + Duration::from_secs(10);
-    while app.child_running() {
-        assert!(
-            Instant::now() < deadline,
-            "child did not exit\n{}",
-            text(&app.screen())
-        );
-        std::thread::sleep(Duration::from_millis(20));
-    }
+    app.wait_exit("child did not exit");
     app.assert_restored_exit();
 }
 

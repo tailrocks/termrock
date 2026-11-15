@@ -4,8 +4,6 @@
 //! `pre_refactor/t03_cancelled/` and each checkpoint's dots become underscores.
 //! TablePro has no `--page` flag. It opens on Connections.
 
-use std::time::{Duration, Instant};
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{App, Launch, TABLEPRO, find_all, row_text, text, try_launch};
@@ -231,14 +229,7 @@ fn quit_unsaved(app: &App) {
     see(&quit, &["unsaved", "Quit"], &["Query history"]);
     app.key("right");
     app.key("enter");
-    let deadline = Instant::now() + Duration::from_secs(5);
-    while app.child_running() {
-        assert!(
-            Instant::now() < deadline,
-            "tablepro stayed up after confirming quit"
-        );
-        std::thread::sleep(Duration::from_millis(25));
-    }
+    app.wait_exit("tablepro stayed up after confirming quit");
     app.expect_exited(0);
 }
 

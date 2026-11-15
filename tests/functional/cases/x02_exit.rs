@@ -9,7 +9,7 @@
 //! only while the process is still running.
 
 use std::path::PathBuf;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use tui_test::TerminalSnapshot;
 use tuiscotti_latest::check::CheckOutcome;
@@ -112,12 +112,7 @@ fn focused(screen: &TerminalSnapshot, label: &str) -> bool {
 }
 
 fn await_exit(app: &App, reason: &str) {
-    let deadline = Instant::now() + Duration::from_secs(8);
-    while app.child_running() {
-        let visible = text(&app.screen());
-        assert!(Instant::now() < deadline, "{reason}\n{visible}");
-        std::thread::sleep(Duration::from_millis(25));
-    }
+    app.wait_exit(reason);
     app.expect_exited(0);
 }
 
