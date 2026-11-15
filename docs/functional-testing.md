@@ -387,8 +387,15 @@ cargo nextest run --workspace --no-tests fail --profile functional
 The profile selects only the non-ignored functional target, so a missing
 target fails (`--no-tests fail`) instead of passing empty. Failures retain
 `target/functional` and `target/nextest/functional` for fourteen days. The
-harness writes an ordered action trace, text and full-cell JSON checkpoints,
-and final screen evidence.
+harness writes an ordered action trace, a text checkpoint for every wait, and
+final screen evidence. Full-cell JSON is the costly part (about 1.1 MB and
+tens of milliseconds of serialization per checkpoint), so a failing test writes
+it for its latest 16 checkpoints, and a passing test writes none (`last.json`
+still holds the final frame). Each
+checkpoint's line in the action trace carries a hash of its cells, so a text
+checkpoint without JSON can still be matched to a frame. A run that is killed
+for a timeout never reaches the failure write and keeps only the text
+checkpoints and the action trace.
 
 `finish()` asserts a live child before Ctrl+Q, exit code zero without a
 termination signal, and restored terminal modes. `Drop` still closes the
