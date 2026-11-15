@@ -1626,31 +1626,47 @@ fn form_toggle_hides_an_open_driver_popup_and_keeps_its_choice() {
     click_page(&app, "Add connection");
     app.wait_text("Test connection");
 
+    // Commit a new choice first, so a choice lost or reset by the hide shows
+    // on the Driver value row after the reveal.
     app.key("tab");
     app.key("enter");
     let popup = app.wait_text("SQLite");
     see(&popup, &["MySQL", "PostgreSQL"], &[]);
+    app.key("down");
+    app.key("enter");
+    app.wait_absent("SQLite");
+    let chosen = app.settle();
+    let value = line_after(&chosen, "Driver");
+    assert!(
+        value.contains("MySQL") && value.contains('▾'),
+        "MySQL is chosen: {value:?}\n{}",
+        text(&chosen)
+    );
+
+    app.key("enter");
+    let popup = app.wait_text("SQLite");
+    see(&popup, &["MySQL", "PostgreSQL", "SQLite"], &[]);
 
     app.key("ctrl+d");
-    app.wait_absent("MySQL");
+    app.wait_absent("SQLite");
     let hidden = app.settle();
-    see(
-        &hidden,
-        &["Host"],
-        &["SQLite", "Driver", "PostgreSQL", "Form · Changed"],
-    );
+    see(&hidden, &["Host"], &["SQLite", "Driver", "PostgreSQL"]);
 
     app.key("ctrl+d");
-    // PostgreSQL is absent while the field is hidden, so waiting for it syncs
-    // on the reveal. A popup that survived the hide paints on that frame or
-    // just after it, so settle before looking.
-    app.wait_text("PostgreSQL");
+    // Driver is absent while the field is hidden, so waiting for it syncs on
+    // the reveal. A popup that survived the hide paints on that frame or just
+    // after it, so settle before looking.
+    app.wait_text("Driver");
     let shown = app.settle();
-    see(
-        &shown,
-        &["Driver", "PostgreSQL", "▾"],
-        &["MySQL", "SQLite", "▴", "Form · Changed"],
+    // The chevron is read on the Driver value row. The nav row "▾ Overlays"
+    // always shows one, so a whole-screen check would pass on any frame.
+    let value = line_after(&shown, "Driver");
+    assert!(
+        value.contains("MySQL") && value.contains('▾') && !value.contains('▴'),
+        "Driver keeps MySQL and shows the closed chevron: {value:?}\n{}",
+        text(&shown)
     );
+    see(&shown, &["Driver"], &["SQLite", "PostgreSQL"]);
     close_to_page(&app);
     app.finish();
 }

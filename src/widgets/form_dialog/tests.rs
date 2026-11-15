@@ -476,6 +476,10 @@ fn form_hidden_focus_falls_back_and_escape_works() {
     let mut rig = Rig::with(source_form());
     rig.edit_secret();
     rig.form.set_visible("secret", false);
+    assert!(
+        !rig.input("secret").editing && !rig.input("secret").field.pressed(),
+        "hiding ended the edit session"
+    );
     assert_eq!(
         rig.focus.current(),
         Some(secret()),
@@ -492,6 +496,19 @@ fn form_hidden_focus_falls_back_and_escape_works() {
         rig.focus.current(),
         Some(driver()),
         "focus moved to the next visible field"
+    );
+
+    // The revealed field holds no session, so Escape dismisses the form
+    // instead of rolling the field back and keeping it open.
+    rig.form.events.clear();
+    rig.form.set_visible("secret", true);
+    rig.draw();
+    assert!(!rig.input("secret").editing, "no restored edit session");
+    rig.key(secret(), KeyCode::Esc);
+    assert_eq!(
+        rig.form.events,
+        vec![FormAction::Cancel],
+        "Escape on the revealed field dismisses the form"
     );
 
     let mut rig = Rig::with(source_form());
