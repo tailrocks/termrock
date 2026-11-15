@@ -178,8 +178,15 @@ impl DocView<'_> {
         self.document.install(result);
     }
 
+    /// Whether the editor takes `ev`: input on it or on its open edit menu.
+    /// Anything else, such as a click in the results, is view-only.
+    fn editor_claims(&self, ev: &PointerEvent) -> bool {
+        ev.on(self.document.editor.id) || self.document.editor.edit_menu.owns(ev)
+    }
+
     /// A wheel gesture over the editor. It scrolls; any other pointer input
-    /// can open the edit menu and goes through [`DocumentWorkspace::update`].
+    /// the editor takes can open the edit menu and goes through
+    /// [`DocumentWorkspace::update`].
     fn editor_wheel(&mut self, ev: &PointerEvent) -> Option<Outcome> {
         ev.wheel()?;
         self.document.editor.route(ev).map(|r| r.outcome())
@@ -1308,11 +1315,17 @@ impl QueryWorkbenchPage {
                     .view_mut(key)
                     .ok()
                     .and_then(|mut view| view.editor_wheel(ev))
-            } else {
+            } else if self
+                .workspace
+                .view_mut(key)
+                .is_ok_and(|view| view.editor_claims(ev))
+            {
                 self.workspace
                     .update(key, |doc| doc.editor.route(ev).map(|r| r.outcome()))
                     .ok()
                     .and_then(|(outcome, _)| outcome)
+            } else {
+                None
             };
             if let Some(outcome) = routed {
                 if click && ev.bar.is_none() {
