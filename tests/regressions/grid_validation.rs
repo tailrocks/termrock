@@ -767,7 +767,10 @@ fn issue48_unchanged_num_roundtrips() {
             let (_, action) = match finish {
                 "enter" => press(&mut grid, KeyCode::Enter),
                 "tab" => press(&mut grid, KeyCode::Tab),
-                _ => grid.on_blur(),
+                _ => grid
+                    .on_blur()
+                    .try_into_single()
+                    .expect("at most one action"),
             };
             assert!(
                 !matches!(action, Some(GridAction::CellChanged { .. })),
@@ -944,11 +947,12 @@ fn issue48_custom_parser_still_runs() {
             }
             default_validator(spec, text)
         });
-        grid.set_rows(GridRows {
+        grid.try_set_rows(GridRows {
             rows: vec![vec![CellValue::Num(1.2345)]],
             total: RowTotal::Unknown,
             more: false,
-        });
+        })
+        .unwrap();
         grid
     };
 
@@ -980,11 +984,12 @@ fn issue48_literal_reserved_words_require_explicit_parser() {
     let literal = |_: &ColumnSpec, s: &str| Ok(CellValue::Text(s.to_owned()));
     for word in ["NULL", "DEFAULT"] {
         let mut grid = DataGrid::new(WidgetId::of("t.grid"), vec![text.clone()]).validator(literal);
-        grid.set_rows(GridRows {
+        grid.try_set_rows(GridRows {
             rows: vec![vec![CellValue::Text(word.into())]],
             total: RowTotal::Unknown,
             more: false,
-        });
+        })
+        .unwrap();
         press(&mut grid, KeyCode::Enter);
         press(&mut grid, KeyCode::Enter);
         assert_eq!(*grid.value(0, 0), CellValue::Text(word.into()));
