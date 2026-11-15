@@ -24,9 +24,7 @@ use junie_tui::widgets::props::{self, Prop};
 const ID: WidgetId = WidgetId::of("inputs");
 
 fn email(s: &str) -> Option<String> {
-    if s.is_empty() {
-        Some("Required".into())
-    } else if !s.contains('@') || !s.contains('.') {
+    if !s.contains('@') || !s.contains('.') {
         Some("Enter a valid email address".into())
     } else {
         None
