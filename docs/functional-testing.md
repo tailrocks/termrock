@@ -337,7 +337,7 @@ wait for:
   until `reached` accepts the screen. After each press it waits for
   `watch(screen)` to change, so a slow application is waited for, not
   pressed again. A press that moves nothing fails with the screen.
-- `App::wait_point` and `App::wait_button` locate a target on the screen once
+- `App::wait_point` and `support::button` locate a target on the screen once
   it is painted, in place of a one-shot `screen()` lookup.
 - `App::wait_exit` waits for the child to quit.
 

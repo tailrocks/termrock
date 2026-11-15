@@ -11,7 +11,7 @@ use std::time::{Duration, Instant};
 use tui_test::TerminalSnapshot;
 
 use crate::support::{
-    App, JACKIN, Launch, Point, SessionMode, file_sha256, reference_binary_from,
+    App, JACKIN, Launch, Point, SessionMode, button, file_sha256, reference_binary_from,
     reference_digest_from, row_text, text, try_launch,
 };
 
@@ -272,10 +272,6 @@ fn focus_key(app: &App, key: &str) {
         return;
     }
     step_until(app, "down", key);
-}
-
-fn button(app: &App, label: &str, row_ok: impl Fn(&str) -> bool) -> Point {
-    app.wait_button(label, row_ok)
 }
 
 fn preview_save(app: &App) -> Point {
