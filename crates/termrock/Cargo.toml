@@ -1,0 +1,15 @@
+[package]
+name = "termrock"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+license = "MIT"
+
+[features]
+default = []
+cli = ["junie-tui/cli"]
+terminal = ["junie-tui/terminal"]
+product = ["terminal", "junie-tui/product"]
+
+[dependencies]
+junie-tui = { path = "../..", version = "0.1.0", default-features = false }
