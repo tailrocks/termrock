@@ -10,100 +10,43 @@
 //! ```
 
 use junie_tui::core::event::{Input, Mouse, MouseKind};
-use junie_tui::metrics::report::ScenarioReport;
-use junie_tui::metrics::{Metric, WorkDelta, measure};
+use junie_tui::metrics::harness::{Harness, assert_exact};
+use junie_tui::metrics::{Metric, measure};
 use junie_tui::motion::Motion;
 use junie_tui::theme::{ColorLevel, Theme};
-use ratatui::Terminal;
-use ratatui::backend::TestBackend;
 use ratatui::layout::Position;
 
 use crate::app::{App, PageId};
 
 const VIEWPORT: (u16, u16) = (140, 44);
 
-struct Fixture {
-    app: App,
-    term: Terminal<TestBackend>,
+fn fixture(page: PageId) -> Harness<App> {
+    let mut app = App::with_motion(Theme::for_level(ColorLevel::TrueColor), Motion::Paused, 0);
+    app.open_page(page);
+    let mut f = Harness::new(app, VIEWPORT);
+    f.warm(30);
+    f
 }
 
-impl Fixture {
-    fn on(page: PageId) -> Self {
-        let mut app = App::with_motion(Theme::for_level(ColorLevel::TrueColor), Motion::Paused, 0);
-        app.open_page(page);
-        let term = Terminal::new(TestBackend::new(VIEWPORT.0, VIEWPORT.1)).expect("test terminal");
-        let mut f = Self { app, term };
-        for _ in 0..30 {
-            f.tick();
-        }
-        f
-    }
-
-    fn tick(&mut self) {
-        junie_tui::shell::handle(&mut self.app, Input::Tick);
-        self.draw();
-    }
-
-    fn draw(&mut self) {
-        self.term
-            .draw(|frame| junie_tui::shell::render(&mut self.app, frame))
-            .expect("test backend draws");
-    }
-
-    fn click_text(&mut self, text: &str) {
-        let screen = self.screen();
-        let (y, line) = screen
-            .lines()
-            .enumerate()
-            .find(|(_, l)| l.contains(text))
-            .unwrap_or_else(|| panic!("{text} not on screen:\n{screen}"));
-        let x = line[..line.find(text).expect("found")].chars().count();
-        for kind in [MouseKind::Down, MouseKind::Up] {
-            junie_tui::shell::handle(
-                &mut self.app,
-                Input::Mouse(Mouse::new(kind, Position::new(x as u16 + 1, y as u16))),
-            );
-            self.draw();
-        }
-    }
-
-    fn screen(&self) -> String {
-        let buf = self.term.backend().buffer();
-        buf.content()
-            .chunks(buf.area.width as usize)
-            .map(|row| row.iter().map(|c| c.symbol()).collect::<String>())
-            .collect::<Vec<_>>()
-            .join("\n")
+fn click_text(f: &mut Harness<App>, text: &str) {
+    let screen = f.screen();
+    let (y, line) = screen
+        .lines()
+        .enumerate()
+        .find(|(_, l)| l.contains(text))
+        .unwrap_or_else(|| panic!("{text} not on screen:\n{screen}"));
+    let x = line[..line.find(text).expect("found")].chars().count();
+    for kind in [MouseKind::Down, MouseKind::Up] {
+        f.send(Input::Mouse(Mouse::new(
+            kind,
+            Position::new(x as u16 + 1, y as u16),
+        )));
     }
 }
 
-fn report(
-    scenario: &'static str,
-    operation: &'static str,
-    record_count: usize,
-    work: WorkDelta,
-    oracle: &str,
-) {
-    ScenarioReport {
-        scenario,
-        operation,
-        record_count,
-        viewport: VIEWPORT,
-        work,
-        correctness_oracle: oracle.to_owned(),
-    }
-    .write()
-    .expect("write the count report");
-}
-
-fn within(w: &WorkDelta, what: &str, budgets: &[(Metric, u64)]) {
-    if let Err(violations) = w.check_budget(budgets) {
-        panic!("{what}: {violations}");
-    }
-}
 #[test]
 fn work_contract_showcase_idle_and_switch() {
-    let mut f = Fixture::on(PageId::QueryWorkbench);
+    let mut f = fixture(PageId::QueryWorkbench);
     let before = f.screen();
     assert!(before.contains("Query 1") && before.contains("customers"));
     assert!(
@@ -120,7 +63,7 @@ fn work_contract_showcase_idle_and_switch() {
         before,
         "a settled tick leaves the frame unchanged"
     );
-    within(
+    assert_exact(
         &idle,
         "query workbench settled tick",
         &[
@@ -129,7 +72,7 @@ fn work_contract_showcase_idle_and_switch() {
             (Metric::TextBytesMeasured, 1_851),
         ],
     );
-    report(
+    f.report(
         "showcase_query_workbench",
         "settled_tick",
         2,
@@ -138,14 +81,14 @@ fn work_contract_showcase_idle_and_switch() {
     );
 
     // Pointer down and up on the second tab, each followed by a frame.
-    let ((), switch) = measure(|| f.click_text("customers"));
+    let ((), switch) = measure(|| click_text(&mut f, "customers"));
     let after = f.screen();
     assert!(
         after.contains("FROM customers"),
         "the customers document is active"
     );
     assert!(!after.contains("FROM orders"));
-    within(
+    assert_exact(
         &switch,
         "document switch (two frames)",
         &[
@@ -154,7 +97,7 @@ fn work_contract_showcase_idle_and_switch() {
             (Metric::TextBytesMeasured, 3_099),
         ],
     );
-    report(
+    f.report(
         "showcase_query_workbench",
         "switch_document",
         2,
@@ -162,7 +105,7 @@ fn work_contract_showcase_idle_and_switch() {
         "the editor shows the customers query after the click",
     );
 
-    let mut g = Fixture::on(PageId::Finder);
+    let mut g = fixture(PageId::Finder);
     let before = g.screen();
     let ((), finder) = measure(|| g.tick());
     assert_eq!(
@@ -172,7 +115,7 @@ fn work_contract_showcase_idle_and_switch() {
     );
     // The Finder page paints a detail card that sizes itself in a scratch
     // buffer on every frame: 1440 cells allocated per frame today.
-    within(
+    assert_exact(
         &finder,
         "finder settled tick",
         &[
@@ -182,7 +125,7 @@ fn work_contract_showcase_idle_and_switch() {
             (Metric::TextBytesMeasured, 1_219),
         ],
     );
-    report(
+    f.report(
         "showcase_finder",
         "settled_tick",
         crate::pages::finder::ACTION_COUNT,
@@ -199,7 +142,7 @@ fn work_contract_showcase_idle_and_switch() {
         before,
         "the Query workbench option is not on the Finder page"
     );
-    within(
+    assert_exact(
         &unrelated,
         "unrelated page option then tick",
         &[
@@ -209,7 +152,7 @@ fn work_contract_showcase_idle_and_switch() {
             (Metric::TextBytesMeasured, 1_219),
         ],
     );
-    report(
+    f.report(
         "showcase_finder",
         "irrelevant_option_change_then_tick",
         crate::pages::finder::ACTION_COUNT,

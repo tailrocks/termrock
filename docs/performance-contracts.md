@@ -58,10 +58,17 @@ apps:
 | `work_contract_showcase_idle_and_switch` | `src/bin/showcase/work_metrics_tests.rs` |
 | `work_contract_jackin_idle_and_roster_update`, `work_contract_jackin_capsule_idle_frame` | `apps/jackin/tests/regressions/work_budgets.rs` |
 
-A budget is a ceiling for each listed metric and zero for every metric that is
-not listed. Each ceiling equals the count measured when the test was written.
-A ceiling that records today's behaviour of an unfixed path says so beside its
-constant. Lowering it when the owning issue lands is the intended change.
+The app tests check each scenario with `assert_exact`: every listed metric must
+equal its measured count and every unlisted metric must be zero. A ceiling
+cannot tell a deleted counter from cheap work, so an exact count is the default
+for a measured fact, and a counter that stops recording fails its test. The
+library tests in `tests/regressions/work_budgets.rs` use ceilings
+(`WorkDelta::check_budget`) where a number is a bound. A count that records
+today's behaviour of an unfixed path says so beside it. Lowering it when the
+owning issue lands is the intended change.
+
+The app tests share `junie_tui::metrics::harness::Harness`, which drives an
+`Application` through its real input and render path and writes the report.
 
 ### Measured counts
 
@@ -94,7 +101,7 @@ list, table, grid and tree widget in the frame.
 | Jackin roster | unrelated workspace policy, then tick | same | same as the settled tick |
 | Jackin roster | workspace rename, then tick | same | width bytes 1,571 instead of 1,531 |
 | Jackin capsule | settled tick | 2 daemons | scheduling records 2, polls 6, width calls 158, width bytes 1,476; segmented 0, reflowed 0, index rebuilds 0, payload bytes cloned 0 |
-| Jackin capsule | one typed key, then the frame | same | payload bytes cloned 0, segmented 0 |
+| Jackin capsule | one typed key, then the frame | same | width calls 146, width bytes 1,416; segmented 0, reflowed 0, index rebuilds 0, payload bytes cloned 0 |
 
 ### What these counts say
 
@@ -122,13 +129,25 @@ simulated-transport budgets, `Picker`, `Select`, `Completion`, `CodeEditor`,
 `SourceRowsRead`, `IdentityComparisons` and `AnnotationQueries` family of
 metrics.
 
+Also unmet, and absent from every scenario above:
+
+- No test shows that a background tab or page projection that is irrelevant to
+  a change does not rebuild. The idle and unrelated-change scenarios measure
+  the focused page only.
+- Jackin has no account-update scenario.
+- Holla's batch summary loop and `tick_plan` are not counted. A Holla
+  scheduling count covers the activity and plan traversal only, so a zero or a
+  steady count there says nothing about batches or the work inside a plan.
+
 ## Reports
 
 Each budget test also writes a count-only JSON report to
 `<target dir>/performance/<scenario>-<operation>-<records>.json`. A report
 lists every metric, zeros included, and states `instrumentation_enabled`, the
 calling-thread scope, `"timing": "not measured"` and the correctness oracle the
-test checked. It has no timing fields.
+test checked. It has no timing fields. A report is written to a temp file in
+the same directory and renamed into place, so concurrent writers of one
+scenario never leave a truncated file.
 
 ## Commands
 

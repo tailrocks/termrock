@@ -419,18 +419,15 @@ fn work_contract_tree_filtered_rebuild() {
 #[test]
 fn work_report_is_count_only_json_with_every_metric() {
     let work = measure(|| junie_tui::record_work!(SegmentedLines, 3usize)).1;
-    let path = ScenarioReport {
+    let report = ScenarioReport {
         scenario: "report_shape",
         operation: "one_count",
         record_count: 3,
         viewport: (100, 30),
         work,
         correctness_oracle: "quoted \"text\" with a \\ and a newline\n".to_owned(),
-    }
-    .write()
-    .expect("write");
-    let parsed: serde_json::Value =
-        serde_json::from_str(&std::fs::read_to_string(path).expect("read")).expect("valid JSON");
+    };
+    let parsed: serde_json::Value = serde_json::from_str(&report.to_json()).expect("valid JSON");
 
     assert_eq!(parsed["schema_version"], 1);
     assert_eq!(parsed["instrumentation_enabled"], true);
@@ -448,4 +445,76 @@ fn work_report_is_count_only_json_with_every_metric() {
     for key in ["median_ns", "p95_ns", "samples"] {
         assert!(parsed.get(key).is_none(), "{key} would be a timing claim");
     }
+}
+
+#[test]
+fn work_report_concurrent_writers_leave_one_whole_report() {
+    use std::path::PathBuf;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    let dir = std::path::Path::new(env!("CARGO_TARGET_TMPDIR")).join("work-report-race");
+    let _ = std::fs::remove_dir_all(&dir);
+    let reports: Vec<ScenarioReport> = (0..8u64)
+        .map(|n| ScenarioReport {
+            scenario: "race",
+            operation: "same_path",
+            record_count: 1,
+            viewport: (100, 30),
+            work: WorkDelta([n; Metric::ALL.len()]),
+            correctness_oracle: format!("writer {n} {}", "x".repeat(4_096)),
+        })
+        .collect();
+    let whole: Vec<String> = reports.iter().map(ScenarioReport::to_json).collect();
+    let writers_left = AtomicUsize::new(reports.len());
+
+    let (paths, torn_reads) = std::thread::scope(|scope| {
+        let writers: Vec<_> = reports
+            .iter()
+            .map(|report| {
+                let (dir, writers_left) = (&dir, &writers_left);
+                scope.spawn(move || {
+                    let mut path = PathBuf::new();
+                    for _ in 0..200 {
+                        path = report.write_in(dir).expect("write");
+                    }
+                    writers_left.fetch_sub(1, Ordering::SeqCst);
+                    path
+                })
+            })
+            .collect();
+        let reader = scope.spawn(|| {
+            let path = dir.join("race-same_path-1.json");
+            let mut torn = 0usize;
+            while writers_left.load(Ordering::SeqCst) > 0 {
+                if let Ok(text) = std::fs::read_to_string(&path)
+                    && !whole.contains(&text)
+                {
+                    torn += 1;
+                }
+            }
+            torn
+        });
+        let paths: Vec<_> = writers
+            .into_iter()
+            .map(|h| h.join().expect("writer"))
+            .collect();
+        (paths, reader.join().expect("reader"))
+    });
+
+    assert_eq!(torn_reads, 0, "a reader saw a truncated or mixed report");
+    let path = &paths[0];
+    assert!(
+        paths.iter().all(|p| p == path),
+        "every writer targets one path"
+    );
+    let text = std::fs::read_to_string(path).expect("read");
+    assert!(
+        whole.contains(&text),
+        "the file is exactly one writer's whole report"
+    );
+    let names: Vec<_> = std::fs::read_dir(&dir)
+        .expect("list")
+        .map(|e| e.expect("entry").file_name())
+        .collect();
+    assert_eq!(names.len(), 1, "no temp file is left behind: {names:?}");
 }

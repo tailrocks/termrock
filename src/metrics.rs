@@ -21,6 +21,8 @@ mod state;
 pub use state::{measure, record, reset, snapshot};
 
 #[cfg(feature = "work-metrics")]
+pub mod harness;
+#[cfg(feature = "work-metrics")]
 pub mod report;
 
 /// Whether this build records work. A report states this so a reader can tell
@@ -79,15 +81,14 @@ metrics! {
     LabelsNormalized => "labels_normalized",
     /// Bytes of lowercased labels produced by that normalization.
     LabelBytesNormalized => "label_bytes_normalized",
-    /// Full rebuilds of an app projection (rows derived from source records).
+    /// Full rebuilds of a projection (rows derived from source records).
     ProjectionRebuilds => "projection_rebuilds",
     /// Source items visited by a ranking pass.
     RankRowsVisited => "rank_rows_visited",
-    /// Retained records visited by an app's control scheduling traversal,
-    /// such as sessions, activities or plans. Counted whether or not a
-    /// record needs work.
+    /// Retained records visited by a control scheduling traversal. Counted
+    /// whether or not a record needs work.
     SchedulingRecordsVisited => "scheduling_records_visited",
-    /// Polls an app's scheduling traversal issued to a live source.
+    /// Polls a scheduling traversal issued to a live source.
     SchedulingPolls => "scheduling_polls",
 }
 
@@ -172,9 +173,12 @@ impl WorkDelta {
             .filter(|&(_, n)| n != 0)
     }
 
-    /// Checks this delta against `budgets`: each listed metric may not exceed its
-    /// budget and every unlisted metric must be zero. The error names each
-    /// violation, so a new kind of work cannot slip in unnoticed.
+    /// Checks this delta against `budgets`, which are ceilings: each listed
+    /// metric may not exceed its budget and every unlisted metric must be
+    /// zero. A ceiling cannot see a counter that stopped counting, so use it
+    /// only where the number is intentionally a bound, and prefer
+    /// [`check_exact`](Self::check_exact). The error names each violation, so
+    /// a new kind of work cannot slip in unnoticed.
     pub fn check_budget(&self, budgets: &[(Metric, u64)]) -> Result<(), String> {
         let mut violations = Vec::new();
         for metric in Metric::ALL {
@@ -185,6 +189,29 @@ impl WorkDelta {
                 .map_or(0, |&(_, b)| b);
             if got > budget {
                 violations.push(format!("{} was {got}, budget {budget}", metric.name()));
+            }
+        }
+        if violations.is_empty() {
+            Ok(())
+        } else {
+            Err(violations.join("; "))
+        }
+    }
+
+    /// Checks this delta against `expected` counts: each listed metric must
+    /// equal its count and every unlisted metric must be zero. Unlike a
+    /// ceiling this fails when a counted site stops recording, so a dead
+    /// counter cannot pass as cheap work.
+    pub fn check_exact(&self, expected: &[(Metric, u64)]) -> Result<(), String> {
+        let mut violations = Vec::new();
+        for metric in Metric::ALL {
+            let got = self.get(metric);
+            let want = expected
+                .iter()
+                .find(|(m, _)| *m == metric)
+                .map_or(0, |&(_, n)| n);
+            if got != want {
+                violations.push(format!("{} was {got}, expected {want}", metric.name()));
             }
         }
         if violations.is_empty() {

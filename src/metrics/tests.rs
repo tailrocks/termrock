@@ -155,3 +155,29 @@ fn metrics_check_budget_flags_overruns_and_unlisted_work() {
         "a metric that is not listed has a budget of zero"
     );
 }
+
+#[test]
+fn metrics_check_exact_flags_undercounts_overcounts_and_unlisted_work() {
+    let mut delta = WorkDelta::ZERO;
+    delta.0[Metric::SegmentedLines as usize] = 5;
+    delta.0[Metric::IndexShifts as usize] = 1;
+
+    assert_eq!(
+        delta.check_exact(&[(Metric::SegmentedLines, 5), (Metric::IndexShifts, 1)]),
+        Ok(())
+    );
+    assert_eq!(
+        delta.check_exact(&[(Metric::SegmentedLines, 6), (Metric::IndexShifts, 1)]),
+        Err("segmented_lines was 5, expected 6".to_owned()),
+        "a count below the expectation fails, which a ceiling would accept"
+    );
+    assert_eq!(
+        delta.check_exact(&[(Metric::SegmentedLines, 4), (Metric::IndexShifts, 1)]),
+        Err("segmented_lines was 5, expected 4".to_owned())
+    );
+    assert_eq!(
+        delta.check_exact(&[(Metric::SegmentedLines, 5)]),
+        Err("index_shifts was 1, expected 0".to_owned()),
+        "a metric that is not listed is expected to be zero"
+    );
+}
