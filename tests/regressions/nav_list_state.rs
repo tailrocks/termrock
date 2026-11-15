@@ -291,3 +291,27 @@ fn navlist_filling_an_empty_list_starts_on_the_first_enabled_item() {
     let (_, action) = nav.on_key(&key(KeyCode::Enter));
     assert_eq!(action, Some(NavAction::Activated(1)));
 }
+
+#[test]
+fn navlist_replacement_that_moves_the_cursor_scrolls_it_into_view() {
+    let mut nav = nav(20);
+    render(&mut nav);
+    nav.on_key(&key(KeyCode::End));
+    render(&mut nav);
+    assert_eq!(nav.cursor, 19);
+    assert!(nav.scroll.offset > 0);
+
+    let mut shorter: Vec<NavItem> = (0..10)
+        .map(|i| NavItem::new(&format!("new {i:02}")).disabled(i != 1))
+        .collect();
+    shorter[1] = NavItem::new("only enabled");
+    assert!(nav.set_items(shorter));
+    assert_eq!(nav.cursor, 1);
+
+    let buf = render_focused(&mut nav);
+    assert_eq!(
+        gutter_rows(&buf).len(),
+        1,
+        "the repaired cursor is on screen"
+    );
+}
