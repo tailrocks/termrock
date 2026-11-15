@@ -1051,6 +1051,11 @@ impl DataGrid {
         }
     }
 
+    #[cfg(test)]
+    pub(crate) fn anchor(&self) -> Option<(usize, usize)> {
+        self.anchor
+    }
+
     pub fn is_editing(&self) -> bool {
         if self.choice.is_some() {
             return true;

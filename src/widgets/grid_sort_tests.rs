@@ -52,6 +52,13 @@ fn press(g: &mut DataGrid, code: KeyCode) -> Option<GridAction> {
     .1
 }
 
+fn press_shift(g: &mut DataGrid, code: KeyCode) {
+    g.on_key(&Key {
+        code,
+        mods: KeyModifiers::SHIFT,
+    });
+}
+
 fn shown(g: &DataGrid) -> Vec<String> {
     (0..g.len())
         .map(|d| g.value(g.source_row(d), 1).text())
@@ -143,6 +150,75 @@ fn issue46_commit_reorders_changed_sort_column() {
 }
 
 #[test]
+fn issue46_append_sorts_by_saved_values_not_pending() {
+    let mut g = grid(
+        true,
+        &[(Some(2), "two"), (Some(1), "one"), (Some(5), "five")],
+    );
+    press(&mut g, KeyCode::Char('s'));
+    assert_eq!(shown(&g), ["one", "two", "five"]);
+    move_to(&mut g, 1);
+    assert_eq!(cursor_tag(&g), "two");
+    edit_cursor_cell(&mut g, "9");
+    assert!(!g.pending.is_empty(), "the edit is still pending");
+
+    g.append_rows(page(&[(Some(3), "three")], false));
+
+    assert_eq!(
+        shown(&g),
+        ["one", "two", "three", "five"],
+        "the pending 9 does not move its row; order uses saved values"
+    );
+}
+
+#[test]
+fn issue46_anchor_follows_its_record() {
+    let mut g = grid(
+        true,
+        &[(Some(1), "one"), (Some(2), "two"), (Some(3), "three")],
+    );
+    press(&mut g, KeyCode::Char('s'));
+    move_to(&mut g, 2);
+    assert_eq!(cursor_tag(&g), "three");
+    press_shift(&mut g, KeyCode::Up);
+    assert_eq!(g.anchor(), Some((2, 0)), "anchor on display 2");
+    assert_eq!(g.cursor.0, 1);
+
+    g.append_rows(page(&[(Some(0), "zero")], false));
+
+    assert_eq!(shown(&g), ["zero", "one", "two", "three"]);
+    assert_eq!(
+        g.anchor(),
+        Some((3, 0)),
+        "anchor moves with its record to display 3"
+    );
+}
+
+#[test]
+fn issue46_commit_keeps_anchor_on_its_record() {
+    let mut g = grid(
+        true,
+        &[(Some(1), "one"), (Some(2), "two"), (Some(3), "three")],
+    );
+    press(&mut g, KeyCode::Char('s'));
+    move_to(&mut g, 2);
+    press_shift(&mut g, KeyCode::Up);
+    assert_eq!(g.anchor(), Some((2, 0)));
+    move_to(&mut g, 1);
+    assert_eq!(cursor_tag(&g), "two");
+    edit_cursor_cell(&mut g, "9");
+
+    g.apply_commit_result(Ok(()));
+
+    assert_eq!(shown(&g), ["one", "three", "two"]);
+    assert_eq!(
+        g.anchor(),
+        Some((1, 0)),
+        "anchor follows the three record to display 1"
+    );
+}
+
+#[test]
 fn issue46_commit_elsewhere_keeps_sorted_order() {
     let mut g = grid(true, &[(Some(2), "two"), (Some(1), "one")]);
     press(&mut g, KeyCode::Char('s'));
@@ -224,6 +300,38 @@ fn issue46_delete_cursor_fallback_is_deterministic() {
     g.apply_commit_result(Ok(()));
     assert!(g.is_empty());
     assert_eq!(g.cursor.0, 0);
+}
+
+#[test]
+fn issue46_delete_and_reorder_in_one_commit_keeps_cursor_fallback() {
+    let mut g = grid(
+        true,
+        &[
+            (Some(2), "two"),
+            (Some(1), "one"),
+            (Some(5), "five"),
+            (Some(3), "three"),
+        ],
+    );
+    press(&mut g, KeyCode::Char('s'));
+    assert_eq!(shown(&g), ["one", "two", "three", "five"]);
+    move_to(&mut g, 1);
+    assert_eq!(cursor_tag(&g), "two");
+    press(&mut g, KeyCode::Char('-'));
+    move_to(&mut g, 3);
+    assert_eq!(cursor_tag(&g), "five");
+    edit_cursor_cell(&mut g, "0");
+    move_to(&mut g, 1);
+    assert_eq!(cursor_tag(&g), "two", "cursor rests on the deleted row");
+
+    g.apply_commit_result(Ok(()));
+
+    assert_eq!(shown(&g), ["five", "one", "three"]);
+    assert_eq!(
+        cursor_tag(&g),
+        "three",
+        "deleted cursor falls back to the next survivor in old display order"
+    );
 }
 
 #[test]
