@@ -67,11 +67,13 @@ pub fn draw_loading(area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, label: &s
     } else {
         label
     };
-    let label = crate::ui::text::truncate(label, area.width.saturating_sub(2) as usize);
-    let w = 2 + crate::ui::text::width(&label) as u16;
+    let glyph = crate::ui::text::width(ctx.theme.glyphs.spinner_frame(ctx.interaction.tick)) as u16;
+    let label = crate::ui::text::truncate(label, area.width.saturating_sub(glyph + 1) as usize);
+    let w = glyph + 1 + crate::ui::text::width(&label) as u16;
     let x = area.x + area.width.saturating_sub(w) / 2;
     let y = area.y + area.height / 2;
-    crate::widgets::progress::render_spinner(Rect::new(x, y, w, 1), buf, ctx, &label, bg);
+    let owner = Rect::new(x, y, w, 1).intersection(area);
+    crate::widgets::progress::render_spinner(owner, buf, ctx, &label, bg);
 }
 
 pub fn draw_empty(area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, e: &EmptyState, bg: Color) {

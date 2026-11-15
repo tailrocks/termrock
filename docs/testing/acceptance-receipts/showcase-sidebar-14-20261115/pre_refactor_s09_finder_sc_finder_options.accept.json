@@ -6,13 +6,13 @@
   "reason": null,
   "candidate_path": {
     "encoding": "utf8",
-    "value": "/tmp/final/pre_refactor__s09_finder__sc_finder_options.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/target/functional/s09-sections-91948-1794772591078419000-0/check-artifacts/pre_refactor/s09_finder/sc_finder_options/278a700a1d452b3270c8b15afe61a0f5954d42752b5c03df42555a2ffdc2509a/sample.tui.pb"
   },
-  "candidate_sha256": "a640e1a1460b1f18138f326b5342bc03b5ab183a6a801bdcb23c0a6d5c950f83",
-  "baseline_sha256": "a640e1a1460b1f18138f326b5342bc03b5ab183a6a801bdcb23c0a6d5c950f83",
+  "candidate_sha256": "278a700a1d452b3270c8b15afe61a0f5954d42752b5c03df42555a2ffdc2509a",
+  "baseline_sha256": "278a700a1d452b3270c8b15afe61a0f5954d42752b5c03df42555a2ffdc2509a",
   "output_path": {
     "encoding": "utf8",
-    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s09_finder/sc_finder_options.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/tests/functional/baselines/pre_refactor/s09_finder/sc_finder_options.tui.pb"
   },
   "error_code": null
 }

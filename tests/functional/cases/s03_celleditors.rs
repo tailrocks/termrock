@@ -1449,3 +1449,39 @@ fn editors_open_choose_and_cancel() {
     );
     app.finish();
 }
+
+#[test]
+fn issue43_rejected_notify_toggle_shows_its_error() {
+    const LOCKED: &str = "Notify stays on while the service has an on-call owner";
+    let app = page("s03-celleditors-notify-lock", None, 120, 40);
+    app.wait_text("Deployment targets");
+    focus_table(&app);
+    for _ in 0..4 {
+        app.key("right");
+    }
+    app.settle();
+
+    app.key("enter");
+    let rejected = app.wait_text(LOCKED);
+    let first = row_with(&rejected, "checkout-api");
+    assert!(
+        first.contains("[✓]") && !first.contains("[ ]"),
+        "the rejected toggle still flipped the cell: {first}"
+    );
+    see(
+        &rejected,
+        &[LOCKED],
+        &["Notify saved", "1 edits", "0 edits"],
+    );
+
+    app.key("down");
+    app.key("enter");
+    let accepted = app.wait_text("Notify saved");
+    see(&accepted, &["1 edits"], &[LOCKED, "0 edits"]);
+    let second = row_with(&accepted, "search");
+    assert!(
+        second.contains("[✓]") && !second.contains("[ ]"),
+        "the accepted toggle did not switch search on: {second}"
+    );
+    app.finish();
+}

@@ -6,13 +6,13 @@
   "reason": null,
   "candidate_path": {
     "encoding": "utf8",
-    "value": "/tmp/final/pre_refactor__s02_chipsselects__opt_chipsselects_more_button.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/target/functional/s02-chips-more-65726-1794772503536357000-5/check-artifacts/pre_refactor/s02_chipsselects/opt_chipsselects_more_button/b985c2373be04f312e7affa393537b499bf79df6c71a7c155090a300ac884eb4/sample.tui.pb"
   },
-  "candidate_sha256": "b0e46f439c1565efd1c7db325c4293a57b4bdc517d633c8a43bb838fc6eba388",
-  "baseline_sha256": "b0e46f439c1565efd1c7db325c4293a57b4bdc517d633c8a43bb838fc6eba388",
+  "candidate_sha256": "b985c2373be04f312e7affa393537b499bf79df6c71a7c155090a300ac884eb4",
+  "baseline_sha256": "b985c2373be04f312e7affa393537b499bf79df6c71a7c155090a300ac884eb4",
   "output_path": {
     "encoding": "utf8",
-    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s02_chipsselects/opt_chipsselects_more_button.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/tests/functional/baselines/pre_refactor/s02_chipsselects/opt_chipsselects_more_button.tui.pb"
   },
   "error_code": null
 }

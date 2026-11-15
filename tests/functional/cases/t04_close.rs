@@ -4,11 +4,12 @@
 //! `pre_refactor/t04_close/` and each checkpoint's dots become underscores.
 //! TablePro has no `--page` flag. It opens on Connections.
 
-use std::time::{Duration, Instant};
-
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, TABLEPRO, find_all, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, TABLEPRO, find_all, flash_settle_stepped as flash_settle, row_text, text,
+    try_launch,
+};
 
 const HOST: &str = "dev-db.internal.acme.io";
 const DATABASE: &str = "acme_dev";
@@ -168,33 +169,6 @@ fn click_tab(app: &App, label: &str) {
     app.click(hits[0]);
 }
 
-/// The 140ms press flash stays painted while motion is reduced. A same-size
-/// resize does not force a new frame, so the shot nudges the width and comes
-/// back. Below about 100 columns the header omits the size chip. The nudge
-/// also parks the hidden terminal cursor, which otherwise differs between the
-/// debug build and the reference binary after a refused Ctrl+W.
-fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
-}
-
 fn footer_toast(screen: &TerminalSnapshot) -> bool {
     let last = screen.rows().saturating_sub(1);
     row_text(screen, last).contains("✓ Connected to Development")
@@ -252,15 +226,7 @@ fn confirm_quit(app: &App) {
     app.wait_text("Quit TablePro?");
     app.key("right");
     app.key("enter");
-    let deadline = Instant::now() + Duration::from_secs(5);
-    while app.child_running() {
-        assert!(
-            Instant::now() < deadline,
-            "tablepro stayed up after confirming quit\n{}",
-            text(&app.screen())
-        );
-        std::thread::sleep(Duration::from_millis(25));
-    }
+    app.wait_exit("tablepro stayed up after confirming quit");
     app.expect_exited(0);
 }
 

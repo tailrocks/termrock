@@ -267,6 +267,7 @@ fn assert_defaults_except(screen: &TerminalSnapshot, changed: &[(&str, &str, boo
         ("Choice tones", "on", true),
         ("Choice stepper", "on", true),
         ("Choice buttons", "two", false),
+        ("Dismiss", "default", false),
     ];
     for (label, value, toggle) in defaults {
         if let Some((_, next, _)) = changed.iter().find(|(name, _, _)| *name == label) {
@@ -490,6 +491,7 @@ fn sections_narrow_then_wide() {
             "truecolor",
             "Add connection",
             "Choice buttons",
+            "Dismiss",
         ],
     );
     assert_option(&narrow_opt, "Width", "auto", false);
@@ -505,7 +507,7 @@ fn sections_narrow_then_wide() {
     shot(
         &app,
         "sc.dialogkinds.options.80x24",
-        "options at 80 by 24 before the terminal grows, with the visible controls and their default values; Choice buttons stays below the fold",
+        "options at 80 by 24 before the terminal grows, with the visible controls and their default values; Choice buttons and Dismiss stay below the fold",
         &args,
     );
 
@@ -601,6 +603,7 @@ fn sections_narrow_then_wide() {
             "Page options",
             "Choice buttons",
             "two",
+            "Dismiss",
         ],
         &[
             CAP_PLAY,
@@ -615,7 +618,7 @@ fn sections_narrow_then_wide() {
     shot(
         &app,
         "sc.dialogkinds.options.120x40",
-        "options caption and every default value at 120 by 40, including Choice buttons two",
+        "options caption and every default value at 120 by 40, including Choice buttons two and the Dismiss row set to default",
         &args,
     );
     shot(
@@ -1154,6 +1157,95 @@ fn option_choice_buttons_three() {
     app.finish();
 }
 
+/// With Dismiss "never" Escape is refused in all three dialogs while their
+/// explicit Cancel and Close buttons still resolve them.
+fn assert_escape_refused_buttons_work(app: &crate::support::App) {
+    click_page(app, "Release channel");
+    clear_flash(app, 120, 40, "Switch");
+    let dialog = app.wait_text("Switch");
+    see(
+        &dialog,
+        &["Release channel", "Stable", "Cancel", "Switch"],
+        &["Esc Cancel", "Choice · None"],
+    );
+    app.key("escape");
+    let refused = app.settle();
+    see(
+        &refused,
+        &["Release channel", "Stable", "Cancel", "Switch"],
+        &["Choice · None", "Choice · Some"],
+    );
+    click_page(app, "Cancel");
+    let closed = app.wait_text("Choice · None");
+    see(&closed, &["Choice · None"], &["Switch"]);
+
+    click_page(app, "Server info");
+    let info = app.wait_text("Open logs");
+    see(&info, &["Server info", "Close"], &["Esc Close"]);
+    app.key("escape");
+    let refused_info = app.settle();
+    see(
+        &refused_info,
+        &["Server info", "Open logs"],
+        &["Info · Closed"],
+    );
+    click_page(app, "Close");
+    app.wait_text("Info · Closed");
+
+    click_page(app, "Add connection");
+    let form = app.wait_text("Test connection");
+    see(&form, &["Add connection", "Cancel"], &["Form · Cancel"]);
+    app.key("escape");
+    let refused_form = app.settle();
+    see(
+        &refused_form,
+        &["Add connection", "Test connection"],
+        &["Form · Cancel"],
+    );
+    click_page(app, "Cancel");
+    app.wait_text("Form · Cancel");
+}
+
+#[test]
+fn option_dismiss_never_refuses_escape_keeps_buttons() {
+    let args = [
+        "--page",
+        "dialogkinds",
+        "--opt",
+        "dialogkinds.dismiss=never",
+    ];
+    let app = open("s05-opt-dismiss", 120, 40, &args);
+    app.wait_text("Nothing yet");
+    assert_escape_refused_buttons_work(&app);
+    let options = option_page(&app);
+    assert_defaults_except(&options, &[("Dismiss", "never", false)]);
+    app.finish();
+}
+
+#[test]
+fn options_tab_dismiss_never_refuses_escape() {
+    let args = ["--page", "dialogkinds"];
+    let app = open("s05-ui-dismiss", 120, 40, &args);
+    let options = option_page(&app);
+    assert_defaults_except(&options, &[]);
+    let label = locate(&app, "Dismiss", |hit| hit.x >= 24 && hit.y > 4);
+    app.click(Point {
+        x: label.x + 2,
+        y: label.y + 1,
+    });
+    app.wait_text("escape");
+    click_where(&app, "never", |hit| hit.x >= 24 && hit.y > label.y + 1);
+    let chosen = app.wait_screen("Dismiss never chosen", |screen| {
+        let visible = text(screen);
+        !visible.contains("escape") && visible.contains("never")
+    });
+    assert_defaults_except(&chosen, &[("Dismiss", "never", false)]);
+    click_tab(&app, "Playground");
+    app.wait_text("Nothing yet");
+    assert_escape_refused_buttons_work(&app);
+    app.finish();
+}
+
 #[test]
 fn kinds_chooser_save_cancel_choice_info_help() {
     let args = ["--page", "dialogkinds"];
@@ -1422,5 +1514,159 @@ fn kinds_chooser_save_cancel_choice_info_help() {
             "Choice · Some(1)",
         ],
     );
+    app.finish();
+}
+
+#[test]
+fn test_connection_replaces_the_masked_password_and_keeps_it_masked() {
+    let args = ["--page", "dialogkinds"];
+    let app = open("s05-keychain", 120, 40, &args);
+    click_page(&app, "Add connection");
+    let form = app.wait_text("Test connection");
+    see(&form, &["7731"], &["keychain-rotated", "hunter2"]);
+
+    click_where(&app, "Test connection", |_| true);
+    let filled = app.wait_text("Password refreshed from the keychain");
+    see(
+        &filled,
+        &["still masked", "0042", "Connected in 42 ms"],
+        &["7731", "keychain-rotated", "hunter2", "revealed"],
+    );
+    close_to_page(&app);
+    app.finish();
+}
+
+/// Opens the form, types into Host and hides it mid-edit, then moves focus to
+/// Driver so no other input is editing. The hide ends the edit session on a
+/// frame that may land after the field disappears, so each frame is judged
+/// only once the terminal is quiet.
+fn hide_host_mid_edit(name: &str) -> crate::support::App {
+    let args = ["--page", "dialogkinds"];
+    let app = open(name, 120, 40, &args);
+    click_page(&app, "Add connection");
+    app.wait_text("Test connection");
+
+    app.key("tab");
+    app.key("tab");
+    app.type_text("edited-host");
+    app.wait_text("edited-host");
+
+    app.key("ctrl+t");
+    app.wait_absent("Host");
+    let hidden = app.settle();
+    see(
+        &hidden,
+        &["Driver", "Password", "Tab Next field"],
+        &["Host", "▎ edited-host"],
+    );
+
+    app.key("tab");
+    let idle = app.settle();
+    see(
+        &idle,
+        &["Driver", "Tab Next field", "Enter Save"],
+        &["Host", "EDIT", "Enter Apply"],
+    );
+    app
+}
+
+/// Reveals Host again. A restored edit session shows in the hint bar as
+/// EDIT, so the revealed frame must carry the idle form hints instead.
+fn reveal_host(app: &crate::support::App) {
+    app.key("ctrl+t");
+    app.wait_text("Host");
+    let shown = app.settle();
+    see(
+        &shown,
+        &["Host", "edited-host", "Tab Next field", "Enter Save"],
+        &["EDIT", "Enter Apply"],
+    );
+}
+
+#[test]
+fn form_toggle_hides_an_editing_input_and_reveal_restores_no_session() {
+    let app = hide_host_mid_edit("s05-toggle");
+    reveal_host(&app);
+
+    // Focus is on Driver, so one Tab reaches Host. A restored session would
+    // trap Tab and keep appending to the old text.
+    app.key("tab");
+    app.type_text("zz");
+    let after = app.settle();
+    see(&after, &["▎ zz"], &["edited-hostzz"]);
+    close_to_page(&app);
+    app.finish();
+}
+
+#[test]
+fn form_toggle_hidden_editing_input_does_not_hold_escape() {
+    let app = hide_host_mid_edit("s05-toggle-esc");
+    reveal_host(&app);
+
+    click_where(&app, "edited-host", |hit| hit.x < 40);
+    let focused = app.settle();
+    see(&focused, &["▎ edited-host"], &[]);
+
+    // One Escape closes the form. A restored session would take it to roll
+    // the host back to its value from before the hide, and keep the form.
+    app.key("escape");
+    let closed = app.settle();
+    see(
+        &closed,
+        &["Enter Open", "Form · Cancel"],
+        &["Test connection", "EDIT", "db.eu-west-1.internal"],
+    );
+    app.finish();
+}
+
+#[test]
+fn form_toggle_hides_an_open_driver_popup_and_keeps_its_choice() {
+    let args = ["--page", "dialogkinds"];
+    let app = open("s05-popup-toggle", 120, 40, &args);
+    click_page(&app, "Add connection");
+    app.wait_text("Test connection");
+
+    // Commit a new choice first, so a choice lost or reset by the hide shows
+    // on the Driver value row after the reveal.
+    app.key("tab");
+    app.key("enter");
+    let popup = app.wait_text("SQLite");
+    see(&popup, &["MySQL", "PostgreSQL"], &[]);
+    app.key("down");
+    app.key("enter");
+    app.wait_absent("SQLite");
+    let chosen = app.settle();
+    let value = line_after(&chosen, "Driver");
+    assert!(
+        value.contains("MySQL") && value.contains('▾'),
+        "MySQL is chosen: {value:?}\n{}",
+        text(&chosen)
+    );
+
+    app.key("enter");
+    let popup = app.wait_text("SQLite");
+    see(&popup, &["MySQL", "PostgreSQL", "SQLite"], &[]);
+
+    app.key("ctrl+d");
+    app.wait_absent("SQLite");
+    let hidden = app.settle();
+    see(&hidden, &["Host"], &["SQLite", "Driver", "PostgreSQL"]);
+
+    app.key("ctrl+d");
+    // Driver is absent while the field is hidden, so waiting for it syncs on
+    // the reveal. A popup that survived the hide paints on that frame or just
+    // after it, so settle before looking.
+    app.wait_text("Driver");
+    let shown = app.settle();
+    // The chevron is read on the Driver value row. The nav row "▾ Overlays"
+    // always shows one, so a whole-screen check would pass on any frame.
+    let value = line_after(&shown, "Driver");
+    assert!(
+        value.contains("MySQL") && value.contains('▾') && !value.contains('▴'),
+        "Driver keeps MySQL and shows the closed chevron: {value:?}\n{}",
+        text(&shown)
+    );
+    see(&shown, &["Driver"], &["SQLite", "PostgreSQL"]);
+    close_to_page(&app);
     app.finish();
 }

@@ -6,13 +6,12 @@
 //! Shift+F10 opens the focused object's menu. The column header has no such
 //! key, so that menu is a right click. There is no `KeyCode::Menu`.
 
-use std::time::{Duration, Instant};
-
 use tui_test::{MouseButton, MouseOptions, TerminalSnapshot};
 
 use crate::support::{
-    App, Launch, Point, SessionMode, TABLEPRO, file_sha256, find_all, reference_binary_from,
-    reference_digest_from, row_text, text, try_launch,
+    App, Launch, Point, SessionMode, TABLEPRO, file_sha256, find_all,
+    flash_settle_stepped as flash_settle, reference_binary_from, reference_digest_from, row_text,
+    text, try_launch,
 };
 
 const HOST: &str = "dev-db.internal.acme.io";
@@ -102,31 +101,6 @@ fn tab_menu(screen: &TerminalSnapshot) -> bool {
         && visible.contains(NEW_QUERY)
         && visible.contains(SWITCH)
         && visible.contains(CURRENT_TAB)
-}
-
-/// The 140ms press flash stays painted until a later frame. A same-size resize
-/// does not force one, so the shot nudges the width and comes back. Below about
-/// 100 columns the header omits the size chip.
-fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
 }
 
 fn shot(app: &App, checkpoint: &str, cols: u32, rows: u32) {
@@ -681,14 +655,7 @@ fn quit_unsaved(app: &App) {
     see(&quit, &["unsaved", "Quit"], &[HISTORY]);
     app.key("right");
     app.key("enter");
-    let deadline = Instant::now() + Duration::from_secs(5);
-    while app.child_running() {
-        assert!(
-            Instant::now() < deadline,
-            "tablepro stayed up after confirming quit"
-        );
-        std::thread::sleep(Duration::from_millis(25));
-    }
+    app.wait_exit("tablepro stayed up after confirming quit");
     app.expect_exited(0);
 }
 
@@ -758,6 +725,7 @@ fn tablepro_menus_highlighted_command_is_the_one_that_runs() {
     );
 
     // The "Opened public.products" note lasts 5s. Both frames are taken after it.
+    app.expire_status();
     app.wait_absent("Opened");
     shot(&app, WIDE, 120, 40);
     app.resize(80, 24);

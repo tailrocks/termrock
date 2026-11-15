@@ -11,11 +11,11 @@
 //! and activates by document key, so a tab click shows that document's own
 //! editor and result ([`tab_click_activates_that_document`]).
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, Point, SHOWCASE, find_all, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, Point, SHOWCASE, find_all, flash_settle, row_text, text, try_launch,
+};
 
 const CRUMB: &str = "Screens › Query workbench";
 const TASK_RUNNER: &str = "Screens › Task runner";
@@ -333,30 +333,6 @@ fn assert_size(app: &App, cols: u16, rows: u16) {
         "terminal size\n{}",
         text(&screen)
     );
-}
-
-/// Below about 100 columns the header omits the size chip, and the narrow
-/// nudge waits on the terminal size instead.
-fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
 }
 
 fn assert_playground(screen: &TerminalSnapshot) {
@@ -945,6 +921,82 @@ fn tab_click_activates_that_document() {
         &[FROM_ORDERS, PENDING, ROWS_META, "2 tabs"],
         &[CUSTOMERS_SQL],
     );
+    app.finish();
+}
+
+fn click_leftmost_close(app: &App) {
+    let screen = app.settle();
+    let mut hits: Vec<_> = find_all(&screen, "×")
+        .into_iter()
+        .filter(|hit| hit.y == 7)
+        .collect();
+    assert!(
+        !hits.is_empty(),
+        "no tab close on the tab row\n{}",
+        text(&screen)
+    );
+    hits.sort_by_key(|hit| hit.x);
+    app.click(hits[0]);
+}
+
+#[test]
+fn issue53_completion_stays_on_b_after_a_closes() {
+    let app = page_motion("s09-issue53-close-earlier", None, 120, 40, "full");
+    app.wait_text(FROM_ORDERS);
+    click_new_tab(&app);
+    app.wait_text("Query 2");
+    type_query(&app, "SELECT * FROM orders LIMIT 25;");
+    click_where(&app, "customers", |hit| hit.y == 7);
+    app.wait_text(CUSTOMERS_SQL);
+
+    app.key("ctrl+r");
+    app.wait_text(RUNNING);
+    click_leftmost_close(&app);
+    app.wait_text("Closed Query 1");
+    let done = app.wait_text("40 rows · 15 ms");
+    see(
+        &done,
+        &[
+            CUSTOMERS_SQL,
+            "40 rows · 15 ms",
+            "customers",
+            "Query 2",
+            "2 tabs",
+        ],
+        &[FROM_ORDERS, PENDING, "≡ Query 1", FINISHED, CANCELLED],
+    );
+
+    click_where(&app, "Query 2", |hit| hit.y == 7);
+    let other = app.wait_text("SELECT * FROM orders LIMIT 25;");
+    see(
+        &other,
+        &["Not run yet", "2 tabs"],
+        &[CUSTOMERS_SQL, "40 rows", ROWS_META],
+    );
+    app.finish();
+}
+
+#[test]
+fn issue53_inactive_completion_does_not_steal_focus() {
+    let app = page_motion("s09-issue53-inactive", None, 120, 40, "full");
+    app.wait_text(FROM_ORDERS);
+    click_new_tab(&app);
+    app.wait_text("Query 2");
+    click_where(&app, "customers", |hit| hit.y == 7);
+    app.wait_text(CUSTOMERS_SQL);
+
+    app.key("ctrl+r");
+    click_where(&app, "Query 2", |hit| hit.y == 7);
+    let done = app.wait_text("customers: ✓ 40 rows");
+    see(
+        &done,
+        &["Query 2", "Not run yet", "Write a query", "3 tabs"],
+        &[CUSTOMERS_SQL, ROWS_META, CANCELLED],
+    );
+
+    click_where(&app, "customers", |hit| hit.y == 7);
+    let b = app.wait_text(CUSTOMERS_SQL);
+    see(&b, &["40 rows · 15 ms", CUSTOMERS_SQL], &["Not run yet"]);
     app.finish();
 }
 

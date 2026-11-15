@@ -35,6 +35,30 @@ internals.
   configured cancel action via the popup's own backdrop.
 - Empty/unavailable content renders deterministically and stays
   keyboard-reachable.
+- A scrollbar `PointerEvent` carries the pointer position and the
+  full `Bar` track in the owner's coordinate space, however deeply the
+  owner is nested or clipped. `HitRegistry::bar` and hit testing stay in
+  screen space, and a press freezes its screen-to-owner transform for
+  the whole gesture, so drag and release stay valid after the bar
+  leaves the visible window.
+- `ScrollView` has two paint paths with different costs. `render`/`begin`/`end`
+  stay the arbitrary-composition path: when the content overflows they
+  allocate, fill and copy a canvas as large as the content on every frame
+  (`ScrollView::last_work` reports the cells), because the callback can
+  register hidden focus stops and position popups anywhere in it.
+  `ScrollView::render_window` is the virtual path for rows a model can
+  supply on demand. The callback runs once, paints in screen coordinates
+  into a scratch buffer the size of the viewport, and its hits, autoscroll
+  areas, cursor and cuts are clipped to the viewport; nothing is
+  translated afterwards, so nested windows apply one projection. The host
+  passes the root `screen` unchanged through nested windows and renders
+  popups against the real buffer after the body returns. Offscreen rows
+  have no focus stops: the model supplies a `focus_target` in padded-canvas
+  coordinates and a container focus stop. The legacy consumers (Showcase
+  `pages/template.rs`, TablePro `tabs.rs` result-facts and detail views,
+  Holla `screens/review.rs` and `screens/snapshot.rs`, Jackin settings
+  `agents_view`) compose arbitrary children with hidden
+  focus stops and popups, so they stay on the legacy path and keep its cost.
 - Public API behaviour stays compatible unless a deliberate migration
   updates consumers and records the decision in
   [decisions](decisions.md).

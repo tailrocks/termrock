@@ -207,6 +207,7 @@ impl EditorScreen {
             workspace,
             name: TextInput::new(NAME, "Name")
                 .required(true)
+                .required_message("Name is required")
                 .help("Directory basename by default")
                 .value(&pending.name)
                 .validator(|v| {
@@ -2012,9 +2013,11 @@ impl Page<Jackin> for EditorScreen {
             return o;
         }
         if let Some(r) = self.tabs.route(ev) {
-            let (o, act) = r.into_parts();
-            if let Some(TabAction::Activated(i)) = act {
-                self.tab = EdTab::ALL[i.min(4)];
+            let (o, actions) = r.into_parts();
+            for action in actions {
+                if let TabAction::Activated(i) = action {
+                    self.tab = EdTab::ALL[i.min(4)];
+                }
             }
             if !click {
                 return o;
@@ -2310,7 +2313,7 @@ impl Page<Jackin> for EditorScreen {
                 area.x,
                 area.bottom().saturating_sub(lines),
                 area.width.saturating_sub(4),
-                1,
+                lines,
             ),
             &widths,
             3,

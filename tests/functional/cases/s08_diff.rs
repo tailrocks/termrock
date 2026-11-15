@@ -3,11 +3,11 @@
 //! Tuiscotti test ids are `[a-z0-9_-]` segments, so the baseline directory is
 //! `pre_refactor/s08_diff/` and each case id's dots become underscores.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, Point, SHOWCASE, find_all, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, Point, SHOWCASE, find_all, flash_settle, row_text, text, try_launch,
+};
 
 const CRUMB: &str = "Text & code › Diff";
 const EDITOR: &str = "Text & code › Code editor";
@@ -242,32 +242,6 @@ fn assert_size(app: &App, cols: u16, rows: u16) {
         "terminal size\n{}",
         text(&screen)
     );
-}
-
-/// The 140ms press flash stays painted while motion is paused, so a shot after
-/// a released click has to redraw once the deadline has passed. Below about 100
-/// columns the header omits the size chip, and the narrow nudge waits on the
-/// terminal size instead.
-fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
 }
 
 fn panel_y(screen: &TerminalSnapshot, label: &str) -> u32 {
@@ -1059,4 +1033,187 @@ fn option_width_narrow() {
         );
         assert_stacked(screen);
     });
+}
+
+const INSPECT_CAPTION: &str = "Inspect changes in";
+const INSPECT_ARGS: &[&str] = &["--page", "diff", "--opt", "diff.inspect=advanced"];
+
+fn inspect_page(name: &str, width: &str, height: &str, cols: u16, rows: u16) -> App {
+    let width = format!("diff.inspect_width={width}");
+    let height = format!("diff.inspect_height={height}");
+    let mut args = INSPECT_ARGS.to_vec();
+    args.extend(["--opt", &width, "--opt", &height]);
+    let app = open(name, cols, rows, &args);
+    app.wait_text(INSPECT_CAPTION);
+    app
+}
+
+fn choose_option(app: &App, label: &str, steps: usize) {
+    click_tab(app, "Options");
+    let screen = app.wait_text("Page options");
+    let hit = *find_all(&screen, label)
+        .iter()
+        .find(|hit| hit.x >= 26)
+        .unwrap_or_else(|| panic!("option {label:?} missing\n{}", text(&screen)));
+    app.click(Point {
+        x: hit.x,
+        y: hit.y + 1,
+    });
+    for _ in 0..steps {
+        app.key("down");
+    }
+    app.key("enter");
+    app.settle();
+}
+
+/// The cells of the page body outside the allocated `width` x `height`
+/// rectangle at the caption's left edge stay blank: no inspector child paints
+/// beyond what the page gave it.
+fn assert_inside_allocation(screen: &TerminalSnapshot, width: usize, height: usize) {
+    let caption = *find_all(screen, INSPECT_CAPTION)
+        .first()
+        .unwrap_or_else(|| panic!("caption missing\n{}", text(screen)));
+    let (left, top) = (usize::from(caption.x), usize::from(caption.y) + 2);
+    let bottom = usize::try_from(screen.rows()).expect("rows") - 1;
+    for y in top..bottom {
+        let row: Vec<char> = row_text(screen, u32::try_from(y).expect("row"))
+            .chars()
+            .collect();
+        for (x, ch) in row.iter().enumerate().skip(left) {
+            let inside = x < left + width && y < top + height;
+            assert!(
+                inside || *ch == ' ',
+                "{ch:?} painted outside the {width}x{height} allocation at ({x}, {y})\n{}",
+                text(screen)
+            );
+        }
+    }
+}
+
+fn row_of(screen: &TerminalSnapshot, needle: &str) -> u32 {
+    (0..screen.rows())
+        .find(|row| row_text(screen, *row).contains(needle))
+        .unwrap_or_else(|| panic!("{needle:?} missing\n{}", text(screen)))
+}
+
+#[test]
+fn inspect_changes_option_opens_a_narrow_allocation_that_stacks_tree_over_diff() {
+    let app = open("s08-inspect-narrow", 120, 40, PAGE_ARGS);
+    app.wait_text("Changes");
+    choose_option(&app, "Inspect changes", 1);
+    choose_option(&app, "Inspect width", 3);
+    choose_option(&app, "Inspect height", 2);
+    click_tab(&app, "Playground");
+    app.wait_text(INSPECT_CAPTION);
+    flash_settle(&app);
+    let screen = app.settle();
+    see(
+        &screen,
+        &[
+            "Inspect changes in 50×16 of",
+            "4 files",
+            "service.toml",
+            "retries.md",
+            "@@ -1,6 +1,7 @@",
+            "2 commits not pushed",
+        ],
+        &["Page options", "Old", "New"],
+    );
+    assert!(
+        row_of(&screen, "retries.md") < row_of(&screen, "@@ -1,6 +1,7 @@"),
+        "narrow allocation did not stack the tree above the diff\n{}",
+        text(&screen)
+    );
+    assert_inside_allocation(&screen, 50, 16);
+    assert_size(&app, 120, 40);
+    shot(&app, "opt.diff.inspect.narrow");
+    app.finish();
+}
+
+#[test]
+fn inspect_changes_tiny_allocations_keep_every_child_inside_the_frame() {
+    let app = inspect_page("s08-inspect-tiny", "30", "8", 120, 40);
+    let screen = app.settle();
+    see(
+        &screen,
+        &["Inspect changes in 30×8 of", "4 files", "config"],
+        &["@@", "commits not pushed", "retries.md", "Page options"],
+    );
+    assert_inside_allocation(&screen, 30, 8);
+    shot(&app, "opt.diff.inspect.tiny");
+    app.finish();
+
+    for (width, height) in [("14", "4"), ("50", "1"), ("14", "1")] {
+        let app = inspect_page("s08-inspect-flat", width, height, 120, 40);
+        let screen = app.settle();
+        see(
+            &screen,
+            &[&format!("Inspect changes in {width}×{height} of")],
+            &["@@", "commits not pushed", "service.toml", "Page options"],
+        );
+        assert_inside_allocation(&screen, width.parse().unwrap(), height.parse().unwrap());
+        app.finish();
+    }
+}
+
+#[test]
+fn inspect_changes_keeps_the_selected_file_through_shrink_grow_and_resets_on_back() {
+    let app = inspect_page("s08-inspect-resize", "full", "full", 120, 40);
+    app.key("tab");
+    app.key("tab");
+    app.key("down");
+    app.key("down");
+    let picked = app.wait_text("A docs/retries.md");
+    assert!(text(&picked).contains("+3 −0"), "\n{}", text(&picked));
+
+    app.resize(72, 20);
+    let small = app.wait_text("Inspect changes in");
+    assert_inside_allocation(
+        &small,
+        small_extent(&small, "Inspect changes in ").0,
+        small_extent(&small, "Inspect changes in ").1,
+    );
+    app.resize(120, 40);
+    let grown = app.wait_text("A docs/retries.md");
+    assert!(
+        text(&grown).contains("Inspect changes in 94×29"),
+        "\n{}",
+        text(&grown)
+    );
+
+    app.key("m");
+    let compact = app.wait_text("compact · unified");
+    see(
+        &compact,
+        &["R src/retry.rs → src/backoff/retry.rs"],
+        &["@@"],
+    );
+    app.key("esc");
+    let reset = app.wait_text("Inspect changes asked to go back");
+    see(
+        &reset,
+        &["Inspect changes in 94×29", "Tab tree / diff"],
+        &["compact · unified", "m advanced view"],
+    );
+    app.finish();
+}
+
+fn small_extent(screen: &TerminalSnapshot, prefix: &str) -> (usize, usize) {
+    let caption = text(screen)
+        .lines()
+        .find(|line| line.contains(prefix))
+        .expect("caption")
+        .to_owned();
+    let size = caption
+        .split(prefix)
+        .nth(1)
+        .expect("size")
+        .split(" of")
+        .next()
+        .expect("size");
+    let (w, h) = size.split_once('×').expect("w×h");
+    (
+        w.trim().parse().expect("width"),
+        h.trim().parse().expect("height"),
+    )
 }

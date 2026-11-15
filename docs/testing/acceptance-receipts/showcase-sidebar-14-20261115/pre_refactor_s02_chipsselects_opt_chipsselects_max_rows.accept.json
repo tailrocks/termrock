@@ -6,13 +6,13 @@
   "reason": null,
   "candidate_path": {
     "encoding": "utf8",
-    "value": "/tmp/final/pre_refactor__s02_chipsselects__opt_chipsselects_max_rows.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/target/functional/s02-chips-rows-24253-1794772761179505000-12/check-artifacts/pre_refactor/s02_chipsselects/opt_chipsselects_max_rows/b4b1b1eb32e9a959bf76b20603953a44d96c033276f7973e2fb6d250b6fd0123/sample.tui.pb"
   },
-  "candidate_sha256": "957341511e207037211963ebb1f50d7ac64faf784a6d0b2827ceee30bcd795f6",
-  "baseline_sha256": "957341511e207037211963ebb1f50d7ac64faf784a6d0b2827ceee30bcd795f6",
+  "candidate_sha256": "b4b1b1eb32e9a959bf76b20603953a44d96c033276f7973e2fb6d250b6fd0123",
+  "baseline_sha256": "b4b1b1eb32e9a959bf76b20603953a44d96c033276f7973e2fb6d250b6fd0123",
   "output_path": {
     "encoding": "utf8",
-    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s02_chipsselects/opt_chipsselects_max_rows.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/tests/functional/baselines/pre_refactor/s02_chipsselects/opt_chipsselects_max_rows.tui.pb"
   },
   "error_code": null
 }

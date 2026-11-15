@@ -211,6 +211,7 @@ impl UndoStack {
         self.redo.clear();
         let folds = kind != EditKind::Other && self.run == Some(kind);
         if !folds {
+            crate::record_work!(PayloadBytesCloned, buf.text().len());
             self.undo.push(Snap {
                 text: buf.text().to_owned(),
                 cursor: buf.cursor_offset(),
@@ -244,6 +245,7 @@ impl UndoStack {
         let Some(s) = self.undo.pop() else {
             return false;
         };
+        crate::record_work!(PayloadBytesCloned, buf.text().len());
         self.redo.push(Snap {
             text: buf.text().to_owned(),
             cursor: buf.cursor_offset(),
@@ -257,6 +259,7 @@ impl UndoStack {
         let Some(s) = self.redo.pop() else {
             return false;
         };
+        crate::record_work!(PayloadBytesCloned, buf.text().len());
         self.undo.push(Snap {
             text: buf.text().to_owned(),
             cursor: buf.cursor_offset(),

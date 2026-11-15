@@ -16,6 +16,7 @@ use junie_tui::widgets::panel::Panel;
 use junie_tui::widgets::progress::{Meter, MeterVisual, spinner_frame};
 
 use super::accounts::QuotaTone;
+use super::row_meta::ClockStamp;
 use junie_tui::widgets::scrollbar;
 use junie_tui::widgets::viewport::{Span, render_spans};
 use ratatui::buffer::Buffer;
@@ -24,7 +25,6 @@ use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
 
 use super::{Cx, Go, Screen};
-use crate::backend::Effect;
 use crate::domain::account::{Account, AccountId, IssueCode, Lifecycle};
 use crate::domain::agent::UsageSurface;
 use crate::domain::usage::{Freshness, OverallSummary, QuotaStatus};
@@ -124,6 +124,7 @@ pub struct UsageScreen {
 
     pub show_detail: bool,
     pub refreshing: bool,
+    clock: ClockStamp,
 }
 
 impl UsageScreen {
@@ -134,12 +135,7 @@ impl UsageScreen {
     fn build_rows(&mut self, w: &World) {
         let mut rows = vec![Row::Overview];
         for s in UsageSurface::ALL {
-            let accounts: Vec<&Account> = w
-                .accounts
-                .sorted()
-                .into_iter()
-                .filter(|a| a.surface == s)
-                .collect();
+            let accounts: Vec<&Account> = w.surface_accounts(s);
             if accounts.is_empty() && s != UsageSurface::Unsupported {
                 continue;
             }
@@ -210,16 +206,7 @@ impl UsageScreen {
             .map(|a| a.id.clone())
             .collect();
         for (i, id) in ids.iter().enumerate() {
-            if let Some(a) = w.accounts.get_mut(id)
-                && a.usage.freshness.phase != Freshness::Refreshing
-            {
-                a.usage.freshness.phase = Freshness::Refreshing;
-                let source = a.source.clone();
-                w.perform(Effect::RefreshAccount {
-                    account: id.clone(),
-                    source,
-                    stagger_ms: i as i64 * 120,
-                });
+            if w.refresh_account(id, i as i64 * 120).is_some() {
                 n += 1;
             }
         }
@@ -801,7 +788,9 @@ impl Page<Jackin> for UsageScreen {
             w.last_refresh_secs = w.now_secs();
             return Outcome::Changed;
         }
-        if self.animating(w) {
+        // The panel meta carries the broker age whenever nothing refreshes, an
+        // empty registry included, so a second boundary always has text to move.
+        if self.animating(w) || self.clock.due(w, true, false) {
             Outcome::Changed
         } else {
             Outcome::Ignored
@@ -886,6 +875,7 @@ impl Page<Jackin> for UsageScreen {
 
     fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, w: &World) {
         self.build_rows(w);
+        self.clock.painted(w);
         let t = ctx.theme;
         let n = w
             .accounts

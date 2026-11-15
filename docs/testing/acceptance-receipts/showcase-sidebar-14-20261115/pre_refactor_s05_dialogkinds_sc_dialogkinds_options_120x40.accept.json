@@ -6,13 +6,13 @@
   "reason": null,
   "candidate_path": {
     "encoding": "utf8",
-    "value": "/tmp/final/pre_refactor__s05_dialogkinds__sc_dialogkinds_options_120x40.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/target/functional/s05-sections-36367-1794771950186117000-0/check-artifacts/pre_refactor/s05_dialogkinds/sc_dialogkinds_options_120x40/e51fb472fb53a1e9c256b7348c7463c4087729ee52039ff6ec16bc64b4dff12c/sample.tui.pb"
   },
-  "candidate_sha256": "77f4901192d03591542ae8726eec69cba0809c01cf785e5c264d18dd500849b3",
-  "baseline_sha256": "77f4901192d03591542ae8726eec69cba0809c01cf785e5c264d18dd500849b3",
+  "candidate_sha256": "e51fb472fb53a1e9c256b7348c7463c4087729ee52039ff6ec16bc64b4dff12c",
+  "baseline_sha256": "e51fb472fb53a1e9c256b7348c7463c4087729ee52039ff6ec16bc64b4dff12c",
   "output_path": {
     "encoding": "utf8",
-    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s05_dialogkinds/sc_dialogkinds_options_120x40.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/tests/functional/baselines/pre_refactor/s05_dialogkinds/sc_dialogkinds_options_120x40.tui.pb"
   },
   "error_code": null
 }

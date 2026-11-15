@@ -1869,3 +1869,6 @@ impl FilesPage {
         self.install_index(index);
     }
 }
+
+#[cfg(test)]
+mod tests;

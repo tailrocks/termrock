@@ -6,13 +6,13 @@
   "reason": null,
   "candidate_path": {
     "encoding": "utf8",
-    "value": "/tmp/final/pre_refactor__s10_activity__opt_activity_digit_toggles.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/target/functional/s10-digits-off-4859-1794771457019833000-0/check-artifacts/pre_refactor/s10_activity/opt_activity_digit_toggles/5858e28de2cac749d21471a126a0ab3d28a9fc0080ced8a795bbd011cbbee8c7/sample.tui.pb"
   },
-  "candidate_sha256": "45a87fdfc9b6fdafca200e7a4819c941182d4de5a57aa70ebeb3316af1a2ee1e",
-  "baseline_sha256": "45a87fdfc9b6fdafca200e7a4819c941182d4de5a57aa70ebeb3316af1a2ee1e",
+  "candidate_sha256": "5858e28de2cac749d21471a126a0ab3d28a9fc0080ced8a795bbd011cbbee8c7",
+  "baseline_sha256": "5858e28de2cac749d21471a126a0ab3d28a9fc0080ced8a795bbd011cbbee8c7",
   "output_path": {
     "encoding": "utf8",
-    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s10_activity/opt_activity_digit_toggles.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/tests/functional/baselines/pre_refactor/s10_activity/opt_activity_digit_toggles.tui.pb"
   },
   "error_code": null
 }

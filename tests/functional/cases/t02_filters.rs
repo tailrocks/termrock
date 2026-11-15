@@ -8,7 +8,9 @@ use std::time::{Duration, Instant};
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, TABLEPRO, find_all, text, try_launch};
+use crate::support::{
+    App, Launch, TABLEPRO, find_all, flash_settle_stepped as flash_settle, text, try_launch,
+};
 
 const WIDE_ID: &str = "pre_refactor/t02_filters/t02_filters_filters_120x40";
 const NARROW_ID: &str = "pre_refactor/t02_filters/t02_filters_filters_narrow";
@@ -72,28 +74,6 @@ fn launch(name: &str) -> App {
     let app = try_launch(launch).unwrap_or_else(|error| panic!("{error}"));
     app.wait_text("Filter connections");
     app
-}
-
-fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
 }
 
 fn click_list(app: &App, name: &str) {
@@ -427,7 +407,7 @@ const OPS: &[Op] = &[
     Op {
         downs: 2,
         values: &["Labs"],
-        preview: "name LIKE '%Labs%'",
+        preview: "name ILIKE '%Labs%' ESCAPE '\\'",
         chip: CHIP_CONTAINS,
         rows: Rows::Kept {
             allow: &[NORTHWIND],
@@ -437,7 +417,7 @@ const OPS: &[Op] = &[
     Op {
         downs: 3,
         values: &["Jun"],
-        preview: "name LIKE 'Jun%'",
+        preview: "name ILIKE 'Jun%' ESCAPE '\\'",
         chip: "name starts with 'Jun'",
         rows: Rows::Kept {
             allow: &[JUNIPER],
@@ -447,7 +427,7 @@ const OPS: &[Op] = &[
     Op {
         downs: 4,
         values: &["Labs"],
-        preview: "name LIKE '%Labs'",
+        preview: "name ILIKE '%Labs' ESCAPE '\\'",
         chip: "name ends with 'Labs'",
         rows: Rows::Kept {
             allow: &[NORTHWIND],
@@ -478,9 +458,22 @@ const OPS: &[Op] = &[
     Op {
         downs: 8,
         values: &["Labs"],
-        preview: "name NOT LIKE '%Labs%'",
+        preview: "name NOT ILIKE '%Labs%' ESCAPE '\\'",
         chip: "name not contains 'Labs'",
-        rows: Rows::Same,
+        rows: Rows::Kept {
+            allow: &[
+                LUMEN,
+                "Halden & Co",
+                BLUEFIN,
+                ORBIT,
+                "Kestrel Health",
+                "Fjord Analytics",
+                TESSELLATE,
+                JUNIPER,
+                MERIDIAN,
+            ],
+            show: &[TESSELLATE, JUNIPER],
+        },
     },
     Op {
         downs: 9,
@@ -544,7 +537,20 @@ const OPS: &[Op] = &[
         values: &["Tessellate"],
         preview: "name NOT IN ('Tessellate')",
         chip: "name not in list 'Tessellate'",
-        rows: Rows::Same,
+        rows: Rows::Kept {
+            allow: &[
+                NORTHWIND,
+                LUMEN,
+                "Halden & Co",
+                BLUEFIN,
+                ORBIT,
+                "Kestrel Health",
+                "Fjord Analytics",
+                JUNIPER,
+                MERIDIAN,
+            ],
+            show: &[NORTHWIND, JUNIPER],
+        },
     },
     Op {
         downs: 16,
@@ -619,7 +625,7 @@ fn tablepro_filters_change_the_visible_organizations() {
     let contains = Op {
         downs: 2,
         values: &["Labs"],
-        preview: "name LIKE '%Labs%'",
+        preview: "name ILIKE '%Labs%' ESCAPE '\\'",
         chip: CHIP_CONTAINS,
         rows: Rows::Kept {
             allow: &[NORTHWIND],
@@ -645,6 +651,7 @@ fn tablepro_filters_change_the_visible_organizations() {
         text(&filtered)
     );
 
+    app.expire_status();
     app.wait_absent("filter applied");
     flash_settle(&app);
     shot(
@@ -746,10 +753,39 @@ fn tablepro_filters_change_the_visible_organizations() {
     focus_chips(&app);
     app.key("+");
     app.wait_text("WHERE ");
+    choose_op(&app, 17);
+    app.key("tab");
+    app.type_text("(");
+    app.key("enter");
+    let rejected = app.wait_text("invalid regular expression");
+    let shown = text(&rejected);
+    assert!(
+        shown.contains("WHERE ") && shown.contains(CHIP_CONTAINS),
+        "editor closed on an invalid regex\n{shown}"
+    );
+    assert!(
+        !shown.contains("matches regex '('"),
+        "an invalid regex became a chip\n{shown}"
+    );
+    app.key("escape");
+    app.key("escape");
+    let kept = app.wait_screen("rejected filter cancelled", |screen| {
+        let visible = text(screen);
+        !visible.contains("WHERE ") && visible.contains(CHIP_CONTAINS)
+    });
+    assert!(
+        !text(&kept).contains("matches regex '('"),
+        "cancelling kept the invalid chip\n{}",
+        text(&kept)
+    );
+    assert_kept(&kept, &[NORTHWIND], &[NORTHWIND]);
+    focus_chips(&app);
+    app.key("+");
+    app.wait_text("WHERE ");
     choose_op(&app, 2);
     app.key("tab");
     app.type_text("Retail");
-    let both_preview = app.wait_text("name LIKE '%Retail%'");
+    let both_preview = app.wait_text("name ILIKE '%Retail%' ESCAPE '\\'");
     assert!(text(&both_preview).contains("WHERE "));
     app.key("enter");
     let both = app.wait_screen("two chips", |screen| {
@@ -774,7 +810,7 @@ fn tablepro_filters_change_the_visible_organizations() {
         "match all stayed after m\n{}",
         text(&any)
     );
-    assert_empty(&any);
+    assert_kept(&any, &[NORTHWIND, LUMEN], &[NORTHWIND, LUMEN]);
     clear_filters(&app);
     focus_grid(&app);
     let before_same = focused_org(&app.screen());

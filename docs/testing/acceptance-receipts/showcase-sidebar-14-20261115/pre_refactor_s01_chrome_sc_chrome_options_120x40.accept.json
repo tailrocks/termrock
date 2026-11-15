@@ -6,13 +6,13 @@
   "reason": null,
   "candidate_path": {
     "encoding": "utf8",
-    "value": "/tmp/final/pre_refactor__s01_chrome__sc_chrome_options_120x40.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/target/functional/s01-chrome-page-6872-1794771850699853000-0/check-artifacts/pre_refactor/s01_chrome/sc_chrome_options_120x40/37c4fe2b4d1e15e865448332fb4aea278da87ffa60591d3118f9934cbb9050b8/sample.tui.pb"
   },
-  "candidate_sha256": "789f7309bd5be56d02c50e50229c8e7ab2b33ed9304fe376261763bdaf906b11",
-  "baseline_sha256": "789f7309bd5be56d02c50e50229c8e7ab2b33ed9304fe376261763bdaf906b11",
+  "candidate_sha256": "37c4fe2b4d1e15e865448332fb4aea278da87ffa60591d3118f9934cbb9050b8",
+  "baseline_sha256": "37c4fe2b4d1e15e865448332fb4aea278da87ffa60591d3118f9934cbb9050b8",
   "output_path": {
     "encoding": "utf8",
-    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s01_chrome/sc_chrome_options_120x40.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/tests/functional/baselines/pre_refactor/s01_chrome/sc_chrome_options_120x40.tui.pb"
   },
   "error_code": null
 }

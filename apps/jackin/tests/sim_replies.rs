@@ -5,7 +5,7 @@ use std::collections::BTreeSet;
 use jackin_console::backend::{Effect, OpScope, Reply};
 use jackin_console::fixtures::{Scenario, world_for};
 use jackin_console::sim::SimBackend;
-use jackin_console::world::World;
+use jackin_console::world::{Msg, World};
 
 fn name(effect: &Effect) -> &'static str {
     match effect {
@@ -115,11 +115,13 @@ fn samples(world: &World) -> Vec<Effect> {
         },
         Effect::Refresh { ticket: 1 },
         Effect::RefreshAccount {
+            ticket: 1,
             account: account.id.clone(),
             source: account.source.clone(),
             stagger_ms: 0,
         },
         Effect::ValidateAccount {
+            ticket: 1,
             account: account.id.clone(),
             source: account.source.clone(),
         },
@@ -194,4 +196,85 @@ fn every_effect_the_simulator_sets_aside_gets_a_reply_when_it_falls_due() {
         }
     }
     assert_eq!(silent, Vec::<&str>::new());
+}
+
+#[test]
+fn refresh_simulator_echoes_ticket() {
+    let world = world_for(Scenario::RoleBinding);
+    let sim = SimBackend::shared();
+    let account = world.accounts.accounts.first().expect("an account");
+
+    let ask = |ticket: u64, id: &str| Effect::RefreshAccount {
+        ticket,
+        account: id.to_owned(),
+        source: account.source.clone(),
+        stagger_ms: 0,
+    };
+    for ticket in [41, 42] {
+        let Some(Msg::AccountRefreshed {
+            ticket: echoed,
+            account: id,
+            source,
+            result,
+        }) = sim.settle(&ask(ticket, &account.id), &world)
+        else {
+            panic!("the simulator answers a refresh");
+        };
+        assert_eq!(
+            (echoed, id, *source),
+            (ticket, account.id.clone(), account.source.clone())
+        );
+        assert!(result.is_ok());
+    }
+
+    let Some(Msg::AccountRefreshed {
+        ticket,
+        account: id,
+        result: Err(_),
+        ..
+    }) = sim.settle(&ask(43, "gone"), &world)
+    else {
+        panic!("a refresh of an account that is not there fails with its ticket");
+    };
+    assert_eq!((ticket, id.as_str()), (43, "gone"));
+}
+
+#[test]
+fn validation_simulator_echoes_ticket() {
+    let world = world_for(Scenario::RoleBinding);
+    let sim = SimBackend::shared();
+    let account = world.accounts.accounts.first().expect("an account");
+
+    let ask = |ticket: u64, id: &str| Effect::ValidateAccount {
+        ticket,
+        account: id.to_owned(),
+        source: account.source.clone(),
+    };
+    for ticket in [51, 52] {
+        let Some(Msg::AccountValidated {
+            ticket: echoed,
+            account: id,
+            source,
+            result,
+        }) = sim.settle(&ask(ticket, &account.id), &world)
+        else {
+            panic!("the simulator answers a validation");
+        };
+        assert_eq!(
+            (echoed, id, *source),
+            (ticket, account.id.clone(), account.source.clone())
+        );
+        assert!(result.is_ok());
+    }
+
+    let Some(Msg::AccountValidated {
+        ticket,
+        account: id,
+        result: Err(_),
+        ..
+    }) = sim.settle(&ask(53, "gone"), &world)
+    else {
+        panic!("a validation of an account that is not there fails with its ticket");
+    };
+    assert_eq!((ticket, id.as_str()), (53, "gone"));
 }

@@ -11,13 +11,18 @@ pub mod completion;
 pub mod detail_card;
 pub mod dialog;
 pub mod diff;
+pub mod document_workspace;
 pub mod edit;
 pub mod empty;
 pub mod field_common;
 pub mod file_browser;
 pub mod form_dialog;
 pub mod grid;
+#[cfg(test)]
+mod grid_sort_tests;
 mod grid_specimen;
+#[cfg(test)]
+mod grid_undo_tests;
 pub mod help;
 pub mod hintbar;
 pub mod icon_button;
@@ -42,6 +47,7 @@ pub mod props;
 pub mod rail;
 pub mod row_menu;
 pub mod scrollbar;
+pub mod search_detail;
 pub mod segments;
 pub mod select;
 pub mod splitter;
@@ -59,3 +65,8 @@ pub mod viewport;
 pub mod viewport_ops;
 mod viewport_specimen;
 pub mod widget_hints;
+
+#[cfg(test)]
+mod collection_edit_tests;
+#[cfg(test)]
+mod keyed_cost_tests;

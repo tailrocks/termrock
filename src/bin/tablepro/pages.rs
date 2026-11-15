@@ -16,7 +16,6 @@ use crate::workbench::WorkTab;
 use crate::workbench::{EXPLORER, TABSTRIP, Workbench};
 use junie_tui::theme::StatusKind;
 use junie_tui::ui::layout::Maximized;
-use junie_tui::widgets::input::TextInput;
 
 pub struct Tablepro;
 
@@ -47,8 +46,20 @@ impl Page<Tablepro> for ConnectionsScreen {
 
     fn on_tick(&mut self, _h: &mut History, cx: &mut Cx) -> Outcome {
         match self.tick() {
-            Some(ConnEvent::Connected(i)) => {
-                cx.go(Act::Connected(i));
+            Some(ConnEvent::Connected {
+                key,
+                generation,
+                connection,
+            }) => {
+                cx.go(Act::Connected {
+                    key,
+                    generation,
+                    connection,
+                });
+                Outcome::Changed
+            }
+            Some(ConnEvent::Cancelled(why)) => {
+                cx.status(why.message());
                 Outcome::Changed
             }
             None => Outcome::Ignored,
@@ -132,9 +143,11 @@ impl Page<Tablepro> for Workbench {
     fn on_esc_top(&mut self, _h: &mut History, cx: &mut Cx) -> Outcome {
         if self.maximized {
             self.maximized = false;
-            if let Some(WorkTab::Query(q)) = self.active_tab_mut() {
-                q.split.maximized = Maximized::None;
-            }
+            let _ = self.modify_active(|tab| {
+                if let WorkTab::Query(q) = tab {
+                    q.split.maximized = Maximized::None;
+                }
+            });
             return Outcome::Changed;
         }
         let f = cx.focus.current();
@@ -146,9 +159,7 @@ impl Page<Tablepro> for Workbench {
             if self.explorer_filter.text().is_empty() {
                 return Outcome::Consumed;
             }
-            self.explorer_filter = TextInput::new(self.explorer_filter.id, "")
-                .placeholder("Filter objects")
-                .plain_label();
+            self.explorer_filter.set_value("");
             self.explorer.set_filter(None);
             return Outcome::Changed;
         }
@@ -164,8 +175,8 @@ impl Page<Tablepro> for Workbench {
     }
 
     fn on_interrupt(&mut self, _h: &mut History, cx: &mut Cx) -> Outcome {
-        if let Some(WorkTab::Query(q)) = self.active_tab_mut()
-            && q.cancel()
+        if let Some(key) = self.active_key()
+            && self.cancel_query(key)
         {
             cx.status_as(StatusKind::Info, "Query cancelled");
             return Outcome::Changed;

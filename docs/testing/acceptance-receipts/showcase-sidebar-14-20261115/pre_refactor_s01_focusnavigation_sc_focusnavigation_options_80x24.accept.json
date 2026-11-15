@@ -6,13 +6,13 @@
   "reason": null,
   "candidate_path": {
     "encoding": "utf8",
-    "value": "/tmp/final/pre_refactor__s01_focusnavigation__sc_focusnavigation_options_80x24.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/target/functional/s01-focusnavigation-sections-28470-1794771563076264000-0/check-artifacts/pre_refactor/s01_focusnavigation/sc_focusnavigation_options_80x24/4323280d2507118742f1cee4160e07638135abcbe445910313efcf6f527b64d6/sample.tui.pb"
   },
-  "candidate_sha256": "f194aaf01ec2f268b191adbe358e828a331e3199af029cc117b3e01c06315f9d",
-  "baseline_sha256": "f194aaf01ec2f268b191adbe358e828a331e3199af029cc117b3e01c06315f9d",
+  "candidate_sha256": "4323280d2507118742f1cee4160e07638135abcbe445910313efcf6f527b64d6",
+  "baseline_sha256": "4323280d2507118742f1cee4160e07638135abcbe445910313efcf6f527b64d6",
   "output_path": {
     "encoding": "utf8",
-    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s01_focusnavigation/sc_focusnavigation_options_80x24.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/tests/functional/baselines/pre_refactor/s01_focusnavigation/sc_focusnavigation_options_80x24.tui.pb"
   },
   "error_code": null
 }

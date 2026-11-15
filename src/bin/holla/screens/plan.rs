@@ -34,7 +34,7 @@ use crate::screens::{
     Cx, Go, ModalResult, Screen, StatusBits, open_context, row_anchor, scroll_drag, scroll_press,
     ticks_label,
 };
-use crate::sim::world::World;
+use crate::sim::world::{STOPPING_REFUSAL, World};
 use junie_tui::ui::layer::LayerTag;
 use junie_tui::ui::text::{plural, truncate_sep};
 
@@ -1061,13 +1061,18 @@ impl Screen for PlanReviewPage {
     }
 }
 
+/// What the output viewport was last built from: the selected step, its
+/// output length and its attempt. A status change alone leaves the lines, and
+/// the selection and scroll position on them, untouched.
+type RenderStamp = (usize, usize, u32);
+
 pub struct PlanTab {
     pub plan: String,
     pub cursor: usize,
     scroll: ScrollState,
     view: TextViewport,
     outline_area: Rect,
-    rendered: (usize, usize),
+    rendered: Option<RenderStamp>,
     pub maximized: bool,
     follow_ups: Vec<Button>,
 
@@ -1082,7 +1087,7 @@ impl PlanTab {
             scroll: ScrollState::default(),
             view: TextViewport::new(OUTPUT).max_lines(2000).wrap(true),
             outline_area: Rect::ZERO,
-            rendered: (usize::MAX, usize::MAX),
+            rendered: None,
             maximized: false,
             follow_ups: vec![],
             landed: false,
@@ -1129,7 +1134,8 @@ impl PlanTab {
         }
         let i = self.cursor.min(p.steps.len().saturating_sub(1));
         let s = &p.steps[i];
-        if self.rendered != (i, s.output.len()) {
+        let stamp = (i, s.output.len(), s.attempt);
+        if self.rendered != Some(stamp) {
             let lines = s
                 .output
                 .iter()
@@ -1150,7 +1156,7 @@ impl PlanTab {
             let follow = self.view.follow;
             self.view.set_lines(lines);
             self.view.follow = follow;
-            self.rendered = (i, s.output.len());
+            self.rendered = Some(stamp);
         }
     }
 }
@@ -1174,6 +1180,10 @@ const RUN_STEP_ACTIONS: [RunStep; 5] = [
 
 impl PlanTab {
     fn retry_step(&mut self, w: &mut World, cx: &mut Cx) -> Outcome {
+        if w.stopping() {
+            cx.status(STOPPING_REFUSAL);
+            return Outcome::Changed;
+        }
         let i = self.cursor;
         let Some(p) = w.plan_mut(&self.plan) else {
             return Outcome::Ignored;
@@ -1352,15 +1362,16 @@ impl ShellPage<Holla> for PlanTab {
                 action: Some(1), ..
             } = result
         {
-            let tick = w.tick;
+            let mut still_running = false;
             if let Some(p) = w.plan_mut(&self.plan) {
                 p.cancel_remaining();
-                if p.running().is_empty() {
-                    p.phase = PlanPhase::Done;
-                    p.ended_tick = Some(tick);
-                }
+                still_running = !p.running().is_empty();
             }
-            cx.status("Remaining steps cancelled · running steps finish");
+            cx.status(if still_running {
+                "Remaining steps cancelled · running steps finish"
+            } else {
+                "Remaining steps cancelled"
+            });
         }
         Outcome::Changed
     }
@@ -1682,7 +1693,7 @@ impl ShellPage<Holla> for PlanTab {
                 let y = area.bottom().saturating_sub(follow_lines);
                 buf.set_string(area.x + 1, y, "Next", t.faint());
                 let rects = junie_tui::widgets::button::row_layout(
-                    Rect::new(area.x + 7, y, area.width.saturating_sub(7), 1),
+                    Rect::new(area.x + 7, y, area.width.saturating_sub(7), follow_lines),
                     &follow_w,
                     2,
                 );
@@ -1808,5 +1819,124 @@ impl Screen for PlanTab {
             });
         }
         bits
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::fixtures::world_for;
+    use crate::scenario::{Motion, Scenario};
+
+    const ID: &str = "docker-cleanup";
+
+    fn armed_images_failure(template: Option<Vec<String>>) -> (World, usize) {
+        let mut w = world_for(Scenario::DockerCleanup, Motion::Full);
+        w.clock.running = true;
+        if let Some(lines) = template {
+            w.step_output.insert("docker-cleanup/images".into(), lines);
+        }
+        let plan = w.plan_mut(ID).expect("plan");
+        let images = plan
+            .steps
+            .iter()
+            .position(|s| s.id == "images")
+            .expect("step");
+        plan.steps[images].fails = true;
+        let tick = w.tick;
+        assert!(w.plan_mut(ID).expect("plan").arm(tick));
+        (w, images)
+    }
+
+    fn tick_until_done(w: &mut World, tab: &mut PlanTab) {
+        for _ in 0..400 {
+            if w.plan(ID).expect("plan").phase == PlanPhase::Done {
+                tab.sync(w);
+                return;
+            }
+            w.tick();
+            tab.sync(w);
+        }
+        panic!("plan never finished");
+    }
+
+    fn tick_until_succeeded(w: &mut World, tab: &mut PlanTab, images: usize) {
+        for _ in 0..400 {
+            if w.plan(ID).expect("plan").steps[images].state == StepState::Succeeded {
+                tab.sync(w);
+                return;
+            }
+            w.tick();
+            tab.sync(w);
+        }
+        panic!("retried step never succeeded");
+    }
+
+    fn view_text(tab: &PlanTab) -> Vec<String> {
+        (0..tab.view.len())
+            .map(|i| tab.view.line_text(i).unwrap_or_default().to_owned())
+            .collect()
+    }
+
+    #[test]
+    fn plan_retry_preserves_viewport_scroll_follow_choice() {
+        let (mut w, images) = armed_images_failure(None);
+        let mut tab = PlanTab::new(ID);
+        tick_until_done(&mut w, &mut tab);
+        assert_eq!(tab.cursor, images, "the landing selects the failed step");
+        tab.view.follow = false;
+
+        assert!(w.plan_mut(ID).expect("plan").retry(images));
+        for _ in 0..400 {
+            if w.plan(ID).expect("plan").steps[images].state == StepState::Succeeded {
+                break;
+            }
+            w.tick();
+            tab.sync(&w);
+            assert!(!tab.view.follow, "scrolled back view keeps its choice");
+        }
+        let output = &w.plan(ID).expect("plan").steps[images].output;
+        assert_eq!(view_text(&tab), *output, "view shows the whole output");
+    }
+
+    #[test]
+    fn plan_status_transition_keeps_the_output_selection() {
+        let mut w = world_for(Scenario::DockerCleanup, Motion::Full);
+        w.clock.running = true;
+        let tick = w.tick;
+        assert!(w.plan_mut(ID).expect("plan").arm(tick));
+        let images = w
+            .plan(ID)
+            .expect("plan")
+            .steps
+            .iter()
+            .position(|s| s.id == "images")
+            .expect("step");
+        let template_len = w.step_output["docker-cleanup/images"].len();
+        let mut tab = PlanTab::new(ID);
+        tab.cursor = images;
+        for _ in 0..400 {
+            let step = &w.plan(ID).expect("plan").steps[images];
+            if step.state == StepState::Running && step.output.len() >= template_len {
+                break;
+            }
+            w.tick();
+            tab.sync(&w);
+        }
+        let step = &w.plan(ID).expect("plan").steps[images];
+        assert_eq!(
+            step.state,
+            StepState::Running,
+            "all lines out, still running"
+        );
+        tab.view.select_all();
+        assert!(tab.view.has_selection());
+
+        tick_until_succeeded(&mut w, &mut tab, images);
+
+        assert!(
+            tab.view.has_selection(),
+            "finishing the step must not rebuild the viewport"
+        );
     }
 }

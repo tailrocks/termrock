@@ -6,6 +6,7 @@ use super::{Hint, PageEvent};
 use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::intent::{DismissReason, Phase};
 use junie_tui::core::pointer::MouseTarget;
+use junie_tui::core::response::Actions;
 use junie_tui::ui::context::ContextConfig;
 use junie_tui::ui::ctx::RenderCtx;
 use junie_tui::ui::layer;
@@ -60,7 +61,7 @@ impl<T: Clone> RowMenu<T> {
                     return None;
                 }
 
-                (o.or(Outcome::Consumed), e)
+                (o.or(Outcome::Consumed), Actions::from(e))
             }
             PageEvent::Pointer(p) => match menu.route(p) {
                 Some(r) if r.outcome() != Outcome::Ignored => r.into_parts(),
@@ -70,25 +71,29 @@ impl<T: Clone> RowMenu<T> {
                     Some(Phase::Click) => (
                         Outcome::Changed,
                         layer::dismiss(menu, DismissReason::OutsideClick)
-                            .and_then(|r| r.into_action()),
+                            .map(|r| r.into_actions())
+                            .unwrap_or_default(),
                     ),
-                    Some(Phase::Press | Phase::Drag) => (Outcome::Consumed, None),
+                    Some(Phase::Press | Phase::Drag) => (Outcome::Consumed, Actions::None),
                     _ => return None,
                 },
             },
             _ => return None,
         };
-        match event {
-            Some(MenuAction::Chosen(i)) => {
-                let (_, target) = self.open.take()?;
-                Some((Outcome::Changed, Some((target, i))))
-            }
-            Some(MenuAction::Dismissed) => {
-                self.open = None;
-                Some((Outcome::Changed, None))
-            }
-            None => Some((out, None)),
+        let mut result = Some((out, None));
+        for ev in event {
+            result = match ev {
+                MenuAction::Chosen(i) => {
+                    let (_, target) = self.open.take()?;
+                    Some((Outcome::Changed, Some((target, i))))
+                }
+                MenuAction::Dismissed => {
+                    self.open = None;
+                    Some((Outcome::Changed, None))
+                }
+            };
         }
+        result
     }
 }
 

@@ -67,6 +67,23 @@ impl Default for Item {
 }
 
 impl Item {
+    /// Text bytes a deep clone of this item copies. A borrowed `Cow` copies
+    /// no bytes.
+    #[cfg(feature = "work-metrics")]
+    pub(crate) fn payload_bytes(&self) -> usize {
+        let owned = |text: &Cow<'static, str>| match text {
+            Cow::Owned(text) => text.len(),
+            Cow::Borrowed(_) => 0,
+        };
+        self.label.len()
+            + self.detail.len()
+            + owned(&self.glyph)
+            + self.tag.as_ref().map_or(0, owned)
+            + owned(&self.group)
+            + self.insert.as_ref().map_or(0, String::len)
+            + self.reason.as_ref().map_or(0, String::len)
+    }
+
     pub fn new(label: impl Into<String>) -> Self {
         Self {
             key: None,
@@ -537,6 +554,50 @@ impl OptionList {
         }
     }
 
+    /// Prepares the paint records of the rows inside `inner`, copying nothing
+    /// but what `payload` returns for each visible row.
+    pub fn snapshot<S: RowSource + ?Sized, P>(
+        &self,
+        inner: Rect,
+        src: &S,
+        mut payload: impl FnMut(usize) -> P,
+    ) -> PopupSnapshot<P> {
+        let len = src.len();
+        let mut rows = Vec::new();
+        for (k, i) in self.visible_lines() {
+            if k >= inner.height {
+                break;
+            }
+            let Some(i) = i else { continue };
+            if i >= len {
+                break;
+            }
+            let key = src.key(i);
+            rows.push(PopupRow {
+                index: i,
+                key,
+                line: k,
+                enabled: src.enabled(i),
+                checked: self.checked.contains(&key),
+                payload: payload(i),
+            });
+        }
+        #[cfg(test)]
+        crate::core::work::add(crate::core::work::Counter::SnapshotRows, rows.len());
+        PopupSnapshot {
+            id: self.id,
+            rows,
+            scroll: self.scroll.clone(),
+            fade_edges: self.fade_edges,
+            hover_moves_cursor: self.hover_moves_cursor,
+            look: self.look,
+            highlighted: self.highlighted(),
+            chosen: self.chosen,
+            more_above: self.scroll.offset > 0,
+            more_below: self.more_below(len),
+        }
+    }
+
     pub fn paint_rows<S: RowSource + ?Sized>(
         &self,
         inner: Rect,
@@ -546,38 +607,13 @@ impl OptionList {
         ctx: &mut RenderCtx,
         mut content: impl FnMut(usize, &RowPaint, &mut Buffer, &mut RenderCtx),
     ) {
-        let has_sb = self.scroll.overflows();
-        let highlighted = self.highlighted();
-        let len = src.len();
-        for (k, i) in self.visible_lines() {
-            if k >= inner.height {
-                break;
-            }
-
-            let Some(i) = i else { continue };
-            if i >= len {
-                break;
-            }
-            let y = inner.y + k;
-            let mut state = ctx.state(self.row_id(i));
-            state.focused = highlighted == Some(i);
-            state.disabled = !src.enabled(i);
-            state.selected = self.chosen == Some(i) || self.checked.contains(&src.key(i));
-
-            state.hovered &= !self.hover_moves_cursor;
-            let area = Rect::new(inner.x, y, inner.width.saturating_sub(u16::from(has_sb)), 1);
-            let row = RowUi::paint(ctx, buf, area, state, RowLook::Fill(self.look), bg);
-            content(i, &row, buf, ctx);
-            ctx.register_part(self.id, Self::row_part(i), area);
-        }
-        if has_sb {
-            if self.fade_edges {
-                scrollbar::render_with_fade(inner, buf, ctx, self.id, &self.scroll, true);
-            } else if inner.width >= 2 {
-                let track = Rect::new(inner.right() - 1, inner.y, 1, inner.height);
-                scrollbar::render_vertical(track, buf, ctx, self.id, &self.scroll, false);
-            }
-        }
+        self.snapshot(inner, src, |_| ()).paint_rows(
+            inner,
+            bg,
+            buf,
+            ctx,
+            |row, paint, buf, ctx| content(row.index, paint, buf, ctx),
+        );
     }
 
     pub fn status<'a, T: AsItem>(&self, items: &'a [T]) -> Option<&'a str> {
@@ -593,6 +629,86 @@ impl OptionList {
         self.pointed
             .and_then(reason)
             .or_else(|| self.highlighted().and_then(reason))
+    }
+}
+
+/// Paint record of one visible popup row.
+#[derive(Debug, Clone)]
+pub struct PopupRow<P> {
+    /// Index in the source the list was laid out over.
+    pub index: usize,
+    pub key: ItemKey,
+    /// Display line inside the popup, counted from its first visible row.
+    pub line: u16,
+    pub enabled: bool,
+    pub checked: bool,
+    pub payload: P,
+}
+
+/// The visible rows of an [`OptionList`] with everything a deferred overlay
+/// paint needs, so queueing a popup never copies the whole collection.
+#[derive(Debug, Clone)]
+pub struct PopupSnapshot<P> {
+    id: WidgetId,
+    rows: Vec<PopupRow<P>>,
+    scroll: ScrollPane,
+    fade_edges: bool,
+    hover_moves_cursor: bool,
+    look: CursorStyle,
+    highlighted: Option<usize>,
+    chosen: Option<usize>,
+    more_above: bool,
+    more_below: bool,
+}
+
+impl<P> PopupSnapshot<P> {
+    pub fn rows(&self) -> &[PopupRow<P>] {
+        &self.rows
+    }
+
+    pub fn row_id(&self, i: usize) -> WidgetId {
+        self.id.part(OptionList::row_part(i))
+    }
+
+    pub fn more_above(&self) -> bool {
+        self.more_above
+    }
+
+    pub fn more_below(&self) -> bool {
+        self.more_below
+    }
+
+    pub fn paint_rows(
+        &self,
+        inner: Rect,
+        bg: Color,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        mut content: impl FnMut(&PopupRow<P>, &RowPaint, &mut Buffer, &mut RenderCtx),
+    ) {
+        let has_sb = self.scroll.overflows();
+        for row in &self.rows {
+            crate::record_work!(VisibleRowsPainted, 1usize);
+            let y = inner.y + row.line;
+            let mut state = ctx.state(self.row_id(row.index));
+            state.focused = self.highlighted == Some(row.index);
+            state.disabled = !row.enabled;
+            state.selected = self.chosen == Some(row.index) || row.checked;
+
+            state.hovered &= !self.hover_moves_cursor;
+            let area = Rect::new(inner.x, y, inner.width.saturating_sub(u16::from(has_sb)), 1);
+            let paint = RowUi::paint(ctx, buf, area, state, RowLook::Fill(self.look), bg);
+            content(row, &paint, buf, ctx);
+            ctx.register_part(self.id, OptionList::row_part(row.index), area);
+        }
+        if has_sb {
+            if self.fade_edges {
+                scrollbar::render_with_fade(inner, buf, ctx, self.id, &self.scroll, true);
+            } else if inner.width >= 2 {
+                let track = Rect::new(inner.right() - 1, inner.y, 1, inner.height);
+                scrollbar::render_vertical(track, buf, ctx, self.id, &self.scroll, false);
+            }
+        }
     }
 }
 

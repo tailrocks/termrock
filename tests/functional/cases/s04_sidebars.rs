@@ -258,8 +258,9 @@ fn specimen_block(screen: &TerminalSnapshot, label: &str) -> Option<String> {
     let runs = block.contains("R Runs");
     let ready = match label {
         "overflow" => {
-            block.contains("far longer than its row")
-                && block.contains("la12")
+            block.contains("R Runs and a …")
+                && block.contains(" 12 │")
+                && !block.contains("far longer than its row")
                 && block.contains("Branches")
         }
         "narrow" => block.contains("Tasks") && block.contains("Branches"),

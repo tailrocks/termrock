@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
-use ratatui::layout::{Constraint, Rect};
+use ratatui::layout::{Constraint, Rect, Size};
 
 use crate::app::PageId;
 use crate::options::{PageValues, page_options};
@@ -11,7 +11,7 @@ use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
 use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::hit::Axis;
-use junie_tui::core::id::{Part, WidgetId};
+use junie_tui::core::id::{Part, PartRef, WidgetId};
 use junie_tui::core::intent::Phase;
 use junie_tui::core::keymap::NavKeys;
 use junie_tui::core::list::{
@@ -21,9 +21,10 @@ use junie_tui::core::pointer::{MouseTarget, PointerEvent};
 use junie_tui::core::scroll::{
     FollowCursor, HScroll, ScrollPane, ScrollState, ScrollbarVisibility, TrackClick,
 };
-use junie_tui::theme::Theme;
+use junie_tui::theme::{CursorStyle, Theme};
 use junie_tui::ui::ctx::RenderCtx;
 use junie_tui::ui::layout::StackChild;
+use junie_tui::ui::scroll_view::{Axes, ScrollView};
 use junie_tui::ui::specimen::{SpecimenState, StateGrid};
 use junie_tui::ui::text::{fit, slice_cells, truncate};
 use junie_tui::widgets::grid::{CellKind, CellValue, ColumnSpec, DataGrid, GridRows, RowTotal};
@@ -40,6 +41,27 @@ const HAND: WidgetId = ID.sub("hand");
 
 const FITS: WidgetId = ID.sub("fits");
 const OVER: WidgetId = ID.sub("over");
+const NEST_OUTER: WidgetId = ID.sub("nest_outer");
+const NEST_INNER: WidgetId = ID.sub("nest_inner");
+const VIRTUAL: WidgetId = ID.sub("virtual");
+
+pub struct VirtualRows(Vec<String>);
+
+impl VirtualRows {
+    fn new(len: usize) -> Self {
+        Self((1..=len).map(|i| format!("Row {i:05}")).collect())
+    }
+}
+
+impl RowSource for VirtualRows {
+    fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    fn label(&self, i: usize) -> &str {
+        &self.0[i]
+    }
+}
 
 fn retired(i: usize) -> bool {
     i % 10 == 9
@@ -94,6 +116,14 @@ pub struct ScrollingPage {
     pub fits: ScrollPane,
     pub over: ScrollPane,
 
+    pub nest_outer: ScrollView,
+    pub nest_inner: ScrollView,
+
+    pub virtual_rows: ScrollView,
+    pub virtual_source: VirtualRows,
+    pub virtual_cursor: usize,
+    pub virtual_painted: usize,
+
     pub region: Select,
     pub tree: TreeView,
     pub table: DataTable,
@@ -126,9 +156,16 @@ impl ScrollingPage {
             hand: ScrollPane::default(),
             fits: ScrollPane::default(),
             over: ScrollPane::default(),
+            nest_outer: ScrollView::new(NEST_OUTER).axes(Axes::VERTICAL),
+            nest_inner: ScrollView::new(NEST_INNER).axes(Axes::VERTICAL),
+            virtual_rows: ScrollView::new(VIRTUAL).axes(Axes::VERTICAL),
+            virtual_source: VirtualRows::new(0),
+            virtual_cursor: 0,
+            virtual_painted: 0,
             region: Select::new(ID.sub("region"), "Region", REGIONS, 5),
             tree: TreeView::new(ID.sub("tree"), vec![]),
-            table: DataTable::new(ID.sub("table"), vec![], vec![]),
+            table: DataTable::try_new(ID.sub("table"), vec![], vec![])
+                .expect("rectangular fixture"),
             grid: DataGrid::new(ID.sub("grid"), vec![]),
             flagged: BTreeSet::new(),
             last: None,
@@ -251,11 +288,12 @@ impl ScrollingPage {
         self.tree = tree;
 
         let rows = REGIONS.iter().map(|r| vec![Cell::new(*r)]).collect();
-        let mut table = DataTable::new(
+        let mut table = DataTable::try_new(
             ID.sub("table"),
             vec![Column::new("Region", Constraint::Min(10))],
             rows,
         )
+        .expect("rectangular fixture")
         .nav(nav)
         .type_ahead_timeout(timeout)
         .type_ahead_precedence(precedence);
@@ -269,14 +307,15 @@ impl ScrollingPage {
         .nav(nav)
         .type_ahead_timeout(timeout)
         .type_ahead_precedence(precedence);
-        grid.set_rows(GridRows {
+        grid.try_set_rows(GridRows {
             rows: SERVICES
                 .iter()
                 .map(|s| vec![CellValue::Text((*s).to_owned())])
                 .collect(),
             total: RowTotal::Exact(SERVICES.len()),
             more: false,
-        });
+        })
+        .expect("rectangular fixture");
         grid.cursor = self.grid.cursor;
         self.grid = grid;
     }
@@ -412,7 +451,14 @@ impl ScrollingPage {
         let x2 = x1 + div + 1;
         let col = |x: u16, w: u16| Rect::new(x, area.y, w, area.height);
         self.render_hand(col(area.x, hand.saturating_sub(1)), buf, ctx);
-        self.render_dividers(col(x1, div.saturating_sub(1)), buf, ctx);
+        let middle = col(x1, div.saturating_sub(1));
+        if self.virtual_len() > 0 {
+            self.render_virtual(middle, buf, ctx);
+        } else if self.opts.on("scrolling.nested") {
+            self.render_nested(middle, buf, ctx);
+        } else {
+            self.render_dividers(middle, buf, ctx);
+        }
         self.render_cursor(col(x2, area.right().saturating_sub(x2)), buf, ctx);
     }
 
@@ -526,6 +572,123 @@ impl ScrollingPage {
                 pane.draw_divider(col, buf, ctx, id, false);
             }
         }
+    }
+
+    fn render_nested(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
+        let t = ctx.theme;
+        let panel = Panel::card(Some("Nested bars")).title_min(4);
+        let bg = panel.bg(t);
+        let inner = panel.render(area, buf, t);
+        if inner.height < 4 || inner.width < 8 {
+            return;
+        }
+        let (outer, nested) = (&mut self.nest_outer, &mut self.nest_inner);
+        let content = Size::new(inner.width, inner.height + 6);
+        outer.render(inner, content, buf, ctx, |frame, buf, ctx| {
+            buf.set_string(frame.x, frame.y, "outer content", t.muted().bg(bg));
+            let area = Rect::new(
+                frame.x,
+                frame.y + 2,
+                frame.width,
+                inner.height.saturating_sub(1),
+            );
+            nested.render(area, Size::new(area.width, 20), buf, ctx, |rows, buf, _| {
+                for i in 0..rows.height {
+                    let text = truncate(&format!("nested row {}", i + 1), rows.width as usize);
+                    buf.set_string(rows.x, rows.y + i, text, t.secondary().bg(bg));
+                }
+            });
+        });
+    }
+
+    fn virtual_len(&self) -> usize {
+        self.virtual_source.len()
+    }
+
+    fn render_virtual(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
+        let t = ctx.theme;
+        let rows = self.virtual_len();
+        let panel = Panel::card(Some("Virtual")).title_min(4);
+        let bg = panel.bg(t);
+        let inner = panel.render(area, buf, t);
+        ctx.focus_stop(VIRTUAL);
+        if inner.height < 3 || inner.width < 8 || rows == 0 {
+            return;
+        }
+        let cursor = self.virtual_cursor.min(rows - 1);
+        let target = Rect::new(0, u16::try_from(cursor).unwrap_or(u16::MAX), 1, 1);
+        let screen = *buf.area();
+        let content = Size::new(inner.width, u16::try_from(rows).unwrap_or(u16::MAX));
+        let mut painted = 0;
+        let state = ctx.state(VIRTUAL);
+        let (view, source) = (&mut self.virtual_rows, &self.virtual_source);
+        view.render_window(
+            screen,
+            inner,
+            content,
+            Some(target),
+            buf,
+            ctx,
+            |window, buf, ctx| {
+                for index in window.content_rows() {
+                    painted += 1;
+                    let rect = window.project_content_rect(Rect::new(
+                        0,
+                        u16::try_from(index).unwrap_or(u16::MAX),
+                        window.viewport.width,
+                        1,
+                    ));
+                    let mut s = state;
+                    s.focused = state.focused && index == cursor;
+                    let look = t.cursor_row(s, bg, CursorStyle::Fill);
+                    let style = if index == cursor {
+                        look.style
+                    } else {
+                        t.secondary().bg(bg)
+                    };
+                    for x in rect.left()..rect.right() {
+                        buf[(x, rect.y)].set_symbol(" ").set_style(style);
+                    }
+                    if index == cursor {
+                        buf.set_string(rect.x, rect.y, look.gutter, look.gutter_style);
+                    }
+                    let label =
+                        truncate(source.label(index), rect.width.saturating_sub(2) as usize);
+                    buf.set_string(rect.x + 2, rect.y, label, style);
+                    ctx.hits.register_part(
+                        VIRTUAL,
+                        PartRef::item(Part::ROW, source.key(index)),
+                        rect,
+                    );
+                }
+            },
+        );
+        self.virtual_painted = painted;
+        panel.draw_meta(area, buf, t, &format!("{painted} of {rows}"));
+    }
+
+    fn virtual_key(&mut self, key: &Key) -> Outcome {
+        let rows = self.virtual_len();
+        if rows == 0 {
+            return Outcome::Ignored;
+        }
+        let last = rows - 1;
+        let page = usize::from(self.virtual_rows.last_layout().viewport.height.max(1));
+        let at = self.virtual_cursor.min(last);
+        let to = match key.code {
+            KeyCode::Up if key.plain() => at.saturating_sub(1),
+            KeyCode::Down if key.plain() => (at + 1).min(last),
+            KeyCode::PageUp if key.plain() => at.saturating_sub(page),
+            KeyCode::PageDown if key.plain() => (at + page).min(last),
+            KeyCode::Home if key.plain() => 0,
+            KeyCode::End if key.plain() => last,
+            _ => return self.virtual_rows.on_key(key).unwrap_or(Outcome::Ignored),
+        };
+        if to == self.virtual_cursor {
+            return Outcome::Consumed;
+        }
+        self.virtual_cursor = to;
+        Outcome::Changed
     }
 
     fn render_cursor(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
@@ -730,6 +893,16 @@ impl ScrollingPage {
             return r.outcome();
         }
 
+        if ev.on(VIRTUAL) {
+            if click && let Some(index) = ev.index_of(Part::ROW) {
+                self.virtual_cursor = index;
+                cx.focus.focus(VIRTUAL);
+                return Outcome::Changed;
+            }
+            if let Some(r) = self.virtual_rows.pointer(ev) {
+                return r.outcome();
+            }
+        }
         if let Some((axis, delta)) = ev.wheel() {
             for (pane, owner) in self.panes() {
                 let over = ev.id == owner || scrollbar::is_bar_of(ev.id, owner);
@@ -748,6 +921,11 @@ impl ScrollingPage {
                 };
             }
             return Outcome::Ignored;
+        }
+        for view in [&mut self.nest_inner, &mut self.nest_outer] {
+            if let Some(r) = view.pointer(ev) {
+                return r.outcome();
+            }
         }
         for (pane, owner) in self.panes() {
             if !scrollbar::is_bar_of(ev.id, owner) {
@@ -797,8 +975,8 @@ impl Page for ScrollingPage {
         }
         match ev {
             PageEvent::Tick => {
-                if self.log.lines.len() < 2000 && self.log.follow {
-                    let n = self.log.lines.len();
+                if self.log.lines().len() < 2000 && self.log.follow {
+                    let n = self.log.lines().len();
                     if let Some(line) = crate::data::log_lines(n + 1).pop() {
                         self.log.push(line);
                     }
@@ -810,6 +988,9 @@ impl Page for ScrollingPage {
                 let Some(f) = cx.focus.current() else {
                     return Outcome::Ignored;
                 };
+                if f == VIRTUAL {
+                    return self.virtual_key(key);
+                }
                 if f == self.prose.id {
                     return self.prose.on_key(key);
                 }
@@ -823,13 +1004,13 @@ impl Page for ScrollingPage {
                     return self.region.on_key(key).0;
                 }
                 if f == self.tree.id {
-                    return self.tree.on_key(key).0;
+                    return self.tree.on_key(key).outcome();
                 }
                 if f == self.table.id {
-                    return self.table.on_key(key).0;
+                    return self.table.on_key(key).outcome();
                 }
                 if f == self.grid.id {
-                    return self.grid.on_key(key).0;
+                    return self.grid.on_key(key).outcome();
                 }
                 Outcome::Ignored
             }
@@ -839,7 +1020,7 @@ impl Page for ScrollingPage {
     }
 
     fn animating(&self) -> bool {
-        self.log.follow && self.log.lines.len() < 2000
+        self.log.follow && self.log.lines().len() < 2000
     }
 
     fn layer_open(&self) -> bool {
@@ -880,6 +1061,8 @@ impl Page for ScrollingPage {
                 v.push(("f", "Flag"));
             }
             v
+        } else if focus == Some(VIRTUAL) {
+            vec![("↑↓", "Move"), ("PgUp/PgDn", "Page"), ("Home/End", "Ends")]
         } else if focus == Some(self.prose.id) {
             nav_hints(&self.prose.nav, false, "Scroll")
         } else if focus == Some(self.region.id) {
@@ -901,6 +1084,12 @@ impl Page for ScrollingPage {
 
     fn set_option(&mut self, key: &str, value: usize) {
         if self.opts.set(key, value) {
+            let rows = self.opts.number("scrolling.window").map_or(0, usize::from);
+            if rows != self.virtual_len() {
+                self.virtual_source = VirtualRows::new(rows);
+                self.virtual_cursor = 0;
+                self.virtual_rows.reset();
+            }
             self.rebuild();
         }
     }
@@ -915,5 +1104,145 @@ impl Page for ScrollingPage {
 
     fn template_mut(&mut self) -> Option<&mut Template> {
         Some(&mut self.template)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use junie_tui::core::focus::FocusRing;
+    use junie_tui::core::hit::HitRegistry;
+    use junie_tui::theme::ColorLevel;
+    use junie_tui::ui::ctx::Interaction;
+
+    fn render(page: &mut ScrollingPage) -> (Buffer, HitRegistry) {
+        let theme = Theme::for_level(ColorLevel::TrueColor);
+        let area = Rect::new(0, 0, 120, 40);
+        let mut buf = Buffer::empty(area);
+        let mut hits = HitRegistry::default();
+        let mut ring = FocusRing::default();
+        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        page.render(area, &mut buf, &mut ctx);
+        (buf, hits)
+    }
+
+    fn text(buf: &Buffer) -> String {
+        buf.content().iter().map(|c| c.symbol()).collect()
+    }
+
+    #[test]
+    fn nested_bars_switch_is_listed_on_the_options_tab_and_off_by_default() {
+        let opt = crate::options::find("scrolling.nested").expect("--opt can set it");
+        assert_eq!(opt.default, 0);
+        let view = crate::options::OptionsView::new(
+            ID.sub("options"),
+            &[crate::options::Group {
+                heading: "Scrolling",
+                opts: crate::options::page_options(PageId::Scrolling),
+                empty: "",
+            }],
+        );
+        assert!(view.control_id("scrolling.nested").is_some());
+    }
+
+    #[test]
+    fn nested_bars_are_off_by_default() {
+        let mut page = ScrollingPage::new();
+        let (buf, hits) = render(&mut page);
+        assert!(!text(&buf).contains("Nested bars"));
+        assert!(hits.bar(scrollbar::id_for(NEST_INNER)).is_none());
+    }
+
+    #[test]
+    fn nested_bars_show_a_partially_clipped_child_scrollbar() {
+        let mut page = ScrollingPage::new();
+        page.set_option("scrolling.nested", 1);
+        let (buf, hits) = render(&mut page);
+        assert!(text(&buf).contains("Nested bars"));
+
+        let full = page
+            .nest_inner
+            .last_layout()
+            .v_track
+            .expect("the child overflows, so it has a track");
+        let shown = hits
+            .bar(scrollbar::id_for(NEST_INNER))
+            .expect("part of the child's track is visible");
+        assert!(
+            shown.track.height < full.height,
+            "the visible fragment ({}) is shorter than the full track ({})",
+            shown.track.height,
+            full.height
+        );
+        assert!(hits.bar(scrollbar::id_for(NEST_OUTER)).is_some());
+    }
+
+    #[test]
+    fn virtual_rows_switch_is_listed_on_the_options_tab_and_off_by_default() {
+        let opt = crate::options::find("scrolling.window").expect("--opt can set it");
+        assert_eq!(opt.default, 0);
+        let view = crate::options::OptionsView::new(
+            ID.sub("options"),
+            &[crate::options::Group {
+                heading: "Scrolling",
+                opts: crate::options::page_options(PageId::Scrolling),
+                empty: "",
+            }],
+        );
+        assert!(view.control_id("scrolling.window").is_some());
+        let mut page = ScrollingPage::new();
+        let (buf, _) = render(&mut page);
+        assert!(!text(&buf).contains("Virtual"));
+    }
+
+    #[test]
+    fn virtual_rows_paint_and_allocate_the_viewport_for_any_row_count() {
+        let mut seen = Vec::new();
+        for (value, rows) in [(1, 100usize), (2, 1000), (3, 10000)] {
+            let mut page = ScrollingPage::new();
+            page.set_option("scrolling.window", value);
+            let (buf, hits) = render(&mut page);
+            assert!(text(&buf).contains("Virtual"));
+            let layout = page.virtual_rows.last_layout();
+            let viewport = usize::from(layout.viewport.width) * usize::from(layout.viewport.height);
+            let work = page.virtual_rows.last_work();
+            assert!(page.virtual_painted <= usize::from(layout.viewport.height));
+            assert!(
+                work.allocated <= viewport && work.filled <= viewport && work.copied <= viewport
+            );
+            assert_eq!(
+                page.virtual_rows.pane.v.content_len,
+                rows.max(usize::from(layout.viewport.height))
+            );
+            let first = hits
+                .part_of(VIRTUAL)
+                .expect("rows register hits against the container");
+            assert_eq!(first.owner, VIRTUAL);
+            seen.push((page.virtual_painted, work.allocated));
+        }
+        assert!(
+            seen.iter().all(|s| *s == seen[0]),
+            "cost ignores the row count: {seen:?}"
+        );
+    }
+
+    #[test]
+    fn virtual_rows_keys_move_the_cursor_and_reveal_the_last_row() {
+        let mut page = ScrollingPage::new();
+        page.set_option("scrolling.window", 3);
+        render(&mut page);
+        let key = |code| Key {
+            code,
+            mods: ratatui::crossterm::event::KeyModifiers::NONE,
+        };
+        assert_eq!(page.virtual_key(&key(KeyCode::Down)), Outcome::Changed);
+        assert_eq!(page.virtual_cursor, 1);
+        assert_eq!(page.virtual_key(&key(KeyCode::End)), Outcome::Changed);
+        let (buf, _) = render(&mut page);
+        assert!(text(&buf).contains("Row 10000"), "the last row is revealed");
+        assert!(!text(&buf).contains("Row 00001"));
+        assert_eq!(page.virtual_key(&key(KeyCode::Home)), Outcome::Changed);
+        let (buf, _) = render(&mut page);
+        assert!(text(&buf).contains("Row 00001"));
     }
 }

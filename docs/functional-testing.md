@@ -113,6 +113,13 @@ redraw rule, through a minimal `shell::App` in `tests/common/mod.rs`)
 and `status.rs` (the sticky status line). No test of a `junie-tui` type
 lives in `apps/jackin/tests`. These tests add no visual baseline and are
 not journeys: a user-visible flow still needs a functional journey.
+
+Put a new data or regression test in the package's shared `regressions`
+target: `tests/regressions/<topic>.rs` with a `mod <topic>;` line in
+`tests/regressions/main.rs`, and the same under `apps/jackin/tests/` for
+`jackin-console`. Do not add a new top-level `tests/*.rs`: the generated CI
+lists every test target, so each new one changes the generated workflows
+(see [CI](ci.md#test-targets-and-generated-ci)).
 `cargo nextest run --all-features --all-targets` runs them, and so do the
 `Rust / junie-tui` and `Rust / jackin-console` CI jobs
 (`nextest run --profile ci --package <crate> --all-features`); the `functional` suite
@@ -166,9 +173,12 @@ the helper always sets: wall time then never moves the simulated clock (so a
 relative label such as "live · 3 s ago" cannot drift under load), and the
 helper's `advance_clock(ms)` sends its documented bracketed-paste clock
 request to step it. A Holla journey that waits for a task or activity to
-progress calls `advance_clock` first. TablePro steps only its status line
-(the 5 s lifetime of a message) this way; its pointer timers and every
-showcase timer stay on wall time. Do not assume every application
+progress calls `advance_clock` first. So does a Jackin journey that waits for a
+simulated save or for a status line to expire: under the opt-in Jackin starts
+its clock stopped, so only `advance_clock` moves it. TablePro steps only its status line
+(the 5 s lifetime of a message) this way, and Showcase holds it (it does not
+implement `advance_clock`); their pointer timers stay on wall time. A launch
+with `launch.clock` set opts in. Do not assume every application
 implements that clock. Never send clock input as a substitute for a domain
 interaction.
 
@@ -317,6 +327,20 @@ that makes an unwanted earlier effect observable. Check disabled styling
 with the target held, then exercise a working control in the same session.
 Do not increase arbitrary sleeps until a flaky test appears green.
 
+Walk and look up through the shared helpers in `tests/functional/support.rs`,
+never with a per-test loop that polls against a short deadline of its own. A
+deadline of 800 ms, 3 s or 5 s passes on an idle machine and fails when the
+harness shares CPU with other jobs, so these helpers end on the state they
+wait for:
+
+- `App::press_until(key, goal, max_presses, watch, reached)` presses a key
+  until `reached` accepts the screen. After each press it waits for
+  `watch(screen)` to change, so a slow application is waited for, not
+  pressed again. A press that moves nothing fails with the screen.
+- `App::wait_point` and `App::wait_button` locate a target on the screen once
+  it is painted, in place of a one-shot `screen()` lookup.
+- `App::wait_exit` waits for the child to quit.
+
 For an asynchronous operation, wait for a durable result rather than a
 very short spinner frame. Inspect an intermediate progress state only when
 the application provides a controlled clock or stable observable barrier.
@@ -380,8 +404,15 @@ cargo nextest run --workspace --no-tests fail --profile functional
 The profile selects only the non-ignored functional target, so a missing
 target fails (`--no-tests fail`) instead of passing empty. Failures retain
 `target/functional` and `target/nextest/functional` for fourteen days. The
-harness writes an ordered action trace, text and full-cell JSON checkpoints,
-and final screen evidence.
+harness writes an ordered action trace, a text checkpoint for every wait, and
+final screen evidence. Full-cell JSON is the costly part (about 1.1 MB and
+tens of milliseconds of serialization per checkpoint), so a failing test writes
+it for its latest 16 checkpoints, and a passing test writes none (`last.json`
+still holds the final frame). Each
+checkpoint's line in the action trace carries a hash of its cells, so a text
+checkpoint without JSON can still be matched to a frame. A run that is killed
+for a timeout never reaches the failure write and keeps only the text
+checkpoints and the action trace.
 
 `finish()` asserts a live child before Ctrl+Q, exit code zero without a
 termination signal, and restored terminal modes. `Drop` still closes the

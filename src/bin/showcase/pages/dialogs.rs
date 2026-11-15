@@ -117,6 +117,7 @@ impl DialogsPage {
                 let input = TextInput::new(RENAME.sub("input"), "Task name")
                     .value(&self.task_name)
                     .required(true)
+                    .required_message("Name cannot be empty")
                     .validator(rename_validator)
                     .help("Shown in the task list and PR title");
                 Dialog::prompt(RENAME, "Rename task", input, "Rename")
@@ -679,11 +680,7 @@ impl Page for DialogsPage {
                     return Outcome::Ignored;
                 };
                 cx.focus.focus(ev.id);
-                if self.buttons[i]
-                    .route(ev)
-                    .and_then(|r| r.into_action())
-                    .is_some()
-                {
+                if self.buttons[i].route(ev).is_some_and(|r| r.has_actions()) {
                     self.open(i, cx);
                 }
                 Outcome::Changed

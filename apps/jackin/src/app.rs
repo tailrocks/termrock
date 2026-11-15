@@ -28,7 +28,7 @@ use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Position, Rect};
 
 use crate::arbiter::{EntryDecision, ExitDecision};
-use crate::backend::Effect;
+use crate::backend::{Effect, Ticket};
 use crate::domain::instance::{InstanceEntry, InstanceId, InstanceStatus};
 use crate::domain::launch::EmptyLanding;
 use crate::domain::vocabulary::fill_in;
@@ -44,7 +44,7 @@ use crate::screens::prelude::PreludeScreen;
 use crate::screens::role_editor::RoleEditorScreen;
 use crate::screens::settings::SettingsScreen;
 use crate::screens::{AppLayer, Cx, Go, LayerTag, ModalResult, Request, Screen};
-use crate::world::{Absorbed, Health, Msg, Snapshot, World};
+use crate::world::{Absorbed, Health, Msg, Snapshot, World, job};
 use junie_tui::shell::Page as _;
 use junie_tui::ui::leave::{LeaveGuard, Stakes};
 use junie_tui::widgets::brand::Lockup;
@@ -198,13 +198,14 @@ impl App {
             clipboard,
             panes,
         } = options;
-        world.clock.running = motion != Motion::Paused;
         world.pane_policy = Arc::new(panes);
         for daemon in world.daemons.values_mut() {
             daemon.set_policy(&world.pane_policy);
         }
         let mut shell = Shell::new();
         shell.motion = motion;
+        // Under the test clock only `advance_clock` moves the simulated clock.
+        world.clock.running = motion != Motion::Paused && !shell.test_requests;
 
         shell.set_clipboard(match clipboard {
             ClipboardMode::Preview => shell::Clipboard::new().write(false),
@@ -239,6 +240,12 @@ impl App {
         app
     }
 
+    /// Feeds [`Remote`] messages from a background host into the app.
+    ///
+    /// A host whose producer can outrun the UI builds the channel with
+    /// `junie_tui::runtime::bounded_external_channel` and retries
+    /// `ExternalSender::try_send` on `Full`. The runtime hands the app a bounded
+    /// group of queued messages per turn, whichever constructor made the channel.
     pub fn with_external(mut self, receiver: ExternalReceiver) -> Self {
         self.external = Some(receiver);
         self
@@ -252,7 +259,9 @@ impl App {
         match external.downcast_ref::<Remote>() {
             Some(Remote::Msg(msg)) => self.dispatch_msg(msg),
             Some(Remote::Reloaded(snapshot)) => {
+                let shown_validation = self.world.displayed_validation.clone();
                 self.world.apply((**snapshot).clone());
+                self.end_retired_validation(shown_validation);
                 self.after_snapshot();
                 Outcome::Changed
             }
@@ -378,11 +387,11 @@ impl App {
                     "Another client is entering {} · joined without replay",
                     self.world.surfaces.vocabulary.construct
                 );
-                self.set_status(&text, Tone::Secondary);
+                self.set_notice(&text, Tone::Secondary);
             }
             EntryDecision::Unknown(e) => {
                 self.enter_manager();
-                self.set_status(
+                self.set_notice(
                     &format!(
                         "Could not confirm running instances: {} · list may be incomplete",
                         self.world.surfaces.vocabulary.discovery(e)
@@ -453,6 +462,14 @@ impl App {
     }
 
     pub fn set_status(&mut self, s: &str, tone: Tone) {
+        self.post_status(s, tone, false);
+    }
+
+    fn set_notice(&mut self, s: &str, tone: Tone) {
+        self.post_status(s, tone, true);
+    }
+
+    fn post_status(&mut self, s: &str, tone: Tone, notice: bool) {
         if tone != Tone::Error
             && let Some(warning) = self.world.committed_save_warning
         {
@@ -462,7 +479,12 @@ impl App {
             self.show_committed_save_warning();
             return;
         }
-        self.shell.status.set_at(s, tone, self.world.clock.now());
+        let now = self.world.clock.now();
+        if notice {
+            self.shell.status.notice_at(s, tone, now);
+        } else {
+            self.shell.status.set_at(s, tone, now);
+        }
     }
 
     fn show_committed_save_warning(&mut self) {
@@ -477,10 +499,13 @@ impl App {
         }
     }
 
+    /// Whether something on screen moves by itself, so every tick needs a
+    /// frame. Quiet panes do not: a link that has nothing to say is polled, not
+    /// drawn.
     fn animating(&self) -> bool {
         matches!(
             self.route(),
-            Route::Intro | Route::Outro | Route::Handoff | Route::Cockpit | Route::Capsule
+            Route::Intro | Route::Outro | Route::Handoff | Route::Cockpit
         ) || self.shell.pointer.has_flash()
             || self
                 .router
@@ -488,14 +513,33 @@ impl App {
                 .is_some_and(|s| s.animating(&self.world))
             || self.layer_animates()
             || !self.world.jobs.is_empty()
-            || self.world.daemons.values().any(|d| !d.panes.is_empty())
+    }
+
+    /// Whether a live link is waiting to be polled. Polling keeps its cadence
+    /// whether or not anything is drawn.
+    fn polls_links(&self) -> bool {
+        self.world.daemons.values().any(|d| !d.panes.is_empty())
     }
 
     pub fn tick_interval(&self) -> std::time::Duration {
         if self.shell.motion == Motion::Paused {
             return std::time::Duration::from_millis(500);
         }
-        std::time::Duration::from_millis(self.route().tick_ms(self.animating()))
+        std::time::Duration::from_millis(
+            self.route().tick_ms(self.animating() || self.polls_links()),
+        )
+    }
+
+    /// Whether the page on screen draws something of this instance's panes.
+    fn shows_panes_of(&self, id: &InstanceId) -> bool {
+        match self.route() {
+            Route::Capsule => self.router.capsule().is_some_and(|c| c.instance == *id),
+            Route::Manager => matches!(
+                &self.router.manager().selected,
+                crate::screens::manager::RowKey::Instance(selected) if selected == id
+            ),
+            _ => false,
+        }
     }
 
     fn now_ms(&self) -> u64 {
@@ -567,9 +611,21 @@ impl App {
     }
 
     fn tick_step(&mut self) -> Outcome {
+        let out = self.step_world_and_page();
+        if out == Outcome::Changed {
+            self.world.projection.work.count_changed_tick();
+        }
+        out
+    }
+
+    fn step_world_and_page(&mut self) -> Outcome {
         let interval = self.route().tick_ms(true) as i64;
-        self.held.extend(self.world.tick(interval));
-        let mut out = if self.animating() {
+        let tick = self.world.tick_with_changes(interval);
+        self.held.extend(tick.messages);
+        let mut out = if self.animating()
+            || !tick.summaries_changed.is_empty()
+            || tick.panes_changed.iter().any(|id| self.shows_panes_of(id))
+        {
             Outcome::Changed
         } else {
             Outcome::Ignored
@@ -643,7 +699,11 @@ impl App {
 
     fn dispatch_msg(&mut self, m: &Msg) -> Outcome {
         if let Msg::PaneWake { instance, pane } = m {
-            return if self.world.wake_pane(instance, *pane) {
+            let roster = self.world.epochs().roster;
+            let changed = self.world.wake_pane(instance, *pane);
+            return if changed
+                && (self.shows_panes_of(instance) || self.world.epochs().roster != roster)
+            {
                 Outcome::Changed
             } else {
                 Outcome::Ignored
@@ -670,15 +730,23 @@ impl App {
     }
 
     fn dispatch_reply(&mut self, m: &Msg) -> Outcome {
-        self.tell_forms_of_reply(m);
+        let shown_validation = self.world.displayed_validation.clone();
+        let owns_status = match m {
+            Msg::AccountValidated {
+                ticket, account, ..
+            } => self.world.validation_owns_status(account, *ticket),
+            _ => false,
+        };
         let absorbed = self.world.absorb(m);
         self.show_committed_save_warning();
         if absorbed == Absorbed::Stale {
             return Outcome::Ignored;
         }
-        let ended = m
-            .job()
-            .is_some_and(|job| !self.job_continues(m) && self.shell.status.end_job(job));
+        self.tell_forms_of_reply(m);
+        let validation = matches!(m, Msg::AccountValidated { .. });
+        let mut ended = !validation
+            && m.job()
+                .is_some_and(|job| !self.job_continues(m) && self.shell.status.end_job(job));
         let route = self.route();
         let (o, reqs) = self
             .shell
@@ -703,9 +771,24 @@ impl App {
             }
             o
         });
+        if owns_status {
+            self.world.displayed_validation = None;
+        }
+        ended |= self.end_retired_validation(shown_validation);
         let o = o.or(self.apply_requests(reqs, route));
         let o = o.or(self.apply_requests(behind, route));
         if ended { o.or(Outcome::Changed) } else { o }
+    }
+
+    /// Ends the validation progress when the request it showed is no longer
+    /// displayed: its reply was accepted, or an installed snapshot retired it.
+    fn end_retired_validation(
+        &mut self,
+        shown_before: Option<(crate::domain::account::AccountId, Ticket)>,
+    ) -> bool {
+        shown_before.is_some()
+            && self.world.displayed_validation.is_none()
+            && self.shell.status.end_job(job::ACCOUNT_VALIDATE)
     }
 
     fn job_continues(&self, m: &Msg) -> bool {
@@ -1513,17 +1596,19 @@ impl App {
         }
     }
 
-    fn settle_layers(&mut self, mut out: Outcome) -> Outcome {
-        while let Some(taken) = self.layers.take(&mut self.shell.focus) {
-            out = out.or(match taken {
-                Taken::Event(r) => self.layer_event(r),
+    fn settle_layers(&mut self, out: Outcome) -> Outcome {
+        Layers::settle(
+            self,
+            |app| (&mut app.layers, &mut app.shell.focus),
+            out,
+            |app, taken| match taken {
+                Taken::Event(r) => app.layer_event(r),
                 Taken::Closed(entry, r) => {
-                    self.layer_gone();
-                    self.layer_closed(entry, r)
+                    app.layer_gone();
+                    app.layer_closed(entry, r)
                 }
-            });
-        }
-        out
+            },
+        )
     }
 
     fn layer_event(&mut self, r: ModalResult) -> Outcome {
@@ -1779,11 +1864,11 @@ impl App {
     fn chrome_pointer(&mut self, ev: &PointerEvent) -> Option<Outcome> {
         if Self::is_host(self.route()) {
             if let Some(r) = self.host_menu.route(ev) {
-                let (o, act) = r.into_parts();
-                return Some(match act {
-                    Some(a) => self.host_menu_action(a, o),
-                    None => o,
-                });
+                let (mut o, actions) = r.into_parts();
+                for a in actions {
+                    o = self.host_menu_action(a, o);
+                }
+                return Some(o);
             }
 
             if self.host_menu.is_open() && ev.is(Phase::Click) {
@@ -1840,6 +1925,7 @@ impl App {
             match r {
                 Request::Status(s, tone) => self.set_status(&s, tone),
                 Request::StatusAs(s, kind) => self.set_status(&s, kind.tone()),
+                Request::Notice(s, tone) => self.set_notice(&s, tone),
                 Request::Sticky(s) => {
                     if self.world.committed_save_warning.is_some() {
                         self.show_committed_save_warning();
@@ -1904,12 +1990,21 @@ impl App {
         );
     }
 
+    /// Navigates to `g`. When that takes the operator out of the open Capsule,
+    /// every pane of it loses the focus before this returns and before the
+    /// backend hears `capsule_left`, so a program that is no longer on screen
+    /// neither counts as watched nor passes the clipboard's focus check. A
+    /// refused or same-instance attach is not a departure.
     pub fn go(&mut self, g: Go) {
         let from = self.open_capsule();
         self.navigate(g);
         if let Some(instance) = from
             && self.open_capsule().as_ref() != Some(&instance)
         {
+            let now = self.world.now_ms();
+            if let Some(daemon) = self.world.daemons.get_mut(&instance) {
+                daemon.blur(now);
+            }
             let backend = Arc::clone(&self.world.backend);
             backend.capsule_left(&self.world, &instance);
         }
@@ -2038,7 +2133,7 @@ impl App {
                 }
                 crate::world::refresh_snapshots(&mut self.world);
                 self.world.refresh_now();
-                self.go(Go::Attach {
+                self.navigate(Go::Attach {
                     instance,
                     pane: None,
                 });
@@ -2052,10 +2147,8 @@ impl App {
                     self.show_tab(TAB_MANAGER);
                     return;
                 };
-                let now = self.world.now_ms();
                 if let Some(d) = self.world.daemons.get_mut(&inst) {
                     d.attached_by = None;
-                    d.blur(now);
                 }
                 self.show_tab(TAB_MANAGER);
                 self.router
@@ -2079,22 +2172,7 @@ impl App {
                 );
             }
             Go::InstanceEnded { instance, purge } => {
-                let dirty = self.world.instance(&instance).is_some_and(|i| i.is_dirty());
-                let now_secs = self.world.clock.now_secs();
-                if let Some(i) = self
-                    .world
-                    .instance_mut(&instance)
-                    .filter(|i| i.status.is_live())
-                {
-                    i.status = if purge {
-                        InstanceStatus::Purged
-                    } else if dirty {
-                        InstanceStatus::PreservedDirty
-                    } else {
-                        InstanceStatus::CleanExited
-                    };
-                    i.last_seen_secs = now_secs;
-                }
+                self.world.end_instance_record(&instance, purge);
                 self.world.daemons.remove(&instance);
                 crate::world::refresh_snapshots(&mut self.world);
                 self.world.sync_arbiter();
@@ -2827,7 +2905,10 @@ impl shell::KeyHost for App {
 
     fn layer_paste(&mut self, text: &str) -> Option<Outcome> {
         let top = self.layers.top_mut()?;
-        let o = top.layer.on_paste(text).or(Outcome::Consumed);
+        let o = top
+            .layer
+            .on_paste_focused(text, &self.shell.focus)
+            .or(Outcome::Consumed);
         Some(self.settle_layers(o))
     }
 

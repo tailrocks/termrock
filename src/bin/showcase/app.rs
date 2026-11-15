@@ -809,7 +809,7 @@ impl App {
             nav_expand: NavExpand::default(),
             nav_auto: None,
             shell,
-            clock: WallClock::new(),
+            clock: WallClock::for_run(),
             layers: Layers::new(),
             inspector: false,
             insp: Inspector::new(PageId::Overview),
@@ -965,7 +965,19 @@ impl App {
                 shell::KeyRouter::route(self, &key)
             }
             Input::Mouse(m) => PointerRouter::route(self, m),
+            Input::External(message) => self.on_external(&message),
             other => shell::KeyRouter::input(self, other),
+        }
+    }
+
+    fn external_page(&self) -> Option<usize> {
+        self.pages.iter().position(|p| p.external().is_some())
+    }
+
+    fn on_external(&mut self, message: &junie_tui::core::event::External) -> Outcome {
+        match self.external_page() {
+            Some(i) => self.with_page(i, |page, cx| page.on_external(message, cx)),
+            None => Outcome::Ignored,
         }
     }
 
@@ -1030,6 +1042,7 @@ impl App {
                 Request::StatusAs(s, kind) => {
                     self.shell.status.set_at(s, kind.tone(), self.clock.now());
                 }
+                Request::Notice(s, tone) => self.shell.status.notice_at(s, tone, self.clock.now()),
                 Request::Sticky(s) => self.shell.status.sticky_at(s, self.clock.now()),
                 Request::Progress(s, job) => {
                     self.shell.status.progress_at(job, s, self.clock.now());
@@ -1113,12 +1126,7 @@ impl App {
             self.set_status("Close the open dialog first".into());
             return;
         }
-        let initial = layer.spec().initial_focus;
-        self.layers.push(
-            LayerEntry { layer, tag, owner },
-            &mut self.shell.focus,
-            initial,
-        );
+        self.layers.open(layer, tag, owner, &mut self.shell.focus);
         if let Some(d) = self.layers.top_as_mut::<Dialog>() {
             d.chrome = (d.chrome.0.max(1), d.chrome.1.max(1));
         }
@@ -1155,14 +1163,16 @@ impl App {
         Some(self.settle_layer(out))
     }
 
-    fn settle_layer(&mut self, mut out: Outcome) -> Outcome {
-        while let Some(taken) = self.layers.take(&mut self.shell.focus) {
-            out = match taken {
-                Taken::Event(r) => self.layer_event(r).or(out),
-                Taken::Closed(entry, r) => self.layer_closed(entry, r).or(out),
-            };
-        }
-        out
+    fn settle_layer(&mut self, out: Outcome) -> Outcome {
+        Layers::settle(
+            self,
+            |app| (&mut app.layers, &mut app.shell.focus),
+            out,
+            |app, taken| match taken {
+                Taken::Event(r) => app.layer_event(r),
+                Taken::Closed(entry, r) => app.layer_closed(entry, r),
+            },
+        )
     }
 
     fn layer_event(&mut self, r: LayerRes) -> Outcome {
@@ -1634,7 +1644,7 @@ impl App {
         if ev.is(Phase::Click) && (row.is_some() || ev.id == NAV) {
             self.shell.focus.focus(NAV);
         }
-        let out = self.nav_event(|nav| nav.pointer(ev).into_parts());
+        let out = self.nav_event(|nav| nav.pointer(ev));
         Some(out)
     }
 
@@ -1709,22 +1719,21 @@ impl App {
         self.nav_reveal = true;
     }
 
-    fn nav_event(
-        &mut self,
-        f: impl FnOnce(&mut TreeView) -> (Outcome, Option<TreeAction>),
-    ) -> Outcome {
+    fn nav_event(&mut self, f: impl FnOnce(&mut TreeView) -> Response<TreeAction>) -> Outcome {
         let auto_open =
             |nav: &TreeView, g: Option<usize>| g.map(|g| nav.expanded.contains(&vec![g]));
         let before = auto_open(&self.nav, self.nav_auto);
-        let (out, ev) = f(&mut self.nav);
+        let (out, actions) = f(&mut self.nav).into_parts();
         if auto_open(&self.nav, self.nav_auto) != before {
             self.nav_auto = None;
         }
-        if let Some(TreeAction::Activate(path)) = ev
-            && let Some(page) = PageId::from_nav_path(&path)
-        {
-            self.open_page(page);
-            return Outcome::Changed;
+        for action in actions {
+            if let TreeAction::Activate(path) = action
+                && let Some(page) = PageId::from_nav_path(&path)
+            {
+                self.open_page(page);
+                return Outcome::Changed;
+            }
         }
         out
     }
@@ -2198,7 +2207,7 @@ impl shell::App for App {
         self.modal_open()
     }
     fn page_under_layer(&self) -> bool {
-        self.modal_open()
+        self.layers.hides_page_focus()
             || self.inspector_overlay()
             || self.pages[self.page().index()].layer_open()
     }
@@ -2207,6 +2216,9 @@ impl shell::App for App {
     }
     fn keyboard_protocol(&self) -> junie_tui::core::keyboard::KeyboardProtocol {
         App::keyboard_protocol(self)
+    }
+    fn external(&self) -> Option<&junie_tui::runtime::ExternalReceiver> {
+        self.pages.iter().find_map(|p| p.external())
     }
 }
 
@@ -2337,7 +2349,7 @@ impl shell::KeyHost for App {
         if top.get::<HelpOverlay>().is_some() {
             return Some(Outcome::Consumed);
         }
-        Some(top.layer.on_paste(text))
+        Some(top.layer.on_paste_focused(text, &self.shell.focus))
     }
 
     fn page_paste(&mut self, text: &str) -> Outcome {

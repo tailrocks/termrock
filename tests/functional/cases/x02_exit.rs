@@ -7,9 +7,15 @@
 //! `App::new` would enable it for jackin. `session` is private, so a confirm
 //! that already exited uses `expect_exited`. `finish` is the mode check, and
 //! only while the process is still running.
+//!
+//! The Showcase guard and the Holla running-activities guard launch on the
+//! test clock. Showcase expires its `Export running` status after five wall
+//! seconds, which a loaded run outlasts before the narrow capture. Holla
+//! cancels its activities on simulated ticks, so on wall time the process
+//! can exit between the `stopping` frame and the next assertion.
 
 use std::path::PathBuf;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use tui_test::TerminalSnapshot;
 use tuiscotti_latest::check::CheckOutcome;
@@ -46,14 +52,15 @@ const HOLLA_QUERY: &str = "Search actions";
 const HOLLA_DISK: &str = "Analyze disk usage";
 const QUIT_HOLLA: &str = "Quit holla";
 const STOP_QUIT: &str = "Stop and quit";
-const HOLLA_RUNNING: &str = "still running";
+const HOLLA_RUNNING: &str = "running. Quitting stops";
+const CANCEL_MS: u64 = 1_000;
 
 const WIDE_ID: &str = "pre_refactor/x02_exit/x02_exit_exit_120x40";
 const NARROW_ID: &str = "pre_refactor/x02_exit/x02_exit_exit_narrow";
 
-fn open_bin(name: &str, bin: &str, args: &[&str]) -> App {
+fn open_bin(name: &str, bin: &str, args: &[&str], clock: bool) -> App {
     let mut launch = Launch::new(name, bin);
-    launch.clock = false;
+    launch.clock = clock;
     launch.cols = 120;
     launch.rows = 40;
     launch.color = Some("truecolor".to_string());
@@ -62,18 +69,18 @@ fn open_bin(name: &str, bin: &str, args: &[&str]) -> App {
     try_launch(launch).unwrap_or_else(|error| panic!("{error}"))
 }
 
-fn open_showcase(name: &str, args: &[&str]) -> App {
-    open_bin(name, SHOWCASE, args)
+fn open_showcase(name: &str, args: &[&str], clock: bool) -> App {
+    open_bin(name, SHOWCASE, args, clock)
 }
 
 fn open_tablepro(name: &str) -> App {
-    let app = open_bin(name, TABLEPRO, &[]);
+    let app = open_bin(name, TABLEPRO, &[], false);
     app.wait_text("Filter connections");
     app
 }
 
-fn open_holla(name: &str, scenario: &str) -> App {
-    let app = open_bin(name, HOLLA, &["--scenario", scenario]);
+fn open_holla(name: &str, scenario: &str, clock: bool) -> App {
+    let app = open_bin(name, HOLLA, &["--scenario", scenario], clock);
     app.wait_text(HOLLA_QUERY);
     app
 }
@@ -112,12 +119,7 @@ fn focused(screen: &TerminalSnapshot, label: &str) -> bool {
 }
 
 fn await_exit(app: &App, reason: &str) {
-    let deadline = Instant::now() + Duration::from_secs(8);
-    while app.child_running() {
-        let visible = text(&app.screen());
-        assert!(Instant::now() < deadline, "{reason}\n{visible}");
-        std::thread::sleep(Duration::from_millis(25));
-    }
+    app.wait_exit(reason);
     app.expect_exited(0);
 }
 
@@ -311,7 +313,7 @@ fn table_quit(screen: &TerminalSnapshot) -> bool {
 }
 
 fn showcase_route() {
-    let app = open_showcase("x02-exit-route", &["--page", "quit"]);
+    let app = open_showcase("x02-exit-route", &["--page", "quit"], false);
     let page = app.wait_text(CLASSIFY);
     assert_eq!((page.cols(), page.rows()), (120, 40));
     see(
@@ -324,7 +326,7 @@ fn showcase_route() {
 }
 
 fn showcase_guard() {
-    let app = open_showcase("x02-exit-guard", &["--page", "quit"]);
+    let app = open_showcase("x02-exit-guard", &["--page", "quit"], true);
     app.wait_text(RUN_EXPORT);
     let screen = app.settle();
     let hits: Vec<_> = find_all(&screen, RUN_EXPORT)
@@ -418,7 +420,7 @@ fn tablepro_guard() {
 }
 
 fn holla_clean() {
-    let app = open_holla("x02-exit-holla-clean", "first-use");
+    let app = open_holla("x02-exit-holla-clean", "first-use", false);
     let landing = app.wait_text(HOLLA_DISK);
     assert_eq!((landing.cols(), landing.rows()), (120, 40));
     see(
@@ -439,7 +441,7 @@ fn holla_quit(screen: &TerminalSnapshot) -> bool {
 }
 
 fn holla_guard() {
-    let app = open_holla("x02-exit-holla-running", "activities-multi");
+    let app = open_holla("x02-exit-holla-running", "activities-multi", true);
     let landing = app.screen();
     see(&landing, &[HOLLA_QUERY], &[QUIT_HOLLA, STOP_QUIT]);
     app.key("ctrl+q");
@@ -448,8 +450,11 @@ fn holla_guard() {
     });
     see(
         &dialog,
-        &[QUIT_HOLLA, STAY, STOP_QUIT, "detached monitors keep"],
-        &["quitting when every process is gone"],
+        &[QUIT_HOLLA, STAY, STOP_QUIT, HOLLA_RUNNING],
+        &[
+            "detached monitors keep",
+            "quitting when every process is gone",
+        ],
     );
     assert!(app.child_running(), "opening the guard quit holla");
     confirm_focused(&app, STOP_QUIT, STAY, holla_quit);
@@ -462,9 +467,19 @@ fn holla_guard() {
         "Stop and quit exited before the activities ended"
     );
     refuse(&stopping, STOP_QUIT);
-    // A second Ctrl+Q is ignored once `quitting` is set. `finish` waits for
-    // the activities to end and checks the restored modes.
-    app.finish();
+    // The test clock holds the cancel, so the activities are still stopping
+    // when a second Ctrl+Q arrives. `quitting` is set, so it is ignored.
+    app.key("ctrl+q");
+    let ignored = app.settle();
+    assert!(app.child_running(), "a second Ctrl+Q quit holla");
+    see(
+        &ignored,
+        &["quitting when every process is gone"],
+        &[QUIT_HOLLA, STOP_QUIT],
+    );
+    app.advance_clock(CANCEL_MS);
+    await_exit(&app, "the stopped activities left holla running");
+    app.assert_restored_exit();
 }
 
 #[test]

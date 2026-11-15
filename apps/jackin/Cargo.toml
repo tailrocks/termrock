@@ -25,6 +25,7 @@ required-features = ["demo"]
 default = []
 demo = ["dep:clap", "junie-tui/cli"]
 product = []
+work-metrics = ["junie-tui/work-metrics"]
 
 [dependencies]
 junie-tui = { path = "../..", default-features = false, features = ["terminal"] }

@@ -40,9 +40,7 @@ fn role_validator(col: usize, s: &str) -> Option<String> {
 }
 
 fn var_validator(s: &str) -> Option<String> {
-    if s.is_empty() {
-        Some("Required".into())
-    } else if !s
+    if !s
         .chars()
         .all(|c| c.is_ascii_uppercase() || c == '_' || c.is_ascii_digit())
     {
@@ -96,7 +94,7 @@ fn member_rows() -> Vec<Vec<Cell>> {
 }
 
 fn members_table(id: WidgetId, rows: Vec<Vec<Cell>>) -> DataTable {
-    DataTable::new(
+    DataTable::try_new(
         id,
         vec![
             Column::new("Name", Constraint::Min(14)).editable(),
@@ -106,6 +104,7 @@ fn members_table(id: WidgetId, rows: Vec<Vec<Cell>>) -> DataTable {
         ],
         rows,
     )
+    .expect("rectangular fixture")
     .validator(role_validator)
 }
 
@@ -126,9 +125,7 @@ fn states_grid() -> StateGrid {
     use SpecimenState::*;
     let tabs = Tabs::new(ID.sub("states-tabs"), &["General", "Members", "Env"]);
     let mut tabs = tabs;
-    if let Some(general) = tabs.items.get_mut(0) {
-        general.dirty = true;
-    }
+    tabs.update_item(0, |general| general.dirty = true);
     StateGrid::new(ID.sub("states"))
         .label_width(14)
         .column_width(26)
@@ -368,7 +365,7 @@ impl SettingsPage {
                 self.remove.disabled = self.members.is_empty();
                 self.remove.render(rects[1], buf, ctx, bg);
                 if let Some(i) = self.selected_member() {
-                    let s = format!("cursor: {}", self.members.rows[i][0].text);
+                    let s = format!("cursor: {}", self.members.rows()[i][0].text);
                     buf.set_string(rects[1].right() + 2, ay, &s, t.faint().bg(bg));
                 }
             }
@@ -446,9 +443,8 @@ impl Page for SettingsPage {
             None => Outcome::Ignored,
         };
 
-        if let Some(general) = self.tabs.items.get_mut(0) {
-            general.dirty = self.dirty && self.opts.on("settings.tab_dirty");
-        }
+        let dirty = self.dirty && self.opts.on("settings.tab_dirty");
+        self.tabs.update_item(0, |general| general.dirty = dirty);
         out
     }
 
@@ -601,7 +597,7 @@ impl SettingsPage {
 
 fn clicked(b: &mut Button, ev: &PointerEvent) -> Option<bool> {
     let r = b.route(ev)?;
-    (r.outcome() != Outcome::Ignored).then(|| r.into_action().is_some())
+    (r.outcome() != Outcome::Ignored).then(|| r.has_actions())
 }
 
 impl SettingsPage {
@@ -670,12 +666,14 @@ impl SettingsPage {
                     return o;
                 }
                 if f == self.members.id {
-                    let (o, tev) = self.members.on_key(key);
-                    match tev {
-                        Some(TableAction::Committed { .. }) => cx.status("Member updated"),
-                        Some(TableAction::LeaveForward) => cx.focus_next(),
-                        Some(TableAction::LeaveBackward) => cx.focus_prev(),
-                        _ => {}
+                    let (o, actions) = self.members.on_key(key).into_parts();
+                    for tev in actions {
+                        match tev {
+                            TableAction::Committed { .. } => cx.status("Member updated"),
+                            TableAction::LeaveForward => cx.focus_next(),
+                            TableAction::LeaveBackward => cx.focus_prev(),
+                            _ => {}
+                        }
                     }
                     return o;
                 }
@@ -726,11 +724,13 @@ impl SettingsPage {
                 if *id == REMOVE_DLG {
                     if *result == DialogResult::Action(1) {
                         if let Some(i) = self.selected_member() {
-                            let name = self.members.rows[i][0].text.clone();
-                            let mut rows = self.members.rows.clone();
+                            let name = self.members.rows()[i][0].text.clone();
+                            let mut rows = self.members.rows().to_vec();
                             rows.remove(i);
-                            self.members.set_rows(rows);
-                            cx.status(format!("Removed {name}"));
+                            match self.members.try_set_rows(rows) {
+                                Ok(()) => cx.status(format!("Removed {name}")),
+                                Err(e) => cx.status(format!("Member not removed · {e}")),
+                            }
                         }
                     } else {
                         cx.status("Kept member");
@@ -763,8 +763,8 @@ impl SettingsPage {
         let Some(i) = self.selected_member() else {
             return;
         };
-        let name = self.members.rows[i][0].text.clone();
-        let role = self.members.rows[i][2].text.clone();
+        let name = self.members.rows()[i][0].text.clone();
+        let role = self.members.rows()[i][2].text.clone();
         cx.open_dialog(Dialog::destructive(
             REMOVE_DLG,
             "Remove member?",

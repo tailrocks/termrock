@@ -23,7 +23,7 @@ use junie_tui::widgets::edit::{EditField, Validator};
 use junie_tui::widgets::input::TextInput;
 use junie_tui::widgets::list_detail::{Action, Event, Frame, Line, ListDetail, ListRow};
 use junie_tui::widgets::option_list::Item;
-use junie_tui::widgets::picker::{Picker, PickerAction, PickerItemsError};
+use junie_tui::widgets::picker::{Picker, PickerAction, PickerItemsError, VisibleKey};
 use junie_tui::widgets::viewport_ops::ViewportOps;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
@@ -96,15 +96,21 @@ fn picker_stable_selection() {
     picker
         .set_items(lettered(&["Alpha", "Beta", "Gamma"]))
         .expect("keyed items are accepted");
-    assert_eq!(picker.items().len(), 3);
+    assert!(picker.visible_item(2).is_some() && picker.visible_item(3).is_none());
     picker.set_cursor(0);
     let (outcome, _) = picker.on_key(&key(KeyCode::Insert));
     assert_eq!(outcome, Outcome::Changed);
     assert_eq!(picker.checked(), &[ItemKey::text("alpha")]);
 
     picker
-        .set_visible_items(lettered(&["Beta"]))
+        .set_visible_keys(vec![
+            VisibleKey::new(ItemKey::text("beta")).matched(vec![0]),
+        ])
         .expect("a filtered view keeps hidden choices");
+    assert_eq!(
+        picker.visible_item(0).map(|row| row.matched.to_vec()),
+        Some(vec![0])
+    );
     assert_eq!(picker.checked(), &[ItemKey::text("alpha")]);
     picker
         .replace_items(lettered(&["Gamma", "Beta", "Alpha"]))
@@ -223,9 +229,8 @@ fn collection_replacement() {
         picker.replace_items(duplicate),
         Err(PickerItemsError::DuplicateKey(ItemKey::text("alpha")))
     );
-    assert_eq!(
-        picker.items().len(),
-        3,
+    assert!(
+        picker.visible_item(2).is_some() && picker.visible_item(3).is_none(),
         "a rejected replacement changes nothing"
     );
 }

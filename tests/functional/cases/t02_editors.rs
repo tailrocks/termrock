@@ -3,11 +3,12 @@
 //! Tuiscotti test ids are `[a-z0-9_-]` segments, so the baseline directory is
 //! `pre_refactor/t02_editors/` and each checkpoint's dots become underscores.
 
-use std::time::{Duration, Instant};
-
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, TABLEPRO, find_all, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, TABLEPRO, find_all, flash_settle_stepped as flash_settle, row_text, text,
+    try_launch,
+};
 
 const ROUTE_ID: &str = "pre_refactor/t02_editors/t02_editors_route_120x40";
 const WIDE_ID: &str = "pre_refactor/t02_editors/t02_editors_types_120x40";
@@ -97,32 +98,6 @@ fn click_connect(app: &App) {
         .collect();
     assert_eq!(hits.len(), 1, "connect button {hits:?}\n{}", text(&screen));
     app.click(hits[0]);
-}
-
-/// The 140ms press flash stays painted while motion is paused, so a shot after
-/// a released click has to redraw once the deadline has passed. Below about 100
-/// columns the header omits the size chip, and the narrow nudge waits on the
-/// terminal size instead.
-fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
 }
 
 fn focused(screen: &TerminalSnapshot) -> String {
@@ -366,15 +341,7 @@ fn confirm_quit(app: &App) {
     app.wait_text("Quit TablePro?");
     app.key("right");
     app.key("enter");
-    let deadline = Instant::now() + Duration::from_secs(5);
-    while app.child_running() {
-        assert!(
-            Instant::now() < deadline,
-            "tablepro stayed up after confirming quit\n{}",
-            text(&app.screen())
-        );
-        std::thread::sleep(Duration::from_millis(25));
-    }
+    app.wait_exit("tablepro stayed up after confirming quit");
     app.expect_exited(0);
 }
 
@@ -408,6 +375,7 @@ fn tablepro_editors_route_opens_orders_and_returns_to_query() {
         text(&opened)
     );
     assert_eq!((opened.cols(), opened.rows()), (120, 40));
+    app.expire_status();
     app.wait_absent(CONNECTED);
     flash_settle(&app);
     app.visual(ROUTE_ID);
@@ -611,6 +579,7 @@ fn tablepro_editors_types_accept_and_reject_each_family() {
     assert!(!text(&settled).contains(NUMBER_BAD));
     assert!(!text(&settled).contains(WHEN_BAD));
     assert!(!text(&settled).contains(JSON_BAD));
+    app.expire_status();
     app.wait_absent(CONNECTED);
     app.wait_absent(READ_ONLY);
     let wide = app.screen();

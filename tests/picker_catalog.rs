@@ -183,7 +183,12 @@ impl PageUsage {
     fn record_type(&mut self, name: &str) {
         if matches!(
             name,
-            "Picker" | "PickerAction" | "PickerCmd" | "PickerKeyProfile" | "PickerStatus"
+            "Picker"
+                | "PickerAction"
+                | "PickerCmd"
+                | "PickerKeyProfile"
+                | "PickerStatus"
+                | "VisibleKey"
         ) && self.exported.contains(&format!("widgets::picker::{name}"))
         {
             self.api.insert(format!("widgets::picker::{name}"));
@@ -359,10 +364,37 @@ impl<'ast> Visit<'ast> for PageUsage {
             self.api.insert("widgets::picker::Picker::new".to_owned());
             self.record_type("Picker");
         }
+        if let Expr::Path(path) = node.func.as_ref()
+            && path
+                .path
+                .segments
+                .iter()
+                .map(|part| part.ident.to_string())
+                .collect::<Vec<_>>()
+                == ["VisibleKey", "new"]
+        {
+            self.api
+                .insert("widgets::picker::VisibleKey::new".to_owned());
+            self.record_type("VisibleKey");
+        }
         syn::visit::visit_expr_call(self, node);
     }
 
     fn visit_expr_method_call(&mut self, node: &'ast syn::ExprMethodCall) {
+        if node.method == "matched"
+            && let Expr::Call(call) = node.receiver.as_ref()
+            && let Expr::Path(path) = call.func.as_ref()
+            && path
+                .path
+                .segments
+                .iter()
+                .map(|part| part.ident.to_string())
+                .collect::<Vec<_>>()
+                == ["VisibleKey", "new"]
+        {
+            self.api
+                .insert("widgets::picker::VisibleKey::matched".to_owned());
+        }
         let id = format!("widgets::picker::Picker::{}", node.method);
         let is_picker = self.is_picker_expr(&node.receiver);
         if is_picker && self.exported.contains(&id) {
@@ -424,7 +456,8 @@ fn validate_picker_sources(
         api_inventory::exceptions_from_source(coverage_source)
             .into_iter()
             .filter(|(id, _)| {
-                id.starts_with("widgets::picker::") || id.starts_with("widgets::option_list::")
+                id.starts_with("widgets::picker::")
+                    || id.starts_with("widgets::option_list::OptionList")
             })
             .collect();
     let catalog_ids: BTreeSet<String> = catalog.keys().cloned().collect();
@@ -574,19 +607,19 @@ fn typed_picker_closures_respect_shadowing_and_restore_outer_bindings() {
     let has_items = |source: &str| {
         PageUsage::from_source(source, &exported, &catalog)
             .api
-            .contains("widgets::picker::Picker::items")
+            .contains("widgets::picker::Picker::visible_items")
     };
     assert!(has_items(
-        "fn show() { value.map(|p: &Picker| p.items()); }"
+        "fn show() { value.map(|p: &Picker| p.visible_items()); }"
     ));
     assert!(!has_items(
-        "fn show(p: Picker) { value.map(|p: &Other| p.items()); }"
+        "fn show(p: Picker) { value.map(|p: &Other| p.visible_items()); }"
     ));
     assert!(!has_items(
-        "fn show() { value.map(|p: &Other| p.items()); } fn other(p: &Other) { p.items(); }"
+        "fn show() { value.map(|p: &Other| p.visible_items()); } fn other(p: &Other) { p.visible_items(); }"
     ));
     assert!(has_items(
-        "fn show(p: Picker) { value.map(|p: &Other| p.items()); p.items(); }"
+        "fn show(p: Picker) { value.map(|p: &Other| p.visible_items()); p.visible_items(); }"
     ));
 }
 
@@ -651,4 +684,42 @@ fn picker_scope_respects_let_else_pattern_shadow() {
     assert!(!page_uses_picker_list(
         "fn show(p: Picker) { let Some(p) = value else { return; }; p.list(); }"
     ));
+}
+
+#[test]
+fn terminal_session_coverage_declares_catalog_capabilities() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+    let source = std::fs::read_to_string(root.join("src/bin/showcase/coverage.rs"))
+        .expect("showcase coverage source reads");
+    let file = syn::parse_file(&source).expect("coverage source parses");
+    let table = file
+        .items
+        .iter()
+        .find_map(|item| match item {
+            syn::Item::Const(c) if c.ident == "TERMINAL_SESSION_COVERAGE" => Some(&*c.expr),
+            _ => None,
+        })
+        .expect("TERMINAL_SESSION_COVERAGE is declared");
+    let syn::Expr::Reference(reference) = table else {
+        panic!("TERMINAL_SESSION_COVERAGE is a slice reference");
+    };
+    let syn::Expr::Array(rows) = &*reference.expr else {
+        panic!("TERMINAL_SESSION_COVERAGE is an array");
+    };
+    let mut seen = BTreeSet::new();
+    for row in &rows.elems {
+        let syn::Expr::Lit(syn::ExprLit {
+            lit: syn::Lit::Str(id),
+            ..
+        }) = row
+        else {
+            panic!("TERMINAL_SESSION_COVERAGE rows are string literals");
+        };
+        let id = id.value();
+        assert!(
+            junie_tui::catalog::find(&id).is_some(),
+            "declared id is not a catalog capability: {id}"
+        );
+        assert!(seen.insert(id.clone()), "duplicate coverage entry: {id}");
+    }
 }

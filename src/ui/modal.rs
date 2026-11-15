@@ -89,9 +89,17 @@ pub enum Dismissal {
     Keep,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FocusOnOpen {
+    Preserve,
+
+    Set(Option<WidgetId>),
+}
+
 struct Entry<M> {
     modal: M,
     saved_focus: Option<WidgetId>,
+    restore_focus: bool,
 }
 
 pub struct ModalStack<M> {
@@ -112,24 +120,45 @@ impl<M> ModalStack<M> {
     }
 
     pub fn push(&mut self, modal: M, focus: &mut Focus, initial: Option<WidgetId>) {
+        self.push_with_focus_policy(modal, focus, FocusOnOpen::Set(initial), true);
+    }
+
+    pub fn push_with_focus_policy(
+        &mut self,
+        modal: M,
+        focus: &mut Focus,
+        initial: FocusOnOpen,
+        restore_focus: bool,
+    ) {
         self.entries.push(Entry {
             modal,
             saved_focus: focus.current(),
+            restore_focus,
         });
-        focus.set(initial);
+        if let FocusOnOpen::Set(target) = initial {
+            focus.set(target);
+        }
     }
 
     pub fn pop(&mut self, focus: &mut Focus) -> Option<M> {
         let e = self.entries.pop()?;
-        focus.set(e.saved_focus);
+        if e.restore_focus {
+            focus.set(e.saved_focus);
+        }
         Some(e.modal)
     }
 
     pub fn clear(&mut self, focus: &mut Focus) {
-        if let Some(e) = self.entries.first() {
-            focus.set(e.saved_focus);
+        let mut target = focus.current();
+        for e in self.entries.iter().rev() {
+            if e.restore_focus {
+                target = e.saved_focus;
+            }
         }
         self.entries.clear();
+        if focus.current() != target {
+            focus.set(target);
+        }
     }
 
     pub fn top(&self) -> Option<&M> {
@@ -154,7 +183,16 @@ impl<M> ModalStack<M> {
     }
 
     pub fn retain(&mut self, mut pred: impl FnMut(&M) -> bool) {
-        self.entries.retain(|e| pred(&e.modal));
+        let mut removed = false;
+        self.entries.retain_mut(|e| {
+            let keep = pred(&e.modal);
+            if !keep {
+                removed = true;
+            } else if removed {
+                e.saved_focus = None;
+            }
+            keep
+        });
     }
 }
 
@@ -333,6 +371,13 @@ impl<'a> Frame<'a> {
             .max(self.min_height)
             .min(bounds.height);
         place_with(bounds, self.anchor, w, h, self.placement, self.fit)
+    }
+
+    /// Width of the content region on `screen`. It does not depend on the
+    /// frame height, so a dialog can measure a wrapped footer before it
+    /// chooses that height.
+    pub(crate) fn inner_width(&self, screen: Rect) -> u16 {
+        self.area(screen).inner(self.margin).width
     }
 
     pub fn render(&self, screen: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) -> (Rect, Rect) {

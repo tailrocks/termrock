@@ -1,6 +1,7 @@
 use crate::domain::context::ScopeTag;
 use crate::domain::effect::Effect;
 use crate::domain::exec::Command;
+use unicode_segmentation::UnicodeSegmentation;
 
 pub const RETAIN_LINES: usize = 4000;
 
@@ -277,7 +278,10 @@ pub struct Activity {
     pub dropped: usize,
 
     pub attachable: bool,
-    pub script: Script,
+    /// The script as the activity was constructed. A restart copies it back
+    /// into `script`, so no run edits the definition it starts from.
+    script_template: Script,
+    script: Script,
 
     pub follow_ups: Vec<String>,
 
@@ -305,7 +309,29 @@ pub struct Activity {
     prompts_seen: usize,
 }
 
+/// The part of an activity the Finder catalog reads. Output lines, stdin and
+/// durations are display metadata and are deliberately absent.
+pub type CatalogShape = (
+    ActivityState,
+    String,
+    String,
+    ScopeTag,
+    Vec<Command>,
+    String,
+);
+
 impl Activity {
+    pub fn catalog_shape(&self) -> CatalogShape {
+        (
+            self.state,
+            self.name.clone(),
+            self.origin.clone(),
+            self.scope.clone(),
+            self.argv.clone(),
+            self.host.clone(),
+        )
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: &str,
@@ -317,7 +343,7 @@ impl Activity {
         script: Script,
         started_tick: u64,
     ) -> Self {
-        Self {
+        let mut a = Self {
             id: id.into(),
             name: name.into(),
             origin: origin.into(),
@@ -331,6 +357,7 @@ impl Activity {
             output: vec![],
             dropped: 0,
             attachable: false,
+            script_template: script.clone(),
             script,
             follow_ups: vec![],
             insights: vec![],
@@ -347,7 +374,28 @@ impl Activity {
             echo_active: false,
             cancel: None,
             prompts_seen: 0,
-        }
+        };
+        a.reset_run_state(started_tick);
+        a
+    }
+
+    /// Puts every per-run field back to its first-run value. It never touches
+    /// the script or the identity, configuration and filter fields.
+    fn reset_run_state(&mut self, tick: u64) {
+        self.state = ActivityState::Running;
+        self.started_tick = tick;
+        self.ended_tick = None;
+        self.exit = None;
+        self.cursor = 0;
+        self.output.clear();
+        self.dropped = 0;
+        self.waiting = None;
+        self.paused_ticks = 0;
+        self.stdin.clear();
+        self.pending.clear();
+        self.echo_active = false;
+        self.cancel = None;
+        self.prompts_seen = 0;
     }
 
     fn emit(&mut self, service: Option<String>, text: String, tone: LineTone) {
@@ -526,18 +574,11 @@ impl Activity {
     }
 
     pub fn restart(&mut self, tick: u64) {
-        self.state = ActivityState::Running;
-        self.started_tick = tick;
-        self.ended_tick = None;
-        self.exit = None;
-        self.cursor = 0;
-        self.output.clear();
-        self.dropped = 0;
-        self.waiting = None;
-        self.paused_ticks = 0;
-        self.stdin.clear();
-        self.cancel = None;
-        self.prompts_seen = 0;
+        if self.state.live() {
+            return;
+        }
+        self.script.clone_from(&self.script_template);
+        self.reset_run_state(tick);
     }
 
     pub fn send_input(&mut self, bytes: &[u8], tick: u64) -> Result<(), InputError> {
@@ -579,12 +620,14 @@ impl Activity {
             }
             return Ok(());
         }
+        let mut echo_dirty = false;
         for &b in bytes {
             match b {
                 0x7f | 0x08 => {
-                    self.pending.pop();
+                    echo_dirty |= erase_last_input(&mut self.pending);
                 }
                 b'\r' | b'\n' => {
+                    echo_dirty = false;
                     if self.waiting.is_some() {
                         let line = String::from_utf8_lossy(&std::mem::take(&mut self.pending))
                             .into_owned();
@@ -595,10 +638,14 @@ impl Activity {
                         self.echo_active = false;
                     }
                 }
-                _ => self.pending.push(b),
+                _ => {
+                    self.pending.push(b);
+                    echo_dirty = true;
+                }
             }
         }
-        if !self.pending.is_empty() {
+        if !self.pending.is_empty() || (echo_dirty && (self.echo_active || self.waiting.is_some()))
+        {
             self.echo_pending(None);
         }
         Ok(())
@@ -702,6 +749,25 @@ impl Activity {
     }
 }
 
+/// Removes one user-perceived character from the end of `pending`. Returns
+/// whether anything was removed. An incomplete trailing UTF-8 scalar goes
+/// first, and a malformed byte goes one byte at a time.
+fn erase_last_input(pending: &mut Vec<u8>) -> bool {
+    if pending.is_empty() {
+        return false;
+    }
+    let keep = match std::str::from_utf8(pending) {
+        Ok(text) => text
+            .grapheme_indices(true)
+            .next_back()
+            .map_or(0, |(offset, _)| offset),
+        Err(error) if error.error_len().is_none() => error.valid_up_to(),
+        Err(_) => pending.len() - 1,
+    };
+    pending.truncate(keep);
+    true
+}
+
 pub fn key_bytes(key: &junie_tui::core::event::Key) -> Option<Vec<u8>> {
     use ratatui::crossterm::event::KeyCode;
     let ctrl = key.ctrl();
@@ -724,4 +790,386 @@ pub fn key_bytes(key: &junie_tui::core::event::Key) -> Option<Vec<u8>> {
         KeyCode::Char(c) if !key.alt() => c.to_string().into_bytes(),
         _ => return None,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn task() -> Activity {
+        Activity::new(
+            "act-test",
+            "demo",
+            "test",
+            ActivityKind::Task,
+            ScopeTag::here("/work"),
+            "host",
+            Script::running(vec![]),
+            0,
+        )
+    }
+
+    fn prompt(text: &str, secret: bool) -> Prompt {
+        Prompt {
+            text: text.into(),
+            secret,
+            since_tick: 0,
+            index: 0,
+        }
+    }
+
+    fn last_text(a: &Activity) -> &str {
+        a.output.last().map_or("", |e| e.1.as_str())
+    }
+
+    fn texts(a: &Activity) -> Vec<&str> {
+        a.output.iter().map(|e| e.1.as_str()).collect()
+    }
+
+    #[test]
+    fn stdin_backspace_removes_unicode_grapheme() {
+        let clusters = ["é", "e\u{301}", "中", "👍🏽", "👨\u{200d}👩\u{200d}👧"];
+        for cluster in clusters {
+            let mut a = task();
+            a.send_input(format!("ab{cluster}").as_bytes(), 1).unwrap();
+            a.send_input(&[0x7f], 2).unwrap();
+            assert_eq!(a.pending, b"ab", "cluster {cluster:?} is erased whole");
+            assert_eq!(last_text(&a), "ab");
+        }
+    }
+
+    #[test]
+    fn stdin_backspace_last_character_clears_echo() {
+        let mut a = task();
+        a.send_input(b"x", 1).unwrap();
+        assert_eq!(last_text(&a), "x");
+        a.send_input(&[0x7f], 2).unwrap();
+        assert!(a.pending.is_empty());
+        assert_eq!(texts(&a), vec![""], "the echo row is blank, not stale");
+    }
+
+    #[test]
+    fn stdin_backspace_empty_is_noop() {
+        let mut a = task();
+        for tick in 1..4 {
+            a.send_input(&[0x7f], tick).unwrap();
+        }
+        assert!(a.pending.is_empty());
+        assert!(a.output.is_empty(), "no blank row for an untouched line");
+    }
+
+    #[test]
+    fn stdin_backspace_fragmented_utf8_discards_incomplete_tail() {
+        let mut a = task();
+        a.send_input(&[b'a', 0xE4, 0xB8], 1).unwrap();
+        a.send_input(&[0x7f], 2).unwrap();
+        assert_eq!(a.pending, b"a", "the incomplete scalar goes, 'a' stays");
+
+        a.send_input(&[0xE4, 0xB8, 0xAD], 3).unwrap();
+        assert_eq!(last_text(&a), "a中");
+    }
+
+    #[test]
+    fn stdin_backspace_malformed_byte_removes_one_byte() {
+        let mut a = task();
+        a.send_input(&[b'a', 0xFF, b'b'], 1).unwrap();
+        a.send_input(&[0x7f], 2).unwrap();
+        assert_eq!(a.pending, [b'a', 0xFF]);
+    }
+
+    #[test]
+    fn stdin_secret_edit_never_displays_input() {
+        let mut a = task();
+        a.output.push((None, "Password: ".into(), LineTone::Normal));
+        a.waiting = Some(prompt("Password: ", true));
+        a.send_input(b"hunter2", 1).unwrap();
+        a.send_input(&[0x7f, 0x7f], 2).unwrap();
+        assert_eq!(a.pending, b"hunte");
+        assert_eq!(last_text(&a), "Password: ");
+        assert!(a.stdin.iter().all(|r| r.secret && r.bytes.is_empty()));
+    }
+
+    #[test]
+    fn stdin_edit_submit_same_chunk_has_one_echo_per_line() {
+        let mut a = task();
+        a.send_input(b"x\ry", 1).unwrap();
+        assert_eq!(texts(&a), vec!["x", "y"]);
+        assert_eq!(a.pending, b"y");
+    }
+
+    #[test]
+    fn stdin_empty_prompt_delete_keeps_prompt_text() {
+        let mut a = task();
+        a.output.push((None, "Name: ".into(), LineTone::Normal));
+        a.waiting = Some(prompt("Name: ", false));
+        a.send_input(b"a", 1).unwrap();
+        assert_eq!(last_text(&a), "Name: a");
+        a.send_input(&[0x7f], 2).unwrap();
+        assert!(a.pending.is_empty());
+        assert_eq!(last_text(&a), "Name: ");
+    }
+
+    fn scripted(script: Script) -> Activity {
+        Activity::new(
+            "act-test",
+            "demo",
+            "test",
+            ActivityKind::Task,
+            ScopeTag::here("/work"),
+            "host",
+            script,
+            0,
+        )
+    }
+
+    /// `wrong` ends the run along its branch, so the `body` line after the
+    /// prompt is never reached on that run.
+    fn terminating_script() -> Script {
+        Script::ending(
+            vec![
+                line(0, "start"),
+                super::prompt(1, "pw: ", false),
+                line(2, "body"),
+            ],
+            3,
+            0,
+        )
+        .branches(vec![vec![
+            Branch {
+                matches: Some("wrong".into()),
+                lines: vec![toned(0, "denied", LineTone::Error)],
+                end: Some((1, 1)),
+            },
+            Branch {
+                matches: None,
+                lines: vec![],
+                end: None,
+            },
+        ]])
+    }
+
+    /// Any answer continues the run, and the branch adds one line before
+    /// `tail`.
+    fn continuing_script() -> Script {
+        Script::ending(
+            vec![
+                line(0, "start"),
+                super::prompt(1, "Continue? ", false),
+                line(2, "tail"),
+            ],
+            3,
+            0,
+        )
+        .branches(vec![vec![Branch {
+            matches: None,
+            lines: vec![line(0, "extra")],
+            end: None,
+        }]])
+    }
+
+    #[test]
+    fn activity_restart_restores_original_terminating_branch_tail() {
+        let mut a = scripted(terminating_script());
+        a.advance(1);
+        a.send_input(b"wrong\r", 2).unwrap();
+        a.advance(3);
+        assert_eq!(a.state, ActivityState::Failed);
+
+        a.restart(10);
+        a.advance(10);
+        a.advance(11);
+        a.send_input(b"ok\r", 12).unwrap();
+        for tick in 13..=16 {
+            a.advance(tick);
+        }
+        assert_eq!(a.state, ActivityState::Succeeded);
+        assert_eq!(a.exit, Some(0));
+        assert!(
+            texts(&a).contains(&"body"),
+            "the original tail runs again: {:?}",
+            texts(&a)
+        );
+    }
+
+    #[test]
+    fn activity_restart_does_not_accumulate_continuing_branch_lines() {
+        let mut a = scripted(continuing_script());
+        a.advance(1);
+        a.send_input(b"y\r", 2).unwrap();
+        for tick in 3..=8 {
+            a.advance(tick);
+        }
+        assert_eq!(a.state, ActivityState::Succeeded);
+        let first = (texts(&a).join("|"), a.duration_ticks(8));
+
+        a.restart(10);
+        a.advance(10);
+        a.advance(11);
+        a.send_input(b"y\r", 12).unwrap();
+        for tick in 13..=18 {
+            a.advance(tick);
+        }
+        assert_eq!(a.state, ActivityState::Succeeded);
+        assert_eq!((texts(&a).join("|"), a.duration_ticks(18)), first);
+    }
+
+    #[test]
+    fn activity_restart_clears_partial_secret_and_plain_input() {
+        let mut a = scripted(Script::ending(
+            vec![
+                line(0, "boot"),
+                super::prompt(4, "Name: ", false),
+                line(5, "done"),
+            ],
+            6,
+            0,
+        ));
+        a.advance(1);
+        a.send_input(b"hun", 2).unwrap();
+        a.stop(3);
+        for tick in 4..=6 {
+            a.advance(tick);
+        }
+        assert_eq!(a.state, ActivityState::Stopped);
+
+        a.restart(10);
+        a.advance(10);
+        a.send_input(b"ab", 11).unwrap();
+        a.advance(14);
+        a.send_input(b"\r", 14).unwrap();
+        assert_eq!(last_text(&a), "Name: ab", "no byte from the stopped run");
+        assert!(a.pending.is_empty());
+    }
+
+    #[test]
+    fn activity_restart_replays_spawn_failure() {
+        let mut a = scripted(Script::spawn_failed("no such file"));
+        a.advance(1);
+        assert_eq!(a.state, ActivityState::Failed);
+
+        a.restart(5);
+        a.advance(5);
+        assert_eq!(a.state, ActivityState::Failed);
+        assert_eq!(a.exit, Some(127));
+        assert_eq!(last_text(&a), "holla: cannot start: no such file");
+    }
+
+    #[test]
+    fn activity_restart_preserves_identity_configuration_and_filters() {
+        let mut a = scripted(terminating_script());
+        a.effect = Some(Effect::ComposeUp);
+        a.after = Some("act-0".into());
+        a.batch = Some("batch-1".into());
+        a.follow_ups = vec!["Open".into()];
+        a.insights = vec![("k".into(), "v".into())];
+        a.hidden_services = vec!["api".into()];
+        a.attachable = true;
+        a.advance(1);
+        a.send_input(b"wrong\r", 2).unwrap();
+        a.advance(3);
+        let before = a.clone();
+
+        a.restart(10);
+
+        assert_eq!(a.id, before.id);
+        assert_eq!(a.name, before.name);
+        assert_eq!(a.origin, before.origin);
+        assert_eq!(a.kind, before.kind);
+        assert_eq!(a.scope, before.scope);
+        assert_eq!(a.host, before.host);
+        assert_eq!(a.effect, before.effect);
+        assert_eq!(a.after, before.after);
+        assert_eq!(a.batch, before.batch);
+        assert_eq!(a.follow_ups, before.follow_ups);
+        assert_eq!(a.insights, before.insights);
+        assert_eq!(a.hidden_services, before.hidden_services);
+        assert_eq!(a.attachable, before.attachable);
+        assert_eq!(a.state, ActivityState::Running);
+        assert_eq!(a.started_tick, 10);
+        assert!(a.output.is_empty());
+        assert_eq!(a.exit, None);
+        assert_eq!(a.ended_tick, None);
+        assert!(a.waiting.is_none());
+        assert!(a.stdin.is_empty());
+        assert!(a.pending.is_empty());
+    }
+
+    #[test]
+    fn activity_restart_live_is_noop() {
+        for state in [
+            ActivityState::Queued,
+            ActivityState::Running,
+            ActivityState::Detached,
+            ActivityState::Cancelling,
+        ] {
+            let mut a = scripted(terminating_script());
+            a.advance(1);
+            a.send_input(b"par", 2).unwrap();
+            a.state = state;
+            if state == ActivityState::Cancelling {
+                a.cancel = Some(CancelState {
+                    requested: 2,
+                    kill_sent: None,
+                });
+            }
+            let before = a.clone();
+
+            a.restart(9);
+
+            assert_eq!(a, before, "restart while {state:?} changes nothing");
+        }
+    }
+
+    #[test]
+    fn activity_restart_reapplies_effect_only_on_new_success() {
+        use crate::domain::fixtures::world_for;
+        use crate::scenario::{Motion, Scenario};
+
+        let mut w = world_for(Scenario::DockerCleanup, Motion::Full);
+        w.clock.running = true;
+        let tick = w.tick;
+        let mut a = Activity::new(
+            "act-effect",
+            "demo",
+            "test",
+            ActivityKind::Task,
+            ScopeTag::here("/work"),
+            "host",
+            Script::ending(vec![line(0, "ok")], 1, 0),
+            tick,
+        );
+        a.effect = Some(Effect::ServiceRestart("unit".into()));
+        w.activities.push(a);
+        let unit = || "unit".to_string();
+
+        for _ in 0..3 {
+            w.tick();
+        }
+        assert_eq!(
+            w.activity("act-effect").unwrap().state,
+            ActivityState::Succeeded
+        );
+        assert_eq!(w.healed_units.iter().filter(|u| **u == unit()).count(), 1);
+        w.healed_units.clear();
+
+        let now = w.tick;
+        w.activity_mut("act-effect").unwrap().restart(now);
+        assert!(
+            w.healed_units.is_empty(),
+            "restart itself applies no effect"
+        );
+
+        for _ in 0..3 {
+            w.tick();
+        }
+        assert_eq!(
+            w.activity("act-effect").unwrap().state,
+            ActivityState::Succeeded
+        );
+        assert_eq!(
+            w.healed_units.iter().filter(|u| **u == unit()).count(),
+            1,
+            "the new success applies the configured effect once"
+        );
+    }
 }

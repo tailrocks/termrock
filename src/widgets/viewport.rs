@@ -195,6 +195,23 @@ pub struct WorkCounters {
     pub index_extends: usize,
 
     pub index_shifts: usize,
+
+    /// Draws from a shared reference that had to deep-clone the view because
+    /// it was not prepared for the draw (see `ViewportOps::draw`).
+    pub draw_fallbacks: usize,
+
+    /// Logical lines copied by those clones.
+    pub draw_cloned_lines: usize,
+
+    /// Source text bytes copied by those clones.
+    pub draw_cloned_bytes: usize,
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+struct DrawWork {
+    fallbacks: usize,
+    lines: usize,
+    bytes: usize,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -227,7 +244,7 @@ struct Cell {
 
 type RowCache = ((u16, bool), Vec<(usize, usize)>);
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct Logical {
     id: u64,
     spans: Line,
@@ -240,6 +257,27 @@ struct Logical {
     segmented: bool,
 
     rows: Vec<RowCache>,
+}
+
+#[cfg(test)]
+thread_local! {
+    static LOGICAL_CLONES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+impl Clone for Logical {
+    fn clone(&self) -> Self {
+        #[cfg(test)]
+        LOGICAL_CLONES.with(|n| n.set(n.get() + 1));
+        Self {
+            id: self.id,
+            spans: self.spans.clone(),
+            text: self.text.clone(),
+            cells: self.cells.clone(),
+            width: self.width,
+            segmented: self.segmented,
+            rows: self.rows.clone(),
+        }
+    }
 }
 
 impl Logical {
@@ -419,6 +457,20 @@ struct VisualRow {
     end: usize,
 }
 
+/// The inputs a layout was built for, plus what it derived from them.
+/// `set_area` records it after a layout is rebuilt, and a shared-reference
+/// draw may skip the deep clone only while the view still matches it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct PreparedKey {
+    revision: u64,
+    area: Rect,
+    wrap: bool,
+    h_scroll: HScroll,
+    scrollbar_gap: u16,
+    layout_width: u16,
+    rows_h: u16,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct Anchor {
     id: u64,
@@ -452,12 +504,13 @@ pub struct TextViewport {
 
     indexed_lines: usize,
 
-    layout_size: Option<(u16, u16, bool, bool)>,
+    prepared: Option<PreparedKey>,
 
     rows_h: u16,
 
     reading: Option<(u64, usize)>,
     work: WorkCounters,
+    draw_work: std::cell::Cell<DrawWork>,
 
     pub scrollbar_gap: u16,
 
@@ -537,9 +590,10 @@ impl TextViewport {
             layout_wrap: false,
             index_valid: false,
             indexed_lines: 0,
-            layout_size: None,
+            prepared: None,
             reading: None,
             work: WorkCounters::default(),
+            draw_work: std::cell::Cell::default(),
             scrollbar_gap: scrollbar::GAP,
             rows_h: 0,
             horizontal: None,
@@ -564,15 +618,11 @@ impl TextViewport {
     }
 
     pub fn h_enabled(&self) -> bool {
-        !self.wrap && self.h_policy().enabled
+        self.projection().h_enabled(&self.scroll)
     }
 
     fn hoff(&self) -> usize {
-        if self.h_enabled() {
-            self.scroll.h.offset
-        } else {
-            0
-        }
+        self.projection().hoff(&self.scroll)
     }
 
     fn text_w(&self) -> usize {
@@ -580,12 +630,7 @@ impl TextViewport {
     }
 
     fn text_rect(&self) -> Rect {
-        let h = if self.rows_h == 0 {
-            self.area.height
-        } else {
-            self.rows_h.min(self.area.height)
-        };
-        Rect::new(self.area.x, self.area.y, self.area.width, h)
+        self.projection().text_rect()
     }
 
     pub fn reveal_cols(&mut self, cols: Range<usize>) -> bool {
@@ -652,7 +697,24 @@ impl TextViewport {
     }
 
     pub fn work_counters(&self) -> WorkCounters {
-        self.work
+        let draw = self.draw_work.get();
+        WorkCounters {
+            draw_fallbacks: draw.fallbacks,
+            draw_cloned_lines: draw.lines,
+            draw_cloned_bytes: draw.bytes,
+            ..self.work
+        }
+    }
+
+    pub(crate) fn clone_for_draw(&self) -> Self {
+        let mut work = self.draw_work.get();
+        work.fallbacks += 1;
+        work.lines += self.lines.len();
+        let bytes = self.lines.iter().map(|l| l.text.len()).sum::<usize>();
+        work.bytes += bytes;
+        crate::record_work!(PayloadBytesCloned, bytes);
+        self.draw_work.set(work);
+        self.clone()
     }
 
     pub fn retention(&self) -> Option<usize> {
@@ -709,6 +771,7 @@ impl TextViewport {
         }
         self.indexed_lines = self.indexed_lines.saturating_sub(drop);
         self.work.index_shifts += 1;
+        crate::record_work!(IndexShifts, 1usize);
         self.scroll.set_content(self.visual.len());
         if !self.follow {
             self.scroll.offset = self.scroll.offset.saturating_sub(gone);
@@ -934,10 +997,12 @@ impl TextViewport {
                 if !l.segmented {
                     l.segment();
                     self.work.segmented_lines += 1;
+                    crate::record_work!(SegmentedLines, 1usize);
                 }
                 if !l.has_rows(key) {
                     l.reflow(text_w, wrap);
                     self.work.reflowed_lines += 1;
+                    crate::record_work!(ReflowedLines, 1usize);
                 }
                 for &(s, e) in self.lines[li].rows_at(key) {
                     self.visual.push(VisualRow {
@@ -951,6 +1016,7 @@ impl TextViewport {
             self.indexed_lines = self.lines.len();
             if extended {
                 self.work.index_extends += 1;
+                crate::record_work!(IndexExtends, 1usize);
                 self.scroll.set_content(self.visual.len());
                 self.clip_selection();
             }
@@ -960,10 +1026,12 @@ impl TextViewport {
             if !l.segmented {
                 l.segment();
                 self.work.segmented_lines += 1;
+                crate::record_work!(SegmentedLines, 1usize);
             }
             if !l.has_rows((text_w, wrap)) {
                 l.reflow(text_w, wrap);
                 self.work.reflowed_lines += 1;
+                crate::record_work!(ReflowedLines, 1usize);
             }
         }
         self.layout_width = text_w;
@@ -987,6 +1055,7 @@ impl TextViewport {
         self.index_valid = true;
         self.indexed_lines = self.lines.len();
         self.work.index_rebuilds += 1;
+        crate::record_work!(IndexRebuilds, 1usize);
         self.scroll.set_content(self.visual.len());
         self.clip_selection();
     }
@@ -1064,13 +1133,14 @@ impl TextViewport {
         self.scroll.scroll_to(target);
     }
 
+    /// Prepares the layout for `area`. A view prepared for exactly this
+    /// area, content revision, wrap, scrollbar gap and horizontal policy can
+    /// be drawn from a shared reference without copying its history.
     pub fn set_area(&mut self, area: Rect) {
         self.area = area;
         self.adopt_policy();
         let h_on = self.h_enabled();
-        let size = (area.width, area.height, self.wrap, h_on);
-        let dirty = !self.index_valid || self.indexed_lines < self.lines.len();
-        if dirty || self.layout_size != Some(size) {
+        if !self.is_prepared(area) {
             let mut rows = area.height;
             self.lay_out(area.width, rows);
             if h_on {
@@ -1084,7 +1154,7 @@ impl TextViewport {
                 self.scroll.h = ScrollState::default();
             }
             self.rows_h = rows;
-            self.layout_size = Some(size);
+            self.prepared = Some(self.prepared_key(area));
 
             if rows < area.height && h_on {
                 let w = area
@@ -1101,6 +1171,25 @@ impl TextViewport {
         if self.follow {
             self.scroll.jump_end();
         }
+    }
+
+    fn prepared_key(&self, area: Rect) -> PreparedKey {
+        PreparedKey {
+            revision: self.revision,
+            area,
+            wrap: self.wrap,
+            h_scroll: self.h_policy(),
+            scrollbar_gap: self.scrollbar_gap,
+            layout_width: self.layout_width,
+            rows_h: self.rows_h,
+        }
+    }
+
+    fn is_prepared(&self, area: Rect) -> bool {
+        self.index_valid
+            && self.indexed_lines == self.lines.len()
+            && self.scroll.h_cfg == self.h_policy()
+            && self.prepared == Some(self.prepared_key(area))
     }
 
     fn sync_h(&mut self) {
@@ -1129,13 +1218,8 @@ impl TextViewport {
         }
     }
 
-    fn index_of(&self, id: u64) -> Option<usize> {
-        self.lines.iter().position(|l| l.id == id)
-    }
-
     fn resolve(&self, a: Anchor) -> Option<CellPos> {
-        let line = self.index_of(a.id)?;
-        Some(CellPos { line, col: a.col })
+        resolve_in(&self.lines, a)
     }
 
     fn anchor_at(&self, p: CellPos) -> Option<Anchor> {
@@ -1155,13 +1239,7 @@ impl TextViewport {
     }
 
     pub fn selection(&self) -> Option<(CellPos, CellPos)> {
-        let (a, b) = self.select.sel?;
-        let a = self.resolve(a)?;
-        let b = self.resolve(b)?;
-        if a == b {
-            return None;
-        }
-        Some((a.min(b), a.max(b)))
+        self.projection().selection()
     }
 
     pub fn select_all(&mut self) -> Outcome {
@@ -1660,174 +1738,94 @@ impl TextViewport {
         (Outcome::Changed, ev)
     }
 
+    /// Prepares the layout for `area`, then paints through the one borrowed
+    /// painter and keeps the scroll and menu geometry it produced.
     pub fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, bg: Color) {
-        self.render_view(area, buf, ctx, bg);
+        let area = area.intersection(*buf.area());
+        if area.is_empty() {
+            self.edit_menu.render(self.area, buf, ctx);
+            return;
+        }
+        self.scroll.note_policy(ctx.track_click, ctx.hscroll);
+        self.adopt_policy();
+        self.scroll.begin(ctx.track_click);
+        self.set_area(area);
+        let mut state = PaintState {
+            scroll: std::mem::take(&mut self.scroll),
+            edit_menu: std::mem::take(&mut self.edit_menu),
+            caret_visible: self.caret_visible,
+        };
+        paint_projection(&self.projection(), &mut state, buf, ctx, bg);
+        self.scroll = state.scroll;
+        self.edit_menu = state.edit_menu;
+    }
 
-        self.edit_menu.render(self.area, buf, ctx);
+    /// Paints a view the host already prepared with `set_area` without
+    /// copying its history. The scroll and menu geometry of the frame is
+    /// local and dropped, as a deep clone's was. `None` means the view is not
+    /// prepared for `area` and the caller must clone and prepare instead.
+    pub(crate) fn draw_prepared(
+        &self,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        bg: Color,
+        caret_allowed: bool,
+    ) -> Option<PaintResult> {
+        if area.is_empty() || !self.is_prepared(area) {
+            return None;
+        }
+        let mut state = PaintState {
+            scroll: self.scroll.clone(),
+            edit_menu: self.edit_menu.clone(),
+            caret_visible: self.caret_visible && caret_allowed,
+        };
+        state.scroll.begin(ctx.track_click);
+        state.scroll.set_viewport(self.rows_h as usize);
+        if self.follow {
+            state.scroll.jump_end();
+        }
+        Some(paint_projection(
+            &self.projection(),
+            &mut state,
+            buf,
+            ctx,
+            bg,
+        ))
+    }
+
+    fn projection(&self) -> ViewportProjection<'_> {
+        ViewportProjection {
+            id: self.id,
+            area: self.area,
+            lines: &self.lines,
+            visual: &self.visual,
+            marks: &self.marks,
+            select: self.select.sel,
+            browse: self.browse,
+            horizontal: self.horizontal,
+            wrap: self.wrap,
+            follow: self.follow,
+            caret: self.caret,
+            layout_width: self.layout_width,
+            rows_h: self.rows_h,
+        }
     }
 
     fn h_policy(&self) -> HScroll {
-        self.horizontal.unwrap_or_else(|| self.scroll.app_hscroll())
+        effective_hscroll(self.horizontal, &self.scroll)
     }
 
     fn adopt_policy(&mut self) {
         let h_cfg = self.h_policy();
         if h_cfg != self.scroll.h_cfg {
             self.scroll.h_cfg = h_cfg;
-            self.layout_size = None;
-        }
-    }
-
-    fn render_view(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, bg: Color) {
-        let area = area.intersection(*buf.area());
-        if area.is_empty() {
-            return;
-        }
-        let t = ctx.theme;
-
-        let focused = ctx
-            .interaction
-            .focused_under(self.id, self.edit_menu.is_open());
-        self.scroll.note_policy(ctx.track_click, ctx.hscroll);
-        self.adopt_policy();
-        self.scroll.begin(ctx.track_click);
-        self.set_area(area);
-        let has_sb = self.scroll.overflows();
-        let text_w = self.layout_width;
-        let hoff = self.hoff();
-        let text = self.text_rect();
-        let right = area.x + text_w;
-        ctx.control(self.id, area, false);
-        ctx.scrollable(self.id, area);
-        ctx.autoscroll(text);
-        let sel = self.selection();
-        if sel.is_some() {
-            ctx.selection(self.id);
-        }
-        fill(buf, area, Style::new().bg(bg));
-        for (k, vi) in self.scroll.visible_range().enumerate() {
-            let y = area.y + k as u16;
-            if y >= text.bottom() {
-                break;
-            }
-            let Some(vr) = self.visual.get(vi).copied() else {
-                break;
-            };
-            let l = &self.lines[vr.line];
-            let line_marks: Vec<&Mark> = self.marks.iter().filter(|m| m.line == vr.line).collect();
-
-            let left = l.col_of(vr.start) + hoff;
-            let mut col = l.col_of(vr.start);
-            for c in &l.cells[vr.start..vr.end] {
-                let at = col;
-                col += c.w;
-
-                if at < left {
-                    continue;
-                }
-                let x = area.x + (at - left).min(u16::MAX as usize) as u16;
-                if x + c.w as u16 > right {
-                    break;
-                }
-                let mut st = Style::new().fg(t.tone(c.style.tone)).bg(bg);
-                if c.style.bold {
-                    st = st.add_modifier(Modifier::BOLD);
-                }
-                if c.style.italic {
-                    st = st.add_modifier(Modifier::ITALIC);
-                }
-                if c.style.underline {
-                    st = st.add_modifier(Modifier::UNDERLINED);
-                }
-                if c.kind == CellKind::Control {
-                    st = st.fg(t.text_muted);
-                }
-                if c.style.reversed {
-                    st = Style::new().fg(t.canvas).bg(t.text_primary);
-                }
-                if let Some(m) = line_marks
-                    .iter()
-                    .find(|m| m.range.start < c.src.end && c.src.start < m.range.end)
-                {
-                    st = if m.current {
-                        t.match_current()
-                    } else {
-                        st.add_modifier(Modifier::UNDERLINED).bg(t.lift(bg))
-                    };
-                }
-                let p = CellPos {
-                    line: vr.line,
-                    col: at,
-                };
-                if let Some((a, b)) = sel
-                    && p >= a
-                    && p < b
-                {
-                    st = t.selection().add_modifier(st.add_modifier);
-                }
-                buf.set_string(x, y, &c.g, st);
-            }
-
-            let end_col = l.col_of(vr.end);
-            if let Some((a, b)) = sel
-                && vr.line >= a.line
-                && vr.line < b.line
-                && vr.end == l.cells.len()
-                && end_col >= left
-            {
-                let x = area.x + (end_col - left).min(u16::MAX as usize) as u16;
-                if x < right {
-                    fill(buf, Rect::new(x, y, 1, 1), t.selection());
-                }
-            }
-        }
-        if has_sb {
-            let body = Rect::new(area.x, area.y, area.width, text.height);
-            self.scroll
-                .draw_with_fade(body, buf, ctx, self.id, focused, &[]);
-        }
-        if text.height < area.height && self.h_enabled() {
-            let w = area.width.saturating_sub(u16::from(has_sb));
-            let hb = Rect::new(area.x, text.bottom(), w, 1);
-            self.scroll.draw_h(hb, buf, ctx, self.id, focused);
-        }
-
-        let cursor_pos = if focused {
-            match self.browse.and_then(|b| self.resolve(b)) {
-                Some(b) if self.select.sel.is_some() => Some(b),
-                _ if self.follow && self.caret_visible => self.caret,
-                _ => None,
-            }
-        } else {
-            None
-        };
-        if let Some(p) = cursor_pos.and_then(|c| self.screen_pos(c)) {
-            ctx.set_cursor(p);
+            self.prepared = None;
         }
     }
 
     pub fn screen_pos(&self, c: CellPos) -> Option<Position> {
-        let vi = self.visual.iter().position(|v| {
-            v.line == c.line
-                && self.col_of(v.line, v.start) <= c.col
-                && (c.col < self.col_of(v.line, v.end)
-                    || v.end == self.lines.get(v.line).map_or(0, |l| l.cells.len()))
-        })?;
-        if !self.scroll.visible_range().contains(&vi) {
-            return None;
-        }
-        let vr = self.visual[vi];
-        let hoff = self.hoff();
-        let base = self.col_of(vr.line, vr.start) + hoff;
-        let text_w = self.layout_width;
-
-        let inside = c.col >= base && c.col - base < text_w as usize;
-        if !inside && hoff > 0 {
-            return None;
-        }
-        let cx = self.area.x + (c.col.saturating_sub(base) as u16).min(text_w.saturating_sub(1));
-        let cy = self.area.y + (vi - self.scroll.offset) as u16;
-        Some(Position::new(cx, cy))
+        self.projection().screen_pos(&self.scroll, c)
     }
 
     pub fn context_point(&self) -> Position {
@@ -1868,6 +1866,245 @@ impl TextViewport {
             Rect::ZERO
         }
     }
+}
+
+/// Borrowed view of everything a paint reads from a `TextViewport`, so the
+/// painter can run from a shared reference while the scroll pane and edit
+/// menu it mutates live in a separate `PaintState`.
+struct ViewportProjection<'a> {
+    id: WidgetId,
+    area: Rect,
+    lines: &'a [Logical],
+    visual: &'a [VisualRow],
+    marks: &'a [Mark],
+    select: Option<(Anchor, Anchor)>,
+    browse: Option<Anchor>,
+    horizontal: Option<HScroll>,
+    wrap: bool,
+    follow: bool,
+    caret: Option<CellPos>,
+    layout_width: u16,
+    rows_h: u16,
+}
+
+/// The state a paint mutates. A deep clone used to carry it implicitly.
+struct PaintState {
+    scroll: ScrollPane,
+    edit_menu: EditMenu,
+    caret_visible: bool,
+}
+
+pub(crate) struct PaintResult {
+    pub(crate) hardware_cursor: Option<Position>,
+}
+
+fn effective_hscroll(horizontal: Option<HScroll>, scroll: &ScrollPane) -> HScroll {
+    horizontal.unwrap_or_else(|| scroll.app_hscroll())
+}
+
+fn resolve_in(lines: &[Logical], a: Anchor) -> Option<CellPos> {
+    let line = lines.iter().position(|l| l.id == a.id)?;
+    Some(CellPos { line, col: a.col })
+}
+
+impl ViewportProjection<'_> {
+    fn h_enabled(&self, scroll: &ScrollPane) -> bool {
+        !self.wrap && effective_hscroll(self.horizontal, scroll).enabled
+    }
+
+    fn hoff(&self, scroll: &ScrollPane) -> usize {
+        if self.h_enabled(scroll) {
+            scroll.h.offset
+        } else {
+            0
+        }
+    }
+
+    fn text_rect(&self) -> Rect {
+        let h = if self.rows_h == 0 {
+            self.area.height
+        } else {
+            self.rows_h.min(self.area.height)
+        };
+        Rect::new(self.area.x, self.area.y, self.area.width, h)
+    }
+
+    fn resolve(&self, a: Anchor) -> Option<CellPos> {
+        resolve_in(self.lines, a)
+    }
+
+    fn selection(&self) -> Option<(CellPos, CellPos)> {
+        let (a, b) = self.select?;
+        let a = self.resolve(a)?;
+        let b = self.resolve(b)?;
+        if a == b {
+            return None;
+        }
+        Some((a.min(b), a.max(b)))
+    }
+
+    fn col_of(&self, line: usize, cell: usize) -> usize {
+        self.lines.get(line).map(|l| l.col_of(cell)).unwrap_or(0)
+    }
+
+    fn screen_pos(&self, scroll: &ScrollPane, c: CellPos) -> Option<Position> {
+        let vi = self.visual.iter().position(|v| {
+            v.line == c.line
+                && self.col_of(v.line, v.start) <= c.col
+                && (c.col < self.col_of(v.line, v.end)
+                    || v.end == self.lines.get(v.line).map_or(0, |l| l.cells.len()))
+        })?;
+        if !scroll.visible_range().contains(&vi) {
+            return None;
+        }
+        let vr = self.visual[vi];
+        let hoff = self.hoff(scroll);
+        let base = self.col_of(vr.line, vr.start) + hoff;
+        let text_w = self.layout_width;
+
+        let inside = c.col >= base && c.col - base < text_w as usize;
+        if !inside && hoff > 0 {
+            return None;
+        }
+        let cx = self.area.x + (c.col.saturating_sub(base) as u16).min(text_w.saturating_sub(1));
+        let cy = self.area.y + (vi - scroll.offset) as u16;
+        Some(Position::new(cx, cy))
+    }
+}
+
+fn paint_projection(
+    p: &ViewportProjection<'_>,
+    state: &mut PaintState,
+    buf: &mut Buffer,
+    ctx: &mut RenderCtx,
+    bg: Color,
+) -> PaintResult {
+    let area = p.area;
+    let t = ctx.theme;
+    let focused = ctx
+        .interaction
+        .focused_under(p.id, state.edit_menu.is_open());
+    let has_sb = state.scroll.overflows();
+    let text_w = p.layout_width;
+    let hoff = p.hoff(&state.scroll);
+    let text = p.text_rect();
+    let right = area.x + text_w;
+    ctx.control(p.id, area, false);
+    ctx.scrollable(p.id, area);
+    ctx.autoscroll(text);
+    let sel = p.selection();
+    if sel.is_some() {
+        ctx.selection(p.id);
+    }
+    fill(buf, area, Style::new().bg(bg));
+    for (k, vi) in state.scroll.visible_range().enumerate() {
+        let y = area.y + k as u16;
+        if y >= text.bottom() {
+            break;
+        }
+        let Some(vr) = p.visual.get(vi).copied() else {
+            break;
+        };
+        let l = &p.lines[vr.line];
+        let line_marks: Vec<&Mark> = p.marks.iter().filter(|m| m.line == vr.line).collect();
+
+        let left = l.col_of(vr.start) + hoff;
+        let mut col = l.col_of(vr.start);
+        for c in &l.cells[vr.start..vr.end] {
+            let at = col;
+            col += c.w;
+
+            if at < left {
+                continue;
+            }
+            let x = area.x + (at - left).min(u16::MAX as usize) as u16;
+            if x + c.w as u16 > right {
+                break;
+            }
+            let mut st = Style::new().fg(t.tone(c.style.tone)).bg(bg);
+            if c.style.bold {
+                st = st.add_modifier(Modifier::BOLD);
+            }
+            if c.style.italic {
+                st = st.add_modifier(Modifier::ITALIC);
+            }
+            if c.style.underline {
+                st = st.add_modifier(Modifier::UNDERLINED);
+            }
+            if c.kind == CellKind::Control {
+                st = st.fg(t.text_muted);
+            }
+            if c.style.reversed {
+                st = Style::new().fg(t.canvas).bg(t.text_primary);
+            }
+            if let Some(m) = line_marks
+                .iter()
+                .find(|m| m.range.start < c.src.end && c.src.start < m.range.end)
+            {
+                st = if m.current {
+                    t.match_current()
+                } else {
+                    st.add_modifier(Modifier::UNDERLINED).bg(t.lift(bg))
+                };
+            }
+            let at_pos = CellPos {
+                line: vr.line,
+                col: at,
+            };
+            if let Some((a, b)) = sel
+                && at_pos >= a
+                && at_pos < b
+            {
+                st = t.selection().add_modifier(st.add_modifier);
+            }
+            buf.set_string(x, y, &c.g, st);
+        }
+
+        let end_col = l.col_of(vr.end);
+        if let Some((a, b)) = sel
+            && vr.line >= a.line
+            && vr.line < b.line
+            && vr.end == l.cells.len()
+            && end_col >= left
+        {
+            let x = area.x + (end_col - left).min(u16::MAX as usize) as u16;
+            if x < right {
+                fill(buf, Rect::new(x, y, 1, 1), t.selection());
+            }
+        }
+    }
+    if has_sb {
+        let body = Rect::new(area.x, area.y, area.width, text.height);
+        state
+            .scroll
+            .draw_with_fade(body, buf, ctx, p.id, focused, &[]);
+    }
+    if text.height < area.height && p.h_enabled(&state.scroll) {
+        let w = area.width.saturating_sub(u16::from(has_sb));
+        let hb = Rect::new(area.x, text.bottom(), w, 1);
+        state.scroll.draw_h(hb, buf, ctx, p.id, focused);
+    }
+
+    let cursor_pos = if focused {
+        match p.browse.and_then(|b| p.resolve(b)) {
+            Some(b) if p.select.is_some() => Some(b),
+            _ if p.follow && state.caret_visible => p.caret,
+            _ => None,
+        }
+    } else {
+        None
+    };
+    if let Some(pos) = cursor_pos.and_then(|c| p.screen_pos(&state.scroll, c)) {
+        ctx.set_cursor(pos);
+    }
+    state.edit_menu.render(area, buf, ctx);
+
+    let hardware_cursor = if p.follow && state.caret_visible {
+        p.caret.and_then(|at| p.screen_pos(&state.scroll, at))
+    } else {
+        None
+    };
+    PaintResult { hardware_cursor }
 }
 
 impl crate::ui::measure::Measure for TextViewport {
@@ -1973,5 +2210,58 @@ impl EditMenuHost for TextViewport {
             _ => {}
         }
         false
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::focus::FocusRing;
+    use crate::core::hit::HitRegistry;
+    use crate::theme::{ColorLevel, Theme};
+    use crate::ui::ctx::Interaction;
+    use crate::widgets::viewport_ops::ViewportOps;
+
+    const AREA: Rect = Rect::new(0, 0, 80, 24);
+
+    fn draw_frame(v: &TextViewport) {
+        let theme = Theme::for_level(ColorLevel::TrueColor);
+        let mut buf = Buffer::empty(AREA);
+        let mut hits = HitRegistry::default();
+        let mut ring = FocusRing::default();
+        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        v.draw(AREA, &mut buf, &mut ctx, theme.canvas, true);
+    }
+
+    fn clones() -> usize {
+        LOGICAL_CLONES.with(std::cell::Cell::get)
+    }
+
+    #[test]
+    fn prepared_draw_clones_no_logical_line_at_any_history_size() {
+        for n in [1_000usize, 100_000] {
+            let lines = (0..n)
+                .map(|i| vec![Span::plain(format!("row {i} of the retained history"))])
+                .collect();
+            let mut v = TextViewport::with_lines(WidgetId::of("t.cost"), lines);
+            v.set_area(AREA);
+            let before = clones();
+            for _ in 0..3 {
+                draw_frame(&v);
+            }
+            assert_eq!(
+                clones() - before,
+                0,
+                "{n} lines: unchanged prepared frames copy no logical line"
+            );
+
+            v.wrap = true;
+            draw_frame(&v);
+            assert_eq!(
+                clones() - before,
+                n,
+                "{n} lines: the counter sees the fallback copy it is meant to catch"
+            );
+        }
     }
 }

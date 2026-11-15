@@ -2,12 +2,13 @@ use crate::core::event::{Key, Outcome};
 use crate::core::focus::{Focus, FocusRing};
 use crate::core::hints::{HasHints, HintCx};
 use crate::core::id::WidgetId;
+use crate::core::intent::DismissReason;
 use crate::core::keymap::{Nav, NavKeys};
 use crate::core::scroll::{ScrollPane, Scrollable};
 use crate::theme::{Strings, Tone};
 use crate::ui::ctx::RenderCtx;
 use crate::ui::text::truncate;
-use crate::widgets::button::{Button, row_layout_right};
+use crate::widgets::button::{Button, row_layout_right, row_lines};
 use crate::widgets::choice::{Checkbox, RadioGroup};
 use crate::widgets::input::{InputAction, TextInput};
 use crate::widgets::keyhint::Hint;
@@ -135,6 +136,40 @@ impl FormField {
         }
     }
 
+    fn owns(&self, id: WidgetId) -> bool {
+        match &self.kind {
+            FormFieldKind::Input(i) => i.id == id,
+            FormFieldKind::Select(s) => s.contains_id(id),
+            FormFieldKind::Check(c) => c.id == id,
+            FormFieldKind::Radio(r) => {
+                r.id == id || (0..r.options.len()).any(|i| r.option_id(i) == id)
+            }
+            FormFieldKind::Chooser { button, .. } => button.id == id,
+            FormFieldKind::Note(_) => false,
+        }
+    }
+
+    /// Ends a hidden field's transient interaction. Returns true when an
+    /// input's uncommitted edit survives as the field's value, so the caller
+    /// reports it like any other committed change.
+    fn end_interaction(&mut self) -> bool {
+        match &mut self.kind {
+            FormFieldKind::Input(i) if i.editing || i.field.pressed() || i.edit_menu.is_open() => {
+                let typed = i.is_dirty().then(|| i.text().to_owned());
+                let _ = i.on_blur();
+                let text = i.text().to_owned();
+                i.set_value(&text);
+                typed.is_some_and(|typed| typed == text)
+            }
+            FormFieldKind::Select(s) => {
+                s.close();
+                let _ = s.on_release(Position::ORIGIN);
+                false
+            }
+            _ => false,
+        }
+    }
+
     fn tab_stop(&self) -> Option<WidgetId> {
         let disabled = match &self.kind {
             FormFieldKind::Input(i) => i.disabled,
@@ -145,6 +180,19 @@ impl FormField {
             FormFieldKind::Note(_) => true,
         };
         if disabled { None } else { self.focus_id() }
+    }
+
+    /// Forgets where the last frame drew the field, so a field the next frame
+    /// does not draw leaves no hit region behind.
+    fn clear_geometry(&mut self) {
+        match &mut self.kind {
+            FormFieldKind::Input(i) => i.area = Rect::ZERO,
+            FormFieldKind::Select(s) => s.area = Rect::ZERO,
+            FormFieldKind::Check(c) => c.area = Rect::ZERO,
+            FormFieldKind::Radio(r) => r.areas.clear(),
+            FormFieldKind::Chooser { button, .. } => button.area = Rect::ZERO,
+            FormFieldKind::Note(_) => {}
+        }
     }
 }
 
@@ -227,6 +275,11 @@ impl FormDialog {
         self
     }
 
+    pub fn dismiss(mut self, dismiss: crate::ui::popup::Dismiss) -> Self {
+        self.dismiss = dismiss;
+        self
+    }
+
     pub fn new(id: WidgetId, title: &str, fields: Vec<FormField>) -> Self {
         Self {
             dismiss: crate::ui::popup::Dismiss::ESCAPE,
@@ -281,10 +334,60 @@ impl FormDialog {
         self.fields.iter_mut().find(|f| f.name == name)
     }
 
+    fn changed_field(&mut self, name: String) {
+        self.dirty = true;
+        self.events.push(FormAction::Changed(name));
+    }
+
     pub fn set_visible(&mut self, name: &str, v: bool) {
         if let Some(f) = self.field_mut(name) {
             f.visible = v;
         }
+        self.reconcile_hidden_interactions();
+    }
+
+    fn reconcile_hidden_interactions(&mut self) {
+        let mut changed = Vec::new();
+        for f in self.fields.iter_mut().filter(|f| !f.visible) {
+            if f.end_interaction() {
+                changed.push(f.name.clone());
+            }
+        }
+        for name in changed {
+            self.changed_field(name);
+        }
+        let hidden = |id: WidgetId| {
+            self.fields
+                .iter()
+                .any(|f| !f.visible && f.focus_id() == Some(id))
+        };
+        if self.kept.is_some_and(hidden) {
+            self.kept = None;
+        }
+        if let Some(name) = &self.reveal
+            && self.field(name).is_some_and(|f| !f.visible)
+        {
+            self.reveal = None;
+        }
+    }
+
+    fn resolve_hidden_focus(&self, focus: &mut Focus) {
+        let Some(cur) = focus.current() else {
+            return;
+        };
+        let Some(at) = self.fields.iter().position(|f| !f.visible && f.owns(cur)) else {
+            return;
+        };
+        let next = self.fields[at + 1..]
+            .iter()
+            .filter(|f| f.visible)
+            .find_map(FormField::tab_stop)
+            .unwrap_or(self.save.id);
+        focus.focus(next);
+    }
+
+    fn is_hidden_target(&self, id: WidgetId) -> bool {
+        self.fields.iter().any(|f| !f.visible && f.owns(id))
     }
 
     pub fn text(&self, name: &str) -> String {
@@ -304,11 +407,7 @@ impl FormDialog {
     pub fn set_text(&mut self, name: &str, v: &str) {
         if let Some(f) = self.field_mut(name) {
             match &mut f.kind {
-                FormFieldKind::Input(i) => {
-                    *i = TextInput::new(i.id, &i.label.clone())
-                        .value(v)
-                        .placeholder(&i.placeholder.clone())
-                }
+                FormFieldKind::Input(i) => i.set_value(v),
                 FormFieldKind::Chooser { value, .. } => *value = v.to_owned(),
                 _ => {}
             }
@@ -362,7 +461,7 @@ impl FormDialog {
     pub fn is_editing(&self) -> bool {
         self.fields
             .iter()
-            .any(|f| matches!(&f.kind, FormFieldKind::Input(i) if i.editing))
+            .any(|f| f.visible && matches!(&f.kind, FormFieldKind::Input(i) if i.editing))
     }
 
     fn save_event(&self) -> FormAction {
@@ -393,19 +492,23 @@ impl FormDialog {
     fn any_open_select(&self) -> bool {
         self.fields
             .iter()
-            .any(|f| matches!(&f.kind, FormFieldKind::Select(s) if s.open))
+            .any(|f| f.visible && matches!(&f.kind, FormFieldKind::Select(s) if s.open))
+    }
+
+    fn dismiss_escape(&mut self) -> Outcome {
+        crate::ui::layer::dismiss(self, DismissReason::Esc)
+            .map_or(Outcome::Consumed, |response| response.outcome())
     }
 
     pub fn on_key(&mut self, key: &Key, focus: &mut Focus, ring: &FocusRing) -> Outcome {
+        self.reconcile_hidden_interactions();
+        self.resolve_hidden_focus(focus);
         let cur = focus.current();
         let editing = self.is_editing();
         let open = self.any_open_select();
         if !editing && !open {
             match key.code {
-                KeyCode::Esc => {
-                    self.events.push(FormAction::Cancel);
-                    return Outcome::Changed;
-                }
+                KeyCode::Esc => return self.dismiss_escape(),
                 KeyCode::Tab => {
                     focus.next(ring);
                     return Outcome::Changed;
@@ -461,10 +564,11 @@ impl FormDialog {
                     }
                 }
                 FormFieldKind::Check(c) if cur == Some(c.id) => {
+                    let before = (c.checked, c.mixed);
                     let o = c.on_key(key);
-                    if o == Outcome::Changed {
-                        self.dirty = true;
-                        self.events.push(FormAction::Changed(name));
+                    if (c.checked, c.mixed) != before {
+                        self.changed_field(name);
+                        return o;
                     }
                     if o.consumed() {
                         return o;
@@ -474,8 +578,8 @@ impl FormDialog {
                     let before = r.selected;
                     let o = r.on_key(key);
                     if r.selected != before {
-                        self.dirty = true;
-                        self.events.push(FormAction::Changed(name));
+                        self.changed_field(name);
+                        return o;
                     }
                     if o.consumed() {
                         return o;
@@ -540,7 +644,8 @@ impl FormDialog {
                     .actions
                     .iter()
                     .map(|(_, b)| b)
-                    .chain([&self.cancel, &self.save]);
+                    .chain([&self.cancel, &self.save])
+                    .filter(|b| ring.contains(b.id));
                 let forward = self.nav.action(key) == Some(Nav::Right);
                 if let Some(id) = self.button_row.step(row, cur, forward) {
                     focus.focus(id);
@@ -548,22 +653,23 @@ impl FormDialog {
                 Outcome::Changed
             }
 
-            KeyCode::Esc if self.dismiss.escape => {
-                self.events.push(FormAction::Cancel);
-                Outcome::Changed
-            }
+            KeyCode::Esc => self.dismiss_escape(),
             _ => Outcome::Consumed,
         }
     }
 
     fn inputs(&mut self) -> impl Iterator<Item = &mut TextInput> {
-        self.fields.iter_mut().filter_map(|f| match &mut f.kind {
-            FormFieldKind::Input(i) => Some(i),
-            _ => None,
-        })
+        self.fields
+            .iter_mut()
+            .filter(|f| f.visible)
+            .filter_map(|f| match &mut f.kind {
+                FormFieldKind::Input(i) => Some(i),
+                _ => None,
+            })
     }
 
     pub fn on_press(&mut self, id: WidgetId, pos: Position, count: u8) -> Outcome {
+        self.reconcile_hidden_interactions();
         if let Some(s) = self.select_owning(id) {
             return s.on_press(id, pos);
         }
@@ -573,6 +679,7 @@ impl FormDialog {
     }
 
     pub fn on_drag(&mut self, pressed: WidgetId, pos: Position) -> Outcome {
+        self.reconcile_hidden_interactions();
         if scrollbar::is_bar_of(pressed, self.id) {
             return match self.pane().bar_of(pressed) {
                 Some(bar) => self.bar_input(&bar, pos, false).outcome(),
@@ -588,7 +695,8 @@ impl FormDialog {
     }
 
     pub fn on_release(&mut self, pressed: WidgetId, pos: Position) -> Outcome {
-        for f in self.fields.iter_mut() {
+        self.reconcile_hidden_interactions();
+        for f in self.fields.iter_mut().filter(|f| f.visible) {
             if let FormFieldKind::Select(s) = &mut f.kind
                 && s.contains_id(pressed)
             {
@@ -604,10 +712,13 @@ impl FormDialog {
     }
 
     fn select_owning(&mut self, id: WidgetId) -> Option<&mut Select> {
-        self.fields.iter_mut().find_map(|f| match &mut f.kind {
-            FormFieldKind::Select(s) if s.contains_id(id) => Some(s),
-            _ => None,
-        })
+        self.fields
+            .iter_mut()
+            .filter(|f| f.visible)
+            .find_map(|f| match &mut f.kind {
+                FormFieldKind::Select(s) if s.contains_id(id) => Some(s),
+                _ => None,
+            })
     }
 
     pub fn on_click(&mut self, id: WidgetId, pos: Position, focus: &mut Focus) -> Outcome {
@@ -621,10 +732,15 @@ impl FormDialog {
         count: u8,
         focus: &mut Focus,
     ) -> Outcome {
+        self.reconcile_hidden_interactions();
+        self.resolve_hidden_focus(focus);
         if scrollbar::is_bar_of(id, self.id) {
             return self.bar_press(pos).outcome().or(Outcome::Consumed);
         }
-        for f in self.fields.iter_mut() {
+        if self.is_hidden_target(id) {
+            return Outcome::Consumed;
+        }
+        for f in self.fields.iter_mut().filter(|f| f.visible) {
             let name = f.name.clone();
             match &mut f.kind {
                 FormFieldKind::Input(i) if i.id == id => {
@@ -642,17 +758,22 @@ impl FormDialog {
                 }
                 FormFieldKind::Check(c) if c.id == id => {
                     focus.focus(id);
-                    self.dirty = true;
-                    self.events.push(FormAction::Changed(name));
-                    return c.on_click();
+                    let before = (c.checked, c.mixed);
+                    let o = c.on_click();
+                    if (c.checked, c.mixed) != before {
+                        self.changed_field(name);
+                    }
+                    return o;
                 }
                 FormFieldKind::Radio(r) => {
                     for i in 0..r.options.len() {
                         if r.option_id(i) == id {
                             focus.focus(r.id);
+                            let before = r.selected;
                             let o = r.on_click(i);
-                            self.dirty = true;
-                            self.events.push(FormAction::Changed(name));
+                            if r.selected != before {
+                                self.changed_field(name);
+                            }
                             return o;
                         }
                     }
@@ -700,7 +821,8 @@ impl FormDialog {
     }
 
     pub fn on_blur(&mut self, ch: crate::core::focus::FocusChange) -> Outcome {
-        for f in self.fields.iter_mut() {
+        self.reconcile_hidden_interactions();
+        for f in self.fields.iter_mut().filter(|f| f.visible) {
             match &mut f.kind {
                 FormFieldKind::Input(i) if i.id == ch.from => {
                     return match i.on_blur() {
@@ -720,10 +842,13 @@ impl FormDialog {
         Outcome::Ignored
     }
 
-    pub fn on_paste(&mut self, text: &str) -> Outcome {
-        for f in self.fields.iter_mut() {
+    pub fn on_paste(&mut self, text: &str, focus: &Focus) -> Outcome {
+        self.reconcile_hidden_interactions();
+        let cur = focus.current();
+        for f in self.fields.iter_mut().filter(|f| f.visible) {
             if let FormFieldKind::Input(i) = &mut f.kind
                 && i.editing
+                && cur == Some(i.id)
             {
                 return i.on_paste(text);
             }
@@ -745,6 +870,7 @@ impl FormDialog {
     }
 
     pub fn render(&mut self, screen: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
+        self.reconcile_hidden_interactions();
         self.scroll.begin(ctx.track_click);
         let s = ctx.theme.strings;
         let old = std::mem::replace(&mut self.strings, s);
@@ -752,7 +878,15 @@ impl FormDialog {
         Strings::follow(&mut self.save.label, old.save, s.save);
         let content = self.content_height();
         let err = u16::from(self.error.is_some());
-        let h = 2 + 2 + content + err + 2;
+        let mut widths: Vec<u16> = self.actions.iter().map(|(_, b)| b.width()).collect();
+        widths.push(self.cancel.width());
+        widths.push(self.save.width());
+        let footer_rows = row_lines(
+            crate::ui::modal::Frame::new(self.width, 0).inner_width(screen),
+            &widths,
+            1,
+        );
+        let h = (2 + 2 + content + err + 1).saturating_add(footer_rows);
         let (area, inner) = crate::ui::modal::Frame::new(self.width, h)
             .title(&self.title)
             .meta(self.meta.as_deref())
@@ -761,7 +895,9 @@ impl FormDialog {
         self.area = area;
         let t = ctx.theme;
         let bg = t.surface_elevated;
-        let body_h = inner.height.saturating_sub(3 + err);
+        let footer_h = footer_rows.min(inner.height);
+        let footer = Rect::new(inner.x, inner.bottom() - footer_h, inner.width, footer_h);
+        let body_h = inner.height.saturating_sub(2 + err + footer_rows);
         self.scroll.set_content(content as usize);
         self.scroll.set_viewport(body_h as usize);
 
@@ -805,9 +941,13 @@ impl FormDialog {
             if !f.visible {
                 continue;
             }
+            f.clear_geometry();
             let fh = f.height() as i32;
             let whole = y >= body.y as i32 && y < body.bottom() as i32;
-            if !whole && let Some(id) = f.tab_stop() {
+            if body_h > 0
+                && !whole
+                && let Some(id) = f.tab_stop()
+            {
                 ctx.focus_stop(id);
             }
             if y + fh > body.y as i32 && y < body.bottom() as i32 {
@@ -894,8 +1034,10 @@ impl FormDialog {
             self.scroll
                 .draw_with_fade(rows, buf, ctx, self.id, true, &[]);
         }
-        if let Some(e) = &self.error {
-            let ey = inner.bottom().saturating_sub(2);
+        if let Some(e) = &self.error
+            && footer.y > inner.y
+        {
+            let ey = footer.y - 1;
             buf.set_string(
                 inner.x,
                 ey,
@@ -909,11 +1051,7 @@ impl FormDialog {
                 t.error_fg().bg(bg).add_modifier(Modifier::BOLD),
             );
         }
-        let ay = inner.bottom().saturating_sub(1);
-        let mut widths: Vec<u16> = self.actions.iter().map(|(_, b)| b.width()).collect();
-        widths.push(self.cancel.width());
-        widths.push(self.save.width());
-        let rects = row_layout_right(Rect::new(inner.x, ay, inner.width, 1), &widths, 1);
+        let rects = row_layout_right(footer, &widths, 1);
         let n = self.actions.len();
         for (i, (_, b)) in self.actions.iter_mut().enumerate() {
             b.render(rects[i], buf, ctx, bg);
@@ -987,10 +1125,12 @@ impl FormDialog {
         use crate::core::intent::Phase;
         use crate::core::pointer::MouseTarget;
         use crate::core::response::Response;
-        for f in self.fields.iter_mut() {
+        self.reconcile_hidden_interactions();
+        self.resolve_hidden_focus(focus);
+        for f in self.fields.iter_mut().filter(|f| f.visible) {
             match &mut f.kind {
                 FormFieldKind::Select(s) => {
-                    let Some(mut r) = s.route(ev) else {
+                    let Some(r) = s.route(ev) else {
                         continue;
                     };
 
@@ -1000,7 +1140,7 @@ impl FormDialog {
                     if ev.is(Phase::Click) {
                         focus.focus(s.id);
                     }
-                    if r.take_action().is_some() {
+                    if r.has_actions() {
                         self.dirty = true;
                         self.events.push(FormAction::Changed(f.name.clone()));
                     }
@@ -1032,5 +1172,49 @@ impl FormDialog {
                 .into(),
             _ => Response::ignored(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests;
+
+#[cfg(test)]
+mod issue35_tests {
+    use std::cell::Cell;
+    use std::rc::Rc;
+
+    use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+
+    use super::*;
+    use crate::core::event::Key;
+    use crate::core::focus::{Focus, FocusRing};
+    use crate::core::id::WidgetId;
+    use crate::widgets::input::TextInput;
+
+    #[test]
+    fn issue35_form_save_blocked_by_required_before_custom() {
+        let id = WidgetId::of("issue35.form");
+        let calls = Rc::new(Cell::new(0));
+        let counter = calls.clone();
+        let name = TextInput::new(id.sub("name"), "Name")
+            .required(true)
+            .required_message("Name is required")
+            .validator(move |_| {
+                counter.set(counter.get() + 1);
+                None
+            });
+        let mut form = FormDialog::new(id, "Account", vec![FormField::input("name", name)]);
+        let mut focus = Focus::default();
+        focus.set(Some(form.save.id));
+        let enter = Key {
+            code: KeyCode::Enter,
+            mods: KeyModifiers::NONE,
+        };
+
+        form.on_key(&enter, &mut focus, &FocusRing::default());
+
+        assert!(!form.events.iter().any(|e| matches!(e, FormAction::Save)));
+        assert_eq!(focus.current(), Some(id.sub("name")));
+        assert_eq!(calls.get(), 0);
     }
 }

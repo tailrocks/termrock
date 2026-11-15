@@ -3,7 +3,7 @@ use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Position, Rect};
 
 use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::id::WidgetId;
+use junie_tui::core::id::{ItemKey, WidgetId};
 use junie_tui::core::pointer::PointerEvent;
 use junie_tui::shell::Menus;
 use junie_tui::ui::columns::HeaderAction;
@@ -18,6 +18,7 @@ use junie_tui::widgets::table::SortDir;
 use crate::app::ModalResult;
 use crate::connections::ConnectionsScreen;
 use crate::db::ObjectKind;
+use crate::tabs::HistoryCommand;
 use crate::workbench::{WorkTab, Workbench};
 
 pub const MENU: WidgetId = WidgetId::of("context-menu");
@@ -32,9 +33,14 @@ pub enum Target {
 
     Results(usize, usize),
 
-    History(usize),
+    History {
+        owner: WidgetId,
+        entry: ItemKey,
+    },
 
-    Connection(usize),
+    /// A connections-tree row and, for a connection row, the connection it showed
+    /// when the menu opened.
+    Connection(ItemKey),
 
     Header(usize),
 
@@ -165,33 +171,43 @@ pub fn on_secondary(w: &mut Workbench, cfg: &ContextConfig, ev: &PointerEvent) -
     if let Some(req) = cfg.on_secondary(&mut w.strip, ev) {
         return Some(build(w, req.map(Target::Tab)));
     }
-    if let Some(g) = w.active_grid_any_mut()
-        && let Some(col) = g.header_menu_at(ev)
-    {
-        let owner = g.id;
-        let (header, items): (Vec<HeaderAction>, Vec<MenuItem>) =
-            g.header_menu(col).into_iter().unzip();
-        let keys = vec![None; items.len()];
-        return Some(CtxMenu {
-            menu: ContextMenu::new(MENU, items)
-                .at(ev.pos())
-                .title(g.columns[col].name.clone()),
-            target: Target::Header(col),
-            owner,
-            keys,
-            header,
-            app: Menus::default(),
-        });
+    let header = w
+        .modify_active_grid(|g| {
+            let col = g.header_menu_at(ev)?;
+            let owner = g.id;
+            let (header, items): (Vec<HeaderAction>, Vec<MenuItem>) =
+                g.header_menu(col).into_iter().unzip();
+            let keys = vec![None; items.len()];
+            Some(CtxMenu {
+                menu: ContextMenu::new(MENU, items)
+                    .at(ev.pos())
+                    .title(g.columns()[col].name.clone()),
+                target: Target::Header(col),
+                owner,
+                keys,
+                header,
+                app: Menus::default(),
+            })
+        })
+        .flatten();
+    if header.is_some() {
+        return header;
     }
-    let req = match w.active_tab_mut()? {
-        WorkTab::Table(t) => cfg
-            .on_secondary(&mut t.grid, ev)?
-            .map(|(r, c)| Target::Grid(r, c)),
-        WorkTab::Query(q) => cfg
-            .on_secondary(q.active_grid_mut()?, ev)?
-            .map(|(r, c)| Target::Results(r, c)),
-        WorkTab::History(h) => cfg.on_secondary(&mut h.list, ev)?.map(Target::History),
-    };
+    let req = w
+        .modify_active(|tab| match tab {
+            WorkTab::Table(t) => cfg
+                .on_secondary(&mut t.grid, ev)
+                .map(|req| req.map(|(r, c)| Target::Grid(r, c))),
+            WorkTab::Query(q) => q.active_grid_mut().and_then(|g| {
+                cfg.on_secondary(g, ev)
+                    .map(|req| req.map(|(r, c)| Target::Results(r, c)))
+            }),
+            WorkTab::History(h) => cfg.on_secondary(&mut h.list, ev).and_then(|req| {
+                let entry = h.filtered.get(req.target).copied()?;
+                Some(req.map(|_| Target::History { owner: h.id, entry }))
+            }),
+        })
+        .flatten()?;
     Some(build(w, req))
 }
 
@@ -218,7 +234,11 @@ pub fn on_key(
                 let g = q.active_grid().filter(|g| g.id == f && !g.is_editing())?;
                 cfg.on_key(g, key)?.map(|(r, c)| Target::Results(r, c))
             }
-            WorkTab::History(h) if f == h.list.id => cfg.on_key(&h.list, key)?.map(Target::History),
+            WorkTab::History(h) if f == h.list.id => {
+                let req = cfg.on_key(&h.list, key)?;
+                let entry = h.filtered.get(req.target).copied()?;
+                req.map(|_| Target::History { owner: h.id, entry })
+            }
             _ => return None,
         }
     };
@@ -231,23 +251,22 @@ pub fn select(w: &mut Workbench, target: Target) {
         Target::Explorer(row) => w.explorer.context_select(row),
         Target::Tab(i) => w.strip.context_select(i),
         Target::Grid(r, c) => {
-            if let Some(WorkTab::Table(t)) = w.active_tab_mut() {
-                t.grid.context_select((r, c));
-            }
+            let _ = w.modify_active(|tab| {
+                if let WorkTab::Table(t) = tab {
+                    t.grid.context_select((r, c));
+                }
+            });
         }
         Target::Results(r, c) => {
-            if let Some(WorkTab::Query(q)) = w.active_tab_mut()
-                && let Some(g) = q.active_grid_mut()
-            {
-                g.context_select((r, c));
-            }
+            let _ = w.modify_active(|tab| {
+                if let WorkTab::Query(q) = tab
+                    && let Some(g) = q.active_grid_mut()
+                {
+                    g.context_select((r, c));
+                }
+            });
         }
-        Target::History(row) => {
-            if let Some(WorkTab::History(h)) = w.active_tab_mut() {
-                h.list.context_select(row);
-            }
-        }
-        Target::Connection(_) | Target::Header(_) | Target::App => {}
+        Target::History { .. } | Target::Connection(..) | Target::Header(_) | Target::App => {}
     }
 }
 
@@ -256,8 +275,8 @@ pub fn on_secondary_connections(
     cfg: &ContextConfig,
     ev: &PointerEvent,
 ) -> Option<CtxMenu> {
-    let req = cfg.on_secondary(c.tree_mut(), ev)?;
-    c.select_row(req.target);
+    let req = cfg.on_secondary(c, ev)?;
+    c.select_key(req.target);
     Some(build_connection(c, req.map(Target::Connection)))
 }
 
@@ -267,27 +286,27 @@ pub fn on_key_connections(
     focus: Option<WidgetId>,
     key: &Key,
 ) -> Option<CtxMenu> {
-    if focus? != c.tree().id {
+    if focus? != c.tree_id() {
         return None;
     }
-    let req = cfg.on_key(c.tree(), key)?;
+    let req = cfg.on_key(c, key)?;
     Some(build_connection(c, req.map(Target::Connection)))
 }
 
 fn build_connection(c: &ConnectionsScreen, req: ContextRequest<Target>) -> CtxMenu {
-    let Target::Connection(row) = req.target else {
+    let Target::Connection(node) = req.target else {
         unreachable!("a connections menu is about a connection row")
     };
-    let (title, items) = connection_items(c, row);
-    finish(req, title, c.tree().id, items)
+    let (title, items) = connection_items(c, node);
+    finish(req, title, c.tree_id(), items)
 }
 
-fn connection_items(c: &ConnectionsScreen, row: usize) -> (String, Items) {
+fn connection_items(c: &ConnectionsScreen, node: ItemKey) -> (String, Items) {
     let mut items = Items::new();
-    let Some(r) = c.tree().rows().get(row) else {
+    let Some(menu) = c.node_menu(node) else {
         return (String::new(), items);
     };
-    if c.connection_at_row(row).is_some() {
+    if menu.group_expanded.is_none() {
         let busy = c.animating().then_some("A connection is in progress");
         cmd(
             &mut items,
@@ -314,8 +333,8 @@ fn connection_items(c: &ConnectionsScreen, row: usize) -> (String, Items) {
             plain(KeyCode::Char('d')),
             None,
         );
-    } else if r.has_children {
-        if r.expanded {
+    } else {
+        if menu.group_expanded == Some(true) {
             cmd(
                 &mut items,
                 MenuItem::new("Collapse").shortcut("←"),
@@ -344,35 +363,48 @@ fn connection_items(c: &ConnectionsScreen, row: usize) -> (String, Items) {
         plain(KeyCode::Char('/')),
         None,
     );
-    (r.label.clone(), items)
+    (menu.label, items)
 }
 
-fn history_items(w: &Workbench, row: usize) -> (String, WidgetId, Items) {
+const HISTORY_ROW_COMMANDS: [(&str, &str, KeyCode, HistoryCommand); 3] = [
+    (
+        "Open in new tab",
+        "Enter",
+        KeyCode::Enter,
+        HistoryCommand::Open,
+    ),
+    (
+        "Run in new tab",
+        "r",
+        KeyCode::Char('r'),
+        HistoryCommand::Rerun,
+    ),
+    ("Copy query", "y", KeyCode::Char('y'), HistoryCommand::Copy),
+];
+
+pub fn history_command(key: &Key) -> Option<HistoryCommand> {
+    HISTORY_ROW_COMMANDS
+        .iter()
+        .find(|(_, _, code, _)| key.is(*code))
+        .map(|(.., cmd)| *cmd)
+}
+
+fn history_items(w: &Workbench, owner: WidgetId, entry: ItemKey) -> (String, WidgetId, Items) {
     let mut items = Items::new();
-    let Some(WorkTab::History(h)) = w.active_tab() else {
+    let Some(h) = w.history_tab(owner) else {
         return (String::new(), w.explorer.id, items);
     };
-    let Some(it) = h.list.items.get(row) else {
+    let Some(it) = h.row_of(entry).and_then(|row| h.list.items.get(row)) else {
         return (String::new(), h.list.id, items);
     };
-    cmd(
-        &mut items,
-        MenuItem::new("Open in new tab").shortcut("Enter"),
-        plain(KeyCode::Enter),
-        None,
-    );
-    cmd(
-        &mut items,
-        MenuItem::new("Run in new tab").shortcut("r"),
-        plain(KeyCode::Char('r')),
-        None,
-    );
-    cmd(
-        &mut items,
-        MenuItem::new("Copy query").shortcut("y"),
-        plain(KeyCode::Char('y')),
-        None,
-    );
+    for (title, shortcut, code, _) in HISTORY_ROW_COMMANDS {
+        cmd(
+            &mut items,
+            MenuItem::new(title).shortcut(shortcut),
+            plain(code),
+            None,
+        );
+    }
     group(&mut items);
     cmd(
         &mut items,
@@ -419,8 +451,8 @@ fn build(w: &Workbench, req: ContextRequest<Target>) -> CtxMenu {
             }
             _ => (String::new(), w.explorer.id, vec![]),
         },
-        Target::History(row) => history_items(w, row),
-        Target::Connection(_) | Target::Header(_) | Target::App => {
+        Target::History { owner, entry } => history_items(w, owner, entry),
+        Target::Connection(..) | Target::Header(_) | Target::App => {
             (String::new(), w.explorer.id, vec![])
         }
     };
@@ -501,12 +533,12 @@ fn explorer_items(w: &Workbench, row: usize) -> (String, WidgetId, Items) {
 
 fn tab_items(w: &Workbench, i: usize) -> (String, WidgetId, Items) {
     let mut items = Items::new();
-    let title = w.tabs.get(i).map(|t| t.label()).unwrap_or_default();
+    let title = w.tabs().nth(i).map(|t| t.label()).unwrap_or_default();
     cmd(
         &mut items,
         MenuItem::new("Switch to tab").shortcut("Enter"),
         plain(KeyCode::Enter),
-        (i == w.active).then_some("Current tab"),
+        (i == w.strip.active).then_some("Current tab"),
     );
     cmd(
         &mut items,
@@ -532,14 +564,16 @@ fn tab_items(w: &Workbench, i: usize) -> (String, WidgetId, Items) {
 
 fn grid_items(g: &DataGrid, row: usize, col: usize, table: bool) -> (String, WidgetId, Items) {
     let mut items = Items::new();
-    let Some(spec) = g.columns.get(col) else {
+    let Some(spec) = g.columns().get(col) else {
         return (String::new(), g.id, items);
     };
     if row >= g.len() {
         return (String::new(), g.id, items);
     }
     let src = g.source_row(row);
-    let deleted = g.pending.deleted.contains(&src);
+    let deleted = g
+        .row_key(src)
+        .is_some_and(|key| g.pending().is_deleted(key));
     let read_only = (!g.editable).then_some("Read-only rows");
     let cell_lock = read_only
         .or(spec.read_only.then_some("Read-only column"))
@@ -629,7 +663,7 @@ fn grid_items(g: &DataGrid, row: usize, col: usize, table: bool) -> (String, Wid
     }
     if table {
         group(&mut items);
-        let none = g.pending.is_empty().then_some("No pending changes");
+        let none = g.pending().is_empty().then_some("No pending changes");
         cmd(
             &mut items,
             MenuItem::new("Preview SQL").shortcut("p"),

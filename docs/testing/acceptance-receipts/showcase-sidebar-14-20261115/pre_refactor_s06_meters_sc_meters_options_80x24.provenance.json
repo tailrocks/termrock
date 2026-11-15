@@ -12,16 +12,16 @@
     "velnor_actions": "0.1.70",
     "host": "aarch64-apple-darwin"
   },
-  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3-target/debug/showcase",
-  "binary_sha256": "c2ed189e03b11c22298c203b7561871ee950aa47282e70284cdba4686bf6f5d0",
+  "binary_path": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182-target/debug/showcase",
+  "binary_sha256": "04127909da955772668d7552725e97e8750a7dc11270d51487c36861fe0cca4d",
   "fixture_args": [
     "--page",
     "meters"
   ],
   "env": {},
   "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
-  "candidate_sha256": "f793dabc3927ddf2eec0c85e0211ce33c6223e54185524c03797a37bfaee5b41",
-  "expect_baseline": "3ef48b655eabcf6c6327448ba756e71728170f6243902e06d945cf758bb242c7",
+  "candidate_sha256": "ba3245f42d138e012db2225c1379be1cdd468faf2fce665880ff538ef3384ff8",
+  "expect_baseline": "213ac31a7467d597c1acd9979d469f7b270aded712434b58ab7d94afcd2bd961",
   "precondition": "",
   "session": null,
   "expected_test_id": "pre_refactor/s06_meters/sc_meters_options_80x24",
@@ -30,29 +30,29 @@
   "previous_archive_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/superseded/pre_refactor/s06_meters/sc_meters_options_80x24.tui.pb",
   "test_id": "pre_refactor/s06_meters/sc_meters_options_80x24",
   "acceptance": {
-    "expected_baseline_sha256": "3ef48b655eabcf6c6327448ba756e71728170f6243902e06d945cf758bb242c7",
-    "accepted_baseline_sha256": "f793dabc3927ddf2eec0c85e0211ce33c6223e54185524c03797a37bfaee5b41",
-    "candidate_sha256": "f793dabc3927ddf2eec0c85e0211ce33c6223e54185524c03797a37bfaee5b41",
+    "expected_baseline_sha256": "213ac31a7467d597c1acd9979d469f7b270aded712434b58ab7d94afcd2bd961",
+    "accepted_baseline_sha256": "ba3245f42d138e012db2225c1379be1cdd468faf2fce665880ff538ef3384ff8",
+    "candidate_sha256": "ba3245f42d138e012db2225c1379be1cdd468faf2fce665880ff538ef3384ff8",
     "transaction_receipt": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/pre_refactor_s06_meters_sc_meters_options_80x24.accept.json"
   },
   "previous_baseline": {
-    "sha256": "3ef48b655eabcf6c6327448ba756e71728170f6243902e06d945cf758bb242c7"
+    "sha256": "213ac31a7467d597c1acd9979d469f7b270aded712434b58ab7d94afcd2bd961"
   },
   "candidate": {
-    "sha256": "f793dabc3927ddf2eec0c85e0211ce33c6223e54185524c03797a37bfaee5b41",
+    "sha256": "ba3245f42d138e012db2225c1379be1cdd468faf2fce665880ff538ef3384ff8",
     "path": "tests/functional/baselines/pre_refactor/s06_meters/sc_meters_options_80x24.tui.pb"
   },
   "history": {
     "superseded_baseline": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/superseded/pre_refactor/s06_meters/sc_meters_options_80x24.tui.pb",
-    "superseded_baseline_sha256": "3ef48b655eabcf6c6327448ba756e71728170f6243902e06d945cf758bb242c7"
+    "superseded_baseline_sha256": "213ac31a7467d597c1acd9979d469f7b270aded712434b58ab7d94afcd2bd961"
   },
   "capture": {
     "mode": "candidate",
     "candidate_path": "tests/functional/baselines/pre_refactor/s06_meters/sc_meters_options_80x24.tui.pb",
-    "candidate_sha256": "f793dabc3927ddf2eec0c85e0211ce33c6223e54185524c03797a37bfaee5b41",
-    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3-target/debug/showcase",
-    "binary_sha256": "c2ed189e03b11c22298c203b7561871ee950aa47282e70284cdba4686bf6f5d0",
-    "note": "Candidate-mode refresh for #14: the five formerly hidden pages join the sidebar, so the Components count and the expanded groups change."
+    "candidate_sha256": "ba3245f42d138e012db2225c1379be1cdd468faf2fce665880ff538ef3384ff8",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182-target/debug/showcase",
+    "binary_sha256": "04127909da955772668d7552725e97e8750a7dc11270d51487c36861fe0cca4d",
+    "note": "Re-accepted after merging origin/train/all into the #14 branch: the Components count is 59 and an expanded group lists its five formerly hidden pages (#14); the sample differs from train/all's baseline only where the sidebar draws, except showcase_page_finder, whose body also carries the Finder page from #257 that train/all's baseline did not yet show."
   },
   "cli_receipt": {
     "schema": "tuiscotti.cli.v1",
@@ -62,13 +62,13 @@
     "reason": null,
     "candidate_path": {
       "encoding": "utf8",
-      "value": "/tmp/final/pre_refactor__s06_meters__sc_meters_options_80x24.tui.pb"
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/target/functional/s06-sections-23326-1794771011189633000-0/check-artifacts/pre_refactor/s06_meters/sc_meters_options_80x24/ba3245f42d138e012db2225c1379be1cdd468faf2fce665880ff538ef3384ff8/sample.tui.pb"
     },
-    "candidate_sha256": "f793dabc3927ddf2eec0c85e0211ce33c6223e54185524c03797a37bfaee5b41",
-    "baseline_sha256": "f793dabc3927ddf2eec0c85e0211ce33c6223e54185524c03797a37bfaee5b41",
+    "candidate_sha256": "ba3245f42d138e012db2225c1379be1cdd468faf2fce665880ff538ef3384ff8",
+    "baseline_sha256": "ba3245f42d138e012db2225c1379be1cdd468faf2fce665880ff538ef3384ff8",
     "output_path": {
       "encoding": "utf8",
-      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s06_meters/sc_meters_options_80x24.tui.pb"
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/tests/functional/baselines/pre_refactor/s06_meters/sc_meters_options_80x24.tui.pb"
     },
     "error_code": null
   }

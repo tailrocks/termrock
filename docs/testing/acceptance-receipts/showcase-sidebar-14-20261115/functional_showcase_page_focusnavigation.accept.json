@@ -6,13 +6,13 @@
   "reason": null,
   "candidate_path": {
     "encoding": "utf8",
-    "value": "/tmp/final/functional__showcase_page_focusnavigation.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/target/functional/showcase-page-focusnavigation-57840-1794771679471116000-0/check-artifacts/functional/showcase_page_focusnavigation/c12c07a5468e584b3385de54797007b5ed692ba582b7813fc840680d28cdb879/sample.tui.pb"
   },
-  "candidate_sha256": "d4d1acb95ad109925c35e2ec20ce62afeb2c8ace59c8db66cc86135e0f4b5e41",
-  "baseline_sha256": "d4d1acb95ad109925c35e2ec20ce62afeb2c8ace59c8db66cc86135e0f4b5e41",
+  "candidate_sha256": "c12c07a5468e584b3385de54797007b5ed692ba582b7813fc840680d28cdb879",
+  "baseline_sha256": "c12c07a5468e584b3385de54797007b5ed692ba582b7813fc840680d28cdb879",
   "output_path": {
     "encoding": "utf8",
-    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/functional/showcase_page_focusnavigation.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/tests/functional/baselines/functional/showcase_page_focusnavigation.tui.pb"
   },
   "error_code": null
 }

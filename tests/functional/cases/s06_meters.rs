@@ -3,11 +3,11 @@
 //! Tuiscotti test ids are `[a-z0-9_-]` segments, so the baseline directory is
 //! `pre_refactor/s06_meters/` and each case id's dots become underscores.
 
-use std::time::Duration;
-
 use tui_test::{SnapshotColor, TerminalSnapshot};
 
-use crate::support::{App, Launch, Point, SHOWCASE, find_all, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, Point, SHOWCASE, clusters, find_all, flash_settle, row_text, text, try_launch,
+};
 
 const CRUMB: &str = "Feedback › Meters";
 const TITLE: &str = "Meters";
@@ -231,32 +231,6 @@ fn italic_at(screen: &TerminalSnapshot, needle: &str) -> bool {
         .cell_at(u32::from(hit.x), u32::from(hit.y))
         .unwrap_or_else(|| panic!("missing cell {needle:?}"))
         .has(tui_test::terminal::cell::Attrs::ITALIC)
-}
-
-/// The 140ms press flash stays painted while motion is paused, so a shot after
-/// a released click has to redraw once the deadline has passed. Below about 85
-/// columns the header omits the size chip, and the narrow nudge waits on the
-/// terminal size instead.
-fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
 }
 
 fn shot(app: &App, case_id: &str) {
@@ -1046,5 +1020,77 @@ fn option_stale_style_faint() {
     see(&shown, &[OFFLINE_META, "38%"], &["╍", "▲"]);
     assert!(!italic_at(&shown, "38%"), "faint italic returned");
     shot(&app, "opt.meters.stale_style");
+    app.finish();
+}
+
+/// The test terminal keeps only the first scalars of a ZWJ or skin-tone
+/// sequence, so these checks pin each cluster's width and its neighbours.
+const FAMILY: &str = "👨\u{200d}";
+const SKIN: &str = "👍";
+
+/// Each quota row paints its international value as whole clusters, so the
+/// text after a wide, combining, right-to-left or ZWJ cluster keeps its place.
+#[test]
+fn option_international_values_paint_whole_clusters() {
+    let app = page("s06-intl", &["meters.international=on"], 120, 40);
+    let screen = app.wait_text(PLAN);
+    for (row, value) in [
+        ("Session (5 h)", "cafe\u{301} 38%".to_string()),
+        ("Weekly", "界A 72%".to_string()),
+        ("Opus weekly", "שלום 86%".to_string()),
+        ("Extra credits", format!("{FAMILY} 100%")),
+        ("CPU", "שלום 23%".to_string()),
+        ("Memory", format!("{FAMILY} 68%")),
+        ("Swap", "🇯🇵 4%".to_string()),
+        ("GPU", format!("{SKIN} 91%")),
+    ] {
+        let line = row_with(&screen, row);
+        assert!(
+            line.contains(&value),
+            "the {row:?} meter lost its value {value:?}: {line:?}\n{}",
+            text(&screen)
+        );
+    }
+
+    let weekly = find_all(&screen, "界A 72%")
+        .into_iter()
+        .next()
+        .expect("weekly value");
+    let cells = clusters(&screen, weekly, 6);
+    let texts: Vec<&str> = cells.iter().map(|c| c.text.as_str()).collect();
+    assert_eq!(texts, ["界", "A", " ", "7", "2", "%"]);
+    assert_eq!(cells[0].width, 2, "the wide cluster spans two cells");
+    assert_eq!(
+        cells[0].bg[0], cells[0].bg[1],
+        "the continuation cell takes the cluster's background"
+    );
+    assert_eq!(
+        cells[0].bg[0], cells[1].bg[0],
+        "the A after the wide cluster shares the fill"
+    );
+
+    for (needle, next) in [
+        (format!("{FAMILY} 100%"), " "),
+        (format!("{SKIN} 91%"), " "),
+    ] {
+        let at = find_all(&screen, &needle)
+            .into_iter()
+            .next()
+            .unwrap_or_else(|| panic!("{needle:?} missing\n{}", text(&screen)));
+        let cells = clusters(&screen, at, 2);
+        assert_eq!(cells[0].width, 2, "{needle:?} is one two-cell cluster");
+        assert_eq!(cells[1].text, next, "{needle:?} is followed by its space");
+    }
+
+    assert!(
+        row_with(&screen, "Swap").contains("🇯🇵"),
+        "the flag cluster is missing\n{}",
+        text(&screen)
+    );
+
+    confirm_option(&app, |screen| {
+        assert_toggle(screen, "International values", "on");
+        assert_option_controls(screen, &[]);
+    });
     app.finish();
 }

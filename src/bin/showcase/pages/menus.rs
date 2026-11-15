@@ -449,7 +449,7 @@ impl Page for MenusPage {
                         return r.outcome();
                     }
                     cx.focus.focus(self.actions.id);
-                    if r.into_action().is_some() {
+                    if r.has_actions() {
                         self.open_actions();
                     }
                     return Outcome::Changed;

@@ -210,7 +210,7 @@ pub struct PointerState {
     pub pointer_focus: bool,
     flash: Option<(WidgetId, u64)>,
 
-    grab: Option<super::hit::Bar>,
+    grab: Option<BarCapture>,
 
     edge: Option<ratatui::layout::Rect>,
 
@@ -237,9 +237,11 @@ impl PointerState {
         }
     }
 
-    pub fn suppress_hover(&mut self) {
+    pub fn suppress_hover(&mut self) -> bool {
+        let changed = (!self.hover_suppressed && self.hover.is_some()) || self.pointer_focus;
         self.hover_suppressed = true;
         self.pointer_focus = false;
+        changed
     }
 
     pub fn focused_by_click(&mut self) {
@@ -270,7 +272,7 @@ impl PointerState {
     pub fn on_down(&mut self, hits: &HitRegistry, pos: Position) -> Option<WidgetId> {
         self.pos = Some(pos);
         let hit = hits.hit(pos);
-        let grab = hit.and_then(|id| hits.bar(id));
+        let grab = hit.and_then(|id| BarCapture::of(hits, id));
 
         if grab.is_none() || grab != self.grab || hit != self.pressed {
             self.track_at = None;
@@ -307,7 +309,7 @@ impl PointerState {
     pub fn track_repeating(&self) -> bool {
         self.config.track_repeat
             && self.pressed.is_some()
-            && matches!((self.grab, self.pos), (Some(bar), Some(pos)) if bar.track.contains(pos))
+            && matches!((self.grab, self.pos), (Some(c), Some(pos)) if c.screen.track.contains(pos))
     }
 
     pub fn track_repeat_due(&mut self, now_ms: u64) -> Option<Position> {
@@ -348,7 +350,11 @@ impl PointerState {
     }
 
     pub fn grabbed(&self) -> Option<super::hit::Bar> {
-        self.grab.filter(|b| self.pressed == Some(b.id))
+        self.capture().map(|c| c.screen)
+    }
+
+    fn capture(&self) -> Option<BarCapture> {
+        self.grab.filter(|c| self.pressed == Some(c.screen.id))
     }
 
     pub fn reports_motion(&self) -> bool {
@@ -538,6 +544,45 @@ impl PointerState {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct BarCapture {
+    screen: Bar,
+    logical: Bar,
+    shift: (u16, u16),
+}
+
+impl BarCapture {
+    fn of(hits: &HitRegistry, id: WidgetId) -> Option<Self> {
+        let screen = hits.bar(id)?;
+        Some(Self {
+            screen,
+            logical: hits.logical_bar(id).unwrap_or(screen),
+            shift: hits.shift_of(id),
+        })
+    }
+
+    fn local_pos(self, screen: Position) -> Position {
+        Position::new(
+            screen.x.saturating_add(self.shift.0),
+            screen.y.saturating_add(self.shift.1),
+        )
+    }
+
+    fn apply(self, ev: &mut PointerEvent, screen: Position) {
+        ev.bar = Some(self.logical);
+        if let Intent::Pointer { pos, .. } = &mut ev.intent {
+            *pos = self.local_pos(screen);
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Held {
+    id: WidgetId,
+    hit: Hit,
+    bar: Option<BarCapture>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PointerEvent {
     pub id: WidgetId,
 
@@ -570,7 +615,7 @@ impl PointerEvent {
                 count,
                 mods,
             },
-            bar: hits.bar(id),
+            bar: hits.logical_bar(id),
         }
     }
 
@@ -615,6 +660,14 @@ impl PointerEvent {
             return None;
         }
         self.hit.part.item.and_then(ItemKey::as_index)
+    }
+
+    /// The logical key of the hit item when this event is on `part`.
+    pub fn key_of(&self, part: Part) -> Option<ItemKey> {
+        if self.hit.part.part != part {
+            return None;
+        }
+        self.hit.part.item
     }
 
     pub fn phase(&self) -> Option<Phase> {
@@ -733,7 +786,7 @@ pub struct PointerRouter {
 
     dragged: bool,
 
-    held: Option<(WidgetId, Hit)>,
+    held: Option<Held>,
 }
 
 impl std::ops::Deref for PointerRouter {
@@ -767,14 +820,23 @@ impl PointerRouter {
         mods: KeyModifiers,
     ) -> PointerEvent {
         let mut ev = PointerEvent::new(hits, phase, id, pos, 1, mods);
-        if hits.part_of(id).is_none()
-            && let Some((held, hit)) = self.held
-            && held == id
-        {
-            ev.hit = hit;
-            if let Intent::Pointer { part, .. } = &mut ev.intent {
-                *part = hit.part;
+        if let Some(held) = self.held.filter(|h| h.id == id) {
+            if hits.part_of(id).is_none() {
+                ev.hit = held.hit;
+                if let Intent::Pointer { part, .. } = &mut ev.intent {
+                    *part = held.hit.part;
+                }
             }
+            if let Some(bar) = held.bar {
+                bar.apply(&mut ev, pos);
+            }
+        }
+        ev
+    }
+
+    fn captured(&self, mut ev: PointerEvent, pos: Position) -> PointerEvent {
+        if let Some(bar) = self.held.filter(|h| h.id == ev.id).and_then(|h| h.bar) {
+            bar.apply(&mut ev, pos);
         }
         ev
     }
@@ -828,11 +890,9 @@ impl PointerRouter {
                     return Outcome::Ignored;
                 };
                 p.router.dragged = true;
-                let bar = p.router.state.grabbed();
-                let mut ev = p
+                let ev = p
                     .router
                     .held_event(p.hits, Phase::Drag, pressed, m.pos, m.mods);
-                ev.bar = bar;
                 swallow(host.deliver(&ev).outcome())
             }
             MouseKind::Up => {
@@ -906,7 +966,11 @@ impl PointerRouter {
         } else if p.router.state.config.focus_on == FocusOn::Press && p.ring.contains(id) {
             p.focus.focus(id);
         }
-        p.router.held = Some((id, hit_of(p.hits, id)));
+        p.router.held = Some(Held {
+            id,
+            hit: hit_of(p.hits, id),
+            bar: p.router.state.capture(),
+        });
 
         let count = p.router.state.press_count(id, m.pos, now);
         let ev = PointerEvent::new(p.hits, Phase::Press, id, m.pos, count, m.mods);
@@ -1004,7 +1068,10 @@ impl PointerRouter {
 
         p.router.state.flash(id, now);
         let count = p.router.state.count_click(id, m.pos, now);
-        let ev = PointerEvent::new(p.hits, Phase::Click, id, m.pos, count, m.mods);
+        let ev = p.router.captured(
+            PointerEvent::new(p.hits, Phase::Click, id, m.pos, count, m.mods),
+            m.pos,
+        );
         let before = p.focus.moves();
         let out = host.deliver(&ev).outcome();
 
@@ -1019,3 +1086,70 @@ impl PointerRouter {
         out.or(Outcome::Changed)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn state(hover: Option<WidgetId>, suppressed: bool, pointer_focus: bool) -> PointerState {
+        PointerState {
+            hover,
+            hover_suppressed: suppressed,
+            pointer_focus,
+            ..PointerState::default()
+        }
+    }
+
+    #[test]
+    fn suppress_hover_reports_only_visual_transition() {
+        let id = WidgetId::of("pointer.tests.target");
+        for hover in [None, Some(id)] {
+            for suppressed in [false, true] {
+                for pointer_focus in [false, true] {
+                    let mut s = state(hover, suppressed, pointer_focus);
+                    let live_hover = hover.is_some() && !suppressed;
+                    let changed = s.suppress_hover();
+                    let label =
+                        format!("hover={hover:?} suppressed={suppressed} focus={pointer_focus}");
+                    assert_eq!(changed, live_hover || pointer_focus, "{label}");
+                    assert!(s.hover_suppressed, "{label}");
+                    assert!(!s.pointer_focus, "{label}");
+                    assert_eq!(s.hover, hover, "the raw hover identity survives: {label}");
+                    assert!(!s.suppress_hover(), "a repeat is not a transition: {label}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn suppress_hover_does_not_decide_on_enabled_state() {
+        let mut hits = HitRegistry::default();
+        let id = WidgetId::of("pointer.tests.disabled");
+        hits.register(id, ratatui::layout::Rect::new(0, 0, 4, 1));
+        let mut s = PointerState::default();
+        s.on_move(&hits, Position::new(1, 0));
+        assert_eq!(s.hover, Some(id));
+        assert!(s.suppress_hover());
+        assert_eq!(s.hover, Some(id));
+    }
+
+    #[test]
+    fn a_move_after_suppression_restores_hover() {
+        let mut hits = HitRegistry::default();
+        let id = WidgetId::of("pointer.tests.move");
+        hits.register(id, ratatui::layout::Rect::new(0, 0, 4, 1));
+        let mut s = PointerState::default();
+        s.on_move(&hits, Position::new(1, 0));
+        assert!(s.suppress_hover());
+        assert_eq!(s.on_move(&hits, Position::new(2, 0)), Outcome::Changed);
+        assert!(!s.hover_suppressed);
+        assert_eq!(s.hover, Some(id));
+        assert!(
+            s.suppress_hover(),
+            "hover is live again, so a key is a transition"
+        );
+    }
+}
+
+#[cfg(test)]
+mod nested_scrollbar_tests;

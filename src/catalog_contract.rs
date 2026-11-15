@@ -16,51 +16,84 @@ use std::path::{Path, PathBuf};
 use api_inventory::{ApiKind, Expansion, Inventory, MATRIX, Record, SourceTree, Value, build};
 use syn::visit::Visit;
 
-const EXPANSIONS: &[Expansion] = &[Expansion {
-    site: "core::id::parts",
-    ids: &[
-        "core::id::Part::CONTAINER",
-        "core::id::Part::BORDER",
-        "core::id::Part::BACKDROP",
-        "core::id::Part::GUTTER",
-        "core::id::Part::MARKER",
-        "core::id::Part::ICON",
-        "core::id::Part::LABEL",
-        "core::id::Part::META",
-        "core::id::Part::HELP",
-        "core::id::Part::TITLE",
-        "core::id::Part::BODY",
-        "core::id::Part::ACTIONS",
-        "core::id::Part::FIELD",
-        "core::id::Part::TEXT",
-        "core::id::Part::PLACEHOLDER",
-        "core::id::Part::ROW",
-        "core::id::Part::CELL",
-        "core::id::Part::HEADER",
-        "core::id::Part::TRACK",
-        "core::id::Part::THUMB",
-        "core::id::Part::RULE",
-        "core::id::Part::TAB",
-        "core::id::Part::CLOSE",
-        "core::id::Part::PREFIX",
-        "core::id::Part::BADGE",
-        "core::id::Part::OVERFLOW",
-        "core::id::Part::NEW",
-        "core::id::Part::EMPTY",
-        "core::id::Part::QUERY",
-        "core::id::Part::SEAM",
-        "core::id::Part::SUMMARY",
-        "core::id::Part::DETAIL",
-        "core::id::Part::KEY",
-        "core::id::Part::ACTION",
-        "core::id::Part::CHANGE",
-        "core::id::Part::ROW_NUMBER",
-    ],
-}];
+const EXPANSIONS: &[Expansion] = &[
+    Expansion {
+        site: "core::id::parts",
+        ids: &[
+            "core::id::Part::CONTAINER",
+            "core::id::Part::BORDER",
+            "core::id::Part::BACKDROP",
+            "core::id::Part::GUTTER",
+            "core::id::Part::MARKER",
+            "core::id::Part::ICON",
+            "core::id::Part::LABEL",
+            "core::id::Part::META",
+            "core::id::Part::HELP",
+            "core::id::Part::TITLE",
+            "core::id::Part::BODY",
+            "core::id::Part::ACTIONS",
+            "core::id::Part::FIELD",
+            "core::id::Part::TEXT",
+            "core::id::Part::PLACEHOLDER",
+            "core::id::Part::ROW",
+            "core::id::Part::CELL",
+            "core::id::Part::HEADER",
+            "core::id::Part::TRACK",
+            "core::id::Part::THUMB",
+            "core::id::Part::RULE",
+            "core::id::Part::TAB",
+            "core::id::Part::CLOSE",
+            "core::id::Part::PREFIX",
+            "core::id::Part::BADGE",
+            "core::id::Part::OVERFLOW",
+            "core::id::Part::NEW",
+            "core::id::Part::EMPTY",
+            "core::id::Part::QUERY",
+            "core::id::Part::SEAM",
+            "core::id::Part::SUMMARY",
+            "core::id::Part::DETAIL",
+            "core::id::Part::KEY",
+            "core::id::Part::ACTION",
+            "core::id::Part::CHANGE",
+            "core::id::Part::ROW_NUMBER",
+        ],
+    },
+    Expansion {
+        site: "metrics::metrics",
+        ids: &[
+            "metrics::Metric",
+            "metrics::Metric::SegmentedLines",
+            "metrics::Metric::ReflowedLines",
+            "metrics::Metric::IndexRebuilds",
+            "metrics::Metric::IndexExtends",
+            "metrics::Metric::IndexShifts",
+            "metrics::Metric::PayloadBytesCloned",
+            "metrics::Metric::AllocatedBufferCells",
+            "metrics::Metric::BufferCellsFilled",
+            "metrics::Metric::BufferCellsCopied",
+            "metrics::Metric::VisibleRowsPainted",
+            "metrics::Metric::IntrinsicWidthCalls",
+            "metrics::Metric::TextBytesMeasured",
+            "metrics::Metric::LabelsNormalized",
+            "metrics::Metric::LabelBytesNormalized",
+            "metrics::Metric::ProjectionRebuilds",
+            "metrics::Metric::RankRowsVisited",
+            "metrics::Metric::SchedulingRecordsVisited",
+            "metrics::Metric::SchedulingPolls",
+            "metrics::Metric::TextBytesHashed",
+            "metrics::Metric::AnnotationQueries",
+            "metrics::Metric::IdentityComparisons",
+            "metrics::Metric::FitVisits",
+            "metrics::Metric::FitCompares",
+            "metrics::Metric::ALL",
+            "metrics::Metric::name",
+        ],
+    },
+];
 
 /// The most APIs `coverage_debt.txt` may ever list. Lower it when the list
 /// shrinks; raising it means the gate was loosened and needs a reviewer's eye.
-const DEBT_CEILING: usize = 4166;
+const DEBT_CEILING: usize = 4150;
 
 /// Specimen states are not API: they stay catalog-only.
 const STATE_KIND: &str = "state";
@@ -513,9 +546,25 @@ fn catalog_module_graph_covers_every_source_file() {
         missing.is_empty(),
         "source files outside the module graph and not declared as `#[cfg(test)] mod`: {missing:?}"
     );
-    let widget_files = on_disk
+    // A widget file is a module of its own or a `#[path]` child of another
+    // widget; either way the graph reads it, and a test-only file is excluded.
+    let widget_files: Vec<_> = on_disk
         .iter()
-        .filter(|p| p.starts_with("src/widgets") && p.file_name().is_some_and(|n| n != "mod.rs"))
+        .filter(|p| {
+            p.parent() == Some(Path::new("src/widgets"))
+                && p.file_name().is_some_and(|n| n != "mod.rs")
+                && !all.test_only_files.contains(*p)
+        })
+        .collect();
+    for file in &widget_files {
+        assert!(all.files_read.contains(*file), "{file:?} is not read");
+    }
+    let own_modules = widget_files
+        .iter()
+        .filter(|p| {
+            let stem = p.file_stem().and_then(|n| n.to_str()).unwrap_or_default();
+            all.modules.contains(&format!("widgets::{stem}"))
+        })
         .count();
     let widget_modules = all
         .modules
@@ -523,7 +572,7 @@ fn catalog_module_graph_covers_every_source_file() {
         .filter(|m| m.starts_with("widgets::") && m.matches("::").count() == 1)
         .count();
     assert_eq!(
-        widget_modules, widget_files,
+        widget_modules, own_modules,
         "widget modules counted from the graph"
     );
 }

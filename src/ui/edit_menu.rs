@@ -180,9 +180,16 @@ impl EditMenu {
             return None;
         }
         let menu = &mut self.open.as_mut()?.0;
-        let mut r = menu.pointer(ev);
-        let action = r.take_action();
-        Some(self.settle(r.outcome(), action))
+        let (out, actions) = menu.pointer(ev).into_parts();
+        if actions.is_empty() {
+            return Some(self.settle(out, None));
+        }
+        let mut settled = (out, None);
+        for action in actions {
+            let (o, cmd) = self.settle(out, Some(action));
+            settled = (settled.0.or(o), settled.1.or(cmd));
+        }
+        Some(settled)
     }
 
     fn settle(&mut self, out: Outcome, action: Option<MenuAction>) -> (Outcome, Option<TextCmd>) {

@@ -6,13 +6,13 @@
   "reason": null,
   "candidate_path": {
     "encoding": "utf8",
-    "value": "/tmp/final/pre_refactor__s04_tabs__sc_tabs_tabs_after.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/target/functional/s04-tabs-change-49250-1794771138461716000-0/check-artifacts/pre_refactor/s04_tabs/sc_tabs_tabs_after/90ee43770890c8825ec48bbb9f48e870f533492c8d17c4a2676f4601d1f98513/sample.tui.pb"
   },
-  "candidate_sha256": "a0a7ad425c86e7e7f8f79c5d84e6d8fc66bbfb68d9450c7ec11d4f1d12101aa8",
-  "baseline_sha256": "a0a7ad425c86e7e7f8f79c5d84e6d8fc66bbfb68d9450c7ec11d4f1d12101aa8",
+  "candidate_sha256": "90ee43770890c8825ec48bbb9f48e870f533492c8d17c4a2676f4601d1f98513",
+  "baseline_sha256": "90ee43770890c8825ec48bbb9f48e870f533492c8d17c4a2676f4601d1f98513",
   "output_path": {
     "encoding": "utf8",
-    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s04_tabs/sc_tabs_tabs_after.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/tests/functional/baselines/pre_refactor/s04_tabs/sc_tabs_tabs_after.tui.pb"
   },
   "error_code": null
 }

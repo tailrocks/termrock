@@ -1331,3 +1331,102 @@ fn option_header_labels_custom_still_sorts_from_the_header() {
     );
     app.finish();
 }
+
+/// Opens the walkthrough on the Options tab, then drives the last cell from the keyboard.
+fn walkthrough(name: &str, value: &str) -> crate::support::App {
+    let opt = format!("editable.tab_walkthrough={value}");
+    let args = ["--page", "editable", "--opt", opt.as_str()];
+    let app = open(name, 120, 40, &args);
+    let options = option_page(&app);
+    assert!(line_after(&options, "Tab at the last cell").contains(value));
+    click_tab(&app, "Playground");
+    let shown = app.wait_text(TASK);
+    see(
+        &shown,
+        &["Try", "Shows", "last —", "0 edits"],
+        &["Cell saved"],
+    );
+    for _ in 0..4 {
+        if text(&app.settle()).contains("Enter Edit") {
+            break;
+        }
+        app.key("tab");
+    }
+    app.wait_text("Enter Edit");
+    app.key("enter");
+    app.wait_text("Enter Apply");
+    app
+}
+
+#[test]
+fn option_tab_walkthrough_commit_then_leave() {
+    let app = walkthrough("s03-tab-commit", "commit");
+    let editing = app.screen();
+    see(
+        &editing,
+        &["Tab Commit, then leave", "Enter, 7, Tab"],
+        &["Cell saved"],
+    );
+    app.type_text("7");
+    app.key("tab");
+    let left = app.wait_text("Cell saved");
+    see(
+        &left,
+        &[
+            "last Committed → LeaveForward",
+            "1 edits",
+            "Cell saved",
+            "Tab Into page",
+        ],
+        &["Enter Apply", "Edit cancelled", "last —"],
+    );
+    app.finish();
+}
+
+#[test]
+fn option_tab_walkthrough_no_op_leaves_without_saving() {
+    let app = walkthrough("s03-tab-noop", "no-op");
+    see(
+        &app.screen(),
+        &["Tab Leave, nothing to save", "Enter, Tab"],
+        &["Cell saved"],
+    );
+    app.key("tab");
+    let left = app.wait_text("last LeaveForward");
+    see(
+        &left,
+        &["last LeaveForward", "0 edits", "Tab Into page"],
+        &["Committed", "Cell saved", "Enter Apply", "1 edits"],
+    );
+    app.finish();
+}
+
+#[test]
+fn option_tab_walkthrough_invalid_blocks_the_move() {
+    let app = walkthrough("s03-tab-invalid", "invalid");
+    see(
+        &app.screen(),
+        &["Tab Blocked by an error", "Enter, x, Tab"],
+        &["Cell saved"],
+    );
+    app.type_text("x");
+    app.key("tab");
+    let blocked = app.wait_text("Changes must be a whole number");
+    see(
+        &blocked,
+        &[
+            "Changes must be a whole number · last none",
+            "Enter Apply",
+            "Esc Cancel",
+        ],
+        &["Cell saved", "LeaveForward", "Committed", "Tab Into page"],
+    );
+    app.key("esc");
+    let cancelled = app.wait_text("Edit cancelled");
+    see(
+        &cancelled,
+        &["Edit cancelled", "last Cancelled", "0 edits"],
+        &["Cell saved", "Enter Apply"],
+    );
+    app.finish();
+}

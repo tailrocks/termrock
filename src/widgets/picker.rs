@@ -1,3 +1,5 @@
+use std::collections::{HashMap, HashSet};
+
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
@@ -19,7 +21,7 @@ use crate::ui::edit_menu::{
     point_field,
 };
 use crate::ui::popup::{Placement, place_with};
-use crate::ui::text::{truncate, wider_than, width};
+use crate::ui::text::{TextClip, paint_graphemes, truncate, wider_than, width};
 use crate::widgets::edit::EditField;
 use crate::widgets::keyhint::Hint;
 use crate::widgets::option_list::{Item, OptionList};
@@ -94,8 +96,8 @@ pub struct Picker {
     pub placeholder: String,
 
     items: Vec<Item>,
-
-    authoritative_items: Vec<Item>,
+    index: HashMap<ItemKey, usize>,
+    visible: Vec<VisibleItem>,
 
     list: OptionList,
 
@@ -116,7 +118,7 @@ pub struct Picker {
 
     pub reveal: Option<crate::ui::reveal::Reveal>,
 
-    pub(crate) pending: Option<PickerAction>,
+    pub(crate) pending: crate::ui::layer::ResultQueue<PickerAction>,
 
     pub delete_is_secondary: bool,
     multi: bool,
@@ -129,6 +131,8 @@ pub struct Picker {
     toggle_keymap_overridden: bool,
     key_profile: PickerKeyProfile,
     key_profile_configured: bool,
+
+    pressed: Option<ItemKey>,
 }
 
 impl HasHints for Picker {
@@ -207,6 +211,62 @@ pub enum PickerItemsError {
     UnknownVisibleKey(ItemKey),
 }
 
+/// One row of a visible projection: the key of an authoritative item and the
+/// byte offsets of the query match inside its label.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct VisibleKey {
+    pub key: ItemKey,
+    pub matched: Vec<usize>,
+}
+
+impl VisibleKey {
+    pub fn new(key: ItemKey) -> Self {
+        Self {
+            key,
+            matched: vec![],
+        }
+    }
+
+    pub fn matched(mut self, matched: Vec<usize>) -> Self {
+        self.matched = matched;
+        self
+    }
+}
+
+#[derive(Debug, Clone)]
+struct VisibleItem {
+    source_index: usize,
+    matched: Vec<usize>,
+}
+
+/// A visible row: the one authoritative item and this projection's match.
+#[derive(Debug, Clone, Copy)]
+pub struct PickerItemView<'a> {
+    pub item: &'a Item,
+    pub matched: &'a [usize],
+}
+
+struct VisibleRows<'a> {
+    items: &'a [Item],
+    visible: &'a [VisibleItem],
+}
+
+impl RowSource for VisibleRows<'_> {
+    fn len(&self) -> usize {
+        self.visible.len()
+    }
+    fn enabled(&self, i: usize) -> bool {
+        !self.items[self.visible[i].source_index].disabled
+    }
+    fn label(&self, i: usize) -> &str {
+        &self.items[self.visible[i].source_index].label
+    }
+    fn key(&self, i: usize) -> ItemKey {
+        let source = self.visible[i].source_index;
+        Picker::key_of(&self.items[source], source)
+    }
+}
+
 impl Picker {
     pub const MAX_ROWS: u16 = 12;
 
@@ -227,7 +287,8 @@ impl Picker {
             title: title.to_owned(),
             placeholder: crate::theme::Strings::DEFAULT.search_placeholder.into(),
             items: vec![],
-            authoritative_items: vec![],
+            index: HashMap::new(),
+            visible: vec![],
             list,
             anchor: Rect::ZERO,
             hints: String::new(),
@@ -239,7 +300,7 @@ impl Picker {
             empty: None,
             area: Rect::ZERO,
             reveal: None,
-            pending: None,
+            pending: crate::ui::layer::ResultQueue::default(),
             delete_is_secondary: true,
             multi: false,
             choose_hint: std::borrow::Cow::Borrowed("Choose"),
@@ -248,6 +309,7 @@ impl Picker {
             toggle_keymap_overridden: false,
             key_profile,
             key_profile_configured,
+            pressed: None,
         }
     }
 
@@ -257,7 +319,7 @@ impl Picker {
     }
 
     pub fn multi_select(mut self, on: bool) -> Result<Self, PickerItemsError> {
-        if on && let Some(error) = Self::validate_items(&self.items, self.is_searchable()) {
+        if on && let Err(error) = Self::index_items(&self.items, self.is_searchable()) {
             return Err(error);
         }
         self.multi = on;
@@ -300,15 +362,33 @@ impl Picker {
             .and_then(|index| self.toggle_item(self.item_key(index)))
     }
     fn item_key(&self, i: usize) -> ItemKey {
-        Self::key_of(&self.items[i], i)
+        self.rows_ref().key(i)
     }
 
-    fn item_for_key_in(items: &[Item], key: ItemKey) -> Option<&Item> {
-        items
-            .iter()
-            .enumerate()
-            .find(|(index, item)| Self::key_of(item, *index) == key)
-            .map(|(_, item)| item)
+    fn rows_ref(&self) -> VisibleRows<'_> {
+        VisibleRows {
+            items: &self.items,
+            visible: &self.visible,
+        }
+    }
+
+    fn visible_at(&self, i: usize) -> Option<&Item> {
+        self.visible.get(i).map(|v| &self.items[v.source_index])
+    }
+
+    /// The key of the item a row hit region shows right now. Row hit regions
+    /// are positional, so a press records this to find out at release whether
+    /// the row still shows the same item.
+    fn row_key_at(&self, id: WidgetId) -> Option<ItemKey> {
+        let row = self.list.row_of(id, self.visible.len())?;
+        let source = self.visible[row].source_index;
+        Some(Self::key_of(&self.items[source], source))
+    }
+
+    fn source_of(&self, key: ItemKey) -> Option<usize> {
+        #[cfg(test)]
+        crate::core::work::add(crate::core::work::Counter::JoinProbes, 1);
+        self.index.get(&key).copied()
     }
 
     fn key_of(item: &Item, index: usize) -> ItemKey {
@@ -332,7 +412,7 @@ impl Picker {
     pub fn set_searchable(&mut self, on: bool) -> Result<(), PickerItemsError> {
         if self.multi
             && on
-            && let Some(error) = Self::validate_items(&self.items, true)
+            && let Err(error) = Self::index_items(&self.items, true)
         {
             return Err(error);
         }
@@ -368,8 +448,24 @@ impl Picker {
             .map_or(0, |q| q.buffer.cursor_offset())
     }
 
-    pub fn items(&self) -> &[Item] {
-        &self.items
+    /// The visible rows, in display order.
+    pub fn visible_items(&self) -> impl ExactSizeIterator<Item = PickerItemView<'_>> + '_ {
+        self.visible.iter().map(|v| PickerItemView {
+            item: &self.items[v.source_index],
+            matched: &v.matched,
+        })
+    }
+
+    /// The visible row at display position `i`.
+    pub fn visible_item(&self, i: usize) -> Option<PickerItemView<'_>> {
+        self.visible.get(i).map(|v| PickerItemView {
+            item: &self.items[v.source_index],
+            matched: &v.matched,
+        })
+    }
+
+    pub fn visible_len(&self) -> usize {
+        self.visible.len()
     }
 
     pub fn list(&self) -> &OptionList {
@@ -390,7 +486,7 @@ impl Picker {
     }
 
     pub fn set_chosen(&mut self, chosen: Option<usize>) {
-        self.list.chosen = chosen.filter(|index| *index < self.items.len());
+        self.list.chosen = chosen.filter(|index| *index < self.visible.len());
     }
 
     pub fn wheel(&mut self, axis: crate::core::hit::Axis, delta: i32) -> Outcome {
@@ -469,7 +565,7 @@ impl Picker {
 
     pub fn height(&self) -> u16 {
         let rows = picker_content_rows(
-            self.items.len(),
+            self.visible.len(),
             self.list.max_rows,
             self.status == PickerStatus::Ready,
         );
@@ -479,119 +575,142 @@ impl Picker {
     }
 
     fn first_enabled(&self) -> usize {
-        self.items.iter().position(|i| !i.disabled).unwrap_or(0)
+        self.visible
+            .iter()
+            .position(|v| !self.items[v.source_index].disabled)
+            .unwrap_or(0)
     }
 
-    pub fn set_items(&mut self, items: Vec<Item>) -> Result<(), PickerItemsError> {
-        if let Some(error) = Self::validate_items(&items, self.multi && self.is_searchable()) {
-            return Err(error);
-        }
-        self.authoritative_items.clone_from(&items);
+    pub fn set_items(&mut self, mut items: Vec<Item>) -> Result<(), PickerItemsError> {
+        let index = Self::index_items(&items, self.multi && self.is_searchable())?;
+        self.visible = Self::identity_projection(&mut items);
         self.items = items;
+        self.index = index;
         self.list.checked.clear();
-        self.list.reset(self.items.len());
+        self.list.reset(self.visible.len());
         self.list.cursor.index = self.first_enabled();
         self.status = PickerStatus::Ready;
         Ok(())
     }
 
-    pub fn replace_items(&mut self, items: Vec<Item>) -> Result<(), PickerItemsError> {
-        if let Some(error) = Self::validate_items(&items, self.multi && self.is_searchable()) {
-            return Err(error);
-        }
-        let keep = self
-            .items
-            .get(self.list.cursor.index)
-            .and_then(|item| item.key);
+    pub fn replace_items(&mut self, mut items: Vec<Item>) -> Result<(), PickerItemsError> {
+        let index = Self::index_items(&items, self.multi && self.is_searchable())?;
+        let keep = self.current_stable_key();
         let offset = self.list.scroll.offset;
-        let stable_checked: std::collections::HashSet<ItemKey> = self
-            .authoritative_items
-            .iter()
-            .filter_map(|item| item.key)
-            .collect();
-        self.authoritative_items.clone_from(&items);
-        self.items = items;
+        let (old_items, old_index) = (&self.items, &self.index);
         self.list.checked.retain(|key| {
-            stable_checked.contains(key)
-                && self
-                    .authoritative_items
-                    .iter()
-                    .any(|item| item.key == Some(*key) && !item.disabled)
+            fn known<'a>(
+                items: &'a [Item],
+                index: &HashMap<ItemKey, usize>,
+                key: &ItemKey,
+            ) -> Option<&'a Item> {
+                index
+                    .get(key)
+                    .map(|&at| &items[at])
+                    .filter(|item| item.key == Some(*key))
+            }
+            known(old_items, old_index, key).is_some()
+                && known(&items, &index, key).is_some_and(|item| !item.disabled)
         });
-        self.list.cursor.index = keep
-            .and_then(|key| {
-                self.items
-                    .iter()
-                    .position(|item| item.key == Some(key) && !item.disabled)
-            })
-            .unwrap_or_else(|| self.first_enabled());
-        self.list.scroll.set_content(self.items.len());
+        self.visible = Self::identity_projection(&mut items);
+        self.items = items;
+        self.index = index;
+        self.restore_cursor(keep);
+        self.list.scroll.set_content(self.visible.len());
         self.list.scroll.scroll_to(offset);
         self.status = PickerStatus::Ready;
         Ok(())
     }
 
-    pub fn set_visible_items(&mut self, items: Vec<Item>) -> Result<(), PickerItemsError> {
-        if let Some(error) = Self::validate_items(&items, true) {
-            return Err(error);
+    /// Replaces the visible projection by authoritative keys. Every key is
+    /// validated before any state changes, then resolved by one map lookup.
+    pub fn set_visible_keys(&mut self, keys: Vec<VisibleKey>) -> Result<(), PickerItemsError> {
+        let mut seen = HashSet::with_capacity(keys.len());
+        let mut visible = Vec::with_capacity(keys.len());
+        for VisibleKey { key, matched } in keys {
+            if !seen.insert(key) {
+                return Err(PickerItemsError::DuplicateKey(key));
+            }
+            let Some(source_index) = self.source_of(key) else {
+                return Err(PickerItemsError::UnknownVisibleKey(key));
+            };
+            visible.push(VisibleItem {
+                source_index,
+                matched,
+            });
         }
-        let mut visible = Vec::with_capacity(items.len());
+        let keep = self.current_stable_key();
+        let offset = self.list.scroll.offset;
+        self.visible = visible;
+        self.restore_cursor(keep);
+        self.list.scroll.set_content(self.visible.len());
+        self.list.scroll.scroll_to(offset);
+        self.status = PickerStatus::Ready;
+        Ok(())
+    }
+
+    /// Compatibility ingress: only each item's key and match are used. Labels
+    /// and other payload of `items` are discarded in favor of the authoritative
+    /// copy, so prefer [`Picker::set_visible_keys`].
+    pub fn set_visible_items(&mut self, items: Vec<Item>) -> Result<(), PickerItemsError> {
+        let mut keys = Vec::with_capacity(items.len());
         for item in items {
             let Some(key) = item.key else {
                 return Err(PickerItemsError::MissingStableKey);
             };
-            let Some(mut authoritative) = self
-                .authoritative_items
-                .iter()
-                .find(|candidate| candidate.key == Some(key))
-                .cloned()
-            else {
-                return Err(PickerItemsError::UnknownVisibleKey(key));
-            };
-            authoritative.matched = item.matched;
-            visible.push(authoritative);
+            keys.push(VisibleKey {
+                key,
+                matched: item.matched,
+            });
         }
-        let keep = self
-            .items
-            .get(self.list.cursor.index)
-            .and_then(|item| item.key);
-        let offset = self.list.scroll.offset;
-        self.items = visible;
-        self.list.cursor.index = keep
-            .and_then(|key| {
-                self.items
-                    .iter()
-                    .position(|item| item.key == Some(key) && !item.disabled)
-            })
-            .unwrap_or_else(|| self.first_enabled());
-        self.list.scroll.set_content(self.items.len());
-        self.list.scroll.scroll_to(offset);
-        self.status = PickerStatus::Ready;
-        Ok(())
+        self.set_visible_keys(keys)
     }
 
     pub fn item_for_key(&self, key: ItemKey) -> Option<&Item> {
-        Self::item_for_key_in(&self.authoritative_items, key)
+        self.source_of(key).map(|at| &self.items[at])
+    }
+
+    fn identity_projection(items: &mut [Item]) -> Vec<VisibleItem> {
+        items
+            .iter_mut()
+            .enumerate()
+            .map(|(source_index, item)| VisibleItem {
+                source_index,
+                matched: std::mem::take(&mut item.matched),
+            })
+            .collect()
+    }
+
+    fn current_stable_key(&self) -> Option<ItemKey> {
+        self.visible_at(self.list.cursor.index)
+            .and_then(|item| item.key)
+    }
+
+    fn restore_cursor(&mut self, keep: Option<ItemKey>) {
+        self.list.cursor.index = keep
+            .and_then(|key| {
+                self.visible.iter().position(|v| {
+                    let item = &self.items[v.source_index];
+                    item.key == Some(key) && !item.disabled
+                })
+            })
+            .unwrap_or_else(|| self.first_enabled());
     }
 
     fn toggle_item(&mut self, key: ItemKey) -> Option<PickerAction> {
-        let group = Self::item_for_key_in(&self.authoritative_items, key)
-            .and_then(|item| item.selection_group);
+        let group = self.item_for_key(key).and_then(|item| item.selection_group);
         if !self.list.checked.contains(&key)
             && let Some(group) = group
-            && let Some(selected) =
-                self.authoritative_items
-                    .iter()
-                    .enumerate()
-                    .find(|(index, item)| {
-                        item.selection_group == Some(group)
-                            && Self::key_of(item, *index) != key
-                            && self.list.checked.contains(&Self::key_of(item, *index))
-                    })
+            && let Some(selected) = self.list.checked.iter().copied().find(|&checked| {
+                checked != key
+                    && self
+                        .item_for_key(checked)
+                        .is_some_and(|item| item.selection_group == Some(group))
+            })
         {
             return Some(PickerAction::SelectionConflict {
                 attempted: key,
-                selected: Self::key_of(selected.1, selected.0),
+                selected,
             });
         }
         self.list.toggle_checked(key);
@@ -609,30 +728,36 @@ impl Picker {
         self.list.checked.clear();
     }
 
-    fn validate_items(items: &[Item], require_stable: bool) -> Option<PickerItemsError> {
-        let mut keys = std::collections::HashSet::with_capacity(items.len());
+    /// Validates `items` and returns the authoritative key index.
+    fn index_items(
+        items: &[Item],
+        require_stable: bool,
+    ) -> Result<HashMap<ItemKey, usize>, PickerItemsError> {
+        let mut keys = HashMap::with_capacity(items.len());
         for (index, item) in items.iter().enumerate() {
             if require_stable && item.key.is_none() {
-                return Some(PickerItemsError::MissingStableKey);
+                return Err(PickerItemsError::MissingStableKey);
             }
             let key = Self::key_of(item, index);
-            if !keys.insert(key) {
-                return Some(PickerItemsError::DuplicateKey(key));
+            if keys.insert(key, index).is_some() {
+                return Err(PickerItemsError::DuplicateKey(key));
             }
         }
-        None
+        #[cfg(test)]
+        crate::core::work::add(crate::core::work::Counter::IndexBuilds, items.len());
+        Ok(keys)
     }
 
     pub fn eligible(&self, i: usize) -> Option<usize> {
         if self.status != PickerStatus::Ready {
             return None;
         }
-        self.items.get(i).filter(|it| !it.disabled).map(|_| i)
+        self.visible_at(i).filter(|it| !it.disabled).map(|_| i)
     }
 
     pub fn current(&self) -> Option<&Item> {
         self.eligible(self.list.cursor.index)
-            .map(|i| &self.items[i])
+            .and_then(|i| self.visible_at(i))
     }
 
     pub fn current_key(&self) -> Option<ItemKey> {
@@ -655,7 +780,7 @@ impl Picker {
     }
 
     pub fn set_cursor(&mut self, i: usize) {
-        self.list.cursor.index = i.min(self.items.len().saturating_sub(1));
+        self.list.cursor.index = i.min(self.visible.len().saturating_sub(1));
         self.list.scroll.ensure_visible(self.list.cursor.index);
     }
 
@@ -715,7 +840,13 @@ impl Picker {
                 Some(KeyStep::Type(_))
             )
         {
-            let moved = self.list.key(key, &self.items[..]);
+            let moved = self.list.key(
+                key,
+                &VisibleRows {
+                    items: &self.items,
+                    visible: &self.visible,
+                },
+            );
             if moved.index().is_some() {
                 let o = if moved.moved() {
                     Outcome::Changed
@@ -734,7 +865,11 @@ impl Picker {
         let Some(nav) = nav else {
             return self.on_other_key(key);
         };
-        match self.list.nav_step(nav, &self.items[..]).index() {
+        let rows = VisibleRows {
+            items: &self.items,
+            visible: &self.visible,
+        };
+        match self.list.nav_step(nav, &rows).index() {
             Some(_) => (Outcome::Changed, None),
             None => self.on_other_key(key),
         }
@@ -771,11 +906,23 @@ impl Picker {
                 None => (Outcome::Consumed, None),
             },
             KeyCode::Char('n') | KeyCode::Char('j') if key.ctrl() => {
-                self.list.step(1, &self.items[..]);
+                self.list.step(
+                    1,
+                    &VisibleRows {
+                        items: &self.items,
+                        visible: &self.visible,
+                    },
+                );
                 (Outcome::Changed, None)
             }
             KeyCode::Char('p') | KeyCode::Char('k') if key.ctrl() => {
-                self.list.step(-1, &self.items[..]);
+                self.list.step(
+                    -1,
+                    &VisibleRows {
+                        items: &self.items,
+                        visible: &self.visible,
+                    },
+                );
                 (Outcome::Changed, None)
             }
             KeyCode::Tab => (Outcome::Changed, Some(PickerAction::NextScope)),
@@ -810,8 +957,14 @@ impl Picker {
         if id == crate::ui::popup::backdrop_id(self.id) {
             return self.on_click_outside();
         }
-        let i = self.eligible(self.list.row_of(id, self.items.len())?)?;
-        self.list.select(i, &self.items[..]);
+        let i = self.eligible(self.list.row_of(id, self.visible.len())?)?;
+        self.list.select(
+            i,
+            &VisibleRows {
+                items: &self.items,
+                visible: &self.visible,
+            },
+        );
         if self.multi {
             match self.toggle_checked(i) {
                 Some(action) => Some(action),
@@ -1002,14 +1155,21 @@ impl Picker {
 
         let hints_fit = inner.bottom() > y + 1;
         let hints = if hints_fit { hints } else { "" };
-        let list = Rect::new(
-            inner.x,
-            y,
-            inner.width,
-            inner.bottom().saturating_sub(y + u16::from(hints_fit)),
-        );
+        // `height` reserves a spare row below the list; the item budget is `max_rows`.
+        let list_rows = inner
+            .bottom()
+            .saturating_sub(y + u16::from(hints_fit))
+            .min(self.list.max_rows.max(1));
+        let list = Rect::new(inner.x, y, inner.width, list_rows);
 
-        self.list.layout(list, &self.items[..], ctx);
+        self.list.layout(
+            list,
+            &VisibleRows {
+                items: &self.items,
+                visible: &self.visible,
+            },
+            ctx,
+        );
         let hint_row = |buf: &mut Buffer| {
             if !hints.is_empty() {
                 let hy = inner.bottom().saturating_sub(1);
@@ -1044,7 +1204,7 @@ impl Picker {
             }
             PickerStatus::Ready => {}
         }
-        if self.items.is_empty() {
+        if self.visible.is_empty() {
             crate::widgets::empty::render(
                 list,
                 buf,
@@ -1059,7 +1219,13 @@ impl Picker {
         let has_sb = self.list.scroll.overflows();
         let row_w = list.width.saturating_sub(u16::from(has_sb));
 
-        let measure = |f: &dyn Fn(&Item) -> u16| self.items.iter().map(f).max().unwrap_or(0);
+        let measure = |f: &dyn Fn(&Item) -> u16| {
+            self.visible
+                .iter()
+                .map(|v| f(&self.items[v.source_index]))
+                .max()
+                .unwrap_or(0)
+        };
         let label_need = measure(&|i| width(&i.label) as u16).max(6);
         let detail_need = measure(&|i| width(&i.detail) as u16);
         let tag_col = measure(&|i| i.tag.as_deref().map_or(0, |t| width(t) as u16));
@@ -1080,12 +1246,16 @@ impl Picker {
         let widths = columns::solve(&cols, row_w.saturating_sub(4), 2);
         let label_col = widths[0];
         let detail_col = widths[1];
-        let items = &self.items[..];
+        let rows = VisibleRows {
+            items: &self.items,
+            visible: &self.visible,
+        };
         let reveal = self.reveal;
         let mut last_group = "";
         self.list
-            .paint_rows(list, bg, items, buf, ctx, |i, r, buf, ctx| {
-                let it = &items[i];
+            .paint_rows(list, bg, &rows, buf, ctx, |i, r, buf, ctx| {
+                let it = &rows.items[rows.visible[i].source_index];
+                let matched = &rows.visible[i].matched;
                 let (row, ry) = (r.area, r.area.y);
                 let rid = self.list.row_id(i);
                 let st = r.style();
@@ -1110,7 +1280,7 @@ impl Picker {
                     .remove_modifier(Modifier::BOLD),
                 );
 
-                if self.list.checked.contains(&self.item_key(i)) {
+                if self.list.checked.contains(&rows.key(i)) {
                     r.mark(
                         ctx,
                         buf,
@@ -1120,27 +1290,27 @@ impl Picker {
                         focused,
                     );
                 }
-                let mut x = row.x + 3;
-                let label = truncate(&it.label, label_col as usize);
+                let label_area = Rect::new(row.x + 3, ry, label_col, 1).intersection(row);
                 let label_cut = !it.disabled
-                    && crate::ui::reveal::truncated(
-                        ctx,
-                        reveal,
-                        rid,
-                        Rect::new(row.x + 3, ry, label_col, 1),
-                        &it.label,
-                    );
-                for (bi, ch) in label.char_indices() {
-                    let mut cs = st;
-                    if it.matched.contains(&bi) {
-                        cs = cs.add_modifier(Modifier::BOLD);
-                    } else if !focused {
-                        cs = cs.remove_modifier(Modifier::BOLD);
-                    }
-                    let g = ch.to_string();
-                    buf.set_string(x, ry, &g, cs);
-                    x += width(&g) as u16;
-                }
+                    && crate::ui::reveal::truncated(ctx, reveal, rid, label_area, &it.label);
+                paint_graphemes(
+                    buf,
+                    label_area,
+                    (0, 0),
+                    &it.label,
+                    TextClip::Ellipsis,
+                    |source, _| {
+                        let matched =
+                            source.is_some_and(|range| matched.iter().any(|m| range.contains(m)));
+                        if matched {
+                            st.add_modifier(Modifier::BOLD)
+                        } else if !focused {
+                            st.remove_modifier(Modifier::BOLD)
+                        } else {
+                            st
+                        }
+                    },
+                );
                 let mut rx = row.right();
                 if group_col > 0 {
                     rx = rx.saturating_sub(group_col + 1);
@@ -1208,16 +1378,17 @@ impl Picker {
 
 impl RowSource for Picker {
     fn len(&self) -> usize {
-        self.items.len()
+        self.visible.len()
     }
     fn enabled(&self, i: usize) -> bool {
-        self.items[..].enabled(i)
+        self.rows_ref().enabled(i)
     }
     fn label(&self, i: usize) -> &str {
-        &self.items[i].label
+        let source = self.visible[i].source_index;
+        &self.items[source].label
     }
     fn key(&self, i: usize) -> ItemKey {
-        self.items[..].key(i)
+        self.rows_ref().key(i)
     }
 }
 
@@ -1260,8 +1431,18 @@ impl crate::core::pointer::MouseTarget for Picker {
         {
             return r.lift();
         }
+        if ev.is(Phase::Press) {
+            self.pressed = self.row_key_at(ev.id);
+            return Response::ignored();
+        }
         if !ev.is(Phase::Click) {
             return Response::ignored();
+        }
+        let pressed = self.pressed.take();
+        if ev.part().part != Part::BACKDROP
+            && pressed.is_some_and(|key| self.row_key_at(ev.id) != Some(key))
+        {
+            return Response::consumed();
         }
         let chosen = if ev.part().part == Part::BACKDROP {
             self.on_click_outside()
@@ -2102,8 +2283,12 @@ mod tests {
             <Picker as Layer<LayerResult, ()>>::on_key(&mut picker, &enter, &mut cx)
         };
         assert_eq!(out, Outcome::Changed);
+        // Earlier toggles queue their events; the layer releases them in order.
+        let closed =
+            std::iter::from_fn(|| <Picker as Layer<LayerResult, ()>>::take_result(&mut picker))
+                .find(LayerOut::closes);
         assert!(matches!(
-            <Picker as Layer<LayerResult, ()>>::take_result(&mut picker),
+            closed,
             Some(LayerOut::Close(LayerResult::Picker(PickerAction::ChosenMany(keys))))
                 if keys == [ItemKey::text("alpha"), ItemKey::text("beta")]
         ));
@@ -2393,6 +2578,75 @@ mod tests {
     }
 
     #[test]
+    fn a_click_cannot_choose_the_item_that_replaced_the_pressed_row() {
+        use crate::core::pointer::MouseTarget;
+        use crate::widgets::picker::VisibleKey;
+
+        let area = Rect::new(0, 0, 100, 30);
+        let (a, b, c) = (ItemKey::text("a"), ItemKey::text("b"), ItemKey::text("c"));
+        let mut picker = Picker::new(WidgetId::of("picker-press"), "Choose")
+            .searchable(false)
+            .expect("disabling search is valid");
+        picker
+            .set_items(vec![
+                Item::new("A").key(a),
+                Item::new("B").key(b),
+                Item::new("C").key(c),
+            ])
+            .expect("valid items");
+        let theme = Theme::for_level(ColorLevel::TrueColor);
+        let mut ring = FocusRing::default();
+        let mut draw = |picker: &mut Picker| {
+            let mut buffer = Buffer::empty(area);
+            let mut hits = HitRegistry::default();
+            let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+            picker.draw(area, &mut buffer, &mut ctx);
+            ctx.flush_overlays(&mut buffer);
+            hits
+        };
+        let pointer = |picker: &mut Picker, hits: &HitRegistry, phase| {
+            let ev = PointerEvent::new(
+                hits,
+                phase,
+                picker.row_id(1),
+                Position::new(1, 1),
+                1,
+                KeyModifiers::NONE,
+            );
+            MouseTarget::pointer(picker, &ev)
+                .into_parts()
+                .1
+                .into_iter()
+                .next()
+        };
+
+        let hits = draw(&mut picker);
+        assert_eq!(pointer(&mut picker, &hits, Phase::Press), None);
+        picker
+            .set_visible_keys(vec![
+                VisibleKey::new(c),
+                VisibleKey::new(a),
+                VisibleKey::new(b),
+            ])
+            .expect("known keys");
+        let hits = draw(&mut picker);
+        assert_eq!(
+            pointer(&mut picker, &hits, Phase::Click),
+            None,
+            "row 1 now holds another item"
+        );
+
+        let hits = draw(&mut picker);
+        assert_eq!(pointer(&mut picker, &hits, Phase::Press), None);
+        let hits = draw(&mut picker);
+        assert_eq!(
+            pointer(&mut picker, &hits, Phase::Click),
+            Some(PickerAction::Chosen(1)),
+            "a press and release on the same item still choose it"
+        );
+    }
+
+    #[test]
     fn picker_layer_pointer_toggle_repaints_stays_open_and_skips_disabled_rows() {
         let area = Rect::new(0, 0, 100, 30);
         let mut picker = Picker::new(WidgetId::of("picker-test"), "Choose")
@@ -2569,6 +2823,28 @@ mod tests {
         assert_eq!(picker.item_for_key(ItemKey::index(17)).unwrap().label, "A");
     }
     #[test]
+    fn picker_visible_projection_reports_rows_in_display_order() {
+        let mut picker = Picker::new(WidgetId::of("projection"), "Projection");
+        let first = Item::new("First").key(ItemKey::index(1));
+        let second = Item::new("Second").key(ItemKey::index(2));
+        picker
+            .set_items(vec![first, second])
+            .expect("valid picker update");
+        picker
+            .set_visible_keys(vec![
+                super::VisibleKey::new(ItemKey::index(2)).matched(vec![0]),
+                super::VisibleKey::new(ItemKey::index(1)),
+            ])
+            .expect("known keys");
+        assert_eq!(picker.visible_len(), 2);
+        let rows: Vec<(&str, Vec<usize>)> = picker
+            .visible_items()
+            .map(|row: super::PickerItemView<'_>| (row.item.label.as_str(), row.matched.to_vec()))
+            .collect();
+        assert_eq!(rows, [("Second", vec![0]), ("First", vec![])]);
+    }
+
+    #[test]
     fn picker_rejects_ambiguous_and_unknown_keys_atomically() {
         let mut picker = Picker::new(WidgetId::of("keys"), "Keys")
             .multi_select(true)
@@ -2744,5 +3020,162 @@ mod tests {
         assert_eq!(picker.height(), u16::MAX);
         picker.set_searchable(false).expect("disable search");
         assert_eq!(picker.height(), u16::MAX);
+    }
+
+    fn keyed_picker(id: &str, count: usize) -> Picker {
+        let mut picker = Picker::new(WidgetId::of(id), "Rows");
+        picker
+            .set_items(
+                (0..count)
+                    .map(|index| Item::new(format!("Item {index}")).key(ItemKey::Index(index)))
+                    .collect(),
+            )
+            .expect("valid picker update");
+        picker
+    }
+
+    fn statuses_for_rows() -> [PickerStatus; 3] {
+        [
+            PickerStatus::Ready,
+            PickerStatus::Loading("Fetching".into()),
+            PickerStatus::Error {
+                message: "Offline".into(),
+                detail: Some("Retry later".into()),
+            },
+        ]
+    }
+
+    fn draw_picker(picker: &mut Picker, area: Rect) -> (Buffer, HitRegistry) {
+        let theme = Theme::for_level(ColorLevel::TrueColor);
+        let mut buffer = Buffer::empty(area);
+        let mut hits = HitRegistry::default();
+        let mut ring = FocusRing::default();
+        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        picker.draw(area, &mut buffer, &mut ctx);
+        ctx.flush_overlays(&mut buffer);
+        drop(ctx);
+        (buffer, hits)
+    }
+
+    fn row_text(buffer: &Buffer, x: (u16, u16), y: u16) -> String {
+        (x.0..x.1)
+            .map(|column| buffer[(column, y)].symbol())
+            .collect()
+    }
+
+    #[test]
+    fn one_row_limit_status_renders_one_row_and_hits_stay_inside_popup() {
+        let area = Rect::new(3, 2, 60, 14);
+        for searchable in [false, true] {
+            for (status, label) in [
+                (PickerStatus::Loading("Fetching".into()), "Fetching"),
+                (
+                    PickerStatus::Error {
+                        message: "Offline".into(),
+                        detail: Some("Retry later".into()),
+                    },
+                    "Offline",
+                ),
+            ] {
+                let mut picker = keyed_picker("rows-one-status", 5).max_rows(1);
+                picker
+                    .set_searchable(searchable)
+                    .expect("keyed items are searchable");
+                picker.status = status;
+                let (buffer, hits) = draw_picker(&mut picker, area);
+                let popup = picker.area;
+                let columns = (popup.x, popup.right());
+                let rows: Vec<String> = (popup.y..popup.bottom())
+                    .map(|y| row_text(&buffer, columns, y))
+                    .collect();
+                let status_rows = rows.iter().filter(|row| row.contains(label)).count();
+                assert_eq!(status_rows, 1, "searchable={searchable} rows={rows:?}");
+                assert!(
+                    !rows.iter().any(|row| row.contains("Retry later")),
+                    "detail needs a second row and must be omitted: {rows:?}"
+                );
+
+                let backdrop = crate::ui::popup::backdrop_id(picker.id);
+                for region in hits.regions() {
+                    if region.id == backdrop || region.area.is_empty() {
+                        continue;
+                    }
+                    let a = region.area;
+                    assert!(
+                        a.x >= popup.x
+                            && a.y >= popup.y
+                            && a.right() <= popup.right()
+                            && a.bottom() <= popup.bottom(),
+                        "region {:?} escapes popup {popup:?}",
+                        a
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn picker_content_rows_guards_direct_zero_list_limit() {
+        let one_row = picker_with_items("rows-direct-one", 3).max_rows(1).height();
+        let mut picker = picker_with_items("rows-direct-zero", 3);
+        picker.list.max_rows = 0;
+        let area = Rect::new(0, 0, 60, 14);
+        for status in statuses_for_rows() {
+            picker.status = status;
+            assert_eq!(picker.height(), one_row);
+            let (buffer, _) = draw_picker(&mut picker, area);
+            assert_eq!(buffer.area(), &area);
+        }
+    }
+
+    #[test]
+    fn picker_content_rows_helper_matrix_never_panics_and_bounds_height() {
+        const LIMITS: [u16; 5] = [0, 1, 2, 8, u16::MAX];
+        const COUNTS: [usize; 5] = [0, 1, 8, 65_536, usize::MAX];
+        for limit in LIMITS {
+            let max = usize::from(limit.max(1));
+            for status in statuses_for_rows() {
+                let ready = status == PickerStatus::Ready;
+                let floor = if ready { 1 } else { 2.min(max) };
+                for count in COUNTS {
+                    let rows = super::picker_content_rows(count, limit, ready);
+                    assert!(
+                        (floor..=max).contains(&rows),
+                        "limit {limit} count {count} ready {ready}: rows {rows}"
+                    );
+                    if count >= max {
+                        assert_eq!(rows, max, "limit {limit} count {count}");
+                    }
+                    if count <= floor {
+                        assert_eq!(rows, floor, "limit {limit} count {count}");
+                    }
+                    for chrome in [5usize, 7] {
+                        let height = (chrome + rows).min(usize::from(u16::MAX));
+                        assert!(height <= chrome + max);
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn picker_content_rows_helper_matrix_holds_through_public_height() {
+        for count in [0usize, 1, 8, 65_536] {
+            let mut picker = picker_with_items("rows-matrix", count);
+            for limit in [0u16, 1, 2, 8, u16::MAX] {
+                picker.set_max_rows(limit);
+                for status in statuses_for_rows() {
+                    picker.status = status;
+                    let height = usize::from(picker.height());
+                    let chrome = if picker.is_searchable() { 7 } else { 5 };
+                    assert!(height > chrome);
+                    assert!(
+                        height
+                            <= chrome
+                                + usize::from(limit.max(1)).min(usize::from(u16::MAX) - chrome)
+                    );
+                }
+            }
+        }
     }
 }

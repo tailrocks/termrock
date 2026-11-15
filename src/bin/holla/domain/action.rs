@@ -127,14 +127,57 @@ impl Confirmation {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Freshness {
-    Live { age_ms: i64 },
-    Cached { age_ms: i64 },
-    Partial { loaded: usize, total: usize },
+    /// `observed_tick` is the world tick `age_ms` was sampled at. Only an
+    /// observed age advances with time; a view that is always current, such as
+    /// the in-memory configuration, carries `None` and never ages.
+    Live {
+        age_ms: i64,
+        observed_tick: Option<u64>,
+    },
+    Cached {
+        age_ms: i64,
+        observed_tick: Option<u64>,
+    },
+    Partial {
+        loaded: usize,
+        total: usize,
+    },
     Loading,
     Unavailable(String),
 }
 
 impl Freshness {
+    pub fn observed_tick(&self) -> Option<u64> {
+        match self {
+            Freshness::Live { observed_tick, .. } | Freshness::Cached { observed_tick, .. } => {
+                *observed_tick
+            }
+            _ => None,
+        }
+    }
+
+    /// The same freshness `elapsed_ms` later. Only an observed Live or Cached
+    /// age moves; every other state is returned unchanged.
+    pub fn advanced(&self, elapsed_ms: i64) -> Freshness {
+        match self {
+            Freshness::Live {
+                age_ms,
+                observed_tick: Some(t),
+            } => Freshness::Live {
+                age_ms: age_ms.saturating_add(elapsed_ms),
+                observed_tick: Some(*t),
+            },
+            Freshness::Cached {
+                age_ms,
+                observed_tick: Some(t),
+            } => Freshness::Cached {
+                age_ms: age_ms.saturating_add(elapsed_ms),
+                observed_tick: Some(*t),
+            },
+            other => other.clone(),
+        }
+    }
+
     pub fn label(&self) -> String {
         let age = |ms: i64| {
             let s = ms / 1000;
@@ -147,8 +190,8 @@ impl Freshness {
             }
         };
         match self {
-            Freshness::Live { age_ms } => format!("live · {}", age(*age_ms)),
-            Freshness::Cached { age_ms } => format!("cached · {}", age(*age_ms)),
+            Freshness::Live { age_ms, .. } => format!("live · {}", age(*age_ms)),
+            Freshness::Cached { age_ms, .. } => format!("cached · {}", age(*age_ms)),
             Freshness::Partial { loaded, total } => {
                 format!("partial · {loaded} of {total} sources")
             }
@@ -351,7 +394,10 @@ impl Item {
             keywords: vec![],
             aliases: vec![],
             page_aliases: vec![],
-            freshness: Freshness::Live { age_ms: 0 },
+            freshness: Freshness::Live {
+                age_ms: 0,
+                observed_tick: None,
+            },
             args: vec![],
             alternatives: vec![],
             launch: Launch::Insert,

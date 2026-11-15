@@ -47,7 +47,7 @@ pub const MATRIX: &[Row] = &[
     },
     Row {
         name: "all-features",
-        features: &["cli", "terminal", "product"],
+        features: &["cli", "terminal", "product", "work-metrics"],
     },
 ];
 
@@ -668,13 +668,14 @@ impl<'a> Walker<'a> {
                     return;
                 }
                 let site = join(module, &name);
+                // A restricted `pub(super)` or `pub(crate)` static is not export.
+                let text = item.mac.tokens.to_string();
+                let tokens: Vec<&str> = text.split_whitespace().collect();
                 let private_only = name == "thread_local"
-                    && !item
-                        .mac
-                        .tokens
-                        .to_string()
-                        .split_whitespace()
-                        .any(|token| token == "pub");
+                    && !tokens.iter().enumerate().any(|(at, token)| {
+                        *token == "pub"
+                            && tokens.get(at + 1).is_none_or(|next| !next.starts_with('('))
+                    });
                 if private_only {
                     return;
                 }

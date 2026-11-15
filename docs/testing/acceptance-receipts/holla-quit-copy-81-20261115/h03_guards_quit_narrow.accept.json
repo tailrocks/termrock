@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/h03_guards/h03_guards_quit_narrow",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/private/tmp/claude-501/-Users-donbeave-Projects-tailrocks-terminal-components-baseline/5bf2943f-8395-4b73-b644-3337b88a2b17/scratchpad/w81/cand_narrow.tui.pb"
+  },
+  "candidate_sha256": "5740c1cfbb1e4a5720e127e42a775b21713b439e5c060e488bf74d6abf07c66c",
+  "baseline_sha256": "5740c1cfbb1e4a5720e127e42a775b21713b439e5c060e488bf74d6abf07c66c",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane7/tests/functional/baselines/pre_refactor/h03_guards/h03_guards_quit_narrow.tui.pb"
+  },
+  "error_code": null
+}

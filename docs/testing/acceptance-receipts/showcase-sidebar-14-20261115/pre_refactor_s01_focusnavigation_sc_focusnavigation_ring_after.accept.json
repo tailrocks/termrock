@@ -6,13 +6,13 @@
   "reason": null,
   "candidate_path": {
     "encoding": "utf8",
-    "value": "/tmp/final/pre_refactor__s01_focusnavigation__sc_focusnavigation_ring_after.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/target/functional/s01-focusnavigation-ring-6962-1794771851746514000-0/check-artifacts/pre_refactor/s01_focusnavigation/sc_focusnavigation_ring_after/8efa74f41307e4cc3f1aa827851c6c2a6a4f3857afcdb4f31bf305e7f792a550/sample.tui.pb"
   },
-  "candidate_sha256": "6fe40e44c22c64806ae0d0fd918a813b49bcc834f5bd751cdd21828be460fdf6",
-  "baseline_sha256": "6fe40e44c22c64806ae0d0fd918a813b49bcc834f5bd751cdd21828be460fdf6",
+  "candidate_sha256": "8efa74f41307e4cc3f1aa827851c6c2a6a4f3857afcdb4f31bf305e7f792a550",
+  "baseline_sha256": "8efa74f41307e4cc3f1aa827851c6c2a6a4f3857afcdb4f31bf305e7f792a550",
   "output_path": {
     "encoding": "utf8",
-    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s01_focusnavigation/sc_focusnavigation_ring_after.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/tests/functional/baselines/pre_refactor/s01_focusnavigation/sc_focusnavigation_ring_after.tui.pb"
   },
   "error_code": null
 }

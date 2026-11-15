@@ -6,7 +6,7 @@ use crate::options::{PageValues, page_options};
 use crate::pages::layout::{sheet_height, sheet_width};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent, Report};
-use junie_tui::core::event::Outcome;
+use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::id::WidgetId;
 use junie_tui::core::intent::Phase;
 use junie_tui::core::keymap::{KeyBinding, NavKeys};
@@ -15,12 +15,15 @@ use junie_tui::theme::Tone;
 use junie_tui::ui::ctx::RenderCtx;
 use junie_tui::ui::layer::LayerTag;
 use junie_tui::ui::layers::LayerResult;
+use junie_tui::ui::popup::Dismiss;
 use junie_tui::ui::specimen::{SpecimenState, StateGrid};
 use junie_tui::ui::text;
 use junie_tui::widgets::button::{Button, ButtonRow, row_layout};
 use junie_tui::widgets::choice::{Checkbox, RadioGroup};
 use junie_tui::widgets::choice_dialog::ChoiceDialog;
-use junie_tui::widgets::form_dialog::{FieldValue, FormAction, FormDialog, FormField};
+use junie_tui::widgets::form_dialog::{
+    FieldValue, FormAction, FormDialog, FormField, FormFieldKind,
+};
 use junie_tui::widgets::help::HelpOverlay;
 use junie_tui::widgets::icon_button::IconButton;
 use junie_tui::widgets::info_dialog::{InfoCmd, InfoDialog, InfoResult};
@@ -41,6 +44,7 @@ const KEYS: WidgetId = ID.sub("keys");
 const DRIVERS: &[&str] = &["PostgreSQL", "MySQL", "SQLite"];
 const SSL: &[&str] = &["Disable", "Require", "Verify full"];
 const CHANNELS: &[&str] = &["Stable", "Beta", "Nightly (may break)"];
+const KEYCHAIN_SECRET: &str = "keychain-rotated-0042";
 const KEY_FILES: &[&str] = &["~/.ssh/id_ed25519", "~/.ssh/prod_rsa", "~/keys/staging.pem"];
 
 const OPENERS: &[(&str, &str)] = &[
@@ -108,6 +112,15 @@ impl DialogKindsPage {
         }
     }
 
+    fn dismiss(&self, default: Dismiss) -> Dismiss {
+        match self.opts.value("dialogkinds.dismiss") {
+            "light" => Dismiss::LIGHT,
+            "escape" => Dismiss::ESCAPE,
+            "never" => Dismiss::NEVER,
+            _ => default,
+        }
+    }
+
     fn button_row(&self) -> ButtonRow {
         ButtonRow::new().wrap(self.opts.on("dialogkinds.button_wrap"))
     }
@@ -156,6 +169,7 @@ impl DialogKindsPage {
         )
         .width(self.width(62))
         .nav(self.nav())
+        .dismiss(self.dismiss(Dismiss::ESCAPE))
         .close_button(self.close_button())
         .button_row(self.button_row());
         if self.opts.on("dialogkinds.form_meta") {
@@ -191,6 +205,7 @@ impl DialogKindsPage {
         .meta("read-only")
         .width(self.width(66))
         .nav(self.nav())
+        .dismiss(self.dismiss(Dismiss::LIGHT))
         .close_button(self.close_button());
         if self.opts.on("dialogkinds.info_error") {
             d = d.error();
@@ -215,6 +230,7 @@ impl DialogKindsPage {
         .line("Switching applies at the next restart.", Tone::Secondary)
         .width(self.width(54))
         .nav(self.nav())
+        .dismiss(self.dismiss(Dismiss::ESCAPE))
         .close_button(self.close_button())
         .button_row(self.button_row());
         if self.opts.on("dialogkinds.choice_tones") {
@@ -243,7 +259,13 @@ impl DialogKindsPage {
             vec![
                 (
                     "Forms",
-                    vec![("Tab", "Next field"), ("Enter", "Save"), ("Esc", "Cancel")],
+                    vec![
+                        ("Tab", "Next field"),
+                        ("Enter", "Save"),
+                        ("Esc", "Cancel"),
+                        ("Ctrl+T", "Toggle host"),
+                        ("Ctrl+D", "Toggle driver"),
+                    ],
                 ),
                 ("Info", vec![("y", "Copy"), ("q", "Close")]),
                 ("Choices", vec![("↑↓", "Option"), ("←→", "Button")]),
@@ -291,6 +313,11 @@ impl DialogKindsPage {
             LayerResult::Form(FormAction::Changed(field)) => {
                 self.log.push(format!("Form · Changed({field:?})"));
                 cx.with_top::<FormDialog>(move |f| {
+                    if field == "driver" {
+                        let remote = f.choice("driver") != 2;
+                        f.set_visible("host", remote);
+                        f.set_visible("password", remote);
+                    }
                     if field == "tunnel" {
                         let on = matches!(
                             f.field("tunnel").map(|x| x.value()),
@@ -312,14 +339,26 @@ impl DialogKindsPage {
                 if name == "test" {
                     cx.with_top::<FormDialog>(|f| {
                         let ok = !f.text("host").trim().is_empty();
-                        f.set_note(
-                            "result",
-                            vec![if ok {
-                                ("✓ Connected in 42 ms".into(), Tone::Success)
-                            } else {
-                                ("✗ Host is required".into(), Tone::Error)
-                            }],
-                        );
+                        let mut lines = vec![if ok {
+                            ("✓ Connected in 42 ms".into(), Tone::Success)
+                        } else {
+                            ("✗ Host is required".into(), Tone::Error)
+                        }];
+                        if ok {
+                            f.set_text("password", KEYCHAIN_SECRET);
+                            let masked = matches!(
+                                f.field("password").map(|x| &x.kind),
+                                Some(FormFieldKind::Input(i)) if i.masked
+                            );
+                            lines.push((
+                                format!(
+                                    "Password refreshed from the keychain · {}",
+                                    if masked { "still masked" } else { "revealed" }
+                                ),
+                                Tone::Muted,
+                            ));
+                        }
+                        f.set_note("result", lines);
                     });
                 }
                 self.log.push(format!("Form · Action({name:?})"));
@@ -641,7 +680,7 @@ impl Page for DialogKindsPage {
                 if p.is(Phase::Click) {
                     cx.focus.focus(p.id);
                 }
-                if r.action().is_some() {
+                if r.has_actions() {
                     self.open(i, cx);
                     return Outcome::Changed;
                 }
@@ -654,7 +693,13 @@ impl Page for DialogKindsPage {
     fn hints(&self, focus: Option<WidgetId>) -> Vec<Hint> {
         if let Some(kind) = self.open.last() {
             return match *kind {
-                "form" => vec![("Tab", "Next field"), ("Enter", "Save"), ("Esc", "Cancel")],
+                "form" => vec![
+                    ("Tab", "Next field"),
+                    ("Enter", "Save"),
+                    ("Esc", "Cancel"),
+                    ("Ctrl+T", "Toggle host"),
+                    ("Ctrl+D", "Toggle driver"),
+                ],
                 "info" if self.opts.value("dialogkinds.info_keymap") == "ctrl" => {
                     vec![("Ctrl+Y", "Copy"), ("Ctrl+W", "Close")]
                 }
@@ -668,6 +713,28 @@ impl Page for DialogKindsPage {
             return h;
         }
         vec![("Enter", "Open")]
+    }
+
+    /// Runs before the open form sees the key, so the toggle lands while an
+    /// Input is editing or a Select popup is open. Ctrl chords never reach
+    /// an Input as text.
+    fn on_layer_key(&mut self, key: &Key, cx: &mut Cx) -> Outcome {
+        if self.open.last() != Some(&"form") {
+            return Outcome::Ignored;
+        }
+        let field = if key.ctrl_char('t') {
+            "host"
+        } else if key.ctrl_char('d') {
+            "driver"
+        } else {
+            return Outcome::Ignored;
+        };
+        self.log.push(format!("Form · Toggle · {field}"));
+        cx.with_top::<FormDialog>(move |f| {
+            let shown = f.field(field).is_some_and(|x| x.visible);
+            f.set_visible(field, !shown);
+        });
+        Outcome::Changed
     }
 
     fn on_layer(&mut self, tag: &LayerTag, report: Report, cx: &mut Cx) -> Outcome {

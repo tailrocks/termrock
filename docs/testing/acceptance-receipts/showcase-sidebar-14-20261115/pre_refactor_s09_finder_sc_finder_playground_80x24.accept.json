@@ -6,13 +6,13 @@
   "reason": null,
   "candidate_path": {
     "encoding": "utf8",
-    "value": "/tmp/final/pre_refactor__s09_finder__sc_finder_playground_80x24.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/target/functional/s09-sections-56262-1794771175833647000-0/check-artifacts/pre_refactor/s09_finder/sc_finder_playground_80x24/60200271719728812ee4be3335d5b366b4e07ec7df4a006f239307d1a855d5c0/sample.tui.pb"
   },
-  "candidate_sha256": "b7707b06e152f5207bd4ad777caaa25df963ece17251b3a1c410d8def9f5a60c",
-  "baseline_sha256": "b7707b06e152f5207bd4ad777caaa25df963ece17251b3a1c410d8def9f5a60c",
+  "candidate_sha256": "60200271719728812ee4be3335d5b366b4e07ec7df4a006f239307d1a855d5c0",
+  "baseline_sha256": "60200271719728812ee4be3335d5b366b4e07ec7df4a006f239307d1a855d5c0",
   "output_path": {
     "encoding": "utf8",
-    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s09_finder/sc_finder_playground_80x24.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/tests/functional/baselines/pre_refactor/s09_finder/sc_finder_playground_80x24.tui.pb"
   },
   "error_code": null
 }

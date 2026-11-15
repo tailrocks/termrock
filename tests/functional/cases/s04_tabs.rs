@@ -948,6 +948,74 @@ fn tabs_selects_orders_then_closes_import() {
     assert!(!row_text(&saved, 7).contains("orders.sql"));
 }
 
+#[test]
+fn tabs_d_marks_dirty_and_brackets_move_the_active_tab() {
+    let args = ["--page", "tabs"];
+    let app = open("s04-tabs-edit", 120, 40, &args);
+    focus_editor(&app);
+    let hinted = app.settle();
+    see(&hinted, &["d Dirty", "[ ] Move"], &[]);
+
+    app.key("right");
+    app.wait_text("Activated(1) · orders.sql");
+    app.key("d");
+    let clean = app.wait_text("Toggled unsaved mark on orders.sql");
+    see(
+        &clean,
+        &["orders.sql · closable"],
+        &["orders.sql · unsaved"],
+    );
+    app.key("d");
+    let dirty = app.wait_screen("unsaved again", |screen| {
+        text(screen).contains("orders.sql · unsaved · closable")
+    });
+    see(&dirty, &["Toggled unsaved mark on orders.sql"], &[]);
+
+    app.key("]");
+    let moved = app.wait_text("Moved orders.sql to position 3");
+    let row = row_text(&moved, 7);
+    assert!(
+        row.find("Import") < row.find("orders.sql"),
+        "orders.sql did not move right\n{row}"
+    );
+    see(&moved, &["orders.sql · unsaved · closable"], &[]);
+
+    app.key("[");
+    app.wait_text("Moved orders.sql to position 2");
+    app.key("[");
+    app.wait_text("Moved orders.sql to position 1");
+    app.key("[");
+    let refused = app.settle();
+    see(&refused, &["Moved orders.sql to position 1"], &[]);
+    let row = row_text(&refused, 7);
+    assert!(
+        row.find("orders.sql") < row.find("Overview"),
+        "orders.sql is first\n{row}"
+    );
+}
+
+#[test]
+fn tabs_d_waits_for_the_overflow_menu_to_close() {
+    let args = ["--page", "tabs"];
+    let app = open("s04-tabs-edit-menu", 120, 40, &args);
+    focus_editor(&app);
+    app.key("down");
+    let menu = app.wait_text("audit_log");
+    see(&menu, &["audit_log", "invoices"], &[]);
+    app.key("d");
+    let swallowed = app.settle();
+    see(
+        &swallowed,
+        &["audit_log", "Overview · pinned (not closable)"],
+        &["Toggled unsaved mark", "Overview · unsaved"],
+    );
+    app.key("esc");
+    app.wait_absent("audit_log");
+    app.key("d");
+    let toggled = app.wait_text("Toggled unsaved mark on Overview");
+    see(&toggled, &["Overview · unsaved"], &["audit_log"]);
+}
+
 fn assert_other_defaults(screen: &TerminalSnapshot, changed: &str) {
     if changed != "rule" {
         assert_select(screen, "Active rule", "auto");

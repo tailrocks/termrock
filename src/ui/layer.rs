@@ -12,7 +12,7 @@ use crate::core::intent::Phase;
 use crate::core::pointer::PointerEvent;
 use crate::core::response::Response;
 use crate::ui::ctx::{Backdrop, RenderCtx};
-use crate::ui::modal::{Modal, ModalStack};
+use crate::ui::modal::{FocusOnOpen, Modal, ModalStack};
 use crate::ui::popup::{Dismiss, Placement};
 use crate::widgets::icon_button::IconButton;
 use crate::widgets::keyhint::Hint;
@@ -215,6 +215,10 @@ pub trait Layer<R, W: ?Sized = ()>: Any {
         Outcome::Ignored
     }
 
+    fn on_paste_focused(&mut self, text: &str, _focus: &Focus) -> Outcome {
+        self.on_paste(text)
+    }
+
     fn on_blur(&mut self, _change: FocusChange) -> Outcome {
         Outcome::Ignored
     }
@@ -256,6 +260,45 @@ impl<R> LayerOut<R> {
 
     pub fn closes(&self) -> bool {
         matches!(self, Self::Close(_))
+    }
+}
+
+/// Results one input queued for a layer, released in order with the closing
+/// result last. A layer closes once, so the close is the final delivery and no
+/// event queued beside it is lost when the layer is removed; a second closing
+/// result in the same batch is redundant and is dropped with it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ResultQueue<T> {
+    items: Vec<T>,
+}
+
+impl<T> Default for ResultQueue<T> {
+    fn default() -> Self {
+        Self { items: Vec::new() }
+    }
+}
+
+impl<T> ResultQueue<T> {
+    pub(crate) fn extend(&mut self, results: impl IntoIterator<Item = T>) {
+        self.items.extend(results);
+    }
+
+    /// Dismissal supersedes the interaction: stale results are discarded so
+    /// the layer resolves to the cancel result alone.
+    pub(crate) fn clear(&mut self) {
+        self.items.clear();
+    }
+
+    pub(crate) fn next(&mut self, closes: impl Fn(&T) -> bool) -> Option<LayerOut<T>> {
+        if let Some(i) = self.items.iter().position(|t| !closes(t)) {
+            return Some(LayerOut::Event(self.items.remove(i)));
+        }
+        if self.items.is_empty() {
+            return None;
+        }
+        let first = self.items.remove(0);
+        self.items.clear();
+        Some(LayerOut::Close(first))
     }
 }
 
@@ -365,10 +408,22 @@ impl<R: 'static, W: ?Sized + 'static, O> ModalStack<LayerEntry<R, W, O>> {
         owner: O,
         focus: &mut Focus,
     ) {
-        let initial = layer.spec().initial_focus;
-        self.push(LayerEntry { layer, tag, owner }, focus, initial);
+        let spec = layer.spec();
+        let initial = match (spec.initial_focus, spec.inert_below) {
+            (Some(id), _) => FocusOnOpen::Set(Some(id)),
+            (None, true) => FocusOnOpen::Set(None),
+            (None, false) => FocusOnOpen::Preserve,
+        };
+        self.push_with_focus_policy(
+            LayerEntry { layer, tag, owner },
+            focus,
+            initial,
+            spec.restore_focus,
+        );
     }
 
+    /// Releases the top layer's next result. One input can queue several, so
+    /// hosts call [`Self::settle`] instead of taking once.
     pub fn take(&mut self, focus: &mut Focus) -> Option<Taken<R, W, O>> {
         match self.top_mut()?.layer.take_result()? {
             LayerOut::Event(r) => Some(Taken::Event(r)),
@@ -376,6 +431,25 @@ impl<R: 'static, W: ?Sized + 'static, O> ModalStack<LayerEntry<R, W, O>> {
                 let entry = self.pop(focus)?;
                 Some(Taken::Closed(entry, r))
             }
+        }
+    }
+
+    /// Drains every pending layer result in order, handing each to `handle`
+    /// and folding the outcomes into `out`. `parts` borrows the host's stack
+    /// and focus; `handle` may open or close layers, and the loop re-reads the
+    /// stack before each take. This is the one drain loop every host uses.
+    pub fn settle<H>(
+        host: &mut H,
+        parts: impl Fn(&mut H) -> (&mut Self, &mut Focus),
+        mut out: Outcome,
+        mut handle: impl FnMut(&mut H, Taken<R, W, O>) -> Outcome,
+    ) -> Outcome {
+        loop {
+            let (layers, focus) = parts(host);
+            let Some(taken) = layers.take(focus) else {
+                return out;
+            };
+            out = out.or(handle(host, taken));
         }
     }
 
@@ -387,6 +461,7 @@ impl<R: 'static, W: ?Sized + 'static, O> ModalStack<LayerEntry<R, W, O>> {
             return Dismissed::Refused;
         }
         top.layer.on_dismiss(reason);
+        // A layer's `on_dismiss` replaces its queue with its cancel result.
         let result = top.layer.take_result().map(LayerOut::into_inner);
         match self.pop(focus) {
             Some(entry) => Dismissed::Closed(entry, result),
@@ -467,7 +542,7 @@ impl Overlay for ChoiceDialog {
         LayerSpec::modal(self.dismiss).initial_focus(self.initial_focus())
     }
     fn on_dismiss(&mut self, _: DismissReason) -> Response<Option<usize>> {
-        self.result = Some(None);
+        self.cancel_implicit();
         Response::emit(None)
     }
     fn close_button(&self) -> Option<&IconButton> {
@@ -589,5 +664,132 @@ impl Overlay for crate::widgets::option_editor::ChoiceEditor {
     }
     fn on_dismiss(&mut self, _: DismissReason) -> Response<Self::Action> {
         Response::emit(crate::widgets::option_editor::ChoiceResult::Cancel)
+    }
+}
+
+#[cfg(test)]
+mod queue_tests {
+    use super::*;
+    use crate::ui::layers::LayerResult;
+    use crate::widgets::menu::{ContextMenu, MenuAction, MenuItem};
+    use crate::widgets::picker::{Picker, PickerAction};
+
+    type Stack = ShellLayers<LayerResult>;
+
+    struct Host {
+        layers: Stack,
+        focus: Focus,
+        seen: Vec<String>,
+    }
+
+    fn host_with_picker(queued: impl IntoIterator<Item = PickerAction>) -> Host {
+        let mut host = Host {
+            layers: Stack::new(),
+            focus: Focus::default(),
+            seen: Vec::new(),
+        };
+        let mut picker = Picker::new(WidgetId::of("queue-picker"), "Pick");
+        picker.pending.extend(queued);
+        host.layers.open(
+            Box::new(picker),
+            LayerTag::new("picker"),
+            (),
+            &mut host.focus,
+        );
+        host
+    }
+
+    fn settle(host: &mut Host) -> Outcome {
+        Stack::settle(
+            host,
+            |h| (&mut h.layers, &mut h.focus),
+            Outcome::Ignored,
+            |h, taken| {
+                let (closed, r) = match taken {
+                    Taken::Event(r) => (false, r),
+                    Taken::Closed(_, r) => (true, r),
+                };
+                h.seen
+                    .push(format!("{}{r:?}", if closed { "close " } else { "" }));
+                Outcome::Changed
+            },
+        )
+    }
+
+    #[test]
+    fn settle_drains_every_queued_result_in_order() {
+        let mut host = host_with_picker([
+            PickerAction::QueryChanged,
+            PickerAction::Toggled,
+            PickerAction::Chosen(2),
+        ]);
+        assert_eq!(settle(&mut host), Outcome::Changed);
+        assert_eq!(
+            host.seen,
+            [
+                "Picker(QueryChanged)",
+                "Picker(Toggled)",
+                "close Picker(Chosen(2))"
+            ]
+        );
+        assert!(host.layers.is_empty());
+        assert_eq!(settle(&mut host), Outcome::Ignored);
+    }
+
+    #[test]
+    fn close_releases_events_queued_after_it_before_the_layer_leaves() {
+        let mut host = host_with_picker([
+            PickerAction::Chosen(0),
+            PickerAction::Toggled,
+            PickerAction::QueryChanged,
+        ]);
+        settle(&mut host);
+        assert_eq!(
+            host.seen,
+            [
+                "Picker(Toggled)",
+                "Picker(QueryChanged)",
+                "close Picker(Chosen(0))"
+            ],
+            "the close is delivered last and no queued event is dropped"
+        );
+    }
+
+    #[test]
+    fn dismiss_resolves_to_cancelled_over_queued_results() {
+        for queued in [
+            vec![PickerAction::Toggled],
+            vec![PickerAction::Chosen(1)],
+            vec![PickerAction::QueryChanged, PickerAction::Chosen(1)],
+        ] {
+            let mut host = host_with_picker(queued);
+            let Dismissed::Closed(_, result) =
+                host.layers.dismiss(DismissReason::Esc, &mut host.focus)
+            else {
+                panic!("a dismissable picker closes");
+            };
+            assert_eq!(result, Some(LayerResult::Picker(PickerAction::Cancelled)));
+        }
+
+        let mut focus = Focus::default();
+        let mut layers = Stack::new();
+        let mut menu = ContextMenu::new(WidgetId::of("queue-menu"), vec![MenuItem::new("Open")]);
+        menu.pending.extend([MenuAction::Chosen(0)]);
+        layers.open(Box::new(menu), LayerTag::new("menu"), (), &mut focus);
+        let Dismissed::Closed(_, result) = layers.dismiss(DismissReason::Esc, &mut focus) else {
+            panic!("a dismissable menu closes");
+        };
+        assert_eq!(result, Some(LayerResult::Menu(MenuAction::Dismissed)));
+    }
+
+    #[test]
+    fn settle_keeps_the_layer_below_after_a_close() {
+        let mut host = host_with_picker([PickerAction::Toggled]);
+        let mut upper = Picker::new(WidgetId::of("queue-upper"), "Upper");
+        upper.pending.extend([PickerAction::Cancelled]);
+        host.layers
+            .open(Box::new(upper), LayerTag::new("upper"), (), &mut host.focus);
+        settle(&mut host);
+        assert_eq!(host.seen, ["close Picker(Cancelled)", "Picker(Toggled)"]);
     }
 }

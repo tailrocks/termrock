@@ -4,6 +4,7 @@ use ratatui::style::Color;
 
 use crate::app::PageId;
 use crate::pages::layout::Sections;
+use crate::pages::stress;
 use crate::pages::{Cx, Hint, PageEvent};
 use junie_tui::core::event::Outcome;
 use junie_tui::core::id::WidgetId;
@@ -32,6 +33,9 @@ pub struct Opt {
     pub effect: Effect,
 
     pub needs: &'static [(&'static str, &'static str)],
+
+    /// Set only through `--opt`; the Options tab does not list it.
+    pub hidden: bool,
 }
 
 impl Opt {
@@ -43,6 +47,7 @@ impl Opt {
             default: 0,
             effect: Effect::Frame,
             needs: &[],
+            hidden: false,
         }
     }
     const fn default(mut self, i: usize) -> Self {
@@ -51,6 +56,10 @@ impl Opt {
     }
     const fn behaviour(mut self) -> Self {
         self.effect = Effect::Behaviour;
+        self
+    }
+    const fn hidden(mut self) -> Self {
+        self.hidden = true;
         self
     }
     const fn needs(mut self, needs: &'static [(&'static str, &'static str)]) -> Self {
@@ -321,6 +330,16 @@ pub static QUERY_WORKBENCH: &[Opt] = &[
         "Environment",
         &["production", "staging", "development", "local"],
     ),
+    Opt::new(
+        "queryworkbench.explorer_open",
+        "Explorer opens",
+        &["pinned", "preview"],
+    ),
+    Opt::new(
+        "queryworkbench.dirty_close",
+        "Close with edits",
+        &["discard", "ask"],
+    ),
 ];
 
 pub static CONNECTIONS: &[Opt] = &[
@@ -349,6 +368,17 @@ pub static FINDER: &[Opt] = &[
     Opt::new("finder.scope", "Scope", &["here", "project", "everywhere"]),
     Opt::new("finder.risk_column", "Risk column", OFF_ON).default(1),
     Opt::new("finder.preview", "Preview", &["auto", "line"]),
+    Opt::new("finder.rows", "Result rows", &["items", "grouped", "cells"]),
+    Opt::new(
+        "finder.results",
+        "Backend",
+        &["ready", "loading", "failing"],
+    ),
+    Opt::new("finder.click", "Click runs", &["double", "single"]),
+    Opt::new("finder.missing", "Lost selection", &["nearest", "first"]),
+    Opt::new("finder.paste", "Paste newlines", &["strip", "join"]),
+    Opt::new("finder.select_first", "First on new query", OFF_ON).default(1),
+    Opt::new("finder.nav_loading", "Move while loading", OFF_ON),
 ];
 
 pub static PANELS: &[Opt] = &[
@@ -375,6 +405,18 @@ pub static PANELS: &[Opt] = &[
     ),
     Opt::new("panels.nav", "Keys", &["desktop", "vim", "no-paging"]),
     Opt::new("panels.keymap", "Follow key", &["f", "t"]),
+    Opt::new(
+        "panels.content",
+        "Log content",
+        &[
+            "generated",
+            "edited",
+            "appended",
+            "replaced",
+            "cleared",
+            "long token",
+        ],
+    ),
 ];
 
 pub static SCROLLING: &[Opt] = &[
@@ -410,6 +452,12 @@ pub static SCROLLING: &[Opt] = &[
     ),
     Opt::new("scrolling.wrap", "Wrap at the ends", OFF_ON),
     Opt::new("scrolling.skip_disabled", "Skip disabled", OFF_ON).default(1),
+    Opt::new("scrolling.nested", "Nested scrollbars", OFF_ON),
+    Opt::new(
+        "scrolling.window",
+        "Virtual rows",
+        &["off", "100", "1000", "10000"],
+    ),
 ];
 
 pub static BUTTONS: &[Opt] = &[
@@ -422,7 +470,11 @@ pub static BUTTONS: &[Opt] = &[
     Opt::new("buttons.row_align", "Row align", &["start", "end"]),
     Opt::new("buttons.row_overflow", "Row overflow", &["more", "wrap"]),
     Opt::new("buttons.row_gap", "Row gap", &["theme", "1", "4"]),
-    Opt::new("buttons.row_width", "Row width", &["full", "48", "30"]),
+    Opt::new(
+        "buttons.row_width",
+        "Row width",
+        &["full", "48", "30", "12", "5"],
+    ),
     Opt::new("buttons.row_wrap", "Arrows wrap in the row", OFF_ON),
     Opt::new("buttons.next_message", "Next row message", OFF_ON).default(1),
     Opt::new("buttons.icon_pad", "Icon plate pad", &["0", "1", "2"]).default(1),
@@ -475,6 +527,7 @@ pub static INPUTS: &[Opt] = &[
         "Required message",
         &["theme", "custom"],
     ),
+    Opt::new("inputs.owner_rule", "Owner rule", &["email", "max-length"]),
 ];
 
 pub static TEXTAREAS: &[Opt] = &[
@@ -622,6 +675,13 @@ pub static CHIPS: &[Opt] = &[
         &["default", "vim"],
     ),
     Opt::new("chipsselects.mixed", "Sort shows mixed", OFF_ON),
+    Opt::new(
+        "chipsselects.mutate_open",
+        "m edits a chip in a menu",
+        OFF_ON,
+    )
+    .hidden(),
+    Opt::new("chipsselects.stress", "Stress data", stress::VALUES),
 ];
 
 #[derive(Debug, Clone)]
@@ -746,6 +806,11 @@ static EDITABLE: &[Opt] = &[
         "Header menu labels",
         &["default", "custom"],
     ),
+    Opt::new(
+        "editable.tab_walkthrough",
+        "Tab at the last cell",
+        &["free", "commit", "no-op", "invalid"],
+    ),
 ];
 
 static DATA_GRID: &[Opt] = &[
@@ -792,8 +857,17 @@ static DATA_GRID: &[Opt] = &[
         &["shell", "page", "jump"],
     ),
     Opt::new("datagrid.horizontal", "Horizontal bar", &["auto", "never"]),
-    Opt::new("datagrid.validator", "Validator", &["default", "strict"]),
+    Opt::new(
+        "datagrid.validator",
+        "Validator",
+        &["default", "strict", "editors"],
+    ),
     Opt::new("datagrid.blur_action", "On blur", &["commit", "cancel"]),
+    Opt::new(
+        "datagrid.malformed",
+        "Malformed input",
+        &["off", "short", "long"],
+    ),
 ];
 
 static COLUMNS: &[Opt] = &[
@@ -812,12 +886,19 @@ static COLUMNS: &[Opt] = &[
     ),
 ];
 
-static BASIC_TABLE: &[Opt] = &[Opt::new(
-    "basictable.selection",
-    "Selection",
-    &["none", "single", "multi"],
-)
-.default(1)];
+static BASIC_TABLE: &[Opt] = &[
+    Opt::new(
+        "basictable.selection",
+        "Selection",
+        &["none", "single", "multi"],
+    )
+    .default(1),
+    Opt::new(
+        "basictable.malformed",
+        "Malformed input",
+        &["off", "short", "long"],
+    ),
+];
 
 static CHROME: &[Opt] = &[
     Opt::new("chrome.bar", "Bar width", &["full", "narrow"]),
@@ -832,6 +913,7 @@ static CHROME: &[Opt] = &[
     Opt::new("chrome.nav", "Nav keys", &["default", "vim"]),
     Opt::new("chrome.dismiss", "Dismiss", &["light", "escape"]),
     Opt::new("chrome.brand", "Brand", &["lockup", "compact", "none"]),
+    Opt::new("chrome.stress", "Stress data", stress::VALUES),
 ];
 
 static STATUS_HINTS: &[Opt] = &[
@@ -923,6 +1005,7 @@ static BREADCRUMBS_RAILS: &[Opt] = &[
     Opt::new("breadcrumbsrails.collapsed_rail", "Collapsed rail", OFF_ON)
         .default(1)
         .needs(&[("breadcrumbsrails.collapsed", "on")]),
+    Opt::new("breadcrumbsrails.stress", "Stress data", stress::VALUES),
 ];
 
 static HELP_KEYS: &[Opt] = &[
@@ -934,7 +1017,12 @@ static HELP_KEYS: &[Opt] = &[
     ),
     Opt::new("helpkeys.gap", "Column gap", &["3", "6"]),
     Opt::new("helpkeys.title", "Overlay title", &["default", "custom"]),
-    Opt::new("helpkeys.max_percent", "Overlay size", &["80", "60", "100"]),
+    Opt::new(
+        "helpkeys.max_percent",
+        "Overlay size",
+        &["80", "60", "100", "20"],
+    ),
+    Opt::new("helpkeys.content", "Help content", &["full", "none"]),
     Opt::new("helpkeys.nav", "Scroll keys", &["default", "vim"]),
     Opt::new("helpkeys.keymap", "Close keys", &["default", "f1"]),
     Opt::new("helpkeys.dismiss", "Dismiss", &["light", "escape"]),
@@ -991,6 +1079,7 @@ static TREES: &[Opt] = &[
     Opt::new("trees.type_ahead", "Type-ahead", OFF_ON).default(1),
     Opt::new("trees.keymap", "Key map", &["default", "custom"]),
     Opt::new("trees.marker", "Selected marker", &["none", "chevron"]),
+    Opt::new("trees.filter", "Filter connections", &["off", "orders"]),
 ];
 
 static OVERVIEW: &[Opt] = &[
@@ -1047,6 +1136,8 @@ pub static TOOLBARS: &[Opt] = &[
     Opt::new("toolbars.skip_disabled", "Skip disabled", OFF_ON).default(1),
     Opt::new("toolbars.gap", "Gap", &["0", "1", "2"]).default(1),
     Opt::new("toolbars.overflow", "Overflow button", &["»", "…", "off"]),
+    Opt::new("toolbars.mutate_open", "m edits » while open", OFF_ON).hidden(),
+    Opt::new("toolbars.stress", "Stress data", stress::VALUES),
 ];
 
 pub static FOCUS_NAV: &[Opt] = &[
@@ -1059,6 +1150,11 @@ pub static FOCUS_NAV: &[Opt] = &[
         "focusnavigation.tab_in_field",
         "Tab in a field",
         &["moves", "stays"],
+    ),
+    Opt::new(
+        "focusnavigation.focus_visible",
+        "Focus ring",
+        &["always", "keyboard-only"],
     ),
 ];
 
@@ -1168,6 +1264,11 @@ pub static DIALOG_KINDS: &[Opt] = &[
         "dialogkinds.choice_buttons",
         "Choice buttons",
         &["two", "three"],
+    ),
+    Opt::new(
+        "dialogkinds.dismiss",
+        "Dismiss",
+        &["default", "light", "escape", "never"],
     ),
 ];
 
@@ -1289,7 +1390,12 @@ pub static PICKERS: &[Opt] = &[
     Opt::new("pickers.empty", "No matches", &["text", "state"]),
     Opt::new("pickers.placeholder", "Placeholder", &["default", "custom"]),
     Opt::new("pickers.hints", "Hint row", &["page", "short"]),
-    Opt::new("pickers.remote", "Remote fetch", &["works", "fails"]),
+    Opt::new(
+        "pickers.remote",
+        "Remote fetch",
+        &["works", "fails", "stalls"],
+    ),
+    Opt::new("pickers.international", "International labels", OFF_ON),
 ];
 
 pub static TABS: &[Opt] = &[
@@ -1372,7 +1478,11 @@ pub static FORMS: &[Opt] = &[
 
 pub static SIDEBARS: &[Opt] = &[
     Opt::new("sidebars.collapsed", "Collapsed (icons)", OFF_ON),
-    Opt::new("sidebars.width", "Open width", &["24", "20", "30"]),
+    Opt::new(
+        "sidebars.width",
+        "Open width",
+        &["24", "20", "30", "12", "8"],
+    ),
     Opt::new(
         "sidebars.collapsed_width",
         "Collapsed width",
@@ -1388,9 +1498,18 @@ pub static SIDEBARS: &[Opt] = &[
     Opt::new(
         "sidebars.rail_label",
         "Rail label",
-        &["Navigation", "Explorer"],
+        &[
+            "Navigation",
+            "Explorer",
+            "Cafe\u{301} 界面 👨\u{200d}👩\u{200d}👧",
+        ],
     )
     .needs(&[("sidebars.hidden", "on")]),
+    Opt::new(
+        "sidebars.items",
+        "Item set",
+        &["full", "short", "empty", "all-disabled"],
+    ),
 ];
 
 pub static METERS: &[Opt] = &[
@@ -1406,6 +1525,7 @@ pub static METERS: &[Opt] = &[
     Opt::new("meters.visual", "Quota meter visual", &["block", "line"]),
     Opt::new("meters.offline", "Offline (last-good)", OFF_ON),
     Opt::new("meters.stale_style", "Stale style", &["dashed", "faint"]),
+    Opt::new("meters.international", "International values", OFF_ON),
 ];
 
 pub static FILE_BROWSER: &[Opt] = &[
@@ -1480,6 +1600,7 @@ pub static ACTIVITY: &[Opt] = &[
     Opt::new("activity.digit_toggles", "Digits toggle streams", OFF_ON)
         .default(1)
         .behaviour(),
+    Opt::new("activity.feed", "Log feed", &["simulated", "channel"]),
 ];
 
 pub static WORKSPACES: &[Opt] = &[
@@ -1586,12 +1707,12 @@ pub static MASTER_DETAIL: &[Opt] = &[
     Opt::new(
         "masterdetail.collapse",
         "Collapses below",
-        &["80", "108", "140"],
+        &["80", "108", "140", "0"],
     ),
     Opt::new(
         "masterdetail.size",
         "Detail size",
-        &["resizable", "share", "master"],
+        &["resizable", "share", "master", "share-100", "master-100"],
     ),
     Opt::new(
         "masterdetail.summary",
@@ -1654,7 +1775,11 @@ pub static CODE_EDITOR: &[Opt] = &[
     Opt::new("codeeditor.indent", "Indent", &["4", "2"]),
     Opt::new("codeeditor.highlighter", "Syntax tones", OFF_ON).default(1),
     Opt::new("codeeditor.segmenter", "Blocks", OFF_ON).default(1),
-    Opt::new("codeeditor.document", "Document", &["sample", "empty"]),
+    Opt::new(
+        "codeeditor.document",
+        "Document",
+        &["sample", "empty", "large"],
+    ),
     Opt::new(
         "codeeditor.horizontal",
         "Horizontal scroll",
@@ -1697,12 +1822,32 @@ pub static CODE_EDITOR: &[Opt] = &[
         "Completion keys",
         &["default", "vim"],
     ),
+    Opt::new(
+        "codeeditor.completion_international",
+        "International completions",
+        OFF_ON,
+    ),
 ];
 
 pub static DIFF: &[Opt] = &[
     Opt::new("diff.mode", "Mode", &["unified", "review"]),
     Opt::new("diff.file", "File", &["changes", "none"]),
     Opt::new("diff.width", "Page width", &["full", "narrow"]),
+    Opt::new(
+        "diff.inspect",
+        "Inspect changes",
+        &["off", "advanced", "compact"],
+    ),
+    Opt::new(
+        "diff.inspect_width",
+        "Inspect width",
+        &["full", "120", "80", "50", "30", "14"],
+    ),
+    Opt::new(
+        "diff.inspect_height",
+        "Inspect height",
+        &["full", "30", "16", "8", "4", "1"],
+    ),
 ];
 
 pub static TERMINAL: &[Opt] = &[
@@ -1745,17 +1890,23 @@ pub static FIXED_DIALOGS: &[Opt] = &[Opt::new(
 pub static LIST_DETAIL: &[Opt] = &[
     Opt::new("listdetail.data", "Jobs", &["five", "none"]),
     Opt::new("listdetail.actions", "Actions", &["shown", "hidden"]),
+    Opt::new(
+        "listdetail.width",
+        "Allocated width",
+        &["full", "60", "30", "12"],
+    ),
 ];
 
 pub static TERMINAL_PANE: &[Opt] = &[
     Opt::new(
         "terminalpane.fixture",
         "Fixture",
-        &["session", "fullscreen", "split", "midstream"],
+        &["session", "fullscreen", "split", "midstream", "wide edge"],
     ),
     Opt::new("terminalpane.size", "Size", &["80x24", "40x12", "20x6"]).default(1),
     Opt::new("terminalpane.colour", "Colour", OFF_ON).default(1),
     Opt::new("terminalpane.focused", "Focused", OFF_ON).default(1),
+    Opt::new("terminalpane.clip", "Clip last column", OFF_ON),
     Opt::new(
         "terminalpane.replay",
         "Replay start",
@@ -1766,6 +1917,29 @@ pub static TERMINAL_PANE: &[Opt] = &[
             "inside a UTF-8 character",
         ],
     ),
+    Opt::new(
+        "terminalpane.host",
+        "Source",
+        &["byte fixture", "session controller"],
+    ),
+    Opt::new(
+        "terminalpane.script",
+        "Session script",
+        &["owner", "viewer", "detaches", "exits", "fails"],
+    )
+    .needs(&[("terminalpane.host", "session controller")]),
+    Opt::new(
+        "terminalpane.area",
+        "Session area",
+        &["fits", "below minimum"],
+    )
+    .needs(&[("terminalpane.host", "session controller")]),
+    Opt::new(
+        "terminalpane.budget",
+        "Drain budget (bytes)",
+        &["65536", "8"],
+    )
+    .needs(&[("terminalpane.host", "session controller")]),
 ];
 
 pub static TERMINAL_VIEWPORT: &[Opt] = &[
@@ -1925,7 +2099,7 @@ impl OptionsView {
             if g.opts.is_empty() {
                 rows.push(Row::Note(g.empty));
             }
-            for opt in g.opts {
+            for opt in g.opts.iter().filter(|o| !o.hidden) {
                 let cid = id.sub(opt.key);
                 let control = if opt.is_toggle() {
                     Control::Toggle(Toggle::new(cid, opt.label, opt.default == 1))
@@ -2089,8 +2263,11 @@ impl OptionsView {
                     if p.id == s.id && (p.is(Phase::Press) || p.is(Phase::Click)) {
                         cx.focus.focus(s.id);
                     }
-                    let (o, a) = r.into_parts();
-                    let set = a.and_then(|SelectAction::Changed(i)| changed(opt, i));
+                    let (o, actions) = r.into_parts();
+                    let mut set = None;
+                    for SelectAction::Changed(i) in actions {
+                        set = changed(opt, i).or(set);
+                    }
                     return Some((o, set));
                 }
                 _ => {}

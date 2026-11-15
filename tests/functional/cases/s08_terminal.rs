@@ -6,11 +6,11 @@
 //! `TerminalPage::new` calls `reset(None)`, and paused motion never ticks, so
 //! every launch stays on that reset frame.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, Point, SHOWCASE, cell_bg, find_all, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, Point, SHOWCASE, cell_bg, find_all, flash_settle, row_text, text, try_launch,
+};
 
 const CRUMB: &str = "Text & code › Terminal";
 const TITLE: &str = "Terminal";
@@ -287,32 +287,6 @@ fn gutter_count(screen: &TerminalSnapshot) -> usize {
     (0..screen.rows())
         .filter(|row| row_text(screen, *row).contains(GUTTER))
         .count()
-}
-
-/// The 140ms press flash stays painted while motion is paused, so a shot after
-/// a released click has to redraw once the deadline has passed. Below about
-/// 100 columns the header omits the size chip, and the narrow nudge waits on
-/// the terminal size instead.
-fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
 }
 
 fn shot(app: &App, case_id: &str) {

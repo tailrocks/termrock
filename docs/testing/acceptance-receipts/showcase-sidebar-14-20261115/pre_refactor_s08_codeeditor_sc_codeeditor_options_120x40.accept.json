@@ -6,13 +6,13 @@
   "reason": null,
   "candidate_path": {
     "encoding": "utf8",
-    "value": "/tmp/final/pre_refactor__s08_codeeditor__sc_codeeditor_options_120x40.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/target/functional/s08-sections-49280-1794771645472633000-0/check-artifacts/pre_refactor/s08_codeeditor/sc_codeeditor_options_120x40/c9e6881586be81f2d0a59a981fab60ee13a336261cdbae60c65f24c8f61b5f47/sample.tui.pb"
   },
-  "candidate_sha256": "c5d42e5182db6da3a45fd188b34b2a85c52e934cf3aa8a4923e73c2ec37c847f",
-  "baseline_sha256": "c5d42e5182db6da3a45fd188b34b2a85c52e934cf3aa8a4923e73c2ec37c847f",
+  "candidate_sha256": "c9e6881586be81f2d0a59a981fab60ee13a336261cdbae60c65f24c8f61b5f47",
+  "baseline_sha256": "c9e6881586be81f2d0a59a981fab60ee13a336261cdbae60c65f24c8f61b5f47",
   "output_path": {
     "encoding": "utf8",
-    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s08_codeeditor/sc_codeeditor_options_120x40.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/tests/functional/baselines/pre_refactor/s08_codeeditor/sc_codeeditor_options_120x40.tui.pb"
   },
   "error_code": null
 }

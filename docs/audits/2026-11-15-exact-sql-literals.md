@@ -14,7 +14,7 @@ the two-decimal display text.
   Integers stay exact decimal and never pass through `f64`. A NaN or infinite
   number is `SqlLiteralError::NonFiniteNumber`.
 - `model::preview_sql` returns `Result<Vec<String>, PreviewSqlError>`. The
-  error carries `PreviewRow::Source(row)`, the column name and a typed
+  error carries `PreviewRow::Source(row)` (since #50 it is `PreviewRow::Key(ItemKey)` and `preview_sql` takes a `GridChangeSet`), the column name and a typed
   `PreviewSqlCause` (`Literal`, `MissingColumn`, `InvalidDefaultPredicate`).
   The first error aborts the preview: no partial statement list exists.
 - Original-row predicates read base values only. A null key or column uses

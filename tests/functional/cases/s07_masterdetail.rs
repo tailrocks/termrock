@@ -3,11 +3,11 @@
 //! Tuiscotti test ids are `[a-z0-9_-]` segments, so the baseline directory is
 //! `pre_refactor/s07_masterdetail/` and each case id's dots become underscores.
 
-use std::time::Duration;
-
 use tui_test::{SnapshotColor, TerminalSnapshot};
 
-use crate::support::{App, Launch, Point, SHOWCASE, find_all, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, Point, SHOWCASE, find_all, flash_settle, row_text, text, try_launch,
+};
 
 const CRUMB: &str = "Layout › Master-detail";
 const TITLE: &str = "Master-detail";
@@ -328,32 +328,6 @@ fn assert_size(app: &App, cols: u16, rows: u16) {
         "terminal size\n{}",
         text(&screen)
     );
-}
-
-/// The 140ms press flash stays painted while motion is paused, so a shot after
-/// a released click has to redraw once the deadline has passed. Below about 100
-/// columns the header omits the size chip, and the narrow nudge waits on the
-/// terminal size instead.
-fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
 }
 
 fn shot(app: &App, case_id: &str) {
@@ -1019,6 +993,34 @@ fn option_size_share() {
             &["Resize", "94 cols", "Page options", SUMMARY],
         );
     });
+}
+
+fn infeasible_share(name: &str, size: &str) {
+    let app = page(
+        name,
+        &["masterdetail.width=72", "masterdetail.collapse=0", size],
+        120,
+        40,
+    );
+    app.wait_text("Database browser");
+    flash_settle(&app);
+    let screen = app.settle();
+    see(
+        &screen,
+        &["72 cols", "Tables", "orders", "Show details", SUMMARY],
+        &["Open table", "shop.public.orders", "Schema", JOIN],
+    );
+    app.finish();
+}
+
+#[test]
+fn option_share_minimum_too_wide_collapses() {
+    infeasible_share("s07-share-100", "masterdetail.size=share-100");
+}
+
+#[test]
+fn option_master_share_minimum_too_wide_collapses() {
+    infeasible_share("s07-master-100", "masterdetail.size=master-100");
 }
 
 #[test]

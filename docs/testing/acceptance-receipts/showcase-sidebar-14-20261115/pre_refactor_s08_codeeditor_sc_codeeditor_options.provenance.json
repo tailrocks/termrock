@@ -12,16 +12,16 @@
     "velnor_actions": "0.1.70",
     "host": "aarch64-apple-darwin"
   },
-  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3-target/debug/showcase",
-  "binary_sha256": "c2ed189e03b11c22298c203b7561871ee950aa47282e70284cdba4686bf6f5d0",
+  "binary_path": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182-target/debug/showcase",
+  "binary_sha256": "04127909da955772668d7552725e97e8750a7dc11270d51487c36861fe0cca4d",
   "fixture_args": [
     "--page",
     "codeeditor"
   ],
   "env": {},
   "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
-  "candidate_sha256": "91db36876b44daff9ba8be5b499a1150c020785b78dc08ae2f493197a3f36615",
-  "expect_baseline": "f4ab7fd02a09f6e37a12933933d7028e815a90645d4149bd4a4e391dd7f4ab73",
+  "candidate_sha256": "1cfbaadf21ab3956051597d9fe30a7fc677042dd2860b87262a104c03f501114",
+  "expect_baseline": "56e388e0e6ff1619a35c4755a4974d52100c33f54086146995a99a3ea70f7de8",
   "precondition": "",
   "session": null,
   "expected_test_id": "pre_refactor/s08_codeeditor/sc_codeeditor_options",
@@ -30,29 +30,29 @@
   "previous_archive_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/superseded/pre_refactor/s08_codeeditor/sc_codeeditor_options.tui.pb",
   "test_id": "pre_refactor/s08_codeeditor/sc_codeeditor_options",
   "acceptance": {
-    "expected_baseline_sha256": "f4ab7fd02a09f6e37a12933933d7028e815a90645d4149bd4a4e391dd7f4ab73",
-    "accepted_baseline_sha256": "91db36876b44daff9ba8be5b499a1150c020785b78dc08ae2f493197a3f36615",
-    "candidate_sha256": "91db36876b44daff9ba8be5b499a1150c020785b78dc08ae2f493197a3f36615",
+    "expected_baseline_sha256": "56e388e0e6ff1619a35c4755a4974d52100c33f54086146995a99a3ea70f7de8",
+    "accepted_baseline_sha256": "1cfbaadf21ab3956051597d9fe30a7fc677042dd2860b87262a104c03f501114",
+    "candidate_sha256": "1cfbaadf21ab3956051597d9fe30a7fc677042dd2860b87262a104c03f501114",
     "transaction_receipt": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/pre_refactor_s08_codeeditor_sc_codeeditor_options.accept.json"
   },
   "previous_baseline": {
-    "sha256": "f4ab7fd02a09f6e37a12933933d7028e815a90645d4149bd4a4e391dd7f4ab73"
+    "sha256": "56e388e0e6ff1619a35c4755a4974d52100c33f54086146995a99a3ea70f7de8"
   },
   "candidate": {
-    "sha256": "91db36876b44daff9ba8be5b499a1150c020785b78dc08ae2f493197a3f36615",
+    "sha256": "1cfbaadf21ab3956051597d9fe30a7fc677042dd2860b87262a104c03f501114",
     "path": "tests/functional/baselines/pre_refactor/s08_codeeditor/sc_codeeditor_options.tui.pb"
   },
   "history": {
     "superseded_baseline": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/superseded/pre_refactor/s08_codeeditor/sc_codeeditor_options.tui.pb",
-    "superseded_baseline_sha256": "f4ab7fd02a09f6e37a12933933d7028e815a90645d4149bd4a4e391dd7f4ab73"
+    "superseded_baseline_sha256": "56e388e0e6ff1619a35c4755a4974d52100c33f54086146995a99a3ea70f7de8"
   },
   "capture": {
     "mode": "candidate",
     "candidate_path": "tests/functional/baselines/pre_refactor/s08_codeeditor/sc_codeeditor_options.tui.pb",
-    "candidate_sha256": "91db36876b44daff9ba8be5b499a1150c020785b78dc08ae2f493197a3f36615",
-    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3-target/debug/showcase",
-    "binary_sha256": "c2ed189e03b11c22298c203b7561871ee950aa47282e70284cdba4686bf6f5d0",
-    "note": "Candidate-mode refresh for #14: the five formerly hidden pages join the sidebar, so the Components count and the expanded groups change."
+    "candidate_sha256": "1cfbaadf21ab3956051597d9fe30a7fc677042dd2860b87262a104c03f501114",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182-target/debug/showcase",
+    "binary_sha256": "04127909da955772668d7552725e97e8750a7dc11270d51487c36861fe0cca4d",
+    "note": "Re-accepted after merging origin/train/all into the #14 branch: the Components count is 59 and an expanded group lists its five formerly hidden pages (#14); the sample differs from train/all's baseline only where the sidebar draws."
   },
   "cli_receipt": {
     "schema": "tuiscotti.cli.v1",
@@ -62,13 +62,13 @@
     "reason": null,
     "candidate_path": {
       "encoding": "utf8",
-      "value": "/tmp/final/pre_refactor__s08_codeeditor__sc_codeeditor_options.tui.pb"
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/target/functional/s08-sections-53054-1794772006870635000-0/check-artifacts/pre_refactor/s08_codeeditor/sc_codeeditor_options/1cfbaadf21ab3956051597d9fe30a7fc677042dd2860b87262a104c03f501114/sample.tui.pb"
     },
-    "candidate_sha256": "91db36876b44daff9ba8be5b499a1150c020785b78dc08ae2f493197a3f36615",
-    "baseline_sha256": "91db36876b44daff9ba8be5b499a1150c020785b78dc08ae2f493197a3f36615",
+    "candidate_sha256": "1cfbaadf21ab3956051597d9fe30a7fc677042dd2860b87262a104c03f501114",
+    "baseline_sha256": "1cfbaadf21ab3956051597d9fe30a7fc677042dd2860b87262a104c03f501114",
     "output_path": {
       "encoding": "utf8",
-      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s08_codeeditor/sc_codeeditor_options.tui.pb"
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/tests/functional/baselines/pre_refactor/s08_codeeditor/sc_codeeditor_options.tui.pb"
     },
     "error_code": null
   }

@@ -292,11 +292,11 @@ impl TerminalViewportPage {
             }
             return outcome;
         }
-        if self.feed.route(ev).and_then(|r| r.into_action()).is_some() {
+        if self.feed.route(ev).is_some_and(|r| r.has_actions()) {
             self.feed_line();
             return Outcome::Changed;
         }
-        if self.reset.route(ev).and_then(|r| r.into_action()).is_some() {
+        if self.reset.route(ev).is_some_and(|r| r.has_actions()) {
             self.load();
             return Outcome::Changed;
         }

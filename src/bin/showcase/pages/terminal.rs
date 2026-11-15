@@ -380,7 +380,7 @@ impl TerminalPage {
                 inner.x,
                 inner.bottom().saturating_sub(lines),
                 inner.width,
-                1,
+                lines,
             ),
             &widths,
             2,
@@ -396,8 +396,8 @@ impl TerminalPage {
                 y,
                 junie_tui::ui::text::truncate(
                     &format!(
-                        "viewport work: {} lines segmented · {} reflowed",
-                        work.segmented_lines, work.reflowed_lines
+                        "viewport work: {} lines segmented · {} reflowed · {} draw copies",
+                        work.segmented_lines, work.reflowed_lines, work.draw_fallbacks
                     ),
                     inner.width as usize,
                 ),
@@ -444,11 +444,11 @@ impl TerminalPage {
             }
             return r.outcome();
         }
-        if self.run.route(ev).and_then(|r| r.into_action()).is_some() {
+        if self.run.route(ev).is_some_and(|r| r.has_actions()) {
             self.reset(None);
             return Outcome::Changed;
         }
-        if self.fail.route(ev).and_then(|r| r.into_action()).is_some() {
+        if self.fail.route(ev).is_some_and(|r| r.has_actions()) {
             self.reset(Some(1));
             return Outcome::Changed;
         }

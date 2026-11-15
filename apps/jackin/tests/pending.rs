@@ -9,23 +9,25 @@ use jackin_console::app::App;
 use jackin_console::backend::{
     Backend, ChangeSet, ChangedFile, CheckRow, Completion, DiffLine, DiffStatus, Effect,
     FileSource, FolderProbe, Hunk, OpAccountRow, OpAccountState, OpError, OpListing, OpScope,
-    ValidationOutcome,
+    Refresh, ValidationOutcome,
 };
 use jackin_console::domain::account::{
     Account, AccountIdentity, AccountOrigin, CredentialSource, DetectedKind, IssueCode,
-    Recoverability, RecoverableIssue,
+    Recoverability, RecoverableIssue, ValidationLevel, ValidationState,
 };
 use jackin_console::domain::agent::Provider;
 use jackin_console::domain::instance::Instance;
 use jackin_console::domain::launch::LaunchContent;
-use jackin_console::domain::reason::{Found, IssueReason};
+use jackin_console::domain::reason::{Found, IssueReason, RefreshOutcome};
+use jackin_console::domain::usage::{Freshness, FreshnessInfo};
 use jackin_console::domain::vocabulary::Vocabulary;
 use jackin_console::fixtures::{Scenario, app_with_world, world_for};
 use jackin_console::launch::{LaunchFeed, LaunchTarget};
 use jackin_console::panes::{PaneBody, PaneRequest, PaneSpawn};
+use jackin_console::screens::Go;
 use jackin_console::sim::{SimBackend, provider};
-use jackin_console::world::{Msg, World};
-use junie_tui::core::event::Input;
+use jackin_console::world::{Absorbed, Msg, Snapshot, World, job};
+use junie_tui::core::event::{Input, Outcome};
 use junie_tui::motion::Motion;
 use junie_tui::runtime::Application;
 use junie_tui::theme::{ColorLevel, Theme};
@@ -70,6 +72,13 @@ impl Held {
             .collect()
     }
 
+    fn refreshes(&self) -> Vec<Effect> {
+        self.seen()
+            .into_iter()
+            .filter(|e| matches!(e, Effect::RefreshAccount { .. }))
+            .collect()
+    }
+
     fn saves(&self) -> usize {
         self.seen()
             .iter()
@@ -77,7 +86,7 @@ impl Held {
             .count()
     }
 
-    fn last_ticket(&self, want: fn(&Effect) -> Option<u64>) -> u64 {
+    fn last_ticket(&self, want: impl Fn(&Effect) -> Option<u64>) -> u64 {
         self.seen().iter().rev().find_map(want).unwrap_or_else(|| {
             panic!(
                 "the request was not sent; the backend saw {:?}",
@@ -132,7 +141,9 @@ impl Backend for Held {
             Effect::CheckSource { .. }
             | Effect::ProbeFolder { .. }
             | Effect::ReadChanges { .. }
-            | Effect::LoadOp { .. } => None,
+            | Effect::LoadOp { .. }
+            | Effect::RefreshAccount { .. }
+            | Effect::ValidateAccount { .. } => None,
             Effect::SaveAccounts { .. } if self.hold_saves => None,
             _ => self.inner.perform(effect, world),
         }
@@ -1189,4 +1200,550 @@ fn a_key_with_blanks_around_it_is_trimmed() {
         panic!("one check with a key expected, got {:?}", backend.seen());
     };
     assert_eq!(key.expose(), "sk-ant");
+}
+
+const PERSONAL: &str = "acct-claude-personal";
+
+fn personal(world: &World) -> &Account {
+    world.accounts.get(PERSONAL).expect("personal account")
+}
+
+/// The ticket of the newest refresh the backend was asked to run for `id`.
+fn refresh_ticket_of(backend: &Held, id: &str) -> u64 {
+    backend.last_ticket(|e| match e {
+        Effect::RefreshAccount {
+            ticket, account, ..
+        } if account == id => Some(*ticket),
+        _ => None,
+    })
+}
+
+fn refreshes_of(backend: &Held, id: &str) -> usize {
+    backend
+        .refreshes()
+        .iter()
+        .filter(|e| matches!(e, Effect::RefreshAccount { account, .. } if account == id))
+        .count()
+}
+
+/// What a provider that read 61% used would answer for `ticket`.
+fn refreshed(app: &App, ticket: u64, id: &str, pct: u8) -> Msg {
+    let account = app.world.accounts.get(id).expect("account");
+    let now = app.world.now_secs();
+    let mut usage = account.usage.clone();
+    usage.freshness = FreshnessInfo::current(now);
+    usage.windows[0].used_pct = Some(pct);
+    Msg::AccountRefreshed {
+        ticket,
+        account: id.to_owned(),
+        source: Box::new(account.source.clone()),
+        result: Ok(Box::new(Refresh {
+            usage,
+            issue: None,
+            last_refresh_secs: now,
+            outcome: RefreshOutcome::NeedsAttention,
+        })),
+    }
+}
+
+fn refresh_failed(app: &App, ticket: u64, id: &str, error: &str) -> Msg {
+    Msg::AccountRefreshed {
+        ticket,
+        account: id.to_owned(),
+        source: Box::new(app.world.accounts.get(id).expect("account").source.clone()),
+        result: Err(error.into()),
+    }
+}
+
+/// A roster arriving from the same backend: every account as it is now, the
+/// credential sources untouched, and no account marked as refreshing.
+fn idle_roster(app: &App) -> Snapshot {
+    let mut snapshot = jackin_console::sim::snapshot(&app.world);
+    for account in &mut snapshot.accounts.accounts {
+        account.usage.freshness.phase = Freshness::Current;
+    }
+    snapshot
+}
+
+fn used_pct(app: &App) -> Option<u8> {
+    personal(&app.world).usage.windows.first()?.used_pct
+}
+
+#[test]
+fn refresh_snapshot_preserves_single_flight_across_pages() {
+    let (mut app, backend) = held(Scenario::AccountsMixed);
+    press(&mut app, "c down down r");
+    assert_eq!(refreshes_of(&backend, PERSONAL), 1, "{:?}", backend.seen());
+    let a = refresh_ticket_of(&backend, PERSONAL);
+
+    let idle = idle_roster(&app);
+    let roster = roster_reply(&mut app, idle);
+    app.deliver(&roster);
+    assert_eq!(
+        personal(&app.world).usage.freshness.phase,
+        Freshness::Refreshing,
+        "the roster does not end the refresh in flight"
+    );
+
+    app.go(Go::Usage {
+        select: Some(PERSONAL.into()),
+    });
+    press(&mut app, "r");
+    assert_eq!(
+        refreshes_of(&backend, PERSONAL),
+        1,
+        "the refresh in flight owns the account: {:?}",
+        backend.refreshes()
+    );
+    assert_eq!(app.world.refresh_pending(PERSONAL), Some(a));
+    assert_eq!(
+        personal(&app.world).usage.freshness.phase,
+        Freshness::Refreshing
+    );
+
+    let reply = refreshed(&app, a, PERSONAL, 61);
+    app.deliver(&reply);
+    assert_eq!(app.world.refresh_pending(PERSONAL), None);
+    assert_eq!(used_pct(&app), Some(61));
+    assert_eq!(
+        personal(&app.world).usage.freshness.phase,
+        Freshness::Current
+    );
+}
+
+#[test]
+fn refresh_old_ticket_cannot_overwrite_new_result() {
+    let (mut app, backend) = held(Scenario::AccountsMixed);
+    press(&mut app, "c down down r");
+    let a = refresh_ticket_of(&backend, PERSONAL);
+    let a_ok = refreshed(&app, a, PERSONAL, 61);
+    let a_err = refresh_failed(&app, a, PERSONAL, "old failure");
+    app.deliver(&a_ok);
+    assert_eq!(used_pct(&app), Some(61));
+
+    press(&mut app, "r");
+    let b = refresh_ticket_of(&backend, PERSONAL);
+    assert_ne!(a, b);
+    assert_eq!(refreshes_of(&backend, PERSONAL), 2);
+    let started = status(&app);
+
+    for stale in [&a_ok, &a_err] {
+        assert_eq!(app.world.absorb(stale), Absorbed::Stale);
+        app.deliver(stale);
+        assert_eq!(
+            app.world.refresh_pending(PERSONAL),
+            Some(b),
+            "B keeps its slot"
+        );
+        assert_eq!(
+            personal(&app.world).usage.freshness.phase,
+            Freshness::Refreshing
+        );
+        assert_eq!(status(&app), started);
+    }
+
+    let b_ok = refreshed(&app, b, PERSONAL, 77);
+    app.deliver(&b_ok);
+    assert_eq!(used_pct(&app), Some(77));
+    let finished = status(&app);
+    assert!(
+        finished.starts_with("Refreshed Claude · Personal"),
+        "{finished}"
+    );
+
+    for stale in [&a_ok, &a_err, &b_ok] {
+        app.deliver(stale);
+        assert_eq!(used_pct(&app), Some(77));
+        assert_eq!(
+            personal(&app.world).usage.freshness.phase,
+            Freshness::Current
+        );
+        assert_eq!(personal(&app.world).issue, None);
+        assert_eq!(status(&app), finished);
+    }
+}
+
+fn with_source(snapshot: &mut Snapshot, id: &str, source: CredentialSource) {
+    snapshot.accounts.get_mut(id).expect("account").source = source;
+}
+
+#[test]
+fn refresh_source_change_and_return_does_not_revive_old_request() {
+    let (mut app, backend) = held(Scenario::AccountsMixed);
+    let original = personal(&app.world).source.clone();
+    let other = CredentialSource::HostEnv {
+        var: "OTHER_TOKEN".into(),
+        detected: DetectedKind::ClaudeApiKeyEnv,
+    };
+    press(&mut app, "c down down r");
+    let a = refresh_ticket_of(&backend, PERSONAL);
+    let a_ok = refreshed(&app, a, PERSONAL, 61);
+    let a_err = refresh_failed(&app, a, PERSONAL, "old failure");
+
+    let mut changed = idle_roster(&app);
+    with_source(&mut changed, PERSONAL, other);
+    let msg = roster_reply(&mut app, changed);
+    app.deliver(&msg);
+    assert_eq!(
+        app.world.refresh_pending(PERSONAL),
+        None,
+        "the source changed"
+    );
+    assert_ne!(
+        personal(&app.world).usage.freshness.phase,
+        Freshness::Refreshing
+    );
+
+    let mut back = idle_roster(&app);
+    with_source(&mut back, PERSONAL, original);
+    let msg = roster_reply(&mut app, back);
+    app.deliver(&msg);
+    assert_eq!(app.world.refresh_pending(PERSONAL), None, "no revival");
+
+    press(&mut app, "r");
+    let b = refresh_ticket_of(&backend, PERSONAL);
+    assert_ne!(a, b);
+    for stale in [&a_ok, &a_err] {
+        assert_eq!(app.world.absorb(stale), Absorbed::Stale);
+        assert_eq!(app.world.refresh_pending(PERSONAL), Some(b));
+        assert_eq!(
+            personal(&app.world).usage.freshness.phase,
+            Freshness::Refreshing
+        );
+    }
+    app.deliver(&refreshed(&app, b, PERSONAL, 77));
+    assert_eq!(used_pct(&app), Some(77));
+}
+
+#[test]
+fn refresh_removed_and_readded_account_does_not_revive_old_request() {
+    let (mut app, backend) = held(Scenario::AccountsMixed);
+    press(&mut app, "c down down r");
+    let a = refresh_ticket_of(&backend, PERSONAL);
+    let a_ok = refreshed(&app, a, PERSONAL, 61);
+
+    let full = idle_roster(&app);
+    let mut removed = full.clone();
+    removed.accounts.remove(PERSONAL);
+    let msg = roster_reply(&mut app, removed);
+    app.deliver(&msg);
+    assert_eq!(app.world.refresh_pending(PERSONAL), None);
+    assert_eq!(app.world.absorb(&a_ok), Absorbed::Stale);
+
+    let msg = roster_reply(&mut app, full);
+    app.deliver(&msg);
+    assert_eq!(app.world.refresh_pending(PERSONAL), None);
+    assert_eq!(app.world.absorb(&a_ok), Absorbed::Stale);
+    assert_eq!(
+        app.world.refresh_account(PERSONAL, 0).map(|t| t != a),
+        Some(true)
+    );
+}
+
+#[test]
+fn refresh_distinct_accounts_progress_independently() {
+    let (mut app, backend) = held(Scenario::AccountsMixed);
+    app.go(Go::Usage {
+        select: Some(PERSONAL.into()),
+    });
+    press(&mut app, "r");
+    let x = PERSONAL;
+    let y = "acct-claude-work";
+    let (tx, ty) = (
+        refresh_ticket_of(&backend, x),
+        refresh_ticket_of(&backend, y),
+    );
+    assert_ne!(tx, ty);
+
+    app.deliver(&refreshed(&app, tx, x, 61));
+    assert_eq!(app.world.refresh_pending(x), None);
+    assert_eq!(app.world.refresh_pending(y), Some(ty));
+    assert_eq!(
+        app.world.accounts.get(y).expect("y").usage.freshness.phase,
+        Freshness::Refreshing
+    );
+
+    app.go(Go::Manager);
+    app.go(Go::Usage { select: None });
+    assert_eq!(app.world.refresh_pending(y), Some(ty));
+    press(&mut app, "r");
+    assert_eq!(refreshes_of(&backend, y), 1, "Y is still in flight");
+    assert_eq!(refreshes_of(&backend, x), 2, "X is idle and starts again");
+
+    app.deliver(&refreshed(&app, ty, y, 70));
+    assert_eq!(app.world.refresh_pending(y), None);
+    assert!(
+        app.world.refresh_pending(x).is_some(),
+        "X's new refresh stays"
+    );
+}
+
+#[test]
+fn refresh_stale_reply_has_no_ui_or_revision_effect() {
+    let (mut app, backend) = held(Scenario::AccountsMixed);
+    press(&mut app, "c down down r");
+    let a = refresh_ticket_of(&backend, PERSONAL);
+    let ok = refreshed(&app, a, PERSONAL, 61);
+    app.deliver(&ok);
+    press(&mut app, "r");
+    let b = refresh_ticket_of(&backend, PERSONAL);
+    assert_ne!(a, b);
+
+    let stale = refresh_failed(&app, a, PERSONAL, "late failure");
+    let before = (
+        screen(&mut app),
+        status(&app),
+        app.world.jobs.len(),
+        app.world.accounts.revision,
+        personal(&app.world).clone(),
+    );
+    assert_eq!(
+        app.deliver(&stale),
+        junie_tui::core::event::Outcome::Ignored
+    );
+    let after = (
+        screen(&mut app),
+        status(&app),
+        app.world.jobs.len(),
+        app.world.accounts.revision,
+        personal(&app.world).clone(),
+    );
+    assert_eq!(before, after);
+    assert!(!after.0.contains("late failure"), "{}", after.0);
+
+    app.deliver(&refresh_failed(&app, b, PERSONAL, "provider is down"));
+    assert!(
+        screen(&mut app).contains("provider is down") || status(&app).contains("provider is down"),
+        "the current reply still reaches the screen"
+    );
+    assert_eq!(
+        personal(&app.world).usage.freshness.phase,
+        Freshness::Stale,
+        "the current error still ends the refresh"
+    );
+}
+
+const NEXT: &str = "acct-claude-archive";
+
+fn validation_ticket_of(backend: &Held, id: &str) -> u64 {
+    *validation_tickets(&backend.seen(), id)
+        .last()
+        .unwrap_or_else(|| panic!("no validation of {id}: {:?}", backend.seen()))
+}
+
+fn validations_of(backend: &Held, id: &str) -> usize {
+    validation_tickets(&backend.seen(), id).len()
+}
+
+fn validation_state(app: &App, id: &str) -> ValidationState {
+    app.world
+        .accounts
+        .get(id)
+        .expect("account")
+        .validation
+        .clone()
+}
+
+fn never_validated_roster(app: &App) -> Snapshot {
+    let mut snapshot = idle_roster(app);
+    for account in &mut snapshot.accounts.accounts {
+        account.validation = ValidationState::NeverValidated;
+    }
+    snapshot
+}
+
+#[test]
+fn validation_old_reply_does_not_clear_current_progress() {
+    let (mut app, backend) = held(Scenario::AccountsMixed);
+    press(&mut app, "c down down v v");
+    assert_eq!(validations_of(&backend, PERSONAL), 2);
+    let tickets = validation_tickets(&backend.seen(), PERSONAL);
+    let (a, b) = (tickets[0], tickets[1]);
+    let progress = status(&app);
+    assert!(progress.starts_with("Validating"), "{progress}");
+
+    let old = validated(&app, a, PERSONAL, valid_fingerprint());
+    let before = (screen(&mut app), personal(&app.world).clone());
+    assert_eq!(app.deliver(&old), Outcome::Ignored);
+    assert_eq!(
+        (screen(&mut app), personal(&app.world).clone()),
+        before,
+        "A changes nothing on screen or in the account"
+    );
+    assert!(matches!(
+        validation_state(&app, PERSONAL),
+        ValidationState::Validating { .. }
+    ));
+    assert_eq!(app.world.validation_pending(PERSONAL), Some(b));
+    assert_eq!(status(&app), progress, "B keeps the progress line");
+    assert_eq!(app.shell.status.job(), Some(job::ACCOUNT_VALIDATE));
+
+    app.deliver(&validated(&app, b, PERSONAL, valid_fingerprint()));
+    assert_eq!(
+        validation_state(&app, PERSONAL),
+        ValidationState::Valid(ValidationLevel::QuotaReadable)
+    );
+    assert_eq!(app.shell.status.job(), None);
+}
+
+#[test]
+fn validation_source_replacement_retires_ticket() {
+    let replaced = CredentialSource::HostEnv {
+        var: "OTHER_TOKEN".into(),
+        detected: DetectedKind::ClaudeApiKeyEnv,
+    };
+    for removal in [false, true] {
+        let (mut app, backend) = held(Scenario::AccountsMixed);
+        press(&mut app, "c down down v");
+        let a = validation_ticket_of(&backend, PERSONAL);
+        let old_ok = validated(&app, a, PERSONAL, valid_fingerprint());
+        let old_err = validated(&app, a, PERSONAL, Err("old failure".into()));
+        assert!(status(&app).starts_with("Validating"));
+
+        let mut roster = never_validated_roster(&app);
+        if removal {
+            roster.accounts.remove(PERSONAL);
+        } else {
+            with_source(&mut roster, PERSONAL, replaced.clone());
+        }
+        let msg = roster_reply(&mut app, roster);
+        app.deliver(&msg);
+        assert_eq!(app.world.validation_pending(PERSONAL), None);
+        assert_eq!(app.shell.status.job(), None, "no job left spinning");
+        assert_eq!(status(&app), "", "retiring prints no result");
+
+        screen(&mut app);
+        let before = (
+            app.world.accounts.get(PERSONAL).cloned(),
+            screen(&mut app),
+            status(&app),
+        );
+        for stale in [&old_ok, &old_err] {
+            assert_eq!(app.world.absorb(stale), Absorbed::Stale);
+            assert_eq!(app.deliver(stale), Outcome::Ignored);
+        }
+        let after = (
+            app.world.accounts.get(PERSONAL).cloned(),
+            screen(&mut app),
+            status(&app),
+        );
+        assert_eq!(before, after, "removal: {removal}");
+        assert!(!after.2.contains("old failure"));
+    }
+}
+
+#[test]
+fn validation_duplicate_and_same_source_refresh() {
+    let (mut app, backend) = held(Scenario::AccountsMixed);
+    press(&mut app, "c down down v");
+    let a = validation_ticket_of(&backend, PERSONAL);
+    let progress = status(&app);
+
+    let roster = never_validated_roster(&app);
+    let msg = roster_reply(&mut app, roster);
+    app.deliver(&msg);
+    assert_eq!(app.world.validation_pending(PERSONAL), Some(a));
+    assert!(matches!(
+        validation_state(&app, PERSONAL),
+        ValidationState::Validating { .. }
+    ));
+    assert_eq!(status(&app), progress, "a roster does not end the job");
+    assert_eq!(app.shell.status.job(), Some(job::ACCOUNT_VALIDATE));
+
+    let reply = validated(&app, a, PERSONAL, valid_fingerprint());
+    assert_eq!(app.world.absorb(&reply), Absorbed::Current);
+    assert_eq!(app.world.absorb(&reply), Absorbed::Stale, "accepted once");
+
+    app.world
+        .accounts
+        .get_mut(PERSONAL)
+        .expect("account")
+        .validation = ValidationState::NeverValidated;
+    assert_eq!(app.deliver(&reply), Outcome::Ignored);
+    assert_eq!(
+        validation_state(&app, PERSONAL),
+        ValidationState::NeverValidated,
+        "the duplicate changes nothing"
+    );
+}
+
+#[test]
+fn validation_nonowner_completion_preserves_status_text_and_job() {
+    let (mut app, backend) = held(Scenario::AccountsMixed);
+    press(&mut app, "c down down v down v");
+    let x = validation_ticket_of(&backend, PERSONAL);
+    let y = validation_ticket_of(&backend, NEXT);
+    let progress = status(&app);
+    assert!(progress.starts_with("Validating"), "{progress}");
+    assert!(app.world.validation_owns_status(NEXT, y));
+
+    app.deliver(&validated(&app, x, PERSONAL, valid_fingerprint()));
+    assert_eq!(
+        validation_state(&app, PERSONAL),
+        ValidationState::Valid(ValidationLevel::QuotaReadable)
+    );
+    assert_eq!(status(&app), progress, "Y's progress text stays");
+    assert_eq!(app.shell.status.job(), Some(job::ACCOUNT_VALIDATE));
+    assert!(app.world.validation_owns_status(NEXT, y));
+
+    app.deliver(&validated(&app, y, NEXT, valid_fingerprint()));
+    assert_eq!(app.shell.status.job(), None);
+    assert!(!app.world.validation_owns_status(NEXT, y));
+    let done = status(&app);
+    assert!(
+        done.starts_with("Claude · Archived") && done.ends_with("quota readable"),
+        "Y's own result replaces its progress: {done}"
+    );
+}
+
+#[test]
+fn validation_owner_source_replacement_ends_the_job() {
+    let (mut app, backend) = held(Scenario::AccountsMixed);
+    press(&mut app, "c down down v down v");
+    let x = validation_ticket_of(&backend, PERSONAL);
+    let y = validation_ticket_of(&backend, NEXT);
+    assert!(app.world.validation_owns_status(NEXT, y));
+
+    let mut roster = never_validated_roster(&app);
+    roster.accounts.remove(NEXT);
+    let msg = roster_reply(&mut app, roster);
+    app.deliver(&msg);
+    assert_eq!(
+        app.shell.status.job(),
+        None,
+        "no spinning job for a gone account"
+    );
+    assert_eq!(app.world.validation_pending(NEXT), None);
+    assert_eq!(
+        app.world.validation_pending(PERSONAL),
+        Some(x),
+        "X is unaffected"
+    );
+}
+
+#[test]
+fn validation_snapshot_preserves_original_started_tick() {
+    let (mut app, backend) = held(Scenario::AccountsMixed);
+    press(&mut app, "c down down v");
+    let a = validation_ticket_of(&backend, PERSONAL);
+    let ValidationState::Validating { started_tick } = validation_state(&app, PERSONAL) else {
+        panic!("the validation shows as running");
+    };
+
+    for _ in 0..3 {
+        ticks(&mut app, 5);
+        assert!(
+            app.world.clock.now_ms as u64 > started_tick,
+            "time moved on"
+        );
+        let roster = never_validated_roster(&app);
+        let msg = roster_reply(&mut app, roster);
+        app.deliver(&msg);
+        assert_eq!(
+            validation_state(&app, PERSONAL),
+            ValidationState::Validating { started_tick },
+            "elapsed time counts from the request, not from the roster"
+        );
+    }
+    assert_eq!(app.world.validation_pending(PERSONAL), Some(a));
 }

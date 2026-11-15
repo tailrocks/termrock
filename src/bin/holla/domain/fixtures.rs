@@ -1287,6 +1287,7 @@ fn base(scenario: Scenario, motion: Motion, host: Host, location: Location) -> W
         trust: crate::domain::custom::TrustStore::default(),
         sudo_cached: true,
         service_failures: vec![],
+        explore_tiles: crate::domain::catalog::default_explore_tiles(),
         task_failures: vec![],
         ops_log: crate::domain::cleanup::OpsLog {
             path: format!("{}/.cache/holla/ops.log", location.home),
@@ -1298,6 +1299,7 @@ fn base(scenario: Scenario, motion: Motion, host: Host, location: Location) -> W
         scan: None,
         fs_latency: vec![],
         cleanup_job: None,
+        epochs: crate::domain::projection::ProjectionEpochs::default(),
         scenario,
         clock,
         tick: 0,
@@ -1326,10 +1328,10 @@ fn base(scenario: Scenario, motion: Motion, host: Host, location: Location) -> W
         scripts: scripts::scripts(),
         step_output: scripts::step_outputs(),
         clipboard: None,
-        scan_started: None,
         next_activity: 0,
         trusted_now: vec![],
         healed_units: vec![],
+        stopping: false,
     }
 }
 
@@ -2216,7 +2218,6 @@ fn disk_cleanup(motion: Motion) -> World {
     w.mise.version = "2026.9.3".into();
     w.docker = docker_acme();
     w.docker.compose = None;
-    w.scan_started = Some(0);
     w.plans = vec![plan_git_pull_all(&w), plan_git_switch_primary(&w)];
     w.sources = sources_for(
         motion,

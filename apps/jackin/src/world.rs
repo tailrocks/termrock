@@ -1,5 +1,5 @@
 use std::collections::BTreeMap;
-use std::sync::Arc;
+use std::sync::{Arc, PoisonError};
 
 use crate::arbiter::{Arbiter, DiscoveryError};
 use crate::backend::{
@@ -10,7 +10,7 @@ use crate::domain::account::{
     AccountId, AccountRegistry, CredentialSource, IssueCode, Recoverability, RecoverableIssue,
     ValidationState,
 };
-use crate::domain::agent::{Agent, AuthMode};
+use crate::domain::agent::{Agent, AuthMode, UsageSurface};
 use crate::domain::doctor::{DoctorFailure, DoctorReport};
 use crate::domain::instance::{
     DaemonSnapshot, Instance, InstanceEntry, InstanceId, InstanceStatus, RepoRef,
@@ -18,7 +18,7 @@ use crate::domain::instance::{
 use crate::domain::reason::{IssueReason, UsageReason};
 use crate::domain::role::{
     AccountOrder, DEFAULT_ROLE_UNUSABLE, LaunchRole, LaunchRoleRule, NO_DEFAULT_ROLE,
-    NO_SAVED_WORKSPACE,
+    NO_SAVED_WORKSPACE, RoleCheckState,
 };
 use crate::domain::surfaces::Surfaces;
 use crate::domain::tuple::TupleIdentity;
@@ -29,6 +29,13 @@ use crate::domain::workspace::{
 use crate::panes::{Daemon, PaneId, PanePolicy};
 use junie_tui::clock::SimClock;
 use junie_tui::shell::JobKey;
+
+mod projection;
+
+pub use projection::{
+    AccountIndex, Projection, ProjectionEpochs, RosterIndex, WorkCounters, WorkSnapshot,
+    WorkspaceMembers, WorldTick,
+};
 
 pub const REFRESH_TIMEOUT_SECS: i64 = 30;
 
@@ -217,11 +224,15 @@ pub enum Msg {
         result: Result<Box<Snapshot>, String>,
     },
     AccountRefreshed {
+        /// The `ticket` of the `Effect::RefreshAccount` this answers.
+        ticket: Ticket,
         account: AccountId,
         source: Box<CredentialSource>,
         result: Result<Box<Refresh>, String>,
     },
     AccountValidated {
+        /// The `ticket` of the `Effect::ValidateAccount` this answers.
+        ticket: Ticket,
         account: AccountId,
         source: Box<CredentialSource>,
         result: Result<Validation, String>,
@@ -371,6 +382,19 @@ pub struct HealthView {
     pub at_secs: i64,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct PendingRefresh {
+    ticket: Ticket,
+    source: CredentialSource,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct PendingValidation {
+    ticket: Ticket,
+    source: CredentialSource,
+    started_ms: i64,
+}
+
 pub struct World {
     pub clock: SimClock,
     pub time: TimeSource,
@@ -400,7 +424,40 @@ pub struct World {
 
     pub tickets: Ticket,
 
+    /// The usage refresh each account is waiting on. World owns request
+    /// identity; `Freshness::Refreshing` only shows it. An entry lives from
+    /// `refresh_account` until its reply is absorbed or `apply` finds the
+    /// account gone or its credential source changed. A host that mutates
+    /// `accounts` or a source outside `apply` must call
+    /// `reconcile_pending_refreshes` before the next reply is absorbed.
+    pub(crate) pending_refreshes: BTreeMap<AccountId, PendingRefresh>,
+
+    /// The validation each account is waiting on. A new `validate_account`
+    /// replaces the account's entry, so the latest request wins and an
+    /// older reply is stale. Validations of different accounts run side by
+    /// side. Retired like `pending_refreshes`: by its accepted reply, or by
+    /// `reconcile_pending_validations` once the account is gone or its
+    /// credential source changed.
+    pub(crate) pending_validations: BTreeMap<AccountId, PendingValidation>,
+
+    /// The validation whose progress text the status line shows: the one
+    /// started last. Only its reply ends that status; another account's reply
+    /// updates that account and leaves the text alone.
+    pub(crate) displayed_validation: Option<(AccountId, Ticket)>,
+
+    /// How many snapshots `apply` installed.
     pub snapshots_applied: u64,
+    /// Counts every accepted change to state a roster snapshot overwrites: a
+    /// snapshot, an admitted record, an accepted account or role reply, a
+    /// named local record edit. A roster refresh is accepted only while this
+    /// still equals the value it captured at request time (`refresh_from`),
+    /// so an older observation cannot revert a newer one. It orders
+    /// observations; it does not prove an external provider sampled later.
+    /// Terminal output and its projection never advance it. A host that
+    /// edits the fields a snapshot carries directly calls
+    /// `authoritative_changed` once after the edit.
+    pub(crate) authoritative_revision: u64,
+    /// The `authoritative_revision` the roster refresh in flight started at.
     pub refresh_from: Option<u64>,
     pub refresh_started_secs: i64,
     pub refresh_ticket: Ticket,
@@ -412,6 +469,9 @@ pub struct World {
     /// What a program may do through a pane; every daemon the world creates
     /// starts with it.
     pub pane_policy: Arc<PanePolicy>,
+
+    /// Epochs, grouped indices and work counters of the derived views.
+    pub projection: Projection,
 }
 
 pub trait WallSource: std::fmt::Debug + Send + Sync {
@@ -550,7 +610,11 @@ impl World {
             discovery_pending: false,
             surfaces,
             tickets: 0,
+            pending_refreshes: BTreeMap::new(),
+            pending_validations: BTreeMap::new(),
+            displayed_validation: None,
             snapshots_applied: 0,
+            authoritative_revision: 0,
             refresh_from: None,
             refresh_started_secs: 0,
             refresh_ticket: 0,
@@ -558,6 +622,7 @@ impl World {
             committed_save_warning: None,
             committed_save_status: None,
             pane_policy: Arc::default(),
+            projection: Projection::default(),
         };
         world.sync_arbiter();
         world
@@ -565,6 +630,97 @@ impl World {
 
     pub fn now_secs(&self) -> i64 {
         self.clock.now_secs()
+    }
+
+    pub fn epochs(&self) -> ProjectionEpochs {
+        self.projection.epochs
+    }
+
+    /// Work the derived views have done so far.
+    pub fn work(&self) -> WorkSnapshot {
+        self.projection.work.snapshot()
+    }
+
+    /// For a host that edited `instances` or `workspaces` membership through
+    /// the public fields. Owning methods mark for themselves.
+    pub fn mark_membership_changed(&mut self) {
+        self.projection.epochs.bump_membership();
+    }
+
+    /// For a host edit that changes only what rows and cards show: names,
+    /// counts, daemon summaries.
+    pub fn mark_roster_changed(&mut self) {
+        self.projection.epochs.bump_roster();
+    }
+
+    /// For a host edit of the account registry.
+    pub fn mark_accounts_changed(&mut self) {
+        self.projection.epochs.bump_accounts();
+    }
+
+    /// Instances grouped by workspace, rebuilt only after a membership epoch
+    /// change. A rebuild installs the groups and the running ids together.
+    pub fn roster(&self) -> Arc<RosterIndex> {
+        let epoch = self.projection.epochs.membership;
+        let mut slot = self
+            .projection
+            .roster
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        if slot.built_at() != Some(epoch) {
+            *slot = Arc::new(RosterIndex::build(
+                &self.instances,
+                epoch,
+                &self.projection.work,
+            ));
+        }
+        Arc::clone(&slot)
+    }
+
+    /// The account registry sorted once per accounts epoch.
+    pub fn account_index(&self) -> Arc<AccountIndex> {
+        let epoch = self.projection.epochs.accounts;
+        let mut slot = self
+            .projection
+            .accounts
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        if slot.built_at() != Some(epoch) {
+            *slot = Arc::new(AccountIndex::build(
+                &self.accounts,
+                epoch,
+                &self.projection.work,
+            ));
+        }
+        Arc::clone(&slot)
+    }
+
+    /// Every account in display order, from the index sorted once per accounts
+    /// epoch.
+    pub fn sorted_accounts(&self) -> Vec<&crate::domain::account::Account> {
+        let index = self.account_index();
+        index
+            .sorted()
+            .iter()
+            .filter_map(|at| self.accounts.accounts.get(*at))
+            .collect()
+    }
+
+    /// The accounts of one usage surface in display order, from the same index.
+    pub fn surface_accounts(&self, surface: UsageSurface) -> Vec<&crate::domain::account::Account> {
+        let index = self.account_index();
+        index
+            .surface(surface)
+            .iter()
+            .filter_map(|at| self.accounts.accounts.get(*at))
+            .collect()
+    }
+
+    /// An account for editing; the accounts epoch moves because the caller is
+    /// about to change it.
+    pub fn account_mut(&mut self, id: &str) -> Option<&mut crate::domain::account::Account> {
+        self.projection.epochs.bump_accounts();
+        self.accounts.get_mut(id)
     }
 
     pub fn new_daemon(&self, workspace: &str) -> Daemon {
@@ -598,6 +754,170 @@ impl World {
         self.tickets
     }
 
+    /// Starts a usage refresh of `id` unless one is already out for its
+    /// current credential source. The ticket of the request sent, or `None`
+    /// when the account is missing or already refreshing (nothing changes
+    /// then). The reply is accepted only while it echoes that ticket.
+    pub fn refresh_account(&mut self, id: &str, stagger_ms: i64) -> Option<Ticket> {
+        let source = self.accounts.get(id)?.source.clone();
+        if self
+            .pending_refreshes
+            .get(id)
+            .is_some_and(|pending| pending.source == source)
+        {
+            return None;
+        }
+        self.pending_refreshes.remove(id);
+        let ticket = self.next_ticket();
+        self.account_mut(id)?.usage.freshness.phase = Freshness::Refreshing;
+        self.pending_refreshes.insert(
+            id.to_owned(),
+            PendingRefresh {
+                ticket,
+                source: source.clone(),
+            },
+        );
+        self.perform(Effect::RefreshAccount {
+            ticket,
+            account: id.to_owned(),
+            source,
+            stagger_ms,
+        });
+        Some(ticket)
+    }
+
+    /// Gives every account that is already marked `Refreshing` a pending
+    /// refresh of its current source, so the marker keeps its single-flight
+    /// meaning. For a world built from accounts caught mid-refresh (the demo
+    /// fixtures). It sends no effect: nothing answers the entry until the host
+    /// delivers a reply with the ticket `refresh_pending` reports.
+    pub fn adopt_refreshing(&mut self) {
+        let marked: Vec<(AccountId, CredentialSource)> = self
+            .accounts
+            .accounts
+            .iter()
+            .filter(|a| a.usage.freshness.phase == Freshness::Refreshing)
+            .filter(|a| !self.pending_refreshes.contains_key(&a.id))
+            .map(|a| (a.id.clone(), a.source.clone()))
+            .collect();
+        for (id, source) in marked {
+            let ticket = self.next_ticket();
+            self.pending_refreshes
+                .insert(id, PendingRefresh { ticket, source });
+        }
+    }
+
+    /// The ticket of the refresh `id` is waiting on, if one is out.
+    pub fn refresh_pending(&self, id: &str) -> Option<Ticket> {
+        self.pending_refreshes.get(id).map(|p| p.ticket)
+    }
+
+    /// Drops the pending requests whose account is gone or whose credential
+    /// source changed, so a later account of the same id or source cannot
+    /// inherit them, and marks the survivors as refreshing again. `apply`
+    /// calls it after every registry replacement.
+    pub fn reconcile_pending_refreshes(&mut self) {
+        let accounts = &self.accounts;
+        self.pending_refreshes
+            .retain(|id, p| accounts.get(id).is_some_and(|a| a.source == p.source));
+        let pending: Vec<AccountId> = self.pending_refreshes.keys().cloned().collect();
+        for id in &pending {
+            if let Some(a) = self.account_mut(id) {
+                a.usage.freshness.phase = Freshness::Refreshing;
+            }
+        }
+    }
+
+    /// Starts a validation of `id`'s credential source and makes it the one
+    /// whose progress the status line shows. A validation already out for the
+    /// account is replaced: only the reply echoing the returned ticket is
+    /// accepted. `None` when the account is missing (nothing changes then).
+    pub fn validate_account(&mut self, id: &str) -> Option<Ticket> {
+        let source = self.accounts.get(id)?.source.clone();
+        let started_ms = self.clock.now_ms;
+        let ticket = self.next_ticket();
+        self.account_mut(id)?.validation = ValidationState::Validating {
+            started_tick: started_ms.max(0) as u64,
+        };
+        self.pending_validations.insert(
+            id.to_owned(),
+            PendingValidation {
+                ticket,
+                source: source.clone(),
+                started_ms,
+            },
+        );
+        self.displayed_validation = Some((id.to_owned(), ticket));
+        self.perform(Effect::ValidateAccount {
+            ticket,
+            account: id.to_owned(),
+            source,
+        });
+        Some(ticket)
+    }
+
+    /// The ticket of the validation `id` is waiting on, if one is out.
+    pub fn validation_pending(&self, id: &str) -> Option<Ticket> {
+        self.pending_validations.get(id).map(|p| p.ticket)
+    }
+
+    /// Whether the status line's validation progress belongs to this request.
+    pub fn validation_owns_status(&self, id: &str, ticket: Ticket) -> bool {
+        self.displayed_validation
+            .as_ref()
+            .is_some_and(|(account, shown)| account == id && *shown == ticket)
+    }
+
+    /// Drops the pending validations whose account is gone or whose
+    /// credential source changed, and marks the survivors as validating again
+    /// from their original start. Clears the displayed pair when its request
+    /// was dropped. `apply` calls it after every registry replacement.
+    pub fn reconcile_pending_validations(&mut self) {
+        let accounts = &self.accounts;
+        self.pending_validations
+            .retain(|id, p| accounts.get(id).is_some_and(|a| a.source == p.source));
+        let pending: Vec<(AccountId, i64)> = self
+            .pending_validations
+            .iter()
+            .map(|(id, p)| (id.clone(), p.started_ms))
+            .collect();
+        for (id, started_ms) in &pending {
+            if let Some(a) = self.account_mut(id) {
+                a.validation = ValidationState::Validating {
+                    started_tick: (*started_ms).max(0) as u64,
+                };
+            }
+        }
+        let pending = &self.pending_validations;
+        if let Some((id, ticket)) = &self.displayed_validation
+            && pending.get(id).is_none_or(|p| p.ticket != *ticket)
+        {
+            self.displayed_validation = None;
+        }
+    }
+
+    /// Accepts a validation reply once: only while it echoes the ticket and
+    /// source of the account's pending validation and the account still has
+    /// that source. Retires the pending entry either way it matches.
+    fn accept_validation(
+        &mut self,
+        account: &str,
+        ticket: Ticket,
+        source: &CredentialSource,
+    ) -> bool {
+        let pending_matches = self
+            .pending_validations
+            .get(account)
+            .is_some_and(|p| p.ticket == ticket && p.source == *source);
+        if !pending_matches {
+            return false;
+        }
+        self.pending_validations.remove(account);
+        self.accounts
+            .get(account)
+            .is_some_and(|a| a.source == *source)
+    }
+
     pub fn refresh(&mut self) -> bool {
         let now = self.now_secs();
         if self.refresh_from.is_some() && now - self.refresh_started_secs < REFRESH_TIMEOUT_SECS {
@@ -615,13 +935,123 @@ impl World {
     fn request_refresh(&mut self, now: i64) {
         let ticket = self.next_ticket();
         self.refresh_ticket = ticket;
-        self.refresh_from = Some(self.snapshots_applied);
+        self.refresh_from = Some(self.authoritative_revision);
         self.refresh_started_secs = now;
         self.perform(Effect::Refresh { ticket });
     }
 
     pub fn now_ms(&self) -> i64 {
         self.clock.now_ms
+    }
+
+    pub fn authoritative_revision(&self) -> u64 {
+        self.authoritative_revision
+    }
+
+    /// Records one accepted change to state a roster snapshot overwrites, so
+    /// a refresh that started before it is dropped instead of reverting it.
+    /// The world's own mutators call it. A host that writes the snapshot
+    /// fields directly calls it once after the edit.
+    pub fn authoritative_changed(&mut self) {
+        self.authoritative_revision = self
+            .authoritative_revision
+            .checked_add(1)
+            .expect("authoritative revision exhausted");
+    }
+
+    /// Runs `edit` and records it as one authoritative change, for a host that
+    /// has to write several snapshot fields directly. `edit` must not call
+    /// `authoritative_changed` or a method that does, which would count the
+    /// change twice.
+    pub fn edit_authoritative<R>(&mut self, edit: impl FnOnce(&mut World) -> R) -> R {
+        let before = self.authoritative_revision;
+        let result = edit(self);
+        debug_assert_eq!(
+            self.authoritative_revision, before,
+            "edit_authoritative must not advance the revision itself"
+        );
+        self.authoritative_changed();
+        result
+    }
+
+    /// Whether a roster reply for `ticket` may be applied. Only the current
+    /// ticket qualifies, and only once: it retires the request, and its
+    /// observation must still match `authoritative_revision`. An older ticket
+    /// leaves the newer request untouched.
+    fn accept_refresh_ticket(&mut self, ticket: Ticket) -> bool {
+        if ticket != self.refresh_ticket {
+            return false;
+        }
+        self.refresh_from
+            .take()
+            .is_some_and(|observed| observed == self.authoritative_revision)
+    }
+
+    /// Ends a live record: purged, or preserved (dirty) or exited (clean).
+    /// False when the record is missing or not live.
+    pub fn end_instance_record(&mut self, id: &InstanceId, purge: bool) -> bool {
+        let Some(live) = self.instance(id).filter(|i| i.status.is_live()) else {
+            return false;
+        };
+        let dirty = live.is_dirty();
+        let now_secs = self.clock.now_secs();
+        let Some(i) = self.instance_mut(id) else {
+            return false;
+        };
+        i.status = if purge {
+            InstanceStatus::Purged
+        } else if dirty {
+            InstanceStatus::PreservedDirty
+        } else {
+            InstanceStatus::CleanExited
+        };
+        i.last_seen_secs = now_secs;
+        self.authoritative_changed();
+        true
+    }
+
+    /// Raises the record's uncommitted count to `count` when that is more.
+    /// Whether it changed.
+    pub fn note_touched_files(&mut self, id: &InstanceId, count: usize) -> bool {
+        if !self.instance(id).is_some_and(|i| i.uncommitted < count) {
+            return false;
+        }
+        let Some(i) = self.instance_view_mut(id) else {
+            return false;
+        };
+        i.uncommitted = count;
+        self.authoritative_changed();
+        true
+    }
+
+    /// Zeroes the record's uncommitted and unpushed counts. Whether either
+    /// was set.
+    pub fn clear_instance_changes(&mut self, id: &InstanceId) -> bool {
+        if !self.instance(id).is_some_and(|i| i.is_dirty()) {
+            return false;
+        }
+        let Some(i) = self.instance_view_mut(id) else {
+            return false;
+        };
+        i.uncommitted = 0;
+        i.unpushed = 0;
+        self.authoritative_changed();
+        true
+    }
+
+    /// Records the outcome of checking `role`. Whether the role exists.
+    pub fn set_role_check(&mut self, role: &str, check: RoleCheckState) -> bool {
+        let Some(r) = self
+            .surfaces
+            .roles
+            .as_mut()
+            .and_then(|admin| admin.role_mut(role))
+        else {
+            return false;
+        };
+        r.check = check;
+        self.authoritative_changed();
+        true
     }
 
     pub fn load_role(&mut self, name: &str) -> RoleLoad {
@@ -750,11 +1180,15 @@ impl World {
             daemon_health,
         } = snapshot;
         self.snapshots_applied += 1;
+        self.authoritative_changed();
+        let before = self.projection.epochs;
         self.workspaces = workspaces;
         self.roles = roles;
         self.instances = instances;
         self.global = global;
         self.accounts = accounts;
+        self.reconcile_pending_refreshes();
+        self.reconcile_pending_validations();
         let doctor_state = self.surfaces.doctor.take().map(|d| d.state);
         self.surfaces = surfaces;
         if let (Some(doctor), Some(state)) = (self.surfaces.doctor.as_mut(), doctor_state) {
@@ -763,6 +1197,7 @@ impl World {
         self.github = github;
         self.daemon_health = daemon_health;
         refresh_snapshots(self);
+        self.projection.epochs.bump_all_from(before);
         self.arbiter.discovery = match index_error {
             Some(error) => Err(error),
             None => Ok(self.running_count()),
@@ -817,14 +1252,11 @@ impl World {
             } => {
                 if let Some(r) = self.roles.iter_mut().find(|r| r.name == *role) {
                     r.load_error = Some(error.clone());
+                    self.authoritative_changed();
                 }
             }
             Msg::Refreshed { ticket, result } => {
-                let current = *ticket == self.refresh_ticket
-                    && self
-                        .refresh_from
-                        .take()
-                        .is_none_or(|from| from == self.snapshots_applied);
+                let current = self.accept_refresh_ticket(*ticket);
                 match result {
                     Ok(snapshot) if current => self.apply((**snapshot).clone()),
                     Err(_) if current => self.daemon_health = DaemonHealth::Stale,
@@ -844,16 +1276,25 @@ impl World {
             }
             Msg::LaunchCancelled { instance } => self.admit_entry((**instance).clone()),
             Msg::AccountRefreshed {
+                ticket,
                 account,
                 source,
                 result,
             } => {
-                let now = self.now_secs();
-                if let Some(a) = self
+                let owns = self
                     .accounts
-                    .get_mut(account)
-                    .filter(|a| a.source == **source)
-                {
+                    .get(account)
+                    .is_some_and(|a| a.source == **source)
+                    && self
+                        .pending_refreshes
+                        .get(account)
+                        .is_some_and(|p| p.ticket == *ticket && p.source == **source);
+                if !owns {
+                    return Absorbed::Stale;
+                }
+                self.pending_refreshes.remove(account);
+                let now = self.now_secs();
+                if let Some(a) = self.account_mut(account) {
                     match result {
                         Ok(refresh) => {
                             a.usage = refresh.usage.clone();
@@ -878,18 +1319,19 @@ impl World {
                         }
                     }
                 }
+                self.authoritative_changed();
             }
             Msg::AccountValidated {
+                ticket,
                 account,
                 source,
                 result,
             } => {
+                if !self.accept_validation(account, *ticket, source) {
+                    return Absorbed::Stale;
+                }
                 let now = self.now_secs();
-                if let Some(a) = self
-                    .accounts
-                    .get_mut(account)
-                    .filter(|a| a.source == **source)
-                {
+                if let Some(a) = self.account_mut(account) {
                     match result {
                         Ok(validation) => match validation {
                             Validation::Fingerprint { level } => {
@@ -914,6 +1356,7 @@ impl World {
                             ));
                         }
                     }
+                    self.authoritative_changed();
                 }
             }
             _ => {}
@@ -931,7 +1374,17 @@ impl World {
         self.committed_save_status = None;
     }
 
+    /// Advances time and delivers the due messages. Hosts that also want to
+    /// know which panes changed use [`World::tick_with_changes`].
     pub fn tick(&mut self, interval_ms: i64) -> Vec<Msg> {
+        self.tick_with_changes(interval_ms).messages
+    }
+
+    /// One poll of every live link. A quiet poll changes nothing and asks for
+    /// nothing: the result names an instance only when its link drained
+    /// something new, and a summary only when the published daemon summary
+    /// differs from the one before.
+    pub fn tick_with_changes(&mut self, interval_ms: i64) -> WorldTick {
         match &self.time {
             TimeSource::Sim => self.clock.advance(interval_ms),
             TimeSource::Wall(source) if self.clock.running => {
@@ -941,7 +1394,7 @@ impl World {
             TimeSource::Wall(_) => {}
         }
         if !self.clock.running {
-            return vec![];
+            return WorldTick::default();
         }
         let now = self.clock.now_ms;
         if self
@@ -952,38 +1405,56 @@ impl World {
         {
             self.start_doctor();
         }
-        let mut changed = Vec::new();
+        let roster = self.roster();
+        let mut panes_changed = Vec::new();
         for (id, d) in self.daemons.iter_mut() {
-            if self
-                .instances
-                .iter()
-                .any(|entry| *entry.id() == *id && entry_is_running(entry))
-                && d.tick(now)
-            {
-                changed.push(id.clone());
+            junie_tui::record_work!(SchedulingRecordsVisited, 1usize);
+            self.projection.work.count_running_lookup();
+            if !roster.is_running(id) {
+                continue;
+            }
+            self.projection.work.count_link_poll();
+            if d.tick(now) {
+                panes_changed.push(id.clone());
             }
         }
-        for id in &changed {
-            refresh_snapshot(self, id);
+        let mut summaries_changed = Vec::new();
+        for id in &panes_changed {
+            if refresh_snapshot(self, id) {
+                summaries_changed.push(id.clone());
+            }
         }
         let backend = self.backend.clone();
-        backend.due(self)
+        WorldTick {
+            messages: backend.due(self),
+            panes_changed,
+            summaries_changed,
+        }
     }
 
-    /// Drains the pane of a wake. Whether it has anything new to draw.
+    /// Drains the pane of a wake and, when that changed it, republishes the
+    /// daemon summary the way a tick does. Whether it has anything new to draw.
     pub fn wake_pane(&mut self, instance: &InstanceId, pane: PaneId) -> bool {
         let now = self.now_ms();
-        self.daemons
+        let changed = self
+            .daemons
             .get_mut(instance)
             .and_then(|d| d.pane_mut(pane))
-            .is_some_and(|p| p.body.tick(now))
+            .is_some_and(|p| p.body.tick(now));
+        if changed {
+            refresh_snapshot(self, instance);
+        }
+        changed
     }
 
     pub fn workspace(&self, id: WorkspaceId) -> Option<&Workspace> {
         self.workspaces.iter().find(|w| w.id == id)
     }
 
+    /// A workspace for editing a label or setting; the roster epoch moves
+    /// because the caller is about to change what its row shows.
     pub fn workspace_mut(&mut self, id: WorkspaceId) -> Option<&mut Workspace> {
+        self.projection.epochs.bump_roster();
         self.workspaces.iter_mut().find(|w| w.id == id)
     }
 
@@ -1019,7 +1490,23 @@ impl World {
             .and_then(InstanceEntry::as_available)
     }
 
+    /// An instance for editing anything, status and workspace included; the
+    /// membership epoch moves because the caller is about to change it. A
+    /// write through this to a field a snapshot carries must be followed by
+    /// `authoritative_changed`. The runtime uses the named edits instead.
     pub fn instance_mut(&mut self, id: &InstanceId) -> Option<&mut Instance> {
+        self.projection.epochs.bump_membership();
+        self.instances
+            .iter_mut()
+            .find(|entry| entry.id() == id)
+            .and_then(InstanceEntry::as_available_mut)
+    }
+
+    /// An instance for editing only what its row and card show: dirty counts
+    /// and the daemon summary. Status, workspace and id must stay as they are,
+    /// because only the roster epoch moves.
+    pub fn instance_view_mut(&mut self, id: &InstanceId) -> Option<&mut Instance> {
+        self.projection.epochs.bump_roster();
         self.instances
             .iter_mut()
             .find(|entry| entry.id() == id)
@@ -1044,6 +1531,8 @@ impl World {
         } else {
             self.instances.push(entry);
         }
+        self.authoritative_changed();
+        self.projection.epochs.bump_membership();
         self.sync_arbiter();
     }
 
@@ -1389,13 +1878,20 @@ pub fn mask_path(home: &str, path: &str) -> String {
     }
 }
 
-pub fn refresh_snapshot(w: &mut World, id: &InstanceId) {
+/// Republishes one daemon's summary on its instance record. The roster epoch
+/// moves only when the summary differs from the published one, so output that
+/// changes a grid and nothing else costs no projection. Whether it moved.
+pub fn refresh_snapshot(w: &mut World, id: &InstanceId) -> bool {
     let Some(snapshot) = w.daemons.get(id).map(Daemon::snapshot) else {
-        return;
+        return false;
     };
-    if let Some(i) = w.instance_mut(id) {
+    if w.instance(id).is_none_or(|i| i.daemon == snapshot) {
+        return false;
+    }
+    if let Some(i) = w.instance_view_mut(id) {
         i.daemon = snapshot;
     }
+    true
 }
 
 pub fn refresh_snapshots(w: &mut World) {
@@ -1403,11 +1899,17 @@ pub fn refresh_snapshots(w: &mut World) {
     for id in &ids {
         refresh_snapshot(w, id);
     }
+    let mut changed = false;
     for entry in w.instances.iter_mut() {
         if let Some(i) = entry.as_available_mut()
             && i.status != InstanceStatus::Running
+            && i.daemon != DaemonSnapshot::Unavailable
         {
             i.daemon = DaemonSnapshot::Unavailable;
+            changed = true;
         }
+    }
+    if changed {
+        w.projection.epochs.bump_roster();
     }
 }

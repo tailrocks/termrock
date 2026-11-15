@@ -377,7 +377,7 @@ impl Page for ProgressPage {
                 if let Some(r) = self.restart.route(ev)
                     && r.outcome() != Outcome::Ignored
                 {
-                    if r.into_action().is_some() {
+                    if r.has_actions() {
                         self.restart();
                     }
                     return Outcome::Changed;
@@ -385,7 +385,7 @@ impl Page for ProgressPage {
                 if let Some(r) = self.pause.route(ev)
                     && r.outcome() != Outcome::Ignored
                 {
-                    if r.into_action().is_some() {
+                    if r.has_actions() {
                         self.toggle_pause();
                     }
                     return Outcome::Changed;

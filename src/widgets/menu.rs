@@ -106,7 +106,7 @@ pub struct ContextMenu {
 
     pub title: Option<String>,
 
-    pub(crate) pending: Option<MenuAction>,
+    pub(crate) pending: crate::ui::layer::ResultQueue<MenuAction>,
 
     pub hide_owner_focus: bool,
 
@@ -211,7 +211,7 @@ impl ContextMenu {
             anchor: Rect::ZERO,
             area: Rect::ZERO,
             title: None,
-            pending: None,
+            pending: crate::ui::layer::ResultQueue::default(),
             hide_owner_focus: true,
             reveal: None,
             min_width: 8,

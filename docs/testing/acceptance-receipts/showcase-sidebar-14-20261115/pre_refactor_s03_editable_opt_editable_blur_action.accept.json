@@ -6,13 +6,13 @@
   "reason": null,
   "candidate_path": {
     "encoding": "utf8",
-    "value": "/tmp/final/pre_refactor__s03_editable__opt_editable_blur_action.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/target/functional/s03-blur-36256-1794771587227826000-0/check-artifacts/pre_refactor/s03_editable/opt_editable_blur_action/70ea09d164d69be0c877ae9a6ee558dc71cb1f7126c447457894c872692ac64e/sample.tui.pb"
   },
-  "candidate_sha256": "8af7b209b3f3f452203874d7aa97d331926c5b5358dfc4871809a5221d175331",
-  "baseline_sha256": "8af7b209b3f3f452203874d7aa97d331926c5b5358dfc4871809a5221d175331",
+  "candidate_sha256": "70ea09d164d69be0c877ae9a6ee558dc71cb1f7126c447457894c872692ac64e",
+  "baseline_sha256": "70ea09d164d69be0c877ae9a6ee558dc71cb1f7126c447457894c872692ac64e",
   "output_path": {
     "encoding": "utf8",
-    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s03_editable/opt_editable_blur_action.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/tests/functional/baselines/pre_refactor/s03_editable/opt_editable_blur_action.tui.pb"
   },
   "error_code": null
 }

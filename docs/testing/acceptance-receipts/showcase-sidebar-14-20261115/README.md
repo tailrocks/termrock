@@ -20,3 +20,18 @@ every accepted capture:
 - `docs/testing/baseline-refreshes-20261108.tsv` has one appended chain row, and
   `docs/testing/binary-baselines-20261108.tsv` points at the new receipt where the
   test is one of the 105 binary baselines.
+
+## Merge with origin/train/all
+
+Merging origin/train/all into the #14 branch conflicted on 133 baselines that
+both sides had moved. Each took train/all's version, and #14's receipts for those
+captures were dropped. Where the merged tree still draws the sidebar in a
+capture, the baseline was accepted again from a fresh run of the merged tree,
+with the same procedure, 135 captures in all (a test that checks several captures needs one run per capture), and
+`baseline-refreshes-20261108.tsv` lists each. Every accepted sample
+differs from train/all's baseline only in sidebar columns 0 to 23 (18 at 80x24),
+checked cell by cell with `tuiscotti check`. The one exception,
+`functional/showcase_page_finder`, is accepted under
+`showcase-sidebar-14-merge-20261116`: train/all's Finder page (#257) draws a
+different body than train/all's baseline holds, so that sample carries #257's
+body and #14's sidebar together.

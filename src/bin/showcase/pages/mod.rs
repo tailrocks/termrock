@@ -62,12 +62,14 @@ pub mod settings;
 pub mod sidebars;
 pub mod splits_stacks;
 pub mod status_hints;
+pub mod stress;
 pub mod tables;
 pub mod tabs;
 pub mod taskrunner;
 pub mod template;
 pub mod terminal;
 pub mod terminal_pane;
+pub mod terminal_session;
 pub mod terminal_viewport;
 pub mod text_utilities;
 pub mod textareas;
@@ -234,6 +236,18 @@ pub trait Page {
         Outcome::Ignored
     }
 
+    fn external(&self) -> Option<&junie_tui::runtime::ExternalReceiver> {
+        None
+    }
+
+    fn on_external(
+        &mut self,
+        _message: &junie_tui::core::event::External,
+        _cx: &mut Cx,
+    ) -> Outcome {
+        Outcome::Ignored
+    }
+
     fn option_value(&self, _key: &str) -> Option<usize> {
         None
     }
@@ -349,4 +363,24 @@ pub mod layout {
             ),
         )
     }
+}
+
+#[cfg(test)]
+pub fn page_text(page: &mut dyn Page, width: u16, height: u16) -> String {
+    use junie_tui::core::focus::FocusRing;
+    use junie_tui::core::hit::HitRegistry;
+    use junie_tui::theme::{ColorLevel, Theme};
+    use junie_tui::ui::ctx::Interaction;
+
+    let theme = Theme::for_level(ColorLevel::TrueColor);
+    let area = Rect::new(0, 0, width, height);
+    let mut buf = Buffer::empty(area);
+    let mut hits = HitRegistry::default();
+    let mut ring = FocusRing::default();
+    let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+    page.render(area, &mut buf, &mut ctx);
+    (0..height)
+        .map(|y| (0..width).map(|x| buf[(x, y)].symbol()).collect::<String>())
+        .collect::<Vec<_>>()
+        .join("\n")
 }

@@ -7,7 +7,9 @@ use std::time::Duration;
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, Point, SHOWCASE, find_all, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, Point, SHOWCASE, clusters, find_all, flash_settle, row_text, text, try_launch,
+};
 
 const CRUMB: &str = "Overlays › Pickers";
 const TITLE: &str = "Pickers";
@@ -321,32 +323,6 @@ fn assert_size(app: &App, cols: u16, rows: u16) {
         "terminal size\n{}",
         text(&screen)
     );
-}
-
-/// The 140ms press flash stays painted while motion is paused, so a shot after
-/// a released click has to redraw once the deadline has passed. Below about 85
-/// columns the header omits the size chip, and the narrow nudge waits on the
-/// terminal size instead.
-fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
 }
 
 fn shot(app: &App, case_id: &str) {
@@ -1647,4 +1623,209 @@ fn option_remote_fails() {
             assert_select(screen, "Width", "auto", &["48", "96"]);
         },
     );
+}
+
+/// The test terminal keeps only the first scalars of a ZWJ or skin-tone
+/// sequence, so those labels are matched by their visible head.
+const INTERNATIONAL_LABELS: &[&str] = &[
+    "cafe\u{301}.md",
+    "界A.md",
+    "שלום.md",
+    "Review 👨\u{200d}",
+    "Review 🇯🇵",
+    "Review 👍",
+];
+
+fn emphasis(screen: &TerminalSnapshot, label: &str, count: usize) -> Vec<(String, u16, bool)> {
+    let at = find_all(screen, label)
+        .into_iter()
+        .next()
+        .unwrap_or_else(|| panic!("label {label:?} missing\n{}", text(screen)));
+    clusters(screen, at, count)
+        .into_iter()
+        .map(|cluster| (cluster.text, cluster.width, cluster.bold))
+        .collect()
+}
+
+fn cluster(text: &str, width: u16, bold: bool) -> (String, u16, bool) {
+    (text.to_string(), width, bold)
+}
+
+#[test]
+fn option_international_labels_paint_whole_clusters() {
+    let app = page("s05-intl", Some("pickers.international=on"), 120, 40);
+    app.wait_text("Open quickly");
+    confirm_control(&app, |screen| {
+        assert_toggle(screen, "International labels", "on");
+        assert_select(screen, "Width", "auto", &["48", "96"]);
+    });
+    click_button(&app, "Open quickly");
+    let opened = app.wait_text("All · Tab scope");
+    see(&opened, INTERNATIONAL_LABELS, &["Cargo.toml", TASK_RATE]);
+    for (label, detail) in [
+        ("cafe\u{301}.md", "combining mark"),
+        ("界A.md", "wide + ASCII"),
+        ("שלום.md", "right-to-left"),
+        ("Review 👨\u{200d}", "ZWJ family"),
+        ("Review 🇯🇵", "flag"),
+        ("Review 👍", "skin tone"),
+    ] {
+        let line = row_with(&opened, label);
+        assert!(
+            line.contains(detail),
+            "the detail {detail:?} was overwritten or pushed off the {label:?} row: {line:?}"
+        );
+    }
+
+    app.type_text("a");
+    let narrowed = app.wait_screen("a narrows the labels", |screen| {
+        !text(screen).contains("Review") && text(screen).contains("界A.md")
+    });
+    assert_eq!(
+        emphasis(&narrowed, "界A.md", 5),
+        [
+            cluster("界", 2, false),
+            cluster("A", 1, true),
+            cluster(".", 1, false),
+            cluster("m", 1, false),
+            cluster("d", 1, false),
+        ],
+        "the A after a wide cluster is painted in the cell after it\n{}",
+        text(&narrowed)
+    );
+
+    app.key("backspace");
+    app.type_text("e");
+    app.wait_screen(
+        "e narrows to the combining label and the reviews",
+        |screen| !text(screen).contains("界A.md") && text(screen).contains("Review"),
+    );
+    app.key("down");
+    let combined = app.settle();
+    assert_eq!(
+        emphasis(&combined, "cafe\u{301}.md", 7),
+        [
+            cluster("c", 1, false),
+            cluster("a", 1, false),
+            cluster("f", 1, false),
+            cluster("e\u{301}", 1, true),
+            cluster(".", 1, false),
+            cluster("m", 1, false),
+            cluster("d", 1, false),
+        ],
+        "a match on the base letter emphasises the whole combining cluster\n{}",
+        text(&combined)
+    );
+    app.key("escape");
+    app.key("escape");
+    app.wait_screen("international picker closed", |screen| {
+        !text(screen).contains("All · Tab scope")
+    });
+    app.finish();
+}
+
+fn row_limit_page(name: &str, rows: &str, remote: &str, paused: bool) -> App {
+    let mut launch = Launch::new(name, SHOWCASE);
+    launch.args = [
+        "--page",
+        "pickers",
+        "--opt",
+        &format!("pickers.max_rows={rows}"),
+        "--opt",
+        &format!("pickers.remote={remote}"),
+    ]
+    .iter()
+    .map(|arg| arg.to_string())
+    .collect();
+    launch.cols = 120;
+    launch.rows = 40;
+    launch.color = Some("truecolor".to_string());
+    if paused {
+        launch.motion = Some("paused".to_string());
+    }
+    let app = try_launch(launch).unwrap_or_else(|error| panic!("{error}"));
+    app.wait_text("Open quickly");
+    app
+}
+
+fn picker_status_rows(screen: &TerminalSnapshot, label: &str) -> usize {
+    (0..screen.rows())
+        .filter(|row| row_text(screen, *row).contains(label))
+        .count()
+}
+
+#[test]
+fn option_row_limits_show_one_status_row_in_every_state() {
+    for rows in ["1", "0"] {
+        let app = row_limit_page(&format!("s05-rows-{rows}-loading"), rows, "stalls", true);
+        click_button(&app, "Remote branch");
+        let loading = app.wait_text("Fetching branches from origin");
+        assert_eq!(
+            picker_status_rows(&loading, "Fetching branches from origin"),
+            1,
+            "max rows {rows}: Loading owns one row\n{}",
+            text(&loading)
+        );
+        see(
+            &loading,
+            &["Remote branches \u{b7} origin"],
+            &["Could not reach origin", "feat/rate-limit"],
+        );
+        app.key("escape");
+        app.finish();
+
+        let app = row_limit_page(&format!("s05-rows-{rows}-error"), rows, "fails", false);
+        click_button(&app, "Remote branch");
+        let error = app.wait_text("Could not reach origin");
+        assert_eq!(
+            picker_status_rows(&error, "Could not reach origin"),
+            1,
+            "max rows {rows}: Error owns one row\n{}",
+            text(&error)
+        );
+        see(
+            &error,
+            &["Remote branches \u{b7} origin"],
+            &["Fetching branches from origin", "feat/rate-limit"],
+        );
+        app.key("escape");
+        app.finish();
+
+        let app = row_limit_page(&format!("s05-rows-{rows}-ready"), rows, "works", false);
+        click_button(&app, "Remote branch");
+        let ready = app.wait_screen("remote branches ready", |screen| {
+            text(screen).contains("main") && !text(screen).contains("Fetching branches")
+        });
+        see(
+            &ready,
+            &["Remote branches \u{b7} origin", "main"],
+            &["Fetching branches from origin", "Could not reach origin"],
+        );
+        app.key("escape");
+        app.finish();
+    }
+}
+
+#[test]
+fn option_remote_stalls_stays_loading() {
+    let app = row_limit_page("s05-remote-stalls", "12", "stalls", false);
+    let screen = app.wait_text("and it stays Loading");
+    assert_readout(
+        &screen,
+        &["remote"],
+        "Loading, and it stays Loading",
+        "Loading, then Ready",
+    );
+    click_button(&app, "Remote branch");
+    app.wait_text("Fetching branches from origin");
+    // Motion runs: three fetch ticks fit well inside this wait.
+    std::thread::sleep(Duration::from_millis(2_000));
+    let loading = app.screen();
+    see(
+        &loading,
+        &["Fetching branches from origin"],
+        &["Could not reach origin", "feat/rate-limit"],
+    );
+    app.key("escape");
+    app.finish();
 }

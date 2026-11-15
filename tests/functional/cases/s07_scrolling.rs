@@ -3,11 +3,11 @@
 //! Tuiscotti test ids are `[a-z0-9_-]` segments, so the baseline directory is
 //! `pre_refactor/s07_scrolling/` and each case id's dots become underscores.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, Point, SHOWCASE, find_all, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, Point, SHOWCASE, find_all, flash_settle, row_text, text, try_launch,
+};
 
 const CRUMB: &str = "Layout › Scrolling";
 const TITLE: &str = "Scrolling";
@@ -272,32 +272,6 @@ fn assert_size(app: &App, cols: u16, rows: u16) {
         "terminal size\n{}",
         text(&screen)
     );
-}
-
-/// The 140ms press flash stays painted while motion is paused, so a shot after
-/// a released click has to redraw once the deadline has passed. Below about 100
-/// columns the header omits the size chip, and the narrow nudge waits on the
-/// terminal size instead.
-fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
 }
 
 fn shot(app: &App, case_id: &str) {
@@ -1565,4 +1539,135 @@ fn option_skip_disabled_off() {
             &["To(row 11)", "api-01", "skip disabled on", RANGE_PROSE],
         );
     });
+}
+
+fn nested_first_row(screen: &TerminalSnapshot) -> Option<u32> {
+    (0..screen.rows())
+        .filter_map(|row| {
+            let line = row_text(screen, row);
+            let tail = line.split_once("nested row ")?.1;
+            tail.split_whitespace().next()?.parse().ok()
+        })
+        .min()
+}
+
+/// Right of the `nested row 1` text the line holds the child's bar first and
+/// the outer pane's bar, on the panel edge, last.
+fn nested_thumb(screen: &TerminalSnapshot) -> Point {
+    let hit = find_all(screen, "nested row 1")
+        .into_iter()
+        .next()
+        .expect("nested row 1 is visible");
+    let line = row_text(screen, u32::from(hit.y));
+    let column = line
+        .chars()
+        .enumerate()
+        .filter(|(index, ch)| *index > usize::from(hit.x) && *ch == '\u{2503}')
+        .map(|(index, _)| index)
+        .next()
+        .unwrap_or_else(|| panic!("child thumb missing on {line:?}"));
+    Point {
+        x: u16::try_from(column).expect("thumb column"),
+        y: hit.y,
+    }
+}
+
+#[test]
+fn option_nested_scrollbars_on_from_the_options_tab_drags_the_child_thumb() {
+    let app = open("s07-nested", 120, 40, PAGE_ARGS);
+    let playground = app.wait_text("Row 001");
+    see(&playground, &["Divider or bar"], &["Nested bars"]);
+
+    click_tab(&app, "Options");
+    let options = app.wait_text("Nested scrollbars");
+    assert_toggle(&options, "Nested scrollbars", "off");
+    app.click(app.point("Nested scrollbars"));
+    app.wait_screen("Nested scrollbars switched on", |screen| {
+        row_with(screen, "Nested scrollbars").contains("on")
+    });
+    click_tab(&app, "Playground");
+
+    let before = app.wait_text("Nested bars");
+    see(
+        &before,
+        &["outer content", "nested row 1"],
+        &["Divider or bar"],
+    );
+    assert_eq!(nested_first_row(&before), Some(1));
+    let outer_row = find_all(&before, "outer content")[0].y;
+    let thumb = nested_thumb(&before);
+
+    app.down(thumb);
+    app.drag_to(Point {
+        x: thumb.x,
+        y: thumb.y + 2,
+    });
+    let dragged = app.settle();
+    let first = nested_first_row(&dragged).expect("child rows stay visible while dragging");
+    assert!(
+        first > 1,
+        "dragging the child thumb scrolls the child, first row {first}\n{}",
+        text(&dragged)
+    );
+    assert_eq!(
+        find_all(&dragged, "outer content")[0].y,
+        outer_row,
+        "the outer pane stays put while the child thumb is dragged"
+    );
+    app.drag_to(thumb);
+    let back = app.settle();
+    assert_eq!(
+        nested_first_row(&back),
+        Some(1),
+        "dragging back to the start restores the child\n{}",
+        text(&back)
+    );
+    app.up(thumb);
+    app.finish();
+}
+
+fn virtual_first_row(screen: &TerminalSnapshot) -> Option<u32> {
+    (0..screen.rows())
+        .flat_map(|row| {
+            let line = row_text(screen, row);
+            let words: Vec<String> = line.split_whitespace().map(str::to_owned).collect();
+            words
+                .windows(2)
+                .filter(|pair| pair[0] == "Row" && pair[1].len() == 5)
+                .filter_map(|pair| pair[1].parse::<u32>().ok())
+                .collect::<Vec<_>>()
+        })
+        .min()
+}
+
+#[test]
+fn option_virtual_rows_10000_keys_and_wheel_move_a_bounded_window() {
+    let app = page("s07-virtual", "scrolling.window=10000", 120, 40);
+    let playground = app.wait_text("of 10000");
+    see(&playground, &["Virtual", "Row 00001"], &["Row 10000"]);
+
+    click_tab(&app, "Options");
+    let options = app.wait_text("Page options");
+    see(&options, &["Virtual rows", "Nested scrollbars"], &[]);
+    click_tab(&app, "Playground");
+    let back = app.wait_text("of 10000");
+
+    app.click(find_all(&back, "Row 00002")[0]);
+    app.key("end");
+    let end = app.wait_text("Row 10000");
+    see(&end, &["of 10000"], &["Row 00001"]);
+    app.key("home");
+    let top = app.wait_text("Row 00001");
+    assert_eq!(virtual_first_row(&top), Some(1));
+
+    let at = find_all(&top, "Row 00001")[0];
+    app.wheel(at, true, 3);
+    let moved = app.settle();
+    let first = virtual_first_row(&moved).expect("rows stay visible while wheeling");
+    assert!(
+        first > 1,
+        "the wheel scrolls the virtual rows, first row {first}\n{}",
+        text(&moved)
+    );
+    app.finish();
 }

@@ -33,6 +33,7 @@ use ratatui::layout::{Position, Rect};
 use ratatui::style::{Modifier, Style};
 
 use super::modals::{InfoDialog, InfoResult};
+use super::row_meta::{ClockStamp, Moment, RowMeta, clocks};
 use super::{Cx, Go, LayerTag, ModalResult, Screen};
 use crate::backend::Effect;
 use crate::domain::account::AccountId;
@@ -144,10 +145,51 @@ struct Row {
     glyph: &'static str,
     glyph_tone: Tone,
     label: String,
-    meta: String,
+    meta: RowMeta,
     meta_tone: Tone,
     trailing: Option<(&'static str, Tone)>,
     expandable: bool,
+}
+
+/// What the cached rows were built from.
+struct RowsStamp {
+    roster: u64,
+    expanded: HashSet<WorkspaceId>,
+    busy: Vec<(RowKey, &'static str)>,
+    selected: RowKey,
+}
+
+/// The row of a sandbox the backend could not describe. `named`: the row sits
+/// under the unattributed group, so its text says which workspace it claims.
+fn unavailable_row(unavailable: &crate::domain::instance::UnavailableInstance, named: bool) -> Row {
+    let display = unavailable.display();
+    let owner = if named {
+        format!("{} · ", display.workspace_name)
+    } else {
+        String::new()
+    };
+    let head = format!(
+        "{} · {owner}{} · {} · ",
+        display.gateway,
+        display.role,
+        unavailable.phase.label()
+    );
+    let tail = format!("metadata unavailable: {}", display.reason);
+    let meta = match unavailable.created_secs {
+        Some(secs) => RowMeta::timed(head, Moment::Ago(secs), format!(" · {tail}")),
+        None => RowMeta::plain(format!("{head}creation time unavailable · {tail}")),
+    };
+    Row {
+        key: RowKey::Instance(unavailable.id.clone()),
+        depth: 1,
+        glyph: "?",
+        glyph_tone: Tone::Warning,
+        label: display.sandbox_name,
+        meta,
+        meta_tone: Tone::Warning,
+        trailing: None,
+        expandable: false,
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -222,6 +264,8 @@ pub struct ManagerScreen {
     pub selected: RowKey,
     pub expanded: HashSet<WorkspaceId>,
     rows: Vec<Row>,
+    stamp: Option<RowsStamp>,
+    clock: ClockStamp,
     pub scroll: ScrollState,
     pub detail_scroll: ScrollState,
     pub detail_cursor: usize,
@@ -233,6 +277,7 @@ pub struct ManagerScreen {
     actions: Vec<Button>,
     pub still_inside: Option<(String, Vec<String>, i64)>,
     pub busy_rows: Vec<(RowKey, &'static str)>,
+    refresh_asked: bool,
     pending_launch: Option<(Option<WorkspaceId>, String)>,
     pending_session: Option<InstanceId>,
     choosing: Option<Choosing>,
@@ -258,6 +303,8 @@ impl ManagerScreen {
             selected: RowKey::CurrentDir,
             expanded: HashSet::new(),
             rows: vec![],
+            stamp: None,
+            clock: ClockStamp::default(),
             scroll: ScrollState::default(),
             detail_scroll: ScrollState::default(),
             detail_cursor: 0,
@@ -272,6 +319,7 @@ impl ManagerScreen {
             actions: vec![],
             still_inside: None,
             busy_rows: vec![],
+            refresh_asked: false,
             pending_launch: None,
             pending_session: None,
             choosing: None,
@@ -294,7 +342,40 @@ impl ManagerScreen {
         self.selected = RowKey::Instance(id.clone());
     }
 
+    /// Builds the rows again only when something they are made of moved: the
+    /// world's roster epoch, the folded workspaces or the busy rows. Anything
+    /// else (cursor, scroll, hover, the clock) reuses the rows as they are.
+    fn ensure_rows(&mut self, w: &World) {
+        let epoch = w.epochs().roster;
+        let fresh = self.stamp.as_ref().is_some_and(|stamp| {
+            stamp.roster == epoch && stamp.expanded == self.expanded && stamp.busy == self.busy_rows
+        });
+        if fresh {
+            if self
+                .stamp
+                .as_ref()
+                .is_some_and(|s| s.selected != self.selected)
+            {
+                self.settle_selection(w);
+                if let Some(stamp) = self.stamp.as_mut() {
+                    stamp.selected = self.selected.clone();
+                }
+            }
+            return;
+        }
+        self.build_rows(w);
+        self.stamp = Some(RowsStamp {
+            roster: epoch,
+            expanded: self.expanded.clone(),
+            busy: self.busy_rows.clone(),
+            selected: self.selected.clone(),
+        });
+    }
+
     fn build_rows(&mut self, w: &World) {
+        w.projection.work.count_manager_build();
+        let roster = w.roster();
+        let entry_at = |index: &usize| w.instances.get(*index);
         let mut rows = vec![];
         let cwd_ws = w.cwd_workspace().map(|x| x.id);
         rows.push(Row {
@@ -303,55 +384,50 @@ impl ManagerScreen {
             glyph: " ",
             glyph_tone: Tone::Normal,
             label: "Current directory".into(),
-            meta: match cwd_ws.and_then(|id| w.workspace(id)) {
+            meta: RowMeta::plain(match cwd_ws.and_then(|id| w.workspace(id)) {
                 Some(ws) => format!("saved as {}", ws.name),
                 None => w.tilde(&w.cwd),
-            },
+            }),
             meta_tone: Tone::Muted,
             trailing: None,
             expandable: false,
         });
+        let mut known = HashSet::with_capacity(w.workspaces.len());
         for ws in &w.workspaces {
-            let kids = w.entries_of(Some(ws.id));
-            let running = w.running_count_of(Some(ws.id));
-            let failed = kids.iter().any(|entry| {
-                entry.as_available().is_some_and(|i| {
-                    matches!(
-                        i.status,
-                        InstanceStatus::FailedSetup | InstanceStatus::Crashed
-                    )
-                })
-            });
-            let restore = kids.iter().any(|entry| {
-                entry
-                    .as_available()
-                    .is_some_and(|i| i.status == InstanceStatus::RestoreAvailable)
-            });
+            known.insert(ws.id);
+            let group = roster.group(Some(ws.id));
+            let count = group.map_or(0, |g| g.indices.len());
+            let running = group.map_or(0, |g| g.running);
+            let failed = group.is_some_and(|g| g.failed);
+            let restore = group.is_some_and(|g| g.restore);
             let (meta, tone) = if let Some((_, what)) = self
                 .busy_rows
                 .iter()
                 .find(|(k, _)| *k == RowKey::Workspace(ws.id))
             {
+                (RowMeta::spinner("", what), Tone::Secondary)
+            } else if running > 0 {
                 (
-                    format!("{} {what}", spinner_frame(w.clock.now_ms as u64 / 80)),
+                    RowMeta::plain(format!("{running} running")),
                     Tone::Secondary,
                 )
-            } else if running > 0 {
-                (format!("{running} running"), Tone::Secondary)
             } else if failed {
-                ("! failed".into(), Tone::Error)
+                (RowMeta::plain("! failed"), Tone::Error)
             } else if restore {
-                ("restore available".into(), Tone::Secondary)
-            } else if kids.is_empty() {
-                ("idle".into(), Tone::Faint)
+                (RowMeta::plain("restore available"), Tone::Secondary)
+            } else if count == 0 {
+                (RowMeta::plain("idle"), Tone::Faint)
             } else {
-                (plural(kids.len(), "record", "records"), Tone::Muted)
+                (
+                    RowMeta::plain(plural(count, "record", "records")),
+                    Tone::Muted,
+                )
             };
             let expanded = self.expanded.contains(&ws.id);
             rows.push(Row {
                 key: RowKey::Workspace(ws.id),
                 depth: 0,
-                glyph: if kids.is_empty() {
+                glyph: if count == 0 {
                     " "
                 } else if expanded {
                     "▾"
@@ -363,82 +439,68 @@ impl ManagerScreen {
                 meta,
                 meta_tone: tone,
                 trailing: None,
-                expandable: !kids.is_empty(),
+                expandable: count > 0,
             });
-            if expanded {
-                for entry in &kids {
+            if expanded && let Some(group) = group {
+                for entry in group.indices.iter().filter_map(entry_at) {
                     let i = match entry {
                         InstanceEntry::Available(instance) => instance,
                         InstanceEntry::Unavailable(unavailable) => {
-                            let display = unavailable.display();
-                            let created = unavailable.created_secs.map_or_else(
-                                || "creation time unavailable".to_owned(),
-                                |secs| w.clock.ago(secs),
-                            );
-                            rows.push(Row {
-                                key: RowKey::Instance(unavailable.id.clone()),
-                                depth: 1,
-                                glyph: "?",
-                                glyph_tone: Tone::Warning,
-                                label: display.sandbox_name,
-                                meta: format!(
-                                    "{} · {} · {} · {created} · metadata unavailable: {}",
-                                    display.gateway,
-                                    display.role,
-                                    unavailable.phase.label(),
-                                    display.reason
-                                ),
-                                meta_tone: Tone::Warning,
-                                trailing: None,
-                                expandable: false,
-                            });
+                            rows.push(unavailable_row(unavailable, false));
                             continue;
                         }
                     };
                     let (glyph, gt) = instance_mark(i.status);
+                    let gateway = &i.id.gateway;
                     let (meta, mt) = if let Some((_, what)) = self
                         .busy_rows
                         .iter()
                         .find(|(k, _)| *k == RowKey::Instance(i.id.clone()))
                     {
                         (
-                            format!("{} {what}", spinner_frame(w.clock.now_ms as u64 / 80)),
+                            RowMeta::spinner(format!("{gateway} · "), what),
                             Tone::Secondary,
                         )
                     } else {
+                        let plain = |text: String, tone| {
+                            (RowMeta::plain(format!("{gateway} · {text}")), tone)
+                        };
                         match i.status {
                             InstanceStatus::Running => (
-                                format!(
-                                    "running {}",
-                                    junie_tui::ui::text::duration(
-                                        std::time::Duration::from_secs(
-                                            (w.now_secs() - i.created_secs).max(0) as u64
-                                        ),
-                                        junie_tui::ui::text::DurationStyle::Spoken
-                                    )
+                                RowMeta::timed(
+                                    format!("{gateway} · running "),
+                                    Moment::Running(i.created_secs),
+                                    "",
                                 ),
                                 Tone::Active,
                             ),
                             InstanceStatus::CleanExited => (
-                                format!("exited clean · {}", w.clock.ago(i.last_seen_secs)),
+                                RowMeta::timed(
+                                    format!("{gateway} · exited clean · "),
+                                    Moment::Ago(i.last_seen_secs),
+                                    "",
+                                ),
                                 Tone::Muted,
                             ),
-                            InstanceStatus::Crashed => ("crashed · exit 137".into(), Tone::Error),
-                            InstanceStatus::PreservedDirty => {
-                                ("preserved · dirty".into(), Tone::Secondary)
+                            InstanceStatus::Crashed => {
+                                plain("crashed · exit 137".into(), Tone::Error)
                             }
-                            InstanceStatus::PreservedUnpushed => (
+                            InstanceStatus::PreservedDirty => {
+                                plain("preserved · dirty".into(), Tone::Secondary)
+                            }
+                            InstanceStatus::PreservedUnpushed => plain(
                                 w.surfaces.vocabulary.status_label(i.status),
                                 Tone::Secondary,
                             ),
                             InstanceStatus::RestoreAvailable => {
-                                ("restore available".into(), Tone::Secondary)
+                                plain("restore available".into(), Tone::Secondary)
                             }
-                            InstanceStatus::FailedSetup => ("failed setup".into(), Tone::Error),
-                            _ => (i.status.label().into(), Tone::Muted),
+                            InstanceStatus::FailedSetup => {
+                                plain("failed setup".into(), Tone::Error)
+                            }
+                            _ => plain(i.status.label().into(), Tone::Muted),
                         }
                     };
-                    let meta = format!("{} · {meta}", i.id.gateway);
                     rows.push(Row {
                         key: RowKey::Instance(i.id.clone()),
                         depth: 1,
@@ -462,20 +524,13 @@ impl ManagerScreen {
                 }
             }
         }
-        let unattributed = w
-            .instances
-            .iter()
-            .filter_map(|entry| match entry {
-                InstanceEntry::Unavailable(unavailable)
-                    if unavailable
-                        .workspace
-                        .is_none_or(|id| w.workspace(id).is_none()) =>
-                {
-                    Some(unavailable)
-                }
-                _ => None,
-            })
-            .collect::<Vec<_>>();
+        let mut unattributed: Vec<usize> = roster
+            .groups()
+            .filter(|(key, _)| key.is_none_or(|id| !known.contains(&id)))
+            .flat_map(|(_, members)| members.indices.iter().copied())
+            .filter(|index| matches!(w.instances.get(*index), Some(InstanceEntry::Unavailable(_))))
+            .collect();
+        unattributed.sort_unstable();
         if !unattributed.is_empty() {
             rows.push(Row {
                 key: RowKey::UnattributedSandboxes,
@@ -483,35 +538,15 @@ impl ManagerScreen {
                 glyph: "▾",
                 glyph_tone: Tone::Warning,
                 label: "Unattributed sandboxes".into(),
-                meta: plural(unattributed.len(), "record", "records"),
+                meta: RowMeta::plain(plural(unattributed.len(), "record", "records")),
                 meta_tone: Tone::Warning,
                 trailing: None,
                 expandable: false,
             });
-            for unavailable in unattributed {
-                let display = unavailable.display();
-                let created = unavailable.created_secs.map_or_else(
-                    || "creation time unavailable".to_owned(),
-                    |secs| w.clock.ago(secs),
-                );
-                rows.push(Row {
-                    key: RowKey::Instance(unavailable.id.clone()),
-                    depth: 1,
-                    glyph: "?",
-                    glyph_tone: Tone::Warning,
-                    label: display.sandbox_name,
-                    meta: format!(
-                        "{} · {} · {} · {} · {created} · metadata unavailable: {}",
-                        display.gateway,
-                        display.workspace_name,
-                        display.role,
-                        unavailable.phase.label(),
-                        display.reason
-                    ),
-                    meta_tone: Tone::Warning,
-                    trailing: None,
-                    expandable: false,
-                });
+            for index in &unattributed {
+                if let Some(InstanceEntry::Unavailable(unavailable)) = w.instances.get(*index) {
+                    rows.push(unavailable_row(unavailable, true));
+                }
             }
         }
         rows.push(Row {
@@ -520,13 +555,19 @@ impl ManagerScreen {
             glyph: " ",
             glyph_tone: Tone::Normal,
             label: "+ New workspace".into(),
-            meta: String::new(),
+            meta: RowMeta::plain(""),
             meta_tone: Tone::Muted,
             trailing: None,
             expandable: false,
         });
         self.rows = rows;
+        self.settle_selection(w);
+        self.scroll.set_content(self.rows.len());
+    }
 
+    /// Keeps the selection on a row that exists: the nearest owner of a row
+    /// that went away, or the first selectable row.
+    fn settle_selection(&mut self, w: &World) {
         if !self.rows.iter().any(|r| r.key == self.selected) {
             self.selected = match &self.selected {
                 RowKey::Instance(id) => {
@@ -545,7 +586,21 @@ impl ManagerScreen {
                 _ => RowKey::CurrentDir,
             };
         }
-        self.scroll.set_content(self.rows.len());
+    }
+
+    /// Whether the clock moved since the last paint in a way the page shows:
+    /// an age or duration crossing a whole second, or a spinner frame.
+    /// Nothing structural is rebuilt for it.
+    fn clock_due(&self, w: &World) -> bool {
+        let (rows_age, spinning) = clocks(
+            self.scroll
+                .visible_range()
+                .filter_map(|i| self.rows.get(i))
+                .map(|r| &r.meta),
+        );
+        let card_age =
+            matches!(self.selected, RowKey::Instance(_) | RowKey::Workspace(_)) || self.wide;
+        self.clock.due(w, rows_age || card_age, spinning)
     }
 
     fn cursor(&self) -> Option<usize> {
@@ -1682,11 +1737,12 @@ impl ManagerScreen {
                 ctx.clickable(Self::toggle_id(i), Rect::new(x, y, 2, 1));
             }
             x += 2;
-            let meta_w = if show_meta {
-                width(&row.meta) as u16
+            let meta_text = if show_meta {
+                row.meta.text(w)
             } else {
-                0
+                String::new()
             };
+            let meta_w = width(&meta_text) as u16;
             let trailing_w: u16 = if row.trailing.is_some() { 2 } else { 0 };
             let avail = rect.right().saturating_sub(x + 1);
             let lw = avail.saturating_sub(if meta_w > 0 { meta_w + 2 } else { 0 } + trailing_w);
@@ -1711,7 +1767,7 @@ impl ManagerScreen {
                 buf.set_string(
                     rect.right().saturating_sub(meta_w + 1 + trailing_w),
                     y,
-                    &row.meta,
+                    &meta_text,
                     st.fg(t.tone(row.meta_tone)).remove_modifier(Modifier::BOLD),
                 );
             }
@@ -1841,6 +1897,9 @@ impl ManagerScreen {
         self.detail_area = inner;
         let bg = if as_drawer { t.canvas } else { t.surface };
         ctx.scrollable(DETAIL, inner);
+        let widths: Vec<u16> = self.actions.iter().map(|b| b.width()).collect();
+        let action_lines = row_lines(inner.width + 1, &widths, 2);
+        let reserve = action_lines.max(2);
         let mut y = inner.y;
         let put = |buf: &mut Buffer, y: u16, text: &str, style: Style| {
             if y < inner.bottom() {
@@ -2025,14 +2084,14 @@ impl ManagerScreen {
                                 inner.x,
                                 inner.y,
                                 inner.width,
-                                inner.height.saturating_sub(3),
+                                inner.height.saturating_sub(reserve + 1),
                             ),
                             buf,
                             t,
                             &e,
                             bg,
                         );
-                        y = inner.bottom().saturating_sub(2);
+                        y = inner.bottom().saturating_sub(reserve);
                     }
                 }
             }
@@ -2043,14 +2102,14 @@ impl ManagerScreen {
                         inner.x,
                         inner.y,
                         inner.width,
-                        inner.height.saturating_sub(3),
+                        inner.height.saturating_sub(reserve + 1),
                     ),
                     buf,
                     t,
                     &e,
                     bg,
                 );
-                y = inner.bottom().saturating_sub(2);
+                y = inner.bottom().saturating_sub(reserve);
             }
             RowKey::Instance(id) => {
                 if let Some(i) = w.instance(&id) {
@@ -2144,7 +2203,7 @@ impl ManagerScreen {
                     }
                     y += 1;
                     let list_top = y;
-                    let rows_avail = inner.bottom().saturating_sub(y + 2) as usize;
+                    let rows_avail = inner.bottom().saturating_sub(y + reserve) as usize;
                     self.detail_scroll.set_content(self.detail_rows.len());
                     self.detail_scroll.set_viewport(rows_avail);
                     if live_focus {
@@ -2226,7 +2285,7 @@ impl ManagerScreen {
                             live_focus,
                         );
                     }
-                    y = inner.bottom().saturating_sub(2);
+                    y = inner.bottom().saturating_sub(reserve);
                 } else if let Some(InstanceEntry::Unavailable(unavailable)) = w.entry(&id) {
                     let display = unavailable.display();
                     let power = if unavailable.phase.ready() {
@@ -2263,15 +2322,21 @@ impl ManagerScreen {
                 }
             }
             RowKey::UnattributedSandboxes => {
-                y = inner.bottom().saturating_sub(2);
+                y = inner.bottom().saturating_sub(reserve);
             }
         }
 
-        let widths: Vec<u16> = self.actions.iter().map(|b| b.width()).collect();
-        let lines = row_lines(inner.width + 1, &widths, 2);
-        let ay = inner.bottom().saturating_sub(lines).max(y);
+        let ay = inner
+            .bottom()
+            .saturating_sub(action_lines)
+            .max(y)
+            .max(inner.y);
         if ay < inner.bottom() {
-            let rects = row_layout(Rect::new(inner.x - 1, ay, inner.width + 1, 1), &widths, 2);
+            let rects = row_layout(
+                Rect::new(inner.x - 1, ay, inner.width + 1, inner.bottom() - ay),
+                &widths,
+                2,
+            );
             for (b, r) in self.actions.iter_mut().zip(rects) {
                 b.render(r, buf, ctx, bg);
             }
@@ -2876,7 +2941,7 @@ fn agent_rows(
 
 impl Page<Jackin> for ManagerScreen {
     fn enter(&mut self, w: &mut World, cx: &mut Cx) {
-        self.build_rows(w);
+        self.ensure_rows(w);
         self.md.close_drawer(cx.focus);
     }
 
@@ -2900,7 +2965,10 @@ impl Page<Jackin> for ManagerScreen {
             w.last_refresh_secs = w.now_secs();
             out = Outcome::Changed;
         }
-        self.build_rows(w);
+        self.ensure_rows(w);
+        if self.clock_due(w) {
+            out = Outcome::Changed;
+        }
         out
     }
 
@@ -3022,18 +3090,24 @@ impl Page<Jackin> for ManagerScreen {
             }
             Msg::LaunchCancelled { .. } => {}
             Msg::Refreshed { result, .. } => {
+                let asked = std::mem::take(&mut self.refresh_asked);
                 if let Err(error) = result {
-                    cx.error(format!("Refresh failed: {error} · showing last-good rows"));
+                    let text = format!("Refresh failed: {error} · showing last-good rows");
+                    if asked {
+                        cx.error(text);
+                    } else {
+                        cx.notice(text, Tone::Error);
+                    }
                 }
             }
             _ => return Outcome::Ignored,
         }
-        self.build_rows(w);
+        self.ensure_rows(w);
         Outcome::Changed
     }
 
     fn on_key(&mut self, key: &Key, w: &mut World, cx: &mut Cx) -> Outcome {
-        self.build_rows(w);
+        self.ensure_rows(w);
         if self.menu.is_open() {
             let (o, chosen) = self.menu.on_key(key);
             match chosen {
@@ -3198,6 +3272,7 @@ impl Page<Jackin> for ManagerScreen {
             }
             KeyCode::F(5) => {
                 w.last_refresh_secs = w.now_secs() - 6;
+                self.refresh_asked = true;
                 cx.status("Refreshing…");
                 return Outcome::Changed;
             }
@@ -3237,7 +3312,7 @@ impl Page<Jackin> for ManagerScreen {
                             self.expanded.insert(id);
                         }
                     }
-                    self.build_rows(w);
+                    self.ensure_rows(w);
                     return Outcome::Changed;
                 }
                 KeyCode::Left | KeyCode::Char('h') => {
@@ -3255,13 +3330,13 @@ impl Page<Jackin> for ManagerScreen {
                         }
                         _ => {}
                     }
-                    self.build_rows(w);
+                    self.ensure_rows(w);
                     return Outcome::Changed;
                 }
                 KeyCode::Char(' ') => {
                     if let RowKey::Workspace(id) = self.selected {
                         self.toggle_expand(id);
-                        self.build_rows(w);
+                        self.ensure_rows(w);
                     }
                     return Outcome::Changed;
                 }
@@ -3269,12 +3344,12 @@ impl Page<Jackin> for ManagerScreen {
                     for ws in &w.workspaces {
                         self.expanded.insert(ws.id);
                     }
-                    self.build_rows(w);
+                    self.ensure_rows(w);
                     return Outcome::Changed;
                 }
                 KeyCode::Char('-') => {
                     self.expanded.clear();
-                    self.build_rows(w);
+                    self.ensure_rows(w);
                     return Outcome::Changed;
                 }
                 KeyCode::Enter => return self.activate(w, cx),
@@ -3702,7 +3777,8 @@ impl Page<Jackin> for ManagerScreen {
     }
 
     fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, w: &World) {
-        self.build_rows(w);
+        self.ensure_rows(w);
+        self.clock.painted(w);
         let t = ctx.theme;
         self.wide = area.width >= 150;
         self.md.detail_owns = self.actions.iter().map(|b| b.id).collect();
@@ -4052,7 +4128,7 @@ impl ManagerScreen {
 
 impl ManagerScreen {
     fn click(&mut self, id: WidgetId, w: &mut World, cx: &mut Cx) -> Outcome {
-        self.build_rows(w);
+        self.ensure_rows(w);
         if self.menu.is_open() {
             let (o, chosen) = self.menu.on_click(id);
             return match chosen {
@@ -4065,7 +4141,7 @@ impl ManagerScreen {
                 if let RowKey::Workspace(ws) = self.rows[i].key.clone() {
                     self.selected = RowKey::Workspace(ws);
                     self.toggle_expand(ws);
-                    self.build_rows(w);
+                    self.ensure_rows(w);
                 }
                 cx.focus.focus(TREE);
                 return Outcome::Changed;
@@ -4148,7 +4224,7 @@ impl ManagerScreen {
     }
 
     fn secondary(&mut self, id: WidgetId, pos: Position, w: &mut World, cx: &mut Cx) -> Outcome {
-        self.build_rows(w);
+        self.ensure_rows(w);
 
         let in_detail = id == DETAIL
             || (0..self.detail_rows.len()).any(|k| Self::detail_row_id(k) == id)

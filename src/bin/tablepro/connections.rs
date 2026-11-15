@@ -1,12 +1,16 @@
+use std::collections::HashMap;
+
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
 
 use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::id::WidgetId;
+use junie_tui::core::id::{ItemKey, Part, PartRef, WidgetId};
 use junie_tui::core::intent::Phase;
+use junie_tui::core::list::SourceStamp;
 use junie_tui::core::pointer::{MouseTarget, PointerEvent};
 use junie_tui::theme::Tone;
+use junie_tui::ui::context::{ContextAnchor, ContextRequest, ContextSource};
 use junie_tui::ui::ctx::RenderCtx;
 use junie_tui::ui::layout::{Stack, StackChild, StackScroll};
 use junie_tui::ui::leave::{KeyContext, Leave, LeaveGuard, Resolved, Stakes, letters_allowed};
@@ -23,7 +27,7 @@ use junie_tui::widgets::panel::Panel;
 use junie_tui::widgets::props::Prop;
 use junie_tui::widgets::select::Select;
 use junie_tui::widgets::tabs::Tabs;
-use junie_tui::widgets::tree::{TreeAction, TreeNode, TreeView};
+use junie_tui::widgets::tree::{TreeAction, TreeNodeRef, TreeSource, TreeView};
 
 use crate::app::OpenDialog as _;
 use crate::db::{ConnectOutcome, Connection, Engine, Environment, SafeMode};
@@ -34,15 +38,69 @@ pub const TREE: WidgetId = WidgetId::of("connections").sub("tree");
 
 pub const NEW_ID: WidgetId = WidgetId::of("connections").sub("new");
 
+/// Simulated connect attempts finish after this many ticks.
+const CONNECT_TICKS: u8 = 12;
+
+/// One configured connection with its stable identity. The key is allocated
+/// once and never reused; the revision counts semantic settings edits.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ConnectionEntry {
+    key: ItemKey,
+    value: Connection,
+    revision: u64,
+}
+
+impl ConnectionEntry {
+    #[cfg(test)]
+    pub fn key(&self) -> ItemKey {
+        self.key
+    }
+
+    #[cfg(test)]
+    pub fn value(&self) -> &Connection {
+        &self.value
+    }
+
+    #[cfg(test)]
+    pub fn revision(&self) -> u64 {
+        self.revision
+    }
+}
+
+/// A mutation was refused before any state changed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ConnectionMutationError {
+    /// A key, revision or attempt counter has no further value to hand out.
+    IdentityExhausted,
+}
+
+impl ConnectionMutationError {
+    pub fn message(self) -> &'static str {
+        match self {
+            ConnectionMutationError::IdentityExhausted => {
+                "Connections cannot be changed right now; the request was not applied"
+            }
+        }
+    }
+}
+
+/// A connect attempt, captured once when it starts.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ConnectRequest {
+    pub connection: ItemKey,
+    pub revision: u64,
+    pub generation: u64,
+    pub snapshot: Connection,
+    pub ticks_left: u8,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ConnState {
     Idle,
-    Connecting {
-        ticks: u32,
-        name: String,
-    },
+    Connecting(ConnectRequest),
     Failed {
-        name: String,
+        key: ItemKey,
+        revision: u64,
         message: String,
         detail: String,
     },
@@ -52,15 +110,140 @@ pub enum ConnState {
     Tested(Result<String, String>),
 }
 
+/// Why an admitted completion did not connect.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Cancelled {
+    Deleted,
+    Changed,
+}
+
+impl Cancelled {
+    pub fn message(self) -> &'static str {
+        match self {
+            Cancelled::Deleted => "Connection was deleted; connect cancelled",
+            Cancelled::Changed => "Connection was changed; connect cancelled",
+        }
+    }
+}
+
 pub enum ConnEvent {
-    Connected(usize),
+    Connected {
+        key: ItemKey,
+        generation: u64,
+        connection: Box<Connection>,
+    },
+    Cancelled(Cancelled),
+}
+
+/// How a `--connect` name failed to pick exactly one connection.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NameLookup {
+    NotFound,
+    Ambiguous(usize),
+}
+
+/// Where a tree node's key leads: a group heading (the index of its entry in
+/// `groups`) or one connection (its position in `entries`).
+#[derive(Debug, Clone, Copy)]
+enum Slot {
+    Group(usize),
+    Entry(usize),
+}
+
+#[derive(Debug)]
+struct Group {
+    key: ItemKey,
+    /// Position of the first entry in this group; its `group` is the heading.
+    first: usize,
+    members: Vec<ItemKey>,
+}
+
+/// The tree's shape over `entries`: group headings, membership and the
+/// revision of that shape. Labels stay in `entries` and are borrowed at paint.
+#[derive(Debug, Default)]
+struct Roster {
+    groups: Vec<Group>,
+    slot: HashMap<ItemKey, Slot>,
+    data: u64,
+}
+
+/// One frame's borrowed tree provider over the screen's entries.
+struct ConnTree<'a> {
+    entries: &'a [ConnectionEntry],
+    roster: &'a Roster,
+    glyphs: &'a junie_tui::theme::Glyphs,
+}
+
+impl TreeSource for ConnTree<'_> {
+    fn stamp(&self) -> SourceStamp {
+        SourceStamp {
+            instance: ItemKey::text("tablepro.connections.tree"),
+            data: self.roster.data,
+            view: self.roster.data,
+        }
+    }
+
+    fn root_count(&self) -> usize {
+        self.roster.groups.len()
+    }
+
+    fn root_key(&self, index: usize) -> ItemKey {
+        self.roster.groups[index].key
+    }
+
+    fn node(&self, key: ItemKey) -> Option<TreeNodeRef<'_>> {
+        let base = TreeNodeRef {
+            label: "",
+            meta: None,
+            glyph: None,
+            glyph_tone: Tone::Muted,
+            label_tone: None,
+            children: &[],
+            lazy: false,
+            busy: false,
+            note: false,
+        };
+        Some(match *self.roster.slot.get(&key)? {
+            Slot::Group(g) => {
+                let group = &self.roster.groups[g];
+                TreeNodeRef {
+                    label: &self.entries[group.first].value.group,
+                    children: &group.members,
+                    ..base
+                }
+            }
+            Slot::Entry(i) => {
+                let c = &self.entries[i].value;
+                let env = c.environment.kind();
+                TreeNodeRef {
+                    label: &c.name,
+                    meta: Some(c.engine.short()),
+                    glyph: Some(self.glyphs.env(env)),
+                    glyph_tone: env.tone(),
+                    ..base
+                }
+            }
+        })
+    }
+}
+
+/// A tree node as the context menu shows it: its label, and for a group
+/// heading whether it is open.
+pub struct NodeMenu {
+    pub label: String,
+    pub group_expanded: Option<bool>,
 }
 
 pub struct ConnectionsScreen {
-    pub connections: Vec<Connection>,
+    entries: Vec<ConnectionEntry>,
+    next_key: u64,
+    last_generation: u64,
+    roster: Roster,
+    /// The tree owns the cursor, expansion and pointer capture by key; the
+    /// connection the cursor stands on is read back from it, never mirrored.
     tree: TreeView,
     filter: TextInput,
-    pub selected: Option<usize>,
+    delete_target: Option<ItemKey>,
     pub state: ConnState,
     connect_btn: Button,
     edit_btn: Button,
@@ -76,17 +259,53 @@ pub struct ConnectionsScreen {
     glyphs: junie_tui::theme::Glyphs,
 }
 
+/// The tree node a pointer event landed on, by key.
+fn row_key(ev: &PointerEvent) -> Option<ItemKey> {
+    ev.key_of(Part::ROW)
+        .or_else(|| ev.key_of(Part::ICON))
+        .or_else(|| ev.key_of(Part::MARKER))
+}
+
+impl ContextSource for ConnectionsScreen {
+    type Target = ItemKey;
+
+    fn context_target(&self, ev: &PointerEvent) -> Option<ItemKey> {
+        ev.on(self.tree.id).then(|| row_key(ev))?
+    }
+
+    fn context_select(&mut self, key: ItemKey) {
+        self.select_key(key);
+    }
+
+    fn context_cursor(&self) -> Option<ContextRequest<ItemKey>> {
+        let key = self.tree.keyed().cursor()?;
+        let row = self.tree.keyed().visible_index(key)?;
+        let area = self.tree.area;
+        let dy = row
+            .saturating_sub(self.tree.scroll.offset)
+            .min(area.height.saturating_sub(1) as usize) as u16;
+        Some(ContextRequest {
+            target: key,
+            anchor: ContextAnchor::Control {
+                id: self.tree.id.part(PartRef::item(Part::ROW, key)),
+                fallback: Rect::new(area.x, area.y + dy, area.width.max(1), 1),
+            },
+        })
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FormLeave {
     Close,
 
-    Edit(usize),
+    Edit(ItemKey),
 
     New,
 }
 
 struct ConnForm {
-    index: Option<usize>,
+    target: Option<ItemKey>,
+    expected_revision: u64,
     tabs: Tabs,
     name: TextInput,
     engine: Select,
@@ -135,7 +354,7 @@ fn name_validator(s: &str) -> Option<String> {
 }
 
 impl ConnForm {
-    fn new(c: Option<&Connection>, index: Option<usize>) -> Self {
+    fn new(c: Option<&Connection>, target: Option<ItemKey>, expected_revision: u64) -> Self {
         let f = ID.sub("form");
         let engines = ["PostgreSQL", "MySQL", "SQLite"];
         let eng = c
@@ -164,7 +383,8 @@ impl ConnForm {
         let mut tabs = Tabs::new(f.sub("tabs"), &["Basic", "Advanced"]);
         tabs.active = 0;
         Self {
-            index,
+            target,
+            expected_revision,
             tabs,
             name: TextInput::new(f.sub("name"), "Name")
                 .required(true)
@@ -311,13 +531,28 @@ pub fn env_tone(env: Environment) -> Tone {
 
 impl ConnectionsScreen {
     pub fn new(connections: Vec<Connection>) -> Self {
+        let entries: Vec<ConnectionEntry> = connections
+            .into_iter()
+            .enumerate()
+            .map(|(i, value)| ConnectionEntry {
+                key: ItemKey::num(i as u64),
+                value,
+                revision: 0,
+            })
+            .collect();
+        let next_key = entries.len() as u64;
         let mut s = Self {
-            connections,
-            tree: TreeView::new(ID.sub("tree"), vec![]),
+            entries,
+            next_key,
+            last_generation: 0,
+            roster: Roster::default(),
+            delete_target: None,
+            tree: TreeView::new(ID.sub("tree"), vec![])
+                .select_follows_cursor(true)
+                .show_selection(false),
             filter: TextInput::new(ID.sub("filter"), "")
                 .placeholder("Filter connections")
                 .plain_label(),
-            selected: Some(0),
             state: ConnState::Idle,
             connect_btn: Button::primary(ID.sub("connect"), "Connect"),
             edit_btn: Button::secondary(ID.sub("edit"), "Edit"),
@@ -333,82 +568,227 @@ impl ConnectionsScreen {
             glyphs: junie_tui::theme::Glyphs::default(),
         };
         s.rebuild_tree();
+        if let Some(first) = s.entries.first().map(|e| e.key) {
+            let src = ConnTree {
+                entries: &s.entries,
+                roster: &s.roster,
+                glyphs: &s.glyphs,
+            };
+            let _ = s.tree.select_source(first, &src);
+        }
         s
     }
 
-    fn rebuild_tree(&mut self) {
-        let mut groups: Vec<String> = Vec::new();
-        for c in &self.connections {
-            if !groups.contains(&c.group) {
-                groups.push(c.group.clone());
-            }
+    /// Fixture for the counter-exhaustion boundary: every counter starts at the
+    /// given value instead of being iterated there.
+    #[cfg(test)]
+    pub fn with_counters(
+        connections: Vec<Connection>,
+        next_key: u64,
+        last_generation: u64,
+        revision: u64,
+    ) -> Self {
+        let mut s = Self::new(connections);
+        s.next_key = next_key;
+        s.last_generation = last_generation;
+        for e in &mut s.entries {
+            e.revision = revision;
         }
-        let nodes: Vec<TreeNode> = groups
+        s
+    }
+
+    #[cfg(test)]
+    pub fn iter(&self) -> impl Iterator<Item = &ConnectionEntry> {
+        self.entries.iter()
+    }
+
+    pub fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    pub fn get(&self, key: ItemKey) -> Option<&ConnectionEntry> {
+        self.entries.iter().find(|e| e.key == key)
+    }
+
+    fn position(&self, key: ItemKey) -> Option<usize> {
+        self.entries.iter().position(|e| e.key == key)
+    }
+
+    /// The one connection a case-insensitive CLI name designates.
+    pub fn resolve_name(&self, name: &str) -> Result<ItemKey, NameLookup> {
+        let mut hits = self
+            .entries
             .iter()
-            .map(|g| {
-                let children: Vec<TreeNode> = self
-                    .connections
-                    .iter()
-                    .filter(|c| &c.group == g)
-                    .map(|c| {
-                        let env = c.environment.kind();
-                        TreeNode::leaf(&c.name)
-                            .glyph(self.glyphs.env(env))
-                            .glyph_tone(env.tone())
-                            .meta(c.engine.short())
-                    })
-                    .collect();
-                TreeNode::dir(g, children)
-            })
-            .collect();
-        let filter = self.tree.filter.clone();
-        let cursor = self.tree.cursor;
-        self.tree = TreeView::new(ID.sub("tree"), nodes);
-        self.tree.expand_all();
-        self.tree.filter = filter;
-        self.tree.flatten();
-        self.tree.cursor = cursor.min(self.tree.rows().len().saturating_sub(1));
-        self.sync_selected_from_cursor();
-    }
-
-    fn connection_at_path(&self, path: &[usize]) -> Option<usize> {
-        if path.len() != 2 {
-            return None;
-        }
-        let node = self.tree.node(path)?;
-        self.connections.iter().position(|c| c.name == node.label)
-    }
-
-    fn sync_selected_from_cursor(&mut self) {
-        let rows = self.tree.rows();
-        if let Some(row) = rows.get(self.tree.cursor)
-            && let Some(i) = self.connection_at_path(&row.path.clone())
-        {
-            self.selected = Some(i);
+            .filter(|e| e.value.name.eq_ignore_ascii_case(name));
+        match (hits.next(), hits.count()) {
+            (None, _) => Err(NameLookup::NotFound),
+            (Some(e), 0) => Ok(e.key),
+            (Some(_), more) => Err(NameLookup::Ambiguous(more + 1)),
         }
     }
 
-    pub fn tree(&self) -> &TreeView {
-        &self.tree
+    /// An owned copy of one connection's current settings.
+    pub fn snapshot(&self, key: ItemKey) -> Option<Connection> {
+        self.get(key).map(|e| e.value.clone())
     }
 
-    pub fn tree_mut(&mut self) -> &mut TreeView {
-        &mut self.tree
+    fn reserve_key(&self) -> Result<(ItemKey, u64), ConnectionMutationError> {
+        let next = self
+            .next_key
+            .checked_add(1)
+            .ok_or(ConnectionMutationError::IdentityExhausted)?;
+        Ok((ItemKey::num(self.next_key), next))
     }
 
-    pub fn connection_at_row(&self, row: usize) -> Option<usize> {
-        let path = self.tree.rows().get(row)?.path.clone();
-        self.connection_at_path(&path)
+    /// Settings equality: the `last_used` display stamp is bookkeeping.
+    fn same_settings(a: &Connection, b: &Connection) -> bool {
+        let mut a = a.clone();
+        a.last_used.clone_from(&b.last_used);
+        a == *b
     }
 
-    pub fn select_row(&mut self, row: usize) {
-        use junie_tui::ui::context::ContextSource;
-        self.tree.context_select(row);
-        self.sync_selected_from_cursor();
+    /// Replace one connection's settings. Equal settings are a no-op and keep the
+    /// revision; a refused edit changes nothing. Returns whether it changed.
+    fn edit_settings(
+        &mut self,
+        key: ItemKey,
+        value: Connection,
+    ) -> Result<bool, ConnectionMutationError> {
+        let Some(i) = self.position(key) else {
+            return Ok(false);
+        };
+        if Self::same_settings(&self.entries[i].value, &value) {
+            return Ok(false);
+        }
+        let revision = self.entries[i]
+            .revision
+            .checked_add(1)
+            .ok_or(ConnectionMutationError::IdentityExhausted)?;
+        self.entries[i].value = value;
+        self.entries[i].revision = revision;
+        if matches!(&self.state, ConnState::Failed { key: k, .. } if *k == key) {
+            self.state = ConnState::Idle;
+        }
+        Ok(true)
+    }
+
+    /// Persist a Safe Mode change made from an open workbench.
+    pub fn set_safe_mode(
+        &mut self,
+        key: ItemKey,
+        level: SafeMode,
+    ) -> Result<bool, ConnectionMutationError> {
+        let Some(mut value) = self.snapshot(key) else {
+            return Ok(false);
+        };
+        value.safe_mode = level;
+        self.edit_settings(key, value)
+    }
+
+    fn set_last_used(&mut self, key: ItemKey, stamp: &str) {
+        if let Some(e) = self.entries.iter_mut().find(|e| e.key == key) {
+            e.value.last_used = stamp.into();
+        }
+    }
+
+    /// Re-derives the tree's shape after `entries` or the glyph set changed.
+    /// The tree keeps its cursor and expansion by key, so nothing is restored
+    /// by position here.
+    fn rebuild_tree(&mut self) {
+        let mut groups: Vec<Group> = Vec::new();
+        let mut slot = HashMap::with_capacity(self.entries.len() + 4);
+        for (i, e) in self.entries.iter().enumerate() {
+            let at = match groups
+                .iter()
+                .position(|g| self.entries[g.first].value.group == e.value.group)
+            {
+                Some(at) => at,
+                None => {
+                    let key = ItemKey::text(&e.value.group);
+                    slot.insert(key, Slot::Group(groups.len()));
+                    groups.push(Group {
+                        key,
+                        first: i,
+                        members: Vec::new(),
+                    });
+                    groups.len() - 1
+                }
+            };
+            groups[at].members.push(e.key);
+            slot.insert(e.key, Slot::Entry(i));
+        }
+        self.roster = Roster {
+            groups,
+            slot,
+            data: self.roster.data + 1,
+        };
+        let src = ConnTree {
+            entries: &self.entries,
+            roster: &self.roster,
+            glyphs: &self.glyphs,
+        };
+        let _ = self.tree.expand_all_source(&src);
+    }
+
+    /// The connection the tree has selected. The selection follows the cursor
+    /// onto connections and survives a filter that hides it.
+    pub fn selected_key(&self) -> Option<ItemKey> {
+        self.tree
+            .keyed()
+            .selected()
+            .find(|k| matches!(self.roster.slot.get(k), Some(Slot::Entry(_))))
+    }
+
+    pub fn tree_id(&self) -> WidgetId {
+        self.tree.id
+    }
+
+    /// Move the cursor to the node `key` names, and select it when it is a
+    /// connection; false when it is gone, filtered out or in a collapsed group.
+    pub fn select_key(&mut self, key: ItemKey) -> bool {
+        let src = ConnTree {
+            entries: &self.entries,
+            roster: &self.roster,
+            glyphs: &self.glyphs,
+        };
+        if !self.tree.set_cursor_source(key, &src).unwrap_or(false) {
+            return false;
+        }
+        if matches!(self.roster.slot.get(&key), Some(Slot::Entry(_))) {
+            let _ = self.tree.select_source(key, &src);
+        }
+        true
+    }
+
+    /// What the context menu needs to know about one tree node.
+    pub fn node_menu(&self, key: ItemKey) -> Option<NodeMenu> {
+        let label = match *self.roster.slot.get(&key)? {
+            Slot::Entry(i) => (self.entries[i].value.name.clone(), None),
+            Slot::Group(g) => (
+                self.entries[self.roster.groups[g].first]
+                    .value
+                    .group
+                    .clone(),
+                Some(self.tree.keyed().is_expanded(key)),
+            ),
+        };
+        Some(NodeMenu {
+            label: label.0,
+            group_expanded: label.1,
+        })
     }
 
     pub fn selected_connection(&self) -> Option<&Connection> {
-        self.selected.and_then(|i| self.connections.get(i))
+        self.selected_key()
+            .and_then(|k| self.get(k))
+            .map(|e| &e.value)
+    }
+
+    /// Drop the form-scoped test result; connect attempts are not form state.
+    fn clear_form_state(&mut self) {
+        if matches!(self.state, ConnState::Testing { .. } | ConnState::Tested(_)) {
+            self.state = ConnState::Idle;
+        }
     }
 
     pub fn form_dirty(&self) -> bool {
@@ -439,11 +819,11 @@ impl ConnectionsScreen {
         match to {
             FormLeave::Close => {
                 self.form = None;
-                self.state = ConnState::Idle;
+                self.clear_form_state();
                 cx.focus.focus(self.tree.id);
             }
-            FormLeave::Edit(i) => {
-                self.open_form(Some(i));
+            FormLeave::Edit(key) => {
+                self.open_form(Some(key));
                 if let Some(form) = self.form.as_ref() {
                     cx.focus.focus(form.name.id);
                 }
@@ -476,7 +856,7 @@ impl ConnectionsScreen {
         match to {
             Leave::Quit => {
                 self.form = None;
-                self.state = ConnState::Idle;
+                self.clear_form_state();
                 true
             }
             Leave::To(to) => {
@@ -506,23 +886,51 @@ impl ConnectionsScreen {
     pub fn animating(&self) -> bool {
         matches!(
             self.state,
-            ConnState::Connecting { .. } | ConnState::Testing { .. }
+            ConnState::Connecting(_) | ConnState::Testing { .. }
         )
     }
 
-    pub fn start_connect(&mut self, i: usize) {
-        if let Some(c) = self.connections.get(i) {
-            self.selected = Some(i);
-            self.state = ConnState::Connecting {
-                ticks: 0,
-                name: c.name.clone(),
-            };
+    /// Begin a simulated attempt on `key`, capturing its settings now. A repeated
+    /// start supersedes the earlier attempt. A refused start changes nothing.
+    pub fn start_connect(&mut self, key: ItemKey) -> Result<(), ConnectionMutationError> {
+        let Some(entry) = self.get(key) else {
+            return Ok(());
+        };
+        let generation = self
+            .last_generation
+            .checked_add(1)
+            .ok_or(ConnectionMutationError::IdentityExhausted)?;
+        let request = ConnectRequest {
+            connection: key,
+            revision: entry.revision,
+            generation,
+            snapshot: entry.value.clone(),
+            ticks_left: CONNECT_TICKS,
+        };
+        self.last_generation = generation;
+        self.select_key(key);
+        self.state = ConnState::Connecting(request);
+        Ok(())
+    }
+
+    fn begin_connect(&mut self, key: ItemKey, cx: &mut crate::app::Cx) {
+        if let Err(e) = self.start_connect(key) {
+            cx.status_as(junie_tui::theme::StatusKind::Warn, e.message());
         }
     }
 
-    pub fn open_form(&mut self, index: Option<usize>) {
-        let c = index.and_then(|i| self.connections.get(i));
-        self.form = Some(ConnForm::new(c, index));
+    pub fn open_form(&mut self, target: Option<ItemKey>) {
+        let entry = match target {
+            Some(key) => match self.get(key) {
+                Some(e) => Some((key, e.revision, e.value.clone())),
+                None => return,
+            },
+            None => None,
+        };
+        self.form = Some(match entry {
+            Some((key, revision, value)) => ConnForm::new(Some(&value), Some(key), revision),
+            None => ConnForm::new(None, None, 0),
+        });
     }
 
     pub fn open_new(&mut self) {
@@ -531,37 +939,11 @@ impl ConnectionsScreen {
 
     pub fn tick(&mut self) -> Option<ConnEvent> {
         match &mut self.state {
-            ConnState::Connecting { ticks, name } => {
-                *ticks += 1;
-                if *ticks >= 12 {
-                    let name = name.clone();
-                    let idx = self.connections.iter().position(|c| c.name == name);
-                    let outcome = idx
-                        .map(|i| self.connections[i].outcome)
-                        .unwrap_or(ConnectOutcome::Ok);
-                    match outcome {
-                        ConnectOutcome::Ok => {
-                            self.state = ConnState::Idle;
-                            if let Some(i) = idx {
-                                self.connections[i].last_used = "just now".into();
-                                return Some(ConnEvent::Connected(i));
-                            }
-                        }
-                        ConnectOutcome::AuthFailed => {
-                            self.state = ConnState::Failed {
-                                name,
-                                message: "Authentication failed".into(),
-                                detail: "FATAL: password authentication failed for user \"acme_app\" (SQLSTATE 28P01). Check the password in the keychain or use “Prompt for password”.".into(),
-                            };
-                        }
-                        ConnectOutcome::Unreachable => {
-                            self.state = ConnState::Failed {
-                                name,
-                                message: "Could not reach the host".into(),
-                                detail: "Connection timed out after 10 s (analytics.acme.io:3306). The host may be behind a VPN or the port may be blocked.".into(),
-                            };
-                        }
-                    }
+            ConnState::Connecting(req) => {
+                req.ticks_left = req.ticks_left.saturating_sub(1);
+                if req.ticks_left == 0 {
+                    let generation = req.generation;
+                    return self.complete(generation);
                 }
             }
             ConnState::Testing { ticks } => {
@@ -583,6 +965,54 @@ impl ConnectionsScreen {
         None
     }
 
+    /// Admit the completion of attempt `generation` exactly once. A completion
+    /// for any other generation, or after the attempt ended, emits nothing.
+    pub fn complete(&mut self, generation: u64) -> Option<ConnEvent> {
+        let req = match std::mem::replace(&mut self.state, ConnState::Idle) {
+            ConnState::Connecting(req) if req.generation == generation => req,
+            other => {
+                self.state = other;
+                return None;
+            }
+        };
+        let Some(entry) = self.get(req.connection) else {
+            return Some(ConnEvent::Cancelled(Cancelled::Deleted));
+        };
+        if entry.revision != req.revision {
+            return Some(ConnEvent::Cancelled(Cancelled::Changed));
+        }
+        match req.snapshot.outcome {
+            ConnectOutcome::Ok => {
+                self.set_last_used(req.connection, "just now");
+                let mut connection = req.snapshot;
+                connection.last_used = "just now".into();
+                Some(ConnEvent::Connected {
+                    key: req.connection,
+                    generation,
+                    connection: Box::new(connection),
+                })
+            }
+            ConnectOutcome::AuthFailed => {
+                self.state = ConnState::Failed {
+                    key: req.connection,
+                    revision: req.revision,
+                    message: "Authentication failed".into(),
+                    detail: "FATAL: password authentication failed for user \"acme_app\" (SQLSTATE 28P01). Check the password in the keychain or use “Prompt for password”.".into(),
+                };
+                None
+            }
+            ConnectOutcome::Unreachable => {
+                self.state = ConnState::Failed {
+                    key: req.connection,
+                    revision: req.revision,
+                    message: "Could not reach the host".into(),
+                    detail: "Connection timed out after 10 s (analytics.acme.io:3306). The host may be behind a VPN or the port may be blocked.".into(),
+                };
+                None
+            }
+        }
+    }
+
     pub fn on_key(&mut self, key: &Key, cx: &mut crate::app::Cx) -> (Outcome, Option<ConnEvent>) {
         let text_focus = self.form_text_focus(cx.focus.current());
         if key.is_char('e')
@@ -591,11 +1021,9 @@ impl ConnectionsScreen {
                 text_focus,
                 ..KeyContext::default()
             })
-            && let Some(i) = self
-                .selected
-                .or_else(|| self.connections.iter().position(|c| c.name == "Production"))
+            && let Some(key) = self.selected_key()
         {
-            return (self.leave_form(FormLeave::Edit(i), cx), None);
+            return (self.leave_form(FormLeave::Edit(key), cx), None);
         }
         let Some(f) = cx.focus.current() else {
             return (Outcome::Ignored, None);
@@ -607,9 +1035,7 @@ impl ConnectionsScreen {
                 | Some(InputAction::Committed)
                 | Some(InputAction::Cancelled) => {
                     let q = self.filter.text().to_owned();
-                    self.tree
-                        .set_filter(if q.is_empty() { None } else { Some(&q) });
-                    self.sync_selected_from_cursor();
+                    self.tree.filter = (!q.is_empty()).then_some(q);
                 }
                 Some(InputAction::CommittedTab { backward }) => {
                     if backward {
@@ -644,13 +1070,16 @@ impl ConnectionsScreen {
                 self.filter.begin_edit();
                 return (Outcome::Changed, None);
             }
-            let (o, ev) = self.tree.on_key(key);
-            self.sync_selected_from_cursor();
-            if let Some(TreeAction::Activate(path)) = ev
-                && let Some(i) = self.connection_at_path(&path)
-            {
-                self.start_connect(i);
-            }
+            let src = ConnTree {
+                entries: &self.entries,
+                roster: &self.roster,
+                glyphs: &self.glyphs,
+            };
+            let Ok(resp) = self.tree.on_key_source(key, &src) else {
+                return (Outcome::Ignored, None);
+            };
+            let (o, actions) = resp.into_parts();
+            self.activate(actions, cx);
             return (o, None);
         }
         if let Some(_form) = self.form.as_mut() {
@@ -686,31 +1115,56 @@ impl ConnectionsScreen {
         }
     }
 
+    /// Starts the connection a tree activation names; a group heading names none.
+    fn activate(
+        &mut self,
+        actions: impl IntoIterator<Item = TreeAction<ItemKey>>,
+        cx: &mut crate::app::Cx,
+    ) {
+        for action in actions {
+            if let TreeAction::Activate(node) = action
+                && let Some(Slot::Entry(i)) = self.roster.slot.get(&node).copied()
+            {
+                let key = self.entries[i].key;
+                self.begin_connect(key, cx);
+            }
+        }
+    }
+
     fn action(&mut self, which: usize, cx: &mut crate::app::Cx) -> Option<ConnEvent> {
         match which {
-            0 | 4 => {
-                if let Some(i) = self.selected {
-                    self.start_connect(i);
+            0 => {
+                if let Some(key) = self.selected_key() {
+                    self.begin_connect(key, cx);
+                }
+            }
+            4 => {
+                let retry = match &self.state {
+                    ConnState::Failed { key, .. } => Some(*key),
+                    _ => self.selected_key(),
+                };
+                if let Some(key) = retry {
+                    self.begin_connect(key, cx);
                 }
             }
             1 => {
-                self.open_form(self.selected);
+                self.open_form(self.selected_key());
                 if let Some(f) = &self.form {
                     cx.focus.focus(f.name.id);
                 }
             }
             2 => {
-                if let Some(i) = self.selected {
-                    let mut c = self.connections[i].clone();
-                    c.name = format!("{} (Copy)", c.name);
-                    c.last_used = "never".into();
-                    self.connections.insert(i + 1, c);
-                    self.rebuild_tree();
-                    cx.status("Duplicated");
+                if let Some(key) = self.selected_key() {
+                    match self.duplicate(key) {
+                        Ok(true) => cx.status("Duplicated"),
+                        Ok(false) => {}
+                        Err(e) => cx.status_as(junie_tui::theme::StatusKind::Warn, e.message()),
+                    }
                 }
             }
             3 => {
-                if let Some(c) = self.selected_connection() {
+                if let Some(entry) = self.selected_key().and_then(|k| self.get(k)) {
+                    let (key, c) = (entry.key, &entry.value);
                     let d = junie_tui::widgets::dialog::Dialog::destructive(
                         ID.sub("delete-dialog"),
                         "Delete connection?",
@@ -720,6 +1174,7 @@ impl ConnectionsScreen {
                         ),
                         "Delete",
                     );
+                    self.delete_target = Some(key);
                     cx.open_dialog(d);
                 }
             }
@@ -728,22 +1183,64 @@ impl ConnectionsScreen {
         None
     }
 
+    /// Insert a copy after `key` under a fresh key. The copy keeps the original's
+    /// label plus " (Copy)"; labels are not identity, so repeats may coincide.
+    fn duplicate(&mut self, key: ItemKey) -> Result<bool, ConnectionMutationError> {
+        let Some(i) = self.position(key) else {
+            return Ok(false);
+        };
+        let (new_key, next_key) = self.reserve_key()?;
+        let mut value = self.entries[i].value.clone();
+        value.name = format!("{} (Copy)", value.name);
+        value.last_used = "never".into();
+        self.entries.insert(
+            i + 1,
+            ConnectionEntry {
+                key: new_key,
+                value,
+                revision: 0,
+            },
+        );
+        self.next_key = next_key;
+        self.rebuild_tree();
+        Ok(true)
+    }
+
+    fn delete(&mut self, key: ItemKey) {
+        let Some(i) = self.position(key) else {
+            return;
+        };
+        self.entries.remove(i);
+        if matches!(&self.state, ConnState::Failed { key: k, .. } if *k == key) {
+            self.state = ConnState::Idle;
+        }
+        self.rebuild_tree();
+        if self.selected_key().is_none()
+            && let Some(next) = self
+                .entries
+                .get(i.min(self.entries.len().saturating_sub(1)))
+                .map(|e| e.key)
+        {
+            let src = ConnTree {
+                entries: &self.entries,
+                roster: &self.roster,
+                glyphs: &self.glyphs,
+            };
+            let _ = self.tree.select_source(next, &src);
+        }
+    }
+
     pub fn on_dialog_closed(
         &mut self,
         id: WidgetId,
         result: junie_tui::widgets::dialog::DialogResult,
     ) -> bool {
         if id == ID.sub("delete-dialog") {
+            let target = self.delete_target.take();
             if result == junie_tui::widgets::dialog::DialogResult::Action(1)
-                && let Some(i) = self.selected
+                && let Some(key) = target
             {
-                self.connections.remove(i);
-                self.selected = if self.connections.is_empty() {
-                    None
-                } else {
-                    Some(i.min(self.connections.len() - 1))
-                };
-                self.rebuild_tree();
+                self.delete(key);
             }
             return true;
         }
@@ -824,9 +1321,7 @@ impl ConnectionsScreen {
                     1 => "3306",
                     _ => "",
                 };
-                form.port = TextInput::new(form.port.id, "Port")
-                    .value(port)
-                    .validator(port_validator);
+                form.port.set_value(port);
             }
             return o;
         }
@@ -862,7 +1357,7 @@ impl ConnectionsScreen {
             let (o, act) = form.cancel_btn.on_key(key);
             if act {
                 self.form = None;
-                self.state = ConnState::Idle;
+                self.clear_form_state();
                 cx.focus.focus(self.tree.id);
             }
             return o;
@@ -911,29 +1406,61 @@ impl ConnectionsScreen {
             });
             return Outcome::Changed;
         }
-        let base = form.index.and_then(|i| self.connections.get(i)).cloned();
+        let (target, expected) = (form.target, form.expected_revision);
+        let base = match target {
+            Some(key) => match self.entries.iter().find(|e| e.key == key) {
+                Some(e) if e.revision == expected => Some(e.value.clone()),
+                Some(_) => {
+                    cx.status_as(
+                        junie_tui::theme::StatusKind::Warn,
+                        "Connection changed since this form opened; reopen it to edit",
+                    );
+                    return Outcome::Changed;
+                }
+                None => {
+                    cx.status_as(
+                        junie_tui::theme::StatusKind::Warn,
+                        "Connection no longer exists",
+                    );
+                    return Outcome::Changed;
+                }
+            },
+            None => None,
+        };
         let c = form.to_connection(base.as_ref());
-        let idx = match form.index {
-            Some(i) => {
-                self.connections[i] = c;
-                i
-            }
-            None => {
-                self.connections.push(c);
-                self.connections.len() - 1
+        let saved = match target {
+            Some(key) => self.edit_settings(key, c).map(|_| key),
+            None => self.insert_new(c),
+        };
+        let key = match saved {
+            Ok(key) => key,
+            Err(e) => {
+                cx.status_as(junie_tui::theme::StatusKind::Warn, e.message());
+                return Outcome::Changed;
             }
         };
         self.form = None;
-        self.state = ConnState::Idle;
+        self.clear_form_state();
         self.rebuild_tree();
-        self.selected = Some(idx);
+        self.select_key(key);
         cx.status_as(junie_tui::theme::StatusKind::Ok, "Connection saved");
         if connect {
-            self.start_connect(idx);
+            self.begin_connect(key, cx);
         } else {
             cx.focus.focus(self.tree.id);
         }
         Outcome::Changed
+    }
+
+    fn insert_new(&mut self, value: Connection) -> Result<ItemKey, ConnectionMutationError> {
+        let (key, next_key) = self.reserve_key()?;
+        self.entries.push(ConnectionEntry {
+            key,
+            value,
+            revision: 0,
+        });
+        self.next_key = next_key;
+        Ok(key)
     }
 
     fn pointer_fields(&mut self) -> Vec<&mut dyn PointerField> {
@@ -978,8 +1505,15 @@ impl ConnectionsScreen {
             _ => {}
         }
 
-        if let Some(r) = self.tree.route(ev) {
-            return (r.outcome(), None);
+        if ev.on(self.tree.id) {
+            let src = ConnTree {
+                entries: &self.entries,
+                roster: &self.roster,
+                glyphs: &self.glyphs,
+            };
+            if let Ok(r) = self.tree.on_pointer_source(ev, &src) {
+                return (r.outcome(), None);
+            }
         }
         if let Some(form) = self.form.as_mut() {
             for sel in [&mut form.engine, &mut form.group] {
@@ -1007,17 +1541,19 @@ impl ConnectionsScreen {
             return (o, None);
         }
         if ev.on(self.tree.id) {
-            if self.tree.row_at(ev).is_some() {
+            if row_key(ev).is_some() {
                 cx.focus.focus(self.tree.id);
             }
-            let (o, act) = self.tree.pointer(ev).into_parts();
-            self.sync_selected_from_cursor();
-
-            if let Some(TreeAction::Activate(path)) = act
-                && let Some(i) = self.connection_at_path(&path)
-            {
-                self.start_connect(i);
-            }
+            let src = ConnTree {
+                entries: &self.entries,
+                roster: &self.roster,
+                glyphs: &self.glyphs,
+            };
+            let Ok(resp) = self.tree.on_pointer_source(ev, &src) else {
+                return (Outcome::Ignored, None);
+            };
+            let (o, actions) = resp.into_parts();
+            self.activate(actions, cx);
             return (o, None);
         }
         if self.form.is_some() {
@@ -1089,7 +1625,7 @@ impl ConnectionsScreen {
         }
         if form.cancel_btn.id == id && form.cancel_btn.on_click() {
             self.form = None;
-            self.state = ConnState::Idle;
+            self.clear_form_state();
             cx.focus.focus(self.tree.id);
             return Outcome::Changed;
         }
@@ -1220,7 +1756,7 @@ impl ConnectionsScreen {
         let t = ctx.theme;
 
         let lf = ctx.interaction.focused(self.tree.id) || ctx.interaction.focused(self.filter.id);
-        let count = format!("{}", self.connections.len());
+        let count = format!("{}", self.entries.len());
         let panel = Panel::framed(Some("Connections")).focused(lf).meta(&count);
         let bg = panel.bg(t);
         let inner = panel.render(l, buf, t);
@@ -1236,7 +1772,7 @@ impl ConnectionsScreen {
             inner.width + 1,
             inner.height.saturating_sub(2),
         );
-        if self.connections.is_empty() {
+        if self.entries.is_empty() {
             junie_tui::widgets::empty::render_ctx(
                 tree_area,
                 buf,
@@ -1250,13 +1786,22 @@ impl ConnectionsScreen {
                 bg,
             );
         } else {
-            self.tree.render(tree_area, buf, ctx, bg);
+            let src = ConnTree {
+                entries: &self.entries,
+                roster: &self.roster,
+                glyphs: &self.glyphs,
+            };
+            let _ = self.tree.render_source(tree_area, &src, buf, ctx, bg);
         }
     }
 
     fn render_detail(&mut self, r: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
         let t = ctx.theme;
-        let Some(c) = self.selected_connection().cloned() else {
+        let Some((key, revision, c)) = self
+            .selected_key()
+            .and_then(|k| self.get(k))
+            .map(|e| (e.key, e.revision, e.value.clone()))
+        else {
             DetailCard::empty(
                 junie_tui::widgets::empty::EmptyState::new("Select a connection")
                     .hint("↑↓ moves, Ctrl+N creates one"),
@@ -1324,9 +1869,11 @@ impl ConnectionsScreen {
                 .wrap(),
             );
         }
-        let connecting =
-            matches!(&self.state, ConnState::Connecting { name, .. } if *name == c.name);
-        let failed = matches!(&self.state, ConnState::Failed { name, .. } if *name == c.name);
+        let connecting = matches!(&self.state, ConnState::Connecting(req) if req.connection == key);
+        let failed = matches!(
+            &self.state,
+            ConnState::Failed { key: k, revision: r, .. } if *k == key && *r == revision
+        );
         self.connect_btn.busy = connecting;
         self.connect_btn.label = if failed {
             "Reconnect".into()
@@ -1341,8 +1888,8 @@ impl ConnectionsScreen {
         let (inner, bg) = (l.slot, l.bg);
         let sy = l.slot.y;
         match &self.state {
-            ConnState::Connecting { ticks, name } if *name == c.name => {
-                let phase = match ticks {
+            ConnState::Connecting(req) if req.connection == key => {
+                let phase = match CONNECT_TICKS - req.ticks_left {
                     0..=3 => "Opening SSH tunnel…",
                     4..=7 => "Authenticating…",
                     _ => "Loading schema…",
@@ -1356,10 +1903,11 @@ impl ConnectionsScreen {
                 );
             }
             ConnState::Failed {
-                name,
+                key: k,
+                revision: r,
                 message,
                 detail,
-            } if *name == c.name => {
+            } if *k == key && *r == revision => {
                 Notice::error(message.as_str())
                     .detail(detail.as_str())
                     .message_lines(1)
@@ -1387,7 +1935,7 @@ impl ConnectionsScreen {
         let Some(form) = self.form.as_mut() else {
             return;
         };
-        let title = if form.index.is_some() {
+        let title = if form.target.is_some() {
             "Edit connection"
         } else {
             "New connection"
@@ -1396,8 +1944,8 @@ impl ConnectionsScreen {
         let bg = panel.bg(t);
         let inner = panel.render(Rect::new(r.x, r.y, r.width.min(84), r.height), buf, t);
 
-        form.tabs.items[0].error =
-            form.name.field.error.is_some() || form.port.field.error.is_some();
+        let error = form.name.field.error.is_some() || form.port.field.error.is_some();
+        form.tabs.update_item(0, |it| it.error = error);
         let (strip, body) = Tabs::layout(inner);
         form.tabs.render(strip, buf, ctx, bg);
 

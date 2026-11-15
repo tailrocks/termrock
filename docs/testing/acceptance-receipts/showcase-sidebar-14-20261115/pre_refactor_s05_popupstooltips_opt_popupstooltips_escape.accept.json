@@ -6,13 +6,13 @@
   "reason": null,
   "candidate_path": {
     "encoding": "utf8",
-    "value": "/tmp/final/pre_refactor__s05_popupstooltips__opt_popupstooltips_escape.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/target/functional/s05-escape-20016-1794770999293213000-0/check-artifacts/pre_refactor/s05_popupstooltips/opt_popupstooltips_escape/4402f65ea9c769f4c56432a404d38f067e196a36a7133ec7452d5a951d59cd6b/sample.tui.pb"
   },
-  "candidate_sha256": "3790dadb837d49b38978bd02c32e2ae146a4464325ae01cba6b0ec7511025e1e",
-  "baseline_sha256": "3790dadb837d49b38978bd02c32e2ae146a4464325ae01cba6b0ec7511025e1e",
+  "candidate_sha256": "4402f65ea9c769f4c56432a404d38f067e196a36a7133ec7452d5a951d59cd6b",
+  "baseline_sha256": "4402f65ea9c769f4c56432a404d38f067e196a36a7133ec7452d5a951d59cd6b",
   "output_path": {
     "encoding": "utf8",
-    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s05_popupstooltips/opt_popupstooltips_escape.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/tests/functional/baselines/pre_refactor/s05_popupstooltips/opt_popupstooltips_escape.tui.pb"
   },
   "error_code": null
 }

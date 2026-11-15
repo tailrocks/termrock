@@ -2,9 +2,13 @@ mod app;
 mod coverage;
 
 mod data;
+mod feed;
 mod inspector;
 mod options;
 mod pages;
+
+#[cfg(all(test, feature = "work-metrics"))]
+mod work_metrics_tests;
 
 use crate::app::{App, NavExpand, PageId};
 use clap::{Parser, ValueEnum};
@@ -70,6 +74,23 @@ fn cli_after_help() -> String {
 fn main() -> std::io::Result<()> {
     let _ = (
         coverage::PICKER_COVERAGE,
+        coverage::TERMINAL_SESSION_COVERAGE,
+        coverage::TEXT_INPUT_COVERAGE,
+        coverage::GRID_EDIT_COVERAGE,
+        coverage::DOCUMENT_WORKSPACE_COVERAGE,
+        coverage::DOCUMENT_WORKSPACE_ALLOWLIST,
+        coverage::GRID_CHANGE_ALLOWLIST,
+        coverage::GRID_PARSER_ALLOWLIST,
+        coverage::SCROLL_WINDOW_COVERAGE,
+        coverage::SCROLL_WINDOW_ALLOWLIST,
+        coverage::EXTERNAL_COVERAGE,
+        coverage::EXTERNAL_ALLOWLIST,
+        coverage::RUNTIME_ALLOWLIST,
+        coverage::INSPECT_CHANGES_COVERAGE,
+        coverage::INSPECT_CHANGES_ALLOWLIST,
+        coverage::SEARCH_SESSION_ALLOWLIST,
+        coverage::SEARCH_DETAIL_PAGES,
+        coverage::SEARCH_DETAIL_COVERAGE,
         coverage::PROOFS,
         coverage::EXCEPTIONS,
     );

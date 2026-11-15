@@ -14,6 +14,7 @@ use crate::core::selection::ClickPolicy;
 use crate::theme::{Theme, Tone};
 use crate::ui::ctx::RenderCtx;
 use crate::ui::list_core::ListCore;
+use crate::ui::measure::terminal_extent;
 use crate::ui::reveal::{Reveal, RevealLine};
 use crate::ui::row::{RowLook, RowUi};
 use crate::widgets::scrollbar;
@@ -77,22 +78,24 @@ struct Row<'a> {
     value_x: u16,
 }
 
-fn column(widths: impl Iterator<Item = u16> + Clone, width: u16, sheet: Sheet) -> Option<u16> {
+fn column(widths: impl Iterator<Item = usize> + Clone, width: u16, sheet: Sheet) -> Option<u16> {
+    let avail = usize::from(width);
+    let value_min = usize::from(sheet.value_min);
     let full = widths.clone().max().unwrap_or(2);
-    if width.saturating_sub(full) >= sheet.value_min {
-        return Some(full);
+    if avail.saturating_sub(full) >= value_min {
+        return Some(terminal_extent(full));
     }
-    let cap = (width as u32 * sheet.label_max_share.min(100) as u32 / 100) as u16;
+    let cap = avail * usize::from(sheet.label_max_share.min(100)) / 100;
 
     let label_w = widths.filter(|w| *w <= cap).max().unwrap_or(cap.max(1));
-    (width.saturating_sub(label_w) >= sheet.value_min).then_some(label_w)
+    (avail.saturating_sub(label_w) >= value_min).then_some(terminal_extent(label_w))
 }
 
 fn label_column(props: &[Prop], width: u16, sheet: Sheet) -> Option<u16> {
     column(
         props
             .iter()
-            .map(|p| crate::ui::text::width(&p.label) as u16 + 2),
+            .map(|p| crate::ui::text::width(&p.label).saturating_add(2)),
         width,
         sheet,
     )
@@ -124,7 +127,9 @@ fn rows(props: &[Prop], width: u16, sheet: Sheet) -> Vec<Row<'_>> {
     let mut out = vec![];
     for p in props {
         match column {
-            Some(label_w) if crate::ui::text::width(&p.label) as u16 + 2 <= label_w => {
+            Some(label_w)
+                if crate::ui::text::width(&p.label).saturating_add(2) <= usize::from(label_w) =>
+            {
                 let vw = width.saturating_sub(label_w) as usize;
                 value_rows(p, Some(&p.label), label_w, vw, &mut out);
             }
@@ -150,7 +155,7 @@ pub fn measure(props: &[Prop], width: u16) -> u16 {
 }
 
 pub fn measure_with(props: &[Prop], width: u16, sheet: Sheet) -> u16 {
-    rows(props, width, sheet).len() as u16
+    terminal_extent(rows(props, width, sheet).len())
 }
 
 pub fn width(props: &[Prop]) -> u16 {
@@ -161,8 +166,12 @@ pub fn width_with(props: &[Prop], sheet: Sheet) -> u16 {
     if props.is_empty() {
         return 0;
     }
-    let w = |s: &str| crate::ui::text::width(s) as u16;
-    let label = props.iter().map(|p| w(&p.label) + 2).max().unwrap_or(2);
+    let w = crate::ui::text::width;
+    let label = props
+        .iter()
+        .map(|p| w(&p.label).saturating_add(2))
+        .max()
+        .unwrap_or(2);
     let value = props
         .iter()
         .map(|p| {
@@ -174,7 +183,7 @@ pub fn width_with(props: &[Prop], sheet: Sheet) -> u16 {
         })
         .max()
         .unwrap_or(0);
-    label + value.max(sheet.value_min)
+    terminal_extent(label.saturating_add(value.max(usize::from(sheet.value_min))))
 }
 
 pub fn render(area: Rect, buf: &mut Buffer, t: &Theme, props: &[Prop], bg: Color) -> u16 {
@@ -477,7 +486,7 @@ impl PropsList {
         let widths = self
             .props
             .iter()
-            .map(|p| crate::ui::text::width(&p.label) as u16 + 2);
+            .map(|p| crate::ui::text::width(&p.label).saturating_add(2));
         let label_w = column(widths, label_area, self.sheet).unwrap_or_else(|| {
             (label_area as u32 * self.sheet.label_max_share.min(100) as u32 / 100) as u16
         });
@@ -489,9 +498,9 @@ impl PropsList {
     }
 
     fn value_width(geo: Geometry, x: u16, p: &Prop) -> usize {
-        let vx = x + 2 + geo.label_w;
+        let vx = x.saturating_add(2).saturating_add(geo.label_w);
         geo.value_right
-            .saturating_sub(vx + Self::hint_width(p, p.copyable)) as usize
+            .saturating_sub(vx.saturating_add(Self::hint_width(p, p.copyable))) as usize
     }
 
     /// The lines of a prop that wraps; `None` for one that stays on a row.
@@ -557,7 +566,7 @@ impl PropsList {
     pub(crate) fn height_at(&self, width: u16) -> u16 {
         let area = Rect::new(0, 0, width, 1);
         let geo = self.geometry(area, area);
-        (self.props.len() + self.wrap_extra(geo, 0)) as u16
+        terminal_extent(self.props.len().saturating_add(self.wrap_extra(geo, 0)))
     }
 
     fn inline_rows(

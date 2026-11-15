@@ -2215,6 +2215,7 @@ impl ConfigTabs {
                 "key",
                 TextInput::new(f.sub("key"), "Key")
                     .required(true)
+                    .required_message("Key is required")
                     .placeholder("DATABASE_URL")
                     .validator(env_key_error)
                     .value(e.as_ref().map(|e| e.key.as_str()).unwrap_or("")),

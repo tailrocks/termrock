@@ -163,7 +163,11 @@ fn open_options(app: &App) {
     let opened = app.wait_text("Inspector · on");
     let tab = find_in(&opened, 80, 0, 119, 8, "Options");
     app.click(tab);
-    app.wait_text("Colour level");
+    app.wait_screen("inspector options tab", |screen| {
+        find_all(screen, "Colour level")
+            .into_iter()
+            .any(|point| point.x >= 88)
+    });
 }
 
 fn finish_inspector(app: &App) {

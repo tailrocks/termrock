@@ -6,13 +6,13 @@
   "reason": null,
   "candidate_path": {
     "encoding": "utf8",
-    "value": "/tmp/final/pre_refactor__s02_chipsselects__opt_chipsselects_track_click.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/target/functional/s02-chips-track-65720-1794772502517932000-4/check-artifacts/pre_refactor/s02_chipsselects/opt_chipsselects_track_click/a44f9ed9479f0f08c9faa141937678d70e8f933e1bc1f859015021204820098a/sample.tui.pb"
   },
-  "candidate_sha256": "3c55765b29f18d2189c0024d55a5f076039605c1f15ec859e4a4d9d85d5c927e",
-  "baseline_sha256": "3c55765b29f18d2189c0024d55a5f076039605c1f15ec859e4a4d9d85d5c927e",
+  "candidate_sha256": "a44f9ed9479f0f08c9faa141937678d70e8f933e1bc1f859015021204820098a",
+  "baseline_sha256": "a44f9ed9479f0f08c9faa141937678d70e8f933e1bc1f859015021204820098a",
   "output_path": {
     "encoding": "utf8",
-    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s02_chipsselects/opt_chipsselects_track_click.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/tests/functional/baselines/pre_refactor/s02_chipsselects/opt_chipsselects_track_click.tui.pb"
   },
   "error_code": null
 }

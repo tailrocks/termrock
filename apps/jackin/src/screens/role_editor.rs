@@ -78,12 +78,14 @@ enum Pick {
     Preflight,
 }
 
+const NAME_MESSAGE: &str = "Use letters, digits, - and _ in the role name.";
+
 fn name_error(v: &str) -> Option<String> {
     let v = v.trim();
     let ok = !v.is_empty()
         && v.chars()
             .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_');
-    (!ok).then(|| "Use letters, digits, - and _ in the role name.".to_owned())
+    (!ok).then(|| NAME_MESSAGE.to_owned())
 }
 
 fn path_error(v: &str, optional: bool) -> Option<String> {
@@ -108,6 +110,7 @@ fn entry_name_error(v: &str) -> Option<String> {
 fn path_input(id: WidgetId, label: &str, value: &str, optional: bool) -> TextInput {
     TextInput::new(id, label)
         .required(!optional)
+        .required_message(PATH_MESSAGE)
         .value(value)
         .validator(move |v| path_error(v, optional))
 }
@@ -201,6 +204,7 @@ impl RoleEditorScreen {
             tabs: Tabs::new(TABS, &TAB_NAMES),
             name: TextInput::new(NAME, "Name")
                 .required(true)
+                .required_message(NAME_MESSAGE)
                 .value(&doc.name)
                 .validator(name_error)
                 .disabled(locked),
@@ -769,6 +773,7 @@ impl RoleEditorScreen {
                 "name",
                 TextInput::new(f.sub("name"), "Name")
                     .required(true)
+                    .required_message("Key is required")
                     .placeholder("EXAMPLE_NAME")
                     .validator(entry_name_error)
                     .value(e.as_ref().map_or("", |e| e.name.as_str())),
@@ -1435,9 +1440,11 @@ impl Page<Jackin> for RoleEditorScreen {
             return o;
         }
         if let Some(r) = self.tabs.route(ev) {
-            let (o, act) = r.into_parts();
-            if let Some(TabAction::Activated(i)) = act {
-                self.tab = Tab::ALL[i.min(2)];
+            let (o, actions) = r.into_parts();
+            for action in actions {
+                if let TabAction::Activated(i) = action {
+                    self.tab = Tab::ALL[i.min(2)];
+                }
             }
             if !click {
                 return o;
@@ -1614,8 +1621,7 @@ impl Page<Jackin> for RoleEditorScreen {
                     };
                     let file = file.clone();
                     if let Some(input) = self.input_mut(id) {
-                        input.field.buffer.set_text(&file);
-                        input.field.error = None;
+                        input.set_value(&file);
                     }
                     self.sync();
                     cx.focus.focus(id);

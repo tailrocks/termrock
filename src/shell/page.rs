@@ -145,6 +145,13 @@ pub fn row_choice(
     Some((row, keys.chars().nth(k).map(replay_key), k))
 }
 
+/// Runs `rebuild` and reports `Changed` only when `view` differs afterwards.
+///
+/// Every call builds `view` twice and runs the whole `rebuild`, so its cost is
+/// that of a full rebuild plus two view clones on every tick, whether or not
+/// anything changed. It suits a small page whose rebuild is cheap. A page whose
+/// source is expensive or large keeps a revision of that source and rebuilds
+/// only when the revision moves (Holla's Finder and Cleanup do this).
 pub fn rebuild_on_tick<P, V: PartialEq>(
     page: &mut P,
     view: impl Fn(&P) -> V,

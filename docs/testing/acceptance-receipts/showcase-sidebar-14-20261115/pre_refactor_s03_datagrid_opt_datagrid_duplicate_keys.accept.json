@@ -6,13 +6,13 @@
   "reason": null,
   "candidate_path": {
     "encoding": "utf8",
-    "value": "/tmp/final/pre_refactor__s03_datagrid__opt_datagrid_duplicate_keys.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/target/functional/s03-duplicate-97327-1794771429788741000-0/check-artifacts/pre_refactor/s03_datagrid/opt_datagrid_duplicate_keys/f987ccc86a08e2b459a793c049fd3d1fe60d0c2ec5e7aaa09420f218246bb0b3/sample.tui.pb"
   },
-  "candidate_sha256": "e4c644a54b81b69eb19ca6b4bede902031683d4dff13a0c9128fc4491516a1fa",
-  "baseline_sha256": "e4c644a54b81b69eb19ca6b4bede902031683d4dff13a0c9128fc4491516a1fa",
+  "candidate_sha256": "f987ccc86a08e2b459a793c049fd3d1fe60d0c2ec5e7aaa09420f218246bb0b3",
+  "baseline_sha256": "f987ccc86a08e2b459a793c049fd3d1fe60d0c2ec5e7aaa09420f218246bb0b3",
   "output_path": {
     "encoding": "utf8",
-    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s03_datagrid/opt_datagrid_duplicate_keys.tui.pb"
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/tests/functional/baselines/pre_refactor/s03_datagrid/opt_datagrid_duplicate_keys.tui.pb"
   },
   "error_code": null
 }
