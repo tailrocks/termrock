@@ -285,6 +285,7 @@ impl DiskPage {
         self.rebuilds += 1;
         let tick = w.tick;
         let focused = self.cursor_fs_path();
+        let focused_before = self.described_item();
         let expanded_fs: Vec<String> = self
             .tree
             .expanded
@@ -324,6 +325,7 @@ impl DiskPage {
 
         let live: BTreeSet<&str> = self.paths.iter().map(|(_, f)| f.as_str()).collect();
         self.selected.retain(|s| live.contains(s.as_str()));
+        self.rewind_if_changed(&focused_before);
     }
 
     fn cursor_fs_path(&self) -> Option<String> {
@@ -2587,5 +2589,50 @@ mod detail_scroll_tests {
         deliver_click(&mut page, &mut w, &hits, row_cell(1));
         assert_ne!(page.cursor_fs_path(), first);
         assert_eq!(page.detail_scroll.offset, 0, "clicking a new row");
+    }
+
+    #[test]
+    fn a_rescan_that_drops_the_focused_entry_rewinds_the_detail() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        let root = w.location.cwd.clone();
+        w.start_scan(&root);
+        w.tick += 1_000_000;
+        let mut page = DiskPage::new(&root);
+        page.rebuild_tree(&w);
+        page.tree
+            .expanded
+            .extend(page.paths.iter().map(|(p, _)| p.clone()));
+        page.rebuild_tree(&w);
+        let (row, path) = page
+            .tree
+            .rows()
+            .iter()
+            .enumerate()
+            .filter_map(|(i, r)| page.fs_path_of(&r.path).map(|p| (i, p)))
+            .find(|(i, p)| *i > 0 && p.matches('/').count() >= 2 && w.fs.get(p).is_some())
+            .expect("a nested visible entry");
+        page.tree.context_select(row);
+        let before = page.cursor_fs_path();
+        assert_eq!(before.as_deref(), Some(path.as_str()));
+        page.detail_scroll.set_content(100);
+        page.detail_scroll.set_viewport(5);
+        page.detail_scroll.jump_start();
+        page.detail_scroll.scroll_by(3);
+
+        // A cleanup removed the focused entry and the finished job rescanned.
+        w.fs.remove_permanent(&path).expect("removed");
+        w.start_scan(&root);
+        w.tick += 1_000_000;
+        page.rebuild_tree(&w);
+
+        assert_ne!(
+            page.cursor_fs_path(),
+            before,
+            "the pane now describes another entry"
+        );
+        assert_eq!(
+            page.detail_scroll.offset, 0,
+            "a different entry starts its detail at the top"
+        );
     }
 }
