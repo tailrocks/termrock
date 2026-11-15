@@ -168,6 +168,10 @@ fn issue11_review_locks_exact_draft() {
         ),
         Err(GridDataError::Busy)
     );
+    assert_eq!(
+        g.try_set_model(vec![ColumnSpec::new("only", CellKind::Text)], page(1)),
+        Err(GridDataError::Busy)
+    );
     assert_eq!(g.finish_edit_session(), Ok(FinishEdit::NoSession));
 
     for (code, mods) in [
