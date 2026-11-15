@@ -33,6 +33,7 @@ ratatui = { workspace = true }
 unicode-segmentation = "1"
 
 [dev-dependencies]
+termrock = { path = "../../crates/termrock", features = ["cli", "terminal"] }
 jackin-console = { path = ".", default-features = false, features = ["demo"] }
 tui-test = { workspace = true }
 tuiscotti-latest = { workspace = true }

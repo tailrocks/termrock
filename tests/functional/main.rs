@@ -2,7 +2,6 @@
 
 mod bins;
 mod cases;
-mod holla;
 mod lifecycle;
 mod showcase;
 #[allow(dead_code)]

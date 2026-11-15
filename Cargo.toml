@@ -60,6 +60,7 @@ serde_json = { workspace = true, optional = true }
 libc = "0.2"
 
 [dev-dependencies]
+termrock = { path = "crates/termrock", features = ["cli", "terminal"] }
 syn = { version = "3.0.9", features = ["full", "visit"] }
 
 tui-test = { workspace = true }
