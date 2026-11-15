@@ -50,8 +50,9 @@ rows with an empty set.
   first (Unsaved changes: Cancel, Discard, Save). Before, they dropped the edits.
 - A failed read no longer empties a populated grid.
 - A schema switch with a hidden explorer shows it, since it focuses it.
-- The plain discard dialog, the clean-table paths and every approved capture are
-  unchanged.
+- Discard on a table with unsaved edits still opens the plain discard dialog.
+  Discard on a clean table no longer asks. It reloads the rows at once, where it
+  used to ask with "0 pending". Every approved capture is unchanged.
 
 ## Limits
 

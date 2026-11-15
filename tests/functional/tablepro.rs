@@ -621,8 +621,6 @@ fn issue12_guarded_reload_pty() {
     let table = app.wait_screen("organizations opened", |s| {
         text(s).contains("public › organizations") && !text(s).contains("Open Quickly")
     });
-    let first = row_of(&table, "public › organizations");
-    let _ = first;
     let id_row = (0..table.rows())
         .map(|index| row_text(&table, index))
         .find(|row| uuid_in(row).is_some())
