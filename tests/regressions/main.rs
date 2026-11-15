@@ -10,4 +10,5 @@ mod common;
 mod form_dialog_geometry;
 mod form_value;
 mod grapheme_paint;
+mod loading_label;
 mod smoke;
