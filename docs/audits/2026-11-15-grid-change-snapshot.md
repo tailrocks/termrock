@@ -68,7 +68,7 @@ overrides. Take a `GridChangeSet` and read `InsertedRow::values`.
 
 - Identifiers are still written unquoted, so the accepted TablePro and Showcase
   captures keep their text. Quoting them is a visible change that needs its own
-  baseline refresh.
+  baseline refresh, tracked in #181.
 - A base row shorter than the schema reads as `Null` in its missing tail until
   #42 canonicalizes stored rows.
 - Delayed save, submission locks and completion validation are #11. Resolved
