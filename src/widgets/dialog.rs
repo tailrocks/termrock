@@ -974,7 +974,11 @@ impl Dialog {
                 self.scroll_code(1)
             }
             (Some(nav @ (Nav::Left | Nav::Right)), _) => {
-                if let Some(id) = self.button_row.step(&self.actions, cur, nav == Nav::Right) {
+                if let Some(id) = self.button_row.step(
+                    self.actions.iter().filter(|b| ring.contains(b.id)),
+                    cur,
+                    nav == Nav::Right,
+                ) {
                     focus.focus(id);
                 }
                 Outcome::Changed
