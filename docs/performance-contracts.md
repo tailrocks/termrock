@@ -87,21 +87,21 @@ list, table, grid and tree widget in the frame.
 | `DataTable` | settled frame | 1k / 10k / 100k | rows painted 29, width calls 62, width bytes 108 |
 | `TreeView` | settled frame | 1k / 10k / 100k | rows painted 30, width calls 30, width bytes 200 |
 | `TreeView` | filter change | 1k / 10k / 100k | labels normalized = n, label bytes 7,890 / 88,890 / 988,890 |
-| Holla Finder | settled tick | 106 items, 5 activities, 0 plans | projection rebuilds 1, ranked 106, scheduling 10, width calls 716 |
+| Holla Finder | settled tick | 106 items, 5 activities, 0 plans | projection rebuilds 1, ranked 106, scheduling 10, width calls 697 |
 | Holla Finder | unrelated world field, then tick | same | same as the settled tick |
-| Holla Finder | query change | same | projection rebuilds 1, ranked 106, width calls 1,639 |
-| TablePro grid | settled tick | 312 rows | rows painted 41, width calls 249 |
+| Holla Finder | query change | same | projection rebuilds 1, ranked 106, width calls 1,620 |
+| TablePro grid | settled tick | 312 rows | rows painted 41, width calls 227 |
 | TablePro grid | one Down key | 312 | same as the settled tick |
-| TablePro grid | one keyed draft edit | 312 | rows painted 39, width calls 257 |
-| TablePro grid | unrelated history entry, then tick | 312 | rows painted 39, width calls 257 |
-| Showcase Query workbench | settled tick | 2 documents | rows painted 47, width calls 389 |
-| Showcase Query workbench | click the second tab (two frames) | 2 | rows painted 82, width calls 593 |
-| Showcase Finder | settled tick | 12 actions | allocated 1,440, rows painted 24, width calls 208 |
+| TablePro grid | one keyed draft edit | 312 | rows painted 39, width calls 234 |
+| TablePro grid | unrelated history entry, then tick | 312 | rows painted 39, width calls 234 |
+| Showcase Query workbench | settled tick | 2 documents | rows painted 47, width calls 371 |
+| Showcase Query workbench | click the second tab (two frames) | 2 | rows painted 82, width calls 561 |
+| Showcase Finder | settled tick | 12 actions | allocated 1,440, rows painted 24, width calls 199 |
 | Showcase Finder | other page's option, then tick | 12 | same as the settled tick |
-| Jackin roster | settled tick | 9 instances, 4 workspaces, 2 daemons | scheduling records 2, polls 6, width calls 178 |
+| Jackin roster | settled tick | 9 instances, 4 workspaces, 2 daemons | scheduling records 2, polls 6, width calls 157 |
 | Jackin roster | unrelated workspace policy, then tick | same | same as the settled tick |
-| Jackin roster | workspace rename, then tick | same | width bytes 1,571 instead of 1,531 |
-| Jackin capsule | settled tick | 2 daemons | segmented 2,021, reflowed 4,012, index rebuilds 5, payload bytes cloned 80,059, width calls 80,161 |
+| Jackin roster | workspace rename, then tick | same | width bytes 1,464 instead of 1,424 |
+| Jackin capsule | settled tick | 2 daemons | segmented 2,021, reflowed 4,012, index rebuilds 5, payload bytes cloned 80,059, width calls 80,112 |
 
 ### What these counts say
 
@@ -136,6 +136,10 @@ Also unmet, and absent from every scenario above:
 - Holla's batch summary loop and `tick_plan` are not counted. A Holla
   scheduling count covers the activity and plan traversal only, so a zero or a
   steady count there says nothing about batches or the work inside a plan.
+- `Tabs` paint work scales with the drawn tabs, not the item count. Painting a
+  drawn tab re-measures its label, calls `close_button.width` once, and
+  measures its prefix and suffix when set. `tabs_render_measures_each_tab_once`
+  pins the plain-label case.
 
 ## Fitting work
 

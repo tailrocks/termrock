@@ -163,7 +163,11 @@ fn tabs_render_measures_each_tab_once() {
             measure(|| tabs.render(Rect::new(0, 0, 80, 2), buf, ctx, bg)).1
         });
         let drawn = tabs.areas.iter().filter(|r| !r.is_empty()).count() as u64;
-        // Painting a drawn tab re-measures its label and sizes its close plate.
+        // The width pass measures each item's label once, and adds one more
+        // measure per prefix and per suffix when set. Painting adds, per drawn
+        // tab, one label re-measure, one close_button.width call, and one
+        // measure per prefix and per suffix. These labels have neither, so each
+        // drawn tab adds two.
         let painting = 2 * drawn;
         assert_eq!(
             work.get(Metric::IntrinsicWidthCalls) - painting,
