@@ -11,7 +11,7 @@
 mod api_inventory;
 
 use std::collections::{BTreeMap, BTreeSet};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use api_inventory::{ApiKind, Expansion, Inventory, MATRIX, Record, SourceTree, Value, build};
 use syn::visit::Visit;
@@ -508,13 +508,10 @@ fn catalog_module_graph_covers_every_source_file() {
     let rows = rows(&s.tree).expect("inventory builds");
     let all = &rows.last().expect("rows").1;
     let on_disk: BTreeSet<_> = s.tree.files.keys().cloned().collect();
-    let missing: Vec<_> = on_disk
-        .difference(&all.files_read)
-        .filter(|path| !path.ends_with("tests.rs") && !path.ends_with("catalog_contract.rs"))
-        .collect();
+    let missing = all.orphan_files(&s.tree);
     assert!(
         missing.is_empty(),
-        "source files outside the module graph (test-only modules are exempt): {missing:?}"
+        "source files outside the module graph and not declared as `#[cfg(test)] mod`: {missing:?}"
     );
     let widget_files = on_disk
         .iter()
@@ -529,6 +526,77 @@ fn catalog_module_graph_covers_every_source_file() {
         widget_modules, widget_files,
         "widget modules counted from the graph"
     );
+}
+
+const PROBE_FILE: &str = "src/zz_probe.rs";
+const PROBE_SOURCE: &str = "pub fn probe_fn() {}\n";
+
+fn with_probe_module(declaration: &str) -> Sources {
+    let mut s = Sources::load();
+    s.tree
+        .files
+        .insert(PathBuf::from(PROBE_FILE), PROBE_SOURCE.to_owned());
+    if !declaration.is_empty() {
+        s.tree
+            .files
+            .get_mut(Path::new("src/lib.rs"))
+            .expect("lib.rs")
+            .push_str(&format!("\n{declaration}\n"));
+    }
+    s
+}
+
+fn orphans(s: &Sources) -> Vec<PathBuf> {
+    let rows = rows(&s.tree).expect("inventory builds");
+    rows.last().expect("rows").1.orphan_files(&s.tree)
+}
+
+#[test]
+fn catalog_cfg_test_module_file_is_test_only_not_an_orphan() {
+    let s = with_probe_module("#[cfg(test)]\nmod zz_probe;");
+    assert!(orphans(&s).is_empty(), "{:?}", orphans(&s));
+    let rows = rows(&s.tree).expect("inventory builds");
+    let all = &rows.last().expect("rows").1;
+    assert!(all.test_only_files.contains(Path::new(PROBE_FILE)));
+    assert!(!all.files_read.contains(Path::new(PROBE_FILE)));
+    assert!(!all.exports.keys().any(|id| id.contains("probe_fn")));
+}
+
+#[test]
+fn catalog_cfg_test_module_children_are_test_only_too() {
+    let mut s = with_probe_module("#[cfg(test)]\nmod zz_probe;");
+    s.tree.files.insert(
+        PathBuf::from(PROBE_FILE),
+        "mod inner;\npub fn probe_fn() {}\n".to_owned(),
+    );
+    s.tree
+        .files
+        .insert(PathBuf::from("src/zz_probe/inner.rs"), String::new());
+    assert!(orphans(&s).is_empty(), "{:?}", orphans(&s));
+}
+
+#[test]
+fn catalog_orphan_source_file_still_fails() {
+    let s = with_probe_module("");
+    assert_eq!(orphans(&s), vec![PathBuf::from(PROBE_FILE)]);
+}
+
+#[test]
+fn catalog_feature_gated_module_is_not_test_only() {
+    let s = with_probe_module("#[cfg(feature = \"no-such-feature\")]\nmod zz_probe;");
+    assert_eq!(orphans(&s), vec![PathBuf::from(PROBE_FILE)]);
+}
+
+#[test]
+fn catalog_non_test_module_still_requires_its_disposition() {
+    let s = with_probe_module("pub mod zz_probe;");
+    assert!(orphans(&s).is_empty());
+    expect_error(
+        &check(&s),
+        "exported API is missing from catalog: zz_probe::probe_fn",
+    );
+    let gated = with_probe_module("#[cfg(test)]\npub mod zz_probe;");
+    assert!(check(&gated).is_empty(), "{}", check(&gated).join("\n"));
 }
 
 #[test]

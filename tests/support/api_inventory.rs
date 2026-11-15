@@ -116,6 +116,21 @@ pub struct Inventory {
     pub public_modules: BTreeSet<String>,
     /// Source files that were read as module bodies.
     pub files_read: BTreeSet<PathBuf>,
+    /// Files of modules that only exist under `cfg(test)`, found through their `mod x;` declarations.
+    pub test_only_files: BTreeSet<PathBuf>,
+}
+
+impl Inventory {
+    /// Files under the tree that no `mod` declaration reaches, neither as API nor as a test-only module.
+    pub fn orphan_files(&self, tree: &SourceTree) -> Vec<PathBuf> {
+        tree.files
+            .keys()
+            .filter(|path| {
+                !self.files_read.contains(*path) && !self.test_only_files.contains(*path)
+            })
+            .cloned()
+            .collect()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -169,6 +184,8 @@ struct Walker<'a> {
     impls: Vec<ImplRec>,
     exported_macros: Vec<String>,
     files_read: BTreeSet<PathBuf>,
+    test_only_files: BTreeSet<PathBuf>,
+    test_cfg: bool,
     errors: Vec<String>,
 }
 
@@ -188,7 +205,8 @@ impl<'a> Walker<'a> {
     fn eval_meta(&self, meta: &Meta) -> Result<bool, String> {
         match meta {
             Meta::Path(path) => match path.get_ident().map(ToString::to_string).as_deref() {
-                Some("test") | Some("windows") => Ok(false),
+                Some("test") => Ok(self.test_cfg),
+                Some("windows") => Ok(false),
                 Some("unix") => Ok(true),
                 other => Err(format!("unsupported cfg predicate `{other:?}`")),
             },
@@ -241,6 +259,82 @@ impl<'a> Walker<'a> {
             }
         }
         on
+    }
+
+    /// True when the item is disabled in this row but would compile in a test build of it.
+    fn test_gated(&mut self, attrs: &[Attribute]) -> bool {
+        let kept = self.errors.len();
+        self.test_cfg = true;
+        let on = self.enabled(attrs, "cfg(test) probe");
+        self.test_cfg = false;
+        self.errors.truncate(kept);
+        on
+    }
+
+    /// The file and child directory of an out-of-line module, if the file exists.
+    fn module_file(
+        &self,
+        item: &syn::ItemMod,
+        file: &Path,
+        dir: &Path,
+    ) -> Option<(PathBuf, PathBuf)> {
+        let name = item.ident.to_string();
+        if let Some(explicit) = Self::path_attr(&item.attrs) {
+            let target = file.parent().unwrap_or(Path::new("")).join(explicit);
+            let nested = target
+                .parent()
+                .unwrap_or(Path::new(""))
+                .join(target.file_stem().unwrap_or_default());
+            return self
+                .tree
+                .files
+                .contains_key(&target)
+                .then_some((target, nested));
+        }
+        let flat = dir.join(format!("{name}.rs"));
+        if self.tree.files.contains_key(&flat) {
+            return Some((flat, dir.join(&name)));
+        }
+        let nested = dir.join(format!("{name}/mod.rs"));
+        self.tree
+            .files
+            .contains_key(&nested)
+            .then(|| (nested, dir.join(&name)))
+    }
+
+    /// Records the file of a `cfg(test)`-only module and of every module it declares.
+    fn collect_test_only(&mut self, item: &syn::ItemMod, file: &Path, dir: &Path) {
+        if let Some((_, items)) = &item.content {
+            let nested = dir.join(item.ident.to_string());
+            for inner in items {
+                if let Item::Mod(inner) = inner {
+                    self.collect_test_only(inner, file, &nested);
+                }
+            }
+            return;
+        }
+        // A test module outside the tree (`#[path = "../tests/..."]`) is no orphan, and rustc rejects a missing one.
+        let Some((target, nested)) = self.module_file(item, file, dir) else {
+            return;
+        };
+        if !self.test_only_files.insert(target.clone()) {
+            return;
+        }
+        let Some(text) = self.tree.files.get(&target) else {
+            return;
+        };
+        match syn::parse_file(text) {
+            Ok(parsed) => {
+                for inner in parsed.items {
+                    if let Item::Mod(inner) = inner {
+                        self.collect_test_only(&inner, &target, &nested);
+                    }
+                }
+            }
+            Err(e) => self
+                .errors
+                .push(format!("{} does not parse: {e}", target.display())),
+        }
     }
 
     fn path_attr(attrs: &[Attribute]) -> Option<String> {
@@ -339,6 +433,9 @@ impl<'a> Walker<'a> {
                 let name = item.ident.to_string();
                 let what = join(module, &name);
                 if !self.enabled(&item.attrs, &what) {
+                    if self.test_gated(&item.attrs) {
+                        self.collect_test_only(&item, file, dir);
+                    }
                     return;
                 }
                 let child = join(module, &name);
@@ -825,6 +922,8 @@ pub fn build(
         impls: Vec::new(),
         exported_macros: Vec::new(),
         files_read: BTreeSet::new(),
+        test_only_files: BTreeSet::new(),
+        test_cfg: false,
         errors: Vec::new(),
     };
     walker.modules.insert(
@@ -883,6 +982,7 @@ pub fn build(
             .cloned()
             .collect(),
         files_read: walker.files_read.clone(),
+        test_only_files: walker.test_only_files.clone(),
         ..Inventory::default()
     };
     let add = |id: String, kind: ApiKind, inv: &mut Inventory| {
