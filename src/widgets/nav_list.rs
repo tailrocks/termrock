@@ -350,6 +350,7 @@ impl NavList {
     }
 
     pub fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, bg: Color) {
+        let before = self.cursor;
         self.reconcile_indices();
         let t = ctx.theme;
         let area = area.intersection(*buf.area());
@@ -361,6 +362,11 @@ impl NavList {
             return;
         }
         self.scroll.set_viewport(usize::from(area.height));
+        if self.cursor != before {
+            // A repaired cursor is revealed once the viewport is known; on the
+            // first frame reconciliation ran against a zero-height viewport.
+            self.reveal_cursor();
+        }
         let focused = ctx.interaction.focused(self.id);
         let has_sb = self.scroll.overflows();
 
