@@ -9,11 +9,12 @@
 //! is false). A later preview replaces the unpinned preview tab in place and
 //! leaves a pinned table and a dirty query alone.
 
-use std::time::{Duration, Instant};
-
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, Point, TABLEPRO, find_all, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, Point, TABLEPRO, find_all, flash_settle_stepped as flash_settle, row_text, text,
+    try_launch,
+};
 
 const HOST: &str = "dev-db.internal.acme.io";
 const DATABASE: &str = "acme_dev";
@@ -277,31 +278,6 @@ fn shows_object(screen: &TerminalSnapshot, name: &str, meta: &str) -> bool {
         .is_some_and(|row| row.contains(&format!("{TITLE}{name}")) && row.contains(meta))
 }
 
-/// The 140ms press flash stays painted while motion is reduced. A same-size
-/// resize does not force a new frame, so the shot nudges the width and comes
-/// back. Below about 100 columns the header omits the size chip.
-fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
-}
-
 fn confirm_quit(app: &App) {
     app.key("ctrl+q");
     let quit = app.wait_text("Quit TablePro?");
@@ -312,14 +288,7 @@ fn confirm_quit(app: &App) {
     );
     app.key("right");
     app.key("enter");
-    let deadline = Instant::now() + Duration::from_secs(5);
-    while app.child_running() {
-        assert!(
-            Instant::now() < deadline,
-            "tablepro stayed up after confirming quit"
-        );
-        std::thread::sleep(Duration::from_millis(25));
-    }
+    app.wait_exit("tablepro stayed up after confirming quit");
     app.expect_exited(0);
 }
 

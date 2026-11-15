@@ -196,6 +196,8 @@ impl MasterDetailPage {
         md = match o.value("masterdetail.size") {
             "share" => md.detail_share(40, 34, 56),
             "master" => md.master_share(33, 26, 40),
+            "share-100" => md.detail_share(50, 100, 100),
+            "master-100" => md.master_share(50, 100, 100),
             _ => md.resizable(Split::new(40, 24, 34)),
         };
         self.md = md;

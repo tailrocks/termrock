@@ -143,9 +143,11 @@ impl Page<Tablepro> for Workbench {
     fn on_esc_top(&mut self, _h: &mut History, cx: &mut Cx) -> Outcome {
         if self.maximized {
             self.maximized = false;
-            if let Some(WorkTab::Query(q)) = self.active_tab_mut() {
-                q.split.maximized = Maximized::None;
-            }
+            let _ = self.modify_active(|tab| {
+                if let WorkTab::Query(q) = tab {
+                    q.split.maximized = Maximized::None;
+                }
+            });
             return Outcome::Changed;
         }
         let f = cx.focus.current();
@@ -173,8 +175,8 @@ impl Page<Tablepro> for Workbench {
     }
 
     fn on_interrupt(&mut self, _h: &mut History, cx: &mut Cx) -> Outcome {
-        if let Some(WorkTab::Query(q)) = self.active_tab_mut()
-            && q.cancel()
+        if let Some(key) = self.active_key()
+            && self.cancel_query(key)
         {
             cx.status_as(StatusKind::Info, "Query cancelled");
             return Outcome::Changed;

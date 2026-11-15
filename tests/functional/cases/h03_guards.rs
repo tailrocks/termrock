@@ -34,7 +34,7 @@ const STOPPING: &str = "Stopping · the tab closes once the process is gone";
 const QUIT: &str = "Quit holla";
 const STAY: &str = "Stay";
 const STOP_QUIT: &str = "Stop and quit";
-const RUNNING: &str = "activities are still running";
+const RUNNING: &str = "activities are running. Quitting stops them.";
 const DETACHED: &str = "detached monitors keep";
 const QUITTING: &str = "quitting when every process is gone";
 const WIDE: &str = "H03.guards.quit.120x40";
@@ -113,7 +113,7 @@ fn quit_open(screen: &TerminalSnapshot) -> bool {
         && visible.contains(STAY)
         && visible.contains(STOP_QUIT)
         && visible.contains(RUNNING)
-        && visible.contains(DETACHED)
+        && !visible.contains(DETACHED)
 }
 
 fn nudge(app: &App, ready: impl Fn(&TerminalSnapshot) -> bool) {
@@ -200,7 +200,7 @@ fn type_query_q(app: &App) {
 fn choose_stop(app: &App) {
     app.key("ctrl+q");
     let dialog = app.wait_screen("quit guard", quit_open);
-    see(&dialog, &[QUIT, STAY, STOP_QUIT, RUNNING, DETACHED], &[]);
+    see(&dialog, &[QUIT, STAY, STOP_QUIT, RUNNING], &[DETACHED]);
     app.key("right");
     app.key("enter");
     let stopping = app.wait_screen("stop accepted", |screen| {
@@ -221,7 +221,7 @@ fn choose_stop(app: &App) {
 fn stop_and_quit(app: &App) {
     app.key("ctrl+q");
     let dialog = app.wait_screen("quit guard", quit_open);
-    see(&dialog, &[QUIT, STAY, STOP_QUIT, RUNNING, DETACHED], &[]);
+    see(&dialog, &[QUIT, STAY, STOP_QUIT, RUNNING], &[DETACHED]);
     app.key("right");
     app.key("enter");
     // Reduced motion reaps the task three ticks after stop, then the shell
@@ -402,8 +402,8 @@ fn holla_guards_quit_stays_then_stops() {
     });
     see(
         &dialog,
-        &[QUIT, STAY, STOP_QUIT, RUNNING, DETACHED],
-        &[STOPPING],
+        &[QUIT, STAY, STOP_QUIT, RUNNING],
+        &[STOPPING, DETACHED],
     );
 
     nudge(&app, quit_open);

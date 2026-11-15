@@ -1443,9 +1443,11 @@ impl Page<Jackin> for RoleEditorScreen {
             return o;
         }
         if let Some(r) = self.tabs.route(ev) {
-            let (o, act) = r.into_parts();
-            if let Some(TabAction::Activated(i)) = act {
-                self.tab = Tab::ALL[i.min(2)];
+            let (o, actions) = r.into_parts();
+            for action in actions {
+                if let TabAction::Activated(i) = action {
+                    self.tab = Tab::ALL[i.min(2)];
+                }
             }
             if !click {
                 return o;

@@ -370,7 +370,7 @@ impl Page for DiffPage {
                         &mut self.empty
                     };
                     cx.focus.focus(button.id);
-                    if button.route(ev).and_then(|r| r.into_action()).is_some() {
+                    if button.route(ev).is_some_and(|r| r.has_actions()) {
                         self.update_controls();
                         return Outcome::Changed;
                     }

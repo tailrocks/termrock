@@ -28,15 +28,15 @@ use junie_tui::widgets::scrollbar;
 use junie_tui::widgets::statusbar::StatusItem;
 use junie_tui::widgets::tree::{TreeAction, TreeNode, TreeView};
 use ratatui::buffer::Buffer;
-use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
 
 use crate::domain::cleanup::{DeleteItem, DeletePlan, Mode, NOISE_NAMES};
 use crate::domain::stack::Spotlight;
 use crate::screens::{
-    Cx, Go, ModalResult, Page, Screen, StatusBits, open_context, row_anchor, scroll_drag,
-    scroll_press,
+    Cx, Go, MenuTake, ModalResult, Page, PendingMenu, Screen, StatusBits, open_context, row_anchor,
+    scroll_drag, scroll_press,
 };
 use crate::sim::fs::ScanNode;
 use crate::sim::world::{ScanPhase, World};
@@ -50,6 +50,30 @@ pub const LIST: WidgetId = WidgetId::of("disk.list");
 pub const FS_METER: MeterTone = MeterTone::Level { warn: 80, crit: 95 };
 
 pub const ROW_MENU: WidgetId = WidgetId::of("disk.row.menu");
+
+const DISK_ROW: &str = "disk-row";
+const NO_LONGER_AVAILABLE: &str = "This item is no longer available";
+
+/// What a disk row menu item does, captured when the menu opens. Toggles capture the
+/// desired state, and cancel captures the scan generation the menu was offered for.
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum DiskAction {
+    SetSelected(bool),
+    CopyPath,
+    Analyze,
+    SetDetails(bool),
+    Review,
+    BuildCleanupPlan,
+    Rescan,
+    CancelScan(Option<u64>),
+    TopFiles,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct DiskContext {
+    target_path: String,
+    actions: Vec<DiskAction>,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Sort {
@@ -111,6 +135,7 @@ pub struct DiskPage {
     pub reviewed: Option<u64>,
 
     pub rebuilds: u32,
+    menu: PendingMenu<DiskContext>,
 }
 
 impl DiskPage {
@@ -140,6 +165,7 @@ impl DiskPage {
             seeded_gen: 0,
             reviewed: None,
             rebuilds: 0,
+            menu: PendingMenu::default(),
         }
     }
 
@@ -344,6 +370,23 @@ impl DiskPage {
     }
 
     fn toggle_select(&mut self, path: &str, w: &World, cx: &mut Cx) {
+        let selected = !self.selected.contains(path);
+        self.set_selected(path, selected, w, cx);
+    }
+
+    fn set_selected(&mut self, path: &str, selected: bool, w: &World, cx: &mut Cx) {
+        if !selected {
+            if self.selected.remove(path) {
+                cx.status(format!(
+                    "Unselected · {} selected · {}",
+                    self.selected.len(),
+                    junie_tui::ui::text::bytes(self.selected_bytes(w))
+                ));
+            }
+            self.reviewed = None;
+            self.rebuild_tree(w);
+            return;
+        }
         if let Some(r) = self.candidate_skip(w, path) {
             cx.status(format!(
                 "Cannot select {} · {r}",
@@ -359,22 +402,14 @@ impl DiskPage {
             cx.status("Already covered by a selected ancestor");
             return;
         }
-        if self.selected.remove(path) {
-            cx.status(format!(
-                "Unselected · {} selected · {}",
-                self.selected.len(),
-                junie_tui::ui::text::bytes(self.selected_bytes(w))
-            ));
-        } else {
-            self.selected
-                .retain(|s| !s.starts_with(&format!("{path}/")));
-            self.selected.insert(path.to_owned());
-            cx.status(format!(
-                "{} selected · {} estimated",
-                plural(self.selected.len(), "item", "items"),
-                junie_tui::ui::text::bytes(self.selected_bytes(w))
-            ));
-        }
+        self.selected
+            .retain(|s| !s.starts_with(&format!("{path}/")));
+        self.selected.insert(path.to_owned());
+        cx.status(format!(
+            "{} selected · {} estimated",
+            plural(self.selected.len(), "item", "items"),
+            junie_tui::ui::text::bytes(self.selected_bytes(w))
+        ));
         self.reviewed = None;
         self.rebuild_tree(w);
     }
@@ -943,13 +978,150 @@ impl DiskPage {
             .then(|| "Already covered by a selected ancestor".to_owned())
     }
 
-    fn row_menu(&self, row: usize, anchor: ContextAnchor, w: &World, cx: &mut Cx) -> Outcome {
+    fn target_present(&self, path: &str) -> bool {
+        self.paths.iter().any(|(_, f)| f.as_str() == path)
+            || self.overview.iter().any(|r| r.path == path)
+            || self.top.iter().any(|r| r.path == path)
+    }
+
+    fn focus_target(&mut self, path: &str) {
+        match self.view {
+            View::Tree => {
+                let row = self
+                    .tree
+                    .rows()
+                    .iter()
+                    .position(|r| self.fs_path_of(&r.path).as_deref() == Some(path));
+                if let Some(row) = row {
+                    self.tree.context_select(row);
+                }
+            }
+            View::Overview => {
+                if let Some(i) = self.overview.iter().position(|r| r.path == path) {
+                    self.cursor = i;
+                }
+            }
+            View::TopFiles => {
+                if let Some(i) = self.top.iter().position(|r| r.path == path) {
+                    self.cursor = i;
+                }
+            }
+        }
+    }
+
+    fn run_action(
+        &mut self,
+        path: &str,
+        action: &DiskAction,
+        w: &mut World,
+        cx: &mut Cx,
+    ) -> Outcome {
+        let scoped = matches!(
+            action,
+            DiskAction::SetSelected(_) | DiskAction::CopyPath | DiskAction::Analyze
+        );
+        if scoped {
+            if !self.target_present(path) {
+                cx.status(NO_LONGER_AVAILABLE);
+                return Outcome::Changed;
+            }
+            self.focus_target(path);
+        }
+        match action {
+            DiskAction::SetSelected(selected) => self.set_selected(path, *selected, w, cx),
+            DiskAction::CopyPath => cx.go(Go::Osc52(path.to_owned())),
+            DiskAction::Analyze => cx.go(Go::Analyze(path.to_owned())),
+            DiskAction::SetDetails(open) => {
+                if *open {
+                    self.md.open_drawer(cx.focus);
+                } else {
+                    self.md.close_drawer(cx.focus);
+                }
+            }
+            DiskAction::Review => return self.review(w, cx),
+            DiskAction::BuildCleanupPlan => return self.build_cleanup_plan(w, cx),
+            DiskAction::Rescan => self.rescan(w, cx),
+            DiskAction::CancelScan(offered) => self.cancel_scan(*offered, w, cx),
+            DiskAction::TopFiles => return self.open_top_files(w, cx),
+        }
+        Outcome::Changed
+    }
+
+    fn review(&mut self, w: &World, cx: &mut Cx) -> Outcome {
+        if self.selected.is_empty() {
+            cx.status("Select at least one entry first · Space selects");
+            return Outcome::Changed;
+        }
+        let plan = self.build_plan(w, Mode::Trash, false);
+        self.reviewed = Some(plan.revision);
+        cx.go(Go::Push(Page::CleanupGate { plan }));
+        Outcome::Changed
+    }
+
+    fn build_cleanup_plan(&mut self, w: &World, cx: &mut Cx) -> Outcome {
+        let sel: Vec<String> = self
+            .selected
+            .iter()
+            .filter(|p| w.disk.candidates.iter().any(|c| &c.path == *p))
+            .cloned()
+            .collect();
+        if sel.is_empty() {
+            cx.status("Select rebuildable artifacts first · d reviews any selection as a deletion");
+        } else {
+            cx.go(Go::CleanupPlan(sel));
+        }
+        Outcome::Changed
+    }
+
+    fn rescan(&mut self, w: &mut World, cx: &mut Cx) {
+        let root = self.path.clone();
+        w.start_scan(&root);
+        self.selected.clear();
+        self.reviewed = None;
+        self.tree.expanded.clear();
+        self.last_revealed = usize::MAX;
+        self.rebuild_tree(w);
+        cx.status("Rescanning · cached hints stay until live sizes arrive");
+    }
+
+    /// Cancels only the scan the menu was offered for. A newer scan keeps running.
+    fn cancel_scan(&mut self, offered: Option<u64>, w: &mut World, cx: &mut Cx) {
+        let running = w
+            .scan
+            .as_ref()
+            .filter(|s| s.is_running())
+            .map(|s| s.generation);
+        match (offered, running) {
+            (Some(offered), Some(current)) if offered == current => {
+                w.cancel_scan();
+                cx.status("Scan cancelled · the partial tree stays and is labelled partial");
+            }
+            (Some(_), Some(_)) => {
+                cx.status("That scan was replaced · the current scan keeps running");
+            }
+            _ => cx.status("No scan is running"),
+        }
+        self.rebuild_tree(w);
+    }
+
+    fn open_top_files(&mut self, w: &World, cx: &mut Cx) -> Outcome {
+        if w.host.os != crate::domain::context::Os::MacOs {
+            cx.status(
+                "Top files is unavailable on Linux · Spotlight is macOS only · use the tree scan",
+            );
+            return Outcome::Changed;
+        }
+        cx.go(Go::Push(Page::TopFiles));
+        Outcome::Changed
+    }
+
+    fn row_menu(&mut self, row: usize, anchor: ContextAnchor, w: &World, cx: &mut Cx) -> Outcome {
         let copy = MenuItem::new("Copy path").shortcut("y");
         let mut review = MenuItem::new("Review deletion…").shortcut("d").danger();
         if self.selected.is_empty() {
             review = review.reason("Select at least one entry first");
         }
-        let (path, items, keys): (String, Vec<MenuItem>, &str) = match self.view {
+        let (path, entries): (String, Vec<(MenuItem, DiskAction)>) = match self.view {
             View::Tree => {
                 let Some(path) = self
                     .tree
@@ -959,12 +1131,9 @@ impl DiskPage {
                 else {
                     return Outcome::Ignored;
                 };
-                let mut select = MenuItem::new(if self.selected.contains(&path) {
-                    "Unselect"
-                } else {
-                    "Select"
-                })
-                .shortcut("Space");
+                let selected = self.selected.contains(&path);
+                let mut select =
+                    MenuItem::new(if selected { "Unselect" } else { "Select" }).shortcut("Space");
                 if let Some(r) = self.select_reason(w, &path) {
                     select = select.reason(r);
                 }
@@ -978,20 +1147,30 @@ impl DiskPage {
                 {
                     clean = clean.reason("Select rebuildable artifacts first");
                 }
+                let running = w
+                    .scan
+                    .as_ref()
+                    .filter(|s| s.is_running())
+                    .map(|s| s.generation);
                 let mut cancel = MenuItem::new("Cancel scan").shortcut("x");
-                if !w.scan.as_ref().is_some_and(|s| s.is_running()) {
+                if running.is_none() {
                     cancel = cancel.reason("No scan is running");
                 }
-                let items = vec![
-                    select,
-                    copy,
-                    self.md.menu_item().shortcut("p").separator(),
-                    review,
-                    clean,
-                    MenuItem::new("Rescan").shortcut("r"),
-                    cancel,
-                ];
-                (path, items, " ypdcrx")
+                (
+                    path,
+                    vec![
+                        (select, DiskAction::SetSelected(!selected)),
+                        (copy, DiskAction::CopyPath),
+                        (
+                            self.md.menu_item().shortcut("p").separator(),
+                            DiskAction::SetDetails(!self.md.drawer_open()),
+                        ),
+                        (review, DiskAction::Review),
+                        (clean, DiskAction::BuildCleanupPlan),
+                        (MenuItem::new("Rescan").shortcut("r"), DiskAction::Rescan),
+                        (cancel, DiskAction::CancelScan(running)),
+                    ],
+                )
             }
             View::Overview => {
                 let Some(r) = self.overview.get(row) else {
@@ -1001,23 +1180,25 @@ impl DiskPage {
                 if w.host.os != crate::domain::context::Os::MacOs {
                     top = top.reason("Spotlight is macOS only");
                 }
-                let items = vec![
-                    MenuItem::new("Analyze").shortcut("Enter"),
-                    copy.separator(),
-                    top,
-                ];
-                (r.path.clone(), items, "\nyt")
+                (
+                    r.path.clone(),
+                    vec![
+                        (
+                            MenuItem::new("Analyze").shortcut("Enter"),
+                            DiskAction::Analyze,
+                        ),
+                        (copy.separator(), DiskAction::CopyPath),
+                        (top, DiskAction::TopFiles),
+                    ],
+                )
             }
             View::TopFiles => {
                 let Some(r) = self.top.get(row) else {
                     return Outcome::Ignored;
                 };
-                let mut select = MenuItem::new(if self.selected.contains(&r.path) {
-                    "Unselect"
-                } else {
-                    "Select"
-                })
-                .shortcut("Space");
+                let selected = self.selected.contains(&r.path);
+                let mut select =
+                    MenuItem::new(if selected { "Unselect" } else { "Select" }).shortcut("Space");
                 if r.missing {
                     select = select.reason("The file vanished");
                 } else if let Some(why) = self.select_reason(w, &r.path) {
@@ -1025,19 +1206,27 @@ impl DiskPage {
                 }
                 (
                     r.path.clone(),
-                    vec![select, copy.separator(), review],
-                    " yd",
+                    vec![
+                        (select, DiskAction::SetSelected(!selected)),
+                        (copy.separator(), DiskAction::CopyPath),
+                        (review, DiskAction::Review),
+                    ],
                 )
             }
         };
         let title = w.location.short(&path);
+        let (items, actions): (Vec<MenuItem>, Vec<DiskAction>) = entries.into_iter().unzip();
+        let token = self.menu.capture(DiskContext {
+            target_path: path,
+            actions,
+        });
         open_context(
             cx,
             ROW_MENU,
             anchor,
             title,
             items,
-            LayerTag::new("disk-row").key(format!("{row}:{keys}")),
+            LayerTag::new(DISK_ROW).key(token),
         )
     }
 }
@@ -1158,24 +1347,12 @@ impl ShellPage<Holla> for DiskPage {
                 return Outcome::Changed;
             }
             KeyCode::Char('t') | KeyCode::Char('T') if self.view != View::TopFiles => {
-                if w.host.os != crate::domain::context::Os::MacOs {
-                    cx.status("Top files is unavailable on Linux · Spotlight is macOS only · use the tree scan");
-                    return Outcome::Changed;
-                }
-                cx.go(Go::Push(Page::TopFiles));
-                return Outcome::Changed;
+                return self.open_top_files(w, cx);
             }
             KeyCode::Char('d') | KeyCode::Backspace
                 if key.plain() && self.view != View::Overview =>
             {
-                if self.selected.is_empty() {
-                    cx.status("Select at least one entry first · Space selects");
-                    return Outcome::Changed;
-                }
-                let plan = self.build_plan(w, Mode::Trash, false);
-                self.reviewed = Some(plan.revision);
-                cx.go(Go::Push(Page::CleanupGate { plan }));
-                return Outcome::Changed;
+                return self.review(w, cx);
             }
             _ => {}
         }
@@ -1255,48 +1432,31 @@ impl ShellPage<Holla> for DiskPage {
                         return Outcome::Changed;
                     }
                     KeyCode::Char('r') => {
-                        let root = self.path.clone();
-                        w.start_scan(&root);
-                        self.selected.clear();
-                        self.reviewed = None;
-                        self.tree.expanded.clear();
-                        self.last_revealed = usize::MAX;
-                        self.rebuild_tree(w);
-                        cx.status("Rescanning · cached hints stay until live sizes arrive");
+                        self.rescan(w, cx);
                         return Outcome::Changed;
                     }
                     KeyCode::Char('x') => {
-                        if w.cancel_scan() {
-                            cx.status(
-                                "Scan cancelled · the partial tree stays and is labelled partial",
-                            );
-                        } else {
-                            cx.status("No scan is running");
-                        }
-                        self.rebuild_tree(w);
+                        let running = w
+                            .scan
+                            .as_ref()
+                            .filter(|s| s.is_running())
+                            .map(|s| s.generation);
+                        self.cancel_scan(running, w, cx);
                         return Outcome::Changed;
                     }
                     KeyCode::Char('c') => {
-                        let sel: Vec<String> = self
-                            .selected
-                            .iter()
-                            .filter(|p| w.disk.candidates.iter().any(|c| &c.path == *p))
-                            .cloned()
-                            .collect();
-                        if sel.is_empty() {
-                            cx.status("Select rebuildable artifacts first · d reviews any selection as a deletion");
-                        } else {
-                            cx.go(Go::CleanupPlan(sel));
-                        }
-                        return Outcome::Changed;
+                        return self.build_cleanup_plan(w, cx);
                     }
                     _ => {}
                 }
                 if !cx.focus.is(TREE) {
                     return Outcome::Ignored;
                 }
-                let (o, ev) = self.tree.on_key(key);
-                if let Some(TreeAction::Activate(_)) = ev {
+                let (o, actions) = self.tree.on_key(key).into_parts();
+                if actions
+                    .into_iter()
+                    .any(|a| matches!(a, TreeAction::Activate(_)))
+                {
                     return Outcome::Changed;
                 }
                 if o.consumed() {
@@ -1431,29 +1591,14 @@ impl ShellPage<Holla> for DiskPage {
         w: &mut World,
         cx: &mut Cx,
     ) -> Outcome {
-        if tag.kind == "disk-row"
-            && let ModalResult::MenuChosen(k) = result
-            && let Some((row, keys)) = tag.key.split_once(':')
-            && let Ok(row) = row.parse::<usize>()
-            && let Some(c) = keys.chars().nth(k)
-        {
-            if self.view == View::Tree {
-                self.tree.context_select(row);
-            } else {
-                self.cursor = row;
-            }
-            let code = if c == '\n' {
-                KeyCode::Enter
-            } else {
-                KeyCode::Char(c)
-            };
-            let key = Key {
-                code,
-                mods: KeyModifiers::NONE,
-            };
-            return self.on_key(&key, w, cx).or(Outcome::Changed);
+        match self.menu.take(tag, DISK_ROW, &result) {
+            MenuTake::Stale => Outcome::Ignored,
+            MenuTake::Dismissed => Outcome::Changed,
+            MenuTake::Chosen(context, index) => match context.actions.get(index).cloned() {
+                Some(action) => self.run_action(&context.target_path, &action, w, cx),
+                None => Outcome::Ignored,
+            },
         }
-        Outcome::Changed
     }
 
     fn on_tick(&mut self, w: &mut World, _cx: &mut Cx) -> Outcome {
@@ -1806,6 +1951,376 @@ impl Screen for DiskPage {
             center: Some(item),
             right: vec![],
         }
+    }
+}
+
+#[cfg(test)]
+mod context_tests {
+    use super::*;
+    use crate::domain::fixtures::world_for;
+    use crate::scenario::{Motion, Scenario};
+    use crate::screens::pointer_tests::{cell_of, render_hits, secondary_open};
+    use junie_tui::core::focus::{Focus, FocusRing};
+    use junie_tui::core::id::{ItemKey, PartRef};
+    use junie_tui::shell::Request;
+
+    /// Opens the page's menu through the real context-key path, with `focus` on the list or tree.
+    fn open_menu(page: &mut DiskPage, w: &mut World, focus: WidgetId) -> LayerTag {
+        let mut focus_state = Focus::default();
+        focus_state.focus(focus);
+        let ring = FocusRing::default();
+        let mut cx = Cx::new(&mut focus_state, &ring);
+        page.on_context_key(w, &mut cx);
+        cx.requests
+            .iter()
+            .find_map(|r| match r {
+                Request::Open(_, tag) => Some(tag.clone()),
+                _ => None,
+            })
+            .expect("the row menu opened")
+    }
+
+    fn deliver(
+        page: &mut DiskPage,
+        w: &mut World,
+        tag: &LayerTag,
+        index: usize,
+    ) -> (Outcome, Vec<Request<ModalResult, (), Go>>) {
+        let mut focus = Focus::default();
+        let ring = FocusRing::default();
+        let mut cx = Cx::new(&mut focus, &ring);
+        let outcome = page.on_layer_result(tag, ModalResult::MenuChosen(index), w, &mut cx);
+        (outcome, std::mem::take(&mut cx.requests))
+    }
+
+    fn choose(
+        page: &mut DiskPage,
+        w: &mut World,
+        tag: &LayerTag,
+        index: usize,
+    ) -> Vec<Request<ModalResult, (), Go>> {
+        deliver(page, w, tag, index).1
+    }
+
+    /// Moves the tree cursor onto the visible row for `path`.
+    fn select_tree_row(page: &mut DiskPage, path: &str) {
+        let row = page
+            .tree
+            .rows()
+            .iter()
+            .position(|r| page.fs_path_of(&r.path).as_deref() == Some(path))
+            .expect("the path is a visible tree row");
+        page.tree.context_select(row);
+    }
+
+    fn overview_row(path: &str) -> OverviewRow {
+        OverviewRow {
+            path: path.into(),
+            label: path.rsplit('/').next().unwrap_or(path).into(),
+            kind: "dir",
+            cached: None,
+        }
+    }
+
+    #[test]
+    fn disk_context_scan_reveal_keeps_original_path() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        let mut page = DiskPage::overview();
+        page.rebuild_overview(&w);
+        assert!(page.overview.len() >= 2, "fixture needs two overview rows");
+        let path = page.overview[1].path.clone();
+        page.cursor = 1;
+        let tag = open_menu(&mut page, &mut w, LIST);
+
+        // A progressive reveal inserts an earlier row before the captured one.
+        page.overview.insert(
+            0,
+            OverviewRow {
+                path: "/revealed/earlier".into(),
+                label: "earlier".into(),
+                kind: "dir",
+                cached: None,
+            },
+        );
+        let requests = choose(&mut page, &mut w, &tag, 1);
+        assert!(
+            requests
+                .iter()
+                .any(|r| matches!(r, Request::Go(Go::Osc52(p)) if *p == path)),
+            "copied the captured path {path}"
+        );
+    }
+
+    #[test]
+    fn disk_context_pointer_menu_keeps_path_after_reveal() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        let mut page = DiskPage::overview();
+        page.rebuild_overview(&w);
+        assert!(page.overview.len() >= 2, "fixture needs two overview rows");
+        let path = page.overview[1].path.clone();
+
+        let hits = render_hits(&mut page, &w);
+        let tag = secondary_open(&mut page, &mut w, &hits, cell_of(&hits, LIST.child(1)));
+
+        page.overview.insert(0, overview_row("/revealed/earlier"));
+        let requests = choose(&mut page, &mut w, &tag, 1);
+        assert!(
+            requests
+                .iter()
+                .any(|r| matches!(r, Request::Go(Go::Osc52(p)) if *p == path)),
+            "the pointer menu copied the captured path {path}"
+        );
+    }
+
+    #[test]
+    fn disk_context_pointer_select_stays_select() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        let root = w.location.cwd.clone();
+        w.start_scan(&root);
+        w.tick += 1_000_000;
+        let mut page = DiskPage::new(&root);
+        page.rebuild_tree(&w);
+        let path = page.paths[0].1.clone();
+        page.selected.remove(&path);
+        select_tree_row(&mut page, &path);
+
+        let hits = render_hits(&mut page, &w);
+        let row = page
+            .tree
+            .rows()
+            .iter()
+            .position(|r| page.fs_path_of(&r.path).as_deref() == Some(path.as_str()))
+            .expect("visible row");
+        let cell = cell_of(
+            &hits,
+            TREE.part(PartRef::item(Part::ROW, ItemKey::index(row))),
+        );
+        let tag = secondary_open(&mut page, &mut w, &hits, cell);
+
+        // The selection changes while the pointer menu is open, so "Select" must stay a select.
+        page.selected.insert(path.clone());
+        choose(&mut page, &mut w, &tag, 0);
+        assert!(page.selected.contains(&path), "Select stays selected");
+    }
+
+    #[test]
+    fn disk_context_missing_target_is_reported() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        let mut page = DiskPage::overview();
+        page.rebuild_overview(&w);
+        assert!(page.overview.len() >= 2, "fixture needs two overview rows");
+        page.cursor = 1;
+        let tag = open_menu(&mut page, &mut w, LIST);
+
+        // A background rebuild removes the captured row before the choice arrives.
+        page.overview.remove(1);
+        let requests = choose(&mut page, &mut w, &tag, 1);
+        assert!(
+            !requests
+                .iter()
+                .any(|r| matches!(r, Request::Go(Go::Osc52(_)))),
+            "nothing is copied for a vanished row"
+        );
+        assert!(
+            requests.iter().any(|r| matches!(
+                r,
+                Request::Status(s, _) if s == NO_LONGER_AVAILABLE
+            )),
+            "the vanished row is reported"
+        );
+    }
+
+    #[test]
+    fn disk_context_newly_ineligible_select_is_refused() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        let root = w.location.cwd.clone();
+        w.start_scan(&root);
+        w.tick += 1_000_000;
+        let mut page = DiskPage::new(&root);
+        page.rebuild_tree(&w);
+        // Expand every folder so the candidates are visible rows.
+        page.tree
+            .expanded
+            .extend(page.paths.iter().map(|(p, _)| p.clone()));
+        page.rebuild_tree(&w);
+        let visible: Vec<String> = page
+            .tree
+            .rows()
+            .iter()
+            .filter_map(|r| page.fs_path_of(&r.path))
+            .collect();
+        let path = visible
+            .iter()
+            .find(|p| {
+                w.disk
+                    .candidates
+                    .iter()
+                    .any(|c| &c.path == *p && c.skip_reason().is_none())
+            })
+            .cloned()
+            .expect("a visible rebuildable candidate");
+        page.selected.remove(&path);
+        select_tree_row(&mut page, &path);
+        let tag = open_menu(&mut page, &mut w, TREE);
+
+        // A guard appears between opening the menu and choosing Select.
+        w.disk
+            .candidates
+            .iter_mut()
+            .find(|c| c.path == path)
+            .expect("candidate")
+            .protected = true;
+        let before = page.selected.clone();
+        let requests = choose(&mut page, &mut w, &tag, 0);
+
+        assert_eq!(page.selected, before, "no other entry changed");
+        assert!(
+            !page.selected.contains(&path),
+            "the guarded entry is not selected"
+        );
+        assert!(
+            requests.iter().any(|r| matches!(
+                r,
+                Request::Status(s, _) if s.starts_with("Cannot select ")
+            )),
+            "the refusal is reported"
+        );
+    }
+
+    #[test]
+    fn disk_context_selected_ancestor_select_is_refused() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        let root = w.location.cwd.clone();
+        w.start_scan(&root);
+        w.tick += 1_000_000;
+        let mut page = DiskPage::new(&root);
+        page.rebuild_tree(&w);
+        let path = page
+            .tree
+            .rows()
+            .iter()
+            .filter_map(|r| page.fs_path_of(&r.path))
+            .find(|p| p.matches('/').count() >= 2 && page.candidate_skip(&w, p).is_none())
+            .expect("a nested visible entry");
+        let ancestor = path.rsplit_once('/').expect("nested path").0.to_owned();
+        page.selected.remove(&path);
+        select_tree_row(&mut page, &path);
+        let tag = open_menu(&mut page, &mut w, TREE);
+
+        // The ancestor is selected while the menu offering "Select" is open.
+        page.selected.insert(ancestor.clone());
+        let before = page.selected.clone();
+        let requests = choose(&mut page, &mut w, &tag, 0);
+
+        assert_eq!(page.selected, before, "the covered entry is not added");
+        assert!(!page.selected.contains(&path));
+        assert!(
+            page.selected.contains(&ancestor),
+            "the ancestor stays selected"
+        );
+        assert!(
+            requests.iter().any(|r| matches!(
+                r,
+                Request::Status(s, _) if s == "Already covered by a selected ancestor"
+            )),
+            "the refusal is reported"
+        );
+    }
+
+    #[test]
+    fn disk_context_cancel_scan_rejects_replacement_generation() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        let root = w.location.cwd.clone();
+        w.start_scan(&root);
+        let offered = w.scan.as_ref().expect("scan").generation;
+        let mut page = DiskPage::new(&root);
+        page.rebuild_tree(&w);
+        let tag = open_menu(&mut page, &mut w, TREE);
+
+        w.start_scan(&root);
+        let replacement = w.scan.as_ref().expect("scan").generation;
+        assert_ne!(replacement, offered);
+        // Item 6 is "Cancel scan" in the tree menu.
+        choose(&mut page, &mut w, &tag, 6);
+
+        let scan = w.scan.as_ref().expect("scan");
+        assert_eq!(scan.generation, replacement);
+        assert!(scan.is_running(), "the replacement scan keeps running");
+    }
+
+    fn dismiss(page: &mut DiskPage, w: &mut World, tag: &LayerTag) {
+        let mut focus = Focus::default();
+        let ring = FocusRing::default();
+        let mut cx = Cx::new(&mut focus, &ring);
+        page.on_layer_result(tag, ModalResult::Cancelled, w, &mut cx);
+    }
+
+    #[test]
+    fn disk_context_old_token_cannot_consume_new_menu() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        let mut page = DiskPage::overview();
+        page.rebuild_overview(&w);
+        assert!(page.overview.len() >= 2, "fixture needs two overview rows");
+        let path = page.overview[1].path.clone();
+        page.cursor = 0;
+        let first = open_menu(&mut page, &mut w, LIST);
+        page.cursor = 1;
+        let second = open_menu(&mut page, &mut w, LIST);
+
+        let (outcome, stale) = deliver(&mut page, &mut w, &first, 1);
+        assert_eq!(outcome, Outcome::Ignored, "a superseded result is ignored");
+        assert!(
+            !stale.iter().any(|r| matches!(r, Request::Go(Go::Osc52(_)))),
+            "the superseded menu did nothing"
+        );
+        dismiss(&mut page, &mut w, &first);
+        let requests = choose(&mut page, &mut w, &second, 1);
+        assert!(
+            requests
+                .iter()
+                .any(|r| matches!(r, Request::Go(Go::Osc52(p)) if *p == path)),
+            "the newer menu still copies its own path"
+        );
+    }
+
+    #[test]
+    fn disk_context_no_scan_cannot_cancel_new_scan() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        let root = w.location.cwd.clone();
+        w.start_scan(&root);
+        w.tick += 1_000_000;
+        let mut page = DiskPage::new(&root);
+        page.rebuild_tree(&w);
+        // The menu is offered while no scan runs.
+        let tag = open_menu(&mut page, &mut w, TREE);
+
+        w.start_scan(&root);
+        // Item 6 is "Cancel scan" in the tree menu.
+        choose(&mut page, &mut w, &tag, 6);
+
+        let scan = w.scan.as_ref().expect("scan");
+        assert!(
+            scan.is_running(),
+            "a menu offered without a scan cannot cancel a new one"
+        );
+    }
+
+    #[test]
+    fn disk_context_select_and_unselect_are_idempotent() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        let root = w.location.cwd.clone();
+        w.start_scan(&root);
+        w.tick += 1_000_000;
+        let mut page = DiskPage::new(&root);
+        page.rebuild_tree(&w);
+        let path = page.paths[0].1.clone();
+        page.selected.remove(&path);
+
+        let tag = open_menu(&mut page, &mut w, TREE);
+        // The selection changes while the menu is open, so the advertised "Select" must stay a select.
+        page.selected.insert(path.clone());
+        choose(&mut page, &mut w, &tag, 0);
+        assert!(page.selected.contains(&path), "Select stays selected");
     }
 }
 

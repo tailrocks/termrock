@@ -212,6 +212,10 @@ impl ClientPlatform {
     }
 
     pub fn current() -> Self {
+        #[cfg(feature = "work-metrics")]
+        if let Some(pinned) = pin::PINNED.with(std::cell::Cell::get) {
+            return pinned;
+        }
         static CURRENT: std::sync::OnceLock<ClientPlatform> = std::sync::OnceLock::new();
         *CURRENT.get_or_init(|| Self::from_env(|k| std::env::var(k).ok()))
     }
@@ -220,6 +224,37 @@ impl ClientPlatform {
         matches!(self, Self::MacOs)
     }
 }
+
+/// Fixes the platform that [`ClientPlatform::current`] reports on one thread.
+/// Key labels and hints differ by platform, so a work count that includes them
+/// would otherwise depend on the host and on `JUNIE_TUI_CLIENT_PLATFORM`.
+#[cfg(feature = "work-metrics")]
+mod pin {
+    use std::cell::Cell;
+
+    use super::ClientPlatform;
+
+    thread_local! {
+        pub(super) static PINNED: Cell<Option<ClientPlatform>> = const { Cell::new(None) };
+    }
+
+    pub(crate) struct PlatformPin(Option<ClientPlatform>);
+
+    impl PlatformPin {
+        pub(crate) fn new(platform: ClientPlatform) -> Self {
+            Self(PINNED.with(|p| p.replace(Some(platform))))
+        }
+    }
+
+    impl Drop for PlatformPin {
+        fn drop(&mut self) {
+            PINNED.with(|p| p.set(self.0));
+        }
+    }
+}
+
+#[cfg(feature = "work-metrics")]
+pub(crate) use pin::PlatformPin;
 
 impl InputConfig {
     pub const fn for_platform(platform: ClientPlatform) -> Self {

@@ -1,11 +1,13 @@
 use std::cell::{Cell, RefCell};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, VecDeque};
 use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use junie_tui::clock::TestRequest;
+use junie_tui::core::pointer::PointerConfig;
+use junie_tui::shell::StatusLine;
 use tui_test::{
     CheckedMouseAction, KeyAction, LaunchEnvMode, LaunchOptions, MouseOptions, OpenOptions,
     Operation, OperationResult, RunOptions, Session, SnapshotCell, SnapshotScope, TerminalSnapshot,
@@ -25,6 +27,9 @@ pub const HOLLA: &str = match option_env!("CARGO_BIN_EXE_holla") {
     None => "",
 };
 const TIMEOUT: Duration = Duration::from_secs(10);
+// A quitting app flushes state and restores the terminal, so under load it
+// needs more than a screen wait.
+const EXIT_TIMEOUT: Duration = Duration::from_secs(20);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Point {
@@ -62,6 +67,9 @@ impl SessionMode {
 /// sets `NO_COLOR=1`. Any other value is passed as `--color`.
 /// `history`: `false` sets `HOLLA_NO_HISTORY=1`. `true` omits that variable.
 /// `motion`: when set, `--motion` is appended. `clock` enables the test clock.
+/// [`Launch::new`] turns it on for TablePro. The app clock then moves only through
+/// [`App::advance_clock`], so a status toast lives until the journey calls
+/// [`App::expire_status`] and a press flash until [`App::settle_flash`].
 /// `mode`: `Candidate` from [`Launch::new`] and [`App::new`]. `Reference` is
 /// opt-in for captures against binaries named by a reference manifest. A
 /// reference-only manifest override never participates in candidate checks.
@@ -95,7 +103,7 @@ impl Launch {
             platform: "macos".to_string(),
             history: false,
             motion: None,
-            clock: false,
+            clock: bin_name(bin) == Some("tablepro"),
             env: Vec::new(),
             term: "xterm-256color".to_string(),
             mode: SessionMode::Candidate,
@@ -123,11 +131,16 @@ impl std::fmt::Display for LaunchError {
 
 impl std::error::Error for LaunchError {}
 
+/// How many of the latest checkpoints keep their full-cell JSON when a test
+/// fails. Every checkpoint keeps its text and its line in the action trace.
+const FAILURE_CELL_CHECKPOINTS: usize = 16;
+
 pub struct App {
     session: Session,
     directory: PathBuf,
     actions: RefCell<Vec<String>>,
     checkpoint: Cell<usize>,
+    recent: RefCell<VecDeque<(usize, TerminalSnapshot)>>,
     clock: bool,
 }
 
@@ -138,12 +151,10 @@ impl App {
         launch.cols = cols;
         launch.rows = rows;
         launch.color = Some(color.to_string());
-        // Only jackin overrides `advance_clock` (src/bin/jackin/app.rs). Elsewhere the
-        // paste falls through to `on_input` (src/shell/app.rs), so the clock stays off.
-        launch.clock = Path::new(bin)
-            .file_name()
-            .and_then(|file| file.to_str())
-            .is_some_and(|name| matches!(name, "jackin" | "jackin-preview"));
+        // `Launch::new` enables the clock for TablePro, `App::new` also for jackin. Elsewhere
+        // the paste falls through to `on_input` (src/shell/app.rs), so the clock stays off.
+        launch.clock = launch.clock
+            || bin_name(bin).is_some_and(|name| matches!(name, "jackin" | "jackin-preview"));
         try_launch(launch).unwrap_or_else(|error| panic!("{error}"))
     }
 
@@ -399,6 +410,76 @@ impl App {
         })
     }
 
+    /// Wait until `find` locates a point on the screen, then return it.
+    ///
+    /// Use it in place of a one-shot `screen()` lookup, which fails when the
+    /// frame that holds the target is still being painted.
+    pub fn wait_point(
+        &self,
+        reason: &str,
+        find: impl Fn(&TerminalSnapshot) -> Option<Point>,
+    ) -> Point {
+        let found = RefCell::new(None);
+        self.wait_screen(reason, |screen| {
+            *found.borrow_mut() = find(screen);
+            found.borrow().is_some()
+        });
+        found
+            .into_inner()
+            .expect("wait_screen returned with a point")
+    }
+
+    /// The point two columns into the one `label` whose row `row_ok`
+    /// accepts. It waits for that row to be painted.
+    pub fn wait_button(&self, label: &str, row_ok: impl Fn(&str) -> bool) -> Point {
+        self.wait_point(&format!("one button {label:?}"), |screen| {
+            let hits: Vec<_> = find_all(screen, label)
+                .into_iter()
+                .filter(|point| row_ok(&row_text(screen, u32::from(point.y))))
+                .collect();
+            (hits.len() == 1).then(|| Point {
+                x: hits[0].x + 2,
+                y: hits[0].y,
+            })
+        })
+    }
+
+    /// Press `key` until `reached` accepts the screen.
+    ///
+    /// After each press it waits for `watch(screen)` to change or for
+    /// `reached` to hold. The wait ends on that state, not on a short
+    /// deadline, so a loaded machine slows the walk and cannot cut it off. A
+    /// press that moves nothing within the harness timeout is a dead end and
+    /// fails with the screen. `max_presses` bounds a walk that keeps moving
+    /// without arriving.
+    pub fn press_until<W: PartialEq>(
+        &self,
+        key: &str,
+        goal: &str,
+        max_presses: usize,
+        watch: impl Fn(&TerminalSnapshot) -> W,
+        reached: impl Fn(&TerminalSnapshot) -> bool,
+    ) -> TerminalSnapshot {
+        for _ in 0..max_presses {
+            let screen = self.screen();
+            if reached(&screen) {
+                return screen;
+            }
+            let before = watch(&screen);
+            self.key(key);
+            self.wait_screen(&format!("{key} moves toward {goal}"), |screen| {
+                reached(screen) || watch(screen) != before
+            });
+        }
+        let screen = self.screen();
+        assert!(
+            reached(&screen),
+            "never reached {goal} with {max_presses} x {key}\n{}",
+            text(&screen)
+        );
+        screen
+    }
+
     pub fn wait_absent(&self, needle: &str) -> TerminalSnapshot {
         self.wait_screen(&format!("absent {needle}"), |screen| {
             !text(screen).contains(needle)
@@ -448,6 +529,16 @@ impl App {
             return;
         }
         self.paste(&TestRequest::advance(milliseconds));
+    }
+
+    /// Lets every status toast reach the end of its lifetime on the stepped clock.
+    pub fn expire_status(&self) {
+        self.advance_clock(StatusLine::<()>::DEFAULT_TTL_MS);
+    }
+
+    /// Lets the pointer press flash reach its deadline on the stepped clock.
+    pub fn settle_flash(&self) {
+        self.advance_clock(PointerConfig::DEFAULT.flash_ms);
     }
 
     pub fn move_to(&self, point: Point) {
@@ -516,6 +607,20 @@ impl App {
             .expect("resize PTY");
     }
 
+    /// Wait for the child to exit. The wait ends on the exit itself, so only
+    /// an app that never quits runs out the budget.
+    pub fn wait_exit(&self, reason: &str) {
+        let deadline = Instant::now() + EXIT_TIMEOUT;
+        while self.child_running() {
+            assert!(
+                Instant::now() < deadline,
+                "{reason}\n{}",
+                text(&self.screen())
+            );
+            std::thread::sleep(Duration::from_millis(25));
+        }
+    }
+
     pub fn finish(&self) {
         self.assert_running("before Ctrl+Q");
         self.key("ctrl+q");
@@ -570,15 +675,7 @@ impl App {
                 name: "KILL".to_string(),
             })
             .expect("kill child");
-        let deadline = Instant::now() + Duration::from_secs(2);
-        while self.child_running() {
-            assert!(
-                Instant::now() < deadline,
-                "child survived Session::kill {}",
-                self.directory.display()
-            );
-            std::thread::sleep(Duration::from_millis(20));
-        }
+        self.wait_exit("child survived Session::kill");
     }
 
     fn assert_running(&self, reason: &str) {
@@ -629,12 +726,20 @@ impl App {
             hasher.finish()
         ));
         let path = self.directory.join(format!("{number:03}"));
-        std::fs::write(
-            path.with_extension("json"),
-            serde_json::to_vec(screen).unwrap(),
-        )
-        .expect("save terminal cells");
         std::fs::write(path.with_extension("txt"), text(screen)).expect("save terminal text");
+        let mut recent = self.recent.borrow_mut();
+        if recent.len() == FAILURE_CELL_CHECKPOINTS {
+            recent.pop_front();
+        }
+        recent.push_back((number, screen.clone()));
+    }
+
+    fn save_failure_cells(&self) {
+        for (number, screen) in self.recent.borrow().iter() {
+            if let Ok(json) = serde_json::to_vec(screen) {
+                let _ = std::fs::write(self.directory.join(format!("{number:03}.json")), json);
+            }
+        }
     }
 }
 
@@ -653,9 +758,52 @@ impl Drop for App {
         let _ = self.session.close();
         let _ = std::fs::remove_dir_all(self.directory.join("home"));
         if std::thread::panicking() {
+            self.save_failure_cells();
             eprintln!("functional evidence: {}", self.directory.display());
         }
     }
+}
+
+/// Ends the 140ms press flash on the stepped clock, then redraws once. See [`redraw_after_flash`].
+pub fn flash_settle_stepped(app: &App) {
+    app.settle_flash();
+    redraw_after_flash(app);
+}
+
+/// Waits out the 140ms press flash on the wall clock, then redraws once. For apps that run
+/// without the stepped test clock, so it needs no [`App::advance_clock`]. See [`redraw_after_flash`].
+pub fn flash_settle(app: &App) {
+    std::thread::sleep(Duration::from_millis(200));
+    redraw_after_flash(app);
+}
+
+/// Forces one redraw after the press flash deadline has passed. A same-size resize does not
+/// force a frame, so the width is nudged by one column and restored. Below about 100 columns
+/// the header omits the size chip, so the nudge waits on the terminal size instead. The redraw
+/// also leaves the hidden terminal cursor in a fixed place.
+fn redraw_after_flash(app: &App) {
+    let screen = app.screen();
+    let cols = u16::try_from(screen.cols()).expect("cols");
+    let rows = u16::try_from(screen.rows()).expect("rows");
+    let nudged = cols + 1;
+    app.resize(nudged, rows);
+    if cols >= 100 {
+        app.wait_text(&format!("{nudged}×{rows}"));
+        app.resize(cols, rows);
+        app.wait_text(&format!("{cols}×{rows}"));
+    } else {
+        app.wait_screen("narrow nudge", |screen| {
+            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
+        });
+        app.resize(cols, rows);
+        app.wait_screen("narrow restored", |screen| {
+            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
+        });
+    }
+}
+
+fn bin_name(bin: &str) -> Option<&str> {
+    Path::new(bin).file_name().and_then(|file| file.to_str())
 }
 
 pub fn try_launch(launch: Launch) -> Result<App, LaunchError> {
@@ -720,6 +868,7 @@ pub fn try_launch(launch: Launch) -> Result<App, LaunchError> {
                     launch.clock
                 )]),
                 checkpoint: Cell::new(0),
+                recent: RefCell::new(VecDeque::new()),
                 clock: launch.clock,
             };
             app.persist_actions();

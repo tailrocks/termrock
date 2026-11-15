@@ -8,6 +8,7 @@ use crate::domain::custom::{CustomConfig, TrustStore};
 use crate::domain::effect::Effect;
 use crate::domain::exec::Command;
 use crate::domain::plan::{Plan, PlanPhase, StepState};
+use crate::domain::projection::{CatalogStamp, CleanupStamp, ProjectionEpochs};
 use crate::domain::stack::{
     AptState, BrewState, CargoState, CleanupRecord, Container, DiskState, DockerState, GitState,
     GithubState, GradleState, MiseState, PgState, Platform, RankingMemory, SshState,
@@ -65,6 +66,24 @@ impl Batch {
     }
 }
 
+/// Work that must settle before holla can leave. Counted from the World, never
+/// from open tabs or cached catalog rows.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct QuitWork {
+    pub activities: usize,
+    pub plans: usize,
+    pub cleanup: bool,
+}
+
+impl QuitWork {
+    pub fn is_empty(&self) -> bool {
+        self.activities == 0 && self.plans == 0 && !self.cleanup
+    }
+}
+
+/// Status shown when a launch, restart or plan start is refused during quit.
+pub const STOPPING_REFUSAL: &str = "Already stopping · wait for quit or restart the app";
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Msg {
     ActivityEnded { id: String, ok: bool },
@@ -108,6 +127,10 @@ pub struct World {
 
     pub healed_units: Vec<String>,
 
+    /// Set once a confirmed quit has asked running work to stop. New work is
+    /// refused from then on so shutdown cannot be extended.
+    pub(crate) stopping: bool,
+
     pub fs: Fs,
 
     pub tools: BTreeSet<String>,
@@ -141,6 +164,8 @@ pub struct World {
     pub fs_latency: Vec<(String, u64)>,
 
     pub cleanup_job: Option<CleanupJob>,
+
+    pub(crate) epochs: ProjectionEpochs,
 }
 
 #[derive(Debug, Clone)]
@@ -323,8 +348,79 @@ impl World {
         self.activities.iter().find(|a| a.id == id)
     }
 
+    /// Raw mutable access for fixtures and tests that build a world before any
+    /// projection exists. Runtime code edits through `edit_activity` so the
+    /// projection epochs see the change.
     pub fn activity_mut(&mut self, id: &str) -> Option<&mut Activity> {
         self.activities.iter_mut().find(|a| a.id == id)
+    }
+
+    pub fn catalog_stamp(&self) -> CatalogStamp {
+        CatalogStamp {
+            catalog: self.epochs.catalog(),
+            fs: self.fs.content_revision(),
+        }
+    }
+
+    pub fn cleanup_stamp(&self) -> CleanupStamp {
+        CleanupStamp {
+            cleanup: self.epochs.cleanup(),
+            fs: self.fs.content_revision(),
+        }
+    }
+
+    pub fn memory_epoch(&self) -> u64 {
+        self.epochs.memory()
+    }
+
+    /// An explicit catalog edit transaction: the epoch moves once when `edit`
+    /// returns. Never call it from a read path or a tick that may find nothing
+    /// to do.
+    pub fn edit_catalog<R>(&mut self, edit: impl FnOnce(&mut Self) -> R) -> R {
+        let out = edit(self);
+        self.epochs.bump_catalog();
+        out
+    }
+
+    /// `edit_catalog` for an edit that may change nothing. The epoch moves only
+    /// when `edit` reports a change.
+    pub fn edit_catalog_if(&mut self, edit: impl FnOnce(&mut Self) -> bool) -> bool {
+        let changed = edit(self);
+        if changed {
+            self.epochs.bump_catalog();
+        }
+        changed
+    }
+
+    /// An edit of provider, process, platform or disk state the cleanup
+    /// candidates read. Also moves the catalog epoch, which embeds their totals.
+    pub fn edit_cleanup<R>(&mut self, edit: impl FnOnce(&mut Self) -> R) -> R {
+        let out = edit(self);
+        self.epochs.bump_cleanup();
+        out
+    }
+
+    pub fn edit_memory<R>(&mut self, edit: impl FnOnce(&mut Self) -> R) -> R {
+        let out = edit(self);
+        self.epochs.bump_memory();
+        out
+    }
+
+    /// Edits one activity and moves the catalog epoch only when the part the
+    /// catalog reads changed. Output lines and stdin are display metadata and
+    /// never bump.
+    pub fn edit_activity<R>(
+        &mut self,
+        id: &str,
+        edit: impl FnOnce(&mut Activity) -> R,
+    ) -> Option<R> {
+        let a = self.activities.iter_mut().find(|a| a.id == id)?;
+        let before = a.catalog_shape();
+        let out = edit(a);
+        if a.catalog_shape() != before {
+            self.epochs.bump_catalog();
+        }
+        Some(out)
     }
 
     pub fn plan(&self, id: &str) -> Option<&Plan> {
@@ -337,6 +433,39 @@ impl World {
 
     pub fn live_activities(&self) -> usize {
         self.activities.iter().filter(|a| a.state.live()).count()
+    }
+
+    pub fn quit_work(&self) -> QuitWork {
+        QuitWork {
+            activities: self.live_activities(),
+            plans: self
+                .plans
+                .iter()
+                .filter(|p| p.phase == PlanPhase::Running)
+                .count(),
+            cleanup: self.cleanup_job.is_some(),
+        }
+    }
+
+    /// Whether a confirmed quit is stopping work, so new work must be refused.
+    pub fn stopping(&self) -> bool {
+        self.stopping
+    }
+
+    /// Asks everything running to stop for a confirmed quit. Plans stop and
+    /// finalize synchronously (their completion messages are returned for normal
+    /// dispatch); activities follow their cancel schedule; a cleanup is never
+    /// stopped. Repeating it changes nothing that was already stopping.
+    pub fn stop_work_for_quit(&mut self) -> Vec<Msg> {
+        self.stopping = true;
+        let running: Vec<String> = self
+            .plans
+            .iter()
+            .filter(|p| p.phase == PlanPhase::Running)
+            .map(|p| p.id.clone())
+            .collect();
+        self.stop_all();
+        running.iter().flat_map(|id| self.stop_plan(id)).collect()
     }
 
     pub fn script_for(&self, key: Option<&str>, argv: &[Command]) -> Script {
@@ -380,6 +509,7 @@ impl World {
         );
         a.advance(self.tick);
         self.activities.push(a);
+        self.epochs.bump_catalog();
         id
     }
 
@@ -441,6 +571,9 @@ impl World {
             members: ids.clone(),
             summarised: false,
         });
+        if !ids.is_empty() {
+            self.epochs.bump_catalog();
+        }
         ids
     }
 
@@ -452,6 +585,9 @@ impl World {
                 a.stop(tick);
                 n += 1;
             }
+        }
+        if n > 0 {
+            self.epochs.bump_catalog();
         }
         n
     }
@@ -469,6 +605,9 @@ impl World {
         let now = self.now_secs();
         self.memory.used(item, Some(&cwd), &host, now);
         self.memory.used(item, None, &host, now);
+        if self.memory.usage.enabled {
+            self.epochs.bump_memory();
+        }
     }
 
     pub fn tick(&mut self) -> Vec<Msg> {
@@ -483,6 +622,7 @@ impl World {
                 msgs.push(Msg::DiscoveryDone {
                     source: s.name.clone(),
                 });
+                self.epochs.bump_catalog();
             }
         }
         let tick = self.tick;
@@ -496,6 +636,7 @@ impl World {
         }
         let mut effects = vec![];
 
+        junie_tui::record_work!(SchedulingRecordsVisited, self.activities.len());
         let ready: Vec<String> = self
             .activities
             .iter()
@@ -508,13 +649,14 @@ impl World {
             .map(|a| a.id.clone())
             .collect();
         for id in ready {
-            if let Some(a) = self.activity_mut(&id) {
-                a.start(tick);
-            }
+            self.edit_activity(&id, |a| a.start(tick));
         }
+        let mut transitioned = false;
+        junie_tui::record_work!(SchedulingRecordsVisited, self.activities.len());
         for a in &mut self.activities {
             let was = a.state;
             a.advance(tick);
+            transitioned |= a.state != was;
             if was.live() && !a.state.live() {
                 let ok = a.state == ActivityState::Succeeded;
                 if ok && let Some(e) = &a.effect {
@@ -525,6 +667,9 @@ impl World {
                     ok,
                 });
             }
+        }
+        if transitioned {
+            self.epochs.bump_catalog();
         }
         for e in &effects {
             self.apply_effect(e);
@@ -539,6 +684,7 @@ impl World {
                 });
             }
         }
+        junie_tui::record_work!(SchedulingRecordsVisited, self.plans.len());
         for pi in 0..self.plans.len() {
             msgs.extend(self.tick_plan(pi));
         }
@@ -553,9 +699,10 @@ impl World {
             return msgs;
         }
 
-        for si in 0..self.plans[pi].steps.len() {
+        let (plans, templates) = (&mut self.plans, &self.step_output);
+        for si in 0..plans[pi].steps.len() {
             let (running, started, duration, fails) = {
-                let s = &self.plans[pi].steps[si];
+                let s = &plans[pi].steps[si];
                 (
                     s.state == StepState::Running,
                     s.started_tick.unwrap_or(tick),
@@ -566,19 +713,14 @@ impl World {
             if !running {
                 continue;
             }
-            let key = format!("{plan_id}/{}", self.plans[pi].steps[si].id);
-            let lines = self.step_output.get(&key).cloned().unwrap_or_default();
+            let key = format!("{plan_id}/{}", plans[pi].steps[si].id);
+            let template = templates.get(&key).map_or(&[][..], Vec::as_slice);
             let elapsed = tick.saturating_sub(started);
-            let want = ((elapsed as f64 / duration as f64) * lines.len() as f64).ceil() as usize;
-            let want = want.min(lines.len());
-            let have = self.plans[pi].steps[si].output.len();
-            if want > have {
-                self.plans[pi].steps[si]
-                    .output
-                    .extend(lines[have..want].iter().cloned());
-            }
+            let progressed = elapsed.min(duration) as u128 * template.len() as u128;
+            let want = progressed.div_ceil(duration as u128) as usize;
+            plans[pi].steps[si].append_attempt_output(template, want);
             if elapsed >= duration {
-                let s = &mut self.plans[pi].steps[si];
+                let s = &mut plans[pi].steps[si];
                 s.ended_tick = Some(tick);
                 s.exit = Some(if fails { 1 } else { 0 });
                 s.state = if fails {
@@ -661,6 +803,12 @@ impl World {
     }
 
     pub fn apply_effect(&mut self, e: &Effect) {
+        if !matches!(
+            e,
+            Effect::GitFetch(_) | Effect::AmpUpdate | Effect::OmzUpgrade
+        ) {
+            self.epochs.bump_cleanup();
+        }
         match e {
             Effect::DockerRestart(name) => {
                 if let Some(c) = self.docker.containers.iter_mut().find(|c| &c.name == name) {
@@ -922,6 +1070,7 @@ impl World {
             return;
         };
         let c = self.disk.candidates.remove(i);
+        self.epochs.bump_cleanup();
         if let Some(fs) = self.disk.filesystems.first_mut() {
             fs.used_gb = fs.used_gb.saturating_sub(c.gb.round() as u32);
         }
@@ -935,6 +1084,7 @@ impl World {
     }
 
     fn apply_plan_effects(&mut self, pi: usize) {
+        self.epochs.bump_cleanup();
         let plan = self.plans[pi].clone();
         let newly_succeeded = plan.unapplied_successful_step_ids();
         let ok = |id: &str| newly_succeeded.contains(id);
@@ -1271,6 +1421,35 @@ mod plan_tests {
     }
 
     #[test]
+    fn plan_cancel_remaining_with_nothing_running_completes_through_the_finaliser() {
+        let mut w = armed_world();
+        let uses = w.docker.cleanup_uses;
+        let plan = w.plan_mut(ID).expect("plan");
+        let stop = plan
+            .steps
+            .iter()
+            .position(|s| s.id == "stop")
+            .expect("step");
+        plan.steps[stop].state = StepState::Succeeded;
+        plan.cancel_remaining();
+        assert!(plan.running().is_empty());
+        assert_eq!(plan.phase, PlanPhase::Running, "no direct Done transition");
+
+        let mut msgs = w.tick();
+        for _ in 0..200 {
+            msgs.extend(w.tick());
+        }
+
+        assert_eq!(plan_done_count(&msgs), 1);
+        assert_eq!(w.plan(ID).expect("plan").phase, PlanPhase::Done);
+        assert!(
+            w.docker.containers.iter().all(|c| !c.running),
+            "the succeeded step applied"
+        );
+        assert_eq!(w.docker.cleanup_uses, uses + 1);
+    }
+
+    #[test]
     fn plan_retry_has_new_completion_without_repeating_success_effects() {
         let mut w = armed_world();
         let uses = w.docker.cleanup_uses;
@@ -1311,6 +1490,178 @@ mod plan_tests {
             uses + 1,
             "usage counted once per arm"
         );
+    }
+
+    fn set_fails(w: &mut World, id: &str, fails: bool) {
+        let plan = w.plan_mut(ID).expect("plan");
+        let i = plan.steps.iter().position(|s| s.id == id).expect("step");
+        plan.steps[i].fails = fails;
+    }
+
+    fn step_output(w: &World, id: &str) -> Vec<String> {
+        w.plan(ID)
+            .expect("plan")
+            .steps
+            .iter()
+            .find(|s| s.id == id)
+            .expect("step")
+            .output
+            .clone()
+    }
+
+    #[test]
+    fn plan_retry_new_template_starts_at_zero() {
+        let mut w = armed_world();
+        set_fails(&mut w, "images", true);
+        tick_until(&mut w, |w| step_state(w, "images") == StepState::Failed);
+        let before = step_output(&w, "images");
+
+        w.step_output.insert(
+            format!("{ID}/images"),
+            vec!["new one".into(), "new two".into()],
+        );
+        set_fails(&mut w, "images", false);
+        let images = w
+            .plan(ID)
+            .expect("plan")
+            .steps
+            .iter()
+            .position(|s| s.id == "images")
+            .expect("step");
+        assert!(w.plan_mut(ID).expect("plan").retry(images));
+        tick_until(&mut w, |w| step_state(w, "images") == StepState::Succeeded);
+
+        let out = step_output(&w, "images");
+        assert_eq!(out[..before.len()], before[..], "history stays");
+        assert_eq!(
+            out[before.len()..],
+            ["retrying…", "new one", "new two"].map(String::from),
+            "only the new template is emitted after the marker"
+        );
+    }
+
+    #[test]
+    fn plan_retry_multiple_attempts_preserve_successful_siblings() {
+        let mut w = armed_world();
+        set_fails(&mut w, "images", true);
+        tick_until(&mut w, |w| step_state(w, "images") == StepState::Failed);
+        let stop_output = step_output(&w, "stop");
+        for _ in 0..2 {
+            tick_until(&mut w, |w| step_state(w, "images") == StepState::Failed);
+            let images = w
+                .plan(ID)
+                .expect("plan")
+                .steps
+                .iter()
+                .position(|s| s.id == "images")
+                .expect("step");
+            assert!(w.plan_mut(ID).expect("plan").retry(images));
+            set_fails(&mut w, "images", true);
+        }
+        set_fails(&mut w, "images", false);
+        let done = tick_until(&mut w, |w| {
+            w.plan(ID).expect("plan").phase == PlanPhase::Done
+        });
+
+        assert_eq!(plan_done_count(&done), 1);
+        assert_eq!(
+            step_output(&w, "stop"),
+            stop_output,
+            "the sibling output is unchanged"
+        );
+        assert_eq!(step_state(&w, "stop"), StepState::Succeeded);
+        let plan = w.plan(ID).expect("plan");
+        let images = plan.steps.iter().find(|s| s.id == "images").expect("step");
+        assert_eq!(images.attempt, 3);
+        assert_eq!(images.state, StepState::Succeeded);
+    }
+}
+
+#[cfg(test)]
+mod quit_tests {
+    use super::*;
+    use crate::domain::activity::{ActivityKind, Script};
+    use crate::domain::context::ScopeTag;
+    use crate::domain::fixtures::world_for;
+    use crate::scenario::Motion;
+
+    const ALL_STATES: [ActivityState; 7] = [
+        ActivityState::Queued,
+        ActivityState::Running,
+        ActivityState::Cancelling,
+        ActivityState::Succeeded,
+        ActivityState::Failed,
+        ActivityState::Stopped,
+        ActivityState::Detached,
+    ];
+
+    #[test]
+    fn quit_work_counts_every_activity_state_plan_phase_and_cleanup() {
+        let mut w = world_for(Scenario::DockerCleanup, Motion::Full);
+        w.activities.clear();
+        let scope = ScopeTag::here(&w.location.cwd);
+        let id = w.start_activity(
+            vec![],
+            Script::running(vec![]),
+            "a",
+            "a",
+            ActivityKind::Task,
+            scope,
+        );
+        for state in ALL_STATES {
+            w.activity_mut(&id).expect("activity").state = state;
+            let work = w.quit_work();
+            assert_eq!(work.activities, usize::from(state.live()), "{state:?}");
+            assert_eq!(work.plans, 0);
+            assert!(!work.cleanup);
+            assert_eq!(work.is_empty(), !state.live(), "{state:?}");
+        }
+        w.activity_mut(&id).expect("activity").state = ActivityState::Succeeded;
+        for (phase, plans) in [
+            (PlanPhase::Review, 0),
+            (PlanPhase::Running, 1),
+            (PlanPhase::Done, 0),
+        ] {
+            w.plan_mut("docker-cleanup").expect("plan").phase = phase;
+            assert_eq!(w.quit_work().plans, plans, "{phase:?}");
+            assert_eq!(w.quit_work().is_empty(), plans == 0, "{phase:?}");
+        }
+    }
+
+    #[test]
+    fn quit_stop_work_is_idempotent_and_finalizes_every_running_plan() {
+        let mut w = world_for(Scenario::DockerCleanup, Motion::Full);
+        w.clock.running = true;
+        let mut second = w.plan("docker-cleanup").cloned().expect("plan");
+        second.id = "second".into();
+        w.plans.push(second);
+        let tick = w.tick;
+        for id in ["docker-cleanup", "second"] {
+            assert!(w.plan_mut(id).expect("plan").arm(tick));
+        }
+        for _ in 0..3 {
+            w.tick();
+        }
+        assert_eq!(w.quit_work().plans, 2);
+        assert!(!w.stopping());
+
+        let msgs = w.stop_work_for_quit();
+
+        assert_eq!(
+            msgs,
+            vec![
+                Msg::PlanDone {
+                    plan: "docker-cleanup".into()
+                },
+                Msg::PlanDone {
+                    plan: "second".into()
+                },
+            ],
+            "one completion per plan, in plan order"
+        );
+        assert!(w.stopping());
+        assert!(w.quit_work().is_empty());
+        assert!(w.stop_work_for_quit().is_empty());
     }
 }
 

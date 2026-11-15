@@ -78,9 +78,20 @@ pub trait FileSource {
         None
     }
 
+    /// Lexical slash-path parent. A trailing separator is ignored, `/a` climbs to
+    /// `/`, and `/` has no parent. Providers that resolve paths themselves
+    /// (filesystems, URIs) override this.
     fn parent(&self, path: &str) -> Option<String> {
-        let (parent, _) = path.trim_end_matches('/').rsplit_once('/')?;
-        (!parent.is_empty()).then(|| parent.to_owned())
+        let normalized = path.trim_end_matches('/');
+        if normalized.is_empty() {
+            return None;
+        }
+        let (parent, _) = normalized.rsplit_once('/')?;
+        if parent.is_empty() {
+            normalized.starts_with('/').then(|| "/".to_owned())
+        } else {
+            Some(parent.to_owned())
+        }
     }
 
     fn display(&self, path: &str) -> String {
@@ -508,7 +519,7 @@ impl FileBrowser {
     }
 
     pub fn load(&mut self) {
-        let cwd = self.cwd.trim_end_matches('/').to_owned();
+        let cwd = self.cwd.clone();
         let (mut items, err) = match self.source.list(&cwd) {
             Ok(v) => (v, None),
             Err(e) => (vec![], Some(e)),
@@ -570,7 +581,8 @@ impl FileBrowser {
                     if home.as_deref() == Some(p.as_str()) {
                         "~".to_owned()
                     } else {
-                        p.rsplit('/')
+                        p.trim_end_matches('/')
+                            .rsplit('/')
                             .next()
                             .filter(|n| !n.is_empty())
                             .unwrap_or("/")

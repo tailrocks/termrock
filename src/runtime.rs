@@ -43,6 +43,10 @@ pub trait Application {
         InputConfig::default()
     }
 
+    fn raw_input_policy(&self) -> RawInputPolicy {
+        RawInputPolicy::default()
+    }
+
     fn keyboard_protocol(&self) -> KeyboardProtocol {
         KeyboardProtocol::current()
     }
@@ -51,48 +55,285 @@ pub trait Application {
         Vec::new()
     }
 
+    /// Consumes the request for another draw left by the last draw. The
+    /// event loop calls it after every draw and keeps drawing while it
+    /// returns true.
+    fn take_render_invalidated(&mut self) -> bool {
+        false
+    }
+
     fn external(&self) -> Option<&ExternalReceiver> {
         None
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct ExternalSender(std::sync::mpsc::Sender<External>);
+/// Bounds one runtime turn's external-message work.
+///
+/// The runtime hands the application at most `max_messages` external messages
+/// per turn and stops early once `max_duration` has elapsed, measured from the
+/// start of the turn and checked between messages. A turn always handles one
+/// message when one is queued, so a zero duration or zero count still makes
+/// progress. Queued messages stay in order and are not lost: the next turn
+/// resumes where this one stopped, after the runtime has checked terminal
+/// input, resize and tick.
+///
+/// The bound counts messages and time between handlers. It cannot interrupt
+/// one handler that blocks or runs for a long time.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ExternalPolicy {
+    /// Messages handled per turn. Zero is treated as one.
+    pub max_messages: usize,
+    /// Time charged from the turn start, including handler time.
+    pub max_duration: Duration,
+}
 
-impl ExternalSender {
-    pub fn send<T: std::any::Any + Send + Sync>(&self, message: T) -> bool {
-        self.0.send(External::new(message)).is_ok()
+impl ExternalPolicy {
+    pub const DEFAULT_MAX_MESSAGES: usize = 64;
+    pub const DEFAULT_MAX_DURATION: Duration = Duration::from_millis(2);
+
+    fn normalized(self) -> Self {
+        Self {
+            max_messages: self.max_messages.max(1),
+            ..self
+        }
     }
 }
 
+impl Default for ExternalPolicy {
+    fn default() -> Self {
+        Self {
+            max_messages: Self::DEFAULT_MAX_MESSAGES,
+            max_duration: Self::DEFAULT_MAX_DURATION,
+        }
+    }
+}
+
+/// A rejected [`ExternalSender::try_send`]. Both variants return the message,
+/// so the producer can retry it or merge it into its own pending state.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ExternalSendError {
+    /// The bounded queue is at capacity. Retry later.
+    Full(External),
+    /// The receiver was dropped. No retry will succeed.
+    Closed(External),
+}
+
+impl std::fmt::Display for ExternalSendError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Full(_) => "external queue is full",
+            Self::Closed(_) => "external queue is closed",
+        })
+    }
+}
+
+impl std::error::Error for ExternalSendError {}
+
+#[derive(Debug, Clone)]
+enum ExternalQueue {
+    Unbounded(std::sync::mpsc::Sender<External>),
+    Bounded(std::sync::mpsc::SyncSender<External>),
+}
+
+/// The producer half of an external-message channel. Clone it for each
+/// producer thread.
+#[derive(Debug, Clone)]
+pub struct ExternalSender(ExternalQueue);
+
+impl ExternalSender {
+    /// Queues `message` without blocking.
+    ///
+    /// A bounded channel answers [`ExternalSendError::Full`] at capacity. An
+    /// unbounded channel never reports `Full`. Either way the rejected message
+    /// comes back in the error, so a retry sends the same payload.
+    pub fn try_send(&self, message: External) -> Result<(), ExternalSendError> {
+        use std::sync::mpsc::TrySendError;
+        match &self.0 {
+            ExternalQueue::Unbounded(tx) => {
+                tx.send(message).map_err(|e| ExternalSendError::Closed(e.0))
+            }
+            ExternalQueue::Bounded(tx) => tx.try_send(message).map_err(|e| match e {
+                TrySendError::Full(m) => ExternalSendError::Full(m),
+                TrySendError::Disconnected(m) => ExternalSendError::Closed(m),
+            }),
+        }
+    }
+
+    /// Wraps `message` and queues it, returning whether it was accepted.
+    ///
+    /// This is the lossy convenience: on a full or closed queue the message is
+    /// dropped and the caller learns only `false`. A producer that must keep
+    /// the payload calls [`try_send`](Self::try_send) with an [`External`] it
+    /// retains and retries on [`ExternalSendError::Full`].
+    pub fn send<T: std::any::Any + Send + Sync>(&self, message: T) -> bool {
+        self.try_send(External::new(message)).is_ok()
+    }
+}
+
+/// The runtime half of an external-message channel, owned by the application
+/// and returned from [`Application::external`].
 #[derive(Debug)]
 pub struct ExternalReceiver {
     queue: std::sync::mpsc::Receiver<External>,
     latency: Duration,
+    policy: ExternalPolicy,
 }
 
 impl ExternalReceiver {
     pub const DEFAULT_LATENCY: Duration = Duration::from_millis(10);
+
+    fn new(queue: std::sync::mpsc::Receiver<External>, policy: ExternalPolicy) -> Self {
+        Self {
+            queue,
+            latency: Self::DEFAULT_LATENCY,
+            policy: policy.normalized(),
+        }
+    }
 
     pub fn latency(mut self, latency: Duration) -> Self {
         self.latency = latency;
         self
     }
 
+    /// The per-turn bound the runtime applies to this receiver.
+    pub fn policy(&self) -> ExternalPolicy {
+        self.policy
+    }
+
+    /// Replaces the per-turn bound, normalising a zero message count to one.
+    pub fn set_policy(&mut self, policy: ExternalPolicy) {
+        self.policy = policy.normalized();
+    }
+
+    pub fn with_policy(mut self, policy: ExternalPolicy) -> Self {
+        self.set_policy(policy);
+        self
+    }
+
+    /// Takes the oldest queued message, if any. An empty or disconnected
+    /// queue both read as no message.
+    pub fn try_recv(&self) -> Option<External> {
+        self.queue.try_recv().ok()
+    }
+
+    /// Takes every queued message at once.
+    ///
+    /// The runtime never calls this. It is unbounded: a producer that keeps
+    /// refilling the queue keeps it from returning, and the whole backlog is
+    /// allocated at once. Read incrementally with [`try_recv`](Self::try_recv).
+    #[deprecated(note = "unbounded; read incrementally with `try_recv`")]
     pub fn drain(&self) -> Vec<External> {
         self.queue.try_iter().collect()
     }
 }
 
+/// Creates an unbounded channel with the default [`ExternalPolicy`].
+///
+/// The queue can grow without limit while the application is busy, so this
+/// suits a low-rate producer. The runtime still handles at most one policy's
+/// worth of messages per turn. Prefer [`bounded_external_channel`] for a
+/// producer that can outrun the application.
 pub fn external_channel() -> (ExternalSender, ExternalReceiver) {
     let (tx, rx) = std::sync::mpsc::channel();
     (
-        ExternalSender(tx),
-        ExternalReceiver {
-            queue: rx,
-            latency: ExternalReceiver::DEFAULT_LATENCY,
-        },
+        ExternalSender(ExternalQueue::Unbounded(tx)),
+        ExternalReceiver::new(rx, ExternalPolicy::default()),
     )
+}
+
+/// Creates a channel that holds at most `capacity` queued messages.
+///
+/// [`ExternalSender::try_send`] never blocks: at capacity it returns
+/// [`ExternalSendError::Full`] with the message, and the producer decides
+/// whether to retry, merge or drop. 256 is a reasonable capacity for a UI
+/// background feed.
+pub fn bounded_external_channel(
+    capacity: std::num::NonZeroUsize,
+    policy: ExternalPolicy,
+) -> (ExternalSender, ExternalReceiver) {
+    let (tx, rx) = std::sync::mpsc::sync_channel(capacity.get());
+    (
+        ExternalSender(ExternalQueue::Bounded(tx)),
+        ExternalReceiver::new(rx, policy),
+    )
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+struct ExternalTurn {
+    changed: bool,
+    exhausted: bool,
+}
+
+/// Hands the application one bounded group of queued external messages.
+///
+/// The receiver is read again before every message, so a handler may replace
+/// or remove it. `exhausted` means the bound stopped the turn and more work
+/// may be queued, so the caller schedules another turn without waiting.
+fn pump_external(
+    app: &mut impl Application,
+    policy: ExternalPolicy,
+    elapsed: impl Fn() -> Duration,
+) -> ExternalTurn {
+    let mut turn = ExternalTurn::default();
+    for count in 0..policy.normalized().max_messages {
+        if app.should_quit() {
+            return turn;
+        }
+        if count > 0 && elapsed() >= policy.max_duration {
+            turn.exhausted = true;
+            return turn;
+        }
+        let Some(message) = app.external().and_then(ExternalReceiver::try_recv) else {
+            return turn;
+        };
+        turn.changed |= app.handle(Input::External(message)) == Outcome::Changed;
+        if app.should_quit() {
+            return turn;
+        }
+    }
+    turn.exhausted = true;
+    turn
+}
+
+/// What one loop iteration does after terminal input: a bounded external
+/// group, then the resize check, then the tick. The order and the quit checks
+/// between them are the fairness contract between those sources.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+struct ServiceTurn {
+    changed: bool,
+    quit: bool,
+    ticked: bool,
+}
+
+fn service_turn(
+    app: &mut impl Application,
+    external_pending: &mut bool,
+    elapsed: impl Fn() -> Duration,
+    resize: impl FnOnce() -> Option<Input>,
+    tick_due: impl FnOnce() -> bool,
+) -> ServiceTurn {
+    let mut turn = ServiceTurn::default();
+    match app.external().map(ExternalReceiver::policy) {
+        Some(policy) => {
+            let external = pump_external(app, policy, elapsed);
+            turn.changed |= external.changed;
+            *external_pending = external.exhausted;
+        }
+        None => *external_pending = false,
+    }
+    if app.should_quit() {
+        turn.quit = true;
+        return turn;
+    }
+    if let Some(resize) = resize() {
+        turn.changed |= app.handle(resize) == Outcome::Changed;
+    }
+    if tick_due() {
+        turn.ticked = true;
+        turn.changed |= app.handle(Input::Tick) == Outcome::Changed;
+        turn.quit = app.should_quit();
+    }
+    turn
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -195,6 +436,11 @@ fn is_navigation(key: &Key) -> bool {
 /// terminal cleanup from then on. Unwinding still restores the terminal when
 /// the session drops, but under `panic = "abort"` a replacing hook must
 /// restore the terminal itself or wrap the hook it replaced.
+///
+/// A panic caught on another thread while entry or resume is still enabling
+/// modes makes the hook restore a half-set-up terminal. Setup then finishes
+/// and the interval stays owed one more cleanup, so leave or drop restores the
+/// modes setup enabled after the hook ran.
 pub struct TerminalSession {
     terminal: ratatui::DefaultTerminal,
     owner: SessionOwner,
@@ -205,7 +451,8 @@ pub struct TerminalSession {
 static SESSION_GATE: RestoreGate = RestoreGate::new(restore_terminal);
 
 /// Claims `gate`, installs the panic bridge, activates the first interval and
-/// then runs `initialize`. A refused claim runs nothing. Any later failure
+/// then runs `initialize` inside its setup window. A refused claim runs
+/// nothing. Any later failure
 /// cleans up once and releases the claim when the returned owner drops.
 fn claim_and_initialize<T>(
     gate: &'static RestoreGate,
@@ -213,8 +460,8 @@ fn claim_and_initialize<T>(
 ) -> std::io::Result<(T, SessionOwner)> {
     let owner = SessionOwner::claim(gate)?;
     panic_bridge::install_once(gate)?;
-    owner.activate()?;
-    Ok((initialize()?, owner))
+    let value = owner.set_up(initialize)?;
+    Ok((value, owner))
 }
 
 fn open_terminal(protocol: KeyboardProtocol) -> std::io::Result<ratatui::DefaultTerminal> {
@@ -321,8 +568,7 @@ impl TerminalSession {
 
     #[cfg(unix)]
     fn reenter(&mut self) -> std::io::Result<(u16, u16)> {
-        self.owner.activate()?;
-        if let Err(e) = Self::resume_modes() {
+        if let Err(e) = self.owner.set_up(Self::resume_modes) {
             let _ = self.owner.restore();
             return Err(e);
         }
@@ -662,6 +908,8 @@ fn event_loop(session: &mut TerminalSession, app: &mut impl Application) -> std:
     let mut hover_due: Option<(u64, Instant)> = None;
     let mut first_poll_delay = first_poll_delay();
     let mut sizes = SizeWatch::new(terminal_size(&session.terminal));
+    let mut external_pending = false;
+    let mut raw_pending = false;
     loop {
         #[cfg(unix)]
         if job_control::take_request() {
@@ -676,8 +924,8 @@ fn event_loop(session: &mut TerminalSession, app: &mut impl Application) -> std:
         }
         let terminal = &mut session.terminal;
         if dirty {
-            draw_frame(terminal, app, suppress_colors)?;
             dirty = false;
+            draw_frame(terminal, app, suppress_colors, &mut dirty)?;
             if let Some(delay) = first_poll_delay.take() {
                 std::thread::sleep(delay);
             }
@@ -713,24 +961,23 @@ fn event_loop(session: &mut TerminalSession, app: &mut impl Application) -> std:
         if let Some(external) = app.external() {
             wait = wait.min(external.latency);
         }
+        wait = turn_wait(wait, raw_pending || external_pending || dirty);
 
-        if pump.has_pending() || poll_uninterrupted(wait)? {
-            pump.set_policy(app.coalesce());
-            let config = effective_input_config(app.input_config(), keyboard::active());
-            let changed = pump.drain(app, || {
-                let input = next_ready_input(config)?;
-                if let Some(input) = &input {
-                    sizes.observe(input);
-                }
-                Ok(input)
-            })?;
+        if raw_pending || pump.has_pending() || poll_uninterrupted(wait)? {
+            let changed = input_turn(
+                app,
+                &mut pump,
+                &mut CrosstermSource,
+                &mut sizes,
+                &mut raw_pending,
+            )?;
             if app.should_quit() {
                 return Ok(());
             }
             if changed {
-                draw_frame(terminal, app, suppress_colors)?;
+                draw_frame(terminal, app, suppress_colors, &mut dirty)?;
                 if pump.settle(app) {
-                    draw_frame(terminal, app, suppress_colors)?;
+                    draw_frame(terminal, app, suppress_colors, &mut dirty)?;
                 }
             }
         }
@@ -738,33 +985,26 @@ fn event_loop(session: &mut TerminalSession, app: &mut impl Application) -> std:
             dirty = true;
         }
 
-        let external = app.external().map(ExternalReceiver::drain);
-        for message in external.into_iter().flatten() {
-            if app.handle(Input::External(message)) == Outcome::Changed {
-                dirty = true;
-            }
-        }
-        if app.should_quit() {
-            return Ok(());
-        }
-
-        if let Some(size) = terminal_size(terminal)
-            && let Some(resize) = sizes.check(size)
-            && app.handle(resize) == Outcome::Changed
-        {
-            dirty = true;
-        }
-        if last_tick.elapsed() >= interval {
-            last_tick = Instant::now();
-            if app.handle(Input::Tick) == Outcome::Changed {
-                dirty = true;
-            }
-            if app.should_quit() {
-                if dirty {
-                    draw_frame(terminal, app, suppress_colors)?;
+        let started = Instant::now();
+        let turn = service_turn(
+            app,
+            &mut external_pending,
+            || started.elapsed(),
+            || terminal_size(terminal).and_then(|size| sizes.check(size)),
+            || {
+                let due = last_tick.elapsed() >= interval;
+                if due {
+                    last_tick = Instant::now();
                 }
-                return Ok(());
+                due
+            },
+        );
+        dirty |= turn.changed;
+        if turn.quit {
+            if turn.ticked && dirty {
+                draw_frame(terminal, app, suppress_colors, &mut dirty)?;
             }
+            return Ok(());
         }
     }
 }
@@ -866,24 +1106,167 @@ pub fn set_focus_click_guard(window: Duration) {
     FOCUS_GUARD.with(|g| g.set(FocusClickGuard::new(window)));
 }
 
-fn next_ready_input(config: InputConfig) -> std::io::Result<Option<Input>> {
-    while poll_input(Duration::ZERO)? {
-        let ev = event::read()?;
-        let dropped = FOCUS_GUARD.with(|g| {
-            let mut guard = g.get();
-            let d = guard.drops(&ev, Instant::now());
-            g.set(guard);
-            d
-        });
-        if dropped {
-            continue;
-        }
-        if let Some(input) = Input::from_crossterm_with(ev, config) {
-            keyboard::observe(&input);
-            return Ok(Some(input));
+/// Bound on the raw terminal events one runtime turn may read before it must
+/// return to the external, resize and tick checks.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RawInputPolicy {
+    /// Raw events read per turn, counting those filtered before an `Input`
+    /// exists. Zero is treated as one.
+    pub max_events: usize,
+    /// Time charged from the turn start and checked between reads. A turn
+    /// always reads one event, so a zero duration still makes progress.
+    pub max_duration: Duration,
+}
+
+impl RawInputPolicy {
+    pub(crate) fn event_limit(&self) -> usize {
+        self.max_events.max(1)
+    }
+
+    pub const DEFAULT_MAX_EVENTS: usize = 256;
+    pub const DEFAULT_MAX_DURATION: Duration = Duration::from_millis(2);
+}
+
+impl Default for RawInputPolicy {
+    fn default() -> Self {
+        Self {
+            max_events: Self::DEFAULT_MAX_EVENTS,
+            max_duration: Self::DEFAULT_MAX_DURATION,
         }
     }
-    Ok(None)
+}
+
+#[derive(Debug, Clone, Copy)]
+struct RawBudget {
+    max_events: usize,
+    max_duration: Duration,
+    started: Instant,
+    read: usize,
+    filtered: usize,
+}
+
+impl RawBudget {
+    fn new(policy: RawInputPolicy, started: Instant) -> Self {
+        Self {
+            max_events: policy.event_limit(),
+            max_duration: policy.max_duration,
+            started,
+            read: 0,
+            filtered: 0,
+        }
+    }
+
+    fn exhausted(&self, now: Instant) -> bool {
+        self.read >= self.max_events
+            || (self.read > 0 && now.saturating_duration_since(self.started) >= self.max_duration)
+    }
+
+    #[allow(dead_code)]
+    fn read(&self) -> usize {
+        self.read
+    }
+
+    #[allow(dead_code)]
+    fn filtered(&self) -> usize {
+        self.filtered
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum RawRead {
+    Input(Input),
+    Empty,
+    Yielded,
+}
+
+trait RawSource {
+    fn poll(&mut self) -> std::io::Result<bool>;
+    fn read(&mut self) -> std::io::Result<Event>;
+    fn dropped(&mut self, event: &Event) -> bool;
+    fn now(&mut self) -> Instant;
+}
+
+struct CrosstermSource;
+
+impl RawSource for CrosstermSource {
+    fn poll(&mut self) -> std::io::Result<bool> {
+        poll_input(Duration::ZERO)
+    }
+
+    fn read(&mut self) -> std::io::Result<Event> {
+        event::read()
+    }
+
+    fn dropped(&mut self, event: &Event) -> bool {
+        FOCUS_GUARD.with(|g| {
+            let mut guard = g.get();
+            let dropped = guard.drops(event, Instant::now());
+            g.set(guard);
+            dropped
+        })
+    }
+
+    fn now(&mut self) -> Instant {
+        Instant::now()
+    }
+}
+
+fn scan_next(
+    source: &mut impl RawSource,
+    budget: &mut RawBudget,
+    config: InputConfig,
+) -> std::io::Result<RawRead> {
+    loop {
+        if !source.poll()? {
+            return Ok(RawRead::Empty);
+        }
+        if budget.exhausted(source.now()) {
+            return Ok(RawRead::Yielded);
+        }
+        let ev = source.read()?;
+        budget.read += 1;
+        if source.dropped(&ev) {
+            budget.filtered += 1;
+            continue;
+        }
+        match Input::from_crossterm_with(ev, config) {
+            Some(input) => {
+                keyboard::observe(&input);
+                return Ok(RawRead::Input(input));
+            }
+            None => budget.filtered += 1,
+        }
+    }
+}
+
+fn turn_wait(wait: Duration, pending: bool) -> Duration {
+    if pending { Duration::ZERO } else { wait }
+}
+
+fn input_turn(
+    app: &mut impl Application,
+    pump: &mut InputPump,
+    source: &mut impl RawSource,
+    sizes: &mut SizeWatch,
+    raw_pending: &mut bool,
+) -> std::io::Result<bool> {
+    pump.set_policy(app.coalesce());
+    let config = effective_input_config(app.input_config(), keyboard::active());
+    let mut budget = RawBudget::new(app.raw_input_policy(), source.now());
+    pump.drain(app, || match scan_next(source, &mut budget, config)? {
+        RawRead::Input(input) => {
+            sizes.observe(&input);
+            Ok(Some(input))
+        }
+        RawRead::Empty => {
+            *raw_pending = false;
+            Ok(None)
+        }
+        RawRead::Yielded => {
+            *raw_pending = true;
+            Ok(None)
+        }
+    })
 }
 
 pub const DRAIN_BUDGET: usize = 256;
@@ -995,14 +1378,26 @@ fn draw_frame(
     terminal: &mut ratatui::DefaultTerminal,
     app: &mut impl Application,
     suppress_colors: bool,
+    dirty: &mut bool,
 ) -> std::io::Result<()> {
     queue!(terminal.backend_mut(), BeginSynchronizedUpdate)?;
-    let drawn = terminal
-        .draw(|f| render_frame(app, f, suppress_colors))
-        .map(|_| ());
+    let drawn = paint(terminal, app, suppress_colors, dirty);
     let ended = execute!(terminal.backend_mut(), EndSynchronizedUpdate);
     drawn?;
     ended
+}
+
+fn paint<B: ratatui::backend::Backend>(
+    terminal: &mut ratatui::Terminal<B>,
+    app: &mut impl Application,
+    suppress_colors: bool,
+    dirty: &mut bool,
+) -> Result<(), B::Error> {
+    let drawn = terminal
+        .draw(|f| render_frame(app, f, suppress_colors))
+        .map(|_| ());
+    *dirty |= app.take_render_invalidated();
+    drawn
 }
 
 fn render_frame(app: &mut impl Application, frame: &mut Frame, suppress_colors: bool) {
@@ -1020,24 +1415,999 @@ fn reset_frame_colors(buffer: &mut Buffer) {
     }
 }
 
+/// Discards every queued raw terminal event, however many arrive.
+///
+/// This never gives up while the queue keeps refilling. [`shell::run`] does
+/// not call it; use [`drain_pending_input_bounded`] at startup instead.
+///
+/// [`shell::run`]: crate::shell::run
 pub fn drain_pending_input() -> std::io::Result<usize> {
-    let was_raw = ratatui::crossterm::terminal::is_raw_mode_enabled()?;
-    if !was_raw {
-        enable_raw_mode()?;
+    drain_pending_input_bounded(usize::MAX)
+}
+
+/// Discards at most `max_events` queued raw terminal events and returns how
+/// many it read, filtered event kinds included. Events beyond the bound stay
+/// queued for normal input handling. `0` returns at once without touching
+/// the terminal.
+///
+/// Raw mode is enabled for the scan when it was off and disabled again on
+/// every return; a disable failure takes precedence over a scan failure.
+pub fn drain_pending_input_bounded(max_events: usize) -> std::io::Result<usize> {
+    discard_pending(&mut CrosstermSource, &mut TerminalRawMode, max_events)
+}
+
+trait RawModeControl {
+    fn enabled(&mut self) -> std::io::Result<bool>;
+    fn enable(&mut self) -> std::io::Result<()>;
+    fn disable(&mut self) -> std::io::Result<()>;
+}
+
+struct TerminalRawMode;
+
+impl RawModeControl for TerminalRawMode {
+    fn enabled(&mut self) -> std::io::Result<bool> {
+        ratatui::crossterm::terminal::is_raw_mode_enabled()
     }
-    let mut n = 0;
-    let drained = loop {
-        match poll_input(Duration::ZERO) {
-            Ok(false) => break Ok(n),
-            Ok(true) => match event::read() {
-                Ok(_) => n += 1,
-                Err(e) => break Err(e),
-            },
-            Err(e) => break Err(e),
+
+    fn enable(&mut self) -> std::io::Result<()> {
+        enable_raw_mode()
+    }
+
+    fn disable(&mut self) -> std::io::Result<()> {
+        disable_raw_mode()
+    }
+}
+
+struct RawModeRestore<'a, M: RawModeControl> {
+    mode: &'a mut M,
+    armed: bool,
+}
+
+impl<M: RawModeControl> RawModeRestore<'_, M> {
+    fn finish(mut self) -> std::io::Result<()> {
+        self.armed = false;
+        self.mode.disable()
+    }
+}
+
+impl<M: RawModeControl> Drop for RawModeRestore<'_, M> {
+    fn drop(&mut self) {
+        if self.armed {
+            let _ = self.mode.disable();
         }
-    };
-    if !was_raw {
-        disable_raw_mode()?;
     }
-    drained
+}
+
+fn discard_pending(
+    source: &mut impl RawSource,
+    mode: &mut impl RawModeControl,
+    max_events: usize,
+) -> std::io::Result<usize> {
+    if max_events == 0 {
+        return Ok(0);
+    }
+    let restore = if mode.enabled()? {
+        None
+    } else {
+        mode.enable()?;
+        Some(RawModeRestore { mode, armed: true })
+    };
+    let scanned = discard_ready(source, max_events);
+    if let Some(restore) = restore {
+        restore.finish()?;
+    }
+    scanned
+}
+
+fn discard_ready(source: &mut impl RawSource, max_events: usize) -> std::io::Result<usize> {
+    let mut discarded = 0;
+    while discarded < max_events && source.poll()? {
+        source.read()?;
+        discarded += 1;
+    }
+    Ok(discarded)
+}
+
+#[cfg(test)]
+mod raw_input_tests {
+    use super::*;
+    use ratatui::crossterm::event::{
+        KeyEvent, KeyEventKind, KeyEventState, MouseButton, MouseEvent,
+    };
+    use std::collections::VecDeque;
+
+    struct Script {
+        queue: VecDeque<Event>,
+        reads: usize,
+        base: Instant,
+        step: Duration,
+        guard: FocusClickGuard,
+        fail_read_at: Option<usize>,
+        endless: Option<Event>,
+    }
+
+    impl Script {
+        fn new(queue: impl IntoIterator<Item = Event>) -> Self {
+            Self {
+                queue: queue.into_iter().collect(),
+                reads: 0,
+                base: Instant::now(),
+                step: Duration::ZERO,
+                guard: FocusClickGuard::default(),
+                fail_read_at: None,
+                endless: None,
+            }
+        }
+
+        fn releases_then(n: usize, tail: impl IntoIterator<Item = Event>) -> Self {
+            Self::new((0..n).map(|_| release('r')).chain(tail))
+        }
+
+        fn endless(event: Event) -> Self {
+            let mut script = Self::new([]);
+            script.endless = Some(event);
+            script
+        }
+    }
+
+    impl RawSource for Script {
+        fn poll(&mut self) -> std::io::Result<bool> {
+            Ok(self.endless.is_some() || !self.queue.is_empty())
+        }
+
+        fn read(&mut self) -> std::io::Result<Event> {
+            if self.fail_read_at == Some(self.reads) {
+                return Err(std::io::Error::other("read failed"));
+            }
+            self.reads += 1;
+            match &self.endless {
+                Some(event) => Ok(event.clone()),
+                None => Ok(self.queue.pop_front().expect("poll said ready")),
+            }
+        }
+
+        fn dropped(&mut self, event: &Event) -> bool {
+            let now = self.now();
+            self.guard.drops(event, now)
+        }
+
+        fn now(&mut self) -> Instant {
+            self.base + self.step * u32::try_from(self.reads).unwrap()
+        }
+    }
+
+    fn release(c: char) -> Event {
+        Event::Key(KeyEvent {
+            code: KeyCode::Char(c),
+            modifiers: KeyModifiers::NONE,
+            kind: KeyEventKind::Release,
+            state: KeyEventState::NONE,
+        })
+    }
+
+    fn press(c: char) -> Event {
+        Event::Key(KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE))
+    }
+
+    fn mouse(kind: MouseEventKind) -> Event {
+        Event::Mouse(MouseEvent {
+            kind,
+            column: 1,
+            row: 1,
+            modifiers: KeyModifiers::NONE,
+        })
+    }
+
+    fn key(c: char) -> Input {
+        Input::Key(Key {
+            code: KeyCode::Char(c),
+            mods: KeyModifiers::NONE,
+        })
+    }
+
+    fn policy(max_events: usize, max_duration: Duration) -> RawInputPolicy {
+        RawInputPolicy {
+            max_events,
+            max_duration,
+        }
+    }
+
+    fn budget(source: &mut Script, policy: RawInputPolicy) -> RawBudget {
+        RawBudget::new(policy, source.now())
+    }
+
+    #[derive(Default)]
+    struct Recorder {
+        policy: Option<RawInputPolicy>,
+        seen: Vec<Input>,
+    }
+
+    impl Application for Recorder {
+        fn handle(&mut self, input: Input) -> Outcome {
+            self.seen.push(input);
+            Outcome::Ignored
+        }
+        fn render(&mut self, _frame: &mut Frame) {}
+        fn should_quit(&self) -> bool {
+            false
+        }
+        fn tick_interval(&self) -> Duration {
+            Duration::from_millis(100)
+        }
+        fn coalesce(&self) -> Coalesce {
+            Coalesce::OFF
+        }
+        fn raw_input_policy(&self) -> RawInputPolicy {
+            self.policy.unwrap_or_default()
+        }
+    }
+
+    struct Turns {
+        app: Recorder,
+        pump: InputPump,
+        sizes: SizeWatch,
+        raw_pending: bool,
+    }
+
+    impl Turns {
+        fn new(policy: RawInputPolicy) -> Self {
+            Self {
+                app: Recorder {
+                    policy: Some(policy),
+                    seen: Vec::new(),
+                },
+                pump: InputPump::new(Coalesce::OFF),
+                sizes: SizeWatch::default(),
+                raw_pending: false,
+            }
+        }
+
+        fn turn(&mut self, source: &mut Script) -> std::io::Result<bool> {
+            input_turn(
+                &mut self.app,
+                &mut self.pump,
+                source,
+                &mut self.sizes,
+                &mut self.raw_pending,
+            )
+        }
+    }
+
+    #[test]
+    fn raw_input_filtered_stream_yields_at_budget() {
+        let mut source = Script::releases_then(10_000, [press('a')]);
+        let mut budget = budget(&mut source, policy(8, Duration::from_secs(60)));
+        let read = scan_next(&mut source, &mut budget, InputConfig::default()).unwrap();
+        assert_eq!(read, RawRead::Yielded);
+        assert_eq!(source.reads, 8);
+        assert_eq!((budget.read(), budget.filtered()), (8, 8));
+        assert_eq!(source.queue.len(), 10_001 - 8);
+    }
+
+    #[test]
+    fn raw_input_budget_is_shared_across_accepted_inputs() {
+        let queue = (b'a'..=b'h').flat_map(|c| [release('r'), press(char::from(c))]);
+        let mut source = Script::new(queue);
+        let mut turns = Turns::new(policy(8, Duration::from_secs(60)));
+        turns.turn(&mut source).unwrap();
+        assert_eq!(source.reads, 8);
+        assert_eq!(turns.app.seen, [key('a'), key('b'), key('c'), key('d')]);
+        assert!(turns.raw_pending);
+    }
+
+    #[test]
+    fn raw_input_fifo_survives_yield() {
+        let mut source = Script::releases_then(5, [press('A'), press('B')]);
+        let mut turns = Turns::new(policy(3, Duration::from_secs(60)));
+        turns.turn(&mut source).unwrap();
+        assert!(turns.app.seen.is_empty());
+        assert!(turns.raw_pending);
+        turns.turn(&mut source).unwrap();
+        assert_eq!(turns.app.seen, [key('A')]);
+        assert!(turns.raw_pending);
+        turns.turn(&mut source).unwrap();
+        assert_eq!(turns.app.seen, [key('A'), key('B')]);
+        assert!(!turns.raw_pending);
+        assert_eq!(source.reads, 7);
+    }
+
+    #[test]
+    fn raw_input_flood_allows_tick_external_resize() {
+        let mut source = Script::endless(release('r'));
+        let mut turns = Turns::new(policy(16, Duration::from_secs(60)));
+        let mut checks = Vec::new();
+        for turn in 0..5 {
+            let before = source.reads;
+            turns.turn(&mut source).unwrap();
+            assert_eq!(
+                source.reads - before,
+                16,
+                "turn {turn} read past its budget"
+            );
+            assert!(turns.raw_pending);
+            let wait = turn_wait(Duration::from_millis(100), turns.raw_pending);
+            assert_eq!(wait, Duration::ZERO);
+            checks.extend(["external", "resize", "tick"]);
+        }
+        assert!(turns.app.seen.is_empty());
+        assert_eq!(checks.len(), 15);
+        assert_eq!(checks[..3], ["external", "resize", "tick"]);
+
+        let mut drained = Script::new([press('a')]);
+        turns.turn(&mut drained).unwrap();
+        assert!(!turns.raw_pending);
+        assert_eq!(
+            turn_wait(Duration::from_millis(100), turns.raw_pending),
+            Duration::from_millis(100)
+        );
+    }
+
+    #[test]
+    fn raw_input_zero_duration_processes_one_then_yields() {
+        let mut source = Script::releases_then(100, [press('a')]);
+        let mut budget = budget(&mut source, policy(1000, Duration::ZERO));
+        let read = scan_next(&mut source, &mut budget, InputConfig::default()).unwrap();
+        assert_eq!(read, RawRead::Yielded);
+        assert_eq!(source.reads, 1);
+    }
+
+    #[test]
+    fn raw_input_duration_is_charged_from_turn_start_between_reads() {
+        let mut source = Script::releases_then(100, [press('a')]);
+        source.step = Duration::from_millis(1);
+        let mut budget = budget(&mut source, policy(1000, Duration::from_millis(3)));
+        let read = scan_next(&mut source, &mut budget, InputConfig::default()).unwrap();
+        assert_eq!(read, RawRead::Yielded);
+        assert_eq!(source.reads, 3);
+    }
+
+    #[test]
+    fn raw_input_zero_event_budget_normalizes_to_one() {
+        let mut source = Script::releases_then(10, [press('a')]);
+        let mut budget = budget(&mut source, policy(0, Duration::from_secs(60)));
+        let read = scan_next(&mut source, &mut budget, InputConfig::default()).unwrap();
+        assert_eq!(read, RawRead::Yielded);
+        assert_eq!(source.reads, 1);
+    }
+
+    #[test]
+    fn raw_input_charges_guard_drops_and_unsupported_events() {
+        let mut source = Script::new([
+            Event::FocusGained,
+            mouse(MouseEventKind::Down(MouseButton::Left)),
+            mouse(MouseEventKind::Up(MouseButton::Left)),
+            mouse(MouseEventKind::Drag(MouseButton::Middle)),
+            release('r'),
+            Event::FocusLost,
+            press('a'),
+        ]);
+        let mut budget = budget(&mut source, policy(6, Duration::from_secs(60)));
+        let first = scan_next(&mut source, &mut budget, InputConfig::default()).unwrap();
+        assert_eq!(first, RawRead::Yielded);
+        assert_eq!((budget.read(), budget.filtered()), (6, 6));
+        let mut next = RawBudget::new(policy(6, Duration::from_secs(60)), source.now());
+        let second = scan_next(&mut source, &mut next, InputConfig::default()).unwrap();
+        assert_eq!(second, RawRead::Input(key('a')));
+    }
+
+    #[test]
+    fn raw_input_accepted_input_ends_scan_without_lookahead() {
+        let mut source = Script::new([press('a'), press('b')]);
+        let mut budget = budget(&mut source, policy(8, Duration::from_secs(60)));
+        let read = scan_next(&mut source, &mut budget, InputConfig::default()).unwrap();
+        assert_eq!(read, RawRead::Input(key('a')));
+        assert_eq!(source.reads, 1);
+        assert_eq!(budget.filtered(), 0);
+    }
+
+    #[test]
+    fn raw_input_empty_at_exact_budget_is_not_a_yield() {
+        let mut source = Script::releases_then(4, []);
+        let mut budget = budget(&mut source, policy(4, Duration::from_secs(60)));
+        let read = scan_next(&mut source, &mut budget, InputConfig::default()).unwrap();
+        assert_eq!(read, RawRead::Empty);
+        assert_eq!(source.reads, 4);
+    }
+
+    #[test]
+    fn raw_input_empty_and_read_error_are_distinct() {
+        let mut turns = Turns::new(RawInputPolicy::default());
+        turns.raw_pending = true;
+        turns.turn(&mut Script::new([])).unwrap();
+        assert!(!turns.raw_pending);
+
+        let mut failing = Script::releases_then(3, [press('a')]);
+        failing.fail_read_at = Some(2);
+        turns.raw_pending = true;
+        let error = turns.turn(&mut failing).unwrap_err();
+        assert_eq!(error.to_string(), "read failed");
+        assert!(turns.raw_pending);
+        assert!(turns.app.seen.is_empty());
+    }
+
+    #[derive(Default)]
+    struct Mode {
+        raw: bool,
+        fail_disable: bool,
+        calls: Vec<&'static str>,
+    }
+
+    impl RawModeControl for Mode {
+        fn enabled(&mut self) -> std::io::Result<bool> {
+            self.calls.push("enabled");
+            Ok(self.raw)
+        }
+        fn enable(&mut self) -> std::io::Result<()> {
+            self.calls.push("enable");
+            self.raw = true;
+            Ok(())
+        }
+        fn disable(&mut self) -> std::io::Result<()> {
+            self.calls.push("disable");
+            if self.fail_disable {
+                return Err(std::io::Error::other("disable failed"));
+            }
+            self.raw = false;
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn startup_discard_is_bounded_and_restores_raw_mode() {
+        let mut flood = Script::endless(release('r'));
+        let mut mode = Mode::default();
+        assert_eq!(discard_pending(&mut flood, &mut mode, 256).unwrap(), 256);
+        assert_eq!(flood.reads, 256);
+        assert!(!mode.raw);
+        assert_eq!(mode.calls, ["enabled", "enable", "disable"]);
+
+        let mut queued = Script::new((0..15).map(|_| release('r')).chain([press('a')]));
+        let mut mode = Mode::default();
+        assert_eq!(discard_pending(&mut queued, &mut mode, 10).unwrap(), 10);
+        assert_eq!(queued.queue.len(), 6);
+
+        let mut short = Script::new([Event::FocusGained, press('a')]);
+        let mut mode = Mode::default();
+        assert_eq!(discard_pending(&mut short, &mut mode, 10).unwrap(), 2);
+
+        let mut raw = Script::endless(release('r'));
+        let mut mode = Mode {
+            raw: true,
+            ..Mode::default()
+        };
+        assert_eq!(discard_pending(&mut raw, &mut mode, 5).unwrap(), 5);
+        assert!(mode.raw);
+        assert_eq!(mode.calls, ["enabled"]);
+    }
+
+    #[test]
+    fn startup_discard_zero_bound_touches_nothing() {
+        let mut flood = Script::endless(release('r'));
+        let mut mode = Mode::default();
+        assert_eq!(discard_pending(&mut flood, &mut mode, 0).unwrap(), 0);
+        assert_eq!(flood.reads, 0);
+        assert!(mode.calls.is_empty());
+    }
+
+    #[test]
+    fn startup_discard_restores_raw_mode_on_scan_error_and_unwind() {
+        let mut failing = Script::releases_then(3, []);
+        failing.fail_read_at = Some(1);
+        let mut mode = Mode::default();
+        let error = discard_pending(&mut failing, &mut mode, 10).unwrap_err();
+        assert_eq!(error.to_string(), "read failed");
+        assert!(!mode.raw);
+
+        struct Panicking;
+        impl RawSource for Panicking {
+            fn poll(&mut self) -> std::io::Result<bool> {
+                panic!("poll panicked")
+            }
+            fn read(&mut self) -> std::io::Result<Event> {
+                unreachable!()
+            }
+            fn dropped(&mut self, _event: &Event) -> bool {
+                false
+            }
+            fn now(&mut self) -> Instant {
+                Instant::now()
+            }
+        }
+        let mut mode = Mode::default();
+        let unwound = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _ = discard_pending(&mut Panicking, &mut mode, 10);
+        }));
+        assert!(unwound.is_err());
+        assert!(!mode.raw);
+        assert_eq!(mode.calls, ["enabled", "enable", "disable"]);
+    }
+
+    #[test]
+    fn startup_discard_error_precedence() {
+        let scan_fails = || {
+            let mut source = Script::releases_then(3, []);
+            source.fail_read_at = Some(1);
+            source
+        };
+
+        let mut mode = Mode::default();
+        let error = discard_pending(&mut scan_fails(), &mut mode, 10).unwrap_err();
+        assert_eq!(error.to_string(), "read failed");
+
+        let mut mode = Mode {
+            fail_disable: true,
+            ..Mode::default()
+        };
+        let error = discard_pending(&mut Script::releases_then(3, []), &mut mode, 10).unwrap_err();
+        assert_eq!(error.to_string(), "disable failed");
+
+        let mut mode = Mode {
+            fail_disable: true,
+            ..Mode::default()
+        };
+        let error = discard_pending(&mut scan_fails(), &mut mode, 10).unwrap_err();
+        assert_eq!(error.to_string(), "disable failed");
+
+        let mut mode = Mode {
+            raw: true,
+            fail_disable: true,
+            ..Mode::default()
+        };
+        assert_eq!(
+            discard_pending(&mut Script::releases_then(3, []), &mut mode, 10).unwrap(),
+            3
+        );
+        let error = discard_pending(&mut scan_fails(), &mut mode, 10).unwrap_err();
+        assert_eq!(error.to_string(), "read failed");
+        assert!(!mode.calls.contains(&"disable"));
+    }
+
+    #[test]
+    fn raw_input_policy_default_and_normalization() {
+        let default = RawInputPolicy::default();
+        assert_eq!(default.max_events, 256);
+        assert_eq!(default.max_duration, Duration::from_millis(2));
+        assert_eq!(policy(0, Duration::ZERO).event_limit(), 1);
+    }
+}
+
+#[cfg(test)]
+mod external_tests {
+    use super::*;
+    use std::num::NonZeroUsize;
+
+    const LONG: Duration = Duration::from_secs(3600);
+
+    fn policy(max_messages: usize) -> ExternalPolicy {
+        ExternalPolicy {
+            max_messages,
+            max_duration: LONG,
+        }
+    }
+
+    fn zero_clock() -> Duration {
+        Duration::ZERO
+    }
+
+    #[derive(Default)]
+    struct Fixture {
+        receiver: Option<ExternalReceiver>,
+        seen: Vec<String>,
+        quit_on: Option<u32>,
+        refill: Option<ExternalSender>,
+        remove_on: Option<u32>,
+        quit: bool,
+    }
+
+    impl Fixture {
+        fn over(receiver: ExternalReceiver) -> Self {
+            Self {
+                receiver: Some(receiver),
+                ..Self::default()
+            }
+        }
+
+        fn numbers(&self) -> Vec<u32> {
+            self.seen
+                .iter()
+                .filter_map(|s| s.strip_prefix('e')?.parse().ok())
+                .collect()
+        }
+    }
+
+    impl Application for Fixture {
+        fn handle(&mut self, input: Input) -> Outcome {
+            match input {
+                Input::External(message) => {
+                    let n = *message.downcast_ref::<u32>().expect("u32 payload");
+                    self.seen.push(format!("e{n}"));
+                    if self.quit_on == Some(n) {
+                        self.quit = true;
+                    }
+                    if self.remove_on == Some(n) {
+                        self.receiver = None;
+                    }
+                    if let Some(tx) = &self.refill {
+                        assert!(tx.send(n + 1000));
+                    }
+                    Outcome::Changed
+                }
+                Input::Resize(..) => {
+                    self.seen.push("r".into());
+                    Outcome::Changed
+                }
+                Input::Tick => {
+                    self.seen.push("t".into());
+                    Outcome::Ignored
+                }
+                Input::Key(_) => {
+                    self.seen.push("k".into());
+                    Outcome::Changed
+                }
+                _ => Outcome::Ignored,
+            }
+        }
+        fn render(&mut self, _frame: &mut Frame) {}
+        fn should_quit(&self) -> bool {
+            self.quit
+        }
+        fn tick_interval(&self) -> Duration {
+            Duration::from_millis(100)
+        }
+        fn external(&self) -> Option<&ExternalReceiver> {
+            self.receiver.as_ref()
+        }
+    }
+
+    fn loaded(count: u32, policy: ExternalPolicy) -> (Fixture, ExternalSender) {
+        let (tx, rx) = external_channel();
+        for n in 0..count {
+            assert!(tx.send(n));
+        }
+        (Fixture::over(rx.with_policy(policy)), tx)
+    }
+
+    fn pump(app: &mut Fixture) -> ExternalTurn {
+        let policy = app.external().expect("receiver").policy();
+        pump_external(app, policy, zero_clock)
+    }
+
+    fn rest(app: &Fixture) -> Vec<u32> {
+        std::iter::from_fn(|| app.external()?.try_recv())
+            .map(|m| *m.downcast_ref::<u32>().expect("u32 payload"))
+            .collect()
+    }
+
+    #[test]
+    fn external_turn_stops_at_count_and_keeps_fifo() {
+        let (mut app, _tx) = loaded(10, policy(3));
+
+        let first = pump(&mut app);
+        assert_eq!(app.numbers(), [0, 1, 2]);
+        assert!(first.changed && first.exhausted);
+
+        let second = pump(&mut app);
+        assert_eq!(app.numbers(), [0, 1, 2, 3, 4, 5]);
+        assert!(second.exhausted);
+
+        assert_eq!(rest(&app), [6, 7, 8, 9], "no extra dequeue, order intact");
+    }
+
+    #[test]
+    fn external_turn_normalizes_a_zero_count_to_one_message() {
+        let (mut app, _tx) = loaded(4, policy(0));
+        assert_eq!(app.external().unwrap().policy().max_messages, 1);
+        pump(&mut app);
+        assert_eq!(app.numbers(), [0]);
+    }
+
+    #[test]
+    fn external_turn_charges_handler_time() {
+        let (mut app, _tx) = loaded(
+            5,
+            ExternalPolicy {
+                max_messages: 64,
+                max_duration: Duration::from_millis(2),
+            },
+        );
+        let policy = app.external().unwrap().policy();
+        let spent = pump_external(&mut app, policy, || Duration::from_millis(3));
+        assert_eq!(app.numbers(), [0], "one handler consumed the budget");
+        assert!(spent.exhausted);
+        assert_eq!(rest(&app), [1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn external_turn_zero_duration_handles_one_then_yields() {
+        let (mut app, _tx) = loaded(
+            3,
+            ExternalPolicy {
+                max_messages: 64,
+                max_duration: Duration::ZERO,
+            },
+        );
+        let turn = pump(&mut app);
+        assert_eq!(app.numbers(), [0]);
+        assert!(turn.exhausted);
+    }
+
+    #[test]
+    fn external_turn_quit_stops_immediately() {
+        let (mut app, _tx) = loaded(6, policy(64));
+        app.quit_on = Some(0);
+        let turn = pump(&mut app);
+        assert_eq!(app.numbers(), [0]);
+        assert!(!turn.exhausted);
+        assert_eq!(rest(&app), [1, 2, 3, 4, 5], "later messages stay queued");
+    }
+
+    #[test]
+    fn external_turn_replenished_queue_yields() {
+        let (mut app, tx) = loaded(1, policy(5));
+        app.refill = Some(tx);
+        let turn = pump(&mut app);
+        assert_eq!(
+            app.numbers().len(),
+            5,
+            "a refilling queue cannot hold the turn"
+        );
+        assert!(turn.exhausted);
+    }
+
+    #[test]
+    fn external_turn_receiver_removed_by_handler() {
+        let (mut app, _tx) = loaded(4, policy(64));
+        app.remove_on = Some(1);
+        let turn = pump(&mut app);
+        assert_eq!(app.numbers(), [0, 1]);
+        assert!(!turn.exhausted);
+        assert!(app.external().is_none());
+        let mut pending = true;
+        service_turn(&mut app, &mut pending, zero_clock, || None, || false);
+        assert!(!pending);
+    }
+
+    #[test]
+    fn external_turn_empty_queue_is_not_pending() {
+        let (mut app, _tx) = loaded(2, policy(8));
+        let mut pending = true;
+        service_turn(&mut app, &mut pending, zero_clock, || None, || false);
+        assert_eq!(app.numbers(), [0, 1]);
+        assert!(!pending, "the queue emptied inside the bound");
+    }
+
+    #[test]
+    fn external_turn_exact_count_costs_one_empty_turn() {
+        let (mut app, _tx) = loaded(3, policy(3));
+        let mut pending = false;
+        service_turn(&mut app, &mut pending, zero_clock, || None, || false);
+        assert!(pending, "conservatively pending at the bound");
+        service_turn(&mut app, &mut pending, zero_clock, || None, || false);
+        assert!(!pending);
+        assert_eq!(app.numbers(), [0, 1, 2]);
+    }
+
+    #[test]
+    fn external_backlog_allows_input_resize_and_tick() {
+        let (mut app, _tx) = loaded(10, policy(3));
+        let mut pending = false;
+
+        let mut keys = vec![Input::Key(Key {
+            code: KeyCode::Char('a'),
+            mods: KeyModifiers::NONE,
+        })]
+        .into_iter();
+        drain_ready_inputs(&mut app, || Ok(keys.next())).expect("input drains");
+        let first = service_turn(
+            &mut app,
+            &mut pending,
+            zero_clock,
+            || Some(Input::Resize(80, 24)),
+            || true,
+        );
+        assert!(first.ticked && !first.quit);
+        assert_eq!(app.seen, ["k", "e0", "e1", "e2", "r", "t"]);
+        assert_eq!(
+            turn_wait(Duration::from_millis(50), pending),
+            Duration::ZERO
+        );
+
+        service_turn(&mut app, &mut pending, zero_clock, || None, || false);
+        assert_eq!(app.seen[6..], ["e3", "e4", "e5"]);
+    }
+
+    #[test]
+    fn external_backlog_quit_skips_resize_and_tick() {
+        let (mut app, _tx) = loaded(5, policy(64));
+        app.quit_on = Some(1);
+        let mut pending = false;
+        let turn = service_turn(
+            &mut app,
+            &mut pending,
+            zero_clock,
+            || Some(Input::Resize(80, 24)),
+            || true,
+        );
+        assert!(turn.quit && !turn.ticked);
+        assert_eq!(app.seen, ["e0", "e1"]);
+    }
+
+    #[test]
+    fn turn_wait_is_immediate_only_while_pending() {
+        let wait = Duration::from_millis(40);
+        assert_eq!(turn_wait(wait, false), wait);
+        assert_eq!(turn_wait(wait, true), Duration::ZERO);
+    }
+
+    fn capacity(n: usize) -> NonZeroUsize {
+        NonZeroUsize::new(n).expect("nonzero")
+    }
+
+    #[test]
+    fn bounded_external_full_and_closed_preserve_payload() {
+        let (tx, rx) = bounded_external_channel(capacity(1), ExternalPolicy::default());
+        assert!(tx.send(1_u32));
+        let second = External::new(2_u32);
+        let Err(ExternalSendError::Full(back)) = tx.try_send(second.clone()) else {
+            panic!("a full queue answers Full");
+        };
+        assert_eq!(back, second, "the same payload comes back");
+        assert!(!tx.send(3_u32), "send reports rejection as false");
+
+        let first = rx.try_recv().expect("queued first");
+        assert_eq!(first.downcast_ref::<u32>(), Some(&1));
+        assert_eq!(tx.try_send(back), Ok(()), "the retry is accepted");
+        let again = rx.try_recv().expect("queued retry");
+        assert_eq!(again, second);
+
+        let kept = External::new(4_u32);
+        drop(rx);
+        assert_eq!(
+            tx.try_send(kept.clone()),
+            Err(ExternalSendError::Closed(kept)),
+        );
+        assert!(!tx.send(5_u32));
+    }
+
+    #[test]
+    fn bounded_external_unbounded_sender_reports_closed_with_payload() {
+        let (tx, rx) = external_channel();
+        drop(rx);
+        let kept = External::new(7_u32);
+        assert_eq!(
+            tx.try_send(kept.clone()),
+            Err(ExternalSendError::Closed(kept))
+        );
+    }
+
+    #[test]
+    fn bounded_external_empty_and_dropped_sender_read_as_no_message() {
+        let (tx, rx) = bounded_external_channel(capacity(2), ExternalPolicy::default());
+        assert!(rx.try_recv().is_none());
+        drop(tx);
+        assert!(rx.try_recv().is_none());
+    }
+
+    #[test]
+    fn bounded_external_producers_share_one_capacity_and_keep_order() {
+        let (tx, rx) = bounded_external_channel(capacity(3), ExternalPolicy::default());
+        let other = tx.clone();
+        assert!(tx.send(0_u32));
+        assert!(other.send(1_u32));
+        assert!(tx.send(2_u32));
+        assert!(matches!(
+            other.try_send(External::new(3_u32)),
+            Err(ExternalSendError::Full(_))
+        ));
+        let order: Vec<u32> = std::iter::from_fn(|| rx.try_recv())
+            .map(|m| *m.downcast_ref::<u32>().expect("u32"))
+            .collect();
+        assert_eq!(order, [0, 1, 2]);
+    }
+
+    #[test]
+    fn bounded_external_policy_is_receiver_local_and_normalized() {
+        let (_tx, rx) = bounded_external_channel(capacity(4), policy(0));
+        assert_eq!(rx.policy().max_messages, 1);
+        let mut rx = rx.with_policy(policy(9));
+        assert_eq!(rx.policy(), policy(9));
+        rx.set_policy(ExternalPolicy::default());
+        assert_eq!(rx.policy(), ExternalPolicy::default());
+        assert_eq!(ExternalPolicy::default().max_messages, 64);
+        assert_eq!(
+            ExternalPolicy::default().max_duration,
+            Duration::from_millis(2)
+        );
+    }
+}
+
+#[cfg(test)]
+mod render_pending_tests {
+    use std::collections::VecDeque;
+
+    use ratatui::Terminal;
+    use ratatui::backend::TestBackend;
+
+    use super::*;
+
+    struct Scripted {
+        requests: VecDeque<bool>,
+        latch: bool,
+        draws: usize,
+    }
+
+    impl Scripted {
+        fn new(requests: &[bool]) -> Self {
+            Self {
+                requests: requests.iter().copied().collect(),
+                latch: false,
+                draws: 0,
+            }
+        }
+    }
+
+    impl Application for Scripted {
+        fn handle(&mut self, _input: Input) -> Outcome {
+            Outcome::Ignored
+        }
+
+        fn render(&mut self, _frame: &mut Frame) {
+            self.draws += 1;
+            self.latch = self.requests.pop_front().unwrap_or(false);
+        }
+
+        fn should_quit(&self) -> bool {
+            false
+        }
+
+        fn tick_interval(&self) -> Duration {
+            Duration::from_millis(100)
+        }
+
+        fn take_render_invalidated(&mut self) -> bool {
+            std::mem::take(&mut self.latch)
+        }
+    }
+
+    fn terminal() -> Terminal<TestBackend> {
+        Terminal::new(TestBackend::new(4, 2)).expect("test terminal")
+    }
+
+    #[test]
+    fn render_pending_survives_all_draw_sites() {
+        let wait = Duration::from_millis(100);
+        let mut terminal = terminal();
+
+        let mut app = Scripted::new(&[true]);
+        let mut dirty = false;
+        paint(&mut terminal, &mut app, false, &mut dirty).expect("initial draw");
+        assert!(dirty, "a request after the initial draw schedules a turn");
+        assert_eq!(turn_wait(wait, dirty), Duration::ZERO);
+
+        let mut app = Scripted::new(&[true, false]);
+        let mut dirty = false;
+        paint(&mut terminal, &mut app, false, &mut dirty).expect("input draw");
+        paint(&mut terminal, &mut app, false, &mut dirty).expect("settle draw");
+        assert!(
+            dirty,
+            "the settle draw does not erase the input draw's request"
+        );
+        assert!(
+            !app.take_render_invalidated(),
+            "each draw's request is consumed"
+        );
+
+        let mut app = Scripted::new(&[true, false]);
+        let mut dirty = false;
+        paint(&mut terminal, &mut app, false, &mut dirty).expect("dirty draw");
+        assert!(
+            dirty,
+            "clearing dirty before the draw keeps the new request"
+        );
+        dirty = false;
+        paint(&mut terminal, &mut app, false, &mut dirty).expect("requested draw");
+        assert!(!dirty, "a stable draw ends the requests");
+        assert_eq!(turn_wait(wait, dirty), wait, "an idle turn keeps its wait");
+        assert_eq!(app.draws, 2);
+    }
 }

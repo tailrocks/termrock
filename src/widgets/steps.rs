@@ -350,19 +350,25 @@ impl crate::ui::measure::Measure for StepRail {
             .steps
             .iter()
             .map(|step| {
-                let label = crate::ui::text::width(&step.label) as u16;
+                let label = crate::ui::text::width(&step.label);
                 let need = match step.shown_meta() {
                     Some(m) => {
-                        let mw = crate::ui::text::width(&m) as u16;
-                        (label + mw + 2).max(mw + 12)
+                        let mw = crate::ui::text::width(&m);
+                        label
+                            .saturating_add(mw)
+                            .saturating_add(2)
+                            .max(mw.saturating_add(12))
                     }
                     None => label,
                 };
-                lead + need + 1
+                need.saturating_add(lead + 1)
             })
             .max()
             .unwrap_or(0);
-        ratatui::layout::Size::new(width, self.steps.len() as u16)
+        ratatui::layout::Size::new(
+            crate::ui::measure::terminal_extent(width),
+            crate::ui::measure::terminal_extent(self.steps.len()),
+        )
     }
 }
 

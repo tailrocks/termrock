@@ -572,7 +572,7 @@ impl OpFlow {
 
     fn choose(&mut self, i: usize, op: &dyn OnePassword) -> Outcome {
         let (Some(row), Some(id)) = (
-            self.picker.items().get(i).cloned(),
+            self.picker.visible_item(i).map(|v| v.item.clone()),
             self.ids.get(i).cloned(),
         ) else {
             return Outcome::Consumed;
@@ -650,17 +650,23 @@ impl OpFlow {
                 _ => Outcome::Ignored,
             };
         };
-        let (o, act) = r.into_parts();
-        match act {
-            Some(PickerAction::Chosen(i)) => self.choose(i, op),
-            Some(PickerAction::Cancelled) if self.dismiss.outside_click => {
-                self.dismissed = true;
-                Outcome::Changed
-            }
-            Some(_) => Outcome::Consumed,
-            None if ev.is(Phase::Click) => o.or(Outcome::Consumed),
-            None => o,
+        let (o, actions) = r.into_parts();
+        let mut result = if ev.is(Phase::Click) {
+            o.or(Outcome::Consumed)
+        } else {
+            o
+        };
+        for act in actions {
+            result = result.or(match act {
+                PickerAction::Chosen(i) => self.choose(i, op),
+                PickerAction::Cancelled if self.dismiss.outside_click => {
+                    self.dismissed = true;
+                    Outcome::Changed
+                }
+                _ => Outcome::Consumed,
+            });
         }
+        result
     }
 
     pub fn hints(&self) -> Vec<Hint> {

@@ -9,6 +9,7 @@ pub mod modals;
 pub mod prelude;
 pub mod role_editor;
 pub mod roles;
+pub mod row_meta;
 pub mod settings;
 pub mod usage;
 

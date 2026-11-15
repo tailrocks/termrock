@@ -230,3 +230,73 @@ fn two_status_lines_are_equal_when_they_show_the_same_thing() {
     b.set_with("x", Tone::Secondary, 2);
     assert!(a != b, "the payload is part of what is shown");
 }
+
+#[test]
+fn a_notice_shows_when_nothing_is_on_screen() {
+    let mut line = StatusLine::<()>::new();
+    line.notice_at("index unreadable", Tone::Error, Moment::from_millis(10));
+    assert_eq!(line.get(), Some(("index unreadable", Tone::Error)));
+}
+
+#[test]
+fn a_notice_never_replaces_the_message_on_screen() {
+    type Post = fn(&mut StatusLine<()>);
+    let shown: [(&str, Post); 4] = [
+        ("status", |line| {
+            line.set("Discarded 1 change", Tone::Secondary)
+        }),
+        ("error", |line| line.error("Discarded 1 change")),
+        ("sticky", |line| line.sticky("Discarded 1 change")),
+        ("progress", |line| {
+            line.progress(junie_tui::shell::JobKey::new("stop"), "Discarded 1 change")
+        }),
+    ];
+    for (name, post) in shown {
+        let mut line = StatusLine::<()>::new();
+        post(&mut line);
+        let revision = line.revision();
+        line.notice_at("Refresh failed", Tone::Error, Moment::from_millis(100));
+        assert_eq!(line.text(), Some("Discarded 1 change"), "{name}");
+        assert_eq!(line.revision(), revision, "{name}: nothing visible changed");
+    }
+}
+
+#[test]
+fn a_notice_replaces_an_earlier_notice() {
+    let mut line = StatusLine::<()>::new();
+    line.notice("Another client is entering", Tone::Secondary);
+    line.notice("Refresh failed", Tone::Error);
+    assert_eq!(line.get(), Some(("Refresh failed", Tone::Error)));
+}
+
+#[test]
+fn a_regular_message_replaces_a_notice() {
+    let mut line = StatusLine::<()>::new();
+    line.notice("Refresh failed", Tone::Error);
+    line.set("Discarded 1 change", Tone::Secondary);
+    line.notice("Refresh failed", Tone::Error);
+    assert_eq!(line.text(), Some("Discarded 1 change"));
+}
+
+#[test]
+fn a_dropped_notice_does_not_come_back_when_the_message_expires() {
+    let mut line = StatusLine::<()>::new();
+    line.set_at("saved", Tone::Secondary, Moment::ZERO);
+    line.notice_at("synced", Tone::Secondary, Moment::from_millis(1));
+    assert!(line.expire(Moment::from_millis(5_000)));
+    assert_eq!(line.text(), None);
+    line.notice_at("synced", Tone::Secondary, Moment::from_millis(5_001));
+    assert_eq!(line.text(), Some("synced"));
+}
+
+#[test]
+fn a_notice_request_is_allowed_from_a_screen_that_is_not_shown() {
+    let mut focus = Focus::default();
+    let ring = FocusRing::default();
+    let mut cx: Cx<'_, ()> = Cx::new(&mut focus, &ring);
+    cx.notice("Refresh failed", Tone::Error);
+    let kept: Vec<_> = background(cx.take()).collect();
+    assert!(
+        matches!(kept.as_slice(), [Request::Notice(text, Tone::Error)] if text == "Refresh failed")
+    );
+}

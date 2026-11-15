@@ -4,6 +4,7 @@ use ratatui::layout::{Rect, Size};
 
 use crate::app::PageId;
 use crate::options::page_options;
+use crate::pages::stress::{self, Mode};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
 use junie_tui::core::event::Outcome;
@@ -216,11 +217,23 @@ impl BreadcrumbsRailsPage {
     fn trail_pair(&self) -> (Breadcrumb, Breadcrumb) {
         (
             Breadcrumb::new(ID.sub("plain"), self.path.clone()).clickable(false),
-            Breadcrumb::new(
-                ID.sub("deep"),
-                DEEP.iter().map(|s| (*s).to_owned()).collect(),
-            ),
+            Breadcrumb::new(ID.sub("deep"), self.deep_trail()),
         )
+    }
+
+    /// The cut-to-fit trail: the fixed six levels, or the stress data.
+    fn deep_trail(&self) -> Vec<String> {
+        let mut trail: Vec<String> = DEEP.iter().map(|s| (*s).to_owned()).collect();
+        match stress::mode(self.opt("breadcrumbsrails.stress")) {
+            Mode::Off => {}
+            Mode::Items => trail = stress::numbered("Folder").collect(),
+            Mode::Label => {
+                if let Some(last) = trail.last_mut() {
+                    *last = stress::long_label();
+                }
+            }
+        }
+        trail
     }
 
     fn geometry(&self, avail: Size, ctx: &RenderCtx) -> Geometry {
@@ -252,11 +265,9 @@ impl BreadcrumbsRailsPage {
 
         let (plain, deep) = self.trail_pair();
         let caption = text::width("clickable(false) · full width") as u16;
-        let trail_w = deep
-            .measure(avail, ctx)
-            .width
-            .max(plain.measure(avail, ctx).width)
-            .max(caption);
+        // The deep trail is cut to fit, so a saturated stress trail never widens the page.
+        let deep_w = stress::clamp_saturated(deep.measure(avail, ctx).width, avail.width);
+        let trail_w = deep_w.max(plain.measure(avail, ctx).width).max(caption);
         let trails = Panel::card(Some("Trails")).outer(Size::new(trail_w, TRAILS_ROWS));
         let width = avail.width.max(side_w + right_nat).max(trails.width);
         Geometry {
@@ -443,18 +454,22 @@ impl Page for BreadcrumbsRailsPage {
             }
             PageEvent::Pointer(ev) => {
                 if let Some(r) = self.crumbs.route(ev) {
-                    let (o, level) = r.into_parts();
-                    if let Some(level) = level {
-                        self.last_crumb = format!("{} (level {level})", self.path[level]);
-                        self.go_to_level(level, cx);
+                    let (o, levels) = r.into_parts();
+                    if !levels.is_empty() {
+                        for level in levels {
+                            self.last_crumb = format!("{} (level {level})", self.path[level]);
+                            self.go_to_level(level, cx);
+                        }
                         return Outcome::Changed;
                     }
                     return o;
                 }
                 if let Some(r) = self.rail.route(ev) {
-                    let (o, a) = r.into_parts();
-                    if let Some(a) = a {
-                        self.set_collapsed(a == RailAction::Collapse, cx);
+                    let (o, actions) = r.into_parts();
+                    if !actions.is_empty() {
+                        for a in actions {
+                            self.set_collapsed(a == RailAction::Collapse, cx);
+                        }
                         return Outcome::Changed;
                     }
                     return o;

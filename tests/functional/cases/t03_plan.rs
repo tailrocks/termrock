@@ -4,8 +4,6 @@
 //! `pre_refactor/t03_plan/` and each checkpoint's dots become underscores.
 //! TablePro has no `--page` flag. It opens on Connections.
 
-use std::time::{Duration, Instant};
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{
@@ -265,14 +263,7 @@ fn quit_unsaved(app: &App) {
     see(&quit, &["unsaved", "Quit"], &["Query history"]);
     app.key("right");
     app.key("enter");
-    let deadline = Instant::now() + Duration::from_secs(5);
-    while app.child_running() {
-        assert!(
-            Instant::now() < deadline,
-            "tablepro stayed up after confirming quit"
-        );
-        std::thread::sleep(Duration::from_millis(25));
-    }
+    app.wait_exit("tablepro stayed up after confirming quit");
     app.expect_exited(0);
 }
 
@@ -326,6 +317,7 @@ fn tablepro_plan_raw_is_distinct_from_the_tree_and_analysis() {
     );
     shot(&app, "T03.plan.plan.120x40");
 
+    app.expire_status();
     app.resize(80, 24);
     let narrow = app.wait_screen("raw plan at 80x24", |screen| {
         screen.cols() == 80

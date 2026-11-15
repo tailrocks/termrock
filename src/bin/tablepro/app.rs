@@ -26,7 +26,9 @@ use junie_tui::ui::leave::{Leave, LeaveGuard, Resolved, Stakes};
 
 use junie_tui::widgets::button::Button;
 use junie_tui::widgets::dialog::{Dialog, DialogBody, DialogResult};
-use junie_tui::widgets::grid::CellValue;
+use junie_tui::widgets::grid::{
+    CellValue, DataGrid, GridChangeSet, GridCommitError, GridCommitFailure, GridCommitToken,
+};
 
 use junie_tui::widgets::menu::MenuAction;
 use junie_tui::widgets::option_list::Item;
@@ -37,14 +39,18 @@ use junie_tui::widgets::too_small::TooSmall;
 
 use crate::connections::ConnectionsScreen;
 use crate::context::{self, CtxMenu};
-use crate::db::{Catalog, Connection, Environment, SafeMode};
+use crate::db::{Catalog, ColType, Connection, Environment, SafeMode};
 use crate::filter_editor::{FilterDone, FilterEditor};
 use crate::model::{History, SwitchTarget, SwitcherIndex};
 use crate::pages::Tablepro;
 use crate::sql::{self, Decision};
+use crate::store::{CommitContext, SessionStore, Source, StoreError, TableId};
 use crate::tabs::{Filter, FilterOp};
-use crate::workbench::{WorkTab, Workbench};
+use crate::workbench::{SAVING_NOTICE, WorkTab, Workbench};
 use junie_tui::shell::Page;
+use junie_tui::widgets::document_workspace::{
+    CloseDecision, CloseToken, OperationToken, WorkspaceError,
+};
 
 const STRIP_SAFE: WidgetId = WidgetId::of("strip.safe");
 const STRIP_SCOPE: WidgetId = WidgetId::of("strip.scope");
@@ -56,7 +62,9 @@ const HELP_DIALOG: WidgetId = WidgetId::of("dialog.help");
 const SAFETY_DIALOG: WidgetId = WidgetId::of("dialog.safety");
 const DISCARD_DIALOG: WidgetId = WidgetId::of("dialog.discard");
 const CLOSE_DIALOG: WidgetId = WidgetId::of("dialog.close");
+const CLOSE_GUARD_DIALOG: WidgetId = WidgetId::of("dialog.close-guard");
 const COMMIT_DIALOG: WidgetId = WidgetId::of("dialog.commit");
+const COMMIT_FAILED_DIALOG: WidgetId = WidgetId::of("dialog.commit-failed");
 const PREVIEW_DIALOG: WidgetId = WidgetId::of("dialog.preview");
 const VIEWER_DIALOG: WidgetId = WidgetId::of("dialog.viewer");
 
@@ -70,16 +78,42 @@ mod connection_identity_tests;
 #[path = "run_selection_tests.rs"]
 mod run_selection_tests;
 
+#[cfg(test)]
+#[path = "commit_owner_tests.rs"]
+mod commit_owner_tests;
+
+#[cfg(test)]
+#[path = "session_store_tests.rs"]
+mod session_store_tests;
+
+#[cfg(test)]
+#[path = "workspace_tests.rs"]
+mod workspace_tests;
+
+#[path = "table_transition.rs"]
+mod table_transition;
+pub use table_transition::TableChange;
+use table_transition::{FilterTarget, Review, TransitionWait};
+
+#[cfg(test)]
+#[path = "table_transition_tests.rs"]
+mod table_transition_tests;
+
+#[cfg(test)]
+#[path = "test_support.rs"]
+mod test_support;
+
 pub enum Act {
     EditFilter(Option<usize>),
     FilterOnCell(usize, CellValue),
     ConfirmDiscard,
+    TableChange(TableChange),
     CommitPending,
     PreviewSql,
     OpenQuery(String, bool),
     OpenTableFiltered(String, String, String),
     OpenViewer(String, CellValue),
-    ConfirmCloseTab(usize),
+    ConfirmClose(CloseToken),
 
     Connected {
         key: ItemKey,
@@ -87,6 +121,141 @@ pub enum Act {
         connection: Box<Connection>,
     },
 }
+
+/// Everything one save needs, captured once when it is reviewed. The review,
+/// the delayed completion, the history entries and the status all read this
+/// value; nothing re-reads the active tab or the grid's live draft.
+#[derive(Debug, Clone)]
+struct CommitRequest {
+    connection_generation: u64,
+    tab: ItemKey,
+    schema: String,
+    table: String,
+    connection_name: String,
+    database: String,
+    /// The table's revision in the store when the reviewed rows were read.
+    expected_table_revision: u64,
+    /// The grid's columns in order, which the store checks against the table.
+    source_columns: Vec<(String, ColType)>,
+    /// The clock reading every `now()` of the save resolves to.
+    context: CommitContext,
+    changes: GridChangeSet,
+    sql: Vec<String>,
+}
+
+/// How a submitted save ended, once the store and the grid have both answered.
+enum CommitOutcome {
+    /// The save no longer has a target, or its lock is gone.
+    Ignored,
+    /// The tab no longer holds the reviewed table; its lock was released.
+    Moved,
+    /// The close-save pair no longer matches the tab; its lock was released and
+    /// the tab stays open.
+    TabChanged,
+    /// The store refused. Nothing changed, and the draft is unlocked.
+    Refused(StoreError),
+    /// The grid does not accept the store's receipt. Nothing changed, and the
+    /// draft stays locked until the failure dialog is closed.
+    ReceiptRejected(GridCommitError),
+    /// The store accepted the save but the grid refused the acknowledgement.
+    Unacknowledged(String),
+    Saved(SaveEnd),
+}
+
+/// What a saved table's tab did next.
+enum SaveEnd {
+    /// An ordinary save: the tab stays.
+    Task,
+    /// The save that closed its tab. Focus goes to `focus`.
+    Closed { focus: WidgetId },
+    /// The save that closed its tab left changes behind, so the tab stays.
+    StillOpen,
+}
+
+/// The workspace operation a submitted save runs under. An ordinary save is a
+/// task of its table's tab; a save that closes the tab is that tab's close-save,
+/// which locks it against edits until it completes, fails or is cancelled.
+#[derive(Debug, Clone, Copy)]
+enum SaveOperation {
+    Task(OperationToken),
+    CloseSave {
+        close: CloseToken,
+        operation: OperationToken,
+    },
+}
+
+/// The one save an app has at a time. Every variant holds the grid lock that
+/// `token` names; only Cancel or a successful completion releases it.
+#[derive(Debug, Clone)]
+enum CommitState {
+    Reviewing {
+        request: CommitRequest,
+        token: GridCommitToken,
+    },
+    Submitted {
+        request: CommitRequest,
+        token: GridCommitToken,
+        ticks_left: u32,
+        operation: SaveOperation,
+    },
+    FailedReceipt {
+        request: CommitRequest,
+        token: GridCommitToken,
+    },
+}
+
+impl CommitState {
+    fn request(&self) -> &CommitRequest {
+        match self {
+            Self::Reviewing { request, .. }
+            | Self::Submitted { request, .. }
+            | Self::FailedReceipt { request, .. } => request,
+        }
+    }
+
+    fn token(&self) -> GridCommitToken {
+        match self {
+            Self::Reviewing { token, .. }
+            | Self::Submitted { token, .. }
+            | Self::FailedReceipt { token, .. } => *token,
+        }
+    }
+}
+
+/// A review that passed every check, with the values its dialog needs.
+struct ReviewedCommit {
+    request: CommitRequest,
+    token: GridCommitToken,
+    level: SafeMode,
+    environment: Environment,
+}
+
+/// The reviewed rows a save wrote: the table revision, live row count,
+/// inserted and deleted counts.
+type SavedRows = (u64, usize, usize, usize);
+
+/// Answers a grid's submission with the store's receipt and records the saved
+/// rows on the tab.
+fn acknowledge_save(
+    tab: &mut WorkTab,
+    token: GridCommitToken,
+    receipt: junie_tui::widgets::grid::GridCommitReceipt,
+    (revision, live_rows, inserted, deleted): SavedRows,
+) -> Result<(), GridCommitError> {
+    let WorkTab::Table(t) = tab else {
+        return Err(GridCommitError::StaleToken);
+    };
+    let answered = t.grid.complete_submission(token, Ok(receipt));
+    if answered.is_ok() {
+        t.saved(revision, live_rows, inserted, deleted);
+    }
+    answered
+}
+
+/// A refused save: the status text and its kind.
+type CommitRefusal = (String, Option<StatusKind>);
+
+const SAVE_TICKS: u32 = 5;
 
 pub type Request = junie_tui::shell::Request<ModalResult, (), Act>;
 
@@ -133,12 +302,16 @@ impl From<LayerResult> for ModalResult {
 
 pub type Layers = ShellLayers<ModalResult>;
 
-fn preview_error_text(e: &crate::model::PreviewSqlError) -> String {
+fn preview_error_text(e: &crate::model::PreviewSqlError, grid: &DataGrid) -> String {
     use crate::model::{PreviewRow, PreviewSqlCause, SqlLiteralError};
-    let PreviewRow::Source(row) = e.row;
+    let PreviewRow::Key(key) = e.row;
+    let row = match grid.source_index(key) {
+        Some(src) => format!("row {}", src + 1),
+        None => "a removed row".to_owned(),
+    };
     let place = match &e.column {
-        Some(column) => format!("row {} · {column}", row + 1),
-        None => format!("row {}", row + 1),
+        Some(column) => format!("{row} · {column}"),
+        None => row,
     };
     let why = match &e.cause {
         PreviewSqlCause::Literal(SqlLiteralError::NonFiniteNumber) => {
@@ -147,6 +320,10 @@ fn preview_error_text(e: &crate::model::PreviewSqlError) -> String {
         PreviewSqlCause::MissingColumn(name) => format!("key column {name} is missing"),
         PreviewSqlCause::InvalidDefaultPredicate => {
             "holds DEFAULT, which cannot identify a row".to_owned()
+        }
+        PreviewSqlCause::GeneratedColumn => "is generated and cannot be changed".to_owned(),
+        PreviewSqlCause::RowShape { expected, actual } => {
+            format!("has {actual} cells where {expected} columns are shown")
         }
     };
     format!("{place} {why}")
@@ -173,7 +350,13 @@ pub struct App {
 
     pub keys: shell::ShellKeys<TpCmd>,
 
-    committing: Option<u32>,
+    commit: Option<CommitState>,
+    close_pending: Option<CloseToken>,
+    close_guard: LeaveGuard<CloseToken>,
+    table_guard: LeaveGuard<table_transition::TableTransition>,
+    transition_wait: Option<TransitionWait>,
+    filter_target: Option<FilterTarget>,
+    connection_generation: u64,
     last_admitted_generation: u64,
     scope: usize,
     switcher_targets: Vec<SwitchTarget>,
@@ -199,7 +382,13 @@ impl App {
             layers: Layers::new(),
             tick: 0,
             keys: shell_keys(),
-            committing: None,
+            commit: None,
+            close_pending: None,
+            close_guard: LeaveGuard::new(CLOSE_GUARD_DIALOG),
+            table_guard: table_transition::guard(),
+            transition_wait: None,
+            filter_target: None,
+            connection_generation: 0,
             last_admitted_generation: 0,
             scope: 0,
             switcher_targets: vec![],
@@ -217,7 +406,12 @@ impl App {
     /// Open a workbench from an owned, already admitted snapshot. The app never
     /// looks the connection up again, so later edits cannot retarget it.
     fn open_workbench(&mut self, key: ItemKey, c: Connection) {
-        let mut wb = Workbench::new(c, Catalog::acme_prod());
+        self.invalidate_connection();
+        let mut wb = Workbench::new(
+            c,
+            Catalog::acme_prod(),
+            SessionStore::new(self.connection_generation),
+        );
         wb.connection_key = Some(key);
         wb.new_query("");
 
@@ -260,7 +454,7 @@ impl App {
         self.connections.animating()
             || self.workbench.as_ref().is_some_and(|w| w.animating())
             || self.shell.pointer.has_flash()
-            || self.committing.is_some()
+            || matches!(self.commit, Some(CommitState::Submitted { .. }))
     }
 
     pub fn tick_interval(&self) -> Duration {
@@ -354,6 +548,9 @@ impl App {
         let Some(dropped) = self.router.apply(nav, |r| r) else {
             return Outcome::Ignored;
         };
+        if dropped.contains(&Route::Workbench) {
+            self.invalidate_connection();
+        }
         if dropped.contains(&Route::Workbench)
             && let Some(w) = self.workbench.take()
         {
@@ -439,11 +636,17 @@ impl App {
             Page::on_tick(&mut self.connections, &mut self.history, cx)
         });
         out = out.or(o).or(self.apply_requests(reqs));
-        if let Some(left) = self.committing.as_mut() {
-            *left = left.saturating_sub(1);
-            if *left == 0 {
-                self.committing = None;
-                self.finish_commit();
+        if let Some(CommitState::Submitted { ticks_left, .. }) = self.commit.as_mut() {
+            *ticks_left = ticks_left.saturating_sub(1);
+            if *ticks_left == 0
+                && let Some(CommitState::Submitted {
+                    request,
+                    token,
+                    operation,
+                    ..
+                }) = self.commit.take()
+            {
+                self.complete_commit(request, token, operation);
             }
             out = Outcome::Changed;
         }
@@ -451,31 +654,12 @@ impl App {
             if w.tick_explorer() {
                 out = Outcome::Changed;
             }
-            let conn = w.connection.name.clone();
-            let db = w.catalog.database.clone();
-            let cat = &w.catalog;
-            let mut entries = vec![];
-            for t in w.tabs.iter_mut() {
-                if let WorkTab::Query(q) = t {
-                    let was = q.is_running();
-                    entries.extend(q.tick(cat, &conn, &db));
-                    if was && !q.is_running() {
-                        out = Outcome::Changed;
-                    }
-                }
+            if w.running().is_some() {
+                out = Outcome::Changed;
             }
+            let entries = w.tick_queries();
             if !entries.is_empty() {
-                for e in entries {
-                    self.history.push(e);
-                }
-
-                let hist = &self.history;
-                let conn2 = conn.clone();
-                for t in w.tabs.iter_mut() {
-                    if let WorkTab::History(h) = t {
-                        h.refresh(hist, &conn2);
-                    }
-                }
+                w.record_history(&mut self.history, entries);
                 out = Outcome::Changed;
             }
             if w.running().is_some() {
@@ -534,6 +718,10 @@ impl App {
                     self.shell.status.set_with_at(s, tone, None, now);
                 }
                 Request::StatusAs(s, kind) => self.set_status_as(kind, s),
+                Request::Notice(s, tone) => {
+                    let now = self.clock.now();
+                    self.shell.status.notice_at(s, tone, now);
+                }
                 Request::Sticky(s) => {
                     let now = self.clock.now();
                     self.shell.status.sticky_at(s, now);
@@ -581,22 +769,13 @@ impl App {
                 self.open_filter_editor(None, Some((col, val.0, val.1)));
             }
             Act::ConfirmDiscard => {
-                let n = self
-                    .workbench
-                    .as_ref()
-                    .map(|w| w.pending_total())
-                    .unwrap_or(0);
-                let d = Dialog::destructive(
-                    DISCARD_DIALOG,
-                    "Discard unsaved changes?",
-                    &format!(
-                        "{n} pending change{} will be dropped. The rows are reloaded from the server.",
-                        if n == 1 { "" } else { "s" }
-                    ),
-                    "Discard",
-                );
-                self.open_dialog(d);
+                let change = match self.workbench.as_ref().and_then(|w| w.active_tab()) {
+                    Some(WorkTab::Table(t)) => TableChange::refresh(t, "Changes discarded"),
+                    _ => return,
+                };
+                self.request_table_change(change, Review::Discard);
             }
+            Act::TableChange(change) => self.request_table_change(change, Review::Guard),
             Act::CommitPending => self.begin_commit(),
             Act::PreviewSql => self.open_preview(),
             Act::OpenQuery(sql, run) => {
@@ -612,28 +791,32 @@ impl App {
                 }
             }
             Act::OpenTableFiltered(table, col, value) => {
+                let mut change = None;
                 if let Some(w) = self.workbench.as_mut() {
                     let schema = w
                         .catalog
                         .find(None, &table)
                         .map(|t| t.schema.clone())
                         .unwrap_or("public".into());
-                    if let Some(i) = w.open_table(&schema, &table, false) {
-                        if let Some(WorkTab::Table(t)) = w.tabs.get_mut(i) {
-                            t.filters = vec![Filter {
+                    if let Some(key) = w.open_table(&schema, &table, false) {
+                        if let Some(t) = w.table(key) {
+                            let mut next = t.view().clone();
+                            next.filters = vec![Filter {
                                 column: col,
                                 op: FilterOp::Eq,
                                 value,
                                 value2: String::new(),
                                 enabled: true,
                             }];
-                            let cat = w.catalog.clone();
-                            t.load(&cat);
+                            change = Some(TableChange::filters(t, next, None));
                         }
                         if let Some(pf) = w.primary_focus() {
                             self.shell.focus.focus(pf);
                         }
                     }
+                }
+                if let Some(change) = change {
+                    self.request_table_change(change, Review::Guard);
                 }
             }
             Act::OpenViewer(name, v) => {
@@ -656,15 +839,7 @@ impl App {
                 d.width = 80;
                 self.open_dialog(d);
             }
-            Act::ConfirmCloseTab(i) => {
-                let d = Dialog::destructive(
-                    CLOSE_DIALOG.child(i),
-                    "Close tab with unsaved work?",
-                    "Pending row edits and unsaved query text in this tab will be lost.",
-                    "Close anyway",
-                );
-                self.open_dialog(d);
-            }
+            Act::ConfirmClose(token) => self.confirm_close(token),
         }
     }
 
@@ -687,13 +862,9 @@ impl App {
                 if w.running().is_none() {
                     return Outcome::Ignored;
                 }
-                for t in w.tabs.iter_mut() {
-                    if let WorkTab::Query(q) = t
-                        && q.cancel()
-                    {
-                        self.set_status_as(StatusKind::Info, "Query cancelled".into());
-                        return Outcome::Changed;
-                    }
+                if w.cancel_running_query() {
+                    self.set_status_as(StatusKind::Info, "Query cancelled".into());
+                    return Outcome::Changed;
                 }
                 Outcome::Ignored
             }
@@ -714,8 +885,8 @@ impl App {
                 Outcome::Changed
             }
             TpCmd::CloseTab => {
-                if let Some(w) = self.workbench.as_ref() {
-                    self.request_close_tab(w.active);
+                if let Some(key) = self.workbench.as_ref().and_then(Workbench::active_key) {
+                    self.request_close_tab(key);
                 }
                 Outcome::Changed
             }
@@ -745,19 +916,24 @@ impl App {
                 Outcome::Changed
             }
             TpCmd::ToggleStructure => {
-                if let Some(w) = self.workbench.as_mut()
-                    && let Some(WorkTab::Table(t)) = w.active_tab_mut()
-                {
-                    t.mode_tabs
-                        .set_active(if t.mode_tabs.active == 0 { 1 } else { 0 });
+                if let Some(w) = self.workbench.as_mut() {
                     let cat = w.catalog.clone();
-                    if let Some(WorkTab::Table(t)) = w.active_tab_mut() {
-                        t.structure_refresh(&cat);
-                        let pf = if t.mode_tabs.active == 1 {
-                            t.structure.id
-                        } else {
-                            t.grid.id
-                        };
+                    let focus = w
+                        .modify_active(|tab| match tab {
+                            WorkTab::Table(t) => {
+                                t.mode_tabs
+                                    .set_active(if t.mode_tabs.active == 0 { 1 } else { 0 });
+                                t.structure_refresh(&cat);
+                                Some(if t.mode_tabs.active == 1 {
+                                    t.structure.id
+                                } else {
+                                    t.grid.id
+                                })
+                            }
+                            _ => None,
+                        })
+                        .flatten();
+                    if let Some(pf) = focus {
                         self.shell.focus.focus(pf);
                     }
                 }
@@ -770,10 +946,17 @@ impl App {
             TpCmd::Find => {
                 if self.active_is_query() {
                     if let Some(w) = self.workbench.as_mut()
-                        && let Some(WorkTab::Query(q)) = w.active_tab_mut()
+                        && let Some(editor) = w
+                            .modify_active(|tab| match tab {
+                                WorkTab::Query(q) => {
+                                    q.editor.open_find();
+                                    Some(q.editor.id)
+                                }
+                                _ => None,
+                            })
+                            .flatten()
                     {
-                        q.editor.open_find();
-                        self.shell.focus.focus(q.editor.id);
+                        self.shell.focus.focus(editor);
                     }
                 } else {
                     self.open_filter_editor(None, None);
@@ -785,26 +968,30 @@ impl App {
                     w.maximized = !w.maximized;
                     let maximized = w.maximized;
                     let f = self.shell.focus.current();
-                    if let Some(WorkTab::Query(q)) = w.active_tab_mut() {
-                        let target = if f == Some(q.editor.id) {
-                            junie_tui::ui::layout::Maximized::First
-                        } else {
-                            junie_tui::ui::layout::Maximized::Second
-                        };
-                        q.split.maximized = if maximized {
-                            target
-                        } else {
-                            junie_tui::ui::layout::Maximized::None
-                        };
-                    }
+                    let _ = w.modify_active(|tab| {
+                        if let WorkTab::Query(q) = tab {
+                            let target = if f == Some(q.editor.id) {
+                                junie_tui::ui::layout::Maximized::First
+                            } else {
+                                junie_tui::ui::layout::Maximized::Second
+                            };
+                            q.split.maximized = if maximized {
+                                target
+                            } else {
+                                junie_tui::ui::layout::Maximized::None
+                            };
+                        }
+                    });
                 }
                 Outcome::Changed
             }
             TpCmd::GrowResults | TpCmd::GrowEditor => {
-                if let Some(w) = self.workbench.as_mut()
-                    && let Some(WorkTab::Query(q)) = w.active_tab_mut()
-                {
-                    q.split.grow(if cmd == TpCmd::GrowEditor { 8 } else { -8 });
+                if let Some(w) = self.workbench.as_mut() {
+                    let _ = w.modify_active(|tab| {
+                        if let WorkTab::Query(q) = tab {
+                            q.split.grow(if cmd == TpCmd::GrowEditor { 8 } else { -8 });
+                        }
+                    });
                 }
                 Outcome::Changed
             }
@@ -824,11 +1011,12 @@ impl App {
             return Outcome::Ignored;
         }
         if let Some(w) = self.workbench.as_mut()
-            && !w.tabs.is_empty()
+            && w.tab_count() > 0
         {
-            let n = w.tabs.len() as isize;
-            let i = (w.active as isize + step).rem_euclid(n) as usize;
-            w.set_active(i);
+            let n = w.tab_count() as isize;
+            let current = w.active_key().and_then(|key| w.tab_index(key)).unwrap_or(0) as isize;
+            let i = (current + step).rem_euclid(n) as usize;
+            w.activate_index(i);
             if let Some(pf) = w.primary_focus()
                 && !self.shell.focus.is(crate::workbench::EXPLORER)
                 && !self.shell.focus.is(crate::workbench::TABSTRIP)
@@ -862,15 +1050,11 @@ impl App {
     }
 
     fn cancel_running(&mut self) -> Outcome {
-        if let Some(w) = self.workbench.as_mut() {
-            for t in w.tabs.iter_mut() {
-                if let WorkTab::Query(q) = t
-                    && q.cancel()
-                {
-                    self.set_status_as(StatusKind::Info, "Query cancelled".into());
-                    return Outcome::Changed;
-                }
-            }
+        if let Some(w) = self.workbench.as_mut()
+            && w.cancel_running_query()
+        {
+            self.set_status_as(StatusKind::Info, "Query cancelled".into());
+            return Outcome::Changed;
         }
         Outcome::Consumed
     }
@@ -883,16 +1067,18 @@ impl App {
         let env = w.connection.environment;
         let conn = w.connection.name.clone();
         let db = w.catalog.database.clone();
-        let tab_index = w.active;
-        let Some(WorkTab::Query(q)) = w.active_tab_mut() else {
+        let tab = w.active_key();
+        let Some((tab, running, statements)) = tab.and_then(|key| match w.tab(key) {
+            Some(WorkTab::Query(q)) => Some((key, q.is_running(), q.statements_to_run(all))),
+            _ => None,
+        }) else {
             self.set_status("Open a query tab to run SQL (Ctrl+T)".into());
             return Outcome::Changed;
         };
-        if q.is_running() {
+        if running {
             self.set_status("Already running · Esc cancels".into());
             return Outcome::Changed;
         }
-        let statements = q.statements_to_run(all);
         if statements.is_empty() {
             self.set_status("Nothing to run".into());
             return Outcome::Changed;
@@ -926,12 +1112,12 @@ impl App {
         }
         let _ = parse_errors;
         let Some((decision, stmt, text)) = worst else {
-            q.start(statements, all, explain);
+            w.start_query(tab, statements, all, explain);
             return Outcome::Changed;
         };
         match decision {
             Decision::Run => {
-                q.start(statements, all, explain);
+                w.start_query(tab, statements, all, explain);
                 Outcome::Changed
             }
             Decision::Deny => {
@@ -939,9 +1125,20 @@ impl App {
                 Outcome::Changed
             }
             Decision::Confirm { deliberate } => {
-                let table = w.catalog.find(None, stmt.target().unwrap_or(""));
-                let risk = sql::assess(&stmt, table);
-                w.pending_run = Some((tab_index, statements.clone(), all, explain));
+                let src = Source {
+                    catalog: &w.catalog,
+                    store: &w.store,
+                };
+                let live = src
+                    .catalog
+                    .find(None, stmt.target().unwrap_or(""))
+                    .map(|t| {
+                        let mut live = t.clone();
+                        live.row_count = src.row_count(t);
+                        live
+                    });
+                let risk = sql::assess(&stmt, live.as_ref());
+                w.pending_run = Some((tab, statements.clone(), all, explain));
                 let tier = sql::tier(&stmt);
                 let dangerous = sql::is_dangerous(&stmt);
                 let title = if dangerous {
@@ -1048,58 +1245,137 @@ impl App {
     }
 
     fn begin_commit(&mut self) {
-        let Some(w) = self.workbench.as_mut() else {
-            return;
-        };
-        let level = w.connection.safe_mode;
-        let env = w.connection.environment;
-        let conn = w.connection.name.clone();
-        let db = w.catalog.database.clone();
-        let (schema, name) = match w.active_tab() {
-            Some(WorkTab::Table(t)) => (t.schema.clone(), t.name.clone()),
-            _ => {
-                self.set_status("Nothing to save".into());
-                return;
-            }
-        };
-        let table = w.catalog.find(Some(&schema), &name).cloned();
-        let Some(table) = table else { return };
-        let Some(WorkTab::Table(t)) = w.active_tab_mut() else {
-            return;
-        };
-        if t.grid.pending().is_empty() {
-            self.set_status("No pending changes".into());
-            return;
-        }
-        if level == SafeMode::ReadOnly {
+        let tab = self.workbench.as_ref().and_then(Workbench::active_key);
+        self.begin_commit_for(tab);
+    }
+
+    /// Opens the review of table `tab`'s draft. The token says the grid is
+    /// locked on it; `None` says nothing opened and the status says why.
+    fn begin_commit_for(&mut self, tab: Option<ItemKey>) -> Option<GridCommitToken> {
+        if self.commit.is_some() {
             self.set_status_as(
                 StatusKind::Warn,
-                "Cannot save changes: TablePro's Safe Mode is set to read-only for this connection"
-                    .into(),
+                "A save is already in progress · wait for it to finish".into(),
             );
-            return;
+            return None;
         }
-        let sqls = match crate::model::preview_sql(&table, &t.columns, &t.grid) {
-            Ok(sqls) => sqls,
-            Err(e) => {
-                self.set_status_as(
-                    StatusKind::Fail,
-                    format!(
-                        "Cannot save: {} · changes kept pending",
-                        preview_error_text(&e)
-                    ),
-                );
-                return;
+        let ReviewedCommit {
+            request,
+            token,
+            level,
+            environment,
+        } = match self.prepare_commit(tab) {
+            Ok(prepared) => prepared,
+            Err((text, kind)) => {
+                self.put_status(text, kind);
+                return None;
             }
         };
-        let (u, i, d) = t.grid.pending().counts();
-        let deletes = d;
+        let dialog = Self::commit_dialog(&request, level, environment);
+        self.commit = Some(CommitState::Reviewing { request, token });
+        self.open_dialog(dialog);
+        Some(token)
+    }
+
+    /// Resolves table `tab`'s draft into one owned request and locks the grid
+    /// on it. It stops, with the draft untouched, at the first problem.
+    fn prepare_commit(&mut self, tab: Option<ItemKey>) -> Result<ReviewedCommit, CommitRefusal> {
+        let Some(w) = self.workbench.as_mut() else {
+            return Err(("Nothing to save".into(), None));
+        };
+        let level = w.connection.safe_mode;
+        let environment = w.connection.environment;
+        let connection_name = w.connection.name.clone();
+        let database = w.catalog.database.clone();
+        let Some(tab) = tab else {
+            return Err(("Nothing to save".into(), None));
+        };
+        let (schema, name) = match w.table(tab) {
+            Some(t) => (t.schema.clone(), t.name.clone()),
+            None => return Err(("Nothing to save".into(), None)),
+        };
+        let Some(table) = w.catalog.find(Some(&schema), &name).cloned() else {
+            return Err((
+                format!("Cannot save: {schema}.{name} is no longer in the catalog"),
+                Some(StatusKind::Fail),
+            ));
+        };
+        let context = w.store.commit_context();
+        if w.ws.save_locked(tab) {
+            return Err((SAVING_NOTICE.into(), Some(StatusKind::Warn)));
+        }
+        if w.table(tab).is_some_and(|t| t.is_editing()) {
+            let finished = w.modify_table(tab, |t, _| t.grid.finish_edit_session().map(|_| ()));
+            if let Some(Err(e)) = finished {
+                return Err((
+                    format!("Fix the open cell first: {e}"),
+                    Some(StatusKind::Warn),
+                ));
+            }
+        }
+        let Some(t) = w.table(tab) else {
+            return Err(("Nothing to save".into(), None));
+        };
+        let changes = t.grid.snapshot_changes();
+        if changes.is_empty() {
+            return Err(("No pending changes".into(), None));
+        }
+        if level == SafeMode::ReadOnly {
+            return Err((
+                "Cannot save changes: TablePro's Safe Mode is set to read-only for this connection"
+                    .into(),
+                Some(StatusKind::Warn),
+            ));
+        }
+        let sql = crate::model::preview_sql(&table, &t.columns, &changes).map_err(|e| {
+            (
+                format!(
+                    "Cannot save: {} · changes kept pending",
+                    preview_error_text(&e, &t.grid)
+                ),
+                Some(StatusKind::Fail),
+            )
+        })?;
+        let (expected_table_revision, source_columns) = (t.table_revision(), t.columns.clone());
+        let token = w
+            .with_view(tab, |mut v| v.begin_submission(changes.clone()))
+            .ok_or_else(|| ("Nothing to save".to_owned(), None))?
+            .map_err(|e| (format!("Cannot save: {e}"), Some(StatusKind::Fail)))?;
+        Ok(ReviewedCommit {
+            request: CommitRequest {
+                connection_generation: self.connection_generation,
+                tab,
+                schema,
+                table: name,
+                connection_name,
+                database,
+                expected_table_revision,
+                source_columns,
+                context,
+                changes,
+                sql,
+            },
+            token,
+            level,
+            environment,
+        })
+    }
+
+    fn commit_dialog(request: &CommitRequest, level: SafeMode, env: Environment) -> Dialog {
+        let (u, i, deletes) = request.changes.counts();
         let deliberate = level.requires_authentication();
         let mut facts = vec![
             Prop::new("Action", "Save changes".to_owned()),
             Prop::new(
                 "Target",
-                format!("{} · {} · {} · {}", conn, env.label(), db, t.qualified()),
+                format!(
+                    "{} · {} · {} · {}.{}",
+                    request.connection_name,
+                    env.label(),
+                    request.database,
+                    request.schema,
+                    request.table
+                ),
             )
             .tone(if env == Environment::Production {
                 Tone::Normal
@@ -1109,10 +1385,10 @@ impl App {
             Prop::new(
                 "Scope",
                 format!(
-                    "{u} update{} · {i} insert{} · {d} delete{}",
+                    "{u} update{} · {i} insert{} · {deletes} delete{}",
                     if u == 1 { "" } else { "s" },
                     if i == 1 { "" } else { "s" },
-                    if d == 1 { "" } else { "s" }
+                    if deletes == 1 { "" } else { "s" }
                 ),
             )
             .tone(Tone::Secondary),
@@ -1149,11 +1425,7 @@ impl App {
             )
             .tone(Tone::Muted),
         );
-        let token = if deliberate {
-            Some(t.name.clone())
-        } else {
-            None
-        };
+        let token = deliberate.then(|| request.table.clone());
         let confirm = if deletes > 0 {
             Button::danger(COMMIT_DIALOG.sub("ok"), "Save")
         } else {
@@ -1171,7 +1443,7 @@ impl App {
             COMMIT_DIALOG,
             &title,
             facts,
-            sqls,
+            request.sql.clone(),
             token.as_deref(),
             confirm,
         );
@@ -1183,51 +1455,396 @@ impl App {
             };
         }
         dlg.width = 78;
-        self.open_dialog(dlg);
+        dlg
     }
 
-    fn finish_commit(&mut self) {
+    /// The confirmation answer for the review that is open. A dismissal, or an
+    /// answer with no matching review, releases the lock the review took.
+    fn commit_reviewed(&mut self, confirmed: bool) {
+        match self.commit.take() {
+            Some(CommitState::Reviewing { request, token }) if confirmed => {
+                match self.begin_save_operation(&request, token) {
+                    Ok(operation) => {
+                        self.commit = Some(CommitState::Submitted {
+                            request,
+                            token,
+                            ticks_left: SAVE_TICKS,
+                            operation,
+                        });
+                        self.set_status("Saving…".into());
+                    }
+                    Err(notice) => {
+                        self.release_commit(&CommitState::Reviewing { request, token });
+                        self.set_status_as(StatusKind::Warn, notice);
+                    }
+                }
+            }
+            Some(state) => {
+                self.release_commit(&state);
+                self.set_status("Changes kept pending".into());
+            }
+            None => self.set_status("Changes kept pending".into()),
+        }
+    }
+
+    /// Starts the workspace operation a confirmed save runs under: the table's
+    /// close-save when the save was chosen from the close prompt, otherwise one
+    /// task of its tab.
+    fn begin_save_operation(
+        &mut self,
+        request: &CommitRequest,
+        token: GridCommitToken,
+    ) -> Result<SaveOperation, String> {
+        let close = self.close_wait(token);
+        let Some(w) = self.workbench.as_mut() else {
+            return Err("The save could not start".into());
+        };
+        let started = match close {
+            Some(close) => {
+                w.ws.begin_close_save(close)
+                    .map(|(operation, resp)| (SaveOperation::CloseSave { close, operation }, resp))
+            }
+            None => {
+                w.ws.begin_operation(request.tab)
+                    .map(|(operation, resp)| (SaveOperation::Task(operation), resp))
+            }
+        };
+        match started {
+            Ok((operation, resp)) => {
+                let _ = w.settle(resp);
+                Ok(operation)
+            }
+            Err(error) => Err(format!("The save could not start: {error}")),
+        }
+    }
+
+    /// Stops the workspace operation a save held, so its tab is editable again.
+    fn cancel_save_operation(&mut self, tab: ItemKey, operation: SaveOperation) {
         let Some(w) = self.workbench.as_mut() else {
             return;
         };
-        let conn = w.connection.name.clone();
-        let db = w.catalog.database.clone();
-        let (schema, name) = match w.active_tab() {
-            Some(WorkTab::Table(t)) => (t.schema.clone(), t.name.clone()),
-            _ => return,
-        };
-        let table = w.catalog.find(Some(&schema), &name).cloned();
-        let Some(WorkTab::Table(t)) = w.active_tab_mut() else {
-            return;
-        };
-        let sqls = match table
-            .as_ref()
-            .map(|tb| crate::model::preview_sql(tb, &t.columns, &t.grid))
-            .transpose()
-        {
-            Ok(sqls) => sqls.unwrap_or_default(),
-            Err(e) => {
-                self.set_status_as(
-                    StatusKind::Fail,
-                    format!(
-                        "Cannot save: {} · changes kept pending",
-                        preview_error_text(&e)
-                    ),
-                );
-                return;
+        let resp = match operation {
+            SaveOperation::Task(_) => Some(w.ws.cancel_operation(tab)),
+            SaveOperation::CloseSave { close, operation } => {
+                w.ws.cancel_close_save(close, operation).ok()
             }
         };
-        let n = t.grid.pending().total();
-        let qualified = t.qualified();
-        let schema = t.schema.clone();
-        t.grid.apply_commit_result(Ok(()));
-        for s in sqls {
+        if let Some(resp) = resp {
+            let _ = w.settle(resp);
+        }
+    }
+
+    /// Releases the grid lock a save took, if its grid still exists. The draft
+    /// is untouched.
+    fn release_commit(&mut self, state: &CommitState) {
+        let _ = self.take_save_continuation(state.token());
+        let _ = self.take_close_wait(state.token());
+        let request = state.request();
+        if request.connection_generation != self.connection_generation {
+            return;
+        }
+        if let CommitState::Submitted { operation, .. } = state {
+            self.cancel_save_operation(request.tab, *operation);
+        }
+        let token = state.token();
+        let _ = self
+            .workbench
+            .as_mut()
+            .and_then(|w| w.with_view(request.tab, |mut v| v.cancel_submission(token)));
+    }
+
+    /// Ends the app's connection era: any save is cancelled, and a callback
+    /// that still holds an older generation can no longer find its target.
+    fn invalidate_connection(&mut self) {
+        if let Some(state) = self.commit.take() {
+            self.release_commit(&state);
+        }
+        self.cancel_transitions();
+        self.connection_generation = self
+            .connection_generation
+            .checked_add(1)
+            .expect("connection generations exhausted");
+    }
+
+    /// Runs a submitted save against the session store and then acknowledges
+    /// it in the grid that submitted it, found by its tab key under its
+    /// connection generation and by the workspace operation it ran under. The
+    /// store is checked completely, and the grid is asked to accept the exact
+    /// receipt, before anything is written. A tab that no longer holds the
+    /// reviewed table releases its lock instead of keeping it for a save that
+    /// can never complete.
+    fn complete_commit(
+        &mut self,
+        request: CommitRequest,
+        token: GridCommitToken,
+        operation: SaveOperation,
+    ) {
+        let continuation = self.take_save_continuation(token);
+        let _ = self.take_close_wait(token);
+        let outcome = self.apply_commit(&request, token, operation);
+        let table = format!("{}.{}", request.schema, request.table);
+        match outcome {
+            CommitOutcome::Ignored => {}
+            CommitOutcome::Moved => self.set_status_as(
+                StatusKind::Warn,
+                "The save no longer matches its tab · changes kept pending".into(),
+            ),
+            CommitOutcome::TabChanged => self.set_status_as(
+                StatusKind::Warn,
+                "The tab changed during the save · it stays open".into(),
+            ),
+            CommitOutcome::Refused(error) => self.set_status_as(
+                StatusKind::Fail,
+                format!("Cannot save to {table}: {error} · changes kept pending"),
+            ),
+            CommitOutcome::ReceiptRejected(error) => {
+                self.commit_failed_receipt(request, token, error.to_string());
+            }
+            CommitOutcome::Unacknowledged(why) => {
+                self.mark_peers_saved(&request);
+                self.set_status_as(
+                    StatusKind::Fail,
+                    format!("{table} was saved but this view could not show it ({why}) · reload the table"),
+                );
+            }
+            CommitOutcome::Saved(end) => {
+                let marked = self.mark_peers_saved(&request);
+                let mut saved = self.commit_succeeded(&request);
+                if marked > 0 {
+                    saved.push_str(&format!(
+                        " · {marked} other view{} of {table} changed and {} to be reloaded",
+                        if marked == 1 { "" } else { "s" },
+                        if marked == 1 { "needs" } else { "need" },
+                    ));
+                }
+                match end {
+                    SaveEnd::Task => match continuation {
+                        Some(transition) => self.finish_save_transition(&saved, &transition),
+                        None => self.set_status_as(StatusKind::Ok, saved),
+                    },
+                    SaveEnd::Closed { focus } => {
+                        self.shell.focus.focus(focus);
+                        self.set_status_as(StatusKind::Ok, format!("{saved} · tab closed"));
+                    }
+                    SaveEnd::StillOpen => self.set_status_as(
+                        StatusKind::Warn,
+                        format!("{saved} · the table still has changes, so it stays open"),
+                    ),
+                }
+            }
+        }
+    }
+
+    /// Stops the workspace operation a save held and unlocks its grid. The
+    /// draft is untouched.
+    fn release_save(&mut self, tab: ItemKey, token: GridCommitToken, operation: SaveOperation) {
+        self.cancel_save_operation(tab, operation);
+        let _ = self
+            .workbench
+            .as_mut()
+            .and_then(|w| w.with_view(tab, |mut v| v.cancel_submission(token)));
+    }
+
+    /// Ends the workspace operation a save ran under without a result, after
+    /// the save itself was refused or its receipt rejected.
+    fn end_save_operation(&mut self, operation: SaveOperation) {
+        let Some(w) = self.workbench.as_mut() else {
+            return;
+        };
+        match operation {
+            SaveOperation::Task(op) => {
+                if let Ok(((), resp)) = w.ws.end_operation(op, |_| ()) {
+                    let _ = w.settle(resp);
+                }
+            }
+            SaveOperation::CloseSave { close, operation } => {
+                let _ = w.ws.fail_close_save(close, operation);
+            }
+        }
+    }
+
+    /// A store refusal: the operation ends, the grid shows the failure on its
+    /// row or status and unlocks the draft, and a conflict marks the tab.
+    fn refuse_save(
+        &mut self,
+        request: &CommitRequest,
+        token: GridCommitToken,
+        operation: SaveOperation,
+        error: StoreError,
+    ) -> CommitOutcome {
+        self.end_save_operation(operation);
+        let failure = GridCommitFailure {
+            key: error.row(),
+            message: error.to_string(),
+        };
+        let conflict = error.is_conflict();
+        let answered = self.workbench.as_mut().and_then(|w| {
+            w.with_view(request.tab, |mut v| {
+                let answered = v.refuse_submission(token, failure);
+                if answered.is_ok() && conflict {
+                    v.mark_source_changed();
+                }
+                answered
+            })
+        });
+        match answered {
+            Some(Err(GridCommitError::StaleToken | GridCommitError::WrongOrigin)) | None => {
+                CommitOutcome::Ignored
+            }
+            Some(_) => CommitOutcome::Refused(error),
+        }
+    }
+
+    /// The store and grid half of [`Self::complete_commit`]. The order is the
+    /// contract: every check that can fail runs before the store is written,
+    /// and the grid and the workspace operation are answered only after it.
+    fn apply_commit(
+        &mut self,
+        request: &CommitRequest,
+        token: GridCommitToken,
+        operation: SaveOperation,
+    ) -> CommitOutcome {
+        if request.connection_generation != self.connection_generation {
+            return CommitOutcome::Ignored;
+        }
+        let Some(held) = self
+            .workbench
+            .as_ref()
+            .and_then(|w| w.table(request.tab))
+            .map(|t| t.schema == request.schema && t.name == request.table)
+        else {
+            return CommitOutcome::Ignored;
+        };
+        if !held {
+            self.release_save(request.tab, token, operation);
+            return CommitOutcome::Moved;
+        }
+        if let SaveOperation::CloseSave {
+            close,
+            operation: op,
+        } = operation
+            && self
+                .workbench
+                .as_ref()
+                .is_some_and(|w| w.ws.validate_close_save(close, op).is_err())
+        {
+            self.release_save(request.tab, token, operation);
+            return CommitOutcome::TabChanged;
+        }
+        let Some(w) = self.workbench.as_mut() else {
+            return CommitOutcome::Ignored;
+        };
+        let Workbench {
+            catalog, store, ws, ..
+        } = &mut *w;
+        let Some(table) = catalog.find(Some(&request.schema), &request.table) else {
+            return self.refuse_save(request, token, operation, StoreError::SchemaChanged);
+        };
+        let id = TableId::new(&request.database, &request.schema, &request.table);
+        let plan = match store.prepare_commit(
+            table,
+            &id,
+            request.expected_table_revision,
+            &request.source_columns,
+            &request.changes,
+            &request.context,
+        ) {
+            Ok(plan) => plan,
+            Err(error) => return self.refuse_save(request, token, operation, error),
+        };
+        let valid = match ws.get(request.tab) {
+            Some(WorkTab::Table(t)) => t.grid.validate_submission_receipt(token, plan.receipt()),
+            _ => Err(GridCommitError::StaleToken),
+        };
+        match valid {
+            Ok(()) => {}
+            Err(GridCommitError::StaleToken | GridCommitError::WrongOrigin) => {
+                return CommitOutcome::Ignored;
+            }
+            Err(error) => {
+                self.end_save_operation(operation);
+                return CommitOutcome::ReceiptRejected(error);
+            }
+        }
+        let receipt = match store.apply_prepared(plan) {
+            Ok(receipt) => receipt,
+            Err(error) => return self.refuse_save(request, token, operation, error),
+        };
+        let (_, inserted, deleted) = request.changes.counts();
+        let (revision, live_rows) = (store.revision(&id), store.row_count(&id, table));
+        let saved_rows = (revision, live_rows, inserted, deleted);
+        let (answered, end) = match operation {
+            SaveOperation::Task(op) => {
+                let finished = ws
+                    .finish_operation(op, |tab| acknowledge_save(tab, token, receipt, saved_rows));
+                match finished {
+                    Ok((answered, resp)) => {
+                        let _ = w.settle(resp);
+                        (answered.map_err(|e| e.to_string()), SaveEnd::Task)
+                    }
+                    Err(error) => (Err(error.to_string()), SaveEnd::Task),
+                }
+            }
+            SaveOperation::CloseSave {
+                close,
+                operation: op,
+            } => {
+                let mut answered = Ok(());
+                let done = ws.complete_close_save(close, op, |tab| {
+                    answered = acknowledge_save(tab, token, receipt, saved_rows)
+                        .map_err(|e| e.to_string());
+                });
+                let still_open = matches!(done, Err(WorkspaceError::StillDirty));
+                if let Ok(resp) = done {
+                    let _ = w.settle(resp);
+                } else {
+                    w.sync_strip();
+                }
+                let end = if still_open {
+                    SaveEnd::StillOpen
+                } else {
+                    SaveEnd::Closed {
+                        focus: w.primary_focus().unwrap_or(crate::workbench::EXPLORER),
+                    }
+                };
+                (answered, end)
+            }
+        };
+        match answered {
+            Ok(()) => CommitOutcome::Saved(end),
+            Err(why) => {
+                let _ = self.workbench.as_mut().and_then(|w| {
+                    w.with_view(request.tab, |mut v| {
+                        let _ = v.cancel_submission(token);
+                        v.mark_source_changed();
+                    })
+                });
+                CommitOutcome::Unacknowledged(why)
+            }
+        }
+    }
+
+    /// Tells every other view of the saved table that its rows are older than
+    /// the store, and returns how many table views kept a draft or an editor.
+    fn mark_peers_saved(&mut self, request: &CommitRequest) -> usize {
+        self.workbench.as_mut().map_or(0, |w| {
+            let marked = w.table_saved(request.tab, &request.schema, &request.table);
+            w.sync_strip();
+            marked
+        })
+    }
+
+    /// Records a finished save in the history and returns its status text.
+    fn commit_succeeded(&mut self, request: &CommitRequest) -> String {
+        let (u, i, d) = request.changes.counts();
+        let n = u + i + d;
+        for sql in &request.sql {
             self.history.push(crate::model::HistoryEntry {
                 id: 0,
-                sql: s,
-                connection: conn.clone(),
-                database: db.clone(),
-                schema: schema.clone(),
+                sql: sql.clone(),
+                connection: request.connection_name.clone(),
+                database: request.database.clone(),
+                schema: request.schema.clone(),
                 minutes_ago: 0,
                 duration_ms: Some(3),
                 rows: Some(1),
@@ -1235,13 +1852,42 @@ impl App {
                 source: crate::model::HistorySource::RowEdits,
             });
         }
-        self.set_status_as(
-            StatusKind::Ok,
-            format!(
-                "Saved {n} change{} to {qualified}",
-                if n == 1 { "" } else { "s" }
-            ),
+        format!(
+            "Saved {n} change{} to {}.{}",
+            if n == 1 { "" } else { "s" },
+            request.schema,
+            request.table
+        )
+    }
+
+    /// An acknowledgement that does not match the reviewed changes leaves the
+    /// draft locked and visible; closing this dialog releases it.
+    fn commit_failed_receipt(
+        &mut self,
+        request: CommitRequest,
+        token: GridCommitToken,
+        message: String,
+    ) {
+        let mut d = Dialog::facts(
+            COMMIT_FAILED_DIALOG,
+            "The save could not be applied",
+            vec![
+                Prop::new("Target", format!("{}.{}", request.schema, request.table)),
+                Prop::new("Why", message).wrap(),
+                Prop::new("Draft", "Kept pending. Closing this releases it.")
+                    .tone(Tone::Muted)
+                    .wrap(),
+            ],
+            vec![],
+            None,
+            Button::secondary(COMMIT_FAILED_DIALOG.sub("cancel"), "Cancel"),
         );
+        d.actions.remove(0);
+        d.cancel_index = Some(0);
+        d.initial_focus = d.actions[0].id;
+        self.commit = Some(CommitState::FailedReceipt { request, token });
+        self.set_status_as(StatusKind::Fail, "The save could not be applied".into());
+        self.open_dialog(d);
     }
 
     fn open_preview(&mut self) {
@@ -1254,12 +1900,13 @@ impl App {
         let Some(table) = w.catalog.find(Some(&t.schema), &t.name) else {
             return;
         };
-        let sqls = match crate::model::preview_sql(table, &t.columns, &t.grid) {
+        let changes = t.grid.snapshot_changes();
+        let sqls = match crate::model::preview_sql(table, &t.columns, &changes) {
             Ok(sqls) => sqls,
             Err(e) => {
                 self.set_status_as(
                     StatusKind::Fail,
-                    format!("Cannot preview SQL: {}", preview_error_text(&e)),
+                    format!("Cannot preview SQL: {}", preview_error_text(&e, &t.grid)),
                 );
                 return;
             }
@@ -1318,12 +1965,7 @@ impl App {
         let Some(w) = self.workbench.as_ref() else {
             return;
         };
-        let open: Vec<(usize, String)> = w
-            .tabs
-            .iter()
-            .enumerate()
-            .map(|(i, t)| (i, t.label()))
-            .collect();
+        let open: Vec<(ItemKey, String)> = w.tabs().map(|t| (t.key(), t.label())).collect();
         let index = SwitcherIndex::build(&w.catalog, &w.connection.name, &open, &self.history);
         let mut p = Picker::new(WidgetId::of("switcher"), "Open Quickly");
         p.placeholder = "Search tables, views, schemas, tabs, queries…".into();
@@ -1401,7 +2043,7 @@ impl App {
         p.hints = "↑↓ Move · Enter Switch · Delete Close tab · Esc Close".to_owned();
         p.set_items(tab_list_items(w, ""))
             .unwrap_or_else(|error| p.report_item_error(error));
-        p.set_cursor(w.active);
+        p.set_cursor(w.active_key().and_then(|key| w.tab_index(key)).unwrap_or(0));
         self.layers.open(
             Box::new(p),
             LayerTag::new(TAB_LIST),
@@ -1459,8 +2101,13 @@ impl App {
             self.set_status("Filters apply to table tabs".into());
             return;
         };
+        if t.saving() {
+            self.set_status_as(StatusKind::Warn, SAVING_NOTICE.into());
+            return;
+        }
         let columns = t.columns.clone();
-        let existing = index.and_then(|i| t.filters.get(i)).cloned();
+        let (tab, view_revision) = (t.key, t.view_revision());
+        let existing = index.and_then(|i| t.view().filters.get(i)).cloned();
         let (col_i, op, value, value2) = match (&existing, &prefill) {
             (Some(f), _) => (
                 columns.iter().position(|c| c.0 == f.column).unwrap_or(0),
@@ -1478,6 +2125,7 @@ impl App {
         };
         let update = existing.is_some();
         let editor = FilterEditor::new(index, update, columns, col_i, op, &value, &value2);
+        self.capture_filter_target(tab, view_revision);
         self.layers.open(
             Box::new(editor),
             LayerTag::new("filter"),
@@ -1486,16 +2134,194 @@ impl App {
         );
     }
 
-    fn request_close_tab(&mut self, index: usize) {
+    /// Asks the workbench to close tab `key`. A clean tab closes at once; a
+    /// dirty one comes back as a close token the user answers.
+    fn request_close_tab(&mut self, key: ItemKey) {
         let Some(w) = self.workbench.as_mut() else {
             return;
         };
-        if w.tabs.get(index).is_some_and(|t| t.dirty()) {
-            self.act(Act::ConfirmCloseTab(index));
+        let before = w.tab_count();
+        match w.request_close(key) {
+            Ok(tokens) => {
+                if tokens.is_empty() && w.tab_count() < before {
+                    let focus = w.primary_focus().unwrap_or(crate::workbench::EXPLORER);
+                    self.shell.focus.focus(focus);
+                }
+                for token in tokens {
+                    self.act(Act::ConfirmClose(token));
+                }
+            }
+            Err(notice) => self.set_status_as(StatusKind::Warn, notice),
+        }
+    }
+
+    /// Opens the choice for a dirty tab that asked to close. A table with a
+    /// draft offers Cancel, Discard and Save; a query tab offers the plain
+    /// confirmation. Either answer names the close token, never a position.
+    fn confirm_close(&mut self, token: CloseToken) {
+        let Some(w) = self.workbench.as_ref() else {
+            return;
+        };
+        match w.tab(token.document) {
+            Some(WorkTab::Table(t)) if t.saving() => {
+                self.set_status_as(StatusKind::Warn, SAVING_NOTICE.into());
+            }
+            Some(WorkTab::Table(t)) => {
+                let stakes = Stakes::Unsaved {
+                    changes: t.dirty_count(),
+                };
+                self.close_pending = Some(token);
+                if let Err(dialog) =
+                    self.close_guard
+                        .request(Leave::To(token), &stakes, &Strings::DEFAULT)
+                {
+                    self.open_dialog(*dialog);
+                }
+            }
+            Some(_) => {
+                self.close_pending = Some(token);
+                let d = Dialog::destructive(
+                    CLOSE_DIALOG,
+                    "Close tab with unsaved work?",
+                    "Pending row edits and unsaved query text in this tab will be lost.",
+                    "Close anyway",
+                );
+                self.open_dialog(d);
+            }
+            None => {}
+        }
+    }
+
+    /// The answer to the plain close confirmation.
+    fn close_answered(&mut self, discard: bool) {
+        let Some(token) = self.close_pending.take() else {
+            return;
+        };
+        if discard {
+            self.discard_close(token);
         } else {
-            w.close_tab(index);
-            let focus = w.primary_focus().unwrap_or(crate::workbench::EXPLORER);
-            self.shell.focus.focus(focus);
+            self.keep_tab(token, false);
+        }
+    }
+
+    /// The answer to the Cancel, Discard, Save guard of a table's close.
+    fn close_guard_closed(&mut self, result: DialogResult) {
+        let pending = self.close_pending.take();
+        match self.close_guard.resolve(result) {
+            Resolved::Discard(Leave::To(token)) => self.discard_close(token),
+            Resolved::Save(Leave::To(token)) => self.save_then_close(token),
+            _ => {
+                if let Some(token) = pending {
+                    self.keep_tab(token, true);
+                }
+            }
+        }
+    }
+
+    fn keep_tab(&mut self, token: CloseToken, announce: bool) {
+        if let Some(w) = self.workbench.as_mut()
+            && let Ok(resp) = w.ws.resolve_close(token, CloseDecision::Cancel)
+        {
+            let _ = w.settle(resp);
+        }
+        if announce {
+            self.set_status("Changes kept pending".into());
+        }
+    }
+
+    /// Closes the tab the token names and drops its changes. A token the tab
+    /// has outgrown asks again instead of closing something that changed while
+    /// the user decided.
+    fn discard_close(&mut self, token: CloseToken) {
+        let Some(w) = self.workbench.as_mut() else {
+            return;
+        };
+        match w.ws.resolve_close(token, CloseDecision::Discard) {
+            Ok(resp) => {
+                let settled = w.settle(resp);
+                let focus = w.primary_focus().unwrap_or(crate::workbench::EXPLORER);
+                self.shell.focus.focus(focus);
+                for operation in settled.cancelled {
+                    self.cancelled_operation(operation);
+                }
+            }
+            Err(WorkspaceError::StaleClose) => {
+                self.set_status_as(
+                    StatusKind::Warn,
+                    "The tab changed while you decided · confirm again".into(),
+                );
+                self.request_close_tab(token.document);
+            }
+            Err(WorkspaceError::SaveInProgress) => {
+                self.set_status_as(StatusKind::Warn, SAVING_NOTICE.into());
+            }
+            Err(_) => {}
+        }
+    }
+
+    /// The workspace stopped `operation`; a save that held it has nothing left
+    /// to finish.
+    fn cancelled_operation(&mut self, operation: OperationToken) {
+        let held = match &self.commit {
+            Some(CommitState::Submitted {
+                operation: SaveOperation::Task(t),
+                ..
+            }) => *t == operation,
+            Some(CommitState::Submitted {
+                operation: SaveOperation::CloseSave { operation: t, .. },
+                ..
+            }) => *t == operation,
+            _ => false,
+        };
+        if held && let Some(state) = self.commit.take() {
+            self.release_commit(&state);
+        }
+    }
+
+    /// Saves the table's draft, then closes the tab when that exact save
+    /// succeeds. The close intent is minted against the content the review
+    /// captured, so any other edit makes it stale instead of closing a tab
+    /// that changed.
+    fn save_then_close(&mut self, token: CloseToken) {
+        let tab = token.document;
+        let Some(w) = self.workbench.as_ref() else {
+            return;
+        };
+        if w.ws.pending_close(tab) != Some(token) {
+            self.set_status_as(
+                StatusKind::Warn,
+                "The tab changed since this was requested · nothing was saved".into(),
+            );
+            return;
+        }
+        let Some(grid_token) = self.begin_commit_for(Some(tab)) else {
+            return;
+        };
+        let Some(w) = self.workbench.as_mut() else {
+            return;
+        };
+        let fresh =
+            w.ws.request_close(tab)
+                .into_actions()
+                .into_iter()
+                .find_map(|action| match action {
+                    junie_tui::widgets::document_workspace::WorkspaceAction::CloseRequested(t) => {
+                        Some(t)
+                    }
+                    _ => None,
+                });
+        match fresh {
+            Some(close) => {
+                self.transition_wait = Some(TransitionWait::Close {
+                    close,
+                    token: grid_token,
+                });
+            }
+            None => {
+                if let Some(state) = self.commit.take() {
+                    self.release_commit(&state);
+                }
+            }
         }
     }
 
@@ -1520,11 +2346,15 @@ impl App {
     }
 
     fn take_layer(&mut self) -> Outcome {
-        match self.layers.take(&mut self.shell.focus) {
-            None => Outcome::Ignored,
-            Some(Taken::Event(r)) => self.layer_event(r),
-            Some(Taken::Closed(entry, r)) => self.layer_closed(entry, r),
-        }
+        Layers::settle(
+            self,
+            |app| (&mut app.layers, &mut app.shell.focus),
+            Outcome::Ignored,
+            |app, taken| match taken {
+                Taken::Event(r) => app.layer_event(r),
+                Taken::Closed(entry, r) => app.layer_closed(entry, r),
+            },
+        )
     }
 
     fn dismiss_layer(&mut self, reason: DismissReason) -> Outcome {
@@ -1583,10 +2413,13 @@ impl App {
                         .layers
                         .top_as::<Picker>()
                         .map_or(i, |p| tab_index(p, i));
+                    let key = self.workbench.as_ref().and_then(|w| w.tab_key_at(idx));
                     // Pop the picker first so the close guard restores the
                     // workbench's focus when cancelled or confirmed.
                     self.layers.pop(&mut self.shell.focus);
-                    self.request_close_tab(idx);
+                    if let Some(key) = key {
+                        self.request_close_tab(key);
+                    }
                     if self.layers.is_empty() {
                         self.open_tab_list();
                     }
@@ -1632,6 +2465,10 @@ impl App {
                 }
             }
             ModalResult::Filter(Some((index, filter))) => self.apply_filter(index, filter),
+            ModalResult::Filter(None) => {
+                self.filter_target = None;
+                Outcome::Changed
+            }
             _ => Outcome::Changed,
         }
     }
@@ -1663,27 +2500,16 @@ impl App {
                         w.explorer.set_filter(None);
                         let _ = w.explorer.rows();
 
-                        let conn = w.connection.clone();
-                        let cat = w.catalog.clone();
-                        let tabs = std::mem::take(&mut w.tabs);
-                        let active = w.active;
-                        let qc = w.query_counter;
-                        let mut nw = Workbench::new(conn, cat);
-                        nw.connection_key = w.connection_key;
-                        nw.tabs = tabs;
-                        nw.active = active;
-                        nw.query_counter = qc;
-                        nw.schema = s.clone();
-                        nw.rebuild_for_schema();
-                        *w = nw;
+                        w.rebuild_for_schema();
+                        w.explorer_visible = true;
                         self.shell.focus.focus(crate::workbench::EXPLORER);
                         self.set_status(format!("Schema {s}"));
                     }
                     SwitchTarget::Database(_) => {
                         self.shell.focus.focus(crate::workbench::EXPLORER);
                     }
-                    SwitchTarget::OpenTab(i) => {
-                        w.set_active(i);
+                    SwitchTarget::OpenTab(key) => {
+                        w.activate(key);
                         if let Some(pf) = w.primary_focus() {
                             self.shell.focus.focus(pf);
                         }
@@ -1707,7 +2533,7 @@ impl App {
             TAB_LIST => {
                 let idx = entry.get::<Picker>().map_or(i, |p| tab_index(p, i));
                 if let Some(w) = self.workbench.as_mut() {
-                    w.set_active(idx);
+                    w.activate_index(idx);
                     if let Some(pf) = w.primary_focus() {
                         self.shell.focus.focus(pf);
                     }
@@ -1739,26 +2565,8 @@ impl App {
     }
 
     fn apply_filter(&mut self, index: Option<usize>, filter: Filter) -> Outcome {
-        let mut applied = None;
-        if let Some(w) = self.workbench.as_mut() {
-            let cat = w.catalog.clone();
-            if let Some(WorkTab::Table(t)) = w.active_tab_mut() {
-                match index {
-                    Some(i) if i < t.filters.len() => t.filters[i] = filter,
-                    _ => t.filters.push(filter),
-                }
-                t.preview = false;
-                t.load(&cat);
-                let n = t.filters.iter().filter(|f| f.enabled).count();
-                applied = Some((n, t.grid.id));
-            }
-        }
-        if let Some((n, gid)) = applied {
-            self.set_status(format!(
-                "{n} filter{} applied",
-                if n == 1 { "" } else { "s" }
-            ));
-            self.shell.focus.focus(gid);
+        if let Some(grid) = self.filter_answered(index, filter) {
+            self.shell.focus.focus(grid);
         }
         Outcome::Changed
     }
@@ -1796,10 +2604,8 @@ impl App {
             };
             let pending = w.pending_run.take();
             if result == DialogResult::Action(1) {
-                if let Some((tab, statements, all, explain)) = pending
-                    && let Some(WorkTab::Query(q)) = w.tabs.get_mut(tab)
-                {
-                    q.start(statements, all, explain);
+                if let Some((tab, statements, all, explain)) = pending {
+                    w.start_query(tab, statements, all, explain);
                 }
             } else {
                 self.set_status_as(StatusKind::Info, "Cancelled · nothing was executed".into());
@@ -1807,38 +2613,31 @@ impl App {
             return Outcome::Changed;
         }
         if id == COMMIT_DIALOG {
-            if result == DialogResult::Action(1) {
-                self.committing = Some(5);
-                self.set_status("Saving…".into());
-            } else {
-                self.set_status("Changes kept pending".into());
+            self.commit_reviewed(result == DialogResult::Action(1));
+            return Outcome::Changed;
+        }
+        if id == COMMIT_FAILED_DIALOG {
+            if let Some(state @ CommitState::FailedReceipt { .. }) = self.commit.take() {
+                self.release_commit(&state);
             }
+            self.set_status("Changes kept pending".into());
+            return Outcome::Changed;
+        }
+        if id == CLOSE_DIALOG {
+            self.close_answered(result == DialogResult::Action(1));
+            return Outcome::Changed;
+        }
+        if self.close_guard.is_dialog(id) {
+            self.close_guard_closed(result);
             return Outcome::Changed;
         }
         if id == DISCARD_DIALOG {
-            if result == DialogResult::Action(1) {
-                if let Some(w) = self.workbench.as_mut() {
-                    let cat = w.catalog.clone();
-                    if let Some(WorkTab::Table(t)) = w.active_tab_mut() {
-                        t.grid.discard();
-                        t.load(&cat);
-                    }
-                }
-                self.set_status("Changes discarded".into());
-            }
+            self.discard_review_closed(result == DialogResult::Action(1));
             return Outcome::Changed;
         }
-        if let Some(w) = self.workbench.as_mut() {
-            for i in 0..w.tabs.len() + 1 {
-                if id == CLOSE_DIALOG.child(i) {
-                    if result == DialogResult::Action(1) {
-                        w.close_tab(i);
-                        let pf = w.primary_focus().unwrap_or(crate::workbench::EXPLORER);
-                        self.shell.focus.focus(pf);
-                    }
-                    return Outcome::Changed;
-                }
-            }
+        if self.table_guard.is_dialog(id) {
+            self.table_guard_closed(result);
+            return Outcome::Changed;
         }
         Outcome::Changed
     }
@@ -1879,10 +2678,11 @@ impl App {
         }
 
         if let Some(r) = self.workbench.as_mut().and_then(|w| w.rail.route(ev)) {
-            return Some(match r.into_action() {
-                Some(a) => self.set_explorer(a == junie_tui::widgets::rail::RailAction::Expand),
-                None => Outcome::Consumed,
-            });
+            let mut out = Outcome::Consumed;
+            for a in r.into_actions() {
+                out = self.set_explorer(a == junie_tui::widgets::rail::RailAction::Expand);
+            }
+            return Some(out);
         }
 
         if let Some(action) = crate::tabs::toolbar_action(id) {
@@ -1935,9 +2735,11 @@ impl App {
             (Route::Workbench, Some(w)) => {
                 let menu = context::on_secondary(w, &cfg, ev);
 
-                if let Some(WorkTab::History(h)) = w.active_tab_mut() {
-                    h.sync_detail_public(&self.history);
-                }
+                let _ = w.modify_active(|tab| {
+                    if let WorkTab::History(h) = tab {
+                        h.sync_detail(&self.history);
+                    }
+                });
                 menu
             }
             (Route::Connections, _) => {
@@ -1992,13 +2794,15 @@ impl App {
         let Some(key) = key else {
             return Outcome::Changed;
         };
+        if let context::Target::History { owner, entry } = target {
+            return self.history_chosen(owner, entry, key);
+        }
         match target {
-            context::Target::Connection(_, Some(key)) => {
-                if !self.connections.select_key(key) {
+            context::Target::Connection(node) => {
+                if !self.connections.select_key(node) {
                     return Outcome::Changed;
                 }
             }
-            context::Target::Connection(row, None) => self.connections.select_row(row),
             _ => {
                 if let Some(w) = self.workbench.as_mut() {
                     context::select(w, target);
@@ -2006,6 +2810,27 @@ impl App {
             }
         }
         self.shell.focus.focus(owner);
+        shell::KeyRouter::replay(self, &key).or(Outcome::Changed)
+    }
+
+    fn history_chosen(&mut self, owner: WidgetId, entry: ItemKey, key: Key) -> Outcome {
+        if let Some(cmd) = context::history_command(&key) {
+            let (o, reqs) = self
+                .shell
+                .deliver(true, |cx| match self.workbench.as_ref() {
+                    Some(w) => w.history_action(owner, entry, cmd, &self.history, cx),
+                    None => Outcome::Ignored,
+                });
+            return self.apply_requests(reqs).or(o).or(Outcome::Changed);
+        }
+        let list = match self.workbench.as_ref().and_then(|w| w.active_tab()) {
+            Some(WorkTab::History(h)) if h.id == owner => h.list.id,
+            _ => {
+                self.set_status("The history tab is no longer available".into());
+                return Outcome::Changed;
+            }
+        };
+        self.shell.focus.focus(list);
         shell::KeyRouter::replay(self, &key).or(Outcome::Changed)
     }
 
@@ -2283,13 +3108,13 @@ impl PointerHost for App {
 }
 
 fn tab_index(p: &Picker, i: usize) -> usize {
-    p.items().get(i).map_or(i, |it| it.value)
+    p.visible_item(i).map_or(i, |it| it.item.value)
 }
 
 fn tab_list_items(w: &Workbench, query: &str) -> Vec<Item> {
     let q = query.to_lowercase();
-    w.tabs
-        .iter()
+    let active = w.active_key();
+    w.tabs()
         .enumerate()
         .filter(|(_, t)| q.is_empty() || t.label().to_lowercase().contains(&q))
         .map(|(i, t)| {
@@ -2322,7 +3147,7 @@ fn tab_list_items(w: &Workbench, query: &str) -> Vec<Item> {
                     WorkTab::History(_) => "H",
                 })
                 .value(i);
-            if i == w.active {
+            if Some(t.key()) == active {
                 it.tag("active")
             } else if t.dirty() {
                 it.tag("unsaved")
@@ -2584,7 +3409,9 @@ impl shell::KeyHost for App {
 
 #[cfg(test)]
 mod tests {
+    use super::test_support::review_code;
     use super::*;
+    use crate::tabs::{QueryTab, ResultBody};
 
     const PRICE: usize = 4;
 
@@ -2601,23 +3428,16 @@ mod tests {
         app
     }
 
-    fn grid(app: &mut App) -> &mut junie_tui::widgets::grid::DataGrid {
-        match app.workbench.as_mut().and_then(|w| w.active_tab_mut()) {
-            Some(WorkTab::Table(t)) => &mut t.grid,
-            _ => panic!("a table tab is active"),
-        }
-    }
-
-    fn review_code(app: &App) -> Vec<String> {
-        match &app
-            .layers
-            .top_as::<Dialog>()
-            .expect("the review dialog is open")
-            .body
-        {
-            DialogBody::Facts { code, .. } => code.clone(),
-            _ => panic!("the dialog lists statements"),
-        }
+    /// Runs `f` on the active table's grid through the workspace's mutation
+    /// gateway, as the app's own handlers do.
+    fn with_grid<R>(
+        app: &mut App,
+        f: impl FnOnce(&mut junie_tui::widgets::grid::DataGrid) -> R,
+    ) -> R {
+        let w = app.workbench.as_mut().expect("connected");
+        let key = w.active_key().expect("a tab is active");
+        w.modify_table(key, |t, _| f(&mut t.grid))
+            .expect("a table tab is active")
     }
 
     fn status(app: &App) -> String {
@@ -2628,33 +3448,274 @@ mod tests {
             .unwrap_or_default()
     }
 
+    const BATCH: &str = "SELECT * FROM products LIMIT 1;\nSELECT * FROM products LIMIT 2;\nSELECT * FROM products LIMIT 3;";
+
+    fn app_with_query(sql: &str) -> App {
+        let mut app = App::new(Theme::junie());
+        let key = app
+            .connections
+            .resolve_name("Development")
+            .expect("Development is a sample connection");
+        app.connect_key(key);
+        app.workbench.as_mut().expect("connected").new_query(sql);
+        app
+    }
+
+    fn query(app: &App) -> &QueryTab {
+        match app.workbench.as_ref().and_then(|w| w.active_tab()) {
+            Some(WorkTab::Query(q)) => q,
+            _ => panic!("a query tab is active"),
+        }
+    }
+
+    fn edit<R>(app: &mut App, f: impl FnOnce(&mut QueryTab) -> R) -> R {
+        app.workbench
+            .as_mut()
+            .and_then(|w| {
+                w.modify_active(|tab| match tab {
+                    WorkTab::Query(q) => Some(f(q)),
+                    _ => None,
+                })
+            })
+            .flatten()
+            .expect("a query tab is active")
+    }
+
+    fn run_batch(app: &mut App) {
+        app.run_active(true, None);
+        assert!(query(app).is_running(), "the batch started");
+    }
+
+    fn tick_until_history(app: &mut App, entries: usize) {
+        for _ in 0..64 {
+            if app.history.entries.len() >= entries {
+                return;
+            }
+            app.advance();
+        }
+        panic!("history never reached {entries} entries");
+    }
+
+    fn esc(app: &mut App) -> Outcome {
+        let key = Key {
+            code: KeyCode::Esc,
+            mods: ratatui::crossterm::event::KeyModifiers::NONE,
+        };
+        shell::KeyRouter::route(app, &key)
+    }
+
+    fn click_stop(app: &mut App) -> Outcome {
+        let ev = PointerEvent::new(
+            &app.shell.hits,
+            Phase::Click,
+            crate::tabs::TOOLBAR_CANCEL,
+            Position::new(0, 0),
+            1,
+            ratatui::crossterm::event::KeyModifiers::NONE,
+        );
+        app.deliver_pointer(&ev)
+    }
+
+    fn shape(q: &QueryTab) -> Vec<(bool, &'static str)> {
+        q.results
+            .iter()
+            .map(|r| {
+                let kind = match r.body {
+                    ResultBody::Rows(_) => "rows",
+                    ResultBody::Cancelled => "cancelled",
+                    _ => "other",
+                };
+                (r.pinned, kind)
+            })
+            .collect()
+    }
+
+    #[test]
+    fn query_cancel_retains_completed_results() {
+        let mut app = app_with_query(BATCH);
+        let base = app.history.entries.len();
+        run_batch(&mut app);
+        tick_until_history(&mut app, base + 1);
+        let (second_sql, second_range, elapsed) = {
+            let r = query(&app).running.as_ref().expect("still running");
+            assert_eq!(r.current, 1, "the second statement is pending");
+            (
+                r.statements[1].0.clone(),
+                r.statements[1].1.clone(),
+                r.started_ticks,
+            )
+        };
+        let first_sql = app.history.entries[0].sql.clone();
+
+        assert_eq!(esc(&mut app), Outcome::Changed);
+
+        let q = query(&app);
+        assert!(!q.is_running());
+        assert_eq!(shape(q), [(false, "rows"), (false, "cancelled")]);
+        assert_eq!(q.active_result, 1, "the cancelled marker is active");
+        assert_eq!(
+            q.result_tabs.items().len(),
+            2,
+            "the strip matches the results"
+        );
+        let marker = &q.results[1];
+        assert_eq!(
+            marker.anchor, second_range,
+            "the marker anchors the pending statement"
+        );
+        assert_eq!(marker.duration_ms, elapsed * 80);
+        assert_eq!(q.editor.running, None);
+        assert_eq!(q.last_status, Some(("cancelled".into(), false)));
+        assert_eq!(
+            app.history.entries.len(),
+            base + 1,
+            "history is not touched by cancel"
+        );
+        assert_eq!(app.history.entries[0].sql, first_sql);
+        assert_ne!(first_sql, second_sql);
+        assert_eq!(status(&app), "Query cancelled");
+    }
+
+    #[test]
+    fn query_cancel_preserves_pins_and_order() {
+        let mut app = app_with_query("SELECT * FROM orders LIMIT 1;");
+        let base = app.history.entries.len();
+        run_batch(&mut app);
+        tick_until_history(&mut app, base + 1);
+        assert!(!query(&app).is_running());
+        edit(&mut app, |q| q.toggle_pin(0));
+        let pinned_key = query(&app).results[0].key;
+
+        edit(&mut app, |q| q.editor.set_text(BATCH));
+        let mid = app.history.entries.len();
+        run_batch(&mut app);
+        tick_until_history(&mut app, mid + 2);
+        assert_eq!(query(&app).running.as_ref().map(|r| r.current), Some(2));
+
+        assert_eq!(click_stop(&mut app), Outcome::Changed);
+
+        let q = query(&app);
+        assert_eq!(
+            shape(q),
+            [
+                (true, "rows"),
+                (false, "rows"),
+                (false, "rows"),
+                (false, "cancelled")
+            ]
+        );
+        assert_eq!(
+            q.results[0].key, pinned_key,
+            "the pinned result keeps its identity"
+        );
+        let keys: Vec<_> = q.results.iter().map(|r| r.key).collect();
+        for (i, k) in keys.iter().enumerate() {
+            assert!(!keys[i + 1..].contains(k), "result keys are unique");
+        }
+        assert_eq!(q.active_result, 3);
+        assert_eq!(q.result_tabs.items().len(), 4);
+        assert_eq!(
+            app.history.entries.len(),
+            mid + 2,
+            "two completions, no cancelled entry"
+        );
+    }
+
+    #[test]
+    fn query_cancel_idempotent() {
+        let mut app = app_with_query(BATCH);
+        let base = app.history.entries.len();
+        run_batch(&mut app);
+        tick_until_history(&mut app, base + 1);
+        assert_eq!(esc(&mut app), Outcome::Changed);
+
+        app.shell.status.clear();
+        assert!(!edit(&mut app, |q| q.cancel()), "nothing left to cancel");
+        assert_ne!(esc(&mut app), Outcome::Changed);
+        assert_ne!(click_stop(&mut app), Outcome::Changed);
+
+        let q = query(&app);
+        assert_eq!(shape(q), [(false, "rows"), (false, "cancelled")]);
+        assert_eq!(q.active_result, 1);
+        assert_eq!(q.result_tabs.items().len(), 2);
+        assert_eq!(q.last_status, Some(("cancelled".into(), false)));
+        assert_eq!(app.history.entries.len(), base + 1);
+        assert_eq!(status(&app), "", "a repeated cancel reports nothing");
+    }
+
+    #[test]
+    fn query_cancel_start_reconciles_strip() {
+        let mut app = app_with_query(BATCH);
+        let base = app.history.entries.len();
+        run_batch(&mut app);
+        tick_until_history(&mut app, base + 3);
+        assert!(!query(&app).is_running());
+        assert_eq!(query(&app).result_tabs.items().len(), 3);
+        edit(&mut app, |q| q.toggle_pin(1));
+        let pinned_label = query(&app).results[0].label.clone();
+
+        run_batch(&mut app);
+        for _ in 0..3 {
+            let q = query(&app);
+            assert_eq!(q.results.len(), 1, "only the pinned result is retained");
+            assert_eq!(q.result_tabs.items().len(), 1, "no stale tab while waiting");
+            assert_eq!(q.result_tabs.items()[0].label, pinned_label);
+            assert_eq!(q.active_result, 0);
+            app.advance();
+        }
+
+        let mut app = app_with_query(BATCH);
+        let base = app.history.entries.len();
+        run_batch(&mut app);
+        tick_until_history(&mut app, base + 3);
+        run_batch(&mut app);
+        let q = query(&app);
+        assert!(q.results.is_empty());
+        assert!(
+            q.result_tabs.items().is_empty(),
+            "an empty strip while only the placeholder shows"
+        );
+    }
+
     #[test]
     fn issue49_save_review_shows_exact_numbers_and_keeps_the_value() {
         let mut app = app_editing_products();
-        let original = grid(&mut app).rows()[0][PRICE].clone();
-        grid(&mut app).record_cell(0, PRICE, CellValue::Num(1.234_567));
+        let original = with_grid(&mut app, |g| g.rows()[0][PRICE].clone());
+        with_grid(&mut app, |g| {
+            g.record_cell(0, PRICE, CellValue::Num(1.234_567)).unwrap()
+        });
         app.begin_commit();
         let code = review_code(&app);
         assert_eq!(code.len(), 1);
         assert!(
-            code[0].contains("SET unit_price = 1.234567 WHERE"),
+            code[0].contains(r#"SET "unit_price" = 1.234567 WHERE"#),
             "{}",
             code[0]
         );
-        assert_eq!(grid(&mut app).rows()[0][PRICE], original);
-        assert_eq!(grid(&mut app).value(0, PRICE), &CellValue::Num(1.234_567));
+        assert_eq!(
+            with_grid(&mut app, |g| g.rows()[0][PRICE].clone()),
+            original
+        );
+        assert_eq!(
+            with_grid(&mut app, |g| g.value(0, PRICE).clone()),
+            CellValue::Num(1.234_567)
+        );
     }
 
     #[test]
     fn issue49_save_and_preview_reject_nonfinite_without_side_effects() {
         let mut app = app_editing_products();
-        grid(&mut app).record_cell(0, PRICE, CellValue::Num(2.5));
-        grid(&mut app).record_cell(1, PRICE, CellValue::Num(f64::NAN));
+        with_grid(&mut app, |g| {
+            g.record_cell(0, PRICE, CellValue::Num(2.5)).unwrap()
+        });
+        with_grid(&mut app, |g| {
+            g.record_cell(1, PRICE, CellValue::Num(f64::NAN)).unwrap()
+        });
         let history = app.history.entries.len();
 
         app.begin_commit();
         assert!(app.layers.is_empty(), "no review dialog opens");
-        assert_eq!(app.committing, None, "no save timer starts");
+        assert!(app.commit.is_none(), "no save starts");
         assert_eq!(
             status(&app),
             "Cannot save: row 2 · unit_price is not a finite number · changes kept pending"
@@ -2673,8 +3734,295 @@ mod tests {
             history,
             "nothing reaches history"
         );
-        let grid = grid(&mut app);
-        assert_eq!(grid.pending().cells().count(), 2, "the draft is kept");
-        assert_eq!(grid.value(0, PRICE), &CellValue::Num(2.5));
+        assert_eq!(
+            with_grid(&mut app, |g| g.pending().cells().count()),
+            2,
+            "the draft is kept"
+        );
+        assert_eq!(
+            with_grid(&mut app, |g| g.value(0, PRICE).clone()),
+            CellValue::Num(2.5)
+        );
+    }
+    const SKU: usize = 1;
+    const NAME: usize = 2;
+
+    fn quoted(v: &CellValue) -> String {
+        match v {
+            CellValue::Text(s) => format!("'{}'", s.replace('\'', "''")),
+            other => panic!("expected text, got {other:?}"),
+        }
+    }
+
+    fn insert_of(app: &mut App) -> String {
+        app.open_preview();
+        let code = review_code(app);
+        let inserts: Vec<&String> = code.iter().filter(|s| s.starts_with("INSERT")).collect();
+        assert_eq!(inserts.len(), 1, "{code:?}");
+        inserts[0].clone()
+    }
+
+    #[test]
+    fn issue50_untouched_duplicate_previews_every_copied_value() {
+        let mut app = app_editing_products();
+        let source = with_grid(&mut app, |g| g.rows()[0].clone());
+        with_grid(&mut app, |g| g.duplicate_row().expect("row duplicates"));
+        let sql = insert_of(&mut app);
+        assert!(!sql.contains("DEFAULT VALUES"), "{sql}");
+        assert!(
+            sql.starts_with(r#"INSERT INTO "public"."products" ("sku", "name", "#),
+            "the primary key resets to DEFAULT and is omitted: {sql}"
+        );
+        assert!(sql.contains(&quoted(&source[SKU])), "{sql}");
+        assert!(sql.contains(&quoted(&source[NAME])), "{sql}");
+        assert!(sql.contains(r#""unit_price""#), "{sql}");
+    }
+
+    #[test]
+    fn issue50_duplicate_with_one_edit_keeps_the_other_copies() {
+        let mut app = app_editing_products();
+        let source = with_grid(&mut app, |g| g.rows()[0].clone());
+        with_grid(&mut app, |g| g.duplicate_row().expect("row duplicates"));
+        let copy = with_grid(&mut app, |g| g.len()) - 1;
+        with_grid(&mut app, |g| {
+            g.record_cell(copy, PRICE, CellValue::Num(12.5)).unwrap()
+        });
+        let sql = insert_of(&mut app);
+        assert!(sql.contains("12.5"), "{sql}");
+        assert!(sql.contains(&quoted(&source[SKU])), "{sql}");
+        assert!(sql.contains(&quoted(&source[NAME])), "{sql}");
+    }
+
+    #[test]
+    fn issue50_duplicating_an_edited_row_copies_the_pending_value() {
+        let mut app = app_editing_products();
+        with_grid(&mut app, |g| {
+            g.record_cell(0, NAME, CellValue::Text("edited name".into()))
+                .unwrap()
+        });
+        with_grid(&mut app, |g| g.duplicate_row().expect("row duplicates"));
+        let sql = insert_of(&mut app);
+        assert!(sql.contains("'edited name'"), "{sql}");
+    }
+
+    use junie_tui::core::event::{Mouse, MouseKind};
+    use junie_tui::core::id::ItemKey;
+    use junie_tui::core::selection::SelectGesture;
+    use ratatui::Terminal;
+    use ratatui::backend::TestBackend;
+
+    const CURSOR_MARK: (usize, usize) = (1, 2);
+
+    fn three_results(retain: usize) -> (App, Vec<ItemKey>) {
+        let mut app = app_with_query(BATCH);
+        let base = app.history.entries.len();
+        run_batch(&mut app);
+        tick_until_history(&mut app, base + 3);
+        assert_eq!(query(&app).results.len(), 3);
+        edit(&mut app, |q| q.set_active_result(retain));
+        let keys = query(&app).results.iter().map(|r| r.key).collect();
+        (app, keys)
+    }
+
+    fn mark_active_grid(app: &mut App) {
+        edit(app, |q| {
+            let g = q.active_grid_mut().expect("rows result");
+            g.cursor = CURSOR_MARK;
+            assert!(g.select_rows(SelectGesture::Only, 1));
+        });
+    }
+
+    fn assert_marked_grid(app: &mut App, what: &str) {
+        let g = query(app).active_grid().expect("rows result");
+        assert_eq!(g.cursor, CURSOR_MARK, "{what}: cursor");
+        assert_eq!(g.selection.to_vec(), [1], "{what}: selection");
+    }
+
+    fn draw(app: &mut App) -> Terminal<TestBackend> {
+        let mut term = Terminal::new(TestBackend::new(120, 40)).expect("terminal");
+        term.draw(|f| shell::render(app, f)).expect("draw");
+        term
+    }
+
+    fn row_text(term: &Terminal<TestBackend>, y: u16) -> String {
+        let buf = term.backend().buffer();
+        (0..buf.area.width)
+            .map(|x| buf[(x, y)].symbol().to_owned())
+            .collect()
+    }
+
+    fn mouse(app: &mut App, kind: MouseKind, at: Position) -> Outcome {
+        shell::handle(app, Input::Mouse(Mouse::new(kind, at)))
+    }
+
+    #[derive(Clone, Copy, Debug)]
+    enum CloseRoute {
+        MiddleClick,
+        CloseButton,
+    }
+
+    fn close_result_via(app: &mut App, route: CloseRoute, i: usize) {
+        draw(app);
+        let q = query(app);
+        let tab = q.result_tabs.areas[i];
+        let (tab_id, close) = (q.result_tabs.tab_id(i), q.result_tabs.close_id(i));
+        match route {
+            CloseRoute::MiddleClick => {
+                let at = Position::new(tab.x + 1, tab.y);
+                assert_eq!(app.shell.hits.hover_at(at), Some(tab_id));
+                assert_eq!(mouse(app, MouseKind::Middle, at), Outcome::Changed);
+            }
+            CloseRoute::CloseButton => {
+                let at = (tab.x..tab.right())
+                    .map(|x| Position::new(x, tab.y))
+                    .find(|&p| app.shell.hits.hover_at(p) == Some(close))
+                    .expect("the close button is drawn on the tab");
+                mouse(app, MouseKind::Down, at);
+                mouse(app, MouseKind::Up, at);
+            }
+        }
+    }
+
+    fn keys(q: &QueryTab) -> Vec<ItemKey> {
+        q.results.iter().map(|r| r.key).collect()
+    }
+
+    fn assert_strip_matches(q: &QueryTab) {
+        assert_eq!(q.result_tabs.items().len(), q.results.len());
+        let shown = q.active_result.min(q.results.len().saturating_sub(1));
+        assert_eq!(
+            q.result_tabs.active, shown,
+            "the strip shows the active result"
+        );
+        assert_eq!(q.result_tabs.cursor, shown);
+    }
+
+    #[test]
+    fn result_close_earlier_keeps_active_body() {
+        for route in [CloseRoute::MiddleClick, CloseRoute::CloseButton] {
+            let (mut app, ks) = three_results(1);
+            mark_active_grid(&mut app);
+
+            close_result_via(&mut app, route, 0);
+
+            let q = query(&app);
+            assert_eq!(keys(q), [ks[1], ks[2]], "{route:?}: A is gone");
+            assert_eq!(q.active_result, 0, "{route:?}: B moved to index 0");
+            assert_eq!(q.results[q.active_result].key, ks[1], "{route:?}");
+            assert_strip_matches(q);
+            assert_marked_grid(&mut app, &format!("{route:?}"));
+
+            let term = draw(&mut app);
+            let q = query(&app);
+            let at = q.result_tabs.areas[0];
+            assert!(
+                row_text(&term, at.y).contains(&q.results[0].label),
+                "{route:?}: the strip shows B first"
+            );
+        }
+    }
+
+    #[test]
+    fn result_close_later_keeps_active_body() {
+        for route in [CloseRoute::MiddleClick, CloseRoute::CloseButton] {
+            let (mut app, ks) = three_results(1);
+            mark_active_grid(&mut app);
+
+            close_result_via(&mut app, route, 2);
+
+            let q = query(&app);
+            assert_eq!(keys(q), [ks[0], ks[1]], "{route:?}");
+            assert_eq!(q.active_result, 1, "{route:?}");
+            assert_strip_matches(q);
+            assert_marked_grid(&mut app, &format!("{route:?}"));
+        }
+    }
+
+    #[test]
+    fn result_close_active_uses_successor_then_previous() {
+        for route in [CloseRoute::MiddleClick, CloseRoute::CloseButton] {
+            let (mut app, ks) = three_results(1);
+
+            close_result_via(&mut app, route, 1);
+            let q = query(&app);
+            assert_eq!(keys(q), [ks[0], ks[2]], "{route:?}");
+            assert_eq!(q.active_result, 1, "{route:?}: C is the successor");
+            assert_eq!(q.results[1].key, ks[2]);
+            assert_strip_matches(q);
+
+            close_result_via(&mut app, route, 1);
+            let q = query(&app);
+            assert_eq!(keys(q), [ks[0]], "{route:?}");
+            assert_eq!(q.active_result, 0, "{route:?}: the last result falls back");
+            assert_strip_matches(q);
+
+            close_result_via(&mut app, route, 0);
+            let q = query(&app);
+            assert!(q.results.is_empty());
+            assert_eq!(q.active_result, 0);
+            assert!(q.result_tabs.items().is_empty());
+        }
+    }
+
+    #[test]
+    fn result_close_key_closes_the_active_result_and_selects_its_successor() {
+        let (mut app, ks) = three_results(1);
+        let id = query(&app).result_tabs.id;
+        app.shell.focus.focus(id);
+        let x = Key {
+            code: KeyCode::Char('x'),
+            mods: ratatui::crossterm::event::KeyModifiers::NONE,
+        };
+        assert_eq!(shell::KeyRouter::route(&mut app, &x), Outcome::Changed);
+        let q = query(&app);
+        assert_eq!(keys(q), [ks[0], ks[2]]);
+        assert_eq!(q.active_result, 1);
+        assert_strip_matches(q);
+    }
+
+    #[test]
+    fn result_close_pinned_or_invalid_noop() {
+        let (mut app, ks) = three_results(2);
+        edit(&mut app, |q| q.toggle_pin(0));
+        assert_eq!(
+            keys(query(&app)),
+            [ks[0], ks[1], ks[2]],
+            "pinning the first result keeps the order"
+        );
+        edit(&mut app, |q| q.set_active_result(1));
+        let q = query(&app);
+        let before = (keys(q), q.active_result, q.result_tabs.items().len());
+
+        edit(&mut app, |q| {
+            q.close_result(0);
+            q.close_result(3);
+            q.close_result(usize::MAX);
+        });
+        let q = query(&app);
+        assert_eq!(
+            (keys(q), q.active_result, q.result_tabs.items().len()),
+            before
+        );
+        assert_strip_matches(q);
+
+        draw(&mut app);
+        let tab = query(&app).result_tabs.areas[0];
+        let at = Position::new(tab.x + 1, tab.y);
+        mouse(&mut app, MouseKind::Middle, at);
+        let q = query(&app);
+        assert_eq!(
+            (keys(q), q.active_result, q.result_tabs.items().len()),
+            before
+        );
+    }
+
+    #[test]
+    fn result_pin_activates_the_toggled_result() {
+        let (mut app, ks) = three_results(1);
+        edit(&mut app, |q| q.toggle_pin(2));
+        let q = query(&app);
+        assert_eq!(keys(q), [ks[2], ks[0], ks[1]]);
+        assert_eq!(q.active_result, 0, "the pinned result is active");
+        assert_strip_matches(q);
     }
 }

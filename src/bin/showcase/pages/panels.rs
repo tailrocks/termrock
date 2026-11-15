@@ -119,6 +119,34 @@ impl PanelsPage {
             .tail(o.on("panels.tail"))
             .nav(nav)
             .keymap(keymap);
+        match o.value("panels.content") {
+            "edited" => {
+                log.replace_line(2, format!("{:7.2}s  info   Line edited in place", 0.74))
+                    .expect("the generated log has a third line");
+            }
+            "appended" => {
+                log.extend_lines((0..3).map(|i| {
+                    format!(
+                        "{:7.2}s  info   Line appended {}",
+                        22.2 + f64::from(i),
+                        i + 1
+                    )
+                }));
+            }
+            "replaced" => {
+                log.set_lines(crate::data::log_lines(8));
+            }
+            "cleared" => {
+                log.clear();
+            }
+            "long token" => {
+                prose.push(
+                    "Copy keeps the source text: 3f9c2a7be41d85c06f1a9e7d2b4c8a0f6e35d1b9c7a2f4e80d6b3a915c7e2f48"
+                        .to_owned(),
+                );
+            }
+            _ => {}
+        }
         if let Some(c) = click {
             prose = prose.track_click(c);
             log = log.track_click(c);

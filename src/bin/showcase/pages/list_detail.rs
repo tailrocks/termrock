@@ -6,14 +6,17 @@ use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
 use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
+use junie_tui::core::id::{ItemKey, WidgetId};
 use junie_tui::core::intent::Phase;
+use junie_tui::core::list::{KeyedRowSource, RowSource, SourceStamp};
 use junie_tui::theme::{ButtonKind, StatusKind, Tone};
 use junie_tui::ui::ctx::RenderCtx;
 use junie_tui::ui::layout::Split;
 use junie_tui::ui::specimen::StateGrid;
 use junie_tui::widgets::empty::{self, EmptyState};
-use junie_tui::widgets::list_detail::{Action, Event, Frame, Line, ListDetail, ListRow};
+use junie_tui::widgets::list_detail::{
+    Action, Event, Line, ListDetail, ListDetailSource, ListRowRef, SourceFrame,
+};
 use junie_tui::widgets::notice::Notice;
 
 const ID: WidgetId = WidgetId::of("listdetail");
@@ -92,6 +95,59 @@ const JOBS: &[Job] = &[
     },
 ];
 
+/// The jobs as a keyed, borrowed provider: rows read the static records in
+/// place and are identified by job name, never by position.
+struct JobRows {
+    jobs: &'static [Job],
+    data: u64,
+}
+
+impl RowSource for JobRows {
+    fn len(&self) -> usize {
+        self.jobs.len()
+    }
+
+    fn label(&self, i: usize) -> &str {
+        self.jobs[i].name
+    }
+
+    fn key(&self, i: usize) -> ItemKey {
+        ItemKey::text(self.jobs[i].name)
+    }
+}
+
+impl KeyedRowSource for JobRows {
+    fn stamp(&self) -> SourceStamp {
+        SourceStamp {
+            instance: ItemKey::text("showcase.list_detail.jobs"),
+            data: self.data,
+            view: 0,
+        }
+    }
+
+    fn source_len(&self) -> usize {
+        self.jobs.len()
+    }
+
+    fn source_key(&self, source_index: usize) -> ItemKey {
+        self.key(source_index)
+    }
+}
+
+impl ListDetailSource for JobRows {
+    fn row(&self, visible: usize) -> ListRowRef<'_> {
+        let job = &self.jobs[visible];
+        ListRowRef {
+            mark: Some(job.state),
+            label: job.name,
+            detail: job.summary,
+            meta: job.word,
+            meta_tone: job.tone,
+            faint: job.faint,
+        }
+    }
+}
+
 pub fn page() -> Box<dyn Page> {
     Box::new(ListDetailPage::new())
 }
@@ -121,17 +177,11 @@ impl ListDetailPage {
         }
     }
 
-    fn rows(&self) -> Vec<ListRow> {
-        self.jobs()
-            .iter()
-            .map(|j| {
-                let row = ListRow::new(j.name)
-                    .mark(j.state)
-                    .detail(j.summary)
-                    .meta(j.word, j.tone);
-                if j.faint { row.faint() } else { row }
-            })
-            .collect()
+    fn rows(&self) -> JobRows {
+        JobRows {
+            jobs: self.jobs(),
+            data: u64::from(self.opts.value("listdetail.data") == "none"),
+        }
     }
 
     fn lines(job: &Job) -> Vec<Line> {
@@ -203,31 +253,37 @@ impl Page for ListDetailPage {
         match self.template.section() {
             Section::Playground => {
                 let rows = self.rows();
-                let Some(job) = self
-                    .jobs()
-                    .get(self.ld.cursor.min(rows.len().saturating_sub(1)))
-                else {
+                let bound = self.ld.bind_source(&rows);
+                let Some(job) = bound.ok().and_then(|()| rows.jobs.get(self.ld.cursor)) else {
                     ctx.control(LIST, Rect::new(body.x, body.y, 1, 1), false);
                     empty::render_ctx(body, buf, ctx, &Self::empty(), ctx.theme.canvas);
                     return;
                 };
-                let frame = Frame {
+                let meta = format!("{} listed", rows.len());
+                let lines = Self::lines(job);
+                let actions = self.actions();
+                let frame = SourceFrame {
                     title: "Jobs",
-                    meta: format!("{} listed", rows.len()),
-                    head: vec![],
-                    rows: &rows,
+                    meta: &meta,
+                    head: &[],
                     under: self.log.as_deref(),
-                    detail_title: job.name.to_owned(),
-                    detail_meta: job.word.to_owned(),
-                    lines: Self::lines(job),
-                    actions: self.actions(),
+                    detail_title: job.name,
+                    detail_meta: job.word,
+                    lines: &lines,
+                    actions: &actions,
                 };
                 let width = self
                     .opts
                     .number("listdetail.width")
                     .map_or(body.width, |w| w.min(body.width));
                 let owner = Rect::new(body.x, body.y, width, body.height);
-                self.ld.render(owner, buf, ctx, &frame);
+                if self
+                    .ld
+                    .render_source(owner, &rows, &frame, buf, ctx)
+                    .is_err()
+                {
+                    ctx.control(LIST, Rect::new(body.x, body.y, 1, 1), false);
+                }
             }
             Section::Options => self.template.render_options(body, buf, ctx),
             Section::States => self.template.render_states(body, buf, ctx),
@@ -260,7 +316,7 @@ impl Page for ListDetailPage {
                 }
                 match ev.phase() {
                     Some(Phase::Click) => {
-                        let (o, event) = self.ld.click(ev.id, cx.focus, len);
+                        let (o, event) = self.ld.click_source(ev.id, cx.focus);
                         self.fire(event);
                         o
                     }

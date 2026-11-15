@@ -4,25 +4,31 @@ use ratatui::layout::{Position, Rect};
 
 use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::hit::Axis;
-use junie_tui::core::id::{Part, WidgetId};
+use junie_tui::core::id::{ItemKey, Part, WidgetId};
 use junie_tui::core::intent::Phase;
 use junie_tui::core::pointer::{MouseTarget, PointerEvent};
+use junie_tui::core::response::Response;
 use junie_tui::ui::ctx::RenderCtx;
 use junie_tui::ui::layout::{Split, SplitDir};
+use junie_tui::widgets::document_workspace::{
+    CloseDecision, CloseToken, DocumentWorkspace, OpenKind, OperationToken, WorkspaceAction,
+    WorkspaceDocument,
+};
 use junie_tui::widgets::empty::EmptyState;
 use junie_tui::widgets::field_common::{PointerField, route_click, route_drag, route_press};
 use junie_tui::widgets::input::{InputAction, TextInput};
 use junie_tui::widgets::keyhint::{Hint, hint};
 use junie_tui::widgets::panel::Panel;
 use junie_tui::widgets::splitter::Splitter;
-use junie_tui::widgets::table::SortDir;
-use junie_tui::widgets::tabs::{TabAction, TabItem, Tabs};
+use junie_tui::widgets::tabs::{TabAction, Tabs};
 use junie_tui::widgets::tree::{TreeAction, TreeNode, TreeView};
+use std::borrow::Cow;
 
-use crate::app::Cx;
+use crate::app::{Cx, TableChange};
 use crate::db::{Catalog, Connection, ObjectKind};
-use crate::model::History;
-use crate::tabs::{HistoryTab, QueryTab, TableTab};
+use crate::model::{History, HistoryEntry};
+use crate::store::{SessionStore, Source};
+use crate::tabs::{HistoryCommand, HistoryTab, QueryTab, TableTab, WorkTabView};
 
 const ID: WidgetId = WidgetId::of("workbench");
 pub const EXPLORER: WidgetId = ID.sub("explorer");
@@ -32,11 +38,14 @@ pub const TABSTRIP: WidgetId = ID.sub("tabstrip");
 
 #[allow(clippy::large_enum_variant)]
 pub type PendingRun = (
-    usize,
+    ItemKey,
     Vec<(String, std::ops::Range<usize>)>,
     bool,
     Option<bool>,
 );
+
+/// Why a table that is being saved refuses to close, reload, sort or filter.
+pub const SAVING_NOTICE: &str = "Saving · wait for the save to finish";
 
 #[allow(clippy::large_enum_variant)]
 pub enum WorkTab {
@@ -46,6 +55,16 @@ pub enum WorkTab {
 }
 
 impl WorkTab {
+    /// The tab's never-reused identity, allocated by the workspace. Unlike a
+    /// tab's position or render `WidgetId`, it still names this tab after
+    /// others close, open or reorder.
+    pub fn key(&self) -> ItemKey {
+        match self {
+            WorkTab::Table(t) => t.key,
+            WorkTab::Query(q) => q.key,
+            WorkTab::History(h) => h.key,
+        }
+    }
     pub fn label(&self) -> String {
         match self {
             WorkTab::Table(t) => t.label(),
@@ -67,6 +86,47 @@ impl WorkTab {
             WorkTab::History(_) => false,
         }
     }
+    pub fn primary_focus(&self) -> WidgetId {
+        match self {
+            WorkTab::Table(t) => t.grid.id,
+            WorkTab::Query(q) => q.editor.id,
+            WorkTab::History(h) => h.list.id,
+        }
+    }
+}
+
+impl WorkspaceDocument for WorkTab {
+    type View<'a> = WorkTabView<'a>;
+
+    fn title(&self) -> Cow<'_, str> {
+        match self {
+            WorkTab::Query(q) => Cow::Borrowed(&q.name),
+            WorkTab::History(_) => Cow::Borrowed("History"),
+            WorkTab::Table(t) => Cow::Owned(t.label()),
+        }
+    }
+
+    fn dirty(&self) -> bool {
+        WorkTab::dirty(self)
+    }
+
+    fn focus_target(&self) -> Option<WidgetId> {
+        Some(self.primary_focus())
+    }
+
+    fn view(&mut self) -> WorkTabView<'_> {
+        WorkTabView::new(self)
+    }
+}
+
+/// What a workspace response asks of the host, after the workbench has
+/// updated what it owns (the strip, the recently closed list, unseen marks).
+#[derive(Debug, Default)]
+pub struct Settled {
+    /// Dirty tabs that asked to close; the host presents each choice.
+    pub close_requests: Vec<CloseToken>,
+    /// Operations the workspace stopped; the host releases what they held.
+    pub cancelled: Vec<OperationToken>,
 }
 
 pub struct Workbench {
@@ -74,6 +134,9 @@ pub struct Workbench {
     /// The configured connection this session was opened from.
     pub connection_key: Option<junie_tui::core::id::ItemKey>,
     pub catalog: Catalog,
+    /// The rows of this connection session. Every tab reads and saves through
+    /// it, and it ends with the connection.
+    pub store: SessionStore,
     pub schema: String,
     pub explorer: TreeView,
     pub explorer_filter: TextInput,
@@ -86,9 +149,10 @@ pub struct Workbench {
     pub explorer_seam: Splitter,
     explorer_split_area: Rect,
     pub maximized: bool,
+    /// A projection of the workspace: items and active index are rebuilt from
+    /// the ordered keys, and a strip event is translated back to a key.
     pub strip: Tabs,
-    pub tabs: Vec<WorkTab>,
-    pub active: usize,
+    pub ws: DocumentWorkspace<WorkTab>,
     pub query_counter: usize,
     pending_loads: Vec<(Vec<usize>, u32)>,
 
@@ -100,6 +164,14 @@ pub struct Workbench {
     pub closed: Vec<(String, String)>,
 }
 
+/// The render id of one tab's `role`, scoped by the workspace id and the tab's
+/// key, never by its position.
+fn tab_id(role: &str, key: ItemKey) -> WidgetId {
+    ID.sub("tab")
+        .sub(role)
+        .part(junie_tui::core::id::PartRef::item(Part::ROW, key))
+}
+
 fn kind_glyph(k: ObjectKind) -> &'static str {
     match k {
         ObjectKind::Table => "T",
@@ -109,12 +181,22 @@ fn kind_glyph(k: ObjectKind) -> &'static str {
     }
 }
 
+fn row_count_meta(src: Source, table: &crate::db::Table) -> String {
+    let rows = src.row_count(table);
+    if rows > 0 {
+        crate::sql::fmt_rows(rows)
+    } else {
+        String::new()
+    }
+}
+
 impl Workbench {
-    pub fn new(connection: Connection, catalog: Catalog) -> Self {
+    pub fn new(connection: Connection, catalog: Catalog, store: SessionStore) -> Self {
         let mut wb = Self {
             connection,
             connection_key: None,
             catalog,
+            store,
             schema: "public".into(),
             explorer: TreeView::new(EXPLORER, vec![]),
             explorer_filter: TextInput::new(EXPLORER.sub("filter"), "")
@@ -128,8 +210,7 @@ impl Workbench {
             explorer_split_area: Rect::ZERO,
             maximized: false,
             strip: Tabs::new(TABSTRIP, &[]),
-            tabs: vec![],
-            active: 0,
+            ws: DocumentWorkspace::new(ID.sub("tab")),
             query_counter: 0,
             pending_loads: vec![],
             open_objects: vec![],
@@ -191,11 +272,7 @@ impl Workbench {
             } else {
                 objs.iter()
                     .map(|t| {
-                        let meta = if t.row_count > 0 {
-                            crate::sql::fmt_rows(t.row_count)
-                        } else {
-                            String::new()
-                        };
+                        let meta = self.row_count_meta(t);
                         if kind == ObjectKind::Table || kind == ObjectKind::View {
                             TreeNode::lazy(&t.name).glyph(kind_glyph(kind)).meta(&meta)
                         } else {
@@ -211,6 +288,111 @@ impl Workbench {
             sections.push(section);
         }
         sections
+    }
+
+    fn row_count_meta(&self, table: &crate::db::Table) -> String {
+        row_count_meta(
+            Source {
+                catalog: &self.catalog,
+                store: &self.store,
+            },
+            table,
+        )
+    }
+
+    /// Puts the live row counts on the explorer's loaded tables, leaving its
+    /// expansion and cursor alone.
+    fn refresh_explorer_counts(&mut self) {
+        let src = Source {
+            catalog: &self.catalog,
+            store: &self.store,
+        };
+        if let Some(db) = self.explorer.nodes.first_mut() {
+            for (schema, schema_node) in src.catalog.schemas.iter().zip(&mut db.children) {
+                for node in schema_node
+                    .children
+                    .iter_mut()
+                    .flat_map(|section| section.children.iter_mut())
+                {
+                    if let Some(table) = src.catalog.find(Some(schema), &node.label)
+                        && matches!(table.kind, ObjectKind::Table | ObjectKind::View)
+                    {
+                        node.meta = Some(row_count_meta(src, table));
+                    }
+                }
+            }
+        }
+        self.explorer.flatten();
+    }
+
+    /// Brings every other view of a saved table up to date. A view with no
+    /// draft and no open editor reads the new rows. Any other keeps its draft
+    /// and editor exactly as they are and is marked, so its own save fails
+    /// as a conflict instead of overwriting the saved rows. Query results are
+    /// snapshots and are only marked. Returns how many table views were marked.
+    pub fn table_saved(&mut self, origin: ItemKey, schema: &str, name: &str) -> usize {
+        let Some(table) = self.catalog.find(Some(schema), name) else {
+            return 0;
+        };
+        let id = Source {
+            catalog: &self.catalog,
+            store: &self.store,
+        }
+        .table_id(table);
+        let revision = self.store.revision(&id);
+        let keys: Vec<ItemKey> = self
+            .ws
+            .iter()
+            .filter(|(key, _)| *key != origin)
+            .map(|(key, _)| key)
+            .collect();
+        let mut marked = 0;
+        for key in keys {
+            let same_table = |tab: &WorkTab| matches!(tab, WorkTab::Table(t) if t.schema == schema && t.name == name);
+            if !self
+                .ws
+                .get(key)
+                .is_some_and(|tab| same_table(tab) || matches!(tab, WorkTab::Query(_)))
+            {
+                continue;
+            }
+            let src = Source {
+                catalog: &self.catalog,
+                store: &self.store,
+            };
+            let updated = self.ws.update(key, |tab| match tab {
+                WorkTab::Table(t) if t.schema == schema && t.name == name => {
+                    let idle = t.dirty_count() == 0 && !t.is_editing() && !t.saving();
+                    let view = t.view().clone();
+                    let refreshed = idle
+                        && t.prepare_load(src, &view)
+                            .ok()
+                            .is_some_and(|loaded| t.install_load(loaded, view).is_ok());
+                    if !refreshed {
+                        t.mark_source_changed();
+                    }
+                    !refreshed
+                }
+                WorkTab::Query(q) => {
+                    q.table_saved(&id, revision);
+                    false
+                }
+                _ => false,
+            });
+            match updated {
+                Ok((was_marked, resp)) => {
+                    let _ = self.settle(resp);
+                    if was_marked {
+                        marked += 1;
+                    }
+                }
+                Err(_) if self.ws.get(key).is_some_and(same_table) => marked += 1,
+                Err(_) => {}
+            }
+        }
+        self.refresh_explorer_counts();
+        self.sync_strip();
+        marked
     }
 
     fn table_children(&self, t: &crate::db::Table) -> Vec<TreeNode> {
@@ -374,59 +556,179 @@ impl Workbench {
     pub fn animating(&self) -> bool {
         !self.pending_loads.is_empty()
             || self
-                .tabs
-                .iter()
+                .tabs()
                 .any(|t| matches!(t, WorkTab::Query(q) if q.is_running()))
     }
 
-    fn sync_strip(&mut self) {
-        let mut labels: Vec<String> = self.tabs.iter().map(|t| t.label()).collect();
+    /// Every tab in strip order.
+    pub fn tabs(&self) -> impl Iterator<Item = &WorkTab> + '_ {
+        self.ws.iter().map(|(_, tab)| tab)
+    }
 
-        for i in 0..labels.len() {
-            if labels.iter().filter(|l| **l == labels[i]).count() > 1
-                && let WorkTab::Table(t) = &self.tabs[i]
-            {
-                labels[i] = t.qualified();
-            }
+    pub fn tab_count(&self) -> usize {
+        self.ws.len()
+    }
+
+    pub fn tab(&self, key: ItemKey) -> Option<&WorkTab> {
+        self.ws.get(key)
+    }
+
+    pub fn tab_key_at(&self, index: usize) -> Option<ItemKey> {
+        self.ws.key_at(index)
+    }
+
+    pub fn tab_index(&self, key: ItemKey) -> Option<usize> {
+        self.ws.index_of(key)
+    }
+
+    pub fn active_key(&self) -> Option<ItemKey> {
+        self.ws.active_key()
+    }
+
+    pub fn active_tab(&self) -> Option<&WorkTab> {
+        self.ws.get(self.ws.active_key()?)
+    }
+
+    /// Whether `key` is the one replaceable preview tab.
+    pub fn is_preview(&self, key: ItemKey) -> bool {
+        self.ws.preview_key() == Some(key)
+    }
+
+    /// The table tab `key` names, read-only.
+    pub fn table(&self, key: ItemKey) -> Option<&TableTab> {
+        match self.ws.get(key)? {
+            WorkTab::Table(t) => Some(t),
+            _ => None,
         }
-        let items: Vec<TabItem> = self
-            .tabs
-            .iter()
-            .zip(labels)
-            .map(|(t, label)| {
-                let mut it = TabItem::new(&label).closable();
-                match t {
-                    WorkTab::Table(tt) => {
-                        it.prefix = Some("T".into());
-                        it.dirty = tt.dirty_count() > 0;
-                    }
-                    WorkTab::Query(q) => {
-                        it.prefix = Some("≡".into());
-                        it.busy = q.is_running();
-                        it.dirty = q.dirty() && !q.is_running();
-                        it.error = q.last_status.as_ref().is_some_and(|s| s.1)
-                            && !q.is_running()
-                            && q.unseen;
-                    }
-                    WorkTab::History(_) => {
-                        it.prefix = Some("H".into());
+    }
+
+    /// The content mutation gateway for one tab. Nothing outside it can hold a
+    /// mutable tab: the workspace advances the tab's content revision, promotes
+    /// a preview that became dirty, and refuses the call while a close-save
+    /// owns the tab (`None`).
+    pub fn modify<R>(&mut self, key: ItemKey, f: impl FnOnce(&mut WorkTab) -> R) -> Option<R> {
+        let (out, resp) = self.ws.update(key, f).ok()?;
+        let _ = self.settle(resp);
+        Some(out)
+    }
+
+    /// [`Self::modify`] for a table, with the catalog and store its rows are read
+    /// from.
+    pub fn modify_table<R>(
+        &mut self,
+        key: ItemKey,
+        f: impl FnOnce(&mut TableTab, Source<'_>) -> R,
+    ) -> Option<R> {
+        let src = Source {
+            catalog: &self.catalog,
+            store: &self.store,
+        };
+        let (out, resp) = self
+            .ws
+            .update(key, |tab| match tab {
+                WorkTab::Table(t) => Some(f(t, src)),
+                _ => None,
+            })
+            .ok()?;
+        let _ = self.settle(resp);
+        out
+    }
+
+    /// Runs `f` on the tab's restricted view. It never advances the content
+    /// revision and works while a close-save holds the tab (`None` when the
+    /// tab is gone).
+    pub fn with_view<R>(
+        &mut self,
+        key: ItemKey,
+        f: impl FnOnce(WorkTabView<'_>) -> R,
+    ) -> Option<R> {
+        self.ws.view_mut(key).ok().map(f)
+    }
+
+    pub fn modify_active<R>(&mut self, f: impl FnOnce(&mut WorkTab) -> R) -> Option<R> {
+        let key = self.ws.active_key()?;
+        self.modify(key, f)
+    }
+
+    /// Handles a workspace response in order: refreshes the strip, remembers
+    /// closed tables, clears a query's unseen mark when it becomes active, and
+    /// hands back what only the host can do.
+    pub fn settle(&mut self, resp: Response<WorkspaceAction<WorkTab>>) -> Settled {
+        let mut settled = Settled::default();
+        let changed_tabs = resp.has_actions();
+        for action in resp.into_actions() {
+            match action {
+                WorkspaceAction::Activated(key) => {
+                    if let Ok(mut view) = self.ws.view_mut(key) {
+                        view.mark_seen();
                     }
                 }
-                it
+                WorkspaceAction::PreviewPromoted(_) => {}
+                WorkspaceAction::CloseRequested(token) => settled.close_requests.push(token),
+                WorkspaceAction::CancelOperation(token) => settled.cancelled.push(token),
+                WorkspaceAction::Closed { document, .. } => {
+                    if let WorkTab::Table(t) = &document {
+                        self.closed.push((t.schema.clone(), t.name.clone()));
+                    }
+                }
+            }
+        }
+        if changed_tabs {
+            self.sync_strip();
+        }
+        settled
+    }
+
+    /// Rebuilds the tab strip from the workspace, so its dirty and busy marks
+    /// match their drafts again.
+    pub fn sync_strip(&mut self) {
+        self.ws.sync_tabs_with(&mut self.strip, |tab, mut item| {
+            item.busy = false;
+            match tab {
+                WorkTab::Table(tt) => {
+                    item.prefix = Some("T".into());
+                    item.dirty = tt.dirty_count() > 0;
+                    if tt.source_changed() {
+                        item.suffix = Some("source changed".into());
+                    }
+                }
+                WorkTab::Query(q) => {
+                    item.prefix = Some("≡".into());
+                    item.busy = q.is_running();
+                    item.dirty = q.dirty() && !q.is_running();
+                    item.error =
+                        q.last_status.as_ref().is_some_and(|s| s.1) && !q.is_running() && q.unseen;
+                }
+                WorkTab::History(_) => {
+                    item.prefix = Some("H".into());
+                    item.dirty = false;
+                }
+            }
+            item
+        });
+        let labels: Vec<String> = self.strip.items().iter().map(|i| i.label.clone()).collect();
+        let qualified: Vec<Option<String>> = self
+            .tabs()
+            .enumerate()
+            .map(|(i, tab)| match tab {
+                WorkTab::Table(t) if labels.iter().filter(|l| **l == labels[i]).count() > 1 => {
+                    Some(t.qualified())
+                }
+                _ => None,
             })
             .collect();
-        let active = self.active.min(items.len().saturating_sub(1));
-
-        self.strip.set_items(items);
+        for (i, label) in qualified.into_iter().enumerate() {
+            if let Some(label) = label {
+                self.strip.update_item(i, |item| item.label = label);
+            }
+        }
         self.strip.allow_new = true;
-        self.strip.set_active(active);
-        self.current_object = match self.tabs.get(self.active) {
+        self.current_object = match self.active_tab() {
             Some(WorkTab::Table(t)) => Some((t.schema.clone(), t.name.clone())),
             _ => None,
         };
         self.open_objects = self
-            .tabs
-            .iter()
+            .tabs()
             .filter_map(|t| {
                 if let WorkTab::Table(t) = t {
                     Some((t.schema.clone(), t.name.clone()))
@@ -437,116 +739,313 @@ impl Workbench {
             .collect();
     }
 
-    pub fn open_table(&mut self, schema: &str, name: &str, preview: bool) -> Option<usize> {
-        if let Some(i) = self
-            .tabs
-            .iter()
-            .position(|t| matches!(t, WorkTab::Table(tt) if tt.schema == schema && tt.name == name))
-        {
-            self.active = i;
-            if let WorkTab::Table(tt) = &mut self.tabs[i]
-                && !preview
-            {
-                tt.preview = false;
+    /// Opens (or re-activates) the table's tab and returns its key. A preview
+    /// open replaces a clean idle preview; a preview that holds a draft, a
+    /// running operation, an open editor or a captured save is pinned first.
+    pub fn open_table(&mut self, schema: &str, name: &str, preview: bool) -> Option<ItemKey> {
+        let existing = self.ws.iter().find_map(|(key, tab)| {
+            matches!(tab, WorkTab::Table(tt) if tt.schema == schema && tt.name == name)
+                .then_some(key)
+        });
+        if let Some(key) = existing {
+            let mut resp = self.ws.activate(key);
+            if !preview {
+                resp |= self.ws.promote(key);
             }
+            let _ = self.settle(resp);
             self.sync_strip();
-            return Some(i);
+            return Some(key);
         }
         let table = self.catalog.find(Some(schema), name)?.clone();
-        let tab = TableTab::new(
-            ID.sub("tab")
-                .child(self.tabs.len() + self.query_counter + 1000),
-            &self.catalog,
-            &table,
-            preview,
-        );
-
-        if preview
-            && let Some(i) = self
-                .tabs
-                .iter()
-                .position(|t| matches!(t, WorkTab::Table(tt) if tt.preview))
-        {
-            self.tabs[i] = WorkTab::Table(tab);
-            self.active = i;
-            self.sync_strip();
-            return Some(i);
+        if preview && let Some(old) = self.ws.preview_key() {
+            let keep = matches!(
+                self.ws.get(old),
+                Some(WorkTab::Table(t)) if t.is_editing() || t.saving()
+            );
+            if keep {
+                let resp = self.ws.promote(old);
+                let _ = self.settle(resp);
+            }
         }
-        self.tabs.push(WorkTab::Table(tab));
-        self.active = self.tabs.len() - 1;
-        self.sync_strip();
-        Some(self.active)
+        let src = Source {
+            catalog: &self.catalog,
+            store: &self.store,
+        };
+        let (key, resp) = self.ws.open_with(
+            |key| WorkTab::Table(TableTab::new(key, tab_id("table", key), src, &table)),
+            if preview {
+                OpenKind::Preview
+            } else {
+                OpenKind::Pinned
+            },
+        );
+        let _ = self.settle(resp);
+        Some(key)
     }
 
-    pub fn new_query(&mut self, text: &str) -> usize {
+    pub fn new_query(&mut self, text: &str) -> ItemKey {
         self.query_counter += 1;
         let name = format!("Query {}", self.query_counter);
-        let tab = QueryTab::new(ID.sub("query").child(self.query_counter), &name, text);
-        self.tabs.push(WorkTab::Query(tab));
-        self.active = self.tabs.len() - 1;
-        self.sync_strip();
-        self.active
+        let (key, resp) = self.ws.open_with(
+            |key| WorkTab::Query(QueryTab::new(key, tab_id("query", key), &name, text)),
+            OpenKind::Pinned,
+        );
+        let _ = self.settle(resp);
+        key
     }
 
-    pub fn open_history(&mut self, history: &History) -> usize {
-        if let Some(i) = self
-            .tabs
+    pub fn open_history(&mut self, history: &History) -> ItemKey {
+        let existing = self
+            .ws
             .iter()
-            .position(|t| matches!(t, WorkTab::History(_)))
-        {
-            self.active = i;
-            if let WorkTab::History(h) = &mut self.tabs[i] {
-                h.refresh(history, &self.connection.name);
-            }
+            .find_map(|(key, tab)| matches!(tab, WorkTab::History(_)).then_some(key));
+        if let Some(key) = existing {
+            let resp = self.ws.activate(key);
+            let connection = self.connection.name.clone();
+            let _ = self.modify(key, |tab| {
+                if let WorkTab::History(h) = tab {
+                    h.refresh(history, &connection);
+                }
+            });
+            let _ = self.settle(resp);
             self.sync_strip();
-            return i;
+            return key;
         }
-        let mut h = HistoryTab::new(ID.sub("history"));
-        h.refresh(history, &self.connection.name);
-        self.tabs.push(WorkTab::History(h));
-        self.active = self.tabs.len() - 1;
+        let connection = self.connection.name.clone();
+        let (key, resp) = self.ws.open_with(
+            |key| {
+                let mut h = HistoryTab::new(key, ID.sub("history"));
+                h.refresh(history, &connection);
+                WorkTab::History(h)
+            },
+            OpenKind::Pinned,
+        );
+        let _ = self.settle(resp);
+        key
+    }
+
+    /// Makes `key` the active tab. A query's unseen mark clears even when the
+    /// tab was already active.
+    pub fn activate(&mut self, key: ItemKey) -> bool {
+        if !self.ws.contains(key) {
+            return false;
+        }
+        let resp = self.ws.activate(key);
+        if let Ok(mut view) = self.ws.view_mut(key) {
+            view.mark_seen();
+        }
+        let _ = self.settle(resp);
         self.sync_strip();
-        self.active
+        true
     }
 
-    pub fn close_tab(&mut self, i: usize) {
-        if i < self.tabs.len() {
-            if let WorkTab::Table(t) = &self.tabs[i] {
-                self.closed.push((t.schema.clone(), t.name.clone()));
+    pub fn history_tab(&self, owner: WidgetId) -> Option<&HistoryTab> {
+        self.tabs().find_map(|t| match t {
+            WorkTab::History(h) if h.id == owner => Some(h),
+            _ => None,
+        })
+    }
+
+    pub fn history_action(
+        &self,
+        owner: WidgetId,
+        entry: ItemKey,
+        cmd: HistoryCommand,
+        history: &History,
+        cx: &mut Cx,
+    ) -> Outcome {
+        match self.history_tab(owner) {
+            Some(h) => h.run(entry, cmd, history, cx),
+            None => {
+                cx.status("The history tab is no longer available");
+                Outcome::Changed
             }
-            self.tabs.remove(i);
-            if self.active >= self.tabs.len() {
-                self.active = self.tabs.len().saturating_sub(1);
-            } else if self.active > i {
-                self.active -= 1;
-            }
-            self.sync_strip();
         }
     }
 
-    pub fn set_active(&mut self, i: usize) {
-        if i < self.tabs.len() {
-            self.active = i;
-            if let WorkTab::Query(q) = &mut self.tabs[i] {
-                q.unseen = false;
+    pub fn record_history(&mut self, history: &mut History, entries: Vec<HistoryEntry>) {
+        for e in entries {
+            history.push(e);
+        }
+        self.refresh_history(history);
+    }
+
+    /// Activates the tab at strip position `index`. The position came from the
+    /// strip's current projection; it is translated to a key before anything
+    /// changes.
+    pub fn activate_index(&mut self, index: usize) -> bool {
+        self.ws.key_at(index).is_some_and(|key| self.activate(key))
+    }
+
+    /// A second table tab on the table, standing in for another view of the
+    /// same rows. The explorer opens one tab per table, so only tests get here.
+    #[cfg(test)]
+    pub fn open_second_view(&mut self, schema: &str, name: &str) -> Option<ItemKey> {
+        let table = self.catalog.find(Some(schema), name)?.clone();
+        let src = Source {
+            catalog: &self.catalog,
+            store: &self.store,
+        };
+        let (key, resp) = self.ws.open_with(
+            |key| WorkTab::Table(TableTab::new(key, tab_id("table", key), src, &table)),
+            OpenKind::Pinned,
+        );
+        let _ = self.settle(resp);
+        Some(key)
+    }
+
+    /// Asks to close tab `key`. A clean tab closes at once, and a query that
+    /// is only running is discarded, which cancels the run. A dirty tab stays
+    /// and its close token comes back for the host to confirm. A table that is
+    /// saving refuses. A live editor is finished first, so its edit is part of
+    /// the draft before the request captures the content revision, and a
+    /// rejected input keeps the tab open with no request.
+    pub fn request_close(&mut self, key: ItemKey) -> Result<Vec<CloseToken>, String> {
+        if matches!(self.ws.get(key), Some(WorkTab::Table(t)) if t.saving()) {
+            return Err(SAVING_NOTICE.to_owned());
+        }
+        let finished = self.modify(key, |tab| match tab {
+            WorkTab::Table(t) => t
+                .grid
+                .finish_edit_session()
+                .map(|_| ())
+                .map_err(|e| e.to_string()),
+            _ => Ok(()),
+        });
+        if let Some(Err(message)) = finished {
+            return Err(format!("Fix the open cell first: {message}"));
+        }
+        let resp = self.ws.request_close(key);
+        let settled = self.settle(resp);
+        let mut confirm = vec![];
+        for token in settled.close_requests {
+            if self.ws.get(token.document).is_some_and(WorkTab::dirty) {
+                confirm.push(token);
+            } else if let Ok(resp) = self.ws.resolve_close(token, CloseDecision::Discard) {
+                let _ = self.settle(resp);
             }
-            self.sync_strip();
+        }
+        Ok(confirm)
+    }
+
+    /// [`Self::request_close`] for a handler that owns a `Cx`: the answer goes
+    /// out as a confirmation request or a status.
+    fn close_via(&mut self, key: ItemKey, cx: &mut Cx) -> Outcome {
+        match self.request_close(key) {
+            Ok(tokens) => {
+                for token in tokens {
+                    cx.go(crate::app::Act::ConfirmClose(token));
+                }
+            }
+            Err(notice) => cx.status(notice),
+        }
+        Outcome::Changed
+    }
+
+    /// Refreshes every history tab against `history`.
+    pub fn refresh_history(&mut self, history: &History) {
+        let connection = self.connection.name.clone();
+        let keys: Vec<ItemKey> = self
+            .ws
+            .iter()
+            .filter(|(_, tab)| matches!(tab, WorkTab::History(_)))
+            .map(|(key, _)| key)
+            .collect();
+        for key in keys {
+            let _ = self.modify(key, |tab| {
+                if let WorkTab::History(h) = tab {
+                    h.refresh(history, &connection);
+                }
+            });
         }
     }
 
-    pub fn active_tab(&self) -> Option<&WorkTab> {
-        self.tabs.get(self.active)
+    /// Polls every running query tab and returns the history entries the
+    /// statements made. A run that ends here ends its workspace operation.
+    /// Polling goes through the view facet: it never advances a tab's content
+    /// revision, so a close prompt that is open stays valid.
+    pub fn tick_queries(&mut self) -> Vec<crate::model::HistoryEntry> {
+        let conn = self.connection.name.clone();
+        let db = self.catalog.database.clone();
+        let running: Vec<ItemKey> = self
+            .ws
+            .iter()
+            .filter(|(_, tab)| matches!(tab, WorkTab::Query(q) if q.is_running()))
+            .map(|(key, _)| key)
+            .collect();
+        let mut entries = vec![];
+        for key in running {
+            let src = Source {
+                catalog: &self.catalog,
+                store: &self.store,
+            };
+            let Ok((made, still_running)) = self
+                .ws
+                .view_mut(key)
+                .map(|mut view| view.tick(src, &conn, &db))
+            else {
+                continue;
+            };
+            entries.extend(made);
+            if !still_running && let Some(token) = self.ws.running(key) {
+                let _ = self.ws.end_operation(token, |_| ());
+            }
+        }
+        entries
     }
-    pub fn active_tab_mut(&mut self) -> Option<&mut WorkTab> {
-        self.tabs.get_mut(self.active)
+
+    /// Starts a query run in tab `key` under a workspace operation, so closing
+    /// or replacing the tab names the run it cancels.
+    pub fn start_query(
+        &mut self,
+        key: ItemKey,
+        statements: Vec<(String, std::ops::Range<usize>)>,
+        all: bool,
+        explain: Option<bool>,
+    ) -> bool {
+        let Ok((_, resp)) = self.ws.begin_operation(key) else {
+            return false;
+        };
+        let _ = self.settle(resp);
+        let started = self.modify(key, |tab| {
+            if let WorkTab::Query(q) = tab {
+                q.start(statements, all, explain);
+            }
+        });
+        if started.is_none() {
+            let _ = self.ws.cancel_operation(key);
+            return false;
+        }
+        true
+    }
+
+    /// Cancels the first running query, if any.
+    pub fn cancel_running_query(&mut self) -> bool {
+        let keys: Vec<ItemKey> = self
+            .ws
+            .iter()
+            .filter(|(_, tab)| matches!(tab, WorkTab::Query(q) if q.is_running()))
+            .map(|(key, _)| key)
+            .collect();
+        keys.into_iter().any(|key| self.cancel_query(key))
+    }
+
+    /// Cancels the running query of tab `key`, if any.
+    pub fn cancel_query(&mut self, key: ItemKey) -> bool {
+        let cancelled = self
+            .modify(key, |tab| match tab {
+                WorkTab::Query(q) => q.cancel(),
+                _ => false,
+            })
+            .unwrap_or(false);
+        if cancelled {
+            let _ = self.ws.cancel_operation(key);
+        }
+        cancelled
     }
 
     pub fn primary_focus(&self) -> Option<WidgetId> {
-        match self.tabs.get(self.active)? {
-            WorkTab::Table(t) => Some(t.grid.id),
-            WorkTab::Query(q) => Some(q.editor.id),
-            WorkTab::History(h) => Some(h.list.id),
-        }
+        self.active_tab().map(WorkTab::primary_focus)
     }
 
     pub fn is_editing(&self) -> bool {
@@ -554,8 +1053,7 @@ impl Workbench {
     }
 
     pub fn pending_total(&self) -> usize {
-        self.tabs
-            .iter()
+        self.tabs()
             .map(|t| {
                 if let WorkTab::Table(t) = t {
                     t.dirty_count()
@@ -567,8 +1065,7 @@ impl Workbench {
     }
 
     pub fn unsaved_queries(&self) -> usize {
-        self.tabs
-            .iter()
+        self.tabs()
             .filter(|t| matches!(t, WorkTab::Query(q) if q.dirty()))
             .count()
     }
@@ -592,7 +1089,7 @@ impl Workbench {
     }
 
     pub fn running(&self) -> Option<u32> {
-        self.tabs.iter().find_map(|t| match t {
+        self.tabs().find_map(|t| match t {
             WorkTab::Query(q) => q.running.as_ref().map(|r| r.started_ticks * 80),
             _ => None,
         })
@@ -642,6 +1139,10 @@ impl Workbench {
     }
 
     pub fn on_key(&mut self, key: &Key, cx: &mut Cx, history: &mut History) -> Outcome {
+        self.dispatch_key(key, cx, history)
+    }
+
+    fn dispatch_key(&mut self, key: &Key, cx: &mut Cx, history: &mut History) -> Outcome {
         let Some(f) = cx.focus.current() else {
             return Outcome::Ignored;
         };
@@ -706,17 +1207,26 @@ impl Workbench {
                 cx.status("Explorer refreshed");
                 return Outcome::Changed;
             }
-            let (o, ev) = self.explorer.on_key(key);
-            if let Some(TreeAction::Expand(path)) = ev {
-                self.pending_loads.push((path, 3));
+            let (o, actions) = self.explorer.on_key(key).into_parts();
+            for action in actions {
+                if let TreeAction::Expand(path) = action {
+                    self.pending_loads.push((path, 3));
+                }
             }
             return o;
         }
         if f == self.strip.id {
             let (o, ev) = self.strip.on_key(key);
             match ev {
-                Some(TabAction::Activated(i)) => self.set_active(i),
-                Some(TabAction::Close(i)) => return self.request_close(i, cx),
+                Some(TabAction::Activated(i)) => {
+                    self.activate_index(i);
+                }
+                Some(TabAction::Close(i)) => {
+                    return match self.ws.key_at(i) {
+                        Some(tab) => self.close_via(tab, cx),
+                        None => Outcome::Ignored,
+                    };
+                }
                 Some(TabAction::New) => {
                     self.new_query("");
                     if let Some(pf) = self.primary_focus() {
@@ -727,15 +1237,44 @@ impl Workbench {
             }
             return o;
         }
+        let Some(active) = self.ws.active_key() else {
+            return Outcome::Ignored;
+        };
         let cat = &self.catalog;
         let conn = self.connection.name.clone();
         let db = self.catalog.database.clone();
-        match self.tabs.get_mut(self.active) {
-            Some(WorkTab::Table(t)) => Self::table_key(t, key, f, cx, cat, &conn, &db, history),
-            Some(WorkTab::Query(q)) => q.on_key(key, cx, cat),
-            Some(WorkTab::History(h)) => Self::history_key(h, key, f, cx, history, &conn),
-            None => Outcome::Ignored,
+        let edited = self.ws.update(active, |tab| match tab {
+            WorkTab::Table(t) => Self::table_key(t, key, f, cx, cat, &conn, &db, history),
+            WorkTab::Query(q) => q.on_key(
+                key,
+                cx,
+                Source {
+                    catalog: cat,
+                    store: &self.store,
+                },
+            ),
+            WorkTab::History(h) => Self::history_key(h, key, f, cx, history, &conn),
+        });
+        match edited {
+            Ok((out, resp)) => {
+                let _ = self.settle(resp);
+                out
+            }
+            Err(_) => self.navigate_locked(active, key, cx),
         }
+    }
+
+    /// A close-save owns the tab: mutation keys are refused with the saving
+    /// notice, while view-only navigation still reaches the tab.
+    fn navigate_locked(&mut self, active: ItemKey, key: &Key, cx: &mut Cx) -> Outcome {
+        let Ok(mut view) = self.ws.view_mut(active) else {
+            return Outcome::Ignored;
+        };
+        if view.navigate(key, cx.focus.current()) {
+            return Outcome::Changed;
+        }
+        cx.status(SAVING_NOTICE);
+        Outcome::Consumed
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -761,38 +1300,15 @@ impl Workbench {
             return o;
         }
         if f == t.structure.id {
-            return t.structure.on_key(key).0;
+            return t.structure.on_key(key).outcome();
         }
         if f == t.ddl.id {
             return t.ddl.on_key(key);
         }
         if f == t.chips.id {
             let (o, ev) = t.chips.on_key(key);
-            match ev {
-                Some(junie_tui::widgets::chips::ChipAction::Remove(i)) => {
-                    t.filters.remove(i);
-                    t.load(cat);
-                    cx.status("Filter removed");
-                }
-                Some(junie_tui::widgets::chips::ChipAction::Toggle(i)) => {
-                    t.filters[i].enabled = !t.filters[i].enabled;
-                    t.load(cat);
-                }
-                Some(junie_tui::widgets::chips::ChipAction::Activate(i)) => {
-                    cx.go(crate::app::Act::EditFilter(Some(i)));
-                }
-                Some(junie_tui::widgets::chips::ChipAction::Add) => {
-                    cx.go(crate::app::Act::EditFilter(None))
-                }
-                Some(junie_tui::widgets::chips::ChipAction::ClearAll) => {
-                    t.filters.clear();
-                    t.load(cat);
-                }
-                Some(junie_tui::widgets::chips::ChipAction::Lead) => {
-                    t.match_all = !t.match_all;
-                    t.load(cat);
-                }
-                None => {}
+            if let Some(ev) = ev {
+                Self::chip_event(t, ev, cx);
             }
             return o;
         }
@@ -806,13 +1322,36 @@ impl Workbench {
             }
         }
         if f == t.grid.id {
-            let (o, ev) = t.grid.on_key(key);
-            if let Some(ev) = ev {
-                return Self::grid_event(t, ev, cx, cat, conn, db, history).or(o);
+            let (o, actions) = t.grid.on_key(key).into_parts();
+            let mut out = o;
+            for ev in actions {
+                out = Self::grid_event(t, ev, cx, cat, conn, db, history).or(out);
             }
-            return o;
+            return out;
         }
         Outcome::Ignored
+    }
+
+    /// Asks the app to change the table's rows or controls. The grid and chips
+    /// may have moved ahead of the change, so they go back to the shown view;
+    /// installing the change moves them together with the rows.
+    fn request_change(t: &mut TableTab, cx: &mut Cx, change: TableChange) {
+        t.restore_view_controls();
+        cx.go(crate::app::Act::TableChange(change));
+    }
+
+    /// The one handler for a filter chip gesture, from the keyboard or the pointer.
+    fn chip_event(t: &mut TableTab, ev: junie_tui::widgets::chips::ChipAction, cx: &mut Cx) {
+        use junie_tui::widgets::chips::ChipAction;
+        match ev {
+            ChipAction::Activate(i) => cx.go(crate::app::Act::EditFilter(Some(i))),
+            ChipAction::Add => cx.go(crate::app::Act::EditFilter(None)),
+            other => {
+                if let Some(change) = TableChange::from_chip(t, &other) {
+                    Self::request_change(t, cx, change);
+                }
+            }
+        }
     }
 
     fn grid_event(
@@ -827,32 +1366,16 @@ impl Workbench {
         use junie_tui::widgets::grid::GridAction;
         match ev {
             GridAction::SortRequested(s) => {
-                t.sort = s;
-                t.load(cat);
-                match s {
-                    Some((c, d)) => cx.status(format!(
-                        "Sorted by {} {}",
-                        t.columns[c].0,
-                        if d == SortDir::Asc {
-                            "ascending"
-                        } else {
-                            "descending"
-                        }
-                    )),
-                    None => cx.status("Sort cleared"),
-                }
+                let change = TableChange::sort(t, s);
+                Self::request_change(t, cx, change);
             }
             GridAction::FetchMore => {
                 cx.status("Showing the first 500 rows · add a LIMIT or filter to narrow");
                 t.grid.set_loading(false);
             }
             GridAction::Refresh => {
-                if t.dirty_count() > 0 {
-                    cx.go(crate::app::Act::ConfirmDiscard);
-                } else {
-                    t.load(cat);
-                    cx.status("Refreshed");
-                }
+                let change = TableChange::refresh(t, "Refreshed");
+                Self::request_change(t, cx, change);
             }
             GridAction::CommitRequested => cx.go(crate::app::Act::CommitPending),
             GridAction::DiscardRequested => cx.go(crate::app::Act::ConfirmDiscard),
@@ -863,9 +1386,10 @@ impl Workbench {
             }
             GridAction::OpenFilters => cx.go(crate::app::Act::EditFilter(None)),
             GridAction::ClearFilters => {
-                t.filters.clear();
-                t.load(cat);
-                cx.status("Filters cleared");
+                let mut next = t.view().clone();
+                next.filters.clear();
+                let change = TableChange::filters(t, next, Some("Filters cleared".to_owned()));
+                Self::request_change(t, cx, change);
             }
             GridAction::FollowReference { row, col } => {
                 let name = t.columns[col].0.clone();
@@ -873,7 +1397,7 @@ impl Workbench {
                 if let Some(target) = cat
                     .find(Some(&t.schema), &name)
                     .and(None::<String>)
-                    .or_else(|| t.grid.columns[col].references.clone())
+                    .or_else(|| t.grid.columns()[col].references.clone())
                 {
                     cx.go(crate::app::Act::OpenTableFiltered(target, "id".into(), v));
                 }
@@ -940,82 +1464,75 @@ impl Workbench {
                     h.refresh(history, conn);
                     return Outcome::Changed;
                 }
-                KeyCode::Enter => {
-                    if let Some(e) = h.current_entry(history) {
-                        cx.go(crate::app::Act::OpenQuery(e.sql.clone(), false));
-                    }
-                    return Outcome::Changed;
-                }
-                KeyCode::Char('r') => {
-                    if let Some(e) = h.current_entry(history) {
-                        cx.go(crate::app::Act::OpenQuery(e.sql.clone(), true));
-                    }
-                    return Outcome::Changed;
-                }
-                KeyCode::Char('y') => {
-                    if let Some(e) = h.current_entry(history) {
-                        cx.copy_as(e.sql.clone(), "query");
-                    }
-                    return Outcome::Changed;
-                }
+                KeyCode::Enter => return h.run_selected(HistoryCommand::Open, history, cx),
+                KeyCode::Char('r') => return h.run_selected(HistoryCommand::Rerun, history, cx),
+                KeyCode::Char('y') => return h.run_selected(HistoryCommand::Copy, history, cx),
                 _ => {}
             }
             let o = h.list.on_key(key);
-            h.sync_detail_public(history);
+            h.sync_detail(history);
             return o;
         }
         if f == h.detail.id {
             return h.detail.on_key(key).0;
         }
-        let mut hit: Option<(Outcome, bool, bool)> = None;
-        for (b, run) in [(&mut h.open_btn, false), (&mut h.rerun_btn, true)] {
+        let mut hit: Option<(Outcome, bool, HistoryCommand)> = None;
+        for (b, cmd) in [
+            (&mut h.open_btn, HistoryCommand::Open),
+            (&mut h.rerun_btn, HistoryCommand::Rerun),
+            (&mut h.copy_btn, HistoryCommand::Copy),
+        ] {
             if f == b.id {
                 let (o, act) = b.on_key(key);
-                hit = Some((o, act, run));
+                hit = Some((o, act, cmd));
                 break;
             }
         }
-        if let Some((o, act, run)) = hit {
-            if act && let Some(e) = h.current_entry(history) {
-                cx.go(crate::app::Act::OpenQuery(e.sql.clone(), run));
-            }
-            return o;
-        }
-        if f == h.copy_btn.id {
-            let (o, act) = h.copy_btn.on_key(key);
-            if act && let Some(e) = h.current_entry(history) {
-                cx.copy_as(e.sql.clone(), "query");
+        if let Some((o, act, cmd)) = hit {
+            if act {
+                h.run_selected(cmd, history, cx);
             }
             return o;
         }
         Outcome::Ignored
     }
 
-    fn request_close(&mut self, i: usize, cx: &mut Cx) -> Outcome {
-        if self.tabs.get(i).is_some_and(|t| t.dirty()) {
-            cx.go(crate::app::Act::ConfirmCloseTab(i));
-        } else {
-            self.close_tab(i);
-        }
-        Outcome::Changed
-    }
-
-    fn pointer_fields(&mut self) -> Vec<&mut dyn PointerField> {
-        let mut v: Vec<&mut dyn PointerField> = vec![&mut self.explorer_filter];
-        if let Some(WorkTab::History(h)) = self.tabs.get_mut(self.active) {
-            v.push(&mut h.search);
-        }
-        v
+    /// Runs `f` with the pointer fields a press, click or drag may reach: the
+    /// explorer filter, and the history search when the active tab is one.
+    fn with_pointer_fields<R>(&mut self, f: impl FnOnce(&mut [&mut dyn PointerField]) -> R) -> R {
+        let search = self.ws.active_key().filter(|key| {
+            !self.ws.save_locked(*key) && matches!(self.ws.get(*key), Some(WorkTab::History(_)))
+        });
+        let filter = &mut self.explorer_filter;
+        let Some(key) = search else {
+            return f(&mut [filter]);
+        };
+        let (out, resp) = self
+            .ws
+            .update(key, |tab| match tab {
+                WorkTab::History(h) => f(&mut [filter, &mut h.search]),
+                _ => f(&mut [filter]),
+            })
+            .expect("an open tab that no save holds");
+        let _ = self.settle(resp);
+        out
     }
 
     pub fn pointer(&mut self, ev: &PointerEvent, cx: &mut Cx, history: &mut History) -> Outcome {
-        let facts = match self.tabs.get_mut(self.active) {
-            Some(WorkTab::History(h)) => Some(&mut h.detail_view),
-            Some(WorkTab::Query(q)) => Some(&mut q.result_facts),
-            _ => None,
-        };
-        if let Some(r) = facts.and_then(|v| v.pointer(ev)) {
-            return r.outcome();
+        self.dispatch_pointer(ev, cx, history)
+    }
+
+    fn dispatch_pointer(
+        &mut self,
+        ev: &PointerEvent,
+        cx: &mut Cx,
+        history: &mut History,
+    ) -> Outcome {
+        if let Some(key) = self.ws.active_key()
+            && let Ok(mut view) = self.ws.view_mut(key)
+            && let Some(o) = view.facts_pointer(ev)
+        {
+            return o;
         }
         if ev.wheel().is_some() {
             return self.wheel(ev);
@@ -1029,6 +1546,25 @@ impl Workbench {
         }
     }
 
+    /// The active tab's pointer handling for `ev`, through the workspace's
+    /// mutation gateway. A tab held by a close-save ignores it.
+    fn edit_active_pointer(
+        &mut self,
+        f: impl FnOnce(&mut WorkTab, &Catalog) -> Outcome,
+    ) -> Outcome {
+        let Some(key) = self.ws.active_key() else {
+            return Outcome::Ignored;
+        };
+        let cat = &self.catalog;
+        match self.ws.update(key, |tab| f(tab, cat)) {
+            Ok((out, resp)) => {
+                let _ = self.settle(resp);
+                out
+            }
+            Err(_) => Outcome::Consumed,
+        }
+    }
+
     fn press(&mut self, ev: &PointerEvent) -> Outcome {
         let (id, pos) = (ev.id, ev.pos());
         if id == self.explorer_seam.id {
@@ -1037,62 +1573,67 @@ impl Workbench {
                 .on_press(&self.explorer_split, area, 1, pos);
             return Outcome::Consumed;
         }
-        match self.tabs.get_mut(self.active) {
-            Some(WorkTab::Query(q)) if id == q.seam.id => {
-                q.seam.on_press(&q.split, q.split_area, 1, pos);
-                return Outcome::Consumed;
-            }
-            Some(WorkTab::History(h)) if id == h.seam.id => {
-                h.seam.on_press(&h.split, h.split_area, 2, pos);
-                return Outcome::Consumed;
-            }
-            _ => {}
+        if let Some(key) = self.ws.active_key()
+            && let Ok(mut view) = self.ws.view_mut(key)
+            && view.seam_press(id, pos)
+        {
+            return Outcome::Consumed;
         }
-        if let Some(o) = route_press(&mut self.pointer_fields(), id, pos, ev.count()) {
+        let count = ev.count();
+        if let Some(o) = self.with_pointer_fields(|fields| route_press(fields, id, pos, count)) {
             return o;
         }
         if let Some(r) = self.explorer.route(ev) {
             return r.outcome();
         }
-        match self.tabs.get_mut(self.active) {
-            Some(WorkTab::Table(t)) => t
+        self.edit_active_pointer(|tab, _| match tab {
+            WorkTab::Table(t) => t
                 .grid
                 .route(ev)
                 .map(|r| r.outcome())
                 .or_else(|| t.structure.route(ev).map(|r| r.outcome()))
                 .or_else(|| t.ddl.route(ev).map(|r| r.outcome()))
                 .unwrap_or(Outcome::Ignored),
-            Some(WorkTab::Query(q)) => q.press(ev),
-            Some(WorkTab::History(h)) => h
+            WorkTab::Query(q) => q.press(ev),
+            WorkTab::History(h) => h
                 .list
                 .route(ev)
                 .map(|r| r.outcome())
                 .or_else(|| h.detail.route(ev).map(|r| r.outcome()))
                 .unwrap_or(Outcome::Ignored),
-            None => Outcome::Ignored,
-        }
+        })
     }
 
     fn middle(&mut self, ev: &PointerEvent, cx: &mut Cx) -> Outcome {
         if let Some(r) = self.strip.route(ev) {
-            let (o, act) = r.into_parts();
-            return match act {
-                Some(TabAction::Close(i)) => self.request_close(i, cx),
-                _ => o,
-            };
+            let (mut out, actions) = r.into_parts();
+            for act in actions {
+                if let TabAction::Close(i) = act
+                    && let Some(key) = self.ws.key_at(i)
+                {
+                    out = self.close_via(key, cx);
+                }
+            }
+            return out;
         }
-        match self.tabs.get_mut(self.active) {
-            Some(WorkTab::Query(q)) => q.middle(ev),
+        self.edit_active_pointer(|tab, _| match tab {
+            WorkTab::Query(q) => q.middle(ev),
             _ => Outcome::Ignored,
-        }
+        })
     }
 
-    pub fn active_grid_any_mut(&mut self) -> Option<&mut junie_tui::widgets::grid::DataGrid> {
-        match self.tabs.get_mut(self.active)? {
-            WorkTab::Table(t) => Some(&mut t.grid),
-            WorkTab::Query(q) => q.active_grid_mut(),
+    /// Runs `f` on the grid the active tab shows (a table's rows or a query's
+    /// active result), through the mutation gateway.
+    pub fn modify_active_grid<R>(
+        &mut self,
+        f: impl FnOnce(&mut junie_tui::widgets::grid::DataGrid) -> R,
+    ) -> Option<R> {
+        self.modify_active(|tab| match tab {
+            WorkTab::Table(t) => Some(f(&mut t.grid)),
+            WorkTab::Query(q) => q.active_grid_mut().map(f),
             WorkTab::History(_) => None,
-        }
+        })
+        .flatten()
     }
 
     pub fn on_header_action(
@@ -1102,27 +1643,37 @@ impl Workbench {
         cx: &mut Cx,
         history: &mut History,
     ) -> Outcome {
-        let cat = &self.catalog;
+        self.header_action(col, action, cx, history)
+    }
+
+    fn header_action(
+        &mut self,
+        col: usize,
+        action: junie_tui::ui::columns::HeaderAction,
+        cx: &mut Cx,
+        history: &mut History,
+    ) -> Outcome {
         let conn = self.connection.name.clone();
         let db = self.catalog.database.clone();
-        match self.tabs.get_mut(self.active) {
-            Some(WorkTab::Table(t)) => {
+        self.edit_active_pointer(|tab, cat| match tab {
+            WorkTab::Table(t) => {
                 let (o, ev) = t.grid.on_header_action(col, action);
                 match ev {
                     Some(ev) => Self::grid_event(t, ev, cx, cat, &conn, &db, history).or(o),
                     None => o,
                 }
             }
-            Some(WorkTab::Query(q)) => q
+            WorkTab::Query(q) => q
                 .active_grid_mut()
                 .map_or(Outcome::Ignored, |g| g.on_header_action(col, action).0),
-            _ => Outcome::Ignored,
-        }
+            WorkTab::History(_) => Outcome::Ignored,
+        })
     }
 
     fn click(&mut self, ev: &PointerEvent, cx: &mut Cx, history: &mut History) -> Outcome {
         let (id, pos) = (ev.id, ev.pos());
-        if let Some(o) = route_click(&mut self.pointer_fields(), id, pos, ev.count()) {
+        let count = ev.count();
+        if let Some(o) = self.with_pointer_fields(|fields| route_click(fields, id, pos, count)) {
             cx.focus.focus(id);
             return o;
         }
@@ -1146,9 +1697,11 @@ impl Workbench {
                     return Outcome::Changed;
                 }
             }
-            let (o, act) = self.explorer.pointer(ev).into_parts();
-            if let Some(TreeAction::Expand(path)) = act {
-                self.pending_loads.push((path, 3));
+            let (o, actions) = self.explorer.pointer(ev).into_parts();
+            for act in actions {
+                if let TreeAction::Expand(path) = act {
+                    self.pending_loads.push((path, 3));
+                }
             }
             return o;
         }
@@ -1161,38 +1714,43 @@ impl Workbench {
         }
         if let Some(r) = self.strip.route(ev) {
             cx.focus.focus(self.strip.id);
-            let (o, act) = r.into_parts();
-            match act {
-                Some(TabAction::Activated(i)) => {
-                    self.set_active(i);
-                    if let Some(pf) = self.primary_focus() {
-                        cx.focus.focus(pf);
+            let (o, actions) = r.into_parts();
+            for act in actions {
+                match act {
+                    TabAction::Activated(i) => {
+                        self.activate_index(i);
+                        if let Some(pf) = self.primary_focus() {
+                            cx.focus.focus(pf);
+                        }
+                    }
+                    TabAction::Close(i) => {
+                        return match self.ws.key_at(i) {
+                            Some(tab) => self.close_via(tab, cx),
+                            None => Outcome::Ignored,
+                        };
+                    }
+                    TabAction::New => {
+                        self.new_query("");
+                        if let Some(pf) = self.primary_focus() {
+                            cx.focus.focus(pf);
+                        }
                     }
                 }
-                Some(TabAction::Close(i)) => return self.request_close(i, cx),
-                Some(TabAction::New) => {
-                    self.new_query("");
-                    if let Some(pf) = self.primary_focus() {
-                        cx.focus.focus(pf);
-                    }
-                }
-                None => {}
             }
             return o;
         }
-        let cat = &self.catalog;
         let conn = self.connection.name.clone();
         let db = self.catalog.database.clone();
-        match self.tabs.get_mut(self.active) {
-            Some(WorkTab::Table(t)) => {
+        self.edit_active_pointer(|tab, cat| match tab {
+            WorkTab::Table(t) => {
                 if let Some(r) = t.mode_tabs.route(ev) {
                     cx.focus.focus(t.mode_tabs.id);
                     return r.outcome();
                 }
                 if let Some(r) = t.structure_tabs.route(ev) {
                     cx.focus.focus(t.structure_tabs.id);
-                    let (o, act) = r.into_parts();
-                    if act.is_some() {
+                    let (o, actions) = r.into_parts();
+                    if !actions.is_empty() {
                         t.structure_refresh(cat);
                     }
                     return o;
@@ -1206,23 +1764,9 @@ impl Workbench {
                 }
                 if let Some(r) = t.chips.route(ev) {
                     cx.focus.focus(t.chips.id);
-                    let (o, act) = r.into_parts();
-                    match act {
-                        Some(junie_tui::widgets::chips::ChipAction::Remove(i)) => {
-                            t.filters.remove(i);
-                            t.load(cat);
-                        }
-                        Some(junie_tui::widgets::chips::ChipAction::Activate(i)) => {
-                            cx.go(crate::app::Act::EditFilter(Some(i)))
-                        }
-                        Some(junie_tui::widgets::chips::ChipAction::Add) => {
-                            cx.go(crate::app::Act::EditFilter(None))
-                        }
-                        Some(junie_tui::widgets::chips::ChipAction::Lead) => {
-                            t.match_all = !t.match_all;
-                            t.load(cat);
-                        }
-                        _ => {}
+                    let (o, actions) = r.into_parts();
+                    for act in actions {
+                        Self::chip_event(t, act, cx);
                     }
                     return o;
                 }
@@ -1230,16 +1774,17 @@ impl Workbench {
                     cx.focus.focus(t.grid.id);
                 }
                 if let Some(r) = t.grid.route(ev) {
-                    let (o, act) = r.into_parts();
-                    if let Some(act) = act {
-                        return Self::grid_event(t, act, cx, cat, &conn, &db, history).or(o);
+                    let (o, actions) = r.into_parts();
+                    let mut out = o;
+                    for act in actions {
+                        out = Self::grid_event(t, act, cx, cat, &conn, &db, history).or(out);
                     }
-                    return o;
+                    return out;
                 }
                 Outcome::Ignored
             }
-            Some(WorkTab::Query(q)) => q.click(ev, cx, cat),
-            Some(WorkTab::History(h)) => {
+            WorkTab::Query(q) => q.click(ev, cx, cat),
+            WorkTab::History(h) => {
                 if id == h.seam.id {
                     return h.seam.on_click(&mut h.split, ev.count());
                 }
@@ -1248,7 +1793,7 @@ impl Workbench {
                         cx.focus.focus(h.list.id);
                     }
                     let o = h.list.pointer(ev).outcome();
-                    h.sync_detail_public(history);
+                    h.sync_detail(history);
                     return o;
                 }
                 if ev.on(h.detail.id) {
@@ -1257,34 +1802,28 @@ impl Workbench {
                     }
                     return h.detail.pointer(ev).outcome();
                 }
-                let mut hit: Option<bool> = None;
-                for (b, run) in [(&mut h.open_btn, false), (&mut h.rerun_btn, true)] {
+                let mut hit: Option<HistoryCommand> = None;
+                for (b, cmd) in [
+                    (&mut h.open_btn, HistoryCommand::Open),
+                    (&mut h.rerun_btn, HistoryCommand::Rerun),
+                    (&mut h.copy_btn, HistoryCommand::Copy),
+                ] {
                     if b.id == id && b.on_click() {
-                        hit = Some(run);
+                        hit = Some(cmd);
                         break;
                     }
                 }
-                if let Some(run) = hit {
-                    if let Some(e) = h.current_entry(history) {
-                        cx.go(crate::app::Act::OpenQuery(e.sql.clone(), run));
-                    }
-                    return Outcome::Changed;
+                match hit {
+                    Some(cmd) => h.run_selected(cmd, history, cx),
+                    None => Outcome::Ignored,
                 }
-                if h.copy_btn.id == id && h.copy_btn.on_click() {
-                    if let Some(e) = h.current_entry(history) {
-                        cx.copy_as(e.sql.clone(), "query");
-                    }
-                    return Outcome::Changed;
-                }
-                Outcome::Ignored
             }
-            None => Outcome::Ignored,
-        }
+        })
     }
 
     fn drag(&mut self, ev: &PointerEvent) -> Outcome {
         let (pressed, pos) = (ev.id, ev.pos());
-        if let Some(o) = route_drag(&mut self.pointer_fields(), pressed, pos) {
+        if let Some(o) = self.with_pointer_fields(|fields| route_drag(fields, pressed, pos)) {
             return o;
         }
         if let Some(r) = self.explorer.route(ev) {
@@ -1297,28 +1836,28 @@ impl Workbench {
                 .explorer_seam
                 .on_drag(&mut self.explorer_split, area, 1, pos);
         }
-        match self.tabs.get_mut(self.active) {
-            Some(WorkTab::Table(t)) => t
+        if let Some(key) = self.ws.active_key()
+            && let Ok(mut view) = self.ws.view_mut(key)
+            && let Some(o) = view.seam_drag(pressed, pos)
+        {
+            return o;
+        }
+        self.edit_active_pointer(|tab, _| match tab {
+            WorkTab::Table(t) => t
                 .grid
                 .route(ev)
                 .map(|r| r.outcome())
                 .or_else(|| t.structure.route(ev).map(|r| r.outcome()))
                 .or_else(|| t.ddl.route(ev).map(|r| r.outcome()))
                 .unwrap_or(Outcome::Ignored),
-            Some(WorkTab::Query(q)) => q.drag(ev),
-            Some(WorkTab::History(h)) => {
-                if pressed == h.seam.id {
-                    let area = h.split_area;
-                    return h.seam.on_drag(&mut h.split, area, 2, pos);
-                }
-                h.list
-                    .route(ev)
-                    .map(|r| r.outcome())
-                    .or_else(|| h.detail.route(ev).map(|r| r.outcome()))
-                    .unwrap_or(Outcome::Ignored)
-            }
-            None => Outcome::Ignored,
-        }
+            WorkTab::Query(q) => q.drag(ev),
+            WorkTab::History(h) => h
+                .list
+                .route(ev)
+                .map(|r| r.outcome())
+                .or_else(|| h.detail.route(ev).map(|r| r.outcome()))
+                .unwrap_or(Outcome::Ignored),
+        })
     }
 
     fn wheel(&mut self, ev: &PointerEvent) -> Outcome {
@@ -1335,41 +1874,28 @@ impl Workbench {
                 self.explorer.pointer(ev).outcome()
             };
         }
-        match self.tabs.get_mut(self.active) {
-            Some(WorkTab::Table(t)) => t
-                .grid
-                .route(ev)
-                .map(|r| r.outcome())
-                .or_else(|| t.structure.route(ev).map(|r| r.outcome()))
-                .or_else(|| t.ddl.route(ev).map(|r| r.outcome()))
-                .unwrap_or(Outcome::Ignored),
-            Some(WorkTab::Query(q)) => q.wheel(ev),
-            Some(WorkTab::History(h)) => {
-                if ev.on(h.list.id) {
-                    return if horizontal {
-                        Outcome::Consumed
-                    } else {
-                        h.list.pointer(ev).outcome()
-                    };
-                }
-                h.detail
-                    .route(ev)
-                    .map(|r| r.outcome())
-                    .unwrap_or(Outcome::Ignored)
-            }
-            None => Outcome::Ignored,
+        let Some(key) = self.ws.active_key() else {
+            return Outcome::Ignored;
+        };
+        match self.ws.view_mut(key) {
+            Ok(mut view) => view.wheel(ev),
+            Err(_) => Outcome::Ignored,
         }
     }
 
     pub fn on_blur(&mut self, ch: junie_tui::core::focus::FocusChange) -> Outcome {
         use junie_tui::core::focus::forward_blur;
         let mut out = forward_blur(ch, &mut [&mut self.explorer_filter]);
-        for tab in &mut self.tabs {
-            out = out.or(match tab {
+        for key in self.ws.ordered_keys().to_vec() {
+            if !self.ws.get(key).is_some_and(WorkTab::is_editing) {
+                continue;
+            }
+            let blurred = self.modify(key, |tab| match tab {
                 WorkTab::Table(t) => forward_blur(ch, &mut [&mut t.grid, &mut t.structure]),
                 WorkTab::History(h) => forward_blur(ch, &mut [&mut h.search]),
                 WorkTab::Query(_) => Outcome::Ignored,
             });
+            out = out.or(blurred.unwrap_or(Outcome::Ignored));
         }
         out
     }
@@ -1378,12 +1904,11 @@ impl Workbench {
         if self.explorer_filter.editing {
             return self.explorer_filter.on_paste(text);
         }
-        match self.tabs.get_mut(self.active) {
-            Some(WorkTab::Table(t)) => t.grid.on_paste(text),
-            Some(WorkTab::Query(q)) => q.on_paste(text),
-            Some(WorkTab::History(h)) => h.search.on_paste(text),
-            None => Outcome::Ignored,
-        }
+        self.edit_active_pointer(|tab, _| match tab {
+            WorkTab::Table(t) => t.grid.on_paste(text),
+            WorkTab::Query(q) => q.on_paste(text),
+            WorkTab::History(h) => h.search.on_paste(text),
+        })
     }
 
     pub fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, history: &History) {
@@ -1459,12 +1984,16 @@ impl Workbench {
             }
             return;
         }
-        let Some(active) = self.tabs.get(self.active) else {
+        let Some(active_key) = self.ws.active_key() else {
             let panel = Panel::framed(None);
             let inner = panel.render(main, buf, t);
             junie_tui::widgets::empty::render(inner, buf, t, &EmptyState::new("No open tabs").hint("Enter on a table in the explorer opens it · Ctrl+T starts a query · Ctrl+O opens anything"), t.canvas);
             return;
         };
+        let Some(active) = self.ws.get(active_key) else {
+            return;
+        };
+        let preview = self.is_preview(active_key);
         let title = match active {
             WorkTab::Table(tt) => format!("{} › {}", tt.schema, tt.name),
             WorkTab::Query(q) => q.name.clone(),
@@ -1476,7 +2005,7 @@ impl Workbench {
         let meta = match active {
             WorkTab::Table(tt) => format!(
                 "{} · {} cols",
-                if tt.preview { "preview" } else { "" },
+                if preview { "preview" } else { "" },
                 tt.columns.len()
             )
             .trim_start_matches(" · ")
@@ -1498,23 +2027,8 @@ impl Workbench {
         let bg = panel.bg(t);
         let inner = panel.render(main, buf, t);
         let conn = self.connection.name.clone();
-        match self.tabs.get_mut(self.active) {
-            Some(WorkTab::Table(tt)) => tt.render(inner, buf, ctx, bg),
-            Some(WorkTab::Query(q)) => q.render(inner, buf, ctx, bg),
-            Some(WorkTab::History(h)) => h.render(inner, buf, ctx, bg, history, &conn),
-            None => {}
-        }
-    }
-}
-
-impl HistoryTab {
-    pub fn sync_detail_public(&mut self, history: &History) {
-        let text = self
-            .current_entry(history)
-            .map(|e| e.sql.clone())
-            .unwrap_or_default();
-        if self.detail.text() != text {
-            self.detail.set_text(&text);
+        if let Ok(mut view) = self.ws.view_mut(active_key) {
+            view.render(inner, buf, ctx, bg, history, &conn);
         }
     }
 }

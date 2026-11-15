@@ -7,7 +7,7 @@ use ratatui::style::Modifier;
 
 use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::hit::Axis;
-use junie_tui::core::id::WidgetId;
+use junie_tui::core::id::{ItemKey, WidgetId};
 use junie_tui::core::keymap::hint_key;
 use junie_tui::core::pointer::{MouseTarget, PointerEvent};
 use junie_tui::theme::{StatusKind, SyntaxTone, Tone};
@@ -21,7 +21,8 @@ use junie_tui::widgets::code::{CodeEditor, Diagnostic, EditorAction, Severity};
 use junie_tui::widgets::completion::{Completion, CompletionAction};
 use junie_tui::widgets::empty::EmptyState;
 use junie_tui::widgets::grid::{
-    CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridCmd, GridRows, RowTotal,
+    CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridChangeSet, GridCmd, GridCommitError,
+    GridCommitFailure, GridCommitToken, GridDataError, GridRows, RowTotal,
 };
 use junie_tui::widgets::input::TextInput;
 use junie_tui::widgets::keyhint::{Hint, hint};
@@ -40,6 +41,8 @@ use crate::app::Cx;
 use crate::db::{Catalog, ColType, Table, Value};
 use crate::model::{self, History, HistoryEntry, HistorySource};
 use crate::sql::{self, PlanNode, Statement};
+use crate::store::{Source, TableId};
+use crate::workbench::WorkTab;
 
 const ALT_D: junie_tui::core::event::Key = junie_tui::core::event::Key {
     code: KeyCode::Char('d'),
@@ -187,74 +190,145 @@ impl Filter {
         }
     }
 
-    pub fn to_sql(&self) -> String {
-        let c = &self.column;
-        let v = &self.value;
+    /// The one expression that evaluates this filter and renders its SQL.
+    pub fn expression(&self) -> sql::Expr {
+        use sql::{Expr, PredicateOp as P};
+        let leaf = |op: P| {
+            Expr::Leaf(sql::Predicate {
+                column: self.column.clone(),
+                op,
+            })
+        };
+        let v = self.value.clone();
+        let list = || self.value.split(',').map(|s| s.trim().to_owned()).collect();
         match self.op {
-            FilterOp::Eq => format!("{c} = '{v}'"),
-            FilterOp::Ne => format!("{c} != '{v}'"),
-            FilterOp::Contains => format!("{c} LIKE '%{v}%'"),
-            FilterOp::NotContains => format!("{c} NOT LIKE '%{v}%'"),
-            FilterOp::StartsWith => format!("{c} LIKE '{v}%'"),
-            FilterOp::EndsWith => format!("{c} LIKE '%{v}'"),
-            FilterOp::Gt => format!("{c} > '{v}'"),
-            FilterOp::Ge => format!("{c} >= '{v}'"),
-            FilterOp::Lt => format!("{c} < '{v}'"),
-            FilterOp::Le => format!("{c} <= '{v}'"),
-            FilterOp::IsNull => format!("{c} IS NULL"),
-            FilterOp::IsNotNull => format!("{c} IS NOT NULL"),
-            FilterOp::IsEmpty => format!("{c} = ''"),
-            FilterOp::IsNotEmpty => format!("{c} != ''"),
-            FilterOp::In => format!(
-                "{c} IN ({})",
-                v.split(',')
-                    .map(|s| format!("'{}'", s.trim()))
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            ),
-            FilterOp::NotIn => format!(
-                "{c} NOT IN ({})",
-                v.split(',')
-                    .map(|s| format!("'{}'", s.trim()))
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            ),
-            FilterOp::Between => format!("{c} >= '{v}' AND {c} <= '{}'", self.value2),
-            FilterOp::Regex => format!("{c} ~ '{v}'"),
+            FilterOp::Eq => leaf(P::Eq(v)),
+            FilterOp::Ne => leaf(P::Ne(v)),
+            FilterOp::Contains => leaf(P::Contains(v)),
+            FilterOp::NotContains => Expr::Not(Box::new(leaf(P::Contains(v)))),
+            FilterOp::StartsWith => leaf(P::StartsWith(v)),
+            FilterOp::EndsWith => leaf(P::EndsWith(v)),
+            FilterOp::Gt => leaf(P::Gt(v)),
+            FilterOp::Ge => leaf(P::Ge(v)),
+            FilterOp::Lt => leaf(P::Lt(v)),
+            FilterOp::Le => leaf(P::Le(v)),
+            FilterOp::IsNull => leaf(P::IsNull),
+            FilterOp::IsNotNull => leaf(P::IsNotNull),
+            FilterOp::IsEmpty => leaf(P::Eq(String::new())),
+            FilterOp::IsNotEmpty => leaf(P::Ne(String::new())),
+            FilterOp::In => leaf(P::In(list())),
+            FilterOp::NotIn => Expr::Not(Box::new(leaf(P::In(list())))),
+            FilterOp::Between => Expr::All(vec![leaf(P::Ge(v)), leaf(P::Le(self.value2.clone()))]),
+            FilterOp::Regex => leaf(P::Regex(v)),
         }
     }
 
-    pub fn predicates(&self) -> Vec<sql::Predicate> {
-        use sql::Cmp;
-        let p = |cmp: Cmp, value: &str| sql::Predicate {
-            column: self.column.clone(),
-            cmp,
-            value: value.to_owned(),
-        };
-        match self.op {
-            FilterOp::Eq => vec![p(Cmp::Eq, &self.value)],
-            FilterOp::Ne => vec![p(Cmp::Ne, &self.value)],
-            FilterOp::Contains => vec![p(Cmp::Like, &format!("%{}%", self.value))],
-            FilterOp::NotContains => vec![],
-            FilterOp::StartsWith => vec![p(Cmp::Like, &format!("{}%", self.value))],
-            FilterOp::EndsWith => vec![p(Cmp::Like, &format!("%{}", self.value))],
-            FilterOp::Gt => vec![p(Cmp::Gt, &self.value)],
-            FilterOp::Ge => vec![p(Cmp::Ge, &self.value)],
-            FilterOp::Lt => vec![p(Cmp::Lt, &self.value)],
-            FilterOp::Le => vec![p(Cmp::Le, &self.value)],
-            FilterOp::IsNull => vec![p(Cmp::IsNull, "")],
-            FilterOp::IsNotNull => vec![p(Cmp::IsNotNull, "")],
-            FilterOp::IsEmpty => vec![p(Cmp::Eq, "")],
-            FilterOp::IsNotEmpty => vec![p(Cmp::Ne, "")],
-            FilterOp::In => vec![p(
-                Cmp::In(self.value.split(',').map(|s| s.trim().to_owned()).collect()),
-                "",
-            )],
-            FilterOp::NotIn => vec![],
-            FilterOp::Between => vec![p(Cmp::Ge, &self.value), p(Cmp::Le, &self.value2)],
-            FilterOp::Regex => vec![p(Cmp::Like, &format!("%{}%", self.value))],
-        }
+    pub fn to_sql(&self) -> String {
+        self.expression().to_sql()
     }
+
+    /// Rules the editor enforces before a filter can replace the current view.
+    /// Whatever passes here evaluates on every row without a per-row failure.
+    pub fn check(&self, ty: ColType) -> Result<(), FilterError> {
+        let fail = |field, message: &str| {
+            Err(FilterError {
+                field,
+                message: message.into(),
+            })
+        };
+        if self.op.needs_value() && self.value.is_empty() {
+            return fail(FilterField::Value, "A value is required for this operator");
+        }
+        if self.op == FilterOp::Between && self.value2.is_empty() {
+            return fail(FilterField::Value2, "A value is required for this operator");
+        }
+        let is_list = matches!(self.op, FilterOp::In | FilterOp::NotIn);
+        if is_list && self.value.split(',').any(|s| s.trim().is_empty()) {
+            return fail(FilterField::Value, "List items cannot be empty");
+        }
+        if self.op == FilterOp::Regex {
+            sql::compile_regex(&self.value).map_err(|message| FilterError {
+                field: FilterField::Value,
+                message,
+            })?;
+        }
+        let numeric = matches!(ty, ColType::Int | ColType::Numeric);
+        let ordinal = matches!(
+            self.op,
+            FilterOp::Eq
+                | FilterOp::Ne
+                | FilterOp::Gt
+                | FilterOp::Ge
+                | FilterOp::Lt
+                | FilterOp::Le
+                | FilterOp::In
+                | FilterOp::NotIn
+                | FilterOp::Between
+        );
+        type Parses = fn(&str) -> bool;
+        let typed: Option<(&str, Parses)> = match ty {
+            ColType::Int => Some(("Enter a whole number", |t| t.parse::<i64>().is_ok())),
+            ColType::Numeric => Some(("Enter a number", |t| {
+                t.parse::<f64>().is_ok_and(f64::is_finite)
+            })),
+            ColType::Bool => Some(("Enter true or false", |t| {
+                t.eq_ignore_ascii_case("true") || t.eq_ignore_ascii_case("false")
+            })),
+            _ => None,
+        };
+        if let (true, Some((msg, parses))) = (ordinal, typed) {
+            let operands: Vec<(FilterField, &str)> = match self.op {
+                FilterOp::In | FilterOp::NotIn => self
+                    .value
+                    .split(',')
+                    .map(|t| (FilterField::Value, t.trim()))
+                    .collect(),
+                FilterOp::Between => vec![
+                    (FilterField::Value, self.value.as_str()),
+                    (FilterField::Value2, self.value2.as_str()),
+                ],
+                _ => vec![(FilterField::Value, self.value.as_str())],
+            };
+            for (field, text) in operands {
+                if !parses(text) {
+                    return fail(field, msg);
+                }
+            }
+        }
+        if self.op == FilterOp::Between {
+            let ordered = if ty == ColType::Int {
+                matches!(
+                    (self.value.parse::<i64>(), self.value2.parse::<i64>()),
+                    (Ok(lo), Ok(hi)) if lo <= hi
+                )
+            } else if numeric {
+                let lo = self.value.parse::<f64>().unwrap_or(f64::NAN);
+                let hi = self.value2.parse::<f64>().unwrap_or(f64::NAN);
+                lo <= hi
+            } else {
+                self.value.to_lowercase() <= self.value2.to_lowercase()
+            };
+            if !ordered {
+                return fail(
+                    FilterField::Value2,
+                    "The upper bound is below the lower bound",
+                );
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FilterField {
+    Value,
+    Value2,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FilterError {
+    pub field: FilterField,
+    pub message: String,
 }
 
 fn quote(v: &str) -> String {
@@ -359,7 +433,57 @@ pub enum TableMode {
     Structure,
 }
 
+/// The controls that decide which rows a table shows. They change only
+/// together, when a prepared load is installed.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TableViewState {
+    pub sort: Option<(usize, SortDir)>,
+    pub filters: Vec<Filter>,
+    pub match_all: bool,
+}
+
+impl Default for TableViewState {
+    fn default() -> Self {
+        Self {
+            sort: None,
+            filters: vec![],
+            match_all: true,
+        }
+    }
+}
+
+impl TableViewState {
+    /// The WHERE clause for the enabled filters, joined by the match mode.
+    /// With no enabled filter there is no clause at all.
+    pub fn filter_expr(&self) -> Option<sql::Expr> {
+        let children: Vec<sql::Expr> = self
+            .filters
+            .iter()
+            .filter(|f| f.enabled)
+            .map(Filter::expression)
+            .collect();
+        if children.is_empty() {
+            None
+        } else if self.match_all {
+            Some(sql::Expr::All(children))
+        } else {
+            Some(sql::Expr::Any(children))
+        }
+    }
+}
+
+/// Rows read for one view, not yet shown. Preparing one touches nothing.
+pub struct LoadedTable {
+    rows: GridRows,
+    keys: Vec<ItemKey>,
+    total: usize,
+    table_revision: u64,
+}
+
 pub struct TableTab {
+    /// Never-reused identity of this tab within its workbench. `id` is a render
+    /// identity; operations that outlive one event name the tab by this key.
+    pub key: ItemKey,
     pub id: WidgetId,
     pub schema: String,
     pub name: String,
@@ -367,20 +491,23 @@ pub struct TableTab {
     pub mode_tabs: Tabs,
     pub grid: DataGrid,
     pub chips: ChipBar,
-    pub filters: Vec<Filter>,
-    pub match_all: bool,
-    pub sort: Option<(usize, SortDir)>,
-    pub preview: bool,
+    view: TableViewState,
+    view_revision: u64,
     pub structure_tabs: Tabs,
     pub structure: DataTable,
     pub ddl: ScrollPanel,
     pub loading: u32,
     pub columns: Vec<(String, ColType)>,
     pub total: usize,
+    /// How many saves the store had accepted for this table when the shown rows
+    /// were read. It is the table's revision, not the grid's.
+    table_revision: u64,
+    /// Another view saved this table after these rows were read.
+    source_changed: bool,
 }
 
 impl TableTab {
-    pub fn new(id: WidgetId, cat: &Catalog, table: &Table, preview: bool) -> Self {
+    pub fn new(key: ItemKey, id: WidgetId, src: Source, table: &Table) -> Self {
         let columns: Vec<(String, ColType)> = table
             .columns
             .iter()
@@ -399,7 +526,7 @@ impl TableTab {
         }
         grid.empty = EmptyState::new("No rows").hint("f changes the filter");
         let mut chips = ChipBar::new(id.sub("chips"));
-        chips.lead = Some("match all ▾".into());
+        chips.set_lead(Some("match all ▾".into()));
 
         let mut mode_tabs = Tabs::new(id.sub("mode"), &["Data", "Structure"]);
         mode_tabs.active = 0;
@@ -416,6 +543,7 @@ impl TableTab {
         );
         structure_tabs.active = 0;
         let mut t = Self {
+            key,
             id,
             schema: table.schema.clone(),
             name: table.name.clone(),
@@ -423,19 +551,20 @@ impl TableTab {
             mode_tabs,
             grid,
             chips,
-            filters: vec![],
-            match_all: true,
-            sort: None,
-            preview,
+            view: TableViewState::default(),
+            view_revision: 0,
             structure_tabs,
-            structure: DataTable::new(id.sub("structure"), vec![], vec![]),
+            structure: DataTable::try_new(id.sub("structure"), vec![], vec![])
+                .expect("rectangular fixture"),
             ddl: ScrollPanel::new(id.sub("ddl"), vec![]),
             loading: 3,
             columns,
-            total: table.row_count,
+            total: src.row_count(table),
+            table_revision: 0,
+            source_changed: false,
         };
         t.rebuild_structure(table);
-        t.load(cat);
+        t.load_first(src);
         t
     }
 
@@ -451,17 +580,13 @@ impl TableTab {
         format!("{}.{}", self.schema, self.name)
     }
 
-    fn select(&self) -> sql::Select {
-        let mut predicates = Vec::new();
-        for f in self.filters.iter().filter(|f| f.enabled) {
-            predicates.extend(f.predicates());
-        }
+    fn select(&self, view: &TableViewState) -> sql::Select {
         sql::Select {
             columns: vec!["*".into()],
             schema: Some(self.schema.clone()),
             table: self.name.clone(),
-            predicates,
-            order: self
+            filter: view.filter_expr(),
+            order: view
                 .sort
                 .map(|(c, d)| (self.columns[c].0.clone(), d == SortDir::Asc)),
             limit: Some(sql::ROW_CAP),
@@ -469,48 +594,148 @@ impl TableTab {
         }
     }
 
-    pub fn load(&mut self, cat: &Catalog) {
-        let sel = self.select();
-        match sql::run_select(cat, &sel) {
-            Ok(rs) => {
-                let rows: Vec<Vec<CellValue>> = rs
-                    .rows
-                    .iter()
-                    .map(|r| r.iter().map(to_cell).collect())
-                    .collect();
-                let total = if self.filters.iter().any(|f| f.enabled) {
-                    RowTotal::Estimated(rs.total)
-                } else {
-                    RowTotal::Exact(rs.total)
-                };
-                self.total = rs.total;
-                self.grid.set_rows(GridRows {
-                    rows,
-                    total,
-                    more: rs.total > sql::ROW_CAP,
-                });
-                self.grid.sort = self.sort;
-                self.grid.filtered_cols = self
-                    .filters
-                    .iter()
-                    .filter(|f| f.enabled)
-                    .filter_map(|f| self.columns.iter().position(|c| c.0 == f.column))
-                    .collect();
-            }
+    /// Whether a captured save owns this table's rows, so nothing may reload,
+    /// sort or filter them.
+    pub fn saving(&self) -> bool {
+        self.grid.submission_pending()
+    }
+
+    /// The controls the shown rows were read with.
+    pub fn view(&self) -> &TableViewState {
+        &self.view
+    }
+
+    /// Counts the views this tab has installed. A request made against an older
+    /// count was made against controls that are no longer shown.
+    pub fn view_revision(&self) -> u64 {
+        self.view_revision
+    }
+
+    /// The store revision of the table when the shown rows were read.
+    pub fn table_revision(&self) -> u64 {
+        self.table_revision
+    }
+
+    /// Whether another view saved this table after these rows were read. The
+    /// rows and any draft stay as they are until the table is reloaded.
+    pub fn source_changed(&self) -> bool {
+        self.source_changed
+    }
+
+    pub fn mark_source_changed(&mut self) {
+        self.source_changed = true;
+    }
+
+    /// Records this tab's own accepted save. The rows are the saved ones, so
+    /// the table revision they were read at is the store's now.
+    pub fn saved(&mut self, revision: u64, live_rows: usize, inserted: usize, deleted: usize) {
+        self.table_revision = revision;
+        self.source_changed = false;
+        if self.view.filters.iter().any(|f| f.enabled) {
+            self.total = self.total.saturating_add(inserted).saturating_sub(deleted);
+            self.grid.total = RowTotal::Estimated(self.total);
+        } else {
+            self.total = live_rows;
+            self.grid.total = RowTotal::Exact(live_rows);
+        }
+    }
+
+    /// Reads the rows `view` selects. Nothing the tab shows changes, so a failed
+    /// query leaves the rows, draft and controls exactly as they were.
+    pub fn prepare_load(
+        &self,
+        src: Source,
+        view: &TableViewState,
+    ) -> Result<LoadedTable, sql::ExecError> {
+        let rs = sql::run_select(src, &self.select(view))?;
+        let rows: Vec<Vec<CellValue>> = rs
+            .rows
+            .iter()
+            .map(|r| r.iter().map(to_cell).collect())
+            .collect();
+        let total = if view.filters.iter().any(|f| f.enabled) {
+            RowTotal::Estimated(rs.total)
+        } else {
+            RowTotal::Exact(rs.total)
+        };
+        Ok(LoadedTable {
+            rows: GridRows {
+                rows,
+                total,
+                more: rs.total > sql::ROW_CAP,
+            },
+            keys: rs
+                .row_keys
+                .expect("a SELECT of every column returns its row keys"),
+            total: rs.total,
+            table_revision: rs
+                .source_revision
+                .expect("a SELECT of a table returns its revision"),
+        })
+    }
+
+    /// Shows a prepared load and its view together. The grid replaces its rows
+    /// once, so a refusal (a save owns the rows) changes nothing, draft and
+    /// controls included. The replacement itself drops the draft.
+    pub fn install_load(
+        &mut self,
+        loaded: LoadedTable,
+        view: TableViewState,
+    ) -> Result<(), GridDataError> {
+        let revision = self
+            .view_revision
+            .checked_add(1)
+            .expect("table view revisions exhausted");
+        self.grid.try_set_rows_keyed(loaded.rows, loaded.keys)?;
+        self.total = loaded.total;
+        self.table_revision = loaded.table_revision;
+        self.source_changed = false;
+        self.grid.sort = view.sort;
+        self.grid.filtered_cols = view
+            .filters
+            .iter()
+            .filter(|f| f.enabled)
+            .filter_map(|f| self.columns.iter().position(|c| c.0 == f.column))
+            .collect();
+        self.grid.empty = EmptyState::new("No rows").hint("f changes the filter");
+        self.view = view;
+        self.view_revision = revision;
+        self.rebuild_chips();
+        Ok(())
+    }
+
+    /// The first load of a new tab. With no earlier rows to keep, a failed query
+    /// shows an empty error state.
+    fn load_first(&mut self, src: Source) {
+        let view = TableViewState::default();
+        match self.prepare_load(src, &view) {
+            Ok(loaded) => self
+                .install_load(loaded, view)
+                .expect("a new table tab is never being saved"),
             Err(e) => {
-                self.grid.set_rows(GridRows {
-                    rows: vec![],
-                    total: RowTotal::Exact(0),
-                    more: false,
-                });
+                self.grid
+                    .try_set_rows(GridRows {
+                        rows: vec![],
+                        total: RowTotal::Exact(0),
+                        more: false,
+                    })
+                    .expect("a new table tab is never being saved");
                 self.grid.empty = EmptyState::new("Query failed").hint(&e.message);
+                self.rebuild_chips();
             }
         }
+    }
+
+    /// Puts the sort marker and chips back to the shown view, after a gesture
+    /// moved them ahead of a change that was not applied.
+    pub fn restore_view_controls(&mut self) {
+        self.grid.sort = self.view.sort;
         self.rebuild_chips();
     }
 
     fn rebuild_chips(&mut self) {
-        self.chips.chips = self
+        let chips = self
+            .view
             .filters
             .iter()
             .map(|f| {
@@ -519,11 +744,12 @@ impl TableTab {
                 c
             })
             .collect();
-        self.chips.lead = Some(if self.match_all {
+        self.chips.set_chips(chips);
+        self.chips.set_lead(Some(if self.view.match_all {
             "match all ▾".into()
         } else {
             "match any ▾".into()
-        });
+        }));
     }
 
     fn rebuild_structure(&mut self, table: &Table) {
@@ -646,11 +872,13 @@ impl TableTab {
             4 => "No triggers",
             _ => "Nothing here",
         };
-        self.structure = DataTable::new(self.id.sub("structure"), cols, rows).empty_text(empty);
+        self.structure = DataTable::try_new(self.id.sub("structure"), cols, rows)
+            .expect("rectangular fixture")
+            .empty_text(empty);
 
-        let mut ddl = vec![format!("CREATE TABLE {} (", table.qualified())];
+        let mut ddl = vec![format!("CREATE TABLE {} (", model::table_ident(table))];
         for (i, c) in table.columns.iter().enumerate() {
-            let mut line = format!("    {} {}", c.name, c.ty.sql());
+            let mut line = format!("    {} {}", model::quote_ident(&c.name), c.ty.sql());
             if !c.nullable {
                 line.push_str(" NOT NULL");
             }
@@ -663,7 +891,12 @@ impl TableTab {
             ddl.push(line);
         }
         for (i, k) in table.constraints.iter().enumerate() {
-            let mut line = format!("    CONSTRAINT {} {} {}", k.name, k.kind, k.definition);
+            let mut line = format!(
+                "    CONSTRAINT {} {} {}",
+                model::quote_ident(&k.name),
+                k.kind,
+                k.definition
+            );
             if i + 1 < table.constraints.len() {
                 line.push(',');
             }
@@ -675,19 +908,21 @@ impl TableTab {
             .iter()
             .filter(|i| !i.name.ends_with("_pkey") && !i.name.ends_with("_key"))
         {
+            let columns: Vec<String> = ix.columns.iter().map(|c| model::quote_ident(c)).collect();
             ddl.push(format!(
                 "CREATE INDEX {} ON {} USING {} ({});",
-                ix.name,
-                table.qualified(),
+                model::quote_ident(&ix.name),
+                model::table_ident(table),
                 ix.method,
-                ix.columns.join(", ")
+                columns.join(", ")
             ));
         }
         if let Some(c) = &table.comment {
+            let literal =
+                model::sql_literal(&Value::Text(c.clone())).expect("text literals serialize");
             ddl.push(format!(
-                "COMMENT ON TABLE {} IS '{}';",
-                table.qualified(),
-                c
+                "COMMENT ON TABLE {} IS {literal};",
+                model::table_ident(table),
             ));
         }
         self.ddl = ScrollPanel::new(self.id.sub("ddl"), ddl);
@@ -720,7 +955,9 @@ impl TableTab {
                 let km = &self.chips.keymap;
                 let mut h = vec![hint("Enter", "Edit filter"), hint("Space", "Enable")];
                 h.extend(hint_key(km, ChipCmd::Remove).map(|k| hint(k, "Remove")));
-                h.extend(hint_key(km, ChipCmd::Add).map(|k| hint(k, "Add")));
+                if self.chips.add_label().is_some() {
+                    h.extend(hint_key(km, ChipCmd::Add).map(|k| hint(k, "Add")));
+                }
                 h
             }
             Some(f) if f == self.structure_tabs.id => {
@@ -770,7 +1007,7 @@ impl TableTab {
         match self.mode {
             TableMode::Data => {
                 let mut y = body.y;
-                if !self.filters.is_empty() || ctx.interaction.focused(self.chips.id) {
+                if !self.view.filters.is_empty() || ctx.interaction.focused(self.chips.id) {
                     self.chips
                         .render(Rect::new(body.x, y, body.width, 1), buf, ctx, bg);
                     y += 2;
@@ -785,7 +1022,7 @@ impl TableTab {
                 let sy = body.bottom().saturating_sub(1);
 
                 let mut parts: Vec<(String, u8)> = vec![];
-                if let Some((c, d)) = self.sort {
+                if let Some((c, d)) = self.view.sort {
                     parts.push((
                         format!(
                             "sort {} {}",
@@ -795,7 +1032,7 @@ impl TableTab {
                         4,
                     ));
                 }
-                let active = self.filters.iter().filter(|f| f.enabled).count();
+                let active = self.view.filters.iter().filter(|f| f.enabled).count();
                 if active > 0 {
                     parts.push((format!("filtered ({active})"), 4));
                 }
@@ -864,7 +1101,7 @@ impl TableTab {
                     );
                     let sy = inner.bottom().saturating_sub(1);
                     let n = self.structure.len();
-                    let what = self.structure_tabs.items[self.structure_tabs.active]
+                    let what = self.structure_tabs.items()[self.structure_tabs.active]
                         .label
                         .to_lowercase();
                     buf.set_string(
@@ -918,11 +1155,16 @@ pub struct PlanInfo {
 }
 
 pub struct ResultSet {
+    pub key: ItemKey,
     pub label: String,
     pub pinned: bool,
     pub anchor: Range<usize>,
     pub duration_ms: u32,
     pub body: ResultBody,
+    /// The table and revision the rows were read from. The rows stay as they
+    /// were read; a later save only marks them.
+    pub source: Option<(TableId, u64)>,
+    pub source_changed: bool,
 }
 
 pub struct Running {
@@ -935,7 +1177,37 @@ pub struct Running {
     pub results: Vec<ResultSet>,
 }
 
+#[derive(Clone, Copy)]
+struct ResultSlot {
+    n: usize,
+    key: ItemKey,
+}
+
+enum RunTerminal {
+    Complete { failed: bool },
+    Cancelled,
+}
+
+fn mint_result_key(counter: &mut u64) -> ItemKey {
+    *counter += 1;
+    ItemKey::num(*counter)
+}
+
+/// The active index after `removed` leaves a strip that now holds `new_len` results.
+/// Closing an earlier result shifts the active one down, and closing the active one
+/// selects its successor, or its predecessor when it was last.
+fn active_after_remove(active: usize, removed: usize, new_len: usize) -> usize {
+    if new_len == 0 {
+        0
+    } else if removed < active {
+        active - 1
+    } else {
+        active.min(new_len - 1)
+    }
+}
+
 pub struct QueryTab {
+    pub key: ItemKey,
     pub id: WidgetId,
     pub name: String,
     pub editor: CodeEditor,
@@ -952,6 +1224,7 @@ pub struct QueryTab {
     pub last_status: Option<(String, bool)>,
     pub last_duration: Option<u32>,
     pub result_counter: usize,
+    next_result_key: u64,
     pub unseen: bool,
     pub saved_text: String,
 
@@ -959,7 +1232,7 @@ pub struct QueryTab {
 }
 
 impl QueryTab {
-    pub fn new(id: WidgetId, name: &str, text: &str) -> Self {
+    pub fn new(key: ItemKey, id: WidgetId, name: &str, text: &str) -> Self {
         let editor = CodeEditor::new(id.sub("editor"), text)
             .highlighter(highlight_sql)
             .segmenter(segment_sql)
@@ -967,6 +1240,7 @@ impl QueryTab {
         let mut result_tabs = Tabs::new(id.sub("result-tabs"), &[]);
         result_tabs.allow_new = false;
         Self {
+            key,
             id,
             name: name.to_owned(),
             editor,
@@ -982,6 +1256,7 @@ impl QueryTab {
             last_status: None,
             last_duration: None,
             result_counter: 0,
+            next_result_key: 0,
             unseen: false,
             saved_text: text.to_owned(),
         }
@@ -1052,10 +1327,14 @@ impl QueryTab {
             return;
         }
 
-        let pinned: Vec<ResultSet> = self.results.drain(..).filter(|r| r.pinned).collect();
-        self.results = pinned;
+        let active = self.results.get(self.active_result).map(|r| r.key);
+        self.results.retain(|r| r.pinned);
+        self.active_result = active
+            .and_then(|k| self.results.iter().position(|r| r.key == k))
+            .unwrap_or(0);
+        self.sync_result_tabs();
         self.editor.set_running(Some(statements[0].1.clone()));
-        self.editor.diagnostics.clear();
+        self.editor.set_diagnostics(Vec::new());
         self.running = Some(Running {
             statements,
             current: 0,
@@ -1069,24 +1348,14 @@ impl QueryTab {
     }
 
     pub fn cancel(&mut self) -> bool {
-        if let Some(r) = self.running.take() {
-            self.editor.set_running(None);
-            let (_, range) = r.statements[r.current].clone();
-            self.results.push(ResultSet {
-                label: "Cancelled".into(),
-                pinned: false,
-                anchor: range,
-                duration_ms: r.started_ticks * 80,
-                body: ResultBody::Cancelled,
-            });
-            self.sync_result_tabs();
-            self.last_status = Some(("cancelled".into(), false));
-            return true;
-        }
-        false
+        let Some(run) = self.running.take() else {
+            return false;
+        };
+        self.finish_running(run, RunTerminal::Cancelled);
+        true
     }
 
-    pub fn tick(&mut self, cat: &Catalog, connection: &str, database: &str) -> Vec<HistoryEntry> {
+    pub fn tick(&mut self, src: Source, connection: &str, database: &str) -> Vec<HistoryEntry> {
         let mut out = vec![];
         let Some(r) = self.running.as_mut() else {
             return out;
@@ -1098,14 +1367,18 @@ impl QueryTab {
         }
         let (sql_text, range) = r.statements[r.current].clone();
         let explain = r.explain;
+        let key = mint_result_key(&mut self.next_result_key);
         let (result, entry) = execute(
-            cat,
+            src,
             &sql_text,
             range.clone(),
             explain,
             connection,
             database,
-            self.result_counter + 1,
+            ResultSlot {
+                n: self.result_counter + 1,
+                key,
+            },
         );
         self.result_counter += 1;
         let failed = matches!(result.body, ResultBody::Error { .. });
@@ -1116,7 +1389,7 @@ impl QueryTab {
             } else {
                 range.end
             };
-            self.editor.diagnostics.push(Diagnostic {
+            self.editor.push_diagnostic(Diagnostic {
                 range: start..end,
                 severity: Severity::Error,
                 message: message.clone(),
@@ -1126,40 +1399,7 @@ impl QueryTab {
         out.push(entry);
         if failed || r.current + 1 >= r.statements.len() {
             let done = self.running.take().unwrap();
-            self.editor.set_running(None);
-            let n = done.results.len();
-            let total_ms: u32 = done.results.iter().map(|r| r.duration_ms).sum();
-            let last_failed = failed;
-            self.results.extend(done.results);
-            self.sync_result_tabs();
-            self.active_result = self.results.len().saturating_sub(1);
-            self.result_tabs.set_active(self.active_result);
-            self.last_duration = Some(total_ms);
-            if last_failed {
-                let msg = if done.all && n > 1 {
-                    format!("Statement {n}/{} failed", done.statements.len())
-                } else {
-                    "error".into()
-                };
-                self.last_status = Some((msg, true));
-            } else {
-                self.last_status = Some((
-                    format!(
-                        "{} · {}",
-                        if n > 1 {
-                            format!("{n} statements")
-                        } else {
-                            "ok".into()
-                        },
-                        duration(
-                            std::time::Duration::from_millis(u64::from(total_ms)),
-                            DurationStyle::Compact
-                        )
-                    ),
-                    false,
-                ));
-            }
-            self.unseen = true;
+            self.finish_running(done, RunTerminal::Complete { failed });
         } else {
             r.current += 1;
             r.ticks_left = 4;
@@ -1167,6 +1407,80 @@ impl QueryTab {
             self.editor.set_running(Some(next));
         }
         out
+    }
+
+    /// Marks every result read from `table` before it reached `revision`. The
+    /// rows are a snapshot of the query as it ran and are never rerun.
+    pub fn table_saved(&mut self, table: &TableId, revision: u64) {
+        let mut marked = false;
+        for r in &mut self.results {
+            if r.source
+                .as_ref()
+                .is_some_and(|(t, read_at)| t == table && *read_at < revision)
+            {
+                marked |= !r.source_changed;
+                r.source_changed = true;
+            }
+        }
+        if marked {
+            self.sync_result_tabs();
+        }
+    }
+
+    fn finish_running(&mut self, run: Running, terminal: RunTerminal) {
+        self.editor.set_running(None);
+        let Running {
+            statements,
+            current,
+            started_ticks,
+            all,
+            results: done,
+            ..
+        } = run;
+        let n = done.len();
+        let total_ms: u32 = done.iter().map(|r| r.duration_ms).sum();
+        self.results.extend(done);
+        match terminal {
+            RunTerminal::Cancelled => {
+                let key = mint_result_key(&mut self.next_result_key);
+                self.results.push(ResultSet {
+                    key,
+                    source: None,
+                    source_changed: false,
+                    label: "Cancelled".into(),
+                    pinned: false,
+                    anchor: statements[current].1.clone(),
+                    duration_ms: started_ticks * 80,
+                    body: ResultBody::Cancelled,
+                });
+                self.last_status = Some(("cancelled".into(), false));
+            }
+            RunTerminal::Complete { failed } => {
+                self.last_duration = Some(total_ms);
+                self.last_status = Some(if failed {
+                    let msg = if all && n > 1 {
+                        format!("Statement {n}/{} failed", statements.len())
+                    } else {
+                        "error".into()
+                    };
+                    (msg, true)
+                } else {
+                    let summary = if n > 1 {
+                        format!("{n} statements")
+                    } else {
+                        "ok".into()
+                    };
+                    let took = duration(
+                        std::time::Duration::from_millis(u64::from(total_ms)),
+                        DurationStyle::Compact,
+                    );
+                    (format!("{summary} · {took}"), false)
+                });
+                self.unseen = true;
+            }
+        }
+        self.active_result = self.results.len().saturating_sub(1);
+        self.sync_result_tabs();
     }
 
     fn sync_result_tabs(&mut self) {
@@ -1179,6 +1493,9 @@ impl QueryTab {
                 it.closable = !r.pinned;
                 if r.pinned {
                     it.prefix = Some("▪".into());
+                }
+                if r.source_changed {
+                    it.suffix = Some("source changed".into());
                 }
                 it
             })
@@ -1202,12 +1519,12 @@ impl QueryTab {
     pub fn close_result(&mut self, i: usize) {
         if i < self.results.len() && !self.results[i].pinned {
             self.results.remove(i);
+            self.active_result = active_after_remove(self.active_result, i, self.results.len());
             self.sync_result_tabs();
-            self.active_result = self.active_result.min(self.results.len().saturating_sub(1));
-            self.result_tabs.set_active(self.active_result);
         }
     }
 
+    /// Pinning or unpinning is an explicit action on that result, so it becomes the active one.
     pub fn toggle_pin(&mut self, i: usize) {
         if i < self.results.len() {
             self.results[i].pinned = !self.results[i].pinned;
@@ -1224,14 +1541,14 @@ impl QueryTab {
         }
     }
 
-    pub fn trigger_completion(&mut self, cat: &Catalog, manual: bool) {
+    pub fn trigger_completion(&mut self, src: Source, manual: bool) {
         let cur = self.editor.cursor_offset();
         let text = self.editor.text();
         if !manual && !model::auto_trigger(text, cur) {
             self.completion.close();
             return;
         }
-        let (items, replace) = model::complete(cat, text, cur);
+        let (items, replace) = model::complete(src, text, cur);
         let anchor = self
             .editor
             .cursor_cell()
@@ -1255,8 +1572,9 @@ impl QueryTab {
     }
 
     fn accept_completion(&mut self, i: usize) {
-        self.completion.apply(i, &mut self.editor.field.buffer);
-        self.completion.close();
+        if self.completion.apply(i, &mut self.editor.field.buffer) {
+            self.completion.close();
+        }
     }
 
     pub fn hints(&self, focus: Option<WidgetId>) -> Vec<Hint> {
@@ -1320,7 +1638,7 @@ impl QueryTab {
         }
     }
 
-    pub fn on_key(&mut self, key: &Key, cx: &mut Cx, cat: &Catalog) -> Outcome {
+    pub fn on_key(&mut self, key: &Key, cx: &mut Cx, src: Source) -> Outcome {
         let Some(f) = cx.focus.current() else {
             return Outcome::Ignored;
         };
@@ -1347,18 +1665,18 @@ impl QueryTab {
                 if !self.editor.editing {
                     self.editor.begin_edit();
                 }
-                self.trigger_completion(cat, true);
+                self.trigger_completion(src, true);
                 return Outcome::Changed;
             }
             let (o, ev) = self.editor.on_key(key);
             match ev {
                 Some(EditorAction::Changed) => {
-                    self.editor.diagnostics.clear();
-                    self.trigger_completion(cat, false);
+                    self.editor.set_diagnostics(Vec::new());
+                    self.trigger_completion(src, false);
                 }
                 Some(EditorAction::CursorMoved) => {
                     if self.completion.is_open() {
-                        self.trigger_completion(cat, false);
+                        self.trigger_completion(src, false);
                     }
                 }
                 Some(EditorAction::Committed) => self.completion.close(),
@@ -1399,14 +1717,16 @@ impl QueryTab {
         };
         match &mut r.body {
             ResultBody::Rows(g) if f == g.id => {
-                let (o, ev) = g.on_key(key);
-                match ev {
-                    Some(GridAction::Copy(s)) => cx.copy(s),
-                    Some(GridAction::SortRequested(_)) => {}
-                    Some(GridAction::LeaveForward) => cx.focus_next(),
-                    Some(GridAction::LeaveBackward) => cx.focus_prev(),
-                    Some(GridAction::ReadOnly { reason }) => cx.status(reason),
-                    _ => {}
+                let (o, actions) = g.on_key(key).into_parts();
+                for ev in actions {
+                    match ev {
+                        GridAction::Copy(s) => cx.copy(s),
+                        GridAction::SortRequested(_) => {}
+                        GridAction::LeaveForward => cx.focus_next(),
+                        GridAction::LeaveBackward => cx.focus_prev(),
+                        GridAction::ReadOnly { reason } => cx.status(reason),
+                        _ => {}
+                    }
                 }
                 o
             }
@@ -1424,7 +1744,7 @@ impl QueryTab {
                     return raw.on_key(key);
                 }
                 if f == tree.id {
-                    return tree.on_key(key).0;
+                    return tree.on_key(key).outcome();
                 }
                 Outcome::Ignored
             }
@@ -1459,14 +1779,17 @@ impl QueryTab {
     }
 
     pub fn middle(&mut self, ev: &PointerEvent) -> Outcome {
-        match self.result_tabs.route(ev).map(|r| r.into_parts()) {
-            Some((_, Some(TabAction::Close(i)))) => {
+        let Some((o, actions)) = self.result_tabs.route(ev).map(|r| r.into_parts()) else {
+            return Outcome::Ignored;
+        };
+        let mut out = o;
+        for action in actions {
+            if let TabAction::Close(i) = action {
                 self.close_result(i);
-                Outcome::Changed
+                out = Outcome::Changed;
             }
-            Some((o, _)) => o,
-            None => Outcome::Ignored,
         }
+        out
     }
 
     pub fn click(&mut self, ev: &PointerEvent, cx: &mut Cx, cat: &Catalog) -> Outcome {
@@ -1476,11 +1799,14 @@ impl QueryTab {
         }
         if self.completion.is_open() {
             match self.completion.route(ev).map(|r| r.into_parts()) {
-                Some((_, Some(CompletionAction::Accept(i)))) => {
-                    self.accept_completion(i);
-                    return Outcome::Changed;
+                Some((_, actions)) => {
+                    for action in actions {
+                        if let CompletionAction::Accept(i) = action {
+                            self.accept_completion(i);
+                            return Outcome::Changed;
+                        }
+                    }
                 }
-                Some(_) => {}
                 None => self.completion.close(),
             }
         }
@@ -1493,11 +1819,13 @@ impl QueryTab {
         }
         if let Some(r) = self.result_tabs.route(ev) {
             cx.focus.focus(self.result_tabs.id);
-            let (o, act) = r.into_parts();
-            match act {
-                Some(TabAction::Activated(i)) => self.set_active_result(i),
-                Some(TabAction::Close(i)) => self.close_result(i),
-                _ => {}
+            let (o, actions) = r.into_parts();
+            for act in actions {
+                match act {
+                    TabAction::Activated(i) => self.set_active_result(i),
+                    TabAction::Close(i) => self.close_result(i),
+                    _ => {}
+                }
             }
             return o;
         }
@@ -1508,9 +1836,11 @@ impl QueryTab {
             ResultBody::Rows(g) => match g.route(ev) {
                 Some(r) => {
                     cx.focus.focus(g.id);
-                    let (o, act) = r.into_parts();
-                    if let Some(GridAction::Copy(s)) = act {
-                        cx.copy(s);
+                    let (o, actions) = r.into_parts();
+                    for act in actions {
+                        if let GridAction::Copy(s) = act {
+                            cx.copy(s);
+                        }
                     }
                     o
                 }
@@ -2106,14 +2436,15 @@ fn plan_to_tree(node: &PlanNode, nodes: &mut Vec<PlanInfo>, root_total: f64) -> 
 }
 
 fn execute(
-    cat: &Catalog,
+    src: Source,
     text: &str,
     range: Range<usize>,
     explain: Option<bool>,
     connection: &str,
     database: &str,
-    n: usize,
+    slot: ResultSlot,
 ) -> (ResultSet, HistoryEntry) {
+    let ResultSlot { n, key } = slot;
     let mut entry = HistoryEntry {
         id: 0,
         sql: text.to_owned(),
@@ -2136,6 +2467,9 @@ fn execute(
             entry.error = Some(e.message.clone());
             return (
                 ResultSet {
+                    key,
+                    source: None,
+                    source_changed: false,
                     label: format!("Error {n}"),
                     pinned: false,
                     anchor: range,
@@ -2169,9 +2503,9 @@ fn execute(
         junie_tui::ui::text::truncate(&l, 28)
     };
     match stmt {
-        Statement::Select(sel) => match sql::run_select(cat, &sel) {
+        Statement::Select(sel) => match sql::run_select(src, &sel) {
             Ok(rs) => {
-                let table = cat.find(sel.schema.as_deref(), &sel.table);
+                let table = src.catalog.find(sel.schema.as_deref(), &sel.table);
                 let specs = table
                     .map(|t| column_specs(t, &rs.columns))
                     .unwrap_or_else(|| {
@@ -2202,11 +2536,42 @@ fn execute(
                 } else {
                     RowTotal::Exact(rows.len())
                 };
-                grid.set_rows(GridRows { rows, total, more });
+                let data = GridRows { rows, total, more };
+                let seated = match rs.row_keys.clone() {
+                    Some(keys) => grid.try_set_rows_keyed(data, keys),
+                    None => grid.try_set_rows(data),
+                };
+                if let Err(e) = seated {
+                    let message = e.to_string();
+                    entry.error = Some(message.clone());
+                    return (
+                        ResultSet {
+                            key,
+                            source: None,
+                            source_changed: false,
+                            label: format!("Error {n}"),
+                            pinned: false,
+                            anchor: range,
+                            duration_ms: 2,
+                            body: ResultBody::Error {
+                                message,
+                                detail: None,
+                                at: None,
+                            },
+                        },
+                        entry,
+                    );
+                }
+                let source = table
+                    .zip(rs.source_revision)
+                    .map(|(t, rev)| (src.table_id(t), rev));
                 entry.duration_ms = Some(rs.duration_ms);
                 entry.rows = Some(rs.rows.len());
                 (
                     ResultSet {
+                        key,
+                        source,
+                        source_changed: false,
                         label: format!(
                             "{} ({})",
                             label_for("SELECT", Some(&sel.table)),
@@ -2224,6 +2589,9 @@ fn execute(
                 entry.error = Some(e.message.clone());
                 (
                     ResultSet {
+                        key,
+                        source: None,
+                        source_changed: false,
                         label: format!("Error {n}"),
                         pinned: false,
                         anchor: range,
@@ -2239,7 +2607,7 @@ fn execute(
             }
         },
         Statement::Explain { analyze, inner } => match *inner {
-            Statement::Select(sel) => match sql::explain(cat, &sel, analyze) {
+            Statement::Select(sel) => match sql::explain(src, &sel, analyze) {
                 Ok(plan) => {
                     let mut nodes = vec![];
                     let root = plan_to_tree(&plan, &mut nodes, max_total_cost(&plan));
@@ -2247,7 +2615,8 @@ fn execute(
                     tree.expand_all();
                     let mut raw_lines = vec![];
                     sql::plan_text(&plan, 0, &mut raw_lines);
-                    let planning = 0.21 + sel.predicates.len() as f64 * 0.09;
+                    let planning =
+                        0.21 + sel.filter.as_ref().map_or(0, sql::Expr::leaves) as f64 * 0.09;
                     raw_lines.push(format!("Planning Time: {planning:.3} ms"));
                     let exec = analyze.then(|| plan.actual_ms.unwrap_or(0.0) + 0.4);
                     if let Some(e) = exec {
@@ -2258,6 +2627,9 @@ fn execute(
                     entry.rows = Some(nodes.len());
                     (
                         ResultSet {
+                            key,
+                            source: None,
+                            source_changed: false,
                             label: if analyze {
                                 "EXPLAIN ANALYZE".into()
                             } else {
@@ -2282,6 +2654,9 @@ fn execute(
                     entry.error = Some(e.message.clone());
                     (
                         ResultSet {
+                            key,
+                            source: None,
+                            source_changed: false,
                             label: format!("Error {n}"),
                             pinned: false,
                             anchor: range,
@@ -2304,6 +2679,9 @@ fn execute(
                 entry.error = Some(msg.clone());
                 (
                     ResultSet {
+                        key,
+                        source: None,
+                        source_changed: false,
                         label: format!("Error {n}"),
                         pinned: false,
                         anchor: range,
@@ -2320,10 +2698,10 @@ fn execute(
         },
         other => {
             let target = other.target().map(str::to_owned);
-            let table = target.as_deref().and_then(|t| cat.find(None, t));
+            let table = target.as_deref().and_then(|t| src.catalog.find(None, t));
             let (rows, ms) = match &other {
                 Statement::Update { has_where, .. } | Statement::Delete { has_where, .. } => {
-                    let n = table.map(|t| t.row_count).unwrap_or(0);
+                    let n = table.map(|t| src.row_count(t)).unwrap_or(0);
                     if *has_where {
                         ((n / 150).max(1), 12 + (n / 40_000) as u32)
                     } else {
@@ -2331,7 +2709,7 @@ fn execute(
                     }
                 }
                 Statement::Insert { .. } => (1, 4),
-                Statement::Truncate { .. } => (table.map(|t| t.row_count).unwrap_or(0), 30),
+                Statement::Truncate { .. } => (table.map(|t| src.row_count(t)).unwrap_or(0), 30),
                 _ => (0, 25),
             };
             if let Some(t) = target.as_deref()
@@ -2348,6 +2726,9 @@ fn execute(
                 entry.error = Some(msg.clone());
                 return (
                     ResultSet {
+                        key,
+                        source: None,
+                        source_changed: false,
                         label: format!("Error {n}"),
                         pinned: false,
                         anchor: range,
@@ -2365,6 +2746,9 @@ fn execute(
             entry.rows = Some(rows);
             (
                 ResultSet {
+                    key,
+                    source: None,
+                    source_changed: false,
                     label: format!("{} ({})", label_for(other.verb(), target.as_deref()), rows),
                     pinned: false,
                     anchor: range,
@@ -2384,7 +2768,33 @@ fn execute(
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HistoryCommand {
+    Open,
+    Rerun,
+    Copy,
+}
+
+/// Row to select after a refresh. A selection that is still listed keeps its
+/// entry. A hidden or deleted one moves to the nearest entry after it in the
+/// previous order that is still listed, then the nearest before it, then the
+/// row at its old position, and an empty list selects nothing.
+fn reselect(before: &[ItemKey], at: usize, key: ItemKey, now: &[ItemKey]) -> Option<usize> {
+    let rows: std::collections::HashMap<ItemKey, usize> =
+        now.iter().enumerate().map(|(i, k)| (*k, i)).collect();
+    if let Some(row) = rows.get(&key) {
+        return Some(*row);
+    }
+    let after = before.get(at + 1..).unwrap_or_default().iter();
+    let ahead = before.get(..at).unwrap_or_default().iter().rev();
+    after
+        .chain(ahead)
+        .find_map(|k| rows.get(k).copied())
+        .or_else(|| now.len().checked_sub(1).map(|last| at.min(last)))
+}
+
 pub struct HistoryTab {
+    pub key: ItemKey,
     pub id: WidgetId,
     pub list: ListBox,
     pub detail: CodeEditor,
@@ -2393,7 +2803,8 @@ pub struct HistoryTab {
     pub failed_only: bool,
 
     pub slow_ms: u32,
-    pub filtered: Vec<usize>,
+    pub filtered: Vec<ItemKey>,
+    detail_loaded: Option<(ItemKey, String)>,
     pub open_btn: Button,
     pub rerun_btn: Button,
     pub copy_btn: Button,
@@ -2406,8 +2817,9 @@ pub struct HistoryTab {
 }
 
 impl HistoryTab {
-    pub fn new(id: WidgetId) -> Self {
+    pub fn new(key: ItemKey, id: WidgetId) -> Self {
         Self {
+            key,
             id,
             list: ListBox::new(id.sub("list"), vec![], SelectMode::Single)
                 .empty_text("No matching queries"),
@@ -2423,6 +2835,7 @@ impl HistoryTab {
             failed_only: false,
             slow_ms: 1000,
             filtered: vec![],
+            detail_loaded: None,
 
             open_btn: Button::primary(id.sub("open"), "Open in new tab")
                 .tooltip("Open the selected query in a new tab")
@@ -2450,24 +2863,33 @@ impl HistoryTab {
             },
             self.failed_only,
         );
-        self.filtered = matches.iter().map(|e| e.id).collect();
+        let before = std::mem::replace(
+            &mut self.filtered,
+            matches.iter().map(|e| e.key()).collect(),
+        );
+        let (cursor, offset, viewport) = (
+            self.list.cursor,
+            self.list.scroll.offset,
+            self.list.scroll.viewport_len,
+        );
+        let selected = before.get(cursor).copied();
+        let kept = selected.map_or_else(
+            || (!self.filtered.is_empty()).then_some(0),
+            |key| reselect(&before, cursor, key, &self.filtered),
+        );
+
         let items: Vec<ListItem> = matches
             .iter()
             .map(|e| {
-                let mut label = e.first_line();
-                if !e.ok() {
-                    label = label.to_string();
-                }
+                let label = e.first_line();
                 let meta = format!("{} · {}", e.when(), e.duration());
                 let mut it = ListItem::new(&junie_tui::ui::text::truncate(&label, 90)).meta(&meta);
                 if e.duration_ms.is_some_and(|ms| ms > self.slow_ms) {
                     it = it.meta_tone(Tone::Warning);
                 }
-                it.disabled = false;
                 it
             })
             .collect();
-        let cursor = self.list.cursor;
         self.list = ListBox::new(self.id.sub("list"), items, SelectMode::Single).empty_text(
             if q.is_empty() {
                 "No query history"
@@ -2475,28 +2897,69 @@ impl HistoryTab {
                 "No matching queries"
             },
         );
-        self.list.cursor = cursor.min(self.filtered.len().saturating_sub(1));
-        self.list.chosen = if self.filtered.is_empty() {
-            None
-        } else {
-            Some(self.list.cursor)
-        };
+        self.list.cursor = kept.unwrap_or(0);
+        self.list.chosen = kept;
+        if let Some(row) = kept
+            && viewport > 0
+        {
+            self.list.scroll.set_viewport(viewport);
+            let below_top = cursor.saturating_sub(offset).min(viewport - 1);
+            self.list.scroll.scroll_to(row.saturating_sub(below_top));
+        }
         self.sync_detail(history);
     }
 
-    pub fn current_entry<'a>(&self, history: &'a History) -> Option<&'a HistoryEntry> {
-        let id = *self.filtered.get(self.list.cursor)?;
-        history.entries.iter().find(|e| e.id == id)
+    pub fn selected_key(&self) -> Option<ItemKey> {
+        self.filtered.get(self.list.cursor).copied()
     }
 
-    fn sync_detail(&mut self, history: &History) {
-        let text = self
-            .current_entry(history)
-            .map(|e| e.sql.clone())
-            .unwrap_or_default();
-        if self.detail.text() != text {
-            self.detail.set_text(&text);
+    pub fn current_entry<'a>(&self, history: &'a History) -> Option<&'a HistoryEntry> {
+        history.get(self.selected_key()?)
+    }
+
+    pub fn row_of(&self, key: ItemKey) -> Option<usize> {
+        self.filtered.iter().position(|k| *k == key)
+    }
+
+    pub fn run_selected(&self, cmd: HistoryCommand, history: &History, cx: &mut Cx) -> Outcome {
+        match self.selected_key() {
+            Some(key) => self.run(key, cmd, history, cx),
+            None => Outcome::Changed,
         }
+    }
+
+    pub fn run(
+        &self,
+        key: ItemKey,
+        cmd: HistoryCommand,
+        history: &History,
+        cx: &mut Cx,
+    ) -> Outcome {
+        let Some(e) = history.get(key) else {
+            cx.status("That history entry is no longer available");
+            return Outcome::Changed;
+        };
+        match cmd {
+            HistoryCommand::Open => cx.go(crate::app::Act::OpenQuery(e.sql.clone(), false)),
+            HistoryCommand::Rerun => cx.go(crate::app::Act::OpenQuery(e.sql.clone(), true)),
+            HistoryCommand::Copy => cx.copy_as(e.sql.clone(), "query"),
+        }
+        Outcome::Changed
+    }
+
+    pub fn sync_detail(&mut self, history: &History) {
+        let shown = self.current_entry(history);
+        let loaded = match (&self.detail_loaded, shown) {
+            (Some((key, sql)), Some(e)) => *key == e.key() && *sql == e.sql,
+            (None, None) => true,
+            _ => false,
+        };
+        if loaded {
+            return;
+        }
+        self.detail_loaded = shown.map(|e| (e.key(), e.sql.clone()));
+        let text = shown.map_or("", |e| e.sql.as_str());
+        self.detail.set_text(text);
     }
 
     pub fn hints(&self, focus: Option<WidgetId>) -> Vec<Hint> {
@@ -2583,7 +3046,7 @@ impl HistoryTab {
         let entries: Vec<&HistoryEntry> = self
             .filtered
             .iter()
-            .filter_map(|id| history.entries.iter().find(|e| e.id == *id))
+            .filter_map(|key| history.get(*key))
             .collect();
         for (k, i) in self.list.scroll.visible_range().enumerate() {
             let y = l.y + k as u16;
@@ -2705,13 +3168,883 @@ impl HistoryTab {
 }
 
 #[cfg(test)]
+mod issue47_tests {
+    use super::*;
+    use junie_tui::widgets::grid::{CellKind, default_validator};
+
+    #[test]
+    fn issue47_fixture_named_values_parse_under_the_explicit_grammar() {
+        let catalog = Catalog::acme_prod();
+        let mut checked = [0usize; 3];
+        for table in catalog.tables.iter().filter(|t| !t.columns.is_empty()) {
+            let columns: Vec<(String, ColType)> = table
+                .columns
+                .iter()
+                .map(|c| (c.name.clone(), c.ty))
+                .collect();
+            let specs = column_specs(table, &columns);
+            for row in crate::db::rows(table, 0, 64) {
+                for (spec, value) in specs.iter().zip(&row) {
+                    let slot = match spec.kind {
+                        CellKind::Timestamp => 0,
+                        CellKind::Id => 1,
+                        CellKind::Json => 2,
+                        _ => continue,
+                    };
+                    if *value == Value::Null {
+                        continue;
+                    }
+                    let text = value.display();
+                    let parsed = default_validator(spec, &text);
+                    assert_eq!(
+                        parsed.map(|v| v == to_cell(value)),
+                        Ok(true),
+                        "{}.{} fixture {text:?} must round-trip the default parser",
+                        table.name,
+                        spec.name
+                    );
+                    checked[slot] += 1;
+                }
+            }
+        }
+        assert!(
+            checked.iter().all(|&n| n > 0),
+            "every named kind is exercised: {checked:?}"
+        );
+    }
+}
+
+#[cfg(test)]
+mod issue194_tests {
+    use super::*;
+    use crate::db::{ColType, Column, Constraint, Index, ObjectKind};
+
+    #[test]
+    fn issue194_ddl_quotes_identifiers() {
+        let table = Table {
+            schema: "public".into(),
+            name: "UserOrders".into(),
+            kind: ObjectKind::Table,
+            columns: vec![
+                Column {
+                    name: "order".into(),
+                    ty: ColType::Int,
+                    nullable: false,
+                    default: None,
+                    primary: true,
+                    references: None,
+                    enum_values: vec![],
+                    generated: false,
+                },
+                Column {
+                    name: "UserId".into(),
+                    ty: ColType::Text,
+                    nullable: true,
+                    default: None,
+                    primary: false,
+                    references: None,
+                    enum_values: vec![],
+                    generated: false,
+                },
+                Column {
+                    name: "we\"ird".into(),
+                    ty: ColType::Text,
+                    nullable: true,
+                    default: None,
+                    primary: false,
+                    references: None,
+                    enum_values: vec![],
+                    generated: false,
+                },
+            ],
+            indexes: vec![Index {
+                name: "Idx\"Order".into(),
+                columns: vec!["order".into(), "UserId".into()],
+                unique: false,
+                method: "btree",
+            }],
+            constraints: vec![Constraint {
+                name: "order_check".into(),
+                kind: "CHECK",
+                definition: "CHECK (\"order\" > 0)".into(),
+            }],
+            triggers: vec![],
+            row_count: 0,
+            comment: Some("it's a note".into()),
+        };
+        let cat = Catalog {
+            database: "db".into(),
+            schemas: vec!["public".into()],
+            tables: vec![table.clone()],
+        };
+        let store = crate::store::SessionStore::new(1);
+        let tab = TableTab::new(
+            ItemKey::num(0),
+            WidgetId::of("issue194"),
+            crate::store::Source {
+                catalog: &cat,
+                store: &store,
+            },
+            &table,
+        );
+        let ddl = tab.ddl.lines();
+
+        assert_eq!(ddl[0], "CREATE TABLE \"public\".\"UserOrders\" (");
+        assert_eq!(ddl[1], "    \"order\" integer NOT NULL,");
+        assert_eq!(ddl[2], "    \"UserId\" text,");
+        assert_eq!(ddl[3], "    \"we\"\"ird\" text,");
+        assert_eq!(
+            ddl[4],
+            "    CONSTRAINT \"order_check\" CHECK CHECK (\"order\" > 0)"
+        );
+        assert_eq!(ddl[5], ");");
+        assert_eq!(
+            ddl[6],
+            "CREATE INDEX \"Idx\"\"Order\" ON \"public\".\"UserOrders\" USING btree (\"order\", \"UserId\");"
+        );
+        assert_eq!(
+            ddl[7],
+            "COMMENT ON TABLE \"public\".\"UserOrders\" IS 'it''s a note';"
+        );
+    }
+}
+
+/// Painting and view-only access to one workspace tab. Its field is private,
+/// so a caller of `DocumentWorkspace::view_mut` cannot reach a tab's rows,
+/// draft or text through it. Every operation here moves a cursor, a scroll
+/// offset or a divider, paints, or takes or releases a grid's save lock; none
+/// can edit.
+pub struct WorkTabView<'a> {
+    document: &'a mut WorkTab,
+}
+
+impl<'a> WorkTabView<'a> {
+    pub(crate) fn new(document: &'a mut WorkTab) -> Self {
+        Self { document }
+    }
+
+    pub fn render(
+        &mut self,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        bg: ratatui::style::Color,
+        history: &History,
+        connection: &str,
+    ) {
+        match self.document {
+            WorkTab::Table(t) => t.render(area, buf, ctx, bg),
+            WorkTab::Query(q) => q.render(area, buf, ctx, bg),
+            WorkTab::History(h) => h.render(area, buf, ctx, bg, history, connection),
+        }
+    }
+
+    /// One poll of a running query. It moves the run forward and returns the
+    /// history entries its statements made, and whether the run is still
+    /// going. Run progress and results are not editor text, so this is not a
+    /// content change.
+    pub fn tick(
+        &mut self,
+        src: Source,
+        connection: &str,
+        database: &str,
+    ) -> (Vec<HistoryEntry>, bool) {
+        match self.document {
+            WorkTab::Query(q) => (q.tick(src, connection, database), q.is_running()),
+            _ => (vec![], false),
+        }
+    }
+
+    /// Clears a query's "result not seen yet" mark.
+    pub fn mark_seen(&mut self) {
+        if let WorkTab::Query(q) = self.document {
+            q.unseen = false;
+        }
+    }
+
+    /// Locks a table's grid on `changes`, its own current capture. The lock
+    /// stops later edits and changes none of the rows or the draft, so it is
+    /// not a content change. Any other tab is `StaleToken`.
+    pub fn begin_submission(
+        &mut self,
+        changes: GridChangeSet,
+    ) -> Result<GridCommitToken, GridCommitError> {
+        match self.document {
+            WorkTab::Table(t) => t.grid.begin_submission(changes),
+            _ => Err(GridCommitError::StaleToken),
+        }
+    }
+
+    /// Unlocks the grid a save locked. The draft is untouched.
+    pub fn cancel_submission(&mut self, token: GridCommitToken) -> Result<(), GridCommitError> {
+        match self.document {
+            WorkTab::Table(t) => t.grid.cancel_submission(token),
+            _ => Err(GridCommitError::StaleToken),
+        }
+    }
+
+    /// Unlocks the grid with the store's refusal and keeps the draft. The
+    /// refusal is shown on its row or in the status, so no content changes.
+    pub fn refuse_submission(
+        &mut self,
+        token: GridCommitToken,
+        failure: GridCommitFailure,
+    ) -> Result<(), GridCommitError> {
+        match self.document {
+            WorkTab::Table(t) => t.grid.complete_submission(token, Err(failure)),
+            _ => Err(GridCommitError::StaleToken),
+        }
+    }
+
+    /// Marks a table as older than the store.
+    pub fn mark_source_changed(&mut self) {
+        if let WorkTab::Table(t) = self.document {
+            t.mark_source_changed();
+        }
+    }
+
+    /// Moves the focused grid's cell cursor or the focused editor's caret for
+    /// a plain navigation key. Any other key, including every one that could
+    /// type, delete or commit, is refused.
+    pub fn navigate(&mut self, key: &Key, focus: Option<WidgetId>) -> bool {
+        use ratatui::crossterm::event::KeyModifiers;
+        let plain = key.mods.is_empty() || key.mods == KeyModifiers::SHIFT;
+        let moves = matches!(
+            key.code,
+            KeyCode::Up
+                | KeyCode::Down
+                | KeyCode::Left
+                | KeyCode::Right
+                | KeyCode::PageUp
+                | KeyCode::PageDown
+                | KeyCode::Home
+                | KeyCode::End
+        );
+        if !plain || !moves {
+            return false;
+        }
+        match self.document {
+            WorkTab::Table(t) if focus == Some(t.grid.id) && !t.grid.is_editing() => {
+                let _ = t.grid.on_key(key);
+                true
+            }
+            WorkTab::Query(q) if focus == Some(q.editor.id) => {
+                let _ = q.editor.on_key(key);
+                true
+            }
+            _ => false,
+        }
+    }
+
+    /// A wheel gesture over the tab's scrollable parts.
+    pub fn wheel(&mut self, ev: &PointerEvent) -> Outcome {
+        let horizontal = matches!(ev.wheel(), Some((Axis::Horizontal, _)));
+        match self.document {
+            WorkTab::Table(t) => t
+                .grid
+                .route(ev)
+                .map(|r| r.outcome())
+                .or_else(|| t.structure.route(ev).map(|r| r.outcome()))
+                .or_else(|| t.ddl.route(ev).map(|r| r.outcome()))
+                .unwrap_or(Outcome::Ignored),
+            WorkTab::Query(q) => q.wheel(ev),
+            WorkTab::History(h) => {
+                if ev.on(h.list.id) {
+                    return if horizontal {
+                        Outcome::Consumed
+                    } else {
+                        h.list.pointer(ev).outcome()
+                    };
+                }
+                h.detail
+                    .route(ev)
+                    .map(|r| r.outcome())
+                    .unwrap_or(Outcome::Ignored)
+            }
+        }
+    }
+
+    /// Pointer input on the read-only detail pane (history detail or query
+    /// result facts): scrolling and selecting.
+    pub fn facts_pointer(&mut self, ev: &PointerEvent) -> Option<Outcome> {
+        let facts = match self.document {
+            WorkTab::History(h) => &mut h.detail_view,
+            WorkTab::Query(q) => &mut q.result_facts,
+            WorkTab::Table(_) => return None,
+        };
+        facts.pointer(ev).map(|r| r.outcome())
+    }
+
+    /// A press on the tab's divider.
+    pub fn seam_press(&mut self, id: WidgetId, pos: ratatui::layout::Position) -> bool {
+        match self.document {
+            WorkTab::Query(q) if id == q.seam.id => {
+                q.seam.on_press(&q.split, q.split_area, 1, pos);
+                true
+            }
+            WorkTab::History(h) if id == h.seam.id => {
+                h.seam.on_press(&h.split, h.split_area, 2, pos);
+                true
+            }
+            _ => false,
+        }
+    }
+
+    /// A drag of the tab's divider.
+    pub fn seam_drag(&mut self, id: WidgetId, pos: ratatui::layout::Position) -> Option<Outcome> {
+        match self.document {
+            WorkTab::History(h) if id == h.seam.id => {
+                let area = h.split_area;
+                Some(h.seam.on_drag(&mut h.split, area, 2, pos))
+            }
+            _ => None,
+        }
+    }
+}
+
+#[cfg(test)]
+mod issue10_tests {
+    use super::*;
+    use crate::db::{self, Value};
+
+    fn orders(cat: &Catalog) -> &Table {
+        cat.find(Some("public"), "orders").expect("orders fixture")
+    }
+
+    fn filter(column: &str, op: FilterOp, value: &str, value2: &str) -> Filter {
+        Filter {
+            column: column.into(),
+            op,
+            value: value.into(),
+            value2: value2.into(),
+            enabled: true,
+        }
+    }
+
+    fn col(table: &Table, name: &str) -> usize {
+        table
+            .columns
+            .iter()
+            .position(|c| c.name == name)
+            .unwrap_or_else(|| panic!("column {name}"))
+    }
+
+    fn text<'a>(table: &Table, row: &'a [Value], name: &str) -> Option<&'a str> {
+        match &row[col(table, name)] {
+            Value::Text(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    fn id_of(table: &Table, row: &[Value]) -> String {
+        row[col(table, "id")].display()
+    }
+
+    /// Runs the tab's own select (its filters and match mode) through the simulator.
+    fn tab_ids(cat: &Catalog, filters: Vec<Filter>, match_all: bool) -> Vec<String> {
+        let table = orders(cat);
+        let store = crate::store::SessionStore::new(1);
+        let src = Source {
+            catalog: cat,
+            store: &store,
+        };
+        let tab = TableTab::new(ItemKey::num(0), WidgetId::of("issue10"), src, table);
+        let view = TableViewState {
+            sort: None,
+            filters,
+            match_all,
+        };
+        let rs = sql::run_select(src, &tab.select(&view)).expect("filtered select runs");
+        let id = rs
+            .columns
+            .iter()
+            .position(|c| c.0 == "id")
+            .expect("id column");
+        rs.rows.iter().map(|r| r[id].display()).collect()
+    }
+
+    /// Independent oracle over the same generated rows the simulator scans.
+    fn expected(cat: &Catalog, keep: impl Fn(&Table, &[Value]) -> bool) -> Vec<String> {
+        let table = orders(cat);
+        let scan = table.row_count.min(2_000);
+        db::rows(table, 0, scan)
+            .iter()
+            .filter(|r| keep(table, r))
+            .take(sql::ROW_CAP)
+            .map(|r| id_of(table, r))
+            .collect()
+    }
+
+    fn status_is(t: &Table, r: &[Value], want: &str) -> bool {
+        text(t, r, "status") == Some(want)
+    }
+
+    fn is_gift(t: &Table, r: &[Value]) -> bool {
+        r[col(t, "is_gift")] == Value::Bool(true)
+    }
+
+    /// One row per id: text `notes`, integer `order_number`, boolean `is_gift`.
+    /// Every other column is NULL.
+    type Fixture = (
+        &'static str,
+        Option<&'static str>,
+        Option<i64>,
+        Option<bool>,
+    );
+
+    const ROWS: [Fixture; 8] = [
+        ("r1", Some("paid"), Some(1), Some(true)),
+        ("r2", Some("Paid"), Some(2), Some(false)),
+        ("r3", Some("unpaid"), Some(3), Some(true)),
+        ("r4", Some("a_b%"), Some(4), None),
+        ("r5", Some("axbc"), Some(5), Some(false)),
+        ("r6", Some(""), Some(10), Some(true)),
+        ("r7", None, None, None),
+        ("r8", Some("shipped"), Some(20), Some(false)),
+    ];
+
+    fn fixture_rows(table: &Table) -> Vec<(&'static str, Vec<Value>)> {
+        ROWS.iter()
+            .map(|&(id, notes, number, gift)| {
+                let mut row = vec![Value::Null; table.columns.len()];
+                if let Some(t) = notes {
+                    row[col(table, "notes")] = Value::Text(t.into());
+                }
+                if let Some(n) = number {
+                    row[col(table, "order_number")] = Value::Int(n);
+                }
+                if let Some(b) = gift {
+                    row[col(table, "is_gift")] = Value::Bool(b);
+                }
+                (id, row)
+            })
+            .collect()
+    }
+
+    /// The ids the operator admits, through the same expression the tab runs.
+    fn admitted(table: &Table, f: &Filter) -> Vec<&'static str> {
+        let prepared = sql::prepare(table, &f.expression()).expect("fixture filter prepares");
+        fixture_rows(table)
+            .into_iter()
+            .filter(|(_, row)| prepared.admits(row))
+            .map(|(id, _)| id)
+            .collect()
+    }
+
+    /// Operator, column, value, value2, admitted ids, and why.
+    type OpCase = (
+        FilterOp,
+        &'static str,
+        &'static str,
+        &'static str,
+        &'static [&'static str],
+        &'static str,
+    );
+
+    #[test]
+    fn issue10_all_filter_operators_match_expected_rows() {
+        use FilterOp::*;
+        assert_eq!(FilterOp::ALL.len(), 18, "a new operator needs a row here");
+        let cases: [OpCase; 24] = [
+            (
+                Eq,
+                "notes",
+                "PAID",
+                "",
+                &["r1", "r2"],
+                "text equality ignores case",
+            ),
+            (
+                Ne,
+                "notes",
+                "paid",
+                "",
+                &["r3", "r4", "r5", "r6", "r8"],
+                "Ne drops both cases of paid and NULL",
+            ),
+            (
+                Contains,
+                "notes",
+                "a_b%",
+                "",
+                &["r4"],
+                "wildcard characters are literal",
+            ),
+            (
+                NotContains,
+                "notes",
+                "a_b%",
+                "",
+                &["r1", "r2", "r3", "r5", "r6", "r8"],
+                "negation drops the match and NULL",
+            ),
+            (
+                StartsWith,
+                "notes",
+                "a_",
+                "",
+                &["r4"],
+                "an underscore is not one-character wildcard",
+            ),
+            (
+                EndsWith,
+                "notes",
+                "b%",
+                "",
+                &["r4"],
+                "a percent is not a trailing wildcard",
+            ),
+            (
+                Gt,
+                "order_number",
+                "4",
+                "",
+                &["r5", "r6", "r8"],
+                "Gt excludes the bound",
+            ),
+            (
+                Ge,
+                "order_number",
+                "5",
+                "",
+                &["r5", "r6", "r8"],
+                "Ge includes the bound",
+            ),
+            (
+                Lt,
+                "order_number",
+                "3",
+                "",
+                &["r1", "r2"],
+                "Lt excludes the bound",
+            ),
+            (
+                Le,
+                "order_number",
+                "3",
+                "",
+                &["r1", "r2", "r3"],
+                "Le includes the bound",
+            ),
+            (IsNull, "notes", "", "", &["r7"], "only the NULL row"),
+            (
+                IsNotNull,
+                "notes",
+                "",
+                "",
+                &["r1", "r2", "r3", "r4", "r5", "r6", "r8"],
+                "empty text is not NULL",
+            ),
+            (
+                IsEmpty,
+                "notes",
+                "",
+                "",
+                &["r6"],
+                "empty text only, not NULL",
+            ),
+            (
+                IsNotEmpty,
+                "notes",
+                "",
+                "",
+                &["r1", "r2", "r3", "r4", "r5", "r8"],
+                "non-empty text only, not NULL",
+            ),
+            (
+                In,
+                "notes",
+                "paid , shipped",
+                "",
+                &["r1", "r2", "r8"],
+                "members are trimmed and case-insensitive",
+            ),
+            (
+                NotIn,
+                "notes",
+                "paid , shipped",
+                "",
+                &["r3", "r4", "r5", "r6"],
+                "NotIn drops members and NULL",
+            ),
+            (
+                Between,
+                "order_number",
+                "2",
+                "5",
+                &["r2", "r3", "r4", "r5"],
+                "both ends are inclusive",
+            ),
+            (
+                Regex,
+                "notes",
+                "^pa.d$",
+                "",
+                &["r1"],
+                "anchored and case-sensitive",
+            ),
+            (
+                Regex,
+                "notes",
+                "^PAID$",
+                "",
+                &[],
+                "regex does not ignore case",
+            ),
+            (
+                Regex,
+                "notes",
+                "paid",
+                "",
+                &["r1", "r3"],
+                "an unanchored pattern finds a substring",
+            ),
+            (
+                Eq,
+                "is_gift",
+                "true",
+                "",
+                &["r1", "r3", "r6"],
+                "boolean equality",
+            ),
+            (
+                Ne,
+                "is_gift",
+                "true",
+                "",
+                &["r2", "r5", "r8"],
+                "boolean Ne drops NULL",
+            ),
+            (
+                Gt,
+                "order_number",
+                "9007199254740993",
+                "",
+                &[],
+                "no row exceeds a large bound",
+            ),
+            (
+                In,
+                "order_number",
+                "3,20",
+                "",
+                &["r3", "r8"],
+                "integer membership",
+            ),
+        ];
+        let cat = Catalog::acme_prod();
+        let table = orders(&cat);
+        for (op, column, value, value2, want, why) in cases {
+            let f = filter(column, op, value, value2);
+            assert_eq!(admitted(table, &f), want, "{op:?} {value:?}: {why}");
+        }
+        for op in FilterOp::ALL {
+            assert!(cases.iter().any(|case| case.0 == op), "{op:?} has no rows");
+        }
+    }
+
+    #[test]
+    fn issue10_match_any_returns_the_union_of_enabled_filters() {
+        let cat = Catalog::acme_prod();
+        let filters = vec![
+            filter("status", FilterOp::Eq, "paid", ""),
+            filter("is_gift", FilterOp::Eq, "true", ""),
+        ];
+        assert_eq!(
+            tab_ids(&cat, filters, false),
+            expected(&cat, |t, r| status_is(t, r, "paid") || is_gift(t, r)),
+        );
+    }
+
+    #[test]
+    fn issue10_match_all_still_intersects_enabled_filters() {
+        let cat = Catalog::acme_prod();
+        let filters = vec![
+            filter("status", FilterOp::Eq, "paid", ""),
+            filter("is_gift", FilterOp::Eq, "true", ""),
+        ];
+        assert_eq!(
+            tab_ids(&cat, filters, true),
+            expected(&cat, |t, r| status_is(t, r, "paid") && is_gift(t, r)),
+        );
+    }
+
+    #[test]
+    fn issue10_no_enabled_filters_is_unrestricted() {
+        let cat = Catalog::acme_prod();
+        let disabled = Filter {
+            enabled: false,
+            ..filter("status", FilterOp::Eq, "paid", "")
+        };
+        assert_eq!(tab_ids(&cat, vec![], true), expected(&cat, |_, _| true));
+        assert_eq!(
+            tab_ids(&cat, vec![disabled], false),
+            expected(&cat, |_, _| true)
+        );
+    }
+
+    #[test]
+    fn issue10_not_contains_excludes_matches_and_nulls() {
+        let cat = Catalog::acme_prod();
+        let got = tab_ids(
+            &cat,
+            vec![filter("notes", FilterOp::NotContains, "gift", "")],
+            true,
+        );
+        assert_eq!(
+            got,
+            expected(&cat, |t, r| text(t, r, "notes")
+                .is_some_and(|s| !s.to_lowercase().contains("gift"))),
+        );
+    }
+
+    #[test]
+    fn issue10_not_in_excludes_listed_values_and_nulls() {
+        let cat = Catalog::acme_prod();
+        let got = tab_ids(
+            &cat,
+            vec![filter("status", FilterOp::NotIn, "paid, shipped", "")],
+            true,
+        );
+        assert_eq!(
+            got,
+            expected(&cat, |t, r| text(t, r, "status")
+                .is_some_and(|s| s != "paid" && s != "shipped")),
+        );
+    }
+
+    #[test]
+    fn issue10_regex_is_a_pattern_not_a_substring() {
+        let cat = Catalog::acme_prod();
+        let got = tab_ids(
+            &cat,
+            vec![filter("status", FilterOp::Regex, "^p.id$", "")],
+            true,
+        );
+        assert_eq!(got, expected(&cat, |t, r| status_is(t, r, "paid")));
+    }
+
+    #[test]
+    fn issue10_between_stays_one_child_under_match_any() {
+        let cat = Catalog::acme_prod();
+        let filters = vec![
+            filter("order_number", FilterOp::Between, "10000", "10002"),
+            filter("status", FilterOp::Eq, "paid", ""),
+        ];
+        assert_eq!(
+            tab_ids(&cat, filters, false),
+            expected(&cat, |t, r| {
+                let in_range = match r[col(t, "order_number")] {
+                    Value::Int(n) => (10_000..=10_002).contains(&n),
+                    _ => false,
+                };
+                in_range || status_is(t, r, "paid")
+            }),
+        );
+    }
+
+    #[test]
+    fn issue10_is_null_selects_only_null_rows() {
+        let cat = Catalog::acme_prod();
+        let got = tab_ids(&cat, vec![filter("notes", FilterOp::IsNull, "", "")], true);
+        assert_eq!(
+            got,
+            expected(&cat, |t, r| r[col(t, "notes")] == Value::Null)
+        );
+    }
+
+    #[test]
+    fn issue10_editor_rejects_values_that_cannot_evaluate() {
+        let int_filter = |op, value: &str, value2: &str| Filter {
+            column: "order_number".into(),
+            op,
+            value: value.into(),
+            value2: value2.into(),
+            enabled: true,
+        };
+        let text_filter = |op, value: &str| Filter {
+            column: "notes".into(),
+            op,
+            value: value.into(),
+            value2: String::new(),
+            enabled: true,
+        };
+        let err = int_filter(FilterOp::Gt, "abc", "")
+            .check(ColType::Int)
+            .unwrap_err();
+        assert_eq!(err.field, FilterField::Value);
+        assert!(err.message.contains("whole number"), "{}", err.message);
+
+        let err = int_filter(FilterOp::Between, "5", "1")
+            .check(ColType::Int)
+            .unwrap_err();
+        assert_eq!(err.field, FilterField::Value2);
+
+        let err = text_filter(FilterOp::Regex, "(")
+            .check(ColType::Text)
+            .unwrap_err();
+        assert_eq!(err.field, FilterField::Value);
+        assert!(err.message.starts_with("invalid regular expression"));
+
+        let err = text_filter(FilterOp::In, "paid,,shipped")
+            .check(ColType::Enum)
+            .unwrap_err();
+        assert_eq!(err.field, FilterField::Value);
+
+        assert!(
+            int_filter(FilterOp::Gt, "3", "")
+                .check(ColType::Int)
+                .is_ok()
+        );
+        assert!(
+            int_filter(FilterOp::Between, "1", "3")
+                .check(ColType::Int)
+                .is_ok()
+        );
+        assert!(
+            text_filter(FilterOp::Regex, "^p.id$")
+                .check(ColType::Text)
+                .is_ok()
+        );
+    }
+
+    #[test]
+    fn issue10_boolean_filter_rejects_non_boolean_operands() {
+        let gift = |op, value: &str| filter("is_gift", op, value, "");
+        let err = gift(FilterOp::Eq, "yes").check(ColType::Bool).unwrap_err();
+        assert_eq!(err.field, FilterField::Value);
+        assert_eq!(err.message, "Enter true or false");
+        let err = gift(FilterOp::In, "true, maybe")
+            .check(ColType::Bool)
+            .unwrap_err();
+        assert_eq!(err.field, FilterField::Value);
+        assert!(gift(FilterOp::Eq, "true").check(ColType::Bool).is_ok());
+        assert!(gift(FilterOp::Ne, "FALSE").check(ColType::Bool).is_ok());
+        assert!(gift(FilterOp::IsNull, "").check(ColType::Bool).is_ok());
+    }
+
+    #[test]
+    fn issue10_integer_range_order_is_exact() {
+        let err = filter(
+            "order_number",
+            FilterOp::Between,
+            "9007199254740993",
+            "9007199254740992",
+        )
+        .check(ColType::Int)
+        .unwrap_err();
+        assert_eq!(err.field, FilterField::Value2);
+    }
+}
+
+#[cfg(test)]
 mod issue9_tests {
     use super::*;
 
     #[test]
     fn issue9_query_editor_unicode_paste() {
         let sql = "SELECT é, 名 FROM 表 WHERE note = '💾;中'; SELECT e\u{301} FROM t";
-        let mut tab = QueryTab::new(WidgetId::of("issue9"), "Query 1", "");
+        let mut tab = QueryTab::new(ItemKey::num(0), WidgetId::of("issue9"), "Query 1", "");
         tab.editor.editing = true;
         assert_eq!(tab.on_paste(sql), Outcome::Changed);
         assert_eq!(tab.editor.text(), sql);
@@ -2729,5 +4062,33 @@ mod issue9_tests {
             assert_eq!(&sql[range.clone()], text.as_str());
         }
         assert!(!highlight_sql(sql).is_empty());
+    }
+}
+
+#[cfg(test)]
+mod issue84_tests {
+    use super::*;
+    use crate::db::Catalog;
+
+    #[test]
+    fn completion_prefix_editor_home_acceptance() {
+        let cat = Catalog::acme_prod();
+        let original = " SELECT id FROM users";
+        let mut tab = QueryTab::new(ItemKey::num(0), WidgetId::of("issue84"), "Query 1", "");
+        tab.editor.set_text(original);
+        assert_eq!(tab.editor.cursor_offset(), 0);
+        let store = crate::store::SessionStore::new(1);
+        tab.trigger_completion(
+            Source {
+                catalog: &cat,
+                store: &store,
+            },
+            true,
+        );
+        assert!(tab.completion.is_open());
+        tab.accept_completion(0);
+        let text = tab.editor.text();
+        assert!(text.len() > original.len(), "{text:?}");
+        assert!(text.ends_with(original), "{text:?}");
     }
 }

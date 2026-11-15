@@ -2025,37 +2025,50 @@ impl Page<Jackin> for CapsuleScreen {
         Some(PANES)
     }
 
+    /// Only what counts down on its own needs a frame per tick. Output of the
+    /// panes arrives through the world, and an idle pane draws nothing new.
     fn animating(&self, _w: &World) -> bool {
-        true
+        (self.prefix_timeout_ms.is_some() && self.prefix_until.is_some())
+            || self.redraw_flash > 0
+            || self.pending_spawn.is_some()
     }
 
     fn is_editing(&self) -> bool {
         false
     }
 
+    /// Changed only when the tick changed something this page shows: a prefix
+    /// that timed out, the redraw flash, a spawned pane, drained pane effects,
+    /// a pane or focus that moved, or a new dirty count.
     fn on_tick(&mut self, w: &mut World, cx: &mut Cx) -> Outcome {
+        let mut changed = false;
         if let Some(until) = self.prefix_until
             && w.now_ms() >= until
         {
             self.prefix_until = None;
             cx.status("Prefix timed out");
+            changed = true;
         }
         if self.redraw_flash > 0 {
             self.redraw_flash -= 1;
+            changed = true;
         }
         if self.pending_spawn.is_some() {
             self.apply_pending_spawn(w, cx);
+            changed = true;
         }
+        let before = self.control_signature(w);
         self.after_input(w);
-        self.run_effects(w, cx);
+        changed |= self.control_signature(w) != before;
+        changed |= self.run_effects(w, cx);
 
         let touched = self.daemon(w).map(|d| d.touched_files().len()).unwrap_or(0);
-        if touched > 0
-            && let Some(i) = w.instance_mut(&self.instance)
-        {
-            i.uncommitted = i.uncommitted.max(touched);
+        changed |= w.note_touched_files(&self.instance, touched);
+        if changed {
+            Outcome::Changed
+        } else {
+            Outcome::Ignored
         }
-        Outcome::Changed
     }
 
     fn on_msg(&mut self, msg: &Msg, w: &mut World, cx: &mut Cx) -> Outcome {
@@ -2066,7 +2079,7 @@ impl Page<Jackin> for CapsuleScreen {
             && *instance == self.instance
         {
             self.takeover = Some(by.clone());
-            cx.status(format!("{by} attached to this instance"));
+            cx.notice(format!("{by} attached to this instance"), Tone::Secondary);
             return Outcome::Changed;
         }
         Outcome::Ignored
@@ -2538,10 +2551,7 @@ impl CapsuleScreen {
                     action: Some(1), ..
                 },
             ) => {
-                if let Some(i) = w.instance_mut(&self.instance) {
-                    i.uncommitted = 0;
-                    i.unpushed = 0;
-                }
+                w.clear_instance_changes(&self.instance);
                 cx.status("Changes discarded");
                 self.end_instance(false, cx);
             }
@@ -2611,8 +2621,9 @@ impl CapsuleScreen {
         Outcome::Changed
     }
 
-    /// Gives every terminal pane the room its place in the layout has now,
-    /// which starts a pane that was waiting for room.
+    /// Gives every pane the room its place in the layout has now, which
+    /// starts a pane that was waiting for room and prepares each viewport, so
+    /// the frame that follows draws it without copying its history.
     fn sync_all(&mut self, w: &mut World) {
         if self.body.is_empty() {
             return;
@@ -2621,13 +2632,7 @@ impl CapsuleScreen {
         self.layout(body, w);
         let ids: Vec<PaneId> = self.pane_rects.iter().map(|(id, _)| *id).collect();
         for pid in ids {
-            let terminal = self
-                .daemon(w)
-                .and_then(|d| d.pane(pid))
-                .is_some_and(|p| p.body.kind() != PaneKindTag::Script);
-            if terminal {
-                self.prime(pid, w);
-            }
+            self.prime(pid, w);
         }
     }
 
@@ -2663,19 +2668,36 @@ impl CapsuleScreen {
         self.sync_focus(w);
     }
 
-    fn run_effects(&mut self, w: &mut World, cx: &mut Cx) {
+    /// Drains the effects the panes asked for. Whether there were any.
+    fn run_effects(&mut self, w: &mut World, cx: &mut Cx) -> bool {
         let words = &w.surfaces.vocabulary.pane;
         let Some(d) = w.daemons.get_mut(&self.instance) else {
-            return;
+            return false;
         };
+        let mut any = false;
         for pane in &mut d.panes {
             for effect in pane.body.take_effects(words) {
+                any = true;
                 match effect {
                     PaneEffect::Status { text, tone } => cx.status_in(text, tone),
                     PaneEffect::Copy { text, what } => cx.copy_as(text, what),
                 }
             }
         }
+        any
+    }
+
+    /// The small facts a tick of input syncing can change: which panes exist,
+    /// which one has focus and what state each reports. Never the grid.
+    fn control_signature(&self, w: &World) -> (usize, usize, Option<PaneId>, Vec<AgentState>) {
+        self.daemon(w).map_or((0, 0, None, vec![]), |d| {
+            (
+                d.tabs.len(),
+                d.active,
+                d.focused_pane(),
+                d.panes.iter().map(|p| p.body.state()).collect(),
+            )
+        })
     }
 
     fn send_prefix(&mut self, key: &Key, w: &mut World) {
@@ -3288,15 +3310,17 @@ impl CapsuleScreen {
                 return None;
             }
         };
-        let (o, act) = r.into_parts();
-        match act {
-            Some(MenuAction::Chosen(i)) => {
-                let label = m.items[i].item.label.clone();
-                let t = if tab == usize::MAX { None } else { Some(tab) };
-                self.run_menu(&label, t, w, cx);
+        let (o, actions) = r.into_parts();
+        if actions.is_empty() {
+            self.tab_menu = Some((tab, m));
+        } else {
+            for act in actions {
+                if let MenuAction::Chosen(i) = act {
+                    let label = m.items[i].item.label.clone();
+                    let t = if tab == usize::MAX { None } else { Some(tab) };
+                    self.run_menu(&label, t, w, cx);
+                }
             }
-            Some(MenuAction::Dismissed) => {}
-            None => self.tab_menu = Some((tab, m)),
         }
         Some(o.or(Outcome::Changed))
     }
@@ -3320,14 +3344,16 @@ impl CapsuleScreen {
             return o;
         }
         if let Some(r) = self.menubar.route(ev) {
-            let (o, act) = r.into_parts();
-            match act {
-                Some(MenuBarAction::Chosen(mi, ii)) => {
-                    let label = self.menubar.menus[mi][ii].item.label.clone();
-                    self.run_menu(&label, None, w, cx);
+            let (o, actions) = r.into_parts();
+            for act in actions {
+                match act {
+                    MenuBarAction::Chosen(mi, ii) => {
+                        let label = self.menubar.menus[mi][ii].item.label.clone();
+                        self.run_menu(&label, None, w, cx);
+                    }
+                    MenuBarAction::Brand => self.open_brand_menu(w),
+                    _ => {}
                 }
-                Some(MenuBarAction::Brand) => self.open_brand_menu(w),
-                _ => {}
             }
             return o.or(Outcome::Changed);
         }
@@ -3348,11 +3374,13 @@ impl CapsuleScreen {
             return Outcome::Changed;
         }
         if let Some(r) = self.tabs.route(ev) {
-            let (o, act) = r.into_parts();
-            if let Some(TabAction::Activated(i)) = act
-                && let Some(d) = self.daemon_mut(w)
-            {
-                d.active = i;
+            let (o, actions) = r.into_parts();
+            for act in actions {
+                if let TabAction::Activated(i) = act
+                    && let Some(d) = self.daemon_mut(w)
+                {
+                    d.active = i;
+                }
             }
             cx.focus.focus(PANES);
             return o.or(Outcome::Changed);

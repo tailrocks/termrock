@@ -15,6 +15,8 @@ struct Message<P> {
     job: Option<JobKey>,
 
     sticky: bool,
+
+    notice: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -178,6 +180,7 @@ impl<P: PartialEq> StatusLine<P> {
             payload,
             job: None,
             sticky: false,
+            notice: false,
         });
     }
 
@@ -192,6 +195,26 @@ impl<P: PartialEq> StatusLine<P> {
         self.observe(now);
         self.set_with(text, tone, payload)
     }
+
+    /// Posts a message about something the user did not just do, such as a
+    /// periodic refresh failing. It replaces nothing but another notice, so it
+    /// never hides a confirmation the user has not read yet. It is dropped
+    /// when a regular message is on screen, so keep the lasting state of a
+    /// failure somewhere other than this line.
+    pub fn notice_with(&mut self, text: impl Into<String>, tone: Tone, payload: P) {
+        if self.message.as_ref().is_some_and(|m| !m.notice) {
+            return;
+        }
+        self.set_with(text, tone, payload);
+        if let Some(m) = self.message.as_mut() {
+            m.notice = true;
+        }
+    }
+
+    pub fn notice_with_at(&mut self, text: impl Into<String>, tone: Tone, payload: P, now: Moment) {
+        self.observe(now);
+        self.notice_with(text, tone, payload)
+    }
 }
 
 impl<P: Default + PartialEq> StatusLine<P> {
@@ -202,6 +225,15 @@ impl<P: Default + PartialEq> StatusLine<P> {
     pub fn set_at(&mut self, text: impl Into<String>, tone: Tone, now: Moment) {
         self.observe(now);
         self.set(text, tone)
+    }
+
+    pub fn notice(&mut self, text: impl Into<String>, tone: Tone) {
+        self.notice_with(text, tone, P::default())
+    }
+
+    pub fn notice_at(&mut self, text: impl Into<String>, tone: Tone, now: Moment) {
+        self.observe(now);
+        self.notice(text, tone)
     }
 
     pub fn sticky(&mut self, text: impl Into<String>) {

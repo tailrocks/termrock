@@ -12,7 +12,9 @@ use jackin_console::domain::instance::{DaemonSnapshot, Instance, InstanceId, Ins
 use jackin_console::domain::launch::LaunchContent;
 use jackin_console::domain::surfaces::{LiveFacts, Surfaces};
 use jackin_console::launch::{LaunchFeed, LaunchTarget};
-use jackin_console::panes::{Daemon, PaneBody, PanePolicy, PaneRequest, PaneSpawn, TerminalPane};
+use jackin_console::panes::{
+    Daemon, PaneBody, PaneCommand, PanePolicy, PaneRequest, PaneSpawn, TerminalPane,
+};
 use jackin_console::rain::INTRO_END;
 use jackin_console::world::{World, WorldParts};
 use junie_tui::clock::SimClock;
@@ -36,6 +38,7 @@ pub struct TermBackend {
     pub bench: Arc<Bench>,
     pub requests: Mutex<Vec<PaneRequest>>,
     pub left: Mutex<Vec<String>>,
+    pub left_seen: Mutex<Vec<Vec<Vec<PaneCommand>>>>,
     pub effects: Mutex<Vec<Effect>>,
 }
 
@@ -43,6 +46,13 @@ impl TermBackend {
     /// The instances the Capsule told the backend it had left, in order.
     pub fn left(&self) -> Vec<String> {
         self.left.lock().expect("left").clone()
+    }
+
+    /// What every pane link had been sent, as seen at each `capsule_left`
+    /// call: whatever the console did to the panes before it told the
+    /// backend.
+    pub fn left_seen(&self) -> Vec<Vec<Vec<PaneCommand>>> {
+        self.left_seen.lock().expect("left seen").clone()
     }
 
     /// The tickets of the refreshes the world asked for, in order.
@@ -93,6 +103,10 @@ impl Backend for TermBackend {
 
     fn capsule_left(&self, _: &World, instance: &InstanceId) {
         self.left.lock().expect("left").push(instance.short_label());
+        let links = (0..self.bench.opened())
+            .map(|n| self.bench.commands(n))
+            .collect();
+        self.left_seen.lock().expect("left seen").push(links);
     }
 }
 
@@ -107,8 +121,12 @@ impl NativeClipboard for Sink {
 }
 
 pub fn instance() -> Instance {
+    instance_named(INSTANCE)
+}
+
+pub fn instance_named(id: &str) -> Instance {
     Instance {
-        id: InstanceId::simulated(INSTANCE),
+        id: InstanceId::simulated(id),
         container: "jackin-sandbox".into(),
         workspace: None,
         workdir: Some("/sandbox/project".into()),
@@ -152,6 +170,7 @@ impl Rig {
             bench: bench.clone(),
             requests: Mutex::new(Vec::new()),
             left: Mutex::new(Vec::new()),
+            left_seen: Mutex::new(Vec::new()),
             effects: Mutex::new(Vec::new()),
         });
         let mut parts = WorldParts::new(

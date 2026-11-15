@@ -241,13 +241,18 @@ impl HelpOverlay {
     }
 
     pub fn render(&mut self, screen: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
+        let screen = screen.intersection(*buf.area());
         let s = ctx.theme.strings;
         let old = std::mem::replace(&mut self.strings, s);
         crate::theme::Strings::follow(&mut self.title, old.help_title, s.help_title);
         crate::theme::Strings::follow(&mut self.hint, old.help_footer, s.help_footer);
         self.scroll.begin(ctx.track_click);
         crate::theme::Strings::follow(&mut self.done.label, old.done, s.done);
-        let pct = |n: u16| (u32::from(n) * u32::from(self.max_percent) / 100) as u16;
+        if screen.is_empty() {
+            self.clear_geometry();
+            return;
+        }
+        let pct = |n: u16| (u32::from(n) * u32::from(self.max_percent.min(100)) / 100) as u16;
         let w = screen.width.saturating_sub(4).min(pct(screen.width));
         let h = screen.height.saturating_sub(3).min(pct(screen.height));
         let (area, inner) = Frame::new(w, h)
@@ -258,29 +263,32 @@ impl HelpOverlay {
             .render(screen, buf, ctx);
         self.area = area;
         if inner.is_empty() {
+            self.clear_geometry();
             return;
         }
         let t = ctx.theme;
         let bg = t.surface_elevated;
-
-        let cols = (inner.width / 36).clamp(1, 3);
-        let col_w = inner.width / cols;
-        let cols = cols as usize;
 
         let widest = self
             .sections
             .iter()
             .flat_map(|(_, rows)| rows.iter().map(|(k, _)| width(&t.glyphs.key_label(k))))
             .max()
-            .unwrap_or(0) as u16;
-        let key_w = widest.min(col_w * 2 / 5).max(4);
-        let action_w = col_w.saturating_sub(key_w + 3).max(8) as usize;
+            .unwrap_or(0);
+        let cols = help_columns(inner.width, widest);
 
         let mut blocks: Vec<Vec<(String, String, bool)>> = vec![];
         for (title, rows) in &self.sections {
             let mut b = vec![(title.clone(), String::new(), true)];
             for (k, a) in rows {
-                for (i, line) in crate::ui::text::wrap(a, action_w).into_iter().enumerate() {
+                if cols.action == 0 {
+                    b.push((k.clone(), String::new(), false));
+                    continue;
+                }
+                for (i, line) in crate::ui::text::wrap(a, cols.action)
+                    .into_iter()
+                    .enumerate()
+                {
                     let key = if i == 0 { k.clone() } else { String::new() };
                     b.push((key, line, false));
                 }
@@ -289,9 +297,9 @@ impl HelpOverlay {
             blocks.push(b);
         }
 
-        let mut columns: Vec<Vec<(String, String, bool)>> = vec![vec![]; cols];
+        let mut columns: Vec<Vec<(String, String, bool)>> = vec![vec![]; cols.count];
         for (i, b) in blocks.into_iter().enumerate() {
-            columns[i % cols].extend(b);
+            columns[i % cols.count].extend(b);
         }
         let total = columns.iter().map(Vec::len).max().unwrap_or(0);
         let body_h = inner.height.saturating_sub(1);
@@ -299,25 +307,30 @@ impl HelpOverlay {
         self.scroll.set_viewport(body_h as usize);
         ctx.scrollable(self.id, inner);
         for (ci, col) in columns.iter().enumerate() {
-            let x = inner.x + ci as u16 * col_w;
+            let x = inner.x + (ci * cols.width) as u16;
             for (k, i) in self.scroll.visible_range().enumerate() {
                 let Some((key, action, heading)) = col.get(i) else {
                     continue;
                 };
                 let y = inner.y + k as u16;
                 if *heading {
-                    buf.set_string(x, y, key, t.secondary().bg(bg).add_modifier(Modifier::BOLD));
+                    buf.set_string(
+                        x,
+                        y,
+                        truncate(key, cols.width),
+                        t.secondary().bg(bg).add_modifier(Modifier::BOLD),
+                    );
                 } else {
                     buf.set_string(
                         x,
                         y,
-                        truncate(&t.glyphs.key_label(key), key_w as usize),
+                        truncate(&t.glyphs.key_label(key), cols.key),
                         t.key_hint_key().bg(bg),
                     );
                     buf.set_string(
-                        x + key_w + 1,
+                        x + (cols.key + cols.gap) as u16,
                         y,
-                        truncate(action, action_w),
+                        truncate(action, cols.action),
                         t.secondary().bg(bg),
                     );
                 }
@@ -327,29 +340,32 @@ impl HelpOverlay {
             let body = Rect::new(
                 area.x,
                 inner.y,
-                (area.right() - 1).saturating_sub(area.x),
+                area.right().saturating_sub(1).saturating_sub(area.x),
                 body_h,
             );
-            self.scroll
-                .draw_with_fade(body, buf, ctx, self.id, true, &[]);
-            let pos = scrollbar::position_label(&self.scroll);
-            let pw = width(&pos) as u16;
+            if !body.is_empty() {
+                self.scroll
+                    .draw_with_fade(body, buf, ctx, self.id, true, &[]);
+                let label = format!(" {} ", scrollbar::position_label(&self.scroll));
+                let lw = width(&label) as u16;
 
-            let reserve = if self.dismiss.shows_close() {
-                crate::ui::modal::CLOSE_WIDTH + 1
-            } else {
-                0
-            };
-            buf.set_string(
-                area.right().saturating_sub(pw + 4 + reserve),
-                area.y,
-                format!(" {pos} "),
-                t.faint().bg(bg),
-            );
+                let reserve = if self.dismiss.shows_close() {
+                    crate::ui::modal::CLOSE_WIDTH + 1
+                } else {
+                    0
+                };
+                let title_w =
+                    (width(&self.title) as u16).min(area.width.saturating_sub(6 + reserve)) + 2;
+                let title_end = area.x.saturating_add(title_w).saturating_add(1);
+                let x = area.right().saturating_sub(lw + 2 + reserve);
+                if x >= title_end {
+                    buf.set_string(x, area.y, label, t.faint().bg(bg));
+                }
+            }
         }
         let y = inner.bottom().saturating_sub(1);
-        let bw = self.done.width();
-        let room = inner.width.saturating_sub(bw + 2);
+        let bw = self.done.width().min(inner.width);
+        let room = inner.width.saturating_sub(bw.saturating_add(2));
         buf.set_string(
             inner.x,
             y,
@@ -362,6 +378,42 @@ impl HelpOverlay {
             ctx,
             bg,
         );
+    }
+
+    fn clear_geometry(&mut self) {
+        self.area = Rect::ZERO;
+        self.done.area = Rect::ZERO;
+        self.scroll.set_content(0);
+        self.scroll.set_viewport(0);
+    }
+}
+
+/// Column layout for one help body, in cells. Every field is measured from the
+/// clipped inner width, so `key + gap + action <= width` holds for every input.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct HelpColumns {
+    count: usize,
+    width: usize,
+    key: usize,
+    gap: usize,
+    action: usize,
+}
+
+fn help_columns(inner_width: u16, widest: usize) -> HelpColumns {
+    let inner = usize::from(inner_width);
+    let count = (inner / 36).clamp(1, 3);
+    let width = inner / count;
+    let maximum = width.saturating_mul(2) / 5;
+    let key = widest.clamp(4.min(maximum), maximum);
+    let remaining = width.saturating_sub(key);
+    let gap = remaining.min(1);
+    let action = remaining.saturating_sub(gap).saturating_sub(2);
+    HelpColumns {
+        count,
+        width,
+        key,
+        gap,
+        action,
     }
 }
 
@@ -402,5 +454,36 @@ impl crate::core::pointer::MouseTarget for HelpOverlay {
             return self.on_click(ev.id).into();
         }
         Response::ignored()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn help_column_budget_has_valid_interval() {
+        for inner in 0..=120u16 {
+            for widest in [0usize, 1, 4, 65536, usize::MAX] {
+                let c = help_columns(inner, widest);
+                assert!((1..=3).contains(&c.count), "count {c:?} at {inner}");
+                assert!(
+                    c.key + c.gap + c.action <= c.width,
+                    "fields overflow the column: {c:?} at {inner}"
+                );
+                assert!(c.width * c.count <= usize::from(inner));
+            }
+        }
+    }
+
+    #[test]
+    fn help_column_budget_keeps_normal_layout() {
+        for inner in [72u16, 80, 108, 120] {
+            let c = help_columns(inner, 12);
+            let col_w = usize::from(inner) / c.count;
+            assert_eq!(c.width, col_w);
+            assert_eq!(c.key, 12.min(col_w * 2 / 5));
+            assert_eq!(c.action, col_w - c.key - 3);
+        }
     }
 }

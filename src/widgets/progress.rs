@@ -3,6 +3,7 @@ use ratatui::layout::{Rect, Size};
 use ratatui::style::Color;
 
 use crate::ui::ctx::RenderCtx;
+use crate::ui::measure::terminal_extent;
 use crate::ui::text::width;
 
 pub const SPINNER: [&str; 10] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
@@ -48,14 +49,15 @@ impl BarLayout {
     }
 
     fn label(&self, area: Rect, buf: &mut Buffer, ctx: &RenderCtx, label: &str, bg: Color) -> u16 {
-        let label_w = self.label_width.unwrap_or(width(label) as u16);
-        let has_label = label_w > 0 && !label.is_empty() && area.width > label_w + 8;
+        let label_w = self.label_width.map_or_else(|| width(label), usize::from);
+        let has_label =
+            label_w > 0 && !label.is_empty() && usize::from(area.width) > label_w.saturating_add(8);
         if !has_label {
             return area.x;
         }
-        let text = crate::ui::text::truncate(label, label_w as usize);
+        let text = crate::ui::text::truncate(label, label_w);
         buf.set_string(area.x, area.y, text, ctx.theme.primary().bg(bg));
-        area.x + label_w + 2
+        area.x + terminal_extent(label_w) + 2
     }
 }
 
@@ -375,7 +377,7 @@ impl Meter {
             _ => self.value.clone(),
         };
         let ratio = (self.used_pct.unwrap_or(0).min(100) as f64) / 100.0;
-        let vw = width(&value) as u16;
+        let vw = width(&value);
         let text_style = paint.text;
         let mut suffix_style = ratatui::style::Style::new().fg(fill_color).bg(bg);
         if self.tone == MeterTone::Exhausted {
@@ -392,7 +394,8 @@ impl Meter {
         }
         match self.visual {
             MeterVisual::Line => {
-                let track_w = area.width.saturating_sub(vw + 3);
+                let track_w =
+                    terminal_extent(usize::from(area.width).saturating_sub(vw.saturating_add(3)));
                 if track_w < MIN_TRACK {
                     buf.set_string(
                         area.x,
@@ -419,7 +422,7 @@ impl Meter {
                 }
                 let x = area.x + track_w + 1;
                 buf.set_string(x, area.y, &value, text_style);
-                buf.set_string(x + vw, area.y, suffix, suffix_style);
+                buf.set_string(x + terminal_extent(vw), area.y, suffix, suffix_style);
             }
             MeterVisual::Block => {
                 let bar_w = area.width.saturating_sub(2);
@@ -488,16 +491,16 @@ impl crate::ui::measure::Measure for Meter {
             MeterTone::Unknown if self.value.is_empty() => t.glyphs.none.to_owned(),
             _ => self.value.clone(),
         };
-        let vw = width(&value) as u16;
+        let vw = width(&value);
         let w = if !self.paint(t, t.canvas).has_run {
-            vw + 2
+            vw.saturating_add(2)
         } else {
             match self.visual {
-                MeterVisual::Line => vw + 3 + MIN_TRACK,
-                MeterVisual::Block => vw.max(4) + 2,
+                MeterVisual::Line => vw.saturating_add(3 + usize::from(MIN_TRACK)),
+                MeterVisual::Block => vw.max(4).saturating_add(2),
             }
         };
-        Size::new(w, 1)
+        Size::new(terminal_extent(w), 1)
     }
 }
 

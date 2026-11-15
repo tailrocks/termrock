@@ -39,6 +39,8 @@ impl RowSource for [String] {
         <[String]>::len(self)
     }
     fn label(&self, i: usize) -> &str {
+        #[cfg(test)]
+        crate::core::work::add(crate::core::work::Counter::LabelVisits, 1);
         &self[i]
     }
 }
@@ -397,4 +399,31 @@ impl NavProfile {
 
 pub trait Navigable: RowSource {
     fn cursor(&self) -> Cursor;
+}
+
+/// Identity and revisions of a keyed provider.
+///
+/// `instance` identifies a provider lifetime, never a reusable label: a new
+/// store gets a new instance even when its counters equal an older store's.
+/// `data` changes when authoritative membership, payload or enablement
+/// changes. `view` changes when the visible order, filter or match metadata
+/// changes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct SourceStamp {
+    pub instance: ItemKey,
+    pub data: u64,
+    pub view: u64,
+}
+
+/// A [`RowSource`] whose rows have stable logical identity.
+///
+/// The inherited `len`, `key`, `label` and `enabled` describe the visible
+/// ordered projection. `source_len` and `source_key` enumerate every
+/// authoritative key, including records a filter currently hides. Keys must
+/// not be [`ItemKey::Index`], must be unique, and every visible key must be
+/// authoritative; `KeyedState::reconcile` rejects a source that is not.
+pub trait KeyedRowSource: RowSource {
+    fn stamp(&self) -> SourceStamp;
+    fn source_len(&self) -> usize;
+    fn source_key(&self, source_index: usize) -> ItemKey;
 }
