@@ -1841,6 +1841,9 @@ impl ManagerScreen {
         self.detail_area = inner;
         let bg = if as_drawer { t.canvas } else { t.surface };
         ctx.scrollable(DETAIL, inner);
+        let widths: Vec<u16> = self.actions.iter().map(|b| b.width()).collect();
+        let action_lines = row_lines(inner.width + 1, &widths, 2);
+        let reserve = action_lines.max(2);
         let mut y = inner.y;
         let put = |buf: &mut Buffer, y: u16, text: &str, style: Style| {
             if y < inner.bottom() {
@@ -2025,14 +2028,14 @@ impl ManagerScreen {
                                 inner.x,
                                 inner.y,
                                 inner.width,
-                                inner.height.saturating_sub(3),
+                                inner.height.saturating_sub(reserve + 1),
                             ),
                             buf,
                             t,
                             &e,
                             bg,
                         );
-                        y = inner.bottom().saturating_sub(2);
+                        y = inner.bottom().saturating_sub(reserve);
                     }
                 }
             }
@@ -2043,14 +2046,14 @@ impl ManagerScreen {
                         inner.x,
                         inner.y,
                         inner.width,
-                        inner.height.saturating_sub(3),
+                        inner.height.saturating_sub(reserve + 1),
                     ),
                     buf,
                     t,
                     &e,
                     bg,
                 );
-                y = inner.bottom().saturating_sub(2);
+                y = inner.bottom().saturating_sub(reserve);
             }
             RowKey::Instance(id) => {
                 if let Some(i) = w.instance(&id) {
@@ -2144,7 +2147,7 @@ impl ManagerScreen {
                     }
                     y += 1;
                     let list_top = y;
-                    let rows_avail = inner.bottom().saturating_sub(y + 2) as usize;
+                    let rows_avail = inner.bottom().saturating_sub(y + reserve) as usize;
                     self.detail_scroll.set_content(self.detail_rows.len());
                     self.detail_scroll.set_viewport(rows_avail);
                     if live_focus {
@@ -2226,7 +2229,7 @@ impl ManagerScreen {
                             live_focus,
                         );
                     }
-                    y = inner.bottom().saturating_sub(2);
+                    y = inner.bottom().saturating_sub(reserve);
                 } else if let Some(InstanceEntry::Unavailable(unavailable)) = w.entry(&id) {
                     let display = unavailable.display();
                     let power = if unavailable.phase.ready() {
@@ -2263,15 +2266,17 @@ impl ManagerScreen {
                 }
             }
             RowKey::UnattributedSandboxes => {
-                y = inner.bottom().saturating_sub(2);
+                y = inner.bottom().saturating_sub(reserve);
             }
         }
 
-        let widths: Vec<u16> = self.actions.iter().map(|b| b.width()).collect();
-        let lines = row_lines(inner.width + 1, &widths, 2);
-        let ay = inner.bottom().saturating_sub(lines).max(y);
+        let ay = inner.bottom().saturating_sub(action_lines).max(y);
         if ay < inner.bottom() {
-            let rects = row_layout(Rect::new(inner.x - 1, ay, inner.width + 1, 1), &widths, 2);
+            let rects = row_layout(
+                Rect::new(inner.x - 1, ay, inner.width + 1, inner.bottom() - ay),
+                &widths,
+                2,
+            );
             for (b, r) in self.actions.iter_mut().zip(rects) {
                 b.render(r, buf, ctx, bg);
             }

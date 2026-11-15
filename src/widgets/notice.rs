@@ -148,7 +148,8 @@ impl Notice {
             return 0;
         }
         let (glyph, gs) = self.kind.glyph(t);
-        buf.set_string(area.x, area.y, glyph, gs.bg(bg));
+        let glyph_cell = Rect::new(area.x, area.y, area.width.min(2), 1);
+        crate::ui::text::paint_clipped(buf, glyph_cell, 0, glyph, gs.bg(bg));
         if area.width <= 2 {
             return 1;
         }

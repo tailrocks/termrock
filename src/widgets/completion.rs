@@ -10,7 +10,7 @@ use crate::core::list::{Cursor, Moved, Navigable, RowSource};
 use crate::theme::CursorStyle;
 use crate::ui::ctx::RenderCtx;
 use crate::ui::popup::{Dismiss, Placement, backdrop_id, place_with, surface_for};
-use crate::ui::text::{truncate, width};
+use crate::ui::text::{TextClip, paint_graphemes, width};
 use crate::widgets::option_list::{Item, OptionList};
 
 pub const TEXT_INSET: u16 = 4;
@@ -232,29 +232,32 @@ impl Completion {
                     .remove_modifier(Modifier::BOLD),
                 );
 
-                let mut x = row.x + 3;
                 let avail = row.width.saturating_sub(3) as usize;
                 let show_detail =
                     !it.detail.is_empty() && avail > width(&it.label) + width(&it.detail) + 2;
-                let label = truncate(
+                let label_w = if show_detail {
+                    avail - width(&it.detail) - 2
+                } else {
+                    avail
+                };
+                paint_graphemes(
+                    buf,
+                    Rect::new(row.x + 3, y, label_w as u16, 1).intersection(row),
+                    (0, 0),
                     &it.label,
-                    if show_detail {
-                        avail - width(&it.detail) - 2
-                    } else {
-                        avail
+                    TextClip::Ellipsis,
+                    |source, _| {
+                        let matched = source
+                            .is_some_and(|range| it.matched.iter().any(|m| range.contains(m)));
+                        if matched {
+                            st.add_modifier(Modifier::BOLD)
+                        } else if !focused {
+                            st.remove_modifier(Modifier::BOLD)
+                        } else {
+                            st
+                        }
                     },
                 );
-                for (bi, ch) in label.char_indices() {
-                    let mut cs = st;
-                    if it.matched.contains(&bi) {
-                        cs = cs.add_modifier(Modifier::BOLD);
-                    } else if !focused {
-                        cs = cs.remove_modifier(Modifier::BOLD);
-                    }
-                    let g = ch.to_string();
-                    buf.set_string(x, y, &g, cs);
-                    x += width(&g) as u16;
-                }
                 if show_detail {
                     let dx = row.right().saturating_sub(width(&it.detail) as u16 + 1);
                     buf.set_string(
