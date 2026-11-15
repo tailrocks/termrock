@@ -160,7 +160,13 @@ pub enum StoreError {
         key: ItemKey,
         column: String,
     },
+    /// `DEFAULT` for a column without a default, which cannot be left empty.
     Required {
+        key: ItemKey,
+        column: String,
+    },
+    /// An explicit `NULL` for a column that does not accept it.
+    NullNotAllowed {
         key: ItemKey,
         column: String,
     },
@@ -194,6 +200,7 @@ impl StoreError {
             | Self::WrongKind { key, .. }
             | Self::NonFinite { key, .. }
             | Self::Required { key, .. }
+            | Self::NullNotAllowed { key, .. }
             | Self::NotInEnum { key, .. }
             | Self::UnsupportedDefault { key, .. }
             | Self::SequenceExhausted { key, .. } => Some(*key),
@@ -234,6 +241,12 @@ impl std::fmt::Display for StoreError {
             } => write!(f, "{column} must be {}", expected.sql()),
             Self::NonFinite { column, .. } => write!(f, "{column} must be a finite number"),
             Self::Required { column, .. } => write!(f, "{column} is required"),
+            Self::NullNotAllowed { column, .. } => {
+                write!(
+                    f,
+                    "{column} is required (type DEFAULT to use the column default)"
+                )
+            }
             Self::NotInEnum { column, value, .. } => {
                 write!(f, "{value:?} is not a value of {column}")
             }
@@ -696,7 +709,7 @@ fn convert(key: ItemKey, column: &Column, cell: &CellValue) -> Result<Value, Sto
             if column.nullable {
                 Value::Null
             } else {
-                return Err(StoreError::Required {
+                return Err(StoreError::NullNotAllowed {
                     key,
                     column: column.name.clone(),
                 });

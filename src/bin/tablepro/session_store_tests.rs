@@ -446,7 +446,11 @@ fn issue51_failed_save_changes_neither_store_nor_draft() {
     let draft = tab(&mut app, key).grid.snapshot_changes().counts();
     confirm_save(&mut app, key);
 
-    assert!(status(&app).contains("sku is required"), "{}", status(&app));
+    assert!(
+        status(&app).contains("sku is required (type DEFAULT to use the column default)"),
+        "{}",
+        status(&app)
+    );
     assert_eq!(app.history.entries.len(), history, "no success history");
     let t = tab(&mut app, key);
     assert_eq!(

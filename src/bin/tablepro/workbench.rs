@@ -555,17 +555,7 @@ impl Workbench {
             return Some(i);
         }
         let table = self.catalog.find(Some(schema), name)?.clone();
-        let (key, n) = self.alloc_tab_key();
-        let tab = TableTab::new(
-            key,
-            ID.sub("tab").child(n + 1000),
-            Source {
-                catalog: &self.catalog,
-                store: &self.store,
-            },
-            &table,
-            preview,
-        );
+        let tab = self.new_table_tab(&table, preview);
 
         if preview {
             for old in &mut self.tabs {
@@ -659,22 +649,30 @@ impl Workbench {
         (ItemKey::num(n), n as usize)
     }
 
-    /// A second table tab on the table, standing in for another view of the
-    /// same rows. The explorer opens one tab per table, so only tests get here.
-    #[cfg(test)]
-    pub fn open_second_view(&mut self, schema: &str, name: &str) -> Option<ItemKey> {
-        let table = self.catalog.find(Some(schema), name)?.clone();
+    /// A table tab for `table` under the next tab key. Every table tab is
+    /// built here, so the explorer's open and the test-only second view cannot
+    /// drift apart.
+    fn new_table_tab(&mut self, table: &crate::db::Table, preview: bool) -> TableTab {
         let (key, n) = self.alloc_tab_key();
-        let tab = TableTab::new(
+        TableTab::new(
             key,
             ID.sub("tab").child(n + 1000),
             Source {
                 catalog: &self.catalog,
                 store: &self.store,
             },
-            &table,
-            false,
-        );
+            table,
+            preview,
+        )
+    }
+
+    /// A second table tab on the table, standing in for another view of the
+    /// same rows. The explorer opens one tab per table, so only tests get here.
+    #[cfg(test)]
+    pub fn open_second_view(&mut self, schema: &str, name: &str) -> Option<ItemKey> {
+        let table = self.catalog.find(Some(schema), name)?.clone();
+        let tab = self.new_table_tab(&table, false);
+        let key = tab.key;
         self.tabs.push(WorkTab::Table(tab));
         self.sync_strip();
         Some(key)
