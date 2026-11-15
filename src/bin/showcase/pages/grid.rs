@@ -24,7 +24,7 @@ use junie_tui::widgets::empty::EmptyState;
 use junie_tui::widgets::grid::{
     CellEditResult, CellKind, CellValue, ColumnSpec, DataGrid, DeletedRow, FinishEdit, GridAction,
     GridChangeSet, GridCmd, GridCommitFailure, GridCommitToken, GridDataError, GridEditError,
-    GridRows, GridUndoKind, InsertedRow, RowState, RowTotal, UpdatedRow,
+    GridRows, GridUndo, GridUndoKind, InsertedRow, RowState, RowTotal, UpdatedRow,
 };
 use junie_tui::widgets::option_editor::{
     Affordance, ColumnEditor, EditorConfig, OptionItem, Options,
@@ -194,12 +194,16 @@ fn delete_statement(row: &DeletedRow) -> Result<String, SqlError> {
     ))
 }
 
-fn undo_status(kind: GridUndoKind) -> &'static str {
+fn undo_status(kind: GridUndoKind, row: &str) -> String {
     match kind {
-        GridUndoKind::Cell => "Undid a cell edit",
-        GridUndoKind::DeleteMark => "Undid a delete mark · the staged edits are back",
-        GridUndoKind::Insert => "Undid an insert · the row is gone",
-        GridUndoKind::RemovedInsert => "Undid a removed insert · the row and its edits are back",
+        GridUndoKind::Cell => format!("Undid a cell edit · {row}"),
+        GridUndoKind::DeleteMark => {
+            format!("Undid a delete mark · {row} · the staged edits are back")
+        }
+        GridUndoKind::Insert => "Undid an insert · the row is gone".to_owned(),
+        GridUndoKind::RemovedInsert => {
+            "Undid a removed insert · the row and its edits are back".to_owned()
+        }
     }
 }
 
@@ -865,6 +869,21 @@ impl GridPage {
         }
     }
 
+    /// Names the row an undo touched by its id, so undoing the same kind of
+    /// change on different rows reads differently.
+    fn undo_message(&self, undone: GridUndo) -> String {
+        let row = match self
+            .grid
+            .source_index(undone.key)
+            .and_then(|src| self.grid.rows().get(src))
+            .and_then(|cells| cells.first())
+        {
+            Some(CellValue::Int(id)) => format!("row {id}"),
+            _ => "the new row".to_owned(),
+        };
+        undo_status(undone.kind, &row)
+    }
+
     fn on_event(&mut self, ev: Option<GridAction>, cx: &mut Cx) {
         match ev {
             Some(GridAction::CellChanged { .. }) => {
@@ -872,7 +891,7 @@ impl GridPage {
             }
             Some(GridAction::RowInserted(_)) => cx.status("Row inserted · fill it in, then Save"),
             Some(GridAction::RowDeleted(_)) => cx.status("Row queued for deletion · u undoes"),
-            Some(GridAction::Undone(undone)) => cx.status(undo_status(undone.kind)),
+            Some(GridAction::Undone(undone)) => cx.status(self.undo_message(undone)),
             Some(GridAction::FetchMore) => {
                 let from = self.grid.len();
                 match self.grid.try_append_rows(page(
@@ -1767,6 +1786,32 @@ mod tests {
             vec![
                 r#"UPDATE "customers" SET "plan" = 'pro' WHERE "id" = 1001;"#.to_owned(),
                 r#"DELETE FROM "customers" WHERE "id" = 1002;"#.to_owned(),
+            ]
+        );
+    }
+
+    #[test]
+    fn codex196_undo_status_names_the_row() {
+        let mut rig = Rig::new();
+        rig.page
+            .grid
+            .record_cell(0, SEATS, CellValue::Int(10))
+            .unwrap();
+        rig.page
+            .grid
+            .record_cell(1, SEATS, CellValue::Int(20))
+            .unwrap();
+        for _ in 0..2 {
+            rig.with_cx(|page, cx| {
+                let undone = page.grid.undo().unwrap().expect("a draft to undo");
+                page.on_event(Some(GridAction::Undone(undone)), cx);
+            });
+        }
+        assert_eq!(
+            rig.statuses,
+            vec![
+                "Undid a cell edit · row 1002",
+                "Undid a cell edit · row 1001"
             ]
         );
     }
