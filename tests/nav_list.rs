@@ -249,3 +249,43 @@ fn rail_collapse_and_custom_glyphs_are_bounded() {
     });
     assert_outside_untouched(&p.buf, col, "custom top glyph in a one-cell rail");
 }
+
+/// Paints a rail whose labels outrun `col` and checks the labels stop at the
+/// column's bottom edge: only `expected` lands in the column, nothing paints
+/// or registers a hit outside it.
+fn assert_rail_stops_at_bottom(screen: Rect, col: Rect, expected: &[&str]) {
+    let rail = SidebarRail::new(WidgetId::of("t.rail"), "abcdefghijkl");
+    let p = paint_in(screen, None, |buf, ctx| {
+        rail.render_rail(col, buf, ctx, Color::Reset)
+    });
+    let what = format!("rail {col:?} in {screen:?}");
+    assert_outside_untouched(&p.buf, col, &what);
+    assert_hits_inside(&p, col, &what);
+    assert_eq!(
+        rail_label(&p.buf, col.x, col.y.saturating_add(2), col.bottom()),
+        expected,
+        "{what}: the labels stop at the bottom edge"
+    );
+}
+
+#[test]
+fn rail_labels_stop_at_allocation_bottom_above_screen_edge() {
+    assert_rail_stops_at_bottom(SCREEN, Rect::new(5, 5, 1, 3), &["a"]);
+}
+
+#[test]
+fn rail_labels_stop_at_allocation_bottom_on_screen_edge() {
+    assert_rail_stops_at_bottom(SCREEN, Rect::new(5, 7, 1, 3), &["a"]);
+}
+
+#[test]
+fn rail_labels_stop_at_allocation_bottom_near_u16_max() {
+    let screen = Rect::new(0, u16::MAX - 5, 4, 5);
+    assert_rail_stops_at_bottom(screen, Rect::new(0, u16::MAX - 5, 1, 3), &["a"]);
+}
+
+#[test]
+fn rail_row_at_u16_max_paints_nothing_and_does_not_overflow() {
+    let screen = Rect::new(0, u16::MAX, 4, 1);
+    assert_rail_stops_at_bottom(screen, Rect::new(0, u16::MAX, 1, 1), &[]);
+}
