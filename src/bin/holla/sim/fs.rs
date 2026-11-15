@@ -1,3 +1,5 @@
+#[cfg(test)]
+use std::cell::Cell;
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::scenario::EPOCH_SECS;
@@ -976,6 +978,8 @@ impl Fs {
     }
 
     pub fn home_index(&self, home: &str) -> Vec<String> {
+        #[cfg(test)]
+        HOME_INDEX_CALLS.with(|c| c.set(c.get() + 1));
         let mut out = vec![];
         let ignores = self.ignore_names(home);
         self.index_dir(home, home, &ignores, &mut out, 0);
@@ -1044,6 +1048,8 @@ impl Fs {
     }
 
     pub fn find(&self, index: &[String], query: &str) -> Vec<FindHit> {
+        #[cfg(test)]
+        FIND_CALLS.with(|c| c.set(c.get() + 1));
         let q = query.trim();
         if q.is_empty() {
             return vec![];
@@ -1284,4 +1290,17 @@ mod tests {
             "the mounted volume loses only its own two inodes"
         );
     }
+}
+
+#[cfg(test)]
+thread_local! {
+    static HOME_INDEX_CALLS: Cell<u64> = const { Cell::new(0) };
+    static FIND_CALLS: Cell<u64> = const { Cell::new(0) };
+}
+
+/// Calls to `home_index` and `find` on the current test thread. Counters are
+/// per thread, so parallel tests do not see each other's calls.
+#[cfg(test)]
+pub fn call_counts() -> (u64, u64) {
+    (HOME_INDEX_CALLS.with(Cell::get), FIND_CALLS.with(Cell::get))
 }
