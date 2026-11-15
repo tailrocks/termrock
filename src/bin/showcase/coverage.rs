@@ -974,97 +974,121 @@ pub const INSPECT_CHANGES_ALLOWLIST: &[(&str, &str)] = &[
 /// The pages that show the shared Finder composition, each with the source
 /// file `search_detail_coverage_ids_are_used_by_their_pages` reads. A page
 /// that adopts the composition adds a row here and its name to the ids it uses.
-pub const SEARCH_DETAIL_PAGES: &[(&str, &str)] = &[("finder", "src/bin/showcase/pages/finder.rs")];
+pub const SEARCH_DETAIL_PAGES: &[(&str, &str)] = &[
+    ("finder", "src/bin/showcase/pages/finder.rs"),
+    ("holla", "src/bin/holla/screens/finder.rs"),
+];
 
 /// Which pages use each shared Finder id. An id is listed once, with every page
 /// that uses it, and is not in [`SEARCH_SESSION_ALLOWLIST`].
 pub const SEARCH_DETAIL_COVERAGE: &[(&str, &[&str])] = &[
-    ("widgets::search_detail::ResultRowKind", &["finder"]),
+    (
+        "widgets::search_detail::ResultRowKind",
+        &["finder", "holla"],
+    ),
     (
         "widgets::search_detail::ResultRowKind::Heading",
-        &["finder"],
+        &["finder", "holla"],
     ),
-    ("widgets::search_detail::ResultRowKind::Item", &["finder"]),
-    ("widgets::search_detail::ResultRowKind::Cells", &["finder"]),
-    ("widgets::search_detail::ResultRowKind::Spacer", &["finder"]),
-    ("widgets::search_detail::SearchSource", &["finder"]),
+    (
+        "widgets::search_detail::ResultRowKind::Item",
+        &["finder", "holla"],
+    ),
+    (
+        "widgets::search_detail::ResultRowKind::Cells",
+        &["finder", "holla"],
+    ),
+    (
+        "widgets::search_detail::ResultRowKind::Spacer",
+        &["finder", "holla"],
+    ),
+    ("widgets::search_detail::SearchSource", &["finder", "holla"]),
     (
         "widgets::search_detail::SearchSource::row_kind",
-        &["finder"],
+        &["finder", "holla"],
     ),
     (
         "widgets::search_detail::SearchSource::cell_count",
-        &["finder"],
+        &["finder", "holla"],
     ),
     (
         "widgets::search_detail::SearchSource::cell_key",
-        &["finder"],
+        &["finder", "holla"],
     ),
     (
         "widgets::search_detail::SearchSource::cell_label",
-        &["finder"],
+        &["finder", "holla"],
     ),
     (
         "widgets::search_detail::SearchSource::cell_enabled",
-        &["finder"],
+        &["finder", "holla"],
     ),
     (
         "widgets::search_detail::SearchSource::cell_click_policy",
-        &["finder"],
+        &["finder", "holla"],
     ),
     (
         "widgets::search_detail::QueryToken::result_stamp",
-        &["finder"],
+        &["finder", "holla"],
     ),
-    ("widgets::search_detail::QueryRequest", &["finder"]),
-    ("widgets::search_detail::SearchAction", &["finder"]),
+    ("widgets::search_detail::QueryRequest", &["finder", "holla"]),
+    ("widgets::search_detail::SearchAction", &["finder", "holla"]),
     (
         "widgets::search_detail::SearchAction::QueryRequested",
-        &["finder"],
+        &["finder", "holla"],
     ),
     (
         "widgets::search_detail::SearchAction::Activate",
-        &["finder"],
+        &["finder", "holla"],
     ),
     (
         "widgets::search_detail::SearchAction::ContextRequested",
-        &["finder"],
+        &["finder", "holla"],
     ),
     (
         "widgets::search_detail::SearchAction::DetailAction",
-        &["finder"],
+        &["finder", "holla"],
     ),
-    ("widgets::search_detail::MissingSelection", &["finder"]),
+    (
+        "widgets::search_detail::MissingSelection",
+        &["finder", "holla"],
+    ),
     (
         "widgets::search_detail::MissingSelection::NearestPosition",
         &["finder"],
     ),
     (
         "widgets::search_detail::MissingSelection::FirstEnabled",
-        &["finder"],
+        &["finder", "holla"],
     ),
-    ("widgets::search_detail::QueryPasteMode", &["finder"]),
+    (
+        "widgets::search_detail::QueryPasteMode",
+        &["finder", "holla"],
+    ),
     (
         "widgets::search_detail::QueryPasteMode::StripLineBreaks",
         &["finder"],
     ),
     (
         "widgets::search_detail::QueryPasteMode::JoinLinesWithSpaceTrim",
-        &["finder"],
+        &["finder", "holla"],
     ),
-    ("widgets::search_detail::SearchConfig", &["finder"]),
-    ("widgets::search_detail::SearchConfig::click", &["finder"]),
+    ("widgets::search_detail::SearchConfig", &["finder", "holla"]),
+    (
+        "widgets::search_detail::SearchConfig::click",
+        &["finder", "holla"],
+    ),
     (
         "widgets::search_detail::SearchConfig::select_first_on_query",
         &["finder"],
     ),
     (
         "widgets::search_detail::SearchConfig::missing_selection",
-        &["finder"],
+        &["finder", "holla"],
     ),
     (
         "widgets::search_detail::SearchConfig::paste_mode",
-        &["finder"],
+        &["finder", "holla"],
     ),
     (
         "widgets::search_detail::SearchConfig::navigate_while_loading",
@@ -1075,9 +1099,15 @@ pub const SEARCH_DETAIL_COVERAGE: &[(&str, &[&str])] = &[
     ("widgets::search_detail::SearchPhase::Ready", &["finder"]),
     ("widgets::search_detail::SearchPhase::Failed", &["finder"]),
     ("widgets::search_detail::SearchSession::error", &["finder"]),
-    ("widgets::search_detail::SearchDetail", &["finder"]),
-    ("widgets::search_detail::SearchDetail::new", &["finder"]),
-    ("widgets::search_detail::SearchDetail::config", &["finder"]),
+    ("widgets::search_detail::SearchDetail", &["finder", "holla"]),
+    (
+        "widgets::search_detail::SearchDetail::new",
+        &["finder", "holla"],
+    ),
+    (
+        "widgets::search_detail::SearchDetail::config",
+        &["finder", "holla"],
+    ),
     (
         "widgets::search_detail::SearchDetail::collapse_below",
         &["finder"],
@@ -1094,33 +1124,45 @@ pub const SEARCH_DETAIL_COVERAGE: &[(&str, &[&str])] = &[
         &["finder"],
     ),
     ("widgets::search_detail::SearchDetail::session", &["finder"]),
-    ("widgets::search_detail::SearchDetail::query", &["finder"]),
+    (
+        "widgets::search_detail::SearchDetail::query",
+        &["finder", "holla"],
+    ),
     (
         "widgets::search_detail::SearchDetail::selected_key",
-        &["finder"],
+        &["finder", "holla"],
     ),
     ("widgets::search_detail::SearchDetail::phase", &["finder"]),
     (
         "widgets::search_detail::SearchDetail::on_detail",
-        &["finder"],
+        &["finder", "holla"],
     ),
     (
         "widgets::search_detail::SearchDetail::set_query",
-        &["finder"],
+        &["finder", "holla"],
     ),
     (
         "widgets::search_detail::SearchDetail::refresh_source",
-        &["finder"],
+        &["finder", "holla"],
     ),
     ("widgets::search_detail::SearchDetail::retry", &["finder"]),
-    ("widgets::search_detail::SearchDetail::submit", &["finder"]),
+    (
+        "widgets::search_detail::SearchDetail::submit",
+        &["finder", "holla"],
+    ),
     ("widgets::search_detail::SearchDetail::fail", &["finder"]),
-    ("widgets::search_detail::SearchDetail::on_key", &["finder"]),
+    (
+        "widgets::search_detail::SearchDetail::on_key",
+        &["finder", "holla"],
+    ),
     (
         "widgets::search_detail::SearchDetail::on_paste",
-        &["finder"],
+        &["finder", "holla"],
     ),
-    ("widgets::search_detail::SearchDetail::pointer", &["finder"]),
+    (
+        "widgets::search_detail::SearchDetail::pointer",
+        &["finder", "holla"],
+    ),
     (
         "widgets::search_detail::SearchDetail::emit_pending_context",
         &["finder"],
@@ -1128,6 +1170,82 @@ pub const SEARCH_DETAIL_COVERAGE: &[(&str, &[&str])] = &[
     (
         "widgets::search_detail::SearchDetail::render_source",
         &["finder"],
+    ),
+    (
+        "widgets::search_detail::SearchAction::SelectionChanged",
+        &["holla"],
+    ),
+    (
+        "widgets::search_detail::SearchAction::QueryCommand",
+        &["holla"],
+    ),
+    (
+        "widgets::search_detail::SearchAction::DetailItem",
+        &["holla"],
+    ),
+    ("widgets::search_detail::SearchCmd", &["holla"]),
+    ("widgets::search_detail::SearchCmd::Activate", &["holla"]),
+    ("widgets::search_detail::SearchCmd::Up", &["holla"]),
+    ("widgets::search_detail::SearchCmd::Down", &["holla"]),
+    ("widgets::search_detail::SearchCmd::Left", &["holla"]),
+    ("widgets::search_detail::SearchCmd::Right", &["holla"]),
+    ("widgets::search_detail::SearchCmd::Home", &["holla"]),
+    ("widgets::search_detail::SearchCmd::End", &["holla"]),
+    ("widgets::search_detail::SearchCmd::PageUp", &["holla"]),
+    ("widgets::search_detail::SearchCmd::PageDown", &["holla"]),
+    ("widgets::search_detail::SearchFocusMode", &["holla"]),
+    (
+        "widgets::search_detail::SearchFocusMode::Combined",
+        &["holla"],
+    ),
+    ("widgets::search_detail::SearchConfig::keymap", &["holla"]),
+    (
+        "widgets::search_detail::SearchConfig::focus_mode",
+        &["holla"],
+    ),
+    (
+        "widgets::search_detail::SearchConfig::type_to_query_from_detail",
+        &["holla"],
+    ),
+    (
+        "widgets::search_detail::SearchConfig::reset_preview_on_query",
+        &["holla"],
+    ),
+    (
+        "widgets::search_detail::SearchDetail::configure_query",
+        &["holla"],
+    ),
+    (
+        "widgets::search_detail::SearchDetail::render_hosted",
+        &["holla"],
+    ),
+    (
+        "widgets::search_detail::SearchDetail::config_mut",
+        &["holla"],
+    ),
+    ("widgets::search_detail::SearchPaint", &["holla"]),
+    ("widgets::search_detail::SearchPaint::query", &["holla"]),
+    (
+        "widgets::search_detail::SearchPaint::rows_begin",
+        &["holla"],
+    ),
+    ("widgets::search_detail::SearchPaint::row", &["holla"]),
+    ("widgets::search_detail::SearchPaint::empty", &["holla"]),
+    ("widgets::search_detail::SearchPaint::detail", &["holla"]),
+    ("widgets::search_detail::SearchPaint::summary", &["holla"]),
+    ("widgets::search_detail::SearchPaint::is_lead", &["holla"]),
+    ("widgets::search_detail::QueryView", &["holla"]),
+    ("widgets::search_detail::RowPaint", &["holla"]),
+    ("widgets::search_detail::RowPaint::place_cell", &["holla"]),
+    ("widgets::search_detail::RowPaint::cell_hit", &["holla"]),
+    ("widgets::list_detail::DetailPane", &["holla"]),
+    (
+        "widgets::search_detail::SearchDetail::detail_share",
+        &["holla"],
+    ),
+    (
+        "widgets::search_detail::SearchDetail::summary_rows",
+        &["holla"],
     ),
 ];
 
@@ -1137,18 +1255,12 @@ const SEARCH_HEADLESS_REASON: &str = "SearchSession is the headless half and run
 
 const SEARCH_INTERNAL_REASON: &str = "Reached through the Finder's SearchDetail and its SearchSource without being named in page code: the standard painter and the blanket SearchDetailSource impl use it.";
 
-const SEARCH_HOLLA_REASON: &str = "The Holla Finder migration (the next PR of #64, after #62) uses it: Combined focus, the query paint hook, custom row painting and preview policy. The Showcase Finder runs Separate focus with the standard painter and the default preview policy.";
+const HOSTED_PANES_REASON: &str = "SearchDetail::render_hosted and the list-detail hosted layer serve an app that paints every pane itself; apps compose through SearchPaint, so no showcase page calls the layer below it directly. The Holla Finder exercises it end to end.";
+
+const SEARCH_HOLLA_REASON: &str = "Neither the Showcase Finder nor the Holla Finder calls it by name: they run on the defaults or on other API here; tests/regressions/search_detail.rs and tests/regressions/search_detail_view.rs pin it.";
 
 pub const SEARCH_SESSION_ALLOWLIST: &[(&str, &str)] = &[
     ("widgets::search_detail::QueryToken", SEARCH_INTERNAL_REASON),
-    (
-        "widgets::search_detail::SearchAction::SelectionChanged",
-        SEARCH_HOLLA_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchAction::QueryCommand",
-        SEARCH_HOLLA_REASON,
-    ),
     ("widgets::search_detail::SearchError", SEARCH_PINNED_REASON),
     (
         "widgets::search_detail::SearchError::StaleQuery",
@@ -1174,7 +1286,6 @@ pub const SEARCH_SESSION_ALLOWLIST: &[(&str, &str)] = &[
         "widgets::search_detail::SearchError::UnsubmittedProjection",
         SEARCH_PINNED_REASON,
     ),
-    ("widgets::search_detail::SearchCmd", SEARCH_PINNED_REASON),
     (
         "widgets::search_detail::SearchCmd::FocusQuery",
         SEARCH_PINNED_REASON,
@@ -1192,43 +1303,7 @@ pub const SEARCH_SESSION_ALLOWLIST: &[(&str, &str)] = &[
         SEARCH_PINNED_REASON,
     ),
     (
-        "widgets::search_detail::SearchCmd::Activate",
-        SEARCH_PINNED_REASON,
-    ),
-    (
         "widgets::search_detail::SearchCmd::Context",
-        SEARCH_PINNED_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchCmd::Up",
-        SEARCH_PINNED_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchCmd::Down",
-        SEARCH_PINNED_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchCmd::Left",
-        SEARCH_PINNED_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchCmd::Right",
-        SEARCH_PINNED_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchCmd::Home",
-        SEARCH_PINNED_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchCmd::End",
-        SEARCH_PINNED_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchCmd::PageUp",
-        SEARCH_PINNED_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchCmd::PageDown",
         SEARCH_PINNED_REASON,
     ),
     (
@@ -1236,31 +1311,11 @@ pub const SEARCH_SESSION_ALLOWLIST: &[(&str, &str)] = &[
         SEARCH_PINNED_REASON,
     ),
     (
-        "widgets::search_detail::SearchFocusMode",
-        SEARCH_HOLLA_REASON,
-    ),
-    (
         "widgets::search_detail::SearchFocusMode::Separate",
         SEARCH_HOLLA_REASON,
     ),
     (
-        "widgets::search_detail::SearchFocusMode::Combined",
-        SEARCH_HOLLA_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchConfig::keymap",
-        SEARCH_HOLLA_REASON,
-    ),
-    (
         "widgets::search_detail::SearchConfig::context",
-        SEARCH_HOLLA_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchConfig::focus_mode",
-        SEARCH_HOLLA_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchConfig::type_to_query_from_detail",
         SEARCH_HOLLA_REASON,
     ),
     (
@@ -1396,23 +1451,11 @@ pub const SEARCH_SESSION_ALLOWLIST: &[(&str, &str)] = &[
         SEARCH_HEADLESS_REASON,
     ),
     (
-        "widgets::search_detail::SearchDetail::config_mut",
-        SEARCH_HOLLA_REASON,
-    ),
-    (
-        "widgets::search_detail::RowPaint::cell_hit",
-        SEARCH_INTERNAL_REASON,
-    ),
-    (
         "widgets::search_detail::SearchDetail::open_detail",
         SEARCH_HOLLA_REASON,
     ),
     (
         "widgets::search_detail::SearchDetail::close_detail",
-        SEARCH_HOLLA_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchDetail::configure_query",
         SEARCH_HOLLA_REASON,
     ),
     (
@@ -1423,22 +1466,8 @@ pub const SEARCH_SESSION_ALLOWLIST: &[(&str, &str)] = &[
         "widgets::search_detail::SearchDetailSource",
         SEARCH_INTERNAL_REASON,
     ),
-    ("widgets::search_detail::QueryView", SEARCH_HOLLA_REASON),
-    ("widgets::search_detail::RowPaint", SEARCH_INTERNAL_REASON),
-    (
-        "widgets::search_detail::RowPaint::place_cell",
-        SEARCH_INTERNAL_REASON,
-    ),
     (
         "widgets::search_detail::paint_query_default",
-        SEARCH_HOLLA_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchAction::DetailItem",
-        SEARCH_HOLLA_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchConfig::reset_preview_on_query",
         SEARCH_HOLLA_REASON,
     ),
     (
@@ -1460,6 +1489,30 @@ pub const SEARCH_SESSION_ALLOWLIST: &[(&str, &str)] = &[
     (
         "widgets::search_detail::SearchSession::cancel_press",
         SEARCH_HEADLESS_REASON,
+    ),
+    ("widgets::list_detail::MasterRow", HOSTED_PANES_REASON),
+    ("widgets::list_detail::PaneHost", HOSTED_PANES_REASON),
+    (
+        "widgets::list_detail::PaneHost::rows_begin",
+        HOSTED_PANES_REASON,
+    ),
+    ("widgets::list_detail::PaneHost::row", HOSTED_PANES_REASON),
+    ("widgets::list_detail::PaneHost::empty", HOSTED_PANES_REASON),
+    (
+        "widgets::list_detail::PaneHost::detail",
+        HOSTED_PANES_REASON,
+    ),
+    (
+        "widgets::list_detail::PaneHost::summary",
+        HOSTED_PANES_REASON,
+    ),
+    (
+        "widgets::list_detail::PaneHost::is_lead",
+        HOSTED_PANES_REASON,
+    ),
+    (
+        "widgets::list_detail::ListDetail::render_hosted",
+        HOSTED_PANES_REASON,
     ),
 ];
 
@@ -1690,7 +1743,7 @@ mod tests {
                 !reason.trim().is_empty(),
                 "allowlist entry has no reason: {id}"
             );
-            assert!(seen.insert(*id), "duplicate allowlist entry: {id}");
+            assert!(seen.insert(*id), "declared twice: {id}");
         }
         for id in [
             "core::keymap::KeyboardCapabilities",

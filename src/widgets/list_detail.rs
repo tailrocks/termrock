@@ -9,7 +9,7 @@ use crate::core::scroll::{ScrollState, TrackClick};
 use crate::theme::{ButtonKind, StatusKind, Tone};
 use crate::ui::ctx::{RenderCtx, fill, legible_on_fill};
 use crate::ui::layout::Split;
-use crate::ui::master_detail::{MasterDetail, Mode};
+use crate::ui::master_detail::{DetailSize, MasterDetail, Mode};
 use crate::ui::text::{fit, paint_clipped, paint_truncated, truncate, width, wrap};
 use crate::widgets::button::{Button, ButtonRow, RowOverflow};
 use crate::widgets::keyhint::{Hint, hint};
@@ -315,6 +315,45 @@ struct ListGeom {
     under: u16,
 }
 
+/// The detail pane a [`PaneHost`] paints.
+pub struct DetailPane<'a> {
+    pub area: Rect,
+    /// The detail replaces the master instead of sitting beside it.
+    pub drawer: bool,
+    /// The detail's focus owner, for its hit regions and scrollbar.
+    pub id: WidgetId,
+    /// The detail's scroll. The host sets its content and viewport; keys,
+    /// wheel and scrollbar drags move it, and a new selection resets it.
+    pub scroll: &'a mut ScrollState,
+}
+
+/// Paints every pane of a list-detail whose look the host owns. The list-detail
+/// keeps the layout, the master scroll, the row hit regions and the detail
+/// scroll; the host draws inside the rectangles it is given.
+pub trait PaneHost {
+    /// The master area is about to paint `row_w` wide rows, after the scroll
+    /// settled and a scrollbar, if any, took its column.
+    fn rows_begin(&mut self, _area: Rect, _row_w: u16) {}
+
+    /// Paints one visible row inside `row.rect`. Its hit region is registered
+    /// first.
+    fn row(&mut self, row: MasterRow, buf: &mut Buffer, ctx: &mut RenderCtx);
+
+    /// Paints the master area when there are no visible rows.
+    fn empty(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx);
+
+    fn detail(&mut self, pane: DetailPane<'_>, buf: &mut Buffer, ctx: &mut RenderCtx);
+
+    /// Paints the summary under a master that has no room for the detail.
+    fn summary(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx);
+
+    /// Whether visible row `row` is a heading that stays on screen when the
+    /// row below it is selected at the top edge of the master.
+    fn is_lead(&self, _row: usize) -> bool {
+        false
+    }
+}
+
 /// Aggregate column widths of the master rows.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct MasterWidths {
@@ -411,6 +450,7 @@ pub struct ListDetail {
     keyed: KeyedState,
     synced_cursor: Option<usize>,
     widths: Option<(SourceStamp, usize, u16, u16)>,
+    hosted_selected: Option<usize>,
 }
 
 impl ListDetail {
@@ -438,6 +478,7 @@ impl ListDetail {
             keyed: KeyedState::new(),
             synced_cursor: None,
             widths: None,
+            hosted_selected: None,
         }
     }
 
@@ -645,6 +686,27 @@ impl ListDetail {
             })
     }
 
+    /// Scrolls the pane a wheel event landed on. Besides the pane and scrollbar
+    /// ids, a wheel over a master row or cell (any part owned by the master) or
+    /// over a detail item scrolls that row's own pane.
+    pub fn wheel_event(&mut self, ev: &PointerEvent, delta: i32) -> Outcome {
+        let on_master_row = ev.on(self.master)
+            || self
+                .scroll
+                .visible_range()
+                .any(|i| self.master.child(i) == ev.id);
+        let on_detail_item = ev.on(self.detail)
+            || (0..self.items).any(|i| self.detail.child(i).sub("item") == ev.id);
+        let id = if on_master_row {
+            self.master
+        } else if on_detail_item {
+            self.detail
+        } else {
+            ev.id
+        };
+        self.wheel(id, delta)
+    }
+
     pub fn wheel(&mut self, id: WidgetId, delta: i32) -> Outcome {
         if id == self.master || id == scrollbar::id_for(self.master) {
             self.scroll.scroll_by(delta as isize);
@@ -800,6 +862,100 @@ impl ListDetail {
                 s.finish_list(geom, buf, ctx);
             },
         );
+    }
+
+    /// Lays out and paints a list-detail whose panes the host draws: no master
+    /// frame, no standard detail. `selected_row` is supplied for this frame
+    /// only; the list keeps no cursor of its own. Each row's hit region belongs
+    /// to the master id with `Part::ROW` and the row key, registered before the
+    /// host paints.
+    #[allow(clippy::too_many_arguments)]
+    pub fn render_hosted(
+        &mut self,
+        area: Rect,
+        len: usize,
+        key_of: impl Fn(usize) -> ItemKey,
+        selected_row: Option<usize>,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        host: &mut impl PaneHost,
+    ) {
+        self.names.clear();
+        self.buttons.clear();
+        self.md.detail_owns.clear();
+        let l = self.md.layout(area, buf, ctx, ctx.theme.canvas);
+        if !l.master.is_empty() {
+            self.hosted_master(l.master, len, key_of, selected_row, buf, ctx, host);
+        }
+        match l.mode {
+            Mode::Split | Mode::Drawer if !l.detail.is_empty() => host.detail(
+                DetailPane {
+                    area: l.detail,
+                    drawer: l.mode == Mode::Drawer,
+                    id: self.detail,
+                    scroll: &mut self.detail_scroll,
+                },
+                buf,
+                ctx,
+            ),
+            Mode::Master if !l.summary.is_empty() => host.summary(l.summary, buf, ctx),
+            _ => {}
+        }
+        self.md.finish(ctx);
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn hosted_master(
+        &mut self,
+        area: Rect,
+        len: usize,
+        key_of: impl Fn(usize) -> ItemKey,
+        selected: Option<usize>,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        host: &mut impl PaneHost,
+    ) {
+        let focused = ctx.interaction.focused(self.master);
+        ctx.control(self.master, area, false);
+        ctx.scrollable(self.master, area);
+        if len == 0 {
+            host.empty(area, buf, ctx);
+            return;
+        }
+        self.scroll.set_content(len);
+        self.scroll.set_viewport(area.height as usize);
+        if let Some(row) = selected {
+            let arrived = self.hosted_selected != Some(row);
+            self.scroll.follow(row);
+            if arrived && row > 0 && row == self.scroll.offset && host.is_lead(row - 1) {
+                self.scroll.scroll_by(-1);
+            }
+        }
+        self.hosted_selected = selected;
+        let has_sb = self.scroll.overflows();
+        let row_w = area.width.saturating_sub(u16::from(has_sb));
+        host.rows_begin(area, row_w);
+        for (k, i) in self.scroll.visible_range().enumerate() {
+            let rect = Rect::new(area.x, area.y + k as u16, row_w, 1);
+            let key = key_of(i);
+            ctx.register_part(self.master, PartRef::item(Part::ROW, key), rect);
+            #[cfg(test)]
+            crate::core::work::add(crate::core::work::Counter::VisibleRowsPainted, 1);
+            host.row(
+                MasterRow {
+                    index: i,
+                    key,
+                    rect,
+                    selected: selected == Some(i),
+                    focused,
+                },
+                buf,
+                ctx,
+            );
+        }
+        if has_sb {
+            scrollbar::render_with_fade(area, buf, ctx, self.master, &self.scroll, focused);
+        }
     }
 
     /// Reconciles the selection with `source` without painting: a cursor the
@@ -1089,6 +1245,16 @@ impl ListDetail {
     /// The narrowest area that still shows the detail beside the master.
     pub(crate) fn set_collapse_below(&mut self, width: u16) {
         self.md.collapse_below = width;
+    }
+
+    /// Sizes the detail as `pct` percent of the width, within `min..=max`.
+    pub(crate) fn set_detail_share(&mut self, pct: u16, min: u16, max: u16) {
+        self.md.size = DetailSize::Share { pct, min, max };
+    }
+
+    /// How many rows the summary keeps under a master with no room beside it.
+    pub(crate) fn set_summary_rows(&mut self, rows: u16) {
+        self.md.summary_rows = rows;
     }
 
     fn rendered(&mut self, lines: &[Line], body: Rect, label_w: u16) -> Vec<Rendered> {

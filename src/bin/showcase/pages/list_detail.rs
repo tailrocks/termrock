@@ -310,7 +310,7 @@ impl Page for ListDetailPage {
                 }
                 if let Some((axis, delta)) = ev.wheel() {
                     return match axis {
-                        junie_tui::core::hit::Axis::Vertical => self.ld.wheel(ev.id, delta),
+                        junie_tui::core::hit::Axis::Vertical => self.ld.wheel_event(ev, delta),
                         junie_tui::core::hit::Axis::Horizontal => Outcome::Ignored,
                     };
                 }
