@@ -730,3 +730,31 @@ fn option_clickable_width_collapsed_and_rail() {
     );
     hidden.finish();
 }
+
+#[test]
+fn option_stress_crumbs_and_long_label() {
+    let items = page(
+        "s01-opt-stress-items",
+        &["--opt", "breadcrumbsrails.stress=20k items"],
+        120,
+        40,
+    );
+    let screen = items.wait_text("Folder 20000");
+    assert_has(&screen, "deep, cut to fit · full width");
+    assert_lacks(&screen, "Folder 00001");
+    assert_has(&screen, "Explorer");
+    assert_has(&screen, "Disk › Users › alex");
+    items.finish();
+
+    let label = page(
+        "s01-opt-stress-label",
+        &["--opt", "breadcrumbsrails.stress=65k label"],
+        120,
+        40,
+    );
+    let screen = label.wait_text("long label");
+    assert_has(&screen, "Explorer");
+    assert_has(&screen, "Location");
+    assert_has(&screen, "Desktop");
+    label.finish();
+}

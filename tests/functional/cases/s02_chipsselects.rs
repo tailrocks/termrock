@@ -1573,3 +1573,42 @@ fn stale_overflow_menu_closes_when_a_chip_changes() {
     app.key("escape");
     app.finish();
 }
+
+#[test]
+fn option_stress_filters_and_long_label() {
+    let items = open(
+        "s02-chips-stress-items",
+        120,
+        40,
+        &[
+            "--page",
+            "chipsselects",
+            "--opt",
+            "chipsselects.stress=20k items",
+        ],
+    );
+    let screen = items.wait_text("filter 00001");
+    assert!(text(&screen).contains(TITLE), "chips page title missing");
+    items.finish();
+
+    let label = open(
+        "s02-chips-stress-label",
+        120,
+        40,
+        &[
+            "--page",
+            "chipsselects",
+            "--opt",
+            "chipsselects.stress=65k label",
+        ],
+    );
+    // The 65,536-cell chip cannot fit the bar, so it sits behind the +5 marker
+    // with the four demo filters instead of wrapping to a zero-width chip.
+    let screen = label.wait_text("+5");
+    assert!(
+        text(&screen).contains("match all") && !text(&screen).contains("long label"),
+        "long chip should be behind the marker\n{}",
+        text(&screen)
+    );
+    label.finish();
+}

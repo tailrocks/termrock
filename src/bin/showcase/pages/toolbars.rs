@@ -3,6 +3,7 @@ use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Rect, Size};
 
 use crate::pages::layout::{sheet_height, sheet_width};
+use crate::pages::stress::{self, Mode};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
 use junie_tui::core::event::Outcome;
@@ -56,7 +57,24 @@ fn busy_if(item: ToolItem, off: bool, why: &str) -> ToolItem {
     if off { item.reason(why) } else { item }
 }
 
+/// The narrow bar holds the query commands, or the stress data when it is set.
+fn narrow_items(mode: Mode, running: bool) -> Vec<ToolItem> {
+    match mode {
+        Mode::Off => query_items(running),
+        Mode::Items => stress::numbered("Action")
+            .map(|label| ToolItem::new(&label))
+            .collect(),
+        Mode::Label => std::iter::once(ToolItem::new(&stress::long_label()))
+            .chain(query_items(running))
+            .collect(),
+    }
+}
+
 const NARROW_W: u16 = 32;
+
+/// Hidden labels named in the overflow readout, and the cells each keeps.
+const BEHIND_SHOWN: usize = 8;
+const BEHIND_LABEL_CELLS: usize = 40;
 
 fn format_items() -> Vec<ToolItem> {
     vec![
@@ -88,17 +106,19 @@ const OPT_KEYS: [&str; 6] = [
     "toolbars.gap",
     "toolbars.overflow",
     "toolbars.mutate_open",
+    "toolbars.stress",
 ];
 const OPT_DEFAULTS: [usize; 6] = [0, 0, 1, 1, 0, 0];
 
 const MUTATED: &str = "Run all";
+const STRESS: usize = 5;
 
 impl ToolbarsPage {
     pub fn new() -> Self {
         let mut p = Self {
             template: Template::new(ID, states_grid()),
             query: Toolbar::new(ID.sub("query"), query_items(false)),
-            narrow: Toolbar::new(ID.sub("narrow"), query_items(false)),
+            narrow: Toolbar::new(ID.sub("narrow"), narrow_items(Mode::Off, false)),
             format: Toolbar::new(ID.sub("format"), format_items()),
             running: false,
             last: "none yet · Activated(i) or Toggled(i, on)".into(),
@@ -177,8 +197,9 @@ impl ToolbarsPage {
                 _ => {}
             }
 
-            for bar in [&mut self.query, &mut self.narrow] {
-                let mut items = query_items(self.running);
+            let query = query_items(self.running);
+            let narrow = narrow_items(self.stress_mode(), self.running);
+            for (bar, mut items) in [(&mut self.query, query), (&mut self.narrow, narrow)] {
                 for (n, o) in items.iter_mut().zip(bar.items()) {
                     if n.on.is_some() {
                         n.on = o.on;
@@ -198,23 +219,30 @@ impl ToolbarsPage {
         }
     }
 
+    fn stress_mode(&self) -> Mode {
+        stress::mode(stress::VALUES[self.opts[STRESS]])
+    }
+
     fn behind_text(&self) -> String {
-        let hidden: Vec<String> = self
-            .narrow
-            .hidden()
+        let hidden = self.narrow.hidden();
+        if hidden.is_empty() {
+            return "everything fits: no » button".to_owned();
+        }
+        let named: Vec<String> = hidden
             .iter()
+            .take(BEHIND_SHOWN)
             .map(|&i| {
                 let it = &self.narrow.items()[i];
+                let label = text::truncate(&it.label, BEHIND_LABEL_CELLS);
                 match (&it.reason, it.disabled) {
-                    (Some(r), true) => format!("{} ({r})", it.label),
-                    _ => it.label.clone(),
+                    (Some(r), true) => format!("{label} ({r})"),
+                    _ => label,
                 }
             })
             .collect();
-        if hidden.is_empty() {
-            "everything fits: no » button".to_owned()
-        } else {
-            format!("behind »: {}", hidden.join(" · "))
+        match hidden.len().saturating_sub(BEHIND_SHOWN) {
+            0 => format!("behind »: {}", named.join(" · ")),
+            more => format!("behind »: {} · and {more} more", named.join(" · ")),
         }
     }
 
@@ -455,7 +483,13 @@ impl Page for ToolbarsPage {
 
     fn set_option(&mut self, key: &str, value: usize) {
         if let Some(i) = OPT_KEYS.iter().position(|k| *k == key) {
-            self.opts[i] = value;
+            if i == STRESS {
+                self.opts[i] = value.min(stress::VALUES.len() - 1);
+                self.narrow.items = narrow_items(self.stress_mode(), self.running);
+                self.narrow.cursor = 0;
+            } else {
+                self.opts[i] = value;
+            }
             self.rebuild();
         }
     }

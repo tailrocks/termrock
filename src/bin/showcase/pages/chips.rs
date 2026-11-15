@@ -5,6 +5,7 @@ use ratatui::layout::{Rect, Size};
 use crate::app::PageId;
 use crate::options::{PageValues, page_options};
 use crate::pages::layout::{sheet_height, sheet_width};
+use crate::pages::stress::{self, Mode};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
 use junie_tui::core::event::Outcome;
@@ -66,18 +67,36 @@ pub struct ChipsPage {
     sections: crate::pages::layout::Sections,
 }
 
+fn default_filters() -> Vec<Chip> {
+    let mut bad = Chip::new("amount > 'abc'");
+    bad.error = true;
+    let mut chips = vec![
+        Chip::new("status = 'pending'"),
+        Chip::new("total > 100"),
+        Chip::new("country in (DE, FR)"),
+        bad,
+    ];
+    chips[2].enabled = false;
+    chips
+}
+
+/// The filter bar holds the demo filters, or the stress data when it is set.
+fn stress_filters(mode: Mode) -> Vec<Chip> {
+    match mode {
+        Mode::Off => default_filters(),
+        Mode::Items => stress::numbered("filter")
+            .map(|label| Chip::new(&label))
+            .collect(),
+        Mode::Label => std::iter::once(Chip::new(&stress::long_label()))
+            .chain(default_filters())
+            .collect(),
+    }
+}
+
 impl ChipsPage {
     pub fn new() -> Self {
         let mut filters = ChipBar::new(ID.sub("filters"));
-        let mut bad = Chip::new("amount > 'abc'");
-        bad.error = true;
-        filters.set_chips(vec![
-            Chip::new("status = 'pending'"),
-            Chip::new("total > 100"),
-            Chip::new("country in (DE, FR)"),
-            bad,
-        ]);
-        filters.update_chip(2, |c| c.enabled = false);
+        filters.set_chips(default_filters());
         let mut streams = ChipBar::new(ID.sub("streams"));
         let streams_chips = ["api", "worker", "db", "cron"]
             .iter()
@@ -342,10 +361,11 @@ impl ChipsPage {
         let w = |s: &str| text::width(s) as u16;
         let card =
             |p: Panel, meta: &str, content: u16| p.meta(meta).outer(Size::new(content, 0)).width;
+        // A saturated stress bar is cut to its card, so it never widens the page.
         let bar = |b: &ChipBar| {
             self.opts
                 .number("chipsselects.bar_width")
-                .unwrap_or_else(|| b.measure(any, ctx).width)
+                .unwrap_or_else(|| stress::clamp_saturated(b.measure(any, ctx).width, width))
         };
         let (fp, meta) = self.filters_panel(false);
         let last = w(&format!("last action: {}", self.last));
@@ -655,6 +675,11 @@ impl Page for ChipsPage {
 
     fn set_option(&mut self, key: &str, value: usize) {
         if self.opts.set(key, value) {
+            if key == "chipsselects.stress" {
+                let mode = stress::mode(self.opts.value(key));
+                self.filters.chips = stress_filters(mode);
+                self.filters.cursor = 0;
+            }
             self.rebuild();
         }
     }

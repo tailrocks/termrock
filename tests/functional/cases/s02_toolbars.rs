@@ -1133,3 +1133,36 @@ fn stale_overflow_menu_closes_when_the_bar_changes() {
     see(&ran, &["Activated(3) · Explain"], &["╭", NONE, "Esc Close"]);
     app.finish();
 }
+
+#[test]
+fn option_stress_items_and_long_label() {
+    let items = page(
+        "s02-toolbars-stress-items",
+        Some("toolbars.stress=20k items"),
+        120,
+        40,
+    );
+    let play = items.wait_text("Action 00001");
+    assert!(
+        text(&play).contains("behind »: Action 00002 · Action 00003")
+            && text(&play).contains("and 19991 more"),
+        "overflow readout does not count the stress items\n{}",
+        text(&play)
+    );
+    see(
+        &play,
+        &[QUERY, FORMAT_ROW, IDLE],
+        &[NARROW_ROW, ACTIVATED_RUN],
+    );
+    items.finish();
+
+    let label = page(
+        "s02-toolbars-stress-label",
+        Some("toolbars.stress=65k label"),
+        120,
+        40,
+    );
+    let play = label.wait_text("long label");
+    see(&play, &[QUERY, FORMAT_ROW, IDLE], &[ACTIVATED_RUN]);
+    label.finish();
+}

@@ -17,6 +17,7 @@ use crate::ui::ctx::{RenderCtx, fill};
 use crate::ui::edit_menu::{
     EditCaps, EditMenu, EditMenuHost, edit_menu_key, edit_menu_pointer, edit_menu_route,
 };
+use crate::ui::measure::terminal_extent;
 use crate::ui::text::{MappedCell, WrapOpts, wrap_mapped};
 use crate::widgets::field_common::PointerSelect;
 use crate::widgets::scrollbar;
@@ -249,17 +250,18 @@ impl<'a> Panel<'a> {
     }
 
     pub fn outer(&self, content: ratatui::layout::Size) -> ratatui::layout::Size {
-        let w = |s: &str| crate::ui::text::width(s) as u16;
+        let w = |s: &str| crate::ui::text::width(s);
         let title = self.title.map(w).unwrap_or(0);
         let meta = self.meta.filter(|m| !m.is_empty()).map(w).unwrap_or(0);
+        let (width, height) = (usize::from(content.width), usize::from(content.height));
         match self.kind {
             PanelKind::Card => {
-                let pad = self.pad_x * 2;
+                let pad = usize::from(self.pad_x) * 2;
                 let row = title + if meta > 0 { meta + 1 } else { 0 };
                 let head = if self.title.is_some() { 3 } else { 2 };
                 ratatui::layout::Size::new(
-                    (content.width + pad).max(row + pad),
-                    content.height + head,
+                    terminal_extent((width + pad).max(row + pad)),
+                    terminal_extent(height + head),
                 )
             }
             PanelKind::Framed => {
@@ -268,7 +270,10 @@ impl<'a> Panel<'a> {
                 } else {
                     title + 2
                 };
-                ratatui::layout::Size::new((content.width + 5).max(row + 4), content.height + 2)
+                ratatui::layout::Size::new(
+                    terminal_extent((width + 5).max(row + 4)),
+                    terminal_extent(height + 2),
+                )
             }
         }
     }
@@ -1491,3 +1496,22 @@ impl EditMenuHost for ScrollPanel {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod saturation_tests {
+    use ratatui::layout::Size;
+
+    use super::Panel;
+
+    /// A saturated intrinsic width reaches the panel as `u16::MAX`. Adding the
+    /// border and padding must saturate too, not overflow.
+    #[test]
+    fn outer_saturates_a_saturated_content_width() {
+        let card = Panel::card(Some("Trails")).outer(Size::new(u16::MAX, 0));
+        assert_eq!(card.width, u16::MAX);
+        let framed = Panel::framed(Some("Explorer")).outer(Size::new(u16::MAX, 0));
+        assert_eq!(framed.width, u16::MAX);
+        let tall = Panel::card(None).outer(Size::new(0, u16::MAX));
+        assert_eq!(tall.height, u16::MAX);
+    }
+}
