@@ -400,7 +400,10 @@ impl Backend for SimBackend {
                 result: power_transition(world, instance, false),
             }),
             Effect::RefreshAccount {
-                account, source, ..
+                ticket,
+                account,
+                source,
+                ..
             } => {
                 let refreshed = world.accounts.get(account).map(|a| {
                     let override_for_account = self
@@ -420,6 +423,7 @@ impl Backend for SimBackend {
                     )
                 });
                 Some(Msg::AccountRefreshed {
+                    ticket: *ticket,
                     account: account.clone(),
                     source: Box::new(source.clone()),
                     result: refreshed
