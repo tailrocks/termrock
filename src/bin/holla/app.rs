@@ -1800,7 +1800,8 @@ impl App {
                 if self.world.activity(&id).is_some_and(|a| a.state.live()) {
                     return;
                 }
-                self.world.activities.retain(|a| a.id != id);
+                // The record outlives its tab: batch tallies count members by
+                // ID, so only the tab is removed below.
             }
             TabKind::Plan(id) => {
                 if stop {

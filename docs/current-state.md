@@ -146,6 +146,12 @@ read it against, because each of its reasons names a Fixed control.
 - The showcase demonstrates every library capability; the coverage
   gate is described in
   [shared components plan](architecture/shared-components-plan.md).
+- Holla keeps every `Activity` record for the lifetime of its simulated
+  `World`. Closing a tab removes only the tab, so a batch keeps counting
+  its members by ID after the tab closes, and reopening a tab shows the
+  retained record without starting it or applying its effect again. No
+  history eviction exists yet. Keeping records linear in session history is
+  intentional, and idle scheduling must not assume a bounded record count.
 
 ## Testing today
 
