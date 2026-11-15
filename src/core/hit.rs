@@ -488,6 +488,26 @@ impl HitRegistry {
         }
     }
 
+    pub(crate) fn clip_mark(&mut self, mark: HitMark, viewport: Rect) {
+        self.clip_since(mark.regions, viewport);
+        let from = mark.bars.min(self.bars.len());
+        let bars: Vec<Bar> = self.bars.drain(from..).collect();
+        for mut bar in bars {
+            bar.track = bar.track.intersection(viewport);
+            if !bar.track.is_empty() {
+                self.bars.push(bar);
+            }
+        }
+        let from = mark.autoscroll.min(self.autoscroll.len());
+        let areas: Vec<(usize, Rect)> = self.autoscroll.drain(from..).collect();
+        for (layer, area) in areas {
+            let area = area.intersection(viewport);
+            if !area.is_empty() {
+                self.autoscroll.push((layer, area));
+            }
+        }
+    }
+
     pub fn shift_of(&self, id: WidgetId) -> (u16, u16) {
         self.shifts
             .iter()
@@ -697,6 +717,44 @@ mod tests {
         hits.register_thumb(FIRST, OWNER, Rect::new(5, 2, 1, 2));
         hits.raise(FIRST);
         assert_eq!(hits.logical_bars.len(), 1);
+        assert_eq!(hits.logical_bar(FIRST), Some(bar));
+    }
+
+    #[test]
+    fn clip_mark_clips_screen_geometry_and_keeps_logical_bars() {
+        let mut hits = HitRegistry::default();
+        hits.register(SECOND, Rect::new(0, 0, 40, 40));
+        let mark = hits.mark();
+        let bar = vbar(FIRST, Rect::new(5, 6, 1, 30));
+        hits.register_bar(bar);
+        hits.register_autoscroll(Rect::new(0, 0, 40, 40));
+        hits.register(OWNER, Rect::new(2, 2, 3, 30));
+        hits.register(OWNER, Rect::new(30, 30, 3, 3));
+        hits.clip_mark(mark, Rect::new(0, 0, 20, 10));
+
+        assert_eq!(hits.regions()[0].area, Rect::new(0, 0, 40, 40), "before the mark");
+        let kept: Vec<Rect> = hits.regions()[1..].iter().map(|r| r.area).collect();
+        assert_eq!(
+            kept,
+            vec![Rect::new(5, 6, 1, 4), Rect::new(2, 2, 3, 8)],
+            "regions are clipped and fully hidden ones dropped"
+        );
+        assert_eq!(hits.bar(FIRST).map(|b| b.track), Some(Rect::new(5, 6, 1, 4)));
+        assert_eq!(hits.logical_bar(FIRST), Some(bar), "the logical bar keeps its full track");
+        assert_eq!(hits.shift_of(FIRST), (0, 0));
+        assert_eq!(hits.autoscroll_at(Position::new(1, 1)), Some(Rect::new(0, 0, 20, 10)));
+        assert_eq!(hits.autoscroll_at(Position::new(25, 25)), None);
+    }
+
+    #[test]
+    fn clip_mark_drops_a_bar_with_no_visible_track() {
+        let mut hits = HitRegistry::default();
+        let mark = hits.mark();
+        let bar = vbar(FIRST, Rect::new(5, 20, 1, 8));
+        hits.register_bar(bar);
+        hits.clip_mark(mark, Rect::new(0, 0, 20, 10));
+        assert_eq!(hits.bar(FIRST), None);
+        assert_eq!(hits.hit(Position::new(5, 21)), None);
         assert_eq!(hits.logical_bar(FIRST), Some(bar));
     }
 }

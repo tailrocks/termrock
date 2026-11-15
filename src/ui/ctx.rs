@@ -171,8 +171,9 @@ fn shifted(shifts: Vec<Shift>, draw: OverlayFn) -> OverlayFn {
     })
 }
 
-pub(crate) fn copy_cells(from: &Buffer, area: Rect, to: &mut Buffer, at: Position) {
+pub(crate) fn copy_cells(from: &Buffer, area: Rect, to: &mut Buffer, at: Position) -> usize {
     let area = area.intersection(from.area);
+    let mut copied = 0;
     for y in 0..area.height {
         for x in 0..area.width {
             let (tx, ty) = (at.x as u32 + x as u32, at.y as u32 + y as u32);
@@ -182,9 +183,11 @@ pub(crate) fn copy_cells(from: &Buffer, area: Rect, to: &mut Buffer, at: Positio
             let p = Position::new(tx as u16, ty as u16);
             if to.area.contains(p) {
                 to[(p.x, p.y)] = from[(area.x + x, area.y + y)].clone();
+                copied += 1;
             }
         }
     }
+    copied
 }
 
 impl<'a> RenderCtx<'a> {
