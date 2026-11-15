@@ -6,7 +6,7 @@ use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, CxExt, Hint, Page, PageEvent};
 use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::focus::BlurAction;
-use junie_tui::core::id::WidgetId;
+use junie_tui::core::id::{ItemKey, WidgetId};
 use junie_tui::core::intent::Phase;
 use junie_tui::core::keymap::{Actions, KeyBinding, KeyMap, NavKeys, hint_key, label_for};
 use junie_tui::core::pointer::{MouseTarget, PointerEvent};
@@ -22,7 +22,7 @@ use junie_tui::widgets::dialog::{Dialog, DialogResult};
 use junie_tui::widgets::empty::EmptyState;
 use junie_tui::widgets::grid::{
     CellEditResult, CellKind, CellValue, ColumnSpec, DataGrid, FinishEdit, GridAction, GridCmd,
-    GridEditError, GridRows, RowState, RowTotal,
+    GridEditError, GridRows, GridUndoKind, RowState, RowTotal,
 };
 use junie_tui::widgets::option_editor::{
     Affordance, ColumnEditor, EditorConfig, OptionItem, Options,
@@ -164,6 +164,15 @@ fn literal(row: usize, column: &str, v: &CellValue) -> Result<String, NonFinite>
         }
         other => other.text(),
     })
+}
+
+fn undo_status(kind: GridUndoKind) -> &'static str {
+    match kind {
+        GridUndoKind::Cell => "Undid a cell edit",
+        GridUndoKind::DeleteMark => "Undid a delete mark · the staged edits are back",
+        GridUndoKind::Insert => "Undid an insert · the row is gone",
+        GridUndoKind::RemovedInsert => "Undid a removed insert · the row and its edits are back",
+    }
 }
 
 fn tiers() -> Options {
@@ -424,7 +433,10 @@ const COMMANDS: &[(GridCmd, &str)] = &[
     (GridCmd::OpenFilters, "Filters · OpenFilters"),
     (GridCmd::ClearFilters, "Clear filters · ClearFilters"),
     (GridCmd::Refresh, "Reload · Refresh"),
-    (GridCmd::Undo, "Undo a cell, delete or insert"),
+    (
+        GridCmd::Undo,
+        "Undo the last draft change · Undone names its key",
+    ),
     (GridCmd::Discard, "Discard · DiscardRequested"),
     (GridCmd::PreviewSql, "Preview SQL · PreviewSql"),
     (
@@ -482,6 +494,7 @@ fn states_grid() -> StateGrid {
     let mut changed = DataGrid::new(id.child(1), cols());
     changed.set_rows(rows());
     changed.record_cell(0, 2, CellValue::Int(40));
+    changed.record_cell(1, 2, CellValue::Int(7));
     changed.toggle_delete(1);
     changed.insert_row();
     let mut read_only = DataGrid::new(id.child(2), cols()).editable(false);
@@ -556,27 +569,36 @@ impl GridPage {
     }
 
     fn statements(&self) -> Result<Vec<String>, NonFinite> {
+        let pending = self.grid.pending();
+        let in_source_order = |keys: &mut dyn Iterator<Item = ItemKey>| {
+            let mut rows: Vec<(usize, ItemKey)> = keys
+                .filter_map(|key| Some((self.grid.source_index(key)?, key)))
+                .collect();
+            rows.sort_unstable();
+            rows
+        };
         let mut out = Vec::new();
-        let mut cells: Vec<_> = self.grid.pending.cells.iter().collect();
-        cells.sort_by_key(|((r, c), _)| (*r, *c));
-        for ((r, c), v) in cells {
-            if self.grid.pending.inserted.contains(r) {
-                continue;
-            }
-            let name = &self.grid.columns[*c].name;
+        let mut cells: Vec<(usize, usize, &CellValue)> = pending
+            .cells()
+            .filter(|(key, _, _)| !pending.is_inserted(*key) && !pending.is_deleted(*key))
+            .filter_map(|(key, c, v)| Some((self.grid.source_index(key)?, c, v)))
+            .collect();
+        cells.sort_by_key(|(r, c, _)| (*r, *c));
+        for (r, c, v) in cells {
+            let name = &self.grid.columns[c].name;
             out.push(format!(
                 "UPDATE {TABLE} SET {name} = {} WHERE id = {};",
-                literal(*r, name, v)?,
-                self.grid.value(*r, 0).text()
+                literal(r, name, v)?,
+                self.grid.value(r, 0).text()
             ));
         }
-        for r in &self.grid.pending.inserted {
+        for (r, key) in in_source_order(&mut pending.inserted()) {
             let cols: Vec<&str> = self
                 .grid
                 .columns
                 .iter()
                 .enumerate()
-                .filter(|(c, _)| self.grid.pending.cells.contains_key(&(*r, *c)))
+                .filter(|(c, _)| pending.is_dirty(key, *c))
                 .map(|(_, col)| col.name.as_str())
                 .collect();
             if cols.is_empty() {
@@ -587,13 +609,7 @@ impl GridPage {
                     .columns
                     .iter()
                     .enumerate()
-                    .filter_map(|(c, col)| {
-                        self.grid
-                            .pending
-                            .cells
-                            .get(&(*r, c))
-                            .map(|v| literal(*r, &col.name, v))
-                    })
+                    .filter_map(|(c, col)| pending.value(key, c).map(|v| literal(r, &col.name, v)))
                     .collect::<Result<Vec<String>, NonFinite>>()?;
                 out.push(format!(
                     "INSERT INTO {TABLE} ({}) VALUES ({});",
@@ -602,10 +618,10 @@ impl GridPage {
                 ));
             }
         }
-        for r in &self.grid.pending.deleted {
+        for (r, _) in in_source_order(&mut pending.deleted()) {
             out.push(format!(
                 "DELETE FROM {TABLE} WHERE id = {};",
-                self.grid.value(*r, 0).text()
+                self.grid.value(r, 0).text()
             ));
         }
         Ok(out)
@@ -613,7 +629,7 @@ impl GridPage {
 
     fn changes_dialog(&self, review: bool) -> Result<Dialog, NonFinite> {
         let code = self.statements()?;
-        let (changed, inserted, deleted) = self.grid.pending.counts();
+        let (changed, inserted, deleted) = self.grid.pending().counts();
         let facts = vec![
             Prop::new("Statements", code.len().to_string()),
             Prop::new(
@@ -699,7 +715,7 @@ impl GridPage {
         let src = self.grid.source_row(display);
         match self.grid.try_edit_text(src, col, text) {
             Ok(CellEditResult::Changed) => {
-                cx.status(format!("{} pending", self.grid.pending.total()));
+                cx.status(format!("{} pending", self.grid.pending().total()));
             }
             Ok(CellEditResult::Unchanged) => cx.status("The cell already has that value"),
             Err(GridEditError::Validation(e)) => {
@@ -715,10 +731,11 @@ impl GridPage {
     fn on_event(&mut self, ev: Option<GridAction>, cx: &mut Cx) {
         match ev {
             Some(GridAction::CellChanged { .. }) => {
-                cx.status(format!("{} pending", self.grid.pending.total()))
+                cx.status(format!("{} pending", self.grid.pending().total()))
             }
             Some(GridAction::RowInserted(_)) => cx.status("Row inserted · fill it in, then Save"),
             Some(GridAction::RowDeleted(_)) => cx.status("Row queued for deletion · u undoes"),
+            Some(GridAction::Undone(undone)) => cx.status(undo_status(undone.kind)),
             Some(GridAction::FetchMore) => {
                 let from = self.grid.len();
                 self.grid
@@ -734,7 +751,7 @@ impl GridPage {
                 if !self.settle_edit(cx) {
                     return;
                 }
-                if self.grid.pending.is_empty() {
+                if self.grid.pending().is_empty() {
                     cx.status("Nothing to save");
                 } else {
                     self.open_changes(true, cx);
@@ -788,13 +805,12 @@ impl GridPage {
     fn finish_commit(&mut self, cx: &mut Cx) {
         self.grid.set_loading(false);
 
-        let bad = self
-            .grid
-            .pending
-            .cells
-            .iter()
-            .find(|((_, c), v)| *c == 3 && matches!(v, CellValue::Int(n) if *n > 500))
-            .map(|((r, _), _)| *r);
+        let pending = self.grid.pending();
+        let bad = pending
+            .cells()
+            .filter(|(key, _, _)| !pending.is_deleted(*key))
+            .find(|(_, c, v)| *c == 3 && matches!(v, CellValue::Int(n) if *n > 500))
+            .and_then(|(key, _, _)| self.grid.source_index(key));
         match bad {
             Some(r) => {
                 self.grid
@@ -802,7 +818,7 @@ impl GridPage {
                 cx.status("Save failed · the row is marked");
             }
             None => {
-                let n = self.grid.pending.total();
+                let n = self.grid.pending().total();
                 self.grid.apply_commit_result(Ok(()));
                 self.saved += n as u32;
                 cx.status(format!("Saved {n} changes"));
@@ -972,7 +988,7 @@ impl Page for GridPage {
         "Typed cells, a pending-change queue, paging and local sort"
     }
     fn leave_stakes(&self) -> junie_tui::ui::leave::Stakes {
-        if !self.grid.pending.is_empty() {
+        if !self.grid.pending().is_empty() {
             junie_tui::ui::leave::Stakes::Unsaved { changes: 0 }
         } else {
             junie_tui::ui::leave::Stakes::Clean
@@ -1156,28 +1172,14 @@ mod tests {
     #[test]
     fn issue49_showcase_preview_preserves_numeric_precision() {
         let mut page = GridPage::new();
+        page.grid.record_cell(0, MRR, CellValue::Num(0.001));
+        page.grid.record_cell(1, MRR, CellValue::Num(1.234_567));
+        page.grid.record_cell(2, MRR, CellValue::Num(100.0));
+        page.grid.insert_row();
+        let insert = page.grid.len() - 1;
+        page.grid.record_cell(insert, SEATS, CellValue::Int(5));
         page.grid
-            .pending
-            .cells
-            .insert((0, MRR), CellValue::Num(0.001));
-        page.grid
-            .pending
-            .cells
-            .insert((1, MRR), CellValue::Num(1.234_567));
-        page.grid
-            .pending
-            .cells
-            .insert((2, MRR), CellValue::Num(100.0));
-        let insert = page.grid.len();
-        page.grid.pending.inserted.insert(insert);
-        page.grid
-            .pending
-            .cells
-            .insert((insert, SEATS), CellValue::Int(5));
-        page.grid
-            .pending
-            .cells
-            .insert((insert, MRR), CellValue::Num(-0.000_25));
+            .record_cell(insert, MRR, CellValue::Num(-0.000_25));
 
         assert_eq!(
             page.statements().unwrap(),
@@ -1196,14 +1198,8 @@ mod tests {
     fn issue49_showcase_preview_rejects_nonfinite_numbers_entirely() {
         for bad in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
             let mut page = GridPage::new();
-            page.grid
-                .pending
-                .cells
-                .insert((0, MRR), CellValue::Num(2.5));
-            page.grid
-                .pending
-                .cells
-                .insert((1, MRR), CellValue::Num(bad));
+            page.grid.record_cell(0, MRR, CellValue::Num(2.5));
+            page.grid.record_cell(1, MRR, CellValue::Num(bad));
             let want = NonFinite {
                 row: 1,
                 column: "mrr".into(),
@@ -1211,7 +1207,7 @@ mod tests {
             assert_eq!(page.statements(), Err(want.clone()));
             assert_eq!(page.changes_dialog(false).err(), Some(want.clone()));
             assert_eq!(page.changes_dialog(true).err(), Some(want));
-            assert_eq!(page.grid.pending.cells.len(), 2, "the draft is kept");
+            assert_eq!(page.grid.pending().cells().count(), 2, "the draft is kept");
         }
     }
 }
