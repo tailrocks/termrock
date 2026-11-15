@@ -7,7 +7,7 @@ use ratatui::style::Modifier;
 
 use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::hit::Axis;
-use junie_tui::core::id::WidgetId;
+use junie_tui::core::id::{ItemKey, WidgetId};
 use junie_tui::core::keymap::hint_key;
 use junie_tui::core::pointer::{MouseTarget, PointerEvent};
 use junie_tui::theme::{StatusKind, SyntaxTone, Tone};
@@ -1004,6 +1004,7 @@ pub struct PlanInfo {
 }
 
 pub struct ResultSet {
+    pub key: ItemKey,
     pub label: String,
     pub pinned: bool,
     pub anchor: Range<usize>,
@@ -1019,6 +1020,22 @@ pub struct Running {
     pub all: bool,
     pub explain: Option<bool>,
     pub results: Vec<ResultSet>,
+}
+
+#[derive(Clone, Copy)]
+struct ResultSlot {
+    n: usize,
+    key: ItemKey,
+}
+
+enum RunTerminal {
+    Complete { failed: bool },
+    Cancelled,
+}
+
+fn mint_result_key(counter: &mut u64) -> ItemKey {
+    *counter += 1;
+    ItemKey::num(*counter)
 }
 
 pub struct QueryTab {
@@ -1038,6 +1055,7 @@ pub struct QueryTab {
     pub last_status: Option<(String, bool)>,
     pub last_duration: Option<u32>,
     pub result_counter: usize,
+    next_result_key: u64,
     pub unseen: bool,
     pub saved_text: String,
 
@@ -1068,6 +1086,7 @@ impl QueryTab {
             last_status: None,
             last_duration: None,
             result_counter: 0,
+            next_result_key: 0,
             unseen: false,
             saved_text: text.to_owned(),
         }
@@ -1138,8 +1157,12 @@ impl QueryTab {
             return;
         }
 
-        let pinned: Vec<ResultSet> = self.results.drain(..).filter(|r| r.pinned).collect();
-        self.results = pinned;
+        let active = self.results.get(self.active_result).map(|r| r.key);
+        self.results.retain(|r| r.pinned);
+        self.active_result = active
+            .and_then(|k| self.results.iter().position(|r| r.key == k))
+            .unwrap_or(0);
+        self.sync_result_tabs();
         self.editor.set_running(Some(statements[0].1.clone()));
         self.editor.diagnostics.clear();
         self.running = Some(Running {
@@ -1155,21 +1178,11 @@ impl QueryTab {
     }
 
     pub fn cancel(&mut self) -> bool {
-        if let Some(r) = self.running.take() {
-            self.editor.set_running(None);
-            let (_, range) = r.statements[r.current].clone();
-            self.results.push(ResultSet {
-                label: "Cancelled".into(),
-                pinned: false,
-                anchor: range,
-                duration_ms: r.started_ticks * 80,
-                body: ResultBody::Cancelled,
-            });
-            self.sync_result_tabs();
-            self.last_status = Some(("cancelled".into(), false));
-            return true;
-        }
-        false
+        let Some(run) = self.running.take() else {
+            return false;
+        };
+        self.finish_running(run, RunTerminal::Cancelled);
+        true
     }
 
     pub fn tick(&mut self, cat: &Catalog, connection: &str, database: &str) -> Vec<HistoryEntry> {
@@ -1184,6 +1197,7 @@ impl QueryTab {
         }
         let (sql_text, range) = r.statements[r.current].clone();
         let explain = r.explain;
+        let key = mint_result_key(&mut self.next_result_key);
         let (result, entry) = execute(
             cat,
             &sql_text,
@@ -1191,7 +1205,10 @@ impl QueryTab {
             explain,
             connection,
             database,
-            self.result_counter + 1,
+            ResultSlot {
+                n: self.result_counter + 1,
+                key,
+            },
         );
         self.result_counter += 1;
         let failed = matches!(result.body, ResultBody::Error { .. });
@@ -1212,40 +1229,7 @@ impl QueryTab {
         out.push(entry);
         if failed || r.current + 1 >= r.statements.len() {
             let done = self.running.take().unwrap();
-            self.editor.set_running(None);
-            let n = done.results.len();
-            let total_ms: u32 = done.results.iter().map(|r| r.duration_ms).sum();
-            let last_failed = failed;
-            self.results.extend(done.results);
-            self.sync_result_tabs();
-            self.active_result = self.results.len().saturating_sub(1);
-            self.result_tabs.set_active(self.active_result);
-            self.last_duration = Some(total_ms);
-            if last_failed {
-                let msg = if done.all && n > 1 {
-                    format!("Statement {n}/{} failed", done.statements.len())
-                } else {
-                    "error".into()
-                };
-                self.last_status = Some((msg, true));
-            } else {
-                self.last_status = Some((
-                    format!(
-                        "{} · {}",
-                        if n > 1 {
-                            format!("{n} statements")
-                        } else {
-                            "ok".into()
-                        },
-                        duration(
-                            std::time::Duration::from_millis(u64::from(total_ms)),
-                            DurationStyle::Compact
-                        )
-                    ),
-                    false,
-                ));
-            }
-            self.unseen = true;
+            self.finish_running(done, RunTerminal::Complete { failed });
         } else {
             r.current += 1;
             r.ticks_left = 4;
@@ -1253,6 +1237,60 @@ impl QueryTab {
             self.editor.set_running(Some(next));
         }
         out
+    }
+
+    fn finish_running(&mut self, run: Running, terminal: RunTerminal) {
+        self.editor.set_running(None);
+        let Running {
+            statements,
+            current,
+            started_ticks,
+            all,
+            results: done,
+            ..
+        } = run;
+        let n = done.len();
+        let total_ms: u32 = done.iter().map(|r| r.duration_ms).sum();
+        self.results.extend(done);
+        match terminal {
+            RunTerminal::Cancelled => {
+                let key = mint_result_key(&mut self.next_result_key);
+                self.results.push(ResultSet {
+                    key,
+                    label: "Cancelled".into(),
+                    pinned: false,
+                    anchor: statements[current].1.clone(),
+                    duration_ms: started_ticks * 80,
+                    body: ResultBody::Cancelled,
+                });
+                self.last_status = Some(("cancelled".into(), false));
+            }
+            RunTerminal::Complete { failed } => {
+                self.last_duration = Some(total_ms);
+                self.last_status = Some(if failed {
+                    let msg = if all && n > 1 {
+                        format!("Statement {n}/{} failed", statements.len())
+                    } else {
+                        "error".into()
+                    };
+                    (msg, true)
+                } else {
+                    let summary = if n > 1 {
+                        format!("{n} statements")
+                    } else {
+                        "ok".into()
+                    };
+                    let took = duration(
+                        std::time::Duration::from_millis(u64::from(total_ms)),
+                        DurationStyle::Compact,
+                    );
+                    (format!("{summary} · {took}"), false)
+                });
+                self.unseen = true;
+            }
+        }
+        self.active_result = self.results.len().saturating_sub(1);
+        self.sync_result_tabs();
     }
 
     fn sync_result_tabs(&mut self) {
@@ -2199,8 +2237,9 @@ fn execute(
     explain: Option<bool>,
     connection: &str,
     database: &str,
-    n: usize,
+    slot: ResultSlot,
 ) -> (ResultSet, HistoryEntry) {
+    let ResultSlot { n, key } = slot;
     let mut entry = HistoryEntry {
         id: 0,
         sql: text.to_owned(),
@@ -2223,6 +2262,7 @@ fn execute(
             entry.error = Some(e.message.clone());
             return (
                 ResultSet {
+                    key,
                     label: format!("Error {n}"),
                     pinned: false,
                     anchor: range,
@@ -2294,6 +2334,7 @@ fn execute(
                 entry.rows = Some(rs.rows.len());
                 (
                     ResultSet {
+                        key,
                         label: format!(
                             "{} ({})",
                             label_for("SELECT", Some(&sel.table)),
@@ -2311,6 +2352,7 @@ fn execute(
                 entry.error = Some(e.message.clone());
                 (
                     ResultSet {
+                        key,
                         label: format!("Error {n}"),
                         pinned: false,
                         anchor: range,
@@ -2346,6 +2388,7 @@ fn execute(
                     entry.rows = Some(nodes.len());
                     (
                         ResultSet {
+                            key,
                             label: if analyze {
                                 "EXPLAIN ANALYZE".into()
                             } else {
@@ -2370,6 +2413,7 @@ fn execute(
                     entry.error = Some(e.message.clone());
                     (
                         ResultSet {
+                            key,
                             label: format!("Error {n}"),
                             pinned: false,
                             anchor: range,
@@ -2392,6 +2436,7 @@ fn execute(
                 entry.error = Some(msg.clone());
                 (
                     ResultSet {
+                        key,
                         label: format!("Error {n}"),
                         pinned: false,
                         anchor: range,
@@ -2436,6 +2481,7 @@ fn execute(
                 entry.error = Some(msg.clone());
                 return (
                     ResultSet {
+                        key,
                         label: format!("Error {n}"),
                         pinned: false,
                         anchor: range,
@@ -2453,6 +2499,7 @@ fn execute(
             entry.rows = Some(rows);
             (
                 ResultSet {
+                    key,
                     label: format!("{} ({})", label_for(other.verb(), target.as_deref()), rows),
                     pinned: false,
                     anchor: range,
