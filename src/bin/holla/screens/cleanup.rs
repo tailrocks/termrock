@@ -50,6 +50,13 @@ enum Row {
     Note(String),
 }
 
+/// What the cursor rests on, by identity, so a rebuild can find the row again.
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum Anchor {
+    Category(String),
+    Candidate(String),
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Special {
     id: String,
@@ -226,13 +233,17 @@ impl CleanupPage {
         }
     }
 
-    fn selected_path(&self) -> Option<String> {
-        match self.rows.get(self.cursor) {
-            Some(Row::Candidate(c, i)) => self
+    fn cursor_anchor(&self) -> Option<Anchor> {
+        match self.rows.get(self.cursor)? {
+            Row::Category(c) => self
+                .cats
+                .get(*c)
+                .map(|k| Anchor::Category(k.category.id.to_owned())),
+            Row::Candidate(c, i) => self
                 .cats
                 .get(*c)
                 .and_then(|k| k.candidates.get(*i))
-                .map(|k| k.path.clone()),
+                .map(|k| Anchor::Candidate(k.path.clone())),
             _ => None,
         }
     }
@@ -259,7 +270,7 @@ impl CleanupPage {
     }
 
     fn reload_source(&mut self, w: &World) {
-        let keep = self.selected_path();
+        let keep = self.cursor_anchor();
         let (cats, special) = if let Some((sp, cat)) = self.special_category(w) {
             (vec![cat], Some(sp))
         } else {
@@ -338,11 +349,11 @@ impl CleanupPage {
     }
 
     fn rebuild_rows(&mut self) {
-        let keep = self.selected_path();
+        let keep = self.cursor_anchor();
         self.install_rows(keep);
     }
 
-    fn install_rows(&mut self, keep: Option<String>) {
+    fn install_rows(&mut self, keep: Option<Anchor>) {
         crate::domain::projection::record(|x| x.cleanup_row_builds += 1);
         let mut rows = vec![];
         if self.cats.is_empty() {
@@ -379,10 +390,16 @@ impl CleanupPage {
             }
         )));
         self.rows = rows;
-        let target = keep.and_then(|p| {
-            self.rows.iter().position(
-                |r| matches!(r, Row::Candidate(c, i) if self.cats[*c].candidates[*i].path == p),
-            )
+        let target = keep.and_then(|anchor| {
+            self.rows.iter().position(|r| match (r, &anchor) {
+                (Row::Category(c), Anchor::Category(id)) => {
+                    self.cats[*c].category.id == id.as_str()
+                }
+                (Row::Candidate(c, i), Anchor::Candidate(p)) => {
+                    self.cats[*c].candidates[*i].path == *p
+                }
+                _ => false,
+            })
         });
         self.cursor = target
             .unwrap_or(self.cursor)
@@ -2129,6 +2146,29 @@ mod context_tests {
                 "the earlier category keeps its state: {p}"
             );
         }
+    }
+
+    #[test]
+    fn cleanup_category_cursor_follows_its_category_after_rebuild() {
+        let w = world();
+        let mut page = expanded_page(&w);
+        let last = page.cats.len() - 1;
+        assert!(last >= 1, "fixture needs two categories");
+        let id = page.cats[last].category.id;
+        page.open.clear();
+        page.rebuild_rows();
+        page.cursor = row_of_category(&page, last);
+        let row = page.cursor;
+
+        page.open.insert(page.cats[0].category.id.to_owned());
+        page.rebuild_rows();
+
+        assert_ne!(row_of_category(&page, last), row, "the row moved");
+        assert!(
+            matches!(page.rows[page.cursor], Row::Category(c) if page.cats[c].category.id == id),
+            "the cursor stayed on {id}, got {:?}",
+            page.rows[page.cursor]
+        );
     }
 
     #[test]
