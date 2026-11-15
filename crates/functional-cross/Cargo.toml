@@ -11,9 +11,16 @@ publish = false
 path = "src/lib.rs"
 doctest = false
 
+[[bin]]
+name = "holla-xtest"
+path = "src/bin/holla-xtest.rs"
+
 [[test]]
 name = "functional"
 path = "tests/functional/main.rs"
+
+[dependencies]
+termrock-holla = { path = "../../apps/holla" }
 
 [dev-dependencies]
 termrock = { path = "../termrock", features = ["cli", "terminal"] }

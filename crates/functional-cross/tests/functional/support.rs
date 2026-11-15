@@ -16,7 +16,7 @@ pub fn tablepro_bin() -> &'static str {
 }
 
 pub fn holla_bin() -> &'static str {
-    app_binary("holla")
+    env!("CARGO_BIN_EXE_holla-xtest")
 }
 
 /// Path of a sibling app binary.

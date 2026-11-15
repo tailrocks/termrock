@@ -753,6 +753,7 @@ dependencies = [
  "serde_json",
  "sha2 0.10.9",
  "termrock",
+ "termrock-holla",
  "tuiscotti",
  "tuiscotti-tui-test",
 ]
