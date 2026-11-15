@@ -30,11 +30,24 @@ fn click(app: &mut App, at: Position) {
     app.handle_input(Input::Mouse(Mouse::new(MouseKind::Up, at)));
 }
 
-fn query_tab(app: &mut App) -> &mut crate::tabs::QueryTab {
-    match app.workbench.as_mut().and_then(|w| w.active_tab_mut()) {
+fn query_tab(app: &App) -> &crate::tabs::QueryTab {
+    match app.workbench.as_ref().and_then(|w| w.active_tab()) {
         Some(WorkTab::Query(q)) => q,
         _ => panic!("a query tab is active"),
     }
+}
+
+fn edit_query_tab(app: &mut App, f: impl FnOnce(&mut crate::tabs::QueryTab)) {
+    let edited = app.workbench.as_mut().and_then(|w| {
+        w.modify_active(|tab| match tab {
+            WorkTab::Query(q) => {
+                f(q);
+                true
+            }
+            _ => false,
+        })
+    });
+    assert_eq!(edited, Some(true), "a query tab is active");
 }
 
 /// Connect, type `SQL`, and select its first two statements from the start,
@@ -50,9 +63,9 @@ fn app_with_selected_statements() -> App {
 
     let editor = query_tab(&mut app).editor.id;
     app.shell.focus.focus(editor);
-    query_tab(&mut app).editor.begin_edit();
+    edit_query_tab(&mut app, |q| q.editor.begin_edit());
     app.handle_input(Input::Paste(SQL.into()));
-    query_tab(&mut app).editor.jump_to(0);
+    edit_query_tab(&mut app, |q| q.editor.jump_to(0));
     for _ in 0..SELECTED.chars().count() {
         app.handle_input(key(KeyCode::Right, KeyModifiers::SHIFT));
     }
@@ -68,7 +81,7 @@ fn app_with_selected_statements() -> App {
     app
 }
 
-fn running_statements(app: &mut App) -> Vec<String> {
+fn running_statements(app: &App) -> Vec<String> {
     query_tab(app)
         .running
         .as_ref()
