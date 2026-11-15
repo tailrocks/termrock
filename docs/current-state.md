@@ -154,6 +154,15 @@ read it against, because each of its reasons names a Fixed control.
   retained record without starting it or applying its effect again. No
   history eviction exists yet. Keeping records linear in session history is
   intentional, and idle scheduling must not assume a bounded record count.
+- Holla "Stop and close" on an activity tab captures the activity ID when
+  the dialog opens (`close-tab` layer key) and records it in
+  `App::pending_activity_closes`. The tab stays open while the process is
+  live and closes on that activity's terminal event, or at once when the stop
+  finishes synchronously (a queued activity) or the activity already ended.
+  The request is retired when its tab or record is gone, so it never closes
+  another tab. Closing a background tab keeps the shown tab shown and
+  re-indexes the owners of open layers. Plan tabs use the separate
+  `close-plan-tab` layer kind.
 
 ## Holla persisted JSON
 
