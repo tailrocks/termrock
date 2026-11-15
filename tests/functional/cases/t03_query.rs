@@ -218,11 +218,6 @@ fn dismiss(app: &App) {
 }
 
 fn deny_key(app: &App, key: &str) -> TerminalSnapshot {
-    // The deny status stays for five seconds. A repeat of the same sentence
-    // does not change the screen, so wait until the previous one expires.
-    app.wait_screen("deny status clear", |screen| {
-        !text(screen).contains("Cannot execute")
-    });
     let screen = run_key(app, key, "Cannot execute");
     see(
         &screen,
@@ -290,6 +285,35 @@ fn finish_dirty(app: &App) {
     app.expect_exited(0);
 }
 
+fn open_connected(name: &str) -> App {
+    let app = open(name);
+    connect(&app);
+    app
+}
+
+fn open_in_mode(name: &str, level: usize, label: &str) -> App {
+    let app = open_connected(name);
+    set_mode(&app, 0, level, label);
+    app
+}
+
+/// The deny status stays for five seconds on the wall clock, and a repeat of
+/// the same sentence does not change the screen. Each session therefore
+/// issues one denial instead of waiting the status out between them.
+fn open_read_only(name: &str) -> App {
+    let app = open_in_mode(name, 5, "Read-Only");
+    header_token(&app.screen(), "read-only");
+    app.key("ctrl+t");
+    let fresh = app.wait_screen("query 2", |screen| {
+        let visible = text(screen);
+        visible.contains("Query 2")
+            && visible.contains("Type SQL")
+            && visible.contains("No results yet")
+    });
+    see(&fresh, &["No results yet", "Type SQL"], &["rows affected"]);
+    app
+}
+
 #[test]
 fn route_lands_on_the_query_editor() {
     let app = open("t03-query-route");
@@ -310,9 +334,8 @@ fn route_lands_on_the_query_editor() {
 }
 
 #[test]
-fn classify_shows_the_safety_decision() {
-    let app = open("t03-query-classify");
-    connect(&app);
+fn classify_silent_shows_the_safety_decision() {
+    let app = open_connected("t03-query-classify-silent");
     let connected = app.screen();
     header_token(&connected, "silent");
     see(&connected, &["Type SQL", "Query 1"], &[DANGER, QUERY_TITLE]);
@@ -498,8 +521,12 @@ fn classify_shows_the_safety_decision() {
         ],
         &[DANGER, WRITE_TITLE],
     );
+    finish_dirty(&app);
+}
 
-    set_mode(&app, 0, 1, "Alert");
+#[test]
+fn classify_alert_confirms_writes() {
+    let app = open_in_mode("t03-query-classify-alert", 1, "Alert");
     header_token(&app.screen(), "alert");
     put_sql(&app, "SELECT name FROM organizations", "FROM organizations");
     let alert_select = run_key(&app, "ctrl+r", "Showing 500 rows");
@@ -597,8 +624,12 @@ fn classify_shows_the_safety_decision() {
         &[DANGER, "to confirm"],
     );
     dismiss(&app);
+    finish_dirty(&app);
+}
 
-    set_mode(&app, 1, 2, "Alert (Full)");
+#[test]
+fn classify_alert_full_confirms_reads() {
+    let app = open_in_mode("t03-query-classify-alert-full", 2, "Alert (Full)");
     header_token(&app.screen(), "alert+");
     put_sql(&app, "SELECT name FROM organizations", "FROM organizations");
     let full_select = run_key(&app, "ctrl+r", QUERY_TITLE);
@@ -646,8 +677,12 @@ fn classify_shows_the_safety_decision() {
         &[WRITE_TITLE, DANGER, "to confirm"],
     );
     dismiss(&app);
+    finish_dirty(&app);
+}
 
-    set_mode(&app, 2, 3, "Safe Mode");
+#[test]
+fn classify_safe_mode_types_to_confirm() {
+    let app = open_in_mode("t03-query-classify-safe", 3, "Safe Mode");
     header_token(&app.screen(), "safe");
     put_sql(&app, "SELECT name FROM organizations", "FROM organizations");
     let safe_select = run_key(&app, "ctrl+r", "Showing 500 rows");
@@ -741,8 +776,12 @@ fn classify_shows_the_safety_decision() {
         &[DANGER],
     );
     dismiss(&app);
+    finish_dirty(&app);
+}
 
-    set_mode(&app, 3, 4, "Safe Mode (Full)");
+#[test]
+fn classify_safe_mode_full_types_for_reads() {
+    let app = open_in_mode("t03-query-classify-safe-full", 4, "Safe Mode (Full)");
     header_token(&app.screen(), "safe+");
     put_sql(&app, "SELECT name FROM organizations", "FROM organizations");
     let full_safe = run_key(&app, "ctrl+r", "Type organizations to confirm");
@@ -772,18 +811,12 @@ fn classify_shows_the_safety_decision() {
         &[WRITE_TITLE, DANGER],
     );
     dismiss(&app);
+    finish_dirty(&app);
+}
 
-    set_mode(&app, 4, 5, "Read-Only");
-    header_token(&app.screen(), "read-only");
-    app.key("ctrl+t");
-    let fresh = app.wait_screen("query 2", |screen| {
-        let visible = text(screen);
-        visible.contains("Query 2")
-            && visible.contains("Type SQL")
-            && visible.contains("No results yet")
-    });
-    see(&fresh, &["No results yet", "Type SQL"], &["rows affected"]);
-
+#[test]
+fn classify_read_only_denies_run() {
+    let app = open_read_only("t03-query-read-only-run");
     let empty = run_key(&app, "ctrl+r", "Nothing to run");
     see(&empty, &["Nothing to run", "No results yet"], &[DENY]);
 
@@ -826,7 +859,12 @@ fn classify_shows_the_safety_decision() {
     assert!(!tabs.is_empty(), "Query 2 tab\n{}", text(&back));
     app.click(tabs[0]);
     app.wait_text("denied_marker_ro");
+    finish_dirty(&app);
+}
 
+#[test]
+fn classify_read_only_denies_explain() {
+    let app = open_read_only("t03-query-read-only-explain");
     put_sql(
         &app,
         "UPDATE products SET name = 'denied_explain' WHERE sku = 'SKU-01000'",
@@ -838,7 +876,12 @@ fn classify_shows_the_safety_decision() {
         &[DENY, "No results yet", "denied_explain"],
         &["EXPLAIN", "Planning"],
     );
+    finish_dirty(&app);
+}
 
+#[test]
+fn classify_read_only_denies_a_script_with_a_write() {
+    let app = open_read_only("t03-query-read-only-skip");
     put_sql(
         &app,
         "zzskip; UPDATE products SET name = 'denied_skip' WHERE sku = 'SKU-01000'",
@@ -850,7 +893,12 @@ fn classify_shows_the_safety_decision() {
         &[DENY, "No results yet", "zzskip", "denied_skip"],
         &["syntax error", "ZZSKIP", "Error 1"],
     );
+    finish_dirty(&app);
+}
 
+#[test]
+fn classify_read_only_denies_a_mixed_script() {
+    let app = open_read_only("t03-query-read-only-mix");
     put_sql(
         &app,
         "SELECT name FROM organizations; UPDATE products SET name = 'denied_mix' WHERE sku = 'SKU-01000'",
@@ -862,10 +910,21 @@ fn classify_shows_the_safety_decision() {
         &[DENY, "No results yet", "denied_mix"],
         &["SELECT organizations", "rows affected"],
     );
+    finish_dirty(&app);
+}
 
-    // A successful read does not replace the shell status, so the previous
-    // deny sentence stays until its wall-clock TTL. Wait it out before
-    // asserting the read itself is not a denial.
+#[test]
+fn classify_read_only_still_reads() {
+    let app = open_read_only("t03-query-read-only-reads");
+    // A successful read does not replace the shell status, so a denial made
+    // earlier in this app stays on screen until its wall-clock TTL. Issue one
+    // denial first, then wait it out before asserting the reads themselves.
+    put_sql(
+        &app,
+        "UPDATE products SET name = 'denied_reads' WHERE sku = 'SKU-01000'",
+        "denied_reads",
+    );
+    deny_key(&app, "ctrl+r");
     app.wait_screen("read-only deny expired", |screen| {
         !text(screen).contains("Cannot execute")
     });
@@ -888,6 +947,5 @@ fn classify_shows_the_safety_decision() {
         &["EXPLAIN ANALYZE", "Execution 0.660 ms"],
         &[DENY],
     );
-
     finish_dirty(&app);
 }
