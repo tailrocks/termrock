@@ -1199,22 +1199,29 @@ impl Execution {
             return true;
         }
         if self.plan.dry_run {
-            self.report.bytes += bytes;
+            self.report.bytes = self.report.bytes.saturating_add(bytes);
             self.record(path, Outcome::WouldRemove, bytes, None, log, now);
             return true;
         }
         match self.plan.mode {
             Mode::Trash => match fs.trash(path, now) {
                 Ok(stats) => {
-                    self.report.bytes += stats.removed_allocated_bytes;
+                    self.report.bytes = self
+                        .report
+                        .bytes
+                        .saturating_add(stats.removed_allocated_bytes);
                     self.record_removal(path, Outcome::Trashed, stats, log, now);
                 }
                 Err(e) => self.record(path, Outcome::Failed, 0, Some(e), log, now),
             },
             Mode::Permanent => match fs.remove_permanent(path) {
                 Ok(stats) => {
-                    self.report.bytes += stats.removed_allocated_bytes;
-                    self.report.freed_now += stats.reclaimed_bytes;
+                    self.report.bytes = self
+                        .report
+                        .bytes
+                        .saturating_add(stats.removed_allocated_bytes);
+                    self.report.freed_now =
+                        self.report.freed_now.saturating_add(stats.reclaimed_bytes);
                     self.record_removal(path, Outcome::Removed, stats, log, now);
                 }
                 Err(e) => self.record(path, Outcome::Failed, 0, Some(e), log, now),
@@ -1537,6 +1544,23 @@ mod tests {
         assert_eq!(report.freed_now, 0);
         assert!(report.items.iter().all(|item| item.reclaimed_bytes == 0));
         assert_eq!(fs, before, "a dry run removes nothing");
+    }
+
+    #[test]
+    fn cleanup_report_totals_saturate_instead_of_overflowing() {
+        let huge = u64::MAX / 2 + 1;
+        let mut fs = Fs::new();
+        fs.dir("/Users/alex/Downloads", 1)
+            .sparse("/Users/alex/Downloads/a", huge, huge, 1)
+            .sparse("/Users/alex/Downloads/b", huge, huge, 1)
+            .volume("/", u64::MAX, 1 << 30);
+        let paths = ["/Users/alex/Downloads/a", "/Users/alex/Downloads/b"];
+        let dry = run(&mut fs.clone(), &paths, Mode::Permanent, true);
+        assert_eq!(dry.bytes, u64::MAX, "dry-run estimates saturate");
+        assert_eq!(dry.items.len(), 2, "both items are still recorded");
+        let live = run(&mut fs, &paths, Mode::Permanent, false);
+        assert_eq!(live.bytes, u64::MAX, "processed bytes saturate");
+        assert_eq!(live.freed_now, u64::MAX, "reclaimed bytes saturate");
     }
 
     const NOW: i64 = 1_800_000_000;
