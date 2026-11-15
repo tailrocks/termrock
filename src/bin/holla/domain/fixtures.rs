@@ -1287,6 +1287,7 @@ fn base(scenario: Scenario, motion: Motion, host: Host, location: Location) -> W
         trust: crate::domain::custom::TrustStore::default(),
         sudo_cached: true,
         service_failures: vec![],
+        explore_tiles: crate::domain::catalog::default_explore_tiles(),
         task_failures: vec![],
         ops_log: crate::domain::cleanup::OpsLog {
             path: format!("{}/.cache/holla/ops.log", location.home),

@@ -149,6 +149,8 @@ pub struct World {
 
     pub service_failures: Vec<String>,
 
+    pub explore_tiles: Vec<crate::domain::catalog::ExploreTile>,
+
     pub task_failures: Vec<String>,
     pub ops_log: OpsLog,
     pub size_cache: SizeCache,

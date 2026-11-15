@@ -27,7 +27,7 @@ pub(super) fn fault_armed(step: Step) -> bool {
         .is_ok()
 }
 
-fn arm(step: Step) {
+pub(super) fn arm(step: Step) {
     FAULT.store(step as u8 + 1, Ordering::SeqCst);
 }
 

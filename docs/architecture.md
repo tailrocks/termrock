@@ -35,6 +35,12 @@ internals.
   configured cancel action via the popup's own backdrop.
 - Empty/unavailable content renders deterministically and stays
   keyboard-reachable.
+- A scrollbar `PointerEvent` carries the pointer position and the
+  full `Bar` track in the owner's coordinate space, however deeply the
+  owner is nested or clipped. `HitRegistry::bar` and hit testing stay in
+  screen space, and a press freezes its screen-to-owner transform for
+  the whole gesture, so drag and release stay valid after the bar
+  leaves the visible window.
 - Public API behaviour stays compatible unless a deliberate migration
   updates consumers and records the decision in
   [decisions](decisions.md).

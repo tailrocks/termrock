@@ -246,6 +246,26 @@ fn wait_selection_change(app: &App, before: &str) {
     }
 }
 
+/// Where the account row `name` sits against the focus. Only panel body lines
+/// count, so the title crumb that repeats the focused name is not the row.
+fn account_place(visible: &str, name: &str) -> RowPlace {
+    let lines: Vec<&str> = visible.lines().collect();
+    let Some(focus) = lines.iter().position(|line| line.contains('▎')) else {
+        return RowPlace::Missing;
+    };
+    let Some(row) = lines
+        .iter()
+        .position(|line| line.contains('│') && tree_side(line).contains(name))
+    else {
+        return RowPlace::Missing;
+    };
+    match focus.cmp(&row) {
+        std::cmp::Ordering::Equal => RowPlace::On,
+        std::cmp::Ordering::Less => RowPlace::Above,
+        std::cmp::Ordering::Greater => RowPlace::Below,
+    }
+}
+
 /// Stay on the row under `header` until `ready`. Refresh can move the cursor
 /// while that row's issue text is a spinner, so a one-shot focus check loses
 /// the detail. Keys move back. A key is not sent while the row is already held.
@@ -255,11 +275,30 @@ fn hold_under(
     label: &str,
     ready: impl Fn(&str) -> bool,
 ) -> TerminalSnapshot {
+    hold_row(app, |visible| row_place(visible, header), label, ready)
+}
+
+/// `hold_under` for an account row that is its own label.
+fn hold_account(
+    app: &App,
+    name: &str,
+    label: &str,
+    ready: impl Fn(&str) -> bool,
+) -> TerminalSnapshot {
+    hold_row(app, |visible| account_place(visible, name), label, ready)
+}
+
+fn hold_row(
+    app: &App,
+    place_of: impl Fn(&str) -> RowPlace,
+    label: &str,
+    ready: impl Fn(&str) -> bool,
+) -> TerminalSnapshot {
     let deadline = Instant::now() + Duration::from_secs(15);
     loop {
         let screen = app.screen();
         let visible = text(&screen);
-        let place = row_place(&visible, header);
+        let place = place_of(&visible);
         if matches!(place, RowPlace::On) && ready(&visible) {
             no_secrets(&screen);
             return screen;
@@ -361,40 +400,15 @@ fn j04_usage_route() {
         text(&failed)
     );
     // Experiments stays on the fixture's refreshing row, so the header keeps
-    // "refreshing". Stop on Work instead of stepping past it while it is stale.
-    let current = 'work: {
-        for _ in 0..40 {
-            let screen = app.screen();
-            let visible = text(&screen);
-            if visible.contains(WORK) && visible.contains("77%") && visible.contains("· current ·")
-            {
-                no_secrets(&screen);
-                break 'work screen;
-            }
-            if visible.contains(WORK) && visible.contains(STALE) {
-                let settled = app.wait_screen("work became current", |screen| {
-                    let visible = text(screen);
-                    visible.contains(WORK)
-                        && visible.contains("77%")
-                        && visible.contains("· current ·")
-                        && !visible.contains(STALE)
-                });
-                no_secrets(&settled);
-                break 'work settled;
-            }
-            let before = selection(&visible);
-            app.key("up");
-            let deadline = Instant::now() + Duration::from_millis(800);
-            loop {
-                let moved = selection(&text(&app.screen()));
-                if moved != before || Instant::now() >= deadline {
-                    break;
-                }
-                std::thread::sleep(Duration::from_millis(20));
-            }
-        }
-        panic!("work became current\n{}", text(&app.screen()));
-    };
+    // "refreshing". Replies for the other accounts still land while the cursor
+    // walks up, so hold Work until it reads current instead of stepping past it
+    // once.
+    let current = hold_account(&app, "Work", "work became current", |visible| {
+        visible.contains(WORK)
+            && visible.contains("77%")
+            && visible.contains("· current ·")
+            && !visible.contains(STALE)
+    });
     assert!(
         !text(&current).contains(STALE),
         "stale work stayed stale after refresh\n{}",
