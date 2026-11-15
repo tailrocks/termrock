@@ -6,6 +6,7 @@
 
 #[path = "../common/mod.rs"]
 mod common;
+mod file_browser_paths;
 mod help_geometry;
 mod master_detail_bounds;
 mod nav_list_state;
