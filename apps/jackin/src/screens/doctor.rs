@@ -16,6 +16,7 @@ use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
 
+use super::row_meta::ClockStamp;
 use super::{Cx, Go, Screen};
 use crate::domain::doctor::{DoctorCheck, DoctorReport};
 use crate::world::{Msg, World, job};
@@ -28,6 +29,7 @@ const RUN: WidgetId = WidgetId::of("doctor.empty.run");
 
 pub struct DoctorScreen {
     ld: ListDetail,
+    clock: ClockStamp,
 }
 
 impl Default for DoctorScreen {
@@ -55,6 +57,7 @@ impl DoctorScreen {
     pub fn new() -> Self {
         Self {
             ld: ListDetail::new(LIST, DETAIL, Split::new(50, 36, 40)),
+            clock: ClockStamp::default(),
         }
     }
 
@@ -280,7 +283,7 @@ impl Page<Jackin> for DoctorScreen {
     }
 
     fn on_tick(&mut self, w: &mut World, _cx: &mut Cx) -> Outcome {
-        if self.running(w) {
+        if self.running(w) || self.clock.due(w, true, false) {
             Outcome::Changed
         } else {
             Outcome::Ignored
@@ -362,6 +365,7 @@ impl Page<Jackin> for DoctorScreen {
     }
 
     fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, w: &World) {
+        self.clock.painted(w);
         let t = ctx.theme;
         let Some(report) = self.report(w) else {
             ctx.control(LIST, Rect::new(area.x, area.y, 1, 1), false);
