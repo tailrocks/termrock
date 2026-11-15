@@ -30,6 +30,7 @@ mod nav_list_width;
 mod pane_rig;
 mod pane_tree_minima;
 mod pane_tree_pointer;
+mod picker_row_limits;
 mod picker_rows;
 mod response_batches;
 mod scroll_view_navigation;
