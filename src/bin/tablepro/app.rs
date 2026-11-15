@@ -2630,7 +2630,11 @@ mod tests {
 
     fn app_with_query(sql: &str) -> App {
         let mut app = App::new(Theme::junie());
-        app.connect(1);
+        let key = app
+            .connections
+            .resolve_name("Development")
+            .expect("Development is a sample connection");
+        app.connect_key(key);
         app.workbench.as_mut().expect("connected").new_query(sql);
         app
     }
