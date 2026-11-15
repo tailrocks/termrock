@@ -1090,6 +1090,27 @@ fn option_frames_never() {
     });
 }
 
+/// The pointer stops at the same boundary as the keyboard: the 24-column
+/// minimum is the outer pane rectangle, so the seam cannot cross column 52.
+#[test]
+fn option_min_24x6_pointer_drag_stops_at_the_minimum() {
+    let app = page("s07-min-drag", Some("panetree.min=24x6"), 120, 40);
+    app.wait_text(META);
+    let (start, top) = seam_at(&app.settle());
+    assert_eq!(start, SEAM_X, "rest seam");
+    let y = top + 2;
+    let end = Point { x: 30, y };
+    app.down(Point { x: start, y });
+    app.drag_to(end);
+    let held = app.settle();
+    assert_eq!(seam_at(&held).0, 52, "the drag crossed the pane minimum");
+    app.up(end);
+    flash_settle(&app);
+    let released = app.settle();
+    assert_eq!(seam_at(&released).0, 52, "release moved the minimum seam");
+    app.finish();
+}
+
 #[test]
 fn option_min_24x6() {
     let app = page("s07-min", Some("panetree.min=24x6"), 120, 40);
