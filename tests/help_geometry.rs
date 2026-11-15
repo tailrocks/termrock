@@ -192,3 +192,106 @@ fn help_percent_overflow_cannot_expand_surface() {
         );
     }
 }
+
+fn rendered_text(buf: &Buffer) -> String {
+    let area = buf.area;
+    let mut out = String::new();
+    for y in area.y..area.bottom() {
+        for x in area.x..area.right() {
+            out.push_str(buf[(x, y)].symbol());
+        }
+        out.push('\n');
+    }
+    out
+}
+
+#[test]
+fn help_zero_action_budget_keeps_binding_order() {
+    let canvas = Rect::new(0, 0, 60, 24);
+    let mut found_zero_budget = false;
+    for w in 0..=60u16 {
+        let mut help = HelpOverlay::new(
+            ID,
+            "Scope",
+            vec![(
+                "Keys",
+                vec![("x1", "◆one"), ("x2", "◆two"), ("x3", "◆three")],
+            )],
+        );
+        let mut buf = sentinel_buffer(canvas);
+        paint(&mut help, Rect::new(0, 0, w, 24), &mut buf);
+        let text = rendered_text(&buf);
+
+        // No action glyph painted means the action budget was zero. Widths
+        // too small for any body are skipped: nothing is shown to order.
+        let shown: Vec<&str> = ["x1", "x2", "x3"]
+            .into_iter()
+            .filter(|k| text.contains(k))
+            .collect();
+        if text.contains('◆') || shown.is_empty() {
+            continue;
+        }
+        assert_eq!(
+            shown.len(),
+            3,
+            "a zero action budget dropped a binding at width {w}\n{text}"
+        );
+        found_zero_budget = true;
+        let positions: Vec<usize> = shown
+            .iter()
+            .map(|k| {
+                assert_eq!(
+                    text.matches(k).count(),
+                    1,
+                    "binding {k} not shown exactly once at width {w}\n{text}"
+                );
+                text.find(k).unwrap()
+            })
+            .collect();
+        assert!(
+            positions.windows(2).all(|p| p[0] < p[1]),
+            "bindings out of order at width {w}: {positions:?}\n{text}"
+        );
+    }
+    assert!(
+        found_zero_budget,
+        "no width in 0..=60 produced a zero action budget, so the case never ran"
+    );
+}
+
+#[test]
+fn help_wide_narrow_wide_renders_identically() {
+    let wide = Rect::new(0, 0, 100, 30);
+    let mut help = overlay();
+
+    let mut first = sentinel_buffer(wide);
+    paint(&mut help, wide, &mut first);
+    let first_frame = help.area;
+    let first_done = help.done.area;
+
+    let mut narrow = sentinel_buffer(wide);
+    paint(&mut help, Rect::new(5, 3, 9, 4), &mut narrow);
+    let mut empty = sentinel_buffer(wide);
+    paint(&mut help, Rect::new(5, 3, 0, 0), &mut empty);
+
+    let mut again = sentinel_buffer(wide);
+    paint(&mut help, wide, &mut again);
+
+    for y in wide.y..wide.bottom() {
+        for x in wide.x..wide.right() {
+            assert_eq!(
+                again[(x, y)],
+                first[(x, y)],
+                "cell ({x},{y}) differs after narrow and empty renders"
+            );
+        }
+    }
+    assert_eq!(
+        help.area, first_frame,
+        "frame changed on the wide re-render"
+    );
+    assert_eq!(
+        help.done.area, first_done,
+        "Done changed on the wide re-render"
+    );
+}
