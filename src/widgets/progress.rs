@@ -571,22 +571,26 @@ pub fn render_spinner(area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, label: 
         return;
     }
     let t = ctx.theme;
-    buf.set_string(
-        area.x,
-        area.y,
+    let glyph = crate::ui::text::paint_clipped(
+        buf,
+        area,
+        0,
         t.glyphs.spinner_frame(ctx.interaction.tick),
         ratatui::style::Style::new()
             .fg(t.legible_mark(t.accent, bg))
             .bg(bg),
     );
-    buf.set_string(
-        area.x + 2,
-        area.y,
-        label,
-        ratatui::style::Style::new()
-            .fg(t.legible(t.text_secondary, bg))
-            .bg(bg),
-    );
+    if glyph > 0 {
+        crate::ui::text::paint_truncated(
+            buf,
+            area,
+            glyph + 1,
+            label,
+            ratatui::style::Style::new()
+                .fg(t.legible(t.text_secondary, bg))
+                .bg(bg),
+        );
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

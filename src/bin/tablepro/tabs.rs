@@ -2692,7 +2692,7 @@ impl HistoryTab {
             let lines = junie_tui::widgets::button::row_lines(inner.width, &action_widths, 2);
             let ay = (fy + used + 1).min(inner.bottom().saturating_sub(lines));
             let rects = junie_tui::widgets::button::row_layout(
-                Rect::new(inner.x, ay, inner.width, 1),
+                Rect::new(inner.x, ay, inner.width, lines),
                 &action_widths,
                 2,
             );

@@ -6,7 +6,7 @@ use crate::core::keymap::{Nav, NavKeys};
 use crate::theme::{ButtonKind, Strings, Tone};
 use crate::ui::ctx::RenderCtx;
 use crate::ui::text::truncate;
-use crate::widgets::button::{Button, row_layout_right};
+use crate::widgets::button::{Button, row_layout_right, row_lines};
 use crate::widgets::choice::RadioGroup;
 use crate::widgets::keyhint::Hint;
 use ratatui::buffer::Buffer;
@@ -268,7 +268,13 @@ impl ChoiceDialog {
                 Strings::follow(&mut b.label, old.next, s.next);
             }
         }
-        let h = self.height();
+        let widths: Vec<u16> = self.buttons.iter().map(|b| b.width()).collect();
+        let footer_rows = row_lines(
+            crate::ui::modal::Frame::new(self.width, 0).inner_width(screen),
+            &widths,
+            1,
+        );
+        let h = self.height().saturating_add(footer_rows.saturating_sub(1));
 
         let flash = ctx.interaction.flash;
         if self.refused {
@@ -283,30 +289,42 @@ impl ChoiceDialog {
         self.area = area;
         let t = ctx.theme;
         let bg = t.surface_elevated;
+        let footer_h = footer_rows.min(inner.height);
+        let footer = Rect::new(inner.x, inner.bottom() - footer_h, inner.width, footer_h);
+        let body_bottom = footer.y;
         let mut y = inner.y;
         if let Some(s) = &self.stepper {
-            buf.set_string(
-                inner.x,
-                y,
-                truncate(s, inner.width as usize),
-                t.muted().bg(bg),
-            );
-            y += 2;
+            if y < body_bottom {
+                buf.set_string(
+                    inner.x,
+                    y,
+                    truncate(s, inner.width as usize),
+                    t.muted().bg(bg),
+                );
+            }
+            y = y.saturating_add(2);
         }
         for (l, tone) in &self.lines {
-            buf.set_string(
-                inner.x,
-                y,
-                truncate(l, inner.width as usize),
-                Style::new().fg(t.tone(*tone)).bg(bg),
-            );
-            y += 1;
+            if y < body_bottom {
+                buf.set_string(
+                    inner.x,
+                    y,
+                    truncate(l, inner.width as usize),
+                    Style::new().fg(t.tone(*tone)).bg(bg),
+                );
+            }
+            y = y.saturating_add(1);
         }
         if !self.lines.is_empty() {
-            y += 1;
+            y = y.saturating_add(1);
         }
         self.radio.render(
-            Rect::new(inner.x - 1, y, inner.width + 1, self.radio.height()),
+            Rect::new(
+                inner.x - 1,
+                y,
+                inner.width + 1,
+                self.radio.height().min(body_bottom.saturating_sub(y)),
+            ),
             buf,
             ctx,
             bg,
@@ -325,9 +343,7 @@ impl ChoiceDialog {
                 );
             }
         }
-        let ay = inner.bottom().saturating_sub(1);
-        let widths: Vec<u16> = self.buttons.iter().map(|b| b.width()).collect();
-        let rects = row_layout_right(Rect::new(inner.x, ay, inner.width, 1), &widths, 1);
+        let rects = row_layout_right(footer, &widths, 1);
         for (b, r) in self.buttons.iter_mut().zip(rects) {
             b.render(r, buf, ctx, bg);
         }

@@ -102,7 +102,8 @@ impl IconButton {
     }
 
     pub fn width(&self, t: &Theme) -> u16 {
-        width(self.glyph(t)) as u16 + 2 * self.pad
+        let total = width(self.glyph(t)).saturating_add(2 * usize::from(self.pad));
+        u16::try_from(total).unwrap_or(u16::MAX)
     }
 
     pub fn style(&self, ctx: &RenderCtx, host: Style) -> Style {
@@ -129,7 +130,14 @@ impl IconButton {
     ) -> Rect {
         let plate = Rect::new(x, y, self.width(ctx.theme), 1).intersection(*buf.area());
         fill(buf, plate, host);
-        self.render_in(plate, x + self.pad, buf, ctx, host, default_tip)
+        self.render_in(
+            plate,
+            x.saturating_add(self.pad),
+            buf,
+            ctx,
+            host,
+            default_tip,
+        )
     }
 
     pub fn render_in(
@@ -154,7 +162,9 @@ impl IconButton {
                 }
             }
         }
-        buf.set_string(glyph_x, plate.y, self.glyph(ctx.theme), st);
+        if let Some(col) = glyph_x.checked_sub(plate.x) {
+            crate::ui::text::paint_clipped(buf, plate, usize::from(col), self.glyph(ctx.theme), st);
+        }
         match self.part {
             Some((owner, part)) => {
                 ctx.register_part(owner, part, plate);
