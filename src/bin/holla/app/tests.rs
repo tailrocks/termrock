@@ -2336,14 +2336,16 @@ fn preview_top_word(app: &mut App) -> String {
 #[test]
 fn finder_explore_reorder_keeps_preview_scroll() {
     let mut app = finder_app();
-    app.world.explore_tiles = long_git_explore_tiles(&[
-        "explore.system",
-        "explore.tasks",
-        "explore.files",
-        "explore.git",
-        "explore.disk",
-        "explore.services",
-    ]);
+    app.world.edit_catalog(|w| {
+        w.explore_tiles = long_git_explore_tiles(&[
+            "explore.system",
+            "explore.tasks",
+            "explore.files",
+            "explore.git",
+            "explore.disk",
+            "explore.services",
+        ])
+    });
     tick(&mut app, 1);
     finder_select_explore(&mut app, "explore.git");
     drawn_text(&mut app);
@@ -2357,14 +2359,16 @@ fn finder_explore_reorder_keeps_preview_scroll() {
         "preview did not scroll before the rebuild"
     );
 
-    app.world.explore_tiles = long_git_explore_tiles(&[
-        "explore.system",
-        "explore.disk",
-        "explore.files",
-        "explore.tasks",
-        "explore.git",
-        "explore.services",
-    ]);
+    app.world.edit_catalog(|w| {
+        w.explore_tiles = long_git_explore_tiles(&[
+            "explore.system",
+            "explore.disk",
+            "explore.files",
+            "explore.tasks",
+            "explore.git",
+            "explore.services",
+        ])
+    });
     tick(&mut app, 1);
 
     assert_eq!(
@@ -2395,14 +2399,16 @@ fn scroll_preview_down(app: &mut App, times: usize) {
 #[test]
 fn finder_explore_key_selection_change_resets_preview_scroll() {
     let mut app = finder_app();
-    app.world.explore_tiles = long_explore_tiles(&[
-        "explore.system",
-        "explore.tasks",
-        "explore.files",
-        "explore.git",
-        "explore.disk",
-        "explore.services",
-    ]);
+    app.world.edit_catalog(|w| {
+        w.explore_tiles = long_explore_tiles(&[
+            "explore.system",
+            "explore.tasks",
+            "explore.files",
+            "explore.git",
+            "explore.disk",
+            "explore.services",
+        ])
+    });
     tick(&mut app, 1);
     finder_select_explore(&mut app, "explore.git");
     drawn_text(&mut app);
@@ -2425,14 +2431,16 @@ fn finder_explore_key_selection_change_resets_preview_scroll() {
 #[test]
 fn finder_explore_click_selection_change_resets_preview_scroll() {
     let mut app = finder_app();
-    app.world.explore_tiles = long_explore_tiles(&[
-        "explore.system",
-        "explore.tasks",
-        "explore.files",
-        "explore.git",
-        "explore.disk",
-        "explore.services",
-    ]);
+    app.world.edit_catalog(|w| {
+        w.explore_tiles = long_explore_tiles(&[
+            "explore.system",
+            "explore.tasks",
+            "explore.files",
+            "explore.git",
+            "explore.disk",
+            "explore.services",
+        ])
+    });
     tick(&mut app, 1);
     finder_select_explore(&mut app, "explore.git");
     drawn_text(&mut app);
