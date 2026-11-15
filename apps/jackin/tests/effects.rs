@@ -3107,12 +3107,12 @@ fn the_usage_screen_refreshes_every_enabled_account_and_shows_the_reply() {
     });
     assert!(screen(&mut app).contains("38%"));
 
-    let enabled = app
+    let idle = app
         .world
         .accounts
         .accounts
         .iter()
-        .filter(|a| a.enabled)
+        .filter(|a| a.enabled && a.usage.freshness.phase != Freshness::Refreshing)
         .count();
     press(&mut app, "r");
     assert!(
@@ -3127,11 +3127,7 @@ fn the_usage_screen_refreshes_every_enabled_account_and_shows_the_reply() {
         .iter()
         .filter(|e| matches!(e, Effect::RefreshAccount { .. }))
         .count();
-    assert_eq!(
-        asked, enabled,
-        "one refresh for each enabled account; the world, not the Refreshing marker the \
-         fixture seeds, says which requests are out"
-    );
+    assert_eq!(asked, idle, "one refresh for each enabled idle account");
     let shown = screen(&mut app);
     assert!(shown.contains("40%"), "{shown}");
 }

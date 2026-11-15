@@ -647,6 +647,27 @@ impl World {
         Some(ticket)
     }
 
+    /// Gives every account that is already marked `Refreshing` a pending
+    /// refresh of its current source, so the marker keeps its single-flight
+    /// meaning. For a world built from accounts caught mid-refresh (the demo
+    /// fixtures). It sends no effect: nothing answers the entry until the host
+    /// delivers a reply with the ticket `refresh_pending` reports.
+    pub fn adopt_refreshing(&mut self) {
+        let marked: Vec<(AccountId, CredentialSource)> = self
+            .accounts
+            .accounts
+            .iter()
+            .filter(|a| a.usage.freshness.phase == Freshness::Refreshing)
+            .filter(|a| !self.pending_refreshes.contains_key(&a.id))
+            .map(|a| (a.id.clone(), a.source.clone()))
+            .collect();
+        for (id, source) in marked {
+            let ticket = self.next_ticket();
+            self.pending_refreshes
+                .insert(id, PendingRefresh { ticket, source });
+        }
+    }
+
     /// The ticket of the refresh `id` is waiting on, if one is out.
     pub fn refresh_pending(&self, id: &str) -> Option<Ticket> {
         self.pending_refreshes.get(id).map(|p| p.ticket)
