@@ -257,7 +257,13 @@ impl<S: TableEditSource + ?Sized> TableRows for EditRows<'_, S> {
 
     fn commit(&mut self, src: usize, col: usize, text: String) -> Result<(), String> {
         let key = self.0.key(src);
-        self.0.set_cell(key, col, text)
+        let before = self.0.stamp();
+        self.0.set_cell(key, col, text)?;
+        let after = self.0.stamp();
+        if after.instance != before.instance || after.data == before.data {
+            return Err("the table source did not advance its data revision".to_owned());
+        }
+        Ok(())
     }
 }
 

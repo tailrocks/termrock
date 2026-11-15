@@ -322,9 +322,6 @@ fn rerun_uses_the_selected_entry_sql() {
     });
 
     app.key("s");
-    // The selection follows its entry across filters; select the newest one
-    // explicitly instead of relying on a clamped list position.
-    app.key("home");
     let restored = app.wait_screen("failed-only off restores the entry", |screen| {
         let visible = text(screen);
         scope_is(screen, "Development", "any")

@@ -239,6 +239,8 @@ pub struct TreeView {
     keyed: KeyedState,
     projection: TreeProjection,
     layout_generation: u64,
+    select_follows_cursor: bool,
+    show_selection: bool,
 }
 
 impl std::ops::Deref for TreeView {
@@ -467,6 +469,8 @@ impl TreeView {
             keyed: KeyedState::new(),
             projection: TreeProjection::default(),
             layout_generation: 0,
+            select_follows_cursor: false,
+            show_selection: true,
         };
 
         for i in 0..tv.nodes.len() {
@@ -474,6 +478,23 @@ impl TreeView {
         }
         tv.flatten();
         tv
+    }
+
+    /// In a tree driven through the `*_source` methods, selects the node the
+    /// cursor lands on whenever it is a leaf. A branch under the cursor leaves
+    /// the selection alone, and a filter that hides the selected node does not
+    /// clear it.
+    pub fn select_follows_cursor(mut self, on: bool) -> Self {
+        self.select_follows_cursor = on;
+        self
+    }
+
+    /// Whether a tree driven through the `*_source` methods paints its selected
+    /// nodes. Off, the selection is tracked for the host but only the cursor
+    /// row is drawn.
+    pub fn show_selection(mut self, on: bool) -> Self {
+        self.show_selection = on;
+        self
     }
 
     pub fn branch_activate(mut self, action: BranchAction) -> Self {
@@ -2002,6 +2023,60 @@ impl TreeView {
         }
     }
 
+    /// Moves the cursor to `key` by identity and scrolls it into view. A key
+    /// that is unknown, hidden by a filter or inside a collapsed branch is
+    /// refused. Returns whether the cursor now rests on `key`.
+    pub fn set_cursor_source<S: TreeSource + ?Sized>(
+        &mut self,
+        key: ItemKey,
+        source: &S,
+    ) -> Result<bool, KeyedSourceError> {
+        self.bind_tree(source)?;
+        self.keyed.set_cursor(key);
+        if let Some(row) = self.keyed.cursor_view() {
+            self.core.cursor = row;
+            self.core.scroll.ensure_visible(row);
+        }
+        Ok(self.keyed.cursor() == Some(key))
+    }
+
+    /// Makes `key` the only selected node. Returns whether the selection
+    /// changed; an unknown or disabled key is refused.
+    pub fn select_source<S: TreeSource + ?Sized>(
+        &mut self,
+        key: ItemKey,
+        source: &S,
+    ) -> Result<bool, KeyedSourceError> {
+        self.bind_tree(source)?;
+        Ok(self.keyed.replace_selection([key]))
+    }
+
+    fn follow_cursor(&mut self) {
+        if !self.select_follows_cursor {
+            return;
+        }
+        if let Some(row) = self.keyed.cursor_view()
+            && !self.projection.rows[row].has_children
+        {
+            self.select_key(self.projection.rows[row].key);
+        }
+    }
+
+    /// Expands every node of the provider that has children.
+    pub fn expand_all_source<S: TreeSource + ?Sized>(
+        &mut self,
+        source: &S,
+    ) -> Result<(), KeyedSourceError> {
+        self.bind_tree(source)?;
+        let keys: Vec<ItemKey> = self.projection.order.clone();
+        for key in keys {
+            if source.node(key).is_some_and(|n| !n.children.is_empty()) {
+                self.keyed.set_expanded(key, true);
+            }
+        }
+        Ok(())
+    }
+
     /// Keyboard input over a borrowed keyed provider. Expansion, selection and
     /// the cursor are held by key, so inserting an earlier sibling moves none
     /// of them.
@@ -2021,7 +2096,9 @@ impl TreeView {
         );
         self.projection = proj;
         self.keyed.adopt_cursor_view(self.core.cursor);
-        Ok(self.apply_keyed_plan(source, plan))
+        let response = self.apply_keyed_plan(source, plan);
+        self.follow_cursor();
+        Ok(response)
     }
 
     /// Pointer input over a borrowed keyed provider. Hit regions carry the
@@ -2071,7 +2148,9 @@ impl TreeView {
                 );
                 self.projection = proj;
                 self.keyed.adopt_cursor_view(self.core.cursor);
-                Ok(self.apply_keyed_plan(source, plan))
+                let response = self.apply_keyed_plan(source, plan);
+                self.follow_cursor();
+                Ok(response)
             }
             _ => Ok(Response::ignored()),
         }
@@ -2090,13 +2169,14 @@ impl TreeView {
         self.note_layout(area, buf);
         let proj = std::mem::take(&mut self.projection);
         let keyed = std::mem::take(&mut self.keyed);
+        let show_selection = self.show_selection;
         let rows = KeyedTreeRows {
             source,
             proj: &proj,
         };
         self.render_in(
             &rows,
-            |i| keyed.is_selected(proj.rows[i].key),
+            |i| show_selection && keyed.is_selected(proj.rows[i].key),
             area,
             buf,
             ctx,
