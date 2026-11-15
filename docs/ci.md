@@ -33,6 +33,11 @@ change the config and run `velnor-actions generate`.
   jackin consumes (`default-features = false, features = ["terminal"]`):
   `termpane` in, `clap` out. The bins and the `functional` target require
   `cli`, so they are skipped there.
+- **Rust / termrock** and **Rust / termrock (product)** — the facade
+  crate `crates/termrock`, which re-exports `junie-tui` under the supported
+  import path and has empty default features. The product job builds it with
+  `--no-default-features --features product`. Its tests live in the shared
+  `crates/termrock/tests/regressions` target.
 - **Required** — the verdict job. Its `needs` are Plan, the four Rust
   jobs, `suite-functional` and jactionlint, as listed in the generated
   `ci.yml`.
