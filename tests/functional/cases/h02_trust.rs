@@ -6,11 +6,9 @@
 //! child mise file. The checkpoints are the open custom-config dialog, which
 //! is the page that shows the digest.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, HOLLA, Launch, row_text, text, try_launch};
+use crate::support::{App, HOLLA, Launch, flash_settle, row_text, text, try_launch};
 
 /// sha256 of the `monorepo-child` `.holla.toml` body `seed_custom` writes.
 const DIGEST: &str = "4abea82557e55d9a5a325425792e1569110e81b25e7c6f1930f539e33978b1c5";
@@ -133,33 +131,6 @@ fn assert_custom_open(screen: &TerminalSnapshot, cols: u32, rows: u32) {
         "Cancel is not the focused button\n{}",
         text(screen)
     );
-}
-
-/// The 140ms press flash stays painted while motion is reduced. A same-size
-/// resize does not force a new frame, so the shot nudges the width and comes
-/// back. Below about 100 columns the header omits the size chip. The nudge
-/// also leaves the hidden terminal cursor on the redraw, instead of on
-/// whichever footer cell the previous diff wrote last.
-fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
 }
 
 /// The shot compares the settled frame. It does not resize.

@@ -7,7 +7,9 @@
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, Point, TABLEPRO, find_all, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, Point, TABLEPRO, find_all, flash_settle, row_text, text, try_launch,
+};
 
 const WIDE_ID: &str = "pre_refactor/t02_explorer/t02_explorer_tree_120x40";
 const NARROW_ID: &str = "pre_refactor/t02_explorer/t02_explorer_tree_narrow";
@@ -228,31 +230,6 @@ fn assert_open(screen: &TerminalSnapshot, name: &str, preview: bool) {
         "duplicate organizations tab\n{}",
         text(screen)
     );
-}
-
-/// The 140ms press flash stays painted until the next frame after the deadline.
-/// A same-size resize does not force that frame, so nudge one column and return.
-/// Below about 85 columns the header omits the size chip.
-fn flash_settle(app: &App) {
-    app.settle_flash();
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
 }
 
 fn expand_analytics(app: &App) {

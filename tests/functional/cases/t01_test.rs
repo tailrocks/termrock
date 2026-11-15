@@ -5,7 +5,9 @@
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, Point, TABLEPRO, find_all, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, Point, TABLEPRO, find_all, flash_settle, row_text, text, try_launch,
+};
 
 /// The form card is at most 84 columns, and the test result is drawn after
 /// the buttons, so the full sentence is truncated at 120×40.
@@ -123,32 +125,6 @@ fn open_form(app: &App, name: &str, host: &str) {
 fn rename(app: &App, name: &str) {
     app.type_text(name);
     app.wait_text(name);
-}
-
-/// The 140ms press flash stays painted while motion is paused, so a shot after
-/// a released click has to redraw once the deadline has passed. Below about 100
-/// columns the header omits the size chip, and the narrow nudge waits on the
-/// terminal size instead.
-fn flash_settle(app: &App) {
-    app.settle_flash();
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
 }
 
 fn assert_size(app: &App) {

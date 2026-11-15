@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, TABLEPRO, find_all, row_text, text, try_launch};
+use crate::support::{App, Launch, TABLEPRO, find_all, flash_settle, row_text, text, try_launch};
 
 const ROUTE_ID: &str = "pre_refactor/t01_leave/t01_leave_route_120x40";
 const WIDE_ID: &str = "pre_refactor/t01_leave/t01_leave_guards_120x40";
@@ -103,31 +103,6 @@ fn draft_replaced(screen: &TerminalSnapshot) -> bool {
         && !visible.contains(SPLICE)
         && visible.contains(EDIT)
         && form_hit(screen, PROD)
-}
-
-/// The 140ms press flash stays painted until the deadline passes. A same-size
-/// resize does not force a post-flash frame, so nudge one column and restore.
-/// Below about 85 columns the header omits the size chip.
-fn flash_settle(app: &App) {
-    app.settle_flash();
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
 }
 
 fn click_dialog(app: &App, label: &str) {
