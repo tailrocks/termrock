@@ -88,9 +88,7 @@ impl SidebarRail {
             "…"
         };
         for (i, cluster) in self.rows().enumerate() {
-            let Some(y) = col.y.checked_add(2 + i as u16) else {
-                break;
-            };
+            let y = col.y.saturating_add(2 + i as u16);
             if y >= col.bottom() {
                 break;
             }

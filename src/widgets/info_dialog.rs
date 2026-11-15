@@ -359,7 +359,7 @@ impl InfoDialog {
         let s = ctx.theme.strings;
         let old = std::mem::replace(&mut self.strings, s);
         crate::theme::Strings::follow(&mut self.close.label, old.close, s.close);
-        let inner_w = crate::ui::modal::Frame::new(self.width, 1).inner_width(screen);
+        let inner_w = crate::ui::modal::Frame::new(self.width, 0).inner_width(screen);
         let mut widths: Vec<u16> = self.actions.iter().map(|b| b.width()).collect();
         widths.push(self.close.width());
         let footer_rows = row_lines(inner_w, &widths, 1);
