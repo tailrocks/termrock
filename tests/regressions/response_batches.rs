@@ -1,8 +1,6 @@
 //! Compound widget inputs return every semantic action once, in order.
 
-mod common;
-
-use common::*;
+use crate::common::*;
 use junie_tui::core::event::Outcome;
 use junie_tui::core::id::WidgetId;
 use junie_tui::core::response::{Actions, Flow, Invalidate, Response};

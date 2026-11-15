@@ -21,6 +21,9 @@ use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use crate::core::event::{External, Input, InputConfig, Key, Mouse, MouseKind, Outcome};
 use crate::core::keyboard::{self, KeyboardProtocol};
 
+mod panic_bridge;
+use panic_bridge::{RestoreGate, SessionOwner};
+
 pub trait Application {
     fn handle(&mut self, input: Input) -> Outcome;
     fn render(&mut self, frame: &mut Frame);
@@ -162,44 +165,78 @@ fn is_navigation(key: &Key) -> bool {
         .is_empty()
 }
 
+/// An active terminal session: raw mode, alternate screen, mouse and paste
+/// capture, plus (on Unix) ownership of the process SIGTSTP action.
+///
+/// One session owns the terminal at a time. [`enter`](Self::enter) and
+/// [`enter_with`](Self::enter_with) claim that ownership before touching the
+/// terminal, so a second entry while a session lives fails with
+/// `ErrorKind::AlreadyExists` and has no side effects. The claim lasts until
+/// the session is dropped, also after [`try_leave`](Self::try_leave).
+///
+/// Two cleanup contracts live here and stay separate. Terminal modes are
+/// restored once per active interval by the session's `SessionOwner`, from
+/// whichever of `try_leave`, drop or the panic hook gets there first. The
+/// interval ends at [`suspend`](Self::suspend) and starts again when it
+/// resumes. The SIGTSTP action is restored by [`job_control::JobControlGuard`],
+/// only when the session ends ([`try_leave`](Self::try_leave),
+/// [`leave`](Self::leave) or drop), never from the panic hook and never during
+/// a suspend. Field order makes drop restore the terminal first and the signal
+/// action last.
+///
+/// # Panic hook
+///
+/// The first entry in the process installs one permanent panic-hook bridge.
+/// It restores the terminal when a panic happens while a session is active,
+/// on any thread, then calls the hook that was installed before it. Later
+/// entries add nothing to the chain, and a panic after the session ended
+/// emits no terminal cleanup. The library never changes the hook again. A host
+/// that calls `std::panic::set_hook` afterwards replaces the bridge and owns
+/// terminal cleanup from then on. Unwinding still restores the terminal when
+/// the session drops, but under `panic = "abort"` a replacing hook must
+/// restore the terminal itself or wrap the hook it replaced.
 pub struct TerminalSession {
     terminal: ratatui::DefaultTerminal,
-    restoration: Restoration,
+    owner: SessionOwner,
+    #[cfg(unix)]
+    job_control: Option<job_control::JobControlGuard>,
 }
 
-struct Restoration {
-    restore: fn(),
-    active: bool,
-}
+static SESSION_GATE: RestoreGate = RestoreGate::new(restore_terminal);
 
-impl Restoration {
-    fn leave(&mut self) {
-        if self.active {
-            self.active = false;
-            (self.restore)();
-        }
-    }
-
-    fn reacquire(&mut self) {
-        self.active = true;
-    }
-}
-
-impl Drop for Restoration {
-    fn drop(&mut self) {
-        self.leave();
-    }
-}
-
-fn initialize_with_restoration<T>(
-    restore: fn(),
+/// Claims `gate`, installs the panic bridge, activates the first interval and
+/// then runs `initialize`. A refused claim runs nothing. Any later failure
+/// cleans up once and releases the claim when the returned owner drops.
+fn claim_and_initialize<T>(
+    gate: &'static RestoreGate,
     initialize: impl FnOnce() -> std::io::Result<T>,
-) -> std::io::Result<(T, Restoration)> {
-    let restoration = Restoration {
-        restore,
-        active: true,
-    };
-    Ok((initialize()?, restoration))
+) -> std::io::Result<(T, SessionOwner)> {
+    let owner = SessionOwner::claim(gate)?;
+    panic_bridge::install_once(gate)?;
+    owner.activate()?;
+    Ok((initialize()?, owner))
+}
+
+fn open_terminal(protocol: KeyboardProtocol) -> std::io::Result<ratatui::DefaultTerminal> {
+    enable_raw_mode()?;
+    prime_input()?;
+    let mut out = stdout();
+    execute!(
+        out,
+        EnterAlternateScreen,
+        EnableMouseCapture,
+        EnableBracketedPaste,
+        EnableFocusChange
+    )?;
+
+    if let Some(push) = keyboard::session::enter(protocol, || {
+        ratatui::crossterm::terminal::supports_keyboard_enhancement().unwrap_or(false)
+    }) {
+        out.write_all(push.as_bytes())?;
+        out.flush()?;
+    }
+    let backend = ratatui::backend::CrosstermBackend::new(out);
+    ratatui::Terminal::new(backend)
 }
 
 const ENABLE_WRAP: &str = "\x1b[?7h";
@@ -209,135 +246,299 @@ impl TerminalSession {
         Self::enter_with(KeyboardProtocol::current())
     }
 
+    /// Fails with `ErrorKind::AlreadyExists`, before any terminal change,
+    /// while another session is alive.
     pub fn enter_with(protocol: KeyboardProtocol) -> std::io::Result<Self> {
-        enable_raw_mode()?;
-        let (terminal, restoration) = initialize_with_restoration(restore_terminal, || {
-            prime_input()?;
-            let mut out = stdout();
-            execute!(
-                out,
-                EnterAlternateScreen,
-                EnableMouseCapture,
-                EnableBracketedPaste,
-                EnableFocusChange
-            )?;
+        Self::enter_on(&SESSION_GATE, || open_terminal(protocol))
+    }
 
-            if let Some(push) = keyboard::session::enter(protocol, || {
-                ratatui::crossterm::terminal::supports_keyboard_enhancement().unwrap_or(false)
-            }) {
-                out.write_all(push.as_bytes())?;
-                out.flush()?;
-            }
-            let backend = ratatui::backend::CrosstermBackend::new(out);
-            ratatui::Terminal::new(backend)
-        })?;
-        let previous = std::panic::take_hook();
-        std::panic::set_hook(Box::new(move |info| {
-            restore_terminal();
-            previous(info);
-        }));
-        Ok(Self {
+    fn enter_on(
+        gate: &'static RestoreGate,
+        open: impl FnOnce() -> std::io::Result<ratatui::DefaultTerminal>,
+    ) -> std::io::Result<Self> {
+        let (terminal, owner) = claim_and_initialize(gate, open)?;
+        Self::with_job_control(terminal, owner)
+    }
+
+    #[cfg(unix)]
+    fn with_job_control(
+        terminal: ratatui::DefaultTerminal,
+        owner: SessionOwner,
+    ) -> std::io::Result<Self> {
+        let mut session = Self {
             terminal,
-            restoration,
-        })
+            owner,
+            job_control: None,
+        };
+        session.job_control = Some(job_control::install()?);
+        Ok(session)
+    }
+
+    #[cfg(not(unix))]
+    fn with_job_control(
+        terminal: ratatui::DefaultTerminal,
+        owner: SessionOwner,
+    ) -> std::io::Result<Self> {
+        Ok(Self { terminal, owner })
     }
 
     pub fn terminal(&mut self) -> &mut ratatui::DefaultTerminal {
         &mut self.terminal
     }
 
+    /// Restores the terminal modes, then, on Unix, the host's SIGTSTP action.
+    ///
+    /// Terminal cleanup stays best effort and runs once per active interval.
+    /// It fails with `ErrorKind::WouldBlock` only while another thread is
+    /// still cleaning up, and then nothing else is released. A failed SIGTSTP
+    /// restoration is reported too. In both cases the session keeps its
+    /// [`job_control`] claim so a later call or drop can retry.
+    pub fn try_leave(&mut self) -> std::io::Result<()> {
+        self.owner.restore()?;
+        #[cfg(unix)]
+        if let Some(guard) = self.job_control.as_mut() {
+            guard.restore()?;
+            self.job_control = None;
+        }
+        Ok(())
+    }
+
+    /// [`try_leave`](Self::try_leave) with the SIGTSTP error discarded.
     pub fn leave(&mut self) {
-        self.restoration.leave();
+        let _ = self.try_leave();
     }
 
     #[cfg(unix)]
     pub fn suspend(&mut self) -> std::io::Result<(u16, u16)> {
-        self.restoration.leave();
-        job_control::stop_self();
+        let guard = match &mut self.job_control {
+            Some(guard) => guard,
+            None => self.job_control.insert(job_control::install()?),
+        };
+        self.owner.restore()?;
+        guard.stop_self()?;
         self.reenter()
     }
 
     #[cfg(unix)]
     fn reenter(&mut self) -> std::io::Result<(u16, u16)> {
-        enable_raw_mode()?;
-        let mut out = stdout();
-        if let Err(e) = execute!(
-            out,
-            EnterAlternateScreen,
-            EnableMouseCapture,
-            EnableBracketedPaste,
-            EnableFocusChange
-        ) {
-            restore_terminal();
+        self.owner.activate()?;
+        if let Err(e) = Self::resume_modes() {
+            let _ = self.owner.restore();
             return Err(e);
         }
-        if let Some(push) = keyboard::session::resume()
-            && let Err(e) = out.write_all(push.as_bytes()).and_then(|()| out.flush())
-        {
-            restore_terminal();
-            return Err(e);
-        }
-        self.restoration.reacquire();
 
+        let mut out = stdout();
         execute!(out, Clear(ClearType::All))?;
         self.terminal.swap_buffers();
         self.terminal.swap_buffers();
         let size = self.terminal.size()?;
         Ok((size.width, size.height))
     }
+
+    #[cfg(unix)]
+    fn resume_modes() -> std::io::Result<()> {
+        enable_raw_mode()?;
+        let mut out = stdout();
+        execute!(
+            out,
+            EnterAlternateScreen,
+            EnableMouseCapture,
+            EnableBracketedPaste,
+            EnableFocusChange
+        )?;
+        if let Some(push) = keyboard::session::resume() {
+            out.write_all(push.as_bytes())?;
+            out.flush()?;
+        }
+        Ok(())
+    }
 }
 
 #[cfg(unix)]
 pub mod job_control {
+    //! Cooperative Ctrl+Z (SIGTSTP) handling for the runtime.
+    //!
+    //! [`install`] swaps the process SIGTSTP action for one that only sets a
+    //! flag, which [`take_request`] consumes, and returns a
+    //! [`JobControlGuard`]. Dropping the guard puts back the exact action
+    //! that was there before: handler, signal mask and flags, `SIG_IGN`
+    //! included. [`TerminalSession`](super::TerminalSession) holds one for
+    //! its whole lifetime, so direct session users own SIGTSTP too.
+    //!
+    //! While a guard is alive the library owns SIGTSTP exclusively and a
+    //! host must not replace the action. Unlike the panic hook, which a host
+    //! may wrap, a second owner is refused. The guard is released on
+    //! session end and on unwind, but not by the panic hook, so panic
+    //! restoration never touches signal state.
+
     use std::ffi::c_int;
+    use std::io;
     use std::sync::atomic::{AtomicBool, Ordering};
 
-    #[cfg(any(
-        target_os = "macos",
-        target_os = "freebsd",
-        target_os = "openbsd",
-        target_os = "netbsd"
-    ))]
-    const SIGTSTP: c_int = 18;
-    #[cfg(not(any(
-        target_os = "macos",
-        target_os = "freebsd",
-        target_os = "openbsd",
-        target_os = "netbsd"
-    )))]
-    const SIGTSTP: c_int = 20;
-    const SIG_DFL: usize = 0;
-
     static REQUESTED: AtomicBool = AtomicBool::new(false);
+    static OWNED: AtomicBool = AtomicBool::new(false);
 
-    unsafe extern "C" {
-        fn signal(sig: c_int, handler: usize) -> usize;
-        fn raise(sig: c_int) -> c_int;
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum Step {
+        Install,
+        Restore,
+        Default,
+        Raise,
+        Reinstate,
+    }
+
+    fn inject(step: Step) -> io::Result<()> {
+        #[cfg(test)]
+        if tests::fault_armed(step) {
+            return Err(io::Error::other(format!("injected {step:?} failure")));
+        }
+        let _ = step;
+        Ok(())
     }
 
     extern "C" fn on_tstp(_sig: c_int) {
         REQUESTED.store(true, Ordering::SeqCst);
     }
 
-    pub fn install() {
-        let handler: extern "C" fn(c_int) = on_tstp;
-        unsafe {
-            signal(SIGTSTP, handler as *const () as usize);
+    fn action(handler: libc::sighandler_t) -> io::Result<libc::sigaction> {
+        let mut act: libc::sigaction = unsafe { std::mem::zeroed() };
+        act.sa_sigaction = handler;
+        act.sa_flags = 0;
+        if unsafe { libc::sigemptyset(&mut act.sa_mask) } != 0 {
+            return Err(io::Error::last_os_error());
+        }
+        Ok(act)
+    }
+
+    fn set_action(
+        step: Step,
+        new: &libc::sigaction,
+        old: Option<&mut libc::sigaction>,
+    ) -> io::Result<()> {
+        inject(step)?;
+        let old = old.map_or(std::ptr::null_mut(), std::ptr::from_mut);
+        if unsafe { libc::sigaction(libc::SIGTSTP, new, old) } != 0 {
+            return Err(io::Error::last_os_error());
+        }
+        Ok(())
+    }
+
+    /// Owns the SIGTSTP action installed by [`install`].
+    ///
+    /// Dropping it restores the previous action. A failed restore is not
+    /// reported from `drop`.
+    #[must_use = "dropping the guard immediately gives SIGTSTP back to the host"]
+    pub struct JobControlGuard {
+        previous: libc::sigaction,
+        owned: libc::sigaction,
+        active: bool,
+    }
+
+    impl std::fmt::Debug for JobControlGuard {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.debug_struct("JobControlGuard")
+                .field("active", &self.active)
+                .finish_non_exhaustive()
         }
     }
 
+    /// Claims SIGTSTP and discards any request left by an earlier owner.
+    ///
+    /// Fails with [`io::ErrorKind::AlreadyExists`], before changing any
+    /// handler or pending request, while another guard is alive. The
+    /// installed action has an empty mask and no `SA_RESTART`, so a blocked
+    /// terminal read wakes with `Interrupted`.
+    pub fn install() -> io::Result<JobControlGuard> {
+        if OWNED
+            .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+            .is_err()
+        {
+            return Err(io::Error::new(
+                io::ErrorKind::AlreadyExists,
+                "SIGTSTP job control is already owned",
+            ));
+        }
+        let installed = action(on_tstp as *const () as libc::sighandler_t).and_then(|owned| {
+            REQUESTED.store(false, Ordering::SeqCst);
+            let mut previous = owned;
+            set_action(Step::Install, &owned, Some(&mut previous))?;
+            Ok(JobControlGuard {
+                previous,
+                owned,
+                active: true,
+            })
+        });
+        if installed.is_err() {
+            OWNED.store(false, Ordering::SeqCst);
+        }
+        installed
+    }
+
+    /// Consumes a pending suspend request set by the SIGTSTP handler.
     pub fn take_request() -> bool {
         REQUESTED.swap(false, Ordering::SeqCst)
     }
 
-    pub fn stop_self() {
-        unsafe {
-            signal(SIGTSTP, SIG_DFL);
-            raise(SIGTSTP);
+    impl JobControlGuard {
+        /// Stops the process as the shell expects and reinstalls the owned
+        /// action after it continues.
+        ///
+        /// The signal is never raised under an action this guard did not
+        /// set. The error of a failed raise, or else of a failed
+        /// reinstatement, is returned. The guard keeps the saved host action
+        /// for [`drop`](Drop::drop) in every case.
+        pub fn stop_self(&mut self) -> io::Result<()> {
+            if !self.active {
+                return Err(io::Error::other("job control guard already restored"));
+            }
+            let default = action(libc::SIG_DFL)?;
+            set_action(Step::Default, &default, None)?;
+            let raised = inject(Step::Raise).and_then(|()| {
+                if unsafe { libc::raise(libc::SIGTSTP) } != 0 {
+                    return Err(io::Error::last_os_error());
+                }
+                Ok(())
+            });
+            let reinstated = set_action(Step::Reinstate, &self.owned, None);
+            raised.and(reinstated)
         }
-        install();
+
+        pub(super) fn restore(&mut self) -> io::Result<()> {
+            if !self.active {
+                return Ok(());
+            }
+            set_action(Step::Restore, &self.previous, None)?;
+            self.active = false;
+            REQUESTED.store(false, Ordering::SeqCst);
+            OWNED.store(false, Ordering::SeqCst);
+            Ok(())
+        }
     }
+
+    impl Drop for JobControlGuard {
+        fn drop(&mut self) {
+            let _ = self.restore();
+        }
+    }
+
+    #[cfg(test)]
+    pub(in crate::runtime) fn fail_next_install() {
+        tests::arm(Step::Install);
+    }
+
+    #[cfg(test)]
+    pub(in crate::runtime) fn fail_next_restore() {
+        tests::arm(Step::Restore);
+    }
+
+    #[cfg(test)]
+    mod tests;
 }
+
+#[cfg(test)]
+mod isolated;
+#[cfg(test)]
+mod tests;
 
 fn restore_terminal() {
     let mut out = stdout();
@@ -362,11 +563,9 @@ fn restore_terminal() {
 
 pub fn run(app: &mut impl Application) -> std::io::Result<()> {
     let mut session = TerminalSession::enter_with(app.keyboard_protocol())?;
-    #[cfg(unix)]
-    job_control::install();
     let result = event_loop(&mut session, app);
-    session.leave();
-    result
+    let left = session.try_leave();
+    result.and(left)
 }
 
 fn prime_input() -> std::io::Result<()> {

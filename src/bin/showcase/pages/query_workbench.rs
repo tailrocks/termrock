@@ -8,8 +8,8 @@ use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
 use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::focus::forward_blur;
-use junie_tui::core::id::WidgetId;
+use junie_tui::core::focus::{Focus, forward_blur};
+use junie_tui::core::id::{ItemKey, Part, PartRef, WidgetId};
 use junie_tui::core::intent::Phase;
 use junie_tui::core::pointer::{MouseTarget, PointerEvent};
 use junie_tui::theme::{EnvKind, Glyphs, SyntaxTone, Tone};
@@ -120,10 +120,110 @@ enum Outcome2 {
     None,
 }
 
-struct Doc {
-    title: String,
+/// Names one accepted run of one document. `generation` is an operation
+/// counter owned by the document; it is not an editor text revision. Callers
+/// compare tokens, never display indices.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct OperationToken {
+    document: ItemKey,
+    generation: u64,
+}
+
+/// The work in flight, captured when the run started. The SQL and mode are
+/// owned copies, so later edits, tab moves or closes cannot change what runs.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct RunRequest {
+    token: OperationToken,
     sql: String,
+    explain: bool,
+    ticks_left: u8,
+}
+
+/// One open query document. The editor (text, caret, selection, undo,
+/// scroll) and the result view live with the document, so activation only
+/// changes which document is routed and painted; it never copies text.
+struct Doc {
+    key: ItemKey,
+    title: String,
+    editor: CodeEditor,
     result: Outcome2,
+    results: DataTable,
+    /// Bumped on each accepted run and on cancellation, so an older
+    /// completion can never match.
+    run_generation: u64,
+    last_completed_generation: Option<u64>,
+    /// The exact text `result` was produced from, and the run that made it.
+    /// A demonstration or initial result has no run.
+    result_sql: Option<String>,
+    result_token: Option<OperationToken>,
+}
+
+fn editor_id(key: ItemKey) -> WidgetId {
+    ID.sub("editor").part(PartRef::item(Part::ROW, key))
+}
+
+fn results_id(key: ItemKey) -> WidgetId {
+    ID.sub("results").part(PartRef::item(Part::ROW, key))
+}
+
+impl Doc {
+    fn new(key: ItemKey, title: String, sql: &str, result: Outcome2, read_only: bool) -> Self {
+        let mut doc = Self {
+            key,
+            title,
+            editor: CodeEditor::new(editor_id(key), sql)
+                .highlighter(highlight)
+                .read_only(read_only)
+                .placeholder("Write a query, then Ctrl+R"),
+            result: Outcome2::None,
+            results: result_table(results_id(key), "", 0),
+            run_generation: 0,
+            last_completed_generation: None,
+            result_sql: None,
+            result_token: None,
+        };
+        doc.install(result);
+        doc
+    }
+
+    /// Stores a configured outcome for the text currently in the editor.
+    fn install(&mut self, result: Outcome2) {
+        let sql = self.editor.text().to_owned();
+        self.install_for(result, sql, None);
+    }
+
+    /// Stores an outcome produced from `sql` and rebuilds this document's
+    /// result view. Diagnostics are placed only when the editor still holds
+    /// exactly `sql`, because their ranges are byte offsets into it.
+    fn install_for(&mut self, result: Outcome2, sql: String, token: Option<OperationToken>) {
+        self.editor.diagnostics.clear();
+        match &result {
+            Outcome2::Rows { table, count, .. } => {
+                self.results = result_table(results_id(self.key), table, *count);
+            }
+            Outcome2::Plan { .. } => self.results = plan_table(results_id(self.key)),
+            Outcome2::Error { .. } => {
+                if self.editor.text() == sql
+                    && let Some((_, range)) = from_table(&sql)
+                {
+                    self.editor.diagnostics.push(Diagnostic {
+                        range,
+                        severity: Severity::Error,
+                        message: "unknown relation".into(),
+                    });
+                }
+            }
+            Outcome2::None => {}
+        }
+        self.result = result;
+        self.result_sql = Some(sql);
+        self.result_token = token;
+    }
+
+    /// A run produced the result and the editor no longer holds its text.
+    fn result_is_for_earlier_text(&self) -> bool {
+        self.result_token.is_some() && self.result_sql.as_deref() != Some(self.editor.text())
+    }
 }
 
 fn explorer_nodes() -> Vec<TreeNode> {
@@ -175,8 +275,7 @@ const CUSTOMERS: &[&str] = &[
     "Hooli",
 ];
 
-fn result_table(table: &str, count: usize) -> DataTable {
-    let id = ID.sub("results");
+fn result_table(id: WidgetId, table: &str, count: usize) -> DataTable {
     let (cols, rows): (Vec<Column>, Vec<Vec<Cell>>) = match table {
         "orders" => (
             vec![
@@ -235,7 +334,7 @@ fn result_table(table: &str, count: usize) -> DataTable {
         .empty(EmptyState::new("0 rows").hint("The query ran; nothing matched"))
 }
 
-fn plan_table() -> DataTable {
+fn plan_table(id: WidgetId) -> DataTable {
     let rows = [
         ("Limit", "0.42..2.10", "25"),
         ("  └ Index Scan Backward on orders", "0.42..8 410", "1 204"),
@@ -243,7 +342,7 @@ fn plan_table() -> DataTable {
         ("      Using orders_created_at_idx", "", ""),
     ];
     DataTable::new(
-        ID.sub("results"),
+        id,
         vec![
             Column::new("Plan node", Constraint::Min(30)),
             Column::new("Cost", Constraint::Length(12)).right(),
@@ -309,13 +408,16 @@ pub struct QueryWorkbenchPage {
     loading: Vec<(Vec<usize>, u8)>,
     pub tabs: Tabs,
     docs: Vec<Doc>,
+    /// Authoritative active document. The tab strip mirrors it. Tabs moves
+    /// its own active index before it emits `Activated`, so the strip can
+    /// already show a document the page has not activated yet.
+    active_key: Option<ItemKey>,
+    next_doc_key: u64,
 
     opened: usize,
     pub toolbar: Toolbar,
-    pub editor: CodeEditor,
-    pub results: DataTable,
 
-    running: Option<(usize, bool, u8)>,
+    running: Option<RunRequest>,
     outer: Split,
     inner: Split,
     outer_seam: Splitter,
@@ -333,21 +435,27 @@ impl QueryWorkbenchPage {
         explorer.expanded.insert(vec![0, 0]);
         explorer.expanded.insert(vec![0, 0, 0]);
         explorer.flatten();
+        let read_only = opts.on("queryworkbench.read_only");
+        let first = ItemKey::num(0);
         let docs = vec![
-            Doc {
-                title: "Query 1".into(),
-                sql: FIRST_QUERY.into(),
-                result: Outcome2::Rows {
+            Doc::new(
+                first,
+                "Query 1".into(),
+                FIRST_QUERY,
+                Outcome2::Rows {
                     table: "orders".into(),
                     count: 25,
                     ms: 15,
                 },
-            },
-            Doc {
-                title: "customers".into(),
-                sql: "SELECT * FROM customers LIMIT 100;\n".into(),
-                result: Outcome2::None,
-            },
+                read_only,
+            ),
+            Doc::new(
+                ItemKey::num(1),
+                "customers".into(),
+                "SELECT * FROM customers LIMIT 100;\n",
+                Outcome2::None,
+                read_only,
+            ),
         ];
         let mut page = Self {
             template: Template::new(ID, states_grid()),
@@ -359,10 +467,10 @@ impl QueryWorkbenchPage {
             loading: Vec::new(),
             tabs: Tabs::with_items(ID.sub("tabs"), vec![]),
             docs,
+            active_key: Some(first),
+            next_doc_key: 2,
             opened: 1,
             toolbar: Toolbar::new(ID.sub("toolbar"), toolbar_items(false)),
-            editor: CodeEditor::new(ID.sub("editor"), FIRST_QUERY),
-            results: result_table("orders", 25),
             running: None,
             outer: Split::new(32, 22, 40),
             inner: Split::new(40, 5, 6),
@@ -373,6 +481,7 @@ impl QueryWorkbenchPage {
             inner_area: Rect::ZERO,
         };
         page.rebuild();
+        page.apply_result_option();
         page
     }
 
@@ -385,9 +494,33 @@ impl QueryWorkbenchPage {
         }
     }
 
+    fn doc_index(&self, key: ItemKey) -> Option<usize> {
+        self.docs.iter().position(|doc| doc.key == key)
+    }
+
+    fn active_doc(&self) -> Option<&Doc> {
+        let key = self.active_key?;
+        self.docs.iter().find(|doc| doc.key == key)
+    }
+
+    fn active_doc_mut(&mut self) -> Option<&mut Doc> {
+        let key = self.active_key?;
+        self.docs.iter_mut().find(|doc| doc.key == key)
+    }
+
+    /// Keys are allocated monotonically and never reused. Exhaustion refuses
+    /// the allocation before anything is inserted.
+    fn alloc_key(&mut self) -> Option<ItemKey> {
+        let n = self.next_doc_key;
+        self.next_doc_key = n.checked_add(1)?;
+        Some(ItemKey::num(n))
+    }
+
+    /// Rebuilds layout and strip options only. Document editors and result
+    /// views are configured in place and keep their text, caret, undo and
+    /// scroll state.
     fn rebuild(&mut self) {
         let o = &self.opts;
-        let active = self.tabs.active;
         self.tabs = Tabs::with_items(ID.sub("tabs"), self.tab_items())
             .allow_new(o.on("queryworkbench.allow_new"))
             .overflow_menu(true)
@@ -395,8 +528,6 @@ impl QueryWorkbenchPage {
                 "hover" => CloseReveal::Hover,
                 _ => CloseReveal::Always,
             });
-        self.tabs
-            .set_active(active.min(self.docs.len().saturating_sub(1)));
         let explorer_pct = o.number("queryworkbench.explorer_width").unwrap_or(32);
         let mut outer = Split::new(explorer_pct, 22, 40);
         if !o.on("queryworkbench.explorer") {
@@ -404,13 +535,28 @@ impl QueryWorkbenchPage {
         }
         self.outer = outer;
         self.inner = Split::new(o.number("queryworkbench.editor_share").unwrap_or(40), 5, 6);
-        self.load_editor();
-        if let Some(r) = self.result_option() {
-            if let Some(d) = self.docs.get_mut(self.tabs.active) {
-                d.result = r;
-            }
-            self.sync_results();
+        let read_only = o.on("queryworkbench.read_only");
+        for doc in &mut self.docs {
+            doc.editor.read_only = read_only;
         }
+        self.sync_strip();
+    }
+
+    /// Installs the demonstration result chosen by the Result option on the
+    /// active document, once, when that option changes.
+    fn apply_result_option(&mut self) {
+        if let (Some(result), Some(doc)) = (self.result_option(), self.active_doc_mut()) {
+            doc.install(result);
+        }
+    }
+
+    /// Points the strip at the authoritative active document.
+    fn sync_strip(&mut self) {
+        let index = self
+            .active_key
+            .and_then(|key| self.doc_index(key))
+            .unwrap_or(0);
+        self.tabs.set_active(index);
     }
 
     fn result_option(&self) -> Option<Outcome2> {
@@ -429,12 +575,60 @@ impl QueryWorkbenchPage {
         })
     }
 
+    /// A document is busy only while its live generation owns the request.
+    fn is_running(&self, doc: &Doc) -> bool {
+        self.running.as_ref().is_some_and(|request| {
+            request.token.document == doc.key && request.token.generation == doc.run_generation
+        })
+    }
+
+    fn running_doc(&self) -> Option<&Doc> {
+        self.docs.iter().find(|doc| self.is_running(doc))
+    }
+
+    fn sync_toolbar(&mut self) {
+        self.toolbar.items = toolbar_items(self.running.is_some());
+    }
+
+    /// The document that may take `token`'s completion: same key, same
+    /// generation, not yet completed.
+    fn completion_index(&self, token: OperationToken) -> Option<usize> {
+        self.docs.iter().position(|doc| {
+            doc.key == token.document
+                && doc.run_generation == token.generation
+                && doc.last_completed_generation != Some(token.generation)
+        })
+    }
+
+    /// Drops the request when it belongs to `key` and retires its generation
+    /// on the document, if the document is still open. The generation is
+    /// checked before anything changes.
+    fn cancel_running_for(&mut self, key: ItemKey) -> bool {
+        if self
+            .running
+            .as_ref()
+            .is_none_or(|request| request.token.document != key)
+        {
+            return false;
+        }
+        let next = self.docs.iter().find(|doc| doc.key == key).map(|doc| {
+            doc.run_generation
+                .checked_add(1)
+                .expect("query run generation exhausted")
+        });
+        self.running = None;
+        if let (Some(doc), Some(next)) = (self.docs.iter_mut().find(|doc| doc.key == key), next) {
+            doc.run_generation = next;
+        }
+        self.sync_toolbar();
+        true
+    }
+
     fn tab_items(&self) -> Vec<TabItem> {
         self.docs
             .iter()
-            .enumerate()
-            .map(|(i, d)| {
-                let busy = self.running.is_some_and(|(t, _, _)| t == i);
+            .map(|d| {
+                let busy = self.is_running(d);
                 TabItem::new(&d.title)
                     .prefix(if d.title.starts_with("Query") {
                         "≡"
@@ -456,91 +650,110 @@ impl QueryWorkbenchPage {
         }
     }
 
-    fn load_editor(&mut self) {
-        let sql = self
-            .docs
-            .get(self.tabs.active)
-            .map_or(String::new(), |d| d.sql.clone());
-        self.editor = CodeEditor::new(ID.sub("editor"), &sql)
-            .highlighter(highlight)
-            .read_only(self.opts.on("queryworkbench.read_only"))
-            .placeholder("Write a query, then Ctrl+R");
-        self.sync_results();
-    }
-
-    fn store_editor(&mut self) {
-        let text = self.editor.text().to_owned();
-        if let Some(d) = self.docs.get_mut(self.tabs.active) {
-            d.sql = text;
+    /// Moves keyboard focus from a document's editor or result view to the
+    /// same role in another document. Focus on the strip or elsewhere stays.
+    fn retarget_focus(focus: &mut Focus, from: ItemKey, to: ItemKey) {
+        if focus.is(editor_id(from)) {
+            focus.focus(editor_id(to));
+        } else if focus.is(results_id(from)) {
+            focus.focus(results_id(to));
         }
     }
 
-    fn sync_results(&mut self) {
-        self.editor.diagnostics.clear();
-        match self.docs.get(self.tabs.active).map(|d| d.result.clone()) {
-            Some(Outcome2::Rows { table, count, .. }) => {
-                self.results = result_table(&table, count);
-            }
-            Some(Outcome2::Plan { .. }) => self.results = plan_table(),
-            Some(Outcome2::Error { .. }) => {
-                let sql = self.editor.text().to_owned();
-                if let Some((_, range)) = from_table(&sql) {
-                    self.editor.diagnostics.push(Diagnostic {
-                        range,
-                        severity: Severity::Error,
-                        message: "unknown relation".into(),
-                    });
-                }
-            }
-            _ => {}
+    /// The one activation transition. It compares the target against
+    /// `active_key`, never against the strip, and never touches document
+    /// text. Returns whether the active document changed.
+    fn activate_document(&mut self, key: ItemKey, focus: &mut Focus) -> bool {
+        let Some(index) = self.doc_index(key) else {
+            return false;
+        };
+        let previous = self.active_key;
+        self.tabs.set_active(index);
+        if previous == Some(key) {
+            return false;
         }
+        if let Some(departing) = previous.and_then(|k| self.docs.iter_mut().find(|d| d.key == k)) {
+            departing.editor.editing = false;
+        }
+        self.active_key = Some(key);
+        if let Some(previous) = previous {
+            Self::retarget_focus(focus, previous, key);
+        }
+        true
     }
 
-    fn switch_to(&mut self, i: usize) {
-        if i == self.tabs.active && !self.docs.is_empty() {
+    /// Checked adapter from a strip position to a document key.
+    fn switch_to(&mut self, index: usize, focus: &mut Focus) -> bool {
+        let Some(key) = self.docs.get(index).map(|doc| doc.key) else {
+            return false;
+        };
+        self.activate_document(key, focus)
+    }
+
+    fn new_tab(&mut self, title: String, sql: &str, focus: &mut Focus) -> bool {
+        let Some(key) = self.alloc_key() else {
+            return false;
+        };
+        let read_only = self.opts.on("queryworkbench.read_only");
+        self.docs
+            .push(Doc::new(key, title, sql, Outcome2::None, read_only));
+        self.tabs.set_items(self.tab_items());
+        self.activate_document(key, focus);
+        true
+    }
+
+    fn close_tab(&mut self, index: usize, cx: &mut Cx) {
+        if index >= self.docs.len() {
             return;
         }
-        self.store_editor();
-        self.tabs.set_active(i);
-        self.load_editor();
-    }
-
-    fn new_tab(&mut self, title: String, sql: &str) {
-        self.store_editor();
-        self.docs.push(Doc {
-            title,
-            sql: sql.into(),
-            result: Outcome2::None,
-        });
-        self.tabs.set_items(self.tab_items());
-        let n = self.docs.len() - 1;
-        self.tabs.set_active(n);
-        self.tabs.cursor = n;
-        self.load_editor();
-    }
-
-    fn close_tab(&mut self, i: usize, cx: &mut Cx) {
-        self.store_editor();
-        let title = self.docs.remove(i).title;
-        if self.running.is_some_and(|(t, _, _)| t == i) {
-            self.running = None;
+        let key = self.docs[index].key;
+        self.cancel_running_for(key);
+        let closed = self.docs.remove(index);
+        if self.active_key == Some(closed.key) {
+            let next = self.docs.get(index).or(self.docs.last());
+            self.active_key = next.map(|doc| doc.key);
+            match self.active_key {
+                Some(next) => Self::retarget_focus(cx.focus, closed.key, next),
+                None => {
+                    if cx.focus.is(editor_id(closed.key)) || cx.focus.is(results_id(closed.key)) {
+                        cx.focus.focus(self.tabs.id);
+                    }
+                }
+            }
         }
-        self.tabs.remove(i);
-        self.load_editor();
-        cx.status(format!("Closed {title}"));
+        self.tabs.remove(index);
+        self.sync_strip();
+        self.sync_tabs();
+        cx.status(format!("Closed {}", closed.title));
     }
 
     fn run(&mut self, explain: bool, cx: &mut Cx) {
-        if self.running.is_some() || self.docs.is_empty() {
+        if let Some(pending) = self.running_doc() {
+            cx.status(format!("A query is already running in {}", pending.title));
             return;
         }
-        self.store_editor();
-        if self.editor.text().trim().is_empty() {
+        let Some(doc) = self.active_doc_mut() else {
+            return;
+        };
+        if doc.editor.text().trim().is_empty() {
             cx.status("Nothing to run");
             return;
         }
-        self.running = Some((self.tabs.active, explain, RUN_TICKS));
-        self.toolbar.items = toolbar_items(true);
+        let Some(generation) = doc.run_generation.checked_add(1) else {
+            cx.status("Query run limit reached");
+            return;
+        };
+        doc.run_generation = generation;
+        self.running = Some(RunRequest {
+            token: OperationToken {
+                document: doc.key,
+                generation,
+            },
+            sql: doc.editor.text().to_owned(),
+            explain,
+            ticks_left: RUN_TICKS,
+        });
+        self.sync_toolbar();
         self.sync_tabs();
         cx.status(if explain {
             "Explaining…"
@@ -550,25 +763,43 @@ impl QueryWorkbenchPage {
     }
 
     fn stop(&mut self, cx: &mut Cx) {
-        if self.running.take().is_some() {
-            self.toolbar.items = toolbar_items(false);
-            self.sync_tabs();
-            cx.status("Query cancelled");
-        }
-    }
-
-    fn finish(&mut self, tab: usize, explain: bool, cx: &mut Cx) {
-        self.toolbar.items = toolbar_items(false);
-        let Some(doc) = self.docs.get_mut(tab) else {
+        let Some(key) = self.running.as_ref().map(|request| request.token.document) else {
             return;
         };
-        let table = from_table(&doc.sql).map(|(t, _)| t);
-        doc.result = match table {
+        let title = self
+            .docs
+            .iter()
+            .find(|doc| doc.key == key)
+            .map(|doc| doc.title.clone());
+        self.cancel_running_for(key);
+        self.sync_tabs();
+        cx.status(match title {
+            Some(title) if self.active_key != Some(key) => format!("Query cancelled in {title}"),
+            _ => "Query cancelled".into(),
+        });
+    }
+
+    /// Completes `request` for the document and generation that started it.
+    /// The captured SQL is evaluated, never the editor's current text. A
+    /// request whose document is gone, cancelled or already completed has no
+    /// effect at all.
+    fn finish(&mut self, request: RunRequest, cx: &mut Cx) {
+        let Some(index) = self.completion_index(request.token) else {
+            return;
+        };
+        let RunRequest {
+            token,
+            sql,
+            explain,
+            ..
+        } = request;
+        let table = from_table(&sql).map(|(t, _)| t);
+        let result = match table {
             Some(t) if TABLES.iter().any(|(n, _)| *n == t) => {
                 if explain {
                     Outcome2::Plan { ms: 2 }
                 } else {
-                    let count = if doc.sql.contains("LIMIT 25") { 25 } else { 40 };
+                    let count = if sql.contains("LIMIT 25") { 25 } else { 40 };
                     Outcome2::Rows {
                         table: t,
                         count,
@@ -585,28 +816,34 @@ impl QueryWorkbenchPage {
                 detail: "SQLSTATE 42601".into(),
             },
         };
-        let msg = match &doc.result {
+        let msg = match &result {
             Outcome2::Rows { count, ms, .. } => format!("✓ {count} rows · {ms} ms"),
             Outcome2::Plan { .. } => "✓ Plan ready".into(),
             Outcome2::Error { message, .. } => format!("✗ {message}"),
             Outcome2::None => String::new(),
         };
+        let doc = &mut self.docs[index];
+        doc.last_completed_generation = Some(token.generation);
+        let msg = if self.active_key == Some(doc.key) {
+            msg
+        } else {
+            format!("{}: {msg}", doc.title)
+        };
+        doc.install_for(result, sql, Some(token));
         self.sync_tabs();
-        if tab == self.tabs.active {
-            self.sync_results();
-        }
         cx.status(msg);
     }
 
     fn tick(&mut self, cx: &mut Cx) -> Outcome {
         let mut changed = false;
-        if let Some((tab, explain, left)) = self.running.as_mut() {
+        if let Some(request) = self.running.as_mut() {
             changed = true;
-            *left -= 1;
-            if *left == 0 {
-                let (tab, explain) = (*tab, *explain);
-                self.running = None;
-                self.finish(tab, explain, cx);
+            request.ticks_left = request.ticks_left.saturating_sub(1);
+            if request.ticks_left == 0
+                && let Some(request) = self.running.take()
+            {
+                self.sync_toolbar();
+                self.finish(request, cx);
             }
         }
         for (_, left) in &mut self.loading {
@@ -648,24 +885,33 @@ impl QueryWorkbenchPage {
                 if !TABLES.iter().any(|(t, _)| *t == name) {
                     return;
                 }
-                match self.docs.iter().position(|d| d.title == name) {
-                    Some(i) => self.switch_to(i),
-                    None => {
-                        self.new_tab(name.clone(), &format!("SELECT * FROM {name} LIMIT 100;\n"))
+                let opened = match self.docs.iter().position(|d| d.title == name) {
+                    Some(i) => {
+                        self.switch_to(i, cx.focus);
+                        true
                     }
+                    None => self.new_tab(
+                        name.clone(),
+                        &format!("SELECT * FROM {name} LIMIT 100;\n"),
+                        cx.focus,
+                    ),
+                };
+                if opened {
+                    cx.status(format!("Opened {name}"));
                 }
-                cx.status(format!("Opened {name}"));
             }
         }
     }
 
     fn tab_action(&mut self, a: TabAction, cx: &mut Cx) {
         match a {
-            TabAction::Activated(i) => self.switch_to(i),
+            TabAction::Activated(i) => {
+                self.switch_to(i, cx.focus);
+            }
             TabAction::Close(i) => self.close_tab(i, cx),
             TabAction::New => {
                 self.opened += 1;
-                self.new_tab(format!("Query {}", self.opened), "");
+                self.new_tab(format!("Query {}", self.opened), "", cx.focus);
             }
         }
     }
@@ -677,8 +923,9 @@ impl QueryWorkbenchPage {
                 1 => self.run(true, cx),
                 2 => self.stop(cx),
                 _ => {
-                    self.editor.set_text("");
-                    self.store_editor();
+                    if let Some(doc) = self.active_doc_mut() {
+                        doc.editor.set_text("");
+                    }
                 }
             }
         }
@@ -745,7 +992,7 @@ impl QueryWorkbenchPage {
         }
         let (strip, body) = Tabs::layout(r);
         self.tabs.render(strip, buf, ctx, t.canvas);
-        if self.docs.is_empty() {
+        if self.active_doc().is_none() {
             let hint = if self.tabs.allow_new {
                 "Click + or press n on the tabs to open one"
             } else {
@@ -775,29 +1022,35 @@ impl QueryWorkbenchPage {
 
     fn render_editor(&mut self, r: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
         let t = ctx.theme;
-        let title = self.docs[self.tabs.active].title.clone();
-        let meta = if self.editor.read_only {
+        let Some(doc) = self.active_doc_mut() else {
+            return;
+        };
+        let meta = if doc.editor.read_only {
             "read-only".to_owned()
         } else {
-            format!("{} lines", self.editor.text().lines().count().max(1))
+            format!("{} lines", doc.editor.text().lines().count().max(1))
         };
-        let panel = Panel::card(Some(&title))
+        let panel = Panel::card(Some(&doc.title))
             .meta(&meta)
-            .focused(ctx.interaction.focused(self.editor.id));
+            .focused(ctx.interaction.focused(doc.editor.id));
         let bg = panel.bg(t);
         if let Some(inner) = panel.try_render(r, buf, t) {
-            self.editor.render(inner, buf, ctx, bg);
+            doc.editor.render(inner, buf, ctx, bg);
         }
     }
 
     fn render_results(&mut self, r: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
         let t = ctx.theme;
-        let result = self.docs[self.tabs.active].result.clone();
-        let running = self
-            .running
-            .is_some_and(|(tab, _, _)| tab == self.tabs.active);
+        let running = self.active_doc().is_some_and(|doc| self.is_running(doc));
+        let Some(doc) = self.active_doc_mut() else {
+            return;
+        };
+        let earlier = doc.result_is_for_earlier_text();
+        let result = doc.result.clone();
         let meta = if running {
             "running".to_owned()
+        } else if earlier {
+            "Result for earlier query text".to_owned()
         } else {
             match &result {
                 Outcome2::Rows { count, ms, .. } => format!(
@@ -816,7 +1069,7 @@ impl QueryWorkbenchPage {
         };
         let panel = Panel::card(Some(title))
             .meta(&meta)
-            .focused(ctx.interaction.focused(self.results.id));
+            .focused(ctx.interaction.focused(doc.results.id));
         let bg = panel.bg(t);
         let Some(inner) = panel.try_render(r, buf, t) else {
             return;
@@ -833,7 +1086,7 @@ impl QueryWorkbenchPage {
         }
         match result {
             Outcome2::Rows { .. } | Outcome2::Plan { .. } => {
-                self.results.render(inner, buf, ctx, bg);
+                doc.results.render(inner, buf, ctx, bg);
             }
             Outcome2::Error { message, detail } => {
                 let e = EmptyState::error(&message).hint(&detail);
@@ -931,15 +1184,18 @@ impl QueryWorkbenchPage {
             }
             return o;
         }
-        if let Some(r) = self.editor.route(ev) {
+        let Some(doc) = self.active_doc_mut() else {
+            return Outcome::Ignored;
+        };
+        if let Some(r) = doc.editor.route(ev) {
             if click && ev.bar.is_none() {
-                cx.focus.focus(self.editor.id);
+                cx.focus.focus(doc.editor.id);
             }
             return r.outcome();
         }
-        if let Some(r) = self.results.route(ev) {
-            if click && !scrollbar::is_bar_of(ev.id, self.results.id) {
-                cx.focus.focus(self.results.id);
+        if let Some(r) = doc.results.route(ev) {
+            if click && !scrollbar::is_bar_of(ev.id, doc.results.id) {
+                cx.focus.focus(doc.results.id);
             }
             return r.outcome();
         }
@@ -994,18 +1250,21 @@ impl QueryWorkbenchPage {
             }
             return o;
         }
-        if f == self.editor.id {
-            let (o, a) = self.editor.on_key(key);
+        let Some(doc) = self.active_doc_mut() else {
+            return Outcome::Ignored;
+        };
+        if f == doc.editor.id {
+            let (o, a) = doc.editor.on_key(key);
             match a {
-                Some(EditorAction::Changed) => self.editor.diagnostics.clear(),
+                Some(EditorAction::Changed) => doc.editor.diagnostics.clear(),
                 Some(EditorAction::Leave { backward: false }) => cx.focus_next(),
                 Some(EditorAction::Leave { backward: true }) => cx.focus_prev(),
                 _ => {}
             }
             return o;
         }
-        if f == self.results.id {
-            let (o, actions) = self.results.on_key(key).into_parts();
+        if f == doc.results.id {
+            let (o, actions) = doc.results.on_key(key).into_parts();
             for a in actions {
                 match a {
                     TableAction::LeaveForward => cx.focus_next(),
@@ -1088,8 +1347,10 @@ impl Page for QueryWorkbenchPage {
             PageEvent::Paste(text) => {
                 if cx.focus.is(self.filter.id) {
                     self.filter.on_paste(text)
-                } else if cx.focus.is(self.editor.id) {
-                    self.editor.on_paste(text)
+                } else if let Some(doc) = self.active_doc_mut()
+                    && cx.focus.is(doc.editor.id)
+                {
+                    doc.editor.on_paste(text)
                 } else {
                     Outcome::Ignored
                 }
@@ -1100,7 +1361,7 @@ impl Page for QueryWorkbenchPage {
     }
 
     fn editing(&self) -> bool {
-        self.filter.editing || self.editor.editing
+        self.filter.editing || self.active_doc().is_some_and(|d| d.editor.editing)
     }
 
     fn animating(&self) -> bool {
@@ -1126,7 +1387,9 @@ impl Page for QueryWorkbenchPage {
                 vec![("↑↓", "Move"), ("←→", "Fold"), ("Enter", "Open table")]
             }
             Some(f) if f == self.tabs.id => vec![("←→", "Switch"), ("Enter", "Open")],
-            Some(f) if f == self.results.id => vec![("↑↓←→", "Cell"), ("Ctrl+R", "Run")],
+            Some(f) if self.active_doc().is_some_and(|d| f == d.results.id) => {
+                vec![("↑↓←→", "Cell"), ("Ctrl+R", "Run")]
+            }
             _ => vec![("Ctrl+R", "Run"), ("Tab", "Next")],
         }
     }
@@ -1136,9 +1399,12 @@ impl Page for QueryWorkbenchPage {
     }
 
     fn set_option(&mut self, key: &str, value: usize) {
+        let before = self.opts.get(key);
         if self.opts.set(key, value) {
-            self.store_editor();
             self.rebuild();
+            if key == "queryworkbench.result" && self.opts.get(key) != before {
+                self.apply_result_option();
+            }
         }
     }
 
@@ -1152,5 +1418,915 @@ impl Page for QueryWorkbenchPage {
 
     fn template_mut(&mut self) -> Option<&mut Template> {
         Some(&mut self.template)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use junie_tui::core::focus::{Focus, FocusRing};
+    use junie_tui::core::hit::HitRegistry;
+    use junie_tui::theme::{ColorLevel, Theme};
+    use junie_tui::ui::ctx::Interaction;
+    use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+    use ratatui::layout::Position;
+
+    const AREA: Rect = Rect::new(0, 0, 140, 44);
+
+    struct Rig {
+        page: QueryWorkbenchPage,
+        focus: Focus,
+        ring: FocusRing,
+        hits: HitRegistry,
+        statuses: Vec<String>,
+    }
+
+    impl Rig {
+        fn new() -> Self {
+            let mut rig = Self {
+                page: QueryWorkbenchPage::new(),
+                focus: Focus::default(),
+                ring: FocusRing::default(),
+                hits: HitRegistry::default(),
+                statuses: Vec::new(),
+            };
+            rig.paint();
+            rig
+        }
+
+        fn paint(&mut self) -> Buffer {
+            let theme = Theme::for_level(ColorLevel::TrueColor);
+            let mut buf = Buffer::empty(AREA);
+            let mut hits = HitRegistry::default();
+            let mut ring = FocusRing::default();
+            let interaction = Interaction {
+                focus: self.focus.current(),
+                ..Interaction::default()
+            };
+            let mut ctx = RenderCtx::new(&theme, interaction, &mut hits, &mut ring);
+            self.page.render(AREA, &mut buf, &mut ctx);
+            ctx.flush_overlays(&mut buf);
+            self.hits = hits;
+            self.ring = ring;
+            buf
+        }
+
+        fn send(&mut self, ev: PageEvent) -> Outcome {
+            let mut cx = Cx::new(&mut self.focus, &self.ring);
+            let out = self.page.handle(&ev, &mut cx);
+            Self::collect(&mut self.statuses, cx);
+            self.paint();
+            out
+        }
+
+        fn with_cx(&mut self, f: impl FnOnce(&mut QueryWorkbenchPage, &mut Cx)) {
+            let mut cx = Cx::new(&mut self.focus, &self.ring);
+            f(&mut self.page, &mut cx);
+            Self::collect(&mut self.statuses, cx);
+            self.paint();
+        }
+
+        fn collect(statuses: &mut Vec<String>, mut cx: Cx) {
+            let statuses_iter = cx.take().into_iter().filter_map(|request| match request {
+                junie_tui::shell::Request::Status(text, _) => Some(text),
+                _ => None,
+            });
+            statuses.extend(statuses_iter);
+        }
+
+        fn key(&mut self, code: KeyCode, mods: KeyModifiers) {
+            self.send(PageEvent::Key(Key { code, mods }));
+        }
+
+        fn run(&mut self) {
+            self.key(KeyCode::Char('r'), KeyModifiers::CONTROL);
+        }
+
+        fn click_tab(&mut self, i: usize) {
+            let area = self.page.tabs.areas[i];
+            let pos = Position::new(area.x + 1, area.y);
+            let id = self.hits.hit(pos).expect("tab hit region");
+            let ev = PointerEvent::new(&self.hits, Phase::Click, id, pos, 1, KeyModifiers::NONE);
+            self.send(PageEvent::Pointer(ev));
+        }
+
+        fn type_into_editor(&mut self, text: &str) {
+            let editor = &mut self.page.active_doc_mut().expect("active doc").editor;
+            editor.begin_edit();
+            let id = editor.id;
+            self.focus.focus(id);
+            self.send(PageEvent::Paste(text.to_owned()));
+        }
+    }
+
+    const CUSTOMERS_SQL: &str = "SELECT * FROM customers LIMIT 100;\n";
+
+    fn doc(p: &QueryWorkbenchPage, i: usize) -> &Doc {
+        &p.docs[i]
+    }
+
+    fn texts(p: &QueryWorkbenchPage) -> Vec<String> {
+        p.docs.iter().map(|d| d.editor.text().to_owned()).collect()
+    }
+
+    fn active(p: &QueryWorkbenchPage) -> &Doc {
+        p.active_doc().expect("active doc")
+    }
+
+    #[derive(Debug, PartialEq)]
+    struct EditorState {
+        text: String,
+        cursor: usize,
+        selection: Option<String>,
+        v_offset: usize,
+        h_offset: usize,
+    }
+
+    fn editor_state(d: &Doc) -> EditorState {
+        EditorState {
+            text: d.editor.text().to_owned(),
+            cursor: d.editor.cursor_offset(),
+            selection: d.editor.field.buffer.selected_text().map(str::to_owned),
+            v_offset: d.editor.scroll.v.offset,
+            h_offset: d.editor.hscroll,
+        }
+    }
+
+    /// Strip, active key, painted editor and result owner name one document.
+    fn assert_agree(rig: &mut Rig) {
+        let buf = rig.paint();
+        let p = &rig.page;
+        let key = p.active_key.expect("active key");
+        let index = p.doc_index(key).expect("active key names a document");
+        assert_eq!(p.tabs.active, index, "strip highlights the active document");
+        assert_eq!(p.tabs.items[index].label, p.docs[index].title);
+        let d = &p.docs[index];
+        assert_eq!(d.editor.id, editor_id(key));
+        assert_eq!(d.results.id, results_id(key));
+        assert!(
+            rig.hits.area_of(d.editor.id).is_some(),
+            "editor is hit-registered"
+        );
+        for other in p.docs.iter().filter(|o| o.key != key) {
+            assert!(
+                rig.hits.area_of(other.editor.id).is_none(),
+                "inactive editor {:?} is not routed",
+                other.title
+            );
+        }
+        let screen: String = buf.content().iter().map(|c| c.symbol()).collect();
+        let top = d.editor.scroll.v.offset;
+        let line = d.editor.text().lines().nth(top).unwrap_or("");
+        // A horizontal scroll paints an ellipsis in the first column in place
+        // of one character, so the visible text starts one column later.
+        let skip = if d.editor.hscroll > 0 {
+            d.editor.hscroll + 1
+        } else {
+            0
+        };
+        let probe: String = line.chars().skip(skip).take(12).collect();
+        assert!(screen.contains(&probe), "screen paints {probe:?}");
+    }
+
+    #[test]
+    fn issue52_click_activation_keeps_document_text() {
+        let mut rig = Rig::new();
+        rig.type_into_editor("-- scratch\n");
+        let query1 = active(&rig.page).editor.text().to_owned();
+        assert!(query1.starts_with("-- scratch"));
+
+        rig.click_tab(1);
+        assert_eq!(rig.page.tabs.active, 1, "strip highlights customers");
+        assert_eq!(active(&rig.page).editor.text(), CUSTOMERS_SQL);
+        assert_agree(&mut rig);
+
+        rig.run();
+        assert_eq!(texts(&rig.page), [query1.clone(), CUSTOMERS_SQL.into()]);
+
+        rig.with_cx(|p, cx| p.tab_action(TabAction::New, cx));
+        assert_eq!(
+            texts(&rig.page),
+            [query1.clone(), CUSTOMERS_SQL.into(), String::new()]
+        );
+        rig.with_cx(|p, cx| p.tab_action(TabAction::Close(2), cx));
+        assert_eq!(texts(&rig.page), [query1, CUSTOMERS_SQL.into()]);
+        assert_agree(&mut rig);
+    }
+
+    #[test]
+    fn issue52_keyboard_overflow_explorer_activation() {
+        let mut rig = Rig::new();
+        rig.type_into_editor("-- one\n");
+        rig.focus.focus(rig.page.tabs.id);
+
+        rig.key(KeyCode::Right, KeyModifiers::NONE);
+        assert_eq!(active(&rig.page).title, "customers");
+        assert_agree(&mut rig);
+        rig.key(KeyCode::Left, KeyModifiers::NONE);
+        assert_eq!(active(&rig.page).title, "Query 1");
+        assert!(active(&rig.page).editor.text().starts_with("-- one"));
+        assert_agree(&mut rig);
+
+        rig.key(KeyCode::Right, KeyModifiers::NONE);
+        rig.run();
+        assert!(doc(&rig.page, 0).editor.text().starts_with("-- one"));
+        assert_eq!(doc(&rig.page, 1).editor.text(), CUSTOMERS_SQL);
+
+        for n in 3..=14 {
+            rig.with_cx(|p, cx| p.tab_action(TabAction::New, cx));
+            rig.type_into_editor(&format!("-- doc {n}\n"));
+        }
+        rig.with_cx(|p, cx| {
+            p.switch_to(0, cx.focus);
+        });
+        rig.focus.focus(rig.page.tabs.id);
+        rig.key(KeyCode::Down, KeyModifiers::NONE);
+        assert!(rig.page.tabs.menu_open(), "overflow menu is open");
+        rig.key(KeyCode::Enter, KeyModifiers::NONE);
+        let chosen = rig.page.tabs.active;
+        assert!(chosen > 1, "a previously hidden tab was chosen");
+        assert_eq!(active(&rig.page).title, rig.page.tabs.items[chosen].label);
+        assert!(active(&rig.page).editor.text().starts_with("-- doc"));
+        assert_agree(&mut rig);
+
+        rig.with_cx(|p, cx| {
+            p.tree_action(TreeAction::Activate(vec![0, 0, 0, 1]), cx);
+        });
+        assert_eq!(active(&rig.page).title, "customers");
+        assert_eq!(active(&rig.page).editor.text(), CUSTOMERS_SQL);
+        assert_agree(&mut rig);
+    }
+
+    fn enter_edit(rig: &mut Rig) {
+        let editor = &mut rig.page.active_doc_mut().expect("active doc").editor;
+        editor.begin_edit();
+        let id = editor.id;
+        rig.focus.focus(id);
+    }
+
+    fn switch(rig: &mut Rig, index: usize) {
+        rig.with_cx(|p, cx| {
+            p.switch_to(index, cx.focus);
+        });
+    }
+
+    #[test]
+    fn issue52_editor_state_retained_per_document() {
+        let mut rig = Rig::new();
+        let results_a = active(&rig.page).results.id;
+        rig.focus.focus(results_a);
+        for _ in 0..4 {
+            rig.key(KeyCode::Down, KeyModifiers::NONE);
+        }
+        let result_a = (
+            active(&rig.page).results.cursor_row,
+            active(&rig.page).results.scroll.v.offset,
+        );
+        assert_eq!(result_a.0, 4);
+
+        let long: String = (0..60)
+            .map(|i| format!("-- line {i} {}\n", "x".repeat(150)))
+            .collect();
+        rig.type_into_editor(&long);
+        rig.page
+            .active_doc_mut()
+            .expect("active doc")
+            .editor
+            .jump_to(10);
+        for _ in 0..3 {
+            rig.key(KeyCode::Right, KeyModifiers::SHIFT);
+        }
+        {
+            let editor = &mut rig.page.active_doc_mut().expect("active doc").editor;
+            editor.scroll.v.scroll_to(5);
+            editor.hscroll = 7;
+        }
+        rig.paint();
+        let a = editor_state(active(&rig.page));
+        assert_eq!(a.selection.as_deref(), Some("xxx"));
+        assert_eq!((a.v_offset, a.h_offset), (5, 7));
+
+        switch(&mut rig, 1);
+        enter_edit(&mut rig);
+        rig.send(PageEvent::Paste("-- b\n".into()));
+        let b = editor_state(active(&rig.page));
+        assert!(b.text.starts_with("-- b\nSELECT"));
+
+        for _ in 0..3 {
+            switch(&mut rig, 0);
+            assert_eq!(editor_state(active(&rig.page)), a);
+            assert_eq!(
+                (
+                    active(&rig.page).results.cursor_row,
+                    active(&rig.page).results.scroll.v.offset
+                ),
+                result_a
+            );
+            switch(&mut rig, 1);
+            assert_eq!(editor_state(active(&rig.page)), b);
+        }
+
+        enter_edit(&mut rig);
+        rig.key(KeyCode::Char('z'), KeyModifiers::CONTROL);
+        assert_eq!(
+            active(&rig.page).editor.text(),
+            CUSTOMERS_SQL,
+            "undo reverts B only"
+        );
+        assert_eq!(
+            doc(&rig.page, 0).editor.text(),
+            a.text,
+            "A untouched by B's undo"
+        );
+
+        switch(&mut rig, 0);
+        enter_edit(&mut rig);
+        rig.key(KeyCode::Char('z'), KeyModifiers::CONTROL);
+        assert_eq!(
+            active(&rig.page).editor.text(),
+            FIRST_QUERY,
+            "A's own undo history survived"
+        );
+        assert_eq!(doc(&rig.page, 1).editor.text(), CUSTOMERS_SQL);
+    }
+
+    #[test]
+    fn issue52_close_inactive_preserves_active_key() {
+        let mut rig = Rig::new();
+        rig.with_cx(|p, cx| p.tab_action(TabAction::New, cx));
+        rig.type_into_editor("-- c\n");
+        let keys: Vec<ItemKey> = rig.page.docs.iter().map(|d| d.key).collect();
+        assert_eq!(keys.len(), 3);
+        rig.click_tab(1);
+        let b_key = keys[1];
+        enter_edit(&mut rig);
+        rig.send(PageEvent::Paste("-- b\n".into()));
+        let b = editor_state(active(&rig.page));
+        let b_results = active(&rig.page).results.cursor_row;
+
+        rig.with_cx(|p, cx| p.tab_action(TabAction::Close(0), cx));
+        assert_eq!(rig.page.active_key, Some(b_key));
+        assert_eq!(editor_state(active(&rig.page)), b);
+        assert_eq!(active(&rig.page).results.cursor_row, b_results);
+        assert_agree(&mut rig);
+
+        rig.with_cx(|p, cx| p.tab_action(TabAction::Close(1), cx));
+        assert_eq!(rig.page.active_key, Some(b_key));
+        assert_eq!(editor_state(active(&rig.page)), b);
+        assert_agree(&mut rig);
+
+        rig.focus.focus(active(&rig.page).editor.id);
+        rig.with_cx(|p, cx| p.tab_action(TabAction::Close(0), cx));
+        assert!(rig.page.docs.is_empty());
+        assert_eq!(rig.page.active_key, None);
+        assert_eq!(
+            rig.focus.current(),
+            Some(rig.page.tabs.id),
+            "focus falls back to the strip"
+        );
+        rig.paint();
+        assert!(!rig.page.editing());
+        rig.run();
+        rig.with_cx(|p, cx| p.tab_action(TabAction::Close(0), cx));
+        rig.with_cx(|p, cx| {
+            assert!(!p.switch_to(0, cx.focus));
+        });
+
+        rig.with_cx(|p, cx| p.tab_action(TabAction::New, cx));
+        let fresh = rig.page.active_key.expect("new doc is active");
+        assert!(!keys.contains(&fresh), "keys are never reused");
+        assert_agree(&mut rig);
+    }
+
+    #[test]
+    fn issue52_options_and_noop_activation_do_not_reset() {
+        let mut rig = Rig::new();
+        rig.type_into_editor("-- keep\n");
+        let focus_id = active(&rig.page).results.id;
+        rig.focus.focus(focus_id);
+        rig.key(KeyCode::Down, KeyModifiers::NONE);
+        rig.key(KeyCode::Down, KeyModifiers::NONE);
+        let before_a = editor_state(active(&rig.page));
+        let rows_a = active(&rig.page).results.cursor_row;
+        let customers = Outcome2::None;
+        assert_eq!(rows_a, 2);
+
+        rig.with_cx(|p, cx| {
+            let key = p.active_key.expect("active key");
+            assert!(
+                !p.activate_document(key, cx.focus),
+                "equal activation is a no-op"
+            );
+            assert!(!p.switch_to(0, cx.focus));
+        });
+        assert_eq!(editor_state(active(&rig.page)), before_a);
+
+        for (key, value) in [
+            ("queryworkbench.read_only", 1),
+            ("queryworkbench.read_only", 0),
+            ("queryworkbench.editor_share", 2),
+            ("queryworkbench.allow_new", 0),
+        ] {
+            rig.page.set_option(key, value);
+            assert_eq!(editor_state(active(&rig.page)), before_a, "{key}");
+            assert_eq!(active(&rig.page).results.cursor_row, rows_a, "{key}");
+        }
+        assert!(active(&rig.page).editor.text().starts_with("-- keep"));
+        rig.paint();
+        enter_edit(&mut rig);
+        rig.key(KeyCode::Char('z'), KeyModifiers::CONTROL);
+        assert!(
+            !active(&rig.page).editor.text().starts_with("-- keep"),
+            "undo history survived rebuilds"
+        );
+
+        rig.page.set_option("queryworkbench.result", 3);
+        assert!(matches!(active(&rig.page).result, Outcome2::Plan { .. }));
+        assert_eq!(
+            doc(&rig.page, 1).result,
+            customers,
+            "other documents keep their result"
+        );
+        let plan_cursor = active(&rig.page).results.cursor_row;
+        rig.page.set_option("queryworkbench.explorer_width", 1);
+        assert_eq!(active(&rig.page).results.cursor_row, plan_cursor);
+    }
+
+    #[test]
+    fn issue52_switch_scopes_focus_to_active_document() {
+        let mut rig = Rig::new();
+        rig.type_into_editor("-- a\n");
+        let a_key = rig.page.active_key.expect("key");
+        let a_state = editor_state(active(&rig.page));
+        rig.paint();
+        let a_area = rig
+            .hits
+            .area_of(editor_id(a_key))
+            .expect("A is hit-registered before the switch");
+        let a_pos = Position::new(a_area.x + 1, a_area.y + 1);
+
+        rig.with_cx(|p, cx| {
+            p.tree_action(TreeAction::Activate(vec![0, 0, 0, 1]), cx);
+        });
+        let b_key = rig.page.active_key.expect("key");
+        assert_ne!(a_key, b_key);
+        assert_eq!(
+            rig.focus.current(),
+            Some(editor_id(b_key)),
+            "focus follows the active document"
+        );
+        rig.paint();
+        assert!(
+            rig.hits.area_of(editor_id(a_key)).is_none(),
+            "A has no hit region"
+        );
+        assert!(rig.hits.area_of(editor_id(b_key)).is_some());
+
+        enter_edit(&mut rig);
+        rig.send(PageEvent::Paste("-- b\n".into()));
+        assert_eq!(
+            rig.page.docs[0].editor.text(),
+            a_state.text,
+            "paste never reaches A"
+        );
+
+        // B holds a selection. Drag and Release carrying A's editor id, at A's
+        // old geometry, must not reach A or B. Safety comes from the
+        // key-scoped editor ids: no hit region or focus role names A now.
+        rig.page
+            .active_doc_mut()
+            .expect("active doc")
+            .editor
+            .jump_to(5);
+        for _ in 0..3 {
+            rig.key(KeyCode::Right, KeyModifiers::SHIFT);
+        }
+        let b_before = editor_state(active(&rig.page));
+        assert_eq!(b_before.selection.as_deref(), Some("SEL"));
+        let focus_before = rig.focus.current();
+        for phase in [Phase::Drag, Phase::Release] {
+            let ev = PointerEvent::new(
+                &rig.hits,
+                phase,
+                editor_id(a_key),
+                a_pos,
+                1,
+                KeyModifiers::NONE,
+            );
+            let out = rig.send(PageEvent::Pointer(ev));
+            assert_eq!(out, Outcome::Ignored, "{phase:?} with A's id");
+        }
+        assert_eq!(rig.page.active_key, Some(b_key));
+        assert_eq!(
+            editor_state(active(&rig.page)),
+            b_before,
+            "B text and selection"
+        );
+        assert_eq!(rig.page.docs[0].editor.text(), a_state.text, "A text");
+        assert_eq!(
+            rig.page.docs[0].editor.field.buffer.selected_text(),
+            None,
+            "A has no selection"
+        );
+        assert_eq!(rig.focus.current(), focus_before, "focus unchanged");
+
+        rig.with_cx(|p, cx| {
+            p.tree_action(TreeAction::Activate(vec![0, 0, 0, 1]), cx);
+        });
+        rig.with_cx(|p, cx| {
+            p.switch_to(0, cx.focus);
+        });
+        assert_eq!(rig.focus.current(), Some(editor_id(a_key)));
+        assert_eq!(editor_state(active(&rig.page)), a_state);
+    }
+
+    #[test]
+    fn issue52_tab_click_round_trip_retains_each_document() {
+        let mut rig = Rig::new();
+        rig.focus.focus(active(&rig.page).results.id);
+        for _ in 0..4 {
+            rig.key(KeyCode::Down, KeyModifiers::NONE);
+        }
+        let result_a = (
+            active(&rig.page).results.cursor_row,
+            active(&rig.page).results.scroll.v.offset,
+        );
+
+        let long: String = (0..60)
+            .map(|i| format!("-- line {i} {}\n", "x".repeat(150)))
+            .collect();
+        rig.type_into_editor(&long);
+        rig.page
+            .active_doc_mut()
+            .expect("active doc")
+            .editor
+            .jump_to(10);
+        for _ in 0..3 {
+            rig.key(KeyCode::Right, KeyModifiers::SHIFT);
+        }
+        {
+            let editor = &mut rig.page.active_doc_mut().expect("active doc").editor;
+            editor.scroll.v.scroll_to(5);
+            editor.hscroll = 7;
+        }
+        rig.paint();
+        let a = editor_state(active(&rig.page));
+        assert_eq!(a.selection.as_deref(), Some("xxx"));
+
+        rig.focus.focus(rig.page.tabs.id);
+        rig.paint();
+        rig.click_tab(1);
+        assert_eq!(rig.page.tabs.active, 1);
+        assert_agree(&mut rig);
+
+        enter_edit(&mut rig);
+        rig.send(PageEvent::Paste("-- b\n".into()));
+        let b = editor_state(active(&rig.page));
+
+        rig.focus.focus(rig.page.tabs.id);
+        rig.paint();
+        rig.click_tab(0);
+        assert_eq!(rig.page.tabs.active, 0);
+        assert_agree(&mut rig);
+
+        let a_back = editor_state(active(&rig.page));
+        assert_eq!(a_back.text, a.text, "A's text");
+        assert_eq!(a_back.cursor, a.cursor, "A's caret");
+        assert_eq!(
+            (a_back.v_offset, a_back.h_offset),
+            (a.v_offset, a.h_offset),
+            "A's scroll"
+        );
+        // Known loss, tracked in #105: painting an editor that
+        // lost focus commits it (src/widgets/code.rs, `commit` on unfocused
+        // paint), which clears the selection. Caret, undo and scroll survive.
+        assert_eq!(a_back.selection, None, "A's selection is cleared on blur");
+        assert_eq!(
+            (
+                active(&rig.page).results.cursor_row,
+                active(&rig.page).results.scroll.v.offset
+            ),
+            result_a,
+            "A's result view"
+        );
+
+        rig.click_tab(1);
+        assert_eq!(editor_state(active(&rig.page)), b, "B's state");
+
+        rig.click_tab(0);
+        enter_edit(&mut rig);
+        rig.key(KeyCode::Char('z'), KeyModifiers::CONTROL);
+        assert_eq!(
+            active(&rig.page).editor.text(),
+            FIRST_QUERY,
+            "A's undo history survived the round trip"
+        );
+        assert_eq!(texts(&rig.page)[1], b.text, "B untouched by A's undo");
+    }
+
+    const ORDERS_25_SQL: &str = "SELECT * FROM orders LIMIT 25;\n";
+    const EARLIER_NOTE: &str = "Result for earlier query text";
+
+    fn customers_rows() -> Outcome2 {
+        Outcome2::Rows {
+            table: "customers".into(),
+            count: 40,
+            ms: 15,
+        }
+    }
+
+    fn orders_rows() -> Outcome2 {
+        Outcome2::Rows {
+            table: "orders".into(),
+            count: 25,
+            ms: 15,
+        }
+    }
+
+    /// Documents A (orders), B (customers) and C (orders LIMIT 25), A active.
+    fn three_docs() -> Rig {
+        let mut rig = Rig::new();
+        rig.with_cx(|p, cx| p.tab_action(TabAction::New, cx));
+        rig.page
+            .active_doc_mut()
+            .expect("active doc")
+            .editor
+            .set_text(ORDERS_25_SQL);
+        switch(&mut rig, 0);
+        rig
+    }
+
+    fn tick_to_completion(rig: &mut Rig) {
+        for _ in 0..RUN_TICKS {
+            rig.send(PageEvent::Tick);
+        }
+    }
+
+    fn screen_text(buf: &Buffer) -> String {
+        buf.content()
+            .chunks(usize::from(buf.area.width))
+            .map(|row| row.iter().map(|cell| cell.symbol()).collect::<String>())
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    fn close(rig: &mut Rig, index: usize) {
+        rig.with_cx(|p, cx| p.tab_action(TabAction::Close(index), cx));
+    }
+
+    fn toolbar_idle(rig: &Rig) -> bool {
+        let items = &rig.page.toolbar.items;
+        !items[0].disabled && !items[1].disabled && items[2].disabled
+    }
+
+    #[test]
+    fn issue53_close_earlier_keeps_run_on_b() {
+        let mut rig = three_docs();
+        let c_before = doc(&rig.page, 2).result.clone();
+        switch(&mut rig, 1);
+        let b_key = active(&rig.page).key;
+        rig.run();
+        assert!(rig.page.running.is_some());
+        close(&mut rig, 0);
+        assert_eq!(rig.page.doc_index(b_key), Some(0));
+        tick_to_completion(&mut rig);
+
+        assert_eq!(
+            doc(&rig.page, 0).result,
+            customers_rows(),
+            "B gets B's result"
+        );
+        assert_eq!(doc(&rig.page, 1).result, c_before, "C is untouched");
+        assert!(rig.page.running.is_none());
+        assert!(rig.page.tabs.items.iter().all(|tab| !tab.busy));
+        assert!(toolbar_idle(&rig));
+
+        let mut rig = Rig::new();
+        switch(&mut rig, 1);
+        rig.run();
+        close(&mut rig, 0);
+        tick_to_completion(&mut rig);
+        assert_eq!(rig.page.docs.len(), 1);
+        assert_eq!(
+            doc(&rig.page, 0).result,
+            customers_rows(),
+            "the result is not dropped when the saved index vanished"
+        );
+    }
+
+    #[test]
+    fn issue53_query_text_is_captured_at_submission() {
+        let mut rig = three_docs();
+        switch(&mut rig, 1);
+        let b = active(&rig.page);
+        let b_key = b.key;
+        rig.page
+            .active_doc_mut()
+            .expect("active doc")
+            .editor
+            .set_text(ORDERS_25_SQL);
+        rig.run();
+        let edited = "SELECT * FROM customers LIMIT 100;\n-- later edit\n";
+        rig.page
+            .active_doc_mut()
+            .expect("active doc")
+            .editor
+            .set_text(edited);
+        tick_to_completion(&mut rig);
+
+        let b = &rig.page.docs[rig.page.doc_index(b_key).expect("B")];
+        assert_eq!(b.result, orders_rows(), "executed the captured query");
+        assert_eq!(b.editor.text(), edited, "the late edit is intact");
+        assert!(screen_text(&rig.paint()).contains(EARLIER_NOTE));
+
+        let mut rig = three_docs();
+        switch(&mut rig, 1);
+        let failing = "SELECT * FROM nope LIMIT 1;\n";
+        rig.page
+            .active_doc_mut()
+            .expect("active doc")
+            .editor
+            .set_text(failing);
+        rig.run();
+        rig.page
+            .active_doc_mut()
+            .expect("active doc")
+            .editor
+            .set_text(&format!("-- moved\n{failing}"));
+        tick_to_completion(&mut rig);
+        assert!(matches!(active(&rig.page).result, Outcome2::Error { .. }));
+        assert!(
+            active(&rig.page).editor.diagnostics.is_empty(),
+            "stale byte offsets are not attached to new text"
+        );
+
+        let mut rig = three_docs();
+        switch(&mut rig, 1);
+        rig.page
+            .active_doc_mut()
+            .expect("active doc")
+            .editor
+            .set_text(failing);
+        rig.run();
+        tick_to_completion(&mut rig);
+        assert_eq!(
+            active(&rig.page).editor.diagnostics.len(),
+            1,
+            "unchanged text keeps its diagnostic"
+        );
+        assert!(!screen_text(&rig.paint()).contains(EARLIER_NOTE));
+    }
+
+    #[test]
+    fn issue53_target_close_cancels_only_matching_run() {
+        let mut rig = three_docs();
+        let old_keys: Vec<ItemKey> = rig.page.docs.iter().map(|d| d.key).collect();
+        switch(&mut rig, 1);
+        rig.run();
+        close(&mut rig, 0);
+        assert!(rig.page.running.is_some(), "closing A leaves B's run");
+        close(&mut rig, 1);
+        assert!(rig.page.running.is_some(), "closing C leaves B's run");
+        assert!(!toolbar_idle(&rig));
+
+        close(&mut rig, 0);
+        assert!(rig.page.running.is_none(), "closing B cancels its run");
+        assert!(toolbar_idle(&rig));
+        assert!(rig.page.tabs.items.is_empty());
+
+        rig.with_cx(|p, cx| p.tab_action(TabAction::New, cx));
+        let fresh = active(&rig.page).key;
+        assert!(
+            !old_keys.contains(&fresh),
+            "a reopened tab is a new identity"
+        );
+        rig.statuses.clear();
+        tick_to_completion(&mut rig);
+        assert_eq!(active(&rig.page).result, Outcome2::None);
+        assert!(
+            rig.statuses.iter().all(|s| !s.starts_with('✓')),
+            "an old run reports nothing: {:?}",
+            rig.statuses
+        );
+    }
+
+    #[test]
+    fn issue53_inactive_completion_does_not_steal_focus() {
+        let mut rig = three_docs();
+        switch(&mut rig, 1);
+        let b_key = active(&rig.page).key;
+        rig.run();
+        switch(&mut rig, 2);
+        let c_key = active(&rig.page).key;
+        enter_edit(&mut rig);
+        rig.statuses.clear();
+        tick_to_completion(&mut rig);
+
+        assert_eq!(rig.page.active_key, Some(c_key));
+        assert_eq!(rig.focus.current(), Some(editor_id(c_key)));
+        let b = &rig.page.docs[rig.page.doc_index(b_key).expect("B")];
+        assert_eq!(b.result, customers_rows());
+        assert!(rig.page.tabs.items.iter().all(|tab| !tab.busy));
+        assert_eq!(
+            rig.statuses.last().map(String::as_str),
+            Some("customers: ✓ 40 rows · 15 ms"),
+            "the status names the document the result belongs to"
+        );
+
+        switch(&mut rig, 1);
+        assert!(screen_text(&rig.paint()).contains("40 rows"));
+    }
+
+    fn deliver(rig: &mut Rig, request: &RunRequest) {
+        let request = RunRequest {
+            ticks_left: 0,
+            ..request.clone()
+        };
+        rig.with_cx(|p, cx| p.finish(request, cx));
+    }
+
+    #[test]
+    fn issue53_stale_and_duplicate_generation_ignored() {
+        let mut rig = three_docs();
+        switch(&mut rig, 1);
+        rig.run();
+        let old = rig.page.running.clone().expect("running");
+        rig.with_cx(|p, cx| p.stop(cx));
+        assert!(rig.page.running.is_none());
+        assert!(toolbar_idle(&rig));
+        assert!(active(&rig.page).run_generation > old.token.generation);
+
+        rig.page
+            .active_doc_mut()
+            .expect("active doc")
+            .editor
+            .set_text(ORDERS_25_SQL);
+        rig.run();
+        let newest = rig.page.running.clone().expect("running again");
+        assert!(newest.token.generation > old.token.generation);
+        assert_eq!(newest.token.document, old.token.document);
+
+        let statuses = rig.statuses.len();
+        deliver(&mut rig, &old);
+        assert_eq!(active(&rig.page).result, Outcome2::None, "stale result");
+        assert_eq!(rig.statuses.len(), statuses, "stale status");
+        assert!(rig.page.running.is_some(), "the newer run keeps running");
+        assert!(
+            !toolbar_idle(&rig),
+            "stale delivery does not touch busy state"
+        );
+
+        tick_to_completion(&mut rig);
+        assert_eq!(active(&rig.page).result, orders_rows());
+        assert_eq!(active(&rig.page).result_token, Some(newest.token));
+        assert_eq!(active(&rig.page).result_sql.as_deref(), Some(ORDERS_25_SQL));
+        let statuses = rig.statuses.len();
+
+        deliver(&mut rig, &newest);
+        assert_eq!(rig.statuses.len(), statuses, "duplicate status");
+        assert_eq!(active(&rig.page).result_token, Some(newest.token));
+    }
+
+    #[test]
+    fn issue53_cancel_after_ready_before_install_rejects_result() {
+        let mut rig = three_docs();
+        switch(&mut rig, 1);
+        rig.run();
+        let ready = rig.page.running.clone().expect("running");
+        rig.with_cx(|p, cx| p.stop(cx));
+        let statuses = rig.statuses.len();
+        deliver(&mut rig, &ready);
+        assert_eq!(active(&rig.page).result, Outcome2::None);
+        assert_eq!(active(&rig.page).result_token, None);
+        assert_eq!(rig.statuses.len(), statuses);
+
+        rig.run();
+        let ready = rig.page.running.clone().expect("running");
+        close(&mut rig, 1);
+        let before: Vec<Outcome2> = rig.page.docs.iter().map(|d| d.result.clone()).collect();
+        deliver(&mut rig, &ready);
+        let after: Vec<Outcome2> = rig.page.docs.iter().map(|d| d.result.clone()).collect();
+        assert_eq!(before, after, "no other document takes the result");
+        assert_eq!(rig.statuses.len(), statuses + 2, "only run and close speak");
+    }
+
+    #[test]
+    fn issue53_second_run_is_refused_naming_pending_document() {
+        let mut rig = three_docs();
+        switch(&mut rig, 1);
+        rig.run();
+        let pending = rig.page.running.clone().expect("running");
+        switch(&mut rig, 2);
+        rig.statuses.clear();
+        rig.run();
+        assert_eq!(rig.page.running.as_ref(), Some(&pending));
+        assert_eq!(rig.statuses, ["A query is already running in customers"]);
+        assert!(rig.page.toolbar.items[0].disabled && rig.page.toolbar.items[1].disabled);
+        assert!(!rig.page.toolbar.items[2].disabled, "Stop stays available");
+
+        rig.statuses.clear();
+        rig.with_cx(|p, cx| p.stop(cx));
+        assert_eq!(rig.statuses, ["Query cancelled in customers"]);
+        assert!(toolbar_idle(&rig));
     }
 }

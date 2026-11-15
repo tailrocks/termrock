@@ -870,3 +870,48 @@ fn the_track_click_each_terminal_was_drawn_with_decides_its_own_press() {
         "the second terminal was drawn with page: the same press moves one page"
     );
 }
+
+#[test]
+fn issue_terminal_screen_pos_excludes_track() {
+    for origin in [Position::new(0, 0), Position::new(3, 2)] {
+        let area = Rect::new(origin.x, origin.y, 6, 4);
+        let mut state = TerminalState::new(4, 20);
+        state.feed(b"0123456789012345678");
+        let mut v = TerminalViewport::new(ID, state);
+        v.set_area(area);
+        let ops: &dyn ViewportOps = &v;
+        let at = |col| ops.screen_pos(CellPos { line: 0, col });
+
+        assert_eq!(at(4), Some(Position::new(origin.x + 4, origin.y)));
+        assert_eq!(at(5), None, "column 5 is the scroll track");
+        assert_eq!(at(19), None, "column 19 is past the pane");
+        assert_eq!(at(25), None, "column 25 is past the emulated grid");
+        assert_eq!(
+            ops.caret(),
+            Some(CellPos { line: 0, col: 19 }),
+            "the program's caret stays where the emulator put it"
+        );
+        let anchor = ops.context_point();
+        assert!(
+            anchor.x < area.right() - 1 && area.contains(anchor),
+            "the context point {anchor:?} falls back inside the content of {area:?}"
+        );
+    }
+}
+
+#[test]
+fn issue_terminal_viewport_draw_clips_wide_glyph_before_the_track() {
+    let mut v = with_state(TerminalState::new(10, 12));
+    v.feed("abcdefghi\u{754c}j".as_bytes());
+
+    let (buf, _) = paint(&v, true);
+
+    assert_eq!(buf[(8, 0)].symbol(), "i");
+    assert_eq!(
+        buf[(9, 0)].symbol(),
+        " ",
+        "the wide glyph would cover the track"
+    );
+    assert_ne!(buf[(10, 0)].symbol(), "j");
+    assert_ne!(buf[(10, 0)].symbol(), "\u{754c}");
+}
