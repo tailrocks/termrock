@@ -168,7 +168,12 @@ pub fn preview_sql(
         .iter()
         .map(|c| c.name.as_str())
         .collect();
-    let generated = |ci: usize| table.column(&columns[ci].0).is_some_and(|c| c.generated);
+    let generated = |ci: usize| {
+        table
+            .columns
+            .iter()
+            .any(|c| c.generated && c.name == columns[ci].0)
+    };
     let mut out = Vec::new();
     for row in changes.updated() {
         let key = row.key();
@@ -1483,6 +1488,43 @@ mod tests {
             err.row,
             PreviewRow::Key(grid.row_key(0).unwrap()),
             "the error names the row by key"
+        );
+    }
+
+    #[test]
+    fn codex196_generated_columns_match_by_exact_identifier() {
+        let t = table(vec![
+            generated_id("Id"),
+            column("id", ColType::Int, false),
+            column("name", ColType::Text, false),
+        ]);
+        let columns: Vec<(String, ColType)> =
+            t.columns.iter().map(|c| (c.name.clone(), c.ty)).collect();
+        let specs = vec![
+            ColumnSpec::new("Id", CellKind::Id).read_only(),
+            ColumnSpec::new("id", CellKind::Number),
+            ColumnSpec::new("name", CellKind::Text),
+        ];
+        let mut grid = DataGrid::new(WidgetId::of("codex196"), specs);
+        grid.try_set_rows(GridRows {
+            rows: vec![vec![CellValue::Int(1), CellValue::Int(2), text("a")]],
+            total: RowTotal::Exact(1),
+            more: false,
+        })
+        .unwrap();
+        grid.duplicate_row().expect("row duplicates");
+        assert_eq!(
+            preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap(),
+            vec![r#"INSERT INTO "public"."ledger" ("id", "name") VALUES (2, 'a');"#.to_owned()],
+            "only the generated \"Id\" is left out"
+        );
+
+        grid.undo().unwrap();
+        grid.record_cell(0, 1, CellValue::Int(9)).unwrap();
+        assert_eq!(
+            preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap(),
+            vec![r#"UPDATE "public"."ledger" SET "id" = 9 WHERE "Id" = 1;"#.to_owned()],
+            "the ordinary \"id\" column stays editable"
         );
     }
 
