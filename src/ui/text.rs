@@ -92,7 +92,7 @@ pub fn truncate(s: &str, max: usize) -> String {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg_attr(not(test), expect(dead_code, reason = "Clip is first consumed by #75"))]
 pub(crate) enum TextClip {
     Clip,
     Ellipsis,
@@ -125,7 +125,9 @@ fn clusters_fit(source: &str, budget: usize) -> bool {
 /// relative to the first painted cell. The synthetic ellipsis gets `None`, so
 /// a match in hidden text never styles it. A cluster too wide for the room
 /// left is dropped and later clusters do not shift back into its cells. A wide
-/// cluster is styled across all of its cells with its own style.
+/// cluster is styled across all of its cells with its own style. A dropped wide
+/// cluster leaves blank cells after the ellipsis: `ab界界` in 4 cells paints
+/// `ab…` and one blank cell, because later clusters do not shift back.
 pub(crate) fn paint_graphemes(
     buf: &mut Buffer,
     owner: Rect,
