@@ -4,6 +4,8 @@ mod connections;
 mod context;
 mod db;
 mod filter_editor;
+#[cfg(test)]
+mod history_identity_tests;
 mod model;
 
 mod pages;
