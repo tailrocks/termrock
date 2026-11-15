@@ -820,7 +820,7 @@ impl App {
             nav_expand: NavExpand::default(),
             nav_auto: None,
             shell,
-            clock: WallClock::new(),
+            clock: WallClock::for_run(),
             layers: Layers::new(),
             inspector: false,
             insp: Inspector::new(PageId::Overview),
