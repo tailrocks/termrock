@@ -322,6 +322,11 @@ fn rerun_uses_the_selected_entry_sql() {
     });
 
     app.key("s");
+    app.wait_screen("failed-only off keeps the selected record", |screen| {
+        scope_is(screen, "Development", "any")
+            && focused_line(screen).contains("SELECT * FROM events")
+    });
+    app.key("up");
     let restored = app.wait_screen("failed-only off restores the entry", |screen| {
         let visible = text(screen);
         scope_is(screen, "Development", "any")
