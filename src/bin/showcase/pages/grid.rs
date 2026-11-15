@@ -21,10 +21,12 @@ use junie_tui::widgets::chips::{Chip, ChipBar};
 use junie_tui::widgets::dialog::{Dialog, DialogResult};
 use junie_tui::widgets::empty::EmptyState;
 use junie_tui::widgets::grid::{
-    CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridCmd, GridRows, GridUndoKind,
-    RowState, RowTotal,
+    CellEditResult, CellKind, CellValue, ColumnSpec, DataGrid, FinishEdit, GridAction, GridCmd,
+    GridEditError, GridRows, GridUndoKind, RowState, RowTotal,
 };
-use junie_tui::widgets::option_editor::{Affordance, ColumnEditor, EditorConfig, Options};
+use junie_tui::widgets::option_editor::{
+    Affordance, ColumnEditor, EditorConfig, OptionItem, Options,
+};
 use junie_tui::widgets::panel::Panel;
 use junie_tui::widgets::props::{self, Prop};
 
@@ -56,6 +58,7 @@ const NAMES: &[&str] = &[
 ];
 const PLANS: &[&str] = &["free", "pro", "team", "enterprise"];
 const OWNERS: &[&str] = &["mira", "jonas", "ana", "kai"];
+const TIERS: &[&str] = &["standard", "priority", "dedicated"];
 
 fn row(i: usize) -> Vec<CellValue> {
     let plan = PLANS[(i * 7 + 3) % PLANS.len()];
@@ -94,13 +97,25 @@ fn row(i: usize) -> Vec<CellValue> {
         renewed,
         CellValue::Int(201 + (i % 4) as i64),
         notes,
+        CellValue::Text(TIERS[i % TIERS.len()].to_owned()),
+        match i % 6 {
+            2 => CellValue::Null,
+            0 | 3 => CellValue::Bool(true),
+            _ => CellValue::Bool(false),
+        },
     ]
 }
 
-fn page(from: usize, total: RowTotal) -> GridRows {
+fn page(from: usize, total: RowTotal, cols: usize) -> GridRows {
     let to = (from + PAGE).min(ALL);
     GridRows {
-        rows: (from..to).map(row).collect(),
+        rows: (from..to)
+            .map(|i| {
+                let mut r = row(i);
+                r.truncate(cols);
+                r
+            })
+            .collect(),
         total: if to >= ALL {
             RowTotal::Exact(ALL)
         } else {
@@ -159,8 +174,15 @@ fn undo_status(kind: GridUndoKind) -> &'static str {
     }
 }
 
-fn columns() -> Vec<ColumnSpec> {
-    vec![
+fn tiers() -> Options {
+    Options::new(
+        std::iter::once(OptionItem::new("").label("(none)"))
+            .chain(TIERS.iter().map(|t| OptionItem::new(t))),
+    )
+}
+
+fn columns(strict: bool) -> Vec<ColumnSpec> {
+    let mut cols = vec![
         ColumnSpec::new("id", CellKind::Id)
             .primary()
             .read_only()
@@ -188,7 +210,16 @@ fn columns() -> Vec<ColumnSpec> {
             .references("accounts")
             .type_label("integer"),
         ColumnSpec::new("notes", CellKind::Json).type_label("jsonb"),
-    ]
+    ];
+    if strict {
+        cols.extend([
+            ColumnSpec::new("tier", CellKind::Text)
+                .editor(ColumnEditor::Select(tiers()))
+                .type_label("text"),
+            ColumnSpec::new("paused", CellKind::Bool).type_label("boolean"),
+        ]);
+    }
+    cols
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -210,9 +241,10 @@ struct Knobs {
     horizontal: usize,
     validator: usize,
     blur_action: usize,
+    malformed: usize,
 }
 
-const KEYS: [&str; 17] = [
+const KEYS: [&str; 18] = [
     "datagrid.access",
     "datagrid.rows",
     "datagrid.total",
@@ -230,6 +262,7 @@ const KEYS: [&str; 17] = [
     "datagrid.horizontal",
     "datagrid.validator",
     "datagrid.blur_action",
+    "datagrid.malformed",
 ];
 
 impl Knobs {
@@ -260,7 +293,8 @@ impl Knobs {
             "datagrid.track_click" => &mut self.track_click,
             "datagrid.horizontal" => &mut self.horizontal,
             "datagrid.validator" => &mut self.validator,
-            _ => &mut self.blur_action,
+            "datagrid.blur_action" => &mut self.blur_action,
+            _ => &mut self.malformed,
         }
     }
 
@@ -306,12 +340,18 @@ fn strict(spec: &ColumnSpec, text: &str) -> Result<CellValue, String> {
         ("customer", CellValue::Text(s)) if s.trim().len() < 3 => {
             Err("A customer name has at least 3 letters".into())
         }
+        ("active", CellValue::Bool(false)) => Err("Accounts are deactivated by support".into()),
+        ("tier", CellValue::Text(s)) if s.is_empty() => {
+            Err("A support tier is required: pick one".into())
+        }
         _ => Ok(parsed),
     }
 }
 
 fn build(k: &Knobs) -> DataGrid {
-    let mut grid = DataGrid::new(ID.sub("grid"), columns())
+    let cols = columns(k.validator == 2);
+    let width = cols.len();
+    let mut grid = DataGrid::new(ID.sub("grid"), cols)
         .editable(k.access == 0)
         .overflow_badges(k.overflow_badges == 1)
         .type_ahead(k.type_ahead > 0)
@@ -358,23 +398,44 @@ fn build(k: &Knobs) -> DataGrid {
             ..HScroll::default()
         });
     }
-    if k.validator == 1 {
+    if k.validator >= 1 {
         grid = grid.validator(strict);
     }
     grid.read_only_reason = READ_ONLY[k.access].map(str::to_owned);
     grid.row_numbers = k.row_numbers == 1;
     grid.blur_action = [BlurAction::Commit, BlurAction::Cancel][k.blur_action];
     grid.local_sort = true;
-    grid.set_rows(if k.rows == 0 {
-        page(0, k.total())
+    let mut loaded = if k.rows == 0 {
+        page(0, k.total(), width)
     } else {
         GridRows {
             rows: Vec::new(),
             total: RowTotal::Exact(0),
             more: false,
         }
-    });
+    };
+    if k.rows == 0 && k.malformed > 0 {
+        loaded.rows.insert(0, malformed_row(k.malformed, width));
+    }
+    match grid.try_set_rows(loaded) {
+        Ok(()) => {}
+        Err(e) => {
+            grid.empty = EmptyState::error("Rows rejected before display").hint(&e.to_string());
+        }
+    }
     grid
+}
+
+fn malformed_row(kind: usize, width: usize) -> Vec<CellValue> {
+    match kind {
+        1 => vec![CellValue::Int(1000), CellValue::Text("Short row".into())],
+        _ => {
+            let mut cells = row(0);
+            cells.truncate(width);
+            cells.push(CellValue::Text("one cell too many".into()));
+            cells
+        }
+    }
 }
 
 const COMMANDS: &[(GridCmd, &str)] = &[
@@ -439,25 +500,27 @@ fn states_grid() -> StateGrid {
         more: false,
     };
     let mut clean = DataGrid::new(id.child(0), cols());
-    clean.set_rows(GridRows {
-        rows: (0..3)
-            .map(|i| {
-                let r = row(i);
-                vec![r[0].clone(), r[1].clone(), r[3].clone()]
-            })
-            .collect(),
-        total: RowTotal::Exact(3),
-        more: false,
-    });
+    clean
+        .try_set_rows(GridRows {
+            rows: (0..3)
+                .map(|i| {
+                    let r = row(i);
+                    vec![r[0].clone(), r[1].clone(), r[3].clone()]
+                })
+                .collect(),
+            total: RowTotal::Exact(3),
+            more: false,
+        })
+        .expect("rectangular fixture");
     let mut changed = DataGrid::new(id.child(1), cols());
-    changed.set_rows(rows());
+    changed.try_set_rows(rows()).expect("rectangular fixture");
     changed.record_cell(0, 2, CellValue::Int(40));
     changed.record_cell(1, 2, CellValue::Int(7));
     changed.toggle_delete(1);
     changed.insert_row();
     let mut read_only = DataGrid::new(id.child(2), cols()).editable(false);
     read_only.read_only_reason = READ_ONLY[1].map(str::to_owned);
-    read_only.set_rows(rows());
+    read_only.try_set_rows(rows()).expect("rectangular fixture");
     StateGrid::new(id)
         .rows(&[
             Rest,
@@ -498,7 +561,7 @@ impl GridPage {
         let Some(r) = self.grid.route(ev) else {
             return Outcome::Ignored;
         };
-        let (o, gev) = r.into_parts();
+        let (o, actions) = r.into_parts();
         if ev.is(Phase::Click) {
             if self.grid.bar_ids().contains(&ev.id) {
                 cx.focus.focus(ev.id);
@@ -506,7 +569,9 @@ impl GridPage {
                 cx.focus.focus(self.grid.id);
             }
         }
-        self.on_event(gev, cx);
+        for gev in actions {
+            self.on_event(Some(gev), cx);
+        }
         o
     }
 
@@ -543,7 +608,7 @@ impl GridPage {
             .collect();
         cells.sort_by_key(|(r, c, _)| (*r, *c));
         for (r, c, v) in cells {
-            let name = &self.grid.columns[c].name;
+            let name = &self.grid.columns()[c].name;
             out.push(format!(
                 "UPDATE {TABLE} SET {name} = {} WHERE id = {};",
                 literal(r, name, v)?,
@@ -553,7 +618,7 @@ impl GridPage {
         for (r, key) in in_source_order(&mut pending.inserted()) {
             let cols: Vec<&str> = self
                 .grid
-                .columns
+                .columns()
                 .iter()
                 .enumerate()
                 .filter(|(c, _)| pending.is_dirty(key, *c))
@@ -564,7 +629,7 @@ impl GridPage {
             } else {
                 let vals = self
                     .grid
-                    .columns
+                    .columns()
                     .iter()
                     .enumerate()
                     .filter_map(|(c, col)| pending.value(key, c).map(|v| literal(r, &col.name, v)))
@@ -629,9 +694,62 @@ impl GridPage {
         self.filters.set_chips(
             self.filter_values
                 .iter()
-                .map(|(c, v)| Chip::new(&format!("{} = {}", self.grid.columns[*c].name, v.text())))
+                .map(|(c, v)| Chip::new(&format!("{} = {}", self.grid.columns()[*c].name, v.text())))
                 .collect(),
         );
+    }
+
+    /// Resolves a live cell editor before the changes dialog reads the queue.
+    /// A rejected value keeps the editor open and stops the save.
+    fn settle_edit(&mut self, cx: &mut Cx) -> bool {
+        match self.grid.finish_edit_session() {
+            Ok(FinishEdit::NoSession) => true,
+            Ok(FinishEdit::Accepted { result, .. }) => {
+                if result == CellEditResult::Unchanged {
+                    cx.status("The open cell kept its value");
+                }
+                true
+            }
+            Err(e) => {
+                cx.status(match e {
+                    GridEditError::Validation(_) | GridEditError::NoChoice => {
+                        format!("Fix the open cell first: {e}")
+                    }
+                    GridEditError::Busy | GridEditError::InvalidTarget => e.to_string(),
+                });
+                false
+            }
+        }
+    }
+
+    /// A rejected toggle or clear leaves a `!` on its cell; the status line
+    /// says why while the cursor is on it.
+    fn explain_cell_error(&self, cx: &mut Cx) {
+        let (display, col) = self.grid.cursor;
+        let src = self.grid.source_row(display);
+        if let Some(message) = self.grid.cell_errors.get(&(src, col)) {
+            cx.status(message.clone());
+        }
+    }
+
+    /// Pasting onto a cell that is not being edited sets its value through the
+    /// same parser the editors use.
+    fn paste_into_cell(&mut self, text: &str, cx: &mut Cx) -> Outcome {
+        let (display, col) = self.grid.cursor;
+        let src = self.grid.source_row(display);
+        match self.grid.try_edit_text(src, col, text) {
+            Ok(CellEditResult::Changed) => {
+                cx.status(format!("{} pending", self.grid.pending().total()));
+            }
+            Ok(CellEditResult::Unchanged) => cx.status("The cell already has that value"),
+            Err(GridEditError::Validation(e)) => {
+                let message = e.message().to_owned();
+                cx.status(format!("Paste rejected: {message}"));
+                self.grid.cell_errors.insert((src, col), message);
+            }
+            Err(e) => cx.status(e.to_string()),
+        }
+        Outcome::Changed
     }
 
     fn on_event(&mut self, ev: Option<GridAction>, cx: &mut Cx) {
@@ -644,23 +762,39 @@ impl GridPage {
             Some(GridAction::Undone(undone)) => cx.status(undo_status(undone.kind)),
             Some(GridAction::FetchMore) => {
                 let from = self.grid.len();
-                self.grid.append_rows(page(from, self.knobs.total()));
-                let kept = if self.grid.sort.is_some() {
-                    " · sort kept"
-                } else {
-                    ""
-                };
-                cx.status(format!(
-                    "Fetched rows {}–{}{kept}",
-                    from + 1,
-                    self.grid.len()
-                ));
+                match self.grid.try_append_rows(page(
+                    from,
+                    self.knobs.total(),
+                    self.grid.columns().len(),
+                )) {
+                    Ok(()) => {
+                        let kept = if self.grid.sort.is_some() {
+                            " · sort kept"
+                        } else {
+                            ""
+                        };
+                        cx.status(format!(
+                            "Fetched rows {}–{}{kept}",
+                            from + 1,
+                            self.grid.len()
+                        ));
+                    }
+                    Err(e) => cx.status(format!("Fetch rejected · {e}")),
+                }
             }
             Some(GridAction::Refresh) => {
-                self.grid.set_rows(page(0, self.knobs.total()));
-                cx.status("Reloaded from the source");
+                match self
+                    .grid
+                    .try_set_rows(page(0, self.knobs.total(), self.grid.columns().len()))
+                {
+                    Ok(()) => cx.status("Reloaded from the source"),
+                    Err(e) => cx.status(format!("Reload rejected · {e}")),
+                }
             }
             Some(GridAction::CommitRequested) => {
+                if !self.settle_edit(cx) {
+                    return;
+                }
                 if self.grid.pending().is_empty() {
                     cx.status("Nothing to save");
                 } else {
@@ -671,17 +805,24 @@ impl GridPage {
                 self.grid.discard();
                 cx.status("Changes discarded");
             }
-            Some(GridAction::PreviewSql) => self.open_changes(false, cx),
+            Some(GridAction::PreviewSql) => {
+                if self.settle_edit(cx) {
+                    self.open_changes(false, cx);
+                }
+            }
             Some(GridAction::Copy(s)) => cx.status(format!("Copied {} chars", s.len())),
             Some(GridAction::FollowReference { row, col }) => cx.status(format!(
                 "Follow {} = {} into {}",
-                self.grid.columns[col].name,
+                self.grid.columns()[col].name,
                 self.grid.value(row, col).text(),
-                self.grid.columns[col].references.as_deref().unwrap_or("?")
+                self.grid.columns()[col]
+                    .references
+                    .as_deref()
+                    .unwrap_or("?")
             )),
             Some(GridAction::OpenViewer { row, col }) => cx.status(format!(
                 "Would open the viewer for {} on row {}",
-                self.grid.columns[col].name,
+                self.grid.columns()[col].name,
                 row + 1
             )),
             Some(GridAction::FilterOnCell { col, value }) => {
@@ -734,7 +875,7 @@ impl GridPage {
 
     fn schema(&self) -> Vec<Prop> {
         self.grid
-            .columns
+            .columns()
             .iter()
             .map(|c| {
                 let mut v = vec![format!("{:?}", c.kind), c.type_label.clone()];
@@ -833,8 +974,9 @@ impl GridPage {
                     inner.height.saturating_sub(filters_h),
                 );
                 self.grid.render(body, buf, ctx, bg);
-                let meta = match &self.grid.read_only_reason {
-                    Some(_) if !self.grid.editable => {
+                let meta = match (self.grid.edit_error(), &self.grid.read_only_reason) {
+                    (Some(e), _) => e.to_owned(),
+                    (None, Some(_)) if !self.grid.editable => {
                         format!("read-only · {}", self.grid.position_label())
                     }
                     _ => self.grid.position_label(),
@@ -960,8 +1102,10 @@ impl Page for GridPage {
             if ch.from != self.grid.id {
                 return Outcome::Ignored;
             }
-            let (out, gev) = self.grid.on_blur();
-            self.on_event(gev, cx);
+            let (out, actions) = self.grid.on_blur().into_parts();
+            for gev in actions {
+                self.on_event(Some(gev), cx);
+            }
             return out;
         }
         if let Some(o) = self.sections.handle(ev) {
@@ -983,8 +1127,11 @@ impl Page for GridPage {
                     return Outcome::Ignored;
                 };
                 if f == self.grid.id {
-                    let (o, ev) = self.grid.on_key(key);
-                    self.on_event(ev, cx);
+                    let (o, actions) = self.grid.on_key(key).into_parts();
+                    for ev in actions {
+                        self.on_event(Some(ev), cx);
+                    }
+                    self.explain_cell_error(cx);
                     return o;
                 }
                 if self.grid.bar_ids().contains(&f) {
@@ -994,7 +1141,10 @@ impl Page for GridPage {
                 }
                 Outcome::Ignored
             }
-            PageEvent::Paste(text) => self.grid.on_paste(text),
+            PageEvent::Paste(text) => match self.grid.on_paste(text) {
+                Outcome::Ignored if cx.focus.is(self.grid.id) => self.paste_into_cell(text, cx),
+                o => o,
+            },
             PageEvent::Pointer(p) => self.pointer(p, cx),
             PageEvent::DialogClosed { id, result, .. }
                 if *id == PREVIEW && *result == DialogResult::Action(1) =>
@@ -1069,6 +1219,51 @@ impl Page for GridPage {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::pages::page_text;
+
+    fn with_malformed(value: usize) -> String {
+        let mut page = GridPage::new();
+        page.set_option("datagrid.malformed", value);
+        page_text(&mut page, 120, 40)
+    }
+
+    #[test]
+    fn issue42_malformed_input_option_is_off_by_default() {
+        let page = GridPage::new();
+        assert_eq!(page.option_value("datagrid.malformed"), Some(0));
+        let text = page_text(&mut GridPage::new(), 120, 40);
+        assert!(text.contains("Northwind"), "default rows load");
+        assert!(
+            !text.contains("rejected"),
+            "no rejection without the option"
+        );
+    }
+
+    #[test]
+    fn issue42_malformed_input_option_is_listed_on_the_options_tab() {
+        let listed = crate::options::page_options(crate::app::PageId::Grid);
+        let opt = listed
+            .iter()
+            .find(|o| o.key == "datagrid.malformed")
+            .expect("the Options tab lists it");
+        assert_eq!(opt.index_of("long"), Some(2));
+    }
+
+    #[test]
+    fn issue42_long_row_shows_the_data_error() {
+        let text = with_malformed(2);
+        assert!(text.contains("Rows rejected before display"), "{text}");
+        assert!(text.contains("row 0 has 10 cells, expected 9"), "{text}");
+        assert!(!text.contains("Northwind"), "the whole batch is refused");
+    }
+
+    #[test]
+    fn issue42_short_row_is_padded_with_null() {
+        let text = with_malformed(1);
+        assert!(text.contains("Short row"), "{text}");
+        assert!(text.contains("NULL"), "padded cells render as NULL: {text}");
+        assert!(!text.contains("rejected"), "{text}");
+    }
 
     const MRR: usize = 4;
     const SEATS: usize = 3;

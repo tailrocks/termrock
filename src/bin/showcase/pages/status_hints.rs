@@ -758,7 +758,7 @@ impl Page for StatusHintsPage {
                     if let Some(r) = self.posts[i].route(ev)
                         && r.outcome() != Outcome::Ignored
                     {
-                        if r.into_action().is_some() {
+                        if r.has_actions() {
                             Self::post(i, cx);
                         }
                         return Outcome::Changed;
@@ -767,7 +767,7 @@ impl Page for StatusHintsPage {
                 if let Some(r) = self.run.route(ev)
                     && r.outcome() != Outcome::Ignored
                 {
-                    if r.into_action().is_some() {
+                    if r.has_actions() {
                         self.job = Some(0.0);
                     }
                     return Outcome::Changed;

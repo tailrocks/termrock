@@ -3,7 +3,8 @@ use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use crate::core::event::Key;
 use crate::core::id::WidgetId;
 use crate::widgets::grid::{
-    CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridRows, ORDER_REBUILDS, RowTotal,
+    CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridRows,
+    ORDER_REBUILDS, RowTotal,
 };
 use crate::widgets::table::SortDir;
 
@@ -40,7 +41,7 @@ fn grid(local_sort: bool, items: &[(Option<i64>, &str)]) -> DataGrid {
         ],
     );
     g.local_sort = local_sort;
-    g.set_rows(page(items, false));
+    g.try_set_rows(page(items, false)).unwrap();
     g
 }
 
@@ -49,11 +50,13 @@ fn press(g: &mut DataGrid, code: KeyCode) -> Option<GridAction> {
         code,
         mods: KeyModifiers::NONE,
     })
-    .1
+    .into_actions()
+    .into_iter()
+    .next()
 }
 
 fn press_shift(g: &mut DataGrid, code: KeyCode) {
-    g.on_key(&Key {
+    let _ = g.on_key(&Key {
         code,
         mods: KeyModifiers::SHIFT,
     });
@@ -103,17 +106,19 @@ fn issue46_append_preserves_active_local_sort() {
     move_to(&mut g, 1);
     assert_eq!(cursor_tag(&g), "four");
 
-    g.append_rows(page(
+    g.try_append_rows(page(
         &[(Some(1), "one"), (Some(3), "three"), (None, "null")],
         false,
-    ));
+    ))
+    .unwrap();
 
     assert_eq!(shown(&g), ["one", "two", "three", "four", "null"]);
     assert_eq!(cursor_tag(&g), "four", "cursor follows its record");
 
     press(&mut g, KeyCode::Char('s'));
     assert_eq!(g.sort, Some((0, SortDir::Desc)));
-    g.append_rows(page(&[(Some(3), "three-b"), (None, "null-b")], false));
+    g.try_append_rows(page(&[(Some(3), "three-b"), (None, "null-b")], false))
+        .unwrap();
     assert_eq!(
         shown(&g),
         ["null-b", "null", "four", "three-b", "three", "two", "one"],
@@ -162,7 +167,8 @@ fn issue46_append_sorts_by_saved_values_not_pending() {
     edit_cursor_cell(&mut g, "9");
     assert!(!g.pending().is_empty(), "the edit is still pending");
 
-    g.append_rows(page(&[(Some(3), "three")], false));
+    g.try_append_rows(page(&[(Some(3), "three")], false))
+        .unwrap();
 
     assert_eq!(
         shown(&g),
@@ -184,7 +190,8 @@ fn issue46_anchor_follows_its_record() {
     assert_eq!(g.anchor(), Some((2, 0)), "anchor on display 2");
     assert_eq!(g.cursor.0, 1);
 
-    g.append_rows(page(&[(Some(0), "zero")], false));
+    g.try_append_rows(page(&[(Some(0), "zero")], false))
+        .unwrap();
 
     assert_eq!(shown(&g), ["zero", "one", "two", "three"]);
     assert_eq!(
@@ -238,7 +245,7 @@ fn issue46_inserted_drafts_stay_tail_until_commit() {
     assert_eq!(g.pending().inserted().count(), 1);
     g.cursor.1 = 0;
     edit_cursor_cell(&mut g, "0");
-    g.append_rows(page(&[(Some(2), "two")], false));
+    g.try_append_rows(page(&[(Some(2), "two")], false)).unwrap();
 
     let draft = g.source_row(3);
     assert!(
@@ -343,7 +350,8 @@ fn issue46_remote_and_failure_do_not_sort() {
         action,
         Some(GridAction::SortRequested(Some((0, SortDir::Asc))))
     );
-    g.append_rows(page(&[(Some(0), "zero")], false));
+    g.try_append_rows(page(&[(Some(0), "zero")], false))
+        .unwrap();
     assert_eq!(
         shown(&g),
         ["two", "one", "zero"],
@@ -370,16 +378,18 @@ fn issue46_empty_append_does_not_resort() {
     let mut g = grid(true, &[(Some(2), "two"), (Some(1), "one")]);
     press(&mut g, KeyCode::Char('s'));
     let before = rebuilds();
-    g.append_rows(GridRows {
+    g.try_append_rows(GridRows {
         rows: vec![],
         total: RowTotal::Exact(2),
         more: true,
-    });
+    })
+    .unwrap();
     assert_eq!(rebuilds(), before);
     assert!(g.more, "metadata still applies");
     assert_eq!(shown(&g), ["one", "two"]);
 
-    g.append_rows(page(&[(Some(0), "zero")], false));
+    g.try_append_rows(page(&[(Some(0), "zero")], false))
+        .unwrap();
     assert_eq!(rebuilds(), before + 1, "a real append rebuilds once");
 }
 
@@ -392,7 +402,8 @@ fn issue46_empty_commit_and_stale_sort_column_are_safe() {
     assert_eq!(rebuilds(), before, "an empty success does not reorder");
 
     g.sort = Some((9, SortDir::Asc));
-    g.append_rows(page(&[(Some(0), "zero")], false));
+    g.try_append_rows(page(&[(Some(0), "zero")], false))
+        .unwrap();
     assert_eq!(
         shown(&g),
         ["two", "one", "zero"],
@@ -437,7 +448,8 @@ fn issue46_stale_sort_column_keeps_source_order_both_ways() {
     for dir in [SortDir::Asc, SortDir::Desc] {
         let mut g = grid(true, &[(Some(2), "two"), (Some(1), "one")]);
         g.sort = Some((9, dir));
-        g.append_rows(page(&[(Some(0), "zero")], false));
+        g.try_append_rows(page(&[(Some(0), "zero")], false))
+            .unwrap();
         assert_eq!(shown(&g), ["two", "one", "zero"], "{dir:?}");
     }
 }
@@ -446,11 +458,12 @@ fn issue46_stale_sort_column_keeps_source_order_both_ways() {
 fn issue46_short_rows_sort_without_panic() {
     let mut g = grid(true, &[(Some(2), "two")]);
     press(&mut g, KeyCode::Char('s'));
-    g.append_rows(GridRows {
+    g.try_append_rows(GridRows {
         rows: vec![vec![int(1)], vec![]],
         total: RowTotal::Exact(3),
         more: false,
-    });
+    })
+    .unwrap();
     assert_eq!(g.len(), 3);
     assert_eq!(g.value(g.source_row(0), 0).text(), "1");
     assert_eq!(g.value(g.source_row(1), 0).text(), "2");

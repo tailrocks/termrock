@@ -707,7 +707,7 @@ impl Page for FocusNavPage {
                             return r.outcome();
                         }
                         cx.focus.focus(id);
-                        if r.into_action().is_some() {
+                        if r.has_actions() {
                             self.open_layer(demo, cx);
                         }
                         return Outcome::Changed;
@@ -736,7 +736,7 @@ impl Page for FocusNavPage {
                         if !ev.is(Phase::Click) {
                             return r.outcome();
                         }
-                        if r.into_action().is_some() {
+                        if r.has_actions() {
                             cx.status(format!("{} ✓", b.label));
                         }
                         return Outcome::Changed;

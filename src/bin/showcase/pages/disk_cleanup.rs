@@ -955,8 +955,10 @@ impl Page for DiskCleanupPage {
                     return self.facts.on_key(key).0;
                 }
                 if cx.focus.is(self.tree.id) {
-                    let (o, a) = self.tree.on_key(key);
-                    self.on_tree(a, cx);
+                    let (o, actions) = self.tree.on_key(key).into_parts();
+                    for a in actions {
+                        self.on_tree(Some(a), cx);
+                    }
                     return o;
                 }
                 if cx.focus.is(self.list.id) {
@@ -987,8 +989,10 @@ impl Page for DiskCleanupPage {
                     return r.into_parts().0;
                 }
                 if let Some(r) = self.tree.route(ev) {
-                    let (o, a) = r.into_parts();
-                    self.on_tree(a, cx);
+                    let (o, actions) = r.into_parts();
+                    for a in actions {
+                        self.on_tree(Some(a), cx);
+                    }
                     return o;
                 }
                 if let Some(r) = self.list.route(ev) {
@@ -997,7 +1001,7 @@ impl Page for DiskCleanupPage {
                 if let Some(r) = self.review.route(ev)
                     && r.outcome() != Outcome::Ignored
                 {
-                    if r.into_action().is_some() {
+                    if r.has_actions() {
                         self.open_review(cx);
                     }
                     return Outcome::Changed;
@@ -1005,7 +1009,7 @@ impl Page for DiskCleanupPage {
                 if let Some(r) = self.rescan.route(ev)
                     && r.outcome() != Outcome::Ignored
                 {
-                    if r.into_action().is_some() {
+                    if r.has_actions() {
                         self.start_rescan(cx);
                     }
                     return Outcome::Changed;

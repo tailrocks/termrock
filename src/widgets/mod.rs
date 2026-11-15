@@ -46,6 +46,7 @@ pub mod props;
 pub mod rail;
 pub mod row_menu;
 pub mod scrollbar;
+pub mod search_detail;
 pub mod segments;
 pub mod select;
 pub mod splitter;
@@ -66,3 +67,5 @@ pub mod widget_hints;
 
 #[cfg(test)]
 mod collection_edit_tests;
+#[cfg(test)]
+mod keyed_cost_tests;

@@ -72,7 +72,10 @@ fn click(tabs: &mut Tabs, hits: &HitRegistry, id: WidgetId) -> (Outcome, Option<
         KeyModifiers::NONE,
     );
     match tabs.route(&ev) {
-        Some(response) => response.into_parts(),
+        Some(response) => {
+            let (outcome, actions) = response.into_parts();
+            (outcome, actions.into_iter().next())
+        }
         None => (Outcome::Ignored, None),
     }
 }

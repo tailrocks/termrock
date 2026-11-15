@@ -603,8 +603,7 @@ impl TerminalPanePage {
                     && self.session_controls[i]
                         .1
                         .route(ev)
-                        .and_then(|r| r.into_action())
-                        .is_some()
+                        .is_some_and(|r| r.has_actions())
             });
             return match fired {
                 Some(i) => {
@@ -614,12 +613,7 @@ impl TerminalPanePage {
                 None => Outcome::Ignored,
             };
         }
-        let fired = (0..4).find(|&i| {
-            self.button(i)
-                .route(ev)
-                .and_then(|r| r.into_action())
-                .is_some()
-        });
+        let fired = (0..4).find(|&i| self.button(i).route(ev).is_some_and(|r| r.has_actions()));
         match fired {
             Some(i) => {
                 self.run(i);

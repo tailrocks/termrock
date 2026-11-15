@@ -477,10 +477,12 @@ impl InfoDialog {
                 focus.focus(self.props.id);
             }
 
-            if let Some(crate::widgets::props::PropsAction::Activate(i)) = r.take_action()
-                && let Some(Some(v)) = self.copy_values.get(i)
-            {
-                self.result = Some(InfoResult::Copy(v.clone()));
+            for action in r.take_actions() {
+                if let crate::widgets::props::PropsAction::Activate(i) = action
+                    && let Some(Some(v)) = self.copy_values.get(i)
+                {
+                    self.result = Some(InfoResult::Copy(v.clone()));
+                }
             }
             return r.erase();
         }

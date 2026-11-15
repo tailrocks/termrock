@@ -1090,11 +1090,15 @@ impl App {
     }
 
     fn settle_layer(&mut self, out: Outcome) -> Outcome {
-        match self.modals.take(&mut self.shell.focus) {
-            None => out,
-            Some(Taken::Event(r)) => self.on_layer_event(r).or(out),
-            Some(Taken::Closed(entry, r)) => self.on_layer_result(entry, r),
-        }
+        Layers::settle(
+            self,
+            |app| (&mut app.modals, &mut app.shell.focus),
+            out,
+            |app, taken| match taken {
+                Taken::Event(r) => app.on_layer_event(r),
+                Taken::Closed(entry, r) => app.on_layer_result(entry, r),
+            },
+        )
     }
 
     fn dismiss_layer(&mut self, reason: DismissReason) -> Outcome {
@@ -1214,7 +1218,7 @@ impl App {
                 if let ModalResult::Picked(i) = result {
                     let row = entry
                         .get::<Picker>()
-                        .and_then(|p| p.items().get(i))
+                        .and_then(|p| p.visible_item(i).map(|v| v.item))
                         .and_then(|it| it.key.map(|key| (key, it.group == "plans")));
                     match row {
                         Some((k, true)) => {
@@ -1413,47 +1417,52 @@ impl App {
 
     fn chrome_pointer(&mut self, ev: &PointerEvent) -> Option<Outcome> {
         if let Some(r) = self.crumbs.route(ev) {
-            let (o, level) = r.into_parts();
-            let nav = level.and_then(|_| self.router.crumb_click(&self.crumbs, 0, ev.id));
-            return Some(match nav {
-                Some(nav) => {
+            let (mut out, levels) = r.into_parts();
+            for _ in levels {
+                if let Some(nav) = self.router.crumb_click(&self.crumbs, 0, ev.id) {
                     if self.navigate(nav) {
                         self.enter_top();
                     }
-                    Outcome::Changed
+                    out = Outcome::Changed;
                 }
-                None => o,
-            });
+            }
+            return Some(out);
         }
         if let Some(r) = self.menu.route(ev) {
-            let (o, act) = r.into_parts();
-            return Some(match act {
-                Some(act @ MenuBarAction::Chosen(..)) => match self.menus.command(act) {
-                    Some(cmd) => self.run_cmd(cmd),
-                    None => o,
-                },
-                Some(MenuBarAction::Brand) => {
-                    self.open_about();
-                    Outcome::Changed
-                }
-                _ => o,
-            });
+            let (mut out, actions) = r.into_parts();
+            for act in actions {
+                out = match act {
+                    act @ MenuBarAction::Chosen(..) => match self.menus.command(act) {
+                        Some(cmd) => self.run_cmd(cmd),
+                        None => out,
+                    },
+                    MenuBarAction::Brand => {
+                        self.open_about();
+                        Outcome::Changed
+                    }
+                    _ => out,
+                };
+            }
+            return Some(out);
         }
 
         if let Some(r) = self.strip.route(ev) {
-            let (o, act) = r.into_parts();
-            return Some(match act {
-                Some(TabAction::Activated(i)) => {
-                    self.activate_tab(i);
-                    Outcome::Changed
-                }
-                Some(TabAction::Close(i)) => {
-                    self.router.select(i);
-                    self.go(Go::CloseTab);
-                    Outcome::Changed
-                }
-                _ => o,
-            });
+            let (mut out, actions) = r.into_parts();
+            for act in actions {
+                out = match act {
+                    TabAction::Activated(i) => {
+                        self.activate_tab(i);
+                        Outcome::Changed
+                    }
+                    TabAction::Close(i) => {
+                        self.router.select(i);
+                        self.go(Go::CloseTab);
+                        Outcome::Changed
+                    }
+                    _ => out,
+                };
+            }
+            return Some(out);
         }
         if !ev.is(Phase::Click) {
             return None;

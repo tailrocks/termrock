@@ -642,10 +642,12 @@ impl ShellPage<Holla> for ActivityTab {
         match ev.phase() {
             Some(Phase::Click) => {
                 if let Some(r) = self.chips.route(ev) {
-                    let (o, act) = r.into_parts();
-                    if let Some(ChipAction::Activate(i)) | Some(ChipAction::Toggle(i)) = act {
-                        let name = self.chips.chips()[i].label.clone();
-                        self.toggle_stream(name, w);
+                    let (o, actions) = r.into_parts();
+                    for act in actions {
+                        if let ChipAction::Activate(i) | ChipAction::Toggle(i) = act {
+                            let name = self.chips.chips()[i].label.clone();
+                            self.toggle_stream(name, w);
+                        }
                     }
                     cx.focus.focus(CHIPS);
                     return o.or(Outcome::Changed);

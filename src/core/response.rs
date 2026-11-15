@@ -20,12 +20,160 @@ pub enum Invalidate {
     Layout,
 }
 
-#[must_use = "a Response carries the consumed/repaint answer; fold it with `|` or read it"]
+/// The ordered semantic actions one input produced.
+///
+/// Zero or one action is stored inline; a second action allocates. The
+/// unrelated [`crate::core::keymap::Actions`] trait is a key-map concept; import
+/// this type under another name (`ResponseActions`) when a module needs both.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Actions<A> {
+    None,
+    One(A),
+    Many(Vec<A>),
+}
+
+// A derive would add an `A: Default` bound that an empty batch does not need.
+#[allow(clippy::derivable_impls)]
+impl<A> Default for Actions<A> {
+    fn default() -> Self {
+        Self::None
+    }
+}
+
+impl<A> Actions<A> {
+    pub fn len(&self) -> usize {
+        match self {
+            Self::None => 0,
+            Self::One(_) => 1,
+            Self::Many(values) => values.len(),
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    pub fn push(&mut self, next: A) {
+        let previous = std::mem::take(self);
+        *self = match previous {
+            Self::None => Self::One(next),
+            Self::One(first) => Self::Many(vec![first, next]),
+            Self::Many(mut values) => {
+                values.push(next);
+                Self::Many(values)
+            }
+        };
+    }
+
+    pub fn append(&mut self, other: Self) {
+        for action in other {
+            self.push(action);
+        }
+    }
+
+    /// Borrowed, ordered view of the batch.
+    pub fn iter(&self) -> ActionsIter<'_, A> {
+        match self {
+            Self::None => ActionsIter::Small(None.into_iter()),
+            Self::One(value) => ActionsIter::Small(Some(value).into_iter()),
+            Self::Many(values) => ActionsIter::Many(values.iter()),
+        }
+    }
+}
+
+impl<A> From<Option<A>> for Actions<A> {
+    fn from(action: Option<A>) -> Self {
+        action.map_or(Self::None, Self::One)
+    }
+}
+
+impl<A> Extend<A> for Actions<A> {
+    fn extend<I: IntoIterator<Item = A>>(&mut self, iter: I) {
+        for action in iter {
+            self.push(action);
+        }
+    }
+}
+
+impl<A> FromIterator<A> for Actions<A> {
+    fn from_iter<I: IntoIterator<Item = A>>(iter: I) -> Self {
+        let mut actions = Self::None;
+        actions.extend(iter);
+        actions
+    }
+}
+
+/// Owning iterator over [`Actions`].
+pub enum ActionsIntoIter<A> {
+    Small(std::option::IntoIter<A>),
+    Many(std::vec::IntoIter<A>),
+}
+
+impl<A> Iterator for ActionsIntoIter<A> {
+    type Item = A;
+
+    fn next(&mut self) -> Option<A> {
+        match self {
+            Self::Small(it) => it.next(),
+            Self::Many(it) => it.next(),
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        match self {
+            Self::Small(it) => it.size_hint(),
+            Self::Many(it) => it.size_hint(),
+        }
+    }
+}
+
+impl<A> ExactSizeIterator for ActionsIntoIter<A> {}
+
+impl<A> IntoIterator for Actions<A> {
+    type Item = A;
+    type IntoIter = ActionsIntoIter<A>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        match self {
+            Self::None => ActionsIntoIter::Small(None.into_iter()),
+            Self::One(value) => ActionsIntoIter::Small(Some(value).into_iter()),
+            Self::Many(values) => ActionsIntoIter::Many(values.into_iter()),
+        }
+    }
+}
+
+/// Borrowed iterator over [`Actions`].
+pub enum ActionsIter<'a, A> {
+    Small(std::option::IntoIter<&'a A>),
+    Many(std::slice::Iter<'a, A>),
+}
+
+impl<'a, A> Iterator for ActionsIter<'a, A> {
+    type Item = &'a A;
+
+    fn next(&mut self) -> Option<&'a A> {
+        match self {
+            Self::Small(it) => it.next(),
+            Self::Many(it) => it.next(),
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        match self {
+            Self::Small(it) => it.size_hint(),
+            Self::Many(it) => it.size_hint(),
+        }
+    }
+}
+
+impl<A> ExactSizeIterator for ActionsIter<'_, A> {}
+
+#[must_use = "a Response carries the consumed/repaint answer and its actions; fold it with `|`, drain it or read it"]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Response<A = ()> {
     flow: Flow,
     invalidate: Invalidate,
-    action: Option<A>,
+    actions: Actions<A>,
 }
 
 impl<A> Default for Response<A> {
@@ -39,7 +187,7 @@ impl<A> Response<A> {
         Self {
             flow: Flow::Ignored,
             invalidate: Invalidate::None,
-            action: None,
+            actions: Actions::None,
         }
     }
 
@@ -47,7 +195,7 @@ impl<A> Response<A> {
         Self {
             flow: Flow::Consumed,
             invalidate: Invalidate::None,
-            action: None,
+            actions: Actions::None,
         }
     }
 
@@ -55,7 +203,7 @@ impl<A> Response<A> {
         Self {
             flow: Flow::Consumed,
             invalidate: Invalidate::Paint,
-            action: None,
+            actions: Actions::None,
         }
     }
 
@@ -63,7 +211,7 @@ impl<A> Response<A> {
         Self {
             flow: Flow::Consumed,
             invalidate: Invalidate::Paint,
-            action: Some(action),
+            actions: Actions::One(action),
         }
     }
 
@@ -106,54 +254,89 @@ impl<A> Response<A> {
         }
     }
 
-    pub const fn action(&self) -> Option<&A> {
-        self.action.as_ref()
+    /// Borrowed, ordered view of the pending actions; does not take them.
+    pub fn actions(&self) -> ActionsIter<'_, A> {
+        self.actions.iter()
     }
 
-    pub fn take_action(&mut self) -> Option<A> {
-        self.action.take()
+    /// Whether the response carries at least one action.
+    pub fn has_actions(&self) -> bool {
+        !self.actions.is_empty()
     }
 
-    pub fn into_action(self) -> Option<A> {
-        self.action
+    pub fn into_actions(self) -> Actions<A> {
+        self.actions
     }
 
-    pub fn into_parts(self) -> (Outcome, Option<A>) {
-        (self.outcome(), self.action)
+    pub fn take_actions(&mut self) -> Actions<A> {
+        std::mem::take(&mut self.actions)
     }
 
-    pub fn with_action<B>(self, action: B) -> Response<B> {
-        Response {
-            flow: Flow::Consumed,
-            invalidate: self.invalidate.max(Invalidate::Paint),
-            action: Some(action),
+    /// Legacy decomposition. `Outcome` has no layout case, so a `Layout`
+    /// invalidation collapses to `Changed`; use [`Response::into_raw_parts`]
+    /// when the invalidation level must survive.
+    pub fn into_parts(self) -> (Outcome, Actions<A>) {
+        (self.outcome(), self.actions)
+    }
+
+    /// Flag-preserving decomposition: flow, invalidation level and actions.
+    pub fn into_raw_parts(self) -> (Flow, Invalidate, Actions<A>) {
+        (self.flow, self.invalidate, self.actions)
+    }
+
+    /// Appends one action after any already pending.
+    pub fn push_action(&mut self, action: A) {
+        self.flow = Flow::Consumed;
+        self.invalidate = self.invalidate.max(Invalidate::Paint);
+        self.actions.push(action);
+    }
+
+    /// Folds `other` after `self`: flow and invalidation take the maximum and
+    /// the actions keep their order.
+    pub fn merge(mut self, other: Self) -> Self {
+        self |= other;
+        self
+    }
+
+    pub fn map_actions<B>(self, mut f: impl FnMut(A) -> B) -> Response<B> {
+        let mut mapped = Actions::None;
+        for action in self.actions {
+            mapped.push(f(action));
         }
-    }
-
-    pub fn map_action<B>(self, f: impl FnOnce(A) -> B) -> Response<B> {
         Response {
             flow: self.flow,
             invalidate: self.invalidate,
-            action: self.action.map(f),
+            actions: mapped,
         }
     }
 
-    pub fn on_action(self, f: impl FnOnce(A)) -> Response<()> {
-        if let Some(a) = self.action {
-            f(a);
+    pub fn on_actions(self, mut f: impl FnMut(A)) -> Response<()> {
+        for action in self.actions {
+            f(action);
         }
         Response {
             flow: self.flow,
             invalidate: self.invalidate,
-            action: None,
+            actions: Actions::None,
         }
     }
 
+    /// For a boundary whose contract proves at most one action. A batch of
+    /// two or more comes back unchanged in `Err`.
+    pub fn try_into_single(self) -> Result<(Outcome, Option<A>), Self> {
+        if self.actions.len() > 1 {
+            return Err(self);
+        }
+        let outcome = self.outcome();
+        Ok((outcome, self.actions.into_iter().next()))
+    }
+
+    /// Deliberately discards the actions, keeping flow and invalidation.
     pub fn erase(self) -> Response<()> {
         Response {
             flow: self.flow,
             invalidate: self.invalidate,
-            action: None,
+            actions: Actions::None,
         }
     }
 }
@@ -163,7 +346,7 @@ impl Response<()> {
         Response {
             flow: self.flow,
             invalidate: self.invalidate,
-            action: None,
+            actions: Actions::None,
         }
     }
 }
@@ -180,27 +363,27 @@ impl<A> From<Outcome> for Response<A> {
 
 impl<A> From<(Outcome, Option<A>)> for Response<A> {
     fn from((o, a): (Outcome, Option<A>)) -> Self {
-        let r = Self::from(o);
-        match a {
-            Some(a) => r.with_action(a),
-            None => r,
+        let mut r = Self::from(o);
+        if let Some(a) = a {
+            r.push_action(a);
         }
+        r
     }
 }
 
-impl BitOr for Response<()> {
-    type Output = Response<()>;
+impl<A> BitOr for Response<A> {
+    type Output = Response<A>;
 
-    fn bitor(mut self, rhs: Self) -> Self::Output {
-        self |= rhs;
-        self
+    fn bitor(self, rhs: Self) -> Self::Output {
+        self.merge(rhs)
     }
 }
 
-impl BitOrAssign for Response<()> {
+impl<A> BitOrAssign for Response<A> {
     fn bitor_assign(&mut self, rhs: Self) {
         self.flow = self.flow.max(rhs.flow);
         self.invalidate = self.invalidate.max(rhs.invalidate);
+        self.actions.append(rhs.actions);
     }
 }
 

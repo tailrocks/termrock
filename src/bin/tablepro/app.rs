@@ -1508,11 +1508,15 @@ impl App {
     }
 
     fn take_layer(&mut self) -> Outcome {
-        match self.layers.take(&mut self.shell.focus) {
-            None => Outcome::Ignored,
-            Some(Taken::Event(r)) => self.layer_event(r),
-            Some(Taken::Closed(entry, r)) => self.layer_closed(entry, r),
-        }
+        Layers::settle(
+            self,
+            |app| (&mut app.layers, &mut app.shell.focus),
+            Outcome::Ignored,
+            |app, taken| match taken {
+                Taken::Event(r) => app.layer_event(r),
+                Taken::Closed(entry, r) => app.layer_closed(entry, r),
+            },
+        )
     }
 
     fn dismiss_layer(&mut self, reason: DismissReason) -> Outcome {
@@ -1869,10 +1873,11 @@ impl App {
         }
 
         if let Some(r) = self.workbench.as_mut().and_then(|w| w.rail.route(ev)) {
-            return Some(match r.into_action() {
-                Some(a) => self.set_explorer(a == junie_tui::widgets::rail::RailAction::Expand),
-                None => Outcome::Consumed,
-            });
+            let mut out = Outcome::Consumed;
+            for a in r.into_actions() {
+                out = self.set_explorer(a == junie_tui::widgets::rail::RailAction::Expand);
+            }
+            return Some(out);
         }
 
         if let Some(action) = crate::tabs::toolbar_action(id) {
@@ -1986,12 +1991,11 @@ impl App {
             return self.history_chosen(owner, entry, key);
         }
         match target {
-            context::Target::Connection(_, Some(key)) => {
-                if !self.connections.select_key(key) {
+            context::Target::Connection(node) => {
+                if !self.connections.select_key(node) {
                     return Outcome::Changed;
                 }
             }
-            context::Target::Connection(row, None) => self.connections.select_row(row),
             _ => {
                 if let Some(w) = self.workbench.as_mut() {
                     context::select(w, target);
@@ -2297,7 +2301,7 @@ impl PointerHost for App {
 }
 
 fn tab_index(p: &Picker, i: usize) -> usize {
-    p.items().get(i).map_or(i, |it| it.value)
+    p.visible_item(i).map_or(i, |it| it.item.value)
 }
 
 fn tab_list_items(w: &Workbench, query: &str) -> Vec<Item> {

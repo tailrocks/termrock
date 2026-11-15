@@ -409,9 +409,9 @@ impl Page for ToolbarsPage {
                         if !ev.is(Phase::Click) {
                             return r.outcome();
                         }
-                        let (out, a) = r.into_parts();
+                        let (out, actions) = r.into_parts();
                         cx.focus.focus(bid);
-                        if let Some(a) = a {
+                        for a in actions {
                             self.act(a, k, cx);
                         }
                         return out.or(Outcome::Changed);

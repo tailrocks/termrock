@@ -5,6 +5,7 @@ use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Position, Rect};
 use ratatui::style::{Color, Modifier, Style};
 
+use crate::core::data::{DataError, ShapeError};
 use crate::core::event::{Key, Outcome};
 use crate::core::focus::BlurAction;
 use crate::core::hit::Axis;
@@ -213,6 +214,83 @@ pub struct GridUndo {
     pub kind: GridUndoKind,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GridDataError {
+    Shape(DataError),
+    Key(GridKeyError),
+    ColumnWidth {
+        column: usize,
+        min_width: u16,
+        max_width: u16,
+    },
+}
+
+impl From<DataError> for GridDataError {
+    fn from(e: DataError) -> Self {
+        Self::Shape(e)
+    }
+}
+
+impl From<GridKeyError> for GridDataError {
+    fn from(e: GridKeyError) -> Self {
+        Self::Key(e)
+    }
+}
+
+impl std::fmt::Display for GridDataError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Shape(e) => e.fmt(f),
+            Self::Key(e) => e.fmt(f),
+            Self::ColumnWidth {
+                column,
+                min_width,
+                max_width,
+            } => write!(
+                f,
+                "column {column}: width range {min_width}..={max_width} is empty or zero"
+            ),
+        }
+    }
+}
+
+impl std::error::Error for GridDataError {}
+
+fn validate_column_widths(columns: &[ColumnSpec]) -> Result<(), GridDataError> {
+    match columns
+        .iter()
+        .position(|c| c.max_width == 0 || c.min_width > c.max_width)
+    {
+        Some(column) => Err(GridDataError::ColumnWidth {
+            column,
+            min_width: columns[column].min_width,
+            max_width: columns[column].max_width,
+        }),
+        None => Ok(()),
+    }
+}
+
+fn normalize_rows(
+    width: usize,
+    mut rows: Vec<Vec<CellValue>>,
+    first: usize,
+) -> Result<Vec<Vec<CellValue>>, DataError> {
+    if width == 0 && !rows.is_empty() {
+        return Err(DataError::EmptySchemaWithRows);
+    }
+    if let Some((i, row)) = rows.iter().enumerate().find(|(_, r)| r.len() > width) {
+        return Err(DataError::Shape(ShapeError {
+            row: first + i,
+            expected: width,
+            actual: row.len(),
+        }));
+    }
+    for row in &mut rows {
+        row.resize(width, CellValue::Null);
+    }
+    Ok(rows)
+}
+
 #[derive(Debug, Clone)]
 enum UndoAction {
     Cell {
@@ -372,18 +450,110 @@ fn validate_row_keys(rows: usize, keys: &[ItemKey]) -> Result<(), GridKeyError> 
     }
 }
 
-fn parse_cell(parser: &CellParser, spec: &ColumnSpec, text: &str) -> Result<CellValue, FieldError> {
-    if text.is_empty() {
-        return match spec.kind {
-            CellKind::Text | CellKind::Json | CellKind::Enum => Ok(CellValue::Text(String::new())),
-            _ if spec.nullable => Ok(CellValue::Null),
-            _ => Err(FieldError::from("Empty: use Delete for NULL")),
-        };
-    }
-    parser.validate_in(spec, text)
+/// What a user edit asks the configured [`CellParser`] to turn into a value.
+///
+/// Every user-originated mutation reaches the parser through [`convert_input`]
+/// exactly once per commit attempt; there is no pre-parser shortcut for empty
+/// text, option values or booleans.
+#[derive(Debug, Clone, Copy)]
+enum CellInput<'a> {
+    /// Raw text exactly as typed or serialised by an editor (may be empty).
+    Text(&'a str),
+    /// The explicit "make this NULL" gesture (Delete, nullable Bool cycle).
+    Null,
 }
 
+/// The canonical text a NULL gesture presents to the parser. It is the
+/// reserved token of the default grammar.
+const NULL_TOKEN: &str = "null";
+
+fn convert_input(
+    parser: &CellParser,
+    spec: &ColumnSpec,
+    input: CellInput<'_>,
+) -> Result<CellValue, FieldError> {
+    let text = match input {
+        CellInput::Text(s) => s,
+        CellInput::Null => NULL_TOKEN,
+    };
+    let value = parser.validate_in(spec, text)?;
+    // A clear gesture can only ever produce NULL: a custom parser may reject
+    // it, but it cannot turn it into unrelated data.
+    if matches!(input, CellInput::Null) && (!spec.nullable || !matches!(value, CellValue::Null)) {
+        return Err(FieldError::new(format!(
+            "{} does not accept NULL",
+            spec.name
+        )));
+    }
+    Ok(value)
+}
+
+/// Whether a user edit changed the effective cell value.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CellEditResult {
+    /// The parsed value differs from the effective value and was recorded.
+    Changed,
+    /// The parser accepted a value equal to the effective one; nothing was
+    /// recorded (no draft, no undo entry, no `CellChanged`).
+    Unchanged,
+}
+
+/// Why a user cell edit did not happen.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GridEditError {
+    /// A submission is in flight and the grid refuses edits (enforced by the
+    /// submission lock; reserved here as the single refusal point).
+    Busy,
+    /// The target row/column does not exist, is read-only, deleted, or the
+    /// editing state is inconsistent.
+    InvalidTarget,
+    /// A choice editor has no committable selection.
+    NoChoice,
+    /// The configured parser rejected the input.
+    Validation(FieldError),
+}
+
+impl std::fmt::Display for GridEditError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            GridEditError::Busy => f.write_str("Saving: edits are locked"),
+            GridEditError::InvalidTarget => f.write_str("This cell cannot be edited"),
+            GridEditError::NoChoice => f.write_str("Choose an option first"),
+            GridEditError::Validation(e) => f.write_str(e.message()),
+        }
+    }
+}
+
+impl std::error::Error for GridEditError {}
+
+/// Outcome of [`DataGrid::finish_edit_session`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FinishEdit {
+    /// No text or choice session was live; nothing was parsed.
+    NoSession,
+    /// The parser accepted the session's value and the session closed.
+    Accepted {
+        row: usize,
+        col: usize,
+        result: CellEditResult,
+    },
+}
+
+/// The built-in cell grammar.
+///
+/// Exact empty text is `Text("")` for Text and Enum columns, NULL for other
+/// nullable columns, and an error otherwise (empty Json is invalid JSON). The
+/// reserved token `null` (any case) is NULL for nullable columns. A literal
+/// text value spelled `null` needs a custom parser; see [`DataGrid::validator`].
 pub fn default_validator(col: &ColumnSpec, text: &str) -> Result<CellValue, String> {
+    if text.is_empty() {
+        return match col.kind {
+            CellKind::Text | CellKind::Enum => Ok(CellValue::Text(String::new())),
+            CellKind::Json => Err("Must be a JSON object or array".to_owned()),
+            _ if col.nullable => Ok(CellValue::Null),
+            _ => Err("Empty: use Delete for NULL".to_owned()),
+        };
+    }
     let t = text.trim();
     if t.eq_ignore_ascii_case("null") {
         return if col.nullable {
@@ -482,7 +652,7 @@ const GRID_MIN_W: u16 = 24;
 pub struct DataGrid {
     parts: PartMap,
     pub id: WidgetId,
-    pub columns: Vec<ColumnSpec>,
+    columns: Vec<ColumnSpec>,
     rows: Vec<Vec<CellValue>>,
     row_keys: Vec<ItemKey>,
     key_to_source: HashMap<ItemKey, usize>,
@@ -757,23 +927,6 @@ impl DataGrid {
         }
     }
 
-    fn apply_choice(
-        &mut self,
-        src: usize,
-        col: usize,
-        value: String,
-    ) -> Result<GridAction, String> {
-        let parsed = if value.is_empty() {
-            Ok(CellValue::Text(String::new()))
-        } else {
-            self.validator
-                .validate_in(&self.columns[col], &value)
-                .map_err(FieldError::into_message)
-        }?;
-        self.record_cell(src, col, parsed);
-        Ok(GridAction::CellChanged { row: src, col })
-    }
-
     fn next_writable(&self, backward: bool) -> Result<usize, GridAction> {
         let n = self.columns.len();
         let mut col = self.cursor.1;
@@ -795,40 +948,195 @@ impl DataGrid {
         }
     }
 
-    fn on_choice(&mut self, r: Option<ChoiceResult>) -> Option<GridAction> {
-        let (value, tab) = match r? {
+    fn on_choice(&mut self, r: Option<ChoiceResult>) -> Response<GridAction> {
+        let Some(r) = r else {
+            return Response::ignored();
+        };
+        let (value, tab) = match r {
             ChoiceResult::Cancel => {
                 self.choice = None;
-                return None;
+                return Response::ignored();
             }
             ChoiceResult::Commit(v) => (v, None),
             ChoiceResult::CommitAndTab { value, backward } => (value, Some(backward)),
         };
-        let (src, col, generation) = self.choice.as_ref().map(|c| (c.row, c.col, c.generation))?;
-        if !self.session_target_live(src, col, generation) {
-            self.choice = None;
-            return None;
+        let Ok(FinishEdit::Accepted { row, col, result }) = self.finish_choice(value) else {
+            return Response::ignored();
+        };
+        let mut resp = Response::changed();
+        if result == CellEditResult::Changed {
+            resp.push_action(GridAction::CellChanged { row, col });
         }
-        match self.apply_choice(src, col, value) {
-            Ok(ev) => {
+        match tab {
+            Some(backward) => resp.merge(self.tab_after_commit(backward)),
+            None => resp,
+        }
+    }
+
+    fn edit_blocked(&self, src: usize, col: usize) -> bool {
+        !self.editable
+            || src >= self.rows.len()
+            || self
+                .row_key(src)
+                .is_none_or(|key| self.pending.is_deleted(key))
+            || self.columns.get(col).is_none_or(|c| c.read_only)
+    }
+
+    fn commit_input(
+        &mut self,
+        src: usize,
+        col: usize,
+        input: CellInput<'_>,
+    ) -> Result<CellEditResult, GridEditError> {
+        if self.edit_blocked(src, col) {
+            return Err(GridEditError::InvalidTarget);
+        }
+        let value = convert_input(&self.validator, &self.columns[col], input)
+            .map_err(GridEditError::Validation)?;
+        self.cell_errors.remove(&(src, col));
+        if value == *self.value(src, col) {
+            return Ok(CellEditResult::Unchanged);
+        }
+        self.record_cell(src, col, value);
+        Ok(CellEditResult::Changed)
+    }
+
+    /// Applies user-typed text to a cell through the configured parser.
+    ///
+    /// This is the programmatic twin of committing a text editor: `text` goes
+    /// to the parser unchanged (including `""`), a rejection leaves drafts and
+    /// undo untouched, and an accepted value equal to the current one is
+    /// [`CellEditResult::Unchanged`]. Typed model values that are trusted use
+    /// [`DataGrid::record_cell`] instead.
+    pub fn try_edit_text(
+        &mut self,
+        src: usize,
+        col: usize,
+        text: &str,
+    ) -> Result<CellEditResult, GridEditError> {
+        self.commit_input(src, col, CellInput::Text(text))
+    }
+
+    fn finish_text(&mut self) -> Result<FinishEdit, GridEditError> {
+        let e = self.edit.as_ref().ok_or(GridEditError::InvalidTarget)?;
+        let (row, col, text) = (e.row, e.col, e.field.text().to_owned());
+        if !self.session_target_live(row, col, e.generation) {
+            self.edit = None;
+            return Err(GridEditError::InvalidTarget);
+        }
+        match self.commit_input(row, col, CellInput::Text(&text)) {
+            Ok(result) => {
+                self.edit = None;
+                Ok(FinishEdit::Accepted { row, col, result })
+            }
+            Err(err) => {
+                if let Some(e) = self.edit.as_mut() {
+                    e.field.set_error(Some(FieldError::new(err.to_string())));
+                }
+                Err(err)
+            }
+        }
+    }
+
+    fn finish_choice(&mut self, value: String) -> Result<FinishEdit, GridEditError> {
+        let (row, col, generation) = self
+            .choice
+            .as_ref()
+            .map(|c| (c.row, c.col, c.generation))
+            .ok_or(GridEditError::InvalidTarget)?;
+        if !self.session_target_live(row, col, generation) {
+            self.choice = None;
+            return Err(GridEditError::InvalidTarget);
+        }
+        match self.commit_input(row, col, CellInput::Text(&value)) {
+            Ok(result) => {
                 self.choice = None;
-                if let Some(backward) = tab {
-                    match self.next_writable(backward) {
-                        Ok(c) => {
-                            self.set_cursor(self.cursor.0, c, false);
-                            let _ = self.begin_edit();
+                Ok(FinishEdit::Accepted { row, col, result })
+            }
+            Err(err) => {
+                if let Some(c) = self.choice.as_mut() {
+                    c.editor.error = Some(err.to_string());
+                }
+                Err(err)
+            }
+        }
+    }
+
+    /// Commits the live text or choice session explicitly, for hosts that must
+    /// resolve it before they save or close.
+    ///
+    /// With no session nothing is parsed. Otherwise the session's value goes
+    /// through the parser once: a rejection keeps the session, its input and a
+    /// visible error; an accepted value (changed or not) closes it. Choice
+    /// sessions commit their current selection regardless of the blur policy.
+    /// It never navigates and never cancels a live session.
+    pub fn finish_edit_session(&mut self) -> Result<FinishEdit, GridEditError> {
+        match (self.edit.is_some(), self.choice.is_some()) {
+            (false, false) => Ok(FinishEdit::NoSession),
+            (true, true) => Err(GridEditError::InvalidTarget),
+            (true, false) => self.finish_text(),
+            (false, true) => {
+                let value = self
+                    .choice
+                    .as_ref()
+                    .and_then(|c| c.editor.blur_value(&self.editor_config));
+                match value {
+                    Some(v) => self.finish_choice(v),
+                    None => {
+                        let err = GridEditError::NoChoice;
+                        if let Some(c) = self.choice.as_mut() {
+                            c.editor.error = Some(err.to_string());
                         }
-                        Err(leave) => return Some(leave),
+                        Err(err)
                     }
                 }
-                Some(ev)
             }
-            Err(msg) => {
-                if let Some(c) = self.choice.as_mut() {
-                    c.editor.error = Some(msg);
-                }
-                None
+        }
+    }
+
+    fn immediate(
+        &mut self,
+        src: usize,
+        col: usize,
+        input: CellInput<'_>,
+    ) -> (Outcome, Option<GridAction>) {
+        match self.commit_input(src, col, input) {
+            Ok(CellEditResult::Changed) => (
+                Outcome::Changed,
+                Some(GridAction::CellChanged { row: src, col }),
+            ),
+            Ok(CellEditResult::Unchanged) => (Outcome::Consumed, None),
+            Err(GridEditError::Validation(e)) => {
+                self.cell_errors.insert((src, col), e.into_message());
+                (Outcome::Changed, None)
             }
+            Err(_) => (Outcome::Consumed, None),
+        }
+    }
+
+    /// Folds an editor-level outcome and every result it carries through
+    /// [`Self::on_choice`], in order.
+    fn on_choices(
+        &mut self,
+        out: Outcome,
+        results: crate::core::response::Actions<ChoiceResult>,
+    ) -> Response<GridAction> {
+        let mut resp = Response::from(out);
+        for result in results {
+            resp |= self.on_choice(Some(result));
+        }
+        resp
+    }
+
+    /// After a successful commit: land on the next writable cell, or report
+    /// that traversal left the grid at its edge.
+    fn tab_after_commit(&mut self, backward: bool) -> Response<GridAction> {
+        match self.next_writable(backward) {
+            Ok(c) => {
+                self.set_cursor(self.cursor.0, c, false);
+                self.begin_edit_for_traversal()
+            }
+            Err(leave) => Response::emit(leave),
         }
     }
 
@@ -894,6 +1202,9 @@ impl DataGrid {
         self
     }
 
+    /// Sets the parser every user edit goes through, with the raw text of the
+    /// edit (`""` included). Delete and the nullable Bool cycle present the
+    /// reserved token `null` and must get `CellValue::Null` back.
     pub fn validator(
         mut self,
         f: impl Fn(&ColumnSpec, &str) -> Result<CellValue, String> + 'static,
@@ -1019,6 +1330,9 @@ impl DataGrid {
     pub fn rows(&self) -> &[Vec<CellValue>] {
         &self.rows
     }
+    pub fn columns(&self) -> &[ColumnSpec] {
+        &self.columns
+    }
     pub fn source_row(&self, display: usize) -> usize {
         self.order.get(display).copied().unwrap_or(display)
     }
@@ -1095,18 +1409,33 @@ impl DataGrid {
         !self.pending.is_empty() || !self.undo.is_empty()
     }
 
-    pub fn set_rows(&mut self, data: GridRows) {
-        let keys = self.alloc_keys(data.rows.len());
-        self.install_rows(data, keys);
+    pub fn try_set_rows(&mut self, data: GridRows) -> Result<(), GridDataError> {
+        let rows = normalize_rows(self.columns.len(), data.rows, 0)?;
+        let keys = self.alloc_keys(rows.len());
+        self.install_rows(GridRows { rows, ..data }, keys);
+        Ok(())
     }
 
     pub fn try_set_rows_keyed(
         &mut self,
         data: GridRows,
         keys: Vec<ItemKey>,
-    ) -> Result<(), GridKeyError> {
+    ) -> Result<(), GridDataError> {
         validate_row_keys(data.rows.len(), &keys)?;
-        self.install_rows(data, keys);
+        let rows = normalize_rows(self.columns.len(), data.rows, 0)?;
+        self.install_rows(GridRows { rows, ..data }, keys);
+        Ok(())
+    }
+
+    pub fn try_set_model(
+        &mut self,
+        columns: Vec<ColumnSpec>,
+        data: GridRows,
+    ) -> Result<(), GridDataError> {
+        validate_column_widths(&columns)?;
+        let rows = normalize_rows(columns.len(), data.rows, 0)?;
+        let keys = self.alloc_keys(rows.len());
+        self.install_model(columns, GridRows { rows, ..data }, keys);
         Ok(())
     }
 
@@ -1115,15 +1444,21 @@ impl DataGrid {
         columns: Vec<ColumnSpec>,
         data: GridRows,
         keys: Vec<ItemKey>,
-    ) -> Result<(), GridKeyError> {
+    ) -> Result<(), GridDataError> {
+        validate_column_widths(&columns)?;
         validate_row_keys(data.rows.len(), &keys)?;
+        let rows = normalize_rows(columns.len(), data.rows, 0)?;
+        self.install_model(columns, GridRows { rows, ..data }, keys);
+        Ok(())
+    }
+
+    fn install_model(&mut self, columns: Vec<ColumnSpec>, data: GridRows, keys: Vec<ItemKey>) {
         self.sizing.reset();
         self.sort = self.sort.filter(|&(c, _)| c < columns.len());
         self.filtered_cols.retain(|&c| c < columns.len());
         self.cursor.1 = self.cursor.1.min(columns.len().saturating_sub(1));
         self.columns = columns;
         self.install_rows(data, keys);
-        Ok(())
     }
 
     fn install_rows(&mut self, data: GridRows, keys: Vec<ItemKey>) {
@@ -1148,14 +1483,15 @@ impl DataGrid {
         self.scroll.ensure_visible(self.cursor.0);
     }
 
-    pub fn append_rows(&mut self, data: GridRows) {
+    pub fn try_append_rows(&mut self, data: GridRows) -> Result<(), GridDataError> {
         let start = self.rows.len();
         let appended = !data.rows.is_empty();
         let cursor_key = self.view_key(self.cursor.0, self.cursor.1);
         let anchor_key = self.anchor.and_then(|(d, c)| self.view_key(d, c));
+        let rows = normalize_rows(self.columns.len(), data.rows, start)?;
         let revision = self.next_revision(true, false);
-        let keys = self.alloc_keys(data.rows.len());
-        self.rows.extend(data.rows);
+        let keys = self.alloc_keys(rows.len());
+        self.rows.extend(rows);
         for (offset, key) in keys.into_iter().enumerate() {
             self.row_keys.push(key);
             self.key_to_source.insert(key, start + offset);
@@ -1172,6 +1508,7 @@ impl DataGrid {
         if appended {
             self.scroll.ensure_visible(self.cursor.0);
         }
+        Ok(())
     }
 
     pub fn set_loading(&mut self, on: bool) {
@@ -1329,16 +1666,32 @@ impl DataGrid {
             && self.read_only_reason_at_cursor().is_none()
     }
 
-    pub fn begin_edit(&mut self) -> (Outcome, Option<GridAction>) {
+    /// Explicit activation of the cursor cell (Enter, F2, double click):
+    /// toggles flip, viewers are requested and editors open.
+    pub fn begin_edit(&mut self) -> Response<GridAction> {
+        self.open_editor(false)
+    }
+
+    /// Passive arrival at a cell (Tab traversal): text and choice editors
+    /// open, but toggle, boolean, JSON and long-text cells are only revealed.
+    fn begin_edit_for_traversal(&mut self) -> Response<GridAction> {
+        self.open_editor(true)
+    }
+
+    fn open_editor(&mut self, traversal: bool) -> Response<GridAction> {
+        self.clamp_cursor();
         let Some(src) = self.cursor_src() else {
-            return (Outcome::Consumed, None);
+            return Response::consumed();
         };
-        if !self.editable {
-            return (Outcome::Consumed, None);
+        if !self.editable || self.columns.is_empty() {
+            return Response::consumed();
         }
         let col = self.cursor.1;
         if let Some(reason) = self.read_only_reason_at_cursor() {
-            return (Outcome::Changed, Some(GridAction::ReadOnly { reason }));
+            if traversal {
+                return Response::changed();
+            }
+            return Response::emit(GridAction::ReadOnly { reason });
         }
 
         self.scroll.ensure_visible(self.cursor.0);
@@ -1349,10 +1702,10 @@ impl DataGrid {
         if spec.editor.is_constrained() {
             let raw = v.edit_text();
             if let Some(next) = spec.editor.toggled(&raw) {
-                return match self.apply_choice(src, col, next) {
-                    Ok(ev) => (Outcome::Changed, Some(ev)),
-                    Err(_) => (Outcome::Consumed, None),
-                };
+                if traversal {
+                    return Response::changed();
+                }
+                return self.immediate(src, col, CellInput::Text(&next)).into();
             }
             let opened =
                 ChoiceEditor::open(self.choice_id(), &spec.editor, &raw, &self.editor_config);
@@ -1362,34 +1715,28 @@ impl DataGrid {
                 editor,
                 generation: self.structural_generation,
             });
-            return (Outcome::Changed, None);
+            return Response::changed();
+        }
+        if traversal
+            && (matches!(spec.kind, CellKind::Bool | CellKind::Json)
+                || matches!(spec.kind, CellKind::Text if self.is_long_text(&v, col)))
+        {
+            return Response::changed();
         }
         match spec.kind {
             CellKind::Bool => {
                 let next = match v {
-                    CellValue::Bool(true) => CellValue::Bool(false),
-                    CellValue::Bool(false) if spec.nullable => CellValue::Null,
-                    _ => CellValue::Bool(true),
+                    CellValue::Bool(true) => CellInput::Text("false"),
+                    CellValue::Bool(false) if spec.nullable => CellInput::Null,
+                    _ => CellInput::Text("true"),
                 };
-                self.record_cell(src, col, next);
-                return (
-                    Outcome::Changed,
-                    Some(GridAction::CellChanged { row: src, col }),
-                );
+                return self.immediate(src, col, next).into();
             }
             CellKind::Json => {
-                return (
-                    Outcome::Changed,
-                    Some(GridAction::OpenViewer { row: src, col }),
-                );
+                return Response::emit(GridAction::OpenViewer { row: src, col });
             }
-            CellKind::Text
-                if width(&v.text()) > 2 * self.widths.get(col).copied().unwrap_or(20) as usize =>
-            {
-                return (
-                    Outcome::Changed,
-                    Some(GridAction::OpenViewer { row: src, col }),
-                );
+            CellKind::Text if self.is_long_text(&v, col) => {
+                return Response::emit(GridAction::OpenViewer { row: src, col });
             }
             _ => {}
         }
@@ -1397,7 +1744,7 @@ impl DataGrid {
 
         let (parser, spec) = (self.validator.clone(), self.columns[col].clone());
         field.validator = Some(Validator::new(move |text| {
-            parse_cell(&parser, &spec, text).map(|_| ())
+            convert_input(&parser, &spec, CellInput::Text(text)).map(|_| ())
         }));
         self.edit = Some(EditState {
             row: src,
@@ -1405,28 +1752,21 @@ impl DataGrid {
             field,
             generation: self.structural_generation,
         });
-        (Outcome::Changed, None)
+        Response::changed()
+    }
+
+    fn is_long_text(&self, v: &CellValue, col: usize) -> bool {
+        width(&v.text()) > 2 * self.widths.get(col).copied().unwrap_or(20) as usize
     }
 
     pub fn commit_edit(&mut self) -> Option<GridAction> {
-        let mut e = self.edit.take()?;
-        if !self.session_target_live(e.row, e.col, e.generation) {
-            return None;
-        }
-        let parsed = parse_cell(&self.validator, &self.columns[e.col], e.field.text());
-        match parsed {
-            Ok(v) => {
-                self.record_cell(e.row, e.col, v);
-                Some(GridAction::CellChanged {
-                    row: e.row,
-                    col: e.col,
-                })
-            }
-            Err(err) => {
-                e.field.set_error(Some(err));
-                self.edit = Some(e);
-                None
-            }
+        match self.finish_text().ok()? {
+            FinishEdit::Accepted {
+                row,
+                col,
+                result: CellEditResult::Changed,
+            } => Some(GridAction::CellChanged { row, col }),
+            _ => None,
         }
     }
 
@@ -1451,7 +1791,7 @@ impl DataGrid {
             && self.rows.get(row).is_some_and(|r| col < r.len())
     }
 
-    pub fn on_blur(&mut self) -> (Outcome, Option<GridAction>) {
+    pub fn on_blur(&mut self) -> Response<GridAction> {
         if let Some(c) = &self.choice {
             let r = match self.editor_config.blur {
                 BlurAction::Commit => match c.editor.blur_value(&self.editor_config) {
@@ -1459,23 +1799,26 @@ impl DataGrid {
                     None => ChoiceResult::Cancel,
                 },
                 BlurAction::Cancel => ChoiceResult::Cancel,
-                BlurAction::Keep => return (Outcome::Ignored, None),
+                BlurAction::Keep => return Response::ignored(),
             };
-            return (Outcome::Changed, self.on_choice(Some(r)));
+            return Response::changed() | self.on_choice(Some(r));
         }
         if self.edit.is_none() {
-            return (Outcome::Ignored, None);
+            return Response::ignored();
         }
         match self.blur_action {
-            BlurAction::Commit => (Outcome::Changed, self.commit_edit()),
+            BlurAction::Commit => Response::from((Outcome::Changed, self.commit_edit())),
             BlurAction::Cancel => {
                 self.cancel_edit();
-                (Outcome::Changed, None)
+                Response::changed()
             }
-            BlurAction::Keep => (Outcome::Ignored, None),
+            BlurAction::Keep => Response::ignored(),
         }
     }
 
+    /// Records an already-typed value as a draft. This is trusted model input
+    /// (seeding, previews): it skips the configured parser and eligibility
+    /// checks. User edits go through [`DataGrid::try_edit_text`] instead.
     pub fn record_cell(&mut self, src: usize, col: usize, value: CellValue) -> bool {
         let Some(&key) = self.row_keys.get(src) else {
             return false;
@@ -1680,7 +2023,7 @@ impl DataGrid {
     }
 
     pub fn insert_row(&mut self) -> Option<GridAction> {
-        if !self.editable {
+        if !self.editable || self.columns.is_empty() {
             return None;
         }
         let row: Vec<CellValue> = self
@@ -1881,6 +2224,11 @@ impl DataGrid {
         self.revision = revision;
     }
 
+    fn clamp_cursor(&mut self) {
+        self.cursor.0 = self.cursor.0.min(self.content_rows().saturating_sub(1));
+        self.cursor.1 = self.cursor.1.min(self.columns.len().saturating_sub(1));
+    }
+
     fn set_cursor(&mut self, row: usize, col: usize, extend: bool) {
         let n = self.content_rows();
         let row = row.min(n.saturating_sub(1));
@@ -1930,7 +2278,10 @@ impl DataGrid {
             let (c0, c1) = (a.1.min(self.cursor.1), a.1.max(self.cursor.1));
             if with_header {
                 out.push_str(
-                    &self.columns[c0..=c1]
+                    &self
+                        .columns
+                        .get(c0..=c1)
+                        .unwrap_or_default()
                         .iter()
                         .map(|c| c.name.as_str())
                         .collect::<Vec<_>>()
@@ -1975,10 +2326,11 @@ impl DataGrid {
         out
     }
 
-    pub fn on_key(&mut self, key: &Key) -> (Outcome, Option<GridAction>) {
+    pub fn on_key(&mut self, key: &Key) -> Response<GridAction> {
+        self.clamp_cursor();
         if let Some(c) = self.choice.as_mut() {
             let (out, r) = c.editor.on_key(key, &self.editor_config);
-            return (out, self.on_choice(r));
+            return Response::from(out) | self.on_choice(r);
         }
 
         if key.code == KeyCode::Down
@@ -1995,42 +2347,25 @@ impl DataGrid {
             let r = e.field.on_key(key);
             return match r.exit {
                 Some(EditExit::Commit) => match self.commit_edit() {
-                    Some(ev) => (Outcome::Changed, Some(ev)),
-                    None => (Outcome::Changed, None),
+                    Some(ev) => Response::emit(ev),
+                    None => Response::changed(),
                 },
                 Some(EditExit::Cancel) => {
                     self.cancel_edit();
-                    (Outcome::Changed, None)
+                    Response::changed()
                 }
                 Some(EditExit::Tab { backward }) => {
-                    let ev = self.commit_edit();
+                    let committed = self.commit_edit();
                     if self.edit.is_some() {
-                        return (Outcome::Changed, None);
+                        return Response::changed();
                     }
-
-                    let n = self.columns.len();
-                    let mut col = self.cursor.1;
-                    loop {
-                        if backward {
-                            if col == 0 {
-                                return (Outcome::Changed, Some(GridAction::LeaveBackward));
-                            }
-                            col -= 1;
-                        } else {
-                            col += 1;
-                            if col >= n {
-                                return (Outcome::Changed, Some(GridAction::LeaveForward));
-                            }
-                        }
-                        if !self.columns[col].read_only && !self.columns[col].primary {
-                            break;
-                        }
+                    let mut resp = Response::changed();
+                    if let Some(action) = committed {
+                        resp.push_action(action);
                     }
-                    self.set_cursor(self.cursor.0, col, false);
-                    let _ = self.begin_edit();
-                    (Outcome::Changed, ev)
+                    resp.merge(self.tab_after_commit(backward))
                 }
-                None => (r.outcome, None),
+                None => Response::from(r.outcome),
             };
         }
 
@@ -2040,11 +2375,13 @@ impl DataGrid {
         let n_rows = self.content_rows();
         if n_rows == 0 {
             return match lookup(&self.keymap, key) {
-                Some(GridCmd::InsertRow) if self.editable => (Outcome::Changed, self.insert_row()),
-                Some(GridCmd::Refresh) => (Outcome::Changed, Some(GridAction::Refresh)),
-                Some(GridCmd::FilterOnCell) => (Outcome::Changed, Some(GridAction::OpenFilters)),
-                Some(GridCmd::ClearFilters) => (Outcome::Changed, Some(GridAction::ClearFilters)),
-                _ => (Outcome::Ignored, None),
+                Some(GridCmd::InsertRow) if self.editable => {
+                    Response::from((Outcome::Changed, self.insert_row()))
+                }
+                Some(GridCmd::Refresh) => Response::emit(GridAction::Refresh),
+                Some(GridCmd::FilterOnCell) => Response::emit(GridAction::OpenFilters),
+                Some(GridCmd::ClearFilters) => Response::emit(GridAction::ClearFilters),
+                _ => Response::ignored(),
             };
         }
         if let Some(KeyStep::Type(ch)) = KeyStep::ordered(
@@ -2069,12 +2406,12 @@ impl DataGrid {
             if let Moved::To(d) = moved {
                 self.set_cursor(d, c, false);
             }
-            return (moved.outcome(), None);
+            return Response::from(moved.outcome());
         }
 
         let copy = (key.ctrl_char('c') && self.has_selection()).then_some(GridCmd::Copy);
         if let Some(action) = lookup(&self.keymap, key).or(copy) {
-            return self.on_action(action);
+            return self.on_action(action).into();
         }
         if let Some(nav) = self.nav.action(key) {
             let letter = matches!(key.code, KeyCode::Char(_));
@@ -2106,41 +2443,41 @@ impl DataGrid {
                 Nav::Home => self.set_cursor(r, 0, shift),
                 Nav::End => self.set_cursor(r, usize::MAX, shift),
             }
-            return (Outcome::Changed, None);
+            return Response::changed();
         }
         match key.code {
             KeyCode::Enter | KeyCode::F(2) => {
                 if self.on_more_row() {
-                    return (Outcome::Changed, Some(GridAction::FetchMore));
+                    return Response::emit(GridAction::FetchMore);
                 }
                 if !self.editable {
                     if let Some(reason) = self.read_only_reason_at_cursor() {
-                        return (Outcome::Changed, Some(GridAction::ReadOnly { reason }));
+                        return Response::emit(GridAction::ReadOnly { reason });
                     }
-                    return (
+                    return Response::from((
                         Outcome::Changed,
                         self.cursor_src().map(GridAction::Activated),
-                    );
+                    ));
                 }
                 self.begin_edit()
             }
             KeyCode::Char(' ') => {
                 if self.on_more_row() {
-                    return (Outcome::Changed, Some(GridAction::FetchMore));
+                    return Response::emit(GridAction::FetchMore);
                 }
                 self.select_rows(SelectGesture::Toggle, self.cursor.0);
-                (Outcome::Changed, None)
+                Response::changed()
             }
             KeyCode::Esc => {
                 if self.anchor.is_some() || !self.selection.is_empty() {
                     self.anchor = None;
                     self.selection.clear();
-                    (Outcome::Changed, None)
+                    Response::changed()
                 } else {
-                    (Outcome::Ignored, None)
+                    Response::ignored()
                 }
             }
-            _ => (Outcome::Ignored, None),
+            _ => Response::ignored(),
         }
     }
 
@@ -2185,6 +2522,7 @@ impl DataGrid {
     }
 
     fn on_action(&mut self, action: GridCmd) -> (Outcome, Option<GridAction>) {
+        self.clamp_cursor();
         let c = self.cursor.1;
         match action {
             GridCmd::ClearCell => {
@@ -2208,21 +2546,13 @@ impl DataGrid {
                 let Some(src) = self.cursor_src() else {
                     return (Outcome::Consumed, None);
                 };
-                let spec = &self.columns[c];
+                let Some(spec) = self.columns.get(c) else {
+                    return (Outcome::Consumed, None);
+                };
                 if spec.read_only {
                     return (Outcome::Consumed, None);
                 }
-                if spec.nullable {
-                    self.record_cell(src, c, CellValue::Null);
-                    (
-                        Outcome::Changed,
-                        Some(GridAction::CellChanged { row: src, col: c }),
-                    )
-                } else {
-                    self.cell_errors
-                        .insert((src, c), format!("{} is NOT NULL", spec.name));
-                    (Outcome::Changed, None)
-                }
+                self.immediate(src, c, CellInput::Null)
             }
             GridCmd::ToggleDelete => {
                 let Some(src) = self.cursor_src() else {
@@ -2242,7 +2572,7 @@ impl DataGrid {
             ),
             GridCmd::Commit => (Outcome::Changed, Some(GridAction::CommitRequested)),
             GridCmd::Sort => {
-                if !self.columns[c].sortable {
+                if !self.columns.get(c).is_some_and(|spec| spec.sortable) {
                     return (Outcome::Consumed, None);
                 }
                 let next = match self.sort {
@@ -2280,7 +2610,10 @@ impl DataGrid {
             }
             GridCmd::PreviewSql => (Outcome::Changed, Some(GridAction::PreviewSql)),
             GridCmd::FollowReference => {
-                if self.columns[c].references.is_some()
+                if self
+                    .columns
+                    .get(c)
+                    .is_some_and(|spec| spec.references.is_some())
                     && let Some(src) = self.cursor_src()
                 {
                     return (
@@ -2393,7 +2726,7 @@ impl DataGrid {
         Outcome::Changed
     }
 
-    pub fn on_click(&mut self, id: WidgetId, pos: Position) -> (Outcome, Option<GridAction>) {
+    pub fn on_click(&mut self, id: WidgetId, pos: Position) -> Response<GridAction> {
         self.on_click_with(id, pos, KeyModifiers::NONE, 1)
     }
 
@@ -2419,16 +2752,17 @@ impl DataGrid {
         pos: Position,
         mods: KeyModifiers,
         count: u8,
-    ) -> (Outcome, Option<GridAction>) {
+    ) -> Response<GridAction> {
         let count = count.max(1);
+        self.clamp_cursor();
         if self.seam_of(id).is_some() {
             self.sizing.release();
-            return (Outcome::Consumed, None);
+            return Response::consumed();
         }
         if let Some(c) = self.choice.as_mut() {
             if c.editor.contains_id(id) {
                 let (out, r) = c.editor.on_click(id);
-                return (out, self.on_choice(r));
+                return Response::from(out) | self.on_choice(r);
             }
 
             self.choice = None;
@@ -2438,51 +2772,54 @@ impl DataGrid {
             return self.begin_edit();
         }
         if id == self.bar[0].id && self.bar[0].on_click() {
-            return (Outcome::Changed, Some(GridAction::PreviewSql));
+            return Response::emit(GridAction::PreviewSql);
         }
         if id == self.bar[1].id && self.bar[1].on_click() {
-            return (Outcome::Changed, Some(GridAction::DiscardRequested));
+            return Response::emit(GridAction::DiscardRequested);
         }
         if id == self.bar[2].id && self.bar[2].on_click() {
-            return (Outcome::Changed, Some(GridAction::CommitRequested));
+            return Response::emit(GridAction::CommitRequested);
         }
         if id == self.more_id() {
             self.set_cursor(self.rows.len(), self.cursor.1, false);
-            return (Outcome::Changed, Some(GridAction::FetchMore));
+            return Response::emit(GridAction::FetchMore);
         }
         if id == self.left_id() {
             self.scroll.h.scroll_by(-1);
-            return (Outcome::Changed, None);
+            return Response::changed();
         }
         if id == self.right_id() {
             self.scroll.h.scroll_by(1);
-            return (Outcome::Changed, None);
+            return Response::changed();
         }
         if scrollbar::is_bar_of(id, self.id) {
-            return (self.bar_press(pos).outcome().or(Outcome::Consumed), None);
+            return Response::from(self.bar_press(pos).outcome().or(Outcome::Consumed));
         }
         if let Some(c) = self.header_of(id) {
+            let mut committed = Response::ignored();
             if self.edit.is_some() {
-                self.commit_edit();
+                if let Some(action) = self.commit_edit() {
+                    committed.push_action(action);
+                }
                 if self.edit.is_some() {
-                    return (Outcome::Changed, None);
+                    return Response::changed();
                 }
             }
             if !self.columns[c].sortable {
-                return (Outcome::Consumed, None);
+                return committed | Response::consumed();
             }
             let next = match self.sort {
                 Some((sc, SortDir::Asc)) if sc == c => Some((c, SortDir::Desc)),
                 Some((sc, SortDir::Desc)) if sc == c => None,
                 _ => Some((c, SortDir::Asc)),
             };
-            return self.request_sort(next);
+            return committed | self.request_sort(next).into();
         }
         if let Some(d) = self.rownum_of(id) {
             if let Some(GridDrag::Rows { id: from_id, .. }) = self.drag.take()
                 && from_id == id
             {
-                return (Outcome::Changed, None);
+                return Response::changed();
             }
             if d < self.order.len() {
                 let from = self.cursor.0;
@@ -2490,9 +2827,10 @@ impl DataGrid {
                 let g = SelectGesture::from_mods(mods, self.toggle_mods, from);
                 self.select_rows(g, d);
             }
-            return (Outcome::Changed, None);
+            return Response::changed();
         }
         if let Some((d, c)) = self.cell_of(id) {
+            let mut committed = Response::ignored();
             if let Some(e) = &self.edit {
                 if self.order.get(d) == Some(&e.row) && e.col == c {
                     if let Some(at) = self.edit_offset(pos)
@@ -2500,43 +2838,53 @@ impl DataGrid {
                     {
                         e.field.click(at, count, false);
                     }
-                    return (Outcome::Changed, None);
+                    return Response::changed();
                 }
-                self.commit_edit();
+                if let Some(action) = self.commit_edit() {
+                    committed.push_action(action);
+                }
                 if self.edit.is_some() {
-                    return (Outcome::Changed, None);
+                    return Response::changed();
                 }
             }
-            let same = self.cursor == (d, c) && self.anchor.is_none();
-
-            if let Some(rect) = self.col_rects.get(c.saturating_sub(self.scroll.h.offset))
-                && self.columns[c].references.is_some()
-                && pos.x + 1 == rect.right()
-                && let Some(&src) = self.order.get(d)
-            {
-                return (
-                    Outcome::Changed,
-                    Some(GridAction::FollowReference { row: src, col: c }),
-                );
-            }
-
-            let extend = mods.contains(KeyModifiers::SHIFT);
-            self.point_cursor(d, c, extend);
-            if extend {
-                return (Outcome::Changed, None);
-            }
-            if self.editable && self.click.edits(count, same) {
-                return self.begin_edit();
-            }
-            if !self.editable && self.click.activates(count, same) {
-                return (
-                    Outcome::Changed,
-                    self.cursor_src().map(GridAction::Activated),
-                );
-            }
-            return (Outcome::Changed, None);
+            return committed | self.click_cell_after_commit(d, c, pos, mods, count);
         }
-        (Outcome::Ignored, None)
+        Response::ignored()
+    }
+
+    fn click_cell_after_commit(
+        &mut self,
+        d: usize,
+        c: usize,
+        pos: Position,
+        mods: KeyModifiers,
+        count: u8,
+    ) -> Response<GridAction> {
+        let same = self.cursor == (d, c) && self.anchor.is_none();
+
+        if let Some(rect) = self.col_rects.get(c.saturating_sub(self.scroll.h.offset))
+            && self.columns[c].references.is_some()
+            && pos.x + 1 == rect.right()
+            && let Some(&src) = self.order.get(d)
+        {
+            return Response::emit(GridAction::FollowReference { row: src, col: c });
+        }
+
+        let extend = mods.contains(KeyModifiers::SHIFT);
+        self.point_cursor(d, c, extend);
+        if extend {
+            return Response::changed();
+        }
+        if self.editable && self.click.edits(count, same) {
+            return self.begin_edit();
+        }
+        if !self.editable && self.click.activates(count, same) {
+            return Response::from((
+                Outcome::Changed,
+                self.cursor_src().map(GridAction::Activated),
+            ));
+        }
+        Response::changed()
     }
 
     pub fn on_drag(&mut self, pressed: WidgetId, pos: Position) -> Outcome {
@@ -2787,6 +3135,7 @@ impl DataGrid {
         if area.is_empty() || area.height < 2 {
             return;
         }
+        self.clamp_cursor();
         self.area = area;
         let t = ctx.theme;
         let focused = ctx.interaction.focused(self.id);
@@ -3519,7 +3868,9 @@ impl crate::core::focus::BlurTarget for DataGrid {
         self.id
     }
     fn blur(&mut self) -> Outcome {
-        self.on_blur().0
+        // `BlurTarget` reports only an outcome; hosts that need the commit
+        // action call `DataGrid::on_blur` directly.
+        self.on_blur().erase().outcome()
     }
 }
 
@@ -3584,8 +3935,8 @@ impl crate::core::pointer::MouseTarget for DataGrid {
             && ev.on(c.editor.id)
             && ev.wheel().is_none()
         {
-            let (out, r) = c.editor.pointer(ev).into_parts();
-            return (out, self.on_choice(r)).into();
+            let (out, results) = c.editor.pointer(ev).into_parts();
+            return self.on_choices(out, results);
         }
 
         if (ev.on(self.id) || ev.wheel().is_some())
@@ -3597,7 +3948,7 @@ impl crate::core::pointer::MouseTarget for DataGrid {
         match ev.phase() {
             Some(Phase::Press) => self.on_press(id, pos, ev.count()).into(),
             Some(Phase::Drag) => self.on_drag(id, pos).into(),
-            Some(Phase::Click) => self.on_click_with(id, pos, ev.mods(), ev.count()).into(),
+            Some(Phase::Click) => self.on_click_with(id, pos, ev.mods(), ev.count()),
             _ => Response::ignored(),
         }
     }

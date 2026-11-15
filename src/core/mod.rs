@@ -1,3 +1,4 @@
+pub mod data;
 pub mod edit;
 pub mod event;
 pub mod focus;
@@ -6,6 +7,7 @@ pub mod hit;
 pub mod id;
 pub mod intent;
 pub mod keyboard;
+pub mod keyed;
 pub mod keymap;
 pub mod list;
 pub mod nav;
@@ -18,3 +20,5 @@ pub mod shape;
 pub mod text;
 pub(crate) mod text_index;
 pub mod typeahead;
+#[cfg(test)]
+pub(crate) mod work;

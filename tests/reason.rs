@@ -185,6 +185,11 @@ mod item_eligibility {
         )
     }
 
+    fn parts<A>(r: junie_tui::core::response::Response<A>) -> (Outcome, Option<A>) {
+        let (out, actions) = r.into_parts();
+        (out, actions.into_iter().next())
+    }
+
     fn completion(items: Vec<Item>) -> Completion {
         let mut c = Completion::new(WidgetId::of("t.completion"));
         c.open(items, Rect::new(4, 2, 1, 1), 2);
@@ -230,7 +235,7 @@ mod item_eligibility {
             let mut c = completion(mixed());
             let hits = render_completion(&mut c);
             let ev = click(&hits, c.row_id(row), 1);
-            let (out, action) = c.route(&ev).expect("popup row is hit").into_parts();
+            let (out, action) = parts(c.route(&ev).expect("popup row is hit"));
             assert!(out.consumed(), "a click on a disabled row is consumed");
             assert_eq!(action, None, "row {row} is disabled and never accepts");
             assert_eq!(
@@ -243,7 +248,8 @@ mod item_eligibility {
         let hits = render_completion(&mut c);
         let ev = click(&hits, c.row_id(2), 1);
         assert_eq!(
-            c.route(&ev).and_then(|r| r.into_action()),
+            c.route(&ev)
+                .and_then(|r| r.into_actions().into_iter().next()),
             Some(CompletionAction::Accept(2))
         );
     }
@@ -277,7 +283,9 @@ mod item_eligibility {
     fn issue36_completion_apply_rechecks_eligibility() {
         let mut c = completion(mixed());
         let accepted = 2;
-        c.items[accepted].disabled = true;
+        let mut items = c.items().to_vec();
+        items[accepted].disabled = true;
+        c.set_items(items);
         for stale in [0, 1, accepted, 9] {
             let mut buffer = TextBuffer::single("ab");
             buffer.select_range(0, 1);
@@ -299,7 +307,9 @@ mod item_eligibility {
         }
 
         let mut c = completion(mixed());
-        c.items.truncate(2);
+        let mut items = c.items().to_vec();
+        items.truncate(2);
+        c.set_items(items);
         let mut buffer = TextBuffer::single("ab");
         assert!(!c.apply(2, &mut buffer));
         assert_eq!(buffer.text(), "ab", "a removed item cannot be applied");
@@ -325,7 +335,8 @@ mod item_eligibility {
         let rows = (0..2)
             .map(|_| vec![Cell::new("one"), Cell::new("a"), Cell::new("off")])
             .collect();
-        let mut t = DataTable::new(WidgetId::of("t.table"), columns, rows)
+        let mut t = DataTable::try_new(WidgetId::of("t.table"), columns, rows)
+            .unwrap()
             .cell_nav(true)
             .editor_config(EditorConfig {
                 affordance: Affordance::Always,
@@ -341,7 +352,7 @@ mod item_eligibility {
     }
 
     fn cells(t: &DataTable) -> Vec<Vec<String>> {
-        t.rows
+        t.rows()
             .iter()
             .map(|r| r.iter().map(|c| c.text.clone()).collect())
             .collect()
@@ -355,7 +366,7 @@ mod item_eligibility {
                 let mut t = table();
                 t.cursor_row = 0;
                 t.cursor_col = col;
-                let (out, action) = t.on_key(&key(code));
+                let (out, action) = parts(t.on_key(&key(code)));
                 assert!(out.consumed(), "col {col} {code:?} is consumed");
                 assert_eq!(action, None, "col {col} {code:?} claims no change");
                 assert!(!t.is_editing(), "col {col} {code:?} opens no editor");
@@ -366,7 +377,7 @@ mod item_eligibility {
             t.cursor_col = col;
             let hits = render_table(&mut t);
             let ev = click(&hits, t.cell_id(0, col), 2);
-            let (_, action) = t.route(&ev).expect("cell is hit").into_parts();
+            let (_, action) = parts(t.route(&ev).expect("cell is hit"));
             assert_eq!(action, None, "col {col} double-click claims no change");
             assert!(!t.is_editing(), "col {col} double-click opens no editor");
             assert_eq!(
@@ -383,13 +394,13 @@ mod item_eligibility {
         let hits = render_table(&mut t);
         let affordance = t.open_id(0, 1);
         let ev = click(&hits, affordance, 1);
-        let (_, action) = t.route(&ev).expect("affordance is hit").into_parts();
+        let (_, action) = parts(t.route(&ev).expect("affordance is hit"));
         assert_eq!(action, None);
         assert!(!t.is_editing(), "the popup affordance opens nothing");
 
         t.cursor_row = 1;
         t.cursor_col = 1;
-        t.on_key(&key(KeyCode::F(2)));
+        let _ = t.on_key(&key(KeyCode::F(2)));
         assert!(t.is_editing(), "an enabled row still edits");
     }
 
@@ -397,13 +408,13 @@ mod item_eligibility {
         let mut t = table();
         t.cursor_row = 1;
         t.cursor_col = col;
-        t.on_key(&key(KeyCode::F(2)));
+        let _ = t.on_key(&key(KeyCode::F(2)));
         assert!(t.is_editing(), "col {col} editor opens on the enabled row");
         if col == 0 {
-            t.on_key(&key(KeyCode::Char('x')));
+            let _ = t.on_key(&key(KeyCode::Char('x')));
         } else {
             render_table(&mut t);
-            t.on_key(&key(KeyCode::Down));
+            let _ = t.on_key(&key(KeyCode::Down));
         }
         t
     }
@@ -425,10 +436,10 @@ mod item_eligibility {
                 "col {col}: no popup region survives a redraw"
             );
             for code in [KeyCode::Enter, KeyCode::Tab] {
-                let (_, action) = t.on_key(&key(code));
+                let (_, action) = parts(t.on_key(&key(code)));
                 assert!(!commits(action), "col {col}: {code:?} commits nothing");
             }
-            assert!(!commits(t.on_blur()));
+            assert!(!commits(t.on_blur().into_actions().into_iter().next()));
             assert_eq!(cells(&t), pristine, "col {col}: the cell is unchanged");
             t.set_row_disabled(1, false);
             assert!(
@@ -440,9 +451,12 @@ mod item_eligibility {
                 let mut t = editing(col);
                 t.disabled.insert(1);
                 let (out, action) = match finish {
-                    0 => t.on_key(&key(KeyCode::Enter)),
-                    1 => t.on_key(&key(KeyCode::Tab)),
-                    _ => (Outcome::Changed, t.on_blur()),
+                    0 => parts(t.on_key(&key(KeyCode::Enter))),
+                    1 => parts(t.on_key(&key(KeyCode::Tab))),
+                    _ => (
+                        Outcome::Changed,
+                        t.on_blur().into_actions().into_iter().next(),
+                    ),
                 };
                 assert!(out.consumed());
                 assert!(
@@ -453,7 +467,7 @@ mod item_eligibility {
                 assert_eq!(cells(&t), pristine, "col {col} finish {finish}: unchanged");
                 let hits = render_table(&mut t);
                 assert!(hits.regions().iter().all(|r| r.owner != t.choice_id()));
-                let (_, again) = t.on_key(&key(KeyCode::Enter));
+                let (_, again) = parts(t.on_key(&key(KeyCode::Enter)));
                 assert!(!commits(again), "no second event on a later key");
             }
         }

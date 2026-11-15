@@ -382,12 +382,14 @@ impl InspectChanges {
         }
         match self.region {
             Region::Tree => {
-                let (o, ev) = self.tree.on_key(key);
-                if let Some(TreeAction::Activate(path)) = ev
-                    && let Some(i) = self.file_of_path(&path)
-                {
-                    self.select_file(i);
-                    return Outcome::Changed;
+                let (o, actions) = self.tree.on_key(key).into_parts();
+                for action in actions {
+                    if let TreeAction::Activate(path) = action
+                        && let Some(i) = self.file_of_path(&path)
+                    {
+                        self.select_file(i);
+                        return Outcome::Changed;
+                    }
                 }
 
                 if o == Outcome::Changed
@@ -770,11 +772,13 @@ impl<R: From<InspectOutcome> + 'static, W: 'static> Layer<R, W> for InspectChang
             if click {
                 self.set_region(Region::Tree, focus);
             }
-            let (o, act) = r.into_parts();
-            if let Some(TreeAction::Activate(path)) = act
-                && let Some(i) = self.file_of_path(&path)
-            {
-                self.select_file(i);
+            let (o, actions) = r.into_parts();
+            for action in actions {
+                if let TreeAction::Activate(path) = action
+                    && let Some(i) = self.file_of_path(&path)
+                {
+                    self.select_file(i);
+                }
             }
             return if click { o.or(Outcome::Changed) } else { o };
         }

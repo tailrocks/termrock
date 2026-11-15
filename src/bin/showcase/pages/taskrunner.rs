@@ -440,7 +440,7 @@ impl Page for TaskRunnerPage {
                     return Outcome::Ignored;
                 };
                 if f == self.tree.id {
-                    return self.tree.on_key(key).0;
+                    return self.tree.on_key(key).outcome();
                 }
                 if f == self.log.id {
                     return self.log.on_key(key);
@@ -479,13 +479,13 @@ impl Page for TaskRunnerPage {
                 }
                 if ev.is(Phase::Click) {
                     if let Some(r) = self.run.route(ev) {
-                        if r.into_action().is_some() {
+                        if r.has_actions() {
                             self.start(cx);
                         }
                         return Outcome::Changed;
                     }
                     if let Some(r) = self.cancel.route(ev) {
-                        if r.into_action().is_some() {
+                        if r.has_actions() {
                             cx.open_dialog(Dialog::destructive(
                                 CANCEL_DLG,
                                 "Cancel pipeline?",

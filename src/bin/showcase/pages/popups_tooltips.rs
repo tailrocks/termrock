@@ -526,7 +526,7 @@ impl Page for PopupsTooltipsPage {
                     if click {
                         cx.focus.focus(self.open.id);
                     }
-                    if r.action().is_some() {
+                    if r.has_actions() {
                         self.open_popover();
                     }
                     return r.outcome().or(Outcome::Changed);

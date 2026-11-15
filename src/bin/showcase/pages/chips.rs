@@ -579,16 +579,20 @@ impl Page for ChipsPage {
                     if click {
                         cx.focus.focus(self.filters.id);
                     }
-                    let (o, ev) = r.into_parts();
-                    self.on_chip(ev, cx);
+                    let (o, actions) = r.into_parts();
+                    for ev in actions {
+                        self.on_chip(Some(ev), cx);
+                    }
                     return o;
                 }
                 if let Some(r) = self.streams.route(ev) {
                     if click {
                         cx.focus.focus(self.streams.id);
                     }
-                    let (o, ev) = r.into_parts();
-                    self.on_stream(ev);
+                    let (o, actions) = r.into_parts();
+                    for ev in actions {
+                        self.on_stream(Some(ev));
+                    }
                     return o;
                 }
 
@@ -598,8 +602,10 @@ impl Page for ChipsPage {
                         if (click || ev.is(Phase::Press)) && ev.id == sid {
                             cx.focus.focus(sid);
                         }
-                        let (o, a) = r.into_parts();
-                        Self::select_changed(sel, a, cx);
+                        let (o, actions) = r.into_parts();
+                        for a in actions {
+                            Self::select_changed(sel, Some(a), cx);
+                        }
                         return o;
                     }
                 }

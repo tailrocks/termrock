@@ -13,8 +13,8 @@ use crate::core::selection::SelectGesture;
 use crate::theme::{ColorLevel, Theme};
 use crate::ui::ctx::{Interaction, RenderCtx};
 use crate::widgets::grid::{
-    CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridCmd, GridKeyError, GridRevision,
-    GridRows, GridUndo, GridUndoKind, PendingChanges, RowState, RowTotal,
+    CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridCmd, GridDataError, GridKeyError,
+    GridRevision, GridRows, GridUndo, GridUndoKind, PendingChanges, RowState, RowTotal,
 };
 use crate::widgets::table::SortDir;
 
@@ -41,12 +41,15 @@ fn page(n: usize, more: bool) -> GridRows {
 
 fn grid(n: usize) -> DataGrid {
     let mut g = DataGrid::new(WidgetId::of("issue33"), columns());
-    g.set_rows(page(n, false));
+    g.try_set_rows(page(n, false)).unwrap();
     g
 }
 
 fn press(g: &mut DataGrid, code: KeyCode, mods: KeyModifiers) -> Option<GridAction> {
-    g.on_key(&Key { code, mods }).1
+    g.on_key(&Key { code, mods })
+        .try_into_single()
+        .unwrap_or_else(|_| panic!("single action expected"))
+        .1
 }
 
 fn undone(g: &mut DataGrid) -> GridUndo {
@@ -96,7 +99,7 @@ fn assert_consistent(g: &DataGrid) {
     }
     for (k, c, _) in g.pending().cells() {
         assert!(g.source_index(k).is_some(), "no phantom pending cell");
-        assert!(c < g.columns.len());
+        assert!(c < g.columns().len());
     }
 }
 
@@ -217,7 +220,7 @@ fn issue33_removed_insert_restores_complete_row() {
     let before_cursor = g.cursor;
     let before_counts = g.pending().counts();
 
-    assert!(g.begin_edit().1.is_none() && g.is_editing());
+    assert!(g.begin_edit().actions().next().is_none() && g.is_editing());
     g.toggle_delete(3);
     assert!(!g.is_editing(), "removal closes the editor");
     assert_eq!(g.selection.to_vec(), vec![3], "B keeps its mark, shifted");
@@ -288,7 +291,7 @@ fn issue33_key_revision_lifecycle() {
     );
     let mut seen: HashSet<ItemKey> = (0..2).map(|s| key_of(&g, s)).collect();
 
-    g.append_rows(page(1, false));
+    g.try_append_rows(page(1, false)).unwrap();
     assert_eq!(
         g.revision(),
         GridRevision {
@@ -348,7 +351,7 @@ fn issue33_key_revision_lifecycle() {
     );
 
     g.record_cell(1, 0, text("stale"));
-    g.set_rows(page(2, false));
+    g.try_set_rows(page(2, false)).unwrap();
     assert_eq!(
         g.revision(),
         GridRevision {
@@ -372,14 +375,14 @@ fn issue33_keyed_setters_validate_before_install() {
 
     assert_eq!(
         g.try_set_rows_keyed(page(2, false), vec![k]),
-        Err(GridKeyError::KeyCount {
+        Err(GridDataError::Key(GridKeyError::KeyCount {
             expected: 2,
             actual: 1
-        })
+        }))
     );
     assert_eq!(
         g.try_set_rows_keyed(page(2, false), vec![k, k]),
-        Err(GridKeyError::DuplicateKey(k))
+        Err(GridDataError::Key(GridKeyError::DuplicateKey(k)))
     );
     assert_eq!(
         g.try_set_model_keyed(
@@ -387,10 +390,10 @@ fn issue33_keyed_setters_validate_before_install() {
             page(2, false),
             vec![k, k]
         ),
-        Err(GridKeyError::DuplicateKey(k))
+        Err(GridDataError::Key(GridKeyError::DuplicateKey(k)))
     );
     assert_eq!((g.rows(), g.revision()), (&rows[..], revision), "untouched");
-    assert_eq!(g.columns.len(), 2);
+    assert_eq!(g.columns().len(), 2);
     assert_eq!(
         g.pending().counts(),
         (1, 0, 0),
@@ -415,7 +418,7 @@ fn issue33_keyed_setters_validate_before_install() {
     };
     g.try_set_model_keyed(model, one, vec![ItemKey::text("solo")])
         .unwrap();
-    assert_eq!(g.columns.len(), 1);
+    assert_eq!(g.columns().len(), 1);
     assert_eq!(g.row_key(0), Some(ItemKey::text("solo")));
 }
 
@@ -427,7 +430,7 @@ fn issue33_append_between_remove_and_undo() {
     g.record_cell(2, 0, text("A"));
     g.toggle_delete(2);
 
-    g.append_rows(page(1, false));
+    g.try_append_rows(page(1, false)).unwrap();
     let kc = key_of(&g, 2);
     g.cell_errors.insert((2, 1), "c broke".into());
     g.select_rows(SelectGesture::Only, 2);
@@ -457,11 +460,11 @@ fn issue33_append_between_remove_and_undo() {
     let mut s = grid(2);
     s.local_sort = true;
     s.sort = Some((0, SortDir::Desc));
-    s.set_rows(page(2, false));
+    s.try_set_rows(page(2, false)).unwrap();
     s.insert_row();
     let ka = key_of(&s, 2);
     s.toggle_delete(2);
-    s.append_rows(page(1, false));
+    s.try_append_rows(page(1, false)).unwrap();
     let kc = key_of(&s, 2);
     s.undo();
     let by_display: Vec<ItemKey> = (0..4)

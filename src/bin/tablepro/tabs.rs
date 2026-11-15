@@ -499,7 +499,8 @@ impl TableTab {
             sort: None,
             preview,
             structure_tabs,
-            structure: DataTable::new(id.sub("structure"), vec![], vec![]),
+            structure: DataTable::try_new(id.sub("structure"), vec![], vec![])
+                .expect("rectangular fixture"),
             ddl: ScrollPanel::new(id.sub("ddl"), vec![]),
             loading: 3,
             columns,
@@ -569,29 +570,38 @@ impl TableTab {
                     RowTotal::Exact(rs.total)
                 };
                 self.total = rs.total;
-                self.grid.set_rows(GridRows {
+                let loaded = self.grid.try_set_rows(GridRows {
                     rows,
                     total,
                     more: rs.total > sql::ROW_CAP,
                 });
-                self.grid.sort = self.sort;
-                self.grid.filtered_cols = self
-                    .filters
-                    .iter()
-                    .filter(|f| f.enabled)
-                    .filter_map(|f| self.columns.iter().position(|c| c.0 == f.column))
-                    .collect();
+                match loaded {
+                    Ok(()) => {
+                        self.grid.sort = self.sort;
+                        self.grid.filtered_cols = self
+                            .filters
+                            .iter()
+                            .filter(|f| f.enabled)
+                            .filter_map(|f| self.columns.iter().position(|c| c.0 == f.column))
+                            .collect();
+                    }
+                    Err(e) => self.show_load_failure(&e.to_string()),
+                }
             }
-            Err(e) => {
-                self.grid.set_rows(GridRows {
-                    rows: vec![],
-                    total: RowTotal::Exact(0),
-                    more: false,
-                });
-                self.grid.empty = EmptyState::new("Query failed").hint(&e.message);
-            }
+            Err(e) => self.show_load_failure(&e.message),
         }
         self.rebuild_chips();
+    }
+
+    fn show_load_failure(&mut self, message: &str) {
+        self.grid
+            .try_set_rows(GridRows {
+                rows: vec![],
+                total: RowTotal::Exact(0),
+                more: false,
+            })
+            .expect("an empty row set fits any schema");
+        self.grid.empty = EmptyState::new("Query failed").hint(message);
     }
 
     fn rebuild_chips(&mut self) {
@@ -732,7 +742,9 @@ impl TableTab {
             4 => "No triggers",
             _ => "Nothing here",
         };
-        self.structure = DataTable::new(self.id.sub("structure"), cols, rows).empty_text(empty);
+        self.structure = DataTable::try_new(self.id.sub("structure"), cols, rows)
+            .expect("rectangular fixture")
+            .empty_text(empty);
 
         let mut ddl = vec![format!("CREATE TABLE {} (", table.qualified())];
         for (i, c) in table.columns.iter().enumerate() {
@@ -1539,14 +1551,16 @@ impl QueryTab {
         };
         match &mut r.body {
             ResultBody::Rows(g) if f == g.id => {
-                let (o, ev) = g.on_key(key);
-                match ev {
-                    Some(GridAction::Copy(s)) => cx.copy(s),
-                    Some(GridAction::SortRequested(_)) => {}
-                    Some(GridAction::LeaveForward) => cx.focus_next(),
-                    Some(GridAction::LeaveBackward) => cx.focus_prev(),
-                    Some(GridAction::ReadOnly { reason }) => cx.status(reason),
-                    _ => {}
+                let (o, actions) = g.on_key(key).into_parts();
+                for ev in actions {
+                    match ev {
+                        GridAction::Copy(s) => cx.copy(s),
+                        GridAction::SortRequested(_) => {}
+                        GridAction::LeaveForward => cx.focus_next(),
+                        GridAction::LeaveBackward => cx.focus_prev(),
+                        GridAction::ReadOnly { reason } => cx.status(reason),
+                        _ => {}
+                    }
                 }
                 o
             }
@@ -1564,7 +1578,7 @@ impl QueryTab {
                     return raw.on_key(key);
                 }
                 if f == tree.id {
-                    return tree.on_key(key).0;
+                    return tree.on_key(key).outcome();
                 }
                 Outcome::Ignored
             }
@@ -1599,14 +1613,17 @@ impl QueryTab {
     }
 
     pub fn middle(&mut self, ev: &PointerEvent) -> Outcome {
-        match self.result_tabs.route(ev).map(|r| r.into_parts()) {
-            Some((_, Some(TabAction::Close(i)))) => {
+        let Some((o, actions)) = self.result_tabs.route(ev).map(|r| r.into_parts()) else {
+            return Outcome::Ignored;
+        };
+        let mut out = o;
+        for action in actions {
+            if let TabAction::Close(i) = action {
                 self.close_result(i);
-                Outcome::Changed
+                out = Outcome::Changed;
             }
-            Some((o, _)) => o,
-            None => Outcome::Ignored,
         }
+        out
     }
 
     pub fn click(&mut self, ev: &PointerEvent, cx: &mut Cx, cat: &Catalog) -> Outcome {
@@ -1616,11 +1633,14 @@ impl QueryTab {
         }
         if self.completion.is_open() {
             match self.completion.route(ev).map(|r| r.into_parts()) {
-                Some((_, Some(CompletionAction::Accept(i)))) => {
-                    self.accept_completion(i);
-                    return Outcome::Changed;
+                Some((_, actions)) => {
+                    for action in actions {
+                        if let CompletionAction::Accept(i) = action {
+                            self.accept_completion(i);
+                            return Outcome::Changed;
+                        }
+                    }
                 }
-                Some(_) => {}
                 None => self.completion.close(),
             }
         }
@@ -1633,11 +1653,13 @@ impl QueryTab {
         }
         if let Some(r) = self.result_tabs.route(ev) {
             cx.focus.focus(self.result_tabs.id);
-            let (o, act) = r.into_parts();
-            match act {
-                Some(TabAction::Activated(i)) => self.set_active_result(i),
-                Some(TabAction::Close(i)) => self.close_result(i),
-                _ => {}
+            let (o, actions) = r.into_parts();
+            for act in actions {
+                match act {
+                    TabAction::Activated(i) => self.set_active_result(i),
+                    TabAction::Close(i) => self.close_result(i),
+                    _ => {}
+                }
             }
             return o;
         }
@@ -1648,9 +1670,11 @@ impl QueryTab {
             ResultBody::Rows(g) => match g.route(ev) {
                 Some(r) => {
                     cx.focus.focus(g.id);
-                    let (o, act) = r.into_parts();
-                    if let Some(GridAction::Copy(s)) = act {
-                        cx.copy(s);
+                    let (o, actions) = r.into_parts();
+                    for act in actions {
+                        if let GridAction::Copy(s) = act {
+                            cx.copy(s);
+                        }
                     }
                     o
                 }
@@ -2344,7 +2368,25 @@ fn execute(
                 } else {
                     RowTotal::Exact(rows.len())
                 };
-                grid.set_rows(GridRows { rows, total, more });
+                if let Err(e) = grid.try_set_rows(GridRows { rows, total, more }) {
+                    let message = e.to_string();
+                    entry.error = Some(message.clone());
+                    return (
+                        ResultSet {
+                            key,
+                            label: format!("Error {n}"),
+                            pinned: false,
+                            anchor: range,
+                            duration_ms: 2,
+                            body: ResultBody::Error {
+                                message,
+                                detail: None,
+                                at: None,
+                            },
+                        },
+                        entry,
+                    );
+                }
                 entry.duration_ms = Some(rs.duration_ms);
                 entry.rows = Some(rs.rows.len());
                 (

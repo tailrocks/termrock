@@ -741,9 +741,11 @@ impl Workbench {
                 cx.status("Explorer refreshed");
                 return Outcome::Changed;
             }
-            let (o, ev) = self.explorer.on_key(key);
-            if let Some(TreeAction::Expand(path)) = ev {
-                self.pending_loads.push((path, 3));
+            let (o, actions) = self.explorer.on_key(key).into_parts();
+            for action in actions {
+                if let TreeAction::Expand(path) = action {
+                    self.pending_loads.push((path, 3));
+                }
             }
             return o;
         }
@@ -796,7 +798,7 @@ impl Workbench {
             return o;
         }
         if f == t.structure.id {
-            return t.structure.on_key(key).0;
+            return t.structure.on_key(key).outcome();
         }
         if f == t.ddl.id {
             return t.ddl.on_key(key);
@@ -841,11 +843,12 @@ impl Workbench {
             }
         }
         if f == t.grid.id {
-            let (o, ev) = t.grid.on_key(key);
-            if let Some(ev) = ev {
-                return Self::grid_event(t, ev, cx, cat, conn, db, history).or(o);
+            let (o, actions) = t.grid.on_key(key).into_parts();
+            let mut out = o;
+            for ev in actions {
+                out = Self::grid_event(t, ev, cx, cat, conn, db, history).or(out);
             }
-            return o;
+            return out;
         }
         Outcome::Ignored
     }
@@ -908,7 +911,7 @@ impl Workbench {
                 if let Some(target) = cat
                     .find(Some(&t.schema), &name)
                     .and(None::<String>)
-                    .or_else(|| t.grid.columns[col].references.clone())
+                    .or_else(|| t.grid.columns()[col].references.clone())
                 {
                     cx.go(crate::app::Act::OpenTableFiltered(target, "id".into(), v));
                 }
@@ -1092,11 +1095,13 @@ impl Workbench {
 
     fn middle(&mut self, ev: &PointerEvent, cx: &mut Cx) -> Outcome {
         if let Some(r) = self.strip.route(ev) {
-            let (o, act) = r.into_parts();
-            return match act {
-                Some(TabAction::Close(i)) => self.request_close(i, cx),
-                _ => o,
-            };
+            let (mut out, actions) = r.into_parts();
+            for act in actions {
+                if let TabAction::Close(i) = act {
+                    out = self.request_close(i, cx);
+                }
+            }
+            return out;
         }
         match self.tabs.get_mut(self.active) {
             Some(WorkTab::Query(q)) => q.middle(ev),
@@ -1163,9 +1168,11 @@ impl Workbench {
                     return Outcome::Changed;
                 }
             }
-            let (o, act) = self.explorer.pointer(ev).into_parts();
-            if let Some(TreeAction::Expand(path)) = act {
-                self.pending_loads.push((path, 3));
+            let (o, actions) = self.explorer.pointer(ev).into_parts();
+            for act in actions {
+                if let TreeAction::Expand(path) = act {
+                    self.pending_loads.push((path, 3));
+                }
             }
             return o;
         }
@@ -1178,22 +1185,23 @@ impl Workbench {
         }
         if let Some(r) = self.strip.route(ev) {
             cx.focus.focus(self.strip.id);
-            let (o, act) = r.into_parts();
-            match act {
-                Some(TabAction::Activated(i)) => {
-                    self.set_active(i);
-                    if let Some(pf) = self.primary_focus() {
-                        cx.focus.focus(pf);
+            let (o, actions) = r.into_parts();
+            for act in actions {
+                match act {
+                    TabAction::Activated(i) => {
+                        self.set_active(i);
+                        if let Some(pf) = self.primary_focus() {
+                            cx.focus.focus(pf);
+                        }
+                    }
+                    TabAction::Close(i) => return self.request_close(i, cx),
+                    TabAction::New => {
+                        self.new_query("");
+                        if let Some(pf) = self.primary_focus() {
+                            cx.focus.focus(pf);
+                        }
                     }
                 }
-                Some(TabAction::Close(i)) => return self.request_close(i, cx),
-                Some(TabAction::New) => {
-                    self.new_query("");
-                    if let Some(pf) = self.primary_focus() {
-                        cx.focus.focus(pf);
-                    }
-                }
-                None => {}
             }
             return o;
         }
@@ -1208,8 +1216,8 @@ impl Workbench {
                 }
                 if let Some(r) = t.structure_tabs.route(ev) {
                     cx.focus.focus(t.structure_tabs.id);
-                    let (o, act) = r.into_parts();
-                    if act.is_some() {
+                    let (o, actions) = r.into_parts();
+                    if !actions.is_empty() {
                         t.structure_refresh(cat);
                     }
                     return o;
@@ -1223,23 +1231,25 @@ impl Workbench {
                 }
                 if let Some(r) = t.chips.route(ev) {
                     cx.focus.focus(t.chips.id);
-                    let (o, act) = r.into_parts();
-                    match act {
-                        Some(junie_tui::widgets::chips::ChipAction::Remove(i)) => {
-                            t.filters.remove(i);
-                            t.load(cat);
+                    let (o, actions) = r.into_parts();
+                    for act in actions {
+                        match act {
+                            junie_tui::widgets::chips::ChipAction::Remove(i) => {
+                                t.filters.remove(i);
+                                t.load(cat);
+                            }
+                            junie_tui::widgets::chips::ChipAction::Activate(i) => {
+                                cx.go(crate::app::Act::EditFilter(Some(i)))
+                            }
+                            junie_tui::widgets::chips::ChipAction::Add => {
+                                cx.go(crate::app::Act::EditFilter(None))
+                            }
+                            junie_tui::widgets::chips::ChipAction::Lead => {
+                                t.match_all = !t.match_all;
+                                t.load(cat);
+                            }
+                            _ => {}
                         }
-                        Some(junie_tui::widgets::chips::ChipAction::Activate(i)) => {
-                            cx.go(crate::app::Act::EditFilter(Some(i)))
-                        }
-                        Some(junie_tui::widgets::chips::ChipAction::Add) => {
-                            cx.go(crate::app::Act::EditFilter(None))
-                        }
-                        Some(junie_tui::widgets::chips::ChipAction::Lead) => {
-                            t.match_all = !t.match_all;
-                            t.load(cat);
-                        }
-                        _ => {}
                     }
                     return o;
                 }
@@ -1247,11 +1257,12 @@ impl Workbench {
                     cx.focus.focus(t.grid.id);
                 }
                 if let Some(r) = t.grid.route(ev) {
-                    let (o, act) = r.into_parts();
-                    if let Some(act) = act {
-                        return Self::grid_event(t, act, cx, cat, &conn, &db, history).or(o);
+                    let (o, actions) = r.into_parts();
+                    let mut out = o;
+                    for act in actions {
+                        out = Self::grid_event(t, act, cx, cat, &conn, &db, history).or(out);
                     }
-                    return o;
+                    return out;
                 }
                 Outcome::Ignored
             }

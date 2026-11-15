@@ -11,6 +11,7 @@ use junie_tui::core::id::WidgetId;
 use junie_tui::core::intent::Phase;
 use junie_tui::core::keymap::{KeyBinding, NavKeys, hint_key};
 use junie_tui::core::pointer::MouseTarget;
+use junie_tui::core::response::Actions;
 use junie_tui::core::scroll::TrackClick;
 use junie_tui::core::selection::ClickPolicy;
 use junie_tui::theme::Tone;
@@ -23,6 +24,13 @@ use junie_tui::widgets::panel::Panel;
 use junie_tui::widgets::scrollbar;
 use junie_tui::widgets::tree::{BranchAction, TreeAction, TreeCmd, TreeNode, TreeView};
 use ratatui::crossterm::event::KeyCode;
+
+fn push_step(last: &mut String, step: String) {
+    if !last.is_empty() {
+        last.push_str(" → ");
+    }
+    last.push_str(&step);
+}
 
 const ID: WidgetId = WidgetId::of("trees");
 const MENU: WidgetId = WidgetId::of("trees.menu");
@@ -183,8 +191,19 @@ impl TreesPage {
             .find(|t| t.id == id)
     }
 
-    fn on_action(&mut self, id: WidgetId, a: Option<TreeAction>, cx: &mut Cx) {
-        let Some(a) = a else { return };
+    /// Handles one input's whole batch; the readout lists it in order, so
+    /// `branch_activate: Both` shows `Expand(..) → Activate(..)`.
+    fn on_actions(&mut self, id: WidgetId, actions: Actions<TreeAction>, cx: &mut Cx) {
+        if actions.is_empty() {
+            return;
+        }
+        self.last.clear();
+        for a in actions {
+            self.on_action(id, a, cx);
+        }
+    }
+
+    fn on_action(&mut self, id: WidgetId, a: TreeAction, cx: &mut Cx) {
         let t = if id == CONNECTIONS {
             &mut self.conns
         } else {
@@ -194,13 +213,13 @@ impl TreesPage {
             |t: &TreeView, p: &[usize]| t.node(p).map(|n| n.label.clone()).unwrap_or_default();
         match a {
             TreeAction::Expand(p) => {
-                self.last = format!("Expand({})", name(t, &p));
+                push_step(&mut self.last, format!("Expand({})", name(t, &p)));
 
                 t.set_busy(&p, true);
                 self.loading = Some((p, LOAD_TICKS));
             }
             TreeAction::Activate(p) => {
-                self.last = format!("Activate({})", name(t, &p));
+                push_step(&mut self.last, format!("Activate({})", name(t, &p)));
                 cx.status(format!("Opened {}", name(t, &p)));
             }
         }
@@ -298,8 +317,8 @@ impl TreesPage {
         };
         self.tree.cursor = row;
         match action {
-            RowAction::Open => self.tree.on_key(&plain(KeyCode::Enter)).0,
-            RowAction::Fold => self.tree.toggle(row).0,
+            RowAction::Open => self.tree.on_key(&plain(KeyCode::Enter)).outcome(),
+            RowAction::Fold => self.tree.toggle(row).outcome(),
             RowAction::ExpandAll => {
                 self.tree.expand_all();
                 Outcome::Changed
@@ -552,8 +571,8 @@ impl Page for TreesPage {
                 let Some(t) = self.tree_mut(id) else {
                     return Outcome::Ignored;
                 };
-                let (o, a) = t.on_key(key);
-                self.on_action(id, a, cx);
+                let (o, actions) = t.on_key(key).into_parts();
+                self.on_actions(id, actions, cx);
                 o
             }
             PageEvent::Pointer(ev) if ev.is(Phase::Secondary) => {
@@ -577,8 +596,8 @@ impl Page for TreesPage {
                     if ev.is(Phase::Click) && t.row_at(ev).is_some() {
                         cx.focus.focus(tid);
                     }
-                    let (o, a) = r.into_parts();
-                    self.on_action(tid, a, cx);
+                    let (o, actions) = r.into_parts();
+                    self.on_actions(tid, actions, cx);
                     return o;
                 }
                 Outcome::Ignored
@@ -645,5 +664,35 @@ impl Page for TreesPage {
 
     fn template_mut(&mut self) -> Option<&mut Template> {
         Some(&mut self.template)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use junie_tui::core::event::Key;
+    use junie_tui::core::focus::{Focus, FocusRing};
+    use ratatui::crossterm::event::KeyModifiers;
+
+    /// With `branch_activate: both`, Enter on a collapsed lazy branch reports
+    /// the expansion request and then the activation, each once, in order.
+    #[test]
+    fn branch_activate_both_lists_expand_then_activate() {
+        let mut page = TreesPage::new();
+        page.set_option("trees.branch", 2);
+        let mut ring = FocusRing::default();
+        ring.register(CONNECTIONS);
+        let mut focus = Focus::default();
+        focus.focus(CONNECTIONS);
+        let mut cx = Cx::new(&mut focus, &ring);
+
+        page.conns.cursor = 1;
+        let enter = PageEvent::Key(Key {
+            code: KeyCode::Enter,
+            mods: KeyModifiers::NONE,
+        });
+        let _ = page.handle(&enter, &mut cx);
+
+        assert_eq!(page.last, "Expand(orders-db) → Activate(orders-db)");
     }
 }

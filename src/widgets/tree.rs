@@ -1,12 +1,18 @@
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+use std::collections::{HashMap, HashSet};
+
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier};
 
 use crate::core::event::{Key, Outcome};
 use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
+use crate::core::keyed::{KeyedSourceError, KeyedState};
 use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup, unassigned_chord};
-use crate::core::list::{Cursor, KeyStep, Moved, Navigable, RowSource};
+use crate::core::list::{
+    Cursor, KeyStep, KeyedRowSource, Moved, Navigable, RowSource, SourceStamp,
+};
+use crate::core::response::Response;
 use crate::core::scroll::{ScrollPane, Scrollable};
 use crate::core::selection::ClickPolicy;
 use crate::theme::Tone;
@@ -114,11 +120,77 @@ pub struct FlatRow {
     pub note: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TreeAction {
-    Expand(Path),
+/// One visible tree row as the shared engine reads it.
+#[derive(Debug, Clone, Copy)]
+struct RowRef<'a> {
+    depth: usize,
+    label: &'a str,
+    meta: Option<&'a str>,
+    glyph: Option<&'a str>,
+    glyph_tone: Tone,
+    label_tone: Option<Tone>,
+    has_children: bool,
+    expanded: bool,
+    busy: bool,
+    note: bool,
+}
 
-    Activate(Path),
+/// The visible rows the shared tree engine works over: owned flattened rows,
+/// or a keyed projection that borrows labels from its source.
+trait TreeRows: RowSource {
+    fn row(&self, i: usize) -> RowRef<'_>;
+    fn hit_key(&self, i: usize) -> ItemKey;
+    /// Visible index of the row's parent, when it has one.
+    fn parent(&self, i: usize) -> Option<usize>;
+}
+
+impl TreeRows for [FlatRow] {
+    fn row(&self, i: usize) -> RowRef<'_> {
+        let r = &self[i];
+        RowRef {
+            depth: r.depth,
+            label: &r.label,
+            meta: r.meta.as_deref(),
+            glyph: r.glyph.as_deref(),
+            glyph_tone: r.glyph_tone,
+            label_tone: r.label_tone,
+            has_children: r.has_children,
+            expanded: r.expanded,
+            busy: r.busy,
+            note: r.note,
+        }
+    }
+
+    fn hit_key(&self, i: usize) -> ItemKey {
+        ItemKey::index(i)
+    }
+
+    fn parent(&self, i: usize) -> Option<usize> {
+        let depth = self[i].depth;
+        if depth == 0 {
+            return None;
+        }
+        self[..i].iter().rposition(|r| r.depth < depth)
+    }
+}
+
+/// What a key or click asks of the tree, before the owning storage applies it.
+enum Plan {
+    Done(Outcome),
+    Command(TreeCmd),
+    Toggle(usize),
+    Recursive(usize),
+    Branch(usize),
+    Leaf(usize),
+}
+
+/// A tree action. Owned trees identify nodes by index [`Path`]; a keyed tree
+/// identifies them by [`ItemKey`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TreeAction<K = Path> {
+    Expand(K),
+
+    Activate(K),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -163,6 +235,12 @@ pub struct TreeView {
     pub selected_marker: Option<&'static str>,
 
     pub alt_click_recursive: bool,
+
+    keyed: KeyedState,
+    projection: TreeProjection,
+    layout_generation: u64,
+    select_follows_cursor: bool,
+    show_selection: bool,
 }
 
 impl std::ops::Deref for TreeView {
@@ -388,6 +466,11 @@ impl TreeView {
             divider: false,
             selected_marker: None,
             alt_click_recursive: true,
+            keyed: KeyedState::new(),
+            projection: TreeProjection::default(),
+            layout_generation: 0,
+            select_follows_cursor: false,
+            show_selection: true,
         };
 
         for i in 0..tv.nodes.len() {
@@ -395,6 +478,23 @@ impl TreeView {
         }
         tv.flatten();
         tv
+    }
+
+    /// In a tree driven through the `*_source` methods, selects the node the
+    /// cursor lands on whenever it is a leaf. A branch under the cursor leaves
+    /// the selection alone, and a filter that hides the selected node does not
+    /// clear it.
+    pub fn select_follows_cursor(mut self, on: bool) -> Self {
+        self.select_follows_cursor = on;
+        self
+    }
+
+    /// Whether a tree driven through the `*_source` methods paints its selected
+    /// nodes. Off, the selection is tracked for the host but only the cursor
+    /// row is drawn.
+    pub fn show_selection(mut self, on: bool) -> Self {
+        self.show_selection = on;
+        self
     }
 
     pub fn branch_activate(mut self, action: BranchAction) -> Self {
@@ -480,21 +580,19 @@ impl TreeView {
         self
     }
 
-    fn branch(&mut self, i: usize) -> (Outcome, Option<TreeAction>) {
+    fn branch(&mut self, i: usize) -> Response<TreeAction> {
         let path = self.rows[i].path.clone();
         match self.branch_activate {
             BranchAction::Toggle => self.toggle(i),
             BranchAction::Activate => {
                 self.selected = Some(path.clone());
-                (Outcome::Changed, Some(TreeAction::Activate(path)))
+                Response::emit(TreeAction::Activate(path))
             }
             BranchAction::Both => {
-                let (o, ev) = self.toggle(i);
+                let mut resp = self.toggle(i);
                 self.selected = Some(path.clone());
-                (
-                    o.or(Outcome::Changed),
-                    ev.or(Some(TreeAction::Activate(path))),
-                )
+                resp.push_action(TreeAction::Activate(path));
+                resp
             }
         }
     }
@@ -606,6 +704,7 @@ impl TreeView {
         self.flatten();
         self.core.scroll.jump_start();
         self.core.cursor = 0;
+        self.keyed.clear_cursor();
     }
 
     pub fn reveal(&mut self, path: &[usize]) {
@@ -614,7 +713,7 @@ impl TreeView {
         }
         self.flatten();
         if let Some(i) = self.rows.iter().position(|r| r.path == path) {
-            self.set_cursor(i);
+            self.set_cursor(self.rows.len(), i);
         }
     }
 
@@ -643,17 +742,17 @@ impl TreeView {
         self.core.cursor_model()
     }
 
-    fn set_cursor(&mut self, i: usize) {
-        self.core.cursor = i.min(self.rows.len().saturating_sub(1));
+    fn set_cursor(&mut self, len: usize, i: usize) {
+        self.core.cursor = i.min(len.saturating_sub(1));
         self.core.scroll.ensure_visible(self.core.cursor);
     }
 
-    pub fn toggle(&mut self, i: usize) -> (Outcome, Option<TreeAction>) {
+    pub fn toggle(&mut self, i: usize) -> Response<TreeAction> {
         let Some(row) = self.rows.get(i) else {
-            return (Outcome::Consumed, None);
+            return Response::consumed();
         };
         if !row.has_children {
-            return (Outcome::Consumed, None);
+            return Response::consumed();
         }
         let path = row.path.clone();
         if !self.expanded.remove(&path) {
@@ -666,12 +765,12 @@ impl TreeView {
             }
             self.refold(i);
             if lazy {
-                return (Outcome::Changed, Some(TreeAction::Expand(path)));
+                return Response::from((Outcome::Changed, Some(TreeAction::Expand(path))));
             }
-            return (Outcome::Changed, None);
+            return Response::changed();
         }
         self.refold(i);
-        (Outcome::Changed, None)
+        Response::changed()
     }
 
     fn refold(&mut self, i: usize) {
@@ -771,65 +870,82 @@ impl TreeView {
         command_items(&self.keymap, &cmds)
     }
 
-    pub fn run(&mut self, cmd: TreeCmd) -> (Outcome, Option<TreeAction>) {
+    pub fn run(&mut self, cmd: TreeCmd) -> Response<TreeAction> {
         match cmd {
             TreeCmd::ExpandAll => self.expand_all(),
             TreeCmd::CollapseAll => self.collapse_all(),
         }
-        (Outcome::Changed, None)
+        Response::changed()
     }
 
-    pub fn on_key(&mut self, key: &Key) -> (Outcome, Option<TreeAction>) {
-        if self.rows.is_empty() {
-            return (Outcome::Ignored, None);
+    pub fn on_key(&mut self, key: &Key) -> Response<TreeAction> {
+        let rows = std::mem::take(&mut self.rows);
+        let plan = self.plan_key(&rows[..], key);
+        self.rows = rows;
+        self.apply_plan(plan)
+    }
+
+    fn apply_plan(&mut self, plan: Plan) -> Response<TreeAction> {
+        match plan {
+            Plan::Done(out) => Response::from(out),
+            Plan::Command(cmd) => self.run(cmd),
+            Plan::Toggle(i) => self.toggle(i),
+            Plan::Recursive(i) => self.toggle_recursive(i),
+            Plan::Branch(i) => self.branch(i),
+            Plan::Leaf(i) => {
+                let path = self.rows[i].path.clone();
+                self.selected = Some(path.clone());
+                Response::emit(TreeAction::Activate(path))
+            }
+        }
+    }
+
+    fn plan_key<R: TreeRows + ?Sized>(&mut self, rows: &R, key: &Key) -> Plan {
+        if rows.len() == 0 {
+            return Plan::Done(Outcome::Ignored);
         }
         if unassigned_chord(key, &self.keymap) {
-            return (Outcome::Ignored, None);
+            return Plan::Done(Outcome::Ignored);
         }
         if let Some(action) = lookup(&self.keymap, key) {
-            return self.run(action);
+            return Plan::Command(action);
         }
-        let rows = &self.rows[..];
-        let nav = match self.core.key_step(key, rows) {
+        let (nav, moved) = match self.core.key_step(key, rows) {
             Some((KeyStep::Type(_), moved)) => {
                 if let Moved::To(i) = moved {
-                    self.set_cursor(i);
+                    self.set_cursor(rows.len(), i);
                 }
-                return (moved.outcome(), None);
+                return Plan::Done(moved.outcome());
             }
             Some((KeyStep::Nav(nav), moved)) => (nav, moved),
-            None => return self.on_plain_key(key),
+            None => return self.plan_plain_key(rows, key),
         };
-        let (nav, moved) = nav;
+        let cursor = self.core.cursor;
         let out = match nav {
             Nav::Up | Nav::Down | Nav::PageUp | Nav::PageDown | Nav::Home | Nav::End => {
                 if let Some(i) = moved.index() {
-                    self.set_cursor(i);
+                    self.set_cursor(rows.len(), i);
                 }
                 Outcome::Changed
             }
             Nav::Right => {
-                let row = &self.rows[self.core.cursor];
+                let row = rows.row(cursor);
                 if row.has_children && !row.expanded {
-                    return self.toggle(self.core.cursor);
+                    return Plan::Toggle(cursor);
                 } else if row.has_children {
-                    self.set_cursor(self.core.cursor + 1);
+                    self.set_cursor(rows.len(), cursor + 1);
                     Outcome::Changed
                 } else {
                     Outcome::Consumed
                 }
             }
             Nav::Left => {
-                let row = &self.rows[self.core.cursor];
+                let row = rows.row(cursor);
                 if row.has_children && row.expanded {
-                    return self.toggle(self.core.cursor);
+                    return Plan::Toggle(cursor);
                 } else if row.depth > 0 {
-                    let depth = row.depth;
-                    if let Some(pi) = self.rows[..self.core.cursor]
-                        .iter()
-                        .rposition(|r| r.depth < depth)
-                    {
-                        self.set_cursor(pi);
+                    if let Some(pi) = rows.parent(cursor) {
+                        self.set_cursor(rows.len(), pi);
                     }
                     Outcome::Changed
                 } else {
@@ -837,61 +953,61 @@ impl TreeView {
                 }
             }
         };
-        (out, None)
+        Plan::Done(out)
     }
 
-    fn on_plain_key(&mut self, key: &Key) -> (Outcome, Option<TreeAction>) {
-        let out = match key.code {
+    fn plan_plain_key<R: TreeRows + ?Sized>(&mut self, rows: &R, key: &Key) -> Plan {
+        match key.code {
             KeyCode::Enter | KeyCode::Char(' ') => {
-                let row = &self.rows[self.core.cursor];
+                let cursor = self.core.cursor;
+                let row = rows.row(cursor);
                 if row.note {
-                    Outcome::Consumed
+                    Plan::Done(Outcome::Consumed)
                 } else if row.has_children {
-                    return self.branch(self.core.cursor);
+                    Plan::Branch(cursor)
                 } else {
-                    self.selected = Some(row.path.clone());
-                    return (
-                        Outcome::Changed,
-                        Some(TreeAction::Activate(row.path.clone())),
-                    );
+                    Plan::Leaf(cursor)
                 }
             }
-            _ => Outcome::Ignored,
-        };
-        (out, None)
+            _ => Plan::Done(Outcome::Ignored),
+        }
     }
 
-    pub fn on_click_row(&mut self, i: usize) -> (Outcome, Option<TreeAction>) {
+    pub fn on_click_row(&mut self, i: usize) -> Response<TreeAction> {
         self.on_click_row_count(i, 1)
     }
 
-    pub fn on_click_row_count(&mut self, i: usize, count: u8) -> (Outcome, Option<TreeAction>) {
-        if i >= self.rows.len() {
-            return (Outcome::Consumed, None);
+    pub fn on_click_row_count(&mut self, i: usize, count: u8) -> Response<TreeAction> {
+        let rows = std::mem::take(&mut self.rows);
+        let plan = self.plan_click_row(&rows[..], i, count);
+        self.rows = rows;
+        self.apply_plan(plan)
+    }
+
+    fn plan_click_row<R: TreeRows + ?Sized>(&mut self, rows: &R, i: usize, count: u8) -> Plan {
+        if i >= rows.len() {
+            return Plan::Done(Outcome::Consumed);
         }
         let again = self.core.cursor == i;
         self.core.scroll.pointer_move();
-        self.set_cursor(i);
-        if self.rows[i].note {
-            return (Outcome::Consumed, None);
+        self.set_cursor(rows.len(), i);
+        let row = rows.row(i);
+        if row.note {
+            return Plan::Done(Outcome::Consumed);
         }
         if !self.core.click.activates(count.max(1), again) {
-            return (Outcome::Changed, None);
+            return Plan::Done(Outcome::Changed);
         }
-        if self.rows[i].has_children {
-            self.branch(i)
+        if row.has_children {
+            Plan::Branch(i)
         } else {
-            self.selected = Some(self.rows[i].path.clone());
-            (
-                Outcome::Changed,
-                Some(TreeAction::Activate(self.rows[i].path.clone())),
-            )
+            Plan::Leaf(i)
         }
     }
 
-    pub fn on_click_toggle(&mut self, i: usize) -> (Outcome, Option<TreeAction>) {
+    pub fn on_click_toggle(&mut self, i: usize) -> Response<TreeAction> {
         self.core.scroll.pointer_move();
-        self.set_cursor(i);
+        self.set_cursor(self.rows.len(), i);
         self.toggle(i)
     }
 
@@ -900,7 +1016,7 @@ impl TreeView {
         i: usize,
         toggle: bool,
         mods: KeyModifiers,
-    ) -> (Outcome, Option<TreeAction>) {
+    ) -> Response<TreeAction> {
         self.on_click_at(i, toggle, mods, 1)
     }
 
@@ -910,27 +1026,44 @@ impl TreeView {
         toggle: bool,
         mods: KeyModifiers,
         count: u8,
-    ) -> (Outcome, Option<TreeAction>) {
-        if self.alt_click_recursive
-            && mods.contains(KeyModifiers::ALT)
-            && self.rows.get(i).is_some_and(|r| r.has_children && !r.note)
-        {
-            self.set_cursor(i);
-            return self.toggle_recursive(i);
-        }
-        if toggle {
-            self.on_click_toggle(i)
-        } else {
-            self.on_click_row_count(i, count)
-        }
+    ) -> Response<TreeAction> {
+        let rows = std::mem::take(&mut self.rows);
+        let plan = self.plan_click(&rows[..], i, toggle, mods, count);
+        self.rows = rows;
+        self.apply_plan(plan)
     }
 
-    pub fn toggle_recursive(&mut self, i: usize) -> (Outcome, Option<TreeAction>) {
+    fn plan_click<R: TreeRows + ?Sized>(
+        &mut self,
+        rows: &R,
+        i: usize,
+        toggle: bool,
+        mods: KeyModifiers,
+        count: u8,
+    ) -> Plan {
+        if self.alt_click_recursive
+            && mods.contains(KeyModifiers::ALT)
+            && i < rows.len()
+            && rows.row(i).has_children
+            && !rows.row(i).note
+        {
+            self.set_cursor(rows.len(), i);
+            return Plan::Recursive(i);
+        }
+        if toggle {
+            self.core.scroll.pointer_move();
+            self.set_cursor(rows.len(), i);
+            return Plan::Toggle(i);
+        }
+        self.plan_click_row(rows, i, count)
+    }
+
+    pub fn toggle_recursive(&mut self, i: usize) -> Response<TreeAction> {
         let Some(row) = self.rows.get(i) else {
-            return (Outcome::Consumed, None);
+            return Response::consumed();
         };
         if !row.has_children {
-            return (Outcome::Consumed, None);
+            return Response::consumed();
         }
         let path = row.path.clone();
         let open = !row.expanded;
@@ -969,9 +1102,9 @@ impl TreeView {
         }
         self.refold(i);
         if open && lazy {
-            return (Outcome::Changed, Some(TreeAction::Expand(path)));
+            return Response::from((Outcome::Changed, Some(TreeAction::Expand(path))));
         }
-        (Outcome::Changed, None)
+        Response::changed()
     }
 
     pub fn track_click(mut self, click: crate::core::scroll::TrackClick) -> Self {
@@ -980,6 +1113,28 @@ impl TreeView {
     }
 
     pub fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, bg: Color) {
+        let rows = std::mem::take(&mut self.rows);
+        let selected = self.selected.clone();
+        self.render_in(
+            &rows[..],
+            |i| selected.as_deref() == Some(rows[i].path.as_slice()),
+            area,
+            buf,
+            ctx,
+            bg,
+        );
+        self.rows = rows;
+    }
+
+    fn render_in<R: TreeRows + ?Sized>(
+        &mut self,
+        rows: &R,
+        is_selected: impl Fn(usize) -> bool,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        bg: Color,
+    ) {
         self.core.scroll.begin(ctx.track_click);
         let area = area.intersection(*buf.area());
         if area.is_empty() {
@@ -989,7 +1144,7 @@ impl TreeView {
         let t = ctx.theme;
         let focused = ctx.interaction.focused(self.id);
         self.core.scroll.set_viewport(area.height as usize);
-        let n = self.rows.len();
+        let n = rows.len();
 
         if self.core.is_focus_stop(n, focused) {
             ctx.control(self.id, area, false);
@@ -1020,13 +1175,13 @@ impl TreeView {
 
         let show_meta = self.show_meta
             && self.core.scroll.visible_range().all(|ri| {
-                let row = &self.rows[ri];
-                let Some(m) = &row.meta else { return true };
+                let row = rows.row(ri);
+                let Some(m) = row.meta else { return true };
                 let need = 1
                     + (row.depth as u16) * self.indent
                     + 2
                     + if row.glyph.is_some() { 2 } else { 0 }
-                    + crate::ui::text::width(&row.label) as u16
+                    + crate::ui::text::width(row.label) as u16
                     + 2
                     + crate::ui::text::width(m) as u16
                     + 1;
@@ -1034,18 +1189,19 @@ impl TreeView {
             });
         for (i, ri) in self.core.scroll.visible_range().enumerate() {
             let y = area.y + i as u16;
-            let row = &self.rows[ri];
+            let row = rows.row(ri);
+            let hit = rows.hit_key(ri);
             let rect = Rect::new(area.x, y, row_w, 1);
 
             let full = Rect::new(area.x, y, full_w, 1);
-            let rid = self.row_id(ri);
+            let rid = self.id.part(PartRef::item(Part::ROW, hit));
             let mut s = ctx.child_state(self.id, rid, ri == self.core.cursor);
-            let tid = self.toggle_id(ri);
+            let tid = self.id.part(PartRef::item(Part::ICON, hit));
 
             s.hovered |= ctx.interaction.hovered(tid);
             s.pressed |= ctx.interaction.pressed(tid);
 
-            let gid = self.glyph_id(ri);
+            let gid = self.id.part(PartRef::item(Part::MARKER, hit));
             s.hovered |= ctx.interaction.hovered(gid);
             s.pressed |= ctx.interaction.pressed(gid);
             if row.note {
@@ -1053,7 +1209,7 @@ impl TreeView {
                 s.pressed = false;
             }
             s.focused = focused && ri == self.core.cursor;
-            s.selected = self.selected.as_ref() == Some(&row.path);
+            s.selected = is_selected(ri);
             s.inactive_selection = self.core.inactive_selection;
             let rp = RowUi::paint(ctx, buf, full, s, RowLook::Bar, bg);
             let st = rp.style();
@@ -1061,7 +1217,7 @@ impl TreeView {
             let mut x = rect.x + 1 + indent;
 
             if !row.note {
-                ctx.register_part(self.id, PartRef::item(Part::ROW, ItemKey::index(ri)), full);
+                ctx.register_part(self.id, PartRef::item(Part::ROW, hit), full);
             }
             if x + 2 >= rect.right() {
                 continue;
@@ -1088,7 +1244,7 @@ impl TreeView {
             if row.has_children {
                 ctx.register_part(
                     self.id,
-                    PartRef::item(Part::ICON, ItemKey::index(ri)),
+                    PartRef::item(Part::ICON, hit),
                     Rect::new(x, y, 2, 1),
                 );
             } else if s.selected
@@ -1098,11 +1254,7 @@ impl TreeView {
                 rp.mark(ctx, buf, x, y, MarkKind::Glyph(m), focused);
             }
             x += 2;
-            let meta_w = row
-                .meta
-                .as_ref()
-                .map(|m| crate::ui::text::width(m))
-                .unwrap_or(0) as u16;
+            let meta_w = row.meta.map(crate::ui::text::width).unwrap_or(0) as u16;
             let avail = rect.right().saturating_sub(x);
 
             let meta_w = if !show_meta || avail.saturating_sub(meta_w + 2) < 10 {
@@ -1126,11 +1278,11 @@ impl TreeView {
                 label_style = st.fg(t.text_muted).remove_modifier(Modifier::BOLD);
             }
             let mut lx = x;
-            if let Some(g) = row.glyph.as_deref() {
+            if let Some(g) = row.glyph {
                 if !row.note {
                     ctx.register_part(
                         self.id,
-                        PartRef::item(Part::MARKER, ItemKey::index(ri)),
+                        PartRef::item(Part::MARKER, hit),
                         Rect::new(lx, y, 2.min(rect.right().saturating_sub(lx)), 1),
                     );
                 }
@@ -1150,10 +1302,10 @@ impl TreeView {
             buf.set_string(
                 lx,
                 y,
-                crate::ui::text::fit(&row.label, (lw as usize).saturating_sub((lx - x) as usize)),
+                crate::ui::text::fit(row.label, (lw as usize).saturating_sub((lx - x) as usize)),
                 label_style,
             );
-            if let Some(m) = &row.meta
+            if let Some(m) = row.meta
                 && meta_w > 0
                 && meta_w + 4 < avail
             {
@@ -1168,7 +1320,7 @@ impl TreeView {
             if row.has_children {
                 ctx.register_part(
                     self.id,
-                    PartRef::item(Part::ICON, ItemKey::index(ri)),
+                    PartRef::item(Part::ICON, hit),
                     Rect::new(rect.x + 1 + indent, y, 2, 1),
                 );
             }
@@ -1375,9 +1527,885 @@ impl crate::core::pointer::MouseTarget for TreeView {
             _ => ev.index_of(Part::MARKER).map(|row| (row, false)),
         };
         match hit {
-            Some((row, toggle)) => self.on_click_at(row, toggle, ev.mods(), ev.count()).into(),
+            Some((row, toggle)) => self.on_click_at(row, toggle, ev.mods(), ev.count()),
             None => crate::core::response::Response::ignored(),
         }
+    }
+}
+
+/// One tree node borrowed from its provider. `children` are keys of nodes the
+/// provider also serves through [`TreeSource::node`].
+#[derive(Debug, Clone, Copy)]
+pub struct TreeNodeRef<'a> {
+    pub label: &'a str,
+    pub meta: Option<&'a str>,
+    pub glyph: Option<&'a str>,
+    pub glyph_tone: Tone,
+    pub label_tone: Option<Tone>,
+    pub children: &'a [ItemKey],
+    pub lazy: bool,
+    pub busy: bool,
+    pub note: bool,
+}
+
+const NO_NODE: TreeNodeRef<'static> = TreeNodeRef {
+    label: "",
+    meta: None,
+    glyph: None,
+    glyph_tone: Tone::Muted,
+    label_tone: None,
+    children: &[],
+    lazy: false,
+    busy: false,
+    note: false,
+};
+
+/// A keyed provider of tree nodes. Every node must be reachable from exactly
+/// one parent, keys must not be [`ItemKey::Index`], and the graph must be
+/// acyclic; [`TreeView`] rejects a source that is not.
+pub trait TreeSource {
+    fn stamp(&self) -> SourceStamp;
+    fn root_count(&self) -> usize;
+    fn root_key(&self, index: usize) -> ItemKey;
+    fn node(&self, key: ItemKey) -> Option<TreeNodeRef<'_>>;
+}
+
+#[derive(Debug, Clone, Copy)]
+struct TreeRecord {
+    key: ItemKey,
+    depth: usize,
+    parent: Option<usize>,
+    has_children: bool,
+    expanded: bool,
+}
+
+/// A validated source: preorder keys, key positions and parent positions.
+type Validated = (Vec<ItemKey>, HashMap<ItemKey, usize>, Vec<Option<usize>>);
+
+/// A flattening frame: child list (roots when `None`), next index, depth and
+/// parent row.
+type Frame<'a> = (Option<&'a [ItemKey]>, usize, usize, Option<usize>);
+
+/// The keyed flattening of a [`TreeSource`]: only key, depth, parent and
+/// flags per visible row, with labels borrowed from the source at paint.
+#[derive(Debug, Clone, Default)]
+struct TreeProjection {
+    order: Vec<ItemKey>,
+    positions: HashMap<ItemKey, usize>,
+    parent_positions: Vec<Option<usize>>,
+    own_match: Vec<bool>,
+    subtree_match: Vec<bool>,
+    rows: Vec<TreeRecord>,
+    validated: Option<(ItemKey, u64)>,
+    matched_for: Option<(ItemKey, u64, String)>,
+    built: Option<(SourceStamp, u64, Option<String>)>,
+    view: u64,
+}
+
+impl TreeProjection {
+    /// Validates the source once per data revision: positional keys,
+    /// duplicates (including a node with two parents), missing nodes and
+    /// cycles. The previous projection survives an error.
+    fn validate<S: TreeSource + ?Sized>(source: &S) -> Result<Validated, KeyedSourceError> {
+        #[derive(Default)]
+        struct Walk {
+            order: Vec<ItemKey>,
+            positions: HashMap<ItemKey, usize>,
+            parents: Vec<Option<usize>>,
+            on_stack: HashSet<ItemKey>,
+        }
+        impl Walk {
+            fn enter<S: TreeSource + ?Sized>(
+                &mut self,
+                source: &S,
+                key: ItemKey,
+                parent: Option<usize>,
+            ) -> Result<usize, KeyedSourceError> {
+                if matches!(key, ItemKey::Index(_)) {
+                    return Err(KeyedSourceError::PositionalKey {
+                        index: self.order.len(),
+                        authoritative: true,
+                    });
+                }
+                if self.on_stack.contains(&key) {
+                    return Err(KeyedSourceError::Cycle { key });
+                }
+                if self.positions.contains_key(&key) {
+                    return Err(KeyedSourceError::DuplicateAuthoritative { key });
+                }
+                if source.node(key).is_none() {
+                    return Err(KeyedSourceError::MissingNode { key });
+                }
+                let at = self.order.len();
+                self.order.push(key);
+                self.positions.insert(key, at);
+                self.parents.push(parent);
+                self.on_stack.insert(key);
+                Ok(at)
+            }
+        }
+        let mut walk = Walk::default();
+        let mut stack: Vec<(&[ItemKey], usize, usize)> = Vec::new();
+        for r in 0..source.root_count() {
+            let root = source.root_key(r);
+            let at = walk.enter(source, root, None)?;
+            stack.push((source.node(root).map_or(&[][..], |n| n.children), 0, at));
+            while let Some(frame) = stack.last_mut() {
+                let (children, next, owner) = (frame.0, frame.1, frame.2);
+                if next >= children.len() {
+                    walk.on_stack.remove(&walk.order[owner]);
+                    stack.pop();
+                    continue;
+                }
+                frame.1 += 1;
+                let child = children[next];
+                let at = walk.enter(source, child, Some(owner))?;
+                stack.push((source.node(child).map_or(&[][..], |n| n.children), 0, at));
+            }
+        }
+        #[cfg(test)]
+        crate::core::work::add(crate::core::work::Counter::SourceRows, walk.order.len());
+        Ok((walk.order, walk.positions, walk.parents))
+    }
+
+    fn refresh<S: TreeSource + ?Sized>(
+        &mut self,
+        source: &S,
+        keyed: &KeyedState,
+        filter: Option<&str>,
+    ) -> Result<(), KeyedSourceError> {
+        let stamp = source.stamp();
+        let data_key = (stamp.instance, stamp.data);
+        if self.validated != Some(data_key) {
+            let (order, positions, parents) = Self::validate(source)?;
+            self.order = order;
+            self.positions = positions;
+            self.parent_positions = parents;
+            self.validated = Some(data_key);
+            self.matched_for = None;
+            self.built = None;
+        }
+        if let Some(query) = filter
+            && self
+                .matched_for
+                .as_ref()
+                .is_none_or(|m| (m.0, m.1, m.2.as_str()) != (stamp.instance, stamp.data, query))
+        {
+            self.compute_matches(source, query);
+            self.matched_for = Some((stamp.instance, stamp.data, query.to_owned()));
+            self.built = None;
+        }
+        let want = (stamp, keyed.expanded_revision(), filter.map(str::to_owned));
+        if self.built.as_ref() == Some(&want) {
+            return Ok(());
+        }
+        self.rebuild(source, keyed, filter);
+        self.view += 1;
+        self.built = Some(want);
+        Ok(())
+    }
+
+    /// One postorder pass per (data revision, query): a node shows when its
+    /// subtree holds a match.
+    fn compute_matches<S: TreeSource + ?Sized>(&mut self, source: &S, query: &str) {
+        self.own_match = self
+            .order
+            .iter()
+            .map(|&key| label_matches(source.node(key).map_or("", |n| n.label), query))
+            .collect();
+        self.subtree_match = self.own_match.clone();
+        for i in (0..self.order.len()).rev() {
+            if self.subtree_match[i]
+                && let Some(parent) = self.parent_positions[i]
+            {
+                self.subtree_match[parent] = true;
+            }
+        }
+    }
+
+    fn rebuild<S: TreeSource + ?Sized>(
+        &mut self,
+        source: &S,
+        keyed: &KeyedState,
+        filter: Option<&str>,
+    ) {
+        let mut rows = Vec::new();
+        let mut stack: Vec<Frame<'_>> = vec![(None, 0, 0, None)];
+        while let Some(frame) = stack.last_mut() {
+            let (list, next, depth, parent) = (frame.0, frame.1, frame.2, frame.3);
+            let key = match list {
+                None if next < source.root_count() => source.root_key(next),
+                Some(children) if next < children.len() => children[next],
+                _ => {
+                    stack.pop();
+                    continue;
+                }
+            };
+            frame.1 += 1;
+            let at = self.positions[&key];
+            if filter.is_some() && !self.subtree_match[at] {
+                continue;
+            }
+            let node = source.node(key).unwrap_or(NO_NODE);
+            let has_children = !node.children.is_empty() || (node.lazy && !node.note);
+            let expanded = has_children
+                && (keyed.is_expanded(key)
+                    || (filter.is_some() && !node.children.is_empty() && !self.own_match[at]));
+            rows.push(TreeRecord {
+                key,
+                depth,
+                parent,
+                has_children,
+                expanded,
+            });
+            if expanded {
+                stack.push((Some(node.children), 0, depth + 1, Some(rows.len() - 1)));
+            }
+        }
+        self.rows = rows;
+    }
+}
+
+/// The visible rows of a [`TreeSource`] projection, as the engine and the
+/// keyed state read them.
+struct KeyedTreeRows<'a, S: ?Sized> {
+    source: &'a S,
+    proj: &'a TreeProjection,
+}
+
+impl<S: TreeSource + ?Sized> KeyedTreeRows<'_, S> {
+    fn node(&self, i: usize) -> TreeNodeRef<'_> {
+        self.source.node(self.proj.rows[i].key).unwrap_or(NO_NODE)
+    }
+}
+
+impl<S: TreeSource + ?Sized> RowSource for KeyedTreeRows<'_, S> {
+    fn len(&self) -> usize {
+        self.proj.rows.len()
+    }
+    fn enabled(&self, i: usize) -> bool {
+        !self.node(i).note
+    }
+    fn label(&self, i: usize) -> &str {
+        self.node(i).label
+    }
+    fn key(&self, i: usize) -> ItemKey {
+        self.proj.rows[i].key
+    }
+}
+
+impl<S: TreeSource + ?Sized> KeyedRowSource for KeyedTreeRows<'_, S> {
+    fn stamp(&self) -> SourceStamp {
+        let stamp = self.source.stamp();
+        SourceStamp {
+            instance: stamp.instance,
+            data: stamp.data,
+            view: self.proj.view,
+        }
+    }
+    fn source_len(&self) -> usize {
+        self.proj.order.len()
+    }
+    fn source_key(&self, i: usize) -> ItemKey {
+        self.proj.order[i]
+    }
+}
+
+impl<S: TreeSource + ?Sized> TreeRows for KeyedTreeRows<'_, S> {
+    fn row(&self, i: usize) -> RowRef<'_> {
+        let node = self.node(i);
+        let rec = &self.proj.rows[i];
+        RowRef {
+            depth: rec.depth,
+            label: node.label,
+            meta: node.meta,
+            glyph: node.glyph,
+            glyph_tone: node.glyph_tone,
+            label_tone: node.label_tone,
+            has_children: rec.has_children,
+            expanded: rec.expanded,
+            busy: node.busy,
+            note: node.note,
+        }
+    }
+    fn hit_key(&self, i: usize) -> ItemKey {
+        self.proj.rows[i].key
+    }
+    fn parent(&self, i: usize) -> Option<usize> {
+        self.proj.rows[i].parent
+    }
+}
+
+impl TreeView {
+    /// The stable-identity state of a tree driven through the `*_source`
+    /// methods: cursor, selection, expansion and pointer capture by key.
+    pub fn keyed(&self) -> &KeyedState {
+        &self.keyed
+    }
+
+    fn normalized_filter(&self) -> Option<String> {
+        self.filter
+            .as_deref()
+            .map(|f| f.trim().to_lowercase())
+            .filter(|f| !f.is_empty())
+    }
+
+    fn bind_tree<S: TreeSource + ?Sized>(&mut self, source: &S) -> Result<(), KeyedSourceError> {
+        let first = self.keyed.stamp().is_none();
+        let filter = self.normalized_filter();
+        self.projection
+            .refresh(source, &self.keyed, filter.as_deref())?;
+        let old_cursor = self.keyed.cursor();
+        let mut out = {
+            let rows = KeyedTreeRows {
+                source,
+                proj: &self.projection,
+            };
+            self.keyed.reconcile(&rows)?
+        };
+        if first {
+            for r in 0..source.root_count() {
+                self.keyed.set_expanded(source.root_key(r), true);
+            }
+            self.projection
+                .refresh(source, &self.keyed, filter.as_deref())?;
+            let rows = KeyedTreeRows {
+                source,
+                proj: &self.projection,
+            };
+            let again = self.keyed.reconcile(&rows)?;
+            out.view_changed |= again.view_changed;
+            out.cursor_changed |= again.cursor_changed;
+        }
+        if out.cursor_changed
+            && let Some(lost) = old_cursor
+            && self.keyed.visible_index(lost).is_none()
+            && let Some(&at) = self.projection.positions.get(&lost)
+        {
+            let mut cur = at;
+            while let Some(parent) = self.projection.parent_positions[cur] {
+                let key = self.projection.order[parent];
+                if self.keyed.visible_index(key).is_some() {
+                    self.keyed.set_cursor(key);
+                    break;
+                }
+                cur = parent;
+            }
+        }
+        if first || out.view_changed || out.data_changed || out.cursor_changed {
+            let n = self.keyed.visible_len();
+            self.core.cursor = self
+                .keyed
+                .cursor_view()
+                .unwrap_or(0)
+                .min(n.saturating_sub(1));
+            self.core.scroll.set_content(n);
+            self.core.scroll.ensure_visible(self.core.cursor);
+        }
+        Ok(())
+    }
+
+    fn note_layout(&mut self, area: Rect, buf: &Buffer) {
+        if area.intersection(*buf.area()) != self.area {
+            self.layout_generation += 1;
+            self.keyed.invalidate_layout(self.layout_generation);
+        }
+    }
+
+    fn select_key(&mut self, key: ItemKey) {
+        self.keyed.replace_selection([key]);
+    }
+
+    fn toggle_key<S: TreeSource + ?Sized>(
+        &mut self,
+        source: &S,
+        key: ItemKey,
+    ) -> Response<TreeAction<ItemKey>> {
+        if self.keyed.is_expanded(key) {
+            self.keyed.set_expanded(key, false);
+            return Response::changed();
+        }
+        self.keyed.set_expanded(key, true);
+        let lazy = source
+            .node(key)
+            .is_some_and(|n| n.lazy && n.children.is_empty());
+        if lazy {
+            return Response::from((Outcome::Changed, Some(TreeAction::Expand(key))));
+        }
+        Response::changed()
+    }
+
+    fn set_subtree_expanded<S: TreeSource + ?Sized>(
+        &mut self,
+        source: &S,
+        root: ItemKey,
+        open: bool,
+    ) {
+        let mut stack = vec![root];
+        while let Some(key) = stack.pop() {
+            let Some(node) = source.node(key) else {
+                continue;
+            };
+            if !node.children.is_empty() || key == root {
+                self.keyed.set_expanded(key, open);
+            }
+            stack.extend(node.children.iter().copied());
+        }
+    }
+
+    fn apply_keyed_plan<S: TreeSource + ?Sized>(
+        &mut self,
+        source: &S,
+        plan: Plan,
+    ) -> Response<TreeAction<ItemKey>> {
+        let key_at = |me: &Self, i: usize| me.keyed.visible_key(i);
+        match plan {
+            Plan::Done(out) => Response::from(out),
+            Plan::Command(TreeCmd::ExpandAll) => {
+                let keys: Vec<ItemKey> = self.projection.order.clone();
+                for key in keys {
+                    if source.node(key).is_some_and(|n| !n.children.is_empty()) {
+                        self.keyed.set_expanded(key, true);
+                    }
+                }
+                Response::changed()
+            }
+            Plan::Command(TreeCmd::CollapseAll) => {
+                let open: Vec<ItemKey> = self.keyed.expanded().collect();
+                for key in open {
+                    self.keyed.set_expanded(key, false);
+                }
+                Response::changed()
+            }
+            Plan::Toggle(i) => match key_at(self, i) {
+                Some(key) if self.projection.rows[i].has_children => self.toggle_key(source, key),
+                _ => Response::consumed(),
+            },
+            Plan::Recursive(i) => {
+                let Some(key) = key_at(self, i) else {
+                    return Response::consumed();
+                };
+                let open = !self.projection.rows[i].expanded;
+                let lazy = source
+                    .node(key)
+                    .is_some_and(|n| n.lazy && n.children.is_empty());
+                self.set_subtree_expanded(source, key, open);
+                if open && lazy {
+                    return Response::from((Outcome::Changed, Some(TreeAction::Expand(key))));
+                }
+                Response::changed()
+            }
+            Plan::Branch(i) => {
+                let Some(key) = key_at(self, i) else {
+                    return Response::consumed();
+                };
+                match self.branch_activate {
+                    BranchAction::Toggle => self.toggle_key(source, key),
+                    BranchAction::Activate => {
+                        self.select_key(key);
+                        Response::emit(TreeAction::Activate(key))
+                    }
+                    BranchAction::Both => {
+                        let mut resp = self.toggle_key(source, key);
+                        self.select_key(key);
+                        resp.push_action(TreeAction::Activate(key));
+                        resp
+                    }
+                }
+            }
+            Plan::Leaf(i) => {
+                let Some(key) = key_at(self, i) else {
+                    return Response::consumed();
+                };
+                self.select_key(key);
+                Response::emit(TreeAction::Activate(key))
+            }
+        }
+    }
+
+    /// Moves the cursor to `key` by identity and scrolls it into view. A key
+    /// that is unknown, hidden by a filter or inside a collapsed branch is
+    /// refused. Returns whether the cursor now rests on `key`.
+    pub fn set_cursor_source<S: TreeSource + ?Sized>(
+        &mut self,
+        key: ItemKey,
+        source: &S,
+    ) -> Result<bool, KeyedSourceError> {
+        self.bind_tree(source)?;
+        self.keyed.set_cursor(key);
+        if let Some(row) = self.keyed.cursor_view() {
+            self.core.cursor = row;
+            self.core.scroll.ensure_visible(row);
+        }
+        Ok(self.keyed.cursor() == Some(key))
+    }
+
+    /// Makes `key` the only selected node. Returns whether the selection
+    /// changed; an unknown or disabled key is refused.
+    pub fn select_source<S: TreeSource + ?Sized>(
+        &mut self,
+        key: ItemKey,
+        source: &S,
+    ) -> Result<bool, KeyedSourceError> {
+        self.bind_tree(source)?;
+        Ok(self.keyed.replace_selection([key]))
+    }
+
+    fn follow_cursor(&mut self) {
+        if !self.select_follows_cursor {
+            return;
+        }
+        if let Some(row) = self.keyed.cursor_view()
+            && !self.projection.rows[row].has_children
+        {
+            self.select_key(self.projection.rows[row].key);
+        }
+    }
+
+    /// Expands every node of the provider that has children.
+    pub fn expand_all_source<S: TreeSource + ?Sized>(
+        &mut self,
+        source: &S,
+    ) -> Result<(), KeyedSourceError> {
+        self.bind_tree(source)?;
+        let keys: Vec<ItemKey> = self.projection.order.clone();
+        for key in keys {
+            if source.node(key).is_some_and(|n| !n.children.is_empty()) {
+                self.keyed.set_expanded(key, true);
+            }
+        }
+        Ok(())
+    }
+
+    /// Keyboard input over a borrowed keyed provider. Expansion, selection and
+    /// the cursor are held by key, so inserting an earlier sibling moves none
+    /// of them.
+    pub fn on_key_source<S: TreeSource + ?Sized>(
+        &mut self,
+        key: &Key,
+        source: &S,
+    ) -> Result<Response<TreeAction<ItemKey>>, KeyedSourceError> {
+        self.bind_tree(source)?;
+        let proj = std::mem::take(&mut self.projection);
+        let plan = self.plan_key(
+            &KeyedTreeRows {
+                source,
+                proj: &proj,
+            },
+            key,
+        );
+        self.projection = proj;
+        self.keyed.adopt_cursor_view(self.core.cursor);
+        let response = self.apply_keyed_plan(source, plan);
+        self.follow_cursor();
+        Ok(response)
+    }
+
+    /// Pointer input over a borrowed keyed provider. Hit regions carry the
+    /// node key, so a press can only complete on the node it began on.
+    pub fn on_pointer_source<S: TreeSource + ?Sized>(
+        &mut self,
+        ev: &crate::core::pointer::PointerEvent,
+        source: &S,
+    ) -> Result<Response<TreeAction<ItemKey>>, KeyedSourceError> {
+        use crate::core::intent::Phase;
+        self.bind_tree(source)?;
+        if let Some(r) = crate::core::pointer::scroll_input(self, ev) {
+            return Ok(r.lift());
+        }
+        let hit = match (ev.key_of(Part::ICON), ev.key_of(Part::ROW)) {
+            (Some(key), _) => Some((key, true)),
+            (None, Some(key)) => Some((key, false)),
+            _ => ev.key_of(Part::MARKER).map(|key| (key, false)),
+        };
+        let Some((key, toggle)) = hit.filter(|_| ev.on(self.id)) else {
+            return Ok(Response::ignored());
+        };
+        match ev.phase() {
+            Some(Phase::Press) => {
+                self.keyed.capture_press(key, self.layout_generation);
+                Ok(Response::ignored())
+            }
+            Some(Phase::Click) => {
+                if self.keyed.pressed().is_some()
+                    && !self.keyed.release_press(key, self.layout_generation)
+                {
+                    return Ok(Response::consumed());
+                }
+                let Some(row) = self.keyed.visible_index(key) else {
+                    return Ok(Response::consumed());
+                };
+                let proj = std::mem::take(&mut self.projection);
+                let plan = self.plan_click(
+                    &KeyedTreeRows {
+                        source,
+                        proj: &proj,
+                    },
+                    row,
+                    toggle,
+                    ev.mods(),
+                    ev.count(),
+                );
+                self.projection = proj;
+                self.keyed.adopt_cursor_view(self.core.cursor);
+                let response = self.apply_keyed_plan(source, plan);
+                self.follow_cursor();
+                Ok(response)
+            }
+            _ => Ok(Response::ignored()),
+        }
+    }
+
+    /// Paints nodes borrowed from a keyed provider.
+    pub fn render_source<S: TreeSource + ?Sized>(
+        &mut self,
+        area: Rect,
+        source: &S,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        bg: Color,
+    ) -> Result<(), KeyedSourceError> {
+        self.bind_tree(source)?;
+        self.note_layout(area, buf);
+        let proj = std::mem::take(&mut self.projection);
+        let keyed = std::mem::take(&mut self.keyed);
+        let show_selection = self.show_selection;
+        let rows = KeyedTreeRows {
+            source,
+            proj: &proj,
+        };
+        self.render_in(
+            &rows,
+            |i| show_selection && keyed.is_selected(proj.rows[i].key),
+            area,
+            buf,
+            ctx,
+            bg,
+        );
+        self.projection = proj;
+        self.keyed = keyed;
+        Ok(())
+    }
+}
+
+/// One node of a [`KeyedTree`].
+#[derive(Debug, Clone)]
+pub struct KeyedTreeNode {
+    pub label: String,
+    pub meta: Option<String>,
+    pub glyph: Option<std::borrow::Cow<'static, str>>,
+    pub glyph_tone: Tone,
+    pub label_tone: Option<Tone>,
+    pub lazy: bool,
+    pub busy: bool,
+    pub note: bool,
+    children: Vec<ItemKey>,
+}
+
+impl KeyedTreeNode {
+    pub fn new(label: &str) -> Self {
+        Self {
+            label: label.to_owned(),
+            meta: None,
+            glyph: None,
+            glyph_tone: Tone::Muted,
+            label_tone: None,
+            lazy: false,
+            busy: false,
+            note: false,
+            children: Vec::new(),
+        }
+    }
+
+    pub fn lazy(label: &str) -> Self {
+        Self {
+            lazy: true,
+            ..Self::new(label)
+        }
+    }
+
+    pub fn meta(mut self, meta: &str) -> Self {
+        self.meta = Some(meta.to_owned());
+        self
+    }
+
+    pub fn glyph(mut self, glyph: impl Into<std::borrow::Cow<'static, str>>) -> Self {
+        self.glyph = Some(glyph.into());
+        self
+    }
+
+    pub fn children(&self) -> &[ItemKey] {
+        &self.children
+    }
+}
+
+/// An owned keyed tree store that advances its own revisions. A `Clone` is an
+/// independent store with a fresh instance.
+#[derive(Debug)]
+pub struct KeyedTree {
+    instance: ItemKey,
+    data: u64,
+    view: u64,
+    roots: Vec<ItemKey>,
+    nodes: HashMap<ItemKey, KeyedTreeNode>,
+    parents: HashMap<ItemKey, Option<ItemKey>>,
+}
+
+impl Clone for KeyedTree {
+    fn clone(&self) -> Self {
+        Self {
+            instance: crate::core::keyed::fresh_instance(),
+            data: self.data,
+            view: self.view,
+            roots: self.roots.clone(),
+            nodes: self.nodes.clone(),
+            parents: self.parents.clone(),
+        }
+    }
+}
+
+impl Default for KeyedTree {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl KeyedTree {
+    pub fn new() -> Self {
+        Self {
+            instance: crate::core::keyed::fresh_instance(),
+            data: 0,
+            view: 0,
+            roots: Vec::new(),
+            nodes: HashMap::new(),
+            parents: HashMap::new(),
+        }
+    }
+
+    pub fn get(&self, key: ItemKey) -> Option<&KeyedTreeNode> {
+        self.nodes.get(&key)
+    }
+
+    pub fn len(&self) -> usize {
+        self.nodes.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.nodes.is_empty()
+    }
+
+    /// Inserts `node` under `parent` (a root when `None`) before `position`.
+    pub fn insert(
+        &mut self,
+        parent: Option<ItemKey>,
+        position: usize,
+        key: ItemKey,
+        node: KeyedTreeNode,
+    ) -> Result<(), KeyedSourceError> {
+        if matches!(key, ItemKey::Index(_)) {
+            return Err(KeyedSourceError::PositionalKey {
+                index: position,
+                authoritative: true,
+            });
+        }
+        if self.nodes.contains_key(&key) {
+            return Err(KeyedSourceError::DuplicateAuthoritative { key });
+        }
+        if let Some(parent) = parent
+            && !self.nodes.contains_key(&parent)
+        {
+            return Err(KeyedSourceError::MissingNode { key: parent });
+        }
+        let siblings = match parent {
+            Some(parent) => &mut self.nodes.get_mut(&parent).expect("checked").children,
+            None => &mut self.roots,
+        };
+        let at = position.min(siblings.len());
+        siblings.insert(at, key);
+        self.nodes.insert(
+            key,
+            KeyedTreeNode {
+                children: Vec::new(),
+                ..node
+            },
+        );
+        self.parents.insert(key, parent);
+        self.data += 1;
+        self.view += 1;
+        Ok(())
+    }
+
+    /// Removes a node and its whole subtree.
+    pub fn remove(&mut self, key: ItemKey) -> bool {
+        let Some(parent) = self.parents.remove(&key) else {
+            return false;
+        };
+        let siblings = match parent {
+            Some(parent) => self.nodes.get_mut(&parent).map(|n| &mut n.children),
+            None => Some(&mut self.roots),
+        };
+        if let Some(siblings) = siblings {
+            siblings.retain(|k| *k != key);
+        }
+        let mut stack = vec![key];
+        while let Some(next) = stack.pop() {
+            if let Some(node) = self.nodes.remove(&next) {
+                for child in node.children {
+                    self.parents.remove(&child);
+                    stack.push(child);
+                }
+            }
+        }
+        self.data += 1;
+        self.view += 1;
+        true
+    }
+
+    /// Edits one node's own fields. Its `children` are not reachable here, so
+    /// the closure cannot break the tree shape.
+    pub fn update(&mut self, key: ItemKey, edit: impl FnOnce(&mut KeyedTreeNode)) -> bool {
+        let Some(node) = self.nodes.get_mut(&key) else {
+            return false;
+        };
+        let children = std::mem::take(&mut node.children);
+        edit(node);
+        node.children = children;
+        self.data += 1;
+        self.view += 1;
+        true
+    }
+}
+
+impl TreeSource for KeyedTree {
+    fn stamp(&self) -> SourceStamp {
+        SourceStamp {
+            instance: self.instance,
+            data: self.data,
+            view: self.view,
+        }
+    }
+
+    fn root_count(&self) -> usize {
+        self.roots.len()
+    }
+
+    fn root_key(&self, index: usize) -> ItemKey {
+        self.roots[index]
+    }
+
+    fn node(&self, key: ItemKey) -> Option<TreeNodeRef<'_>> {
+        let n = self.nodes.get(&key)?;
+        Some(TreeNodeRef {
+            label: &n.label,
+            meta: n.meta.as_deref(),
+            glyph: n.glyph.as_deref(),
+            glyph_tone: n.glyph_tone,
+            label_tone: n.label_tone,
+            children: &n.children,
+            lazy: n.lazy,
+            busy: n.busy,
+            note: n.note,
+        })
     }
 }
 
@@ -1707,10 +2735,10 @@ mod tests {
 
         let before = tv.rows_built;
         work::take();
-        tv.toggle(5 * 5);
+        let _ = tv.toggle(5 * 5);
         assert_eq!(tv.rows().len(), 246);
         assert_eq!(tv.rows_built - before, 0, "collapse rebuilds no rows");
-        tv.toggle(5 * 5);
+        let _ = tv.toggle(5 * 5);
         assert_eq!(tv.rows().len(), 250);
         assert_eq!(
             tv.rows_built - before,

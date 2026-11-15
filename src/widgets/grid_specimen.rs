@@ -11,11 +11,13 @@ const SAMPLE_ROWS: usize = 3;
 
 impl DataGrid {
     fn sample_edit_col(&self) -> Option<usize> {
-        self.columns.iter().position(|c| !c.read_only && !c.primary)
+        self.columns()
+            .iter()
+            .position(|c| !c.read_only && !c.primary)
     }
 
     fn sample_text_col(&self) -> Option<usize> {
-        (0..self.columns.len()).find(|&c| {
+        (0..self.columns().len()).find(|&c| {
             matches!(
                 self.rows().first().and_then(|r| r.get(c)),
                 Some(CellValue::Text(_))
@@ -63,11 +65,12 @@ impl Specimen for DataGrid {
 
         if g.rows().len() > SAMPLE_ROWS && g.pending().is_empty() {
             let rows = g.rows()[..SAMPLE_ROWS].to_vec();
-            g.set_rows(GridRows {
+            g.try_set_rows(GridRows {
                 rows,
                 total: RowTotal::Exact(SAMPLE_ROWS),
                 more: false,
-            });
+            })
+            .expect("sample rows keep the schema width");
         }
         g.cancel_edit();
         g.cursor = (0, g.cursor.1);
@@ -96,11 +99,13 @@ impl Specimen for DataGrid {
                 g.row_errors
                     .insert(g.source_row(0), "Enter a valid value".into());
             }
-            SpecimenState::Empty => g.set_rows(GridRows {
-                rows: Vec::new(),
-                total: RowTotal::Exact(0),
-                more: false,
-            }),
+            SpecimenState::Empty => g
+                .try_set_rows(GridRows {
+                    rows: Vec::new(),
+                    total: RowTotal::Exact(0),
+                    more: false,
+                })
+                .expect("an empty row set fits any schema"),
             SpecimenState::Loading => g.set_loading(true),
             SpecimenState::Overflow => {
                 if let Some(c) = g.sample_text_col() {
@@ -109,11 +114,12 @@ impl Specimen for DataGrid {
                         s.push_str(" and a value longer than its column");
                     }
                     let n = rows.len();
-                    g.set_rows(GridRows {
+                    g.try_set_rows(GridRows {
                         rows,
                         total: RowTotal::Exact(n),
                         more: false,
-                    });
+                    })
+                    .expect("edited rows keep the schema width");
                 }
             }
             _ => {}

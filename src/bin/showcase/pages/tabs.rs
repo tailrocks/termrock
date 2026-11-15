@@ -519,8 +519,8 @@ impl Page for TabsPage {
                     if click {
                         cx.focus.focus(self.editor.id);
                     }
-                    let (out, a) = r.into_parts();
-                    if let Some(a) = a {
+                    let (out, actions) = r.into_parts();
+                    for a in actions {
                         self.act(a, cx);
                     }
                     return if click { out.or(Outcome::Changed) } else { out };
