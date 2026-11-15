@@ -618,7 +618,8 @@ impl FormDialog {
                     .actions
                     .iter()
                     .map(|(_, b)| b)
-                    .chain([&self.cancel, &self.save]);
+                    .chain([&self.cancel, &self.save])
+                    .filter(|b| ring.contains(b.id));
                 let forward = self.nav.action(key) == Some(Nav::Right);
                 if let Some(id) = self.button_row.step(row, cur, forward) {
                     focus.focus(id);
