@@ -522,3 +522,35 @@ fn holla_cleanup_hardlinks_report_reclaimed_once() {
     );
     app.finish();
 }
+
+#[test]
+fn holla_stop_and_close_waits_for_terminal() {
+    let app = holla("holla-stop-and-close", "parity-task-input");
+    app.wait_text("Search actions and resources");
+    app.paste("stubborn");
+    app.wait_text("Run the stubborn worker");
+    app.key("enter");
+    app.wait_text("$ ./stubborn");
+    app.wait_text("ignoring SIGTERM");
+
+    app.key("ctrl+w");
+    app.wait_text("Stop and close");
+    app.key("right");
+    app.key("enter");
+    let stopping = app.wait_screen("stopping status with the tab still open", |s| {
+        let t = text(s);
+        t.contains("Stopping") && t.contains("$ ./stubborn")
+    });
+    assert!(text(&stopping).contains("the tab closes once the process is gone"));
+
+    let closed = app.wait_screen("tab closed after the reap", |s| {
+        let t = text(s);
+        t.contains("Type Search") && !t.contains("$ ./stubborn")
+    });
+    assert!(
+        text(&closed).contains("stopped"),
+        "the stop outcome is reported: {}",
+        text(&closed)
+    );
+    app.finish();
+}
