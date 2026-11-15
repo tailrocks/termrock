@@ -647,6 +647,31 @@ fn issue33_row_source_key_follows_display_order() {
     );
 }
 
+fn display_keys(g: &DataGrid) -> Vec<ItemKey> {
+    (0..g.len()).map(|d| key_of(g, g.source_row(d))).collect()
+}
+
+#[test]
+fn codex196_commit_keeps_sorted_display_order() {
+    let mut g = grid(3);
+    g.local_sort = true;
+    g.run(GridCmd::Sort);
+    g.record_cell(0, 0, text("zzz")).unwrap();
+    g.insert_row().unwrap();
+    let before = display_keys(&g);
+    assert_eq!(before.len(), 4);
+
+    commit(&mut g);
+
+    assert_eq!(
+        display_keys(&g),
+        before,
+        "an edited sort key and a pinned draft stay where Save found them"
+    );
+    assert_eq!(g.value(g.source_row(0), 0), &text("zzz"));
+    assert_consistent(&g);
+}
+
 #[test]
 fn codex196_paste_into_cell_runs_the_edit_gateway() {
     let mut g = grid(2);

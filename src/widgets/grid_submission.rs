@@ -364,7 +364,6 @@ impl DataGrid {
         self.undo.clear();
         self.row_errors.clear();
         self.cell_errors.clear();
-        self.rebuild_order();
         self.revision = revision;
         self.scroll.set_content(self.content_rows());
         self.cursor.0 = match cursor.and_then(|key| self.display_of(key)) {
