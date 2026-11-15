@@ -40,9 +40,7 @@ fn role_validator(col: usize, s: &str) -> Option<String> {
 }
 
 fn var_validator(s: &str) -> Option<String> {
-    if s.is_empty() {
-        Some("Required".into())
-    } else if !s
+    if !s
         .chars()
         .all(|c| c.is_ascii_uppercase() || c == '_' || c.is_ascii_digit())
     {

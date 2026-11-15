@@ -117,6 +117,7 @@ impl DialogsPage {
                 let input = TextInput::new(RENAME.sub("input"), "Task name")
                     .value(&self.task_name)
                     .required(true)
+                    .required_message("Name cannot be empty")
                     .validator(rename_validator)
                     .help("Shown in the task list and PR title");
                 Dialog::prompt(RENAME, "Rename task", input, "Rename")
