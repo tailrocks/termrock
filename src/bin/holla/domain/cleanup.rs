@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use crate::domain::context::Os;
-use crate::sim::fs::{Fs, NodeKind};
+use crate::sim::fs::{Fs, NodeKind, RemovalStats};
 
 pub const CACHE_SCHEMA: u32 = 3;
 pub const CACHE_TTL_SECS: i64 = 7 * 86_400;
@@ -794,7 +794,12 @@ impl Outcome {
 pub struct ItemResult {
     pub path: String,
     pub outcome: Outcome,
+    /// Processed allocation that left the tree. Two links to one inode can
+    /// both count here, so this is not disk space returned.
     pub bytes: u64,
+    /// Blocks returned to the volume by this item. Zero for Trash, dry runs,
+    /// and any removal that left another reference to the inode alive.
+    pub reclaimed_bytes: u64,
     pub error: Option<String>,
 }
 
@@ -804,7 +809,11 @@ pub struct LogRecord {
     pub mode: Mode,
     pub dry_run: bool,
     pub path: String,
+    /// Processed allocation (the `size` key, kept for old readers).
     pub size: u64,
+    /// Blocks actually returned to the volume. `None` marks a record written
+    /// before this field existed; it is unknown, never inferred from `size`.
+    pub reclaimed_size: Option<u64>,
     pub outcome: Outcome,
     pub error: Option<String>,
 }
@@ -817,12 +826,16 @@ impl LogRecord {
                 .replace('\n', "\\n")
         };
         format!(
-            "{{\"v\":1,\"timestamp_ms\":{},\"mode\":\"{}\",\"dry_run\":{},\"path\":\"{}\",\"size\":{},\"outcome\":\"{}\"{}}}",
+            "{{\"v\":1,\"timestamp_ms\":{},\"mode\":\"{}\",\"dry_run\":{},\"path\":\"{}\",\"size\":{}{},\"outcome\":\"{}\"{}}}",
             self.timestamp_ms,
             self.mode.label(),
             self.dry_run,
             esc(&self.path),
             self.size,
+            match self.reclaimed_size {
+                Some(n) => format!(",\"reclaimed_size\":{n}"),
+                None => String::new(),
+            },
             self.outcome.label(),
             match &self.error {
                 Some(e) => format!(",\"error\":\"{}\"", esc(e)),
@@ -890,6 +903,10 @@ impl LogRecord {
             dry_run: raw(line, "dry_run")? == "true",
             path: unescape(raw(line, "path")?),
             size: raw(line, "size")?.parse().ok()?,
+            reclaimed_size: match raw(line, "reclaimed_size") {
+                Some(v) => Some(v.parse().ok()?),
+                None => None,
+            },
             outcome,
             error: raw(line, "error").map(unescape),
         })
@@ -924,8 +941,11 @@ pub struct Report {
     pub log_failures: u32,
     pub log_path: String,
 
+    /// Processed allocation across all items, including Trash moves.
     pub bytes: u64,
 
+    /// Blocks returned to the volume by permanent removals, counted once per
+    /// inode. Only this value may reduce the volume's used space.
     pub freed_now: u64,
 }
 
@@ -981,6 +1001,12 @@ pub struct ExecContext<'a> {
     pub os: Os,
     pub now_secs: i64,
     pub processes: &'a dyn Fn(&str) -> ProcessObservation,
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+struct Amounts {
+    processed: u64,
+    reclaimed: u64,
 }
 
 #[derive(Debug, Clone)]
@@ -1044,19 +1070,37 @@ impl Execution {
         log: &mut OpsLog,
         now_secs: i64,
     ) {
+        let amounts = Amounts {
+            processed: bytes,
+            reclaimed: 0,
+        };
+        self.record_amounts(path, outcome, amounts, error, log, now_secs);
+    }
+
+    fn record_amounts(
+        &mut self,
+        path: &str,
+        outcome: Outcome,
+        amounts: Amounts,
+        error: Option<String>,
+        log: &mut OpsLog,
+        now_secs: i64,
+    ) {
         log.append(&LogRecord {
             timestamp_ms: now_secs * 1000,
             mode: self.plan.mode,
             dry_run: self.plan.dry_run,
             path: path.into(),
-            size: bytes,
+            size: amounts.processed,
+            reclaimed_size: Some(amounts.reclaimed),
             outcome,
             error: error.clone(),
         });
         self.report.items.push(ItemResult {
             path: path.into(),
             outcome,
-            bytes,
+            bytes: amounts.processed,
+            reclaimed_bytes: amounts.reclaimed,
             error,
         });
     }
@@ -1189,27 +1233,43 @@ impl Execution {
             return true;
         }
         if self.plan.dry_run {
+            self.report.bytes += bytes;
             self.record(path, Outcome::WouldRemove, bytes, None, log, now);
             return true;
         }
         match self.plan.mode {
             Mode::Trash => match fs.trash(path, now) {
-                Ok(b) => {
-                    self.report.bytes += b;
-                    self.record(path, Outcome::Trashed, b, None, log, now);
+                Ok(stats) => {
+                    self.report.bytes += stats.removed_allocated_bytes;
+                    self.record_removal(path, Outcome::Trashed, stats, log, now);
                 }
                 Err(e) => self.record(path, Outcome::Failed, 0, Some(e), log, now),
             },
             Mode::Permanent => match fs.remove_permanent(path) {
-                Ok(b) => {
-                    self.report.bytes += b;
-                    self.report.freed_now += b;
-                    self.record(path, Outcome::Removed, b, None, log, now);
+                Ok(stats) => {
+                    self.report.bytes += stats.removed_allocated_bytes;
+                    self.report.freed_now += stats.reclaimed_bytes;
+                    self.record_removal(path, Outcome::Removed, stats, log, now);
                 }
                 Err(e) => self.record(path, Outcome::Failed, 0, Some(e), log, now),
             },
         }
         true
+    }
+
+    fn record_removal(
+        &mut self,
+        path: &str,
+        outcome: Outcome,
+        stats: RemovalStats,
+        log: &mut OpsLog,
+        now_secs: i64,
+    ) {
+        let amounts = Amounts {
+            processed: stats.removed_allocated_bytes,
+            reclaimed: stats.reclaimed_bytes,
+        };
+        self.record_amounts(path, outcome, amounts, None, log, now_secs);
     }
 
     pub fn finish(mut self, log: &mut OpsLog) -> Report {
@@ -1368,5 +1428,118 @@ impl SizeCache {
         self.entries
             .retain(|e| now_secs - e.recorded_secs <= CACHE_TTL_SECS);
         self.entries.sort_by(|a, b| a.path.cmp(&b.path));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const HOME: &str = "/Users/alex";
+    const BLOCK: u64 = crate::sim::fs::BLOCK;
+
+    fn run(fs: &mut Fs, paths: &[&str], mode: Mode, dry_run: bool) -> Report {
+        let items = paths
+            .iter()
+            .map(|p| DeleteItem {
+                path: (*p).into(),
+                category: "test".into(),
+                estimate: fs.size_of(p),
+                guard: None,
+            })
+            .collect();
+        let plan = DeletePlan::new("mbp", HOME, items, mode, dry_run);
+        let mut exec = Execution::start(&plan, plan.revision, "/log").unwrap();
+        let mut log = OpsLog::default();
+        let processes = |_: &str| ProcessObservation::NotRunning;
+        let cx = ExecContext {
+            home: HOME,
+            os: Os::MacOs,
+            now_secs: 1_000,
+            processes: &processes,
+        };
+        while exec.step(fs, &mut log, &cx) {}
+        exec.finish(&mut log)
+    }
+
+    fn two_links() -> Fs {
+        let mut fs = Fs::new();
+        fs.dir("/Users/alex/Downloads", 1)
+            .file("/Users/alex/Downloads/a", 100, 1)
+            .hardlink("/Users/alex/Downloads/b", "/Users/alex/Downloads/a")
+            .volume("/", 1 << 40, 1 << 30);
+        fs
+    }
+
+    #[test]
+    fn cleanup_freed_now_matches_last_link_reclamation() {
+        let mut live = two_links();
+        let report = run(
+            &mut live,
+            &["/Users/alex/Downloads/a", "/Users/alex/Downloads/b"],
+            Mode::Permanent,
+            false,
+        );
+        assert_eq!(report.freed_now, BLOCK, "the inode is reclaimed once");
+        assert_eq!(report.bytes, 2 * BLOCK, "processed sizes stay distinct");
+        assert_eq!(report.items[0].reclaimed_bytes, 0);
+        assert_eq!(report.items[1].reclaimed_bytes, BLOCK);
+        assert_eq!(report.items[0].bytes, BLOCK);
+        assert_eq!(report.items[1].bytes, BLOCK);
+
+        let mut dry = two_links();
+        let estimate = run(
+            &mut dry,
+            &["/Users/alex/Downloads/a", "/Users/alex/Downloads/b"],
+            Mode::Permanent,
+            true,
+        );
+        assert_eq!(estimate.freed_now, 0, "dry run reclaims nothing");
+        assert_eq!(
+            estimate.bytes,
+            2 * BLOCK,
+            "dry run totals its processed estimate"
+        );
+        assert_eq!(
+            estimate.items.iter().map(|i| i.bytes).collect::<Vec<_>>(),
+            vec![BLOCK, BLOCK],
+            "dry run keeps each item's processed estimate"
+        );
+
+        let mut trash = two_links();
+        let trashed = run(
+            &mut trash,
+            &["/Users/alex/Downloads/a", "/Users/alex/Downloads/b"],
+            Mode::Trash,
+            false,
+        );
+        assert_eq!(trashed.freed_now, 0, "trash never reclaims");
+        assert_eq!(trashed.bytes, 2 * BLOCK);
+    }
+
+    #[test]
+    fn cleanup_log_records_reclaimed_size_round_trip() {
+        let record = LogRecord {
+            timestamp_ms: 1_000,
+            mode: Mode::Permanent,
+            dry_run: false,
+            path: "/Users/alex/Downloads/big".into(),
+            size: u64::MAX - 7,
+            reclaimed_size: Some(u64::MAX - 9),
+            outcome: Outcome::Removed,
+            error: None,
+        };
+        assert_eq!(LogRecord::parse(&record.json()), Some(record));
+    }
+
+    #[test]
+    fn cleanup_legacy_log_reclamation_is_unknown() {
+        let legacy = r#"{"v":1,"timestamp_ms":1000,"mode":"permanent","dry_run":false,"path":"/Users/alex/Downloads/old","size":8192,"outcome":"removed"}"#;
+        let parsed = LogRecord::parse(legacy).unwrap();
+        assert_eq!(parsed.size, 8192);
+        assert_eq!(
+            parsed.reclaimed_size, None,
+            "a record without reclaimed_size never reads as measured reclamation"
+        );
     }
 }

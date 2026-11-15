@@ -1265,6 +1265,7 @@ fn cleanup_results(motion: Motion) -> World {
             dry_run: false,
             path: format!("{HOME}/work/legacy/node_modules"),
             size: 3_900 * mb,
+            reclaimed_size: Some(0),
             outcome: crate::domain::cleanup::Outcome::Trashed,
             error: None,
         }
