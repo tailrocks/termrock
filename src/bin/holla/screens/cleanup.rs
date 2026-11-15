@@ -270,6 +270,7 @@ impl CleanupPage {
     }
 
     fn reload_source(&mut self, w: &World) {
+        let before = self.described_item();
         let keep = self.cursor_anchor();
         let (cats, special) = if let Some((sp, cat)) = self.special_category(w) {
             (vec![cat], Some(sp))
@@ -300,6 +301,7 @@ impl CleanupPage {
         }
         self.age_deadline = self.next_age_deadline(w);
         self.install_rows(keep);
+        self.rewind_if_changed(&before);
     }
 
     /// Re-derives every cached candidate's age and eligibility from its file's
@@ -349,8 +351,10 @@ impl CleanupPage {
     }
 
     fn rebuild_rows(&mut self) {
+        let before = self.described_item();
         let keep = self.cursor_anchor();
         self.install_rows(keep);
+        self.rewind_if_changed(&before);
     }
 
     fn install_rows(&mut self, keep: Option<Anchor>) {
@@ -2573,5 +2577,36 @@ mod detail_scroll_tests {
         press(&mut page, &mut w, KeyCode::Left);
         assert!(matches!(page.rows[page.cursor], Row::Category(_)));
         assert_eq!(page.detail_scroll.offset, 0, "the category is a new item");
+    }
+
+    #[test]
+    fn a_rebuild_that_moves_the_cursor_to_another_item_rewinds_the_detail() {
+        let mut w = world_for(Scenario::RustDirty, Motion::Full);
+        let mut page = page_on_first_row(&w);
+        let candidate = selectable_rows(&page)
+            .into_iter()
+            .find(|&i| matches!(page.rows[i], Row::Candidate(..)))
+            .expect("a candidate row");
+        page.cursor = candidate;
+        let Some(Row::Candidate(ci, ki)) = page.rows.get(candidate).cloned() else {
+            panic!("candidate row")
+        };
+        let doomed = page.cats[ci].candidates[ki].path.clone();
+        let before = page.described_item();
+        scroll_detail_to_three(&mut page);
+
+        w.fs.remove_permanent(&doomed).expect("removed");
+        w.edit_cleanup(|_| {});
+        assert!(page.ensure_projection(&w), "the cleanup stamp moved");
+
+        assert_ne!(
+            page.described_item(),
+            before,
+            "the pane now describes another item"
+        );
+        assert_eq!(
+            page.detail_scroll.offset, 0,
+            "a different item starts its detail at the top"
+        );
     }
 }
