@@ -4,6 +4,7 @@
 //! here. Never add a new top-level `tests/*.rs`: each target changes the
 //! generated CI workflows (see `docs/ci.md`).
 
+mod button_row_focus;
 #[path = "../common/mod.rs"]
 mod common;
 mod form_value;

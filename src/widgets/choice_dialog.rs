@@ -233,7 +233,11 @@ impl ChoiceDialog {
             _ => None,
         };
         if let Some(back) = step {
-            if let Some(id) = self.button_row.step(&self.buttons, cur, !back) {
+            if let Some(id) = self.button_row.step(
+                self.buttons.iter().filter(|b| ring.contains(b.id)),
+                cur,
+                !back,
+            ) {
                 focus.focus(id);
             }
             return Outcome::Changed;
