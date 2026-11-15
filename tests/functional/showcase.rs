@@ -1792,8 +1792,10 @@ fn showcase_listdetail_dragging_the_detail_scrollbar_scrolls_the_detail() {
         !text(&screen).contains("port 443 only"),
         "the last binding starts below the fold"
     );
-    let thumb = find_all(&screen, "┃");
-    let track = find_all(&screen, "┆");
+    let beside_sidebar =
+        |points: Vec<Point>| -> Vec<Point> { points.into_iter().filter(|p| p.x > 40).collect() };
+    let thumb = beside_sidebar(find_all(&screen, "┃"));
+    let track = beside_sidebar(find_all(&screen, "┆"));
     assert!(!thumb.is_empty(), "the overflowing detail draws a thumb");
     let top = thumb[0];
     let bottom = *track
@@ -1910,7 +1912,11 @@ fn showcase_fixeddialogs_form_does_not_offer_its_fixed_action() {
 #[test]
 fn showcase_fixeddialogs_browser_box_refuses_and_shows_its_reason() {
     let app = fixed_dialogs("showcase-fixeddialogs-browser", &[]);
-    app.click_text("File browser");
+    let in_page = find_all(&app.screen(), "File browser")
+        .into_iter()
+        .find(|point| point.x > 30)
+        .expect("the page lists its File browser button beside the sidebar");
+    app.click(in_page);
     let open = app.wait_text("Read-only");
     assert!(text(&open).contains("[ ] Read-only"));
     assert!(text(&open).contains("Always read-only · the host decides"));

@@ -227,7 +227,7 @@ fn narrow_ascii(screen: &TerminalSnapshot) -> bool {
         && count(screen, HEAVY) == 0
         && count(screen, BAR) == 0
         && count(screen, GUTTER) == 1
-        && count(screen, THUMB) == 57
+        && count(screen, THUMB) == 73
 }
 
 fn assert_wide_ascii(screen: &TerminalSnapshot) {
@@ -266,7 +266,7 @@ fn assert_narrow_ascii(screen: &TerminalSnapshot) {
     assert_ink(screen, 4, 9, MARK, green(), nav());
     assert_column(screen, 79, 7, 10, THUMB, white50(), canvas());
     assert_row(screen, 21, 21, 73, THUMB, white50(), canvas());
-    assert_eq!(count(screen, THUMB), 57, "thumb count\n{}", text(screen));
+    assert_eq!(count(screen, THUMB), 73, "thumb count\n{}", text(screen));
     assert_document_clipped(screen);
     let line = row_containing(screen, LINE);
     assert!(

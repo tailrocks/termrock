@@ -191,7 +191,12 @@ fn click_tab(app: &App, label: &str) {
 
 fn click_side(app: &App, label: &str) {
     reveal_side(app, label);
-    click_where(app, label, |hit| hit.x < 24);
+    let screen = app.wait_text(label);
+    let hit = find_all(&screen, label)
+        .into_iter()
+        .find(|hit| hit.x < 24)
+        .unwrap_or_else(|| panic!("no sidebar row {label:?}\n{}", text(&screen)));
+    app.click(hit);
 }
 
 fn click_run(app: &App) {
@@ -554,6 +559,7 @@ fn route_by_page_keyboard_and_pointer() {
         "Inputs & forms › Forms",
         "Inputs & forms › Checks & radios",
         "Inputs & forms › Toolbars",
+        "Inputs & forms › Fixed controls",
         "Tables › Basic table",
         "Tables › Editable",
         "Tables › Data grid",
@@ -570,6 +576,7 @@ fn route_by_page_keyboard_and_pointer() {
         "Overlays › Dialog kinds",
         "Overlays › Popups & tooltips",
         "Overlays › File browser",
+        "Overlays › Fixed dialogs",
         "Feedback › Progress",
         "Feedback › Empty & error",
         "Feedback › Meters",
@@ -579,6 +586,7 @@ fn route_by_page_keyboard_and_pointer() {
         "Layout › Splits & stacks",
         "Layout › Master-detail",
         "Layout › Pane tree",
+        "Layout › List detail",
         "Text & code › Code editor",
         "Text & code › Diff",
         CRUMB,

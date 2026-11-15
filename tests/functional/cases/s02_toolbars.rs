@@ -1029,7 +1029,7 @@ fn option_overflow_off() {
     let narrow = (0..play.rows())
         .map(|row| row_text(&play, row))
         .find(|line| {
-            line.contains("Run F5") && line.contains("Shift+F5") && line.contains("Overlays")
+            line.contains("Run F5") && line.contains("Shift+F5") && line.contains("Navigation")
         })
         .expect("narrow row");
     assert!(

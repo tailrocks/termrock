@@ -1245,12 +1245,33 @@ fn assert_acceptance_receipts() {
             "{file}"
         );
         let baseline = baseline_root().join(format!("{baseline_id}.tui.pb"));
+        let refreshed_from = first_refresh_previous_sha(baseline_id);
         assert_eq!(
             receipt["candidate_sha256"].as_str(),
-            Some(sha256_file(&baseline).as_str()),
+            Some(
+                refreshed_from
+                    .unwrap_or_else(|| sha256_file(&baseline))
+                    .as_str()
+            ),
             "{file}"
         );
     }
+}
+
+/// The digest the first acceptance receipt recorded, when a later refresh
+/// replaced the baseline: the superseded sample of the first ledger row.
+fn first_refresh_previous_sha(test_id: &str) -> Option<String> {
+    let ledger = std::fs::read_to_string(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("docs/testing/baseline-refreshes-20261108.tsv"),
+    )
+    .expect("baseline refresh ledger");
+    ledger
+        .lines()
+        .skip(1)
+        .map(|line| line.split('\t').collect::<Vec<_>>())
+        .find(|fields| fields.first() == Some(&test_id))
+        .map(|fields| fields[3].to_owned())
 }
 
 fn refuse_candidate(bin: &Path) {

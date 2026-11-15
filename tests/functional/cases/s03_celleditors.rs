@@ -341,7 +341,7 @@ fn route_by_page_keyboard_and_pointer() {
 
     let keys = open("s03-celleditors-route-keys", 120, 40, &[]);
     keys.wait_text(OVERVIEW);
-    for _ in 0..18 {
+    for _ in 0..19 {
         keys.key("]");
     }
     let arrived = keys.wait_text(BLURB);

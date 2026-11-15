@@ -375,6 +375,7 @@ fn route_by_page_keyboard_and_pointer() {
         "Inputs & forms › Forms",
         "Inputs & forms › Checks & radios",
         "Inputs & forms › Toolbars",
+        "Inputs & forms › Fixed controls",
         "Tables › Basic table",
         "Tables › Editable",
         "Tables › Data grid",
@@ -391,6 +392,7 @@ fn route_by_page_keyboard_and_pointer() {
         "Overlays › Dialog kinds",
         "Overlays › Popups & tooltips",
         "Overlays › File browser",
+        "Overlays › Fixed dialogs",
         CRUMB,
     ];
     for stop in stops {
@@ -401,13 +403,13 @@ fn route_by_page_keyboard_and_pointer() {
     see(
         &entered,
         &[CRUMB, BLURB, "Building", "Pause", "0%"],
-        &[OVERVIEW, "Page options", "Overlays › File browser"],
+        &[OVERVIEW, "Page options", "Overlays › Fixed dialogs"],
     );
     app.key("[");
-    let left = app.wait_text("Overlays › File browser");
+    let left = app.wait_text("Overlays › Fixed dialogs");
     see(
         &left,
-        &["Overlays › File browser"],
+        &["Overlays › Fixed dialogs"],
         &[CRUMB, "Building", BLURB],
     );
     app.key("]");
@@ -415,7 +417,7 @@ fn route_by_page_keyboard_and_pointer() {
     see(
         &again,
         &[CRUMB, "Building", "Resolving"],
-        &["Overlays › File browser", OVERVIEW],
+        &["Overlays › Fixed dialogs", OVERVIEW],
     );
     click_side(&app, "Overview");
     let overview = app.wait_text(OVERVIEW);

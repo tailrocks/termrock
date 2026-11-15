@@ -265,7 +265,7 @@ fn route_by_page_keyboard_and_pointer() {
 
     let app = open("s04-route-keys", 120, 40, &[]);
     app.wait_text(OVERVIEW);
-    for _ in 0..23 {
+    for _ in 0..24 {
         app.key("]");
     }
     let entered = app.wait_text(BLURB);

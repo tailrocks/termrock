@@ -290,7 +290,7 @@ fn route_by_page_keyboard_and_pointer() {
 
     let app = open("s04-route-keys", 120, 40, &[]);
     app.wait_text(OVERVIEW);
-    for _ in 0..20 {
+    for _ in 0..21 {
         press(&app, "]");
     }
     let entered = app.wait_text(BLURB);
