@@ -793,7 +793,11 @@ static DATA_GRID: &[Opt] = &[
         &["shell", "page", "jump"],
     ),
     Opt::new("datagrid.horizontal", "Horizontal bar", &["auto", "never"]),
-    Opt::new("datagrid.validator", "Validator", &["default", "strict"]),
+    Opt::new(
+        "datagrid.validator",
+        "Validator",
+        &["default", "strict", "editors"],
+    ),
     Opt::new("datagrid.blur_action", "On blur", &["commit", "cancel"]),
 ];
 

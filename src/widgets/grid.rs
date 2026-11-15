@@ -371,18 +371,110 @@ fn validate_row_keys(rows: usize, keys: &[ItemKey]) -> Result<(), GridKeyError> 
     }
 }
 
-fn parse_cell(parser: &CellParser, spec: &ColumnSpec, text: &str) -> Result<CellValue, FieldError> {
-    if text.is_empty() {
-        return match spec.kind {
-            CellKind::Text | CellKind::Json | CellKind::Enum => Ok(CellValue::Text(String::new())),
-            _ if spec.nullable => Ok(CellValue::Null),
-            _ => Err(FieldError::from("Empty: use Delete for NULL")),
-        };
-    }
-    parser.validate_in(spec, text)
+/// What a user edit asks the configured [`CellParser`] to turn into a value.
+///
+/// Every user-originated mutation reaches the parser through [`convert_input`]
+/// exactly once per commit attempt; there is no pre-parser shortcut for empty
+/// text, option values or booleans.
+#[derive(Debug, Clone, Copy)]
+enum CellInput<'a> {
+    /// Raw text exactly as typed or serialised by an editor (may be empty).
+    Text(&'a str),
+    /// The explicit "make this NULL" gesture (Delete, nullable Bool cycle).
+    Null,
 }
 
+/// The canonical text a NULL gesture presents to the parser. It is the
+/// reserved token of the default grammar.
+const NULL_TOKEN: &str = "null";
+
+fn convert_input(
+    parser: &CellParser,
+    spec: &ColumnSpec,
+    input: CellInput<'_>,
+) -> Result<CellValue, FieldError> {
+    let text = match input {
+        CellInput::Text(s) => s,
+        CellInput::Null => NULL_TOKEN,
+    };
+    let value = parser.validate_in(spec, text)?;
+    // A clear gesture can only ever produce NULL: a custom parser may reject
+    // it, but it cannot turn it into unrelated data.
+    if matches!(input, CellInput::Null) && (!spec.nullable || !matches!(value, CellValue::Null)) {
+        return Err(FieldError::new(format!(
+            "{} does not accept NULL",
+            spec.name
+        )));
+    }
+    Ok(value)
+}
+
+/// Whether a user edit changed the effective cell value.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CellEditResult {
+    /// The parsed value differs from the effective value and was recorded.
+    Changed,
+    /// The parser accepted a value equal to the effective one; nothing was
+    /// recorded (no draft, no undo entry, no `CellChanged`).
+    Unchanged,
+}
+
+/// Why a user cell edit did not happen.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GridEditError {
+    /// A submission is in flight and the grid refuses edits (enforced by the
+    /// submission lock; reserved here as the single refusal point).
+    Busy,
+    /// The target row/column does not exist, is read-only, deleted, or the
+    /// editing state is inconsistent.
+    InvalidTarget,
+    /// A choice editor has no committable selection.
+    NoChoice,
+    /// The configured parser rejected the input.
+    Validation(FieldError),
+}
+
+impl std::fmt::Display for GridEditError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            GridEditError::Busy => f.write_str("Saving: edits are locked"),
+            GridEditError::InvalidTarget => f.write_str("This cell cannot be edited"),
+            GridEditError::NoChoice => f.write_str("Choose an option first"),
+            GridEditError::Validation(e) => f.write_str(e.message()),
+        }
+    }
+}
+
+impl std::error::Error for GridEditError {}
+
+/// Outcome of [`DataGrid::finish_edit_session`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FinishEdit {
+    /// No text or choice session was live; nothing was parsed.
+    NoSession,
+    /// The parser accepted the session's value and the session closed.
+    Accepted {
+        row: usize,
+        col: usize,
+        result: CellEditResult,
+    },
+}
+
+/// The built-in cell grammar.
+///
+/// Exact empty text is `Text("")` for Text and Enum columns, NULL for other
+/// nullable columns, and an error otherwise (empty Json is invalid JSON). The
+/// reserved token `null` (any case) is NULL for nullable columns. A literal
+/// text value spelled `null` needs a custom parser; see [`DataGrid::validator`].
 pub fn default_validator(col: &ColumnSpec, text: &str) -> Result<CellValue, String> {
+    if text.is_empty() {
+        return match col.kind {
+            CellKind::Text | CellKind::Enum => Ok(CellValue::Text(String::new())),
+            CellKind::Json => Err("Must be a JSON object or array".to_owned()),
+            _ if col.nullable => Ok(CellValue::Null),
+            _ => Err("Empty: use Delete for NULL".to_owned()),
+        };
+    }
     let t = text.trim();
     if t.eq_ignore_ascii_case("null") {
         return if col.nullable {
@@ -748,23 +840,6 @@ impl DataGrid {
         }
     }
 
-    fn apply_choice(
-        &mut self,
-        src: usize,
-        col: usize,
-        value: String,
-    ) -> Result<GridAction, String> {
-        let parsed = if value.is_empty() {
-            Ok(CellValue::Text(String::new()))
-        } else {
-            self.validator
-                .validate_in(&self.columns[col], &value)
-                .map_err(FieldError::into_message)
-        }?;
-        self.record_cell(src, col, parsed);
-        Ok(GridAction::CellChanged { row: src, col })
-    }
-
     fn next_writable(&self, backward: bool) -> Result<usize, GridAction> {
         let n = self.columns.len();
         let mut col = self.cursor.1;
@@ -795,27 +870,153 @@ impl DataGrid {
             ChoiceResult::Commit(v) => (v, None),
             ChoiceResult::CommitAndTab { value, backward } => (value, Some(backward)),
         };
-        let (src, col) = self.choice.as_ref().map(|c| (c.row, c.col))?;
-        match self.apply_choice(src, col, value) {
-            Ok(ev) => {
+        let FinishEdit::Accepted { row, col, result } = self.finish_choice(value).ok()? else {
+            return None;
+        };
+        let ev =
+            (result == CellEditResult::Changed).then_some(GridAction::CellChanged { row, col });
+        if let Some(backward) = tab {
+            match self.next_writable(backward) {
+                Ok(c) => {
+                    self.set_cursor(self.cursor.0, c, false);
+                    let _ = self.begin_edit();
+                }
+                Err(leave) => return Some(leave),
+            }
+        }
+        ev
+    }
+
+    fn edit_blocked(&self, src: usize, col: usize) -> bool {
+        !self.editable
+            || src >= self.rows.len()
+            || self
+                .row_key(src)
+                .is_none_or(|key| self.pending.is_deleted(key))
+            || self.columns.get(col).is_none_or(|c| c.read_only)
+    }
+
+    fn commit_input(
+        &mut self,
+        src: usize,
+        col: usize,
+        input: CellInput<'_>,
+    ) -> Result<CellEditResult, GridEditError> {
+        if self.edit_blocked(src, col) {
+            return Err(GridEditError::InvalidTarget);
+        }
+        let value = convert_input(&self.validator, &self.columns[col], input)
+            .map_err(GridEditError::Validation)?;
+        self.cell_errors.remove(&(src, col));
+        if value == *self.value(src, col) {
+            return Ok(CellEditResult::Unchanged);
+        }
+        self.record_cell(src, col, value);
+        Ok(CellEditResult::Changed)
+    }
+
+    /// Applies user-typed text to a cell through the configured parser.
+    ///
+    /// This is the programmatic twin of committing a text editor: `text` goes
+    /// to the parser unchanged (including `""`), a rejection leaves drafts and
+    /// undo untouched, and an accepted value equal to the current one is
+    /// [`CellEditResult::Unchanged`]. Typed model values that are trusted use
+    /// [`DataGrid::record_cell`] instead.
+    pub fn try_edit_text(
+        &mut self,
+        src: usize,
+        col: usize,
+        text: &str,
+    ) -> Result<CellEditResult, GridEditError> {
+        self.commit_input(src, col, CellInput::Text(text))
+    }
+
+    fn finish_text(&mut self) -> Result<FinishEdit, GridEditError> {
+        let e = self.edit.as_ref().ok_or(GridEditError::InvalidTarget)?;
+        let (row, col, text) = (e.row, e.col, e.field.text().to_owned());
+        match self.commit_input(row, col, CellInput::Text(&text)) {
+            Ok(result) => {
+                self.edit = None;
+                Ok(FinishEdit::Accepted { row, col, result })
+            }
+            Err(err) => {
+                if let Some(e) = self.edit.as_mut() {
+                    e.field.set_error(Some(FieldError::new(err.to_string())));
+                }
+                Err(err)
+            }
+        }
+    }
+
+    fn finish_choice(&mut self, value: String) -> Result<FinishEdit, GridEditError> {
+        let (row, col) = self
+            .choice
+            .as_ref()
+            .map(|c| (c.row, c.col))
+            .ok_or(GridEditError::InvalidTarget)?;
+        match self.commit_input(row, col, CellInput::Text(&value)) {
+            Ok(result) => {
                 self.choice = None;
-                if let Some(backward) = tab {
-                    match self.next_writable(backward) {
-                        Ok(c) => {
-                            self.set_cursor(self.cursor.0, c, false);
-                            let _ = self.begin_edit();
+                Ok(FinishEdit::Accepted { row, col, result })
+            }
+            Err(err) => {
+                if let Some(c) = self.choice.as_mut() {
+                    c.editor.error = Some(err.to_string());
+                }
+                Err(err)
+            }
+        }
+    }
+
+    /// Commits the live text or choice session explicitly, for hosts that must
+    /// resolve it before they save or close.
+    ///
+    /// With no session nothing is parsed. Otherwise the session's value goes
+    /// through the parser once: a rejection keeps the session, its input and a
+    /// visible error; an accepted value (changed or not) closes it. Choice
+    /// sessions commit their current selection regardless of the blur policy.
+    /// It never navigates and never cancels a live session.
+    pub fn finish_edit_session(&mut self) -> Result<FinishEdit, GridEditError> {
+        match (self.edit.is_some(), self.choice.is_some()) {
+            (false, false) => Ok(FinishEdit::NoSession),
+            (true, true) => Err(GridEditError::InvalidTarget),
+            (true, false) => self.finish_text(),
+            (false, true) => {
+                let value = self
+                    .choice
+                    .as_ref()
+                    .and_then(|c| c.editor.blur_value(&self.editor_config));
+                match value {
+                    Some(v) => self.finish_choice(v),
+                    None => {
+                        let err = GridEditError::NoChoice;
+                        if let Some(c) = self.choice.as_mut() {
+                            c.editor.error = Some(err.to_string());
                         }
-                        Err(leave) => return Some(leave),
+                        Err(err)
                     }
                 }
-                Some(ev)
             }
-            Err(msg) => {
-                if let Some(c) = self.choice.as_mut() {
-                    c.editor.error = Some(msg);
-                }
-                None
+        }
+    }
+
+    fn immediate(
+        &mut self,
+        src: usize,
+        col: usize,
+        input: CellInput<'_>,
+    ) -> (Outcome, Option<GridAction>) {
+        match self.commit_input(src, col, input) {
+            Ok(CellEditResult::Changed) => (
+                Outcome::Changed,
+                Some(GridAction::CellChanged { row: src, col }),
+            ),
+            Ok(CellEditResult::Unchanged) => (Outcome::Consumed, None),
+            Err(GridEditError::Validation(e)) => {
+                self.cell_errors.insert((src, col), e.into_message());
+                (Outcome::Changed, None)
             }
+            Err(_) => (Outcome::Consumed, None),
         }
     }
 
@@ -881,6 +1082,9 @@ impl DataGrid {
         self
     }
 
+    /// Sets the parser every user edit goes through, with the raw text of the
+    /// edit (`""` included). Delete and the nullable Bool cycle present the
+    /// reserved token `null` and must get `CellValue::Null` back.
     pub fn validator(
         mut self,
         f: impl Fn(&ColumnSpec, &str) -> Result<CellValue, String> + 'static,
@@ -1322,10 +1526,7 @@ impl DataGrid {
         if spec.editor.is_constrained() {
             let raw = v.edit_text();
             if let Some(next) = spec.editor.toggled(&raw) {
-                return match self.apply_choice(src, col, next) {
-                    Ok(ev) => (Outcome::Changed, Some(ev)),
-                    Err(_) => (Outcome::Consumed, None),
-                };
+                return self.immediate(src, col, CellInput::Text(&next));
             }
             let opened =
                 ChoiceEditor::open(self.choice_id(), &spec.editor, &raw, &self.editor_config);
@@ -1339,15 +1540,11 @@ impl DataGrid {
         match spec.kind {
             CellKind::Bool => {
                 let next = match v {
-                    CellValue::Bool(true) => CellValue::Bool(false),
-                    CellValue::Bool(false) if spec.nullable => CellValue::Null,
-                    _ => CellValue::Bool(true),
+                    CellValue::Bool(true) => CellInput::Text("false"),
+                    CellValue::Bool(false) if spec.nullable => CellInput::Null,
+                    _ => CellInput::Text("true"),
                 };
-                self.record_cell(src, col, next);
-                return (
-                    Outcome::Changed,
-                    Some(GridAction::CellChanged { row: src, col }),
-                );
+                return self.immediate(src, col, next);
             }
             CellKind::Json => {
                 return (
@@ -1369,7 +1566,7 @@ impl DataGrid {
 
         let (parser, spec) = (self.validator.clone(), self.columns[col].clone());
         field.validator = Some(Validator::new(move |text| {
-            parse_cell(&parser, &spec, text).map(|_| ())
+            convert_input(&parser, &spec, CellInput::Text(text)).map(|_| ())
         }));
         self.edit = Some(EditState {
             row: src,
@@ -1380,21 +1577,13 @@ impl DataGrid {
     }
 
     pub fn commit_edit(&mut self) -> Option<GridAction> {
-        let mut e = self.edit.take()?;
-        let parsed = parse_cell(&self.validator, &self.columns[e.col], e.field.text());
-        match parsed {
-            Ok(v) => {
-                self.record_cell(e.row, e.col, v);
-                Some(GridAction::CellChanged {
-                    row: e.row,
-                    col: e.col,
-                })
-            }
-            Err(err) => {
-                e.field.set_error(Some(err));
-                self.edit = Some(e);
-                None
-            }
+        match self.finish_text().ok()? {
+            FinishEdit::Accepted {
+                row,
+                col,
+                result: CellEditResult::Changed,
+            } => Some(GridAction::CellChanged { row, col }),
+            _ => None,
         }
     }
 
@@ -1427,6 +1616,9 @@ impl DataGrid {
         }
     }
 
+    /// Records an already-typed value as a draft. This is trusted model input
+    /// (seeding, previews): it skips the configured parser and eligibility
+    /// checks. User edits go through [`DataGrid::try_edit_text`] instead.
     pub fn record_cell(&mut self, src: usize, col: usize, value: CellValue) -> bool {
         let Some(&key) = self.row_keys.get(src) else {
             return false;
@@ -2144,17 +2336,7 @@ impl DataGrid {
                 if spec.read_only {
                     return (Outcome::Consumed, None);
                 }
-                if spec.nullable {
-                    self.record_cell(src, c, CellValue::Null);
-                    (
-                        Outcome::Changed,
-                        Some(GridAction::CellChanged { row: src, col: c }),
-                    )
-                } else {
-                    self.cell_errors
-                        .insert((src, c), format!("{} is NOT NULL", spec.name));
-                    (Outcome::Changed, None)
-                }
+                self.immediate(src, c, CellInput::Null)
             }
             GridCmd::ToggleDelete => {
                 let Some(src) = self.cursor_src() else {
