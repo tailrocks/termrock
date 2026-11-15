@@ -124,7 +124,11 @@ impl HelpKeysPage {
     }
 
     pub fn build_help(&self) -> HelpOverlay {
-        let mut h = HelpOverlay::new(HELP, "Editor", sections())
+        let content = match self.opt("helpkeys.content") {
+            "none" => Vec::new(),
+            _ => sections(),
+        };
+        let mut h = HelpOverlay::new(HELP, "Editor", content)
             .max_percent(self.opt("helpkeys.max_percent").parse().unwrap_or(80))
             .nav(match self.opt("helpkeys.nav") {
                 "vim" => NavKeys::VIM,
