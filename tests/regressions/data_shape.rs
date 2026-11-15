@@ -580,3 +580,19 @@ fn issue42_validate_rectangular_rejects_the_first_ragged_row() {
         Err(DataError::EmptySchemaWithRows),
     );
 }
+
+#[test]
+fn issue42_update_cell_keeps_the_cursor_on_its_record_when_the_sort_moves_it() {
+    let mut t = table();
+    t.try_set_rows(vec![full("x", "1"), full("y", "2")])
+        .expect("rectangular");
+    t.sort_by(0);
+    assert_eq!(t.cursor_row, 0);
+    assert_eq!(t.source_row(0), 0, "the cursor is on x");
+
+    assert!(t.update_cell(0, 0, |c| c.text = "z".into()));
+
+    assert_eq!(t.source_row(1), 0, "z now sorts after y");
+    assert_eq!(t.cursor_row, 1, "the cursor followed its record");
+    assert_eq!(t.source_row(t.cursor_row), 0);
+}
