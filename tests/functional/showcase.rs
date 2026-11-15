@@ -1196,6 +1196,27 @@ fn showcase_terminal_replay_mid_sequence() {
     mid.finish();
 }
 
+#[test]
+fn showcase_terminal_wide_edge_clips_to_the_pane() {
+    let glyphs = |clip: &str| {
+        let app = terminal_pane(
+            "showcase-terminal-wide-edge",
+            &["terminalpane.fixture=wide edge", clip],
+        );
+        let screen = app.settle();
+        let (_, row) = pane_row(&screen, "wide edge", 0);
+        app.finish();
+        row.chars().filter(|c| "日本語".contains(*c)).count()
+    };
+
+    assert_eq!(glyphs("terminalpane.clip=off"), 20, "the whole row fits");
+    assert_eq!(
+        glyphs("terminalpane.clip=on"),
+        19,
+        "the glyph that would straddle the clipped edge is blank"
+    );
+}
+
 fn mode_reads(screen: &TerminalSnapshot, mode: &str, value: &str) -> bool {
     row_text(screen, u32::from(find(screen, mode).y)).contains(value)
 }
