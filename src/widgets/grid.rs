@@ -29,6 +29,13 @@ use crate::widgets::option_editor::{
 use crate::widgets::scrollbar;
 use crate::widgets::table::SortDir;
 
+#[path = "grid_changes.rs"]
+mod changes;
+pub use changes::{
+    CellChange, CommittedRow, DeletedRow, GridChangeSet, GridCommitReceipt, GridInstanceId,
+    InsertedRow, UpdatedRow,
+};
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum CellValue {
     Null,
@@ -690,6 +697,7 @@ pub struct DataGrid {
     key_to_source: HashMap<ItemKey, usize>,
     next_local_key: u64,
     revision: GridRevision,
+    origin: changes::GridOrigin,
     order: Vec<usize>,
     pub total: RowTotal,
     pub more: bool,
@@ -872,6 +880,7 @@ impl DataGrid {
             key_to_source: HashMap::new(),
             next_local_key: 0,
             revision: GridRevision::default(),
+            origin: changes::GridOrigin::new(),
             order: vec![],
             total: RowTotal::Unknown,
             more: false,

@@ -65,6 +65,82 @@ pub const GRID_EDIT_COVERAGE: &[(&str, &str)] = &[
     ("widgets::grid::FinishEdit", "grid"),
     ("widgets::grid::FinishEdit::NoSession", "grid"),
     ("widgets::grid::FinishEdit::Accepted", "grid"),
+    ("widgets::grid::GridChangeSet", "grid"),
+    ("widgets::grid::InsertedRow", "grid"),
+    ("widgets::grid::UpdatedRow", "grid"),
+    ("widgets::grid::DeletedRow", "grid"),
+    ("widgets::grid::DataGrid::snapshot_changes", "grid"),
+    ("widgets::grid::InsertedRow::key", "grid"),
+    ("widgets::grid::InsertedRow::values", "grid"),
+    ("widgets::grid::UpdatedRow::key", "grid"),
+    ("widgets::grid::UpdatedRow::before", "grid"),
+    ("widgets::grid::UpdatedRow::cells", "grid"),
+    ("widgets::grid::DeletedRow::before", "grid"),
+    ("widgets::grid::CellChange::column", "grid"),
+    ("widgets::grid::CellChange::after", "grid"),
+    ("widgets::grid::GridChangeSet::inserted", "grid"),
+    ("widgets::grid::GridChangeSet::updated", "grid"),
+    ("widgets::grid::GridChangeSet::deleted", "grid"),
+    ("widgets::grid::GridChangeSet::counts", "grid"),
+];
+
+pub const GRID_CHANGE_ALLOWLIST: &[(&str, &str)] = &[
+    (
+        "widgets::grid::DataGrid::instance_id",
+        "A submission-time admission and acknowledgement shape. The Showcase grid has no submission lifecycle yet, so no page can use it; the unit tests in src/widgets/grid_changeset_tests.rs cover it.",
+    ),
+    (
+        "widgets::grid::GridInstanceId",
+        "A submission-time admission and acknowledgement shape. The Showcase grid has no submission lifecycle yet, so no page can use it; the unit tests in src/widgets/grid_changeset_tests.rs cover it.",
+    ),
+    (
+        "widgets::grid::GridChangeSet::origin",
+        "A submission-time admission and acknowledgement shape. The Showcase grid has no submission lifecycle yet, so no page can use it; the unit tests in src/widgets/grid_changeset_tests.rs cover it.",
+    ),
+    (
+        "widgets::grid::GridChangeSet::revision",
+        "A submission-time admission and acknowledgement shape. The Showcase grid has no submission lifecycle yet, so no page can use it; the unit tests in src/widgets/grid_changeset_tests.rs cover it.",
+    ),
+    (
+        "widgets::grid::GridChangeSet::is_empty",
+        "The Showcase page keeps its own pending-count guard before it opens the dialog, and the dialog already shows the zero counts.",
+    ),
+    (
+        "widgets::grid::GridChangeSet::same_capture",
+        "A submission-time admission and acknowledgement shape. The Showcase grid has no submission lifecycle yet, so no page can use it; the unit tests in src/widgets/grid_changeset_tests.rs cover it.",
+    ),
+    (
+        "widgets::grid::CommittedRow",
+        "A submission-time admission and acknowledgement shape. The Showcase grid has no submission lifecycle yet, so no page can use it; the unit tests in src/widgets/grid_changeset_tests.rs cover it.",
+    ),
+    (
+        "widgets::grid::GridCommitReceipt",
+        "A submission-time admission and acknowledgement shape. The Showcase grid has no submission lifecycle yet, so no page can use it; the unit tests in src/widgets/grid_changeset_tests.rs cover it.",
+    ),
+    (
+        "widgets::grid::GridCommitReceipt::new",
+        "A submission-time admission and acknowledgement shape. The Showcase grid has no submission lifecycle yet, so no page can use it; the unit tests in src/widgets/grid_changeset_tests.rs cover it.",
+    ),
+    (
+        "widgets::grid::GridCommitReceipt::origin",
+        "A submission-time admission and acknowledgement shape. The Showcase grid has no submission lifecycle yet, so no page can use it; the unit tests in src/widgets/grid_changeset_tests.rs cover it.",
+    ),
+    (
+        "widgets::grid::GridCommitReceipt::revision",
+        "A submission-time admission and acknowledgement shape. The Showcase grid has no submission lifecycle yet, so no page can use it; the unit tests in src/widgets/grid_changeset_tests.rs cover it.",
+    ),
+    (
+        "widgets::grid::DeletedRow::key",
+        "The DELETE preview matches on the base row from DeletedRow::before, so the row key is not shown.",
+    ),
+    (
+        "widgets::grid::CellChange",
+        "The page reads a changed cell through its accessors and never names the type.",
+    ),
+    (
+        "widgets::grid::CellChange::before",
+        "The UPDATE preview matches on the row's base values from UpdatedRow::before, so the per-cell before value is not shown.",
+    ),
 ];
 
 pub const PICKER_ALLOWLIST: &[(&str, &str)] = &[
@@ -318,6 +394,55 @@ mod tests {
                 source.contains(&needle),
                 "page {page} never uses {id} (looked for {needle})"
             );
+        }
+    }
+
+    #[test]
+    fn grid_change_apis_are_covered_or_allowlisted_with_reasons() {
+        let catalog = catalog_source();
+        let mut seen = std::collections::BTreeSet::new();
+        for (id, reason) in GRID_CHANGE_ALLOWLIST {
+            assert!(
+                catalog.contains(&format!("\"{id}\"")),
+                "declared id is not a catalog capability: {id}"
+            );
+            assert!(
+                !reason.trim().is_empty(),
+                "allowlist entry has no reason: {id}"
+            );
+            assert!(seen.insert(*id), "duplicate allowlist entry: {id}");
+            assert!(
+                !GRID_EDIT_COVERAGE.iter().any(|(covered, _)| covered == id),
+                "{id} is both covered and allowlisted"
+            );
+        }
+        let declared =
+            |id: &str| seen.contains(id) || GRID_EDIT_COVERAGE.iter().any(|(c, _)| *c == id);
+        for line in catalog.lines() {
+            let Some(id) = line.split('"').nth(1) else {
+                continue;
+            };
+            let change_type = [
+                "GridInstanceId",
+                "CellChange",
+                "InsertedRow",
+                "UpdatedRow",
+                "DeletedRow",
+                "GridChangeSet",
+                "CommittedRow",
+                "GridCommitReceipt",
+            ]
+            .iter()
+            .any(|t| id.starts_with(&format!("widgets::grid::{t}")));
+            if change_type
+                || id == "widgets::grid::DataGrid::snapshot_changes"
+                || id == "widgets::grid::DataGrid::instance_id"
+            {
+                assert!(
+                    declared(id),
+                    "grid change capability {id} has no coverage or allowlist line"
+                );
+            }
         }
     }
 

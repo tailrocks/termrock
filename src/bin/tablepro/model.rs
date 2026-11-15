@@ -2,16 +2,18 @@ use crate::db::{Catalog, ColType, Table, Value};
 use crate::sql::{FUNCTIONS, KEYWORDS, TokKind, tokenize};
 use junie_tui::core::id::ItemKey;
 use junie_tui::ui::text::fuzzy;
-use junie_tui::widgets::grid::{CellValue, DataGrid};
+use junie_tui::widgets::grid::{CellValue, GridChangeSet};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SqlLiteralError {
     NonFiniteNumber,
 }
 
+/// The snapshot row a serialization error belongs to. A key is stable across
+/// sorting and edits, so the error names the same row the reviewer saw.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PreviewRow {
-    Source(usize),
+    Key(ItemKey),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -19,6 +21,13 @@ pub enum PreviewSqlCause {
     Literal(SqlLiteralError),
     MissingColumn(String),
     InvalidDefaultPredicate,
+    /// A draft changes a column the schema generates.
+    GeneratedColumn,
+    /// A snapshot row is not as wide as the projected columns.
+    RowShape {
+        expected: usize,
+        actual: usize,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -29,27 +38,58 @@ pub struct PreviewSqlError {
 }
 
 impl PreviewSqlError {
-    fn at(row: usize, column: &str, cause: PreviewSqlCause) -> Self {
+    fn at(row: ItemKey, column: &str, cause: PreviewSqlCause) -> Self {
         Self {
-            row: PreviewRow::Source(row),
+            row: PreviewRow::Key(row),
             column: Some(column.to_owned()),
+            cause,
+        }
+    }
+
+    fn row(row: ItemKey, cause: PreviewSqlCause) -> Self {
+        Self {
+            row: PreviewRow::Key(row),
+            column: None,
             cause,
         }
     }
 }
 
-fn cell_literal(row: usize, column: &str, value: &CellValue) -> Result<String, PreviewSqlError> {
-    sql_literal(&crate::tabs::from_cell(value))
-        .map_err(|e| PreviewSqlError::at(row, column, PreviewSqlCause::Literal(e)))
+/// `DEFAULT` and `NULL` are decided here, before the value reaches the typed
+/// literal serializer, so the two stay distinct.
+fn cell_literal(row: ItemKey, column: &str, value: &CellValue) -> Result<String, PreviewSqlError> {
+    match value {
+        CellValue::Default => Ok("DEFAULT".to_owned()),
+        CellValue::Null => Ok("NULL".to_owned()),
+        other => sql_literal(&crate::tabs::from_cell(other))
+            .map_err(|e| PreviewSqlError::at(row, column, PreviewSqlCause::Literal(e))),
+    }
 }
 
-/// Matches the row as it was loaded: base values only, so an edited key still
-/// finds its original record.
+fn check_width(
+    row: ItemKey,
+    columns: &[(String, ColType)],
+    values: &[CellValue],
+) -> Result<(), PreviewSqlError> {
+    if values.len() == columns.len() {
+        return Ok(());
+    }
+    Err(PreviewSqlError::row(
+        row,
+        PreviewSqlCause::RowShape {
+            expected: columns.len(),
+            actual: values.len(),
+        },
+    ))
+}
+
+/// Matches the row as it was loaded: the snapshot's base values, so an edited
+/// key still finds its original record.
 fn row_predicate(
     key_columns: &[&str],
     columns: &[(String, ColType)],
-    grid: &DataGrid,
-    src: usize,
+    row: ItemKey,
+    before: &[CellValue],
 ) -> Result<String, PreviewSqlError> {
     let keyed: Vec<(usize, &str)> = if key_columns.is_empty() {
         columns
@@ -66,90 +106,90 @@ fn row_predicate(
                     .position(|c| c.0 == *k)
                     .map(|ci| (ci, *k))
                     .ok_or_else(|| {
-                        PreviewSqlError::at(src, k, PreviewSqlCause::MissingColumn((*k).to_owned()))
+                        PreviewSqlError::at(row, k, PreviewSqlCause::MissingColumn((*k).to_owned()))
                     })
             })
             .collect::<Result<_, _>>()?
     };
     let terms: Vec<String> = keyed
         .into_iter()
-        .map(|(ci, name)| {
-            let base = grid
-                .rows()
-                .get(src)
-                .and_then(|r| r.get(ci))
-                .cloned()
-                .unwrap_or(CellValue::Null);
-            match base {
-                CellValue::Null => Ok(format!("{name} IS NULL")),
-                CellValue::Default => Err(PreviewSqlError::at(
-                    src,
-                    name,
-                    PreviewSqlCause::InvalidDefaultPredicate,
-                )),
-                other => Ok(format!("{name} = {}", cell_literal(src, name, &other)?)),
-            }
+        .map(|(ci, name)| match &before[ci] {
+            CellValue::Null => Ok(format!("{name} IS NULL")),
+            CellValue::Default => Err(PreviewSqlError::at(
+                row,
+                name,
+                PreviewSqlCause::InvalidDefaultPredicate,
+            )),
+            other => Ok(format!("{name} = {}", cell_literal(row, name, other)?)),
         })
         .collect::<Result<_, _>>()?;
     Ok(terms.join(" AND "))
 }
 
-fn in_source_order(grid: &DataGrid, keys: impl Iterator<Item = ItemKey>) -> Vec<(usize, ItemKey)> {
-    let mut rows: Vec<(usize, ItemKey)> = keys
-        .filter_map(|key| Some((grid.source_index(key)?, key)))
-        .collect();
-    rows.sort_unstable();
-    rows
-}
-
-/// Complete statement list for the pending changes, or the first
-/// serialization error: a partial list is never returned.
+/// Complete statement list for a captured change set, or the first
+/// serialization error: a partial list is never returned. The snapshot is the
+/// only input, so the SQL cannot drift from what was captured.
+///
+/// - INSERT lists every column except an explicit `Default` cell and a column
+///   the schema generates; an explicit `Null` is written as `NULL`.
+/// - UPDATE sets only the changed columns, writing an explicit `Default` as
+///   `DEFAULT`, and matches the base row. A change to a generated column is an
+///   error rather than a dropped statement.
+/// - DELETE matches the base row.
+/// - A row predicate uses the primary key when the projection has it, else every
+///   projected column, and fails if the key is missing or holds `Default`.
 pub fn preview_sql(
     table: &Table,
     columns: &[(String, ColType)],
-    grid: &DataGrid,
+    changes: &GridChangeSet,
 ) -> Result<Vec<String>, PreviewSqlError> {
     let pk: Vec<&str> = table
         .primary_key()
         .iter()
         .map(|c| c.name.as_str())
         .collect();
-    let pending = grid.pending();
+    let generated = |ci: usize| table.column(&columns[ci].0).is_some_and(|c| c.generated);
     let mut out = Vec::new();
-    for (r, key) in in_source_order(grid, pending.dirty_rows().into_iter()) {
-        let mut cells: Vec<(usize, &CellValue)> = pending
+    for row in changes.updated() {
+        let key = row.key();
+        check_width(key, columns, row.before())?;
+        let sets: Vec<String> = row
             .cells()
-            .filter(|(row, _, _)| *row == key)
-            .map(|(_, col, v)| (col, v))
-            .collect();
-        cells.sort_by_key(|(c, _)| *c);
-        let sets: Vec<String> = cells
-            .into_iter()
-            .map(|(c, v)| {
-                let name = &columns[c].0;
-                Ok(format!("{name} = {}", cell_literal(r, name, v)?))
+            .iter()
+            .map(|change| {
+                let name = &columns[change.column()].0;
+                if generated(change.column()) {
+                    return Err(PreviewSqlError::at(
+                        key,
+                        name,
+                        PreviewSqlCause::GeneratedColumn,
+                    ));
+                }
+                Ok(format!(
+                    "{name} = {}",
+                    cell_literal(key, name, change.after())?
+                ))
             })
             .collect::<Result<_, PreviewSqlError>>()?;
         out.push(format!(
             "UPDATE {} SET {} WHERE {};",
             table.qualified(),
             sets.join(", "),
-            row_predicate(&pk, columns, grid, r)?
+            row_predicate(&pk, columns, key, row.before())?
         ));
     }
-    for (r, key) in in_source_order(grid, pending.inserted()) {
+    for row in changes.inserted() {
+        let key = row.key();
+        check_width(key, columns, row.values())?;
         let mut names = vec![];
         let mut vals = vec![];
-        for (ci, c) in columns.iter().enumerate() {
-            let v = pending
-                .value(key, ci)
-                .cloned()
-                .unwrap_or(CellValue::Default);
-            if matches!(v, CellValue::Default) {
+        for (ci, (name, _)) in columns.iter().enumerate() {
+            let v = &row.values()[ci];
+            if matches!(v, CellValue::Default) || generated(ci) {
                 continue;
             }
-            names.push(c.0.clone());
-            vals.push(cell_literal(r, &c.0, &v)?);
+            names.push(name.clone());
+            vals.push(cell_literal(key, name, v)?);
         }
         if names.is_empty() {
             out.push(format!("INSERT INTO {} DEFAULT VALUES;", table.qualified()));
@@ -162,11 +202,12 @@ pub fn preview_sql(
             ));
         }
     }
-    for (r, _) in in_source_order(grid, pending.deleted()) {
+    for row in changes.deleted() {
+        check_width(row.key(), columns, row.before())?;
         out.push(format!(
             "DELETE FROM {} WHERE {};",
             table.qualified(),
-            row_predicate(&pk, columns, grid, r)?
+            row_predicate(&pk, columns, row.key(), row.before())?
         ));
     }
     Ok(out)
@@ -1011,7 +1052,7 @@ mod tests {
     use super::*;
     use crate::db::{Column, ObjectKind};
     use junie_tui::core::id::WidgetId;
-    use junie_tui::widgets::grid::{CellKind, ColumnSpec, GridRows, RowTotal};
+    use junie_tui::widgets::grid::{CellKind, ColumnSpec, DataGrid, GridRows, RowTotal};
 
     fn column(name: &str, ty: ColType, primary: bool) -> Column {
         Column {
@@ -1142,7 +1183,7 @@ mod tests {
         grid.record_cell(0, 1, CellValue::Num(0.001));
         grid.record_cell(1, 1, CellValue::Num(8.0));
         assert_eq!(
-            preview_sql(&t, &columns, &grid).unwrap(),
+            preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap(),
             vec![
                 "UPDATE public.ledger SET ref = 9.876543, amount = 0.001 WHERE ref = 1.234567;"
                     .to_owned(),
@@ -1153,7 +1194,7 @@ mod tests {
         grid.toggle_delete(0);
         grid.toggle_delete(1);
         assert_eq!(
-            preview_sql(&t, &columns, &grid).unwrap(),
+            preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap(),
             vec![
                 "DELETE FROM public.ledger WHERE ref = 1.234567;".to_owned(),
                 "DELETE FROM public.ledger WHERE ref IS NULL;".to_owned(),
@@ -1178,7 +1219,7 @@ mod tests {
         grid.record_cell(1, 1, CellValue::Text("it's".into()));
         grid.record_cell(1, 2, CellValue::Num(-0.000_1));
         assert_eq!(
-            preview_sql(&t, &columns, &grid).unwrap(),
+            preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap(),
             vec![
                 "UPDATE public.ledger SET amount = 0.001 WHERE ref = 1.2345 AND note = 'O''Brien' AND amount IS NULL;"
                     .to_owned(),
@@ -1200,11 +1241,11 @@ mod tests {
         );
         grid.record_cell(0, 1, CellValue::Num(6.5));
         grid.record_cell(1, 1, CellValue::Num(f64::NAN));
-        let err = preview_sql(&t, &columns, &grid).unwrap_err();
+        let err = preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap_err();
         assert_eq!(
             err,
             PreviewSqlError {
-                row: PreviewRow::Source(1),
+                row: PreviewRow::Key(grid.row_key(1).unwrap()),
                 column: Some("amount".into()),
                 cause: PreviewSqlCause::Literal(SqlLiteralError::NonFiniteNumber),
             }
@@ -1213,8 +1254,8 @@ mod tests {
         grid.undo();
         grid.insert_row();
         grid.record_cell(2, 0, CellValue::Num(f64::INFINITY));
-        let err = preview_sql(&t, &columns, &grid).unwrap_err();
-        assert_eq!(err.row, PreviewRow::Source(2));
+        let err = preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap_err();
+        assert_eq!(err.row, PreviewRow::Key(grid.row_key(2).unwrap()));
         assert_eq!(err.column.as_deref(), Some("ref"));
     }
 
@@ -1230,9 +1271,9 @@ mod tests {
         );
         grid.record_cell(0, 1, CellValue::Num(6.5));
         assert_eq!(
-            preview_sql(&t, &columns, &grid).unwrap_err(),
+            preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap_err(),
             PreviewSqlError {
-                row: PreviewRow::Source(0),
+                row: PreviewRow::Key(grid.row_key(0).unwrap()),
                 column: Some("ref".into()),
                 cause: PreviewSqlCause::Literal(SqlLiteralError::NonFiniteNumber),
             },
@@ -1242,9 +1283,9 @@ mod tests {
         grid.discard();
         grid.toggle_delete(1);
         assert_eq!(
-            preview_sql(&t, &columns, &grid).unwrap_err(),
+            preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap_err(),
             PreviewSqlError {
-                row: PreviewRow::Source(1),
+                row: PreviewRow::Key(grid.row_key(1).unwrap()),
                 column: Some("ref".into()),
                 cause: PreviewSqlCause::InvalidDefaultPredicate,
             }
@@ -1254,17 +1295,147 @@ mod tests {
             column("id", ColType::Int, true),
             column("amount", ColType::Numeric, false),
         ]);
-        let (_, grid) = grid_of(&orphan, vec![vec![CellValue::Int(1), CellValue::Num(1.0)]]);
-        let narrow = vec![("amount".to_owned(), ColType::Numeric)];
-        let mut grid = grid;
+        let projected = table(vec![column("amount", ColType::Numeric, false)]);
+        let (narrow, mut grid) = grid_of(&projected, vec![vec![CellValue::Num(1.0)]]);
         grid.toggle_delete(0);
         assert_eq!(
-            preview_sql(&orphan, &narrow, &grid).unwrap_err(),
+            preview_sql(&orphan, &narrow, &grid.snapshot_changes()).unwrap_err(),
             PreviewSqlError {
-                row: PreviewRow::Source(0),
+                row: PreviewRow::Key(grid.row_key(0).unwrap()),
                 column: Some("id".into()),
                 cause: PreviewSqlCause::MissingColumn("id".into()),
             }
+        );
+    }
+
+    fn generated_id(name: &str) -> Column {
+        Column {
+            generated: true,
+            ..column(name, ColType::Int, true)
+        }
+    }
+
+    fn notes() -> Table {
+        table(vec![
+            generated_id("id"),
+            column("name", ColType::Text, false),
+            column("note", ColType::Text, false),
+        ])
+    }
+
+    fn notes_grid(rows: Vec<Vec<CellValue>>) -> (Vec<(String, ColType)>, DataGrid) {
+        let t = notes();
+        let columns: Vec<(String, ColType)> =
+            t.columns.iter().map(|c| (c.name.clone(), c.ty)).collect();
+        let specs = vec![
+            ColumnSpec::new("id", CellKind::Id).primary().read_only(),
+            ColumnSpec::new("name", CellKind::Text),
+            ColumnSpec::new("note", CellKind::Text),
+        ];
+        let mut grid = DataGrid::new(WidgetId::of("issue50"), specs);
+        grid.set_rows(GridRows {
+            total: RowTotal::Exact(rows.len()),
+            rows,
+            more: false,
+        });
+        (columns, grid)
+    }
+
+    fn text(s: &str) -> CellValue {
+        CellValue::Text(s.into())
+    }
+
+    fn one_note() -> Vec<Vec<CellValue>> {
+        vec![vec![CellValue::Int(7), text("a'b"), CellValue::Null]]
+    }
+
+    #[test]
+    fn issue50_duplicate_sql_includes_copied_values() {
+        let (columns, mut grid) = notes_grid(one_note());
+        grid.duplicate_row().expect("row duplicates");
+        let sql = preview_sql(&notes(), &columns, &grid.snapshot_changes()).unwrap();
+        assert_eq!(
+            sql,
+            vec!["INSERT INTO public.ledger (name, note) VALUES ('a''b', NULL);".to_owned()],
+            "the copied text and the copied NULL are written, the generated id is not"
+        );
+
+        let copy = grid.len() - 1;
+        grid.record_cell(copy, 2, text("edited"));
+        let sql = preview_sql(&notes(), &columns, &grid.snapshot_changes()).unwrap();
+        assert_eq!(
+            sql,
+            vec!["INSERT INTO public.ledger (name, note) VALUES ('a''b', 'edited');".to_owned()],
+            "one edit changes one column and keeps the other copies"
+        );
+    }
+
+    #[test]
+    fn issue50_sql_default_null_and_original_identity() {
+        let t = notes();
+        let (columns, mut grid) = notes_grid(one_note());
+        grid.insert_row().expect("row inserts");
+        let fresh = grid.len() - 1;
+        grid.record_cell(fresh, 1, text("x"));
+        assert_eq!(
+            preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap(),
+            vec!["INSERT INTO public.ledger (name, note) VALUES ('x', NULL);".to_owned()],
+            "Default is omitted, Null is written"
+        );
+
+        grid.discard();
+        grid.record_cell(0, 2, CellValue::Default);
+        grid.record_cell(0, 1, CellValue::Null);
+        assert_eq!(
+            preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap(),
+            vec!["UPDATE public.ledger SET name = NULL, note = DEFAULT WHERE id = 7;".to_owned()],
+            "an explicit Default stays DEFAULT, an explicit Null stays NULL"
+        );
+
+        let keyed = keyed();
+        let (kcolumns, mut kgrid) =
+            grid_of(&keyed, vec![vec![CellValue::Num(1.5), CellValue::Num(2.0)]]);
+        kgrid.record_cell(0, 0, CellValue::Num(8.25));
+        let captured = kgrid.snapshot_changes();
+        kgrid.discard();
+        assert_eq!(
+            preview_sql(&keyed, &kcolumns, &captured).unwrap(),
+            vec!["UPDATE public.ledger SET ref = 8.25 WHERE ref = 1.5;".to_owned()],
+            "the predicate names the original key and a retained capture needs no grid"
+        );
+
+        let (orphans, mut grid) = notes_grid(vec![vec![CellValue::Default, text("a"), text("b")]]);
+        grid.toggle_delete(0);
+        let err = preview_sql(&t, &orphans, &grid.snapshot_changes()).unwrap_err();
+        assert_eq!(err.column.as_deref(), Some("id"));
+        assert_eq!(err.cause, PreviewSqlCause::InvalidDefaultPredicate);
+        let narrow = vec![("name".to_owned(), ColType::Text)];
+        let (_, mut grid) = notes_grid(vec![vec![CellValue::Int(1), text("a"), text("b")]]);
+        grid.toggle_delete(0);
+        let err = preview_sql(&t, &narrow, &grid.snapshot_changes()).unwrap_err();
+        assert_eq!(
+            err.cause,
+            PreviewSqlCause::RowShape {
+                expected: 1,
+                actual: 3
+            },
+            "a snapshot wider than the projection is refused, not indexed past"
+        );
+    }
+
+    #[test]
+    fn issue50_generated_column_update_is_rejected_not_dropped() {
+        let t = notes();
+        let (columns, mut grid) = notes_grid(one_note());
+        grid.record_cell(0, 0, CellValue::Int(99));
+        grid.record_cell(0, 1, text("kept"));
+        let err = preview_sql(&t, &columns, &grid.snapshot_changes()).unwrap_err();
+        assert_eq!(err.cause, PreviewSqlCause::GeneratedColumn);
+        assert_eq!(err.column.as_deref(), Some("id"));
+        assert_eq!(
+            err.row,
+            PreviewRow::Key(grid.row_key(0).unwrap()),
+            "the error names the row by key"
         );
     }
 }

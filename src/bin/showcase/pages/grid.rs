@@ -21,8 +21,9 @@ use junie_tui::widgets::chips::{Chip, ChipBar};
 use junie_tui::widgets::dialog::{Dialog, DialogResult};
 use junie_tui::widgets::empty::EmptyState;
 use junie_tui::widgets::grid::{
-    CellEditResult, CellKind, CellValue, ColumnSpec, DataGrid, FinishEdit, GridAction, GridCmd,
-    GridEditError, GridRows, GridUndoKind, RowState, RowTotal,
+    CellEditResult, CellKind, CellValue, ColumnSpec, DataGrid, DeletedRow, FinishEdit, GridAction,
+    GridChangeSet, GridCmd, GridEditError, GridRows, GridUndoKind, InsertedRow, RowState, RowTotal,
+    UpdatedRow,
 };
 use junie_tui::widgets::option_editor::{
     Affordance, ColumnEditor, EditorConfig, OptionItem, Options,
@@ -164,6 +165,10 @@ fn literal(row: usize, column: &str, v: &CellValue) -> Result<String, NonFinite>
         }
         other => other.text(),
     })
+}
+
+fn delete_statement(row: &DeletedRow) -> String {
+    format!("DELETE FROM {TABLE} WHERE id = {};", row.before()[0].text())
 }
 
 fn undo_status(kind: GridUndoKind) -> &'static str {
@@ -596,68 +601,63 @@ impl GridPage {
         }
     }
 
-    fn statements(&self) -> Result<Vec<String>, NonFinite> {
-        let pending = self.grid.pending();
-        let in_source_order = |keys: &mut dyn Iterator<Item = ItemKey>| {
-            let mut rows: Vec<(usize, ItemKey)> = keys
-                .filter_map(|key| Some((self.grid.source_index(key)?, key)))
-                .collect();
-            rows.sort_unstable();
-            rows
-        };
+    /// SQL projection of one captured change set. The snapshot owns the rows:
+    /// an insert lists every cell that is not `DEFAULT`, an update matches the
+    /// base row, and nothing here reads the draft.
+    fn statements(&self, changes: &GridChangeSet) -> Result<Vec<String>, NonFinite> {
         let mut out = Vec::new();
-        let mut cells: Vec<(usize, usize, &CellValue)> = pending
-            .cells()
-            .filter(|(key, _, _)| !pending.is_inserted(*key) && !pending.is_deleted(*key))
-            .filter_map(|(key, c, v)| Some((self.grid.source_index(key)?, c, v)))
-            .collect();
-        cells.sort_by_key(|(r, c, _)| (*r, *c));
-        for (r, c, v) in cells {
-            let name = &self.grid.columns()[c].name;
-            out.push(format!(
-                "UPDATE {TABLE} SET {name} = {} WHERE id = {};",
-                literal(r, name, v)?,
-                self.grid.value(r, 0).text()
-            ));
+        for row in changes.updated() {
+            self.update_statements(row, &mut out)?;
         }
-        for (r, key) in in_source_order(&mut pending.inserted()) {
-            let cols: Vec<&str> = self
-                .grid
-                .columns()
-                .iter()
-                .enumerate()
-                .filter(|(c, _)| pending.is_dirty(key, *c))
-                .map(|(_, col)| col.name.as_str())
-                .collect();
-            if cols.is_empty() {
-                out.push(format!("INSERT INTO {TABLE} DEFAULT VALUES;"));
-            } else {
-                let vals = self
-                    .grid
-                    .columns()
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(c, col)| pending.value(key, c).map(|v| literal(r, &col.name, v)))
-                    .collect::<Result<Vec<String>, NonFinite>>()?;
-                out.push(format!(
-                    "INSERT INTO {TABLE} ({}) VALUES ({});",
-                    cols.join(", "),
-                    vals.join(", ")
-                ));
-            }
+        for row in changes.inserted() {
+            out.push(self.insert_statement(row)?);
         }
-        for (r, _) in in_source_order(&mut pending.deleted()) {
-            out.push(format!(
-                "DELETE FROM {TABLE} WHERE id = {};",
-                self.grid.value(r, 0).text()
-            ));
+        for row in changes.deleted() {
+            out.push(delete_statement(row));
         }
         Ok(out)
     }
 
-    fn changes_dialog(&self, review: bool) -> Result<Dialog, NonFinite> {
-        let code = self.statements()?;
-        let (changed, inserted, deleted) = self.grid.pending().counts();
+    fn row_of(&self, key: ItemKey) -> usize {
+        self.grid.source_index(key).unwrap_or_default()
+    }
+
+    fn update_statements(&self, row: &UpdatedRow, out: &mut Vec<String>) -> Result<(), NonFinite> {
+        for change in row.cells() {
+            let name = &self.grid.columns()[change.column()].name;
+            out.push(format!(
+                "UPDATE {TABLE} SET {name} = {} WHERE id = {};",
+                literal(self.row_of(row.key()), name, change.after())?,
+                row.before()[0].text()
+            ));
+        }
+        Ok(())
+    }
+
+    fn insert_statement(&self, row: &InsertedRow) -> Result<String, NonFinite> {
+        let mut names = Vec::new();
+        let mut values = Vec::new();
+        for (col, value) in self.grid.columns().iter().zip(row.values()) {
+            if matches!(value, CellValue::Default) {
+                continue;
+            }
+            names.push(col.name.as_str());
+            values.push(literal(self.row_of(row.key()), &col.name, value)?);
+        }
+        Ok(if names.is_empty() {
+            format!("INSERT INTO {TABLE} DEFAULT VALUES;")
+        } else {
+            format!(
+                "INSERT INTO {TABLE} ({}) VALUES ({});",
+                names.join(", "),
+                values.join(", ")
+            )
+        })
+    }
+
+    fn changes_dialog(&self, changes: &GridChangeSet, review: bool) -> Result<Dialog, NonFinite> {
+        let code = self.statements(changes)?;
+        let (changed, inserted, deleted) = changes.counts();
         let facts = vec![
             Prop::new("Statements", code.len().to_string()),
             Prop::new(
@@ -687,8 +687,9 @@ impl GridPage {
         })
     }
 
+    /// Captures the draft once and renders the dialog from that capture.
     fn open_changes(&self, review: bool, cx: &mut Cx) {
-        match self.changes_dialog(review) {
+        match self.changes_dialog(&self.grid.snapshot_changes(), review) {
             Ok(dialog) => cx.open_dialog(dialog),
             Err(e) => cx.status_in(e.message(), Tone::Error),
         }
@@ -1142,7 +1143,9 @@ impl Page for GridPage {
             PageEvent::DialogClosed { id, result, .. }
                 if *id == PREVIEW && *result == DialogResult::Action(1) =>
             {
-                let copied = self.statements().map_or(0, |s| s.len());
+                let copied = self
+                    .statements(&self.grid.snapshot_changes())
+                    .map_or(0, |s| s.len());
                 cx.status(format!("Copied {copied} statements"));
                 Outcome::Changed
             }
@@ -1258,6 +1261,10 @@ mod tests {
     const MRR: usize = 4;
     const SEATS: usize = 3;
 
+    fn sql(page: &GridPage) -> Result<Vec<String>, NonFinite> {
+        page.statements(&page.grid.snapshot_changes())
+    }
+
     #[test]
     fn issue49_showcase_preview_preserves_numeric_precision() {
         let mut page = GridPage::new();
@@ -1271,16 +1278,22 @@ mod tests {
             .record_cell(insert, MRR, CellValue::Num(-0.000_25));
 
         assert_eq!(
-            page.statements().unwrap(),
+            sql(&page).unwrap(),
             vec![
                 "UPDATE customers SET mrr = 0.001 WHERE id = 1001;".to_owned(),
                 "UPDATE customers SET mrr = 1.234567 WHERE id = 1002;".to_owned(),
                 "UPDATE customers SET mrr = 100.0 WHERE id = 1003;".to_owned(),
-                "INSERT INTO customers (seats, mrr) VALUES (5, -0.00025);".to_owned(),
+                "INSERT INTO customers (customer, plan, seats, mrr, active, renewed_at, account_id, notes) VALUES (NULL, NULL, 5, -0.00025, NULL, NULL, NULL, NULL);".to_owned(),
             ]
         );
-        assert!(page.changes_dialog(false).is_ok());
-        assert!(page.changes_dialog(true).is_ok());
+        assert!(
+            page.changes_dialog(&page.grid.snapshot_changes(), false)
+                .is_ok()
+        );
+        assert!(
+            page.changes_dialog(&page.grid.snapshot_changes(), true)
+                .is_ok()
+        );
     }
 
     #[test]
@@ -1293,10 +1306,61 @@ mod tests {
                 row: 1,
                 column: "mrr".into(),
             };
-            assert_eq!(page.statements(), Err(want.clone()));
-            assert_eq!(page.changes_dialog(false).err(), Some(want.clone()));
-            assert_eq!(page.changes_dialog(true).err(), Some(want));
+            assert_eq!(sql(&page), Err(want.clone()));
+            assert_eq!(
+                page.changes_dialog(&page.grid.snapshot_changes(), false)
+                    .err(),
+                Some(want.clone())
+            );
+            assert_eq!(
+                page.changes_dialog(&page.grid.snapshot_changes(), true)
+                    .err(),
+                Some(want)
+            );
             assert_eq!(page.grid.pending().cells().count(), 2, "the draft is kept");
         }
+    }
+    const CUSTOMER: usize = 1;
+    const PLAN: usize = 2;
+
+    fn insert_statement(page: &GridPage) -> String {
+        let statements = sql(page).expect("the draft serializes");
+        let inserts: Vec<&String> = statements
+            .iter()
+            .filter(|s| s.starts_with("INSERT"))
+            .collect();
+        assert_eq!(inserts.len(), 1, "{statements:?}");
+        inserts[0].clone()
+    }
+
+    #[test]
+    fn issue50_showcase_duplicate_review_contains_copied_values() {
+        let mut page = GridPage::new();
+        let source = page.grid.rows()[0].clone();
+        page.grid.duplicate_row().expect("row duplicates");
+
+        let untouched = insert_statement(&page);
+        assert!(!untouched.contains("DEFAULT VALUES"), "{untouched}");
+        assert!(
+            untouched.starts_with("INSERT INTO customers (customer, plan, seats, "),
+            "id and mrr reset to DEFAULT and are omitted: {untouched}"
+        );
+        assert!(
+            untouched.contains(&literal(0, "customer", &source[CUSTOMER]).unwrap()),
+            "{untouched}"
+        );
+        assert!(
+            untouched.contains(&literal(0, "plan", &source[PLAN]).unwrap()),
+            "{untouched}"
+        );
+
+        let copy = page.grid.len() - 1;
+        page.grid.record_cell(copy, SEATS, CellValue::Int(99));
+        let edited = insert_statement(&page);
+        assert!(edited.contains(", 99,"), "{edited}");
+        assert!(
+            edited.contains(&literal(0, "customer", &source[CUSTOMER]).unwrap()),
+            "the other copies survive one edit: {edited}"
+        );
     }
 }
