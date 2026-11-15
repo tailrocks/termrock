@@ -7,7 +7,10 @@ use std::path::PathBuf;
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, TABLEPRO, find_all, flash_settle, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, TABLEPRO, find_all, flash_settle_stepped as flash_settle, row_text, text,
+    try_launch,
+};
 
 const ROUTE_ID: &str = "pre_refactor/t01_leave/t01_leave_route_120x40";
 const WIDE_ID: &str = "pre_refactor/t01_leave/t01_leave_guards_120x40";

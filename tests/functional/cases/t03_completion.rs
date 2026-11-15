@@ -9,7 +9,8 @@ use std::time::{Duration, Instant};
 use tui_test::TerminalSnapshot;
 
 use crate::support::{
-    App, Launch, Point, TABLEPRO, cell_bg, find_all, flash_settle, row_text, text, try_launch,
+    App, Launch, Point, TABLEPRO, cell_bg, find_all, flash_settle_stepped as flash_settle,
+    row_text, text, try_launch,
 };
 
 const HOST: &str = "dev-db.internal.acme.io";

@@ -8,7 +8,8 @@
 use tui_test::TerminalSnapshot;
 
 use crate::support::{
-    App, Launch, Point, TABLEPRO, find_all, flash_settle, row_text, text, try_launch,
+    App, Launch, Point, TABLEPRO, find_all, flash_settle_stepped as flash_settle, row_text, text,
+    try_launch,
 };
 
 const QUERY: &str = "Query 1";
