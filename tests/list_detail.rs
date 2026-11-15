@@ -1,7 +1,7 @@
 mod common;
 
 use common::*;
-use junie_tui::core::event::{Mouse, MouseKind, Outcome};
+use junie_tui::core::event::{Key, Mouse, MouseKind, Outcome};
 use junie_tui::core::focus::{Focus, FocusRing};
 use junie_tui::core::hit::HitRegistry;
 use junie_tui::core::id::WidgetId;
@@ -15,7 +15,7 @@ use junie_tui::ui::layout::Split;
 use junie_tui::widgets::list_detail::{Action, Event, Frame, Line, ListDetail, ListRow};
 use junie_tui::widgets::scrollbar;
 use ratatui::buffer::Buffer;
-use ratatui::crossterm::event::KeyCode;
+use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Position, Rect};
 
 const MASTER: WidgetId = WidgetId::of("t.ld.master");
@@ -375,6 +375,30 @@ fn a_press_off_centre_on_the_list_thumb_drags_it_cell_for_cell() {
         "one cell of drag moves the thumb one cell"
     );
     rig.mouse(MouseKind::Up, track[grab + 1]);
+}
+
+#[test]
+fn an_empty_allocation_forgets_the_split_so_keys_cannot_resize_it() {
+    let mut rig = Rig::new();
+    let wide = rig.render();
+
+    rig.area = Rect::new(0, 0, 0, AREA.height);
+    rig.render();
+    let nudge = Key {
+        code: KeyCode::Left,
+        mods: KeyModifiers::ALT | KeyModifiers::SHIFT,
+    };
+    for _ in 0..3 {
+        let len = rig.rows.len();
+        rig.ld.on_key(&nudge, &mut rig.focus, len);
+    }
+
+    rig.area = AREA;
+    assert_eq!(
+        rig.render(),
+        wide,
+        "keys sent while nothing was rendered left the split where it was"
+    );
 }
 
 #[test]

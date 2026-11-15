@@ -805,6 +805,7 @@ impl ListDetail {
         if area.is_empty() {
             self.scroll.set_viewport(0);
             self.detail_scroll.set_viewport(0);
+            self.md.forget_geometry();
             return;
         }
         let l = self.md.layout(area, buf, ctx, t.canvas);
