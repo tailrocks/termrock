@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-wheel-lines-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "target/functional/s01-wheel-one-9748-1794711107209889000-0/check-artifacts/opt-shell-wheel-lines-boundary/3c55e518db2c8b5067c0dbd7f1045bd34df25ea3d8099b831259056fc1bf5b15/sample.tui.pb"
+  },
+  "candidate_sha256": "3c55e518db2c8b5067c0dbd7f1045bd34df25ea3d8099b831259056fc1bf5b15",
+  "baseline_sha256": "3c55e518db2c8b5067c0dbd7f1045bd34df25ea3d8099b831259056fc1bf5b15",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane14/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-wheel-lines-boundary.tui.pb"
+  },
+  "error_code": null
+}
