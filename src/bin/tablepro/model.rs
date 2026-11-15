@@ -564,17 +564,31 @@ pub fn tables_in_statement<'a>(cat: &'a Catalog, stmt: &str) -> Vec<(&'a Table, 
     out
 }
 
+/// The untrimmed text between the last real `;` that ends at or before
+/// `cursor` and the next real `;` that starts at or after it. Whitespace the
+/// user is typing into belongs to the statement, so a cursor after `WHERE `
+/// still sees that statement's tables. A cursor right after a `;` starts the
+/// next segment and never sees the previous statement.
+fn statement_around(src: &str, cursor: usize) -> &str {
+    let (mut start, mut end) = (0, src.len());
+    for t in tokenize(src) {
+        if t.kind != TokKind::Punct || &src[t.start..t.end] != ";" {
+            continue;
+        }
+        if t.end <= cursor {
+            start = t.end;
+        } else {
+            end = t.start;
+            break;
+        }
+    }
+    &src[start..end]
+}
+
 pub fn complete(cat: &Catalog, src: &str, requested: usize) -> (Vec<Completion>, usize) {
     let cursor = completion_cursor(src, requested);
     let (word, clause, qualifier) = context(src, cursor);
-    // Aliases come only from the statement that contains the cursor. A cursor
-    // in the gap between statements gets none, rather than a neighbour's.
-    let stmt = crate::sql::split_statements(src)
-        .into_iter()
-        .find(|&(a, b)| a <= cursor && cursor <= b)
-        .map(|(a, b)| &src[a..b])
-        .unwrap_or("");
-    let in_stmt = tables_in_statement(cat, stmt);
+    let in_stmt = tables_in_statement(cat, statement_around(src, cursor));
     let mut pool: Vec<Completion> = Vec::new();
     let mut push =
         |kind: CompletionKind, label: &str, detail: String, insert: Option<String>, boost: i32| {
@@ -1037,6 +1051,46 @@ mod completion_prefix_tests {
             labels(src),
             labels(alone),
             "the previous statement's alias `u` must not change the list"
+        );
+    }
+
+    #[test]
+    fn completion_prefix_trailing_whitespace_keeps_the_statement_sources() {
+        let cat = cat();
+        for src in [
+            "SELECT u.id FROM customers u WHERE ",
+            "SELECT u.id FROM customers u ORDER BY ",
+            "SELECT u.id FROM customers u WHERE \n  ",
+        ] {
+            let (rows, replace) = complete(&cat, src, src.len());
+            assert_eq!(replace, 0, "{src:?}");
+            let columns: Vec<&str> = rows
+                .iter()
+                .filter(|c| c.kind == CompletionKind::Column)
+                .map(|c| c.label.as_str())
+                .collect();
+            assert!(columns.contains(&"email"), "{src:?}: {columns:?}");
+            assert!(
+                columns.iter().all(|l| !l.contains('.')),
+                "{src:?} offered other tables' columns: {columns:?}"
+            );
+            assert!(
+                rows.iter()
+                    .any(|c| c.kind == CompletionKind::Alias && c.label == "u"),
+                "{src:?} lost the alias `u`"
+            );
+        }
+    }
+
+    #[test]
+    fn completion_prefix_cursor_before_next_semicolon_keeps_its_statement() {
+        let cat = cat();
+        let src = "SELECT 1; SELECT u.id FROM customers u WHERE  ; SELECT 2";
+        let cursor = src.find("  ;").unwrap() + 1;
+        let (rows, _) = complete(&cat, src, cursor);
+        assert!(
+            rows.iter()
+                .any(|c| c.kind == CompletionKind::Alias && c.label == "u")
         );
     }
 

@@ -36,4 +36,27 @@ The one visible difference is cosmetic. The Showcase word loop stops at the firs
 
 - Regression tests in `src/bin/tablepro/sql.rs` and `src/bin/tablepro/tabs.rs`, all named `issue9_*`, plus the functional case `issue9_tablepro_query_editor_unicode_paste_keeps_text_and_editor_alive` in `tests/functional/tablepro.rs`.
 - The policy is recorded for users in the Known limits list of `docs/current-state.md`.
-- Out of scope: SQL grammar expansion, Unicode normalization, grapheme-aware cursor movement, and completion context. The completion-before-first-statement panic is a separate defect, tracked as #84.
+- Out of scope: SQL grammar expansion, Unicode normalization, grapheme-aware cursor movement, and completion context. The completion-before-first-statement panic is a separate defect, tracked as #84 and recorded below.
+
+## Completion context before the first statement (#84)
+
+`model::context` found the current statement with `sql::statement_at`, which falls forward to the first statement when the cursor is before it. With `" SELECT id FROM users"` and the cursor at 0 it sliced `1..0` and panicked. A cursor inside a UTF-8 scalar also panicked on the first slice.
+
+`completion_cursor` clamps the requested offset to the text and floors it to a char boundary. `context` and `complete` both use that cursor. `context` now tokenizes `src[..word_start]` and starts the clause scan after the last real `;` token. A `;` inside a string or comment is not a delimiter, and nothing after the cursor takes part. A cursor in leading whitespace gets `Clause::Start`, and so does a cursor after a completed statement.
+
+### `statement_at` deleted
+
+`statement_at` had two callers, both in `context` and `complete`, and both are gone. The function is deleted, not kept as dead public API, because its fallbacks (the previous statement, then the first one) are exactly what the completion fix must not use. Statement navigation and execution use `split_statements`, which is unchanged.
+
+### Gap semantics for `complete`
+
+`complete` ranks columns and aliases from the tables in one statement. That statement is now the untrimmed segment between the last real `;` that ends at or before the cursor and the next real `;` that starts at or after it, found by `statement_around` over `tokenize`.
+
+Untrimmed matters. Matching the trimmed `split_statements` ranges finds no statement for a cursor in the trailing whitespace of `SELECT u.id FROM customers u WHERE ` (offset 35, past the trimmed end at 34). Completion then fell back to every catalog column, and offered `events.id` and `orders.id` instead of the `customers` columns and the alias `u`. Main did not have this defect, because `statement_at` fell back to the preceding statement. `completion_prefix_trailing_whitespace_keeps_the_statement_sources` covers `WHERE ` and `ORDER BY ` and failed before the fix. `completion_prefix_cursor_before_next_semicolon_keeps_its_statement` covers a cursor between a statement and its closing `;`.
+
+The rules, by cursor position.
+
+- Inside a statement or in its trailing whitespace, before the next `;`: that statement's tables and aliases.
+- Right before a `;`: the statement that the `;` closes.
+- Right after a `;`: the next segment, so the previous statement's aliases never apply (`completion_prefix_gap_gets_no_neighbour_aliases`).
+- In whitespace between a `;` and the next statement's text: the segment includes that following statement, because no `;` separates them. The clause there is `Clause::Start`, which offers only start keywords and does not use the table list.
