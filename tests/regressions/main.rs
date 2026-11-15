@@ -7,6 +7,7 @@
 #[path = "../common/mod.rs"]
 mod common;
 
+mod collection_edit_lifecycle;
 mod data_shape;
 mod grid_validation;
 mod response_batches;
