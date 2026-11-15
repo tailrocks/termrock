@@ -21,8 +21,9 @@ use junie_tui::widgets::chips::{Chip, ChipBar};
 use junie_tui::widgets::dialog::{Dialog, DialogResult};
 use junie_tui::widgets::empty::EmptyState;
 use junie_tui::widgets::grid::{
-    CellEditResult, CellKind, CellValue, ColumnSpec, DataGrid, FinishEdit, GridAction, GridCmd,
-    GridEditError, GridRows, GridUndoKind, RowState, RowTotal,
+    CellEditResult, CellKind, CellValue, ColumnSpec, DataGrid, DeletedRow, FinishEdit, GridAction,
+    GridChangeSet, GridCmd, GridCommitFailure, GridCommitToken, GridEditError, GridRows,
+    GridUndoKind, InsertedRow, RowState, RowTotal, UpdatedRow,
 };
 use junie_tui::widgets::option_editor::{
     Affordance, ColumnEditor, EditorConfig, OptionItem, Options,
@@ -37,6 +38,7 @@ const PAGE: usize = 40;
 const ALL: usize = 96;
 
 const TABLE: &str = "customers";
+const SEATS_COLUMN: usize = 3;
 
 const NAMES: &[&str] = &[
     "Northwind Traders",
@@ -103,6 +105,7 @@ fn row(i: usize) -> Vec<CellValue> {
             0 | 3 => CellValue::Bool(true),
             _ => CellValue::Bool(false),
         },
+        CellValue::Num(1.0045 + 0.25 * (i % 4) as f64),
     ]
 }
 
@@ -165,6 +168,10 @@ fn literal(row: usize, column: &str, v: &CellValue) -> Result<String, NonFinite>
     })
 }
 
+fn delete_statement(row: &DeletedRow) -> String {
+    format!("DELETE FROM {TABLE} WHERE id = {};", row.before()[0].text())
+}
+
 fn undo_status(kind: GridUndoKind) -> &'static str {
     match kind {
         GridUndoKind::Cell => "Undid a cell edit",
@@ -217,6 +224,10 @@ fn columns(strict: bool) -> Vec<ColumnSpec> {
                 .editor(ColumnEditor::Select(tiers()))
                 .type_label("text"),
             ColumnSpec::new("paused", CellKind::Bool).type_label("boolean"),
+            ColumnSpec {
+                min_width: 8,
+                ..ColumnSpec::new("rate", CellKind::Number).type_label("double precision")
+            },
         ]);
     }
     cols
@@ -514,10 +525,18 @@ fn states_grid() -> StateGrid {
         .expect("rectangular fixture");
     let mut changed = DataGrid::new(id.child(1), cols());
     changed.try_set_rows(rows()).expect("rectangular fixture");
-    changed.record_cell(0, 2, CellValue::Int(40));
-    changed.record_cell(1, 2, CellValue::Int(7));
-    changed.toggle_delete(1);
-    changed.insert_row();
+    changed
+        .record_cell(0, 2, CellValue::Int(40))
+        .expect("a fresh grid is never being saved");
+    changed
+        .record_cell(1, 2, CellValue::Int(7))
+        .expect("a fresh grid is never being saved");
+    changed
+        .toggle_delete(1)
+        .expect("a fresh grid is never being saved");
+    changed
+        .insert_row()
+        .expect("a fresh grid is never being saved");
     let mut read_only = DataGrid::new(id.child(2), cols()).editable(false);
     read_only.read_only_reason = READ_ONLY[1].map(str::to_owned);
     read_only.try_set_rows(rows()).expect("rectangular fixture");
@@ -543,6 +562,19 @@ fn states_grid() -> StateGrid {
         .column("Read-only (view)", read_only)
 }
 
+/// A save the page captured when it was reviewed. The delayed completion and
+/// its limit check read this snapshot, never the grid's live draft.
+struct DemoCommit {
+    snapshot: GridChangeSet,
+    token: GridCommitToken,
+    stage: SaveStage,
+}
+
+enum SaveStage {
+    Reviewing,
+    Submitted { ticks_left: u8 },
+}
+
 pub struct GridPage {
     template: Template,
     knobs: Knobs,
@@ -552,7 +584,7 @@ pub struct GridPage {
 
     filter_values: Vec<(usize, CellValue)>,
     sections: crate::pages::layout::Sections,
-    commit_ticks: u8,
+    commit: Option<DemoCommit>,
     saved: u32,
 }
 
@@ -586,73 +618,68 @@ impl GridPage {
             filters,
             filter_values: Vec::new(),
             sections: crate::pages::layout::Sections::new(ID.sub("page")),
-            commit_ticks: 0,
+            commit: None,
             saved: 0,
         }
     }
 
-    fn statements(&self) -> Result<Vec<String>, NonFinite> {
-        let pending = self.grid.pending();
-        let in_source_order = |keys: &mut dyn Iterator<Item = ItemKey>| {
-            let mut rows: Vec<(usize, ItemKey)> = keys
-                .filter_map(|key| Some((self.grid.source_index(key)?, key)))
-                .collect();
-            rows.sort_unstable();
-            rows
-        };
+    /// SQL projection of one captured change set. The snapshot owns the rows:
+    /// an insert lists every cell that is not `DEFAULT`, an update matches the
+    /// base row, and nothing here reads the draft.
+    fn statements(&self, changes: &GridChangeSet) -> Result<Vec<String>, NonFinite> {
         let mut out = Vec::new();
-        let mut cells: Vec<(usize, usize, &CellValue)> = pending
-            .cells()
-            .filter(|(key, _, _)| !pending.is_inserted(*key) && !pending.is_deleted(*key))
-            .filter_map(|(key, c, v)| Some((self.grid.source_index(key)?, c, v)))
-            .collect();
-        cells.sort_by_key(|(r, c, _)| (*r, *c));
-        for (r, c, v) in cells {
-            let name = &self.grid.columns()[c].name;
-            out.push(format!(
-                "UPDATE {TABLE} SET {name} = {} WHERE id = {};",
-                literal(r, name, v)?,
-                self.grid.value(r, 0).text()
-            ));
+        for row in changes.updated() {
+            self.update_statements(row, &mut out)?;
         }
-        for (r, key) in in_source_order(&mut pending.inserted()) {
-            let cols: Vec<&str> = self
-                .grid
-                .columns()
-                .iter()
-                .enumerate()
-                .filter(|(c, _)| pending.is_dirty(key, *c))
-                .map(|(_, col)| col.name.as_str())
-                .collect();
-            if cols.is_empty() {
-                out.push(format!("INSERT INTO {TABLE} DEFAULT VALUES;"));
-            } else {
-                let vals = self
-                    .grid
-                    .columns()
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(c, col)| pending.value(key, c).map(|v| literal(r, &col.name, v)))
-                    .collect::<Result<Vec<String>, NonFinite>>()?;
-                out.push(format!(
-                    "INSERT INTO {TABLE} ({}) VALUES ({});",
-                    cols.join(", "),
-                    vals.join(", ")
-                ));
-            }
+        for row in changes.inserted() {
+            out.push(self.insert_statement(row)?);
         }
-        for (r, _) in in_source_order(&mut pending.deleted()) {
-            out.push(format!(
-                "DELETE FROM {TABLE} WHERE id = {};",
-                self.grid.value(r, 0).text()
-            ));
+        for row in changes.deleted() {
+            out.push(delete_statement(row));
         }
         Ok(out)
     }
 
-    fn changes_dialog(&self, review: bool) -> Result<Dialog, NonFinite> {
-        let code = self.statements()?;
-        let (changed, inserted, deleted) = self.grid.pending().counts();
+    fn row_of(&self, key: ItemKey) -> usize {
+        self.grid.source_index(key).unwrap_or_default()
+    }
+
+    fn update_statements(&self, row: &UpdatedRow, out: &mut Vec<String>) -> Result<(), NonFinite> {
+        for change in row.cells() {
+            let name = &self.grid.columns()[change.column()].name;
+            out.push(format!(
+                "UPDATE {TABLE} SET {name} = {} WHERE id = {};",
+                literal(self.row_of(row.key()), name, change.after())?,
+                row.before()[0].text()
+            ));
+        }
+        Ok(())
+    }
+
+    fn insert_statement(&self, row: &InsertedRow) -> Result<String, NonFinite> {
+        let mut names = Vec::new();
+        let mut values = Vec::new();
+        for (col, value) in self.grid.columns().iter().zip(row.values()) {
+            if matches!(value, CellValue::Default) {
+                continue;
+            }
+            names.push(col.name.as_str());
+            values.push(literal(self.row_of(row.key()), &col.name, value)?);
+        }
+        Ok(if names.is_empty() {
+            format!("INSERT INTO {TABLE} DEFAULT VALUES;")
+        } else {
+            format!(
+                "INSERT INTO {TABLE} ({}) VALUES ({});",
+                names.join(", "),
+                values.join(", ")
+            )
+        })
+    }
+
+    fn changes_dialog(&self, changes: &GridChangeSet, review: bool) -> Result<Dialog, NonFinite> {
+        let code = self.statements(changes)?;
+        let (changed, inserted, deleted) = changes.counts();
         let facts = vec![
             Prop::new("Statements", code.len().to_string()),
             Prop::new(
@@ -682,10 +709,44 @@ impl GridPage {
         })
     }
 
-    fn open_changes(&self, review: bool, cx: &mut Cx) {
-        match self.changes_dialog(review) {
+    /// Captures the draft once and renders the preview from that capture.
+    fn open_preview(&self, cx: &mut Cx) {
+        match self.changes_dialog(&self.grid.snapshot_changes(), false) {
             Ok(dialog) => cx.open_dialog(dialog),
             Err(e) => cx.status_in(e.message(), Tone::Error),
+        }
+    }
+
+    /// Captures the draft once, locks the grid on that capture and renders the
+    /// review from it. The save that follows commits exactly what was shown.
+    fn begin_review(&mut self, cx: &mut Cx) {
+        if self.commit.is_some() {
+            cx.status("A save is already in progress");
+            return;
+        }
+        let snapshot = self.grid.snapshot_changes();
+        let dialog = match self.changes_dialog(&snapshot, true) {
+            Ok(dialog) => dialog,
+            Err(e) => return cx.status_in(e.message(), Tone::Error),
+        };
+        match self.grid.begin_submission(snapshot.clone()) {
+            Ok(token) => {
+                self.commit = Some(DemoCommit {
+                    snapshot,
+                    token,
+                    stage: SaveStage::Reviewing,
+                });
+                cx.open_dialog(dialog);
+            }
+            Err(e) => cx.status(e.to_string()),
+        }
+    }
+
+    /// Releases the lock and forgets the save, leaving the draft as it was.
+    fn cancel_commit(&mut self) {
+        if let Some(commit) = self.commit.take() {
+            let _ = self.grid.cancel_submission(commit.token);
+            self.grid.set_loading(false);
         }
     }
 
@@ -786,16 +847,16 @@ impl GridPage {
                 if self.grid.pending().is_empty() {
                     cx.status("Nothing to save");
                 } else {
-                    self.open_changes(true, cx);
+                    self.begin_review(cx);
                 }
             }
-            Some(GridAction::DiscardRequested) => {
-                self.grid.discard();
-                cx.status("Changes discarded");
-            }
+            Some(GridAction::DiscardRequested) => match self.grid.discard() {
+                Ok(_) => cx.status("Changes discarded"),
+                Err(e) => cx.status(e.to_string()),
+            },
             Some(GridAction::PreviewSql) => {
                 if self.settle_edit(cx) {
-                    self.open_changes(false, cx);
+                    self.open_preview(cx);
                 }
             }
             Some(GridAction::Copy(s)) => cx.status(format!("Copied {} chars", s.len())),
@@ -837,27 +898,52 @@ impl GridPage {
         }
     }
 
-    fn finish_commit(&mut self, cx: &mut Cx) {
+    /// Completes the submitted save from its captured snapshot. The plan limit
+    /// is checked on the snapshot's rows, so cells edited since the review (the
+    /// grid refuses that) or a rebuilt grid can never change the outcome.
+    fn finish_commit(&mut self, commit: DemoCommit, cx: &mut Cx) {
         self.grid.set_loading(false);
-
-        let pending = self.grid.pending();
-        let bad = pending
-            .cells()
-            .filter(|(key, _, _)| !pending.is_deleted(*key))
-            .find(|(_, c, v)| *c == 3 && matches!(v, CellValue::Int(n) if *n > 500))
-            .and_then(|(key, _, _)| self.grid.source_index(key));
-        match bad {
-            Some(r) => {
-                self.grid
-                    .apply_commit_result(Err((r, "seats above the plan limit (500)".into())));
-                cx.status("Save failed · the row is marked");
-            }
+        let DemoCommit {
+            snapshot, token, ..
+        } = commit;
+        let over_limit = |value: &CellValue| matches!(value, CellValue::Int(n) if *n > 500);
+        let bad = snapshot
+            .updated()
+            .iter()
+            .find(|row| {
+                row.cells()
+                    .iter()
+                    .any(|c| c.column() == SEATS_COLUMN && over_limit(c.after()))
+            })
+            .map(|row| row.key())
+            .or_else(|| {
+                snapshot
+                    .inserted()
+                    .iter()
+                    .find(|row| row.values().get(SEATS_COLUMN).is_some_and(over_limit))
+                    .map(|row| row.key())
+            });
+        let (n, outcome) = match bad {
+            Some(key) => (
+                0,
+                Err(GridCommitFailure {
+                    key: Some(key),
+                    message: "seats above the plan limit (500)".into(),
+                }),
+            ),
             None => {
-                let n = self.grid.pending().total();
-                self.grid.apply_commit_result(Ok(()));
+                let (u, i, d) = snapshot.counts();
+                (u + i + d, Ok(snapshot.identity_receipt()))
+            }
+        };
+        let failed = outcome.is_err();
+        match self.grid.complete_submission(token, outcome) {
+            Ok(()) if failed => cx.status("Save failed · the row is marked"),
+            Ok(()) => {
                 self.saved += n as u32;
                 cx.status(format!("Saved {n} changes"));
             }
+            Err(_) => cx.status("The save was cancelled · changes kept pending"),
         }
     }
 
@@ -1034,7 +1120,13 @@ impl Page for GridPage {
         self.grid.is_editing()
     }
     fn animating(&self) -> bool {
-        self.commit_ticks > 0
+        matches!(
+            self.commit,
+            Some(DemoCommit {
+                stage: SaveStage::Submitted { .. },
+                ..
+            })
+        )
     }
 
     fn measure(&self, avail: ratatui::layout::Size, ctx: &RenderCtx) -> ratatui::layout::Size {
@@ -1077,6 +1169,7 @@ impl Page for GridPage {
         }
         let n = crate::options::find(key).map_or(1, |o| o.values.len());
         *self.knobs.slot(key) = value.min(n - 1);
+        self.cancel_commit();
         self.grid = build(&self.knobs);
         self.filter_values.clear();
         self.set_filters();
@@ -1101,12 +1194,18 @@ impl Page for GridPage {
         }
         match ev {
             PageEvent::Tick => {
-                if self.commit_ticks == 0 {
+                let Some(DemoCommit {
+                    stage: SaveStage::Submitted { ticks_left },
+                    ..
+                }) = self.commit.as_mut()
+                else {
                     return Outcome::Ignored;
-                }
-                self.commit_ticks -= 1;
-                if self.commit_ticks == 0 {
-                    self.finish_commit(cx);
+                };
+                *ticks_left = ticks_left.saturating_sub(1);
+                if *ticks_left == 0
+                    && let Some(commit) = self.commit.take()
+                {
+                    self.finish_commit(commit, cx);
                 }
                 Outcome::Changed
             }
@@ -1137,16 +1236,27 @@ impl Page for GridPage {
             PageEvent::DialogClosed { id, result, .. }
                 if *id == PREVIEW && *result == DialogResult::Action(1) =>
             {
-                let copied = self.statements().map_or(0, |s| s.len());
+                let copied = self
+                    .statements(&self.grid.snapshot_changes())
+                    .map_or(0, |s| s.len());
                 cx.status(format!("Copied {copied} statements"));
                 Outcome::Changed
             }
-            PageEvent::DialogClosed { id, result, .. }
-                if *id == REVIEW && *result == DialogResult::Action(1) =>
-            {
-                self.grid.set_loading(true);
-                self.commit_ticks = 4;
-                cx.status("Saving…");
+            PageEvent::DialogClosed { id, result, .. } if *id == REVIEW => {
+                match self.commit.as_mut() {
+                    Some(commit)
+                        if *result == DialogResult::Action(1)
+                            && matches!(commit.stage, SaveStage::Reviewing) =>
+                    {
+                        commit.stage = SaveStage::Submitted { ticks_left: 4 };
+                        self.grid.set_loading(true);
+                        cx.status("Saving…");
+                    }
+                    _ => {
+                        self.cancel_commit();
+                        cx.status("Changes kept pending");
+                    }
+                }
                 Outcome::Changed
             }
             _ => Outcome::Ignored,
@@ -1156,6 +1266,9 @@ impl Page for GridPage {
     fn hints(&self, focus: Option<WidgetId>) -> Vec<Hint> {
         if let Some(h) = self.template.hints(focus) {
             return h;
+        }
+        if self.grid.submission_pending() {
+            return vec![("↑↓←→", "Cell"), ("Saving…", "edits are locked")];
         }
         if self.grid.is_editing() {
             return vec![("Enter", "Apply"), ("Esc", "Cancel"), ("Tab", "Next cell")];
@@ -1253,45 +1366,254 @@ mod tests {
     const MRR: usize = 4;
     const SEATS: usize = 3;
 
+    struct Rig {
+        page: GridPage,
+        focus: junie_tui::core::focus::Focus,
+        ring: junie_tui::core::focus::FocusRing,
+        statuses: Vec<String>,
+    }
+
+    impl Rig {
+        fn new() -> Self {
+            Self {
+                page: GridPage::new(),
+                focus: junie_tui::core::focus::Focus::default(),
+                ring: junie_tui::core::focus::FocusRing::default(),
+                statuses: Vec::new(),
+            }
+        }
+
+        fn with_cx(&mut self, f: impl FnOnce(&mut GridPage, &mut Cx)) {
+            let mut cx = Cx::new(&mut self.focus, &self.ring);
+            f(&mut self.page, &mut cx);
+            for request in cx.take() {
+                if let junie_tui::shell::Request::Status(text, _) = request {
+                    self.statuses.push(text);
+                }
+            }
+        }
+
+        fn event(&mut self, ev: PageEvent) {
+            self.with_cx(|page, cx| {
+                page.handle(&ev, cx);
+            });
+        }
+
+        fn save(&mut self) {
+            self.with_cx(|page, cx| page.on_event(Some(GridAction::CommitRequested), cx));
+        }
+
+        fn answer_review(&mut self, result: DialogResult) {
+            self.event(PageEvent::DialogClosed {
+                id: REVIEW,
+                result,
+                value: None,
+            });
+        }
+
+        fn ticks(&mut self, n: usize) {
+            for _ in 0..n {
+                self.event(PageEvent::Tick);
+            }
+        }
+
+        fn last_status(&self) -> &str {
+            self.statuses.last().map_or("", String::as_str)
+        }
+    }
+
+    #[test]
+    fn issue11_showcase_timer_uses_reviewed_snapshot() {
+        let mut rig = Rig::new();
+        let _ = rig.page.grid.record_cell(0, SEATS, CellValue::Int(40));
+        rig.save();
+        rig.answer_review(DialogResult::Action(1));
+        assert_eq!(rig.last_status(), "Saving…");
+
+        let _ = rig.page.grid.record_cell(1, SEATS, CellValue::Int(900));
+        rig.ticks(4);
+
+        assert_eq!(rig.last_status(), "Saved 1 changes", "{:?}", rig.statuses);
+        assert!(rig.page.grid.pending().is_empty());
+        assert_ne!(
+            rig.page.grid.value(1, SEATS),
+            &CellValue::Int(900),
+            "an edit between confirm and completion never reached the save"
+        );
+        assert_eq!(rig.page.grid.value(0, SEATS), &CellValue::Int(40));
+        assert!(rig.page.commit.is_none());
+    }
+
+    #[test]
+    fn issue11_showcase_option_replacement_cancels_request() {
+        let mut rig = Rig::new();
+        let _ = rig.page.grid.record_cell(0, SEATS, CellValue::Int(40));
+        rig.save();
+        rig.answer_review(DialogResult::Action(1));
+        let replaced = rig.page.grid.instance_id();
+
+        rig.page.set_option(KEYS[0], 0);
+        assert_ne!(rig.page.grid.instance_id(), replaced, "a fresh grid");
+        assert!(rig.page.commit.is_none(), "the request was cancelled");
+        rig.ticks(6);
+
+        assert!(
+            !rig.statuses.iter().any(|s| s.starts_with("Saved")),
+            "a rebuilt grid never reports the old save: {:?}",
+            rig.statuses
+        );
+        assert_eq!(rig.page.saved, 0);
+        assert!(!rig.page.grid.submission_pending());
+    }
+
+    #[test]
+    fn issue11_showcase_review_locks_and_cancel_releases() {
+        let mut rig = Rig::new();
+        let _ = rig.page.grid.record_cell(0, SEATS, CellValue::Int(40));
+        rig.save();
+        assert!(
+            rig.page.grid.submission_pending(),
+            "the review locks the draft"
+        );
+        assert_eq!(
+            rig.page.grid.record_cell(1, SEATS, CellValue::Int(7)),
+            Err(GridEditError::Busy)
+        );
+        rig.save();
+        assert_eq!(rig.last_status(), "A save is already in progress");
+
+        rig.answer_review(DialogResult::Cancelled);
+        assert!(!rig.page.grid.submission_pending());
+        assert_eq!(rig.page.grid.pending().total(), 1, "the draft survived");
+        rig.ticks(6);
+        assert_eq!(rig.page.saved, 0);
+    }
+
+    #[test]
+    fn issue11_showcase_limit_check_marks_the_reviewed_row() {
+        let mut rig = Rig::new();
+        let _ = rig.page.grid.record_cell(0, SEATS, CellValue::Int(900));
+        rig.save();
+        rig.answer_review(DialogResult::Action(1));
+        rig.ticks(4);
+
+        assert_eq!(rig.last_status(), "Save failed · the row is marked");
+        assert!(!rig.page.grid.submission_pending(), "a failure unlocks");
+        assert_eq!(rig.page.grid.pending().total(), 1, "the draft is retained");
+        assert!(rig.page.grid.row_errors.contains_key(&0));
+    }
+
+    fn sql(page: &GridPage) -> Result<Vec<String>, NonFinite> {
+        page.statements(&page.grid.snapshot_changes())
+    }
+
     #[test]
     fn issue49_showcase_preview_preserves_numeric_precision() {
         let mut page = GridPage::new();
-        page.grid.record_cell(0, MRR, CellValue::Num(0.001));
-        page.grid.record_cell(1, MRR, CellValue::Num(1.234_567));
-        page.grid.record_cell(2, MRR, CellValue::Num(100.0));
-        page.grid.insert_row();
-        let insert = page.grid.len() - 1;
-        page.grid.record_cell(insert, SEATS, CellValue::Int(5));
         page.grid
-            .record_cell(insert, MRR, CellValue::Num(-0.000_25));
+            .record_cell(0, MRR, CellValue::Num(0.001))
+            .unwrap();
+        page.grid
+            .record_cell(1, MRR, CellValue::Num(1.234_567))
+            .unwrap();
+        page.grid
+            .record_cell(2, MRR, CellValue::Num(100.0))
+            .unwrap();
+        page.grid.insert_row().unwrap();
+        let insert = page.grid.len() - 1;
+        page.grid
+            .record_cell(insert, SEATS, CellValue::Int(5))
+            .unwrap();
+        page.grid
+            .record_cell(insert, MRR, CellValue::Num(-0.000_25))
+            .unwrap();
 
         assert_eq!(
-            page.statements().unwrap(),
+            sql(&page).unwrap(),
             vec![
                 "UPDATE customers SET mrr = 0.001 WHERE id = 1001;".to_owned(),
                 "UPDATE customers SET mrr = 1.234567 WHERE id = 1002;".to_owned(),
                 "UPDATE customers SET mrr = 100.0 WHERE id = 1003;".to_owned(),
-                "INSERT INTO customers (seats, mrr) VALUES (5, -0.00025);".to_owned(),
+                "INSERT INTO customers (customer, plan, seats, mrr, active, renewed_at, account_id, notes) VALUES (NULL, NULL, 5, -0.00025, NULL, NULL, NULL, NULL);".to_owned(),
             ]
         );
-        assert!(page.changes_dialog(false).is_ok());
-        assert!(page.changes_dialog(true).is_ok());
+        assert!(
+            page.changes_dialog(&page.grid.snapshot_changes(), false)
+                .is_ok()
+        );
+        assert!(
+            page.changes_dialog(&page.grid.snapshot_changes(), true)
+                .is_ok()
+        );
     }
 
     #[test]
     fn issue49_showcase_preview_rejects_nonfinite_numbers_entirely() {
         for bad in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
             let mut page = GridPage::new();
-            page.grid.record_cell(0, MRR, CellValue::Num(2.5));
-            page.grid.record_cell(1, MRR, CellValue::Num(bad));
+            page.grid.record_cell(0, MRR, CellValue::Num(2.5)).unwrap();
+            page.grid.record_cell(1, MRR, CellValue::Num(bad)).unwrap();
             let want = NonFinite {
                 row: 1,
                 column: "mrr".into(),
             };
-            assert_eq!(page.statements(), Err(want.clone()));
-            assert_eq!(page.changes_dialog(false).err(), Some(want.clone()));
-            assert_eq!(page.changes_dialog(true).err(), Some(want));
+            assert_eq!(sql(&page), Err(want.clone()));
+            assert_eq!(
+                page.changes_dialog(&page.grid.snapshot_changes(), false)
+                    .err(),
+                Some(want.clone())
+            );
+            assert_eq!(
+                page.changes_dialog(&page.grid.snapshot_changes(), true)
+                    .err(),
+                Some(want)
+            );
             assert_eq!(page.grid.pending().cells().count(), 2, "the draft is kept");
         }
+    }
+    const CUSTOMER: usize = 1;
+    const PLAN: usize = 2;
+
+    fn insert_statement(page: &GridPage) -> String {
+        let statements = sql(page).expect("the draft serializes");
+        let inserts: Vec<&String> = statements
+            .iter()
+            .filter(|s| s.starts_with("INSERT"))
+            .collect();
+        assert_eq!(inserts.len(), 1, "{statements:?}");
+        inserts[0].clone()
+    }
+
+    #[test]
+    fn issue50_showcase_duplicate_review_contains_copied_values() {
+        let mut page = GridPage::new();
+        let source = page.grid.rows()[0].clone();
+        page.grid.duplicate_row().expect("row duplicates");
+
+        let untouched = insert_statement(&page);
+        assert!(!untouched.contains("DEFAULT VALUES"), "{untouched}");
+        assert!(
+            untouched.starts_with("INSERT INTO customers (customer, plan, seats, "),
+            "id and mrr reset to DEFAULT and are omitted: {untouched}"
+        );
+        assert!(
+            untouched.contains(&literal(0, "customer", &source[CUSTOMER]).unwrap()),
+            "{untouched}"
+        );
+        assert!(
+            untouched.contains(&literal(0, "plan", &source[PLAN]).unwrap()),
+            "{untouched}"
+        );
+
+        let copy = page.grid.len() - 1;
+        page.grid
+            .record_cell(copy, SEATS, CellValue::Int(99))
+            .unwrap();
+        let edited = insert_statement(&page);
+        assert!(edited.contains(", 99,"), "{edited}");
+        assert!(
+            edited.contains(&literal(0, "customer", &source[CUSTOMER]).unwrap()),
+            "the other copies survive one edit: {edited}"
+        );
     }
 }

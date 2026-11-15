@@ -26,7 +26,9 @@ use junie_tui::ui::leave::{Leave, LeaveGuard, Resolved, Stakes};
 
 use junie_tui::widgets::button::Button;
 use junie_tui::widgets::dialog::{Dialog, DialogBody, DialogResult};
-use junie_tui::widgets::grid::CellValue;
+use junie_tui::widgets::grid::{
+    CellValue, DataGrid, GridChangeSet, GridCommitError, GridCommitToken,
+};
 
 use junie_tui::widgets::input::TextInput;
 
@@ -45,7 +47,7 @@ use crate::model::{History, SwitchTarget, SwitcherIndex};
 use crate::pages::Tablepro;
 use crate::sql::{self, Decision};
 use crate::tabs::{Filter, FilterOp};
-use crate::workbench::{WorkTab, Workbench};
+use crate::workbench::{SAVING_NOTICE, WorkTab, Workbench};
 use junie_tui::shell::Page;
 
 const STRIP_SAFE: WidgetId = WidgetId::of("strip.safe");
@@ -59,6 +61,7 @@ const SAFETY_DIALOG: WidgetId = WidgetId::of("dialog.safety");
 const DISCARD_DIALOG: WidgetId = WidgetId::of("dialog.discard");
 const CLOSE_DIALOG: WidgetId = WidgetId::of("dialog.close");
 const COMMIT_DIALOG: WidgetId = WidgetId::of("dialog.commit");
+const COMMIT_FAILED_DIALOG: WidgetId = WidgetId::of("dialog.commit-failed");
 const PREVIEW_DIALOG: WidgetId = WidgetId::of("dialog.preview");
 const VIEWER_DIALOG: WidgetId = WidgetId::of("dialog.viewer");
 
@@ -67,6 +70,14 @@ const LEAVE_DIALOG: WidgetId = WidgetId::of("dialog.quit");
 #[cfg(test)]
 #[path = "connection_identity_tests.rs"]
 mod connection_identity_tests;
+
+#[cfg(test)]
+#[path = "commit_owner_tests.rs"]
+mod commit_owner_tests;
+
+#[cfg(test)]
+#[path = "test_support.rs"]
+mod test_support;
 
 pub enum Act {
     EditFilter(Option<usize>),
@@ -85,6 +96,71 @@ pub enum Act {
         connection: Box<Connection>,
     },
 }
+
+/// Everything one save needs, captured once when it is reviewed. The review,
+/// the delayed completion, the history entries and the status all read this
+/// value; nothing re-reads the active tab or the grid's live draft.
+#[derive(Debug, Clone)]
+struct CommitRequest {
+    connection_generation: u64,
+    tab: ItemKey,
+    schema: String,
+    table: String,
+    connection_name: String,
+    database: String,
+    changes: GridChangeSet,
+    sql: Vec<String>,
+}
+
+/// The one save an app has at a time. Every variant holds the grid lock that
+/// `token` names; only Cancel or a successful completion releases it.
+#[derive(Debug, Clone)]
+enum CommitState {
+    Reviewing {
+        request: CommitRequest,
+        token: GridCommitToken,
+    },
+    Submitted {
+        request: CommitRequest,
+        token: GridCommitToken,
+        ticks_left: u32,
+    },
+    FailedReceipt {
+        request: CommitRequest,
+        token: GridCommitToken,
+    },
+}
+
+impl CommitState {
+    fn request(&self) -> &CommitRequest {
+        match self {
+            Self::Reviewing { request, .. }
+            | Self::Submitted { request, .. }
+            | Self::FailedReceipt { request, .. } => request,
+        }
+    }
+
+    fn token(&self) -> GridCommitToken {
+        match self {
+            Self::Reviewing { token, .. }
+            | Self::Submitted { token, .. }
+            | Self::FailedReceipt { token, .. } => *token,
+        }
+    }
+}
+
+/// A review that passed every check, with the values its dialog needs.
+struct PreparedCommit {
+    request: CommitRequest,
+    token: GridCommitToken,
+    level: SafeMode,
+    environment: Environment,
+}
+
+/// A refused save: the status text and its kind.
+type CommitRefusal = (String, Option<StatusKind>);
+
+const SAVE_TICKS: u32 = 5;
 
 pub type Request = junie_tui::shell::Request<ModalResult, (), Act>;
 
@@ -131,12 +207,16 @@ impl From<LayerResult> for ModalResult {
 
 pub type Layers = ShellLayers<ModalResult>;
 
-fn preview_error_text(e: &crate::model::PreviewSqlError) -> String {
+fn preview_error_text(e: &crate::model::PreviewSqlError, grid: &DataGrid) -> String {
     use crate::model::{PreviewRow, PreviewSqlCause, SqlLiteralError};
-    let PreviewRow::Source(row) = e.row;
+    let PreviewRow::Key(key) = e.row;
+    let row = match grid.source_index(key) {
+        Some(src) => format!("row {}", src + 1),
+        None => "a removed row".to_owned(),
+    };
     let place = match &e.column {
-        Some(column) => format!("row {} · {column}", row + 1),
-        None => format!("row {}", row + 1),
+        Some(column) => format!("{row} · {column}"),
+        None => row,
     };
     let why = match &e.cause {
         PreviewSqlCause::Literal(SqlLiteralError::NonFiniteNumber) => {
@@ -145,6 +225,10 @@ fn preview_error_text(e: &crate::model::PreviewSqlError) -> String {
         PreviewSqlCause::MissingColumn(name) => format!("key column {name} is missing"),
         PreviewSqlCause::InvalidDefaultPredicate => {
             "holds DEFAULT, which cannot identify a row".to_owned()
+        }
+        PreviewSqlCause::GeneratedColumn => "is generated and cannot be changed".to_owned(),
+        PreviewSqlCause::RowShape { expected, actual } => {
+            format!("has {actual} cells where {expected} columns are shown")
         }
     };
     format!("{place} {why}")
@@ -171,7 +255,8 @@ pub struct App {
 
     pub keys: shell::ShellKeys<TpCmd>,
 
-    committing: Option<u32>,
+    commit: Option<CommitState>,
+    connection_generation: u64,
     last_admitted_generation: u64,
     scope: usize,
     switcher_targets: Vec<SwitchTarget>,
@@ -197,7 +282,8 @@ impl App {
             layers: Layers::new(),
             tick: 0,
             keys: shell_keys(),
-            committing: None,
+            commit: None,
+            connection_generation: 0,
             last_admitted_generation: 0,
             scope: 0,
             switcher_targets: vec![],
@@ -215,6 +301,7 @@ impl App {
     /// Open a workbench from an owned, already admitted snapshot. The app never
     /// looks the connection up again, so later edits cannot retarget it.
     fn open_workbench(&mut self, key: ItemKey, c: Connection) {
+        self.invalidate_connection();
         let mut wb = Workbench::new(c, Catalog::acme_prod());
         wb.connection_key = Some(key);
         wb.new_query("");
@@ -258,7 +345,7 @@ impl App {
         self.connections.animating()
             || self.workbench.as_ref().is_some_and(|w| w.animating())
             || self.shell.pointer.has_flash()
-            || self.committing.is_some()
+            || matches!(self.commit, Some(CommitState::Submitted { .. }))
     }
 
     pub fn tick_interval(&self) -> Duration {
@@ -352,6 +439,9 @@ impl App {
         let Some(dropped) = self.router.apply(nav, |r| r) else {
             return Outcome::Ignored;
         };
+        if dropped.contains(&Route::Workbench) {
+            self.invalidate_connection();
+        }
         if dropped.contains(&Route::Workbench)
             && let Some(w) = self.workbench.take()
         {
@@ -437,11 +527,12 @@ impl App {
             Page::on_tick(&mut self.connections, &mut self.history, cx)
         });
         out = out.or(o).or(self.apply_requests(reqs));
-        if let Some(left) = self.committing.as_mut() {
-            *left = left.saturating_sub(1);
-            if *left == 0 {
-                self.committing = None;
-                self.finish_commit();
+        if let Some(CommitState::Submitted { ticks_left, .. }) = self.commit.as_mut() {
+            *ticks_left = ticks_left.saturating_sub(1);
+            if *ticks_left == 0
+                && let Some(CommitState::Submitted { request, token, .. }) = self.commit.take()
+            {
+                self.complete_commit(request, token);
             }
             out = Outcome::Changed;
         }
@@ -579,6 +670,10 @@ impl App {
                 self.open_filter_editor(None, Some((col, val.0, val.1)));
             }
             Act::ConfirmDiscard => {
+                if self.active_is_saving() {
+                    self.set_status_as(StatusKind::Warn, SAVING_NOTICE.into());
+                    return;
+                }
                 let n = self
                     .workbench
                     .as_ref()
@@ -617,6 +712,12 @@ impl App {
                         .map(|t| t.schema.clone())
                         .unwrap_or("public".into());
                     if let Some(i) = w.open_table(&schema, &table, false) {
+                        if let Some(WorkTab::Table(t)) = w.tabs.get_mut(i)
+                            && t.saving()
+                        {
+                            self.set_status_as(StatusKind::Warn, SAVING_NOTICE.into());
+                            return;
+                        }
                         if let Some(WorkTab::Table(t)) = w.tabs.get_mut(i) {
                             t.filters = vec![Filter {
                                 column: col,
@@ -626,7 +727,7 @@ impl App {
                                 enabled: true,
                             }];
                             let cat = w.catalog.clone();
-                            t.load(&cat);
+                            let _ = t.load(&cat);
                         }
                         if let Some(pf) = w.primary_focus() {
                             self.shell.focus.focus(pf);
@@ -655,6 +756,10 @@ impl App {
                 self.open_dialog(d);
             }
             Act::ConfirmCloseTab(i) => {
+                if self.tab_is_saving(i) {
+                    self.set_status_as(StatusKind::Warn, SAVING_NOTICE.into());
+                    return;
+                }
                 let d = Dialog::destructive(
                     CLOSE_DIALOG.child(i),
                     "Close tab with unsaved work?",
@@ -1046,58 +1151,118 @@ impl App {
     }
 
     fn begin_commit(&mut self) {
-        let Some(w) = self.workbench.as_mut() else {
-            return;
-        };
-        let level = w.connection.safe_mode;
-        let env = w.connection.environment;
-        let conn = w.connection.name.clone();
-        let db = w.catalog.database.clone();
-        let (schema, name) = match w.active_tab() {
-            Some(WorkTab::Table(t)) => (t.schema.clone(), t.name.clone()),
-            _ => {
-                self.set_status("Nothing to save".into());
-                return;
-            }
-        };
-        let table = w.catalog.find(Some(&schema), &name).cloned();
-        let Some(table) = table else { return };
-        let Some(WorkTab::Table(t)) = w.active_tab_mut() else {
-            return;
-        };
-        if t.grid.pending().is_empty() {
-            self.set_status("No pending changes".into());
-            return;
-        }
-        if level == SafeMode::ReadOnly {
+        if self.commit.is_some() {
             self.set_status_as(
                 StatusKind::Warn,
-                "Cannot save changes: TablePro's Safe Mode is set to read-only for this connection"
-                    .into(),
+                "A save is already in progress · wait for it to finish".into(),
             );
             return;
         }
-        let sqls = match crate::model::preview_sql(&table, &t.columns, &t.grid) {
-            Ok(sqls) => sqls,
-            Err(e) => {
-                self.set_status_as(
-                    StatusKind::Fail,
-                    format!(
-                        "Cannot save: {} · changes kept pending",
-                        preview_error_text(&e)
-                    ),
-                );
+        let PreparedCommit {
+            request,
+            token,
+            level,
+            environment,
+        } = match self.prepare_commit() {
+            Ok(prepared) => prepared,
+            Err((text, kind)) => {
+                self.put_status(text, kind);
                 return;
             }
         };
-        let (u, i, d) = t.grid.pending().counts();
-        let deletes = d;
+        let dialog = Self::commit_dialog(&request, level, environment);
+        self.commit = Some(CommitState::Reviewing { request, token });
+        self.open_dialog(dialog);
+    }
+
+    /// Resolves the active table's draft into one owned request and locks the
+    /// grid on it. It stops, with the draft untouched, at the first problem.
+    fn prepare_commit(&mut self) -> Result<PreparedCommit, CommitRefusal> {
+        let Some(w) = self.workbench.as_mut() else {
+            return Err(("Nothing to save".into(), None));
+        };
+        let level = w.connection.safe_mode;
+        let environment = w.connection.environment;
+        let connection_name = w.connection.name.clone();
+        let database = w.catalog.database.clone();
+        let Some(tab) = w.active_key() else {
+            return Err(("Nothing to save".into(), None));
+        };
+        let (schema, name) = match w.active_tab() {
+            Some(WorkTab::Table(t)) => (t.schema.clone(), t.name.clone()),
+            _ => return Err(("Nothing to save".into(), None)),
+        };
+        let Some(table) = w.catalog.find(Some(&schema), &name).cloned() else {
+            return Err((
+                format!("Cannot save: {schema}.{name} is no longer in the catalog"),
+                Some(StatusKind::Fail),
+            ));
+        };
+        let Some(WorkTab::Table(t)) = w.active_tab_mut() else {
+            return Err(("Nothing to save".into(), None));
+        };
+        if let Err(e) = t.grid.finish_edit_session() {
+            return Err((
+                format!("Fix the open cell first: {e}"),
+                Some(StatusKind::Warn),
+            ));
+        }
+        let changes = t.grid.snapshot_changes();
+        if changes.is_empty() {
+            return Err(("No pending changes".into(), None));
+        }
+        if level == SafeMode::ReadOnly {
+            return Err((
+                "Cannot save changes: TablePro's Safe Mode is set to read-only for this connection"
+                    .into(),
+                Some(StatusKind::Warn),
+            ));
+        }
+        let sql = crate::model::preview_sql(&table, &t.columns, &changes).map_err(|e| {
+            (
+                format!(
+                    "Cannot save: {} · changes kept pending",
+                    preview_error_text(&e, &t.grid)
+                ),
+                Some(StatusKind::Fail),
+            )
+        })?;
+        let token = t
+            .grid
+            .begin_submission(changes.clone())
+            .map_err(|e| (format!("Cannot save: {e}"), Some(StatusKind::Fail)))?;
+        Ok(PreparedCommit {
+            request: CommitRequest {
+                connection_generation: self.connection_generation,
+                tab,
+                schema,
+                table: name,
+                connection_name,
+                database,
+                changes,
+                sql,
+            },
+            token,
+            level,
+            environment,
+        })
+    }
+
+    fn commit_dialog(request: &CommitRequest, level: SafeMode, env: Environment) -> Dialog {
+        let (u, i, deletes) = request.changes.counts();
         let deliberate = level.requires_authentication();
         let mut facts = vec![
             Prop::new("Action", "Save changes".to_owned()),
             Prop::new(
                 "Target",
-                format!("{} · {} · {} · {}", conn, env.label(), db, t.qualified()),
+                format!(
+                    "{} · {} · {} · {}.{}",
+                    request.connection_name,
+                    env.label(),
+                    request.database,
+                    request.schema,
+                    request.table
+                ),
             )
             .tone(if env == Environment::Production {
                 Tone::Normal
@@ -1107,10 +1272,10 @@ impl App {
             Prop::new(
                 "Scope",
                 format!(
-                    "{u} update{} · {i} insert{} · {d} delete{}",
+                    "{u} update{} · {i} insert{} · {deletes} delete{}",
                     if u == 1 { "" } else { "s" },
                     if i == 1 { "" } else { "s" },
-                    if d == 1 { "" } else { "s" }
+                    if deletes == 1 { "" } else { "s" }
                 ),
             )
             .tone(Tone::Secondary),
@@ -1147,11 +1312,7 @@ impl App {
             )
             .tone(Tone::Muted),
         );
-        let token = if deliberate {
-            Some(t.name.clone())
-        } else {
-            None
-        };
+        let token = deliberate.then(|| request.table.clone());
         let confirm = if deletes > 0 {
             Button::danger(COMMIT_DIALOG.sub("ok"), "Save")
         } else {
@@ -1169,7 +1330,7 @@ impl App {
             COMMIT_DIALOG,
             &title,
             facts,
-            sqls,
+            request.sql.clone(),
             token.as_deref(),
             confirm,
         );
@@ -1181,51 +1342,108 @@ impl App {
             };
         }
         dlg.width = 78;
-        self.open_dialog(dlg);
+        dlg
     }
 
-    fn finish_commit(&mut self) {
-        let Some(w) = self.workbench.as_mut() else {
-            return;
-        };
-        let conn = w.connection.name.clone();
-        let db = w.catalog.database.clone();
-        let (schema, name) = match w.active_tab() {
-            Some(WorkTab::Table(t)) => (t.schema.clone(), t.name.clone()),
-            _ => return,
-        };
-        let table = w.catalog.find(Some(&schema), &name).cloned();
-        let Some(WorkTab::Table(t)) = w.active_tab_mut() else {
-            return;
-        };
-        let sqls = match table
-            .as_ref()
-            .map(|tb| crate::model::preview_sql(tb, &t.columns, &t.grid))
-            .transpose()
-        {
-            Ok(sqls) => sqls.unwrap_or_default(),
-            Err(e) => {
-                self.set_status_as(
-                    StatusKind::Fail,
-                    format!(
-                        "Cannot save: {} · changes kept pending",
-                        preview_error_text(&e)
-                    ),
-                );
-                return;
+    /// The confirmation answer for the review that is open. A dismissal, or an
+    /// answer with no matching review, releases the lock the review took.
+    fn commit_reviewed(&mut self, confirmed: bool) {
+        match self.commit.take() {
+            Some(CommitState::Reviewing { request, token }) if confirmed => {
+                self.commit = Some(CommitState::Submitted {
+                    request,
+                    token,
+                    ticks_left: SAVE_TICKS,
+                });
+                self.set_status("Saving…".into());
             }
+            Some(state) => {
+                self.release_commit(&state);
+                self.set_status("Changes kept pending".into());
+            }
+            None => self.set_status("Changes kept pending".into()),
+        }
+    }
+
+    /// Releases the grid lock a save took, if its grid still exists. The draft
+    /// is untouched.
+    fn release_commit(&mut self, state: &CommitState) {
+        let request = state.request();
+        if request.connection_generation != self.connection_generation {
+            return;
+        }
+        if let Some(WorkTab::Table(t)) =
+            self.workbench.as_mut().and_then(|w| w.tab_mut(request.tab))
+        {
+            let _ = t.grid.cancel_submission(state.token());
+        }
+    }
+
+    /// Ends the app's connection era: any save is cancelled, and a callback
+    /// that still holds an older generation can no longer find its target.
+    fn invalidate_connection(&mut self) {
+        if let Some(state) = self.commit.take() {
+            self.release_commit(&state);
+        }
+        self.connection_generation = self
+            .connection_generation
+            .checked_add(1)
+            .expect("connection generations exhausted");
+    }
+
+    /// Applies the acknowledgement of a submitted save to the grid that
+    /// submitted it, found by its tab key under its connection generation. A
+    /// tab that no longer holds the reviewed table releases its lock instead of
+    /// keeping it for a save that can never complete.
+    fn complete_commit(&mut self, request: CommitRequest, token: GridCommitToken) {
+        if request.connection_generation != self.connection_generation {
+            return;
+        }
+        let Some(WorkTab::Table(t)) = self.workbench.as_mut().and_then(|w| w.tab_mut(request.tab))
+        else {
+            return;
         };
-        let n = t.grid.pending().total();
-        let qualified = t.qualified();
-        let schema = t.schema.clone();
-        t.grid.apply_commit_result(Ok(()));
-        for s in sqls {
+        if t.schema != request.schema || t.name != request.table {
+            let _ = t.grid.cancel_submission(token);
+            self.set_status_as(
+                StatusKind::Warn,
+                "The save no longer matches its tab · changes kept pending".into(),
+            );
+            return;
+        }
+        match t
+            .grid
+            .complete_submission(token, Ok(request.changes.identity_receipt()))
+        {
+            Ok(()) => {
+                if let Some(w) = self.workbench.as_mut() {
+                    w.sync_strip();
+                }
+                self.commit_succeeded(&request);
+            }
+            Err(GridCommitError::StaleToken | GridCommitError::WrongOrigin) => {}
+            Err(error) if t.grid.submission_pending() => {
+                self.commit_failed_receipt(request, token, error.to_string());
+            }
+            Err(_) => {
+                self.set_status_as(
+                    StatusKind::Warn,
+                    "The save was cancelled · changes kept pending".into(),
+                );
+            }
+        }
+    }
+
+    fn commit_succeeded(&mut self, request: &CommitRequest) {
+        let (u, i, d) = request.changes.counts();
+        let n = u + i + d;
+        for sql in &request.sql {
             self.history.push(crate::model::HistoryEntry {
                 id: 0,
-                sql: s,
-                connection: conn.clone(),
-                database: db.clone(),
-                schema: schema.clone(),
+                sql: sql.clone(),
+                connection: request.connection_name.clone(),
+                database: request.database.clone(),
+                schema: request.schema.clone(),
                 minutes_ago: 0,
                 duration_ms: Some(3),
                 rows: Some(1),
@@ -1236,10 +1454,42 @@ impl App {
         self.set_status_as(
             StatusKind::Ok,
             format!(
-                "Saved {n} change{} to {qualified}",
-                if n == 1 { "" } else { "s" }
+                "Saved {n} change{} to {}.{}",
+                if n == 1 { "" } else { "s" },
+                request.schema,
+                request.table
             ),
         );
+    }
+
+    /// An acknowledgement that does not match the reviewed changes leaves the
+    /// draft locked and visible; closing this dialog releases it.
+    fn commit_failed_receipt(
+        &mut self,
+        request: CommitRequest,
+        token: GridCommitToken,
+        message: String,
+    ) {
+        let mut d = Dialog::facts(
+            COMMIT_FAILED_DIALOG,
+            "The save could not be applied",
+            vec![
+                Prop::new("Target", format!("{}.{}", request.schema, request.table)),
+                Prop::new("Why", message).wrap(),
+                Prop::new("Draft", "Kept pending. Closing this releases it.")
+                    .tone(Tone::Muted)
+                    .wrap(),
+            ],
+            vec![],
+            None,
+            Button::secondary(COMMIT_FAILED_DIALOG.sub("cancel"), "Cancel"),
+        );
+        d.actions.remove(0);
+        d.cancel_index = Some(0);
+        d.initial_focus = d.actions[0].id;
+        self.commit = Some(CommitState::FailedReceipt { request, token });
+        self.set_status_as(StatusKind::Fail, "The save could not be applied".into());
+        self.open_dialog(d);
     }
 
     fn open_preview(&mut self) {
@@ -1252,12 +1502,13 @@ impl App {
         let Some(table) = w.catalog.find(Some(&t.schema), &t.name) else {
             return;
         };
-        let sqls = match crate::model::preview_sql(table, &t.columns, &t.grid) {
+        let changes = t.grid.snapshot_changes();
+        let sqls = match crate::model::preview_sql(table, &t.columns, &changes) {
             Ok(sqls) => sqls,
             Err(e) => {
                 self.set_status_as(
                     StatusKind::Fail,
-                    format!("Cannot preview SQL: {}", preview_error_text(&e)),
+                    format!("Cannot preview SQL: {}", preview_error_text(&e, &t.grid)),
                 );
                 return;
             }
@@ -1457,6 +1708,10 @@ impl App {
             self.set_status("Filters apply to table tabs".into());
             return;
         };
+        if t.saving() {
+            self.set_status_as(StatusKind::Warn, SAVING_NOTICE.into());
+            return;
+        }
         let columns = t.columns.clone();
         let existing = index.and_then(|i| t.filters.get(i)).cloned();
         let (col_i, op, value, value2) = match (&existing, &prefill) {
@@ -1490,11 +1745,24 @@ impl App {
         };
         if w.tabs.get(index).is_some_and(|t| t.dirty()) {
             self.act(Act::ConfirmCloseTab(index));
-        } else {
-            w.close_tab(index);
+        } else if w.close_tab(index) {
             let focus = w.primary_focus().unwrap_or(crate::workbench::EXPLORER);
             self.shell.focus.focus(focus);
         }
+    }
+
+    fn tab_is_saving(&self, index: usize) -> bool {
+        matches!(
+            self.workbench.as_ref().and_then(|w| w.tabs.get(index)),
+            Some(WorkTab::Table(t)) if t.saving()
+        )
+    }
+
+    fn active_is_saving(&self) -> bool {
+        matches!(
+            self.workbench.as_ref().and_then(|w| w.active_tab()),
+            Some(WorkTab::Table(t)) if t.saving()
+        )
     }
 
     fn top_kind(&self) -> Option<&'static str> {
@@ -1667,19 +1935,7 @@ impl App {
                         w.explorer.set_filter(None);
                         let _ = w.explorer.rows();
 
-                        let conn = w.connection.clone();
-                        let cat = w.catalog.clone();
-                        let tabs = std::mem::take(&mut w.tabs);
-                        let active = w.active;
-                        let qc = w.query_counter;
-                        let mut nw = Workbench::new(conn, cat);
-                        nw.connection_key = w.connection_key;
-                        nw.tabs = tabs;
-                        nw.active = active;
-                        nw.query_counter = qc;
-                        nw.schema = s.clone();
-                        nw.rebuild_for_schema();
-                        *w = nw;
+                        w.rebuild_for_schema();
                         self.shell.focus.focus(crate::workbench::EXPLORER);
                         self.set_status(format!("Schema {s}"));
                     }
@@ -1747,12 +2003,16 @@ impl App {
         if let Some(w) = self.workbench.as_mut() {
             let cat = w.catalog.clone();
             if let Some(WorkTab::Table(t)) = w.active_tab_mut() {
+                if t.saving() {
+                    self.set_status_as(StatusKind::Warn, SAVING_NOTICE.into());
+                    return Outcome::Changed;
+                }
                 match index {
                     Some(i) if i < t.filters.len() => t.filters[i] = filter,
                     _ => t.filters.push(filter),
                 }
                 t.preview = false;
-                t.load(&cat);
+                let _ = t.load(&cat);
                 let n = t.filters.iter().filter(|f| f.enabled).count();
                 applied = Some((n, t.grid.id));
             }
@@ -1811,24 +2071,35 @@ impl App {
             return Outcome::Changed;
         }
         if id == COMMIT_DIALOG {
-            if result == DialogResult::Action(1) {
-                self.committing = Some(5);
-                self.set_status("Saving…".into());
-            } else {
-                self.set_status("Changes kept pending".into());
+            self.commit_reviewed(result == DialogResult::Action(1));
+            return Outcome::Changed;
+        }
+        if id == COMMIT_FAILED_DIALOG {
+            if let Some(state @ CommitState::FailedReceipt { .. }) = self.commit.take() {
+                self.release_commit(&state);
             }
+            self.set_status("Changes kept pending".into());
             return Outcome::Changed;
         }
         if id == DISCARD_DIALOG {
             if result == DialogResult::Action(1) {
-                if let Some(w) = self.workbench.as_mut() {
-                    let cat = w.catalog.clone();
-                    if let Some(WorkTab::Table(t)) = w.active_tab_mut() {
-                        t.grid.discard();
-                        t.load(&cat);
+                let discarded = match self.workbench.as_mut() {
+                    Some(w) => {
+                        let cat = w.catalog.clone();
+                        match w.active_tab_mut() {
+                            Some(WorkTab::Table(t)) => {
+                                t.grid.discard().is_ok() && t.load(&cat).is_ok()
+                            }
+                            _ => true,
+                        }
                     }
+                    None => true,
+                };
+                if discarded {
+                    self.set_status("Changes discarded".into());
+                } else {
+                    self.set_status_as(StatusKind::Warn, SAVING_NOTICE.into());
                 }
-                self.set_status("Changes discarded".into());
             }
             return Outcome::Changed;
         }
@@ -1836,9 +2107,12 @@ impl App {
             for i in 0..w.tabs.len() + 1 {
                 if id == CLOSE_DIALOG.child(i) {
                     if result == DialogResult::Action(1) {
-                        w.close_tab(i);
-                        let pf = w.primary_focus().unwrap_or(crate::workbench::EXPLORER);
-                        self.shell.focus.focus(pf);
+                        if w.close_tab(i) {
+                            let pf = w.primary_focus().unwrap_or(crate::workbench::EXPLORER);
+                            self.shell.focus.focus(pf);
+                        } else {
+                            self.set_status_as(StatusKind::Warn, SAVING_NOTICE.into());
+                        }
                     }
                     return Outcome::Changed;
                 }
@@ -2586,6 +2860,7 @@ impl shell::KeyHost for App {
 
 #[cfg(test)]
 mod tests {
+    use super::test_support::review_code;
     use super::*;
 
     const PRICE: usize = 4;
@@ -2610,18 +2885,6 @@ mod tests {
         }
     }
 
-    fn review_code(app: &App) -> Vec<String> {
-        match &app
-            .layers
-            .top_as::<Dialog>()
-            .expect("the review dialog is open")
-            .body
-        {
-            DialogBody::Facts { code, .. } => code.clone(),
-            _ => panic!("the dialog lists statements"),
-        }
-    }
-
     fn status(app: &App) -> String {
         app.shell
             .status
@@ -2634,7 +2897,9 @@ mod tests {
     fn issue49_save_review_shows_exact_numbers_and_keeps_the_value() {
         let mut app = app_editing_products();
         let original = grid(&mut app).rows()[0][PRICE].clone();
-        grid(&mut app).record_cell(0, PRICE, CellValue::Num(1.234_567));
+        grid(&mut app)
+            .record_cell(0, PRICE, CellValue::Num(1.234_567))
+            .unwrap();
         app.begin_commit();
         let code = review_code(&app);
         assert_eq!(code.len(), 1);
@@ -2650,13 +2915,17 @@ mod tests {
     #[test]
     fn issue49_save_and_preview_reject_nonfinite_without_side_effects() {
         let mut app = app_editing_products();
-        grid(&mut app).record_cell(0, PRICE, CellValue::Num(2.5));
-        grid(&mut app).record_cell(1, PRICE, CellValue::Num(f64::NAN));
+        grid(&mut app)
+            .record_cell(0, PRICE, CellValue::Num(2.5))
+            .unwrap();
+        grid(&mut app)
+            .record_cell(1, PRICE, CellValue::Num(f64::NAN))
+            .unwrap();
         let history = app.history.entries.len();
 
         app.begin_commit();
         assert!(app.layers.is_empty(), "no review dialog opens");
-        assert_eq!(app.committing, None, "no save timer starts");
+        assert!(app.commit.is_none(), "no save starts");
         assert_eq!(
             status(&app),
             "Cannot save: row 2 · unit_price is not a finite number · changes kept pending"
@@ -2678,5 +2947,64 @@ mod tests {
         let grid = grid(&mut app);
         assert_eq!(grid.pending().cells().count(), 2, "the draft is kept");
         assert_eq!(grid.value(0, PRICE), &CellValue::Num(2.5));
+    }
+    const SKU: usize = 1;
+    const NAME: usize = 2;
+
+    fn quoted(v: &CellValue) -> String {
+        match v {
+            CellValue::Text(s) => format!("'{}'", s.replace('\'', "''")),
+            other => panic!("expected text, got {other:?}"),
+        }
+    }
+
+    fn insert_of(app: &mut App) -> String {
+        app.open_preview();
+        let code = review_code(app);
+        let inserts: Vec<&String> = code.iter().filter(|s| s.starts_with("INSERT")).collect();
+        assert_eq!(inserts.len(), 1, "{code:?}");
+        inserts[0].clone()
+    }
+
+    #[test]
+    fn issue50_untouched_duplicate_previews_every_copied_value() {
+        let mut app = app_editing_products();
+        let source = grid(&mut app).rows()[0].clone();
+        grid(&mut app).duplicate_row().expect("row duplicates");
+        let sql = insert_of(&mut app);
+        assert!(!sql.contains("DEFAULT VALUES"), "{sql}");
+        assert!(
+            sql.starts_with("INSERT INTO public.products (sku, name, "),
+            "the primary key resets to DEFAULT and is omitted: {sql}"
+        );
+        assert!(sql.contains(&quoted(&source[SKU])), "{sql}");
+        assert!(sql.contains(&quoted(&source[NAME])), "{sql}");
+        assert!(sql.contains("unit_price"), "{sql}");
+    }
+
+    #[test]
+    fn issue50_duplicate_with_one_edit_keeps_the_other_copies() {
+        let mut app = app_editing_products();
+        let source = grid(&mut app).rows()[0].clone();
+        grid(&mut app).duplicate_row().expect("row duplicates");
+        let copy = grid(&mut app).len() - 1;
+        grid(&mut app)
+            .record_cell(copy, PRICE, CellValue::Num(12.5))
+            .unwrap();
+        let sql = insert_of(&mut app);
+        assert!(sql.contains("12.5"), "{sql}");
+        assert!(sql.contains(&quoted(&source[SKU])), "{sql}");
+        assert!(sql.contains(&quoted(&source[NAME])), "{sql}");
+    }
+
+    #[test]
+    fn issue50_duplicating_an_edited_row_copies_the_pending_value() {
+        let mut app = app_editing_products();
+        grid(&mut app)
+            .record_cell(0, NAME, CellValue::Text("edited name".into()))
+            .unwrap();
+        grid(&mut app).duplicate_row().expect("row duplicates");
+        let sql = insert_of(&mut app);
+        assert!(sql.contains("'edited name'"), "{sql}");
     }
 }

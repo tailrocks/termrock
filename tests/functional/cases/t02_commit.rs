@@ -410,3 +410,64 @@ fn commit_cancel_keeps_pending_and_confirm_records_the_preview() {
     );
     app.finish();
 }
+
+/// The tab strip row that lists the open tabs.
+fn strip_row(screen: &TerminalSnapshot) -> String {
+    (0..screen.rows())
+        .map(|row| row_text(screen, row))
+        .find(|line| line.contains(QUERY) && line.contains(TABLE))
+        .unwrap_or_else(|| panic!("no tab strip row\n{}", text(screen)))
+}
+
+fn organizations_is_dirty(screen: &TerminalSnapshot) -> bool {
+    let row = strip_row(screen);
+    let after = row.split(TABLE).nth(1).unwrap_or("");
+    after.trim_start().starts_with('•')
+}
+
+#[test]
+fn issue11_save_switch_pty() {
+    let mut launch = Launch::new("t02-commit-owner", TABLEPRO);
+    launch.cols = 120;
+    launch.rows = 40;
+    launch.color = Some("truecolor".to_string());
+    launch.motion = Some("reduced".to_string());
+    launch.clock = true;
+    let app = try_launch(launch).unwrap_or_else(|error| panic!("{error}"));
+    app.wait_text("Filter connections");
+    connect_development(&app);
+    open_organizations(&app);
+    edit_name(&app);
+
+    app.key("ctrl+s");
+    let review = app.wait_text(SAVE_TITLE);
+    let statement = preview_statement(&review);
+    app.key("enter");
+    app.wait_text("Saving");
+
+    app.key("ctrl+pageup");
+    let switched = app.wait_screen("the query tab is active", |screen| {
+        let visible = text(screen);
+        !visible.contains(PANEL) && visible.contains("Filter objects")
+    });
+    assert!(
+        organizations_is_dirty(&switched),
+        "the saving tab still shows its draft as dirty\n{}",
+        text(&switched)
+    );
+
+    app.advance_clock(1_000);
+    let saved = app.wait_text(SAVED);
+    see(&saved, &[SAVED], &["Saving", SAVE_TITLE]);
+    assert!(
+        !organizations_is_dirty(&saved),
+        "the saved tab still shows a dirty mark\n{}",
+        text(&saved)
+    );
+
+    app.key("ctrl+y");
+    let history = app.wait_text(HISTORY);
+    see(&history, &[HISTORY, UPDATE, VALUE], &[SAVE_TITLE]);
+    same_statement(&statement, &history, "history");
+    app.finish();
+}
