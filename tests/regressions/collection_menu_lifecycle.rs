@@ -318,3 +318,99 @@ fn toolbar_cursor_keeps_the_more_stop_and_clamps_past_it() {
     tb.insert_item(0, ToolItem::new("Z"));
     assert_eq!(tb.cursor, 0, "an in-range cursor is not moved");
 }
+
+#[test]
+fn toolbar_policy_change_then_render_closes_the_open_menu() {
+    let mut tb = Toolbar::new(TOOLBAR, tools(&["A", "B", "C"]));
+    open_overflow_menu(&mut tb);
+
+    tb.gap = 2;
+    render_toolbar(&mut tb, NARROW);
+
+    assert!(
+        !tb.menu_open(),
+        "a render after a spacing change must not re-validate the old menu rows"
+    );
+}
+
+#[test]
+fn toolbar_resize_that_changes_the_hidden_items_closes_the_open_menu() {
+    let mut changed = false;
+    for width in NARROW + 1..40 {
+        let mut tb = Toolbar::new(TOOLBAR, tools(&["A", "B", "C", "D", "E"]));
+        open_overflow_menu(&mut tb);
+        let before = tb.hidden().to_vec();
+
+        render_toolbar(&mut tb, width);
+
+        if tb.hidden() != before && !tb.hidden().is_empty() {
+            changed = true;
+            assert!(
+                !tb.menu_open(),
+                "width {width} hides {:?} but the menu still lists {before:?}",
+                tb.hidden()
+            );
+        }
+    }
+    assert!(
+        changed,
+        "no width changed the hidden items, so the case never ran"
+    );
+}
+
+#[test]
+fn chip_context_policy_change_then_render_closes_the_open_menu() {
+    let mut cb = ChipBar::new(CHIPS);
+    cb.set_chips(vec![Chip::new("a"), Chip::new("b")]);
+    render_chips(&mut cb, CHIP_WIDTH);
+    cb.on_key(&key(KeyCode::Menu));
+    assert!(cb.menu_open(), "the Menu key opens the chip context menu");
+
+    cb.context_menu = false;
+    render_chips(&mut cb, CHIP_WIDTH);
+
+    assert!(
+        !cb.menu_open(),
+        "a disabled context menu must not stay open across a render"
+    );
+}
+
+/// The first chip the hidden-chip menu lists at `width`, if the bar overflows there.
+fn first_hidden_chip(width: u16) -> Option<usize> {
+    let mut cb = ChipBar::new(CHIPS);
+    cb.set_chips((0..6).map(|i| Chip::new(&format!("chip{i}"))).collect());
+    render_chips(&mut cb, width);
+    cb.on_key(&key(KeyCode::Down));
+    match cb.on_key(&key(KeyCode::Enter)).1 {
+        Some(ChipAction::Activate(i)) if i >= 1 => Some(i),
+        _ => None,
+    }
+}
+
+#[test]
+fn chip_resize_that_changes_the_hidden_chips_closes_the_open_menu() {
+    let at_open = first_hidden_chip(CHIP_WIDTH).expect("the bar overflows when the menu opens");
+    let mut changed = false;
+    for width in CHIP_WIDTH + 1..80 {
+        let Some(now) = first_hidden_chip(width).filter(|&now| now != at_open) else {
+            continue;
+        };
+        let mut cb = ChipBar::new(CHIPS);
+        cb.set_chips((0..6).map(|i| Chip::new(&format!("chip{i}"))).collect());
+        render_chips(&mut cb, CHIP_WIDTH);
+        cb.on_key(&key(KeyCode::Down));
+        assert!(cb.menu_open(), "Down opens the hidden-chip menu");
+
+        render_chips(&mut cb, width);
+
+        changed = true;
+        assert!(
+            !cb.menu_open(),
+            "width {width} hides from chip {now} but the menu still lists from chip {at_open}"
+        );
+    }
+    assert!(
+        changed,
+        "no width changed the hidden chips, so the case never ran"
+    );
+}

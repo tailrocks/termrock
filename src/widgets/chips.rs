@@ -600,6 +600,7 @@ impl ChipBar {
 
     pub fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, bg: Color) {
         let area = area.intersection(*buf.area());
+        self.close_stale_menu();
         self.layout = None;
         if area.is_empty() {
             return;
@@ -630,6 +631,14 @@ impl ChipBar {
         let (shown, marker) =
             overflow_run_cells(&widths, usize::from(area.right().saturating_sub(x)), 1);
         self.shown = shown;
+        if let Some((_, BarMenu::Hidden(rows))) = &self.menu
+            && !rows
+                .iter()
+                .copied()
+                .eq(shown.min(self.chips.len())..self.chips.len())
+        {
+            self.menu = None;
+        }
         let mut more_area = Rect::ZERO;
         for (i, chip) in self.chips.iter().enumerate() {
             if i >= shown {
