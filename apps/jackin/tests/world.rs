@@ -655,7 +655,7 @@ mod projection_work {
         let refresh_ticket = world
             .refresh_account(&account, 0)
             .expect("a refresh ticket");
-        let validation_ticket = world
+        let validate_ticket = world
             .validate_account(&account)
             .expect("a validation ticket");
         let base = world.epochs();
@@ -682,7 +682,7 @@ mod projection_work {
         };
 
         world.absorb(&refreshed(refresh_ticket, &other, refresh()));
-        world.absorb(&validated(validation_ticket, &other, Err("late".into())));
+        world.absorb(&validated(validate_ticket, &other, Err("late".into())));
         assert_eq!(
             world.epochs(),
             base,
@@ -710,22 +710,18 @@ mod projection_work {
             "a failed refresh still changes the account"
         );
 
-        world.absorb(&validated(
-            validation_ticket,
-            &source,
-            Err("rejected".into()),
-        ));
+        world.absorb(&validated(validate_ticket, &source, Err("rejected".into())));
         let c = world.epochs();
         assert_eq!(c.accounts, b.accounts + 1, "an accepted validation");
         assert_eq!((c.membership, c.roster), (base.membership, base.roster));
 
-        let validation_ticket = world
+        let validate_ticket = world
             .validate_account(&account)
             .expect("a validation ticket");
-        let restarted = world.epochs();
-        assert_eq!(restarted.accounts, c.accounts + 1, "a validation start");
+        let started = world.epochs();
+        assert_eq!(started.accounts, c.accounts + 1, "a validation start");
         world.absorb(&validated(
-            validation_ticket,
+            validate_ticket,
             &source,
             Ok(Validation::Fingerprint {
                 level: jackin_console::domain::account::ValidationLevel::MaterialDiscovered,
@@ -733,8 +729,141 @@ mod projection_work {
         ));
         assert_eq!(
             world.epochs().accounts,
-            restarted.accounts + 1,
+            started.accounts + 1,
             "a fingerprint check"
+        );
+    }
+
+    fn live_record(world: &mut World, uncommitted: usize, unpushed: usize) -> InstanceId {
+        let id = world.instances[0].id().clone();
+        let record = world.instance_mut(&id).expect("an available record");
+        record.status = InstanceStatus::Running;
+        record.uncommitted = uncommitted;
+        record.unpushed = unpushed;
+        id
+    }
+
+    #[test]
+    fn end_instance_record_moves_membership_and_roster() {
+        let mut world = world_for(Scenario::Returning);
+        let id = live_record(&mut world, 0, 0);
+        let before = world.epochs();
+        assert!(world.end_instance_record(&id, false));
+        let after = world.epochs();
+        assert_eq!(
+            (after.membership, after.roster, after.accounts),
+            (before.membership + 1, before.roster + 1, before.accounts),
+            "the status changed, so the roster index must rebuild"
+        );
+        let before = world.epochs();
+        assert!(!world.end_instance_record(&id, false), "no longer live");
+        assert_eq!(world.epochs(), before, "a refused end moves nothing");
+    }
+
+    #[test]
+    fn note_touched_files_moves_the_roster_only_when_it_raises_the_count() {
+        let mut world = world_for(Scenario::Returning);
+        let id = live_record(&mut world, 1, 0);
+        let before = world.epochs();
+        assert!(world.note_touched_files(&id, 4));
+        let after = world.epochs();
+        assert_eq!(
+            (after.membership, after.roster, after.accounts),
+            (before.membership, before.roster + 1, before.accounts)
+        );
+        assert!(!world.note_touched_files(&id, 4));
+        assert!(!world.note_touched_files(&id, 2));
+        assert_eq!(
+            world.epochs(),
+            after,
+            "a count that is not higher moves nothing"
+        );
+    }
+
+    #[test]
+    fn clear_instance_changes_moves_the_roster_only_when_something_was_set() {
+        let mut world = world_for(Scenario::Returning);
+        let id = live_record(&mut world, 2, 1);
+        let before = world.epochs();
+        assert!(world.clear_instance_changes(&id));
+        let after = world.epochs();
+        assert_eq!(
+            (after.membership, after.roster, after.accounts),
+            (before.membership, before.roster + 1, before.accounts)
+        );
+        assert!(!world.clear_instance_changes(&id));
+        assert_eq!(world.epochs(), after, "nothing to clear moves nothing");
+    }
+
+    #[test]
+    fn refresh_account_moves_the_accounts_epoch_only_when_it_starts_one() {
+        let mut world = world_for(Scenario::Returning);
+        let account = world.accounts.accounts[0].id.clone();
+        let before = world.epochs();
+        assert!(world.refresh_account(&account, 0).is_some());
+        let after = world.epochs();
+        assert_eq!(
+            (after.membership, after.roster, after.accounts),
+            (before.membership, before.roster, before.accounts + 1),
+            "the account shows Refreshing"
+        );
+        assert!(
+            world.refresh_account(&account, 0).is_none(),
+            "single flight"
+        );
+        assert_eq!(world.epochs(), after, "a refused start moves nothing");
+    }
+
+    #[test]
+    fn reconcile_pending_refreshes_moves_the_accounts_epoch_for_each_survivor() {
+        let mut world = world_for(Scenario::Returning);
+        let account = world.accounts.accounts[0].id.clone();
+        world.refresh_account(&account, 0).expect("a ticket");
+        world
+            .account_mut(&account)
+            .expect("account")
+            .usage
+            .freshness
+            .phase = jackin_console::domain::usage::Freshness::Current;
+        let before = world.epochs();
+        world.reconcile_pending_refreshes();
+        let after = world.epochs();
+        assert_eq!(
+            (after.membership, after.roster),
+            (before.membership, before.roster)
+        );
+        assert!(
+            after.accounts > before.accounts,
+            "the survivor shows Refreshing again"
+        );
+        assert_eq!(
+            world
+                .accounts
+                .get(&account)
+                .expect("account")
+                .usage
+                .freshness
+                .phase,
+            jackin_console::domain::usage::Freshness::Refreshing
+        );
+    }
+
+    #[test]
+    fn validate_account_and_its_reconcile_move_the_accounts_epoch() {
+        let mut world = world_for(Scenario::Returning);
+        let account = world.accounts.accounts[0].id.clone();
+        let before = world.epochs();
+        world.validate_account(&account).expect("a ticket");
+        let started = world.epochs();
+        assert_eq!(started.accounts, before.accounts + 1, "shows Validating");
+        world.reconcile_pending_validations();
+        assert!(
+            world.epochs().accounts > started.accounts,
+            "the survivor is marked Validating again"
+        );
+        assert_eq!(
+            (world.epochs().membership, world.epochs().roster),
+            (before.membership, before.roster)
         );
     }
 }

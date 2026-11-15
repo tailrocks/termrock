@@ -24,9 +24,9 @@ use jackin_console::launch::{
     TypedKey,
 };
 use jackin_console::panes::{PaneBody, PaneRequest, PaneSpawn};
-use jackin_console::sim::SimBackend;
+use jackin_console::sim::{self, SimBackend};
 use jackin_console::world::{Msg, SaveWarning, World};
-use junie_tui::core::event::Input;
+use junie_tui::core::event::{Input, Outcome};
 use junie_tui::motion::Motion;
 use junie_tui::runtime::Application;
 use junie_tui::theme::{ColorLevel, Theme};
@@ -1462,13 +1462,8 @@ fn a_reply_due_on_the_handoff_is_delivered() {
 
     let mut snapshot = jackin_console::sim::snapshot(&app.world);
     snapshot.workspaces.truncate(1);
-    app.world.schedule(
-        0,
-        Msg::Refreshed {
-            ticket: app.world.refresh_ticket,
-            result: Ok(Box::new(snapshot)),
-        },
-    );
+    let reply = roster_reply(&mut app, snapshot);
+    app.world.schedule(0, reply);
     tick(&mut app, 1);
     assert_eq!(
         app.world.workspaces.len(),
@@ -1921,4 +1916,43 @@ fn to_prompt() -> (App, Arc<Mutex<Calls>>) {
     press(&mut app, "right enter");
     assert!(screen(&mut app).contains("Plain-text key"));
     (app, calls)
+}
+
+/// The roster a refresh started now would answer with, and the ticket the
+/// world waits on, with the answer held back.
+fn roster_out(app: &mut App) -> Msg {
+    let snapshot = sim::snapshot(&app.world);
+    let ticket = hold_roster_refresh(app);
+    Msg::Refreshed {
+        ticket,
+        result: Ok(Box::new(snapshot)),
+    }
+}
+
+#[test]
+fn refresh_started_before_launch_ready_cannot_remove_the_admitted_instance() {
+    let mine = launched("jk-5b0x", "sbx-alpha", InstanceStatus::Running);
+    let (mut app, _) = scripted(vec![running(0), vec![ready(mine)]], None);
+    let held = roster_out(&mut app);
+    tick_until(&mut app, "the capsule", |a| a.route() == Route::Capsule);
+    assert!(app.world.instance(&iid("jk-5b0x")).is_some());
+
+    assert_eq!(app.deliver(&held), Outcome::Ignored);
+    assert_eq!(app.route(), Route::Capsule, "the capsule stays open");
+    assert!(app.world.instance(&iid("jk-5b0x")).is_some());
+}
+
+#[test]
+fn refresh_started_before_launch_failed_cannot_remove_the_admitted_instance() {
+    let mine = launched("jk-5b0x", "sbx-alpha", InstanceStatus::Running);
+    let (mut app, _) = scripted(vec![running(0), vec![failed(mine)]], None);
+    let held = roster_out(&mut app);
+    tick_until(&mut app, "the admitted record", |a| {
+        a.world.instance(&iid("jk-5b0x")).is_some()
+    });
+    let route = app.route();
+
+    assert_eq!(app.deliver(&held), Outcome::Ignored);
+    assert_eq!(app.route(), route);
+    assert!(app.world.instance(&iid("jk-5b0x")).is_some());
 }

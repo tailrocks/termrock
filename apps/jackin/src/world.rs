@@ -18,7 +18,7 @@ use crate::domain::instance::{
 use crate::domain::reason::{IssueReason, UsageReason};
 use crate::domain::role::{
     AccountOrder, DEFAULT_ROLE_UNUSABLE, LaunchRole, LaunchRoleRule, NO_DEFAULT_ROLE,
-    NO_SAVED_WORKSPACE,
+    NO_SAVED_WORKSPACE, RoleCheckState,
 };
 use crate::domain::surfaces::Surfaces;
 use crate::domain::tuple::TupleIdentity;
@@ -445,7 +445,19 @@ pub struct World {
     /// updates that account and leaves the text alone.
     pub(crate) displayed_validation: Option<(AccountId, Ticket)>,
 
+    /// How many snapshots `apply` installed.
     pub snapshots_applied: u64,
+    /// Counts every accepted change to state a roster snapshot overwrites: a
+    /// snapshot, an admitted record, an accepted account or role reply, a
+    /// named local record edit. A roster refresh is accepted only while this
+    /// still equals the value it captured at request time (`refresh_from`),
+    /// so an older observation cannot revert a newer one. It orders
+    /// observations; it does not prove an external provider sampled later.
+    /// Terminal output and its projection never advance it. A host that
+    /// edits the fields a snapshot carries directly calls
+    /// `authoritative_changed` once after the edit.
+    pub(crate) authoritative_revision: u64,
+    /// The `authoritative_revision` the roster refresh in flight started at.
     pub refresh_from: Option<u64>,
     pub refresh_started_secs: i64,
     pub refresh_ticket: Ticket,
@@ -602,6 +614,7 @@ impl World {
             pending_validations: BTreeMap::new(),
             displayed_validation: None,
             snapshots_applied: 0,
+            authoritative_revision: 0,
             refresh_from: None,
             refresh_started_secs: 0,
             refresh_ticket: 0,
@@ -863,15 +876,15 @@ impl World {
         let accounts = &self.accounts;
         self.pending_validations
             .retain(|id, p| accounts.get(id).is_some_and(|a| a.source == p.source));
-        let restart: Vec<(AccountId, i64)> = self
+        let pending: Vec<(AccountId, i64)> = self
             .pending_validations
             .iter()
             .map(|(id, p)| (id.clone(), p.started_ms))
             .collect();
-        for (id, started_ms) in restart {
-            if let Some(a) = self.account_mut(&id) {
+        for (id, started_ms) in &pending {
+            if let Some(a) = self.account_mut(id) {
                 a.validation = ValidationState::Validating {
-                    started_tick: started_ms.max(0) as u64,
+                    started_tick: (*started_ms).max(0) as u64,
                 };
             }
         }
@@ -922,13 +935,123 @@ impl World {
     fn request_refresh(&mut self, now: i64) {
         let ticket = self.next_ticket();
         self.refresh_ticket = ticket;
-        self.refresh_from = Some(self.snapshots_applied);
+        self.refresh_from = Some(self.authoritative_revision);
         self.refresh_started_secs = now;
         self.perform(Effect::Refresh { ticket });
     }
 
     pub fn now_ms(&self) -> i64 {
         self.clock.now_ms
+    }
+
+    pub fn authoritative_revision(&self) -> u64 {
+        self.authoritative_revision
+    }
+
+    /// Records one accepted change to state a roster snapshot overwrites, so
+    /// a refresh that started before it is dropped instead of reverting it.
+    /// The world's own mutators call it. A host that writes the snapshot
+    /// fields directly calls it once after the edit.
+    pub fn authoritative_changed(&mut self) {
+        self.authoritative_revision = self
+            .authoritative_revision
+            .checked_add(1)
+            .expect("authoritative revision exhausted");
+    }
+
+    /// Runs `edit` and records it as one authoritative change, for a host that
+    /// has to write several snapshot fields directly. `edit` must not call
+    /// `authoritative_changed` or a method that does, which would count the
+    /// change twice.
+    pub fn edit_authoritative<R>(&mut self, edit: impl FnOnce(&mut World) -> R) -> R {
+        let before = self.authoritative_revision;
+        let result = edit(self);
+        debug_assert_eq!(
+            self.authoritative_revision, before,
+            "edit_authoritative must not advance the revision itself"
+        );
+        self.authoritative_changed();
+        result
+    }
+
+    /// Whether a roster reply for `ticket` may be applied. Only the current
+    /// ticket qualifies, and only once: it retires the request, and its
+    /// observation must still match `authoritative_revision`. An older ticket
+    /// leaves the newer request untouched.
+    fn accept_refresh_ticket(&mut self, ticket: Ticket) -> bool {
+        if ticket != self.refresh_ticket {
+            return false;
+        }
+        self.refresh_from
+            .take()
+            .is_some_and(|observed| observed == self.authoritative_revision)
+    }
+
+    /// Ends a live record: purged, or preserved (dirty) or exited (clean).
+    /// False when the record is missing or not live.
+    pub fn end_instance_record(&mut self, id: &InstanceId, purge: bool) -> bool {
+        let Some(live) = self.instance(id).filter(|i| i.status.is_live()) else {
+            return false;
+        };
+        let dirty = live.is_dirty();
+        let now_secs = self.clock.now_secs();
+        let Some(i) = self.instance_mut(id) else {
+            return false;
+        };
+        i.status = if purge {
+            InstanceStatus::Purged
+        } else if dirty {
+            InstanceStatus::PreservedDirty
+        } else {
+            InstanceStatus::CleanExited
+        };
+        i.last_seen_secs = now_secs;
+        self.authoritative_changed();
+        true
+    }
+
+    /// Raises the record's uncommitted count to `count` when that is more.
+    /// Whether it changed.
+    pub fn note_touched_files(&mut self, id: &InstanceId, count: usize) -> bool {
+        if !self.instance(id).is_some_and(|i| i.uncommitted < count) {
+            return false;
+        }
+        let Some(i) = self.instance_view_mut(id) else {
+            return false;
+        };
+        i.uncommitted = count;
+        self.authoritative_changed();
+        true
+    }
+
+    /// Zeroes the record's uncommitted and unpushed counts. Whether either
+    /// was set.
+    pub fn clear_instance_changes(&mut self, id: &InstanceId) -> bool {
+        if !self.instance(id).is_some_and(|i| i.is_dirty()) {
+            return false;
+        }
+        let Some(i) = self.instance_view_mut(id) else {
+            return false;
+        };
+        i.uncommitted = 0;
+        i.unpushed = 0;
+        self.authoritative_changed();
+        true
+    }
+
+    /// Records the outcome of checking `role`. Whether the role exists.
+    pub fn set_role_check(&mut self, role: &str, check: RoleCheckState) -> bool {
+        let Some(r) = self
+            .surfaces
+            .roles
+            .as_mut()
+            .and_then(|admin| admin.role_mut(role))
+        else {
+            return false;
+        };
+        r.check = check;
+        self.authoritative_changed();
+        true
     }
 
     pub fn load_role(&mut self, name: &str) -> RoleLoad {
@@ -1057,6 +1180,7 @@ impl World {
             daemon_health,
         } = snapshot;
         self.snapshots_applied += 1;
+        self.authoritative_changed();
         let before = self.projection.epochs;
         self.workspaces = workspaces;
         self.roles = roles;
@@ -1128,14 +1252,11 @@ impl World {
             } => {
                 if let Some(r) = self.roles.iter_mut().find(|r| r.name == *role) {
                     r.load_error = Some(error.clone());
+                    self.authoritative_changed();
                 }
             }
             Msg::Refreshed { ticket, result } => {
-                let current = *ticket == self.refresh_ticket
-                    && self
-                        .refresh_from
-                        .take()
-                        .is_none_or(|from| from == self.snapshots_applied);
+                let current = self.accept_refresh_ticket(*ticket);
                 match result {
                     Ok(snapshot) if current => self.apply((**snapshot).clone()),
                     Err(_) if current => self.daemon_health = DaemonHealth::Stale,
@@ -1198,6 +1319,7 @@ impl World {
                         }
                     }
                 }
+                self.authoritative_changed();
             }
             Msg::AccountValidated {
                 ticket,
@@ -1209,8 +1331,7 @@ impl World {
                     return Absorbed::Stale;
                 }
                 let now = self.now_secs();
-                if let Some(a) = self.accounts.get_mut(account) {
-                    self.projection.epochs.bump_accounts();
+                if let Some(a) = self.account_mut(account) {
                     match result {
                         Ok(validation) => match validation {
                             Validation::Fingerprint { level } => {
@@ -1235,6 +1356,7 @@ impl World {
                             ));
                         }
                     }
+                    self.authoritative_changed();
                 }
             }
             _ => {}
@@ -1368,7 +1490,9 @@ impl World {
     }
 
     /// An instance for editing anything, status and workspace included; the
-    /// membership epoch moves because the caller is about to change it.
+    /// membership epoch moves because the caller is about to change it. A
+    /// write through this to a field a snapshot carries must be followed by
+    /// `authoritative_changed`. The runtime uses the named edits instead.
     pub fn instance_mut(&mut self, id: &InstanceId) -> Option<&mut Instance> {
         self.projection.epochs.bump_membership();
         self.instances
@@ -1406,6 +1530,7 @@ impl World {
         } else {
             self.instances.push(entry);
         }
+        self.authoritative_changed();
         self.projection.epochs.bump_membership();
         self.sync_arbiter();
     }

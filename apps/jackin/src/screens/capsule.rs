@@ -2059,14 +2059,7 @@ impl Page<Jackin> for CapsuleScreen {
         changed |= self.run_effects(w, cx);
 
         let touched = self.daemon(w).map(|d| d.touched_files().len()).unwrap_or(0);
-        if touched
-            > w.instance(&self.instance)
-                .map_or(usize::MAX, |i| i.uncommitted)
-            && let Some(i) = w.instance_view_mut(&self.instance)
-        {
-            i.uncommitted = i.uncommitted.max(touched);
-            changed = true;
-        }
+        changed |= w.note_touched_files(&self.instance, touched);
         if changed {
             Outcome::Changed
         } else {
@@ -2554,10 +2547,7 @@ impl CapsuleScreen {
                     action: Some(1), ..
                 },
             ) => {
-                if let Some(i) = w.instance_view_mut(&self.instance) {
-                    i.uncommitted = 0;
-                    i.unpushed = 0;
-                }
+                w.clear_instance_changes(&self.instance);
                 cx.status("Changes discarded");
                 self.end_instance(false, cx);
             }

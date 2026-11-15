@@ -2169,22 +2169,7 @@ impl App {
                 );
             }
             Go::InstanceEnded { instance, purge } => {
-                let dirty = self.world.instance(&instance).is_some_and(|i| i.is_dirty());
-                let now_secs = self.world.clock.now_secs();
-                if let Some(i) = self
-                    .world
-                    .instance_mut(&instance)
-                    .filter(|i| i.status.is_live())
-                {
-                    i.status = if purge {
-                        InstanceStatus::Purged
-                    } else if dirty {
-                        InstanceStatus::PreservedDirty
-                    } else {
-                        InstanceStatus::CleanExited
-                    };
-                    i.last_seen_secs = now_secs;
-                }
+                self.world.end_instance_record(&instance, purge);
                 self.world.daemons.remove(&instance);
                 crate::world::refresh_snapshots(&mut self.world);
                 self.world.sync_arbiter();
