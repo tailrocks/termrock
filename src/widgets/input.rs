@@ -976,3 +976,84 @@ impl EditMenuHost for TextInput {
         self.field.run(cmd).edited
     }
 }
+
+#[cfg(test)]
+mod issue35_tests {
+    use std::cell::Cell;
+    use std::rc::Rc;
+
+    use ratatui::buffer::Buffer;
+    use ratatui::crossterm::event::KeyCode;
+    use ratatui::layout::Rect;
+
+    use super::*;
+    use crate::core::event::Key;
+    use crate::core::focus::FocusRing;
+    use crate::core::hit::HitRegistry;
+    use crate::theme::{ColorLevel, Theme};
+    use crate::ui::ctx::Interaction;
+
+    const REQUIRED: &str = "Name is required";
+
+    fn key(code: KeyCode) -> Key {
+        Key {
+            code,
+            mods: ratatui::crossterm::event::KeyModifiers::NONE,
+        }
+    }
+
+    fn painted(input: &mut TextInput) -> String {
+        let theme = Theme::for_level(ColorLevel::TrueColor);
+        let mut buf = Buffer::empty(Rect::new(0, 0, 60, 4));
+        let mut hits = HitRegistry::default();
+        let mut ring = FocusRing::default();
+        let interaction = Interaction {
+            focus: Some(input.id),
+            ..Default::default()
+        };
+        let mut ctx = RenderCtx::new(&theme, interaction, &mut hits, &mut ring);
+        input.render(buf.area, &mut buf, &mut ctx, theme.canvas);
+        (0..buf.area.height)
+            .flat_map(|y| (0..buf.area.width).map(move |x| (x, y)))
+            .map(|(x, y)| buf[(x, y)].symbol().to_owned())
+            .collect()
+    }
+
+    #[test]
+    fn issue35_input_required_error_recovers() {
+        for when in [ValidateWhen::AfterError, ValidateWhen::Live] {
+            let calls = Rc::new(Cell::new(0));
+            let counter = calls.clone();
+            let mut input = TextInput::new(WidgetId::of("issue35.name"), "Name")
+                .edit_entry(EditEntry::Explicit)
+                .required(true)
+                .required_message(REQUIRED)
+                .validate_on(ValidateOn::EveryCommit)
+                .validate_when(when)
+                .validator(move |text| {
+                    counter.set(counter.get() + 1);
+                    (text.len() > 40).then(|| "too long".to_owned())
+                });
+
+            input.on_key(&key(KeyCode::Enter));
+            input.on_key(&key(KeyCode::Enter));
+            assert_eq!(input.error(), Some(REQUIRED), "{when:?}");
+            assert_eq!(
+                calls.get(),
+                0,
+                "custom rule must not run on empty required text"
+            );
+            assert!(painted(&mut input).contains(REQUIRED));
+
+            input.on_key(&key(KeyCode::Enter));
+            input.on_key(&key(KeyCode::Char('a')));
+            assert_eq!(
+                input.error(),
+                None,
+                "{when:?} revalidates the corrected value"
+            );
+            assert_eq!(calls.get(), 1, "{when:?}");
+            assert!(!painted(&mut input).contains(REQUIRED));
+        }
+    }
+}
