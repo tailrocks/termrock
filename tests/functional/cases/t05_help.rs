@@ -40,6 +40,9 @@ fn open(name: &str) -> App {
     launch.rows = 40;
     launch.color = Some("truecolor".to_string());
     launch.motion = Some("reduced".to_string());
+    // The connect toast expires after five wall-clock seconds. The test clock
+    // freezes status expiry so the baselines never depend on how long a journey takes.
+    launch.clock = true;
     let app = try_launch(launch).unwrap_or_else(|error| panic!("{error}"));
     app.wait_text("Filter connections");
     app
