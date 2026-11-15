@@ -137,6 +137,17 @@ Also unmet, and absent from every scenario above:
   scheduling count covers the activity and plan traversal only, so a zero or a
   steady count there says nothing about batches or the work inside a plan.
 
+## Fitting work
+
+`FitVisits` and `FitCompares` count the responsive fitters' loop visits and
+removal-order comparisons. Together with `IntrinsicWidthCalls` they show that a
+fit measures each label once and sorts once instead of rescanning survivors.
+The Showcase scenarios `work_contract_stress_*` set each `Stress data` option
+(Toolbars, Breadcrumbs, Chrome, Chips) to 20,000 items and to one 65,536-cell
+label, and assert exact counts for the frame that applies the option and the
+next settled frame. A fitter that goes quadratic changes these counts and
+fails the scenario.
+
 ## Reports
 
 Each budget test also writes a count-only JSON report to
