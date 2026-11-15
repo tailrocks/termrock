@@ -1,6 +1,4 @@
-mod common;
-
-use common::*;
+use crate::common::*;
 use junie_tui::core::data::{DataError, ShapeError};
 use junie_tui::core::event::Outcome;
 use junie_tui::core::id::WidgetId;
@@ -204,7 +202,7 @@ fn issue42_empty_schema_is_inert() {
     ] {
         g.run(cmd);
     }
-    assert!(g.pending.is_empty());
+    assert!(g.pending().is_empty());
 }
 
 #[test]
@@ -299,7 +297,7 @@ fn issue42_shape_failure_is_atomic() {
     g.cursor = (0, 0);
     g.begin_edit();
     assert!(g.is_editing());
-    let (pending, rows) = (g.pending.clone(), g.rows().to_vec());
+    let (pending, rows) = (g.pending().clone(), g.rows().to_vec());
     assert!(
         g.try_set_rows(grid_rows(vec![
             vec![text("n0"), text("n1")],
@@ -315,7 +313,8 @@ fn issue42_shape_failure_is_atomic() {
         .is_err()
     );
     assert_eq!(
-        g.pending, pending,
+        *g.pending(),
+        pending,
         "staged changes survive a rejected replacement"
     );
     assert_eq!(g.rows(), rows.as_slice());
@@ -481,10 +480,9 @@ fn issue42_public_stale_cursor_indices_safe() {
     g.try_set_rows(grid_rows(vec![vec![text("a")], vec![text("b")]]))
         .expect("padded");
     assert!(
-        g.pending
-            .cells
-            .keys()
-            .all(|&(r, c)| r < g.rows().len() && c < 2),
+        g.pending()
+            .cells()
+            .all(|(key, c, _)| g.source_index(key).is_some_and(|r| r < g.rows().len()) && c < 2),
         "no pending entry points outside the model",
     );
 }

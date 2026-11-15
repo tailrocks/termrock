@@ -63,7 +63,13 @@ const MIDSTREAM: &[&[u8]] = &[
     b"\x1b[2J\x1b[Hready $ ",
 ];
 
-const FIXTURES: [Fixture; 4] = [
+const WIDE_EDGE: &[&[u8]] = &[
+    "日本語日本語日本語日本語日本語日本語日本語日本語日本語日本語\r\n".as_bytes(),
+    "ab日cd日ef日gh日ij日kl日mn日op日qr日st日uv日wx日yz\r\n".as_bytes(),
+    "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\r\n".as_bytes(),
+];
+
+const FIXTURES: [Fixture; 5] = [
     Fixture {
         name: "session",
         chunks: SESSION,
@@ -82,6 +88,11 @@ const FIXTURES: [Fixture; 4] = [
     Fixture {
         name: "midstream",
         chunks: MIDSTREAM,
+        leave: None,
+    },
+    Fixture {
+        name: "wide edge",
+        chunks: WIDE_EDGE,
         leave: None,
     },
 ];
@@ -368,13 +379,23 @@ impl TerminalPanePage {
         let inner = panel.render(frame, buf, t);
         ctx.control(PANE, inner, false);
         ctx.clickable(PANE, frame);
+        let shown = if self.opts.on("terminalpane.clip") {
+            Rect::new(
+                inner.x,
+                inner.y,
+                inner.width.saturating_sub(1),
+                inner.height,
+            )
+        } else {
+            inner
+        };
         TerminalView::new(&self.state)
             .focused(
                 self.opts.on("terminalpane.focused") && ctx.interaction.focused(PANE)
                     || self.opts.on("terminalpane.focused") && self.capturing,
             )
             .color(self.opts.on("terminalpane.colour"))
-            .render(inner, buf);
+            .render(shown, buf);
 
         let side_x = frame.right() + 2;
         if area.right() > side_x + 24 {

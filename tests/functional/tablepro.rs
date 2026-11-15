@@ -567,3 +567,15 @@ fn tablepro_resize_and_too_small_recovers() {
     freeze(&app, "functional/tablepro_connections_nocolor");
     app.finish();
 }
+
+#[test]
+fn issue9_tablepro_query_editor_unicode_paste_keeps_text_and_editor_alive() {
+    let app = connected("tablepro-issue9-unicode");
+    app.key("tab");
+    let sql = "SELECT é, 名 FROM 表 WHERE note = '💾;中';";
+    app.paste(sql);
+    app.wait_text(sql);
+    app.type_text("1");
+    let screen = app.wait_text(&format!("{sql}1"));
+    assert!(text(&screen).contains(sql), "{}", text(&screen));
+}

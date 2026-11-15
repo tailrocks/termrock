@@ -44,12 +44,12 @@ impl Specimen for DataGrid {
     fn specimen_height(&self, state: SpecimenState) -> u16 {
         let rows = if state == SpecimenState::Empty {
             2
-        } else if self.pending.is_empty() {
+        } else if self.pending().is_empty() {
             SAMPLE_ROWS.min(self.rows().len().max(1)) as u16
         } else {
             self.rows().len().max(1) as u16
         };
-        let bar = if self.pending.is_empty() { 0 } else { 2 };
+        let bar = if self.pending().is_empty() { 0 } else { 2 };
         1 + rows + bar
     }
 
@@ -63,7 +63,7 @@ impl Specimen for DataGrid {
     ) {
         let mut g = self.clone();
 
-        if g.rows().len() > SAMPLE_ROWS && g.pending.is_empty() {
+        if g.rows().len() > SAMPLE_ROWS && g.pending().is_empty() {
             let rows = g.rows()[..SAMPLE_ROWS].to_vec();
             g.try_set_rows(GridRows {
                 rows,

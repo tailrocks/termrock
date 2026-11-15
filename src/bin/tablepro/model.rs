@@ -1,91 +1,155 @@
 use crate::db::{Catalog, ColType, Table, Value};
 use crate::sql::{FUNCTIONS, KEYWORDS, TokKind, tokenize};
+use junie_tui::core::id::ItemKey;
 use junie_tui::ui::text::fuzzy;
+use junie_tui::widgets::grid::{CellValue, DataGrid};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SqlLiteralError {
+    NonFiniteNumber,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PreviewRow {
+    Source(usize),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PreviewSqlCause {
+    Literal(SqlLiteralError),
+    MissingColumn(String),
+    InvalidDefaultPredicate,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PreviewSqlError {
+    pub row: PreviewRow,
+    pub column: Option<String>,
+    pub cause: PreviewSqlCause,
+}
+
+impl PreviewSqlError {
+    fn at(row: usize, column: &str, cause: PreviewSqlCause) -> Self {
+        Self {
+            row: PreviewRow::Source(row),
+            column: Some(column.to_owned()),
+            cause,
+        }
+    }
+}
+
+fn cell_literal(row: usize, column: &str, value: &CellValue) -> Result<String, PreviewSqlError> {
+    sql_literal(&crate::tabs::from_cell(value))
+        .map_err(|e| PreviewSqlError::at(row, column, PreviewSqlCause::Literal(e)))
+}
+
+/// Matches the row as it was loaded: base values only, so an edited key still
+/// finds its original record.
+fn row_predicate(
+    key_columns: &[&str],
+    columns: &[(String, ColType)],
+    grid: &DataGrid,
+    src: usize,
+) -> Result<String, PreviewSqlError> {
+    let keyed: Vec<(usize, &str)> = if key_columns.is_empty() {
+        columns
+            .iter()
+            .enumerate()
+            .map(|(ci, c)| (ci, c.0.as_str()))
+            .collect()
+    } else {
+        key_columns
+            .iter()
+            .map(|k| {
+                columns
+                    .iter()
+                    .position(|c| c.0 == *k)
+                    .map(|ci| (ci, *k))
+                    .ok_or_else(|| {
+                        PreviewSqlError::at(src, k, PreviewSqlCause::MissingColumn((*k).to_owned()))
+                    })
+            })
+            .collect::<Result<_, _>>()?
+    };
+    let terms: Vec<String> = keyed
+        .into_iter()
+        .map(|(ci, name)| {
+            let base = grid
+                .rows()
+                .get(src)
+                .and_then(|r| r.get(ci))
+                .cloned()
+                .unwrap_or(CellValue::Null);
+            match base {
+                CellValue::Null => Ok(format!("{name} IS NULL")),
+                CellValue::Default => Err(PreviewSqlError::at(
+                    src,
+                    name,
+                    PreviewSqlCause::InvalidDefaultPredicate,
+                )),
+                other => Ok(format!("{name} = {}", cell_literal(src, name, &other)?)),
+            }
+        })
+        .collect::<Result<_, _>>()?;
+    Ok(terms.join(" AND "))
+}
+
+fn in_source_order(grid: &DataGrid, keys: impl Iterator<Item = ItemKey>) -> Vec<(usize, ItemKey)> {
+    let mut rows: Vec<(usize, ItemKey)> = keys
+        .filter_map(|key| Some((grid.source_index(key)?, key)))
+        .collect();
+    rows.sort_unstable();
+    rows
+}
+
+/// Complete statement list for the pending changes, or the first
+/// serialization error: a partial list is never returned.
 pub fn preview_sql(
     table: &Table,
     columns: &[(String, ColType)],
-    grid: &junie_tui::widgets::grid::DataGrid,
-) -> Vec<String> {
-    use junie_tui::widgets::grid::CellValue;
+    grid: &DataGrid,
+) -> Result<Vec<String>, PreviewSqlError> {
     let pk: Vec<&str> = table
         .primary_key()
         .iter()
         .map(|c| c.name.as_str())
         .collect();
-    let pk_where = |src: usize| -> String {
-        if pk.is_empty() {
-            return columns
-                .iter()
-                .enumerate()
-                .map(|(ci, c)| {
-                    let v = grid
-                        .rows()
-                        .get(src)
-                        .and_then(|r| r.get(ci))
-                        .cloned()
-                        .unwrap_or(CellValue::Null);
-                    match v {
-                        CellValue::Null => format!("{} IS NULL", c.0),
-                        other => {
-                            format!("{} = {}", c.0, sql_literal(&crate::tabs::from_cell(&other)))
-                        }
-                    }
-                })
-                .collect::<Vec<_>>()
-                .join(" AND ");
-        }
-        pk.iter()
-            .map(|k| {
-                let ci = columns.iter().position(|c| c.0 == *k).unwrap_or(0);
-                let v = grid
-                    .rows()
-                    .get(src)
-                    .and_then(|r| r.get(ci))
-                    .cloned()
-                    .unwrap_or(CellValue::Null);
-                format!("{k} = {}", sql_literal(&crate::tabs::from_cell(&v)))
-            })
-            .collect::<Vec<_>>()
-            .join(" AND ")
-    };
-    let pending = &grid.pending;
+    let pending = grid.pending();
     let mut out = Vec::new();
-    for r in pending.dirty_rows() {
-        let mut sets: Vec<(usize, String)> = pending
-            .cells
-            .iter()
-            .filter(|((row, _), _)| *row == r)
-            .map(|((_, col), v)| {
-                (
-                    *col,
-                    format!(
-                        "{} = {}",
-                        columns[*col].0,
-                        sql_literal(&crate::tabs::from_cell(v))
-                    ),
-                )
-            })
+    for (r, key) in in_source_order(grid, pending.dirty_rows().into_iter()) {
+        let mut cells: Vec<(usize, &CellValue)> = pending
+            .cells()
+            .filter(|(row, _, _)| *row == key)
+            .map(|(_, col, v)| (col, v))
             .collect();
-        sets.sort_by_key(|(c, _)| *c);
-        let sets: Vec<String> = sets.into_iter().map(|(_, s)| s).collect();
+        cells.sort_by_key(|(c, _)| *c);
+        let sets: Vec<String> = cells
+            .into_iter()
+            .map(|(c, v)| {
+                let name = &columns[c].0;
+                Ok(format!("{name} = {}", cell_literal(r, name, v)?))
+            })
+            .collect::<Result<_, PreviewSqlError>>()?;
         out.push(format!(
             "UPDATE {} SET {} WHERE {};",
             table.qualified(),
             sets.join(", "),
-            pk_where(r)
+            row_predicate(&pk, columns, grid, r)?
         ));
     }
-    for &r in &pending.inserted {
+    for (r, key) in in_source_order(grid, pending.inserted()) {
         let mut names = vec![];
         let mut vals = vec![];
         for (ci, c) in columns.iter().enumerate() {
-            let v = pending.value(r, ci).cloned().unwrap_or(CellValue::Default);
+            let v = pending
+                .value(key, ci)
+                .cloned()
+                .unwrap_or(CellValue::Default);
             if matches!(v, CellValue::Default) {
                 continue;
             }
             names.push(c.0.clone());
-            vals.push(sql_literal(&crate::tabs::from_cell(&v)));
+            vals.push(cell_literal(r, &c.0, &v)?);
         }
         if names.is_empty() {
             out.push(format!("INSERT INTO {} DEFAULT VALUES;", table.qualified()));
@@ -98,25 +162,37 @@ pub fn preview_sql(
             ));
         }
     }
-    for &r in &pending.deleted {
+    for (r, _) in in_source_order(grid, pending.deleted()) {
         out.push(format!(
             "DELETE FROM {} WHERE {};",
             table.qualified(),
-            pk_where(r)
+            row_predicate(&pk, columns, grid, r)?
         ));
     }
-    out
+    Ok(out)
 }
 
-pub fn sql_literal(v: &Value) -> String {
-    match v {
-        Value::Null => "NULL".into(),
+/// Mutation serialization, never display formatting. A finite number prints
+/// the shortest text that parses back to the stored `f64` bits; digits the
+/// model discarded before storing the value cannot be recovered.
+pub fn sql_literal(v: &Value) -> Result<String, SqlLiteralError> {
+    Ok(match v {
+        Value::Null => "NULL".to_owned(),
         Value::Int(i) => i.to_string(),
-        Value::Num(n) => format!("{n:.2}"),
+        Value::Num(n) => {
+            if !n.is_finite() {
+                return Err(SqlLiteralError::NonFiniteNumber);
+            }
+            let mut text = n.to_string();
+            if !text.contains(['.', 'e', 'E']) {
+                text.push_str(".0");
+            }
+            text
+        }
         Value::Bool(b) => b.to_string(),
         Value::Text(s) => format!("'{}'", s.replace('\'', "''")),
         Value::Json(j) => format!("'{}'::jsonb", j.replace('\'', "''")),
-    }
+    })
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -927,5 +1003,268 @@ fn group_rank(g: &str) -> u32 {
         "Schemas" => 3,
         "Databases" => 4,
         _ => 5,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db::{Column, ObjectKind};
+    use junie_tui::core::id::WidgetId;
+    use junie_tui::widgets::grid::{CellKind, ColumnSpec, GridRows, RowTotal};
+
+    fn column(name: &str, ty: ColType, primary: bool) -> Column {
+        Column {
+            name: name.into(),
+            ty,
+            nullable: true,
+            default: None,
+            primary,
+            references: None,
+            enum_values: vec![],
+            generated: false,
+        }
+    }
+
+    fn table(columns: Vec<Column>) -> Table {
+        Table {
+            schema: "public".into(),
+            name: "ledger".into(),
+            kind: ObjectKind::Table,
+            columns,
+            indexes: vec![],
+            constraints: vec![],
+            triggers: vec![],
+            row_count: 0,
+            comment: None,
+        }
+    }
+
+    fn grid_of(table: &Table, rows: Vec<Vec<CellValue>>) -> (Vec<(String, ColType)>, DataGrid) {
+        let columns: Vec<(String, ColType)> = table
+            .columns
+            .iter()
+            .map(|c| (c.name.clone(), c.ty))
+            .collect();
+        let specs = columns
+            .iter()
+            .map(|(name, _)| ColumnSpec::new(name, CellKind::Number))
+            .collect();
+        let mut grid = DataGrid::new(WidgetId::of("issue49"), specs);
+        grid.try_set_rows(GridRows {
+            total: RowTotal::Exact(rows.len()),
+            rows,
+            more: false,
+        })
+        .expect("rectangular fixture");
+        (columns, grid)
+    }
+
+    fn keyed() -> Table {
+        table(vec![
+            column("ref", ColType::Numeric, true),
+            column("amount", ColType::Numeric, false),
+        ])
+    }
+
+    fn unkeyed() -> Table {
+        table(vec![
+            column("ref", ColType::Numeric, false),
+            column("note", ColType::Text, false),
+            column("amount", ColType::Numeric, false),
+        ])
+    }
+
+    #[test]
+    fn issue49_numeric_literal_roundtrip() {
+        let finite = [
+            1.2345,
+            0.001,
+            1.234_567,
+            0.1 + 0.2,
+            1.0,
+            100.0,
+            -0.0,
+            0.0,
+            f64::MIN_POSITIVE,
+            5e-324,
+            -5e-324,
+            f64::MAX,
+            f64::MIN,
+            f64::EPSILON,
+            1e21,
+            123_456_789.123_456_79,
+            9_007_199_254_740_993.0,
+        ];
+        for n in finite {
+            let token = sql_literal(&Value::Num(n)).expect("finite numbers serialize");
+            let parsed: f64 = token.parse().expect("the token is a numeric literal");
+            assert_eq!(parsed.to_bits(), n.to_bits(), "{n:?} became {token}");
+            assert!(
+                token.contains(['.', 'e', 'E']),
+                "{token} must read as a float, not an integer"
+            );
+        }
+        for i in [0, 1, -1, i64::MAX, i64::MIN, 9_007_199_254_740_993] {
+            assert_eq!(sql_literal(&Value::Int(i)), Ok(i.to_string()));
+        }
+        assert_eq!(sql_literal(&Value::Num(-0.0)), Ok("-0.0".to_owned()));
+        assert_eq!(sql_literal(&Value::Num(1.0)), Ok("1.0".to_owned()));
+        assert_eq!(sql_literal(&Value::Null), Ok("NULL".to_owned()));
+        assert_eq!(sql_literal(&Value::Bool(true)), Ok("true".to_owned()));
+        assert_eq!(
+            sql_literal(&Value::Text("it's".into())),
+            Ok("'it''s'".to_owned())
+        );
+        assert_eq!(
+            sql_literal(&Value::Json("{\"a\":\"b'c\"}".into())),
+            Ok("'{\"a\":\"b''c\"}'::jsonb".to_owned())
+        );
+        for n in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            assert_eq!(
+                sql_literal(&Value::Num(n)),
+                Err(SqlLiteralError::NonFiniteNumber)
+            );
+        }
+    }
+
+    #[test]
+    fn issue49_update_where_uses_original_precision() {
+        let t = keyed();
+        let (columns, mut grid) = grid_of(
+            &t,
+            vec![
+                vec![CellValue::Num(1.234_567), CellValue::Num(2.5)],
+                vec![CellValue::Null, CellValue::Num(7.0)],
+            ],
+        );
+        grid.record_cell(0, 0, CellValue::Num(9.876_543));
+        grid.record_cell(0, 1, CellValue::Num(0.001));
+        grid.record_cell(1, 1, CellValue::Num(8.0));
+        assert_eq!(
+            preview_sql(&t, &columns, &grid).unwrap(),
+            vec![
+                "UPDATE public.ledger SET ref = 9.876543, amount = 0.001 WHERE ref = 1.234567;"
+                    .to_owned(),
+                "UPDATE public.ledger SET amount = 8.0 WHERE ref IS NULL;".to_owned(),
+            ]
+        );
+        grid.discard();
+        grid.toggle_delete(0);
+        grid.toggle_delete(1);
+        assert_eq!(
+            preview_sql(&t, &columns, &grid).unwrap(),
+            vec![
+                "DELETE FROM public.ledger WHERE ref = 1.234567;".to_owned(),
+                "DELETE FROM public.ledger WHERE ref IS NULL;".to_owned(),
+            ]
+        );
+    }
+
+    #[test]
+    fn issue49_no_pk_predicate_and_insert_precision() {
+        let t = unkeyed();
+        let (columns, mut grid) = grid_of(
+            &t,
+            vec![vec![
+                CellValue::Num(1.2345),
+                CellValue::Text("O'Brien".into()),
+                CellValue::Null,
+            ]],
+        );
+        grid.record_cell(0, 2, CellValue::Num(0.001));
+        grid.insert_row();
+        grid.record_cell(1, 0, CellValue::Num(1.234_567_8));
+        grid.record_cell(1, 1, CellValue::Text("it's".into()));
+        grid.record_cell(1, 2, CellValue::Num(-0.000_1));
+        assert_eq!(
+            preview_sql(&t, &columns, &grid).unwrap(),
+            vec![
+                "UPDATE public.ledger SET amount = 0.001 WHERE ref = 1.2345 AND note = 'O''Brien' AND amount IS NULL;"
+                    .to_owned(),
+                "INSERT INTO public.ledger (ref, note, amount) VALUES (1.2345678, 'it''s', -0.0001);"
+                    .to_owned(),
+            ]
+        );
+    }
+
+    #[test]
+    fn issue49_nonfinite_aborts_entire_preview() {
+        let t = keyed();
+        let (columns, mut grid) = grid_of(
+            &t,
+            vec![
+                vec![CellValue::Num(1.5), CellValue::Num(2.5)],
+                vec![CellValue::Num(3.5), CellValue::Num(4.5)],
+            ],
+        );
+        grid.record_cell(0, 1, CellValue::Num(6.5));
+        grid.record_cell(1, 1, CellValue::Num(f64::NAN));
+        let err = preview_sql(&t, &columns, &grid).unwrap_err();
+        assert_eq!(
+            err,
+            PreviewSqlError {
+                row: PreviewRow::Source(1),
+                column: Some("amount".into()),
+                cause: PreviewSqlCause::Literal(SqlLiteralError::NonFiniteNumber),
+            }
+        );
+
+        grid.undo();
+        grid.insert_row();
+        grid.record_cell(2, 0, CellValue::Num(f64::INFINITY));
+        let err = preview_sql(&t, &columns, &grid).unwrap_err();
+        assert_eq!(err.row, PreviewRow::Source(2));
+        assert_eq!(err.column.as_deref(), Some("ref"));
+    }
+
+    #[test]
+    fn issue49_error_context_survives_snapshot_migration() {
+        let t = keyed();
+        let (columns, mut grid) = grid_of(
+            &t,
+            vec![
+                vec![CellValue::Num(f64::NEG_INFINITY), CellValue::Num(2.5)],
+                vec![CellValue::Default, CellValue::Num(2.5)],
+            ],
+        );
+        grid.record_cell(0, 1, CellValue::Num(6.5));
+        assert_eq!(
+            preview_sql(&t, &columns, &grid).unwrap_err(),
+            PreviewSqlError {
+                row: PreviewRow::Source(0),
+                column: Some("ref".into()),
+                cause: PreviewSqlCause::Literal(SqlLiteralError::NonFiniteNumber),
+            },
+            "an invalid before-image names its own column"
+        );
+
+        grid.discard();
+        grid.toggle_delete(1);
+        assert_eq!(
+            preview_sql(&t, &columns, &grid).unwrap_err(),
+            PreviewSqlError {
+                row: PreviewRow::Source(1),
+                column: Some("ref".into()),
+                cause: PreviewSqlCause::InvalidDefaultPredicate,
+            }
+        );
+
+        let orphan = table(vec![
+            column("id", ColType::Int, true),
+            column("amount", ColType::Numeric, false),
+        ]);
+        let (_, grid) = grid_of(&orphan, vec![vec![CellValue::Int(1), CellValue::Num(1.0)]]);
+        let narrow = vec![("amount".to_owned(), ColType::Numeric)];
+        let mut grid = grid;
+        grid.toggle_delete(0);
+        assert_eq!(
+            preview_sql(&orphan, &narrow, &grid).unwrap_err(),
+            PreviewSqlError {
+                row: PreviewRow::Source(0),
+                column: Some("id".into()),
+                cause: PreviewSqlCause::MissingColumn("id".into()),
+            }
+        );
     }
 }

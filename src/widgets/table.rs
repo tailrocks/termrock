@@ -1023,7 +1023,13 @@ impl DataTable {
         };
         let editor = &self.columns[col].editor;
         if let Some(next) = editor.toggled(&text) {
-            return (Outcome::Changed, self.apply_value(src, col, next).ok());
+            return match self.apply_value(src, col, next) {
+                Ok(ev) => (Outcome::Changed, Some(ev)),
+                Err(msg) => {
+                    self.rows[src][col].error = Some(msg);
+                    (Outcome::Changed, None)
+                }
+            };
         }
         if editor.is_constrained() {
             let opened = ChoiceEditor::open(self.choice_id(), editor, &text, &self.editor_config);

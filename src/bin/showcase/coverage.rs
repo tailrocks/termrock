@@ -51,6 +51,22 @@ pub const PICKER_COVERAGE: &[(&str, &str)] = &[
     ("widgets::picker::Picker::set_cursor", "pickers"),
 ];
 
+pub const GRID_EDIT_COVERAGE: &[(&str, &str)] = &[
+    ("widgets::grid::DataGrid::try_edit_text", "grid"),
+    ("widgets::grid::DataGrid::finish_edit_session", "grid"),
+    ("widgets::grid::CellEditResult", "grid"),
+    ("widgets::grid::CellEditResult::Changed", "grid"),
+    ("widgets::grid::CellEditResult::Unchanged", "grid"),
+    ("widgets::grid::GridEditError", "grid"),
+    ("widgets::grid::GridEditError::Busy", "grid"),
+    ("widgets::grid::GridEditError::InvalidTarget", "grid"),
+    ("widgets::grid::GridEditError::NoChoice", "grid"),
+    ("widgets::grid::GridEditError::Validation", "grid"),
+    ("widgets::grid::FinishEdit", "grid"),
+    ("widgets::grid::FinishEdit::NoSession", "grid"),
+    ("widgets::grid::FinishEdit::Accepted", "grid"),
+];
+
 pub const PICKER_ALLOWLIST: &[(&str, &str)] = &[
     (
         "widgets::picker::Picker::wheel",
@@ -272,6 +288,37 @@ mod tests {
     fn catalog_source() -> String {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
         std::fs::read_to_string(root.join("src/catalog.rs")).expect("catalog source reads")
+    }
+
+    #[test]
+    fn grid_edit_coverage_ids_are_catalog_capabilities_used_by_their_page() {
+        let catalog = catalog_source();
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let mut seen = std::collections::BTreeSet::new();
+        for (id, page) in GRID_EDIT_COVERAGE {
+            assert!(
+                catalog.contains(&format!("\"{id}\"")),
+                "declared id is not a catalog capability: {id}"
+            );
+            assert!(seen.insert(*id), "duplicate coverage entry: {id}");
+            let source =
+                std::fs::read_to_string(root.join(format!("src/bin/showcase/pages/{page}.rs")))
+                    .unwrap_or_else(|e| panic!("coverage page {page} has no source: {e}"));
+            let mut parts = id.rsplit("::");
+            let last = parts.next().expect("id has a segment");
+            let prev = parts.next().unwrap_or("");
+            let needle = if last.starts_with(|c: char| c.is_ascii_lowercase()) {
+                format!("{last}(")
+            } else if prev.starts_with(|c: char| c.is_ascii_uppercase()) {
+                format!("{prev}::{last}")
+            } else {
+                last.to_owned()
+            };
+            assert!(
+                source.contains(&needle),
+                "page {page} never uses {id} (looked for {needle})"
+            );
+        }
     }
 
     #[test]

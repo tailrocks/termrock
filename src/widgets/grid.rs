@@ -175,9 +175,49 @@ pub struct GridRows {
     pub more: bool,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct GridRevision {
+    pub source: u64,
+    pub draft: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GridKeyError {
+    KeyCount { expected: usize, actual: usize },
+    DuplicateKey(ItemKey),
+}
+
+impl std::fmt::Display for GridKeyError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::KeyCount { expected, actual } => {
+                write!(f, "expected {expected} row keys, got {actual}")
+            }
+            Self::DuplicateKey(key) => write!(f, "row key {key:?} appears more than once"),
+        }
+    }
+}
+
+impl std::error::Error for GridKeyError {}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GridUndoKind {
+    Cell,
+    DeleteMark,
+    Insert,
+    RemovedInsert,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct GridUndo {
+    pub key: ItemKey,
+    pub kind: GridUndoKind,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GridDataError {
     Shape(DataError),
+    Key(GridKeyError),
     ColumnWidth {
         column: usize,
         min_width: u16,
@@ -191,10 +231,17 @@ impl From<DataError> for GridDataError {
     }
 }
 
+impl From<GridKeyError> for GridDataError {
+    fn from(e: GridKeyError) -> Self {
+        Self::Key(e)
+    }
+}
+
 impl std::fmt::Display for GridDataError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Shape(e) => e.fmt(f),
+            Self::Key(e) => e.fmt(f),
             Self::ColumnWidth {
                 column,
                 min_width,
@@ -244,38 +291,76 @@ fn normalize_rows(
     Ok(rows)
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum UndoAction {
+#[derive(Debug, Clone)]
+enum UndoAction {
     Cell {
-        row: usize,
+        key: ItemKey,
         col: usize,
         before: Option<CellValue>,
     },
     Delete {
-        row: usize,
+        key: ItemKey,
         was_deleted: bool,
     },
     Insert {
-        row: usize,
+        key: ItemKey,
     },
+    RemoveInserted {
+        row: Box<RemovedDraftRow>,
+    },
+}
+
+#[derive(Debug, Clone)]
+struct RemovedDraftRow {
+    key: ItemKey,
+    position: usize,
+    base: Vec<CellValue>,
+    cells: Vec<(usize, CellValue)>,
+    cell_errors: Vec<(usize, String)>,
+    row_error: Option<String>,
+    view: StructuralViewSnapshot,
+}
+
+#[derive(Debug, Clone)]
+struct StructuralViewSnapshot {
+    source_keys: Vec<ItemKey>,
+    selection: RowSelection,
+    cursor: Option<(ItemKey, usize)>,
+    anchor: Option<(ItemKey, usize)>,
+    scroll_offset: usize,
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct PendingChanges {
-    pub cells: HashMap<(usize, usize), CellValue>,
-    pub inserted: BTreeSet<usize>,
-    pub deleted: BTreeSet<usize>,
+    cells: HashMap<(ItemKey, usize), CellValue>,
+    inserted: BTreeSet<ItemKey>,
+    deleted: BTreeSet<ItemKey>,
 }
 
 impl PendingChanges {
     pub fn is_empty(&self) -> bool {
         self.cells.is_empty() && self.inserted.is_empty() && self.deleted.is_empty()
     }
-    pub fn dirty_rows(&self) -> BTreeSet<usize> {
+    pub fn cells(&self) -> impl Iterator<Item = (ItemKey, usize, &CellValue)> + '_ {
+        self.cells.iter().map(|(&(key, col), v)| (key, col, v))
+    }
+    pub fn inserted(&self) -> impl Iterator<Item = ItemKey> + '_ {
+        self.inserted.iter().copied()
+    }
+    pub fn deleted(&self) -> impl Iterator<Item = ItemKey> + '_ {
+        self.deleted.iter().copied()
+    }
+    pub fn is_inserted(&self, key: ItemKey) -> bool {
+        self.inserted.contains(&key)
+    }
+    pub fn is_deleted(&self, key: ItemKey) -> bool {
+        self.deleted.contains(&key)
+    }
+    pub fn dirty_rows(&self) -> BTreeSet<ItemKey> {
         self.cells
             .keys()
-            .map(|(r, _)| *r)
-            .filter(|r| !self.inserted.contains(r))
+            .map(|(key, _)| *key)
+            .filter(|key| !self.inserted.contains(key) && !self.deleted.contains(key))
             .collect()
     }
 
@@ -290,11 +375,11 @@ impl PendingChanges {
         let (u, i, d) = self.counts();
         u + i + d
     }
-    pub fn is_dirty(&self, row: usize, col: usize) -> bool {
-        self.cells.contains_key(&(row, col))
+    pub fn is_dirty(&self, key: ItemKey, col: usize) -> bool {
+        self.cells.contains_key(&(key, col))
     }
-    pub fn value(&self, row: usize, col: usize) -> Option<&CellValue> {
-        self.cells.get(&(row, col))
+    pub fn value(&self, key: ItemKey, col: usize) -> Option<&CellValue> {
+        self.cells.get(&(key, col))
     }
 }
 
@@ -318,6 +403,7 @@ pub struct EditState {
 #[derive(Debug, Clone, PartialEq)]
 pub enum GridAction {
     CellChanged { row: usize, col: usize },
+    Undone(GridUndo),
     RowInserted(usize),
     RowDeleted(usize),
     SortRequested(Option<(usize, SortDir)>),
@@ -349,18 +435,124 @@ pub fn cell_validator(
     })
 }
 
-fn parse_cell(parser: &CellParser, spec: &ColumnSpec, text: &str) -> Result<CellValue, FieldError> {
-    if text.is_empty() {
-        return match spec.kind {
-            CellKind::Text | CellKind::Json | CellKind::Enum => Ok(CellValue::Text(String::new())),
-            _ if spec.nullable => Ok(CellValue::Null),
-            _ => Err(FieldError::from("Empty: use Delete for NULL")),
-        };
+fn validate_row_keys(rows: usize, keys: &[ItemKey]) -> Result<(), GridKeyError> {
+    if keys.len() != rows {
+        return Err(GridKeyError::KeyCount {
+            expected: rows,
+            actual: keys.len(),
+        });
     }
-    parser.validate_in(spec, text)
+    let mut seen = std::collections::HashSet::with_capacity(keys.len());
+    match keys.iter().find(|&&key| !seen.insert(key)) {
+        Some(&key) => Err(GridKeyError::DuplicateKey(key)),
+        None => Ok(()),
+    }
 }
 
+/// What a user edit asks the configured [`CellParser`] to turn into a value.
+///
+/// Every user-originated mutation reaches the parser through [`convert_input`]
+/// exactly once per commit attempt; there is no pre-parser shortcut for empty
+/// text, option values or booleans.
+#[derive(Debug, Clone, Copy)]
+enum CellInput<'a> {
+    /// Raw text exactly as typed or serialised by an editor (may be empty).
+    Text(&'a str),
+    /// The explicit "make this NULL" gesture (Delete, nullable Bool cycle).
+    Null,
+}
+
+/// The canonical text a NULL gesture presents to the parser. It is the
+/// reserved token of the default grammar.
+const NULL_TOKEN: &str = "null";
+
+fn convert_input(
+    parser: &CellParser,
+    spec: &ColumnSpec,
+    input: CellInput<'_>,
+) -> Result<CellValue, FieldError> {
+    let text = match input {
+        CellInput::Text(s) => s,
+        CellInput::Null => NULL_TOKEN,
+    };
+    let value = parser.validate_in(spec, text)?;
+    // A clear gesture can only ever produce NULL: a custom parser may reject
+    // it, but it cannot turn it into unrelated data.
+    if matches!(input, CellInput::Null) && (!spec.nullable || !matches!(value, CellValue::Null)) {
+        return Err(FieldError::new(format!(
+            "{} does not accept NULL",
+            spec.name
+        )));
+    }
+    Ok(value)
+}
+
+/// Whether a user edit changed the effective cell value.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CellEditResult {
+    /// The parsed value differs from the effective value and was recorded.
+    Changed,
+    /// The parser accepted a value equal to the effective one; nothing was
+    /// recorded (no draft, no undo entry, no `CellChanged`).
+    Unchanged,
+}
+
+/// Why a user cell edit did not happen.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GridEditError {
+    /// A submission is in flight and the grid refuses edits (enforced by the
+    /// submission lock; reserved here as the single refusal point).
+    Busy,
+    /// The target row/column does not exist, is read-only, deleted, or the
+    /// editing state is inconsistent.
+    InvalidTarget,
+    /// A choice editor has no committable selection.
+    NoChoice,
+    /// The configured parser rejected the input.
+    Validation(FieldError),
+}
+
+impl std::fmt::Display for GridEditError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            GridEditError::Busy => f.write_str("Saving: edits are locked"),
+            GridEditError::InvalidTarget => f.write_str("This cell cannot be edited"),
+            GridEditError::NoChoice => f.write_str("Choose an option first"),
+            GridEditError::Validation(e) => f.write_str(e.message()),
+        }
+    }
+}
+
+impl std::error::Error for GridEditError {}
+
+/// Outcome of [`DataGrid::finish_edit_session`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FinishEdit {
+    /// No text or choice session was live; nothing was parsed.
+    NoSession,
+    /// The parser accepted the session's value and the session closed.
+    Accepted {
+        row: usize,
+        col: usize,
+        result: CellEditResult,
+    },
+}
+
+/// The built-in cell grammar.
+///
+/// Exact empty text is `Text("")` for Text and Enum columns, NULL for other
+/// nullable columns, and an error otherwise (empty Json is invalid JSON). The
+/// reserved token `null` (any case) is NULL for nullable columns. A literal
+/// text value spelled `null` needs a custom parser; see [`DataGrid::validator`].
 pub fn default_validator(col: &ColumnSpec, text: &str) -> Result<CellValue, String> {
+    if text.is_empty() {
+        return match col.kind {
+            CellKind::Text | CellKind::Enum => Ok(CellValue::Text(String::new())),
+            CellKind::Json => Err("Must be a JSON object or array".to_owned()),
+            _ if col.nullable => Ok(CellValue::Null),
+            _ => Err("Empty: use Delete for NULL".to_owned()),
+        };
+    }
     let t = text.trim();
     if t.eq_ignore_ascii_case("null") {
         return if col.nullable {
@@ -444,6 +636,8 @@ impl crate::ui::measure::Measure for DataGrid {
     }
 }
 
+const FETCH_MORE_KEY: ItemKey = ItemKey::text("datagrid.fetch-more");
+
 const GRID_CHROME_W: u16 = 6;
 
 const GRID_MIN_W: u16 = 24;
@@ -454,6 +648,10 @@ pub struct DataGrid {
     pub id: WidgetId,
     columns: Vec<ColumnSpec>,
     rows: Vec<Vec<CellValue>>,
+    row_keys: Vec<ItemKey>,
+    key_to_source: HashMap<ItemKey, usize>,
+    next_local_key: u64,
+    revision: GridRevision,
     order: Vec<usize>,
     pub total: RowTotal,
     pub more: bool,
@@ -466,7 +664,7 @@ pub struct DataGrid {
     anchor: Option<(usize, usize)>,
 
     pub selection: RowSelection,
-    pub pending: PendingChanges,
+    pending: PendingChanges,
     undo: Vec<UndoAction>,
 
     pub scroll: ScrollPane,
@@ -632,6 +830,10 @@ impl DataGrid {
             id,
             columns,
             rows: vec![],
+            row_keys: vec![],
+            key_to_source: HashMap::new(),
+            next_local_key: 0,
+            revision: GridRevision::default(),
             order: vec![],
             total: RowTotal::Unknown,
             more: false,
@@ -716,23 +918,6 @@ impl DataGrid {
         }
     }
 
-    fn apply_choice(
-        &mut self,
-        src: usize,
-        col: usize,
-        value: String,
-    ) -> Result<GridAction, String> {
-        let parsed = if value.is_empty() {
-            Ok(CellValue::Text(String::new()))
-        } else {
-            self.validator
-                .validate_in(&self.columns[col], &value)
-                .map_err(FieldError::into_message)
-        }?;
-        self.record_cell(src, col, parsed);
-        Ok(GridAction::CellChanged { row: src, col })
-    }
-
     fn next_writable(&self, backward: bool) -> Result<usize, GridAction> {
         let n = self.columns.len();
         let mut col = self.cursor.1;
@@ -763,27 +948,153 @@ impl DataGrid {
             ChoiceResult::Commit(v) => (v, None),
             ChoiceResult::CommitAndTab { value, backward } => (value, Some(backward)),
         };
-        let (src, col) = self.choice.as_ref().map(|c| (c.row, c.col))?;
-        match self.apply_choice(src, col, value) {
-            Ok(ev) => {
+        let FinishEdit::Accepted { row, col, result } = self.finish_choice(value).ok()? else {
+            return None;
+        };
+        let ev =
+            (result == CellEditResult::Changed).then_some(GridAction::CellChanged { row, col });
+        if let Some(backward) = tab {
+            match self.next_writable(backward) {
+                Ok(c) => {
+                    self.set_cursor(self.cursor.0, c, false);
+                    let _ = self.begin_edit();
+                }
+                Err(leave) => return Some(leave),
+            }
+        }
+        ev
+    }
+
+    fn edit_blocked(&self, src: usize, col: usize) -> bool {
+        !self.editable
+            || src >= self.rows.len()
+            || self
+                .row_key(src)
+                .is_none_or(|key| self.pending.is_deleted(key))
+            || self.columns.get(col).is_none_or(|c| c.read_only)
+    }
+
+    fn commit_input(
+        &mut self,
+        src: usize,
+        col: usize,
+        input: CellInput<'_>,
+    ) -> Result<CellEditResult, GridEditError> {
+        if self.edit_blocked(src, col) {
+            return Err(GridEditError::InvalidTarget);
+        }
+        let value = convert_input(&self.validator, &self.columns[col], input)
+            .map_err(GridEditError::Validation)?;
+        self.cell_errors.remove(&(src, col));
+        if value == *self.value(src, col) {
+            return Ok(CellEditResult::Unchanged);
+        }
+        self.record_cell(src, col, value);
+        Ok(CellEditResult::Changed)
+    }
+
+    /// Applies user-typed text to a cell through the configured parser.
+    ///
+    /// This is the programmatic twin of committing a text editor: `text` goes
+    /// to the parser unchanged (including `""`), a rejection leaves drafts and
+    /// undo untouched, and an accepted value equal to the current one is
+    /// [`CellEditResult::Unchanged`]. Typed model values that are trusted use
+    /// [`DataGrid::record_cell`] instead.
+    pub fn try_edit_text(
+        &mut self,
+        src: usize,
+        col: usize,
+        text: &str,
+    ) -> Result<CellEditResult, GridEditError> {
+        self.commit_input(src, col, CellInput::Text(text))
+    }
+
+    fn finish_text(&mut self) -> Result<FinishEdit, GridEditError> {
+        let e = self.edit.as_ref().ok_or(GridEditError::InvalidTarget)?;
+        let (row, col, text) = (e.row, e.col, e.field.text().to_owned());
+        match self.commit_input(row, col, CellInput::Text(&text)) {
+            Ok(result) => {
+                self.edit = None;
+                Ok(FinishEdit::Accepted { row, col, result })
+            }
+            Err(err) => {
+                if let Some(e) = self.edit.as_mut() {
+                    e.field.set_error(Some(FieldError::new(err.to_string())));
+                }
+                Err(err)
+            }
+        }
+    }
+
+    fn finish_choice(&mut self, value: String) -> Result<FinishEdit, GridEditError> {
+        let (row, col) = self
+            .choice
+            .as_ref()
+            .map(|c| (c.row, c.col))
+            .ok_or(GridEditError::InvalidTarget)?;
+        match self.commit_input(row, col, CellInput::Text(&value)) {
+            Ok(result) => {
                 self.choice = None;
-                if let Some(backward) = tab {
-                    match self.next_writable(backward) {
-                        Ok(c) => {
-                            self.set_cursor(self.cursor.0, c, false);
-                            let _ = self.begin_edit();
+                Ok(FinishEdit::Accepted { row, col, result })
+            }
+            Err(err) => {
+                if let Some(c) = self.choice.as_mut() {
+                    c.editor.error = Some(err.to_string());
+                }
+                Err(err)
+            }
+        }
+    }
+
+    /// Commits the live text or choice session explicitly, for hosts that must
+    /// resolve it before they save or close.
+    ///
+    /// With no session nothing is parsed. Otherwise the session's value goes
+    /// through the parser once: a rejection keeps the session, its input and a
+    /// visible error; an accepted value (changed or not) closes it. Choice
+    /// sessions commit their current selection regardless of the blur policy.
+    /// It never navigates and never cancels a live session.
+    pub fn finish_edit_session(&mut self) -> Result<FinishEdit, GridEditError> {
+        match (self.edit.is_some(), self.choice.is_some()) {
+            (false, false) => Ok(FinishEdit::NoSession),
+            (true, true) => Err(GridEditError::InvalidTarget),
+            (true, false) => self.finish_text(),
+            (false, true) => {
+                let value = self
+                    .choice
+                    .as_ref()
+                    .and_then(|c| c.editor.blur_value(&self.editor_config));
+                match value {
+                    Some(v) => self.finish_choice(v),
+                    None => {
+                        let err = GridEditError::NoChoice;
+                        if let Some(c) = self.choice.as_mut() {
+                            c.editor.error = Some(err.to_string());
                         }
-                        Err(leave) => return Some(leave),
+                        Err(err)
                     }
                 }
-                Some(ev)
             }
-            Err(msg) => {
-                if let Some(c) = self.choice.as_mut() {
-                    c.editor.error = Some(msg);
-                }
-                None
+        }
+    }
+
+    fn immediate(
+        &mut self,
+        src: usize,
+        col: usize,
+        input: CellInput<'_>,
+    ) -> (Outcome, Option<GridAction>) {
+        match self.commit_input(src, col, input) {
+            Ok(CellEditResult::Changed) => (
+                Outcome::Changed,
+                Some(GridAction::CellChanged { row: src, col }),
+            ),
+            Ok(CellEditResult::Unchanged) => (Outcome::Consumed, None),
+            Err(GridEditError::Validation(e)) => {
+                self.cell_errors.insert((src, col), e.into_message());
+                (Outcome::Changed, None)
             }
+            Err(_) => (Outcome::Consumed, None),
         }
     }
 
@@ -849,6 +1160,9 @@ impl DataGrid {
         self
     }
 
+    /// Sets the parser every user edit goes through, with the raw text of the
+    /// edit (`""` included). Delete and the nullable Bool cycle present the
+    /// reserved token `null` and must get `CellValue::Null` back.
     pub fn validator(
         mut self,
         f: impl Fn(&ColumnSpec, &str) -> Result<CellValue, String> + 'static,
@@ -982,17 +1296,97 @@ impl DataGrid {
     }
 
     pub fn value(&self, src: usize, col: usize) -> &CellValue {
-        self.pending.value(src, col).unwrap_or_else(|| {
-            self.rows
-                .get(src)
-                .and_then(|r| r.get(col))
-                .unwrap_or(&CellValue::Null)
-        })
+        self.row_keys
+            .get(src)
+            .and_then(|&key| self.pending.value(key, col))
+            .unwrap_or_else(|| {
+                self.rows
+                    .get(src)
+                    .and_then(|r| r.get(col))
+                    .unwrap_or(&CellValue::Null)
+            })
+    }
+
+    pub fn pending(&self) -> &PendingChanges {
+        &self.pending
+    }
+
+    pub fn revision(&self) -> GridRevision {
+        self.revision
+    }
+
+    pub fn row_key(&self, src: usize) -> Option<ItemKey> {
+        self.row_keys.get(src).copied()
+    }
+
+    pub fn source_index(&self, key: ItemKey) -> Option<usize> {
+        self.key_to_source.get(&key).copied()
+    }
+
+    fn next_revision(&self, source: bool, draft: bool) -> GridRevision {
+        let bump = |v: u64, on: bool| {
+            if on {
+                v.checked_add(1).expect("DataGrid revision exhausted")
+            } else {
+                v
+            }
+        };
+        GridRevision {
+            source: bump(self.revision.source, source),
+            draft: bump(self.revision.draft, draft),
+        }
+    }
+
+    fn alloc_key(&mut self) -> ItemKey {
+        loop {
+            let key = ItemKey::num(self.next_local_key);
+            self.next_local_key = self
+                .next_local_key
+                .checked_add(1)
+                .expect("DataGrid row key space exhausted");
+            if !self.key_to_source.contains_key(&key) {
+                return key;
+            }
+        }
+    }
+
+    fn alloc_keys(&mut self, n: usize) -> Vec<ItemKey> {
+        (0..n).map(|_| self.alloc_key()).collect()
+    }
+
+    fn reindex_keys(&mut self) {
+        self.key_to_source = self
+            .row_keys
+            .iter()
+            .enumerate()
+            .map(|(src, &key)| (key, src))
+            .collect();
+    }
+
+    fn draft_open(&self) -> bool {
+        !self.pending.is_empty() || !self.undo.is_empty()
+    }
+
+    fn close_sessions(&mut self) {
+        self.edit = None;
+        self.choice = None;
     }
 
     pub fn try_set_rows(&mut self, data: GridRows) -> Result<(), GridDataError> {
         let rows = normalize_rows(self.columns.len(), data.rows, 0)?;
-        self.install_rows(GridRows { rows, ..data });
+        let keys = self.alloc_keys(rows.len());
+        self.install_rows(GridRows { rows, ..data }, keys);
+        Ok(())
+    }
+
+    pub fn try_set_rows_keyed(
+        &mut self,
+        data: GridRows,
+        keys: Vec<ItemKey>,
+    ) -> Result<(), GridDataError> {
+        validate_row_keys(data.rows.len(), &keys)?;
+        let rows = normalize_rows(self.columns.len(), data.rows, 0)?;
+        self.install_rows(GridRows { rows, ..data }, keys);
         Ok(())
     }
 
@@ -1003,17 +1397,39 @@ impl DataGrid {
     ) -> Result<(), GridDataError> {
         validate_column_widths(&columns)?;
         let rows = normalize_rows(columns.len(), data.rows, 0)?;
+        let keys = self.alloc_keys(rows.len());
+        self.install_model(columns, GridRows { rows, ..data }, keys);
+        Ok(())
+    }
+
+    pub fn try_set_model_keyed(
+        &mut self,
+        columns: Vec<ColumnSpec>,
+        data: GridRows,
+        keys: Vec<ItemKey>,
+    ) -> Result<(), GridDataError> {
+        validate_column_widths(&columns)?;
+        validate_row_keys(data.rows.len(), &keys)?;
+        let rows = normalize_rows(columns.len(), data.rows, 0)?;
+        self.install_model(columns, GridRows { rows, ..data }, keys);
+        Ok(())
+    }
+
+    fn install_model(&mut self, columns: Vec<ColumnSpec>, data: GridRows, keys: Vec<ItemKey>) {
         self.sizing.reset();
         self.sort = self.sort.filter(|&(c, _)| c < columns.len());
         self.filtered_cols.retain(|&c| c < columns.len());
         self.cursor.1 = self.cursor.1.min(columns.len().saturating_sub(1));
         self.columns = columns;
-        self.install_rows(GridRows { rows, ..data });
-        Ok(())
+        self.install_rows(data, keys);
     }
 
-    fn install_rows(&mut self, data: GridRows) {
+    fn install_rows(&mut self, data: GridRows, keys: Vec<ItemKey>) {
+        let revision = self.next_revision(true, self.draft_open());
         self.rows = data.rows;
+        self.row_keys = keys;
+        self.reindex_keys();
+        self.revision = revision;
         self.total = data.total;
         self.more = data.more;
         self.order = (0..self.rows.len()).collect();
@@ -1023,8 +1439,7 @@ impl DataGrid {
         self.row_errors.clear();
         self.selection.clear();
         self.anchor = None;
-        self.edit = None;
-        self.choice = None;
+        self.close_sessions();
         self.cursor.0 = self.cursor.0.min(self.rows.len().saturating_sub(1));
         self.sample_widths();
         if self.local_sort
@@ -1039,7 +1454,14 @@ impl DataGrid {
     pub fn try_append_rows(&mut self, data: GridRows) -> Result<(), GridDataError> {
         let start = self.rows.len();
         let rows = normalize_rows(self.columns.len(), data.rows, start)?;
+        let revision = self.next_revision(true, false);
+        let keys = self.alloc_keys(rows.len());
         self.rows.extend(rows);
+        for (offset, key) in keys.into_iter().enumerate() {
+            self.row_keys.push(key);
+            self.key_to_source.insert(key, start + offset);
+        }
+        self.revision = revision;
         self.order.extend(start..self.rows.len());
         self.total = data.total;
         self.more = data.more;
@@ -1083,32 +1505,50 @@ impl DataGrid {
     }
 
     fn apply_local_sort(&mut self, col: usize, dir: SortDir) {
-        let rows = &self.rows;
-        let cell = |src: usize| rows[src].get(col).unwrap_or(&CellValue::Null);
+        let (rows, keys, pending) = (&self.rows, &self.row_keys, &self.pending);
         self.order.sort_by(|&a, &b| {
-            let va = cell(a);
-            let vb = cell(b);
+            let (ia, ib) = (pending.is_inserted(keys[a]), pending.is_inserted(keys[b]));
+            if ia || ib {
+                return ia.cmp(&ib).then_with(|| a.cmp(&b));
+            }
+            let va = rows[a].get(col).unwrap_or(&CellValue::Null);
+            let vb = rows[b].get(col).unwrap_or(&CellValue::Null);
             let o = cmp_cells(va, vb).then_with(|| a.cmp(&b));
             if dir == SortDir::Asc { o } else { o.reverse() }
         });
     }
 
-    pub fn row_state(&self, src: usize) -> RowState {
-        self.row_state_with(src, |src| self.pending.cells.keys().any(|(r, _)| *r == src))
+    fn rebuild_order(&mut self) {
+        self.order = (0..self.rows.len()).collect();
+        if self.local_sort
+            && let Some((c, d)) = self.sort
+        {
+            self.apply_local_sort(c, d);
+        }
     }
 
-    fn row_state_with(&self, src: usize, edited: impl Fn(usize) -> bool) -> RowState {
+    pub fn row_state(&self, src: usize) -> RowState {
+        self.row_state_with(src, |key| self.pending.cells.keys().any(|(k, _)| *k == key))
+    }
+
+    fn row_state_with(&self, src: usize, edited: impl Fn(ItemKey) -> bool) -> RowState {
+        let key = self.row_key(src);
         if self.row_errors.contains_key(&src) {
             RowState::Error
-        } else if self.pending.deleted.contains(&src) {
+        } else if key.is_some_and(|k| self.pending.is_deleted(k)) {
             RowState::Deleted
-        } else if self.pending.inserted.contains(&src) {
+        } else if key.is_some_and(|k| self.pending.is_inserted(k)) {
             RowState::Inserted
-        } else if edited(src) {
+        } else if key.is_some_and(edited) {
             RowState::Modified
         } else {
             RowState::Clean
         }
+    }
+
+    fn src_deleted(&self, src: usize) -> bool {
+        self.row_key(src)
+            .is_some_and(|key| self.pending.is_deleted(key))
     }
 
     pub fn is_editing(&self) -> bool {
@@ -1151,7 +1591,7 @@ impl DataGrid {
             return self.read_only_reason.clone();
         }
         let spec = self.columns.get(self.cursor.1)?;
-        if self.pending.deleted.contains(&src) {
+        if self.src_deleted(src) {
             Some(self.strings.grid_row_deleted.to_owned())
         } else if spec.read_only {
             Some(crate::theme::Strings::fill(
@@ -1191,10 +1631,7 @@ impl DataGrid {
         if spec.editor.is_constrained() {
             let raw = v.edit_text();
             if let Some(next) = spec.editor.toggled(&raw) {
-                return match self.apply_choice(src, col, next) {
-                    Ok(ev) => (Outcome::Changed, Some(ev)),
-                    Err(_) => (Outcome::Consumed, None),
-                };
+                return self.immediate(src, col, CellInput::Text(&next));
             }
             let opened =
                 ChoiceEditor::open(self.choice_id(), &spec.editor, &raw, &self.editor_config);
@@ -1208,15 +1645,11 @@ impl DataGrid {
         match spec.kind {
             CellKind::Bool => {
                 let next = match v {
-                    CellValue::Bool(true) => CellValue::Bool(false),
-                    CellValue::Bool(false) if spec.nullable => CellValue::Null,
-                    _ => CellValue::Bool(true),
+                    CellValue::Bool(true) => CellInput::Text("false"),
+                    CellValue::Bool(false) if spec.nullable => CellInput::Null,
+                    _ => CellInput::Text("true"),
                 };
-                self.record_cell(src, col, next);
-                return (
-                    Outcome::Changed,
-                    Some(GridAction::CellChanged { row: src, col }),
-                );
+                return self.immediate(src, col, next);
             }
             CellKind::Json => {
                 return (
@@ -1238,7 +1671,7 @@ impl DataGrid {
 
         let (parser, spec) = (self.validator.clone(), self.columns[col].clone());
         field.validator = Some(Validator::new(move |text| {
-            parse_cell(&parser, &spec, text).map(|_| ())
+            convert_input(&parser, &spec, CellInput::Text(text)).map(|_| ())
         }));
         self.edit = Some(EditState {
             row: src,
@@ -1249,22 +1682,13 @@ impl DataGrid {
     }
 
     pub fn commit_edit(&mut self) -> Option<GridAction> {
-        let mut e = self.edit.take()?;
-        let spec = self.columns.get(e.col)?;
-        let parsed = parse_cell(&self.validator, spec, e.field.text());
-        match parsed {
-            Ok(v) => {
-                self.record_cell(e.row, e.col, v);
-                Some(GridAction::CellChanged {
-                    row: e.row,
-                    col: e.col,
-                })
-            }
-            Err(err) => {
-                e.field.set_error(Some(err));
-                self.edit = Some(e);
-                None
-            }
+        match self.finish_text().ok()? {
+            FinishEdit::Accepted {
+                row,
+                col,
+                result: CellEditResult::Changed,
+            } => Some(GridAction::CellChanged { row, col }),
+            _ => None,
         }
     }
 
@@ -1297,67 +1721,210 @@ impl DataGrid {
         }
     }
 
-    pub fn record_cell(&mut self, src: usize, col: usize, value: CellValue) {
-        let before = self.pending.cells.get(&(src, col)).cloned();
-        let stored = self
-            .rows
-            .get(src)
-            .and_then(|r| r.get(col))
-            .cloned()
-            .unwrap_or(CellValue::Null);
-        if value == stored && !self.pending.inserted.contains(&src) {
-            self.pending.cells.remove(&(src, col));
-        } else {
-            self.pending.cells.insert((src, col), value);
+    /// Records an already-typed value as a draft. This is trusted model input
+    /// (seeding, previews): it skips the configured parser and eligibility
+    /// checks. User edits go through [`DataGrid::try_edit_text`] instead.
+    pub fn record_cell(&mut self, src: usize, col: usize, value: CellValue) -> bool {
+        let Some(&key) = self.row_keys.get(src) else {
+            return false;
+        };
+        if col >= self.columns.len() {
+            return false;
         }
         self.cell_errors.remove(&(src, col));
-        self.undo.push(UndoAction::Cell {
-            row: src,
-            col,
-            before,
-        });
+        if value == *self.value(src, col) {
+            return false;
+        }
+        let revision = self.next_revision(false, true);
+        let before = self.pending.cells.get(&(key, col)).cloned();
+        let stored = self.rows[src].get(col).unwrap_or(&CellValue::Null);
+        if value == *stored && !self.pending.is_inserted(key) {
+            self.pending.cells.remove(&(key, col));
+        } else {
+            self.pending.cells.insert((key, col), value);
+        }
+        self.undo.push(UndoAction::Cell { key, col, before });
+        self.revision = revision;
+        true
     }
 
     pub fn toggle_delete(&mut self, src: usize) -> Option<GridAction> {
         if !self.editable {
             return None;
         }
-        if self.pending.inserted.contains(&src) {
-            self.remove_inserted(src);
+        let key = self.row_key(src)?;
+        if self.pending.is_inserted(key) {
+            self.remove_inserted_recorded(src);
             return Some(GridAction::RowDeleted(src));
         }
-        let was = self.pending.deleted.contains(&src);
-        if was {
-            self.pending.deleted.remove(&src);
-        } else {
-            self.pending.deleted.insert(src);
-            self.pending.cells.retain(|(r, _), _| *r != src);
+        let revision = self.next_revision(false, true);
+        self.close_sessions();
+        let was_deleted = self.pending.deleted.remove(&key);
+        if !was_deleted {
+            self.pending.deleted.insert(key);
         }
-        self.undo.push(UndoAction::Delete {
-            row: src,
-            was_deleted: was,
-        });
+        self.undo.push(UndoAction::Delete { key, was_deleted });
+        self.revision = revision;
         Some(GridAction::RowDeleted(src))
     }
 
-    fn remove_inserted(&mut self, src: usize) {
-        self.rows.remove(src);
-        self.order = (0..self.rows.len()).collect();
-        self.pending.inserted.remove(&src);
-        self.pending.cells.retain(|(r, _), _| *r != src);
-        let shift = |s: &mut BTreeSet<usize>| {
-            *s = s.iter().map(|&r| if r > src { r - 1 } else { r }).collect();
-        };
-        shift(&mut self.pending.inserted);
-        shift(&mut self.pending.deleted);
-        self.pending.cells = self
+    fn remove_inserted_recorded(&mut self, src: usize) {
+        let revision = self.next_revision(false, true);
+        let row = self.capture_removed(src);
+        self.remove_rows(&[src]);
+        self.undo
+            .push(UndoAction::RemoveInserted { row: Box::new(row) });
+        self.revision = revision;
+    }
+
+    fn view_key(&self, display: usize, col: usize) -> Option<(ItemKey, usize)> {
+        let &src = self.order.get(display)?;
+        Some((self.row_keys[src], col))
+    }
+
+    fn capture_removed(&self, src: usize) -> RemovedDraftRow {
+        let key = self.row_keys[src];
+        let mut cells: Vec<(usize, CellValue)> = self
             .pending
             .cells
-            .drain()
-            .map(|((r, c), v)| ((if r > src { r - 1 } else { r }, c), v))
+            .iter()
+            .filter(|((k, _), _)| *k == key)
+            .map(|((_, col), v)| (*col, v.clone()))
             .collect();
+        cells.sort_by_key(|(col, _)| *col);
+        RemovedDraftRow {
+            key,
+            position: src,
+            base: self.rows[src].clone(),
+            cells,
+            cell_errors: self
+                .cell_errors
+                .iter()
+                .filter(|((r, _), _)| *r == src)
+                .map(|((_, col), msg)| (*col, msg.clone()))
+                .collect(),
+            row_error: self.row_errors.get(&src).cloned(),
+            view: StructuralViewSnapshot {
+                source_keys: self.row_keys.clone(),
+                selection: self.selection.clone(),
+                cursor: self.view_key(self.cursor.0, self.cursor.1),
+                anchor: self.anchor.and_then(|(d, c)| self.view_key(d, c)),
+                scroll_offset: self.scroll.offset,
+            },
+        }
+    }
+
+    fn display_of(&self, key: ItemKey) -> Option<usize> {
+        let src = self.source_index(key)?;
+        self.order.iter().position(|&s| s == src)
+    }
+
+    fn remove_rows(&mut self, removed: &[usize]) {
+        if removed.is_empty() {
+            return;
+        }
+        self.close_sessions();
+        let cursor_key = self.view_key(self.cursor.0, self.cursor.1);
+        let anchor_key = self.anchor.and_then(|(d, c)| self.view_key(d, c));
+        let map = |i: usize| match removed.binary_search(&i) {
+            Ok(_) => None,
+            Err(shift) => Some(i - shift),
+        };
+        let gone: std::collections::HashSet<ItemKey> =
+            removed.iter().map(|&src| self.row_keys[src]).collect();
+        self.pending.cells.retain(|(key, _), _| !gone.contains(key));
+        self.pending.inserted.retain(|key| !gone.contains(key));
+        self.pending.deleted.retain(|key| !gone.contains(key));
+        let mut i = 0;
+        self.rows.retain(|_| {
+            i += 1;
+            removed.binary_search(&(i - 1)).is_err()
+        });
+        self.row_keys.retain(|key| !gone.contains(key));
+        self.reindex_keys();
+        self.cell_errors = std::mem::take(&mut self.cell_errors)
+            .into_iter()
+            .filter_map(|((r, c), msg)| map(r).map(|r| ((r, c), msg)))
+            .collect();
+        self.row_errors = std::mem::take(&mut self.row_errors)
+            .into_iter()
+            .filter_map(|(r, msg)| map(r).map(|r| (r, msg)))
+            .collect();
+        self.selection.remap(map);
+        self.order = self.order.iter().filter_map(|&src| map(src)).collect();
         self.scroll.set_content(self.content_rows());
-        self.cursor.0 = self.cursor.0.min(self.rows.len().saturating_sub(1));
+        self.cursor.0 = cursor_key
+            .and_then(|(key, _)| self.display_of(key))
+            .unwrap_or_else(|| self.cursor.0.min(self.content_rows().saturating_sub(1)));
+        self.anchor = anchor_key.and_then(|(key, c)| Some((self.display_of(key)?, c)));
+    }
+
+    fn restore_removed(&mut self, row: RemovedDraftRow) {
+        self.close_sessions();
+        let RemovedDraftRow {
+            key,
+            position,
+            base,
+            cells,
+            cell_errors,
+            row_error,
+            view,
+        } = row;
+        let saved: std::collections::HashSet<ItemKey> = view.source_keys.iter().copied().collect();
+        let appended: Vec<ItemKey> = self
+            .selection
+            .iter()
+            .filter_map(|src| self.row_key(src))
+            .filter(|key| !saved.contains(key))
+            .collect();
+        let at = position.min(self.rows.len());
+        let shift = |i: usize| if i >= at { i + 1 } else { i };
+        self.cell_errors = std::mem::take(&mut self.cell_errors)
+            .into_iter()
+            .map(|((r, c), msg)| ((shift(r), c), msg))
+            .collect();
+        self.row_errors = std::mem::take(&mut self.row_errors)
+            .into_iter()
+            .map(|(r, msg)| (shift(r), msg))
+            .collect();
+        self.rows.insert(at, base);
+        self.row_keys.insert(at, key);
+        self.reindex_keys();
+        self.pending.inserted.insert(key);
+        for (col, value) in cells {
+            self.pending.cells.insert((key, col), value);
+        }
+        for (col, msg) in cell_errors {
+            self.cell_errors.insert((at, col), msg);
+        }
+        if let Some(msg) = row_error {
+            self.row_errors.insert(at, msg);
+        }
+        self.rebuild_order();
+
+        let mut selection = view.selection;
+        selection.remap(|old| {
+            view.source_keys
+                .get(old)
+                .and_then(|k| self.source_index(*k))
+        });
+        for key in appended {
+            if let Some(src) = self.source_index(key) {
+                selection.set(src, true);
+            }
+        }
+        self.selection = selection;
+        self.scroll.set_content(self.content_rows());
+        if let Some((key, col)) = view.cursor
+            && let Some(display) = self.display_of(key)
+        {
+            self.cursor = (display, col);
+        }
+        self.anchor = view
+            .anchor
+            .and_then(|(key, col)| Some((self.display_of(key)?, col)));
+        self.scroll.offset = view.scroll_offset;
+        self.scroll.ensure_visible(self.cursor.0);
     }
 
     pub fn insert_row(&mut self) -> Option<GridAction> {
@@ -1375,13 +1942,7 @@ impl DataGrid {
                 }
             })
             .collect();
-        self.rows.push(row);
-        let src = self.rows.len() - 1;
-        self.order.push(src);
-        self.pending.inserted.insert(src);
-        self.undo.push(UndoAction::Insert { row: src });
-        self.scroll.set_content(self.content_rows());
-
+        let src = self.push_inserted(row);
         let disp = self.order.iter().position(|&r| r == src).unwrap_or(0);
         let col = self
             .columns
@@ -1390,6 +1951,22 @@ impl DataGrid {
             .unwrap_or(0);
         self.set_cursor(disp, col, false);
         Some(GridAction::RowInserted(src))
+    }
+
+    fn push_inserted(&mut self, row: Vec<CellValue>) -> usize {
+        let revision = self.next_revision(false, true);
+        let key = self.alloc_key();
+        self.close_sessions();
+        let src = self.rows.len();
+        self.rows.push(row);
+        self.row_keys.push(key);
+        self.key_to_source.insert(key, src);
+        self.order.push(src);
+        self.pending.inserted.insert(key);
+        self.undo.push(UndoAction::Insert { key });
+        self.revision = revision;
+        self.scroll.set_content(self.content_rows());
+        src
     }
 
     pub fn duplicate_row(&mut self) -> Option<GridAction> {
@@ -1405,87 +1982,132 @@ impl DataGrid {
                 row[ci] = CellValue::Default;
             }
         }
-        self.rows.push(row);
-        let new = self.rows.len() - 1;
-        self.order.push(new);
-        self.pending.inserted.insert(new);
-        self.undo.push(UndoAction::Insert { row: new });
-        self.scroll.set_content(self.content_rows());
+        let new = self.push_inserted(row);
         let disp = self.order.len() - 1;
         self.set_cursor(disp, self.cursor.1, false);
         Some(GridAction::RowInserted(new))
     }
 
-    pub fn undo(&mut self) -> bool {
-        let Some(a) = self.undo.pop() else {
-            return false;
-        };
-        match a {
-            UndoAction::Cell { row, col, before } => match before {
-                Some(v) => {
-                    self.pending.cells.insert((row, col), v);
-                }
-                None => {
-                    self.pending.cells.remove(&(row, col));
-                }
-            },
-            UndoAction::Delete { row, was_deleted } => {
-                if was_deleted {
-                    self.pending.deleted.insert(row);
-                } else {
-                    self.pending.deleted.remove(&row);
-                }
-            }
-            UndoAction::Insert { row } => {
-                if self.pending.inserted.contains(&row) {
-                    self.remove_inserted(row);
-                }
-            }
+    pub fn undo(&mut self) -> Option<GridUndo> {
+        if self.undo.is_empty() {
+            return None;
         }
-        true
+        let revision = self.next_revision(false, true);
+        let action = self.undo.pop()?;
+        self.close_sessions();
+        let undone = match action {
+            UndoAction::Cell { key, col, before } => {
+                let src = self.source_index(key);
+                debug_assert!(src.is_some(), "an undo target key resolves");
+                src?;
+                match before {
+                    Some(v) => {
+                        self.pending.cells.insert((key, col), v);
+                    }
+                    None => {
+                        self.pending.cells.remove(&(key, col));
+                    }
+                }
+                GridUndo {
+                    key,
+                    kind: GridUndoKind::Cell,
+                }
+            }
+            UndoAction::Delete { key, was_deleted } => {
+                let src = self.source_index(key);
+                debug_assert!(src.is_some(), "an undo target key resolves");
+                src?;
+                if was_deleted {
+                    self.pending.deleted.insert(key);
+                } else {
+                    self.pending.deleted.remove(&key);
+                }
+                GridUndo {
+                    key,
+                    kind: GridUndoKind::DeleteMark,
+                }
+            }
+            UndoAction::Insert { key } => {
+                let src = self.source_index(key);
+                debug_assert!(src.is_some(), "an undo target key resolves");
+                self.remove_rows(&[src?]);
+                GridUndo {
+                    key,
+                    kind: GridUndoKind::Insert,
+                }
+            }
+            UndoAction::RemoveInserted { row } => {
+                let key = row.key;
+                self.restore_removed(*row);
+                GridUndo {
+                    key,
+                    kind: GridUndoKind::RemovedInsert,
+                }
+            }
+        };
+        self.revision = revision;
+        Some(undone)
     }
 
     pub fn apply_commit_result(&mut self, result: Result<(), (usize, String)>) {
         match result {
             Ok(()) => {
-                for ((r, c), v) in self.pending.cells.drain() {
-                    if let Some(row) = self.rows.get_mut(r)
-                        && let Some(cell) = row.get_mut(c)
+                let revision = self.next_revision(true, self.draft_open());
+                self.close_sessions();
+                let cursor_key = self.view_key(self.cursor.0, self.cursor.1);
+                let pending = std::mem::take(&mut self.pending);
+                for ((key, col), value) in pending.cells {
+                    if pending.deleted.contains(&key) {
+                        continue;
+                    }
+                    if let Some(&src) = self.key_to_source.get(&key)
+                        && let Some(cell) = self.rows.get_mut(src).and_then(|r| r.get_mut(col))
                     {
-                        *cell = v;
+                        *cell = value;
                     }
                 }
-                let deleted = std::mem::take(&mut self.pending.deleted);
-                let mut keep: Vec<Vec<CellValue>> = Vec::new();
-                for (i, row) in self.rows.drain(..).enumerate() {
-                    if !deleted.contains(&i) {
-                        keep.push(row);
-                    }
-                }
-                self.rows = keep;
-                self.order = (0..self.rows.len()).collect();
-                self.pending = PendingChanges::default();
+                let mut deleted: Vec<usize> = pending
+                    .deleted
+                    .iter()
+                    .filter_map(|&key| self.source_index(key))
+                    .collect();
+                deleted.sort_unstable();
+                self.remove_rows(&deleted);
                 self.undo.clear();
                 self.row_errors.clear();
                 self.cell_errors.clear();
+                self.rebuild_order();
+                self.revision = revision;
                 self.scroll.set_content(self.content_rows());
-                self.cursor.0 = self.cursor.0.min(self.rows.len().saturating_sub(1));
+                self.cursor.0 = match cursor_key.and_then(|(key, _)| self.display_of(key)) {
+                    Some(display) => display,
+                    None => self.cursor.0.min(self.rows.len().saturating_sub(1)),
+                };
             }
             Err((row, msg)) => {
-                self.row_errors.insert(row, msg);
+                if row < self.rows.len() {
+                    self.row_errors.insert(row, msg);
+                }
             }
         }
     }
 
     pub fn discard(&mut self) {
-        let inserted: Vec<usize> = self.pending.inserted.iter().copied().collect();
-        for src in inserted.into_iter().rev() {
-            self.remove_inserted(src);
-        }
+        let revision = self.next_revision(false, self.draft_open());
+        let mut inserted: Vec<usize> = self
+            .pending
+            .inserted
+            .iter()
+            .filter_map(|&key| self.source_index(key))
+            .collect();
+        inserted.sort_unstable();
+        self.close_sessions();
+        self.remove_rows(&inserted);
         self.pending = PendingChanges::default();
         self.undo.clear();
         self.cell_errors.clear();
         self.row_errors.clear();
+        self.revision = revision;
     }
 
     fn clamp_cursor(&mut self) {
@@ -1809,10 +2431,16 @@ impl DataGrid {
                     return (Outcome::Consumed, None);
                 }
                 if !self.selection.is_empty() {
-                    let rows: Vec<usize> = self.selection.to_vec();
+                    let keys: Vec<ItemKey> = self
+                        .selection
+                        .iter()
+                        .filter_map(|src| self.row_key(src))
+                        .collect();
                     let mut last = None;
-                    for src in rows {
-                        last = self.toggle_delete(src);
+                    for key in keys {
+                        if let Some(src) = self.source_index(key) {
+                            last = self.toggle_delete(src);
+                        }
                     }
                     return (Outcome::Changed, last);
                 }
@@ -1825,17 +2453,7 @@ impl DataGrid {
                 if spec.read_only {
                     return (Outcome::Consumed, None);
                 }
-                if spec.nullable {
-                    self.record_cell(src, c, CellValue::Null);
-                    (
-                        Outcome::Changed,
-                        Some(GridAction::CellChanged { row: src, col: c }),
-                    )
-                } else {
-                    self.cell_errors
-                        .insert((src, c), format!("{} is NOT NULL", spec.name));
-                    (Outcome::Changed, None)
-                }
+                self.immediate(src, c, CellInput::Null)
             }
             GridCmd::ToggleDelete => {
                 let Some(src) = self.cursor_src() else {
@@ -1879,19 +2497,10 @@ impl DataGrid {
             GridCmd::OpenFilters => (Outcome::Changed, Some(GridAction::OpenFilters)),
             GridCmd::ClearFilters => (Outcome::Changed, Some(GridAction::ClearFilters)),
             GridCmd::Refresh => (Outcome::Changed, Some(GridAction::Refresh)),
-            GridCmd::Undo => {
-                if self.undo() {
-                    (
-                        Outcome::Changed,
-                        Some(GridAction::CellChanged {
-                            row: self.cursor.0,
-                            col: self.cursor.1,
-                        }),
-                    )
-                } else {
-                    (Outcome::Consumed, None)
-                }
-            }
+            GridCmd::Undo => match self.undo() {
+                Some(undone) => (Outcome::Changed, Some(GridAction::Undone(undone))),
+                None => (Outcome::Consumed, None),
+            },
             GridCmd::Discard => (Outcome::Changed, Some(GridAction::DiscardRequested)),
             GridCmd::SelectAll => {
                 if self.select_rows(SelectGesture::All, 0) {
@@ -2612,8 +3221,8 @@ impl DataGrid {
             return;
         }
 
-        let edited_rows: std::collections::HashSet<usize> =
-            self.pending.cells.keys().map(|&(r, _)| r).collect();
+        let edited_rows: std::collections::HashSet<ItemKey> =
+            self.pending.cells.keys().map(|&(key, _)| key).collect();
         let editing_here = self
             .edit
             .as_ref()
@@ -2672,7 +3281,7 @@ impl DataGrid {
                 .pressed_any(visible_cols.map(|c| self.cell_id(d, c)));
             s.focused = focused && d == self.cursor.0;
             s.selected = self.selection.contains(src);
-            let state = self.row_state_with(src, |r| edited_rows.contains(&r));
+            let state = self.row_state_with(src, |key| edited_rows.contains(&key));
             let rp = RowUi::resolve(ctx, row_rect, s, RowLook::Bar, bg);
             let mut drawn = rp;
             if state == RowState::Deleted {
@@ -2753,7 +3362,10 @@ impl DataGrid {
                     }
                 } else {
                     let v = self.value(src, ci);
-                    let dirty = self.pending.is_dirty(src, ci) && state != RowState::Inserted;
+                    let dirty = self
+                        .row_key(src)
+                        .is_some_and(|key| self.pending.is_dirty(key, ci))
+                        && state != RowState::Inserted;
                     let cfg = &self.editor_config;
                     let in_choice = choice_here == Some((src, ci));
                     if in_choice {
@@ -3164,6 +3776,12 @@ impl RowSource for DataGrid {
     }
     fn label(&self, _: usize) -> &str {
         ""
+    }
+    fn key(&self, display: usize) -> ItemKey {
+        self.order
+            .get(display)
+            .and_then(|&src| self.row_key(src))
+            .unwrap_or(FETCH_MORE_KEY)
     }
 }
 

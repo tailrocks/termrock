@@ -350,9 +350,16 @@ pub fn table() -> DataTable {
         .collect();
     let mut t = DataTable::try_new(ID.sub("table"), columns, rows)
         .expect("rectangular fixture")
-        .cell_nav(true);
+        .cell_nav(true)
+        .validator(notify_policy);
     t.cursor_col = ENV;
     t
+}
+
+pub const NOTIFY_LOCKED: &str = "Notify stays on while the service has an on-call owner";
+
+fn notify_policy(col: usize, text: &str) -> Option<String> {
+    (col == NOTIFY && text == "no").then(|| NOTIFY_LOCKED.to_owned())
 }
 
 pub struct CellEditorsPage {
@@ -425,9 +432,24 @@ impl CellEditorsPage {
         }
     }
 
+    fn cursor_cell_error(&self) -> Option<String> {
+        let t = &self.table;
+        if t.cursor_row >= t.len() {
+            return None;
+        }
+        t.rows()[t.source_row(t.cursor_row)]
+            .get(t.cursor_col)?
+            .error
+            .clone()
+    }
+
     fn render_table(&mut self, card: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
         let t = ctx.theme;
-        let err = self.table.edit_error().map(str::to_owned);
+        let err = self
+            .table
+            .edit_error()
+            .map(str::to_owned)
+            .or_else(|| self.cursor_cell_error());
         let panel =
             Panel::card(Some("Deployment targets")).focused(ctx.interaction.focused(self.table.id));
         let bg = panel.bg(t);

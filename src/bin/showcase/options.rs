@@ -426,6 +426,7 @@ pub static SCROLLING: &[Opt] = &[
     ),
     Opt::new("scrolling.wrap", "Wrap at the ends", OFF_ON),
     Opt::new("scrolling.skip_disabled", "Skip disabled", OFF_ON).default(1),
+    Opt::new("scrolling.nested", "Nested scrollbars", OFF_ON),
 ];
 
 pub static BUTTONS: &[Opt] = &[
@@ -808,7 +809,11 @@ static DATA_GRID: &[Opt] = &[
         &["shell", "page", "jump"],
     ),
     Opt::new("datagrid.horizontal", "Horizontal bar", &["auto", "never"]),
-    Opt::new("datagrid.validator", "Validator", &["default", "strict"]),
+    Opt::new(
+        "datagrid.validator",
+        "Validator",
+        &["default", "strict", "editors"],
+    ),
     Opt::new("datagrid.blur_action", "On blur", &["commit", "cancel"]),
     Opt::new(
         "datagrid.malformed",
@@ -1308,7 +1313,7 @@ pub static POPUPS_TOOLTIPS: &[Opt] = &[
 
 pub static PICKERS: &[Opt] = &[
     Opt::new("pickers.width", "Width", &["auto", "48", "96"]),
-    Opt::new("pickers.max_rows", "Max rows", &["12", "6"]),
+    Opt::new("pickers.max_rows", "Max rows", &["12", "6", "1", "0"]),
     Opt::new("pickers.placement", "Placement", &["center", "below"]),
     Opt::new("pickers.fit", "Fit", &["default", "third", "flush"]),
     Opt::new("pickers.backdrop", "Backdrop", &["default", "full"]),
@@ -1781,11 +1786,12 @@ pub static TERMINAL_PANE: &[Opt] = &[
     Opt::new(
         "terminalpane.fixture",
         "Fixture",
-        &["session", "fullscreen", "split", "midstream"],
+        &["session", "fullscreen", "split", "midstream", "wide edge"],
     ),
     Opt::new("terminalpane.size", "Size", &["80x24", "40x12", "20x6"]).default(1),
     Opt::new("terminalpane.colour", "Colour", OFF_ON).default(1),
     Opt::new("terminalpane.focused", "Focused", OFF_ON).default(1),
+    Opt::new("terminalpane.clip", "Clip last column", OFF_ON),
     Opt::new(
         "terminalpane.replay",
         "Replay start",
