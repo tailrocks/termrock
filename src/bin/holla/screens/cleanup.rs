@@ -1,4 +1,4 @@
-use crate::screens::Holla;
+use crate::screens::{DetailRewind, Holla};
 use junie_tui::shell::Page as ShellPage;
 use junie_tui::widgets::page_header::{Heading, PageHeader};
 use std::collections::BTreeSet;
@@ -270,6 +270,7 @@ impl CleanupPage {
     }
 
     fn reload_source(&mut self, w: &World) {
+        let before = self.described_item();
         let keep = self.cursor_anchor();
         let (cats, special) = if let Some((sp, cat)) = self.special_category(w) {
             (vec![cat], Some(sp))
@@ -300,6 +301,7 @@ impl CleanupPage {
         }
         self.age_deadline = self.next_age_deadline(w);
         self.install_rows(keep);
+        self.rewind_if_changed(&before);
     }
 
     /// Re-derives every cached candidate's age and eligibility from its file's
@@ -349,8 +351,10 @@ impl CleanupPage {
     }
 
     fn rebuild_rows(&mut self) {
+        let before = self.described_item();
         let keep = self.cursor_anchor();
         self.install_rows(keep);
+        self.rewind_if_changed(&before);
     }
 
     fn install_rows(&mut self, keep: Option<Anchor>) {
@@ -437,6 +441,10 @@ impl CleanupPage {
         );
     }
 
+    fn select_row(&mut self, row: usize) {
+        self.track_detail(|p| p.cursor = row);
+    }
+
     fn step(&mut self, delta: isize) {
         let n = self.rows.len() as isize;
         let mut c = self.cursor as isize;
@@ -446,8 +454,7 @@ impl CleanupPage {
                 return;
             }
             if matches!(self.rows[c as usize], Row::Category(_) | Row::Candidate(..)) {
-                self.cursor = c as usize;
-                self.detail_scroll.jump_start();
+                self.select_row(c as usize);
                 self.scroll.ensure_visible(self.cursor);
                 return;
             }
@@ -1319,6 +1326,25 @@ impl CleanupPage {
     }
 }
 
+impl DetailRewind for CleanupPage {
+    type Item = Option<(&'static str, Option<String>)>;
+
+    fn described_item(&self) -> Self::Item {
+        match self.rows.get(self.cursor)? {
+            Row::Category(ci) => Some((self.cats.get(*ci)?.category.id, None)),
+            Row::Candidate(ci, ki) => {
+                let cat = self.cats.get(*ci)?;
+                Some((cat.category.id, Some(cat.candidates.get(*ki)?.path.clone())))
+            }
+            _ => None,
+        }
+    }
+
+    fn detail_scroll_mut(&mut self) -> &mut ScrollState {
+        &mut self.detail_scroll
+    }
+}
+
 impl ShellPage<Holla> for CleanupPage {
     fn on_key(&mut self, key: &Key, w: &mut World, cx: &mut Cx) -> Outcome {
         self.ensure_projection(w);
@@ -1351,19 +1377,24 @@ impl ShellPage<Holla> for CleanupPage {
                 Outcome::Changed
             }
             KeyCode::Home | KeyCode::Char('g') => {
-                self.cursor = 0;
-                if !matches!(
-                    self.rows.first(),
-                    Some(Row::Category(_) | Row::Candidate(..))
-                ) {
-                    self.step(1);
-                }
+                self.select_row(
+                    self.rows
+                        .iter()
+                        .position(|r| matches!(r, Row::Category(_) | Row::Candidate(..)))
+                        .unwrap_or(0),
+                );
                 self.scroll.jump_start();
                 Outcome::Changed
             }
             KeyCode::End | KeyCode::Char('G') => {
-                self.cursor = self.rows.len();
-                self.step(-1);
+                if let Some(last) = self
+                    .rows
+                    .iter()
+                    .rposition(|r| matches!(r, Row::Category(_) | Row::Candidate(..)))
+                {
+                    self.select_row(last);
+                    self.scroll.ensure_visible(self.cursor);
+                }
                 Outcome::Changed
             }
             KeyCode::Char(' ') => {
@@ -1392,13 +1423,15 @@ impl ShellPage<Holla> for CleanupPage {
                             self.toggle_candidate(ci, ki, cx);
                             self.rebuild_rows();
                         } else if key.code == KeyCode::Left {
-                            self.set_open(ci, false);
-                            self.rebuild_rows();
-                            self.cursor = self
-                                .rows
-                                .iter()
-                                .position(|r| matches!(r, Row::Category(c) if *c == ci))
-                                .unwrap_or(0);
+                            self.track_detail(|p| {
+                                p.set_open(ci, false);
+                                p.rebuild_rows();
+                                p.cursor = p
+                                    .rows
+                                    .iter()
+                                    .position(|r| matches!(r, Row::Category(c) if *c == ci))
+                                    .unwrap_or(0);
+                            });
                         }
                     }
                     _ => {}
@@ -1499,7 +1532,7 @@ impl ShellPage<Holla> for CleanupPage {
                     return Outcome::Changed;
                 }
                 if let Some(i) = row {
-                    self.cursor = i;
+                    self.select_row(i);
                     cx.focus.focus(LIST);
                     match self.rows.get(i).cloned() {
                         Some(Row::Category(ci)) => {
@@ -1531,7 +1564,7 @@ impl ShellPage<Holla> for CleanupPage {
                     return Outcome::Ignored;
                 }
                 if cx.context.moves_cursor {
-                    self.cursor = i;
+                    self.select_row(i);
                 }
                 cx.focus.focus(LIST);
                 self.row_menu(i, ContextAnchor::Pointer(pos), cx)
@@ -2369,6 +2402,211 @@ mod context_tests {
         assert!(
             status_of(&requests).is_some_and(|s| s.starts_with("Cannot select ")),
             "the refusal is reported"
+        );
+    }
+}
+
+#[cfg(test)]
+mod detail_scroll_tests {
+    use super::*;
+    use crate::domain::fixtures::world_for;
+    use crate::scenario::{Motion, Scenario};
+    use crate::screens::pointer_tests::{cell_of, render_hits};
+    use junie_tui::core::focus::{Focus, FocusRing};
+    use junie_tui::core::hit::HitRegistry;
+    use ratatui::crossterm::event::KeyModifiers;
+    use ratatui::layout::Position;
+
+    fn selectable_rows(page: &CleanupPage) -> Vec<usize> {
+        (0..page.rows.len())
+            .filter(|&i| matches!(page.rows[i], Row::Category(_) | Row::Candidate(..)))
+            .collect()
+    }
+
+    /// A page with every category expanded and its cursor on the first selectable row.
+    fn page_on_first_row(w: &World) -> CleanupPage {
+        let mut page = CleanupPage::new(None);
+        page.ensure_projection(w);
+        for c in &page.cats {
+            page.open.insert(c.category.id.to_owned());
+        }
+        page.rebuild_rows();
+        let rows = selectable_rows(&page);
+        assert!(rows.len() >= 3, "fixture needs three selectable rows");
+        page.cursor = rows[0];
+        page
+    }
+
+    fn scroll_detail_to_three(page: &mut CleanupPage) {
+        page.detail_scroll.set_content(100);
+        page.detail_scroll.set_viewport(5);
+        page.detail_scroll.jump_start();
+        page.detail_scroll.scroll_by(3);
+        assert_eq!(page.detail_scroll.offset, 3);
+    }
+
+    fn press(page: &mut CleanupPage, w: &mut World, code: KeyCode) {
+        let mut focus = Focus::default();
+        focus.focus(LIST);
+        let ring = FocusRing::default();
+        let mut cx = Cx::new(&mut focus, &ring);
+        let key = Key {
+            code,
+            mods: KeyModifiers::NONE,
+        };
+        page.on_key(&key, w, &mut cx);
+    }
+
+    /// Renders the page, scrolls its detail to 3 (a render clamps the scroll to the
+    /// detail height), then routes a `phase` pointer event on `row` through `pointer`.
+    fn deliver(page: &mut CleanupPage, w: &mut World, phase: Phase, row: usize) {
+        let hits: HitRegistry = render_hits(page, w);
+        scroll_detail_to_three(page);
+        let pos: Position = cell_of(&hits, LIST.part(row_part(row)));
+        let id = hits.hit(pos).expect("a rendered row is under the pointer");
+        let event = PointerEvent::new(&hits, phase, id, pos, 1, KeyModifiers::NONE);
+        let mut focus = Focus::default();
+        let ring = FocusRing::default();
+        let mut cx = Cx::new(&mut focus, &ring);
+        page.pointer(&event, w, &mut cx);
+    }
+
+    #[test]
+    fn up_and_down_at_the_ends_keep_the_detail_scroll() {
+        let mut w = world_for(Scenario::RustDirty, Motion::Full);
+        let mut page = page_on_first_row(&w);
+        let rows = selectable_rows(&page);
+        let (first, second, last) = (rows[0], rows[1], *rows.last().expect("rows"));
+
+        scroll_detail_to_three(&mut page);
+        press(&mut page, &mut w, KeyCode::Up);
+        assert_eq!(page.cursor, first);
+        assert_eq!(page.detail_scroll.offset, 3, "Up on the first row");
+
+        press(&mut page, &mut w, KeyCode::Down);
+        assert_eq!(page.cursor, second);
+        assert_eq!(page.detail_scroll.offset, 0, "Down onto a new row");
+
+        page.cursor = last;
+        scroll_detail_to_three(&mut page);
+        press(&mut page, &mut w, KeyCode::Down);
+        assert_eq!(page.cursor, last);
+        assert_eq!(page.detail_scroll.offset, 3, "Down on the last row");
+    }
+
+    #[test]
+    fn home_and_end_reset_the_detail_scroll_only_when_the_row_changes() {
+        let mut w = world_for(Scenario::RustDirty, Motion::Full);
+        let mut page = page_on_first_row(&w);
+        let rows = selectable_rows(&page);
+        let (first, last) = (rows[0], *rows.last().expect("rows"));
+
+        scroll_detail_to_three(&mut page);
+        press(&mut page, &mut w, KeyCode::Home);
+        assert_eq!(page.cursor, first);
+        assert_eq!(page.detail_scroll.offset, 3, "Home on the first row");
+
+        press(&mut page, &mut w, KeyCode::End);
+        assert_eq!(page.cursor, last);
+        assert_eq!(page.detail_scroll.offset, 0, "End onto a new row");
+
+        scroll_detail_to_three(&mut page);
+        press(&mut page, &mut w, KeyCode::End);
+        assert_eq!(page.cursor, last);
+        assert_eq!(page.detail_scroll.offset, 3, "End on the last row");
+
+        press(&mut page, &mut w, KeyCode::Home);
+        assert_eq!(page.cursor, first);
+        assert_eq!(page.detail_scroll.offset, 0, "Home onto a new row");
+    }
+
+    #[test]
+    fn row_clicks_reset_the_detail_scroll_only_when_the_row_changes() {
+        let mut w = world_for(Scenario::RustDirty, Motion::Full);
+        let mut page = page_on_first_row(&w);
+        let rows = selectable_rows(&page);
+        let (first, second) = (rows[0], rows[1]);
+
+        deliver(&mut page, &mut w, Phase::Click, first);
+        assert_eq!(page.cursor, first);
+        assert_eq!(
+            page.detail_scroll.offset, 3,
+            "re-clicking the selected row keeps the scroll"
+        );
+        deliver(&mut page, &mut w, Phase::Click, second);
+        assert_eq!(page.cursor, second);
+        assert_eq!(
+            page.detail_scroll.offset, 0,
+            "clicking a new row starts its detail at the top"
+        );
+    }
+
+    #[test]
+    fn secondary_clicks_reset_the_detail_scroll_only_when_the_row_changes() {
+        let mut w = world_for(Scenario::RustDirty, Motion::Full);
+        let mut page = page_on_first_row(&w);
+        let rows = selectable_rows(&page);
+        let (first, second) = (rows[0], rows[1]);
+
+        deliver(&mut page, &mut w, Phase::Secondary, first);
+        assert_eq!(page.cursor, first);
+        assert_eq!(
+            page.detail_scroll.offset, 3,
+            "a secondary click on the selected row keeps the scroll"
+        );
+
+        deliver(&mut page, &mut w, Phase::Secondary, second);
+        assert_eq!(page.cursor, second);
+        assert_eq!(
+            page.detail_scroll.offset, 0,
+            "a secondary click on a new row starts its detail at the top"
+        );
+    }
+
+    #[test]
+    fn collapsing_from_a_candidate_rewinds_the_detail_to_the_category() {
+        let mut w = world_for(Scenario::RustDirty, Motion::Full);
+        let mut page = page_on_first_row(&w);
+        let candidate = selectable_rows(&page)
+            .into_iter()
+            .find(|&i| matches!(page.rows[i], Row::Candidate(..)))
+            .expect("a candidate row");
+        page.cursor = candidate;
+
+        scroll_detail_to_three(&mut page);
+        press(&mut page, &mut w, KeyCode::Left);
+        assert!(matches!(page.rows[page.cursor], Row::Category(_)));
+        assert_eq!(page.detail_scroll.offset, 0, "the category is a new item");
+    }
+
+    #[test]
+    fn a_rebuild_that_moves_the_cursor_to_another_item_rewinds_the_detail() {
+        let mut w = world_for(Scenario::RustDirty, Motion::Full);
+        let mut page = page_on_first_row(&w);
+        let candidate = selectable_rows(&page)
+            .into_iter()
+            .find(|&i| matches!(page.rows[i], Row::Candidate(..)))
+            .expect("a candidate row");
+        page.cursor = candidate;
+        let Some(Row::Candidate(ci, ki)) = page.rows.get(candidate).cloned() else {
+            panic!("candidate row")
+        };
+        let doomed = page.cats[ci].candidates[ki].path.clone();
+        let before = page.described_item();
+        scroll_detail_to_three(&mut page);
+
+        w.fs.remove_permanent(&doomed).expect("removed");
+        w.edit_cleanup(|_| {});
+        assert!(page.ensure_projection(&w), "the cleanup stamp moved");
+
+        assert_ne!(
+            page.described_item(),
+            before,
+            "the pane now describes another item"
+        );
+        assert_eq!(
+            page.detail_scroll.offset, 0,
+            "a different item starts its detail at the top"
         );
     }
 }

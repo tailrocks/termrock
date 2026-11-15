@@ -73,3 +73,33 @@ fn a_file_browser_survives_a_screen_too_small_for_its_frame() {
         paint_in(screen, None, |buf, ctx| d.render(screen, buf, ctx));
     });
 }
+
+/// A terminal that reports no rows leaves an empty buffer; a framed dialog
+/// used to write its title row into it.
+#[test]
+fn framed_dialogs_survive_an_empty_buffer() {
+    for w in [0u16, 7, 40] {
+        let screen = Rect::new(0, 0, w, 0);
+        let mut choice = ChoiceDialog::new(
+            WidgetId::of("t.choice0"),
+            "Pick",
+            "Kind",
+            &["one", "two"],
+            0,
+        );
+        paint_in(screen, None, |buf, ctx| choice.render(screen, buf, ctx));
+
+        let id = WidgetId::of("t.form0");
+        let field = FormField::input("name", TextInput::new(id.sub("name"), "Name"));
+        let mut form = FormDialog::new(id, "Account", vec![field]);
+        paint_in(screen, None, |buf, ctx| form.render(screen, buf, ctx));
+
+        let mut files = FileBrowser::new(
+            WidgetId::of("t.files0"),
+            "Choose",
+            MemorySource::new(vec![FileEntry::dir("/a")]),
+            "/a",
+        );
+        paint_in(screen, None, |buf, ctx| files.render(screen, buf, ctx));
+    }
+}

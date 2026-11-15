@@ -869,26 +869,6 @@ impl GridPage {
         }
     }
 
-    /// Pasting onto a cell that is not being edited sets its value through the
-    /// same parser the editors use.
-    fn paste_into_cell(&mut self, text: &str, cx: &mut Cx) -> Outcome {
-        let (display, col) = self.grid.cursor;
-        let src = self.grid.source_row(display);
-        match self.grid.try_edit_text(src, col, text) {
-            Ok(CellEditResult::Changed) => {
-                cx.status(format!("{} pending", self.grid.pending().total()));
-            }
-            Ok(CellEditResult::Unchanged) => cx.status("The cell already has that value"),
-            Err(GridEditError::Validation(e)) => {
-                let message = e.message().to_owned();
-                cx.status(format!("Paste rejected: {message}"));
-                self.grid.cell_errors.insert((src, col), message);
-            }
-            Err(e) => cx.status(e.to_string()),
-        }
-        Outcome::Changed
-    }
-
     /// Names the row an undo touched by the key the action carries: the id
     /// the grid shows for it, or a draft row that has no id yet.
     fn undone_row(&self, key: ItemKey) -> String {
@@ -1330,7 +1310,18 @@ impl Page for GridPage {
                 Outcome::Ignored
             }
             PageEvent::Paste(text) => match self.grid.on_paste(text) {
-                Outcome::Ignored if cx.focus.is(self.grid.id) => self.paste_into_cell(text, cx),
+                Outcome::Ignored if cx.focus.is(self.grid.id) => {
+                    let (o, actions) = self.grid.paste_into_cell(text).into_parts();
+                    // A consumed paste with no action is an equal value.
+                    if o == Outcome::Consumed && actions.is_empty() {
+                        cx.status("The cell already has that value");
+                    }
+                    for ev in actions {
+                        self.on_event(Some(ev), cx);
+                    }
+                    self.explain_cell_error(cx);
+                    o
+                }
                 o => o,
             },
             PageEvent::Pointer(p) => self.pointer(p, cx),
@@ -1859,6 +1850,32 @@ mod tests {
                 r#"UPDATE "customers" SET "plan" = 'pro' WHERE "id" = 1001;"#.to_owned(),
                 r#"DELETE FROM "customers" WHERE "id" = 1002;"#.to_owned(),
             ]
+        );
+    }
+
+    #[test]
+    fn codex196_paste_onto_a_focused_cell_goes_through_the_grid() {
+        let mut rig = Rig::new();
+        rig.focus.set(Some(rig.page.grid.id));
+        rig.page.grid.cursor = (0, SEATS);
+
+        rig.event(PageEvent::Paste("40".into()));
+        assert_eq!(rig.page.grid.value(0, SEATS), &CellValue::Int(40));
+        assert_eq!(rig.last_status(), "1 pending");
+
+        rig.event(PageEvent::Paste("lots".into()));
+        assert_eq!(rig.page.grid.value(0, SEATS), &CellValue::Int(40));
+        assert_eq!(rig.last_status(), "Must be a number");
+
+        rig.event(PageEvent::Paste("40".into()));
+        assert_eq!(rig.last_status(), "The cell already has that value");
+
+        rig.focus.set(None);
+        rig.event(PageEvent::Paste("41".into()));
+        assert_eq!(
+            rig.page.grid.value(0, SEATS),
+            &CellValue::Int(40),
+            "a grid without focus ignores a paste"
         );
     }
 }

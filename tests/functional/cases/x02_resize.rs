@@ -19,6 +19,7 @@ use crate::support::{App, HOLLA, Launch, Point, SHOWCASE, TABLEPRO, find_all, te
 const TOO_SMALL: &str = "Terminal too small";
 const MIN_WIDTH: u16 = 72;
 const MIN_HEIGHT: u16 = 20;
+const PICKER_QUERY: &str = "▎ schema";
 const PICKER_DRAFT: &str = "schema.rs";
 const PICKER_DETAIL: &str = "src/db/schema.rs";
 const PICKER_OPEN: &str = "All · Tab scope";
@@ -159,9 +160,12 @@ fn open_quick_picker(app: &App) {
     click_labeled(app, "Open quickly", |hit| hit.y > 4 && hit.x >= 24);
     app.wait_text("Files and tasks");
     app.type_text("schema");
+    // "sc" already lists schema.rs, so the list alone passes on a partly typed
+    // draft. The rest of the bytes then reach a too-small screen and are dropped.
     let filtered = app.wait_screen("schema draft", |screen| {
         let visible = text(screen);
-        visible.contains(PICKER_DRAFT)
+        visible.contains(PICKER_QUERY)
+            && visible.contains(PICKER_DRAFT)
             && visible.contains(PICKER_DETAIL)
             && visible.contains(PICKER_OPEN)
             && !visible.contains(PICKER_HIDDEN)

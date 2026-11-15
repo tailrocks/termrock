@@ -375,6 +375,25 @@ fn a_fence_is_acknowledged_once_and_never_reaches_the_app() {
 }
 
 #[test]
+fn the_fence_alone_is_acknowledged_and_a_clock_step_stays_a_paste() {
+    junie_tui::shell::clipboard::take_output();
+    let mut host = Host::new(Act::Nothing);
+    host.test_requests(false);
+    host.fence_requests(true);
+
+    let out = host.input(Input::Paste(TestRequest::FENCE.to_owned()));
+    assert_eq!(out, Outcome::Ignored);
+    host.input(Input::Paste(TestRequest::advance(250)));
+
+    assert_eq!(host.inputs, 1, "only the step reaches the app, as text");
+    assert!(host.stepped.is_empty());
+    assert_eq!(
+        junie_tui::shell::clipboard::take_output(),
+        [TestRequest::FENCE_ACK]
+    );
+}
+
+#[test]
 fn a_clock_step_reaches_the_app_as_a_step_and_not_as_a_paste() {
     junie_tui::shell::clipboard::take_output();
     let mut host = Host::new(Act::Nothing);

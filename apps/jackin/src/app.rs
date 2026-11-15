@@ -2000,6 +2000,7 @@ impl App {
             if let Some(daemon) = self.world.daemons.get_mut(&instance) {
                 daemon.blur(now);
             }
+            self.drop_layers_of(Route::Capsule);
             let backend = Arc::clone(&self.world.backend);
             backend.capsule_left(&self.world, &instance);
         }

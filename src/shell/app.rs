@@ -90,6 +90,9 @@ pub struct Shell<P = ()> {
 
     pub test_requests: bool,
 
+    /// The fence alone, without the stepped clock. See [`TestRequest::FENCE_ENV`].
+    pub fence_requests: bool,
+
     pub focus_fallback: FocusFallback,
 
     pub footer_keys: HintKeys,
@@ -132,6 +135,7 @@ impl<P> Shell<P> {
             quit: false,
             motion: Motion::Full,
             test_requests: crate::clock::TestRequest::opted_in(),
+            fence_requests: crate::clock::TestRequest::fence_opted_in(),
             focus_fallback: FocusFallback::Nearest,
             footer_keys: HintKeys::default(),
             context: ContextConfig::DEFAULT,
@@ -420,6 +424,9 @@ pub fn render<A: App + ?Sized>(app: &mut A, frame: &mut Frame) {
 pub fn handle<A: App + ?Sized>(app: &mut A, input: Input) -> Outcome {
     let request = match &input {
         Input::Paste(text) if app.shell().test_requests => TestRequest::parse(text),
+        Input::Paste(text) if app.shell().fence_requests => {
+            TestRequest::parse(text).filter(|request| *request == TestRequest::Fence)
+        }
         _ => None,
     };
     if request == Some(TestRequest::Fence) {

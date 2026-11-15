@@ -559,6 +559,68 @@ fn work_contract_picker_linear_projection() {
     }
 }
 
+/// A cursor that is not on the first item must be re-found by key, not by a
+/// scan: no identity comparison at any cursor position or list size.
+#[test]
+fn work_contract_picker_cursor_restore() {
+    for n in SIZES {
+        let items = picker_items(n);
+        let build = |cursor: usize| {
+            let mut picker = Picker::new(ID, "Pick");
+            picker.set_items(items.clone()).expect("valid items");
+            picker.set_cursor(cursor);
+            assert_eq!(picker.current_key(), Some(ItemKey::Index(cursor)));
+            picker
+        };
+
+        for cursor in [0, 19, n / 2] {
+            // A 20 item window that contains the cursor item.
+            let start = cursor.saturating_sub(10).min(n - 20);
+            let visible: Vec<Item> = items[start..start + 20].to_vec();
+            let mut picker = build(cursor);
+            let (res, work) = measure(|| picker.set_visible_items(visible.clone()));
+            res.expect("known keys");
+            // Measured: the cursor item keeps the cursor, found through the
+            // projection's key map, with no comparison and no clone.
+            assert_exact(
+                &work,
+                &format!("picker set_visible_items, cursor {cursor}, n={n}"),
+                &[],
+            );
+            assert_eq!(picker.current_key(), Some(ItemKey::Index(cursor)));
+
+            let mut picker = build(cursor);
+            let (res, work) = measure(|| picker.replace_items(items.clone()));
+            res.expect("valid items");
+            // Measured: the identity projection puts the cursor item at its
+            // source position, found through the key index.
+            assert_exact(
+                &work,
+                &format!("picker replace_items, cursor {cursor}, n={n}"),
+                &[],
+            );
+            assert_eq!(picker.current_key(), Some(ItemKey::Index(cursor)));
+        }
+
+        // The cursor deep in a sparse projection, then a full replacement:
+        // the source position is far from the visible position.
+        let stride = n / 20;
+        let sparse: Vec<Item> = (0..20).map(|k| items[k * stride].clone()).collect();
+        let mut picker = build(0);
+        picker.set_visible_items(sparse).expect("known keys");
+        picker.set_cursor(19);
+        assert_eq!(picker.current_key(), Some(ItemKey::Index(19 * stride)));
+        let (res, work) = measure(|| picker.replace_items(items.clone()));
+        res.expect("valid items");
+        assert_exact(
+            &work,
+            &format!("picker replace_items from a sparse projection, n={n}"),
+            &[],
+        );
+        assert_eq!(picker.current_key(), Some(ItemKey::Index(19 * stride)));
+    }
+}
+
 #[test]
 fn work_contract_select_open_frame() {
     for n in SIZES {

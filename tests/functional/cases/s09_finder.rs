@@ -1157,3 +1157,313 @@ fn option_results_loading_dims_and_blocks_actions() {
     );
     app.finish();
 }
+
+fn focus_query(app: &App, shown: &str) {
+    click_where(app, shown, |hit| hit.y == 8 && hit.x < 50);
+    flash_settle(app);
+}
+
+#[test]
+fn option_click_double_selects_then_runs() {
+    let app = open_with("s09-click-double", &["finder.query=empty"]);
+    app.wait_text("Stash changes");
+    let push = click_where(&app, "Push", |hit| hit.y > 9 && hit.x < 70);
+    let selected = app.wait_text("git push");
+    see(
+        &selected,
+        &["Runs git push"],
+        &["Ran ", "git pull --ff-only"],
+    );
+    app.click(push);
+    let ran = app.wait_text("Ran Push");
+    see(&ran, &["Ran Push"], &["Ran Pull"]);
+    app.finish();
+}
+
+#[test]
+fn option_click_single_runs_on_one_click() {
+    let app = open_with(
+        "s09-click-single",
+        &["finder.click=single", "finder.query=empty"],
+    );
+    app.wait_text("Stash changes");
+    click_where(&app, "Push", |hit| hit.y > 9 && hit.x < 70);
+    let ran = app.wait_text("Ran Push");
+    see(&ran, &["Ran Push"], &["Ran Pull", "Ran Stash"]);
+    app.finish();
+}
+
+#[test]
+fn option_paste_strips_or_joins_line_breaks() {
+    let strip = open_with("s09-paste-strip", &["finder.query=empty"]);
+    strip.wait_text("Stash changes");
+    focus_query(&strip, PLACEHOLDER);
+    strip.paste("pu\nll");
+    let stripped = strip.wait_absent("Stash changes");
+    see(
+        &stripped,
+        &["pull", "Pull", "Pull with rebase"],
+        &["pu ll", "Push", "No matches"],
+    );
+    strip.finish();
+
+    let join = open_with(
+        "s09-paste-join",
+        &["finder.query=empty", "finder.paste=join"],
+    );
+    join.wait_text("Stash changes");
+    focus_query(&join, PLACEHOLDER);
+    join.paste("pu\nll");
+    let joined = join.wait_text(NO_MATCH);
+    see(&joined, &["pu ll", NO_MATCH], &["pull", "Pull with rebase"]);
+    join.finish();
+}
+
+/// Moves to Push, then narrows the query so Push is gone. The page ranks
+/// "pu" as Pull, Push, Pull with rebase; "pul" drops Push. Returns the preview
+/// command the selection lands on.
+fn selection_after_push_disappears(name: &str, missing: &str) -> String {
+    let opt = format!("finder.missing={missing}");
+    let app = open_with(name, &["finder.select_first=off", &opt]);
+    app.wait_text("git pull --ff-only");
+    focus_query(&app, "pu");
+    app.key("end");
+    app.key("tab");
+    app.key("down");
+    let on_push = app.wait_text("git push");
+    see(&on_push, &["Runs git push"], &["Ran "]);
+    app.key("ctrl+f");
+    app.key("end");
+    app.type_text("l");
+    let after = app.wait_text("pul");
+    let screen = flat(&after);
+    app.finish();
+    screen
+}
+
+#[test]
+fn option_missing_selection_nearest_or_first() {
+    let nearest = selection_after_push_disappears("s09-missing-nearest", "nearest");
+    assert!(
+        nearest.contains("Runs git pull --rebase") && !nearest.contains("Runs git pull --ff-only"),
+        "nearest should land on the last remaining row: {nearest}"
+    );
+    let first = selection_after_push_disappears("s09-missing-first", "first");
+    assert!(
+        first.contains("Runs git pull --ff-only") && !first.contains("Runs git pull --rebase"),
+        "first should land on the first row: {first}"
+    );
+}
+
+/// With a request pending, Tab, Down, Enter. Returns the flattened screen.
+fn move_while_pending(name: &str, opts: &[&str]) -> String {
+    let mut all = vec!["finder.results=loading"];
+    all.extend_from_slice(opts);
+    let app = open_with(name, &all);
+    app.wait_text("git pull --ff-only");
+    focus_query(&app, "pu");
+    app.key("end");
+    app.type_text("s");
+    app.wait_text("Searching");
+    app.key("tab");
+    app.key("down");
+    app.key("enter");
+    let screen = app.settle();
+    let shown = flat(&screen);
+    app.finish();
+    shown
+}
+
+#[test]
+fn option_move_while_loading_moves_the_retained_cursor() {
+    let off = move_while_pending("s09-nav-off", &[]);
+    assert!(
+        off.contains("Searching") && off.contains("Runs git pull --ff-only"),
+        "the cursor must stay while loading: {off}"
+    );
+    assert!(
+        !off.contains("Runs git push") && !off.contains("Ran "),
+        "{off}"
+    );
+    let on = move_while_pending("s09-nav-on", &["finder.nav_loading=on"]);
+    assert!(
+        on.contains("Searching") && on.contains("Runs git push"),
+        "the cursor must move while loading: {on}"
+    );
+    assert!(
+        !on.contains("Runs git pull --ff-only") && !on.contains("Ran "),
+        "{on}"
+    );
+}
+
+#[test]
+fn option_keys_emacs_rebinds_the_result_keys() {
+    let app = open_with(
+        "s09-keys-emacs",
+        &["finder.keys=emacs", "finder.query=empty"],
+    );
+    app.wait_text("Stash changes");
+    focus_query(&app, PLACEHOLDER);
+    app.key("tab");
+    let hints = app.settle();
+    see(&hints, &["Ctrl+N/P Move"], &["↑↓ Move"]);
+    // The arrows are unbound, so Enter still runs the first row.
+    app.key("down");
+    app.key("enter");
+    let first = app.wait_text("Ran Pull");
+    see(&first, &["Ran Pull"], &["Ran Push"]);
+    app.key("ctrl+n");
+    let moved = app.wait_text("git push");
+    see(&moved, &["Runs git push"], &["Runs git pull --ff-only"]);
+    app.key("enter");
+    let ran = app.wait_text("Ran Push");
+    see(&ran, &["Ran Push"], &[]);
+    app.key("ctrl+p");
+    app.wait_text("git pull --ff-only");
+    app.finish();
+}
+
+#[test]
+fn option_painter_hosted_draws_every_pane_itself() {
+    let app = page("s09-hosted", Some("finder.painter=hosted"), 120, 40);
+    let play = app.wait_text("git pull --ff-only");
+    see(
+        &play,
+        &[
+            "pu",
+            "scope ‹ here ›",
+            "Pull",
+            "Push",
+            "Pull with rebase",
+            "up to date",
+            "Runs git pull --ff-only",
+            "Gate runs directly",
+        ],
+        &[
+            "Alternatives…",
+            "Why?",
+            "Results",
+            "Stash changes",
+            "No matches",
+        ],
+    );
+    shot(&app, "opt.finder.painter");
+    // Query and results share one focus owner: typing edits the query and the
+    // arrow keys move the selection, with no Tab between them. The hosted
+    // query line sits one row higher than the standard one.
+    click_where(&app, "pu", |hit| hit.y == 7 && hit.x < 50);
+    flash_settle(&app);
+    see(
+        &app.settle(),
+        &["Type Search", "Ctrl+O Preview"],
+        &["Tab Actions"],
+    );
+    app.key("end");
+    app.type_text("sh");
+    let narrowed = app.wait_absent("Pull with rebase");
+    see(&narrowed, &["push", "Push", "Runs git push"], &["Pull"]);
+    app.key("backspace");
+    app.key("backspace");
+    app.wait_text("Pull with rebase");
+    app.key("down");
+    let moved = app.wait_text("git push");
+    see(&moved, &["Runs git push"], &["Runs git pull --ff-only"]);
+    app.key("enter");
+    let ran = app.wait_text("Ran Push");
+    see(&ran, &["Ran Push"], &[]);
+    app.key("alt+up");
+    let scoped = app.wait_text("scope ‹ project ›");
+    see(&scoped, &["scope ‹ project ›"], &["scope ‹ here ›"]);
+    app.finish();
+}
+
+#[test]
+fn option_painter_hosted_reports_placed_chips() {
+    let app = open_with(
+        "s09-hosted-cells",
+        &[
+            "finder.painter=hosted",
+            "finder.rows=cells",
+            "finder.query=empty",
+        ],
+    );
+    let screen = app.wait_text("Stash changes");
+    // The hosted painter draws no Results frame; the standard painter does.
+    // Without that check this test passes with the option off.
+    see(
+        &screen,
+        &["git", "cargo", "Build", "Test"],
+        &["Ran ", "Results"],
+    );
+    click_where(&app, "Build", |hit| hit.y > 8 && hit.x < 70);
+    let ran = app.wait_text("Ran Build");
+    see(&ran, &["Ran Build"], &["Ran Test", "Ran Pull"]);
+    app.finish();
+}
+
+enum Change {
+    /// Type one more letter: "pu" becomes "pul", and Pull stays selected.
+    Query,
+    /// Click the scope link: the same query is answered again.
+    Scope,
+}
+
+/// Scrolls the preview of Pull down, makes `change`, and reports whether the
+/// preview is back at its top. The terminal is short enough for the preview to
+/// scroll.
+fn preview_back_at_top(name: &str, scroll: &str, change: Change) -> bool {
+    let opt = format!("finder.preview_scroll={scroll}");
+    let mut args = PAGE_ARGS.to_vec();
+    args.extend(["--opt", &opt]);
+    let app = open(name, 120, 20, &args);
+    app.wait_text("Alternatives…");
+    focus_query(&app, "pu");
+    app.key("ctrl+o");
+    for _ in 0..4 {
+        app.key("down");
+    }
+    let scrolled = flat(&app.settle());
+    assert!(
+        scrolled.contains("Gate runs directly") && !scrolled.contains("Runs git pull"),
+        "the preview did not scroll: {scrolled}"
+    );
+    match change {
+        Change::Query => {
+            focus_query(&app, "pu");
+            app.key("end");
+            app.type_text("l");
+            app.wait_text("pul");
+        }
+        Change::Scope => {
+            click_where(&app, "scope ‹ here ›", |hit| hit.y < 14);
+            app.wait_text("scope ‹ project ›");
+        }
+    }
+    let after = flat(&app.settle());
+    assert!(
+        after.contains("Pull") && after.contains("Alternatives…"),
+        "{after}"
+    );
+    app.finish();
+    after.contains("Runs git pull")
+}
+
+#[test]
+fn option_preview_scroll_kept_or_reset() {
+    assert!(
+        !preview_back_at_top("s09-scroll-kept-query", "kept", Change::Query),
+        "a new query kept the same selection, so the preview scroll stays"
+    );
+    assert!(
+        !preview_back_at_top("s09-scroll-kept-scope", "kept", Change::Scope),
+        "the same selection answered again keeps the preview scroll"
+    );
+    assert!(
+        preview_back_at_top("s09-scroll-query", "reset on query", Change::Query),
+        "a new query returns the preview to its top"
+    );
+    assert!(
+        preview_back_at_top("s09-scroll-result", "reset on result", Change::Scope),
+        "every accepted result returns the preview to its top"
+    );
+}

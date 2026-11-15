@@ -541,22 +541,23 @@ impl Toolbar {
             area.right()
         };
         let y = area.y;
-        let mut x = area.x;
 
-        let mut sep_at: Option<u16> = None;
+        let fit = self.fit(&widths, area.x, limit);
+        if !self.overflow {
+            self.relocate_unplaced(fit.len());
+        }
+
         for (i, w) in widths.iter().copied().enumerate() {
-            crate::record_work!(FitVisits, 1usize);
             let it = &self.items[i];
-            if w > usize::from(limit.saturating_sub(x)) {
+            let Some(&Placed { x, .. }) = fit.get(i) else {
                 if overflowing {
                     self.hidden.extend(i..n);
-                    if let Some(sx) = sep_at {
+                    if let Some(sx) = i.checked_sub(1).and_then(|j| fit[j].sep) {
                         buf.set_string(sx, y, " ", ratatui::style::Style::new().bg(bg));
                     }
                 }
                 break;
-            }
-            sep_at = None;
+            };
             let w = terminal_extent(w);
             let r = Rect::new(x, y, w, 1);
             self.areas[i] = r;
@@ -611,16 +612,13 @@ impl Toolbar {
                 };
                 crate::ui::tooltip::show(ctx, iid, r, &tip, None);
             }
-            x = x.saturating_add(w).saturating_add(self.gap);
-            if it.separator_after && x < limit {
-                sep_at = Some(x);
+            if let Some(sx) = fit[i].sep {
                 buf.set_string(
-                    x,
+                    sx,
                     y,
                     t.glyphs.divider,
                     ratatui::style::Style::new().fg(t.border_subtle).bg(bg),
                 );
-                x = x.saturating_add(1).saturating_add(self.gap);
             }
         }
         if self
@@ -659,6 +657,55 @@ impl Toolbar {
         self.layout = Some(self.policy());
         if let Some((menu, _)) = self.menu.as_mut() {
             menu.render(*buf.area(), buf, ctx);
+        }
+    }
+}
+
+/// Where `fit` placed one item, and where the divider after it goes.
+struct Placed {
+    x: u16,
+    sep: Option<u16>,
+}
+
+impl Toolbar {
+    /// Lays the items left to right and stops at the first that does not fit
+    /// before `limit`. Paint and cursor relocation both read this one result.
+    fn fit(&self, widths: &[usize], x0: u16, limit: u16) -> Vec<Placed> {
+        let mut x = x0;
+        let mut out = Vec::new();
+        for (i, &w) in widths.iter().enumerate() {
+            crate::record_work!(FitVisits, 1usize);
+            if w > usize::from(limit.saturating_sub(x)) {
+                break;
+            }
+            let at = x;
+            x = x
+                .saturating_add(terminal_extent(w))
+                .saturating_add(self.gap);
+            let sep = (self.items[i].separator_after && x < limit).then_some(x);
+            if sep.is_some() {
+                x = x.saturating_add(1).saturating_add(self.gap);
+            }
+            out.push(Placed { x: at, sep });
+        }
+        out
+    }
+
+    /// Backstop for a width change: with no More button, an item past the room
+    /// is not drawn and a cursor on it would have no mark. Navigation never
+    /// lands on an undrawn item, so this only runs after a resize. Moves the
+    /// cursor to the nearest drawn item, an enabled one when `skip_disabled`.
+    fn relocate_unplaced(&mut self, shown: usize) {
+        if self.cursor < shown {
+            return;
+        }
+        let usable = |i: &usize| !self.skip_disabled || !self.items[*i].disabled;
+        if let Some(to) = (0..shown)
+            .rev()
+            .find(usable)
+            .or_else(|| shown.checked_sub(1))
+        {
+            self.cursor = to;
         }
     }
 }

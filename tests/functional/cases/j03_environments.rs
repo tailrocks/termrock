@@ -10,7 +10,7 @@ use std::time::Duration;
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, JACKIN, Launch, Point, row_text, text, try_launch};
+use crate::support::{App, JACKIN, Launch, Point, button, row_text, text, try_launch};
 
 const DIRECTORY: &str = "Current directory";
 const PAYMENTS: &str = "payments-platform";
@@ -258,10 +258,6 @@ fn open_workspace_env(app: &App) -> TerminalSnapshot {
             && !visible.contains(REVIEW)
             && !visible.contains(OPS)
     })
-}
-
-fn button(app: &App, label: &str, row_ok: impl Fn(&str) -> bool) -> Point {
-    app.wait_button(label, row_ok)
 }
 
 fn form_save(app: &App) -> Point {

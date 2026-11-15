@@ -777,7 +777,15 @@ impl Page for EditorPage {
                 }
                 o
             }
-            PageEvent::Paste(text) => self.editor.on_paste(text),
+            PageEvent::Paste(text) => {
+                let o = self.editor.on_paste(text);
+                if self.completion.is_open() {
+                    // The paste moved the cursor past the word the popup was
+                    // opened for, so its replace span and rows are stale.
+                    self.trigger(false);
+                }
+                o
+            }
             PageEvent::Pointer(ev) => {
                 if ev.wheel().is_some()
                     && let Some(r) = self.completion.route(ev)
@@ -918,6 +926,76 @@ mod tests {
         page.trigger(true);
         assert!(page.completion.is_open(), "{word} opens the popup");
         page.hints(None)
+    }
+
+    fn drawn(page: &mut EditorPage) -> String {
+        use junie_tui::core::focus::FocusRing;
+        use junie_tui::core::hit::HitRegistry;
+        use junie_tui::theme::{ColorLevel, Theme};
+        use junie_tui::ui::ctx::Interaction;
+
+        let theme = Theme::for_level(ColorLevel::TrueColor);
+        let area = Rect::new(0, 0, 120, 40);
+        let mut buf = Buffer::empty(area);
+        let mut hits = HitRegistry::default();
+        let mut ring = FocusRing::default();
+        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        page.render(area, &mut buf, &mut ctx);
+        ctx.flush_overlays(&mut buf);
+        buf.content().iter().map(|c| c.symbol()).collect()
+    }
+
+    #[test]
+    fn completion_draws_why_the_highlighted_entry_is_unavailable() {
+        let (_, why) = UNAVAILABLE[0];
+        let mut page = EditorPage::new();
+        page.editor.field.buffer.insert_str("url");
+        drawn(&mut page);
+        page.trigger(true);
+        assert!(drawn(&mut page).contains(why));
+
+        // "url" is listed but disabled, and "return" is enabled. Keyboard
+        // navigation skips disabled rows, so the highlight starts on "return"
+        // and the reason of the unhighlighted "url" must stay undrawn.
+        let mut page = EditorPage::new();
+        page.editor.field.buffer.insert_str("ur");
+        drawn(&mut page);
+        page.trigger(true);
+        assert!(page.completion.items().iter().any(|i| i.label == "url"));
+        assert_eq!(
+            page.completion.current().map(|i| i.label.as_str()),
+            Some("return")
+        );
+        assert!(!drawn(&mut page).contains(why));
+    }
+
+    #[test]
+    fn a_paste_with_the_popup_open_refreshes_what_accept_replaces() {
+        use junie_tui::core::focus::{Focus, FocusRing};
+        let mut page = EditorPage::new();
+        page.editor.field.buffer.insert_str("fet");
+        page.editor.begin_edit();
+        page.trigger(true);
+        assert!(page.completion.is_open());
+        let mut focus = Focus::default();
+        focus.focus(page.editor.id);
+        let ring = FocusRing::default();
+        let mut cx = Cx::new(&mut focus, &ring);
+        page.handle(&PageEvent::Paste("ch".into()), &mut cx);
+        let (_, word) = page.word_before_cursor();
+        assert_eq!(word, "fetch");
+        // Accepting must replace the whole word the user now sees, not the
+        // three characters the popup was opened with.
+        let enter = junie_tui::core::event::Key {
+            code: KeyCode::Enter,
+            mods: ratatui::crossterm::event::KeyModifiers::NONE,
+        };
+        page.handle(&PageEvent::Key(enter), &mut cx);
+        assert!(
+            !page.editor.text().contains("fefetch"),
+            "stale replace span corrupted the word: {:?}",
+            &page.editor.text()[..16.min(page.editor.text().len())]
+        );
     }
 
     #[test]

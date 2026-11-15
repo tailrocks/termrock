@@ -233,6 +233,45 @@ fn workspace_close_save_locks_edits_but_not_navigation() {
     assert!(w(&app).tab(products).is_none());
 }
 
+fn paste(app: &mut App, text: &str) {
+    app.handle_input(Input::Paste(text.to_owned()));
+}
+
+#[test]
+fn codex196_paste_onto_a_focused_table_cell_edits_it_through_the_grid() {
+    let mut app = connected();
+    let products = open(&mut app, "products", false);
+    let grid = w(&app).table(products).expect("open").grid.id;
+    with_grid(&mut app, products, |g| g.cursor = (0, PRODUCT_NAME));
+
+    app.shell.focus.focus(crate::workbench::EXPLORER);
+    paste(&mut app, "Elsewhere");
+    assert_eq!(
+        with_grid(&mut app, products, |g| g.pending().total()),
+        0,
+        "a paste while the grid has no focus leaves its cells alone"
+    );
+
+    app.shell.focus.focus(grid);
+    paste(&mut app, "Pasted name");
+    assert_eq!(
+        with_grid(&mut app, products, |g| g.value(0, PRODUCT_NAME).clone()),
+        CellValue::Text("Pasted name".into()),
+        "a paste onto the focused cell sets its value"
+    );
+    assert_eq!(with_grid(&mut app, products, |g| g.pending().total()), 1);
+
+    app.begin_commit();
+    app.dialog_closed(COMMIT_DIALOG, DialogResult::Action(1));
+    app.shell.focus.focus(grid);
+    paste(&mut app, "During save");
+    assert_eq!(
+        with_grid(&mut app, products, |g| g.value(0, PRODUCT_NAME).clone()),
+        CellValue::Text("Pasted name".into()),
+        "a locked grid refuses the paste"
+    );
+}
+
 #[test]
 fn workspace_cancelled_save_review_keeps_the_tab_and_releases_the_close() {
     let (mut app, products, _) = two_dirty_tables();

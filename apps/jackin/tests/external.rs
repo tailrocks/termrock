@@ -255,6 +255,37 @@ fn a_periodic_refresh_that_removes_the_open_instance_leaves_its_capsule() {
 }
 
 #[test]
+fn a_refresh_that_removes_the_open_instance_closes_the_capsule_dialog_over_it() {
+    let mut app = app();
+    app.go(Go::Attach {
+        instance: instance_id(STOPPED),
+        pane: None,
+    });
+    assert_eq!(app.route(), Route::Capsule);
+    for (code, mods) in [
+        (KeyCode::Char('b'), KeyModifiers::CONTROL),
+        (KeyCode::Char('i'), KeyModifiers::NONE),
+    ] {
+        Application::handle(&mut app, Input::Key(Key { code, mods }));
+        screen(&mut app);
+    }
+    assert!(
+        screen(&mut app).contains("Debug info"),
+        "the dialog is open"
+    );
+
+    let gone = without(&app, STOPPED);
+    deliver_roster(&mut app, gone);
+
+    assert_ne!(app.route(), Route::Capsule);
+    let shown = screen(&mut app);
+    assert!(
+        !shown.contains("Debug info"),
+        "the capsule's dialog does not outlive the capsule:\n{shown}"
+    );
+}
+
+#[test]
 fn a_periodic_refresh_that_removes_an_unopened_instance_drops_its_daemon() {
     let mut app = app();
     let other = "jk-9b02";
