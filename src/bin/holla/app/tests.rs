@@ -72,6 +72,8 @@ fn plan_tab(app: &App, id: &str) -> Option<usize> {
 
 fn confirm_close_dialog(app: &mut App) {
     assert!(!app.modals.is_empty(), "the close dialog is open");
+    // Arrow keys step only over buttons the last frame placed.
+    drawn_text(app);
     app.handle_input(key(KeyCode::Right, KeyModifiers::NONE));
     app.handle_input(key(KeyCode::Enter, KeyModifiers::NONE));
     assert!(app.modals.is_empty(), "the dialog resolved");
@@ -333,6 +335,8 @@ fn assert_quit_body(app: &App, expected: &str) {
 }
 
 fn confirm_quit(app: &mut App) {
+    // Arrow keys step only over buttons the last frame placed.
+    drawn_text(app);
     app.handle_input(key(KeyCode::Right, KeyModifiers::NONE));
     app.handle_input(key(KeyCode::Enter, KeyModifiers::NONE));
     assert!(app.modals.is_empty(), "the quit dialog resolved");
