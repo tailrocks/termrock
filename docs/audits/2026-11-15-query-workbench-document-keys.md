@@ -15,4 +15,4 @@ Fix, in `src/bin/showcase/pages/query_workbench.rs`:
 
 Not changed: library widgets, `Tabs` notification order, layout, colours, the `visual-baseline` tag.
 
-Limits: a `CodeEditor` clears its selection and edit mode when it is painted without focus, so a selection survives a switch only when focus follows the editor (programmatic or explorer activation), not a tab click that moves focus to the strip. `issue52_tab_click_round_trip_retains_each_document` pins this loss while keeping caret, undo and scroll. The fix is tracked in #105 (overlaps #40). Pointer capture of a drag in progress is owned by the shell and is not cancelled by the page; activation cannot happen mid-drag from the keyboard or strip.
+Limits: a `CodeEditor` keeps its selection when it is painted without focus (#105), so tab clicks, which move focus to the strip, retain caret, selection, undo and scroll. `issue52_tab_click_round_trip_retains_each_document` pins this. Pointer capture of a drag in progress is owned by the shell and is not cancelled by the page; activation cannot happen mid-drag from the keyboard or strip.
