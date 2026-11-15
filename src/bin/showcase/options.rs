@@ -32,6 +32,8 @@ pub struct Opt {
     pub effect: Effect,
 
     pub needs: &'static [(&'static str, &'static str)],
+
+    pub hidden: bool,
 }
 
 impl Opt {
@@ -43,7 +45,12 @@ impl Opt {
             default: 0,
             effect: Effect::Frame,
             needs: &[],
+            hidden: false,
         }
+    }
+    const fn hidden(mut self) -> Self {
+        self.hidden = true;
+        self
     }
     const fn default(mut self, i: usize) -> Self {
         self.default = i;
@@ -410,6 +417,7 @@ pub static SCROLLING: &[Opt] = &[
     ),
     Opt::new("scrolling.wrap", "Wrap at the ends", OFF_ON),
     Opt::new("scrolling.skip_disabled", "Skip disabled", OFF_ON).default(1),
+    Opt::new("scrolling.nested", "Nested scrollbars", OFF_ON).hidden(),
 ];
 
 pub static BUTTONS: &[Opt] = &[
@@ -1925,7 +1933,7 @@ impl OptionsView {
             if g.opts.is_empty() {
                 rows.push(Row::Note(g.empty));
             }
-            for opt in g.opts {
+            for opt in g.opts.iter().filter(|o| !o.hidden) {
                 let cid = id.sub(opt.key);
                 let control = if opt.is_toggle() {
                     Control::Toggle(Toggle::new(cid, opt.label, opt.default == 1))
