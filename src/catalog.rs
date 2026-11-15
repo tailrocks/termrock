@@ -2981,6 +2981,7 @@ pub static CAPABILITIES: &[Capability] = &[
     Capability::function("widgets::nav_list::NavList::width"),
     Capability::function("widgets::nav_list::NavList::on_key"),
     Capability::function("widgets::nav_list::NavList::on_click"),
+    Capability::function("widgets::nav_list::NavList::set_items"),
     Capability::function("widgets::nav_list::NavList::render"),
     Capability::ty("widgets::page_header::PageHeader"),
     Capability::ty("widgets::page_header::Heading"),
