@@ -341,7 +341,7 @@ mod tests {
 
     #[test]
     fn sim_link_partial_utf8_and_escape_stream_is_lossless() {
-        let stream = "日本語\x1b]2;title\x07\x1b[31mred\x1b[0m"
+        let stream = "é日本語 😀\x1b]2;tïtle 😀\x07\x1b[31;1mred\x1b[0m\r\n😀\x1b[2;3Hend"
             .as_bytes()
             .to_vec();
         let link = SimLink::new(vec![at(0, output(&stream))]);
@@ -354,6 +354,18 @@ mod tests {
         }
         assert_eq!(received, stream);
         assert_eq!(link.drain(0, 1), []);
+
+        let mut reference = pane_over(stream.clone(), 64 * 1024);
+        reference.tick(0);
+        assert!(
+            reference.title().is_some(),
+            "the OSC title reaches the pane"
+        );
+        let mut budgeted = pane_over(stream.clone(), 1);
+        for now in 0..=stream.len() as i64 {
+            budgeted.tick(now);
+        }
+        assert_eq!(screen(&budgeted), screen(&reference));
     }
 
     #[test]
@@ -402,23 +414,41 @@ mod tests {
         }
     }
 
-    fn grid_text(pane: &TerminalPane) -> usize {
-        let view = pane.grid().state().view(0);
-        (0..24)
-            .flat_map(|row| (0..view.cols()).map(move |col| (row, col)))
-            .filter_map(|(row, col)| view.cell(row, col))
-            .filter(|cell| cell.text() == "x")
-            .count()
+    /// What the user sees of a pane: every cell's text, the cursor, the title
+    /// and the history kept above the screen.
+    #[derive(Debug, PartialEq, Eq)]
+    struct Screen {
+        cells: Vec<(String, bool)>,
+        cursor: (u16, u16),
+        title: Option<String>,
+        history: usize,
     }
 
-    #[test]
-    fn sim_link_pane_feeds_within_tick_budget() {
+    fn screen(pane: &TerminalPane) -> Screen {
+        let state = pane.grid().state();
+        let view = state.view(0);
+        let cells = (0..view.rows())
+            .flat_map(|row| (0..view.cols()).map(move |col| (row, col)))
+            .filter_map(|(row, col)| view.cell(row, col))
+            .map(|cell| (cell.text().to_owned(), cell.is_wide_continuation()))
+            .collect();
+        Screen {
+            cells,
+            cursor: view.cursor(),
+            title: pane.title().map(str::to_owned),
+            history: state.scrollback_len(),
+        }
+    }
+
+    /// A pane over one attach that shows `stream`, fed at most `feed_budget_bytes`
+    /// per tick.
+    fn pane_over(stream: Vec<u8>, feed_budget_bytes: usize) -> TerminalPane {
         let instance = InstanceId::simulated("jk-sim-link");
         let request = PaneRequest::new(&instance, None, None);
         let link = SimLink::new(vec![
             at(0, LinkEvent::Attached),
             at(0, LinkEvent::Lease(Lease::Owner)),
-            at(1_000, output(&vec![b'x'; 1_000])),
+            at(0, LinkEvent::Output(stream)),
         ]);
         let mut pane = TerminalPane::new(
             1,
@@ -428,18 +458,10 @@ mod tests {
             0,
         );
         pane.set_policy(&Arc::new(PanePolicy {
-            feed_budget_bytes: 100,
+            feed_budget_bytes,
             ..PanePolicy::default()
         }));
         pane.sync_size(Rect::new(0, 0, 81, 24));
-        pane.tick(0);
-        pane.tick(1_000);
-        assert_eq!(grid_text(&pane), 100, "one tick feeds one budget");
-        for now in 1_001..1_009 {
-            pane.tick(now);
-        }
-        assert_eq!(grid_text(&pane), 900);
-        pane.tick(1_009);
-        assert_eq!(grid_text(&pane), 1_000, "the rest arrives in order");
+        pane
     }
 }
