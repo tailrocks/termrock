@@ -4,6 +4,10 @@ pub mod context;
 pub mod ctx;
 pub mod edit_menu;
 pub mod fade;
+#[cfg(test)]
+mod intrinsic_tests;
+#[cfg(test)]
+mod intrinsic_wide_tests;
 pub mod layer;
 pub mod layers;
 pub mod layout;

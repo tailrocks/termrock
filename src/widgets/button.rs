@@ -6,6 +6,7 @@ use crate::core::id::WidgetId;
 use crate::core::refusal::{Control, Reason};
 use crate::theme::{ButtonKind, Kind};
 use crate::ui::ctx::RenderCtx;
+use crate::ui::measure::terminal_extent;
 use crate::ui::text::width;
 use ratatui::crossterm::event::KeyCode;
 
@@ -105,9 +106,14 @@ impl Button {
         self.control(Control::fixed(reason))
     }
 
+    /// Natural width of the button, saturating at `u16::MAX`.
     pub fn width(&self) -> u16 {
+        terminal_extent(self.intrinsic_width())
+    }
+
+    pub(crate) fn intrinsic_width(&self) -> usize {
         let marker = if self.on.is_some() || self.busy { 2 } else { 0 };
-        (width(&self.label) + 2 + marker) as u16
+        width(&self.label).saturating_add(2 + marker)
     }
 
     pub fn hint(&self) -> crate::widgets::keyhint::Hint {
@@ -255,9 +261,9 @@ impl Button {
     }
 }
 
-fn wrap_lines(width: u16, widths: &[u16], gap: u16) -> Vec<Vec<usize>> {
+pub(crate) fn wrap_lines(width: usize, widths: &[usize], gap: usize) -> Vec<Vec<usize>> {
     let mut lines: Vec<Vec<usize>> = vec![vec![]];
-    let mut used = 0u16;
+    let mut used = 0usize;
     for (i, &w) in widths.iter().enumerate() {
         let line = lines.last_mut().expect("one line");
         let need = if line.is_empty() {
@@ -276,34 +282,49 @@ fn wrap_lines(width: u16, widths: &[u16], gap: u16) -> Vec<Vec<usize>> {
     lines
 }
 
+fn wide(widths: &[u16]) -> Vec<usize> {
+    widths.iter().map(|&w| usize::from(w)).collect()
+}
+
+/// Number of lines the buttons wrap onto, saturating at `u16::MAX`.
 pub fn row_lines(width: u16, widths: &[u16], gap: u16) -> u16 {
     if widths.is_empty() {
         return 1;
     }
-    wrap_lines(width, widths, gap).len() as u16
+    terminal_extent(wrap_lines(usize::from(width), &wide(widths), usize::from(gap)).len())
 }
 
 pub fn row_layout(area: Rect, widths: &[u16], gap: u16) -> Vec<Rect> {
-    place_lines(area, widths, gap, false)
+    place_lines(area, &wide(widths), gap, false)
 }
 
 pub fn row_layout_right(area: Rect, widths: &[u16], gap: u16) -> Vec<Rect> {
-    place_lines(area, widths, gap, true)
+    place_lines(area, &wide(widths), gap, true)
 }
 
-fn place_lines(area: Rect, widths: &[u16], gap: u16, right: bool) -> Vec<Rect> {
-    let mut out = vec![Rect::ZERO; widths.len()];
-    for (k, line) in wrap_lines(area.width, widths, gap).iter().enumerate() {
-        let y = area.y.saturating_add(k as u16);
-        let total = line.iter().map(|&i| widths[i]).sum::<u16>()
-            + gap * line.len().saturating_sub(1) as u16;
+/// Wraps and places buttons from their wide intrinsic widths, so a button wider
+/// than any `u16` allocation never looks like it fits.
+pub(crate) fn place_lines(area: Rect, wide: &[usize], gap: u16, right: bool) -> Vec<Rect> {
+    let mut out = vec![Rect::ZERO; wide.len()];
+    for (k, line) in wrap_lines(usize::from(area.width), wide, usize::from(gap))
+        .iter()
+        .enumerate()
+    {
+        let y = area.y.saturating_add(terminal_extent(k));
+        let total = line
+            .iter()
+            .map(|&i| wide[i])
+            .fold(0usize, usize::saturating_add)
+            .saturating_add(usize::from(gap).saturating_mul(line.len().saturating_sub(1)));
         let mut x = if right {
-            area.right().saturating_sub(total).max(area.x)
+            area.right()
+                .saturating_sub(terminal_extent(total))
+                .max(area.x)
         } else {
             area.x
         };
         for &i in line {
-            let w = widths[i].min(area.right().saturating_sub(x));
+            let w = terminal_extent(wide[i].min(usize::from(area.right().saturating_sub(x))));
             out[i] = Rect::new(x, y, w, area.height.min(1));
             x = x.saturating_add(w).saturating_add(gap);
         }
@@ -411,21 +432,33 @@ impl ButtonRow {
             .or_else(|| buttons.len().checked_sub(1))
     }
 
-    fn lines(&self, width: u16, widths: &[u16], gap: u16) -> Vec<Vec<usize>> {
-        wrap_lines(width, widths, gap)
+    fn lines(&self, width: u16, widths: &[usize], gap: u16) -> Vec<Vec<usize>> {
+        wrap_lines(usize::from(width), widths, usize::from(gap))
     }
 
+    fn intrinsic_widths(buttons: &[Button]) -> Vec<usize> {
+        buttons.iter().map(Button::intrinsic_width).collect()
+    }
+
+    /// Natural width of the whole row, saturating at `u16::MAX`.
     pub fn width(&self, buttons: &[Button], theme: &crate::theme::Theme) -> u16 {
-        let n = buttons.len() as u16;
-        buttons.iter().map(Button::width).sum::<u16>() + self.gap_for(theme) * n.saturating_sub(1)
+        terminal_extent(
+            Self::intrinsic_widths(buttons)
+                .iter()
+                .fold(0usize, |a, w| a.saturating_add(*w))
+                .saturating_add(
+                    usize::from(self.gap_for(theme))
+                        .saturating_mul(buttons.len().saturating_sub(1)),
+                ),
+        )
     }
 
     pub fn rows(&self, width: u16, buttons: &[Button], theme: &crate::theme::Theme) -> u16 {
         match self.overflow {
             RowOverflow::More => 1,
             RowOverflow::Wrap => {
-                let widths: Vec<u16> = buttons.iter().map(Button::width).collect();
-                self.lines(width, &widths, self.gap_for(theme)).len() as u16
+                let widths = Self::intrinsic_widths(buttons);
+                terminal_extent(self.lines(width, &widths, self.gap_for(theme)).len())
             }
         }
     }
@@ -434,15 +467,15 @@ impl ButtonRow {
         match self.overflow {
             RowOverflow::More => 1,
             RowOverflow::Wrap => {
-                let widths: Vec<u16> = buttons.iter().map(Button::width).collect();
-                self.lines(width, &widths, self.gap.unwrap_or(gap)).len() as u16
+                let widths = Self::intrinsic_widths(buttons);
+                terminal_extent(self.lines(width, &widths, self.gap.unwrap_or(gap)).len())
             }
         }
     }
 
     pub fn layout(&self, area: Rect, buttons: &[Button], theme: &crate::theme::Theme) -> RowLayout {
         let gap = self.gap_for(theme);
-        let widths: Vec<u16> = buttons.iter().map(Button::width).collect();
+        let widths = Self::intrinsic_widths(buttons);
         let mut out = RowLayout {
             rects: vec![None; buttons.len()],
             ..Default::default()
@@ -450,19 +483,25 @@ impl ButtonRow {
         if area.is_empty() || buttons.is_empty() {
             return out;
         }
-        let place = |line: &[(usize, u16)], y: u16, out: &mut RowLayout| -> Vec<Rect> {
-            let total = line.iter().map(|(_, w)| *w).sum::<u16>()
-                + gap * line.len().saturating_sub(1) as u16;
+        let place = |line: &[(usize, usize)], y: u16, out: &mut RowLayout| -> Vec<Rect> {
+            let total = line
+                .iter()
+                .map(|(_, w)| *w)
+                .fold(0usize, usize::saturating_add)
+                .saturating_add(usize::from(gap).saturating_mul(line.len().saturating_sub(1)));
             let x = match self.align {
                 RowAlign::Start => area.x,
-                RowAlign::End => area.right().saturating_sub(total).max(area.x),
+                RowAlign::End => area
+                    .right()
+                    .saturating_sub(terminal_extent(total))
+                    .max(area.x),
             };
 
             let mut cx = x;
             let rects: Vec<Rect> = line
                 .iter()
                 .map(|(_, w)| {
-                    let w = (*w).min(area.right().saturating_sub(cx));
+                    let w = terminal_extent((*w).min(usize::from(area.right().saturating_sub(cx))));
                     let r = Rect::new(cx, y, w, 1);
                     cx = cx.saturating_add(w).saturating_add(gap);
                     r
@@ -478,32 +517,37 @@ impl ButtonRow {
         match self.overflow {
             RowOverflow::Wrap => {
                 for (k, line) in self.lines(area.width, &widths, gap).iter().enumerate() {
-                    let y = area.y + k as u16;
+                    let y = area.y.saturating_add(terminal_extent(k));
                     if y >= area.bottom() {
                         break;
                     }
-                    let line: Vec<(usize, u16)> = line.iter().map(|&i| (i, widths[i])).collect();
+                    let line: Vec<(usize, usize)> = line.iter().map(|&i| (i, widths[i])).collect();
                     place(&line, y, &mut out);
                 }
             }
             RowOverflow::More => {
-                let total = widths.iter().sum::<u16>() + gap * (widths.len() as u16 - 1);
-                if total <= area.width {
-                    let line: Vec<(usize, u16)> = widths.iter().copied().enumerate().collect();
+                let total = widths
+                    .iter()
+                    .fold(0usize, |a, w| a.saturating_add(*w))
+                    .saturating_add(usize::from(gap).saturating_mul(widths.len() - 1));
+                if total <= usize::from(area.width) {
+                    let line: Vec<(usize, usize)> = widths.iter().copied().enumerate().collect();
                     place(&line, area.y, &mut out);
                     return out;
                 }
 
                 let primary = Self::primary(buttons).unwrap_or(0);
-                let more_w = (width(theme.glyphs.ellipsis) + 2) as u16;
-                let mut budget = area.width.saturating_sub(widths[primary] + gap + more_w);
+                let gap = usize::from(gap);
+                let more_w = width(theme.glyphs.ellipsis) + 2;
+                let mut budget = usize::from(area.width)
+                    .saturating_sub(widths[primary].saturating_add(gap).saturating_add(more_w));
                 let mut keep = vec![false; buttons.len()];
                 keep[primary] = true;
                 for (i, &w) in widths.iter().enumerate() {
                     if i == primary {
                         continue;
                     }
-                    if w + gap <= budget {
+                    if w.saturating_add(gap) <= budget {
                         budget -= w + gap;
                         keep[i] = true;
                     } else {
@@ -512,7 +556,7 @@ impl ButtonRow {
                 }
                 out.hidden = (0..buttons.len()).filter(|i| !keep[*i]).collect();
 
-                let mut line: Vec<(usize, u16)> = Vec::new();
+                let mut line: Vec<(usize, usize)> = Vec::new();
                 for (i, &w) in widths.iter().enumerate() {
                     if keep[i] && i != primary {
                         line.push((i, w));

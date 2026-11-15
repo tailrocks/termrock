@@ -8,6 +8,7 @@ use ratatui::style::Style;
 use crate::core::event::ClientPlatform;
 
 use crate::theme::{BadgeKind, HintAlign, HintBarStyle, StatusKind, Theme, Tone};
+use crate::ui::measure::terminal_extent;
 
 pub const UP_DOWN: &str = "↑↓";
 pub const LEFT_RIGHT: &str = "←→";
@@ -221,30 +222,33 @@ pub fn render_aligned(
     render_styled(area, buf, t, hints, badge, right, &style)
 }
 
-const GAP: u16 = 2;
+const GAP: usize = 2;
 
-fn hint_width(h: &Hint, compact: bool) -> u16 {
-    let kw = crate::ui::text::width(&normalize_key(h.key.as_ref())) as u16;
+fn hint_width(h: &Hint, compact: bool) -> usize {
+    let kw = crate::ui::text::width(&normalize_key(h.key.as_ref()));
     if compact {
         kw
     } else {
-        kw + 1 + crate::ui::text::width(&h.action) as u16
+        kw.saturating_add(1)
+            .saturating_add(crate::ui::text::width(&h.action))
     }
 }
 
-fn cost(hints: &[Hint], keep: &[usize], compact: &[bool]) -> u32 {
-    let mut c: u32 = keep
+/// Full width of the kept hints plus their gaps and the cut marker slot, with
+/// no narrowing, so a fit against `room` never sees a wrapped total.
+pub(crate) fn cost(hints: &[Hint], keep: &[usize], compact: &[bool]) -> usize {
+    let mut c = keep
         .iter()
-        .map(|&i| (hint_width(&hints[i], compact[i]) + GAP) as u32)
-        .sum();
+        .map(|&i| hint_width(&hints[i], compact[i]).saturating_add(GAP))
+        .fold(0usize, usize::saturating_add);
     if keep.len() < hints.len() {
-        c += GAP as u32;
+        c = c.saturating_add(GAP);
     }
     c
 }
 
 fn fit(hints: &[Hint], room: u16, style: &HintBarStyle) -> (Vec<usize>, Vec<bool>) {
-    let room = room as u32;
+    let room = usize::from(room);
     let all: Vec<usize> = (0..hints.len()).collect();
     let full = vec![false; hints.len()];
     if cost(hints, &all, &full) <= room {
@@ -269,15 +273,21 @@ fn fit(hints: &[Hint], room: u16, style: &HintBarStyle) -> (Vec<usize>, Vec<bool
     (keep, full)
 }
 
+/// Natural width of the hint bar, saturating at `u16::MAX`.
 pub fn width(hints: &[Hint], badge: Option<&str>, status: Option<&str>) -> u16 {
     let all: Vec<usize> = (0..hints.len()).collect();
     let full = vec![false; hints.len()];
-    let badge = badge.map_or(0, |b| crate::ui::text::width(b) as u16 + 4);
+    let badge = badge.map_or(0, |b| crate::ui::text::width(b).saturating_add(4));
     let status = status
-        .map(|s| crate::ui::text::width(s) as u16)
+        .map(crate::ui::text::width)
         .filter(|w| *w > 0)
-        .map_or(0, |w| w + 3);
-    1 + badge + cost(hints, &all, &full) as u16 + status
+        .map_or(0, |w| w.saturating_add(3));
+    terminal_extent(
+        1usize
+            .saturating_add(badge)
+            .saturating_add(cost(hints, &all, &full))
+            .saturating_add(status),
+    )
 }
 
 pub fn render_status(
@@ -529,7 +539,10 @@ fn render_right(
             crate::ui::text::truncate(&format!(" {text} "), area.width.saturating_sub(2) as usize);
         if !b.is_empty() {
             buf.set_string(x, area.y, &b, t.badge(kind));
-            x = (x + crate::ui::text::width(&b) as u16 + 2).min(area.right());
+            x = x
+                .saturating_add(terminal_extent(crate::ui::text::width(&b)))
+                .saturating_add(2)
+                .min(area.right());
         }
     }
     let mut right_w = 0u16;
@@ -552,7 +565,7 @@ fn render_right(
                 .filter(|&i| hints[i].is_pinned(style))
                 .collect();
             if !pinned.is_empty() {
-                let need = cost(hints, &pinned, &vec![false; hints.len()]) as usize;
+                let need = cost(hints, &pinned, &vec![false; hints.len()]);
                 available = available.min(share.max(available.saturating_sub(need + 2)));
             }
         }
@@ -587,11 +600,11 @@ fn render_right(
     let (keep, compact) = fit(hints, limit.saturating_sub(x), style);
     let cut = keep.len() < hints.len();
     if style.align == HintAlign::Center {
-        let mut used = cost(hints, &keep, &compact) as u16;
+        let mut used = terminal_extent(cost(hints, &keep, &compact));
         used = if cut {
-            used.saturating_sub(GAP) + 1
+            used.saturating_sub(GAP as u16) + 1
         } else {
-            used.saturating_sub(GAP)
+            used.saturating_sub(GAP as u16)
         };
         let free = area.width.saturating_sub(used);
         let mid = area.x + free / 2;
@@ -607,9 +620,10 @@ fn render_right(
         if !compact[i] {
             buf.set_string(x + kw + 1, area.y, &h.action, t.key_hint_action());
         }
-        let w = hint_width(h, compact[i]).min(area.right().saturating_sub(x));
+        let hw = terminal_extent(hint_width(h, compact[i]));
+        let w = hw.min(area.right().saturating_sub(x));
         spots.push((i, Rect::new(x, area.y, w, 1)));
-        x += hint_width(h, compact[i]) + GAP;
+        x = x.saturating_add(hw).saturating_add(GAP as u16);
     }
     if cut && x < limit {
         buf.set_string(x, area.y, t.glyphs.ellipsis, t.faint());
