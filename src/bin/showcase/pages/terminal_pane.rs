@@ -333,7 +333,14 @@ impl TerminalPanePage {
     }
 
     fn session_visible(&self, action: SessionAction) -> bool {
-        action != SessionAction::Confirm || self.session.as_ref().is_some_and(|d| d.held_paste())
+        let Some(demo) = self.session.as_ref() else {
+            return true;
+        };
+        match action {
+            SessionAction::Confirm => demo.held_paste(),
+            SessionAction::Enter => demo.can_retry(),
+            _ => true,
+        }
     }
 
     fn fixture(&self) -> &'static Fixture {
@@ -798,6 +805,8 @@ mod tests {
     use junie_tui::ui::ctx::Interaction;
 
     const HOST: usize = 1;
+    const DETACHES: usize = 2;
+    const FAILS: usize = 4;
 
     fn session_page(script: usize) -> TerminalPanePage {
         let mut page = TerminalPanePage::new();
@@ -883,5 +892,23 @@ mod tests {
                 screen.join("\n")
             );
         }
+    }
+
+    #[test]
+    fn retry_is_offered_only_when_the_session_can_be_retried() {
+        let mut attached = session_page(0);
+        assert!(!attached.session_visible(SessionAction::Enter), "attaching");
+        attached.run_session(SessionAction::Play);
+        assert!(
+            !attached.session_visible(SessionAction::Enter),
+            "an attached session would receive the Enter as input"
+        );
+
+        let mut detaches = session_page(DETACHES);
+        detaches.run_session(SessionAction::Play);
+        detaches.run_session(SessionAction::Play);
+        assert!(detaches.session_visible(SessionAction::Enter), "detached");
+
+        assert!(session_page(FAILS).session_visible(SessionAction::Enter));
     }
 }
