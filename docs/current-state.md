@@ -222,5 +222,10 @@ variant of these enums stays a breaking change and is recorded here.
   keeps the draft. Digits discarded before the model stored a number cannot
   be recovered, and arbitrary-precision decimals are not supported. See
   [the audit note](audits/2026-11-15-exact-sql-literals.md).
+- Shared shell layers honor `LayerSpec::restore_focus` on result, dismissal and
+  bulk clear, and a non-inert layer with no initial target leaves focus alone
+  (`ModalStack::push_with_focus_policy`, `FocusOnOpen`). `ModalStack::retain`
+  drops the saved return focus of every surviving layer above a removed one.
+  See [the audit note](audits/2026-11-15-layer-focus-policy.md).
 - The `visual-baseline` git tag is frozen historical evidence. It is
   never moved, and it is not a substitute for the current design.

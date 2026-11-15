@@ -1,10 +1,10 @@
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
-use ratatui::layout::{Rect, Size};
+use ratatui::layout::{Position, Rect, Size};
 
 use crate::pages::layout::{sheet_height, sheet_width};
 use crate::pages::template::{Section, Template};
-use crate::pages::{Cx, Hint, Page, PageEvent};
+use crate::pages::{Cx, Hint, LayerRes, Page, PageEvent, Report};
 use junie_tui::core::event::{ClientPlatform, InputConfig, Key, Outcome};
 use junie_tui::core::focus::cancel_focus_request;
 use junie_tui::core::id::{Part, WidgetId};
@@ -13,7 +13,10 @@ use junie_tui::core::keyboard::{self, KeyboardProtocol, ProtocolState};
 use junie_tui::core::keymap::{KeyBinding, Nav, NavKeys, select_all_bindings};
 use junie_tui::core::pointer::MouseTarget;
 use junie_tui::ui::ctx::RenderCtx;
+use junie_tui::ui::layer::{DismissReason, Layer, LayerCx, LayerOut, LayerSpec, LayerTag};
 use junie_tui::ui::measure::{Tile, Tiled, tiles};
+use junie_tui::ui::modal::Frame;
+use junie_tui::ui::popup::{Dismiss, Placement};
 use junie_tui::ui::specimen::{SpecimenState, StateGrid};
 use junie_tui::widgets::button::{Button, row_layout};
 use junie_tui::widgets::input::{InputAction, TextInput};
@@ -23,6 +26,138 @@ use junie_tui::widgets::props::{self, Prop};
 use junie_tui::widgets::tabs::Tabs;
 
 const ID: WidgetId = WidgetId::of("focusnav");
+
+const LAYER_TAG: &str = "focuslayer";
+const LAYER_GO: WidgetId = ID.sub("layer.go");
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum LayerDemo {
+    Tip,
+    Restore,
+    Stay,
+}
+
+impl LayerDemo {
+    fn spec(self) -> LayerSpec {
+        match self {
+            Self::Tip => LayerSpec::tooltip(),
+            Self::Restore => LayerSpec::popover(Dismiss::LIGHT).initial_focus(LAYER_GO),
+            Self::Stay => LayerSpec::popover(Dismiss::LIGHT)
+                .initial_focus(LAYER_GO)
+                .restore_focus(false),
+        }
+    }
+
+    fn title(self) -> &'static str {
+        match self {
+            Self::Tip => "Passive tip",
+            Self::Restore => "restore_focus on",
+            Self::Stay => "restore_focus off",
+        }
+    }
+
+    fn note(self) -> &'static str {
+        match self {
+            Self::Tip => "Opens and closes without moving focus.",
+            Self::Restore => "Closing returns focus to the opener.",
+            Self::Stay => "Closing keeps the focus the layer set.",
+        }
+    }
+}
+
+struct FocusLayer {
+    demo: LayerDemo,
+    anchor: Rect,
+    go: Button,
+    target: WidgetId,
+    result: Option<LayerOut<LayerRes>>,
+}
+
+impl FocusLayer {
+    fn new(demo: LayerDemo, anchor: Rect, target: WidgetId) -> Self {
+        Self {
+            demo,
+            anchor,
+            go: Button::primary(LAYER_GO, "Focus Cancel"),
+            target,
+            result: None,
+        }
+    }
+
+    fn finish(&mut self, cx: &mut LayerCx<'_, ()>) -> Outcome {
+        cx.focus.focus(self.target);
+        self.result = Some(LayerOut::Close(LayerRes::Page(Report {
+            result: None,
+            values: None,
+            closed: None,
+        })));
+        Outcome::Changed
+    }
+}
+
+impl Layer<LayerRes> for FocusLayer {
+    fn spec(&self) -> LayerSpec {
+        self.demo.spec()
+    }
+
+    fn render(&mut self, screen: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, _: &()) {
+        let t = ctx.theme;
+        let frame = match self.demo {
+            LayerDemo::Tip => Frame::new(42, 3)
+                .min_size(20, 3)
+                .chrome(0, 0)
+                .margin(ratatui::layout::Margin::new(1, 0))
+                .backdrop(false)
+                .anchor(self.anchor, Placement::Above),
+            _ => Frame::new(44, 6)
+                .title(self.demo.title())
+                .backdrop(false)
+                .dismiss(self.demo.spec().dismiss)
+                .anchor(self.anchor, Placement::Above),
+        };
+        let (_, inner) = frame.render(screen, buf, ctx);
+        let bg = t.surface_elevated;
+        buf.set_string(
+            inner.x,
+            inner.y,
+            junie_tui::ui::text::truncate(self.demo.note(), inner.width as usize),
+            t.muted().bg(bg),
+        );
+        if self.demo != LayerDemo::Tip && inner.height > 2 {
+            let w = self.go.width().min(inner.width);
+            self.go
+                .render(Rect::new(inner.x, inner.y + 2, w, 1), buf, ctx, bg);
+        }
+    }
+
+    fn on_key(&mut self, key: &Key, cx: &mut LayerCx<'_, ()>) -> Outcome {
+        if self.demo != LayerDemo::Tip && cx.focus.is(LAYER_GO) && self.go.on_key(key).1 {
+            return self.finish(cx);
+        }
+        Outcome::Ignored
+    }
+
+    fn on_click(&mut self, id: WidgetId, _: Position, cx: &mut LayerCx<'_, ()>) -> Outcome {
+        if id == LAYER_GO && self.go.on_click() {
+            return self.finish(cx);
+        }
+        Outcome::Consumed
+    }
+
+    fn hints(&self, _: Option<WidgetId>) -> Vec<junie_tui::widgets::keyhint::Hint> {
+        use junie_tui::widgets::keyhint::hint;
+        match self.demo {
+            LayerDemo::Tip => vec![hint("Esc", "Close")],
+            _ => vec![hint("Enter", "Focus Cancel"), hint("Esc", "Close")],
+        }
+    }
+
+    fn on_dismiss(&mut self, _: DismissReason) {}
+
+    fn take_result(&mut self) -> Option<LayerOut<LayerRes>> {
+        self.result.take()
+    }
+}
 
 const NAVS: [Nav; 8] = [
     Nav::Up,
@@ -99,6 +234,8 @@ pub struct FocusNavPage {
     pub tags: Vec<Button>,
     pub list: ListBox,
 
+    layer_buttons: [(LayerDemo, Button); 3],
+
     nav: usize,
     tab_stays: bool,
 
@@ -131,6 +268,20 @@ impl FocusNavPage {
             cancel: Button::subtle(ID.child(3), "Cancel"),
             tags,
             list: ListBox::new(ID.child(4), items, SelectMode::Single).nav(NavKeys::DESKTOP),
+            layer_buttons: [
+                (
+                    LayerDemo::Tip,
+                    Button::secondary(ID.sub("layer.tip"), "Passive tip"),
+                ),
+                (
+                    LayerDemo::Restore,
+                    Button::secondary(ID.sub("layer.restore"), "Restore on"),
+                ),
+                (
+                    LayerDemo::Stay,
+                    Button::secondary(ID.sub("layer.stay"), "Restore off"),
+                ),
+            ],
             nav: 0,
             tab_stays: false,
             last_change: "none yet".into(),
@@ -154,6 +305,9 @@ impl FocusNavPage {
         }
         if id == self.cancel.id {
             return "Cancel".into();
+        }
+        if let Some((_, b)) = self.layer_buttons.iter().find(|(_, b)| b.id == id) {
+            return format!("{} button", b.label);
         }
         if id == self.list.id {
             return "Mailbox list".into();
@@ -273,6 +427,32 @@ impl FocusNavPage {
         Panel::card(Some("Focus ring")).meta("Tab · Shift+Tab · click")
     }
 
+    fn layer_panel() -> Panel<'static> {
+        Panel::card(Some("Layer focus")).meta("restore_focus")
+    }
+
+    fn layer_width(&self) -> u16 {
+        let buttons: u16 = self
+            .layer_buttons
+            .iter()
+            .map(|(_, b)| b.width() + 1)
+            .sum::<u16>()
+            .saturating_sub(1);
+        buttons.max(LAYER_NOTE.chars().count() as u16)
+    }
+
+    fn open_layer(&mut self, demo: LayerDemo, cx: &mut Cx) {
+        let anchor = self
+            .layer_buttons
+            .iter()
+            .find(|(d, _)| *d == demo)
+            .map_or(Rect::ZERO, |(_, b)| b.area);
+        cx.open(
+            FocusLayer::new(demo, anchor, self.cancel.id),
+            LayerTag::new(LAYER_TAG),
+        );
+    }
+
     fn list_panel(&self, ctx: &RenderCtx) -> Panel<'static> {
         Panel::card(Some("Mailboxes"))
             .meta("nav()")
@@ -293,6 +473,8 @@ impl FocusNavPage {
         let ring_size = Self::ring_panel().outer(Size::new(self.ring_width(), RING_ROWS));
         let list_panel = self.list_panel(ctx);
         let list_size = list_panel.outer(Size::new(LIST_W, self.list.items.len() as u16));
+        let layer_size = Self::layer_panel().outer(Size::new(self.layer_width(), LAYER_ROWS));
+        let layer_h = |_: u16| layer_size.height;
         let ring_h = |_: u16| ring_size.height;
         let focus_h = |w: u16| sheet_height(&focus_panel, &focus, w);
         let list_h = |_: u16| list_size.height;
@@ -309,7 +491,10 @@ impl FocusNavPage {
                     Tile::new(list_size.width, &list_h),
                     Tile::new(sheet_width(&nav_panel, &nav), &nav_h),
                 ],
-                &[Tile::new(sheet_width(&keys_panel, &keys), &keys_h)],
+                &[
+                    Tile::new(layer_size.width, &layer_h),
+                    Tile::new(sheet_width(&keys_panel, &keys), &keys_h),
+                ],
             ],
             (2, 1),
         )
@@ -353,12 +538,32 @@ impl FocusNavPage {
         let inner = panel.render(tiled.at(3, area), buf, t);
         props::render(inner, buf, t, &self.nav_facts(), bg);
 
-        let panel = Panel::card(Some("Keys and input"));
+        let panel = Self::layer_panel();
         let bg = panel.bg(t);
         let inner = panel.render(tiled.at(4, area), buf, t);
+        let widths: Vec<u16> = self.layer_buttons.iter().map(|(_, b)| b.width()).collect();
+        let r = row_layout(Rect::new(inner.x, inner.y, inner.width, 1), &widths, 1);
+        for ((_, b), r) in self.layer_buttons.iter_mut().zip(r) {
+            b.render(r, buf, ctx, bg);
+        }
+        if inner.height > 2 {
+            buf.set_string(
+                inner.x,
+                inner.y + 2,
+                junie_tui::ui::text::truncate(LAYER_NOTE, inner.width as usize),
+                t.muted().bg(bg),
+            );
+        }
+
+        let panel = Panel::card(Some("Keys and input"));
+        let bg = panel.bg(t);
+        let inner = panel.render(tiled.at(5, area), buf, t);
         props::render(inner, buf, t, &self.keys_facts(), bg);
     }
 }
+
+const LAYER_ROWS: u16 = 3;
+const LAYER_NOTE: &str = "A tip never moves focus; a popover may leave it.";
 
 const FIELD_W: u16 = 30;
 const RING_ROWS: u16 = 8;
@@ -467,6 +672,13 @@ impl Page for FocusNavPage {
                     cx.status(format!("Removed {}", gone.label));
                     return Outcome::Changed;
                 }
+                if let Some(i) = self.layer_buttons.iter().position(|(_, b)| b.id == f) {
+                    let (out, activated) = self.layer_buttons[i].1.on_key(key);
+                    if activated {
+                        self.open_layer(self.layer_buttons[i].0, cx);
+                    }
+                    return out;
+                }
                 for b in [&mut self.save, &mut self.cancel]
                     .into_iter()
                     .chain(self.tags.iter_mut())
@@ -482,6 +694,20 @@ impl Page for FocusNavPage {
                 Outcome::Ignored
             }
             PageEvent::Pointer(ev) => {
+                for i in 0..self.layer_buttons.len() {
+                    let (demo, b) = &mut self.layer_buttons[i];
+                    let (demo, id) = (*demo, b.id);
+                    if let Some(r) = b.route(ev) {
+                        if !ev.is(Phase::Click) {
+                            return r.outcome();
+                        }
+                        cx.focus.focus(id);
+                        if r.into_action().is_some() {
+                            self.open_layer(demo, cx);
+                        }
+                        return Outcome::Changed;
+                    }
+                }
                 for field in [&mut self.name, &mut self.email] {
                     let fid = field.id;
                     if let Some(r) = field.route(ev) {
@@ -526,12 +752,23 @@ impl Page for FocusNavPage {
                 vec![("Enter / Space", "Activate"), ("Delete", "Remove tag")]
             }
             Some(f) if f == self.list.id => vec![("↑↓", "Move")],
+            Some(f) if self.layer_buttons.iter().any(|(_, b)| b.id == f) => {
+                vec![("Enter / Space", "Open layer")]
+            }
             _ => Vec::new(),
         }
     }
 
     fn editing(&self) -> bool {
         self.name.editing || self.email.editing
+    }
+
+    fn on_layer(&mut self, _: &LayerTag, _: Report, cx: &mut Cx) -> Outcome {
+        cx.status(format!(
+            "Layer closed · focus on {}",
+            self.name_of(cx.focus.current())
+        ));
+        Outcome::Changed
     }
 
     fn option_value(&self, key: &str) -> Option<usize> {
