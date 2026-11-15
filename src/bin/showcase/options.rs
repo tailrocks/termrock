@@ -1278,7 +1278,7 @@ pub static POPUPS_TOOLTIPS: &[Opt] = &[
 
 pub static PICKERS: &[Opt] = &[
     Opt::new("pickers.width", "Width", &["auto", "48", "96"]),
-    Opt::new("pickers.max_rows", "Max rows", &["12", "6"]),
+    Opt::new("pickers.max_rows", "Max rows", &["12", "6", "1", "0"]),
     Opt::new("pickers.placement", "Placement", &["center", "below"]),
     Opt::new("pickers.fit", "Fit", &["default", "third", "flush"]),
     Opt::new("pickers.backdrop", "Backdrop", &["default", "full"]),
