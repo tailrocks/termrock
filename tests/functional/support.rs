@@ -600,11 +600,38 @@ impl App {
         }
     }
 
+    /// Resizes the PTY and returns once the app has drawn at the new size.
+    ///
+    /// The emulator reports the new cols and rows at once but keeps the old
+    /// frame until the app handles the resize and redraws. A read or click
+    /// taken in that gap sees the previous layout. So the wait is for output
+    /// that lands after the resize. The terminal's visual revision counts
+    /// every output chunk, and the resize itself adds one, so the app's frame
+    /// is the first revision past `before + 1`. The base is read before the
+    /// resize because the frame can land before a read taken after it.
     pub fn resize(&self, cols: u16, rows: u16) {
         self.log(format!("resize {cols}x{rows}"));
+        let before = self.screen();
+        let wanted = (u32::from(cols), u32::from(rows));
+        let changed = (before.cols(), before.rows()) != wanted;
+        let frame = before.metadata().revision + 2;
         self.session
             .execute(Operation::Resize { cols, rows })
             .expect("resize PTY");
+        if !changed {
+            return;
+        }
+        self.wait_screen(&format!("frame drawn at {cols}x{rows}"), |screen| {
+            (screen.cols(), screen.rows()) == wanted && screen.metadata().revision >= frame
+        });
+    }
+
+    /// [`App::resize`], then the screen at the new size.
+    pub fn wait_size(&self, cols: u16, rows: u16) -> TerminalSnapshot {
+        self.resize(cols, rows);
+        self.wait_screen(&format!("size {cols}x{rows}"), |screen| {
+            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
+        })
     }
 
     /// Wait for the child to exit. The wait ends on the exit itself, so only

@@ -265,13 +265,6 @@ fn id_prefix(preview: &str) -> String {
     id.chars().take(8).collect()
 }
 
-fn wait_size(app: &App, cols: u16, rows: u16) -> TerminalSnapshot {
-    app.resize(cols, rows);
-    app.wait_screen(&format!("size {cols}x{rows}"), |screen| {
-        screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-    })
-}
-
 #[test]
 fn route_closes_the_organizations_tab() {
     let app = open("t02-commit-route");
@@ -341,7 +334,7 @@ fn commit_cancel_keeps_pending_and_confirm_records_the_preview() {
 
     // The first 80 by 24 frame clips the wide dialog, and the next paints the
     // title before the statement. Both have to be on screen together.
-    wait_size(&app, 80, 24);
+    app.wait_size(80, 24);
     let narrow = app.wait_screen("narrow save dialog", |screen| {
         let visible = text(screen);
         screen.cols() == 80
@@ -353,7 +346,7 @@ fn commit_cancel_keeps_pending_and_confirm_records_the_preview() {
     same_statement(&statement, &narrow, "narrow save dialog", false);
     shot(&app, "T02.commit.commit.narrow");
 
-    wait_size(&app, 120, 40);
+    app.wait_size(120, 40);
     let restored = app.wait_screen("save dialog restored", |screen| {
         let visible = text(screen);
         screen.cols() == 120
