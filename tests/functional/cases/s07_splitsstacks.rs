@@ -1278,3 +1278,55 @@ fn option_track_click_jump() {
         );
     });
 }
+
+#[test]
+fn escape_cancels_a_seam_drag_and_keeps_the_size_it_reached() {
+    let app = open("s07-splits-esc", 120, 40, PAGE_ARGS);
+    app.wait_text("Three panes");
+    flash_settle(&app);
+    let rest = app.settle();
+    let seam = vertical_seam(&rest);
+    let start = content_hit(&rest, "Editor").x;
+    park(&app);
+
+    let held_at = drag_vertical(&app, seam, 10);
+    let held = app.settle();
+    assert_eq!(content_hit(&held, "Editor").x, start + 10);
+
+    app.key("escape");
+    let cancelled = app.wait_screen("drag cancelled", |screen| {
+        text(screen).contains("Drag cancelled: the seam stays where it is")
+    });
+    assert_eq!(
+        content_hit(&cancelled, "Editor").x,
+        start + 10,
+        "cancelling kept the size the drag reached"
+    );
+    see(&cancelled, &["Splits & stacks"], &[]);
+
+    app.drag_to(Point {
+        x: held_at.x + 8,
+        y: held_at.y,
+    });
+    let still = app.settle();
+    assert_eq!(
+        content_hit(&still, "Editor").x,
+        start + 10,
+        "the pointer still holds the seam but the grab is dropped"
+    );
+    app.up(held_at);
+    flash_settle(&app);
+    let released = app.settle();
+    assert_eq!(content_hit(&released, "Editor").x, start + 10);
+
+    let seam = vertical_seam(&released);
+    let again = drag_vertical(&app, seam, -4);
+    let moved = app.settle();
+    assert_eq!(
+        content_hit(&moved, "Editor").x,
+        start + 6,
+        "a fresh press grabs the seam again"
+    );
+    app.up(again);
+    app.finish();
+}
