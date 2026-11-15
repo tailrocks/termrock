@@ -715,7 +715,7 @@ fn g05_approved_binary_manifest_matches_active_samples() {
         );
         count += 1;
     }
-    assert_eq!(count, 105);
+    assert_eq!(count, 107);
     assert!(!ids.contains("functional/tablepro_query_syntax_error"));
     let historical_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("docs/testing/acceptance-receipts/historical-binary-20261108/transactions.jsonl");
