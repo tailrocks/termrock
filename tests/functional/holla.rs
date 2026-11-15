@@ -449,3 +449,76 @@ fn holla_resize_finder_recovers() {
     app.visual("functional/holla_resize_narrow");
     app.finish();
 }
+
+#[test]
+fn holla_cleanup_hardlinks_report_reclaimed_once() {
+    let app = holla("holla-cleanup-hardlinks", "parity-cleanup-hardlinks");
+    app.wait_text("Search actions and resources");
+    app.paste("Review cleanup candidates");
+    app.wait_text("▎ Review cleanup candidates");
+    app.key("enter");
+    app.wait_text("Cleanup review");
+    app.key("enter");
+    app.wait_text("110.0 MiB");
+    app.key("down");
+    app.key("down");
+    app.key("space");
+    app.wait_text("2 selected (110.");
+    app.key("down");
+    app.key("space");
+    app.wait_text("3 selected (210.");
+    app.key("down");
+    app.key("space");
+    app.wait_text("2 selected (210.0 MiB)");
+    app.key("m");
+    app.wait_text("mode PERMANENT (cannot be undone)");
+    app.key("d");
+    app.wait_text("gate 1 of 2");
+    app.key("right");
+    app.key("enter");
+    let phrase = "PERMANENTLY DELETE 2 UNDER /Users/alex ON mbp";
+    app.wait_text("gate 2 of 2");
+    app.type_text(phrase);
+    app.key("enter");
+    let report = app.wait_screen("cleanup report", |s| {
+        let t = text(s);
+        t.contains("Cleanup report") && !t.contains("Cleanup running")
+    });
+    let flat = |screen: &tui_test::TerminalSnapshot| {
+        text(screen)
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ")
+    };
+    let report = flat(&report);
+    assert!(
+        report.contains("2 removed")
+            && report.contains("210.0 MiB left the tree · 110.0 MiB freed now"),
+        "two links to one 100 MiB inode: processed 210.0 MiB, reclaimed 110.0 MiB\n{report}"
+    );
+    assert!(
+        report.contains("removed 110.0 MiB ~/Library/Caches/com.example.alpha")
+            && report.contains("removed 100.0 MiB ~/Library/Caches/com.example.beta"),
+        "each item keeps its own processed size\n{report}"
+    );
+
+    app.key("escape");
+    app.wait_text("▎ Review cleanup candidates");
+    app.key("escape");
+    app.wait_text("Search actions and resources");
+    app.paste("Show cleanup history");
+    app.wait_text("▎ Show cleanup history");
+    app.key("enter");
+    let history = app.wait_text("Cleanup history");
+    let history = flat(&history);
+    assert!(
+        history.contains("method processed outcome") && !history.contains(" freed outcome"),
+        "history column is labelled processed, not freed\n{history}"
+    );
+    assert!(
+        history.contains("permanent 110.0 MiB removed")
+            && history.contains("permanent 100.0 MiB removed"),
+        "history rows keep the processed size\n{history}"
+    );
+    app.finish();
+}

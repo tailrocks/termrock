@@ -113,6 +113,7 @@ pub fn world_for(scenario: Scenario, motion: Motion) -> World {
         Scenario::ParityInsights => insights(motion),
         Scenario::ParityDeleteSafety => delete_safety(motion),
         Scenario::ParityCleanupResults => cleanup_results(motion),
+        Scenario::ParityCleanupHardlinks => cleanup_hardlinks(motion),
         Scenario::ParityPlatforms => platforms_mac(motion),
         Scenario::ParityPlatformsLinux => platforms_linux(motion),
         other => panic!("{other:?} is not a parity scenario"),
@@ -1272,6 +1273,29 @@ fn cleanup_results(motion: Motion) -> World {
         .json(),
     );
     w.persisted.ops_log = w.ops_log.lines.clone();
+    w
+}
+
+fn cleanup_hardlinks(motion: Motion) -> World {
+    let root = format!("{HOME}/Projects/safe");
+    let mut w = base(
+        Scenario::ParityCleanupHardlinks,
+        motion,
+        mac(),
+        loc(&root, HOME, None),
+    );
+    let mb = 1024 * 1024;
+    let caches = format!("{HOME}/Library/Caches");
+    w.fs.file(
+        &format!("{caches}/com.example.alpha/shared.bin"),
+        100 * mb,
+        40,
+    );
+    w.fs.file(&format!("{caches}/com.example.alpha/own.bin"), 10 * mb, 40);
+    w.fs.hardlink(
+        &format!("{caches}/com.example.beta/shared.bin"),
+        &format!("{caches}/com.example.alpha/shared.bin"),
+    );
     w
 }
 

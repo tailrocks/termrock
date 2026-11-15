@@ -1542,4 +1542,30 @@ mod tests {
             "a record without reclaimed_size never reads as measured reclamation"
         );
     }
+
+    #[test]
+    fn cleanup_dry_run_report_bytes_sums_estimates() {
+        let mut fs = two_links();
+        fs.file("/Users/alex/Downloads/c", 3 * BLOCK, 1);
+        let before = fs.clone();
+        let paths = [
+            "/Users/alex/Downloads/a",
+            "/Users/alex/Downloads/b",
+            "/Users/alex/Downloads/c",
+        ];
+        let report = run(&mut fs, &paths, Mode::Permanent, true);
+        assert_eq!(
+            report.bytes,
+            5 * BLOCK,
+            "a dry run totals every item's estimate, a shared inode once per item"
+        );
+        assert_eq!(
+            report.bytes,
+            report.items.iter().map(|item| item.bytes).sum::<u64>(),
+            "the total is the sum of the per-item estimates"
+        );
+        assert_eq!(report.freed_now, 0);
+        assert!(report.items.iter().all(|item| item.reclaimed_bytes == 0));
+        assert_eq!(fs, before, "a dry run removes nothing");
+    }
 }
