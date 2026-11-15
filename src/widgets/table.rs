@@ -2876,6 +2876,9 @@ impl KeyedTable {
     }
 
     fn check(&self, row: usize, cells: &[Cell]) -> Result<(), KeyedTableError> {
+        if self.columns.is_empty() {
+            return Err(KeyedTableError::Shape(DataError::EmptySchemaWithRows));
+        }
         if cells.len() == self.columns.len() {
             return Ok(());
         }
