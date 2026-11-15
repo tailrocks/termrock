@@ -2867,4 +2867,222 @@ mod tests {
         assert_eq!(pending.cells.len(), 2, "the draft is kept");
         assert_eq!(pending.value(0, PRICE), Some(&CellValue::Num(2.5)));
     }
+
+    use junie_tui::core::event::{Mouse, MouseKind};
+    use junie_tui::core::id::ItemKey;
+    use junie_tui::core::selection::SelectGesture;
+    use ratatui::Terminal;
+    use ratatui::backend::TestBackend;
+
+    const CURSOR_MARK: (usize, usize) = (1, 2);
+
+    fn three_results(retain: usize) -> (App, Vec<ItemKey>) {
+        let mut app = app_with_query(BATCH);
+        let base = app.history.entries.len();
+        run_batch(&mut app);
+        tick_until_history(&mut app, base + 3);
+        let q = query(&mut app);
+        assert_eq!(q.results.len(), 3);
+        q.set_active_result(retain);
+        let keys = q.results.iter().map(|r| r.key).collect();
+        (app, keys)
+    }
+
+    fn mark_active_grid(app: &mut App) {
+        let g = query(app).active_grid_mut().expect("rows result");
+        g.cursor = CURSOR_MARK;
+        assert!(g.select_rows(SelectGesture::Only, 1));
+    }
+
+    fn assert_marked_grid(app: &mut App, what: &str) {
+        let g = query(app).active_grid().expect("rows result");
+        assert_eq!(g.cursor, CURSOR_MARK, "{what}: cursor");
+        assert_eq!(g.selection.to_vec(), [1], "{what}: selection");
+    }
+
+    fn draw(app: &mut App) -> Terminal<TestBackend> {
+        let mut term = Terminal::new(TestBackend::new(120, 40)).expect("terminal");
+        term.draw(|f| shell::render(app, f)).expect("draw");
+        term
+    }
+
+    fn row_text(term: &Terminal<TestBackend>, y: u16) -> String {
+        let buf = term.backend().buffer();
+        (0..buf.area.width)
+            .map(|x| buf[(x, y)].symbol().to_owned())
+            .collect()
+    }
+
+    fn mouse(app: &mut App, kind: MouseKind, at: Position) -> Outcome {
+        shell::handle(app, Input::Mouse(Mouse::new(kind, at)))
+    }
+
+    #[derive(Clone, Copy, Debug)]
+    enum CloseRoute {
+        MiddleClick,
+        CloseButton,
+    }
+
+    fn close_result_via(app: &mut App, route: CloseRoute, i: usize) {
+        draw(app);
+        let q = query(app);
+        let tab = q.result_tabs.areas[i];
+        let (tab_id, close) = (q.result_tabs.tab_id(i), q.result_tabs.close_id(i));
+        match route {
+            CloseRoute::MiddleClick => {
+                let at = Position::new(tab.x + 1, tab.y);
+                assert_eq!(app.shell.hits.hover_at(at), Some(tab_id));
+                assert_eq!(mouse(app, MouseKind::Middle, at), Outcome::Changed);
+            }
+            CloseRoute::CloseButton => {
+                let at = (tab.x..tab.right())
+                    .map(|x| Position::new(x, tab.y))
+                    .find(|&p| app.shell.hits.hover_at(p) == Some(close))
+                    .expect("the close button is drawn on the tab");
+                mouse(app, MouseKind::Down, at);
+                mouse(app, MouseKind::Up, at);
+            }
+        }
+    }
+
+    fn keys(q: &QueryTab) -> Vec<ItemKey> {
+        q.results.iter().map(|r| r.key).collect()
+    }
+
+    fn assert_strip_matches(q: &QueryTab) {
+        assert_eq!(q.result_tabs.items.len(), q.results.len());
+        let shown = q.active_result.min(q.results.len().saturating_sub(1));
+        assert_eq!(
+            q.result_tabs.active, shown,
+            "the strip shows the active result"
+        );
+        assert_eq!(q.result_tabs.cursor, shown);
+    }
+
+    #[test]
+    fn result_close_earlier_keeps_active_body() {
+        for route in [CloseRoute::MiddleClick, CloseRoute::CloseButton] {
+            let (mut app, ks) = three_results(1);
+            mark_active_grid(&mut app);
+
+            close_result_via(&mut app, route, 0);
+
+            let q = query(&mut app);
+            assert_eq!(keys(q), [ks[1], ks[2]], "{route:?}: A is gone");
+            assert_eq!(q.active_result, 0, "{route:?}: B moved to index 0");
+            assert_eq!(q.results[q.active_result].key, ks[1], "{route:?}");
+            assert_strip_matches(q);
+            assert_marked_grid(&mut app, &format!("{route:?}"));
+
+            let term = draw(&mut app);
+            let q = query(&mut app);
+            let at = q.result_tabs.areas[0];
+            assert!(
+                row_text(&term, at.y).contains(&q.results[0].label),
+                "{route:?}: the strip shows B first"
+            );
+        }
+    }
+
+    #[test]
+    fn result_close_later_keeps_active_body() {
+        for route in [CloseRoute::MiddleClick, CloseRoute::CloseButton] {
+            let (mut app, ks) = three_results(1);
+            mark_active_grid(&mut app);
+
+            close_result_via(&mut app, route, 2);
+
+            let q = query(&mut app);
+            assert_eq!(keys(q), [ks[0], ks[1]], "{route:?}");
+            assert_eq!(q.active_result, 1, "{route:?}");
+            assert_strip_matches(q);
+            assert_marked_grid(&mut app, &format!("{route:?}"));
+        }
+    }
+
+    #[test]
+    fn result_close_active_uses_successor_then_previous() {
+        for route in [CloseRoute::MiddleClick, CloseRoute::CloseButton] {
+            let (mut app, ks) = three_results(1);
+
+            close_result_via(&mut app, route, 1);
+            let q = query(&mut app);
+            assert_eq!(keys(q), [ks[0], ks[2]], "{route:?}");
+            assert_eq!(q.active_result, 1, "{route:?}: C is the successor");
+            assert_eq!(q.results[1].key, ks[2]);
+            assert_strip_matches(q);
+
+            close_result_via(&mut app, route, 1);
+            let q = query(&mut app);
+            assert_eq!(keys(q), [ks[0]], "{route:?}");
+            assert_eq!(q.active_result, 0, "{route:?}: the last result falls back");
+            assert_strip_matches(q);
+
+            close_result_via(&mut app, route, 0);
+            let q = query(&mut app);
+            assert!(q.results.is_empty());
+            assert_eq!(q.active_result, 0);
+            assert!(q.result_tabs.items.is_empty());
+        }
+    }
+
+    #[test]
+    fn result_close_key_closes_the_active_result_and_selects_its_successor() {
+        let (mut app, ks) = three_results(1);
+        let id = query(&mut app).result_tabs.id;
+        app.shell.focus.focus(id);
+        let x = Key {
+            code: KeyCode::Char('x'),
+            mods: ratatui::crossterm::event::KeyModifiers::NONE,
+        };
+        assert_eq!(shell::KeyRouter::route(&mut app, &x), Outcome::Changed);
+        let q = query(&mut app);
+        assert_eq!(keys(q), [ks[0], ks[2]]);
+        assert_eq!(q.active_result, 1);
+        assert_strip_matches(q);
+    }
+
+    #[test]
+    fn result_close_pinned_or_invalid_noop() {
+        let (mut app, ks) = three_results(2);
+        query(&mut app).toggle_pin(0);
+        assert_eq!(
+            keys(query(&mut app)),
+            [ks[0], ks[1], ks[2]],
+            "pinning the first result keeps the order"
+        );
+        let q = query(&mut app);
+        q.set_active_result(1);
+        let before = (keys(q), q.active_result, q.result_tabs.items.len());
+
+        q.close_result(0);
+        q.close_result(3);
+        q.close_result(usize::MAX);
+
+        assert_eq!(
+            (keys(q), q.active_result, q.result_tabs.items.len()),
+            before
+        );
+        assert_strip_matches(q);
+
+        draw(&mut app);
+        let tab = query(&mut app).result_tabs.areas[0];
+        let at = Position::new(tab.x + 1, tab.y);
+        mouse(&mut app, MouseKind::Middle, at);
+        let q = query(&mut app);
+        assert_eq!(
+            (keys(q), q.active_result, q.result_tabs.items.len()),
+            before
+        );
+    }
+
+    #[test]
+    fn result_pin_activates_the_toggled_result() {
+        let (mut app, ks) = three_results(1);
+        query(&mut app).toggle_pin(2);
+        let q = query(&mut app);
+        assert_eq!(keys(q), [ks[2], ks[0], ks[1]]);
+        assert_eq!(q.active_result, 0, "the pinned result is active");
+        assert_strip_matches(q);
+    }
 }

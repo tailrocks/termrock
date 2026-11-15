@@ -952,6 +952,19 @@ fn mint_result_key(counter: &mut u64) -> ItemKey {
     ItemKey::num(*counter)
 }
 
+/// The active index after `removed` leaves a strip that now holds `new_len` results.
+/// Closing an earlier result shifts the active one down, and closing the active one
+/// selects its successor, or its predecessor when it was last.
+fn active_after_remove(active: usize, removed: usize, new_len: usize) -> usize {
+    if new_len == 0 {
+        0
+    } else if removed < active {
+        active - 1
+    } else {
+        active.min(new_len - 1)
+    }
+}
+
 pub struct QueryTab {
     pub id: WidgetId,
     pub name: String,
@@ -1240,12 +1253,12 @@ impl QueryTab {
     pub fn close_result(&mut self, i: usize) {
         if i < self.results.len() && !self.results[i].pinned {
             self.results.remove(i);
+            self.active_result = active_after_remove(self.active_result, i, self.results.len());
             self.sync_result_tabs();
-            self.active_result = self.active_result.min(self.results.len().saturating_sub(1));
-            self.result_tabs.set_active(self.active_result);
         }
     }
 
+    /// Pinning or unpinning is an explicit action on that result, so it becomes the active one.
     pub fn toggle_pin(&mut self, i: usize) {
         if i < self.results.len() {
             self.results[i].pinned = !self.results[i].pinned;
