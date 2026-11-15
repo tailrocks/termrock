@@ -412,6 +412,9 @@ impl<F: SessionFault> TerminalSessionController<F> {
         &self.view
     }
 
+    /// The screen for scrolling and selection. A grid size set through this
+    /// handle is undone by the next `sync_size`, which keeps the grid at the
+    /// size forwarded to the program.
     pub fn viewport_mut(&mut self) -> &mut TerminalViewport {
         &mut self.view
     }
@@ -807,14 +810,14 @@ impl<F: SessionFault> TerminalSessionController<F> {
                 let attempt = std::mem::take(&mut self.attempt);
                 self.open_link(attempt);
             }
-            SessionStatus::Attaching | SessionStatus::Attached(_)
-                if self.forwarded != Some(size) =>
-            {
+            SessionStatus::Attaching | SessionStatus::Attached(_) => {
                 self.view.resize(rows, cols);
-                if let Some(link) = &self.link {
-                    link.set_size(size);
+                if self.forwarded != Some(size) {
+                    if let Some(link) = &self.link {
+                        link.set_size(size);
+                    }
+                    self.forwarded = Some(size);
                 }
-                self.forwarded = Some(size);
             }
             _ => {}
         }
