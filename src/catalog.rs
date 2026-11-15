@@ -3773,6 +3773,7 @@ pub static CAPABILITIES: &[Capability] = &[
     Capability::function("runtime::ExternalReceiver::drain"),
     Capability::function("runtime::external_channel"),
     Capability::function("runtime::Application::external"),
+    Capability::function("runtime::Application::take_render_invalidated"),
     Capability::ty("terminal::TerminalState"),
     Capability::function("terminal::TerminalState::new"),
     Capability::function("terminal::TerminalState::feed"),
