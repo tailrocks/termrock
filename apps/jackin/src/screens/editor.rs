@@ -2310,7 +2310,7 @@ impl Page<Jackin> for EditorScreen {
                 area.x,
                 area.bottom().saturating_sub(lines),
                 area.width.saturating_sub(4),
-                1,
+                lines,
             ),
             &widths,
             3,

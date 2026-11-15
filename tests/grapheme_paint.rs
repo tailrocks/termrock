@@ -5,8 +5,9 @@ use junie_tui::core::focus::FocusRing;
 use junie_tui::core::hit::HitRegistry;
 use junie_tui::core::id::WidgetId;
 use junie_tui::theme::{ColorLevel, Theme};
+use junie_tui::ui::content::draw_loading;
 use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::widgets::button::{Button, row_layout, row_layout_right};
+use junie_tui::widgets::button::{Button, row_layout, row_layout_right, row_lines};
 use junie_tui::widgets::choice_dialog::ChoiceDialog;
 use junie_tui::widgets::completion::Completion;
 use junie_tui::widgets::form_dialog::{FormDialog, FormField};
@@ -303,6 +304,73 @@ fn legacy_button_rows_stay_inside_allocation() {
     assert_eq!(two[1], Rect::ZERO, "second button does not fit the one row");
 }
 
+fn app_footer(labels: &[&str]) -> Vec<Button> {
+    labels
+        .iter()
+        .enumerate()
+        .map(|(i, l)| Button::secondary(WidgetId::of("t.footer").sub(&i.to_string()), l))
+        .collect()
+}
+
+#[test]
+fn measured_app_footer_keeps_every_action_visible_and_clickable() {
+    let shapes: [(&[&str], u16, u16, bool); 3] = [
+        (
+            &[
+                "Reconnect",
+                "New session",
+                "Shell",
+                "Inspect",
+                "Stop",
+                "Purge…",
+            ],
+            40,
+            2,
+            false,
+        ),
+        (&["Cancel", "Save…"], 14, 3, true),
+        (&["Launch", "Edit", "Prewarm", "Delete…"], 20, 2, false),
+    ];
+    for (labels, width, gap, right) in shapes {
+        let mut buttons = app_footer(labels);
+        let widths: Vec<u16> = buttons.iter().map(Button::width).collect();
+        let lines = row_lines(width, &widths, gap);
+        assert!(lines > 1, "{labels:?} must wrap at width {width}");
+        let owner = Rect::new(4, 10, width, lines);
+        let place = |area: Rect| {
+            if right {
+                row_layout_right(area, &widths, gap)
+            } else {
+                row_layout(area, &widths, gap)
+            }
+        };
+
+        let one_row = place(Rect::new(4, 10, width, 1));
+        assert!(
+            one_row.iter().any(|r| r.is_empty()),
+            "{labels:?}: a one-row allocation cannot hold a wrapped footer"
+        );
+
+        let rects = place(owner);
+        let p = paint_in(OUTER, None, |buf, ctx| {
+            for (b, r) in buttons.iter_mut().zip(&rects) {
+                b.render(*r, buf, ctx, Color::Reset);
+            }
+        });
+        assert_outside_untouched(&p.buf, owner, &format!("{labels:?}"));
+        assert_hits_inside(&p, owner, &format!("{labels:?}"));
+        for ((b, r), label) in buttons.iter().zip(&rects).zip(labels) {
+            assert!(!r.is_empty(), "{label}: has a rectangle");
+            let text: String = (r.x..r.right())
+                .map(|x| p.buf[(x, r.y)].symbol().to_owned())
+                .collect();
+            assert!(text.contains(label), "{label}: painted in {text:?}");
+            let centre = (r.x + r.width / 2, r.y).into();
+            assert_eq!(p.hits.hit(centre), Some(b.id), "{label}: clickable");
+        }
+    }
+}
+
 fn narrow_button(variant: usize) -> Button {
     let id = WidgetId::of("t.narrow");
     let mut b = match variant {
@@ -362,6 +430,21 @@ fn spinner_label_and_wide_glyph_are_bounded() {
                 assert_outside_untouched(&p.buf, owner, &format!("{glyphs:?} {w}x{rows}"));
                 if w == 1 && glyphs[0] == "界" {
                     assert_ne!(p.buf[(5, 3)].symbol(), "界", "no partial wide glyph");
+                }
+            }
+        }
+        for h in [1u16, 3] {
+            for w in [1u16, 2, 5] {
+                let owner = Rect::new(5, 3, w, h);
+                let p = paint_with(&theme, OUTER, None, |buf, ctx| {
+                    draw_loading(owner, buf, ctx, "WORKING hard", Color::Reset);
+                });
+                let what = format!("draw_loading {glyphs:?} {w}x{h}");
+                assert_outside_untouched(&p.buf, owner, &what);
+                if w == 1 && glyphs[0] == "界" {
+                    for y in 3..3 + h {
+                        assert_ne!(p.buf[(5, y)].symbol(), "界", "{what}: no partial glyph");
+                    }
                 }
             }
         }
