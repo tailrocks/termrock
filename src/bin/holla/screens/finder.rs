@@ -1,4 +1,4 @@
-use crate::screens::Holla;
+use crate::screens::{DetailPane, Holla};
 use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::hit::Axis;
 use junie_tui::core::id::WidgetId;
@@ -628,11 +628,7 @@ impl FinderPage {
     /// Moves the cursor and rewinds the preview only when the previewed item
     /// changes, so re-selecting the current item keeps the reader's place.
     fn select_row(&mut self, row: usize) {
-        let before = self.current_id();
-        self.cursor = row;
-        if self.current_id() != before {
-            self.preview_scroll.jump_start();
-        }
+        self.track_detail(|p| p.cursor = row);
     }
 
     fn step(&mut self, delta: isize) {
@@ -1359,12 +1355,11 @@ impl FinderPage {
         }
         if let Some((_, _, ci)) = self.explore_areas.iter().find(|(cid, _, _)| *cid == id) {
             if let Some(r) = self.rows.iter().position(|r| matches!(r, Row::Explore(_))) {
-                let before = self.current_id();
-                self.cursor = r;
-                self.explore_cursor = *ci;
-                if self.current_id() != before {
-                    self.preview_scroll.jump_start();
-                }
+                let ci = *ci;
+                self.track_detail(|p| {
+                    p.cursor = r;
+                    p.explore_cursor = ci;
+                });
             }
             cx.focus.focus(FINDER);
             return self.activate_current(cx);
@@ -1381,6 +1376,18 @@ impl FinderPage {
             return Outcome::Changed;
         }
         Outcome::Ignored
+    }
+}
+
+impl DetailPane for FinderPage {
+    type Item = Option<String>;
+
+    fn described_item(&self) -> Self::Item {
+        self.current_id()
+    }
+
+    fn detail_scroll_mut(&mut self) -> &mut ScrollState {
+        &mut self.preview_scroll
     }
 }
 
@@ -1490,15 +1497,13 @@ impl ShellPage<Holla> for FinderPage {
                     Row::Explore(c) => c.len(),
                     _ => 0,
                 };
-                let before = self.explore_cursor;
-                if key.code == KeyCode::Left {
-                    self.explore_cursor = self.explore_cursor.saturating_sub(1);
-                } else {
-                    self.explore_cursor = (self.explore_cursor + 1).min(n.saturating_sub(1));
-                }
-                if self.explore_cursor != before {
-                    self.preview_scroll.jump_start();
-                }
+                self.track_detail(|p| {
+                    if key.code == KeyCode::Left {
+                        p.explore_cursor = p.explore_cursor.saturating_sub(1);
+                    } else {
+                        p.explore_cursor = (p.explore_cursor + 1).min(n.saturating_sub(1));
+                    }
+                });
                 Outcome::Changed
             }
             KeyCode::Enter => self.activate_current(cx),

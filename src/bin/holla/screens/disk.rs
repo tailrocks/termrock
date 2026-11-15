@@ -1,4 +1,4 @@
-use crate::screens::Holla;
+use crate::screens::{DetailPane, Holla};
 use junie_tui::shell::Page as ShellPage;
 use junie_tui::widgets::page_header::Heading;
 use std::collections::BTreeSet;
@@ -324,21 +324,6 @@ impl DiskPage {
 
         let live: BTreeSet<&str> = self.paths.iter().map(|(_, f)| f.as_str()).collect();
         self.selected.retain(|s| live.contains(s.as_str()));
-    }
-
-    /// The item the detail panel describes, so its scroll rewinds only when this changes.
-    fn detail_target(&self) -> Option<String> {
-        match self.view {
-            View::Tree => self.cursor_fs_path(),
-            View::Overview => self.overview.get(self.cursor).map(|r| r.path.clone()),
-            View::TopFiles => self.top.get(self.cursor).map(|r| r.path.clone()),
-        }
-    }
-
-    fn rewind_detail_if_moved(&mut self, before: Option<String>) {
-        if self.detail_target() != before {
-            self.detail_scroll.jump_start();
-        }
     }
 
     fn cursor_fs_path(&self) -> Option<String> {
@@ -1331,6 +1316,22 @@ impl DiskPage {
     }
 }
 
+impl DetailPane for DiskPage {
+    type Item = Option<String>;
+
+    fn described_item(&self) -> Self::Item {
+        match self.view {
+            View::Tree => self.cursor_fs_path(),
+            View::Overview => self.overview.get(self.cursor).map(|r| r.path.clone()),
+            View::TopFiles => self.top.get(self.cursor).map(|r| r.path.clone()),
+        }
+    }
+
+    fn detail_scroll_mut(&mut self) -> &mut ScrollState {
+        &mut self.detail_scroll
+    }
+}
+
 impl ShellPage<Holla> for DiskPage {
     fn on_key(&mut self, key: &Key, w: &mut World, cx: &mut Cx) -> Outcome {
         self.md.master = self.main_id();
@@ -1477,13 +1478,11 @@ impl ShellPage<Holla> for DiskPage {
                 if !cx.focus.is(TREE) {
                     return Outcome::Ignored;
                 }
-                let before = self.detail_target();
-                let (o, ev) = self.tree.on_key(key);
+                let (o, ev) = self.track_detail(|p| p.tree.on_key(key));
                 if let Some(TreeAction::Activate(_)) = ev {
                     return Outcome::Changed;
                 }
                 if o.consumed() {
-                    self.rewind_detail_if_moved(before);
                     return o;
                 }
                 Outcome::Ignored
@@ -1496,31 +1495,23 @@ impl ShellPage<Holla> for DiskPage {
                 };
                 match key.code {
                     KeyCode::Up | KeyCode::Char('k') => {
-                        let before = self.detail_target();
-                        self.cursor = self.cursor.saturating_sub(1);
-                        self.rewind_detail_if_moved(before);
+                        self.track_detail(|p| p.cursor = p.cursor.saturating_sub(1));
                         self.list_scroll.ensure_visible(self.cursor);
                         Outcome::Changed
                     }
                     KeyCode::Down | KeyCode::Char('j') => {
-                        let before = self.detail_target();
-                        self.cursor = (self.cursor + 1).min(n.saturating_sub(1));
-                        self.rewind_detail_if_moved(before);
+                        self.track_detail(|p| p.cursor = (p.cursor + 1).min(n.saturating_sub(1)));
                         self.list_scroll.ensure_visible(self.cursor);
                         Outcome::Changed
                     }
                     KeyCode::Home | KeyCode::Char('g') => {
-                        let before = self.detail_target();
-                        self.cursor = 0;
+                        self.track_detail(|p| p.cursor = 0);
                         self.list_scroll.jump_start();
-                        self.rewind_detail_if_moved(before);
                         Outcome::Changed
                     }
                     KeyCode::End | KeyCode::Char('G') => {
-                        let before = self.detail_target();
-                        self.cursor = n.saturating_sub(1);
+                        self.track_detail(|p| p.cursor = n.saturating_sub(1));
                         self.list_scroll.ensure_visible(self.cursor);
-                        self.rewind_detail_if_moved(before);
                         Outcome::Changed
                     }
                     KeyCode::Enter => self.open_row(w, cx),
@@ -1573,35 +1564,28 @@ impl ShellPage<Holla> for DiskPage {
                     scroll_drag(area, pos, scroll)
                 }
             }
-            Some(Phase::Click) => {
-                let before = self.detail_target();
-                let outcome = self.click(ev, w, cx);
-                self.rewind_detail_if_moved(before);
-                outcome
-            }
+            Some(Phase::Click) => self.track_detail(|p| p.click(ev, w, cx)),
             Some(Phase::Secondary) => {
-                let before = self.detail_target();
-                let row = if self.view == View::Tree {
-                    let Some(req) = cx.context.on_secondary(&mut self.tree, ev) else {
-                        return Outcome::Ignored;
-                    };
-                    cx.focus.focus(TREE);
-                    req.target
-                } else {
-                    let Some(i) = self
-                        .list_scroll
-                        .visible_range()
-                        .find(|&i| LIST.child(i) == id)
-                    else {
-                        return Outcome::Ignored;
-                    };
-                    if cx.context.moves_cursor {
-                        self.cursor = i;
+                let row = self.track_detail(|p| {
+                    if p.view == View::Tree {
+                        let req = cx.context.on_secondary(&mut p.tree, ev)?;
+                        cx.focus.focus(TREE);
+                        Some(req.target)
+                    } else {
+                        let i = p
+                            .list_scroll
+                            .visible_range()
+                            .find(|&i| LIST.child(i) == id)?;
+                        if cx.context.moves_cursor {
+                            p.cursor = i;
+                        }
+                        cx.focus.focus(LIST);
+                        Some(i)
                     }
-                    cx.focus.focus(LIST);
-                    i
+                });
+                let Some(row) = row else {
+                    return Outcome::Ignored;
                 };
-                self.rewind_detail_if_moved(before);
                 self.row_menu(row, ContextAnchor::Pointer(pos), w, cx)
             }
             _ => Outcome::Ignored,
