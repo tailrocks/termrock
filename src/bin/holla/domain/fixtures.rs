@@ -1327,7 +1327,6 @@ fn base(scenario: Scenario, motion: Motion, host: Host, location: Location) -> W
         scripts: scripts::scripts(),
         step_output: scripts::step_outputs(),
         clipboard: None,
-        scan_started: None,
         next_activity: 0,
         trusted_now: vec![],
         healed_units: vec![],
@@ -2217,7 +2216,6 @@ fn disk_cleanup(motion: Motion) -> World {
     w.mise.version = "2026.9.3".into();
     w.docker = docker_acme();
     w.docker.compose = None;
-    w.scan_started = Some(0);
     w.plans = vec![plan_git_pull_all(&w), plan_git_switch_primary(&w)];
     w.sources = sources_for(
         motion,
