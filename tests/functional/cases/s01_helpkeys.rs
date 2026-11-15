@@ -1130,3 +1130,52 @@ fn option_boundaries_keep_siblings() {
         ],
     );
 }
+
+#[test]
+fn help_overlay_narrow_and_empty_examples_stay_on_screen() {
+    let args = ["--page", "helpkeys"];
+    let app = open("s01-helpkeys-narrow-empty", 120, 40, &args);
+    app.wait_text(WIDTH_DEFAULT);
+    click_text(&app, "Open help overlay");
+    app.wait_text("Navigation");
+    app.key("esc");
+    app.wait_absent("Ctrl+P");
+
+    app.key("n");
+    let narrow = app.wait_text("Done");
+    assert!(
+        text(&narrow).contains("Done") && text(&narrow).contains("╰"),
+        "narrow example should keep its footer and bottom edge on screen\n{}",
+        text(&narrow)
+    );
+    app.key("esc");
+    app.wait_absent("Done");
+
+    app.key("e");
+    let empty = app.wait_text("Done");
+    assert!(
+        text(&empty).contains("Editor") && !text(&empty).contains("Ctrl+P"),
+        "empty example should show the frame and Done without any section\n{}",
+        text(&empty)
+    );
+    app.key("esc");
+    app.wait_absent("Done");
+    app.finish();
+}
+
+#[test]
+fn help_overlay_opens_at_the_narrowest_showcase_terminal() {
+    let app = open("s01-helpkeys-72x20", 72, 20, &["--page", "helpkeys"]);
+    app.wait_text(WIDTH_DEFAULT);
+    app.key("?");
+    let help = app.wait_text("Done");
+    assert_size(&help, 72, 20);
+    assert!(
+        text(&help).contains("╰"),
+        "the shell help overlay should keep its bottom edge at 72 by 20\n{}",
+        text(&help)
+    );
+    app.key("esc");
+    app.wait_absent("Done");
+    app.finish();
+}

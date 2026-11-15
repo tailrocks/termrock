@@ -1,4 +1,5 @@
 use ratatui::buffer::Buffer;
+use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Rect, Size};
 
 use crate::app::PageId;
@@ -121,6 +122,17 @@ impl HelpKeysPage {
             .position(|o| o.key == key)
             .unwrap_or_else(|| panic!("no option {key}"));
         table[i].values[self.opts[i]]
+    }
+
+    /// The narrow example: the overlay at its smallest share of the screen,
+    /// so its body falls to one column and the footer shares a few cells.
+    fn narrow_help(&self) -> HelpOverlay {
+        HelpOverlay::new(HELP, "Editor", sections()).max_percent(20)
+    }
+
+    /// The empty example: a section list with no rows at all.
+    fn empty_help(&self) -> HelpOverlay {
+        HelpOverlay::new(HELP, "Editor", Vec::new())
     }
 
     pub fn build_help(&self) -> HelpOverlay {
@@ -332,6 +344,16 @@ impl Page for HelpKeysPage {
             return o;
         }
         let open = match ev {
+            PageEvent::Key(key) if cx.focus.is(OPEN) && key.code == KeyCode::Char('n') => {
+                cx.focus.focus(OPEN);
+                cx.open_help(self.narrow_help());
+                return Outcome::Changed;
+            }
+            PageEvent::Key(key) if cx.focus.is(OPEN) && key.code == KeyCode::Char('e') => {
+                cx.focus.focus(OPEN);
+                cx.open_help(self.empty_help());
+                return Outcome::Changed;
+            }
             PageEvent::Key(key) if cx.focus.is(OPEN) => {
                 let (o, act) = self.open.on_key(key);
                 if !act {
