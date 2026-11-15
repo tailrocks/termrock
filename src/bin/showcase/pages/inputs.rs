@@ -31,6 +31,17 @@ fn email(s: &str) -> Option<String> {
     }
 }
 
+const OWNER_ID: WidgetId = ID.child(2);
+const OWNER_MAX_CHARS: usize = 24;
+
+fn owner_length(s: &str) -> Option<String> {
+    if s.chars().count() > OWNER_MAX_CHARS {
+        Some(format!("Use at most {OWNER_MAX_CHARS} characters"))
+    } else {
+        None
+    }
+}
+
 pub const TEXT_COMMANDS: [(TextCmd, &str); 14] = [
     (TextCmd::SelectAll, "Select all"),
     (TextCmd::Copy, "Copy"),
@@ -144,10 +155,14 @@ impl InputsPage {
 
     fn rebuild(&mut self) {
         let o = &self.opts;
-        let mut owner = TextInput::new(ID.child(2), "Owner email")
+        let mut owner = TextInput::new(OWNER_ID, "Owner email")
             .value("mira@example")
-            .required(true)
-            .validator(email);
+            .required(true);
+        owner = if o.value("inputs.owner_rule") == "max-length" {
+            owner.validator(owner_length)
+        } else {
+            owner.validator(email)
+        };
         owner.validate();
         let mut project = TextInput::new(ID.child(0), "Project name")
             .value("payments-gateway")
@@ -209,6 +224,9 @@ impl InputsPage {
             {
                 g.set_value(old.field.buffer.text());
                 g.field.error = old.field.error.clone();
+            }
+            if g.id == OWNER_ID {
+                g.validate();
             }
             *f = g;
         }

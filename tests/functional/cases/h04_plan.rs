@@ -178,21 +178,35 @@ fn leave(app: &App) {
         );
         if visible.contains("Quit holla") {
             app.key("enter");
-            let exit_by = Instant::now() + Duration::from_secs(8);
-            while app.child_running() {
-                assert!(
-                    Instant::now() < exit_by,
-                    "confirmed quit did not exit\n{}",
-                    text(&app.screen())
-                );
-                std::thread::sleep(Duration::from_millis(25));
-            }
+            app.wait_exit("confirmed quit did not exit");
             app.expect_exited(0);
             return;
         }
         assert!(Instant::now() < deadline, "quit did not exit\n{visible}");
         std::thread::sleep(Duration::from_millis(25));
     }
+}
+
+fn leave_running_plan(app: &App) {
+    app.key("ctrl+q");
+    let dialog = app.wait_screen("running plan quit guard", |screen| {
+        let visible = text(screen);
+        visible.contains("Stop and quit") && visible.contains("1 plan is")
+    });
+    assert!(app.child_running(), "a running plan quit without a prompt");
+    see(&dialog, &["Quit holla", "Stay"], &[]);
+    app.key("right");
+    app.key("enter");
+    let deadline = Instant::now() + Duration::from_secs(8);
+    while app.child_running() {
+        assert!(
+            Instant::now() < deadline,
+            "confirmed quit did not exit\n{}",
+            text(&app.screen())
+        );
+        std::thread::sleep(Duration::from_millis(25));
+    }
+    app.expect_exited(0);
 }
 
 fn assert_dialog(screen: &TerminalSnapshot, cols: u32, rows: u32) {
@@ -494,12 +508,20 @@ fn h04_plan_plan() {
         text(&apt_after)
     );
     repeat(&app, "down", 4);
-    let mise_after = app.wait_text("retrying");
+    let mise_after = app.wait_text("retrying…");
+    let mise_visible = text(&mise_after);
+    let (before_retry, after_retry) = mise_visible
+        .split_once("retrying…")
+        .expect("retry marker is on screen");
     assert_eq!(
-        occurrences(&mise_after, MISE_CMD),
+        before_retry.matches(MISE_CMD).count(),
         1,
-        "mise command was repeated\n{}",
-        text(&mise_after)
+        "mise command before the retry marker\n{mise_visible}"
+    );
+    assert_eq!(
+        after_retry.matches(MISE_CMD).count(),
+        1,
+        "retried mise command is not re-emitted after the retry marker\n{mise_visible}"
     );
     assert_eq!(
         occurrences(&mise_after, FAIL_LINE),
@@ -512,7 +534,7 @@ fn h04_plan_plan() {
         &["cancelled", "Final verification"],
         &["prod-eu-1", "tmp-shell-3", "~/work/repos"],
     );
-    leave(&app);
+    leave_running_plan(&app);
 }
 
 #[test]

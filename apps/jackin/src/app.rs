@@ -1976,12 +1976,21 @@ impl App {
         );
     }
 
+    /// Navigates to `g`. When that takes the operator out of the open Capsule,
+    /// every pane of it loses the focus before this returns and before the
+    /// backend hears `capsule_left`, so a program that is no longer on screen
+    /// neither counts as watched nor passes the clipboard's focus check. A
+    /// refused or same-instance attach is not a departure.
     pub fn go(&mut self, g: Go) {
         let from = self.open_capsule();
         self.navigate(g);
         if let Some(instance) = from
             && self.open_capsule().as_ref() != Some(&instance)
         {
+            let now = self.world.now_ms();
+            if let Some(daemon) = self.world.daemons.get_mut(&instance) {
+                daemon.blur(now);
+            }
             let backend = Arc::clone(&self.world.backend);
             backend.capsule_left(&self.world, &instance);
         }
@@ -2110,7 +2119,7 @@ impl App {
                 }
                 crate::world::refresh_snapshots(&mut self.world);
                 self.world.refresh_now();
-                self.go(Go::Attach {
+                self.navigate(Go::Attach {
                     instance,
                     pane: None,
                 });
@@ -2124,10 +2133,8 @@ impl App {
                     self.show_tab(TAB_MANAGER);
                     return;
                 };
-                let now = self.world.now_ms();
                 if let Some(d) = self.world.daemons.get_mut(&inst) {
                     d.attached_by = None;
-                    d.blur(now);
                 }
                 self.show_tab(TAB_MANAGER);
                 self.router

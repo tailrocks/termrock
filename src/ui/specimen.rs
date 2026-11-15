@@ -650,7 +650,7 @@ impl Specimen for crate::widgets::tabs::Tabs {
         use SpecimenState::*;
         match state {
             Rest | Hover | Pressed | Focused | FocusedHover | Busy | Error | Overflow | Narrow => {
-                !self.items.is_empty()
+                !self.items().is_empty()
             }
             Selected | Disabled | Editing | Empty | Loading => false,
         }
@@ -670,7 +670,7 @@ impl Specimen for crate::widgets::tabs::Tabs {
     ) {
         let mut t = self.clone();
         let v = state.visual();
-        let target = (t.active + 1).min(t.items.len().saturating_sub(1));
+        let target = (t.active + 1).min(t.items().len().saturating_sub(1));
         if v.hovered {
             ctx.interaction.hover = Some(t.tab_id(target));
         }
@@ -680,12 +680,12 @@ impl Specimen for crate::widgets::tabs::Tabs {
         if v.focused {
             t.cursor = if v.hovered { t.active } else { target };
         }
-        if let Some(it) = t.items.get_mut(target) {
+        t.update_item(target, |it| {
             it.busy |= v.busy;
             it.error |= v.error;
-        }
+        });
         if state == SpecimenState::Overflow {
-            let mut items = t.items.clone();
+            let mut items = t.items().to_vec();
             items.extend((1..=6).map(|i| crate::widgets::tabs::TabItem::new(&format!("More {i}"))));
             t.set_items(items);
         }

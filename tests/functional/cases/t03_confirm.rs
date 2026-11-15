@@ -5,7 +5,7 @@
 //! TablePro has no `--page` flag. It opens on Connections. Development starts
 //! in Silent, which runs an ordinary UPDATE with no dialog.
 
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use tui_test::TerminalSnapshot;
 
@@ -380,15 +380,7 @@ fn quit_dirty(app: &App) {
     see(&quit, &[LOST, "Quit"], &[TITLE]);
     app.key("right");
     app.key("enter");
-    let deadline = Instant::now() + Duration::from_secs(5);
-    while app.child_running() {
-        assert!(
-            Instant::now() < deadline,
-            "tablepro stayed up after confirming quit\n{}",
-            text(&app.screen())
-        );
-        std::thread::sleep(Duration::from_millis(25));
-    }
+    app.wait_exit("tablepro stayed up after confirming quit");
     app.expect_exited(0);
 }
 

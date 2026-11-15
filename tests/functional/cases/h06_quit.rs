@@ -31,7 +31,7 @@ const REMOTE_TITLE: &str = "Quit holla❯ on";
 const STAY: &str = "Stay";
 const LEAVE: &str = "Leave when it settles";
 const STOP_QUIT: &str = "Stop and quit";
-const ACTIVITY_BODY: &str = "still running. Quitting stops what holla started";
+const ACTIVITY_BODY: &str = "is running. Quitting stops it.";
 const SETTLE: &str = "leaving when the cleanup settles · its report and log land first";
 const ALREADY: &str = "Already stopping · the shell leaves when every process is gone";
 const STOPPING: &str = "stopping ";
@@ -385,15 +385,7 @@ fn confirm_after_tick(app: &App, label: &str) -> String {
 }
 
 fn wait_exit(app: &App) {
-    let deadline = Instant::now() + Duration::from_secs(8);
-    while app.child_running() {
-        assert!(
-            Instant::now() < deadline,
-            "quit did not exit\n{}",
-            text(&app.screen())
-        );
-        std::thread::sleep(Duration::from_millis(25));
-    }
+    app.wait_exit("quit did not exit");
     app.expect_exited(0);
 }
 
@@ -560,7 +552,7 @@ fn h06_quit_guard_waits() {
     let (k, t) = running_count(&body);
     assert!(
         body.contains(&format!(
-            "still running and a cleanup is at {k} of {t} items"
+            "A cleanup is at {k} of {t} items; quitting waits for its report and log"
         )),
         "combined guard missing\n{body}"
     );

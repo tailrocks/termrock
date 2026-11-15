@@ -660,6 +660,7 @@ impl PickersPage {
                 self.refill(kind, cx);
                 true
             }
+            Kind::Remote if self.opts.value("pickers.remote") == "stalls" => false,
             Kind::Remote => match self.fetching {
                 Some(n) if n > 1 => {
                     self.fetching = Some(n - 1);
@@ -749,14 +750,11 @@ impl PickersPage {
             Prop::new("Commands", commands),
             Prop::new(
                 "Remote",
-                format!(
-                    "Loading, then {}",
-                    if self.opts.value("pickers.remote") == "fails" {
-                        "Error (r retries)"
-                    } else {
-                        "Ready"
-                    }
-                ),
+                match self.opts.value("pickers.remote") {
+                    "fails" => "Loading, then Error (r retries)",
+                    "stalls" => "Loading, and it stays Loading",
+                    _ => "Loading, then Ready",
+                },
             ),
         ]
     }

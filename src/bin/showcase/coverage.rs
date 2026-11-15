@@ -1,3 +1,98 @@
+/// The session controller capabilities the Terminal pane page shows: its
+/// "session controller" source runs a scripted transport through every one.
+pub const TERMINAL_SESSION_COVERAGE: &[&str] = &[
+    "terminal::SessionFault",
+    "terminal::SessionSize",
+    "terminal::SessionLease",
+    "terminal::SessionLease::Owner",
+    "terminal::SessionLease::ReadOnly",
+    "terminal::SessionSent",
+    "terminal::SessionSent::Queued",
+    "terminal::SessionCommand",
+    "terminal::SessionCommand::Input",
+    "terminal::SessionCommand::Reply",
+    "terminal::SessionCommand::Redraw",
+    "terminal::SessionEnd",
+    "terminal::SessionEnd::Detached",
+    "terminal::SessionEvent",
+    "terminal::SessionEvent::Attached",
+    "terminal::SessionEvent::Lease",
+    "terminal::SessionEvent::Output",
+    "terminal::SessionEvent::Notice",
+    "terminal::SessionEvent::Exited",
+    "terminal::SessionEvent::Ended",
+    "terminal::SessionLink",
+    "terminal::SessionLink::send",
+    "terminal::SessionLink::set_size",
+    "terminal::SessionLink::drain",
+    "terminal::SessionSource",
+    "terminal::SessionSource::open",
+    "terminal::SessionSource::restart",
+    "terminal::SessionSource::closed_before_attach",
+    "terminal::SessionDetach",
+    "terminal::SessionDetach::Operator",
+    "terminal::SessionStatus",
+    "terminal::SessionStatus::Pending",
+    "terminal::SessionStatus::Attaching",
+    "terminal::SessionStatus::Attached",
+    "terminal::SessionStatus::Detached",
+    "terminal::SessionStatus::Exited",
+    "terminal::SessionStatus::Failed",
+    "terminal::SessionConfig",
+    "terminal::SessionClipboardContext",
+    "terminal::SessionClipboardRefusal",
+    "terminal::SessionClipboardRefusal::Write",
+    "terminal::SessionClipboardRefusal::Read",
+    "terminal::SessionClipboardDecision",
+    "terminal::SessionClipboardDecision::Refuse",
+    "terminal::SessionHostPolicy",
+    "terminal::SessionHostPolicy::title",
+    "terminal::SessionHostPolicy::notice",
+    "terminal::SessionHostPolicy::clipboard",
+    "terminal::SessionEffect",
+    "terminal::SessionEffect::Detached",
+    "terminal::SessionEffect::Failed",
+    "terminal::SessionEffect::Notice",
+    "terminal::SessionEffect::ClipboardRefused",
+    "terminal::SessionEffect::Copy",
+    "terminal::SessionKey",
+    "terminal::SessionKey::Consumed",
+    "terminal::SessionKey::Forwarded",
+    "terminal::SessionPaste",
+    "terminal::SessionPaste::Sent",
+    "terminal::SessionPaste::NeedsConfirm",
+    "terminal::SessionPaste::TooLarge",
+    "terminal::SessionPaste::Full",
+    "terminal::SessionPaste::Dropped",
+    "terminal::TerminalSessionController",
+    "terminal::SessionConfig::MINIMUM",
+    "terminal::SessionConfig::new",
+    "terminal::TerminalSessionController::new",
+    "terminal::TerminalSessionController::status",
+    "terminal::TerminalSessionController::viewport",
+    "terminal::TerminalSessionController::title",
+    "terminal::TerminalSessionController::attention",
+    "terminal::TerminalSessionController::has_output",
+    "terminal::TerminalSessionController::dropped_replies",
+    "terminal::TerminalSessionController::live",
+    "terminal::TerminalSessionController::too_small",
+    "terminal::TerminalSessionController::pump",
+    "terminal::TerminalSessionController::next_replay_deadline",
+    "terminal::TerminalSessionController::take_effects",
+    "terminal::TerminalSessionController::key",
+    "terminal::TerminalSessionController::gesture",
+    "terminal::TerminalSessionController::paste",
+    "terminal::TerminalSessionController::paste_confirmed",
+    "terminal::TerminalSessionController::sync_size",
+    "terminal::TerminalSessionController::focus_changed",
+    "terminal::TerminalSessionController::close_needs_confirm",
+    "terminal::TerminalSessionController::set_config",
+    "terminal::TerminalSessionController::wheel",
+    "terminal::TerminalSessionController::redraw",
+    "terminal::TerminalSessionController::clear",
+    "terminal::TerminalSessionController::viewport_mut",
+];
+
 pub const PICKER_COVERAGE: &[(&str, &str)] = &[
     ("widgets::picker::Picker::report_item_error", "pickers"),
     ("widgets::picker::Picker::list", "pickers"),
@@ -522,6 +617,33 @@ pub const GRID_PARSER_ALLOWLIST: &[(&str, &str)] = &[
     ),
 ];
 
+pub const SCROLL_WINDOW_COVERAGE: &[(&str, &str)] = &[
+    ("ui::scroll_view::ScrollView::render_window", "scrolling"),
+    ("ui::scroll_view::ScrollView::last_work", "scrolling"),
+    ("ui::scroll_view::ScrollWork", "scrolling"),
+    ("ui::scroll_view::VisibleWindow", "scrolling"),
+    (
+        "ui::scroll_view::VisibleWindow::project_content_rect",
+        "scrolling",
+    ),
+    ("ui::scroll_view::VisibleWindow::content_rows", "scrolling"),
+];
+
+pub const SCROLL_WINDOW_ALLOWLIST: &[(&str, &str)] = &[
+    (
+        "ui::scroll_view::VisibleWindow::project_rect",
+        "The Virtual rows demo projects model rows with project_content_rect, which wraps it; a padded-canvas rectangle is only needed by hosts that position a popup anchor.",
+    ),
+    (
+        "ui::scroll_view::VisibleWindow::project_point",
+        "The Virtual rows demo has no point-anchored overlay; cursor and caret hosts project a point from the same window.",
+    ),
+    (
+        "ui::scroll_view::VisibleWindow::rows",
+        "The demo iterates content_rows, which is rows without the padding; rows is the padded-canvas range for painting padding decorations.",
+    ),
+];
+
 pub const PICKER_ALLOWLIST: &[(&str, &str)] = &[
     (
         "widgets::picker::Picker::set_visible_items",
@@ -1024,6 +1146,32 @@ mod tests {
                     "document workspace capability {id} has no coverage or allowlist line"
                 );
             }
+        }
+    }
+
+    #[test]
+    fn scroll_window_apis_are_covered_or_allowlisted_with_reasons() {
+        let catalog = catalog_source();
+        let mut seen = std::collections::BTreeSet::new();
+        for (id, why) in SCROLL_WINDOW_COVERAGE.iter().chain(SCROLL_WINDOW_ALLOWLIST) {
+            assert!(
+                catalog.contains(&format!("\"{id}\"")),
+                "declared id is not a catalog capability: {id}"
+            );
+            assert!(!why.trim().is_empty(), "no reason: {id}");
+            assert!(seen.insert(*id), "duplicate declaration: {id}");
+        }
+        for line in catalog.lines().filter(|l| {
+            l.contains("ui::scroll_view::VisibleWindow")
+                || l.contains("ScrollView::render_window")
+                || l.contains("ScrollView::last_work")
+                || l.contains("ui::scroll_view::ScrollWork")
+        }) {
+            let id = line.split('"').nth(1).expect("catalog line has an id");
+            assert!(
+                seen.contains(id),
+                "scroll window API lacks a declaration: {id}"
+            );
         }
     }
 

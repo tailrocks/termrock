@@ -5,6 +5,7 @@ use ratatui::style::{Color, Modifier, Style};
 use crate::core::id::WidgetId;
 use crate::theme::{Theme, Tone};
 use crate::ui::ctx::RenderCtx;
+use crate::ui::measure::terminal_extent;
 use crate::ui::text::{truncate, wrap};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -128,6 +129,7 @@ impl Notice {
         lines
     }
 
+    /// Rows the notice needs at `width`, saturating at `u16::MAX`.
     pub fn height(&self, width: u16) -> u16 {
         let w = width.saturating_sub(2) as usize;
         let message = self.lines(&self.message, w, self.message_lines).len();
@@ -135,7 +137,12 @@ impl Notice {
             .detail
             .as_ref()
             .map_or(0, |d| self.lines(d, w, self.max_lines).len());
-        (message.max(1) + detail + usize::from(self.hint.is_some())) as u16
+        terminal_extent(
+            message
+                .max(1)
+                .saturating_add(detail)
+                .saturating_add(usize::from(self.hint.is_some())),
+        )
     }
 
     pub fn render(&self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, bg: Color) -> u16 {
@@ -202,10 +209,10 @@ impl crate::ui::measure::Measure for Notice {
         ]
         .into_iter()
         .flatten()
-        .map(|s| crate::ui::text::width(s) as u16)
+        .map(|s| crate::ui::text::width(s))
         .max()
         .unwrap_or(0);
-        let width = text + 2;
+        let width = terminal_extent(text.saturating_add(2));
         ratatui::layout::Size::new(width, self.height(width))
     }
 }
@@ -223,13 +230,16 @@ impl crate::ui::specimen::Specimen for Notice {
     }
 
     fn specimen_height(&self, _state: crate::ui::specimen::SpecimenState) -> u16 {
-        self.message_lines.max(1) as u16
-            + if self.detail.is_some() {
-                self.max_lines as u16
-            } else {
-                0
-            }
-            + u16::from(self.hint.is_some())
+        terminal_extent(
+            self.message_lines
+                .max(1)
+                .saturating_add(if self.detail.is_some() {
+                    self.max_lines
+                } else {
+                    0
+                })
+                .saturating_add(usize::from(self.hint.is_some())),
+        )
     }
 
     fn specimen(

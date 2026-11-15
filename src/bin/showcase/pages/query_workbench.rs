@@ -325,7 +325,7 @@ impl Doc {
     /// result view. Diagnostics are placed only when the editor still holds
     /// exactly `sql`, because their ranges are byte offsets into it.
     fn install_for(&mut self, result: Outcome2, sql: String, token: Option<OperationToken>) {
-        self.editor.diagnostics.clear();
+        self.editor.set_diagnostics(Vec::new());
         match &result {
             Outcome2::Rows { table, count, .. } => {
                 self.results = result_table(results_id(self.key), table, *count);
@@ -335,7 +335,7 @@ impl Doc {
                 if self.editor.text() == sql
                     && let Some((_, range)) = from_table(&sql)
                 {
-                    self.editor.diagnostics.push(Diagnostic {
+                    self.editor.push_diagnostic(Diagnostic {
                         range,
                         severity: Severity::Error,
                         message: "unknown relation".into(),
@@ -732,7 +732,8 @@ impl QueryWorkbenchPage {
     }
 
     fn sync_toolbar(&mut self) {
-        self.toolbar.items = toolbar_items(self.running.is_some());
+        self.toolbar
+            .set_items(toolbar_items(self.running.is_some()));
     }
 
     /// Drops the request when it belongs to `key` and cancels that document's
@@ -1391,7 +1392,7 @@ impl QueryWorkbenchPage {
             let edited = self.workspace.update(active, |doc| {
                 let (o, a) = doc.editor.on_key(key);
                 match a {
-                    Some(EditorAction::Changed) => doc.editor.diagnostics.clear(),
+                    Some(EditorAction::Changed) => doc.editor.set_diagnostics(Vec::new()),
                     Some(EditorAction::Leave { backward: false }) => return (o, 1),
                     Some(EditorAction::Leave { backward: true }) => return (o, -1),
                     _ => {}
@@ -1737,7 +1738,7 @@ mod tests {
         let key = p.active_key().expect("active key");
         let index = p.doc_index(key).expect("active key names a document");
         assert_eq!(p.tabs.active, index, "strip highlights the active document");
-        assert_eq!(p.tabs.items[index].label, p.docs()[index].title);
+        assert_eq!(p.tabs.items()[index].label, p.docs()[index].title);
         let d = p.docs()[index];
         assert_eq!(d.editor.id, editor_id(key));
         assert_eq!(d.results.id, results_id(key));
@@ -1823,7 +1824,7 @@ mod tests {
         rig.key(KeyCode::Enter, KeyModifiers::NONE);
         let chosen = rig.page.tabs.active;
         assert!(chosen > 1, "a previously hidden tab was chosen");
-        assert_eq!(active(&rig.page).title, rig.page.tabs.items[chosen].label);
+        assert_eq!(active(&rig.page).title, rig.page.tabs.items()[chosen].label);
         assert!(active(&rig.page).editor.text().starts_with("-- doc"));
         assert_agree(&mut rig);
 
@@ -2235,7 +2236,7 @@ mod tests {
     }
 
     fn toolbar_idle(rig: &Rig) -> bool {
-        let items = &rig.page.toolbar.items;
+        let items = rig.page.toolbar.items();
         !items[0].disabled && !items[1].disabled && items[2].disabled
     }
 
@@ -2258,7 +2259,7 @@ mod tests {
         );
         assert_eq!(doc(&rig.page, 1).result, c_before, "C is untouched");
         assert!(rig.page.running.is_none());
-        assert!(rig.page.tabs.items.iter().all(|tab| !tab.busy));
+        assert!(rig.page.tabs.items().iter().all(|tab| !tab.busy));
         assert!(toolbar_idle(&rig));
 
         let mut rig = Rig::new();
@@ -2302,7 +2303,7 @@ mod tests {
         tick_to_completion(&mut rig);
         assert!(matches!(active(&rig.page).result, Outcome2::Error { .. }));
         assert!(
-            active(&rig.page).editor.diagnostics.is_empty(),
+            active(&rig.page).editor.diagnostics().is_empty(),
             "stale byte offsets are not attached to new text"
         );
 
@@ -2312,7 +2313,7 @@ mod tests {
         rig.run();
         tick_to_completion(&mut rig);
         assert_eq!(
-            active(&rig.page).editor.diagnostics.len(),
+            active(&rig.page).editor.diagnostics().len(),
             1,
             "unchanged text keeps its diagnostic"
         );
@@ -2334,7 +2335,7 @@ mod tests {
         close(&mut rig, 0);
         assert!(rig.page.running.is_none(), "closing B cancels its run");
         assert!(toolbar_idle(&rig));
-        assert!(rig.page.tabs.items.is_empty());
+        assert!(rig.page.tabs.items().is_empty());
 
         rig.with_cx(|p, cx| p.tab_action(TabAction::New, cx));
         let fresh = active(&rig.page).key;
@@ -2368,7 +2369,7 @@ mod tests {
         assert_eq!(rig.focus.current(), Some(editor_id(c_key)));
         let b = rig.page.docs()[rig.page.doc_index(b_key).expect("B")];
         assert_eq!(b.result, customers_rows());
-        assert!(rig.page.tabs.items.iter().all(|tab| !tab.busy));
+        assert!(rig.page.tabs.items().iter().all(|tab| !tab.busy));
         assert_eq!(
             rig.statuses.last().map(String::as_str),
             Some("customers: ✓ 40 rows · 15 ms"),
@@ -2464,8 +2465,11 @@ mod tests {
         rig.run();
         assert_eq!(rig.page.running.as_ref(), Some(&pending));
         assert_eq!(rig.statuses, ["A query is already running in customers"]);
-        assert!(rig.page.toolbar.items[0].disabled && rig.page.toolbar.items[1].disabled);
-        assert!(!rig.page.toolbar.items[2].disabled, "Stop stays available");
+        assert!(rig.page.toolbar.items()[0].disabled && rig.page.toolbar.items()[1].disabled);
+        assert!(
+            !rig.page.toolbar.items()[2].disabled,
+            "Stop stays available"
+        );
 
         rig.statuses.clear();
         rig.with_cx(|p, cx| p.stop(cx));

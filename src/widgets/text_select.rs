@@ -223,29 +223,3 @@ pub(crate) fn plain_cells(s: &str) -> Vec<PlainCell<'_>> {
         })
         .collect()
 }
-
-pub(crate) fn plain_cell_at(cells: &[PlainCell<'_>], col: usize) -> usize {
-    cells
-        .iter()
-        .position(|c| c.col + crate::ui::text::width(c.g).max(1) > col)
-        .unwrap_or(cells.len())
-}
-
-pub(crate) fn plain_col_of(s: &str, cells: &[PlainCell<'_>], i: usize) -> usize {
-    cells
-        .get(i)
-        .map(|c| c.col)
-        .unwrap_or_else(|| crate::ui::text::width(s))
-}
-
-pub(crate) fn plain_slice(s: &str, from: usize, to: usize) -> &str {
-    let cells = plain_cells(s);
-    let a = plain_cell_at(&cells, from);
-    let b = plain_cell_at(&cells, to);
-    if a >= b {
-        return "";
-    }
-    let start = cells[a].bytes.start;
-    let end = cells[b - 1].bytes.end;
-    &s[start..end]
-}

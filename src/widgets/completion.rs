@@ -95,6 +95,9 @@ impl Completion {
     pub fn open(&mut self, items: Vec<Item>, anchor: Rect, replace_len: usize) {
         self.set_items(items);
         self.list.reset(self.items.len());
+        self.list.cursor.index = (0..self.items.len())
+            .find(|&i| self.can_accept(i))
+            .unwrap_or(0);
         self.anchor = anchor;
         self.replace_len = replace_len;
     }
@@ -124,10 +127,21 @@ impl Completion {
         self.items.get(self.list.cursor.index)
     }
 
-    pub fn apply(&self, i: usize, buffer: &mut crate::core::text::TextBuffer) {
-        let Some(item) = self.items.get(i) else {
-            return;
-        };
+    fn can_accept(&self, index: usize) -> bool {
+        let source = &self.items[..];
+        index < source.len() && source.enabled(index)
+    }
+
+    fn accepted(&self, index: usize) -> Option<CompletionAction> {
+        self.can_accept(index)
+            .then_some(CompletionAction::Accept(index))
+    }
+
+    pub fn apply(&self, i: usize, buffer: &mut crate::core::text::TextBuffer) -> bool {
+        if !self.can_accept(i) {
+            return false;
+        }
+        let item = &self.items[i];
         let insert = item.insertion();
         let cur = buffer.cursor_offset();
         buffer.remove_range(cur.saturating_sub(self.replace_len)..cur);
@@ -136,6 +150,7 @@ impl Completion {
             buffer.insert_char(')');
             buffer.move_left(false);
         }
+        true
     }
 
     pub fn row_id(&self, i: usize) -> WidgetId {
@@ -159,10 +174,10 @@ impl Completion {
             return (Outcome::Changed, None);
         }
         match key.code {
-            KeyCode::Tab | KeyCode::Enter => (
-                Outcome::Changed,
-                Some(CompletionAction::Accept(self.list.cursor.index)),
-            ),
+            KeyCode::Tab | KeyCode::Enter => match self.accepted(self.list.cursor.index) {
+                Some(accept) => (Outcome::Changed, Some(accept)),
+                None => (Outcome::Consumed, None),
+            },
             KeyCode::Esc if self.list.dismiss.escape => {
                 self.close();
                 (Outcome::Changed, Some(CompletionAction::Dismiss))
@@ -180,8 +195,9 @@ impl Completion {
             return Some(CompletionAction::Dismiss);
         }
         let i = self.list.row_of(id, self.items.len())?;
+        let accepted = self.accepted(i)?;
         self.list.select(i, &self.items[..]);
-        Some(CompletionAction::Accept(i))
+        Some(accepted)
     }
 
     pub fn render(&mut self, screen: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {

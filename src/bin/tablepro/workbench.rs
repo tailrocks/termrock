@@ -26,9 +26,9 @@ use std::borrow::Cow;
 
 use crate::app::{Cx, TableChange};
 use crate::db::{Catalog, Connection, ObjectKind};
-use crate::model::History;
+use crate::model::{History, HistoryEntry};
 use crate::store::{SessionStore, Source};
-use crate::tabs::{HistoryTab, QueryTab, TableTab, WorkTabView};
+use crate::tabs::{HistoryCommand, HistoryTab, QueryTab, TableTab, WorkTabView};
 
 const ID: WidgetId = WidgetId::of("workbench");
 pub const EXPLORER: WidgetId = ID.sub("explorer");
@@ -828,6 +828,37 @@ impl Workbench {
         true
     }
 
+    pub fn history_tab(&self, owner: WidgetId) -> Option<&HistoryTab> {
+        self.tabs().find_map(|t| match t {
+            WorkTab::History(h) if h.id == owner => Some(h),
+            _ => None,
+        })
+    }
+
+    pub fn history_action(
+        &self,
+        owner: WidgetId,
+        entry: ItemKey,
+        cmd: HistoryCommand,
+        history: &History,
+        cx: &mut Cx,
+    ) -> Outcome {
+        match self.history_tab(owner) {
+            Some(h) => h.run(entry, cmd, history, cx),
+            None => {
+                cx.status("The history tab is no longer available");
+                Outcome::Changed
+            }
+        }
+    }
+
+    pub fn record_history(&mut self, history: &mut History, entries: Vec<HistoryEntry>) {
+        for e in entries {
+            history.push(e);
+        }
+        self.refresh_history(history);
+    }
+
     /// Activates the tab at strip position `index`. The position came from the
     /// strip's current projection; it is translated to a key before anything
     /// changes.
@@ -1422,51 +1453,33 @@ impl Workbench {
                     h.refresh(history, conn);
                     return Outcome::Changed;
                 }
-                KeyCode::Enter => {
-                    if let Some(e) = h.current_entry(history) {
-                        cx.go(crate::app::Act::OpenQuery(e.sql.clone(), false));
-                    }
-                    return Outcome::Changed;
-                }
-                KeyCode::Char('r') => {
-                    if let Some(e) = h.current_entry(history) {
-                        cx.go(crate::app::Act::OpenQuery(e.sql.clone(), true));
-                    }
-                    return Outcome::Changed;
-                }
-                KeyCode::Char('y') => {
-                    if let Some(e) = h.current_entry(history) {
-                        cx.copy_as(e.sql.clone(), "query");
-                    }
-                    return Outcome::Changed;
-                }
+                KeyCode::Enter => return h.run_selected(HistoryCommand::Open, history, cx),
+                KeyCode::Char('r') => return h.run_selected(HistoryCommand::Rerun, history, cx),
+                KeyCode::Char('y') => return h.run_selected(HistoryCommand::Copy, history, cx),
                 _ => {}
             }
             let o = h.list.on_key(key);
-            h.sync_detail_public(history);
+            h.sync_detail(history);
             return o;
         }
         if f == h.detail.id {
             return h.detail.on_key(key).0;
         }
-        let mut hit: Option<(Outcome, bool, bool)> = None;
-        for (b, run) in [(&mut h.open_btn, false), (&mut h.rerun_btn, true)] {
+        let mut hit: Option<(Outcome, bool, HistoryCommand)> = None;
+        for (b, cmd) in [
+            (&mut h.open_btn, HistoryCommand::Open),
+            (&mut h.rerun_btn, HistoryCommand::Rerun),
+            (&mut h.copy_btn, HistoryCommand::Copy),
+        ] {
             if f == b.id {
                 let (o, act) = b.on_key(key);
-                hit = Some((o, act, run));
+                hit = Some((o, act, cmd));
                 break;
             }
         }
-        if let Some((o, act, run)) = hit {
-            if act && let Some(e) = h.current_entry(history) {
-                cx.go(crate::app::Act::OpenQuery(e.sql.clone(), run));
-            }
-            return o;
-        }
-        if f == h.copy_btn.id {
-            let (o, act) = h.copy_btn.on_key(key);
-            if act && let Some(e) = h.current_entry(history) {
-                cx.copy_as(e.sql.clone(), "query");
+        if let Some((o, act, cmd)) = hit {
+            if act {
+                h.run_selected(cmd, history, cx);
             }
             return o;
         }
@@ -1769,7 +1782,7 @@ impl Workbench {
                         cx.focus.focus(h.list.id);
                     }
                     let o = h.list.pointer(ev).outcome();
-                    h.sync_detail_public(history);
+                    h.sync_detail(history);
                     return o;
                 }
                 if ev.on(h.detail.id) {
@@ -1778,26 +1791,21 @@ impl Workbench {
                     }
                     return h.detail.pointer(ev).outcome();
                 }
-                let mut hit: Option<bool> = None;
-                for (b, run) in [(&mut h.open_btn, false), (&mut h.rerun_btn, true)] {
+                let mut hit: Option<HistoryCommand> = None;
+                for (b, cmd) in [
+                    (&mut h.open_btn, HistoryCommand::Open),
+                    (&mut h.rerun_btn, HistoryCommand::Rerun),
+                    (&mut h.copy_btn, HistoryCommand::Copy),
+                ] {
                     if b.id == id && b.on_click() {
-                        hit = Some(run);
+                        hit = Some(cmd);
                         break;
                     }
                 }
-                if let Some(run) = hit {
-                    if let Some(e) = h.current_entry(history) {
-                        cx.go(crate::app::Act::OpenQuery(e.sql.clone(), run));
-                    }
-                    return Outcome::Changed;
+                match hit {
+                    Some(cmd) => h.run_selected(cmd, history, cx),
+                    None => Outcome::Ignored,
                 }
-                if h.copy_btn.id == id && h.copy_btn.on_click() {
-                    if let Some(e) = h.current_entry(history) {
-                        cx.copy_as(e.sql.clone(), "query");
-                    }
-                    return Outcome::Changed;
-                }
-                Outcome::Ignored
             }
         })
     }
@@ -2010,18 +2018,6 @@ impl Workbench {
         let conn = self.connection.name.clone();
         if let Ok(mut view) = self.ws.view_mut(active_key) {
             view.render(inner, buf, ctx, bg, history, &conn);
-        }
-    }
-}
-
-impl HistoryTab {
-    pub fn sync_detail_public(&mut self, history: &History) {
-        let text = self
-            .current_entry(history)
-            .map(|e| e.sql.clone())
-            .unwrap_or_default();
-        if self.detail.text() != text {
-            self.detail.set_text(&text);
         }
     }
 }

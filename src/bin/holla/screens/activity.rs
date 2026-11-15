@@ -24,7 +24,7 @@ use crate::domain::activity::{
     ActivityKind, ActivityState, InputError, KILL_AFTER_TICKS, LineTone, RETAIN_LINES, key_bytes,
 };
 use crate::screens::{Cx, Go, ModalResult, Screen, StatusBits, open_context, ticks_label};
-use crate::sim::world::World;
+use crate::sim::world::{STOPPING_REFUSAL, World};
 use junie_tui::ui::layer::LayerTag;
 
 pub const VIEW: WidgetId = WidgetId::of("activity.view");
@@ -56,7 +56,7 @@ pub struct ActivityTab {
 impl ActivityTab {
     pub fn new(id: &str) -> Self {
         let mut chips = ChipBar::new(CHIPS);
-        chips.add_label = None;
+        chips.set_add_label(None);
         Self {
             id: id.into(),
             view: TextViewport::new(VIEW).max_lines(RETAIN_LINES).wrap(true),
@@ -103,8 +103,8 @@ impl ActivityTab {
             self.input = false;
         }
         let services = a.services();
-        if self.chips.chips.len() != services.len() || self.synced_services != services {
-            self.chips.chips = services
+        if self.chips.chips().len() != services.len() || self.synced_services != services {
+            let chips = services
                 .iter()
                 .map(|s| {
                     let mut c = Chip::new(s);
@@ -113,10 +113,12 @@ impl ActivityTab {
                     c
                 })
                 .collect();
+            self.chips.set_chips(chips);
             self.synced_services = services.clone();
         } else {
-            for (c, s) in self.chips.chips.iter_mut().zip(&services) {
-                c.enabled = !a.hidden_services.contains(s);
+            for (i, s) in services.iter().enumerate() {
+                let enabled = !a.hidden_services.contains(s);
+                self.chips.update_chip(i, |c| c.enabled = enabled);
             }
         }
         let svc_w = services.iter().map(|s| width(s)).max().unwrap_or(0);
@@ -221,10 +223,10 @@ impl ActivityTab {
 
     fn send(&mut self, bytes: &[u8], w: &mut World, cx: &mut Cx) -> Outcome {
         let tick = w.tick;
-        let Some(a) = w.activity_mut(&self.id) else {
+        let Some(sent) = w.edit_activity(&self.id, |a| a.send_input(bytes, tick)) else {
             return Outcome::Ignored;
         };
-        match a.send_input(bytes, tick) {
+        match sent {
             Ok(()) => {
                 if bytes == [0x03] {
                     cx.status("Sent ^C · stopping · SIGKILL follows if it lingers");
@@ -247,13 +249,13 @@ impl ActivityTab {
     }
 
     fn toggle_stream(&mut self, name: String, w: &mut World) {
-        if let Some(a) = w.activity_mut(&self.id) {
+        w.edit_activity(&self.id, |a| {
             if a.hidden_services.contains(&name) {
                 a.hidden_services.retain(|s| s != &name);
             } else {
                 a.hidden_services.push(name);
             }
-        }
+        });
     }
 
     fn follow_up(&self, label: &str, w: &World, cx: &mut Cx) {
@@ -372,7 +374,7 @@ impl ActivityTab {
     }
 
     fn chip_menu(&self, i: usize, anchor: ContextAnchor, w: &World, cx: &mut Cx) -> Outcome {
-        let Some(chip) = self.chips.chips.get(i) else {
+        let Some(chip) = self.chips.chips().get(i) else {
             return Outcome::Ignored;
         };
         let hidden = w
@@ -402,13 +404,13 @@ impl ShellPage<Holla> for ActivityTab {
                 return Outcome::Changed;
             }
             if key.is_char('q') {
-                if let Some(a) = w.activity_mut(&self.id) {
+                w.edit_activity(&self.id, |a| {
                     a.state = ActivityState::Stopped;
                     a.ended_tick = Some(tick);
                     a.exit = Some(0);
                     a.output
                         .push((None, "program exited".into(), LineTone::Muted));
-                }
+                });
                 self.attached = false;
                 cx.status("Program exited · tab kept with its last screen");
                 return Outcome::Changed;
@@ -487,7 +489,7 @@ impl ShellPage<Holla> for ActivityTab {
             let (o, ev) = self.chips.on_key(key);
             match ev {
                 Some(ChipAction::Toggle(i)) | Some(ChipAction::Activate(i)) => {
-                    let name = self.chips.chips[i].label.clone();
+                    let name = self.chips.chips()[i].label.clone();
                     self.toggle_stream(name, w);
                     return Outcome::Changed;
                 }
@@ -508,10 +510,10 @@ impl ShellPage<Holla> for ActivityTab {
                     .activity(&self.id)
                     .map(|a| a.name.clone())
                     .unwrap_or_default();
-                if let Some(a) = w.activity_mut(&self.id)
-                    && a.state == ActivityState::Detached
+                if w.activity(&self.id)
+                    .is_some_and(|a| a.state == ActivityState::Detached)
                 {
-                    a.state = ActivityState::Running;
+                    w.edit_activity(&self.id, |a| a.state = ActivityState::Running);
                 }
                 cx.status(format!("Attached to {tool}"));
                 return Outcome::Changed;
@@ -539,42 +541,46 @@ impl ShellPage<Holla> for ActivityTab {
                 return Outcome::Changed;
             }
             KeyCode::Char('s') if key.plain() => {
-                if let Some(a) = w.activity_mut(&self.id) {
-                    match a.state {
-                        ActivityState::Cancelling => {
-                            let since = a
-                                .cancel
-                                .as_ref()
-                                .map(|c| tick.saturating_sub(c.requested))
-                                .unwrap_or(0);
-                            cx.status(format!(
-                                "Already stopping · SIGTERM sent · SIGKILL in {}",
-                                ticks_label(KILL_AFTER_TICKS.saturating_sub(since))
-                            ));
-                        }
-                        s if s.live() => {
-                            let name = a.name.clone();
-                            a.stop(tick);
-                            cx.status(format!("Stopping {name} · SIGTERM sent · output kept"));
-                        }
-                        _ => cx.status("Already finished"),
+                w.edit_activity(&self.id, |a| match a.state {
+                    ActivityState::Cancelling => {
+                        let since = a
+                            .cancel
+                            .as_ref()
+                            .map(|c| tick.saturating_sub(c.requested))
+                            .unwrap_or(0);
+                        cx.status(format!(
+                            "Already stopping · SIGTERM sent · SIGKILL in {}",
+                            ticks_label(KILL_AFTER_TICKS.saturating_sub(since))
+                        ));
                     }
-                }
+                    s if s.live() => {
+                        let name = a.name.clone();
+                        a.stop(tick);
+                        cx.status(format!("Stopping {name} · SIGTERM sent · output kept"));
+                    }
+                    _ => cx.status("Already finished"),
+                });
                 self.input = false;
                 return Outcome::Changed;
             }
             KeyCode::Char('r') if key.plain() => {
-                if let Some(a) = w.activity_mut(&self.id) {
-                    if a.state.live() {
-                        cx.status("Still running · s stops it first");
-                        return Outcome::Changed;
-                    }
+                if w.stopping() {
+                    cx.status(STOPPING_REFUSAL);
+                    return Outcome::Changed;
+                }
+                if w.activity(&self.id).is_some_and(|a| a.state.live()) {
+                    cx.status("Still running · s stops it first");
+                    return Outcome::Changed;
+                }
+                w.edit_activity(&self.id, |a| {
                     a.restart(tick);
                     a.advance(tick);
                     cx.status(format!("Restarted {}", a.name));
-                }
+                });
                 self.synced = 0;
+                self.synced_dropped = 0;
                 self.synced_last = None;
+                self.input = false;
                 self.view.clear();
                 self.find_matches.clear();
                 return Outcome::Changed;
@@ -618,9 +624,9 @@ impl ShellPage<Holla> for ActivityTab {
     fn on_paste(&mut self, text: &str, w: &mut World, _cx: &mut Cx) -> Outcome {
         if self.input {
             let tick = w.tick;
-            if let Some(a) = w.activity_mut(&self.id) {
+            w.edit_activity(&self.id, |a| {
                 let _ = a.send_input(text.as_bytes(), tick);
-            }
+            });
             return Outcome::Changed;
         }
         if let Some(q) = self.find_query.as_mut() {
@@ -639,7 +645,7 @@ impl ShellPage<Holla> for ActivityTab {
                     let (o, actions) = r.into_parts();
                     for act in actions {
                         if let ChipAction::Activate(i) | ChipAction::Toggle(i) = act {
-                            let name = self.chips.chips[i].label.clone();
+                            let name = self.chips.chips()[i].label.clone();
                             self.toggle_stream(name, w);
                         }
                     }
@@ -667,7 +673,8 @@ impl ShellPage<Holla> for ActivityTab {
                 if self.is_editing() {
                     return Outcome::Ignored;
                 }
-                if let Some(i) = (0..self.chips.chips.len()).find(|&i| self.chips.chip_id(i) == id)
+                if let Some(i) =
+                    (0..self.chips.chips().len()).find(|&i| self.chips.chip_id(i) == id)
                 {
                     if cx.context.moves_cursor {
                         self.chips.cursor = i;
@@ -826,7 +833,7 @@ impl ShellPage<Holla> for ActivityTab {
             .subtitle(&insight, Tone::Muted)
             .render(area, buf, t);
         let mut y = area.y + 3;
-        if !self.chips.chips.is_empty() {
+        if !self.chips.chips().is_empty() {
             self.chips.render(
                 Rect::new(area.x + 1, y, area.width.saturating_sub(2), 1),
                 buf,
@@ -1050,7 +1057,7 @@ fn follow_up_supported(label: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::activity::{Activity, ActivityKind, Script};
+    use crate::domain::activity::{Activity, ActivityKind, Script, line};
     use crate::domain::context::ScopeTag;
     use crate::domain::fixtures::world_for;
     use crate::scenario::{Motion, Scenario};
@@ -1161,5 +1168,105 @@ mod tests {
             "one Backspace erases the whole cluster, leaving no bare e"
         );
         assert!(tab.input, "erasing keeps the tab in input mode");
+    }
+
+    fn rendered_text(buf: &Buffer) -> String {
+        let area = buf.area;
+        (area.y..area.bottom())
+            .map(|y| {
+                (area.x..area.right())
+                    .map(|x| buf[(x, y)].symbol())
+                    .collect::<String>()
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    /// `wrong` ends the run, so `body` is only reached by a run that answers
+    /// anything else.
+    fn restartable_script() -> Script {
+        use crate::domain::activity::{Branch, prompt, toned};
+        Script::ending(
+            vec![line(0, "start"), prompt(1, "pw: ", false), line(2, "body")],
+            3,
+            0,
+        )
+        .branches(vec![vec![
+            Branch {
+                matches: Some("wrong".into()),
+                lines: vec![toned(0, "denied", LineTone::Error)],
+                end: Some((1, 1)),
+            },
+            Branch {
+                matches: None,
+                lines: vec![],
+                end: None,
+            },
+        ]])
+    }
+
+    fn tick_world(w: &mut World, tab: &mut ActivityTab, until: impl Fn(&Activity) -> bool) {
+        for _ in 0..20 {
+            if w.activity("act-test").is_some_and(&until) {
+                return;
+            }
+            w.tick();
+            tab.sync(w);
+        }
+        panic!("activity never reached the expected state");
+    }
+
+    fn type_text(tab: &mut ActivityTab, w: &mut World, cx: &mut Cx<'_>, text: &str) {
+        for c in text.chars() {
+            press(tab, w, cx, KeyCode::Char(c));
+        }
+        press(tab, w, cx, KeyCode::Enter);
+    }
+
+    #[test]
+    fn activity_tab_restart_key_resets_view_to_fresh_run() {
+        let mut w = world_for(Scenario::DockerCleanup, Motion::Full);
+        w.clock.running = true;
+        let tick = w.tick;
+        w.activities.push(Activity::new(
+            "act-test",
+            "demo",
+            "test",
+            ActivityKind::Task,
+            ScopeTag::here("/work"),
+            "host",
+            restartable_script(),
+            tick,
+        ));
+        let mut tab = ActivityTab::new("act-test");
+        let mut focus = Focus::default();
+        let ring = FocusRing::default();
+        let mut cx = Cx::new(&mut focus, &ring);
+
+        tick_world(&mut w, &mut tab, |a| a.waiting.is_some());
+        press(&mut tab, &mut w, &mut cx, KeyCode::Char('i'));
+        assert!(tab.input);
+        type_text(&mut tab, &mut w, &mut cx, "wrong");
+        tick_world(&mut w, &mut tab, |a| a.state.finished());
+        assert_eq!(w.activity("act-test").unwrap().state, ActivityState::Failed);
+        assert!(rendered_text(&render_tab(&mut tab, &w)).contains("denied"));
+
+        press(&mut tab, &mut w, &mut cx, KeyCode::Char('r'));
+        assert!(!tab.input, "no input capture survives the restart");
+        assert!(tab.find_matches.is_empty());
+        let fresh = rendered_text(&render_tab(&mut tab, &w));
+        assert!(!fresh.contains("denied"), "no row of the old run stays");
+
+        tick_world(&mut w, &mut tab, |a| a.waiting.is_some());
+        press(&mut tab, &mut w, &mut cx, KeyCode::Char('i'));
+        type_text(&mut tab, &mut w, &mut cx, "ok");
+        tick_world(&mut w, &mut tab, |a| a.state.finished());
+
+        let a = w.activity("act-test").unwrap();
+        assert_eq!(a.state, ActivityState::Succeeded);
+        assert_eq!(a.exit, Some(0));
+        let after = rendered_text(&render_tab(&mut tab, &w));
+        assert!(after.contains("body"), "the original tail runs again");
+        assert!(!after.contains("denied"), "only the second run is shown");
     }
 }

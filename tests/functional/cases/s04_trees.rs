@@ -1304,3 +1304,25 @@ fn option_marker_chevron() {
     shot(&app, "opt.trees.marker");
     app.finish();
 }
+
+#[test]
+fn option_filter_keeps_ancestor_of_matching_leaf() {
+    let app = option_screen("s04-filter", "trees.filter=orders");
+    let filtered = app.wait_text("orders-db");
+    see(
+        &filtered,
+        &["production", "staging", "orders-db"],
+        &["billing-db", "replica-eu", "archive"],
+    );
+    assert_eq!(
+        find_all(&filtered, "orders-db").len(),
+        2,
+        "both orders-db leaves match the filter\n{}",
+        text(&filtered)
+    );
+    confirm_control(&app, |screen| {
+        assert_select(screen, "Filter connections", "orders", &["off"]);
+    });
+    shot(&app, "opt.trees.filter");
+    app.finish();
+}

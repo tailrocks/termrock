@@ -28,8 +28,7 @@ impl crate::ui::measure::Measure for TextArea {
         _avail: ratatui::layout::Size,
         _ctx: &crate::ui::ctx::RenderCtx,
     ) -> ratatui::layout::Size {
-        let text = self.field.buffer.text();
-        let longest = text.split('\n').map(width).max().unwrap_or(0) as u16;
+        let longest = self.field.buffer.max_line_width() as u16;
         let label = width(&self.label) as u16 + 2;
         ratatui::layout::Size::new((longest + 5).max(label), self.height())
     }
@@ -78,6 +77,7 @@ pub struct TextArea {
     pub blur_action: BlurAction,
 
     snapshot: String,
+    snapshot_revision: u64,
 
     pub nav: NavKeys,
 
@@ -123,6 +123,7 @@ impl TextArea {
             rows,
             blur_action: BlurAction::Commit,
             snapshot: String::new(),
+            snapshot_revision: 0,
             nav: NavKeys::default(),
             edit_entry: None,
             entry: crate::theme::Theme::DEFAULT_EDIT_ENTRY,
@@ -187,7 +188,9 @@ impl TextArea {
     }
 
     pub fn is_dirty(&self) -> bool {
-        self.editing && self.field.buffer.text() != self.snapshot
+        self.editing
+            && self.field.buffer.revision() != self.snapshot_revision
+            && self.field.buffer.text() != self.snapshot
     }
 
     pub fn hints(&self) -> Vec<crate::widgets::keyhint::Hint> {
@@ -275,6 +278,7 @@ impl TextArea {
         if !self.disabled {
             if !self.editing {
                 self.snapshot = self.field.buffer.text().to_owned();
+                self.snapshot_revision = self.field.buffer.revision();
                 self.focus_edit = false;
             }
             self.editing = true;
@@ -551,9 +555,9 @@ impl TextArea {
         }
 
         let text = self.field.buffer.text();
-        let lines: Vec<&str> = text.split('\n').collect();
-        self.content_cols = lines.iter().map(|l| width(l)).max().unwrap_or(0);
-        self.scroll.set_content(lines.len());
+        let line_count = self.field.buffer.line_count();
+        self.content_cols = self.field.buffer.max_line_width();
+        self.scroll.set_content(line_count);
         self.scroll.set_viewport(rows as usize);
         let cur = self.field.buffer.cursor_pos();
         if s.editing && (self.follow_cursor || self.last_cursor != Some(cur) || resized) {
@@ -592,59 +596,51 @@ impl TextArea {
             }
         } else {
             let sel = self.field.buffer.selection();
-            let mut line_start = 0usize;
-            for (li, line) in lines.iter().enumerate() {
-                let visible = li >= self.scroll.offset && li < self.scroll.offset + rows as usize;
-                if visible {
-                    let y = inner.y + (li - self.scroll.offset) as u16;
-                    let mut col = 0usize;
-                    let clipped_right = width(line) > self.hscroll + inner.width as usize;
-                    let available =
-                        inner.width as usize - usize::from(clipped_right && inner.width > 0);
-                    for (gi, g) in
-                        unicode_segmentation::UnicodeSegmentation::grapheme_indices(*line, true)
+            let first = self.scroll.offset;
+            let last = line_count.min(first + rows as usize);
+            for li in first..last {
+                let Some(view) = self.field.buffer.line_view(li) else {
+                    continue;
+                };
+                let y = inner.y + (li - first) as u16;
+                let line_width = self.field.buffer.line_width(li).unwrap_or(0);
+                let clipped_right = line_width > self.hscroll + inner.width as usize;
+                let available =
+                    inner.width as usize - usize::from(clipped_right && inner.width > 0);
+                for at in view.graphemes_from_col(self.hscroll) {
+                    if at.col < self.hscroll {
+                        if inner.width > 0 {
+                            buf.set_string(inner.x, y, t.glyphs.ellipsis, fs.fg(t.text_muted));
+                        }
+                        continue;
+                    }
+                    let visible_col = at.col - self.hscroll;
+                    if visible_col + at.width > available {
+                        break;
+                    }
+                    let mut st = fs;
+                    if let Some(r) = &sel
+                        && r.contains(&at.offset)
                     {
-                        let gw = width(g);
-                        let start = col;
-                        col += gw;
-                        if col <= self.hscroll {
-                            continue;
-                        }
-                        if start < self.hscroll {
-                            if inner.width > 0 {
-                                buf.set_string(inner.x, y, t.glyphs.ellipsis, fs.fg(t.text_muted));
-                            }
-                            continue;
-                        }
-                        let visible_col = start - self.hscroll;
-                        if visible_col + gw > available {
-                            break;
-                        }
-                        let mut st = fs;
-                        if let Some(r) = &sel
-                            && r.contains(&(line_start + gi))
-                        {
-                            st = t.selection();
-                        }
-                        buf.set_string(inner.x + visible_col as u16, y, g, st);
+                        st = t.selection();
                     }
-                    if clipped_right && inner.width > 0 {
-                        let st = fs.fg(t.text_muted);
-                        buf.set_string(inner.right() - 1, y, t.glyphs.ellipsis, st);
-                    }
-                    if s.editing && li == cur.line {
-                        for xx in inner.x..inner.right() {
-                            if let Some(c) = buf.cell_mut(Position::new(xx, y)) {
-                                c.set_style(
-                                    c.style()
-                                        .add_modifier(Modifier::UNDERLINED)
-                                        .underline_color(t.border_strong),
-                                );
-                            }
+                    buf.set_string(inner.x + visible_col as u16, y, at.text, st);
+                }
+                if clipped_right && inner.width > 0 {
+                    let st = fs.fg(t.text_muted);
+                    buf.set_string(inner.right() - 1, y, t.glyphs.ellipsis, st);
+                }
+                if s.editing && li == cur.line {
+                    for xx in inner.x..inner.right() {
+                        if let Some(c) = buf.cell_mut(Position::new(xx, y)) {
+                            c.set_style(
+                                c.style()
+                                    .add_modifier(Modifier::UNDERLINED)
+                                    .underline_color(t.border_strong),
+                            );
                         }
                     }
                 }
-                line_start += line.len() + 1;
             }
             if s.editing
                 && self.scroll.visible_range().contains(&cur.line)
@@ -672,7 +668,7 @@ impl TextArea {
         let fy = body.bottom();
         if fy < area.bottom() {
             let pos = if s.editing {
-                format!("ln {}/{}", cur.line + 1, lines.len())
+                format!("ln {}/{}", cur.line + 1, line_count)
             } else if self.scroll.overflows() {
                 scrollbar::position_label(&self.scroll)
             } else {
@@ -900,3 +896,6 @@ impl EditMenuHost for TextArea {
         self.field.run(cmd).edited
     }
 }
+
+#[cfg(test)]
+mod tests;

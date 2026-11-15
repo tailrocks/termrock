@@ -5,6 +5,8 @@ use ratatui::style::{Modifier, Style};
 use crate::core::id::WidgetId;
 use crate::theme::{Kind, Plane, Tone};
 use crate::ui::ctx::{RenderCtx, VisualState, fill};
+use crate::ui::fitting::{removal_order, work};
+use crate::ui::measure::terminal_extent;
 use crate::ui::text::{truncate, width};
 use crate::widgets::progress::{Meter, MeterTone, MeterVisual};
 
@@ -89,14 +91,19 @@ impl StatusItem {
         self
     }
 
+    /// Natural width of the item, saturating at `u16::MAX`.
     pub fn width(&self) -> u16 {
-        let w = width(&self.text) as u16 + if self.busy { 2 } else { 0 };
+        terminal_extent(self.intrinsic_width())
+    }
+
+    pub(crate) fn intrinsic_width(&self) -> usize {
+        let w = width(&self.text).saturating_add(if self.busy { 2 } else { 0 });
         let base = match self.emphasis {
-            Emphasis::Chip => w + 2,
+            Emphasis::Chip => w.saturating_add(2),
             _ => w,
         };
         if self.meter.is_some() {
-            base + 1 + STATUS_METER_TRACK + 7
+            base.saturating_add(1 + usize::from(STATUS_METER_TRACK) + 7)
         } else {
             base
         }
@@ -135,14 +142,7 @@ impl crate::ui::measure::Measure for StatusBar {
         _avail: ratatui::layout::Size,
         _ctx: &crate::ui::ctx::RenderCtx,
     ) -> ratatui::layout::Size {
-        let group = |items: &[StatusItem]| -> u16 {
-            let n = items.len() as u16;
-            items.iter().map(StatusItem::width).sum::<u16>() + n.saturating_sub(1) * GAP
-        };
-        let ws = [group(&self.left), group(&self.center), group(&self.right)];
-        let present = ws.iter().filter(|w| **w > 0).count() as u16;
-        let w = ws.iter().sum::<u16>() + present.saturating_sub(1) * GAP + 2 * EDGE;
-        ratatui::layout::Size::new(w, 1)
+        ratatui::layout::Size::new(terminal_extent(self.intrinsic_width()), 1)
     }
 
     fn min_width(&self, _avail: ratatui::layout::Size, _ctx: &crate::ui::ctx::RenderCtx) -> u16 {
@@ -159,6 +159,45 @@ pub fn reveal_id(group: Group, index: usize) -> WidgetId {
 const GAP: u16 = 3;
 const EDGE: u16 = 1;
 
+/// Running width and count of one group's kept items. Exact in `u128`, so
+/// removing an item can never turn a saturated total falsely small.
+#[derive(Clone, Copy, Default)]
+struct Tally {
+    sum: u128,
+    count: usize,
+}
+
+impl Tally {
+    fn add(&mut self, width: usize) {
+        self.sum += width as u128;
+        self.count += 1;
+    }
+
+    fn remove(&mut self, width: usize) {
+        self.sum -= width as u128;
+        self.count -= 1;
+    }
+
+    /// Item widths plus the gaps between them; an empty group takes no room.
+    fn cells(self) -> u128 {
+        match self.count {
+            0 => 0,
+            n => self.sum + (n as u128 - 1) * u128::from(GAP),
+        }
+    }
+}
+
+/// Full width of the kept items, group gaps, the optional More marker and the
+/// edges, before any fit against an allocation. A gap separates groups that take
+/// a positive width, so a lone empty label opens none.
+fn needed(groups: &[Tally; 3], gone: bool) -> u128 {
+    let cells = groups.map(Tally::cells);
+    let present = cells.iter().filter(|&&c| c > 0).count();
+    let gaps = present.saturating_sub(1) as u128 * u128::from(GAP);
+    let more = if gone { 1 + u128::from(GAP) } else { 0 };
+    cells.iter().sum::<u128>() + gaps + more + 2 * u128::from(EDGE)
+}
+
 impl StatusBar {
     pub fn new() -> Self {
         Self::default()
@@ -172,63 +211,74 @@ impl StatusBar {
         }
     }
 
+    /// Display width of every item, per group, measured once per layout.
+    pub(crate) fn item_widths(&self) -> [Vec<usize>; 3] {
+        [&self.left, &self.center, &self.right]
+            .map(|items| items.iter().map(StatusItem::intrinsic_width).collect())
+    }
+
+    pub(crate) fn intrinsic_width(&self) -> usize {
+        let tally = self.item_widths().map(|ws| {
+            let mut t = Tally::default();
+            ws.iter().for_each(|&w| t.add(w));
+            t
+        });
+        usize::try_from(needed(&tally, false)).unwrap_or(usize::MAX)
+    }
+
     pub fn layout(&self, area: Rect) -> Vec<Placed> {
         self.plan(area).0
     }
 
-    fn plan(&self, area: Rect) -> (Vec<Placed>, Vec<(Group, usize)>, Option<u16>) {
-        let total_w = area.width;
-        let mut keep: [Vec<bool>; 3] = [
-            vec![true; self.left.len()],
-            vec![true; self.center.len()],
-            vec![true; self.right.len()],
-        ];
-        let groups = [Group::Left, Group::Center, Group::Right];
-        let group_w = |g: usize, keep: &[Vec<bool>; 3]| -> u16 {
-            let items = self.group(groups[g]);
-            let mut w = 0u16;
-            let mut n = 0u16;
-            for (it, k) in items.iter().zip(&keep[g]) {
-                if *k {
-                    w += it.width();
-                    n += 1;
-                }
-            }
-            if n > 0 { w + (n - 1) * GAP } else { 0 }
-        };
-        let needed = |keep: &[Vec<bool>; 3]| -> u16 {
-            let ws = [group_w(0, keep), group_w(1, keep), group_w(2, keep)];
-            let present = ws.iter().filter(|w| **w > 0).count() as u16;
-            let gaps = present.saturating_sub(1) * GAP;
-
-            let gone = keep.iter().flatten().any(|k| !k);
-            let more = if gone { 1 + GAP } else { 0 };
-            ws.iter().sum::<u16>() + gaps + more + 2 * EDGE
-        };
-
-        while needed(&keep) > total_w {
-            let mut victim: Option<(u8, usize, usize)> = None;
-            for g in [1usize, 2, 0] {
-                let items = self.group(groups[g]);
-                let alive: Vec<usize> = (0..items.len()).filter(|i| keep[g][*i]).collect();
-                if alive.is_empty() || (g == 0 && alive.len() == 1) {
-                    continue;
-                }
-                let i = alive
-                    .iter()
-                    .copied()
-                    .min_by_key(|i| (items[*i].priority, usize::MAX - *i))
-                    .unwrap();
-                let p = items[i].priority;
-                if victim.is_none_or(|(vp, _, _)| p < vp) {
-                    victim = Some((p, g, i));
-                }
-            }
-            match victim {
-                Some((_, g, i)) => keep[g][i] = false,
-                None => break,
+    /// Which items survive in `avail` cells. Items go in ascending priority; a
+    /// tie removes Center before Right before Left, and the highest index first
+    /// inside a group. The last Left item is never removed. One sort fixes that
+    /// order and per-group running totals replace a rebuild of the survivors per
+    /// removal.
+    pub(crate) fn keep_masks(&self, widths: &[Vec<usize>; 3], avail: usize) -> [Vec<bool>; 3] {
+        let mut keep = widths.clone().map(|ws| vec![true; ws.len()]);
+        let mut tally = widths.clone().map(|ws| {
+            let mut t = Tally::default();
+            ws.iter().for_each(|&w| {
+                work::visit();
+                t.add(w);
+            });
+            t
+        });
+        let avail = avail as u128;
+        if needed(&tally, false) <= avail {
+            return keep;
+        }
+        let groups = [&self.left, &self.center, &self.right];
+        let rank = [2u8, 0, 1];
+        let mut victims: Vec<(usize, usize)> = Vec::new();
+        let mut keys: Vec<(u8, u8, usize)> = Vec::new();
+        for (g, items) in groups.iter().enumerate() {
+            for (i, it) in items.iter().enumerate() {
+                victims.push((g, i));
+                keys.push((it.priority, rank[g], usize::MAX - i));
             }
         }
+        for v in removal_order(&keys) {
+            work::visit();
+            let (g, i) = victims[v];
+            if g == 0 && tally[0].count == 1 {
+                continue;
+            }
+            keep[g][i] = false;
+            tally[g].remove(widths[g][i]);
+            if needed(&tally, true) <= avail {
+                break;
+            }
+        }
+        keep
+    }
+
+    fn plan(&self, area: Rect) -> (Vec<Placed>, Vec<(Group, usize)>, Option<u16>) {
+        let total_w = area.width;
+        let widths = self.item_widths();
+        let keep = self.keep_masks(&widths, usize::from(total_w));
+        let groups = [Group::Left, Group::Center, Group::Right];
         let mut placed = vec![];
 
         let mut x = area.x + EDGE;
@@ -237,14 +287,14 @@ impl StatusBar {
             if !keep[0][i] {
                 continue;
             }
-            let mut w = it.width();
+            let mut w = terminal_extent(widths[0][i]);
             let mut text = it.text.clone();
             let room = (area.x + EDGE + left_budget).saturating_sub(x);
-            if w > room {
+            if widths[0][i] > usize::from(room) {
                 let pad =
                     if it.emphasis == Emphasis::Chip { 2 } else { 0 } + if it.busy { 2 } else { 0 };
                 text = truncate(&it.text, room.saturating_sub(pad) as usize);
-                w = width(&text) as u16 + pad;
+                w = terminal_extent(width(&text) + usize::from(pad));
             }
             placed.push(Placed {
                 group: Group::Left,
@@ -253,7 +303,7 @@ impl StatusBar {
                 width: w,
                 text,
             });
-            x += w + GAP;
+            x = x.saturating_add(w).saturating_add(GAP);
         }
         let left_end = x.saturating_sub(GAP);
 
@@ -263,7 +313,7 @@ impl StatusBar {
             if !keep[2][i] {
                 continue;
             }
-            let w = it.width();
+            let w = terminal_extent(widths[2][i]);
             rx = rx.saturating_sub(w);
             right_items.push(Placed {
                 group: Group::Right,
@@ -302,7 +352,13 @@ impl StatusBar {
                 .min(area.right().saturating_sub(EDGE + 1))
         });
 
-        let cw = group_w(1, &keep);
+        let mut center = Tally::default();
+        for (i, &w) in widths[1].iter().enumerate() {
+            if keep[1][i] {
+                center.add(w);
+            }
+        }
+        let cw = terminal_extent(usize::try_from(center.cells()).unwrap_or(usize::MAX));
         if cw > 0 {
             let lo = left_end + GAP;
             let hi = right_start.saturating_sub(GAP);
@@ -312,7 +368,7 @@ impl StatusBar {
                 if !keep[1][i] {
                     continue;
                 }
-                let w = it.width();
+                let w = terminal_extent(widths[1][i]);
                 placed.push(Placed {
                     group: Group::Center,
                     index: i,
@@ -320,7 +376,7 @@ impl StatusBar {
                     width: w,
                     text: it.text.clone(),
                 });
-                cx += w + GAP;
+                cx = cx.saturating_add(w).saturating_add(GAP);
             }
         }
         right_items.reverse();

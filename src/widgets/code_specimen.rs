@@ -41,7 +41,7 @@ impl Specimen for CodeEditor {
             Editing => e.editing = true,
             Disabled => e.read_only = true,
             Busy => e.set_running(e.blocks().first().cloned().or(Some(0..first_line))),
-            Error => e.diagnostics.push(Diagnostic {
+            Error => e.push_diagnostic(Diagnostic {
                 range: 0..first_line.min(4),
                 severity: Severity::Error,
                 message: "expected an item".into(),

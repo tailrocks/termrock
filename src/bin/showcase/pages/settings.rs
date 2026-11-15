@@ -125,9 +125,7 @@ fn states_grid() -> StateGrid {
     use SpecimenState::*;
     let tabs = Tabs::new(ID.sub("states-tabs"), &["General", "Members", "Env"]);
     let mut tabs = tabs;
-    if let Some(general) = tabs.items.get_mut(0) {
-        general.dirty = true;
-    }
+    tabs.update_item(0, |general| general.dirty = true);
     StateGrid::new(ID.sub("states"))
         .label_width(14)
         .column_width(26)
@@ -445,9 +443,8 @@ impl Page for SettingsPage {
             None => Outcome::Ignored,
         };
 
-        if let Some(general) = self.tabs.items.get_mut(0) {
-            general.dirty = self.dirty && self.opts.on("settings.tab_dirty");
-        }
+        let dirty = self.dirty && self.opts.on("settings.tab_dirty");
+        self.tabs.update_item(0, |general| general.dirty = dirty);
         out
     }
 

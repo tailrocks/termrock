@@ -5,6 +5,7 @@ use ratatui::style::Style;
 use crate::core::id::{PartRef, WidgetId};
 use crate::theme::Theme;
 use crate::ui::ctx::{RenderCtx, fill};
+use crate::ui::measure::terminal_extent;
 use crate::ui::text::width;
 use crate::ui::tooltip::Tip;
 
@@ -101,9 +102,13 @@ impl IconButton {
         self.glyph.as_deref().unwrap_or(t.glyphs.close)
     }
 
+    /// Glyph plus padding on both sides, saturating at `u16::MAX`.
     pub fn width(&self, t: &Theme) -> u16 {
-        let total = width(self.glyph(t)).saturating_add(2 * usize::from(self.pad));
-        u16::try_from(total).unwrap_or(u16::MAX)
+        terminal_extent(self.intrinsic_width(t))
+    }
+
+    pub(crate) fn intrinsic_width(&self, t: &Theme) -> usize {
+        width(self.glyph(t)).saturating_add(2 * usize::from(self.pad))
     }
 
     pub fn style(&self, ctx: &RenderCtx, host: Style) -> Style {

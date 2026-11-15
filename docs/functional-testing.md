@@ -327,6 +327,20 @@ that makes an unwanted earlier effect observable. Check disabled styling
 with the target held, then exercise a working control in the same session.
 Do not increase arbitrary sleeps until a flaky test appears green.
 
+Walk and look up through the shared helpers in `tests/functional/support.rs`,
+never with a per-test loop that polls against a short deadline of its own. A
+deadline of 800 ms, 3 s or 5 s passes on an idle machine and fails when the
+harness shares CPU with other jobs, so these helpers end on the state they
+wait for:
+
+- `App::press_until(key, goal, max_presses, watch, reached)` presses a key
+  until `reached` accepts the screen. After each press it waits for
+  `watch(screen)` to change, so a slow application is waited for, not
+  pressed again. A press that moves nothing fails with the screen.
+- `App::wait_point` and `App::wait_button` locate a target on the screen once
+  it is painted, in place of a one-shot `screen()` lookup.
+- `App::wait_exit` waits for the child to quit.
+
 For an asynchronous operation, wait for a durable result rather than a
 very short spinner frame. Inspect an intermediate progress state only when
 the application provides a controlled clock or stable observable barrier.

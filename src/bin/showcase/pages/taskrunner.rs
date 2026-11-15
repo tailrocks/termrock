@@ -163,7 +163,7 @@ impl TaskRunnerPage {
             tree.expand_all();
         }
         self.tree = tree;
-        self.log = ScrollPanel::new(ID.sub("log"), self.log.lines.clone())
+        self.log = ScrollPanel::new(ID.sub("log"), self.log.lines().to_vec())
             .tail(o.on("taskrunner.follow"))
             .wrap(o.on("taskrunner.wrap"));
     }
@@ -174,7 +174,7 @@ impl TaskRunnerPage {
             t.state = TaskState::Queued;
         }
         self.running = true;
-        self.log.lines.clear();
+        self.log.clear();
         self.log.push("Pipeline started".into());
         self.log.follow = true;
         cx.status("Pipeline running");

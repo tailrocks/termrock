@@ -267,11 +267,17 @@ impl<S: TableEditSource + ?Sized> TableRows for EditRows<'_, S> {
     }
 }
 
+enum Refused {
+    Ineligible,
+    Invalid(String),
+}
+
 #[derive(Debug, Clone)]
 pub struct ChoiceEdit {
     pub row: usize,
     pub col: usize,
     pub editor: ChoiceEditor,
+    generation: u64,
 }
 
 #[derive(Debug, Clone)]
@@ -280,6 +286,7 @@ pub struct EditState {
     pub col: usize,
 
     pub field: EditField,
+    generation: u64,
 }
 
 impl crate::ui::measure::Measure for DataTable {
@@ -395,6 +402,7 @@ pub struct DataTable {
     typeahead: crate::core::typeahead::TypeAhead,
 
     pub choice: Option<ChoiceEdit>,
+    structural_generation: u64,
 
     pub editor_config: EditorConfig,
 
@@ -499,6 +507,7 @@ impl DataTable {
             type_ahead_precedence: None,
             typeahead: Default::default(),
             choice: None,
+            structural_generation: 0,
             editor_config: EditorConfig::default(),
             keyed: KeyedState::new(),
             layout_generation: 0,
@@ -616,6 +625,12 @@ impl DataTable {
     pub fn set_row_disabled(&mut self, src: usize, disabled: bool) {
         if disabled {
             self.disabled.insert(src);
+            if self.edit.as_ref().is_some_and(|e| e.row == src) {
+                self.edit = None;
+            }
+            if self.choice.as_ref().is_some_and(|c| c.row == src) {
+                self.choice = None;
+            }
             self.selection.retain(|r| r != src);
             if self.selected == Some(src) {
                 self.selected = None;
@@ -725,6 +740,7 @@ impl DataTable {
             }));
         }
         let cursor_src = self.order.get(self.cursor_row).copied();
+        self.structural_change();
         self.rows[src] = cells;
         if let Some((c, d)) = self.sort {
             self.apply_sort(c, d);
@@ -737,11 +753,18 @@ impl DataTable {
     }
 
     pub fn remove_rows(&mut self, srcs: &[usize]) {
-        let gone: BTreeSet<usize> = srcs.iter().copied().collect();
+        let gone: BTreeSet<usize> = srcs
+            .iter()
+            .copied()
+            .filter(|&r| r < self.rows.len())
+            .collect();
+        if gone.is_empty() {
+            return;
+        }
         let map = |r: usize| (!gone.contains(&r)).then(|| r - gone.range(..r).count());
         let cursor_src = self.order.get(self.cursor_row).copied();
         let len = self.rows.len();
-        self.edit = None;
+        self.structural_change();
         self.selection.remap(map);
         self.disabled = self.disabled.iter().filter_map(|&r| map(r)).collect();
         self.selected = self.selected.and_then(map);
@@ -1151,8 +1174,7 @@ impl DataTable {
     }
 
     fn install_rows(&mut self, rows: Vec<Vec<Cell>>) {
-        self.edit = None;
-        self.choice = None;
+        self.structural_change();
         self.selected = None;
         self.selection.clear();
         self.disabled.retain(|&r| r < rows.len());
@@ -1267,17 +1289,15 @@ impl DataTable {
     ) -> Response<TableAction> {
         self.clamp_cursor(rows.len());
         let col = self.cursor_col;
-        if rows.len() == 0 || !rows.editable() || !self.columns.get(col).is_some_and(|c| c.editable)
-        {
+        let Some(&src) = self.order.get(self.cursor_row) else {
+            return Response::consumed();
+        };
+        if rows.len() == 0 || !self.editable_target(rows, src, col) {
             return Response::consumed();
         }
 
         self.scroll.ensure_visible(self.cursor_row);
         self.ensure_col_visible();
-        let src = self.order[self.cursor_row];
-        if rows.row_disabled(src) {
-            return Response::consumed();
-        }
         let Some(text) = rows.cell(src, col).map(|c| c.text.to_owned()) else {
             return Response::consumed();
         };
@@ -1289,10 +1309,11 @@ impl DataTable {
             return match self.apply_value(rows, src, col, next) {
                 Ok(Some(action)) => Response::emit(action),
                 Ok(None) => Response::changed(),
-                Err(msg) => {
+                Err(Refused::Invalid(msg)) => {
                     rows.flag(src, col, Some(msg));
                     Response::changed()
                 }
+                Err(Refused::Ineligible) => Response::consumed(),
             };
         }
         if editor.is_constrained() {
@@ -1301,6 +1322,7 @@ impl DataTable {
                 row: src,
                 col,
                 editor,
+                generation: self.structural_generation,
             });
             return Response::changed();
         }
@@ -1310,8 +1332,17 @@ impl DataTable {
             row: src,
             col,
             field,
+            generation: self.structural_generation,
         });
         Response::changed()
+    }
+
+    fn editable_target<R: TableRows + ?Sized>(&self, rows: &R, src: usize, col: usize) -> bool {
+        rows.editable()
+            && !rows.row_disabled(src)
+            && !self.is_disabled(src)
+            && self.columns.get(col).is_some_and(|c| c.editable)
+            && rows.cell(src, col).is_some()
     }
 
     /// Validates and stores `text`. `Ok(None)` is a valid no-op: the text equals
@@ -1322,18 +1353,21 @@ impl DataTable {
         src: usize,
         col: usize,
         text: String,
-    ) -> Result<Option<TableAction>, String> {
+    ) -> Result<Option<TableAction>, Refused> {
+        if !self.editable_target(rows, src, col) {
+            return Err(Refused::Ineligible);
+        }
         if let Some(Err(err)) = self.validator.as_ref().map(|v| v.validate_in(&col, &text)) {
-            return Err(err.into_message());
+            return Err(Refused::Invalid(err.into_message()));
         }
         let Some(cell) = rows.cell(src, col) else {
-            return Err(String::new());
+            return Err(Refused::Ineligible);
         };
         if cell.text == text {
             rows.flag(src, col, None);
             return Ok(None);
         }
-        rows.commit(src, col, text)?;
+        rows.commit(src, col, text).map_err(Refused::Invalid)?;
         if let Some((c, d)) = self.sort
             && c == col
         {
@@ -1362,10 +1396,20 @@ impl DataTable {
             ChoiceResult::Commit(v) => (v, None),
             ChoiceResult::CommitAndTab { value, backward } => (value, Some(backward)),
         };
-        let Some((src, col)) = self.choice.as_ref().map(|c| (c.row, c.col)) else {
+        let Some((src, col, generation)) =
+            self.choice.as_ref().map(|c| (c.row, c.col, c.generation))
+        else {
             return Response::ignored();
         };
+        if !self.session_target_live(rows, src, col, generation) {
+            self.choice = None;
+            return Response::emit(TableAction::Cancelled);
+        }
         match self.apply_value(rows, src, col, value) {
+            Err(Refused::Ineligible) => {
+                self.choice = None;
+                Response::emit(TableAction::Cancelled)
+            }
             Ok(committed) => {
                 self.choice = None;
                 let mut resp = Response::changed();
@@ -1377,7 +1421,7 @@ impl DataTable {
                     None => resp,
                 }
             }
-            Err(msg) => {
+            Err(Refused::Invalid(msg)) => {
                 if let Some(c) = self.choice.as_mut() {
                     c.editor.error = Some(msg);
                 }
@@ -1467,6 +1511,11 @@ impl DataTable {
     fn commit_edit_in<R: TableRows + ?Sized>(&mut self, rows: &mut R) -> Option<TableAction> {
         let mut e = self.edit.take()?;
         let src = e.row;
+        if !self.session_target_live(rows, e.row, e.col, e.generation)
+            || !self.editable_target(rows, e.row, e.col)
+        {
+            return Some(TableAction::Cancelled);
+        }
         if !e.field.validate() {
             self.edit = Some(e);
             return None;
@@ -1499,10 +1548,28 @@ impl DataTable {
     }
 
     pub fn cancel_edit(&mut self) -> Option<TableAction> {
-        if self.choice.take().is_some() {
-            return Some(TableAction::Cancelled);
-        }
-        self.edit.take().map(|_| TableAction::Cancelled)
+        self.cancel_sessions().then_some(TableAction::Cancelled)
+    }
+
+    fn cancel_sessions(&mut self) -> bool {
+        let text_closed = self.edit.take().is_some();
+        let choice_closed = self.choice.take().is_some();
+        text_closed || choice_closed
+    }
+
+    fn structural_change(&mut self) {
+        self.cancel_sessions();
+        self.structural_generation = self.structural_generation.wrapping_add(1);
+    }
+
+    fn session_target_live<R: TableRows + ?Sized>(
+        &self,
+        rows: &R,
+        row: usize,
+        col: usize,
+        generation: u64,
+    ) -> bool {
+        generation == self.structural_generation && rows.cell(row, col).is_some()
     }
 
     pub fn on_blur(&mut self) -> Response<TableAction> {
@@ -1563,6 +1630,9 @@ impl DataTable {
                     let mut resp = Response::changed();
                     if let Some(action) = committed {
                         resp.push_action(action);
+                    }
+                    if committed == Some(TableAction::Cancelled) {
+                        return resp;
                     }
                     resp.merge(self.tab_after_commit(rows, backward))
                 }

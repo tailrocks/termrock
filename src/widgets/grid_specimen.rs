@@ -72,8 +72,7 @@ impl Specimen for DataGrid {
             })
             .expect("sample rows keep the schema width");
         }
-        g.edit = None;
-        g.choice = None;
+        g.cancel_edit();
         g.cursor = (0, g.cursor.1);
         let row = 1.min(g.len().saturating_sub(1));
         let v = state.visual();

@@ -358,7 +358,7 @@ impl ContextSource for DataGrid {
 impl ContextSource for Tabs {
     type Target = usize;
     fn context_target(&self, ev: &PointerEvent) -> Option<usize> {
-        ev.on(self.id).then(|| ev.index_of(Part::TAB))?
+        (self.layout_valid() && ev.on(self.id)).then(|| ev.index_of(Part::TAB))?
     }
     fn context_select(&mut self, tab: usize) {
         if let Some(i) = Navigable::cursor(self).select(tab, self).index() {
@@ -366,7 +366,7 @@ impl ContextSource for Tabs {
         }
     }
     fn context_cursor(&self) -> Option<ContextRequest<usize>> {
-        (self.cursor < self.items.len()).then(|| ContextRequest {
+        (self.cursor < self.items().len()).then(|| ContextRequest {
             target: self.cursor,
             anchor: ContextAnchor::Control {
                 id: self.tab_id(self.cursor),

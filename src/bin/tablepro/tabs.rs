@@ -190,74 +190,145 @@ impl Filter {
         }
     }
 
-    pub fn to_sql(&self) -> String {
-        let c = &self.column;
-        let v = &self.value;
+    /// The one expression that evaluates this filter and renders its SQL.
+    pub fn expression(&self) -> sql::Expr {
+        use sql::{Expr, PredicateOp as P};
+        let leaf = |op: P| {
+            Expr::Leaf(sql::Predicate {
+                column: self.column.clone(),
+                op,
+            })
+        };
+        let v = self.value.clone();
+        let list = || self.value.split(',').map(|s| s.trim().to_owned()).collect();
         match self.op {
-            FilterOp::Eq => format!("{c} = '{v}'"),
-            FilterOp::Ne => format!("{c} != '{v}'"),
-            FilterOp::Contains => format!("{c} LIKE '%{v}%'"),
-            FilterOp::NotContains => format!("{c} NOT LIKE '%{v}%'"),
-            FilterOp::StartsWith => format!("{c} LIKE '{v}%'"),
-            FilterOp::EndsWith => format!("{c} LIKE '%{v}'"),
-            FilterOp::Gt => format!("{c} > '{v}'"),
-            FilterOp::Ge => format!("{c} >= '{v}'"),
-            FilterOp::Lt => format!("{c} < '{v}'"),
-            FilterOp::Le => format!("{c} <= '{v}'"),
-            FilterOp::IsNull => format!("{c} IS NULL"),
-            FilterOp::IsNotNull => format!("{c} IS NOT NULL"),
-            FilterOp::IsEmpty => format!("{c} = ''"),
-            FilterOp::IsNotEmpty => format!("{c} != ''"),
-            FilterOp::In => format!(
-                "{c} IN ({})",
-                v.split(',')
-                    .map(|s| format!("'{}'", s.trim()))
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            ),
-            FilterOp::NotIn => format!(
-                "{c} NOT IN ({})",
-                v.split(',')
-                    .map(|s| format!("'{}'", s.trim()))
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            ),
-            FilterOp::Between => format!("{c} >= '{v}' AND {c} <= '{}'", self.value2),
-            FilterOp::Regex => format!("{c} ~ '{v}'"),
+            FilterOp::Eq => leaf(P::Eq(v)),
+            FilterOp::Ne => leaf(P::Ne(v)),
+            FilterOp::Contains => leaf(P::Contains(v)),
+            FilterOp::NotContains => Expr::Not(Box::new(leaf(P::Contains(v)))),
+            FilterOp::StartsWith => leaf(P::StartsWith(v)),
+            FilterOp::EndsWith => leaf(P::EndsWith(v)),
+            FilterOp::Gt => leaf(P::Gt(v)),
+            FilterOp::Ge => leaf(P::Ge(v)),
+            FilterOp::Lt => leaf(P::Lt(v)),
+            FilterOp::Le => leaf(P::Le(v)),
+            FilterOp::IsNull => leaf(P::IsNull),
+            FilterOp::IsNotNull => leaf(P::IsNotNull),
+            FilterOp::IsEmpty => leaf(P::Eq(String::new())),
+            FilterOp::IsNotEmpty => leaf(P::Ne(String::new())),
+            FilterOp::In => leaf(P::In(list())),
+            FilterOp::NotIn => Expr::Not(Box::new(leaf(P::In(list())))),
+            FilterOp::Between => Expr::All(vec![leaf(P::Ge(v)), leaf(P::Le(self.value2.clone()))]),
+            FilterOp::Regex => leaf(P::Regex(v)),
         }
     }
 
-    pub fn predicates(&self) -> Vec<sql::Predicate> {
-        use sql::Cmp;
-        let p = |cmp: Cmp, value: &str| sql::Predicate {
-            column: self.column.clone(),
-            cmp,
-            value: value.to_owned(),
-        };
-        match self.op {
-            FilterOp::Eq => vec![p(Cmp::Eq, &self.value)],
-            FilterOp::Ne => vec![p(Cmp::Ne, &self.value)],
-            FilterOp::Contains => vec![p(Cmp::Like, &format!("%{}%", self.value))],
-            FilterOp::NotContains => vec![],
-            FilterOp::StartsWith => vec![p(Cmp::Like, &format!("{}%", self.value))],
-            FilterOp::EndsWith => vec![p(Cmp::Like, &format!("%{}", self.value))],
-            FilterOp::Gt => vec![p(Cmp::Gt, &self.value)],
-            FilterOp::Ge => vec![p(Cmp::Ge, &self.value)],
-            FilterOp::Lt => vec![p(Cmp::Lt, &self.value)],
-            FilterOp::Le => vec![p(Cmp::Le, &self.value)],
-            FilterOp::IsNull => vec![p(Cmp::IsNull, "")],
-            FilterOp::IsNotNull => vec![p(Cmp::IsNotNull, "")],
-            FilterOp::IsEmpty => vec![p(Cmp::Eq, "")],
-            FilterOp::IsNotEmpty => vec![p(Cmp::Ne, "")],
-            FilterOp::In => vec![p(
-                Cmp::In(self.value.split(',').map(|s| s.trim().to_owned()).collect()),
-                "",
-            )],
-            FilterOp::NotIn => vec![],
-            FilterOp::Between => vec![p(Cmp::Ge, &self.value), p(Cmp::Le, &self.value2)],
-            FilterOp::Regex => vec![p(Cmp::Like, &format!("%{}%", self.value))],
-        }
+    pub fn to_sql(&self) -> String {
+        self.expression().to_sql()
     }
+
+    /// Rules the editor enforces before a filter can replace the current view.
+    /// Whatever passes here evaluates on every row without a per-row failure.
+    pub fn check(&self, ty: ColType) -> Result<(), FilterError> {
+        let fail = |field, message: &str| {
+            Err(FilterError {
+                field,
+                message: message.into(),
+            })
+        };
+        if self.op.needs_value() && self.value.is_empty() {
+            return fail(FilterField::Value, "A value is required for this operator");
+        }
+        if self.op == FilterOp::Between && self.value2.is_empty() {
+            return fail(FilterField::Value2, "A value is required for this operator");
+        }
+        let is_list = matches!(self.op, FilterOp::In | FilterOp::NotIn);
+        if is_list && self.value.split(',').any(|s| s.trim().is_empty()) {
+            return fail(FilterField::Value, "List items cannot be empty");
+        }
+        if self.op == FilterOp::Regex {
+            sql::compile_regex(&self.value).map_err(|message| FilterError {
+                field: FilterField::Value,
+                message,
+            })?;
+        }
+        let numeric = matches!(ty, ColType::Int | ColType::Numeric);
+        let ordinal = matches!(
+            self.op,
+            FilterOp::Eq
+                | FilterOp::Ne
+                | FilterOp::Gt
+                | FilterOp::Ge
+                | FilterOp::Lt
+                | FilterOp::Le
+                | FilterOp::In
+                | FilterOp::NotIn
+                | FilterOp::Between
+        );
+        type Parses = fn(&str) -> bool;
+        let typed: Option<(&str, Parses)> = match ty {
+            ColType::Int => Some(("Enter a whole number", |t| t.parse::<i64>().is_ok())),
+            ColType::Numeric => Some(("Enter a number", |t| {
+                t.parse::<f64>().is_ok_and(f64::is_finite)
+            })),
+            ColType::Bool => Some(("Enter true or false", |t| {
+                t.eq_ignore_ascii_case("true") || t.eq_ignore_ascii_case("false")
+            })),
+            _ => None,
+        };
+        if let (true, Some((msg, parses))) = (ordinal, typed) {
+            let operands: Vec<(FilterField, &str)> = match self.op {
+                FilterOp::In | FilterOp::NotIn => self
+                    .value
+                    .split(',')
+                    .map(|t| (FilterField::Value, t.trim()))
+                    .collect(),
+                FilterOp::Between => vec![
+                    (FilterField::Value, self.value.as_str()),
+                    (FilterField::Value2, self.value2.as_str()),
+                ],
+                _ => vec![(FilterField::Value, self.value.as_str())],
+            };
+            for (field, text) in operands {
+                if !parses(text) {
+                    return fail(field, msg);
+                }
+            }
+        }
+        if self.op == FilterOp::Between {
+            let ordered = if ty == ColType::Int {
+                matches!(
+                    (self.value.parse::<i64>(), self.value2.parse::<i64>()),
+                    (Ok(lo), Ok(hi)) if lo <= hi
+                )
+            } else if numeric {
+                let lo = self.value.parse::<f64>().unwrap_or(f64::NAN);
+                let hi = self.value2.parse::<f64>().unwrap_or(f64::NAN);
+                lo <= hi
+            } else {
+                self.value.to_lowercase() <= self.value2.to_lowercase()
+            };
+            if !ordered {
+                return fail(
+                    FilterField::Value2,
+                    "The upper bound is below the lower bound",
+                );
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FilterField {
+    Value,
+    Value2,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FilterError {
+    pub field: FilterField,
+    pub message: String,
 }
 
 fn quote(v: &str) -> String {
@@ -381,6 +452,26 @@ impl Default for TableViewState {
     }
 }
 
+impl TableViewState {
+    /// The WHERE clause for the enabled filters, joined by the match mode.
+    /// With no enabled filter there is no clause at all.
+    pub fn filter_expr(&self) -> Option<sql::Expr> {
+        let children: Vec<sql::Expr> = self
+            .filters
+            .iter()
+            .filter(|f| f.enabled)
+            .map(Filter::expression)
+            .collect();
+        if children.is_empty() {
+            None
+        } else if self.match_all {
+            Some(sql::Expr::All(children))
+        } else {
+            Some(sql::Expr::Any(children))
+        }
+    }
+}
+
 /// Rows read for one view, not yet shown. Preparing one touches nothing.
 pub struct LoadedTable {
     rows: GridRows,
@@ -435,7 +526,7 @@ impl TableTab {
         }
         grid.empty = EmptyState::new("No rows").hint("f changes the filter");
         let mut chips = ChipBar::new(id.sub("chips"));
-        chips.lead = Some("match all ▾".into());
+        chips.set_lead(Some("match all ▾".into()));
 
         let mut mode_tabs = Tabs::new(id.sub("mode"), &["Data", "Structure"]);
         mode_tabs.active = 0;
@@ -490,15 +581,11 @@ impl TableTab {
     }
 
     fn select(&self, view: &TableViewState) -> sql::Select {
-        let mut predicates = Vec::new();
-        for f in view.filters.iter().filter(|f| f.enabled) {
-            predicates.extend(f.predicates());
-        }
         sql::Select {
             columns: vec!["*".into()],
             schema: Some(self.schema.clone()),
             table: self.name.clone(),
-            predicates,
+            filter: view.filter_expr(),
             order: view
                 .sort
                 .map(|(c, d)| (self.columns[c].0.clone(), d == SortDir::Asc)),
@@ -647,7 +734,7 @@ impl TableTab {
     }
 
     fn rebuild_chips(&mut self) {
-        self.chips.chips = self
+        let chips = self
             .view
             .filters
             .iter()
@@ -657,11 +744,12 @@ impl TableTab {
                 c
             })
             .collect();
-        self.chips.lead = Some(if self.view.match_all {
+        self.chips.set_chips(chips);
+        self.chips.set_lead(Some(if self.view.match_all {
             "match all ▾".into()
         } else {
             "match any ▾".into()
-        });
+        }));
     }
 
     fn rebuild_structure(&mut self, table: &Table) {
@@ -867,7 +955,9 @@ impl TableTab {
                 let km = &self.chips.keymap;
                 let mut h = vec![hint("Enter", "Edit filter"), hint("Space", "Enable")];
                 h.extend(hint_key(km, ChipCmd::Remove).map(|k| hint(k, "Remove")));
-                h.extend(hint_key(km, ChipCmd::Add).map(|k| hint(k, "Add")));
+                if self.chips.add_label().is_some() {
+                    h.extend(hint_key(km, ChipCmd::Add).map(|k| hint(k, "Add")));
+                }
                 h
             }
             Some(f) if f == self.structure_tabs.id => {
@@ -1011,7 +1101,7 @@ impl TableTab {
                     );
                     let sy = inner.bottom().saturating_sub(1);
                     let n = self.structure.len();
-                    let what = self.structure_tabs.items[self.structure_tabs.active]
+                    let what = self.structure_tabs.items()[self.structure_tabs.active]
                         .label
                         .to_lowercase();
                     buf.set_string(
@@ -1065,6 +1155,7 @@ pub struct PlanInfo {
 }
 
 pub struct ResultSet {
+    pub key: ItemKey,
     pub label: String,
     pub pinned: bool,
     pub anchor: Range<usize>,
@@ -1086,6 +1177,35 @@ pub struct Running {
     pub results: Vec<ResultSet>,
 }
 
+#[derive(Clone, Copy)]
+struct ResultSlot {
+    n: usize,
+    key: ItemKey,
+}
+
+enum RunTerminal {
+    Complete { failed: bool },
+    Cancelled,
+}
+
+fn mint_result_key(counter: &mut u64) -> ItemKey {
+    *counter += 1;
+    ItemKey::num(*counter)
+}
+
+/// The active index after `removed` leaves a strip that now holds `new_len` results.
+/// Closing an earlier result shifts the active one down, and closing the active one
+/// selects its successor, or its predecessor when it was last.
+fn active_after_remove(active: usize, removed: usize, new_len: usize) -> usize {
+    if new_len == 0 {
+        0
+    } else if removed < active {
+        active - 1
+    } else {
+        active.min(new_len - 1)
+    }
+}
+
 pub struct QueryTab {
     pub key: ItemKey,
     pub id: WidgetId,
@@ -1104,6 +1224,7 @@ pub struct QueryTab {
     pub last_status: Option<(String, bool)>,
     pub last_duration: Option<u32>,
     pub result_counter: usize,
+    next_result_key: u64,
     pub unseen: bool,
     pub saved_text: String,
 
@@ -1135,6 +1256,7 @@ impl QueryTab {
             last_status: None,
             last_duration: None,
             result_counter: 0,
+            next_result_key: 0,
             unseen: false,
             saved_text: text.to_owned(),
         }
@@ -1205,10 +1327,14 @@ impl QueryTab {
             return;
         }
 
-        let pinned: Vec<ResultSet> = self.results.drain(..).filter(|r| r.pinned).collect();
-        self.results = pinned;
+        let active = self.results.get(self.active_result).map(|r| r.key);
+        self.results.retain(|r| r.pinned);
+        self.active_result = active
+            .and_then(|k| self.results.iter().position(|r| r.key == k))
+            .unwrap_or(0);
+        self.sync_result_tabs();
         self.editor.set_running(Some(statements[0].1.clone()));
-        self.editor.diagnostics.clear();
+        self.editor.set_diagnostics(Vec::new());
         self.running = Some(Running {
             statements,
             current: 0,
@@ -1222,23 +1348,11 @@ impl QueryTab {
     }
 
     pub fn cancel(&mut self) -> bool {
-        if let Some(r) = self.running.take() {
-            self.editor.set_running(None);
-            let (_, range) = r.statements[r.current].clone();
-            self.results.push(ResultSet {
-                source: None,
-                source_changed: false,
-                label: "Cancelled".into(),
-                pinned: false,
-                anchor: range,
-                duration_ms: r.started_ticks * 80,
-                body: ResultBody::Cancelled,
-            });
-            self.sync_result_tabs();
-            self.last_status = Some(("cancelled".into(), false));
-            return true;
-        }
-        false
+        let Some(run) = self.running.take() else {
+            return false;
+        };
+        self.finish_running(run, RunTerminal::Cancelled);
+        true
     }
 
     pub fn tick(&mut self, src: Source, connection: &str, database: &str) -> Vec<HistoryEntry> {
@@ -1253,6 +1367,7 @@ impl QueryTab {
         }
         let (sql_text, range) = r.statements[r.current].clone();
         let explain = r.explain;
+        let key = mint_result_key(&mut self.next_result_key);
         let (result, entry) = execute(
             src,
             &sql_text,
@@ -1260,7 +1375,10 @@ impl QueryTab {
             explain,
             connection,
             database,
-            self.result_counter + 1,
+            ResultSlot {
+                n: self.result_counter + 1,
+                key,
+            },
         );
         self.result_counter += 1;
         let failed = matches!(result.body, ResultBody::Error { .. });
@@ -1271,7 +1389,7 @@ impl QueryTab {
             } else {
                 range.end
             };
-            self.editor.diagnostics.push(Diagnostic {
+            self.editor.push_diagnostic(Diagnostic {
                 range: start..end,
                 severity: Severity::Error,
                 message: message.clone(),
@@ -1281,40 +1399,7 @@ impl QueryTab {
         out.push(entry);
         if failed || r.current + 1 >= r.statements.len() {
             let done = self.running.take().unwrap();
-            self.editor.set_running(None);
-            let n = done.results.len();
-            let total_ms: u32 = done.results.iter().map(|r| r.duration_ms).sum();
-            let last_failed = failed;
-            self.results.extend(done.results);
-            self.sync_result_tabs();
-            self.active_result = self.results.len().saturating_sub(1);
-            self.result_tabs.set_active(self.active_result);
-            self.last_duration = Some(total_ms);
-            if last_failed {
-                let msg = if done.all && n > 1 {
-                    format!("Statement {n}/{} failed", done.statements.len())
-                } else {
-                    "error".into()
-                };
-                self.last_status = Some((msg, true));
-            } else {
-                self.last_status = Some((
-                    format!(
-                        "{} · {}",
-                        if n > 1 {
-                            format!("{n} statements")
-                        } else {
-                            "ok".into()
-                        },
-                        duration(
-                            std::time::Duration::from_millis(u64::from(total_ms)),
-                            DurationStyle::Compact
-                        )
-                    ),
-                    false,
-                ));
-            }
-            self.unseen = true;
+            self.finish_running(done, RunTerminal::Complete { failed });
         } else {
             r.current += 1;
             r.ticks_left = 4;
@@ -1340,6 +1425,62 @@ impl QueryTab {
         if marked {
             self.sync_result_tabs();
         }
+    }
+
+    fn finish_running(&mut self, run: Running, terminal: RunTerminal) {
+        self.editor.set_running(None);
+        let Running {
+            statements,
+            current,
+            started_ticks,
+            all,
+            results: done,
+            ..
+        } = run;
+        let n = done.len();
+        let total_ms: u32 = done.iter().map(|r| r.duration_ms).sum();
+        self.results.extend(done);
+        match terminal {
+            RunTerminal::Cancelled => {
+                let key = mint_result_key(&mut self.next_result_key);
+                self.results.push(ResultSet {
+                    key,
+                    source: None,
+                    source_changed: false,
+                    label: "Cancelled".into(),
+                    pinned: false,
+                    anchor: statements[current].1.clone(),
+                    duration_ms: started_ticks * 80,
+                    body: ResultBody::Cancelled,
+                });
+                self.last_status = Some(("cancelled".into(), false));
+            }
+            RunTerminal::Complete { failed } => {
+                self.last_duration = Some(total_ms);
+                self.last_status = Some(if failed {
+                    let msg = if all && n > 1 {
+                        format!("Statement {n}/{} failed", statements.len())
+                    } else {
+                        "error".into()
+                    };
+                    (msg, true)
+                } else {
+                    let summary = if n > 1 {
+                        format!("{n} statements")
+                    } else {
+                        "ok".into()
+                    };
+                    let took = duration(
+                        std::time::Duration::from_millis(u64::from(total_ms)),
+                        DurationStyle::Compact,
+                    );
+                    (format!("{summary} · {took}"), false)
+                });
+                self.unseen = true;
+            }
+        }
+        self.active_result = self.results.len().saturating_sub(1);
+        self.sync_result_tabs();
     }
 
     fn sync_result_tabs(&mut self) {
@@ -1378,12 +1519,12 @@ impl QueryTab {
     pub fn close_result(&mut self, i: usize) {
         if i < self.results.len() && !self.results[i].pinned {
             self.results.remove(i);
+            self.active_result = active_after_remove(self.active_result, i, self.results.len());
             self.sync_result_tabs();
-            self.active_result = self.active_result.min(self.results.len().saturating_sub(1));
-            self.result_tabs.set_active(self.active_result);
         }
     }
 
+    /// Pinning or unpinning is an explicit action on that result, so it becomes the active one.
     pub fn toggle_pin(&mut self, i: usize) {
         if i < self.results.len() {
             self.results[i].pinned = !self.results[i].pinned;
@@ -1431,8 +1572,9 @@ impl QueryTab {
     }
 
     fn accept_completion(&mut self, i: usize) {
-        self.completion.apply(i, &mut self.editor.field.buffer);
-        self.completion.close();
+        if self.completion.apply(i, &mut self.editor.field.buffer) {
+            self.completion.close();
+        }
     }
 
     pub fn hints(&self, focus: Option<WidgetId>) -> Vec<Hint> {
@@ -1529,7 +1671,7 @@ impl QueryTab {
             let (o, ev) = self.editor.on_key(key);
             match ev {
                 Some(EditorAction::Changed) => {
-                    self.editor.diagnostics.clear();
+                    self.editor.set_diagnostics(Vec::new());
                     self.trigger_completion(src, false);
                 }
                 Some(EditorAction::CursorMoved) => {
@@ -2300,8 +2442,9 @@ fn execute(
     explain: Option<bool>,
     connection: &str,
     database: &str,
-    n: usize,
+    slot: ResultSlot,
 ) -> (ResultSet, HistoryEntry) {
+    let ResultSlot { n, key } = slot;
     let mut entry = HistoryEntry {
         id: 0,
         sql: text.to_owned(),
@@ -2324,6 +2467,7 @@ fn execute(
             entry.error = Some(e.message.clone());
             return (
                 ResultSet {
+                    key,
                     source: None,
                     source_changed: false,
                     label: format!("Error {n}"),
@@ -2424,6 +2568,7 @@ fn execute(
                 entry.rows = Some(rs.rows.len());
                 (
                     ResultSet {
+                        key,
                         source,
                         source_changed: false,
                         label: format!(
@@ -2443,6 +2588,7 @@ fn execute(
                 entry.error = Some(e.message.clone());
                 (
                     ResultSet {
+                        key,
                         source: None,
                         source_changed: false,
                         label: format!("Error {n}"),
@@ -2468,7 +2614,8 @@ fn execute(
                     tree.expand_all();
                     let mut raw_lines = vec![];
                     sql::plan_text(&plan, 0, &mut raw_lines);
-                    let planning = 0.21 + sel.predicates.len() as f64 * 0.09;
+                    let planning =
+                        0.21 + sel.filter.as_ref().map_or(0, sql::Expr::leaves) as f64 * 0.09;
                     raw_lines.push(format!("Planning Time: {planning:.3} ms"));
                     let exec = analyze.then(|| plan.actual_ms.unwrap_or(0.0) + 0.4);
                     if let Some(e) = exec {
@@ -2479,6 +2626,7 @@ fn execute(
                     entry.rows = Some(nodes.len());
                     (
                         ResultSet {
+                            key,
                             source: None,
                             source_changed: false,
                             label: if analyze {
@@ -2505,6 +2653,7 @@ fn execute(
                     entry.error = Some(e.message.clone());
                     (
                         ResultSet {
+                            key,
                             source: None,
                             source_changed: false,
                             label: format!("Error {n}"),
@@ -2529,6 +2678,7 @@ fn execute(
                 entry.error = Some(msg.clone());
                 (
                     ResultSet {
+                        key,
                         source: None,
                         source_changed: false,
                         label: format!("Error {n}"),
@@ -2575,6 +2725,7 @@ fn execute(
                 entry.error = Some(msg.clone());
                 return (
                     ResultSet {
+                        key,
                         source: None,
                         source_changed: false,
                         label: format!("Error {n}"),
@@ -2594,6 +2745,7 @@ fn execute(
             entry.rows = Some(rows);
             (
                 ResultSet {
+                    key,
                     source: None,
                     source_changed: false,
                     label: format!("{} ({})", label_for(other.verb(), target.as_deref()), rows),
@@ -2615,6 +2767,31 @@ fn execute(
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HistoryCommand {
+    Open,
+    Rerun,
+    Copy,
+}
+
+/// Row to select after a refresh. A selection that is still listed keeps its
+/// entry. A hidden or deleted one moves to the nearest entry after it in the
+/// previous order that is still listed, then the nearest before it, then the
+/// row at its old position, and an empty list selects nothing.
+fn reselect(before: &[ItemKey], at: usize, key: ItemKey, now: &[ItemKey]) -> Option<usize> {
+    let rows: std::collections::HashMap<ItemKey, usize> =
+        now.iter().enumerate().map(|(i, k)| (*k, i)).collect();
+    if let Some(row) = rows.get(&key) {
+        return Some(*row);
+    }
+    let after = before.get(at + 1..).unwrap_or_default().iter();
+    let ahead = before.get(..at).unwrap_or_default().iter().rev();
+    after
+        .chain(ahead)
+        .find_map(|k| rows.get(k).copied())
+        .or_else(|| now.len().checked_sub(1).map(|last| at.min(last)))
+}
+
 pub struct HistoryTab {
     pub key: ItemKey,
     pub id: WidgetId,
@@ -2625,7 +2802,8 @@ pub struct HistoryTab {
     pub failed_only: bool,
 
     pub slow_ms: u32,
-    pub filtered: Vec<usize>,
+    pub filtered: Vec<ItemKey>,
+    detail_loaded: Option<(ItemKey, String)>,
     pub open_btn: Button,
     pub rerun_btn: Button,
     pub copy_btn: Button,
@@ -2656,6 +2834,7 @@ impl HistoryTab {
             failed_only: false,
             slow_ms: 1000,
             filtered: vec![],
+            detail_loaded: None,
 
             open_btn: Button::primary(id.sub("open"), "Open in new tab")
                 .tooltip("Open the selected query in a new tab")
@@ -2683,24 +2862,33 @@ impl HistoryTab {
             },
             self.failed_only,
         );
-        self.filtered = matches.iter().map(|e| e.id).collect();
+        let before = std::mem::replace(
+            &mut self.filtered,
+            matches.iter().map(|e| e.key()).collect(),
+        );
+        let (cursor, offset, viewport) = (
+            self.list.cursor,
+            self.list.scroll.offset,
+            self.list.scroll.viewport_len,
+        );
+        let selected = before.get(cursor).copied();
+        let kept = selected.map_or_else(
+            || (!self.filtered.is_empty()).then_some(0),
+            |key| reselect(&before, cursor, key, &self.filtered),
+        );
+
         let items: Vec<ListItem> = matches
             .iter()
             .map(|e| {
-                let mut label = e.first_line();
-                if !e.ok() {
-                    label = label.to_string();
-                }
+                let label = e.first_line();
                 let meta = format!("{} · {}", e.when(), e.duration());
                 let mut it = ListItem::new(&junie_tui::ui::text::truncate(&label, 90)).meta(&meta);
                 if e.duration_ms.is_some_and(|ms| ms > self.slow_ms) {
                     it = it.meta_tone(Tone::Warning);
                 }
-                it.disabled = false;
                 it
             })
             .collect();
-        let cursor = self.list.cursor;
         self.list = ListBox::new(self.id.sub("list"), items, SelectMode::Single).empty_text(
             if q.is_empty() {
                 "No query history"
@@ -2708,28 +2896,69 @@ impl HistoryTab {
                 "No matching queries"
             },
         );
-        self.list.cursor = cursor.min(self.filtered.len().saturating_sub(1));
-        self.list.chosen = if self.filtered.is_empty() {
-            None
-        } else {
-            Some(self.list.cursor)
-        };
+        self.list.cursor = kept.unwrap_or(0);
+        self.list.chosen = kept;
+        if let Some(row) = kept
+            && viewport > 0
+        {
+            self.list.scroll.set_viewport(viewport);
+            let below_top = cursor.saturating_sub(offset).min(viewport - 1);
+            self.list.scroll.scroll_to(row.saturating_sub(below_top));
+        }
         self.sync_detail(history);
     }
 
-    pub fn current_entry<'a>(&self, history: &'a History) -> Option<&'a HistoryEntry> {
-        let id = *self.filtered.get(self.list.cursor)?;
-        history.entries.iter().find(|e| e.id == id)
+    pub fn selected_key(&self) -> Option<ItemKey> {
+        self.filtered.get(self.list.cursor).copied()
     }
 
-    fn sync_detail(&mut self, history: &History) {
-        let text = self
-            .current_entry(history)
-            .map(|e| e.sql.clone())
-            .unwrap_or_default();
-        if self.detail.text() != text {
-            self.detail.set_text(&text);
+    pub fn current_entry<'a>(&self, history: &'a History) -> Option<&'a HistoryEntry> {
+        history.get(self.selected_key()?)
+    }
+
+    pub fn row_of(&self, key: ItemKey) -> Option<usize> {
+        self.filtered.iter().position(|k| *k == key)
+    }
+
+    pub fn run_selected(&self, cmd: HistoryCommand, history: &History, cx: &mut Cx) -> Outcome {
+        match self.selected_key() {
+            Some(key) => self.run(key, cmd, history, cx),
+            None => Outcome::Changed,
         }
+    }
+
+    pub fn run(
+        &self,
+        key: ItemKey,
+        cmd: HistoryCommand,
+        history: &History,
+        cx: &mut Cx,
+    ) -> Outcome {
+        let Some(e) = history.get(key) else {
+            cx.status("That history entry is no longer available");
+            return Outcome::Changed;
+        };
+        match cmd {
+            HistoryCommand::Open => cx.go(crate::app::Act::OpenQuery(e.sql.clone(), false)),
+            HistoryCommand::Rerun => cx.go(crate::app::Act::OpenQuery(e.sql.clone(), true)),
+            HistoryCommand::Copy => cx.copy_as(e.sql.clone(), "query"),
+        }
+        Outcome::Changed
+    }
+
+    pub fn sync_detail(&mut self, history: &History) {
+        let shown = self.current_entry(history);
+        let loaded = match (&self.detail_loaded, shown) {
+            (Some((key, sql)), Some(e)) => *key == e.key() && *sql == e.sql,
+            (None, None) => true,
+            _ => false,
+        };
+        if loaded {
+            return;
+        }
+        self.detail_loaded = shown.map(|e| (e.key(), e.sql.clone()));
+        let text = shown.map_or("", |e| e.sql.as_str());
+        self.detail.set_text(text);
     }
 
     pub fn hints(&self, focus: Option<WidgetId>) -> Vec<Hint> {
@@ -2816,7 +3045,7 @@ impl HistoryTab {
         let entries: Vec<&HistoryEntry> = self
             .filtered
             .iter()
-            .filter_map(|id| history.entries.iter().find(|e| e.id == *id))
+            .filter_map(|key| history.get(*key))
             .collect();
         for (k, i) in self.list.scroll.visible_range().enumerate() {
             let y = l.y + k as u16;
@@ -3231,6 +3460,273 @@ impl<'a> WorkTabView<'a> {
 }
 
 #[cfg(test)]
+mod issue10_tests {
+    use super::*;
+    use crate::db::{self, Value};
+
+    fn orders(cat: &Catalog) -> &Table {
+        cat.find(Some("public"), "orders").expect("orders fixture")
+    }
+
+    fn filter(column: &str, op: FilterOp, value: &str, value2: &str) -> Filter {
+        Filter {
+            column: column.into(),
+            op,
+            value: value.into(),
+            value2: value2.into(),
+            enabled: true,
+        }
+    }
+
+    fn col(table: &Table, name: &str) -> usize {
+        table
+            .columns
+            .iter()
+            .position(|c| c.name == name)
+            .unwrap_or_else(|| panic!("column {name}"))
+    }
+
+    fn text<'a>(table: &Table, row: &'a [Value], name: &str) -> Option<&'a str> {
+        match &row[col(table, name)] {
+            Value::Text(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    fn id_of(table: &Table, row: &[Value]) -> String {
+        row[col(table, "id")].display()
+    }
+
+    /// Runs the tab's own select (its filters and match mode) through the simulator.
+    fn tab_ids(cat: &Catalog, filters: Vec<Filter>, match_all: bool) -> Vec<String> {
+        let table = orders(cat);
+        let mut tab = TableTab::new(WidgetId::of("issue10"), cat, table, false);
+        tab.filters = filters;
+        tab.match_all = match_all;
+        let rs = sql::run_select(cat, &tab.select()).expect("filtered select runs");
+        let id = rs
+            .columns
+            .iter()
+            .position(|c| c.0 == "id")
+            .expect("id column");
+        rs.rows.iter().map(|r| r[id].display()).collect()
+    }
+
+    /// Independent oracle over the same generated rows the simulator scans.
+    fn expected(cat: &Catalog, keep: impl Fn(&Table, &[Value]) -> bool) -> Vec<String> {
+        let table = orders(cat);
+        let scan = table.row_count.min(2_000);
+        db::rows(table, 0, scan)
+            .iter()
+            .filter(|r| keep(table, r))
+            .take(sql::ROW_CAP)
+            .map(|r| id_of(table, r))
+            .collect()
+    }
+
+    fn status_is(t: &Table, r: &[Value], want: &str) -> bool {
+        text(t, r, "status") == Some(want)
+    }
+
+    fn is_gift(t: &Table, r: &[Value]) -> bool {
+        r[col(t, "is_gift")] == Value::Bool(true)
+    }
+
+    #[test]
+    fn issue10_match_any_returns_the_union_of_enabled_filters() {
+        let cat = Catalog::acme_prod();
+        let filters = vec![
+            filter("status", FilterOp::Eq, "paid", ""),
+            filter("is_gift", FilterOp::Eq, "true", ""),
+        ];
+        assert_eq!(
+            tab_ids(&cat, filters, false),
+            expected(&cat, |t, r| status_is(t, r, "paid") || is_gift(t, r)),
+        );
+    }
+
+    #[test]
+    fn issue10_match_all_still_intersects_enabled_filters() {
+        let cat = Catalog::acme_prod();
+        let filters = vec![
+            filter("status", FilterOp::Eq, "paid", ""),
+            filter("is_gift", FilterOp::Eq, "true", ""),
+        ];
+        assert_eq!(
+            tab_ids(&cat, filters, true),
+            expected(&cat, |t, r| status_is(t, r, "paid") && is_gift(t, r)),
+        );
+    }
+
+    #[test]
+    fn issue10_no_enabled_filters_is_unrestricted() {
+        let cat = Catalog::acme_prod();
+        let disabled = Filter {
+            enabled: false,
+            ..filter("status", FilterOp::Eq, "paid", "")
+        };
+        assert_eq!(tab_ids(&cat, vec![], true), expected(&cat, |_, _| true));
+        assert_eq!(
+            tab_ids(&cat, vec![disabled], false),
+            expected(&cat, |_, _| true)
+        );
+    }
+
+    #[test]
+    fn issue10_not_contains_excludes_matches_and_nulls() {
+        let cat = Catalog::acme_prod();
+        let got = tab_ids(
+            &cat,
+            vec![filter("notes", FilterOp::NotContains, "gift", "")],
+            true,
+        );
+        assert_eq!(
+            got,
+            expected(&cat, |t, r| text(t, r, "notes")
+                .is_some_and(|s| !s.to_lowercase().contains("gift"))),
+        );
+    }
+
+    #[test]
+    fn issue10_not_in_excludes_listed_values_and_nulls() {
+        let cat = Catalog::acme_prod();
+        let got = tab_ids(
+            &cat,
+            vec![filter("status", FilterOp::NotIn, "paid, shipped", "")],
+            true,
+        );
+        assert_eq!(
+            got,
+            expected(&cat, |t, r| text(t, r, "status")
+                .is_some_and(|s| s != "paid" && s != "shipped")),
+        );
+    }
+
+    #[test]
+    fn issue10_regex_is_a_pattern_not_a_substring() {
+        let cat = Catalog::acme_prod();
+        let got = tab_ids(
+            &cat,
+            vec![filter("status", FilterOp::Regex, "^p.id$", "")],
+            true,
+        );
+        assert_eq!(got, expected(&cat, |t, r| status_is(t, r, "paid")));
+    }
+
+    #[test]
+    fn issue10_between_stays_one_child_under_match_any() {
+        let cat = Catalog::acme_prod();
+        let filters = vec![
+            filter("order_number", FilterOp::Between, "10000", "10002"),
+            filter("status", FilterOp::Eq, "paid", ""),
+        ];
+        assert_eq!(
+            tab_ids(&cat, filters, false),
+            expected(&cat, |t, r| {
+                let in_range = match r[col(t, "order_number")] {
+                    Value::Int(n) => (10_000..=10_002).contains(&n),
+                    _ => false,
+                };
+                in_range || status_is(t, r, "paid")
+            }),
+        );
+    }
+
+    #[test]
+    fn issue10_is_null_selects_only_null_rows() {
+        let cat = Catalog::acme_prod();
+        let got = tab_ids(&cat, vec![filter("notes", FilterOp::IsNull, "", "")], true);
+        assert_eq!(
+            got,
+            expected(&cat, |t, r| r[col(t, "notes")] == Value::Null)
+        );
+    }
+
+    #[test]
+    fn issue10_editor_rejects_values_that_cannot_evaluate() {
+        let int_filter = |op, value: &str, value2: &str| Filter {
+            column: "order_number".into(),
+            op,
+            value: value.into(),
+            value2: value2.into(),
+            enabled: true,
+        };
+        let text_filter = |op, value: &str| Filter {
+            column: "notes".into(),
+            op,
+            value: value.into(),
+            value2: String::new(),
+            enabled: true,
+        };
+        let err = int_filter(FilterOp::Gt, "abc", "")
+            .check(ColType::Int)
+            .unwrap_err();
+        assert_eq!(err.field, FilterField::Value);
+        assert!(err.message.contains("whole number"), "{}", err.message);
+
+        let err = int_filter(FilterOp::Between, "5", "1")
+            .check(ColType::Int)
+            .unwrap_err();
+        assert_eq!(err.field, FilterField::Value2);
+
+        let err = text_filter(FilterOp::Regex, "(")
+            .check(ColType::Text)
+            .unwrap_err();
+        assert_eq!(err.field, FilterField::Value);
+        assert!(err.message.starts_with("invalid regular expression"));
+
+        let err = text_filter(FilterOp::In, "paid,,shipped")
+            .check(ColType::Enum)
+            .unwrap_err();
+        assert_eq!(err.field, FilterField::Value);
+
+        assert!(
+            int_filter(FilterOp::Gt, "3", "")
+                .check(ColType::Int)
+                .is_ok()
+        );
+        assert!(
+            int_filter(FilterOp::Between, "1", "3")
+                .check(ColType::Int)
+                .is_ok()
+        );
+        assert!(
+            text_filter(FilterOp::Regex, "^p.id$")
+                .check(ColType::Text)
+                .is_ok()
+        );
+    }
+
+    #[test]
+    fn issue10_boolean_filter_rejects_non_boolean_operands() {
+        let gift = |op, value: &str| filter("is_gift", op, value, "");
+        let err = gift(FilterOp::Eq, "yes").check(ColType::Bool).unwrap_err();
+        assert_eq!(err.field, FilterField::Value);
+        assert_eq!(err.message, "Enter true or false");
+        let err = gift(FilterOp::In, "true, maybe")
+            .check(ColType::Bool)
+            .unwrap_err();
+        assert_eq!(err.field, FilterField::Value);
+        assert!(gift(FilterOp::Eq, "true").check(ColType::Bool).is_ok());
+        assert!(gift(FilterOp::Ne, "FALSE").check(ColType::Bool).is_ok());
+        assert!(gift(FilterOp::IsNull, "").check(ColType::Bool).is_ok());
+    }
+
+    #[test]
+    fn issue10_integer_range_order_is_exact() {
+        let err = filter(
+            "order_number",
+            FilterOp::Between,
+            "9007199254740993",
+            "9007199254740992",
+        )
+        .check(ColType::Int)
+        .unwrap_err();
+        assert_eq!(err.field, FilterField::Value2);
+    }
+}
+
+#[cfg(test)]
 mod issue9_tests {
     use super::*;
 
@@ -3255,5 +3751,26 @@ mod issue9_tests {
             assert_eq!(&sql[range.clone()], text.as_str());
         }
         assert!(!highlight_sql(sql).is_empty());
+    }
+}
+
+#[cfg(test)]
+mod issue84_tests {
+    use super::*;
+    use crate::db::Catalog;
+
+    #[test]
+    fn completion_prefix_editor_home_acceptance() {
+        let cat = Catalog::acme_prod();
+        let original = " SELECT id FROM users";
+        let mut tab = QueryTab::new(WidgetId::of("issue84"), "Query 1", "");
+        tab.editor.set_text(original);
+        assert_eq!(tab.editor.cursor_offset(), 0);
+        tab.trigger_completion(&cat, true);
+        assert!(tab.completion.is_open());
+        tab.accept_completion(0);
+        let text = tab.editor.text();
+        assert!(text.len() > original.len(), "{text:?}");
+        assert!(text.ends_with(original), "{text:?}");
     }
 }

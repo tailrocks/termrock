@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "functional/jackin_fixed_palette_export",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/private/tmp/claude-501/-Users-donbeave-Projects-tailrocks-terminal-components-baseline/5bf2943f-8395-4b73-b644-3337b88a2b17/scratchpad/cand-palette.tui.pb"
+  },
+  "candidate_sha256": "e5e18de1f34b6cc147c78a1deec374ac1bcc79cb1f33e3cbcbafb1eccc52bd69",
+  "baseline_sha256": "e5e18de1f34b6cc147c78a1deec374ac1bcc79cb1f33e3cbcbafb1eccc52bd69",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/cifix-264/apps/jackin/tests/functional/baselines/functional/jackin_fixed_palette_export.tui.pb"
+  },
+  "error_code": null
+}

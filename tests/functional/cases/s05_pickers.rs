@@ -1720,3 +1720,106 @@ fn option_international_labels_paint_whole_clusters() {
     });
     app.finish();
 }
+
+fn row_limit_page(name: &str, rows: &str, remote: &str, paused: bool) -> App {
+    let mut launch = Launch::new(name, SHOWCASE);
+    launch.args = [
+        "--page",
+        "pickers",
+        "--opt",
+        &format!("pickers.max_rows={rows}"),
+        "--opt",
+        &format!("pickers.remote={remote}"),
+    ]
+    .iter()
+    .map(|arg| arg.to_string())
+    .collect();
+    launch.cols = 120;
+    launch.rows = 40;
+    launch.color = Some("truecolor".to_string());
+    if paused {
+        launch.motion = Some("paused".to_string());
+    }
+    let app = try_launch(launch).unwrap_or_else(|error| panic!("{error}"));
+    app.wait_text("Open quickly");
+    app
+}
+
+fn picker_status_rows(screen: &TerminalSnapshot, label: &str) -> usize {
+    (0..screen.rows())
+        .filter(|row| row_text(screen, *row).contains(label))
+        .count()
+}
+
+#[test]
+fn option_row_limits_show_one_status_row_in_every_state() {
+    for rows in ["1", "0"] {
+        let app = row_limit_page(&format!("s05-rows-{rows}-loading"), rows, "stalls", true);
+        click_button(&app, "Remote branch");
+        let loading = app.wait_text("Fetching branches from origin");
+        assert_eq!(
+            picker_status_rows(&loading, "Fetching branches from origin"),
+            1,
+            "max rows {rows}: Loading owns one row\n{}",
+            text(&loading)
+        );
+        see(
+            &loading,
+            &["Remote branches \u{b7} origin"],
+            &["Could not reach origin", "feat/rate-limit"],
+        );
+        app.key("escape");
+        app.finish();
+
+        let app = row_limit_page(&format!("s05-rows-{rows}-error"), rows, "fails", false);
+        click_button(&app, "Remote branch");
+        let error = app.wait_text("Could not reach origin");
+        assert_eq!(
+            picker_status_rows(&error, "Could not reach origin"),
+            1,
+            "max rows {rows}: Error owns one row\n{}",
+            text(&error)
+        );
+        see(
+            &error,
+            &["Remote branches \u{b7} origin"],
+            &["Fetching branches from origin", "feat/rate-limit"],
+        );
+        app.key("escape");
+        app.finish();
+
+        let app = row_limit_page(&format!("s05-rows-{rows}-ready"), rows, "works", false);
+        click_button(&app, "Remote branch");
+        let ready = app.wait_screen("remote branches ready", |screen| {
+            text(screen).contains("main") && !text(screen).contains("Fetching branches")
+        });
+        see(
+            &ready,
+            &["Remote branches \u{b7} origin", "main"],
+            &["Fetching branches from origin", "Could not reach origin"],
+        );
+        app.key("escape");
+        app.finish();
+    }
+}
+
+#[test]
+fn option_remote_stalls_stays_loading() {
+    let app = page("s05-remote-stalls", Some("pickers.remote=stalls"), 120, 40);
+    let screen = app.wait_text("and it stays Loading");
+    assert_readout(
+        &screen,
+        &["remote"],
+        "Loading, and it stays Loading",
+        "Loading, then Ready",
+    );
+    click_button(&app, "Remote branch");
+    let loading = app.wait_text("Fetching branches from origin");
+    see(
+        &loading,
+        &["Fetching branches from origin"],
+        &["Could not reach origin", "feat/rate-limit"],
+    );
+    app.key("escape");
+    app.finish();
+}

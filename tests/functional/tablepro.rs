@@ -297,24 +297,20 @@ fn tablepro_clean_picker_close_is_immediate_and_picker_stays_usable() {
 }
 
 fn action_btn(app: &App, label: &str) -> Point {
-    let screen = app.screen();
-    find_all(&screen, label)
-        .into_iter()
-        .find(|pt| row_text(&screen, u32::from(pt.y)).contains("Duplicate"))
-        .unwrap_or_else(|| {
-            panic!(
-                "action {label} on the detail action row:\n{}",
-                text(&screen)
-            )
-        })
+    app.wait_point(
+        &format!("action {label} on the detail action row"),
+        |screen| {
+            find_all(screen, label)
+                .into_iter()
+                .find(|pt| row_text(screen, u32::from(pt.y)).contains("Duplicate"))
+        },
+    )
 }
 
 fn list_row(app: &App, label: &str) -> Point {
-    let screen = app.screen();
-    find_all(&screen, label)
-        .into_iter()
-        .find(|pt| pt.x < 40)
-        .unwrap_or_else(|| panic!("list row {label}:\n{}", text(&screen)))
+    app.wait_point(&format!("list row {label}"), |screen| {
+        find_all(screen, label).into_iter().find(|pt| pt.x < 40)
+    })
 }
 
 fn close_all_tabs(app: &App) {
@@ -506,14 +502,7 @@ fn tablepro_history_rerun_and_help_and_layout() {
     assert!(text(&quit).contains("unsaved"));
     app.key("right");
     app.key("enter");
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
-    while app.child_running() {
-        assert!(
-            std::time::Instant::now() < deadline,
-            "tablepro stayed up after confirming quit"
-        );
-        std::thread::sleep(std::time::Duration::from_millis(25));
-    }
+    app.wait_exit("tablepro stayed up after confirming quit");
     app.expect_exited(0);
 
     let app = connected("tablepro-help-layout");

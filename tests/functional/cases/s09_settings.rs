@@ -3,7 +3,7 @@
 //! Tuiscotti test ids are `[a-z0-9_-]` segments, so the baseline directory is
 //! `pre_refactor/s09_settings/` and each case id's dots become underscores.
 
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use tui_test::TerminalSnapshot;
 
@@ -269,15 +269,7 @@ fn discard_quit(app: &App) {
     app.key("ctrl+q");
     app.wait_text("Unsaved changes");
     click_where(app, "Discard", |hit| hit.y > 8 && hit.y < 32);
-    let deadline = Instant::now() + Duration::from_secs(8);
-    while app.child_running() {
-        assert!(
-            Instant::now() < deadline,
-            "discard did not exit\n{}",
-            text(&app.screen())
-        );
-        std::thread::sleep(Duration::from_millis(50));
-    }
+    app.wait_exit("discard did not exit");
     app.expect_exited(0);
 }
 

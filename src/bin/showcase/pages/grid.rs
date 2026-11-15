@@ -640,7 +640,7 @@ impl GridPage {
     pub fn new() -> Self {
         let knobs = Knobs::defaults();
         let mut filters = ChipBar::new(ID.sub("filters"));
-        filters.lead = Some("Filters".into());
+        filters.set_lead(Some("Filters".into()));
         Self {
             template: Template::new(ID, states_grid()),
             grid: build(&knobs),
@@ -825,11 +825,14 @@ impl GridPage {
 
     fn set_filters(&mut self) {
         self.grid.filtered_cols = self.filter_values.iter().map(|(c, _)| *c).collect();
-        self.filters.chips = self
-            .filter_values
-            .iter()
-            .map(|(c, v)| Chip::new(&format!("{} = {}", self.grid.columns()[*c].name, v.text())))
-            .collect();
+        self.filters.set_chips(
+            self.filter_values
+                .iter()
+                .map(|(c, v)| {
+                    Chip::new(&format!("{} = {}", self.grid.columns()[*c].name, v.text()))
+                })
+                .collect(),
+        );
     }
 
     /// Resolves a live cell editor before the changes dialog reads the queue.
@@ -900,7 +903,18 @@ impl GridPage {
                     self.knobs.total(),
                     self.grid.columns().len(),
                 )) {
-                    Ok(()) => cx.status(format!("Fetched rows {}–{}", from + 1, self.grid.len())),
+                    Ok(()) => {
+                        let kept = if self.grid.sort.is_some() {
+                            " · sort kept"
+                        } else {
+                            ""
+                        };
+                        cx.status(format!(
+                            "Fetched rows {}–{}{kept}",
+                            from + 1,
+                            self.grid.len()
+                        ))
+                    }
                     Err(e) => cx.status(format!("Fetch rejected · {e}")),
                 }
             }
@@ -1357,6 +1371,9 @@ impl Page for GridPage {
         let key = |cmd| hint_key(&self.grid.keymap, cmd);
         if let Some(k) = key(GridCmd::Sort) {
             h.push((k, "Sort"));
+        }
+        if self.grid.local_sort && self.grid.sort.is_some() {
+            h.push(("Sorted", "saved values · new rows last"));
         }
         h.push(("Space", "Select row"));
         if self.grid.editable {

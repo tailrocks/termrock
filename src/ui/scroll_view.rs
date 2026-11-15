@@ -50,8 +50,10 @@ pub enum ScrollCmd {
 
     PageRight,
 
+    /// Resets both axes to the origin when either one overflows.
     Top,
 
+    /// Moves the vertical axis to its end. The horizontal offset is kept.
     Bottom,
 }
 
@@ -110,6 +112,95 @@ impl ViewLayout {
     }
 }
 
+/// Scratch-buffer work of the latest frame, in cells.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct ScrollWork {
+    /// Cells of scratch storage allocated.
+    pub allocated: usize,
+    /// Cells written to initialise that storage.
+    pub filled: usize,
+    /// Cells copied between the screen buffer and scratch storage.
+    pub copied: usize,
+}
+
+/// The slice of a padded content canvas that [`ScrollView::render_window`] shows.
+///
+/// `logical` is in padded-canvas coordinates: model coordinate (0, 0) sits at
+/// `content_origin`. `viewport` and `screen` are in terminal coordinates.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct VisibleWindow {
+    pub logical: Rect,
+    pub viewport: Rect,
+    pub screen: Rect,
+    pub content_origin: Position,
+    content_rows: (u16, u16),
+}
+
+impl VisibleWindow {
+    fn empty(screen: Rect) -> Self {
+        Self {
+            logical: Rect::ZERO,
+            viewport: Rect::ZERO,
+            screen,
+            content_origin: Position::ORIGIN,
+            content_rows: (0, 0),
+        }
+    }
+
+    /// Maps a padded-canvas rectangle to the screen, clipped to the window.
+    pub fn project_rect(self, rect: Rect) -> Rect {
+        let part = rect.intersection(self.logical);
+        if part.is_empty() {
+            return Rect::ZERO;
+        }
+        Rect::new(
+            self.viewport.x + (part.x - self.logical.x),
+            self.viewport.y + (part.y - self.logical.y),
+            part.width,
+            part.height,
+        )
+    }
+
+    /// Maps a padded-canvas point to the screen, or `None` outside the window.
+    pub fn project_point(self, point: Position) -> Option<Position> {
+        self.logical.contains(point).then(|| {
+            Position::new(
+                self.viewport.x + (point.x - self.logical.x),
+                self.viewport.y + (point.y - self.logical.y),
+            )
+        })
+    }
+
+    /// Maps a model-relative rectangle (origin at the content, not the padding).
+    pub fn project_content_rect(self, rect: Rect) -> Rect {
+        let moved = Rect::new(
+            rect.x.saturating_add(self.content_origin.x),
+            rect.y.saturating_add(self.content_origin.y),
+            rect.width,
+            rect.height,
+        );
+        self.project_rect(moved)
+    }
+
+    /// Visible padded-canvas rows.
+    pub fn rows(self) -> std::ops::Range<usize> {
+        usize::from(self.logical.y)..usize::from(self.logical.bottom())
+    }
+
+    /// Visible model rows, without the padding rows.
+    pub fn content_rows(self) -> std::ops::Range<usize> {
+        let (top, len) = self.content_rows;
+        let rows = self.rows();
+        let (first, end) = (usize::from(top), usize::from(top) + usize::from(len));
+        let start = rows.start.max(first);
+        let stop = rows.end.min(end);
+        if start >= stop {
+            return 0..0;
+        }
+        (start - first)..(stop - first)
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct Followed {
     focus: Option<WidgetId>,
@@ -137,6 +228,7 @@ pub struct ScrollView {
     pub context: u16,
     followed: Option<Followed>,
     layout: ViewLayout,
+    work: ScrollWork,
 }
 
 impl ScrollView {
@@ -153,6 +245,7 @@ impl ScrollView {
             context: 1,
             followed: None,
             layout: ViewLayout::default(),
+            work: ScrollWork::default(),
         }
     }
 
@@ -201,6 +294,10 @@ impl ScrollView {
         self.layout
     }
 
+    pub fn last_work(&self) -> ScrollWork {
+        self.work
+    }
+
     pub fn offset(&self) -> (usize, usize) {
         (self.pane.h.offset, self.pane.v.offset)
     }
@@ -220,8 +317,11 @@ impl ScrollView {
     pub fn fit(&self, area: Size, measure: impl Fn(Size) -> Size) -> Size {
         let size = measure(area);
         let pad = self.padding;
-        let (pad_w, pad_h) = (pad.left + pad.right, pad.top + pad.bottom);
-        let room = 1 + self.scrollbar_gap;
+        let (pad_w, pad_h) = (
+            pad.left.saturating_add(pad.right),
+            pad.top.saturating_add(pad.bottom),
+        );
+        let room = 1u16.saturating_add(self.scrollbar_gap);
         let bar = self.axes.vertical
             && self.bars != ScrollbarVisibility::Never
             && area.width > room
@@ -248,7 +348,7 @@ impl ScrollView {
             .saturating_add(pad.bottom);
         let shows = self.bars != ScrollbarVisibility::Never;
         let always = self.bars == ScrollbarVisibility::Always;
-        let v_room = 1 + self.scrollbar_gap;
+        let v_room = 1u16.saturating_add(self.scrollbar_gap);
         let (mut v, mut h) = (false, false);
         for _ in 0..3 {
             let vw = area.width.saturating_sub(if v { v_room } else { 0 });
@@ -280,8 +380,8 @@ impl ScrollView {
         let inner = Rect::new(
             content.x.saturating_add(pad.left),
             content.y.saturating_add(pad.top),
-            cw.saturating_sub(pad.left + pad.right),
-            ch.saturating_sub(pad.top + pad.bottom),
+            cw.saturating_sub(pad.left.saturating_add(pad.right)),
+            ch.saturating_sub(pad.top.saturating_add(pad.bottom)),
         );
         let v_track = v.then(|| Rect::new(area.right() - 1, area.y, 1, vh));
         let h_track = h.then(|| Rect::new(area.x, area.bottom() - 1, area.width - u16::from(v), 1));
@@ -296,6 +396,10 @@ impl ScrollView {
         }
     }
 
+    /// Legacy arbitrary-composition path. When the content overflows, the
+    /// callback paints a canvas as large as the content, so its cost grows
+    /// with the content size; use [`ScrollView::render_window`] for rows a
+    /// model can supply on demand.
     pub fn render(
         &mut self,
         area: Rect,
@@ -310,13 +414,108 @@ impl ScrollView {
         self.end(frame, buf, ctx);
     }
 
-    pub fn begin(
+    /// Paints only the visible window of a padded content canvas.
+    ///
+    /// `screen` is the root terminal rectangle, passed unchanged through nested
+    /// windows. `area` is clipped to `buf.area` and `screen`. `content` is the
+    /// unpadded model extent and `focus_target` a padded-canvas rectangle to
+    /// reveal before painting. The callback runs once with the final window,
+    /// paints in screen coordinates into scratch storage the size of the
+    /// viewport, and its hits, cursor and cuts are clipped to the viewport.
+    /// Floating content is rendered by the host afterwards against the real
+    /// buffer, using the returned `window.screen`.
+    #[allow(clippy::too_many_arguments)]
+    pub fn render_window(
         &mut self,
+        screen: Rect,
         area: Rect,
         content: Size,
-        buf: &Buffer,
+        focus_target: Option<Rect>,
+        buf: &mut Buffer,
         ctx: &mut RenderCtx,
-    ) -> ScrollFrame {
+        draw: impl FnOnce(VisibleWindow, &mut Buffer, &mut RenderCtx),
+    ) -> VisibleWindow {
+        self.work = ScrollWork::default();
+        let area = area.intersection(buf.area).intersection(screen);
+        let l = self.prepare(area, content, ctx);
+        if self.follow_focus {
+            self.reveal_target(l, focus_target, ctx.interaction.focus);
+        }
+        let mut window = VisibleWindow::empty(screen);
+        if !l.viewport.is_empty() {
+            let canvas = Rect::new(0, 0, l.content.width, l.content.height);
+            let offset = (self.pane.h.offset as u16, self.pane.v.offset as u16);
+            window = VisibleWindow {
+                logical: Rect::new(offset.0, offset.1, l.viewport.width, l.viewport.height)
+                    .intersection(canvas),
+                viewport: l.viewport,
+                screen,
+                content_origin: Position::new(self.padding.left, self.padding.top),
+                content_rows: (self.padding.top, content.height),
+            };
+            self.paint_window(window, l.overflows(), buf, ctx, draw);
+        }
+        self.draw_tracks(l, buf, ctx);
+        window
+    }
+
+    fn paint_window(
+        &mut self,
+        window: VisibleWindow,
+        overflows: bool,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        draw: impl FnOnce(VisibleWindow, &mut Buffer, &mut RenderCtx),
+    ) {
+        let viewport = window.viewport;
+        let mut blank = Cell::default();
+        if let Some(c) = buf.cell(viewport.as_position()) {
+            blank.set_style(c.style());
+        }
+        let mut scratch = Buffer::filled(viewport, blank);
+        self.work.allocated = scratch.content().len();
+        self.work.filled = scratch.content().len();
+        if overflows {
+            ctx.scrollable(self.id, viewport);
+        }
+        let mark = ctx.hits.mark();
+        let cuts = crate::ui::reveal::cuts_len();
+        let cursor = ctx.cursor;
+        draw(window, &mut scratch, ctx);
+        ctx.hits.clip_mark(mark, viewport);
+        crate::ui::reveal::clip_cuts_since(cuts, viewport);
+        if let Some(p) = ctx.cursor
+            && ctx.cursor != cursor
+            && !viewport.contains(p)
+        {
+            ctx.cursor = cursor;
+        }
+        self.work.copied = copy_cells(&scratch, viewport, buf, viewport.as_position());
+    }
+
+    fn reveal_target(&mut self, l: ViewLayout, target: Option<Rect>, focus: Option<WidgetId>) {
+        let canvas = Rect::new(0, 0, l.content.width, l.content.height);
+        let Some(target) = target
+            .map(|t| t.intersection(canvas))
+            .filter(|t| !t.is_empty())
+        else {
+            self.followed = None;
+            return;
+        };
+        let now = Followed { focus, target };
+        if self.followed == Some(now) {
+            return;
+        }
+        self.followed = Some(now);
+        self.pane
+            .v
+            .reveal_span(usize::from(target.y), usize::from(target.height));
+        self.pane
+            .h
+            .reveal_span(usize::from(target.x), usize::from(target.width));
+    }
+
+    fn prepare(&mut self, area: Rect, content: Size, ctx: &RenderCtx) -> ViewLayout {
         let l = self.layout(area, content);
         self.layout = l;
         let p = &mut self.pane;
@@ -332,6 +531,22 @@ impl ScrollView {
         if !l.overflows() {
             p.v.offset = 0;
             p.h.offset = 0;
+        }
+        l
+    }
+
+    /// Legacy arbitrary-composition path; see [`ScrollView::render`] for its
+    /// full-canvas cost.
+    pub fn begin(
+        &mut self,
+        area: Rect,
+        content: Size,
+        buf: &Buffer,
+        ctx: &mut RenderCtx,
+    ) -> ScrollFrame {
+        self.work = ScrollWork::default();
+        let l = self.prepare(area, content, ctx);
+        if !l.overflows() {
             return ScrollFrame {
                 layout: l,
                 off: None,
@@ -348,7 +563,8 @@ impl ScrollView {
 
         let whole = buf.area.union(l.content);
         let mut off = Buffer::empty(whole);
-        copy_cells(buf, buf.area, &mut off, buf.area.as_position());
+        self.work.allocated = off.content().len();
+        self.work.copied += copy_cells(buf, buf.area, &mut off, buf.area.as_position());
         let mut blank = Cell::default();
         if let Some(c) = buf.cell(l.viewport.as_position()) {
             blank.set_style(c.style());
@@ -356,6 +572,7 @@ impl ScrollView {
         for y in l.content.top()..l.content.bottom() {
             for x in l.content.left()..l.content.right() {
                 off[(x, y)] = blank.clone();
+                self.work.filled += 1;
             }
         }
         ScrollFrame {
@@ -390,10 +607,11 @@ impl ScrollView {
                     let p = Position::new(x, y);
                     if !l.content.contains(p) {
                         buf[(x, y)] = off[(x, y)].clone();
+                        self.work.copied += 1;
                     }
                 }
             }
-            copy_cells(&off, window, buf, to);
+            self.work.copied += copy_cells(&off, window, buf, to);
             ctx.hits.scroll_since(frame.mark, l.content, window, to);
             crate::ui::reveal::scroll_cuts_since(frame.cuts, l.content, window, to);
             if ctx.cursor != frame.cursor {
@@ -405,6 +623,10 @@ impl ScrollView {
             }
             shift.set((ox, oy));
         }
+        self.draw_tracks(l, buf, ctx);
+    }
+
+    fn draw_tracks(&mut self, l: ViewLayout, buf: &mut Buffer, ctx: &mut RenderCtx) {
         let id = self.id;
         match l.v_track {
             Some(track) => self.pane.draw_v(track, buf, ctx, id, false),
@@ -470,11 +692,10 @@ impl ScrollView {
         let cmd = crate::core::keymap::lookup(&self.keys, key)?;
         let (v, h) = (&mut self.pane.v, &mut self.pane.h);
         let moved = match cmd {
-            ScrollCmd::PageUp | ScrollCmd::PageDown | ScrollCmd::Top | ScrollCmd::Bottom
-                if !v.overflows() =>
-            {
+            ScrollCmd::PageUp | ScrollCmd::PageDown | ScrollCmd::Bottom if !v.overflows() => {
                 return None;
             }
+            ScrollCmd::Top if !v.overflows() && !h.overflows() => return None,
             ScrollCmd::PageLeft | ScrollCmd::PageRight if !h.overflows() => return None,
             ScrollCmd::PageUp => v.page_up(),
             ScrollCmd::PageDown => v.page_down(),
@@ -552,3 +773,6 @@ impl ScrollFrame {
         }
     }
 }
+
+#[cfg(test)]
+mod window_tests;

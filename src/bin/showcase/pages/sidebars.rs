@@ -30,8 +30,10 @@ const ITEMS: [(&str, &str, &str, Option<&str>, bool); 8] = [
     ("Appearance", "A", "Preferences", None, false),
 ];
 
-fn items(badges: bool) -> Vec<NavItem> {
-    ITEMS
+/// The item set named by the `sidebars.items` option. `full` is the approved
+/// playground; the other sets exercise shrink, empty and all-disabled lists.
+fn items(badges: bool, set: &str) -> Vec<NavItem> {
+    let full: Vec<NavItem> = ITEMS
         .iter()
         .map(|&(label, icon, section, badge, disabled)| {
             let it = NavItem::new(label)
@@ -43,7 +45,13 @@ fn items(badges: bool) -> Vec<NavItem> {
                 _ => it,
             }
         })
-        .collect()
+        .collect();
+    match set {
+        "short" => full.into_iter().take(3).collect(),
+        "empty" => Vec::new(),
+        "all-disabled" => full.into_iter().map(|it| it.disabled(true)).collect(),
+        _ => full,
+    }
 }
 
 pub struct SidebarsPage {
@@ -64,7 +72,7 @@ impl SidebarsPage {
         let opts = PageValues::new(page_options(PageId::Sidebars));
         let mut page = Self {
             template: Template::new(ID, states_grid()),
-            nav: NavList::new(ID.sub("nav"), items(true)).current(0),
+            nav: NavList::new(ID.sub("nav"), items(true, "full")).current(0),
             collapse: Button::secondary(ID.sub("collapse"), "Collapse"),
             rail: SidebarRail::new(ID.sub("rail"), "Navigation"),
             hidden: false,
@@ -77,20 +85,16 @@ impl SidebarsPage {
 
     fn apply(&mut self) {
         let o = &self.opts;
-        let (current, cursor) = (self.nav.current, self.nav.cursor);
         let width = o.number("sidebars.width").unwrap_or(24);
         let collapsed_w = o.number("sidebars.collapsed_width").unwrap_or(6);
-        let mut nav = NavList::new(ID.sub("nav"), items(o.on("sidebars.badges")))
-            .current(current)
-            .collapsed(o.on("sidebars.collapsed"))
-            .widths(width, collapsed_w)
-            .nav(match o.value("sidebars.keys") {
-                "desktop" => NavKeys::DEFAULT,
-                _ => NavKeys::VIM,
-            });
-        nav.cursor = cursor;
-        nav.scroll = self.nav.scroll;
-        self.nav = nav;
+        self.nav
+            .set_items(items(o.on("sidebars.badges"), o.value("sidebars.items")));
+        self.nav.collapsed = o.on("sidebars.collapsed");
+        self.nav.widths = (width, collapsed_w);
+        self.nav.nav = match o.value("sidebars.keys") {
+            "desktop" => NavKeys::DEFAULT,
+            _ => NavKeys::VIM,
+        };
         self.rail = SidebarRail::new(ID.sub("rail"), o.value("sidebars.rail_label"))
             .collapsed_rail(o.on("sidebars.collapsed_rail"));
         self.hidden = o.on("sidebars.hidden");
@@ -144,9 +148,16 @@ impl SidebarsPage {
         .map(str::to_owned)
     }
 
+    /// The label of the current item, or `None` when the list is empty.
+    fn current_label(&self) -> Option<&str> {
+        self.nav
+            .items
+            .get(self.nav.current)
+            .map(|it| it.label.as_str())
+    }
+
     fn card_height(&self, width: u16) -> u16 {
-        let current = &self.nav.items[self.nav.current].label;
-        let panel = Panel::card(Some(current));
+        let panel = Panel::card(self.current_label());
         let inner = panel.inner(Size::new(width, 0)).width.max(1) as usize;
         let rows: usize = self
             .lines()
@@ -209,8 +220,8 @@ impl SidebarsPage {
             area.right().saturating_sub(content_x),
             area.height,
         );
-        let current = self.nav.items[self.nav.current].label.clone();
-        let panel = Panel::card(Some(&current));
+        let current = self.current_label().map(str::to_owned);
+        let panel = Panel::card(current.as_deref());
         let bg = panel.bg(t);
         let inner = panel.render(
             Rect::new(
@@ -254,7 +265,7 @@ impl SidebarsPage {
 
 fn states_grid() -> StateGrid {
     use SpecimenState::*;
-    let sample = || NavList::new(ID.sub("states-nav"), items(true)).widths(22, 6);
+    let sample = || NavList::new(ID.sub("states-nav"), items(true, "full")).widths(22, 6);
     StateGrid::new(ID.sub("states"))
         .label_width(14)
         .column_width(24)
@@ -392,5 +403,102 @@ impl Page for SidebarsPage {
 
     fn template_mut(&mut self) -> Option<&mut Template> {
         Some(&mut self.template)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use junie_tui::core::event::Key;
+    use junie_tui::core::focus::{Focus, FocusRing};
+    use junie_tui::core::hit::HitRegistry;
+    use junie_tui::theme::{ColorLevel, Theme};
+    use junie_tui::ui::ctx::Interaction;
+    use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+
+    const SET: &str = "sidebars.items";
+
+    fn key(code: KeyCode) -> PageEvent {
+        PageEvent::Key(Key {
+            code,
+            mods: KeyModifiers::NONE,
+        })
+    }
+
+    fn set(page: &mut SidebarsPage, value: usize) {
+        page.set_option(SET, value);
+    }
+
+    fn screen(buf: &Buffer) -> String {
+        buf.content().iter().map(|c| c.symbol()).collect()
+    }
+
+    fn render(page: &mut SidebarsPage) -> Buffer {
+        let theme = Theme::for_level(ColorLevel::TrueColor);
+        let mut buf = Buffer::empty(Rect::new(0, 0, 100, 30));
+        let mut hits = HitRegistry::default();
+        let mut ring = FocusRing::default();
+        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        page.render(buf.area, &mut buf, &mut ctx);
+        buf
+    }
+
+    /// Focuses the sidebar list and feeds it one page event.
+    fn press(page: &mut SidebarsPage, ev: &PageEvent) -> Outcome {
+        let mut focus = Focus::default();
+        let ring = FocusRing::default();
+        focus.focus(page.nav.id);
+        let mut cx = Cx::new(&mut focus, &ring);
+        page.handle(ev, &mut cx)
+    }
+
+    #[test]
+    fn default_item_set_is_the_full_playground() {
+        let page = SidebarsPage::new();
+        assert_eq!(page.nav.items.len(), ITEMS.len());
+    }
+
+    #[test]
+    fn shrinking_under_the_cursor_repairs_it_before_the_next_key() {
+        let mut page = SidebarsPage::new();
+        press(&mut page, &key(KeyCode::End));
+        assert_eq!(page.nav.cursor, 7);
+
+        set(&mut page, 1);
+        render(&mut page);
+        assert_eq!(page.nav.items.len(), 3);
+        assert_eq!(page.nav.cursor, 2, "last enabled row of the short set");
+
+        let outcome = press(&mut page, &key(KeyCode::Up));
+        assert_eq!(outcome, Outcome::Changed);
+        press(&mut page, &key(KeyCode::Enter));
+        assert_eq!(page.last, "NavAction::Activated(1) · Runs");
+    }
+
+    #[test]
+    fn empty_item_set_renders_and_activates_nothing() {
+        let mut page = SidebarsPage::new();
+        set(&mut page, 2);
+
+        assert!(page.nav.items.is_empty());
+        let text = screen(&render(&mut page));
+        assert!(!text.contains("Tasks"), "no row paints for an empty set");
+        assert!(text.contains("Last: none yet"));
+        press(&mut page, &key(KeyCode::Down));
+        press(&mut page, &key(KeyCode::Enter));
+        assert_eq!(page.last, "none yet");
+    }
+
+    #[test]
+    fn all_disabled_item_set_renders_and_activates_nothing() {
+        let mut page = SidebarsPage::new();
+        set(&mut page, 3);
+
+        assert!(page.nav.items.iter().all(|it| it.disabled));
+        assert!(screen(&render(&mut page)).contains("Tasks"));
+        for code in [KeyCode::Down, KeyCode::Up, KeyCode::End, KeyCode::Enter] {
+            press(&mut page, &key(code));
+        }
+        assert_eq!(page.last, "none yet");
     }
 }

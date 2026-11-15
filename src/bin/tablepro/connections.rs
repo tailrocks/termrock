@@ -1944,8 +1944,8 @@ impl ConnectionsScreen {
         let bg = panel.bg(t);
         let inner = panel.render(Rect::new(r.x, r.y, r.width.min(84), r.height), buf, t);
 
-        form.tabs.items[0].error =
-            form.name.field.error.is_some() || form.port.field.error.is_some();
+        let error = form.name.field.error.is_some() || form.port.field.error.is_some();
+        form.tabs.update_item(0, |it| it.error = error);
         let (strip, body) = Tabs::layout(inner);
         form.tabs.render(strip, buf, ctx, bg);
 

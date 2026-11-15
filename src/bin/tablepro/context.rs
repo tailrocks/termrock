@@ -18,6 +18,7 @@ use junie_tui::widgets::table::SortDir;
 use crate::app::ModalResult;
 use crate::connections::ConnectionsScreen;
 use crate::db::ObjectKind;
+use crate::tabs::HistoryCommand;
 use crate::workbench::{WorkTab, Workbench};
 
 pub const MENU: WidgetId = WidgetId::of("context-menu");
@@ -32,7 +33,10 @@ pub enum Target {
 
     Results(usize, usize),
 
-    History(usize),
+    History {
+        owner: WidgetId,
+        entry: ItemKey,
+    },
 
     /// A connections-tree row and, for a connection row, the connection it showed
     /// when the menu opened.
@@ -198,9 +202,10 @@ pub fn on_secondary(w: &mut Workbench, cfg: &ContextConfig, ev: &PointerEvent) -
                 cfg.on_secondary(g, ev)
                     .map(|req| req.map(|(r, c)| Target::Results(r, c)))
             }),
-            WorkTab::History(h) => cfg
-                .on_secondary(&mut h.list, ev)
-                .map(|req| req.map(Target::History)),
+            WorkTab::History(h) => cfg.on_secondary(&mut h.list, ev).and_then(|req| {
+                let entry = h.filtered.get(req.target).copied()?;
+                Some(req.map(|_| Target::History { owner: h.id, entry }))
+            }),
         })
         .flatten()?;
     Some(build(w, req))
@@ -229,7 +234,11 @@ pub fn on_key(
                 let g = q.active_grid().filter(|g| g.id == f && !g.is_editing())?;
                 cfg.on_key(g, key)?.map(|(r, c)| Target::Results(r, c))
             }
-            WorkTab::History(h) if f == h.list.id => cfg.on_key(&h.list, key)?.map(Target::History),
+            WorkTab::History(h) if f == h.list.id => {
+                let req = cfg.on_key(&h.list, key)?;
+                let entry = h.filtered.get(req.target).copied()?;
+                req.map(|_| Target::History { owner: h.id, entry })
+            }
             _ => return None,
         }
     };
@@ -257,14 +266,7 @@ pub fn select(w: &mut Workbench, target: Target) {
                 }
             });
         }
-        Target::History(row) => {
-            let _ = w.modify_active(|tab| {
-                if let WorkTab::History(h) = tab {
-                    h.list.context_select(row);
-                }
-            });
-        }
-        Target::Connection(..) | Target::Header(_) | Target::App => {}
+        Target::History { .. } | Target::Connection(..) | Target::Header(_) | Target::App => {}
     }
 }
 
@@ -364,32 +366,45 @@ fn connection_items(c: &ConnectionsScreen, node: ItemKey) -> (String, Items) {
     (menu.label, items)
 }
 
-fn history_items(w: &Workbench, row: usize) -> (String, WidgetId, Items) {
+const HISTORY_ROW_COMMANDS: [(&str, &str, KeyCode, HistoryCommand); 3] = [
+    (
+        "Open in new tab",
+        "Enter",
+        KeyCode::Enter,
+        HistoryCommand::Open,
+    ),
+    (
+        "Run in new tab",
+        "r",
+        KeyCode::Char('r'),
+        HistoryCommand::Rerun,
+    ),
+    ("Copy query", "y", KeyCode::Char('y'), HistoryCommand::Copy),
+];
+
+pub fn history_command(key: &Key) -> Option<HistoryCommand> {
+    HISTORY_ROW_COMMANDS
+        .iter()
+        .find(|(_, _, code, _)| key.is(*code))
+        .map(|(.., cmd)| *cmd)
+}
+
+fn history_items(w: &Workbench, owner: WidgetId, entry: ItemKey) -> (String, WidgetId, Items) {
     let mut items = Items::new();
-    let Some(WorkTab::History(h)) = w.active_tab() else {
+    let Some(h) = w.history_tab(owner) else {
         return (String::new(), w.explorer.id, items);
     };
-    let Some(it) = h.list.items.get(row) else {
+    let Some(it) = h.row_of(entry).and_then(|row| h.list.items.get(row)) else {
         return (String::new(), h.list.id, items);
     };
-    cmd(
-        &mut items,
-        MenuItem::new("Open in new tab").shortcut("Enter"),
-        plain(KeyCode::Enter),
-        None,
-    );
-    cmd(
-        &mut items,
-        MenuItem::new("Run in new tab").shortcut("r"),
-        plain(KeyCode::Char('r')),
-        None,
-    );
-    cmd(
-        &mut items,
-        MenuItem::new("Copy query").shortcut("y"),
-        plain(KeyCode::Char('y')),
-        None,
-    );
+    for (title, shortcut, code, _) in HISTORY_ROW_COMMANDS {
+        cmd(
+            &mut items,
+            MenuItem::new(title).shortcut(shortcut),
+            plain(code),
+            None,
+        );
+    }
     group(&mut items);
     cmd(
         &mut items,
@@ -436,7 +451,7 @@ fn build(w: &Workbench, req: ContextRequest<Target>) -> CtxMenu {
             }
             _ => (String::new(), w.explorer.id, vec![]),
         },
-        Target::History(row) => history_items(w, row),
+        Target::History { owner, entry } => history_items(w, owner, entry),
         Target::Connection(..) | Target::Header(_) | Target::App => {
             (String::new(), w.explorer.id, vec![])
         }

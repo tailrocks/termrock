@@ -1,10 +1,10 @@
+use std::cell::{Ref, RefCell};
 use std::ops::Range;
 
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::{Color, Modifier, Style};
-use unicode_segmentation::UnicodeSegmentation;
 
 use crate::core::edit::{EditEntry, EditKind, FieldKeys, TextCmd};
 use crate::core::event::{Key, Outcome};
@@ -13,7 +13,6 @@ use crate::core::hit::Axis;
 use crate::core::id::WidgetId;
 use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup};
 use crate::core::scroll::{HScroll, ScrollPane, ScrollState, Scrollable};
-use crate::core::text::TextBuffer;
 use crate::theme::SyntaxTone;
 use crate::ui::ctx::{RenderCtx, fill};
 use crate::ui::edit_menu::{
@@ -24,6 +23,12 @@ use crate::ui::text::{find_ranges, width};
 use crate::widgets::edit::{EditField, Editable, LineLook};
 use crate::widgets::field_common::{EditAction, PointerField};
 use crate::widgets::scrollbar;
+
+mod index;
+use index::{
+    BracketMap, DiagnosticIndex, ProviderKey, RunIndex, SegmentSnapshot, SyntaxCache,
+    next_generation,
+};
 
 pub type Highlighter = fn(&str) -> Vec<(Range<usize>, SyntaxTone)>;
 pub type Segmenter = fn(&str) -> Vec<Range<usize>>;
@@ -71,12 +76,12 @@ pub struct CodeEditor {
     pub scroll: ScrollPane,
     pub hscroll: usize,
     pub indent: usize,
-    pub highlighter: Option<Highlighter>,
-    pub segmenter: Option<Segmenter>,
-    pub diagnostics: Vec<Diagnostic>,
+    highlighter: Option<Highlighter>,
+    segmenter: Option<Segmenter>,
+    diagnostics: Vec<Diagnostic>,
 
     pub running: Option<Range<usize>>,
-    pub find: Option<FindState>,
+    find: Option<FindState>,
     pub placeholder: String,
 
     pub tab_leaves: bool,
@@ -84,8 +89,16 @@ pub struct CodeEditor {
     text_area: Rect,
     gutter_w: u16,
 
-    cached_spans: Vec<(Range<usize>, SyntaxTone)>,
-    cached_for: u64,
+    highlighter_generation: u64,
+    segmenter_generation: u64,
+    diagnostics_revision: u64,
+    find_revision: u64,
+    find_scanned: Option<(u64, String)>,
+    syntax: Option<SyntaxCache>,
+    diagnostic_index: Option<DiagnosticIndex>,
+    find_runs: Option<(u64, u64, RunIndex)>,
+    brackets: Option<BracketMap>,
+    segment_cache: RefCell<Option<SegmentSnapshot>>,
 
     rendered_state: Option<(usize, u64, bool)>,
 
@@ -154,15 +167,6 @@ impl Actions for CodeCmd {
     }
 }
 
-fn hash_text(s: &str) -> u64 {
-    let mut h: u64 = 0xcbf2_9ce4_8422_2325;
-    for b in s.bytes() {
-        h ^= b as u64;
-        h = h.wrapping_mul(0x0100_0000_01b3);
-    }
-    h ^ s.len() as u64
-}
-
 impl CodeEditor {
     pub fn new(id: WidgetId, text: &str) -> Self {
         let mut field = EditField::multi(text);
@@ -185,8 +189,16 @@ impl CodeEditor {
             area: Rect::ZERO,
             text_area: Rect::ZERO,
             gutter_w: 0,
-            cached_spans: vec![],
-            cached_for: 0,
+            highlighter_generation: 0,
+            segmenter_generation: 0,
+            diagnostics_revision: 0,
+            find_revision: 0,
+            find_scanned: None,
+            syntax: None,
+            diagnostic_index: None,
+            find_runs: None,
+            brackets: None,
+            segment_cache: RefCell::new(None),
             rendered_state: None,
             scrollbar_gap: scrollbar::GAP,
             horizontal: None,
@@ -307,12 +319,79 @@ impl CodeEditor {
     }
 
     pub fn highlighter(mut self, h: Highlighter) -> Self {
-        self.highlighter = Some(h);
+        self.set_highlighter(Some(h));
         self
     }
     pub fn segmenter(mut self, s: Segmenter) -> Self {
-        self.segmenter = Some(s);
+        self.set_segmenter(Some(s));
         self
+    }
+
+    pub fn set_highlighter(&mut self, value: Option<Highlighter>) {
+        self.highlighter = value;
+        self.invalidate_highlighter();
+    }
+
+    pub fn invalidate_highlighter(&mut self) {
+        self.highlighter_generation = next_generation(self.highlighter_generation);
+        self.syntax = None;
+    }
+
+    pub fn highlighter_fn(&self) -> Option<Highlighter> {
+        self.highlighter
+    }
+
+    pub fn set_segmenter(&mut self, value: Option<Segmenter>) {
+        self.segmenter = value;
+        self.invalidate_segmenter();
+    }
+
+    pub fn invalidate_segmenter(&mut self) {
+        self.segmenter_generation = next_generation(self.segmenter_generation);
+        *self.segment_cache.get_mut() = None;
+    }
+
+    pub fn segmenter_fn(&self) -> Option<Segmenter> {
+        self.segmenter
+    }
+
+    pub fn set_diagnostics(&mut self, value: Vec<Diagnostic>) {
+        self.diagnostics = value;
+        self.diagnostics_revision = next_generation(self.diagnostics_revision);
+        self.diagnostic_index = None;
+    }
+
+    pub fn push_diagnostic(&mut self, diagnostic: Diagnostic) {
+        self.diagnostics.push(diagnostic);
+        self.diagnostics_revision = next_generation(self.diagnostics_revision);
+        self.diagnostic_index = None;
+    }
+
+    pub fn diagnostics(&self) -> &[Diagnostic] {
+        &self.diagnostics
+    }
+
+    pub fn find_state(&self) -> Option<&FindState> {
+        self.find.as_ref()
+    }
+
+    pub fn set_find_query(&mut self, text: &str) {
+        if self.find.is_none() {
+            self.open_find();
+            if let Some(f) = self.find.as_mut() {
+                f.editing = false;
+            }
+        }
+        if let Some(f) = self.find.as_mut() {
+            f.needle.set_text(text);
+        }
+        self.refind();
+    }
+
+    pub fn set_find_current(&mut self, index: usize) {
+        if let Some(f) = self.find.as_mut() {
+            f.current = index.min(f.matches.len().saturating_sub(1));
+        }
     }
     pub fn read_only(mut self, ro: bool) -> Self {
         self.read_only = ro;
@@ -330,7 +409,7 @@ impl CodeEditor {
     pub fn set_text(&mut self, text: &str) {
         self.field.set_text(text);
         self.field.buffer.move_doc_start(false);
-        self.diagnostics.clear();
+        self.set_diagnostics(Vec::new());
         self.hscroll = 0;
         self.scroll.jump_start();
         self.refind();
@@ -340,15 +419,28 @@ impl CodeEditor {
         self.field.buffer.is_empty()
     }
 
+    fn cached_segments(&self) -> Ref<'_, SegmentSnapshot> {
+        let key = ProviderKey {
+            text: self.field.buffer.revision(),
+            provider: self.segmenter_generation,
+        };
+        let stale = self.segment_cache.borrow().as_ref().map(|s| s.key) != Some(key);
+        if stale {
+            let blocks = self
+                .segmenter
+                .map(|f| f(self.field.buffer.text()))
+                .unwrap_or_default();
+            let snapshot = SegmentSnapshot::build(key, blocks);
+            *self.segment_cache.borrow_mut() = Some(snapshot);
+        }
+        Ref::map(self.segment_cache.borrow(), |slot| {
+            slot.as_ref().expect("segment snapshot installed")
+        })
+    }
+
     pub fn current_block(&self) -> Option<Range<usize>> {
-        let seg = self.segmenter?;
-        let cur = self.field.buffer.cursor_offset();
-        let blocks = seg(self.field.buffer.text());
-        blocks
-            .iter()
-            .find(|b| cur >= b.start && cur <= b.end)
-            .or_else(|| blocks.iter().rev().find(|b| b.end <= cur))
-            .cloned()
+        self.cached_segments()
+            .block_at(self.field.buffer.cursor_offset())
     }
 
     pub fn selection_or_block(&self) -> Option<(String, Range<usize>)> {
@@ -360,14 +452,11 @@ impl CodeEditor {
     }
 
     pub fn blocks(&self) -> Vec<Range<usize>> {
-        self.segmenter
-            .map(|s| s(self.field.buffer.text()))
-            .unwrap_or_default()
+        self.cached_segments().blocks.clone()
     }
 
     pub fn jump_to(&mut self, offset: usize) {
-        let offset = offset.min(self.field.buffer.text().len());
-        let pos = TextBuffer::pos_of(self.field.buffer.text(), offset);
+        let pos = self.field.buffer.position_at(offset);
         self.field.buffer.set_cursor_line_col(pos.line, pos.col);
         self.scroll.ensure_visible(pos.line);
     }
@@ -393,7 +482,9 @@ impl CodeEditor {
     pub fn begin_edit(&mut self) {
         if !self.read_only {
             if !self.editing {
-                self.snapshot = Some(self.field.buffer.text().to_owned());
+                self.snapshot = self
+                    .esc_reverts
+                    .then(|| self.field.buffer.text().to_owned());
             }
             self.editing = true;
         }
@@ -425,6 +516,7 @@ impl CodeEditor {
             current: 0,
             editing: true,
         });
+        self.find_scanned = None;
         self.refind();
     }
 
@@ -432,16 +524,26 @@ impl CodeEditor {
         let Some(f) = self.find.as_mut() else {
             return;
         };
-        f.matches.clear();
-        f.current = 0;
-        let needle = f.needle.text();
-        if needle.is_empty() {
-            return;
+        let revision = self.field.buffer.revision();
+        let scanned = self
+            .find_scanned
+            .as_ref()
+            .is_some_and(|(rev, needle)| *rev == revision && needle == f.needle.text());
+        if !scanned {
+            #[cfg(test)]
+            index::work::tally(|c| c.find_scans += 1);
+            f.matches.clear();
+            let needle = f.needle.text();
+            if !needle.is_empty() {
+                let case_sensitive = needle.chars().any(|c| c.is_uppercase());
+                f.matches = find_ranges(self.field.buffer.text(), needle, case_sensitive);
+            }
+            self.find_scanned = Some((revision, needle.to_owned()));
+            self.find_revision = next_generation(self.find_revision);
         }
-        let case_sensitive = needle.chars().any(|c| c.is_uppercase());
-        f.matches = find_ranges(self.field.buffer.text(), needle, case_sensitive);
         let cur = self.field.buffer.cursor_offset();
-        f.current = f.matches.iter().position(|m| m.start >= cur).unwrap_or(0);
+        let first = f.matches.partition_point(|m| m.start < cur);
+        f.current = if first < f.matches.len() { first } else { 0 };
     }
 
     fn goto_match(&mut self, delta: isize) {
@@ -708,15 +810,28 @@ impl CodeEditor {
             }
             CodeCmd::PrevBlock => {
                 let cur = self.field.buffer.cursor_offset();
-                if let Some(b) = self.blocks().iter().rev().find(|b| b.start < cur) {
-                    self.jump_to(b.start);
+                let target = self
+                    .cached_segments()
+                    .blocks
+                    .iter()
+                    .rev()
+                    .find(|b| b.start < cur)
+                    .map(|b| b.start);
+                if let Some(start) = target {
+                    self.jump_to(start);
                 }
                 (Outcome::Changed, Some(EditorAction::CursorMoved))
             }
             CodeCmd::NextBlock => {
                 let cur = self.field.buffer.cursor_offset();
-                if let Some(b) = self.blocks().iter().find(|b| b.start > cur) {
-                    self.jump_to(b.start);
+                let target = self
+                    .cached_segments()
+                    .blocks
+                    .iter()
+                    .find(|b| b.start > cur)
+                    .map(|b| b.start);
+                if let Some(start) = target {
+                    self.jump_to(start);
                 }
                 (Outcome::Changed, Some(EditorAction::CursorMoved))
             }
@@ -808,16 +923,44 @@ impl CodeEditor {
         Outcome::Changed
     }
 
-    fn spans(&mut self) -> &[(Range<usize>, SyntaxTone)] {
-        let h = hash_text(self.field.buffer.text());
-        if h != self.cached_for {
-            self.cached_spans = self
+    fn prepare_annotations(&mut self) {
+        let text = self.field.buffer.revision();
+        let key = ProviderKey {
+            text,
+            provider: self.highlighter_generation,
+        };
+        if self.syntax.as_ref().map(|c| c.key) != Some(key) {
+            let spans = self
                 .highlighter
                 .map(|f| f(self.field.buffer.text()))
                 .unwrap_or_default();
-            self.cached_for = h;
+            self.syntax = Some(SyntaxCache::build(key, spans));
         }
-        &self.cached_spans
+        let stale = self
+            .diagnostic_index
+            .as_ref()
+            .is_none_or(|d| d.text != text || d.revision != self.diagnostics_revision);
+        if stale {
+            self.diagnostic_index = Some(DiagnosticIndex::build(
+                text,
+                self.diagnostics_revision,
+                &self.diagnostics,
+                &self.field.buffer,
+            ));
+        }
+        if let Some(f) = &self.find {
+            let current = self
+                .find_runs
+                .as_ref()
+                .is_some_and(|(t, r, _)| *t == text && *r == self.find_revision);
+            if !current {
+                let runs = RunIndex::build(f.matches.iter());
+                self.find_runs = Some((text, self.find_revision, runs));
+            }
+        }
+        if self.brackets.as_ref().map(|b| b.text) != Some(text) {
+            self.brackets = Some(BracketMap::build(text, self.field.buffer.text()));
+        }
     }
 
     pub fn track_click(mut self, click: crate::core::scroll::TrackClick) -> Self {
@@ -888,17 +1031,14 @@ impl CodeEditor {
         };
         fill(buf, area, fs);
         let body_h = area.height.saturating_sub(1);
-        let spans: Vec<(Range<usize>, SyntaxTone)> = self.spans().to_vec();
-        let text_owned = self.field.buffer.text().to_owned();
-        let lines: Vec<&str> = text_owned.split('\n').collect();
-        let line_count = lines.len();
+        let line_count = self.field.buffer.line_count();
         let num_w = (line_count.to_string().len() as u16).max(2);
 
         let gutter_w = (1 + 1 + num_w + 1 + 1).min(area.width);
         self.gutter_w = gutter_w;
 
         self.scroll.h_cfg = self.horizontal.unwrap_or(ctx.hscroll);
-        let widest = lines.iter().map(|l| width(l)).max().unwrap_or(0);
+        let widest = self.field.buffer.max_line_width();
         let gap = self.scrollbar_gap;
         let text_w = |has_sb: bool| {
             area.width
@@ -930,7 +1070,7 @@ impl CodeEditor {
         }
         let cur = self.field.buffer.cursor_pos();
         let cur_off = self.field.buffer.cursor_offset();
-        let rendered_state = (cur_off, self.cached_for, s.editing);
+        let rendered_state = (cur_off, self.field.buffer.revision(), s.editing);
         if s.editing && (viewport_changed || self.rendered_state != Some(rendered_state)) {
             self.scroll.ensure_visible(cur.line);
         }
@@ -940,25 +1080,21 @@ impl CodeEditor {
         } else {
             None
         };
-        let running = self.running.clone();
+        self.prepare_annotations();
+        let running = self.running.as_ref();
         let sel = self.field.buffer.selection();
-        let find = self.find.clone();
-        let diags = self.diagnostics.clone();
-        let bracket = self.bracket_pair();
-
-        let mut line_starts = Vec::with_capacity(line_count);
-        let mut acc = 0;
-        for l in &lines {
-            line_starts.push(acc);
-            acc += l.len() + 1;
-        }
-        let tone_at = |off: usize| -> SyntaxTone {
-            spans
-                .iter()
-                .find(|(r, _)| r.contains(&off))
-                .map(|(_, tn)| *tn)
-                .unwrap_or(SyntaxTone::Plain)
-        };
+        let diags = self.diagnostics.as_slice();
+        let syntax = self.syntax.as_ref().expect("annotations prepared above");
+        let diag_index = self
+            .diagnostic_index
+            .as_ref()
+            .expect("annotations prepared above");
+        let brackets = self.brackets.as_ref().expect("annotations prepared above");
+        let bracket = brackets.pair_at(cur_off);
+        let find_runs = self
+            .find
+            .as_ref()
+            .and_then(|f| Some((f.current, &self.find_runs.as_ref()?.2)));
         let gutter_bar = t.gutter(s, fs.bg.unwrap_or(bg), false);
         for row in 0..rows {
             let li = self.scroll.offset + row;
@@ -970,13 +1106,18 @@ impl CodeEditor {
             if li >= line_count {
                 continue;
             }
-            let line = lines[li];
-            let ls = line_starts[li];
+            let Some(view) = self.field.buffer.line_view(li) else {
+                continue;
+            };
+            #[cfg(test)]
+            index::work::tally(|c| c.rows += 1);
+            let line = view.text();
+            let ls = view.start();
             let le = ls + line.len();
 
             let mut marker = " ";
             let mut marker_style = fs;
-            if let Some(r) = &running {
+            if let Some(r) = running {
                 if r.start >= ls && r.start <= le {
                     marker = t.glyphs.spinner_frame(ctx.interaction.tick);
                     marker_style = fs.fg(t.accent);
@@ -994,9 +1135,7 @@ impl CodeEditor {
                 }
             }
 
-            let diag_here = diags
-                .iter()
-                .find(|d| d.range.start >= ls && d.range.start <= le);
+            let diag_here = diag_index.gutter(li).map(|ordinal| &diags[ordinal]);
             if let Some(d) = diag_here {
                 let c = if d.severity == Severity::Error {
                     t.error
@@ -1033,19 +1172,13 @@ impl CodeEditor {
             }
 
             let mut x = text_area.x;
-            let mut col = 0usize;
             if self.hscroll > 0 && !line.is_empty() {
                 put(buf, x, y, t.glyphs.ellipsis, fs.fg(t.text_muted));
             }
             let underline_line = s.editing && li == cur.line;
-            for (gi, g) in line.grapheme_indices(true) {
-                let gw = width(g);
-                if col + gw <= self.hscroll {
-                    col += gw;
-                    continue;
-                }
-                if col >= self.hscroll && col == self.hscroll && self.hscroll > 0 {
-                    col += gw;
+            for at in view.graphemes_from_col(self.hscroll) {
+                let (g, gw) = (at.text, at.width);
+                if at.col == self.hscroll && self.hscroll > 0 {
                     x += gw as u16;
                     continue;
                 }
@@ -1059,27 +1192,27 @@ impl CodeEditor {
                     );
                     break;
                 }
-                let off = ls + gi;
-                let mut st = fs.patch(t.syntax(tone_at(off)));
+                #[cfg(test)]
+                index::work::tally(|c| c.graphemes += 1);
+                let off = at.offset;
+                let mut st = fs.patch(t.syntax(syntax.tone_at(off)));
                 if let Some(r) = &sel
                     && r.contains(&off)
                 {
                     let sel = t.selection();
                     st = st.bg(t.selection_bg).add_modifier(sel.add_modifier);
                 }
-                if let Some(f) = &find
-                    && let Some(mi) = f.matches.iter().position(|m| m.contains(&off))
+                if let Some((current, runs)) = find_runs
+                    && let Some(mi) = runs.at(off)
                 {
-                    st = if mi == f.current {
+                    st = if mi == current {
                         st.patch(t.match_current())
                     } else {
                         st.add_modifier(Modifier::UNDERLINED)
                             .underline_color(t.border_strong)
                     };
                 }
-                if let Some(d) = diags.iter().find(|d| {
-                    d.range.contains(&off) || (d.range.is_empty() && d.range.start == off)
-                }) {
+                if let Some(d) = diag_index.at(off).map(|ordinal| &diags[ordinal]) {
                     let c = if d.severity == Severity::Error {
                         t.error
                     } else {
@@ -1099,7 +1232,6 @@ impl CodeEditor {
                 }
                 put(buf, x, y, g, st);
                 x += gw as u16;
-                col += gw;
             }
             if underline_line {
                 for xx in x..text_area.right() {
@@ -1225,7 +1357,7 @@ impl CodeEditor {
             .right()
             .saturating_sub(width(&pos) as u16 + right_padding)
             .max(area.x);
-        if let Some(d) = diags.iter().min_by_key(|d| d.range.start.abs_diff(cur_off)) {
+        if let Some(d) = diag_index.nearest(cur_off).map(|ordinal| &diags[ordinal]) {
             let c = if d.severity == Severity::Error {
                 t.error
             } else {
@@ -1245,58 +1377,14 @@ impl CodeEditor {
             put(buf, px, fy, &pos, fs.fg(t.text_faint));
         }
     }
-
-    fn bracket_pair(&self) -> Option<(usize, usize)> {
-        let text = self.field.buffer.text().as_bytes();
-        let cur = self.field.buffer.cursor_offset();
-        let at = |i: usize| text.get(i).copied();
-        let probe = [cur, cur.wrapping_sub(1)];
-        for &p in &probe {
-            let Some(c) = at(p) else { continue };
-            let (open, close, forward) = match c {
-                b'(' => (b'(', b')', true),
-                b')' => (b'(', b')', false),
-                b'[' => (b'[', b']', true),
-                b']' => (b'[', b']', false),
-                _ => continue,
-            };
-            let mut depth = 0i32;
-            if forward {
-                for (i, &b) in text.iter().enumerate().skip(p) {
-                    if b == open {
-                        depth += 1;
-                    } else if b == close {
-                        depth -= 1;
-                        if depth == 0 {
-                            return Some((p, i));
-                        }
-                    }
-                }
-            } else {
-                for i in (0..=p).rev() {
-                    let b = text[i];
-                    if b == close {
-                        depth += 1;
-                    } else if b == open {
-                        depth -= 1;
-                        if depth == 0 {
-                            return Some((i, p));
-                        }
-                    }
-                }
-            }
-        }
-        None
-    }
 }
 
 impl crate::ui::measure::Measure for CodeEditor {
     fn measure(&self, _avail: ratatui::layout::Size, _ctx: &RenderCtx) -> ratatui::layout::Size {
-        let text = self.field.buffer.text();
-        let lines: Vec<&str> = text.split('\n').collect();
-        let num_w = (lines.len().to_string().len() as u16).max(2);
-        let widest = lines.iter().map(|l| width(l)).max().unwrap_or(0) as u16;
-        ratatui::layout::Size::new(1 + 1 + num_w + 1 + 1 + widest + 1, lines.len() as u16 + 1)
+        let line_count = self.field.buffer.line_count();
+        let num_w = (line_count.to_string().len() as u16).max(2);
+        let widest = self.field.buffer.max_line_width() as u16;
+        ratatui::layout::Size::new(1 + 1 + num_w + 1 + 1 + widest + 1, line_count as u16 + 1)
     }
 }
 
@@ -1499,3 +1587,6 @@ mod issue105_tests {
         assert_eq!(editor.field.buffer.selection(), None);
     }
 }
+
+#[cfg(test)]
+mod tests;

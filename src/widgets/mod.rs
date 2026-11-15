@@ -18,6 +18,8 @@ pub mod field_common;
 pub mod file_browser;
 pub mod form_dialog;
 pub mod grid;
+#[cfg(test)]
+mod grid_sort_tests;
 mod grid_specimen;
 #[cfg(test)]
 mod grid_undo_tests;
@@ -63,5 +65,6 @@ pub mod viewport_ops;
 mod viewport_specimen;
 pub mod widget_hints;
 
+mod collection_edit_tests;
 #[cfg(test)]
 mod keyed_cost_tests;

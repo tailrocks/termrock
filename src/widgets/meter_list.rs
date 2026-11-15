@@ -5,6 +5,7 @@ use ratatui::style::{Color, Style};
 use crate::core::id::WidgetId;
 use crate::theme::Tone;
 use crate::ui::ctx::RenderCtx;
+use crate::ui::measure::terminal_extent;
 use crate::ui::text::{fit, truncate, width};
 use crate::widgets::progress::{Meter, MeterTone};
 
@@ -115,26 +116,31 @@ impl MeterList {
         self
     }
 
+    /// Row count, saturating at `u16::MAX`.
     pub fn height(&self) -> u16 {
-        self.rows.len() as u16
+        terminal_extent(self.rows.len())
+    }
+
+    fn intrinsic_label_width(&self) -> usize {
+        self.label_width.map_or_else(
+            || self.rows.iter().map(|r| width(&r.label)).max().unwrap_or(0),
+            usize::from,
+        )
     }
 
     pub fn label_column(&self, area: Rect) -> u16 {
-        self.label_width
-            .unwrap_or_else(|| {
-                self.rows
-                    .iter()
-                    .map(|r| width(&r.label) as u16)
-                    .max()
-                    .unwrap_or(0)
-            })
-            .min(area.width)
+        terminal_extent(self.intrinsic_label_width().min(usize::from(area.width)))
     }
 
     pub fn meter_column(&self, area: Rect) -> (u16, u16) {
-        let mx = area.x + self.label_column(area) + self.label_gap;
-        let room = area.right().saturating_sub(mx).saturating_sub(self.reserve);
-        let mw = self.meter_width.map_or(room, |w| w.min(room));
+        let used = usize::from(self.label_column(area)).saturating_add(usize::from(self.label_gap));
+        let mx = area
+            .x
+            .saturating_add(terminal_extent(used))
+            .min(area.right());
+        let room =
+            usize::from(area.right().saturating_sub(mx)).saturating_sub(usize::from(self.reserve));
+        let mw = terminal_extent(self.meter_width.map_or(room, |w| usize::from(w).min(room)));
         if mw == 0 || mw < self.min_meter {
             (mx, 0)
         } else {
@@ -154,7 +160,7 @@ impl MeterList {
         let detail_style = Style::new().fg(t.tone(self.detail_tone)).bg(bg);
         let mut drawn = 0;
         for (i, row) in self.rows.iter().enumerate() {
-            let y = area.y + i as u16;
+            let y = area.y.saturating_add(terminal_extent(i));
             if y >= area.bottom() {
                 break;
             }
@@ -170,12 +176,12 @@ impl MeterList {
             }
             row.meter.render(Rect::new(mx, y, mw, 1), buf, ctx, bg);
             if let Some(d) = &row.detail {
-                let dx = mx + mw + self.detail_gap;
-                if dx < area.right() {
+                let dx = usize::from(mx) + usize::from(mw) + usize::from(self.detail_gap);
+                if dx < usize::from(area.right()) {
                     buf.set_string(
-                        dx,
+                        terminal_extent(dx),
                         y,
-                        truncate(d, (area.right() - dx) as usize),
+                        truncate(d, usize::from(area.right()) - dx),
                         detail_style,
                     );
                 }
@@ -187,14 +193,17 @@ impl MeterList {
 
 impl crate::ui::measure::Measure for MeterList {
     fn measure(&self, avail: ratatui::layout::Size, ctx: &RenderCtx) -> ratatui::layout::Size {
-        let label = self.label_column(Rect::new(0, 0, u16::MAX, 1));
-        let meter = self.meter_width.unwrap_or_else(|| {
-            self.rows
-                .iter()
-                .map(|r| r.meter.measure(avail, ctx).width)
-                .max()
-                .unwrap_or(0)
-        });
+        let label = self.intrinsic_label_width();
+        let meter = self.meter_width.map_or_else(
+            || {
+                self.rows
+                    .iter()
+                    .map(|r| usize::from(r.meter.measure(avail, ctx).width))
+                    .max()
+                    .unwrap_or(0)
+            },
+            usize::from,
+        );
 
         let detail = match self.meter_width {
             None => 0,
@@ -202,14 +211,15 @@ impl crate::ui::measure::Measure for MeterList {
                 .rows
                 .iter()
                 .filter_map(|r| r.detail.as_deref())
-                .map(|d| self.detail_gap + width(d) as u16)
+                .map(|d| usize::from(self.detail_gap).saturating_add(width(d)))
                 .max()
                 .unwrap_or(0),
         };
-        ratatui::layout::Size::new(
-            label + self.label_gap + meter.max(self.min_meter) + detail.max(self.reserve),
-            self.height(),
-        )
+        let total = label
+            .saturating_add(usize::from(self.label_gap))
+            .saturating_add(meter.max(usize::from(self.min_meter)))
+            .saturating_add(detail.max(usize::from(self.reserve)));
+        ratatui::layout::Size::new(terminal_extent(total), self.height())
     }
 }
 

@@ -6,7 +6,8 @@
 use tui_test::{SnapshotColor, TerminalSnapshot};
 
 use crate::support::{
-    App, Launch, Point, SHOWCASE, cell_bg, clusters, find_all, flash_settle, row_text, text, try_launch,
+    App, Launch, Point, SHOWCASE, cell_bg, clusters, find_all, flash_settle, row_text, text,
+    try_launch,
 };
 
 const CRUMB: &str = "Text & code › Code editor";
@@ -1398,6 +1399,18 @@ fn option_document_empty() {
         &[FETCH, "fetch(", "3 blocks", RANGE],
     );
     finish_option(&app, "opt.codeeditor.document");
+}
+
+#[test]
+fn option_document_large() {
+    let app = page("s08-large", Some("codeeditor.document=large"), 120, 40);
+    app.wait_text(FETCH);
+    confirm_options(&app, "Document", |screen| {
+        assert_select(screen, "Document", "large", &["sample", "empty"]);
+    });
+    let screen = app.settle();
+    see(&screen, &[FETCH, "1–21 of 20001"], &[RANGE, "Type code"]);
+    app.finish();
 }
 
 #[test]

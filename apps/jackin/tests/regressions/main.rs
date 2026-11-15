@@ -7,4 +7,14 @@
 #![cfg(feature = "demo")]
 
 mod footer_wiring;
+// Support modules live beside the top-level targets and are shared with them.
+// They sit at the crate root because `capsule_support` imports `crate::pane_support`.
+#[path = "../capsule_support/mod.rs"]
+mod capsule_support;
+#[path = "../pane_support/mod.rs"]
+mod pane_support;
+#[path = "../product_support/mod.rs"]
+mod product_support;
+
+mod navigation_focus;
 mod smoke;

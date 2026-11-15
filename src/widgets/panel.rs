@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyModifiers;
 use ratatui::layout::{Position, Rect};
@@ -15,6 +17,7 @@ use crate::ui::ctx::{RenderCtx, fill};
 use crate::ui::edit_menu::{
     EditCaps, EditMenu, EditMenuHost, edit_menu_key, edit_menu_pointer, edit_menu_route,
 };
+use crate::ui::text::{MappedCell, WrapOpts, wrap_mapped};
 use crate::widgets::field_common::PointerSelect;
 use crate::widgets::scrollbar;
 use crate::widgets::text_select::{self, TextSelect};
@@ -469,10 +472,172 @@ impl<'a> Panel<'a> {
 
 use ratatui::style::Style;
 
+/// A byte offset on a grapheme boundary of one entry in `ScrollPanel::lines`.
+/// Selections live in these coordinates, so they do not depend on wrapping.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+struct SourcePos {
+    line: usize,
+    byte: usize,
+}
+
+#[derive(Debug, Clone)]
+struct RowMap {
+    source: usize,
+    cells: Vec<MappedCell>,
+    end: usize,
+}
+
+#[derive(Debug, Clone)]
+struct WrappedCache {
+    revision: u64,
+    width: u16,
+    rows: Vec<String>,
+    maps: Vec<RowMap>,
+}
+
+struct RowView<'a> {
+    source: usize,
+    cells: Cow<'a, [MappedCell]>,
+    end: usize,
+}
+
+struct Located {
+    pos: SourcePos,
+    probe: usize,
+}
+
+impl RowView<'_> {
+    fn end_col(&self) -> usize {
+        self.cells.last().map_or(0, |c| c.columns.end)
+    }
+
+    /// Maps a display column to a source boundary. A column inside a glyph
+    /// snaps to the nearer edge of the whole grapheme, ties toward its end,
+    /// and a column past the row maps to the row's end. `probe` is the start
+    /// of the grapheme the column falls on, for word lookup.
+    fn byte_at_col(&self, col: usize) -> (usize, usize) {
+        let i = self.cells.partition_point(|c| c.columns.end <= col);
+        let Some(cell) = self.cells.get(i) else {
+            let probe = self
+                .cells
+                .iter()
+                .rev()
+                .find(|c| !c.bytes.is_empty())
+                .map_or(self.end, |c| c.bytes.start);
+            return (self.end, probe);
+        };
+        let width = cell.columns.len();
+        let byte = if (col - cell.columns.start) * 2 < width {
+            cell.bytes.start
+        } else {
+            cell.bytes.end
+        };
+        (byte, cell.bytes.start)
+    }
+
+    fn col_of(&self, byte: usize) -> usize {
+        self.cells
+            .iter()
+            .find(|c| c.bytes.start >= byte)
+            .map_or_else(|| self.end_col(), |c| c.columns.start)
+    }
+}
+
+fn plain_row(line: &str) -> Vec<MappedCell> {
+    text_select::plain_cells(line)
+        .into_iter()
+        .map(|c| MappedCell {
+            columns: c.col..c.col + crate::ui::text::width(c.g),
+            bytes: c.bytes,
+        })
+        .collect()
+}
+
+/// The original text between two ordered boundaries, with one `\n` between
+/// adjacent entries and nothing inserted or trimmed.
+fn copy_source(lines: &[String], a: SourcePos, b: SourcePos) -> Option<String> {
+    let (a, b) = if a <= b { (a, b) } else { (b, a) };
+    if a == b {
+        return None;
+    }
+    let first = lines.get(a.line)?;
+    let last = lines.get(b.line)?;
+    if !first.is_char_boundary(a.byte) || !last.is_char_boundary(b.byte) {
+        return None;
+    }
+    if a.line == b.line {
+        return first.get(a.byte..b.byte).map(str::to_owned);
+    }
+    let mut result = first.get(a.byte..)?.to_owned();
+    for line in lines.iter().take(b.line).skip(a.line + 1) {
+        result.push('\n');
+        result.push_str(line);
+    }
+    result.push('\n');
+    result.push_str(last.get(..b.byte)?);
+    Some(result)
+}
+
+fn paint_selection(
+    buf: &mut Buffer,
+    origin: (u16, u16),
+    text_w: u16,
+    hoff: usize,
+    view: &RowView<'_>,
+    (a, b): (SourcePos, SourcePos),
+    style: Style,
+) {
+    if view.source < a.line || view.source > b.line {
+        return;
+    }
+    let from = if view.source == a.line { a.byte } else { 0 };
+    let to = if view.source == b.line {
+        b.byte
+    } else {
+        usize::MAX
+    };
+    let mut mark = |col: usize| {
+        if col >= hoff && col - hoff < usize::from(text_w) {
+            buf[(origin.0 + (col - hoff) as u16, origin.1)].set_style(style);
+        }
+    };
+    for c in view.cells.iter() {
+        let inside = if c.bytes.is_empty() {
+            from <= c.bytes.start && c.bytes.start < to
+        } else {
+            from <= c.bytes.start && c.bytes.end <= to
+        };
+        if inside {
+            c.columns.clone().for_each(&mut mark);
+        }
+    }
+    let end = SourcePos {
+        line: view.source,
+        byte: view.end,
+    };
+    if a <= end && end < b {
+        mark(view.end_col());
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct WidestCache {
+    revision: u64,
+    cells: usize,
+}
+
+#[cfg(test)]
+#[derive(Debug, Clone, Default)]
+struct Work {
+    wrap_builds: std::cell::Cell<usize>,
+    width_measurements: std::cell::Cell<usize>,
+}
+
 #[derive(Debug, Clone)]
 pub struct ScrollPanel {
     pub id: WidgetId,
-    pub lines: Vec<String>,
+    lines: Vec<String>,
+    content_revision: u64,
 
     pub scroll: ScrollPane,
 
@@ -482,7 +647,10 @@ pub struct ScrollPanel {
     pub wrap: bool,
     pub area: Rect,
 
-    wrapped_cache: (u16, Vec<String>, Vec<usize>),
+    wrapped_cache: Option<WrappedCache>,
+    widest_cache: Option<WidestCache>,
+    #[cfg(test)]
+    work: Work,
 
     pub horizontal: Option<HScroll>,
 
@@ -492,9 +660,7 @@ pub struct ScrollPanel {
 
     pub pointer_select: PointerSelect,
 
-    select: TextSelect<CellPos>,
-
-    select_w: u16,
+    select: TextSelect<SourcePos>,
 
     pub edit_menu: EditMenu,
 }
@@ -545,18 +711,21 @@ impl ScrollPanel {
         Self {
             id,
             lines,
+            content_revision: 0,
             scroll: ScrollPane::default(),
             follow: false,
             tail: false,
             wrap: false,
             area: Rect::ZERO,
-            wrapped_cache: (0, vec![], vec![]),
+            wrapped_cache: None,
+            widest_cache: None,
+            #[cfg(test)]
+            work: Work::default(),
             horizontal: None,
             nav: NavKeys::default(),
             keymap: PanelCmd::default_keymap(),
             pointer_select: PointerSelect::DEFAULT,
             select: TextSelect::default(),
-            select_w: 0,
             edit_menu: EditMenu::default(),
         }
     }
@@ -595,9 +764,146 @@ impl ScrollPanel {
         self
     }
 
+    pub fn lines(&self) -> &[String] {
+        &self.lines
+    }
+
+    /// Replaces every line. Returns false, changing nothing, when `lines`
+    /// equals the current content.
+    pub fn set_lines(&mut self, lines: Vec<String>) -> bool {
+        if self.lines == lines {
+            return false;
+        }
+        self.lines = lines;
+        self.content_changed();
+        true
+    }
+
+    /// Replaces one line. `Err(index)` reports an index past the last line,
+    /// `Ok(false)` an identical line.
+    pub fn replace_line(&mut self, index: usize, line: String) -> Result<bool, usize> {
+        let slot = self.lines.get_mut(index).ok_or(index)?;
+        if *slot == line {
+            return Ok(false);
+        }
+        *slot = line;
+        self.content_changed();
+        Ok(true)
+    }
+
+    /// Appends lines. The iterator is drained before the content changes, so
+    /// a panicking iterator leaves the panel untouched. Returns false for an
+    /// empty iterator.
+    pub fn extend_lines(&mut self, lines: impl IntoIterator<Item = String>) -> bool {
+        let added: Vec<String> = lines.into_iter().collect();
+        if added.is_empty() {
+            return false;
+        }
+        self.append(added);
+        true
+    }
+
+    /// Removes every line. Returns false when there were none.
+    pub fn clear(&mut self) -> bool {
+        if self.lines.is_empty() {
+            return false;
+        }
+        self.lines.clear();
+        self.content_changed();
+        true
+    }
+
     pub fn push(&mut self, line: String) {
-        self.lines.push(line);
-        self.wrapped_cache.0 = 0;
+        self.append(vec![line]);
+    }
+
+    fn append(&mut self, added: Vec<String>) {
+        let widest = self
+            .widest_cache
+            .filter(|c| c.revision == self.content_revision)
+            .map(|c| c.cells.max(self.widest_of(&added)));
+        self.lines.extend(added);
+        self.revision_bumped();
+        self.widest_cache = widest.map(|cells| WidestCache {
+            revision: self.content_revision,
+            cells,
+        });
+    }
+
+    /// A replacement can change rows the selection already covers, so it
+    /// drops the selection and any press or drag in progress. An append only
+    /// adds rows after them and goes through `revision_bumped` alone.
+    fn content_changed(&mut self) {
+        self.revision_bumped();
+        self.select = TextSelect::default();
+    }
+
+    fn revision_bumped(&mut self) {
+        match self.content_revision.checked_add(1) {
+            Some(next) => self.content_revision = next,
+            None => {
+                self.content_revision = 0;
+                self.widest_cache = None;
+            }
+        }
+        self.wrapped_cache = None;
+    }
+
+    fn widest_of(&self, lines: &[String]) -> usize {
+        #[cfg(test)]
+        self.work
+            .width_measurements
+            .set(self.work.width_measurements.get() + lines.len());
+        lines
+            .iter()
+            .map(|l| crate::ui::text::width(l))
+            .max()
+            .unwrap_or(0)
+    }
+
+    fn widest(&mut self) -> usize {
+        if let Some(c) = self
+            .widest_cache
+            .filter(|c| c.revision == self.content_revision)
+        {
+            return c.cells;
+        }
+        let cells = self.widest_of(&self.lines);
+        self.widest_cache = Some(WidestCache {
+            revision: self.content_revision,
+            cells,
+        });
+        cells
+    }
+
+    fn ensure_wrapped(&mut self, width: u16) {
+        if self
+            .wrapped_cache
+            .as_ref()
+            .is_some_and(|c| c.revision == self.content_revision && c.width == width)
+        {
+            return;
+        }
+        #[cfg(test)]
+        self.work.wrap_builds.set(self.work.wrap_builds.get() + 1);
+        let mut rows = Vec::new();
+        let mut maps = Vec::new();
+        for (source, l) in self.lines.iter().enumerate() {
+            for row in wrap_mapped(l, width as usize, WrapOpts::default()) {
+                rows.push(row.text);
+                maps.push(RowMap {
+                    source,
+                    cells: row.cells,
+                    end: row.end,
+                });
+            }
+        }
+        self.wrapped_cache = Some(WrappedCache {
+            revision: self.content_revision,
+            width,
+            rows,
+            maps,
+        });
     }
 
     fn settle_follow(&mut self) {
@@ -610,7 +916,7 @@ impl ScrollPanel {
         }
 
         let cmd = lookup(&self.keymap, key).or_else(|| {
-            (key.ctrl_char('c') && self.selection().is_some()).then_some(PanelCmd::Copy)
+            (key.ctrl_char('c') && self.select.range().is_some()).then_some(PanelCmd::Copy)
         });
         match cmd {
             Some(PanelCmd::SelectAll) => return self.select_all(),
@@ -664,38 +970,12 @@ impl ScrollPanel {
     pub fn measure(&mut self, area: Rect) {
         self.area = area;
         let text_w = area.width.saturating_sub(2);
-        if self.wrap && self.wrapped_cache.0 != text_w {
-            let mut out = Vec::new();
-            let mut src = Vec::new();
-            for (i, l) in self.lines.iter().enumerate() {
-                let rows = crate::ui::text::wrap(l, text_w as usize);
-                src.extend(std::iter::repeat_n(i, rows.len()));
-                out.extend(rows);
-            }
-            self.wrapped_cache = (text_w, out, src);
+        if self.wrap {
+            self.ensure_wrapped(text_w);
         }
 
-        if self.select_w != text_w {
-            if self.wrap {
-                self.select = TextSelect::default();
-            }
-            self.select_w = text_w;
-        }
-        let len = if self.wrap {
-            self.wrapped_cache.1.len()
-        } else {
-            self.lines.len()
-        };
-
-        let widest = if self.h_enabled() {
-            self.lines
-                .iter()
-                .map(|l| crate::ui::text::width(l))
-                .max()
-                .unwrap_or(0)
-        } else {
-            0
-        };
+        let len = self.rows().len();
+        let widest = if self.h_enabled() { self.widest() } else { 0 };
         self.scroll.h.set_content(widest);
         self.scroll.h.set_viewport(text_w as usize);
         let has_hb =
@@ -747,11 +1027,7 @@ impl ScrollPanel {
             .interaction
             .focused_under(self.id, self.edit_menu.is_open());
         let text_w = area.width.saturating_sub(2);
-        let lines: &Vec<String> = if self.wrap {
-            &self.wrapped_cache.1
-        } else {
-            &self.lines
-        };
+        let lines = self.rows();
         ctx.control(self.id, area, false);
         ctx.scrollable(self.id, area);
 
@@ -780,22 +1056,10 @@ impl ScrollPanel {
             };
             buf.set_string(area.x, y, &text, st);
 
-            if let Some((a, b)) = sel
-                && (a.line..=b.line).contains(&li)
+            if let Some(range) = sel
+                && let Some(view) = self.row_view(li)
             {
-                let from = if li == a.line { a.col } else { 0 };
-                let to = if li == b.line {
-                    b.col
-                } else {
-                    crate::ui::text::width(line) + 1
-                };
-                for col in from.max(hoff)..to {
-                    let x = col - hoff;
-                    if x >= text_w as usize {
-                        break;
-                    }
-                    buf[(area.x + x as u16, y)].set_style(t.selection());
-                }
+                paint_selection(buf, (area.x, y), text_w, hoff, &view, range, t.selection());
             }
         }
         if self.scroll.overflows() {
@@ -821,29 +1085,37 @@ impl ScrollPanel {
 
 impl ScrollPanel {
     fn rows(&self) -> &[String] {
-        if self.wrap {
-            &self.wrapped_cache.1
-        } else {
-            &self.lines
+        if !self.wrap {
+            return &self.lines;
         }
+        self.wrapped_cache.as_ref().map_or(&[], |c| &c.rows)
     }
 
-    fn source_of(&self, row: usize) -> usize {
+    fn row_view(&self, row: usize) -> Option<RowView<'_>> {
         if self.wrap {
-            self.wrapped_cache.2.get(row).copied().unwrap_or(row)
-        } else {
-            row
+            let map = self.wrapped_cache.as_ref()?.maps.get(row)?;
+            return Some(RowView {
+                source: map.source,
+                cells: Cow::Borrowed(&map.cells),
+                end: map.end,
+            });
         }
+        let line = self.lines.get(row)?;
+        Some(RowView {
+            source: row,
+            cells: Cow::Owned(plain_row(line)),
+            end: line.len(),
+        })
     }
 
-    fn pos_at(&self, pos: Position) -> Option<CellPos> {
-        let rows = self.rows();
+    fn locate(&self, pos: Position) -> Option<Located> {
+        let count = self.rows().len();
         let rows_h = (self.scroll.viewport_len as u16).min(self.area.height);
-        if self.area.is_empty() || rows.is_empty() || rows_h == 0 {
+        if self.area.is_empty() || count == 0 || rows_h == 0 {
             return None;
         }
         let y = pos.y.clamp(self.area.y, self.area.y + rows_h - 1) - self.area.y;
-        let line = (y as usize + self.scroll.offset).min(rows.len() - 1);
+        let row = (y as usize + self.scroll.offset).min(count - 1);
         let text_w = self.area.width.saturating_sub(2).max(1);
         let x = pos.x.saturating_sub(self.area.x).min(text_w - 1) as usize;
         let hoff = if self.h_enabled() {
@@ -851,86 +1123,117 @@ impl ScrollPanel {
         } else {
             0
         };
-        let col = (x + hoff).min(crate::ui::text::width(&rows[line]));
-        Some(CellPos { line, col })
+        let view = self.row_view(row)?;
+        let (byte, probe) = view.byte_at_col(x + hoff);
+        Some(Located {
+            pos: SourcePos {
+                line: view.source,
+                byte,
+            },
+            probe,
+        })
     }
 
-    fn word_at(&self, p: CellPos) -> Option<(CellPos, CellPos)> {
-        let row = self.rows().get(p.line)?;
-        let cells = text_select::plain_cells(row);
-        let at = text_select::plain_cell_at(&cells, p.col);
-        let (s, e) = text_select::word_bounds(&cells, at, |c| text_select::is_word(c.g))?;
-        let col = |i| text_select::plain_col_of(row, &cells, i);
+    fn word_at(&self, at: &Located) -> Option<(SourcePos, SourcePos)> {
+        let line = at.pos.line;
+        let cells = text_select::plain_cells(self.lines.get(line)?);
+        let i = cells
+            .iter()
+            .position(|c| c.bytes.end > at.probe)
+            .unwrap_or(cells.len());
+        let (s, e) = text_select::word_bounds(&cells, i, |c| text_select::is_word(c.g))?;
         Some((
-            CellPos {
-                line: p.line,
-                col: col(s),
+            SourcePos {
+                line,
+                byte: cells[s].bytes.start,
             },
-            CellPos {
-                line: p.line,
-                col: col(e),
+            SourcePos {
+                line,
+                byte: cells[e - 1].bytes.end,
             },
         ))
     }
 
-    fn line_at(&self, p: CellPos) -> Option<(CellPos, CellPos)> {
-        let rows = self.rows();
-        rows.get(p.line)?;
-        let src = self.source_of(p.line);
-        let mut first = p.line;
-        while first > 0 && self.source_of(first - 1) == src {
-            first -= 1;
-        }
-        let mut last = p.line;
-        while last + 1 < rows.len() && self.source_of(last + 1) == src {
-            last += 1;
-        }
+    fn line_at(&self, at: &Located) -> Option<(SourcePos, SourcePos)> {
+        let line = at.pos.line;
         Some((
-            CellPos {
-                line: first,
-                col: 0,
-            },
-            CellPos {
-                line: last,
-                col: crate::ui::text::width(&rows[last]),
+            SourcePos { line, byte: 0 },
+            SourcePos {
+                line,
+                byte: self.lines.get(line)?.len(),
             },
         ))
     }
 
-    pub fn selection(&self) -> Option<(CellPos, CellPos)> {
-        self.select.range()
-    }
-
-    pub fn selected_text(&self) -> Option<String> {
-        let (a, b) = self.selection()?;
-        let rows = self.rows();
-        let mut out = String::new();
-        let last = b.line.min(rows.len().saturating_sub(1));
-        for (li, row) in rows.iter().enumerate().take(last + 1).skip(a.line) {
-            if li > a.line {
-                out.push(if self.source_of(li) == self.source_of(li - 1) {
-                    ' '
-                } else {
-                    '\n'
-                });
+    /// The display cell for a source boundary. A boundary shared by two soft
+    /// wrapped rows belongs to the following row's start for a start endpoint
+    /// and to the preceding row's end for an end endpoint, so a resize cannot
+    /// flip which row an endpoint paints on.
+    fn visual_of(&self, pos: SourcePos, end_side: bool) -> Option<CellPos> {
+        let (lo, hi) = if self.wrap {
+            let maps = &self.wrapped_cache.as_ref()?.maps;
+            (
+                maps.partition_point(|m| m.source < pos.line),
+                maps.partition_point(|m| m.source <= pos.line),
+            )
+        } else {
+            (pos.line, (pos.line + 1).min(self.lines.len()))
+        };
+        let mut found = None;
+        for row in lo..hi {
+            let view = self.row_view(row)?;
+            let past = if end_side {
+                pos.byte <= view.end
+            } else {
+                pos.byte < view.end
+            };
+            if past || row + 1 == hi {
+                found = Some((row, view));
+                break;
             }
-            let from = if li == a.line { a.col } else { 0 };
-            let to = if li == b.line { b.col } else { usize::MAX };
-            out.push_str(text_select::plain_slice(row, from, to).trim_end_matches(' '));
         }
-        Some(out)
+        let (line, view) = found?;
+        Some(CellPos {
+            line,
+            col: view.col_of(pos.byte),
+        })
+    }
+
+    /// The selection in current display rows and columns, where `line` is an
+    /// absolute wrapped row, not a source entry. `None` until the panel has
+    /// been measured at a visible width. Use [`Self::source_selection`] for
+    /// anything that must outlive a resize.
+    pub fn selection(&self) -> Option<(CellPos, CellPos)> {
+        let (a, b) = self.select.range()?;
+        if self.area.width.saturating_sub(2) == 0 {
+            return None;
+        }
+        Some((self.visual_of(a, false)?, self.visual_of(b, true)?))
+    }
+
+    /// The selection as `(entry, byte)` endpoints in `lines()`, ordered, on
+    /// grapheme boundaries. Independent of wrapping and width.
+    pub fn source_selection(&self) -> Option<((usize, usize), (usize, usize))> {
+        let (a, b) = self.select.range()?;
+        Some(((a.line, a.byte), (b.line, b.byte)))
+    }
+
+    /// The selected source text: entries joined by one `\n`, soft wraps
+    /// invisible, nothing trimmed.
+    pub fn selected_text(&self) -> Option<String> {
+        let (a, b) = self.select.range()?;
+        copy_source(&self.lines, a, b)
     }
 
     pub fn select_all(&mut self) -> Outcome {
-        let rows = self.rows();
-        let Some(last) = rows.len().checked_sub(1) else {
+        let Some(last) = self.lines.len().checked_sub(1) else {
             return Outcome::Consumed;
         };
         let all = (
-            CellPos { line: 0, col: 0 },
-            CellPos {
+            SourcePos { line: 0, byte: 0 },
+            SourcePos {
                 line: last,
-                col: crate::ui::text::width(&rows[last]),
+                byte: self.lines[last].len(),
             },
         );
         if self.select.sel == Some(all) {
@@ -945,9 +1248,16 @@ impl ScrollPanel {
     }
 
     fn on_press_with(&mut self, pos: Position, count: u8, mods: KeyModifiers) -> Outcome {
-        let at = self.pos_at(pos);
-        let word = at.and_then(|p| self.word_at(p));
-        let line = at.and_then(|p| self.line_at(p));
+        let at = self.locate(pos);
+        let word = at
+            .as_ref()
+            .filter(|_| count == 2)
+            .and_then(|l| self.word_at(l));
+        let line = at
+            .as_ref()
+            .filter(|_| count >= 3)
+            .and_then(|l| self.line_at(l));
+        let at = at.map(|l| l.pos);
         self.select
             .press(self.pointer_select, at, count, mods, word, line)
     }
@@ -965,19 +1275,26 @@ impl ScrollPanel {
             self.scroll.scroll_by((pos.y + 1 - bottom) as isize);
             self.settle_follow();
         }
-        let head = self.pos_at(pos);
+        let head = self.locate(pos);
         let word = if self.select.by_word() {
-            head.and_then(|p| self.word_at(p))
+            head.as_ref().and_then(|l| self.word_at(l))
         } else {
             None
         };
-        self.select.drag(self.pointer_select, head, pos, word)
+        self.select
+            .drag(self.pointer_select, head.map(|l| l.pos), pos, word)
     }
 
     fn on_click_with(&mut self, pos: Position, count: u8) -> Outcome {
-        let at = self.pos_at(pos);
-        let word = at.and_then(|p| self.word_at(p));
-        let line = at.and_then(|p| self.line_at(p));
+        let at = self.locate(pos);
+        let word = at
+            .as_ref()
+            .filter(|_| count == 2)
+            .and_then(|l| self.word_at(l));
+        let line = at
+            .as_ref()
+            .filter(|_| count >= 3)
+            .and_then(|l| self.line_at(l));
         self.select
             .click(self.pointer_select, pos, count, word, line)
     }
@@ -1076,13 +1393,13 @@ impl crate::ui::specimen::Specimen for ScrollPanel {
         use crate::ui::specimen::SpecimenState::*;
         let mut panel = self.clone();
         match state {
-            Empty => panel.lines.clear(),
+            Empty => {
+                panel.clear();
+            }
 
             Hover | Pressed | Overflow => {
-                let n = panel.lines.len();
-                panel
-                    .lines
-                    .extend((n + 1..=12.max(n)).map(|i| format!("line {i}")));
+                let n = panel.lines().len();
+                panel.extend_lines((n + 1..=12.max(n)).map(|i| format!("line {i}")));
             }
             _ => {}
         }
@@ -1171,3 +1488,6 @@ impl EditMenuHost for ScrollPanel {
         false
     }
 }
+
+#[cfg(test)]
+mod tests;

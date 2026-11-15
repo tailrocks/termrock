@@ -58,8 +58,7 @@ impl Specimen for DataTable {
         let rows: Vec<_> = t.rows().iter().take(SAMPLE_ROWS).cloned().collect();
         t.try_set_rows(rows)
             .expect("sample rows keep the schema width");
-        t.edit = None;
-        t.choice = None;
+        t.cancel_edit();
         t.selected = None;
         t.sort = None;
         t.selection.clear();

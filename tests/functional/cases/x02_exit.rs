@@ -15,7 +15,7 @@
 //! can exit between the `stopping` frame and the next assertion.
 
 use std::path::PathBuf;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use tui_test::TerminalSnapshot;
 use tuiscotti_latest::check::CheckOutcome;
@@ -52,7 +52,7 @@ const HOLLA_QUERY: &str = "Search actions";
 const HOLLA_DISK: &str = "Analyze disk usage";
 const QUIT_HOLLA: &str = "Quit holla";
 const STOP_QUIT: &str = "Stop and quit";
-const HOLLA_RUNNING: &str = "still running";
+const HOLLA_RUNNING: &str = "running. Quitting stops";
 const CANCEL_MS: u64 = 1_000;
 
 const WIDE_ID: &str = "pre_refactor/x02_exit/x02_exit_exit_120x40";
@@ -119,12 +119,7 @@ fn focused(screen: &TerminalSnapshot, label: &str) -> bool {
 }
 
 fn await_exit(app: &App, reason: &str) {
-    let deadline = Instant::now() + Duration::from_secs(8);
-    while app.child_running() {
-        let visible = text(&app.screen());
-        assert!(Instant::now() < deadline, "{reason}\n{visible}");
-        std::thread::sleep(Duration::from_millis(25));
-    }
+    app.wait_exit(reason);
     app.expect_exited(0);
 }
 
@@ -455,8 +450,11 @@ fn holla_guard() {
     });
     see(
         &dialog,
-        &[QUIT_HOLLA, STAY, STOP_QUIT, "detached monitors keep"],
-        &["quitting when every process is gone"],
+        &[QUIT_HOLLA, STAY, STOP_QUIT, HOLLA_RUNNING],
+        &[
+            "detached monitors keep",
+            "quitting when every process is gone",
+        ],
     );
     assert!(app.child_running(), "opening the guard quit holla");
     confirm_focused(&app, STOP_QUIT, STAY, holla_quit);

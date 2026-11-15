@@ -71,6 +71,7 @@ fn cli_after_help() -> String {
 fn main() -> std::io::Result<()> {
     let _ = (
         coverage::PICKER_COVERAGE,
+        coverage::TERMINAL_SESSION_COVERAGE,
         coverage::PICKER_ALLOWLIST,
         coverage::TEXT_INPUT_COVERAGE,
         coverage::GRID_EDIT_COVERAGE,
@@ -78,6 +79,8 @@ fn main() -> std::io::Result<()> {
         coverage::DOCUMENT_WORKSPACE_ALLOWLIST,
         coverage::GRID_CHANGE_ALLOWLIST,
         coverage::GRID_PARSER_ALLOWLIST,
+        coverage::SCROLL_WINDOW_COVERAGE,
+        coverage::SCROLL_WINDOW_ALLOWLIST,
         coverage::KEYMAP_ALLOWLIST,
         coverage::EXTERNAL_COVERAGE,
         coverage::EXTERNAL_ALLOWLIST,

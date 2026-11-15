@@ -25,7 +25,9 @@ use junie_tui::ui::popup::{Dismiss, Place, Placement};
 use junie_tui::ui::specimen::{SpecimenState, StateGrid};
 use junie_tui::ui::text::fuzzy;
 use junie_tui::widgets::button::Button;
-use junie_tui::widgets::code::{CodeCmd, CodeEditor, Diagnostic, EditorAction, Severity};
+use junie_tui::widgets::code::{
+    CodeCmd, CodeEditor, Diagnostic, EditorAction, Highlighter, Segmenter, Severity,
+};
 use junie_tui::widgets::completion::{Completion, CompletionAction, TEXT_INSET};
 use junie_tui::widgets::empty::{self, EmptyState};
 use junie_tui::widgets::option_list::Item;
@@ -101,6 +103,7 @@ fn international_candidates() -> Vec<(String, String, &'static str)> {
         .map(|(kind, sample)| (format!("go_{sample}("), format!("fn () · {kind}"), "ƒ"))
         .collect()
 }
+const UNAVAILABLE: &[(&str, &str)] = &[("url", "Moved into the request above")];
 
 fn highlight(src: &str) -> Vec<(Range<usize>, SyntaxTone)> {
     let b = src.as_bytes();
@@ -201,9 +204,16 @@ fn blocks(src: &str) -> Vec<Range<usize>> {
     out
 }
 
+const LARGE_REPEATS: usize = 800;
+
+fn large_document() -> String {
+    SAMPLE.repeat(LARGE_REPEATS)
+}
+
 pub struct EditorPage {
     template: Template,
     opts: PageValues,
+    document: &'static str,
     editor: CodeEditor,
     completion: Completion,
     find: Button,
@@ -230,6 +240,7 @@ impl EditorPage {
         let mut page = Self {
             template: Template::new(ID, states_grid()),
             opts: PageValues::new(page_options(PageId::Editor)),
+            document: "sample",
             editor: CodeEditor::new(ID.sub("code"), SAMPLE),
             completion: Completion::new(ID.sub("complete")),
             find: Button::secondary(ID.sub("find"), "Find").shortcut("/"),
@@ -244,14 +255,20 @@ impl EditorPage {
 
     fn rebuild(&mut self) {
         let o = &self.opts;
-        let text = if o.value("codeeditor.document") == "empty" {
-            String::new()
-        } else if self.editor.text().is_empty() {
-            SAMPLE.to_owned()
-        } else {
-            self.editor.text().to_owned()
+        let document = o.value("codeeditor.document");
+        let text = match document {
+            "empty" => String::new(),
+            "large" if self.document != "large" => large_document(),
+            "sample" if self.document == "large" => SAMPLE.to_owned(),
+            _ if self.editor.text().is_empty() => SAMPLE.to_owned(),
+            _ => self.editor.text().to_owned(),
         };
-        let cursor = self.editor.cursor_offset().min(text.len());
+        let cursor = if document == self.document {
+            self.editor.cursor_offset().min(text.len())
+        } else {
+            0
+        };
+        self.document = document;
         let keys = field_keys(o, "codeeditor.field_keys");
         let mut e = CodeEditor::new(ID.sub("code"), &text)
             .placeholder("Type code. i edits, Ctrl+R runs the block under the cursor.")
@@ -297,7 +314,7 @@ impl EditorPage {
         }
         e.indent = o.number("codeeditor.indent").unwrap_or(4) as usize;
         e.jump_to(cursor);
-        e.diagnostics = std::mem::take(&mut self.editor.diagnostics);
+        e.set_diagnostics(self.editor.diagnostics().to_vec());
         self.editor = e;
 
         let wide = o.value("codeeditor.completion_width") == "wide";
@@ -353,13 +370,16 @@ impl EditorPage {
             .chain(international)
             .filter_map(|(label, detail, glyph)| {
                 let (penalty, matched) = fuzzy(&label, &word)?;
-                Some((
-                    penalty,
-                    Item::new(label)
-                        .glyph(glyph)
-                        .detail(detail)
-                        .matched(matched),
-                ))
+                let why = UNAVAILABLE.iter().find(|(name, _)| *name == label.as_str());
+                let item = Item::new(label)
+                    .glyph(glyph)
+                    .detail(detail)
+                    .matched(matched);
+                let item = match why {
+                    Some((_, why)) => item.reason(*why),
+                    None => item,
+                };
+                Some((penalty, item))
             })
             .collect();
         ranked.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.label.cmp(&b.1.label)));
@@ -378,8 +398,9 @@ impl EditorPage {
     }
 
     fn accept(&mut self, i: usize) {
-        self.completion.apply(i, &mut self.editor.field.buffer);
-        self.completion.close();
+        if self.completion.apply(i, &mut self.editor.field.buffer) {
+            self.completion.close();
+        }
     }
 
     fn run(&mut self, cx: &mut Cx) {
@@ -402,14 +423,14 @@ impl EditorPage {
         if let Some(block) = self.editor.running.clone() {
             let text = self.editor.text()[block.clone()].to_owned();
             if let Some(p) = text.find(".unwrap()") {
-                self.editor.diagnostics.push(Diagnostic {
+                self.editor.push_diagnostic(Diagnostic {
                     range: block.start + p + 1..block.start + p + 9,
                     severity: Severity::Warning,
                     message: "unwrap() panics on Err; propagate with ? instead".into(),
                 });
             }
             if let Some(p) = text.find("todo!") {
-                self.editor.diagnostics.push(Diagnostic {
+                self.editor.push_diagnostic(Diagnostic {
                     range: block.start + p..block.start + p + 5,
                     severity: Severity::Error,
                     message: "not yet implemented".into(),
@@ -432,8 +453,8 @@ impl EditorPage {
             .position(|b| b.start <= cur && cur <= b.end)
             .map(|i| format!("{} of {}", i + 1, all.len()))
             .unwrap_or_else(|| "between blocks".into());
-        let diags = self.editor.diagnostics.len();
-        let find = match &self.editor.find {
+        let diags = self.editor.diagnostics().len();
+        let find = match self.editor.find_state() {
             None => "closed".to_owned(),
             Some(f) if f.needle.text().is_empty() => "type to find".to_owned(),
             Some(f) if f.matches.is_empty() => format!("“{}” · no matches", f.needle.text()),
@@ -553,10 +574,10 @@ impl EditorPage {
             let panel = Panel::card(Some("Diagnostics"));
             let bg = panel.bg(t);
             let inner = panel.render(Rect::new(r.x, y, r.width, (r.bottom() - y).min(9)), buf, t);
-            if self.editor.diagnostics.is_empty() {
+            if self.editor.diagnostics().is_empty() {
                 empty::render(inner, buf, t, &Self::no_diagnostics(), bg);
             } else {
-                for (i, d) in self.editor.diagnostics.iter().enumerate() {
+                for (i, d) in self.editor.diagnostics().iter().enumerate() {
                     let yy = inner.y + i as u16;
                     if yy >= inner.bottom() {
                         break;
@@ -597,7 +618,7 @@ fn states_grid() -> StateGrid {
     let id = ID.sub("states");
     let src = "let delay = 200;\nretry(delay);";
     let mut warned = CodeEditor::new(id.child(2), src).highlighter(highlight);
-    warned.diagnostics.push(Diagnostic {
+    warned.push_diagnostic(Diagnostic {
         range: 4..9,
         severity: Severity::Warning,
         message: "unused variable".into(),
@@ -731,7 +752,7 @@ impl Page for EditorPage {
                 let (o, ev) = self.editor.on_key(key);
                 match ev {
                     Some(EditorAction::Changed) => {
-                        self.editor.diagnostics.clear();
+                        self.editor.set_diagnostics(Vec::new());
                         self.trigger(false);
                     }
                     Some(EditorAction::CursorMoved) => {
@@ -848,8 +869,19 @@ impl Page for EditorPage {
     }
 
     fn set_option(&mut self, key: &str, value: usize) {
-        if self.opts.set(key, value) {
-            self.rebuild();
+        if !self.opts.set(key, value) {
+            return;
+        }
+        match key {
+            "codeeditor.highlighter" => {
+                let provider = self.opts.on(key).then_some(highlight as Highlighter);
+                self.editor.set_highlighter(provider);
+            }
+            "codeeditor.segmenter" => {
+                let provider = self.opts.on(key).then_some(blocks as Segmenter);
+                self.editor.set_segmenter(provider);
+            }
+            _ => self.rebuild(),
         }
     }
 

@@ -1064,6 +1064,27 @@ fn option_frames_never() {
     });
 }
 
+/// The pointer stops at the same boundary as the keyboard: the 24-column
+/// minimum is the outer pane rectangle, so the seam cannot cross column 52.
+#[test]
+fn option_min_24x6_pointer_drag_stops_at_the_minimum() {
+    let app = page("s07-min-drag", Some("panetree.min=24x6"), 120, 40);
+    app.wait_text(META);
+    let (start, top) = seam_at(&app.settle());
+    assert_eq!(start, SEAM_X, "rest seam");
+    let y = top + 2;
+    let end = Point { x: 30, y };
+    app.down(Point { x: start, y });
+    app.drag_to(end);
+    let held = app.settle();
+    assert_eq!(seam_at(&held).0, 52, "the drag crossed the pane minimum");
+    app.up(end);
+    flash_settle(&app);
+    let released = app.settle();
+    assert_eq!(seam_at(&released).0, 52, "release moved the minimum seam");
+    app.finish();
+}
+
 #[test]
 fn option_min_24x6() {
     let app = page("s07-min", Some("panetree.min=24x6"), 120, 40);
@@ -1248,5 +1269,53 @@ fn option_hit_pad_3() {
     );
     assert_size(&app, 120, 40);
     shot(&app, "opt.panetree.hit_pad");
+    app.finish();
+}
+
+#[test]
+fn seam_release_outside_returns_the_seam_to_rest() {
+    let app = page("s07-seam-release", None, 120, 40);
+    app.wait_text(META);
+    flash_settle(&app);
+    let before = app.settle();
+    let (x, top) = seam_at(&before);
+    assert_eq!(x, SEAM_X, "rest seam");
+    let y = top + 2;
+
+    app.down(Point { x, y });
+    let end = Point { x: x + 6, y };
+    app.drag_to(end);
+    app.up(Point { x: end.x, y: 0 });
+    flash_settle(&app);
+    let released = app.settle();
+
+    let (kept, kept_top) = seam_at(&released);
+    assert_eq!(kept, x + 6, "the release outside kept the dragged ratio");
+    assert_eq!(
+        cell(&released, kept, kept_top),
+        "│",
+        "a release outside the seam's own line left the seam pressed"
+    );
+
+    let next_y = kept_top + 2;
+    app.down(Point { x: kept, y: next_y });
+    let next_end = Point {
+        x: kept + 4,
+        y: next_y,
+    };
+    app.drag_to(next_end);
+    let regrab = app.settle();
+    let (moved, moved_top) = seam_at(&regrab);
+    assert_eq!(
+        moved,
+        kept + 4,
+        "the next gesture moved the seam from its press"
+    );
+    assert_eq!(
+        cell(&regrab, moved, moved_top),
+        "┃",
+        "the next gesture draws the seam pressed while held"
+    );
+    app.up(next_end);
     app.finish();
 }

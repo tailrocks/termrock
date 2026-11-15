@@ -337,15 +337,21 @@ impl DataGrid {
         receipt: GridCommitReceipt,
         revision: GridRevision,
     ) {
-        self.close_sessions();
+        self.structural_change();
         let landed: HashMap<ItemKey, ItemKey> = receipt
             .rows
             .iter()
             .map(|row| (row.key, row.committed_key))
             .collect();
-        let cursor = self
+        let landed_key = |key: ItemKey| landed.get(&key).copied().unwrap_or(key);
+        let cursor_key = self
             .view_key(self.cursor.0, self.cursor.1)
-            .map(|(key, _)| landed.get(&key).copied().unwrap_or(key));
+            .map(|(key, col)| (landed_key(key), col));
+        let anchor_key = self
+            .anchor
+            .and_then(|(display, col)| self.view_key(display, col))
+            .map(|(key, col)| (landed_key(key), col));
+        let fallback_key = self.key_after_removal().map(landed_key);
         self.pending = super::PendingChanges::default();
         for row in receipt.rows {
             if let Some(&src) = self.key_to_source.get(&row.key) {
@@ -365,12 +371,15 @@ impl DataGrid {
         self.row_errors.clear();
         self.cell_errors.clear();
         self.rebuild_order();
+        let survivor = |key: Option<(ItemKey, usize)>| {
+            key.filter(|&(key, _)| self.source_index(key).is_some())
+        };
+        let cursor = survivor(cursor_key).or_else(|| fallback_key.map(|key| (key, self.cursor.1)));
+        self.restore_view(cursor, anchor_key);
         self.revision = revision;
         self.scroll.set_content(self.content_rows());
-        self.cursor.0 = match cursor.and_then(|key| self.display_of(key)) {
-            Some(display) => display,
-            None => self.cursor.0.min(self.rows.len().saturating_sub(1)),
-        };
+        self.cursor.0 = self.cursor.0.min(self.rows.len().saturating_sub(1));
+        self.scroll.ensure_visible(self.cursor.0);
     }
 }
 
