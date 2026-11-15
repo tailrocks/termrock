@@ -630,6 +630,12 @@ mod tty_input {
         unsafe { libc::poll(&mut p, 1, 0) > 0 && p.revents & libc::POLLIN != 0 }
     }
 
+    /// crossterm reads the tty only when its edge-triggered poller reports it
+    /// readable. When SIGWINCH and a key land in one poller batch it returns
+    /// the resize and discards the tty's readiness, so the key waits unread
+    /// until the next byte arrives. `queued` sees such input, and a termios
+    /// write that changes a value makes the kernel signal the tty again. A
+    /// write of unchanged attributes does not do that on macOS.
     pub fn rearm() -> bool {
         let Some(fd) = fd() else {
             return false;
@@ -646,7 +652,11 @@ mod tty_input {
             if libc::tcgetattr(fd, attrs.as_mut_ptr()) != 0 {
                 return false;
             }
-            libc::tcsetattr(fd, libc::TCSANOW, attrs.as_ptr()) == 0
+            let attrs = attrs.assume_init();
+            let mut nudged = attrs;
+            nudged.c_cc[libc::VMIN] = attrs.c_cc[libc::VMIN].wrapping_add(1);
+            let changed = libc::tcsetattr(fd, libc::TCSANOW, &nudged) == 0;
+            libc::tcsetattr(fd, libc::TCSANOW, &attrs) == 0 && changed
         }
     }
 }
