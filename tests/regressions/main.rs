@@ -10,6 +10,8 @@ mod file_browser_paths;
 mod help_geometry;
 mod master_detail_bounds;
 mod nav_list_state;
+mod pane_rig;
+mod pane_tree_minima;
 mod pane_tree_pointer;
 mod scroll_view_navigation;
 mod smoke;

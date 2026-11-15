@@ -15,6 +15,52 @@ use crate::widgets::splitter::Splitter;
 
 pub type PaneId = u64;
 
+/// Cells between two panes of one split.
+const SEAM: u16 = 1;
+
+/// The smallest outer rectangle a subtree needs. Sums use `usize` so any
+/// `min_size`, including `u16::MAX`, adds up without overflow.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct PaneMinimum {
+    width: usize,
+    height: usize,
+}
+
+impl PaneMinimum {
+    fn of(size: (u16, u16)) -> Self {
+        Self {
+            width: size.0 as usize,
+            height: size.1 as usize,
+        }
+    }
+
+    /// The minimum of a split: sizes add along `dir` plus the seam and the larger one wins across it.
+    fn join(dir: SplitDir, a: Self, b: Self) -> Self {
+        let seam = SEAM as usize;
+        match dir {
+            SplitDir::Horizontal => Self {
+                width: a.width.saturating_add(seam).saturating_add(b.width),
+                height: a.height.max(b.height),
+            },
+            SplitDir::Vertical => Self {
+                width: a.width.max(b.width),
+                height: a.height.saturating_add(seam).saturating_add(b.height),
+            },
+        }
+    }
+
+    fn along(self, dir: SplitDir) -> usize {
+        match dir {
+            SplitDir::Horizontal => self.width,
+            SplitDir::Vertical => self.height,
+        }
+    }
+
+    fn fits(self, area: Rect) -> bool {
+        self.width <= area.width as usize && self.height <= area.height as usize
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PaneNode {
     Leaf(PaneId),
@@ -193,6 +239,31 @@ impl PaneNode {
         Some(cur)
     }
 
+    fn minimum(&self, leaf: PaneMinimum) -> PaneMinimum {
+        match self {
+            PaneNode::Leaf(_) => leaf,
+            PaneNode::Split {
+                dir, first, second, ..
+            } => PaneMinimum::join(*dir, first.minimum(leaf), second.minimum(leaf)),
+        }
+    }
+
+    /// Whether every leaf laid out in `area` keeps the outer minimum `leaf`.
+    fn leaves_fit(&self, area: Rect, leaf: PaneMinimum) -> bool {
+        match self {
+            PaneNode::Leaf(_) => leaf.fits(area),
+            PaneNode::Split {
+                dir,
+                split,
+                first,
+                second,
+            } => {
+                let (a, b) = split.layout(*dir, area, SEAM);
+                first.leaves_fit(a, leaf) && second.leaves_fit(b, leaf)
+            }
+        }
+    }
+
     fn unzoom(&mut self) {
         if let PaneNode::Split {
             split,
@@ -288,6 +359,7 @@ pub enum PaneRefusal {
 
     NothingToResize,
 
+    /// The seam cannot move: a pane or the whole area is at its minimum size.
     AtMinimum,
 
     OnePane,
@@ -390,11 +462,20 @@ pub struct PaneTree {
 
     pub split_keys: SplitKeys,
 
+    /// The smallest outer rectangle (columns, rows) a pane may be resized to.
+    ///
+    /// Keyboard resizing, seam dragging and a double-click reset share this
+    /// limit and clamp to the boundary it implies, counting every pane and
+    /// seam below a split. Frames are not added: a framed pane keeps
+    /// `outer.saturating_sub(2)` cells of content. When the area is too small
+    /// for the limits, or the 5% to 95% ratio cannot express the boundary,
+    /// resizing is refused and the split stays as it was until the area grows.
     pub min_size: (u16, u16),
 
     pub frames: Frames,
 
     pub hit_pad: u16,
+    area: Rect,
     rects: Vec<(PaneId, Rect)>,
     seams: Vec<Seam>,
     handles: Vec<Splitter>,
@@ -415,6 +496,7 @@ impl PaneTree {
             min_size: (12, 3),
             frames: Frames::default(),
             hit_pad: 1,
+            area: Rect::ZERO,
             rects: Vec::new(),
             seams: Vec::new(),
             handles: Vec::new(),
@@ -623,23 +705,64 @@ impl PaneTree {
         let Some(seam) = self.seams.iter().find(|s| s.path == p).cloned() else {
             return Err(PaneRefusal::NothingToResize);
         };
-        let (min_c, min_r) = self.min_size;
-        let Some(PaneNode::Split { split, dir: sd, .. }) = self.root.node_at_mut(&p) else {
-            return Err(PaneRefusal::NothingToResize);
-        };
-        let before = *split;
-        let was = split.layout(*sd, seam.container, 1);
-        split.nudge(*sd, seam.container, 1, delta);
-        let (a, b) = split.layout(*sd, seam.container, 1);
-        let too_small = match sd {
-            SplitDir::Horizontal => a.width < min_c || b.width < min_c,
-            SplitDir::Vertical => a.height < min_r || b.height < min_r,
-        };
-        if too_small || (a, b) == was {
-            *split = before;
-            return Err(PaneRefusal::AtMinimum);
+        let container = seam.container;
+        let moved = self.commit_split_candidate(&p, container, |split, sd| {
+            split.nudge(sd, container, SEAM, delta);
+        });
+        if moved {
+            Ok(Outcome::Changed)
+        } else {
+            Err(PaneRefusal::AtMinimum)
         }
-        Ok(Outcome::Changed)
+    }
+
+    /// The one place a seam moves. `edit` runs on a copy of the split at `path`,
+    /// clamped to the minimum extents of both subtrees, so a drag or key step
+    /// lands on the nearest feasible boundary. The copy then returns to the
+    /// stored minima and is committed only if it moved the seam and every leaf
+    /// below still meets `min_size` when laid out from those stored values.
+    /// Otherwise the tree is untouched, `precise` state included.
+    fn commit_split_candidate(
+        &mut self,
+        path: &[u8],
+        container: Rect,
+        edit: impl FnOnce(&mut Split, SplitDir),
+    ) -> bool {
+        let leaf = PaneMinimum::of(self.min_size);
+        if !self.root.minimum(leaf).fits(self.area) {
+            return false;
+        }
+        let Some(PaneNode::Split {
+            dir,
+            split,
+            first,
+            second,
+        }) = self.root.node_at(path)
+        else {
+            return false;
+        };
+        let dir = *dir;
+        let (first_min, second_min) = (first.minimum(leaf), second.minimum(leaf));
+        if !PaneMinimum::join(dir, first_min, second_min).fits(container) {
+            return false;
+        }
+        let extent = |m: PaneMinimum| u16::try_from(m.along(dir)).unwrap_or(u16::MAX);
+        let stored = *split;
+        let mut candidate = stored;
+        candidate.min_first = extent(first_min);
+        candidate.min_second = extent(second_min);
+        edit(&mut candidate, dir);
+        candidate.min_first = stored.min_first;
+        candidate.min_second = stored.min_second;
+
+        let (a, b) = candidate.layout(dir, container, SEAM);
+        let accepted = (a, b) != stored.layout(dir, container, SEAM)
+            && first.leaves_fit(a, leaf)
+            && second.leaves_fit(b, leaf);
+        if accepted && let Some(PaneNode::Split { split, .. }) = self.root.node_at_mut(path) {
+            *split = candidate;
+        }
+        accepted
     }
 
     pub fn natural_size(&self, content: &dyn Fn(PaneId) -> Size) -> Size {
@@ -655,6 +778,7 @@ impl PaneTree {
     }
 
     pub fn layout(&mut self, area: Rect) {
+        self.area = area;
         self.rects.clear();
         self.seams.clear();
         let mut rects = Vec::new();
@@ -801,7 +925,7 @@ impl PaneTree {
                 };
                 self.dead = None;
                 self.grab = Some(grab);
-                h.on_press(split, container, 1, ev.pos());
+                h.on_press(split, container, SEAM, ev.pos());
                 self.handles[i] = h;
                 Some(Outcome::Consumed)
             }
@@ -812,12 +936,15 @@ impl PaneTree {
                 };
                 let s = self.seams[i].clone();
                 let mut h = self.handles.get(i).copied()?;
-                let Some(PaneNode::Split { split, .. }) = self.root.node_at_mut(&s.path) else {
-                    return None;
-                };
-                let o = h.on_drag(split, s.container, 1, ev.pos());
+                let moved = self.commit_split_candidate(&s.path, s.container, |split, _| {
+                    h.on_drag(split, s.container, SEAM, ev.pos());
+                });
                 self.handles[i] = h;
-                Some(o)
+                Some(if moved {
+                    Outcome::Changed
+                } else {
+                    Outcome::Consumed
+                })
             }
             Phase::DragEnd => Some(self.end_seam_gesture()),
             Phase::Release => {
@@ -837,11 +964,15 @@ impl PaneTree {
                 let i = seam?;
                 let s = self.seams[i].clone();
                 let mut h = self.handles.get(i).copied()?;
-                let Some(PaneNode::Split { split, .. }) = self.root.node_at_mut(&s.path) else {
-                    return None;
-                };
-                let o = h.on_click(split, ev.count());
+                let moved = self.commit_split_candidate(&s.path, s.container, |split, _| {
+                    h.on_click(split, ev.count());
+                });
                 self.handles[i] = h;
+                let o = if moved {
+                    Outcome::Changed
+                } else {
+                    Outcome::Consumed
+                };
                 Some(if held && o == Outcome::Consumed {
                     Outcome::Changed
                 } else {

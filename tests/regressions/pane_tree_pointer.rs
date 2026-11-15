@@ -1,103 +1,36 @@
-use junie_tui::core::event::{Mouse, MouseKind, Outcome};
-use junie_tui::core::focus::{Focus, FocusRing};
-use junie_tui::core::hit::HitRegistry;
+use junie_tui::core::event::MouseKind;
 use junie_tui::core::id::WidgetId;
-use junie_tui::core::pointer::{PointerEvent, PointerHost, PointerParts, PointerRouter};
-use junie_tui::core::response::Response;
 use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
 use junie_tui::ui::layout::{Split, SplitDir};
 use junie_tui::ui::pane_tree::{PaneNode, PaneTree};
-use ratatui::buffer::Buffer;
 use ratatui::layout::{Position, Rect};
+
+use crate::pane_rig::Rig;
 
 const ID: WidgetId = WidgetId::of("t.pane.seam");
 const AREA: Rect = Rect::new(0, 0, 60, 12);
 const Y: u16 = 5;
 const OUTSIDE: Position = Position::new(200, 200);
 
-struct Rig {
-    tree: PaneTree,
-    area: Rect,
-    hits: HitRegistry,
-    focus: Focus,
-    ring: FocusRing,
-    router: PointerRouter,
-}
-
-impl PointerHost for Rig {
-    fn pointer_parts(&mut self) -> PointerParts<'_> {
-        PointerParts {
-            router: &mut self.router,
-            hits: &self.hits,
-            focus: &mut self.focus,
-            ring: &self.ring,
-        }
-    }
-
-    fn layer_open(&self) -> bool {
-        false
-    }
-
-    fn now_ms(&self) -> u64 {
-        0
-    }
-
-    fn deliver(&mut self, ev: &PointerEvent) -> Response<()> {
-        self.tree.on_pointer(ev).unwrap_or(Outcome::Ignored).into()
-    }
+fn rig() -> Rig {
+    let mut tree = PaneTree::new(ID, 1);
+    tree.split(1, 2, SplitDir::Horizontal, false);
+    Rig::new(tree, AREA)
 }
 
 impl Rig {
-    fn new() -> Self {
-        let mut tree = PaneTree::new(ID, 1);
-        tree.split(1, 2, SplitDir::Horizontal, false);
-        let mut rig = Self {
-            tree,
-            area: AREA,
-            hits: HitRegistry::default(),
-            focus: Focus::default(),
-            ring: FocusRing::default(),
-            router: PointerRouter::default(),
-        };
-        rig.render();
-        rig
-    }
-
-    fn render(&mut self) -> Buffer {
-        let theme = Theme::for_level(ColorLevel::TrueColor);
-        let mut buf = Buffer::empty(self.area);
-        self.hits = HitRegistry::default();
-        let mut ring = FocusRing::default();
-        let interaction = Interaction {
-            hover: self.router.hover,
-            pressed: self.router.pressed,
-            ..Default::default()
-        };
-        let mut ctx = RenderCtx::new(&theme, interaction, &mut self.hits, &mut ring);
-        self.tree
-            .render(self.area, &mut buf, &mut ctx, theme.canvas, &|p| {
-                format!("pane {p}")
-            });
-        buf
-    }
-
-    fn mouse(&mut self, kind: MouseKind, pos: Position) -> Outcome {
-        PointerRouter::route(self, Mouse::new(kind, pos))
-    }
-
-    fn seam_x(&self) -> u16 {
+    pub fn seam_x(&self) -> u16 {
         self.tree.seams()[0].handle.x
     }
 
-    fn root_percent(&self) -> u16 {
+    pub fn root_percent(&self) -> u16 {
         match &self.tree.root {
             PaneNode::Split { split, .. } => split.percent,
             PaneNode::Leaf(_) => panic!("the tree is split"),
         }
     }
 
-    fn seam_symbol(&mut self) -> String {
+    pub fn seam_symbol(&mut self) -> String {
         let buf = self.render();
         let handle = self.tree.seams()[0].handle;
         buf[(handle.x, handle.y)].symbol().to_owned()
@@ -113,7 +46,7 @@ fn rest_glyph() -> String {
 
 #[test]
 fn releasing_outside_the_tree_returns_the_seam_to_rest() {
-    let mut rig = Rig::new();
+    let mut rig = rig();
     let x = rig.seam_x();
     rig.mouse(MouseKind::Down, Position::new(x, Y));
     rig.mouse(MouseKind::Drag, Position::new(x, Y));
@@ -129,7 +62,7 @@ fn releasing_outside_the_tree_returns_the_seam_to_rest() {
 
 #[test]
 fn releasing_over_another_pane_returns_the_seam_to_rest() {
-    let mut rig = Rig::new();
+    let mut rig = rig();
     let x = rig.seam_x();
     rig.mouse(MouseKind::Down, Position::new(x, Y));
     rig.mouse(MouseKind::Drag, Position::new(x - 5, Y));
@@ -144,7 +77,7 @@ fn releasing_over_another_pane_returns_the_seam_to_rest() {
 
 #[test]
 fn the_terminal_phases_after_a_drag_do_not_move_the_split_again() {
-    let mut rig = Rig::new();
+    let mut rig = rig();
     let x = rig.seam_x();
     rig.mouse(MouseKind::Down, Position::new(x, Y));
     rig.mouse(MouseKind::Drag, Position::new(x + 3, Y));
@@ -164,7 +97,7 @@ fn the_terminal_phases_after_a_drag_do_not_move_the_split_again() {
 
 #[test]
 fn splitting_the_tree_during_a_drag_cancels_the_grab() {
-    let mut rig = Rig::new();
+    let mut rig = rig();
     let x = rig.seam_x();
     rig.mouse(MouseKind::Down, Position::new(x, Y));
     rig.mouse(MouseKind::Drag, Position::new(x + 2, Y));
@@ -190,7 +123,7 @@ fn splitting_the_tree_during_a_drag_cancels_the_grab() {
 
 #[test]
 fn replacing_the_root_during_a_drag_does_not_retarget_the_grab() {
-    let mut rig = Rig::new();
+    let mut rig = rig();
     let x = rig.seam_x();
     rig.mouse(MouseKind::Down, Position::new(x, Y));
 
@@ -215,7 +148,7 @@ fn replacing_the_root_during_a_drag_does_not_retarget_the_grab() {
 
 #[test]
 fn a_gesture_after_a_cancelled_release_starts_with_its_own_grab() {
-    let mut rig = Rig::new();
+    let mut rig = rig();
     let x = rig.seam_x();
     rig.mouse(MouseKind::Down, Position::new(x, Y));
     rig.mouse(MouseKind::Drag, Position::new(x + 2, Y));
@@ -237,7 +170,7 @@ fn a_gesture_after_a_cancelled_release_starts_with_its_own_grab() {
 
 #[test]
 fn a_real_double_click_resets_the_split_but_a_cancelled_release_does_not() {
-    let mut rig = Rig::new();
+    let mut rig = rig();
     let base = rig.root_percent();
     let x = rig.seam_x();
     rig.mouse(MouseKind::Down, Position::new(x, Y));
@@ -267,7 +200,7 @@ fn a_real_double_click_resets_the_split_but_a_cancelled_release_does_not() {
 
 #[test]
 fn a_seam_still_under_the_pointer_after_release_shows_hover() {
-    let mut rig = Rig::new();
+    let mut rig = rig();
     let x = rig.seam_x();
     rig.mouse(MouseKind::Down, Position::new(x, Y));
     rig.mouse(MouseKind::Drag, Position::new(x, Y));
