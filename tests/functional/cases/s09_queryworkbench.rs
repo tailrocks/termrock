@@ -7,8 +7,9 @@
 //! A paused Ctrl+R stays on "Running…". The 140ms press flash stays painted
 //! while motion is paused, so a shot after a released click has to redraw once
 //! the deadline has passed ([`flash_settle`]). A tab click marks the strip
-//! active before this page reloads the editor, so opening and closing go
-//! through the explorer and the close glyph, which call `load_editor`.
+//! active before it emits `Activated`; the page keeps one editor per document
+//! and activates by document key, so a tab click shows that document's own
+//! editor and result ([`tab_click_activates_that_document`]).
 
 use std::time::Duration;
 
@@ -909,6 +910,113 @@ fn expand_views(app: &App) {
     // The explorer column clips the lazy names to active_custo… and monthly_reve….
     app.wait_text("active_custo");
     app.wait_text("monthly_reve");
+}
+
+#[test]
+fn tab_click_activates_that_document() {
+    let app = page_motion("s09-tab-click-document", None, 120, 40, "full");
+    app.wait_text(FROM_ORDERS);
+    click_where(&app, "customers", |hit| hit.y == 7);
+    let customers = app.wait_text(CUSTOMERS_SQL);
+    see(
+        &customers,
+        &[CUSTOMERS_SQL, "Not run yet", "2 tabs"],
+        &[FROM_ORDERS, PENDING, "Northwind"],
+    );
+
+    // Run belongs to the document the strip shows, not the one loaded before.
+    app.key("ctrl+r");
+    let ran = app.wait_text("✓ 40 rows");
+    see(
+        &ran,
+        &[CUSTOMERS_SQL, "✓ 40 rows"],
+        &[FROM_ORDERS, PENDING, "Not run yet"],
+    );
+
+    click_where(&app, "Query 1", |hit| hit.y == 7);
+    let query1 = app.wait_text(FROM_ORDERS);
+    see(
+        &query1,
+        &[FROM_ORDERS, PENDING, ROWS_META, "2 tabs"],
+        &[CUSTOMERS_SQL],
+    );
+    app.finish();
+}
+
+fn click_leftmost_close(app: &App) {
+    let screen = app.settle();
+    let mut hits: Vec<_> = find_all(&screen, "×")
+        .into_iter()
+        .filter(|hit| hit.y == 7)
+        .collect();
+    assert!(
+        !hits.is_empty(),
+        "no tab close on the tab row\n{}",
+        text(&screen)
+    );
+    hits.sort_by_key(|hit| hit.x);
+    app.click(hits[0]);
+}
+
+#[test]
+fn issue53_completion_stays_on_b_after_a_closes() {
+    let app = page_motion("s09-issue53-close-earlier", None, 120, 40, "full");
+    app.wait_text(FROM_ORDERS);
+    click_new_tab(&app);
+    app.wait_text("Query 2");
+    type_query(&app, "SELECT * FROM orders LIMIT 25;");
+    click_where(&app, "customers", |hit| hit.y == 7);
+    app.wait_text(CUSTOMERS_SQL);
+
+    app.key("ctrl+r");
+    app.wait_text(RUNNING);
+    click_leftmost_close(&app);
+    app.wait_text("Closed Query 1");
+    let done = app.wait_text("40 rows · 15 ms");
+    see(
+        &done,
+        &[
+            CUSTOMERS_SQL,
+            "40 rows · 15 ms",
+            "customers",
+            "Query 2",
+            "2 tabs",
+        ],
+        &[FROM_ORDERS, PENDING, "≡ Query 1", FINISHED, CANCELLED],
+    );
+
+    click_where(&app, "Query 2", |hit| hit.y == 7);
+    let other = app.wait_text("SELECT * FROM orders LIMIT 25;");
+    see(
+        &other,
+        &["Not run yet", "2 tabs"],
+        &[CUSTOMERS_SQL, "40 rows", ROWS_META],
+    );
+    app.finish();
+}
+
+#[test]
+fn issue53_inactive_completion_does_not_steal_focus() {
+    let app = page_motion("s09-issue53-inactive", None, 120, 40, "full");
+    app.wait_text(FROM_ORDERS);
+    click_new_tab(&app);
+    app.wait_text("Query 2");
+    click_where(&app, "customers", |hit| hit.y == 7);
+    app.wait_text(CUSTOMERS_SQL);
+
+    app.key("ctrl+r");
+    click_where(&app, "Query 2", |hit| hit.y == 7);
+    let done = app.wait_text("customers: ✓ 40 rows");
+    see(
+        &done,
+        &["Query 2", "Not run yet", "Write a query", "3 tabs"],
+        &[CUSTOMERS_SQL, ROWS_META, CANCELLED],
+    );
+
+    click_where(&app, "customers", |hit| hit.y == 7);
+    let b = app.wait_text(CUSTOMERS_SQL);
+    see(&b, &["40 rows · 15 ms", CUSTOMERS_SQL], &["Not run yet"]);
+    app.finish();
 }
 
 #[test]
