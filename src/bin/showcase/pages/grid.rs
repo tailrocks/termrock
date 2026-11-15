@@ -694,7 +694,9 @@ impl GridPage {
         self.filters.set_chips(
             self.filter_values
                 .iter()
-                .map(|(c, v)| Chip::new(&format!("{} = {}", self.grid.columns()[*c].name, v.text())))
+                .map(|(c, v)| {
+                    Chip::new(&format!("{} = {}", self.grid.columns()[*c].name, v.text()))
+                })
                 .collect(),
         );
     }

@@ -1910,7 +1910,7 @@ fn holla_projection_output_only_does_not_rerank_finder() {
     let mut app = settled(Scenario::RustDirty, false);
     let id = start_stream(&mut app, "streamer");
     tick(&mut app, 2);
-    app.finder_mut().expect("finder").query.set_text("streamer");
+    app.finder_mut().expect("finder").set_query("streamer");
     let text = drawn_text_sized(&mut app, 240);
     assert!(shows_retained_lines(&text, 0), "{text}");
     let selected = top_finder_id(&mut app);
@@ -2549,4 +2549,137 @@ fn finder_identity_moves_between_item_and_explore() {
 
     app.handle_input(key(KeyCode::Enter, KeyModifiers::NONE));
     assert_eq!(finder_group(&mut app), Some("Git"));
+}
+
+fn type_text(app: &mut App, text: &str) {
+    for c in text.chars() {
+        app.handle_input(key(KeyCode::Char(c), KeyModifiers::NONE));
+    }
+}
+
+#[test]
+fn search_detail_holla_external_query_callers() {
+    let mut app = settled(Scenario::DockerCleanup, true);
+    assert_eq!(finder(&mut app).query(), "docker clean");
+    let drawn = drawn_text(&mut app);
+    assert!(drawn.contains("docker clean"), "{drawn}");
+    assert!(
+        drawn.contains("Results \u{b7}"),
+        "the startup query was ranked on entry, not just stored: {drawn}"
+    );
+    assert!(
+        finder(&mut app).current_id().is_some(),
+        "the first result is selected"
+    );
+
+    let run = |app: &mut App| {
+        app.go(Go::Run {
+            item: "no.such.item".into(),
+            args: vec![],
+        })
+    };
+    run(&mut app);
+    assert_eq!(app.last_query.as_deref(), Some("docker clean"));
+
+    type_text(&mut app, "x");
+    run(&mut app);
+    assert_eq!(app.last_query.as_deref(), Some("docker cleanx"));
+
+    finder(&mut app).set_query("   ");
+    run(&mut app);
+    assert_eq!(app.last_query, None, "a blank query is not history");
+}
+
+#[test]
+fn search_detail_combined_focus_preserves_holla_query_routing() {
+    let mut app = finder_app();
+    drawn_text(&mut app);
+    let first = finder(&mut app).current_id();
+    type_text(&mut app, "git");
+    assert_eq!(finder(&mut app).query(), "git");
+    app.handle_input(key(KeyCode::Backspace, KeyModifiers::NONE));
+    assert_eq!(finder(&mut app).query(), "gi");
+    app.handle_input(key(KeyCode::Char('z'), KeyModifiers::CONTROL));
+    assert_eq!(finder(&mut app).query(), "git", "Ctrl+Z undoes the delete");
+    assert!(status(&app).contains("Undone"), "{}", status(&app));
+    app.handle_input(key(KeyCode::Char('a'), KeyModifiers::CONTROL));
+    assert!(status(&app).contains("Query selected"), "{}", status(&app));
+    app.handle_input(Input::Paste("pull\nrebase\n".into()));
+    assert_eq!(
+        finder(&mut app).query(),
+        "pull rebase",
+        "a paste joins its lines and replaces the selected query"
+    );
+
+    app.handle_input(key(KeyCode::Esc, KeyModifiers::NONE));
+    assert_eq!(finder(&mut app).query(), "", "Esc clears the query first");
+    type_text(&mut app, "git");
+    let top = finder(&mut app).current_id();
+    app.handle_input(key(KeyCode::Down, KeyModifiers::NONE));
+    let second = finder(&mut app).current_id();
+    assert_ne!(top, second, "Down moves through the results");
+    assert_eq!(finder(&mut app).query(), "git", "and never edits");
+    app.handle_input(key(KeyCode::Esc, KeyModifiers::NONE));
+    app.handle_input(key(KeyCode::Esc, KeyModifiers::NONE));
+    assert_eq!(finder(&mut app).query(), "");
+    assert_eq!(first.is_some(), finder(&mut app).current_id().is_some());
+}
+
+#[test]
+fn search_detail_combined_focus_preview_typing_returns_to_the_query() {
+    let mut app = finder_app();
+    drawn_text(&mut app);
+    app.handle_input(key(KeyCode::Tab, KeyModifiers::NONE));
+    let focus = app.shell.focus.current();
+    assert!(
+        finder(&mut app).search_on_detail(focus),
+        "Tab moves focus to the preview"
+    );
+    app.handle_input(key(KeyCode::Char('j'), KeyModifiers::NONE));
+    assert_eq!(finder(&mut app).query(), "", "j scrolls the preview");
+    app.handle_input(key(KeyCode::Char('y'), KeyModifiers::NONE));
+    assert_eq!(finder(&mut app).query(), "", "y copies the command");
+    app.handle_input(key(KeyCode::Char('g'), KeyModifiers::NONE));
+    assert_eq!(
+        finder(&mut app).query(),
+        "g",
+        "other text goes to the query"
+    );
+    let focus = app.shell.focus.current();
+    assert!(
+        !finder(&mut app).search_on_detail(focus),
+        "and focus is back on the results"
+    );
+}
+
+#[test]
+fn search_detail_holla_cell_click_policy_is_exact() {
+    let mut app = finder_app();
+    drawn_text(&mut app);
+    app.last_query = Some("sentinel".into());
+    app.handle_input(key(KeyCode::Down, KeyModifiers::NONE));
+    app.handle_input(key(KeyCode::Down, KeyModifiers::NONE));
+    let target = finder(&mut app).current().expect("an item").label.clone();
+    app.handle_input(key(KeyCode::Home, KeyModifiers::NONE));
+    let lines = finder_list_lines(&mut app);
+    let y = lines
+        .iter()
+        .position(|l| l.contains(&target))
+        .unwrap_or_else(|| panic!("{target} not drawn: {lines:?}"));
+    click_at(&mut app, 12, y as u16);
+    assert_eq!(
+        finder(&mut app).current().map(|i| i.label.clone()),
+        Some(target),
+        "a click selects the row"
+    );
+    assert_eq!(
+        app.last_query.as_deref(),
+        Some("sentinel"),
+        "a single click on a data row does not run it"
+    );
+
+    let (x, y) = drawn_tile(&mut app, "Git");
+    click_at(&mut app, x + 1, y);
+    assert_eq!(finder_group(&mut app), Some("Git"));
+    assert_eq!(app.active(), 0);
 }

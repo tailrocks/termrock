@@ -77,6 +77,7 @@ fn main() -> std::io::Result<()> {
         coverage::GRID_EDIT_COVERAGE,
         coverage::KEYMAP_ALLOWLIST,
         coverage::SEARCH_SESSION_ALLOWLIST,
+        coverage::SEARCH_DETAIL_HOLLA_COVERAGE,
     );
     let cli: Cli = junie_tui::cli::parse(cli_after_help());
     let motion = cli.common.motion(NO_MOTION_ENV);

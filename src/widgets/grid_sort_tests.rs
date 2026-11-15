@@ -3,8 +3,7 @@ use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use crate::core::event::Key;
 use crate::core::id::WidgetId;
 use crate::widgets::grid::{
-    CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridRows,
-    ORDER_REBUILDS, RowTotal,
+    CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridRows, ORDER_REBUILDS, RowTotal,
 };
 use crate::widgets::table::SortDir;
 

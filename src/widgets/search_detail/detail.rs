@@ -8,8 +8,9 @@ use super::{
     QueryToken, SearchAction, SearchCmd, SearchConfig, SearchError, SearchFocusMode, SearchPhase,
     SearchSession, SearchSource,
 };
-use crate::core::event::Key;
+use crate::core::event::{Key, Outcome};
 use crate::core::focus::Focus;
+use crate::core::hit::Axis;
 use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
 use crate::core::intent::Phase;
 use crate::core::list::{KeyedRowSource, RowSource, SourceStamp};
@@ -22,7 +23,9 @@ use crate::ui::layout::Split;
 use crate::ui::text::{fit, truncate};
 use crate::widgets::edit::EditField;
 use crate::widgets::input::TextInput;
-use crate::widgets::list_detail::{Event, ListDetail, ListDetailSource, MasterRow, SourceFrame};
+use crate::widgets::list_detail::{
+    DetailPane, Event, ListDetail, ListDetailSource, MasterRow, PaneHost, SourceFrame,
+};
 use ratatui::style::Modifier;
 
 type Reply = Response<SearchAction>;
@@ -34,6 +37,35 @@ type Reply = Response<SearchAction>;
 pub trait SearchDetailSource: SearchSource + ListDetailSource {}
 
 impl<T: SearchSource + ListDetailSource + ?Sized> SearchDetailSource for T {}
+
+/// Paints every pane of a [`SearchDetail`] whose look the host owns: the query
+/// line, each row, the empty list, the preview and the summary. The widget
+/// keeps layout, scroll, selection, focus and hit regions.
+pub trait SearchPaint<S: SearchSource + ?Sized> {
+    /// Draws the query inside `area`, in [`SearchFocusMode::Combined`]
+    /// only.
+    fn query(&mut self, area: Rect, query: QueryView<'_>, buf: &mut Buffer, ctx: &mut RenderCtx);
+
+    /// The results are about to paint `row_w` wide rows inside `area`.
+    fn rows_begin(&mut self, _area: Rect, _row_w: u16) {}
+
+    /// Draws one visible row. A [`Cells`](super::ResultRowKind::Cells) row
+    /// reports each cell rect with [`RowPaint::place_cell`].
+    fn row(&mut self, row: RowPaint<'_, S>, buf: &mut Buffer, ctx: &mut RenderCtx);
+
+    /// Draws the results area when there is nothing to list.
+    fn empty(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx);
+
+    fn detail(&mut self, pane: DetailPane<'_>, buf: &mut Buffer, ctx: &mut RenderCtx);
+
+    fn summary(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx);
+
+    /// Whether visible row `row` is a heading that stays on screen above the
+    /// first item it labels when that item is selected at the top edge.
+    fn is_lead(&self, _source: &S, _row: usize) -> bool {
+        false
+    }
+}
 
 /// The query as a paint hook sees it. The hook cannot edit the query.
 #[derive(Clone, Debug)]
@@ -68,7 +100,20 @@ pub struct RowPaint<'a, S: ?Sized> {
     /// The displayed results are not the newest answer: loading or failed.
     /// Paint them dimmed; they cannot be acted on.
     pub stale: bool,
+    owner: WidgetId,
     cells: &'a mut Vec<(usize, Rect)>,
+}
+
+impl<S: SearchSource + ?Sized> RowPaint<'_, S> {
+    /// The hit region id the widget registers for cell `cell` of this row, for
+    /// hover and pressed state. It exists only for a cell placed with
+    /// [`place_cell`](Self::place_cell).
+    pub fn cell_hit(&self, cell: usize) -> WidgetId {
+        self.owner.part(PartRef::item(
+            Part::CELL,
+            self.source.cell_key(self.row, cell),
+        ))
+    }
 }
 
 impl<S: ?Sized> RowPaint<'_, S> {
@@ -166,6 +211,18 @@ impl SearchDetail {
 
     pub fn config_mut(&mut self) -> &mut SearchConfig {
         self.session.config_mut()
+    }
+
+    /// Reconfigures how the preview sits beside the results: its size, the
+    /// width below which it collapses into a drawer, its summary rows.
+    pub fn arrange(
+        mut self,
+        configure: impl FnOnce(
+            crate::ui::master_detail::MasterDetail,
+        ) -> crate::ui::master_detail::MasterDetail,
+    ) -> Self {
+        self.list = self.list.arrange(configure);
+        self
     }
 
     /// The results focus owner, and the query's too in Combined mode.
@@ -467,6 +524,12 @@ impl SearchDetail {
         focus: &mut Focus,
     ) -> Result<Reply, SearchError> {
         self.verify(source)?;
+        if let Some((Axis::Vertical, delta)) = ev.wheel() {
+            let outcome = self.list.wheel(ev.id, delta);
+            if outcome != Outcome::Ignored {
+                return Ok(outcome.into());
+            }
+        }
         if let Some(outcome) = self.list.on_pointer(ev) {
             return Ok(outcome.into());
         }
@@ -624,6 +687,70 @@ impl SearchDetail {
         Ok(())
     }
 
+    /// Paints the query and the results with the host's own look for every
+    /// pane. See [`SearchPaint`]. With no accepted results yet the list is
+    /// empty and `source` is not read; otherwise `source` must be the last
+    /// accepted projection, whether or not a newer request is pending.
+    pub fn render_hosted<S: SearchSource + ?Sized>(
+        &mut self,
+        area: Rect,
+        source: &S,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        host: &mut impl SearchPaint<S>,
+    ) -> Result<(), SearchError> {
+        let has_rows = self.session.accepted_stamp().is_some();
+        if has_rows {
+            self.session.verify_display(source.stamp())?;
+        }
+        let (query_area, body) = self.split(area);
+        self.paint_query_area(query_area, buf, ctx, &mut |area, view, buf, ctx| {
+            host.query(area, view, buf, ctx)
+        });
+
+        let selected = self.session.selected_cell();
+        let stale = !self.session.is_interactive();
+        let Self {
+            id,
+            list,
+            anchors,
+            scratch,
+            ..
+        } = self;
+        anchors.clear();
+        let mut panes = Panes {
+            host,
+            source: has_rows.then_some(source),
+            owner: *id,
+            selected,
+            stale,
+            anchors,
+            scratch,
+        };
+        let (len, rows) = if has_rows {
+            (source.len(), selected)
+        } else {
+            (0, None)
+        };
+        list.render_hosted(
+            body,
+            len,
+            |i| {
+                if has_rows {
+                    source.key(i)
+                } else {
+                    ItemKey::Index(i)
+                }
+            },
+            rows.map(|(row, _)| row),
+            buf,
+            ctx,
+            &mut panes,
+        );
+        self.track_layout(area);
+        Ok(())
+    }
+
     fn split(&self, area: Rect) -> (Rect, Rect) {
         let rows = match self.session.config().focus_mode {
             SearchFocusMode::Combined => 1,
@@ -687,6 +814,55 @@ impl SearchDetail {
     }
 }
 
+struct Panes<'a, S: SearchSource + ?Sized, H: SearchPaint<S>> {
+    host: &'a mut H,
+    source: Option<&'a S>,
+    owner: WidgetId,
+    selected: Option<(usize, usize)>,
+    stale: bool,
+    anchors: &'a mut Vec<Anchor>,
+    scratch: &'a mut Vec<(usize, Rect)>,
+}
+
+impl<S: SearchSource + ?Sized, H: SearchPaint<S>> PaneHost for Panes<'_, S, H> {
+    fn rows_begin(&mut self, area: Rect, row_w: u16) {
+        self.host.rows_begin(area, row_w);
+    }
+
+    fn row(&mut self, row: MasterRow, buf: &mut Buffer, ctx: &mut RenderCtx) {
+        let Some(source) = self.source else { return };
+        let host = &mut *self.host;
+        paint_one(
+            self.owner,
+            source,
+            &row,
+            self.selected,
+            self.stale,
+            (&mut *self.anchors, &mut *self.scratch),
+            &mut |row, buf, ctx| host.row(row, buf, ctx),
+            buf,
+            ctx,
+        );
+    }
+
+    fn empty(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
+        self.host.empty(area, buf, ctx);
+    }
+
+    fn detail(&mut self, pane: DetailPane<'_>, buf: &mut Buffer, ctx: &mut RenderCtx) {
+        self.host.detail(pane, buf, ctx);
+    }
+
+    fn summary(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
+        self.host.summary(area, buf, ctx);
+    }
+
+    fn is_lead(&self, row: usize) -> bool {
+        self.source
+            .is_some_and(|source| self.host.is_lead(source, row))
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 fn paint_one<S: SearchSource + ?Sized>(
     owner: WidgetId,
@@ -714,6 +890,7 @@ fn paint_one<S: SearchSource + ?Sized>(
             selected_cell,
             focused: master.focused,
             stale,
+            owner,
             cells: scratch,
         },
         buf,

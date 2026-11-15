@@ -422,94 +422,93 @@ pub const KEYMAP_ALLOWLIST: &[(&str, &str)] = &[
     ),
 ];
 
-const SEARCH_SESSION_REASON: &str = "The composed Finder controller is not on a showcase page until the Showcase and Holla Finder migrations (the next PRs of #64) land; tests/regressions/search_detail.rs, tests/regressions/search_detail_view.rs and the work-counter test pin it meanwhile.";
+const SEARCH_SESSION_REASON: &str = "The Holla Finder drives the composed controller; the Showcase Finder migration (the next PR of #64) has not landed, and this part of the API is used by neither app. tests/regressions/search_detail.rs, tests/regressions/search_detail_view.rs and the work-counter test pin it meanwhile.";
+
+const HOSTED_PANES_REASON: &str = "SearchDetail::render_hosted and SearchDetail::arrange drive the list-detail layer for an app that paints its own panes; apps compose through SearchPaint and SearchDetail::arrange, so no showcase page calls this layer directly. The Holla Finder exercises it end to end.";
+
+/// What the Holla Finder (`src/bin/holla/screens/finder.rs`) uses of the shared
+/// Finder composition. `search_detail_holla_coverage_ids_are_used_by_the_holla_finder`
+/// reads that source for every id.
+pub const SEARCH_DETAIL_HOLLA_COVERAGE: &[&str] = &[
+    "widgets::search_detail::ResultRowKind",
+    "widgets::search_detail::ResultRowKind::Heading",
+    "widgets::search_detail::ResultRowKind::Item",
+    "widgets::search_detail::ResultRowKind::Cells",
+    "widgets::search_detail::ResultRowKind::Spacer",
+    "widgets::search_detail::SearchSource",
+    "widgets::search_detail::SearchSource::row_kind",
+    "widgets::search_detail::SearchSource::cell_count",
+    "widgets::search_detail::SearchSource::cell_key",
+    "widgets::search_detail::SearchSource::cell_label",
+    "widgets::search_detail::SearchSource::cell_enabled",
+    "widgets::search_detail::SearchSource::cell_click_policy",
+    "widgets::search_detail::QueryToken::result_stamp",
+    "widgets::search_detail::QueryRequest",
+    "widgets::search_detail::SearchAction",
+    "widgets::search_detail::SearchAction::QueryRequested",
+    "widgets::search_detail::SearchAction::SelectionChanged",
+    "widgets::search_detail::SearchAction::Activate",
+    "widgets::search_detail::SearchAction::ContextRequested",
+    "widgets::search_detail::SearchAction::DetailAction",
+    "widgets::search_detail::SearchAction::QueryCommand",
+    "widgets::search_detail::SearchAction::DetailItem",
+    "widgets::search_detail::SearchCmd",
+    "widgets::search_detail::SearchCmd::Activate",
+    "widgets::search_detail::SearchCmd::Up",
+    "widgets::search_detail::SearchCmd::Down",
+    "widgets::search_detail::SearchCmd::Left",
+    "widgets::search_detail::SearchCmd::Right",
+    "widgets::search_detail::SearchCmd::Home",
+    "widgets::search_detail::SearchCmd::End",
+    "widgets::search_detail::SearchCmd::PageUp",
+    "widgets::search_detail::SearchCmd::PageDown",
+    "widgets::search_detail::MissingSelection",
+    "widgets::search_detail::MissingSelection::FirstEnabled",
+    "widgets::search_detail::SearchFocusMode",
+    "widgets::search_detail::SearchFocusMode::Combined",
+    "widgets::search_detail::QueryPasteMode",
+    "widgets::search_detail::QueryPasteMode::JoinLinesWithSpaceTrim",
+    "widgets::search_detail::SearchConfig",
+    "widgets::search_detail::SearchConfig::keymap",
+    "widgets::search_detail::SearchConfig::click",
+    "widgets::search_detail::SearchConfig::missing_selection",
+    "widgets::search_detail::SearchConfig::focus_mode",
+    "widgets::search_detail::SearchConfig::paste_mode",
+    "widgets::search_detail::SearchConfig::type_to_query_from_detail",
+    "widgets::search_detail::SearchConfig::reset_preview_on_query",
+    "widgets::search_detail::SearchDetail",
+    "widgets::search_detail::SearchDetail::new",
+    "widgets::search_detail::SearchDetail::config",
+    "widgets::search_detail::SearchDetail::arrange",
+    "widgets::search_detail::SearchDetail::query",
+    "widgets::search_detail::SearchDetail::selected_key",
+    "widgets::search_detail::SearchDetail::on_detail",
+    "widgets::search_detail::SearchDetail::set_query",
+    "widgets::search_detail::SearchDetail::configure_query",
+    "widgets::search_detail::SearchDetail::refresh_source",
+    "widgets::search_detail::SearchDetail::submit",
+    "widgets::search_detail::SearchDetail::on_key",
+    "widgets::search_detail::SearchDetail::on_paste",
+    "widgets::search_detail::SearchDetail::pointer",
+    "widgets::search_detail::SearchDetail::render_hosted",
+    "widgets::search_detail::SearchDetail::config_mut",
+    "widgets::search_detail::SearchPaint",
+    "widgets::search_detail::SearchPaint::query",
+    "widgets::search_detail::SearchPaint::rows_begin",
+    "widgets::search_detail::SearchPaint::row",
+    "widgets::search_detail::SearchPaint::empty",
+    "widgets::search_detail::SearchPaint::detail",
+    "widgets::search_detail::SearchPaint::summary",
+    "widgets::search_detail::SearchPaint::is_lead",
+    "widgets::search_detail::QueryView",
+    "widgets::search_detail::RowPaint",
+    "widgets::search_detail::RowPaint::place_cell",
+    "widgets::search_detail::RowPaint::cell_hit",
+    "widgets::list_detail::DetailPane",
+];
 
 pub const SEARCH_SESSION_ALLOWLIST: &[(&str, &str)] = &[
-    (
-        "widgets::search_detail::ResultRowKind",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::ResultRowKind::Heading",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::ResultRowKind::Item",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::ResultRowKind::Cells",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::ResultRowKind::Spacer",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchSource",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchSource::row_kind",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchSource::cell_count",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchSource::cell_key",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchSource::cell_label",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchSource::cell_enabled",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchSource::cell_click_policy",
-        SEARCH_SESSION_REASON,
-    ),
     ("widgets::search_detail::QueryToken", SEARCH_SESSION_REASON),
-    (
-        "widgets::search_detail::QueryToken::result_stamp",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::QueryRequest",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchAction",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchAction::QueryRequested",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchAction::SelectionChanged",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchAction::Activate",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchAction::ContextRequested",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchAction::DetailAction",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchAction::QueryCommand",
-        SEARCH_SESSION_REASON,
-    ),
     ("widgets::search_detail::SearchError", SEARCH_SESSION_REASON),
     (
         "widgets::search_detail::SearchError::StaleQuery",
@@ -535,7 +534,6 @@ pub const SEARCH_SESSION_ALLOWLIST: &[(&str, &str)] = &[
         "widgets::search_detail::SearchError::UnsubmittedProjection",
         SEARCH_SESSION_REASON,
     ),
-    ("widgets::search_detail::SearchCmd", SEARCH_SESSION_REASON),
     (
         "widgets::search_detail::SearchCmd::FocusQuery",
         SEARCH_SESSION_REASON,
@@ -553,43 +551,7 @@ pub const SEARCH_SESSION_ALLOWLIST: &[(&str, &str)] = &[
         SEARCH_SESSION_REASON,
     ),
     (
-        "widgets::search_detail::SearchCmd::Activate",
-        SEARCH_SESSION_REASON,
-    ),
-    (
         "widgets::search_detail::SearchCmd::Context",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchCmd::Up",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchCmd::Down",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchCmd::Left",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchCmd::Right",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchCmd::Home",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchCmd::End",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchCmd::PageUp",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchCmd::PageDown",
         SEARCH_SESSION_REASON,
     ),
     (
@@ -597,19 +559,7 @@ pub const SEARCH_SESSION_ALLOWLIST: &[(&str, &str)] = &[
         SEARCH_SESSION_REASON,
     ),
     (
-        "widgets::search_detail::MissingSelection",
-        SEARCH_SESSION_REASON,
-    ),
-    (
         "widgets::search_detail::MissingSelection::NearestPosition",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::MissingSelection::FirstEnabled",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchFocusMode",
         SEARCH_SESSION_REASON,
     ),
     (
@@ -617,31 +567,7 @@ pub const SEARCH_SESSION_ALLOWLIST: &[(&str, &str)] = &[
         SEARCH_SESSION_REASON,
     ),
     (
-        "widgets::search_detail::SearchFocusMode::Combined",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::QueryPasteMode",
-        SEARCH_SESSION_REASON,
-    ),
-    (
         "widgets::search_detail::QueryPasteMode::StripLineBreaks",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::QueryPasteMode::JoinLinesWithSpaceTrim",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchConfig",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchConfig::keymap",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchConfig::click",
         SEARCH_SESSION_REASON,
     ),
     (
@@ -649,23 +575,7 @@ pub const SEARCH_SESSION_ALLOWLIST: &[(&str, &str)] = &[
         SEARCH_SESSION_REASON,
     ),
     (
-        "widgets::search_detail::SearchConfig::missing_selection",
-        SEARCH_SESSION_REASON,
-    ),
-    (
         "widgets::search_detail::SearchConfig::context",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchConfig::focus_mode",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchConfig::paste_mode",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchConfig::type_to_query_from_detail",
         SEARCH_SESSION_REASON,
     ),
     (
@@ -822,22 +732,6 @@ pub const SEARCH_SESSION_ALLOWLIST: &[(&str, &str)] = &[
         SEARCH_SESSION_REASON,
     ),
     (
-        "widgets::search_detail::SearchDetail",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchDetail::new",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchDetail::config",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchDetail::config_mut",
-        SEARCH_SESSION_REASON,
-    ),
-    (
         "widgets::search_detail::SearchDetail::id",
         SEARCH_SESSION_REASON,
     ),
@@ -847,14 +741,6 @@ pub const SEARCH_SESSION_ALLOWLIST: &[(&str, &str)] = &[
     ),
     (
         "widgets::search_detail::SearchDetail::session",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchDetail::query",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchDetail::selected_key",
         SEARCH_SESSION_REASON,
     ),
     (
@@ -870,27 +756,7 @@ pub const SEARCH_SESSION_ALLOWLIST: &[(&str, &str)] = &[
         SEARCH_SESSION_REASON,
     ),
     (
-        "widgets::search_detail::SearchDetail::on_detail",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchDetail::set_query",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchDetail::configure_query",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchDetail::refresh_source",
-        SEARCH_SESSION_REASON,
-    ),
-    (
         "widgets::search_detail::SearchDetail::retry",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchDetail::submit",
         SEARCH_SESSION_REASON,
     ),
     (
@@ -899,18 +765,6 @@ pub const SEARCH_SESSION_ALLOWLIST: &[(&str, &str)] = &[
     ),
     (
         "widgets::search_detail::SearchDetail::set_selection",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchDetail::on_key",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchDetail::on_paste",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchDetail::pointer",
         SEARCH_SESSION_REASON,
     ),
     (
@@ -927,12 +781,6 @@ pub const SEARCH_SESSION_ALLOWLIST: &[(&str, &str)] = &[
     ),
     (
         "widgets::search_detail::SearchDetailSource",
-        SEARCH_SESSION_REASON,
-    ),
-    ("widgets::search_detail::QueryView", SEARCH_SESSION_REASON),
-    ("widgets::search_detail::RowPaint", SEARCH_SESSION_REASON),
-    (
-        "widgets::search_detail::RowPaint::place_cell",
         SEARCH_SESSION_REASON,
     ),
     (
@@ -952,15 +800,7 @@ pub const SEARCH_SESSION_ALLOWLIST: &[(&str, &str)] = &[
         SEARCH_SESSION_REASON,
     ),
     (
-        "widgets::search_detail::SearchAction::DetailItem",
-        SEARCH_SESSION_REASON,
-    ),
-    (
         "widgets::search_detail::SearchConfig::selection_owner",
-        SEARCH_SESSION_REASON,
-    ),
-    (
-        "widgets::search_detail::SearchConfig::reset_preview_on_query",
         SEARCH_SESSION_REASON,
     ),
     (
@@ -988,6 +828,33 @@ pub const SEARCH_SESSION_ALLOWLIST: &[(&str, &str)] = &[
         SEARCH_SESSION_REASON,
     ),
     ("widgets::list_detail::MasterRow", SEARCH_SESSION_REASON),
+    ("widgets::list_detail::PaneHost", HOSTED_PANES_REASON),
+    (
+        "widgets::list_detail::PaneHost::rows_begin",
+        HOSTED_PANES_REASON,
+    ),
+    ("widgets::list_detail::PaneHost::row", HOSTED_PANES_REASON),
+    ("widgets::list_detail::PaneHost::empty", HOSTED_PANES_REASON),
+    (
+        "widgets::list_detail::PaneHost::detail",
+        HOSTED_PANES_REASON,
+    ),
+    (
+        "widgets::list_detail::PaneHost::summary",
+        HOSTED_PANES_REASON,
+    ),
+    (
+        "widgets::list_detail::PaneHost::is_lead",
+        HOSTED_PANES_REASON,
+    ),
+    (
+        "widgets::list_detail::ListDetail::arrange",
+        HOSTED_PANES_REASON,
+    ),
+    (
+        "widgets::list_detail::ListDetail::render_hosted",
+        HOSTED_PANES_REASON,
+    ),
 ];
 
 #[cfg(test)]
@@ -1069,7 +936,7 @@ mod tests {
                 !reason.trim().is_empty(),
                 "allowlist entry has no reason: {id}"
             );
-            assert!(seen.insert(*id), "duplicate allowlist entry: {id}");
+            assert!(seen.insert(*id), "declared twice: {id}");
         }
         for id in [
             "core::keymap::KeyboardCapabilities",
@@ -1094,6 +961,13 @@ mod tests {
     fn search_session_api_is_declared_with_a_reason() {
         let catalog = catalog_source();
         let mut seen = std::collections::BTreeSet::new();
+        for id in SEARCH_DETAIL_HOLLA_COVERAGE {
+            assert!(
+                catalog.contains(&format!("\"{id}\"")),
+                "declared id is not a catalog capability: {id}"
+            );
+            assert!(seen.insert(*id), "declared twice: {id}");
+        }
         for (id, reason) in SEARCH_SESSION_ALLOWLIST {
             assert!(
                 catalog.contains(&format!("\"{id}\"")),
@@ -1115,6 +989,29 @@ mod tests {
                     "search_detail capability lacks a coverage declaration: {rest}"
                 );
             }
+        }
+    }
+
+    #[test]
+    fn search_detail_holla_coverage_ids_are_used_by_the_holla_finder() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let source = std::fs::read_to_string(root.join("src/bin/holla/screens/finder.rs"))
+            .expect("the holla finder source");
+        for id in SEARCH_DETAIL_HOLLA_COVERAGE {
+            let mut parts = id.rsplit("::");
+            let last = parts.next().expect("id has a segment");
+            let prev = parts.next().unwrap_or("");
+            let needle = if last.starts_with(|c: char| c.is_ascii_lowercase()) {
+                format!("{last}(")
+            } else if prev.starts_with(|c: char| c.is_ascii_uppercase()) {
+                format!("{prev}::{last}")
+            } else {
+                last.to_owned()
+            };
+            assert!(
+                source.contains(&needle),
+                "the holla finder never uses {id} (looked for {needle})"
+            );
         }
     }
 }

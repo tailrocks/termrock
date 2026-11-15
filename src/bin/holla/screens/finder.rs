@@ -1,49 +1,66 @@
 use crate::screens::Holla;
+use junie_tui::core::edit::TextCmd;
 use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::hit::Axis;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
+use junie_tui::core::id::{ItemKey, WidgetId};
+use junie_tui::core::keymap::KeyBinding;
+use junie_tui::core::list::{KeyedRowSource, RowSource, SourceStamp};
 use junie_tui::core::pointer::PointerEvent;
-use junie_tui::core::scroll::ScrollState;
+use junie_tui::core::response::Response;
 use junie_tui::core::selection::ClickPolicy;
 use junie_tui::shell::Page as ShellPage;
 use junie_tui::theme::{CursorStyle, Theme, Tone};
 use junie_tui::ui::columns::{self, Col};
+use junie_tui::ui::context::{ContextAnchor, ContextSource};
 use junie_tui::ui::ctx::{RenderCtx, fill};
-use junie_tui::ui::master_detail::MasterDetail;
+use junie_tui::ui::layout::Split;
+use junie_tui::ui::master_detail::SPLIT_MIN;
 use junie_tui::ui::text::{fit, truncate, truncate_middle, wider_than, width, wrap};
-use junie_tui::widgets::edit::EditField;
 use junie_tui::widgets::empty::{self, EmptyState};
-use junie_tui::widgets::field_common::EditAction;
+use junie_tui::widgets::input::TextInput;
 use junie_tui::widgets::keyhint::{Hint, hint};
+use junie_tui::widgets::list_detail::DetailPane;
 use junie_tui::widgets::page_header::Heading;
 use junie_tui::widgets::panel::Panel;
 use junie_tui::widgets::scrollbar;
+use junie_tui::widgets::search_detail::{
+    MissingSelection, QueryPasteMode, QueryRequest, QueryView, ResultRowKind, RowPaint,
+    SearchAction, SearchCmd, SearchConfig, SearchDetail, SearchFocusMode, SearchPaint,
+    SearchSource,
+};
 use junie_tui::widgets::statusbar::StatusItem;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::{Modifier, Style};
+use std::collections::HashMap;
+use std::rc::Rc;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::domain::action::{Confirmation, Item, Kind, Launch, Risk};
 use crate::domain::context::Scope;
 use crate::domain::projection::{CatalogStamp, Deadline, Seen};
 use crate::domain::ranking::{Ranked, search};
-use crate::screens::{Cx, Go, Page, Screen, StatusBits, risk_tone, scroll_drag, scroll_press};
+use crate::screens::{Cx, Go, Page, Screen, StatusBits, risk_tone};
 use crate::sim::world::World;
 use junie_tui::ui::text::{plural, truncate_sep};
 
 pub const FINDER: WidgetId = WidgetId::of("here.finder");
-pub const PREVIEW: WidgetId = WidgetId::of("here.preview");
 pub const SCOPE: WidgetId = WidgetId::of("here.scope");
-const EXPLORE_CELL: WidgetId = WidgetId::of("here.explore");
+const QUERY: WidgetId = WidgetId::of("here.query");
 
 const PREVIEW_COMMANDS: usize = 6;
 
+/// How many heading and spacer keys the authoritative key universe reserves:
+/// every row that is not an item needs a key of its own.
+const HEADING_KEYS: usize = 16;
+const BLANK_KEYS: usize = 8;
+const EXPLORE_ROW: ItemKey = ItemKey::pair(3, 0);
+
 type PreviewLine = (String, String, Tone, bool);
 
+/// What one request is ranked into, before the rows get their keys.
 #[derive(Debug, Clone, PartialEq, Eq)]
-enum Row {
+enum Plan {
     Heading(String),
     Item(usize, Ranked),
 
@@ -51,15 +68,234 @@ enum Row {
     Blank,
 }
 
-/// What the ranked rows were built from besides the catalog and memory: the
-/// query, scope and group. Compared by value, so an edit through any public
-/// field is seen without a flag to forget.
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct ViewKey {
-    query: String,
-    scope: Scope,
-    group: Option<&'static str>,
+/// One visible result row, keyed for the shared result source.
+#[derive(Debug, Clone)]
+enum Row {
+    Heading {
+        key: ItemKey,
+        text: String,
+    },
+    Item {
+        key: ItemKey,
+        index: usize,
+        ranked: Ranked,
+    },
+    Explore {
+        cells: Vec<usize>,
+    },
+    Blank {
+        key: ItemKey,
+    },
 }
+
+/// The stable identity of everything the finder can show, built once per
+/// catalog. An item is its key wherever it shows, as a row or as an Explore
+/// chip, so a selection follows it from one to the other.
+#[derive(Debug, Default)]
+struct Keys {
+    items: Vec<ItemKey>,
+    labels: Vec<String>,
+    universe: Vec<ItemKey>,
+    index: HashMap<ItemKey, usize>,
+}
+
+impl Keys {
+    fn new(items: &[Item]) -> Self {
+        let mut keys = Keys::default();
+        for (at, it) in items.iter().enumerate() {
+            let key = ItemKey::text(&it.id);
+            keys.items.push(key);
+            keys.labels.push(it.label.clone());
+            keys.universe.push(key);
+            keys.index.insert(key, at);
+        }
+        keys.universe
+            .extend((0..HEADING_KEYS).map(|n| ItemKey::pair(1, n as u64)));
+        keys.universe
+            .extend((0..BLANK_KEYS).map(|n| ItemKey::pair(2, n as u64)));
+        keys.universe.push(EXPLORE_ROW);
+        keys
+    }
+}
+
+fn selectable(plan: &Plan) -> bool {
+    match plan {
+        Plan::Item(..) => true,
+        Plan::Explore(cells) => !cells.is_empty(),
+        Plan::Heading(_) | Plan::Blank => false,
+    }
+}
+
+/// Gives each planned row its key. An item shows once: a second row for the
+/// same item is dropped, because a selectable key is unique in a projection. A
+/// projection with nothing to select shows no rows at all, so the empty state
+/// replaces the headings.
+fn keyed_rows(plan: Vec<Plan>, keys: &Keys) -> Vec<Row> {
+    if !plan.iter().any(selectable) {
+        return vec![];
+    }
+    let (mut headings, mut blanks) = (0, 0);
+    let mut shown = std::collections::HashSet::new();
+    let plan = plan
+        .into_iter()
+        .filter(|p| !matches!(p, Plan::Item(index, _) if !shown.insert(*index)))
+        .collect::<Vec<_>>();
+    plan.into_iter()
+        .map(|p| match p {
+            Plan::Heading(text) => {
+                headings += 1;
+                Row::Heading {
+                    key: ItemKey::pair(1, (headings - 1).min(HEADING_KEYS - 1) as u64),
+                    text,
+                }
+            }
+            Plan::Blank => {
+                blanks += 1;
+                Row::Blank {
+                    key: ItemKey::pair(2, (blanks - 1).min(BLANK_KEYS - 1) as u64),
+                }
+            }
+            Plan::Item(index, ranked) => Row::Item {
+                key: keys.items[index],
+                index,
+                ranked,
+            },
+            Plan::Explore(cells) => Row::Explore { cells },
+        })
+        .collect()
+}
+
+/// The ranked rows one query request is answered with. The authoritative keys
+/// are the whole catalog, so a scope or a query that hides items changes the
+/// rows and not the key universe.
+struct Results {
+    stamp: SourceStamp,
+    keys: Rc<Keys>,
+    rows: Vec<Row>,
+}
+
+impl Results {
+    fn empty() -> Self {
+        Self {
+            stamp: SourceStamp {
+                instance: ItemKey::num(0),
+                data: 0,
+                view: 0,
+            },
+            keys: Rc::new(Keys::default()),
+            rows: vec![],
+        }
+    }
+
+    fn has_items(&self) -> bool {
+        self.rows.iter().any(|r| matches!(r, Row::Item { .. }))
+    }
+}
+
+impl RowSource for Results {
+    fn len(&self) -> usize {
+        self.rows.len()
+    }
+
+    fn enabled(&self, i: usize) -> bool {
+        matches!(self.rows[i], Row::Item { .. } | Row::Explore { .. })
+    }
+
+    fn label(&self, i: usize) -> &str {
+        match &self.rows[i] {
+            Row::Heading { text, .. } => text,
+            Row::Item { index, .. } => &self.keys.labels[*index],
+            Row::Explore { .. } | Row::Blank { .. } => "",
+        }
+    }
+
+    fn key(&self, i: usize) -> ItemKey {
+        match &self.rows[i] {
+            Row::Heading { key, .. } | Row::Item { key, .. } | Row::Blank { key } => *key,
+            Row::Explore { .. } => EXPLORE_ROW,
+        }
+    }
+}
+
+impl KeyedRowSource for Results {
+    fn stamp(&self) -> SourceStamp {
+        self.stamp
+    }
+
+    fn source_len(&self) -> usize {
+        self.keys.universe.len()
+    }
+
+    fn source_key(&self, i: usize) -> ItemKey {
+        self.keys.universe[i]
+    }
+}
+
+impl SearchSource for Results {
+    fn row_kind(&self, row: usize) -> ResultRowKind {
+        match self.rows[row] {
+            Row::Heading { .. } => ResultRowKind::Heading,
+            Row::Item { .. } => ResultRowKind::Item,
+            Row::Explore { .. } => ResultRowKind::Cells,
+            Row::Blank { .. } => ResultRowKind::Spacer,
+        }
+    }
+
+    fn cell_count(&self, row: usize) -> usize {
+        match &self.rows[row] {
+            Row::Item { .. } => 1,
+            Row::Explore { cells } => cells.len(),
+            Row::Heading { .. } | Row::Blank { .. } => 0,
+        }
+    }
+
+    fn cell_key(&self, row: usize, cell: usize) -> ItemKey {
+        match &self.rows[row] {
+            Row::Explore { cells } => self.keys.items[cells[cell]],
+            _ => self.key(row),
+        }
+    }
+
+    fn cell_label(&self, row: usize, cell: usize) -> &str {
+        match &self.rows[row] {
+            Row::Explore { cells } => &self.keys.labels[cells[cell]],
+            _ => self.label(row),
+        }
+    }
+
+    fn cell_enabled(&self, _row: usize, _cell: usize) -> bool {
+        true
+    }
+
+    /// An item follows the data click policy, a chip is a navigation target:
+    /// one click opens it.
+    fn cell_click_policy(&self, row: usize, _cell: usize) -> Option<ClickPolicy> {
+        match self.rows[row] {
+            Row::Item { .. } => Some(ClickPolicy::DATA),
+            Row::Explore { .. } => Some(ClickPolicy::NAVIGATION),
+            Row::Heading { .. } | Row::Blank { .. } => None,
+        }
+    }
+}
+
+/// What the ranked rows were built from besides the catalog and memory: the
+/// scope and group. They are the view of the input stamp, so a change to
+/// either requests new results.
+fn view_of(scope: Scope, group: Option<&str>) -> u64 {
+    let scope = match scope {
+        Scope::Here => 0,
+        Scope::Parent => 1,
+        Scope::Children => 2,
+        Scope::System => 3,
+    };
+    let group = match group.map(ItemKey::text) {
+        Some(ItemKey::Text(hash)) => hash,
+        _ => 0,
+    };
+    group.rotate_left(3) ^ scope
+}
+
+static NEXT_INSTANCE: AtomicU64 = AtomicU64::new(1);
 
 /// The visible text that changes with time but not with ranking: the data
 /// freshness of the selected item, activity line counts and durations, and the
@@ -71,109 +307,138 @@ struct DisplayStamp {
     ago: Vec<String>,
 }
 
-fn selectable(row: &Row) -> bool {
-    match row {
-        Row::Item(..) => true,
-        Row::Explore(cells) => !cells.is_empty(),
-        Row::Heading(_) | Row::Blank => false,
-    }
-}
-
+/// The query line, the keyboard routes and the preview of the Holla Finder.
+/// The shared [`SearchDetail`] owns the query text, the selection, the
+/// preview scroll and the pointer routes; this page owns the catalog, the
+/// ranking and what every pane looks like.
 pub struct FinderPage {
     pub group: Option<&'static str>,
-    pub query: EditField,
     pub scope: Scope,
     source: Vec<Item>,
     source_seen: Seen<CatalogStamp>,
     source_deadline: Deadline,
     items: Vec<Item>,
+    keys: Rc<Keys>,
+    revision: u64,
+    instance: ItemKey,
     memory_seen: Option<u64>,
     decor_deadline: Deadline,
-    view_seen: Option<ViewKey>,
     display_seen: Option<DisplayStamp>,
 
     pub warnings: Vec<String>,
-    rows: Vec<Row>,
-    pub cursor: usize,
-    scroll: ScrollState,
-    preview_scroll: ScrollState,
-    explore_cursor: usize,
+    search: SearchDetail,
+    results: Results,
+    pending_query: Option<QueryRequest>,
 
     pub explore_overflow_marker: bool,
 
-    md: MasterDetail,
     list_area: Rect,
     preview_area: Rect,
-    scope_area: Rect,
-    explore_areas: Vec<(WidgetId, Rect, usize)>,
 
     pub rebuilds: u32,
-
-    query_changed: bool,
 
     last_tick: u64,
 }
 
-fn query_field() -> EditField {
-    use junie_tui::core::edit::{CMD_TEXT_KEYS, TextCmd};
-    use junie_tui::core::keymap::KeyBinding;
-    let mut keys = CMD_TEXT_KEYS.to_vec();
-    keys.extend([
-        (KeyBinding::ctrl('a'), TextCmd::SelectAll),
-        (KeyBinding::ctrl('z').shift(), TextCmd::Redo),
-        (KeyBinding::ctrl('Z'), TextCmd::Redo),
-        (KeyBinding::ctrl('y'), TextCmd::Redo),
-        (KeyBinding::ctrl('z'), TextCmd::Undo),
-    ]);
-    let mut f = EditField::single("");
-    f.text_keymap = Some(keys);
+fn holla_keymap() -> Vec<(KeyBinding, SearchCmd)> {
+    vec![
+        (KeyBinding::key(KeyCode::Enter), SearchCmd::Activate),
+        (KeyBinding::key(KeyCode::Up), SearchCmd::Up),
+        (KeyBinding::key(KeyCode::Down), SearchCmd::Down),
+        (KeyBinding::key(KeyCode::Left), SearchCmd::Left),
+        (KeyBinding::key(KeyCode::Right), SearchCmd::Right),
+        (KeyBinding::key(KeyCode::Home), SearchCmd::Home),
+        (KeyBinding::key(KeyCode::End), SearchCmd::End),
+        (KeyBinding::key(KeyCode::PageUp), SearchCmd::PageUp),
+        (KeyBinding::key(KeyCode::PageDown), SearchCmd::PageDown),
+    ]
+}
 
-    f.undo_runs = false;
-    f
+fn new_search() -> SearchDetail {
+    use junie_tui::core::edit::CMD_TEXT_KEYS;
+    let mut search = SearchDetail::new(FINDER, TextInput::new(QUERY, ""), Split::new(60, 28, 34))
+        .config(
+            SearchConfig::default()
+                .keymap(holla_keymap())
+                .focus_mode(SearchFocusMode::Combined)
+                .missing_selection(MissingSelection::FirstEnabled)
+                .paste_mode(QueryPasteMode::JoinLinesWithSpaceTrim)
+                .type_to_query_from_detail(true)
+                .reset_preview_on_query(true)
+                .click(ClickPolicy::DATA),
+        )
+        .arrange(|md| {
+            md.detail_share(34, 34, 48)
+                .summary_rows(1)
+                .collapse_below(SPLIT_MIN)
+        });
+    let _ = search.configure_query(|field| {
+        let mut keys = CMD_TEXT_KEYS.to_vec();
+        keys.extend([
+            (KeyBinding::ctrl('a'), TextCmd::SelectAll),
+            (KeyBinding::ctrl('z').shift(), TextCmd::Redo),
+            (KeyBinding::ctrl('Z'), TextCmd::Redo),
+            (KeyBinding::ctrl('y'), TextCmd::Redo),
+            (KeyBinding::ctrl('z'), TextCmd::Undo),
+        ]);
+        field.text_keymap = Some(keys);
+        field.undo_runs = false;
+    });
+    search
 }
 
 impl FinderPage {
     pub fn new(group: Option<&'static str>) -> Self {
         Self {
             group,
-            query: query_field(),
             scope: Scope::Here,
             source: vec![],
             source_seen: Seen::default(),
             source_deadline: Deadline::default(),
             items: vec![],
+            keys: Rc::new(Keys::default()),
+            revision: 0,
+            instance: ItemKey::num(NEXT_INSTANCE.fetch_add(1, Ordering::Relaxed)),
             memory_seen: None,
             decor_deadline: Deadline::default(),
-            view_seen: None,
             display_seen: None,
             warnings: vec![],
-            rows: vec![],
-            cursor: 0,
-            scroll: ScrollState::default(),
-            preview_scroll: ScrollState::default(),
-            explore_cursor: 0,
+            search: new_search(),
+            results: Results::empty(),
+            pending_query: None,
             explore_overflow_marker: true,
-            md: MasterDetail::new(FINDER, PREVIEW)
-                .detail_share(34, 34, 48)
-                .summary_rows(1),
             list_area: Rect::ZERO,
             preview_area: Rect::ZERO,
-            scope_area: Rect::ZERO,
-            explore_areas: vec![],
             rebuilds: 0,
-            query_changed: false,
             last_tick: u64::MAX,
         }
     }
 
+    pub fn query(&self) -> &str {
+        self.search.query()
+    }
+
+    /// Replaces the query text. The request it makes is answered on the next
+    /// [`ensure_projection`](Self::ensure_projection), which every input,
+    /// tick, enter and paint runs first.
+    pub fn set_query(&mut self, text: &str) -> Outcome {
+        let reply = self.search.set_query(text);
+        let (outcome, _) = self.queue_requests(reply);
+        outcome
+    }
+
+    fn selected_index(&self) -> Option<usize> {
+        let key = self.search.selected_key()?;
+        self.keys.index.get(&key).copied()
+    }
+
     pub fn current(&self) -> Option<&Item> {
-        match self.rows.get(self.cursor) {
-            Some(Row::Item(i, _)) => self.items.get(*i),
-            Some(Row::Explore(cells)) => cells
-                .get(self.explore_cursor)
-                .and_then(|i| self.items.get(*i)),
-            _ => None,
-        }
+        self.items.get(self.selected_index()?)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn search_on_detail(&self, focus: Option<WidgetId>) -> bool {
+        self.search.on_detail(focus)
     }
 
     pub fn current_id(&self) -> Option<String> {
@@ -184,94 +449,149 @@ impl FinderPage {
         self.scope = s;
     }
 
-    fn view_key(&self) -> ViewKey {
-        ViewKey {
-            query: self.query.text().to_owned(),
-            scope: self.scope,
-            group: self.group,
+    fn input_stamp(&self) -> SourceStamp {
+        SourceStamp {
+            instance: self.instance,
+            data: self.revision,
+            view: view_of(self.scope, self.group),
         }
     }
 
-    /// Brings the ranked rows up to date with the world and returns whether it
-    /// did any work. Each layer rebuilds only for its own dependency. A source
-    /// stamp or a source deadline rebuilds the structural catalog. A source
-    /// change, a memory epoch or a memory deadline decorates it again. Any of
-    /// those or a changed query, scope or group reranks. A stamp is published
-    /// only after the whole projection is installed.
+    /// Takes the query requests out of `reply`. A newer request replaces an
+    /// older one that was not answered yet.
+    fn queue_requests(&mut self, reply: Response<SearchAction>) -> (Outcome, Vec<SearchAction>) {
+        let (outcome, actions) = reply.into_parts();
+        let mut rest = vec![];
+        for action in actions {
+            match action {
+                SearchAction::QueryRequested(request) => self.pending_query = Some(request),
+                other => rest.push(other),
+            }
+        }
+        (outcome, rest)
+    }
+
+    /// Ranks and submits the latest pending request. The request is dropped
+    /// when the input changed since it was made; a newer one is already
+    /// queued then. Returns the selection actions of the accepted results.
+    fn execute_pending_query(&mut self, w: &World) -> Response<SearchAction> {
+        let Some(request) = self.pending_query.take() else {
+            return Response::ignored();
+        };
+        if request.token.source != self.input_stamp() {
+            return Response::ignored();
+        }
+        self.rebuilds += 1;
+        let results = Results {
+            stamp: request.token.result_stamp(),
+            keys: Rc::clone(&self.keys),
+            rows: keyed_rows(self.plan_rows(w, &request.text), &self.keys),
+        };
+        match self.search.submit(request.token, &results) {
+            Ok(reply) => {
+                self.results = results;
+                reply
+            }
+            Err(_) => Response::ignored(),
+        }
+    }
+
+    /// Answers every pending request, then the requests the answers cause.
+    /// Returns whether it ranked anything and the actions the answers made.
+    fn answer_requests(&mut self, w: &World) -> (bool, Vec<SearchAction>) {
+        let (mut ranked, mut rest) = (false, vec![]);
+        while self.pending_query.is_some() {
+            ranked = true;
+            let reply = self.execute_pending_query(w);
+            rest.extend(self.queue_requests(reply).1);
+        }
+        (ranked, rest)
+    }
+
+    /// Brings the catalog and the ranked rows up to date with the world and
+    /// returns whether it did any work. A source stamp or a source deadline
+    /// rebuilds the structural catalog. A source change, a memory epoch or a
+    /// memory deadline decorates it again. Any of those, or a changed scope or
+    /// group, requests new results, and so does a query edit. Nothing is ranked
+    /// without a request, and a stamp is published only after the whole catalog
+    /// is installed.
     fn ensure_projection(&mut self, w: &World) -> bool {
-        let now = w.now_secs();
-        let stamp = w.catalog_stamp();
-        let memory = w.memory_epoch();
-        let view = self.view_key();
-        let source_stale = self.source_seen.needs_rebuild(stamp) || self.source_deadline.due(now);
-        let decor_stale =
-            source_stale || self.memory_seen != Some(memory) || self.decor_deadline.due(now);
-        let view_stale = self.view_seen.as_ref() != Some(&view);
-        if !(source_stale || decor_stale || view_stale) {
+        let catalog = self.sync_catalog(w);
+        let reply = self.search.refresh_source(self.input_stamp());
+        self.queue_requests(reply);
+        let (ranked, _) = self.answer_requests(w);
+        if !(catalog || ranked) {
             #[cfg(test)]
             self.assert_matches_reference(w);
             return false;
         }
-        let keep = self.current_id();
+        self.display_seen = Some(self.display_stamp(w));
+        true
+    }
+
+    fn sync_catalog(&mut self, w: &World) -> bool {
+        let now = w.now_secs();
+        let stamp = w.catalog_stamp();
+        let memory = w.memory_epoch();
+        let source_stale = self.source_seen.needs_rebuild(stamp) || self.source_deadline.due(now);
+        let decor_stale =
+            source_stale || self.memory_seen != Some(memory) || self.decor_deadline.due(now);
+        if !decor_stale {
+            return false;
+        }
         let source = source_stale.then(|| crate::domain::catalog::build_sources_with_warnings(w));
-        let decorated = decor_stale.then(|| {
-            crate::domain::catalog::decorate(
-                w,
-                source.as_ref().map_or(self.source.as_slice(), |s| &s.0),
-            )
-        });
+        let decorated = crate::domain::catalog::decorate(
+            w,
+            source.as_ref().map_or(self.source.as_slice(), |s| &s.0),
+        );
         if let Some((items, warnings)) = source {
             self.source = items;
             self.warnings = warnings;
             self.source_deadline =
                 Deadline::new(now, crate::domain::catalog::source_deadline_secs(w));
         }
-        if let Some(items) = decorated {
-            self.items = items;
-            self.decor_deadline = Deadline::new(
+        self.items = decorated;
+        self.decor_deadline = Deadline::new(
+            now,
+            crate::domain::projection::memory_deadline(
+                &w.memory.usage,
+                &w.location.cwd,
+                &w.host.name,
                 now,
-                crate::domain::projection::memory_deadline(
-                    &w.memory.usage,
-                    &w.location.cwd,
-                    &w.host.name,
-                    now,
-                ),
-            );
-        }
-        self.rank_rows(w, keep);
+            ),
+        );
+        self.keys = Rc::new(Keys::new(&self.items));
+        self.revision += 1;
         self.source_seen.published(stamp);
         self.memory_seen = Some(memory);
-        self.view_seen = Some(view);
-        self.display_seen = Some(self.display_stamp(w));
         true
     }
 
-    fn rank_rows(&mut self, w: &World, keep: Option<String>) {
-        self.rebuilds += 1;
-        let learned = if crate::domain::ranking::Query::parse(self.query.text()).is_empty() {
+    fn plan_rows(&self, w: &World, query: &str) -> Vec<Plan> {
+        let learned = if crate::domain::ranking::Query::parse(query).is_empty() {
             None
         } else {
             w.memory
                 .usage
-                .learned_for(self.query.text(), &w.host.name)
+                .learned_for(query, &w.host.name)
                 .map(str::to_owned)
         };
         let ranked = crate::domain::ranking::search_with(
             &self.items,
-            self.query.text(),
+            query,
             self.scope,
             self.group,
             learned.as_deref(),
         );
-        let has_query = !crate::domain::ranking::Query::parse(self.query.text()).is_empty();
-        let mut rows = vec![];
+        let has_query = !crate::domain::ranking::Query::parse(query).is_empty();
+        let mut rows: Vec<Plan> = vec![];
         if let Some(g) = self.group {
-            rows.push(Row::Heading(format!(
+            rows.push(Plan::Heading(format!(
                 "{g} · {}",
                 plural(ranked.len(), "entry", "entries")
             )));
             for r in ranked {
-                rows.push(Row::Item(r.index, r));
+                rows.push(Plan::Item(r.index, r));
             }
         } else if has_query || self.scope != Scope::Here {
             let title = if has_query {
@@ -283,13 +603,13 @@ impl FinderPage {
                     plural(ranked.len(), "entry", "entries")
                 )
             };
-            rows.push(Row::Heading(title));
+            rows.push(Plan::Heading(title));
             for r in ranked
                 .into_iter()
                 .filter(|r| has_query || self.items[r.index].kind != Kind::Explore)
                 .take(60)
             {
-                rows.push(Row::Item(r.index, r));
+                rows.push(Plan::Item(r.index, r));
             }
         } else {
             let mut used = std::collections::BTreeSet::new();
@@ -303,10 +623,10 @@ impl FinderPage {
                 .take(5)
                 .collect();
             if !suggested.is_empty() {
-                rows.push(Row::Heading("Suggested here".into()));
+                rows.push(Plan::Heading("Suggested here".into()));
                 for r in suggested {
                     used.insert(r.index);
-                    rows.push(Row::Item(r.index, r.clone()));
+                    rows.push(Plan::Item(r.index, r.clone()));
                 }
             }
 
@@ -319,10 +639,10 @@ impl FinderPage {
                 .filter_map(|(id, _)| ranked.iter().find(|r| self.items[r.index].id == *id))
                 .filter(|r| !used.contains(&r.index))
                 .collect();
-            rows.push(Row::Blank);
-            rows.push(Row::Heading("Recent here".into()));
+            rows.push(Plan::Blank);
+            rows.push(Plan::Heading("Recent here".into()));
             if recent.is_empty() {
-                rows.push(Row::Heading(
+                rows.push(Plan::Heading(
                     if projection.is_empty() {
                         "nothing used here yet"
                     } else {
@@ -338,7 +658,7 @@ impl FinderPage {
                     rr.reason = w.clock.ago(secs);
                     rr.ago_secs = Some(secs);
                 }
-                rows.push(Row::Item(r.index, rr));
+                rows.push(Plan::Item(r.index, rr));
             }
 
             if w.location.workspace.is_some() {
@@ -381,11 +701,11 @@ impl FinderPage {
                         .as_ref()
                         .map(|p| p.name.clone())
                         .unwrap_or_default();
-                    rows.push(Row::Blank);
-                    rows.push(Row::Heading(format!("From {name} · the parent root")));
+                    rows.push(Plan::Blank);
+                    rows.push(Plan::Heading(format!("From {name} · the parent root")));
                     for r in parent {
                         used.insert(r.index);
-                        rows.push(Row::Item(r.index, r.clone()));
+                        rows.push(Plan::Item(r.index, r.clone()));
                     }
                 }
             }
@@ -396,117 +716,53 @@ impl FinderPage {
                 .take(4)
                 .collect();
             if !running.is_empty() {
-                rows.push(Row::Blank);
-                rows.push(Row::Heading("Running".into()));
+                rows.push(Plan::Blank);
+                rows.push(Plan::Heading("Running".into()));
                 for r in running {
                     used.insert(r.index);
-                    rows.push(Row::Item(r.index, r.clone()));
+                    rows.push(Plan::Item(r.index, r.clone()));
                 }
             }
 
-            rows.push(Row::Blank);
-            rows.push(Row::Heading("Explore".into()));
+            rows.push(Plan::Blank);
+            rows.push(Plan::Heading("Explore".into()));
             let cells: Vec<usize> = self
                 .items
                 .iter()
                 .enumerate()
-                .filter(|(_, it)| it.kind == Kind::Explore && it.id.starts_with("explore."))
+                .filter(|(i, it)| {
+                    it.kind == Kind::Explore && it.id.starts_with("explore.") && !used.contains(i)
+                })
                 .map(|(i, _)| i)
                 .collect();
             if !cells.is_empty() {
-                rows.push(Row::Explore(cells));
+                rows.push(Plan::Explore(cells));
             }
             for r in ranked
                 .iter()
                 .filter(|r| self.items[r.index].id.starts_with("scope."))
             {
-                rows.push(Row::Item(r.index, r.clone()));
+                rows.push(Plan::Item(r.index, r.clone()));
             }
         }
-        self.rows = rows;
-
-        let query_changed = std::mem::take(&mut self.query_changed);
-        let target = if query_changed {
-            None
-        } else {
-            keep.as_deref().and_then(|id| self.locate_item(id))
-        };
-        match target {
-            Some((row, column)) => {
-                self.cursor = row;
-                self.explore_cursor = column;
-            }
-            None => {
-                self.cursor = self.first_selectable();
-                self.explore_cursor = 0;
-            }
-        }
-        self.scroll.set_content(self.rows.len());
-        self.scroll.ensure_visible(self.cursor);
-
-        if query_changed || keep != self.current_id() {
-            self.preview_scroll.jump_start();
-        }
+        rows
     }
 
-    /// The item as it reads at the world's current tick: the activity text and
-    /// the data freshness are recomputed from the live world, everything else
-    /// stays as cached.
     fn live_item<'a>(&self, it: &'a Item, w: &World) -> std::borrow::Cow<'a, Item> {
-        let activity = it
-            .id
-            .strip_prefix("activity.")
-            .filter(|_| it.kind == Kind::Activity)
-            .and_then(|id| w.activity(id));
-        let observed = it.freshness.observed_tick();
-        if activity.is_none() && observed.is_none() {
-            return std::borrow::Cow::Borrowed(it);
-        }
-        let mut live = it.clone();
-        if let Some(a) = activity {
-            let display = crate::domain::catalog::activity_display(a, w.tick);
-            live.summary = display.summary;
-            if let Some(r) = live.reasons.first_mut() {
-                r.text = display.reason;
-            }
-        }
-        if let Some(t) = observed {
-            let elapsed = w.tick.saturating_sub(t).min(i64::MAX as u64) as i64;
-            live.freshness = it
-                .freshness
-                .advanced(elapsed.saturating_mul(crate::sim::world::TICK_MS));
-        }
-        std::borrow::Cow::Owned(live)
-    }
-
-    fn row_reason(&self, it: &Item, rk: &Ranked, w: &World) -> String {
-        let reason = match rk.ago_secs {
-            Some(secs) => w.clock.ago(secs),
-            None => match self.live_item(it, w) {
-                std::borrow::Cow::Owned(live) if it.kind == Kind::Activity => {
-                    match (it.reasons.first(), live.reasons.first()) {
-                        (Some(old), Some(new)) => rk.reason.replacen(&old.text, &new.text, 1),
-                        _ => rk.reason.clone(),
-                    }
-                }
-                _ => rk.reason.clone(),
-            },
-        };
-        match &rk.tag {
-            Some(tag) if !reason.starts_with(tag.as_str()) => format!("{tag} · {reason}"),
-            _ => reason,
-        }
+        live_item(it, w)
     }
 
     fn display_stamp(&self, w: &World) -> DisplayStamp {
         let mut activities = vec![];
         let mut ago = vec![];
-        for r in &self.rows {
-            let Row::Item(i, rk) = r else { continue };
-            if let Some(secs) = rk.ago_secs {
+        for r in &self.results.rows {
+            let Row::Item { index, ranked, .. } = r else {
+                continue;
+            };
+            if let Some(secs) = ranked.ago_secs {
                 ago.push(w.clock.ago(secs));
             }
-            let it = &self.items[*i];
+            let it = &self.items[*index];
             if it.kind == Kind::Activity
                 && let Some(a) = it
                     .id
@@ -532,22 +788,22 @@ impl FinderPage {
     #[cfg(test)]
     pub(crate) fn rebuild_signature(&self, w: &World) -> Vec<String> {
         let mut v = vec![];
-        for r in &self.rows {
+        for r in &self.results.rows {
             v.push(match r {
-                Row::Heading(h) => format!("heading {h}"),
-                Row::Blank => "blank".into(),
-                Row::Explore(c) => format!(
+                Row::Heading { text, .. } => format!("heading {text}"),
+                Row::Blank { .. } => "blank".into(),
+                Row::Explore { cells } => format!(
                     "explore {:?}",
-                    c.iter().map(|i| &self.items[*i].id).collect::<Vec<_>>()
+                    cells.iter().map(|i| &self.items[*i].id).collect::<Vec<_>>()
                 ),
-                Row::Item(i, rk) => {
-                    let it = &self.items[*i];
+                Row::Item { index, ranked, .. } => {
+                    let it = &self.items[*index];
                     format!(
                         "item {} {} {:?} {}",
                         it.id,
-                        rk.score,
-                        rk.matched,
-                        self.row_reason(it, rk, w)
+                        ranked.score,
+                        ranked.matched,
+                        row_reason(it, ranked, w)
                     )
                 }
             });
@@ -568,7 +824,7 @@ impl FinderPage {
     fn assert_matches_reference(&self, w: &World) {
         let mut reference = FinderPage::new(self.group);
         reference.scope = self.scope;
-        reference.query.buffer.set_text(self.query.text());
+        reference.set_query(self.query());
         crate::domain::projection::uncounted(|| reference.ensure_projection(w));
         crate::domain::projection::assert_same_signature(
             &self.rebuild_signature(w),
@@ -583,99 +839,8 @@ impl FinderPage {
         self.ensure_projection(w);
     }
 
-    /// Finds an item by its stable id in the rows just built. Returns the row
-    /// and its Explore column (0 for ordinary rows).
-    fn locate_item(&self, id: &str) -> Option<(usize, usize)> {
-        self.rows
-            .iter()
-            .enumerate()
-            .find_map(|(row, entry)| match entry {
-                Row::Item(index, _) => self
-                    .items
-                    .get(*index)
-                    .filter(|item| item.id == id)
-                    .map(|_| (row, 0)),
-                Row::Explore(cells) => cells
-                    .iter()
-                    .position(|index| self.items.get(*index).is_some_and(|item| item.id == id))
-                    .map(|column| (row, column)),
-                Row::Heading(_) | Row::Blank => None,
-            })
-    }
-
-    fn first_selectable(&self) -> usize {
-        self.rows.iter().position(selectable).unwrap_or(0)
-    }
-
     fn scope_title(&self, w: &World) -> String {
-        match self.scope {
-            Scope::Here => "Here".into(),
-            Scope::Parent => match &w.location.workspace {
-                Some(p) => format!("Parent · {}", p.name),
-                None => match &w.location.project {
-                    Some(p) => format!("Parent · {}", p.name),
-                    None => "Parent".into(),
-                },
-            },
-            Scope::Children => format!(
-                "Children · {}",
-                plural(w.location.children.len(), "project", "projects")
-            ),
-            Scope::System => format!("System · {}", w.host.name),
-        }
-    }
-
-    fn step(&mut self, delta: isize) {
-        if self.rows.is_empty() {
-            return;
-        }
-        let n = self.rows.len() as isize;
-        let mut c = self.cursor as isize;
-        loop {
-            c += delta;
-            if c < 0 || c >= n {
-                return;
-            }
-            if selectable(&self.rows[c as usize]) {
-                self.cursor = c as usize;
-                self.preview_scroll.jump_start();
-                self.scroll.ensure_visible(self.cursor);
-
-                if self.cursor > 0
-                    && self.cursor == self.scroll.offset
-                    && matches!(self.rows[self.cursor - 1], Row::Heading(_))
-                {
-                    self.scroll.scroll_by(-1);
-                }
-                return;
-            }
-        }
-    }
-
-    fn query_edited(&mut self) {
-        self.query_changed = true;
-        self.scroll.jump_start();
-    }
-
-    fn query_selected(&self) -> bool {
-        !self.query.text().is_empty()
-            && self.query.buffer.selected_text() == Some(self.query.text())
-    }
-
-    fn query_apply(&mut self, action: EditAction, key: &Key) -> Outcome {
-        if self.query.apply(action, key).edited {
-            self.query_edited();
-        }
-        Outcome::Changed
-    }
-
-    fn clear_query(&mut self) {
-        if self.query.text().is_empty() {
-            return;
-        }
-        self.query.record(junie_tui::core::edit::EditKind::Other);
-        self.query.buffer.set_text("");
-        self.query_edited();
+        scope_title(self.scope, w)
     }
 
     fn primary_hint(&self) -> Hint {
@@ -699,247 +864,451 @@ impl FinderPage {
         }
     }
 
-    fn preview_lines(&self, it: &Item, w: &World) -> Vec<PreviewLine> {
-        let mut v: Vec<PreviewLine> = vec![];
-        v.push(("Does".into(), it.summary.clone(), Tone::Normal, true));
-        for (i, c) in it.commands.iter().enumerate().take(PREVIEW_COMMANDS) {
-            v.push((
-                if i == 0 { "Runs".into() } else { String::new() },
-                c.clone(),
-                Tone::Secondary,
-                false,
-            ));
-        }
-        if it.commands.len() > PREVIEW_COMMANDS {
-            v.push((
-                String::new(),
-                format!("… {} more", it.commands.len() - PREVIEW_COMMANDS),
-                Tone::Muted,
-                false,
-            ));
-        }
-        if it.commands.is_empty() {
-            v.push((
-                "Runs".into(),
-                "no command · opens inside holla".into(),
-                Tone::Muted,
-                true,
-            ));
-        }
-        let runs_in = if it.scope.direction == Scope::System {
-            format!("{} · host-wide", w.host.name)
-        } else {
-            w.location.short(&it.scope.runs_in)
+    fn activate(&mut self, key: ItemKey, cx: &mut Cx) {
+        let Some(it) = self.keys.index.get(&key).and_then(|&i| self.items.get(i)) else {
+            return;
         };
-        v.push(("In".into(), runs_in, Tone::Normal, false));
-        v.push((
-            "Host".into(),
-            format!(
-                "{} · {}{}",
-                w.host.name,
-                w.host.role.label(),
-                if w.host.remote { " · over SSH" } else { "" }
-            ),
-            Tone::Normal,
-            true,
-        ));
+        match &it.launch {
+            Launch::Group(g) => cx.go(Go::Push(Page::Finder { group: Some(g) })),
+            Launch::Scope(s) => cx.go(Go::Scope(*s)),
+            _ => cx.go(Go::Run {
+                item: it.id.clone(),
+                args: vec![],
+            }),
+        }
+    }
 
-        let defined =
-            if it.scope.direction == Scope::System || it.scope.defined_at == it.scope.runs_in {
-                String::new()
-            } else {
-                format!(" · {}", w.location.short(&it.scope.defined_at))
-            };
+    fn activate_current(&mut self, cx: &mut Cx) -> Outcome {
+        match self.search.selected_key() {
+            Some(key) => {
+                self.activate(key, cx);
+                Outcome::Changed
+            }
+            None => Outcome::Consumed,
+        }
+    }
+
+    fn open_alternatives(&mut self, key: ItemKey, anchor: ContextAnchor, cx: &mut Cx) {
+        let Some(it) = self.keys.index.get(&key).and_then(|&i| self.items.get(i)) else {
+            return;
+        };
+        let anchor = match anchor {
+            ContextAnchor::Pointer(pos) => Rect::new(pos.x, pos.y, 1, 1),
+            ContextAnchor::Control { fallback, .. } => {
+                Rect::new(self.list_area.x + 6, fallback.y, 1, 1)
+            }
+        };
+        cx.go(Go::Alternatives {
+            item: it.id.clone(),
+            anchor,
+        });
+    }
+
+    fn alternatives(&mut self, cx: &mut Cx) -> Outcome {
+        let Some(key) = self.search.selected_key() else {
+            return Outcome::Consumed;
+        };
+        let anchor = self
+            .search
+            .context_cursor()
+            .map_or(ContextAnchor::Pointer(self.list_area.as_position()), |r| {
+                r.anchor
+            });
+        self.open_alternatives(key, anchor, cx);
+        Outcome::Changed
+    }
+
+    /// Answers the requests in `reply`, then runs the other actions in order.
+    fn serve(&mut self, reply: Response<SearchAction>, w: &World, cx: &mut Cx) -> Outcome {
+        let (mut outcome, mut actions) = self.queue_requests(reply);
+        let (ranked, answered) = self.answer_requests(w);
+        actions.extend(answered);
+        if ranked {
+            self.display_seen = Some(self.display_stamp(w));
+            outcome = outcome.or(Outcome::Changed);
+        }
+        for action in actions {
+            match action {
+                SearchAction::Activate(key) => self.activate(key, cx),
+                SearchAction::ContextRequested(request) => {
+                    self.open_alternatives(request.target, request.anchor, cx);
+                }
+                SearchAction::QueryCommand { cmd, effective } => {
+                    let note = match (cmd, effective) {
+                        (TextCmd::SelectAll, true) => "Query selected · typing replaces it",
+                        (TextCmd::SelectAll, false) => "Nothing to select",
+                        (TextCmd::Undo, true) => "Undone",
+                        (TextCmd::Undo, false) => "Nothing to undo",
+                        (TextCmd::Redo, true) => "Redone",
+                        (TextCmd::Redo, false) => "Nothing to redo",
+                        _ => continue,
+                    };
+                    cx.status(note);
+                }
+                SearchAction::QueryRequested(_)
+                | SearchAction::SelectionChanged(_)
+                | SearchAction::DetailAction { .. }
+                | SearchAction::DetailItem { .. } => {}
+            }
+        }
+        outcome
+    }
+
+    /// Whether the shared controller should see `key`. The query field would
+    /// take Tab and the other keys the page leaves to focus traversal and the
+    /// shell.
+    fn is_query_or_result_key(&self, key: &Key) -> bool {
+        self.search.session().command_for(key).is_some()
+            || match key.code {
+                KeyCode::Esc | KeyCode::Backspace => true,
+                KeyCode::Char(_) => !key.alt(),
+                _ => false,
+            }
+    }
+
+    fn preview_key(&mut self, key: &Key, w: &World, cx: &mut Cx) -> Option<Outcome> {
+        match key.code {
+            KeyCode::Char('y') if key.plain() => {
+                if let Some(it) = self.current() {
+                    let cmd = it.commands.join("\n");
+                    if cmd.is_empty() {
+                        cx.status("Nothing to copy: this row has no command");
+                    } else {
+                        cx.copy(cmd);
+                    }
+                }
+                Some(Outcome::Changed)
+            }
+            KeyCode::Enter => Some(self.activate_current(cx)),
+            KeyCode::Up | KeyCode::Down | KeyCode::Esc | KeyCode::Char(_) => {
+                let reply = match self.search.on_key(key, &self.results, cx.focus) {
+                    Ok(reply) => reply,
+                    Err(_) => return Some(Outcome::Ignored),
+                };
+                Some(self.serve(reply, w, cx))
+            }
+            _ => Some(Outcome::Ignored),
+        }
+    }
+}
+
+fn scope_title(scope: Scope, w: &World) -> String {
+    match scope {
+        Scope::Here => "Here".into(),
+        Scope::Parent => match &w.location.workspace {
+            Some(p) => format!("Parent · {}", p.name),
+            None => match &w.location.project {
+                Some(p) => format!("Parent · {}", p.name),
+                None => "Parent".into(),
+            },
+        },
+        Scope::Children => format!(
+            "Children · {}",
+            plural(w.location.children.len(), "project", "projects")
+        ),
+        Scope::System => format!("System · {}", w.host.name),
+    }
+}
+
+fn scope_word(scope: Scope) -> &'static str {
+    match scope {
+        Scope::Here => "here",
+        Scope::Parent => "parent",
+        Scope::Children => "children",
+        Scope::System => "system",
+    }
+}
+
+/// The item as it reads at the world's current tick: the activity text and
+/// the data freshness are recomputed from the live world, everything else
+/// stays as cached.
+fn live_item<'a>(it: &'a Item, w: &World) -> std::borrow::Cow<'a, Item> {
+    let activity = it
+        .id
+        .strip_prefix("activity.")
+        .filter(|_| it.kind == Kind::Activity)
+        .and_then(|id| w.activity(id));
+    let observed = it.freshness.observed_tick();
+    if activity.is_none() && observed.is_none() {
+        return std::borrow::Cow::Borrowed(it);
+    }
+    let mut live = it.clone();
+    if let Some(a) = activity {
+        let display = crate::domain::catalog::activity_display(a, w.tick);
+        live.summary = display.summary;
+        if let Some(r) = live.reasons.first_mut() {
+            r.text = display.reason;
+        }
+    }
+    if let Some(t) = observed {
+        let elapsed = w.tick.saturating_sub(t).min(i64::MAX as u64) as i64;
+        live.freshness = it
+            .freshness
+            .advanced(elapsed.saturating_mul(crate::sim::world::TICK_MS));
+    }
+    std::borrow::Cow::Owned(live)
+}
+
+fn row_reason(it: &Item, rk: &Ranked, w: &World) -> String {
+    let reason = match rk.ago_secs {
+        Some(secs) => w.clock.ago(secs),
+        None => match live_item(it, w) {
+            std::borrow::Cow::Owned(live) if it.kind == Kind::Activity => {
+                match (it.reasons.first(), live.reasons.first()) {
+                    (Some(old), Some(new)) => rk.reason.replacen(&old.text, &new.text, 1),
+                    _ => rk.reason.clone(),
+                }
+            }
+            _ => rk.reason.clone(),
+        },
+    };
+    match &rk.tag {
+        Some(tag) if !reason.starts_with(tag.as_str()) => format!("{tag} · {reason}"),
+        _ => reason,
+    }
+}
+
+fn preview_lines(it: &Item, w: &World) -> Vec<PreviewLine> {
+    let mut v: Vec<PreviewLine> = vec![];
+    v.push(("Does".into(), it.summary.clone(), Tone::Normal, true));
+    for (i, c) in it.commands.iter().enumerate().take(PREVIEW_COMMANDS) {
         v.push((
-            "Scope".into(),
-            format!("{}{}", it.scope.word, defined),
-            Tone::Normal,
+            if i == 0 { "Runs".into() } else { String::new() },
+            c.clone(),
+            Tone::Secondary,
             false,
         ));
-        let mut reasons: Vec<&str> = it.reasons.iter().map(|r| r.text.as_str()).collect();
-        reasons.sort();
-        let why = {
-            let mut sorted: Vec<&crate::domain::action::Reason> = it.reasons.iter().collect();
-            sorted.sort_by_key(|r| std::cmp::Reverse(r.signal));
-            sorted
-                .iter()
-                .map(|r| r.text.as_str())
-                .take(3)
-                .collect::<Vec<_>>()
-                .join(" · ")
-        };
-        v.push((
-            "Why".into(),
-            if why.is_empty() {
-                "available".into()
-            } else {
-                why
-            },
-            Tone::Normal,
-            true,
-        ));
-        let changes = if it.effects.is_empty() {
-            match it.risk {
-                Risk::ReadOnly => "none · read-only".to_owned(),
-                _ => "see the command".to_owned(),
-            }
-        } else {
-            it.effects.join(" · ")
-        };
-        v.push(("Changes".into(), changes, Tone::Normal, true));
-        v.push((
-            "Risk".into(),
-            it.risk.label().into(),
-            risk_tone(it.risk),
-            true,
-        ));
-        v.push((
-            "Data".into(),
-            it.freshness.label(),
-            match it.freshness {
-                crate::domain::action::Freshness::Unavailable(_) => Tone::Error,
-                crate::domain::action::Freshness::Loading
-                | crate::domain::action::Freshness::Partial { .. } => Tone::Warning,
-                _ => Tone::Muted,
-            },
-            true,
-        ));
-        let gate = match (&it.launch, &it.confirmation) {
-            (Launch::Cleanup { .. } | Launch::Disk { .. } | Launch::TopFiles | Launch::Find, _) => {
-                "opens a review · the deletion is gated there (typed phrase)".to_owned()
-            }
-            (_, Confirmation::TwoGate { .. }) => format!(
-                "two gates · type {}",
-                it.confirmation.phrase().unwrap_or_default()
-            ),
-            (_, c) => c.label(),
-        };
-        v.push((
-            "Gate".into(),
-            gate,
-            if matches!(it.confirmation, Confirmation::None) {
-                Tone::Muted
-            } else {
-                Tone::Normal
-            },
-            true,
-        ));
-        if !it.args.is_empty() {
-            let names: Vec<String> = it
-                .args
-                .iter()
-                .map(|a| {
-                    if a.default.is_empty() {
-                        a.name.clone()
-                    } else {
-                        format!("{} = {}", a.name, a.default)
-                    }
-                })
-                .collect();
-            v.push(("Args".into(), names.join(" · "), Tone::Normal, true));
-        }
-        if let Some(tool) = &it.preferred_tool {
-            v.push(("Prefers".into(), tool.clone(), Tone::Muted, true));
-        }
-        let mut alts: Vec<String> = it.alternatives.iter().map(|a| a.label.clone()).collect();
-        alts.push("Pin".into());
-        alts.push("Alias".into());
-        alts.push("Why here?".into());
-
-        let key = if junie_tui::core::keyboard::label_deliverable("Alt+Enter") {
-            "Alt+Enter"
-        } else {
-            "Alternatives…"
-        };
-        v.push((key.into(), alts.join(" · "), Tone::Muted, true));
-        let _ = reasons;
-        v
     }
+    if it.commands.len() > PREVIEW_COMMANDS {
+        v.push((
+            String::new(),
+            format!("… {} more", it.commands.len() - PREVIEW_COMMANDS),
+            Tone::Muted,
+            false,
+        ));
+    }
+    if it.commands.is_empty() {
+        v.push((
+            "Runs".into(),
+            "no command · opens inside holla".into(),
+            Tone::Muted,
+            true,
+        ));
+    }
+    let runs_in = if it.scope.direction == Scope::System {
+        format!("{} · host-wide", w.host.name)
+    } else {
+        w.location.short(&it.scope.runs_in)
+    };
+    v.push(("In".into(), runs_in, Tone::Normal, false));
+    v.push((
+        "Host".into(),
+        format!(
+            "{} · {}{}",
+            w.host.name,
+            w.host.role.label(),
+            if w.host.remote { " · over SSH" } else { "" }
+        ),
+        Tone::Normal,
+        true,
+    ));
 
-    fn render_preview(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, w: &World) {
-        let t = ctx.theme;
-        let focused = ctx.interaction.focused(PREVIEW);
-        let Some(it) = self.current().cloned() else {
-            let hint_text = if self.rows.iter().any(|r| matches!(r, Row::Item(..))) {
-                "↑↓ moves the cursor"
-            } else if self.query.text().trim().is_empty() {
-                "Ctrl+↑ widens the scope"
-            } else {
-                "Esc clears the query"
-            };
-            let card_h = 7.min(area.height);
-            let area = Rect::new(area.x, area.y, area.width, card_h);
-            let panel = Panel::card(Some("Preview")).focused(focused);
-            let inner = panel.render(area, buf, t);
-            empty::render(
-                inner,
-                buf,
-                t,
-                &EmptyState::new("Nothing to preview").hint(hint_text),
-                panel.bg(t),
-            );
-            ctx.control(PREVIEW, area, false);
-            return;
-        };
-        let it = self.live_item(&it, w).into_owned();
-        let meta = format!("{} · {}", it.kind.label(), it.scope.word);
-        let panel = Panel::card(Some(&it.label)).focused(focused).meta(&meta);
-        let bg = panel.bg(t);
-
-        let lines = self.preview_lines(&it, w);
-        let label_w = lines.iter().map(|(l, ..)| width(l)).max().unwrap_or(4) as u16 + 2;
-        let inner_w = area.width.saturating_sub(4);
-        let vw = inner_w.saturating_sub(label_w + 1) as usize;
-        let mut flat: Vec<(String, String, Tone)> = vec![];
-        for (l, v, tone, wraps) in lines {
-            if wraps {
-                let parts = wrap(&v, vw.max(8));
-                for (i, p) in parts.into_iter().enumerate() {
-                    flat.push((if i == 0 { l.clone() } else { String::new() }, p, tone));
+    let defined = if it.scope.direction == Scope::System || it.scope.defined_at == it.scope.runs_in
+    {
+        String::new()
+    } else {
+        format!(" · {}", w.location.short(&it.scope.defined_at))
+    };
+    v.push((
+        "Scope".into(),
+        format!("{}{}", it.scope.word, defined),
+        Tone::Normal,
+        false,
+    ));
+    let mut reasons: Vec<&str> = it.reasons.iter().map(|r| r.text.as_str()).collect();
+    reasons.sort();
+    let why = {
+        let mut sorted: Vec<&crate::domain::action::Reason> = it.reasons.iter().collect();
+        sorted.sort_by_key(|r| std::cmp::Reverse(r.signal));
+        sorted
+            .iter()
+            .map(|r| r.text.as_str())
+            .take(3)
+            .collect::<Vec<_>>()
+            .join(" · ")
+    };
+    v.push((
+        "Why".into(),
+        if why.is_empty() {
+            "available".into()
+        } else {
+            why
+        },
+        Tone::Normal,
+        true,
+    ));
+    let changes = if it.effects.is_empty() {
+        match it.risk {
+            Risk::ReadOnly => "none · read-only".to_owned(),
+            _ => "see the command".to_owned(),
+        }
+    } else {
+        it.effects.join(" · ")
+    };
+    v.push(("Changes".into(), changes, Tone::Normal, true));
+    v.push((
+        "Risk".into(),
+        it.risk.label().into(),
+        risk_tone(it.risk),
+        true,
+    ));
+    v.push((
+        "Data".into(),
+        it.freshness.label(),
+        match it.freshness {
+            crate::domain::action::Freshness::Unavailable(_) => Tone::Error,
+            crate::domain::action::Freshness::Loading
+            | crate::domain::action::Freshness::Partial { .. } => Tone::Warning,
+            _ => Tone::Muted,
+        },
+        true,
+    ));
+    let gate = match (&it.launch, &it.confirmation) {
+        (Launch::Cleanup { .. } | Launch::Disk { .. } | Launch::TopFiles | Launch::Find, _) => {
+            "opens a review · the deletion is gated there (typed phrase)".to_owned()
+        }
+        (_, Confirmation::TwoGate { .. }) => format!(
+            "two gates · type {}",
+            it.confirmation.phrase().unwrap_or_default()
+        ),
+        (_, c) => c.label(),
+    };
+    v.push((
+        "Gate".into(),
+        gate,
+        if matches!(it.confirmation, Confirmation::None) {
+            Tone::Muted
+        } else {
+            Tone::Normal
+        },
+        true,
+    ));
+    if !it.args.is_empty() {
+        let names: Vec<String> = it
+            .args
+            .iter()
+            .map(|a| {
+                if a.default.is_empty() {
+                    a.name.clone()
+                } else {
+                    format!("{} = {}", a.name, a.default)
                 }
-            } else {
-                flat.push((l, truncate_middle(&v, vw.max(8)), tone));
-            }
+            })
+            .collect();
+        v.push(("Args".into(), names.join(" · "), Tone::Normal, true));
+    }
+    if let Some(tool) = &it.preferred_tool {
+        v.push(("Prefers".into(), tool.clone(), Tone::Muted, true));
+    }
+    let mut alts: Vec<String> = it.alternatives.iter().map(|a| a.label.clone()).collect();
+    alts.push("Pin".into());
+    alts.push("Alias".into());
+    alts.push("Why here?".into());
+
+    let key = if junie_tui::core::keyboard::label_deliverable("Alt+Enter") {
+        "Alt+Enter"
+    } else {
+        "Alternatives…"
+    };
+    v.push((key.into(), alts.join(" · "), Tone::Muted, true));
+    let _ = reasons;
+    v
+}
+
+/// Paints the Finder's own look into the panes of the shared [`SearchDetail`].
+struct Paint<'a> {
+    w: &'a World,
+    items: &'a [Item],
+    results: &'a Results,
+    scope: Scope,
+    group: Option<&'static str>,
+    query: &'a str,
+    current: Option<&'a Item>,
+    marker: bool,
+    list_area: &'a mut Rect,
+    preview_area: &'a mut Rect,
+    cols: Columns,
+}
+
+/// The widths of the list columns, solved once per paint from every item row.
+#[derive(Debug, Default, Clone, Copy)]
+struct Columns {
+    label: u16,
+    kind: u16,
+    scope: u16,
+    reason: u16,
+    risk: u16,
+}
+
+impl Columns {
+    fn solve(results: &Results, items: &[Item], row_w: u16) -> Self {
+        let item_rows: Vec<&Item> = results
+            .rows
+            .iter()
+            .filter_map(|r| match r {
+                Row::Item { index, .. } => Some(&items[*index]),
+                _ => None,
+            })
+            .collect();
+        let max_label = item_rows
+            .iter()
+            .map(|it| width(&it.label))
+            .max()
+            .unwrap_or(10) as u16;
+        let type_w = item_rows
+            .iter()
+            .map(|it| width(it.kind.label()))
+            .max()
+            .unwrap_or(4) as u16;
+        let scope_w = item_rows
+            .iter()
+            .map(|it| width(&it.scope.word))
+            .max()
+            .unwrap_or(4) as u16;
+        let content_w = row_w.saturating_sub(4);
+
+        let risk_w = item_rows
+            .iter()
+            .filter(|it| matches!(it.risk, Risk::Destructive | Risk::Privileged))
+            .map(|it| width(it.risk.label()) as u16)
+            .max()
+            .unwrap_or(0);
+
+        let label_cap = max_label.min((content_w * 36 / 100).max(14));
+        let mut cols = vec![
+            Col::content(label_cap, label_cap).max(max_label),
+            Col::fixed(type_w),
+            Col::fixed(scope_w),
+            Col::content(12, 12).flex(1, u16::MAX).droppable(1),
+        ];
+        if risk_w > 0 {
+            cols.push(Col::fixed(risk_w));
         }
-        let card_h = (flat.len() as u16 + 3).min(area.height);
-        let area = Rect::new(area.x, area.y, area.width, card_h);
-        let inner = panel.render(area, buf, t);
-        ctx.control(PREVIEW, area, false);
-        self.preview_area = inner;
-        ctx.scrollable(PREVIEW, inner);
-        if inner.is_empty() {
-            return;
-        }
-        self.preview_scroll.set_content(flat.len());
-        self.preview_scroll.set_viewport(inner.height as usize);
-        let has_sb = self.preview_scroll.overflows();
-        for (k, i) in self.preview_scroll.visible_range().enumerate() {
-            let y = inner.y + k as u16;
-            let (l, v, tone) = &flat[i];
-            buf.set_string(inner.x, y, l, t.muted().bg(bg));
-            let st = Style::new().fg(t.tone(*tone)).bg(bg);
-            buf.set_string(
-                inner.x + label_w,
-                y,
-                junie_tui::ui::reveal::cut(Rect::new(inner.x + label_w, y, (vw) as u16, 1), v),
-                st,
-            );
-        }
-        if has_sb {
-            scrollbar::render_with_fade(
-                Rect::new(inner.x, inner.y, inner.width, inner.height),
-                buf,
-                ctx,
-                PREVIEW,
-                &self.preview_scroll,
-                focused,
-            );
+        let widths = columns::solve(&cols, content_w, 2);
+        Self {
+            label: widths[0],
+            kind: widths[1],
+            scope: widths[2],
+            reason: widths[3],
+            risk: risk_w,
         }
     }
+}
 
-    fn render_query(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
+impl SearchPaint<Results> for Paint<'_> {
+    fn query(&mut self, area: Rect, view: QueryView<'_>, buf: &mut Buffer, ctx: &mut RenderCtx) {
         let t = ctx.theme;
-        let focused = ctx.interaction.focused(FINDER);
+        let focused = view.focused;
         let fs = t.field_style(junie_tui::ui::ctx::VisualState {
             focused,
             editing: focused,
@@ -964,7 +1333,7 @@ impl FinderPage {
             ),
         );
 
-        let readout = format!("scope ‹ {} ›", self.scope_word());
+        let readout = format!("scope ‹ {} ›", scope_word(self.scope));
         let rw = width(&readout) as u16 + 2;
         let rx = area.right().saturating_sub(rw);
 
@@ -974,10 +1343,9 @@ impl FinderPage {
             rs = rs.fg(t.legible(t.text_muted, rs.bg.unwrap_or(bg)));
         }
         buf.set_string(rx, area.y, format!(" {readout} "), rs);
-        self.scope_area = Rect::new(rx, area.y, rw, 1);
-        ctx.clickable(SCOPE, self.scope_area);
+        ctx.clickable(SCOPE, Rect::new(rx, area.y, rw, 1));
         let text_w = rx.saturating_sub(area.x + 3) as usize;
-        let query = self.query.text().to_owned();
+        let query = view.text;
         if query.is_empty() {
             let placeholder = match self.group {
                 Some(g) => format!("Search {}…", g.to_lowercase()),
@@ -993,12 +1361,13 @@ impl FinderPage {
                 fs.fg(t.text_muted),
             );
         } else {
-            let shown = if width(&query) > text_w {
-                truncate_middle(&query, text_w)
+            let shown = if width(query) > text_w {
+                truncate_middle(query, text_w)
             } else {
-                query.clone()
+                query.to_owned()
             };
-            let st = if self.query_selected() {
+            let all_selected = view.selection == Some(0..query.len());
+            let st = if all_selected {
                 fs.fg(t.canvas).bg(t.accent)
             } else if focused {
                 fs.add_modifier(Modifier::UNDERLINED)
@@ -1009,383 +1378,301 @@ impl FinderPage {
             buf.set_string(area.x + 2, area.y, &shown, st);
         }
         if focused {
-            let cx = area.x + 2 + width(&query).min(text_w) as u16;
+            let cx = area.x + 2 + width(query).min(text_w) as u16;
             ctx.set_cursor(Position::new(cx, area.y));
         }
     }
 
-    fn scope_word(&self) -> String {
-        match self.scope {
-            Scope::Here => "here".into(),
-            Scope::Parent => "parent".into(),
-            Scope::Children => "children".into(),
-            Scope::System => "system".into(),
-        }
+    fn rows_begin(&mut self, area: Rect, row_w: u16) {
+        *self.list_area = area;
+        self.cols = Columns::solve(self.results, self.items, row_w);
     }
 
-    #[allow(clippy::too_many_arguments)]
-    fn render_rows(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, w: &World) {
+    fn row(&mut self, mut row: RowPaint<'_, Results>, buf: &mut Buffer, ctx: &mut RenderCtx) {
         let t = ctx.theme;
         let bg = t.canvas;
-        let focused = ctx.interaction.focused(FINDER);
-        self.list_area = area;
-        ctx.control(FINDER, area, false);
-        ctx.scrollable(FINDER, area);
-        self.explore_areas.clear();
-        if self.rows.iter().all(|r| !selectable(r)) {
-            let title = if !self.query.text().trim().is_empty() {
-                format!("No matches for “{}”", truncate(self.query.text(), 30))
-            } else {
-                match self.scope {
-                    Scope::Parent => format!("No project root above {}", w.location.cwd_short()),
-                    Scope::Children => {
-                        format!("No child projects below {}", w.location.cwd_short())
-                    }
-                    _ => "Nothing here yet".to_owned(),
-                }
-            };
-            let hint_text = match self.scope {
-                Scope::Here => "Esc clears the query · Ctrl+↑ widens to the parent scope",
-                Scope::Children => "Esc clears the query · Ctrl+↑ returns to here",
-                _ => "Esc clears the query · Ctrl+↓ narrows the scope",
-            };
-            empty::render(area, buf, t, &EmptyState::new(&title).hint(hint_text), bg);
-            return;
-        }
-        self.scroll.set_content(self.rows.len());
-        self.scroll.set_viewport(area.height as usize);
-        let has_sb = self.scroll.overflows();
-        let row_w = area.width.saturating_sub(u16::from(has_sb));
+        let rect = row.rect;
+        let y = rect.y;
+        let Columns {
+            label: label_w,
+            kind: type_w,
+            scope: scope_w,
+            reason: reason_w,
+            risk: risk_w,
+        } = self.cols;
+        match &row.source.rows[row.row] {
+            Row::Blank { .. } => {}
+            Row::Heading { text, .. } => Heading::new(text).render(
+                Rect::new(rect.x + 3, y, rect.width.saturating_sub(3), 1),
+                buf,
+                t,
+                bg,
+            ),
+            Row::Explore { cells } => {
+                let mut s = ctx.state(row.hit);
+                s.focused = row.focused && row.selected;
 
-        let item_rows: Vec<(&Item, &Ranked)> = self
-            .rows
-            .iter()
-            .filter_map(|r| match r {
-                Row::Item(i, rk) => Some((&self.items[*i], rk)),
-                _ => None,
-            })
-            .collect();
-        let max_label = item_rows
-            .iter()
-            .map(|(it, _)| width(&it.label))
-            .max()
-            .unwrap_or(10) as u16;
-        let type_w = item_rows
-            .iter()
-            .map(|(it, _)| width(it.kind.label()))
-            .max()
-            .unwrap_or(4) as u16;
-        let scope_w = item_rows
-            .iter()
-            .map(|(it, _)| width(&it.scope.word))
-            .max()
-            .unwrap_or(4) as u16;
-        let content_w = row_w.saturating_sub(4);
+                let cr = t.cursor_row(s, bg, CursorStyle::Fill);
+                let st = cr.style;
+                fill(buf, rect, st);
+                buf.set_string(rect.x, y, cr.gutter, cr.gutter_style);
+                let mut x = rect.x + 3;
 
-        let risk_w = item_rows
-            .iter()
-            .filter(|(it, _)| matches!(it.risk, Risk::Destructive | Risk::Privileged))
-            .map(|(it, _)| width(it.risk.label()) as u16)
-            .max()
-            .unwrap_or(0);
-
-        let label_cap = max_label.min((content_w * 36 / 100).max(14));
-        let mut cols = vec![
-            Col::content(label_cap, label_cap).max(max_label),
-            Col::fixed(type_w),
-            Col::fixed(scope_w),
-            Col::content(12, 12).flex(1, u16::MAX).droppable(1),
-        ];
-        if risk_w > 0 {
-            cols.push(Col::fixed(risk_w));
-        }
-        let widths = columns::solve(&cols, content_w, 2);
-        let (label_w, type_w, scope_w, reason_w) = (widths[0], widths[1], widths[2], widths[3]);
-        let show_reason = reason_w > 0;
-        for (k, i) in self.scroll.visible_range().enumerate() {
-            let y = area.y + k as u16;
-            let row = Rect::new(area.x, y, row_w, 1);
-            match &self.rows[i] {
-                Row::Blank => {}
-                Row::Heading(h) => Heading::new(h).render(
-                    Rect::new(area.x + 3, y, row_w.saturating_sub(3), 1),
-                    buf,
-                    t,
-                    bg,
-                ),
-                Row::Explore(cells) => {
-                    let rid = FINDER.child(i);
-                    let mut s = ctx.state(rid);
-                    s.focused = focused && i == self.cursor;
-                    let is_cursor = i == self.cursor;
-
-                    let cr = t.cursor_row(s, bg, CursorStyle::Fill);
-                    let st = cr.style;
-                    fill(buf, row, st);
-                    buf.set_string(row.x, y, cr.gutter, cr.gutter_style);
-                    let mut x = row.x + 3;
-
-                    ctx.clickable(rid, row);
-                    let widths: Vec<u16> = cells
-                        .iter()
-                        .map(|idx| width(&self.items[*idx].label) as u16 + 2)
-                        .collect();
-                    let (shown, more) = junie_tui::widgets::chips::overflow_run(
-                        &widths,
-                        row.right().saturating_sub(x),
-                        1,
-                    );
-                    for (ci, idx) in cells.iter().enumerate().take(shown) {
-                        let it = &self.items[*idx];
-                        let cid = EXPLORE_CELL.child(ci);
-                        let chosen = is_cursor && ci == self.explore_cursor;
-                        let cw = widths[ci];
-
-                        let mut cs = ctx.title_style(cid, st.bg.unwrap_or(bg)).fg(t.text_primary);
-                        if chosen {
-                            cs = cs.add_modifier(Modifier::BOLD);
-                            buf.set_string(x, y, "›", st.fg(t.row_ink(&cr, t.text_secondary)));
-                        }
-                        buf.set_string(x + 1, y, &it.label, cs);
-                        ctx.clickable(cid, Rect::new(x, y, cw, 1));
-                        self.explore_areas.push((cid, Rect::new(x, y, cw, 1), ci));
-                        x += cw + 1;
-                    }
-                    if let Some(m) = more.filter(|_| self.explore_overflow_marker) {
-                        buf.set_string(x, y, &m, st.fg(t.text_muted));
-                    }
-                }
-                Row::Item(idx, rk) => {
+                let widths: Vec<u16> = cells
+                    .iter()
+                    .map(|idx| width(&self.items[*idx].label) as u16 + 2)
+                    .collect();
+                let (shown, more) = junie_tui::widgets::chips::overflow_run(
+                    &widths,
+                    rect.right().saturating_sub(x),
+                    1,
+                );
+                for (ci, idx) in cells.iter().enumerate().take(shown) {
                     let it = &self.items[*idx];
-                    let rid = FINDER.child(i);
-                    let mut s = ctx.state(rid);
-                    s.focused = focused && i == self.cursor;
-                    s.selected = i == self.cursor;
+                    let cid = row.cell_hit(ci);
+                    let chosen = row.selected_cell == Some(ci);
+                    let cw = widths[ci];
 
-                    let cr = t.cursor_row(s, bg, CursorStyle::Fill);
-                    let st = cr.style;
-                    fill(buf, row, st);
-                    if s.selected {
-                        buf.set_string(row.x + 1, y, "›", st.fg(t.row_ink(&cr, t.text_secondary)));
+                    let mut cs = ctx.title_style(cid, st.bg.unwrap_or(bg)).fg(t.text_primary);
+                    if chosen {
+                        cs = cs.add_modifier(Modifier::BOLD);
+                        buf.set_string(x, y, "›", st.fg(t.row_ink(&cr, t.text_secondary)));
                     }
-                    let mut x = row.x + 3;
+                    buf.set_string(x + 1, y, &it.label, cs);
+                    row.place_cell(ci, Rect::new(x, y, cw, 1));
+                    x += cw + 1;
+                }
+                if let Some(m) = more.filter(|_| self.marker) {
+                    buf.set_string(x, y, &m, st.fg(t.text_muted));
+                }
+            }
+            Row::Item { index, ranked, .. } => {
+                let it = &self.items[*index];
+                let mut s = ctx.state(row.hit);
+                s.focused = row.focused && row.selected;
+                s.selected = row.selected;
 
-                    let label_cell = Rect::new(x, y, label_w, 1);
-                    let mut cut = wider_than(&it.label, label_w as usize);
-                    let label = truncate(&it.label, label_w as usize);
-                    junie_tui::ui::reveal::queue_cut(label_cell, &it.label);
-                    let mut lx = x;
-                    for (bi, ch) in label.char_indices() {
-                        let mut cs = st;
-                        if rk.matched.contains(&bi) {
-                            cs = cs.add_modifier(Modifier::BOLD);
-                        } else if !s.focused {
-                            cs = cs.remove_modifier(Modifier::BOLD);
-                        }
-                        if it.hidden {
-                            cs = cs.fg(t.row_ink(&cr, t.text_faint));
-                        }
-                        let g = ch.to_string();
-                        buf.set_string(lx, y, &g, cs);
-                        lx += width(&g) as u16;
-                    }
-                    x += label_w + 2;
-                    let plain = st.remove_modifier(Modifier::BOLD);
-                    buf.set_string(
-                        x,
-                        y,
-                        fit(it.kind.label(), type_w as usize),
-                        plain.fg(t.row_ink(&cr, t.text_muted)),
-                    );
-                    x += type_w + 2;
-                    let scope_tone = if it.scope.direction == Scope::Here {
-                        t.text_muted
-                    } else {
-                        t.text_secondary
-                    };
-                    buf.set_string(
-                        x,
-                        y,
-                        fit(&it.scope.word, scope_w as usize),
-                        plain.fg(t.row_ink(&cr, scope_tone)),
-                    );
-                    x += scope_w + 2;
-                    if show_reason {
-                        let reason = self.row_reason(it, rk, w);
-                        let rs = plain.fg(t.row_ink(
-                            &cr,
-                            if rk.tag.is_some() {
-                                t.text_secondary
-                            } else {
-                                t.text_muted
-                            },
-                        ));
-                        buf.set_string(x, y, truncate_sep(&reason, reason_w as usize), rs);
-                        junie_tui::ui::reveal::queue_cut(Rect::new(x, y, reason_w, 1), &reason);
-                        cut |= wider_than(&reason, reason_w as usize);
-                        if cut && s.focused {
-                            junie_tui::ui::reveal::peek(ctx, &format!("{} — {reason}", it.label));
-                        }
-                    } else if cut && s.focused {
-                        junie_tui::ui::reveal::peek(ctx, &it.label);
-                    }
+                let cr = t.cursor_row(s, bg, CursorStyle::Fill);
+                let st = cr.style;
+                fill(buf, rect, st);
+                if s.selected {
+                    buf.set_string(rect.x + 1, y, "›", st.fg(t.row_ink(&cr, t.text_secondary)));
+                }
+                let mut x = rect.x + 3;
 
-                    if risk_w > 0 && matches!(it.risk, Risk::Destructive | Risk::Privileged) {
-                        let r = it.risk.label();
-                        let rx = row.right().saturating_sub(width(r) as u16 + 1);
-                        buf.set_string(rx, y, r, plain.fg(t.row_ink(&cr, t.text_secondary)));
+                let label_cell = Rect::new(x, y, label_w, 1);
+                let mut cut = wider_than(&it.label, label_w as usize);
+                let label = truncate(&it.label, label_w as usize);
+                junie_tui::ui::reveal::queue_cut(label_cell, &it.label);
+                let mut lx = x;
+                for (bi, ch) in label.char_indices() {
+                    let mut cs = st;
+                    if ranked.matched.contains(&bi) {
+                        cs = cs.add_modifier(Modifier::BOLD);
+                    } else if !s.focused {
+                        cs = cs.remove_modifier(Modifier::BOLD);
                     }
-                    ctx.clickable(rid, row);
+                    if it.hidden {
+                        cs = cs.fg(t.row_ink(&cr, t.text_faint));
+                    }
+                    let g = ch.to_string();
+                    buf.set_string(lx, y, &g, cs);
+                    lx += width(&g) as u16;
+                }
+                x += label_w + 2;
+                let plain = st.remove_modifier(Modifier::BOLD);
+                buf.set_string(
+                    x,
+                    y,
+                    fit(it.kind.label(), type_w as usize),
+                    plain.fg(t.row_ink(&cr, t.text_muted)),
+                );
+                x += type_w + 2;
+                let scope_tone = if it.scope.direction == Scope::Here {
+                    t.text_muted
+                } else {
+                    t.text_secondary
+                };
+                buf.set_string(
+                    x,
+                    y,
+                    fit(&it.scope.word, scope_w as usize),
+                    plain.fg(t.row_ink(&cr, scope_tone)),
+                );
+                x += scope_w + 2;
+                if reason_w > 0 {
+                    let reason = row_reason(it, ranked, self.w);
+                    let rs = plain.fg(t.row_ink(
+                        &cr,
+                        if ranked.tag.is_some() {
+                            t.text_secondary
+                        } else {
+                            t.text_muted
+                        },
+                    ));
+                    buf.set_string(x, y, truncate_sep(&reason, reason_w as usize), rs);
+                    junie_tui::ui::reveal::queue_cut(Rect::new(x, y, reason_w, 1), &reason);
+                    cut |= wider_than(&reason, reason_w as usize);
+                    if cut && s.focused {
+                        junie_tui::ui::reveal::peek(ctx, &format!("{} — {reason}", it.label));
+                    }
+                } else if cut && s.focused {
+                    junie_tui::ui::reveal::peek(ctx, &it.label);
+                }
+
+                if risk_w > 0 && matches!(it.risk, Risk::Destructive | Risk::Privileged) {
+                    let r = it.risk.label();
+                    let rx = rect.right().saturating_sub(width(r) as u16 + 1);
+                    buf.set_string(rx, y, r, plain.fg(t.row_ink(&cr, t.text_secondary)));
                 }
             }
         }
+    }
+
+    fn empty(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
+        let t = ctx.theme;
+        *self.list_area = area;
+        let title = if !self.query.trim().is_empty() {
+            format!("No matches for “{}”", truncate(self.query, 30))
+        } else {
+            match self.scope {
+                Scope::Parent => format!("No project root above {}", self.w.location.cwd_short()),
+                Scope::Children => {
+                    format!("No child projects below {}", self.w.location.cwd_short())
+                }
+                _ => "Nothing here yet".to_owned(),
+            }
+        };
+        let hint_text = match self.scope {
+            Scope::Here => "Esc clears the query · Ctrl+↑ widens to the parent scope",
+            Scope::Children => "Esc clears the query · Ctrl+↑ returns to here",
+            _ => "Esc clears the query · Ctrl+↓ narrows the scope",
+        };
+        empty::render(
+            area,
+            buf,
+            t,
+            &EmptyState::new(&title).hint(hint_text),
+            t.canvas,
+        );
+    }
+
+    fn detail(&mut self, pane: DetailPane<'_>, buf: &mut Buffer, ctx: &mut RenderCtx) {
+        let t = ctx.theme;
+        let (area, id) = (pane.area, pane.id);
+        let scroll = pane.scroll;
+        let focused = ctx.interaction.focused(id);
+        let Some(it) = self.current else {
+            let hint_text = if self.results.has_items() {
+                "↑↓ moves the cursor"
+            } else if self.query.trim().is_empty() {
+                "Ctrl+↑ widens the scope"
+            } else {
+                "Esc clears the query"
+            };
+            let card_h = 7.min(area.height);
+            let area = Rect::new(area.x, area.y, area.width, card_h);
+            let panel = Panel::card(Some("Preview")).focused(focused);
+            let inner = panel.render(area, buf, t);
+            empty::render(
+                inner,
+                buf,
+                t,
+                &EmptyState::new("Nothing to preview").hint(hint_text),
+                panel.bg(t),
+            );
+            ctx.control(id, area, false);
+            return;
+        };
+        let it = live_item(it, self.w).into_owned();
+        let meta = format!("{} · {}", it.kind.label(), it.scope.word);
+        let panel = Panel::card(Some(&it.label)).focused(focused).meta(&meta);
+        let bg = panel.bg(t);
+
+        let lines = preview_lines(&it, self.w);
+        let label_w = lines.iter().map(|(l, ..)| width(l)).max().unwrap_or(4) as u16 + 2;
+        let inner_w = area.width.saturating_sub(4);
+        let vw = inner_w.saturating_sub(label_w + 1) as usize;
+        let mut flat: Vec<(String, String, Tone)> = vec![];
+        for (l, v, tone, wraps) in lines {
+            if wraps {
+                let parts = wrap(&v, vw.max(8));
+                for (i, p) in parts.into_iter().enumerate() {
+                    flat.push((if i == 0 { l.clone() } else { String::new() }, p, tone));
+                }
+            } else {
+                flat.push((l, truncate_middle(&v, vw.max(8)), tone));
+            }
+        }
+        let card_h = (flat.len() as u16 + 3).min(area.height);
+        let area = Rect::new(area.x, area.y, area.width, card_h);
+        let inner = panel.render(area, buf, t);
+        ctx.control(id, area, false);
+        *self.preview_area = inner;
+        ctx.scrollable(id, inner);
+        if inner.is_empty() {
+            return;
+        }
+        scroll.set_content(flat.len());
+        scroll.set_viewport(inner.height as usize);
+        let has_sb = scroll.overflows();
+        for (k, i) in scroll.visible_range().enumerate() {
+            let y = inner.y + k as u16;
+            let (l, v, tone) = &flat[i];
+            buf.set_string(inner.x, y, l, t.muted().bg(bg));
+            let st = Style::new().fg(t.tone(*tone)).bg(bg);
+            buf.set_string(
+                inner.x + label_w,
+                y,
+                junie_tui::ui::reveal::cut(Rect::new(inner.x + label_w, y, (vw) as u16, 1), v),
+                st,
+            );
+        }
         if has_sb {
             scrollbar::render_with_fade(
-                Rect::new(area.x, area.y, area.width, area.height),
+                Rect::new(inner.x, inner.y, inner.width, inner.height),
                 buf,
                 ctx,
-                FINDER,
-                &self.scroll,
+                id,
+                scroll,
                 focused,
             );
         }
     }
 
-    fn locate_row(&self, id: WidgetId) -> Option<usize> {
-        self.scroll.visible_range().find(|&i| FINDER.child(i) == id)
+    fn summary(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
+        let t = ctx.theme;
+        let Some(it) = self.current else { return };
+        let cmd = it
+            .commands
+            .first()
+            .cloned()
+            .unwrap_or_else(|| "opens inside holla".into());
+
+        let tail = format!(" · {} · {}", it.scope.word, it.risk.label());
+        let room = (area.width.saturating_sub(3) as usize).saturating_sub(2 + width(&tail));
+        let line = format!("→ {}{tail}", truncate_middle(&cmd, room.max(8)));
+        buf.set_string(
+            area.x + 3,
+            area.y,
+            junie_tui::ui::reveal::cut(
+                Rect::new(area.x + 3, area.y, area.width.saturating_sub(3), 1),
+                &line,
+            ),
+            t.muted(),
+        );
     }
 
-    fn activate_current(&mut self, cx: &mut Cx) -> Outcome {
-        let Some(it) = self.current() else {
-            return Outcome::Consumed;
-        };
-        match &it.launch {
-            Launch::Group(g) => cx.go(Go::Push(Page::Finder { group: Some(g) })),
-            Launch::Scope(s) => cx.go(Go::Scope(*s)),
-            _ => cx.go(Go::Run {
-                item: it.id.clone(),
-                args: vec![],
-            }),
-        }
-        Outcome::Changed
-    }
-
-    fn alternatives(&mut self, cx: &mut Cx) -> Outcome {
-        let Some(it) = self.current() else {
-            return Outcome::Consumed;
-        };
-        let anchor = self
-            .scroll
-            .visible_range()
-            .find(|&i| i == self.cursor)
-            .map(|i| {
-                Rect::new(
-                    self.list_area.x + 6,
-                    self.list_area.y + (i - self.scroll.offset) as u16,
-                    1,
-                    1,
-                )
-            })
-            .unwrap_or(self.list_area);
-        cx.go(Go::Alternatives {
-            item: it.id.clone(),
-            anchor,
-        });
-        Outcome::Changed
-    }
-
-    fn preview_key(&mut self, key: &Key, cx: &mut Cx) -> Outcome {
-        match key.code {
-            KeyCode::Up | KeyCode::Char('k') => {
-                self.preview_scroll.scroll_by(-1);
-                Outcome::Changed
-            }
-            KeyCode::Down | KeyCode::Char('j') => {
-                self.preview_scroll.scroll_by(1);
-                Outcome::Changed
-            }
-            KeyCode::Char('y') => {
-                if let Some(it) = self.current() {
-                    let cmd = it.commands.join("\n");
-                    if cmd.is_empty() {
-                        cx.status("Nothing to copy: this row has no command");
-                    } else {
-                        cx.copy(cmd);
-                    }
-                }
-                Outcome::Changed
-            }
-            KeyCode::Esc => {
-                self.md.close_drawer(cx.focus);
-                Outcome::Changed
-            }
-            KeyCode::Enter => self.activate_current(cx),
-            _ => Outcome::Ignored,
-        }
-    }
-}
-
-impl FinderPage {
-    fn click(&mut self, id: WidgetId, pos: Position, w: &mut World, cx: &mut Cx) -> Outcome {
-        self.ensure_projection(w);
-        if id == SCOPE {
-            let next = match self.scope {
-                Scope::System => Scope::Children,
-                s => s.outward(),
-            };
-            cx.go(Go::Scope(next));
-            return Outcome::Changed;
-        }
-        if id == scrollbar::id_for(FINDER) {
-            cx.focus.focus(FINDER);
-            return scroll_press(self.list_area, pos, &mut self.scroll);
-        }
-        if id == scrollbar::id_for(PREVIEW) {
-            cx.focus.focus(PREVIEW);
-            return scroll_press(self.preview_area, pos, &mut self.preview_scroll);
-        }
-        if id == PREVIEW {
-            cx.focus.focus(PREVIEW);
-            return Outcome::Changed;
-        }
-        if let Some((_, _, ci)) = self.explore_areas.iter().find(|(cid, _, _)| *cid == id) {
-            if let Some(r) = self.rows.iter().position(|r| matches!(r, Row::Explore(_))) {
-                self.cursor = r;
-                self.explore_cursor = *ci;
-                self.preview_scroll.jump_start();
-            }
-            cx.focus.focus(FINDER);
-            return self.activate_current(cx);
-        }
-        if let Some(i) = self.locate_row(id) {
-            if selectable(&self.rows[i]) {
-                self.cursor = i;
-                self.preview_scroll.jump_start();
-            }
-            cx.focus.focus(FINDER);
-            return Outcome::Changed;
-        }
-        if id == FINDER {
-            cx.focus.focus(FINDER);
-            return Outcome::Changed;
-        }
-        Outcome::Ignored
+    fn is_lead(&self, source: &Results, row: usize) -> bool {
+        matches!(source.rows[row], Row::Heading { .. })
     }
 }
 
 impl ShellPage<Holla> for FinderPage {
     fn on_key(&mut self, key: &Key, w: &mut World, cx: &mut Cx) -> Outcome {
         self.ensure_projection(w);
-        if cx.focus.is(PREVIEW) {
-            let typed = matches!(
-                key.code,
-                KeyCode::Char(c) if !key.chord() && !matches!(c, 'j' | 'k' | 'y')
-            );
-            if typed {
-                self.md.close_drawer(cx.focus);
-            } else {
-                return self.preview_key(key, cx);
-            }
+        if self.search.on_detail(cx.focus.current()) {
+            return self.preview_key(key, w, cx).unwrap_or(Outcome::Ignored);
         }
         if !cx.focus.is(FINDER) {
             return Outcome::Ignored;
@@ -1394,206 +1681,56 @@ impl ShellPage<Holla> for FinderPage {
             return self.alternatives(cx);
         }
         if key.ctrl() {
-            return match key.code {
+            match key.code {
                 KeyCode::Up => {
                     cx.go(Go::Scope(self.scope.outward()));
-                    Outcome::Changed
+                    return Outcome::Changed;
                 }
                 KeyCode::Down => {
                     cx.go(Go::Scope(self.scope.inward()));
-                    Outcome::Changed
-                }
-
-                KeyCode::Char('w') | KeyCode::Char('W') => Outcome::Ignored,
-
-                _ => match self.query.action(key) {
-                    EditAction::SelectAll => {
-                        let any = !self.query.text().is_empty();
-                        self.query_apply(EditAction::SelectAll, key);
-                        cx.status(if any {
-                            "Query selected · typing replaces it"
-                        } else {
-                            "Nothing to select"
-                        });
-                        Outcome::Changed
-                    }
-                    EditAction::Undo => {
-                        let can = self.query.can_undo();
-                        self.query_apply(EditAction::Undo, key);
-                        cx.status(if can { "Undone" } else { "Nothing to undo" });
-                        Outcome::Changed
-                    }
-                    EditAction::Redo => {
-                        let can = self.query.can_redo();
-                        self.query_apply(EditAction::Redo, key);
-                        cx.status(if can { "Redone" } else { "Nothing to redo" });
-                        Outcome::Changed
-                    }
-                    a @ (EditAction::Apply(_)
-                    | EditAction::Paste
-                    | EditAction::Copy
-                    | EditAction::Cut) => self.query_apply(a, key),
-                    _ => Outcome::Ignored,
-                },
-            };
-        }
-        if key.alt() && key.code == KeyCode::Backspace {
-            let a = self.query.action(key);
-            return self.query_apply(a, key);
-        }
-        match key.code {
-            KeyCode::Up => {
-                self.step(-1);
-                Outcome::Changed
-            }
-            KeyCode::Down => {
-                self.step(1);
-                Outcome::Changed
-            }
-            KeyCode::PageUp => {
-                for _ in 0..self.scroll.viewport_len.max(1) {
-                    self.step(-1);
-                }
-                Outcome::Changed
-            }
-            KeyCode::PageDown => {
-                for _ in 0..self.scroll.viewport_len.max(1) {
-                    self.step(1);
-                }
-                Outcome::Changed
-            }
-            KeyCode::Home => {
-                self.cursor = self.first_selectable();
-                self.preview_scroll.jump_start();
-                self.scroll.jump_start();
-                Outcome::Changed
-            }
-            KeyCode::End => {
-                self.cursor = self.rows.iter().rposition(selectable).unwrap_or(0);
-                self.preview_scroll.jump_start();
-                self.scroll.ensure_visible(self.cursor);
-                Outcome::Changed
-            }
-            KeyCode::Left | KeyCode::Right
-                if matches!(self.rows.get(self.cursor), Some(Row::Explore(_))) =>
-            {
-                let n = match &self.rows[self.cursor] {
-                    Row::Explore(c) => c.len(),
-                    _ => 0,
-                };
-                let before = self.explore_cursor;
-                if key.code == KeyCode::Left {
-                    self.explore_cursor = self.explore_cursor.saturating_sub(1);
-                } else {
-                    self.explore_cursor = (self.explore_cursor + 1).min(n.saturating_sub(1));
-                }
-                if self.explore_cursor != before {
-                    self.preview_scroll.jump_start();
-                }
-                Outcome::Changed
-            }
-            KeyCode::Enter => self.activate_current(cx),
-            KeyCode::Backspace if self.query.text().is_empty() => Outcome::Consumed,
-            KeyCode::Backspace => {
-                let a = self.query.action(key);
-                self.query_apply(a, key)
-            }
-            KeyCode::Esc => {
-                if self.query_selected() {
-                    self.query.buffer.clear_selection();
                     return Outcome::Changed;
                 }
-                if !self.query.text().is_empty() {
-                    self.clear_query();
-                    return Outcome::Changed;
-                }
-                if self.scope != Scope::Here {
-                    cx.go(Go::Scope(Scope::Here));
-                    return Outcome::Changed;
-                }
-                Outcome::Ignored
+                KeyCode::Char('w') | KeyCode::Char('W') => return Outcome::Ignored,
+                _ => {}
             }
-            KeyCode::Char(c) if !key.chord() => self.query_apply(EditAction::Insert(c), key),
-            _ => Outcome::Ignored,
         }
+        if !self.is_query_or_result_key(key) {
+            return Outcome::Ignored;
+        }
+        let reply = match self.search.on_key(key, &self.results, cx.focus) {
+            Ok(reply) => reply,
+            Err(_) => return Outcome::Ignored,
+        };
+        let outcome = self.serve(reply, w, cx);
+        if outcome == Outcome::Ignored && key.code == KeyCode::Esc && self.scope != Scope::Here {
+            cx.go(Go::Scope(Scope::Here));
+            return Outcome::Changed;
+        }
+        outcome
     }
 
-    fn on_paste(&mut self, text: &str, _w: &mut World, _cx: &mut Cx) -> Outcome {
-        let flat: String = text.split(['\n', '\r']).collect::<Vec<_>>().join(" ");
-        let flat = flat.trim().to_owned();
-        if flat.is_empty() || !self.query.paste(&flat) {
-            return Outcome::Consumed;
-        }
-        self.query_edited();
-        Outcome::Changed
+    fn on_paste(&mut self, text: &str, w: &mut World, cx: &mut Cx) -> Outcome {
+        let reply = self.search.on_paste(text, cx.focus);
+        self.serve(reply, w, cx)
     }
 
     fn pointer(&mut self, ev: &PointerEvent, w: &mut World, cx: &mut Cx) -> Outcome {
-        let (id, pos) = (ev.id, ev.pos());
-        if let Some((axis, delta)) = ev.wheel() {
-            if axis != Axis::Vertical {
+        self.ensure_projection(w);
+        if ev.id == SCOPE {
+            if !ev.is(junie_tui::core::intent::Phase::Click) {
                 return Outcome::Ignored;
             }
-            if id == PREVIEW {
-                self.preview_scroll.scroll_by(delta as isize);
-                return Outcome::Changed;
-            }
-            if id == FINDER {
-                self.scroll.scroll_by(delta as isize);
-                return Outcome::Changed;
-            }
-            return Outcome::Ignored;
+            let next = match self.scope {
+                Scope::System => Scope::Children,
+                s => s.outward(),
+            };
+            cx.go(Go::Scope(next));
+            return Outcome::Changed;
         }
-        match ev.phase() {
-            Some(Phase::Press) => {
-                if id == scrollbar::id_for(FINDER) {
-                    return scroll_press(self.list_area, pos, &mut self.scroll);
-                }
-                if id == scrollbar::id_for(PREVIEW) {
-                    return scroll_press(self.preview_area, pos, &mut self.preview_scroll);
-                }
-                Outcome::Ignored
-            }
-            Some(Phase::Drag) => {
-                if id == scrollbar::id_for(FINDER) {
-                    return scroll_drag(self.list_area, pos, &mut self.scroll);
-                }
-                if id == scrollbar::id_for(PREVIEW) {
-                    return scroll_drag(self.preview_area, pos, &mut self.preview_scroll);
-                }
-                Outcome::Ignored
-            }
-            Some(Phase::Click) => {
-                if let Some(i) = self.locate_row(id)
-                    && matches!(self.rows[i], Row::Item(..))
-                    && ClickPolicy::DATA.activates(ev.count(), self.cursor == i)
-                {
-                    self.cursor = i;
-                    self.preview_scroll.jump_start();
-                    return self.activate_current(cx);
-                }
-                self.click(id, pos, w, cx)
-            }
-            Some(Phase::Secondary) => {
-                if let Some(i) = self.locate_row(id)
-                    && let Some(Row::Item(ix, _)) = self.rows.get(i)
-                    && let Some(item) = self.items.get(*ix).map(|it| it.id.clone())
-                {
-                    if cx.context.moves_cursor {
-                        self.cursor = i;
-                        self.preview_scroll.jump_start();
-                    }
-                    cx.focus.focus(FINDER);
-
-                    cx.go(Go::Alternatives {
-                        item,
-                        anchor: Rect::new(pos.x, pos.y, 1, 1),
-                    });
-                    return Outcome::Changed;
-                }
-                Outcome::Ignored
-            }
-            _ => Outcome::Ignored,
+        self.search.config_mut().context = cx.context;
+        match self.search.pointer(ev, &self.results, cx.focus) {
+            Ok(reply) => self.serve(reply, w, cx),
+            Err(_) => Outcome::Ignored,
         }
     }
 
@@ -1620,50 +1757,41 @@ impl ShellPage<Holla> for FinderPage {
     fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, w: &World) {
         self.ensure_projection(w);
         self.display_seen = Some(self.display_stamp(w));
-        let t = ctx.theme;
-        let query = Rect::new(area.x, area.y, area.width, 1);
-        self.render_query(query, buf, ctx);
-        let body = Rect::new(
-            area.x,
-            area.y + 2,
-            area.width,
-            area.height.saturating_sub(2),
-        );
-        let l = self.md.layout(body, buf, ctx, t.canvas);
-        if !l.master.is_empty() {
-            self.render_rows(l.master, buf, ctx, w);
-        }
-        if !l.detail.is_empty() {
-            self.render_preview(l.detail, buf, ctx, w);
-        }
-
-        if !l.summary.is_empty()
-            && let Some(it) = self.current()
-        {
-            let cmd = it
-                .commands
-                .first()
-                .cloned()
-                .unwrap_or_else(|| "opens inside holla".into());
-
-            let tail = format!(" · {} · {}", it.scope.word, it.risk.label());
-            let room = (body.width.saturating_sub(3) as usize).saturating_sub(2 + width(&tail));
-            let line = format!("→ {}{tail}", truncate_middle(&cmd, room.max(8)));
-            buf.set_string(
-                body.x + 3,
-                l.summary.y,
-                junie_tui::ui::reveal::cut(
-                    Rect::new(body.x + 3, l.summary.y, body.width.saturating_sub(3), 1),
-                    &line,
-                ),
-                t.muted(),
-            );
-        }
-        self.md.finish(ctx);
+        let Self {
+            search,
+            results,
+            items,
+            keys,
+            scope,
+            group,
+            explore_overflow_marker,
+            list_area,
+            preview_area,
+            ..
+        } = self;
+        let query = search.query().to_owned();
+        let current = search
+            .selected_key()
+            .and_then(|key| keys.index.get(&key))
+            .and_then(|&i| items.get(i));
+        let mut paint = Paint {
+            w,
+            items,
+            results,
+            scope: *scope,
+            group: *group,
+            query: &query,
+            current,
+            marker: *explore_overflow_marker,
+            list_area,
+            preview_area,
+            cols: Columns::default(),
+        };
+        let _ = search.render_hosted(area, results, buf, ctx, &mut paint);
     }
 
     fn hints(&self, focus: Option<WidgetId>, _w: &World) -> Vec<Hint> {
-        if focus == Some(PREVIEW) {
+        if self.search.on_detail(focus) {
             return vec![
                 hint("↑↓", "Scroll"),
                 hint("y", "Copy command"),
@@ -1679,7 +1807,7 @@ impl ShellPage<Holla> for FinderPage {
             hint("Tab", "Preview"),
             hint("Ctrl+↑↓", "Scope"),
         ];
-        v.push(if !self.query.text().is_empty() {
+        v.push(if !self.query().is_empty() {
             hint("Esc", "Clear")
         } else if self.scope != Scope::Here {
             hint("Esc", "Back to Here")
