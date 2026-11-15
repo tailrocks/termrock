@@ -68,8 +68,8 @@ fn work_contract_showcase_idle_and_switch() {
         "query workbench settled tick",
         &[
             (Metric::VisibleRowsPainted, 47),
-            (Metric::IntrinsicWidthCalls, 378),
-            (Metric::TextBytesMeasured, 1_778),
+            (Metric::IntrinsicWidthCalls, 371),
+            (Metric::TextBytesMeasured, 1_733),
             (Metric::FitVisits, 13),
         ],
     );
@@ -94,8 +94,8 @@ fn work_contract_showcase_idle_and_switch() {
         "document switch (two frames)",
         &[
             (Metric::VisibleRowsPainted, 82),
-            (Metric::IntrinsicWidthCalls, 575),
-            (Metric::TextBytesMeasured, 2_968),
+            (Metric::IntrinsicWidthCalls, 561),
+            (Metric::TextBytesMeasured, 2_878),
             (Metric::FitVisits, 24),
         ],
     );
@@ -123,8 +123,8 @@ fn work_contract_showcase_idle_and_switch() {
         &[
             (Metric::AllocatedBufferCells, 1_440),
             (Metric::VisibleRowsPainted, 24),
-            (Metric::IntrinsicWidthCalls, 202),
-            (Metric::TextBytesMeasured, 1_202),
+            (Metric::IntrinsicWidthCalls, 199),
+            (Metric::TextBytesMeasured, 1_179),
             (Metric::FitVisits, 5),
         ],
     );
@@ -151,8 +151,8 @@ fn work_contract_showcase_idle_and_switch() {
         &[
             (Metric::AllocatedBufferCells, 1_440),
             (Metric::VisibleRowsPainted, 24),
-            (Metric::IntrinsicWidthCalls, 202),
-            (Metric::TextBytesMeasured, 1_202),
+            (Metric::IntrinsicWidthCalls, 199),
+            (Metric::TextBytesMeasured, 1_179),
             (Metric::FitVisits, 5),
         ],
     );
@@ -223,17 +223,17 @@ fn stress_case(case: &Stress, change: &[(Metric, u64)], settled: &[(Metric, u64)
 // the totals include the demo bars the page also draws. The per-frame split
 // below is arithmetic on the exact counts, not a separate measurement.
 //
-// - Toolbars: 20,353 widths is one pass over the N items plus the page's own
+// - Toolbars: 20,350 widths is one pass over the N items plus the page's own
 //   bars. The 20 visits show the pack loop stops at the first item that does
 //   not fit instead of walking all N.
-// - Breadcrumbs: 60,424 widths is 3N plus 424 and 19,998 visits is N. The page
+// - Breadcrumbs: 60,421 widths is 3N plus 421 and 19,998 visits is N. The page
 //   plans the trail three times a frame (measure, geometry, paint), one width
 //   per label each time.
-// - Chrome: 120,650 widths is 6N plus 650, 240,083 visits is 12N plus 83 and
+// - Chrome: 120,647 widths is 6N plus 647, 240,083 visits is 12N plus 83 and
 //   1,825,650 compares is 6 sorts of about 1.01 N ceil(log2 N). The status bar
 //   is therefore planned six times a frame, each plan linear in N plus one sort
 //   (inferred from the arithmetic).
-// - Chips: 60,390 widths is 3N plus 390 and 40,024 visits is 2N plus 24. The
+// - Chips: 60,387 widths is 3N plus 387 and 40,024 visits is 2N plus 24. The
 //   28 compares equal the stress-off frame: the chip fitter never sorts.
 //
 // A fitter that rescans survivors per removal would add a factor of N to the
@@ -252,14 +252,14 @@ fn work_contract_stress_toolbars_items() {
         },
         &[
             (Metric::VisibleRowsPainted, 17),
-            (Metric::IntrinsicWidthCalls, 20_353),
-            (Metric::TextBytesMeasured, 242_477),
+            (Metric::IntrinsicWidthCalls, 20_350),
+            (Metric::TextBytesMeasured, 242_454),
             (Metric::FitVisits, 20),
         ],
         &[
             (Metric::VisibleRowsPainted, 17),
-            (Metric::IntrinsicWidthCalls, 20_401),
-            (Metric::TextBytesMeasured, 242_677),
+            (Metric::IntrinsicWidthCalls, 20_398),
+            (Metric::TextBytesMeasured, 242_654),
             (Metric::FitVisits, 20),
         ],
     );
@@ -278,14 +278,14 @@ fn work_contract_stress_toolbars_label() {
         },
         &[
             (Metric::VisibleRowsPainted, 17),
-            (Metric::IntrinsicWidthCalls, 404),
-            (Metric::TextBytesMeasured, 68_310),
+            (Metric::IntrinsicWidthCalls, 401),
+            (Metric::TextBytesMeasured, 68_287),
             (Metric::FitVisits, 19),
         ],
         &[
             (Metric::VisibleRowsPainted, 17),
-            (Metric::IntrinsicWidthCalls, 536),
-            (Metric::TextBytesMeasured, 69_022),
+            (Metric::IntrinsicWidthCalls, 533),
+            (Metric::TextBytesMeasured, 68_999),
             (Metric::FitVisits, 19),
         ],
     );
@@ -307,8 +307,8 @@ fn work_contract_stress_breadcrumbs_items() {
             (Metric::BufferCellsFilled, 4_012),
             (Metric::BufferCellsCopied, 12_320),
             (Metric::VisibleRowsPainted, 20),
-            (Metric::IntrinsicWidthCalls, 60_424),
-            (Metric::TextBytesMeasured, 722_693),
+            (Metric::IntrinsicWidthCalls, 60_421),
+            (Metric::TextBytesMeasured, 722_670),
             (Metric::FitVisits, 19_998),
         ],
         &[
@@ -316,8 +316,8 @@ fn work_contract_stress_breadcrumbs_items() {
             (Metric::BufferCellsFilled, 4_012),
             (Metric::BufferCellsCopied, 12_320),
             (Metric::VisibleRowsPainted, 20),
-            (Metric::IntrinsicWidthCalls, 60_424),
-            (Metric::TextBytesMeasured, 722_693),
+            (Metric::IntrinsicWidthCalls, 60_421),
+            (Metric::TextBytesMeasured, 722_670),
             (Metric::FitVisits, 19_998),
         ],
     );
@@ -339,8 +339,8 @@ fn work_contract_stress_breadcrumbs_label() {
             (Metric::BufferCellsFilled, 4_012),
             (Metric::BufferCellsCopied, 12_320),
             (Metric::VisibleRowsPainted, 20),
-            (Metric::IntrinsicWidthCalls, 542),
-            (Metric::TextBytesMeasured, 200_028),
+            (Metric::IntrinsicWidthCalls, 539),
+            (Metric::TextBytesMeasured, 200_005),
             (Metric::FitVisits, 10),
         ],
         &[
@@ -348,8 +348,8 @@ fn work_contract_stress_breadcrumbs_label() {
             (Metric::BufferCellsFilled, 4_012),
             (Metric::BufferCellsCopied, 12_320),
             (Metric::VisibleRowsPainted, 20),
-            (Metric::IntrinsicWidthCalls, 542),
-            (Metric::TextBytesMeasured, 200_028),
+            (Metric::IntrinsicWidthCalls, 539),
+            (Metric::TextBytesMeasured, 200_005),
             (Metric::FitVisits, 10),
         ],
     );
@@ -368,15 +368,15 @@ fn work_contract_stress_chrome_items() {
         },
         &[
             (Metric::VisibleRowsPainted, 20),
-            (Metric::IntrinsicWidthCalls, 120_650),
-            (Metric::TextBytesMeasured, 1_084_349),
+            (Metric::IntrinsicWidthCalls, 120_647),
+            (Metric::TextBytesMeasured, 1_084_326),
             (Metric::FitVisits, 240_083),
             (Metric::FitCompares, 1_825_650),
         ],
         &[
             (Metric::VisibleRowsPainted, 20),
-            (Metric::IntrinsicWidthCalls, 120_650),
-            (Metric::TextBytesMeasured, 1_084_349),
+            (Metric::IntrinsicWidthCalls, 120_647),
+            (Metric::TextBytesMeasured, 1_084_326),
             (Metric::FitVisits, 240_083),
             (Metric::FitCompares, 1_825_650),
         ],
@@ -396,15 +396,15 @@ fn work_contract_stress_chrome_label() {
         },
         &[
             (Metric::VisibleRowsPainted, 20),
-            (Metric::IntrinsicWidthCalls, 1_104),
-            (Metric::TextBytesMeasured, 401_547),
+            (Metric::IntrinsicWidthCalls, 1_101),
+            (Metric::TextBytesMeasured, 401_524),
             (Metric::FitVisits, 124),
             (Metric::FitCompares, 216),
         ],
         &[
             (Metric::VisibleRowsPainted, 20),
-            (Metric::IntrinsicWidthCalls, 1_104),
-            (Metric::TextBytesMeasured, 401_547),
+            (Metric::IntrinsicWidthCalls, 1_101),
+            (Metric::TextBytesMeasured, 401_524),
             (Metric::FitVisits, 124),
             (Metric::FitCompares, 216),
         ],
@@ -427,8 +427,8 @@ fn work_contract_stress_chips_items() {
             (Metric::BufferCellsFilled, 4_602),
             (Metric::BufferCellsCopied, 11_910),
             (Metric::VisibleRowsPainted, 17),
-            (Metric::IntrinsicWidthCalls, 60_390),
-            (Metric::TextBytesMeasured, 723_221),
+            (Metric::IntrinsicWidthCalls, 60_387),
+            (Metric::TextBytesMeasured, 723_198),
             (Metric::FitVisits, 40_024),
             (Metric::FitCompares, 28),
         ],
@@ -437,8 +437,8 @@ fn work_contract_stress_chips_items() {
             (Metric::BufferCellsFilled, 4_602),
             (Metric::BufferCellsCopied, 11_910),
             (Metric::VisibleRowsPainted, 17),
-            (Metric::IntrinsicWidthCalls, 60_390),
-            (Metric::TextBytesMeasured, 723_221),
+            (Metric::IntrinsicWidthCalls, 60_387),
+            (Metric::TextBytesMeasured, 723_198),
             (Metric::FitVisits, 40_024),
             (Metric::FitCompares, 28),
         ],
@@ -461,8 +461,8 @@ fn work_contract_stress_chips_label() {
             (Metric::BufferCellsFilled, 4_602),
             (Metric::BufferCellsCopied, 11_910),
             (Metric::VisibleRowsPainted, 17),
-            (Metric::IntrinsicWidthCalls, 395),
-            (Metric::TextBytesMeasured, 199_917),
+            (Metric::IntrinsicWidthCalls, 392),
+            (Metric::TextBytesMeasured, 199_894),
             (Metric::FitVisits, 39),
             (Metric::FitCompares, 28),
         ],
@@ -471,8 +471,8 @@ fn work_contract_stress_chips_label() {
             (Metric::BufferCellsFilled, 4_602),
             (Metric::BufferCellsCopied, 11_910),
             (Metric::VisibleRowsPainted, 17),
-            (Metric::IntrinsicWidthCalls, 395),
-            (Metric::TextBytesMeasured, 199_917),
+            (Metric::IntrinsicWidthCalls, 392),
+            (Metric::TextBytesMeasured, 199_894),
             (Metric::FitVisits, 39),
             (Metric::FitCompares, 28),
         ],

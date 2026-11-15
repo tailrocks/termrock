@@ -68,8 +68,8 @@ fn work_contract_holla_idle_and_source_update() {
             (Metric::ProjectionRebuilds, 1),
             (Metric::RankRowsVisited, items),
             (Metric::SchedulingRecordsVisited, 2 * activities + plans),
-            (Metric::IntrinsicWidthCalls, 704),
-            (Metric::TextBytesMeasured, 3_271),
+            (Metric::IntrinsicWidthCalls, 697),
+            (Metric::TextBytesMeasured, 3_206),
             (Metric::FitVisits, 19),
         ],
     );
@@ -103,8 +103,8 @@ fn work_contract_holla_idle_and_source_update() {
             (Metric::ProjectionRebuilds, 1),
             (Metric::RankRowsVisited, items),
             (Metric::SchedulingRecordsVisited, 2 * activities + plans),
-            (Metric::IntrinsicWidthCalls, 704),
-            (Metric::TextBytesMeasured, 3_271),
+            (Metric::IntrinsicWidthCalls, 697),
+            (Metric::TextBytesMeasured, 3_206),
             (Metric::FitVisits, 19),
         ],
     );
@@ -129,8 +129,8 @@ fn work_contract_holla_idle_and_source_update() {
         &[
             (Metric::ProjectionRebuilds, 1),
             (Metric::RankRowsVisited, items),
-            (Metric::IntrinsicWidthCalls, 1_627),
-            (Metric::TextBytesMeasured, 8_473),
+            (Metric::IntrinsicWidthCalls, 1_620),
+            (Metric::TextBytesMeasured, 8_408),
             (Metric::FitVisits, 13),
         ],
     );

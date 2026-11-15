@@ -17,6 +17,7 @@ use crate::widgets::hintbar::{HintBar, HintLayer};
 use crate::widgets::keyhint::Hint;
 use crate::widgets::segments::{self, Segment};
 use crate::widgets::statusbar::{StatusBar, StatusItem};
+use crate::widgets::tabs::Tabs;
 use crate::widgets::toolbar::{ToolItem, Toolbar};
 
 const ID: WidgetId = WidgetId::of("overflow.work");
@@ -148,6 +149,38 @@ fn large_overflow_toolbar_work_is_linear() {
         frame(80, 1, |buf, ctx| {
             let bg = ctx.theme.canvas;
             measure(|| bar.render(Rect::new(0, 0, 80, 1), buf, ctx, bg)).1
+        })
+    });
+}
+
+#[test]
+fn tabs_render_measures_each_tab_once() {
+    for n in [1usize, 7, 40, 300] {
+        let labels = vec!["x"; n];
+        let mut tabs = Tabs::new(ID, &labels);
+        let work = frame(80, 2, |buf, ctx| {
+            let bg = ctx.theme.canvas;
+            measure(|| tabs.render(Rect::new(0, 0, 80, 2), buf, ctx, bg)).1
+        });
+        let drawn = tabs.areas.iter().filter(|r| !r.is_empty()).count() as u64;
+        // Painting a drawn tab re-measures its label and sizes its close plate.
+        let painting = 2 * drawn;
+        assert_eq!(
+            work.get(Metric::IntrinsicWidthCalls) - painting,
+            n as u64,
+            "Tabs::render of {n} tabs with {drawn} drawn ({work:?})"
+        );
+    }
+}
+
+#[test]
+fn large_overflow_tabs_work_is_linear() {
+    assert_linear("Tabs::render", 1, 1, 2, |n| {
+        let labels = vec!["x"; n];
+        let mut tabs = Tabs::new(ID, &labels);
+        frame(80, 2, |buf, ctx| {
+            let bg = ctx.theme.canvas;
+            measure(|| tabs.render(Rect::new(0, 0, 80, 2), buf, ctx, bg)).1
         })
     });
 }
