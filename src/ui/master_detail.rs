@@ -298,6 +298,14 @@ impl MasterDetail {
         l
     }
 
+    /// Drops the last frame's geometry. A host calls this when it renders
+    /// into no space at all, so keys and drags cannot resize a split that is
+    /// not on screen.
+    pub fn forget_geometry(&mut self) {
+        self.last = MdLayout::default();
+        self.container = Rect::ZERO;
+    }
+
     pub fn finish(&self, ctx: &mut RenderCtx) {
         if self.last.mode == Mode::Master {
             ctx.control(self.detail, Rect::ZERO, false);
