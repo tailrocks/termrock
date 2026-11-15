@@ -2985,7 +2985,7 @@ mod tests {
     }
 
     fn assert_strip_matches(q: &QueryTab) {
-        assert_eq!(q.result_tabs.items.len(), q.results.len());
+        assert_eq!(q.result_tabs.items().len(), q.results.len());
         let shown = q.active_result.min(q.results.len().saturating_sub(1));
         assert_eq!(
             q.result_tabs.active, shown,
@@ -3057,7 +3057,7 @@ mod tests {
             let q = query(&mut app);
             assert!(q.results.is_empty());
             assert_eq!(q.active_result, 0);
-            assert!(q.result_tabs.items.is_empty());
+            assert!(q.result_tabs.items().is_empty());
         }
     }
 
@@ -3088,14 +3088,14 @@ mod tests {
         );
         let q = query(&mut app);
         q.set_active_result(1);
-        let before = (keys(q), q.active_result, q.result_tabs.items.len());
+        let before = (keys(q), q.active_result, q.result_tabs.items().len());
 
         q.close_result(0);
         q.close_result(3);
         q.close_result(usize::MAX);
 
         assert_eq!(
-            (keys(q), q.active_result, q.result_tabs.items.len()),
+            (keys(q), q.active_result, q.result_tabs.items().len()),
             before
         );
         assert_strip_matches(q);
@@ -3106,7 +3106,7 @@ mod tests {
         mouse(&mut app, MouseKind::Middle, at);
         let q = query(&mut app);
         assert_eq!(
-            (keys(q), q.active_result, q.result_tabs.items.len()),
+            (keys(q), q.active_result, q.result_tabs.items().len()),
             before
         );
     }
