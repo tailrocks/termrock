@@ -506,11 +506,7 @@ impl crate::core::pointer::MouseTarget for NavList {
         match ev.index_of(Part::ROW) {
             Some(i) if ev.is(Phase::Click) && i < self.items.len() => {
                 let (o, a) = self.on_click(i);
-                let r: Response<NavAction> = o.into();
-                match a {
-                    Some(a) => r.with_action(a),
-                    None => r,
-                }
+                Response::from((o, a))
             }
             _ => Response::ignored(),
         }

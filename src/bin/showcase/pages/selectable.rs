@@ -9,6 +9,7 @@ use junie_tui::core::event::{ClientPlatform, Outcome};
 use junie_tui::core::id::WidgetId;
 use junie_tui::core::intent::Phase;
 use junie_tui::core::pointer::{MouseTarget, PointerEvent};
+use junie_tui::core::response::{Actions, Response};
 use junie_tui::core::selection::{Activate, ClickPolicy, SelectionMode};
 use junie_tui::ui::context::ContextRequest;
 use junie_tui::ui::ctx::RenderCtx;
@@ -236,11 +237,12 @@ fn members_table(members: &[Member], k: &[usize; 5], platform: ClientPlatform) -
         2 => KeyModifiers::ALT,
         _ => DataTable::toggle_mods_for(platform),
     };
-    DataTable::new(
+    DataTable::try_new(
         ID.sub("members"),
         columns(),
         members.iter().map(cells).collect(),
     )
+    .expect("rectangular fixture")
     .selection_mode(SelectionMode::Multi)
     .selection_column(checks == 1)
     .disabled_rows(if disabled == 0 { &[0] } else { &[] })
@@ -266,7 +268,8 @@ fn states_grid() -> StateGrid {
                 vec![c[0].clone(), c[1].clone()]
             })
             .collect();
-        DataTable::new(id.child(k), cols, rows)
+        DataTable::try_new(id.child(k), cols, rows)
+            .expect("rectangular fixture")
             .selection_mode(SelectionMode::Multi)
             .selection_column(checks)
     };
@@ -534,7 +537,9 @@ impl SelectablePage {
             {
                 m.notes = v.trim().to_owned();
             }
-            self.table.set_row(r, cells(m));
+            if let Err(e) = self.table.try_set_row(r, cells(m)) {
+                cx.status(format!("Row not updated · {e}"));
+            }
         }
         let n = self.loaded.len();
         let msg = if n == 1 {
@@ -622,12 +627,16 @@ impl SelectablePage {
     fn table_input(
         &mut self,
         cx: &mut Cx,
-        f: impl FnOnce(&mut DataTable) -> (Outcome, Option<TableAction>),
+        f: impl FnOnce(&mut DataTable) -> Response<TableAction>,
     ) -> Outcome {
         let guard = (self.leave_edits != LeaveEdits::Discard && self.dirty())
             .then(|| (self.table.selection.clone(), self.table.cursor_row));
-        let (out, tev) = f(&mut self.table);
-        if let (Some((before, cursor)), Some(TableAction::SelectionChanged)) = (guard, &tev) {
+        let (out, tev) = f(&mut self.table).into_parts();
+        if let Some((before, cursor)) = guard
+            && tev
+                .iter()
+                .any(|a| matches!(a, TableAction::SelectionChanged))
+        {
             if self.leave_edits == LeaveEdits::Commit && self.edits_valid() {
                 self.do_apply(cx);
                 return Outcome::Changed;
@@ -658,11 +667,13 @@ impl SelectablePage {
         out
     }
 
-    fn on_table_event(&mut self, ev: Option<TableAction>, cx: &mut Cx) {
-        match ev {
-            Some(TableAction::SelectionChanged) => self.selection_changed(),
-            Some(TableAction::Activated(src)) => self.edit_row(src, cx),
-            _ => {}
+    fn on_table_event(&mut self, events: Actions<TableAction>, cx: &mut Cx) {
+        for ev in events {
+            match ev {
+                TableAction::SelectionChanged => self.selection_changed(),
+                TableAction::Activated(src) => self.edit_row(src, cx),
+                _ => {}
+            }
         }
     }
 
@@ -705,10 +716,10 @@ impl SelectablePage {
             RowAction::Delete => {
                 self.table_input(cx, |t| {
                     let changed = t.context_selection(cell.0);
-                    (
+                    Response::from((
                         Outcome::Changed,
                         changed.then_some(TableAction::SelectionChanged),
-                    )
+                    ))
                 });
 
                 if self.pending.is_none() {
@@ -842,10 +853,10 @@ impl SelectablePage {
                 let before = t.selection.clone();
                 req = cfg.on_secondary(t, ev);
                 let changed = t.selection != before;
-                (
+                Response::from((
                     Outcome::Changed,
                     changed.then_some(TableAction::SelectionChanged),
-                )
+                ))
             });
             let Some(req) = req else {
                 return Outcome::Ignored;
@@ -862,9 +873,9 @@ impl SelectablePage {
         let out = self.table_input(cx, |t| match t.route(ev) {
             Some(r) => {
                 routed = true;
-                r.into_parts()
+                r
             }
-            None => (Outcome::Ignored, None),
+            None => Response::ignored(),
         });
         if routed {
             if click && ev.bar.is_none() && out != Outcome::Ignored && cx.focus.current() == before
@@ -905,7 +916,7 @@ impl SelectablePage {
             let Some(r) = r else {
                 continue;
             };
-            if r.into_action().is_some() {
+            if r.has_actions() {
                 match i {
                     0 => self.do_apply(cx),
                     1 => self.do_revert(cx),

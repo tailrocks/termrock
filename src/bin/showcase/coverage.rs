@@ -1,6 +1,5 @@
 pub const PICKER_COVERAGE: &[(&str, &str)] = &[
     ("widgets::picker::Picker::report_item_error", "pickers"),
-    ("widgets::picker::Picker::items", "pickers"),
     ("widgets::picker::Picker::list", "pickers"),
     ("widgets::picker::PickerStatus", "pickers"),
     ("widgets::picker::PickerStatus::Ready", "pickers"),
@@ -47,14 +46,499 @@ pub const PICKER_COVERAGE: &[(&str, &str)] = &[
     ("widgets::picker::Picker::cursor_style", "pickers"),
     ("widgets::picker::Picker::set_items", "pickers"),
     ("widgets::picker::Picker::replace_items", "pickers"),
-    ("widgets::picker::Picker::set_visible_items", "pickers"),
+    ("widgets::picker::Picker::visible_item", "pickers"),
+    ("widgets::picker::Picker::set_visible_keys", "pickers"),
+    ("widgets::picker::VisibleKey", "pickers"),
+    ("widgets::picker::VisibleKey::new", "pickers"),
+    ("widgets::picker::VisibleKey::matched", "pickers"),
     ("widgets::picker::Picker::set_cursor", "pickers"),
 ];
 
 pub const TEXT_INPUT_COVERAGE: &[(&str, &str)] =
     &[("widgets::input::TextInput::set_value", "dialogkinds")];
+pub const GRID_EDIT_COVERAGE: &[(&str, &str)] = &[
+    ("widgets::grid::DataGrid::try_edit_text", "grid"),
+    ("widgets::grid::DataGrid::finish_edit_session", "grid"),
+    ("widgets::grid::CellEditResult", "grid"),
+    ("widgets::grid::CellEditResult::Changed", "grid"),
+    ("widgets::grid::CellEditResult::Unchanged", "grid"),
+    ("widgets::grid::GridEditError", "grid"),
+    ("widgets::grid::GridEditError::Busy", "grid"),
+    ("widgets::grid::GridEditError::InvalidTarget", "grid"),
+    ("widgets::grid::GridEditError::NoChoice", "grid"),
+    ("widgets::grid::GridEditError::Validation", "grid"),
+    ("widgets::grid::FinishEdit", "grid"),
+    ("widgets::grid::FinishEdit::NoSession", "grid"),
+    ("widgets::grid::FinishEdit::Accepted", "grid"),
+    ("widgets::grid::GridChangeSet", "grid"),
+    ("widgets::grid::InsertedRow", "grid"),
+    ("widgets::grid::UpdatedRow", "grid"),
+    ("widgets::grid::DeletedRow", "grid"),
+    ("widgets::grid::DataGrid::snapshot_changes", "grid"),
+    ("widgets::grid::InsertedRow::key", "grid"),
+    ("widgets::grid::InsertedRow::values", "grid"),
+    ("widgets::grid::UpdatedRow::key", "grid"),
+    ("widgets::grid::UpdatedRow::before", "grid"),
+    ("widgets::grid::UpdatedRow::cells", "grid"),
+    ("widgets::grid::DeletedRow::before", "grid"),
+    ("widgets::grid::CellChange::column", "grid"),
+    ("widgets::grid::CellChange::after", "grid"),
+    ("widgets::grid::GridChangeSet::inserted", "grid"),
+    ("widgets::grid::GridChangeSet::updated", "grid"),
+    ("widgets::grid::GridChangeSet::deleted", "grid"),
+    ("widgets::grid::GridChangeSet::counts", "grid"),
+    ("widgets::grid::GridChangeSet::identity_receipt", "grid"),
+    ("widgets::grid::GridCommitToken", "grid"),
+    ("widgets::grid::GridCommitFailure", "grid"),
+    ("widgets::grid::DataGrid::begin_submission", "grid"),
+    ("widgets::grid::DataGrid::cancel_submission", "grid"),
+    ("widgets::grid::DataGrid::complete_submission", "grid"),
+    ("widgets::grid::DataGrid::submission_pending", "grid"),
+];
+
+pub const DOCUMENT_WORKSPACE_COVERAGE: &[(&str, &str)] = &[
+    (
+        "widgets::document_workspace::DocumentWorkspace",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceDocument",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceDocument::title",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceDocument::dirty",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceDocument::focus_target",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceDocument::view",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::OperationToken",
+        "queryworkbench",
+    ),
+    ("widgets::document_workspace::CloseToken", "queryworkbench"),
+    ("widgets::document_workspace::OpenKind", "queryworkbench"),
+    (
+        "widgets::document_workspace::OpenKind::Pinned",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::OpenKind::Preview",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::CloseDecision",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::CloseDecision::Cancel",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::CloseDecision::Discard",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceAction",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceAction::Activated",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceAction::PreviewPromoted",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceAction::CloseRequested",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceAction::CancelOperation",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceAction::Closed",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::new",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::open_with",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::activate",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::promote",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::key_at",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::index_of",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::get",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::iter",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::len",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::active_key",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::ordered_keys",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::update",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::view_mut",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::begin_operation",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::end_operation",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::cancel_operation",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::running",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::request_close",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::resolve_close",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::sync_tabs_with",
+        "queryworkbench",
+    ),
+];
+
+pub const DOCUMENT_WORKSPACE_ALLOWLIST: &[(&str, &str)] = &[
+    (
+        "widgets::document_workspace::DocumentWorkspace::finish_operation",
+        "Only an operation whose result changes content ends here, such as a TablePro grid commit; Showcase runs fill a result pane and end through end_operation. tests/regressions/document_workspace.rs asserts it.",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceError",
+        "The page reports a refusal through its Display text and never matches a variant, so each variant is asserted by tests/regressions/document_workspace.rs instead.",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceError::MissingDocument",
+        "The page reports a refusal through its Display text; tests/regressions/document_workspace.rs asserts this variant.",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceError::StaleClose",
+        "The page reports a refusal through its Display text; tests/regressions/document_workspace.rs asserts this variant.",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceError::StaleOperation",
+        "The page reports a refusal through its Display text; tests/regressions/document_workspace.rs asserts this variant.",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceError::SaveInProgress",
+        "The page reports a refusal through its Display text; tests/regressions/document_workspace.rs asserts this variant.",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceError::StillDirty",
+        "Only the save protocol returns it, and Showcase documents are never saved; tests/regressions/document_workspace.rs asserts this variant.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::id",
+        "The page keeps its own widget id constant and never asks the controller for it.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::scoped_id",
+        "The page derives its editor and result ids with its own key-scoped helpers; TablePro's tab ids and the conformance suite use the controller's.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::is_empty",
+        "The page counts tabs with len, so the emptiness predicate has no call site.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::contains",
+        "The page finds documents by title through iter, so the membership predicate has no call site; the conformance suite asserts it.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::preview_key",
+        "The page opens and promotes previews through the controller's actions and never reads the slot; TablePro's workbench and the conformance suite do.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::open",
+        "The page opens through open_with because each document builds its ids from its own key.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::reorder",
+        "Tabs emits no move gesture, so no page can drive a reorder; the conformance suite and the example do.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::revision",
+        "The page never captures a content revision; the conformance suite asserts that view work leaves it unchanged.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::pending_close",
+        "The page keeps the token it was handed and never asks for the stored one; TablePro's save-then-close and the conformance suite do.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::save_locked",
+        "Showcase documents are never saved, so no page holds a close-save lock; TablePro's key and pointer paths read it.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::sync_tabs",
+        "The page decorates its tab items, so it calls sync_tabs_with; the conformance suite and the example call the plain projection.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::begin_close_save",
+        "Showcase documents are never saved; TablePro's table close and the conformance suite drive the save protocol.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::validate_close_save",
+        "Showcase documents are never saved; TablePro's table close and the conformance suite drive the save protocol.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::complete_close_save",
+        "Showcase documents are never saved; TablePro's table close and the conformance suite drive the save protocol.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::fail_close_save",
+        "Showcase documents are never saved; TablePro's table close and the conformance suite drive the save protocol.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::cancel_close_save",
+        "Showcase documents are never saved; TablePro's connection reset and the conformance suite drive the save protocol.",
+    ),
+];
+
+pub const GRID_CHANGE_ALLOWLIST: &[(&str, &str)] = &[
+    (
+        "widgets::grid::DataGrid::instance_id",
+        "Admission and acknowledgement plumbing. The Grid page's save drives begin_submission and complete_submission, which use it internally, and never names it; src/widgets/grid_changeset_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
+    ),
+    (
+        "widgets::grid::GridInstanceId",
+        "Admission and acknowledgement plumbing. The Grid page's save drives begin_submission and complete_submission, which use it internally, and never names it; src/widgets/grid_changeset_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
+    ),
+    (
+        "widgets::grid::GridChangeSet::origin",
+        "Admission and acknowledgement plumbing. The Grid page's save drives begin_submission and complete_submission, which use it internally, and never names it; src/widgets/grid_changeset_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
+    ),
+    (
+        "widgets::grid::GridChangeSet::revision",
+        "Admission and acknowledgement plumbing. The Grid page's save drives begin_submission and complete_submission, which use it internally, and never names it; src/widgets/grid_changeset_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
+    ),
+    (
+        "widgets::grid::GridChangeSet::is_empty",
+        "The Showcase page keeps its own pending-count guard before it opens the dialog, and the dialog already shows the zero counts.",
+    ),
+    (
+        "widgets::grid::GridChangeSet::same_capture",
+        "Admission and acknowledgement plumbing. The Grid page's save drives begin_submission and complete_submission, which use it internally, and never names it; src/widgets/grid_changeset_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
+    ),
+    (
+        "widgets::grid::CommittedRow",
+        "Admission and acknowledgement plumbing. The Grid page's save drives begin_submission and complete_submission, which use it internally, and never names it; src/widgets/grid_changeset_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
+    ),
+    (
+        "widgets::grid::GridCommitReceipt",
+        "Admission and acknowledgement plumbing. The Grid page's save drives begin_submission and complete_submission, which use it internally, and never names it; src/widgets/grid_changeset_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
+    ),
+    (
+        "widgets::grid::GridCommitReceipt::new",
+        "Admission and acknowledgement plumbing. The Grid page's save drives begin_submission and complete_submission, which use it internally, and never names it; src/widgets/grid_changeset_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
+    ),
+    (
+        "widgets::grid::GridCommitReceipt::origin",
+        "Admission and acknowledgement plumbing. The Grid page's save drives begin_submission and complete_submission, which use it internally, and never names it; src/widgets/grid_changeset_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
+    ),
+    (
+        "widgets::grid::GridCommitReceipt::revision",
+        "Admission and acknowledgement plumbing. The Grid page's save drives begin_submission and complete_submission, which use it internally, and never names it; src/widgets/grid_changeset_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
+    ),
+    (
+        "widgets::grid::DeletedRow::key",
+        "The DELETE preview matches on the base row from DeletedRow::before, so the row key is not shown.",
+    ),
+    (
+        "widgets::grid::CellChange",
+        "The page reads a changed cell through its accessors and never names the type.",
+    ),
+    (
+        "widgets::grid::GridCommitError",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::GridCommitError::Busy",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::GridCommitError::Editing",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::GridCommitError::Empty",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::GridCommitError::WrongOrigin",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::GridCommitError::StaleRevision",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::GridCommitError::StaleToken",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::GridCommitError::InvalidReceipt",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::GridCommitError::Exhausted",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::ReceiptFault",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::ReceiptFault::Missing",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::ReceiptFault::Unexpected",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::ReceiptFault::Duplicate",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::ReceiptFault::Width",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::ReceiptFault::UpdatedKeyChanged",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::ReceiptFault::KeyCollision",
+        "The Grid page prints the error through Display in its status line and never branches on the variant; src/widgets/grid_submission_tests.rs asserts each one.",
+    ),
+    (
+        "widgets::grid::GridDataError",
+        "The Grid page prints the refusal through Display in its status line and never branches on the variant; src/widgets/grid_undo_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
+    ),
+    (
+        "widgets::grid::GridDataError::Busy",
+        "The Grid page prints the refusal through Display in its status line and never branches on the variant; src/widgets/grid_undo_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
+    ),
+    (
+        "widgets::grid::GridDataError::Key",
+        "The Grid page prints the refusal through Display in its status line and never branches on the variant; src/widgets/grid_undo_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
+    ),
+    (
+        "widgets::grid::GridDataError::Shape",
+        "The Grid page prints the refusal through Display in its status line and never branches on the variant; src/widgets/grid_undo_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
+    ),
+    (
+        "widgets::grid::GridDataError::ColumnWidth",
+        "The Grid page prints the refusal through Display in its status line and never branches on the variant; src/widgets/grid_undo_tests.rs and src/widgets/grid_submission_tests.rs assert it.",
+    ),
+    (
+        "widgets::grid::GridCommitToken::origin",
+        "A host that holds a token may compare its grid; the page keeps the token private and the tests in src/widgets/grid_submission_tests.rs read it.",
+    ),
+    (
+        "widgets::grid::GridCommitToken::revision",
+        "A host that holds a token may compare its capture revision; the page keeps the token private and the tests in src/widgets/grid_submission_tests.rs read it.",
+    ),
+    (
+        "widgets::grid::DataGrid::validate_submission_receipt",
+        "Used by a host that lets an external store mutate before it completes; the Grid page has no store, and complete_submission runs the same check, which src/widgets/grid_submission_tests.rs asserts.",
+    ),
+    (
+        "widgets::grid::DataGrid::commit_failure",
+        "The Grid page marks the failed row; the grid-level message for a failure that names no row is asserted in src/widgets/grid_submission_tests.rs.",
+    ),
+    (
+        "widgets::grid::CellChange::before",
+        "The UPDATE preview matches on the row's base values from UpdatedRow::before, so the per-cell before value is not shown.",
+    ),
+];
+
+pub const GRID_PARSER_ALLOWLIST: &[(&str, &str)] = &[
+    (
+        "widgets::edit::parsers::json_container",
+        "The grid page demonstrates this grammar through default_validator on its notes (Json) column; no page calls the helper directly.",
+    ),
+    (
+        "widgets::edit::parsers::canonical_uuid",
+        "The grid page demonstrates this grammar through default_validator on its Id columns; no page calls the helper directly.",
+    ),
+    (
+        "widgets::edit::parsers::date_or_timestamp",
+        "The grid page demonstrates this grammar through default_validator on its renewed_at (Timestamp) column; no page calls the helper directly.",
+    ),
+];
 
 pub const PICKER_ALLOWLIST: &[(&str, &str)] = &[
+    (
+        "widgets::picker::Picker::set_visible_items",
+        "Compatibility ingress that keeps only each item's key and match; the showcase uses set_visible_keys, and tests/regressions/keyed_costs pins the old ingress.",
+    ),
+    (
+        "widgets::picker::Picker::visible_items",
+        "Read-only enumeration of the projection for application code; the showcase reads one row through visible_item.",
+    ),
+    (
+        "widgets::picker::Picker::visible_len",
+        "Read-only count of the projection for application code; the showcase has no counter of visible rows.",
+    ),
+    (
+        "widgets::picker::PickerItemView",
+        "Returned by visible_item and visible_items; pages read its item and matched fields without naming the type.",
+    ),
     (
         "widgets::picker::Picker::wheel",
         "The showcase uses builder configuration and layer-driven interaction; this method serves application or layer plumbing.",
@@ -382,6 +866,164 @@ mod tests {
                 "declared id is not a catalog capability: {id}"
             );
             assert!(!page.is_empty(), "coverage entry names no page: {id}");
+        }
+    }
+
+    #[test]
+    fn grid_edit_coverage_ids_are_catalog_capabilities_used_by_their_page() {
+        let catalog = catalog_source();
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let mut seen = std::collections::BTreeSet::new();
+        for (id, page) in GRID_EDIT_COVERAGE {
+            assert!(
+                catalog.contains(&format!("\"{id}\"")),
+                "declared id is not a catalog capability: {id}"
+            );
+            assert!(seen.insert(*id), "duplicate coverage entry: {id}");
+            let source =
+                std::fs::read_to_string(root.join(format!("src/bin/showcase/pages/{page}.rs")))
+                    .unwrap_or_else(|e| panic!("coverage page {page} has no source: {e}"));
+            let mut parts = id.rsplit("::");
+            let last = parts.next().expect("id has a segment");
+            let prev = parts.next().unwrap_or("");
+            let needle = if last.starts_with(|c: char| c.is_ascii_lowercase()) {
+                format!("{last}(")
+            } else if prev.starts_with(|c: char| c.is_ascii_uppercase()) {
+                format!("{prev}::{last}")
+            } else {
+                last.to_owned()
+            };
+            assert!(
+                source.contains(&needle),
+                "page {page} never uses {id} (looked for {needle})"
+            );
+        }
+    }
+
+    #[test]
+    fn grid_change_apis_are_covered_or_allowlisted_with_reasons() {
+        let catalog = catalog_source();
+        let mut seen = std::collections::BTreeSet::new();
+        for (id, reason) in GRID_CHANGE_ALLOWLIST {
+            assert!(
+                catalog.contains(&format!("\"{id}\"")),
+                "declared id is not a catalog capability: {id}"
+            );
+            assert!(
+                !reason.trim().is_empty(),
+                "allowlist entry has no reason: {id}"
+            );
+            assert!(seen.insert(*id), "duplicate allowlist entry: {id}");
+            assert!(
+                !GRID_EDIT_COVERAGE.iter().any(|(covered, _)| covered == id),
+                "{id} is both covered and allowlisted"
+            );
+        }
+        let declared =
+            |id: &str| seen.contains(id) || GRID_EDIT_COVERAGE.iter().any(|(c, _)| *c == id);
+        for line in catalog.lines() {
+            let Some(id) = line.split('"').nth(1) else {
+                continue;
+            };
+            let change_type = [
+                "GridInstanceId",
+                "CellChange",
+                "InsertedRow",
+                "UpdatedRow",
+                "DeletedRow",
+                "GridChangeSet",
+                "CommittedRow",
+                "GridCommitReceipt",
+                "GridCommitToken",
+                "GridCommitError",
+                "GridCommitFailure",
+                "ReceiptFault",
+                "GridDataError",
+            ]
+            .iter()
+            .any(|t| id.starts_with(&format!("widgets::grid::{t}")));
+            if change_type
+                || id == "widgets::grid::DataGrid::snapshot_changes"
+                || id == "widgets::grid::DataGrid::instance_id"
+                || id.starts_with("widgets::grid::DataGrid::begin_submission")
+                || id.starts_with("widgets::grid::DataGrid::cancel_submission")
+                || id.starts_with("widgets::grid::DataGrid::complete_submission")
+                || id.starts_with("widgets::grid::DataGrid::validate_submission")
+                || id.starts_with("widgets::grid::DataGrid::submission_pending")
+                || id.starts_with("widgets::grid::DataGrid::commit_failure")
+            {
+                assert!(
+                    declared(id),
+                    "grid change capability {id} has no coverage or allowlist line"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn grid_parser_helpers_are_declared_with_reasons() {
+        let catalog = catalog_source();
+        let mut seen = std::collections::BTreeSet::new();
+        for (id, reason) in GRID_PARSER_ALLOWLIST {
+            assert!(
+                catalog.contains(&format!("\"{id}\"")),
+                "declared id is not a catalog capability: {id}"
+            );
+            assert!(
+                !reason.trim().is_empty(),
+                "allowlist entry has no reason: {id}"
+            );
+            assert!(seen.insert(*id), "duplicate allowlist entry: {id}");
+        }
+        for id in [
+            "widgets::edit::parsers::json_container",
+            "widgets::edit::parsers::canonical_uuid",
+            "widgets::edit::parsers::date_or_timestamp",
+        ] {
+            assert!(seen.contains(id), "{id} is neither covered nor allowlisted");
+        }
+    }
+
+    #[test]
+    fn document_workspace_apis_are_covered_or_allowlisted_with_reasons() {
+        let catalog = catalog_source();
+        let mut seen = std::collections::BTreeSet::new();
+        for (id, reason) in DOCUMENT_WORKSPACE_ALLOWLIST {
+            assert!(
+                catalog.contains(&format!("\"{id}\"")),
+                "declared id is not a catalog capability: {id}"
+            );
+            assert!(
+                !reason.trim().is_empty(),
+                "allowlist entry has no reason: {id}"
+            );
+            assert!(seen.insert(*id), "duplicate allowlist entry: {id}");
+            assert!(
+                !DOCUMENT_WORKSPACE_COVERAGE
+                    .iter()
+                    .any(|(covered, _)| covered == id),
+                "{id} is both covered and allowlisted"
+            );
+        }
+        let mut covered = std::collections::BTreeSet::new();
+        for (id, page) in DOCUMENT_WORKSPACE_COVERAGE {
+            assert!(
+                catalog.contains(&format!("\"{id}\"")),
+                "declared id is not a catalog capability: {id}"
+            );
+            assert_eq!(*page, "queryworkbench", "{id}");
+            assert!(covered.insert(*id), "duplicate coverage entry: {id}");
+        }
+        for line in catalog.lines() {
+            let Some(id) = line.split('"').nth(1) else {
+                continue;
+            };
+            if id.starts_with("widgets::document_workspace::") {
+                assert!(
+                    seen.contains(id) || covered.contains(id),
+                    "document workspace capability {id} has no coverage or allowlist line"
+                );
+            }
         }
     }
 

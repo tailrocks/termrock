@@ -1583,17 +1583,19 @@ impl App {
         }
     }
 
-    fn settle_layers(&mut self, mut out: Outcome) -> Outcome {
-        while let Some(taken) = self.layers.take(&mut self.shell.focus) {
-            out = out.or(match taken {
-                Taken::Event(r) => self.layer_event(r),
+    fn settle_layers(&mut self, out: Outcome) -> Outcome {
+        Layers::settle(
+            self,
+            |app| (&mut app.layers, &mut app.shell.focus),
+            out,
+            |app, taken| match taken {
+                Taken::Event(r) => app.layer_event(r),
                 Taken::Closed(entry, r) => {
-                    self.layer_gone();
-                    self.layer_closed(entry, r)
+                    app.layer_gone();
+                    app.layer_closed(entry, r)
                 }
-            });
-        }
-        out
+            },
+        )
     }
 
     fn layer_event(&mut self, r: ModalResult) -> Outcome {
@@ -1849,11 +1851,11 @@ impl App {
     fn chrome_pointer(&mut self, ev: &PointerEvent) -> Option<Outcome> {
         if Self::is_host(self.route()) {
             if let Some(r) = self.host_menu.route(ev) {
-                let (o, act) = r.into_parts();
-                return Some(match act {
-                    Some(a) => self.host_menu_action(a, o),
-                    None => o,
-                });
+                let (mut o, actions) = r.into_parts();
+                for a in actions {
+                    o = self.host_menu_action(a, o);
+                }
+                return Some(o);
             }
 
             if self.host_menu.is_open() && ev.is(Phase::Click) {

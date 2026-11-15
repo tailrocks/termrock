@@ -7,7 +7,7 @@ use ratatui::style::Modifier;
 
 use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::hit::Axis;
-use junie_tui::core::id::WidgetId;
+use junie_tui::core::id::{ItemKey, WidgetId};
 use junie_tui::core::keymap::hint_key;
 use junie_tui::core::pointer::{MouseTarget, PointerEvent};
 use junie_tui::theme::{StatusKind, SyntaxTone, Tone};
@@ -21,7 +21,8 @@ use junie_tui::widgets::code::{CodeEditor, Diagnostic, EditorAction, Severity};
 use junie_tui::widgets::completion::{Completion, CompletionAction};
 use junie_tui::widgets::empty::EmptyState;
 use junie_tui::widgets::grid::{
-    CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridCmd, GridRows, RowTotal,
+    CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridCmd, GridDataError, GridRows,
+    RowTotal,
 };
 use junie_tui::widgets::input::TextInput;
 use junie_tui::widgets::keyhint::{Hint, hint};
@@ -40,6 +41,8 @@ use crate::app::Cx;
 use crate::db::{Catalog, ColType, Table, Value};
 use crate::model::{self, History, HistoryEntry, HistorySource};
 use crate::sql::{self, PlanNode, Statement};
+use crate::store::{Source, TableId};
+use crate::workbench::WorkTab;
 
 const ALT_D: junie_tui::core::event::Key = junie_tui::core::event::Key {
     code: KeyCode::Char('d'),
@@ -359,7 +362,37 @@ pub enum TableMode {
     Structure,
 }
 
+/// The controls that decide which rows a table shows. They change only
+/// together, when a prepared load is installed.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TableViewState {
+    pub sort: Option<(usize, SortDir)>,
+    pub filters: Vec<Filter>,
+    pub match_all: bool,
+}
+
+impl Default for TableViewState {
+    fn default() -> Self {
+        Self {
+            sort: None,
+            filters: vec![],
+            match_all: true,
+        }
+    }
+}
+
+/// Rows read for one view, not yet shown. Preparing one touches nothing.
+pub struct LoadedTable {
+    rows: GridRows,
+    keys: Vec<ItemKey>,
+    total: usize,
+    table_revision: u64,
+}
+
 pub struct TableTab {
+    /// Never-reused identity of this tab within its workbench. `id` is a render
+    /// identity; operations that outlive one event name the tab by this key.
+    pub key: ItemKey,
     pub id: WidgetId,
     pub schema: String,
     pub name: String,
@@ -367,20 +400,23 @@ pub struct TableTab {
     pub mode_tabs: Tabs,
     pub grid: DataGrid,
     pub chips: ChipBar,
-    pub filters: Vec<Filter>,
-    pub match_all: bool,
-    pub sort: Option<(usize, SortDir)>,
-    pub preview: bool,
+    view: TableViewState,
+    view_revision: u64,
     pub structure_tabs: Tabs,
     pub structure: DataTable,
     pub ddl: ScrollPanel,
     pub loading: u32,
     pub columns: Vec<(String, ColType)>,
     pub total: usize,
+    /// How many saves the store had accepted for this table when the shown rows
+    /// were read. It is the table's revision, not the grid's.
+    table_revision: u64,
+    /// Another view saved this table after these rows were read.
+    source_changed: bool,
 }
 
 impl TableTab {
-    pub fn new(id: WidgetId, cat: &Catalog, table: &Table, preview: bool) -> Self {
+    pub fn new(key: ItemKey, id: WidgetId, src: Source, table: &Table) -> Self {
         let columns: Vec<(String, ColType)> = table
             .columns
             .iter()
@@ -416,6 +452,7 @@ impl TableTab {
         );
         structure_tabs.active = 0;
         let mut t = Self {
+            key,
             id,
             schema: table.schema.clone(),
             name: table.name.clone(),
@@ -423,19 +460,20 @@ impl TableTab {
             mode_tabs,
             grid,
             chips,
-            filters: vec![],
-            match_all: true,
-            sort: None,
-            preview,
+            view: TableViewState::default(),
+            view_revision: 0,
             structure_tabs,
-            structure: DataTable::new(id.sub("structure"), vec![], vec![]),
+            structure: DataTable::try_new(id.sub("structure"), vec![], vec![])
+                .expect("rectangular fixture"),
             ddl: ScrollPanel::new(id.sub("ddl"), vec![]),
             loading: 3,
             columns,
-            total: table.row_count,
+            total: src.row_count(table),
+            table_revision: 0,
+            source_changed: false,
         };
         t.rebuild_structure(table);
-        t.load(cat);
+        t.load_first(src);
         t
     }
 
@@ -451,9 +489,9 @@ impl TableTab {
         format!("{}.{}", self.schema, self.name)
     }
 
-    fn select(&self) -> sql::Select {
+    fn select(&self, view: &TableViewState) -> sql::Select {
         let mut predicates = Vec::new();
-        for f in self.filters.iter().filter(|f| f.enabled) {
+        for f in view.filters.iter().filter(|f| f.enabled) {
             predicates.extend(f.predicates());
         }
         sql::Select {
@@ -461,7 +499,7 @@ impl TableTab {
             schema: Some(self.schema.clone()),
             table: self.name.clone(),
             predicates,
-            order: self
+            order: view
                 .sort
                 .map(|(c, d)| (self.columns[c].0.clone(), d == SortDir::Asc)),
             limit: Some(sql::ROW_CAP),
@@ -469,48 +507,148 @@ impl TableTab {
         }
     }
 
-    pub fn load(&mut self, cat: &Catalog) {
-        let sel = self.select();
-        match sql::run_select(cat, &sel) {
-            Ok(rs) => {
-                let rows: Vec<Vec<CellValue>> = rs
-                    .rows
-                    .iter()
-                    .map(|r| r.iter().map(to_cell).collect())
-                    .collect();
-                let total = if self.filters.iter().any(|f| f.enabled) {
-                    RowTotal::Estimated(rs.total)
-                } else {
-                    RowTotal::Exact(rs.total)
-                };
-                self.total = rs.total;
-                self.grid.set_rows(GridRows {
-                    rows,
-                    total,
-                    more: rs.total > sql::ROW_CAP,
-                });
-                self.grid.sort = self.sort;
-                self.grid.filtered_cols = self
-                    .filters
-                    .iter()
-                    .filter(|f| f.enabled)
-                    .filter_map(|f| self.columns.iter().position(|c| c.0 == f.column))
-                    .collect();
-            }
+    /// Whether a captured save owns this table's rows, so nothing may reload,
+    /// sort or filter them.
+    pub fn saving(&self) -> bool {
+        self.grid.submission_pending()
+    }
+
+    /// The controls the shown rows were read with.
+    pub fn view(&self) -> &TableViewState {
+        &self.view
+    }
+
+    /// Counts the views this tab has installed. A request made against an older
+    /// count was made against controls that are no longer shown.
+    pub fn view_revision(&self) -> u64 {
+        self.view_revision
+    }
+
+    /// The store revision of the table when the shown rows were read.
+    pub fn table_revision(&self) -> u64 {
+        self.table_revision
+    }
+
+    /// Whether another view saved this table after these rows were read. The
+    /// rows and any draft stay as they are until the table is reloaded.
+    pub fn source_changed(&self) -> bool {
+        self.source_changed
+    }
+
+    pub fn mark_source_changed(&mut self) {
+        self.source_changed = true;
+    }
+
+    /// Records this tab's own accepted save. The rows are the saved ones, so
+    /// the table revision they were read at is the store's now.
+    pub fn saved(&mut self, revision: u64, live_rows: usize, inserted: usize, deleted: usize) {
+        self.table_revision = revision;
+        self.source_changed = false;
+        if self.view.filters.iter().any(|f| f.enabled) {
+            self.total = self.total.saturating_add(inserted).saturating_sub(deleted);
+            self.grid.total = RowTotal::Estimated(self.total);
+        } else {
+            self.total = live_rows;
+            self.grid.total = RowTotal::Exact(live_rows);
+        }
+    }
+
+    /// Reads the rows `view` selects. Nothing the tab shows changes, so a failed
+    /// query leaves the rows, draft and controls exactly as they were.
+    pub fn prepare_load(
+        &self,
+        src: Source,
+        view: &TableViewState,
+    ) -> Result<LoadedTable, sql::ExecError> {
+        let rs = sql::run_select(src, &self.select(view))?;
+        let rows: Vec<Vec<CellValue>> = rs
+            .rows
+            .iter()
+            .map(|r| r.iter().map(to_cell).collect())
+            .collect();
+        let total = if view.filters.iter().any(|f| f.enabled) {
+            RowTotal::Estimated(rs.total)
+        } else {
+            RowTotal::Exact(rs.total)
+        };
+        Ok(LoadedTable {
+            rows: GridRows {
+                rows,
+                total,
+                more: rs.total > sql::ROW_CAP,
+            },
+            keys: rs
+                .row_keys
+                .expect("a SELECT of every column returns its row keys"),
+            total: rs.total,
+            table_revision: rs
+                .source_revision
+                .expect("a SELECT of a table returns its revision"),
+        })
+    }
+
+    /// Shows a prepared load and its view together. The grid replaces its rows
+    /// once, so a refusal (a save owns the rows) changes nothing, draft and
+    /// controls included. The replacement itself drops the draft.
+    pub fn install_load(
+        &mut self,
+        loaded: LoadedTable,
+        view: TableViewState,
+    ) -> Result<(), GridDataError> {
+        let revision = self
+            .view_revision
+            .checked_add(1)
+            .expect("table view revisions exhausted");
+        self.grid.try_set_rows_keyed(loaded.rows, loaded.keys)?;
+        self.total = loaded.total;
+        self.table_revision = loaded.table_revision;
+        self.source_changed = false;
+        self.grid.sort = view.sort;
+        self.grid.filtered_cols = view
+            .filters
+            .iter()
+            .filter(|f| f.enabled)
+            .filter_map(|f| self.columns.iter().position(|c| c.0 == f.column))
+            .collect();
+        self.grid.empty = EmptyState::new("No rows").hint("f changes the filter");
+        self.view = view;
+        self.view_revision = revision;
+        self.rebuild_chips();
+        Ok(())
+    }
+
+    /// The first load of a new tab. With no earlier rows to keep, a failed query
+    /// shows an empty error state.
+    fn load_first(&mut self, src: Source) {
+        let view = TableViewState::default();
+        match self.prepare_load(src, &view) {
+            Ok(loaded) => self
+                .install_load(loaded, view)
+                .expect("a new table tab is never being saved"),
             Err(e) => {
-                self.grid.set_rows(GridRows {
-                    rows: vec![],
-                    total: RowTotal::Exact(0),
-                    more: false,
-                });
+                self.grid
+                    .try_set_rows(GridRows {
+                        rows: vec![],
+                        total: RowTotal::Exact(0),
+                        more: false,
+                    })
+                    .expect("a new table tab is never being saved");
                 self.grid.empty = EmptyState::new("Query failed").hint(&e.message);
+                self.rebuild_chips();
             }
         }
+    }
+
+    /// Puts the sort marker and chips back to the shown view, after a gesture
+    /// moved them ahead of a change that was not applied.
+    pub fn restore_view_controls(&mut self) {
+        self.grid.sort = self.view.sort;
         self.rebuild_chips();
     }
 
     fn rebuild_chips(&mut self) {
         self.chips.chips = self
+            .view
             .filters
             .iter()
             .map(|f| {
@@ -519,7 +657,7 @@ impl TableTab {
                 c
             })
             .collect();
-        self.chips.lead = Some(if self.match_all {
+        self.chips.lead = Some(if self.view.match_all {
             "match all ▾".into()
         } else {
             "match any ▾".into()
@@ -646,11 +784,13 @@ impl TableTab {
             4 => "No triggers",
             _ => "Nothing here",
         };
-        self.structure = DataTable::new(self.id.sub("structure"), cols, rows).empty_text(empty);
+        self.structure = DataTable::try_new(self.id.sub("structure"), cols, rows)
+            .expect("rectangular fixture")
+            .empty_text(empty);
 
-        let mut ddl = vec![format!("CREATE TABLE {} (", table.qualified())];
+        let mut ddl = vec![format!("CREATE TABLE {} (", model::table_ident(table))];
         for (i, c) in table.columns.iter().enumerate() {
-            let mut line = format!("    {} {}", c.name, c.ty.sql());
+            let mut line = format!("    {} {}", model::quote_ident(&c.name), c.ty.sql());
             if !c.nullable {
                 line.push_str(" NOT NULL");
             }
@@ -663,7 +803,12 @@ impl TableTab {
             ddl.push(line);
         }
         for (i, k) in table.constraints.iter().enumerate() {
-            let mut line = format!("    CONSTRAINT {} {} {}", k.name, k.kind, k.definition);
+            let mut line = format!(
+                "    CONSTRAINT {} {} {}",
+                model::quote_ident(&k.name),
+                k.kind,
+                k.definition
+            );
             if i + 1 < table.constraints.len() {
                 line.push(',');
             }
@@ -675,19 +820,21 @@ impl TableTab {
             .iter()
             .filter(|i| !i.name.ends_with("_pkey") && !i.name.ends_with("_key"))
         {
+            let columns: Vec<String> = ix.columns.iter().map(|c| model::quote_ident(c)).collect();
             ddl.push(format!(
                 "CREATE INDEX {} ON {} USING {} ({});",
-                ix.name,
-                table.qualified(),
+                model::quote_ident(&ix.name),
+                model::table_ident(table),
                 ix.method,
-                ix.columns.join(", ")
+                columns.join(", ")
             ));
         }
         if let Some(c) = &table.comment {
+            let literal =
+                model::sql_literal(&Value::Text(c.clone())).expect("text literals serialize");
             ddl.push(format!(
-                "COMMENT ON TABLE {} IS '{}';",
-                table.qualified(),
-                c
+                "COMMENT ON TABLE {} IS {literal};",
+                model::table_ident(table),
             ));
         }
         self.ddl = ScrollPanel::new(self.id.sub("ddl"), ddl);
@@ -770,7 +917,7 @@ impl TableTab {
         match self.mode {
             TableMode::Data => {
                 let mut y = body.y;
-                if !self.filters.is_empty() || ctx.interaction.focused(self.chips.id) {
+                if !self.view.filters.is_empty() || ctx.interaction.focused(self.chips.id) {
                     self.chips
                         .render(Rect::new(body.x, y, body.width, 1), buf, ctx, bg);
                     y += 2;
@@ -785,7 +932,7 @@ impl TableTab {
                 let sy = body.bottom().saturating_sub(1);
 
                 let mut parts: Vec<(String, u8)> = vec![];
-                if let Some((c, d)) = self.sort {
+                if let Some((c, d)) = self.view.sort {
                     parts.push((
                         format!(
                             "sort {} {}",
@@ -795,7 +942,7 @@ impl TableTab {
                         4,
                     ));
                 }
-                let active = self.filters.iter().filter(|f| f.enabled).count();
+                let active = self.view.filters.iter().filter(|f| f.enabled).count();
                 if active > 0 {
                     parts.push((format!("filtered ({active})"), 4));
                 }
@@ -923,6 +1070,10 @@ pub struct ResultSet {
     pub anchor: Range<usize>,
     pub duration_ms: u32,
     pub body: ResultBody,
+    /// The table and revision the rows were read from. The rows stay as they
+    /// were read; a later save only marks them.
+    pub source: Option<(TableId, u64)>,
+    pub source_changed: bool,
 }
 
 pub struct Running {
@@ -936,6 +1087,7 @@ pub struct Running {
 }
 
 pub struct QueryTab {
+    pub key: ItemKey,
     pub id: WidgetId,
     pub name: String,
     pub editor: CodeEditor,
@@ -959,7 +1111,7 @@ pub struct QueryTab {
 }
 
 impl QueryTab {
-    pub fn new(id: WidgetId, name: &str, text: &str) -> Self {
+    pub fn new(key: ItemKey, id: WidgetId, name: &str, text: &str) -> Self {
         let editor = CodeEditor::new(id.sub("editor"), text)
             .highlighter(highlight_sql)
             .segmenter(segment_sql)
@@ -967,6 +1119,7 @@ impl QueryTab {
         let mut result_tabs = Tabs::new(id.sub("result-tabs"), &[]);
         result_tabs.allow_new = false;
         Self {
+            key,
             id,
             name: name.to_owned(),
             editor,
@@ -1073,6 +1226,8 @@ impl QueryTab {
             self.editor.set_running(None);
             let (_, range) = r.statements[r.current].clone();
             self.results.push(ResultSet {
+                source: None,
+                source_changed: false,
                 label: "Cancelled".into(),
                 pinned: false,
                 anchor: range,
@@ -1086,7 +1241,7 @@ impl QueryTab {
         false
     }
 
-    pub fn tick(&mut self, cat: &Catalog, connection: &str, database: &str) -> Vec<HistoryEntry> {
+    pub fn tick(&mut self, src: Source, connection: &str, database: &str) -> Vec<HistoryEntry> {
         let mut out = vec![];
         let Some(r) = self.running.as_mut() else {
             return out;
@@ -1099,7 +1254,7 @@ impl QueryTab {
         let (sql_text, range) = r.statements[r.current].clone();
         let explain = r.explain;
         let (result, entry) = execute(
-            cat,
+            src,
             &sql_text,
             range.clone(),
             explain,
@@ -1169,6 +1324,24 @@ impl QueryTab {
         out
     }
 
+    /// Marks every result read from `table` before it reached `revision`. The
+    /// rows are a snapshot of the query as it ran and are never rerun.
+    pub fn table_saved(&mut self, table: &TableId, revision: u64) {
+        let mut marked = false;
+        for r in &mut self.results {
+            if r.source
+                .as_ref()
+                .is_some_and(|(t, read_at)| t == table && *read_at < revision)
+            {
+                marked |= !r.source_changed;
+                r.source_changed = true;
+            }
+        }
+        if marked {
+            self.sync_result_tabs();
+        }
+    }
+
     fn sync_result_tabs(&mut self) {
         let items: Vec<TabItem> = self
             .results
@@ -1179,6 +1352,9 @@ impl QueryTab {
                 it.closable = !r.pinned;
                 if r.pinned {
                     it.prefix = Some("▪".into());
+                }
+                if r.source_changed {
+                    it.suffix = Some("source changed".into());
                 }
                 it
             })
@@ -1224,14 +1400,14 @@ impl QueryTab {
         }
     }
 
-    pub fn trigger_completion(&mut self, cat: &Catalog, manual: bool) {
+    pub fn trigger_completion(&mut self, src: Source, manual: bool) {
         let cur = self.editor.cursor_offset();
         let text = self.editor.text();
         if !manual && !model::auto_trigger(text, cur) {
             self.completion.close();
             return;
         }
-        let (items, replace) = model::complete(cat, text, cur);
+        let (items, replace) = model::complete(src, text, cur);
         let anchor = self
             .editor
             .cursor_cell()
@@ -1320,7 +1496,7 @@ impl QueryTab {
         }
     }
 
-    pub fn on_key(&mut self, key: &Key, cx: &mut Cx, cat: &Catalog) -> Outcome {
+    pub fn on_key(&mut self, key: &Key, cx: &mut Cx, src: Source) -> Outcome {
         let Some(f) = cx.focus.current() else {
             return Outcome::Ignored;
         };
@@ -1347,18 +1523,18 @@ impl QueryTab {
                 if !self.editor.editing {
                     self.editor.begin_edit();
                 }
-                self.trigger_completion(cat, true);
+                self.trigger_completion(src, true);
                 return Outcome::Changed;
             }
             let (o, ev) = self.editor.on_key(key);
             match ev {
                 Some(EditorAction::Changed) => {
                     self.editor.diagnostics.clear();
-                    self.trigger_completion(cat, false);
+                    self.trigger_completion(src, false);
                 }
                 Some(EditorAction::CursorMoved) => {
                     if self.completion.is_open() {
-                        self.trigger_completion(cat, false);
+                        self.trigger_completion(src, false);
                     }
                 }
                 Some(EditorAction::Committed) => self.completion.close(),
@@ -1399,14 +1575,16 @@ impl QueryTab {
         };
         match &mut r.body {
             ResultBody::Rows(g) if f == g.id => {
-                let (o, ev) = g.on_key(key);
-                match ev {
-                    Some(GridAction::Copy(s)) => cx.copy(s),
-                    Some(GridAction::SortRequested(_)) => {}
-                    Some(GridAction::LeaveForward) => cx.focus_next(),
-                    Some(GridAction::LeaveBackward) => cx.focus_prev(),
-                    Some(GridAction::ReadOnly { reason }) => cx.status(reason),
-                    _ => {}
+                let (o, actions) = g.on_key(key).into_parts();
+                for ev in actions {
+                    match ev {
+                        GridAction::Copy(s) => cx.copy(s),
+                        GridAction::SortRequested(_) => {}
+                        GridAction::LeaveForward => cx.focus_next(),
+                        GridAction::LeaveBackward => cx.focus_prev(),
+                        GridAction::ReadOnly { reason } => cx.status(reason),
+                        _ => {}
+                    }
                 }
                 o
             }
@@ -1424,7 +1602,7 @@ impl QueryTab {
                     return raw.on_key(key);
                 }
                 if f == tree.id {
-                    return tree.on_key(key).0;
+                    return tree.on_key(key).outcome();
                 }
                 Outcome::Ignored
             }
@@ -1459,14 +1637,17 @@ impl QueryTab {
     }
 
     pub fn middle(&mut self, ev: &PointerEvent) -> Outcome {
-        match self.result_tabs.route(ev).map(|r| r.into_parts()) {
-            Some((_, Some(TabAction::Close(i)))) => {
+        let Some((o, actions)) = self.result_tabs.route(ev).map(|r| r.into_parts()) else {
+            return Outcome::Ignored;
+        };
+        let mut out = o;
+        for action in actions {
+            if let TabAction::Close(i) = action {
                 self.close_result(i);
-                Outcome::Changed
+                out = Outcome::Changed;
             }
-            Some((o, _)) => o,
-            None => Outcome::Ignored,
         }
+        out
     }
 
     pub fn click(&mut self, ev: &PointerEvent, cx: &mut Cx, cat: &Catalog) -> Outcome {
@@ -1476,11 +1657,14 @@ impl QueryTab {
         }
         if self.completion.is_open() {
             match self.completion.route(ev).map(|r| r.into_parts()) {
-                Some((_, Some(CompletionAction::Accept(i)))) => {
-                    self.accept_completion(i);
-                    return Outcome::Changed;
+                Some((_, actions)) => {
+                    for action in actions {
+                        if let CompletionAction::Accept(i) = action {
+                            self.accept_completion(i);
+                            return Outcome::Changed;
+                        }
+                    }
                 }
-                Some(_) => {}
                 None => self.completion.close(),
             }
         }
@@ -1493,11 +1677,13 @@ impl QueryTab {
         }
         if let Some(r) = self.result_tabs.route(ev) {
             cx.focus.focus(self.result_tabs.id);
-            let (o, act) = r.into_parts();
-            match act {
-                Some(TabAction::Activated(i)) => self.set_active_result(i),
-                Some(TabAction::Close(i)) => self.close_result(i),
-                _ => {}
+            let (o, actions) = r.into_parts();
+            for act in actions {
+                match act {
+                    TabAction::Activated(i) => self.set_active_result(i),
+                    TabAction::Close(i) => self.close_result(i),
+                    _ => {}
+                }
             }
             return o;
         }
@@ -1508,9 +1694,11 @@ impl QueryTab {
             ResultBody::Rows(g) => match g.route(ev) {
                 Some(r) => {
                     cx.focus.focus(g.id);
-                    let (o, act) = r.into_parts();
-                    if let Some(GridAction::Copy(s)) = act {
-                        cx.copy(s);
+                    let (o, actions) = r.into_parts();
+                    for act in actions {
+                        if let GridAction::Copy(s) = act {
+                            cx.copy(s);
+                        }
                     }
                     o
                 }
@@ -2106,7 +2294,7 @@ fn plan_to_tree(node: &PlanNode, nodes: &mut Vec<PlanInfo>, root_total: f64) -> 
 }
 
 fn execute(
-    cat: &Catalog,
+    src: Source,
     text: &str,
     range: Range<usize>,
     explain: Option<bool>,
@@ -2136,6 +2324,8 @@ fn execute(
             entry.error = Some(e.message.clone());
             return (
                 ResultSet {
+                    source: None,
+                    source_changed: false,
                     label: format!("Error {n}"),
                     pinned: false,
                     anchor: range,
@@ -2169,9 +2359,9 @@ fn execute(
         junie_tui::ui::text::truncate(&l, 28)
     };
     match stmt {
-        Statement::Select(sel) => match sql::run_select(cat, &sel) {
+        Statement::Select(sel) => match sql::run_select(src, &sel) {
             Ok(rs) => {
-                let table = cat.find(sel.schema.as_deref(), &sel.table);
+                let table = src.catalog.find(sel.schema.as_deref(), &sel.table);
                 let specs = table
                     .map(|t| column_specs(t, &rs.columns))
                     .unwrap_or_else(|| {
@@ -2202,11 +2392,40 @@ fn execute(
                 } else {
                     RowTotal::Exact(rows.len())
                 };
-                grid.set_rows(GridRows { rows, total, more });
+                let data = GridRows { rows, total, more };
+                let seated = match rs.row_keys.clone() {
+                    Some(keys) => grid.try_set_rows_keyed(data, keys),
+                    None => grid.try_set_rows(data),
+                };
+                if let Err(e) = seated {
+                    let message = e.to_string();
+                    entry.error = Some(message.clone());
+                    return (
+                        ResultSet {
+                            source: None,
+                            source_changed: false,
+                            label: format!("Error {n}"),
+                            pinned: false,
+                            anchor: range,
+                            duration_ms: 2,
+                            body: ResultBody::Error {
+                                message,
+                                detail: None,
+                                at: None,
+                            },
+                        },
+                        entry,
+                    );
+                }
+                let source = table
+                    .zip(rs.source_revision)
+                    .map(|(t, rev)| (src.table_id(t), rev));
                 entry.duration_ms = Some(rs.duration_ms);
                 entry.rows = Some(rs.rows.len());
                 (
                     ResultSet {
+                        source,
+                        source_changed: false,
                         label: format!(
                             "{} ({})",
                             label_for("SELECT", Some(&sel.table)),
@@ -2224,6 +2443,8 @@ fn execute(
                 entry.error = Some(e.message.clone());
                 (
                     ResultSet {
+                        source: None,
+                        source_changed: false,
                         label: format!("Error {n}"),
                         pinned: false,
                         anchor: range,
@@ -2239,7 +2460,7 @@ fn execute(
             }
         },
         Statement::Explain { analyze, inner } => match *inner {
-            Statement::Select(sel) => match sql::explain(cat, &sel, analyze) {
+            Statement::Select(sel) => match sql::explain(src, &sel, analyze) {
                 Ok(plan) => {
                     let mut nodes = vec![];
                     let root = plan_to_tree(&plan, &mut nodes, max_total_cost(&plan));
@@ -2258,6 +2479,8 @@ fn execute(
                     entry.rows = Some(nodes.len());
                     (
                         ResultSet {
+                            source: None,
+                            source_changed: false,
                             label: if analyze {
                                 "EXPLAIN ANALYZE".into()
                             } else {
@@ -2282,6 +2505,8 @@ fn execute(
                     entry.error = Some(e.message.clone());
                     (
                         ResultSet {
+                            source: None,
+                            source_changed: false,
                             label: format!("Error {n}"),
                             pinned: false,
                             anchor: range,
@@ -2304,6 +2529,8 @@ fn execute(
                 entry.error = Some(msg.clone());
                 (
                     ResultSet {
+                        source: None,
+                        source_changed: false,
                         label: format!("Error {n}"),
                         pinned: false,
                         anchor: range,
@@ -2320,10 +2547,10 @@ fn execute(
         },
         other => {
             let target = other.target().map(str::to_owned);
-            let table = target.as_deref().and_then(|t| cat.find(None, t));
+            let table = target.as_deref().and_then(|t| src.catalog.find(None, t));
             let (rows, ms) = match &other {
                 Statement::Update { has_where, .. } | Statement::Delete { has_where, .. } => {
-                    let n = table.map(|t| t.row_count).unwrap_or(0);
+                    let n = table.map(|t| src.row_count(t)).unwrap_or(0);
                     if *has_where {
                         ((n / 150).max(1), 12 + (n / 40_000) as u32)
                     } else {
@@ -2331,7 +2558,7 @@ fn execute(
                     }
                 }
                 Statement::Insert { .. } => (1, 4),
-                Statement::Truncate { .. } => (table.map(|t| t.row_count).unwrap_or(0), 30),
+                Statement::Truncate { .. } => (table.map(|t| src.row_count(t)).unwrap_or(0), 30),
                 _ => (0, 25),
             };
             if let Some(t) = target.as_deref()
@@ -2348,6 +2575,8 @@ fn execute(
                 entry.error = Some(msg.clone());
                 return (
                     ResultSet {
+                        source: None,
+                        source_changed: false,
                         label: format!("Error {n}"),
                         pinned: false,
                         anchor: range,
@@ -2365,6 +2594,8 @@ fn execute(
             entry.rows = Some(rows);
             (
                 ResultSet {
+                    source: None,
+                    source_changed: false,
                     label: format!("{} ({})", label_for(other.verb(), target.as_deref()), rows),
                     pinned: false,
                     anchor: range,
@@ -2385,6 +2616,7 @@ fn execute(
 }
 
 pub struct HistoryTab {
+    pub key: ItemKey,
     pub id: WidgetId,
     pub list: ListBox,
     pub detail: CodeEditor,
@@ -2406,8 +2638,9 @@ pub struct HistoryTab {
 }
 
 impl HistoryTab {
-    pub fn new(id: WidgetId) -> Self {
+    pub fn new(key: ItemKey, id: WidgetId) -> Self {
         Self {
+            key,
             id,
             list: ListBox::new(id.sub("list"), vec![], SelectMode::Single)
                 .empty_text("No matching queries"),
@@ -2705,13 +2938,306 @@ impl HistoryTab {
 }
 
 #[cfg(test)]
+mod issue47_tests {
+    use super::*;
+    use junie_tui::widgets::grid::{CellKind, default_validator};
+
+    #[test]
+    fn issue47_fixture_named_values_parse_under_the_explicit_grammar() {
+        let catalog = Catalog::acme_prod();
+        let mut checked = [0usize; 3];
+        for table in catalog.tables.iter().filter(|t| !t.columns.is_empty()) {
+            let columns: Vec<(String, ColType)> = table
+                .columns
+                .iter()
+                .map(|c| (c.name.clone(), c.ty))
+                .collect();
+            let specs = column_specs(table, &columns);
+            for row in crate::db::rows(table, 0, 64) {
+                for (spec, value) in specs.iter().zip(&row) {
+                    let slot = match spec.kind {
+                        CellKind::Timestamp => 0,
+                        CellKind::Id => 1,
+                        CellKind::Json => 2,
+                        _ => continue,
+                    };
+                    if *value == Value::Null {
+                        continue;
+                    }
+                    let text = value.display();
+                    let parsed = default_validator(spec, &text);
+                    assert_eq!(
+                        parsed.map(|v| v == to_cell(value)),
+                        Ok(true),
+                        "{}.{} fixture {text:?} must round-trip the default parser",
+                        table.name,
+                        spec.name
+                    );
+                    checked[slot] += 1;
+                }
+            }
+        }
+        assert!(
+            checked.iter().all(|&n| n > 0),
+            "every named kind is exercised: {checked:?}"
+        );
+    }
+}
+
+#[cfg(test)]
+mod issue194_tests {
+    use super::*;
+    use crate::db::{ColType, Column, Constraint, Index, ObjectKind};
+
+    #[test]
+    fn issue194_ddl_quotes_identifiers() {
+        let table = Table {
+            schema: "public".into(),
+            name: "UserOrders".into(),
+            kind: ObjectKind::Table,
+            columns: vec![
+                Column {
+                    name: "order".into(),
+                    ty: ColType::Int,
+                    nullable: false,
+                    default: None,
+                    primary: true,
+                    references: None,
+                    enum_values: vec![],
+                    generated: false,
+                },
+                Column {
+                    name: "UserId".into(),
+                    ty: ColType::Text,
+                    nullable: true,
+                    default: None,
+                    primary: false,
+                    references: None,
+                    enum_values: vec![],
+                    generated: false,
+                },
+                Column {
+                    name: "we\"ird".into(),
+                    ty: ColType::Text,
+                    nullable: true,
+                    default: None,
+                    primary: false,
+                    references: None,
+                    enum_values: vec![],
+                    generated: false,
+                },
+            ],
+            indexes: vec![Index {
+                name: "Idx\"Order".into(),
+                columns: vec!["order".into(), "UserId".into()],
+                unique: false,
+                method: "btree",
+            }],
+            constraints: vec![Constraint {
+                name: "order_check".into(),
+                kind: "CHECK",
+                definition: "CHECK (\"order\" > 0)".into(),
+            }],
+            triggers: vec![],
+            row_count: 0,
+            comment: Some("it's a note".into()),
+        };
+        let cat = Catalog {
+            database: "db".into(),
+            schemas: vec!["public".into()],
+            tables: vec![table.clone()],
+        };
+        let store = crate::store::SessionStore::new(1);
+        let tab = TableTab::new(
+            ItemKey::num(0),
+            WidgetId::of("issue194"),
+            crate::store::Source {
+                catalog: &cat,
+                store: &store,
+            },
+            &table,
+        );
+        let ddl = &tab.ddl.lines;
+
+        assert_eq!(ddl[0], "CREATE TABLE \"public\".\"UserOrders\" (");
+        assert_eq!(ddl[1], "    \"order\" integer NOT NULL,");
+        assert_eq!(ddl[2], "    \"UserId\" text,");
+        assert_eq!(ddl[3], "    \"we\"\"ird\" text,");
+        assert_eq!(
+            ddl[4],
+            "    CONSTRAINT \"order_check\" CHECK CHECK (\"order\" > 0)"
+        );
+        assert_eq!(ddl[5], ");");
+        assert_eq!(
+            ddl[6],
+            "CREATE INDEX \"Idx\"\"Order\" ON \"public\".\"UserOrders\" USING btree (\"order\", \"UserId\");"
+        );
+        assert_eq!(
+            ddl[7],
+            "COMMENT ON TABLE \"public\".\"UserOrders\" IS 'it''s a note';"
+        );
+    }
+}
+
+/// Painting and view-only access to one workspace tab. Its field is private,
+/// so a caller of `DocumentWorkspace::view_mut` cannot reach a tab's rows,
+/// draft or text through it. Every operation here moves a cursor, a scroll
+/// offset or a divider, or paints; none can edit.
+pub struct WorkTabView<'a> {
+    document: &'a mut WorkTab,
+}
+
+impl<'a> WorkTabView<'a> {
+    pub(crate) fn new(document: &'a mut WorkTab) -> Self {
+        Self { document }
+    }
+
+    pub fn render(
+        &mut self,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        bg: ratatui::style::Color,
+        history: &History,
+        connection: &str,
+    ) {
+        match self.document {
+            WorkTab::Table(t) => t.render(area, buf, ctx, bg),
+            WorkTab::Query(q) => q.render(area, buf, ctx, bg),
+            WorkTab::History(h) => h.render(area, buf, ctx, bg, history, connection),
+        }
+    }
+
+    /// One poll of a running query. It moves the run forward and returns the
+    /// history entries its statements made, and whether the run is still
+    /// going. Run progress and results are not editor text, so this is not a
+    /// content change.
+    pub fn tick(
+        &mut self,
+        src: Source,
+        connection: &str,
+        database: &str,
+    ) -> (Vec<HistoryEntry>, bool) {
+        match self.document {
+            WorkTab::Query(q) => (q.tick(src, connection, database), q.is_running()),
+            _ => (vec![], false),
+        }
+    }
+
+    /// Clears a query's "result not seen yet" mark.
+    pub fn mark_seen(&mut self) {
+        if let WorkTab::Query(q) = self.document {
+            q.unseen = false;
+        }
+    }
+
+    /// Moves the focused grid's cell cursor or the focused editor's caret for
+    /// a plain navigation key. Any other key, including every one that could
+    /// type, delete or commit, is refused.
+    pub fn navigate(&mut self, key: &Key, focus: Option<WidgetId>) -> bool {
+        use ratatui::crossterm::event::KeyModifiers;
+        let plain = key.mods.is_empty() || key.mods == KeyModifiers::SHIFT;
+        let moves = matches!(
+            key.code,
+            KeyCode::Up
+                | KeyCode::Down
+                | KeyCode::Left
+                | KeyCode::Right
+                | KeyCode::PageUp
+                | KeyCode::PageDown
+                | KeyCode::Home
+                | KeyCode::End
+        );
+        if !plain || !moves {
+            return false;
+        }
+        match self.document {
+            WorkTab::Table(t) if focus == Some(t.grid.id) && !t.grid.is_editing() => {
+                let _ = t.grid.on_key(key);
+                true
+            }
+            WorkTab::Query(q) if focus == Some(q.editor.id) => {
+                let _ = q.editor.on_key(key);
+                true
+            }
+            _ => false,
+        }
+    }
+
+    /// A wheel gesture over the tab's scrollable parts.
+    pub fn wheel(&mut self, ev: &PointerEvent) -> Outcome {
+        let horizontal = matches!(ev.wheel(), Some((Axis::Horizontal, _)));
+        match self.document {
+            WorkTab::Table(t) => t
+                .grid
+                .route(ev)
+                .map(|r| r.outcome())
+                .or_else(|| t.structure.route(ev).map(|r| r.outcome()))
+                .or_else(|| t.ddl.route(ev).map(|r| r.outcome()))
+                .unwrap_or(Outcome::Ignored),
+            WorkTab::Query(q) => q.wheel(ev),
+            WorkTab::History(h) => {
+                if ev.on(h.list.id) {
+                    return if horizontal {
+                        Outcome::Consumed
+                    } else {
+                        h.list.pointer(ev).outcome()
+                    };
+                }
+                h.detail
+                    .route(ev)
+                    .map(|r| r.outcome())
+                    .unwrap_or(Outcome::Ignored)
+            }
+        }
+    }
+
+    /// Pointer input on the read-only detail pane (history detail or query
+    /// result facts): scrolling and selecting.
+    pub fn facts_pointer(&mut self, ev: &PointerEvent) -> Option<Outcome> {
+        let facts = match self.document {
+            WorkTab::History(h) => &mut h.detail_view,
+            WorkTab::Query(q) => &mut q.result_facts,
+            WorkTab::Table(_) => return None,
+        };
+        facts.pointer(ev).map(|r| r.outcome())
+    }
+
+    /// A press on the tab's divider.
+    pub fn seam_press(&mut self, id: WidgetId, pos: ratatui::layout::Position) -> bool {
+        match self.document {
+            WorkTab::Query(q) if id == q.seam.id => {
+                q.seam.on_press(&q.split, q.split_area, 1, pos);
+                true
+            }
+            WorkTab::History(h) if id == h.seam.id => {
+                h.seam.on_press(&h.split, h.split_area, 2, pos);
+                true
+            }
+            _ => false,
+        }
+    }
+
+    /// A drag of the tab's divider.
+    pub fn seam_drag(&mut self, id: WidgetId, pos: ratatui::layout::Position) -> Option<Outcome> {
+        match self.document {
+            WorkTab::History(h) if id == h.seam.id => {
+                let area = h.split_area;
+                Some(h.seam.on_drag(&mut h.split, area, 2, pos))
+            }
+            _ => None,
+        }
+    }
+}
+
+#[cfg(test)]
 mod issue9_tests {
     use super::*;
 
     #[test]
     fn issue9_query_editor_unicode_paste() {
         let sql = "SELECT é, 名 FROM 表 WHERE note = '💾;中'; SELECT e\u{301} FROM t";
-        let mut tab = QueryTab::new(WidgetId::of("issue9"), "Query 1", "");
+        let mut tab = QueryTab::new(ItemKey::num(0), WidgetId::of("issue9"), "Query 1", "");
         tab.editor.editing = true;
         assert_eq!(tab.on_paste(sql), Outcome::Changed);
         assert_eq!(tab.editor.text(), sql);

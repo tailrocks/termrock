@@ -236,7 +236,8 @@ impl FinderPage {
                 .placeholder("Search actions, files and tasks")
                 .plain_label(),
             scope: 0,
-            results: DataTable::new(ID.sub("results"), vec![], vec![]),
+            results: DataTable::try_new(ID.sub("results"), vec![], vec![])
+                .expect("rectangular fixture"),
             shown: Vec::new(),
             alternatives: Button::secondary(ID.sub("alternatives"), "Alternatives…"),
             why: Button::subtle(ID.sub("why"), "Why?"),
@@ -304,11 +305,11 @@ impl FinderPage {
             })
             .collect();
         let total = ACTIONS.iter().filter(|a| a.scope <= self.scope).count();
-        self.results = DataTable::new(ID.sub("results"), self.columns(), rows).empty(
-            EmptyState::new("No matches").hint(&format!(
+        self.results = DataTable::try_new(ID.sub("results"), self.columns(), rows)
+            .expect("rectangular fixture")
+            .empty(EmptyState::new("No matches").hint(&format!(
                 "Nothing among {total} actions here matches; try Everywhere"
-            )),
-        );
+            )));
         self.results.cursor_row = 0;
     }
 
@@ -510,11 +511,13 @@ impl FinderPage {
             if click && !scrollbar::is_bar_of(ev.id, self.results.id) {
                 cx.focus.focus(self.results.id);
             }
-            let (o, a) = r.into_parts();
-            if let Some(TableAction::Activated(_)) = a
-                && let Some(act) = self.current()
-            {
-                self.run(act.name, cx);
+            let (o, actions) = r.into_parts();
+            for a in actions {
+                if let TableAction::Activated(_) = a
+                    && let Some(act) = self.current()
+                {
+                    self.run(act.name, cx);
+                }
             }
             return o;
         }
@@ -525,7 +528,7 @@ impl FinderPage {
                 &mut self.why
             };
             if let Some(r) = button.route(ev) {
-                if r.into_action().is_some() {
+                if r.has_actions() {
                     cx.focus.focus(b);
                     if alt {
                         self.open_alternatives(self.button_anchor());
@@ -571,11 +574,13 @@ impl FinderPage {
                 self.open_alternatives(req.anchor);
                 return Outcome::Changed;
             }
-            let (o, a) = self.results.on_key(key);
-            if let Some(TableAction::Activated(_)) = a
-                && let Some(act) = self.current()
-            {
-                self.run(act.name, cx);
+            let (o, actions) = self.results.on_key(key).into_parts();
+            for a in actions {
+                if let TableAction::Activated(_) = a
+                    && let Some(act) = self.current()
+                {
+                    self.run(act.name, cx);
+                }
             }
             return o;
         }
@@ -608,7 +613,7 @@ fn states_grid() -> StateGrid {
         .iter()
         .map(|a| vec![Cell::new(a.name), Cell::new(a.group).tone(Tone::Secondary)])
         .collect();
-    let table = DataTable::new(
+    let table = DataTable::try_new(
         id.child(1),
         vec![
             Column::new("Action", Constraint::Min(12)),
@@ -616,6 +621,7 @@ fn states_grid() -> StateGrid {
         ],
         rows,
     )
+    .expect("rectangular fixture")
     .empty(EmptyState::new("No matches"));
     StateGrid::new(id)
         .rows(&[Rest, Hover, Focused, Selected, Empty, Overflow, Narrow])

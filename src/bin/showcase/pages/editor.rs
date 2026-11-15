@@ -478,7 +478,7 @@ impl EditorPage {
             Prop::new(
                 "Completion",
                 if self.completion.is_open() {
-                    format!("{} items", self.completion.items.len())
+                    format!("{} items", self.completion.items().len())
                 } else {
                     "closed".into()
                 },
@@ -760,11 +760,16 @@ impl Page for EditorPage {
                 }
                 if ev.is(Phase::Click) && self.completion.is_open() {
                     if ev.on(self.completion.id) {
-                        if let Some(CompletionAction::Accept(i)) =
-                            self.completion.route(ev).and_then(|r| r.into_action())
-                        {
-                            self.accept(i);
-                            return Outcome::Changed;
+                        let actions = self
+                            .completion
+                            .route(ev)
+                            .map(|r| r.into_actions())
+                            .unwrap_or_default();
+                        for action in actions {
+                            if let CompletionAction::Accept(i) = action {
+                                self.accept(i);
+                                return Outcome::Changed;
+                            }
                         }
                     } else {
                         self.completion.close();
@@ -772,14 +777,14 @@ impl Page for EditorPage {
                 }
                 if ev.is(Phase::Click) {
                     if let Some(r) = self.find.route(ev) {
-                        if r.into_action().is_some() {
+                        if r.has_actions() {
                             self.open_find(cx);
                         }
                         return Outcome::Changed;
                     }
                     if let Some(r) = self.run_button.route(ev) {
                         cx.focus.focus(self.run_button.id);
-                        if r.into_action().is_some() {
+                        if r.has_actions() {
                             self.run(cx);
                         }
                         return Outcome::Changed;

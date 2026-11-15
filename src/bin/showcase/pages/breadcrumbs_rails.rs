@@ -443,18 +443,22 @@ impl Page for BreadcrumbsRailsPage {
             }
             PageEvent::Pointer(ev) => {
                 if let Some(r) = self.crumbs.route(ev) {
-                    let (o, level) = r.into_parts();
-                    if let Some(level) = level {
-                        self.last_crumb = format!("{} (level {level})", self.path[level]);
-                        self.go_to_level(level, cx);
+                    let (o, levels) = r.into_parts();
+                    if !levels.is_empty() {
+                        for level in levels {
+                            self.last_crumb = format!("{} (level {level})", self.path[level]);
+                            self.go_to_level(level, cx);
+                        }
                         return Outcome::Changed;
                     }
                     return o;
                 }
                 if let Some(r) = self.rail.route(ev) {
-                    let (o, a) = r.into_parts();
-                    if let Some(a) = a {
-                        self.set_collapsed(a == RailAction::Collapse, cx);
+                    let (o, actions) = r.into_parts();
+                    if !actions.is_empty() {
+                        for a in actions {
+                            self.set_collapsed(a == RailAction::Collapse, cx);
+                        }
                         return Outcome::Changed;
                     }
                     return o;

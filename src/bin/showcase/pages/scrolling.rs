@@ -136,7 +136,8 @@ impl ScrollingPage {
             nest_inner: ScrollView::new(NEST_INNER).axes(Axes::VERTICAL),
             region: Select::new(ID.sub("region"), "Region", REGIONS, 5),
             tree: TreeView::new(ID.sub("tree"), vec![]),
-            table: DataTable::new(ID.sub("table"), vec![], vec![]),
+            table: DataTable::try_new(ID.sub("table"), vec![], vec![])
+                .expect("rectangular fixture"),
             grid: DataGrid::new(ID.sub("grid"), vec![]),
             flagged: BTreeSet::new(),
             last: None,
@@ -259,11 +260,12 @@ impl ScrollingPage {
         self.tree = tree;
 
         let rows = REGIONS.iter().map(|r| vec![Cell::new(*r)]).collect();
-        let mut table = DataTable::new(
+        let mut table = DataTable::try_new(
             ID.sub("table"),
             vec![Column::new("Region", Constraint::Min(10))],
             rows,
         )
+        .expect("rectangular fixture")
         .nav(nav)
         .type_ahead_timeout(timeout)
         .type_ahead_precedence(precedence);
@@ -277,14 +279,15 @@ impl ScrollingPage {
         .nav(nav)
         .type_ahead_timeout(timeout)
         .type_ahead_precedence(precedence);
-        grid.set_rows(GridRows {
+        grid.try_set_rows(GridRows {
             rows: SERVICES
                 .iter()
                 .map(|s| vec![CellValue::Text((*s).to_owned())])
                 .collect(),
             total: RowTotal::Exact(SERVICES.len()),
             more: false,
-        });
+        })
+        .expect("rectangular fixture");
         grid.cursor = self.grid.cursor;
         self.grid = grid;
     }
@@ -868,13 +871,13 @@ impl Page for ScrollingPage {
                     return self.region.on_key(key).0;
                 }
                 if f == self.tree.id {
-                    return self.tree.on_key(key).0;
+                    return self.tree.on_key(key).outcome();
                 }
                 if f == self.table.id {
-                    return self.table.on_key(key).0;
+                    return self.table.on_key(key).outcome();
                 }
                 if f == self.grid.id {
-                    return self.grid.on_key(key).0;
+                    return self.grid.on_key(key).outcome();
                 }
                 Outcome::Ignored
             }

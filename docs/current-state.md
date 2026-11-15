@@ -35,7 +35,7 @@ does not exist in this tree yet.
 
 | Feature | Default | Adds |
 | --- | --- | --- |
-| `cli` | yes | `clap`, `serde_json` (Holla's persisted JSON codec, see below), the `cli` module and `Motion` as a `clap::ValueEnum`. The four binaries require it; `jackin-console` enables it on its `junie-tui` dependency. The library itself has no `serde_json` dependency with `--no-default-features`. |
+| `cli` | yes | `clap`, the `cli` module and `Motion` as a `clap::ValueEnum`. The four binaries require it; `jackin-console` enables it on its `junie-tui` dependency. `serde_json` is a normal dependency of the library (the JSON cell parser `widgets::edit::parsers::json_container` and Holla's persisted JSON codec), not a feature. |
 | `terminal` | yes | `termpane` and the `terminal` module. |
 
 `jackin-console` features (none is a default):
@@ -225,6 +225,13 @@ variant of these enums stays a breaking change and is recorded here.
 | `clock::ClockStep`, `Shell::clock_steps` | `ClockStep` (`PREFIX`, `request(ms)`, `parse -> Option<u64>`) became the enum `clock::TestRequest { Advance(ms), Fence }` (`ADVANCE_PREFIX`, `FENCE`, `FENCE_ACK`, `advance(ms)`, `parse -> Option<TestRequest>`). `Shell::clock_steps` became `Shell::test_requests`. Both stay inert unless `JUNIE_TUI_TEST_CLOCK=1`. |
 | `terminal::TerminalState::feed` | Program output passes a guard first (`src/terminal/guard.rs`): a string sequence (OSC, DCS, APC, PM, SOS) over 144 KiB is dropped whole until its end, at most 16 characters join one cell (combining marks, variation selectors, joiners and what a joiner pulls in), and DEL, the bidi controls (U+061C, U+200E, U+200F, U+202A to U+202E, U+2066 to U+2069) and the tag characters (U+E0000 to U+E007F) never reach a cell. A byte that is not valid UTF-8, or a lead byte cut short by the next byte, becomes one U+FFFD and never passes on as it is. `terminal::is_spoofing_format` is that set, and the jackin console's title filter uses it. A 100,000 byte OSC 52 write still fits. |
 | `terminal::encode_key` | Ctrl and Shift on arrows, Home, End, Page, Insert, Delete and F1 to F12 now send the xterm parameter forms (`CSI 1;m X`, `CSI n;m ~`), Ctrl+Backspace sends `0x08`, and Ctrl with `@ \ ] ^ _ /` sends the C0 byte. Alt alone keeps the `ESC` prefix; Shift+Enter stays `\r`. |
+| `widgets::table::DataTable` | `new`, `set_rows` and `set_row` are gone, and `columns` and `rows` are no longer public fields. `try_new(id, columns, rows)`, `try_set_rows`, `try_set_row(src, cells)` and `try_set_model(columns, rows)` return `Result<_, core::data::DataError>`: a row must have exactly one cell per column, a schema with no columns takes no rows, and a rejected call leaves the rows, schema, sort, cursor and open editors untouched. `columns()` and `rows()` read the model. `update_column(index, FnOnce(&mut Column)) -> Result<bool, usize>` edits one column (`Ok(false)` when nothing changed) and `update_cell(src, col, FnOnce(&mut Cell))` edits one cell, so neither can change the table's shape. `try_set_model` clears a sort whose column changed and keeps a numeric flag only for a column that is unchanged at the same index. A stale public `cursor_row`, `cursor_col`, `sort` or `edit` index is clamped or ignored on input and render instead of indexing out of bounds. |
+| `widgets::grid::DataGrid` | `set_rows` and `append_rows` became `try_set_rows` and `try_append_rows`, which return `Result<(), GridDataError>`. A short row is padded with `CellValue::Null` to the schema width; a row with extra cells, or any row under a schema with no columns, is rejected with the zero-based source row, and nothing changes. `try_set_model(columns, rows)` replaces the schema and the rows together and rejects a column whose `max_width` is zero or below its `min_width` with `GridDataError::ColumnWidth`. `columns` is no longer a public field; use `columns()`. `insert_row` does nothing under an empty schema, and a stale public `cursor` or `sort` column is clamped or ignored. |
+| `widgets::grid::DataGrid` user edits | Every user-originated cell mutation (text editor, Select/Combo/Radio/Segmented/Tags popups, Checkbox toggle, native Bool cycle, Delete/clear) reaches the configured `validator` exactly once per commit attempt, including the empty string. `default_validator` now owns the empty rule: empty Text/Enum is `Text("")`, empty Json is rejected, empty Number/Id/Timestamp/Bool is NULL only if nullable. The reserved token `null` (any case) stays NULL for nullable columns in the default grammar; a literal text value `null` needs a custom parser. Delete and the nullable Bool cycle are an explicit NULL intent: the parser sees `null` and must return `CellValue::Null`, or the clear is rejected. A rejected attempt records no draft or undo entry and keeps the editor open. A text or popup session shows the rejection on its own field or popup (`edit_error`) and leaves `cell_errors` alone: the open editor already sits on that cell with the input to correct, the message disappears with the session when it is cancelled, and a cell mark would outlive an Esc. `cell_errors` marks only cells with no session open, so an immediate toggle and the Delete clear set it, and the next accepted edit of that cell clears it. `try_edit_text` returns its `GridEditError` and sets nothing, so the host decides where to show it (the showcase marks the cell). An accepted value equal to the current one closes the editor and records nothing (no draft, undo entry or `CellChanged`; Tab still moves on). New: `try_edit_text`, `finish_edit_session` (`FinishEdit`), `CellEditResult`, `GridEditError`. `record_cell` is now documented as trusted model input and no user-event path calls it. |
+| `widgets::grid::CellValue::edit_text` and unchanged commits | The editor seed is lossless and separate from the two-decimal display (`text`, `text_ref`, cell rendering are unchanged). `Num` seeds Rust's shortest round-trip `f64` text, with `.0` appended to an integral finite value so it stays `Num` under the default int-first parser; `Int` seeds its decimal digits. `Null` and `Default` seed the reserved tokens `NULL` and `DEFAULT` instead of empty text, and the default grammar now also maps `default` (any case) to `CellValue::Default`, for Enum and Select option values too, so an option whose value is `default` becomes `CellValue::Default` and needs a custom parser to stay literal. A literal `Text("NULL")` or `Text("DEFAULT")` therefore needs a custom literal-text parser to survive an unchanged commit. After the configured parser accepts the text (there is no raw-text shortcut), the result is compared with the effective value by one crate-private `same_edit_value`: finite `Num` compares numerically, so `0.0` and `-0.0` are a no-op that keeps the stored bits; NaNs are equal only with identical bits; `Int` and `Num` are different variants and an `Int` is never cast to `f64`. An equal result records nothing (no draft, undo entry or `CellChanged`), and an edit that returns a cell to its stored value removes the draft by the same equality. Scope is finite `f64` storage; arbitrary-precision decimals and nonfinite rejection (#47) are outside this change. |
+| `widgets::grid::DataGrid` mutators | `record_cell` returns `Result<CellEditResult, GridEditError>`; `toggle_delete`, `insert_row` and `duplicate_row` return `Result<Option<GridAction>, GridEditError>`; `undo` returns `Result<Option<GridUndo>, GridEditError>`; `discard` returns `Result<bool, GridEditError>`. `try_set_rows`, `try_append_rows`, `try_set_rows_keyed` and `try_set_model_keyed` return `Result<(), GridDataError>` (`Busy`, `Keys`, plus the shape variants). All refuse with `Busy` while a captured save is reviewed or submitted. `apply_commit_result` is removed for `begin_submission`, `cancel_submission`, `complete_submission` and `validate_submission_receipt`. |
+| `widgets::grid::default_validator` named kinds | Intentional behavior correction. The built-in `Json`, `Id` and `Timestamp` grammars used to check shape only (first and last delimiter, length 36 of hex or hyphens, two hyphens at fixed offsets). They now parse completely, through the new public helpers `widgets::edit::parsers::{json_container, canonical_uuid, date_or_timestamp}` (each `&str -> Result<(), FieldError>`, usable by forms without a `DataGrid`). `Json` is exactly one full `serde_json` value whose root is an object or array (scalars, trailing text and empty input fail, and a container nested deeper than serde_json's default recursion limit of 128 is rejected; a custom `CellParser` can accept it). `Id` is the canonical 8-4-4-4-12 hexadecimal grouping of 36 ASCII bytes, either case, version and variant bits unconstrained; braced, compact, URN and all-hyphen forms fail. `Timestamp` is `YYYY-MM-DD`, optionally followed by `T` or a space, `HH:MM:SS`, an optional fraction of 1 to 9 digits and an optional `Z`, `+HH`, `-HH`, `+HH:MM` or `-HH:MM` offset, with years 0001 to 9999, Gregorian leap rules, no leap second and a plain fixed offset (no named zone, no conversion, no assumed local time); `2025-06-01 12:30:00+00` and date-only values stay valid. Accepted values keep their trimmed spelling: nothing is reserialised, lower-cased or normalised. `Number` rejects non-finite results (`NaN`, `inf`, `1e999`) and keeps the int-first order. No JSON scalar support, schema or timezone checking is added; an application that wants a looser or different grammar passes its own `cell_validator`, and `CellKind::Id` always means this UUID form (use `Text` or a custom parser for another ID scheme). `serde_json` is now a normal dependency of the library instead of a `cli` extra. |
+| `widgets::table::DataTable` immediate toggle | A Checkbox toggle the table validator rejects sets the target cell's `Cell.error` (shown in the error colour) instead of being dropped. |
 | `widgets::edit::EditField::validate`, `widgets::input::TextInput::validate` | Required precedes the custom validator. Empty required text (zero bytes; whitespace is not empty) fails with the required message and the validator does not run. Other text runs the validator once. Before, a validator replaced the required check, so an app that set `required(true)` with a validator accepting empty text saved an empty value. Apps that want the old result must call `required(false)`. Blank-text rules stay in the validator. See [docs/audits/2026-11-15-required-before-validator.md](audits/2026-11-15-required-before-validator.md). |
 | `terminal::TerminalView`, `TerminalViewport` | Intentional edge-case correction (no API change). A view paints only inside the part of its area that overlaps the buffer, and a wide symbol that does not fit completely in the remaining columns (by Ratatui's `CellWidth`) paints one blank cell with its own style, so no emitted symbol is wider than the pane. A wide glyph's continuation cell that is the first visible column paints a blank. The focused cursor is drawn only when it is inside the buffer. `TerminalViewport::screen_pos` returns `None` for a column in the scroll track, past the pane or past the emulated grid; it used to clamp onto the last emulated column. `context_point` then falls back to the last drawn row of the pane. Showcase's Terminal pane page shows it with the `wide edge` fixture and the `Clip last column` option (off by default). |
 
@@ -277,5 +284,76 @@ variant of these enums stays a breaking change and is recorded here.
   cursor and cell range. `undo()` and `GridAction::Undone` report the affected
   `GridUndo` key. See
   [the audit note](audits/2026-11-15-grid-keyed-drafts-undo.md).
+- `DataGrid::snapshot_changes()` returns an owned `GridChangeSet`, the one
+  normalized view of a draft: complete inserted rows (a duplicate carries every
+  copied value, `Default` and `Null` distinct), updated rows with their base row
+  and only the genuinely changed cells, and deleted rows with their base row.
+  Rows are keyed, in source order and disjoint, and the snapshot carries a
+  `GridInstanceId` and `GridRevision`. Cloning a `DataGrid` gives the clone a
+  fresh id. `same_capture` compares captures bit for bit, and `CommittedRow` and
+  `GridCommitReceipt` define the acknowledgement shape. TablePro's
+  `model::preview_sql` and the Showcase Grid preview read only a snapshot, so
+  they no longer build an INSERT from `PendingChanges::cells`. A generated-column
+  change is rejected, not dropped, and a fresh insert's untouched cells now
+  appear as `NULL`. See
+  [the audit note](audits/2026-11-15-grid-change-snapshot.md).
+- A save is bound to the grid, tab, connection and exact changes it was reviewed
+  with. `DataGrid::begin_submission` locks a `GridChangeSet` and returns a
+  `GridCommitToken`; until `cancel_submission` or `complete_submission`, every
+  draft and source mutation returns `Busy`, and the key, menu and pointer paths
+  show `GridAction::ReadOnly` instead. `complete_submission` validates the
+  `GridCommitReceipt` completely before it applies it, and a grid clone starts
+  unlocked with its own origin. `apply_commit_result` is removed. TablePro keeps
+  one `CommitRequest` per save, finds its grid by a never-reused tab key under a
+  connection generation, and Showcase's Grid page saves from its reviewed
+  snapshot. The user-visible changes are a `Saving: edits are locked` refusal
+  while a save is reviewed or running, a table that cannot close while it saves,
+  and a tab strip whose dirty mark clears when the save lands. See
+  [the audit note](audits/2026-11-15-commit-owner-binding.md).
+- A TablePro table with unsaved edits keeps them, and its shown sort, filters
+  and chips, until the user saves or discards. Header and context sort, every
+  filter chip gesture (keyboard and pointer), the filter editor, Open Filtered,
+  Refresh and Discard all send one `TableChange` to `App::request_table_transition`.
+  The host finishes a live editor once, and a clean table changes at once. A table
+  with edits opens the library's `LeaveGuard` (Cancel, Discard, Save); Discard
+  reads the next rows first and replaces them and the view together, and a failed
+  read or install changes nothing. Save reviews the table's own save and runs the
+  change only after that exact save succeeds. A filter editor answers the table
+  and view it was opened on, never the active tab. `TableTab` now holds its sort,
+  filters and match mode in a private `TableViewState`, and `TableTab::load` is
+  replaced by `prepare_load` and `install_load`. The first edit that leaves a
+  draft makes a preview tab permanent, and a preview is never replaced while it
+  holds a draft or an open editor. Showcase's Grid page asks the same guard before
+  Reload drops a draft. See
+  [the audit note](audits/2026-11-15-guarded-table-transitions.md).
+- A saved TablePro change lasts for the connection session. One `SessionStore`
+  per `Workbench` keeps sparse overlays (replaced rows, deleted baseline keys,
+  inserted rows) over the lazy seed generator, so a table with millions of seed
+  rows holds only what a save changed. Every SELECT reads it: table load,
+  refresh, sort, filter, close and reopen, the query editor, and EXPLAIN row
+  counts. Rows carry store keys that never derive from the primary key, and each
+  table has a revision. A save is prepared whole and checked (revision, schema,
+  before images, kinds, NULL, enum, defaults) before it is applied, so a refused
+  batch changes neither the store nor the draft. The default simulator resolves
+  `gen_random_uuid()` (a version 8 id from the insert counter), `identity` and
+  `nextval('orders_number_seq')`, `now()` (one frozen clock reading per save) and
+  literals. Other views of the table refresh when clean, keep their draft and
+  open editor and show `source changed` when not, and query results stay
+  snapshots with the same mark. Filtered totals stay estimates, scaled from a
+  bounded sample plus the exact inserted matches. A new connection starts from
+  the seed again. Nothing is written to disk, and foreign keys, unique indexes
+  and CHECK constraints are not enforced. See
+  [the audit note](audits/2026-11-15-tablepro-session-store.md).
+- `widgets::document_workspace::DocumentWorkspace<D>` is the one controller for
+  keyed documents behind a tab strip. It owns identity (never-reused `ItemKey`s),
+  order, the active key, one preview slot, a per-document operation
+  (`OperationToken`), close requests (`CloseToken`) and the save-and-close lock.
+  `update` is the only content gateway and `view_mut` hands out the document's
+  restricted view facet. Showcase's Query workbench and TablePro's Workbench both
+  run on it; the documents, SQL and backends stay in the apps. A dirty table's
+  close now offers Save, a preview open appends instead of replacing in place,
+  and a close request that an edit has outgrown is refused and asked again. See
+  [the audit note](audits/2026-11-15-document-workspace.md) and
+  `examples/document_workspace.rs`.
 - The `visual-baseline` git tag is frozen historical evidence. It is
   never moved, and it is not a substitute for the current design.

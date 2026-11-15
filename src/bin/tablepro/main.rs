@@ -9,6 +9,7 @@ mod model;
 mod pages;
 
 mod sql;
+mod store;
 mod tabs;
 mod workbench;
 

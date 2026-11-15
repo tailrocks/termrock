@@ -444,11 +444,11 @@ impl TerminalPage {
             }
             return r.outcome();
         }
-        if self.run.route(ev).and_then(|r| r.into_action()).is_some() {
+        if self.run.route(ev).is_some_and(|r| r.has_actions()) {
             self.reset(None);
             return Outcome::Changed;
         }
-        if self.fail.route(ev).and_then(|r| r.into_action()).is_some() {
+        if self.fail.route(ev).is_some_and(|r| r.has_actions()) {
             self.reset(Some(1));
             return Outcome::Changed;
         }

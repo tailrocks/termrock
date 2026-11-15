@@ -505,7 +505,7 @@ impl Page for FocusNavPage {
                         if !ev.is(Phase::Click) {
                             return r.outcome();
                         }
-                        if r.into_action().is_some() {
+                        if r.has_actions() {
                             cx.status(format!("{} ✓", b.label));
                         }
                         return Outcome::Changed;

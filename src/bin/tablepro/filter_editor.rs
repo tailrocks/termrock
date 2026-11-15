@@ -214,8 +214,9 @@ impl FilterEditor {
             if focusing {
                 focus.focus(self.column.id);
             }
-            let (o, act) = r.into_parts();
-            if let Some(SelectAction::Changed(i)) = act {
+            let (o, actions) = r.into_parts();
+            for action in actions {
+                let SelectAction::Changed(i) = action;
                 self.column_changed(i);
             }
             return Step::Keep(o.or(Outcome::Changed));

@@ -23,7 +23,9 @@ use junie_tui::widgets::button::{Button, row_layout};
 use junie_tui::widgets::empty::EmptyState;
 use junie_tui::widgets::option_list::Item;
 use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::picker::{Picker, PickerAction, PickerKeyProfile, PickerStatus};
+use junie_tui::widgets::picker::{
+    Picker, PickerAction, PickerKeyProfile, PickerStatus, VisibleKey,
+};
 use junie_tui::widgets::props::{self, Prop};
 use junie_tui::widgets::tree::TreeNode;
 
@@ -314,10 +316,12 @@ impl Rows {
                 if kind == Kind::MultiSearch {
                     p.replace_items(items.clone())
                         .unwrap_or_else(|error| p.report_item_error(error));
-                    p.set_visible_items(
+                    p.set_visible_keys(
                         items
-                            .into_iter()
+                            .iter()
                             .filter(|item| fuzzy(&item.label, &q).is_some())
+                            .filter_map(|item| item.key)
+                            .map(|key| VisibleKey::new(key).matched(Vec::new()))
                             .collect(),
                     )
                     .unwrap_or_else(|error| p.report_item_error(error));
@@ -585,7 +589,10 @@ impl PickersPage {
             PickerAction::QueryChanged => self.refill(kind, cx),
             PickerAction::Chosen(i) | PickerAction::ChosenAlt(i) => {
                 let alt = matches!(ev, PickerAction::ChosenAlt(_));
-                if let Some(it) = picker.as_ref().and_then(|p: &Picker| p.items().get(i)) {
+                if let Some(it) = picker
+                    .as_ref()
+                    .and_then(|p: &Picker| p.visible_item(i).map(|v| v.item))
+                {
                     if kind == Kind::Level {
                         self.level = i;
                     }
@@ -942,7 +949,7 @@ impl Page for PickersPage {
                 if p.is(Phase::Click) {
                     cx.focus.focus(p.id);
                 }
-                if r.action().is_some() {
+                if r.has_actions() {
                     self.open(Kind::ALL[i], cx);
                     return Outcome::Changed;
                 }

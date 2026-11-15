@@ -11,6 +11,7 @@ pub mod completion;
 pub mod detail_card;
 pub mod dialog;
 pub mod diff;
+pub mod document_workspace;
 pub mod edit;
 pub mod empty;
 pub mod field_common;
@@ -61,3 +62,6 @@ pub mod viewport;
 pub mod viewport_ops;
 mod viewport_specimen;
 pub mod widget_hints;
+
+#[cfg(test)]
+mod keyed_cost_tests;

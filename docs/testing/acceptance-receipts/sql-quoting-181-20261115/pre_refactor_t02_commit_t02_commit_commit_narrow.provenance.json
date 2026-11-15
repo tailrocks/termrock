@@ -1,0 +1,72 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Library/Caches/mbx/targets/v1/b99c0109586920d4303a9df57d68adadc212f0a373e54239cc8302244b943d32/debug/tablepro",
+  "binary_sha256": "83e7bc1f26bf73edc4428e8f6d2b1a119d3f813f88880d51f659db2c5b4f40a6",
+  "fixture_args": [],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "4dbd0cf0dbe0f1da6f668e7bd42a1fe721ec2abb8c74bafd169ea1ae2d1d6eff",
+  "expect_baseline": "450cedc2306dea07e0d791da7ae3f18da282fed0339805565062de991301c768",
+  "precondition": "SQL preview identifiers are delimited (#181): the 80 by 24 Save changes? dialog statement now reads UPDATE \"public\".\"organizations\" SET \"name\" = ..., so the statement text cells on the code row and the horizontal scroll thumb under it (the longer statement shortens the thumb) change; no other cell differs. Textual assertions in t02_commit.rs were corrected to the quoted text in the same run.",
+  "session": null,
+  "expected_test_id": "pre_refactor/t02_commit/t02_commit_commit_narrow",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/sql-quoting-181-20261115/pre_refactor_t02_commit_t02_commit_commit_narrow.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/sql-quoting-181-20261115/pre_refactor_t02_commit_t02_commit_commit_narrow.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/sql-quoting-181-20261115/superseded/pre_refactor/t02_commit/t02_commit_commit_narrow.tui.pb",
+  "test_id": "pre_refactor/t02_commit/t02_commit_commit_narrow",
+  "acceptance": {
+    "expected_baseline_sha256": "450cedc2306dea07e0d791da7ae3f18da282fed0339805565062de991301c768",
+    "accepted_baseline_sha256": "4dbd0cf0dbe0f1da6f668e7bd42a1fe721ec2abb8c74bafd169ea1ae2d1d6eff",
+    "candidate_sha256": "4dbd0cf0dbe0f1da6f668e7bd42a1fe721ec2abb8c74bafd169ea1ae2d1d6eff",
+    "transaction_receipt": "docs/testing/acceptance-receipts/sql-quoting-181-20261115/pre_refactor_t02_commit_t02_commit_commit_narrow.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "450cedc2306dea07e0d791da7ae3f18da282fed0339805565062de991301c768"
+  },
+  "candidate": {
+    "sha256": "4dbd0cf0dbe0f1da6f668e7bd42a1fe721ec2abb8c74bafd169ea1ae2d1d6eff",
+    "path": "tests/functional/baselines/pre_refactor/t02_commit/t02_commit_commit_narrow.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/sql-quoting-181-20261115/superseded/pre_refactor/t02_commit/t02_commit_commit_narrow.tui.pb",
+    "superseded_baseline_sha256": "450cedc2306dea07e0d791da7ae3f18da282fed0339805565062de991301c768"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/t02_commit/t02_commit_commit_narrow.tui.pb",
+    "candidate_sha256": "4dbd0cf0dbe0f1da6f668e7bd42a1fe721ec2abb8c74bafd169ea1ae2d1d6eff",
+    "binary_path": "/Users/donbeave/Library/Caches/mbx/targets/v1/b99c0109586920d4303a9df57d68adadc212f0a373e54239cc8302244b943d32/debug/tablepro",
+    "binary_sha256": "83e7bc1f26bf73edc4428e8f6d2b1a119d3f813f88880d51f659db2c5b4f40a6",
+    "note": "Live candidate capture of this branch (fix/181-quote-sql-identifiers). The pinned reference binary predates the quoted SQL preview, so no Reference-mode capture exists."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/t02_commit/t02_commit_commit_narrow",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Library/Caches/mbx/targets/v1/b99c0109586920d4303a9df57d68adadc212f0a373e54239cc8302244b943d32/functional/t02-commit-37970-1794726941853709000-0/check-artifacts/pre_refactor/t02_commit/t02_commit_commit_narrow/4dbd0cf0dbe0f1da6f668e7bd42a1fe721ec2abb8c74bafd169ea1ae2d1d6eff/sample.tui.pb"
+    },
+    "candidate_sha256": "4dbd0cf0dbe0f1da6f668e7bd42a1fe721ec2abb8c74bafd169ea1ae2d1d6eff",
+    "baseline_sha256": "4dbd0cf0dbe0f1da6f668e7bd42a1fe721ec2abb8c74bafd169ea1ae2d1d6eff",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane15/tests/functional/baselines/pre_refactor/t02_commit/t02_commit_commit_narrow.tui.pb"
+    },
+    "error_code": null
+  }
+}

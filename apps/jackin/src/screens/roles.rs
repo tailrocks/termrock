@@ -33,8 +33,10 @@ use crate::domain::precedence::PrecedenceLevel;
 use crate::domain::role::{RoleCheckState, RoleManifestDoc, RoleRecord};
 use crate::domain::workspace::{AllowedRoles, RoleEntry, RoleName, RoleSource, usability_of};
 use crate::world::{Msg, RoleLoad, SaveSuccess, World, job};
+use junie_tui::core::id::ItemKey;
+use junie_tui::core::keyed::KeyedVec;
 use junie_tui::ui::text::plural;
-use junie_tui::widgets::list_detail::{Action, Event, Frame, Line, ListDetail, ListRow};
+use junie_tui::widgets::list_detail::{Action, Event, Line, ListDetail, ListRow, SourceFrame};
 
 pub const LIST: WidgetId = WidgetId::of("roles.list");
 pub const DETAIL: WidgetId = WidgetId::of("roles.detail");
@@ -60,6 +62,7 @@ struct Bind {
 pub struct RolesScreen {
     ld: ListDetail,
     rows: Vec<Row>,
+    roster: KeyedVec<ListRow>,
     filter: Option<String>,
     want: Option<RoleName>,
     pending: Option<Bind>,
@@ -139,6 +142,7 @@ impl RolesScreen {
     pub fn new() -> Self {
         Self {
             ld: ListDetail::new(LIST, DETAIL, Split::new(42, 36, 44)),
+            roster: KeyedVec::new(),
             rows: vec![Row::Add],
             filter: None,
             want: None,
@@ -175,6 +179,7 @@ impl RolesScreen {
             .unwrap_or_default();
         rows.push(Row::Add);
         self.rows = rows;
+        self.refresh_roster(w);
         if let Some(want) = self.want.take()
             && let Some(i) = self
                 .rows
@@ -184,6 +189,25 @@ impl RolesScreen {
             self.ld.select(i);
         }
         self.ld.clamp(self.rows.len());
+    }
+
+    fn row_key(row: &Row) -> ItemKey {
+        match row {
+            Row::Role(name) => ItemKey::text(&format!("role:{name}")),
+            Row::Add => ItemKey::text("add"),
+        }
+    }
+
+    /// Rebuilds the keyed roster from the current rows and lets the list keep
+    /// its selection on the same role when roles appear, vanish or reorder.
+    fn refresh_roster(&mut self, w: &World) {
+        let rows = self.list_rows(w);
+        let keyed = self.rows.iter().map(Self::row_key).zip(rows);
+        // Keys derive from role names the manifest keeps unique, so the
+        // roster is always valid.
+        if self.roster.replace_if_changed(keyed).is_ok() {
+            let _ = self.ld.bind_source(&self.roster);
+        }
     }
 
     fn selected_role<'a>(&self, w: &'a World) -> Option<&'a RoleRecord> {
@@ -1063,7 +1087,7 @@ impl Page<Jackin> for RolesScreen {
                     self.add(cx);
                     return Outcome::Changed;
                 }
-                let (o, event) = self.ld.click(ev.id, cx.focus, self.rows.len());
+                let (o, event) = self.ld.click_source(ev.id, cx.focus);
                 match event {
                     Some(Event::Item(_)) => self.open_pick(w, cx),
                     Some(Event::Action(name)) => self.fire(name, w, cx),
@@ -1149,7 +1173,6 @@ impl Page<Jackin> for RolesScreen {
             empty::render_ctx(area, buf, ctx, &self.empty(), t.canvas);
             return;
         }
-        let rows = self.list_rows(w);
         let roles = w.surfaces.roles.as_ref().map_or(0, |a| a.roles.len());
         let failing = w.surfaces.roles.as_ref().map_or(0, |a| {
             a.roles
@@ -1166,18 +1189,23 @@ impl Page<Jackin> for RolesScreen {
             None => "Roles".into(),
         };
         let (detail_title, detail_meta, lines, actions) = self.detail(w);
-        let frame = Frame {
+        let frame = SourceFrame {
             title: &title,
-            meta,
-            head: vec![],
-            rows: &rows,
+            meta: &meta,
+            head: &[],
             under: Some(ORDER_LINE),
-            detail_title,
-            detail_meta,
-            lines,
-            actions,
+            detail_title: &detail_title,
+            detail_meta: &detail_meta,
+            lines: &lines,
+            actions: &actions,
         };
-        self.ld.render(area, buf, ctx, &frame);
+        if self
+            .ld
+            .render_source(area, &self.roster, &frame, buf, ctx)
+            .is_err()
+        {
+            ctx.control(LIST, Rect::new(area.x, area.y, 1, 1), false);
+        }
     }
 
     fn hints(&self, focus: Option<WidgetId>, w: &World) -> Vec<Hint> {

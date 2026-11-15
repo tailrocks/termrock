@@ -583,3 +583,91 @@ fn issue9_tablepro_query_editor_unicode_paste_keeps_text_and_editor_alive() {
     let screen = app.wait_text(&format!("{sql}1"));
     assert!(text(&screen).contains(sql), "{}", text(&screen));
 }
+
+fn uuid_in(row: &str) -> Option<&str> {
+    let bytes = row.as_bytes();
+    (0..bytes.len().saturating_sub(35)).find_map(|start| {
+        let window = row.get(start..start + 36)?;
+        let dashes = [8, 13, 18, 23];
+        window
+            .bytes()
+            .enumerate()
+            .all(|(i, b)| {
+                if dashes.contains(&i) {
+                    b == b'-'
+                } else {
+                    b.is_ascii_hexdigit()
+                }
+            })
+            .then_some(window)
+    })
+}
+
+fn row_of(screen: &tui_test::TerminalSnapshot, needle: &str) -> String {
+    (0..screen.rows())
+        .map(|index| row_text(screen, index))
+        .find(|row| row.contains(needle))
+        .unwrap_or_else(|| panic!("no row has {needle:?}\n{}", text(screen)))
+}
+
+#[test]
+fn issue12_guarded_reload_pty() {
+    const EDIT: &str = "GuardEdit";
+    const PENDING: &str = "1 pending";
+    const GUARD: &str = "Unsaved changes";
+
+    let app = connected("tablepro-issue12-guarded-reload");
+    app.key("ctrl+o");
+    app.wait_text("Open Quickly");
+    app.type_text("organizations");
+    app.wait_text("organizations");
+    app.key("enter");
+    let table = app.wait_screen("organizations opened", |s| {
+        text(s).contains("public › organizations") && !text(s).contains("Open Quickly")
+    });
+    let id_row = (0..table.rows())
+        .map(|index| row_text(&table, index))
+        .find(|row| uuid_in(row).is_some())
+        .expect("a data row with an id");
+    let id = uuid_in(&id_row).expect("an id").to_owned();
+
+    app.key("right");
+    app.key("enter");
+    app.wait_text("Apply");
+    app.key("ctrl+l");
+    app.key("backspace");
+    app.type_text(EDIT);
+    app.key("enter");
+    let edited = app.wait_screen("the edit is pending", |s| {
+        text(s).contains(PENDING) && row_of(s, &id).contains(EDIT)
+    });
+    assert!(!text(&edited).contains(GUARD));
+
+    app.key("s");
+    let asked = app.wait_text(GUARD);
+    assert!(
+        row_of(&asked, &id).contains(EDIT),
+        "the draft is still on its row while the guard asks\n{}",
+        text(&asked)
+    );
+    assert!(!text(&asked).contains("Sorted by"), "{}", text(&asked));
+
+    app.key("escape");
+    let kept = app.wait_screen("Cancel keeps the draft and the order", |s| {
+        let visible = text(s);
+        !visible.contains(GUARD) && visible.contains(EDIT) && visible.contains(PENDING)
+    });
+    assert!(row_of(&kept, &id).contains(EDIT), "{}", text(&kept));
+    assert!(!text(&kept).contains("Sorted by"), "{}", text(&kept));
+
+    app.key("s");
+    app.wait_text(GUARD);
+    app.key("left");
+    app.key("enter");
+    let sorted = app.wait_screen("Discard sorts and drops the draft", |s| {
+        let visible = text(s);
+        !visible.contains(GUARD) && !visible.contains(EDIT) && visible.contains("Sorted by")
+    });
+    assert!(!text(&sorted).contains(PENDING), "{}", text(&sorted));
+    app.finish();
+}

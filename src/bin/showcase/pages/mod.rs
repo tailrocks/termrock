@@ -362,3 +362,23 @@ pub mod layout {
         )
     }
 }
+
+#[cfg(test)]
+pub fn page_text(page: &mut dyn Page, width: u16, height: u16) -> String {
+    use junie_tui::core::focus::FocusRing;
+    use junie_tui::core::hit::HitRegistry;
+    use junie_tui::theme::{ColorLevel, Theme};
+    use junie_tui::ui::ctx::Interaction;
+
+    let theme = Theme::for_level(ColorLevel::TrueColor);
+    let area = Rect::new(0, 0, width, height);
+    let mut buf = Buffer::empty(area);
+    let mut hits = HitRegistry::default();
+    let mut ring = FocusRing::default();
+    let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+    page.render(area, &mut buf, &mut ctx);
+    (0..height)
+        .map(|y| (0..width).map(|x| buf[(x, y)].symbol()).collect::<String>())
+        .collect::<Vec<_>>()
+        .join("\n")
+}

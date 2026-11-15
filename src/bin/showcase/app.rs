@@ -1178,14 +1178,16 @@ impl App {
         Some(self.settle_layer(out))
     }
 
-    fn settle_layer(&mut self, mut out: Outcome) -> Outcome {
-        while let Some(taken) = self.layers.take(&mut self.shell.focus) {
-            out = match taken {
-                Taken::Event(r) => self.layer_event(r).or(out),
-                Taken::Closed(entry, r) => self.layer_closed(entry, r).or(out),
-            };
-        }
-        out
+    fn settle_layer(&mut self, out: Outcome) -> Outcome {
+        Layers::settle(
+            self,
+            |app| (&mut app.layers, &mut app.shell.focus),
+            out,
+            |app, taken| match taken {
+                Taken::Event(r) => app.layer_event(r),
+                Taken::Closed(entry, r) => app.layer_closed(entry, r),
+            },
+        )
     }
 
     fn layer_event(&mut self, r: LayerRes) -> Outcome {
@@ -1657,7 +1659,7 @@ impl App {
         if ev.is(Phase::Click) && (row.is_some() || ev.id == NAV) {
             self.shell.focus.focus(NAV);
         }
-        let out = self.nav_event(|nav| nav.pointer(ev).into_parts());
+        let out = self.nav_event(|nav| nav.pointer(ev));
         Some(out)
     }
 
@@ -1732,22 +1734,21 @@ impl App {
         self.nav_reveal = true;
     }
 
-    fn nav_event(
-        &mut self,
-        f: impl FnOnce(&mut TreeView) -> (Outcome, Option<TreeAction>),
-    ) -> Outcome {
+    fn nav_event(&mut self, f: impl FnOnce(&mut TreeView) -> Response<TreeAction>) -> Outcome {
         let auto_open =
             |nav: &TreeView, g: Option<usize>| g.map(|g| nav.expanded.contains(&vec![g]));
         let before = auto_open(&self.nav, self.nav_auto);
-        let (out, ev) = f(&mut self.nav);
+        let (out, actions) = f(&mut self.nav).into_parts();
         if auto_open(&self.nav, self.nav_auto) != before {
             self.nav_auto = None;
         }
-        if let Some(TreeAction::Activate(path)) = ev
-            && let Some(page) = PageId::from_nav_path(&path)
-        {
-            self.open_page(page);
-            return Outcome::Changed;
+        for action in actions {
+            if let TreeAction::Activate(path) = action
+                && let Some(page) = PageId::from_nav_path(&path)
+            {
+                self.open_page(page);
+                return Outcome::Changed;
+            }
         }
         out
     }

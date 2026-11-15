@@ -3311,15 +3311,17 @@ impl CapsuleScreen {
                 return None;
             }
         };
-        let (o, act) = r.into_parts();
-        match act {
-            Some(MenuAction::Chosen(i)) => {
-                let label = m.items[i].item.label.clone();
-                let t = if tab == usize::MAX { None } else { Some(tab) };
-                self.run_menu(&label, t, w, cx);
+        let (o, actions) = r.into_parts();
+        if actions.is_empty() {
+            self.tab_menu = Some((tab, m));
+        } else {
+            for act in actions {
+                if let MenuAction::Chosen(i) = act {
+                    let label = m.items[i].item.label.clone();
+                    let t = if tab == usize::MAX { None } else { Some(tab) };
+                    self.run_menu(&label, t, w, cx);
+                }
             }
-            Some(MenuAction::Dismissed) => {}
-            None => self.tab_menu = Some((tab, m)),
         }
         Some(o.or(Outcome::Changed))
     }
@@ -3343,14 +3345,16 @@ impl CapsuleScreen {
             return o;
         }
         if let Some(r) = self.menubar.route(ev) {
-            let (o, act) = r.into_parts();
-            match act {
-                Some(MenuBarAction::Chosen(mi, ii)) => {
-                    let label = self.menubar.menus[mi][ii].item.label.clone();
-                    self.run_menu(&label, None, w, cx);
+            let (o, actions) = r.into_parts();
+            for act in actions {
+                match act {
+                    MenuBarAction::Chosen(mi, ii) => {
+                        let label = self.menubar.menus[mi][ii].item.label.clone();
+                        self.run_menu(&label, None, w, cx);
+                    }
+                    MenuBarAction::Brand => self.open_brand_menu(w),
+                    _ => {}
                 }
-                Some(MenuBarAction::Brand) => self.open_brand_menu(w),
-                _ => {}
             }
             return o.or(Outcome::Changed);
         }
@@ -3371,11 +3375,13 @@ impl CapsuleScreen {
             return Outcome::Changed;
         }
         if let Some(r) = self.tabs.route(ev) {
-            let (o, act) = r.into_parts();
-            if let Some(TabAction::Activated(i)) = act
-                && let Some(d) = self.daemon_mut(w)
-            {
-                d.active = i;
+            let (o, actions) = r.into_parts();
+            for act in actions {
+                if let TabAction::Activated(i) = act
+                    && let Some(d) = self.daemon_mut(w)
+                {
+                    d.active = i;
+                }
             }
             cx.focus.focus(PANES);
             return o.or(Outcome::Changed);
