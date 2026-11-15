@@ -143,6 +143,7 @@ read it against, because each of its reasons names a Fixed control.
 - Behaviour is overridable in layers: app/profile policy, then
   per-widget setting, then user key remapping.
 - A control with one true value is `Control::Fixed(Reason)` (`core::refusal`): `Checkbox`, `Select`, `Button`, one `RadioGroup` option and one `ListItem` take `.fixed(reason)` or `.control(..)`. It stays in the focus ring, draws the disabled look with the `▎` gutter when focused, and refuses an edit: the value is untouched, the widget returns `Consumed` (`Select`, `Button`: `(Consumed, ..)`) and raises the reason into a thread-local slot (`RefCell<Option<Reason>>`). The call site reads the slot with `take_refusal()` (which clears it) and posts it with `Cx::refused(Reason)`, a neutral status of the reason text alone that lasts 5 s. `shell::handle` clears the slot at the start and at the end of each input, and redraws whenever an input changed the status line (text or tone), so a refusal by key paints at once. `Cx::sticky` posts a neutral status that does not expire and clears on the next key, paste or mouse press (`StatusLine::set_sticky_with`); it is for text a user must read or copy. A `Dialog` routes its mnemonics and its confirm key through `Button::activate`, and every finish (Enter in a prompt field, the typed acknowledgement) through `Button::refuse`, so a fixed action refuses on every route and `Dialog::hints` does not offer it. A fixed `ListItem` keeps its checked state through every selection path. `Reason` limits: text 60 columns, `short` 20 (`Reason::within_limits`); `ContextMenu::reason_room` is the room of the menu border. The showcase page `fixedcontrols` shows it. `Table` rows have no fixed state yet.
+- The showcase Query workbench keeps one `CodeEditor` per document, selected by an authoritative key, not the tab strip. Record: [Query workbench document keys](audits/2026-11-15-query-workbench-document-keys.md).
 - The showcase demonstrates every library capability; the coverage
   gate is described in
   [shared components plan](architecture/shared-components-plan.md).
@@ -183,6 +184,14 @@ variant of these enums stays a breaking change and is recorded here.
 
 ## Known limits
 
+- TablePro's SQL tokenizer (`src/bin/tablepro/sql.rs`) is total over any valid
+  UTF-8 string: every token range starts and ends on a char boundary, and the
+  ranges cover the input exactly. Identifiers accept alphabetic or `_` scalars
+  first and alphanumeric or `_` scalars after; any other scalar (emoji, combining
+  mark, symbol) is one punctuation token. This is a lexical policy, not SQL Unicode
+  identifier support. A doubled quote inside a string or quoted identifier stays
+  in one token.
+
 - `TerminalState::scrolled_off` is exact while the history is below its
   limit (it follows the growth of `scrollback_len`). At the limit, and with
   a limit of 0, it sums the main-screen scroll operations that start at row
@@ -203,5 +212,15 @@ variant of these enums stays a breaking change and is recorded here.
   [architecture](architecture.md); no part of that split has landed.
 - Applications simulate their backends (PostgreSQL, Docker,
   filesystem). No real external effect is claimed or tested.
+- TablePro's save and preview SQL (`model::preview_sql`) and the Showcase
+  grid's SQL preview serialize a finite number as the shortest text that
+  parses back to the stored `f64` (`1.2345` stays `1.2345`, `1.0` stays
+  `1.0`), in assignments, inserted values and original-row predicates. A
+  null key matches with `IS NULL`. A NaN or infinite number, a `DEFAULT` in a
+  row predicate or a key column missing from the tab aborts the whole
+  preview with the row and column named, opens no dialog, starts no save and
+  keeps the draft. Digits discarded before the model stored a number cannot
+  be recovered, and arbitrary-precision decimals are not supported. See
+  [the audit note](audits/2026-11-15-exact-sql-literals.md).
 - The `visual-baseline` git tag is frozen historical evidence. It is
   never moved, and it is not a substitute for the current design.
