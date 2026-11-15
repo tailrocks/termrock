@@ -3,7 +3,9 @@
 //! A report states how much work one operation did, in the units of
 //! [`Metric`]. It carries no elapsed time and makes no latency claim.
 
-use std::path::PathBuf;
+use std::io::Write;
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use super::{ENABLED, Metric, WorkDelta};
 
@@ -12,7 +14,7 @@ pub const SCHEMA_VERSION: u32 = 1;
 /// What one scenario operation did.
 #[derive(Clone, Debug)]
 pub struct ScenarioReport {
-    /// App or widget family, for example `holla_finder`.
+    /// The family the scenario exercises, for example `list_settled`.
     pub scenario: &'static str,
     /// The single operation measured, for example `settled_tick`.
     pub operation: &'static str,
@@ -70,14 +72,39 @@ impl ScenarioReport {
         let target = std::env::var_os("CARGO_TARGET_DIR")
             .map(PathBuf::from)
             .unwrap_or_else(|| PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/target")));
-        let dir = target.join("performance");
-        std::fs::create_dir_all(&dir)?;
-        let path = dir.join(format!(
+        self.write_in(&target.join("performance"))
+    }
+
+    /// Writes the report into `dir` and returns its path.
+    ///
+    /// The JSON goes to a temp file that no other writer can name, in the same
+    /// directory, and is then renamed over the final path. A concurrent writer
+    /// of the same scenario replaces the file whole, so a reader never sees a
+    /// truncated or interleaved report.
+    pub fn write_in(&self, dir: &Path) -> std::io::Result<PathBuf> {
+        static NEXT_TEMP: AtomicU64 = AtomicU64::new(0);
+
+        std::fs::create_dir_all(dir)?;
+        let name = format!(
             "{}-{}-{}.json",
             self.scenario, self.operation, self.record_count
+        );
+        let path = dir.join(&name);
+        let temp = dir.join(format!(
+            ".{name}.{}.{}.tmp",
+            std::process::id(),
+            NEXT_TEMP.fetch_add(1, Ordering::Relaxed)
         ));
-        std::fs::write(&path, self.to_json())?;
-        Ok(path)
+        let written = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&temp)
+            .and_then(|mut file| file.write_all(self.to_json().as_bytes()))
+            .and_then(|()| std::fs::rename(&temp, &path));
+        if written.is_err() {
+            let _ = std::fs::remove_file(&temp);
+        }
+        written.map(|()| path)
     }
 }
 

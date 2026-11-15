@@ -9,132 +9,59 @@
 //!     --no-tests fail -E 'test(/^work_metrics_tests::/)'
 //! ```
 
-use junie_tui::core::event::{Input, Key};
-use junie_tui::metrics::report::ScenarioReport;
+use junie_tui::metrics::harness::{Harness, assert_exact};
 use junie_tui::metrics::{Metric, WorkDelta, measure};
 use junie_tui::motion::Motion;
 use junie_tui::theme::Theme;
-use ratatui::Terminal;
-use ratatui::backend::TestBackend;
-use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+use ratatui::crossterm::event::KeyCode;
 
 use crate::app::App;
 use crate::scenario::Scenario;
 
 const VIEWPORT: (u16, u16) = (120, 40);
+const SCENARIO: &str = "holla_finder";
 
-struct Fixture {
-    app: App,
-    term: Terminal<TestBackend>,
+fn fixture(scenario: Scenario) -> Harness<App> {
+    let mut app = App::launch(scenario, Motion::Paused, 0, Theme::junie(), false);
+    app.world.clock.running = true;
+    let mut f = Harness::new(app, VIEWPORT);
+    f.warm(31);
+    f
 }
 
-impl Fixture {
-    fn new(scenario: Scenario) -> Self {
-        let mut app = App::launch(scenario, Motion::Paused, 0, Theme::junie(), false);
-        app.world.clock.running = true;
-        let term = Terminal::new(TestBackend::new(VIEWPORT.0, VIEWPORT.1)).expect("test terminal");
-        let mut f = Self { app, term };
-        for _ in 0..30 {
-            f.tick();
-        }
-        f.tick();
-        f
-    }
-
-    fn tick(&mut self) {
-        junie_tui::shell::handle(&mut self.app, Input::Tick);
-        self.draw();
-    }
-
-    fn draw(&mut self) {
-        self.term
-            .draw(|frame| junie_tui::shell::render(&mut self.app, frame))
-            .expect("test backend draws");
-    }
-
-    fn type_char(&mut self, c: char) {
-        junie_tui::shell::handle(
-            &mut self.app,
-            Input::Key(Key {
-                code: KeyCode::Char(c),
-                mods: KeyModifiers::NONE,
-            }),
-        );
-        self.draw();
-    }
-
-    /// The frame text with the animated braille spinner glyphs masked, so two
-    /// frames compare equal when only the spinner advanced.
-    fn screen(&self) -> String {
-        let buf = self.term.backend().buffer();
-        buf.content()
-            .chunks(buf.area.width as usize)
-            .map(|row| {
-                row.iter()
-                    .map(|c| c.symbol())
-                    .collect::<String>()
-                    .chars()
-                    .map(|ch| {
-                        if ('\u{2800}'..='\u{28ff}').contains(&ch) {
-                            '*'
-                        } else {
-                            ch
-                        }
-                    })
-                    .collect::<String>()
-            })
-            .collect::<Vec<_>>()
-            .join("\n")
-    }
-
-    fn catalog_items(&self) -> usize {
-        crate::domain::catalog::build_with_warnings(&self.app.world)
-            .0
-            .len()
-    }
-
-    fn report(&self, operation: &'static str, work: WorkDelta, oracle: &str) {
-        ScenarioReport {
-            scenario: "holla_finder",
-            operation,
-            record_count: self.catalog_items(),
-            viewport: VIEWPORT,
-            work,
-            correctness_oracle: oracle.to_owned(),
-        }
-        .write()
-        .expect("write the count report");
-    }
+fn catalog_items(f: &Harness<App>) -> usize {
+    crate::domain::catalog::build_with_warnings(&f.app.world)
+        .0
+        .len()
 }
-fn within(w: &WorkDelta, what: &str, budgets: &[(Metric, u64)]) {
-    if let Err(violations) = w.check_budget(budgets) {
-        panic!("{what}: {violations}");
-    }
+
+fn report(f: &Harness<App>, operation: &'static str, work: WorkDelta, oracle: &str) {
+    f.report(SCENARIO, operation, catalog_items(f), work, oracle);
 }
 
 #[test]
 fn work_contract_holla_idle_and_source_update() {
-    let mut f = Fixture::new(Scenario::ActivitiesMulti);
-    let items = f.catalog_items() as u64;
+    let mut f = fixture(Scenario::ActivitiesMulti);
+    let items = catalog_items(&f) as u64;
     let activities = f.app.world.activities.len() as u64;
     let plans = f.app.world.plans.len() as u64;
     assert_eq!((items, activities, plans), (106, 5, 0), "the fixture size");
 
     // Today every distinct world tick rebuilds the whole Finder projection
     // from the catalog, whether or not anything changed (#62 owns that fix).
-    // The budgets below are therefore the measured cost of the current page,
+    // The counts below are therefore the measured cost of the current page,
     // not a claim that idle work is bounded: one rebuild, one rank pass over
     // all 106 items, and two scheduling passes over the 5 retained activities.
-    let before = f.screen();
+    let before = f.screen_without_spinner();
     let ((), idle) = measure(|| f.tick());
     assert_eq!(
-        f.screen(),
+        f.screen_without_spinner(),
         before,
         "a settled tick leaves the frame unchanged"
     );
     // Scheduling visits each activity in the ready scan and in the advance
     // loop, then each plan once.
-    within(
+    assert_exact(
         &idle,
         "settled tick",
         &[
@@ -150,7 +77,8 @@ fn work_contract_holla_idle_and_source_update() {
         1,
         "an idle tick still rebuilds"
     );
-    f.report(
+    report(
+        &f,
         "settled_tick",
         idle,
         "the frame text is unchanged by the tick",
@@ -162,8 +90,12 @@ fn work_contract_holla_idle_and_source_update() {
         f.app.world.clipboard = Some("unrelated".to_owned());
         f.tick();
     });
-    assert_eq!(f.screen(), before, "the unrelated field is not on screen");
-    within(
+    assert_eq!(
+        f.screen_without_spinner(),
+        before,
+        "the unrelated field is not on screen"
+    );
+    assert_exact(
         &irrelevant,
         "unrelated field then tick",
         &[
@@ -175,16 +107,21 @@ fn work_contract_holla_idle_and_source_update() {
         ],
     );
     assert_eq!(irrelevant.get(Metric::ProjectionRebuilds), 1);
-    f.report(
+    report(
+        &f,
         "irrelevant_source_change_then_tick",
         irrelevant,
         "the frame text is unchanged by an unrelated world field",
     );
 
-    let ((), key) = measure(|| f.type_char('d'));
-    assert_ne!(f.screen(), before, "the query change reaches the frame");
+    let ((), key) = measure(|| f.press(KeyCode::Char('d')));
+    assert_ne!(
+        f.screen_without_spinner(),
+        before,
+        "the query change reaches the frame"
+    );
     // A key does not tick the world, so no scheduling work is counted.
-    within(
+    assert_exact(
         &key,
         "query change",
         &[
@@ -195,7 +132,8 @@ fn work_contract_holla_idle_and_source_update() {
         ],
     );
     assert_eq!(key.get(Metric::SchedulingRecordsVisited), 0);
-    f.report(
+    report(
+        &f,
         "query_change",
         key,
         "the frame differs after the query changes",
