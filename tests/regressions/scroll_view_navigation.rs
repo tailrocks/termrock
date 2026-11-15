@@ -1,6 +1,4 @@
-mod common;
-
-use common::*;
+use super::common::*;
 use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::id::WidgetId;
 use junie_tui::core::keymap::KeyBinding;
