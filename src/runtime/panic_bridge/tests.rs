@@ -130,6 +130,21 @@ fn restore_gate_stale_snapshot_cannot_restore_a_later_interval() {
 }
 
 #[test]
+fn restore_gate_hook_retries_when_setup_settles_after_its_load() {
+    let (gate, restores) = counting_gate!();
+    let token = gate.claim().expect("claim");
+    gate.activate_setup(&token).expect("activate");
+    let observed = gate.load();
+    assert_eq!(observed.setup, Setup::Running);
+
+    gate.finish_setup(&token);
+    gate.restore_observed(observed);
+
+    assert_eq!(runs(restores), 1, "the hook skipped an active interval");
+    assert_eq!(gate.load().phase, Phase::Inactive);
+}
+
+#[test]
 fn restore_gate_exhaustion_is_an_error_not_a_wrap() {
     let (gate, _) = counting_gate!();
     gate.word.store(

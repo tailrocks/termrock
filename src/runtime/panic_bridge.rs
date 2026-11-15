@@ -232,8 +232,14 @@ impl RestoreGate {
 
     /// Ends the setup that [`activate_setup`](Self::activate_setup) began.
     /// Call it once setup stops enabling modes, whether it succeeded or not.
+    ///
+    /// Retries until the exchange succeeds or the setup is already over. A
+    /// failed exchange means another actor changed the word, and each actor's
+    /// transitions are finite, so the loop never waits on a thread. A bounded
+    /// loop could give up and leave `Running` set, which keeps every later
+    /// cleanup of the interval owing another one.
     pub(super) fn finish_setup(&self, token: &SessionToken) {
-        for _ in 0..ATTEMPTS {
+        loop {
             let current = self.load();
             if current.owner != token.owner {
                 return;
@@ -277,15 +283,26 @@ impl RestoreGate {
         self.restore_observed(self.load());
     }
 
-    /// Cleans up when the gate still holds exactly the observed active
-    /// interval. A later interval or owner makes the exchange fail.
+    /// Cleans up the observed active interval. Another actor may change the
+    /// word's setup bits or release flag first, such as `finish_setup`, so a
+    /// failed exchange reloads and retries while the gate still holds the same
+    /// owner and interval in the active phase. A later interval or owner, or
+    /// a cleanup another actor already started, ends the retries.
     fn restore_observed(&self, observed: State) {
-        if observed.phase != Phase::Active {
-            return;
-        }
-        let restoring = observed.in_phase(Phase::Restoring);
-        if self.swap(observed, restoring) {
-            self.run_cleanup(restoring);
+        let mut current = observed;
+        for _ in 0..ATTEMPTS {
+            if current.phase != Phase::Active {
+                return;
+            }
+            let restoring = current.in_phase(Phase::Restoring);
+            if self.swap(current, restoring) {
+                self.run_cleanup(restoring);
+                return;
+            }
+            current = self.load();
+            if (current.owner, current.interval) != (observed.owner, observed.interval) {
+                return;
+            }
         }
     }
 
