@@ -222,7 +222,7 @@ fn finish_grid(g: &mut DataGrid, how: Finish) -> Option<GridAction> {
 }
 
 #[test]
-fn issue32_grid_replace_cancels_all_sessions() {
+fn issue32_grid_replace_cancels_choice() {
     for how in FINISHES {
         for replacement in [&["x", "y", "z"][..], &[][..]] {
             let mut g = grid(&["a", "b", "c"]);
@@ -294,5 +294,161 @@ fn issue32_append_keeps_existing_editor_but_replace_cancels() {
         "{act:?}"
     );
     assert!(g.choice.is_none());
+    assert!(g.pending.is_empty());
+}
+
+fn text_table(texts: &[&str]) -> DataTable {
+    let rows = texts.iter().map(|t| vec![Cell::new(*t)]).collect();
+    DataTable::new(
+        WidgetId::of("t.text"),
+        vec![Column::new("Name", Constraint::Length(10)).editable()],
+        rows,
+    )
+    .validator(|_col, text| text.contains('!').then(|| "no bang".to_owned()))
+    .cell_nav(true)
+}
+
+fn text_table_open_on(t: &mut DataTable, display: usize) {
+    for _ in 0..display {
+        t.on_key(&key(KeyCode::Down));
+    }
+    t.on_key(&key(KeyCode::Enter));
+    assert!(t.edit.is_some(), "Enter opens the text editor");
+}
+
+fn cells(texts: &[&str]) -> Vec<Vec<Cell>> {
+    texts.iter().map(|t| vec![Cell::new(*t)]).collect()
+}
+
+#[test]
+fn issue32_table_text_structural_change_closes_editor() {
+    type Mutate = fn(&mut DataTable);
+    let cases: [(&str, Mutate, &[&str]); 3] = [
+        ("remove_rows", |t| t.remove_rows(&[0]), &["b", "c"]),
+        (
+            "set_row",
+            |t| t.set_row(1, vec![Cell::new("z")]),
+            &["a", "z", "c"],
+        ),
+        (
+            "set_rows",
+            |t| t.set_rows(cells(&["x", "y", "z"])),
+            &["x", "y", "z"],
+        ),
+    ];
+    for (name, mutate, expected) in cases {
+        let mut t = text_table(&["a", "b", "c"]);
+        text_table_open_on(&mut t, 1);
+        mutate(&mut t);
+        assert!(!t.is_editing(), "{name}: the text session closes");
+        assert_eq!(t.commit_edit(), None, "{name}: nothing to commit");
+        assert_eq!(texts(&t), expected, "{name}: no row is rewritten");
+    }
+}
+
+#[test]
+fn issue32_table_text_stale_session_cannot_commit() {
+    let mut t = text_table(&["a", "b", "c"]);
+    text_table_open_on(&mut t, 1);
+    let stale = t.edit.take();
+    t.set_rows(cells(&["x", "y", "z"]));
+    t.edit = stale;
+    assert_eq!(t.commit_edit(), Some(TableAction::Cancelled));
+    assert!(!t.is_editing(), "a stale session is closed");
+    assert_eq!(texts(&t), ["x", "y", "z"]);
+}
+
+#[test]
+fn issue32_table_text_invalid_value_keeps_session() {
+    let mut t = text_table(&["a", "b"]);
+    text_table_open_on(&mut t, 1);
+    t.on_key(&key(KeyCode::Char('!')));
+    let (_, act) = t.on_key(&key(KeyCode::Enter));
+    assert_eq!(act, None, "a rejected value commits nothing");
+    assert!(t.is_editing(), "the live session stays open");
+    assert_eq!(t.edit_error(), Some("no bang"));
+    assert_eq!(texts(&t), ["a", "b"]);
+}
+
+fn grid_text(texts: &[&str]) -> DataGrid {
+    let mut g = DataGrid::new(
+        WidgetId::of("g.text"),
+        vec![ColumnSpec::new("name", CellKind::Text)],
+    )
+    .editable(true)
+    .validator(|_spec, text| {
+        if text.contains('!') {
+            Err("no bang".to_owned())
+        } else {
+            Ok(CellValue::Text(text.to_owned()))
+        }
+    });
+    g.set_rows(rows(texts));
+    g
+}
+
+fn grid_text_open_on(g: &mut DataGrid, display: usize) {
+    for _ in 0..display {
+        g.on_key(&key(KeyCode::Down));
+    }
+    let (_, act) = g.begin_edit();
+    assert_eq!(act, None);
+    assert!(g.edit.is_some(), "begin_edit opens the text editor");
+}
+
+#[test]
+fn issue32_grid_text_structural_change_closes_editor() {
+    let mut g = grid_text(&["a", "b", "c"]);
+    grid_text_open_on(&mut g, 1);
+    g.set_rows(rows(&["x", "y", "z"]));
+    assert!(!g.is_editing(), "set_rows closes the text session");
+    assert_eq!(g.commit_edit(), None);
+    assert!(g.pending.is_empty(), "nothing staged on the replacement");
+
+    let mut g = grid_text(&["a", "b", "c"]);
+    grid_text_open_on(&mut g, 1);
+    g.discard();
+    assert!(!g.is_editing(), "discard closes the text session");
+    assert_eq!(g.commit_edit(), None);
+    assert!(g.pending.is_empty());
+
+    let mut g = grid_text(&["a", "b"]);
+    g.insert_row();
+    let inserted = g.len() - 1;
+    grid_text_open_on(&mut g, inserted);
+    g.toggle_delete(inserted);
+    assert!(
+        !g.is_editing(),
+        "removing the inserted row closes the session"
+    );
+    assert_eq!(g.commit_edit(), None);
+    assert_eq!(g.len(), 2);
+    assert!(g.pending.is_empty());
+}
+
+#[test]
+fn issue32_grid_text_stale_session_cannot_commit() {
+    let mut g = grid_text(&["a", "b", "c"]);
+    grid_text_open_on(&mut g, 1);
+    let stale = g.edit.take();
+    g.set_rows(rows(&["x", "y", "z"]));
+    g.edit = stale;
+    assert_eq!(g.commit_edit(), None, "the stale session commits nothing");
+    assert!(!g.is_editing(), "a stale session is closed");
+    assert!(
+        g.pending.is_empty(),
+        "no cell is staged on replacement data"
+    );
+}
+
+#[test]
+fn issue32_grid_text_invalid_value_keeps_session() {
+    let mut g = grid_text(&["a", "b"]);
+    grid_text_open_on(&mut g, 1);
+    g.on_key(&key(KeyCode::Char('!')));
+    let (_, act) = g.on_key(&key(KeyCode::Enter));
+    assert_eq!(act, None, "a rejected value commits nothing");
+    assert!(g.is_editing(), "the live session stays open");
+    assert_eq!(g.edit_error(), Some("no bang"));
     assert!(g.pending.is_empty());
 }
