@@ -1124,12 +1124,7 @@ impl App {
             self.set_status("Close the open dialog first".into());
             return;
         }
-        let initial = layer.spec().initial_focus;
-        self.layers.push(
-            LayerEntry { layer, tag, owner },
-            &mut self.shell.focus,
-            initial,
-        );
+        self.layers.open(layer, tag, owner, &mut self.shell.focus);
         if let Some(d) = self.layers.top_as_mut::<Dialog>() {
             d.chrome = (d.chrome.0.max(1), d.chrome.1.max(1));
         }
@@ -2209,7 +2204,7 @@ impl shell::App for App {
         self.modal_open()
     }
     fn page_under_layer(&self) -> bool {
-        self.modal_open()
+        self.layers.hides_page_focus()
             || self.inspector_overlay()
             || self.pages[self.page().index()].layer_open()
     }

@@ -287,6 +287,11 @@ variant of these enums stays a breaking change and is recorded here.
   a disabled table row opens no editor and cannot commit one, including after
   it is disabled mid-edit. See
   [the audit note](audits/2026-11-15-item-eligibility.md).
+- Shared shell layers honor `LayerSpec::restore_focus` on result, dismissal and
+  bulk clear, and a non-inert layer with no initial target leaves focus alone
+  (`ModalStack::push_with_focus_policy`, `FocusOnOpen`). `ModalStack::retain`
+  drops the saved return focus of every surviving layer above a removed one.
+  See [the audit note](audits/2026-11-15-layer-focus-policy.md).
 - `DataGrid` keeps its drafts and undo history by row identity. Each row has
   an `ItemKey` (local keys are never reused, provider keys come from
   `try_set_rows_keyed`), `GridRevision` counts source and draft changes, and

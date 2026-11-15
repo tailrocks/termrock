@@ -32,9 +32,15 @@ const FORWARD: &[&str] = &[
     "Gamma tag",
     "Delta tag",
     "Mailbox list",
+    "Passive tip button",
+    "Restore on button",
+    "Restore off button",
     "outside the page",
 ];
 const BACK: &[&str] = &[
+    "Restore off button",
+    "Restore on button",
+    "Passive tip button",
     "Mailbox list",
     "Delta tag",
     "Gamma tag",
