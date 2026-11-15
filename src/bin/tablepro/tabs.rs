@@ -1341,8 +1341,9 @@ impl QueryTab {
     }
 
     fn accept_completion(&mut self, i: usize) {
-        self.completion.apply(i, &mut self.editor.field.buffer);
-        self.completion.close();
+        if self.completion.apply(i, &mut self.editor.field.buffer) {
+            self.completion.close();
+        }
     }
 
     pub fn hints(&self, focus: Option<WidgetId>) -> Vec<Hint> {
