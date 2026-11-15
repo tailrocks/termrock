@@ -395,10 +395,11 @@ Velnor generates the workflows; change its configuration and run
 
 The push filters and the `head_branch` predicates of the follow-up workflows
 (`state-seal`, `cache-prune`) come from `[workflow].default_branch`. That
-value must equal the repository's actual default branch, so check it offline
-with `python3 scripts/check_default_branch.py --expected <branch>` (exit 0
-match, 1 mismatch, 2 invalid config). `tests/ci_default_branch.rs` runs the
-same check. To change the branch, edit the source value, run
+value must equal the repository's actual default branch. `tests/ci_default_branch.rs`
+checks it offline: `repository_config_default_branch_is_main` reads
+`.velnor/config.toml`, and fixture tests cover match, mismatch, fork names,
+and invalid shapes. Run it with `cargo nextest run -p junie-tui --test
+ci_default_branch --no-tests fail`. To change the branch, edit the source value, run
 `mise exec -- velnor-actions generate` from the repository root, and confirm a
 second generation leaves no diff. After the change merges, record one real
 push run on that branch in the Actions tab before closing the issue.
