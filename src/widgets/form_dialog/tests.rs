@@ -1,5 +1,6 @@
 use super::*;
 use crate::core::event::Key;
+use crate::core::focus::BlurAction;
 use crate::core::hit::HitRegistry;
 use crate::core::refusal::{Reason, clear_refusal, take_refusal};
 use crate::theme::{ColorLevel, Theme};
@@ -380,6 +381,59 @@ fn form_hidden_input_rejects_paste_and_drag() {
         "a click on a hidden field never focuses it"
     );
     rig.untouched();
+}
+
+fn type_into_secret(rig: &mut Rig, text: &str) {
+    rig.focus.focus(secret());
+    rig.draw();
+    rig.input_mut("secret").begin_edit();
+    for c in text.chars() {
+        rig.key(secret(), KeyCode::Char(c));
+    }
+    assert!(rig.input("secret").is_dirty(), "the edit is uncommitted");
+    assert!(rig.form.events.is_empty(), "typing reports no change yet");
+}
+
+#[test]
+fn form_hiding_a_dirty_input_follows_its_blur_policy() {
+    let mut rig = Rig::with(source_form());
+    type_into_secret(&mut rig, "x");
+    rig.form.set_visible("secret", false);
+    assert_eq!(rig.input("secret").text(), "x", "commit keeps the edit");
+    assert!(!rig.input("secret").editing);
+    assert_eq!(
+        rig.form.events,
+        vec![FormAction::Changed("secret".into())],
+        "and reports it like a blur commit"
+    );
+    assert!(rig.form.dirty);
+    rig.form.set_visible("secret", false);
+    assert_eq!(rig.form.events.len(), 1, "hiding twice reports once");
+
+    let mut form = source_form();
+    match &mut form.field_mut("secret").expect("field").kind {
+        FormFieldKind::Input(i) => i.blur_action = BlurAction::Cancel,
+        _ => panic!("not an input"),
+    }
+    let mut rig = Rig::with(form);
+    type_into_secret(&mut rig, "x");
+    rig.form.set_visible("secret", false);
+    assert_eq!(
+        rig.input("secret").text(),
+        "hunter2",
+        "cancel reverts the edit"
+    );
+    assert!(!rig.input("secret").editing);
+    assert!(
+        rig.form.events.is_empty(),
+        "a reverted edit reports nothing"
+    );
+    rig.form.set_visible("secret", true);
+    assert_eq!(
+        rig.input("secret").text(),
+        "hunter2",
+        "the original value shows again"
+    );
 }
 
 #[test]
