@@ -2,7 +2,7 @@
 
 # TablePro SQL tokenizer made UTF-8 safe (2026-11-15)
 
-Source: issue #9. The tokenizer lives in `src/bin/tablepro/sql.rs`. Its consumers are `highlight_sql` and `segment_sql` in `src/bin/tablepro/tabs.rs`, `split_statements`, and the `Words` iterator.
+Source: issue #9. The tokenizer lives in `src/bin/tablepro/sql.rs`. Its consumers are `highlight_sql` and `segment_sql` in `src/bin/tablepro/tabs.rs`, `split_statements`, the `Words` iterator, and the completion path in `src/bin/tablepro/model.rs` (`context`, `tables_in_statement` and `statement_around`).
 
 ## Decision
 
