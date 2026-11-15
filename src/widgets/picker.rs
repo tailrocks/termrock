@@ -1002,12 +1002,12 @@ impl Picker {
 
         let hints_fit = inner.bottom() > y + 1;
         let hints = if hints_fit { hints } else { "" };
-        let list = Rect::new(
-            inner.x,
-            y,
-            inner.width,
-            inner.bottom().saturating_sub(y + u16::from(hints_fit)),
-        );
+        // `height` reserves a spare row below the list; the item budget is `max_rows`.
+        let list_rows = inner
+            .bottom()
+            .saturating_sub(y + u16::from(hints_fit))
+            .min(self.list.max_rows.max(1));
+        let list = Rect::new(inner.x, y, inner.width, list_rows);
 
         self.list.layout(list, &self.items[..], ctx);
         let hint_row = |buf: &mut Buffer| {
