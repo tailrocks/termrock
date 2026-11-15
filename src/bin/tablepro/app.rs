@@ -1663,14 +1663,14 @@ impl App {
             }
             SAFE_MODE => {
                 let level = SafeMode::ALL[i.min(5)];
+                if let Some(key) = self.workbench.as_ref().and_then(|w| w.connection_key)
+                    && let Err(e) = self.connections.set_safe_mode(key, level)
+                {
+                    self.set_status_as(StatusKind::Warn, e.message().to_owned());
+                    return Outcome::Changed;
+                }
                 if let Some(w) = self.workbench.as_mut() {
                     w.connection.safe_mode = level;
-                    if let Some(key) = w.connection_key
-                        && let Err(e) = self.connections.set_safe_mode(key, level)
-                    {
-                        self.set_status_as(StatusKind::Warn, e.message().to_owned());
-                        return Outcome::Changed;
-                    }
                 }
                 self.set_status_as(
                     StatusKind::Ok,

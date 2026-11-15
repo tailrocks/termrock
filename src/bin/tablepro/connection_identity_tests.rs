@@ -77,13 +77,25 @@ fn delete_selected(app: &mut App) {
 
 #[test]
 fn connection_identity_duplicate_names() {
-    let mut app = app_with(vec![conn("Dup", "host-a"), conn("Dup", "host-b")]);
+    let mut a = conn("Dup", "host-a");
+    a.outcome = ConnectOutcome::AuthFailed;
+    let mut app = app_with(vec![a, conn("Dup", "host-b")]);
+    let before = entries(&app);
     select_row(&mut app, 2);
     press(&mut app, KeyCode::Enter);
     tick(&mut app, 12);
     assert_eq!(app.route(), Route::Workbench);
     let wb = app.workbench.as_ref().expect("workbench opens");
     assert_eq!(wb.connection.host, "host-b");
+    assert_eq!(wb.connection.outcome, ConnectOutcome::Ok);
+    assert_ne!(
+        wb.connection.outcome,
+        before[0].value().outcome,
+        "A and B differ in outcome"
+    );
+    assert_eq!(wb.connection_key, Some(before[1].key()));
+    assert_ne!(wb.connection_key, Some(before[0].key()));
+    assert_eq!(entries(&app)[0], before[0], "A is untouched by B's attempt");
 }
 
 #[test]
@@ -343,4 +355,30 @@ fn connection_identity_counter_exhaustion_is_atomic() {
     assert_eq!(entries(&app), before);
     tick(&mut app, 12);
     assert_eq!(app.workbench.as_ref().unwrap().connection.host, "host-b");
+}
+
+#[test]
+fn connection_identity_safe_mode_route_is_atomic_on_exhaustion() {
+    let mut app = App::new(Theme::for_level(ColorLevel::TrueColor));
+    app.connections = ConnectionsScreen::with_counters(vec![conn("Dup", "host-a")], 1, 0, u64::MAX);
+    let key = app.connections.iter().next().unwrap().key();
+    app.connect_key(key);
+    assert_eq!(
+        app.workbench.as_ref().unwrap().connection.safe_mode,
+        SafeMode::Silent
+    );
+    let before = entries(&app);
+
+    ctrl(&mut app, 'l');
+    draw(&mut app);
+    press(&mut app, KeyCode::Down);
+    press(&mut app, KeyCode::Enter);
+
+    assert_eq!(
+        app.workbench.as_ref().unwrap().connection.safe_mode,
+        SafeMode::Silent,
+        "workbench keeps the stored level when the save is refused"
+    );
+    assert_eq!(entries(&app), before, "stored connection is unchanged");
+    assert!(status(&app).contains("not applied"), "{}", status(&app));
 }
