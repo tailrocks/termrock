@@ -208,3 +208,151 @@ fn a_press_off_centre_on_the_list_thumb_drags_it_cell_for_cell() {
         "one cell of drag moves the thumb one cell"
     );
 }
+
+fn many_files(n: usize) -> ChangeSet {
+    changes(
+        (0..n)
+            .map(|i| file(&format!("src/a/very/long/path/file{i}.rs")))
+            .collect(),
+        vec![unread("zz.bin")],
+    )
+}
+
+fn render_in(ic: &mut InspectChanges, outer: Rect, screen: Rect) -> Painted {
+    paint_in(outer, Some(ID), |buf, ctx| {
+        Layer::<Out, ()>::render(ic, screen, buf, ctx, &());
+    })
+}
+
+#[test]
+fn inspect_composite_tiny_render_has_no_off_parent_hits() {
+    let outer = Rect::new(0, 0, 140, 40);
+    for mode in [InspectMode::Advanced, InspectMode::Compact] {
+        for w in [0u16, 1, 5, 12, 30, 60, 100] {
+            for h in [0u16, 1, 2, 3, 4, 5, 6, 8, 12, 24] {
+                let screen = Rect::new(5, 3, w, h);
+                let mut ic = InspectChanges::new(ID, "Changes", many_files(3), mode);
+                let p = render_in(&mut ic, outer, screen);
+                let what = format!("{mode:?} screen {screen:?}");
+                let frame = ic.area;
+                for y in outer.y..outer.bottom() {
+                    for x in outer.x..outer.right() {
+                        if !frame.contains((x, y).into()) {
+                            assert_eq!(
+                                p.buf[(x, y)].symbol(),
+                                "#",
+                                "{what}: cell ({x},{y}) outside the frame {frame:?} was written"
+                            );
+                        }
+                    }
+                }
+                for r in p.hits.regions() {
+                    if r.owner == junie_tui::ui::modal::BACKDROP {
+                        continue;
+                    }
+                    assert!(
+                        contains(frame, r.area),
+                        "{what}: hit {:?} escapes {frame:?}",
+                        r.area
+                    );
+                }
+            }
+        }
+    }
+}
+
+fn path_in(text: &str, name: &str) -> bool {
+    text.contains(name)
+}
+
+#[test]
+fn inspect_composite_shrink_grow_retains_selection() {
+    let outer = Rect::new(0, 0, 140, 40);
+    let mut ic = InspectChanges::new(ID, "Changes", many_files(3), InspectMode::Advanced);
+    render_in(&mut ic, outer, SCREEN);
+    let mut focus = Focus::default();
+    let ring = FocusRing::default();
+    {
+        let mut cx = LayerCx {
+            focus: &mut focus,
+            ring: &ring,
+            app: &(),
+        };
+        for _ in 0..2 {
+            Layer::<Out, ()>::on_key(&mut ic, &key(KeyCode::Down), &mut cx);
+        }
+    }
+    let before = screen_text(&render_in(&mut ic, outer, SCREEN).buf);
+    assert!(path_in(&before, "file2.rs"), "{before}");
+
+    let tiny = render_in(&mut ic, outer, Rect::new(5, 3, 40, 3));
+    for r in tiny.hits.regions() {
+        assert!(
+            r.owner == junie_tui::ui::modal::BACKDROP || contains(ic.area, r.area),
+            "a hit survives outside the shrunk frame: {:?}",
+            r.area
+        );
+    }
+    assert_eq!(
+        ic.mode,
+        InspectMode::Advanced,
+        "the mode survives the shrink"
+    );
+
+    let after = screen_text(&render_in(&mut ic, outer, SCREEN).buf);
+    assert!(
+        path_in(&after, "file2.rs"),
+        "the selected file survives grow: {after}"
+    );
+}
+
+#[test]
+fn inspect_composite_stacked_render_stays_in_frame() {
+    let outer = Rect::new(0, 0, 140, 40);
+    for h in 0..=14u16 {
+        let screen = Rect::new(2, 2, 60, h);
+        let mut ic = InspectChanges::new(ID, "Changes", many_files(3), InspectMode::Advanced);
+        let p = render_in(&mut ic, outer, screen);
+        let frame = ic.area;
+        assert!(
+            contains(screen, frame),
+            "h={h}: frame {frame:?} in {screen:?}"
+        );
+        for y in outer.y..outer.bottom() {
+            for x in outer.x..outer.right() {
+                if !frame.contains((x, y).into()) {
+                    assert_eq!(p.buf[(x, y)].symbol(), "#", "h={h}: ({x},{y})");
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn inspect_composite_stacked_body_of_one_row_stays_in_the_frame() {
+    let outer = Rect::new(0, 0, 140, 40);
+    for height in [5u16, 6, 7, 8, 9] {
+        let screen = Rect::new(5, 3, 60, height);
+        let mut ic = InspectChanges::new(ID, "Changes", many_files(3), InspectMode::Advanced);
+        let p = render_in(&mut ic, outer, screen);
+        let frame = ic.area;
+        for y in outer.y..outer.bottom() {
+            for x in outer.x..outer.right() {
+                if !frame.contains((x, y).into()) {
+                    assert_eq!(
+                        p.buf[(x, y)].symbol(),
+                        "#",
+                        "height {height}: cell ({x},{y}) outside {frame:?} was written"
+                    );
+                }
+            }
+        }
+        for r in p.hits.regions() {
+            assert!(
+                r.owner == junie_tui::ui::modal::BACKDROP || contains(frame, r.area),
+                "height {height}: hit {:?} escapes {frame:?}",
+                r.area
+            );
+        }
+    }
+}
