@@ -1485,3 +1485,28 @@ fn issue43_rejected_notify_toggle_shows_its_error() {
     );
     app.finish();
 }
+
+#[test]
+fn standalone_choice_editor_reports_its_options_while_open() {
+    let app = page("s03-celleditors-chooser", None, 120, 40);
+    app.wait_text("Deployment targets");
+    let anchor = app.point("Deployment targets");
+    for _ in 0..12 {
+        if text(&app.screen()).contains("Default region") {
+            break;
+        }
+        app.wheel(anchor, true, 3);
+        app.settle();
+    }
+    let closed = app.wait_text("Default region");
+    see(&closed, &["A ChoiceEditor on its own"], &["options open"]);
+    app.click_text("Default region");
+    let open = app.wait_text("options open");
+    see(&open, &["18 options open", CHOOSING], &[]);
+    app.key("esc");
+    let shut = app.wait_screen("chooser closed", |screen| {
+        !text(screen).contains("options open")
+    });
+    see(&shut, &["Default region"], &["options open"]);
+    app.finish();
+}

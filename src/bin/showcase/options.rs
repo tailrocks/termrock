@@ -1396,6 +1396,7 @@ pub static PICKERS: &[Opt] = &[
         &["works", "fails", "stalls"],
     ),
     Opt::new("pickers.international", "International labels", OFF_ON),
+    Opt::new("pickers.preselect", "Preselect multi rows", OFF_ON),
 ];
 
 pub static TABS: &[Opt] = &[

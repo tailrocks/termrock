@@ -1,4 +1,5 @@
 use ratatui::buffer::Buffer;
+use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Rect, Size};
 
 use crate::app::PageId;
@@ -75,6 +76,11 @@ pub struct SplitsStacksPage {
 
     outer_area: Rect,
     inner_area: Rect,
+    /// The seam under the pointer between its press and the end of the gesture.
+    held: Option<WidgetId>,
+    /// A seam whose grab Esc dropped: the pointer still holds it, so its drag
+    /// events are ignored until the button is released.
+    dropped: Option<WidgetId>,
     zoom: [Button; 3],
     stack: Stack,
     scroll: StackScroll,
@@ -93,6 +99,8 @@ impl SplitsStacksPage {
             inner_seam: Splitter::new(INNER, SplitDir::Vertical),
             outer_area: Rect::ZERO,
             inner_area: Rect::ZERO,
+            held: None,
+            dropped: None,
             zoom: [
                 Button::secondary(ID.sub("zoom-editor"), "Zoom editor"),
                 Button::secondary(ID.sub("zoom-output"), "Zoom output"),
@@ -341,15 +349,27 @@ impl SplitsStacksPage {
             return o;
         }
         let (id, pos) = (ev.id, ev.pos());
+        if matches!(
+            ev.phase(),
+            Some(Phase::Release | Phase::DragEnd | Phase::Click)
+        ) {
+            self.held = None;
+            self.dropped = None;
+        }
         match ev.phase() {
             Some(Phase::Press) => {
                 if let Some((seam, split, area)) = self.seam(id) {
                     seam.on_press(split, area, 1, pos);
+                    self.held = Some(id);
+                    self.dropped = None;
                     return Outcome::Consumed;
                 }
                 Outcome::Ignored
             }
             Some(Phase::Drag) => {
+                if self.dropped == Some(id) {
+                    return Outcome::Consumed;
+                }
                 if let Some((seam, split, area)) = self.seam(id) {
                     return seam.on_drag(split, area, 1, pos);
                 }
@@ -370,6 +390,17 @@ impl SplitsStacksPage {
             }
             _ => Outcome::Ignored,
         }
+    }
+
+    /// Esc drops the grab of the seam being dragged. The panes keep the size
+    /// the drag reached: only the rest of the gesture is cancelled.
+    fn cancel_drag(&mut self, cx: &mut Cx) -> Outcome {
+        let held = self.outer_seam.cancel_drag() | self.inner_seam.cancel_drag();
+        self.dropped = self.held.take();
+        if held {
+            cx.status("Drag cancelled: the seam stays where it is");
+        }
+        Outcome::Changed
     }
 
     fn seam(&mut self, id: WidgetId) -> Option<(&mut Splitter, &mut Split, Rect)> {
@@ -459,6 +490,9 @@ impl Page for SplitsStacksPage {
         match ev {
             PageEvent::Pointer(ev) => self.pointer(ev, cx),
             PageEvent::Key(key) => {
+                if key.is(KeyCode::Esc) && self.held.is_some() {
+                    return self.cancel_drag(cx);
+                }
                 let Some(f) = cx.focus.current() else {
                     return Outcome::Ignored;
                 };

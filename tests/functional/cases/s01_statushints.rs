@@ -939,8 +939,9 @@ fn status_posts_expire_and_error_stays() {
         footer(&warning)
     );
 
-    app.key("tab");
-    app.key("tab");
+    for _ in 0..4 {
+        app.key("tab");
+    }
     app.key("enter");
     let finished = app.wait_screen("job footer", |screen| {
         footer(screen).contains("Indexing finished")
@@ -1001,6 +1002,66 @@ fn status_posts_expire_and_error_stays() {
     assert!(
         !text(&cleared).contains("Indexing finished"),
         "forbidden Indexing finished after the error is cleared"
+    );
+    app.finish();
+}
+
+#[test]
+fn notices_replace_notices_and_yield_to_posts() {
+    const SYNC: &str = "Sync paused: another client is entering";
+    const REFRESH: &str = "Refresh failed, retrying in 30 s";
+    let app = page("statushints-notice", &[], 120, 40, "reduced");
+    let before = app.wait_text("the live widget");
+    assert!(
+        !footer(&before).contains("Sync paused") && !footer(&before).contains("Refresh failed"),
+        "the footer starts without a notice: {}",
+        footer(&before)
+    );
+
+    wheel_to(&app, "resolved", "Notice: refresh failed");
+    activate(&app, "Notice: sync paused");
+    let first = app.wait_screen("first notice", |screen| footer(screen).contains(SYNC));
+    assert!(
+        footer(&first).contains(SYNC),
+        "a notice shows when the line is free: {}",
+        footer(&first)
+    );
+
+    activate(&app, "Notice: refresh failed");
+    let second = app.wait_screen("second notice", |screen| footer(screen).contains(REFRESH));
+    assert!(
+        !footer(&second).contains("Sync paused"),
+        "a notice replaces an earlier notice: {}",
+        footer(&second)
+    );
+
+    activate(&app, "Post info");
+    let post = app.wait_screen("post over a notice", |screen| {
+        footer(screen).contains("Saved 3 rows")
+    });
+    assert!(
+        !footer(&post).contains("Refresh failed"),
+        "a post replaces a notice: {}",
+        footer(&post)
+    );
+
+    activate(&app, "Notice: sync paused");
+    let dropped = app.settle();
+    assert!(
+        footer(&dropped).contains("Saved 3 rows") && !footer(&dropped).contains("Sync paused"),
+        "a notice never hides a post: {}",
+        footer(&dropped)
+    );
+
+    app.wait_absent("Saved 3 rows");
+    activate(&app, "Notice: refresh failed");
+    let free = app.wait_screen("notice on a free line", |screen| {
+        footer(screen).contains(REFRESH)
+    });
+    assert!(
+        !footer(&free).contains("Sync paused"),
+        "the dropped notice did not come back: {}",
+        footer(&free)
     );
     app.finish();
 }

@@ -44,6 +44,8 @@ const CAPTIONS: [&str; 9] = [
     "Command line · CommonArgs: every app flattens it into its own clap parser",
 ];
 
+const NOTICE_NOTE: &str = "a notice is for what the user did not just do (a background refresh failing): it replaces only another notice, and it is dropped while a post is showing";
+
 const AUTO_NOTE: &str = "Auto: pinned when the key is in theme.hintbar.pinned_keys (Esc) · Hint::pinned keeps F5 · Normal drops first";
 
 const MOTION_NOTE: &str = "full: the spinner turns and the bar fills · reduced: the bar fills, the spinner keeps its first frame · paused: nothing moves; --frame N picks the tick";
@@ -98,13 +100,38 @@ fn shell_height(w: u16) -> u16 {
         .map(|l| hanging(l, w.saturating_sub(2)).len() as u16)
         .sum();
 
-    16 + note_rows(&ttl_note(), w) + note_rows(MOTION_NOTE, w) + args
+    17 + note_rows(&ttl_note(), w) + note_rows(NOTICE_NOTE, w) + note_rows(MOTION_NOTE, w) + args
 }
 
-const POSTS: [(&str, &str, Tone); 3] = [
-    ("Post info", "Saved 3 rows", Tone::Secondary),
-    ("Post warning", "2 rows skipped", Tone::Warning),
-    ("Post error", "Connection lost", Tone::Error),
+/// A post is what the user just did (`Cx::status_in`). A notice is a message
+/// about something they did not do (`Cx::notice`), so it never hides a post.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Post {
+    Message,
+    Notice,
+}
+
+const POSTS: [(&str, &str, Tone, Post); 5] = [
+    ("Post info", "Saved 3 rows", Tone::Secondary, Post::Message),
+    (
+        "Post warning",
+        "2 rows skipped",
+        Tone::Warning,
+        Post::Message,
+    ),
+    ("Post error", "Connection lost", Tone::Error, Post::Message),
+    (
+        "Notice: sync paused",
+        "Sync paused: another client is entering",
+        Tone::Secondary,
+        Post::Notice,
+    ),
+    (
+        "Notice: refresh failed",
+        "Refresh failed, retrying in 30 s",
+        Tone::Warning,
+        Post::Notice,
+    ),
 ];
 
 const JOB_STEP: f64 = 0.02;
@@ -133,7 +160,7 @@ impl StatusHintsPage {
             posts: POSTS
                 .iter()
                 .enumerate()
-                .map(|(i, (label, _, _))| Button::secondary(ID.sub("post").child(i), label))
+                .map(|(i, (label, ..))| Button::secondary(ID.sub("post").child(i), label))
                 .collect(),
             run: Button::secondary(ID.sub("run"), "Run job"),
             job: None,
@@ -500,16 +527,22 @@ impl StatusHintsPage {
             "Status line · StatusLine: the shell's footer message",
         );
         y += 1;
-        if y < area.bottom() {
-            let mut x = area.x + 2;
-            for b in &mut self.posts {
-                let w = b.width();
-                b.render(Rect::new(x, y, w, 1), buf, ctx, bg);
-                x += w + 2;
+        for kind in [Post::Message, Post::Notice] {
+            if y < area.bottom() {
+                let mut x = area.x + 2;
+                for (b, (.., k)) in self.posts.iter_mut().zip(POSTS) {
+                    if k != kind {
+                        continue;
+                    }
+                    let w = b.width();
+                    b.render(Rect::new(x, y, w, 1), buf, ctx, bg);
+                    x += w + 2;
+                }
             }
+            y += 1;
         }
-        y += 1;
-        y += note(area, buf, t, y, &ttl_note()) + 1;
+        y += note(area, buf, t, y, &ttl_note());
+        y += note(area, buf, t, y, NOTICE_NOTE) + 1;
 
         caption(
             buf,
@@ -624,8 +657,11 @@ impl StatusHintsPage {
     }
 
     fn post(i: usize, cx: &mut Cx) {
-        let (_, text, tone) = POSTS[i];
-        cx.status_in(text, tone);
+        let (_, text, tone, kind) = POSTS[i];
+        match kind {
+            Post::Message => cx.status_in(text, tone),
+            Post::Notice => cx.notice(text, tone),
+        }
     }
 }
 

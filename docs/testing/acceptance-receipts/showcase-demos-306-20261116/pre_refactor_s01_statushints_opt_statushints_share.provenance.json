@@ -1,0 +1,81 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-306-target/debug/showcase",
+  "binary_sha256": "3efe35dfe311a096f16cc5b4b14b591ae77b046ea82ca4b548d97e4e369052e4",
+  "fixture_args": [
+    "--page",
+    "statushints",
+    "--opt",
+    "statushints.width=narrow",
+    "--opt",
+    "statushints.status=plain",
+    "--opt",
+    "statushints.share=30"
+  ],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "36ba4778ec835a47b0625efd97bbc7e2f6a177e9feba76631512829b6df923e3",
+  "expect_baseline": "f07d1871123779f63f0c4f342532f92f04db4d7a34a034b60deaa6ea698a9a58",
+  "precondition": "",
+  "session": null,
+  "expected_test_id": "pre_refactor/s01_statushints/opt_statushints_share",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/showcase-demos-306-20261116/pre_refactor_s01_statushints_opt_statushints_share.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/showcase-demos-306-20261116/pre_refactor_s01_statushints_opt_statushints_share.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/showcase-demos-306-20261116/superseded/pre_refactor/s01_statushints/opt_statushints_share.tui.pb",
+  "test_id": "pre_refactor/s01_statushints/opt_statushints_share",
+  "acceptance": {
+    "expected_baseline_sha256": "f07d1871123779f63f0c4f342532f92f04db4d7a34a034b60deaa6ea698a9a58",
+    "accepted_baseline_sha256": "36ba4778ec835a47b0625efd97bbc7e2f6a177e9feba76631512829b6df923e3",
+    "candidate_sha256": "36ba4778ec835a47b0625efd97bbc7e2f6a177e9feba76631512829b6df923e3",
+    "transaction_receipt": "docs/testing/acceptance-receipts/showcase-demos-306-20261116/pre_refactor_s01_statushints_opt_statushints_share.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "f07d1871123779f63f0c4f342532f92f04db4d7a34a034b60deaa6ea698a9a58"
+  },
+  "candidate": {
+    "sha256": "36ba4778ec835a47b0625efd97bbc7e2f6a177e9feba76631512829b6df923e3",
+    "path": "tests/functional/baselines/pre_refactor/s01_statushints/opt_statushints_share.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/showcase-demos-306-20261116/superseded/pre_refactor/s01_statushints/opt_statushints_share.tui.pb",
+    "superseded_baseline_sha256": "f07d1871123779f63f0c4f342532f92f04db4d7a34a034b60deaa6ea698a9a58"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/s01_statushints/opt_statushints_share.tui.pb",
+    "candidate_sha256": "36ba4778ec835a47b0625efd97bbc7e2f6a177e9feba76631512829b6df923e3",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-306-target/debug/showcase",
+    "binary_sha256": "3efe35dfe311a096f16cc5b4b14b591ae77b046ea82ca4b548d97e4e369052e4",
+    "note": "Showcase demos for #306: Status and hints gains a notice row and Pickers a rows hint in its card title, so these captures shift"
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s01_statushints/opt_statushints_share",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-306/target/functional/statushints-share-1674-1794779184624273000-3/check-artifacts/pre_refactor/s01_statushints/opt_statushints_share/36ba4778ec835a47b0625efd97bbc7e2f6a177e9feba76631512829b6df923e3/sample.tui.pb"
+    },
+    "candidate_sha256": "36ba4778ec835a47b0625efd97bbc7e2f6a177e9feba76631512829b6df923e3",
+    "baseline_sha256": "36ba4778ec835a47b0625efd97bbc7e2f6a177e9feba76631512829b6df923e3",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-306/tests/functional/baselines/pre_refactor/s01_statushints/opt_statushints_share.tui.pb"
+    },
+    "error_code": null
+  }
+}

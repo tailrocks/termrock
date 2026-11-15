@@ -562,7 +562,14 @@ impl CellEditorsPage {
         }
         match l.slot(3) {
             Some(r) => {
-                let panel = Panel::card(Some("A ChoiceEditor on its own"));
+                let open_meta = self
+                    .chooser
+                    .as_ref()
+                    .map(|c| format!("{} options open", c.options().0.len()));
+                let mut panel = Panel::card(Some("A ChoiceEditor on its own"));
+                if let Some(meta) = &open_meta {
+                    panel = panel.meta(meta);
+                }
                 let bg = panel.bg(t);
                 let inner = panel.render(r, buf, t);
                 self.pick.label = format!("Default region  {}  ▾", self.region);
