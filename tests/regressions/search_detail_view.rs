@@ -27,7 +27,6 @@ use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Position, Rect};
 
-
 const ID: WidgetId = WidgetId::of("sd");
 const QUERY: WidgetId = WidgetId::of("sd.q");
 const WIDE: Rect = Rect::new(0, 0, 120, 14);
