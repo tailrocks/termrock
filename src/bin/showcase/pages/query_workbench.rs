@@ -120,6 +120,25 @@ enum Outcome2 {
     None,
 }
 
+/// Names one accepted run of one document. `generation` is an operation
+/// counter owned by the document; it is not an editor text revision. Callers
+/// compare tokens, never display indices.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct OperationToken {
+    document: ItemKey,
+    generation: u64,
+}
+
+/// The work in flight, captured when the run started. The SQL and mode are
+/// owned copies, so later edits, tab moves or closes cannot change what runs.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct RunRequest {
+    token: OperationToken,
+    sql: String,
+    explain: bool,
+    ticks_left: u8,
+}
+
 /// One open query document. The editor (text, caret, selection, undo,
 /// scroll) and the result view live with the document, so activation only
 /// changes which document is routed and painted; it never copies text.
@@ -129,6 +148,14 @@ struct Doc {
     editor: CodeEditor,
     result: Outcome2,
     results: DataTable,
+    /// Bumped on each accepted run and on cancellation, so an older
+    /// completion can never match.
+    run_generation: u64,
+    last_completed_generation: Option<u64>,
+    /// The exact text `result` was produced from, and the run that made it.
+    /// A demonstration or initial result has no run.
+    result_sql: Option<String>,
+    result_token: Option<OperationToken>,
 }
 
 fn editor_id(key: ItemKey) -> WidgetId {
@@ -150,14 +177,25 @@ impl Doc {
                 .placeholder("Write a query, then Ctrl+R"),
             result: Outcome2::None,
             results: result_table(results_id(key), "", 0),
+            run_generation: 0,
+            last_completed_generation: None,
+            result_sql: None,
+            result_token: None,
         };
         doc.install(result);
         doc
     }
 
-    /// Stores a new outcome and rebuilds this document's result view and
-    /// diagnostics. Called only when a result is produced or configured.
+    /// Stores a configured outcome for the text currently in the editor.
     fn install(&mut self, result: Outcome2) {
+        let sql = self.editor.text().to_owned();
+        self.install_for(result, sql, None);
+    }
+
+    /// Stores an outcome produced from `sql` and rebuilds this document's
+    /// result view. Diagnostics are placed only when the editor still holds
+    /// exactly `sql`, because their ranges are byte offsets into it.
+    fn install_for(&mut self, result: Outcome2, sql: String, token: Option<OperationToken>) {
         self.editor.set_diagnostics(Vec::new());
         match &result {
             Outcome2::Rows { table, count, .. } => {
@@ -165,7 +203,9 @@ impl Doc {
             }
             Outcome2::Plan { .. } => self.results = plan_table(results_id(self.key)),
             Outcome2::Error { .. } => {
-                if let Some((_, range)) = from_table(self.editor.text()) {
+                if self.editor.text() == sql
+                    && let Some((_, range)) = from_table(&sql)
+                {
                     self.editor.push_diagnostic(Diagnostic {
                         range,
                         severity: Severity::Error,
@@ -176,6 +216,13 @@ impl Doc {
             Outcome2::None => {}
         }
         self.result = result;
+        self.result_sql = Some(sql);
+        self.result_token = token;
+    }
+
+    /// A run produced the result and the editor no longer holds its text.
+    fn result_is_for_earlier_text(&self) -> bool {
+        self.result_token.is_some() && self.result_sql.as_deref() != Some(self.editor.text())
     }
 }
 
@@ -370,7 +417,7 @@ pub struct QueryWorkbenchPage {
     opened: usize,
     pub toolbar: Toolbar,
 
-    running: Option<(ItemKey, bool, u8)>,
+    running: Option<RunRequest>,
     outer: Split,
     inner: Split,
     outer_seam: Splitter,
@@ -528,11 +575,60 @@ impl QueryWorkbenchPage {
         })
     }
 
+    /// A document is busy only while its live generation owns the request.
+    fn is_running(&self, doc: &Doc) -> bool {
+        self.running.as_ref().is_some_and(|request| {
+            request.token.document == doc.key && request.token.generation == doc.run_generation
+        })
+    }
+
+    fn running_doc(&self) -> Option<&Doc> {
+        self.docs.iter().find(|doc| self.is_running(doc))
+    }
+
+    fn sync_toolbar(&mut self) {
+        self.toolbar.items = toolbar_items(self.running.is_some());
+    }
+
+    /// The document that may take `token`'s completion: same key, same
+    /// generation, not yet completed.
+    fn completion_index(&self, token: OperationToken) -> Option<usize> {
+        self.docs.iter().position(|doc| {
+            doc.key == token.document
+                && doc.run_generation == token.generation
+                && doc.last_completed_generation != Some(token.generation)
+        })
+    }
+
+    /// Drops the request when it belongs to `key` and retires its generation
+    /// on the document, if the document is still open. The generation is
+    /// checked before anything changes.
+    fn cancel_running_for(&mut self, key: ItemKey) -> bool {
+        if self
+            .running
+            .as_ref()
+            .is_none_or(|request| request.token.document != key)
+        {
+            return false;
+        }
+        let next = self.docs.iter().find(|doc| doc.key == key).map(|doc| {
+            doc.run_generation
+                .checked_add(1)
+                .expect("query run generation exhausted")
+        });
+        self.running = None;
+        if let (Some(doc), Some(next)) = (self.docs.iter_mut().find(|doc| doc.key == key), next) {
+            doc.run_generation = next;
+        }
+        self.sync_toolbar();
+        true
+    }
+
     fn tab_items(&self) -> Vec<TabItem> {
         self.docs
             .iter()
             .map(|d| {
-                let busy = self.running.is_some_and(|(key, _, _)| key == d.key);
+                let busy = self.is_running(d);
                 TabItem::new(&d.title)
                     .prefix(if d.title.starts_with("Query") {
                         "≡"
@@ -610,11 +706,9 @@ impl QueryWorkbenchPage {
         if index >= self.docs.len() {
             return;
         }
+        let key = self.docs[index].key;
+        self.cancel_running_for(key);
         let closed = self.docs.remove(index);
-        if self.running.is_some_and(|(key, _, _)| key == closed.key) {
-            self.running = None;
-            self.toolbar.items = toolbar_items(false);
-        }
         if self.active_key == Some(closed.key) {
             let next = self.docs.get(index).or(self.docs.last());
             self.active_key = next.map(|doc| doc.key);
@@ -634,18 +728,32 @@ impl QueryWorkbenchPage {
     }
 
     fn run(&mut self, explain: bool, cx: &mut Cx) {
-        if self.running.is_some() {
+        if let Some(pending) = self.running_doc() {
+            cx.status(format!("A query is already running in {}", pending.title));
             return;
         }
-        let Some(doc) = self.active_doc() else {
+        let Some(doc) = self.active_doc_mut() else {
             return;
         };
         if doc.editor.text().trim().is_empty() {
             cx.status("Nothing to run");
             return;
         }
-        self.running = Some((doc.key, explain, RUN_TICKS));
-        self.toolbar.items = toolbar_items(true);
+        let Some(generation) = doc.run_generation.checked_add(1) else {
+            cx.status("Query run limit reached");
+            return;
+        };
+        doc.run_generation = generation;
+        self.running = Some(RunRequest {
+            token: OperationToken {
+                document: doc.key,
+                generation,
+            },
+            sql: doc.editor.text().to_owned(),
+            explain,
+            ticks_left: RUN_TICKS,
+        });
+        self.sync_toolbar();
         self.sync_tabs();
         cx.status(if explain {
             "Explaining…"
@@ -655,19 +763,36 @@ impl QueryWorkbenchPage {
     }
 
     fn stop(&mut self, cx: &mut Cx) {
-        if self.running.take().is_some() {
-            self.toolbar.items = toolbar_items(false);
-            self.sync_tabs();
-            cx.status("Query cancelled");
-        }
-    }
-
-    fn finish(&mut self, key: ItemKey, explain: bool, cx: &mut Cx) {
-        self.toolbar.items = toolbar_items(false);
-        let Some(doc) = self.docs.iter_mut().find(|d| d.key == key) else {
+        let Some(key) = self.running.as_ref().map(|request| request.token.document) else {
             return;
         };
-        let sql = doc.editor.text().to_owned();
+        let title = self
+            .docs
+            .iter()
+            .find(|doc| doc.key == key)
+            .map(|doc| doc.title.clone());
+        self.cancel_running_for(key);
+        self.sync_tabs();
+        cx.status(match title {
+            Some(title) if self.active_key != Some(key) => format!("Query cancelled in {title}"),
+            _ => "Query cancelled".into(),
+        });
+    }
+
+    /// Completes `request` for the document and generation that started it.
+    /// The captured SQL is evaluated, never the editor's current text. A
+    /// request whose document is gone, cancelled or already completed has no
+    /// effect at all.
+    fn finish(&mut self, request: RunRequest, cx: &mut Cx) {
+        let Some(index) = self.completion_index(request.token) else {
+            return;
+        };
+        let RunRequest {
+            token,
+            sql,
+            explain,
+            ..
+        } = request;
         let table = from_table(&sql).map(|(t, _)| t);
         let result = match table {
             Some(t) if TABLES.iter().any(|(n, _)| *n == t) => {
@@ -697,20 +822,28 @@ impl QueryWorkbenchPage {
             Outcome2::Error { message, .. } => format!("✗ {message}"),
             Outcome2::None => String::new(),
         };
-        doc.install(result);
+        let doc = &mut self.docs[index];
+        doc.last_completed_generation = Some(token.generation);
+        let msg = if self.active_key == Some(doc.key) {
+            msg
+        } else {
+            format!("{}: {msg}", doc.title)
+        };
+        doc.install_for(result, sql, Some(token));
         self.sync_tabs();
         cx.status(msg);
     }
 
     fn tick(&mut self, cx: &mut Cx) -> Outcome {
         let mut changed = false;
-        if let Some((key, explain, left)) = self.running.as_mut() {
+        if let Some(request) = self.running.as_mut() {
             changed = true;
-            *left -= 1;
-            if *left == 0 {
-                let (key, explain) = (*key, *explain);
-                self.running = None;
-                self.finish(key, explain, cx);
+            request.ticks_left = request.ticks_left.saturating_sub(1);
+            if request.ticks_left == 0
+                && let Some(request) = self.running.take()
+            {
+                self.sync_toolbar();
+                self.finish(request, cx);
             }
         }
         for (_, left) in &mut self.loading {
@@ -908,15 +1041,16 @@ impl QueryWorkbenchPage {
 
     fn render_results(&mut self, r: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
         let t = ctx.theme;
-        let running = self
-            .running
-            .is_some_and(|(key, _, _)| Some(key) == self.active_key);
+        let running = self.active_doc().is_some_and(|doc| self.is_running(doc));
         let Some(doc) = self.active_doc_mut() else {
             return;
         };
+        let earlier = doc.result_is_for_earlier_text();
         let result = doc.result.clone();
         let meta = if running {
             "running".to_owned()
+        } else if earlier {
+            "Result for earlier query text".to_owned()
         } else {
             match &result {
                 Outcome2::Rows { count, ms, .. } => format!(
@@ -1296,6 +1430,7 @@ mod tests {
         focus: Focus,
         ring: FocusRing,
         hits: HitRegistry,
+        statuses: Vec<String>,
     }
 
     impl Rig {
@@ -1305,6 +1440,7 @@ mod tests {
                 focus: Focus::default(),
                 ring: FocusRing::default(),
                 hits: HitRegistry::default(),
+                statuses: Vec::new(),
             };
             rig.paint();
             rig
@@ -1330,6 +1466,7 @@ mod tests {
         fn send(&mut self, ev: PageEvent) -> Outcome {
             let mut cx = Cx::new(&mut self.focus, &self.ring);
             let out = self.page.handle(&ev, &mut cx);
+            Self::collect(&mut self.statuses, cx);
             self.paint();
             out
         }
@@ -1337,7 +1474,16 @@ mod tests {
         fn with_cx(&mut self, f: impl FnOnce(&mut QueryWorkbenchPage, &mut Cx)) {
             let mut cx = Cx::new(&mut self.focus, &self.ring);
             f(&mut self.page, &mut cx);
+            Self::collect(&mut self.statuses, cx);
             self.paint();
+        }
+
+        fn collect(statuses: &mut Vec<String>, mut cx: Cx) {
+            let statuses_iter = cx.take().into_iter().filter_map(|request| match request {
+                junie_tui::shell::Request::Status(text, _) => Some(text),
+                _ => None,
+            });
+            statuses.extend(statuses_iter);
         }
 
         fn key(&mut self, code: KeyCode, mods: KeyModifiers) {
@@ -1868,5 +2014,311 @@ mod tests {
             "A's undo history survived the round trip"
         );
         assert_eq!(texts(&rig.page)[1], b.text, "B untouched by A's undo");
+    }
+
+    const ORDERS_25_SQL: &str = "SELECT * FROM orders LIMIT 25;\n";
+    const EARLIER_NOTE: &str = "Result for earlier query text";
+
+    fn customers_rows() -> Outcome2 {
+        Outcome2::Rows {
+            table: "customers".into(),
+            count: 40,
+            ms: 15,
+        }
+    }
+
+    fn orders_rows() -> Outcome2 {
+        Outcome2::Rows {
+            table: "orders".into(),
+            count: 25,
+            ms: 15,
+        }
+    }
+
+    /// Documents A (orders), B (customers) and C (orders LIMIT 25), A active.
+    fn three_docs() -> Rig {
+        let mut rig = Rig::new();
+        rig.with_cx(|p, cx| p.tab_action(TabAction::New, cx));
+        rig.page
+            .active_doc_mut()
+            .expect("active doc")
+            .editor
+            .set_text(ORDERS_25_SQL);
+        switch(&mut rig, 0);
+        rig
+    }
+
+    fn tick_to_completion(rig: &mut Rig) {
+        for _ in 0..RUN_TICKS {
+            rig.send(PageEvent::Tick);
+        }
+    }
+
+    fn screen_text(buf: &Buffer) -> String {
+        buf.content()
+            .chunks(usize::from(buf.area.width))
+            .map(|row| row.iter().map(|cell| cell.symbol()).collect::<String>())
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    fn close(rig: &mut Rig, index: usize) {
+        rig.with_cx(|p, cx| p.tab_action(TabAction::Close(index), cx));
+    }
+
+    fn toolbar_idle(rig: &Rig) -> bool {
+        let items = &rig.page.toolbar.items;
+        !items[0].disabled && !items[1].disabled && items[2].disabled
+    }
+
+    #[test]
+    fn issue53_close_earlier_keeps_run_on_b() {
+        let mut rig = three_docs();
+        let c_before = doc(&rig.page, 2).result.clone();
+        switch(&mut rig, 1);
+        let b_key = active(&rig.page).key;
+        rig.run();
+        assert!(rig.page.running.is_some());
+        close(&mut rig, 0);
+        assert_eq!(rig.page.doc_index(b_key), Some(0));
+        tick_to_completion(&mut rig);
+
+        assert_eq!(
+            doc(&rig.page, 0).result,
+            customers_rows(),
+            "B gets B's result"
+        );
+        assert_eq!(doc(&rig.page, 1).result, c_before, "C is untouched");
+        assert!(rig.page.running.is_none());
+        assert!(rig.page.tabs.items.iter().all(|tab| !tab.busy));
+        assert!(toolbar_idle(&rig));
+
+        let mut rig = Rig::new();
+        switch(&mut rig, 1);
+        rig.run();
+        close(&mut rig, 0);
+        tick_to_completion(&mut rig);
+        assert_eq!(rig.page.docs.len(), 1);
+        assert_eq!(
+            doc(&rig.page, 0).result,
+            customers_rows(),
+            "the result is not dropped when the saved index vanished"
+        );
+    }
+
+    #[test]
+    fn issue53_query_text_is_captured_at_submission() {
+        let mut rig = three_docs();
+        switch(&mut rig, 1);
+        let b = active(&rig.page);
+        let b_key = b.key;
+        rig.page
+            .active_doc_mut()
+            .expect("active doc")
+            .editor
+            .set_text(ORDERS_25_SQL);
+        rig.run();
+        let edited = "SELECT * FROM customers LIMIT 100;\n-- later edit\n";
+        rig.page
+            .active_doc_mut()
+            .expect("active doc")
+            .editor
+            .set_text(edited);
+        tick_to_completion(&mut rig);
+
+        let b = &rig.page.docs[rig.page.doc_index(b_key).expect("B")];
+        assert_eq!(b.result, orders_rows(), "executed the captured query");
+        assert_eq!(b.editor.text(), edited, "the late edit is intact");
+        assert!(screen_text(&rig.paint()).contains(EARLIER_NOTE));
+
+        let mut rig = three_docs();
+        switch(&mut rig, 1);
+        let failing = "SELECT * FROM nope LIMIT 1;\n";
+        rig.page
+            .active_doc_mut()
+            .expect("active doc")
+            .editor
+            .set_text(failing);
+        rig.run();
+        rig.page
+            .active_doc_mut()
+            .expect("active doc")
+            .editor
+            .set_text(&format!("-- moved\n{failing}"));
+        tick_to_completion(&mut rig);
+        assert!(matches!(active(&rig.page).result, Outcome2::Error { .. }));
+        assert!(
+            active(&rig.page).editor.diagnostics().is_empty(),
+            "stale byte offsets are not attached to new text"
+        );
+
+        let mut rig = three_docs();
+        switch(&mut rig, 1);
+        rig.page
+            .active_doc_mut()
+            .expect("active doc")
+            .editor
+            .set_text(failing);
+        rig.run();
+        tick_to_completion(&mut rig);
+        assert_eq!(
+            active(&rig.page).editor.diagnostics().len(),
+            1,
+            "unchanged text keeps its diagnostic"
+        );
+        assert!(!screen_text(&rig.paint()).contains(EARLIER_NOTE));
+    }
+
+    #[test]
+    fn issue53_target_close_cancels_only_matching_run() {
+        let mut rig = three_docs();
+        let old_keys: Vec<ItemKey> = rig.page.docs.iter().map(|d| d.key).collect();
+        switch(&mut rig, 1);
+        rig.run();
+        close(&mut rig, 0);
+        assert!(rig.page.running.is_some(), "closing A leaves B's run");
+        close(&mut rig, 1);
+        assert!(rig.page.running.is_some(), "closing C leaves B's run");
+        assert!(!toolbar_idle(&rig));
+
+        close(&mut rig, 0);
+        assert!(rig.page.running.is_none(), "closing B cancels its run");
+        assert!(toolbar_idle(&rig));
+        assert!(rig.page.tabs.items.is_empty());
+
+        rig.with_cx(|p, cx| p.tab_action(TabAction::New, cx));
+        let fresh = active(&rig.page).key;
+        assert!(
+            !old_keys.contains(&fresh),
+            "a reopened tab is a new identity"
+        );
+        rig.statuses.clear();
+        tick_to_completion(&mut rig);
+        assert_eq!(active(&rig.page).result, Outcome2::None);
+        assert!(
+            rig.statuses.iter().all(|s| !s.starts_with('✓')),
+            "an old run reports nothing: {:?}",
+            rig.statuses
+        );
+    }
+
+    #[test]
+    fn issue53_inactive_completion_does_not_steal_focus() {
+        let mut rig = three_docs();
+        switch(&mut rig, 1);
+        let b_key = active(&rig.page).key;
+        rig.run();
+        switch(&mut rig, 2);
+        let c_key = active(&rig.page).key;
+        enter_edit(&mut rig);
+        rig.statuses.clear();
+        tick_to_completion(&mut rig);
+
+        assert_eq!(rig.page.active_key, Some(c_key));
+        assert_eq!(rig.focus.current(), Some(editor_id(c_key)));
+        let b = &rig.page.docs[rig.page.doc_index(b_key).expect("B")];
+        assert_eq!(b.result, customers_rows());
+        assert!(rig.page.tabs.items.iter().all(|tab| !tab.busy));
+        assert_eq!(
+            rig.statuses.last().map(String::as_str),
+            Some("customers: ✓ 40 rows · 15 ms"),
+            "the status names the document the result belongs to"
+        );
+
+        switch(&mut rig, 1);
+        assert!(screen_text(&rig.paint()).contains("40 rows"));
+    }
+
+    fn deliver(rig: &mut Rig, request: &RunRequest) {
+        let request = RunRequest {
+            ticks_left: 0,
+            ..request.clone()
+        };
+        rig.with_cx(|p, cx| p.finish(request, cx));
+    }
+
+    #[test]
+    fn issue53_stale_and_duplicate_generation_ignored() {
+        let mut rig = three_docs();
+        switch(&mut rig, 1);
+        rig.run();
+        let old = rig.page.running.clone().expect("running");
+        rig.with_cx(|p, cx| p.stop(cx));
+        assert!(rig.page.running.is_none());
+        assert!(toolbar_idle(&rig));
+        assert!(active(&rig.page).run_generation > old.token.generation);
+
+        rig.page
+            .active_doc_mut()
+            .expect("active doc")
+            .editor
+            .set_text(ORDERS_25_SQL);
+        rig.run();
+        let newest = rig.page.running.clone().expect("running again");
+        assert!(newest.token.generation > old.token.generation);
+        assert_eq!(newest.token.document, old.token.document);
+
+        let statuses = rig.statuses.len();
+        deliver(&mut rig, &old);
+        assert_eq!(active(&rig.page).result, Outcome2::None, "stale result");
+        assert_eq!(rig.statuses.len(), statuses, "stale status");
+        assert!(rig.page.running.is_some(), "the newer run keeps running");
+        assert!(
+            !toolbar_idle(&rig),
+            "stale delivery does not touch busy state"
+        );
+
+        tick_to_completion(&mut rig);
+        assert_eq!(active(&rig.page).result, orders_rows());
+        assert_eq!(active(&rig.page).result_token, Some(newest.token));
+        assert_eq!(active(&rig.page).result_sql.as_deref(), Some(ORDERS_25_SQL));
+        let statuses = rig.statuses.len();
+
+        deliver(&mut rig, &newest);
+        assert_eq!(rig.statuses.len(), statuses, "duplicate status");
+        assert_eq!(active(&rig.page).result_token, Some(newest.token));
+    }
+
+    #[test]
+    fn issue53_cancel_after_ready_before_install_rejects_result() {
+        let mut rig = three_docs();
+        switch(&mut rig, 1);
+        rig.run();
+        let ready = rig.page.running.clone().expect("running");
+        rig.with_cx(|p, cx| p.stop(cx));
+        let statuses = rig.statuses.len();
+        deliver(&mut rig, &ready);
+        assert_eq!(active(&rig.page).result, Outcome2::None);
+        assert_eq!(active(&rig.page).result_token, None);
+        assert_eq!(rig.statuses.len(), statuses);
+
+        rig.run();
+        let ready = rig.page.running.clone().expect("running");
+        close(&mut rig, 1);
+        let before: Vec<Outcome2> = rig.page.docs.iter().map(|d| d.result.clone()).collect();
+        deliver(&mut rig, &ready);
+        let after: Vec<Outcome2> = rig.page.docs.iter().map(|d| d.result.clone()).collect();
+        assert_eq!(before, after, "no other document takes the result");
+        assert_eq!(rig.statuses.len(), statuses + 2, "only run and close speak");
+    }
+
+    #[test]
+    fn issue53_second_run_is_refused_naming_pending_document() {
+        let mut rig = three_docs();
+        switch(&mut rig, 1);
+        rig.run();
+        let pending = rig.page.running.clone().expect("running");
+        switch(&mut rig, 2);
+        rig.statuses.clear();
+        rig.run();
+        assert_eq!(rig.page.running.as_ref(), Some(&pending));
+        assert_eq!(rig.statuses, ["A query is already running in customers"]);
+        assert!(rig.page.toolbar.items[0].disabled && rig.page.toolbar.items[1].disabled);
+        assert!(!rig.page.toolbar.items[2].disabled, "Stop stays available");
+
+        rig.statuses.clear();
+        rig.with_cx(|p, cx| p.stop(cx));
+        assert_eq!(rig.statuses, ["Query cancelled in customers"]);
+        assert!(toolbar_idle(&rig));
     }
 }
