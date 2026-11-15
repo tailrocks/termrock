@@ -307,3 +307,43 @@ fn help_wide_narrow_wide_renders_identically() {
         "Done changed on the wide re-render"
     );
 }
+
+#[test]
+fn help_frame_without_a_body_reports_the_drawn_frame() {
+    let tiny = Rect::new(0, 0, 40, 3);
+    let mut help = overlay();
+
+    let mut buf = sentinel_buffer(tiny);
+    paint(&mut help, tiny, &mut buf);
+
+    assert!(
+        !help.area.is_empty(),
+        "the drawn frame is reported as the overlay area"
+    );
+    assert!(help.done.area.is_empty(), "no body leaves no Done target");
+}
+
+#[test]
+fn help_frame_without_a_body_keeps_the_reading_position() {
+    let short = Rect::new(0, 0, 80, 10);
+    let tiny = Rect::new(0, 0, 40, 3);
+    let mut help = overlay();
+
+    let mut buf = sentinel_buffer(short);
+    paint(&mut help, short, &mut buf);
+    for _ in 0..3 {
+        help.on_key(&key(KeyCode::Down));
+    }
+    let read = help.scroll.v.offset;
+    assert!(read > 0, "Down did not scroll");
+
+    let mut buf = sentinel_buffer(tiny);
+    paint(&mut help, tiny, &mut buf);
+    let mut buf = sentinel_buffer(short);
+    paint(&mut help, short, &mut buf);
+
+    assert_eq!(
+        help.scroll.v.offset, read,
+        "a frame too small for the body keeps the reading position"
+    );
+}

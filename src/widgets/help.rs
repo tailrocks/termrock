@@ -249,7 +249,8 @@ impl HelpOverlay {
         self.scroll.begin(ctx.track_click);
         crate::theme::Strings::follow(&mut self.done.label, old.done, s.done);
         if screen.is_empty() {
-            self.clear_geometry();
+            self.area = Rect::ZERO;
+            self.clear_body();
             return;
         }
         let pct = |n: u16| (u32::from(n) * u32::from(self.max_percent.min(100)) / 100) as u16;
@@ -263,7 +264,7 @@ impl HelpOverlay {
             .render(screen, buf, ctx);
         self.area = area;
         if inner.is_empty() {
-            self.clear_geometry();
+            self.clear_body();
             return;
         }
         let t = ctx.theme;
@@ -380,10 +381,10 @@ impl HelpOverlay {
         );
     }
 
-    fn clear_geometry(&mut self) {
-        self.area = Rect::ZERO;
+    /// Drops the body's hit geometry. The content length stays, so the reading
+    /// position survives a frame too small to hold the body.
+    fn clear_body(&mut self) {
         self.done.area = Rect::ZERO;
-        self.scroll.set_content(0);
         self.scroll.set_viewport(0);
     }
 }
