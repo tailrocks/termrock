@@ -476,10 +476,12 @@ fn h04_plan_plan() {
         &[],
     );
     app.key("enter");
-    let kept = app.wait_screen("keep running", |screen| {
+    let kept = app.wait_screen("retried command after the retry marker", |screen| {
         let visible = text(screen);
         !visible.contains(CANCEL_TITLE)
-            && (visible.contains(" running") || visible.contains(MISE_CMD))
+            && visible
+                .split_once("retrying…")
+                .is_some_and(|(_, retried)| retried.contains(MISE_CMD))
     });
     see(&kept, &[TITLE, MISE_CMD], &[CANCELLED_RUN, DISCARD]);
 
