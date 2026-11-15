@@ -37,10 +37,17 @@ pub trait DetailRewind: Sized {
     fn track_detail<R>(&mut self, mv: impl FnOnce(&mut Self) -> R) -> R {
         let before = self.described_item();
         let out = mv(self);
-        if self.described_item() != before {
+        self.rewind_if_changed(&before);
+        out
+    }
+
+    /// Rewinds the pane when it no longer describes `before`. A rebuild that
+    /// replaces the rows moves the cursor without a user move, so it calls
+    /// this directly with the item captured before the rebuild.
+    fn rewind_if_changed(&mut self, before: &Self::Item) {
+        if self.described_item() != *before {
             self.detail_scroll_mut().jump_start();
         }
-        out
     }
 }
 
