@@ -165,6 +165,109 @@ fn plan_stop_and_close_uses_captured_plan_id() {
     assert!(plan_tab(&app, "other-plan").is_some());
 }
 
+fn finish_with_failed_images(app: &mut App) {
+    app.world
+        .plan_mut(ID)
+        .expect("plan")
+        .steps
+        .iter_mut()
+        .find(|s| s.id == "images")
+        .expect("step")
+        .fails = true;
+    arm(app, ID);
+    for _ in 0..400 {
+        if app.world.plan(ID).expect("plan").phase == PlanPhase::Done {
+            return;
+        }
+        tick(app, 1);
+    }
+    panic!("plan never finished");
+}
+
+fn retry_images(app: &mut App) {
+    let plan = app.world.plan_mut(ID).expect("plan");
+    let images = plan
+        .steps
+        .iter()
+        .position(|s| s.id == "images")
+        .expect("step");
+    assert!(plan.retry(images));
+}
+
+fn confirm_cancel_remaining(app: &mut App) {
+    let tab = plan_tab(app, ID).expect("plan tab open");
+    app.activate_tab(tab);
+    app.handle_input(key(KeyCode::Char('c'), KeyModifiers::CONTROL));
+    assert!(!app.modals.is_empty(), "the cancel dialog is open");
+    app.shell
+        .focus
+        .set(Some(WidgetId::of("cancel-plan").sub("ok")));
+    app.handle_input(key(KeyCode::Enter, KeyModifiers::NONE));
+    assert!(app.modals.is_empty(), "the dialog resolved");
+}
+
+#[test]
+fn plan_cancel_remaining_with_nothing_running_publishes_one_completion() {
+    let mut app = app();
+    finish_with_failed_images(&mut app);
+    let finished = status(&app);
+    assert!(finished.contains("failed"), "{finished}");
+    let uses = app.world.docker.cleanup_uses;
+    retry_images(&mut app);
+    assert_eq!(app.world.plan(ID).expect("plan").phase, PlanPhase::Running);
+    assert!(app.world.plan(ID).expect("plan").running().is_empty());
+
+    confirm_cancel_remaining(&mut app);
+    assert_eq!(step(&app, ID, "images"), StepState::Cancelled);
+    tick(&mut app, 1);
+
+    let plan = app.world.plan(ID).expect("plan");
+    assert_eq!(plan.phase, PlanPhase::Done);
+    assert!(plan.ended_tick.is_some());
+    let text = status(&app);
+    assert!(
+        text.starts_with("Clean Docker completely finished · "),
+        "{text}"
+    );
+    assert!(text.contains("cancelled"), "{text}");
+    assert!(!text.contains("stopped"), "{text}");
+    assert_eq!(app.world.docker.cleanup_uses, uses, "no repeated effects");
+
+    let snapshot = app.world.plan(ID).cloned();
+    tick(&mut app, 120);
+    assert_eq!(
+        app.world.plan(ID).cloned(),
+        snapshot,
+        "ticks change nothing"
+    );
+}
+
+#[test]
+fn plan_stop_wording_differs_from_cancel_remaining() {
+    let mut app = app();
+    arm(&mut app, ID);
+    tick_until_running(&mut app, ID, "rm");
+    let tab = plan_tab(&app, ID).expect("plan tab open");
+    app.activate_tab(tab);
+    app.handle_input(key(KeyCode::Char('w'), KeyModifiers::CONTROL));
+    confirm_close_dialog(&mut app);
+    assert!(status(&app).contains(" stopped · "), "{}", status(&app));
+
+    let mut app = self::app();
+    arm(&mut app, ID);
+    tick_until_running(&mut app, ID, "rm");
+    confirm_cancel_remaining(&mut app);
+    for _ in 0..400 {
+        if app.world.plan(ID).expect("plan").phase == PlanPhase::Done {
+            break;
+        }
+        tick(&mut app, 1);
+    }
+    let text = status(&app);
+    assert!(text.contains(" finished · "), "{text}");
+    assert!(!text.contains("stopped"), "{text}");
+}
+
 #[test]
 fn plan_stop_dialog_dismissal_keeps_the_plan_running() {
     let mut app = app();

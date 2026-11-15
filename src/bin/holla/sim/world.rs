@@ -1418,6 +1418,35 @@ mod plan_tests {
     }
 
     #[test]
+    fn plan_cancel_remaining_with_nothing_running_completes_through_the_finaliser() {
+        let mut w = armed_world();
+        let uses = w.docker.cleanup_uses;
+        let plan = w.plan_mut(ID).expect("plan");
+        let stop = plan
+            .steps
+            .iter()
+            .position(|s| s.id == "stop")
+            .expect("step");
+        plan.steps[stop].state = StepState::Succeeded;
+        plan.cancel_remaining();
+        assert!(plan.running().is_empty());
+        assert_eq!(plan.phase, PlanPhase::Running, "no direct Done transition");
+
+        let mut msgs = w.tick();
+        for _ in 0..200 {
+            msgs.extend(w.tick());
+        }
+
+        assert_eq!(plan_done_count(&msgs), 1);
+        assert_eq!(w.plan(ID).expect("plan").phase, PlanPhase::Done);
+        assert!(
+            w.docker.containers.iter().all(|c| !c.running),
+            "the succeeded step applied"
+        );
+        assert_eq!(w.docker.cleanup_uses, uses + 1);
+    }
+
+    #[test]
     fn plan_retry_has_new_completion_without_repeating_success_effects() {
         let mut w = armed_world();
         let uses = w.docker.cleanup_uses;
