@@ -410,6 +410,7 @@ pub static SCROLLING: &[Opt] = &[
     ),
     Opt::new("scrolling.wrap", "Wrap at the ends", OFF_ON),
     Opt::new("scrolling.skip_disabled", "Skip disabled", OFF_ON).default(1),
+    Opt::new("scrolling.nested", "Nested scrollbars", OFF_ON),
 ];
 
 pub static BUTTONS: &[Opt] = &[
@@ -1169,6 +1170,11 @@ pub static DIALOG_KINDS: &[Opt] = &[
         "Choice buttons",
         &["two", "three"],
     ),
+    Opt::new(
+        "dialogkinds.dismiss",
+        "Dismiss",
+        &["default", "light", "escape", "never"],
+    ),
 ];
 
 pub static POPUPS_TOOLTIPS: &[Opt] = &[
@@ -1278,7 +1284,7 @@ pub static POPUPS_TOOLTIPS: &[Opt] = &[
 
 pub static PICKERS: &[Opt] = &[
     Opt::new("pickers.width", "Width", &["auto", "48", "96"]),
-    Opt::new("pickers.max_rows", "Max rows", &["12", "6"]),
+    Opt::new("pickers.max_rows", "Max rows", &["12", "6", "1", "0"]),
     Opt::new("pickers.placement", "Placement", &["center", "below"]),
     Opt::new("pickers.fit", "Fit", &["default", "third", "flush"]),
     Opt::new("pickers.backdrop", "Backdrop", &["default", "full"]),
@@ -1751,11 +1757,12 @@ pub static TERMINAL_PANE: &[Opt] = &[
     Opt::new(
         "terminalpane.fixture",
         "Fixture",
-        &["session", "fullscreen", "split", "midstream"],
+        &["session", "fullscreen", "split", "midstream", "wide edge"],
     ),
     Opt::new("terminalpane.size", "Size", &["80x24", "40x12", "20x6"]).default(1),
     Opt::new("terminalpane.colour", "Colour", OFF_ON).default(1),
     Opt::new("terminalpane.focused", "Focused", OFF_ON).default(1),
+    Opt::new("terminalpane.clip", "Clip last column", OFF_ON),
     Opt::new(
         "terminalpane.replay",
         "Replay start",
