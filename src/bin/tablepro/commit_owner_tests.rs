@@ -443,3 +443,104 @@ fn issue11_rejected_live_editor_stops_the_review() {
         status(&app)
     );
 }
+
+fn press(app: &mut App, code: ratatui::crossterm::event::KeyCode) {
+    app.handle_input(Input::Key(Key {
+        code,
+        mods: ratatui::crossterm::event::KeyModifiers::NONE,
+    }));
+}
+
+/// Picks the schema through Open Quickly, the way a user switches schemas.
+fn switch_schema(app: &mut App, schema: &str) {
+    use ratatui::crossterm::event::KeyCode;
+    app.open_switcher();
+    for c in schema.chars() {
+        press(app, KeyCode::Char(c));
+    }
+    let row = app
+        .switcher_targets
+        .iter()
+        .position(|t| matches!(t, crate::model::SwitchTarget::Schema(s) if s == schema))
+        .expect("the schema is offered");
+    for _ in 0..row {
+        press(app, KeyCode::Down);
+    }
+    press(app, KeyCode::Enter);
+    assert_eq!(
+        app.workbench.as_ref().expect("connected").schema,
+        schema,
+        "the switch applied"
+    );
+}
+
+#[test]
+fn issue11_schema_switch_never_reuses_tab_key() {
+    let (mut app, products, customers) = app_with_two_tables();
+    let w = app.workbench.as_mut().expect("connected");
+    let query = w.tabs.len();
+    w.new_query("select 1");
+    assert_eq!(w.tabs.len(), query + 1);
+
+    switch_schema(&mut app, "analytics");
+
+    let w = app.workbench.as_mut().expect("connected");
+    let opened = w.open_table("analytics", "events", false).expect("opens");
+    let keys: Vec<ItemKey> = w.tabs.iter().map(WorkTab::key).collect();
+    for (i, k) in keys.iter().enumerate() {
+        assert!(
+            !keys[..i].contains(k),
+            "tab keys stay unique across a schema switch: {keys:?}"
+        );
+    }
+    assert!(products < opened && customers < opened);
+
+    edit(&mut app, opened, 1, "after-switch");
+    activate(&mut app, opened);
+    app.begin_commit();
+    assert!(
+        app.layers.top_as::<Dialog>().is_some(),
+        "the review opened: {}",
+        status(&app)
+    );
+    confirm(&mut app);
+    ticks(&mut app, 8);
+
+    assert!(
+        !grid_at(&mut app, opened).submission_pending(),
+        "the save released the grid: {}",
+        status(&app)
+    );
+    assert!(grid_at(&mut app, opened).pending().is_empty());
+    assert!(status(&app).starts_with("Saved"), "{}", status(&app));
+}
+
+#[test]
+fn issue11_completion_for_a_mismatched_tab_releases_the_lock() {
+    let (mut app, products, _) = app_with_two_tables();
+    edit(&mut app, products, PRODUCT_NAME, "kept");
+    activate(&mut app, products);
+    app.begin_commit();
+    confirm(&mut app);
+    let Some(CommitState::Submitted {
+        mut request, token, ..
+    }) = app.commit.take()
+    else {
+        panic!("the save is submitted");
+    };
+    request.table = "customers".into();
+
+    app.complete_commit(request, token);
+
+    assert!(
+        !grid_at(&mut app, products).submission_pending(),
+        "the lock is not stranded"
+    );
+    assert_eq!(
+        grid_at(&mut app, products).pending().total(),
+        1,
+        "the draft is kept"
+    );
+    assert!(status(&app).contains("kept pending"), "{}", status(&app));
+    assert!(saved_sql(&app).is_empty());
+}

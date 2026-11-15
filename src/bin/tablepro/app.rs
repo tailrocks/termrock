@@ -1388,7 +1388,9 @@ impl App {
     }
 
     /// Applies the acknowledgement of a submitted save to the grid that
-    /// submitted it, found by its tab key under its connection generation.
+    /// submitted it, found by its tab key under its connection generation. A
+    /// tab that no longer holds the reviewed table releases its lock instead of
+    /// keeping it for a save that can never complete.
     fn complete_commit(&mut self, request: CommitRequest, token: GridCommitToken) {
         if request.connection_generation != self.connection_generation {
             return;
@@ -1398,6 +1400,11 @@ impl App {
             return;
         };
         if t.schema != request.schema || t.name != request.table {
+            let _ = t.grid.cancel_submission(token);
+            self.set_status_as(
+                StatusKind::Warn,
+                "The save no longer matches its tab · changes kept pending".into(),
+            );
             return;
         }
         match t
@@ -1920,19 +1927,7 @@ impl App {
                         w.explorer.set_filter(None);
                         let _ = w.explorer.rows();
 
-                        let conn = w.connection.clone();
-                        let cat = w.catalog.clone();
-                        let tabs = std::mem::take(&mut w.tabs);
-                        let active = w.active;
-                        let qc = w.query_counter;
-                        let mut nw = Workbench::new(conn, cat);
-                        nw.connection_key = w.connection_key;
-                        nw.tabs = tabs;
-                        nw.active = active;
-                        nw.query_counter = qc;
-                        nw.schema = s.clone();
-                        nw.rebuild_for_schema();
-                        *w = nw;
+                        w.rebuild_for_schema();
                         self.shell.focus.focus(crate::workbench::EXPLORER);
                         self.set_status(format!("Schema {s}"));
                     }
