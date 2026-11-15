@@ -1962,6 +1962,39 @@ fn showcase_fixeddialogs_form_refusals_and_repeats_report_no_change() {
 }
 
 #[test]
+fn showcase_dialogkinds_sqlite_hides_remote_fields_and_keeps_their_values() {
+    let app = App::new(
+        "showcase-dialogkinds-sqlite",
+        SHOWCASE,
+        &["--page", "dialogkinds", "--motion", "paused"],
+        120,
+        50,
+        "truecolor",
+    );
+    app.wait_text("Add connection");
+    app.click_text("Add connection");
+    let open = app.wait_text("Test connection");
+    assert!(text(&open).contains("Password") && text(&open).contains("Host"));
+    app.click_text("PostgreSQL");
+    app.click_text("SQLite");
+    let file = app.wait_screen("the remote fields are hidden", |s| {
+        !text(s).contains("Password")
+    });
+    assert!(!text(&file).contains("Host"), "{}", text(&file));
+    app.click_text("SQLite");
+    app.click_text("PostgreSQL");
+    let back = app.wait_screen("the remote fields return", |s| text(s).contains("Password"));
+    assert!(
+        text(&back).contains("db.eu-west-1.internal") && text(&back).contains('\u{2022}'),
+        "the masked password is back with its value: {}",
+        text(&back)
+    );
+    app.key("escape");
+    app.wait_absent("Test connection");
+    app.finish();
+}
+
+#[test]
 fn showcase_fixeddialogs_browser_box_refuses_and_shows_its_reason() {
     let app = fixed_dialogs("showcase-fixeddialogs-browser", &[]);
     app.click_text("File browser");

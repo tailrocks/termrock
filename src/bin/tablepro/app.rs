@@ -2558,7 +2558,10 @@ impl shell::KeyHost for App {
 
     fn layer_paste(&mut self, text: &str) -> Option<Outcome> {
         let top = self.layers.top_mut()?;
-        let out = top.layer.on_paste(text).or(Outcome::Consumed);
+        let out = top
+            .layer
+            .on_paste_focused(text, &self.shell.focus)
+            .or(Outcome::Consumed);
         Some(self.take_layer().or(out))
     }
 
