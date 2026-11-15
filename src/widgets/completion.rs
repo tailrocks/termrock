@@ -11,7 +11,7 @@ use crate::theme::CursorStyle;
 use crate::ui::ctx::RenderCtx;
 use crate::ui::popup::{Dismiss, Placement, backdrop_id, place_with, surface_for};
 use crate::ui::text::{TextClip, paint_graphemes, width};
-use crate::widgets::option_list::{Item, OptionList, PopupSnapshot};
+use crate::widgets::option_list::{Item, OptionList, PopupSnapshot, paint_reason};
 
 pub const TEXT_INSET: u16 = 4;
 
@@ -210,8 +210,19 @@ impl Completion {
             return;
         }
         let (label_w, detail_w) = self.aggregate_widths();
+        // Every reason must fit whole: `menu::reason_room` leaves 8 columns of chrome.
+        let reason_w = self
+            .items
+            .iter()
+            .filter(|i| i.disabled)
+            .filter_map(|i| i.reason.as_deref())
+            .map(width)
+            .max()
+            .map_or(0, |w| w + 8);
         let (min_w, max_w) = self.list.width;
-        let w = (label_w + detail_w + 8).clamp(min_w as usize, max_w as usize) as u16;
+        let w = (label_w + detail_w + 8)
+            .max(reason_w)
+            .clamp(min_w as usize, max_w as usize) as u16;
         let rows = (self.items.len() as u16).min(self.list.max_rows);
         let h = rows + 2;
         let area = place_with(
@@ -235,7 +246,10 @@ impl Completion {
             items[i].clone()
         });
         let (id, dismiss) = (self.id, self.list.dismiss);
-        ctx.overlay(move |buf, ctx| Self::paint(&snapshot, id, dismiss, area, buf, ctx));
+        let reason = self.list.status(&self.items[..]).map(str::to_owned);
+        ctx.overlay(move |buf, ctx| {
+            Self::paint(&snapshot, reason.as_deref(), id, dismiss, area, buf, ctx);
+        });
     }
 
     fn aggregate_widths(&mut self) -> (usize, usize) {
@@ -261,6 +275,7 @@ impl Completion {
 
     fn paint(
         snapshot: &PopupSnapshot<Item>,
+        reason: Option<&str>,
         id: WidgetId,
         dismiss: Dismiss,
         area: Rect,
@@ -324,6 +339,7 @@ impl Completion {
                 );
             }
         });
+        paint_reason(reason, snapshot.more_below(), area, bg, buf, t);
     }
 }
 

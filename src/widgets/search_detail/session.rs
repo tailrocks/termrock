@@ -701,3 +701,6 @@ impl SearchSession {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

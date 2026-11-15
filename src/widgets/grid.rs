@@ -2136,6 +2136,11 @@ impl DataGrid {
             .filter_map(|src| self.row_key(src))
             .filter(|key| !saved.contains(key))
             .collect();
+        let appended_anchor = self
+            .selection
+            .anchor()
+            .and_then(|src| self.row_key(src))
+            .filter(|key| appended.contains(key));
         let at = position.min(self.rows.len());
         let shift = |i: usize| if i >= at { i + 1 } else { i };
         self.cell_errors = std::mem::take(&mut self.cell_errors)
@@ -2167,10 +2172,15 @@ impl DataGrid {
                 .get(old)
                 .and_then(|k| self.source_index(*k))
         });
-        for key in appended {
-            if let Some(src) = self.source_index(key) {
-                selection.set(src, true);
-            }
+        if !appended.is_empty() {
+            let anchor = appended_anchor
+                .and_then(|key| self.source_index(key))
+                .or(selection.anchor());
+            let rows = selection
+                .iter()
+                .chain(appended.iter().filter_map(|&key| self.source_index(key)))
+                .collect::<Vec<_>>();
+            selection.replace(rows, anchor);
         }
         self.selection = selection;
         self.scroll.set_content(self.content_rows());
@@ -3154,6 +3164,28 @@ impl DataGrid {
             }
             None => Outcome::Ignored,
         }
+    }
+
+    /// Pastes `text` onto the cursor cell through the same parser, eligibility
+    /// checks and submission lock as an editor commit.
+    ///
+    /// Hosts call it when the grid has focus and [`DataGrid::on_paste`] left
+    /// the paste alone because no editor is open. A rejected value is recorded
+    /// as the cell's error, a refusal comes back as [`GridAction::ReadOnly`],
+    /// and an accepted change comes back as [`GridAction::CellChanged`]. A
+    /// value equal to the current one is consumed with no action.
+    pub fn paste_into_cell(&mut self, text: &str) -> Response<GridAction> {
+        if self.is_editing() {
+            return Response::ignored();
+        }
+        let Some(src) = self.cursor_src() else {
+            return Response::ignored();
+        };
+        if let Some(reason) = self.read_only_reason_at_cursor() {
+            return Response::emit(GridAction::ReadOnly { reason });
+        }
+        let col = self.cursor.1;
+        Response::from(self.immediate(src, col, CellInput::Text(text)))
     }
 
     pub fn position_label(&self) -> String {

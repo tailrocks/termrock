@@ -1602,11 +1602,14 @@ fn option_stress_filters_and_long_label() {
             "chipsselects.stress=65k label",
         ],
     );
-    // The 65,536-cell chip cannot fit the bar, so it sits behind the +5 marker
-    // with the four demo filters instead of wrapping to a zero-width chip.
-    let screen = label.wait_text("+5");
+    // The 65,536-cell chip comes after the demo filters, so the cursor starts on
+    // a chip that fits. The chip and the demo filter that no longer fits sit
+    // behind the +2 marker instead of wrapping to a zero-width chip.
+    let screen = label.wait_text("+2");
     assert!(
-        text(&screen).contains("match all") && !text(&screen).contains("long label"),
+        text(&screen).contains("match all")
+            && text(&screen).contains("status = 'pending'")
+            && !text(&screen).contains("long label"),
         "long chip should be behind the marker\n{}",
         text(&screen)
     );

@@ -231,13 +231,21 @@ fn stress_case(case: &Stress, change: &[(Metric, u64)], settled: &[(Metric, u64)
 //   not fit instead of walking all N.
 // - Breadcrumbs: 60,502 widths is 3N plus 502 and 19,998 visits is N. The page
 //   plans the trail three times a frame (measure, geometry, paint), one width
-//   per label each time.
+//   per label each time. The trail is cut to its card, so the page fits the
+//   viewport and paints straight into the frame: no off-screen buffer cells.
 // - Chrome: 120,895 widths is 6N plus 895, 240,083 visits is 12N plus 83 and
 //   1,825,650 compares is 6 sorts of about 1.01 N ceil(log2 N). The status bar
 //   is therefore planned six times a frame, each plan linear in N plus one sort
 //   (inferred from the arithmetic).
-// - Chips: 60,496 widths is 3N plus 496 and 40,024 visits is 2N plus 24. The
-//   28 compares equal the stress-off frame: the chip fitter never sorts.
+// - Chips: 80,627 widths is 4N plus 627 and 40,025 visits is 2N plus 25. The
+//   28 compares equal the stress-off frame: the chip fitter never sorts. The
+//   bar is cut to its card, so the page fits the viewport width and
+//   `ScrollView::fit` measures it a second time to reserve the scrollbar
+//   column. That is a fourth pass over the bar (the page measures at two
+//   widths, 114 and 112, and then renders), one more N than before the clamp
+//   left room for the card insets. The card now holds four filter chips and `+19996`.
+//   In the label scene the 65,536-cell chip comes last, so the bar shows the
+//   four demo filters and `+1`: 643 widths, 266,497 bytes and 35 visits.
 //
 // A fitter that rescans survivors per removal would add a factor of N to the
 // visits or the widths and fail these exact counts.
@@ -306,18 +314,18 @@ fn work_contract_stress_breadcrumbs_items() {
             shows: "Folder 20000",
         },
         &[
-            (Metric::AllocatedBufferCells, 6_336),
-            (Metric::BufferCellsFilled, 4_012),
-            (Metric::BufferCellsCopied, 12_320),
+            (Metric::AllocatedBufferCells, 0),
+            (Metric::BufferCellsFilled, 0),
+            (Metric::BufferCellsCopied, 0),
             (Metric::VisibleRowsPainted, 20),
             (Metric::IntrinsicWidthCalls, 60_502),
             (Metric::TextBytesMeasured, 722_753),
             (Metric::FitVisits, 19_998),
         ],
         &[
-            (Metric::AllocatedBufferCells, 6_336),
-            (Metric::BufferCellsFilled, 4_012),
-            (Metric::BufferCellsCopied, 12_320),
+            (Metric::AllocatedBufferCells, 0),
+            (Metric::BufferCellsFilled, 0),
+            (Metric::BufferCellsCopied, 0),
             (Metric::VisibleRowsPainted, 20),
             (Metric::IntrinsicWidthCalls, 60_502),
             (Metric::TextBytesMeasured, 722_753),
@@ -338,21 +346,21 @@ fn work_contract_stress_breadcrumbs_label() {
             shows: "… › long label long label",
         },
         &[
-            (Metric::AllocatedBufferCells, 6_336),
-            (Metric::BufferCellsFilled, 4_012),
-            (Metric::BufferCellsCopied, 12_320),
+            (Metric::AllocatedBufferCells, 0),
+            (Metric::BufferCellsFilled, 0),
+            (Metric::BufferCellsCopied, 0),
             (Metric::VisibleRowsPainted, 20),
-            (Metric::IntrinsicWidthCalls, 620),
-            (Metric::TextBytesMeasured, 200_088),
+            (Metric::IntrinsicWidthCalls, 616),
+            (Metric::TextBytesMeasured, 200_064),
             (Metric::FitVisits, 10),
         ],
         &[
-            (Metric::AllocatedBufferCells, 6_336),
-            (Metric::BufferCellsFilled, 4_012),
-            (Metric::BufferCellsCopied, 12_320),
+            (Metric::AllocatedBufferCells, 0),
+            (Metric::BufferCellsFilled, 0),
+            (Metric::BufferCellsCopied, 0),
             (Metric::VisibleRowsPainted, 20),
-            (Metric::IntrinsicWidthCalls, 620),
-            (Metric::TextBytesMeasured, 200_088),
+            (Metric::IntrinsicWidthCalls, 616),
+            (Metric::TextBytesMeasured, 200_064),
             (Metric::FitVisits, 10),
         ],
     );
@@ -423,26 +431,26 @@ fn work_contract_stress_chips_items() {
             value: "20k items",
             operation: "chips_items_settled",
             records: crate::pages::stress::COUNT,
-            shows: "+19995",
+            shows: "+19996",
         },
         &[
-            (Metric::AllocatedBufferCells, 6_624),
-            (Metric::BufferCellsFilled, 4_602),
-            (Metric::BufferCellsCopied, 11_910),
+            (Metric::AllocatedBufferCells, 6_440),
+            (Metric::BufferCellsFilled, 4_368),
+            (Metric::BufferCellsCopied, 12_096),
             (Metric::VisibleRowsPainted, 18),
-            (Metric::IntrinsicWidthCalls, 60_497),
-            (Metric::TextBytesMeasured, 723_326),
-            (Metric::FitVisits, 40_024),
+            (Metric::IntrinsicWidthCalls, 80_628),
+            (Metric::TextBytesMeasured, 964_141),
+            (Metric::FitVisits, 40_025),
             (Metric::FitCompares, 28),
         ],
         &[
-            (Metric::AllocatedBufferCells, 6_624),
-            (Metric::BufferCellsFilled, 4_602),
-            (Metric::BufferCellsCopied, 11_910),
+            (Metric::AllocatedBufferCells, 6_440),
+            (Metric::BufferCellsFilled, 4_368),
+            (Metric::BufferCellsCopied, 12_096),
             (Metric::VisibleRowsPainted, 18),
-            (Metric::IntrinsicWidthCalls, 60_497),
-            (Metric::TextBytesMeasured, 723_326),
-            (Metric::FitVisits, 40_024),
+            (Metric::IntrinsicWidthCalls, 80_628),
+            (Metric::TextBytesMeasured, 964_141),
+            (Metric::FitVisits, 40_025),
             (Metric::FitCompares, 28),
         ],
     );
@@ -457,26 +465,26 @@ fn work_contract_stress_chips_label() {
             value: "65k label",
             operation: "chips_label_settled",
             records: 1,
-            shows: "+5  + Add filter",
+            shows: "'abc' ×   +1",
         },
         &[
-            (Metric::AllocatedBufferCells, 6_624),
-            (Metric::BufferCellsFilled, 4_602),
-            (Metric::BufferCellsCopied, 11_910),
+            (Metric::AllocatedBufferCells, 6_440),
+            (Metric::BufferCellsFilled, 4_368),
+            (Metric::BufferCellsCopied, 12_096),
             (Metric::VisibleRowsPainted, 18),
-            (Metric::IntrinsicWidthCalls, 493),
-            (Metric::TextBytesMeasured, 200_008),
-            (Metric::FitVisits, 39),
+            (Metric::IntrinsicWidthCalls, 644),
+            (Metric::TextBytesMeasured, 266_511),
+            (Metric::FitVisits, 35),
             (Metric::FitCompares, 28),
         ],
         &[
-            (Metric::AllocatedBufferCells, 6_624),
-            (Metric::BufferCellsFilled, 4_602),
-            (Metric::BufferCellsCopied, 11_910),
+            (Metric::AllocatedBufferCells, 6_440),
+            (Metric::BufferCellsFilled, 4_368),
+            (Metric::BufferCellsCopied, 12_096),
             (Metric::VisibleRowsPainted, 18),
-            (Metric::IntrinsicWidthCalls, 493),
-            (Metric::TextBytesMeasured, 200_008),
-            (Metric::FitVisits, 39),
+            (Metric::IntrinsicWidthCalls, 644),
+            (Metric::TextBytesMeasured, 266_511),
+            (Metric::FitVisits, 35),
             (Metric::FitCompares, 28),
         ],
     );

@@ -362,3 +362,42 @@ fn issue36_completion_advertises_accept_only_with_an_eligible_item() {
     assert!(accepts(&mixed));
     assert!(mixed.has_eligible());
 }
+
+fn drawn(c: &mut Completion) -> String {
+    let theme = Theme::for_level(ColorLevel::TrueColor);
+    let mut buf = Buffer::empty(SCREEN);
+    let mut hits = HitRegistry::default();
+    let mut ring = FocusRing::default();
+    {
+        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        c.render(SCREEN, &mut buf, &mut ctx);
+        ctx.flush_overlays(&mut buf);
+    }
+    (0..SCREEN.height)
+        .map(|y| {
+            (0..SCREEN.width)
+                .map(|x| buf[(x, y)].symbol())
+                .collect::<String>()
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+#[test]
+fn issue281_completion_draws_why_the_highlighted_entry_is_disabled() {
+    let reason = "Moved into the request above";
+    let mut blocked = completion(vec![Item::new("url").reason(reason)]);
+    assert!(!blocked.has_eligible());
+    assert!(
+        drawn(&mut blocked).contains(reason),
+        "the highlighted disabled entry shows its reason:\n{}",
+        drawn(&mut blocked)
+    );
+
+    let mut mixed = completion(vec![Item::new("url").reason(reason), Item::new("fetch(")]);
+    assert_eq!(mixed.list.cursor.index, 1, "open skips the disabled entry");
+    assert!(
+        !drawn(&mut mixed).contains(reason),
+        "an eligible highlighted entry shows no reason"
+    );
+}

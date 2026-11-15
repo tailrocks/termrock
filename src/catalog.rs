@@ -3004,6 +3004,7 @@ pub static CAPABILITIES: &[Capability] = &[
     Capability::function("widgets::grid::DataGrid::context_selection"),
     Capability::function("widgets::grid::DataGrid::on_drag"),
     Capability::function("widgets::grid::DataGrid::on_paste"),
+    Capability::function("widgets::grid::DataGrid::paste_into_cell"),
     Capability::function("widgets::grid::DataGrid::position_label"),
     Capability::function("widgets::grid::DataGrid::rows_label"),
     Capability::function("widgets::grid::DataGrid::cols_label"),

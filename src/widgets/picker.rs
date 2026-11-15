@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
@@ -615,7 +615,15 @@ impl Picker {
         self.visible = Self::identity_projection(&mut items);
         self.items = items;
         self.index = index;
-        self.restore_cursor(keep);
+        // The projection is the identity, so a key's visible position is its
+        // source position.
+        let at = keep.and_then(|key| {
+            self.index
+                .get(&key)
+                .copied()
+                .filter(|&source| self.items[source].key == Some(key))
+        });
+        self.restore_cursor(at);
         self.list.scroll.set_content(self.visible.len());
         self.list.scroll.scroll_to(offset);
         self.status = PickerStatus::Ready;
@@ -625,10 +633,10 @@ impl Picker {
     /// Replaces the visible projection by authoritative keys. Every key is
     /// validated before any state changes, then resolved by one map lookup.
     pub fn set_visible_keys(&mut self, keys: Vec<VisibleKey>) -> Result<(), PickerItemsError> {
-        let mut seen = HashSet::with_capacity(keys.len());
+        let mut positions = HashMap::with_capacity(keys.len());
         let mut visible = Vec::with_capacity(keys.len());
         for VisibleKey { key, matched } in keys {
-            if !seen.insert(key) {
+            if positions.insert(key, visible.len()).is_some() {
                 return Err(PickerItemsError::DuplicateKey(key));
             }
             let Some(source_index) = self.source_of(key) else {
@@ -639,10 +647,15 @@ impl Picker {
                 matched,
             });
         }
-        let keep = self.current_stable_key();
+        let at = self.current_stable_key().and_then(|key| {
+            positions
+                .get(&key)
+                .copied()
+                .filter(|&at| self.items[visible[at].source_index].key == Some(key))
+        });
         let offset = self.list.scroll.offset;
         self.visible = visible;
-        self.restore_cursor(keep);
+        self.restore_cursor(at);
         self.list.scroll.set_content(self.visible.len());
         self.list.scroll.scroll_to(offset);
         self.status = PickerStatus::Ready;
@@ -686,14 +699,12 @@ impl Picker {
             .and_then(|item| item.key)
     }
 
-    fn restore_cursor(&mut self, keep: Option<ItemKey>) {
-        self.list.cursor.index = keep
-            .and_then(|key| {
-                self.visible.iter().position(|v| {
-                    let item = &self.items[v.source_index];
-                    item.key == Some(key) && !item.disabled
-                })
-            })
+    /// Puts the cursor on `at`, the visible position the caller resolved for the
+    /// remembered key through a map, or on the first enabled row when the key
+    /// is gone or its row is disabled. It scans no list to find the key.
+    fn restore_cursor(&mut self, at: Option<usize>) {
+        self.list.cursor.index = at
+            .filter(|&i| self.visible_at(i).is_some_and(|item| !item.disabled))
             .unwrap_or_else(|| self.first_enabled());
     }
 

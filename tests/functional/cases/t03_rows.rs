@@ -8,10 +8,7 @@ use std::time::Duration;
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{
-    App, Launch, TABLEPRO, find_all, flash_settle_stepped as flash_settle, row_text, text,
-    try_launch,
-};
+use crate::support::{App, Launch, TABLEPRO, find_all, flash_settle, row_text, text, try_launch};
 
 const HOST: &str = "dev-db.internal.acme.io";
 const DATABASE: &str = "acme_dev";
@@ -241,10 +238,7 @@ fn confirm_quit(app: &App) {
         &["Quit TablePro?", "1 unsaved query will be lost."],
         &[RUNNING, "Execute query?"],
     );
-    app.key("right");
-    app.key("enter");
-    app.wait_exit("tablepro stayed up after confirming quit");
-    app.expect_exited(0);
+    app.confirm_quit();
 }
 
 #[test]

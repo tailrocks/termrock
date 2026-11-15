@@ -53,3 +53,29 @@ pub fn long_label() -> String {
         .take(LABEL_CELLS)
         .collect()
 }
+
+/// Test helpers shared by the pages that take stress data.
+#[cfg(test)]
+pub mod testing {
+    use junie_tui::core::focus::FocusRing;
+    use junie_tui::core::hit::HitRegistry;
+    use junie_tui::theme::{ColorLevel, Theme};
+    use junie_tui::ui::ctx::{Interaction, RenderCtx};
+
+    /// The index of `value` in [`super::VALUES`], as a page option takes it.
+    pub fn index(value: &str) -> usize {
+        super::VALUES
+            .iter()
+            .position(|v| *v == value)
+            .unwrap_or_else(|| panic!("no stress value {value:?}"))
+    }
+
+    /// Runs `f` with a render context for measuring.
+    pub fn measuring<T>(f: impl FnOnce(&RenderCtx) -> T) -> T {
+        let theme = Theme::for_level(ColorLevel::TrueColor);
+        let mut hits = HitRegistry::default();
+        let mut ring = FocusRing::default();
+        let ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        f(&ctx)
+    }
+}

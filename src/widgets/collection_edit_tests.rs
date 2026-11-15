@@ -226,13 +226,6 @@ fn rows(texts: &[&str]) -> GridRows {
     }
 }
 
-fn commit_ok(g: &mut DataGrid) {
-    let snapshot = g.snapshot_changes();
-    let token = g.begin_submission(snapshot.clone()).unwrap();
-    g.complete_submission(token, Ok(snapshot.identity_receipt()))
-        .unwrap();
-}
-
 fn grid_open_on(g: &mut DataGrid, display: usize) {
     for _ in 0..display {
         let _ = g.on_key(&key(KeyCode::Down));
@@ -303,9 +296,6 @@ fn issue32_grid_structural_paths_cancel_choice() {
         Err(GridCommitError::Editing),
         "a save cannot start under a live session"
     );
-    g.finish_edit_session().unwrap();
-    commit_ok(&mut g);
-    assert!(g.choice.is_none(), "an accepted commit leaves no session");
 
     let mut g = grid(&["a", "b"]);
     g.insert_row().unwrap();
@@ -313,6 +303,28 @@ fn issue32_grid_structural_paths_cancel_choice() {
     let _ = g.on_key(&key(KeyCode::Enter));
     assert!(g.undo().unwrap().is_some());
     assert!(g.choice.is_none(), "undoing an insert closes the session");
+}
+
+#[test]
+fn issue32_accepted_receipt_cancels_a_session_it_did_not_expect() {
+    // A save cannot start under a live session and edits are refused while one
+    // is in flight, so a session can only reach `apply_receipt` through
+    // crate-private setup: park a real one and put it back during the save.
+    let mut g = grid(&["a", "b"]);
+    g.record_cell(0, 0, CellValue::Text("z".into())).unwrap();
+    grid_open_on(&mut g, 1);
+    let parked = g.choice.take();
+    let snapshot = g.snapshot_changes();
+    let token = g.begin_submission(snapshot.clone()).unwrap();
+    g.choice = parked;
+    assert!(g.choice.is_some(), "the forged session is live");
+
+    g.complete_submission(token, Ok(snapshot.identity_receipt()))
+        .unwrap();
+    assert!(
+        g.choice.is_none(),
+        "an accepted receipt reshapes the rows and closes any session"
+    );
 }
 
 #[test]

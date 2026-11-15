@@ -6,8 +6,7 @@
 use tui_test::TerminalSnapshot;
 
 use crate::support::{
-    App, Launch, Point, TABLEPRO, find_all, flash_settle_stepped as flash_settle, row_text, text,
-    try_launch,
+    App, Launch, Point, TABLEPRO, find_all, flash_settle, row_text, text, try_launch,
 };
 
 const HOST: &str = "prod-db-1.acme.io";
@@ -198,12 +197,17 @@ fn submit(app: &App) -> TerminalSnapshot {
     app.settle()
 }
 
+/// Resize, then wait for the app to draw at the new size. The emulator
+/// reports the new size at once but still holds the old frame, so the header
+/// readout of the size is the sign that the new frame has landed.
 fn wait_size(app: &App, cols: u16, rows: u16) -> TerminalSnapshot {
     app.resize(cols, rows);
+    let readout = format!("{cols}×{rows}");
     app.wait_screen(&format!("size {cols}x{rows}"), |screen| {
         let visible = text(screen);
         screen.cols() == u32::from(cols)
             && screen.rows() == u32::from(rows)
+            && visible.contains(&readout)
             && (visible.contains("TablePro")
                 || visible.contains(TITLE)
                 || visible.contains("Filter connections"))
@@ -389,7 +393,16 @@ fn basic_fields_reject_blank_names_and_invalid_ports() {
     assert_eq!((failed.cols(), failed.rows()), (120, 40));
     app.visual(&visual_id("T01.basic.fields.120x40"));
 
-    let fields_narrow = wait_size(&app, 80, 24);
+    wait_size(&app, 80, 24);
+    // The resized frame is drawn in more than one pass, and the status line
+    // comes last. Wait for it along with the clipped port error.
+    let fields_narrow = app.wait_screen("narrow field errors", |screen| {
+        let visible = text(screen);
+        screen.cols() == 80
+            && screen.rows() == 24
+            && visible.contains(STATUS)
+            && visible.contains(NARROW_PORT_ERROR)
+    });
     assert_eq!((fields_narrow.cols(), fields_narrow.rows()), (80, 24));
     assert_required(&fields_narrow);
     assert_eq!(
@@ -418,7 +431,10 @@ fn basic_fields_reject_blank_names_and_invalid_ports() {
     assert_original_detail(&closed);
 
     app.key("e");
-    let reopened = app.wait_text(TITLE);
+    let reopened = app.wait_screen("reopened form keeps status", |screen| {
+        let visible = text(screen);
+        visible.contains(TITLE) && visible.contains(STATUS)
+    });
     assert_stored_form(&reopened, false);
     assert!(
         text(&reopened).contains(STATUS),
