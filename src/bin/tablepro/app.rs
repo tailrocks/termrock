@@ -8,7 +8,7 @@ use junie_tui::clock::{Clock, WallClock};
 use junie_tui::core::event::{Input, Key, Outcome};
 use junie_tui::core::focus::FocusChange;
 
-use junie_tui::core::id::WidgetId;
+use junie_tui::core::id::{ItemKey, WidgetId};
 use junie_tui::core::intent::Phase;
 use junie_tui::core::pointer::{
     MouseTarget, PointerEvent, PointerHost, PointerParts, PointerRouter,
@@ -39,7 +39,7 @@ use junie_tui::widgets::too_small::TooSmall;
 
 use crate::connections::ConnectionsScreen;
 use crate::context::{self, CtxMenu};
-use crate::db::{Catalog, Environment, SafeMode};
+use crate::db::{Catalog, Connection, Environment, SafeMode};
 use crate::filter_editor::{FilterDone, FilterEditor};
 use crate::model::{History, SwitchTarget, SwitcherIndex};
 use crate::pages::Tablepro;
@@ -64,6 +64,10 @@ const VIEWER_DIALOG: WidgetId = WidgetId::of("dialog.viewer");
 
 const LEAVE_DIALOG: WidgetId = WidgetId::of("dialog.quit");
 
+#[cfg(test)]
+#[path = "connection_identity_tests.rs"]
+mod connection_identity_tests;
+
 pub enum Act {
     EditFilter(Option<usize>),
     FilterOnCell(usize, CellValue),
@@ -75,7 +79,11 @@ pub enum Act {
     OpenViewer(String, CellValue),
     ConfirmCloseTab(usize),
 
-    Connected(usize),
+    Connected {
+        key: ItemKey,
+        generation: u64,
+        connection: Box<Connection>,
+    },
 }
 
 pub type Request = junie_tui::shell::Request<ModalResult, (), Act>;
@@ -164,6 +172,7 @@ pub struct App {
     pub keys: shell::ShellKeys<TpCmd>,
 
     committing: Option<u32>,
+    last_admitted_generation: u64,
     scope: usize,
     switcher_targets: Vec<SwitchTarget>,
 
@@ -189,17 +198,25 @@ impl App {
             tick: 0,
             keys: shell_keys(),
             committing: None,
+            last_admitted_generation: 0,
             scope: 0,
             switcher_targets: vec![],
             switcher_index: None,
         }
     }
 
-    pub fn connect(&mut self, index: usize) {
-        let Some(c) = self.connections.connections.get(index).cloned() else {
-            return;
-        };
+    /// Open the connection `key` names from its current settings (CLI start).
+    pub fn connect_key(&mut self, key: ItemKey) {
+        if let Some(c) = self.connections.snapshot(key) {
+            self.open_workbench(key, c);
+        }
+    }
+
+    /// Open a workbench from an owned, already admitted snapshot. The app never
+    /// looks the connection up again, so later edits cannot retarget it.
+    fn open_workbench(&mut self, key: ItemKey, c: Connection) {
         let mut wb = Workbench::new(c, Catalog::acme_prod());
+        wb.connection_key = Some(key);
         wb.new_query("");
 
         self.shell.focus.focus(crate::workbench::EXPLORER);
@@ -543,7 +560,16 @@ impl App {
 
     fn act(&mut self, a: Act) {
         match a {
-            Act::Connected(i) => self.connect(i),
+            Act::Connected {
+                key,
+                generation,
+                connection,
+            } => {
+                if generation > self.last_admitted_generation {
+                    self.last_admitted_generation = generation;
+                    self.open_workbench(key, *connection);
+                }
+            }
             Act::EditFilter(i) => self.open_filter_editor(i, None),
             Act::FilterOnCell(col, v) => {
                 let val = match &v {
@@ -1643,6 +1669,7 @@ impl App {
                         let active = w.active;
                         let qc = w.query_counter;
                         let mut nw = Workbench::new(conn, cat);
+                        nw.connection_key = w.connection_key;
                         nw.tabs = tabs;
                         nw.active = active;
                         nw.query_counter = qc;
@@ -1689,17 +1716,14 @@ impl App {
             }
             SAFE_MODE => {
                 let level = SafeMode::ALL[i.min(5)];
+                if let Some(key) = self.workbench.as_ref().and_then(|w| w.connection_key)
+                    && let Err(e) = self.connections.set_safe_mode(key, level)
+                {
+                    self.set_status_as(StatusKind::Warn, e.message().to_owned());
+                    return Outcome::Changed;
+                }
                 if let Some(w) = self.workbench.as_mut() {
                     w.connection.safe_mode = level;
-                    let name = w.connection.name.clone();
-                    if let Some(c) = self
-                        .connections
-                        .connections
-                        .iter_mut()
-                        .find(|c| c.name == name)
-                    {
-                        c.safe_mode = level;
-                    }
                 }
                 self.set_status_as(
                     StatusKind::Ok,
@@ -1969,7 +1993,12 @@ impl App {
             return Outcome::Changed;
         };
         match target {
-            context::Target::Connection(row) => self.connections.select_row(row),
+            context::Target::Connection(_, Some(key)) => {
+                if !self.connections.select_key(key) {
+                    return Outcome::Changed;
+                }
+            }
+            context::Target::Connection(row, None) => self.connections.select_row(row),
             _ => {
                 if let Some(w) = self.workbench.as_mut() {
                     context::select(w, target);
@@ -2013,7 +2042,7 @@ impl App {
         match self.route() {
             Route::Connections => {
                 left.push(Segment::new("Connections", Tone::Secondary).priority(8));
-                let n = self.connections.connections.len();
+                let n = self.connections.len();
                 left.push(Segment::new(format!("{n} saved"), Tone::Muted).priority(3));
             }
             Route::Workbench => {
