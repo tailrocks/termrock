@@ -103,6 +103,11 @@ pub trait PaneLink: Send + std::fmt::Debug {
     /// The events that arrived since the last call, at most `output_budget`
     /// bytes of output. `now_ms` is the console's clock, so a scripted link
     /// plays on the same time as the tests.
+    ///
+    /// A zero budget takes no output bytes, but events before the first
+    /// blocked output still return. An output larger than the budget is split
+    /// into ordered pieces across calls. Events behind a blocked or partly
+    /// sent output wait for the rest of it, so the order of events holds.
     fn drain(&self, now_ms: i64, output_budget: usize) -> Vec<LinkEvent>;
 }
 
