@@ -61,8 +61,6 @@ pub const TERMINAL_SESSION_COVERAGE: &[&str] = &[
     "terminal::SessionPaste",
     "terminal::SessionPaste::Sent",
     "terminal::SessionPaste::NeedsConfirm",
-    "terminal::SessionPaste::TooLarge",
-    "terminal::SessionPaste::Full",
     "terminal::SessionPaste::Dropped",
     "terminal::TerminalSessionController",
     "terminal::SessionConfig::MINIMUM",
