@@ -2270,7 +2270,11 @@ impl ManagerScreen {
             }
         }
 
-        let ay = inner.bottom().saturating_sub(action_lines).max(y);
+        let ay = inner
+            .bottom()
+            .saturating_sub(action_lines)
+            .max(y)
+            .max(inner.y);
         if ay < inner.bottom() {
             let rects = row_layout(
                 Rect::new(inner.x - 1, ay, inner.width + 1, inner.bottom() - ay),
