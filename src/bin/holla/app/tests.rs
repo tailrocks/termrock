@@ -718,6 +718,74 @@ fn finder_explore_selection_tracks_reordered_cells() {
     assert_eq!(finder_group(&mut app), Some("Git"));
 }
 
+/// Explore tiles in `order`, with the Git summary long enough to overflow the
+/// preview pane so its scroll offset can move.
+fn long_git_explore_tiles(order: &[&str]) -> Vec<crate::domain::catalog::ExploreTile> {
+    let words: Vec<String> = (0..600).map(|i| format!("L{i:03}")).collect();
+    let summary: &'static str = Box::leak(words.join(" ").into_boxed_str());
+    let mut tiles = explore_tiles(order);
+    tiles
+        .iter_mut()
+        .find(|t| t.id == "explore.git")
+        .expect("git tile")
+        .summary = summary;
+    tiles
+}
+
+fn preview_top_word(app: &mut App) -> String {
+    drawn_text(app)
+        .lines()
+        .find_map(|line| {
+            line.split_whitespace()
+                .find(|w| {
+                    w.len() == 4 && w.starts_with('L') && w[1..].bytes().all(|b| b.is_ascii_digit())
+                })
+                .map(str::to_owned)
+        })
+        .expect("preview word drawn")
+}
+
+#[test]
+fn finder_explore_reorder_keeps_preview_scroll() {
+    let mut app = finder_app();
+    app.world.explore_tiles = long_git_explore_tiles(&[
+        "explore.system",
+        "explore.tasks",
+        "explore.files",
+        "explore.git",
+        "explore.disk",
+        "explore.services",
+    ]);
+    tick(&mut app, 1);
+    finder_select_explore(&mut app, "explore.git");
+    drawn_text(&mut app);
+    click_at(&mut app, 100, 9);
+    for _ in 0..3 {
+        app.handle_input(key(KeyCode::Down, KeyModifiers::NONE));
+    }
+    let scrolled = preview_top_word(&mut app);
+    assert_ne!(
+        scrolled, "L000",
+        "preview did not scroll before the rebuild"
+    );
+
+    app.world.explore_tiles = long_git_explore_tiles(&[
+        "explore.system",
+        "explore.disk",
+        "explore.files",
+        "explore.tasks",
+        "explore.git",
+        "explore.services",
+    ]);
+    tick(&mut app, 1);
+
+    assert_eq!(
+        finder(&mut app).current_id().as_deref(),
+        Some("explore.git")
+    );
+    assert_eq!(preview_top_word(&mut app), scrolled);
+}
+
 #[test]
 fn finder_empty_explore_row_is_not_selectable() {
     let mut app = finder_app();
