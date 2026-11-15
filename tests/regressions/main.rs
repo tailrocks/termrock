@@ -5,3 +5,4 @@
 //! generated CI workflows (see `docs/ci.md`).
 
 mod smoke;
+mod work_budgets;

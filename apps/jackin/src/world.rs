@@ -1054,6 +1054,7 @@ impl World {
         }
         let mut changed = Vec::new();
         for (id, d) in self.daemons.iter_mut() {
+            junie_tui::record_work!(SchedulingRecordsVisited, 1usize);
             if self
                 .instances
                 .iter()

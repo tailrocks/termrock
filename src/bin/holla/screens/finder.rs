@@ -157,6 +157,7 @@ impl FinderPage {
 
     fn rebuild(&mut self, w: &World) {
         self.rebuilds += 1;
+        junie_tui::record_work!(ProjectionRebuilds, 1usize);
         let keep = self.current_id();
         let (items, warnings) = crate::domain::catalog::build_with_warnings(w);
         self.items = items;

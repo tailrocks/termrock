@@ -7,3 +7,4 @@
 #![cfg(feature = "demo")]
 
 mod smoke;
+mod work_budgets;
