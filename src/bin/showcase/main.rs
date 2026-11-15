@@ -72,6 +72,8 @@ fn main() -> std::io::Result<()> {
         coverage::PICKER_COVERAGE,
         coverage::PICKER_ALLOWLIST,
         coverage::TEXT_INPUT_COVERAGE,
+        coverage::SCROLL_WINDOW_COVERAGE,
+        coverage::SCROLL_WINDOW_ALLOWLIST,
         coverage::KEYMAP_ALLOWLIST,
     );
     let cli: Cli = junie_tui::cli::parse(cli_after_help());
