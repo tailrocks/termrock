@@ -410,7 +410,9 @@ impl App {
     pub(super) fn cancel_transitions(&mut self) {
         self.transition_wait = None;
         self.filter_target = None;
+        self.close_pending = None;
         let _ = self.table_guard.resolve(DialogResult::Cancelled);
+        let _ = self.close_guard.resolve(DialogResult::Cancelled);
     }
 
     /// The view a filter editor opens against, for its answer to find again.
