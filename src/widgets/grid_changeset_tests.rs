@@ -259,7 +259,9 @@ fn issue50_snapshot_is_immutable_and_deterministic() {
     }
 
     let kept = first.clone();
-    g.apply_local_sort(NAME, SortDir::Desc);
+    g.local_sort = true;
+    g.sort = Some((NAME, SortDir::Desc));
+    g.rebuild_order();
     g.cursor = (3, QTY);
     assert_eq!(g.snapshot_changes(), first, "sort and cursor are not draft");
     assert_eq!(g.snapshot_changes().revision(), first.revision());
