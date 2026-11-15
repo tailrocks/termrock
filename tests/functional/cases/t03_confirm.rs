@@ -5,8 +5,6 @@
 //! TablePro has no `--page` flag. It opens on Connections. Development starts
 //! in Silent, which runs an ordinary UPDATE with no dialog.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{

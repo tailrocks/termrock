@@ -4,8 +4,6 @@
 //! `pre_refactor/t05_maximize/` and each checkpoint's dots become underscores.
 //! TablePro has no `--page` flag. It opens on Connections.
 
-use std::time::Duration;
-
 use tui_test::{SnapshotColor, TerminalSnapshot};
 
 use crate::support::{

@@ -9,8 +9,6 @@
 //! is false). A later preview replaces the unpinned preview tab in place and
 //! leaves a pinned table and a dirty query alone.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{
