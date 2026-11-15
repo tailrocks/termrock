@@ -1777,7 +1777,7 @@ impl App {
         }
     }
 
-    fn activate_tab(&mut self, i: usize) {
+    pub(crate) fn activate_tab(&mut self, i: usize) {
         if i >= self.router.tab_count() {
             return;
         }
@@ -1797,7 +1797,7 @@ impl App {
         i
     }
 
-    fn open_activity_tab(&mut self, id: &str, activate: bool) {
+    pub(crate) fn open_activity_tab(&mut self, id: &str, activate: bool) {
         if let Some(i) = self
             .tabs
             .iter()
