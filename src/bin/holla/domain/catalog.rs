@@ -229,60 +229,83 @@ fn contribute(w: &World, items: &mut Vec<Item>, with_custom: bool) {
     activity_items(w, items);
 }
 
+/// One Explore tile on the Finder's empty Here view. The world owns the list so
+/// the tile set is data, not a constant baked into the catalog builder.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExploreTile {
+    pub id: &'static str,
+    pub label: &'static str,
+    pub group: &'static str,
+    pub aliases: &'static [&'static str],
+    pub summary: &'static str,
+}
+
+pub fn default_explore_tiles() -> Vec<ExploreTile> {
+    let tile = |id, label, group, aliases, summary| ExploreTile {
+        id,
+        label,
+        group,
+        aliases,
+        summary,
+    };
+    vec![
+        tile(
+            "explore.tasks",
+            "Tasks",
+            "Tasks",
+            &["t"],
+            "project tasks from mise and the build system, here and around",
+        ),
+        tile(
+            "explore.git",
+            "Git",
+            "Git",
+            &["g"],
+            "worktree state, sync, branches, bulk operations across children",
+        ),
+        tile(
+            "explore.files",
+            "Files",
+            "Files",
+            &["f"],
+            "browse this folder, find files under home, preview safely",
+        ),
+        tile(
+            "explore.disk",
+            "Disk",
+            "Disk",
+            &["d"],
+            "usage analysis and stack-aware cleanup",
+        ),
+        tile(
+            "explore.services",
+            "Services",
+            "Services",
+            &["s"],
+            "containers, Compose, databases and system services",
+        ),
+        tile(
+            "explore.system",
+            "System",
+            "System",
+            &["y"],
+            "resources, processes, monitors, upgrades",
+        ),
+    ]
+}
+
 fn explore(w: &World, out: &mut Vec<Item>) {
     let here = ScopeTag::here(&w.location.cwd);
-    let mut ex = |id: &str, label: &str, group: &'static str, aliases: &[&str], summary: &str| {
+    for t in &w.explore_tiles {
         out.push(
-            Item::new(id, label, Kind::Explore, ResultType::Flow, here.clone())
-                .summary(summary)
-                .aliases(aliases)
+            Item::new(t.id, t.label, Kind::Explore, ResultType::Flow, here.clone())
+                .summary(t.summary)
+                .aliases(t.aliases)
                 .group("Explore")
-                .launch(Launch::Group(group))
+                .launch(Launch::Group(t.group))
                 .reason(Signal::Default, "stable entry point"),
         );
-    };
-    ex(
-        "explore.tasks",
-        "Tasks",
-        "Tasks",
-        &["t"],
-        "project tasks from mise and the build system, here and around",
-    );
-    ex(
-        "explore.git",
-        "Git",
-        "Git",
-        &["g"],
-        "worktree state, sync, branches, bulk operations across children",
-    );
-    ex(
-        "explore.files",
-        "Files",
-        "Files",
-        &["f"],
-        "browse this folder, find files under home, preview safely",
-    );
-    ex(
-        "explore.disk",
-        "Disk",
-        "Disk",
-        &["d"],
-        "usage analysis and stack-aware cleanup",
-    );
-    ex(
-        "explore.services",
-        "Services",
-        "Services",
-        &["s"],
-        "containers, Compose, databases and system services",
-    );
-    ex(
-        "explore.system",
-        "System",
-        "System",
-        &["y"],
-        "resources, processes, monitors, upgrades",
-    );
+    }
 
     if let Some(p) = &w.location.workspace {
         out.push(
@@ -2462,10 +2485,10 @@ fn upgrade_items(w: &World, out: &mut Vec<Item>) {
 pub fn parse_brew_services(text: &str) -> Result<Vec<String>, String> {
     use manifest::{Json, parse_json};
     let json = parse_json(text).map_err(|e| format!("brew services list --json: {e}"))?;
-    let arr = match &json {
-        Json::Arr(a) => a.clone(),
-        Json::Obj(_) => match json.get("services") {
-            Some(Json::Arr(a)) => a.clone(),
+    let arr: &[Json] = match &json {
+        Json::Array(a) => a.as_slice(),
+        Json::Object(_) => match json.get("services") {
+            Some(Json::Array(a)) => a.as_slice(),
             _ => return Err("brew services list --json: no services array".into()),
         },
         _ => return Err("brew services list --json: unexpected shape".into()),

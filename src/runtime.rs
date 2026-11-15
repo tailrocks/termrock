@@ -21,6 +21,9 @@ use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use crate::core::event::{External, Input, InputConfig, Key, Mouse, MouseKind, Outcome};
 use crate::core::keyboard::{self, KeyboardProtocol};
 
+mod panic_bridge;
+use panic_bridge::{RestoreGate, SessionOwner};
+
 pub trait Application {
     fn handle(&mut self, input: Input) -> Outcome;
     fn render(&mut self, frame: &mut Frame);
@@ -50,6 +53,13 @@ pub trait Application {
 
     fn take_output(&mut self) -> Vec<String> {
         Vec::new()
+    }
+
+    /// Consumes the request for another draw left by the last draw. The
+    /// event loop calls it after every draw and keeps drawing while it
+    /// returns true.
+    fn take_render_invalidated(&mut self) -> bool {
+        false
     }
 
     fn external(&self) -> Option<&ExternalReceiver> {
@@ -399,53 +409,75 @@ fn is_navigation(key: &Key) -> bool {
 /// An active terminal session: raw mode, alternate screen, mouse and paste
 /// capture, plus (on Unix) ownership of the process SIGTSTP action.
 ///
+/// One session owns the terminal at a time. [`enter`](Self::enter) and
+/// [`enter_with`](Self::enter_with) claim that ownership before touching the
+/// terminal, so a second entry while a session lives fails with
+/// `ErrorKind::AlreadyExists` and has no side effects. The claim lasts until
+/// the session is dropped, also after [`try_leave`](Self::try_leave).
+///
 /// Two cleanup contracts live here and stay separate. Terminal modes are
-/// restored by `Restoration`, which also runs from the panic hook, and may
-/// be left and re-entered during [`suspend`](Self::suspend). The SIGTSTP
-/// action is restored by [`job_control::JobControlGuard`], only when the
-/// session ends ([`try_leave`](Self::try_leave), [`leave`](Self::leave) or
-/// drop), never from the panic hook and never during a suspend. Field order
-/// makes drop restore the terminal first and the signal action last.
+/// restored once per active interval by the session's `SessionOwner`, from
+/// whichever of `try_leave`, drop or the panic hook gets there first. The
+/// interval ends at [`suspend`](Self::suspend) and starts again when it
+/// resumes. The SIGTSTP action is restored by [`job_control::JobControlGuard`],
+/// only when the session ends ([`try_leave`](Self::try_leave),
+/// [`leave`](Self::leave) or drop), never from the panic hook and never during
+/// a suspend. Field order makes drop restore the terminal first and the signal
+/// action last.
+///
+/// # Panic hook
+///
+/// The first entry in the process installs one permanent panic-hook bridge.
+/// It restores the terminal when a panic happens while a session is active,
+/// on any thread, then calls the hook that was installed before it. Later
+/// entries add nothing to the chain, and a panic after the session ended
+/// emits no terminal cleanup. The library never changes the hook again. A host
+/// that calls `std::panic::set_hook` afterwards replaces the bridge and owns
+/// terminal cleanup from then on. Unwinding still restores the terminal when
+/// the session drops, but under `panic = "abort"` a replacing hook must
+/// restore the terminal itself or wrap the hook it replaced.
 pub struct TerminalSession {
     terminal: ratatui::DefaultTerminal,
-    restoration: Restoration,
+    owner: SessionOwner,
     #[cfg(unix)]
     job_control: Option<job_control::JobControlGuard>,
 }
 
-struct Restoration {
-    restore: fn(),
-    active: bool,
-}
+static SESSION_GATE: RestoreGate = RestoreGate::new(restore_terminal);
 
-impl Restoration {
-    fn leave(&mut self) {
-        if self.active {
-            self.active = false;
-            (self.restore)();
-        }
-    }
-
-    fn reacquire(&mut self) {
-        self.active = true;
-    }
-}
-
-impl Drop for Restoration {
-    fn drop(&mut self) {
-        self.leave();
-    }
-}
-
-fn initialize_with_restoration<T>(
-    restore: fn(),
+/// Claims `gate`, installs the panic bridge, activates the first interval and
+/// then runs `initialize`. A refused claim runs nothing. Any later failure
+/// cleans up once and releases the claim when the returned owner drops.
+fn claim_and_initialize<T>(
+    gate: &'static RestoreGate,
     initialize: impl FnOnce() -> std::io::Result<T>,
-) -> std::io::Result<(T, Restoration)> {
-    let restoration = Restoration {
-        restore,
-        active: true,
-    };
-    Ok((initialize()?, restoration))
+) -> std::io::Result<(T, SessionOwner)> {
+    let owner = SessionOwner::claim(gate)?;
+    panic_bridge::install_once(gate)?;
+    owner.activate()?;
+    Ok((initialize()?, owner))
+}
+
+fn open_terminal(protocol: KeyboardProtocol) -> std::io::Result<ratatui::DefaultTerminal> {
+    enable_raw_mode()?;
+    prime_input()?;
+    let mut out = stdout();
+    execute!(
+        out,
+        EnterAlternateScreen,
+        EnableMouseCapture,
+        EnableBracketedPaste,
+        EnableFocusChange
+    )?;
+
+    if let Some(push) = keyboard::session::enter(protocol, || {
+        ratatui::crossterm::terminal::supports_keyboard_enhancement().unwrap_or(false)
+    }) {
+        out.write_all(push.as_bytes())?;
+        out.flush()?;
+    }
+    let backend = ratatui::backend::CrosstermBackend::new(out);
+    ratatui::Terminal::new(backend)
 }
 
 const ENABLE_WRAP: &str = "\x1b[?7h";
@@ -455,41 +487,40 @@ impl TerminalSession {
         Self::enter_with(KeyboardProtocol::current())
     }
 
+    /// Fails with `ErrorKind::AlreadyExists`, before any terminal change,
+    /// while another session is alive.
     pub fn enter_with(protocol: KeyboardProtocol) -> std::io::Result<Self> {
-        enable_raw_mode()?;
-        let (terminal, restoration) = initialize_with_restoration(restore_terminal, || {
-            prime_input()?;
-            let mut out = stdout();
-            execute!(
-                out,
-                EnterAlternateScreen,
-                EnableMouseCapture,
-                EnableBracketedPaste,
-                EnableFocusChange
-            )?;
+        Self::enter_on(&SESSION_GATE, || open_terminal(protocol))
+    }
 
-            if let Some(push) = keyboard::session::enter(protocol, || {
-                ratatui::crossterm::terminal::supports_keyboard_enhancement().unwrap_or(false)
-            }) {
-                out.write_all(push.as_bytes())?;
-                out.flush()?;
-            }
-            let backend = ratatui::backend::CrosstermBackend::new(out);
-            ratatui::Terminal::new(backend)
-        })?;
-        #[cfg(unix)]
-        let job_control = Some(job_control::install()?);
-        let previous = std::panic::take_hook();
-        std::panic::set_hook(Box::new(move |info| {
-            restore_terminal();
-            previous(info);
-        }));
-        Ok(Self {
+    fn enter_on(
+        gate: &'static RestoreGate,
+        open: impl FnOnce() -> std::io::Result<ratatui::DefaultTerminal>,
+    ) -> std::io::Result<Self> {
+        let (terminal, owner) = claim_and_initialize(gate, open)?;
+        Self::with_job_control(terminal, owner)
+    }
+
+    #[cfg(unix)]
+    fn with_job_control(
+        terminal: ratatui::DefaultTerminal,
+        owner: SessionOwner,
+    ) -> std::io::Result<Self> {
+        let mut session = Self {
             terminal,
-            restoration,
-            #[cfg(unix)]
-            job_control,
-        })
+            owner,
+            job_control: None,
+        };
+        session.job_control = Some(job_control::install()?);
+        Ok(session)
+    }
+
+    #[cfg(not(unix))]
+    fn with_job_control(
+        terminal: ratatui::DefaultTerminal,
+        owner: SessionOwner,
+    ) -> std::io::Result<Self> {
+        Ok(Self { terminal, owner })
     }
 
     pub fn terminal(&mut self) -> &mut ratatui::DefaultTerminal {
@@ -498,11 +529,13 @@ impl TerminalSession {
 
     /// Restores the terminal modes, then, on Unix, the host's SIGTSTP action.
     ///
-    /// Terminal cleanup stays best effort. Only the SIGTSTP restoration is
-    /// reported. When it fails the session keeps its [`job_control`] claim
-    /// so a later call or drop can retry.
+    /// Terminal cleanup stays best effort and runs once per active interval.
+    /// It fails with `ErrorKind::WouldBlock` only while another thread is
+    /// still cleaning up, and then nothing else is released. A failed SIGTSTP
+    /// restoration is reported too. In both cases the session keeps its
+    /// [`job_control`] claim so a later call or drop can retry.
     pub fn try_leave(&mut self) -> std::io::Result<()> {
-        self.restoration.leave();
+        self.owner.restore()?;
         #[cfg(unix)]
         if let Some(guard) = self.job_control.as_mut() {
             guard.restore()?;
@@ -522,38 +555,43 @@ impl TerminalSession {
             Some(guard) => guard,
             None => self.job_control.insert(job_control::install()?),
         };
-        self.restoration.leave();
+        self.owner.restore()?;
         guard.stop_self()?;
         self.reenter()
     }
 
     #[cfg(unix)]
     fn reenter(&mut self) -> std::io::Result<(u16, u16)> {
-        enable_raw_mode()?;
-        let mut out = stdout();
-        if let Err(e) = execute!(
-            out,
-            EnterAlternateScreen,
-            EnableMouseCapture,
-            EnableBracketedPaste,
-            EnableFocusChange
-        ) {
-            restore_terminal();
+        self.owner.activate()?;
+        if let Err(e) = Self::resume_modes() {
+            let _ = self.owner.restore();
             return Err(e);
         }
-        if let Some(push) = keyboard::session::resume()
-            && let Err(e) = out.write_all(push.as_bytes()).and_then(|()| out.flush())
-        {
-            restore_terminal();
-            return Err(e);
-        }
-        self.restoration.reacquire();
 
+        let mut out = stdout();
         execute!(out, Clear(ClearType::All))?;
         self.terminal.swap_buffers();
         self.terminal.swap_buffers();
         let size = self.terminal.size()?;
         Ok((size.width, size.height))
+    }
+
+    #[cfg(unix)]
+    fn resume_modes() -> std::io::Result<()> {
+        enable_raw_mode()?;
+        let mut out = stdout();
+        execute!(
+            out,
+            EnterAlternateScreen,
+            EnableMouseCapture,
+            EnableBracketedPaste,
+            EnableFocusChange
+        )?;
+        if let Some(push) = keyboard::session::resume() {
+            out.write_all(push.as_bytes())?;
+            out.flush()?;
+        }
+        Ok(())
     }
 }
 
@@ -725,8 +763,23 @@ pub mod job_control {
     }
 
     #[cfg(test)]
+    pub(in crate::runtime) fn fail_next_install() {
+        tests::arm(Step::Install);
+    }
+
+    #[cfg(test)]
+    pub(in crate::runtime) fn fail_next_restore() {
+        tests::arm(Step::Restore);
+    }
+
+    #[cfg(test)]
     mod tests;
 }
+
+#[cfg(test)]
+mod isolated;
+#[cfg(test)]
+mod tests;
 
 fn restore_terminal() {
     let mut out = stdout();
@@ -866,8 +919,8 @@ fn event_loop(session: &mut TerminalSession, app: &mut impl Application) -> std:
         }
         let terminal = &mut session.terminal;
         if dirty {
-            draw_frame(terminal, app, suppress_colors)?;
             dirty = false;
+            draw_frame(terminal, app, suppress_colors, &mut dirty)?;
             if let Some(delay) = first_poll_delay.take() {
                 std::thread::sleep(delay);
             }
@@ -903,7 +956,7 @@ fn event_loop(session: &mut TerminalSession, app: &mut impl Application) -> std:
         if let Some(external) = app.external() {
             wait = wait.min(external.latency);
         }
-        wait = turn_wait(wait, raw_pending || external_pending);
+        wait = turn_wait(wait, raw_pending || external_pending || dirty);
 
         if raw_pending || pump.has_pending() || poll_uninterrupted(wait)? {
             let changed = input_turn(
@@ -917,9 +970,9 @@ fn event_loop(session: &mut TerminalSession, app: &mut impl Application) -> std:
                 return Ok(());
             }
             if changed {
-                draw_frame(terminal, app, suppress_colors)?;
+                draw_frame(terminal, app, suppress_colors, &mut dirty)?;
                 if pump.settle(app) {
-                    draw_frame(terminal, app, suppress_colors)?;
+                    draw_frame(terminal, app, suppress_colors, &mut dirty)?;
                 }
             }
         }
@@ -944,7 +997,7 @@ fn event_loop(session: &mut TerminalSession, app: &mut impl Application) -> std:
         dirty |= turn.changed;
         if turn.quit {
             if turn.ticked && dirty {
-                draw_frame(terminal, app, suppress_colors)?;
+                draw_frame(terminal, app, suppress_colors, &mut dirty)?;
             }
             return Ok(());
         }
@@ -1320,14 +1373,26 @@ fn draw_frame(
     terminal: &mut ratatui::DefaultTerminal,
     app: &mut impl Application,
     suppress_colors: bool,
+    dirty: &mut bool,
 ) -> std::io::Result<()> {
     queue!(terminal.backend_mut(), BeginSynchronizedUpdate)?;
-    let drawn = terminal
-        .draw(|f| render_frame(app, f, suppress_colors))
-        .map(|_| ());
+    let drawn = paint(terminal, app, suppress_colors, dirty);
     let ended = execute!(terminal.backend_mut(), EndSynchronizedUpdate);
     drawn?;
     ended
+}
+
+fn paint<B: ratatui::backend::Backend>(
+    terminal: &mut ratatui::Terminal<B>,
+    app: &mut impl Application,
+    suppress_colors: bool,
+    dirty: &mut bool,
+) -> Result<(), B::Error> {
+    let drawn = terminal
+        .draw(|f| render_frame(app, f, suppress_colors))
+        .map(|_| ());
+    *dirty |= app.take_render_invalidated();
+    drawn
 }
 
 fn render_frame(app: &mut impl Application, frame: &mut Frame, suppress_colors: bool) {
@@ -2248,5 +2313,96 @@ mod external_tests {
             ExternalPolicy::default().max_duration,
             Duration::from_millis(2)
         );
+    }
+}
+
+#[cfg(test)]
+mod render_pending_tests {
+    use std::collections::VecDeque;
+
+    use ratatui::Terminal;
+    use ratatui::backend::TestBackend;
+
+    use super::*;
+
+    struct Scripted {
+        requests: VecDeque<bool>,
+        latch: bool,
+        draws: usize,
+    }
+
+    impl Scripted {
+        fn new(requests: &[bool]) -> Self {
+            Self {
+                requests: requests.iter().copied().collect(),
+                latch: false,
+                draws: 0,
+            }
+        }
+    }
+
+    impl Application for Scripted {
+        fn handle(&mut self, _input: Input) -> Outcome {
+            Outcome::Ignored
+        }
+
+        fn render(&mut self, _frame: &mut Frame) {
+            self.draws += 1;
+            self.latch = self.requests.pop_front().unwrap_or(false);
+        }
+
+        fn should_quit(&self) -> bool {
+            false
+        }
+
+        fn tick_interval(&self) -> Duration {
+            Duration::from_millis(100)
+        }
+
+        fn take_render_invalidated(&mut self) -> bool {
+            std::mem::take(&mut self.latch)
+        }
+    }
+
+    fn terminal() -> Terminal<TestBackend> {
+        Terminal::new(TestBackend::new(4, 2)).expect("test terminal")
+    }
+
+    #[test]
+    fn render_pending_survives_all_draw_sites() {
+        let wait = Duration::from_millis(100);
+        let mut terminal = terminal();
+
+        let mut app = Scripted::new(&[true]);
+        let mut dirty = false;
+        paint(&mut terminal, &mut app, false, &mut dirty).expect("initial draw");
+        assert!(dirty, "a request after the initial draw schedules a turn");
+        assert_eq!(turn_wait(wait, dirty), Duration::ZERO);
+
+        let mut app = Scripted::new(&[true, false]);
+        let mut dirty = false;
+        paint(&mut terminal, &mut app, false, &mut dirty).expect("input draw");
+        paint(&mut terminal, &mut app, false, &mut dirty).expect("settle draw");
+        assert!(
+            dirty,
+            "the settle draw does not erase the input draw's request"
+        );
+        assert!(
+            !app.take_render_invalidated(),
+            "each draw's request is consumed"
+        );
+
+        let mut app = Scripted::new(&[true, false]);
+        let mut dirty = false;
+        paint(&mut terminal, &mut app, false, &mut dirty).expect("dirty draw");
+        assert!(
+            dirty,
+            "clearing dirty before the draw keeps the new request"
+        );
+        dirty = false;
+        paint(&mut terminal, &mut app, false, &mut dirty).expect("requested draw");
+        assert!(!dirty, "a stable draw ends the requests");
+        assert_eq!(turn_wait(wait, dirty), wait, "an idle turn keeps its wait");
+        assert_eq!(app.draws, 2);
     }
 }
