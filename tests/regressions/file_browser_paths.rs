@@ -1,9 +1,7 @@
-mod common;
-
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use common::key;
+use crate::common::key;
 use junie_tui::core::focus::{Focus, FocusRing};
 use junie_tui::core::hit::HitRegistry;
 use junie_tui::core::id::WidgetId;
