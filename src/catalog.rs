@@ -3625,6 +3625,7 @@ pub static CAPABILITIES: &[Capability] = &[
     Capability::function("shell::Cx::status"),
     Capability::function("shell::Cx::status_in"),
     Capability::function("shell::Cx::status_as"),
+    Capability::function("shell::Cx::notice"),
     Capability::function("shell::Cx::progress"),
     Capability::function("shell::Cx::error"),
     Capability::function("shell::Cx::open"),
