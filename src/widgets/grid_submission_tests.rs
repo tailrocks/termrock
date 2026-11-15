@@ -228,6 +228,27 @@ fn issue11_review_locks_exact_draft() {
 }
 
 #[test]
+fn issue278_try_set_model_refuses_while_locked() {
+    let mut g = edited(2);
+    let _held = lock(&mut g);
+    let locked = state(&g);
+    let columns = vec![ColumnSpec::new("only", CellKind::Text)];
+
+    // page(1) has two cells per row, so the shape check alone would fail with
+    // `Shape`; the lock must win before it.
+    assert_eq!(
+        g.try_set_model(columns.clone(), page(1)),
+        Err(GridDataError::Busy)
+    );
+    assert_eq!(
+        state(&g),
+        locked,
+        "a refused model swap left the grid alone"
+    );
+    assert_eq!(g.columns.len(), 2);
+}
+
+#[test]
 fn issue11_begin_submission_checks_the_capture() {
     let mut g = grid(2);
     assert_eq!(
