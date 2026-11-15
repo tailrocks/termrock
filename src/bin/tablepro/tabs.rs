@@ -1055,7 +1055,7 @@ impl QueryTab {
         let pinned: Vec<ResultSet> = self.results.drain(..).filter(|r| r.pinned).collect();
         self.results = pinned;
         self.editor.set_running(Some(statements[0].1.clone()));
-        self.editor.diagnostics.clear();
+        self.editor.set_diagnostics(Vec::new());
         self.running = Some(Running {
             statements,
             current: 0,
@@ -1116,7 +1116,7 @@ impl QueryTab {
             } else {
                 range.end
             };
-            self.editor.diagnostics.push(Diagnostic {
+            self.editor.push_diagnostic(Diagnostic {
                 range: start..end,
                 severity: Severity::Error,
                 message: message.clone(),
@@ -1353,7 +1353,7 @@ impl QueryTab {
             let (o, ev) = self.editor.on_key(key);
             match ev {
                 Some(EditorAction::Changed) => {
-                    self.editor.diagnostics.clear();
+                    self.editor.set_diagnostics(Vec::new());
                     self.trigger_completion(cat, false);
                 }
                 Some(EditorAction::CursorMoved) => {

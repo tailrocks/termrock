@@ -158,7 +158,7 @@ impl Doc {
     /// Stores a new outcome and rebuilds this document's result view and
     /// diagnostics. Called only when a result is produced or configured.
     fn install(&mut self, result: Outcome2) {
-        self.editor.diagnostics.clear();
+        self.editor.set_diagnostics(Vec::new());
         match &result {
             Outcome2::Rows { table, count, .. } => {
                 self.results = result_table(results_id(self.key), table, *count);
@@ -166,7 +166,7 @@ impl Doc {
             Outcome2::Plan { .. } => self.results = plan_table(results_id(self.key)),
             Outcome2::Error { .. } => {
                 if let Some((_, range)) = from_table(self.editor.text()) {
-                    self.editor.diagnostics.push(Diagnostic {
+                    self.editor.push_diagnostic(Diagnostic {
                         range,
                         severity: Severity::Error,
                         message: "unknown relation".into(),
@@ -1116,7 +1116,7 @@ impl QueryWorkbenchPage {
         if f == doc.editor.id {
             let (o, a) = doc.editor.on_key(key);
             match a {
-                Some(EditorAction::Changed) => doc.editor.diagnostics.clear(),
+                Some(EditorAction::Changed) => doc.editor.set_diagnostics(Vec::new()),
                 Some(EditorAction::Leave { backward: false }) => cx.focus_next(),
                 Some(EditorAction::Leave { backward: true }) => cx.focus_prev(),
                 _ => {}

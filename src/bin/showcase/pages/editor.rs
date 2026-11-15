@@ -289,7 +289,7 @@ impl EditorPage {
         }
         e.indent = o.number("codeeditor.indent").unwrap_or(4) as usize;
         e.jump_to(cursor);
-        e.diagnostics = std::mem::take(&mut self.editor.diagnostics);
+        e.set_diagnostics(self.editor.diagnostics().to_vec());
         self.editor = e;
 
         let wide = o.value("codeeditor.completion_width") == "wide";
@@ -387,14 +387,14 @@ impl EditorPage {
         if let Some(block) = self.editor.running.clone() {
             let text = self.editor.text()[block.clone()].to_owned();
             if let Some(p) = text.find(".unwrap()") {
-                self.editor.diagnostics.push(Diagnostic {
+                self.editor.push_diagnostic(Diagnostic {
                     range: block.start + p + 1..block.start + p + 9,
                     severity: Severity::Warning,
                     message: "unwrap() panics on Err; propagate with ? instead".into(),
                 });
             }
             if let Some(p) = text.find("todo!") {
-                self.editor.diagnostics.push(Diagnostic {
+                self.editor.push_diagnostic(Diagnostic {
                     range: block.start + p..block.start + p + 5,
                     severity: Severity::Error,
                     message: "not yet implemented".into(),
@@ -417,8 +417,8 @@ impl EditorPage {
             .position(|b| b.start <= cur && cur <= b.end)
             .map(|i| format!("{} of {}", i + 1, all.len()))
             .unwrap_or_else(|| "between blocks".into());
-        let diags = self.editor.diagnostics.len();
-        let find = match &self.editor.find {
+        let diags = self.editor.diagnostics().len();
+        let find = match self.editor.find_state() {
             None => "closed".to_owned(),
             Some(f) if f.needle.text().is_empty() => "type to find".to_owned(),
             Some(f) if f.matches.is_empty() => format!("“{}” · no matches", f.needle.text()),
@@ -538,10 +538,10 @@ impl EditorPage {
             let panel = Panel::card(Some("Diagnostics"));
             let bg = panel.bg(t);
             let inner = panel.render(Rect::new(r.x, y, r.width, (r.bottom() - y).min(9)), buf, t);
-            if self.editor.diagnostics.is_empty() {
+            if self.editor.diagnostics().is_empty() {
                 empty::render(inner, buf, t, &Self::no_diagnostics(), bg);
             } else {
-                for (i, d) in self.editor.diagnostics.iter().enumerate() {
+                for (i, d) in self.editor.diagnostics().iter().enumerate() {
                     let yy = inner.y + i as u16;
                     if yy >= inner.bottom() {
                         break;
@@ -582,7 +582,7 @@ fn states_grid() -> StateGrid {
     let id = ID.sub("states");
     let src = "let delay = 200;\nretry(delay);";
     let mut warned = CodeEditor::new(id.child(2), src).highlighter(highlight);
-    warned.diagnostics.push(Diagnostic {
+    warned.push_diagnostic(Diagnostic {
         range: 4..9,
         severity: Severity::Warning,
         message: "unused variable".into(),
@@ -716,7 +716,7 @@ impl Page for EditorPage {
                 let (o, ev) = self.editor.on_key(key);
                 match ev {
                     Some(EditorAction::Changed) => {
-                        self.editor.diagnostics.clear();
+                        self.editor.set_diagnostics(Vec::new());
                         self.trigger(false);
                     }
                     Some(EditorAction::CursorMoved) => {

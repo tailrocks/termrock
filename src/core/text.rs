@@ -112,6 +112,10 @@ impl TextBuffer {
         self.index().view(&self.text, line)
     }
 
+    pub(crate) fn line_at_offset(&self, offset: usize) -> usize {
+        self.index().line_of(offset)
+    }
+
     pub fn line_range(&self, line: usize) -> Option<Range<usize>> {
         self.index().range(line)
     }
