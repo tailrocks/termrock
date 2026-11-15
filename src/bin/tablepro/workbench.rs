@@ -634,6 +634,17 @@ impl Workbench {
         out
     }
 
+    /// Runs `f` on the tab's restricted view. It never advances the content
+    /// revision and works while a close-save holds the tab (`None` when the
+    /// tab is gone).
+    pub fn with_view<R>(
+        &mut self,
+        key: ItemKey,
+        f: impl FnOnce(WorkTabView<'_>) -> R,
+    ) -> Option<R> {
+        self.ws.view_mut(key).ok().map(f)
+    }
+
     pub fn modify_active<R>(&mut self, f: impl FnOnce(&mut WorkTab) -> R) -> Option<R> {
         let key = self.ws.active_key()?;
         self.modify(key, f)

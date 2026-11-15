@@ -21,8 +21,8 @@ use junie_tui::widgets::code::{CodeEditor, Diagnostic, EditorAction, Severity};
 use junie_tui::widgets::completion::{Completion, CompletionAction};
 use junie_tui::widgets::empty::EmptyState;
 use junie_tui::widgets::grid::{
-    CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridCmd, GridDataError, GridRows,
-    RowTotal,
+    CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridChangeSet, GridCmd, GridCommitError,
+    GridCommitFailure, GridCommitToken, GridDataError, GridRows, RowTotal,
 };
 use junie_tui::widgets::input::TextInput;
 use junie_tui::widgets::keyhint::{Hint, hint};
@@ -3082,7 +3082,8 @@ mod issue194_tests {
 /// Painting and view-only access to one workspace tab. Its field is private,
 /// so a caller of `DocumentWorkspace::view_mut` cannot reach a tab's rows,
 /// draft or text through it. Every operation here moves a cursor, a scroll
-/// offset or a divider, or paints; none can edit.
+/// offset or a divider, paints, or takes or releases a grid's save lock; none
+/// can edit.
 pub struct WorkTabView<'a> {
     document: &'a mut WorkTab,
 }
@@ -3128,6 +3129,47 @@ impl<'a> WorkTabView<'a> {
     pub fn mark_seen(&mut self) {
         if let WorkTab::Query(q) = self.document {
             q.unseen = false;
+        }
+    }
+
+    /// Locks a table's grid on `changes`, its own current capture. The lock
+    /// stops later edits and changes none of the rows or the draft, so it is
+    /// not a content change. Any other tab is `StaleToken`.
+    pub fn begin_submission(
+        &mut self,
+        changes: GridChangeSet,
+    ) -> Result<GridCommitToken, GridCommitError> {
+        match self.document {
+            WorkTab::Table(t) => t.grid.begin_submission(changes),
+            _ => Err(GridCommitError::StaleToken),
+        }
+    }
+
+    /// Unlocks the grid a save locked. The draft is untouched.
+    pub fn cancel_submission(&mut self, token: GridCommitToken) -> Result<(), GridCommitError> {
+        match self.document {
+            WorkTab::Table(t) => t.grid.cancel_submission(token),
+            _ => Err(GridCommitError::StaleToken),
+        }
+    }
+
+    /// Unlocks the grid with the store's refusal and keeps the draft. The
+    /// refusal is shown on its row or in the status, so no content changes.
+    pub fn refuse_submission(
+        &mut self,
+        token: GridCommitToken,
+        failure: GridCommitFailure,
+    ) -> Result<(), GridCommitError> {
+        match self.document {
+            WorkTab::Table(t) => t.grid.complete_submission(token, Err(failure)),
+            _ => Err(GridCommitError::StaleToken),
+        }
+    }
+
+    /// Marks a table as older than the store.
+    pub fn mark_source_changed(&mut self) {
+        if let WorkTab::Table(t) = self.document {
+            t.mark_source_changed();
         }
     }
 

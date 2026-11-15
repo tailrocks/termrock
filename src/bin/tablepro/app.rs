@@ -1301,44 +1301,43 @@ impl App {
         if w.ws.save_locked(tab) {
             return Err((SAVING_NOTICE.into(), Some(StatusKind::Warn)));
         }
-        let reviewed = w.modify_table(tab, |t, _| -> Result<_, CommitRefusal> {
-            if let Err(e) = t.grid.finish_edit_session() {
+        if w.table(tab).is_some_and(|t| t.is_editing()) {
+            let finished = w.modify_table(tab, |t, _| t.grid.finish_edit_session().map(|_| ()));
+            if let Some(Err(e)) = finished {
                 return Err((
                     format!("Fix the open cell first: {e}"),
                     Some(StatusKind::Warn),
                 ));
             }
-            let changes = t.grid.snapshot_changes();
-            if changes.is_empty() {
-                return Err(("No pending changes".into(), None));
-            }
-            if level == SafeMode::ReadOnly {
-                return Err((
-                    "Cannot save changes: TablePro's Safe Mode is set to read-only for this connection"
-                        .into(),
-                    Some(StatusKind::Warn),
-                ));
-            }
-            let sql = crate::model::preview_sql(&table, &t.columns, &changes).map_err(|e| {
-                (
-                    format!(
-                        "Cannot save: {} · changes kept pending",
-                        preview_error_text(&e, &t.grid)
-                    ),
-                    Some(StatusKind::Fail),
-                )
-            })?;
-            let token = t
-                .grid
-                .begin_submission(changes.clone())
-                .map_err(|e| (format!("Cannot save: {e}"), Some(StatusKind::Fail)))?;
-            Ok((changes, sql, token, t.table_revision(), t.columns.clone()))
-        });
-        let (changes, sql, token, expected_table_revision, source_columns) = match reviewed {
-            Some(Ok(review)) => review,
-            Some(Err(refusal)) => return Err(refusal),
-            None => return Err(("Nothing to save".into(), None)),
+        }
+        let Some(t) = w.table(tab) else {
+            return Err(("Nothing to save".into(), None));
         };
+        let changes = t.grid.snapshot_changes();
+        if changes.is_empty() {
+            return Err(("No pending changes".into(), None));
+        }
+        if level == SafeMode::ReadOnly {
+            return Err((
+                "Cannot save changes: TablePro's Safe Mode is set to read-only for this connection"
+                    .into(),
+                Some(StatusKind::Warn),
+            ));
+        }
+        let sql = crate::model::preview_sql(&table, &t.columns, &changes).map_err(|e| {
+            (
+                format!(
+                    "Cannot save: {} · changes kept pending",
+                    preview_error_text(&e, &t.grid)
+                ),
+                Some(StatusKind::Fail),
+            )
+        })?;
+        let (expected_table_revision, source_columns) = (t.table_revision(), t.columns.clone());
+        let token = w
+            .with_view(tab, |mut v| v.begin_submission(changes.clone()))
+            .ok_or_else(|| ("Nothing to save".to_owned(), None))?
+            .map_err(|e| (format!("Cannot save: {e}"), Some(StatusKind::Fail)))?;
         Ok(ReviewedCommit {
             request: CommitRequest {
                 connection_generation: self.connection_generation,
@@ -1548,7 +1547,7 @@ impl App {
         let _ = self
             .workbench
             .as_mut()
-            .and_then(|w| w.modify_table(request.tab, |t, _| t.grid.cancel_submission(token)));
+            .and_then(|w| w.with_view(request.tab, |mut v| v.cancel_submission(token)));
     }
 
     /// Ends the app's connection era: any save is cancelled, and a callback
@@ -1640,7 +1639,7 @@ impl App {
         let _ = self
             .workbench
             .as_mut()
-            .and_then(|w| w.modify_table(tab, |t, _| t.grid.cancel_submission(token)));
+            .and_then(|w| w.with_view(tab, |mut v| v.cancel_submission(token)));
     }
 
     /// Ends the workspace operation a save ran under without a result, after
@@ -1677,10 +1676,10 @@ impl App {
         };
         let conflict = error.is_conflict();
         let answered = self.workbench.as_mut().and_then(|w| {
-            w.modify_table(request.tab, |t, _| {
-                let answered = t.grid.complete_submission(token, Err(failure));
+            w.with_view(request.tab, |mut v| {
+                let answered = v.refuse_submission(token, failure);
                 if answered.is_ok() && conflict {
-                    t.mark_source_changed();
+                    v.mark_source_changed();
                 }
                 answered
             })
@@ -1812,9 +1811,9 @@ impl App {
             Ok(()) => CommitOutcome::Saved(end),
             Err(why) => {
                 let _ = self.workbench.as_mut().and_then(|w| {
-                    w.modify_table(request.tab, |t, _| {
-                        let _ = t.grid.cancel_submission(token);
-                        t.mark_source_changed();
+                    w.with_view(request.tab, |mut v| {
+                        let _ = v.cancel_submission(token);
+                        v.mark_source_changed();
                     })
                 });
                 CommitOutcome::Unacknowledged(why)
