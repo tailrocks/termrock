@@ -1904,6 +1904,8 @@ const EDIT_AND_SAVE: &str = "enter tab tab tab tab tab p i n enter ctrl+s";
 fn save_in_the_editor(app: &mut App) {
     press(app, EDIT_AND_SAVE);
     settle(app);
+    // Arrow keys step only over buttons the last frame placed.
+    screen(app);
     press(app, "right enter");
     settle(app);
 }
