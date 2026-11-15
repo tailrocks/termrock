@@ -1494,6 +1494,10 @@ impl App {
             match r {
                 Request::Status(s, tone) => self.set_status(&s, tone),
                 Request::StatusAs(s, kind) => self.set_status(&s, kind.tone()),
+                Request::Notice(s, tone) => {
+                    let now = self.world.clock.now();
+                    self.shell.status.notice_at(s, tone, now);
+                }
                 Request::Sticky(s) => {
                     let now = self.world.clock.now();
                     self.shell.status.sticky_at(s, now);

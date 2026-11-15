@@ -2075,7 +2075,7 @@ impl Page<Jackin> for CapsuleScreen {
             && *instance == self.instance
         {
             self.takeover = Some(by.clone());
-            cx.status(format!("{by} attached to this instance"));
+            cx.notice(format!("{by} attached to this instance"), Tone::Secondary);
             return Outcome::Changed;
         }
         Outcome::Ignored

@@ -277,6 +277,7 @@ pub struct ManagerScreen {
     actions: Vec<Button>,
     pub still_inside: Option<(String, Vec<String>, i64)>,
     pub busy_rows: Vec<(RowKey, &'static str)>,
+    refresh_asked: bool,
     pending_launch: Option<(Option<WorkspaceId>, String)>,
     pending_session: Option<InstanceId>,
     choosing: Option<Choosing>,
@@ -318,6 +319,7 @@ impl ManagerScreen {
             actions: vec![],
             still_inside: None,
             busy_rows: vec![],
+            refresh_asked: false,
             pending_launch: None,
             pending_session: None,
             choosing: None,
@@ -3084,8 +3086,14 @@ impl Page<Jackin> for ManagerScreen {
             }
             Msg::LaunchCancelled { .. } => {}
             Msg::Refreshed { result, .. } => {
+                let asked = std::mem::take(&mut self.refresh_asked);
                 if let Err(error) = result {
-                    cx.error(format!("Refresh failed: {error} · showing last-good rows"));
+                    let text = format!("Refresh failed: {error} · showing last-good rows");
+                    if asked {
+                        cx.error(text);
+                    } else {
+                        cx.notice(text, Tone::Error);
+                    }
                 }
             }
             _ => return Outcome::Ignored,
@@ -3260,6 +3268,7 @@ impl Page<Jackin> for ManagerScreen {
             }
             KeyCode::F(5) => {
                 w.last_refresh_secs = w.now_secs() - 6;
+                self.refresh_asked = true;
                 cx.status("Refreshing…");
                 return Outcome::Changed;
             }

@@ -16,6 +16,9 @@ mod pane_support;
 #[path = "../product_support/mod.rs"]
 mod product_support;
 
+#[path = "../common/mod.rs"]
+mod common;
 mod navigation_focus;
 mod smoke;
+mod status_priority;
 mod work_budgets;

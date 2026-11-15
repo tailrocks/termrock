@@ -387,11 +387,11 @@ impl App {
                     "Another client is entering {} · joined without replay",
                     self.world.surfaces.vocabulary.construct
                 );
-                self.set_status(&text, Tone::Secondary);
+                self.set_notice(&text, Tone::Secondary);
             }
             EntryDecision::Unknown(e) => {
                 self.enter_manager();
-                self.set_status(
+                self.set_notice(
                     &format!(
                         "Could not confirm running instances: {} · list may be incomplete",
                         self.world.surfaces.vocabulary.discovery(e)
@@ -462,6 +462,14 @@ impl App {
     }
 
     pub fn set_status(&mut self, s: &str, tone: Tone) {
+        self.post_status(s, tone, false);
+    }
+
+    fn set_notice(&mut self, s: &str, tone: Tone) {
+        self.post_status(s, tone, true);
+    }
+
+    fn post_status(&mut self, s: &str, tone: Tone, notice: bool) {
         if tone != Tone::Error
             && let Some(warning) = self.world.committed_save_warning
         {
@@ -471,7 +479,12 @@ impl App {
             self.show_committed_save_warning();
             return;
         }
-        self.shell.status.set_at(s, tone, self.world.clock.now());
+        let now = self.world.clock.now();
+        if notice {
+            self.shell.status.notice_at(s, tone, now);
+        } else {
+            self.shell.status.set_at(s, tone, now);
+        }
     }
 
     fn show_committed_save_warning(&mut self) {
@@ -1912,6 +1925,7 @@ impl App {
             match r {
                 Request::Status(s, tone) => self.set_status(&s, tone),
                 Request::StatusAs(s, kind) => self.set_status(&s, kind.tone()),
+                Request::Notice(s, tone) => self.set_notice(&s, tone),
                 Request::Sticky(s) => {
                     if self.world.committed_save_warning.is_some() {
                         self.show_committed_save_warning();
