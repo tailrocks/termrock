@@ -131,6 +131,8 @@ pub struct Picker {
     toggle_keymap_overridden: bool,
     key_profile: PickerKeyProfile,
     key_profile_configured: bool,
+
+    pressed: Option<ItemKey>,
 }
 
 impl HasHints for Picker {
@@ -307,6 +309,7 @@ impl Picker {
             toggle_keymap_overridden: false,
             key_profile,
             key_profile_configured,
+            pressed: None,
         }
     }
 
@@ -371,6 +374,15 @@ impl Picker {
 
     fn visible_at(&self, i: usize) -> Option<&Item> {
         self.visible.get(i).map(|v| &self.items[v.source_index])
+    }
+
+    /// The key of the item a row hit region shows right now. Row hit regions
+    /// are positional, so a press records this to find out at release whether
+    /// the row still shows the same item.
+    fn row_key_at(&self, id: WidgetId) -> Option<ItemKey> {
+        let row = self.list.row_of(id, self.visible.len())?;
+        let source = self.visible[row].source_index;
+        Some(Self::key_of(&self.items[source], source))
     }
 
     fn source_of(&self, key: ItemKey) -> Option<usize> {
@@ -1419,8 +1431,18 @@ impl crate::core::pointer::MouseTarget for Picker {
         {
             return r.lift();
         }
+        if ev.is(Phase::Press) {
+            self.pressed = self.row_key_at(ev.id);
+            return Response::ignored();
+        }
         if !ev.is(Phase::Click) {
             return Response::ignored();
+        }
+        let pressed = self.pressed.take();
+        if ev.part().part != Part::BACKDROP
+            && pressed.is_some_and(|key| self.row_key_at(ev.id) != Some(key))
+        {
+            return Response::consumed();
         }
         let chosen = if ev.part().part == Part::BACKDROP {
             self.on_click_outside()
