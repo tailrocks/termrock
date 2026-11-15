@@ -863,6 +863,39 @@ pub fn find_in(
     matches[0]
 }
 
+/// One painted grapheme cluster: its text, the cells it spans, whether it is
+/// bold, and the background of every cell it spans.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Cluster {
+    pub text: String,
+    pub width: u16,
+    pub bold: bool,
+    pub bg: Vec<tui_test::SnapshotColor>,
+}
+
+/// The first `count` clusters on `from`'s row, starting at `from.x`. A wide
+/// cluster is one entry that spans its continuation cells.
+pub fn clusters(screen: &TerminalSnapshot, from: Point, count: usize) -> Vec<Cluster> {
+    let row = screen.row(u32::from(from.y)).expect("row in terminal");
+    let mut out = Vec::new();
+    let mut column = usize::from(from.x);
+    while out.len() < count && column < row.len() {
+        let cell = &row[column];
+        let span = 1 + row[column + 1..]
+            .iter()
+            .take_while(|next| next.is_continuation())
+            .count();
+        out.push(Cluster {
+            text: cell.text().to_string(),
+            width: u16::try_from(span).expect("cluster width"),
+            bold: cell.has(tui_test::terminal::cell::Attrs::BOLD),
+            bg: row[column..column + span].iter().map(|c| c.bg()).collect(),
+        });
+        column += span;
+    }
+    out
+}
+
 pub fn cell_bg(screen: &TerminalSnapshot, point: Point) -> tui_test::SnapshotColor {
     screen
         .cell_at(u32::from(point.x), u32::from(point.y))

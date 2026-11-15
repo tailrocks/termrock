@@ -1989,10 +1989,7 @@ mod tests {
             (a.v_offset, a.h_offset),
             "A's scroll"
         );
-        // Known loss, tracked in #105: painting an editor that
-        // lost focus commits it (src/widgets/code.rs, `commit` on unfocused
-        // paint), which clears the selection. Caret, undo and scroll survive.
-        assert_eq!(a_back.selection, None, "A's selection is cleared on blur");
+        assert_eq!(a_back.selection, a.selection, "A's selection");
         assert_eq!(
             (
                 active(&rig.page).results.cursor_row,

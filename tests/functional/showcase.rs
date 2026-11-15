@@ -1911,7 +1911,9 @@ fn showcase_fixeddialogs_form_does_not_offer_its_fixed_action() {
     let app = fixed_dialogs("showcase-fixeddialogs-form", &[]);
     app.click_text("Form dialog");
     app.wait_text("Plain text");
-    app.key("tab");
+    for _ in 0..3 {
+        app.key("tab");
+    }
     let on_fixed = app.settle();
     assert!(text(&on_fixed).contains("▎Plain text"));
     assert!(
@@ -1925,6 +1927,70 @@ fn showcase_fixeddialogs_form_does_not_offer_its_fixed_action() {
     assert!(status_row(&on_live).contains("Enter Check"));
     app.key("escape");
     app.wait_absent("Plain text");
+    app.finish();
+}
+
+#[test]
+fn showcase_fixeddialogs_form_refusals_and_repeats_report_no_change() {
+    let app = fixed_dialogs("showcase-fixeddialogs-form-changes", &[]);
+    app.click_text("Form dialog");
+    app.wait_text("Credential source");
+    app.click_text("Keep awake");
+    app.click_text("Typed key");
+    app.click_text("Local folder");
+    let refused = app.settle();
+    assert!(text(&refused).contains("[ ] Keep awake"));
+    assert!(text(&refused).contains("(●) Local folder"));
+    app.key("escape");
+    let closed = app.wait_text("form closed");
+    assert!(
+        text(&closed).contains("form closed · 0 form changes"),
+        "a refused box and option and the selected radio report nothing"
+    );
+
+    app.click_text("Form dialog");
+    app.wait_text("Credential source");
+    app.click_text("Password manager");
+    app.wait_screen("the radio moves", |s| {
+        text(s).contains("(●) Password manager")
+    });
+    app.key("escape");
+    app.wait_screen("one change is reported", |s| {
+        text(s).contains("form closed · 1 form changes")
+    });
+    app.finish();
+}
+
+#[test]
+fn showcase_dialogkinds_sqlite_hides_remote_fields_and_keeps_their_values() {
+    let app = App::new(
+        "showcase-dialogkinds-sqlite",
+        SHOWCASE,
+        &["--page", "dialogkinds", "--motion", "paused"],
+        120,
+        50,
+        "truecolor",
+    );
+    app.wait_text("Add connection");
+    app.click_text("Add connection");
+    let open = app.wait_text("Test connection");
+    assert!(text(&open).contains("Password") && text(&open).contains("Host"));
+    app.click_text("PostgreSQL");
+    app.click_text("SQLite");
+    let file = app.wait_screen("the remote fields are hidden", |s| {
+        !text(s).contains("Password")
+    });
+    assert!(!text(&file).contains("Host"), "{}", text(&file));
+    app.click_text("SQLite");
+    app.click_text("PostgreSQL");
+    let back = app.wait_screen("the remote fields return", |s| text(s).contains("Password"));
+    assert!(
+        text(&back).contains("db.eu-west-1.internal") && text(&back).contains('\u{2022}'),
+        "the masked password is back with its value: {}",
+        text(&back)
+    );
+    app.key("escape");
+    app.wait_absent("Test connection");
     app.finish();
 }
 

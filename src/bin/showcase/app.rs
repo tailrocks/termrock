@@ -2363,7 +2363,7 @@ impl shell::KeyHost for App {
         if top.get::<HelpOverlay>().is_some() {
             return Some(Outcome::Consumed);
         }
-        Some(top.layer.on_paste(text))
+        Some(top.layer.on_paste_focused(text, &self.shell.focus))
     }
 
     fn page_paste(&mut self, text: &str) -> Outcome {

@@ -152,7 +152,7 @@ impl QuitLeavePage {
                 cx.status(format!("Saved; would {} now", go_label(&to)));
             }
             Resolved::Discard(to) => {
-                self.title = TextInput::new(TITLE, "Title").value(&self.saved);
+                self.title.set_value(&self.saved);
                 self.running = false;
                 cx.status(format!("Discarded; would {} now", go_label(&to)));
             }
@@ -536,7 +536,7 @@ impl Page for QuitLeavePage {
             self.opts[i] = value.min(table[i].values.len() - 1);
             if key == "quitleave.stakes" {
                 let v = table[i].values[self.opts[i]];
-                self.title = TextInput::new(TITLE, "Title").value(if v == "unsaved" {
+                self.title.set_value(if v == "unsaved" {
                     "Q3 settlement report (draft)"
                 } else {
                     SAVED_TITLE

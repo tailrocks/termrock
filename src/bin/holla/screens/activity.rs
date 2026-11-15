@@ -888,7 +888,7 @@ impl ShellPage<Holla> for ActivityTab {
             let y = area.bottom().saturating_sub(follow_h - 1);
             buf.set_string(area.x + 1, y, "Next", t.faint());
             let rects = junie_tui::widgets::button::row_layout(
-                Rect::new(follow_area.x, y, follow_area.width, 1),
+                Rect::new(follow_area.x, y, follow_area.width, follow_h - 1),
                 &follow_w,
                 2,
             );

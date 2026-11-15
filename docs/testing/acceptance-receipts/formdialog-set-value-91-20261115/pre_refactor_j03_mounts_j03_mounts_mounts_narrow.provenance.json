@@ -1,0 +1,72 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/cifix-262-target/debug/jackin-preview",
+  "binary_sha256": "30a63f2658cdc35dcede47997b1db92745b9d7f2c1c7fc518d0b94c003b26c90",
+  "fixture_args": [],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "05682ba9ff0eed69c9d338d704cfecb7aa9137e5322fe9be1fef5429c31cc4c3",
+  "expect_baseline": "adb5c8b256c85010ef15521ab5c06acecbd3b24c46e2030d2ee2dd50e2e16895",
+  "precondition": "Re-pin for #91: FormDialog::set_text now replaces the value through TextInput::set_value, so the mount form's Destination field keeps required(true) and its help line after the host is chosen; the old baseline captured the rebuilt input that had lost both (label showed 'optional', no help). Captured from the live candidate build of train/paint-form; diff confined to the Destination label suffix and its help row.",
+  "session": null,
+  "expected_test_id": "pre_refactor/j03_mounts/j03_mounts_mounts_narrow",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/formdialog-set-value-91-20261115/pre_refactor_j03_mounts_j03_mounts_mounts_narrow.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/formdialog-set-value-91-20261115/pre_refactor_j03_mounts_j03_mounts_mounts_narrow.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/formdialog-set-value-91-20261115/superseded/pre_refactor/j03_mounts/j03_mounts_mounts_narrow.tui.pb",
+  "test_id": "pre_refactor/j03_mounts/j03_mounts_mounts_narrow",
+  "acceptance": {
+    "expected_baseline_sha256": "adb5c8b256c85010ef15521ab5c06acecbd3b24c46e2030d2ee2dd50e2e16895",
+    "accepted_baseline_sha256": "05682ba9ff0eed69c9d338d704cfecb7aa9137e5322fe9be1fef5429c31cc4c3",
+    "candidate_sha256": "05682ba9ff0eed69c9d338d704cfecb7aa9137e5322fe9be1fef5429c31cc4c3",
+    "transaction_receipt": "docs/testing/acceptance-receipts/formdialog-set-value-91-20261115/pre_refactor_j03_mounts_j03_mounts_mounts_narrow.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "adb5c8b256c85010ef15521ab5c06acecbd3b24c46e2030d2ee2dd50e2e16895"
+  },
+  "candidate": {
+    "sha256": "05682ba9ff0eed69c9d338d704cfecb7aa9137e5322fe9be1fef5429c31cc4c3",
+    "path": "tests/functional/baselines/pre_refactor/j03_mounts/j03_mounts_mounts_narrow.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/formdialog-set-value-91-20261115/superseded/pre_refactor/j03_mounts/j03_mounts_mounts_narrow.tui.pb",
+    "superseded_baseline_sha256": "adb5c8b256c85010ef15521ab5c06acecbd3b24c46e2030d2ee2dd50e2e16895"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/j03_mounts/j03_mounts_mounts_narrow.tui.pb",
+    "candidate_sha256": "05682ba9ff0eed69c9d338d704cfecb7aa9137e5322fe9be1fef5429c31cc4c3",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/cifix-262-target/debug/jackin-preview",
+    "binary_sha256": "30a63f2658cdc35dcede47997b1db92745b9d7f2c1c7fc518d0b94c003b26c90",
+    "note": "Live candidate capture of train/paint-form. The pinned reference binary predates #91, so no Reference-mode capture of this change exists."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/j03_mounts/j03_mounts_mounts_narrow",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "target/functional/j03-mounts-mounts-77016-1794753339908730000-0/check-artifacts/pre_refactor/j03_mounts/j03_mounts_mounts_narrow/05682ba9ff0eed69c9d338d704cfecb7aa9137e5322fe9be1fef5429c31cc4c3/sample.tui.pb"
+    },
+    "candidate_sha256": "05682ba9ff0eed69c9d338d704cfecb7aa9137e5322fe9be1fef5429c31cc4c3",
+    "baseline_sha256": "05682ba9ff0eed69c9d338d704cfecb7aa9137e5322fe9be1fef5429c31cc4c3",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/cifix-262/tests/functional/baselines/pre_refactor/j03_mounts/j03_mounts_mounts_narrow.tui.pb"
+    },
+    "error_code": null
+  }
+}

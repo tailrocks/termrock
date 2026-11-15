@@ -222,7 +222,12 @@ impl Page for ListDetailPage {
                     lines: Self::lines(job),
                     actions: self.actions(),
                 };
-                self.ld.render(body, buf, ctx, &frame);
+                let width = self
+                    .opts
+                    .number("listdetail.width")
+                    .map_or(body.width, |w| w.min(body.width));
+                let owner = Rect::new(body.x, body.y, width, body.height);
+                self.ld.render(owner, buf, ctx, &frame);
             }
             Section::Options => self.template.render_options(body, buf, ctx),
             Section::States => self.template.render_states(body, buf, ctx),

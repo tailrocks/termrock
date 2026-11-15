@@ -10,6 +10,7 @@ use crate::core::scroll::{ScrollPane, Scrollable};
 use crate::ui::ctx::{RenderCtx, VisualState};
 use crate::ui::list_core::ListCore;
 use crate::ui::row::{RowLook, RowUi};
+use crate::ui::text::{paint_clipped, paint_truncated};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
 pub enum StepState {
@@ -251,13 +252,14 @@ impl StepRail {
                 StepState::Done => (t.glyphs.done, mark(t.success)),
                 StepState::Failed => ("!", mark(t.error).add_modifier(Modifier::BOLD)),
             };
-            buf.set_string(row.x + 1, y, glyph, gstyle);
-            let mut x = row.x + 3;
+            paint_clipped(buf, row, 1, glyph, gstyle);
+            let mut off = 3usize;
             if self.numbered {
                 let num = format!("{:02}", i + 1);
-                buf.set_string(
-                    x,
-                    y,
+                paint_clipped(
+                    buf,
+                    row,
+                    off,
                     &num,
                     st.fg(if step.state == StepState::Running {
                         t.text_secondary
@@ -266,7 +268,7 @@ impl StepRail {
                     })
                     .remove_modifier(Modifier::BOLD),
                 );
-                x += 3;
+                off += crate::ui::text::width(&num) + 1;
             }
             let label_style = match step.state {
                 StepState::Queued => st.fg(t.text_muted),
@@ -289,21 +291,26 @@ impl StepRail {
                 _ => st.fg(t.text_faint),
             }
             .remove_modifier(Modifier::BOLD);
-            let avail = row.right().saturating_sub(x + 1) as usize;
+            let avail = usize::from(row.width).saturating_sub(off + 1);
             let mw = meta
                 .as_ref()
                 .map(|m| crate::ui::text::width(m))
                 .unwrap_or(0);
             let show_meta = mw > 0 && avail >= mw + 12;
             let lw = if show_meta { avail - mw - 2 } else { avail };
-            buf.set_string(
-                x,
+            let label_room = Rect::new(
+                row.x.saturating_add(u16::try_from(off).unwrap_or(u16::MAX)),
                 y,
-                crate::ui::text::truncate(&step.label, lw),
-                label_style,
-            );
+                u16::try_from(lw).unwrap_or(u16::MAX),
+                1,
+            )
+            .intersection(row);
+            paint_truncated(buf, label_room, 0, &step.label, label_style);
             if show_meta && let Some(m) = &meta {
-                buf.set_string(row.right().saturating_sub(mw as u16 + 1), y, m, meta_style);
+                let meta_room =
+                    Rect::new(row.right().saturating_sub(mw as u16 + 1), y, mw as u16, 1)
+                        .intersection(row);
+                paint_clipped(buf, meta_room, 0, m, meta_style);
             }
             if self.selectable {
                 ctx.register_part(self.id, Self::row_part(i), row);

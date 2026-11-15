@@ -423,7 +423,11 @@ pub static BUTTONS: &[Opt] = &[
     Opt::new("buttons.row_align", "Row align", &["start", "end"]),
     Opt::new("buttons.row_overflow", "Row overflow", &["more", "wrap"]),
     Opt::new("buttons.row_gap", "Row gap", &["theme", "1", "4"]),
-    Opt::new("buttons.row_width", "Row width", &["full", "48", "30"]),
+    Opt::new(
+        "buttons.row_width",
+        "Row width",
+        &["full", "48", "30", "12", "5"],
+    ),
     Opt::new("buttons.row_wrap", "Arrows wrap in the row", OFF_ON),
     Opt::new("buttons.next_message", "Next row message", OFF_ON).default(1),
     Opt::new("buttons.icon_pad", "Icon plate pad", &["0", "1", "2"]).default(1),
@@ -1296,6 +1300,7 @@ pub static PICKERS: &[Opt] = &[
     Opt::new("pickers.placeholder", "Placeholder", &["default", "custom"]),
     Opt::new("pickers.hints", "Hint row", &["page", "short"]),
     Opt::new("pickers.remote", "Remote fetch", &["works", "fails"]),
+    Opt::new("pickers.international", "International labels", OFF_ON),
 ];
 
 pub static TABS: &[Opt] = &[
@@ -1378,7 +1383,11 @@ pub static FORMS: &[Opt] = &[
 
 pub static SIDEBARS: &[Opt] = &[
     Opt::new("sidebars.collapsed", "Collapsed (icons)", OFF_ON),
-    Opt::new("sidebars.width", "Open width", &["24", "20", "30"]),
+    Opt::new(
+        "sidebars.width",
+        "Open width",
+        &["24", "20", "30", "12", "8"],
+    ),
     Opt::new(
         "sidebars.collapsed_width",
         "Collapsed width",
@@ -1394,7 +1403,11 @@ pub static SIDEBARS: &[Opt] = &[
     Opt::new(
         "sidebars.rail_label",
         "Rail label",
-        &["Navigation", "Explorer"],
+        &[
+            "Navigation",
+            "Explorer",
+            "Cafe\u{301} 界面 👨\u{200d}👩\u{200d}👧",
+        ],
     )
     .needs(&[("sidebars.hidden", "on")]),
 ];
@@ -1412,6 +1425,7 @@ pub static METERS: &[Opt] = &[
     Opt::new("meters.visual", "Quota meter visual", &["block", "line"]),
     Opt::new("meters.offline", "Offline (last-good)", OFF_ON),
     Opt::new("meters.stale_style", "Stale style", &["dashed", "faint"]),
+    Opt::new("meters.international", "International values", OFF_ON),
 ];
 
 pub static FILE_BROWSER: &[Opt] = &[
@@ -1704,12 +1718,32 @@ pub static CODE_EDITOR: &[Opt] = &[
         "Completion keys",
         &["default", "vim"],
     ),
+    Opt::new(
+        "codeeditor.completion_international",
+        "International completions",
+        OFF_ON,
+    ),
 ];
 
 pub static DIFF: &[Opt] = &[
     Opt::new("diff.mode", "Mode", &["unified", "review"]),
     Opt::new("diff.file", "File", &["changes", "none"]),
     Opt::new("diff.width", "Page width", &["full", "narrow"]),
+    Opt::new(
+        "diff.inspect",
+        "Inspect changes",
+        &["off", "advanced", "compact"],
+    ),
+    Opt::new(
+        "diff.inspect_width",
+        "Inspect width",
+        &["full", "120", "80", "50", "30", "14"],
+    ),
+    Opt::new(
+        "diff.inspect_height",
+        "Inspect height",
+        &["full", "30", "16", "8", "4", "1"],
+    ),
 ];
 
 pub static TERMINAL: &[Opt] = &[
@@ -1752,6 +1786,11 @@ pub static FIXED_DIALOGS: &[Opt] = &[Opt::new(
 pub static LIST_DETAIL: &[Opt] = &[
     Opt::new("listdetail.data", "Jobs", &["five", "none"]),
     Opt::new("listdetail.actions", "Actions", &["shown", "hidden"]),
+    Opt::new(
+        "listdetail.width",
+        "Allocated width",
+        &["full", "60", "30", "12"],
+    ),
 ];
 
 pub static TERMINAL_PANE: &[Opt] = &[

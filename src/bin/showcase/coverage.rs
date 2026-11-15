@@ -51,6 +51,9 @@ pub const PICKER_COVERAGE: &[(&str, &str)] = &[
     ("widgets::picker::Picker::set_cursor", "pickers"),
 ];
 
+pub const TEXT_INPUT_COVERAGE: &[(&str, &str)] =
+    &[("widgets::input::TextInput::set_value", "dialogkinds")];
+
 pub const PICKER_ALLOWLIST: &[(&str, &str)] = &[
     (
         "widgets::picker::Picker::wheel",
@@ -312,6 +315,55 @@ pub const RUNTIME_ALLOWLIST: &[(&str, &str)] = &[
     ),
 ];
 
+pub const INSPECT_CHANGES_COVERAGE: &[(&str, &str)] = &[
+    ("widgets::inspect_changes::ChangeSet", "diff"),
+    ("widgets::inspect_changes::ChangeWords", "diff"),
+    ("widgets::inspect_changes::InspectOutcome", "diff"),
+    ("widgets::inspect_changes::InspectOutcome::Close", "diff"),
+    ("widgets::inspect_changes::InspectOutcome::Back", "diff"),
+    ("widgets::inspect_changes::InspectMode", "diff"),
+    ("widgets::inspect_changes::InspectMode::Compact", "diff"),
+    ("widgets::inspect_changes::InspectMode::Advanced", "diff"),
+    ("widgets::inspect_changes::InspectChanges", "diff"),
+    ("widgets::inspect_changes::InspectChanges::new", "diff"),
+    (
+        "widgets::inspect_changes::InspectChanges::returns_to_exit",
+        "diff",
+    ),
+    ("widgets::inspect_changes::InspectChanges::words", "diff"),
+];
+
+pub const INSPECT_CHANGES_ALLOWLIST: &[(&str, &str)] = &[
+    (
+        "widgets::inspect_changes::ChangeSet::additions",
+        "The inspector draws the added-line total in its summary line; the page does not read it separately.",
+    ),
+    (
+        "widgets::inspect_changes::ChangeSet::deletions",
+        "The inspector draws the removed-line total in its summary line; the page does not read it separately.",
+    ),
+    (
+        "widgets::inspect_changes::ChangeSet::is_empty",
+        "The inspector draws its empty state itself; the page always supplies a change set that has files.",
+    ),
+    (
+        "widgets::inspect_changes::ChangeSet::summary",
+        "The inspector draws this summary in its header; the page shows it through the widget rather than calling it.",
+    ),
+    (
+        "widgets::inspect_changes::InspectMode::label",
+        "The inspector draws the mode label in its header; the page shows it through the widget rather than calling it.",
+    ),
+    (
+        "widgets::inspect_changes::InspectChanges::wheel_at",
+        "Wheel events reach the inspector through its layer pointer route, which the page forwards pointer events to.",
+    ),
+    (
+        "widgets::inspect_changes::InspectChanges::initial_focus",
+        "The Diff page renders the inspector inline and never pushes its layer, so the layer spec's initial focus does not apply there; the user reaches the inspector with Tab twice, as the PTY tests do.",
+    ),
+];
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -319,6 +371,18 @@ mod tests {
     fn catalog_source() -> String {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
         std::fs::read_to_string(root.join("src/catalog.rs")).expect("catalog source reads")
+    }
+
+    #[test]
+    fn text_input_coverage_ids_are_catalog_capabilities() {
+        let catalog = catalog_source();
+        for (id, page) in TEXT_INPUT_COVERAGE {
+            assert!(
+                catalog.contains(&format!("\"{id}\"")),
+                "declared id is not a catalog capability: {id}"
+            );
+            assert!(!page.is_empty(), "coverage entry names no page: {id}");
+        }
     }
 
     #[test]

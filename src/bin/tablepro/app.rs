@@ -28,8 +28,6 @@ use junie_tui::widgets::button::Button;
 use junie_tui::widgets::dialog::{Dialog, DialogBody, DialogResult};
 use junie_tui::widgets::grid::CellValue;
 
-use junie_tui::widgets::input::TextInput;
-
 use junie_tui::widgets::menu::MenuAction;
 use junie_tui::widgets::option_list::Item;
 use junie_tui::widgets::picker::{Picker, PickerAction};
@@ -67,6 +65,10 @@ const LEAVE_DIALOG: WidgetId = WidgetId::of("dialog.quit");
 #[cfg(test)]
 #[path = "connection_identity_tests.rs"]
 mod connection_identity_tests;
+
+#[cfg(test)]
+#[path = "run_selection_tests.rs"]
+mod run_selection_tests;
 
 pub enum Act {
     EditFilter(Option<usize>),
@@ -1657,9 +1659,7 @@ impl App {
                     }
                     SwitchTarget::Schema(s) => {
                         w.schema = s.clone();
-                        w.explorer_filter = TextInput::new(w.explorer_filter.id, "")
-                            .placeholder("Filter objects")
-                            .plain_label();
+                        w.explorer_filter.set_value("");
                         w.explorer.set_filter(None);
                         let _ = w.explorer.rows();
 
@@ -2562,7 +2562,10 @@ impl shell::KeyHost for App {
 
     fn layer_paste(&mut self, text: &str) -> Option<Outcome> {
         let top = self.layers.top_mut()?;
-        let out = top.layer.on_paste(text).or(Outcome::Consumed);
+        let out = top
+            .layer
+            .on_paste_focused(text, &self.shell.focus)
+            .or(Outcome::Consumed);
         Some(self.take_layer().or(out))
     }
 

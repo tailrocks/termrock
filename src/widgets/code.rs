@@ -404,8 +404,12 @@ impl CodeEditor {
     }
 
     pub fn commit(&mut self) {
-        self.editing = false;
+        self.end_edit();
         self.field.buffer.clear_selection();
+    }
+
+    fn end_edit(&mut self) {
+        self.editing = false;
     }
 
     pub fn open_find(&mut self) {
@@ -510,12 +514,12 @@ impl CodeEditor {
         }
 
         if self.read_only && self.editing {
-            self.commit();
+            self.end_edit();
         }
 
         if key.code == KeyCode::F(6) && !key.ctrl() && !key.alt() {
             let backward = key.shift();
-            self.commit();
+            self.end_edit();
             request_focus_next(backward);
             return (Outcome::Changed, Some(EditorAction::Leave { backward }));
         }
@@ -529,7 +533,7 @@ impl CodeEditor {
 
         if matches!(key.code, KeyCode::Tab | KeyCode::BackTab) && key.ctrl() {
             let backward = key.code == KeyCode::BackTab || key.shift();
-            self.commit();
+            self.end_edit();
             request_focus_next(backward);
             return (Outcome::Changed, Some(EditorAction::Leave { backward }));
         }
@@ -552,7 +556,7 @@ impl CodeEditor {
             }
             EditAction::Tab { backward } => {
                 if self.tab_leaves {
-                    self.commit();
+                    self.end_edit();
                     request_focus_next(backward);
                     return (Outcome::Changed, Some(EditorAction::Leave { backward }));
                 }
@@ -864,7 +868,7 @@ impl CodeEditor {
         s.editing = self.editing && held;
 
         if (!held || self.read_only) && self.editing {
-            self.commit();
+            self.end_edit();
             s.editing = false;
             ctx.note_render_mutation();
         }
@@ -1390,5 +1394,108 @@ impl EditMenuHost for CodeEditor {
         let edited = self.field.run_as(cmd, self.read_only).edited;
         self.after_change();
         edited
+    }
+}
+
+#[cfg(test)]
+mod issue105_tests {
+    use ratatui::crossterm::event::KeyModifiers;
+
+    use super::*;
+    use crate::core::focus::FocusRing;
+    use crate::core::hit::HitRegistry;
+    use crate::theme::{ColorLevel, Theme};
+    use crate::ui::ctx::Interaction;
+
+    const ID: WidgetId = WidgetId::of("issue105.editor");
+    const AREA: Rect = Rect::new(0, 0, 40, 4);
+
+    fn key(code: KeyCode, mods: KeyModifiers) -> Key {
+        Key { code, mods }
+    }
+
+    fn paint(editor: &mut CodeEditor, focused: bool) -> Buffer {
+        let theme = Theme::for_level(ColorLevel::TrueColor);
+        let mut buf = Buffer::empty(AREA);
+        let mut hits = HitRegistry::default();
+        let mut ring = FocusRing::default();
+        let interaction = Interaction {
+            focus: focused.then_some(ID),
+            ..Default::default()
+        };
+        let mut ctx = RenderCtx::new(&theme, interaction, &mut hits, &mut ring);
+        editor.render(AREA, &mut buf, &mut ctx, theme.canvas);
+        buf
+    }
+
+    fn selected_cells(buf: &Buffer) -> usize {
+        let selection_bg = Theme::for_level(ColorLevel::TrueColor).selection_bg;
+        buf.content()
+            .iter()
+            .filter(|c| c.bg == selection_bg)
+            .count()
+    }
+
+    fn editor_with_selection() -> CodeEditor {
+        let mut editor = CodeEditor::new(ID, "select this text");
+        paint(&mut editor, true);
+        editor.begin_edit();
+        for _ in 0..6 {
+            editor.on_key(&key(KeyCode::Right, KeyModifiers::SHIFT));
+        }
+        assert_eq!(
+            editor.selection_or_block().map(|(t, _)| t).as_deref(),
+            Some("select")
+        );
+        editor
+    }
+
+    #[test]
+    fn unfocused_paint_ends_the_edit_and_keeps_the_selection() {
+        let mut editor = editor_with_selection();
+        let focused = selected_cells(&paint(&mut editor, true));
+        assert_eq!(focused, "select".len());
+
+        let blurred = paint(&mut editor, false);
+        assert!(!editor.editing, "blur ends the edit session");
+        assert_eq!(
+            editor.selection_or_block().map(|(t, _)| t).as_deref(),
+            Some("select"),
+            "the selection is document state and survives blur"
+        );
+        assert_eq!(selected_cells(&blurred), focused, "it stays painted");
+
+        paint(&mut editor, true);
+        assert_eq!(
+            editor.selection_or_block().map(|(t, _)| t).as_deref(),
+            Some("select"),
+            "and is still there when focus returns"
+        );
+    }
+
+    #[test]
+    fn leaving_with_the_keyboard_keeps_the_selection() {
+        for leave in [
+            key(KeyCode::F(6), KeyModifiers::NONE),
+            key(KeyCode::Tab, KeyModifiers::CONTROL),
+        ] {
+            let mut editor = editor_with_selection();
+            let (_, action) = editor.on_key(&leave);
+            assert!(matches!(action, Some(EditorAction::Leave { .. })));
+            assert!(!editor.editing);
+            assert_eq!(
+                editor.selection_or_block().map(|(t, _)| t).as_deref(),
+                Some("select")
+            );
+        }
+        crate::core::focus::cancel_focus_request();
+    }
+
+    #[test]
+    fn explicit_commit_still_clears_the_selection() {
+        let mut editor = editor_with_selection();
+        let (_, action) = editor.on_key(&key(KeyCode::Esc, KeyModifiers::NONE));
+        assert!(matches!(action, Some(EditorAction::Committed)));
+        assert_eq!(editor.field.buffer.selection(), None);
     }
 }

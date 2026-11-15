@@ -380,7 +380,7 @@ impl TerminalPage {
                 inner.x,
                 inner.bottom().saturating_sub(lines),
                 inner.width,
-                1,
+                lines,
             ),
             &widths,
             2,
