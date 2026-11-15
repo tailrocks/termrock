@@ -39,7 +39,7 @@ use crate::screens::{
     scroll_press,
 };
 use crate::sim::fs::ScanNode;
-use crate::sim::world::World;
+use crate::sim::world::{ScanPhase, World};
 use junie_tui::ui::layer::LayerTag;
 use junie_tui::ui::text::plural;
 
@@ -104,6 +104,7 @@ pub struct DiskPage {
     md: MasterDetail,
     last_tick: u64,
     last_revealed: usize,
+    last_phase: Option<ScanPhase>,
     generation: u64,
     seeded_gen: u64,
 
@@ -134,6 +135,7 @@ impl DiskPage {
             md: MasterDetail::new(TREE, DETAIL).detail_share(38, 34, 50),
             last_tick: u64::MAX,
             last_revealed: usize::MAX,
+            last_phase: None,
             generation: 0,
             seeded_gen: 0,
             reviewed: None,
@@ -319,7 +321,7 @@ impl DiskPage {
 
     fn seed_selection(&mut self, w: &World) {
         let Some(scan) = &w.scan else { return };
-        if self.seeded_gen == scan.generation || !scan.done(w.tick) {
+        if self.seeded_gen == scan.generation || !scan.completed() {
             return;
         }
         self.seeded_gen = scan.generation;
@@ -573,15 +575,15 @@ impl DiskPage {
                     v.push(
                         Prop::new(
                             "Freshness",
-                            if scan.cancelled {
+                            if scan.cancelled() {
                                 "partial · scan cancelled".to_owned()
-                            } else if scan.done(w.tick) {
+                            } else if scan.completed() {
                                 "live · complete".to_owned()
                             } else {
                                 format!("live · {}%", (scan.progress(w.tick) * 100.0).round())
                             },
                         )
-                        .tone(if scan.cancelled {
+                        .tone(if scan.cancelled() {
                             Tone::Warning
                         } else {
                             Tone::Muted
@@ -977,7 +979,7 @@ impl DiskPage {
                     clean = clean.reason("Select rebuildable artifacts first");
                 }
                 let mut cancel = MenuItem::new("Cancel scan").shortcut("x");
-                if !w.scan.as_ref().is_some_and(|s| !s.done(w.tick)) {
+                if !w.scan.as_ref().is_some_and(|s| s.is_running()) {
                     cancel = cancel.reason("No scan is running");
                 }
                 let items = vec![
@@ -1466,9 +1468,14 @@ impl ShellPage<Holla> for DiskPage {
                 };
                 let revealed = scan.revealed(w.tick);
                 let generation = scan.generation;
-                if revealed != self.last_revealed || generation != self.generation {
+                let phase = scan.phase();
+                if revealed != self.last_revealed
+                    || generation != self.generation
+                    || Some(phase) != self.last_phase
+                {
                     self.last_revealed = revealed;
                     self.generation = generation;
+                    self.last_phase = Some(phase);
                     self.seed_selection(w);
                     self.rebuild_tree(w);
                     return Outcome::Changed;
@@ -1518,7 +1525,7 @@ impl ShellPage<Holla> for DiskPage {
             View::Tree => {
                 if let Some(scan) = &w.scan {
                     let errors = scan.tree.errors();
-                    if scan.cancelled {
+                    if scan.cancelled() {
                         let line = format!(
                             "▲ partial · scan cancelled at {}% · {} entries · {} selected ({})",
                             (scan.progress(w.tick) * 100.0).round(),
@@ -1535,7 +1542,7 @@ impl ShellPage<Holla> for DiskPage {
                             ),
                             Style::new().fg(t.warning),
                         );
-                    } else if !scan.done(w.tick) {
+                    } else if scan.is_running() {
                         let label = format!(
                             "scanning · {} of {} entries",
                             scan.revealed(w.tick),
@@ -1737,7 +1744,7 @@ impl ShellPage<Holla> for DiskPage {
     }
 
     fn animating(&self, w: &World) -> bool {
-        self.view == View::Tree && w.scan.as_ref().is_some_and(|s| !s.done(w.tick))
+        self.view == View::Tree && w.scan.as_ref().is_some_and(|s| s.is_running())
     }
 
     fn primary_focus(&self) -> Option<WidgetId> {
@@ -1765,7 +1772,7 @@ impl Screen for DiskPage {
 
     fn status(&self, w: &World) -> StatusBits {
         let (text, busy) = match (&self.view, &w.scan) {
-            (View::Tree, Some(s)) if !s.done(w.tick) => (
+            (View::Tree, Some(s)) if s.is_running() => (
                 format!(
                     "scanning {} · {}%",
                     w.location.short(&self.path),
@@ -1799,5 +1806,59 @@ impl Screen for DiskPage {
             center: Some(item),
             right: vec![],
         }
+    }
+}
+
+#[cfg(test)]
+mod scan_status_tests {
+    use super::*;
+    use crate::domain::fixtures::world_for;
+    use crate::scenario::{Motion, Scenario};
+    use crate::sim::world::scan_test_support::{run_to_completion, scan_done_count, scan_world};
+
+    fn home_scan(scan_ticks: u64) -> World {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        w.clock.running = true;
+        w.disk.scan_ticks = scan_ticks;
+        let home = w.location.home.clone();
+        w.start_scan(&home);
+        w
+    }
+
+    #[test]
+    fn disk_page_animates_until_the_completing_tick() {
+        let mut w = scan_world(4096, 1);
+        let page = DiskPage::new("/work/big");
+        w.tick();
+        assert!(
+            page.animating(&w),
+            "the first batch leaves entries unscanned"
+        );
+        let msgs = run_to_completion(&mut w);
+        assert_eq!(scan_done_count(&msgs), 1);
+        assert!(!page.animating(&w));
+    }
+
+    #[test]
+    fn completed_scan_preselects_candidates_and_cancelled_scan_does_not() {
+        let mut w = home_scan(1);
+        let home = w.location.home.clone();
+        let mut page = DiskPage::new(&home);
+        run_to_completion(&mut w);
+        page.seed_selection(&w);
+        assert!(
+            !page.selected.is_empty(),
+            "a completed scan seeds its default candidates"
+        );
+
+        let mut w = home_scan(50);
+        let mut page = DiskPage::new(&home);
+        w.tick();
+        assert!(w.cancel_scan());
+        page.seed_selection(&w);
+        assert!(
+            page.selected.is_empty(),
+            "a cancelled partial scan never preselects"
+        );
     }
 }
