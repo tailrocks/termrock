@@ -1,4 +1,5 @@
 use crate::domain::digest::sha256_hex;
+use crate::domain::manifest::{Json, json_opt_str, json_str, parse_json};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Origin {
@@ -472,26 +473,19 @@ impl TrustStore {
     }
 
     pub fn serialize(&self) -> String {
-        let items: Vec<String> = self
+        let entries: Vec<Json> = self
             .entries
             .iter()
-            .map(|e| {
-                format!(
-                    "{{\"digest\":\"{}\",\"path\":{},\"cwd\":{}}}",
-                    e.digest,
-                    json_str(e.path.as_deref()),
-                    json_str(e.cwd.as_deref())
-                )
-            })
+            .map(|e| serde_json::json!({ "digest": e.digest, "path": e.path, "cwd": e.cwd }))
             .collect();
-        format!("{{\"v\":2,\"entries\":[{}]}}", items.join(","))
+        serde_json::json!({ "v": 2, "entries": entries }).to_string()
     }
 
     pub fn load(text: Option<&str>) -> Self {
         let Some(text) = text else {
             return Self::default();
         };
-        let json = match crate::domain::manifest::parse_json(text) {
+        let json = match parse_json(text) {
             Ok(j) => j,
             Err(e) => {
                 return Self {
@@ -500,54 +494,122 @@ impl TrustStore {
                 };
             }
         };
-        use crate::domain::manifest::Json;
-        let v = match json.get("v") {
-            Some(Json::Num(n)) => *n as i64,
-            _ => {
+        let Some(version) = json.get("v") else {
+            return Self {
+                corrupt: Some("trusted.json has no version".into()),
+                ..Default::default()
+            };
+        };
+        let Some(version) = version.as_i64() else {
+            return Self {
+                corrupt: Some("trusted.json version is not an integer".into()),
+                ..Default::default()
+            };
+        };
+        let (field, parse): (&str, EntryParser) = match version {
+            1 => ("hashes", |h: &Json| {
+                h.as_str()
+                    .map(|digest| TrustEntry {
+                        digest: digest.into(),
+                        path: None,
+                        cwd: None,
+                    })
+                    .ok_or_else(|| "expected digest string".to_owned())
+            }),
+            2 => ("entries", trust_entry),
+            other => {
                 return Self {
-                    corrupt: Some("trusted.json has no version".into()),
+                    corrupt: Some(format!("trusted.json version {other} is unknown")),
                     ..Default::default()
                 };
             }
         };
         let mut store = Self::default();
-        match v {
-            1 => {
-                if let Some(Json::Arr(h)) = json.get("hashes") {
-                    for d in h.iter().filter_map(Json::as_str) {
-                        store.entries.push(TrustEntry {
-                            digest: d.into(),
-                            path: None,
-                            cwd: None,
-                        });
+        match json.get(field) {
+            None => {}
+            Some(Json::Array(items)) => {
+                for (i, item) in items.iter().enumerate() {
+                    match parse(item) {
+                        Ok(entry) => store.entries.push(entry),
+                        Err(why) => {
+                            if store.corrupt.is_none() {
+                                store.corrupt =
+                                    Some(format!("trusted.json {field} entry {i} invalid: {why}"));
+                            }
+                        }
                     }
                 }
             }
-            2 => {
-                if let Some(Json::Arr(es)) = json.get("entries") {
-                    for e in es {
-                        let Some(d) = e.get("digest").and_then(Json::as_str) else {
-                            continue;
-                        };
-                        store.entries.push(TrustEntry {
-                            digest: d.into(),
-                            path: e.get("path").and_then(Json::as_str).map(str::to_owned),
-                            cwd: e.get("cwd").and_then(Json::as_str).map(str::to_owned),
-                        });
-                    }
-                }
-            }
-            other => {
-                store.corrupt = Some(format!("trusted.json version {other} is unknown"));
-            }
+            Some(_) => store.corrupt = Some(format!("trusted.json {field} is not an array")),
         }
         store
     }
 }
 
-fn json_str(s: Option<&str>) -> String {
-    match s {
-        Some(s) => format!("\"{}\"", s.replace('\\', "\\\\").replace('"', "\\\"")),
-        None => "null".into(),
+type EntryParser = fn(&Json) -> Result<TrustEntry, String>;
+
+fn trust_entry(e: &Json) -> Result<TrustEntry, String> {
+    Ok(TrustEntry {
+        digest: json_str(e, "digest")?.to_owned(),
+        path: json_opt_str(e, "path")?,
+        cwd: json_opt_str(e, "cwd")?,
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn holla_json_strings_roundtrip_all_escape_classes() {
+        let store = TrustStore {
+            entries: vec![
+                TrustEntry {
+                    digest: "abc".into(),
+                    path: Some("/w/\"a\"\\n\nb\u{1}🚀".into()),
+                    cwd: Some("/w\t".into()),
+                },
+                TrustEntry {
+                    digest: "def".into(),
+                    path: None,
+                    cwd: None,
+                },
+            ],
+            ..Default::default()
+        };
+        let text = store.serialize();
+        assert!(serde_json::from_str::<serde_json::Value>(&text).is_ok());
+        let loaded = TrustStore::load(Some(&text));
+        assert_eq!(loaded.corrupt, None);
+        assert_eq!(loaded.entries, store.entries);
+    }
+
+    #[test]
+    fn holla_json_duplicate_keys_use_last_value() {
+        let text = r#"{"v":2,"entries":[{"digest":"d","path":"/a","path":"/b","cwd":null}]}"#;
+        let loaded = TrustStore::load(Some(text));
+        assert_eq!(loaded.entries[0].path.as_deref(), Some("/b"));
+    }
+
+    #[test]
+    fn holla_json_wrong_type_entries_report_corruption() {
+        let loaded = TrustStore::load(Some(r#"{"v":2,"entries":"nope"}"#));
+        assert!(loaded.entries.is_empty());
+        assert!(loaded.corrupt.is_some());
+    }
+
+    #[test]
+    fn holla_json_invalid_entries_keep_valid_siblings_with_diagnostic() {
+        let text = r#"{"v":2,"entries":[{"digest":"a"},{"path":"/no-digest"},{"digest":"c","path":"/c"}]}"#;
+        let loaded = TrustStore::load(Some(text));
+        let digests: Vec<&str> = loaded.entries.iter().map(|e| e.digest.as_str()).collect();
+        assert_eq!(digests, ["a", "c"]);
+        assert!(loaded.corrupt.is_some());
+    }
+
+    #[test]
+    fn holla_json_integer_schema_version_is_exact() {
+        let loaded = TrustStore::load(Some(r#"{"v":2.0,"entries":[]}"#));
+        assert!(loaded.corrupt.is_some());
     }
 }

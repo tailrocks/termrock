@@ -22,8 +22,7 @@ change the config and run `velnor-actions generate`.
   --all-features`, which selects every test target of the package (the
   library, the binaries, `functional` and every other `tests/*.rs`
   target), plus clippy `-D warnings` on `--all-targets`, `cargo fmt
-  --check` and `cargo doc`. A new test target needs no CI change. The
-  `ci` profile in `.config/nextest.toml` must keep no `default-filter`,
+  --check` and `cargo doc`. The `ci` profile in `.config/nextest.toml` must keep no `default-filter`,
   or targets drop out of this job.
 - **Rust / junie-tui (product)** and **Rust / jackin-console
   (product)** — the same five tasks for the product shape. The second
@@ -40,6 +39,29 @@ change the config and run `velnor-actions generate`.
 - **DCO** — every commit must carry `Signed-off-by`
   (`git commit -s`, committer Alexey Zhokhov
   <alexey@zhokhov.com>).
+
+## Test targets and generated CI
+
+The generated `ci.yml` and `state-seal.yml` embed the name of every
+top-level integration test target (`tests/*.rs`, `apps/jackin/tests/*.rs`)
+in `VELNOR_MBX_STATS_WORKSPACE`. A new top-level test file therefore changes
+the generated YAML, and the Plan job fails with `Files
+.github/workflows/ci.yml and <regenerated> differ` until the workflows are
+regenerated. Two pull requests that each add a target also conflict in that
+generated YAML, which must never be resolved by hand.
+
+New integration tests go into the shared `regressions` target of their
+package, which keeps the target list stable:
+
+- `junie-tui`: `tests/regressions/<topic>.rs` plus `mod <topic>;` in
+  `tests/regressions/main.rs`.
+- `jackin-console`: `apps/jackin/tests/regressions/<topic>.rs` plus
+  `mod <topic>;` in `apps/jackin/tests/regressions/main.rs` (the target is
+  gated by the `demo` feature).
+
+Add a new top-level `tests/*.rs` only when a test needs its own binary
+(different features, harness or process-wide state), and regenerate in the
+same change with `mise exec -- velnor-actions generate`.
 
 ## The demo feature
 
