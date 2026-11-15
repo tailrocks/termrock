@@ -2553,6 +2553,7 @@ impl shell::KeyHost for App {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::tabs::{QueryTab, ResultBody};
 
     const PRICE: usize = 4;
 
@@ -2590,6 +2591,219 @@ mod tests {
             .get()
             .map(|(text, _)| text.to_owned())
             .unwrap_or_default()
+    }
+
+    const BATCH: &str = "SELECT * FROM products LIMIT 1;\nSELECT * FROM products LIMIT 2;\nSELECT * FROM products LIMIT 3;";
+
+    fn app_with_query(sql: &str) -> App {
+        let mut app = App::new(Theme::junie());
+        app.connect(1);
+        app.workbench.as_mut().expect("connected").new_query(sql);
+        app
+    }
+
+    fn query(app: &mut App) -> &mut QueryTab {
+        match app.workbench.as_mut().and_then(|w| w.active_tab_mut()) {
+            Some(WorkTab::Query(q)) => q,
+            _ => panic!("a query tab is active"),
+        }
+    }
+
+    fn run_batch(app: &mut App) {
+        app.run_active(true, None);
+        assert!(query(app).is_running(), "the batch started");
+    }
+
+    fn tick_until_history(app: &mut App, entries: usize) {
+        for _ in 0..64 {
+            if app.history.entries.len() >= entries {
+                return;
+            }
+            app.advance();
+        }
+        panic!("history never reached {entries} entries");
+    }
+
+    fn esc(app: &mut App) -> Outcome {
+        let key = Key {
+            code: KeyCode::Esc,
+            mods: ratatui::crossterm::event::KeyModifiers::NONE,
+        };
+        shell::KeyRouter::route(app, &key)
+    }
+
+    fn click_stop(app: &mut App) -> Outcome {
+        let ev = PointerEvent::new(
+            &app.shell.hits,
+            Phase::Click,
+            crate::tabs::TOOLBAR_CANCEL,
+            Position::new(0, 0),
+            1,
+            ratatui::crossterm::event::KeyModifiers::NONE,
+        );
+        app.deliver_pointer(&ev)
+    }
+
+    fn shape(q: &QueryTab) -> Vec<(bool, &'static str)> {
+        q.results
+            .iter()
+            .map(|r| {
+                let kind = match r.body {
+                    ResultBody::Rows(_) => "rows",
+                    ResultBody::Cancelled => "cancelled",
+                    _ => "other",
+                };
+                (r.pinned, kind)
+            })
+            .collect()
+    }
+
+    #[test]
+    fn query_cancel_retains_completed_results() {
+        let mut app = app_with_query(BATCH);
+        let base = app.history.entries.len();
+        run_batch(&mut app);
+        tick_until_history(&mut app, base + 1);
+        let (second_sql, second_range, elapsed) = {
+            let r = query(&mut app).running.as_ref().expect("still running");
+            assert_eq!(r.current, 1, "the second statement is pending");
+            (
+                r.statements[1].0.clone(),
+                r.statements[1].1.clone(),
+                r.started_ticks,
+            )
+        };
+        let first_sql = app.history.entries[0].sql.clone();
+
+        assert_eq!(esc(&mut app), Outcome::Changed);
+
+        let q = query(&mut app);
+        assert!(!q.is_running());
+        assert_eq!(shape(q), [(false, "rows"), (false, "cancelled")]);
+        assert_eq!(q.active_result, 1, "the cancelled marker is active");
+        assert_eq!(
+            q.result_tabs.items.len(),
+            2,
+            "the strip matches the results"
+        );
+        let marker = &q.results[1];
+        assert_eq!(
+            marker.anchor, second_range,
+            "the marker anchors the pending statement"
+        );
+        assert_eq!(marker.duration_ms, elapsed * 80);
+        assert_eq!(q.editor.running, None);
+        assert_eq!(q.last_status, Some(("cancelled".into(), false)));
+        assert_eq!(
+            app.history.entries.len(),
+            base + 1,
+            "history is not touched by cancel"
+        );
+        assert_eq!(app.history.entries[0].sql, first_sql);
+        assert_ne!(first_sql, second_sql);
+        assert_eq!(status(&app), "Query cancelled");
+    }
+
+    #[test]
+    fn query_cancel_preserves_pins_and_order() {
+        let mut app = app_with_query("SELECT * FROM orders LIMIT 1;");
+        let base = app.history.entries.len();
+        run_batch(&mut app);
+        tick_until_history(&mut app, base + 1);
+        assert!(!query(&mut app).is_running());
+        query(&mut app).toggle_pin(0);
+        let pinned_key = query(&mut app).results[0].key;
+
+        let q = query(&mut app);
+        q.editor.set_text(BATCH);
+        let mid = app.history.entries.len();
+        run_batch(&mut app);
+        tick_until_history(&mut app, mid + 2);
+        assert_eq!(query(&mut app).running.as_ref().map(|r| r.current), Some(2));
+
+        assert_eq!(click_stop(&mut app), Outcome::Changed);
+
+        let q = query(&mut app);
+        assert_eq!(
+            shape(q),
+            [
+                (true, "rows"),
+                (false, "rows"),
+                (false, "rows"),
+                (false, "cancelled")
+            ]
+        );
+        assert_eq!(
+            q.results[0].key, pinned_key,
+            "the pinned result keeps its identity"
+        );
+        let keys: Vec<_> = q.results.iter().map(|r| r.key).collect();
+        for (i, k) in keys.iter().enumerate() {
+            assert!(!keys[i + 1..].contains(k), "result keys are unique");
+        }
+        assert_eq!(q.active_result, 3);
+        assert_eq!(q.result_tabs.items.len(), 4);
+        assert_eq!(
+            app.history.entries.len(),
+            mid + 2,
+            "two completions, no cancelled entry"
+        );
+    }
+
+    #[test]
+    fn query_cancel_idempotent() {
+        let mut app = app_with_query(BATCH);
+        let base = app.history.entries.len();
+        run_batch(&mut app);
+        tick_until_history(&mut app, base + 1);
+        assert_eq!(esc(&mut app), Outcome::Changed);
+
+        app.shell.status.clear();
+        assert!(!query(&mut app).cancel(), "nothing left to cancel");
+        assert_ne!(esc(&mut app), Outcome::Changed);
+        assert_ne!(click_stop(&mut app), Outcome::Changed);
+
+        let q = query(&mut app);
+        assert_eq!(shape(q), [(false, "rows"), (false, "cancelled")]);
+        assert_eq!(q.active_result, 1);
+        assert_eq!(q.result_tabs.items.len(), 2);
+        assert_eq!(q.last_status, Some(("cancelled".into(), false)));
+        assert_eq!(app.history.entries.len(), base + 1);
+        assert_eq!(status(&app), "", "a repeated cancel reports nothing");
+    }
+
+    #[test]
+    fn query_cancel_start_reconciles_strip() {
+        let mut app = app_with_query(BATCH);
+        let base = app.history.entries.len();
+        run_batch(&mut app);
+        tick_until_history(&mut app, base + 3);
+        assert!(!query(&mut app).is_running());
+        assert_eq!(query(&mut app).result_tabs.items.len(), 3);
+        query(&mut app).toggle_pin(1);
+        let pinned_label = query(&mut app).results[0].label.clone();
+
+        run_batch(&mut app);
+        for _ in 0..3 {
+            let q = query(&mut app);
+            assert_eq!(q.results.len(), 1, "only the pinned result is retained");
+            assert_eq!(q.result_tabs.items.len(), 1, "no stale tab while waiting");
+            assert_eq!(q.result_tabs.items[0].label, pinned_label);
+            assert_eq!(q.active_result, 0);
+            app.advance();
+        }
+
+        let mut app = app_with_query(BATCH);
+        let base = app.history.entries.len();
+        run_batch(&mut app);
+        tick_until_history(&mut app, base + 3);
+        run_batch(&mut app);
+        let q = query(&mut app);
+        assert!(q.results.is_empty());
+        assert!(
+            q.result_tabs.items.is_empty(),
+            "an empty strip while only the placeholder shows"
+        );
     }
 
     #[test]
