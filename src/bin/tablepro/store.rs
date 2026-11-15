@@ -160,7 +160,15 @@ pub enum StoreError {
         key: ItemKey,
         column: String,
     },
+    /// A value a column cannot be left empty with, for a column that has no
+    /// default: an explicit `NULL`, or `DEFAULT`, has nothing to store.
     Required {
+        key: ItemKey,
+        column: String,
+    },
+    /// An explicit `NULL` for a column that cannot be empty but has a default,
+    /// which `DEFAULT` stores instead.
+    NullNotAllowed {
         key: ItemKey,
         column: String,
     },
@@ -194,6 +202,7 @@ impl StoreError {
             | Self::WrongKind { key, .. }
             | Self::NonFinite { key, .. }
             | Self::Required { key, .. }
+            | Self::NullNotAllowed { key, .. }
             | Self::NotInEnum { key, .. }
             | Self::UnsupportedDefault { key, .. }
             | Self::SequenceExhausted { key, .. } => Some(*key),
@@ -234,6 +243,12 @@ impl std::fmt::Display for StoreError {
             } => write!(f, "{column} must be {}", expected.sql()),
             Self::NonFinite { column, .. } => write!(f, "{column} must be a finite number"),
             Self::Required { column, .. } => write!(f, "{column} is required"),
+            Self::NullNotAllowed { column, .. } => {
+                write!(
+                    f,
+                    "{column} is required (type DEFAULT to use the column default)"
+                )
+            }
             Self::NotInEnum { column, value, .. } => {
                 write!(f, "{value:?} is not a value of {column}")
             }
@@ -695,6 +710,11 @@ fn convert(key: ItemKey, column: &Column, cell: &CellValue) -> Result<Value, Sto
         (CellValue::Null, _) => {
             if column.nullable {
                 Value::Null
+            } else if column.default.is_some() {
+                return Err(StoreError::NullNotAllowed {
+                    key,
+                    column: column.name.clone(),
+                });
             } else {
                 return Err(StoreError::Required {
                     key,

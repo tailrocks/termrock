@@ -447,6 +447,11 @@ fn issue51_failed_save_changes_neither_store_nor_draft() {
     confirm_save(&mut app, key);
 
     assert!(status(&app).contains("sku is required"), "{}", status(&app));
+    assert!(
+        !status(&app).contains("DEFAULT"),
+        "sku has no default to type: {}",
+        status(&app)
+    );
     assert_eq!(app.history.entries.len(), history, "no success history");
     let t = tab(&mut app, key);
     assert_eq!(
@@ -468,6 +473,41 @@ fn issue51_failed_save_changes_neither_store_nor_draft() {
         "no row of the failed batch reached the store"
     );
     assert_eq!(rows[1][NAME], second);
+}
+
+#[test]
+fn issue51_null_in_defaulted_column_offers_the_default_hint() {
+    let mut app = connected();
+    let key = open(&mut app, "products");
+    tab(&mut app, key)
+        .grid
+        .record_cell(0, CURRENCY, CellValue::Null)
+        .expect("edit");
+    confirm_save(&mut app, key);
+
+    assert!(
+        status(&app).contains("currency is required (type DEFAULT to use the column default)"),
+        "{}",
+        status(&app)
+    );
+}
+
+#[test]
+fn issue51_null_in_column_without_default_says_required() {
+    let mut app = connected();
+    let key = open(&mut app, "products");
+    tab(&mut app, key)
+        .grid
+        .record_cell(0, SKU, CellValue::Null)
+        .expect("edit");
+    confirm_save(&mut app, key);
+
+    assert!(status(&app).contains("sku is required"), "{}", status(&app));
+    assert!(
+        !status(&app).contains("DEFAULT"),
+        "sku has no default to type: {}",
+        status(&app)
+    );
 }
 
 #[test]
