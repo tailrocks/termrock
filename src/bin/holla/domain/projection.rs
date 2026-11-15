@@ -13,13 +13,17 @@
 //! | `apply_effect`, plan effects, `remove_candidate`, cleanup commit/step/settle | yes | yes | no |
 //! | activity start, stop, state or identity change | yes | no | no |
 //! | activity output or stdin only, clock tick, pointer, scroll | no | no | no |
-//! | trust, custom config reload, `edit_catalog` | yes | no | no |
+//! | trust, custom config reload, `edit_catalog`, `edit_catalog_if` when it reports a change | yes | no | no |
 //! | `edit_cleanup` | yes | yes | no |
 //! | memory use, query learning, pin, alias, hide, restore, reset, save | no | no | yes |
 //! | `Fs` node mutation | the `fs` half of both stamps | | |
 //!
 //! Cleanup also bumps the catalog epoch because the catalog embeds cleanup
 //! candidate totals.
+//!
+//! #64 mapping: `CatalogStamp{catalog,fs}` and `CleanupStamp` map to
+//! `SourceStamp.data`, `ViewKey` to `view`, and the page instance to `instance`.
+//! Holla supplies a ready projection; #64 owns the keyed identity.
 
 use std::cell::Cell;
 

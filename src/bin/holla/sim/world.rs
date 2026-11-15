@@ -318,6 +318,16 @@ impl World {
         out
     }
 
+    /// `edit_catalog` for an edit that may change nothing. The epoch moves only
+    /// when `edit` reports a change.
+    pub fn edit_catalog_if(&mut self, edit: impl FnOnce(&mut Self) -> bool) -> bool {
+        let changed = edit(self);
+        if changed {
+            self.epochs.bump_catalog();
+        }
+        changed
+    }
+
     /// An edit of provider, process, platform or disk state the cleanup
     /// candidates read. Also moves the catalog epoch, which embeds their totals.
     pub fn edit_cleanup<R>(&mut self, edit: impl FnOnce(&mut Self) -> R) -> R {

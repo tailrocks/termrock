@@ -1011,3 +1011,21 @@ fn holla_projection_config_reload_matches_full_rebuild() {
     app.reload_project_config();
     tick_checked(&mut app, 3);
 }
+
+#[test]
+fn holla_projection_snapshot_revoke_invalidates_catalog() {
+    let mut app = settled(Scenario::RustDirty, true);
+    let path = app
+        .world
+        .custom_project
+        .as_ref()
+        .expect("a project configuration")
+        .path
+        .clone();
+    app.push_page(Page::Config { path });
+    drawn_text(&mut app);
+    app.handle_input(key(KeyCode::Char('u'), KeyModifiers::NONE));
+    assert!(status(&app).contains("Trust revoked"), "{}", status(&app));
+    app.handle_input(key(KeyCode::Esc, KeyModifiers::NONE));
+    tick_checked(&mut app, 3);
+}
