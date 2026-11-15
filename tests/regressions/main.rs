@@ -18,3 +18,4 @@ mod pane_tree_pointer;
 
 mod file_browser_paths;
 mod smoke;
+mod tabs_overflow_mutation;

@@ -644,9 +644,11 @@ impl QueryWorkbenchPage {
 
     fn sync_tabs(&mut self) {
         let items = self.tab_items();
-        for (t, it) in self.tabs.items.iter_mut().zip(items) {
-            t.busy = it.busy;
-            t.error = it.error;
+        for (i, it) in items.into_iter().enumerate() {
+            self.tabs.update_item(i, |t| {
+                t.busy = it.busy;
+                t.error = it.error;
+            });
         }
     }
 
@@ -1551,7 +1553,7 @@ mod tests {
         let key = p.active_key.expect("active key");
         let index = p.doc_index(key).expect("active key names a document");
         assert_eq!(p.tabs.active, index, "strip highlights the active document");
-        assert_eq!(p.tabs.items[index].label, p.docs[index].title);
+        assert_eq!(p.tabs.items()[index].label, p.docs[index].title);
         let d = &p.docs[index];
         assert_eq!(d.editor.id, editor_id(key));
         assert_eq!(d.results.id, results_id(key));
@@ -1637,7 +1639,7 @@ mod tests {
         rig.key(KeyCode::Enter, KeyModifiers::NONE);
         let chosen = rig.page.tabs.active;
         assert!(chosen > 1, "a previously hidden tab was chosen");
-        assert_eq!(active(&rig.page).title, rig.page.tabs.items[chosen].label);
+        assert_eq!(active(&rig.page).title, rig.page.tabs.items()[chosen].label);
         assert!(active(&rig.page).editor.text().starts_with("-- doc"));
         assert_agree(&mut rig);
 
@@ -2090,7 +2092,7 @@ mod tests {
         );
         assert_eq!(doc(&rig.page, 1).result, c_before, "C is untouched");
         assert!(rig.page.running.is_none());
-        assert!(rig.page.tabs.items.iter().all(|tab| !tab.busy));
+        assert!(rig.page.tabs.items().iter().all(|tab| !tab.busy));
         assert!(toolbar_idle(&rig));
 
         let mut rig = Rig::new();
@@ -2184,7 +2186,7 @@ mod tests {
         close(&mut rig, 0);
         assert!(rig.page.running.is_none(), "closing B cancels its run");
         assert!(toolbar_idle(&rig));
-        assert!(rig.page.tabs.items.is_empty());
+        assert!(rig.page.tabs.items().is_empty());
 
         rig.with_cx(|p, cx| p.tab_action(TabAction::New, cx));
         let fresh = active(&rig.page).key;
@@ -2218,7 +2220,7 @@ mod tests {
         assert_eq!(rig.focus.current(), Some(editor_id(c_key)));
         let b = &rig.page.docs[rig.page.doc_index(b_key).expect("B")];
         assert_eq!(b.result, customers_rows());
-        assert!(rig.page.tabs.items.iter().all(|tab| !tab.busy));
+        assert!(rig.page.tabs.items().iter().all(|tab| !tab.busy));
         assert_eq!(
             rig.statuses.last().map(String::as_str),
             Some("customers: ✓ 40 rows · 15 ms"),
