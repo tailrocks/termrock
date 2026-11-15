@@ -275,9 +275,12 @@ struct Knobs {
     validator: usize,
     blur_action: usize,
     malformed: usize,
+    source: usize,
+    host: usize,
+    identity: usize,
 }
 
-const KEYS: [&str; 18] = [
+const KEYS: [&str; 21] = [
     "datagrid.access",
     "datagrid.rows",
     "datagrid.total",
@@ -296,6 +299,9 @@ const KEYS: [&str; 18] = [
     "datagrid.validator",
     "datagrid.blur_action",
     "datagrid.malformed",
+    "datagrid.source",
+    "datagrid.host",
+    "datagrid.identity",
 ];
 
 impl Knobs {
@@ -327,6 +333,9 @@ impl Knobs {
             "datagrid.horizontal" => &mut self.horizontal,
             "datagrid.validator" => &mut self.validator,
             "datagrid.blur_action" => &mut self.blur_action,
+            "datagrid.source" => &mut self.source,
+            "datagrid.host" => &mut self.host,
+            "datagrid.identity" => &mut self.identity,
             _ => &mut self.malformed,
         }
     }
@@ -382,9 +391,110 @@ fn strict(spec: &ColumnSpec, text: &str) -> Result<CellValue, String> {
     }
 }
 
-fn build(k: &Knobs) -> DataGrid {
-    let cols = columns(k.validator == 2);
-    let width = cols.len();
+/// `Row source` values that replace the columns together with the rows.
+const fn swaps_model(k: &Knobs) -> bool {
+    matches!(k.source, 2 | 3)
+}
+
+/// The column set the grid ends up with. A model swap always lands on the
+/// wide set, so the three extra columns appear when the model is installed.
+fn target_columns(k: &Knobs) -> Vec<ColumnSpec> {
+    columns(k.validator == 2 || swaps_model(k))
+}
+
+/// The row id is the database key, so a keyed source uses it as the row key.
+fn id_keys(rows: &[Vec<CellValue>]) -> Vec<ItemKey> {
+    rows.iter()
+        .map(|r| match r.first() {
+            Some(CellValue::Int(id)) => ItemKey::num(*id as u64),
+            _ => ItemKey::num(u64::MAX),
+        })
+        .collect()
+}
+
+fn sample(k: &Knobs, width: usize) -> GridRows {
+    let mut loaded = if k.rows == 0 {
+        page(0, k.total(), width)
+    } else {
+        GridRows {
+            rows: Vec::new(),
+            total: RowTotal::Exact(0),
+            more: false,
+        }
+    };
+    if k.rows == 0 && k.malformed > 0 {
+        loaded.rows.insert(0, malformed_row(k.malformed, width));
+    }
+    loaded
+}
+
+/// Installs the sample through the `Row source` the option names. Every
+/// route refuses the whole batch on a fault, so a rejected source leaves the
+/// grid on the rows it had.
+fn load(grid: &mut DataGrid, k: &Knobs) -> Result<(), GridDataError> {
+    let cols = target_columns(k);
+    let data = sample(k, cols.len());
+    let mut keys = id_keys(&data.rows);
+    match k.source {
+        // Two rows that claim one identity.
+        4 if keys.len() > 1 => keys[1] = keys[0],
+        // One key short of the rows.
+        5 => {
+            keys.pop();
+        }
+        _ => {}
+    }
+    match k.source {
+        1 | 4 | 5 => grid.try_set_rows_keyed(data, keys),
+        2 => grid.try_set_model(cols, data),
+        3 => grid.try_set_model_keyed(cols, data, keys),
+        _ => grid.try_set_rows(data),
+    }
+}
+
+/// What the host asked of the grid on its own, outside any key press, and
+/// the one line the card shows for the answer.
+fn host_call(grid: &mut DataGrid, k: &Knobs) -> Option<String> {
+    let edit = |grid: &mut DataGrid, text: &str| {
+        Some(match grid.try_edit_text(0, SEATS_COLUMN, text) {
+            Ok(CellEditResult::Changed) => format!("try_edit_text \"{text}\" · seats changed"),
+            Ok(CellEditResult::Unchanged) => {
+                format!("try_edit_text \"{text}\" · seats unchanged")
+            }
+            Err(e) => format!("try_edit_text \"{text}\" · {e}"),
+        })
+    };
+    match k.host {
+        1 => edit(grid, "40"),
+        2 => edit(grid, "lots"),
+        3 => {
+            let same = grid.value(0, SEATS_COLUMN).text();
+            edit(grid, &same)
+        }
+        4 => Some(match grid.update_column(1, |c| c.read_only = true) {
+            Ok(true) => format!(
+                "update_column · customer is read-only · revision {}",
+                revision_label(grid)
+            ),
+            Ok(false) => "update_column · nothing to change".to_owned(),
+            Err(e) => format!("update_column · {e}"),
+        }),
+        _ => None,
+    }
+}
+
+fn revision_label(grid: &DataGrid) -> String {
+    let rev = grid.revision();
+    format!("{}.{}", rev.source, rev.draft)
+}
+
+/// The grid for these knobs, and what the host call said about it.
+fn build(k: &Knobs) -> (DataGrid, Option<String>) {
+    let cols = if swaps_model(k) {
+        columns(false)
+    } else {
+        target_columns(k)
+    };
     let mut grid = DataGrid::new(ID.sub("grid"), cols)
         .editable(k.access == 0)
         .overflow_badges(k.overflow_badges == 1)
@@ -439,25 +549,11 @@ fn build(k: &Knobs) -> DataGrid {
     grid.row_numbers = k.row_numbers == 1;
     grid.blur_action = [BlurAction::Commit, BlurAction::Cancel][k.blur_action];
     grid.local_sort = true;
-    let mut loaded = if k.rows == 0 {
-        page(0, k.total(), width)
-    } else {
-        GridRows {
-            rows: Vec::new(),
-            total: RowTotal::Exact(0),
-            more: false,
-        }
-    };
-    if k.rows == 0 && k.malformed > 0 {
-        loaded.rows.insert(0, malformed_row(k.malformed, width));
+    if let Err(e) = load(&mut grid, k) {
+        grid.empty = EmptyState::error("Rows rejected before display").hint(&e.to_string());
     }
-    match grid.try_set_rows(loaded) {
-        Ok(()) => {}
-        Err(e) => {
-            grid.empty = EmptyState::error("Rows rejected before display").hint(&e.to_string());
-        }
-    }
-    grid
+    let note = host_call(&mut grid, k);
+    (grid, note)
 }
 
 fn malformed_row(kind: usize, width: usize) -> Vec<CellValue> {
@@ -617,6 +713,8 @@ pub struct GridPage {
     commit: Option<DemoCommit>,
     reload_guard: LeaveGuard<SampleTransition>,
     saved: u32,
+    /// What the last host call said, until the next key press.
+    note: Option<String>,
 }
 
 impl GridPage {
@@ -640,11 +738,12 @@ impl GridPage {
 
     pub fn new() -> Self {
         let knobs = Knobs::defaults();
+        let (grid, note) = build(&knobs);
         let mut filters = ChipBar::new(ID.sub("filters"));
         filters.set_lead(Some("Filters".into()));
         Self {
             template: Template::new(ID, states_grid()),
-            grid: build(&knobs),
+            grid,
             knobs,
             filters,
             filter_values: Vec::new(),
@@ -652,6 +751,7 @@ impl GridPage {
             commit: None,
             reload_guard: LeaveGuard::new(ID.sub("reload-guard")).save(false),
             saved: 0,
+            note,
         }
     }
 
@@ -684,15 +784,10 @@ impl GridPage {
 
     fn run_transition(&mut self, transition: SampleTransition, cx: &mut Cx) {
         match transition {
-            SampleTransition::Reload => {
-                match self
-                    .grid
-                    .try_set_rows(page(0, self.knobs.total(), self.grid.columns().len()))
-                {
-                    Ok(()) => cx.status("Reloaded from the source"),
-                    Err(e) => cx.status(e.to_string()),
-                }
-            }
+            SampleTransition::Reload => match load(&mut self.grid, &self.knobs) {
+                Ok(()) => cx.status("Reloaded from the source"),
+                Err(e) => cx.status(e.to_string()),
+            },
         }
     }
 
@@ -1057,6 +1152,44 @@ impl GridPage {
             .collect()
     }
 
+    /// What the grid says about the row under the cursor and about its draft,
+    /// read through the key, revision and pending accessors a host would use.
+    fn identity(&self) -> Vec<Prop> {
+        let src = self.grid.source_row(self.grid.cursor.0);
+        let pending = self.grid.pending();
+        let row = match self.grid.row_key(src) {
+            Some(key) => {
+                let state = if pending.is_inserted(key) {
+                    "inserted"
+                } else if pending.is_deleted(key) {
+                    "marked for deletion"
+                } else {
+                    "stored"
+                };
+                let back = self.grid.source_index(key).map_or(0, |i| i + 1);
+                format!("{key:?} · row {back} · {state}")
+            }
+            None => "no row under the cursor".to_owned(),
+        };
+        let rev = self.grid.revision();
+        vec![
+            Prop::new("Row key", row),
+            Prop::new(
+                "Revision",
+                format!("source {} · draft {}", rev.source, rev.draft),
+            ),
+            Prop::new(
+                "Draft",
+                format!(
+                    "{} cells · {} inserted · {} deleted",
+                    pending.cells().count(),
+                    pending.inserted().count(),
+                    pending.deleted().count()
+                ),
+            ),
+        ]
+    }
+
     fn commands(&self) -> Vec<Prop> {
         let mut out: Vec<Prop> = COMMANDS
             .iter()
@@ -1073,7 +1206,7 @@ impl GridPage {
         let wrap = |v: Vec<Prop>| -> Vec<Prop> { v.into_iter().map(Prop::wrap).collect() };
         [
             GRID_H,
-            3,
+            3 + IDENTITY_LINES * u16::from(self.knobs.identity == 1),
             crate::pages::layout::sheet_height(
                 &Panel::card(Some("Schema")),
                 &wrap(self.schema()),
@@ -1129,9 +1262,14 @@ impl GridPage {
                     inner.height.saturating_sub(filters_h),
                 );
                 self.grid.render(body, buf, ctx, bg);
-                let meta = match (self.grid.edit_error(), &self.grid.read_only_reason) {
-                    (Some(e), _) => e.to_owned(),
-                    (None, Some(_)) if !self.grid.editable => {
+                let meta = match (
+                    self.grid.edit_error(),
+                    self.note.as_deref(),
+                    &self.grid.read_only_reason,
+                ) {
+                    (Some(e), _, _) => e.to_owned(),
+                    (None, Some(note), _) => note.to_owned(),
+                    (None, None, Some(_)) if !self.grid.editable => {
                         format!("read-only · {}", self.grid.position_label())
                     }
                     _ => self.grid.position_label(),
@@ -1156,12 +1294,20 @@ impl GridPage {
                 .grid
                 .pending_label()
                 .unwrap_or_else(|| "no pending changes".into());
-            let props = vec![
+            let mut props = vec![
                 Prop::new("Change marks", legend),
                 Prop::new("Pending", pending),
             ];
+            if self.knobs.identity == 1 {
+                props.extend(self.identity());
+            }
             props::render(
-                Rect::new(r.x + 2, r.y, r.width.saturating_sub(4), 2),
+                Rect::new(
+                    r.x + 2,
+                    r.y,
+                    r.width.saturating_sub(4),
+                    (props.len() as u16).min(r.height),
+                ),
                 buf,
                 t,
                 &props,
@@ -1181,6 +1327,7 @@ impl GridPage {
 }
 
 const GRID_H: u16 = 26;
+const IDENTITY_LINES: u16 = 3;
 
 impl Page for GridPage {
     fn title(&self) -> &'static str {
@@ -1251,7 +1398,7 @@ impl Page for GridPage {
         let n = crate::options::find(key).map_or(1, |o| o.values.len());
         *self.knobs.slot(key) = value.min(n - 1);
         self.cancel_commit();
-        self.grid = build(&self.knobs);
+        (self.grid, self.note) = build(&self.knobs);
         self.filter_values.clear();
         self.set_filters();
     }
@@ -1294,6 +1441,7 @@ impl Page for GridPage {
                 let Some(f) = cx.focus.current() else {
                     return Outcome::Ignored;
                 };
+                self.note = None;
                 if f == self.grid.id {
                     let (o, actions) = self.grid.on_key(key).into_parts();
                     for ev in actions {
@@ -1309,21 +1457,24 @@ impl Page for GridPage {
                 }
                 Outcome::Ignored
             }
-            PageEvent::Paste(text) => match self.grid.on_paste(text) {
-                Outcome::Ignored if cx.focus.is(self.grid.id) => {
-                    let (o, actions) = self.grid.paste_into_cell(text).into_parts();
-                    // A consumed paste with no action is an equal value.
-                    if o == Outcome::Consumed && actions.is_empty() {
-                        cx.status("The cell already has that value");
+            PageEvent::Paste(text) => {
+                self.note = None;
+                match self.grid.on_paste(text) {
+                    Outcome::Ignored if cx.focus.is(self.grid.id) => {
+                        let (o, actions) = self.grid.paste_into_cell(text).into_parts();
+                        // A consumed paste with no action is an equal value.
+                        if o == Outcome::Consumed && actions.is_empty() {
+                            cx.status("The cell already has that value");
+                        }
+                        for ev in actions {
+                            self.on_event(Some(ev), cx);
+                        }
+                        self.explain_cell_error(cx);
+                        o
                     }
-                    for ev in actions {
-                        self.on_event(Some(ev), cx);
-                    }
-                    self.explain_cell_error(cx);
-                    o
+                    o => o,
                 }
-                o => o,
-            },
+            }
             PageEvent::Pointer(p) => self.pointer(p, cx),
             PageEvent::DialogClosed { id, result, .. }
                 if *id == PREVIEW && *result == DialogResult::Action(1) =>
@@ -1463,6 +1614,114 @@ mod tests {
         assert!(text.contains("Short row"), "{text}");
         assert!(text.contains("NULL"), "padded cells render as NULL: {text}");
         assert!(!text.contains("rejected"), "{text}");
+    }
+
+    fn with(key: &str, value: usize) -> GridPage {
+        let mut page = GridPage::new();
+        page.set_option(key, value);
+        page
+    }
+
+    #[test]
+    fn issue298_a_keyed_source_keeps_the_row_id_as_the_row_key() {
+        let page = with("datagrid.source", 1);
+        assert_eq!(page.grid.row_key(0), Some(ItemKey::num(1001)));
+        assert_eq!(page.grid.row_key(2), Some(ItemKey::num(1003)));
+        assert_eq!(page.grid.source_index(ItemKey::num(1003)), Some(2));
+        assert_eq!(page.grid.columns().len(), 9);
+        let local = GridPage::new();
+        assert_ne!(
+            local.grid.row_key(0),
+            Some(ItemKey::num(1001)),
+            "the default source still hands out local keys"
+        );
+    }
+
+    #[test]
+    fn issue298_a_model_source_swaps_the_columns_with_the_rows() {
+        for (value, keyed) in [(2, false), (3, true)] {
+            let page = with("datagrid.source", value);
+            assert_eq!(page.grid.columns().len(), 12, "the wide column set");
+            assert_eq!(page.grid.len(), PAGE);
+            assert_eq!(
+                page.grid.row_key(0) == Some(ItemKey::num(1001)),
+                keyed,
+                "only the keyed model keeps the ids"
+            );
+        }
+    }
+
+    #[test]
+    fn issue298_a_bad_key_list_refuses_the_whole_batch() {
+        let text = page_text(&mut with("datagrid.source", 4), 120, 40);
+        assert!(text.contains("Rows rejected before display"), "{text}");
+        assert!(text.contains("appears more than once"), "{text}");
+        assert!(!text.contains("Northwind"), "{text}");
+        let text = page_text(&mut with("datagrid.source", 5), 120, 40);
+        assert!(text.contains("expected 40 row keys, got 39"), "{text}");
+        assert_eq!(with("datagrid.source", 5).grid.len(), 0);
+    }
+
+    #[test]
+    fn issue298_a_keyed_reload_replaces_the_rows_under_the_same_keys() {
+        let mut rig = Rig::new();
+        rig.page.set_option("datagrid.source", 1);
+        let before = rig.page.grid.revision();
+        rig.with_cx(|page, cx| page.on_event(Some(GridAction::Refresh), cx));
+        assert_eq!(rig.last_status(), "Reloaded from the source");
+        assert_eq!(rig.page.grid.row_key(0), Some(ItemKey::num(1001)));
+        assert_ne!(rig.page.grid.revision(), before, "a reload is a new source");
+    }
+
+    #[test]
+    fn issue298_host_edits_report_changed_unchanged_and_rejected() {
+        let note = |value| with("datagrid.host", value).note.expect("a note");
+        assert_eq!(note(1), "try_edit_text \"40\" · seats changed");
+        assert_eq!(note(2), "try_edit_text \"lots\" · Must be a number");
+        assert_eq!(note(3), "try_edit_text \"3\" · seats unchanged");
+        assert_eq!(with("datagrid.host", 1).grid.pending().total(), 1);
+        assert!(with("datagrid.host", 2).grid.pending().is_empty());
+        assert!(with("datagrid.host", 3).grid.pending().is_empty());
+        assert!(with("datagrid.host", 0).note.is_none());
+    }
+
+    #[test]
+    fn issue298_update_column_locks_the_customer_and_bumps_the_revision() {
+        let page = with("datagrid.host", 4);
+        assert!(page.grid.columns()[CUSTOMER].read_only);
+        assert_eq!(page.grid.revision().source, 2, "load, then the spec edit");
+        assert_eq!(
+            page.note.as_deref(),
+            Some("update_column · customer is read-only · revision 2.0")
+        );
+    }
+
+    #[test]
+    fn issue298_the_note_clears_on_the_next_key() {
+        let mut rig = Rig::new();
+        rig.page.set_option("datagrid.host", 1);
+        rig.focus.set(Some(rig.page.grid.id));
+        assert!(rig.page.note.is_some());
+        rig.event(PageEvent::Key(Key {
+            code: KeyCode::Down,
+            mods: KeyModifiers::NONE,
+        }));
+        assert!(rig.page.note.is_none());
+    }
+
+    #[test]
+    fn issue298_the_identity_readout_follows_the_cursor_and_the_draft() {
+        let mut page = with("datagrid.identity", 1);
+        page.grid.record_cell(1, SEATS, CellValue::Int(9)).unwrap();
+        page.grid.toggle_delete(2).unwrap();
+        page.grid.insert_row().unwrap();
+        page.grid.cursor = (1, 0);
+        let text = page_text(&mut page, 120, 48);
+        assert!(text.contains("Num(1) · row 2 · stored"), "{text}");
+        assert!(text.contains("1 cells · 1 inserted · 1 deleted"), "{text}");
+        assert!(text.contains("source 1 · draft 3"), "{text}");
+        let plain = page_text(&mut GridPage::new(), 120, 48);
+        assert!(!plain.contains("Row key"), "off by default");
     }
 
     const MRR: usize = 4;

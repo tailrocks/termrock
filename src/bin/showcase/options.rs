@@ -875,6 +875,24 @@ static DATA_GRID: &[Opt] = &[
         "Malformed input",
         &["off", "short", "long"],
     ),
+    Opt::new(
+        "datagrid.source",
+        "Row source",
+        &[
+            "local",
+            "keyed",
+            "model",
+            "model keyed",
+            "duplicate key",
+            "key count",
+        ],
+    ),
+    Opt::new(
+        "datagrid.host",
+        "Host call",
+        &["off", "edit", "rejected", "unchanged", "lock customer"],
+    ),
+    Opt::new("datagrid.identity", "Identity readout", OFF_ON),
 ];
 
 static COLUMNS: &[Opt] = &[
