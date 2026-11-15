@@ -1,6 +1,4 @@
-mod common;
-
-use common::*;
+use super::common::*;
 use junie_tui::core::focus::FocusRing;
 use junie_tui::core::hit::HitRegistry;
 use junie_tui::core::id::WidgetId;
