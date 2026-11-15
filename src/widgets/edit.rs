@@ -406,14 +406,16 @@ impl EditField {
     }
 
     pub fn validate(&mut self) -> bool {
-        self.error = match &self.validator {
-            Some(v) => v.validate(self.buffer.text()).err(),
-            None => self
-                .required
+        let required_error = self
+            .required
+            .as_ref()
+            .filter(|_| self.buffer.is_empty())
+            .map(|m| FieldError::new(m.clone()));
+        self.error = required_error.or_else(|| {
+            self.validator
                 .as_ref()
-                .filter(|_| self.buffer.is_empty())
-                .map(|m| FieldError::new(m.clone())),
-        };
+                .and_then(|v| v.validate(self.buffer.text()).err())
+        });
         self.error.is_none()
     }
 
@@ -699,5 +701,74 @@ impl<T: Editable> PointerField for T {
         self.field().click(offset, count.max(1), whole);
         self.pointer_after();
         Outcome::Changed
+    }
+}
+
+#[cfg(test)]
+mod issue35_tests {
+    use std::cell::Cell;
+
+    use super::*;
+
+    const REQUIRED: &str = "Name is required";
+
+    fn counting(calls: &Rc<Cell<usize>>, reject: bool) -> Validator {
+        let calls = calls.clone();
+        Validator::check(move |_| {
+            calls.set(calls.get() + 1);
+            reject.then(|| "custom rule".to_owned())
+        })
+    }
+
+    #[test]
+    fn issue35_required_precedes_custom() {
+        for reject in [false, true] {
+            let calls = Rc::new(Cell::new(0));
+            let mut field = EditField::single("");
+            field.required = Some(REQUIRED.to_owned());
+            field.validator = Some(counting(&calls, reject));
+
+            assert!(!field.validate());
+            assert_eq!(field.error_message(), Some(REQUIRED));
+            assert_eq!(
+                calls.get(),
+                0,
+                "custom rule must not run on empty required text"
+            );
+        }
+    }
+
+    #[test]
+    fn issue35_optional_and_nonempty_call_custom_once() {
+        for (text, required) in [("", false), ("   ", true), ("ada", true), ("ada", false)] {
+            let calls = Rc::new(Cell::new(0));
+            let mut field = EditField::single(text);
+            field.required = required.then(|| REQUIRED.to_owned());
+            field.validator = Some(counting(&calls, true));
+
+            assert!(!field.validate());
+            assert_eq!(field.error_message(), Some("custom rule"), "text {text:?}");
+            assert_eq!(calls.get(), 1, "text {text:?} required {required}");
+        }
+    }
+
+    #[test]
+    fn issue35_valid_value_clears_previous_error() {
+        let calls = Rc::new(Cell::new(0));
+        let mut field = EditField::single("ada");
+        field.required = Some(REQUIRED.to_owned());
+        field.validator = Some(counting(&calls, false));
+        field.error = Some(FieldError::new("stale"));
+
+        assert!(field.validate());
+        assert!(field.error.is_none());
+        assert_eq!(calls.get(), 1);
+    }
+
+    #[test]
+    fn issue35_required_only_checks_empty_buffer() {
+        let mut field = EditField::single("   ");
+        field.required = Some(REQUIRED.to_owned());
+        assert!(field.validate(), "whitespace stays nonempty for required");
     }
 }
