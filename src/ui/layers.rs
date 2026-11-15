@@ -2,7 +2,7 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Position, Rect};
 
 use crate::core::event::{Key, Outcome};
-use crate::core::focus::FocusChange;
+use crate::core::focus::{Focus, FocusChange};
 use crate::core::hints::{HasHints, HintCx};
 use crate::core::hit::Axis;
 use crate::core::id::WidgetId;
@@ -265,8 +265,11 @@ impl<R: From<LayerResult> + 'static, W: ?Sized + 'static> Layer<R, W> for FormDi
     fn on_wheel(&mut self, delta: i32, _: Position) -> Outcome {
         Scrollable::wheel(self, Axis::Vertical, delta).outcome()
     }
-    fn on_paste(&mut self, text: &str) -> Outcome {
-        FormDialog::on_paste(self, text)
+    fn on_paste(&mut self, _: &str) -> Outcome {
+        Outcome::Consumed
+    }
+    fn on_paste_focused(&mut self, text: &str, focus: &Focus) -> Outcome {
+        FormDialog::on_paste(self, text, focus)
     }
     fn on_blur(&mut self, change: FocusChange) -> Outcome {
         FormDialog::on_blur(self, change)

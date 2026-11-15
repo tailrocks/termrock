@@ -294,6 +294,11 @@ impl DialogKindsPage {
             LayerResult::Form(FormAction::Changed(field)) => {
                 self.log.push(format!("Form · Changed({field:?})"));
                 cx.with_top::<FormDialog>(move |f| {
+                    if field == "driver" {
+                        let remote = f.choice("driver") != 2;
+                        f.set_visible("host", remote);
+                        f.set_visible("password", remote);
+                    }
                     if field == "tunnel" {
                         let on = matches!(
                             f.field("tunnel").map(|x| x.value()),

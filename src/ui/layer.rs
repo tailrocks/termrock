@@ -215,6 +215,10 @@ pub trait Layer<R, W: ?Sized = ()>: Any {
         Outcome::Ignored
     }
 
+    fn on_paste_focused(&mut self, text: &str, _focus: &Focus) -> Outcome {
+        self.on_paste(text)
+    }
+
     fn on_blur(&mut self, _change: FocusChange) -> Outcome {
         Outcome::Ignored
     }
