@@ -99,66 +99,55 @@ impl MasterDetail {
         self.panes_width(master, detail).max(self.collapse_below)
     }
 
+    /// Desired extent for the given pane widths. When no representable width
+    /// can hold the configured share minima, this saturates at `u16::MAX`.
     pub fn panes_width(&self, master: u16, detail: u16) -> u16 {
-        match self.size {
-            DetailSize::Resizable => self.split.natural_extent(master, detail, self.gap),
-            DetailSize::Share { pct, min, max } => {
-                let detail = detail.min(max.max(min));
-                let fits = |w: u16| {
-                    let dw = ((w as u32 * pct as u32 / 100) as u16).clamp(min, max.max(min));
-                    dw >= detail && w.saturating_sub(dw + self.gap) >= master
-                };
-                let mut w = master.saturating_add(detail).saturating_add(self.gap);
-                while w < u16::MAX && !fits(w) {
-                    w += 1;
-                }
-                w
+        let (pct, min, max, detail_share) = match self.size {
+            DetailSize::Resizable => {
+                return self.split.natural_extent(master, detail, self.gap);
             }
-            DetailSize::MasterShare { pct, min, max } => {
-                let master = master.min(max.max(min));
-                let fits = |w: u16| {
-                    let mw = (((w as u32 * pct as u32 + 50) / 100) as u16).clamp(min, max.max(min));
-                    mw >= master && w.saturating_sub(mw + self.gap) >= detail
-                };
-                let mut w = master.saturating_add(detail).saturating_add(self.gap);
-                while w < u16::MAX && !fits(w) {
-                    w += 1;
-                }
-                w
-            }
+            DetailSize::Share { pct, min, max } => (pct, min, max, true),
+            DetailSize::MasterShare { pct, min, max } => (pct, min, max, false),
+        };
+        let (master, detail) = if detail_share {
+            (master, detail.min(max.max(min)))
+        } else {
+            (master.min(max.max(min)), detail)
+        };
+        let fits = |w: u16| {
+            share_widths(w, self.gap, pct, min, max, detail_share)
+                .is_some_and(|(m, _, d)| m >= master && d >= detail)
+        };
+        let mut w = master.saturating_add(detail).saturating_add(self.gap);
+        while w < u16::MAX && !fits(w) {
+            w += 1;
         }
+        w
     }
 
+    /// Splits `area` into master and detail rectangles inside it.
+    ///
+    /// Returns `None` when the area is narrower than `collapse_below`, or when
+    /// a `Share`/`MasterShare` size cannot fit: the area is empty or the
+    /// configured minimum exceeds the width left after the gap. Callers then use
+    /// the collapsed layout, as [`MasterDetail::layout`] does.
     pub fn split_rects(&self, area: Rect) -> Option<(Rect, Rect)> {
         if area.width < self.collapse_below {
             return None;
         }
-        Some(match self.size {
-            DetailSize::Share { pct, min, max } => {
-                let dw = (area.width as u32 * pct as u32 / 100) as u16;
-                let dw = dw.clamp(min, max.max(min));
-                let master = Rect::new(
-                    area.x,
-                    area.y,
-                    area.width.saturating_sub(dw + self.gap),
-                    area.height,
-                );
-                (
-                    master,
-                    Rect::new(master.right() + self.gap, area.y, dw, area.height),
-                )
-            }
-            DetailSize::MasterShare { pct, min, max } => {
-                let mw = ((area.width as u32 * pct as u32 + 50) / 100) as u16;
-                let mw = mw.clamp(min, max.max(min)).min(area.width);
-                let dx = (mw + self.gap).min(area.width);
-                (
-                    Rect::new(area.x, area.y, mw, area.height),
-                    Rect::new(area.x + dx, area.y, area.width - dx, area.height),
-                )
-            }
-            DetailSize::Resizable => self.split.horizontal(area, self.gap),
-        })
+        let (pct, min, max, detail_share) = match self.size {
+            DetailSize::Resizable => return Some(self.split.horizontal(area, self.gap)),
+            DetailSize::Share { pct, min, max } => (pct, min, max, true),
+            DetailSize::MasterShare { pct, min, max } => (pct, min, max, false),
+        };
+        if area.is_empty() {
+            return None;
+        }
+        let (mw, gap, dw) = share_widths(area.width, self.gap, pct, min, max, detail_share)?;
+        Some((
+            Rect::new(area.x, area.y, mw, area.height),
+            Rect::new(area.x + mw + gap, area.y, dw, area.height),
+        ))
     }
 
     pub fn collapsed_mode(&self, focus: &crate::ui::ctx::Interaction) -> Mode {
@@ -372,6 +361,35 @@ impl MasterDetail {
         }
         v
     }
+}
+
+/// Master, gap and detail widths for a share layout in `width` columns, or
+/// `None` when the minimum pane cannot fit beside the gap. The three widths sum
+/// to `width`. `pct` is capped at 100 and `max` is raised to `min`; `Share`
+/// floors its preferred width and `MasterShare` rounds it.
+fn share_widths(
+    width: u16,
+    gap: u16,
+    pct: u16,
+    min: u16,
+    max: u16,
+    detail_share: bool,
+) -> Option<(u16, u16, u16)> {
+    let gap = gap.min(width);
+    let usable = width - gap;
+    if min > usable {
+        return None;
+    }
+    let round = if detail_share { 0 } else { 50 };
+    let preferred = (u32::from(width) * u32::from(pct.min(100)) + round) / 100;
+    let pane = preferred.clamp(u32::from(min), u32::from(max.max(min))) as u16;
+    let pane = pane.min(usable);
+    let rest = usable - pane;
+    Some(if detail_share {
+        (rest, gap, pane)
+    } else {
+        (pane, gap, rest)
+    })
 }
 
 impl crate::ui::specimen::Specimen for MasterDetail {
