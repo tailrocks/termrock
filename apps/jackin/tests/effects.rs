@@ -1904,7 +1904,11 @@ const EDIT_AND_SAVE: &str = "enter tab tab tab tab tab p i n enter ctrl+s";
 fn save_in_the_editor(app: &mut App) {
     press(app, EDIT_AND_SAVE);
     settle(app);
-    // Arrow keys step only over buttons the last frame placed.
+    // A button joins the focus ring only when a frame places it, and an arrow key
+    // steps over ring members. Without this draw the ring is empty and the key
+    // moves nothing, so Enter would pick the default button.
+    // The runtime draws after every input that changes the screen, so a real session
+    // never sends the arrow before the frame; the test has to supply it.
     screen(app);
     press(app, "right enter");
     settle(app);

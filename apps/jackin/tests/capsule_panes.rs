@@ -708,3 +708,51 @@ fn a_new_pane_leaves_the_session_list_to_the_backend() {
         "the Capsule wrote no session record into the world"
     );
 }
+
+/// Draws the rig's screen on a terminal of the given size.
+fn draw_at(rig: &mut Rig, cols: u16, rows: u16) {
+    use junie_tui::runtime::Application;
+    use ratatui::Terminal;
+    use ratatui::backend::TestBackend;
+    let mut terminal = Terminal::new(TestBackend::new(cols, rows)).expect("test terminal");
+    terminal
+        .draw(|f| Application::render(&mut rig.app, f))
+        .expect("draw");
+}
+
+#[test]
+fn a_split_of_a_pane_a_shrunk_terminal_left_three_rows_high_is_refused() {
+    use junie_tui::core::event::Input;
+    use junie_tui::runtime::Application;
+
+    let mut rig = Rig::new();
+    rig.attach();
+    for _ in 0..2 {
+        rig.press("ctrl+b \"");
+        rig.typed("Shell");
+        rig.press("enter");
+        rig.advance(80);
+        let n = rig.bench.opened() - 1;
+        rig.bench.push(n, LinkEvent::Attached);
+        rig.bench.push(n, LinkEvent::Lease(Lease::Owner));
+        rig.advance(900);
+    }
+    assert_eq!(rig.daemon().panes.len(), 3);
+    draw_at(&mut rig, 72, 20);
+    for spec in ["ctrl+b", "\""] {
+        Application::handle(&mut rig.app, Input::Key(key(spec)));
+        draw_at(&mut rig, 72, 20);
+    }
+    for c in "Shell".chars() {
+        Application::handle(&mut rig.app, Input::Key(key(&c.to_string())));
+        draw_at(&mut rig, 72, 20);
+    }
+    Application::handle(&mut rig.app, Input::Key(key("enter")));
+    draw_at(&mut rig, 72, 20);
+    assert_eq!(
+        rig.daemon().panes.len(),
+        3,
+        "no room to split a pane three rows high"
+    );
+    assert!(rig.status().starts_with("Cannot split"), "{}", rig.status());
+}

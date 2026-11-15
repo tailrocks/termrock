@@ -22,6 +22,35 @@ use ratatui::layout::{Position, Rect};
 use crate::domain::context::Scope;
 use crate::sim::world::{Msg, World};
 
+/// A detail or preview pane that describes one item. Every move of the
+/// selection goes through `track_detail`, the single rule for the pane's
+/// scroll: it rewinds only when the described item changes, so re-selecting
+/// the current item (or a reorder that keeps it) keeps the reader's place.
+pub trait DetailRewind: Sized {
+    type Item: PartialEq;
+
+    /// The item the pane currently describes.
+    fn described_item(&self) -> Self::Item;
+
+    fn detail_scroll_mut(&mut self) -> &mut ScrollState;
+
+    fn track_detail<R>(&mut self, mv: impl FnOnce(&mut Self) -> R) -> R {
+        let before = self.described_item();
+        let out = mv(self);
+        self.rewind_if_changed(&before);
+        out
+    }
+
+    /// Rewinds the pane when it no longer describes `before`. A rebuild that
+    /// replaces the rows moves the cursor without a user move, so it calls
+    /// this directly with the item captured before the rebuild.
+    fn rewind_if_changed(&mut self, before: &Self::Item) {
+        if self.described_item() != *before {
+            self.detail_scroll_mut().jump_start();
+        }
+    }
+}
+
 pub type Layers = ShellLayers<ModalResult, (), usize>;
 
 pub type LayerSlot = LayerEntry<ModalResult, (), usize>;

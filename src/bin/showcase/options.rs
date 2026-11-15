@@ -379,6 +379,13 @@ pub static FINDER: &[Opt] = &[
     Opt::new("finder.paste", "Paste newlines", &["strip", "join"]),
     Opt::new("finder.select_first", "First on new query", OFF_ON).default(1),
     Opt::new("finder.nav_loading", "Move while loading", OFF_ON),
+    Opt::new("finder.painter", "Painter", &["standard", "hosted"]),
+    Opt::new("finder.keys", "Result keys", &["arrows", "emacs"]),
+    Opt::new(
+        "finder.preview_scroll",
+        "Preview scroll",
+        &["kept", "reset on query", "reset on result"],
+    ),
 ];
 
 pub static PANELS: &[Opt] = &[

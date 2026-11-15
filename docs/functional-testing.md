@@ -182,6 +182,8 @@ with `launch.clock` set opts in. Do not assume every application
 implements that clock. Never send clock input as a substitute for a domain
 interaction.
 
+`JUNIE_TUI_TEST_FENCE=1` is the opt-in that makes an app answer the shell fence (a BEL queued behind the frame of every earlier input) without freezing the status clock as `JUNIE_TUI_TEST_CLOCK` does; `App::resize` and `App::fence` wait on it for Showcase, TablePro, Holla and Jackin.
+
 Every read of the screen by the helper (`screen`, the `wait_*` predicates,
 `settle`, `stable_screen`) begins with a fence: the helper pastes
 `junie-tui:fence`, and under the same opt-in the shell answers it with a BEL
@@ -337,7 +339,7 @@ wait for:
   until `reached` accepts the screen. After each press it waits for
   `watch(screen)` to change, so a slow application is waited for, not
   pressed again. A press that moves nothing fails with the screen.
-- `App::wait_point` and `App::wait_button` locate a target on the screen once
+- `App::wait_point` and `support::button` locate a target on the screen once
   it is painted, in place of a one-shot `screen()` lookup.
 - `App::wait_exit` waits for the child to quit.
 

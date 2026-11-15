@@ -1,7 +1,9 @@
 use tui_test::terminal::cell::Attrs;
 use tui_test::{SnapshotColor, TerminalSnapshot};
 
-use super::support::{App, Point, SHOWCASE, cell_bg, crop, find, find_all, row_text, text};
+use super::support::{
+    App, Point, SHOWCASE, cell_bg, crop, find, find_all, flash_settle, row_text, text,
+};
 
 fn inside(point: Point) -> Point {
     Point {
@@ -697,18 +699,14 @@ fn showcase_tree_expand_and_file_selection() {
         gutter_text(s).as_deref() == Some("▎")
     });
 
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(20);
-    loop {
-        if app.try_sustained(std::time::Duration::from_millis(600), |s| settled(s)) {
-            break;
-        }
-        assert!(
-            std::time::Instant::now() < deadline,
-            "tree row must settle without hover"
-        );
-        app.move_to(Point { x: 0, y: 0 });
-        std::thread::sleep(std::time::Duration::from_millis(100));
-    }
+    // The click on `src` armed the 140 ms press flash. Under `--motion paused` no tick
+    // expires it and a moved mouse that changes no hover paints no frame, so a flash that was
+    // still live at the last paint stays on screen. Let it lapse, then redraw once.
+    flash_settle(&app);
+    assert!(
+        app.try_sustained(std::time::Duration::from_millis(600), settled),
+        "tree row must settle without hover"
+    );
     app.visual("functional/showcase_trees");
     app.finish();
 }

@@ -223,8 +223,14 @@ fn settle_spinner(
 ) -> TerminalSnapshot {
     for _ in 0..SPINNER_FRAMES {
         app.resize(cols + 1, rows);
+        // The emulator grid changes the moment the resize is sent, and it keeps
+        // the old cells, so the size alone says nothing about the app. The chrome
+        // names the size it laid out: waiting for the bumped label waits for a
+        // frame the app drew after the clock step above was applied.
         app.wait_screen("spinner bump", move |screen| {
-            screen.cols() == u32::from(cols + 1) && screen.rows() == u32::from(rows)
+            screen.cols() == u32::from(cols + 1)
+                && screen.rows() == u32::from(rows)
+                && labelled_size(screen, cols + 1, rows)
         });
         app.resize(cols, rows);
         let screen = app.wait_screen("spinner sample", |screen| {
@@ -279,18 +285,31 @@ fn open_catalog(app: &App, label: &str) {
     app.key("enter");
 }
 
-fn focus_named(app: &App, name: &str) {
+/// The cursor row: the line carrying the focus bar.
+fn cursor_line(screen: &TerminalSnapshot) -> Option<String> {
+    text(screen)
+        .lines()
+        .find(|line| line.contains('▎'))
+        .map(str::to_string)
+}
+
+/// Each key is followed by a wait on the cursor row, not on any change of the
+/// page. A frame that is still in flight from the previous key also changes the
+/// page, so a page-wide wait can return before this key has been applied and the
+/// loop then counts a step the cursor has not taken. `top` names the first row,
+/// where Home must land before the first step is counted.
+fn focus_named(app: &App, top: &str, name: &str) {
     app.key("home");
+    app.wait_screen("cursor at the top row", |screen| named(screen, top));
     for _ in 0..120 {
         if named(&app.screen(), name) {
             return;
         }
-        let before = screen_text(app);
+        let before = cursor_line(&app.screen());
         app.key("down");
         let wanted = name.to_string();
-        let previous = before;
         app.wait_screen("cursor", move |screen| {
-            named(screen, &wanted) || text(screen) != previous
+            named(screen, &wanted) || cursor_line(screen) != before
         });
     }
     assert!(
@@ -445,7 +464,7 @@ fn h05_scan_scan_cancels_completes_and_changes_root() {
         &[PARTIAL, "hint only", CLEANUP_METER, BACKUP, QUIT],
     );
 
-    focus_named(&app, "media");
+    focus_named(&app, "data", "media");
     let media = app.screen();
     assert!(
         named(&media, "media") && !text(&media).contains("hint only"),
@@ -455,7 +474,7 @@ fn h05_scan_scan_cancels_completes_and_changes_root() {
     expand_for(&app, "a.mov");
     until_visible(&app, "a-copy.mov");
     until_visible(&app, "link");
-    focus_named(&app, "link");
+    focus_named(&app, "data", "link");
     let link = app.wait_screen("symlink detail", |screen| {
         named(screen, "link") && has_phrase(screen, LINK_DETAIL)
     });
@@ -465,10 +484,10 @@ fn h05_scan_scan_cancels_completes_and_changes_root() {
         text(&link)
     );
 
-    focus_named(&app, ".hidden");
+    focus_named(&app, "data", ".hidden");
     expand_for(&app, "h.bin");
 
-    focus_named(&app, "locked");
+    focus_named(&app, "data", "locked");
     let locked = app.wait_screen("locked detail", |screen| {
         named(screen, "locked") && text(screen).contains("permission denied")
     });
@@ -478,7 +497,7 @@ fn h05_scan_scan_cancels_completes_and_changes_root() {
         text(&locked)
     );
 
-    focus_named(&app, "cloud");
+    focus_named(&app, "data", "cloud");
     let cloud = app.wait_screen("cloud detail", |screen| {
         named(screen, "cloud") && text(screen).contains("dataless") && has_phrase(screen, EVICTED)
     });
@@ -490,10 +509,10 @@ fn h05_scan_scan_cancels_completes_and_changes_root() {
         text(&cloud)
     );
 
-    focus_named(&app, "skip-me");
+    focus_named(&app, "data", "skip-me");
     expand_for(&app, "s.bin");
 
-    focus_named(&app, "many");
+    focus_named(&app, "data", "many");
     expand_for(&app, "f059.bin");
     until_visible(&app, "f000.bin");
     assert!(
@@ -514,7 +533,7 @@ fn h05_scan_scan_cancels_completes_and_changes_root() {
         &[COMPLETE, "sparse.img", "stale", QUIT],
     );
 
-    focus_named(&app, DOCUMENTS);
+    focus_named(&app, "~/Desktop", DOCUMENTS);
     app.key("enter");
     let documents = app.wait_screen("documents scan", |screen| {
         let visible = text(screen);

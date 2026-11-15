@@ -810,14 +810,14 @@ impl CapsuleScreen {
                 SplitDir::Horizontal => (
                     MIN_PANE_COLS,
                     MIN_PANE_ROWS,
-                    inner.width / 2 - 2,
+                    (inner.width / 2).saturating_sub(2),
                     inner.height.saturating_sub(2),
                 ),
                 SplitDir::Vertical => (
                     MIN_PANE_COLS,
                     MIN_PANE_ROWS,
                     inner.width.saturating_sub(2),
-                    inner.height / 2 - 2,
+                    (inner.height / 2).saturating_sub(2),
                 ),
             };
             if have_c < need_c {
@@ -1675,6 +1675,10 @@ impl CapsuleScreen {
         let rects = self.pane_rects.clone();
         let dialog = self.mode() == Mode::Dialog;
         for (pid, r) in &rects {
+            let r = &r.intersection(body);
+            if r.is_empty() {
+                continue;
+            }
             let Some(pane) = d.pane(*pid) else { continue };
             let focused = tab.focused == *pid;
             let inner = if framed {

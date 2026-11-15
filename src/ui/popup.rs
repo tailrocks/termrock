@@ -292,7 +292,10 @@ fn side(
     overflow: Overflow,
 ) -> (u16, u16) {
     let (lo, hi) = bounds;
-    let past = anchor.1.clamp(lo, hi);
+    // An anchor a resize left outside the bounds acts as if it sat on the
+    // nearest edge, so the room before it never exceeds the bounds.
+    let anchor = (anchor.0.clamp(lo, hi), anchor.1.clamp(lo, hi));
+    let past = anchor.1;
     let room_after = hi.saturating_sub(past);
     let room_before = anchor.0.saturating_sub(lo).min(hi - lo);
     let at_after = |n: u16| (past, n);

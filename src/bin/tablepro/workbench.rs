@@ -1900,12 +1900,23 @@ impl Workbench {
         out
     }
 
-    pub fn on_paste(&mut self, text: &str) -> Outcome {
+    pub fn on_paste(&mut self, text: &str, cx: &mut Cx) -> Outcome {
         if self.explorer_filter.editing {
             return self.explorer_filter.on_paste(text);
         }
         self.edit_active_pointer(|tab, _| match tab {
-            WorkTab::Table(t) => t.grid.on_paste(text),
+            WorkTab::Table(t) => match t.grid.on_paste(text) {
+                Outcome::Ignored if cx.focus.is(t.grid.id) => {
+                    let (out, actions) = t.grid.paste_into_cell(text).into_parts();
+                    for ev in actions {
+                        if let junie_tui::widgets::grid::GridAction::ReadOnly { reason } = ev {
+                            cx.status(reason);
+                        }
+                    }
+                    out
+                }
+                out => out,
+            },
             WorkTab::Query(q) => q.on_paste(text),
             WorkTab::History(h) => h.search.on_paste(text),
         })
