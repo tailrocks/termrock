@@ -4,6 +4,7 @@
 //! here. Never add a new top-level `tests/*.rs`: each target changes the
 //! generated CI workflows (see `docs/ci.md`).
 
+mod button_row_focus;
 mod chip_add_hotkey;
 mod collection_edit_lifecycle;
 mod collection_menu_lifecycle;
