@@ -648,9 +648,9 @@ impl TableTab {
         };
         self.structure = DataTable::new(self.id.sub("structure"), cols, rows).empty_text(empty);
 
-        let mut ddl = vec![format!("CREATE TABLE {} (", table.qualified())];
+        let mut ddl = vec![format!("CREATE TABLE {} (", model::table_ident(table))];
         for (i, c) in table.columns.iter().enumerate() {
-            let mut line = format!("    {} {}", c.name, c.ty.sql());
+            let mut line = format!("    {} {}", model::quote_ident(&c.name), c.ty.sql());
             if !c.nullable {
                 line.push_str(" NOT NULL");
             }
@@ -663,7 +663,12 @@ impl TableTab {
             ddl.push(line);
         }
         for (i, k) in table.constraints.iter().enumerate() {
-            let mut line = format!("    CONSTRAINT {} {} {}", k.name, k.kind, k.definition);
+            let mut line = format!(
+                "    CONSTRAINT {} {} {}",
+                model::quote_ident(&k.name),
+                k.kind,
+                k.definition
+            );
             if i + 1 < table.constraints.len() {
                 line.push(',');
             }
@@ -675,18 +680,19 @@ impl TableTab {
             .iter()
             .filter(|i| !i.name.ends_with("_pkey") && !i.name.ends_with("_key"))
         {
+            let columns: Vec<String> = ix.columns.iter().map(|c| model::quote_ident(c)).collect();
             ddl.push(format!(
                 "CREATE INDEX {} ON {} USING {} ({});",
-                ix.name,
-                table.qualified(),
+                model::quote_ident(&ix.name),
+                model::table_ident(table),
                 ix.method,
-                ix.columns.join(", ")
+                columns.join(", ")
             ));
         }
         if let Some(c) = &table.comment {
             ddl.push(format!(
                 "COMMENT ON TABLE {} IS '{}';",
-                table.qualified(),
+                model::table_ident(table),
                 c
             ));
         }
@@ -2729,5 +2735,91 @@ mod issue9_tests {
             assert_eq!(&sql[range.clone()], text.as_str());
         }
         assert!(!highlight_sql(sql).is_empty());
+    }
+}
+
+#[cfg(test)]
+mod issue194_tests {
+    use super::*;
+    use crate::db::{ColType, Column, Constraint, Index, ObjectKind};
+
+    #[test]
+    fn issue194_ddl_quotes_identifiers() {
+        let table = Table {
+            schema: "public".into(),
+            name: "UserOrders".into(),
+            kind: ObjectKind::Table,
+            columns: vec![
+                Column {
+                    name: "order".into(),
+                    ty: ColType::Int,
+                    nullable: false,
+                    default: None,
+                    primary: true,
+                    references: None,
+                    enum_values: vec![],
+                    generated: false,
+                },
+                Column {
+                    name: "UserId".into(),
+                    ty: ColType::Text,
+                    nullable: true,
+                    default: None,
+                    primary: false,
+                    references: None,
+                    enum_values: vec![],
+                    generated: false,
+                },
+                Column {
+                    name: "we\"ird".into(),
+                    ty: ColType::Text,
+                    nullable: true,
+                    default: None,
+                    primary: false,
+                    references: None,
+                    enum_values: vec![],
+                    generated: false,
+                },
+            ],
+            indexes: vec![Index {
+                name: "Idx\"Order".into(),
+                columns: vec!["order".into(), "UserId".into()],
+                unique: false,
+                method: "btree",
+            }],
+            constraints: vec![Constraint {
+                name: "order_check".into(),
+                kind: "CHECK",
+                definition: "CHECK (\"order\" > 0)".into(),
+            }],
+            triggers: vec![],
+            row_count: 0,
+            comment: Some("note".into()),
+        };
+        let cat = Catalog {
+            database: "db".into(),
+            schemas: vec!["public".into()],
+            tables: vec![table.clone()],
+        };
+        let tab = TableTab::new(WidgetId::of("issue194"), &cat, &table, false);
+        let ddl = &tab.ddl.lines;
+
+        assert_eq!(ddl[0], "CREATE TABLE \"public\".\"UserOrders\" (");
+        assert_eq!(ddl[1], "    \"order\" integer NOT NULL,");
+        assert_eq!(ddl[2], "    \"UserId\" text,");
+        assert_eq!(ddl[3], "    \"we\"\"ird\" text,");
+        assert_eq!(
+            ddl[4],
+            "    CONSTRAINT \"order_check\" CHECK CHECK (\"order\" > 0)"
+        );
+        assert_eq!(ddl[5], ");");
+        assert_eq!(
+            ddl[6],
+            "CREATE INDEX \"Idx\"\"Order\" ON \"public\".\"UserOrders\" USING btree (\"order\", \"UserId\");"
+        );
+        assert_eq!(
+            ddl[7],
+            "COMMENT ON TABLE \"public\".\"UserOrders\" IS 'note';"
+        );
     }
 }

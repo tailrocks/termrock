@@ -62,7 +62,7 @@ pub fn quote_ident(name: &str) -> String {
     format!("\"{}\"", name.replace('"', "\"\""))
 }
 
-fn table_ident(table: &Table) -> String {
+pub fn table_ident(table: &Table) -> String {
     format!(
         "{}.{}",
         quote_ident(&table.schema),
