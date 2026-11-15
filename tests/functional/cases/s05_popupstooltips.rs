@@ -1012,9 +1012,9 @@ fn option_reveal_key_r_uses_r_and_ignores_right() {
         &["r Full text", "README.md", "popup.rs"],
         &["→ Full text", "← Collapse"],
     );
-    // Paused motion never redraws when the 140 ms click flash expires, so a
-    // key inside the window would repaint the pressed colour for good.
-    std::thread::sleep(Duration::from_millis(200));
+    // The ignored key repaints nothing. Let the flash expire first so its
+    // order against the tick cannot change the settled frame.
+    app.stable_screen();
     app.key("right");
     let stayed = app.settle();
     see(&stayed, &["r Full text", "README.md"], &["← Collapse"]);
