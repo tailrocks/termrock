@@ -906,6 +906,7 @@ impl FinderPage {
                     buf.set_string(row.x, y, cr.gutter, cr.gutter_style);
                     let mut x = row.x + 3;
 
+                    ctx.clickable(rid, row);
                     let widths: Vec<u16> = cells
                         .iter()
                         .map(|idx| width(&self.items[*idx].label) as u16 + 2)
@@ -934,7 +935,6 @@ impl FinderPage {
                     if let Some(m) = more.filter(|_| self.explore_overflow_marker) {
                         buf.set_string(x, y, &m, st.fg(t.text_muted));
                     }
-                    ctx.clickable(rid, row);
                 }
                 Row::Item(idx, rk) => {
                     let it = &self.items[*idx];
