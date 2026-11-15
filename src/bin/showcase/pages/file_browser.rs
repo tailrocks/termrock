@@ -31,6 +31,7 @@ fn fixture() -> MemorySource {
     let d = |p: &str, meta: &str| FileEntry::dir(&format!("{HOME}{p}")).meta(meta);
     let f = |p: &str, meta: &str| FileEntry::file(&format!("{HOME}{p}")).meta(meta);
     MemorySource::new(vec![
+        FileEntry::dir("/Users").meta("1 item"),
         FileEntry::dir(HOME),
         d("/src", "4 items"),
         d("/design", "2 items"),

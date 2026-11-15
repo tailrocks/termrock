@@ -40,3 +40,23 @@ fn a_boxed_source_answers_with_the_overrides_of_the_source_inside() {
     assert_eq!(boxed.expand("@/p"), "/sandbox/p");
     assert_eq!(boxed.list("/"), Ok(Vec::new()));
 }
+
+struct Slashes;
+
+impl FileSource for Slashes {
+    fn list(&self, _dir: &str) -> Result<Vec<FileEntry>, String> {
+        Ok(Vec::new())
+    }
+
+    fn is_dir(&self, _path: &str) -> bool {
+        true
+    }
+}
+
+#[test]
+fn a_boxed_default_source_still_climbs_from_a_first_level_directory_to_root() {
+    let boxed: Box<dyn FileSource> = Box::new(Slashes);
+
+    assert_eq!(boxed.parent("/a").as_deref(), Some("/"));
+    assert_eq!(boxed.parent("/").as_deref(), None);
+}
