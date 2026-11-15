@@ -131,6 +131,8 @@ pub struct Picker {
     toggle_keymap_overridden: bool,
     key_profile: PickerKeyProfile,
     key_profile_configured: bool,
+
+    pressed: Option<ItemKey>,
 }
 
 impl HasHints for Picker {
@@ -307,6 +309,7 @@ impl Picker {
             toggle_keymap_overridden: false,
             key_profile,
             key_profile_configured,
+            pressed: None,
         }
     }
 
@@ -371,6 +374,15 @@ impl Picker {
 
     fn visible_at(&self, i: usize) -> Option<&Item> {
         self.visible.get(i).map(|v| &self.items[v.source_index])
+    }
+
+    /// The key of the item a row hit region shows right now. Row hit regions
+    /// are positional, so a press records this to find out at release whether
+    /// the row still shows the same item.
+    fn row_key_at(&self, id: WidgetId) -> Option<ItemKey> {
+        let row = self.list.row_of(id, self.visible.len())?;
+        let source = self.visible[row].source_index;
+        Some(Self::key_of(&self.items[source], source))
     }
 
     fn source_of(&self, key: ItemKey) -> Option<usize> {
@@ -1419,8 +1431,18 @@ impl crate::core::pointer::MouseTarget for Picker {
         {
             return r.lift();
         }
+        if ev.is(Phase::Press) {
+            self.pressed = self.row_key_at(ev.id);
+            return Response::ignored();
+        }
         if !ev.is(Phase::Click) {
             return Response::ignored();
+        }
+        let pressed = self.pressed.take();
+        if ev.part().part != Part::BACKDROP
+            && pressed.is_some_and(|key| self.row_key_at(ev.id) != Some(key))
+        {
+            return Response::consumed();
         }
         let chosen = if ev.part().part == Part::BACKDROP {
             self.on_click_outside()
@@ -2552,6 +2574,75 @@ mod tests {
             Err(super::PickerItemsError::DuplicateKey(ItemKey::text(
                 "same-id"
             )))
+        );
+    }
+
+    #[test]
+    fn a_click_cannot_choose_the_item_that_replaced_the_pressed_row() {
+        use crate::core::pointer::MouseTarget;
+        use crate::widgets::picker::VisibleKey;
+
+        let area = Rect::new(0, 0, 100, 30);
+        let (a, b, c) = (ItemKey::text("a"), ItemKey::text("b"), ItemKey::text("c"));
+        let mut picker = Picker::new(WidgetId::of("picker-press"), "Choose")
+            .searchable(false)
+            .expect("disabling search is valid");
+        picker
+            .set_items(vec![
+                Item::new("A").key(a),
+                Item::new("B").key(b),
+                Item::new("C").key(c),
+            ])
+            .expect("valid items");
+        let theme = Theme::for_level(ColorLevel::TrueColor);
+        let mut ring = FocusRing::default();
+        let mut draw = |picker: &mut Picker| {
+            let mut buffer = Buffer::empty(area);
+            let mut hits = HitRegistry::default();
+            let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+            picker.draw(area, &mut buffer, &mut ctx);
+            ctx.flush_overlays(&mut buffer);
+            hits
+        };
+        let pointer = |picker: &mut Picker, hits: &HitRegistry, phase| {
+            let ev = PointerEvent::new(
+                hits,
+                phase,
+                picker.row_id(1),
+                Position::new(1, 1),
+                1,
+                KeyModifiers::NONE,
+            );
+            MouseTarget::pointer(picker, &ev)
+                .into_parts()
+                .1
+                .into_iter()
+                .next()
+        };
+
+        let hits = draw(&mut picker);
+        assert_eq!(pointer(&mut picker, &hits, Phase::Press), None);
+        picker
+            .set_visible_keys(vec![
+                VisibleKey::new(c),
+                VisibleKey::new(a),
+                VisibleKey::new(b),
+            ])
+            .expect("known keys");
+        let hits = draw(&mut picker);
+        assert_eq!(
+            pointer(&mut picker, &hits, Phase::Click),
+            None,
+            "row 1 now holds another item"
+        );
+
+        let hits = draw(&mut picker);
+        assert_eq!(pointer(&mut picker, &hits, Phase::Press), None);
+        let hits = draw(&mut picker);
+        assert_eq!(
+            pointer(&mut picker, &hits, Phase::Click),
+            Some(PickerAction::Chosen(1)),
+            "a press and release on the same item still choose it"
         );
     }
 
