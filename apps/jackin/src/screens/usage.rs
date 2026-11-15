@@ -16,6 +16,7 @@ use junie_tui::widgets::panel::Panel;
 use junie_tui::widgets::progress::{Meter, MeterVisual, spinner_frame};
 
 use super::accounts::QuotaTone;
+use super::row_meta::ClockStamp;
 use junie_tui::widgets::scrollbar;
 use junie_tui::widgets::viewport::{Span, render_spans};
 use ratatui::buffer::Buffer;
@@ -123,6 +124,7 @@ pub struct UsageScreen {
 
     pub show_detail: bool,
     pub refreshing: bool,
+    clock: ClockStamp,
 }
 
 impl UsageScreen {
@@ -133,12 +135,7 @@ impl UsageScreen {
     fn build_rows(&mut self, w: &World) {
         let mut rows = vec![Row::Overview];
         for s in UsageSurface::ALL {
-            let accounts: Vec<&Account> = w
-                .accounts
-                .sorted()
-                .into_iter()
-                .filter(|a| a.surface == s)
-                .collect();
+            let accounts: Vec<&Account> = w.surface_accounts(s);
             if accounts.is_empty() && s != UsageSurface::Unsupported {
                 continue;
             }
@@ -791,7 +788,9 @@ impl Page<Jackin> for UsageScreen {
             w.last_refresh_secs = w.now_secs();
             return Outcome::Changed;
         }
-        if self.animating(w) {
+        // The panel meta carries the broker age whenever nothing refreshes, an
+        // empty registry included, so a second boundary always has text to move.
+        if self.animating(w) || self.clock.due(w, true, false) {
             Outcome::Changed
         } else {
             Outcome::Ignored
@@ -876,6 +875,7 @@ impl Page<Jackin> for UsageScreen {
 
     fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, w: &World) {
         self.build_rows(w);
+        self.clock.painted(w);
         let t = ctx.theme;
         let n = w
             .accounts
