@@ -2634,7 +2634,11 @@ mod tests {
             .expect("results are hit-registered");
         let pos = Position::new(area.x + 2, area.y + 2);
         let id = rig.hits.hit(pos).expect("a hit region under the click");
-        assert_ne!(id, active(&rig.page).editor.id, "the click is not on the editor");
+        assert_ne!(
+            id,
+            active(&rig.page).editor.id,
+            "the click is not on the editor"
+        );
         let ev = PointerEvent::new(&rig.hits, Phase::Click, id, pos, 1, KeyModifiers::NONE);
         rig.send(PageEvent::Pointer(ev));
 
