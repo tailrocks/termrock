@@ -113,6 +113,13 @@ redraw rule, through a minimal `shell::App` in `tests/common/mod.rs`)
 and `status.rs` (the sticky status line). No test of a `junie-tui` type
 lives in `apps/jackin/tests`. These tests add no visual baseline and are
 not journeys: a user-visible flow still needs a functional journey.
+
+Put a new data or regression test in the package's shared `regressions`
+target: `tests/regressions/<topic>.rs` with a `mod <topic>;` line in
+`tests/regressions/main.rs`, and the same under `apps/jackin/tests/` for
+`jackin-console`. Do not add a new top-level `tests/*.rs`: the generated CI
+lists every test target, so each new one changes the generated workflows
+(see [CI](ci.md#test-targets-and-generated-ci)).
 `cargo nextest run --all-features --all-targets` runs them, and so do the
 `Rust / junie-tui` and `Rust / jackin-console` CI jobs
 (`nextest run --profile ci --package <crate> --all-features`); the `functional` suite
@@ -392,6 +399,17 @@ Velnor generates the workflows; change its configuration and run
 `velnor-actions generate`, never hand-edit generated YAML. The suite sets
 `required = true`, so the aggregate `Required` check needs
 `suite-functional`. `Required` is the check to require in branch protection.
+
+The push filters and the `head_branch` predicates of the follow-up workflows
+(`state-seal`, `cache-prune`) come from `[workflow].default_branch`. That
+value must equal the repository's actual default branch. `tests/ci_default_branch.rs`
+checks it offline: `repository_config_default_branch_is_main` reads
+`.velnor/config.toml`, and fixture tests cover match, mismatch, fork names,
+and invalid shapes. Run it with `cargo nextest run -p junie-tui --test
+ci_default_branch --no-tests fail`. To change the branch, edit the source value, run
+`mise exec -- velnor-actions generate` from the repository root, and confirm a
+second generation leaves no diff. After the change merges, record one real
+push run on that branch in the Actions tab before closing the issue.
 
 On a failure, read the action trace and the last frame first. Classify the
 failure as an incorrect locator/precondition, input-mode/routing failure,

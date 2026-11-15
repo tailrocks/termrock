@@ -559,7 +559,7 @@ impl ViewportOps for TerminalViewport {
         if let Some((_, end)) = self.select.range()
             && let Some(at) = self.screen_pos(CellPos {
                 line: usize::try_from(end.line).unwrap_or(usize::MAX),
-                col: usize::from(end.col),
+                col: usize::from(end.col.min(self.state.size().1.saturating_sub(1))),
             })
         {
             return at;
@@ -606,10 +606,8 @@ impl ViewportOps for TerminalViewport {
         if row >= u64::from(self.state.size().0) || row >= u64::from(self.area.height) {
             return None;
         }
-        let cols = self.state.size().1;
-        let col = u16::try_from(at.col)
-            .unwrap_or(u16::MAX)
-            .min(cols.saturating_sub(1));
+        let cols = self.state.size().1.min(self.grid(self.area).width);
+        let col = u16::try_from(at.col).ok().filter(|&col| col < cols)?;
         Some(Position::new(
             self.area.x + col,
             self.area.y + u16::try_from(row).ok()?,
