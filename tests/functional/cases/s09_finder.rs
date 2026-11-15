@@ -434,7 +434,7 @@ fn route_by_page_keyboard_and_pointer() {
 #[test]
 fn sections_narrow_then_wide() {
     let app = open("s09-sections", 80, 24, PAGE_ARGS);
-    let narrow_play = app.wait_text("→ git pull --ff-only");
+    let narrow_play = app.wait_text("git pull --ff-only");
     assert_size(&app, 80, 24);
     see(
         &narrow_play,
@@ -447,7 +447,7 @@ fn sections_narrow_then_wide() {
             "Pull",
             "Push",
             "Pull with rebase",
-            "→ git pull --ff-only",
+            "Runs git pull --ff-only",
             "mutating",
         ],
         &[
@@ -784,7 +784,7 @@ fn edit_query_scope_run_why_and_empty() {
             "No matches",
         ],
     );
-    click_where(&app, "Push", |hit| hit.y > 10 && hit.x < 70);
+    click_where(&app, "Push", |hit| hit.y > 9 && hit.x < 70);
     flash_settle(&app);
     app.key("enter");
     let ran = app.wait_text("Ran Push");
@@ -999,10 +999,10 @@ fn option_scope_project() {
 fn option_risk_column_off() {
     let app = page("s09-risk", Some("finder.risk_column=off"), 120, 40);
     let play = app.wait_text("git pull --ff-only");
-    let head = row_with(&play, "Group");
+    let push = row_with(&play, "Push");
     assert!(
-        head.contains("Action") && head.contains("Note") && !head.contains('…'),
-        "risk column off still clips the table head\n{head}"
+        push.contains("2 commits ahead") && !push.contains("remote"),
+        "risk column off still shows the risk beside Push\n{push}"
     );
     see(
         &play,
@@ -1022,10 +1022,10 @@ fn option_risk_column_off() {
         assert_finder_options(screen, "typed", "here", "off", "auto");
     });
     let screen = app.settle();
-    let head = row_with(&screen, "Group");
+    let push = row_with(&screen, "Push");
     assert!(
-        !head.contains('…'),
-        "returning from options restored the risk-column ellipsis\n{head}"
+        !push.contains("remote"),
+        "returning from options restored the risk column\n{push}"
     );
     shot(&app, "opt.finder.risk_column");
     app.finish();
@@ -1034,7 +1034,7 @@ fn option_risk_column_off() {
 #[test]
 fn option_preview_line() {
     let app = page("s09-preview", Some("finder.preview=line"), 120, 40);
-    let play = app.wait_text("→ git pull --ff-only");
+    let play = app.wait_text("git pull --ff-only");
     let push = row_with(&play, "Push");
     let rebase = row_with(&play, "Pull with rebase");
     assert!(
@@ -1050,10 +1050,9 @@ fn option_preview_line() {
         &[
             CAP_PLAY,
             "pu",
-            "→ git pull --ff-only",
+            "Runs git pull --ff-only",
             "here",
             "mutating",
-            "Risk",
             "remote",
         ],
         &[
@@ -1065,15 +1064,103 @@ fn option_preview_line() {
             "No matches",
         ],
     );
-    confirm_options(&app, "→ git pull --ff-only", |screen| {
+    confirm_options(&app, "git pull --ff-only", |screen| {
         assert_finder_options(screen, "typed", "here", "on", "line");
     });
     let screen = app.wait_text("rewrites local commits");
     see(
         &screen,
-        &[CAP_PLAY, "→ git pull --ff-only", "remote", "Risk"],
+        &[CAP_PLAY, "Runs git pull --ff-only", "remote"],
         &["Page options", "Alternatives…", "Why?"],
     );
     shot(&app, "opt.finder.preview");
+    app.finish();
+}
+
+fn open_with(name: &str, opts: &[&str]) -> App {
+    let mut args = PAGE_ARGS.to_vec();
+    for opt in opts {
+        args.extend(["--opt", opt]);
+    }
+    open(name, 120, 40, &args)
+}
+
+#[test]
+fn option_rows_grouped_headings_are_never_selected() {
+    let app = open_with(
+        "s09-rows-grouped",
+        &["finder.rows=grouped", "finder.query=empty"],
+    );
+    let screen = app.wait_text("Stash changes");
+    see(
+        &screen,
+        &["git", "cargo", "Pull", "Build", "Test"],
+        &["Ran ", "No matches"],
+    );
+    app.key("tab");
+    app.key("tab");
+    app.key("home");
+    app.key("enter");
+    let first = app.wait_text("Ran ");
+    see(&first, &["Ran "], &["Ran git", "Ran cargo"]);
+    app.key("end");
+    app.key("enter");
+    let last = app.settle();
+    see(&last, &["Ran "], &["Ran git", "Ran cargo", "Ran docker"]);
+    app.finish();
+}
+
+#[test]
+fn option_rows_cells_run_on_one_click() {
+    let app = open_with(
+        "s09-rows-cells",
+        &["finder.rows=cells", "finder.query=empty"],
+    );
+    let screen = app.wait_text("Stash changes");
+    see(&screen, &["git", "cargo", "Build", "Test"], &["Ran "]);
+    click_where(&app, "Build", |hit| hit.y > 9 && hit.x < 70);
+    let ran = app.wait_text("Ran Build");
+    see(&ran, &["Ran Build"], &["Ran Test", "Ran Pull"]);
+    app.finish();
+}
+
+#[test]
+fn option_results_failing_reports_and_retries() {
+    let app = open_with("s09-failing", &["finder.results=failing"]);
+    app.wait_text("git pull --ff-only");
+    click_where(&app, "pu", |hit| hit.y == 8 && hit.x < 50);
+    flash_settle(&app);
+    app.key("end");
+    app.type_text("s");
+    let failed = app.wait_text("Search failed");
+    see(
+        &failed,
+        &["Search failed", "Ctrl+R retries", "Pull", "Push"],
+        &["No matches"],
+    );
+    app.key("ctrl+r");
+    let retried = app.wait_absent("Search failed");
+    see(
+        &retried,
+        &["pus", "Push", "2 commits ahead"],
+        &["Search failed", "Searching"],
+    );
+    app.finish();
+}
+
+#[test]
+fn option_results_loading_dims_and_blocks_actions() {
+    let app = open_with("s09-loading", &["finder.results=loading"]);
+    app.wait_text("git pull --ff-only");
+    click_where(&app, "pu", |hit| hit.y == 8 && hit.x < 50);
+    flash_settle(&app);
+    app.key("end");
+    app.type_text("s");
+    let loading = app.wait_text("Searching");
+    see(&loading, &["Searching", "Pull", "Push"], &["Search failed"]);
+    app.key("tab");
+    app.key("enter");
+    let after = app.settle();
+    see(&after, &["Searching", "Pull"], &["Ran "]);
     app.finish();
 }

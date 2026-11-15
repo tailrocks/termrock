@@ -9,7 +9,7 @@ use super::{
     SearchSession, SearchSource,
 };
 use crate::core::event::Key;
-use crate::core::focus::Focus;
+use crate::core::focus::{Focus, FocusChange};
 use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
 use crate::core::intent::Phase;
 use crate::core::list::{KeyedRowSource, RowSource, SourceStamp};
@@ -193,6 +193,22 @@ impl SearchDetail {
     /// query, for example the active scope. It never changes the query text.
     pub fn set_query_readout(&mut self, text: &str) {
         self.session.query_input_mut().set_readout(text);
+    }
+
+    /// Whether the query is being edited, for a host that suspends its own
+    /// single-key shortcuts while text is typed.
+    pub fn editing(&self) -> bool {
+        self.session.query_input().editing
+    }
+
+    /// Ends query editing when focus leaves the query. Other focus changes are
+    /// ignored.
+    pub fn on_blur(&mut self, change: FocusChange) -> Reply {
+        if change.from != self.session.query_input().id {
+            return Response::ignored();
+        }
+        let _ = self.session.query_input_mut().on_blur();
+        self.session.edited_query().repaint()
     }
 
     /// The results focus owner, and the query's too in Combined mode.

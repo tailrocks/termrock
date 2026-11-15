@@ -1023,3 +1023,35 @@ fn search_detail_standard_paint_draws_rows_and_registers_hits() {
     assert!(source.source_len() > 0);
     let _: SourceStamp = source.stamp();
 }
+
+#[test]
+fn search_detail_standard_paint_places_selectable_cells() {
+    let mut search = new_search(SearchConfig::default());
+    let req = accept(&mut search, 1, mixed());
+    let source = source_for(&req, mixed());
+    let theme = Theme::for_level(ColorLevel::TrueColor);
+    let mut buf = Buffer::empty(WIDE);
+    let mut hits = HitRegistry::default();
+    let mut ring = FocusRing::default();
+    {
+        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        search
+            .render_source(WIDE, &source, &detail_frame(&[]), &mut buf, &mut ctx)
+            .expect("source");
+    }
+    let text = (0..WIDE.height)
+        .map(|y| row(&buf, y).trim_end().to_owned())
+        .collect::<Vec<_>>()
+        .join("\n");
+    for label in ["one", "two", "three"] {
+        assert!(text.contains(label), "chip {label} is painted\n{text}");
+    }
+    for cell in [30, 31, 32] {
+        assert!(
+            hits.regions().iter().any(|r| r.owner == ID
+                && r.part.part == Part::CELL
+                && r.part.item == Some(k(cell))),
+            "cell {cell} registers a hit region under its own key"
+        );
+    }
+}

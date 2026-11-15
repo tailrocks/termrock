@@ -3997,6 +3997,8 @@ pub static CAPABILITIES: &[Capability] = &[
     Capability::function("widgets::search_detail::SearchDetail::config_mut"),
     Capability::builder("widgets::search_detail::SearchDetail::collapse_below"),
     Capability::function("widgets::search_detail::SearchDetail::set_query_readout"),
+    Capability::function("widgets::search_detail::SearchDetail::editing"),
+    Capability::function("widgets::search_detail::SearchDetail::on_blur"),
     Capability::function("widgets::search_detail::RowPaint::cell_hit"),
     Capability::function("widgets::search_detail::SearchDetail::id"),
     Capability::function("widgets::search_detail::SearchDetail::detail_id"),
