@@ -820,6 +820,7 @@ fn browse_directory_hidden_filter_cancel_and_url() {
         &[".env", ".zshrc", "crates/", URL_PAY],
     );
     app.click(Point { x: 110, y: 20 });
+    flash_settle(&app);
     let stayed = app.wait_text(CHOOSE_DIR);
     assert_dialog(&stayed, &[CHOOSE_DIR, PAY], &["Cancelled"]);
 
