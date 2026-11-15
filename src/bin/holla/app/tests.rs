@@ -466,6 +466,39 @@ fn every_batch_member_retains_activity_after_tab_operations() {
     assert_eq!(tally(&app), (2, 1, 0, 0));
 }
 
+#[test]
+fn disk_page_stops_animating_on_the_tick_that_publishes_the_cache() {
+    let mut app = App::launch(
+        Scenario::DiskCleanup,
+        Motion::Full,
+        0,
+        Theme::junie(),
+        false,
+    );
+    app.world.clock.running = true;
+    app.world.disk.scan_ticks = 1;
+    app.world.fs.dir("/work/big", 1);
+    for i in 0..4096 {
+        app.world.fs.file(&format!("/work/big/f{i:05}"), 4096, 1);
+    }
+    app.world.start_scan("/work/big");
+    app.push_page(Page::Disk {
+        path: "/work/big".into(),
+    });
+
+    tick(&mut app, 1);
+    assert!(app.top().expect("page").animating(&app.world));
+    assert_eq!(
+        app.world.persisted.sizes, None,
+        "cache waits for the last entry"
+    );
+
+    tick(&mut app, 1);
+    assert!(app.world.scan.as_ref().expect("scan").completed());
+    assert!(app.world.persisted.sizes.is_some());
+    assert!(!app.top().expect("page").animating(&app.world));
+}
+
 const FINAL_NAME: &str = "zz-final-hit.txt";
 const FINAL_QUERY: &str = "zz-final-hit";
 
