@@ -400,8 +400,8 @@ fn work_contract_holla_background_updates_keep_projection() {
             &format!("output round {round}"),
             &[
                 scheduling,
-                (Metric::IntrinsicWidthCalls, 517),
-                (Metric::TextBytesMeasured, 2_312),
+                (Metric::IntrinsicWidthCalls, 491),
+                (Metric::TextBytesMeasured, 2_286),
                 (Metric::FitVisits, 20),
             ],
         );

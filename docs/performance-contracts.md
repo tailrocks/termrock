@@ -121,7 +121,7 @@ list, table, grid and tree widget in the frame.
 | Holla Files preview | same, 16 MiB text and 16 MiB bytes | 16 MiB | the same, width bytes 90,871 (only the size label differs); a settled tick after it repeats no pass |
 | Holla Files preview | one 262,143-byte line whose last scalar straddles the cap | 1 MiB + 256 KiB | rollback probes 2, NUL probe, validation, sanitizing and line chars 262,143 each; segmented 1 |
 | Holla Files preview | NUL at byte 100 of a 16 MiB file | 16 MiB | NUL probe 101, nothing validated, sanitized or segmented |
-| Holla Finder | 20 rounds of 50 streamed output lines on a running activity, then a tick | 87 items, 1 activity | per round: no projection rebuild, scheduling 2, width calls 517, width bytes 2,312 |
+| Holla Finder | 20 rounds of 50 streamed output lines on a running activity, then a tick | 87 items, 1 activity | per round: no projection rebuild, scheduling 2, width calls 491, width bytes 2,286 |
 | Holla Finder | source change under a hidden Finder, 4 ticks | same | no rebuild, scheduling 8 |
 | Holla Finder | activate the hidden Finder | same | projection rebuilds 1, ranked 87 |
 | Holla Finder | relevant source change, then tick | same | projection rebuilds 1, ranked 87; the next tick rebuilds nothing |
