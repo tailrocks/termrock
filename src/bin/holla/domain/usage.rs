@@ -1,5 +1,7 @@
 use std::collections::BTreeSet;
 
+use crate::domain::manifest::{Json, json_opt_str, json_str, parse_json};
+
 pub const MAX_USES: usize = 20;
 pub const HALF_LIFE_DAYS: f64 = 10.0;
 pub const STALE_DAYS: i64 = 90;
@@ -152,7 +154,7 @@ impl UsageStore {
             .stamps
             .iter()
             .map(|s| {
-                let age_days = (now_secs - s).max(0) as f64 / 86_400.0;
+                let age_days = now_secs.saturating_sub(*s).max(0) as f64 / 86_400.0;
                 0.5f64.powf(age_days / HALF_LIFE_DAYS)
             })
             .sum();
@@ -187,7 +189,7 @@ impl UsageStore {
     }
 
     pub fn prune(&mut self, now_secs: i64) {
-        let cutoff = now_secs - STALE_DAYS * 86_400;
+        let cutoff = now_secs.saturating_sub(STALE_DAYS * 86_400);
         for u in &mut self.actions {
             u.stamps.retain(|s| *s >= cutoff);
         }
@@ -210,41 +212,73 @@ impl UsageStore {
                 .then_with(|| a.host.cmp(&b.host))
                 .then_with(|| a.path.cmp(&b.path))
         });
-        let a: Vec<String> = actions
+        let actions: Vec<Json> = actions
             .iter()
             .map(|u| {
-                format!(
-                    "{{\"item\":{},\"path\":{},\"host\":{},\"stamps\":[{}]}}",
-                    js(&u.item),
-                    u.path.as_deref().map(js).unwrap_or("null".into()),
-                    js(&u.host),
-                    u.stamps
-                        .iter()
-                        .map(|s| s.to_string())
-                        .collect::<Vec<_>>()
-                        .join(",")
-                )
+                serde_json::json!({
+                    "item": u.item,
+                    "path": u.path,
+                    "host": u.host,
+                    "stamps": u.stamps,
+                })
             })
             .collect();
         let mut queries: Vec<&QueryChoice> = self.queries.iter().collect();
         queries.sort_by(|a, b| a.query.cmp(&b.query).then_with(|| a.host.cmp(&b.host)));
-        let q: Vec<String> = queries
+        let queries: Vec<Json> = queries
             .iter()
             .map(|c| {
-                format!(
-                    "{{\"query\":{},\"item\":{},\"host\":{},\"last\":{}}}",
-                    js(&c.query),
-                    js(&c.item),
-                    js(&c.host),
-                    c.last
-                )
+                serde_json::json!({
+                    "query": c.query,
+                    "item": c.item,
+                    "host": c.host,
+                    "last": c.last,
+                })
             })
             .collect();
-        format!(
-            "{{\"v\":1,\"actions\":[{}],\"queries\":[{}]}}",
-            a.join(","),
-            q.join(",")
-        )
+        serde_json::json!({ "v": 1, "actions": actions, "queries": queries }).to_string()
+    }
+
+    fn parse_action(it: &Json, now_secs: i64) -> Result<ActionUse, String> {
+        let mut stamps: Vec<i64> = match it.get("stamps") {
+            None => vec![],
+            Some(Json::Array(values)) => values
+                .iter()
+                .map(|v| {
+                    v.as_i64()
+                        .map(|s| s.min(now_secs))
+                        .ok_or_else(|| "stamps: expected signed integer".to_owned())
+                })
+                .collect::<Result<_, _>>()?,
+            Some(_) => return Err("stamps: expected array".into()),
+        };
+        stamps.sort();
+        if stamps.len() > MAX_USES {
+            let drop = stamps.len() - MAX_USES;
+            stamps.drain(..drop);
+        }
+        Ok(ActionUse {
+            item: json_str(it, "item")?.into(),
+            path: json_opt_str(it, "path")?,
+            host: json_str(it, "host")?.into(),
+            stamps,
+        })
+    }
+
+    fn parse_query(it: &Json, now_secs: i64) -> Result<QueryChoice, String> {
+        let last = match it.get("last") {
+            None => 0,
+            Some(v) => v
+                .as_i64()
+                .ok_or_else(|| "last: expected signed integer".to_owned())?
+                .min(now_secs),
+        };
+        Ok(QueryChoice {
+            query: json_str(it, "query")?.into(),
+            item: json_str(it, "item")?.into(),
+            host: json_str(it, "host")?.into(),
+            last,
+        })
     }
 
     pub fn load(text: Option<&str>, now_secs: i64) -> Self {
@@ -252,7 +286,6 @@ impl UsageStore {
         let Some(text) = text else {
             return store;
         };
-        use crate::domain::manifest::{Json, parse_json};
         let json = match parse_json(text) {
             Ok(j) => j,
             Err(e) => {
@@ -261,72 +294,59 @@ impl UsageStore {
             }
         };
         match json.get("v") {
-            Some(Json::Num(n)) if *n as i64 == 1 => {}
-            Some(Json::Num(n)) => {
-                store.load_error = Some(format!(
-                    "frecency.json schema {} unknown · starting empty",
-                    *n as i64
-                ));
-                return store;
-            }
-            _ => {
+            Some(v) => match v.as_i64() {
+                Some(1) => {}
+                Some(n) => {
+                    store.load_error =
+                        Some(format!("frecency.json schema {n} unknown · starting empty"));
+                    return store;
+                }
+                None => {
+                    store.load_error = Some(
+                        "frecency.json schema version is not an integer · starting empty".into(),
+                    );
+                    return store;
+                }
+            },
+            None => {
                 store.load_error =
                     Some("frecency.json has no schema version · starting empty".into());
                 return store;
             }
         }
-        if let Some(Json::Arr(items)) = json.get("actions") {
-            for it in items {
-                let (Some(item), Some(host)) = (
-                    it.get("item").and_then(Json::as_str),
-                    it.get("host").and_then(Json::as_str),
-                ) else {
-                    continue;
-                };
-                let path = it.get("path").and_then(Json::as_str).map(str::to_owned);
-                let mut stamps: Vec<i64> = match it.get("stamps") {
-                    Some(Json::Arr(s)) => s
-                        .iter()
-                        .filter_map(|v| match v {
-                            Json::Num(n) => Some((*n as i64).min(now_secs)),
-                            _ => None,
-                        })
-                        .collect(),
-                    _ => vec![],
-                };
-                stamps.sort();
-                if stamps.len() > MAX_USES {
-                    let drop = stamps.len() - MAX_USES;
-                    stamps.drain(..drop);
+        match json.get("actions") {
+            None => {}
+            Some(Json::Array(items)) => {
+                for (i, it) in items.iter().enumerate() {
+                    match Self::parse_action(it, now_secs) {
+                        Ok(action) => store.actions.push(action),
+                        Err(why) => {
+                            if store.load_error.is_none() {
+                                store.load_error =
+                                    Some(format!("frecency.json action {i} invalid: {why}"));
+                            }
+                        }
+                    }
                 }
-                store.actions.push(ActionUse {
-                    item: item.into(),
-                    path,
-                    host: host.into(),
-                    stamps,
-                });
             }
+            Some(_) => store.load_error = Some("frecency.json actions is not an array".into()),
         }
-        if let Some(Json::Arr(items)) = json.get("queries") {
-            for it in items {
-                let (Some(query), Some(item), Some(host)) = (
-                    it.get("query").and_then(Json::as_str),
-                    it.get("item").and_then(Json::as_str),
-                    it.get("host").and_then(Json::as_str),
-                ) else {
-                    continue;
-                };
-                let last = match it.get("last") {
-                    Some(Json::Num(n)) => (*n as i64).min(now_secs),
-                    _ => 0,
-                };
-                store.queries.push(QueryChoice {
-                    query: query.into(),
-                    item: item.into(),
-                    host: host.into(),
-                    last,
-                });
+        match json.get("queries") {
+            None => {}
+            Some(Json::Array(items)) => {
+                for (i, it) in items.iter().enumerate() {
+                    match Self::parse_query(it, now_secs) {
+                        Ok(query) => store.queries.push(query),
+                        Err(why) => {
+                            if store.load_error.is_none() {
+                                store.load_error =
+                                    Some(format!("frecency.json query {i} invalid: {why}"));
+                            }
+                        }
+                    }
+                }
             }
+            Some(_) => store.load_error = Some("frecency.json queries is not an array".into()),
         }
         store.loaded_from = Some("frecency.json");
         store
@@ -366,7 +386,7 @@ impl UsageStore {
         }
         if let Some(text) = on_disk {
             let disk = UsageStore::load(Some(text), now_secs);
-            if disk.load_error.is_none() {
+            if disk.loaded_from.is_some() {
                 self.merge(&disk);
             }
         }
@@ -376,6 +396,110 @@ impl UsageStore {
     }
 }
 
-fn js(s: &str) -> String {
-    format!("\"{}\"", s.replace('\\', "\\\\").replace('"', "\\\""))
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const NOW: i64 = 1_800_000_000;
+
+    #[test]
+    fn holla_json_strings_roundtrip_all_escape_classes() {
+        let item = "run \"fmt\"\\n\tnext\u{1}🚀";
+        let mut store = UsageStore::default();
+        store.actions.push(ActionUse {
+            item: item.into(),
+            path: Some("/w/a\\nb\n".into()),
+            host: "h\"ost".into(),
+            stamps: vec![NOW],
+        });
+        store.queries.push(QueryChoice {
+            query: "q\\n\"x".into(),
+            item: item.into(),
+            host: "h".into(),
+            last: NOW,
+        });
+        let text = store.serialize();
+        assert!(serde_json::from_str::<serde_json::Value>(&text).is_ok());
+        let loaded = UsageStore::load(Some(&text), NOW);
+        assert_eq!(loaded.load_error, None);
+        assert_eq!(loaded.actions, store.actions);
+        assert_eq!(loaded.queries, store.queries);
+    }
+
+    #[test]
+    fn holla_json_integer_fields_are_exact_and_checked() {
+        let stamp = 9_007_199_254_740_993;
+        let mut store = UsageStore::default();
+        store.actions.push(ActionUse {
+            item: "i".into(),
+            path: None,
+            host: "h".into(),
+            stamps: vec![stamp],
+        });
+        store.queries.push(QueryChoice {
+            query: "q".into(),
+            item: "i".into(),
+            host: "h".into(),
+            last: stamp,
+        });
+        let loaded = UsageStore::load(Some(&store.serialize()), i64::MAX);
+        assert_eq!(loaded.actions[0].stamps, vec![stamp]);
+        assert_eq!(loaded.queries[0].last, stamp);
+
+        let fractional = r#"{"v":1,"actions":[{"item":"i","path":null,"host":"h","stamps":[1.5,1e3]}],"queries":[]}"#;
+        let rejected = UsageStore::load(Some(fractional), NOW);
+        assert!(rejected.actions.is_empty());
+        assert!(rejected.load_error.is_some());
+    }
+
+    #[test]
+    fn holla_json_extreme_timestamps_do_not_overflow() {
+        let text = format!(
+            r#"{{"v":1,"actions":[{{"item":"i","path":null,"host":"h","stamps":[{min}]}},{{"item":"f","path":null,"host":"h","stamps":[{max}]}}],"queries":[{{"query":"q","item":"i","host":"h","last":{min}}}]}}"#,
+            min = i64::MIN,
+            max = i64::MAX
+        );
+        let loaded = UsageStore::load(Some(&text), NOW);
+        assert_eq!(loaded.frecency("i", None, "h", NOW), 0.0);
+        assert!((loaded.frecency("f", None, "h", NOW) - 0.5).abs() < 1e-12);
+        let mut pruned = loaded;
+        pruned.prune(NOW);
+        let items: Vec<&str> = pruned.actions.iter().map(|a| a.item.as_str()).collect();
+        assert_eq!(items, ["f"]);
+        assert!(pruned.queries.is_empty());
+    }
+
+    #[test]
+    fn holla_json_invalid_entries_keep_valid_siblings_with_diagnostic() {
+        let text = r#"{"v":1,"actions":[{"item":"a","path":null,"host":"h","stamps":[1]},{"item":7,"path":null,"host":"h","stamps":[1]},{"item":"c","path":null,"host":"h","stamps":[3]}],"queries":[]}"#;
+        let loaded = UsageStore::load(Some(text), NOW);
+        let items: Vec<&str> = loaded.actions.iter().map(|a| a.item.as_str()).collect();
+        assert_eq!(items, ["a", "c"]);
+        assert!(
+            loaded
+                .load_error
+                .as_deref()
+                .is_some_and(|e| e.contains("action 1"))
+        );
+    }
+
+    #[test]
+    fn holla_json_wrong_type_actions_report_corruption() {
+        let loaded = UsageStore::load(Some(r#"{"v":1,"actions":5,"queries":[]}"#), NOW);
+        assert!(loaded.actions.is_empty());
+        assert!(loaded.load_error.is_some());
+    }
+
+    #[test]
+    fn holla_json_partial_disk_store_still_merges_valid_entries() {
+        let disk = format!(
+            r#"{{"v":1,"actions":[{{"item":"a","path":null,"host":"h","stamps":[{NOW}]}},{{"item":7,"path":null,"host":"h","stamps":[1]}}],"queries":[]}}"#
+        );
+        let mut mine = UsageStore::default();
+        mine.used("b", None, "h", NOW);
+        let text = mine.save(Some(&disk), NOW).unwrap();
+        let saved = UsageStore::load(Some(&text), NOW);
+        assert!(saved.find("a", None, "h").is_some());
+        assert!(saved.find("b", None, "h").is_some());
+    }
 }
