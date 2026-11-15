@@ -174,6 +174,19 @@ impl FormField {
         };
         if disabled { None } else { self.focus_id() }
     }
+
+    /// Forgets where the last frame drew the field, so a field the next frame
+    /// does not draw leaves no hit region behind.
+    fn clear_geometry(&mut self) {
+        match &mut self.kind {
+            FormFieldKind::Input(i) => i.area = Rect::ZERO,
+            FormFieldKind::Select(s) => s.area = Rect::ZERO,
+            FormFieldKind::Check(c) => c.area = Rect::ZERO,
+            FormFieldKind::Radio(r) => r.areas.clear(),
+            FormFieldKind::Chooser { button, .. } => button.area = Rect::ZERO,
+            FormFieldKind::Note(_) => {}
+        }
+    }
 }
 
 impl HasHints for FormDialog {
@@ -915,6 +928,7 @@ impl FormDialog {
             if !f.visible {
                 continue;
             }
+            f.clear_geometry();
             let fh = f.height() as i32;
             let whole = y >= body.y as i32 && y < body.bottom() as i32;
             if body_h > 0
