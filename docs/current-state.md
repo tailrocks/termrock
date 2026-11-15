@@ -183,6 +183,14 @@ variant of these enums stays a breaking change and is recorded here.
 
 ## Known limits
 
+- TablePro's SQL tokenizer (`src/bin/tablepro/sql.rs`) is total over any valid
+  UTF-8 string: every token range starts and ends on a char boundary, and the
+  ranges cover the input exactly. Identifiers accept alphabetic or `_` scalars
+  first and alphanumeric or `_` scalars after; any other scalar (emoji, combining
+  mark, symbol) is one punctuation token. This is a lexical policy, not SQL Unicode
+  identifier support. A doubled quote inside a string or quoted identifier stays
+  in one token.
+
 - `TerminalState::scrolled_off` is exact while the history is below its
   limit (it follows the growth of `scrollback_len`). At the limit, and with
   a limit of 0, it sums the main-screen scroll operations that start at row
