@@ -1,4 +1,5 @@
 use super::*;
+use crate::screens::finder::FinderPage;
 use junie_tui::core::event::Input;
 
 const ID: &str = "docker-cleanup";
@@ -488,4 +489,73 @@ fn files_find_enter_publishes_zero_duration_and_absent_index_sources() {
         "a missing index source is done"
     );
     assert_eq!(published(&mut absent).map(|(_, done)| done), Some(true));
+}
+
+fn finder_app() -> App {
+    let mut app = App::launch(Scenario::RustDirty, Motion::Full, 0, Theme::junie(), false);
+    app.world.clock.running = true;
+    app
+}
+
+fn finder(app: &mut App) -> &mut FinderPage {
+    app.router
+        .top_of_mut(0)
+        .and_then(|s| s.as_finder())
+        .expect("finder on the first tab")
+}
+
+fn finder_select_explore(app: &mut App, id: &str) {
+    for _ in 0..80 {
+        match finder(app).current_id() {
+            Some(cur) if cur == id => return,
+            Some(cur) if cur.starts_with("explore.") => {
+                app.handle_input(key(KeyCode::Right, KeyModifiers::NONE));
+            }
+            _ => {
+                app.handle_input(key(KeyCode::Down, KeyModifiers::NONE));
+            }
+        }
+    }
+    panic!("finder never selected {id}");
+}
+
+#[test]
+fn finder_explore_selection_survives_background_tick() {
+    let mut app = finder_app();
+    finder_select_explore(&mut app, "explore.git");
+
+    tick(&mut app, 3);
+
+    assert_eq!(
+        finder(&mut app).current_id().as_deref(),
+        Some("explore.git")
+    );
+}
+
+#[test]
+fn finder_missing_explore_selection_uses_first_selectable() {
+    let mut app = finder_app();
+    finder_select_explore(&mut app, "explore.git");
+
+    app.handle_input(key(KeyCode::Down, KeyModifiers::CONTROL));
+    tick(&mut app, 1);
+    let after_scope = finder(&mut app).current_id();
+    app.handle_input(key(KeyCode::Home, KeyModifiers::NONE));
+    let first = finder(&mut app).current_id();
+
+    assert_ne!(after_scope.as_deref(), Some("explore.git"));
+    assert_eq!(after_scope, first);
+}
+
+#[test]
+fn finder_query_edit_resets_explore_selection() {
+    let mut app = finder_app();
+    finder_select_explore(&mut app, "explore.git");
+
+    app.handle_input(key(KeyCode::Char('g'), KeyModifiers::NONE));
+    tick(&mut app, 1);
+    let typed = finder(&mut app).current_id();
+    app.handle_input(key(KeyCode::Home, KeyModifiers::NONE));
+
+    assert_eq!(finder(&mut app).current_id(), typed);
 }
