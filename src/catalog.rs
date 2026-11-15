@@ -2583,6 +2583,7 @@ pub static CAPABILITIES: &[Capability] = &[
     Capability::function("widgets::panel::ScrollPanel::measure"),
     Capability::function("widgets::panel::ScrollPanel::render"),
     Capability::function("widgets::panel::ScrollPanel::selection"),
+    Capability::function("widgets::panel::ScrollPanel::source_selection"),
     Capability::function("widgets::panel::ScrollPanel::selected_text"),
     Capability::function("widgets::panel::ScrollPanel::select_all"),
     Capability::function("widgets::panel::ScrollPanel::clear_selection"),

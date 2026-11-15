@@ -168,6 +168,7 @@ read it against, because each of its reasons names a Fixed control.
   builds on the calling thread; the work-budget tests read deltas of it.
   `shell::rebuild_on_tick` stays for small callers and compares the whole view
   on every tick.
+- `ScrollPanel` selection and copy are source-based: the selection is a pair of `(entry, byte)` grapheme boundaries in `lines()`, `selected_text` copies the original text (entries joined by one `\n`, soft wraps add nothing, nothing is trimmed), and a resize or wrap toggle keeps the selection. `selection()` is the current visual view and `source_selection()` the stable one. Record: [ScrollPanel logical copy](audits/2026-11-15-scrollpanel-logical-copy.md).
 - A Query workbench run is bound to its document key, a per-document generation and the SQL captured at run start (`OperationToken`, `RunRequest`). Completion is admitted once, by key and generation; a late edit, a close or a cancel cannot redirect or double-apply it. Record: [Query workbench run identity](audits/2026-11-15-query-workbench-run-identity.md).
 - The showcase demonstrates every library capability; the coverage
   gate is described in

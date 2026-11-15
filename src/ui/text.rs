@@ -434,8 +434,38 @@ pub fn wrap(s: &str, w: usize) -> Vec<String> {
 }
 
 pub fn wrap_with(s: &str, w: usize, opts: WrapOpts) -> Vec<String> {
+    wrap_rows(s, w, opts, false)
+        .into_iter()
+        .map(|row| row.text)
+        .collect()
+}
+
+/// One displayed grapheme (or synthetic indent) and the source bytes it
+/// stands for. `bytes` is empty for continuation indent, which maps to the
+/// boundary before the row's first real grapheme.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct MappedCell {
+    pub columns: Range<usize>,
+    pub bytes: Range<usize>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct MappedRow {
+    pub text: String,
+    pub cells: Vec<MappedCell>,
+    /// Source byte after the row's last grapheme, or where an empty row sits.
+    pub end: usize,
+}
+
+/// The same line breaking as [`wrap_with`], with each row's source provenance.
+pub(crate) fn wrap_mapped(s: &str, w: usize, opts: WrapOpts) -> Vec<MappedRow> {
+    wrap_rows(s, w, opts, true)
+}
+
+fn wrap_rows(s: &str, w: usize, opts: WrapOpts, track: bool) -> Vec<MappedRow> {
     let w = w.max(1);
-    let mut lines = Vec::new();
+    let mut rows = Vec::new();
+    let mut offset = 0;
     for para in s.split('\n') {
         let body = para.trim_start_matches(' ');
         let lead = para.len() - body.len();
@@ -449,9 +479,21 @@ pub fn wrap_with(s: &str, w: usize, opts: WrapOpts) -> Vec<String> {
 
         let first = if first * 2 <= w { first } else { 0 };
         let cont = if cont * 2 <= w { cont } else { first };
-        wrap_para(body, w, first, cont, &mut lines);
+        wrap_para(
+            body,
+            ParaSpec {
+                w,
+                first,
+                cont,
+                at: offset,
+                body_at: offset + lead,
+                track,
+            },
+            &mut rows,
+        );
+        offset += para.len() + 1;
     }
-    lines
+    rows
 }
 
 fn hang_column(s: &str, gap: usize) -> Option<usize> {
@@ -463,9 +505,21 @@ fn hang_column(s: &str, gap: usize) -> Option<usize> {
     Some(width(&s[..s.len() - rest.len()]))
 }
 
+struct ParaSpec {
+    w: usize,
+    first: usize,
+    cont: usize,
+    at: usize,
+    body_at: usize,
+    track: bool,
+}
+
 struct Para<'a> {
-    lines: &'a mut Vec<String>,
+    rows: &'a mut Vec<MappedRow>,
     line: String,
+    cells: Vec<MappedCell>,
+    row_at: usize,
+    track: bool,
     lw: usize,
     base: usize,
     cont: usize,
@@ -477,60 +531,123 @@ impl Para<'_> {
         self.lw == self.base
     }
 
-    fn break_line(&mut self) {
-        self.lines.push(std::mem::take(&mut self.line));
+    fn finish_row(&mut self) {
+        let end = self.cells.last().map_or(self.row_at, |c| c.bytes.end);
+        self.rows.push(MappedRow {
+            text: std::mem::take(&mut self.line),
+            cells: std::mem::take(&mut self.cells),
+            end,
+        });
+    }
+
+    fn break_line(&mut self, at: usize) {
+        self.finish_row();
         self.line = " ".repeat(self.cont);
         self.lw = self.cont;
         self.base = self.cont;
-    }
-
-    fn push_word(&mut self, word: &str, ww: usize) {
-        if self.lw + ww <= self.w {
-            self.line.push_str(word);
-            self.lw += ww;
-        } else {
-            self.hard_wrap(word);
+        self.row_at = at;
+        if self.track && self.cont > 0 {
+            self.cells.push(MappedCell {
+                columns: 0..self.cont,
+                bytes: at..at,
+            });
         }
     }
 
-    fn hard_wrap(&mut self, word: &str) {
-        for g in word.graphemes(true) {
-            let room = (self.w - self.base).max(1);
-            let g = if width(g) > room { "…" } else { g };
-            let gw = width(g);
-            if self.lw + gw > self.w && !self.empty() {
-                self.break_line();
+    fn put(&mut self, shown: &str, bytes: Range<usize>) {
+        let gw = width(shown);
+        if self.track {
+            self.cells.push(MappedCell {
+                columns: self.lw..self.lw + gw,
+                bytes,
+            });
+        }
+        self.line.push_str(shown);
+        self.lw += gw;
+    }
+
+    fn put_word(&mut self, word: &str, ww: usize, at: usize) {
+        if self.track {
+            let start = self.lw;
+            let mut col = start;
+            for (i, g) in word.grapheme_indices(true) {
+                let gw = width(g);
+                self.cells.push(MappedCell {
+                    columns: col..col + gw,
+                    bytes: at + i..at + i + g.len(),
+                });
+                col += gw;
             }
-            self.line.push_str(g);
-            self.lw += gw;
+        }
+        self.line.push_str(word);
+        self.lw += ww;
+    }
+
+    fn push_word(&mut self, word: &str, ww: usize, at: usize) {
+        if self.lw + ww <= self.w {
+            self.put_word(word, ww, at);
+        } else {
+            self.hard_wrap(word, at);
+        }
+    }
+
+    fn hard_wrap(&mut self, word: &str, at: usize) {
+        for (i, g) in word.grapheme_indices(true) {
+            let room = (self.w - self.base).max(1);
+            let shown = if width(g) > room { "…" } else { g };
+            let gw = width(shown);
+            if self.lw + gw > self.w && !self.empty() {
+                self.break_line(at + i);
+            }
+            self.put(shown, at + i..at + i + g.len());
         }
     }
 }
 
-fn wrap_para(body: &str, w: usize, first: usize, cont: usize, lines: &mut Vec<String>) {
+fn wrap_para(body: &str, spec: ParaSpec, rows: &mut Vec<MappedRow>) {
+    let ParaSpec {
+        w,
+        first,
+        cont,
+        at,
+        body_at,
+        track,
+    } = spec;
     let mut p = Para {
-        lines,
+        rows,
         line: " ".repeat(first),
+        cells: Vec::new(),
+        row_at: at,
+        track,
         lw: first,
         base: first,
         cont,
         w,
     };
-    for word in body.split(' ') {
-        let ww = width(word);
-        if p.empty() {
-            p.push_word(word, ww);
-        } else if p.lw + 1 + ww <= w {
-            p.line.push(' ');
-            p.line.push_str(word);
-            p.lw += 1 + ww;
-        } else {
-            p.break_line();
-            p.push_word(word, ww);
+    if track {
+        for i in 0..first {
+            p.cells.push(MappedCell {
+                columns: i..i + 1,
+                bytes: at + i..at + i + 1,
+            });
         }
     }
-    let last = std::mem::take(&mut p.line);
-    p.lines.push(last);
+    let mut next = body_at;
+    for word in body.split(' ') {
+        let word_at = next;
+        next += word.len() + 1;
+        let ww = width(word);
+        if p.empty() {
+            p.push_word(word, ww, word_at);
+        } else if p.lw + 1 + ww <= w {
+            p.put(" ", word_at - 1..word_at);
+            p.put_word(word, ww, word_at);
+        } else {
+            p.break_line(word_at);
+            p.push_word(word, ww, word_at);
+        }
+    }
+    p.finish_row();
 }
 
 struct SearchText {
@@ -824,3 +941,6 @@ mod paint_tests {
         assert_eq!(row_symbols(&buf, 0, 0, 5), ["a", "b", "界", " ", SENTINEL]);
     }
 }
+
+#[cfg(test)]
+mod wrap_tests;

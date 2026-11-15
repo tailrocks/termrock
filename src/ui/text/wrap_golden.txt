@@ -1,0 +1,750 @@
+0|0|default|a⏎b⏎c⏎d⏎e⏎f⏎g⏎h⏎i⏎j⏎k⏎l
+0|0|plain|a⏎b⏎c⏎d⏎e⏎f⏎g⏎h⏎i⏎j⏎k⏎l
+0|1|default|a⏎b⏎c⏎d⏎e⏎f⏎g⏎h⏎i⏎j⏎k⏎l
+0|1|plain|a⏎b⏎c⏎d⏎e⏎f⏎g⏎h⏎i⏎j⏎k⏎l
+0|2|default|ab⏎cd⏎ef⏎gh⏎ij⏎kl
+0|2|plain|ab⏎cd⏎ef⏎gh⏎ij⏎kl
+0|3|default|abc⏎def⏎ghi⏎jkl
+0|3|plain|abc⏎def⏎ghi⏎jkl
+0|4|default|abcd⏎efgh⏎ijkl
+0|4|plain|abcd⏎efgh⏎ijkl
+0|5|default|abcde⏎fghij⏎kl
+0|5|plain|abcde⏎fghij⏎kl
+0|6|default|abcdef⏎ghijkl
+0|6|plain|abcdef⏎ghijkl
+0|7|default|abcdefg⏎hijkl
+0|7|plain|abcdefg⏎hijkl
+0|8|default|abcdefgh⏎ijkl
+0|8|plain|abcdefgh⏎ijkl
+0|9|default|abcdefghi⏎jkl
+0|9|plain|abcdefghi⏎jkl
+0|10|default|abcdefghij⏎kl
+0|10|plain|abcdefghij⏎kl
+0|11|default|abcdefghijk⏎l
+0|11|plain|abcdefghijk⏎l
+0|12|default|abcdefghijkl
+0|12|plain|abcdefghijkl
+0|13|default|abcdefghijkl
+0|13|plain|abcdefghijkl
+0|14|default|abcdefghijkl
+0|14|plain|abcdefghijkl
+1|0|default|h⏎e⏎l⏎l⏎o⏎w⏎o⏎r⏎l⏎d⏎f⏎o⏎o⏎b⏎a⏎r⏎b⏎a⏎z
+1|0|plain|h⏎e⏎l⏎l⏎o⏎w⏎o⏎r⏎l⏎d⏎f⏎o⏎o⏎b⏎a⏎r⏎b⏎a⏎z
+1|1|default|h⏎e⏎l⏎l⏎o⏎w⏎o⏎r⏎l⏎d⏎f⏎o⏎o⏎b⏎a⏎r⏎b⏎a⏎z
+1|1|plain|h⏎e⏎l⏎l⏎o⏎w⏎o⏎r⏎l⏎d⏎f⏎o⏎o⏎b⏎a⏎r⏎b⏎a⏎z
+1|2|default|he⏎ll⏎o⏎wo⏎rl⏎d⏎fo⏎o⏎ba⏎r⏎ba⏎z
+1|2|plain|he⏎ll⏎o⏎wo⏎rl⏎d⏎fo⏎o⏎ba⏎r⏎ba⏎z
+1|3|default|hel⏎lo⏎wor⏎ld⏎foo⏎bar⏎baz
+1|3|plain|hel⏎lo⏎wor⏎ld⏎foo⏎bar⏎baz
+1|4|default|hell⏎o⏎worl⏎d⏎foo⏎bar⏎baz
+1|4|plain|hell⏎o⏎worl⏎d⏎foo⏎bar⏎baz
+1|5|default|hello⏎world⏎foo⏎bar⏎baz
+1|5|plain|hello⏎world⏎foo⏎bar⏎baz
+1|6|default|hello⏎world⏎foo⏎bar⏎baz
+1|6|plain|hello⏎world⏎foo⏎bar⏎baz
+1|7|default|hello⏎world⏎foo bar⏎baz
+1|7|plain|hello⏎world⏎foo bar⏎baz
+1|8|default|hello⏎world⏎foo bar⏎baz
+1|8|plain|hello⏎world⏎foo bar⏎baz
+1|9|default|hello⏎world foo⏎bar baz
+1|9|plain|hello⏎world foo⏎bar baz
+1|10|default|hello⏎world foo⏎bar baz
+1|10|plain|hello⏎world foo⏎bar baz
+1|11|default|hello world⏎foo bar baz
+1|11|plain|hello world⏎foo bar baz
+1|12|default|hello world⏎foo bar baz
+1|12|plain|hello world⏎foo bar baz
+1|13|default|hello world⏎foo bar baz
+1|13|plain|hello world⏎foo bar baz
+1|14|default|hello world⏎foo bar baz
+1|14|plain|hello world⏎foo bar baz
+2|0|default|i⏎n⏎d⏎e⏎n⏎t⏎e⏎d⏎t⏎e⏎x⏎t⏎t⏎h⏎a⏎t⏎w⏎r⏎a⏎p⏎s⏎a⏎r⏎o⏎u⏎n⏎d⏎h⏎e⏎r⏎e
+2|0|plain|i⏎n⏎d⏎e⏎n⏎t⏎e⏎d⏎t⏎e⏎x⏎t⏎t⏎h⏎a⏎t⏎w⏎r⏎a⏎p⏎s⏎a⏎r⏎o⏎u⏎n⏎d⏎h⏎e⏎r⏎e
+2|1|default|i⏎n⏎d⏎e⏎n⏎t⏎e⏎d⏎t⏎e⏎x⏎t⏎t⏎h⏎a⏎t⏎w⏎r⏎a⏎p⏎s⏎a⏎r⏎o⏎u⏎n⏎d⏎h⏎e⏎r⏎e
+2|1|plain|i⏎n⏎d⏎e⏎n⏎t⏎e⏎d⏎t⏎e⏎x⏎t⏎t⏎h⏎a⏎t⏎w⏎r⏎a⏎p⏎s⏎a⏎r⏎o⏎u⏎n⏎d⏎h⏎e⏎r⏎e
+2|2|default|in⏎de⏎nt⏎ed⏎te⏎xt⏎th⏎at⏎wr⏎ap⏎s⏎ar⏎ou⏎nd⏎he⏎re
+2|2|plain|in⏎de⏎nt⏎ed⏎te⏎xt⏎th⏎at⏎wr⏎ap⏎s⏎ar⏎ou⏎nd⏎he⏎re
+2|3|default|ind⏎ent⏎ed⏎tex⏎t⏎tha⏎t⏎wra⏎ps⏎aro⏎und⏎her⏎e
+2|3|plain|ind⏎ent⏎ed⏎tex⏎t⏎tha⏎t⏎wra⏎ps⏎aro⏎und⏎her⏎e
+2|4|default|  in⏎  de⏎  nt⏎  ed⏎  te⏎  xt⏎  th⏎  at⏎  wr⏎  ap⏎  s⏎  ar⏎  ou⏎  nd⏎  he⏎  re
+2|4|plain|inde⏎nted⏎text⏎that⏎wrap⏎s⏎arou⏎nd⏎here
+2|5|default|  ind⏎  ent⏎  ed⏎  tex⏎  t⏎  tha⏎  t⏎  wra⏎  ps⏎  aro⏎  und⏎  her⏎  e
+2|5|plain|inden⏎ted⏎text⏎that⏎wraps⏎aroun⏎d⏎here
+2|6|default|  inde⏎  nted⏎  text⏎  that⏎  wrap⏎  s⏎  arou⏎  nd⏎  here
+2|6|plain|indent⏎ed⏎text⏎that⏎wraps⏎around⏎here
+2|7|default|  inden⏎  ted⏎  text⏎  that⏎  wraps⏎  aroun⏎  d⏎  here
+2|7|plain|indente⏎d text⏎that⏎wraps⏎around⏎here
+2|8|default|  indent⏎  ed⏎  text⏎  that⏎  wraps⏎  around⏎  here
+2|8|plain|indented⏎text⏎that⏎wraps⏎around⏎here
+2|9|default|  indente⏎  d text⏎  that⏎  wraps⏎  around⏎  here
+2|9|plain|indented⏎text that⏎wraps⏎around⏎here
+2|10|default|  indented⏎  text⏎  that⏎  wraps⏎  around⏎  here
+2|10|plain|indented⏎text that⏎wraps⏎around⏎here
+2|11|default|  indented⏎  text that⏎  wraps⏎  around⏎  here
+2|11|plain|indented⏎text that⏎wraps⏎around here
+2|12|default|  indented⏎  text that⏎  wraps⏎  around⏎  here
+2|12|plain|indented⏎text that⏎wraps around⏎here
+2|13|default|  indented⏎  text that⏎  wraps⏎  around here
+2|13|plain|indented text⏎that wraps⏎around here
+2|14|default|  indented⏎  text that⏎  wraps around⏎  here
+2|14|plain|indented text⏎that wraps⏎around here
+3|0|default|a⏎b⏎c⏎d⏎e
+3|0|plain|a⏎b⏎c⏎d⏎e
+3|1|default|a⏎b⏎c⏎d⏎e
+3|1|plain|a⏎b⏎c⏎d⏎e
+3|2|default|a ⏎b ⏎c ⏎d ⏎e
+3|2|plain|a ⏎b ⏎c ⏎d ⏎e
+3|3|default|a ⏎b  ⏎c  ⏎d  ⏎e
+3|3|plain|a ⏎b  ⏎c  ⏎d  ⏎e
+3|4|default|a  b⏎c   ⏎d   ⏎e
+3|4|plain|a  b⏎c   ⏎d   ⏎e
+3|5|default|a  b ⏎c   ⏎d    ⏎e
+3|5|plain|a  b ⏎c   ⏎d    ⏎e
+3|6|default|a  b  ⏎c    d⏎e
+3|6|plain|a  b  ⏎c    d⏎e
+3|7|default|a  b  ⏎c    d ⏎e
+3|7|plain|a  b  ⏎c    d ⏎e
+3|8|default|a  b   c⏎d     e
+3|8|plain|a  b   c⏎d     e
+3|9|default|a  b   c ⏎d     e
+3|9|plain|a  b   c ⏎d     e
+3|10|default|a  b   c  ⏎d     e
+3|10|plain|a  b   c  ⏎d     e
+3|11|default|a  b   c   ⏎d     e
+3|11|plain|a  b   c   ⏎d     e
+3|12|default|a  b   c   ⏎d     e
+3|12|plain|a  b   c   ⏎d     e
+3|13|default|a  b   c    d⏎e
+3|13|plain|a  b   c    d⏎e
+3|14|default|a  b   c    d ⏎       e
+3|14|plain|a  b   c    d ⏎e
+4|0|default|t⏎r⏎a⏎i⏎l⏎i⏎n⏎g⏎s⏎p⏎a⏎c⏎e⏎s⏎
+4|0|plain|t⏎r⏎a⏎i⏎l⏎i⏎n⏎g⏎s⏎p⏎a⏎c⏎e⏎s⏎
+4|1|default|t⏎r⏎a⏎i⏎l⏎i⏎n⏎g⏎s⏎p⏎a⏎c⏎e⏎s⏎
+4|1|plain|t⏎r⏎a⏎i⏎l⏎i⏎n⏎g⏎s⏎p⏎a⏎c⏎e⏎s⏎
+4|2|default|tr⏎ai⏎li⏎ng⏎sp⏎ac⏎es⏎
+4|2|plain|tr⏎ai⏎li⏎ng⏎sp⏎ac⏎es⏎
+4|3|default|tra⏎ili⏎ng⏎spa⏎ces⏎
+4|3|plain|tra⏎ili⏎ng⏎spa⏎ces⏎
+4|4|default|trai⏎ling⏎spac⏎es  ⏎
+4|4|plain|trai⏎ling⏎spac⏎es  ⏎
+4|5|default|trail⏎ing⏎space⏎s   
+4|5|plain|trail⏎ing⏎space⏎s   
+4|6|default|traili⏎ng⏎spaces⏎
+4|6|plain|traili⏎ng⏎spaces⏎
+4|7|default|trailin⏎g⏎spaces ⏎
+4|7|plain|trailin⏎g⏎spaces ⏎
+4|8|default|trailing⏎spaces  ⏎
+4|8|plain|trailing⏎spaces  ⏎
+4|9|default|trailing⏎spaces   
+4|9|plain|trailing⏎spaces   
+4|10|default|trailing⏎spaces   
+4|10|plain|trailing⏎spaces   
+4|11|default|trailing⏎spaces   
+4|11|plain|trailing⏎spaces   
+4|12|default|trailing⏎spaces   
+4|12|plain|trailing⏎spaces   
+4|13|default|trailing⏎spaces   
+4|13|plain|trailing⏎spaces   
+4|14|default|trailing⏎spaces   
+4|14|plain|trailing⏎spaces   
+5|0|default|
+5|0|plain|
+5|1|default|
+5|1|plain|
+5|2|default|
+5|2|plain|
+5|3|default|
+5|3|plain|
+5|4|default|
+5|4|plain|
+5|5|default|
+5|5|plain|
+5|6|default|
+5|6|plain|
+5|7|default|
+5|7|plain|
+5|8|default|
+5|8|plain|
+5|9|default|
+5|9|plain|
+5|10|default|     
+5|10|plain|
+5|11|default|     
+5|11|plain|
+5|12|default|     
+5|12|plain|
+5|13|default|     
+5|13|plain|
+5|14|default|     
+5|14|plain|
+6|0|default|
+6|0|plain|
+6|1|default|
+6|1|plain|
+6|2|default|
+6|2|plain|
+6|3|default|
+6|3|plain|
+6|4|default|
+6|4|plain|
+6|5|default|
+6|5|plain|
+6|6|default|
+6|6|plain|
+6|7|default|
+6|7|plain|
+6|8|default|
+6|8|plain|
+6|9|default|
+6|9|plain|
+6|10|default|
+6|10|plain|
+6|11|default|
+6|11|plain|
+6|12|default|
+6|12|plain|
+6|13|default|
+6|13|plain|
+6|14|default|
+6|14|plain|
+7|0|default|a⏎b
+7|0|plain|a⏎b
+7|1|default|a⏎b
+7|1|plain|a⏎b
+7|2|default|a⏎b
+7|2|plain|a⏎b
+7|3|default|a⏎b
+7|3|plain|a⏎b
+7|4|default|a⏎b
+7|4|plain|a⏎b
+7|5|default|a⏎b
+7|5|plain|a⏎b
+7|6|default|a⏎b
+7|6|plain|a⏎b
+7|7|default|a⏎b
+7|7|plain|a⏎b
+7|8|default|a⏎b
+7|8|plain|a⏎b
+7|9|default|a⏎b
+7|9|plain|a⏎b
+7|10|default|a⏎b
+7|10|plain|a⏎b
+7|11|default|a⏎b
+7|11|plain|a⏎b
+7|12|default|a⏎b
+7|12|plain|a⏎b
+7|13|default|a⏎b
+7|13|plain|a⏎b
+7|14|default|a⏎b
+7|14|plain|a⏎b
+8|0|default|a⏎⏎b⏎c⏎d⏎e⏎f⏎g
+8|0|plain|a⏎⏎b⏎c⏎d⏎e⏎f⏎g
+8|1|default|a⏎⏎b⏎c⏎d⏎e⏎f⏎g
+8|1|plain|a⏎⏎b⏎c⏎d⏎e⏎f⏎g
+8|2|default|a⏎⏎b⏎c⏎d⏎e⏎f⏎g
+8|2|plain|a⏎⏎b⏎c⏎d⏎e⏎f⏎g
+8|3|default|a⏎⏎b c⏎d e⏎f g
+8|3|plain|a⏎⏎b c⏎d e⏎f g
+8|4|default|a⏎⏎b c⏎d e⏎f g
+8|4|plain|a⏎⏎b c⏎d e⏎f g
+8|5|default|a⏎⏎b c d⏎e f g
+8|5|plain|a⏎⏎b c d⏎e f g
+8|6|default|a⏎⏎b c d⏎e f g
+8|6|plain|a⏎⏎b c d⏎e f g
+8|7|default|a⏎⏎b c d e⏎f g
+8|7|plain|a⏎⏎b c d e⏎f g
+8|8|default|a⏎⏎b c d e⏎f g
+8|8|plain|a⏎⏎b c d e⏎f g
+8|9|default|a⏎⏎b c d e f⏎g
+8|9|plain|a⏎⏎b c d e f⏎g
+8|10|default|a⏎⏎b c d e f⏎g
+8|10|plain|a⏎⏎b c d e f⏎g
+8|11|default|a⏎⏎b c d e f g
+8|11|plain|a⏎⏎b c d e f g
+8|12|default|a⏎⏎b c d e f g
+8|12|plain|a⏎⏎b c d e f g
+8|13|default|a⏎⏎b c d e f g
+8|13|plain|a⏎⏎b c d e f g
+8|14|default|a⏎⏎b c d e f g
+8|14|plain|a⏎⏎b c d e f g
+9|0|default|k⏎e⏎y⏎v⏎a⏎l⏎u⏎e⏎t⏎e⏎x⏎t⏎t⏎h⏎a⏎t⏎i⏎s⏎l⏎o⏎n⏎g⏎e⏎n⏎o⏎u⏎g⏎h⏎t⏎o⏎w⏎r⏎a⏎p
+9|0|plain|k⏎e⏎y⏎v⏎a⏎l⏎u⏎e⏎t⏎e⏎x⏎t⏎t⏎h⏎a⏎t⏎i⏎s⏎l⏎o⏎n⏎g⏎e⏎n⏎o⏎u⏎g⏎h⏎t⏎o⏎w⏎r⏎a⏎p
+9|1|default|k⏎e⏎y⏎v⏎a⏎l⏎u⏎e⏎t⏎e⏎x⏎t⏎t⏎h⏎a⏎t⏎i⏎s⏎l⏎o⏎n⏎g⏎e⏎n⏎o⏎u⏎g⏎h⏎t⏎o⏎w⏎r⏎a⏎p
+9|1|plain|k⏎e⏎y⏎v⏎a⏎l⏎u⏎e⏎t⏎e⏎x⏎t⏎t⏎h⏎a⏎t⏎i⏎s⏎l⏎o⏎n⏎g⏎e⏎n⏎o⏎u⏎g⏎h⏎t⏎o⏎w⏎r⏎a⏎p
+9|2|default|ke⏎y ⏎va⏎lu⏎e⏎te⏎xt⏎th⏎at⏎is⏎lo⏎ng⏎en⏎ou⏎gh⏎to⏎wr⏎ap
+9|2|plain|ke⏎y ⏎va⏎lu⏎e⏎te⏎xt⏎th⏎at⏎is⏎lo⏎ng⏎en⏎ou⏎gh⏎to⏎wr⏎ap
+9|3|default|key⏎val⏎ue⏎tex⏎t⏎tha⏎t⏎is⏎lon⏎g⏎eno⏎ugh⏎to⏎wra⏎p
+9|3|plain|key⏎val⏎ue⏎tex⏎t⏎tha⏎t⏎is⏎lon⏎g⏎eno⏎ugh⏎to⏎wra⏎p
+9|4|default|key ⏎valu⏎e⏎text⏎that⏎is⏎long⏎enou⏎gh⏎to⏎wrap
+9|4|plain|key ⏎valu⏎e⏎text⏎that⏎is⏎long⏎enou⏎gh⏎to⏎wrap
+9|5|default|key  ⏎value⏎text⏎that⏎is⏎long⏎enoug⏎h to⏎wrap
+9|5|plain|key  ⏎value⏎text⏎that⏎is⏎long⏎enoug⏎h to⏎wrap
+9|6|default|key  ⏎value⏎text⏎that⏎is⏎long⏎enough⏎to⏎wrap
+9|6|plain|key  ⏎value⏎text⏎that⏎is⏎long⏎enough⏎to⏎wrap
+9|7|default|key  ⏎value⏎text⏎that is⏎long⏎enough⏎to wrap
+9|7|plain|key  ⏎value⏎text⏎that is⏎long⏎enough⏎to wrap
+9|8|default|key  ⏎value⏎text⏎that is⏎long⏎enough⏎to wrap
+9|8|plain|key  ⏎value⏎text⏎that is⏎long⏎enough⏎to wrap
+9|9|default|key  ⏎value⏎text that⏎is long⏎enough to⏎wrap
+9|9|plain|key  ⏎value⏎text that⏎is long⏎enough to⏎wrap
+9|10|default|key  ⏎value text⏎that is⏎long⏎enough to⏎wrap
+9|10|plain|key  ⏎value text⏎that is⏎long⏎enough to⏎wrap
+9|11|default|key   value⏎text that⏎is long⏎enough to⏎wrap
+9|11|plain|key   value⏎text that⏎is long⏎enough to⏎wrap
+9|12|default|key   value⏎      text⏎      that⏎      is⏎      long⏎      enough⏎      to⏎      wrap
+9|12|plain|key   value⏎text that is⏎long enough⏎to wrap
+9|13|default|key   value⏎      text⏎      that is⏎      long⏎      enough⏎      to wrap
+9|13|plain|key   value⏎text that is⏎long enough⏎to wrap
+9|14|default|key   value⏎      text⏎      that is⏎      long⏎      enough⏎      to wrap
+9|14|plain|key   value⏎text that is⏎long enough to⏎wrap
+10|0|default|…⏎…⏎…⏎…⏎…⏎…⏎…⏎…⏎…⏎…
+10|0|plain|…⏎…⏎…⏎…⏎…⏎…⏎…⏎…⏎…⏎…
+10|1|default|…⏎…⏎…⏎…⏎…⏎…⏎…⏎…⏎…⏎…
+10|1|plain|…⏎…⏎…⏎…⏎…⏎…⏎…⏎…⏎…⏎…
+10|2|default|日⏎本⏎語⏎の⏎テ⏎キ⏎ス⏎ト⏎で⏎す
+10|2|plain|日⏎本⏎語⏎の⏎テ⏎キ⏎ス⏎ト⏎で⏎す
+10|3|default|日⏎本⏎語⏎の⏎テ⏎キ⏎ス⏎ト⏎で⏎す
+10|3|plain|日⏎本⏎語⏎の⏎テ⏎キ⏎ス⏎ト⏎で⏎す
+10|4|default|日本⏎語の⏎テキ⏎スト⏎です
+10|4|plain|日本⏎語の⏎テキ⏎スト⏎です
+10|5|default|日本⏎語の⏎テキ⏎スト⏎です
+10|5|plain|日本⏎語の⏎テキ⏎スト⏎です
+10|6|default|日本語⏎のテキ⏎ストで⏎す
+10|6|plain|日本語⏎のテキ⏎ストで⏎す
+10|7|default|日本語⏎のテキ⏎ストで⏎す
+10|7|plain|日本語⏎のテキ⏎ストで⏎す
+10|8|default|日本語の⏎テキスト⏎です
+10|8|plain|日本語の⏎テキスト⏎です
+10|9|default|日本語の⏎テキスト⏎です
+10|9|plain|日本語の⏎テキスト⏎です
+10|10|default|日本語のテ⏎キストです
+10|10|plain|日本語のテ⏎キストです
+10|11|default|日本語のテ⏎キストです
+10|11|plain|日本語のテ⏎キストです
+10|12|default|日本語のテキ⏎ストです
+10|12|plain|日本語のテキ⏎ストです
+10|13|default|日本語のテキ⏎ストです
+10|13|plain|日本語のテキ⏎ストです
+10|14|default|日本語のテキス⏎トです
+10|14|plain|日本語のテキス⏎トです
+11|0|default|é⏎é⏎é⏎é⏎é
+11|0|plain|é⏎é⏎é⏎é⏎é
+11|1|default|é⏎é⏎é⏎é⏎é
+11|1|plain|é⏎é⏎é⏎é⏎é
+11|2|default|éé⏎éé⏎é
+11|2|plain|éé⏎éé⏎é
+11|3|default|ééé⏎éé
+11|3|plain|ééé⏎éé
+11|4|default|éééé⏎é
+11|4|plain|éééé⏎é
+11|5|default|ééééé
+11|5|plain|ééééé
+11|6|default|ééééé
+11|6|plain|ééééé
+11|7|default|ééééé
+11|7|plain|ééééé
+11|8|default|ééééé
+11|8|plain|ééééé
+11|9|default|ééééé
+11|9|plain|ééééé
+11|10|default|ééééé
+11|10|plain|ééééé
+11|11|default|ééééé
+11|11|plain|ééééé
+11|12|default|ééééé
+11|12|plain|ééééé
+11|13|default|ééééé
+11|13|plain|ééééé
+11|14|default|ééééé
+11|14|plain|ééééé
+12|0|default|…⏎f⏎a⏎m⏎i⏎l⏎y⏎…⏎x
+12|0|plain|…⏎f⏎a⏎m⏎i⏎l⏎y⏎…⏎x
+12|1|default|…⏎f⏎a⏎m⏎i⏎l⏎y⏎…⏎x
+12|1|plain|…⏎f⏎a⏎m⏎i⏎l⏎y⏎…⏎x
+12|2|default|👨‍👩‍👧‍👦⏎fa⏎mi⏎ly⏎👨‍👩‍👧‍👦⏎x
+12|2|plain|👨‍👩‍👧‍👦⏎fa⏎mi⏎ly⏎👨‍👩‍👧‍👦⏎x
+12|3|default|👨‍👩‍👧‍👦⏎fam⏎ily⏎👨‍👩‍👧‍👦⏎x
+12|3|plain|👨‍👩‍👧‍👦⏎fam⏎ily⏎👨‍👩‍👧‍👦⏎x
+12|4|default|👨‍👩‍👧‍👦⏎fami⏎ly⏎👨‍👩‍👧‍👦 x
+12|4|plain|👨‍👩‍👧‍👦⏎fami⏎ly⏎👨‍👩‍👧‍👦 x
+12|5|default|👨‍👩‍👧‍👦⏎famil⏎y 👨‍👩‍👧‍👦⏎x
+12|5|plain|👨‍👩‍👧‍👦⏎famil⏎y 👨‍👩‍👧‍👦⏎x
+12|6|default|👨‍👩‍👧‍👦⏎family⏎👨‍👩‍👧‍👦 x
+12|6|plain|👨‍👩‍👧‍👦⏎family⏎👨‍👩‍👧‍👦 x
+12|7|default|👨‍👩‍👧‍👦⏎family⏎👨‍👩‍👧‍👦 x
+12|7|plain|👨‍👩‍👧‍👦⏎family⏎👨‍👩‍👧‍👦 x
+12|8|default|👨‍👩‍👧‍👦⏎family⏎👨‍👩‍👧‍👦 x
+12|8|plain|👨‍👩‍👧‍👦⏎family⏎👨‍👩‍👧‍👦 x
+12|9|default|👨‍👩‍👧‍👦 family⏎👨‍👩‍👧‍👦 x
+12|9|plain|👨‍👩‍👧‍👦 family⏎👨‍👩‍👧‍👦 x
+12|10|default|👨‍👩‍👧‍👦 family⏎👨‍👩‍👧‍👦 x
+12|10|plain|👨‍👩‍👧‍👦 family⏎👨‍👩‍👧‍👦 x
+12|11|default|👨‍👩‍👧‍👦 family⏎👨‍👩‍👧‍👦 x
+12|11|plain|👨‍👩‍👧‍👦 family⏎👨‍👩‍👧‍👦 x
+12|12|default|👨‍👩‍👧‍👦 family 👨‍👩‍👧‍👦⏎x
+12|12|plain|👨‍👩‍👧‍👦 family 👨‍👩‍👧‍👦⏎x
+12|13|default|👨‍👩‍👧‍👦 family 👨‍👩‍👧‍👦⏎x
+12|13|plain|👨‍👩‍👧‍👦 family 👨‍👩‍👧‍👦⏎x
+12|14|default|👨‍👩‍👧‍👦 family 👨‍👩‍👧‍👦 x
+12|14|plain|👨‍👩‍👧‍👦 family 👨‍👩‍👧‍👦 x
+13|0|default|x⏎…⏎…⏎y⏎…⏎z
+13|0|plain|x⏎…⏎…⏎y⏎…⏎z
+13|1|default|x⏎…⏎…⏎y⏎…⏎z
+13|1|plain|x⏎…⏎…⏎y⏎…⏎z
+13|2|default|x⏎日⏎本⏎y⏎語⏎z
+13|2|plain|x⏎日⏎本⏎y⏎語⏎z
+13|3|default|x⏎日⏎本⏎y⏎語⏎z
+13|3|plain|x⏎日⏎本⏎y⏎語⏎z
+13|4|default|x⏎日本⏎y 語⏎z
+13|4|plain|x⏎日本⏎y 語⏎z
+13|5|default|x⏎日本⏎y 語⏎z
+13|5|plain|x⏎日本⏎y 語⏎z
+13|6|default|x 日本⏎y 語 z
+13|6|plain|x 日本⏎y 語 z
+13|7|default|x 日本⏎y 語 z
+13|7|plain|x 日本⏎y 語 z
+13|8|default|x 日本 y⏎語 z
+13|8|plain|x 日本 y⏎語 z
+13|9|default|x 日本 y⏎語 z
+13|9|plain|x 日本 y⏎語 z
+13|10|default|x 日本 y⏎語 z
+13|10|plain|x 日本 y⏎語 z
+13|11|default|x 日本 y 語⏎z
+13|11|plain|x 日本 y 語⏎z
+13|12|default|x 日本 y 語⏎z
+13|12|plain|x 日本 y 語⏎z
+13|13|default|x 日本 y 語 z
+13|13|plain|x 日本 y 語 z
+13|14|default|x 日本 y 語 z
+13|14|plain|x 日本 y 語 z
+14|0|default|l⏎o⏎n⏎g⏎g⏎a⏎p⏎w⏎i⏎t⏎h⏎m⏎a⏎n⏎y⏎s⏎p⏎a⏎c⏎e⏎s⏎i⏎n⏎s⏎i⏎d⏎e⏎i⏎t
+14|0|plain|l⏎o⏎n⏎g⏎g⏎a⏎p⏎w⏎i⏎t⏎h⏎m⏎a⏎n⏎y⏎s⏎p⏎a⏎c⏎e⏎s⏎i⏎n⏎s⏎i⏎d⏎e⏎i⏎t
+14|1|default|l⏎o⏎n⏎g⏎g⏎a⏎p⏎w⏎i⏎t⏎h⏎m⏎a⏎n⏎y⏎s⏎p⏎a⏎c⏎e⏎s⏎i⏎n⏎s⏎i⏎d⏎e⏎i⏎t
+14|1|plain|l⏎o⏎n⏎g⏎g⏎a⏎p⏎w⏎i⏎t⏎h⏎m⏎a⏎n⏎y⏎s⏎p⏎a⏎c⏎e⏎s⏎i⏎n⏎s⏎i⏎d⏎e⏎i⏎t
+14|2|default|lo⏎ng⏎ga⏎p ⏎wi⏎th⏎ma⏎ny⏎sp⏎ac⏎es⏎in⏎si⏎de⏎it
+14|2|plain|lo⏎ng⏎ga⏎p ⏎wi⏎th⏎ma⏎ny⏎sp⏎ac⏎es⏎in⏎si⏎de⏎it
+14|3|default|lon⏎g  ⏎gap⏎wit⏎h  ⏎man⏎y  ⏎spa⏎ces⏎ins⏎ide⏎it
+14|3|plain|lon⏎g  ⏎gap⏎wit⏎h  ⏎man⏎y  ⏎spa⏎ces⏎ins⏎ide⏎it
+14|4|default|long⏎gap ⏎with⏎many⏎spac⏎es⏎insi⏎de  ⏎it
+14|4|plain|long⏎gap ⏎with⏎many⏎spac⏎es⏎insi⏎de  ⏎it
+14|5|default|long ⏎gap  ⏎with ⏎many ⏎space⏎s⏎insid⏎e  ⏎it
+14|5|plain|long ⏎gap  ⏎with ⏎many ⏎space⏎s⏎insid⏎e  ⏎it
+14|6|default|long  ⏎gap  ⏎with  ⏎many  ⏎spaces⏎inside⏎it
+14|6|plain|long  ⏎gap  ⏎with  ⏎many  ⏎spaces⏎inside⏎it
+14|7|default|long   ⏎gap  ⏎with  ⏎many  ⏎spaces⏎inside ⏎it
+14|7|plain|long   ⏎gap  ⏎with  ⏎many  ⏎spaces⏎inside ⏎it
+14|8|default|long   ⏎gap  ⏎with  ⏎many  ⏎spaces⏎inside  ⏎it
+14|8|plain|long   ⏎gap  ⏎with  ⏎many  ⏎spaces⏎inside  ⏎it
+14|9|default|long   ⏎gap  ⏎with  ⏎many  ⏎spaces⏎inside  ⏎it
+14|9|plain|long   ⏎gap  ⏎with  ⏎many  ⏎spaces⏎inside  ⏎it
+14|10|default|long   ⏎gap   with⏎many  ⏎spaces⏎inside  ⏎it
+14|10|plain|long   ⏎gap   with⏎many  ⏎spaces⏎inside  ⏎it
+14|11|default|long    gap⏎with   many⏎spaces⏎inside   it
+14|11|plain|long    gap⏎with   many⏎spaces⏎inside   it
+14|12|default|long    gap ⏎with   many ⏎spaces⏎inside   it
+14|12|plain|long    gap ⏎with   many ⏎spaces⏎inside   it
+14|13|default|long    gap  ⏎with   many  ⏎spaces inside⏎it
+14|13|plain|long    gap  ⏎with   many  ⏎spaces inside⏎it
+14|14|default|long    gap  ⏎with   many  ⏎spaces inside ⏎it
+14|14|plain|long    gap  ⏎with   many  ⏎spaces inside ⏎it
+15|0|default|	⏎t⏎a⏎b⏎	⏎s⏎e⏎p⏎a⏎r⏎a⏎t⏎e⏎d⏎w⏎o⏎r⏎d⏎s
+15|0|plain|	⏎t⏎a⏎b⏎	⏎s⏎e⏎p⏎a⏎r⏎a⏎t⏎e⏎d⏎w⏎o⏎r⏎d⏎s
+15|1|default|	⏎t⏎a⏎b⏎	⏎s⏎e⏎p⏎a⏎r⏎a⏎t⏎e⏎d⏎w⏎o⏎r⏎d⏎s
+15|1|plain|	⏎t⏎a⏎b⏎	⏎s⏎e⏎p⏎a⏎r⏎a⏎t⏎e⏎d⏎w⏎o⏎r⏎d⏎s
+15|2|default|	t⏎ab⏎	s⏎ep⏎ar⏎at⏎ed⏎wo⏎rd⏎s
+15|2|plain|	t⏎ab⏎	s⏎ep⏎ar⏎at⏎ed⏎wo⏎rd⏎s
+15|3|default|	ta⏎b	s⏎epa⏎rat⏎ed⏎wor⏎ds
+15|3|plain|	ta⏎b	s⏎epa⏎rat⏎ed⏎wor⏎ds
+15|4|default|	tab⏎	sep⏎arat⏎ed⏎word⏎s
+15|4|plain|	tab⏎	sep⏎arat⏎ed⏎word⏎s
+15|5|default|	tab	⏎separ⏎ated⏎words
+15|5|plain|	tab	⏎separ⏎ated⏎words
+15|6|default|	tab	s⏎eparat⏎ed⏎words
+15|6|plain|	tab	s⏎eparat⏎ed⏎words
+15|7|default|	tab	se⏎parated⏎words
+15|7|plain|	tab	se⏎parated⏎words
+15|8|default|	tab	sep⏎arated⏎words
+15|8|plain|	tab	sep⏎arated⏎words
+15|9|default|	tab	sepa⏎rated⏎words
+15|9|plain|	tab	sepa⏎rated⏎words
+15|10|default|	tab	separ⏎ated words
+15|10|plain|	tab	separ⏎ated words
+15|11|default|	tab	separa⏎ted words
+15|11|plain|	tab	separa⏎ted words
+15|12|default|	tab	separat⏎ed words
+15|12|plain|	tab	separat⏎ed words
+15|13|default|	tab	separate⏎d words
+15|13|plain|	tab	separate⏎d words
+15|14|default|	tab	separated⏎words
+15|14|plain|	tab	separated⏎words
+16|0|default|l⏎e⏎a⏎d⏎i⏎n⏎g⏎a⏎n⏎d⏎t⏎r⏎a⏎i⏎l⏎i⏎n⏎g⏎
+16|0|plain|l⏎e⏎a⏎d⏎i⏎n⏎g⏎a⏎n⏎d⏎t⏎r⏎a⏎i⏎l⏎i⏎n⏎g⏎
+16|1|default|l⏎e⏎a⏎d⏎i⏎n⏎g⏎a⏎n⏎d⏎t⏎r⏎a⏎i⏎l⏎i⏎n⏎g⏎
+16|1|plain|l⏎e⏎a⏎d⏎i⏎n⏎g⏎a⏎n⏎d⏎t⏎r⏎a⏎i⏎l⏎i⏎n⏎g⏎
+16|2|default|le⏎ad⏎in⏎g⏎an⏎d⏎tr⏎ai⏎li⏎ng⏎
+16|2|plain|le⏎ad⏎in⏎g⏎an⏎d⏎tr⏎ai⏎li⏎ng⏎
+16|3|default|lea⏎din⏎g⏎and⏎tra⏎ili⏎ng ⏎
+16|3|plain|lea⏎din⏎g⏎and⏎tra⏎ili⏎ng ⏎
+16|4|default|lead⏎ing⏎and⏎trai⏎ling⏎
+16|4|plain|lead⏎ing⏎and⏎trai⏎ling⏎
+16|5|default|leadi⏎ng⏎and⏎trail⏎ing  ⏎
+16|5|plain|leadi⏎ng⏎and⏎trail⏎ing  ⏎
+16|6|default|   lea⏎   din⏎   g⏎   and⏎   tra⏎   ili⏎   ng ⏎   
+16|6|plain|leadin⏎g and⏎traili⏎ng   
+16|7|default|   lead⏎   ing⏎   and⏎   trai⏎   ling⏎   
+16|7|plain|leading⏎and⏎trailin⏎g   
+16|8|default|   leadi⏎   ng⏎   and⏎   trail⏎   ing  ⏎   
+16|8|plain|leading⏎and⏎trailing⏎
+16|9|default|   leadin⏎   g and⏎   traili⏎   ng   
+16|9|plain|leading⏎and⏎trailing ⏎
+16|10|default|   leading⏎   and⏎   trailin⏎   g   
+16|10|plain|leading⏎and⏎trailing  ⏎
+16|11|default|   leading⏎   and⏎   trailing⏎   
+16|11|plain|leading and⏎trailing   
+16|12|default|   leading⏎   and⏎   trailing ⏎   
+16|12|plain|leading and⏎trailing   
+16|13|default|   leading⏎   and⏎   trailing  ⏎   
+16|13|plain|leading and⏎trailing   
+16|14|default|   leading and⏎   trailing   
+16|14|plain|leading and⏎trailing   
+17|0|default|h⏎t⏎t⏎p⏎s⏎:⏎/⏎/⏎e⏎x⏎a⏎m⏎p⏎l⏎e⏎.⏎c⏎o⏎m⏎/⏎a⏎/⏎v⏎e⏎r⏎y⏎/⏎l⏎o⏎n⏎g⏎/⏎u⏎r⏎l⏎/⏎t⏎h⏎a⏎t⏎/⏎n⏎e⏎v⏎e⏎r⏎/⏎b⏎r⏎e⏎a⏎k⏎s⏎?⏎x⏎=⏎1⏎&⏎y⏎=⏎2
+17|0|plain|h⏎t⏎t⏎p⏎s⏎:⏎/⏎/⏎e⏎x⏎a⏎m⏎p⏎l⏎e⏎.⏎c⏎o⏎m⏎/⏎a⏎/⏎v⏎e⏎r⏎y⏎/⏎l⏎o⏎n⏎g⏎/⏎u⏎r⏎l⏎/⏎t⏎h⏎a⏎t⏎/⏎n⏎e⏎v⏎e⏎r⏎/⏎b⏎r⏎e⏎a⏎k⏎s⏎?⏎x⏎=⏎1⏎&⏎y⏎=⏎2
+17|1|default|h⏎t⏎t⏎p⏎s⏎:⏎/⏎/⏎e⏎x⏎a⏎m⏎p⏎l⏎e⏎.⏎c⏎o⏎m⏎/⏎a⏎/⏎v⏎e⏎r⏎y⏎/⏎l⏎o⏎n⏎g⏎/⏎u⏎r⏎l⏎/⏎t⏎h⏎a⏎t⏎/⏎n⏎e⏎v⏎e⏎r⏎/⏎b⏎r⏎e⏎a⏎k⏎s⏎?⏎x⏎=⏎1⏎&⏎y⏎=⏎2
+17|1|plain|h⏎t⏎t⏎p⏎s⏎:⏎/⏎/⏎e⏎x⏎a⏎m⏎p⏎l⏎e⏎.⏎c⏎o⏎m⏎/⏎a⏎/⏎v⏎e⏎r⏎y⏎/⏎l⏎o⏎n⏎g⏎/⏎u⏎r⏎l⏎/⏎t⏎h⏎a⏎t⏎/⏎n⏎e⏎v⏎e⏎r⏎/⏎b⏎r⏎e⏎a⏎k⏎s⏎?⏎x⏎=⏎1⏎&⏎y⏎=⏎2
+17|2|default|ht⏎tp⏎s:⏎//⏎ex⏎am⏎pl⏎e.⏎co⏎m/⏎a/⏎ve⏎ry⏎/l⏎on⏎g/⏎ur⏎l/⏎th⏎at⏎/n⏎ev⏎er⏎/b⏎re⏎ak⏎s?⏎x=⏎1&⏎y=⏎2
+17|2|plain|ht⏎tp⏎s:⏎//⏎ex⏎am⏎pl⏎e.⏎co⏎m/⏎a/⏎ve⏎ry⏎/l⏎on⏎g/⏎ur⏎l/⏎th⏎at⏎/n⏎ev⏎er⏎/b⏎re⏎ak⏎s?⏎x=⏎1&⏎y=⏎2
+17|3|default|htt⏎ps:⏎//e⏎xam⏎ple⏎.co⏎m/a⏎/ve⏎ry/⏎lon⏎g/u⏎rl/⏎tha⏎t/n⏎eve⏎r/b⏎rea⏎ks?⏎x=1⏎&y=⏎2
+17|3|plain|htt⏎ps:⏎//e⏎xam⏎ple⏎.co⏎m/a⏎/ve⏎ry/⏎lon⏎g/u⏎rl/⏎tha⏎t/n⏎eve⏎r/b⏎rea⏎ks?⏎x=1⏎&y=⏎2
+17|4|default|http⏎s://⏎exam⏎ple.⏎com/⏎a/ve⏎ry/l⏎ong/⏎url/⏎that⏎/nev⏎er/b⏎reak⏎s?x=⏎1&y=⏎2
+17|4|plain|http⏎s://⏎exam⏎ple.⏎com/⏎a/ve⏎ry/l⏎ong/⏎url/⏎that⏎/nev⏎er/b⏎reak⏎s?x=⏎1&y=⏎2
+17|5|default|https⏎://ex⏎ample⏎.com/⏎a/ver⏎y/lon⏎g/url⏎/that⏎/neve⏎r/bre⏎aks?x⏎=1&y=⏎2
+17|5|plain|https⏎://ex⏎ample⏎.com/⏎a/ver⏎y/lon⏎g/url⏎/that⏎/neve⏎r/bre⏎aks?x⏎=1&y=⏎2
+17|6|default|https:⏎//exam⏎ple.co⏎m/a/ve⏎ry/lon⏎g/url/⏎that/n⏎ever/b⏎reaks?⏎x=1&y=⏎2
+17|6|plain|https:⏎//exam⏎ple.co⏎m/a/ve⏎ry/lon⏎g/url/⏎that/n⏎ever/b⏎reaks?⏎x=1&y=⏎2
+17|7|default|https:/⏎/exampl⏎e.com/a⏎/very/l⏎ong/url⏎/that/n⏎ever/br⏎eaks?x=⏎1&y=2
+17|7|plain|https:/⏎/exampl⏎e.com/a⏎/very/l⏎ong/url⏎/that/n⏎ever/br⏎eaks?x=⏎1&y=2
+17|8|default|https://⏎example.⏎com/a/ve⏎ry/long/⏎url/that⏎/never/b⏎reaks?x=⏎1&y=2
+17|8|plain|https://⏎example.⏎com/a/ve⏎ry/long/⏎url/that⏎/never/b⏎reaks?x=⏎1&y=2
+17|9|default|https://e⏎xample.co⏎m/a/very/⏎long/url/⏎that/neve⏎r/breaks?⏎x=1&y=2
+17|9|plain|https://e⏎xample.co⏎m/a/very/⏎long/url/⏎that/neve⏎r/breaks?⏎x=1&y=2
+17|10|default|https://ex⏎ample.com/⏎a/very/lon⏎g/url/that⏎/never/bre⏎aks?x=1&y=⏎2
+17|10|plain|https://ex⏎ample.com/⏎a/very/lon⏎g/url/that⏎/never/bre⏎aks?x=1&y=⏎2
+17|11|default|https://exa⏎mple.com/a/⏎very/long/u⏎rl/that/nev⏎er/breaks?x⏎=1&y=2
+17|11|plain|https://exa⏎mple.com/a/⏎very/long/u⏎rl/that/nev⏎er/breaks?x⏎=1&y=2
+17|12|default|https://exam⏎ple.com/a/ve⏎ry/long/url/⏎that/never/b⏎reaks?x=1&y=⏎2
+17|12|plain|https://exam⏎ple.com/a/ve⏎ry/long/url/⏎that/never/b⏎reaks?x=1&y=⏎2
+17|13|default|https://examp⏎le.com/a/very⏎/long/url/tha⏎t/never/break⏎s?x=1&y=2
+17|13|plain|https://examp⏎le.com/a/very⏎/long/url/tha⏎t/never/break⏎s?x=1&y=2
+17|14|default|https://exampl⏎e.com/a/very/l⏎ong/url/that/n⏎ever/breaks?x=⏎1&y=2
+17|14|plain|https://exampl⏎e.com/a/very/l⏎ong/url/that/n⏎ever/breaks?x=⏎1&y=2
+18|0|default|w⏎o⏎r⏎d⏎w⏎o⏎r⏎d⏎w⏎o⏎r⏎d⏎w⏎o⏎r⏎d⏎w⏎o⏎r⏎d⏎w⏎o⏎r⏎d⏎w⏎o⏎r⏎d⏎w⏎o⏎r⏎d
+18|0|plain|w⏎o⏎r⏎d⏎w⏎o⏎r⏎d⏎w⏎o⏎r⏎d⏎w⏎o⏎r⏎d⏎w⏎o⏎r⏎d⏎w⏎o⏎r⏎d⏎w⏎o⏎r⏎d⏎w⏎o⏎r⏎d
+18|1|default|w⏎o⏎r⏎d⏎w⏎o⏎r⏎d⏎w⏎o⏎r⏎d⏎w⏎o⏎r⏎d⏎w⏎o⏎r⏎d⏎w⏎o⏎r⏎d⏎w⏎o⏎r⏎d⏎w⏎o⏎r⏎d
+18|1|plain|w⏎o⏎r⏎d⏎w⏎o⏎r⏎d⏎w⏎o⏎r⏎d⏎w⏎o⏎r⏎d⏎w⏎o⏎r⏎d⏎w⏎o⏎r⏎d⏎w⏎o⏎r⏎d⏎w⏎o⏎r⏎d
+18|2|default|wo⏎rd⏎wo⏎rd⏎wo⏎rd⏎wo⏎rd⏎wo⏎rd⏎wo⏎rd⏎wo⏎rd⏎wo⏎rd
+18|2|plain|wo⏎rd⏎wo⏎rd⏎wo⏎rd⏎wo⏎rd⏎wo⏎rd⏎wo⏎rd⏎wo⏎rd⏎wo⏎rd
+18|3|default|wor⏎d⏎wor⏎d⏎wor⏎d⏎wor⏎d⏎wor⏎d⏎wor⏎d⏎wor⏎d⏎wor⏎d
+18|3|plain|wor⏎d⏎wor⏎d⏎wor⏎d⏎wor⏎d⏎wor⏎d⏎wor⏎d⏎wor⏎d⏎wor⏎d
+18|4|default|word⏎word⏎word⏎word⏎word⏎word⏎word⏎word
+18|4|plain|word⏎word⏎word⏎word⏎word⏎word⏎word⏎word
+18|5|default|word⏎word⏎word⏎word⏎word⏎word⏎word⏎word
+18|5|plain|word⏎word⏎word⏎word⏎word⏎word⏎word⏎word
+18|6|default|word⏎word⏎word⏎word⏎word⏎word⏎word⏎word
+18|6|plain|word⏎word⏎word⏎word⏎word⏎word⏎word⏎word
+18|7|default|word⏎word⏎word⏎word⏎word⏎word⏎word⏎word
+18|7|plain|word⏎word⏎word⏎word⏎word⏎word⏎word⏎word
+18|8|default|word⏎word⏎word⏎word⏎word⏎word⏎word⏎word
+18|8|plain|word⏎word⏎word⏎word⏎word⏎word⏎word⏎word
+18|9|default|word word⏎word word⏎word word⏎word word
+18|9|plain|word word⏎word word⏎word word⏎word word
+18|10|default|word word⏎word word⏎word word⏎word word
+18|10|plain|word word⏎word word⏎word word⏎word word
+18|11|default|word word⏎word word⏎word word⏎word word
+18|11|plain|word word⏎word word⏎word word⏎word word
+18|12|default|word word⏎word word⏎word word⏎word word
+18|12|plain|word word⏎word word⏎word word⏎word word
+18|13|default|word word⏎word word⏎word word⏎word word
+18|13|plain|word word⏎word word⏎word word⏎word word
+18|14|default|word word word⏎word word word⏎word word
+18|14|plain|word word word⏎word word word⏎word word
+19|0|default|f⏎o⏎u⏎r⏎-⏎s⏎p⏎a⏎c⏎e⏎i⏎n⏎d⏎e⏎n⏎t⏎w⏎i⏎t⏎h⏎a⏎h⏎a⏎n⏎g⏎g⏎a⏎p⏎h⏎e⏎r⏎e
+19|0|plain|f⏎o⏎u⏎r⏎-⏎s⏎p⏎a⏎c⏎e⏎i⏎n⏎d⏎e⏎n⏎t⏎w⏎i⏎t⏎h⏎a⏎h⏎a⏎n⏎g⏎g⏎a⏎p⏎h⏎e⏎r⏎e
+19|1|default|f⏎o⏎u⏎r⏎-⏎s⏎p⏎a⏎c⏎e⏎i⏎n⏎d⏎e⏎n⏎t⏎w⏎i⏎t⏎h⏎a⏎h⏎a⏎n⏎g⏎g⏎a⏎p⏎h⏎e⏎r⏎e
+19|1|plain|f⏎o⏎u⏎r⏎-⏎s⏎p⏎a⏎c⏎e⏎i⏎n⏎d⏎e⏎n⏎t⏎w⏎i⏎t⏎h⏎a⏎h⏎a⏎n⏎g⏎g⏎a⏎p⏎h⏎e⏎r⏎e
+19|2|default|fo⏎ur⏎-s⏎pa⏎ce⏎in⏎de⏎nt⏎wi⏎th⏎a ⏎ha⏎ng⏎ga⏎p⏎he⏎re
+19|2|plain|fo⏎ur⏎-s⏎pa⏎ce⏎in⏎de⏎nt⏎wi⏎th⏎a ⏎ha⏎ng⏎ga⏎p⏎he⏎re
+19|3|default|fou⏎r-s⏎pac⏎e⏎ind⏎ent⏎wit⏎h a⏎han⏎g⏎gap⏎her⏎e
+19|3|plain|fou⏎r-s⏎pac⏎e⏎ind⏎ent⏎wit⏎h a⏎han⏎g⏎gap⏎her⏎e
+19|4|default|four⏎-spa⏎ce⏎inde⏎nt⏎with⏎a   ⏎hang⏎gap⏎here
+19|4|plain|four⏎-spa⏎ce⏎inde⏎nt⏎with⏎a   ⏎hang⏎gap⏎here
+19|5|default|four-⏎space⏎inden⏎t⏎with⏎a   ⏎hang⏎gap⏎here
+19|5|plain|four-⏎space⏎inden⏎t⏎with⏎a   ⏎hang⏎gap⏎here
+19|6|default|four-s⏎pace⏎indent⏎with a⏎hang⏎gap⏎here
+19|6|plain|four-s⏎pace⏎indent⏎with a⏎hang⏎gap⏎here
+19|7|default|four-sp⏎ace⏎indent⏎with a ⏎hang⏎gap⏎here
+19|7|plain|four-sp⏎ace⏎indent⏎with a ⏎hang⏎gap⏎here
+19|8|default|    four⏎    -spa⏎    ce⏎    inde⏎    nt⏎    with⏎    a   ⏎    hang⏎    gap⏎    here
+19|8|plain|four-spa⏎ce⏎indent⏎with a  ⏎hang gap⏎here
+19|9|default|    four-⏎    space⏎    inden⏎    t⏎    with⏎    a   ⏎    hang⏎    gap⏎    here
+19|9|plain|four-spac⏎e indent⏎with a   ⏎hang gap⏎here
+19|10|default|    four-s⏎    pace⏎    indent⏎    with a⏎    hang⏎    gap⏎    here
+19|10|plain|four-space⏎indent⏎with a   ⏎hang gap⏎here
+19|11|default|    four-sp⏎    ace⏎    indent⏎    with a ⏎    hang⏎    gap⏎    here
+19|11|plain|four-space⏎indent with⏎a    hang⏎gap here
+19|12|default|    four-spa⏎    ce⏎    indent⏎    with a  ⏎    hang gap⏎    here
+19|12|plain|four-space⏎indent with⏎a    hang⏎gap here
+19|13|default|    four-spac⏎    e indent⏎    with a   ⏎    hang gap⏎    here
+19|13|plain|four-space⏎indent with a⏎hang gap here
+19|14|default|    four-space⏎    indent⏎    with a   ⏎    hang gap⏎    here
+19|14|plain|four-space⏎indent with a ⏎hang gap here
+20|0|default|a⏎b
+20|0|plain|a⏎b
+20|1|default|a⏎b
+20|1|plain|a⏎b
+20|2|default|a⏎b
+20|2|plain|a⏎b
+20|3|default|a b
+20|3|plain|a b
+20|4|default|a b
+20|4|plain|a b
+20|5|default|a b
+20|5|plain|a b
+20|6|default|a b
+20|6|plain|a b
+20|7|default|a b
+20|7|plain|a b
+20|8|default|a b
+20|8|plain|a b
+20|9|default|a b
+20|9|plain|a b
+20|10|default|a b
+20|10|plain|a b
+20|11|default|a b
+20|11|plain|a b
+20|12|default|a b
+20|12|plain|a b
+20|13|default|a b
+20|13|plain|a b
+20|14|default|a b
+20|14|plain|a b
+21|0|default|x
+21|0|plain|x
+21|1|default|x
+21|1|plain|x
+21|2|default| x
+21|2|plain|x
+21|3|default| x
+21|3|plain|x
+21|4|default| x
+21|4|plain|x
+21|5|default| x
+21|5|plain|x
+21|6|default| x
+21|6|plain|x
+21|7|default| x
+21|7|plain|x
+21|8|default| x
+21|8|plain|x
+21|9|default| x
+21|9|plain|x
+21|10|default| x
+21|10|plain|x
+21|11|default| x
+21|11|plain|x
+21|12|default| x
+21|12|plain|x
+21|13|default| x
+21|13|plain|x
+21|14|default| x
+21|14|plain|x
+22|0|default|a⏎b⏎
+22|0|plain|a⏎b⏎
+22|1|default|a⏎b⏎
+22|1|plain|a⏎b⏎
+22|2|default|ab⏎
+22|2|plain|ab⏎
+22|3|default|ab ⏎
+22|3|plain|ab ⏎
+22|4|default|ab  
+22|4|plain|ab  
+22|5|default|ab  
+22|5|plain|ab  
+22|6|default|ab  
+22|6|plain|ab  
+22|7|default|ab  
+22|7|plain|ab  
+22|8|default|ab  
+22|8|plain|ab  
+22|9|default|ab  
+22|9|plain|ab  
+22|10|default|ab  
+22|10|plain|ab  
+22|11|default|ab  
+22|11|plain|ab  
+22|12|default|ab  
+22|12|plain|ab  
+22|13|default|ab  
+22|13|plain|ab  
+22|14|default|ab  
+22|14|plain|ab  
+23|0|default|a⏎b⏎c⏎d⏎e⏎f
+23|0|plain|a⏎b⏎c⏎d⏎e⏎f
+23|1|default|a⏎b⏎c⏎d⏎e⏎f
+23|1|plain|a⏎b⏎c⏎d⏎e⏎f
+23|2|default|ab⏎cd⏎ef
+23|2|plain|ab⏎cd⏎ef
+23|3|default|ab⏎cd ⏎ef
+23|3|plain|ab⏎cd ⏎ef
+23|4|default|ab⏎  cd⏎  ef
+23|4|plain|ab⏎cd ⏎ef
+23|5|default|ab⏎  cd ⏎  ef
+23|5|plain|ab⏎cd ⏎ef
+23|6|default|ab⏎  cd ⏎  ef
+23|6|plain|ab⏎cd  ef
+23|7|default|ab⏎  cd ⏎  ef
+23|7|plain|ab⏎cd  ef
+23|8|default|ab⏎  cd  ef
+23|8|plain|ab⏎cd  ef
+23|9|default|ab⏎  cd  ef
+23|9|plain|ab⏎cd  ef
+23|10|default|ab⏎  cd  ef
+23|10|plain|ab⏎cd  ef
+23|11|default|ab⏎  cd  ef
+23|11|plain|ab⏎cd  ef
+23|12|default|ab⏎  cd  ef
+23|12|plain|ab⏎cd  ef
+23|13|default|ab⏎  cd  ef
+23|13|plain|ab⏎cd  ef
+23|14|default|ab⏎  cd  ef
+23|14|plain|ab⏎cd  ef
+24|0|default|a​⏎b⏎c
+24|0|plain|a​⏎b⏎c
+24|1|default|a​⏎b⏎c
+24|1|plain|a​⏎b⏎c
+24|2|default|a​b⏎c
+24|2|plain|a​b⏎c
+24|3|default|a​b⏎c
+24|3|plain|a​b⏎c
+24|4|default|a​b c
+24|4|plain|a​b c
+24|5|default|a​b c
+24|5|plain|a​b c
+24|6|default|a​b c
+24|6|plain|a​b c
+24|7|default|a​b c
+24|7|plain|a​b c
+24|8|default|a​b c
+24|8|plain|a​b c
+24|9|default|a​b c
+24|9|plain|a​b c
+24|10|default|a​b c
+24|10|plain|a​b c
+24|11|default|a​b c
+24|11|plain|a​b c
+24|12|default|a​b c
+24|12|plain|a​b c
+24|13|default|a​b c
+24|13|plain|a​b c
+24|14|default|a​b c
+24|14|plain|a​b c
