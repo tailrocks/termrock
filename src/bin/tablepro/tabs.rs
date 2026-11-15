@@ -790,7 +790,7 @@ impl TableTab {
     }
 
     pub fn dirty_count(&self) -> usize {
-        self.grid.pending.total()
+        self.grid.pending().total()
     }
 
     pub fn hints(&self, focus: Option<WidgetId>) -> Vec<Hint> {
@@ -3054,5 +3054,33 @@ mod issue10_tests {
         .check(ColType::Int)
         .unwrap_err();
         assert_eq!(err.field, FilterField::Value2);
+    }
+}
+
+#[cfg(test)]
+mod issue9_tests {
+    use super::*;
+
+    #[test]
+    fn issue9_query_editor_unicode_paste() {
+        let sql = "SELECT é, 名 FROM 表 WHERE note = '💾;中'; SELECT e\u{301} FROM t";
+        let mut tab = QueryTab::new(WidgetId::of("issue9"), "Query 1", "");
+        tab.editor.editing = true;
+        assert_eq!(tab.on_paste(sql), Outcome::Changed);
+        assert_eq!(tab.editor.text(), sql);
+
+        let runs = tab.statements_to_run(true);
+        let texts: Vec<&str> = runs.iter().map(|(text, _)| text.as_str()).collect();
+        assert_eq!(
+            texts,
+            [
+                "SELECT é, 名 FROM 表 WHERE note = '💾;中'",
+                "SELECT e\u{301} FROM t"
+            ]
+        );
+        for (text, range) in &runs {
+            assert_eq!(&sql[range.clone()], text.as_str());
+        }
+        assert!(!highlight_sql(sql).is_empty());
     }
 }

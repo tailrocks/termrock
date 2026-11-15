@@ -147,67 +147,89 @@ pub fn is_literal(word: &str) -> bool {
         .any(|l| word.eq_ignore_ascii_case(l))
 }
 
+/// The scalar starting at byte offset `at`, or `None` at end of input or when
+/// `at` is not a char boundary. `str::get` performs the boundary check, so no
+/// caller can slice inside a multi-byte scalar through this helper.
+fn scalar_at(src: &str, at: usize) -> Option<char> {
+    src.get(at..)?.chars().next()
+}
+
+/// Advances `at` past every leading scalar that satisfies `keep`. Returns the
+/// new byte offset, which is always a char boundary.
+fn scan_while(src: &str, mut at: usize, keep: impl Fn(char) -> bool) -> usize {
+    while let Some(ch) = scalar_at(src, at) {
+        if !keep(ch) {
+            break;
+        }
+        at += ch.len_utf8();
+    }
+    at
+}
+
+/// End offset of a quoted run that opens at `start`. A doubled quote inside
+/// the run is an escape and stays in the token. An unterminated run ends at
+/// the end of input.
+fn quoted_end(src: &str, start: usize, quote: char) -> usize {
+    let mut at = start + quote.len_utf8();
+    while let Some(ch) = scalar_at(src, at) {
+        at += ch.len_utf8();
+        if ch == quote {
+            if scalar_at(src, at) == Some(quote) {
+                at += quote.len_utf8();
+            } else {
+                break;
+            }
+        }
+    }
+    at
+}
+
+/// Splits `src` into contiguous, non-empty tokens whose byte ranges cover the
+/// whole input. Every range starts and ends on a UTF-8 char boundary, so the
+/// ranges can be used to slice `src` directly.
+///
+/// Identifiers accept an alphabetic or `_` scalar first, then alphanumeric
+/// scalars or `_`. Any other scalar, such as an emoji or a combining mark,
+/// becomes one punctuation token. This is a lexical policy, not full SQL
+/// Unicode identifier support.
 pub fn tokenize(src: &str) -> Vec<Token> {
-    let b = src.as_bytes();
     let mut out = Vec::new();
     let mut i = 0;
-    while i < b.len() {
-        let c = b[i] as char;
+    while let Some(c) = scalar_at(src, i) {
         let start = i;
         let kind = if c.is_whitespace() {
-            while i < b.len() && (b[i] as char).is_whitespace() {
-                i += 1;
-            }
+            i = scan_while(src, i, char::is_whitespace);
             TokKind::Whitespace
-        } else if c == '-' && b.get(i + 1) == Some(&b'-') {
-            while i < b.len() && b[i] != b'\n' {
-                i += 1;
-            }
+        } else if c == '-' && src[i..].starts_with("--") {
+            i = src[i..].find('\n').map_or(src.len(), |n| i + n);
             TokKind::Comment
-        } else if c == '/' && b.get(i + 1) == Some(&b'*') {
-            i += 2;
-            while i < b.len() && !(b[i] == b'*' && b.get(i + 1) == Some(&b'/')) {
-                i += 1;
-            }
-            i = (i + 2).min(b.len());
+        } else if c == '/' && src[i..].starts_with("/*") {
+            i = src[i + 2..].find("*/").map_or(src.len(), |n| i + 2 + n + 2);
             TokKind::Comment
         } else if c == '\'' {
-            i += 1;
-            while i < b.len() && b[i] != b'\'' {
-                i += 1;
-            }
-            i = (i + 1).min(b.len());
+            i = quoted_end(src, i, '\'');
             TokKind::String
         } else if c == '"' {
-            i += 1;
-            while i < b.len() && b[i] != b'"' {
-                i += 1;
-            }
-            i = (i + 1).min(b.len());
+            i = quoted_end(src, i, '"');
             TokKind::Ident
         } else if c.is_ascii_digit() {
-            while i < b.len() && ((b[i] as char).is_ascii_digit() || b[i] == b'.') {
-                i += 1;
-            }
+            i = scan_while(src, i, |ch| ch.is_ascii_digit() || ch == '.');
             TokKind::Number
         } else if c.is_alphabetic() || c == '_' {
-            while i < b.len() && ((b[i] as char).is_alphanumeric() || b[i] == b'_') {
-                i += 1;
-            }
-            if is_literal(&src[start..i]) {
+            i = scan_while(src, i, |ch| ch.is_alphanumeric() || ch == '_');
+            let word = &src[start..i];
+            if is_literal(word) {
                 TokKind::Literal
-            } else if is_keyword(&src[start..i]) {
+            } else if is_keyword(word) {
                 TokKind::Keyword
             } else {
                 TokKind::Ident
             }
         } else if "=<>!+-*/%|".contains(c) {
-            while i < b.len() && "=<>!+-*/%|".contains(b[i] as char) {
-                i += 1;
-            }
+            i = scan_while(src, i, |ch| "=<>!+-*/%|".contains(ch));
             TokKind::Operator
         } else {
-            i += c.len_utf8().max(1);
+            i += c.len_utf8();
             TokKind::Punct
         };
         out.push(Token {
@@ -2010,13 +2032,129 @@ mod issue10_sql_tests {
         for value in ["O'Reilly", "''", "back\\slash", "100%_", "naïve ☃"] {
             let quoted = crate::model::quote_text(value);
             assert_eq!(
-                quoted,
+                Ok(quoted.clone()),
                 crate::model::sql_literal(&Value::Text(value.into()))
             );
             assert_eq!(
                 filter_on("notes", FilterOp::Eq, value).to_sql(),
                 format!("notes = {quoted}")
             );
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Asserts the tokenizer's core contract: contiguous, non-empty ranges
+    /// that cover `src` exactly, with both endpoints on char boundaries.
+    fn assert_partition(src: &str) {
+        let toks = tokenize(src);
+        let mut at = 0;
+        for t in &toks {
+            assert_eq!(t.start, at, "gap or overlap before {t:?} in {src:?}");
+            assert!(t.start < t.end, "empty token {t:?} in {src:?}");
+            assert!(
+                src.is_char_boundary(t.start) && src.is_char_boundary(t.end),
+                "token {t:?} is not on char boundaries in {src:?}"
+            );
+            at = t.end;
+        }
+        assert_eq!(at, src.len(), "tokens stop early in {src:?}");
+        let joined: String = toks.iter().map(|t| &src[t.start..t.end]).collect();
+        assert_eq!(joined, src);
+    }
+
+    const UNICODE_CORPUS: &[&str] = &[
+        "SELECT é",
+        "SELECT é FROM t",
+        "SELECT 名 FROM 表 WHERE 名 = '中;文'",
+        "SELECT \"é\"\"中\" FROM t",
+        "SELECT 💾, 'x''é'; /*中*/",
+        "SELECT e\u{301} FROM t",
+        "SELECT\u{a0}1\u{2003}FROM t",
+        "-- 💾 comment\nSELECT 1",
+        "SELECT 'unterminated é",
+        "SELECT /* unterminated 中",
+        "SELECT \"unterminated 名",
+        "💾💾💾",
+        "_é1 = 2",
+        "",
+    ];
+
+    #[test]
+    fn issue9_tokens_partition_utf8() {
+        for src in UNICODE_CORPUS {
+            assert_partition(src);
+        }
+    }
+
+    #[test]
+    fn issue9_every_scalar_prefix_makes_progress() {
+        let src = "SELECT é中💾, 'x''é'; /*中*/";
+        for (end, _) in src.char_indices().chain([(src.len(), ' ')]) {
+            assert_partition(&src[..end]);
+        }
+    }
+
+    #[test]
+    fn issue9_ascii_token_kinds_are_unchanged() {
+        let kinds: Vec<TokKind> = tokenize("SELECT id, 1.5 FROM t WHERE x <> NULL")
+            .into_iter()
+            .filter(|t| t.kind != TokKind::Whitespace)
+            .map(|t| t.kind)
+            .collect();
+        use TokKind::*;
+        assert_eq!(
+            kinds,
+            [
+                Keyword, Ident, Punct, Number, Keyword, Ident, Keyword, Ident, Operator, Literal
+            ]
+        );
+    }
+
+    #[test]
+    fn issue9_doubled_quotes_stay_one_token() {
+        let src = "'it''s' \"a\"\"é\"";
+        let toks = tokenize(src);
+        assert_eq!(toks.len(), 3);
+        assert_eq!(&src[toks[0].start..toks[0].end], "'it''s'");
+        assert_eq!(toks[0].kind, TokKind::String);
+        assert_eq!(&src[toks[2].start..toks[2].end], "\"a\"\"é\"");
+        assert_eq!(toks[2].kind, TokKind::Ident);
+    }
+
+    #[test]
+    fn issue9_unicode_quotes_comments_segments() {
+        let src = "SELECT 'é;中'; -- 💾\nSELECT \"名\";";
+        let texts: Vec<&str> = split_statements(src)
+            .into_iter()
+            .map(|(a, b)| &src[a..b])
+            .collect();
+        assert_eq!(texts, ["SELECT 'é;中'", "-- 💾\nSELECT \"名\""]);
+    }
+
+    #[test]
+    fn issue9_unterminated_input_extends_to_eof() {
+        let quote = "SELECT 'é;中";
+        assert_eq!(split_statements(quote), [(0, quote.len())]);
+        let block = "SELECT /* é; 中";
+        assert_eq!(split_statements(block), [(0, block.len())]);
+    }
+
+    #[test]
+    fn issue9_consumers_slice_only_token_boundaries() {
+        for src in UNICODE_CORPUS {
+            for range in crate::tabs::segment_sql(src) {
+                assert!(src.is_char_boundary(range.start));
+                assert!(src.is_char_boundary(range.end));
+            }
+            for (range, _) in crate::tabs::highlight_sql(src) {
+                assert!(src.is_char_boundary(range.start));
+                assert!(src.is_char_boundary(range.end));
+            }
+            let _ = parse(src);
         }
     }
 }

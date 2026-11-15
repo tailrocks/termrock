@@ -22,7 +22,7 @@ tuiscotti-latest = { package = "tuiscotti", git = "https://github.com/tailrocks/
 
 [features]
 default = ["cli", "terminal"]
-cli = ["dep:clap", "dep:regex"]
+cli = ["dep:clap", "dep:regex", "dep:serde_json"]
 terminal = ["dep:termpane"]
 product = ["terminal"]
 
@@ -59,6 +59,7 @@ ratatui = { workspace = true }
 unicode-width = "0.2.3"
 unicode-segmentation = "1"
 regex = { version = "1.13", optional = true }
+serde_json = { workspace = true, optional = true }
 
 [target.'cfg(unix)'.dependencies]
 
