@@ -478,6 +478,14 @@ mod showcase_coverage {
                 errors.push(format!("API is both showcased and allowlisted: {id}"));
             }
         }
+        let close = format!("{MODULE}::InspectOutcome::Close");
+        let always_back =
+            page.contains(".returns_to_exit(true)") && !page.contains(".returns_to_exit(false)");
+        if always_back && claimed.contains(&close) {
+            errors.push(format!(
+                "coverage claims {close}, but the page only builds returns_to_exit(true) inspectors"
+            ));
+        }
         for (id, reason) in &allowed {
             if reason.trim().is_empty() {
                 errors.push(format!("allowlist entry has no reason: {id}"));
