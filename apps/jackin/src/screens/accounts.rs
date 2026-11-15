@@ -657,7 +657,7 @@ impl AccountsScreen {
             if let Some(f) = fields.iter_mut().find(|f| f.name == "endpoint")
                 && let super::modals::FieldKindW::Input(i) = &mut f.kind
             {
-                *i = TextInput::new(i.id, "Endpoint / deployment").value(&e.host);
+                i.set_value(&e.host);
             }
         }
         self.form = Some(ctx);

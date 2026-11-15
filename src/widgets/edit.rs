@@ -482,6 +482,10 @@ impl EditField {
         self.undo.seal();
     }
 
+    pub(crate) fn cancel_pointer_selection(&mut self) {
+        self.press = PressState::default();
+    }
+
     pub fn pressed(&self) -> bool {
         self.press.at.is_some()
     }

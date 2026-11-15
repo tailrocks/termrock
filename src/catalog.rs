@@ -2157,6 +2157,7 @@ pub static CAPABILITIES: &[Capability] = &[
     Capability::function("widgets::input::TextInput::can_undo"),
     Capability::function("widgets::input::TextInput::hints"),
     Capability::function("widgets::input::TextInput::on_blur"),
+    Capability::function("widgets::input::TextInput::set_value"),
     Capability::function("widgets::input::TextInput::clear"),
     Capability::function("widgets::input::TextInput::text"),
     Capability::function("widgets::input::TextInput::begin_edit"),

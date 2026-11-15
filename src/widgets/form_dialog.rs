@@ -304,11 +304,7 @@ impl FormDialog {
     pub fn set_text(&mut self, name: &str, v: &str) {
         if let Some(f) = self.field_mut(name) {
             match &mut f.kind {
-                FormFieldKind::Input(i) => {
-                    *i = TextInput::new(i.id, &i.label.clone())
-                        .value(v)
-                        .placeholder(&i.placeholder.clone())
-                }
+                FormFieldKind::Input(i) => i.set_value(v),
                 FormFieldKind::Chooser { value, .. } => *value = v.to_owned(),
                 _ => {}
             }

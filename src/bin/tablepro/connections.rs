@@ -824,9 +824,7 @@ impl ConnectionsScreen {
                     1 => "3306",
                     _ => "",
                 };
-                form.port = TextInput::new(form.port.id, "Port")
-                    .value(port)
-                    .validator(port_validator);
+                form.port.set_value(port);
             }
             return o;
         }
