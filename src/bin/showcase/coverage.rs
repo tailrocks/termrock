@@ -188,6 +188,7 @@ pub const TEXT_INPUT_COVERAGE: &[(&str, &str)] =
     &[("widgets::input::TextInput::set_value", "selectable")];
 pub const GRID_EDIT_COVERAGE: &[(&str, &str)] = &[
     ("widgets::grid::DataGrid::try_edit_text", "grid"),
+    ("widgets::grid::DataGrid::paste_into_cell", "grid"),
     ("widgets::grid::DataGrid::finish_edit_session", "grid"),
     ("widgets::grid::CellEditResult", "grid"),
     ("widgets::grid::CellEditResult::Changed", "grid"),

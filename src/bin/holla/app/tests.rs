@@ -72,7 +72,11 @@ fn plan_tab(app: &App, id: &str) -> Option<usize> {
 
 fn confirm_close_dialog(app: &mut App) {
     assert!(!app.modals.is_empty(), "the close dialog is open");
-    // Arrow keys step only over buttons the last frame placed.
+    // A button joins the focus ring only when a frame places it, and an arrow key
+    // steps over ring members. Without this draw the ring is empty and the key
+    // moves nothing, so Enter would pick the default button.
+    // The runtime draws after every input that changes the screen, so a real session
+    // never sends the arrow before the frame; the test has to supply it.
     drawn_text(app);
     app.handle_input(key(KeyCode::Right, KeyModifiers::NONE));
     app.handle_input(key(KeyCode::Enter, KeyModifiers::NONE));
@@ -335,7 +339,11 @@ fn assert_quit_body(app: &App, expected: &str) {
 }
 
 fn confirm_quit(app: &mut App) {
-    // Arrow keys step only over buttons the last frame placed.
+    // A button joins the focus ring only when a frame places it, and an arrow key
+    // steps over ring members. Without this draw the ring is empty and the key
+    // moves nothing, so Enter would pick the default button.
+    // The runtime draws after every input that changes the screen, so a real session
+    // never sends the arrow before the frame; the test has to supply it.
     drawn_text(app);
     app.handle_input(key(KeyCode::Right, KeyModifiers::NONE));
     app.handle_input(key(KeyCode::Enter, KeyModifiers::NONE));
@@ -2927,4 +2935,50 @@ fn finder_query_edit_on_the_same_result_resets_preview_scroll() {
         "the query edit kept the same item selected"
     );
     assert_eq!(preview_body_word(&mut app), top);
+}
+
+#[test]
+fn finder_preview_follows_a_selection_moved_off_a_chip_that_no_longer_fits() {
+    const LONG: &str = "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW";
+    // The preview title is cut to the pane, so match its start.
+    const TITLE: &str = "WWWWWWWWWW";
+    let mut app = finder_app();
+    let mut tiles = explore_tiles(&[
+        "explore.tasks",
+        "explore.git",
+        "explore.files",
+        "explore.disk",
+    ]);
+    let mut long = explore_tiles(&["explore.services"]).remove(0);
+    long.label = LONG;
+    tiles.push(long);
+    app.world.edit_catalog(|w| w.explore_tiles = tiles.clone());
+    tick(&mut app, 1);
+    finder_select_explore(&mut app, "explore.services");
+    let wide = drawn_text_sized(&mut app, 120);
+    assert!(
+        wide.lines()
+            .any(|l| l.contains(TITLE) && l.contains("explore \u{b7} here")),
+        "premise: the last chip is drawn and the preview describes it\n{wide}"
+    );
+
+    let narrow = drawn_text_sized(&mut app, 110);
+    let now = finder(&mut app).current_id();
+    assert_eq!(
+        now.as_deref(),
+        Some("explore.disk"),
+        "premise: narrowing left the last chip out and the selection moved\n{narrow}"
+    );
+    assert!(
+        narrow
+            .lines()
+            .any(|l| l.contains("Disk") && l.contains("explore \u{b7} here")),
+        "the frame that moved the selection shows the new preview\n{narrow}"
+    );
+    assert!(
+        !narrow
+            .lines()
+            .any(|l| l.contains(TITLE) && l.contains("explore \u{b7} here")),
+        "the preview still describes the chip that is no longer drawn\n{narrow}"
+    );
 }

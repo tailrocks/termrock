@@ -171,10 +171,16 @@ pub(crate) fn record(f: impl FnOnce(&mut Work)) {
 }
 
 /// Runs a reference computation that must not count as projection work, such
-/// as the full rebuild a differential check compares against.
+/// as the full rebuild a differential check compares against. The library's
+/// own #56 counters, which this module cannot see into (width calls, bytes
+/// measured), are suspended too, so a contract measures the product path and
+/// not the test-only oracle that runs beside it.
 #[cfg(test)]
 pub(crate) fn uncounted<R>(f: impl FnOnce() -> R) -> R {
     UNCOUNTED.with(|c| c.set(c.get() + 1));
+    #[cfg(feature = "work-metrics")]
+    let out = junie_tui::metrics::suspended(f);
+    #[cfg(not(feature = "work-metrics"))]
     let out = f();
     UNCOUNTED.with(|c| c.set(c.get() - 1));
     out

@@ -1008,6 +1008,9 @@ impl RoleEditorScreen {
             bg,
         );
         let head_y = area.y + used + 1;
+        if head_y >= area.bottom() {
+            return;
+        }
         let n = self.pending.env.len();
         let head = format!("Entries  {n}");
         buf.set_string(

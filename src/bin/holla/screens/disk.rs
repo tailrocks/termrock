@@ -1,4 +1,4 @@
-use crate::screens::Holla;
+use crate::screens::{DetailRewind, Holla};
 use junie_tui::shell::Page as ShellPage;
 use junie_tui::widgets::page_header::Heading;
 use std::collections::BTreeSet;
@@ -1243,6 +1243,16 @@ fn short_error(e: &crate::sim::fs::FsError) -> &'static str {
 impl DiskPage {
     fn click(&mut self, ev: &PointerEvent, w: &mut World, cx: &mut Cx) -> Outcome {
         let (id, pos) = (ev.id, ev.pos());
+        if self.view == View::Overview
+            && let Some(i) = self
+                .list_scroll
+                .visible_range()
+                .find(|&i| LIST.child(i) == id)
+            && ClickPolicy::DATA.activates(ev.count(), self.cursor == i)
+        {
+            self.cursor = i;
+            return self.open_row(w, cx);
+        }
         if id == scrollbar::id_for(TREE) {
             cx.focus.focus(TREE);
             return self.tree.pointer(ev).outcome();
@@ -1303,6 +1313,22 @@ impl DiskPage {
 impl DiskPage {
     fn main_id(&self) -> WidgetId {
         if self.view == View::Tree { TREE } else { LIST }
+    }
+}
+
+impl DetailRewind for DiskPage {
+    type Item = Option<String>;
+
+    fn described_item(&self) -> Self::Item {
+        match self.view {
+            View::Tree => self.cursor_fs_path(),
+            View::Overview => self.overview.get(self.cursor).map(|r| r.path.clone()),
+            View::TopFiles => self.top.get(self.cursor).map(|r| r.path.clone()),
+        }
+    }
+
+    fn detail_scroll_mut(&mut self) -> &mut ScrollState {
+        &mut self.detail_scroll
     }
 }
 
@@ -1452,7 +1478,7 @@ impl ShellPage<Holla> for DiskPage {
                 if !cx.focus.is(TREE) {
                     return Outcome::Ignored;
                 }
-                let (o, actions) = self.tree.on_key(key).into_parts();
+                let (o, actions) = self.track_detail(|p| p.tree.on_key(key).into_parts());
                 if actions
                     .into_iter()
                     .any(|a| matches!(a, TreeAction::Activate(_)))
@@ -1460,7 +1486,6 @@ impl ShellPage<Holla> for DiskPage {
                     return Outcome::Changed;
                 }
                 if o.consumed() {
-                    self.detail_scroll.jump_start();
                     return o;
                 }
                 Outcome::Ignored
@@ -1473,24 +1498,22 @@ impl ShellPage<Holla> for DiskPage {
                 };
                 match key.code {
                     KeyCode::Up | KeyCode::Char('k') => {
-                        self.cursor = self.cursor.saturating_sub(1);
-                        self.detail_scroll.jump_start();
+                        self.track_detail(|p| p.cursor = p.cursor.saturating_sub(1));
                         self.list_scroll.ensure_visible(self.cursor);
                         Outcome::Changed
                     }
                     KeyCode::Down | KeyCode::Char('j') => {
-                        self.cursor = (self.cursor + 1).min(n.saturating_sub(1));
-                        self.detail_scroll.jump_start();
+                        self.track_detail(|p| p.cursor = (p.cursor + 1).min(n.saturating_sub(1)));
                         self.list_scroll.ensure_visible(self.cursor);
                         Outcome::Changed
                     }
                     KeyCode::Home | KeyCode::Char('g') => {
-                        self.cursor = 0;
+                        self.track_detail(|p| p.cursor = 0);
                         self.list_scroll.jump_start();
                         Outcome::Changed
                     }
                     KeyCode::End | KeyCode::Char('G') => {
-                        self.cursor = n.saturating_sub(1);
+                        self.track_detail(|p| p.cursor = n.saturating_sub(1));
                         self.list_scroll.ensure_visible(self.cursor);
                         Outcome::Changed
                     }
@@ -1544,39 +1567,27 @@ impl ShellPage<Holla> for DiskPage {
                     scroll_drag(area, pos, scroll)
                 }
             }
-            Some(Phase::Click) => {
-                if self.view == View::Overview
-                    && let Some(i) = self
-                        .list_scroll
-                        .visible_range()
-                        .find(|&i| LIST.child(i) == id)
-                    && ClickPolicy::DATA.activates(ev.count(), self.cursor == i)
-                {
-                    self.cursor = i;
-                    return self.open_row(w, cx);
-                }
-                self.click(ev, w, cx)
-            }
+            Some(Phase::Click) => self.track_detail(|p| p.click(ev, w, cx)),
             Some(Phase::Secondary) => {
-                let row = if self.view == View::Tree {
-                    let Some(req) = cx.context.on_secondary(&mut self.tree, ev) else {
-                        return Outcome::Ignored;
-                    };
-                    cx.focus.focus(TREE);
-                    req.target
-                } else {
-                    let Some(i) = self
-                        .list_scroll
-                        .visible_range()
-                        .find(|&i| LIST.child(i) == id)
-                    else {
-                        return Outcome::Ignored;
-                    };
-                    if cx.context.moves_cursor {
-                        self.cursor = i;
+                let row = self.track_detail(|p| {
+                    if p.view == View::Tree {
+                        let req = cx.context.on_secondary(&mut p.tree, ev)?;
+                        cx.focus.focus(TREE);
+                        Some(req.target)
+                    } else {
+                        let i = p
+                            .list_scroll
+                            .visible_range()
+                            .find(|&i| LIST.child(i) == id)?;
+                        if cx.context.moves_cursor {
+                            p.cursor = i;
+                        }
+                        cx.focus.focus(LIST);
+                        Some(i)
                     }
-                    cx.focus.focus(LIST);
-                    i
+                });
+                let Some(row) = row else {
+                    return Outcome::Ignored;
                 };
                 self.row_menu(row, ContextAnchor::Pointer(pos), w, cx)
             }
@@ -2375,5 +2386,206 @@ mod scan_status_tests {
             page.selected.is_empty(),
             "a cancelled partial scan never preselects"
         );
+    }
+}
+
+#[cfg(test)]
+mod detail_scroll_tests {
+    use super::*;
+    use crate::domain::fixtures::world_for;
+    use crate::scenario::{Motion, Scenario};
+    use crate::screens::pointer_tests::{cell_of, render_hits, secondary_open};
+    use junie_tui::core::focus::{Focus, FocusRing};
+    use junie_tui::core::hit::HitRegistry;
+    use junie_tui::core::id::{ItemKey, PartRef};
+    use ratatui::crossterm::event::KeyModifiers;
+    use ratatui::layout::Position;
+
+    fn overview_page(w: &World) -> DiskPage {
+        let mut page = DiskPage::overview();
+        page.rebuild_overview(w);
+        assert!(page.overview.len() >= 2, "fixture needs two overview rows");
+        page
+    }
+
+    fn deliver_click(page: &mut DiskPage, w: &mut World, hits: &HitRegistry, pos: Position) {
+        let id = hits.hit(pos).expect("a rendered row is under the pointer");
+        let event = PointerEvent::new(hits, Phase::Click, id, pos, 1, KeyModifiers::NONE);
+        let mut focus = Focus::default();
+        let ring = FocusRing::default();
+        let mut cx = Cx::new(&mut focus, &ring);
+        page.pointer(&event, w, &mut cx);
+    }
+
+    fn press(page: &mut DiskPage, w: &mut World, focus: WidgetId, code: KeyCode) {
+        let mut focus_state = Focus::default();
+        focus_state.focus(focus);
+        let ring = FocusRing::default();
+        let mut cx = Cx::new(&mut focus_state, &ring);
+        let key = Key {
+            code,
+            mods: KeyModifiers::NONE,
+        };
+        page.on_key(&key, w, &mut cx);
+    }
+
+    fn scroll_detail_to_three(page: &mut DiskPage) {
+        page.detail_scroll.set_content(100);
+        page.detail_scroll.set_viewport(5);
+        page.detail_scroll.jump_start();
+        page.detail_scroll.scroll_by(3);
+        assert_eq!(page.detail_scroll.offset, 3);
+    }
+
+    #[test]
+    fn list_cursor_keys_reset_detail_scroll_only_when_the_row_changes() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        let mut page = DiskPage::overview();
+        page.rebuild_overview(&w);
+        let last = page.overview.len() - 1;
+        assert!(last >= 1, "fixture needs two overview rows");
+
+        page.cursor = 0;
+        scroll_detail_to_three(&mut page);
+        press(&mut page, &mut w, LIST, KeyCode::Up);
+        assert_eq!(page.cursor, 0);
+        assert_eq!(page.detail_scroll.offset, 3, "Up on the first row");
+
+        press(&mut page, &mut w, LIST, KeyCode::Down);
+        assert_eq!(page.cursor, 1);
+        assert_eq!(page.detail_scroll.offset, 0, "Down onto a new row");
+
+        page.cursor = last;
+        scroll_detail_to_three(&mut page);
+        press(&mut page, &mut w, LIST, KeyCode::Down);
+        assert_eq!(page.cursor, last);
+        assert_eq!(page.detail_scroll.offset, 3, "Down on the last row");
+
+        press(&mut page, &mut w, LIST, KeyCode::Up);
+        assert_eq!(page.cursor, last - 1);
+        assert_eq!(page.detail_scroll.offset, 0, "Up onto a new row");
+    }
+
+    #[test]
+    fn tree_cursor_keys_reset_detail_scroll_only_when_the_row_changes() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        let root = w.location.cwd.clone();
+        w.start_scan(&root);
+        w.tick += 1_000_000;
+        let mut page = DiskPage::new(&root);
+        page.rebuild_tree(&w);
+        assert!(page.tree.rows().len() >= 2, "fixture needs two tree rows");
+
+        page.tree.context_select(0);
+        let first = page.cursor_fs_path();
+        scroll_detail_to_three(&mut page);
+        press(&mut page, &mut w, TREE, KeyCode::Up);
+        assert_eq!(page.cursor_fs_path(), first);
+        assert_eq!(page.detail_scroll.offset, 3, "Up on the first row");
+
+        press(&mut page, &mut w, TREE, KeyCode::Down);
+        assert_ne!(page.cursor_fs_path(), first);
+        assert_eq!(page.detail_scroll.offset, 0, "Down onto a new row");
+    }
+
+    #[test]
+    fn home_and_end_reset_detail_scroll_only_when_the_row_changes() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        let mut page = overview_page(&w);
+        let last = page.overview.len() - 1;
+
+        page.cursor = last;
+        scroll_detail_to_three(&mut page);
+        press(&mut page, &mut w, LIST, KeyCode::Home);
+        assert_eq!(page.cursor, 0);
+        assert_eq!(page.detail_scroll.offset, 0, "Home onto a new row");
+
+        scroll_detail_to_three(&mut page);
+        press(&mut page, &mut w, LIST, KeyCode::Home);
+        assert_eq!(page.cursor, 0);
+        assert_eq!(page.detail_scroll.offset, 3, "Home on the first row");
+
+        press(&mut page, &mut w, LIST, KeyCode::End);
+        assert_eq!(page.cursor, last);
+        assert_eq!(page.detail_scroll.offset, 0, "End onto a new row");
+
+        scroll_detail_to_three(&mut page);
+        press(&mut page, &mut w, LIST, KeyCode::End);
+        assert_eq!(page.cursor, last);
+        assert_eq!(page.detail_scroll.offset, 3, "End on the last row");
+    }
+
+    #[test]
+    fn clicking_an_overview_row_resets_detail_scroll_only_when_the_row_changes() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        let mut page = overview_page(&w);
+        page.cursor = 0;
+        let hits = render_hits(&mut page, &w);
+
+        scroll_detail_to_three(&mut page);
+        deliver_click(&mut page, &mut w, &hits, cell_of(&hits, LIST.child(0)));
+        assert_eq!(page.cursor, 0);
+        assert_eq!(
+            page.detail_scroll.offset, 3,
+            "re-clicking the selected row keeps the scroll"
+        );
+
+        deliver_click(&mut page, &mut w, &hits, cell_of(&hits, LIST.child(1)));
+        assert_eq!(page.cursor, 1);
+        assert_eq!(
+            page.detail_scroll.offset, 0,
+            "clicking a new row starts its detail at the top"
+        );
+    }
+
+    #[test]
+    fn secondary_click_on_an_overview_row_resets_detail_scroll_only_when_the_row_changes() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        let mut page = overview_page(&w);
+        page.cursor = 0;
+        let hits = render_hits(&mut page, &w);
+
+        scroll_detail_to_three(&mut page);
+        secondary_open(&mut page, &mut w, &hits, cell_of(&hits, LIST.child(0)));
+        assert_eq!(
+            page.detail_scroll.offset, 3,
+            "the selected row keeps the scroll"
+        );
+
+        secondary_open(&mut page, &mut w, &hits, cell_of(&hits, LIST.child(1)));
+        assert_eq!(page.cursor, 1);
+        assert_eq!(
+            page.detail_scroll.offset, 0,
+            "a secondary click on a new row starts its detail at the top"
+        );
+    }
+
+    #[test]
+    fn tree_click_resets_detail_scroll_only_when_the_row_changes() {
+        let mut w = world_for(Scenario::DiskCleanup, Motion::Full);
+        let root = w.location.cwd.clone();
+        w.start_scan(&root);
+        w.tick += 1_000_000;
+        let mut page = DiskPage::new(&root);
+        page.rebuild_tree(&w);
+        assert!(page.tree.rows().len() >= 2, "fixture needs two tree rows");
+        page.tree.context_select(0);
+        let first = page.cursor_fs_path();
+        let hits = render_hits(&mut page, &w);
+        let row_cell = |row: usize| {
+            cell_of(
+                &hits,
+                TREE.part(PartRef::item(Part::ROW, ItemKey::index(row))),
+            )
+        };
+
+        scroll_detail_to_three(&mut page);
+        deliver_click(&mut page, &mut w, &hits, row_cell(0));
+        assert_eq!(page.cursor_fs_path(), first);
+        assert_eq!(page.detail_scroll.offset, 3, "re-clicking the selected row");
+
+        deliver_click(&mut page, &mut w, &hits, row_cell(1));
+        assert_ne!(page.cursor_fs_path(), first);
+        assert_eq!(page.detail_scroll.offset, 0, "clicking a new row");
     }
 }

@@ -1827,6 +1827,12 @@ mod tests {
     use super::*;
     use crate::domain::fixtures::world_for;
     use crate::scenario::{Motion, Scenario};
+    use junie_tui::core::focus::{Focus, FocusRing};
+    use junie_tui::core::hit::HitRegistry;
+    use junie_tui::theme::Theme;
+    use junie_tui::ui::ctx::Interaction;
+    use ratatui::buffer::Buffer;
+    use ratatui::layout::Rect;
 
     const ID: &str = "docker-cleanup";
 
@@ -1937,6 +1943,77 @@ mod tests {
         assert!(
             tab.view.has_selection(),
             "finishing the step must not rebuild the viewport"
+        );
+    }
+
+    /// Draws `tab` through its real render path.
+    fn draw(tab: &mut PlanTab, w: &World) -> Buffer {
+        let theme = Theme::junie();
+        let mut buf = Buffer::empty(Rect::new(0, 0, 120, 60));
+        let mut hits = HitRegistry::default();
+        let mut ring = FocusRing::default();
+        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        tab.render(buf.area, &mut buf, &mut ctx, w);
+        buf
+    }
+
+    /// The status glyph drawn on the outline row of step `index`: the cell two
+    /// to the left of its two-digit number, which starts the row.
+    fn status_glyph(buf: &Buffer, index: usize) -> String {
+        let num = format!("{:02}", index + 1);
+        let area = buf.area;
+        (area.y..area.bottom())
+            .find(|&y| (buf[(4, y)].symbol(), buf[(5, y)].symbol()) == (&num[..1], &num[1..]))
+            .map(|y| buf[(2, y)].symbol().to_owned())
+            .unwrap_or_else(|| panic!("step {num} is not drawn:\n{}", dump(buf)))
+    }
+
+    fn dump(buf: &Buffer) -> String {
+        let area = buf.area;
+        (area.y..area.bottom())
+            .map(|y| {
+                (area.x..area.right())
+                    .map(|x| buf[(x, y)].symbol())
+                    .collect::<String>()
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    #[test]
+    fn plan_retry_zero_line_script_updates_status() {
+        let (mut w, images) = armed_images_failure(Some(vec![]));
+        let mut tab = PlanTab::new(ID);
+        tick_until_done(&mut w, &mut tab);
+        assert_eq!(tab.cursor, images, "the landing selects the failed step");
+        let mut screen = draw(&mut tab, &w);
+        assert_eq!(status_glyph(&screen, images), "!", "the failed step shows");
+
+        assert!(w.plan_mut(ID).expect("plan").retry(images));
+        let retried_len = w.plan(ID).expect("plan").steps[images].output.len();
+        tab.sync(&w);
+        screen = draw(&mut tab, &w);
+        let mut focus = Focus::default();
+        let ring = FocusRing::default();
+        let mut cx = Cx::new(&mut focus, &ring);
+        for _ in 0..400 {
+            if w.plan(ID).expect("plan").steps[images].state == StepState::Succeeded {
+                break;
+            }
+            w.tick();
+            if tab.on_tick(&mut w, &mut cx) != Outcome::Ignored {
+                screen = draw(&mut tab, &w);
+            }
+        }
+        let step = &w.plan(ID).expect("plan").steps[images];
+        assert_eq!(step.state, StepState::Succeeded, "the retry finished");
+        assert_eq!(step.output.len(), retried_len, "the script emitted no line");
+
+        assert_eq!(
+            status_glyph(&screen, images),
+            "\u{2713}",
+            "the step's row on the last drawn frame shows it succeeded:\n{}",
+            dump(&screen)
         );
     }
 }

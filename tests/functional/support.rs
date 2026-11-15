@@ -429,21 +429,6 @@ impl App {
             .expect("wait_screen returned with a point")
     }
 
-    /// The point two columns into the one `label` whose row `row_ok`
-    /// accepts. It waits for that row to be painted.
-    pub fn wait_button(&self, label: &str, row_ok: impl Fn(&str) -> bool) -> Point {
-        self.wait_point(&format!("one button {label:?}"), |screen| {
-            let hits: Vec<_> = find_all(screen, label)
-                .into_iter()
-                .filter(|point| row_ok(&row_text(screen, u32::from(point.y))))
-                .collect();
-            (hits.len() == 1).then(|| Point {
-                x: hits[0].x + 2,
-                y: hits[0].y,
-            })
-        })
-    }
-
     /// Press `key` until `reached` accepts the screen.
     ///
     /// After each press it waits for `watch(screen)` to change or for
@@ -621,6 +606,15 @@ impl App {
         }
     }
 
+    /// Moves to the focused Quit button of the open quit dialog, confirms it and waits for
+    /// TablePro to exit cleanly.
+    pub fn confirm_quit(&self) {
+        self.key("right");
+        self.key("enter");
+        self.wait_exit("tablepro stayed up after confirming quit");
+        self.expect_exited(0);
+    }
+
     pub fn finish(&self) {
         self.assert_running("before Ctrl+Q");
         self.key("ctrl+q");
@@ -764,16 +758,15 @@ impl Drop for App {
     }
 }
 
-/// Ends the 140ms press flash on the stepped clock, then redraws once. See [`redraw_after_flash`].
-pub fn flash_settle_stepped(app: &App) {
-    app.settle_flash();
-    redraw_after_flash(app);
-}
-
-/// Waits out the 140ms press flash on the wall clock, then redraws once. For apps that run
-/// without the stepped test clock, so it needs no [`App::advance_clock`]. See [`redraw_after_flash`].
+/// Lets the 140ms press flash reach its deadline, then redraws once. A session on the stepped
+/// test clock advances it with [`App::settle_flash`]. Any other session waits on the wall clock.
+/// See [`redraw_after_flash`].
 pub fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
+    if app.clock {
+        app.settle_flash();
+    } else {
+        std::thread::sleep(Duration::from_millis(200));
+    }
     redraw_after_flash(app);
 }
 
@@ -884,6 +877,36 @@ pub fn try_launch(launch: Launch) -> Result<App, LaunchError> {
             })
         }
     }
+}
+
+/// The point two columns into the one `label` whose row `row_ok` accepts. It waits for that row
+/// to be painted.
+pub fn button(app: &App, label: &str, row_ok: impl Fn(&str) -> bool) -> Point {
+    app.wait_point(&format!("one button {label:?}"), |screen| {
+        let hits: Vec<_> = find_all(screen, label)
+            .into_iter()
+            .filter(|point| row_ok(&row_text(screen, u32::from(point.y))))
+            .collect();
+        (hits.len() == 1).then(|| Point {
+            x: hits[0].x + 2,
+            y: hits[0].y,
+        })
+    })
+}
+
+/// Presses `key` until the focused row, the first one carrying the `▎` marker, contains `marker`.
+/// A jackin screen walk of at most 12 presses. See [`App::press_until`].
+pub fn step_until(app: &App, key: &str, marker: &str) {
+    app.press_until(key, marker, 12, focused_line, |screen| {
+        focused_line(screen).contains(marker)
+    });
+}
+
+fn focused_line(screen: &TerminalSnapshot) -> String {
+    (0..screen.rows())
+        .map(|row| row_text(screen, row))
+        .find(|line| line.contains('▎'))
+        .unwrap_or_default()
 }
 
 pub fn text(screen: &TerminalSnapshot) -> String {

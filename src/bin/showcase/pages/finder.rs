@@ -959,3 +959,135 @@ impl Page for FinderPage {
 
 #[cfg(all(test, feature = "work-metrics"))]
 pub(crate) const ACTION_COUNT: usize = ACTIONS.len();
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::app::App;
+    use crate::options::OptSet;
+    use junie_tui::core::event::Input;
+    use junie_tui::motion::Motion;
+    use junie_tui::runtime::Application;
+    use junie_tui::theme::{ColorLevel, Theme};
+    use ratatui::Terminal;
+    use ratatui::backend::TestBackend;
+    use ratatui::crossterm::event::KeyModifiers;
+
+    struct Run {
+        app: App,
+        term: Terminal<TestBackend>,
+    }
+
+    impl Run {
+        fn new(cols: u16, rows: u16) -> Self {
+            let mut app =
+                App::with_motion(Theme::for_level(ColorLevel::TrueColor), Motion::Paused, 0);
+            app.open_page(PageId::Finder);
+            for (key, value) in [("finder.rows", "cells"), ("finder.query", "empty")] {
+                let at = page_options(PageId::Finder)
+                    .iter()
+                    .find(|o| o.key == key)
+                    .and_then(|o| o.values.iter().position(|v| *v == value))
+                    .expect("a finder option value");
+                app.apply_opt(OptSet { key, value: at });
+            }
+            let mut run = Self {
+                app,
+                term: Terminal::new(TestBackend::new(cols, rows)).expect("test terminal"),
+            };
+            for _ in 0..10 {
+                run.send(Input::Tick);
+            }
+            run
+        }
+
+        fn send(&mut self, input: Input) {
+            self.app.handle(input);
+            self.draw();
+        }
+
+        fn draw(&mut self) {
+            let app = &mut self.app;
+            self.term.draw(|frame| app.render(frame)).expect("draws");
+        }
+
+        fn press(&mut self, code: KeyCode) {
+            self.send(Input::Key(Key {
+                code,
+                mods: KeyModifiers::NONE,
+            }));
+        }
+
+        fn resize(&mut self, cols: u16, rows: u16) {
+            self.term.backend_mut().resize(cols, rows);
+            self.send(Input::Resize(cols, rows));
+        }
+
+        fn screen(&self) -> String {
+            let buf = self.term.backend().buffer();
+            buf.content()
+                .chunks(buf.area.width as usize)
+                .map(|row| row.iter().map(|c| c.symbol()).collect::<String>())
+                .collect::<Vec<_>>()
+                .join("\n")
+        }
+
+        fn selected(&self) -> Option<usize> {
+            let page = self.app.pages[PageId::Finder.index()]
+                .as_any()
+                .and_then(|any| any.downcast_ref::<FinderPage>())
+                .expect("the finder page");
+            page.search.selected_key().and_then(action_of)
+        }
+    }
+
+    fn action_named(name: &str) -> usize {
+        ACTIONS
+            .iter()
+            .position(|a| a.name == name)
+            .expect("a catalog action")
+    }
+
+    /// The Finder in chip rows with the last git chip selected, drawn wide
+    /// enough to show it.
+    fn with_the_last_chip_selected() -> Run {
+        let mut run = Run::new(140, 44);
+        for _ in 0..3 {
+            run.press(KeyCode::Tab);
+        }
+        for _ in 0..3 {
+            run.press(KeyCode::Right);
+        }
+        let last = action_named("Pull with rebase");
+        assert_eq!(
+            run.selected(),
+            Some(last),
+            "premise: the last chip is selected"
+        );
+        let screen = run.screen();
+        assert!(
+            screen.contains("Pull with rebase   │") && screen.contains(ACTIONS[last].runs),
+            "premise: the chip is drawn and the preview describes it\n{screen}"
+        );
+        run
+    }
+
+    #[test]
+    fn the_preview_follows_a_selection_moved_off_a_chip_that_no_longer_fits() {
+        let mut run = with_the_last_chip_selected();
+        let last = action_named("Pull with rebase");
+        run.resize(130, 44);
+        let now = run.selected().expect("the selection moved to a drawn chip");
+        let screen = run.screen();
+        assert_ne!(
+            now, last,
+            "premise: narrowing left the last chip out\n{screen}"
+        );
+        assert!(
+            screen.contains(ACTIONS[now].runs) && !screen.contains(ACTIONS[last].runs),
+            "the frame that moved the selection shows {}'s preview, not {}'s\n{screen}",
+            ACTIONS[now].name,
+            ACTIONS[last].name
+        );
+    }
+}

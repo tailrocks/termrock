@@ -266,9 +266,11 @@ impl BreadcrumbsRailsPage {
         let (plain, deep) = self.trail_pair();
         let caption = text::width("clickable(false) · full width") as u16;
         // The deep trail is cut to fit, so a saturated stress trail never widens the page.
-        let deep_w = stress::clamp_saturated(deep.measure(avail, ctx).width, avail.width);
+        let trails_panel = Panel::card(Some("Trails"));
+        let deep_room = trails_panel.inner(Size::new(avail.width, 0)).width;
+        let deep_w = stress::clamp_saturated(deep.measure(avail, ctx).width, deep_room);
         let trail_w = deep_w.max(plain.measure(avail, ctx).width).max(caption);
-        let trails = Panel::card(Some("Trails")).outer(Size::new(trail_w, TRAILS_ROWS));
+        let trails = trails_panel.outer(Size::new(trail_w, TRAILS_ROWS));
         let width = avail.width.max(side_w + right_nat).max(trails.width);
         Geometry {
             side_w,
@@ -542,4 +544,20 @@ impl Page for BreadcrumbsRailsPage {
 
 pub fn page() -> Box<dyn Page> {
     Box::new(BreadcrumbsRailsPage::new())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::pages::stress::testing::{index, measuring};
+
+    #[test]
+    fn a_saturated_stress_trail_stays_inside_the_page_width() {
+        for value in ["20k items", "65k label"] {
+            let mut page = BreadcrumbsRailsPage::new();
+            page.set_option("breadcrumbsrails.stress", index(value));
+            let size = measuring(|ctx| page.measure(Size::new(120, 40), ctx));
+            assert!(size.width <= 120, "{value}: measured {} cells", size.width);
+        }
+    }
 }

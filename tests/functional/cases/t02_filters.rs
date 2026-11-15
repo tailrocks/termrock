@@ -8,9 +8,7 @@ use std::time::{Duration, Instant};
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{
-    App, Launch, TABLEPRO, find_all, flash_settle_stepped as flash_settle, text, try_launch,
-};
+use crate::support::{App, Launch, TABLEPRO, find_all, flash_settle, text, try_launch};
 
 const WIDE_ID: &str = "pre_refactor/t02_filters/t02_filters_filters_120x40";
 const NARROW_ID: &str = "pre_refactor/t02_filters/t02_filters_filters_narrow";

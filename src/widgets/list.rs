@@ -701,6 +701,7 @@ impl ListBox {
     ) -> Result<Response<ListAction>, KeyedSourceError> {
         use crate::core::intent::Phase;
         self.bind(source)?;
+        self.keyed.note_pointer(ev.phase());
         if let Some(r) = crate::core::pointer::scroll_input(self, ev) {
             return Ok(r.lift());
         }
@@ -718,9 +719,7 @@ impl ListBox {
                 Ok(Response::ignored())
             }
             Some(Phase::Click) => {
-                if self.keyed.pressed().is_some()
-                    && !self.keyed.release_press(key, self.layout_generation)
-                {
+                if !self.keyed.release_click(key, self.layout_generation) {
                     return Ok(Response::consumed());
                 }
                 let Some(row) = self.keyed.visible_index(key) else {

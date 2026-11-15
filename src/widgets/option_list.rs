@@ -616,6 +616,26 @@ impl OptionList {
         );
     }
 
+    /// Draws the reason the highlighted or pointed entry is disabled on the
+    /// bottom border of the popup `area`. Menus and completion share this.
+    pub(crate) fn paint_status<T: AsItem>(
+        &self,
+        items: &[T],
+        area: Rect,
+        bg: Color,
+        buf: &mut Buffer,
+        t: &crate::theme::Theme,
+    ) {
+        paint_reason(
+            self.status(items),
+            self.more_below(items.len()),
+            area,
+            bg,
+            buf,
+            t,
+        );
+    }
+
     pub fn status<'a, T: AsItem>(&self, items: &'a [T]) -> Option<&'a str> {
         let reason = |i: usize| {
             let it = items.get(i)?.as_item();
@@ -629,6 +649,32 @@ impl OptionList {
         self.pointed
             .and_then(reason)
             .or_else(|| self.highlighted().and_then(reason))
+    }
+}
+
+/// Draws `reason` on the bottom border of the popup `area`, truncated to the
+/// room `menu::reason_room` leaves.
+pub(crate) fn paint_reason(
+    reason: Option<&str>,
+    more_below: bool,
+    area: Rect,
+    bg: Color,
+    buf: &mut Buffer,
+    t: &crate::theme::Theme,
+) {
+    let Some(reason) = reason else {
+        return;
+    };
+    let room = crate::widgets::menu::reason_room(area.width, more_below);
+    if room >= 1 {
+        buf.set_string(
+            area.x + 2,
+            area.bottom().saturating_sub(1),
+            format!(" {} ", crate::ui::text::truncate(reason, room)),
+            ratatui::style::Style::new()
+                .fg(t.legible(t.text_muted, bg))
+                .bg(bg),
+        );
     }
 }
 

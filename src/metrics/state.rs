@@ -5,11 +5,15 @@ use super::{METRIC_COUNT, Metric, WorkDelta, WorkSnapshot};
 thread_local! {
     static COUNTS: [Cell<u64>; METRIC_COUNT] = const { [const { Cell::new(0) }; METRIC_COUNT] };
     static EPOCH: Cell<u64> = const { Cell::new(0) };
+    static SUSPENDED: Cell<u32> = const { Cell::new(0) };
 }
 
 /// Adds `amount` to `metric` on this thread. Overflow panics: a wrapped or
 /// saturated counter could make a budget pass for the wrong reason.
 pub fn record(metric: Metric, amount: u64) {
+    if SUSPENDED.with(Cell::get) > 0 {
+        return;
+    }
     COUNTS.with(|counts| {
         let cell = &counts[metric as usize];
         let next = cell.get().checked_add(amount).unwrap_or_else(|| {
@@ -17,6 +21,22 @@ pub fn record(metric: Metric, amount: u64) {
         });
         cell.set(next);
     });
+}
+
+/// Runs `f` without counting: every [`record`] on this thread inside it is
+/// dropped. For test-only reference computations, such as a differential
+/// check that rebuilds a page from nothing, whose work is not the work of the
+/// path under measurement. Nests, and counts again when `f` returns or panics.
+pub fn suspended<T>(f: impl FnOnce() -> T) -> T {
+    struct Resume;
+    impl Drop for Resume {
+        fn drop(&mut self) {
+            SUSPENDED.with(|depth| depth.set(depth.get() - 1));
+        }
+    }
+    SUSPENDED.with(|depth| depth.set(depth.get() + 1));
+    let _resume = Resume;
+    f()
 }
 
 /// This thread's counts, tagged with its identity and reset epoch.

@@ -619,6 +619,112 @@ mod widgets {
         );
     }
 
+    fn nav_list() -> ListBox {
+        list(SelectMode::Single).click(junie_tui::core::selection::ClickPolicy::NAVIGATION)
+    }
+
+    fn press_at(list: &mut ListBox, source: &KeyedVec<ListItem>, at: Position) {
+        let frame = draw_list(list, source);
+        let id = frame.id_at(list.id, Part::ROW, at);
+        let _ = list
+            .on_pointer_source(&frame.event(Phase::Press, id, at), source)
+            .expect("valid");
+    }
+
+    fn click_at(list: &mut ListBox, source: &KeyedVec<ListItem>, at: Position) -> usize {
+        let frame = draw_list(list, source);
+        let id = frame.id_at(list.id, Part::ROW, at);
+        list.on_pointer_source(&frame.event(Phase::Click, id, at), source)
+            .expect("valid")
+            .actions()
+            .count()
+    }
+
+    #[test]
+    fn keyed_list_click_after_a_reorder_is_consumed() {
+        let mut store = items(&[(1, "alpha"), (2, "bravo"), (3, "charlie")]);
+        let mut list = nav_list();
+        let at = Position::new(6, 0);
+        press_at(&mut list, &store, at);
+        assert_eq!(list.keyed().pressed(), Some(k(1)));
+
+        // The pressed row moves away; another row now sits under the pointer.
+        store.move_to(k(1), 2);
+        assert_eq!(
+            click_at(&mut list, &store, at),
+            0,
+            "the click belongs to the row that moved, not the one under it"
+        );
+        assert!(list.keyed().selected().next().is_none());
+    }
+
+    #[test]
+    fn keyed_list_dropped_press_does_not_eat_a_click_after_a_release_elsewhere() {
+        let first = items(&[(1, "alpha"), (2, "bravo")]);
+        let mut list = nav_list();
+        let at = Position::new(6, 1);
+        press_at(&mut list, &first, at);
+
+        let second = items(&[(1, "one"), (2, "two")]);
+        let frame = draw_list(&mut list, &second);
+        let id = frame.id_at(list.id, Part::ROW, at);
+        // The router ends the gesture with a release instead of a click.
+        let _ = list
+            .on_pointer_source(&frame.event(Phase::Release, id, at), &second)
+            .expect("valid");
+
+        assert!(
+            click_at(&mut list, &second, at) > 0,
+            "a click with no press behind it is not the dropped one"
+        );
+    }
+
+    #[test]
+    fn keyed_list_dropped_press_is_forgotten_by_a_press_off_the_rows() {
+        let first = items(&[(1, "alpha"), (2, "bravo")]);
+        let mut list = nav_list();
+        let at = Position::new(6, 1);
+        press_at(&mut list, &first, at);
+
+        // A press on something that is not a row (a gap, a header, a track)
+        // starts a new gesture, so the dropped press is no longer awaited.
+        let second = items(&[(1, "one"), (2, "two")]);
+        let frame = draw_list(&mut list, &second);
+        let gap = frame.event(Phase::Press, WidgetId::of("gap"), Position::new(39, 9));
+        let _ = list.on_pointer_source(&gap, &second).expect("valid");
+
+        assert!(
+            click_at(&mut list, &second, at) > 0,
+            "a click with no press behind it is not the dropped one"
+        );
+    }
+
+    #[test]
+    fn keyed_list_click_after_a_source_swap_is_consumed() {
+        let first = items(&[(1, "alpha"), (2, "bravo")]);
+        let mut list =
+            list(SelectMode::Single).click(junie_tui::core::selection::ClickPolicy::NAVIGATION);
+        let frame = draw_list(&mut list, &first);
+        let at = Position::new(6, 1);
+        let id = frame.id_at(list.id, Part::ROW, at);
+        let _ = list
+            .on_pointer_source(&frame.event(Phase::Press, id, at), &first)
+            .expect("valid");
+        assert_eq!(list.keyed().pressed(), Some(k(2)));
+
+        // Another provider instance that happens to reuse the same keys.
+        let second = items(&[(1, "one"), (2, "two")]);
+        let after = draw_list(&mut list, &second);
+        let id = after.id_at(list.id, Part::ROW, at);
+        let out = list
+            .on_pointer_source(&after.event(Phase::Click, id, at), &second)
+            .expect("valid");
+        assert!(
+            out.actions().next().is_none(),
+            "the press belonged to the old source"
+        );
+    }
+
     #[test]
     fn keyed_list_click_activates_the_clicked_key() {
         let store = items(&[(1, "alpha"), (2, "bravo")]);
@@ -910,6 +1016,29 @@ mod widgets {
     }
 
     #[test]
+    fn keyed_table_click_after_a_source_swap_is_consumed() {
+        let mut store = table_store();
+        let mut t = table();
+        let frame = draw_table(&mut t, &mut store);
+        let at = Position::new(8, 2);
+        let id = frame.id_at(t.id, Part::CELL, at);
+        let _ = t
+            .on_pointer_edit_source(&frame.event(Phase::Press, id, at), &mut store)
+            .expect("valid");
+        assert_eq!(t.keyed().pressed(), Some(k(2)));
+        let cursor = t.keyed().cursor();
+
+        let mut second = table_store();
+        let after = draw_table(&mut t, &mut second);
+        let id = after.id_at(t.id, Part::CELL, at);
+        let out = t
+            .on_pointer_edit_source(&after.event(Phase::Click, id, at), &mut second)
+            .expect("valid");
+        assert!(out.is_consumed() && out.actions().next().is_none());
+        assert_eq!(t.keyed().cursor(), cursor, "the old press moved nothing");
+    }
+
+    #[test]
     fn keyed_owned_and_borrowed_tables_conform() {
         let rows = [("alpha", "ann"), ("bravo", "bob"), ("charlie", "cy")];
         let mut owned = DataTable::try_new(
@@ -1135,6 +1264,7 @@ mod trees {
         nodes: HashMap<ItemKey, (String, Vec<ItemKey>)>,
         roots: Vec<ItemKey>,
         data: u64,
+        notes: Vec<ItemKey>,
     }
 
     impl Raw {
@@ -1146,6 +1276,7 @@ mod trees {
                     .map(|(n, c)| (k(*n), (format!("n{n}"), c.iter().map(|x| k(*x)).collect())))
                     .collect(),
                 data: 1,
+                notes: vec![],
             }
         }
     }
@@ -1175,7 +1306,7 @@ mod trees {
                 children,
                 lazy: false,
                 busy: false,
-                note: false,
+                note: self.notes.contains(&key),
             })
         }
     }
@@ -1271,6 +1402,69 @@ mod trees {
             .expect("valid");
         assert!(out.actions().next().is_none());
         assert_eq!(view.keyed().pressed(), None);
+    }
+
+    #[test]
+    fn keyed_tree_click_after_a_source_swap_is_consumed() {
+        let first = tree();
+        let mut view = TreeView::new(WidgetId::of("kt"), vec![]);
+        let frame = draw(&mut view, &first);
+        let at = Position::new(8, 3);
+        let id = frame.id_at(view.id, Part::ROW, at);
+        let _ = view
+            .on_pointer_source(&frame.event(Phase::Press, id, at), &first)
+            .expect("valid");
+        assert_eq!(view.keyed().pressed(), Some(k(2)));
+        let cursor = view.keyed().cursor();
+
+        // Another provider instance that happens to reuse the same keys.
+        let second = tree();
+        let after = draw(&mut view, &second);
+        let id = after.id_at(view.id, Part::ROW, at);
+        let _ = view
+            .on_pointer_source(&after.event(Phase::Click, id, at), &second)
+            .expect("valid");
+        assert_eq!(view.keyed().cursor(), cursor, "the old press moved nothing");
+        assert!(view.keyed().selected().next().is_none());
+    }
+
+    #[test]
+    fn keyed_tree_select_source_refuses_an_unknown_key_without_mutation() {
+        let store = tree();
+        let mut view = TreeView::new(WidgetId::of("kt"), vec![]);
+        draw(&mut view, &store);
+        assert_eq!(view.select_source(k(2), &store), Ok(true));
+        assert_eq!(view.select_source(k(99), &store), Ok(false));
+        assert_eq!(
+            view.keyed().selected().collect::<Vec<_>>(),
+            vec![k(2)],
+            "a refused key leaves the selection alone"
+        );
+    }
+
+    #[test]
+    fn keyed_tree_select_source_refuses_note_nodes_hidden_or_visible() {
+        let mut raw = Raw::new(&[1, 5], &[(1, &[2]), (2, &[]), (5, &[])]);
+        raw.notes = vec![k(2)];
+        let mut view = TreeView::new(WidgetId::of("kt"), vec![]);
+        draw(&mut view, &raw);
+        assert_eq!(view.select_source(k(5), &raw), Ok(true));
+
+        assert_eq!(view.select_source(k(2), &raw), Ok(false), "visible note");
+        assert_eq!(view.keyed().selected().collect::<Vec<_>>(), vec![k(5)]);
+
+        assert_eq!(view.set_cursor_source(k(1), &raw), Ok(true));
+        let _ = view
+            .on_key_source(&key(KeyCode::Left), &raw)
+            .expect("valid");
+        draw(&mut view, &raw);
+        assert!(view.keyed().visible_index(k(2)).is_none(), "note is hidden");
+        assert_eq!(view.select_source(k(2), &raw), Ok(false), "hidden note");
+        assert_eq!(
+            view.keyed().selected().collect::<Vec<_>>(),
+            vec![k(5)],
+            "a refused note leaves the selection alone"
+        );
     }
 
     #[test]

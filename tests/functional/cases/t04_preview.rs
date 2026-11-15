@@ -12,8 +12,7 @@
 use tui_test::TerminalSnapshot;
 
 use crate::support::{
-    App, Launch, Point, TABLEPRO, find_all, flash_settle_stepped as flash_settle, row_text, text,
-    try_launch,
+    App, Launch, Point, TABLEPRO, find_all, flash_settle, row_text, text, try_launch,
 };
 
 const HOST: &str = "dev-db.internal.acme.io";
@@ -286,10 +285,7 @@ fn confirm_quit(app: &App) {
         &["Quit TablePro?", "1 unsaved query will be lost."],
         &["Loading schema", "Execute query?"],
     );
-    app.key("right");
-    app.key("enter");
-    app.wait_exit("tablepro stayed up after confirming quit");
-    app.expect_exited(0);
+    app.confirm_quit();
 }
 
 #[test]
