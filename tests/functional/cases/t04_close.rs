@@ -174,7 +174,7 @@ fn click_tab(app: &App, label: &str) {
 /// also parks the hidden terminal cursor, which otherwise differs between the
 /// debug build and the reference binary after a refused Ctrl+W.
 fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.settle_flash();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");

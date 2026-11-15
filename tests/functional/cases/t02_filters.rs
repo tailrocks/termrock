@@ -75,7 +75,7 @@ fn launch(name: &str) -> App {
 }
 
 fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.settle_flash();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");
@@ -645,6 +645,7 @@ fn tablepro_filters_change_the_visible_organizations() {
         text(&filtered)
     );
 
+    app.expire_status();
     app.wait_absent("filter applied");
     flash_settle(&app);
     shot(

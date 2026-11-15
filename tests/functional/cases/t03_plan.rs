@@ -326,6 +326,7 @@ fn tablepro_plan_raw_is_distinct_from_the_tree_and_analysis() {
     );
     shot(&app, "T03.plan.plan.120x40");
 
+    app.expire_status();
     app.resize(80, 24);
     let narrow = app.wait_screen("raw plan at 80x24", |screen| {
         screen.cols() == 80

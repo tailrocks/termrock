@@ -153,7 +153,7 @@ fn focus_editor(app: &App) {
 /// resize does not force a new frame, so the shot nudges the width and comes
 /// back. Below about 100 columns the header omits the size chip.
 fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.settle_flash();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");

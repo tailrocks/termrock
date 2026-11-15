@@ -116,7 +116,7 @@ fn connect_development(app: &App) {
 /// columns the header omits the size chip, and the narrow nudge waits on the
 /// terminal size instead.
 fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.settle_flash();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");

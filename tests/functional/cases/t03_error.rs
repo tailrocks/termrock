@@ -275,6 +275,7 @@ fn tablepro_error_recover_replaces_the_syntax_error() {
     assert_eq!((after_wide.cols(), after_wide.rows()), (120, 40));
     assert!(recovered(&after_wide), "{}", text(&after_wide));
 
+    app.expire_status();
     app.wait_absent(CONNECTED);
     app.resize(80, 24);
     let narrowed = app.wait_screen("recovered result at 80x24", |screen| {

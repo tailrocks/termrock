@@ -5,8 +5,6 @@
 //! TablePro has no `--page` flag. It opens on the connections screen, and a
 //! paused connect never finishes (`on_tick` returns before `advance`).
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{App, Launch, Point, TABLEPRO, find_all, row_text, text, try_launch};
@@ -236,7 +234,7 @@ fn assert_open(screen: &TerminalSnapshot, name: &str, preview: bool) {
 /// A same-size resize does not force that frame, so nudge one column and return.
 /// Below about 85 columns the header omits the size chip.
 fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.settle_flash();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");

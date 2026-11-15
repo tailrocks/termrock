@@ -9,8 +9,6 @@
 //! so its Triggers tab is the empty state and must not keep the previous
 //! object's trigger name.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{App, Launch, Point, TABLEPRO, find_all, row_text, text, try_launch};
@@ -117,7 +115,7 @@ fn narrow_connected(screen: &TerminalSnapshot) -> bool {
 /// The 140ms press flash stays painted until a later frame. A same-size resize
 /// does not force that frame, so the nudge goes one column out and back.
 fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.settle_flash();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");
