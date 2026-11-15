@@ -717,9 +717,10 @@ impl Select {
 
         self.list.chosen = self.mixed.is_none().then_some(self.selected);
         let options = &self.options;
-        let snapshot = self
-            .list
-            .snapshot(inner, &options[..], |i| options[i].clone());
+        let snapshot = self.list.snapshot(inner, &options[..], |i| {
+            crate::record_work!(PayloadBytesCloned, options[i].len());
+            options[i].clone()
+        });
         let (id, dismiss, reveal) = (self.id, self.list.dismiss, self.reveal);
         ctx.overlay(move |buf, ctx| {
             let t = ctx.theme;

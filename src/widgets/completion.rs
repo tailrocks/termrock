@@ -226,7 +226,10 @@ impl Completion {
         self.list.layout(inner, &self.items[..], ctx);
 
         let items = &self.items;
-        let snapshot = self.list.snapshot(inner, &items[..], |i| items[i].clone());
+        let snapshot = self.list.snapshot(inner, &items[..], |i| {
+            crate::record_work!(PayloadBytesCloned, items[i].payload_bytes());
+            items[i].clone()
+        });
         let (id, dismiss) = (self.id, self.list.dismiss);
         ctx.overlay(move |buf, ctx| Self::paint(&snapshot, id, dismiss, area, buf, ctx));
     }

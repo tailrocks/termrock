@@ -67,6 +67,23 @@ impl Default for Item {
 }
 
 impl Item {
+    /// Text bytes a deep clone of this item copies. A borrowed `Cow` copies
+    /// no bytes.
+    #[cfg(feature = "work-metrics")]
+    pub(crate) fn payload_bytes(&self) -> usize {
+        let owned = |text: &Cow<'static, str>| match text {
+            Cow::Owned(text) => text.len(),
+            Cow::Borrowed(_) => 0,
+        };
+        self.label.len()
+            + self.detail.len()
+            + owned(&self.glyph)
+            + self.tag.as_ref().map_or(0, owned)
+            + owned(&self.group)
+            + self.insert.as_ref().map_or(0, String::len)
+            + self.reason.as_ref().map_or(0, String::len)
+    }
+
     pub fn new(label: impl Into<String>) -> Self {
         Self {
             key: None,
@@ -671,6 +688,7 @@ impl<P> PopupSnapshot<P> {
     ) {
         let has_sb = self.scroll.overflows();
         for row in &self.rows {
+            crate::record_work!(VisibleRowsPainted, 1usize);
             let y = inner.y + row.line;
             let mut state = ctx.state(self.row_id(row.index));
             state.focused = self.highlighted == Some(row.index);

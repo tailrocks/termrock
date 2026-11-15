@@ -428,7 +428,10 @@ impl CodeEditor {
         if stale {
             let blocks = self
                 .segmenter
-                .map(|f| f(self.field.buffer.text()))
+                .map(|f| {
+                    crate::record_work!(AnnotationQueries, 1usize);
+                    f(self.field.buffer.text())
+                })
                 .unwrap_or_default();
             let snapshot = SegmentSnapshot::build(key, blocks);
             *self.segment_cache.borrow_mut() = Some(snapshot);
@@ -482,9 +485,10 @@ impl CodeEditor {
     pub fn begin_edit(&mut self) {
         if !self.read_only {
             if !self.editing {
-                self.snapshot = self
-                    .esc_reverts
-                    .then(|| self.field.buffer.text().to_owned());
+                self.snapshot = self.esc_reverts.then(|| {
+                    crate::record_work!(PayloadBytesCloned, self.field.buffer.text().len());
+                    self.field.buffer.text().to_owned()
+                });
             }
             self.editing = true;
         }
@@ -932,7 +936,10 @@ impl CodeEditor {
         if self.syntax.as_ref().map(|c| c.key) != Some(key) {
             let spans = self
                 .highlighter
-                .map(|f| f(self.field.buffer.text()))
+                .map(|f| {
+                    crate::record_work!(AnnotationQueries, 1usize);
+                    f(self.field.buffer.text())
+                })
                 .unwrap_or_default();
             self.syntax = Some(SyntaxCache::build(key, spans));
         }
@@ -1111,6 +1118,7 @@ impl CodeEditor {
             };
             #[cfg(test)]
             index::work::tally(|c| c.rows += 1);
+            crate::record_work!(VisibleRowsPainted, 1usize);
             let line = view.text();
             let ls = view.start();
             let le = ls + line.len();
