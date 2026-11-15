@@ -181,3 +181,46 @@ fn metrics_check_exact_flags_undercounts_overcounts_and_unlisted_work() {
         "a metric that is not listed is expected to be zero"
     );
 }
+
+struct LabelApp;
+
+impl crate::runtime::Application for LabelApp {
+    fn handle(&mut self, _: crate::core::event::Input) -> crate::core::event::Outcome {
+        crate::core::event::Outcome::Changed
+    }
+
+    fn render(&mut self, frame: &mut ratatui::Frame) {
+        let label = crate::core::keymap::KeyBinding::new(
+            ratatui::crossterm::event::KeyCode::Char('k'),
+            ratatui::crossterm::event::KeyModifiers::SUPER,
+        )
+        .label();
+        frame.render_widget(ratatui::widgets::Paragraph::new(label), frame.area());
+    }
+
+    fn should_quit(&self) -> bool {
+        false
+    }
+
+    fn tick_interval(&self) -> std::time::Duration {
+        std::time::Duration::from_millis(100)
+    }
+}
+
+#[test]
+fn harness_frames_do_not_depend_on_the_host_platform() {
+    let host = crate::core::event::ClientPlatform::current();
+    let mut f = harness::Harness::new(LabelApp, (10, 1));
+    f.tick();
+    assert!(
+        f.screen().starts_with("⌘K"),
+        "the harness measures the macOS label on every host: {:?}",
+        f.screen()
+    );
+    drop(f);
+    assert_eq!(
+        crate::core::event::ClientPlatform::current(),
+        host,
+        "dropping the harness restores the host platform"
+    );
+}

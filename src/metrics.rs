@@ -5,7 +5,7 @@
 //! [`record_work!`](crate::record_work). Without the `work-metrics` feature
 //! the macro expands to an empty block and does not evaluate its arguments, so
 //! a disabled build pays no cost. With it, counts land in a thread-local table
-//! that a test reads through [`snapshot`] and [`WorkSnapshot::delta`].
+//! that a test reads through `snapshot` and [`WorkSnapshot::delta`].
 //!
 //! Counters are scoped to the executing thread. Work on another thread or in a
 //! child process never appears in the calling thread's delta. A zero is

@@ -10,23 +10,27 @@ use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 
 use super::report::ScenarioReport;
 use super::{Metric, WorkDelta};
-use crate::core::event::{Input, Key};
+use crate::core::event::{ClientPlatform, Input, Key, PlatformPin};
 use crate::runtime::Application;
 
 pub struct Harness<A: Application> {
     pub app: A,
     term: Terminal<TestBackend>,
     viewport: (u16, u16),
+    _platform: PlatformPin,
 }
 
 impl<A: Application> Harness<A> {
-    /// Wraps `app` and draws into a `viewport` of columns by rows.
+    /// Wraps `app` and draws into a `viewport` of columns by rows. The calling
+    /// thread reports [`ClientPlatform::MacOs`] while the harness lives, so
+    /// platform-specific labels measure the same on every host.
     pub fn new(app: A, viewport: (u16, u16)) -> Self {
         let term = Terminal::new(TestBackend::new(viewport.0, viewport.1)).expect("test terminal");
         Self {
             app,
             term,
             viewport,
+            _platform: PlatformPin::new(ClientPlatform::MacOs),
         }
     }
 
