@@ -1649,3 +1649,49 @@ fn option_nested_scrollbars_on_from_the_options_tab_drags_the_child_thumb() {
     app.up(thumb);
     app.finish();
 }
+
+fn virtual_first_row(screen: &TerminalSnapshot) -> Option<u32> {
+    (0..screen.rows())
+        .flat_map(|row| {
+            let line = row_text(screen, row);
+            let words: Vec<String> = line.split_whitespace().map(str::to_owned).collect();
+            words
+                .windows(2)
+                .filter(|pair| pair[0] == "Row" && pair[1].len() == 5)
+                .filter_map(|pair| pair[1].parse::<u32>().ok())
+                .collect::<Vec<_>>()
+        })
+        .min()
+}
+
+#[test]
+fn option_virtual_rows_10000_keys_and_wheel_move_a_bounded_window() {
+    let app = page("s07-virtual", "scrolling.window=10000", 120, 40);
+    let playground = app.wait_text("of 10000");
+    see(&playground, &["Virtual", "Row 00001"], &["Row 10000"]);
+
+    click_tab(&app, "Options");
+    let options = app.wait_text("Page options");
+    see(&options, &["Virtual rows", "Nested scrollbars"], &[]);
+    click_tab(&app, "Playground");
+    let back = app.wait_text("of 10000");
+
+    app.click(find_all(&back, "Row 00002")[0]);
+    app.key("end");
+    let end = app.wait_text("Row 10000");
+    see(&end, &["of 10000"], &["Row 00001"]);
+    app.key("home");
+    let top = app.wait_text("Row 00001");
+    assert_eq!(virtual_first_row(&top), Some(1));
+
+    let at = find_all(&top, "Row 00001")[0];
+    app.wheel(at, true, 3);
+    let moved = app.settle();
+    let first = virtual_first_row(&moved).expect("rows stay visible while wheeling");
+    assert!(
+        first > 1,
+        "the wheel scrolls the virtual rows, first row {first}\n{}",
+        text(&moved)
+    );
+    app.finish();
+}
