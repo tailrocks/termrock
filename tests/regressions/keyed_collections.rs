@@ -410,7 +410,8 @@ fn keyed_vec_owns_its_revisions() {
 mod widgets {
     use super::*;
     use crate::common::{chord, key, row};
-    use junie_tui::core::focus::FocusRing;
+    use junie_tui::core::event::Outcome;
+    use junie_tui::core::focus::{BlurAction, BlurTarget, FocusRing};
     use junie_tui::core::hit::HitRegistry;
     use junie_tui::core::id::{Part, WidgetId};
     use junie_tui::core::intent::Phase;
@@ -903,6 +904,90 @@ mod widgets {
             vec![TableAction::Committed { row: k(1), col: 1 }]
         );
         assert_eq!(store.row(k(1)).expect("row")[1].text, "ann?");
+    }
+
+    #[test]
+    fn borrowed_table_blur_commits_like_an_owned_table() {
+        let mut store = table_store();
+        let mut t = table();
+        draw_table(&mut t, &mut store);
+        let _ = t
+            .on_key_edit_source(&key(KeyCode::Enter), &mut store)
+            .expect("valid");
+        type_text(&mut t, &mut store, "!");
+        let _ = t.on_blur_edit_source(&mut store).expect("valid");
+        assert_eq!(
+            store.row(k(1)).expect("row")[0].text,
+            "alpha!",
+            "the default blur policy commits the typed text"
+        );
+    }
+
+    #[test]
+    fn borrowed_table_blur_edit_source_commits_by_key() {
+        let mut store = table_store();
+        let mut t = table();
+        draw_table(&mut t, &mut store);
+        let _ = t
+            .on_key_edit_source(&key(KeyCode::Down), &mut store)
+            .expect("valid");
+        let _ = t
+            .on_key_edit_source(&key(KeyCode::Enter), &mut store)
+            .expect("valid");
+        type_text(&mut t, &mut store, "!");
+        store.move_row(k(2), 0);
+        draw_table(&mut t, &mut store);
+
+        let out = t.on_blur_edit_source(&mut store).expect("valid");
+        assert_eq!(
+            out.actions().copied().collect::<Vec<_>>(),
+            vec![TableAction::Committed { row: k(2), col: 0 }]
+        );
+        assert_eq!(store.row(k(2)).expect("row")[0].text, "bravo!");
+        assert_eq!(store.row(k(1)).expect("row")[0].text, "alpha");
+        assert!(!t.is_editing());
+        assert_eq!(t.keyed().edit_key(), None, "no stale edit target");
+        draw_table(&mut t, &mut store);
+        assert!(!t.is_editing(), "a repaint after the blur stays closed");
+    }
+
+    #[test]
+    fn borrowed_table_blur_with_the_cancel_policy_discards_the_edit() {
+        let mut store = table_store();
+        let mut t = table();
+        t.blur_action = BlurAction::Cancel;
+        draw_table(&mut t, &mut store);
+        let _ = t
+            .on_key_edit_source(&key(KeyCode::Enter), &mut store)
+            .expect("valid");
+        type_text(&mut t, &mut store, "!");
+        let out = t.on_blur_edit_source(&mut store).expect("valid");
+        assert_eq!(
+            out.actions().copied().collect::<Vec<_>>(),
+            vec![TableAction::Cancelled]
+        );
+        assert_eq!(store.row(k(1)).expect("row")[0].text, "alpha");
+        assert!(!t.is_editing());
+        assert_eq!(t.keyed().edit_key(), None, "no stale edit target");
+    }
+
+    #[test]
+    fn borrowed_table_blur_without_a_source_leaves_the_editor_open() {
+        let mut store = table_store();
+        let mut t = table();
+        draw_table(&mut t, &mut store);
+        let _ = t
+            .on_key_edit_source(&key(KeyCode::Enter), &mut store)
+            .expect("valid");
+        type_text(&mut t, &mut store, "!");
+        assert!(
+            t.on_blur().outcome() == Outcome::Ignored,
+            "a keyed table cannot commit without its source"
+        );
+        assert_eq!(t.blur(), Outcome::Ignored);
+        assert!(t.is_editing(), "the typed text is not thrown away");
+        let _ = t.on_blur_edit_source(&mut store).expect("valid");
+        assert_eq!(store.row(k(1)).expect("row")[0].text, "alpha!");
     }
 
     #[test]
