@@ -167,33 +167,42 @@ pub fn on_secondary(w: &mut Workbench, cfg: &ContextConfig, ev: &PointerEvent) -
     if let Some(req) = cfg.on_secondary(&mut w.strip, ev) {
         return Some(build(w, req.map(Target::Tab)));
     }
-    if let Some(g) = w.active_grid_any_mut()
-        && let Some(col) = g.header_menu_at(ev)
-    {
-        let owner = g.id;
-        let (header, items): (Vec<HeaderAction>, Vec<MenuItem>) =
-            g.header_menu(col).into_iter().unzip();
-        let keys = vec![None; items.len()];
-        return Some(CtxMenu {
-            menu: ContextMenu::new(MENU, items)
-                .at(ev.pos())
-                .title(g.columns()[col].name.clone()),
-            target: Target::Header(col),
-            owner,
-            keys,
-            header,
-            app: Menus::default(),
-        });
+    let header = w
+        .modify_active_grid(|g| {
+            let col = g.header_menu_at(ev)?;
+            let owner = g.id;
+            let (header, items): (Vec<HeaderAction>, Vec<MenuItem>) =
+                g.header_menu(col).into_iter().unzip();
+            let keys = vec![None; items.len()];
+            Some(CtxMenu {
+                menu: ContextMenu::new(MENU, items)
+                    .at(ev.pos())
+                    .title(g.columns()[col].name.clone()),
+                target: Target::Header(col),
+                owner,
+                keys,
+                header,
+                app: Menus::default(),
+            })
+        })
+        .flatten();
+    if header.is_some() {
+        return header;
     }
-    let req = match w.active_tab_mut()? {
-        WorkTab::Table(t) => cfg
-            .on_secondary(&mut t.grid, ev)?
-            .map(|(r, c)| Target::Grid(r, c)),
-        WorkTab::Query(q) => cfg
-            .on_secondary(q.active_grid_mut()?, ev)?
-            .map(|(r, c)| Target::Results(r, c)),
-        WorkTab::History(h) => cfg.on_secondary(&mut h.list, ev)?.map(Target::History),
-    };
+    let req = w
+        .modify_active(|tab| match tab {
+            WorkTab::Table(t) => cfg
+                .on_secondary(&mut t.grid, ev)
+                .map(|req| req.map(|(r, c)| Target::Grid(r, c))),
+            WorkTab::Query(q) => q.active_grid_mut().and_then(|g| {
+                cfg.on_secondary(g, ev)
+                    .map(|req| req.map(|(r, c)| Target::Results(r, c)))
+            }),
+            WorkTab::History(h) => cfg
+                .on_secondary(&mut h.list, ev)
+                .map(|req| req.map(Target::History)),
+        })
+        .flatten()?;
     Some(build(w, req))
 }
 
@@ -233,21 +242,27 @@ pub fn select(w: &mut Workbench, target: Target) {
         Target::Explorer(row) => w.explorer.context_select(row),
         Target::Tab(i) => w.strip.context_select(i),
         Target::Grid(r, c) => {
-            if let Some(WorkTab::Table(t)) = w.active_tab_mut() {
-                t.grid.context_select((r, c));
-            }
+            let _ = w.modify_active(|tab| {
+                if let WorkTab::Table(t) = tab {
+                    t.grid.context_select((r, c));
+                }
+            });
         }
         Target::Results(r, c) => {
-            if let Some(WorkTab::Query(q)) = w.active_tab_mut()
-                && let Some(g) = q.active_grid_mut()
-            {
-                g.context_select((r, c));
-            }
+            let _ = w.modify_active(|tab| {
+                if let WorkTab::Query(q) = tab
+                    && let Some(g) = q.active_grid_mut()
+                {
+                    g.context_select((r, c));
+                }
+            });
         }
         Target::History(row) => {
-            if let Some(WorkTab::History(h)) = w.active_tab_mut() {
-                h.list.context_select(row);
-            }
+            let _ = w.modify_active(|tab| {
+                if let WorkTab::History(h) = tab {
+                    h.list.context_select(row);
+                }
+            });
         }
         Target::Connection(..) | Target::Header(_) | Target::App => {}
     }
@@ -513,12 +528,12 @@ fn explorer_items(w: &Workbench, row: usize) -> (String, WidgetId, Items) {
 
 fn tab_items(w: &Workbench, i: usize) -> (String, WidgetId, Items) {
     let mut items = Items::new();
-    let title = w.tabs.get(i).map(|t| t.label()).unwrap_or_default();
+    let title = w.tabs().nth(i).map(|t| t.label()).unwrap_or_default();
     cmd(
         &mut items,
         MenuItem::new("Switch to tab").shortcut("Enter"),
         plain(KeyCode::Enter),
-        (i == w.active).then_some("Current tab"),
+        (i == w.strip.active).then_some("Current tab"),
     );
     cmd(
         &mut items,

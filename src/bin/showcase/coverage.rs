@@ -91,6 +91,258 @@ pub const GRID_EDIT_COVERAGE: &[(&str, &str)] = &[
     ("widgets::grid::DataGrid::submission_pending", "grid"),
 ];
 
+pub const DOCUMENT_WORKSPACE_COVERAGE: &[(&str, &str)] = &[
+    (
+        "widgets::document_workspace::DocumentWorkspace",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceDocument",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceDocument::title",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceDocument::dirty",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceDocument::focus_target",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceDocument::view",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::OperationToken",
+        "queryworkbench",
+    ),
+    ("widgets::document_workspace::CloseToken", "queryworkbench"),
+    ("widgets::document_workspace::OpenKind", "queryworkbench"),
+    (
+        "widgets::document_workspace::OpenKind::Pinned",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::OpenKind::Preview",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::CloseDecision",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::CloseDecision::Cancel",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::CloseDecision::Discard",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceAction",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceAction::Activated",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceAction::PreviewPromoted",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceAction::CloseRequested",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceAction::CancelOperation",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceAction::Closed",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::new",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::open_with",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::activate",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::promote",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::key_at",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::index_of",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::get",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::iter",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::len",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::active_key",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::ordered_keys",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::update",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::view_mut",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::begin_operation",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::end_operation",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::cancel_operation",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::running",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::request_close",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::resolve_close",
+        "queryworkbench",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::sync_tabs_with",
+        "queryworkbench",
+    ),
+];
+
+pub const DOCUMENT_WORKSPACE_ALLOWLIST: &[(&str, &str)] = &[
+    (
+        "widgets::document_workspace::DocumentWorkspace::finish_operation",
+        "Only an operation whose result changes content ends here, such as a TablePro grid commit; Showcase runs fill a result pane and end through end_operation. tests/regressions/document_workspace.rs asserts it.",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceError",
+        "The page reports a refusal through its Display text and never matches a variant, so each variant is asserted by tests/regressions/document_workspace.rs instead.",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceError::MissingDocument",
+        "The page reports a refusal through its Display text; tests/regressions/document_workspace.rs asserts this variant.",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceError::StaleClose",
+        "The page reports a refusal through its Display text; tests/regressions/document_workspace.rs asserts this variant.",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceError::StaleOperation",
+        "The page reports a refusal through its Display text; tests/regressions/document_workspace.rs asserts this variant.",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceError::SaveInProgress",
+        "The page reports a refusal through its Display text; tests/regressions/document_workspace.rs asserts this variant.",
+    ),
+    (
+        "widgets::document_workspace::WorkspaceError::StillDirty",
+        "Only the save protocol returns it, and Showcase documents are never saved; tests/regressions/document_workspace.rs asserts this variant.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::id",
+        "The page keeps its own widget id constant and never asks the controller for it.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::scoped_id",
+        "The page derives its editor and result ids with its own key-scoped helpers; TablePro's tab ids and the conformance suite use the controller's.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::is_empty",
+        "The page counts tabs with len, so the emptiness predicate has no call site.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::contains",
+        "The page finds documents by title through iter, so the membership predicate has no call site; the conformance suite asserts it.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::preview_key",
+        "The page opens and promotes previews through the controller's actions and never reads the slot; TablePro's workbench and the conformance suite do.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::open",
+        "The page opens through open_with because each document builds its ids from its own key.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::reorder",
+        "Tabs emits no move gesture, so no page can drive a reorder; the conformance suite and the example do.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::revision",
+        "The page never captures a content revision; the conformance suite asserts that view work leaves it unchanged.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::pending_close",
+        "The page keeps the token it was handed and never asks for the stored one; TablePro's save-then-close and the conformance suite do.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::save_locked",
+        "Showcase documents are never saved, so no page holds a close-save lock; TablePro's key and pointer paths read it.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::sync_tabs",
+        "The page decorates its tab items, so it calls sync_tabs_with; the conformance suite and the example call the plain projection.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::begin_close_save",
+        "Showcase documents are never saved; TablePro's table close and the conformance suite drive the save protocol.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::validate_close_save",
+        "Showcase documents are never saved; TablePro's table close and the conformance suite drive the save protocol.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::complete_close_save",
+        "Showcase documents are never saved; TablePro's table close and the conformance suite drive the save protocol.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::fail_close_save",
+        "Showcase documents are never saved; TablePro's table close and the conformance suite drive the save protocol.",
+    ),
+    (
+        "widgets::document_workspace::DocumentWorkspace::cancel_close_save",
+        "Showcase documents are never saved; TablePro's connection reset and the conformance suite drive the save protocol.",
+    ),
+];
+
 pub const GRID_CHANGE_ALLOWLIST: &[(&str, &str)] = &[
     (
         "widgets::grid::DataGrid::instance_id",
@@ -600,6 +852,49 @@ mod tests {
             "widgets::edit::parsers::date_or_timestamp",
         ] {
             assert!(seen.contains(id), "{id} is neither covered nor allowlisted");
+        }
+    }
+
+    #[test]
+    fn document_workspace_apis_are_covered_or_allowlisted_with_reasons() {
+        let catalog = catalog_source();
+        let mut seen = std::collections::BTreeSet::new();
+        for (id, reason) in DOCUMENT_WORKSPACE_ALLOWLIST {
+            assert!(
+                catalog.contains(&format!("\"{id}\"")),
+                "declared id is not a catalog capability: {id}"
+            );
+            assert!(
+                !reason.trim().is_empty(),
+                "allowlist entry has no reason: {id}"
+            );
+            assert!(seen.insert(*id), "duplicate allowlist entry: {id}");
+            assert!(
+                !DOCUMENT_WORKSPACE_COVERAGE
+                    .iter()
+                    .any(|(covered, _)| covered == id),
+                "{id} is both covered and allowlisted"
+            );
+        }
+        let mut covered = std::collections::BTreeSet::new();
+        for (id, page) in DOCUMENT_WORKSPACE_COVERAGE {
+            assert!(
+                catalog.contains(&format!("\"{id}\"")),
+                "declared id is not a catalog capability: {id}"
+            );
+            assert_eq!(*page, "queryworkbench", "{id}");
+            assert!(covered.insert(*id), "duplicate coverage entry: {id}");
+        }
+        for line in catalog.lines() {
+            let Some(id) = line.split('"').nth(1) else {
+                continue;
+            };
+            if id.starts_with("widgets::document_workspace::") {
+                assert!(
+                    seen.contains(id) || covered.contains(id),
+                    "document workspace capability {id} has no coverage or allowlist line"
+                );
+            }
         }
     }
 

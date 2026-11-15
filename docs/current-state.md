@@ -341,5 +341,16 @@ variant of these enums stays a breaking change and is recorded here.
   the seed again. Nothing is written to disk, and foreign keys, unique indexes
   and CHECK constraints are not enforced. See
   [the audit note](audits/2026-11-15-tablepro-session-store.md).
+- `widgets::document_workspace::DocumentWorkspace<D>` is the one controller for
+  keyed documents behind a tab strip. It owns identity (never-reused `ItemKey`s),
+  order, the active key, one preview slot, a per-document operation
+  (`OperationToken`), close requests (`CloseToken`) and the save-and-close lock.
+  `update` is the only content gateway and `view_mut` hands out the document's
+  restricted view facet. Showcase's Query workbench and TablePro's Workbench both
+  run on it; the documents, SQL and backends stay in the apps. A dirty table's
+  close now offers Save, a preview open appends instead of replacing in place,
+  and a close request that an edit has outgrown is refused and asked again. See
+  [the audit note](audits/2026-11-15-document-workspace.md) and
+  `examples/document_workspace.rs`.
 - The `visual-baseline` git tag is frozen historical evidence. It is
   never moved, and it is not a substitute for the current design.

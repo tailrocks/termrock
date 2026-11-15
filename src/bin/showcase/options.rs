@@ -321,6 +321,16 @@ pub static QUERY_WORKBENCH: &[Opt] = &[
         "Environment",
         &["production", "staging", "development", "local"],
     ),
+    Opt::new(
+        "queryworkbench.explorer_open",
+        "Explorer opens",
+        &["pinned", "preview"],
+    ),
+    Opt::new(
+        "queryworkbench.dirty_close",
+        "Close with edits",
+        &["discard", "ask"],
+    ),
 ];
 
 pub static CONNECTIONS: &[Opt] = &[

@@ -26,15 +26,28 @@ fn connected() -> App {
 
 fn open(app: &mut App, table: &str) -> ItemKey {
     let w = app.workbench.as_mut().expect("connected");
-    let i = w.open_table("public", table, false).expect("opens");
-    w.tabs[i].key()
+    w.open_table("public", table, false).expect("opens")
 }
 
-fn tab(app: &mut App, key: ItemKey) -> &mut TableTab {
-    match app.workbench.as_mut().and_then(|w| w.tab_mut(key)) {
-        Some(WorkTab::Table(t)) => t,
-        _ => panic!("{key:?} is a table tab"),
+fn tab(app: &mut App, key: ItemKey) -> &TableTab {
+    match app.workbench.as_ref().and_then(|w| w.table(key)) {
+        Some(t) => t,
+        None => panic!("{key:?} is a table tab"),
     }
+}
+
+fn edit(app: &mut App, key: ItemKey, row: usize, col: usize, value: CellValue) {
+    with_tab(app, key, |t| {
+        t.grid.record_cell(row, col, value).expect("edit");
+    });
+}
+
+/// Runs `f` on a table tab through the workspace's mutation gateway.
+fn with_tab<R>(app: &mut App, key: ItemKey, f: impl FnOnce(&mut TableTab) -> R) -> R {
+    app.workbench
+        .as_mut()
+        .and_then(|w| w.modify_table(key, |t, _| f(t)))
+        .unwrap_or_else(|| panic!("{key:?} is a table tab"))
 }
 
 fn ticks(app: &mut App, n: usize) {
@@ -53,8 +66,7 @@ fn status(app: &App) -> String {
 
 fn save(app: &mut App, key: ItemKey) {
     let w = app.workbench.as_mut().expect("connected");
-    let at = w.tabs.iter().position(|t| t.key() == key).expect("open");
-    w.set_active(at);
+    assert!(w.activate(key), "open");
     app.begin_commit();
     app.dialog_closed(COMMIT_DIALOG, DialogResult::Action(1));
     ticks(app, 6);
@@ -90,14 +102,17 @@ fn id_of(grid: &DataGrid, src: usize) -> String {
 /// The rows a query shows, found by running it through the editor tab.
 fn select(app: &mut App, sql: &str) -> Vec<Vec<CellValue>> {
     let w = app.workbench.as_mut().expect("connected");
-    let i = w.new_query(sql);
-    let WorkTab::Query(q) = &mut w.tabs[i] else {
-        panic!("a query tab");
-    };
-    q.start(vec![(sql.to_owned(), 0..sql.len())], false, None);
+    let key = w.new_query(sql);
+    w.modify(key, |tab| {
+        let WorkTab::Query(q) = tab else {
+            panic!("a query tab");
+        };
+        q.start(vec![(sql.to_owned(), 0..sql.len())], false, None);
+    })
+    .expect("the query tab is editable");
     ticks(app, 14);
     let w = app.workbench.as_ref().expect("connected");
-    let WorkTab::Query(q) = &w.tabs[i] else {
+    let Some(WorkTab::Query(q)) = w.tab(key) else {
         panic!("a query tab");
     };
     q.active_grid()
@@ -124,10 +139,13 @@ fn issue51_update_save_reload_query_persists() {
     let mut app = connected();
     let key = open(&mut app, "products");
     let id = id_of(&tab(&mut app, key).grid, 0);
-    tab(&mut app, key)
-        .grid
-        .record_cell(0, NAME, CellValue::Text("Renamed once".into()))
-        .expect("edit");
+    edit(
+        &mut app,
+        key,
+        0,
+        NAME,
+        CellValue::Text("Renamed once".into()),
+    );
     save(&mut app, key);
     let saved = |grid: &DataGrid| row_with_id(grid, &id).map(|r| r[NAME].clone());
     assert_eq!(
@@ -170,8 +188,10 @@ fn issue51_update_save_reload_query_persists() {
     );
 
     let w = app.workbench.as_mut().expect("connected");
-    let open_at = w.tabs.iter().position(|t| t.key() == key).expect("open");
-    assert!(w.close_tab(open_at));
+    assert!(
+        w.request_close(key).expect("a clean tab closes").is_empty(),
+        "a clean tab closes at once"
+    );
     let reopened = open(&mut app, "products");
     assert_eq!(
         saved(&tab(&mut app, reopened).grid),
@@ -195,13 +215,13 @@ fn issue51_insert_delete_survive_all_views() {
     let key = open(&mut app, "products");
     let seed_total = tab(&mut app, key).total;
     let deleted_id = id_of(&tab(&mut app, key).grid, 1);
-    {
-        let g = &mut tab(&mut app, key).grid;
+    with_tab(&mut app, key, |t| {
+        let g = &mut t.grid;
         g.toggle_delete(1).expect("marks a delete");
         g.insert_row().expect("inserts");
         let src = g.rows().len() - 1;
         fill_new_row(g, src, "SKU-SAVED", "Brand new");
-    }
+    });
     save(&mut app, key);
 
     let inserted_id = {
@@ -239,8 +259,10 @@ fn issue51_insert_delete_survive_all_views() {
     );
 
     let w = app.workbench.as_mut().expect("connected");
-    let open_at = w.tabs.iter().position(|t| t.key() == key).expect("open");
-    assert!(w.close_tab(open_at));
+    assert!(
+        w.request_close(key).expect("a clean tab closes").is_empty(),
+        "a clean tab closes at once"
+    );
     let reopened = open(&mut app, "products");
     let t = tab(&mut app, reopened);
     assert!(row_with_id(&t.grid, &deleted_id).is_none(), "still deleted");
@@ -288,8 +310,7 @@ fn strip_suffixes(app: &App) -> Vec<Option<String>> {
 
 fn confirm_save(app: &mut App, key: ItemKey) {
     let w = app.workbench.as_mut().expect("connected");
-    let at = w.tabs.iter().position(|t| t.key() == key).expect("open");
-    w.set_active(at);
+    assert!(w.activate(key), "open");
     app.begin_commit();
     app.dialog_closed(COMMIT_DIALOG, DialogResult::Action(1));
     ticks(app, 6);
@@ -301,14 +322,8 @@ fn issue51_dirty_second_view_conflicts() {
     let a = open(&mut app, "products");
     let b = second_view(&mut app);
     let c = second_view(&mut app);
-    tab(&mut app, b)
-        .grid
-        .record_cell(1, NAME, text_cell("B draft"))
-        .expect("edit");
-    tab(&mut app, a)
-        .grid
-        .record_cell(0, NAME, text_cell("A saved"))
-        .expect("edit");
+    edit(&mut app, b, 1, NAME, text_cell("B draft"));
+    edit(&mut app, a, 0, NAME, text_cell("A saved"));
     save(&mut app, a);
 
     assert_eq!(
@@ -388,8 +403,8 @@ fn issue51_peer_save_preserves_uncommitted_editor_input() {
     let mut app = connected();
     let a = open(&mut app, "products");
     let b = second_view(&mut app);
-    {
-        let g = &mut tab(&mut app, b).grid;
+    with_tab(&mut app, b, |t| {
+        let g = &mut t.grid;
         g.cursor = (1, NAME);
         let _ = g.begin_edit();
         for c in "-typing".chars() {
@@ -398,7 +413,7 @@ fn issue51_peer_save_preserves_uncommitted_editor_input() {
                 mods: ratatui::crossterm::event::KeyModifiers::NONE,
             });
         }
-    }
+    });
     let editor = format!("{:?}", tab(&mut app, b).grid.edit);
     let source = tab(&mut app, b).grid.revision().source;
     assert!(tab(&mut app, b).grid.is_editing());
@@ -408,10 +423,7 @@ fn issue51_peer_save_preserves_uncommitted_editor_input() {
         "nothing is staged"
     );
 
-    tab(&mut app, a)
-        .grid
-        .record_cell(0, NAME, text_cell("A saved"))
-        .expect("edit");
+    edit(&mut app, a, 0, NAME, text_cell("A saved"));
     save(&mut app, a);
 
     let t = tab(&mut app, b);
@@ -436,12 +448,12 @@ fn issue51_failed_save_changes_neither_store_nor_draft() {
     let key = open(&mut app, "products");
     let second = name_at(&mut app, key, 1);
     let first = name_at(&mut app, key, 0);
-    {
-        let g = &mut tab(&mut app, key).grid;
+    with_tab(&mut app, key, |t| {
+        let g = &mut t.grid;
         g.record_cell(1, NAME, text_cell("valid but unsaved"))
             .expect("edit");
         g.record_cell(0, SKU, CellValue::Null).expect("edit");
-    }
+    });
     let history = app.history.entries.len();
     let draft = tab(&mut app, key).grid.snapshot_changes().counts();
     confirm_save(&mut app, key);
@@ -479,10 +491,7 @@ fn issue51_failed_save_changes_neither_store_nor_draft() {
 fn issue51_null_in_defaulted_column_offers_the_default_hint() {
     let mut app = connected();
     let key = open(&mut app, "products");
-    tab(&mut app, key)
-        .grid
-        .record_cell(0, CURRENCY, CellValue::Null)
-        .expect("edit");
+    edit(&mut app, key, 0, CURRENCY, CellValue::Null);
     confirm_save(&mut app, key);
 
     assert!(
@@ -496,10 +505,7 @@ fn issue51_null_in_defaulted_column_offers_the_default_hint() {
 fn issue51_null_in_column_without_default_says_required() {
     let mut app = connected();
     let key = open(&mut app, "products");
-    tab(&mut app, key)
-        .grid
-        .record_cell(0, SKU, CellValue::Null)
-        .expect("edit");
+    edit(&mut app, key, 0, SKU, CellValue::Null);
     confirm_save(&mut app, key);
 
     assert!(status(&app).contains("sku is required"), "{}", status(&app));
@@ -515,18 +521,11 @@ fn issue51_receipt_validation_happens_before_the_store_changes() {
     let mut app = connected();
     let key = open(&mut app, "products");
     let original = name_at(&mut app, key, 0);
-    tab(&mut app, key)
-        .grid
-        .record_cell(0, NAME, text_cell("never stored"))
-        .expect("edit");
+    edit(&mut app, key, 0, NAME, text_cell("never stored"));
     let older = tab(&mut app, key).grid.snapshot_changes();
-    tab(&mut app, key)
-        .grid
-        .record_cell(0, SKU, text_cell("SKU-NEWER"))
-        .expect("edit");
+    edit(&mut app, key, 0, SKU, text_cell("SKU-NEWER"));
     let w = app.workbench.as_mut().expect("connected");
-    let at = w.tabs.iter().position(|t| t.key() == key).expect("open");
-    w.set_active(at);
+    assert!(w.activate(key), "open");
     app.begin_commit();
     app.dialog_closed(COMMIT_DIALOG, DialogResult::Action(1));
     let Some(CommitState::Submitted { request, .. }) = app.commit.as_mut() else {
@@ -561,16 +560,12 @@ fn issue51_query_results_stay_snapshots_and_say_so() {
     let key = open(&mut app, "products");
     let sql = "SELECT * FROM public.products LIMIT 2";
     let before = select(&mut app, sql);
-    tab(&mut app, key)
-        .grid
-        .record_cell(0, NAME, text_cell("after the query"))
-        .expect("edit");
+    edit(&mut app, key, 0, NAME, text_cell("after the query"));
     save(&mut app, key);
 
     let w = app.workbench.as_ref().expect("connected");
     let q = w
-        .tabs
-        .iter()
+        .tabs()
         .find_map(|t| match t {
             WorkTab::Query(q) if !q.results.is_empty() => Some(q),
             _ => None,
@@ -595,10 +590,7 @@ fn issue51_new_connection_starts_from_the_seed_again() {
     let mut app = connected();
     let key = open(&mut app, "products");
     let original = name_at(&mut app, key, 0);
-    tab(&mut app, key)
-        .grid
-        .record_cell(0, NAME, text_cell("this session"))
-        .expect("edit");
+    edit(&mut app, key, 0, NAME, text_cell("this session"));
     save(&mut app, key);
 
     let again = app
@@ -619,7 +611,7 @@ fn issue51_saved_counts_reach_totals_and_explorer() {
     let mut app = connected();
     let key = open(&mut app, "products");
     let seed = tab(&mut app, key).total;
-    tab(&mut app, key).grid.toggle_delete(0).expect("delete");
+    with_tab(&mut app, key, |t| t.grid.toggle_delete(0).expect("delete"));
     save(&mut app, key);
     assert_eq!(tab(&mut app, key).total, seed - 1);
     assert_eq!(

@@ -72,6 +72,8 @@ fn main() -> std::io::Result<()> {
         coverage::PICKER_COVERAGE,
         coverage::PICKER_ALLOWLIST,
         coverage::GRID_EDIT_COVERAGE,
+        coverage::DOCUMENT_WORKSPACE_COVERAGE,
+        coverage::DOCUMENT_WORKSPACE_ALLOWLIST,
         coverage::GRID_CHANGE_ALLOWLIST,
         coverage::GRID_PARSER_ALLOWLIST,
         coverage::KEYMAP_ALLOWLIST,

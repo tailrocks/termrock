@@ -42,6 +42,7 @@ use crate::db::{Catalog, ColType, Table, Value};
 use crate::model::{self, History, HistoryEntry, HistorySource};
 use crate::sql::{self, PlanNode, Statement};
 use crate::store::{Source, TableId};
+use crate::workbench::WorkTab;
 
 const ALT_D: junie_tui::core::event::Key = junie_tui::core::event::Key {
     code: KeyCode::Char('d'),
@@ -401,7 +402,6 @@ pub struct TableTab {
     pub chips: ChipBar,
     view: TableViewState,
     view_revision: u64,
-    pub preview: bool,
     pub structure_tabs: Tabs,
     pub structure: DataTable,
     pub ddl: ScrollPanel,
@@ -416,7 +416,7 @@ pub struct TableTab {
 }
 
 impl TableTab {
-    pub fn new(key: ItemKey, id: WidgetId, src: Source, table: &Table, preview: bool) -> Self {
+    pub fn new(key: ItemKey, id: WidgetId, src: Source, table: &Table) -> Self {
         let columns: Vec<(String, ColType)> = table
             .columns
             .iter()
@@ -462,7 +462,6 @@ impl TableTab {
             chips,
             view: TableViewState::default(),
             view_revision: 0,
-            preview,
             structure_tabs,
             structure: DataTable::try_new(id.sub("structure"), vec![], vec![])
                 .expect("rectangular fixture"),
@@ -552,12 +551,6 @@ impl TableTab {
             self.total = live_rows;
             self.grid.total = RowTotal::Exact(live_rows);
         }
-    }
-
-    /// Ends the preview state for good, so the tab is no longer replaced by the
-    /// next preview.
-    pub fn promote(&mut self) {
-        self.preview = false;
     }
 
     /// Reads the rows `view` selects. Nothing the tab shows changes, so a failed
@@ -2945,34 +2938,6 @@ impl HistoryTab {
 }
 
 #[cfg(test)]
-mod issue9_tests {
-    use super::*;
-
-    #[test]
-    fn issue9_query_editor_unicode_paste() {
-        let sql = "SELECT é, 名 FROM 表 WHERE note = '💾;中'; SELECT e\u{301} FROM t";
-        let mut tab = QueryTab::new(ItemKey::num(0), WidgetId::of("issue9"), "Query 1", "");
-        tab.editor.editing = true;
-        assert_eq!(tab.on_paste(sql), Outcome::Changed);
-        assert_eq!(tab.editor.text(), sql);
-
-        let runs = tab.statements_to_run(true);
-        let texts: Vec<&str> = runs.iter().map(|(text, _)| text.as_str()).collect();
-        assert_eq!(
-            texts,
-            [
-                "SELECT é, 名 FROM 表 WHERE note = '💾;中'",
-                "SELECT e\u{301} FROM t"
-            ]
-        );
-        for (text, range) in &runs {
-            assert_eq!(&sql[range.clone()], text.as_str());
-        }
-        assert!(!highlight_sql(sql).is_empty());
-    }
-}
-
-#[cfg(test)]
 mod issue47_tests {
     use super::*;
     use junie_tui::widgets::grid::{CellKind, default_validator};
@@ -3091,7 +3056,6 @@ mod issue194_tests {
                 store: &store,
             },
             &table,
-            false,
         );
         let ddl = &tab.ddl.lines;
 
@@ -3112,5 +3076,184 @@ mod issue194_tests {
             ddl[7],
             "COMMENT ON TABLE \"public\".\"UserOrders\" IS 'it''s a note';"
         );
+    }
+}
+
+/// Painting and view-only access to one workspace tab. Its field is private,
+/// so a caller of `DocumentWorkspace::view_mut` cannot reach a tab's rows,
+/// draft or text through it. Every operation here moves a cursor, a scroll
+/// offset or a divider, or paints; none can edit.
+pub struct WorkTabView<'a> {
+    document: &'a mut WorkTab,
+}
+
+impl<'a> WorkTabView<'a> {
+    pub(crate) fn new(document: &'a mut WorkTab) -> Self {
+        Self { document }
+    }
+
+    pub fn render(
+        &mut self,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        bg: ratatui::style::Color,
+        history: &History,
+        connection: &str,
+    ) {
+        match self.document {
+            WorkTab::Table(t) => t.render(area, buf, ctx, bg),
+            WorkTab::Query(q) => q.render(area, buf, ctx, bg),
+            WorkTab::History(h) => h.render(area, buf, ctx, bg, history, connection),
+        }
+    }
+
+    /// One poll of a running query. It moves the run forward and returns the
+    /// history entries its statements made, and whether the run is still
+    /// going. Run progress and results are not editor text, so this is not a
+    /// content change.
+    pub fn tick(
+        &mut self,
+        src: Source,
+        connection: &str,
+        database: &str,
+    ) -> (Vec<HistoryEntry>, bool) {
+        match self.document {
+            WorkTab::Query(q) => (q.tick(src, connection, database), q.is_running()),
+            _ => (vec![], false),
+        }
+    }
+
+    /// Clears a query's "result not seen yet" mark.
+    pub fn mark_seen(&mut self) {
+        if let WorkTab::Query(q) = self.document {
+            q.unseen = false;
+        }
+    }
+
+    /// Moves the focused grid's cell cursor or the focused editor's caret for
+    /// a plain navigation key. Any other key, including every one that could
+    /// type, delete or commit, is refused.
+    pub fn navigate(&mut self, key: &Key, focus: Option<WidgetId>) -> bool {
+        use ratatui::crossterm::event::KeyModifiers;
+        let plain = key.mods.is_empty() || key.mods == KeyModifiers::SHIFT;
+        let moves = matches!(
+            key.code,
+            KeyCode::Up
+                | KeyCode::Down
+                | KeyCode::Left
+                | KeyCode::Right
+                | KeyCode::PageUp
+                | KeyCode::PageDown
+                | KeyCode::Home
+                | KeyCode::End
+        );
+        if !plain || !moves {
+            return false;
+        }
+        match self.document {
+            WorkTab::Table(t) if focus == Some(t.grid.id) && !t.grid.is_editing() => {
+                let _ = t.grid.on_key(key);
+                true
+            }
+            WorkTab::Query(q) if focus == Some(q.editor.id) => {
+                let _ = q.editor.on_key(key);
+                true
+            }
+            _ => false,
+        }
+    }
+
+    /// A wheel gesture over the tab's scrollable parts.
+    pub fn wheel(&mut self, ev: &PointerEvent) -> Outcome {
+        let horizontal = matches!(ev.wheel(), Some((Axis::Horizontal, _)));
+        match self.document {
+            WorkTab::Table(t) => t
+                .grid
+                .route(ev)
+                .map(|r| r.outcome())
+                .or_else(|| t.structure.route(ev).map(|r| r.outcome()))
+                .or_else(|| t.ddl.route(ev).map(|r| r.outcome()))
+                .unwrap_or(Outcome::Ignored),
+            WorkTab::Query(q) => q.wheel(ev),
+            WorkTab::History(h) => {
+                if ev.on(h.list.id) {
+                    return if horizontal {
+                        Outcome::Consumed
+                    } else {
+                        h.list.pointer(ev).outcome()
+                    };
+                }
+                h.detail
+                    .route(ev)
+                    .map(|r| r.outcome())
+                    .unwrap_or(Outcome::Ignored)
+            }
+        }
+    }
+
+    /// Pointer input on the read-only detail pane (history detail or query
+    /// result facts): scrolling and selecting.
+    pub fn facts_pointer(&mut self, ev: &PointerEvent) -> Option<Outcome> {
+        let facts = match self.document {
+            WorkTab::History(h) => &mut h.detail_view,
+            WorkTab::Query(q) => &mut q.result_facts,
+            WorkTab::Table(_) => return None,
+        };
+        facts.pointer(ev).map(|r| r.outcome())
+    }
+
+    /// A press on the tab's divider.
+    pub fn seam_press(&mut self, id: WidgetId, pos: ratatui::layout::Position) -> bool {
+        match self.document {
+            WorkTab::Query(q) if id == q.seam.id => {
+                q.seam.on_press(&q.split, q.split_area, 1, pos);
+                true
+            }
+            WorkTab::History(h) if id == h.seam.id => {
+                h.seam.on_press(&h.split, h.split_area, 2, pos);
+                true
+            }
+            _ => false,
+        }
+    }
+
+    /// A drag of the tab's divider.
+    pub fn seam_drag(&mut self, id: WidgetId, pos: ratatui::layout::Position) -> Option<Outcome> {
+        match self.document {
+            WorkTab::History(h) if id == h.seam.id => {
+                let area = h.split_area;
+                Some(h.seam.on_drag(&mut h.split, area, 2, pos))
+            }
+            _ => None,
+        }
+    }
+}
+
+#[cfg(test)]
+mod issue9_tests {
+    use super::*;
+
+    #[test]
+    fn issue9_query_editor_unicode_paste() {
+        let sql = "SELECT é, 名 FROM 表 WHERE note = '💾;中'; SELECT e\u{301} FROM t";
+        let mut tab = QueryTab::new(ItemKey::num(0), WidgetId::of("issue9"), "Query 1", "");
+        tab.editor.editing = true;
+        assert_eq!(tab.on_paste(sql), Outcome::Changed);
+        assert_eq!(tab.editor.text(), sql);
+
+        let runs = tab.statements_to_run(true);
+        let texts: Vec<&str> = runs.iter().map(|(text, _)| text.as_str()).collect();
+        assert_eq!(
+            texts,
+            [
+                "SELECT é, 名 FROM 表 WHERE note = '💾;中'",
+                "SELECT e\u{301} FROM t"
+            ]
+        );
+        for (text, range) in &runs {
+            assert_eq!(&sql[range.clone()], text.as_str());
+        }
+        assert!(!highlight_sql(sql).is_empty());
     }
 }

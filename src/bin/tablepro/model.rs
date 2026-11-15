@@ -937,7 +937,7 @@ pub enum SwitchTarget {
     View { schema: String, name: String },
     Schema(String),
     Database(String),
-    OpenTab(usize),
+    OpenTab(ItemKey),
     RecentQuery(usize),
 }
 
@@ -960,7 +960,7 @@ impl SwitcherIndex {
     pub fn build(
         cat: &Catalog,
         connection: &str,
-        open_tabs: &[(usize, String)],
+        open_tabs: &[(ItemKey, String)],
         history: &History,
     ) -> Self {
         let mut items = Vec::new();
