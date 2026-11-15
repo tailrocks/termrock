@@ -4630,6 +4630,14 @@ pub static ALLOWLIST: &[Allowed] = &[
         reason: "the page's scripted link always queues. session_controller_reply_and_paste_limits pins a full queue.",
     },
     Allowed {
+        id: "terminal::SessionPaste::TooLarge",
+        reason: "the page pastes only a one-line and a three-line text, both under SessionConfig::paste_max_bytes. session_controller_reply_and_paste_limits pins the refusal with a nine-byte paste against a limit of eight.",
+    },
+    Allowed {
+        id: "terminal::SessionPaste::Full",
+        reason: "the page's scripted link always queues, so a paste never meets a full queue. session_controller_reply_and_paste_limits pins it.",
+    },
+    Allowed {
         id: "terminal::TerminalSessionController::set_host_policy",
         reason: "apps/jackin swaps its host policy through this call. The page sets its policy once at construction, and no test in this repo swaps one.",
     },
