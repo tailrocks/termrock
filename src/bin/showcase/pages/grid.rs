@@ -467,7 +467,7 @@ impl GridPage {
     pub fn new() -> Self {
         let knobs = Knobs::defaults();
         let mut filters = ChipBar::new(ID.sub("filters"));
-        filters.lead = Some("Filters".into());
+        filters.set_lead(Some("Filters".into()));
         Self {
             template: Template::new(ID, states_grid()),
             grid: build(&knobs),
@@ -565,11 +565,12 @@ impl GridPage {
 
     fn set_filters(&mut self) {
         self.grid.filtered_cols = self.filter_values.iter().map(|(c, _)| *c).collect();
-        self.filters.chips = self
-            .filter_values
-            .iter()
-            .map(|(c, v)| Chip::new(&format!("{} = {}", self.grid.columns[*c].name, v.text())))
-            .collect();
+        self.filters.set_chips(
+            self.filter_values
+                .iter()
+                .map(|(c, v)| Chip::new(&format!("{} = {}", self.grid.columns[*c].name, v.text())))
+                .collect(),
+        );
     }
 
     fn on_event(&mut self, ev: Option<GridAction>, cx: &mut Cx) {

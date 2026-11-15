@@ -540,7 +540,7 @@ impl QueryWorkbenchPage {
             return;
         }
         self.running = Some((self.tabs.active, explain, RUN_TICKS));
-        self.toolbar.items = toolbar_items(true);
+        self.toolbar.set_items(toolbar_items(true));
         self.sync_tabs();
         cx.status(if explain {
             "Explaining…"
@@ -551,14 +551,14 @@ impl QueryWorkbenchPage {
 
     fn stop(&mut self, cx: &mut Cx) {
         if self.running.take().is_some() {
-            self.toolbar.items = toolbar_items(false);
+            self.toolbar.set_items(toolbar_items(false));
             self.sync_tabs();
             cx.status("Query cancelled");
         }
     }
 
     fn finish(&mut self, tab: usize, explain: bool, cx: &mut Cx) {
-        self.toolbar.items = toolbar_items(false);
+        self.toolbar.set_items(toolbar_items(false));
         let Some(doc) = self.docs.get_mut(tab) else {
             return;
         };

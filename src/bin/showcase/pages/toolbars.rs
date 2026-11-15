@@ -107,7 +107,7 @@ impl ToolbarsPage {
     fn rebuild(&mut self) {
         let style = |t: &Toolbar, o: &[usize; 5]| {
             let cursor = t.cursor;
-            let mut n = Toolbar::new(t.id, t.items.clone())
+            let mut n = Toolbar::new(t.id, t.items().to_vec())
                 .nav(if o[0] == 1 {
                     NavKeys::VIM
                 } else {
@@ -139,7 +139,7 @@ impl ToolbarsPage {
     fn act(&mut self, a: ToolbarAction, k: usize, cx: &mut Cx) {
         let label = match a {
             ToolbarAction::Activated(i) | ToolbarAction::Toggled(i, _) => {
-                self.bar_mut(k).items[i].label.clone()
+                self.bar_mut(k).items()[i].label.clone()
             }
         };
         self.last = format!("{a:?} · {label}");
@@ -154,12 +154,12 @@ impl ToolbarsPage {
 
             for bar in [&mut self.query, &mut self.narrow] {
                 let mut items = query_items(self.running);
-                for (n, o) in items.iter_mut().zip(&bar.items) {
+                for (n, o) in items.iter_mut().zip(bar.items()) {
                     if n.on.is_some() {
                         n.on = o.on;
                     }
                 }
-                bar.items = items;
+                bar.set_items(items);
             }
         }
         cx.status(self.last.clone());
@@ -179,7 +179,7 @@ impl ToolbarsPage {
             .hidden()
             .iter()
             .map(|&i| {
-                let it = &self.narrow.items[i];
+                let it = &self.narrow.items()[i];
                 match (&it.reason, it.disabled) {
                     (Some(r), true) => format!("{} ({r})", it.label),
                     _ => it.label.clone(),

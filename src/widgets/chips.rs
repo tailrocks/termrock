@@ -60,11 +60,11 @@ impl Chip {
 #[derive(Debug, Clone)]
 pub struct ChipBar {
     pub id: WidgetId,
-    pub chips: Vec<Chip>,
+    chips: Vec<Chip>,
     pub cursor: usize,
-    pub add_label: Option<String>,
+    add_label: Option<String>,
 
-    pub lead: Option<String>,
+    lead: Option<String>,
     pub area: Rect,
 
     pub overflow_marker: bool,
@@ -90,6 +90,20 @@ pub struct ChipBar {
     shown: usize,
 
     more_area: Rect,
+
+    /// The scalar policy the last complete render laid out with. `None` after
+    /// any collection or label change, so stale hit targets cannot act.
+    layout: Option<BarPolicy>,
+}
+
+/// Scalar fields that shape the rendered geometry or the menus. Direct writes
+/// to these public fields are caught by comparing against the key captured at
+/// render.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct BarPolicy {
+    overflow_menu: bool,
+    overflow_marker: bool,
+    context_menu: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -160,6 +174,134 @@ impl ChipBar {
             menu: None,
             shown: 0,
             more_area: Rect::ZERO,
+            layout: None,
+        }
+    }
+
+    pub fn chips(&self) -> &[Chip] {
+        &self.chips
+    }
+
+    /// Replaces every chip. Returns `false` when the collection is unchanged.
+    pub fn set_chips(&mut self, chips: Vec<Chip>) -> bool {
+        if self.chips == chips {
+            return false;
+        }
+        self.chips = chips;
+        self.invalidate_chips();
+        true
+    }
+
+    /// Inserts at `index`, which may equal the length. Returns `false` for a
+    /// position past the end.
+    pub fn insert_chip(&mut self, index: usize, chip: Chip) -> bool {
+        if index > self.chips.len() {
+            return false;
+        }
+        self.chips.insert(index, chip);
+        self.invalidate_chips();
+        true
+    }
+
+    pub fn remove_chip(&mut self, index: usize) -> Option<Chip> {
+        if index >= self.chips.len() {
+            return None;
+        }
+        let chip = self.chips.remove(index);
+        self.invalidate_chips();
+        Some(chip)
+    }
+
+    /// Edits a copy of one chip and commits it only when the copy differs. A
+    /// panicking `update` leaves the collection untouched.
+    pub fn update_chip(&mut self, index: usize, update: impl FnOnce(&mut Chip)) -> bool {
+        let Some(current) = self.chips.get(index) else {
+            return false;
+        };
+        let mut next = current.clone();
+        update(&mut next);
+        if next == *current {
+            return false;
+        }
+        self.chips[index] = next;
+        self.invalidate_chips();
+        true
+    }
+
+    pub fn add_label(&self) -> Option<&str> {
+        self.add_label.as_deref()
+    }
+
+    /// Returns `false` when the label is unchanged.
+    pub fn set_add_label(&mut self, label: Option<String>) -> bool {
+        if self.add_label == label {
+            return false;
+        }
+        self.add_label = label;
+        self.invalidate_chips();
+        true
+    }
+
+    pub fn lead(&self) -> Option<&str> {
+        self.lead.as_deref()
+    }
+
+    /// Returns `false` when the lead is unchanged.
+    pub fn set_lead(&mut self, lead: Option<String>) -> bool {
+        if self.lead == lead {
+            return false;
+        }
+        self.lead = lead;
+        self.invalidate_chips();
+        true
+    }
+
+    /// Drops every target derived from the chips and labels: the open menu,
+    /// the overflow geometry and the hit regions. Only a fresh render
+    /// re-enables them.
+    fn invalidate_chips(&mut self) {
+        self.menu = None;
+        self.shown = 0;
+        self.more_area = Rect::ZERO;
+        self.area = Rect::ZERO;
+        self.layout = None;
+    }
+
+    fn policy(&self) -> BarPolicy {
+        BarPolicy {
+            overflow_menu: self.overflow_menu,
+            overflow_marker: self.overflow_marker,
+            context_menu: self.context_menu,
+        }
+    }
+
+    fn layout_current(&self) -> bool {
+        self.layout == Some(self.policy())
+    }
+
+    /// Scalar fields are public, so a direct write can change the policy
+    /// without a checked method. Close the menu on the next input.
+    fn close_stale_menu(&mut self) {
+        if self.menu.is_some() && !self.layout_current() {
+            self.menu = None;
+        }
+    }
+
+    fn owns(&self, id: WidgetId) -> bool {
+        id == self.more_id()
+            || id == self.add_id()
+            || id == self.lead_id()
+            || (0..self.chips.len()).any(|i| id == self.chip_id(i) || id == self.close_id(i))
+    }
+
+    /// Re-checks an action against the live collection at resolution.
+    fn eligible(&self, action: ChipAction) -> bool {
+        match action {
+            ChipAction::Activate(i) | ChipAction::Toggle(i) => i < self.chips.len(),
+            ChipAction::Remove(i) => self.chips.get(i).is_some_and(|chip| chip.removable),
+            ChipAction::ClearAll => !self.chips.is_empty(),
+            ChipAction::Add => self.add_label.is_some(),
+            ChipAction::Lead => self.lead.is_some(),
         }
     }
 
@@ -196,14 +338,22 @@ impl ChipBar {
     }
 
     fn open_menu(&mut self) {
+        if !self.layout_current() {
+            return;
+        }
         let hidden: Vec<usize> = (self.shown.min(self.chips.len())..self.chips.len()).collect();
         if hidden.is_empty() {
             return;
         }
-        let items = hidden
+        let rows: Option<Vec<MenuItem>> = hidden
             .iter()
-            .map(|&i| MenuItem::new(self.chips[i].label.clone()))
+            .map(|&i| Some(MenuItem::new(self.chips.get(i)?.label.clone())))
             .collect();
+        // One missing chip abandons the menu rather than misaligning its rows
+        // with the hidden indices.
+        let Some(items) = rows else {
+            return;
+        };
         let menu =
             ContextMenu::new(self.menu_id(), items).anchor_control(self.more_id(), self.more_area);
         self.menu = Some((menu, BarMenu::Hidden(hidden)));
@@ -238,6 +388,9 @@ impl ChipBar {
     }
 
     fn open_chip_menu(&mut self, i: usize, anchor: crate::ui::context::ContextAnchor) {
+        if !self.layout_current() {
+            return;
+        }
         let (actions, items): (Vec<_>, Vec<_>) = self.context_items(i).into_iter().unzip();
         if items.is_empty() {
             return;
@@ -251,10 +404,13 @@ impl ChipBar {
             MenuAction::Chosen(k) => match self.menu.take()?.1 {
                 BarMenu::Hidden(hidden) => {
                     let i = *hidden.get(k)?;
+                    if i >= self.chips.len() {
+                        return None;
+                    }
                     self.cursor = i;
                     Some(ChipAction::Activate(i))
                 }
-                BarMenu::Chip(actions) => actions.get(k).copied(),
+                BarMenu::Chip(actions) => actions.get(k).copied().filter(|&a| self.eligible(a)),
             },
             MenuAction::Dismissed => {
                 self.menu = None;
@@ -302,6 +458,7 @@ impl ChipBar {
     }
 
     pub fn on_key(&mut self, key: &Key) -> (Outcome, Option<ChipAction>) {
+        self.close_stale_menu();
         if let Some((menu, _)) = self.menu.as_mut() {
             let (o, ev) = menu.on_key(key);
             return (o, self.menu_event(ev));
@@ -376,11 +533,15 @@ impl ChipBar {
     }
 
     pub fn on_click(&mut self, id: WidgetId) -> (Outcome, Option<ChipAction>) {
+        self.close_stale_menu();
         if let Some((menu, _)) = self.menu.as_mut()
             && menu.contains_id(id)
         {
             let ev = menu.on_click(id);
             return (Outcome::Changed, self.menu_event(ev));
+        }
+        if !self.layout_current() && self.owns(id) {
+            return (Outcome::Consumed, None);
         }
         if id == self.more_id() {
             if self.menu.take().is_none() {
@@ -411,6 +572,7 @@ impl ChipBar {
 
     pub fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, bg: Color) {
         let area = area.intersection(*buf.area());
+        self.layout = None;
         if area.is_empty() {
             return;
         }
@@ -531,6 +693,7 @@ impl ChipBar {
             ctx.ring.register(self.id);
         }
         self.more_area = more_area;
+        self.layout = Some(self.policy());
         if more_area.is_empty() && matches!(self.menu, Some((_, BarMenu::Hidden(_)))) {
             self.menu = None;
         }
@@ -655,6 +818,9 @@ impl crate::core::pointer::MouseTarget for ChipBar {
                 else {
                     return crate::core::response::Response::ignored();
                 };
+                if !self.layout_current() {
+                    return crate::core::response::Response::consumed();
+                }
                 if self.context.moves_cursor {
                     self.cursor = i;
                 }
