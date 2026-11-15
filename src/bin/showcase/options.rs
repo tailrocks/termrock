@@ -32,8 +32,6 @@ pub struct Opt {
     pub effect: Effect,
 
     pub needs: &'static [(&'static str, &'static str)],
-
-    pub hidden: bool,
 }
 
 impl Opt {
@@ -45,7 +43,6 @@ impl Opt {
             default: 0,
             effect: Effect::Frame,
             needs: &[],
-            hidden: false,
         }
     }
     const fn default(mut self, i: usize) -> Self {
@@ -54,10 +51,6 @@ impl Opt {
     }
     const fn behaviour(mut self) -> Self {
         self.effect = Effect::Behaviour;
-        self
-    }
-    const fn hidden(mut self) -> Self {
-        self.hidden = true;
         self
     }
     const fn needs(mut self, needs: &'static [(&'static str, &'static str)]) -> Self {
@@ -234,15 +227,6 @@ pub static SHELL: &[Opt] = &[
         &["accent", "neutral", "none"],
     ),
 ];
-
-/// The options an Options tab lists. A page's hidden options come last, are
-/// accepted by `--opt` and the option API, and are not drawn, so a demo of a
-/// rejected input does not change the approved Options captures.
-pub fn visible_options(page: PageId) -> &'static [Opt] {
-    let all = page_options(page);
-    let shown = all.iter().position(|o| o.hidden).unwrap_or(all.len());
-    &all[..shown]
-}
 
 pub fn page_options(page: PageId) -> &'static [Opt] {
     match page {
@@ -819,8 +803,7 @@ static DATA_GRID: &[Opt] = &[
         "datagrid.malformed",
         "Malformed input",
         &["off", "short", "long"],
-    )
-    .hidden(),
+    ),
 ];
 
 static COLUMNS: &[Opt] = &[
@@ -850,8 +833,7 @@ static BASIC_TABLE: &[Opt] = &[
         "basictable.malformed",
         "Malformed input",
         &["off", "short", "long"],
-    )
-    .hidden(),
+    ),
 ];
 
 static CHROME: &[Opt] = &[
