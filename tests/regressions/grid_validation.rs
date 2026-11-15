@@ -58,7 +58,7 @@ fn press(grid: &mut DataGrid, code: KeyCode) -> (Outcome, Option<GridAction>) {
 
 fn untouched(grid: &mut DataGrid) {
     assert!(grid.pending().is_empty(), "pending {:?}", grid.pending());
-    assert!(grid.undo().is_none(), "an undo record was pushed");
+    assert!(grid.undo().unwrap().is_none(), "an undo record was pushed");
 }
 
 fn draw_grid(grid: &mut DataGrid) -> ratatui::buffer::Buffer {
@@ -873,9 +873,12 @@ fn issue48_pending_noop_keeps_history() {
     assert_eq!(grid.pending().total(), 1);
     assert_eq!(bits(&grid, 0), 7.5f64.to_bits());
 
-    assert!(grid.undo().is_some(), "the real edit undoes");
+    assert!(grid.undo().unwrap().is_some(), "the real edit undoes");
     assert_eq!(bits(&grid, 0), 1.2345f64.to_bits());
-    assert!(grid.undo().is_none(), "the no-op left no history entry");
+    assert!(
+        grid.undo().unwrap().is_none(),
+        "the no-op left no history entry"
+    );
     untouched(&mut grid);
 
     press(&mut grid, KeyCode::Enter);

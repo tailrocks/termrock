@@ -7,7 +7,7 @@ use ratatui::style::Modifier;
 
 use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::hit::Axis;
-use junie_tui::core::id::WidgetId;
+use junie_tui::core::id::{ItemKey, WidgetId};
 use junie_tui::core::keymap::hint_key;
 use junie_tui::core::pointer::{MouseTarget, PointerEvent};
 use junie_tui::theme::{StatusKind, SyntaxTone, Tone};
@@ -21,7 +21,8 @@ use junie_tui::widgets::code::{CodeEditor, Diagnostic, EditorAction, Severity};
 use junie_tui::widgets::completion::{Completion, CompletionAction};
 use junie_tui::widgets::empty::EmptyState;
 use junie_tui::widgets::grid::{
-    CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridCmd, GridRows, RowTotal,
+    CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridCmd, GridDataError, GridRows,
+    RowTotal,
 };
 use junie_tui::widgets::input::TextInput;
 use junie_tui::widgets::keyhint::{Hint, hint};
@@ -360,6 +361,9 @@ pub enum TableMode {
 }
 
 pub struct TableTab {
+    /// Never-reused identity of this tab within its workbench. `id` is a render
+    /// identity; operations that outlive one event name the tab by this key.
+    pub key: ItemKey,
     pub id: WidgetId,
     pub schema: String,
     pub name: String,
@@ -380,7 +384,7 @@ pub struct TableTab {
 }
 
 impl TableTab {
-    pub fn new(id: WidgetId, cat: &Catalog, table: &Table, preview: bool) -> Self {
+    pub fn new(key: ItemKey, id: WidgetId, cat: &Catalog, table: &Table, preview: bool) -> Self {
         let columns: Vec<(String, ColType)> = table
             .columns
             .iter()
@@ -416,6 +420,7 @@ impl TableTab {
         );
         structure_tabs.active = 0;
         let mut t = Self {
+            key,
             id,
             schema: table.schema.clone(),
             name: table.name.clone(),
@@ -436,7 +441,7 @@ impl TableTab {
             total: table.row_count,
         };
         t.rebuild_structure(table);
-        t.load(cat);
+        t.load(cat).expect("a new table tab is never being saved");
         t
     }
 
@@ -470,7 +475,19 @@ impl TableTab {
         }
     }
 
-    pub fn load(&mut self, cat: &Catalog) {
+    /// Whether a captured save owns this table's rows, so nothing may reload,
+    /// sort or filter them.
+    pub fn saving(&self) -> bool {
+        self.grid.submission_pending()
+    }
+
+    /// Reloads the rows from the current query. A save in flight refuses it
+    /// before anything changes, so callers that edit the view first must check
+    /// [`TableTab::saving`] before they do.
+    pub fn load(&mut self, cat: &Catalog) -> Result<(), GridDataError> {
+        if self.saving() {
+            return Err(GridDataError::Busy);
+        }
         let sel = self.select();
         match sql::run_select(cat, &sel) {
             Ok(rs) => {
@@ -500,12 +517,14 @@ impl TableTab {
                             .filter_map(|f| self.columns.iter().position(|c| c.0 == f.column))
                             .collect();
                     }
+                    Err(e @ GridDataError::Busy) => return Err(e),
                     Err(e) => self.show_load_failure(&e.to_string()),
                 }
             }
             Err(e) => self.show_load_failure(&e.message),
         }
         self.rebuild_chips();
+        Ok(())
     }
 
     fn show_load_failure(&mut self, message: &str) {
@@ -948,6 +967,7 @@ pub struct Running {
 }
 
 pub struct QueryTab {
+    pub key: ItemKey,
     pub id: WidgetId,
     pub name: String,
     pub editor: CodeEditor,
@@ -971,7 +991,7 @@ pub struct QueryTab {
 }
 
 impl QueryTab {
-    pub fn new(id: WidgetId, name: &str, text: &str) -> Self {
+    pub fn new(key: ItemKey, id: WidgetId, name: &str, text: &str) -> Self {
         let editor = CodeEditor::new(id.sub("editor"), text)
             .highlighter(highlight_sql)
             .segmenter(segment_sql)
@@ -979,6 +999,7 @@ impl QueryTab {
         let mut result_tabs = Tabs::new(id.sub("result-tabs"), &[]);
         result_tabs.allow_new = false;
         Self {
+            key,
             id,
             name: name.to_owned(),
             editor,
@@ -2426,6 +2447,7 @@ fn execute(
 }
 
 pub struct HistoryTab {
+    pub key: ItemKey,
     pub id: WidgetId,
     pub list: ListBox,
     pub detail: CodeEditor,
@@ -2447,8 +2469,9 @@ pub struct HistoryTab {
 }
 
 impl HistoryTab {
-    pub fn new(id: WidgetId) -> Self {
+    pub fn new(key: ItemKey, id: WidgetId) -> Self {
         Self {
+            key,
             id,
             list: ListBox::new(id.sub("list"), vec![], SelectMode::Single)
                 .empty_text("No matching queries"),
@@ -2752,7 +2775,7 @@ mod issue9_tests {
     #[test]
     fn issue9_query_editor_unicode_paste() {
         let sql = "SELECT é, 名 FROM 表 WHERE note = '💾;中'; SELECT e\u{301} FROM t";
-        let mut tab = QueryTab::new(WidgetId::of("issue9"), "Query 1", "");
+        let mut tab = QueryTab::new(ItemKey::num(0), WidgetId::of("issue9"), "Query 1", "");
         tab.editor.editing = true;
         assert_eq!(tab.on_paste(sql), Outcome::Changed);
         assert_eq!(tab.editor.text(), sql);
