@@ -100,6 +100,13 @@ const DEBT_CEILING: usize = 4150;
 /// one structural signal: the reason text is prose and never decides anything.
 const DEFERRED_KIND: &str = "Deferred";
 
+/// The tracking issues the #14 deferrals are filed under (#296 to #308, one per
+/// area). A `Deferred` line must name one of them: `Some(0)` or a stray number
+/// is a typo, not a plan. Add an issue here when a new area is opened.
+const KNOWN_TRACKING_ISSUES: &[u64] = &[
+    296, 297, 298, 299, 300, 301, 302, 303, 304, 305, 306, 307, 308,
+];
+
 /// A reason shorter than this is a label (a page name), not an explanation.
 const MIN_REASON_WORDS: usize = 4;
 
@@ -434,9 +441,19 @@ fn validate(rows: &[(&'static str, Inventory)], s: &Sources) -> (Vec<String>, Re
                 }
             }
         }
-        let tracked = matches!(record.get("tracking_issue"), Some(Value::Some(_)));
-        if kind == DEFERRED_KIND && !tracked {
-            errors.push(format!("deferred exception lacks a tracking issue: {api}"));
+        if kind == DEFERRED_KIND {
+            match record.get("tracking_issue") {
+                Some(Value::Some(issue)) => match **issue {
+                    Value::Num(n) if KNOWN_TRACKING_ISSUES.contains(&n) => {}
+                    Value::Num(n) => errors.push(format!(
+                        "deferred exception names an unknown tracking issue: {api} says #{n}, expected one of {KNOWN_TRACKING_ISSUES:?}"
+                    )),
+                    _ => errors.push(format!(
+                        "deferred exception has a tracking issue that is not a number: {api}"
+                    )),
+                },
+                _ => errors.push(format!("deferred exception lacks a tracking issue: {api}")),
+            }
         }
         if proofs.contains_key(api) {
             errors.push(format!("API has both a proof and an exception: {api}"));
@@ -1083,6 +1100,33 @@ fn catalog_accepts_an_exception_whose_test_names_the_api() {
 }
 
 #[test]
+fn catalog_test_scan_ignores_string_literals_and_comments() {
+    let mut found = BTreeMap::new();
+    api_inventory::scan_tests(
+        "a.rs",
+        "// Owner in a comment\nuse owner::Thing;\n#[test] fn t() { assert_eq!(1, 1, \"in_a_string\"); assert!(real_call(\"also_a_string\", r#\"raw_string\"#, 'c'), \"msg {inline}\"); /* in_a_block_comment */ // in_a_line_comment\n}\n",
+        &mut found,
+    );
+    let t = &found["a.rs::t"];
+    assert!(t.body.contains("real_call"));
+    for name in [
+        "in_a_string",
+        "also_a_string",
+        "raw_string",
+        "in_a_block_comment",
+        "in_a_line_comment",
+        "inline",
+    ] {
+        assert!(
+            !t.body.contains(name),
+            "{name} is not an identifier of the test"
+        );
+    }
+    assert!(t.file.contains("Thing"));
+    assert!(!t.file.contains("Owner"), "a comment is not the owner type");
+}
+
+#[test]
 fn catalog_owner_type_must_appear_in_the_test_or_its_file() {
     let s = Sources::load();
     let rows = rows(&s.tree).expect("inventory builds");
@@ -1118,7 +1162,7 @@ fn catalog_deferred_kind_requires_a_tracking_issue() {
         "Deferred",
         PROBE_REASON,
         "src/clock.rs::probe_test",
-        "Some(14)",
+        "Some(296)",
     );
     s.tests.insert(
         "src/clock.rs::probe_test".into(),
@@ -1128,6 +1172,17 @@ fn catalog_deferred_kind_requires_a_tracking_issue() {
         },
     );
     assert!(check(&s).is_empty(), "{}", check(&s).join("\n"));
+}
+
+#[test]
+fn catalog_deferred_tracking_issue_must_be_a_known_issue() {
+    for issue in ["Some(0)", "Some(14)", "Some(309)"] {
+        let s = with_probe_exception("Deferred", PROBE_REASON, "src/clock.rs::probe_test", issue);
+        expect_error(
+            &check(&s),
+            "deferred exception names an unknown tracking issue: clock::undeclared_probe",
+        );
+    }
 }
 
 #[test]

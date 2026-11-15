@@ -291,6 +291,24 @@ fn harness_send_draws_after_every_input_and_warm_runs_that_many_ticks() {
 }
 
 #[test]
+fn harness_tick_is_one_tick_input_and_one_frame() {
+    let mut h = harness::Harness::new(
+        CountingApp {
+            handled: 0,
+            frames: 0,
+        },
+        (10, 1),
+    );
+    h.tick();
+    h.tick();
+    assert_eq!(
+        (h.app.handled, h.app.frames),
+        (2, 2),
+        "each tick handles one input and draws"
+    );
+}
+
+#[test]
 fn harness_assert_at_most_accepts_a_ceiling_and_names_the_metric_over_it() {
     let mut delta = WorkDelta::ZERO;
     delta.0[Metric::SegmentedLines as usize] = 5;

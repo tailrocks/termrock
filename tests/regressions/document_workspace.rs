@@ -219,6 +219,40 @@ fn workspace_first_update_that_dirties_a_preview_promotes_once() {
 }
 
 #[test]
+fn workspace_promote_pins_only_the_preview_document() {
+    let mut w = ws();
+    let pinned = open(&mut w, "pinned");
+    let (preview, _) = w.open(doc("preview", ""), OpenKind::Preview);
+    assert!(
+        acts(w.promote(pinned)).is_empty(),
+        "a pinned document is not promoted"
+    );
+    assert_eq!(w.preview_key(), Some(preview));
+    assert_eq!(acts(w.promote(preview)), [format!("promoted:{preview:?}")]);
+    assert_eq!(w.preview_key(), None, "the preview is pinned now");
+    assert!(
+        acts(w.promote(preview)).is_empty(),
+        "promoting twice emits once"
+    );
+}
+
+#[test]
+fn workspace_running_reports_the_operation_in_flight_for_its_document_only() {
+    let mut w = ws();
+    let (a, b) = (open(&mut w, "a"), open(&mut w, "b"));
+    assert_eq!(w.running(a), None, "nothing runs before an operation");
+    let (token, _) = w.begin_operation(a).expect("open");
+    assert_eq!(w.running(a), Some(token));
+    assert_eq!(w.running(b), None, "another document is not running");
+    assert!(w.finish_operation(token, |_| ()).is_ok());
+    assert_eq!(
+        w.running(a),
+        None,
+        "a finished operation is no longer running"
+    );
+}
+
+#[test]
 fn workspace_activating_the_current_key_is_a_no_op() {
     let mut w = ws();
     let a = open(&mut w, "a");
