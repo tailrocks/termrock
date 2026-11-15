@@ -546,3 +546,26 @@ fn issue11_completed_token_is_stale() {
     assert!(g.submission_pending(), "the old token did not release it");
     g.cancel_submission(second).unwrap();
 }
+
+#[test]
+fn issue11_receipt_removes_the_deleted_row_when_an_insert_reuses_its_key() {
+    let mut g = grid(3);
+    let keys: Vec<ItemKey> = (0..3).map(|i| g.row_key(i).unwrap()).collect();
+    g.toggle_delete(1).unwrap();
+    g.insert_row().unwrap();
+    g.record_cell(3, 0, text("reborn")).unwrap();
+    let (snapshot, token) = lock(&mut g);
+    let mut rows = receipt_rows(&snapshot);
+    assert_eq!(rows.len(), 1, "only the inserted row is in the receipt");
+    rows[0].committed_key = keys[1];
+
+    g.complete_submission(token, Ok(GridCommitReceipt::new(&snapshot, rows)))
+        .unwrap();
+
+    assert_eq!(g.len(), 3);
+    assert_eq!(g.value(0, 0), &text("name0"));
+    assert_eq!(g.value(1, 0), &text("name2"), "the deleted row left");
+    assert_eq!(g.value(2, 0), &text("reborn"), "the inserted row stayed");
+    assert_eq!(g.row_key(2), Some(keys[1]));
+    assert_eq!(g.source_index(keys[1]), Some(2));
+}
