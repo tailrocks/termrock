@@ -196,7 +196,7 @@ impl Doc {
     /// result view. Diagnostics are placed only when the editor still holds
     /// exactly `sql`, because their ranges are byte offsets into it.
     fn install_for(&mut self, result: Outcome2, sql: String, token: Option<OperationToken>) {
-        self.editor.diagnostics.clear();
+        self.editor.set_diagnostics(Vec::new());
         match &result {
             Outcome2::Rows { table, count, .. } => {
                 self.results = result_table(results_id(self.key), table, *count);
@@ -206,7 +206,7 @@ impl Doc {
                 if self.editor.text() == sql
                     && let Some((_, range)) = from_table(&sql)
                 {
-                    self.editor.diagnostics.push(Diagnostic {
+                    self.editor.push_diagnostic(Diagnostic {
                         range,
                         severity: Severity::Error,
                         message: "unknown relation".into(),
@@ -1253,7 +1253,7 @@ impl QueryWorkbenchPage {
         if f == doc.editor.id {
             let (o, a) = doc.editor.on_key(key);
             match a {
-                Some(EditorAction::Changed) => doc.editor.diagnostics.clear(),
+                Some(EditorAction::Changed) => doc.editor.set_diagnostics(Vec::new()),
                 Some(EditorAction::Leave { backward: false }) => cx.focus_next(),
                 Some(EditorAction::Leave { backward: true }) => cx.focus_prev(),
                 _ => {}
@@ -2151,7 +2151,7 @@ mod tests {
         tick_to_completion(&mut rig);
         assert!(matches!(active(&rig.page).result, Outcome2::Error { .. }));
         assert!(
-            active(&rig.page).editor.diagnostics.is_empty(),
+            active(&rig.page).editor.diagnostics().is_empty(),
             "stale byte offsets are not attached to new text"
         );
 
@@ -2165,7 +2165,7 @@ mod tests {
         rig.run();
         tick_to_completion(&mut rig);
         assert_eq!(
-            active(&rig.page).editor.diagnostics.len(),
+            active(&rig.page).editor.diagnostics().len(),
             1,
             "unchanged text keeps its diagnostic"
         );

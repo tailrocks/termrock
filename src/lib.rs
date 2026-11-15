@@ -9,6 +9,8 @@ pub mod runtime;
 pub mod shell;
 #[cfg(feature = "terminal")]
 pub mod terminal;
+#[cfg(test)]
+mod test_alloc;
 pub mod theme;
 pub mod ui;
 pub mod widgets;
