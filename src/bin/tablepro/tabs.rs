@@ -360,6 +360,31 @@ pub enum TableMode {
     Structure,
 }
 
+/// The controls that decide which rows a table shows. They change only
+/// together, when a prepared load is installed.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TableViewState {
+    pub sort: Option<(usize, SortDir)>,
+    pub filters: Vec<Filter>,
+    pub match_all: bool,
+}
+
+impl Default for TableViewState {
+    fn default() -> Self {
+        Self {
+            sort: None,
+            filters: vec![],
+            match_all: true,
+        }
+    }
+}
+
+/// Rows read for one view, not yet shown. Preparing one touches nothing.
+pub struct LoadedTable {
+    rows: GridRows,
+    total: usize,
+}
+
 pub struct TableTab {
     /// Never-reused identity of this tab within its workbench. `id` is a render
     /// identity; operations that outlive one event name the tab by this key.
@@ -371,9 +396,8 @@ pub struct TableTab {
     pub mode_tabs: Tabs,
     pub grid: DataGrid,
     pub chips: ChipBar,
-    pub filters: Vec<Filter>,
-    pub match_all: bool,
-    pub sort: Option<(usize, SortDir)>,
+    view: TableViewState,
+    view_revision: u64,
     pub preview: bool,
     pub structure_tabs: Tabs,
     pub structure: DataTable,
@@ -428,9 +452,8 @@ impl TableTab {
             mode_tabs,
             grid,
             chips,
-            filters: vec![],
-            match_all: true,
-            sort: None,
+            view: TableViewState::default(),
+            view_revision: 0,
             preview,
             structure_tabs,
             structure: DataTable::try_new(id.sub("structure"), vec![], vec![])
@@ -441,7 +464,7 @@ impl TableTab {
             total: table.row_count,
         };
         t.rebuild_structure(table);
-        t.load(cat).expect("a new table tab is never being saved");
+        t.load_first(cat);
         t
     }
 
@@ -457,9 +480,9 @@ impl TableTab {
         format!("{}.{}", self.schema, self.name)
     }
 
-    fn select(&self) -> sql::Select {
+    fn select(&self, view: &TableViewState) -> sql::Select {
         let mut predicates = Vec::new();
-        for f in self.filters.iter().filter(|f| f.enabled) {
+        for f in view.filters.iter().filter(|f| f.enabled) {
             predicates.extend(f.predicates());
         }
         sql::Select {
@@ -467,7 +490,7 @@ impl TableTab {
             schema: Some(self.schema.clone()),
             table: self.name.clone(),
             predicates,
-            order: self
+            order: view
                 .sort
                 .map(|(c, d)| (self.columns[c].0.clone(), d == SortDir::Asc)),
             limit: Some(sql::ROW_CAP),
@@ -481,50 +504,106 @@ impl TableTab {
         self.grid.submission_pending()
     }
 
-    /// Reloads the rows from the current query. A save in flight refuses it
-    /// before anything changes, so callers that edit the view first must check
-    /// [`TableTab::saving`] before they do.
-    pub fn load(&mut self, cat: &Catalog) -> Result<(), GridDataError> {
-        if self.saving() {
-            return Err(GridDataError::Busy);
-        }
-        let sel = self.select();
-        match sql::run_select(cat, &sel) {
-            Ok(rs) => {
-                let rows: Vec<Vec<CellValue>> = rs
-                    .rows
-                    .iter()
-                    .map(|r| r.iter().map(to_cell).collect())
-                    .collect();
-                let total = if self.filters.iter().any(|f| f.enabled) {
-                    RowTotal::Estimated(rs.total)
-                } else {
-                    RowTotal::Exact(rs.total)
-                };
-                self.total = rs.total;
-                let loaded = self.grid.try_set_rows(GridRows {
-                    rows,
-                    total,
-                    more: rs.total > sql::ROW_CAP,
-                });
-                match loaded {
-                    Ok(()) => {
-                        self.grid.sort = self.sort;
-                        self.grid.filtered_cols = self
-                            .filters
-                            .iter()
-                            .filter(|f| f.enabled)
-                            .filter_map(|f| self.columns.iter().position(|c| c.0 == f.column))
-                            .collect();
-                    }
-                    Err(e @ GridDataError::Busy) => return Err(e),
-                    Err(e) => self.show_load_failure(&e.to_string()),
-                }
-            }
-            Err(e) => self.show_load_failure(&e.message),
-        }
+    /// The controls the shown rows were read with.
+    pub fn view(&self) -> &TableViewState {
+        &self.view
+    }
+
+    /// Counts the views this tab has installed. A request made against an older
+    /// count was made against controls that are no longer shown.
+    pub fn view_revision(&self) -> u64 {
+        self.view_revision
+    }
+
+    /// Ends the preview state for good, so the tab is no longer replaced by the
+    /// next preview.
+    pub fn promote(&mut self) {
+        self.preview = false;
+    }
+
+    /// Reads the rows `view` selects. Nothing the tab shows changes, so a failed
+    /// query leaves the rows, draft and controls exactly as they were.
+    pub fn prepare_load(
+        &self,
+        cat: &Catalog,
+        view: &TableViewState,
+    ) -> Result<LoadedTable, sql::ExecError> {
+        let rs = sql::run_select(cat, &self.select(view))?;
+        let rows: Vec<Vec<CellValue>> = rs
+            .rows
+            .iter()
+            .map(|r| r.iter().map(to_cell).collect())
+            .collect();
+        let total = if view.filters.iter().any(|f| f.enabled) {
+            RowTotal::Estimated(rs.total)
+        } else {
+            RowTotal::Exact(rs.total)
+        };
+        Ok(LoadedTable {
+            rows: GridRows {
+                rows,
+                total,
+                more: rs.total > sql::ROW_CAP,
+            },
+            total: rs.total,
+        })
+    }
+
+    /// Shows a prepared load and its view together. The grid replaces its rows
+    /// once, so a refusal (a save owns the rows) changes nothing, draft and
+    /// controls included. The replacement itself drops the draft.
+    pub fn install_load(
+        &mut self,
+        loaded: LoadedTable,
+        view: TableViewState,
+    ) -> Result<(), GridDataError> {
+        let revision = self
+            .view_revision
+            .checked_add(1)
+            .expect("table view revisions exhausted");
+        self.grid.try_set_rows(loaded.rows)?;
+        self.total = loaded.total;
+        self.grid.sort = view.sort;
+        self.grid.filtered_cols = view
+            .filters
+            .iter()
+            .filter(|f| f.enabled)
+            .filter_map(|f| self.columns.iter().position(|c| c.0 == f.column))
+            .collect();
+        self.grid.empty = EmptyState::new("No rows").hint("f changes the filter");
+        self.view = view;
+        self.view_revision = revision;
         self.rebuild_chips();
         Ok(())
+    }
+
+    /// The first load of a new tab. With no earlier rows to keep, a failed query
+    /// shows an empty error state.
+    fn load_first(&mut self, cat: &Catalog) {
+        let view = TableViewState::default();
+        match self.prepare_load(cat, &view) {
+            Ok(loaded) => self
+                .install_load(loaded, view)
+                .expect("a new table tab is never being saved"),
+            Err(e) => {
+                self.grid
+                    .try_set_rows(GridRows {
+                        rows: vec![],
+                        total: RowTotal::Exact(0),
+                        more: false,
+                    })
+                    .expect("a new table tab is never being saved");
+                self.grid.empty = EmptyState::new("Query failed").hint(&e.message);
+                self.rebuild_chips();
+            }
+        }
+    }
+
+    /// Puts the sort marker and chips back to the shown view, after a gesture
+    /// moved them ahead of a change that was not applied.
+    pub fn restore_view_controls(&mut self) {
+        self.grid.sort = self.view.sort;
+        self.rebuild_chips();
     }
 
     fn show_load_failure(&mut self, message: &str) {
@@ -540,6 +619,7 @@ impl TableTab {
 
     fn rebuild_chips(&mut self) {
         self.chips.chips = self
+            .view
             .filters
             .iter()
             .map(|f| {
@@ -548,7 +628,7 @@ impl TableTab {
                 c
             })
             .collect();
-        self.chips.lead = Some(if self.match_all {
+        self.chips.lead = Some(if self.view.match_all {
             "match all ▾".into()
         } else {
             "match any ▾".into()
@@ -801,7 +881,7 @@ impl TableTab {
         match self.mode {
             TableMode::Data => {
                 let mut y = body.y;
-                if !self.filters.is_empty() || ctx.interaction.focused(self.chips.id) {
+                if !self.view.filters.is_empty() || ctx.interaction.focused(self.chips.id) {
                     self.chips
                         .render(Rect::new(body.x, y, body.width, 1), buf, ctx, bg);
                     y += 2;
@@ -816,7 +896,7 @@ impl TableTab {
                 let sy = body.bottom().saturating_sub(1);
 
                 let mut parts: Vec<(String, u8)> = vec![];
-                if let Some((c, d)) = self.sort {
+                if let Some((c, d)) = self.view.sort {
                     parts.push((
                         format!(
                             "sort {} {}",
@@ -826,7 +906,7 @@ impl TableTab {
                         4,
                     ));
                 }
-                let active = self.filters.iter().filter(|f| f.enabled).count();
+                let active = self.view.filters.iter().filter(|f| f.enabled).count();
                 if active > 0 {
                     parts.push((format!("filtered ({active})"), 4));
                 }

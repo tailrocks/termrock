@@ -307,5 +307,21 @@ variant of these enums stays a breaking change and is recorded here.
   while a save is reviewed or running, a table that cannot close while it saves,
   and a tab strip whose dirty mark clears when the save lands. See
   [the audit note](audits/2026-11-15-commit-owner-binding.md).
+- A TablePro table with unsaved edits keeps them, and its shown sort, filters
+  and chips, until the user saves or discards. Header and context sort, every
+  filter chip gesture (keyboard and pointer), the filter editor, Open Filtered,
+  Refresh and Discard all send one `TableChange` to `App::request_table_transition`.
+  The host finishes a live editor once, and a clean table changes at once. A table
+  with edits opens the library's `LeaveGuard` (Cancel, Discard, Save); Discard
+  reads the next rows first and replaces them and the view together, and a failed
+  read or install changes nothing. Save reviews the table's own save and runs the
+  change only after that exact save succeeds. A filter editor answers the table
+  and view it was opened on, never the active tab. `TableTab` now holds its sort,
+  filters and match mode in a private `TableViewState`, and `TableTab::load` is
+  replaced by `prepare_load` and `install_load`. The first edit that leaves a
+  draft makes a preview tab permanent, and a preview is never replaced while it
+  holds a draft or an open editor. Showcase's Grid page asks the same guard before
+  Reload drops a draft. See
+  [the audit note](audits/2026-11-15-guarded-table-transitions.md).
 - The `visual-baseline` git tag is frozen historical evidence. It is
   never moved, and it is not a substitute for the current design.

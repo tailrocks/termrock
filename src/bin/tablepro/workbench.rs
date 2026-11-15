@@ -15,11 +15,10 @@ use junie_tui::widgets::input::{InputAction, TextInput};
 use junie_tui::widgets::keyhint::{Hint, hint};
 use junie_tui::widgets::panel::Panel;
 use junie_tui::widgets::splitter::Splitter;
-use junie_tui::widgets::table::SortDir;
 use junie_tui::widgets::tabs::{TabAction, TabItem, Tabs};
 use junie_tui::widgets::tree::{TreeAction, TreeNode, TreeView};
 
-use crate::app::Cx;
+use crate::app::{Cx, TableChange};
 use crate::db::{Catalog, Connection, ObjectKind};
 use crate::model::History;
 use crate::tabs::{HistoryTab, QueryTab, TableTab};
@@ -478,16 +477,25 @@ impl Workbench {
             preview,
         );
 
-        if preview
-            && let Some(i) = self
+        if preview {
+            for old in &mut self.tabs {
+                if let WorkTab::Table(t) = old
+                    && t.preview
+                    && (t.dirty_count() > 0 || t.is_editing() || t.saving())
+                {
+                    t.promote();
+                }
+            }
+            if let Some(i) = self
                 .tabs
                 .iter()
-                .position(|t| matches!(t, WorkTab::Table(tt) if tt.preview && !tt.saving()))
-        {
-            self.tabs[i] = WorkTab::Table(tab);
-            self.active = i;
-            self.sync_strip();
-            return Some(i);
+                .position(|t| matches!(t, WorkTab::Table(tt) if tt.preview))
+            {
+                self.tabs[i] = WorkTab::Table(tab);
+                self.active = i;
+                self.sync_strip();
+                return Some(i);
+            }
         }
         self.tabs.push(WorkTab::Table(tab));
         self.active = self.tabs.len() - 1;
@@ -563,6 +571,34 @@ impl Workbench {
 
     pub fn tab_mut(&mut self, key: ItemKey) -> Option<&mut WorkTab> {
         self.tabs.iter_mut().find(|t| t.key() == key)
+    }
+
+    /// The table tab `key` names, with the catalog its rows are read from.
+    pub fn table_mut(&mut self, key: ItemKey) -> Option<(&mut TableTab, &Catalog)> {
+        let tab = self.tabs.iter_mut().find(|t| t.key() == key)?;
+        match tab {
+            WorkTab::Table(t) => Some((t, &self.catalog)),
+            _ => None,
+        }
+    }
+
+    /// Keeps a preview tab only while nothing in it needs keeping. The first
+    /// edit that leaves a draft makes the tab permanent, and it stays so after
+    /// the draft is saved, discarded or undone.
+    fn settle_previews(&mut self) {
+        let mut promoted = false;
+        for tab in &mut self.tabs {
+            if let WorkTab::Table(t) = tab
+                && t.preview
+                && t.dirty_count() > 0
+            {
+                t.promote();
+                promoted = true;
+            }
+        }
+        if promoted {
+            self.sync_strip();
+        }
     }
 
     pub fn active_key(&self) -> Option<ItemKey> {
@@ -687,6 +723,12 @@ impl Workbench {
     }
 
     pub fn on_key(&mut self, key: &Key, cx: &mut Cx, history: &mut History) -> Outcome {
+        let out = self.dispatch_key(key, cx, history);
+        self.settle_previews();
+        out
+    }
+
+    fn dispatch_key(&mut self, key: &Key, cx: &mut Cx, history: &mut History) -> Outcome {
         let Some(f) = cx.focus.current() else {
             return Outcome::Ignored;
         };
@@ -815,30 +857,8 @@ impl Workbench {
         }
         if f == t.chips.id {
             let (o, ev) = t.chips.on_key(key);
-            match ev {
-                Some(junie_tui::widgets::chips::ChipAction::Remove(i)) => {
-                    if Self::change_view(t, cx, cat, |t| {
-                        t.filters.remove(i);
-                    }) {
-                        cx.status("Filter removed");
-                    }
-                }
-                Some(junie_tui::widgets::chips::ChipAction::Toggle(i)) => {
-                    Self::change_view(t, cx, cat, |t| t.filters[i].enabled = !t.filters[i].enabled);
-                }
-                Some(junie_tui::widgets::chips::ChipAction::Activate(i)) => {
-                    cx.go(crate::app::Act::EditFilter(Some(i)));
-                }
-                Some(junie_tui::widgets::chips::ChipAction::Add) => {
-                    cx.go(crate::app::Act::EditFilter(None))
-                }
-                Some(junie_tui::widgets::chips::ChipAction::ClearAll) => {
-                    Self::change_view(t, cx, cat, |t| t.filters.clear());
-                }
-                Some(junie_tui::widgets::chips::ChipAction::Lead) => {
-                    Self::change_view(t, cx, cat, |t| t.match_all = !t.match_all);
-                }
-                None => {}
+            if let Some(ev) = ev {
+                Self::chip_event(t, ev, cx);
             }
             return o;
         }
@@ -862,20 +882,26 @@ impl Workbench {
         Outcome::Ignored
     }
 
-    /// Applies `edit` to a table's view and reloads it, or refuses before
-    /// anything changes while a captured save owns its rows.
-    fn change_view(
-        t: &mut TableTab,
-        cx: &mut Cx,
-        cat: &Catalog,
-        edit: impl FnOnce(&mut TableTab),
-    ) -> bool {
-        if t.saving() {
-            cx.status(SAVING_NOTICE);
-            return false;
+    /// Asks the app to change the table's rows or controls. The grid and chips
+    /// may have moved ahead of the change, so they go back to the shown view;
+    /// installing the change moves them together with the rows.
+    fn request_change(t: &mut TableTab, cx: &mut Cx, change: TableChange) {
+        t.restore_view_controls();
+        cx.go(crate::app::Act::TableChange(change));
+    }
+
+    /// The one handler for a filter chip gesture, from the keyboard or the pointer.
+    fn chip_event(t: &mut TableTab, ev: junie_tui::widgets::chips::ChipAction, cx: &mut Cx) {
+        use junie_tui::widgets::chips::ChipAction;
+        match ev {
+            ChipAction::Activate(i) => cx.go(crate::app::Act::EditFilter(Some(i))),
+            ChipAction::Add => cx.go(crate::app::Act::EditFilter(None)),
+            other => {
+                if let Some(change) = TableChange::from_chip(t, &other) {
+                    Self::request_change(t, cx, change);
+                }
+            }
         }
-        edit(t);
-        t.load(cat).is_ok()
     }
 
     fn grid_event(
@@ -890,32 +916,16 @@ impl Workbench {
         use junie_tui::widgets::grid::GridAction;
         match ev {
             GridAction::SortRequested(s) => {
-                if !Self::change_view(t, cx, cat, |t| t.sort = s) {
-                    return Outcome::Changed;
-                }
-                match s {
-                    Some((c, d)) => cx.status(format!(
-                        "Sorted by {} {}",
-                        t.columns[c].0,
-                        if d == SortDir::Asc {
-                            "ascending"
-                        } else {
-                            "descending"
-                        }
-                    )),
-                    None => cx.status("Sort cleared"),
-                }
+                let change = TableChange::sort(t, s);
+                Self::request_change(t, cx, change);
             }
             GridAction::FetchMore => {
                 cx.status("Showing the first 500 rows · add a LIMIT or filter to narrow");
                 t.grid.set_loading(false);
             }
             GridAction::Refresh => {
-                if t.dirty_count() > 0 {
-                    cx.go(crate::app::Act::ConfirmDiscard);
-                } else if Self::change_view(t, cx, cat, |_| {}) {
-                    cx.status("Refreshed");
-                }
+                let change = TableChange::refresh(t, "Refreshed");
+                Self::request_change(t, cx, change);
             }
             GridAction::CommitRequested => cx.go(crate::app::Act::CommitPending),
             GridAction::DiscardRequested => cx.go(crate::app::Act::ConfirmDiscard),
@@ -926,9 +936,10 @@ impl Workbench {
             }
             GridAction::OpenFilters => cx.go(crate::app::Act::EditFilter(None)),
             GridAction::ClearFilters => {
-                if Self::change_view(t, cx, cat, |t| t.filters.clear()) {
-                    cx.status("Filters cleared");
-                }
+                let mut next = t.view().clone();
+                next.filters.clear();
+                let change = TableChange::filters(t, next, Some("Filters cleared".to_owned()));
+                Self::request_change(t, cx, change);
             }
             GridAction::FollowReference { row, col } => {
                 let name = t.columns[col].0.clone();
@@ -1072,6 +1083,17 @@ impl Workbench {
     }
 
     pub fn pointer(&mut self, ev: &PointerEvent, cx: &mut Cx, history: &mut History) -> Outcome {
+        let out = self.dispatch_pointer(ev, cx, history);
+        self.settle_previews();
+        out
+    }
+
+    fn dispatch_pointer(
+        &mut self,
+        ev: &PointerEvent,
+        cx: &mut Cx,
+        history: &mut History,
+    ) -> Outcome {
         let facts = match self.tabs.get_mut(self.active) {
             Some(WorkTab::History(h)) => Some(&mut h.detail_view),
             Some(WorkTab::Query(q)) => Some(&mut q.result_facts),
@@ -1161,6 +1183,18 @@ impl Workbench {
     }
 
     pub fn on_header_action(
+        &mut self,
+        col: usize,
+        action: junie_tui::ui::columns::HeaderAction,
+        cx: &mut Cx,
+        history: &mut History,
+    ) -> Outcome {
+        let out = self.header_action(col, action, cx, history);
+        self.settle_previews();
+        out
+    }
+
+    fn header_action(
         &mut self,
         col: usize,
         action: junie_tui::ui::columns::HeaderAction,
@@ -1276,23 +1310,7 @@ impl Workbench {
                     cx.focus.focus(t.chips.id);
                     let (o, actions) = r.into_parts();
                     for act in actions {
-                        match act {
-                            junie_tui::widgets::chips::ChipAction::Remove(i) => {
-                                Self::change_view(t, cx, cat, |t| {
-                                    t.filters.remove(i);
-                                });
-                            }
-                            junie_tui::widgets::chips::ChipAction::Activate(i) => {
-                                cx.go(crate::app::Act::EditFilter(Some(i)))
-                            }
-                            junie_tui::widgets::chips::ChipAction::Add => {
-                                cx.go(crate::app::Act::EditFilter(None))
-                            }
-                            junie_tui::widgets::chips::ChipAction::Lead => {
-                                Self::change_view(t, cx, cat, |t| t.match_all = !t.match_all);
-                            }
-                            _ => {}
-                        }
+                        Self::chip_event(t, act, cx);
                     }
                     return o;
                 }
@@ -1449,12 +1467,14 @@ impl Workbench {
         if self.explorer_filter.editing {
             return self.explorer_filter.on_paste(text);
         }
-        match self.tabs.get_mut(self.active) {
+        let out = match self.tabs.get_mut(self.active) {
             Some(WorkTab::Table(t)) => t.grid.on_paste(text),
             Some(WorkTab::Query(q)) => q.on_paste(text),
             Some(WorkTab::History(h)) => h.search.on_paste(text),
             None => Outcome::Ignored,
-        }
+        };
+        self.settle_previews();
+        out
     }
 
     pub fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, history: &History) {

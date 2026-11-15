@@ -11,10 +11,11 @@ use junie_tui::core::intent::Phase;
 use junie_tui::core::keymap::{Actions, KeyBinding, KeyMap, NavKeys, hint_key, label_for};
 use junie_tui::core::pointer::{MouseTarget, PointerEvent};
 use junie_tui::core::scroll::{HScroll, ScrollbarVisibility, TrackClick};
-use junie_tui::theme::Tone;
+use junie_tui::theme::{Strings, Tone};
 use junie_tui::ui::columns::HeaderLabels;
 use junie_tui::ui::ctx::RenderCtx;
 use junie_tui::ui::layout::StackChild;
+use junie_tui::ui::leave::{Leave, LeaveGuard, Resolved, Stakes};
 use junie_tui::ui::specimen::{SpecimenState, StateGrid};
 use junie_tui::widgets::button::Button;
 use junie_tui::widgets::chips::{Chip, ChipBar};
@@ -22,8 +23,8 @@ use junie_tui::widgets::dialog::{Dialog, DialogResult};
 use junie_tui::widgets::empty::EmptyState;
 use junie_tui::widgets::grid::{
     CellEditResult, CellKind, CellValue, ColumnSpec, DataGrid, DeletedRow, FinishEdit, GridAction,
-    GridChangeSet, GridCmd, GridCommitFailure, GridCommitToken, GridEditError, GridRows,
-    GridUndoKind, InsertedRow, RowState, RowTotal, UpdatedRow,
+    GridChangeSet, GridCmd, GridCommitFailure, GridCommitToken, GridDataError, GridEditError,
+    GridRows, GridUndoKind, InsertedRow, RowState, RowTotal, UpdatedRow,
 };
 use junie_tui::widgets::option_editor::{
     Affordance, ColumnEditor, EditorConfig, OptionItem, Options,
@@ -575,6 +576,13 @@ enum SaveStage {
     Submitted { ticks_left: u8 },
 }
 
+/// The sample change of rows this page asks the library's leave guard about.
+/// The guard only holds it; what it means stays here.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SampleTransition {
+    Reload,
+}
+
 pub struct GridPage {
     template: Template,
     knobs: Knobs,
@@ -585,6 +593,7 @@ pub struct GridPage {
     filter_values: Vec<(usize, CellValue)>,
     sections: crate::pages::layout::Sections,
     commit: Option<DemoCommit>,
+    reload_guard: LeaveGuard<SampleTransition>,
     saved: u32,
 }
 
@@ -619,7 +628,49 @@ impl GridPage {
             filter_values: Vec::new(),
             sections: crate::pages::layout::Sections::new(ID.sub("page")),
             commit: None,
+            reload_guard: LeaveGuard::new(ID.sub("reload-guard")).save(false),
             saved: 0,
+        }
+    }
+
+    /// Replaces the rows from the source, which drops any draft. A page with
+    /// unsaved edits asks first and changes nothing until it is answered.
+    fn request_reload(&mut self, cx: &mut Cx) {
+        if self.grid.submission_pending() {
+            cx.status(GridDataError::Busy.to_string());
+            return;
+        }
+        if !self.settle_edit(cx) {
+            return;
+        }
+        let changes = self.grid.pending().total();
+        let stakes = if changes == 0 {
+            Stakes::Clean
+        } else {
+            Stakes::Unsaved { changes }
+        };
+        match self.reload_guard.request(
+            Leave::To(SampleTransition::Reload),
+            &stakes,
+            &Strings::DEFAULT,
+        ) {
+            Ok(Leave::To(transition)) => self.run_transition(transition, cx),
+            Ok(Leave::Quit) => {}
+            Err(dialog) => cx.open_dialog(*dialog),
+        }
+    }
+
+    fn run_transition(&mut self, transition: SampleTransition, cx: &mut Cx) {
+        match transition {
+            SampleTransition::Reload => {
+                match self
+                    .grid
+                    .set_rows(page(0, self.knobs.total(), self.grid.columns.len()))
+                {
+                    Ok(()) => cx.status("Reloaded from the source"),
+                    Err(e) => cx.status(e.to_string()),
+                }
+            }
         }
     }
 
@@ -831,15 +882,7 @@ impl GridPage {
                     Err(e) => cx.status(format!("Fetch rejected · {e}")),
                 }
             }
-            Some(GridAction::Refresh) => {
-                match self
-                    .grid
-                    .try_set_rows(page(0, self.knobs.total(), self.grid.columns().len()))
-                {
-                    Ok(()) => cx.status("Reloaded from the source"),
-                    Err(e) => cx.status(format!("Reload rejected · {e}")),
-                }
-            }
+            Some(GridAction::Refresh) => self.request_reload(cx),
             Some(GridAction::CommitRequested) => {
                 if !self.settle_edit(cx) {
                     return;
@@ -1242,6 +1285,13 @@ impl Page for GridPage {
                 cx.status(format!("Copied {copied} statements"));
                 Outcome::Changed
             }
+            PageEvent::DialogClosed { id, result, .. } if self.reload_guard.is_dialog(*id) => {
+                match self.reload_guard.resolve(*result) {
+                    Resolved::Discard(Leave::To(transition)) => self.run_transition(transition, cx),
+                    _ => cx.status("Changes kept pending"),
+                }
+                Outcome::Changed
+            }
             PageEvent::DialogClosed { id, result, .. } if *id == REVIEW => {
                 match self.commit.as_mut() {
                     Some(commit)
@@ -1464,6 +1514,46 @@ mod tests {
         );
         assert_eq!(rig.page.saved, 0);
         assert!(!rig.page.grid.submission_pending());
+    }
+
+    #[test]
+    fn issue12_showcase_reload_asks_before_dropping_a_draft() {
+        let mut rig = Rig::new();
+        let _ = rig.page.grid.record_cell(0, SEATS, CellValue::Int(40));
+        let before = rig.page.grid.snapshot_changes();
+        let revision = rig.page.grid.revision();
+
+        rig.with_cx(|page, cx| page.on_event(Some(GridAction::Refresh), cx));
+        assert!(
+            rig.page.reload_guard.pending().is_some(),
+            "a draft makes the reload ask"
+        );
+        assert_eq!(rig.page.grid.snapshot_changes(), before);
+        assert_eq!(rig.page.grid.revision(), revision, "nothing was replaced");
+
+        let guard = rig.page.reload_guard.id;
+        rig.event(PageEvent::DialogClosed {
+            id: guard,
+            result: DialogResult::Cancelled,
+            value: None,
+        });
+        assert_eq!(rig.page.grid.snapshot_changes(), before, "Cancel keeps it");
+        assert_eq!(rig.last_status(), "Changes kept pending");
+
+        rig.with_cx(|page, cx| page.on_event(Some(GridAction::Refresh), cx));
+        rig.event(PageEvent::DialogClosed {
+            id: guard,
+            result: DialogResult::Action(1),
+            value: None,
+        });
+        assert!(rig.page.grid.pending().is_empty(), "Discard reloads");
+        assert_eq!(rig.last_status(), "Reloaded from the source");
+
+        rig.with_cx(|page, cx| page.on_event(Some(GridAction::Refresh), cx));
+        assert!(
+            rig.page.reload_guard.pending().is_none(),
+            "a clean grid reloads without asking"
+        );
     }
 
     #[test]
