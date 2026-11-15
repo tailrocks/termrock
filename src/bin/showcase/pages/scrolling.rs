@@ -585,7 +585,7 @@ impl ScrollingPage {
     fn render_virtual(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
         let t = ctx.theme;
         let rows = self.virtual_len();
-        let panel = Panel::card(Some("Virtual rows")).title_min(4);
+        let panel = Panel::card(Some("Virtual")).title_min(4);
         let bg = panel.bg(t);
         let inner = panel.render(area, buf, t);
         ctx.focus_stop(VIRTUAL);
@@ -1169,7 +1169,7 @@ mod tests {
         assert!(view.control_id("scrolling.window").is_some());
         let mut page = ScrollingPage::new();
         let (buf, _) = render(&mut page);
-        assert!(!text(&buf).contains("Virtual rows"));
+        assert!(!text(&buf).contains("Virtual"));
     }
 
     #[test]
@@ -1179,7 +1179,7 @@ mod tests {
             let mut page = ScrollingPage::new();
             page.set_option("scrolling.window", value);
             let (buf, hits) = render(&mut page);
-            assert!(text(&buf).contains("Virtual rows"));
+            assert!(text(&buf).contains("Virtual"));
             let layout = page.virtual_rows.last_layout();
             let viewport = usize::from(layout.viewport.width) * usize::from(layout.viewport.height);
             let work = page.virtual_rows.last_work();
