@@ -91,6 +91,30 @@ fn jackin_launch_detach_reconnect_preserves_capsule() {
 }
 
 #[test]
+fn jackin_status_outlives_wall_time_and_expires_on_the_test_clock() {
+    let app = jackin("jackin-status-clock", "reduced");
+    app.wait_text("Current directory");
+    app.key("n");
+    app.wait_text("step 1 of 5");
+    app.key("escape");
+    app.wait_text("Cancelled · nothing created");
+
+    // Longer than the 5 s status lifetime. Under the test clock wall time
+    // does not move the status clock, so the toast must still be showing.
+    std::thread::sleep(Duration::from_millis(6_500));
+    let held = app.screen();
+    assert!(
+        text(&held).contains("Cancelled · nothing created"),
+        "wall time expired the status under the test clock:\n{}",
+        text(&held)
+    );
+
+    app.advance_clock(5_000);
+    app.wait_absent("Cancelled · nothing created");
+    app.finish();
+}
+
+#[test]
 fn jackin_editor_cancel_keeps_unsaved_name_and_discard_restores() {
     let app = jackin("jackin-editor", "reduced");
     app.wait_text("Current directory");
@@ -130,6 +154,7 @@ fn jackin_editor_cancel_keeps_unsaved_name_and_discard_restores() {
     assert!(!text(&reopened).contains("payments-platform-functional"));
     assert!(!text(&reopened).contains("• 1 change"));
 
+    app.advance_clock(6_000);
     app.wait_absent("Discarded 1 change");
     app.visual("functional/jackin_editor_discard");
     app.finish();
