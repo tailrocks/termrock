@@ -539,7 +539,9 @@ fn grid_items(g: &DataGrid, row: usize, col: usize, table: bool) -> (String, Wid
         return (String::new(), g.id, items);
     }
     let src = g.source_row(row);
-    let deleted = g.pending.deleted.contains(&src);
+    let deleted = g
+        .row_key(src)
+        .is_some_and(|key| g.pending().is_deleted(key));
     let read_only = (!g.editable).then_some("Read-only rows");
     let cell_lock = read_only
         .or(spec.read_only.then_some("Read-only column"))
@@ -629,7 +631,7 @@ fn grid_items(g: &DataGrid, row: usize, col: usize, table: bool) -> (String, Wid
     }
     if table {
         group(&mut items);
-        let none = g.pending.is_empty().then_some("No pending changes");
+        let none = g.pending().is_empty().then_some("No pending changes");
         cmd(
             &mut items,
             MenuItem::new("Preview SQL").shortcut("p"),

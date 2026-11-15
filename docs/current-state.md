@@ -222,5 +222,14 @@ variant of these enums stays a breaking change and is recorded here.
   keeps the draft. Digits discarded before the model stored a number cannot
   be recovered, and arbitrary-precision decimals are not supported. See
   [the audit note](audits/2026-11-15-exact-sql-literals.md).
+- `DataGrid` keeps its drafts and undo history by row identity. Each row has
+  an `ItemKey` (local keys are never reused, provider keys come from
+  `try_set_rows_keyed`), `GridRevision` counts source and draft changes, and
+  `DataGrid::pending()` is a read-only keyed view. Deleting an existing row
+  keeps its staged cells, so undelete and Undo show them again. Removing an
+  inserted row is undoable and restores the row, its edits, errors, selection,
+  cursor and cell range. `undo()` and `GridAction::Undone` report the affected
+  `GridUndo` key. See
+  [the audit note](audits/2026-11-15-grid-keyed-drafts-undo.md).
 - The `visual-baseline` git tag is frozen historical evidence. It is
   never moved, and it is not a substitute for the current design.
