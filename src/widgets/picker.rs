@@ -380,8 +380,9 @@ impl Picker {
         self.list.width = (width, width);
     }
 
+    /// Sets the most content rows the popup shows. Zero means one row.
     pub fn set_max_rows(&mut self, rows: u16) {
-        self.list.max_rows = rows;
+        self.list.max_rows = rows.max(1);
     }
 
     pub fn set_placement(&mut self, placement: Placement) {
@@ -428,8 +429,9 @@ impl Picker {
         self
     }
 
+    /// Sets the most content rows the popup shows. Zero means one row.
     pub fn max_rows(mut self, rows: u16) -> Self {
-        self.list.max_rows = rows;
+        self.list.max_rows = rows.max(1);
         self
     }
 
@@ -466,14 +468,14 @@ impl Picker {
     }
 
     pub fn height(&self) -> u16 {
-        let max = self.list.max_rows;
-        let rows = if self.status == PickerStatus::Ready {
-            (self.items.len() as u16).clamp(1, max)
-        } else {
-            (self.items.len() as u16).clamp(2, max)
-        };
+        let rows = picker_content_rows(
+            self.items.len(),
+            self.list.max_rows,
+            self.status == PickerStatus::Ready,
+        );
         let query_rows = if self.is_searchable() { 2 } else { 0 };
-        2 + 1 + query_rows + rows + 2
+        let chrome = 2 + 1 + query_rows + 2;
+        (chrome + rows).min(usize::from(u16::MAX)) as u16
     }
 
     fn first_enabled(&self) -> usize {
@@ -1320,11 +1322,20 @@ impl EditMenuHost for Picker {
     }
 }
 
+/// Content rows a Picker shows for `count` items. A non-ready status keeps two
+/// rows when the limit allows, so a status line and its detail both fit. The
+/// limit is at least one, so the minimum never exceeds the maximum.
+fn picker_content_rows(count: usize, max_rows: u16, ready: bool) -> usize {
+    let max = usize::from(max_rows.max(1));
+    let min = if ready { 1 } else { 2.min(max) };
+    count.clamp(min, max)
+}
+
 #[cfg(test)]
 mod tests {
     use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 
-    use super::{Item, Picker, PickerAction, PickerKeyProfile};
+    use super::{Item, Picker, PickerAction, PickerKeyProfile, PickerStatus};
     use crate::core::edit::TextCmd;
     use crate::core::event::{Key, Outcome};
     use crate::core::focus::{Focus, FocusRing};
@@ -2647,5 +2658,91 @@ mod tests {
         );
         assert!(!picker.is_searchable());
         assert_eq!(picker.items[0].label, "Implicit");
+    }
+
+    fn picker_with_items(id: &str, count: usize) -> Picker {
+        let mut picker = Picker::new(WidgetId::of(id), "Rows");
+        picker
+            .set_items(
+                (0..count)
+                    .map(|index| Item::new(format!("Item {index}")))
+                    .collect(),
+            )
+            .expect("valid picker update");
+        picker
+    }
+
+    fn rendered_text(buffer: &Buffer) -> String {
+        buffer.content().iter().map(|cell| cell.symbol()).collect()
+    }
+
+    #[test]
+    fn zero_row_limit_is_one_row_in_every_status() {
+        let statuses = [
+            PickerStatus::Ready,
+            PickerStatus::Loading("Fetching".into()),
+            PickerStatus::Error {
+                message: "Offline".into(),
+                detail: None,
+            },
+        ];
+        let one_row = picker_with_items("rows-one", 3).max_rows(1).height();
+        for status in statuses {
+            let mut by_setter = picker_with_items("rows-zero-setter", 3);
+            by_setter.set_max_rows(0);
+            by_setter.status = status.clone();
+            let mut by_builder = picker_with_items("rows-zero-builder", 3).max_rows(0);
+            by_builder.status = status;
+            assert_eq!(by_setter.height(), one_row);
+            assert_eq!(by_builder.height(), one_row);
+        }
+    }
+
+    #[test]
+    fn one_row_limit_renders_every_status_without_panic() {
+        let area = Rect::new(3, 2, 60, 14);
+        let theme = Theme::for_level(ColorLevel::TrueColor);
+        let mut picker = picker_with_items("rows-transitions", 5).max_rows(1);
+        let mut rendered = Vec::new();
+        for status in [
+            PickerStatus::Ready,
+            PickerStatus::Loading("Fetching".into()),
+            PickerStatus::Error {
+                message: "Offline".into(),
+                detail: Some("Retry later".into()),
+            },
+            PickerStatus::Ready,
+        ] {
+            picker.status = status;
+            let mut buffer = Buffer::empty(area);
+            let mut hits = HitRegistry::default();
+            let mut ring = FocusRing::default();
+            let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+            picker.draw(area, &mut buffer, &mut ctx);
+            ctx.flush_overlays(&mut buffer);
+            rendered.push(rendered_text(&buffer));
+        }
+        assert!(rendered[1].contains("Fetching"));
+        assert!(rendered[2].contains("Offline"));
+        assert!(rendered[3].contains("Item 0"));
+    }
+
+    #[test]
+    fn large_item_count_is_bounded_before_u16_conversion() {
+        let mut eight = picker_with_items("rows-eight", 8).max_rows(8);
+        let mut large = picker_with_items("rows-large", 65_536).max_rows(8);
+        for status in [PickerStatus::Ready, PickerStatus::Loading("Wait".into())] {
+            eight.status = status.clone();
+            large.status = status;
+            assert_eq!(large.height(), eight.height());
+        }
+    }
+
+    #[test]
+    fn maximum_row_limit_saturates_total_height() {
+        let mut picker = picker_with_items("rows-maximum", 65_536).max_rows(u16::MAX);
+        assert_eq!(picker.height(), u16::MAX);
+        picker.set_searchable(false).expect("disable search");
+        assert_eq!(picker.height(), u16::MAX);
     }
 }
