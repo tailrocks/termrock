@@ -59,10 +59,6 @@ jobs:
           - 2
           - 3
           - 4
-          - 5
-          - 6
-          - 7
-          - 8
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -214,7 +210,7 @@ jobs:
           NEXTEST_TEST_THREADS: "8"
           RUSTUP_HOME: ${{ runner.temp }}/velnor/rustup
           VELNOR_SUITE_SHARD: ${{ matrix.shard }}
-        run: "sh -c 'unset ACTIONS_ID_TOKEN_REQUEST_TOKEN ACTIONS_ID_TOKEN_REQUEST_URL ACTIONS_RUNTIME_TOKEN GITHUB_TOKEN MISE_GITHUB_TOKEN GH_TOKEN GH_HOST GH_CONFIG_DIR; mise --no-config --no-env --no-hooks exec rust@'\"${VELNOR_TOOL_RUST}\"' aqua:nextest-rs/nextest/cargo-nextest@'\"${VELNOR_TOOL_NEXTEST}\"' -- mbx nextest run --workspace --no-tests warn --partition \"hash:$VELNOR_SUITE_SHARD/8\" --profile functional'"
+        run: "sh -c 'unset ACTIONS_ID_TOKEN_REQUEST_TOKEN ACTIONS_ID_TOKEN_REQUEST_URL ACTIONS_RUNTIME_TOKEN GITHUB_TOKEN MISE_GITHUB_TOKEN GH_TOKEN GH_HOST GH_CONFIG_DIR; mise --no-config --no-env --no-hooks exec rust@'\"${VELNOR_TOOL_RUST}\"' aqua:nextest-rs/nextest/cargo-nextest@'\"${VELNOR_TOOL_NEXTEST}\"' -- mbx nextest run --workspace --no-tests warn --partition \"hash:$VELNOR_SUITE_SHARD/4\" --profile functional'"
       - name: Upload suite artifact (functional-terminal-evidence)
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
