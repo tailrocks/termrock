@@ -293,6 +293,83 @@ struct ListGeom {
     under: u16,
 }
 
+/// Aggregate column widths of the master rows.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct MasterWidths {
+    pub label: usize,
+    pub detail: u16,
+    pub meta: u16,
+}
+
+/// The standard master row: gutter, mark, label, detail and meta columns.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn paint_master_row(
+    buf: &mut Buffer,
+    ctx: &mut RenderCtx,
+    hit: WidgetId,
+    rect: Rect,
+    row: ListRowRef<'_>,
+    selected: bool,
+    focused: bool,
+    widths: MasterWidths,
+) {
+    let t = ctx.theme;
+    let bg = t.canvas;
+    let y = rect.y;
+    let mut s = ctx.state(hit);
+    s.focused = focused && selected;
+    s.selected = selected;
+    let st = t.row(s, bg);
+    fill(buf, rect, st);
+    buf.set_string(
+        rect.x,
+        y,
+        t.gutter_symbol(s),
+        t.gutter(s, st.bg.unwrap_or(bg), false),
+    );
+    let mut x = rect.x + 2;
+    if let Some(kind) = row.mark {
+        let (glyph, gs) = t.status_at(kind, ctx.interaction.tick);
+        buf.set_string(x, y, glyph, gs.bg(st.bg.unwrap_or(bg)));
+    }
+    x += 2;
+    let right = rect.right().saturating_sub(1);
+    let lw = (widths.label as u16).min(right.saturating_sub(x));
+    let label_style = if row.faint {
+        st.fg(t.text_muted)
+    } else if s.selected {
+        st.fg(t.accent)
+    } else {
+        st
+    };
+    buf.set_string(
+        x,
+        y,
+        fit(&truncate(row.label, lw as usize), lw as usize),
+        label_style,
+    );
+    let dx = x + lw + COLUMN_GAP;
+    let (detail_col, meta_col) = columns(right.saturating_sub(dx), widths.detail, widths.meta);
+    if !row.detail.is_empty() && detail_col > 0 {
+        buf.set_string(
+            dx,
+            y,
+            truncate(row.detail, detail_col as usize),
+            st.fg(t.text_muted).remove_modifier(Modifier::BOLD),
+        );
+    }
+    if !row.meta.is_empty() && meta_col > 0 {
+        let meta = truncate(row.meta, meta_col as usize);
+        buf.set_string(
+            right - width(&meta) as u16,
+            y,
+            &meta,
+            st.fg(t.tone(row.meta_tone)).remove_modifier(Modifier::BOLD),
+        );
+    }
+    legible_on_fill(buf, rect, t, bg);
+}
+
 pub struct ListDetail {
     pub master: WidgetId,
     pub detail: WidgetId,
@@ -918,70 +995,47 @@ impl ListDetail {
         rows: &R,
         selected: Option<usize>,
     ) {
-        let t = ctx.theme;
         let (inner, row_w, focused) = (geom.inner, geom.row_w, geom.focused);
-        let bg = t.canvas;
-        let (label_w, detail_w, meta_w) = self.aggregate_widths(rows);
-        let label_w = label_w.clamp(8, 22);
+        let widths = self.master_widths_of(rows);
         for (k, i) in self.scroll.visible_range().enumerate() {
             let y = inner.y + k as u16;
-            let row = rows.row(i);
             let rid = self.master_hit(rows.hit_key(i), i);
-            let mut s = ctx.state(rid);
-            s.focused = focused && selected == Some(i);
-            s.selected = selected == Some(i);
-            let st = t.row(s, bg);
             let rect = Rect::new(inner.x - 1, y, row_w + 1, 1);
-            fill(buf, rect, st);
-            buf.set_string(
-                rect.x,
-                y,
-                t.gutter_symbol(s),
-                t.gutter(s, st.bg.unwrap_or(bg), false),
+            paint_master_row(
+                buf,
+                ctx,
+                rid,
+                rect,
+                rows.row(i),
+                selected == Some(i),
+                focused,
+                widths,
             );
-            let mut x = rect.x + 2;
-            if let Some(kind) = row.mark {
-                let (glyph, gs) = t.status_at(kind, ctx.interaction.tick);
-                buf.set_string(x, y, glyph, gs.bg(st.bg.unwrap_or(bg)));
-            }
-            x += 2;
-            let right = rect.right().saturating_sub(1);
-            let lw = (label_w as u16).min(right.saturating_sub(x));
-            let label_style = if row.faint {
-                st.fg(t.text_muted)
-            } else if s.selected {
-                st.fg(t.accent)
-            } else {
-                st
-            };
-            buf.set_string(
-                x,
-                y,
-                fit(&truncate(row.label, lw as usize), lw as usize),
-                label_style,
-            );
-            let dx = x + lw + COLUMN_GAP;
-            let (detail_col, meta_col) = columns(right.saturating_sub(dx), detail_w, meta_w);
-            if !row.detail.is_empty() && detail_col > 0 {
-                buf.set_string(
-                    dx,
-                    y,
-                    truncate(row.detail, detail_col as usize),
-                    st.fg(t.text_muted).remove_modifier(Modifier::BOLD),
-                );
-            }
-            if !row.meta.is_empty() && meta_col > 0 {
-                let meta = truncate(row.meta, meta_col as usize);
-                buf.set_string(
-                    right - width(&meta) as u16,
-                    y,
-                    &meta,
-                    st.fg(t.tone(row.meta_tone)).remove_modifier(Modifier::BOLD),
-                );
-            }
-            legible_on_fill(buf, rect, t, bg);
             ctx.clickable(rid, rect);
         }
+    }
+
+    fn master_widths_of<R: MasterRows + ?Sized>(&mut self, rows: &R) -> MasterWidths {
+        let (label, detail, meta) = self.aggregate_widths(rows);
+        MasterWidths {
+            label: label.clamp(8, 22),
+            detail,
+            meta,
+        }
+    }
+
+    /// The aggregate column widths of `source`, cached by its stamp, for a
+    /// painter that draws the standard master row itself.
+    pub(crate) fn master_widths<S: ListDetailSource + ?Sized>(
+        &mut self,
+        source: &S,
+    ) -> MasterWidths {
+        self.master_widths_of(&SourceRows(source))
+    }
+
+    /// The narrowest area that still shows the detail beside the master.
+    pub(crate) fn set_collapse_below(&mut self, width: u16) {
+        self.md.collapse_below = width;
     }
 
     fn rendered(&mut self, lines: &[Line], body: Rect, label_w: u16) -> Vec<Rendered> {

@@ -814,6 +814,18 @@ pub const SEARCH_SESSION_ALLOWLIST: &[(&str, &str)] = &[
         SEARCH_SESSION_REASON,
     ),
     (
+        "widgets::search_detail::SearchDetail::collapse_below",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::SearchDetail::set_query_readout",
+        SEARCH_SESSION_REASON,
+    ),
+    (
+        "widgets::search_detail::RowPaint::cell_hit",
+        SEARCH_SESSION_REASON,
+    ),
+    (
         "widgets::search_detail::SearchAction::DetailItem",
         SEARCH_SESSION_REASON,
     ),

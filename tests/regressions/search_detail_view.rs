@@ -872,6 +872,23 @@ fn search_detail_separate_query_edits_request_and_results_keys_navigate() {
 }
 
 #[test]
+fn search_detail_tab_on_the_results_is_left_to_the_shell() {
+    let mut search = new_search(SearchConfig::default());
+    let req = accept(&mut search, 1, mixed());
+    let source = source_for(&req, mixed());
+    let mut focus = Focus::default();
+    focus.focus(ID);
+    let reply = search
+        .on_key(&key(KeyCode::Tab), &source, &mut focus)
+        .expect("the accepted source");
+    assert!(
+        !reply.is_consumed(),
+        "Tab on the results must reach the shell's focus ring, not re-focus the results"
+    );
+    assert_eq!(focus.current(), Some(ID));
+}
+
+#[test]
 fn search_detail_narrow_drawer_restores_focus() {
     let lines = frame_lines(40);
     let mut search = new_search(SearchConfig::default());
