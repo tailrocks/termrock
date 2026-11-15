@@ -1067,7 +1067,7 @@ pub fn drain_pending_input() -> std::io::Result<usize> {
 }
 
 #[cfg(test)]
-mod tests {
+mod render_pending_tests {
     use std::collections::VecDeque;
 
     use ratatui::Terminal;
