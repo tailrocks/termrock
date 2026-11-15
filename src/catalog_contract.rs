@@ -13,7 +13,9 @@ mod api_inventory;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
-use api_inventory::{ApiKind, Expansion, Inventory, MATRIX, Record, SourceTree, Value, build};
+use api_inventory::{
+    ApiKind, Expansion, Inventory, MATRIX, Record, SourceTree, TestFn, Value, build, idents,
+};
 use syn::visit::Visit;
 
 const EXPANSIONS: &[Expansion] = &[
@@ -80,7 +82,6 @@ const EXPANSIONS: &[Expansion] = &[
             "metrics::Metric::RankRowsVisited",
             "metrics::Metric::SchedulingRecordsVisited",
             "metrics::Metric::SchedulingPolls",
-            "metrics::Metric::TextBytesHashed",
             "metrics::Metric::AnnotationQueries",
             "metrics::Metric::IdentityComparisons",
             "metrics::Metric::FitVisits",
@@ -95,6 +96,13 @@ const EXPANSIONS: &[Expansion] = &[
 /// shrinks; raising it means the gate was loosened and needs a reviewer's eye.
 const DEBT_CEILING: usize = 4150;
 
+/// The `ExceptionKind` variant that says a demo is only postponed. It is the
+/// one structural signal: the reason text is prose and never decides anything.
+const DEFERRED_KIND: &str = "Deferred";
+
+/// A reason shorter than this is a label (a page name), not an explanation.
+const MIN_REASON_WORDS: usize = 4;
+
 /// Specimen states are not API: they stay catalog-only.
 const STATE_KIND: &str = "state";
 
@@ -108,7 +116,7 @@ struct Sources {
     debt: String,
     debt_baseline: String,
     showcase: Vec<(String, String)>,
-    tests: BTreeMap<String, bool>,
+    tests: BTreeMap<String, TestFn>,
 }
 
 fn root() -> &'static Path {
@@ -199,11 +207,26 @@ fn zero_arg_fns(source: &str) -> BTreeSet<String> {
         .collect()
 }
 
-fn idents(text: &str) -> BTreeSet<String> {
-    text.split(|c: char| !(c.is_alphanumeric() || c == '_'))
-        .filter(|t| !t.is_empty())
-        .map(str::to_owned)
-        .collect()
+/// What a test must say to count as naming `id`: the member, and for a member
+/// of a type, that type too (in the body, or anywhere in the test's file, where
+/// the `use` and the helpers that build the value live).
+fn names_api(test: &TestFn, id: &str, inv: &Inventory) -> bool {
+    let (owner, member) = owner_and_member(id, inv);
+    let member = member.trim_end_matches('!');
+    test.body.contains(member)
+        && owner.is_none_or(|o| {
+            let o = o.rsplit("::").next().unwrap_or(o);
+            test.body.contains(o) || test.file.contains(o)
+        })
+}
+
+fn mention_needed(id: &str, inv: &Inventory) -> String {
+    let (owner, member) = owner_and_member(id, inv);
+    let member = member.trim_end_matches('!');
+    match owner {
+        Some(o) => format!("{}::{member}", o.rsplit("::").next().unwrap_or(o)),
+        None => member.to_owned(),
+    }
 }
 
 fn debt_ids(text: &str) -> Vec<String> {
@@ -358,6 +381,7 @@ fn validate(rows: &[(&'static str, Inventory)], s: &Sources) -> (Vec<String>, Re
     }
     report.proofs = proofs.len();
 
+    let kinds = enum_variants(&s.coverage, "ExceptionKind");
     let mut exceptions: BTreeMap<String, &Record> = BTreeMap::new();
     let exception_records = api_inventory::records_from_source(&s.coverage, "CapabilityException");
     for record in &exception_records {
@@ -378,6 +402,18 @@ fn validate(rows: &[(&'static str, Inventory)], s: &Sources) -> (Vec<String>, Re
         if reason.trim().is_empty() {
             errors.push(format!("exception has an empty reason: {api}"));
         }
+        let words = reason.split_whitespace().count();
+        if words < MIN_REASON_WORDS {
+            errors.push(format!(
+                "exception reason is a bare label, not a reason: {api} says `{reason}` ({words} word(s), at least {MIN_REASON_WORDS} wanted)"
+            ));
+        }
+        let kind = record.get("kind").and_then(Value::leaf).unwrap_or("?");
+        if !kinds.contains(kind) {
+            errors.push(format!(
+                "exception has no known kind: {api} says `{kind}`, expected one of {kinds:?}"
+            ));
+        }
         let test = record
             .get("regression_test")
             .and_then(Value::str)
@@ -386,13 +422,20 @@ fn validate(rows: &[(&'static str, Inventory)], s: &Sources) -> (Vec<String>, Re
             None => errors.push(format!(
                 "exception test does not exist: {api} names `{test}`, which is no #[test] fn at that `path/to/file.rs::name`"
             )),
-            Some(true) => errors.push(format!(
+            Some(found) if found.ignored => errors.push(format!(
                 "exception test is ignored: {api} names `{test}`, which never runs"
             )),
-            Some(false) => {}
+            Some(found) => {
+                if !names_api(found, api, superset) {
+                    errors.push(format!(
+                        "exception test does not mention the API: {api} names `{test}`, whose body never uses `{}`",
+                        mention_needed(api, superset)
+                    ));
+                }
+            }
         }
         let tracked = matches!(record.get("tracking_issue"), Some(Value::Some(_)));
-        if reason.starts_with("Deferred") && !tracked {
+        if kind == DEFERRED_KIND && !tracked {
             errors.push(format!("deferred exception lacks a tracking issue: {api}"));
         }
         if proofs.contains_key(api) {
@@ -936,10 +979,10 @@ fn catalog_rejects_an_exception_test_in_another_file() {
 #[test]
 fn catalog_rejects_an_ignored_exception_test() {
     let mut s = Sources::load();
-    s.tests.insert(
-        "tests/forward_policy.rs::one_line_is_sent_and_many_lines_ask_first".into(),
-        true,
-    );
+    s.tests
+        .get_mut("tests/forward_policy.rs::one_line_is_sent_and_many_lines_ask_first")
+        .expect("the named test exists")
+        .ignored = true;
     expect_error(&check(&s), "which never runs");
 }
 
@@ -952,7 +995,7 @@ fn catalog_test_scan_sees_ignore_and_the_owning_file() {
         &mut found,
     );
     api_inventory::scan_tests("b.rs", "#[test] fn live() {}", &mut found);
-    let got: Vec<_> = found.iter().map(|(k, v)| (k.as_str(), *v)).collect();
+    let got: Vec<_> = found.iter().map(|(k, v)| (k.as_str(), v.ignored)).collect();
     assert_eq!(
         got,
         [
@@ -963,6 +1006,154 @@ fn catalog_test_scan_sees_ignore_and_the_owning_file() {
             ("a.rs::off_why", true),
             ("b.rs::live", false),
         ]
+    );
+}
+
+#[test]
+fn catalog_test_scan_reads_the_body_including_macro_arguments() {
+    let mut found = BTreeMap::new();
+    api_inventory::scan_tests(
+        "a.rs",
+        "use owner::Thing;\n#[test] fn t() { let v = make(); assert_eq!(v.member_in_macro(), 1); v.plain_call(); }\nfn helper() { unrelated_helper(); }\n",
+        &mut found,
+    );
+    let t = &found["a.rs::t"];
+    for name in ["make", "member_in_macro", "plain_call", "assert_eq"] {
+        assert!(t.body.contains(name), "{name} is in the body");
+    }
+    assert!(
+        !t.body.contains("unrelated_helper"),
+        "a helper is not the test"
+    );
+    assert!(t.file.contains("Thing"), "the file's own idents ride along");
+}
+
+/// A probe API with a catalog line, so only its disposition is in question.
+fn with_probe_exception(kind: &str, reason: &str, test: &str, issue: &str) -> Sources {
+    let mut s = Sources::load();
+    with_probe(&mut s);
+    s.coverage.push_str(&format!(
+        "\nconst PROBE_EXCEPTION: CapabilityException = CapabilityException {{ api: \"clock::undeclared_probe\", kind: ExceptionKind::{kind}, reason: \"{reason}\", regression_test: \"{test}\", tracking_issue: {issue} }};\n"
+    ));
+    s
+}
+
+const UNRELATED_TEST: &str = "src/ui/layer.rs::settle_drains_every_queued_result_in_order";
+const PROBE_REASON: &str =
+    "No page can reach this helper because the host calls it between frames.";
+
+#[test]
+fn catalog_rejects_a_bare_page_name_with_an_unrelated_test() {
+    let s = with_probe_exception("Nonvisual", "grid", UNRELATED_TEST, "None");
+    let errors = check(&s);
+    expect_error(&errors, "exception reason is a bare label");
+    expect_error(
+        &errors,
+        "exception test does not mention the API: clock::undeclared_probe",
+    );
+}
+
+#[test]
+fn catalog_rejects_an_exception_test_that_never_names_the_api() {
+    let s = with_probe_exception("Nonvisual", PROBE_REASON, UNRELATED_TEST, "None");
+    let errors = check(&s);
+    expect_error(&errors, "whose body never uses `undeclared_probe`");
+    assert!(
+        errors.iter().all(|e| !e.contains("bare label")),
+        "{errors:?}"
+    );
+}
+
+#[test]
+fn catalog_accepts_an_exception_whose_test_names_the_api() {
+    let mut s = with_probe_exception(
+        "Nonvisual",
+        PROBE_REASON,
+        "src/clock.rs::probe_test",
+        "None",
+    );
+    s.tests.insert(
+        "src/clock.rs::probe_test".into(),
+        TestFn {
+            body: ["undeclared_probe".to_owned()].into(),
+            ..TestFn::default()
+        },
+    );
+    assert!(check(&s).is_empty(), "{}", check(&s).join("\n"));
+}
+
+#[test]
+fn catalog_owner_type_must_appear_in_the_test_or_its_file() {
+    let s = Sources::load();
+    let rows = rows(&s.tree).expect("inventory builds");
+    let inv = &rows.last().expect("rows").1;
+    let id = "widgets::table::DataTable::rows";
+    let test = |body: &[&str], file: &[&str]| TestFn {
+        ignored: false,
+        body: body.iter().map(|n| (*n).to_owned()).collect(),
+        file: std::rc::Rc::new(file.iter().map(|n| (*n).to_owned()).collect()),
+    };
+    assert!(
+        !names_api(&test(&["rows"], &["Grid"]), id, inv),
+        "a Grid::rows test is not DataTable::rows"
+    );
+    assert!(!names_api(&test(&[], &["DataTable"]), id, inv));
+    assert!(names_api(&test(&["rows"], &["DataTable"]), id, inv));
+    assert!(names_api(&test(&["rows", "DataTable"], &[]), id, inv));
+    assert!(names_api(
+        &test(&["suspended"], &[]),
+        "metrics::suspended",
+        inv
+    ));
+}
+
+#[test]
+fn catalog_deferred_kind_requires_a_tracking_issue() {
+    let s = with_probe_exception("Deferred", PROBE_REASON, "src/clock.rs::probe_test", "None");
+    expect_error(
+        &check(&s),
+        "deferred exception lacks a tracking issue: clock::undeclared_probe",
+    );
+    let mut s = with_probe_exception(
+        "Deferred",
+        PROBE_REASON,
+        "src/clock.rs::probe_test",
+        "Some(14)",
+    );
+    s.tests.insert(
+        "src/clock.rs::probe_test".into(),
+        TestFn {
+            body: ["undeclared_probe".to_owned()].into(),
+            ..TestFn::default()
+        },
+    );
+    assert!(check(&s).is_empty(), "{}", check(&s).join("\n"));
+}
+
+#[test]
+fn catalog_deferral_is_decided_by_the_kind_and_not_by_the_reason_text() {
+    let mut s = with_probe_exception(
+        "Nonvisual",
+        "No callable scenario drives this helper yet, so a demo is still to come.",
+        "src/clock.rs::probe_test",
+        "None",
+    );
+    s.tests.insert(
+        "src/clock.rs::probe_test".into(),
+        TestFn {
+            body: ["undeclared_probe".to_owned()].into(),
+            ..TestFn::default()
+        },
+    );
+    assert!(
+        check(&s).is_empty(),
+        "prose is never read for deferral: {}",
+        check(&s).join("\n")
+    );
+    let s = with_probe_exception("Whenever", PROBE_REASON, UNRELATED_TEST, "None");
+    expect_error(
+        &check(&s),
+        "exception has no known kind: clock::undeclared_probe",
     );
 }
 
@@ -993,6 +1184,31 @@ fn catalog_rejects_a_stale_debt_entry() {
 }
 
 #[test]
+fn catalog_metric_expansion_matches_the_compiled_consumer() {
+    use crate::metrics::Metric;
+    let manifest = EXPANSIONS
+        .iter()
+        .find(|e| e.site == "metrics::metrics")
+        .expect("the metrics! manifest");
+    let listed: BTreeSet<&str> = manifest.ids.iter().copied().collect();
+    // The enum and its two members are what `metrics!` generates. The variants
+    // come from the compiled `Metric::ALL`, so a metric added or deleted there
+    // changes this set and the manifest has to follow.
+    let mut compiled: BTreeSet<String> = Metric::ALL
+        .iter()
+        .map(|metric| format!("metrics::Metric::{metric:?}"))
+        .collect();
+    compiled.insert("metrics::Metric".into());
+    compiled.insert("metrics::Metric::ALL".into());
+    compiled.insert("metrics::Metric::name".into());
+    let compiled: BTreeSet<&str> = compiled.iter().map(String::as_str).collect();
+    assert_eq!(
+        listed, compiled,
+        "the manifest lists exactly what metrics! generates"
+    );
+}
+
+#[test]
 fn catalog_part_expansion_matches_the_compiled_consumer() {
     use crate::core::id::Part;
     let listed: BTreeSet<String> = EXPANSIONS[0]
@@ -1009,4 +1225,25 @@ fn catalog_part_expansion_matches_the_compiled_consumer() {
         listed, compiled,
         "the manifest lists exactly what parts! generates"
     );
+}
+
+#[test]
+fn catalog_allowlist_records_are_unique_exact_ids_with_a_reason() {
+    use crate::catalog::{ALLOWLIST, Allowed};
+    let mut seen = BTreeSet::new();
+    for entry in ALLOWLIST {
+        let entry: &Allowed = entry;
+        assert!(seen.insert(entry.id), "{} is listed twice", entry.id);
+        assert!(
+            !entry.id.contains('*') && entry.id.contains("::"),
+            "an exact id, never a prefix: {}",
+            entry.id
+        );
+        assert!(
+            entry.reason.split_whitespace().count() >= MIN_REASON_WORDS,
+            "{} needs a reason, got `{}`",
+            entry.id,
+            entry.reason
+        );
+    }
 }

@@ -3,7 +3,7 @@ use junie_tui::core::hit::HitRegistry;
 use junie_tui::core::id::WidgetId;
 use junie_tui::theme::{ColorLevel, Theme};
 use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::widgets::option_list::Item;
+use junie_tui::widgets::option_list::{Item, OptionList, PopupRow, PopupSnapshot};
 use junie_tui::widgets::picker::Picker;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
@@ -59,4 +59,68 @@ fn painted_item_rows_never_exceed_max_rows() {
         }
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+#[test]
+fn an_option_list_snapshot_carries_the_visible_rows_for_a_deferred_paint() {
+    let items: Vec<Item> = (0..20).map(|i| Item::new(format!("Item {i}"))).collect();
+    let mut list = OptionList::new(WidgetId::of("snap"));
+    let inner = Rect::new(2, 1, 30, 5);
+    let theme = Theme::for_level(ColorLevel::TrueColor);
+    let mut buf = Buffer::empty(Rect::new(0, 0, 40, 8));
+    let mut hits = HitRegistry::default();
+    let mut ring = FocusRing::default();
+    let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+
+    list.layout(inner, &items[..], &ctx);
+    let snapshot: PopupSnapshot<String> =
+        list.snapshot(inner, &items[..], |i| format!("payload {i}"));
+    let rows: &[PopupRow<String>] = snapshot.rows();
+    assert_eq!(rows.len(), 5, "only the rows inside the popup are copied");
+    assert_eq!((rows[0].index, rows[0].line), (0, 0));
+    assert_eq!(rows[0].payload, "payload 0");
+    assert_eq!((rows[4].index, rows[4].line), (4, 4));
+    assert!(rows.iter().all(|row| row.enabled && !row.checked));
+    assert!(!snapshot.more_above() && snapshot.more_below());
+    assert_eq!(
+        snapshot.row_id(3),
+        list.row_id(3),
+        "the snapshot names rows as the list does"
+    );
+
+    let mut painted = Vec::new();
+    snapshot.paint_rows(
+        inner,
+        theme.canvas,
+        &mut buf,
+        &mut ctx,
+        |row, _paint, buf, _ctx| {
+            painted.push(row.index);
+            buf.set_string(
+                inner.x,
+                inner.y + row.line,
+                &row.payload,
+                ratatui::style::Style::new(),
+            );
+        },
+    );
+    assert_eq!(painted, [0, 1, 2, 3, 4]);
+    assert!(
+        common_row(&buf, inner.y + 1).starts_with("payload 1"),
+        "the content closure drew inside each row"
+    );
+
+    let _ = list.select(15, &items[..]);
+    list.layout(inner, &items[..], &ctx);
+    let scrolled = list.snapshot(inner, &items[..], |i| i);
+    assert!(scrolled.more_above(), "rows are scrolled off above");
+    assert!(scrolled.rows().iter().any(|row| row.index == 15));
+}
+
+fn common_row(buf: &Buffer, y: u16) -> String {
+    (2..32)
+        .map(|x| buf[(x, y)].symbol())
+        .collect::<String>()
+        .trim_end()
+        .to_owned()
 }

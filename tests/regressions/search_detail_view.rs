@@ -5,7 +5,7 @@ use crate::common::{chord, key, row};
 use crate::search_detail::{R, Results, acts, input, k, list, one_request};
 use junie_tui::core::edit::FieldKeys;
 use junie_tui::core::event::Key;
-use junie_tui::core::focus::{Focus, FocusRing};
+use junie_tui::core::focus::{Focus, FocusChange, FocusRing};
 use junie_tui::core::hit::HitRegistry;
 use junie_tui::core::id::{ItemKey, Part, WidgetId};
 use junie_tui::core::intent::Phase;
@@ -23,7 +23,8 @@ use junie_tui::widgets::list_detail::{
 };
 use junie_tui::widgets::search_detail::{
     QueryRequest, QueryView, ResultRowKind, RowPaint, SearchAction, SearchConfig, SearchDetail,
-    SearchError, SearchFocusMode, SearchPaint, SearchPhase, paint_query_default,
+    SearchDetailSource, SearchError, SearchFocusMode, SearchPaint, SearchPhase,
+    paint_query_default,
 };
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
@@ -1643,4 +1644,211 @@ fn selection_never_rests_on_a_chip_that_is_not_drawn() {
         ),
         "the preview action runs against a drawn chip: {out:?}"
     );
+}
+
+#[test]
+fn search_detail_layout_builders_place_the_preview_and_size_the_summary() {
+    fn paint_hosted<P: SearchPaint<Results>>(
+        search: &mut SearchDetail,
+        source: &Results,
+        area: Rect,
+        host: &mut P,
+    ) {
+        let theme = Theme::for_level(ColorLevel::TrueColor);
+        let mut buf = Buffer::empty(area);
+        let mut hits = HitRegistry::default();
+        let mut ring = FocusRing::default();
+        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        search
+            .render_hosted(area, source, &mut buf, &mut ctx, host)
+            .expect("the accepted source");
+    }
+    let build = |collapse: u16, share: (u16, u16, u16), summary: u16| {
+        new_search(SearchConfig::default().focus_mode(SearchFocusMode::Combined))
+            .collapse_below(collapse)
+            .detail_share(share.0, share.1, share.2)
+            .summary_rows(summary)
+    };
+    let mut probe = build(80, (25, 20, 60), 2);
+    let req = accept(&mut probe, 1, mixed());
+    let source = source_for(&req, mixed());
+
+    let mut host = Hosted::default();
+    paint_hosted(&mut probe, &source, WIDE, &mut host);
+    let (narrow_share, _, _) = host
+        .detail
+        .expect("120 columns is above the collapse width");
+    let mut wide_share = build(80, (50, 20, 60), 2);
+    accept(&mut wide_share, 1, mixed());
+    let mut host = Hosted::default();
+    paint_hosted(&mut wide_share, &source, WIDE, &mut host);
+    let (wide_pane, _, _) = host.detail.expect("preview beside the list");
+    assert!(
+        wide_pane.width > narrow_share.width,
+        "a larger detail_share gives the preview more columns: {wide_pane:?} {narrow_share:?}"
+    );
+
+    for (rows, collapse) in [(1, 80), (3, 80)] {
+        let mut search = build(collapse, (25, 20, 60), rows);
+        accept(&mut search, 1, mixed());
+        let mut host = Hosted::default();
+        paint_hosted(&mut search, &source, NARROW, &mut host);
+        assert!(
+            host.detail.is_none(),
+            "60 columns is below collapse_below({collapse})"
+        );
+        assert_eq!(
+            host.summary.expect("a summary").height,
+            rows,
+            "summary_rows({rows})"
+        );
+    }
+
+    let mut open = build(40, (25, 20, 60), 2);
+    accept(&mut open, 1, mixed());
+    let mut host = Hosted::default();
+    paint_hosted(&mut open, &source, NARROW, &mut host);
+    assert!(
+        host.detail.is_some(),
+        "collapse_below(40) keeps the preview at 60 columns"
+    );
+}
+
+#[test]
+fn search_detail_editing_blur_readout_and_the_session_it_exposes() {
+    let mut search = new_search(SearchConfig::default());
+    search
+        .configure_query(|field| field.keys = FieldKeys::Desktop)
+        .quiet();
+    assert_eq!(search.id(), ID);
+    search.config_mut().preserve_preview_on_same_key = false;
+    assert!(!search.session().config().preserve_preview_on_same_key);
+    assert!(
+        !search.session().is_interactive(),
+        "no results answer a request yet"
+    );
+    let req = accept(&mut search, 1, list());
+    let source = source_for(&req, list());
+    assert!(search.session().is_interactive());
+
+    search.set_query_readout("in: docs");
+    let mut focus = Focus::default();
+    let frame = draw(&mut search, &source, WIDE, None, &[], &mut Seen::default());
+    assert!(frame.text().contains("in: docs"), "{}", frame.text());
+    assert!(!search.editing());
+    let field = frame
+        .hits
+        .regions()
+        .iter()
+        .find(|r| r.id == QUERY)
+        .expect("the query is a hit region");
+    let click = PointerEvent::new(
+        &frame.hits,
+        Phase::Click,
+        field.id,
+        field.area.as_position(),
+        1,
+        KeyModifiers::NONE,
+    );
+    search
+        .pointer(&click, &source, &mut focus)
+        .expect("source")
+        .quiet();
+    assert!(search.editing(), "clicking the query starts editing");
+    assert_eq!(
+        search.query(),
+        "",
+        "the readout never changes the query text"
+    );
+
+    let elsewhere = search.on_blur(FocusChange {
+        from: ID,
+        to: Some(QUERY),
+    });
+    assert!(
+        !elsewhere.is_consumed(),
+        "a blur of another owner is ignored"
+    );
+    assert!(search.editing());
+    search
+        .on_blur(FocusChange {
+            from: QUERY,
+            to: Some(ID),
+        })
+        .quiet();
+    assert!(!search.editing(), "leaving the query ends editing");
+}
+
+#[test]
+fn search_detail_retry_after_a_failure_and_close_detail_return_focus() {
+    let mut search = new_search(SearchConfig::default());
+    let req = one_request(search.refresh_source(input(1)));
+    search
+        .fail(req.token, "down".into())
+        .expect("current")
+        .quiet();
+    assert_eq!(search.session().error(), Some("down"));
+    let again = one_request(search.retry());
+    assert_ne!(again.token, req.token, "a retry is a new request");
+    assert_eq!(search.session().error(), None);
+
+    let mut focus = Focus::default();
+    focus.focus(ID);
+    search.open_detail(&mut focus);
+    assert!(search.on_detail(focus.current()), "the preview took focus");
+    search.close_detail(&mut focus);
+    assert!(
+        !search.on_detail(focus.current()),
+        "close_detail leaves the preview"
+    );
+}
+
+#[test]
+fn row_paint_places_cells_and_names_their_hit_regions() {
+    fn standard_source<S: SearchDetailSource + ?Sized>(_: &S) {}
+    let mut search = new_search(SearchConfig::default());
+    let req = accept(&mut search, 1, mixed());
+    let source = source_for(&req, mixed());
+    standard_source(&source);
+
+    let mut named: Vec<(usize, WidgetId)> = Vec::new();
+    let theme = Theme::for_level(ColorLevel::TrueColor);
+    let mut buf = Buffer::empty(WIDE);
+    let mut hits = HitRegistry::default();
+    let mut ring = FocusRing::default();
+    {
+        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        search
+            .render_source_with(
+                WIDE,
+                &source,
+                &detail_frame(&[]),
+                &mut buf,
+                &mut ctx,
+                |mut row: RowPaint<'_, Results>, _buf: &mut Buffer, _ctx: &mut RenderCtx| {
+                    if row.kind != ResultRowKind::Cells {
+                        return;
+                    }
+                    for cell in 0..3 {
+                        row.place_cell(
+                            cell,
+                            Rect::new(row.rect.x + 2 + 6 * cell as u16, row.rect.y, 5, 1),
+                        );
+                        named.push((cell, row.cell_hit(cell)));
+                    }
+                },
+                |area, view: QueryView<'_>, buf: &mut Buffer, ctx: &mut RenderCtx| {
+                    paint_query_default(area, view, buf, ctx);
+                },
+            )
+            .expect("the accepted source");
+    }
+    let frame = Frame { buf, hits };
+    for (cell, key) in [(0, 30), (1, 31), (2, 32)] {
+        let (id, _) = frame.hit(Part::CELL, k(key));
+        assert!(
+            named.contains(&(cell, id)),
+            "cell {cell} is registered under the id cell_hit names"
+        );
+    }
 }

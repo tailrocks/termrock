@@ -11,8 +11,9 @@ use junie_tui::core::selection::{Activate, ClickPolicy};
 use junie_tui::ui::context::{ContextAnchor, ContextRequest};
 use junie_tui::widgets::input::TextInput;
 use junie_tui::widgets::search_detail::{
-    MissingSelection, QueryPasteMode, QueryRequest, ResultRowKind, SearchAction, SearchCmd,
-    SearchConfig, SearchError, SearchFocusMode, SearchPhase, SearchSession, SearchSource,
+    MissingSelection, QueryPasteMode, QueryRequest, QueryToken, ResultRowKind, SearchAction,
+    SearchCmd, SearchConfig, SearchError, SearchFocusMode, SearchPhase, SearchSession,
+    SearchSource,
 };
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::Position;
@@ -1026,4 +1027,117 @@ fn search_detail_configure_query_requests_on_text_change() {
     assert!(requests(unchanged).is_empty());
     let changed = s.configure_query(|field| field.set_text("seeded"));
     assert_eq!(one_request(changed).text, "seeded");
+}
+
+#[test]
+fn search_session_exposes_its_query_acceptance_and_selectable_keys() {
+    let mut s: SearchSession = session(SearchConfig::default());
+    assert_eq!(s.accepted_query(), None, "nothing is accepted yet");
+    assert!(!s.is_interactive(), "no results answer a request yet");
+    let req = one_request(s.refresh_source(input(1)));
+    let source = Results::new(&req, list());
+    let token: QueryToken = req.token;
+    assert_eq!(
+        source.stamp,
+        token.result_stamp(),
+        "a source answers with the token's stamp"
+    );
+    assert!(!s.is_interactive(), "a pending request is not interactive");
+    s.submit(req.token, &source).expect("accepted").quiet();
+    assert!(s.is_interactive());
+    assert_eq!(s.accepted_query(), Some(""));
+    assert!(s.is_selectable(k(10)), "an enabled item is selectable");
+    assert!(!s.is_selectable(k(11)), "a disabled item is not");
+    assert!(!s.is_selectable(k(1)), "a heading is not");
+
+    type_text(&mut s, "ab");
+    assert_eq!(
+        s.query_input().field.text(),
+        "ab",
+        "the painted widget shows the typed query"
+    );
+    assert_eq!(
+        s.accepted_query(),
+        Some(""),
+        "the displayed results still answer the old query"
+    );
+}
+
+#[test]
+fn search_session_config_mut_changes_policy_in_place() {
+    let mut s = session(SearchConfig::default());
+    assert_eq!(s.config().paste_mode, QueryPasteMode::StripLineBreaks);
+    assert_eq!(s.config().focus_mode, SearchFocusMode::Separate);
+    assert!(s.config().preserve_preview_on_same_key);
+    s.config_mut().paste_mode = QueryPasteMode::JoinLinesWithSpaceTrim;
+    s.config_mut().preserve_preview_on_same_key = false;
+    started(&mut s, list());
+    assert_eq!(
+        one_request(s.on_paste("a\nb", true)).text,
+        "a b",
+        "the new paste mode applies at once"
+    );
+    assert!(!s.config().preserve_preview_on_same_key);
+    let built = SearchConfig::default().preserve_preview_on_same_key(false);
+    assert!(!built.preserve_preview_on_same_key);
+}
+
+#[test]
+fn search_session_detail_item_and_cancel_press_and_host_owned_commands() {
+    let mut s = session(SearchConfig::default().click(ClickPolicy::NAVIGATION));
+    started(&mut s, list());
+    s.select(k(13)).quiet();
+    assert_eq!(
+        acts(s.detail_item(2)),
+        [SearchAction::DetailItem {
+            key: k(13),
+            index: 2
+        }],
+        "a detail item activates against the selected key"
+    );
+
+    s.press(k(12), 1).quiet();
+    s.cancel_press();
+    assert!(
+        acts(s.release(k(12), 1, 1)).is_empty(),
+        "a cancelled press never activates on release"
+    );
+
+    for host_owned in [
+        SearchCmd::FocusQuery,
+        SearchCmd::FocusResults,
+        SearchCmd::OpenDetail,
+        SearchCmd::CloseDetail,
+        SearchCmd::Context,
+    ] {
+        assert!(
+            host_owned.is_host_owned(),
+            "{host_owned:?} belongs to the composition"
+        );
+    }
+    for own in [
+        SearchCmd::Up,
+        SearchCmd::Down,
+        SearchCmd::Activate,
+        SearchCmd::PageDown,
+    ] {
+        assert!(!own.is_host_owned(), "{own:?} runs in the session");
+    }
+}
+
+#[test]
+fn search_source_row_kinds_cover_headings_and_spacers() {
+    fn row_kinds<S: SearchSource + ?Sized>(source: &S) -> Vec<ResultRowKind> {
+        (0..source.len()).map(|row| source.row_kind(row)).collect()
+    }
+    let mut s = session(SearchConfig::default());
+    let req = one_request(s.refresh_source(input(1)));
+    let source = Results::new(&req, list());
+    let kinds = row_kinds(&source);
+    assert_eq!(kinds[0], ResultRowKind::Heading);
+    assert_eq!(kinds[4], ResultRowKind::Spacer);
+    assert_eq!(source.cell_count(0), 0, "a heading has no cells");
+    assert_eq!(source.cell_count(4), 0, "a spacer has no cells");
+    s.submit(req.token, &source).expect("accepted").quiet();
+    assert_eq!(s.selected_key(), Some(k(10)), "selection skips the heading");
 }
