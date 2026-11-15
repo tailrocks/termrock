@@ -566,4 +566,45 @@ mod tests {
 
         assert!(page.running, "Format never touches the run");
     }
+
+    fn stressed(value: &str) -> ToolbarsPage {
+        let mut page = ToolbarsPage::new();
+        let at = stress::VALUES
+            .iter()
+            .position(|v| *v == value)
+            .expect("a stress value");
+        page.set_option("toolbars.stress", at);
+        page
+    }
+
+    #[test]
+    fn stress_items_do_not_start_or_stop_a_run() {
+        for value in ["20k items", "65k label"] {
+            let mut page = stressed(value);
+            for item in 0..3 {
+                let label = page.narrow.items()[item].label.clone();
+                if label == "Run" || label == MUTATED {
+                    continue;
+                }
+                activate(&mut page, &label);
+                assert!(!page.running, "{value}: activating {label:?} started a run");
+            }
+        }
+    }
+
+    #[test]
+    fn run_all_and_stop_keep_working_after_a_stress_label_shifts_them() {
+        let mut page = stressed("65k label");
+        let run_all = page
+            .narrow
+            .items()
+            .iter()
+            .position(|i| i.label == MUTATED)
+            .expect("Run all");
+        assert_eq!(run_all, 2, "the long label shifts Run all by one");
+        activate(&mut page, MUTATED);
+        assert!(page.running, "Run all starts a run");
+        activate(&mut page, "Stop");
+        assert!(!page.running, "Stop ends it");
+    }
 }
