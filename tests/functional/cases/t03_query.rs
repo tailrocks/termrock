@@ -916,6 +916,18 @@ fn classify_read_only_denies_a_mixed_script() {
 #[test]
 fn classify_read_only_still_reads() {
     let app = open_read_only("t03-query-read-only-reads");
+    // A successful read does not replace the shell status, so a denial made
+    // earlier in this app stays on screen until its wall-clock TTL. Issue one
+    // denial first, then wait it out before asserting the reads themselves.
+    put_sql(
+        &app,
+        "UPDATE products SET name = 'denied_reads' WHERE sku = 'SKU-01000'",
+        "denied_reads",
+    );
+    deny_key(&app, "ctrl+r");
+    app.wait_screen("read-only deny expired", |screen| {
+        !text(screen).contains("Cannot execute")
+    });
     put_sql(&app, "SELECT name FROM organizations", "FROM organizations");
     let read_select = run_key(&app, "ctrl+r", "Showing 500 rows");
     see(
