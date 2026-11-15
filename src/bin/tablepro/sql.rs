@@ -1877,18 +1877,24 @@ mod issue10_sql_tests {
             "an empty All admits everything"
         );
 
-        let mut tab = crate::tabs::TableTab::new(WidgetId::of("issue10-empty"), &cat, table, false);
-        assert_eq!(tab.filter_expr(), None, "no filters is no clause");
+        assert_eq!(
+            crate::tabs::TableViewState::default().filter_expr(),
+            None,
+            "no filters is no clause"
+        );
         for match_all in [true, false] {
-            tab.match_all = match_all;
-            tab.filters = vec![Filter {
-                column: "notes".into(),
-                op: FilterOp::Eq,
-                value: "x".into(),
-                value2: String::new(),
-                enabled: false,
-            }];
-            assert_eq!(tab.filter_expr(), None, "disabled filters add no child");
+            let view = crate::tabs::TableViewState {
+                match_all,
+                filters: vec![Filter {
+                    column: "notes".into(),
+                    op: FilterOp::Eq,
+                    value: "x".into(),
+                    value2: String::new(),
+                    enabled: false,
+                }],
+                ..Default::default()
+            };
+            assert_eq!(view.filter_expr(), None, "disabled filters add no child");
         }
     }
 
@@ -2229,8 +2235,13 @@ mod issue10_sql_tests {
             limit: None,
             count_only: false,
         };
+        let store = crate::store::SessionStore::new(1);
+        let src = Source {
+            catalog: &cat,
+            store: &store,
+        };
         let start = compiles();
-        run_select(&cat, &select(expr.clone())).expect("runs");
+        run_select(src, &select(expr.clone())).expect("runs");
         assert_eq!(
             compiles() - start,
             1,
@@ -2239,20 +2250,27 @@ mod issue10_sql_tests {
 
         let two = Expr::Any(vec![expr.clone(), not(expr)]);
         let start = compiles();
-        run_select(&cat, &select(two)).expect("runs");
+        run_select(src, &select(two)).expect("runs");
         assert_eq!(compiles() - start, 2, "one compile per regex leaf");
 
-        let mut tab =
-            crate::tabs::TableTab::new(WidgetId::of("issue10-compiles"), &cat, table, false);
-        tab.filters = vec![Filter {
-            column: "notes".into(),
-            op: FilterOp::Regex,
-            value: "^Gift".into(),
-            value2: String::new(),
-            enabled: true,
-        }];
+        let tab = crate::tabs::TableTab::new(
+            ItemKey::num(0),
+            WidgetId::of("issue10-compiles"),
+            src,
+            table,
+        );
+        let view = crate::tabs::TableViewState {
+            filters: vec![Filter {
+                column: "notes".into(),
+                op: FilterOp::Regex,
+                value: "^Gift".into(),
+                value2: String::new(),
+                enabled: true,
+            }],
+            ..Default::default()
+        };
         let start = compiles();
-        tab.load(&cat);
+        tab.prepare_load(src, &view).expect("loads");
         assert_eq!(compiles() - start, 1, "a tab load compiles once");
     }
 

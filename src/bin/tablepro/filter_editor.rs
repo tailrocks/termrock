@@ -582,18 +582,33 @@ mod issue10_tests {
     fn issue10_invalid_regex_and_operand_preserve_view() {
         let cat = crate::db::Catalog::acme_prod();
         let table = cat.find(Some("public"), "orders").expect("orders fixture");
-        let mut tab = TableTab::new(WidgetId::of("issue10-view"), &cat, table, false);
-        tab.filters.push(Filter {
-            column: "status".into(),
-            op: FilterOp::Eq,
-            value: "paid".into(),
-            value2: String::new(),
-            enabled: true,
-        });
-        tab.load(&cat);
+        let store = crate::store::SessionStore::new(1);
+        let src = crate::store::Source {
+            catalog: &cat,
+            store: &store,
+        };
+        let mut tab = TableTab::new(
+            junie_tui::core::id::ItemKey::num(0),
+            WidgetId::of("issue10-view"),
+            src,
+            table,
+        );
+        let applied = crate::tabs::TableViewState {
+            filters: vec![Filter {
+                column: "status".into(),
+                op: FilterOp::Eq,
+                value: "paid".into(),
+                value2: String::new(),
+                enabled: true,
+            }],
+            ..Default::default()
+        };
+        let loaded = tab.prepare_load(src, &applied).expect("the filter loads");
+        tab.install_load(loaded, applied)
+            .expect("a table tab that is not saving");
         let view = |t: &TableTab| {
             (
-                t.filters.clone(),
+                t.view().filters.clone(),
                 t.chips.chips().to_vec(),
                 t.grid.rows().to_vec(),
                 t.total,
