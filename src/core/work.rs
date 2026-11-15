@@ -20,9 +20,13 @@ pub enum Counter {
     WidthRows,
     /// Visible paint records prepared for a deferred overlay.
     SnapshotRows,
+    /// Selectable projections built from a submitted result source.
+    ProjectionRebuilds,
+    /// Master rows handed to a paint callback.
+    VisibleRowsPainted,
 }
 
-const COUNTERS: usize = 5;
+const COUNTERS: usize = 7;
 
 thread_local! {
     static CELLS: [Cell<u64>; COUNTERS] = const { [const { Cell::new(0) }; COUNTERS] };
@@ -44,6 +48,8 @@ pub struct Work {
     pub join_probes: u64,
     pub width_rows: u64,
     pub snapshot_rows: u64,
+    pub projection_rebuilds: u64,
+    pub visible_rows_painted: u64,
 }
 
 impl Work {
@@ -55,6 +61,8 @@ impl Work {
             join_probes: c[Counter::JoinProbes as usize].get(),
             width_rows: c[Counter::WidthRows as usize].get(),
             snapshot_rows: c[Counter::SnapshotRows as usize].get(),
+            projection_rebuilds: c[Counter::ProjectionRebuilds as usize].get(),
+            visible_rows_painted: c[Counter::VisibleRowsPainted as usize].get(),
         })
     }
 
@@ -66,6 +74,8 @@ impl Work {
             join_probes: self.join_probes - before.join_probes,
             width_rows: self.width_rows - before.width_rows,
             snapshot_rows: self.snapshot_rows - before.snapshot_rows,
+            projection_rebuilds: self.projection_rebuilds - before.projection_rebuilds,
+            visible_rows_painted: self.visible_rows_painted - before.visible_rows_painted,
         }
     }
 

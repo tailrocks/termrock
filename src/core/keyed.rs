@@ -396,6 +396,11 @@ impl KeyedState {
         true
     }
 
+    /// Drops the capture without a release, for a press the pointer left.
+    pub fn cancel_press(&mut self) {
+        self.press = None;
+    }
+
     pub fn pressed(&self) -> Option<ItemKey> {
         self.press.map(|press| press.key)
     }

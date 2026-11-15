@@ -2,8 +2,10 @@
 
 use super::{ResultRowKind, SearchError, SearchSource};
 use crate::core::id::ItemKey;
+use crate::core::keyed::KeyedSourceError;
 use crate::core::list::{KeyedRowSource, RowSource, SourceStamp};
 use crate::core::selection::ClickPolicy;
+use std::collections::HashSet;
 
 /// One selectable item or cell. Slots are sorted by `row`, then `cell`.
 #[derive(Clone, Copy, Debug)]
@@ -18,7 +20,26 @@ pub(super) struct Slot {
 
 /// Checks every row against its kind and lists the selectable keys. Nothing
 /// is kept when a row is inconsistent.
+///
+/// The authoritative key list must carry every key a row shows: headings,
+/// spacers and cell containers are not selectable, so reconciliation never
+/// sees them, and each must still be listed exactly once among the rows.
 pub(super) fn build<S: SearchSource + ?Sized>(source: &S) -> Result<Vec<Slot>, SearchError> {
+    #[cfg(test)]
+    crate::core::work::add(crate::core::work::Counter::ProjectionRebuilds, 1);
+    let authoritative: HashSet<ItemKey> = (0..source.source_len())
+        .map(|i| source.source_key(i))
+        .collect();
+    let mut shown = HashSet::new();
+    let mut show = |key: ItemKey| -> Result<(), SearchError> {
+        if !authoritative.contains(&key) {
+            return Err(KeyedSourceError::UnknownVisible { key }.into());
+        }
+        if !shown.insert(key) {
+            return Err(KeyedSourceError::DuplicateVisible { key }.into());
+        }
+        Ok(())
+    };
     let mut slots = Vec::new();
     for row in 0..source.len() {
         let cells = source.cell_count(row);
@@ -27,11 +48,13 @@ pub(super) fn build<S: SearchSource + ?Sized>(source: &S) -> Result<Vec<Slot>, S
                 if cells != 0 {
                     return Err(SearchError::InconsistentRow { row });
                 }
+                show(source.key(row))?;
             }
             ResultRowKind::Item => {
                 if cells != 1 || source.cell_key(row, 0) != source.key(row) {
                     return Err(SearchError::InconsistentRow { row });
                 }
+                show(source.key(row))?;
                 slots.push(Slot {
                     key: source.key(row),
                     row,
@@ -43,7 +66,9 @@ pub(super) fn build<S: SearchSource + ?Sized>(source: &S) -> Result<Vec<Slot>, S
             }
             ResultRowKind::Cells => {
                 let row_enabled = source.enabled(row);
+                show(source.key(row))?;
                 for cell in 0..cells {
+                    show(source.cell_key(row, cell))?;
                     slots.push(Slot {
                         key: source.cell_key(row, cell),
                         row,

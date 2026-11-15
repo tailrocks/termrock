@@ -4,6 +4,7 @@ use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
 use crate::core::keyed::{KeyedSourceError, KeyedState};
 use crate::core::list::{KeyedRowSource, SourceStamp};
 use crate::core::pointer::PointerEvent;
+use crate::core::response::Response;
 use crate::core::scroll::{ScrollState, TrackClick};
 use crate::theme::{ButtonKind, StatusKind, Tone};
 use crate::ui::ctx::{RenderCtx, fill, legible_on_fill};
@@ -268,6 +269,30 @@ enum Rendered {
     Blank,
 }
 
+/// One master row handed to a custom painter.
+#[derive(Clone, Copy, Debug)]
+pub struct MasterRow {
+    /// Position in the source's visible rows.
+    pub index: usize,
+    pub key: ItemKey,
+    /// The row's cells, gutter included.
+    pub rect: Rect,
+    pub selected: bool,
+    /// Whether the master list owns keyboard focus.
+    pub focused: bool,
+}
+
+/// The master panel's geometry for one frame.
+struct ListGeom {
+    area: Rect,
+    inner: Rect,
+    row_w: u16,
+    has_sb: bool,
+    focused: bool,
+    under_lines: Vec<String>,
+    under: u16,
+}
+
 pub struct ListDetail {
     pub master: WidgetId,
     pub detail: WidgetId,
@@ -320,8 +345,29 @@ impl ListDetail {
 
     pub fn select(&mut self, index: usize) {
         self.cursor = index;
+        self.reset_detail();
+    }
+
+    /// Returns the detail pane to its first item and the top of its scroll.
+    /// A host whose selection lives elsewhere calls it when the previewed
+    /// record changes.
+    pub fn reset_detail(&mut self) {
         self.item_cursor = 0;
         self.detail_scroll.jump_start();
+    }
+
+    /// Master rows visible at once, at least one. Page keys move by it.
+    pub fn master_page(&self) -> usize {
+        self.scroll.viewport_len.max(1)
+    }
+
+    /// First visible master row. A change moves every row hit region.
+    pub fn master_offset(&self) -> usize {
+        self.scroll.offset
+    }
+
+    pub fn drawer_open(&self) -> bool {
+        self.md.drawer_open()
     }
 
     pub fn open_detail(&mut self, focus: &mut Focus) {
@@ -377,6 +423,24 @@ impl ListDetail {
             return self.detail_key(key, focus);
         }
         (Outcome::Ignored, None)
+    }
+
+    /// Layout, detail and action keys: split resize and Esc-back from the
+    /// layout, then the action buttons or the detail body by focus. Master
+    /// navigation is not handled, so a composition that owns the master
+    /// selection calls this and never copies a cursor back from it.
+    pub fn on_detail_key(&mut self, key: &Key, focus: &mut Focus) -> Response<Event> {
+        if let Some(o) = self.md.on_key(key, focus) {
+            return o.into();
+        }
+        let current = focus.current();
+        if let Some(i) = self.buttons.iter().position(|b| Some(b.id) == current) {
+            return self.action_key(i, key, focus).into();
+        }
+        if current == Some(self.detail) {
+            return self.detail_key(key, focus).into();
+        }
+        Response::ignored()
     }
 
     fn master_key(&mut self, key: &Key, focus: &mut Focus, len: usize) -> Outcome {
@@ -547,7 +611,18 @@ impl ListDetail {
     }
 
     pub fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, frame: &Frame) {
-        self.render_in(&frame.rows[..], &frame.source_frame(), area, buf, ctx);
+        let rows = frame.rows;
+        let source_frame = frame.source_frame();
+        self.render_in(
+            rows.len(),
+            &source_frame,
+            area,
+            buf,
+            ctx,
+            |s, master, buf, ctx| {
+                s.draw_list(master, buf, ctx, rows, &source_frame, Some(s.cursor))
+            },
+        );
     }
 
     /// Paints master rows borrowed from a keyed provider. Aggregate column
@@ -562,9 +637,64 @@ impl ListDetail {
         ctx: &mut RenderCtx,
     ) -> Result<(), KeyedSourceError> {
         self.bind_source(source)?;
-        self.render_in(&SourceRows(source), frame, area, buf, ctx);
+        let rows = SourceRows(source);
+        self.render_in(rows.len(), frame, area, buf, ctx, |s, master, buf, ctx| {
+            s.draw_list(master, buf, ctx, &rows, frame, Some(s.cursor))
+        });
         self.synced_cursor = Some(self.cursor);
         Ok(())
+    }
+
+    /// Like [`render_source`](Self::render_source), with the master rows
+    /// painted by `paint` and the selected row supplied for this frame only.
+    /// It never reads or writes the list's own cursor or keyed state.
+    ///
+    /// Each row's hit region belongs to the master id with `Part::ROW` and the
+    /// row key, so a pointer event reports the key. It is registered before
+    /// the callback runs, so the callback only draws. The callback lives for
+    /// this call.
+    #[allow(clippy::too_many_arguments)]
+    pub fn render_source_selected_with<S: KeyedRowSource + ?Sized>(
+        &mut self,
+        area: Rect,
+        source: &S,
+        frame: &SourceFrame<'_>,
+        selected_row: Option<usize>,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        mut paint: impl FnMut(&S, MasterRow, &mut Buffer, &mut RenderCtx),
+    ) {
+        self.render_in(
+            source.len(),
+            frame,
+            area,
+            buf,
+            ctx,
+            |s, master, buf, ctx| {
+                let geom = s.begin_list(master, buf, ctx, source.len(), frame, selected_row);
+                for (k, i) in s.scroll.visible_range().enumerate() {
+                    let rect =
+                        Rect::new(geom.inner.x - 1, geom.inner.y + k as u16, geom.row_w + 1, 1);
+                    let key = source.key(i);
+                    ctx.register_part(s.master, PartRef::item(Part::ROW, key), rect);
+                    #[cfg(test)]
+                    crate::core::work::add(crate::core::work::Counter::VisibleRowsPainted, 1);
+                    paint(
+                        source,
+                        MasterRow {
+                            index: i,
+                            key,
+                            rect,
+                            selected: selected_row == Some(i),
+                            focused: geom.focused,
+                        },
+                        buf,
+                        ctx,
+                    );
+                }
+                s.finish_list(geom, buf, ctx);
+            },
+        );
     }
 
     /// Reconciles the selection with `source` without painting: a cursor the
@@ -628,13 +758,14 @@ impl ListDetail {
         }
     }
 
-    fn render_in<R: MasterRows + ?Sized>(
+    fn render_in(
         &mut self,
-        rows: &R,
+        len: usize,
         frame: &SourceFrame<'_>,
         area: Rect,
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
+        draw_master: impl FnOnce(&mut Self, Rect, &mut Buffer, &mut RenderCtx),
     ) {
         let t = ctx.theme;
         self.names = frame.actions.iter().map(|a| a.name).collect();
@@ -644,10 +775,10 @@ impl ListDetail {
             .map(|a| Button::new(self.detail.sub(a.name), &a.label, a.kind).disabled(a.disabled))
             .collect();
         self.md.detail_owns = self.buttons.iter().map(|b| b.id).collect();
-        self.clamp(rows.len());
+        self.clamp(len);
         let l = self.md.layout(area, buf, ctx, t.canvas);
         if !l.master.is_empty() {
-            self.draw_list(l.master, buf, ctx, rows, frame);
+            draw_master(self, l.master, buf, ctx);
         }
         match l.mode {
             Mode::Split => self.draw_detail(l.detail, buf, ctx, frame, false),
@@ -681,14 +812,16 @@ impl ListDetail {
         (label, detail, meta)
     }
 
-    fn draw_list<R: MasterRows + ?Sized>(
+    /// The master panel and its scroll, without the rows.
+    fn begin_list(
         &mut self,
         area: Rect,
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
-        rows: &R,
+        len: usize,
         frame: &SourceFrame<'_>,
-    ) {
+        selected: Option<usize>,
+    ) -> ListGeom {
         let t = ctx.theme;
         let focused = ctx.interaction.focused(self.master);
         let pos = scrollbar::position_label(&self.scroll);
@@ -710,7 +843,7 @@ impl ListDetail {
                 area.y,
                 area.width.saturating_sub(2),
                 t,
-                &frame.head,
+                frame.head,
                 t.canvas,
             );
         }
@@ -724,14 +857,70 @@ impl ListDetail {
             .focused(focused)
             .meta(&meta)
             .render(framed, buf, t);
-        let bg = t.canvas;
-        self.scroll.set_content(rows.len());
+        self.scroll.set_content(len);
         self.scroll.set_viewport(inner.height as usize);
-        self.scroll.follow(self.cursor);
+        if let Some(selected) = selected {
+            self.scroll.follow(selected);
+        }
         ctx.control(self.master, inner, false);
         ctx.scrollable(self.master, inner);
         let has_sb = self.scroll.overflows();
-        let row_w = inner.width.saturating_sub(u16::from(has_sb));
+        ListGeom {
+            area,
+            inner,
+            row_w: inner.width.saturating_sub(u16::from(has_sb)),
+            has_sb,
+            focused,
+            under_lines,
+            under,
+        }
+    }
+
+    fn finish_list(&mut self, geom: ListGeom, buf: &mut Buffer, ctx: &mut RenderCtx) {
+        let t = ctx.theme;
+        let ListGeom {
+            area,
+            inner,
+            has_sb,
+            focused,
+            under_lines,
+            under,
+            ..
+        } = geom;
+        if has_sb {
+            scrollbar::render_with_fade(inner, buf, ctx, self.master, &self.scroll, focused);
+        }
+        for (k, text) in under_lines.iter().take(under as usize).enumerate() {
+            let y = area.bottom() - under + k as u16;
+            buf.set_string(area.x + 1, y, text, t.faint().bg(t.canvas));
+        }
+    }
+
+    fn draw_list<R: MasterRows + ?Sized>(
+        &mut self,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        rows: &R,
+        frame: &SourceFrame<'_>,
+        selected: Option<usize>,
+    ) {
+        let geom = self.begin_list(area, buf, ctx, rows.len(), frame, selected);
+        self.draw_rows(&geom, buf, ctx, rows, selected);
+        self.finish_list(geom, buf, ctx);
+    }
+
+    fn draw_rows<R: MasterRows + ?Sized>(
+        &mut self,
+        geom: &ListGeom,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        rows: &R,
+        selected: Option<usize>,
+    ) {
+        let t = ctx.theme;
+        let (inner, row_w, focused) = (geom.inner, geom.row_w, geom.focused);
+        let bg = t.canvas;
         let (label_w, detail_w, meta_w) = self.aggregate_widths(rows);
         let label_w = label_w.clamp(8, 22);
         for (k, i) in self.scroll.visible_range().enumerate() {
@@ -739,8 +928,8 @@ impl ListDetail {
             let row = rows.row(i);
             let rid = self.master_hit(rows.hit_key(i), i);
             let mut s = ctx.state(rid);
-            s.focused = focused && self.cursor == i;
-            s.selected = self.cursor == i;
+            s.focused = focused && selected == Some(i);
+            s.selected = selected == Some(i);
             let st = t.row(s, bg);
             let rect = Rect::new(inner.x - 1, y, row_w + 1, 1);
             fill(buf, rect, st);
@@ -792,13 +981,6 @@ impl ListDetail {
             }
             legible_on_fill(buf, rect, t, bg);
             ctx.clickable(rid, rect);
-        }
-        if has_sb {
-            scrollbar::render_with_fade(inner, buf, ctx, self.master, &self.scroll, focused);
-        }
-        for (k, text) in under_lines.iter().take(under as usize).enumerate() {
-            let y = area.bottom() - under + k as u16;
-            buf.set_string(area.x + 1, y, text, t.faint().bg(t.canvas));
         }
     }
 
@@ -883,12 +1065,12 @@ impl ListDetail {
             .unwrap_or(13)
             .clamp(13, 22)
             + 1;
-        let mut rendered = self.rendered(&frame.lines, body, label_w);
+        let mut rendered = self.rendered(frame.lines, body, label_w);
         if rendered.len() > body_h as usize {
             body.width = inner
                 .width
                 .saturating_sub(scrollbar::reserve(scrollbar::GAP));
-            rendered = self.rendered(&frame.lines, body, label_w);
+            rendered = self.rendered(frame.lines, body, label_w);
         }
         self.item_cursor = self.item_cursor.min(self.items.saturating_sub(1));
         self.detail_scroll.set_content(rendered.len());

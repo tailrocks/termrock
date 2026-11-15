@@ -1,10 +1,9 @@
 use ratatui::crossterm::event::KeyCode;
-use ratatui::layout::Position;
 
 use super::projection::{self, Move, Selectable, Slot};
 use super::{
     MissingSelection, QueryRequest, QueryToken, SearchAction, SearchCmd, SearchConfig, SearchError,
-    SearchFocusMode, SearchSource, fresh_owner,
+    SearchFocusMode, SearchSource, SelectionOwner, fresh_owner,
 };
 use crate::core::edit::{EditKind, TextCmd};
 use crate::core::event::Key;
@@ -116,6 +115,30 @@ impl SearchSession {
         &self.query
     }
 
+    /// The query widget for the composition that paints and points at it.
+    /// Text it changes must be reported through [`edited_query`](Self::edited_query).
+    pub(super) fn query_input_mut(&mut self) -> &mut TextInput {
+        &mut self.query
+    }
+
+    /// Requests results when the query text no longer matches the last
+    /// request, after the query widget was edited outside the session.
+    pub(super) fn edited_query(&mut self) -> Reply {
+        self.after_text_edit()
+    }
+
+    /// The query the displayed results answer.
+    pub fn accepted_query(&self) -> Option<&str> {
+        self.accepted
+            .as_ref()
+            .map(|accepted| accepted.text.as_str())
+    }
+
+    /// Whether `key` is an enabled item or cell of the displayed results.
+    pub fn is_selectable(&self, key: ItemKey) -> bool {
+        self.slot(key).is_some_and(|slot| slot.enabled)
+    }
+
     pub fn phase(&self) -> SearchPhase {
         match self.request {
             RequestState::Uninitialized => SearchPhase::Uninitialized,
@@ -165,6 +188,26 @@ impl SearchSession {
     fn slot(&self, key: ItemKey) -> Option<&Slot> {
         let at = self.state.visible_index(key)?;
         self.accepted.as_ref()?.slots.get(at)
+    }
+
+    fn external(&self) -> bool {
+        self.config.selection_owner == SelectionOwner::External
+    }
+
+    /// Reports the host's own cursor under [`SelectionOwner::External`]. The
+    /// key must be an enabled key of the displayed results. No
+    /// [`SearchAction::SelectionChanged`] comes back: the host moved first.
+    pub fn set_selection(&mut self, key: ItemKey) -> Reply {
+        if !self.external() || !self.is_selectable(key) {
+            return Response::ignored();
+        }
+        let before = self.state.cursor();
+        if !self.state.set_cursor(key) || before == Some(key) {
+            return Response::ignored();
+        }
+        self.column = self.slot(key).map_or(0, |slot| slot.cell);
+        self.drop_stale_intent();
+        Response::changed()
     }
 
     fn can_navigate(&self) -> bool {
@@ -334,16 +377,10 @@ impl SearchSession {
 
     // ---- keyboard ---------------------------------------------------------
 
-    /// The command a key is bound to. A context key maps to
-    /// [`SearchCmd::Context`] unless the key map binds it elsewhere.
+    /// The command a key is bound to. Context keys are the composition's:
+    /// it reads [`ContextConfig`](crate::ui::context::ContextConfig) itself.
     pub fn command_for(&self, key: &Key) -> Option<SearchCmd> {
-        lookup(&self.config.keymap, key).or_else(|| {
-            self.config
-                .context
-                .keys
-                .matches(key)
-                .then_some(SearchCmd::Context)
-        })
+        lookup(&self.config.keymap, key)
     }
 
     /// Routes one key. `query_focused` says whether the query (or, in
@@ -453,7 +490,6 @@ impl SearchSession {
     pub fn run(&mut self, cmd: SearchCmd, page: usize) -> Reply {
         match cmd {
             SearchCmd::Activate => self.activate(),
-            SearchCmd::Context => self.begin_context(),
             SearchCmd::Up => self.navigate(Move::Up),
             SearchCmd::Down => self.navigate(Move::Down),
             SearchCmd::Left => self.navigate(Move::Left),
@@ -462,7 +498,8 @@ impl SearchSession {
             SearchCmd::End => self.navigate(Move::End),
             SearchCmd::PageUp => self.navigate(Move::PageUp(page)),
             SearchCmd::PageDown => self.navigate(Move::PageDown(page)),
-            SearchCmd::FocusQuery
+            SearchCmd::Context
+            | SearchCmd::FocusQuery
             | SearchCmd::FocusResults
             | SearchCmd::OpenDetail
             | SearchCmd::CloseDetail => Response::ignored(),
@@ -470,6 +507,9 @@ impl SearchSession {
     }
 
     fn navigate(&mut self, mv: Move) -> Reply {
+        if self.external() {
+            return Response::ignored();
+        }
         let from = self
             .state
             .cursor()
@@ -503,6 +543,9 @@ impl SearchSession {
 
     /// Selects `key` if it is an enabled key of the displayed results.
     pub fn select(&mut self, key: ItemKey) -> Reply {
+        if self.external() {
+            return Response::ignored();
+        }
         if !self.can_navigate() {
             return Response::consumed();
         }
@@ -534,6 +577,16 @@ impl SearchSession {
         }
     }
 
+    /// Emits activation of detail item `index` against the selected key.
+    pub fn detail_item(&mut self, index: usize) -> Reply {
+        match self.state.cursor() {
+            Some(key) if self.is_interactive() => {
+                Response::emit(SearchAction::DetailItem { key, index })
+            }
+            _ => Response::consumed(),
+        }
+    }
+
     // ---- pointer ----------------------------------------------------------
 
     /// A primary press on `key`: selects it and captures it for the release.
@@ -543,6 +596,9 @@ impl SearchSession {
             return Response::ignored();
         }
         self.press_was_selected = self.state.cursor() == Some(key);
+        if self.external() {
+            return Response::consumed();
+        }
         Response::consumed().merge(self.select(key))
     }
 
@@ -575,6 +631,12 @@ impl SearchSession {
         down.merge(self.release(key, layout_generation, count))
     }
 
+    /// Drops the press capture when the pointer left the row before release.
+    pub fn cancel_press(&mut self) {
+        self.state.cancel_press();
+        self.press_was_selected = false;
+    }
+
     /// Cancels a press captured under another layout generation.
     pub fn invalidate_layout(&mut self, generation: u64) -> bool {
         self.state.invalidate_layout(generation)
@@ -582,26 +644,12 @@ impl SearchSession {
 
     // ---- context ----------------------------------------------------------
 
-    /// A secondary click on `key`.
-    pub fn context_at(&mut self, key: ItemKey, at: Position) -> Reply {
-        if !self.is_interactive() || self.slot(key).is_none_or(|slot| !slot.enabled) {
-            return Response::consumed();
-        }
-        let mut reply = Response::consumed();
-        if self.config.context.moves_cursor {
-            reply = reply.merge(self.select(key));
-        }
-        reply.merge(Response::emit(SearchAction::ContextRequested(
-            ContextRequest {
-                target: key,
-                anchor: ContextAnchor::Pointer(at),
-            },
-        )))
-    }
-
-    /// Starts a keyboard context request for the selected key. The key is
+    /// Holds a keyboard context request for the selected key. The key is
     /// captured now; the anchor comes from the repainted layout through
-    /// [`emit_context`](Self::emit_context).
+    /// [`emit_context`](Self::emit_context). Which keys ask, and whether a
+    /// pointer request moves the cursor, are
+    /// [`ContextConfig`](crate::ui::context::ContextConfig)'s, applied by the
+    /// composition.
     pub fn begin_context(&mut self) -> Reply {
         match self.state.cursor() {
             Some(key) if self.is_interactive() => {

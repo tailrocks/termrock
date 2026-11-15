@@ -29,12 +29,12 @@ impl<A> Quiet for Response<A> {
     }
 }
 
-fn k(n: u64) -> ItemKey {
+pub(crate) fn k(n: u64) -> ItemKey {
     ItemKey::num(n)
 }
 
 #[derive(Clone)]
-enum R {
+pub(crate) enum R {
     Head(u64, &'static str),
     Item(u64, &'static str),
     Off(u64, &'static str),
@@ -43,20 +43,22 @@ enum R {
     BadItem { key: u64, cell: u64, count: usize },
 }
 
-struct Results {
-    stamp: SourceStamp,
-    rows: Vec<R>,
-    hidden: Vec<ItemKey>,
-    item_policy: Option<ClickPolicy>,
-    cell_policy: Option<ClickPolicy>,
+pub(crate) struct Results {
+    pub(crate) stamp: SourceStamp,
+    pub(crate) rows: Vec<R>,
+    pub(crate) hidden: Vec<ItemKey>,
+    omit: Vec<ItemKey>,
+    pub(crate) item_policy: Option<ClickPolicy>,
+    pub(crate) cell_policy: Option<ClickPolicy>,
 }
 
 impl Results {
-    fn new(req: &QueryRequest, rows: Vec<R>) -> Self {
+    pub(crate) fn new(req: &QueryRequest, rows: Vec<R>) -> Self {
         Self {
             stamp: req.token.result_stamp(),
             rows,
             hidden: Vec::new(),
+            omit: Vec::new(),
             item_policy: None,
             cell_policy: None,
         }
@@ -115,6 +117,7 @@ impl Results {
             }
         }
         keys.extend(self.hidden.iter().copied());
+        keys.retain(|key| !self.omit.contains(key));
         keys
     }
 }
@@ -179,7 +182,7 @@ fn combined() -> SearchSession {
     session(SearchConfig::default().focus_mode(SearchFocusMode::Combined))
 }
 
-fn input(data: u64) -> SourceStamp {
+pub(crate) fn input(data: u64) -> SourceStamp {
     SourceStamp {
         instance: k(7_000),
         data,
@@ -187,7 +190,7 @@ fn input(data: u64) -> SourceStamp {
     }
 }
 
-fn acts(reply: Reply) -> Vec<SearchAction> {
+pub(crate) fn acts(reply: Reply) -> Vec<SearchAction> {
     reply.into_actions().into_iter().collect()
 }
 
@@ -201,7 +204,7 @@ fn requests(reply: Reply) -> Vec<QueryRequest> {
         .collect()
 }
 
-fn one_request(reply: Reply) -> QueryRequest {
+pub(crate) fn one_request(reply: Reply) -> QueryRequest {
     let mut all = requests(reply);
     assert_eq!(all.len(), 1, "exactly one request");
     all.remove(0)
@@ -224,7 +227,7 @@ fn started(s: &mut SearchSession, rows: Vec<R>) -> QueryRequest {
     req
 }
 
-fn list() -> Vec<R> {
+pub(crate) fn list() -> Vec<R> {
     vec![
         R::Head(1, "Group"),
         R::Item(10, "a"),
@@ -390,6 +393,14 @@ fn search_detail_invalid_source_leaves_request_pending() {
     assert!(matches!(
         s.submit(req.token, &dup),
         Err(SearchError::InvalidSource(
+            KeyedSourceError::DuplicateVisible { .. }
+        ))
+    ));
+    let mut twice = Results::new(&req, vec![R::Item(1, "x")]);
+    twice.hidden.push(k(1));
+    assert!(matches!(
+        s.submit(req.token, &twice),
+        Err(SearchError::InvalidSource(
             KeyedSourceError::DuplicateAuthoritative { .. }
         ))
     ));
@@ -406,6 +417,44 @@ fn search_detail_invalid_source_leaves_request_pending() {
     assert_eq!(s.selected_key(), None);
     answer(&mut s, &req, list());
     assert_eq!(s.phase(), SearchPhase::Ready);
+}
+
+#[test]
+fn search_detail_container_keys_must_be_authoritative() {
+    let mut s = session(SearchConfig::default());
+    let req = one_request(s.refresh_source(input(1)));
+    let rows = || {
+        vec![
+            R::Head(1, "Group"),
+            R::Gap(2),
+            R::Cells(3, vec![(30, "a", true), (31, "b", true)]),
+            R::Item(10, "x"),
+        ]
+    };
+    for missing in [1, 2, 3, 30] {
+        let mut source = Results::new(&req, rows());
+        source.omit.push(k(missing));
+        let err = s.submit(req.token, &source).expect_err("an unlisted key");
+        assert!(
+            matches!(
+                err,
+                SearchError::InvalidSource(KeyedSourceError::UnknownVisible { key })
+                    if key == k(missing)
+            ),
+            "key {missing}: {err:?}"
+        );
+        assert_eq!(s.phase(), SearchPhase::Loading, "refusal leaves it pending");
+    }
+    let mut repeated = Results::new(&req, rows());
+    repeated.rows.push(R::Head(1, "Again"));
+    assert!(matches!(
+        s.submit(req.token, &repeated),
+        Err(SearchError::InvalidSource(
+            KeyedSourceError::DuplicateVisible { .. }
+        ))
+    ));
+    answer(&mut s, &req, rows());
+    assert_eq!(s.selected_key(), Some(k(30)));
 }
 
 #[test]
@@ -635,7 +684,6 @@ fn search_detail_loading_cannot_activate_stale_result() {
         assert!(acts(s.run(cmd, 5)).is_empty(), "{cmd:?} while pending");
     }
     assert!(acts(s.detail_action("open")).is_empty());
-    assert!(acts(s.context_at(k(10), Position::new(1, 1))).is_empty());
     assert!(acts(s.click(k(12), 1, 2)).is_empty());
     assert_eq!(s.selected_key(), Some(k(10)));
 
@@ -690,19 +738,6 @@ fn search_detail_context_captures_key_and_anchor() {
         "deleted key cancels the intent"
     );
     assert_eq!(s.context_intent(), None);
-
-    s.select(k(10)).quiet();
-    let out = acts(s.context_at(k(14), Position::new(9, 9)));
-    assert_eq!(
-        out,
-        [
-            SearchAction::SelectionChanged(Some(k(14))),
-            SearchAction::ContextRequested(ContextRequest {
-                target: k(14),
-                anchor: ContextAnchor::Pointer(Position::new(9, 9)),
-            }),
-        ]
-    );
 }
 
 #[test]
