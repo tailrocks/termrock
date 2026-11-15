@@ -343,6 +343,34 @@ fn issue42_model_replacement_rebuilds_dependent_state() {
     t.sort_by(0);
     assert_eq!(t.source_row(0), 1);
 
+    let rows = || vec![full("a", "10"), full("b", "9")];
+    let order = |t: &DataTable| (0..t.len()).map(|d| t.source_row(d)).collect::<Vec<_>>();
+    let mut t = table().numeric(&[1]);
+    t.try_set_rows(rows()).expect("rectangular");
+    t.sort_by(1);
+    assert_eq!(order(&t), [1, 0], "a numeric column sorts 9 before 10");
+
+    t.try_set_model(columns(), rows())
+        .expect("same schema, refreshed rows");
+    assert_eq!(
+        t.sort,
+        Some((1, SortDir::Asc)),
+        "same column keeps its sort"
+    );
+    assert_eq!(order(&t), [1, 0], "and keeps its numeric flag");
+
+    let mut other = columns();
+    other[1] = Column::new("label", Constraint::Length(10));
+    t.try_set_model(other, rows())
+        .expect("column 1 now means something else");
+    assert_eq!(t.sort, None, "a sort on a changed column is cleared");
+    t.sort_by(1);
+    assert_eq!(
+        order(&t),
+        [0, 1],
+        "the replaced column no longer inherits numeric ordering"
+    );
+
     let mut g = grid();
     g.sort = Some((1, SortDir::Desc));
     g.cursor = (1, 1);
@@ -459,4 +487,69 @@ fn issue42_public_stale_cursor_indices_safe() {
             .all(|&(r, c)| r < g.rows().len() && c < 2),
         "no pending entry points outside the model",
     );
+}
+
+#[test]
+fn issue42_grid_model_rejects_unusable_width_ranges() {
+    let mut g = grid();
+    g.cursor = (1, 1);
+    let mut inverted = grid_columns();
+    inverted[1].min_width = 20;
+    inverted[1].max_width = 5;
+    let err = g
+        .try_set_model(inverted, grid_rows(vec![vec![text("x"), text("y")]]))
+        .expect_err("min_width above max_width");
+    assert_eq!(
+        err,
+        GridDataError::ColumnWidth {
+            column: 1,
+            min_width: 20,
+            max_width: 5
+        }
+    );
+    assert!(err.to_string().contains("column 1"));
+
+    let mut zero = grid_columns();
+    zero[0].max_width = 0;
+    zero[0].min_width = 0;
+    assert!(matches!(
+        g.try_set_model(zero, grid_rows(vec![])),
+        Err(GridDataError::ColumnWidth { column: 0, .. })
+    ));
+    assert_eq!(g.rows().len(), 2, "the live model is untouched");
+    assert_eq!(g.columns().len(), 2);
+    assert_eq!(g.cursor, (1, 1));
+}
+
+#[test]
+fn issue42_table_width_only_vs_semantic_column_update() {
+    let mut t = table();
+    t.cursor_col = 1;
+    t.on_key(&key(KeyCode::Enter));
+    assert!(t.is_editing());
+    t.sizing.set(0, 14);
+    t.sizing.set(1, 16);
+
+    assert_eq!(
+        t.update_column(0, |c| c.width = Constraint::Length(20)),
+        Ok(true)
+    );
+    assert_eq!(t.sizing.user(0), None, "a width change resets that sizing");
+    assert_eq!(t.sizing.user(1), Some(16), "other columns keep theirs");
+    assert!(t.is_editing(), "a width-only change keeps the open editor");
+
+    assert_eq!(t.update_column(0, |c| c.title = "renamed".into()), Ok(true));
+    assert_eq!(t.sizing.user(1), Some(16), "a title change keeps sizing");
+    assert!(t.is_editing());
+
+    assert_eq!(
+        t.update_column(1, |c| c.editor =
+            ColumnEditor::for_options(Options::values(&["a", "b"]))),
+        Ok(true)
+    );
+    assert!(
+        !t.is_editing(),
+        "an editor change is semantic and closes it"
+    );
+    assert_eq!(t.sizing.user(1), Some(16));
 }

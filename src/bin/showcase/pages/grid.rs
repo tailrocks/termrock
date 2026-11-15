@@ -168,9 +168,10 @@ struct Knobs {
     horizontal: usize,
     validator: usize,
     blur_action: usize,
+    malformed: usize,
 }
 
-const KEYS: [&str; 17] = [
+const KEYS: [&str; 18] = [
     "datagrid.access",
     "datagrid.rows",
     "datagrid.total",
@@ -188,6 +189,7 @@ const KEYS: [&str; 17] = [
     "datagrid.horizontal",
     "datagrid.validator",
     "datagrid.blur_action",
+    "datagrid.malformed",
 ];
 
 impl Knobs {
@@ -218,7 +220,8 @@ impl Knobs {
             "datagrid.track_click" => &mut self.track_click,
             "datagrid.horizontal" => &mut self.horizontal,
             "datagrid.validator" => &mut self.validator,
-            _ => &mut self.blur_action,
+            "datagrid.blur_action" => &mut self.blur_action,
+            _ => &mut self.malformed,
         }
     }
 
@@ -323,7 +326,7 @@ fn build(k: &Knobs) -> DataGrid {
     grid.row_numbers = k.row_numbers == 1;
     grid.blur_action = [BlurAction::Commit, BlurAction::Cancel][k.blur_action];
     grid.local_sort = true;
-    grid.try_set_rows(if k.rows == 0 {
+    let mut loaded = if k.rows == 0 {
         page(0, k.total())
     } else {
         GridRows {
@@ -331,9 +334,28 @@ fn build(k: &Knobs) -> DataGrid {
             total: RowTotal::Exact(0),
             more: false,
         }
-    })
-    .expect("rectangular fixture");
+    };
+    if k.rows == 0 && k.malformed > 0 {
+        loaded.rows.insert(0, malformed_row(k.malformed));
+    }
+    match grid.try_set_rows(loaded) {
+        Ok(()) => {}
+        Err(e) => {
+            grid.empty = EmptyState::error("Rows rejected before display").hint(&e.to_string());
+        }
+    }
     grid
+}
+
+fn malformed_row(kind: usize) -> Vec<CellValue> {
+    match kind {
+        1 => vec![CellValue::Int(1000), CellValue::Text("Short row".into())],
+        _ => {
+            let mut cells = row(0);
+            cells.push(CellValue::Text("one cell too many".into()));
+            cells
+        }
+    }
 }
 
 const COMMANDS: &[(GridCmd, &str)] = &[
@@ -998,5 +1020,45 @@ impl Page for GridPage {
 
     fn template_mut(&mut self) -> Option<&mut Template> {
         Some(&mut self.template)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::pages::page_text;
+
+    fn with_malformed(value: usize) -> String {
+        let mut page = GridPage::new();
+        page.set_option("datagrid.malformed", value);
+        page_text(&mut page, 120, 40)
+    }
+
+    #[test]
+    fn issue42_malformed_input_option_is_off_by_default() {
+        let page = GridPage::new();
+        assert_eq!(page.option_value("datagrid.malformed"), Some(0));
+        let text = page_text(&mut GridPage::new(), 120, 40);
+        assert!(text.contains("Northwind"), "default rows load");
+        assert!(
+            !text.contains("rejected"),
+            "no rejection without the option"
+        );
+    }
+
+    #[test]
+    fn issue42_long_row_shows_the_data_error() {
+        let text = with_malformed(2);
+        assert!(text.contains("Rows rejected before display"), "{text}");
+        assert!(text.contains("row 0 has 10 cells, expected 9"), "{text}");
+        assert!(!text.contains("Northwind"), "the whole batch is refused");
+    }
+
+    #[test]
+    fn issue42_short_row_is_padded_with_null() {
+        let text = with_malformed(1);
+        assert!(text.contains("Short row"), "{text}");
+        assert!(text.contains("NULL"), "padded cells render as NULL: {text}");
+        assert!(!text.contains("rejected"), "{text}");
     }
 }

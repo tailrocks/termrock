@@ -2018,6 +2018,7 @@ pub static CAPABILITIES: &[Capability] = &[
     Capability::function("widgets::grid::DataGrid::try_set_model"),
     Capability::ty("widgets::grid::GridDataError"),
     Capability::variant("widgets::grid::GridDataError::Shape"),
+    Capability::variant("widgets::grid::GridDataError::ColumnWidth"),
     Capability::function("widgets::grid::DataGrid::set_loading"),
     Capability::function("widgets::grid::DataGrid::row_state"),
     Capability::function("widgets::grid::DataGrid::is_editing"),

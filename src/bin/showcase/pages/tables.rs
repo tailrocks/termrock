@@ -133,6 +133,7 @@ pub struct TablesPage {
     template: Template,
 
     selection: usize,
+    malformed: usize,
     pub table: DataTable,
 
     pub reviewers: DataTable,
@@ -248,19 +249,11 @@ impl TablesPage {
         .selection_column(true);
         reviewers.toggle_row(0);
         reviewers.toggle_row(2);
-        let empty = DataTable::try_new(
-            ID.sub("empty"),
-            vec![
-                Column::new("Check", Constraint::Min(12)),
-                Column::new("Result", Constraint::Length(8)),
-            ],
-            vec![],
-        )
-        .expect("rectangular fixture")
-        .empty_text("No checks have run yet");
+        let empty = checks_table(0);
         Self {
             template: Template::new(ID, states_grid()),
             selection,
+            malformed: 0,
             table,
             reviewers,
             empty,
@@ -269,6 +262,29 @@ impl TablesPage {
             header_menu: RowMenu::default(),
         }
     }
+}
+
+fn checks_table(malformed: usize) -> DataTable {
+    let mut table = DataTable::try_new(
+        ID.sub("empty"),
+        vec![
+            Column::new("Check", Constraint::Min(12)),
+            Column::new("Result", Constraint::Length(8)),
+        ],
+        vec![],
+    )
+    .expect("rectangular fixture")
+    .empty_text("No checks have run yet");
+    if malformed > 0 {
+        let mut cells = vec![Cell::new("lint")];
+        if malformed == 2 {
+            cells.extend([Cell::new("ok"), Cell::new("extra")]);
+        }
+        if let Err(e) = table.try_set_rows(vec![cells]) {
+            table.empty_text = format!("Rows rejected · {e}");
+        }
+    }
+    table
 }
 
 pub fn route_table(
@@ -444,13 +460,24 @@ impl Page for TablesPage {
     }
 
     fn option_value(&self, key: &str) -> Option<usize> {
-        (key == "basictable.selection").then_some(self.selection)
+        match key {
+            "basictable.selection" => Some(self.selection),
+            "basictable.malformed" => Some(self.malformed),
+            _ => None,
+        }
     }
 
     fn set_option(&mut self, key: &str, value: usize) {
-        if key == "basictable.selection" {
-            self.selection = value.min(SELECTION_MODES.len() - 1);
-            self.table = tasks_table(SELECTION_MODES[self.selection]);
+        match key {
+            "basictable.selection" => {
+                self.selection = value.min(SELECTION_MODES.len() - 1);
+                self.table = tasks_table(SELECTION_MODES[self.selection]);
+            }
+            "basictable.malformed" => {
+                self.malformed = value.min(2);
+                self.empty = checks_table(self.malformed);
+            }
+            _ => {}
         }
     }
 
@@ -536,5 +563,40 @@ impl Page for TablesPage {
             ("Enter", "Select"),
             OPEN_HINT,
         ]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::pages::page_text;
+
+    fn with_malformed(value: usize) -> String {
+        let mut page = TablesPage::new();
+        page.set_option("basictable.malformed", value);
+        page_text(&mut page, 120, 70)
+    }
+
+    #[test]
+    fn issue42_malformed_input_option_is_off_by_default() {
+        let page = TablesPage::new();
+        assert_eq!(page.option_value("basictable.malformed"), Some(0));
+        let text = page_text(&mut TablesPage::new(), 120, 70);
+        assert!(text.contains("No checks have run yet"), "{text}");
+    }
+
+    #[test]
+    fn issue42_short_and_long_rows_show_the_data_error() {
+        let short = with_malformed(1);
+        assert!(
+            short.contains("Rows rejected · row 0 has 1 cells, expected 2"),
+            "{short}"
+        );
+        let long = with_malformed(2);
+        assert!(
+            long.contains("Rows rejected · row 0 has 3 cells, expected 2"),
+            "{long}"
+        );
+        assert!(!long.contains("No checks have run yet"));
     }
 }

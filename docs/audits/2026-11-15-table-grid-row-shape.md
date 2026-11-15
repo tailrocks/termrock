@@ -25,10 +25,32 @@ column, and a schema with no columns holds no rows. The input contracts differ.
 - The cursor, sort column and edit state stay public. Input and render clamp or
   ignore a stale index instead of indexing with it.
 
+## Schema replacement
+
+`DataTable::try_set_model` keeps a numeric flag, and a sort, only for a column
+that is unchanged at the same index, so a replaced column never inherits the
+ordering of the one it replaced. `DataGrid::try_set_model` also rejects a column
+whose `max_width` is zero or below its `min_width` before it installs anything.
+
+## Showcase demonstration
+
+The Grid and Tables pages have a `Malformed input` option, off by default so the
+approved captures do not change. On Tables, a short or long row sent to the empty
+Checks table is rejected and the `DataError` text replaces the empty message. On
+Grid, a long row rejects the whole batch and the error shows as the empty state,
+while a short row is padded with `NULL` and displayed.
+
 ## Left out on purpose
 
-- `DataGrid::update_column`, `try_set_model_keyed` and the Busy guards belong to
-  #11, #33 and #43. `DataGrid::columns` is read-only until those land.
-- The grid constructor does not validate `min_width <= max_width`.
+- `DataGrid::try_set_model_keyed` and `try_set_rows_keyed` move to #33. The tree
+  has no row keys, and the #78 register gives key storage and never-reused local
+  keys to #33. #33 adds `GridDataError::Keys` and runs its count and uniqueness
+  check in the same validation phase as the shape check. This corrects the
+  unconditional statement in #42 section 5.
+- The Busy half of the column-mutation lock belongs to #11.
+- `GridRevision.source` assertions on a column update belong to #33, which
+  introduces the revision counters.
+- `DataGrid::new` keeps its infallible signature, so only `try_set_model`
+  validates column widths.
 
 The consumer migration is in `docs/current-state.md`.

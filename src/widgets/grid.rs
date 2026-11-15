@@ -178,6 +178,11 @@ pub struct GridRows {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GridDataError {
     Shape(DataError),
+    ColumnWidth {
+        column: usize,
+        min_width: u16,
+        max_width: u16,
+    },
 }
 
 impl From<DataError> for GridDataError {
@@ -190,11 +195,33 @@ impl std::fmt::Display for GridDataError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Shape(e) => e.fmt(f),
+            Self::ColumnWidth {
+                column,
+                min_width,
+                max_width,
+            } => write!(
+                f,
+                "column {column}: width range {min_width}..={max_width} is empty or zero"
+            ),
         }
     }
 }
 
 impl std::error::Error for GridDataError {}
+
+fn validate_column_widths(columns: &[ColumnSpec]) -> Result<(), GridDataError> {
+    match columns
+        .iter()
+        .position(|c| c.max_width == 0 || c.min_width > c.max_width)
+    {
+        Some(column) => Err(GridDataError::ColumnWidth {
+            column,
+            min_width: columns[column].min_width,
+            max_width: columns[column].max_width,
+        }),
+        None => Ok(()),
+    }
+}
 
 fn normalize_rows(
     width: usize,
@@ -974,6 +1001,7 @@ impl DataGrid {
         columns: Vec<ColumnSpec>,
         data: GridRows,
     ) -> Result<(), GridDataError> {
+        validate_column_widths(&columns)?;
         let rows = normalize_rows(columns.len(), data.rows, 0)?;
         self.sizing.reset();
         self.sort = self.sort.filter(|&(c, _)| c < columns.len());

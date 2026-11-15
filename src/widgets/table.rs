@@ -858,9 +858,14 @@ impl DataTable {
         rows: Vec<Vec<Cell>>,
     ) -> Result<(), DataError> {
         validate_rectangular(columns.len(), &rows)?;
-        self.numeric.resize(columns.len(), false);
+        let same_column = |c: usize| self.columns.get(c) == columns.get(c);
+        self.numeric = (0..columns.len())
+            .map(|c| same_column(c) && self.numeric.get(c).copied().unwrap_or(false))
+            .collect();
+        self.sort = self
+            .sort
+            .filter(|&(c, _)| c < columns.len() && same_column(c));
         self.sizing.reset();
-        self.sort = self.sort.filter(|&(c, _)| c < columns.len());
         self.cursor_col = self.cursor_col.min(columns.len().saturating_sub(1));
         self.columns = columns;
         self.install_rows(rows);
