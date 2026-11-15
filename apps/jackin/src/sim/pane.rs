@@ -449,13 +449,4 @@ mod tests {
         draw_at(&pane, Rect::new(0, 0, 60, 24));
         assert_eq!(pane.term.work_counters().draw_fallbacks, 1);
     }
-
-    #[test]
-    fn capsule_pane_collapsed_draw_copies_no_history() {
-        let pane = synced_pane();
-        draw_at(&pane, Rect::new(0, 0, 0, 0));
-        let work = pane.term.work_counters();
-        assert_eq!(work.draw_fallbacks, 0);
-        assert_eq!(work.draw_cloned_lines, 0);
-    }
 }

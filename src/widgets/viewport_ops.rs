@@ -195,9 +195,6 @@ impl ViewportOps for TextViewport {
     ) -> Option<Position> {
         self.scroll.note_policy(ctx.track_click, ctx.hscroll);
         let area = area.intersection(buf.area);
-        if area.is_empty() {
-            return None;
-        }
         if let Some(painted) = self.draw_prepared(area, buf, ctx, bg, caret_allowed) {
             return painted.hardware_cursor;
         }
