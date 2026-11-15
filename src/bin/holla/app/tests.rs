@@ -177,3 +177,58 @@ fn plan_stop_dialog_dismissal_keeps_the_plan_running() {
     assert_eq!(step(&app, ID, "rm"), StepState::Running);
     assert!(plan_tab(&app, ID).is_some());
 }
+
+fn tick_until_step(app: &mut App, id: &str, step_id: &str, state: StepState) {
+    for _ in 0..400 {
+        if step(app, id, step_id) == state {
+            return;
+        }
+        tick(app, 1);
+    }
+    panic!("{step_id} never reached {state:?}: status={}", status(app));
+}
+
+#[test]
+fn plan_retry_emits_template_after_history_marker() {
+    let mut app = app();
+    let template = app.world.step_output["docker-cleanup/images"].clone();
+    app.world
+        .plan_mut(ID)
+        .expect("plan")
+        .steps
+        .iter_mut()
+        .find(|s| s.id == "images")
+        .expect("step")
+        .fails = true;
+    arm(&mut app, ID);
+    tick_until_step(&mut app, ID, "images", StepState::Failed);
+    let tab = plan_tab(&app, ID).expect("plan tab open");
+    app.activate_tab(tab);
+    for _ in 0..400 {
+        if app.world.plan(ID).expect("plan").phase == PlanPhase::Done {
+            break;
+        }
+        tick(&mut app, 1);
+    }
+
+    app.handle_input(key(KeyCode::Char('r'), KeyModifiers::NONE));
+    tick_until_step(&mut app, ID, "images", StepState::Succeeded);
+
+    let output = &app
+        .world
+        .plan(ID)
+        .expect("plan")
+        .steps
+        .iter()
+        .find(|s| s.id == "images")
+        .expect("step")
+        .output;
+    assert_eq!(
+        output.len(),
+        template.len() * 2 + 2,
+        "history stays, then the retry emits the whole template once: {output:?}"
+    );
+    assert_eq!(output[template.len()], "exit status 1");
+    assert_eq!(output[template.len() + 1], "retrying…");
+    assert_eq!(output[template.len() + 2..], template[..]);
+}

@@ -509,9 +509,10 @@ impl World {
             return msgs;
         }
 
-        for si in 0..self.plans[pi].steps.len() {
+        let (plans, templates) = (&mut self.plans, &self.step_output);
+        for si in 0..plans[pi].steps.len() {
             let (running, started, duration, fails) = {
-                let s = &self.plans[pi].steps[si];
+                let s = &plans[pi].steps[si];
                 (
                     s.state == StepState::Running,
                     s.started_tick.unwrap_or(tick),
@@ -522,19 +523,14 @@ impl World {
             if !running {
                 continue;
             }
-            let key = format!("{plan_id}/{}", self.plans[pi].steps[si].id);
-            let lines = self.step_output.get(&key).cloned().unwrap_or_default();
+            let key = format!("{plan_id}/{}", plans[pi].steps[si].id);
+            let template = templates.get(&key).map_or(&[][..], Vec::as_slice);
             let elapsed = tick.saturating_sub(started);
-            let want = ((elapsed as f64 / duration as f64) * lines.len() as f64).ceil() as usize;
-            let want = want.min(lines.len());
-            let have = self.plans[pi].steps[si].output.len();
-            if want > have {
-                self.plans[pi].steps[si]
-                    .output
-                    .extend(lines[have..want].iter().cloned());
-            }
+            let progressed = elapsed.min(duration) as u128 * template.len() as u128;
+            let want = progressed.div_ceil(duration as u128) as usize;
+            plans[pi].steps[si].append_attempt_output(template, want);
             if elapsed >= duration {
-                let s = &mut self.plans[pi].steps[si];
+                let s = &mut plans[pi].steps[si];
                 s.ended_tick = Some(tick);
                 s.exit = Some(if fails { 1 } else { 0 });
                 s.state = if fails {
@@ -1262,5 +1258,89 @@ mod plan_tests {
             uses + 1,
             "usage counted once per arm"
         );
+    }
+
+    fn set_fails(w: &mut World, id: &str, fails: bool) {
+        let plan = w.plan_mut(ID).expect("plan");
+        let i = plan.steps.iter().position(|s| s.id == id).expect("step");
+        plan.steps[i].fails = fails;
+    }
+
+    fn step_output(w: &World, id: &str) -> Vec<String> {
+        w.plan(ID)
+            .expect("plan")
+            .steps
+            .iter()
+            .find(|s| s.id == id)
+            .expect("step")
+            .output
+            .clone()
+    }
+
+    #[test]
+    fn plan_retry_new_template_starts_at_zero() {
+        let mut w = armed_world();
+        set_fails(&mut w, "images", true);
+        tick_until(&mut w, |w| step_state(w, "images") == StepState::Failed);
+        let before = step_output(&w, "images");
+
+        w.step_output.insert(
+            format!("{ID}/images"),
+            vec!["new one".into(), "new two".into()],
+        );
+        set_fails(&mut w, "images", false);
+        let images = w
+            .plan(ID)
+            .expect("plan")
+            .steps
+            .iter()
+            .position(|s| s.id == "images")
+            .expect("step");
+        assert!(w.plan_mut(ID).expect("plan").retry(images));
+        tick_until(&mut w, |w| step_state(w, "images") == StepState::Succeeded);
+
+        let out = step_output(&w, "images");
+        assert_eq!(out[..before.len()], before[..], "history stays");
+        assert_eq!(
+            out[before.len()..],
+            ["retrying…", "new one", "new two"].map(String::from),
+            "only the new template is emitted after the marker"
+        );
+    }
+
+    #[test]
+    fn plan_retry_multiple_attempts_preserve_successful_siblings() {
+        let mut w = armed_world();
+        set_fails(&mut w, "images", true);
+        tick_until(&mut w, |w| step_state(w, "images") == StepState::Failed);
+        let stop_output = step_output(&w, "stop");
+        for _ in 0..2 {
+            tick_until(&mut w, |w| step_state(w, "images") == StepState::Failed);
+            let images = w
+                .plan(ID)
+                .expect("plan")
+                .steps
+                .iter()
+                .position(|s| s.id == "images")
+                .expect("step");
+            assert!(w.plan_mut(ID).expect("plan").retry(images));
+            set_fails(&mut w, "images", true);
+        }
+        set_fails(&mut w, "images", false);
+        let done = tick_until(&mut w, |w| {
+            w.plan(ID).expect("plan").phase == PlanPhase::Done
+        });
+
+        assert_eq!(plan_done_count(&done), 1);
+        assert_eq!(
+            step_output(&w, "stop"),
+            stop_output,
+            "the sibling output is unchanged"
+        );
+        assert_eq!(step_state(&w, "stop"), StepState::Succeeded);
+        let plan = w.plan(ID).expect("plan");
+        let images = plan.steps.iter().find(|s| s.id == "images").expect("step");
+        assert_eq!(images.attempt, 3);
+        assert_eq!(images.state, StepState::Succeeded);
     }
 }
