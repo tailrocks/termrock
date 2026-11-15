@@ -383,9 +383,7 @@ variant of these enums stays a breaking change and is recorded here.
   `GridUndo` key. See
   [the audit note](audits/2026-11-15-grid-keyed-drafts-undo.md).
 - TablePro's simulator evaluates filters with SQL three-valued logic and
-  Rust `regex` syntax, not PostgreSQL's regex dialect or collations. Its
-  query editor does not yet read doubled apostrophes inside string
-  literals; the lexer owns that fix (see
+  Rust `regex` syntax, not PostgreSQL's regex dialect or collations (see
   [TablePro filter semantics](audits/2026-11-15-tablepro-filter-semantics.md)).
 - The `visual-baseline` git tag is frozen historical evidence. It is
   never moved, and it is not a substitute for the current design.
