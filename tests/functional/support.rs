@@ -764,16 +764,15 @@ impl Drop for App {
     }
 }
 
-/// Ends the 140ms press flash on the stepped clock, then redraws once. See [`redraw_after_flash`].
-pub fn flash_settle_stepped(app: &App) {
-    app.settle_flash();
-    redraw_after_flash(app);
-}
-
-/// Waits out the 140ms press flash on the wall clock, then redraws once. For apps that run
-/// without the stepped test clock, so it needs no [`App::advance_clock`]. See [`redraw_after_flash`].
+/// Lets the 140ms press flash reach its deadline, then redraws once. A session on the stepped
+/// test clock advances it with [`App::settle_flash`]. Any other session waits on the wall clock.
+/// See [`redraw_after_flash`].
 pub fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
+    if app.clock {
+        app.settle_flash();
+    } else {
+        std::thread::sleep(Duration::from_millis(200));
+    }
     redraw_after_flash(app);
 }
 
