@@ -172,6 +172,12 @@ pub fn preview_sql(
     Ok(out)
 }
 
+/// The one text-literal policy for SQL the app prints: single quotes, with
+/// embedded apostrophes doubled.
+pub fn quote_text(s: &str) -> String {
+    format!("'{}'", s.replace('\'', "''"))
+}
+
 /// Mutation serialization, never display formatting. A finite number prints
 /// the shortest text that parses back to the stored `f64` bits; digits the
 /// model discarded before storing the value cannot be recovered.
@@ -190,8 +196,8 @@ pub fn sql_literal(v: &Value) -> Result<String, SqlLiteralError> {
             text
         }
         Value::Bool(b) => b.to_string(),
-        Value::Text(s) => format!("'{}'", s.replace('\'', "''")),
-        Value::Json(j) => format!("'{}'::jsonb", j.replace('\'', "''")),
+        Value::Text(s) => quote_text(s),
+        Value::Json(j) => format!("{}::jsonb", quote_text(j)),
     })
 }
 
