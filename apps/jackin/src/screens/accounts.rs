@@ -1358,18 +1358,12 @@ impl AccountsScreen {
     }
 
     fn validate_account(&mut self, id: &str, w: &mut World, cx: &mut Cx) {
-        let started_tick = w.clock.now_ms as u64;
-        let Some(a) = w.account_mut(id) else {
+        let Some(title) = w.accounts.get(id).map(Account::title) else {
             return;
         };
-        a.validation = ValidationState::Validating { started_tick };
-        let title = a.title();
-        let source = a.source.clone();
-        w.perform(Effect::ValidateAccount {
-            account: id.to_owned(),
-            source,
-        });
-        cx.progress(job::ACCOUNT_VALIDATE, format!("Validating {title}…"));
+        if w.validate_account(id).is_some() {
+            cx.progress(job::ACCOUNT_VALIDATE, format!("Validating {title}…"));
+        }
     }
 
     fn show_validation(
@@ -2508,17 +2502,13 @@ impl Page<Jackin> for AccountsScreen {
                 Outcome::Changed
             }
             Msg::AccountValidated {
+                ticket,
                 account,
-                source,
                 result,
+                ..
             } => {
-                if w.accounts
-                    .get(account)
-                    .is_some_and(|a| a.source == **source)
-                {
+                if w.validation_owns_status(account, *ticket) {
                     self.show_validation(account, result, w, cx);
-                } else {
-                    cx.status("Validation discarded · the account changed");
                 }
                 self.ensure_rows(w);
                 Outcome::Changed

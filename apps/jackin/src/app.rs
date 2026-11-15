@@ -28,7 +28,7 @@ use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Position, Rect};
 
 use crate::arbiter::{EntryDecision, ExitDecision};
-use crate::backend::Effect;
+use crate::backend::{Effect, Ticket};
 use crate::domain::instance::{InstanceEntry, InstanceId, InstanceStatus};
 use crate::domain::launch::EmptyLanding;
 use crate::domain::vocabulary::fill_in;
@@ -44,7 +44,7 @@ use crate::screens::prelude::PreludeScreen;
 use crate::screens::role_editor::RoleEditorScreen;
 use crate::screens::settings::SettingsScreen;
 use crate::screens::{AppLayer, Cx, Go, LayerTag, ModalResult, Request, Screen};
-use crate::world::{Absorbed, Health, Msg, Snapshot, World};
+use crate::world::{Absorbed, Health, Msg, Snapshot, World, job};
 use junie_tui::shell::Page as _;
 use junie_tui::ui::leave::{LeaveGuard, Stakes};
 use junie_tui::widgets::brand::Lockup;
@@ -273,7 +273,9 @@ impl App {
         match external.downcast_ref::<Remote>() {
             Some(Remote::Msg(msg)) => self.dispatch_msg(msg),
             Some(Remote::Reloaded(snapshot)) => {
+                let shown_validation = self.world.displayed_validation.clone();
                 self.world.apply((**snapshot).clone());
+                self.end_retired_validation(shown_validation);
                 self.after_snapshot();
                 Outcome::Changed
             }
@@ -735,15 +737,23 @@ impl App {
     }
 
     fn dispatch_reply(&mut self, m: &Msg) -> Outcome {
+        let shown_validation = self.world.displayed_validation.clone();
+        let owns_status = match m {
+            Msg::AccountValidated {
+                ticket, account, ..
+            } => self.world.validation_owns_status(account, *ticket),
+            _ => false,
+        };
         let absorbed = self.world.absorb(m);
         self.show_committed_save_warning();
         if absorbed == Absorbed::Stale {
             return Outcome::Ignored;
         }
         self.tell_forms_of_reply(m);
-        let ended = m
-            .job()
-            .is_some_and(|job| !self.job_continues(m) && self.shell.status.end_job(job));
+        let validation = matches!(m, Msg::AccountValidated { .. });
+        let mut ended = !validation
+            && m.job()
+                .is_some_and(|job| !self.job_continues(m) && self.shell.status.end_job(job));
         let route = self.route();
         let (o, reqs) = self
             .shell
@@ -768,9 +778,24 @@ impl App {
             }
             o
         });
+        if owns_status {
+            self.world.displayed_validation = None;
+        }
+        ended |= self.end_retired_validation(shown_validation);
         let o = o.or(self.apply_requests(reqs, route));
         let o = o.or(self.apply_requests(behind, route));
         if ended { o.or(Outcome::Changed) } else { o }
+    }
+
+    /// Ends the validation progress when the request it showed is no longer
+    /// displayed: its reply was accepted, or an installed snapshot retired it.
+    fn end_retired_validation(
+        &mut self,
+        shown_before: Option<(crate::domain::account::AccountId, Ticket)>,
+    ) -> bool {
+        shown_before.is_some()
+            && self.world.displayed_validation.is_none()
+            && self.shell.status.end_job(job::ACCOUNT_VALIDATE)
     }
 
     fn job_continues(&self, m: &Msg) -> bool {
