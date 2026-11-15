@@ -585,7 +585,8 @@ pub trait Backend: std::fmt::Debug + Send + Sync {
     /// The operator left the Capsule of `instance`: Ctrl+B d, a page of the
     /// console, or the end of the instance. Tabs, zoom, pickers and dialogs
     /// are not leaving. A backend whose panes keep a main process attached
-    /// detaches them here. Once per departure.
+    /// detaches them here. Once per departure, after `App::go` has taken the
+    /// focus from every pane of that Capsule.
     fn capsule_left(&self, _world: &World, _instance: &InstanceId) {}
 
     /// How long the replay window of an attach stays open. A backend that
