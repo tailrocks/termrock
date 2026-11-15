@@ -47,8 +47,20 @@ impl Page<Tablepro> for ConnectionsScreen {
 
     fn on_tick(&mut self, _h: &mut History, cx: &mut Cx) -> Outcome {
         match self.tick() {
-            Some(ConnEvent::Connected(i)) => {
-                cx.go(Act::Connected(i));
+            Some(ConnEvent::Connected {
+                key,
+                generation,
+                connection,
+            }) => {
+                cx.go(Act::Connected {
+                    key,
+                    generation,
+                    connection,
+                });
+                Outcome::Changed
+            }
+            Some(ConnEvent::Cancelled(why)) => {
+                cx.status(why.message());
                 Outcome::Changed
             }
             None => Outcome::Ignored,

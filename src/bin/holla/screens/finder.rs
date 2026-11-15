@@ -71,6 +71,14 @@ struct DisplayStamp {
     ago: Vec<String>,
 }
 
+fn selectable(row: &Row) -> bool {
+    match row {
+        Row::Item(..) => true,
+        Row::Explore(cells) => !cells.is_empty(),
+        Row::Heading(_) | Row::Blank => false,
+    }
+}
+
 pub struct FinderPage {
     pub group: Option<&'static str>,
     pub query: EditField,
@@ -419,27 +427,30 @@ impl FinderPage {
         }
         self.rows = rows;
 
-        let target = if self.query_changed {
+        let query_changed = std::mem::take(&mut self.query_changed);
+        let target = if query_changed {
             None
         } else {
-            keep.and_then(|id| {
-                self.rows
-                    .iter()
-                    .position(|r| matches!(r, Row::Item(i, _) if self.items[*i].id == id))
-            })
+            keep.and_then(|id| self.locate_item(&id))
         };
-        let query_changed = std::mem::take(&mut self.query_changed);
-        self.cursor = target.unwrap_or_else(|| self.first_selectable());
+        match target {
+            Some((row, column)) => {
+                self.cursor = row;
+                self.explore_cursor = column;
+            }
+            None => {
+                self.cursor = self.first_selectable();
+                self.explore_cursor = 0;
+            }
+        }
+        self.scroll.set_content(self.rows.len());
+        self.scroll.ensure_visible(self.cursor);
 
-        let previewed = match self.rows.get(self.cursor) {
-            Some(Row::Item(i, _)) => Some(self.items[*i].id.clone()),
-            _ => None,
-        };
+        let previewed = self.current_id();
         if query_changed || previewed != self.previewed {
             self.preview_scroll.jump_start();
             self.previewed = previewed;
         }
-        self.scroll.set_content(self.rows.len());
     }
 
     /// The item as it reads at the world's current tick: the activity text and
@@ -576,11 +587,28 @@ impl FinderPage {
         self.ensure_projection(w);
     }
 
-    fn first_selectable(&self) -> usize {
+    /// Finds an item by its stable id in the rows just built. Returns the row
+    /// and its Explore column (0 for ordinary rows).
+    fn locate_item(&self, id: &str) -> Option<(usize, usize)> {
         self.rows
             .iter()
-            .position(|r| matches!(r, Row::Item(..) | Row::Explore(_)))
-            .unwrap_or(0)
+            .enumerate()
+            .find_map(|(row, entry)| match entry {
+                Row::Item(index, _) => self
+                    .items
+                    .get(*index)
+                    .filter(|item| item.id == id)
+                    .map(|_| (row, 0)),
+                Row::Explore(cells) => cells
+                    .iter()
+                    .position(|index| self.items.get(*index).is_some_and(|item| item.id == id))
+                    .map(|column| (row, column)),
+                Row::Heading(_) | Row::Blank => None,
+            })
+    }
+
+    fn first_selectable(&self) -> usize {
+        self.rows.iter().position(selectable).unwrap_or(0)
     }
 
     fn scope_title(&self, w: &World) -> String {
@@ -612,7 +640,7 @@ impl FinderPage {
             if c < 0 || c >= n {
                 return;
             }
-            if matches!(self.rows[c as usize], Row::Item(..) | Row::Explore(_)) {
+            if selectable(&self.rows[c as usize]) {
                 self.cursor = c as usize;
                 self.preview_scroll.jump_start();
                 self.scroll.ensure_visible(self.cursor);
@@ -1008,11 +1036,7 @@ impl FinderPage {
         ctx.control(FINDER, area, false);
         ctx.scrollable(FINDER, area);
         self.explore_areas.clear();
-        if self
-            .rows
-            .iter()
-            .all(|r| !matches!(r, Row::Item(..) | Row::Explore(_)))
-        {
+        if self.rows.iter().all(|r| !selectable(r)) {
             let title = if !self.query.text().trim().is_empty() {
                 format!("No matches for “{}”", truncate(self.query.text(), 30))
             } else {
@@ -1105,6 +1129,7 @@ impl FinderPage {
                     buf.set_string(row.x, y, cr.gutter, cr.gutter_style);
                     let mut x = row.x + 3;
 
+                    ctx.clickable(rid, row);
                     let widths: Vec<u16> = cells
                         .iter()
                         .map(|idx| width(&self.items[*idx].label) as u16 + 2)
@@ -1133,7 +1158,6 @@ impl FinderPage {
                     if let Some(m) = more.filter(|_| self.explore_overflow_marker) {
                         buf.set_string(x, y, &m, st.fg(t.text_muted));
                     }
-                    ctx.clickable(rid, row);
                 }
                 Row::Item(idx, rk) => {
                     let it = &self.items[*idx];
@@ -1337,7 +1361,7 @@ impl FinderPage {
             return self.activate_current(cx);
         }
         if let Some(i) = self.locate_row(id) {
-            if matches!(self.rows[i], Row::Item(..) | Row::Explore(_)) {
+            if selectable(&self.rows[i]) {
                 self.cursor = i;
                 self.preview_scroll.jump_start();
             }
@@ -1447,11 +1471,7 @@ impl ShellPage<Holla> for FinderPage {
                 Outcome::Changed
             }
             KeyCode::End => {
-                self.cursor = self
-                    .rows
-                    .iter()
-                    .rposition(|r| matches!(r, Row::Item(..) | Row::Explore(_)))
-                    .unwrap_or(0);
+                self.cursor = self.rows.iter().rposition(selectable).unwrap_or(0);
                 self.scroll.ensure_visible(self.cursor);
                 Outcome::Changed
             }

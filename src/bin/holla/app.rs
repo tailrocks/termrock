@@ -508,7 +508,7 @@ impl App {
                     self.set_status(&text, tone);
                 }
             }
-            Msg::DiscoveryDone { .. } | Msg::PlanStepEnded { .. } | Msg::ScanDone => {}
+            Msg::DiscoveryDone { .. } | Msg::PlanStepEnded { .. } | Msg::ScanDone { .. } => {}
         }
 
         Outcome::Changed.or(self.deliver_all(|s, w, cx| s.on_msg(&m, w, cx)))

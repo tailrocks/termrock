@@ -1,4 +1,5 @@
 use super::*;
+use crate::screens::finder::FinderPage;
 use junie_tui::core::event::Input;
 
 const ID: &str = "docker-cleanup";
@@ -176,6 +177,39 @@ fn plan_stop_dialog_dismissal_keeps_the_plan_running() {
     assert_eq!(app.world.plan(ID).expect("plan").phase, PlanPhase::Running);
     assert_eq!(step(&app, ID, "rm"), StepState::Running);
     assert!(plan_tab(&app, ID).is_some());
+}
+
+#[test]
+fn disk_page_stops_animating_on_the_tick_that_publishes_the_cache() {
+    let mut app = App::launch(
+        Scenario::DiskCleanup,
+        Motion::Full,
+        0,
+        Theme::junie(),
+        false,
+    );
+    app.world.clock.running = true;
+    app.world.disk.scan_ticks = 1;
+    app.world.fs.dir("/work/big", 1);
+    for i in 0..4096 {
+        app.world.fs.file(&format!("/work/big/f{i:05}"), 4096, 1);
+    }
+    app.world.start_scan("/work/big");
+    app.push_page(Page::Disk {
+        path: "/work/big".into(),
+    });
+
+    tick(&mut app, 1);
+    assert!(app.top().expect("page").animating(&app.world));
+    assert_eq!(
+        app.world.persisted.sizes, None,
+        "cache waits for the last entry"
+    );
+
+    tick(&mut app, 1);
+    assert!(app.world.scan.as_ref().expect("scan").completed());
+    assert!(app.world.persisted.sizes.is_some());
+    assert!(!app.top().expect("page").animating(&app.world));
 }
 
 const FINAL_NAME: &str = "zz-final-hit.txt";
@@ -1028,4 +1062,281 @@ fn holla_projection_snapshot_revoke_invalidates_catalog() {
     assert!(status(&app).contains("Trust revoked"), "{}", status(&app));
     app.handle_input(key(KeyCode::Esc, KeyModifiers::NONE));
     tick_checked(&mut app, 3);
+}
+
+fn finder_app() -> App {
+    let mut app = App::launch(Scenario::RustDirty, Motion::Full, 0, Theme::junie(), false);
+    app.world.clock.running = true;
+    app
+}
+
+fn finder(app: &mut App) -> &mut FinderPage {
+    app.router
+        .top_of_mut(0)
+        .and_then(|s| s.as_finder())
+        .expect("finder on the first tab")
+}
+
+fn finder_select_explore(app: &mut App, id: &str) {
+    for _ in 0..80 {
+        match finder(app).current_id() {
+            Some(cur) if cur == id => return,
+            Some(cur) if cur.starts_with("explore.") => {
+                app.handle_input(key(KeyCode::Right, KeyModifiers::NONE));
+            }
+            _ => {
+                app.handle_input(key(KeyCode::Down, KeyModifiers::NONE));
+            }
+        }
+    }
+    panic!("finder never selected {id}");
+}
+
+#[test]
+fn finder_explore_selection_survives_background_tick() {
+    let mut app = finder_app();
+    finder_select_explore(&mut app, "explore.git");
+
+    tick(&mut app, 3);
+
+    assert_eq!(
+        finder(&mut app).current_id().as_deref(),
+        Some("explore.git")
+    );
+}
+
+#[test]
+fn finder_missing_explore_selection_uses_first_selectable() {
+    let mut app = finder_app();
+    finder_select_explore(&mut app, "explore.git");
+
+    app.handle_input(key(KeyCode::Down, KeyModifiers::CONTROL));
+    tick(&mut app, 1);
+    let after_scope = finder(&mut app).current_id();
+    app.handle_input(key(KeyCode::Home, KeyModifiers::NONE));
+    let first = finder(&mut app).current_id();
+
+    assert_ne!(after_scope.as_deref(), Some("explore.git"));
+    assert_eq!(after_scope, first);
+}
+
+#[test]
+fn finder_query_edit_resets_explore_selection() {
+    let mut app = finder_app();
+    finder_select_explore(&mut app, "explore.git");
+
+    app.handle_input(key(KeyCode::Char('g'), KeyModifiers::NONE));
+    tick(&mut app, 1);
+    let typed = finder(&mut app).current_id();
+    app.handle_input(key(KeyCode::Home, KeyModifiers::NONE));
+
+    assert_eq!(finder(&mut app).current_id(), typed);
+}
+
+const LIST_COLS: usize = 78;
+
+fn explore_tiles(ids: &[&str]) -> Vec<crate::domain::catalog::ExploreTile> {
+    let all = crate::domain::catalog::default_explore_tiles();
+    ids.iter()
+        .map(|id| {
+            all.iter()
+                .find(|t| t.id == *id)
+                .unwrap_or_else(|| panic!("no default tile {id}"))
+                .clone()
+        })
+        .collect()
+}
+
+fn finder_list_lines(app: &mut App) -> Vec<String> {
+    drawn_text(app)
+        .lines()
+        .map(|l| l.chars().take(LIST_COLS).collect())
+        .collect()
+}
+
+fn drawn_explore_row(app: &mut App) -> (u16, String) {
+    let lines = finder_list_lines(app);
+    let heading = lines
+        .iter()
+        .position(|l| l.trim() == "Explore")
+        .expect("Explore heading drawn");
+    (heading as u16 + 1, lines[heading + 1].clone())
+}
+
+fn drawn_tile(app: &mut App, label: &str) -> (u16, u16) {
+    let (y, row) = drawn_explore_row(app);
+    let at = row
+        .find(label)
+        .unwrap_or_else(|| panic!("{label} not drawn: {row}"));
+    (row[..at].chars().count() as u16, y)
+}
+
+fn chosen_tile(app: &mut App) -> Option<String> {
+    let (_, row) = drawn_explore_row(app);
+    let at = row.find('\u{203a}')?;
+    row[at + '\u{203a}'.len_utf8()..]
+        .split_whitespace()
+        .next()
+        .map(str::to_owned)
+}
+
+fn focus_markers(app: &mut App) -> usize {
+    finder_list_lines(app)
+        .iter()
+        .map(|l| l.chars().filter(|c| *c == '\u{203a}').count())
+        .sum()
+}
+
+fn click_at(app: &mut App, x: u16, y: u16) {
+    use junie_tui::core::event::{Mouse, MouseKind};
+    let at = ratatui::layout::Position::new(x, y);
+    app.handle_input(Input::Mouse(Mouse::new(MouseKind::Down, at)));
+    app.handle_input(Input::Mouse(Mouse::new(MouseKind::Up, at)));
+}
+
+fn finder_group(app: &mut App) -> Option<&'static str> {
+    finder(app).group
+}
+
+#[test]
+fn finder_explore_pointer_activation_uses_retained_id() {
+    let mut app = finder_app();
+    app.world.edit_catalog(|w| {
+        w.explore_tiles = explore_tiles(&[
+            "explore.system",
+            "explore.tasks",
+            "explore.files",
+            "explore.git",
+            "explore.disk",
+            "explore.services",
+        ])
+    });
+    tick(&mut app, 1);
+
+    let (x, y) = drawn_tile(&mut app, "Disk");
+    click_at(&mut app, x + 1, y);
+    assert_eq!(finder_group(&mut app), Some("Disk"));
+
+    app.handle_input(key(KeyCode::Esc, KeyModifiers::NONE));
+    assert_eq!(finder_group(&mut app), None);
+    assert_eq!(
+        finder(&mut app).current_id().as_deref(),
+        Some("explore.disk")
+    );
+    assert_eq!(chosen_tile(&mut app).as_deref(), Some("Disk"));
+    assert_eq!(focus_markers(&mut app), 1);
+}
+
+#[test]
+fn finder_explore_selection_tracks_reordered_cells() {
+    let mut app = finder_app();
+    finder_select_explore(&mut app, "explore.git");
+    assert_eq!(chosen_tile(&mut app).as_deref(), Some("Git"));
+
+    app.world.edit_catalog(|w| {
+        w.explore_tiles = explore_tiles(&[
+            "explore.system",
+            "explore.disk",
+            "explore.files",
+            "explore.tasks",
+            "explore.git",
+        ])
+    });
+    tick(&mut app, 1);
+
+    assert_eq!(
+        finder(&mut app).current_id().as_deref(),
+        Some("explore.git")
+    );
+    assert_eq!(chosen_tile(&mut app).as_deref(), Some("Git"));
+    assert_eq!(focus_markers(&mut app), 1);
+    let drawn = drawn_text(&mut app);
+    assert!(
+        drawn
+            .lines()
+            .any(|l| l.contains("Git") && l.contains("explore \u{b7} here")),
+        "preview follows the moved tile: {drawn}"
+    );
+
+    app.handle_input(key(KeyCode::Enter, KeyModifiers::NONE));
+    assert_eq!(finder_group(&mut app), Some("Git"));
+}
+
+#[test]
+fn finder_empty_explore_row_is_not_selectable() {
+    let mut app = finder_app();
+    finder_select_explore(&mut app, "explore.git");
+
+    app.world.edit_catalog(|w| w.explore_tiles = vec![]);
+    tick(&mut app, 1);
+    let after = finder(&mut app).current_id();
+    app.handle_input(key(KeyCode::Home, KeyModifiers::NONE));
+    let first = finder(&mut app).current_id();
+    assert_eq!(after, first);
+    assert!(
+        first
+            .as_deref()
+            .is_some_and(|id| !id.starts_with("explore."))
+    );
+    assert_eq!(focus_markers(&mut app), 1);
+
+    for _ in 0..40 {
+        app.handle_input(key(KeyCode::Down, KeyModifiers::NONE));
+        let id = finder(&mut app).current_id();
+        assert!(
+            id.as_deref().is_some_and(|id| !id.starts_with("explore.")),
+            "{id:?}"
+        );
+    }
+    assert_eq!(focus_markers(&mut app), 1);
+}
+
+#[test]
+fn finder_identity_moves_between_item_and_explore() {
+    let mut app = finder_app();
+    finder_select_explore(&mut app, "explore.git");
+
+    let (cwd, host, now) = (
+        app.world.location.cwd.clone(),
+        app.world.host.name.clone(),
+        app.world.now_secs(),
+    );
+    app.world.edit_memory(|w| {
+        w.memory
+            .usage
+            .actions
+            .push(crate::domain::usage::ActionUse {
+                item: "explore.git".into(),
+                path: Some(cwd),
+                host,
+                stamps: vec![now],
+            })
+    });
+    tick(&mut app, 1);
+
+    assert_eq!(
+        finder(&mut app).current_id().as_deref(),
+        Some("explore.git")
+    );
+    assert_eq!(chosen_tile(&mut app), None);
+    assert_eq!(focus_markers(&mut app), 1);
+    let drawn = drawn_text(&mut app);
+    assert!(
+        drawn
+            .lines()
+            .any(|l| l.contains("Git") && l.contains("explore \u{b7} here")),
+        "preview keeps the same item: {drawn}"
+    );
+
+    app.world.edit_memory(|w| w.memory.usage.actions.clear());
+    tick(&mut app, 1);
+    assert_eq!(
+        finder(&mut app).current_id().as_deref(),
+        Some("explore.git")
+    );
+    assert_eq!(chosen_tile(&mut app).as_deref(), Some("Git"));
+    assert_eq!(focus_markers(&mut app), 1);
+
+    app.handle_input(key(KeyCode::Enter, KeyModifiers::NONE));
+    assert_eq!(finder_group(&mut app), Some("Git"));
 }

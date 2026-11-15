@@ -35,7 +35,7 @@ does not exist in this tree yet.
 
 | Feature | Default | Adds |
 | --- | --- | --- |
-| `cli` | yes | `clap`, the `cli` module and `Motion` as a `clap::ValueEnum`. The four binaries require it; `jackin-console` enables it on its `junie-tui` dependency. |
+| `cli` | yes | `clap`, `serde_json` (Holla's persisted JSON codec, see below), the `cli` module and `Motion` as a `clap::ValueEnum`. The four binaries require it; `jackin-console` enables it on its `junie-tui` dependency. The library itself has no `serde_json` dependency with `--no-default-features`. |
 | `terminal` | yes | `termpane` and the `terminal` module. |
 
 `jackin-console` features (none is a default):
@@ -64,7 +64,7 @@ is a compile error in both. The host adds its own data with the builders
 | `World::new(WorldParts)` | | Builds a `World` without a struct literal; `WorldParts::new` takes the clock, home, cwd, `OnePassword`, `Backend` and the `Surfaces`; later fields get defaults. |
 | `World.time` | `TimeSource::Sim` | `Wall(WallSource)` follows the host clock and UTC offset in `World::tick`. |
 | `World::apply(Snapshot)` | | Replaces workspaces, roles, instances, global config, accounts, surfaces, GitHub repos, the discovery state and `daemon_health` (`Snapshot.daemon_health`); keeps panes (a `Snapshot` carries nothing about daemons, so a refresh closes no tab and no pane), jobs, clock, filesystem and the state of the doctor (`DoctorSurface.state`), which only a doctor run changes. |
-| `Effect`, `Msg`, `Backend::perform`, `settle`, `due` | | A save effect carries the id (`None` for a new workspace), the `base` the screen loaded and the record to store (`SaveWorkspace`, `SaveGlobal`, `SaveAccounts`); `DeleteWorkspace`, `Restore` and `TrustRole` carry a key. After an effect no screen writes the `World`: a successful reply carries the `Snapshot` and `World::apply` installs it (`WorkspaceSaved`, `GlobalSaved`, `AccountsSaved`, `WorkspaceDeleted`, `Restored`, `RoleLoaded`, `RoleTrusted`, `Stopped`, `Purged`, `Refreshed`), a failed reply carries the error text and the screen keeps its pending copy and shows the text. `AccountRefreshed` carries a `Refresh` and `AccountValidated` a `Validation`, each with the credential source it was made for, and `World::absorb` writes them into the account only while that source is still the account's. `Backend::perform` answers with `Completion::ready(after_ms, msg)` or `Completion::settle(after_ms)`; the second makes the world call `Backend::settle(effect, world)` when the reply falls due. A reply with no delay is delivered after the input that started it. `Backend::due(world)` lets a backend raise a message on its own (the simulated second client). The simulator (`sim::SimBackend`) owns the workspace id counter, the first-refresh failure, the broker outage, the heartbeat of `Instance.last_seen_secs` (answered with `Effect::Refresh`) and the takeover timer; `sim::snapshot(&World)` builds its replies. |
+| `Effect`, `Msg`, `Backend::perform`, `settle`, `due` | | A save effect carries the id (`None` for a new workspace), the `base` the screen loaded and the record to store (`SaveWorkspace`, `SaveGlobal`, `SaveAccounts`); `DeleteWorkspace`, `Restore` and `TrustRole` carry a key. After an effect no screen writes the `World`: a successful reply carries the `Snapshot` and `World::apply` installs it (`WorkspaceSaved`, `GlobalSaved`, `AccountsSaved`, `WorkspaceDeleted`, `Restored`, `RoleLoaded`, `RoleTrusted`, `Stopped`, `Purged`, `Refreshed`), a failed reply carries the error text and the screen keeps its pending copy and shows the text. `AccountRefreshed` carries a `Refresh` and `AccountValidated` a `Validation`, each with the credential source it was made for, and `World::absorb` writes them into the account only while that source is still the account's. A refresh also carries a `ticket`: `World::refresh_account` (the only starter; Accounts and Usage call it) allocates it with `World::next_ticket`, records it with the source as the account's pending refresh and sends `Effect::RefreshAccount { ticket, .. }`; it starts nothing while a refresh for the same source is pending, whichever page asks. `absorb` accepts an `AccountRefreshed` only when account, source and ticket all match that pending entry (then it clears the entry), otherwise it returns `Absorbed::Stale` before any account, screen, form or job sees it, so a duplicate or older reply cannot overwrite a newer result. `World::apply` reconciles the pending entries after every registry replacement (drops those whose account is gone or whose source changed, restores `Freshness::Refreshing` on the rest); a host that changes `accounts` or a source any other way must call `World::reconcile_pending_refreshes` before the next reply is absorbed. An external backend must echo the exact `ticket`, `account` and `source` of the effect in its `AccountRefreshed` reply, including for a transport error; there is no automatic timeout or retry. `Backend::perform` answers with `Completion::ready(after_ms, msg)` or `Completion::settle(after_ms)`; the second makes the world call `Backend::settle(effect, world)` when the reply falls due. A reply with no delay is delivered after the input that started it. `Backend::due(world)` lets a backend raise a message on its own (the simulated second client). The simulator (`sim::SimBackend`) owns the workspace id counter, the first-refresh failure, the broker outage, the heartbeat of `Instance.last_seen_secs` (answered with `Effect::Refresh`) and the takeover timer; `sim::snapshot(&World)` builds its replies. |
 | `App::with_external`, `Remote` | no receiver | Lets another thread send `Remote::Msg` or `Remote::Reloaded` to the app. |
 | `Backend::spawnable`, `Backend::capsule_left`, `Backend::pane_timing` | `Ok(())`, no call, `PaneTiming::default()` | `spawnable(&World, &Instance, &PaneKind)` answers whether a pane may start; an `Err(PaneRefusal)` (`MainProcessOpen { agent }`: one pane for each main process) disables the row of the new-tab picker, and `PaneWords::refusal` words it from `main_open`. `capsule_left(&World, &str)` runs once when the operator leaves the Capsule of an instance (Ctrl+B d, any page of the console, the end of the instance); tabs, zoom, pickers, dialogs and the clock are not leaving, and quitting the process is the backend's own drop. `pane_timing()` is the replay window a backend gives the `TerminalPane`s it builds. |
 | `Msg::PaneWake { instance, pane }` | not sent | A backend sends it (through `Remote::Msg`) when a pane's link has output or an event waiting. `World::wake_pane` drains that pane at once instead of at the next 80 ms tick, and answers `Changed` only when the pane had something new, so a burst of wakes before a frame asks for one redraw. |
@@ -166,9 +166,50 @@ read it against, because each of its reasons names a Fixed control.
   builds on the calling thread; the work-budget tests read deltas of it.
   `shell::rebuild_on_tick` stays for small callers and compares the whole view
   on every tick.
+- A Query workbench run is bound to its document key, a per-document generation and the SQL captured at run start (`OperationToken`, `RunRequest`). Completion is admitted once, by key and generation; a late edit, a close or a cancel cannot redirect or double-apply it. Record: [Query workbench run identity](audits/2026-11-15-query-workbench-run-identity.md).
 - The showcase demonstrates every library capability; the coverage
   gate is described in
   [shared components plan](architecture/shared-components-plan.md).
+
+## Holla persisted JSON
+
+Holla decodes and encodes every persisted store (`sizes.json`,
+`trusted.json`, `frecency.json`, the ops log) and every discovery input
+(`package.json`, `mise tasks`, `brew services`) with `serde_json`, through
+the single codec in `src/bin/holla/domain/manifest.rs` (`parse_json`,
+`json_str`, `json_u64`, `json_i64`). No store has its own escaping or number
+parser. The policy:
+
+- Strings are exact UTF-8. Quotes, backslashes, newlines, control
+  characters and non-BMP scalars round-trip unchanged, and an escaped
+  surrogate pair decodes to one scalar.
+- Integer fields (sizes, mtimes, timestamps, schema versions, stamps) are
+  read as `u64` or `i64` with no `f64` step. `9007199254740993`, `u64::MAX`
+  and the `i64` limits keep their value. A fraction, an exponent (`1.0`,
+  `1e3`), a negative value for an unsigned field, or an out-of-range value is
+  an invalid field, even when it is mathematically integral.
+- Syntax is strict. Unknown escapes, raw control characters, lone or
+  reversed surrogates, `NaN`, `Infinity` and trailing data are errors. A
+  malformed file is reported as unreadable and the store starts empty.
+- Duplicate object keys keep the last value. Before #63 the first match
+  won.
+- Unknown object fields are ignored. An invalid entry is skipped and its
+  error is recorded as the store's first diagnostic (`sizes.json entry 1
+  invalid: ...`). Valid siblings are kept, and the invalid entry is never
+  filled with a default.
+- Timestamp arithmetic on loaded values saturates, so an extreme stored
+  value cannot panic.
+- One-time loss of legacy caches. Before #63, `sizes.json` escaped only
+  quotes. A path with a bare backslash (for example `\d`) or a raw control
+  character is invalid JSON now, so the file loads empty with a
+  `sizes.json unreadable` diagnostic and rebuilds on the next scan. A
+  backslash that old files wrote unescaped is now read as an escape. `\n`
+  becomes a newline and `\\` becomes one backslash, so that entry misses its
+  real path and is a cache miss. `trusted.json` and `frecency.json` already
+  escaped backslashes and quotes, so only a raw control character in a stored
+  path or item makes them unreadable. Those files start empty, and the next
+  save replaces them. Trust decisions are then asked again, and usage history
+  restarts. No other data changes on upgrade.
 
 ## Testing today
 
@@ -203,6 +244,7 @@ variant of these enums stays a breaking change and is recorded here.
 | `clock::ClockStep`, `Shell::clock_steps` | `ClockStep` (`PREFIX`, `request(ms)`, `parse -> Option<u64>`) became the enum `clock::TestRequest { Advance(ms), Fence }` (`ADVANCE_PREFIX`, `FENCE`, `FENCE_ACK`, `advance(ms)`, `parse -> Option<TestRequest>`). `Shell::clock_steps` became `Shell::test_requests`. Both stay inert unless `JUNIE_TUI_TEST_CLOCK=1`. |
 | `terminal::TerminalState::feed` | Program output passes a guard first (`src/terminal/guard.rs`): a string sequence (OSC, DCS, APC, PM, SOS) over 144 KiB is dropped whole until its end, at most 16 characters join one cell (combining marks, variation selectors, joiners and what a joiner pulls in), and DEL, the bidi controls (U+061C, U+200E, U+200F, U+202A to U+202E, U+2066 to U+2069) and the tag characters (U+E0000 to U+E007F) never reach a cell. A byte that is not valid UTF-8, or a lead byte cut short by the next byte, becomes one U+FFFD and never passes on as it is. `terminal::is_spoofing_format` is that set, and the jackin console's title filter uses it. A 100,000 byte OSC 52 write still fits. |
 | `terminal::encode_key` | Ctrl and Shift on arrows, Home, End, Page, Insert, Delete and F1 to F12 now send the xterm parameter forms (`CSI 1;m X`, `CSI n;m ~`), Ctrl+Backspace sends `0x08`, and Ctrl with `@ \ ] ^ _ /` sends the C0 byte. Alt alone keeps the `ESC` prefix; Shift+Enter stays `\r`. |
+| `terminal::TerminalView`, `TerminalViewport` | Intentional edge-case correction (no API change). A view paints only inside the part of its area that overlaps the buffer, and a wide symbol that does not fit completely in the remaining columns (by Ratatui's `CellWidth`) paints one blank cell with its own style, so no emitted symbol is wider than the pane. A wide glyph's continuation cell that is the first visible column paints a blank. The focused cursor is drawn only when it is inside the buffer. `TerminalViewport::screen_pos` returns `None` for a column in the scroll track, past the pane or past the emulated grid; it used to clamp onto the last emulated column. `context_point` then falls back to the last drawn row of the pane. Showcase's Terminal pane page shows it with the `wide edge` fixture and the `Clip last column` option (off by default). |
 
 ## Known limits
 
@@ -253,5 +295,14 @@ variant of these enums stays a breaking change and is recorded here.
   keeps the draft. Digits discarded before the model stored a number cannot
   be recovered, and arbitrary-precision decimals are not supported. See
   [the audit note](audits/2026-11-15-exact-sql-literals.md).
+- `DataGrid` keeps its drafts and undo history by row identity. Each row has
+  an `ItemKey` (local keys are never reused, provider keys come from
+  `try_set_rows_keyed`), `GridRevision` counts source and draft changes, and
+  `DataGrid::pending()` is a read-only keyed view. Deleting an existing row
+  keeps its staged cells, so undelete and Undo show them again. Removing an
+  inserted row is undoable and restores the row, its edits, errors, selection,
+  cursor and cell range. `undo()` and `GridAction::Undone` report the affected
+  `GridUndo` key. See
+  [the audit note](audits/2026-11-15-grid-keyed-drafts-undo.md).
 - The `visual-baseline` git tag is frozen historical evidence. It is
   never moved, and it is not a substitute for the current design.
