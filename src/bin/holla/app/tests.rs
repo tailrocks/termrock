@@ -1511,6 +1511,14 @@ fn drawn_text(app: &mut App) -> String {
     drawn_text_sized(app, 120)
 }
 
+/// The preview wraps its `Does` value at a width that depends on the client
+/// platform's key label (`Alt+Enter` or `Alternatives…`), so the phrase can
+/// split across rows. Whitespace-insensitive matching ignores where it breaks.
+fn shows_retained_lines(text: &str, count: usize) -> bool {
+    let squeezed: String = text.chars().filter(|c| !c.is_whitespace()).collect();
+    squeezed.contains(&format!("{count}linesretained"))
+}
+
 fn drawn_text_sized(app: &mut App, columns: u16) -> String {
     let mut term = ratatui::Terminal::new(ratatui::backend::TestBackend::new(columns, 40))
         .expect("test terminal");
@@ -1904,7 +1912,7 @@ fn holla_projection_output_only_does_not_rerank_finder() {
     tick(&mut app, 2);
     app.finder_mut().expect("finder").query.set_text("streamer");
     let text = drawn_text_sized(&mut app, 240);
-    assert!(text.contains("0 lines retained"), "{text}");
+    assert!(shows_retained_lines(&text, 0), "{text}");
     let selected = top_finder_id(&mut app);
     assert_eq!(selected.as_deref(), Some(format!("activity.{id}").as_str()));
 
@@ -1933,7 +1941,7 @@ fn holla_projection_output_only_does_not_rerank_finder() {
     let duration = crate::screens::ticks_label(a.duration_ticks(app.world.tick));
     let text = drawn_text_sized(&mut app, 240);
     assert!(
-        text.contains(&format!("{last_len} lines retained")),
+        shows_retained_lines(&text, last_len),
         "the preview shows the current retained line count: {text}"
     );
     assert!(
