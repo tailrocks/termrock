@@ -1041,6 +1041,7 @@ impl App {
                 Request::StatusAs(s, kind) => {
                     self.shell.status.set_at(s, kind.tone(), self.clock.now());
                 }
+                Request::Notice(s, tone) => self.shell.status.notice_at(s, tone, self.clock.now()),
                 Request::Sticky(s) => self.shell.status.sticky_at(s, self.clock.now()),
                 Request::Progress(s, job) => {
                     self.shell.status.progress_at(job, s, self.clock.now());

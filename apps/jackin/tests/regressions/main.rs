@@ -6,4 +6,7 @@
 
 #![cfg(feature = "demo")]
 
+#[path = "../common/mod.rs"]
+mod common;
 mod smoke;
+mod status_priority;
