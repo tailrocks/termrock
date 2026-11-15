@@ -547,7 +547,7 @@ impl ListDetail {
     }
 
     pub fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, frame: &Frame) {
-        self.render_in(&frame.rows[..], &frame.source_frame(), area, buf, ctx);
+        self.render_in(frame.rows, &frame.source_frame(), area, buf, ctx);
     }
 
     /// Paints master rows borrowed from a keyed provider. Aggregate column
@@ -710,7 +710,7 @@ impl ListDetail {
                 area.y,
                 area.width.saturating_sub(2),
                 t,
-                &frame.head,
+                frame.head,
                 t.canvas,
             );
         }
@@ -883,12 +883,12 @@ impl ListDetail {
             .unwrap_or(13)
             .clamp(13, 22)
             + 1;
-        let mut rendered = self.rendered(&frame.lines, body, label_w);
+        let mut rendered = self.rendered(frame.lines, body, label_w);
         if rendered.len() > body_h as usize {
             body.width = inner
                 .width
                 .saturating_sub(scrollbar::reserve(scrollbar::GAP));
-            rendered = self.rendered(&frame.lines, body, label_w);
+            rendered = self.rendered(frame.lines, body, label_w);
         }
         self.item_cursor = self.item_cursor.min(self.items.saturating_sub(1));
         self.detail_scroll.set_content(rendered.len());

@@ -20,9 +20,13 @@ pub enum Counter {
     WidthRows,
     /// Visible paint records prepared for a deferred overlay.
     SnapshotRows,
+    /// Option payload rows copied by cloning a whole `Select`.
+    OptionClones,
+    /// Labels read from a `String` option slice.
+    LabelVisits,
 }
 
-const COUNTERS: usize = 5;
+const COUNTERS: usize = 7;
 
 thread_local! {
     static CELLS: [Cell<u64>; COUNTERS] = const { [const { Cell::new(0) }; COUNTERS] };
@@ -44,6 +48,8 @@ pub struct Work {
     pub join_probes: u64,
     pub width_rows: u64,
     pub snapshot_rows: u64,
+    pub option_clones: u64,
+    pub label_visits: u64,
 }
 
 impl Work {
@@ -55,6 +61,8 @@ impl Work {
             join_probes: c[Counter::JoinProbes as usize].get(),
             width_rows: c[Counter::WidthRows as usize].get(),
             snapshot_rows: c[Counter::SnapshotRows as usize].get(),
+            option_clones: c[Counter::OptionClones as usize].get(),
+            label_visits: c[Counter::LabelVisits as usize].get(),
         })
     }
 
@@ -66,6 +74,8 @@ impl Work {
             join_probes: self.join_probes - before.join_probes,
             width_rows: self.width_rows - before.width_rows,
             snapshot_rows: self.snapshot_rows - before.snapshot_rows,
+            option_clones: self.option_clones - before.option_clones,
+            label_visits: self.label_visits - before.label_visits,
         }
     }
 

@@ -6,11 +6,12 @@ use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::Rect;
 
-use crate::core::event::Key;
+use crate::core::event::{Key, Outcome};
 use crate::core::focus::FocusRing;
 use crate::core::hit::HitRegistry;
 use crate::core::id::{ItemKey, WidgetId};
 use crate::core::keyed::{KeyedRecord, KeyedState, KeyedVec};
+use crate::core::refusal::{Reason, take_refusal};
 use crate::core::work::Work;
 use crate::theme::{ColorLevel, Theme};
 use crate::ui::ctx::{Interaction, RenderCtx};
@@ -214,7 +215,7 @@ fn list_detail_unchanged_widths_are_cached() {
     let mut store = KeyedVec::try_from_rows((0..5_000).map(|n| {
         (
             ItemKey::num(n),
-            ListRow::new(&format!("row {n}")).detail("detail"),
+            ListRow::new(format!("row {n}")).detail("detail"),
         )
     }))
     .expect("valid");
@@ -229,7 +230,7 @@ fn list_detail_unchanged_widths_are_cached() {
         lines: &[],
         actions: &[],
     };
-    let mut paint = |detail: &mut ListDetail, store: &KeyedVec<ListRow>| {
+    let paint = |detail: &mut ListDetail, store: &KeyedVec<ListRow>| {
         overlay_frame(|buf, ctx| {
             detail
                 .render_source(SCREEN, store, &frame, buf, ctx)
@@ -253,4 +254,61 @@ fn list_detail_unchanged_widths_are_cached() {
         changed.width_rows, 5_000,
         "a data revision re-measures once: {changed:?}"
     );
+}
+
+fn select_key(code: KeyCode) -> Key {
+    Key {
+        code,
+        mods: KeyModifiers::NONE,
+    }
+}
+
+#[test]
+fn select_fixed_probe_never_clones_options() {
+    for n in [1_000, 100_000] {
+        let labels: Vec<String> = (0..n).map(|i| format!("option number {i:06}")).collect();
+        let refs: Vec<&str> = labels.iter().map(String::as_str).collect();
+
+        let probe = Select::new(WidgetId::of("fixed"), "Pick", &refs, 0);
+        let (copy, work) = Work::measure(|| probe.clone());
+        assert_eq!(
+            work.option_clones, n as u64,
+            "counter sees a clone: {work:?}"
+        );
+        drop(copy);
+
+        let mut live = Select::new(WidgetId::of("live"), "Pick", &refs, 0);
+        let (_, work) = Work::measure(|| live.on_key(&select_key(KeyCode::Char('o'))));
+        assert!(
+            work.label_visits > 0,
+            "counter sees a label search: {work:?}"
+        );
+
+        let mut select = Select::new(WidgetId::of("fixed"), "Pick", &refs, 0)
+            .fixed(Reason::new("Always off").short("managed"));
+        let keys = [
+            (KeyCode::Char('o'), true),
+            (KeyCode::Enter, true),
+            (KeyCode::Down, true),
+            (KeyCode::Right, false),
+            (KeyCode::F(5), false),
+            (KeyCode::Char('?'), false),
+        ];
+        for (code, refused) in keys {
+            let before = (select.selected, select.open, select.list.cursor.index);
+            let (out, work) = Work::measure(|| select.on_key(&select_key(code)));
+            assert_eq!(
+                (work.option_clones, work.label_visits),
+                (0, 0),
+                "{n} options, {code:?}: {work:?}"
+            );
+            assert_eq!(
+                (select.selected, select.open, select.list.cursor.index),
+                before,
+                "{code:?} changed state"
+            );
+            assert_eq!(out.0 == Outcome::Consumed, refused, "{code:?}");
+            assert_eq!(take_refusal().is_some(), refused, "{code:?}");
+        }
+    }
 }

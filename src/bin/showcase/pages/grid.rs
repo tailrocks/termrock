@@ -1225,10 +1225,12 @@ mod tests {
     }
 
     #[test]
-    fn issue42_malformed_input_option_is_reachable_but_not_listed() {
-        let listed = crate::options::visible_options(crate::app::PageId::Grid);
-        assert!(listed.iter().all(|o| o.key != "datagrid.malformed"));
-        let opt = crate::options::find("datagrid.malformed").expect("--opt accepts it");
+    fn issue42_malformed_input_option_is_listed_on_the_options_tab() {
+        let listed = crate::options::page_options(crate::app::PageId::Grid);
+        let opt = listed
+            .iter()
+            .find(|o| o.key == "datagrid.malformed")
+            .expect("the Options tab lists it");
         assert_eq!(opt.index_of("long"), Some(2));
     }
 
