@@ -265,6 +265,38 @@ pub const KEYMAP_ALLOWLIST: &[(&str, &str)] = &[
     ),
 ];
 
+pub const EXTERNAL_COVERAGE: &[(&str, &str)] = &[
+    ("runtime::bounded_external_channel", "activity"),
+    ("runtime::ExternalPolicy", "activity"),
+    ("runtime::ExternalSender::try_send", "activity"),
+    ("runtime::ExternalSendError", "activity"),
+    ("runtime::ExternalSendError::Full", "activity"),
+    ("runtime::ExternalSendError::Closed", "activity"),
+];
+
+pub const EXTERNAL_ALLOWLIST: &[(&str, &str)] = &[
+    (
+        "runtime::ExternalReceiver::try_recv",
+        "The runtime calls it between handlers; no page reads the queue itself. The runtime unit tests external_turn_ and bounded_external_ pin its order and bound.",
+    ),
+    (
+        "runtime::ExternalReceiver::policy",
+        "A read accessor the runtime uses to copy the bound before each turn; the Activity page shows the bound through the pages it limits, not as a value.",
+    ),
+    (
+        "runtime::ExternalReceiver::set_policy",
+        "The Activity page passes its policy to bounded_external_channel; the setter is covered by the bounded_external_policy_ unit test.",
+    ),
+    (
+        "runtime::ExternalReceiver::with_policy",
+        "The Activity page passes its policy to bounded_external_channel; the builder is covered by the bounded_external_policy_ unit test.",
+    ),
+    (
+        "runtime::ExternalReceiver::drain",
+        "Deprecated and unbounded; the runtime and every app read with try_recv, so no page demonstrates it.",
+    ),
+];
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -305,6 +337,45 @@ mod tests {
                 seen.contains(id),
                 "capability-aware keymap API lacks a coverage declaration: {id}"
             );
+        }
+    }
+
+    #[test]
+    fn external_message_apis_are_declared() {
+        let catalog = catalog_source();
+        let mut seen = std::collections::BTreeSet::new();
+        for (id, owner) in EXTERNAL_COVERAGE {
+            assert!(
+                catalog.contains(&format!("\"{id}\"")),
+                "declared id is not a catalog capability: {id}"
+            );
+            assert!(!owner.trim().is_empty(), "coverage entry has no page: {id}");
+            assert!(seen.insert(*id), "duplicate declaration: {id}");
+        }
+        for (id, reason) in EXTERNAL_ALLOWLIST {
+            assert!(
+                catalog.contains(&format!("\"{id}\"")),
+                "declared id is not a catalog capability: {id}"
+            );
+            assert!(
+                !reason.trim().is_empty(),
+                "allowlist entry has no reason: {id}"
+            );
+            assert!(seen.insert(*id), "duplicate declaration: {id}");
+        }
+        for id in [
+            "runtime::ExternalSender::try_send",
+            "runtime::ExternalSendError",
+            "runtime::ExternalSendError::Full",
+            "runtime::ExternalSendError::Closed",
+            "runtime::ExternalPolicy",
+            "runtime::ExternalReceiver::with_policy",
+            "runtime::ExternalReceiver::policy",
+            "runtime::ExternalReceiver::set_policy",
+            "runtime::ExternalReceiver::try_recv",
+            "runtime::bounded_external_channel",
+        ] {
+            assert!(seen.contains(id), "external API lacks a declaration: {id}");
         }
     }
 }

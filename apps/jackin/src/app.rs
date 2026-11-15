@@ -239,6 +239,12 @@ impl App {
         app
     }
 
+    /// Feeds [`Remote`] messages from a background host into the app.
+    ///
+    /// A host whose producer can outrun the UI builds the channel with
+    /// `junie_tui::runtime::bounded_external_channel` and retries
+    /// `ExternalSender::try_send` on `Full`. The runtime hands the app a bounded
+    /// group of queued messages per turn, whichever constructor made the channel.
     pub fn with_external(mut self, receiver: ExternalReceiver) -> Self {
         self.external = Some(receiver);
         self

@@ -234,6 +234,18 @@ pub trait Page {
         Outcome::Ignored
     }
 
+    fn external(&self) -> Option<&junie_tui::runtime::ExternalReceiver> {
+        None
+    }
+
+    fn on_external(
+        &mut self,
+        _message: &junie_tui::core::event::External,
+        _cx: &mut Cx,
+    ) -> Outcome {
+        Outcome::Ignored
+    }
+
     fn option_value(&self, _key: &str) -> Option<usize> {
         None
     }

@@ -9,7 +9,10 @@ use jackin_console::sim;
 use jackin_console::world::{Msg, Snapshot};
 use junie_tui::core::event::{External, Input, Key, Outcome};
 use junie_tui::motion::Motion;
-use junie_tui::runtime::{Application, ExternalSender, external_channel};
+use junie_tui::runtime::{
+    Application, ExternalPolicy, ExternalReceiver, ExternalSendError, ExternalSender,
+    bounded_external_channel, external_channel,
+};
 use junie_tui::theme::{ColorLevel, Theme};
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
@@ -36,13 +39,11 @@ fn linked() -> (App, ExternalSender) {
 }
 
 fn pump(app: &mut App) -> Vec<Outcome> {
-    let drained = Application::external(app)
-        .map(|rx| rx.drain())
-        .unwrap_or_default();
-    drained
-        .into_iter()
-        .map(|m| Application::handle(app, Input::External(m)))
-        .collect()
+    let mut outcomes = Vec::new();
+    while let Some(message) = Application::external(app).and_then(ExternalReceiver::try_recv) {
+        outcomes.push(Application::handle(app, Input::External(message)));
+    }
+    outcomes
 }
 
 /// The reply to a stop: the roster with the instance no longer running.
@@ -100,6 +101,41 @@ fn a_remote_message_reaches_the_screens_like_a_scheduled_one() {
     assert_ne!(status_of(&app, STOPPED), InstanceStatus::Running);
     assert_eq!(app.world.running_count(), running - 1);
     assert_eq!(app.world.arbiter.running(), Ok(running - 1));
+}
+
+fn bounded(capacity: usize) -> (App, ExternalSender) {
+    let (tx, rx) = bounded_external_channel(
+        std::num::NonZeroUsize::new(capacity).expect("nonzero"),
+        ExternalPolicy::default(),
+    );
+    (app().with_external(rx), tx)
+}
+
+#[test]
+fn a_full_bounded_channel_hands_the_message_back_and_the_retry_is_applied() {
+    let (mut app, tx) = bounded(1);
+    let first = External::new(Remote::Msg(stopped(&app, STOPPED)));
+    let second = External::new(Remote::Msg(stopped(&app, "jk-9b02")));
+
+    assert_eq!(tx.try_send(first), Ok(()));
+    let Err(ExternalSendError::Full(retained)) = tx.try_send(second.clone()) else {
+        panic!("capacity 1 is full after one message");
+    };
+    assert_eq!(retained, second, "the producer keeps the payload to retry");
+    assert_eq!(pump(&mut app), vec![Outcome::Changed]);
+    assert_ne!(status_of(&app, STOPPED), InstanceStatus::Running);
+    assert_eq!(status_of(&app, "jk-9b02"), InstanceStatus::Running);
+
+    assert_eq!(tx.try_send(retained), Ok(()));
+    assert_eq!(pump(&mut app), vec![Outcome::Changed]);
+    assert_ne!(status_of(&app, "jk-9b02"), InstanceStatus::Running);
+}
+
+#[test]
+fn the_application_reports_the_policy_of_the_receiver_it_was_given() {
+    let (with, _tx) = linked();
+    let rx = Application::external(&with).expect("receiver");
+    assert_eq!(rx.policy(), ExternalPolicy::default());
 }
 
 #[test]

@@ -1063,3 +1063,44 @@ fn option_digit_toggles() {
     );
     app.finish();
 }
+
+#[test]
+fn option_feed_channel_keeps_input_live_and_shows_saturation() {
+    let app = page("s10-feed-channel", Some("activity.feed=channel"), 120, 40);
+    let live = app.wait_text("Full retries");
+    see(&live, &["Feed sent", "Handled", RUNNING], &[]);
+    let fed = app.wait_text("feed #");
+    assert!(
+        text(&fed).contains("· feed #"),
+        "no fed line is visible\n{}",
+        text(&fed)
+    );
+    focus_hint(&app, "Show / hide");
+    app.key("1");
+    let hidden = app.wait_text("api hidden");
+    see(
+        &hidden,
+        &["api hidden", "3 of 4 streams", "Full retries"],
+        &[STOPPING],
+    );
+    click_tab(&app, "Options");
+    app.wait_text("Page options");
+    flash_settle(&app);
+    assert_select(
+        &app.settle(),
+        "Log feed",
+        "channel",
+        &["simulated", "channel"],
+    );
+    app.finish();
+
+    let app = open("s10-feed-simulated", 120, 40, PAGE_ARGS);
+    app.wait_text(RUNNING);
+    click_tab(&app, "Options");
+    app.wait_text("Page options");
+    flash_settle(&app);
+    let screen = app.settle();
+    assert_select(&screen, "Log feed", "simulated", &["simulated", "channel"]);
+    see(&screen, &["Log feed"], &["Full retries"]);
+    app.finish();
+}
