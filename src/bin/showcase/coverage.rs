@@ -300,120 +300,163 @@ pub const KEYMAP_ALLOWLIST: &[(&str, &str)] = &[
     ),
 ];
 
-pub const SEARCH_DETAIL_COVERAGE: &[(&str, &str)] = &[
-    ("widgets::search_detail::ResultRowKind", "finder"),
-    ("widgets::search_detail::ResultRowKind::Heading", "finder"),
-    ("widgets::search_detail::ResultRowKind::Item", "finder"),
-    ("widgets::search_detail::ResultRowKind::Cells", "finder"),
-    ("widgets::search_detail::ResultRowKind::Spacer", "finder"),
-    ("widgets::search_detail::SearchSource", "finder"),
-    ("widgets::search_detail::SearchSource::row_kind", "finder"),
-    ("widgets::search_detail::SearchSource::cell_count", "finder"),
-    ("widgets::search_detail::SearchSource::cell_key", "finder"),
-    ("widgets::search_detail::SearchSource::cell_label", "finder"),
+/// The pages that show the shared Finder composition, each with the source
+/// file `search_detail_coverage_ids_are_used_by_their_pages` reads. A page
+/// that adopts the composition adds a row here and its name to the ids it uses.
+pub const SEARCH_DETAIL_PAGES: &[(&str, &str)] = &[("finder", "src/bin/showcase/pages/finder.rs")];
+
+/// Which pages use each shared Finder id. An id is listed once, with every page
+/// that uses it, and is not in [`SEARCH_SESSION_ALLOWLIST`].
+pub const SEARCH_DETAIL_COVERAGE: &[(&str, &[&str])] = &[
+    ("widgets::search_detail::ResultRowKind", &["finder"]),
+    (
+        "widgets::search_detail::ResultRowKind::Heading",
+        &["finder"],
+    ),
+    ("widgets::search_detail::ResultRowKind::Item", &["finder"]),
+    ("widgets::search_detail::ResultRowKind::Cells", &["finder"]),
+    ("widgets::search_detail::ResultRowKind::Spacer", &["finder"]),
+    ("widgets::search_detail::SearchSource", &["finder"]),
+    (
+        "widgets::search_detail::SearchSource::row_kind",
+        &["finder"],
+    ),
+    (
+        "widgets::search_detail::SearchSource::cell_count",
+        &["finder"],
+    ),
+    (
+        "widgets::search_detail::SearchSource::cell_key",
+        &["finder"],
+    ),
+    (
+        "widgets::search_detail::SearchSource::cell_label",
+        &["finder"],
+    ),
     (
         "widgets::search_detail::SearchSource::cell_enabled",
-        "finder",
+        &["finder"],
     ),
     (
         "widgets::search_detail::SearchSource::cell_click_policy",
-        "finder",
+        &["finder"],
     ),
-    ("widgets::search_detail::QueryToken::result_stamp", "finder"),
-    ("widgets::search_detail::QueryRequest", "finder"),
-    ("widgets::search_detail::SearchAction", "finder"),
+    (
+        "widgets::search_detail::QueryToken::result_stamp",
+        &["finder"],
+    ),
+    ("widgets::search_detail::QueryRequest", &["finder"]),
+    ("widgets::search_detail::SearchAction", &["finder"]),
     (
         "widgets::search_detail::SearchAction::QueryRequested",
-        "finder",
+        &["finder"],
     ),
-    ("widgets::search_detail::SearchAction::Activate", "finder"),
+    (
+        "widgets::search_detail::SearchAction::Activate",
+        &["finder"],
+    ),
     (
         "widgets::search_detail::SearchAction::ContextRequested",
-        "finder",
+        &["finder"],
     ),
     (
         "widgets::search_detail::SearchAction::DetailAction",
-        "finder",
+        &["finder"],
     ),
-    ("widgets::search_detail::MissingSelection", "finder"),
+    ("widgets::search_detail::MissingSelection", &["finder"]),
     (
         "widgets::search_detail::MissingSelection::NearestPosition",
-        "finder",
+        &["finder"],
     ),
     (
         "widgets::search_detail::MissingSelection::FirstEnabled",
-        "finder",
+        &["finder"],
     ),
-    ("widgets::search_detail::QueryPasteMode", "finder"),
+    ("widgets::search_detail::QueryPasteMode", &["finder"]),
     (
         "widgets::search_detail::QueryPasteMode::StripLineBreaks",
-        "finder",
+        &["finder"],
     ),
     (
         "widgets::search_detail::QueryPasteMode::JoinLinesWithSpaceTrim",
-        "finder",
+        &["finder"],
     ),
-    ("widgets::search_detail::SearchConfig", "finder"),
-    ("widgets::search_detail::SearchConfig::click", "finder"),
+    ("widgets::search_detail::SearchConfig", &["finder"]),
+    ("widgets::search_detail::SearchConfig::click", &["finder"]),
     (
         "widgets::search_detail::SearchConfig::select_first_on_query",
-        "finder",
+        &["finder"],
     ),
     (
         "widgets::search_detail::SearchConfig::missing_selection",
-        "finder",
+        &["finder"],
     ),
-    ("widgets::search_detail::SearchConfig::paste_mode", "finder"),
+    (
+        "widgets::search_detail::SearchConfig::paste_mode",
+        &["finder"],
+    ),
     (
         "widgets::search_detail::SearchConfig::navigate_while_loading",
-        "finder",
+        &["finder"],
     ),
-    ("widgets::search_detail::SearchPhase", "finder"),
-    ("widgets::search_detail::SearchPhase::Loading", "finder"),
-    ("widgets::search_detail::SearchPhase::Ready", "finder"),
-    ("widgets::search_detail::SearchPhase::Failed", "finder"),
-    ("widgets::search_detail::SearchSession::error", "finder"),
-    ("widgets::search_detail::SearchDetail", "finder"),
-    ("widgets::search_detail::SearchDetail::new", "finder"),
-    ("widgets::search_detail::SearchDetail::config", "finder"),
+    ("widgets::search_detail::SearchPhase", &["finder"]),
+    ("widgets::search_detail::SearchPhase::Loading", &["finder"]),
+    ("widgets::search_detail::SearchPhase::Ready", &["finder"]),
+    ("widgets::search_detail::SearchPhase::Failed", &["finder"]),
+    ("widgets::search_detail::SearchSession::error", &["finder"]),
+    ("widgets::search_detail::SearchDetail", &["finder"]),
+    ("widgets::search_detail::SearchDetail::new", &["finder"]),
+    ("widgets::search_detail::SearchDetail::config", &["finder"]),
     (
         "widgets::search_detail::SearchDetail::collapse_below",
-        "finder",
+        &["finder"],
     ),
     (
         "widgets::search_detail::SearchDetail::set_query_readout",
-        "finder",
+        &["finder"],
     ),
-    ("widgets::search_detail::SearchDetail::editing", "finder"),
-    ("widgets::search_detail::SearchDetail::on_blur", "finder"),
-    ("widgets::search_detail::SearchDetail::id", "finder"),
-    ("widgets::search_detail::SearchDetail::detail_id", "finder"),
-    ("widgets::search_detail::SearchDetail::session", "finder"),
-    ("widgets::search_detail::SearchDetail::query", "finder"),
+    ("widgets::search_detail::SearchDetail::editing", &["finder"]),
+    ("widgets::search_detail::SearchDetail::on_blur", &["finder"]),
+    ("widgets::search_detail::SearchDetail::id", &["finder"]),
+    (
+        "widgets::search_detail::SearchDetail::detail_id",
+        &["finder"],
+    ),
+    ("widgets::search_detail::SearchDetail::session", &["finder"]),
+    ("widgets::search_detail::SearchDetail::query", &["finder"]),
     (
         "widgets::search_detail::SearchDetail::selected_key",
-        "finder",
+        &["finder"],
     ),
-    ("widgets::search_detail::SearchDetail::phase", "finder"),
-    ("widgets::search_detail::SearchDetail::on_detail", "finder"),
-    ("widgets::search_detail::SearchDetail::set_query", "finder"),
+    ("widgets::search_detail::SearchDetail::phase", &["finder"]),
+    (
+        "widgets::search_detail::SearchDetail::on_detail",
+        &["finder"],
+    ),
+    (
+        "widgets::search_detail::SearchDetail::set_query",
+        &["finder"],
+    ),
     (
         "widgets::search_detail::SearchDetail::refresh_source",
-        "finder",
+        &["finder"],
     ),
-    ("widgets::search_detail::SearchDetail::retry", "finder"),
-    ("widgets::search_detail::SearchDetail::submit", "finder"),
-    ("widgets::search_detail::SearchDetail::fail", "finder"),
-    ("widgets::search_detail::SearchDetail::on_key", "finder"),
-    ("widgets::search_detail::SearchDetail::on_paste", "finder"),
-    ("widgets::search_detail::SearchDetail::pointer", "finder"),
+    ("widgets::search_detail::SearchDetail::retry", &["finder"]),
+    ("widgets::search_detail::SearchDetail::submit", &["finder"]),
+    ("widgets::search_detail::SearchDetail::fail", &["finder"]),
+    ("widgets::search_detail::SearchDetail::on_key", &["finder"]),
+    (
+        "widgets::search_detail::SearchDetail::on_paste",
+        &["finder"],
+    ),
+    ("widgets::search_detail::SearchDetail::pointer", &["finder"]),
     (
         "widgets::search_detail::SearchDetail::emit_pending_context",
-        "finder",
+        &["finder"],
     ),
     (
         "widgets::search_detail::SearchDetail::render_source",
-        "finder",
+        &["finder"],
     ),
 ];
 
@@ -827,13 +870,21 @@ mod tests {
     fn search_detail_api_is_covered_or_allowed_exactly_once() {
         let catalog = catalog_source();
         let mut seen = std::collections::BTreeSet::new();
-        for (id, page) in SEARCH_DETAIL_COVERAGE {
+        for (id, pages) in SEARCH_DETAIL_COVERAGE {
             assert!(
                 catalog.contains(&format!("\"{id}\"")),
                 "declared id is not a catalog capability: {id}"
             );
             assert!(seen.insert(*id), "declared twice: {id}");
-            assert_eq!(*page, "finder", "{id}");
+            assert!(!pages.is_empty(), "no page uses {id}");
+            let mut named = std::collections::BTreeSet::new();
+            for page in *pages {
+                assert!(
+                    SEARCH_DETAIL_PAGES.iter().any(|(name, _)| name == page),
+                    "{id} names an unknown page {page}"
+                );
+                assert!(named.insert(*page), "{id} names {page} twice");
+            }
         }
         for (id, reason) in SEARCH_SESSION_ALLOWLIST {
             assert!(
@@ -860,11 +911,9 @@ mod tests {
     }
 
     #[test]
-    fn search_detail_coverage_ids_are_used_by_the_finder_page() {
+    fn search_detail_coverage_ids_are_used_by_their_pages() {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
-        let source = std::fs::read_to_string(root.join("src/bin/showcase/pages/finder.rs"))
-            .expect("the finder page source");
-        for (id, _) in SEARCH_DETAIL_COVERAGE {
+        for (id, pages) in SEARCH_DETAIL_COVERAGE {
             let mut parts = id.rsplit("::");
             let last = parts.next().expect("id has a segment");
             let prev = parts.next().unwrap_or("");
@@ -875,10 +924,18 @@ mod tests {
             } else {
                 last.to_owned()
             };
-            assert!(
-                source.contains(&needle),
-                "the Finder page never uses {id} (looked for {needle})"
-            );
+            for page in *pages {
+                let (_, path) = SEARCH_DETAIL_PAGES
+                    .iter()
+                    .find(|(name, _)| name == page)
+                    .expect("page names are checked by the exactly-once test");
+                let source = std::fs::read_to_string(root.join(path))
+                    .unwrap_or_else(|e| panic!("the {page} page source {path}: {e}"));
+                assert!(
+                    source.contains(&needle),
+                    "the {page} page never uses {id} (looked for {needle})"
+                );
+            }
         }
     }
 }
