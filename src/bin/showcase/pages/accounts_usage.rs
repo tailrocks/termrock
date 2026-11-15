@@ -588,7 +588,7 @@ fn provider_facts(p: usize) -> Vec<Prop> {
 }
 
 fn usage_table() -> DataTable {
-    DataTable::new(
+    DataTable::try_new(
         USAGE,
         vec![
             Column::new("Account", Constraint::Min(12)),
@@ -612,6 +612,7 @@ fn usage_table() -> DataTable {
             })
             .collect(),
     )
+    .expect("rectangular fixture")
     .numeric(&[2, 3, 4])
 }
 

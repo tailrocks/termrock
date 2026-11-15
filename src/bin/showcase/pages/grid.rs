@@ -323,7 +323,7 @@ fn build(k: &Knobs) -> DataGrid {
     grid.row_numbers = k.row_numbers == 1;
     grid.blur_action = [BlurAction::Commit, BlurAction::Cancel][k.blur_action];
     grid.local_sort = true;
-    grid.set_rows(if k.rows == 0 {
+    grid.try_set_rows(if k.rows == 0 {
         page(0, k.total())
     } else {
         GridRows {
@@ -331,7 +331,8 @@ fn build(k: &Knobs) -> DataGrid {
             total: RowTotal::Exact(0),
             more: false,
         }
-    });
+    })
+    .expect("rectangular fixture");
     grid
 }
 
@@ -394,24 +395,26 @@ fn states_grid() -> StateGrid {
         more: false,
     };
     let mut clean = DataGrid::new(id.child(0), cols());
-    clean.set_rows(GridRows {
-        rows: (0..3)
-            .map(|i| {
-                let r = row(i);
-                vec![r[0].clone(), r[1].clone(), r[3].clone()]
-            })
-            .collect(),
-        total: RowTotal::Exact(3),
-        more: false,
-    });
+    clean
+        .try_set_rows(GridRows {
+            rows: (0..3)
+                .map(|i| {
+                    let r = row(i);
+                    vec![r[0].clone(), r[1].clone(), r[3].clone()]
+                })
+                .collect(),
+            total: RowTotal::Exact(3),
+            more: false,
+        })
+        .expect("rectangular fixture");
     let mut changed = DataGrid::new(id.child(1), cols());
-    changed.set_rows(rows());
+    changed.try_set_rows(rows()).expect("rectangular fixture");
     changed.record_cell(0, 2, CellValue::Int(40));
     changed.toggle_delete(1);
     changed.insert_row();
     let mut read_only = DataGrid::new(id.child(2), cols()).editable(false);
     read_only.read_only_reason = READ_ONLY[1].map(str::to_owned);
-    read_only.set_rows(rows());
+    read_only.try_set_rows(rows()).expect("rectangular fixture");
     StateGrid::new(id)
         .rows(&[
             Rest,
@@ -490,7 +493,7 @@ impl GridPage {
             }
             out.push(format!(
                 "UPDATE {TABLE} SET {} = {} WHERE id = {};",
-                self.grid.columns[*c].name,
+                self.grid.columns()[*c].name,
                 literal(v),
                 self.grid.value(*r, 0).text()
             ));
@@ -498,7 +501,7 @@ impl GridPage {
         for r in &self.grid.pending.inserted {
             let cols: Vec<&str> = self
                 .grid
-                .columns
+                .columns()
                 .iter()
                 .enumerate()
                 .filter(|(c, _)| self.grid.pending.cells.contains_key(&(*r, *c)))
@@ -509,7 +512,7 @@ impl GridPage {
             } else {
                 let vals: Vec<String> = self
                     .grid
-                    .columns
+                    .columns()
                     .iter()
                     .enumerate()
                     .filter_map(|(c, _)| self.grid.pending.cells.get(&(*r, c)))
@@ -568,7 +571,7 @@ impl GridPage {
         self.filters.chips = self
             .filter_values
             .iter()
-            .map(|(c, v)| Chip::new(&format!("{} = {}", self.grid.columns[*c].name, v.text())))
+            .map(|(c, v)| Chip::new(&format!("{} = {}", self.grid.columns()[*c].name, v.text())))
             .collect();
     }
 
@@ -581,12 +584,16 @@ impl GridPage {
             Some(GridAction::RowDeleted(_)) => cx.status("Row queued for deletion · u undoes"),
             Some(GridAction::FetchMore) => {
                 let from = self.grid.len();
-                self.grid.append_rows(page(from, self.knobs.total()));
-                cx.status(format!("Fetched rows {}–{}", from + 1, self.grid.len()));
+                match self.grid.try_append_rows(page(from, self.knobs.total())) {
+                    Ok(()) => cx.status(format!("Fetched rows {}–{}", from + 1, self.grid.len())),
+                    Err(e) => cx.status(format!("Fetch rejected · {e}")),
+                }
             }
             Some(GridAction::Refresh) => {
-                self.grid.set_rows(page(0, self.knobs.total()));
-                cx.status("Reloaded from the source");
+                match self.grid.try_set_rows(page(0, self.knobs.total())) {
+                    Ok(()) => cx.status("Reloaded from the source"),
+                    Err(e) => cx.status(format!("Reload rejected · {e}")),
+                }
             }
             Some(GridAction::CommitRequested) => {
                 if self.grid.pending.is_empty() {
@@ -603,13 +610,16 @@ impl GridPage {
             Some(GridAction::Copy(s)) => cx.status(format!("Copied {} chars", s.len())),
             Some(GridAction::FollowReference { row, col }) => cx.status(format!(
                 "Follow {} = {} into {}",
-                self.grid.columns[col].name,
+                self.grid.columns()[col].name,
                 self.grid.value(row, col).text(),
-                self.grid.columns[col].references.as_deref().unwrap_or("?")
+                self.grid.columns()[col]
+                    .references
+                    .as_deref()
+                    .unwrap_or("?")
             )),
             Some(GridAction::OpenViewer { row, col }) => cx.status(format!(
                 "Would open the viewer for {} on row {}",
-                self.grid.columns[col].name,
+                self.grid.columns()[col].name,
                 row + 1
             )),
             Some(GridAction::FilterOnCell { col, value }) => {
@@ -663,7 +673,7 @@ impl GridPage {
 
     fn schema(&self) -> Vec<Prop> {
         self.grid
-            .columns
+            .columns()
             .iter()
             .map(|c| {
                 let mut v = vec![format!("{:?}", c.kind), c.type_label.clone()];

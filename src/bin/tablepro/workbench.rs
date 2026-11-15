@@ -870,7 +870,7 @@ impl Workbench {
                 if let Some(target) = cat
                     .find(Some(&t.schema), &name)
                     .and(None::<String>)
-                    .or_else(|| t.grid.columns[col].references.clone())
+                    .or_else(|| t.grid.columns()[col].references.clone())
                 {
                     cx.go(crate::app::Act::OpenTableFiltered(target, "id".into(), v));
                 }

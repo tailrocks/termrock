@@ -175,7 +175,7 @@ pub fn on_secondary(w: &mut Workbench, cfg: &ContextConfig, ev: &PointerEvent) -
         return Some(CtxMenu {
             menu: ContextMenu::new(MENU, items)
                 .at(ev.pos())
-                .title(g.columns[col].name.clone()),
+                .title(g.columns()[col].name.clone()),
             target: Target::Header(col),
             owner,
             keys,
@@ -532,7 +532,7 @@ fn tab_items(w: &Workbench, i: usize) -> (String, WidgetId, Items) {
 
 fn grid_items(g: &DataGrid, row: usize, col: usize, table: bool) -> (String, WidgetId, Items) {
     let mut items = Items::new();
-    let Some(spec) = g.columns.get(col) else {
+    let Some(spec) = g.columns().get(col) else {
         return (String::new(), g.id, items);
     };
     if row >= g.len() {

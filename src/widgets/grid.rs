@@ -5,6 +5,7 @@ use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Position, Rect};
 use ratatui::style::{Color, Modifier, Style};
 
+use crate::core::data::{DataError, ShapeError};
 use crate::core::event::{Key, Outcome};
 use crate::core::focus::BlurAction;
 use crate::core::hit::Axis;
@@ -172,6 +173,48 @@ pub struct GridRows {
     pub total: RowTotal,
 
     pub more: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GridDataError {
+    Shape(DataError),
+}
+
+impl From<DataError> for GridDataError {
+    fn from(e: DataError) -> Self {
+        Self::Shape(e)
+    }
+}
+
+impl std::fmt::Display for GridDataError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Shape(e) => e.fmt(f),
+        }
+    }
+}
+
+impl std::error::Error for GridDataError {}
+
+fn normalize_rows(
+    width: usize,
+    mut rows: Vec<Vec<CellValue>>,
+    first: usize,
+) -> Result<Vec<Vec<CellValue>>, DataError> {
+    if width == 0 && !rows.is_empty() {
+        return Err(DataError::EmptySchemaWithRows);
+    }
+    if let Some((i, row)) = rows.iter().enumerate().find(|(_, r)| r.len() > width) {
+        return Err(DataError::Shape(ShapeError {
+            row: first + i,
+            expected: width,
+            actual: row.len(),
+        }));
+    }
+    for row in &mut rows {
+        row.resize(width, CellValue::Null);
+    }
+    Ok(rows)
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -382,7 +425,7 @@ const GRID_MIN_W: u16 = 24;
 pub struct DataGrid {
     parts: PartMap,
     pub id: WidgetId,
-    pub columns: Vec<ColumnSpec>,
+    columns: Vec<ColumnSpec>,
     rows: Vec<Vec<CellValue>>,
     order: Vec<usize>,
     pub total: RowTotal,
@@ -904,6 +947,9 @@ impl DataGrid {
     pub fn rows(&self) -> &[Vec<CellValue>] {
         &self.rows
     }
+    pub fn columns(&self) -> &[ColumnSpec] {
+        &self.columns
+    }
     pub fn source_row(&self, display: usize) -> usize {
         self.order.get(display).copied().unwrap_or(display)
     }
@@ -917,7 +963,28 @@ impl DataGrid {
         })
     }
 
-    pub fn set_rows(&mut self, data: GridRows) {
+    pub fn try_set_rows(&mut self, data: GridRows) -> Result<(), GridDataError> {
+        let rows = normalize_rows(self.columns.len(), data.rows, 0)?;
+        self.install_rows(GridRows { rows, ..data });
+        Ok(())
+    }
+
+    pub fn try_set_model(
+        &mut self,
+        columns: Vec<ColumnSpec>,
+        data: GridRows,
+    ) -> Result<(), GridDataError> {
+        let rows = normalize_rows(columns.len(), data.rows, 0)?;
+        self.sizing.reset();
+        self.sort = self.sort.filter(|&(c, _)| c < columns.len());
+        self.filtered_cols.retain(|&c| c < columns.len());
+        self.cursor.1 = self.cursor.1.min(columns.len().saturating_sub(1));
+        self.columns = columns;
+        self.install_rows(GridRows { rows, ..data });
+        Ok(())
+    }
+
+    fn install_rows(&mut self, data: GridRows) {
         self.rows = data.rows;
         self.total = data.total;
         self.more = data.more;
@@ -929,6 +996,7 @@ impl DataGrid {
         self.selection.clear();
         self.anchor = None;
         self.edit = None;
+        self.choice = None;
         self.cursor.0 = self.cursor.0.min(self.rows.len().saturating_sub(1));
         self.sample_widths();
         if self.local_sort
@@ -940,14 +1008,16 @@ impl DataGrid {
         self.scroll.ensure_visible(self.cursor.0);
     }
 
-    pub fn append_rows(&mut self, data: GridRows) {
+    pub fn try_append_rows(&mut self, data: GridRows) -> Result<(), GridDataError> {
         let start = self.rows.len();
-        self.rows.extend(data.rows);
+        let rows = normalize_rows(self.columns.len(), data.rows, start)?;
+        self.rows.extend(rows);
         self.order.extend(start..self.rows.len());
         self.total = data.total;
         self.more = data.more;
         self.loading = false;
         self.scroll.set_content(self.content_rows());
+        Ok(())
     }
 
     pub fn set_loading(&mut self, on: bool) {
@@ -986,9 +1056,10 @@ impl DataGrid {
 
     fn apply_local_sort(&mut self, col: usize, dir: SortDir) {
         let rows = &self.rows;
+        let cell = |src: usize| rows[src].get(col).unwrap_or(&CellValue::Null);
         self.order.sort_by(|&a, &b| {
-            let va = &rows[a][col];
-            let vb = &rows[b][col];
+            let va = cell(a);
+            let vb = cell(b);
             let o = cmp_cells(va, vb).then_with(|| a.cmp(&b));
             if dir == SortDir::Asc { o } else { o.reverse() }
         });
@@ -1072,10 +1143,11 @@ impl DataGrid {
     }
 
     pub fn begin_edit(&mut self) -> (Outcome, Option<GridAction>) {
+        self.clamp_cursor();
         let Some(src) = self.cursor_src() else {
             return (Outcome::Consumed, None);
         };
-        if !self.editable {
+        if !self.editable || self.columns.is_empty() {
             return (Outcome::Consumed, None);
         }
         let col = self.cursor.1;
@@ -1150,7 +1222,8 @@ impl DataGrid {
 
     pub fn commit_edit(&mut self) -> Option<GridAction> {
         let mut e = self.edit.take()?;
-        let parsed = parse_cell(&self.validator, &self.columns[e.col], e.field.text());
+        let spec = self.columns.get(e.col)?;
+        let parsed = parse_cell(&self.validator, spec, e.field.text());
         match parsed {
             Ok(v) => {
                 self.record_cell(e.row, e.col, v);
@@ -1260,7 +1333,7 @@ impl DataGrid {
     }
 
     pub fn insert_row(&mut self) -> Option<GridAction> {
-        if !self.editable {
+        if !self.editable || self.columns.is_empty() {
             return None;
         }
         let row: Vec<CellValue> = self
@@ -1387,6 +1460,11 @@ impl DataGrid {
         self.row_errors.clear();
     }
 
+    fn clamp_cursor(&mut self) {
+        self.cursor.0 = self.cursor.0.min(self.content_rows().saturating_sub(1));
+        self.cursor.1 = self.cursor.1.min(self.columns.len().saturating_sub(1));
+    }
+
     fn set_cursor(&mut self, row: usize, col: usize, extend: bool) {
         let n = self.content_rows();
         let row = row.min(n.saturating_sub(1));
@@ -1436,7 +1514,10 @@ impl DataGrid {
             let (c0, c1) = (a.1.min(self.cursor.1), a.1.max(self.cursor.1));
             if with_header {
                 out.push_str(
-                    &self.columns[c0..=c1]
+                    &self
+                        .columns
+                        .get(c0..=c1)
+                        .unwrap_or_default()
                         .iter()
                         .map(|c| c.name.as_str())
                         .collect::<Vec<_>>()
@@ -1482,6 +1563,7 @@ impl DataGrid {
     }
 
     pub fn on_key(&mut self, key: &Key) -> (Outcome, Option<GridAction>) {
+        self.clamp_cursor();
         if let Some(c) = self.choice.as_mut() {
             let (out, r) = c.editor.on_key(key, &self.editor_config);
             return (out, self.on_choice(r));
@@ -1691,6 +1773,7 @@ impl DataGrid {
     }
 
     fn on_action(&mut self, action: GridCmd) -> (Outcome, Option<GridAction>) {
+        self.clamp_cursor();
         let c = self.cursor.1;
         match action {
             GridCmd::ClearCell => {
@@ -1708,7 +1791,9 @@ impl DataGrid {
                 let Some(src) = self.cursor_src() else {
                     return (Outcome::Consumed, None);
                 };
-                let spec = &self.columns[c];
+                let Some(spec) = self.columns.get(c) else {
+                    return (Outcome::Consumed, None);
+                };
                 if spec.read_only {
                     return (Outcome::Consumed, None);
                 }
@@ -1742,7 +1827,7 @@ impl DataGrid {
             ),
             GridCmd::Commit => (Outcome::Changed, Some(GridAction::CommitRequested)),
             GridCmd::Sort => {
-                if !self.columns[c].sortable {
+                if !self.columns.get(c).is_some_and(|spec| spec.sortable) {
                     return (Outcome::Consumed, None);
                 }
                 let next = match self.sort {
@@ -1789,7 +1874,10 @@ impl DataGrid {
             }
             GridCmd::PreviewSql => (Outcome::Changed, Some(GridAction::PreviewSql)),
             GridCmd::FollowReference => {
-                if self.columns[c].references.is_some()
+                if self
+                    .columns
+                    .get(c)
+                    .is_some_and(|spec| spec.references.is_some())
                     && let Some(src) = self.cursor_src()
                 {
                     return (
@@ -1930,6 +2018,7 @@ impl DataGrid {
         count: u8,
     ) -> (Outcome, Option<GridAction>) {
         let count = count.max(1);
+        self.clamp_cursor();
         if self.seam_of(id).is_some() {
             self.sizing.release();
             return (Outcome::Consumed, None);
@@ -2296,6 +2385,7 @@ impl DataGrid {
         if area.is_empty() || area.height < 2 {
             return;
         }
+        self.clamp_cursor();
         self.area = area;
         let t = ctx.theme;
         let focused = ctx.interaction.focused(self.id);

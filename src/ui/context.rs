@@ -283,14 +283,14 @@ impl ContextSource for DataTable {
     fn context_select(&mut self, (row, col): (usize, usize)) {
         if let Some(r) = Navigable::cursor(self).select(row, self).index() {
             self.cursor_row = r;
-            if self.cell_nav && col < self.columns.len() {
+            if self.cell_nav && col < self.columns().len() {
                 self.cursor_col = col;
             }
             self.context_selection(r);
         }
     }
     fn context_cursor(&self) -> Option<ContextRequest<(usize, usize)>> {
-        (self.cursor_row < self.rows.len()).then(|| {
+        (self.cursor_row < self.rows().len()).then(|| {
             let id = if self.cell_nav {
                 self.cell_id(self.cursor_row, self.cursor_col)
             } else {
@@ -330,7 +330,7 @@ impl ContextSource for DataGrid {
     }
 
     fn context_select(&mut self, cell: (usize, usize)) {
-        if cell.1 < self.columns.len()
+        if cell.1 < self.columns().len()
             && let Some(r) = Navigable::cursor(self).select(cell.0, self).index()
         {
             self.context_selection(r, cell.1);

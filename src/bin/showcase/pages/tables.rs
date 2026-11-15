@@ -82,7 +82,8 @@ const SELECTION_MODES: [SelectionMode; 3] = [
 ];
 
 fn tasks_table(mode: SelectionMode) -> DataTable {
-    DataTable::new(ID.sub("tasks"), task_columns(), task_rows())
+    DataTable::try_new(ID.sub("tasks"), task_columns(), task_rows())
+        .expect("rectangular fixture")
         .numeric(&[0, 5, 6])
         .selection_mode(mode)
         .selection_column(mode == SelectionMode::Multi)
@@ -102,7 +103,8 @@ fn states_grid() -> StateGrid {
             .take(3)
             .map(|r| vec![r[0].clone(), r[1].clone(), r[3].clone()])
             .collect();
-        DataTable::new(id.child(k), cols, rows)
+        DataTable::try_new(id.child(k), cols, rows)
+            .expect("rectangular fixture")
             .numeric(&[0])
             .selection_mode(mode)
             .selection_column(mode == SelectionMode::Multi)
@@ -161,7 +163,7 @@ impl TablesPage {
         } else {
             select
         };
-        let column = &t.columns[col];
+        let column = &t.columns()[col];
         let name = column.title.to_lowercase();
         let sort = match t.sort {
             Some((c, SortDir::Asc)) if c == col => MenuItem::new(format!("Sort {name} descending")),
@@ -192,7 +194,7 @@ impl TablesPage {
 
     fn open_menu(&mut self, req: ContextRequest<(usize, usize)>) {
         let src = self.table.source_row(req.target.0);
-        let title = self.table.rows[src][1].text.clone();
+        let title = self.table.rows()[src][1].text.clone();
         let items = self
             .cell_items(req.target)
             .into_iter()
@@ -211,7 +213,7 @@ impl TablesPage {
                 self.table.cursor_row = cell.0;
                 let (out, tev) = self.table.on_key(&plain(KeyCode::Enter));
                 if let Some(TableAction::Activated(row)) = tev {
-                    cx.status(format!("Selected {}", self.table.rows[row][1].text));
+                    cx.status(format!("Selected {}", self.table.rows()[row][1].text));
                 }
                 out
             }
@@ -223,7 +225,7 @@ impl TablesPage {
         let selection = 1;
         let table = tasks_table(SELECTION_MODES[selection]);
 
-        let mut reviewers = DataTable::new(
+        let mut reviewers = DataTable::try_new(
             ID.sub("reviewers"),
             vec![
                 Column::new("Reviewer", Constraint::Min(12)),
@@ -240,12 +242,13 @@ impl TablesPage {
             .map(|(a, b, c)| vec![Cell::new(a), Cell::new(b).tone(Tone::Muted), Cell::new(c)])
             .collect(),
         )
+        .expect("rectangular fixture")
         .numeric(&[2])
         .selection_mode(SelectionMode::Multi)
         .selection_column(true);
         reviewers.toggle_row(0);
         reviewers.toggle_row(2);
-        let empty = DataTable::new(
+        let empty = DataTable::try_new(
             ID.sub("empty"),
             vec![
                 Column::new("Check", Constraint::Min(12)),
@@ -253,6 +256,7 @@ impl TablesPage {
             ],
             vec![],
         )
+        .expect("rectangular fixture")
         .empty_text("No checks have run yet");
         Self {
             template: Template::new(ID, states_grid()),
@@ -290,7 +294,7 @@ impl TablesPage {
                     .into_iter()
                     .map(|(_, m)| m)
                     .collect();
-                let title = self.table.columns[c].title.clone();
+                let title = self.table.columns()[c].title.clone();
                 let menu = ContextMenu::new(HEADER_MENU, items)
                     .at(ev.pos())
                     .title(title);
@@ -307,7 +311,7 @@ impl TablesPage {
         }
         if let Some((out, tev)) = route_table(&mut self.table, ev, cx) {
             if let Some(TableAction::Activated(r)) = tev {
-                cx.status(format!("Selected {}", self.table.rows[r][1].text));
+                cx.status(format!("Selected {}", self.table.rows()[r][1].text));
             }
             return out;
         }
@@ -346,7 +350,7 @@ impl TablesPage {
         let sort = match self.table.sort {
             Some((c, d)) => format!(
                 "sorted by {} {}",
-                self.table.columns[c].title.to_lowercase(),
+                self.table.columns()[c].title.to_lowercase(),
                 if d == junie_tui::widgets::table::SortDir::Asc {
                     "▴"
                 } else {
@@ -492,7 +496,7 @@ impl Page for TablesPage {
                     }
                     let (out, tev) = self.table.on_key(key);
                     if let Some(TableAction::Activated(row)) = tev {
-                        cx.status(format!("Selected {}", self.table.rows[row][1].text));
+                        cx.status(format!("Selected {}", self.table.rows()[row][1].text));
                     }
                     return out;
                 }

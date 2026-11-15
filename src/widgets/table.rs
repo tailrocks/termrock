@@ -5,6 +5,7 @@ use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Constraint, Layout, Position, Rect};
 use ratatui::style::{Color, Modifier};
 
+use crate::core::data::{DataError, ShapeError, validate_rectangular};
 use crate::core::event::{ClientPlatform, Key, Outcome};
 use crate::core::focus::BlurAction;
 use crate::core::hit::Axis;
@@ -37,7 +38,7 @@ pub enum Align {
     Right,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Column {
     pub title: String,
     pub width: Constraint,
@@ -168,8 +169,8 @@ impl crate::ui::measure::Measure for DataTable {
 pub struct DataTable {
     parts: PartMap,
     pub id: WidgetId,
-    pub columns: Vec<Column>,
-    pub rows: Vec<Vec<Cell>>,
+    columns: Vec<Column>,
+    rows: Vec<Vec<Cell>>,
 
     order: Vec<usize>,
     pub sort: Option<(usize, SortDir)>,
@@ -271,10 +272,15 @@ pub enum TableAction {
 }
 
 impl DataTable {
-    pub fn new(id: WidgetId, columns: Vec<Column>, rows: Vec<Vec<Cell>>) -> Self {
+    pub fn try_new(
+        id: WidgetId,
+        columns: Vec<Column>,
+        rows: Vec<Vec<Cell>>,
+    ) -> Result<Self, DataError> {
+        validate_rectangular(columns.len(), &rows)?;
         let n = rows.len();
         let numeric = vec![false; columns.len()];
-        Self {
+        Ok(Self {
             id,
             columns,
             rows,
@@ -316,7 +322,15 @@ impl DataTable {
             typeahead: Default::default(),
             choice: None,
             editor_config: EditorConfig::default(),
-        }
+        })
+    }
+
+    pub fn columns(&self) -> &[Column] {
+        &self.columns
+    }
+
+    pub fn rows(&self) -> &[Vec<Cell>] {
+        &self.rows
     }
 
     pub fn type_ahead_timeout(mut self, timeout: std::time::Duration) -> Self {
@@ -356,10 +370,10 @@ impl DataTable {
     }
 
     pub fn out_of_set(&self, src: usize, col: usize) -> bool {
-        let (Some(row), Some(c)) = (self.rows.get(src), self.columns.get(col)) else {
+        let (Some(cell), Some(c)) = (self.cell(src, col), self.columns.get(col)) else {
             return false;
         };
-        c.editor.out_of_set(&row[col].text, &self.editor_config)
+        c.editor.out_of_set(&cell.text, &self.editor_config)
     }
 
     pub fn out_of_set_cells(&self) -> Vec<(usize, usize)> {
@@ -488,9 +502,16 @@ impl DataTable {
         src < self.rows.len() && self.selection.toggle(src, |r| !disabled.contains(&r))
     }
 
-    pub fn set_row(&mut self, src: usize, cells: Vec<Cell>) {
+    pub fn try_set_row(&mut self, src: usize, cells: Vec<Cell>) -> Result<(), DataError> {
         if src >= self.rows.len() {
-            return;
+            return Err(DataError::MissingRow(src));
+        }
+        if cells.len() != self.columns.len() {
+            return Err(DataError::Shape(ShapeError {
+                row: src,
+                expected: self.columns.len(),
+                actual: cells.len(),
+            }));
         }
         let cursor_src = self.order.get(self.cursor_row).copied();
         self.rows[src] = cells;
@@ -501,6 +522,7 @@ impl DataTable {
                 self.scroll.ensure_visible(pos);
             }
         }
+        Ok(())
     }
 
     pub fn remove_rows(&mut self, srcs: &[usize]) {
@@ -824,7 +846,80 @@ impl DataTable {
         PartRef::item(Part::CELL, ItemKey::index(display))
     }
 
-    pub fn set_rows(&mut self, rows: Vec<Vec<Cell>>) {
+    pub fn try_set_rows(&mut self, rows: Vec<Vec<Cell>>) -> Result<(), DataError> {
+        validate_rectangular(self.columns.len(), &rows)?;
+        self.install_rows(rows);
+        Ok(())
+    }
+
+    pub fn try_set_model(
+        &mut self,
+        columns: Vec<Column>,
+        rows: Vec<Vec<Cell>>,
+    ) -> Result<(), DataError> {
+        validate_rectangular(columns.len(), &rows)?;
+        self.numeric.resize(columns.len(), false);
+        self.sizing.reset();
+        self.sort = self.sort.filter(|&(c, _)| c < columns.len());
+        self.cursor_col = self.cursor_col.min(columns.len().saturating_sub(1));
+        self.columns = columns;
+        self.install_rows(rows);
+        Ok(())
+    }
+
+    pub fn update_column(
+        &mut self,
+        index: usize,
+        edit: impl FnOnce(&mut Column),
+    ) -> Result<bool, usize> {
+        let Some(original) = self.columns.get(index) else {
+            return Err(index);
+        };
+        let mut candidate = original.clone();
+        edit(&mut candidate);
+        if candidate == *original {
+            return Ok(false);
+        }
+        let resized = candidate.width != original.width;
+        let reedits =
+            candidate.editable != original.editable || candidate.editor != original.editor;
+        self.columns[index] = candidate;
+        if resized {
+            self.sizing.clear(index);
+        }
+        if reedits {
+            if self.edit.as_ref().is_some_and(|e| e.col == index) {
+                self.edit = None;
+            }
+            if self.choice.as_ref().is_some_and(|c| c.col == index) {
+                self.choice = None;
+            }
+        }
+        Ok(true)
+    }
+
+    pub fn update_cell(&mut self, src: usize, col: usize, edit: impl FnOnce(&mut Cell)) -> bool {
+        let Some(cell) = self.cell_mut(src, col) else {
+            return false;
+        };
+        edit(cell);
+        if let Some((c, d)) = self.sort
+            && c == col
+        {
+            self.apply_sort(c, d);
+        }
+        true
+    }
+
+    fn cell(&self, src: usize, col: usize) -> Option<&Cell> {
+        self.rows.get(src)?.get(col)
+    }
+
+    fn cell_mut(&mut self, src: usize, col: usize) -> Option<&mut Cell> {
+        self.rows.get_mut(src)?.get_mut(col)
+    }
+
+    fn install_rows(&mut self, rows: Vec<Vec<Cell>>) {
         self.edit = None;
         self.choice = None;
         self.selected = None;
@@ -842,9 +937,10 @@ impl DataTable {
     fn apply_sort(&mut self, col: usize, dir: SortDir) {
         let numeric = self.numeric.get(col).copied().unwrap_or(false);
         let rows = &self.rows;
+        let text = |src: usize| rows[src].get(col).map_or("", |c| c.text.as_str());
         self.order.sort_by(|&a, &b| {
-            let ca = &rows[a][col].text;
-            let cb = &rows[b][col].text;
+            let ca = text(a);
+            let cb = text(b);
             let ord = if numeric {
                 parse_num(ca).cmp(&parse_num(cb))
             } else {
@@ -882,6 +978,11 @@ impl DataTable {
         Outcome::Changed
     }
 
+    fn clamp_cursor(&mut self) {
+        self.cursor_row = self.cursor_row.min(self.rows.len().saturating_sub(1));
+        self.cursor_col = self.cursor_col.min(self.columns.len().saturating_sub(1));
+    }
+
     fn set_cursor(&mut self, row: usize, col: usize) {
         self.cursor_row = row.min(self.rows.len().saturating_sub(1));
         self.cursor_col = col.min(self.columns.len().saturating_sub(1));
@@ -903,18 +1004,18 @@ impl DataTable {
     }
 
     pub fn start_edit(&mut self) -> (Outcome, Option<TableAction>) {
-        if self.rows.is_empty() {
-            return (Outcome::Consumed, None);
-        }
+        self.clamp_cursor();
         let col = self.cursor_col;
-        if !self.columns[col].editable {
+        if self.rows.is_empty() || !self.columns.get(col).is_some_and(|c| c.editable) {
             return (Outcome::Consumed, None);
         }
 
         self.scroll.ensure_visible(self.cursor_row);
         self.ensure_col_visible();
         let src = self.order[self.cursor_row];
-        let text = self.rows[src][col].text.clone();
+        let Some(text) = self.cell(src, col).map(|c| c.text.clone()) else {
+            return (Outcome::Consumed, None);
+        };
         let editor = &self.columns[col].editor;
         if let Some(next) = editor.toggled(&text) {
             return (Outcome::Changed, self.apply_value(src, col, next).ok());
@@ -942,8 +1043,11 @@ impl DataTable {
         if let Some(Err(err)) = self.validator.as_ref().map(|v| v.validate_in(&col, &text)) {
             return Err(err.into_message());
         }
-        self.rows[src][col].text = text;
-        self.rows[src][col].error = None;
+        let Some(cell) = self.cell_mut(src, col) else {
+            return Err(String::new());
+        };
+        cell.text = text;
+        cell.error = None;
         if let Some((c, d)) = self.sort
             && c == col
         {
@@ -1032,8 +1136,9 @@ impl DataTable {
             return None;
         }
         let text = e.field.text().to_owned();
-        self.rows[src][e.col].text = text;
-        self.rows[src][e.col].error = None;
+        let cell = self.cell_mut(src, e.col)?;
+        cell.text = text;
+        cell.error = None;
         if let Some((c, d)) = self.sort
             && c == e.col
         {
@@ -1106,6 +1211,7 @@ impl DataTable {
         if self.rows.is_empty() {
             return (Outcome::Ignored, None);
         }
+        self.clamp_cursor();
         if let Some(KeyStep::Type(c)) = KeyStep::ordered(
             key,
             &self.nav,
@@ -1362,6 +1468,7 @@ impl DataTable {
             return;
         }
         self.area = area;
+        self.clamp_cursor();
         let t = ctx.theme;
         let focused = ctx.interaction.focused(self.id);
         let editing = self.edit.is_some() && focused;

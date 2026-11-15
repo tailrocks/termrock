@@ -236,7 +236,8 @@ impl FinderPage {
                 .placeholder("Search actions, files and tasks")
                 .plain_label(),
             scope: 0,
-            results: DataTable::new(ID.sub("results"), vec![], vec![]),
+            results: DataTable::try_new(ID.sub("results"), vec![], vec![])
+                .expect("rectangular fixture"),
             shown: Vec::new(),
             alternatives: Button::secondary(ID.sub("alternatives"), "Alternatives…"),
             why: Button::subtle(ID.sub("why"), "Why?"),
@@ -304,11 +305,11 @@ impl FinderPage {
             })
             .collect();
         let total = ACTIONS.iter().filter(|a| a.scope <= self.scope).count();
-        self.results = DataTable::new(ID.sub("results"), self.columns(), rows).empty(
-            EmptyState::new("No matches").hint(&format!(
+        self.results = DataTable::try_new(ID.sub("results"), self.columns(), rows)
+            .expect("rectangular fixture")
+            .empty(EmptyState::new("No matches").hint(&format!(
                 "Nothing among {total} actions here matches; try Everywhere"
-            )),
-        );
+            )));
         self.results.cursor_row = 0;
     }
 
@@ -608,7 +609,7 @@ fn states_grid() -> StateGrid {
         .iter()
         .map(|a| vec![Cell::new(a.name), Cell::new(a.group).tone(Tone::Secondary)])
         .collect();
-    let table = DataTable::new(
+    let table = DataTable::try_new(
         id.child(1),
         vec![
             Column::new("Action", Constraint::Min(12)),
@@ -616,6 +617,7 @@ fn states_grid() -> StateGrid {
         ],
         rows,
     )
+    .expect("rectangular fixture")
     .empty(EmptyState::new("No matches"));
     StateGrid::new(id)
         .rows(&[Rest, Hover, Focused, Selected, Empty, Overflow, Narrow])

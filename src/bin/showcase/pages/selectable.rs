@@ -236,11 +236,12 @@ fn members_table(members: &[Member], k: &[usize; 5], platform: ClientPlatform) -
         2 => KeyModifiers::ALT,
         _ => DataTable::toggle_mods_for(platform),
     };
-    DataTable::new(
+    DataTable::try_new(
         ID.sub("members"),
         columns(),
         members.iter().map(cells).collect(),
     )
+    .expect("rectangular fixture")
     .selection_mode(SelectionMode::Multi)
     .selection_column(checks == 1)
     .disabled_rows(if disabled == 0 { &[0] } else { &[] })
@@ -266,7 +267,8 @@ fn states_grid() -> StateGrid {
                 vec![c[0].clone(), c[1].clone()]
             })
             .collect();
-        DataTable::new(id.child(k), cols, rows)
+        DataTable::try_new(id.child(k), cols, rows)
+            .expect("rectangular fixture")
             .selection_mode(SelectionMode::Multi)
             .selection_column(checks)
     };
@@ -536,7 +538,9 @@ impl SelectablePage {
             {
                 m.notes = v.trim().to_owned();
             }
-            self.table.set_row(r, cells(m));
+            if let Err(e) = self.table.try_set_row(r, cells(m)) {
+                cx.status(format!("Row not updated · {e}"));
+            }
         }
         let n = self.loaded.len();
         let msg = if n == 1 {
