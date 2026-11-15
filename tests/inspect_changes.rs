@@ -152,6 +152,44 @@ fn a_dismissal_resolves_like_leaving_with_escape() {
     }
 }
 
+fn click_on(ic: &mut InspectChanges, id: WidgetId) -> Option<InspectOutcome> {
+    let (_, hits) = drawn(ic);
+    let region = hits
+        .regions()
+        .iter()
+        .find(|r| r.owner == id)
+        .unwrap_or_else(|| panic!("the frame registers no region for {id:?}"));
+    let pos = Position::new(region.area.x, region.area.y);
+    let target = hits.hit(pos).expect("a region under the pointer");
+    assert_eq!(target, id, "the region is the topmost hit at its corner");
+    let ev = PointerEvent::new(&hits, Phase::Click, target, pos, 1, KeyModifiers::NONE);
+    let mut focus = Focus::default();
+    let ring = FocusRing::default();
+    let mut cx = LayerCx {
+        focus: &mut focus,
+        ring: &ring,
+        app: &(),
+    };
+    Layer::<Out, ()>::pointer(ic, &ev, &mut cx);
+    closed_with(ic)
+}
+
+#[test]
+fn the_frames_close_button_and_backdrop_dismiss_the_inspector() {
+    for (returns_to_exit, expected) in
+        [(true, InspectOutcome::Back), (false, InspectOutcome::Close)]
+    {
+        for target in [junie_tui::ui::modal::CLOSE, junie_tui::ui::modal::BACKDROP] {
+            let mut ic = opened(returns_to_exit);
+            assert_eq!(
+                click_on(&mut ic, target),
+                Some(expected),
+                "{target:?} with returns_to_exit({returns_to_exit})"
+            );
+        }
+    }
+}
+
 fn drawn(ic: &mut InspectChanges) -> (Buffer, HitRegistry) {
     let theme = Theme::for_level(ColorLevel::TrueColor);
     let mut buf = Buffer::empty(SCREEN);

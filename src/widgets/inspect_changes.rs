@@ -815,6 +815,20 @@ impl<R: From<InspectOutcome> + 'static, W: 'static> Layer<R, W> for InspectChang
             return self.wheel_at(axis, delta, pos);
         }
         let click = ev.is(Phase::Click);
+        let dismissal = if id == crate::ui::modal::CLOSE {
+            Some(DismissReason::CloseButton)
+        } else if id == crate::ui::modal::BACKDROP {
+            Some(DismissReason::OutsideClick)
+        } else {
+            None
+        };
+        if click && let Some(reason) = dismissal {
+            if Layer::<R, W>::spec(self).dismiss.allows(reason) {
+                Layer::<R, W>::on_dismiss(self, reason);
+                return Outcome::Changed;
+            }
+            return Outcome::Consumed;
+        }
         if ev.is(Phase::Drag) && id == self.seam.id && !self.stacked {
             return self.seam.on_drag(&mut self.split, self.container, 1, pos);
         }
