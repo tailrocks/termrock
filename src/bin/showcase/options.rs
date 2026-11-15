@@ -501,6 +501,7 @@ pub static INPUTS: &[Opt] = &[
         "Required message",
         &["theme", "custom"],
     ),
+    Opt::new("inputs.owner_rule", "Owner rule", &["email", "max-length"]),
 ];
 
 pub static TEXTAREAS: &[Opt] = &[
