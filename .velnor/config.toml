@@ -3,7 +3,7 @@ schema = 1
 [workflow]
 policy = "consumer-v1"
 
-default_branch = "design/interaction-polish"
+default_branch = "main"
 
 runner_label = "ubuntu-26.04"
 crate_timeout_minutes = 15

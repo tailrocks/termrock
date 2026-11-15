@@ -2,6 +2,7 @@ use crate::core::event::{Key, Outcome};
 use crate::core::focus::{Focus, FocusRing};
 use crate::core::hints::{HasHints, HintCx};
 use crate::core::id::WidgetId;
+use crate::core::intent::DismissReason;
 use crate::core::keymap::{Nav, NavKeys};
 use crate::theme::{ButtonKind, Strings, Tone};
 use crate::ui::ctx::RenderCtx;
@@ -86,6 +87,11 @@ impl ChoiceDialog {
 
     pub fn close_button(mut self, button: crate::widgets::icon_button::IconButton) -> Self {
         self.close_button = button;
+        self
+    }
+
+    pub fn dismiss(mut self, dismiss: crate::ui::popup::Dismiss) -> Self {
+        self.dismiss = dismiss;
         self
     }
 
@@ -179,6 +185,15 @@ impl ChoiceDialog {
         }
     }
 
+    /// Resolves an allowed implicit dismissal. Sets `fired` to the cancel
+    /// button's index even when that button is disabled, matching keyboard
+    /// Escape; `fired` reports the resolved route and does not claim the
+    /// button was activated.
+    pub(crate) fn cancel_implicit(&mut self) {
+        self.fired = Some(self.cancel_index);
+        self.result = Some(None);
+    }
+
     fn fire(&mut self, i: usize) -> Outcome {
         self.fired = Some(i);
         self.result = Some(if i == self.cancel_index {
@@ -224,7 +239,8 @@ impl ChoiceDialog {
             return Outcome::Changed;
         }
         match key.code {
-            KeyCode::Esc => self.fire(self.cancel_index),
+            KeyCode::Esc => crate::ui::layer::dismiss(self, DismissReason::Esc)
+                .map_or(Outcome::Consumed, |response| response.outcome()),
             KeyCode::Tab => {
                 focus.next(ring);
                 Outcome::Changed
