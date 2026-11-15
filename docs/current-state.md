@@ -276,5 +276,18 @@ variant of these enums stays a breaking change and is recorded here.
   cursor and cell range. `undo()` and `GridAction::Undone` report the affected
   `GridUndo` key. See
   [the audit note](audits/2026-11-15-grid-keyed-drafts-undo.md).
+- `DataGrid::snapshot_changes()` returns an owned `GridChangeSet`, the one
+  normalized view of a draft: complete inserted rows (a duplicate carries every
+  copied value, `Default` and `Null` distinct), updated rows with their base row
+  and only the genuinely changed cells, and deleted rows with their base row.
+  Rows are keyed, in source order and disjoint, and the snapshot carries a
+  `GridInstanceId` and `GridRevision`. Cloning a `DataGrid` gives the clone a
+  fresh id. `same_capture` compares captures bit for bit, and `CommittedRow` and
+  `GridCommitReceipt` define the acknowledgement shape. TablePro's
+  `model::preview_sql` and the Showcase Grid preview read only a snapshot, so
+  they no longer build an INSERT from `PendingChanges::cells`. A generated-column
+  change is rejected, not dropped, and a fresh insert's untouched cells now
+  appear as `NULL`. See
+  [the audit note](audits/2026-11-15-grid-change-snapshot.md).
 - The `visual-baseline` git tag is frozen historical evidence. It is
   never moved, and it is not a substitute for the current design.

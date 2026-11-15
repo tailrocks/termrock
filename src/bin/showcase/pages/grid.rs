@@ -21,8 +21,9 @@ use junie_tui::widgets::chips::{Chip, ChipBar};
 use junie_tui::widgets::dialog::{Dialog, DialogResult};
 use junie_tui::widgets::empty::EmptyState;
 use junie_tui::widgets::grid::{
-    CellEditResult, CellKind, CellValue, ColumnSpec, DataGrid, FinishEdit, GridAction,
-    GridChangeSet, GridCmd, GridEditError, GridRows, GridUndoKind, RowState, RowTotal,
+    CellEditResult, CellKind, CellValue, ColumnSpec, DataGrid, DeletedRow, FinishEdit, GridAction,
+    GridChangeSet, GridCmd, GridEditError, GridRows, GridUndoKind, InsertedRow, RowState, RowTotal,
+    UpdatedRow,
 };
 use junie_tui::widgets::option_editor::{
     Affordance, ColumnEditor, EditorConfig, OptionItem, Options,
@@ -164,6 +165,10 @@ fn literal(row: usize, column: &str, v: &CellValue) -> Result<String, NonFinite>
         }
         other => other.text(),
     })
+}
+
+fn delete_statement(row: &DeletedRow) -> String {
+    format!("DELETE FROM {TABLE} WHERE id = {};", row.before()[0].text())
 }
 
 fn undo_status(kind: GridUndoKind) -> &'static str {
@@ -572,45 +577,54 @@ impl GridPage {
     /// an insert lists every cell that is not `DEFAULT`, an update matches the
     /// base row, and nothing here reads the draft.
     fn statements(&self, changes: &GridChangeSet) -> Result<Vec<String>, NonFinite> {
-        let row_of = |key: ItemKey| self.grid.source_index(key).unwrap_or_default();
         let mut out = Vec::new();
         for row in changes.updated() {
-            for change in row.cells() {
-                let name = &self.grid.columns[change.column()].name;
-                out.push(format!(
-                    "UPDATE {TABLE} SET {name} = {} WHERE id = {};",
-                    literal(row_of(row.key()), name, change.after())?,
-                    row.before()[0].text()
-                ));
-            }
+            self.update_statements(row, &mut out)?;
         }
         for row in changes.inserted() {
-            let mut names = Vec::new();
-            let mut values = Vec::new();
-            for (col, value) in self.grid.columns.iter().zip(row.values()) {
-                if matches!(value, CellValue::Default) {
-                    continue;
-                }
-                names.push(col.name.as_str());
-                values.push(literal(row_of(row.key()), &col.name, value)?);
-            }
-            if names.is_empty() {
-                out.push(format!("INSERT INTO {TABLE} DEFAULT VALUES;"));
-            } else {
-                out.push(format!(
-                    "INSERT INTO {TABLE} ({}) VALUES ({});",
-                    names.join(", "),
-                    values.join(", ")
-                ));
-            }
+            out.push(self.insert_statement(row)?);
         }
         for row in changes.deleted() {
+            out.push(delete_statement(row));
+        }
+        Ok(out)
+    }
+
+    fn row_of(&self, key: ItemKey) -> usize {
+        self.grid.source_index(key).unwrap_or_default()
+    }
+
+    fn update_statements(&self, row: &UpdatedRow, out: &mut Vec<String>) -> Result<(), NonFinite> {
+        for change in row.cells() {
+            let name = &self.grid.columns[change.column()].name;
             out.push(format!(
-                "DELETE FROM {TABLE} WHERE id = {};",
+                "UPDATE {TABLE} SET {name} = {} WHERE id = {};",
+                literal(self.row_of(row.key()), name, change.after())?,
                 row.before()[0].text()
             ));
         }
-        Ok(out)
+        Ok(())
+    }
+
+    fn insert_statement(&self, row: &InsertedRow) -> Result<String, NonFinite> {
+        let mut names = Vec::new();
+        let mut values = Vec::new();
+        for (col, value) in self.grid.columns.iter().zip(row.values()) {
+            if matches!(value, CellValue::Default) {
+                continue;
+            }
+            names.push(col.name.as_str());
+            values.push(literal(self.row_of(row.key()), &col.name, value)?);
+        }
+        Ok(if names.is_empty() {
+            format!("INSERT INTO {TABLE} DEFAULT VALUES;")
+        } else {
+            format!(
+                "INSERT INTO {TABLE} ({}) VALUES ({});",
+                names.join(", "),
+                values.join(", ")
+            )
+        })
     }
 
     fn changes_dialog(&self, changes: &GridChangeSet, review: bool) -> Result<Dialog, NonFinite> {
