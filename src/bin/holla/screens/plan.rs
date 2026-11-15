@@ -1682,7 +1682,7 @@ impl ShellPage<Holla> for PlanTab {
                 let y = area.bottom().saturating_sub(follow_lines);
                 buf.set_string(area.x + 1, y, "Next", t.faint());
                 let rects = junie_tui::widgets::button::row_layout(
-                    Rect::new(area.x + 7, y, area.width.saturating_sub(7), 1),
+                    Rect::new(area.x + 7, y, area.width.saturating_sub(7), follow_lines),
                     &follow_w,
                     2,
                 );

@@ -92,7 +92,6 @@ pub fn truncate(s: &str, max: usize) -> String {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[cfg_attr(not(test), expect(dead_code, reason = "Clip is first consumed by #75"))]
 pub(crate) enum TextClip {
     Clip,
     Ellipsis,
@@ -176,6 +175,30 @@ pub(crate) fn paint_graphemes(
         col += 1;
     }
     col
+}
+
+/// Paints `source` as whole clusters from column `col` of `owner`'s top row,
+/// dropping what does not fit and never writing outside `owner`. Returns the
+/// cells consumed.
+pub(crate) fn paint_clipped(
+    buf: &mut Buffer,
+    owner: Rect,
+    col: usize,
+    source: &str,
+    ink: Style,
+) -> usize {
+    paint_graphemes(buf, owner, (col, 0), source, TextClip::Clip, |_, _| ink)
+}
+
+/// Like [`paint_clipped`], with a one-cell ellipsis when `source` is cut.
+pub(crate) fn paint_truncated(
+    buf: &mut Buffer,
+    owner: Rect,
+    col: usize,
+    source: &str,
+    ink: Style,
+) -> usize {
+    paint_graphemes(buf, owner, (col, 0), source, TextClip::Ellipsis, |_, _| ink)
 }
 
 fn put(buf: &mut Buffer, x: u16, y: u16, symbol: &str, cells: usize, ink: Style) {

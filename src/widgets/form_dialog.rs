@@ -8,7 +8,7 @@ use crate::core::scroll::{ScrollPane, Scrollable};
 use crate::theme::{Strings, Tone};
 use crate::ui::ctx::RenderCtx;
 use crate::ui::text::truncate;
-use crate::widgets::button::{Button, row_layout_right};
+use crate::widgets::button::{Button, row_layout_right, row_lines};
 use crate::widgets::choice::{Checkbox, RadioGroup};
 use crate::widgets::input::{InputAction, TextInput};
 use crate::widgets::keyhint::Hint;
@@ -753,7 +753,15 @@ impl FormDialog {
         Strings::follow(&mut self.save.label, old.save, s.save);
         let content = self.content_height();
         let err = u16::from(self.error.is_some());
-        let h = 2 + 2 + content + err + 2;
+        let mut widths: Vec<u16> = self.actions.iter().map(|(_, b)| b.width()).collect();
+        widths.push(self.cancel.width());
+        widths.push(self.save.width());
+        let footer_rows = row_lines(
+            crate::ui::modal::Frame::new(self.width, 0).inner_width(screen),
+            &widths,
+            1,
+        );
+        let h = (2 + 2 + content + err + 1).saturating_add(footer_rows);
         let (area, inner) = crate::ui::modal::Frame::new(self.width, h)
             .title(&self.title)
             .meta(self.meta.as_deref())
@@ -762,7 +770,9 @@ impl FormDialog {
         self.area = area;
         let t = ctx.theme;
         let bg = t.surface_elevated;
-        let body_h = inner.height.saturating_sub(3 + err);
+        let footer_h = footer_rows.min(inner.height);
+        let footer = Rect::new(inner.x, inner.bottom() - footer_h, inner.width, footer_h);
+        let body_h = inner.height.saturating_sub(2 + err + footer_rows);
         self.scroll.set_content(content as usize);
         self.scroll.set_viewport(body_h as usize);
 
@@ -895,8 +905,10 @@ impl FormDialog {
             self.scroll
                 .draw_with_fade(rows, buf, ctx, self.id, true, &[]);
         }
-        if let Some(e) = &self.error {
-            let ey = inner.bottom().saturating_sub(2);
+        if let Some(e) = &self.error
+            && footer.y > inner.y
+        {
+            let ey = footer.y - 1;
             buf.set_string(
                 inner.x,
                 ey,
@@ -910,11 +922,7 @@ impl FormDialog {
                 t.error_fg().bg(bg).add_modifier(Modifier::BOLD),
             );
         }
-        let ay = inner.bottom().saturating_sub(1);
-        let mut widths: Vec<u16> = self.actions.iter().map(|(_, b)| b.width()).collect();
-        widths.push(self.cancel.width());
-        widths.push(self.save.width());
-        let rects = row_layout_right(Rect::new(inner.x, ay, inner.width, 1), &widths, 1);
+        let rects = row_layout_right(footer, &widths, 1);
         let n = self.actions.len();
         for (i, (_, b)) in self.actions.iter_mut().enumerate() {
             b.render(rects[i], buf, ctx, bg);

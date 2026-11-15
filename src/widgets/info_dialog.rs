@@ -11,7 +11,7 @@ use crate::core::scroll::Scrollable;
 use crate::theme::Tone;
 use crate::ui::ctx::RenderCtx;
 use crate::ui::text::truncate;
-use crate::widgets::button::{Button, row_layout_right};
+use crate::widgets::button::{Button, row_layout_right, row_lines};
 use crate::widgets::keyhint::Hint;
 use crate::widgets::props::{Prop, PropsAction, PropsList};
 use crate::widgets::scrollbar;
@@ -359,8 +359,10 @@ impl InfoDialog {
         let s = ctx.theme.strings;
         let old = std::mem::replace(&mut self.strings, s);
         crate::theme::Strings::follow(&mut self.close.label, old.close, s.close);
-        let probe = crate::ui::modal::Frame::new(self.width, 1);
-        let inner_w = probe.area(screen).inner(probe.margin).width;
+        let inner_w = crate::ui::modal::Frame::new(self.width, 1).inner_width(screen);
+        let mut widths: Vec<u16> = self.actions.iter().map(|b| b.width()).collect();
+        widths.push(self.close.width());
+        let footer_rows = row_lines(inner_w, &widths, 1);
         let intro = self.intro_lines(inner_w as usize);
         let intro_h = intro.len() as u16 + u16::from(!intro.is_empty());
         let props_h = self.props.height_at(inner_w + 1);
@@ -369,7 +371,7 @@ impl InfoDialog {
         } else {
             (self.detail.len() as u16).min(8) + 1
         };
-        let h = 2 + 2 + intro_h + props_h + detail_h + 2;
+        let h = (2 + 2 + intro_h + props_h + detail_h + 1).saturating_add(footer_rows);
         let title = if self.error_title {
             format!("! {}", self.title)
         } else {
@@ -391,9 +393,11 @@ impl InfoDialog {
                 t.error_fg().bg(bg).add_modifier(Modifier::BOLD),
             );
         }
+        let footer_h = footer_rows.min(inner.height);
+        let footer = Rect::new(inner.x, inner.bottom() - footer_h, inner.width, footer_h);
         let mut y = inner.y;
         for (l, tone) in &intro {
-            if y >= inner.bottom() {
+            if y >= footer.y {
                 break;
             }
             buf.set_string(
@@ -407,7 +411,7 @@ impl InfoDialog {
         if !intro.is_empty() {
             y += 1;
         }
-        let avail = inner.bottom().saturating_sub(y + 2);
+        let avail = footer.y.saturating_sub(y + 1);
         let ph = props_h.min(avail);
         if ph > 0 {
             self.props
@@ -416,7 +420,7 @@ impl InfoDialog {
         }
         if !self.detail.is_empty() {
             y += 1;
-            let dh = inner.bottom().saturating_sub(y + 2);
+            let dh = footer.y.saturating_sub(y + 1);
             let wrapped: Vec<String> = self
                 .detail
                 .iter()
@@ -433,10 +437,7 @@ impl InfoDialog {
                     .draw_with_fade(body, buf, ctx, self.id, true, &[]);
             }
         }
-        let ay = inner.bottom().saturating_sub(1);
-        let mut widths: Vec<u16> = self.actions.iter().map(|b| b.width()).collect();
-        widths.push(self.close.width());
-        let rects = row_layout_right(Rect::new(inner.x, ay, inner.width, 1), &widths, 1);
+        let rects = row_layout_right(footer, &widths, 1);
         for (i, b) in self.actions.iter_mut().enumerate() {
             b.render(rects[i], buf, ctx, bg);
         }

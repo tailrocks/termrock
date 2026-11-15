@@ -335,6 +335,13 @@ impl<'a> Frame<'a> {
         place_with(bounds, self.anchor, w, h, self.placement, self.fit)
     }
 
+    /// Width of the content region on `screen`. It does not depend on the
+    /// frame height, so a dialog can measure a wrapped footer before it
+    /// chooses that height.
+    pub(crate) fn inner_width(&self, screen: Rect) -> u16 {
+        self.area(screen).inner(self.margin).width
+    }
+
     pub fn render(&self, screen: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) -> (Rect, Rect) {
         let t = ctx.theme;
         if self.backdrop {
