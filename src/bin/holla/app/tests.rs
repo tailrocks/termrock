@@ -2000,7 +2000,7 @@ fn holla_projection_output_only_does_not_rerank_finder() {
     let mut app = settled(Scenario::RustDirty, false);
     let id = start_stream(&mut app, "streamer");
     tick(&mut app, 2);
-    app.finder_mut().expect("finder").query.set_text("streamer");
+    app.finder_mut().expect("finder").set_query("streamer");
     let text = drawn_text_sized(&mut app, 240);
     assert!(shows_retained_lines(&text, 0), "{text}");
     let selected = top_finder_id(&mut app);
@@ -2671,4 +2671,260 @@ fn finder_identity_moves_between_item_and_explore() {
 
     app.handle_input(key(KeyCode::Enter, KeyModifiers::NONE));
     assert_eq!(finder_group(&mut app), Some("Git"));
+}
+
+fn type_text(app: &mut App, text: &str) {
+    for c in text.chars() {
+        app.handle_input(key(KeyCode::Char(c), KeyModifiers::NONE));
+    }
+}
+
+#[test]
+fn search_detail_holla_external_query_callers() {
+    let mut app = settled(Scenario::DockerCleanup, true);
+    assert_eq!(finder(&mut app).query(), "docker clean");
+    let drawn = drawn_text(&mut app);
+    assert!(drawn.contains("docker clean"), "{drawn}");
+    assert!(
+        drawn.contains("Results \u{b7}"),
+        "the startup query was ranked on entry, not just stored: {drawn}"
+    );
+    assert!(
+        finder(&mut app).current_id().is_some(),
+        "the first result is selected"
+    );
+
+    let run = |app: &mut App| {
+        app.go(Go::Run {
+            item: "no.such.item".into(),
+            args: vec![],
+        })
+    };
+    run(&mut app);
+    assert_eq!(app.last_query.as_deref(), Some("docker clean"));
+
+    type_text(&mut app, "x");
+    run(&mut app);
+    assert_eq!(app.last_query.as_deref(), Some("docker cleanx"));
+
+    finder(&mut app).set_query("   ");
+    run(&mut app);
+    assert_eq!(app.last_query, None, "a blank query is not history");
+}
+
+#[test]
+fn search_detail_combined_focus_preserves_holla_query_routing() {
+    let mut app = finder_app();
+    drawn_text(&mut app);
+    let first = finder(&mut app).current_id();
+    type_text(&mut app, "git");
+    assert_eq!(finder(&mut app).query(), "git");
+    app.handle_input(key(KeyCode::Backspace, KeyModifiers::NONE));
+    assert_eq!(finder(&mut app).query(), "gi");
+    app.handle_input(key(KeyCode::Char('z'), KeyModifiers::CONTROL));
+    assert_eq!(finder(&mut app).query(), "git", "Ctrl+Z undoes the delete");
+    assert!(status(&app).contains("Undone"), "{}", status(&app));
+    app.handle_input(key(KeyCode::Char('a'), KeyModifiers::CONTROL));
+    assert!(status(&app).contains("Query selected"), "{}", status(&app));
+    app.handle_input(Input::Paste("pull\nrebase\n".into()));
+    assert_eq!(
+        finder(&mut app).query(),
+        "pull rebase",
+        "a paste joins its lines and replaces the selected query"
+    );
+
+    app.handle_input(key(KeyCode::Esc, KeyModifiers::NONE));
+    assert_eq!(finder(&mut app).query(), "", "Esc clears the query first");
+    type_text(&mut app, "git");
+    let top = finder(&mut app).current_id();
+    app.handle_input(key(KeyCode::Down, KeyModifiers::NONE));
+    let second = finder(&mut app).current_id();
+    assert_ne!(top, second, "Down moves through the results");
+    assert_eq!(finder(&mut app).query(), "git", "and never edits");
+    app.handle_input(key(KeyCode::Esc, KeyModifiers::NONE));
+    app.handle_input(key(KeyCode::Esc, KeyModifiers::NONE));
+    assert_eq!(finder(&mut app).query(), "");
+    assert_eq!(first.is_some(), finder(&mut app).current_id().is_some());
+}
+
+#[test]
+fn search_detail_combined_focus_preview_typing_returns_to_the_query() {
+    let mut app = finder_app();
+    drawn_text(&mut app);
+    app.handle_input(key(KeyCode::Tab, KeyModifiers::NONE));
+    let focus = app.shell.focus.current();
+    assert!(
+        finder(&mut app).search_on_detail(focus),
+        "Tab moves focus to the preview"
+    );
+    app.handle_input(key(KeyCode::Char('j'), KeyModifiers::NONE));
+    assert_eq!(finder(&mut app).query(), "", "j scrolls the preview");
+    app.handle_input(key(KeyCode::Char('y'), KeyModifiers::NONE));
+    assert_eq!(finder(&mut app).query(), "", "y copies the command");
+    app.handle_input(key(KeyCode::Char('g'), KeyModifiers::NONE));
+    assert_eq!(
+        finder(&mut app).query(),
+        "g",
+        "other text goes to the query"
+    );
+    let focus = app.shell.focus.current();
+    assert!(
+        !finder(&mut app).search_on_detail(focus),
+        "and focus is back on the results"
+    );
+}
+
+#[test]
+fn search_detail_holla_cell_click_policy_is_exact() {
+    let mut app = finder_app();
+    drawn_text(&mut app);
+    app.last_query = Some("sentinel".into());
+    app.handle_input(key(KeyCode::Down, KeyModifiers::NONE));
+    app.handle_input(key(KeyCode::Down, KeyModifiers::NONE));
+    let target = finder(&mut app).current().expect("an item").label.clone();
+    app.handle_input(key(KeyCode::Home, KeyModifiers::NONE));
+    let lines = finder_list_lines(&mut app);
+    let y = lines
+        .iter()
+        .position(|l| l.contains(&target))
+        .unwrap_or_else(|| panic!("{target} not drawn: {lines:?}"));
+    click_at(&mut app, 12, y as u16);
+    assert_eq!(
+        finder(&mut app).current().map(|i| i.label.clone()),
+        Some(target),
+        "a click selects the row"
+    );
+    assert_eq!(
+        app.last_query.as_deref(),
+        Some("sentinel"),
+        "a single click on a data row does not run it"
+    );
+
+    let (x, y) = drawn_tile(&mut app, "Git");
+    click_at(&mut app, x + 1, y);
+    assert_eq!(finder_group(&mut app), Some("Git"));
+    assert_eq!(app.active(), 0);
+}
+
+/// A Finder whose only result is `scope.system`, with a host name long enough
+/// that the item's preview scrolls. Its preview text is the words `L000..`.
+fn long_preview_result_app() -> App {
+    let mut app = finder_app();
+    let words: Vec<String> = (0..600).map(|i| format!("L{i:03}")).collect();
+    let name: &'static str = Box::leak(words.join(" ").into_boxed_str());
+    app.world.edit_catalog(|w| w.host.name = name.to_owned());
+    tick(&mut app, 1);
+    type_text(&mut app, "L000 L001 L002");
+    tick(&mut app, 1);
+    assert_eq!(
+        finder(&mut app).current_id().as_deref(),
+        Some("scope.system")
+    );
+    app
+}
+
+/// The first `Lnnn` word in the preview body, below its title and rule.
+fn preview_body_word(app: &mut App) -> String {
+    let text = drawn_text(app);
+    let body: Vec<String> = text
+        .lines()
+        .map(|l| l.chars().skip(80).collect::<String>())
+        .skip_while(|l| !l.contains("explore \u{b7} host"))
+        .skip(2)
+        .collect();
+    body.iter()
+        .find_map(|line| {
+            line.split_whitespace()
+                .find(|w| {
+                    w.len() == 4 && w.starts_with('L') && w[1..].bytes().all(|b| b.is_ascii_digit())
+                })
+                .map(str::to_owned)
+        })
+        .expect("preview body word drawn")
+}
+
+/// Scrolls the lone result's preview and returns the word it now starts at.
+fn scrolled_long_preview(app: &mut App) -> String {
+    drawn_text(app);
+    let top = preview_body_word(app);
+    scroll_preview_down(app, 3);
+    let scrolled = preview_body_word(app);
+    assert_ne!(scrolled, top, "preview did not scroll");
+    scrolled
+}
+
+fn result_row_at(app: &mut App) -> (u16, u16) {
+    let y = drawn_text(app)
+        .lines()
+        .position(|l| l.starts_with("  \u{203a} System"))
+        .expect("selected result row drawn");
+    (10, y as u16)
+}
+
+#[test]
+fn finder_reselecting_the_result_by_click_keeps_preview_scroll() {
+    let mut app = long_preview_result_app();
+    let scrolled = scrolled_long_preview(&mut app);
+    let (x, y) = result_row_at(&mut app);
+
+    click_at(&mut app, x, y);
+    assert_eq!(preview_body_word(&mut app), scrolled, "re-click");
+    click_at(&mut app, x, y);
+    assert_eq!(preview_body_word(&mut app), scrolled, "second click");
+}
+
+#[test]
+fn finder_secondary_click_on_the_selected_result_keeps_preview_scroll() {
+    use junie_tui::core::event::{Mouse, MouseKind};
+    let mut app = long_preview_result_app();
+    let scrolled = scrolled_long_preview(&mut app);
+    let (x, y) = result_row_at(&mut app);
+    let at = ratatui::layout::Position::new(x, y);
+
+    app.handle_input(Input::Mouse(Mouse::new(MouseKind::Secondary, at)));
+    app.handle_input(Input::Mouse(Mouse::new(MouseKind::SecondaryUp, at)));
+    assert!(
+        drawn_text(&mut app).contains("Why is this here?"),
+        "the context menu opened"
+    );
+    app.handle_input(key(KeyCode::Esc, KeyModifiers::NONE));
+
+    assert_eq!(
+        finder(&mut app).current_id().as_deref(),
+        Some("scope.system")
+    );
+    assert_eq!(preview_body_word(&mut app), scrolled);
+}
+
+#[test]
+fn finder_home_and_end_on_the_selected_result_keep_preview_scroll() {
+    let mut app = long_preview_result_app();
+    let scrolled = scrolled_long_preview(&mut app);
+
+    app.handle_input(key(KeyCode::Home, KeyModifiers::NONE));
+    assert_eq!(preview_body_word(&mut app), scrolled, "Home");
+    app.handle_input(key(KeyCode::End, KeyModifiers::NONE));
+    assert_eq!(preview_body_word(&mut app), scrolled, "End");
+    assert_eq!(
+        finder(&mut app).current_id().as_deref(),
+        Some("scope.system")
+    );
+}
+
+#[test]
+fn finder_query_edit_on_the_same_result_resets_preview_scroll() {
+    let mut app = long_preview_result_app();
+    drawn_text(&mut app);
+    let top = preview_body_word(&mut app);
+    scrolled_long_preview(&mut app);
+
+    type_text(&mut app, " L003");
+    tick(&mut app, 1);
+
+    assert_eq!(
+        finder(&mut app).current_id().as_deref(),
+        Some("scope.system"),
+        "the query edit kept the same item selected"
+    );
+    assert_eq!(preview_body_word(&mut app), top);
 }

@@ -36,7 +36,9 @@ use crate::core::selection::ClickPolicy;
 use crate::ui::context::{ContextConfig, ContextRequest};
 use ratatui::crossterm::event::KeyCode;
 
-pub use detail::{QueryView, RowPaint, SearchDetail, SearchDetailSource, paint_query_default};
+pub use detail::{
+    QueryView, RowPaint, SearchDetail, SearchDetailSource, SearchPaint, paint_query_default,
+};
 pub use session::{SearchPhase, SearchSession};
 
 /// What a visible result row is.

@@ -18,10 +18,12 @@ use junie_tui::ui::context::{ContextAnchor, ContextConfig, ContextSource};
 use junie_tui::ui::ctx::{Interaction, RenderCtx};
 use junie_tui::ui::layout::Split;
 use junie_tui::widgets::input::TextInput;
-use junie_tui::widgets::list_detail::{Action, Line, ListDetailSource, ListRowRef, SourceFrame};
+use junie_tui::widgets::list_detail::{
+    Action, DetailPane, Line, ListDetailSource, ListRowRef, SourceFrame,
+};
 use junie_tui::widgets::search_detail::{
     QueryRequest, QueryView, ResultRowKind, RowPaint, SearchAction, SearchConfig, SearchDetail,
-    SearchError, SearchFocusMode, SearchPhase, paint_query_default,
+    SearchError, SearchFocusMode, SearchPaint, SearchPhase, paint_query_default,
 };
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
@@ -1026,6 +1028,327 @@ fn search_detail_standard_paint_draws_rows_and_registers_hits() {
     );
     assert!(source.source_len() > 0);
     let _: SourceStamp = source.stamp();
+}
+
+#[derive(Default)]
+struct Hosted {
+    lead: bool,
+    rows: Vec<(usize, Rect, bool)>,
+    cell_hits: Vec<(usize, WidgetId)>,
+    begin: Option<(Rect, u16)>,
+    empty: Option<Rect>,
+    detail: Option<(Rect, bool, usize)>,
+    summary: Option<Rect>,
+}
+
+impl SearchPaint<Results> for Hosted {
+    fn query(&mut self, area: Rect, view: QueryView<'_>, buf: &mut Buffer, ctx: &mut RenderCtx) {
+        paint_query_default(area, view, buf, ctx);
+    }
+
+    fn rows_begin(&mut self, area: Rect, row_w: u16) {
+        self.begin = Some((area, row_w));
+    }
+
+    fn row(&mut self, mut row: RowPaint<'_, Results>, buf: &mut Buffer, _ctx: &mut RenderCtx) {
+        use junie_tui::core::list::RowSource;
+        use junie_tui::widgets::search_detail::SearchSource;
+        self.rows.push((row.row, row.rect, row.selected));
+        buf.set_string(
+            row.rect.x,
+            row.rect.y,
+            row.source.label(row.row),
+            ratatui::style::Style::new(),
+        );
+        if row.kind == ResultRowKind::Cells {
+            let mut x = row.rect.x + 2;
+            for cell in 0..row.source.cell_count(row.row) {
+                row.place_cell(cell, Rect::new(x, row.rect.y, 4, 1));
+                self.cell_hits.push((cell, row.cell_hit(cell)));
+                x += 5;
+            }
+        }
+    }
+
+    fn empty(&mut self, area: Rect, _buf: &mut Buffer, _ctx: &mut RenderCtx) {
+        self.empty = Some(area);
+    }
+
+    fn detail(&mut self, pane: DetailPane<'_>, _buf: &mut Buffer, ctx: &mut RenderCtx) {
+        ctx.control(pane.id, pane.area, false);
+        ctx.scrollable(pane.id, pane.area);
+        pane.scroll.set_content(60);
+        pane.scroll.set_viewport(pane.area.height as usize);
+        self.detail = Some((pane.area, pane.drawer, pane.scroll.offset));
+    }
+
+    fn summary(&mut self, area: Rect, _buf: &mut Buffer, _ctx: &mut RenderCtx) {
+        self.summary = Some(area);
+    }
+
+    fn is_lead(&self, source: &Results, row: usize) -> bool {
+        use junie_tui::widgets::search_detail::SearchSource;
+        self.lead && source.row_kind(row) == ResultRowKind::Heading
+    }
+}
+
+fn hosted_search() -> SearchDetail {
+    new_search(SearchConfig::default().focus_mode(SearchFocusMode::Combined))
+        .detail_share(34, 34, 48)
+        .summary_rows(1)
+        .collapse_below(108)
+}
+
+fn draw_hosted(
+    search: &mut SearchDetail,
+    source: &Results,
+    area: Rect,
+    focus: Option<WidgetId>,
+    host: &mut Hosted,
+) -> Frame {
+    let theme = Theme::for_level(ColorLevel::TrueColor);
+    let mut buf = Buffer::empty(area);
+    let mut hits = HitRegistry::default();
+    let mut ring = FocusRing::default();
+    let interaction = Interaction {
+        focus,
+        ..Default::default()
+    };
+    *host = Hosted {
+        lead: host.lead,
+        ..Hosted::default()
+    };
+    {
+        let mut ctx = RenderCtx::new(&theme, interaction, &mut hits, &mut ring);
+        search
+            .render_hosted(area, source, &mut buf, &mut ctx, host)
+            .expect("the accepted source");
+    }
+    Frame { buf, hits }
+}
+
+#[test]
+fn search_detail_hosted_gives_every_pane_to_the_host_and_keeps_the_layout() {
+    let mut search = hosted_search();
+    let mut host = Hosted::default();
+    let none = Results::new(&one_request(search.refresh_source(input(1))), Vec::new());
+    draw_hosted(&mut search, &none, WIDE, Some(ID), &mut host);
+    assert!(
+        host.empty.is_some() && host.rows.is_empty(),
+        "no accepted results is an empty list, and the source is not read"
+    );
+
+    let req = accept(&mut search, 2, mixed());
+    let source = source_for(&req, mixed());
+    let frame = draw_hosted(&mut search, &source, WIDE, Some(ID), &mut host);
+    let (area, row_w) = host.begin.expect("rows begin");
+    assert_eq!(
+        (area.x, area.y),
+        (0, 2),
+        "the query line and its gap come first, and the list has no frame"
+    );
+    assert_eq!(row_w, area.width, "a short list has no scrollbar column");
+    let (first, rect, _) = host.rows[0];
+    assert_eq!((first, rect.x, rect.y, rect.width), (0, 0, 2, row_w));
+    let (detail, drawer, _) = host.detail.expect("the preview paints beside the list");
+    assert!(!drawer && detail.x >= area.right(), "{detail:?} {area:?}");
+    assert_eq!(detail.width, 40, "{detail:?}");
+    assert!(host.summary.is_none());
+    frame.hit(Part::ROW, k(10));
+
+    let narrow = draw_hosted(&mut search, &source, NARROW, Some(ID), &mut host);
+    assert!(host.detail.is_none(), "below the collapse width");
+    let summary = host.summary.expect("the summary row");
+    assert_eq!(summary.height, 1);
+    drop(narrow);
+}
+
+#[test]
+fn search_detail_hosted_cells_register_under_their_stable_keys() {
+    let mut search = hosted_search();
+    let req = accept(&mut search, 1, mixed());
+    let source = source_for(&req, mixed());
+    let mut host = Hosted::default();
+    let frame = draw_hosted(&mut search, &source, WIDE, Some(ID), &mut host);
+    for (cell, key) in [(0, 30), (1, 31), (2, 32)] {
+        let (id, _) = frame.hit(Part::CELL, k(key));
+        assert!(
+            host.cell_hits.contains(&(cell, id)),
+            "cell_hit names the region registered for cell {cell}"
+        );
+    }
+}
+
+#[test]
+fn search_detail_hosted_wheel_scrolls_the_list_and_the_preview() {
+    let mut search = hosted_search();
+    let rows: Vec<R> = (0..30).map(|i| R::Item(100 + i, "row")).collect();
+    let req = accept(&mut search, 1, rows.clone());
+    let source = source_for(&req, rows);
+    let mut host = Hosted::default();
+    let mut focus = Focus::default();
+    let frame = draw_hosted(
+        &mut search,
+        &source,
+        Rect::new(0, 0, 120, 12),
+        Some(ID),
+        &mut host,
+    );
+    assert_eq!(host.rows[0].0, 0);
+    let wheel = |id: WidgetId, delta: i32| {
+        PointerEvent::wheel_on(
+            &frame.hits,
+            id,
+            junie_tui::core::hit::Axis::Vertical,
+            delta,
+            Position::new(2, 4),
+            KeyModifiers::NONE,
+        )
+    };
+    search
+        .pointer(&wheel(ID, 3), &source, &mut focus)
+        .expect("source")
+        .quiet();
+    let _ = draw_hosted(
+        &mut search,
+        &source,
+        Rect::new(0, 0, 120, 12),
+        Some(ID),
+        &mut host,
+    );
+    assert_eq!(host.rows[0].0, 3, "the list scrolled three rows");
+    search
+        .pointer(&wheel(search.detail_id(), 4), &source, &mut focus)
+        .expect("source")
+        .quiet();
+    let _ = draw_hosted(
+        &mut search,
+        &source,
+        Rect::new(0, 0, 120, 12),
+        Some(ID),
+        &mut host,
+    );
+    assert_eq!(host.detail.expect("preview").2, 4, "the preview scrolled");
+}
+
+#[test]
+fn search_detail_hosted_heading_stays_above_an_item_at_the_top_edge() {
+    let rows = || {
+        let mut rows = vec![R::Head(1, "H1")];
+        rows.extend((0..5).map(|i| R::Item(10 + i, "a")));
+        rows.push(R::Head(2, "H2"));
+        rows.extend((0..5).map(|i| R::Item(20 + i, "b")));
+        rows
+    };
+    let small = Rect::new(0, 0, 120, 4);
+    for (lead, expected_top) in [(true, 6), (false, 7)] {
+        let mut search = hosted_search();
+        let req = accept(&mut search, 1, rows());
+        let source = source_for(&req, rows());
+        let mut host = Hosted {
+            lead,
+            ..Hosted::default()
+        };
+        let mut focus = Focus::default();
+        focus.focus(ID);
+        draw_hosted(&mut search, &source, small, Some(ID), &mut host);
+        on_key(&mut search, &source, &mut focus, &key(KeyCode::End));
+        draw_hosted(&mut search, &source, small, Some(ID), &mut host);
+        for _ in 0..4 {
+            on_key(&mut search, &source, &mut focus, &key(KeyCode::Up));
+            draw_hosted(&mut search, &source, small, Some(ID), &mut host);
+        }
+        assert_eq!(search.selected_key(), Some(k(20)));
+        assert_eq!(
+            host.rows[0].0, expected_top,
+            "lead {lead}: the top row of the list"
+        );
+    }
+}
+
+#[test]
+fn review283_hosted_wheel_over_a_row_scrolls_the_list() {
+    let mut search = hosted_search();
+    let rows: Vec<R> = (0..30).map(|i| R::Item(100 + i, "row")).collect();
+    let req = accept(&mut search, 1, rows.clone());
+    let source = source_for(&req, rows);
+    let mut host = Hosted::default();
+    let mut focus = Focus::default();
+    let area = Rect::new(0, 0, 120, 12);
+    let frame = draw_hosted(&mut search, &source, area, Some(ID), &mut host);
+    let (row_id, rect) = frame.hit(Part::ROW, k(100));
+    let ev = PointerEvent::wheel_on(
+        &frame.hits,
+        row_id,
+        junie_tui::core::hit::Axis::Vertical,
+        3,
+        Position::new(rect.x + 1, rect.y),
+        KeyModifiers::NONE,
+    );
+    search
+        .pointer(&ev, &source, &mut focus)
+        .expect("source")
+        .quiet();
+    let _ = draw_hosted(&mut search, &source, area, Some(ID), &mut host);
+    assert_eq!(host.rows[0].0, 3, "a wheel over a row scrolls the list");
+}
+
+#[test]
+fn review283_same_key_selection_paths_keep_the_preview_scroll() {
+    let lines = frame_lines(40);
+    let mut search = new_search(SearchConfig::default());
+    let req = accept(&mut search, 1, mixed());
+    let source = source_for(&req, mixed());
+    let mut focus = Focus::default();
+    focus.focus(ID);
+    let mut seen = Seen::default();
+    draw(&mut search, &source, WIDE, Some(ID), &lines, &mut seen);
+    search.open_detail(&mut focus);
+    draw(
+        &mut search,
+        &source,
+        WIDE,
+        focus.current(),
+        &lines,
+        &mut seen,
+    );
+    for _ in 0..5 {
+        on_key(&mut search, &source, &mut focus, &key(KeyCode::Down));
+    }
+    focus.focus(ID);
+    let top = |search: &mut SearchDetail, focus: &Focus, seen: &mut Seen| {
+        let f = draw(search, &source, WIDE, focus.current(), &lines, seen);
+        scrolled_top(&f)
+    };
+    assert_eq!(
+        top(&mut search, &focus, &mut seen).as_deref(),
+        Some("preview line 05")
+    );
+    on_key(&mut search, &source, &mut focus, &key(KeyCode::Home));
+    assert_eq!(search.selected_key(), Some(k(10)));
+    assert_eq!(
+        top(&mut search, &focus, &mut seen).as_deref(),
+        Some("preview line 05"),
+        "Home on the selected row"
+    );
+    let frame = draw(&mut search, &source, WIDE, Some(ID), &lines, &mut seen);
+    for (phase, count) in [(Phase::Press, 1), (Phase::Click, 1), (Phase::Secondary, 1)] {
+        let _ = search.pointer(
+            &frame.event(phase, k(10), Part::ROW, count),
+            &source,
+            &mut focus,
+        );
+        assert_eq!(
+            top(&mut search, &focus, &mut seen).as_deref(),
+            Some("preview line 05"),
+            "{phase:?} on the selected row"
+        );
+    }
+    // Explore cell re-click on the selected cell.
+    on_key(&mut search, &source, &mut focus, &key(KeyCode::Down));
+    let frame = draw(&mut search, &source, WIDE, Some(ID), &lines, &mut seen);
+    assert_eq!(search.selected_key(), Some(k(30)));
+    assert_eq!(scrolled_top(&frame).as_deref(), Some("preview line 00"));
 }
 
 #[test]

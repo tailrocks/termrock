@@ -23,7 +23,7 @@ fn settle(page: &mut FinderPage, w: &World) {
 }
 
 fn set_query(page: &mut FinderPage, text: &str) {
-    page.query.buffer.set_text(text);
+    page.set_query(text);
 }
 
 #[test]
@@ -163,14 +163,14 @@ fn holla_projection_temporal_deadlines_match_full_rebuild() {
             let cached = page.source.iter().find(|i| &i.id == id).expect("cached");
             let fresh = reference.iter().find(|i| &i.id == id).expect("reference");
             assert_eq!(
-                page.live_item(cached, &w).freshness.label(),
+                super::live_item(cached, &w).freshness.label(),
                 fresh.freshness.label(),
                 "{id} at tick +{ticks}"
             );
         }
         let cached = page.source.iter().find(|i| i.id == fixed).expect("cached");
         assert_eq!(
-            page.live_item(cached, &w).freshness.label(),
+            super::live_item(cached, &w).freshness.label(),
             "live · 0 s ago"
         );
     }
@@ -290,4 +290,57 @@ fn holla_projection_homebrew_cache_window_matches_full_rebuild() {
         "an expired cache is a settled source"
     );
     assert_eq!(measure(|| settle(&mut page, &w)), Work::default());
+}
+
+#[test]
+fn search_detail_holla_cell_click_policy_is_exact_per_row_kind() {
+    let w = world(Scenario::RustDirty);
+    let mut page = FinderPage::new(None);
+    settle(&mut page, &w);
+    let rows = &page.results.rows;
+    let item = rows
+        .iter()
+        .position(|r| matches!(r, Row::Item { .. }))
+        .expect("an item row");
+    let chips = rows
+        .iter()
+        .position(|r| matches!(r, Row::Explore { .. }))
+        .expect("the Explore row");
+    let heading = rows
+        .iter()
+        .position(|r| matches!(r, Row::Heading { .. }))
+        .expect("a heading");
+    let source = &page.results;
+    assert_eq!(source.cell_click_policy(item, 0), Some(ClickPolicy::DATA));
+    assert_eq!(
+        source.cell_click_policy(chips, 0),
+        Some(ClickPolicy::NAVIGATION)
+    );
+    assert_eq!(source.cell_click_policy(heading, 0), None);
+}
+
+#[test]
+fn search_detail_holla_keys_follow_the_item_between_row_and_chip() {
+    let w = world(Scenario::RustDirty);
+    let mut page = FinderPage::new(None);
+    settle(&mut page, &w);
+    let source = &page.results;
+    let chips = source
+        .rows
+        .iter()
+        .position(|r| matches!(r, Row::Explore { .. }))
+        .expect("the Explore row");
+    let Row::Explore { cells } = &source.rows[chips] else {
+        unreachable!("matched above")
+    };
+    let first = cells[0];
+    assert_eq!(
+        source.cell_key(chips, 0),
+        page.keys.items[first],
+        "a chip is its item's key, so a selection follows the item"
+    );
+    assert_eq!(
+        page.keys.index.get(&source.cell_key(chips, 0)),
+        Some(&first)
+    );
 }
