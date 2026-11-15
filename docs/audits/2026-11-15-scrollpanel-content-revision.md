@@ -19,4 +19,4 @@ Breaking change: the public `lines` field is gone (v0.1).
 
 Not changed: wrapping rules, line endings, colours, focus language, the `visual-baseline` tag. The Panels options list gains one row, so its approved captures were re-accepted through `scripts/accept-baseline.py`.
 
-Limits: every real mutation, an append included, resets the selection. Keeping a selection across an append through logical anchors is #45. Measuring the unchanged-content cost across widgets is #56. The work counters here are test-only (`cfg(test)`).
+Limits: `set_lines`, `replace_line` and `clear` reset the selection, and an append keeps it. Keeping a selection across an edit through logical anchors is #45. Measuring the unchanged-content cost across widgets is #56. The work counters here are test-only (`cfg(test)`).
