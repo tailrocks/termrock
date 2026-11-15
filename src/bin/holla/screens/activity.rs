@@ -1044,3 +1044,65 @@ fn follow_up_supported(label: &str) -> bool {
     let l = label.to_lowercase();
     FOLLOW_UPS.iter().any(|p| l.starts_with(p))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::activity::{Activity, ActivityKind, Script};
+    use crate::domain::context::ScopeTag;
+    use crate::domain::fixtures::world_for;
+    use crate::scenario::{Motion, Scenario};
+    use junie_tui::core::focus::{Focus, FocusRing};
+
+    fn press(tab: &mut ActivityTab, w: &mut World, cx: &mut Cx<'_>, code: KeyCode) {
+        let key = Key {
+            code,
+            mods: KeyModifiers::NONE,
+        };
+        tab.on_key(&key, w, cx);
+        tab.sync(w);
+    }
+
+    fn rendered_last(tab: &ActivityTab) -> String {
+        tab.view
+            .lines()
+            .last()
+            .map(|l| line_text(l))
+            .unwrap_or_default()
+    }
+
+    #[test]
+    fn activity_tab_unicode_erase_updates_rendered_cells() {
+        let mut w = world_for(Scenario::DockerCleanup, Motion::Full);
+        let tick = w.tick;
+        w.activities.push(Activity::new(
+            "act-test",
+            "demo",
+            "test",
+            ActivityKind::Task,
+            ScopeTag::here("/work"),
+            "host",
+            Script::running(vec![]),
+            tick,
+        ));
+        let mut tab = ActivityTab::new("act-test");
+        tab.input = true;
+        let mut focus = Focus::default();
+        let ring = FocusRing::default();
+        let mut cx = Cx::new(&mut focus, &ring);
+
+        press(&mut tab, &mut w, &mut cx, KeyCode::Char('a'));
+        press(&mut tab, &mut w, &mut cx, KeyCode::Char('é'));
+        assert_eq!(rendered_last(&tab), "aé");
+
+        press(&mut tab, &mut w, &mut cx, KeyCode::Backspace);
+        assert_eq!(rendered_last(&tab), "a", "the whole é cell is erased");
+
+        press(&mut tab, &mut w, &mut cx, KeyCode::Backspace);
+        assert_eq!(
+            rendered_last(&tab),
+            "",
+            "the last glyph leaves no stale cell"
+        );
+    }
+}
