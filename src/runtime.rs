@@ -1062,7 +1062,7 @@ fn discard_ready(source: &mut impl RawSource, max_events: usize) -> std::io::Res
 }
 
 #[cfg(test)]
-mod tests {
+mod raw_input_tests {
     use super::*;
     use ratatui::crossterm::event::{
         KeyEvent, KeyEventKind, KeyEventState, MouseButton, MouseEvent,
