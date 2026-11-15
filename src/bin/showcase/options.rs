@@ -383,6 +383,11 @@ pub static PANELS: &[Opt] = &[
     ),
     Opt::new("panels.nav", "Keys", &["desktop", "vim", "no-paging"]),
     Opt::new("panels.keymap", "Follow key", &["f", "t"]),
+    Opt::new(
+        "panels.content",
+        "Log content",
+        &["generated", "edited", "appended", "replaced", "cleared"],
+    ),
 ];
 
 pub static SCROLLING: &[Opt] = &[
