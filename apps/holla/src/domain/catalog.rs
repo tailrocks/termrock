@@ -561,7 +561,7 @@ fn mise_items(w: &World, out: &mut Vec<Item>) {
             .launch(Launch::Activity { script: None })
             .reason(
                 Signal::Urgency,
-                &junie_tui::ui::text::plural(names.len(), "tool missing", "tools missing"),
+                &termrock::ui::text::plural(names.len(), "tool missing", "tools missing"),
             ),
         );
     }
@@ -1592,7 +1592,7 @@ fn rust_items(w: &World, out: &mut Vec<Item>) {
     }
     let cg = &w.cargo;
     let mut clean = Item::new("cargo.clean", &match cg.target {
-        Some(_) => format!("cargo clean · {}", junie_tui::ui::text::bytes(cg.target_bytes)),
+        Some(_) => format!("cargo clean · {}", termrock::ui::text::bytes(cg.target_bytes)),
         None => "cargo clean".into(),
     }, Kind::Cleanup, ResultType::Action, tag.clone())
         .summary(&match &cg.target {
@@ -1609,14 +1609,14 @@ fn rust_items(w: &World, out: &mut Vec<Item>) {
         .launch(Launch::Activity { script: None })
         .alt("Show what clean would remove (dry run)", "cargo.clean_dry")
         .reason(Signal::Context, &match &cg.target {
-            Some(_) => format!("{} of generated artifacts", junie_tui::ui::text::bytes(cg.target_bytes)),
+            Some(_) => format!("{} of generated artifacts", termrock::ui::text::bytes(cg.target_bytes)),
             None => "nothing to remove".into(),
         });
     if let Some(t) = &cg.target {
         clean = clean.effect(Effect::CargoClean(t.clone()));
         let mut effects = vec![format!(
             "{} freed by cargo itself · permanent · next build recompiles everything",
-            junie_tui::ui::text::bytes(cg.target_bytes)
+            termrock::ui::text::bytes(cg.target_bytes)
         )];
         if let Some(s) = &cg.target_shared_with {
             effects.push(format!("shared target: {s} loses its artifacts too"));
@@ -2732,7 +2732,7 @@ fn gradle_items(w: &World, out: &mut Vec<Item>) {
             "no daemon running"
         };
         out.push(
-            Item::new("gradle.clean-all", &format!("Clean Gradle outputs under {} · {}", w.location.cwd_short(), junie_tui::ui::text::bytes(bytes)), Kind::Cleanup, ResultType::Flow, here)
+            Item::new("gradle.clean-all", &format!("Clean Gradle outputs under {} · {}", w.location.cwd_short(), termrock::ui::text::bytes(bytes)), Kind::Cleanup, ResultType::Flow, here)
                 .summary(&format!("gradle --stop, then move every .gradle and build directory below this folder (depth 5, no symlinks, no node_modules) to the Trash · {} candidates · {daemon}", cands.len()))
                 .exec(vec![cmd(w, "gradle", &["--stop"], &cwd)])
                 .keywords(&["gradle", "clean", "cleanup", "build", ".gradle", "recursive", "trash"])
@@ -2758,7 +2758,7 @@ fn idea_items(w: &World, out: &mut Vec<Item>) {
     });
     let bytes: u64 = cands.iter().map(|p| w.fs.size_of(p)).sum();
     out.push(
-        Item::new("idea.clean", &format!("Clean IntelliJ metadata under {} · {}", w.location.cwd_short(), junie_tui::ui::text::bytes(bytes)), Kind::Idea, ResultType::Flow, here)
+        Item::new("idea.clean", &format!("Clean IntelliJ metadata under {} · {}", w.location.cwd_short(), termrock::ui::text::bytes(bytes)), Kind::Idea, ResultType::Flow, here)
             .summary(&format!("move every .idea directory and lowercase .iml file below this folder (depth 5, no symlinks, no node_modules, nothing nested) to the Trash · {} candidates · no IDE shutdown step exists in the baseline", cands.len()))
             .exec(vec![])
             .keywords(&["idea", "intellij", "jetbrains", ".idea", ".iml", "clean", "cleanup", "metadata"])
@@ -2870,7 +2870,7 @@ fn disk_items(w: &World, out: &mut Vec<Item>) {
             )
             .summary(&format!(
                 "{} below this folder · {} stale enough to start selected",
-                junie_tui::ui::text::plural(
+                termrock::ui::text::plural(
                     local.len(),
                     "rebuildable candidate",
                     "rebuildable candidates"
@@ -3078,13 +3078,13 @@ fn cleanup_items(w: &World, out: &mut Vec<Item>) {
     let total: u64 = cats.iter().map(InsightCategory::bytes).sum();
     out.push(
         Item::new("cleanup.review-all", "Review cleanup candidates", Kind::Cleanup, ResultType::Flow, htag.clone())
-            .summary(&format!("{} detected categories · {} · rebuilt-on-demand and safe-if-old candidates start selected, review-first never does, too-recent ones stay visible but ineligible", cats.len(), junie_tui::ui::text::bytes(total)))
+            .summary(&format!("{} detected categories · {} · rebuilt-on-demand and safe-if-old candidates start selected, review-first never does, too-recent ones stay visible but ineligible", cats.len(), termrock::ui::text::bytes(total)))
             .exec(vec![Command::internal("holla cleanup review", &w.location.home, &w.host.name)])
             .keywords(&["cleanup", "clean", "caches", "insights", "review", "space", "free"])
             .group("Disk")
             .page_aliases(&["c"])
             .launch(Launch::Cleanup { category: None })
-            .reason(if total > 5 * 1024 * 1024 * 1024 { Signal::Urgency } else { Signal::Default }, &format!("{} across {} categories", junie_tui::ui::text::bytes(total), cats.len())),
+            .reason(if total > 5 * 1024 * 1024 * 1024 { Signal::Urgency } else { Signal::Default }, &format!("{} across {} categories", termrock::ui::text::bytes(total), cats.len())),
     );
     for c in &cats {
         let cat = c.category;
@@ -3095,7 +3095,7 @@ fn cleanup_items(w: &World, out: &mut Vec<Item>) {
                 &format!(
                     "Clean {} · {}",
                     cat.label,
-                    junie_tui::ui::text::bytes(c.bytes())
+                    termrock::ui::text::bytes(c.bytes())
                 ),
                 Kind::Cleanup,
                 ResultType::Action,
@@ -3110,7 +3110,7 @@ fn cleanup_items(w: &World, out: &mut Vec<Item>) {
                 } else {
                     "any age".into()
                 },
-                junie_tui::ui::text::plural(c.candidates.len(), "candidate", "candidates")
+                termrock::ui::text::plural(c.candidates.len(), "candidate", "candidates")
             ))
             .exec(vec![Command::internal(
                 &format!("holla cleanup review --category {}", cat.id),
@@ -3498,7 +3498,7 @@ fn custom_items(w: &World, out: &mut Vec<Item>) {
                 origin.label(),
                 w.location.short(&cfg.path),
                 a.index,
-                junie_tui::ui::text::clip(&cfg.digest, 12)
+                termrock::ui::text::clip(&cfg.digest, 12)
             ))
             .launch(Launch::Activity {
                 script: Some(a.argv.join(" ")),

@@ -9,8 +9,8 @@ license = "MIT"
 default-run = "showcase"
 
 [workspace]
-members = [".", "apps/jackin", "apps/holla"]
-default-members = [".", "apps/jackin", "apps/holla"]
+members = [".", "apps/jackin", "apps/holla", "crates/termrock"]
+default-members = [".", "apps/jackin", "apps/holla", "crates/termrock"]
 
 [workspace.dependencies]
 clap = { version = "4.6", features = ["derive"] }

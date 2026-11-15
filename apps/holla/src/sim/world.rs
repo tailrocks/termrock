@@ -15,7 +15,7 @@ use crate::domain::stack::{
 };
 use crate::scenario::Scenario;
 use crate::sim::fs::Fs;
-use junie_tui::clock::SimClock;
+use termrock::clock::SimClock;
 use std::collections::BTreeSet;
 
 pub const TICK_MS: i64 = 80;

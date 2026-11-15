@@ -154,8 +154,8 @@ impl GitState {
         }
     }
 
-    pub fn state_parts(&self) -> Vec<(String, junie_tui::theme::Tone)> {
-        use junie_tui::theme::Tone;
+    pub fn state_parts(&self) -> Vec<(String, termrock::theme::Tone)> {
+        use termrock::theme::Tone;
         let mut v = vec![];
         let mut sync = vec![];
         if self.behind > 0 {

@@ -1,15 +1,15 @@
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::hit::Axis;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::PointerEvent;
-use junie_tui::core::scroll::{ScrollState, TrackClick};
-use junie_tui::theme::Tone;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layer::{DismissReason, Layer, LayerCx, LayerOut, LayerSpec};
-use junie_tui::ui::text::{width, wrap};
-use junie_tui::widgets::keyhint::{Hint, hint};
-use junie_tui::widgets::scrollbar;
+use termrock::core::event::{Key, Outcome};
+use termrock::core::hit::Axis;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::PointerEvent;
+use termrock::core::scroll::{ScrollState, TrackClick};
+use termrock::theme::Tone;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layer::{DismissReason, Layer, LayerCx, LayerOut, LayerSpec};
+use termrock::ui::text::{width, wrap};
+use termrock::widgets::keyhint::{Hint, hint};
+use termrock::widgets::scrollbar;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
@@ -57,7 +57,7 @@ pub struct TextModal {
     pub closed: bool,
     pub area: Rect,
 
-    pub dismiss: junie_tui::ui::popup::Dismiss,
+    pub dismiss: termrock::ui::popup::Dismiss,
     wrapped: Vec<(String, String, Tone, bool)>,
     wrapped_for: u16,
 }
@@ -73,7 +73,7 @@ impl TextModal {
             width: 72,
             closed: false,
             area: Rect::ZERO,
-            dismiss: junie_tui::ui::popup::Dismiss::LIGHT,
+            dismiss: termrock::ui::popup::Dismiss::LIGHT,
             wrapped: vec![],
             wrapped_for: 0,
         }
@@ -164,7 +164,7 @@ impl TextModal {
 
         let width_ = self.width;
         let frame = move |h: u16| {
-            junie_tui::ui::modal::Frame::new(width_, h)
+            termrock::ui::modal::Frame::new(width_, h)
                 .min_size(30, 8)
                 .chrome(1, 2)
                 .margin(ratatui::layout::Margin::new(3, 2))
@@ -183,7 +183,7 @@ impl TextModal {
         buf.set_string(
             inner.x,
             inner.y,
-            junie_tui::ui::reveal::cut(Rect::new(inner.x, inner.y, inner.width, 1), &self.title),
+            termrock::ui::reveal::cut(Rect::new(inner.x, inner.y, inner.width, 1), &self.title),
             t.title().bg(bg),
         );
         if !self.subtitle.is_empty() {
@@ -215,7 +215,7 @@ impl TextModal {
                 buf.set_string(
                     body.x,
                     y,
-                    junie_tui::ui::reveal::cut(Rect::new(body.x, y, body.width, 1), value),
+                    termrock::ui::reveal::cut(Rect::new(body.x, y, body.width, 1), value),
                     t.faint().bg(bg),
                 );
                 continue;
@@ -226,7 +226,7 @@ impl TextModal {
                 buf.set_string(
                     vx,
                     y,
-                    junie_tui::ui::reveal::cut(
+                    termrock::ui::reveal::cut(
                         Rect::new(
                             vx,
                             y,
@@ -241,7 +241,7 @@ impl TextModal {
                 buf.set_string(
                     body.x,
                     y,
-                    junie_tui::ui::reveal::cut(
+                    termrock::ui::reveal::cut(
                         Rect::new(body.x, y, body.width.saturating_sub(u16::from(has_sb)), 1),
                         value,
                     ),

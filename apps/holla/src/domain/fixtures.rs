@@ -3107,7 +3107,7 @@ pub fn plan_cleanup_work(w: &World, selected: &[String]) -> Plan {
         .effects(&[&format!(
             "{:.1} GB · {} items · {}",
             c.gb,
-            junie_tui::ui::text::thousands(c.items as usize),
+            termrock::ui::text::thousands(c.items as usize),
             c.method.label()
         )])
         .optional()

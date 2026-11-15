@@ -728,7 +728,7 @@ fn erase_last_input(pending: &mut Vec<u8>) -> bool {
     true
 }
 
-pub fn key_bytes(key: &junie_tui::core::event::Key) -> Option<Vec<u8>> {
+pub fn key_bytes(key: &termrock::core::event::Key) -> Option<Vec<u8>> {
     use ratatui::crossterm::event::KeyCode;
     let ctrl = key.ctrl();
     Some(match key.code {

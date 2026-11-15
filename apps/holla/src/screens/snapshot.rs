@@ -1,26 +1,26 @@
 use crate::screens::Holla;
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::hit::Axis;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::PointerEvent;
-use junie_tui::core::scroll::ScrollState;
-use junie_tui::shell::Page as ShellPage;
-use junie_tui::theme::{StatusKind, Tone};
-use junie_tui::ui::context::ContextAnchor;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::scroll_view::{Axes, ScrollView};
-use junie_tui::ui::text::truncate;
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::keyhint::{Hint, hint};
-use junie_tui::widgets::menu::MenuItem;
-use junie_tui::widgets::meter_list::{MeterList, MeterRow};
-use junie_tui::widgets::page_header::PageHeader;
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::progress::{Meter, MeterTone, MeterVisual};
-use junie_tui::widgets::props::{self, Prop};
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::statusbar::StatusItem;
+use termrock::core::event::{Key, Outcome};
+use termrock::core::hit::Axis;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::PointerEvent;
+use termrock::core::scroll::ScrollState;
+use termrock::shell::Page as ShellPage;
+use termrock::theme::{StatusKind, Tone};
+use termrock::ui::context::ContextAnchor;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::scroll_view::{Axes, ScrollView};
+use termrock::ui::text::truncate;
+use termrock::widgets::button::Button;
+use termrock::widgets::keyhint::{Hint, hint};
+use termrock::widgets::menu::MenuItem;
+use termrock::widgets::meter_list::{MeterList, MeterRow};
+use termrock::widgets::page_header::PageHeader;
+use termrock::widgets::panel::Panel;
+use termrock::widgets::progress::{Meter, MeterTone, MeterVisual};
+use termrock::widgets::props::{self, Prop};
+use termrock::widgets::scrollbar;
+use termrock::widgets::statusbar::StatusItem;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Position, Rect};
@@ -29,8 +29,8 @@ use crate::screens::{
     Cx, Go, ModalResult, Screen, StatusBits, open_context, row_choice, scroll_drag, scroll_press,
 };
 use crate::sim::world::World;
-use junie_tui::ui::layer::LayerTag;
-use junie_tui::ui::text::plural;
+use termrock::ui::layer::LayerTag;
+use termrock::ui::text::plural;
 
 pub const BODY: WidgetId = WidgetId::of("snapshot.body");
 
@@ -821,7 +821,7 @@ impl SnapshotPage {
                         crate::domain::cleanup::Outcome::Removed
                             | crate::domain::cleanup::Outcome::Trashed
                     ) {
-                        junie_tui::ui::text::bytes(r.size)
+                        termrock::ui::text::bytes(r.size)
                     } else {
                         "0 B".to_owned()
                     };
@@ -1111,13 +1111,13 @@ impl SnapshotPage {
                                 "Bytes",
                                 format!(
                                     "{} {} · {} freed now{}",
-                                    junie_tui::ui::text::bytes(r.bytes),
+                                    termrock::ui::text::bytes(r.bytes),
                                     if r.dry_run {
                                         "would leave the tree"
                                     } else {
                                         "left the tree"
                                     },
-                                    junie_tui::ui::text::bytes(r.freed_now),
+                                    termrock::ui::text::bytes(r.freed_now),
                                     if r.mode == crate::domain::cleanup::Mode::Trash && !r.dry_run {
                                         " · the rest returns when the Trash is emptied"
                                     } else {
@@ -1168,7 +1168,7 @@ impl SnapshotPage {
                                 format!(
                                     "{:<14}{:>10}   {}{}",
                                     label,
-                                    junie_tui::ui::text::bytes(it.bytes),
+                                    termrock::ui::text::bytes(it.bytes),
                                     w.location.short(&it.path),
                                     it.error
                                         .as_ref()
@@ -1504,7 +1504,7 @@ impl ShellPage<Holla> for SnapshotPage {
             buf.set_string(
                 inner.x,
                 inner.y + k as u16,
-                junie_tui::ui::reveal::cut(Rect::new(inner.x, inner.y + k as u16, room, 1), line),
+                termrock::ui::reveal::cut(Rect::new(inner.x, inner.y + k as u16, room, 1), line),
                 st,
             );
             for &(_, col, kind) in self.marks.iter().filter(|m| m.0 == i) {
@@ -1575,7 +1575,7 @@ impl ShellPage<Holla> for SnapshotPage {
             v.push(hint("Tab", "Next actions"));
         }
         v.push(hint("Esc", "Back"));
-        v.push(junie_tui::widgets::keyhint::CONTEXT_MENU);
+        v.push(termrock::widgets::keyhint::CONTEXT_MENU);
         v
     }
 

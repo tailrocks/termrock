@@ -16,7 +16,7 @@ default = []
 product = []
 
 [dependencies]
-junie-tui = { path = "../..", default-features = false, features = ["cli"] }
+termrock = { path = "../../crates/termrock", default-features = false, features = ["cli"] }
 clap = { workspace = true }
 ratatui = { workspace = true }
 serde_json = { workspace = true }

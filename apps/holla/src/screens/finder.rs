@@ -1,25 +1,25 @@
 use crate::screens::Holla;
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::hit::Axis;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::PointerEvent;
-use junie_tui::core::scroll::ScrollState;
-use junie_tui::core::selection::ClickPolicy;
-use junie_tui::shell::Page as ShellPage;
-use junie_tui::theme::{CursorStyle, Theme, Tone};
-use junie_tui::ui::columns::{self, Col};
-use junie_tui::ui::ctx::{RenderCtx, fill};
-use junie_tui::ui::master_detail::MasterDetail;
-use junie_tui::ui::text::{fit, truncate, truncate_middle, wider_than, width, wrap};
-use junie_tui::widgets::edit::EditField;
-use junie_tui::widgets::empty::{self, EmptyState};
-use junie_tui::widgets::field_common::EditAction;
-use junie_tui::widgets::keyhint::{Hint, hint};
-use junie_tui::widgets::page_header::Heading;
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::statusbar::StatusItem;
+use termrock::core::event::{Key, Outcome};
+use termrock::core::hit::Axis;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::PointerEvent;
+use termrock::core::scroll::ScrollState;
+use termrock::core::selection::ClickPolicy;
+use termrock::shell::Page as ShellPage;
+use termrock::theme::{CursorStyle, Theme, Tone};
+use termrock::ui::columns::{self, Col};
+use termrock::ui::ctx::{RenderCtx, fill};
+use termrock::ui::master_detail::MasterDetail;
+use termrock::ui::text::{fit, truncate, truncate_middle, wider_than, width, wrap};
+use termrock::widgets::edit::EditField;
+use termrock::widgets::empty::{self, EmptyState};
+use termrock::widgets::field_common::EditAction;
+use termrock::widgets::keyhint::{Hint, hint};
+use termrock::widgets::page_header::Heading;
+use termrock::widgets::panel::Panel;
+use termrock::widgets::scrollbar;
+use termrock::widgets::statusbar::StatusItem;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Position, Rect};
@@ -30,7 +30,7 @@ use crate::domain::context::Scope;
 use crate::domain::ranking::{Ranked, search};
 use crate::screens::{Cx, Go, Page, Screen, StatusBits, risk_tone, scroll_drag, scroll_press};
 use crate::sim::world::World;
-use junie_tui::ui::text::{plural, truncate_sep};
+use termrock::ui::text::{plural, truncate_sep};
 
 pub const FINDER: WidgetId = WidgetId::of("here.finder");
 pub const PREVIEW: WidgetId = WidgetId::of("here.preview");
@@ -90,8 +90,8 @@ pub struct FinderPage {
 }
 
 fn query_field() -> EditField {
-    use junie_tui::core::edit::{CMD_TEXT_KEYS, TextCmd};
-    use junie_tui::core::keymap::KeyBinding;
+    use termrock::core::edit::{CMD_TEXT_KEYS, TextCmd};
+    use termrock::core::keymap::KeyBinding;
     let mut keys = CMD_TEXT_KEYS.to_vec();
     keys.extend([
         (KeyBinding::ctrl('a'), TextCmd::SelectAll),
@@ -455,7 +455,7 @@ impl FinderPage {
         if self.query.text().is_empty() {
             return;
         }
-        self.query.record(junie_tui::core::edit::EditKind::Other);
+        self.query.record(termrock::core::edit::EditKind::Other);
         self.query.buffer.set_text("");
         self.query_edited();
     }
@@ -628,7 +628,7 @@ impl FinderPage {
         alts.push("Alias".into());
         alts.push("Why here?".into());
 
-        let key = if junie_tui::core::keyboard::label_deliverable("Alt+Enter") {
+        let key = if termrock::core::keyboard::label_deliverable("Alt+Enter") {
             "Alt+Enter"
         } else {
             "Alternatives…"
@@ -702,7 +702,7 @@ impl FinderPage {
             buf.set_string(
                 inner.x + label_w,
                 y,
-                junie_tui::ui::reveal::cut(Rect::new(inner.x + label_w, y, (vw) as u16, 1), v),
+                termrock::ui::reveal::cut(Rect::new(inner.x + label_w, y, (vw) as u16, 1), v),
                 st,
             );
         }
@@ -721,7 +721,7 @@ impl FinderPage {
     fn render_query(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
         let t = ctx.theme;
         let focused = ctx.interaction.focused(FINDER);
-        let fs = t.field_style(junie_tui::ui::ctx::VisualState {
+        let fs = t.field_style(termrock::ui::ctx::VisualState {
             focused,
             editing: focused,
             ..Default::default()
@@ -731,12 +731,12 @@ impl FinderPage {
         buf.set_string(
             area.x,
             area.y,
-            t.gutter_symbol(junie_tui::ui::ctx::VisualState {
+            t.gutter_symbol(termrock::ui::ctx::VisualState {
                 focused,
                 ..Default::default()
             }),
             t.gutter(
-                junie_tui::ui::ctx::VisualState {
+                termrock::ui::ctx::VisualState {
                     focused,
                     ..Default::default()
                 },
@@ -767,7 +767,7 @@ impl FinderPage {
             buf.set_string(
                 area.x + 2,
                 area.y,
-                junie_tui::ui::reveal::cut(
+                termrock::ui::reveal::cut(
                     Rect::new(area.x + 2, area.y, (text_w) as u16, 1),
                     &placeholder,
                 ),
@@ -911,7 +911,7 @@ impl FinderPage {
                         .iter()
                         .map(|idx| width(&self.items[*idx].label) as u16 + 2)
                         .collect();
-                    let (shown, more) = junie_tui::widgets::chips::overflow_run(
+                    let (shown, more) = termrock::widgets::chips::overflow_run(
                         &widths,
                         row.right().saturating_sub(x),
                         1,
@@ -954,7 +954,7 @@ impl FinderPage {
                     let label_cell = Rect::new(x, y, label_w, 1);
                     let mut cut = wider_than(&it.label, label_w as usize);
                     let label = truncate(&it.label, label_w as usize);
-                    junie_tui::ui::reveal::queue_cut(label_cell, &it.label);
+                    termrock::ui::reveal::queue_cut(label_cell, &it.label);
                     let mut lx = x;
                     for (bi, ch) in label.char_indices() {
                         let mut cs = st;
@@ -1002,13 +1002,13 @@ impl FinderPage {
                             },
                         ));
                         buf.set_string(x, y, truncate_sep(&reason, reason_w as usize), rs);
-                        junie_tui::ui::reveal::queue_cut(Rect::new(x, y, reason_w, 1), &reason);
+                        termrock::ui::reveal::queue_cut(Rect::new(x, y, reason_w, 1), &reason);
                         cut |= wider_than(&reason, reason_w as usize);
                         if cut && s.focused {
-                            junie_tui::ui::reveal::peek(ctx, &format!("{} — {reason}", it.label));
+                            termrock::ui::reveal::peek(ctx, &format!("{} — {reason}", it.label));
                         }
                     } else if cut && s.focused {
-                        junie_tui::ui::reveal::peek(ctx, &it.label);
+                        termrock::ui::reveal::peek(ctx, &it.label);
                     }
 
                     if risk_w > 0 && matches!(it.risk, Risk::Destructive | Risk::Privileged) {
@@ -1436,7 +1436,7 @@ impl ShellPage<Holla> for FinderPage {
             buf.set_string(
                 body.x + 3,
                 l.summary.y,
-                junie_tui::ui::reveal::cut(
+                termrock::ui::reveal::cut(
                     Rect::new(body.x + 3, l.summary.y, body.width.saturating_sub(3), 1),
                     &line,
                 ),
@@ -1575,8 +1575,8 @@ impl Screen for FinderPage {
     }
 }
 
-pub fn item_facts(it: &Item, w: &World, theme: &Theme) -> Vec<junie_tui::widgets::props::Prop> {
-    use junie_tui::widgets::props::Prop;
+pub fn item_facts(it: &Item, w: &World, theme: &Theme) -> Vec<termrock::widgets::props::Prop> {
+    use termrock::widgets::props::Prop;
     let _ = theme;
     let mut v = vec![
         Prop::new("Action", it.summary.clone()).wrap(),

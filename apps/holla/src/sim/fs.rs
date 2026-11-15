@@ -961,18 +961,18 @@ impl Fs {
             let (score, matched) = if lname == lq || stem == lq {
                 (
                     0,
-                    junie_tui::ui::text::fuzzy(name, q)
+                    termrock::ui::text::fuzzy(name, q)
                         .map(|(_, m)| m)
                         .unwrap_or_default(),
                 )
             } else if let Some(i) = lname.find(&lq) {
                 (
                     10,
-                    junie_tui::ui::text::fuzzy(name, q)
+                    termrock::ui::text::fuzzy(name, q)
                         .map(|(_, m)| m)
                         .unwrap_or_else(|| (i..i + lq.len()).collect()),
                 )
-            } else if let Some((s, m)) = junie_tui::ui::text::fuzzy(name, q) {
+            } else if let Some((s, m)) = termrock::ui::text::fuzzy(name, q) {
                 (50 + s, m)
             } else {
                 continue;

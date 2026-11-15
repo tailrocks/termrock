@@ -8,15 +8,15 @@ pub mod plan;
 pub mod review;
 pub mod snapshot;
 
-use junie_tui::core::event::Outcome;
-use junie_tui::core::scroll::ScrollState;
-use junie_tui::theme::Tone;
-use junie_tui::ui::layer::{LayerEntry, ShellLayers};
-use junie_tui::ui::layers::LayerResult;
-use junie_tui::widgets::menu::MenuAction;
-use junie_tui::widgets::picker::PickerAction;
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::statusbar::StatusItem;
+use termrock::core::event::Outcome;
+use termrock::core::scroll::ScrollState;
+use termrock::theme::Tone;
+use termrock::ui::layer::{LayerEntry, ShellLayers};
+use termrock::ui::layers::LayerResult;
+use termrock::widgets::menu::MenuAction;
+use termrock::widgets::picker::PickerAction;
+use termrock::widgets::scrollbar;
+use termrock::widgets::statusbar::StatusItem;
 use ratatui::layout::{Position, Rect};
 
 use crate::domain::context::Scope;
@@ -168,9 +168,9 @@ pub enum Page {
     },
 }
 
-pub type Request = junie_tui::shell::Request<ModalResult, (), Go>;
+pub type Request = termrock::shell::Request<ModalResult, (), Go>;
 
-pub type Cx<'a> = junie_tui::shell::Cx<'a, ModalResult, (), Go>;
+pub type Cx<'a> = termrock::shell::Cx<'a, ModalResult, (), Go>;
 
 #[derive(Default)]
 pub struct StatusBits {
@@ -180,7 +180,7 @@ pub struct StatusBits {
 
 pub struct Holla;
 
-impl junie_tui::shell::PageTypes for Holla {
+impl termrock::shell::PageTypes for Holla {
     type State = World;
     type Msg = Msg;
     type Result = ModalResult;
@@ -188,7 +188,7 @@ impl junie_tui::shell::PageTypes for Holla {
     type Go = Go;
 }
 
-pub use junie_tui::shell::{open_context, rebuild_on_tick, row_anchor, row_choice};
+pub use termrock::shell::{open_context, rebuild_on_tick, row_anchor, row_choice};
 
 impl ModalResult {
     pub fn menu_chosen(&self) -> Option<usize> {
@@ -199,7 +199,7 @@ impl ModalResult {
     }
 }
 
-pub trait Screen: junie_tui::shell::Page<Holla> {
+pub trait Screen: termrock::shell::Page<Holla> {
     fn on_context_key(&mut self, _w: &mut World, _cx: &mut Cx) -> Outcome {
         Outcome::Ignored
     }
@@ -221,9 +221,9 @@ pub trait Screen: junie_tui::shell::Page<Holla> {
 }
 
 pub fn ticks_label(ticks: u64) -> String {
-    junie_tui::ui::text::duration(
+    termrock::ui::text::duration(
         std::time::Duration::from_millis(ticks * crate::sim::world::TICK_MS as u64),
-        junie_tui::ui::text::DurationStyle::Spoken,
+        termrock::ui::text::DurationStyle::Spoken,
     )
 }
 

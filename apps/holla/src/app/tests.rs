@@ -1,6 +1,6 @@
 use super::*;
 use crate::screens::finder::FinderPage;
-use junie_tui::core::event::Input;
+use termrock::core::event::Input;
 
 const ID: &str = "docker-cleanup";
 
@@ -464,7 +464,7 @@ fn files_find_completion_preserves_selected_path() {
 fn drawn_text(app: &mut App) -> String {
     let mut term =
         ratatui::Terminal::new(ratatui::backend::TestBackend::new(120, 40)).expect("test terminal");
-    term.draw(|f| junie_tui::shell::render(app, f))
+    term.draw(|f| termrock::shell::render(app, f))
         .expect("test backend draws");
     let buf = term.backend().buffer();
     let area = buf.area;
@@ -648,7 +648,7 @@ fn focus_markers(app: &mut App) -> usize {
 }
 
 fn click_at(app: &mut App, x: u16, y: u16) {
-    use junie_tui::core::event::{Mouse, MouseKind};
+    use termrock::core::event::{Mouse, MouseKind};
     let at = ratatui::layout::Position::new(x, y);
     app.handle_input(Input::Mouse(Mouse::new(MouseKind::Down, at)));
     app.handle_input(Input::Mouse(Mouse::new(MouseKind::Up, at)));

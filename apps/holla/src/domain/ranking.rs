@@ -1,4 +1,4 @@
-use junie_tui::ui::text::fuzzy;
+use termrock::ui::text::fuzzy;
 
 use crate::domain::action::{Item, Signal};
 use crate::domain::context::Scope;
