@@ -34,7 +34,7 @@ use crate::screens::{
     Cx, Go, ModalResult, Screen, StatusBits, open_context, row_anchor, scroll_drag, scroll_press,
     ticks_label,
 };
-use crate::sim::world::World;
+use crate::sim::world::{STOPPING_REFUSAL, World};
 use junie_tui::ui::layer::LayerTag;
 use junie_tui::ui::text::{plural, truncate_sep};
 
@@ -1174,6 +1174,10 @@ const RUN_STEP_ACTIONS: [RunStep; 5] = [
 
 impl PlanTab {
     fn retry_step(&mut self, w: &mut World, cx: &mut Cx) -> Outcome {
+        if w.stopping() {
+            cx.status(STOPPING_REFUSAL);
+            return Outcome::Changed;
+        }
         let i = self.cursor;
         let Some(p) = w.plan_mut(&self.plan) else {
             return Outcome::Ignored;

@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain::activity::ActivityKind;
 use crate::screens::finder::FinderPage;
 use junie_tui::core::event::Input;
 
@@ -177,6 +178,296 @@ fn plan_stop_dialog_dismissal_keeps_the_plan_running() {
     assert_eq!(app.world.plan(ID).expect("plan").phase, PlanPhase::Running);
     assert_eq!(step(&app, ID, "rm"), StepState::Running);
     assert!(plan_tab(&app, ID).is_some());
+}
+
+// Issue #81: running plans take part in quit.
+
+use crate::domain::activity::Script;
+use crate::domain::cleanup::{DeleteItem, DeletePlan, Mode};
+use crate::domain::context::ScopeTag;
+
+fn start_activity(app: &mut App, name: &str, script: Script) -> String {
+    let scope = ScopeTag::here(&app.world.location.cwd);
+    app.world
+        .start_activity(vec![], script, name, name, ActivityKind::Task, scope)
+}
+
+fn start_cleanup(app: &mut App, items: usize) {
+    let items = (0..items)
+        .map(|i| DeleteItem {
+            path: format!("/tmp/holla-quit-test/{i}"),
+            category: "test".into(),
+            estimate: 1,
+            guard: None,
+        })
+        .collect();
+    let host = app.world.host.name.clone();
+    let plan = DeletePlan::new(&host, "/tmp/holla-quit-test", items, Mode::Trash, true);
+    crate::screens::cleanup::commit(&plan, &mut app.world).expect("cleanup starts");
+}
+
+fn ctrl_q(app: &mut App) {
+    app.handle_input(key(KeyCode::Char('q'), KeyModifiers::CONTROL));
+}
+
+fn quit_dialog_body(app: &App) -> String {
+    let top = app.modals.top().expect("a dialog is open");
+    assert_eq!(top.tag.kind, "quit");
+    match &app.modals.top_as::<Dialog>().expect("dialog").body {
+        junie_tui::widgets::dialog::DialogBody::Text(text) => text.clone(),
+        _ => panic!("quit dialog has a text body"),
+    }
+}
+
+fn assert_quit_body(app: &App, expected: &str) {
+    let body = quit_dialog_body(app);
+    assert!(body.ends_with(expected), "{body}");
+    assert!(
+        !body.contains("detached monitors keep running"),
+        "the stale detached claim is gone: {body}"
+    );
+}
+
+fn confirm_quit(app: &mut App) {
+    app.handle_input(key(KeyCode::Right, KeyModifiers::NONE));
+    app.handle_input(key(KeyCode::Enter, KeyModifiers::NONE));
+    assert!(app.modals.is_empty(), "the quit dialog resolved");
+}
+
+#[test]
+fn quit_running_plan_requires_confirmation() {
+    let mut app = app();
+    arm(&mut app, ID);
+    tick_until_running(&mut app, ID, "rm");
+    app.activate_tab(0);
+    assert_eq!(app.world.live_activities(), 0);
+    assert!(app.world.cleanup_job.is_none());
+    let before = app.world.plan(ID).cloned();
+
+    ctrl_q(&mut app);
+
+    assert!(!app.shell.quit, "a running plan blocks immediate quit");
+    assert_quit_body(&app, "1 plan is running. Quitting stops it.");
+    app.handle_input(key(KeyCode::Enter, KeyModifiers::NONE));
+    assert!(app.modals.is_empty());
+    assert!(!app.shell.quit && !app.quitting);
+    assert_eq!(app.world.plan(ID).cloned(), before, "Stay changes nothing");
+    assert!(!app.world.stopping());
+}
+
+#[test]
+fn quit_plan_only_stops_and_finalizes_before_exit() {
+    let mut app = app();
+    let uses = app.world.docker.cleanup_uses;
+    arm(&mut app, ID);
+    tick_until_running(&mut app, ID, "rm");
+    app.activate_tab(0);
+    ctrl_q(&mut app);
+
+    confirm_quit(&mut app);
+
+    assert!(app.shell.quit, "nothing is left to wait for");
+    let plan = app.world.plan(ID).expect("plan");
+    assert_eq!(plan.phase, PlanPhase::Done);
+    assert!(plan.ended_tick.is_some());
+    assert_eq!(live_steps(&app, ID), 0);
+    assert_eq!(step(&app, ID, "stop"), StepState::Succeeded);
+    assert_eq!(step(&app, ID, "rm"), StepState::Cancelled);
+    assert_eq!(app.world.docker.cleanup_uses, uses + 1, "one completion");
+    assert!(
+        status(&app).starts_with("Clean Docker completely stopped"),
+        "the completion was delivered before exit: {}",
+        status(&app)
+    );
+}
+
+#[test]
+fn quit_hidden_plan_is_owned_by_world() {
+    let mut app = app();
+    let now = app.world.tick;
+    assert!(app.world.plan_mut(ID).expect("plan").arm(now));
+    assert!(plan_tab(&app, ID).is_none(), "no presentation exists");
+    tick(&mut app, 3);
+
+    ctrl_q(&mut app);
+    assert_quit_body(&app, "1 plan is running. Quitting stops it.");
+    confirm_quit(&mut app);
+
+    assert!(app.shell.quit);
+    assert_eq!(app.world.plan(ID).expect("plan").phase, PlanPhase::Done);
+    assert_eq!(live_steps(&app, ID), 0);
+}
+
+#[test]
+fn quit_mixed_work_waits_for_activity_reap_and_cleanup_report() {
+    let mut app = app();
+    arm(&mut app, ID);
+    tick_until_running(&mut app, ID, "rm");
+    let resistant = start_activity(&mut app, "stubborn", Script::running(vec![]).resistant());
+    let queued = start_activity(&mut app, "later", Script::running(vec![]));
+    {
+        let a = app.world.activity_mut(&queued).expect("activity");
+        a.state = ActivityState::Queued;
+        a.after = Some(resistant.clone());
+    }
+    start_cleanup(&mut app, 3);
+    let uses = app.world.docker.cleanup_uses;
+    app.activate_tab(0);
+
+    ctrl_q(&mut app);
+    assert_quit_body(
+        &app,
+        "2 activities and 1 plan are running. Quitting stops them. A cleanup is at 0 of 3 items; quitting waits for its report and log.",
+    );
+    confirm_quit(&mut app);
+
+    assert!(!app.shell.quit);
+    assert!(app.quitting);
+    assert_eq!(app.world.plan(ID).expect("plan").phase, PlanPhase::Done);
+    assert_eq!(app.world.docker.cleanup_uses, uses + 1);
+    assert_eq!(
+        app.world.activity(&queued).expect("activity").state,
+        ActivityState::Stopped,
+        "queued work stops at once"
+    );
+    let requested = app
+        .world
+        .activity(&resistant)
+        .and_then(|a| a.cancel.clone())
+        .expect("cancel requested")
+        .requested;
+    let reports = app.world.reports.len();
+
+    let mut ticks = 0;
+    while !app.shell.quit {
+        assert!(ticks < 200, "quit never completed");
+        tick(&mut app, 1);
+        ticks += 1;
+        if app.shell.quit {
+            break;
+        }
+        assert!(
+            !app.world.quit_work().is_empty(),
+            "quit_work empty but the shell is still waiting"
+        );
+    }
+    let work = app.world.quit_work();
+    assert!(work.is_empty(), "{work:?}");
+    let a = app.world.activity(&resistant).expect("activity");
+    assert_eq!(a.state, ActivityState::Stopped);
+    assert_eq!(
+        a.exit,
+        Some(137),
+        "the original SIGTERM then SIGKILL schedule ran"
+    );
+    assert!(a.cancel.as_ref().is_some_and(|c| c.requested == requested));
+    assert!(app.world.cleanup_job.is_none());
+    assert_eq!(app.world.reports.len(), reports);
+    assert!(!app.world.reports.last().expect("report").items.is_empty());
+    assert_eq!(
+        app.world.ops_log.lines.len(),
+        3,
+        "the log landed once per item"
+    );
+}
+
+#[test]
+fn quit_repeated_confirmation_is_idempotent() {
+    let mut app = app();
+    arm(&mut app, ID);
+    tick_until_running(&mut app, ID, "rm");
+    let resistant = start_activity(&mut app, "stubborn", Script::running(vec![]).resistant());
+    start_cleanup(&mut app, 4);
+    let uses = app.world.docker.cleanup_uses;
+    app.activate_tab(0);
+    ctrl_q(&mut app);
+    confirm_quit(&mut app);
+    let cancel = app
+        .world
+        .activity(&resistant)
+        .and_then(|a| a.cancel.clone());
+    let plan = app.world.plan(ID).cloned();
+    let output = app.world.activity(&resistant).map(|a| a.output.len());
+    let log = app.world.ops_log.lines.len();
+
+    assert!(
+        app.world.stop_work_for_quit().is_empty(),
+        "no second completion"
+    );
+    ctrl_q(&mut app);
+    assert!(app.modals.is_empty(), "no second dialog while stopping");
+    assert!(
+        status(&app).starts_with("Already stopping"),
+        "{}",
+        status(&app)
+    );
+    tick(&mut app, 1);
+
+    assert_eq!(
+        app.world
+            .activity(&resistant)
+            .and_then(|a| a.cancel.clone()),
+        cancel,
+        "the kill deadline did not restart"
+    );
+    assert_eq!(app.world.plan(ID).cloned(), plan);
+    assert_eq!(app.world.docker.cleanup_uses, uses + 1);
+    assert_eq!(
+        app.world.activity(&resistant).map(|a| a.output.len()),
+        output,
+        "no second stop line"
+    );
+    assert!(
+        app.world.ops_log.lines.len() <= log + 1,
+        "one log line per tick"
+    );
+}
+
+#[test]
+fn quit_in_progress_refuses_new_work() {
+    let mut app = app();
+    arm(&mut app, ID);
+    tick_until_running(&mut app, ID, "rm");
+    let resistant = start_activity(&mut app, "stubborn", Script::running(vec![]).resistant());
+    let done = start_activity(&mut app, "finished", Script::running(vec![]));
+    app.world.activity_mut(&done).expect("activity").state = ActivityState::Succeeded;
+    let mut other = app.world.plan(ID).cloned().expect("plan");
+    other.id = "other-plan".into();
+    other.title = "Other plan".into();
+    other.phase = PlanPhase::Review;
+    app.world.plans.push(other);
+    app.activate_tab(0);
+    ctrl_q(&mut app);
+    confirm_quit(&mut app);
+    assert!(app.quitting && app.world.activity(&resistant).is_some());
+    let activities = app.world.activities.len();
+    let cleanup_uses = app.world.docker.cleanup_uses;
+
+    app.go(Go::Exec {
+        label: "echo".into(),
+        argv: vec![],
+    });
+    assert_eq!(status(&app), crate::sim::world::STOPPING_REFUSAL);
+    assert_eq!(app.world.activities.len(), activities, "no launch");
+
+    app.go(Go::Restart(done.clone()));
+    assert_eq!(
+        app.world.activity(&done).expect("activity").state,
+        ActivityState::Succeeded,
+        "no restart"
+    );
+
+    app.world.plan_mut("other-plan").expect("plan").drift = None;
+    app.pending_gate = Some(GateTarget::Plan("other-plan".into()));
+    app.gate2_confirmed();
+    assert_eq!(
+        app.world.plan("other-plan").expect("plan").phase,
+        PlanPhase::Review,
+    );
+    assert_eq!(app.world.docker.cleanup_uses, cleanup_uses);
+
+    tick(&mut app, 40);
+    assert!(app.shell.quit, "completion still advances");
 }
 
 #[test]

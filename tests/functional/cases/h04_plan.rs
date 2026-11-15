@@ -195,6 +195,28 @@ fn leave(app: &App) {
     }
 }
 
+fn leave_running_plan(app: &App) {
+    app.key("ctrl+q");
+    let dialog = app.wait_screen("running plan quit guard", |screen| {
+        let visible = text(screen);
+        visible.contains("Stop and quit") && visible.contains("1 plan is")
+    });
+    assert!(app.child_running(), "a running plan quit without a prompt");
+    see(&dialog, &["Quit holla", "Stay"], &[]);
+    app.key("right");
+    app.key("enter");
+    let deadline = Instant::now() + Duration::from_secs(8);
+    while app.child_running() {
+        assert!(
+            Instant::now() < deadline,
+            "confirmed quit did not exit\n{}",
+            text(&app.screen())
+        );
+        std::thread::sleep(Duration::from_millis(25));
+    }
+    app.expect_exited(0);
+}
+
 fn assert_dialog(screen: &TerminalSnapshot, cols: u32, rows: u32) {
     assert_eq!(
         (screen.cols(), screen.rows()),
@@ -512,7 +534,7 @@ fn h04_plan_plan() {
         &["cancelled", "Final verification"],
         &["prod-eu-1", "tmp-shell-3", "~/work/repos"],
     );
-    leave(&app);
+    leave_running_plan(&app);
 }
 
 #[test]
