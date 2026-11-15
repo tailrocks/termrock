@@ -167,10 +167,17 @@ fn tabs_render_measures_each_tab_once() {
         // measure per prefix and per suffix when set. Painting adds, per drawn
         // tab, one label re-measure, one close_button.width call, and one
         // measure per prefix and per suffix. These labels have neither, so each
-        // drawn tab adds two.
+        // drawn tab adds two. When tabs are hidden, the grapheme painter also
+        // measures each cell of the overflow marker, the glyph and the digits
+        // of the hidden count, which is O(log n) and not per tab.
         let painting = 2 * drawn;
+        let marker = if drawn < n as u64 {
+            1 + (n as u64 - drawn).to_string().len() as u64
+        } else {
+            0
+        };
         assert_eq!(
-            work.get(Metric::IntrinsicWidthCalls) - painting,
+            work.get(Metric::IntrinsicWidthCalls) - painting - marker,
             n as u64,
             "Tabs::render of {n} tabs with {drawn} drawn ({work:?})"
         );
