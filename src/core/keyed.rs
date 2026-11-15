@@ -117,8 +117,10 @@ impl KeyedState {
 
         let old_stamp = self.stamp;
         let mut out = Reconcile {
-            data_changed: old_stamp.is_none_or(|old| old.instance != stamp.instance || old.data != stamp.data),
-            view_changed: old_stamp.is_none_or(|old| old.view != stamp.view || old.instance != stamp.instance),
+            data_changed: old_stamp
+                .is_none_or(|old| old.instance != stamp.instance || old.data != stamp.data),
+            view_changed: old_stamp
+                .is_none_or(|old| old.view != stamp.view || old.instance != stamp.instance),
             ..Reconcile::default()
         };
         let old_cursor = self.cursor;
@@ -597,7 +599,13 @@ impl<T> KeyedVec<T> {
         }
         let row = self.rows.remove(from);
         self.rows.insert(to, row);
-        for (at, (key, _)) in self.rows.iter().enumerate().take(from.max(to) + 1).skip(from.min(to)) {
+        for (at, (key, _)) in self
+            .rows
+            .iter()
+            .enumerate()
+            .take(from.max(to) + 1)
+            .skip(from.min(to))
+        {
             self.index.insert(*key, at);
         }
         self.view += 1;
@@ -671,7 +679,8 @@ impl KeyedState {
     /// Moves the cursor to the key shown at `index`. Disabled and out-of-range
     /// rows are refused, like [`KeyedState::set_cursor`].
     pub fn adopt_cursor_view(&mut self, index: usize) -> bool {
-        self.visible_key(index).is_some_and(|key| self.set_cursor(key))
+        self.visible_key(index)
+            .is_some_and(|key| self.set_cursor(key))
     }
 
     /// Visible selected rows as view positions, ascending.
@@ -711,7 +720,9 @@ impl KeyedState {
         let changed = next != self.selected;
         self.selected = next;
         let hidden_anchor = self.anchor.filter(|key| !self.positions.contains_key(key));
-        self.anchor = anchor.and_then(|index| self.visible_key(index)).or(hidden_anchor);
+        self.anchor = anchor
+            .and_then(|index| self.visible_key(index))
+            .or(hidden_anchor);
         changed
     }
 }

@@ -4,7 +4,7 @@
 use std::collections::HashSet;
 
 use junie_tui::core::id::ItemKey;
-use junie_tui::core::keyed::{KeyedSourceError, KeyedState, KeyedVec, Reconcile, KeyedRecord};
+use junie_tui::core::keyed::{KeyedRecord, KeyedSourceError, KeyedState, KeyedVec, Reconcile};
 use junie_tui::core::list::{KeyedRowSource, RowSource, SourceStamp};
 use junie_tui::core::work::Work;
 
@@ -180,7 +180,10 @@ fn keyed_filter_preserves_hidden_selection() {
     state.reconcile(&source).expect("deleted");
     assert!(!state.is_selected(k(2)) && !state.is_expanded(k(2)));
     assert_eq!(state.anchor(), None);
-    assert!(!state.set_selected(k(2), true), "deleted keys cannot be selected");
+    assert!(
+        !state.set_selected(k(2), true),
+        "deleted keys cannot be selected"
+    );
 }
 
 #[test]
@@ -195,20 +198,34 @@ fn keyed_cursor_fallback_is_deterministic() {
     source.disable(4);
     source.disable(5);
     state.reconcile(&source).expect("valid");
-    assert_eq!(state.cursor(), Some(k(2)), "predecessor when no successor is enabled");
+    assert_eq!(
+        state.cursor(),
+        Some(k(2)),
+        "predecessor when no successor is enabled"
+    );
 
     for key in [1, 2] {
         source.disable(key);
     }
     state.reconcile(&source).expect("valid");
     assert_eq!(state.cursor(), None);
-    assert!(!state.set_cursor(k(1)), "disabled rows cannot take the cursor");
-    assert!(!state.set_cursor(k(99)), "absent rows cannot take the cursor");
+    assert!(
+        !state.set_cursor(k(1)),
+        "disabled rows cannot take the cursor"
+    );
+    assert!(
+        !state.set_cursor(k(99)),
+        "absent rows cannot take the cursor"
+    );
 
     source.disabled.clear();
     source.data += 1;
     state.reconcile(&source).expect("valid");
-    assert_eq!(state.cursor(), Some(k(1)), "a fresh cursor starts on the first enabled row");
+    assert_eq!(
+        state.cursor(),
+        Some(k(1)),
+        "a fresh cursor starts on the first enabled row"
+    );
 }
 
 #[test]
@@ -219,7 +236,10 @@ fn keyed_press_cannot_retarget_after_reorder() {
     let out = state.reconcile(&source).expect("valid");
     assert!(out.pointer_cancelled);
     assert!(!state.release_press(k(1), 7));
-    assert!(!state.release_press(k(2), 7), "the row now at the old position is not the target");
+    assert!(
+        !state.release_press(k(2), 7),
+        "the row now at the old position is not the target"
+    );
 
     assert!(state.capture_press(k(2), 7));
     source.remove(2);
@@ -237,22 +257,34 @@ fn keyed_edit_cancels_on_changed_source() {
     assert_eq!(state.edit_key(), Some(k(2)));
 
     source.data += 1;
-    assert!(state.reconcile(&source).expect("valid").edit_cancelled, "payload revision moved");
+    assert!(
+        state.reconcile(&source).expect("valid").edit_cancelled,
+        "payload revision moved"
+    );
     assert_eq!(state.edit_key(), None);
 
     assert!(state.begin_edit(k(3)));
     source.show(&[2, 1]);
-    assert!(state.reconcile(&source).expect("valid").edit_cancelled, "hidden");
+    assert!(
+        state.reconcile(&source).expect("valid").edit_cancelled,
+        "hidden"
+    );
 
     source.show(&[2, 3, 1]);
     state.reconcile(&source).expect("valid");
     assert!(state.begin_edit(k(3)));
     source.remove(3);
-    assert!(state.reconcile(&source).expect("valid").edit_cancelled, "deleted");
+    assert!(
+        state.reconcile(&source).expect("valid").edit_cancelled,
+        "deleted"
+    );
 
     assert!(state.begin_edit(k(1)));
     source.disable(1);
-    assert!(state.reconcile(&source).expect("valid").edit_cancelled, "disabled");
+    assert!(
+        state.reconcile(&source).expect("valid").edit_cancelled,
+        "disabled"
+    );
     assert!(!state.begin_edit(k(1)));
 }
 
@@ -289,7 +321,10 @@ fn keyed_failed_release_consumes_capture() {
     let (mut state, _) = bound(&[1, 2]);
     assert!(state.capture_press(k(1), 3));
     assert!(!state.release_press(k(2), 3), "wrong key");
-    assert!(!state.release_press(k(1), 3), "the failed attempt consumed the capture");
+    assert!(
+        !state.release_press(k(1), 3),
+        "the failed attempt consumed the capture"
+    );
 
     assert!(state.capture_press(k(1), 3));
     assert!(!state.release_press(k(1), 4), "wrong layout generation");
@@ -297,7 +332,10 @@ fn keyed_failed_release_consumes_capture() {
 
     assert!(state.capture_press(k(1), 3));
     assert!(state.release_press(k(1), 3));
-    assert!(!state.capture_press(k(99), 3), "absent keys cannot be captured");
+    assert!(
+        !state.capture_press(k(99), 3),
+        "absent keys cannot be captured"
+    );
 }
 
 #[test]
@@ -342,10 +380,14 @@ impl KeyedRecord for Row {
 
 #[test]
 fn keyed_unchanged_stamp_does_not_enumerate_the_source() {
-    let mut store = KeyedVec::try_from_rows((1..=500).map(|n| (k(n), Row::new("r")))).expect("valid");
+    let mut store =
+        KeyedVec::try_from_rows((1..=500).map(|n| (k(n), Row::new("r")))).expect("valid");
     let mut state = KeyedState::new();
     let (_, first) = Work::measure(|| state.reconcile(&store).expect("valid"));
-    assert_eq!(first.source_rows, 1_000, "authoritative plus visible, once: {first:?}");
+    assert_eq!(
+        first.source_rows, 1_000,
+        "authoritative plus visible, once: {first:?}"
+    );
     let (out, again) = Work::measure(|| state.reconcile(&store).expect("valid"));
     assert_eq!((out, again.source_rows), (Reconcile::default(), 0));
 
@@ -368,7 +410,10 @@ fn keyed_vec_owns_its_revisions() {
     );
     assert_eq!(
         store.push(ItemKey::index(3), Row::new("idx")),
-        Err(KeyedSourceError::PositionalKey { index: 2, authoritative: true })
+        Err(KeyedSourceError::PositionalKey {
+            index: 2,
+            authoritative: true
+        })
     );
     assert_eq!(store.len(), 2);
     let s1 = store.stamp();
@@ -384,11 +429,16 @@ fn keyed_vec_owns_its_revisions() {
     assert_eq!(store.position(k(3)), Some(1));
 
     let before = store.stamp();
-    let same = store.iter().map(|(key, row)| (key, row.clone())).collect::<Vec<_>>();
+    let same = store
+        .iter()
+        .map(|(key, row)| (key, row.clone()))
+        .collect::<Vec<_>>();
     assert_eq!(store.replace_if_changed(same).expect("valid"), false);
     assert_eq!(store.stamp(), before);
     assert_eq!(
-        store.replace_if_changed([(k(9), Row::new("n"))]).expect("valid"),
+        store
+            .replace_if_changed([(k(9), Row::new("n"))])
+            .expect("valid"),
         true
     );
     assert_eq!(store.stamp().instance, before.instance);

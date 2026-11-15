@@ -633,14 +633,15 @@ impl ListBox {
         let out = self.keyed.reconcile(source)?;
         if first || out.data_changed || out.view_changed || out.cursor_changed {
             let n = self.keyed.visible_len();
-            self.core.cursor = self.keyed.cursor_view().unwrap_or(0).min(n.saturating_sub(1));
+            self.core.cursor = self
+                .keyed
+                .cursor_view()
+                .unwrap_or(0)
+                .min(n.saturating_sub(1));
             let rows = self.keyed.selected_view();
             match self.mode {
                 SelectMode::Single => self.chosen = rows.first().copied(),
-                SelectMode::Multi => self
-                    .core
-                    .selection
-                    .replace(rows, self.keyed.anchor_view()),
+                SelectMode::Multi => self.core.selection.replace(rows, self.keyed.anchor_view()),
             }
             self.core.scroll.ensure_visible(self.core.cursor);
         }
