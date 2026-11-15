@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
-use ratatui::layout::{Constraint, Rect};
+use ratatui::layout::{Constraint, Rect, Size};
 
 use crate::app::PageId;
 use crate::options::{PageValues, page_options};
@@ -24,6 +24,7 @@ use junie_tui::core::scroll::{
 use junie_tui::theme::Theme;
 use junie_tui::ui::ctx::RenderCtx;
 use junie_tui::ui::layout::StackChild;
+use junie_tui::ui::scroll_view::{Axes, ScrollView};
 use junie_tui::ui::specimen::{SpecimenState, StateGrid};
 use junie_tui::ui::text::{fit, slice_cells, truncate};
 use junie_tui::widgets::grid::{CellKind, CellValue, ColumnSpec, DataGrid, GridRows, RowTotal};
@@ -40,6 +41,8 @@ const HAND: WidgetId = ID.sub("hand");
 
 const FITS: WidgetId = ID.sub("fits");
 const OVER: WidgetId = ID.sub("over");
+const NEST_OUTER: WidgetId = ID.sub("nest_outer");
+const NEST_INNER: WidgetId = ID.sub("nest_inner");
 
 fn retired(i: usize) -> bool {
     i % 10 == 9
@@ -94,6 +97,9 @@ pub struct ScrollingPage {
     pub fits: ScrollPane,
     pub over: ScrollPane,
 
+    pub nest_outer: ScrollView,
+    pub nest_inner: ScrollView,
+
     pub region: Select,
     pub tree: TreeView,
     pub table: DataTable,
@@ -126,6 +132,8 @@ impl ScrollingPage {
             hand: ScrollPane::default(),
             fits: ScrollPane::default(),
             over: ScrollPane::default(),
+            nest_outer: ScrollView::new(NEST_OUTER).axes(Axes::VERTICAL),
+            nest_inner: ScrollView::new(NEST_INNER).axes(Axes::VERTICAL),
             region: Select::new(ID.sub("region"), "Region", REGIONS, 5),
             tree: TreeView::new(ID.sub("tree"), vec![]),
             table: DataTable::new(ID.sub("table"), vec![], vec![]),
@@ -413,7 +421,12 @@ impl ScrollingPage {
         let x2 = x1 + div + 1;
         let col = |x: u16, w: u16| Rect::new(x, area.y, w, area.height);
         self.render_hand(col(area.x, hand.saturating_sub(1)), buf, ctx);
-        self.render_dividers(col(x1, div.saturating_sub(1)), buf, ctx);
+        let middle = col(x1, div.saturating_sub(1));
+        if self.opts.on("scrolling.nested") {
+            self.render_nested(middle, buf, ctx);
+        } else {
+            self.render_dividers(middle, buf, ctx);
+        }
         self.render_cursor(col(x2, area.right().saturating_sub(x2)), buf, ctx);
     }
 
@@ -527,6 +540,33 @@ impl ScrollingPage {
                 pane.draw_divider(col, buf, ctx, id, false);
             }
         }
+    }
+
+    fn render_nested(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
+        let t = ctx.theme;
+        let panel = Panel::card(Some("Nested bars")).title_min(4);
+        let bg = panel.bg(t);
+        let inner = panel.render(area, buf, t);
+        if inner.height < 4 || inner.width < 8 {
+            return;
+        }
+        let (outer, nested) = (&mut self.nest_outer, &mut self.nest_inner);
+        let content = Size::new(inner.width, inner.height + 6);
+        outer.render(inner, content, buf, ctx, |frame, buf, ctx| {
+            buf.set_string(frame.x, frame.y, "outer content", t.muted().bg(bg));
+            let area = Rect::new(
+                frame.x,
+                frame.y + 2,
+                frame.width,
+                inner.height.saturating_sub(1),
+            );
+            nested.render(area, Size::new(area.width, 20), buf, ctx, |rows, buf, _| {
+                for i in 0..rows.height {
+                    let text = truncate(&format!("nested row {}", i + 1), rows.width as usize);
+                    buf.set_string(rows.x, rows.y + i, text, t.secondary().bg(bg));
+                }
+            });
+        });
     }
 
     fn render_cursor(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
@@ -750,6 +790,11 @@ impl ScrollingPage {
             }
             return Outcome::Ignored;
         }
+        for view in [&mut self.nest_inner, &mut self.nest_outer] {
+            if let Some(r) = view.pointer(ev) {
+                return r.outcome();
+            }
+        }
         for (pane, owner) in self.panes() {
             if !scrollbar::is_bar_of(ev.id, owner) {
                 continue;
@@ -824,13 +869,13 @@ impl Page for ScrollingPage {
                     return self.region.on_key(key).0;
                 }
                 if f == self.tree.id {
-                    return self.tree.on_key(key).0;
+                    return self.tree.on_key(key).outcome();
                 }
                 if f == self.table.id {
-                    return self.table.on_key(key).0;
+                    return self.table.on_key(key).outcome();
                 }
                 if f == self.grid.id {
-                    return self.grid.on_key(key).0;
+                    return self.grid.on_key(key).outcome();
                 }
                 Outcome::Ignored
             }
@@ -916,5 +961,76 @@ impl Page for ScrollingPage {
 
     fn template_mut(&mut self) -> Option<&mut Template> {
         Some(&mut self.template)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use junie_tui::core::focus::FocusRing;
+    use junie_tui::core::hit::HitRegistry;
+    use junie_tui::theme::ColorLevel;
+    use junie_tui::ui::ctx::Interaction;
+
+    fn render(page: &mut ScrollingPage) -> (Buffer, HitRegistry) {
+        let theme = Theme::for_level(ColorLevel::TrueColor);
+        let area = Rect::new(0, 0, 120, 40);
+        let mut buf = Buffer::empty(area);
+        let mut hits = HitRegistry::default();
+        let mut ring = FocusRing::default();
+        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        page.render(area, &mut buf, &mut ctx);
+        (buf, hits)
+    }
+
+    fn text(buf: &Buffer) -> String {
+        buf.content().iter().map(|c| c.symbol()).collect()
+    }
+
+    #[test]
+    fn nested_bars_switch_is_listed_on_the_options_tab_and_off_by_default() {
+        let opt = crate::options::find("scrolling.nested").expect("--opt can set it");
+        assert_eq!(opt.default, 0);
+        let view = crate::options::OptionsView::new(
+            ID.sub("options"),
+            &[crate::options::Group {
+                heading: "Scrolling",
+                opts: crate::options::page_options(PageId::Scrolling),
+                empty: "",
+            }],
+        );
+        assert!(view.control_id("scrolling.nested").is_some());
+    }
+
+    #[test]
+    fn nested_bars_are_off_by_default() {
+        let mut page = ScrollingPage::new();
+        let (buf, hits) = render(&mut page);
+        assert!(!text(&buf).contains("Nested bars"));
+        assert!(hits.bar(scrollbar::id_for(NEST_INNER)).is_none());
+    }
+
+    #[test]
+    fn nested_bars_show_a_partially_clipped_child_scrollbar() {
+        let mut page = ScrollingPage::new();
+        page.set_option("scrolling.nested", 1);
+        let (buf, hits) = render(&mut page);
+        assert!(text(&buf).contains("Nested bars"));
+
+        let full = page
+            .nest_inner
+            .last_layout()
+            .v_track
+            .expect("the child overflows, so it has a track");
+        let shown = hits
+            .bar(scrollbar::id_for(NEST_INNER))
+            .expect("part of the child's track is visible");
+        assert!(
+            shown.track.height < full.height,
+            "the visible fragment ({}) is shorter than the full track ({})",
+            shown.track.height,
+            full.height
+        );
+        assert!(hits.bar(scrollbar::id_for(NEST_OUTER)).is_some());
     }
 }

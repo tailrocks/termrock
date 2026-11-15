@@ -46,6 +46,8 @@ fn edited(n: usize) -> DataGrid {
 
 fn press(g: &mut DataGrid, code: KeyCode, mods: KeyModifiers) -> (Outcome, Option<GridAction>) {
     g.on_key(&Key { code, mods })
+        .try_into_single()
+        .unwrap_or_else(|_| panic!("single action expected"))
 }
 
 fn read_only(action: Option<GridAction>) -> bool {

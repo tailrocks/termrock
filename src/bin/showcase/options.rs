@@ -410,6 +410,7 @@ pub static SCROLLING: &[Opt] = &[
     ),
     Opt::new("scrolling.wrap", "Wrap at the ends", OFF_ON),
     Opt::new("scrolling.skip_disabled", "Skip disabled", OFF_ON).default(1),
+    Opt::new("scrolling.nested", "Nested scrollbars", OFF_ON),
 ];
 
 pub static BUTTONS: &[Opt] = &[
@@ -2094,8 +2095,11 @@ impl OptionsView {
                     if p.id == s.id && (p.is(Phase::Press) || p.is(Phase::Click)) {
                         cx.focus.focus(s.id);
                     }
-                    let (o, a) = r.into_parts();
-                    let set = a.and_then(|SelectAction::Changed(i)| changed(opt, i));
+                    let (o, actions) = r.into_parts();
+                    let mut set = None;
+                    for SelectAction::Changed(i) in actions {
+                        set = changed(opt, i).or(set);
+                    }
                     return Some((o, set));
                 }
                 _ => {}

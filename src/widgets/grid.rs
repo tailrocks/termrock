@@ -939,30 +939,32 @@ impl DataGrid {
         }
     }
 
-    fn on_choice(&mut self, r: Option<ChoiceResult>) -> Option<GridAction> {
-        let (value, tab) = match r? {
+    fn on_choice(&mut self, r: Option<ChoiceResult>) -> Response<GridAction> {
+        let Some(r) = r else {
+            return Response::ignored();
+        };
+        let (value, tab) = match r {
             ChoiceResult::Cancel => {
                 self.choice = None;
-                return None;
+                return Response::ignored();
             }
             ChoiceResult::Commit(v) => (v, None),
             ChoiceResult::CommitAndTab { value, backward } => (value, Some(backward)),
         };
-        let FinishEdit::Accepted { row, col, result } = self.finish_choice(value).ok()? else {
-            return None;
+        let accepted = match self.finish_choice(value) {
+            Ok(FinishEdit::Accepted { row, col, result }) => (row, col, result),
+            _ => return Response::ignored(),
         };
-        let ev =
-            (result == CellEditResult::Changed).then_some(GridAction::CellChanged { row, col });
+        let (row, col, result) = accepted;
+        let mut resp = if result == CellEditResult::Changed {
+            Response::emit(GridAction::CellChanged { row, col })
+        } else {
+            Response::changed()
+        };
         if let Some(backward) = tab {
-            match self.next_writable(backward) {
-                Ok(c) => {
-                    self.set_cursor(self.cursor.0, c, false);
-                    let _ = self.begin_edit();
-                }
-                Err(leave) => return Some(leave),
-            }
+            resp = resp.merge(self.tab_after_commit(backward));
         }
-        ev
+        resp
     }
 
     fn edit_blocked(&self, src: usize, col: usize) -> bool {
@@ -1092,6 +1094,32 @@ impl DataGrid {
             }
             Err(GridEditError::Busy) => (Outcome::Changed, Some(Self::busy_action())),
             Err(_) => (Outcome::Consumed, None),
+        }
+    }
+
+    /// Folds an editor-level outcome and every result it carries through
+    /// [`Self::on_choice`], in order.
+    fn on_choices(
+        &mut self,
+        out: Outcome,
+        results: crate::core::response::Actions<ChoiceResult>,
+    ) -> Response<GridAction> {
+        let mut resp = Response::from(out);
+        for result in results {
+            resp |= self.on_choice(Some(result));
+        }
+        resp
+    }
+
+    /// After a successful commit: land on the next writable cell, or report
+    /// that traversal left the grid at its edge.
+    fn tab_after_commit(&mut self, backward: bool) -> Response<GridAction> {
+        match self.next_writable(backward) {
+            Ok(c) => {
+                self.set_cursor(self.cursor.0, c, false);
+                self.begin_edit_for_traversal()
+            }
+            Err(leave) => Response::emit(leave),
         }
     }
 
@@ -1624,19 +1652,34 @@ impl DataGrid {
             && self.read_only_reason_at_cursor().is_none()
     }
 
-    pub fn begin_edit(&mut self) -> (Outcome, Option<GridAction>) {
+    /// Explicit activation of the cursor cell (Enter, F2, double click):
+    /// toggles flip, viewers are requested and editors open.
+    pub fn begin_edit(&mut self) -> Response<GridAction> {
+        self.open_editor(false)
+    }
+
+    /// Passive arrival at a cell (Tab traversal): text and choice editors
+    /// open, but toggle, boolean, JSON and long-text cells are only revealed.
+    fn begin_edit_for_traversal(&mut self) -> Response<GridAction> {
+        self.open_editor(true)
+    }
+
+    fn open_editor(&mut self, traversal: bool) -> Response<GridAction> {
         let Some(src) = self.cursor_src() else {
-            return (Outcome::Consumed, None);
+            return Response::consumed();
         };
         if !self.editable {
-            return (Outcome::Consumed, None);
+            return Response::consumed();
         }
         if self.submission.is_locked() {
-            return (Outcome::Changed, Some(Self::busy_action()));
+            return Response::emit(Self::busy_action());
         }
         let col = self.cursor.1;
         if let Some(reason) = self.read_only_reason_at_cursor() {
-            return (Outcome::Changed, Some(GridAction::ReadOnly { reason }));
+            if traversal {
+                return Response::changed();
+            }
+            return Response::emit(GridAction::ReadOnly { reason });
         }
 
         self.scroll.ensure_visible(self.cursor.0);
@@ -1647,7 +1690,10 @@ impl DataGrid {
         if spec.editor.is_constrained() {
             let raw = v.edit_text();
             if let Some(next) = spec.editor.toggled(&raw) {
-                return self.immediate(src, col, CellInput::Text(&next));
+                if traversal {
+                    return Response::changed();
+                }
+                return Response::from(self.immediate(src, col, CellInput::Text(&next)));
             }
             let opened =
                 ChoiceEditor::open(self.choice_id(), &spec.editor, &raw, &self.editor_config);
@@ -1656,7 +1702,13 @@ impl DataGrid {
                 col,
                 editor,
             });
-            return (Outcome::Changed, None);
+            return Response::changed();
+        }
+        if traversal
+            && (matches!(spec.kind, CellKind::Bool | CellKind::Json)
+                || matches!(spec.kind, CellKind::Text if self.is_long_text(&v, col)))
+        {
+            return Response::changed();
         }
         match spec.kind {
             CellKind::Bool => {
@@ -1665,21 +1717,16 @@ impl DataGrid {
                     CellValue::Bool(false) if spec.nullable => CellInput::Null,
                     _ => CellInput::Text("true"),
                 };
-                return self.immediate(src, col, next);
+                if traversal {
+                    return Response::changed();
+                }
+                return Response::from(self.immediate(src, col, next));
             }
             CellKind::Json => {
-                return (
-                    Outcome::Changed,
-                    Some(GridAction::OpenViewer { row: src, col }),
-                );
+                return Response::emit(GridAction::OpenViewer { row: src, col });
             }
-            CellKind::Text
-                if width(&v.text()) > 2 * self.widths.get(col).copied().unwrap_or(20) as usize =>
-            {
-                return (
-                    Outcome::Changed,
-                    Some(GridAction::OpenViewer { row: src, col }),
-                );
+            CellKind::Text if self.is_long_text(&v, col) => {
+                return Response::emit(GridAction::OpenViewer { row: src, col });
             }
             _ => {}
         }
@@ -1694,7 +1741,11 @@ impl DataGrid {
             col,
             field,
         });
-        (Outcome::Changed, None)
+        Response::changed()
+    }
+
+    fn is_long_text(&self, v: &CellValue, col: usize) -> bool {
+        width(&v.text()) > 2 * self.widths.get(col).copied().unwrap_or(20) as usize
     }
 
     pub fn commit_edit(&mut self) -> Option<GridAction> {
@@ -1712,7 +1763,7 @@ impl DataGrid {
         self.edit.take().is_some()
     }
 
-    pub fn on_blur(&mut self) -> (Outcome, Option<GridAction>) {
+    pub fn on_blur(&mut self) -> Response<GridAction> {
         if let Some(c) = &self.choice {
             let r = match self.editor_config.blur {
                 BlurAction::Commit => match c.editor.blur_value(&self.editor_config) {
@@ -1720,20 +1771,20 @@ impl DataGrid {
                     None => ChoiceResult::Cancel,
                 },
                 BlurAction::Cancel => ChoiceResult::Cancel,
-                BlurAction::Keep => return (Outcome::Ignored, None),
+                BlurAction::Keep => return Response::ignored(),
             };
-            return (Outcome::Changed, self.on_choice(Some(r)));
+            return Response::changed() | self.on_choice(Some(r));
         }
         if self.edit.is_none() {
-            return (Outcome::Ignored, None);
+            return Response::ignored();
         }
         match self.blur_action {
-            BlurAction::Commit => (Outcome::Changed, self.commit_edit()),
+            BlurAction::Commit => Response::from((Outcome::Changed, self.commit_edit())),
             BlurAction::Cancel => {
                 self.cancel_edit();
-                (Outcome::Changed, None)
+                Response::changed()
             }
-            BlurAction::Keep => (Outcome::Ignored, None),
+            BlurAction::Keep => Response::ignored(),
         }
     }
 
@@ -2201,10 +2252,10 @@ impl DataGrid {
         out
     }
 
-    pub fn on_key(&mut self, key: &Key) -> (Outcome, Option<GridAction>) {
+    pub fn on_key(&mut self, key: &Key) -> Response<GridAction> {
         if let Some(c) = self.choice.as_mut() {
             let (out, r) = c.editor.on_key(key, &self.editor_config);
-            return (out, self.on_choice(r));
+            return Response::from(out) | self.on_choice(r);
         }
 
         if key.code == KeyCode::Down
@@ -2221,42 +2272,25 @@ impl DataGrid {
             let r = e.field.on_key(key);
             return match r.exit {
                 Some(EditExit::Commit) => match self.commit_edit() {
-                    Some(ev) => (Outcome::Changed, Some(ev)),
-                    None => (Outcome::Changed, None),
+                    Some(ev) => Response::emit(ev),
+                    None => Response::changed(),
                 },
                 Some(EditExit::Cancel) => {
                     self.cancel_edit();
-                    (Outcome::Changed, None)
+                    Response::changed()
                 }
                 Some(EditExit::Tab { backward }) => {
-                    let ev = self.commit_edit();
+                    let committed = self.commit_edit();
                     if self.edit.is_some() {
-                        return (Outcome::Changed, None);
+                        return Response::changed();
                     }
-
-                    let n = self.columns.len();
-                    let mut col = self.cursor.1;
-                    loop {
-                        if backward {
-                            if col == 0 {
-                                return (Outcome::Changed, Some(GridAction::LeaveBackward));
-                            }
-                            col -= 1;
-                        } else {
-                            col += 1;
-                            if col >= n {
-                                return (Outcome::Changed, Some(GridAction::LeaveForward));
-                            }
-                        }
-                        if !self.columns[col].read_only && !self.columns[col].primary {
-                            break;
-                        }
+                    let mut resp = Response::changed();
+                    if let Some(action) = committed {
+                        resp.push_action(action);
                     }
-                    self.set_cursor(self.cursor.0, col, false);
-                    let _ = self.begin_edit();
-                    (Outcome::Changed, ev)
+                    resp.merge(self.tab_after_commit(backward))
                 }
-                None => (r.outcome, None),
+                None => Response::from(r.outcome),
             };
         }
 
@@ -2267,12 +2301,12 @@ impl DataGrid {
         if n_rows == 0 {
             return match lookup(&self.keymap, key) {
                 Some(GridCmd::InsertRow) if self.editable => {
-                    (Outcome::Changed, self.insert_action())
+                    Response::from((Outcome::Changed, self.insert_action()))
                 }
-                Some(GridCmd::Refresh) => (Outcome::Changed, Some(GridAction::Refresh)),
-                Some(GridCmd::FilterOnCell) => (Outcome::Changed, Some(GridAction::OpenFilters)),
-                Some(GridCmd::ClearFilters) => (Outcome::Changed, Some(GridAction::ClearFilters)),
-                _ => (Outcome::Ignored, None),
+                Some(GridCmd::Refresh) => Response::emit(GridAction::Refresh),
+                Some(GridCmd::FilterOnCell) => Response::emit(GridAction::OpenFilters),
+                Some(GridCmd::ClearFilters) => Response::emit(GridAction::ClearFilters),
+                _ => Response::ignored(),
             };
         }
         if let Some(KeyStep::Type(ch)) = KeyStep::ordered(
@@ -2297,12 +2331,12 @@ impl DataGrid {
             if let Moved::To(d) = moved {
                 self.set_cursor(d, c, false);
             }
-            return (moved.outcome(), None);
+            return Response::from(moved.outcome());
         }
 
         let copy = (key.ctrl_char('c') && self.has_selection()).then_some(GridCmd::Copy);
         if let Some(action) = lookup(&self.keymap, key).or(copy) {
-            return self.on_action(action);
+            return self.on_action(action).into();
         }
         if let Some(nav) = self.nav.action(key) {
             let letter = matches!(key.code, KeyCode::Char(_));
@@ -2334,41 +2368,41 @@ impl DataGrid {
                 Nav::Home => self.set_cursor(r, 0, shift),
                 Nav::End => self.set_cursor(r, usize::MAX, shift),
             }
-            return (Outcome::Changed, None);
+            return Response::changed();
         }
         match key.code {
             KeyCode::Enter | KeyCode::F(2) => {
                 if self.on_more_row() {
-                    return (Outcome::Changed, Some(GridAction::FetchMore));
+                    return Response::emit(GridAction::FetchMore);
                 }
                 if !self.editable {
                     if let Some(reason) = self.read_only_reason_at_cursor() {
-                        return (Outcome::Changed, Some(GridAction::ReadOnly { reason }));
+                        return Response::emit(GridAction::ReadOnly { reason });
                     }
-                    return (
+                    return Response::from((
                         Outcome::Changed,
                         self.cursor_src().map(GridAction::Activated),
-                    );
+                    ));
                 }
                 self.begin_edit()
             }
             KeyCode::Char(' ') => {
                 if self.on_more_row() {
-                    return (Outcome::Changed, Some(GridAction::FetchMore));
+                    return Response::emit(GridAction::FetchMore);
                 }
                 self.select_rows(SelectGesture::Toggle, self.cursor.0);
-                (Outcome::Changed, None)
+                Response::changed()
             }
             KeyCode::Esc => {
                 if self.anchor.is_some() || !self.selection.is_empty() {
                     self.anchor = None;
                     self.selection.clear();
-                    (Outcome::Changed, None)
+                    Response::changed()
                 } else {
-                    (Outcome::Ignored, None)
+                    Response::ignored()
                 }
             }
-            _ => (Outcome::Ignored, None),
+            _ => Response::ignored(),
         }
     }
 
@@ -2632,7 +2666,7 @@ impl DataGrid {
         Outcome::Changed
     }
 
-    pub fn on_click(&mut self, id: WidgetId, pos: Position) -> (Outcome, Option<GridAction>) {
+    pub fn on_click(&mut self, id: WidgetId, pos: Position) -> Response<GridAction> {
         self.on_click_with(id, pos, KeyModifiers::NONE, 1)
     }
 
@@ -2658,16 +2692,16 @@ impl DataGrid {
         pos: Position,
         mods: KeyModifiers,
         count: u8,
-    ) -> (Outcome, Option<GridAction>) {
+    ) -> Response<GridAction> {
         let count = count.max(1);
         if self.seam_of(id).is_some() {
             self.sizing.release();
-            return (Outcome::Consumed, None);
+            return Response::consumed();
         }
         if let Some(c) = self.choice.as_mut() {
             if c.editor.contains_id(id) {
                 let (out, r) = c.editor.on_click(id);
-                return (out, self.on_choice(r));
+                return Response::from(out) | self.on_choice(r);
             }
 
             self.choice = None;
@@ -2677,51 +2711,54 @@ impl DataGrid {
             return self.begin_edit();
         }
         if id == self.bar[0].id && self.bar[0].on_click() {
-            return (Outcome::Changed, Some(GridAction::PreviewSql));
+            return Response::emit(GridAction::PreviewSql);
         }
         if id == self.bar[1].id && self.bar[1].on_click() {
-            return (Outcome::Changed, Some(GridAction::DiscardRequested));
+            return Response::emit(GridAction::DiscardRequested);
         }
         if id == self.bar[2].id && self.bar[2].on_click() {
-            return (Outcome::Changed, Some(GridAction::CommitRequested));
+            return Response::emit(GridAction::CommitRequested);
         }
         if id == self.more_id() {
             self.set_cursor(self.rows.len(), self.cursor.1, false);
-            return (Outcome::Changed, Some(GridAction::FetchMore));
+            return Response::emit(GridAction::FetchMore);
         }
         if id == self.left_id() {
             self.scroll.h.scroll_by(-1);
-            return (Outcome::Changed, None);
+            return Response::changed();
         }
         if id == self.right_id() {
             self.scroll.h.scroll_by(1);
-            return (Outcome::Changed, None);
+            return Response::changed();
         }
         if scrollbar::is_bar_of(id, self.id) {
-            return (self.bar_press(pos).outcome().or(Outcome::Consumed), None);
+            return Response::from(self.bar_press(pos).outcome().or(Outcome::Consumed));
         }
         if let Some(c) = self.header_of(id) {
+            let mut committed = Response::ignored();
             if self.edit.is_some() {
-                self.commit_edit();
+                if let Some(action) = self.commit_edit() {
+                    committed.push_action(action);
+                }
                 if self.edit.is_some() {
-                    return (Outcome::Changed, None);
+                    return Response::changed();
                 }
             }
             if !self.columns[c].sortable {
-                return (Outcome::Consumed, None);
+                return committed | Response::consumed();
             }
             let next = match self.sort {
                 Some((sc, SortDir::Asc)) if sc == c => Some((c, SortDir::Desc)),
                 Some((sc, SortDir::Desc)) if sc == c => None,
                 _ => Some((c, SortDir::Asc)),
             };
-            return self.request_sort(next);
+            return committed | self.request_sort(next).into();
         }
         if let Some(d) = self.rownum_of(id) {
             if let Some(GridDrag::Rows { id: from_id, .. }) = self.drag.take()
                 && from_id == id
             {
-                return (Outcome::Changed, None);
+                return Response::changed();
             }
             if d < self.order.len() {
                 let from = self.cursor.0;
@@ -2729,9 +2766,10 @@ impl DataGrid {
                 let g = SelectGesture::from_mods(mods, self.toggle_mods, from);
                 self.select_rows(g, d);
             }
-            return (Outcome::Changed, None);
+            return Response::changed();
         }
         if let Some((d, c)) = self.cell_of(id) {
+            let mut committed = Response::ignored();
             if let Some(e) = &self.edit {
                 if self.order.get(d) == Some(&e.row) && e.col == c {
                     if let Some(at) = self.edit_offset(pos)
@@ -2739,43 +2777,53 @@ impl DataGrid {
                     {
                         e.field.click(at, count, false);
                     }
-                    return (Outcome::Changed, None);
+                    return Response::changed();
                 }
-                self.commit_edit();
+                if let Some(action) = self.commit_edit() {
+                    committed.push_action(action);
+                }
                 if self.edit.is_some() {
-                    return (Outcome::Changed, None);
+                    return Response::changed();
                 }
             }
-            let same = self.cursor == (d, c) && self.anchor.is_none();
-
-            if let Some(rect) = self.col_rects.get(c.saturating_sub(self.scroll.h.offset))
-                && self.columns[c].references.is_some()
-                && pos.x + 1 == rect.right()
-                && let Some(&src) = self.order.get(d)
-            {
-                return (
-                    Outcome::Changed,
-                    Some(GridAction::FollowReference { row: src, col: c }),
-                );
-            }
-
-            let extend = mods.contains(KeyModifiers::SHIFT);
-            self.point_cursor(d, c, extend);
-            if extend {
-                return (Outcome::Changed, None);
-            }
-            if self.editable && self.click.edits(count, same) {
-                return self.begin_edit();
-            }
-            if !self.editable && self.click.activates(count, same) {
-                return (
-                    Outcome::Changed,
-                    self.cursor_src().map(GridAction::Activated),
-                );
-            }
-            return (Outcome::Changed, None);
+            return committed | self.click_cell_after_commit(d, c, pos, mods, count);
         }
-        (Outcome::Ignored, None)
+        Response::ignored()
+    }
+
+    fn click_cell_after_commit(
+        &mut self,
+        d: usize,
+        c: usize,
+        pos: Position,
+        mods: KeyModifiers,
+        count: u8,
+    ) -> Response<GridAction> {
+        let same = self.cursor == (d, c) && self.anchor.is_none();
+
+        if let Some(rect) = self.col_rects.get(c.saturating_sub(self.scroll.h.offset))
+            && self.columns[c].references.is_some()
+            && pos.x + 1 == rect.right()
+            && let Some(&src) = self.order.get(d)
+        {
+            return Response::emit(GridAction::FollowReference { row: src, col: c });
+        }
+
+        let extend = mods.contains(KeyModifiers::SHIFT);
+        self.point_cursor(d, c, extend);
+        if extend {
+            return Response::changed();
+        }
+        if self.editable && self.click.edits(count, same) {
+            return self.begin_edit();
+        }
+        if !self.editable && self.click.activates(count, same) {
+            return Response::from((
+                Outcome::Changed,
+                self.cursor_src().map(GridAction::Activated),
+            ));
+        }
+        Response::changed()
     }
 
     pub fn on_drag(&mut self, pressed: WidgetId, pos: Position) -> Outcome {
@@ -3758,7 +3806,9 @@ impl crate::core::focus::BlurTarget for DataGrid {
         self.id
     }
     fn blur(&mut self) -> Outcome {
-        self.on_blur().0
+        // `BlurTarget` reports only an outcome; hosts that need the commit
+        // action call `DataGrid::on_blur` directly.
+        self.on_blur().erase().outcome()
     }
 }
 
@@ -3823,8 +3873,8 @@ impl crate::core::pointer::MouseTarget for DataGrid {
             && ev.on(c.editor.id)
             && ev.wheel().is_none()
         {
-            let (out, r) = c.editor.pointer(ev).into_parts();
-            return (out, self.on_choice(r)).into();
+            let (out, results) = c.editor.pointer(ev).into_parts();
+            return self.on_choices(out, results);
         }
 
         if (ev.on(self.id) || ev.wheel().is_some())
@@ -3836,7 +3886,7 @@ impl crate::core::pointer::MouseTarget for DataGrid {
         match ev.phase() {
             Some(Phase::Press) => self.on_press(id, pos, ev.count()).into(),
             Some(Phase::Drag) => self.on_drag(id, pos).into(),
-            Some(Phase::Click) => self.on_click_with(id, pos, ev.mods(), ev.count()).into(),
+            Some(Phase::Click) => self.on_click_with(id, pos, ev.mods(), ev.count()),
             _ => Response::ignored(),
         }
     }

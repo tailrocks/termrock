@@ -898,17 +898,29 @@ impl DataTable {
         self.scroll.reveal_column(self.cursor_col);
     }
 
-    pub fn begin_edit(&mut self) -> Outcome {
-        self.start_edit().0
+    pub fn begin_edit(&mut self) -> Response<TableAction> {
+        self.start_edit()
     }
 
-    pub fn start_edit(&mut self) -> (Outcome, Option<TableAction>) {
+    /// Explicit activation of the cursor cell (Enter, F2, double click):
+    /// toggle editors flip their value and report the commit.
+    pub fn start_edit(&mut self) -> Response<TableAction> {
+        self.open_editor(false)
+    }
+
+    /// Passive arrival at a cell (Tab traversal): text and choice editors
+    /// open, but a toggle editor is only revealed, never flipped.
+    fn begin_edit_for_traversal(&mut self) -> Response<TableAction> {
+        self.open_editor(true)
+    }
+
+    fn open_editor(&mut self, traversal: bool) -> Response<TableAction> {
         if self.rows.is_empty() {
-            return (Outcome::Consumed, None);
+            return Response::consumed();
         }
         let col = self.cursor_col;
         if !self.columns[col].editable {
-            return (Outcome::Consumed, None);
+            return Response::consumed();
         }
 
         self.scroll.ensure_visible(self.cursor_row);
@@ -917,11 +929,15 @@ impl DataTable {
         let text = self.rows[src][col].text.clone();
         let editor = &self.columns[col].editor;
         if let Some(next) = editor.toggled(&text) {
+            if traversal {
+                return Response::changed();
+            }
             return match self.apply_value(src, col, next) {
-                Ok(ev) => (Outcome::Changed, Some(ev)),
+                Ok(Some(action)) => Response::emit(action),
+                Ok(None) => Response::changed(),
                 Err(msg) => {
                     self.rows[src][col].error = Some(msg);
-                    (Outcome::Changed, None)
+                    Response::changed()
                 }
             };
         }
@@ -932,7 +948,7 @@ impl DataTable {
                 col,
                 editor,
             });
-            return (Outcome::Changed, None);
+            return Response::changed();
         }
         let mut field = EditField::single(text);
         field.validator = self.validator.as_ref().map(|v| v.bind(col));
@@ -941,12 +957,23 @@ impl DataTable {
             col,
             field,
         });
-        (Outcome::Changed, None)
+        Response::changed()
     }
 
-    fn apply_value(&mut self, src: usize, col: usize, text: String) -> Result<TableAction, String> {
+    /// Validates and stores `text`. `Ok(None)` is a valid no-op: the text equals
+    /// the stored value, so the target error clears but no commit is reported.
+    fn apply_value(
+        &mut self,
+        src: usize,
+        col: usize,
+        text: String,
+    ) -> Result<Option<TableAction>, String> {
         if let Some(Err(err)) = self.validator.as_ref().map(|v| v.validate_in(&col, &text)) {
             return Err(err.into_message());
+        }
+        if self.rows[src][col].text == text {
+            self.rows[src][col].error = None;
+            return Ok(None);
         }
         self.rows[src][col].text = text;
         self.rows[src][col].error = None;
@@ -959,39 +986,65 @@ impl DataTable {
                 self.scroll.ensure_visible(pos);
             }
         }
-        Ok(TableAction::Committed { row: src, col })
+        Ok(Some(TableAction::Committed { row: src, col }))
     }
 
-    fn on_choice(&mut self, r: Option<ChoiceResult>) -> Option<TableAction> {
-        let (value, tab) = match r? {
+    fn on_choice(&mut self, r: Option<ChoiceResult>) -> Response<TableAction> {
+        let Some(r) = r else {
+            return Response::ignored();
+        };
+        let (value, tab) = match r {
             ChoiceResult::Cancel => {
                 self.choice = None;
-                return Some(TableAction::Cancelled);
+                return Response::emit(TableAction::Cancelled);
             }
             ChoiceResult::Commit(v) => (v, None),
             ChoiceResult::CommitAndTab { value, backward } => (value, Some(backward)),
         };
-        let (src, col) = self.choice.as_ref().map(|c| (c.row, c.col))?;
+        let Some((src, col)) = self.choice.as_ref().map(|c| (c.row, c.col)) else {
+            return Response::ignored();
+        };
         match self.apply_value(src, col, value) {
-            Ok(ev) => {
+            Ok(committed) => {
                 self.choice = None;
+                let mut resp = Response::changed();
+                if let Some(action) = committed {
+                    resp.push_action(action);
+                }
                 match tab {
-                    Some(backward) => match self.tab_to_editable(backward) {
-                        Some(leave) => Some(leave),
-                        None => {
-                            self.start_edit();
-                            Some(ev)
-                        }
-                    },
-                    None => Some(ev),
+                    Some(backward) => resp.merge(self.tab_after_commit(backward)),
+                    None => resp,
                 }
             }
             Err(msg) => {
                 if let Some(c) = self.choice.as_mut() {
                     c.editor.error = Some(msg);
                 }
-                None
+                Response::ignored()
             }
+        }
+    }
+
+    /// Folds an editor-level outcome and every result it carries through
+    /// [`Self::on_choice`], in order.
+    fn on_choices(
+        &mut self,
+        out: Outcome,
+        results: crate::core::response::Actions<ChoiceResult>,
+    ) -> Response<TableAction> {
+        let mut resp = Response::from(out);
+        for result in results {
+            resp |= self.on_choice(Some(result));
+        }
+        resp
+    }
+
+    /// After a successful commit: land on the next editable cell, or report
+    /// that traversal left the table at its edge.
+    fn tab_after_commit(&mut self, backward: bool) -> Response<TableAction> {
+        match self.tab_to_editable(backward) {
+            Some(leave) => Response::emit(leave),
+            None => self.begin_edit_for_traversal(),
         }
     }
 
@@ -1018,18 +1071,21 @@ impl DataTable {
         None
     }
 
-    pub fn on_click_editor(&mut self, id: WidgetId) -> Option<(Outcome, Option<TableAction>)> {
+    pub fn on_click_editor(&mut self, id: WidgetId) -> Option<Response<TableAction>> {
         if let Some(c) = self.choice.as_mut()
             && c.editor.contains_id(id)
         {
             let (out, r) = c.editor.on_click(id);
-            return Some((out, self.on_choice(r)));
+            return Some(Response::from(out) | self.on_choice(r));
         }
         let (di, ci) = self.parts.cell(id, Part::ACTIONS)?;
         self.point_cursor(di, ci);
         Some(self.start_edit())
     }
 
+    /// Commits the open text edit. `None` means either the validator kept the
+    /// editor open (`is_editing` stays true) or the text was unchanged; neither
+    /// reports a commit.
     pub fn commit_edit(&mut self) -> Option<TableAction> {
         let mut e = self.edit.take()?;
         let src = e.row;
@@ -1038,6 +1094,10 @@ impl DataTable {
             return None;
         }
         let text = e.field.text().to_owned();
+        if self.rows[src][e.col].text == text {
+            self.rows[src][e.col].error = None;
+            return None;
+        }
         self.rows[src][e.col].text = text;
         self.rows[src][e.col].error = None;
         if let Some((c, d)) = self.sort
@@ -1062,7 +1122,7 @@ impl DataTable {
         self.edit.take().map(|_| TableAction::Cancelled)
     }
 
-    pub fn on_blur(&mut self) -> Option<TableAction> {
+    pub fn on_blur(&mut self) -> Response<TableAction> {
         if let Some(c) = &self.choice {
             return match self.editor_config.blur {
                 BlurAction::Commit => match c.editor.blur_value(&self.editor_config) {
@@ -1070,47 +1130,50 @@ impl DataTable {
                     None => self.on_choice(Some(ChoiceResult::Cancel)),
                 },
                 BlurAction::Cancel => self.on_choice(Some(ChoiceResult::Cancel)),
-                BlurAction::Keep => None,
+                BlurAction::Keep => Response::ignored(),
             };
         }
-        self.edit.as_ref()?;
-        match self.blur_action {
+        if self.edit.is_none() {
+            return Response::ignored();
+        }
+        let action = match self.blur_action {
             BlurAction::Commit => self.commit_edit(),
             BlurAction::Cancel => self.cancel_edit(),
-            BlurAction::Keep => None,
+            BlurAction::Keep => return Response::ignored(),
+        };
+        let mut resp = Response::changed();
+        if let Some(action) = action {
+            resp.push_action(action);
         }
+        resp
     }
 
-    pub fn on_key(&mut self, key: &Key) -> (Outcome, Option<TableAction>) {
+    pub fn on_key(&mut self, key: &Key) -> Response<TableAction> {
         if let Some(c) = self.choice.as_mut() {
             let (out, r) = c.editor.on_key(key, &self.editor_config);
-            return (out, self.on_choice(r));
+            return Response::from(out) | self.on_choice(r);
         }
         if let Some(e) = self.edit.as_mut() {
             let r = e.field.on_key(key);
             return match r.exit {
-                Some(EditExit::Commit) => match self.commit_edit() {
-                    Some(ev) => (Outcome::Changed, Some(ev)),
-                    None => (Outcome::Changed, None),
-                },
-                Some(EditExit::Cancel) => (Outcome::Changed, self.cancel_edit()),
+                Some(EditExit::Commit) => Response::from((Outcome::Changed, self.commit_edit())),
+                Some(EditExit::Cancel) => Response::from((Outcome::Changed, self.cancel_edit())),
                 Some(EditExit::Tab { backward }) => {
-                    let ev = self.commit_edit();
-                    if ev.is_none() {
-                        return (Outcome::Changed, None);
+                    let committed = self.commit_edit();
+                    if self.edit.is_some() {
+                        return Response::changed();
                     }
-
-                    if let Some(leave) = self.tab_to_editable(backward) {
-                        return (Outcome::Changed, Some(leave));
+                    let mut resp = Response::changed();
+                    if let Some(action) = committed {
+                        resp.push_action(action);
                     }
-                    self.start_edit();
-                    (Outcome::Changed, ev)
+                    resp.merge(self.tab_after_commit(backward))
                 }
-                None => (r.outcome, None),
+                None => Response::from(r.outcome),
             };
         }
         if self.rows.is_empty() {
-            return (Outcome::Ignored, None);
+            return Response::ignored();
         }
         if let Some(KeyStep::Type(c)) = KeyStep::ordered(
             key,
@@ -1125,29 +1188,29 @@ impl DataTable {
             if let Moved::To(d) = moved {
                 self.set_cursor(d, self.cursor_col);
             }
-            return (moved.outcome(), None);
+            return Response::from(moved.outcome());
         }
         if self.multi()
             && let Some(r) = self.on_key_multi(key)
         {
-            return r;
+            return r.into();
         }
         if unassigned_chord(key, &self.keymap) {
-            return (Outcome::Ignored, None);
+            return Response::ignored();
         }
         let (r, c) = (self.cursor_row, self.cursor_col);
         if let Some(action) = lookup(&self.keymap, key) {
             return match action {
-                TableCmd::SortByColumn => (self.sort_by(c), None),
+                TableCmd::SortByColumn => self.sort_by(c).into(),
                 TableCmd::SelectAll if self.multi() => {
                     if self.select_all() {
-                        (Outcome::Changed, Some(TableAction::SelectionChanged))
+                        Response::emit(TableAction::SelectionChanged)
                     } else {
-                        (Outcome::Consumed, None)
+                        Response::consumed()
                     }
                 }
 
-                TableCmd::SelectAll => (Outcome::Ignored, None),
+                TableCmd::SelectAll => Response::ignored(),
             };
         }
 
@@ -1160,7 +1223,7 @@ impl DataTable {
             return self.start_edit();
         }
         if let Some(nav) = self.nav.action(key) {
-            return self.on_nav(nav);
+            return self.on_nav(nav).into();
         }
         match key.code {
             KeyCode::Enter | KeyCode::F(2) if self.cell_nav && self.columns[c].editable => {
@@ -1177,14 +1240,14 @@ impl DataTable {
             KeyCode::Enter | KeyCode::Char(' ') => {
                 let src = self.order[r];
                 if self.is_disabled(src) {
-                    return (Outcome::Consumed, None);
+                    return Response::consumed();
                 }
                 if self.selection_mode == SelectionMode::Single {
                     self.selected = Some(src);
                 }
-                (Outcome::Changed, Some(TableAction::Activated(src)))
+                Response::emit(TableAction::Activated(src))
             }
-            _ => (Outcome::Ignored, None),
+            _ => Response::ignored(),
         }
     }
 
@@ -1232,11 +1295,13 @@ impl DataTable {
         }
     }
 
-    pub fn on_click_header(&mut self, col: usize) -> Outcome {
-        if self.edit.is_some() {
-            self.commit_edit();
+    pub fn on_click_header(&mut self, col: usize) -> Response<TableAction> {
+        let committed = self.commit_edit();
+        let mut resp = Response::from(self.sort_by(col));
+        if let Some(action) = committed {
+            resp = Response::emit(action).merge(resp);
         }
-        self.sort_by(col)
+        resp
     }
 
     pub fn on_click_cell(
@@ -1244,7 +1309,7 @@ impl DataTable {
         display: usize,
         col: usize,
         pos: Position,
-    ) -> (Outcome, Option<TableAction>) {
+    ) -> Response<TableAction> {
         self.on_click_cell_count(display, col, pos, KeyModifiers::NONE, 1)
     }
 
@@ -1254,7 +1319,7 @@ impl DataTable {
         col: usize,
         pos: Position,
         mods: KeyModifiers,
-    ) -> (Outcome, Option<TableAction>) {
+    ) -> Response<TableAction> {
         self.on_click_cell_count(display, col, pos, mods, 1)
     }
 
@@ -1265,14 +1330,15 @@ impl DataTable {
         pos: Position,
         mods: KeyModifiers,
         count: u8,
-    ) -> (Outcome, Option<TableAction>) {
+    ) -> Response<TableAction> {
         let count = count.max(1);
         if display >= self.rows.len() {
-            return (Outcome::Consumed, None);
+            return Response::consumed();
         }
 
         self.choice = None;
         let col = col.min(self.columns.len().saturating_sub(1));
+        let mut committed = Response::ignored();
         if let Some(e) = &self.edit {
             if e.row == self.order[display] && e.col == col {
                 if let Some(at) = self.edit_offset(pos)
@@ -1280,13 +1346,25 @@ impl DataTable {
                 {
                     e.field.click(at, count, false);
                 }
-                return (Outcome::Changed, None);
+                return Response::changed();
             }
-            self.commit_edit();
+            if let Some(action) = self.commit_edit() {
+                committed.push_action(action);
+            }
             if self.edit.is_some() {
-                return (Outcome::Changed, None);
+                return Response::changed();
             }
         }
+        committed.merge(self.click_cell_after_commit(display, col, mods, count))
+    }
+
+    fn click_cell_after_commit(
+        &mut self,
+        display: usize,
+        col: usize,
+        mods: KeyModifiers,
+        count: u8,
+    ) -> Response<TableAction> {
         let same = self.cursor_row == display && (!self.cell_nav || self.cursor_col == col);
         let from = self.cursor_row;
         self.point_cursor(display, if self.cell_nav { col } else { self.cursor_col });
@@ -1296,16 +1374,16 @@ impl DataTable {
             let enabled = |r: usize| !disabled.contains(&r);
             let gesture = SelectGesture::from_mods(mods, self.toggle_mods, from);
             if gesture == SelectGesture::Only && !enabled(src) {
-                return (Outcome::Changed, None);
+                return Response::changed();
             }
             let changed = self.selection.apply(gesture, display, &self.order, enabled);
             if gesture == SelectGesture::Only && self.click.activates(count, same) {
-                return (Outcome::Changed, Some(TableAction::Activated(src)));
+                return Response::emit(TableAction::Activated(src));
             }
-            return (
+            return Response::from((
                 Outcome::Changed,
                 changed.then_some(TableAction::SelectionChanged),
-            );
+            ));
         }
         if self.cell_nav && self.columns[col].editable && self.click.edits(count, same) {
             return self.start_edit();
@@ -1313,16 +1391,16 @@ impl DataTable {
         if !self.cell_nav {
             let src = self.order[display];
             if self.is_disabled(src) {
-                return (Outcome::Changed, None);
+                return Response::changed();
             }
             if self.selection_mode == SelectionMode::Single {
                 self.selected = Some(src);
             }
             if self.click.activates(count, same) {
-                return (Outcome::Changed, Some(TableAction::Activated(src)));
+                return Response::emit(TableAction::Activated(src));
             }
         }
-        (Outcome::Changed, None)
+        Response::changed()
     }
 
     fn layout_columns(&mut self, area: Rect) {
@@ -1871,7 +1949,9 @@ impl crate::core::focus::BlurTarget for DataTable {
     }
     fn blur(&mut self) -> Outcome {
         let editing = self.edit.is_some();
-        self.on_blur();
+        // `BlurTarget` reports only an outcome; hosts that need the commit
+        // action call `DataTable::on_blur` directly.
+        let _ = self.on_blur();
         if editing && self.edit.is_none() {
             Outcome::Changed
         } else {
@@ -1938,8 +2018,8 @@ impl crate::core::pointer::MouseTarget for DataTable {
             && ev.on(c.editor.id)
             && ev.wheel().is_none()
         {
-            let (out, r) = c.editor.pointer(ev).into_parts();
-            return (out, self.on_choice(r)).into();
+            let (out, results) = c.editor.pointer(ev).into_parts();
+            return self.on_choices(out, results);
         }
 
         if (ev.on(self.id) || ev.wheel().is_some())
@@ -1973,7 +2053,7 @@ impl crate::core::pointer::MouseTarget for DataTable {
             Some(Phase::Drag) => self.on_drag(id, pos).into(),
             Some(Phase::Click) => {
                 if let Some(r) = self.on_click_editor(id) {
-                    return r.into();
+                    return r;
                 }
                 if id == self.check_all_id() {
                     return self.on_click_check_all().into();
@@ -1985,7 +2065,7 @@ impl crate::core::pointer::MouseTarget for DataTable {
                     return self.on_click_check(d).into();
                 }
                 if let Some(c) = ev.index_of(Part::HEADER) {
-                    return self.on_click_header(c).into();
+                    return self.on_click_header(c);
                 }
 
                 let col = |t: &Self| t.column_at(pos.x).unwrap_or(t.cursor_col);
@@ -1995,9 +2075,9 @@ impl crate::core::pointer::MouseTarget for DataTable {
                     _ => None,
                 };
                 match at {
-                    Some((row, col)) => self
-                        .on_click_cell_count(row, col, pos, ev.mods(), ev.count())
-                        .into(),
+                    Some((row, col)) => {
+                        self.on_click_cell_count(row, col, pos, ev.mods(), ev.count())
+                    }
                     None => Response::ignored(),
                 }
             }

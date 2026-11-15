@@ -331,9 +331,11 @@ impl Page for SidebarsPage {
             }
             PageEvent::Pointer(ev) => {
                 if let Some(r) = self.rail.route(ev) {
-                    let (o, a) = r.into_parts();
-                    if let Some(a) = a {
-                        self.set_hidden(a == RailAction::Collapse, cx);
+                    let (o, actions) = r.into_parts();
+                    if !actions.is_empty() {
+                        for a in actions {
+                            self.set_hidden(a == RailAction::Collapse, cx);
+                        }
                         return Outcome::Changed;
                     }
                     return o;
@@ -342,15 +344,17 @@ impl Page for SidebarsPage {
                     cx.focus.focus(self.nav.id);
                 }
                 if let Some(r) = self.nav.route(ev) {
-                    let (o, a) = r.into_parts();
-                    self.act(a);
+                    let (o, actions) = r.into_parts();
+                    for a in actions {
+                        self.act(Some(a));
+                    }
                     return o;
                 }
                 if let Some(r) = self.collapse.route(ev) {
                     if !ev.is(Phase::Click) {
                         return r.outcome();
                     }
-                    if r.into_action().is_some() {
+                    if r.has_actions() {
                         self.toggle_collapsed();
                     }
                     return Outcome::Changed;

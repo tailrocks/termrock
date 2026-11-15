@@ -492,7 +492,7 @@ impl FormsPage {
             return r.outcome();
         }
         if let Some(r) = self.submit.route(ev) {
-            if r.into_action().is_some() {
+            if r.has_actions() {
                 self.do_submit(cx);
             }
             return if click {
@@ -502,7 +502,7 @@ impl FormsPage {
             };
         }
         if let Some(r) = self.reset.route(ev) {
-            if r.into_action().is_some() {
+            if r.has_actions() {
                 self.do_reset(cx);
             }
             return if click {

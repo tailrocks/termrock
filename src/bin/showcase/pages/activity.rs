@@ -759,8 +759,10 @@ impl Page for ActivityPage {
             }
             PageEvent::Pointer(ev) => {
                 if let Some(r) = self.chips.route(ev) {
-                    let (o, a) = r.into_parts();
-                    self.on_chips(a, cx);
+                    let (o, actions) = r.into_parts();
+                    for a in actions {
+                        self.on_chips(Some(a), cx);
+                    }
                     return o;
                 }
                 if let Some(r) = self.view.route(ev) {
@@ -772,7 +774,7 @@ impl Page for ActivityPage {
                 if let Some(r) = self.stop.route(ev)
                     && r.outcome() != Outcome::Ignored
                 {
-                    if r.into_action().is_some() {
+                    if r.has_actions() {
                         self.stop(cx);
                     }
                     return Outcome::Changed;
@@ -780,7 +782,7 @@ impl Page for ActivityPage {
                 if let Some(r) = self.restart.route(ev)
                     && r.outcome() != Outcome::Ignored
                 {
-                    if r.into_action().is_some() {
+                    if r.has_actions() {
                         self.restart(cx);
                     }
                     return Outcome::Changed;
