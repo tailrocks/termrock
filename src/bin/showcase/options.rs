@@ -1029,6 +1029,7 @@ static TREES: &[Opt] = &[
     Opt::new("trees.type_ahead", "Type-ahead", OFF_ON).default(1),
     Opt::new("trees.keymap", "Key map", &["default", "custom"]),
     Opt::new("trees.marker", "Selected marker", &["none", "chevron"]),
+    Opt::new("trees.filter", "Filter connections", &["off", "orders"]),
 ];
 
 static OVERVIEW: &[Opt] = &[
