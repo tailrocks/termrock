@@ -272,7 +272,6 @@ pub const INSPECT_CHANGES_COVERAGE: &[(&str, &str)] = &[
     ("widgets::inspect_changes::ChangeSet", "diff"),
     ("widgets::inspect_changes::ChangeWords", "diff"),
     ("widgets::inspect_changes::InspectOutcome", "diff"),
-    ("widgets::inspect_changes::InspectOutcome::Close", "diff"),
     ("widgets::inspect_changes::InspectOutcome::Back", "diff"),
     ("widgets::inspect_changes::InspectMode", "diff"),
     ("widgets::inspect_changes::InspectMode::Compact", "diff"),
@@ -287,6 +286,10 @@ pub const INSPECT_CHANGES_COVERAGE: &[(&str, &str)] = &[
 ];
 
 pub const INSPECT_CHANGES_ALLOWLIST: &[(&str, &str)] = &[
+    (
+        "widgets::inspect_changes::InspectOutcome::Close",
+        "The Diff page configures returns_to_exit(true), so its inspector always resolves to Back; Close is what an inspector with the default returns_to_exit(false) reports, pinned by a_dismissal_resolves_like_leaving_with_escape.",
+    ),
     (
         "widgets::inspect_changes::ChangeSet::additions",
         "The inspector draws the added-line total in its summary line; the page does not read it separately.",
