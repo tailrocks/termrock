@@ -90,10 +90,17 @@ metrics! {
     SchedulingRecordsVisited => "scheduling_records_visited",
     /// Polls a scheduling traversal issued to a live source.
     SchedulingPolls => "scheduling_polls",
+    /// Text bytes fed through a content hash to detect a change.
+    TextBytesHashed => "text_bytes_hashed",
+    /// Calls to an application-supplied annotation provider (highlighter or
+    /// block segmenter) over a whole text.
+    AnnotationQueries => "annotation_queries",
+    /// Stable-key comparisons made while matching items to their source.
+    IdentityComparisons => "identity_comparisons",
 }
 
 /// Number of [`Metric`] variants.
-pub const METRIC_COUNT: usize = Metric::SchedulingPolls as usize + 1;
+pub const METRIC_COUNT: usize = Metric::IdentityComparisons as usize + 1;
 
 /// Raw counts of one thread at one instant, tagged so a delta can reject a
 /// snapshot that is not comparable.

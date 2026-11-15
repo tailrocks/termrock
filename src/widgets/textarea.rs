@@ -274,6 +274,7 @@ impl TextArea {
     pub fn begin_edit(&mut self) {
         if !self.disabled {
             if !self.editing {
+                crate::record_work!(PayloadBytesCloned, self.field.buffer.text().len());
                 self.snapshot = self.field.buffer.text().to_owned();
                 self.focus_edit = false;
             }
@@ -592,6 +593,7 @@ impl TextArea {
             for (li, line) in lines.iter().enumerate() {
                 let visible = li >= self.scroll.offset && li < self.scroll.offset + rows as usize;
                 if visible {
+                    crate::record_work!(VisibleRowsPainted, 1usize);
                     let y = inner.y + (li - self.scroll.offset) as u16;
                     let mut col = 0usize;
                     let clipped_right = width(line) > self.hscroll + inner.width as usize;

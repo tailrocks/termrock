@@ -16,20 +16,32 @@
 
 #![cfg(feature = "work-metrics")]
 
+use std::ops::Range;
+
+use junie_tui::core::event::Key;
 use junie_tui::core::focus::FocusRing;
 use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::WidgetId;
+use junie_tui::core::id::{ItemKey, WidgetId};
+use junie_tui::metrics::harness::assert_exact;
 use junie_tui::metrics::report::ScenarioReport;
 use junie_tui::metrics::{Metric, WorkDelta, measure};
+use junie_tui::theme::SyntaxTone;
 use junie_tui::theme::{ColorLevel, Theme};
 use junie_tui::ui::ctx::{Interaction, RenderCtx};
 use junie_tui::ui::scroll_view::ScrollView;
+use junie_tui::widgets::code::CodeEditor;
+use junie_tui::widgets::completion::Completion;
 use junie_tui::widgets::list::{ListBox, ListItem, SelectMode};
+use junie_tui::widgets::option_list::Item;
+use junie_tui::widgets::picker::Picker;
+use junie_tui::widgets::select::Select;
 use junie_tui::widgets::table::{Cell, Column, DataTable};
+use junie_tui::widgets::textarea::TextArea;
 use junie_tui::widgets::tree::{TreeNode, TreeView};
 use junie_tui::widgets::viewport::{Line, Span, TextViewport};
 use junie_tui::widgets::viewport_ops::ViewportOps;
 use ratatui::buffer::Buffer;
+use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Constraint, Rect, Size};
 
 const VIEWPORT: Rect = Rect::new(0, 0, 100, 30);
@@ -37,12 +49,19 @@ const SIZES: [usize; 3] = [1_000, 10_000, 100_000];
 const ID: WidgetId = WidgetId::of("work.budget");
 
 fn frame<T>(paint: impl FnOnce(&mut Buffer, &mut RenderCtx) -> T) -> (Buffer, T) {
+    frame_with(Interaction::default(), paint)
+}
+
+fn frame_with<T>(
+    interaction: Interaction,
+    paint: impl FnOnce(&mut Buffer, &mut RenderCtx) -> T,
+) -> (Buffer, T) {
     let theme = Theme::for_level(ColorLevel::TrueColor);
     let mut buf = Buffer::empty(VIEWPORT);
     let mut hits = HitRegistry::default();
     let mut ring = FocusRing::default();
     let out = {
-        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        let mut ctx = RenderCtx::new(&theme, interaction, &mut hits, &mut ring);
         paint(&mut buf, &mut ctx)
     };
     (buf, out)
@@ -412,6 +431,500 @@ fn work_contract_tree_filtered_rebuild() {
             n,
             filter,
             "the visible row count equals the labels containing the query",
+        );
+    }
+}
+
+fn key(code: KeyCode) -> Key {
+    Key {
+        code,
+        mods: KeyModifiers::NONE,
+    }
+}
+
+fn focused() -> Interaction {
+    Interaction {
+        focus: Some(ID),
+        ..Interaction::default()
+    }
+}
+
+fn screen_has(buf: &Buffer, text: &str) -> bool {
+    (0..buf.area.height).any(|y| row_text(buf, y).contains(text))
+}
+
+fn per_size<T: Copy>(n: usize, values: [T; 3]) -> T {
+    values[SIZES
+        .iter()
+        .position(|&size| size == n)
+        .expect("a fixture size")]
+}
+
+fn picker_items(n: usize) -> Vec<Item> {
+    (0..n)
+        .map(|i| {
+            Item::new(format!("Item {i:06}"))
+                .key(ItemKey::Index(i))
+                .detail("detail")
+        })
+        .collect()
+}
+
+fn item_bytes(items: &[Item]) -> u64 {
+    items
+        .iter()
+        .map(|i| (i.label.len() + i.detail.len()) as u64)
+        .sum()
+}
+
+fn draw_picker(picker: &mut Picker) -> Buffer {
+    frame(|buf, ctx| {
+        picker.draw(VIEWPORT, buf, ctx);
+        ctx.flush_overlays(buf);
+    })
+    .0
+}
+
+#[test]
+fn work_contract_picker_linear_projection() {
+    for n in SIZES {
+        let items = picker_items(n);
+        let bytes = item_bytes(&items);
+        let mut picker = Picker::new(ID, "Pick");
+        let (set, set_work) = measure(|| picker.set_items(items.clone()));
+        set.expect("valid items");
+        // Measured: set_items copies every item into the authoritative list.
+        assert_exact(
+            &set_work,
+            &format!("picker set_items, n={n}"),
+            &[(Metric::PayloadBytesCloned, bytes)],
+        );
+
+        draw_picker(&mut picker);
+        let (buf, full) = measure(|| draw_picker(&mut picker));
+        assert!(screen_has(&buf, "Item 000000"));
+        // Measured: a settled frame paints 13 rows but measures the width of
+        // every item's label, detail and group (3 calls per item) to size the
+        // columns, so its cost grows with the hidden list.
+        assert_exact(
+            &full,
+            &format!("picker settled frame, n={n}"),
+            &[
+                (Metric::VisibleRowsPainted, 13),
+                (
+                    Metric::IntrinsicWidthCalls,
+                    per_size(n, [3_143, 30_143, 300_143]),
+                ),
+                (
+                    Metric::TextBytesMeasured,
+                    per_size(n, [17_143, 170_143, 1_700_143]),
+                ),
+            ],
+        );
+
+        let stride = n / 20;
+        let visible: Vec<Item> = (0..20).map(|k| items[k * stride].clone()).collect();
+        let (res, project) = measure(|| picker.set_visible_items(visible.clone()));
+        res.expect("known keys");
+        // Measured: each of the 20 visible keys is found by a linear scan of
+        // the authoritative list, sum(k * stride + 1) = 190 * stride + 20
+        // comparisons, plus 1 comparison to re-find the cursor item. This is
+        // the O(N x M) projection; only 20 items are cloned.
+        assert_exact(
+            &project,
+            &format!("picker set_visible_items, n={n}"),
+            &[
+                (Metric::PayloadBytesCloned, 340),
+                (
+                    Metric::IdentityComparisons,
+                    per_size(n, [9_521, 95_021, 950_021]),
+                ),
+            ],
+        );
+
+        let (buf, filtered) = measure(|| draw_picker(&mut picker));
+        assert!(screen_has(&buf, "Item 000000"));
+        // Measured: a frame over the 20 filtered items costs the same at every
+        // hidden size.
+        assert_exact(
+            &filtered,
+            &format!("picker filtered frame, n={n}"),
+            &[
+                (Metric::VisibleRowsPainted, 13),
+                (Metric::IntrinsicWidthCalls, 203),
+                (Metric::TextBytesMeasured, 483),
+            ],
+        );
+
+        let (res, replace) = measure(|| picker.replace_items(items.clone()));
+        res.expect("valid items");
+        // Measured: a full replacement copies every item once and re-finds the
+        // cursor item with one comparison.
+        assert_exact(
+            &replace,
+            &format!("picker replace_items, n={n}"),
+            &[
+                (Metric::PayloadBytesCloned, bytes),
+                (Metric::IdentityComparisons, 1),
+            ],
+        );
+
+        publish(
+            "picker",
+            "settled_frame",
+            n,
+            full,
+            "the frame shows the first item",
+        );
+        publish(
+            "picker",
+            "set_visible_items",
+            n,
+            project,
+            "the picker shows the 20 projected items",
+        );
+    }
+}
+
+#[test]
+fn work_contract_select_open_frame() {
+    for n in SIZES {
+        let labels: Vec<String> = (0..n).map(|i| format!("option {i:06}")).collect();
+        let bytes: u64 = labels.iter().map(|l| l.len() as u64).sum();
+        let refs: Vec<&str> = labels.iter().map(String::as_str).collect();
+        let mut select = Select::new(ID, "Choice", &refs, 0);
+        let area = Rect::new(2, 2, 40, 3);
+        let draw = |select: &mut Select| {
+            frame(|buf, ctx| {
+                select.render(area, buf, ctx, ctx.theme.canvas);
+                ctx.flush_overlays(buf);
+            })
+            .0
+        };
+
+        let (buf, closed) = measure(|| draw(&mut select));
+        assert!(screen_has(&buf, "option 000000"));
+        // Measured: a closed select measures its label and clones nothing.
+        assert_exact(
+            &closed,
+            &format!("select closed frame, n={n}"),
+            &[
+                (Metric::IntrinsicWidthCalls, 1),
+                (Metric::TextBytesMeasured, 6),
+            ],
+        );
+
+        let _ = select.on_key(&key(KeyCode::Enter));
+        assert!(select.open, "Enter opens the list");
+        draw(&mut select);
+        let (buf, open) = measure(|| draw(&mut select));
+        assert!(screen_has(&buf, "option 000007"));
+        // Measured: every open frame paints 8 rows and deep-clones all option
+        // labels into the overlay closure, so the clone grows with the list.
+        assert_exact(
+            &open,
+            &format!("select open frame, n={n}"),
+            &[
+                (Metric::PayloadBytesCloned, bytes),
+                (Metric::VisibleRowsPainted, 8),
+                (Metric::IntrinsicWidthCalls, 1),
+                (Metric::TextBytesMeasured, 6),
+            ],
+        );
+
+        publish(
+            "select",
+            "open_frame",
+            n,
+            open,
+            "the open list shows the first 8 options",
+        );
+    }
+}
+
+#[test]
+fn work_contract_completion_open_frame() {
+    for n in SIZES {
+        let items: Vec<Item> = (0..n)
+            .map(|i| Item::new(format!("symbol_{i:06}")).detail("fn"))
+            .collect();
+        let bytes = item_bytes(&items);
+        let mut completion = Completion::new(ID);
+        let draw = |completion: &mut Completion| {
+            frame(|buf, ctx| {
+                completion.render(VIEWPORT, buf, ctx);
+                ctx.flush_overlays(buf);
+            })
+            .0
+        };
+
+        let (_, closed) = measure(|| draw(&mut completion));
+        assert_exact(&closed, &format!("completion closed frame, n={n}"), &[]);
+
+        completion.open(items, Rect::new(10, 5, 1, 1), 0);
+        draw(&mut completion);
+        let (buf, open) = measure(|| draw(&mut completion));
+        assert!(screen_has(&buf, "symbol_000000"));
+        // Measured: every open frame paints 8 rows, measures every item's
+        // label and detail to size the popup (2 calls per item), and clones
+        // the whole completion, items included, for the overlay closure.
+        assert_exact(
+            &open,
+            &format!("completion open frame, n={n}"),
+            &[
+                (Metric::PayloadBytesCloned, bytes),
+                (Metric::VisibleRowsPainted, 8),
+                (
+                    Metric::IntrinsicWidthCalls,
+                    per_size(n, [2_136, 20_136, 200_136]),
+                ),
+                (
+                    Metric::TextBytesMeasured,
+                    per_size(n, [15_256, 150_256, 1_500_256]),
+                ),
+            ],
+        );
+
+        publish(
+            "completion",
+            "open_frame",
+            n,
+            open,
+            "the popup shows the first 8 candidates",
+        );
+    }
+}
+
+fn editor_text(n: usize) -> String {
+    (0..n)
+        .map(|i| format!("let value_{i:06} = {i};"))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+fn highlight_first_keyword(_: &str) -> Vec<(Range<usize>, SyntaxTone)> {
+    vec![(0..3, SyntaxTone::Keyword)]
+}
+
+fn one_block(text: &str) -> Vec<Range<usize>> {
+    std::iter::once(0..text.len()).collect()
+}
+
+#[test]
+fn work_contract_editor_prepared_frame() {
+    for n in SIZES {
+        let text = editor_text(n);
+        let len = text.len() as u64;
+        let mut editor = CodeEditor::new(ID, &text)
+            .highlighter(highlight_first_keyword)
+            .segmenter(one_block);
+        let draw = |editor: &mut CodeEditor| {
+            frame_with(focused(), |buf, ctx| {
+                editor.render(VIEWPORT, buf, ctx, ctx.theme.canvas);
+            })
+            .0
+        };
+        let widths = |calls: [u64; 3], bytes: [u64; 3]| {
+            [
+                (Metric::IntrinsicWidthCalls, per_size(n, calls)),
+                (Metric::TextBytesMeasured, per_size(n, bytes)),
+            ]
+        };
+
+        let (buf, first) = measure(|| draw(&mut editor));
+        assert!(screen_has(&buf, "let value_000000 = 0;"));
+        // Measured: the first focused frame copies the text twice (the
+        // edit-entry snapshot and the per-frame render copy), hashes it once,
+        // and calls both annotation providers.
+        let [w, b] = widths([1_658, 10_658, 100_658], [23_585, 239_586, 2_489_587]);
+        assert_exact(
+            &first,
+            &format!("editor first frame, n={n}"),
+            &[
+                (Metric::PayloadBytesCloned, 2 * len),
+                (Metric::VisibleRowsPainted, 29),
+                w,
+                b,
+                (Metric::TextBytesHashed, len),
+                (Metric::AnnotationQueries, 2),
+            ],
+        );
+
+        let (_, settled) = measure(|| draw(&mut editor));
+        // Measured: a settled frame still copies and hashes the whole text,
+        // measures every line, and calls the block segmenter, which is not
+        // cached. Only the highlighter result is cached by the hash.
+        assert_exact(
+            &settled,
+            &format!("editor settled frame, n={n}"),
+            &[
+                (Metric::PayloadBytesCloned, len),
+                (Metric::VisibleRowsPainted, 29),
+                w,
+                b,
+                (Metric::TextBytesHashed, len),
+                (Metric::AnnotationQueries, 1),
+            ],
+        );
+
+        let (_, first_key) = measure(|| editor.on_key(&key(KeyCode::Char('x'))));
+        // Measured: the first keystroke of a run snapshots the whole text for
+        // undo.
+        assert_exact(
+            &first_key,
+            &format!("editor first keystroke, n={n}"),
+            &[(Metric::PayloadBytesCloned, len)],
+        );
+        let (_, second_key) = measure(|| editor.on_key(&key(KeyCode::Char('y'))));
+        assert_exact(
+            &second_key,
+            &format!("editor second keystroke of the run, n={n}"),
+            &[],
+        );
+
+        let (buf, after) = measure(|| draw(&mut editor));
+        assert!(screen_has(&buf, "xylet value_000000 = 0;"));
+        // Measured: the frame after an edit repeats the settled frame's work
+        // and also re-runs the highlighter on the changed hash.
+        let [w, b] = widths([1_660, 10_660, 100_660], [23_589, 239_590, 2_489_591]);
+        assert_exact(
+            &after,
+            &format!("editor frame after edit, n={n}"),
+            &[
+                (Metric::PayloadBytesCloned, len + 2),
+                (Metric::VisibleRowsPainted, 29),
+                w,
+                b,
+                (Metric::TextBytesHashed, len + 2),
+                (Metric::AnnotationQueries, 2),
+            ],
+        );
+
+        publish(
+            "code_editor",
+            "settled_frame",
+            n,
+            settled,
+            "the frame shows the first line",
+        );
+        publish(
+            "code_editor",
+            "frame_after_edit",
+            n,
+            after,
+            "the first row starts with the two typed characters",
+        );
+    }
+}
+
+fn notes_text(n: usize) -> String {
+    (0..n)
+        .map(|i| format!("line {i:06} of the seeded notes"))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+#[test]
+fn work_contract_textarea_prepared_frame() {
+    for n in SIZES {
+        let text = notes_text(n);
+        let len = text.len() as u64;
+        let mut area = TextArea::new(ID, "Notes", 10).value(&text);
+        let draw = |area: &mut TextArea| {
+            frame_with(focused(), |buf, ctx| {
+                area.render(VIEWPORT, buf, ctx, ctx.theme.canvas);
+            })
+            .0
+        };
+
+        let (buf, first) = measure(|| draw(&mut area));
+        let last = format!("line {:06} of the seeded notes", n - 1);
+        assert!(
+            screen_has(&buf, &last),
+            "a focused area follows its cursor to the end"
+        );
+        // Measured: the first focused frame snapshots the text for edit entry,
+        // paints the 10 visible lines and measures every line's width.
+        assert_exact(
+            &first,
+            &format!("textarea first frame, n={n}"),
+            &[
+                (Metric::PayloadBytesCloned, len),
+                (Metric::VisibleRowsPainted, 10),
+                (
+                    Metric::IntrinsicWidthCalls,
+                    per_size(n, [1_323, 10_323, 100_323]),
+                ),
+                (
+                    Metric::TextBytesMeasured,
+                    per_size(n, [31_649, 310_653, 3_100_657]),
+                ),
+            ],
+        );
+
+        let (_, settled) = measure(|| draw(&mut area));
+        // Measured: a settled frame clones nothing but still measures every
+        // hidden line.
+        assert_exact(
+            &settled,
+            &format!("textarea settled frame, n={n}"),
+            &[
+                (Metric::VisibleRowsPainted, 10),
+                (
+                    Metric::IntrinsicWidthCalls,
+                    per_size(n, [1_323, 10_323, 100_323]),
+                ),
+                (
+                    Metric::TextBytesMeasured,
+                    per_size(n, [31_649, 310_653, 3_100_657]),
+                ),
+            ],
+        );
+
+        let (_, first_key) = measure(|| area.on_key(&key(KeyCode::Char('x'))));
+        assert_exact(
+            &first_key,
+            &format!("textarea first keystroke, n={n}"),
+            &[(Metric::PayloadBytesCloned, len)],
+        );
+        let (_, second_key) = measure(|| area.on_key(&key(KeyCode::Char('y'))));
+        assert_exact(
+            &second_key,
+            &format!("textarea second keystroke of the run, n={n}"),
+            &[],
+        );
+
+        let (buf, after) = measure(|| draw(&mut area));
+        assert!(screen_has(&buf, &format!("{last}xy")));
+        assert_exact(
+            &after,
+            &format!("textarea frame after edit, n={n}"),
+            &[
+                (Metric::VisibleRowsPainted, 10),
+                (
+                    Metric::IntrinsicWidthCalls,
+                    per_size(n, [1_325, 10_325, 100_325]),
+                ),
+                (
+                    Metric::TextBytesMeasured,
+                    per_size(n, [31_655, 310_659, 3_100_663]),
+                ),
+            ],
+        );
+
+        publish(
+            "textarea",
+            "settled_frame",
+            n,
+            settled,
+            "the frame shows the last 10 lines, following the cursor",
+        );
+        publish(
+            "textarea",
+            "frame_after_edit",
+            n,
+            after,
+            "the last row ends with the two typed characters",
         );
     }
 }

@@ -205,6 +205,10 @@ impl Completion {
 
         self.list.layout(inner, &self.items[..], ctx);
 
+        crate::record_work!(
+            PayloadBytesCloned,
+            self.items.iter().map(Item::payload_bytes).sum::<usize>()
+        );
         let me = self.clone();
         ctx.overlay(move |buf, ctx| me.paint(area, buf, ctx));
     }

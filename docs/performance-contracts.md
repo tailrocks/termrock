@@ -30,18 +30,25 @@ the macro.
 | Metric | Unit | Work site |
 | --- | --- | --- |
 | `SegmentedLines`, `ReflowedLines`, `IndexRebuilds`, `IndexExtends`, `IndexShifts` | lines or passes | `TextViewport` layout, next to its own `WorkCounters` |
-| `PayloadBytesCloned` | bytes | `TextViewport` deep clone on an unprepared `ViewportOps::draw` |
+| `PayloadBytesCloned` | bytes | `TextViewport` deep clone on an unprepared `ViewportOps::draw`; `Picker` item copies; `Select` and `Completion` overlay copies; `CodeEditor` per-frame text copy; every undo snapshot and edit-entry snapshot of `CodeEditor` and `TextArea` |
 | `AllocatedBufferCells` | cells | every scratch `Buffer`, through `ui::ctx::scratch_buffer` |
 | `BufferCellsFilled`, `BufferCellsCopied` | cells | `ScrollView` canvas fill and `copy_cells` |
-| `VisibleRowsPainted` | rows | `ListBox`, `DataTable`, `DataGrid` and `TreeView` paint loops, summed over a frame |
+| `VisibleRowsPainted` | rows | `ListBox`, `DataTable`, `DataGrid`, `TreeView`, `OptionList` (the rows of `Picker`, `Select` and `Completion`), `CodeEditor` and `TextArea` paint loops, summed over a frame |
 | `IntrinsicWidthCalls`, `TextBytesMeasured` | calls, bytes | `ui::text::width` |
 | `LabelsNormalized`, `LabelBytesNormalized` | labels, bytes | `TreeView` filter |
 | `ProjectionRebuilds`, `RankRowsVisited` | rebuilds, items | Holla Finder rebuild and ranking pass |
 | `SchedulingRecordsVisited`, `SchedulingPolls` | records, polls | Jackin daemon traversal and pane polls, Holla activity and plan scheduling |
+| `TextBytesHashed` | bytes | `CodeEditor` change-detection hash, once per frame |
+| `AnnotationQueries` | calls | `CodeEditor` highlighter (on a changed hash) and block segmenter (every frame) |
+| `IdentityComparisons` | comparisons | `Picker::set_visible_items` key lookup and cursor re-find, `Picker::replace_items` cursor re-find |
 
 `TextViewport`, `ScrollView` and the width helper are shared, so every app that
-uses them is counted. `VisibleRowsPainted` does not count `TextViewport`,
-`CodeEditor` or `TerminalViewport` paint.
+uses them is counted. `VisibleRowsPainted` does not count `TextViewport` or
+`TerminalViewport` paint. `PayloadBytesCloned` counts text bytes only: a
+`Select` or `Completion` overlay also clones its `OptionList`, and the count
+does not include that. `IdentityComparisons` counts only the `Picker` lookups
+above; other key scans (`Picker` `retain`, `TreeView`, `ViewportOps`) are not
+counted.
 
 ## Budgets
 
@@ -62,7 +69,9 @@ The app tests check each scenario with `assert_exact`: every listed metric must
 equal its measured count and every unlisted metric must be zero. A ceiling
 cannot tell a deleted counter from cheap work, so an exact count is the default
 for a measured fact, and a counter that stops recording fails its test. The
-library tests in `tests/regressions/work_budgets.rs` use ceilings
+`Picker`, `Select`, `Completion`, `CodeEditor` and `TextArea` tests in
+`tests/regressions/work_budgets.rs` use `assert_exact` too. The older viewport,
+list, table, tree and scroll tests there use ceilings
 (`WorkDelta::check_budget`) where a number is a bound. A count that records
 today's behaviour of an unfixed path says so beside it. Lowering it when the
 owning issue lands is the intended change.
@@ -86,6 +95,21 @@ list, table, grid and tree widget in the frame.
 | `DataTable` | settled frame | 1k / 10k / 100k | rows painted 29, width calls 62, width bytes 108 |
 | `TreeView` | settled frame | 1k / 10k / 100k | rows painted 30, width calls 30, width bytes 200 |
 | `TreeView` | filter change | 1k / 10k / 100k | labels normalized = n, label bytes 7,890 / 88,890 / 988,890 |
+| `Picker` | `set_items` | 1k / 10k / 100k items of 17 text bytes | payload bytes cloned = 17n |
+| `Picker` | settled frame | 1k / 10k / 100k | rows painted 13, width calls 3n + 143, width bytes 17n + 143 |
+| `Picker` | `set_visible_items` of 20 of n items | 1k / 10k / 100k | payload bytes cloned 340, identity comparisons 9,521 / 95,021 / 950,021 (190 x n / 20 + 21) |
+| `Picker` | frame over those 20 items | 1k / 10k / 100k | rows painted 13, width calls 203, width bytes 483, independent of n |
+| `Picker` | `replace_items` | 1k / 10k / 100k | payload bytes cloned = 17n, identity comparisons 1 |
+| `Select` | closed frame | 1k / 10k / 100k options | width calls 1, width bytes 6 |
+| `Select` | open frame | 1k / 10k / 100k | payload bytes cloned = 13n, rows painted 8, width calls 1 |
+| `Completion` | open frame | 1k / 10k / 100k items of 15 text bytes | payload bytes cloned = 15n, rows painted 8, width calls 2n + 136, width bytes 15n + 256 |
+| `CodeEditor` | first focused frame | 1k / 10k / 100k lines | payload bytes cloned 2L, hashed L, annotation queries 2, rows painted 29, width calls 1,658 / 10,658 / 100,658 (L is the text length: 23,889 / 248,889 / 2,588,889) |
+| `CodeEditor` | settled frame | same | payload bytes cloned L, hashed L, annotation queries 1, rows painted 29 |
+| `CodeEditor` | first keystroke, then second of the run | same | payload bytes cloned L, then none |
+| `CodeEditor` | frame after the edit | same | payload bytes cloned L + 2, hashed L + 2, annotation queries 2 |
+| `TextArea` | first focused frame | 1k / 10k / 100k lines | payload bytes cloned L, rows painted 10, width calls n + 323 (L is 32n - 1) |
+| `TextArea` | settled frame | same | no clone, rows painted 10, width calls n + 323 |
+| `TextArea` | first keystroke, then second of the run | same | payload bytes cloned L, then none |
 | Holla Finder | settled tick | 106 items, 5 activities, 0 plans | projection rebuilds 1, ranked 106, scheduling 10, width calls 716 |
 | Holla Finder | unrelated world field, then tick | same | same as the settled tick |
 | Holla Finder | query change | same | projection rebuilds 1, ranked 106, width calls 1,639 |
@@ -115,16 +139,25 @@ list, table, grid and tree widget in the frame.
   a relevant source revision change has no scenario here.
 - Every idle Jackin capsule frame takes that clone path and segments the copy
   again. The scenario records today's counts.
+- A settled `Picker` frame measures the width of every item, so it grows with
+  the hidden list. A frame over a 20-item filtered list does not.
+  `Picker::set_visible_items` finds each visible key by scanning the
+  authoritative list: n x m / 2 comparisons.
+- Every open `Select` and `Completion` frame deep-clones all option text into
+  its overlay closure, though 8 rows are painted.
+- Every `CodeEditor` frame copies and hashes the whole text, measures every
+  line, and calls the block segmenter, which is not cached. A settled
+  `TextArea` frame measures every line. The first keystroke of an undo run
+  copies the whole text in both. Later keystrokes of the run do not.
 
 ### Not covered
 
 These are listed in the PR as unmet acceptance items: the `performance` nextest
 profile and its required-suite inventory gate, ignored release measurements
 and their elapsed-time report schema, terminal output, raw-event and
-simulated-transport budgets, `Picker`, `Select`, `Completion`, `CodeEditor`,
-`TextArea`, `ScrollPanel` and `TerminalView` families, and the
-`SourceRowsRead`, `IdentityComparisons` and `AnnotationQueries` family of
-metrics.
+simulated-transport budgets, `ScrollPanel` and `TerminalView` families, and
+the `SourceRowsRead` metric. `CodeEditor` bracket matching, `Picker`
+`retain` scans and the `CodeEditor` find state are not counted.
 
 Also unmet, and absent from every scenario above:
 

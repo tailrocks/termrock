@@ -486,6 +486,10 @@ impl Picker {
         if let Some(error) = Self::validate_items(&items, self.multi && self.is_searchable()) {
             return Err(error);
         }
+        crate::record_work!(
+            PayloadBytesCloned,
+            items.iter().map(Item::payload_bytes).sum::<usize>()
+        );
         self.authoritative_items.clone_from(&items);
         self.items = items;
         self.list.checked.clear();
@@ -509,6 +513,10 @@ impl Picker {
             .iter()
             .filter_map(|item| item.key)
             .collect();
+        crate::record_work!(
+            PayloadBytesCloned,
+            items.iter().map(Item::payload_bytes).sum::<usize>()
+        );
         self.authoritative_items.clone_from(&items);
         self.items = items;
         self.list.checked.retain(|key| {
@@ -520,9 +528,10 @@ impl Picker {
         });
         self.list.cursor.index = keep
             .and_then(|key| {
-                self.items
-                    .iter()
-                    .position(|item| item.key == Some(key) && !item.disabled)
+                self.items.iter().position(|item| {
+                    crate::record_work!(IdentityComparisons, 1usize);
+                    item.key == Some(key) && !item.disabled
+                })
             })
             .unwrap_or_else(|| self.first_enabled());
         self.list.scroll.set_content(self.items.len());
@@ -543,11 +552,15 @@ impl Picker {
             let Some(mut authoritative) = self
                 .authoritative_items
                 .iter()
-                .find(|candidate| candidate.key == Some(key))
+                .find(|candidate| {
+                    crate::record_work!(IdentityComparisons, 1usize);
+                    candidate.key == Some(key)
+                })
                 .cloned()
             else {
                 return Err(PickerItemsError::UnknownVisibleKey(key));
             };
+            crate::record_work!(PayloadBytesCloned, authoritative.payload_bytes());
             authoritative.matched = item.matched;
             visible.push(authoritative);
         }
@@ -559,9 +572,10 @@ impl Picker {
         self.items = visible;
         self.list.cursor.index = keep
             .and_then(|key| {
-                self.items
-                    .iter()
-                    .position(|item| item.key == Some(key) && !item.disabled)
+                self.items.iter().position(|item| {
+                    crate::record_work!(IdentityComparisons, 1usize);
+                    item.key == Some(key) && !item.disabled
+                })
             })
             .unwrap_or_else(|| self.first_enabled());
         self.list.scroll.set_content(self.items.len());

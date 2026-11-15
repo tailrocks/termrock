@@ -155,6 +155,7 @@ impl Actions for CodeCmd {
 }
 
 fn hash_text(s: &str) -> u64 {
+    crate::record_work!(TextBytesHashed, s.len());
     let mut h: u64 = 0xcbf2_9ce4_8422_2325;
     for b in s.bytes() {
         h ^= b as u64;
@@ -341,9 +342,8 @@ impl CodeEditor {
     }
 
     pub fn current_block(&self) -> Option<Range<usize>> {
-        let seg = self.segmenter?;
         let cur = self.field.buffer.cursor_offset();
-        let blocks = seg(self.field.buffer.text());
+        let blocks = self.run_segmenter()?;
         blocks
             .iter()
             .find(|b| cur >= b.start && cur <= b.end)
@@ -360,9 +360,13 @@ impl CodeEditor {
     }
 
     pub fn blocks(&self) -> Vec<Range<usize>> {
-        self.segmenter
-            .map(|s| s(self.field.buffer.text()))
-            .unwrap_or_default()
+        self.run_segmenter().unwrap_or_default()
+    }
+
+    fn run_segmenter(&self) -> Option<Vec<Range<usize>>> {
+        let segment = self.segmenter?;
+        crate::record_work!(AnnotationQueries, 1usize);
+        Some(segment(self.field.buffer.text()))
     }
 
     pub fn jump_to(&mut self, offset: usize) {
@@ -393,6 +397,7 @@ impl CodeEditor {
     pub fn begin_edit(&mut self) {
         if !self.read_only {
             if !self.editing {
+                crate::record_work!(PayloadBytesCloned, self.field.buffer.text().len());
                 self.snapshot = Some(self.field.buffer.text().to_owned());
             }
             self.editing = true;
@@ -809,7 +814,10 @@ impl CodeEditor {
         if h != self.cached_for {
             self.cached_spans = self
                 .highlighter
-                .map(|f| f(self.field.buffer.text()))
+                .map(|f| {
+                    crate::record_work!(AnnotationQueries, 1usize);
+                    f(self.field.buffer.text())
+                })
                 .unwrap_or_default();
             self.cached_for = h;
         }
@@ -878,6 +886,7 @@ impl CodeEditor {
         fill(buf, area, fs);
         let body_h = area.height.saturating_sub(1);
         let spans: Vec<(Range<usize>, SyntaxTone)> = self.spans().to_vec();
+        crate::record_work!(PayloadBytesCloned, self.field.buffer.text().len());
         let text_owned = self.field.buffer.text().to_owned();
         let lines: Vec<&str> = text_owned.split('\n').collect();
         let line_count = lines.len();
@@ -959,6 +968,7 @@ impl CodeEditor {
             if li >= line_count {
                 continue;
             }
+            crate::record_work!(VisibleRowsPainted, 1usize);
             let line = lines[li];
             let ls = line_starts[li];
             let le = ls + line.len();

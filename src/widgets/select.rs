@@ -642,6 +642,10 @@ impl Select {
 
         self.list.chosen = self.mixed.is_none().then_some(self.selected);
         let list = self.list.clone();
+        crate::record_work!(
+            PayloadBytesCloned,
+            self.options.iter().map(String::len).sum::<usize>()
+        );
         let options = self.options.clone();
         let (id, dismiss, reveal) = (self.id, self.list.dismiss, self.reveal);
         let scroll = list.scroll.offset;
