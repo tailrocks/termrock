@@ -108,25 +108,15 @@ fn selection(visible: &str) -> String {
 }
 
 fn step_until(app: &App, key: &str, label: &str, ready: impl Fn(&str) -> bool) -> TerminalSnapshot {
-    for _ in 0..30 {
-        let screen = app.screen();
-        let visible = text(&screen);
-        if ready(&visible) {
-            no_secrets(&screen);
-            return screen;
-        }
-        let before = selection(&visible);
-        app.key(key);
-        let deadline = Instant::now() + Duration::from_millis(800);
-        loop {
-            let moved = selection(&text(&app.screen()));
-            if moved != before || Instant::now() >= deadline {
-                break;
-            }
-            std::thread::sleep(Duration::from_millis(20));
-        }
-    }
-    panic!("{label}\n{}", text(&app.screen()));
+    let screen = app.press_until(
+        key,
+        label,
+        30,
+        |screen| selection(&text(screen)),
+        |screen| ready(&text(screen)),
+    );
+    no_secrets(&screen);
+    screen
 }
 
 fn down_until(app: &App, label: &str, ready: impl Fn(&str) -> bool) -> TerminalSnapshot {
@@ -236,14 +226,12 @@ fn row_place(visible: &str, header: &str) -> RowPlace {
     }
 }
 
+/// Waits for the press to land. A fixed deadline let the next press go out
+/// before this one painted, and the walk overshot its row under load.
 fn wait_selection_change(app: &App, before: &str) {
-    let deadline = Instant::now() + Duration::from_millis(800);
-    loop {
-        if selection(&text(&app.screen())) != before || Instant::now() >= deadline {
-            break;
-        }
-        std::thread::sleep(Duration::from_millis(20));
-    }
+    app.wait_screen("selection moves", |screen| {
+        selection(&text(screen)) != before
+    });
 }
 
 /// Where the account row `name` sits against the focus. Only panel body lines
