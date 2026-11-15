@@ -732,17 +732,31 @@ mod tests {
         hits.register(OWNER, Rect::new(30, 30, 3, 3));
         hits.clip_mark(mark, Rect::new(0, 0, 20, 10));
 
-        assert_eq!(hits.regions()[0].area, Rect::new(0, 0, 40, 40), "before the mark");
+        assert_eq!(
+            hits.regions()[0].area,
+            Rect::new(0, 0, 40, 40),
+            "before the mark"
+        );
         let kept: Vec<Rect> = hits.regions()[1..].iter().map(|r| r.area).collect();
         assert_eq!(
             kept,
             vec![Rect::new(5, 6, 1, 4), Rect::new(2, 2, 3, 8)],
             "regions are clipped and fully hidden ones dropped"
         );
-        assert_eq!(hits.bar(FIRST).map(|b| b.track), Some(Rect::new(5, 6, 1, 4)));
-        assert_eq!(hits.logical_bar(FIRST), Some(bar), "the logical bar keeps its full track");
+        assert_eq!(
+            hits.bar(FIRST).map(|b| b.track),
+            Some(Rect::new(5, 6, 1, 4))
+        );
+        assert_eq!(
+            hits.logical_bar(FIRST),
+            Some(bar),
+            "the logical bar keeps its full track"
+        );
         assert_eq!(hits.shift_of(FIRST), (0, 0));
-        assert_eq!(hits.autoscroll_at(Position::new(1, 1)), Some(Rect::new(0, 0, 20, 10)));
+        assert_eq!(
+            hits.autoscroll_at(Position::new(1, 1)),
+            Some(Rect::new(0, 0, 20, 10))
+        );
         assert_eq!(hits.autoscroll_at(Position::new(25, 25)), None);
     }
 

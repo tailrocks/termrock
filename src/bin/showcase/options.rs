@@ -411,6 +411,11 @@ pub static SCROLLING: &[Opt] = &[
     Opt::new("scrolling.wrap", "Wrap at the ends", OFF_ON),
     Opt::new("scrolling.skip_disabled", "Skip disabled", OFF_ON).default(1),
     Opt::new("scrolling.nested", "Nested scrollbars", OFF_ON),
+    Opt::new(
+        "scrolling.window",
+        "Virtual rows",
+        &["off", "100", "1000", "10000"],
+    ),
 ];
 
 pub static BUTTONS: &[Opt] = &[

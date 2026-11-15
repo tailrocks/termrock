@@ -51,6 +51,33 @@ pub const PICKER_COVERAGE: &[(&str, &str)] = &[
     ("widgets::picker::Picker::set_cursor", "pickers"),
 ];
 
+pub const SCROLL_WINDOW_COVERAGE: &[(&str, &str)] = &[
+    ("ui::scroll_view::ScrollView::render_window", "scrolling"),
+    ("ui::scroll_view::ScrollView::last_work", "scrolling"),
+    ("ui::scroll_view::ScrollWork", "scrolling"),
+    ("ui::scroll_view::VisibleWindow", "scrolling"),
+    (
+        "ui::scroll_view::VisibleWindow::project_content_rect",
+        "scrolling",
+    ),
+    ("ui::scroll_view::VisibleWindow::content_rows", "scrolling"),
+];
+
+pub const SCROLL_WINDOW_ALLOWLIST: &[(&str, &str)] = &[
+    (
+        "ui::scroll_view::VisibleWindow::project_rect",
+        "The Virtual rows demo projects model rows with project_content_rect, which wraps it; a padded-canvas rectangle is only needed by hosts that position a popup anchor.",
+    ),
+    (
+        "ui::scroll_view::VisibleWindow::project_point",
+        "The Virtual rows demo has no point-anchored overlay; cursor and caret hosts project a point from the same window.",
+    ),
+    (
+        "ui::scroll_view::VisibleWindow::rows",
+        "The demo iterates content_rows, which is rows without the padding; rows is the padded-canvas range for painting padding decorations.",
+    ),
+];
+
 pub const PICKER_ALLOWLIST: &[(&str, &str)] = &[
     (
         "widgets::picker::Picker::wheel",
@@ -272,6 +299,32 @@ mod tests {
     fn catalog_source() -> String {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
         std::fs::read_to_string(root.join("src/catalog.rs")).expect("catalog source reads")
+    }
+
+    #[test]
+    fn scroll_window_apis_are_covered_or_allowlisted_with_reasons() {
+        let catalog = catalog_source();
+        let mut seen = std::collections::BTreeSet::new();
+        for (id, why) in SCROLL_WINDOW_COVERAGE.iter().chain(SCROLL_WINDOW_ALLOWLIST) {
+            assert!(
+                catalog.contains(&format!("\"{id}\"")),
+                "declared id is not a catalog capability: {id}"
+            );
+            assert!(!why.trim().is_empty(), "no reason: {id}");
+            assert!(seen.insert(*id), "duplicate declaration: {id}");
+        }
+        for line in catalog.lines().filter(|l| {
+            l.contains("ui::scroll_view::VisibleWindow")
+                || l.contains("ScrollView::render_window")
+                || l.contains("ScrollView::last_work")
+                || l.contains("ui::scroll_view::ScrollWork")
+        }) {
+            let id = line.split('"').nth(1).expect("catalog line has an id");
+            assert!(
+                seen.contains(id),
+                "scroll window API lacks a declaration: {id}"
+            );
+        }
     }
 
     #[test]

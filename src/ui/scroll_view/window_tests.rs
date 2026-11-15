@@ -74,6 +74,7 @@ struct Visits {
     rows: Vec<usize>,
 }
 
+#[allow(clippy::too_many_arguments)]
 fn window_rows(
     view: &mut ScrollView,
     screen: Rect,
@@ -85,14 +86,22 @@ fn window_rows(
     ctx: &mut RenderCtx,
 ) -> VisibleWindow {
     let content = Size::new(ROW_WIDTH, rows);
-    view.render_window(screen, area, content, target, buf, ctx, |window, buf, ctx| {
-        visits.callbacks += 1;
-        for index in window.content_rows() {
-            visits.rows.push(index);
-            let rect = window.project_content_rect(Rect::new(0, index as u16, ROW_WIDTH, 1));
-            paint_row(buf, ctx, rect, index);
-        }
-    })
+    view.render_window(
+        screen,
+        area,
+        content,
+        target,
+        buf,
+        ctx,
+        |window, buf, ctx| {
+            visits.callbacks += 1;
+            for index in window.content_rows() {
+                visits.rows.push(index);
+                let rect = window.project_content_rect(Rect::new(0, index as u16, ROW_WIDTH, 1));
+                paint_row(buf, ctx, rect, index);
+            }
+        },
+    )
 }
 
 fn prime(view: &mut ScrollView, screen: Rect, area: Rect, rows: u16) {
@@ -116,11 +125,19 @@ fn scroll_window_scratch_cells_ignore_content_height() {
         let mut window = None;
         let first = draw(screen, |buf, ctx| {
             window = Some(window_rows(
-                &mut view, screen, screen, rows, None, &mut visits, buf, ctx,
+                &mut view,
+                screen,
+                screen,
+                rows,
+                None,
+                &mut visits,
+                buf,
+                ctx,
             ));
         });
         let window = window.expect("rendered");
-        let viewport_cells = usize::from(window.viewport.width) * usize::from(window.viewport.height);
+        let viewport_cells =
+            usize::from(window.viewport.width) * usize::from(window.viewport.height);
         let work = view.last_work();
         assert_eq!(visits.callbacks, 1, "rows={rows}");
         assert!(visits.rows.len() <= usize::from(window.viewport.height));
@@ -135,11 +152,16 @@ fn scroll_window_scratch_cells_ignore_content_height() {
         });
         let work = view.last_work();
         assert_eq!(again.callbacks, 1);
-        assert_eq!(again.rows, visits.rows, "unchanged redraw visits the same rows");
+        assert_eq!(
+            again.rows, visits.rows,
+            "unchanged redraw visits the same rows"
+        );
         assert!(work.allocated <= viewport_cells && work.copied <= viewport_cells);
 
         let mut legacy = ScrollView::new(VIEW).axes(Axes::VERTICAL);
-        draw(screen, |buf, ctx| legacy_rows(&mut legacy, screen, rows, buf, ctx));
+        draw(screen, |buf, ctx| {
+            legacy_rows(&mut legacy, screen, rows, buf, ctx)
+        });
         legacy_cells.push(legacy.last_work());
     }
     for (work, rows) in legacy_cells.iter().zip([100usize, 1000, 10000]) {
@@ -169,9 +191,13 @@ fn scroll_window_matches_legacy_simple_rows() {
             .axes(Axes::VERTICAL)
             .padding(padding)
             .follow_focus(false);
-        draw(screen, |buf, ctx| legacy_rows(&mut old, area, rows, buf, ctx));
+        draw(screen, |buf, ctx| {
+            legacy_rows(&mut old, area, rows, buf, ctx)
+        });
         old.scroll_to(0, offset);
-        let legacy = draw(screen, |buf, ctx| legacy_rows(&mut old, area, rows, buf, ctx));
+        let legacy = draw(screen, |buf, ctx| {
+            legacy_rows(&mut old, area, rows, buf, ctx)
+        });
 
         let mut new = ScrollView::new(VIEW)
             .axes(Axes::VERTICAL)
@@ -186,7 +212,11 @@ fn scroll_window_matches_legacy_simple_rows() {
         let label = format!("area={area:?} padding={padding:?} offset={offset}");
 
         assert_eq!(legacy.buf, window.buf, "cells: {label}");
-        assert_eq!(regions(&legacy.hits), regions(&window.hits), "hits: {label}");
+        assert_eq!(
+            regions(&legacy.hits),
+            regions(&window.hits),
+            "hits: {label}"
+        );
         assert_eq!(
             legacy.hits.bars(),
             window.hits.bars(),
@@ -209,7 +239,7 @@ fn scroll_window_matches_legacy_simple_rows() {
         );
         assert_eq!(old.offset(), new.offset(), "after PageDown: {label}");
         assert!(visits.rows.len() <= 10, "{label}");
-        assert_eq!(new.offset().1 > 0 || offset == 0, true, "{label}");
+        assert!(new.offset().1 > 0 || offset == 0, "{label}");
         let first = visits.rows.first().copied().unwrap_or(0);
         assert_eq!(
             window
@@ -248,13 +278,25 @@ fn scroll_window_padding_maps_source_row_zero() {
         });
         seen.push(visits.rows);
     }
-    assert_eq!(seen[0], vec![0, 1, 2, 3], "top padding rows are not model rows");
+    assert_eq!(
+        seen[0],
+        vec![0, 1, 2, 3],
+        "top padding rows are not model rows"
+    );
     assert_eq!(seen[1], vec![0, 1, 2, 3, 4]);
     assert_eq!(seen[2], vec![0, 1, 2, 3, 4]);
-    assert_eq!(seen[3], vec![1, 2, 3, 4], "no fabricated rows past the model");
+    assert_eq!(
+        seen[3],
+        vec![1, 2, 3, 4],
+        "no fabricated rows past the model"
+    );
     let window = window.expect("rendered");
     assert_eq!(window.content_origin, Position::new(3, 2));
-    assert_eq!(zero, Some(Rect::new(0, 0, 0, 0)), "row zero scrolled away at offset 3");
+    assert_eq!(
+        zero,
+        Some(Rect::new(0, 0, 0, 0)),
+        "row zero scrolled away at offset 3"
+    );
 
     view.scroll_to(0, 0);
     let mut visits = Visits::default();
@@ -309,7 +351,10 @@ fn scroll_window_focus_target_reveals_before_paint() {
         ));
     });
     let window = window.expect("rendered");
-    assert_eq!(window.logical.y, 8962, "target revealed with one row of context");
+    assert_eq!(
+        window.logical.y, 8962,
+        "target revealed with one row of context"
+    );
     assert_eq!(visits.callbacks, 1);
     assert_eq!(visits.rows.first(), Some(&8962));
     assert_eq!(visits.rows.len(), 40, "only the visible rows were produced");
@@ -320,18 +365,43 @@ fn scroll_window_focus_target_reveals_before_paint() {
             .resolve(Position::new(1, 38))
             .is_some_and(|hit| hit.part == PartRef::item(Part::ROW, ItemKey::index(9000)))
     );
-    assert!(visits.rows.len() <= 40, "no hidden full draw to find the target");
+    assert!(
+        visits.rows.len() <= 40,
+        "no hidden full draw to find the target"
+    );
 
     view.scroll_to(0, 100);
     let mut again = Visits::default();
     draw(screen, |buf, ctx| {
-        window_rows(&mut view, screen, screen, rows, Some(target), &mut again, buf, ctx);
+        window_rows(
+            &mut view,
+            screen,
+            screen,
+            rows,
+            Some(target),
+            &mut again,
+            buf,
+            ctx,
+        );
     });
-    assert_eq!(view.offset(), (0, 100), "an unchanged target does not undo a user scroll");
+    assert_eq!(
+        view.offset(),
+        (0, 100),
+        "an unchanged target does not undo a user scroll"
+    );
 
     let next = Rect::new(0, 9500, ROW_WIDTH, 1);
     draw(screen, |buf, ctx| {
-        window_rows(&mut view, screen, screen, rows, Some(next), &mut again, buf, ctx);
+        window_rows(
+            &mut view,
+            screen,
+            screen,
+            rows,
+            Some(next),
+            &mut again,
+            buf,
+            ctx,
+        );
     });
     assert_eq!(view.offset(), (0, 9462), "a new target is followed");
 }
@@ -355,7 +425,9 @@ fn open_select() -> Select {
 fn scroll_window_popup_uses_full_screen_after_body_clip() {
     let screen = Rect::new(0, 0, 80, 24);
     let area = Rect::new(10, 5, 40, 8);
-    let mut view = ScrollView::new(VIEW).axes(Axes::VERTICAL).follow_focus(false);
+    let mut view = ScrollView::new(VIEW)
+        .axes(Axes::VERTICAL)
+        .follow_focus(false);
     prime(&mut view, screen, area, 100);
     view.scroll_to(0, 4);
     let mut select = open_select();
@@ -385,8 +457,12 @@ fn scroll_window_popup_uses_full_screen_after_body_clip() {
 fn scroll_window_nested_popup_preserves_root_screen() {
     let screen = Rect::new(0, 0, 80, 24);
     let outer_area = Rect::new(2, 2, 20, 8);
-    let mut outer = ScrollView::new(VIEW).axes(Axes::VERTICAL).follow_focus(false);
-    let mut inner = ScrollView::new(INNER).axes(Axes::VERTICAL).follow_focus(false);
+    let mut outer = ScrollView::new(VIEW)
+        .axes(Axes::VERTICAL)
+        .follow_focus(false);
+    let mut inner = ScrollView::new(INNER)
+        .axes(Axes::VERTICAL)
+        .follow_focus(false);
     let mut select = open_select();
     let mut roots = Vec::new();
     let drawn = draw(screen, |buf, ctx| {
@@ -419,21 +495,31 @@ fn scroll_window_nested_popup_preserves_root_screen() {
     });
     assert_eq!(roots.len(), 2);
     for (root, scratch) in roots {
-        assert_eq!(root, screen, "every nested phase carries the real root screen");
+        assert_eq!(
+            root, screen,
+            "every nested phase carries the real root screen"
+        );
         assert!(
             scratch.width <= outer_area.width && scratch.height <= outer_area.height,
             "scratch is the viewport, not the root: {scratch:?}"
         );
     }
     let low = Position::new(outer_area.x + 3, outer_area.bottom() + 1);
-    assert!(drawn.hits.hit(low).is_some(), "the popup extends below the 20x8 body");
+    assert!(
+        drawn.hits.hit(low).is_some(),
+        "the popup extends below the 20x8 body"
+    );
 }
 
 #[test]
 fn scroll_window_nested_projection_is_applied_once() {
     let screen = Rect::new(0, 0, 80, 30);
-    let mut outer = ScrollView::new(VIEW).axes(Axes::VERTICAL).follow_focus(false);
-    let mut inner = ScrollView::new(INNER).axes(Axes::VERTICAL).follow_focus(false);
+    let mut outer = ScrollView::new(VIEW)
+        .axes(Axes::VERTICAL)
+        .follow_focus(false);
+    let mut inner = ScrollView::new(INNER)
+        .axes(Axes::VERTICAL)
+        .follow_focus(false);
     let render = |outer: &mut ScrollView, inner: &mut ScrollView| {
         draw(screen, |buf, ctx| {
             outer.render_window(
@@ -507,18 +593,28 @@ fn scroll_window_clips_body_overpaint_hits_and_cursor() {
                 assert_eq!(scratch.area, window.viewport);
                 ctx.hits.register(ROWS, Rect::new(0, 0, 30, 12));
                 ctx.set_cursor(Position::new(0, 0));
-                scratch.set_string(window.viewport.x, window.viewport.y, "x".repeat(60), Style::new());
+                scratch.set_string(
+                    window.viewport.x,
+                    window.viewport.y,
+                    "x".repeat(60),
+                    Style::new(),
+                );
             },
         );
     });
     let viewport = view.last_layout().viewport;
     for region in drawn.hits.regions() {
         assert!(
-            viewport.contains(region.area.as_position()) || region.area.is_empty() || region.id == id_for(VIEW),
+            viewport.contains(region.area.as_position())
+                || region.area.is_empty()
+                || region.id == id_for(VIEW),
             "{region:?} escaped the viewport"
         );
     }
-    assert_eq!(drawn.cursor, None, "a cursor outside the viewport is dropped");
+    assert_eq!(
+        drawn.cursor, None,
+        "a cursor outside the viewport is dropped"
+    );
     assert_eq!(drawn.buf[(0, 0)].symbol(), " ");
     assert_eq!(drawn.buf[(area.right() + 3, area.y)].symbol(), " ");
 }
@@ -564,18 +660,39 @@ fn scroll_window_empty_and_resize_are_bounded() {
     let mut wide = ScrollView::new(VIEW).axes(Axes::BOTH);
     let first = draw(screen, |buf, ctx| {
         let mut visits = Visits::default();
-        window_rows(&mut wide, screen, Rect::new(0, 0, 40, 12), 100, None, &mut visits, buf, ctx);
+        window_rows(
+            &mut wide,
+            screen,
+            Rect::new(0, 0, 40, 12),
+            100,
+            None,
+            &mut visits,
+            buf,
+            ctx,
+        );
     });
     let tall = wide.last_layout();
     let second = draw(screen, |buf, ctx| {
         let mut visits = Visits::default();
-        window_rows(&mut wide, screen, Rect::new(0, 0, 20, 6), 100, None, &mut visits, buf, ctx);
+        window_rows(
+            &mut wide,
+            screen,
+            Rect::new(0, 0, 20, 6),
+            100,
+            None,
+            &mut visits,
+            buf,
+            ctx,
+        );
     });
     let small = wide.last_layout();
     assert!(small.viewport.height < tall.viewport.height);
     let area = Rect::new(0, 0, 20, 6);
     for region in second.hits.regions() {
-        assert!(area.contains(region.area.as_position()), "stale geometry {region:?}");
+        assert!(
+            area.contains(region.area.as_position()),
+            "stale geometry {region:?}"
+        );
     }
     assert!(
         first
@@ -625,8 +742,12 @@ fn scroll_window_projection_helpers_map_at_nonzero_origins() {
 fn scroll_window_matches_the_legacy_hit_of_a_bar_press() {
     let screen = Rect::new(0, 0, 60, 20);
     let area = Rect::new(2, 2, 30, 8);
-    let mut old = ScrollView::new(VIEW).axes(Axes::VERTICAL).follow_focus(false);
-    let mut new = ScrollView::new(VIEW).axes(Axes::VERTICAL).follow_focus(false);
+    let mut old = ScrollView::new(VIEW)
+        .axes(Axes::VERTICAL)
+        .follow_focus(false);
+    let mut new = ScrollView::new(VIEW)
+        .axes(Axes::VERTICAL)
+        .follow_focus(false);
     let legacy = draw(screen, |buf, ctx| legacy_rows(&mut old, area, 60, buf, ctx));
     let mut visits = Visits::default();
     let window = draw(screen, |buf, ctx| {
