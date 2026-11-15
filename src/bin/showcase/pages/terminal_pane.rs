@@ -746,7 +746,11 @@ impl Page for TerminalPanePage {
             return h;
         }
         if focus == Some(PANE) {
-            vec![("Enter", "Capture keys"), ("PgUp PgDn", "Scrollback")]
+            let mut hints = vec![("Enter", "Capture keys")];
+            if self.session.is_none() {
+                hints.push(("PgUp PgDn", "Scrollback"));
+            }
+            hints
         } else {
             vec![("Enter", "Activate")]
         }
@@ -780,5 +784,39 @@ impl Page for TerminalPanePage {
 
     fn template_mut(&mut self) -> Option<&mut Template> {
         Some(&mut self.template)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const HOST: usize = 1;
+
+    fn session_page(script: usize) -> TerminalPanePage {
+        let mut page = TerminalPanePage::new();
+        page.set_option("terminalpane.host", HOST);
+        page.set_option("terminalpane.script", script);
+        page
+    }
+
+    #[test]
+    fn the_session_source_does_not_advertise_scrollback_keys_it_ignores() {
+        let hints = |page: &TerminalPanePage| page.hints(Some(PANE));
+        assert!(
+            hints(&TerminalPanePage::new())
+                .iter()
+                .any(|(keys, _)| *keys == "PgUp PgDn"),
+            "the byte fixture scrolls on PageUp and PageDown"
+        );
+        let session = session_page(0);
+        assert!(
+            hints(&session)
+                .iter()
+                .all(|(keys, _)| !keys.contains("PgUp")),
+            "{:?}",
+            hints(&session)
+        );
+        assert!(hints(&session).iter().any(|(keys, _)| *keys == "Enter"));
     }
 }
