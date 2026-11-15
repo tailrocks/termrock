@@ -51,6 +51,13 @@ pub trait Application {
         Vec::new()
     }
 
+    /// Consumes the request for another draw left by the last draw. The
+    /// event loop calls it after every draw and keeps drawing while it
+    /// returns true.
+    fn take_render_invalidated(&mut self) -> bool {
+        false
+    }
+
     fn external(&self) -> Option<&ExternalReceiver> {
         None
     }
@@ -676,8 +683,8 @@ fn event_loop(session: &mut TerminalSession, app: &mut impl Application) -> std:
         }
         let terminal = &mut session.terminal;
         if dirty {
-            draw_frame(terminal, app, suppress_colors)?;
             dirty = false;
+            draw_frame(terminal, app, suppress_colors, &mut dirty)?;
             if let Some(delay) = first_poll_delay.take() {
                 std::thread::sleep(delay);
             }
@@ -713,6 +720,7 @@ fn event_loop(session: &mut TerminalSession, app: &mut impl Application) -> std:
         if let Some(external) = app.external() {
             wait = wait.min(external.latency);
         }
+        wait = turn_wait(dirty, wait);
 
         if pump.has_pending() || poll_uninterrupted(wait)? {
             pump.set_policy(app.coalesce());
@@ -728,9 +736,9 @@ fn event_loop(session: &mut TerminalSession, app: &mut impl Application) -> std:
                 return Ok(());
             }
             if changed {
-                draw_frame(terminal, app, suppress_colors)?;
+                draw_frame(terminal, app, suppress_colors, &mut dirty)?;
                 if pump.settle(app) {
-                    draw_frame(terminal, app, suppress_colors)?;
+                    draw_frame(terminal, app, suppress_colors, &mut dirty)?;
                 }
             }
         }
@@ -761,7 +769,7 @@ fn event_loop(session: &mut TerminalSession, app: &mut impl Application) -> std:
             }
             if app.should_quit() {
                 if dirty {
-                    draw_frame(terminal, app, suppress_colors)?;
+                    draw_frame(terminal, app, suppress_colors, &mut dirty)?;
                 }
                 return Ok(());
             }
@@ -995,14 +1003,30 @@ fn draw_frame(
     terminal: &mut ratatui::DefaultTerminal,
     app: &mut impl Application,
     suppress_colors: bool,
+    dirty: &mut bool,
 ) -> std::io::Result<()> {
     queue!(terminal.backend_mut(), BeginSynchronizedUpdate)?;
-    let drawn = terminal
-        .draw(|f| render_frame(app, f, suppress_colors))
-        .map(|_| ());
+    let drawn = paint(terminal, app, suppress_colors, dirty);
     let ended = execute!(terminal.backend_mut(), EndSynchronizedUpdate);
     drawn?;
     ended
+}
+
+fn paint<B: ratatui::backend::Backend>(
+    terminal: &mut ratatui::Terminal<B>,
+    app: &mut impl Application,
+    suppress_colors: bool,
+    dirty: &mut bool,
+) -> Result<(), B::Error> {
+    let drawn = terminal
+        .draw(|f| render_frame(app, f, suppress_colors))
+        .map(|_| ());
+    *dirty |= app.take_render_invalidated();
+    drawn
+}
+
+fn turn_wait(dirty: bool, wait: Duration) -> Duration {
+    if dirty { Duration::ZERO } else { wait }
 }
 
 fn render_frame(app: &mut impl Application, frame: &mut Frame, suppress_colors: bool) {
@@ -1040,4 +1064,95 @@ pub fn drain_pending_input() -> std::io::Result<usize> {
         disable_raw_mode()?;
     }
     drained
+}
+
+#[cfg(test)]
+mod render_pending_tests {
+    use std::collections::VecDeque;
+
+    use ratatui::Terminal;
+    use ratatui::backend::TestBackend;
+
+    use super::*;
+
+    struct Scripted {
+        requests: VecDeque<bool>,
+        latch: bool,
+        draws: usize,
+    }
+
+    impl Scripted {
+        fn new(requests: &[bool]) -> Self {
+            Self {
+                requests: requests.iter().copied().collect(),
+                latch: false,
+                draws: 0,
+            }
+        }
+    }
+
+    impl Application for Scripted {
+        fn handle(&mut self, _input: Input) -> Outcome {
+            Outcome::Ignored
+        }
+
+        fn render(&mut self, _frame: &mut Frame) {
+            self.draws += 1;
+            self.latch = self.requests.pop_front().unwrap_or(false);
+        }
+
+        fn should_quit(&self) -> bool {
+            false
+        }
+
+        fn tick_interval(&self) -> Duration {
+            Duration::from_millis(100)
+        }
+
+        fn take_render_invalidated(&mut self) -> bool {
+            std::mem::take(&mut self.latch)
+        }
+    }
+
+    fn terminal() -> Terminal<TestBackend> {
+        Terminal::new(TestBackend::new(4, 2)).expect("test terminal")
+    }
+
+    #[test]
+    fn render_pending_survives_all_draw_sites() {
+        let wait = Duration::from_millis(100);
+        let mut terminal = terminal();
+
+        let mut app = Scripted::new(&[true]);
+        let mut dirty = false;
+        paint(&mut terminal, &mut app, false, &mut dirty).expect("initial draw");
+        assert!(dirty, "a request after the initial draw schedules a turn");
+        assert_eq!(turn_wait(dirty, wait), Duration::ZERO);
+
+        let mut app = Scripted::new(&[true, false]);
+        let mut dirty = false;
+        paint(&mut terminal, &mut app, false, &mut dirty).expect("input draw");
+        paint(&mut terminal, &mut app, false, &mut dirty).expect("settle draw");
+        assert!(
+            dirty,
+            "the settle draw does not erase the input draw's request"
+        );
+        assert!(
+            !app.take_render_invalidated(),
+            "each draw's request is consumed"
+        );
+
+        let mut app = Scripted::new(&[true, false]);
+        let mut dirty = false;
+        paint(&mut terminal, &mut app, false, &mut dirty).expect("dirty draw");
+        assert!(
+            dirty,
+            "clearing dirty before the draw keeps the new request"
+        );
+        dirty = false;
+        paint(&mut terminal, &mut app, false, &mut dirty).expect("requested draw");
+        assert!(!dirty, "a stable draw ends the requests");
+        assert_eq!(turn_wait(dirty, wait), wait, "an idle turn keeps its wait");
+        assert_eq!(app.draws, 2);
+    }
 }

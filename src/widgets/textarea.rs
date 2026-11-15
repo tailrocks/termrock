@@ -469,6 +469,9 @@ impl TextArea {
             self.begin_edit();
             self.focus_select.apply(&mut self.field.buffer);
             self.focus_edit = true;
+            if self.editing {
+                ctx.note_render_mutation();
+            }
         } else if !ctx.interaction.has_focus(self.id)
             && self.entry == EditEntry::Immediate
             && self.editing
@@ -476,6 +479,7 @@ impl TextArea {
             && !self.is_dirty()
         {
             self.commit();
+            ctx.note_render_mutation();
         }
         self.focus_seen = has_focus;
         let area = area.intersection(*buf.area());

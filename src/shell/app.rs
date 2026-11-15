@@ -41,6 +41,34 @@ impl PageKey {
 
 type FooterDrawn = (Vec<Hint>, Vec<(usize, Rect)>);
 
+const RENDER_PASSES: u8 = 2;
+
+/// A focus that arrives after the first pass starts a widget's edit while the
+/// second pass paints, so a second pass that changed widget state gets one
+/// more pass to show it.
+const MUTATION_PASSES: u8 = RENDER_PASSES + 1;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct PaintedInteraction {
+    focus: Option<WidgetId>,
+    hover: Option<WidgetId>,
+    pressed: Option<WidgetId>,
+    suppressed: bool,
+    pointer_focus: bool,
+}
+
+impl From<Interaction> for PaintedInteraction {
+    fn from(value: Interaction) -> Self {
+        Self {
+            focus: value.focus,
+            hover: value.hover,
+            pressed: value.pressed,
+            suppressed: value.hover_suppressed,
+            pointer_focus: value.pointer_focus,
+        }
+    }
+}
+
 pub struct Shell<P = ()> {
     pub focus: Focus,
 
@@ -73,6 +101,7 @@ pub struct Shell<P = ()> {
     stop: StopHandle,
     footer: Option<FooterDrawn>,
     page: Option<PageKey>,
+    render_pending: bool,
 }
 
 impl<P> Default for Shell<P> {
@@ -111,6 +140,7 @@ impl<P> Shell<P> {
             stop: StopHandle::default(),
             footer: None,
             page: None,
+            render_pending: false,
         }
     }
 
@@ -235,6 +265,9 @@ pub trait App {
 
     fn tick_interval(&self) -> Duration;
 
+    /// Paints one pass. A frame may call `draw` twice, so apart from the
+    /// painting it must be idempotent: a draw that keeps changing focus or
+    /// geometry cannot settle and leaves the frame pending.
     fn draw(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx);
 
     fn configure(&self, _ctx: &mut RenderCtx) {}
@@ -302,21 +335,33 @@ pub fn blur_fan_out<A: App + ?Sized>(app: &mut A) -> Outcome {
     out
 }
 
+/// Paints the frame until its focus, hover and widget state settle.
+///
+/// Each pass compares the interaction it painted with the one left after
+/// hit registration, hover refresh, focus upkeep and blur delivery. A
+/// difference repaints once. So does a widget that changed its own state
+/// while rendering (`RenderCtx::note_render_mutation`), because widgets drawn
+/// before it read the old state. A widget that does so in the second pass,
+/// as a field does when its focus arrived after the first pass, gets a third.
+/// A frame with nothing to correct paints once. If the last pass is still
+/// unsettled the frame stays pending and `Application::take_render_invalidated` reports it, so
+/// the runtime draws again on its next turn instead of looping here.
 pub fn render<A: App + ?Sized>(app: &mut A, frame: &mut Frame) {
     let area = frame.area();
     app.shell_mut().size = (area.width, area.height);
     let theme = app.theme();
+    let (now_ms, flash_ms, tick) = (app.now_ms(), app.flash_ms(), app.tick());
     let mut cursor;
 
     let mut pass = 0;
     loop {
         let mut hits = HitRegistry::default();
         let mut ring = FocusRing::default();
-        let interaction = app
-            .shell()
-            .interaction(app.now_ms(), app.flash_ms(), app.tick());
+        let interaction = app.shell().interaction(now_ms, flash_ms, tick);
+        let painted = PaintedInteraction::from(interaction);
         let small = app.too_small().applies(area);
         let mut footer_keys = HintKeys::default();
+        let render_mutated;
         {
             let buf = frame.buffer_mut();
             if pass > 0 {
@@ -336,6 +381,7 @@ pub fn render<A: App + ?Sized>(app: &mut A, frame: &mut Frame) {
                 }
             }
             cursor = ctx.cursor;
+            render_mutated = ctx.render_mutated();
         }
         let layer_open = app.layer_open();
         let page = app.page_key();
@@ -347,10 +393,18 @@ pub fn render<A: App + ?Sized>(app: &mut A, frame: &mut Frame) {
         s.hits = hits;
         s.ring = ring;
         s.pointer.refresh_hover(&s.hits);
-        let before = s.focus.current();
         s.upkeep(layer_open, page, primary);
+        let blurred = blur_fan_out(app);
         pass += 1;
-        if pass > 1 || before.is_none() || s.focus.current() == before {
+        let settled = PaintedInteraction::from(app.shell().interaction(now_ms, flash_ms, tick));
+        let unsettled = settled != painted || blurred == Outcome::Changed || render_mutated;
+        let cap = if render_mutated {
+            MUTATION_PASSES
+        } else {
+            RENDER_PASSES
+        };
+        if !unsettled || pass >= cap {
+            app.shell_mut().render_pending = unsettled;
             break;
         }
     }
@@ -423,6 +477,9 @@ impl<A: App> Application for A {
     }
     fn take_output(&mut self) -> Vec<String> {
         super::clipboard::take_output()
+    }
+    fn take_render_invalidated(&mut self) -> bool {
+        std::mem::take(&mut self.shell_mut().render_pending)
     }
     fn external(&self) -> Option<&ExternalReceiver> {
         App::external(self)

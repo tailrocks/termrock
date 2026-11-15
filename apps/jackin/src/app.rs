@@ -477,10 +477,13 @@ impl App {
         }
     }
 
+    /// Whether something on screen moves by itself, so every tick needs a
+    /// frame. Quiet panes do not: a link that has nothing to say is polled, not
+    /// drawn.
     fn animating(&self) -> bool {
         matches!(
             self.route(),
-            Route::Intro | Route::Outro | Route::Handoff | Route::Cockpit | Route::Capsule
+            Route::Intro | Route::Outro | Route::Handoff | Route::Cockpit
         ) || self.shell.pointer.has_flash()
             || self
                 .router
@@ -488,14 +491,33 @@ impl App {
                 .is_some_and(|s| s.animating(&self.world))
             || self.layer_animates()
             || !self.world.jobs.is_empty()
-            || self.world.daemons.values().any(|d| !d.panes.is_empty())
+    }
+
+    /// Whether a live link is waiting to be polled. Polling keeps its cadence
+    /// whether or not anything is drawn.
+    fn polls_links(&self) -> bool {
+        self.world.daemons.values().any(|d| !d.panes.is_empty())
     }
 
     pub fn tick_interval(&self) -> std::time::Duration {
         if self.shell.motion == Motion::Paused {
             return std::time::Duration::from_millis(500);
         }
-        std::time::Duration::from_millis(self.route().tick_ms(self.animating()))
+        std::time::Duration::from_millis(
+            self.route().tick_ms(self.animating() || self.polls_links()),
+        )
+    }
+
+    /// Whether the page on screen draws something of this instance's panes.
+    fn shows_panes_of(&self, id: &InstanceId) -> bool {
+        match self.route() {
+            Route::Capsule => self.router.capsule().is_some_and(|c| c.instance == *id),
+            Route::Manager => matches!(
+                &self.router.manager().selected,
+                crate::screens::manager::RowKey::Instance(selected) if selected == id
+            ),
+            _ => false,
+        }
     }
 
     fn now_ms(&self) -> u64 {
@@ -567,9 +589,21 @@ impl App {
     }
 
     fn tick_step(&mut self) -> Outcome {
+        let out = self.step_world_and_page();
+        if out == Outcome::Changed {
+            self.world.projection.work.count_changed_tick();
+        }
+        out
+    }
+
+    fn step_world_and_page(&mut self) -> Outcome {
         let interval = self.route().tick_ms(true) as i64;
-        self.held.extend(self.world.tick(interval));
-        let mut out = if self.animating() {
+        let tick = self.world.tick_with_changes(interval);
+        self.held.extend(tick.messages);
+        let mut out = if self.animating()
+            || !tick.summaries_changed.is_empty()
+            || tick.panes_changed.iter().any(|id| self.shows_panes_of(id))
+        {
             Outcome::Changed
         } else {
             Outcome::Ignored
@@ -643,7 +677,11 @@ impl App {
 
     fn dispatch_msg(&mut self, m: &Msg) -> Outcome {
         if let Msg::PaneWake { instance, pane } = m {
-            return if self.world.wake_pane(instance, *pane) {
+            let roster = self.world.epochs().roster;
+            let changed = self.world.wake_pane(instance, *pane);
+            return if changed
+                && (self.shows_panes_of(instance) || self.world.epochs().roster != roster)
+            {
                 Outcome::Changed
             } else {
                 Outcome::Ignored
