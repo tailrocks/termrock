@@ -1512,3 +1512,22 @@ fn issue43_save_resolves_the_open_edit_first() {
     app.wait_text("no pending changes");
     app.finish();
 }
+
+#[test]
+fn issue48_strict_grid_rate_edits_exactly_and_commits_unchanged() {
+    let app = strict_grid_at("s03-strict-rate", 10);
+    let start = app.settle();
+    let shown = row_with(&start, "▎");
+    assert!(
+        shown.contains("1.00"),
+        "two decimals are displayed: {shown}"
+    );
+    assert!(!shown.contains("1.0045"), "display stays rounded: {shown}");
+    app.key("enter");
+    let editing = app.wait_text("1.0045");
+    see(&editing, &["1.0045", "no pending changes"], &["1 pending"]);
+    app.key("enter");
+    let kept = app.settle();
+    see(&kept, &["no pending changes"], &["1 pending", "1.0045"]);
+    app.finish();
+}
