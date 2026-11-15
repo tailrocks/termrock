@@ -108,19 +108,10 @@ fn read_ink(screen: &TerminalSnapshot, point: Point) -> Ink {
 }
 
 fn wait_ink(app: &App, point: Point, expected: Ink) -> Ink {
-    let deadline = Instant::now() + Duration::from_millis(800);
-    loop {
-        let got = read_ink(&app.screen(), point);
-        if got == expected {
-            return got;
-        }
-        assert!(
-            Instant::now() < deadline,
-            "cell {point:?} is {got:?}, expected {expected:?}\n{}",
-            text(&app.screen())
-        );
-        std::thread::sleep(Duration::from_millis(25));
-    }
+    app.wait_screen(&format!("cell {point:?} is {expected:?}"), |screen| {
+        read_ink(screen, point) == expected
+    });
+    expected
 }
 
 fn hold_ink(app: &App, point: Point, expected: Ink) {

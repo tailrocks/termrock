@@ -3,7 +3,7 @@
 //! Tuiscotti test ids are `[a-z0-9_-]` segments, so the baseline directory is
 //! `pre_refactor/t03_query/` and each checkpoint's dots become underscores.
 
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use tui_test::TerminalSnapshot;
 
@@ -282,11 +282,7 @@ fn finish_dirty(app: &App) {
     app.wait_text("Quit TablePro?");
     app.key("right");
     app.key("enter");
-    let deadline = Instant::now() + Duration::from_secs(8);
-    while app.child_running() {
-        assert!(Instant::now() < deadline, "Quit did not exit");
-        std::thread::sleep(Duration::from_millis(25));
-    }
+    app.wait_exit("Quit did not exit");
     app.expect_exited(0);
 }
 

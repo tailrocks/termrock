@@ -127,15 +127,7 @@ fn leave(app: &App) {
                 "exit button is not focused\n{visible}"
             );
             app.key("enter");
-            let exit_by = Instant::now() + Duration::from_secs(8);
-            while app.child_running() {
-                assert!(
-                    Instant::now() < exit_by,
-                    "confirmed quit did not exit\n{}",
-                    text(&app.screen())
-                );
-                std::thread::sleep(Duration::from_millis(25));
-            }
+            app.wait_exit("confirmed quit did not exit");
             app.expect_exited(0);
             return;
         }

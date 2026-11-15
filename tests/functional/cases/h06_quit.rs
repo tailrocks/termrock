@@ -385,15 +385,7 @@ fn confirm_after_tick(app: &App, label: &str) -> String {
 }
 
 fn wait_exit(app: &App) {
-    let deadline = Instant::now() + Duration::from_secs(8);
-    while app.child_running() {
-        assert!(
-            Instant::now() < deadline,
-            "quit did not exit\n{}",
-            text(&app.screen())
-        );
-        std::thread::sleep(Duration::from_millis(25));
-    }
+    app.wait_exit("quit did not exit");
     app.expect_exited(0);
 }
 
