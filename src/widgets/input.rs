@@ -1056,4 +1056,52 @@ mod issue35_tests {
             assert!(!painted(&mut input).contains(REQUIRED));
         }
     }
+
+    #[test]
+    fn issue35_required_after_error_uses_current_configuration() {
+        let first = Rc::new(Cell::new(0));
+        let first_calls = first.clone();
+        let mut input = TextInput::new(WidgetId::of("issue35.current"), "Name")
+            .edit_entry(EditEntry::Explicit)
+            .required(true)
+            .required_message("first message")
+            .validate_on(ValidateOn::EveryCommit)
+            .validator(move |_| {
+                first_calls.set(first_calls.get() + 1);
+                None
+            });
+        input.on_key(&key(KeyCode::Enter));
+        input.on_key(&key(KeyCode::Enter));
+        assert_eq!(input.error(), Some("first message"));
+
+        let second = Rc::new(Cell::new(0));
+        let second_calls = second.clone();
+        input.required_message = Some("second message".to_owned());
+        input.field.validator = Some(Validator::check(move |_| {
+            second_calls.set(second_calls.get() + 1);
+            None
+        }));
+
+        input.on_key(&key(KeyCode::Enter));
+        input.on_key(&key(KeyCode::Char('a')));
+        assert_eq!(
+            input.error(),
+            None,
+            "the corrected value clears the prior error"
+        );
+        assert_eq!(
+            second.get(),
+            1,
+            "the current validator runs on the corrected value"
+        );
+
+        input.on_key(&key(KeyCode::Backspace));
+        input.on_key(&key(KeyCode::Enter));
+        assert_eq!(input.error(), Some("second message"));
+        assert_eq!(
+            second.get(),
+            1,
+            "required fires before the current validator"
+        );
+    }
 }

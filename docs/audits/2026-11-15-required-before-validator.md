@@ -21,6 +21,6 @@ Consumers migrated, because each set `required(true)` with a validator that also
 
 Not changed: library widgets other than `EditField::validate`, layout, colours, focus language and the `visual-baseline` tag.
 
-Tests: `widgets::edit::issue35_tests` (direct field matrix, counts validator calls), `widgets::input::issue35_tests::issue35_input_required_error_recovers` (Enter rejection, correction through AfterError, render), and `widgets::form_dialog::issue35_tests::issue35_form_save_blocked_by_required_before_custom` (Save blocked, focus returned to the field).
+Tests: `widgets::edit::issue35_tests` (direct field matrix, counts validator calls), `widgets::input::issue35_tests::issue35_input_required_error_recovers` (Enter rejection, correction through AfterError and Live, render), `widgets::input::issue35_tests::issue35_required_after_error_uses_current_configuration` (message and validator replaced after an error), and `widgets::form_dialog::issue35_tests::issue35_form_save_blocked_by_required_before_custom` (Save blocked, focus returned to the field).
 
 Limits: the TextInput regression covers `AfterError` and `Live` with `ValidateOn::EveryCommit`. `ValidateWhen::Commit` is not exercised by a regression test. The showcase combined example is the existing `owner` field on the inputs page, which pairs `required(true)` with the email validator. Its empty state appears after the user clears the value.
