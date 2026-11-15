@@ -16,4 +16,5 @@ pub mod scroll;
 pub mod selection;
 pub mod shape;
 pub mod text;
+mod text_index;
 pub mod typeahead;

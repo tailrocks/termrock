@@ -1385,3 +1385,6 @@ impl EditMenuHost for CodeEditor {
         edited
     }
 }
+
+#[cfg(test)]
+mod tests;

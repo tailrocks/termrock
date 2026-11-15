@@ -1,5 +1,21 @@
+use std::ops::Range;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, OnceLock};
+
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
+
+use super::text_index::{LineIndex, LineView};
+
+static NEXT_TEXT_REVISION: AtomicU64 = AtomicU64::new(1);
+
+fn fresh_text_revision() -> u64 {
+    NEXT_TEXT_REVISION
+        .try_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
+            value.checked_add(1)
+        })
+        .expect("text revision exhausted")
+}
 
 fn normalized_text(text: &str, multiline: bool) -> std::borrow::Cow<'_, str> {
     if multiline && text.contains('\r') {
@@ -21,7 +37,7 @@ fn normalize_owned(text: String, multiline: bool) -> String {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct TextBuffer {
     text: String,
 
@@ -29,7 +45,26 @@ pub struct TextBuffer {
 
     anchor: Option<usize>,
     multiline: bool,
+    revision: u64,
+    index: OnceLock<Arc<LineIndex>>,
 }
+
+impl Default for TextBuffer {
+    fn default() -> Self {
+        Self::build(String::new(), false)
+    }
+}
+
+impl PartialEq for TextBuffer {
+    fn eq(&self, other: &Self) -> bool {
+        self.text == other.text
+            && self.cursor == other.cursor
+            && self.anchor == other.anchor
+            && self.multiline == other.multiline
+    }
+}
+
+impl Eq for TextBuffer {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CursorPos {
@@ -39,24 +74,71 @@ pub struct CursorPos {
 }
 
 impl TextBuffer {
-    pub fn single(text: impl Into<String>) -> Self {
-        let text = normalize_owned(text.into(), false);
+    fn build(text: String, multiline: bool) -> Self {
         Self {
             cursor: text.len(),
             text,
             anchor: None,
-            multiline: false,
+            multiline,
+            revision: fresh_text_revision(),
+            index: OnceLock::new(),
         }
     }
 
+    pub fn single(text: impl Into<String>) -> Self {
+        Self::build(normalize_owned(text.into(), false), false)
+    }
+
     pub fn multi(text: impl Into<String>) -> Self {
-        let text = normalize_owned(text.into(), true);
-        Self {
-            cursor: text.len(),
-            text,
-            anchor: None,
-            multiline: true,
+        Self::build(normalize_owned(text.into(), true), true)
+    }
+
+    pub fn revision(&self) -> u64 {
+        self.revision
+    }
+
+    fn content_changed(&mut self) {
+        self.revision = fresh_text_revision();
+        self.index.take();
+    }
+
+    fn index(&self) -> &LineIndex {
+        self.index
+            .get_or_init(|| Arc::new(LineIndex::build(&self.text)))
+            .as_ref()
+    }
+
+    pub(crate) fn line_view(&self, line: usize) -> Option<LineView<'_>> {
+        self.index().view(&self.text, line)
+    }
+
+    pub fn line_range(&self, line: usize) -> Option<Range<usize>> {
+        self.index().range(line)
+    }
+
+    pub fn line_width(&self, line: usize) -> Option<usize> {
+        self.index().width(line)
+    }
+
+    pub fn max_line_width(&self) -> usize {
+        self.index().max_width()
+    }
+
+    pub fn position_at(&self, offset: usize) -> CursorPos {
+        let (line, col) = self.index().position(&self.text, offset);
+        CursorPos { line, col }
+    }
+
+    fn floor_at(&self, offset: usize) -> usize {
+        self.index().floor(&self.text, offset)
+    }
+
+    fn replace_text(&mut self, range: Range<usize>, with: &str) {
+        if self.text[range.clone()] == *with {
+            return;
         }
+        self.text.replace_range(range, with);
+        self.content_changed();
     }
 
     pub fn text(&self) -> &str {
@@ -72,17 +154,16 @@ impl TextBuffer {
     }
 
     pub fn select_range(&mut self, a: usize, b: usize) {
-        self.anchor = Some(Self::floor_boundary(&self.text, a));
-        self.cursor = Self::floor_boundary(&self.text, b);
+        self.anchor = Some(self.floor_at(a));
+        self.cursor = self.floor_at(b);
     }
 
     pub fn selection_lines(&self) -> (usize, usize) {
         match self.selection() {
             Some(r) => {
-                let a = Self::pos_of(&self.text, r.start).line;
-
-                let before = &self.text[..r.end];
-                let b = before.matches('\n').count() - usize::from(before.ends_with('\n'));
+                let a = self.position_at(r.start).line;
+                let ends_on_newline = self.text.as_bytes()[r.end - 1] == b'\n';
+                let b = self.index().line_of(r.end) - usize::from(ends_on_newline);
                 (a, b)
             }
             None => {
@@ -93,14 +174,19 @@ impl TextBuffer {
     }
 
     pub fn has_selection_lines(&self) -> bool {
-        self.selection()
-            .is_some_and(|r| self.text[r].contains('\n'))
+        self.selection().is_some_and(|r| {
+            let index = self.index();
+            index.line_of(r.start) != index.line_of(r.end)
+        })
     }
 
     pub fn insert_at(&mut self, at: usize, s: &str) {
         let at = Self::floor_boundary(&self.text, at);
         let s = normalized_text(s, self.multiline);
-        self.text.insert_str(at, &s);
+        if !s.is_empty() {
+            self.text.insert_str(at, &s);
+            self.content_changed();
+        }
         if self.cursor >= at {
             self.cursor += s.len();
         }
@@ -119,7 +205,7 @@ impl TextBuffer {
         }
         let r = Self::floor_boundary(&self.text, r.start)..Self::ceil_boundary(&self.text, r.end);
         let n = r.end - r.start;
-        self.text.replace_range(r.clone(), "");
+        self.replace_text(r.clone(), "");
         let adjust = |p: &mut usize| {
             if *p >= r.end {
                 *p -= n;
@@ -135,7 +221,11 @@ impl TextBuffer {
     }
 
     pub fn set_text(&mut self, text: impl Into<String>) {
-        self.text = normalize_owned(text.into(), self.multiline);
+        let text = normalize_owned(text.into(), self.multiline);
+        if text != self.text {
+            self.text = text;
+            self.content_changed();
+        }
         self.cursor = self.text.len();
         self.anchor = None;
     }
@@ -165,7 +255,7 @@ impl TextBuffer {
         if self.anchor.is_none() {
             self.anchor = Some(self.cursor);
         }
-        self.cursor = Self::floor_boundary(&self.text, offset);
+        self.cursor = self.floor_at(offset);
     }
 
     pub fn word_range_at(&self, offset: usize) -> std::ops::Range<usize> {
@@ -238,25 +328,47 @@ impl TextBuffer {
         }
     }
 
+    fn line_bounds(text: &str, offset: usize) -> Range<usize> {
+        let bytes = text.as_bytes();
+        let start = bytes[..offset]
+            .iter()
+            .rposition(|b| *b == b'\n')
+            .map_or(0, |i| i + 1);
+        let end = bytes[offset..]
+            .iter()
+            .position(|b| *b == b'\n')
+            .map_or(text.len(), |i| offset + i);
+        start..end
+    }
+
     fn floor_boundary(text: &str, offset: usize) -> usize {
         if offset >= text.len() {
             return text.len();
         }
-        text.grapheme_indices(true)
-            .map(|(i, _)| i)
+        let line = Self::line_bounds(text, offset);
+        if offset >= line.end {
+            return line.end;
+        }
+        let start = line.start;
+        text[line]
+            .grapheme_indices(true)
+            .map(|(i, _)| start + i)
             .take_while(|i| *i <= offset)
             .last()
-            .unwrap_or(0)
+            .unwrap_or(start)
     }
 
     fn ceil_boundary(text: &str, offset: usize) -> usize {
         if offset >= text.len() {
             return text.len();
         }
-        text.grapheme_indices(true)
-            .map(|(i, _)| i)
+        let line = Self::line_bounds(text, offset);
+        let (start, end) = (line.start, line.end);
+        text[line]
+            .grapheme_indices(true)
+            .map(|(i, _)| start + i)
             .find(|i| *i >= offset)
-            .unwrap_or(text.len())
+            .unwrap_or(end)
     }
 
     fn normalize_positions(&mut self) {
@@ -415,7 +527,7 @@ impl TextBuffer {
     fn delete_selection(&mut self) -> bool {
         match self.selection() {
             Some(r) => {
-                self.text.replace_range(r.clone(), "");
+                self.replace_text(r.clone(), "");
                 self.cursor = r.start;
                 self.anchor = None;
                 self.normalize_positions();
@@ -441,9 +553,12 @@ impl TextBuffer {
 
         if let Some(r) = self.selection() {
             self.cursor = r.start + s.len();
-            self.text.replace_range(r, &s);
+            self.replace_text(r, &s);
         } else {
-            self.text.insert_str(self.cursor, &s);
+            if !s.is_empty() {
+                self.text.insert_str(self.cursor, &s);
+                self.content_changed();
+            }
             self.cursor += s.len();
         }
         self.anchor = None;
@@ -455,7 +570,7 @@ impl TextBuffer {
             return;
         }
         let start = self.prev_boundary(self.cursor);
-        self.text.replace_range(start..self.cursor, "");
+        self.replace_text(start..self.cursor, "");
         self.cursor = start;
         self.normalize_positions();
     }
@@ -465,7 +580,7 @@ impl TextBuffer {
             return;
         }
         let end = self.next_boundary(self.cursor);
-        self.text.replace_range(self.cursor..end, "");
+        self.replace_text(self.cursor..end, "");
         self.normalize_positions();
     }
 
@@ -474,7 +589,7 @@ impl TextBuffer {
             return;
         }
         let start = self.prev_word(self.cursor);
-        self.text.replace_range(start..self.cursor, "");
+        self.replace_text(start..self.cursor, "");
         self.cursor = start;
         self.normalize_positions();
     }
@@ -484,7 +599,7 @@ impl TextBuffer {
             return;
         }
         let end = self.line_end(self.cursor);
-        self.text.replace_range(self.cursor..end, "");
+        self.replace_text(self.cursor..end, "");
         self.normalize_positions();
     }
 
@@ -493,17 +608,17 @@ impl TextBuffer {
             return;
         }
         let start = self.line_start(self.cursor);
-        self.text.replace_range(start..self.cursor, "");
+        self.replace_text(start..self.cursor, "");
         self.cursor = start;
         self.normalize_positions();
     }
 
     pub fn line_count(&self) -> usize {
-        self.text.split('\n').count()
+        self.index().len()
     }
 
     pub fn cursor_pos(&self) -> CursorPos {
-        Self::pos_of(&self.text, self.cursor)
+        self.position_at(self.cursor)
     }
 
     pub fn pos_of(text: &str, offset: usize) -> CursorPos {
@@ -516,25 +631,13 @@ impl TextBuffer {
     }
 
     pub fn offset_at(&self, line: usize, col: usize) -> usize {
-        let mut start = 0;
-        for (i, l) in self.text.split('\n').enumerate() {
-            if i == line {
-                let mut width = 0;
-                for (gi, g) in l.grapheme_indices(true) {
-                    let w = UnicodeWidthStr::width(g);
-                    if width + w > col {
-                        return start + gi;
-                    }
-                    width += w;
-                }
-                return start + l.len();
-            }
-            start += l.len() + 1;
-        }
-        self.text.len()
+        self.index().offset_at(&self.text, line, col)
     }
 
     pub fn width(&self) -> usize {
         UnicodeWidthStr::width(self.text.as_str())
     }
 }
+
+#[cfg(test)]
+mod tests;
