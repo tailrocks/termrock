@@ -672,7 +672,7 @@ fn render_one_wide_label_at_80_cols() {
             "chips",
             Box::new(move |label, buf, ctx, t| {
                 let mut bar = ChipBar::new(ID);
-                bar.chips = vec![Chip::new(label)];
+                bar.set_chips(vec![Chip::new(label)]);
                 bar.render(area, buf, ctx, t.canvas);
             }),
         ),
