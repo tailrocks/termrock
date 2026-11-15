@@ -27,8 +27,8 @@ fn intrinsic_totals_match_arithmetic_beyond_u16() {
     assert_eq!(status.intrinsic_width(), 20_000 + 3 * 19_999 + 2);
 
     let mut chips = ChipBar::new(ID);
-    chips.add_label = None;
-    chips.chips = (0..10_000).map(|_| Chip::new("x")).collect();
+    chips.set_add_label(None);
+    chips.set_chips((0..10_000).map(|_| Chip::new("x")).collect());
     assert_eq!(chips.intrinsic_width(), 10_000 * 7 - 1);
 }
 

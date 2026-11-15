@@ -144,7 +144,7 @@ fn intrinsic_collection_sums_saturate_at_public_boundary() {
     });
 
     let mut chips = ChipBar::new(ID);
-    chips.chips = (0..10_000).map(|_| Chip::new("x")).collect();
+    chips.set_chips((0..10_000).map(|_| Chip::new("x")).collect());
     frame(80, 1, |_, ctx| {
         assert_eq!(chips.measure(ctx_size, ctx).width, MAX);
     });
@@ -210,7 +210,7 @@ fn intrinsic_long_labels_do_not_wrap_small() {
                 "breadcrumb {name}"
             );
             let mut chips = ChipBar::new(ID);
-            chips.chips = vec![Chip::new(&label)];
+            chips.set_chips(vec![Chip::new(&label)]);
             assert_eq!(chips.measure(wide, ctx).width, MAX, "chips {name}");
             let mut tabs = Tabs::new(ID, &[label.as_str()]);
             assert_eq!(tabs.measure(wide, ctx).width, MAX, "tabs {name}");
