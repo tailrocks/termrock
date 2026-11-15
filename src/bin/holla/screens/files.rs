@@ -90,12 +90,15 @@ pub struct FilesPage {
 
     pub query: String,
     index: Vec<String>,
+    index_initialized: bool,
     hits: Vec<FindHit>,
+    // The (indexed count, done) pair that produced `hits`. A tick that
+    // reproduces it has nothing new to publish.
+    published_index: Option<(usize, bool)>,
 
     find_query: Option<String>,
     find_matches: Vec<(usize, std::ops::Range<usize>)>,
     find_at: usize,
-    last_tick: u64,
     list_area: Rect,
 
     jump_error: Option<String>,
@@ -151,11 +154,12 @@ impl FilesPage {
             md: MasterDetail::new(LIST, PREVIEW).detail_share(44, 36, 70),
             query: String::new(),
             index: vec![],
+            index_initialized: false,
             hits: vec![],
+            published_index: None,
             find_query: None,
             find_matches: vec![],
             find_at: 0,
-            last_tick: u64::MAX,
             list_area: Rect::ZERO,
             jump_error: None,
         }
@@ -436,7 +440,8 @@ impl FilesPage {
     }
 
     fn refresh_hits(&mut self, w: &World) {
-        let (n, _) = self.indexed(w);
+        let progress = self.indexed(w);
+        let (n, _) = progress;
         let slice: Vec<String> = self.index.iter().take(n).cloned().collect();
         let keep = self.hits.get(self.cursor).map(|h| h.path.clone());
         self.hits = w.fs.find(&slice, &self.query);
@@ -445,6 +450,15 @@ impl FilesPage {
             .unwrap_or(0);
         self.scroll.set_content(self.hits.len());
         self.scroll.ensure_visible(self.cursor);
+        self.published_index = Some(progress);
+    }
+
+    /// The only way the index changes. A new index is not the same index
+    /// just because its length matches, so the published stamp is dropped.
+    fn install_index(&mut self, index: Vec<String>) {
+        self.index = index;
+        self.index_initialized = true;
+        self.published_index = None;
     }
 
     fn selected_path(&self) -> Option<String> {
@@ -1498,11 +1512,13 @@ impl ShellPage<Holla> for FilesPage {
             }
             changed = true;
         }
-        if self.mode == Mode::Find && w.tick != self.last_tick && !self.indexed(w).1 {
+        // Compare against the published stamp, not the clock or the done flag:
+        // the completion tick changes the index state without a Loading tick
+        // before it, and a skipped tick must still publish the final hits.
+        if self.mode == Mode::Find && self.published_index != Some(self.indexed(w)) {
             self.refresh_hits(w);
             changed = true;
         }
-        self.last_tick = w.tick;
         if changed {
             Outcome::Changed
         } else {
@@ -1511,8 +1527,9 @@ impl ShellPage<Holla> for FilesPage {
     }
 
     fn enter(&mut self, w: &mut World, cx: &mut Cx) {
-        if self.index.is_empty() {
-            self.index = w.fs.home_index(&w.location.home);
+        if !self.index_initialized {
+            let index = w.fs.home_index(&w.location.home);
+            self.install_index(index);
         }
         match self.mode {
             Mode::Browse => {
@@ -1825,6 +1842,31 @@ impl FilesPage {
 
     pub fn perform_jump(&mut self, target: &str, w: &World, cx: &mut Cx) -> Result<(), String> {
         self.jump_to(target, w, cx)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn published_index(&self) -> Option<(usize, bool)> {
+        self.published_index
+    }
+
+    #[cfg(test)]
+    pub(crate) fn hit_paths(&self) -> Vec<String> {
+        self.hits.iter().map(|h| h.path.clone()).collect()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn selected_hit(&self) -> Option<String> {
+        self.selected_path()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn is_find_mode(&self) -> bool {
+        self.mode == Mode::Find
+    }
+
+    #[cfg(test)]
+    pub(crate) fn install_index_for_test(&mut self, index: Vec<String>) {
+        self.install_index(index);
     }
 }
 
