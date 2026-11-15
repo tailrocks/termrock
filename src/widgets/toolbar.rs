@@ -268,7 +268,7 @@ impl Toolbar {
 
     /// Natural width of every item, gap and separator, saturating at `u16::MAX`.
     ///
-    /// Overflow decisions use [`Self::intrinsic_width`], so a saturated result
+    /// Overflow decisions use the unsaturated intrinsic width, so a saturated result
     /// never hides the More route.
     pub fn width(&self) -> u16 {
         terminal_extent(self.intrinsic_width())
