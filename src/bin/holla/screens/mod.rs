@@ -11,7 +11,7 @@ pub mod snapshot;
 use junie_tui::core::event::Outcome;
 use junie_tui::core::scroll::ScrollState;
 use junie_tui::theme::Tone;
-use junie_tui::ui::layer::{LayerEntry, ShellLayers};
+use junie_tui::ui::layer::{LayerEntry, LayerTag, ShellLayers};
 use junie_tui::ui::layers::LayerResult;
 use junie_tui::widgets::menu::MenuAction;
 use junie_tui::widgets::picker::PickerAction;
@@ -196,6 +196,50 @@ impl ModalResult {
             Self::MenuChosen(k) => Some(k),
             _ => None,
         }
+    }
+}
+
+/// The one row menu a page has open. The page keeps the captured target and actions
+/// here. The layer tag carries only a token, so a result for an earlier menu cannot
+/// consume a newer request, and no row position or key string is ever replayed.
+pub struct PendingMenu<C> {
+    last: u64,
+    pending: Option<(u64, C)>,
+}
+
+impl<C> Default for PendingMenu<C> {
+    fn default() -> Self {
+        Self {
+            last: 0,
+            pending: None,
+        }
+    }
+}
+
+impl<C> PendingMenu<C> {
+    /// Replaces any earlier pending request and returns the tag key for the new menu.
+    pub fn capture(&mut self, context: C) -> String {
+        self.last = self
+            .last
+            .checked_add(1)
+            .expect("row menu token space exhausted");
+        self.pending = Some((self.last, context));
+        self.last.to_string()
+    }
+
+    /// Takes the request this result answers. A result with another kind or token
+    /// returns None and leaves the pending request in place. A dismissal also takes
+    /// the request, so it retires without an action.
+    pub fn take(&mut self, tag: &LayerTag, kind: &str, result: &ModalResult) -> Option<(C, usize)> {
+        if tag.kind != kind {
+            return None;
+        }
+        let token = tag.key.parse::<u64>().ok()?;
+        if self.pending.as_ref()?.0 != token {
+            return None;
+        }
+        let (_, context) = self.pending.take()?;
+        result.menu_chosen().map(|index| (context, index))
     }
 }
 
