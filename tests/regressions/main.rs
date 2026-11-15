@@ -26,6 +26,7 @@ mod keyed_costs;
 mod loading_label;
 mod master_detail_bounds;
 mod nav_list_state;
+mod nav_list_width;
 mod pane_rig;
 mod pane_tree_minima;
 mod pane_tree_pointer;
