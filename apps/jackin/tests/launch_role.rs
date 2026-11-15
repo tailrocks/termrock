@@ -224,13 +224,10 @@ fn the_configured_rule_skips_a_role_that_cannot_launch_as_the_only_one() {
     );
 }
 
-fn snapshot_after(app: &App, change: impl FnOnce(&mut Snapshot)) -> Msg {
+fn snapshot_after(app: &mut App, change: impl FnOnce(&mut Snapshot)) -> Msg {
     let mut snapshot = sim::snapshot(&app.world);
     change(&mut snapshot);
-    Msg::Refreshed {
-        ticket: app.world.refresh_ticket,
-        result: Ok(Box::new(snapshot)),
-    }
+    roster_reply(app, snapshot)
 }
 
 fn open_picker() -> App {
@@ -249,7 +246,7 @@ fn open_picker() -> App {
 #[test]
 fn a_launch_picked_after_the_role_became_unusable_is_refused() {
     let mut app = open_picker();
-    let reload = snapshot_after(&app, |s| {
+    let reload = snapshot_after(&mut app, |s| {
         s.roles
             .iter_mut()
             .find(|r| r.name == "the-architect")
@@ -267,7 +264,7 @@ fn a_launch_picked_after_the_role_became_unusable_is_refused() {
 #[test]
 fn a_launch_picked_after_its_account_became_unusable_is_refused() {
     let mut app = open_picker();
-    let reload = snapshot_after(&app, |s| {
+    let reload = snapshot_after(&mut app, |s| {
         let preselected = s
             .accounts
             .accounts
@@ -302,7 +299,7 @@ fn an_account_invalidated_while_its_picker_is_open_is_refused() {
     press(&mut app, "down enter space enter");
     assert!(screen(&mut app).contains("Account for Claude Code"));
     let launches_before = app.world.instances.len();
-    let reload = snapshot_after(&app, |snapshot| {
+    let reload = snapshot_after(&mut app, |snapshot| {
         snapshot
             .accounts
             .accounts

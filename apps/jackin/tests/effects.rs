@@ -6,9 +6,9 @@ use std::sync::{Arc, Mutex};
 
 use common::*;
 use jackin_console::app::{App, Remote, Route};
-use jackin_console::backend::{Backend, Completion, Effect, FileSource, Refresh};
+use jackin_console::backend::{Backend, Completion, Effect, FileSource, Refresh, Validation};
 use jackin_console::domain::account::{
-    AccountRegistry, CredentialSource, DetectedKind, IssueCode, ValidationState,
+    AccountRegistry, CredentialSource, DetectedKind, IssueCode, ValidationLevel, ValidationState,
 };
 use jackin_console::domain::agent::Agent;
 use jackin_console::domain::instance::{Instance, InstanceEntry, InstanceId, InstanceStatus};
@@ -2320,10 +2320,7 @@ fn a_stop_confirmed_after_the_instance_left_is_refused() {
     assert!(asked.contains("Stop instance"), "{asked}");
 
     let gone = without_instances(&app);
-    app.deliver(&Msg::Refreshed {
-        ticket: app.world.refresh_ticket,
-        result: Ok(gone),
-    });
+    deliver_roster(&mut app, *gone);
     press(&mut app, "right enter");
 
     assert_eq!(count(&backend, |e| matches!(e, Effect::Stop { .. })), 0);
@@ -2338,10 +2335,7 @@ fn a_purge_confirmed_after_the_instance_left_is_refused() {
     assert!(asked.contains("Purge instance"), "{asked}");
 
     let gone = without_instances(&app);
-    app.deliver(&Msg::Refreshed {
-        ticket: app.world.refresh_ticket,
-        result: Ok(gone),
-    });
+    deliver_roster(&mut app, *gone);
     press(&mut app, "c 4 1 e enter");
 
     assert_eq!(count(&backend, |e| matches!(e, Effect::Purge { .. })), 0);
@@ -2434,7 +2428,7 @@ fn inspect_names_the_account_the_launch_used() {
 #[test]
 fn a_refresh_failure_that_a_newer_reply_overtook_is_not_reported() {
     let (mut app, _) = backed(Scenario::Returning, |_, _| None);
-    app.world.refresh_from = Some(app.world.snapshots_applied);
+    app.world.refresh_from = Some(app.world.authoritative_revision());
     app.world.apply(sim::snapshot(&app.world));
     app.deliver(&Msg::Refreshed {
         ticket: app.world.refresh_ticket,
@@ -2442,7 +2436,7 @@ fn a_refresh_failure_that_a_newer_reply_overtook_is_not_reported() {
     });
     assert!(!status(&app).contains("Refresh failed"), "{}", status(&app));
 
-    app.world.refresh_from = Some(app.world.snapshots_applied);
+    app.world.refresh_from = Some(app.world.authoritative_revision());
     app.deliver(&Msg::Refreshed {
         ticket: app.world.refresh_ticket,
         result: Err("instance index unreadable".into()),
@@ -3137,6 +3131,367 @@ fn the_usage_screen_refreshes_every_enabled_account_and_shows_the_reply() {
     assert_eq!(asked, idle, "one refresh for each enabled idle account");
     let shown = screen(&mut app);
     assert!(shown.contains("40%"), "{shown}");
+}
+
+const ARRIVED: &str = "jk-9e11";
+
+/// An app whose roster refresh is out and unanswered, with the roster the
+/// backend would answer it with.
+fn roster_out(scenario: Scenario) -> (App, u64, Snapshot) {
+    let mut app = timed(scenario, world_for(scenario));
+    let snapshot = sim::snapshot(&app.world);
+    let ticket = hold_roster_refresh(&mut app);
+    (app, ticket, snapshot)
+}
+
+fn roster_answer(ticket: u64, snapshot: Snapshot) -> Msg {
+    Msg::Refreshed {
+        ticket,
+        result: Ok(Box::new(snapshot)),
+    }
+}
+
+/// A record the console learns of after the refresh went out: a copy of the
+/// first one under a new id.
+fn arrival(app: &App) -> InstanceEntry {
+    let mut record = app
+        .world
+        .instances
+        .iter()
+        .find_map(InstanceEntry::as_available)
+        .expect("a record")
+        .clone();
+    record.id = iid(ARRIVED);
+    record.container = format!("sbx-{ARRIVED}");
+    InstanceEntry::available(record)
+}
+
+fn admit_arrival(app: &mut App) {
+    let record = arrival(app);
+    app.deliver(&Msg::LaunchCancelled {
+        instance: Box::new(record),
+    });
+    assert!(app.world.instance(&iid(ARRIVED)).is_some());
+}
+
+#[test]
+fn refresh_started_before_launch_cannot_remove_admitted_instance() {
+    let (mut app, ticket, old) = roster_out(Scenario::Returning);
+    admit_arrival(&mut app);
+    let applied = app.world.snapshots_applied;
+
+    assert_eq!(
+        app.deliver(&roster_answer(ticket, old)),
+        Outcome::Ignored,
+        "the roster read before the launch record existed is not news"
+    );
+    assert!(app.world.instance(&iid(ARRIVED)).is_some());
+    assert_eq!(app.world.snapshots_applied, applied);
+}
+
+#[test]
+fn refresh_started_before_a_local_end_cannot_revive_the_record() {
+    let (mut app, ticket, old) = roster_out(Scenario::Returning);
+    let ended = app
+        .world
+        .instances
+        .iter()
+        .filter_map(InstanceEntry::as_available)
+        .find(|i| i.status.is_live())
+        .map(|i| i.id.clone())
+        .expect("a live record");
+    app.go(Go::InstanceEnded {
+        instance: ended.clone(),
+        purge: false,
+    });
+    let ended_as = app.world.instance(&ended).map(|i| i.status);
+    assert!(ended_as.is_some_and(|status| !status.is_live()));
+
+    assert_eq!(app.deliver(&roster_answer(ticket, old)), Outcome::Ignored);
+    assert_eq!(app.world.instance(&ended).map(|i| i.status), ended_as);
+}
+
+fn old_roster_cannot_revert(accept: impl FnOnce(&mut App)) {
+    let (mut app, ticket, old) = roster_out(Scenario::AccountsMixed);
+    let before = old.accounts.get(PERSONAL).expect("account").clone();
+    accept(&mut app);
+    let kept = app.world.accounts.get(PERSONAL).expect("account").clone();
+    assert_ne!(kept, before, "the account reply changed something");
+    let applied = app.world.snapshots_applied;
+
+    assert_eq!(app.deliver(&roster_answer(ticket, old)), Outcome::Ignored);
+    assert_eq!(app.world.snapshots_applied, applied);
+    assert_eq!(*app.world.accounts.get(PERSONAL).expect("account"), kept);
+}
+
+fn usage_refresh(app: &App, ticket: u64) -> Msg {
+    let account = app.world.accounts.get(PERSONAL).expect("account");
+    let now = app.world.now_secs();
+    let mut usage = account.usage.clone();
+    usage.freshness = FreshnessInfo::current(now);
+    usage.windows[0].used_pct = Some(88);
+    Msg::AccountRefreshed {
+        ticket,
+        account: PERSONAL.into(),
+        source: Box::new(account.source.clone()),
+        result: Ok(Box::new(Refresh {
+            usage,
+            issue: None,
+            last_refresh_secs: now,
+            outcome: RefreshOutcome::NeedsAttention,
+        })),
+    }
+}
+
+fn validation_of_personal(app: &mut App, result: Result<Validation, String>) -> Msg {
+    let ticket = app.world.validate_account(PERSONAL).expect("a ticket");
+    Msg::AccountValidated {
+        ticket,
+        account: PERSONAL.into(),
+        source: Box::new(
+            app.world
+                .accounts
+                .get(PERSONAL)
+                .expect("account")
+                .source
+                .clone(),
+        ),
+        result,
+    }
+}
+
+#[test]
+fn refresh_started_before_account_result_cannot_revert_it() {
+    old_roster_cannot_revert(|app| {
+        let ticket = app.world.refresh_account(PERSONAL, 0).expect("a ticket");
+        let reply = usage_refresh(app, ticket);
+        app.deliver(&reply);
+        assert_eq!(first_window_pct(&app.world, PERSONAL), Some(88));
+    });
+    old_roster_cannot_revert(|app| {
+        let ticket = app.world.refresh_account(PERSONAL, 0).expect("a ticket");
+        app.deliver(&Msg::AccountRefreshed {
+            ticket,
+            account: PERSONAL.into(),
+            source: Box::new(
+                app.world
+                    .accounts
+                    .get(PERSONAL)
+                    .expect("account")
+                    .source
+                    .clone(),
+            ),
+            result: Err("the provider did not answer".into()),
+        });
+        assert!(
+            app.world
+                .accounts
+                .get(PERSONAL)
+                .expect("account")
+                .issue
+                .is_some()
+        );
+    });
+    old_roster_cannot_revert(|app| {
+        let reply = validation_of_personal(
+            app,
+            Ok(Validation::Fingerprint {
+                level: ValidationLevel::QuotaReadable,
+            }),
+        );
+        app.deliver(&reply);
+    });
+    old_roster_cannot_revert(|app| {
+        let reply = validation_of_personal(app, Err("the provider did not answer".into()));
+        app.deliver(&reply);
+        assert!(matches!(
+            app.world
+                .accounts
+                .get(PERSONAL)
+                .expect("account")
+                .validation,
+            ValidationState::Invalid(_)
+        ));
+    });
+}
+
+#[test]
+fn refresh_before_role_load_failure_cannot_clear_error() {
+    let (mut app, ticket, old) = roster_out(Scenario::RoleBinding);
+    let name = app.world.roles[0].name.clone();
+    app.deliver(&Msg::RoleLoaded {
+        role: name.clone(),
+        result: Err("manifest not found".into()),
+    });
+    assert_eq!(
+        role(&app.world, &name).load_error.as_deref(),
+        Some("manifest not found")
+    );
+    let applied = app.world.snapshots_applied;
+
+    assert_eq!(app.deliver(&roster_answer(ticket, old)), Outcome::Ignored);
+    assert_eq!(
+        role(&app.world, &name).load_error.as_deref(),
+        Some("manifest not found")
+    );
+    assert_eq!(app.world.snapshots_applied, applied);
+}
+
+#[test]
+fn a_stale_refresh_failure_leaves_health_and_status_alone() {
+    let (mut app, ticket, _) = roster_out(Scenario::Returning);
+    admit_arrival(&mut app);
+    let shown = status(&app);
+    let health = app.world.daemon_health;
+
+    let outcome = app.deliver(&Msg::Refreshed {
+        ticket,
+        result: Err("instance index unreadable".into()),
+    });
+
+    assert_eq!(outcome, Outcome::Ignored);
+    assert_eq!(app.world.daemon_health, health);
+    assert_eq!(status(&app), shown);
+}
+
+#[test]
+fn refresh_revision_retirement_preserves_newer_ticket() {
+    let (mut app, a, old) = roster_out(Scenario::Returning);
+    let newer = sim::snapshot(&app.world);
+    let b = hold_roster_refresh(&mut app);
+    assert_ne!(a, b);
+
+    assert_eq!(app.deliver(&roster_answer(a, old)), Outcome::Ignored);
+    assert_eq!(app.world.refresh_ticket, b);
+    assert!(
+        app.world.refresh_from.is_some(),
+        "the older ticket did not retire the newer request"
+    );
+
+    admit_arrival(&mut app);
+    assert_eq!(app.deliver(&roster_answer(b, newer)), Outcome::Ignored);
+    assert_eq!(app.world.refresh_from, None, "the newer request is retired");
+    assert!(app.world.instance(&iid(ARRIVED)).is_some());
+
+    let mut fresh = sim::snapshot(&app.world);
+    fresh.instances.retain(|entry| entry.id() != &iid(ARRIVED));
+    let c = hold_roster_refresh(&mut app);
+    let applied = app.world.snapshots_applied;
+    assert_ne!(app.deliver(&roster_answer(c, fresh)), Outcome::Ignored);
+    assert_eq!(app.world.snapshots_applied, applied + 1);
+    assert!(
+        app.world.instance(&iid(ARRIVED)).is_none(),
+        "a refresh started after the admission may still remove the record"
+    );
+}
+
+#[test]
+fn duplicate_current_refresh_is_stale() {
+    let (mut app, ticket, snapshot) = roster_out(Scenario::Returning);
+    let mut shrunk = snapshot.clone();
+    shrunk.workspaces.truncate(1);
+    let workspaces = snapshot.workspaces.len();
+    let applied = app.world.snapshots_applied;
+
+    assert_ne!(
+        app.deliver(&roster_answer(ticket, snapshot)),
+        Outcome::Ignored
+    );
+    assert_eq!(app.world.snapshots_applied, applied + 1);
+
+    assert_eq!(
+        app.deliver(&roster_answer(ticket, shrunk)),
+        Outcome::Ignored
+    );
+    assert_eq!(app.world.snapshots_applied, applied + 1);
+    assert_eq!(app.world.workspaces.len(), workspaces);
+
+    let failing = hold_roster_refresh(&mut app);
+    let failure = Msg::Refreshed {
+        ticket: failing,
+        result: Err("instance index unreadable".into()),
+    };
+    app.deliver(&failure);
+    assert!(status(&app).contains("Refresh failed"), "{}", status(&app));
+    assert_eq!(app.deliver(&failure), Outcome::Ignored);
+}
+
+#[test]
+fn the_world_counts_each_authoritative_change_once() {
+    let mut world = world_for(Scenario::Returning);
+    let start = world.authoritative_revision();
+
+    world.authoritative_changed();
+    assert_eq!(world.authoritative_revision(), start + 1);
+
+    let moved = world.edit_authoritative(|w| {
+        w.workspaces.truncate(1);
+        w.roles.truncate(1);
+        w.workspaces.len()
+    });
+    assert_eq!(moved, 1);
+    assert_eq!(world.authoritative_revision(), start + 2);
+
+    world.apply(sim::snapshot(&world));
+    assert_eq!(world.authoritative_revision(), start + 3);
+}
+
+#[test]
+fn named_record_edits_advance_the_fence_only_when_they_change_something() {
+    let mut world = world_for(Scenario::Returning);
+    let id = world
+        .instances
+        .iter()
+        .filter_map(InstanceEntry::as_available)
+        .find(|i| i.status.is_live())
+        .map(|i| i.id.clone())
+        .expect("a live record");
+    world.instance_mut(&id).expect("record").uncommitted = 2;
+    world.instance_mut(&id).expect("record").unpushed = 1;
+    let start = world.authoritative_revision();
+
+    assert!(!world.note_touched_files(&id, 2), "no more than it had");
+    assert!(!world.note_touched_files(&id, 0));
+    assert_eq!(world.authoritative_revision(), start);
+    assert!(world.note_touched_files(&id, 5));
+    assert_eq!(world.instance(&id).expect("record").uncommitted, 5);
+    assert_eq!(world.authoritative_revision(), start + 1);
+
+    assert!(world.clear_instance_changes(&id));
+    let cleared = world.instance(&id).expect("record");
+    assert_eq!((cleared.uncommitted, cleared.unpushed), (0, 0));
+    assert!(!world.clear_instance_changes(&id), "nothing left to clear");
+    assert_eq!(world.authoritative_revision(), start + 2);
+
+    assert!(world.end_instance_record(&id, false));
+    assert_eq!(
+        world.instance(&id).expect("record").status,
+        InstanceStatus::CleanExited
+    );
+    assert!(!world.end_instance_record(&id, false), "no longer live");
+    assert!(
+        !world.end_instance_record(&iid("jk-0000"), false),
+        "unknown"
+    );
+    assert_eq!(world.authoritative_revision(), start + 3);
+}
+
+#[test]
+fn a_role_check_advances_the_fence_only_for_a_known_role() {
+    let mut world = world_for(Scenario::RoleBinding);
+    let start = world.authoritative_revision();
+    assert!(!world.set_role_check("no-such-role", RoleCheckState::Running));
+    assert_eq!(world.authoritative_revision(), start);
+
+    let known = world
+        .surfaces
+        .roles
+        .as_ref()
+        .and_then(|admin| admin.roles.first())
+        .map(|r| r.name.clone())
+        .expect("an admin role");
+    assert!(world.set_role_check(&known, RoleCheckState::Running));
+    assert_eq!(world.authoritative_revision(), start + 1);
 }
 
 const NEXT: &str = "acct-claude-archive";

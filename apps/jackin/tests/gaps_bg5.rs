@@ -10,7 +10,7 @@ mod pane_support;
 mod product_support;
 
 use capsule_support::*;
-use common::app_with;
+use common::{app_with, deliver_roster, hold_roster_refresh};
 use jackin_console::app::Remote;
 use jackin_console::domain::instance::{DaemonSnapshot, InstanceEntry, InstanceId};
 use jackin_console::fixtures::{Scenario, world_for};
@@ -282,10 +282,7 @@ fn refresh_keeps_open_panes() {
             .all(|i| i.daemon == DaemonSnapshot::Unavailable),
         "the snapshot says nothing about daemons"
     );
-    let outcome = app.deliver(&Msg::Refreshed {
-        ticket: app.world.refresh_ticket,
-        result: Ok(Box::new(snapshot.clone())),
-    });
+    let outcome = deliver_roster(&mut app, snapshot.clone());
     assert_ne!(outcome, Outcome::Ignored);
 
     let after: Vec<(InstanceId, usize, usize)> = app
@@ -327,4 +324,32 @@ fn refresh_keeps_open_panes() {
             .expect("daemon"),
         "a reloaded snapshot keeps them too"
     );
+}
+
+#[test]
+fn terminal_projection_does_not_invalidate_roster_observation() {
+    let mut rig = Rig::new();
+    rig.attach();
+    let pane = first_pane(&rig);
+    let roster = snapshot_without_daemons(&rig.app.world);
+    let ticket = hold_roster_refresh(&mut rig.app);
+    let applied = rig.app.world.snapshots_applied;
+
+    rig.bench.output(0, b"output while the roster is out");
+    assert_eq!(wake(&mut rig, pane), Outcome::Changed);
+    jackin_console::world::refresh_snapshots(&mut rig.app.world);
+    rig.advance(160);
+    let panes = rig.daemon().panes.len();
+
+    let answer = Msg::Refreshed {
+        ticket,
+        result: Ok(Box::new(roster)),
+    };
+    assert_ne!(rig.app.deliver(&answer), Outcome::Ignored);
+    assert_eq!(
+        rig.app.world.snapshots_applied,
+        applied + 1,
+        "the roster applied"
+    );
+    assert_eq!(rig.daemon().panes.len(), panes, "the live panes survive");
 }

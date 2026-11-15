@@ -24,6 +24,14 @@ fn instance_id(id: &str) -> InstanceId {
     InstanceId::simulated(id)
 }
 
+fn deliver_roster(app: &mut App, snapshot: Snapshot) -> Outcome {
+    app.world.refresh_from = Some(app.world.authoritative_revision());
+    app.deliver(&Msg::Refreshed {
+        ticket: app.world.refresh_ticket,
+        result: Ok(Box::new(snapshot)),
+    })
+}
+
 fn app() -> App {
     app_for(
         Scenario::Returning,
@@ -233,11 +241,8 @@ fn a_periodic_refresh_that_removes_the_open_instance_leaves_its_capsule() {
     });
     assert_eq!(app.route(), Route::Capsule);
 
-    let refreshed = Msg::Refreshed {
-        ticket: app.world.refresh_ticket,
-        result: Ok(Box::new(without(&app, STOPPED))),
-    };
-    assert_eq!(app.deliver(&refreshed), Outcome::Changed);
+    let gone = without(&app, STOPPED);
+    assert_eq!(deliver_roster(&mut app, gone), Outcome::Changed);
 
     assert_ne!(app.route(), Route::Capsule);
     assert!(app.world.instance(&instance_id(STOPPED)).is_none());
@@ -255,11 +260,8 @@ fn a_periodic_refresh_that_removes_an_unopened_instance_drops_its_daemon() {
     let other = "jk-9b02";
     assert!(app.world.daemons.contains_key(&instance_id(other)));
 
-    let refreshed = Msg::Refreshed {
-        ticket: app.world.refresh_ticket,
-        result: Ok(Box::new(without(&app, other))),
-    };
-    app.deliver(&refreshed);
+    let gone = without(&app, other);
+    deliver_roster(&mut app, gone);
 
     assert!(!app.world.daemons.contains_key(&instance_id(other)));
     assert!(app.world.daemons.contains_key(&instance_id(STOPPED)));
@@ -310,11 +312,8 @@ fn a_periodic_refresh_that_stops_an_unopened_instance_drops_its_daemon() {
     let other = "jk-9b02";
     assert!(app.world.daemons.contains_key(&instance_id(other)));
 
-    let refreshed = Msg::Refreshed {
-        ticket: app.world.refresh_ticket,
-        result: Ok(Box::new(restorable(&app, other))),
-    };
-    app.deliver(&refreshed);
+    let stopped = restorable(&app, other);
+    deliver_roster(&mut app, stopped);
 
     assert!(!app.world.daemons.contains_key(&instance_id(other)));
     assert!(app.world.daemons.contains_key(&instance_id(STOPPED)));

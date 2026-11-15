@@ -1265,13 +1265,6 @@ fn idle_roster(app: &App) -> Snapshot {
     snapshot
 }
 
-fn roster_reply(app: &App, snapshot: Snapshot) -> Msg {
-    Msg::Refreshed {
-        ticket: app.world.refresh_ticket,
-        result: Ok(Box::new(snapshot)),
-    }
-}
-
 fn used_pct(app: &App) -> Option<u8> {
     personal(&app.world).usage.windows.first()?.used_pct
 }
@@ -1283,7 +1276,8 @@ fn refresh_snapshot_preserves_single_flight_across_pages() {
     assert_eq!(refreshes_of(&backend, PERSONAL), 1, "{:?}", backend.seen());
     let a = refresh_ticket_of(&backend, PERSONAL);
 
-    let roster = roster_reply(&app, idle_roster(&app));
+    let idle = idle_roster(&app);
+    let roster = roster_reply(&mut app, idle);
     app.deliver(&roster);
     assert_eq!(
         personal(&app.world).usage.freshness.phase,
@@ -1388,7 +1382,7 @@ fn refresh_source_change_and_return_does_not_revive_old_request() {
 
     let mut changed = idle_roster(&app);
     with_source(&mut changed, PERSONAL, other);
-    let msg = roster_reply(&app, changed);
+    let msg = roster_reply(&mut app, changed);
     app.deliver(&msg);
     assert_eq!(
         app.world.refresh_pending(PERSONAL),
@@ -1402,7 +1396,7 @@ fn refresh_source_change_and_return_does_not_revive_old_request() {
 
     let mut back = idle_roster(&app);
     with_source(&mut back, PERSONAL, original);
-    let msg = roster_reply(&app, back);
+    let msg = roster_reply(&mut app, back);
     app.deliver(&msg);
     assert_eq!(app.world.refresh_pending(PERSONAL), None, "no revival");
 
@@ -1431,12 +1425,12 @@ fn refresh_removed_and_readded_account_does_not_revive_old_request() {
     let full = idle_roster(&app);
     let mut removed = full.clone();
     removed.accounts.remove(PERSONAL);
-    let msg = roster_reply(&app, removed);
+    let msg = roster_reply(&mut app, removed);
     app.deliver(&msg);
     assert_eq!(app.world.refresh_pending(PERSONAL), None);
     assert_eq!(app.world.absorb(&a_ok), Absorbed::Stale);
 
-    let msg = roster_reply(&app, full);
+    let msg = roster_reply(&mut app, full);
     app.deliver(&msg);
     assert_eq!(app.world.refresh_pending(PERSONAL), None);
     assert_eq!(app.world.absorb(&a_ok), Absorbed::Stale);
@@ -1612,7 +1606,7 @@ fn validation_source_replacement_retires_ticket() {
         } else {
             with_source(&mut roster, PERSONAL, replaced.clone());
         }
-        let msg = roster_reply(&app, roster);
+        let msg = roster_reply(&mut app, roster);
         app.deliver(&msg);
         assert_eq!(app.world.validation_pending(PERSONAL), None);
         assert_eq!(app.shell.status.job(), None, "no job left spinning");
@@ -1645,7 +1639,8 @@ fn validation_duplicate_and_same_source_refresh() {
     let a = validation_ticket_of(&backend, PERSONAL);
     let progress = status(&app);
 
-    let msg = roster_reply(&app, never_validated_roster(&app));
+    let roster = never_validated_roster(&app);
+    let msg = roster_reply(&mut app, roster);
     app.deliver(&msg);
     assert_eq!(app.world.validation_pending(PERSONAL), Some(a));
     assert!(matches!(
@@ -1711,7 +1706,7 @@ fn validation_owner_source_replacement_ends_the_job() {
 
     let mut roster = never_validated_roster(&app);
     roster.accounts.remove(NEXT);
-    let msg = roster_reply(&app, roster);
+    let msg = roster_reply(&mut app, roster);
     app.deliver(&msg);
     assert_eq!(
         app.shell.status.job(),
@@ -1741,7 +1736,8 @@ fn validation_snapshot_preserves_original_started_tick() {
             app.world.clock.now_ms as u64 > started_tick,
             "time moved on"
         );
-        let msg = roster_reply(&app, never_validated_roster(&app));
+        let roster = never_validated_roster(&app);
+        let msg = roster_reply(&mut app, roster);
         app.deliver(&msg);
         assert_eq!(
             validation_state(&app, PERSONAL),
