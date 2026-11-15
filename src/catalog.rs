@@ -4638,6 +4638,22 @@ pub static ALLOWLIST: &[Allowed] = &[
         reason: "the page's scripted link always queues, so a paste never meets a full queue. session_controller_reply_and_paste_limits pins it.",
     },
     Allowed {
+        id: "terminal::SessionLink::set_size",
+        reason: "the page opens its link at the size it was built with and never resizes it, because a size option builds a new controller. session_controller_resize_retry_restart_transcript pins each size the link is told.",
+    },
+    Allowed {
+        id: "terminal::SessionSource::closed_before_attach",
+        reason: "no page script closes the stream before the attach, so the controller never asks the source for this fault. session_controller_resize_retry_restart_transcript pins a close before the attach.",
+    },
+    Allowed {
+        id: "terminal::SessionClipboardRefusal::Read",
+        reason: "the page's scripts only write to the clipboard and never send a read request, so DemoPolicy never reports Read. session_controller_clipboard_decisions_and_refusal_throttle pins the refusal.",
+    },
+    Allowed {
+        id: "terminal::SessionEffect::Copy",
+        reason: "the page's DemoPolicy refuses every clipboard write, so the controller never emits Copy. session_controller_clipboard_decisions_and_refusal_throttle pins the effect.",
+    },
+    Allowed {
         id: "terminal::TerminalSessionController::set_host_policy",
         reason: "apps/jackin swaps its host policy through this call. The page sets its policy once at construction, and no test in this repo swaps one.",
     },
