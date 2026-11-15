@@ -113,14 +113,14 @@ list, table, grid and tree widget in the frame.
 | `TextArea` | first keystroke, then second of the run | same | payload bytes cloned L, then none |
 | Holla Finder | settled tick | 106 items, 5 activities, 0 plans | no projection rebuild, scheduling 10, width calls 758 |
 | Holla Finder | unrelated world field, then tick | same | same as the settled tick |
-| Holla Finder | query change | same | projection rebuilds 1, ranked 106, width calls 1,647 |
+| Holla Finder | query change | same | projection rebuilds 1, ranked 106, width calls 1,673 |
 | TablePro grid | settled tick | 312 rows | rows painted 41, width calls 233 |
 | TablePro grid | one Down key | 312 | same as the settled tick |
 | TablePro grid | one keyed draft edit | 312 | rows painted 39, width calls 268 |
 | TablePro grid | unrelated history entry, then tick | 312 | rows painted 39, width calls 268 |
 | Showcase Query workbench | settled tick | 2 documents | rows painted 54, width calls 222 |
 | Showcase Query workbench | click the second tab (two frames) | 2 | rows painted 91, width calls 382 |
-| Showcase Finder | settled tick | 12 actions | allocated 1,440, rows painted 24, width calls 220 |
+| Showcase Finder | settled tick | 12 actions | allocated 0, rows painted 21, width calls 422 |
 | Showcase Finder | other page's option, then tick | 12 | same as the settled tick |
 | Jackin roster | settled tick | 9 instances, 4 workspaces, 2 daemons | scheduling records 2, polls 6, width calls 205 |
 | Jackin roster | unrelated workspace policy, then tick | same | same as the settled tick |
