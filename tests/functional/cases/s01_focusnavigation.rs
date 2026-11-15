@@ -767,17 +767,15 @@ fn option_nav_vim_boundary() {
 
 #[test]
 fn keyboard_only_focus_returns_on_the_first_no_op_key() {
-    let app = launch(
-        "s01-focusnavigation-keyboard-only",
-        &[
-            "--page",
-            "focusnavigation",
-            "--opt",
-            "focusnavigation.focus_visible=keyboard-only",
-        ],
-        120,
-        40,
-    );
+    let app = open_page("s01-focusnavigation-keyboard-only", 120, 40);
+    app.click_text("Options");
+    let options = app.wait_text("Page options");
+    expect(&options, &["Focus ring", "always"], &["keyboard-only"]);
+    app.click_text("always");
+    app.wait_text("Enter Set");
+    app.click_text("keyboard-only");
+    app.wait_absent("Enter Set");
+    app.click_text("Playground");
     app.wait_text("Ada Lovelace");
     click_at(&app, "Gamma", |hit| hit.x >= 24);
     let clicked = app.wait_screen("Gamma holds pointer focus without a gutter", |screen| {
