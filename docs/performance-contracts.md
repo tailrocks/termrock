@@ -164,6 +164,18 @@ families, and the `SourceRowsRead` metric. `CodeEditor` bracket matching, `Picke
 
 Also unmet, and absent from every scenario above:
 
+- No editor or app-page measurement scenario exists. The release measurements
+  time `TextViewport`, `ListBox`, `TreeView` and `ScrollView` only. There is no
+  `CodeEditor` or `TextArea` timing, and none for a Holla, TablePro, Showcase
+  or Jackin page.
+- The timing oracle runs after each operation only. #56 asks for a check
+  before and after every operation, so the first round has no pre-check and a
+  state that was already wrong before round 0 would go unnoticed.
+- No `performance` suite exists in `.velnor/config.toml`, so the profile
+  does not run as its own CI job. The same tests run in the `Rust / <crate>`
+  jobs through the `ci` profile. Adding the suite changes the generated
+  workflows and needs the owner's decision.
+
 - No test shows that a background tab or page projection that is irrelevant to
   a change does not rebuild. The idle and unrelated-change scenarios measure
   the focused page only.
@@ -207,14 +219,29 @@ gate below. The profile is `[profile.performance]` in `.config/nextest.toml`.
 It needs `--all-features` because the counters compile away without
 `work-metrics`; without it the budgets would not run at all.
 
-`tests/performance_inventory.rs` is the required-suite inventory. It lists
-each required suite with its nextest binary, the filter that selects it, its
-source file and the tests it must hold, and fails when
+`tests/regressions/performance_inventory.rs` (the `performance_inventory`
+module of the shared `regressions` target) is the required-suite inventory. It
+lists each required suite with its nextest binary, the filter that selects it,
+its source file and the tests it must hold, and fails when
 
+- nextest does not list a required test, lists it `#[ignore]`d, or the profile
+  filter does not match it. This is checked on the real output of
+  `cargo nextest list --profile performance --workspace --all-features
+  --message-format json`, which the gate runs itself, so a removed `mod` line,
+  an `#[ignore]`, a `#[cfg]` that drops the test or a filter that no longer
+  selects it all fail;
 - the profile no longer has the operand for a suite, so nextest would skip it;
 - the operand would not select one of the suite's required tests, for example
   after a module rename or a narrowed regex;
 - a required test is no longer a `#[test]` function in its file.
+
+The list check runs only under `--profile performance`: there the nested list
+is a cache hit on the build the run just made. Under any other profile it
+prints that it is skipped, because a list in the wrong feature shape would
+rebuild the workspace. Run the profile with the documented command; a run with
+other `-p` or feature flags still works but rebuilds for the nested list.
+The gate cannot vouch for itself: an `#[ignore]` on the gate's own tests
+removes the check, and only `--no-tests fail` and review notice that.
 
 The profile filter is read as text, not evaluated, so it must stay a plain
 union of `binary_id(=ID) & test(MATCHER)` terms. The gate refuses `not` and set
@@ -223,6 +250,10 @@ instead of guessing. The inventory is a floor: a new test in an existing
 suite needs no edit while the operand still selects it. A new suite needs an
 inventory entry and an operand together. `gate_logic::*` runs the same checks
 on synthetic input, including a removed suite and a narrowed matcher.
+
+Both measurement files live in the shared `regressions` target
+(`tests/regressions/work_measurements.rs`, `performance_inventory.rs`), as
+`docs/ci.md` prescribes, so the generated workflows list no new test target.
 
 `[profile.performance-measure]` selects the ignored timing tests and sets
 `test-threads = 1`, so that parallel tests do not time each other. The gate
@@ -257,7 +288,7 @@ enabled until repeatable baselines exist.
 
 ## Release measurements
 
-`scripts/measure-performance.sh` is the procedure. It builds `tests/work_measurements.rs`
+`scripts/measure-performance.sh` is the procedure. It builds `tests/regressions/work_measurements.rs`
 in the release profile without `work-metrics`, runs the ignored tests one at a
 time through `performance-measure`, and prints a summary table of the reports
 with the commit, machine, CPU, compiler and the load average before and after.

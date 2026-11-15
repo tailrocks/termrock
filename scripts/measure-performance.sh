@@ -1,6 +1,6 @@
 #!/bin/sh
 # Release elapsed-time measurements for #56 (docs/performance-contracts.md,
-# "Release measurements"). Builds the ignored `work_measurements` tests in the
+# "Release measurements"). Builds the ignored `work_measurements` module of the `regressions` target in the
 # release profile with the work counters off, runs them one at a time, and
 # prints a summary of the reports they wrote to <target dir>/performance.
 #
@@ -27,7 +27,7 @@ rm -f "$out"/*.timing.json "$out"/measurement-summary.txt
 
 # Build first, so the load printed below is the load the measurement ran under,
 # not the load of the compiler.
-cargo nextest list --release -p junie-tui --test work_measurements \
+cargo nextest list --release -p junie-tui --test regressions \
   --profile performance-measure --run-ignored only >/dev/null
 
 dirty=$(git status --porcelain --untracked-files=no 2>/dev/null | wc -l | tr -d ' ')
@@ -44,7 +44,7 @@ dirty=$(git status --porcelain --untracked-files=no 2>/dev/null | wc -l | tr -d 
 
 # --release: timing a debug build means nothing. No --features: the counters
 # must be off. test-threads = 1 comes from the profile.
-cargo nextest run --release -p junie-tui --test work_measurements \
+cargo nextest run --release -p junie-tui --test regressions \
   --profile performance-measure --run-ignored only --no-tests fail
 
 echo "load after:    $(uptime)" | tee -a "$out/measurement-environment.txt"

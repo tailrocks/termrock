@@ -12,6 +12,16 @@
 //!   tests (a renamed module, a narrowed regex);
 //! - a required test is no longer a `#[test]` function in its source file.
 //!
+//! The checks above read text. What nextest actually runs is checked on its
+//! own output: `performance_nextest_list_runs_every_required_test` runs
+//! `cargo nextest list --profile performance --workspace --all-features
+//! --message-format json` and fails unless every required test is listed,
+//! not `#[ignore]`d and matched by the profile filter. That catches what the
+//! text checks cannot: a `mod` line removed from a binary, an `#[ignore]`, a
+//! `#[cfg]` that drops the test, a filter that no longer selects it. It runs
+//! only under `--profile performance` (the build is then the one the run just
+//! made, so the list is a cache hit) and does nothing under other profiles.
+//!
 //! The inventory is a floor. Adding a test to an existing suite needs no edit
 //! here as long as the operand still selects it; adding a new suite means
 //! adding an entry and an operand together.
@@ -24,12 +34,14 @@
 
 use std::fs;
 use std::path::Path;
+use std::process::Command;
 
 use syn::visit::Visit;
 
 const NEXTEST_CONFIG: &str = ".config/nextest.toml";
 const PROFILE: &str = "performance";
 const MEASURE_PROFILE: &str = "performance-measure";
+const MEASUREMENT_FILE: &str = "tests/regressions/work_measurements.rs";
 
 /// One required suite.
 struct Suite {
@@ -188,20 +200,21 @@ const INVENTORY: &[Suite] = &[
     },
     Suite {
         family: "measurement sampling is real",
-        binary_id: "junie-tui::work_measurements",
-        matcher: Some("=measurement_edit_samples_are_real_changes"),
-        file: "tests/work_measurements.rs",
-        tests: &["measurement_edit_samples_are_real_changes"],
+        binary_id: "junie-tui::regressions",
+        matcher: Some("=work_measurements::measurement_edit_samples_are_real_changes"),
+        file: "tests/regressions/work_measurements.rs",
+        tests: &["work_measurements::measurement_edit_samples_are_real_changes"],
     },
     Suite {
         family: "this gate",
-        binary_id: "junie-tui::performance_inventory",
-        matcher: None,
-        file: "tests/performance_inventory.rs",
+        binary_id: "junie-tui::regressions",
+        matcher: Some("/^performance_inventory::/"),
+        file: "tests/regressions/performance_inventory.rs",
         tests: &[
-            "performance_profile_selects_every_required_suite",
-            "performance_required_tests_exist_in_source",
-            "performance_measure_profile_is_serial_and_runs_only_ignored_measurements",
+            "performance_inventory::performance_profile_selects_every_required_suite",
+            "performance_inventory::performance_nextest_list_runs_every_required_test",
+            "performance_inventory::performance_required_tests_exist_in_source",
+            "performance_inventory::performance_measure_profile_is_serial_and_runs_only_ignored_measurements",
         ],
     },
 ];
@@ -367,6 +380,78 @@ fn check_profile(filter: &str) -> Vec<String> {
     problems
 }
 
+/// Every required test that the `cargo nextest list --message-format json`
+/// output `json` does not show as a listed, not-ignored test that the
+/// profile's filter selects, one line each.
+fn check_list(json: &str) -> Vec<String> {
+    let list: serde_json::Value = match serde_json::from_str(json) {
+        Ok(list) => list,
+        Err(why) => return vec![format!("cannot parse the nextest list output: {why}")],
+    };
+    let Some(suites) = list.get("rust-suites").and_then(|s| s.as_object()) else {
+        return vec!["the nextest list output has no `rust-suites` object".to_owned()];
+    };
+    let mut problems = Vec::new();
+    for suite in INVENTORY {
+        for test in suite.tests {
+            let case = suites
+                .get(suite.binary_id)
+                .and_then(|binary| binary.get("testcases"))
+                .and_then(|cases| cases.get(*test));
+            let Some(case) = case else {
+                problems.push(format!(
+                    "`{}`: nextest does not list `{test}` in binary `{}`",
+                    suite.family, suite.binary_id
+                ));
+                continue;
+            };
+            if case.get("ignored").and_then(|i| i.as_bool()) != Some(false) {
+                problems.push(format!(
+                    "`{}`: `{test}` is #[ignore]d (or its `ignored` flag is unreadable)",
+                    suite.family
+                ));
+            }
+            let status = case
+                .get("filter-match")
+                .and_then(|m| m.get("status"))
+                .and_then(|s| s.as_str());
+            if status != Some("matches") {
+                problems.push(format!(
+                    "`{}`: [profile.{PROFILE}] does not select `{test}` (filter-match status {status:?})",
+                    suite.family
+                ));
+            }
+        }
+    }
+    problems
+}
+
+/// The list command the gate runs. `NEXTEST_*` variables of the enclosing run
+/// are removed so that nothing of that run steers the nested list.
+fn nextest_list_json() -> Result<String, String> {
+    let mut command = Command::new("cargo");
+    command
+        .current_dir(root())
+        .args(["nextest", "list", "--profile", PROFILE])
+        .args(["--workspace", "--all-features", "--message-format", "json"]);
+    for (name, _) in std::env::vars_os() {
+        if name.to_string_lossy().starts_with("NEXTEST") {
+            command.env_remove(name);
+        }
+    }
+    let output = command
+        .output()
+        .map_err(|e| format!("cannot run `cargo nextest list`: {e}"))?;
+    if !output.status.success() {
+        return Err(format!(
+            "`cargo nextest list` failed ({}):\n{}",
+            output.status,
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+    String::from_utf8(output.stdout).map_err(|e| format!("nextest list output is not UTF-8: {e}"))
+}
+
 #[derive(Default)]
 struct TestFns {
     /// `(name, ignored)` of every `#[test]` function, however deeply nested.
@@ -433,6 +518,20 @@ fn performance_profile_selects_every_required_suite() {
     fail(check_profile(&filter));
 }
 
+/// Asks nextest what the `performance` profile runs and checks that against
+/// the inventory. See the module documentation for what this adds to the text
+/// checks. Under any other profile this does nothing: the nested list would
+/// not be a cache hit there and could rebuild the workspace in another shape.
+#[test]
+fn performance_nextest_list_runs_every_required_test() {
+    if std::env::var("NEXTEST_PROFILE").as_deref() != Ok(PROFILE) {
+        eprintln!("not run under `--profile {PROFILE}`: the nextest list check is skipped");
+        return;
+    }
+    let json = nextest_list_json().unwrap_or_else(|why| panic!("{why}"));
+    fail(check_list(&json));
+}
+
 #[test]
 fn performance_required_tests_exist_in_source() {
     fail(
@@ -457,21 +556,20 @@ fn performance_measure_profile_is_serial_and_runs_only_ignored_measurements() {
         ));
     }
     match string_value(&section, "default-filter") {
-        Ok(filter) if filter.contains("binary_id(=junie-tui::work_measurements)") => {}
+        Ok(filter)
+            if filter.contains("binary_id(=junie-tui::regressions)")
+                && filter.contains("work_measurements::") => {}
         Ok(filter) => problems.push(format!(
-            "[profile.{MEASURE_PROFILE}] filter does not select junie-tui::work_measurements: {}",
+            "[profile.{MEASURE_PROFILE}] filter does not select the work_measurements module of junie-tui::regressions: {}",
             squash(&filter)
         )),
         Err(why) => problems.push(why),
     }
-    let found = test_fns(
-        &read("tests/work_measurements.rs"),
-        "tests/work_measurements.rs",
-    )
-    .unwrap_or_else(|why| panic!("{why}"));
+    let found =
+        test_fns(&read(MEASUREMENT_FILE), MEASUREMENT_FILE).unwrap_or_else(|why| panic!("{why}"));
     for name in MEASUREMENTS {
         match found.iter().find(|(f, _)| f == name) {
-            None => problems.push(format!("tests/work_measurements.rs lacks `{name}`")),
+            None => problems.push(format!("{MEASUREMENT_FILE} lacks `{name}`")),
             Some((_, false)) => problems.push(format!(
                 "`{name}` is not #[ignore]d: a timing test must not run in the default profiles"
             )),
@@ -493,6 +591,82 @@ mod gate_logic {
             .map(operand)
             .collect::<Vec<_>>()
             .join(" | ")
+    }
+
+    /// What `cargo nextest list --message-format json` would print if every
+    /// inventory test were listed, not ignored and selected.
+    fn full_list() -> serde_json::Value {
+        let mut suites = serde_json::Map::new();
+        for suite in INVENTORY {
+            let binary = suites
+                .entry(suite.binary_id)
+                .or_insert_with(|| serde_json::json!({ "testcases": {} }));
+            for test in suite.tests {
+                binary["testcases"][*test] = serde_json::json!({
+                    "ignored": false,
+                    "filter-match": { "status": "matches" },
+                });
+            }
+        }
+        serde_json::json!({ "rust-suites": suites })
+    }
+
+    fn list_problems(list: &serde_json::Value) -> Vec<String> {
+        check_list(&list.to_string())
+    }
+
+    #[test]
+    fn a_complete_list_passes() {
+        assert_eq!(list_problems(&full_list()), Vec::<String>::new());
+    }
+
+    #[test]
+    fn a_binary_that_lost_its_module_fails() {
+        // `mod work_metrics_tests;` removed from the tablepro binary: the
+        // binary is still listed, its tests are gone.
+        let mut list = full_list();
+        list["rust-suites"]["junie-tui::bin/tablepro"]["testcases"] = serde_json::json!({});
+        let problems = list_problems(&list);
+        assert_eq!(problems.len(), 1, "{problems:?}");
+        assert!(problems[0].contains("work_contract_tablepro_idle_and_cell_edit"));
+    }
+
+    #[test]
+    fn a_missing_binary_fails() {
+        let mut list = full_list();
+        list["rust-suites"]
+            .as_object_mut()
+            .unwrap()
+            .remove("jackin-console::world");
+        let problems = list_problems(&list);
+        assert_eq!(problems.len(), 4, "{problems:?}");
+        assert!(problems[0].contains("projection_work::"));
+    }
+
+    #[test]
+    fn an_ignored_test_fails() {
+        let mut list = full_list();
+        list["rust-suites"]["junie-tui::bin/showcase"]["testcases"]["work_metrics_tests::work_contract_showcase_idle_and_switch"]
+            ["ignored"] = serde_json::json!(true);
+        let problems = list_problems(&list);
+        assert_eq!(problems.len(), 1, "{problems:?}");
+        assert!(problems[0].contains("#[ignore]"));
+    }
+
+    #[test]
+    fn a_test_the_filter_does_not_select_fails() {
+        let mut list = full_list();
+        list["rust-suites"]["junie-tui::regressions"]["testcases"]["work_budgets::work_contract_tree_filtered_rebuild"]
+            ["filter-match"] = serde_json::json!({ "status": "mismatch", "reason": "expression" });
+        let problems = list_problems(&list);
+        assert_eq!(problems.len(), 1, "{problems:?}");
+        assert!(problems[0].contains("does not select"));
+    }
+
+    #[test]
+    fn unreadable_list_output_fails() {
+        assert!(!check_list("not json").is_empty());
+        assert!(!check_list("{}").is_empty());
     }
 
     #[test]
