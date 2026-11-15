@@ -427,7 +427,7 @@ const OPS: &[Op] = &[
     Op {
         downs: 2,
         values: &["Labs"],
-        preview: "name ILIKE '%Labs%'",
+        preview: "name ILIKE '%Labs%' ESCAPE '\\'",
         chip: CHIP_CONTAINS,
         rows: Rows::Kept {
             allow: &[NORTHWIND],
@@ -437,7 +437,7 @@ const OPS: &[Op] = &[
     Op {
         downs: 3,
         values: &["Jun"],
-        preview: "name ILIKE 'Jun%'",
+        preview: "name ILIKE 'Jun%' ESCAPE '\\'",
         chip: "name starts with 'Jun'",
         rows: Rows::Kept {
             allow: &[JUNIPER],
@@ -447,7 +447,7 @@ const OPS: &[Op] = &[
     Op {
         downs: 4,
         values: &["Labs"],
-        preview: "name ILIKE '%Labs'",
+        preview: "name ILIKE '%Labs' ESCAPE '\\'",
         chip: "name ends with 'Labs'",
         rows: Rows::Kept {
             allow: &[NORTHWIND],
@@ -478,7 +478,7 @@ const OPS: &[Op] = &[
     Op {
         downs: 8,
         values: &["Labs"],
-        preview: "name NOT ILIKE '%Labs%'",
+        preview: "name NOT ILIKE '%Labs%' ESCAPE '\\'",
         chip: "name not contains 'Labs'",
         rows: Rows::Kept {
             allow: &[
@@ -645,7 +645,7 @@ fn tablepro_filters_change_the_visible_organizations() {
     let contains = Op {
         downs: 2,
         values: &["Labs"],
-        preview: "name ILIKE '%Labs%'",
+        preview: "name ILIKE '%Labs%' ESCAPE '\\'",
         chip: CHIP_CONTAINS,
         rows: Rows::Kept {
             allow: &[NORTHWIND],
@@ -804,7 +804,7 @@ fn tablepro_filters_change_the_visible_organizations() {
     choose_op(&app, 2);
     app.key("tab");
     app.type_text("Retail");
-    let both_preview = app.wait_text("name ILIKE '%Retail%'");
+    let both_preview = app.wait_text("name ILIKE '%Retail%' ESCAPE '\\'");
     assert!(text(&both_preview).contains("WHERE "));
     app.key("enter");
     let both = app.wait_screen("two chips", |screen| {

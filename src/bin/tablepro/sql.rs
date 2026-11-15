@@ -390,28 +390,23 @@ fn escape_like(v: &str) -> String {
         .replace('_', "\\_")
 }
 
+/// A UI contains, starts-with or ends-with value as a quoted LIKE pattern with
+/// its explicit `ESCAPE` clause. `head` and `tail` are the only wildcards left
+/// unescaped, so the value itself matches literally.
+fn like_literal(v: &str, head: &str, tail: &str) -> String {
+    let pattern = format!("{head}{}{tail}", escape_like(v));
+    format!("{} ESCAPE '\\'", quote_text(&pattern))
+}
+
 impl Predicate {
     /// The SQL form of `NOT (predicate)` where SQL has a negated spelling, such
     /// as `NOT ILIKE` or `NOT IN`. Other operators keep the wrapping form.
     fn to_sql_negated(&self) -> Option<String> {
         let c = quote_ident(&self.column);
         Some(match &self.op {
-            PredicateOp::Contains(v) => format!(
-                "{c} NOT ILIKE {}",
-                quote_text(&format!("%{}%", escape_like(v)))
-            ),
-            PredicateOp::StartsWith(v) => {
-                format!(
-                    "{c} NOT ILIKE {}",
-                    quote_text(&format!("{}%", escape_like(v)))
-                )
-            }
-            PredicateOp::EndsWith(v) => {
-                format!(
-                    "{c} NOT ILIKE {}",
-                    quote_text(&format!("%{}", escape_like(v)))
-                )
-            }
+            PredicateOp::Contains(v) => format!("{c} NOT ILIKE {}", like_literal(v, "%", "%")),
+            PredicateOp::StartsWith(v) => format!("{c} NOT ILIKE {}", like_literal(v, "", "%")),
+            PredicateOp::EndsWith(v) => format!("{c} NOT ILIKE {}", like_literal(v, "%", "")),
             PredicateOp::Like {
                 pattern,
                 case_insensitive,
@@ -444,15 +439,9 @@ impl Predicate {
             PredicateOp::Le(v) => format!("{c} <= {}", quote_text(v)),
             PredicateOp::IsNull => format!("{c} IS NULL"),
             PredicateOp::IsNotNull => format!("{c} IS NOT NULL"),
-            PredicateOp::Contains(v) => {
-                format!("{c} ILIKE {}", quote_text(&format!("%{}%", escape_like(v))))
-            }
-            PredicateOp::StartsWith(v) => {
-                format!("{c} ILIKE {}", quote_text(&format!("{}%", escape_like(v))))
-            }
-            PredicateOp::EndsWith(v) => {
-                format!("{c} ILIKE {}", quote_text(&format!("%{}", escape_like(v))))
-            }
+            PredicateOp::Contains(v) => format!("{c} ILIKE {}", like_literal(v, "%", "%")),
+            PredicateOp::StartsWith(v) => format!("{c} ILIKE {}", like_literal(v, "", "%")),
+            PredicateOp::EndsWith(v) => format!("{c} ILIKE {}", like_literal(v, "%", "")),
             PredicateOp::Like {
                 pattern,
                 case_insensitive,
@@ -1204,9 +1193,18 @@ pub enum Test {
     Regex(regex::Regex),
 }
 
+// Regex compilations on this thread, so a test can prove a pattern compiles
+// once per load and never per row.
+#[cfg(test)]
+thread_local! {
+    pub(crate) static REGEX_COMPILES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
 /// Compiles a filter pattern once. The message names the regex syntax error
 /// on one line, for the editor and the query error alike.
 pub fn compile_regex(pattern: &str) -> Result<regex::Regex, String> {
+    #[cfg(test)]
+    REGEX_COMPILES.with(|n| n.set(n.get() + 1));
     regex::Regex::new(pattern).map_err(|e| {
         let text = e.to_string();
         let last = text.lines().last().unwrap_or("").trim();
@@ -1750,6 +1748,7 @@ mod issue10_sql_tests {
     use super::*;
     use crate::db::{Catalog, Table};
     use crate::tabs::{Filter, FilterOp};
+    use junie_tui::core::id::WidgetId;
 
     fn orders(cat: &Catalog) -> &Table {
         cat.find(Some("public"), "orders").expect("orders fixture")
@@ -1773,16 +1772,115 @@ mod issue10_sql_tests {
         }
     }
 
+    fn leaf(column: &str, op: PredicateOp) -> Expr {
+        Expr::Leaf(Predicate {
+            column: column.into(),
+            op,
+        })
+    }
+
+    fn not(x: Expr) -> Expr {
+        Expr::Not(Box::new(x))
+    }
+
+    fn truth_on(table: &Table, expr: &Expr, notes: Value) -> Truth {
+        prepare(table, expr)
+            .expect("prepares")
+            .truth(&row_with(table, "notes", notes))
+    }
+
     #[test]
-    fn issue10_three_valued_connectives_follow_sql() {
-        use Truth::*;
-        assert_eq!(Unknown.not(), Unknown);
-        assert_eq!(Unknown.and(False), False);
-        assert_eq!(Unknown.and(True), Unknown);
-        assert_eq!(Unknown.or(True), True);
-        assert_eq!(Unknown.or(False), Unknown);
-        assert_eq!(False.or(False), False);
-        assert_eq!(True.and(True), True);
+    fn issue10_null_truth_survives_negation() {
+        use Truth::{False as F, True as T, Unknown as U};
+        let all = [F, U, T];
+        let not_table = [T, U, F];
+        let and_table = [[F, F, F], [F, U, U], [F, U, T]];
+        let or_table = [[F, U, T], [U, U, T], [T, T, T]];
+        for (i, a) in all.into_iter().enumerate() {
+            assert_eq!(a.not(), not_table[i], "NOT {a:?}");
+            for (j, b) in all.into_iter().enumerate() {
+                assert_eq!(a.and(b), and_table[i][j], "{a:?} AND {b:?}");
+                assert_eq!(a.or(b), or_table[i][j], "{a:?} OR {b:?}");
+            }
+        }
+
+        let cat = Catalog::acme_prod();
+        let table = orders(&cat);
+        let x = || leaf("notes", PredicateOp::Eq("x".into()));
+        let is_null = || leaf("notes", PredicateOp::IsNull);
+        let is_not_null = || leaf("notes", PredicateOp::IsNotNull);
+        let contains_x = || leaf("notes", PredicateOp::Contains("x".into()));
+        let null = || Value::Null;
+
+        assert_eq!(truth_on(table, &x(), null()), U);
+        assert_eq!(truth_on(table, &not(x()), null()), U, "NOT unknown");
+        assert_eq!(
+            truth_on(table, &not(not(x())), null()),
+            U,
+            "NOT NOT unknown"
+        );
+        assert_eq!(truth_on(table, &not(not(x())), Value::Text("x".into())), T);
+        assert_eq!(truth_on(table, &not(not(x())), Value::Text("y".into())), F);
+        assert_eq!(truth_on(table, &not(is_null()), null()), F);
+        assert_eq!(truth_on(table, &not(is_not_null()), null()), T);
+        assert_eq!(
+            truth_on(table, &Expr::Any(vec![x(), is_null()]), null()),
+            T,
+            "unknown OR true"
+        );
+        assert_eq!(
+            truth_on(table, &Expr::Any(vec![x(), is_not_null()]), null()),
+            U,
+            "unknown OR false stays unknown"
+        );
+        assert_eq!(
+            truth_on(
+                table,
+                &Expr::All(vec![is_null(), not(contains_x())]),
+                null()
+            ),
+            U,
+            "true AND NOT unknown"
+        );
+        assert_eq!(
+            truth_on(table, &Expr::All(vec![is_not_null(), x()]), null()),
+            F,
+            "false AND unknown"
+        );
+
+        let nested = Expr::Any(vec![Expr::All(vec![x(), not(contains_x())]), is_null()]);
+        assert!(admits(table, &nested, &row_with(table, "notes", null())));
+        let excluded = Expr::All(vec![not(not(x())), Expr::Any(vec![x(), is_null()])]);
+        assert!(!admits(table, &excluded, &row_with(table, "notes", null())));
+    }
+
+    #[test]
+    fn issue10_empty_connectives_are_never_built_for_no_filters() {
+        let cat = Catalog::acme_prod();
+        let table = orders(&cat);
+        let row = row_with(table, "notes", Value::Text("x".into()));
+        let any = prepare(table, &Expr::Any(vec![])).expect("prepares");
+        let all = prepare(table, &Expr::All(vec![])).expect("prepares");
+        assert_eq!(any.truth(&row), Truth::False, "an empty Any admits nothing");
+        assert_eq!(
+            all.truth(&row),
+            Truth::True,
+            "an empty All admits everything"
+        );
+
+        let mut tab = crate::tabs::TableTab::new(WidgetId::of("issue10-empty"), &cat, table, false);
+        assert_eq!(tab.filter_expr(), None, "no filters is no clause");
+        for match_all in [true, false] {
+            tab.match_all = match_all;
+            tab.filters = vec![Filter {
+                column: "notes".into(),
+                op: FilterOp::Eq,
+                value: "x".into(),
+                value2: String::new(),
+                enabled: false,
+            }];
+            assert_eq!(tab.filter_expr(), None, "disabled filters add no child");
+        }
     }
 
     #[test]
@@ -1865,6 +1963,154 @@ mod issue10_sql_tests {
         assert_eq!(odd.to_sql(), r#""Odd""name" IS NULL"#);
     }
 
+    fn sql_of(column: &str, op: FilterOp, value: &str) -> String {
+        filter_on(column, op, value).to_sql()
+    }
+
+    fn notes_admit(expr: &Expr, text: &str) -> bool {
+        let cat = Catalog::acme_prod();
+        let table = orders(&cat);
+        admits(
+            table,
+            expr,
+            &row_with(table, "notes", Value::Text(text.into())),
+        )
+    }
+
+    #[test]
+    fn issue10_filter_sql_escapes_literals_and_patterns() {
+        assert_eq!(
+            sql_of("notes", FilterOp::Contains, r"a\b"),
+            r"notes ILIKE '%a\\b%' ESCAPE '\'"
+        );
+        assert_eq!(
+            sql_of("notes", FilterOp::StartsWith, r"50%_\"),
+            r"notes ILIKE '50\%\_\\%' ESCAPE '\'"
+        );
+        assert_eq!(
+            sql_of("notes", FilterOp::EndsWith, r"%_\"),
+            r"notes ILIKE '%\%\_\\' ESCAPE '\'"
+        );
+        assert_eq!(
+            sql_of("notes", FilterOp::Contains, "it's"),
+            r"notes ILIKE '%it''s%' ESCAPE '\'"
+        );
+        assert_eq!(
+            sql_of("notes", FilterOp::NotContains, "a_b"),
+            r"notes NOT ILIKE '%a\_b%' ESCAPE '\'"
+        );
+        assert_eq!(
+            sql_of("notes", FilterOp::NotIn, "a'b, c"),
+            "notes NOT IN ('a''b', 'c')"
+        );
+        assert_eq!(
+            sql_of("notes", FilterOp::Regex, "it's"),
+            "notes ~ 'it''s'",
+            "an apostrophe in a regex is doubled"
+        );
+        assert_eq!(
+            sql_of("notes", FilterOp::Regex, r"\d+"),
+            r"notes ~ '\d+'",
+            "a regex keeps its backslash"
+        );
+        assert_eq!(
+            sql_of("notes", FilterOp::Eq, r"back\slash"),
+            r"notes = 'back\slash'"
+        );
+        let not_regex = not(leaf("notes", PredicateOp::Regex("it's".into())));
+        assert_eq!(not_regex.to_sql(), "notes !~ 'it''s'");
+        assert_eq!(
+            parsed_filter("SELECT * FROM orders WHERE notes LIKE 'a_b%'").to_sql(),
+            "notes LIKE 'a_b%'",
+            "a query-editor pattern prints as typed"
+        );
+
+        let backslash = filter_on("notes", FilterOp::Contains, r"a\b");
+        assert!(notes_admit(&backslash, r"xa\by"));
+        assert!(!notes_admit(&backslash, "ab"));
+        assert!(!notes_admit(&backslash, "a b"));
+        let starts = filter_on("notes", FilterOp::StartsWith, "100%");
+        assert!(notes_admit(&starts, "100% off"));
+        assert!(!notes_admit(&starts, "1000"));
+        assert!(!notes_admit(&starts, "x100%"));
+        let ends = filter_on("notes", FilterOp::EndsWith, "_x");
+        assert!(notes_admit(&ends, "a_x"));
+        assert!(!notes_admit(&ends, "abx"));
+        assert!(!notes_admit(&ends, "a_xy"));
+        let trailing_slash = filter_on("notes", FilterOp::StartsWith, r"a\");
+        assert!(notes_admit(&trailing_slash, r"a\z"));
+        assert!(!notes_admit(&trailing_slash, "az"));
+
+        let school = filter_on("notes", FilterOp::Contains, "ÉCOLE");
+        assert!(notes_admit(&school, "école"));
+        assert!(notes_admit(&school, "Rue de l'École"));
+        assert!(!notes_admit(&school, "ecole"));
+        let snowman = filter_on("notes", FilterOp::Eq, "naïve ☃");
+        assert!(notes_admit(&snowman, "NAÏVE ☃"));
+        assert_eq!(snowman.to_sql(), "notes = 'naïve ☃'");
+        let sharp_s = filter_on("notes", FilterOp::Contains, "STRASSE");
+        assert!(
+            !notes_admit(&sharp_s, "straße"),
+            "text is lowercased, not case-folded"
+        );
+        assert!(notes_admit(
+            &filter_on("notes", FilterOp::Contains, "STRAßE"),
+            "straße"
+        ));
+    }
+
+    #[test]
+    fn issue10_nested_connectives_are_parenthesized_in_sql() {
+        let eq = |column: &str, v: &str| leaf(column, PredicateOp::Eq(v.into()));
+        let between = Filter {
+            column: "order_number".into(),
+            op: FilterOp::Between,
+            value: "1".into(),
+            value2: "2".into(),
+            enabled: true,
+        };
+        assert_eq!(
+            between.to_sql(),
+            "order_number >= '1' AND order_number <= '2'"
+        );
+        let any = Expr::Any(vec![between.expression(), eq("status", "x")]);
+        assert_eq!(
+            any.to_sql(),
+            "(order_number >= '1' AND order_number <= '2') OR status = 'x'",
+            "Between stays one child of the outer Any"
+        );
+        assert_eq!(
+            not(Expr::Any(vec![eq("a", "x"), eq("b", "y")])).to_sql(),
+            "NOT (a = 'x' OR b = 'y')"
+        );
+        assert_eq!(
+            not(Expr::All(vec![eq("a", "x"), eq("b", "y")])).to_sql(),
+            "NOT (a = 'x' AND b = 'y')"
+        );
+        assert_eq!(
+            Expr::All(vec![
+                Expr::Any(vec![eq("a", "x"), eq("b", "y")]),
+                eq("c", "z")
+            ])
+            .to_sql(),
+            "(a = 'x' OR b = 'y') AND c = 'z'",
+            "an Any inside an All keeps its parentheses"
+        );
+        assert_eq!(
+            Expr::Any(vec![
+                eq("a", "x"),
+                not(Expr::Any(vec![eq("b", "y"), eq("c", "z")]))
+            ])
+            .to_sql(),
+            "a = 'x' OR NOT (b = 'y' OR c = 'z')"
+        );
+        assert_eq!(not(not(eq("a", "x"))).to_sql(), "NOT (NOT (a = 'x'))");
+        assert_eq!(
+            not(leaf("a", PredicateOp::IsNull)).to_sql(),
+            "NOT (a IS NULL)"
+        );
+    }
+
     #[test]
     fn issue10_quoted_operand_unescapes_once() {
         assert_eq!(literal("'O''Reilly'"), "O'Reilly");
@@ -1939,6 +2185,64 @@ mod issue10_sql_tests {
         let mut lines = vec![];
         plan_text(&plan, 0, &mut lines);
         assert!(!lines.iter().any(|l| l.contains("Index Scan")), "{lines:?}");
+    }
+
+    fn compiles() -> usize {
+        REGEX_COMPILES.with(std::cell::Cell::get)
+    }
+
+    #[test]
+    fn issue10_regex_compiles_once_per_load_not_per_row() {
+        let cat = Catalog::acme_prod();
+        let table = orders(&cat);
+        let rows = crate::db::rows(table, 0, 2_000);
+        assert_eq!(rows.len(), 2_000, "the scan covers the full sample");
+        let expr = filter_on("notes", FilterOp::Regex, "^Gift");
+
+        let start = compiles();
+        let prepared = prepare(table, &expr).expect("prepares");
+        assert_eq!(compiles() - start, 1, "prepare compiles the pattern once");
+        let admitted = rows.iter().filter(|r| prepared.admits(r)).count();
+        assert!(
+            admitted > 0 && admitted < rows.len(),
+            "the pattern selects some rows"
+        );
+        assert_eq!(compiles() - start, 1, "no row compiles anything");
+
+        let select = |filter| Select {
+            columns: vec!["*".into()],
+            schema: Some("public".into()),
+            table: "orders".into(),
+            filter: Some(filter),
+            order: None,
+            limit: None,
+            count_only: false,
+        };
+        let start = compiles();
+        run_select(&cat, &select(expr.clone())).expect("runs");
+        assert_eq!(
+            compiles() - start,
+            1,
+            "one load compiles once over 2000 rows"
+        );
+
+        let two = Expr::Any(vec![expr.clone(), not(expr)]);
+        let start = compiles();
+        run_select(&cat, &select(two)).expect("runs");
+        assert_eq!(compiles() - start, 2, "one compile per regex leaf");
+
+        let mut tab =
+            crate::tabs::TableTab::new(WidgetId::of("issue10-compiles"), &cat, table, false);
+        tab.filters = vec![Filter {
+            column: "notes".into(),
+            op: FilterOp::Regex,
+            value: "^Gift".into(),
+            value2: String::new(),
+            enabled: true,
+        }];
+        let start = compiles();
+        tab.load(&cat);
+        assert_eq!(compiles() - start, 1, "a tab load compiles once");
     }
 
     #[test]
