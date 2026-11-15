@@ -33,7 +33,13 @@ change the config and run `velnor-actions generate`.
   jackin consumes (`default-features = false, features = ["terminal"]`):
   `termpane` in, `clap` out. The bins and the `functional` target require
   `cli`, so they are skipped there.
-- **Required** — the verdict job. Its `needs` are Plan, the four Rust
+- **Rust / functional-cross** and **Rust / functional-cross (product)** —
+  the same five tasks for `crates/functional-cross`, which holds the
+  cross-binary functional cases. Its `functional` target is selected by
+  `suite-functional` (`--workspace`), not by these jobs: the `ci` profile
+  filters out `binary(functional)`, so they run no tests
+  (`allow_empty_test_suite`) and guard the crate's format, clippy and docs.
+- **Required** — the verdict job. Its `needs` are Plan, the six Rust
   jobs, `suite-functional` and jactionlint, as listed in the generated
   `ci.yml`.
 - **DCO** — every commit must carry `Signed-off-by`
