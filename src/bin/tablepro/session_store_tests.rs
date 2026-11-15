@@ -488,6 +488,25 @@ fn issue51_failed_save_changes_neither_store_nor_draft() {
 }
 
 #[test]
+fn issue51_ending_a_refused_save_does_not_advance_the_content_revision() {
+    let mut app = connected();
+    let key = open(&mut app, "products");
+    let w = app.workbench.as_mut().expect("connected");
+    let (op, _) = w.ws.begin_operation(key).expect("the tab is idle");
+    let before = w.ws.revision(key);
+
+    app.end_save_operation(SaveOperation::Task(op));
+
+    let w = app.workbench.as_ref().expect("connected");
+    assert_eq!(
+        w.ws.revision(key),
+        before,
+        "a save that wrote nothing changes no content"
+    );
+    assert_eq!(w.ws.running(key), None, "the operation ended");
+}
+
+#[test]
 fn issue51_null_in_defaulted_column_offers_the_default_hint() {
     let mut app = connected();
     let key = open(&mut app, "products");
