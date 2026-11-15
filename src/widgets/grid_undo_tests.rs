@@ -648,6 +648,30 @@ fn issue33_row_source_key_follows_display_order() {
 }
 
 #[test]
+fn codex196_undo_keeps_the_appended_row_selection_anchor() {
+    let mut g = grid(2);
+    g.insert_row().unwrap();
+    let removed = key_of(&g, 2);
+    g.select_rows(SelectGesture::Only, 2);
+    g.toggle_delete(2).unwrap();
+
+    g.try_append_rows(page(1, false)).unwrap();
+    let appended = key_of(&g, 2);
+    g.select_rows(SelectGesture::Only, 2);
+
+    assert_eq!(g.undo().unwrap().map(|u| u.key), Some(removed));
+    let appended_src = g.source_index(appended).unwrap();
+    assert_eq!(g.selection.anchor(), Some(appended_src));
+
+    g.select_rows(SelectGesture::Extend { from: appended_src }, 0);
+    assert_eq!(
+        g.selection.to_vec(),
+        vec![0, 1, 2, 3],
+        "Shift-select extends from the appended row and keeps it"
+    );
+}
+
+#[test]
 fn codex196_paste_into_cell_runs_the_edit_gateway() {
     let mut g = grid(2);
     let (out, actions) = g.paste_into_cell("pasted").into_parts();
