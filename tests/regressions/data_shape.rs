@@ -301,6 +301,7 @@ fn issue42_shape_failure_is_atomic() {
     let _ = g.begin_edit();
     assert!(g.is_editing());
     let (pending, rows) = (g.pending().clone(), g.rows().to_vec());
+    let revision = g.revision();
     assert!(
         g.try_set_rows(grid_rows(vec![
             vec![text("n0"), text("n1")],
@@ -321,6 +322,11 @@ fn issue42_shape_failure_is_atomic() {
         "staged changes survive a rejected replacement"
     );
     assert_eq!(g.rows(), rows.as_slice());
+    assert_eq!(
+        g.revision(),
+        revision,
+        "a rejected shape does not bump the revision"
+    );
     assert_eq!(g.columns().len(), 2);
     assert!(g.is_editing());
     assert_eq!(g.cell_errors.get(&(0, 0)).map(String::as_str), Some("kept"));

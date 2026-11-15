@@ -396,13 +396,12 @@ fn keyed_vec_owns_its_revisions() {
         .iter()
         .map(|(key, row)| (key, row.clone()))
         .collect::<Vec<_>>();
-    assert_eq!(store.replace_if_changed(same).expect("valid"), false);
+    assert!(!store.replace_if_changed(same).expect("valid"));
     assert_eq!(store.stamp(), before);
-    assert_eq!(
+    assert!(
         store
             .replace_if_changed([(k(9), Row::new("n"))])
-            .expect("valid"),
-        true
+            .expect("valid")
     );
     assert_eq!(store.stamp().instance, before.instance);
     assert_eq!(store.len(), 1);
@@ -1051,6 +1050,28 @@ mod trees {
         store.remove(k(1));
         let _ = draw(&mut view, &store);
         assert!(!view.keyed().is_expanded(k(1)) && !view.keyed().is_selected(k(12)));
+    }
+
+    #[test]
+    fn keyed_tree_cursor_moves_by_key_and_expand_all_opens_every_branch() {
+        let mut store = tree();
+        let mut view = TreeView::new(WidgetId::of("kt"), vec![]);
+        view.expand_all_source(&store).expect("valid");
+        assert!(view.keyed().is_expanded(k(1)) && view.keyed().is_expanded(k(2)));
+
+        assert!(view.set_cursor_source(k(21), &store).expect("valid"));
+        store
+            .insert(None, 0, k(9), KeyedTreeNode::new("aaa"))
+            .expect("earlier sibling");
+        let _ = draw(&mut view, &store);
+        assert_eq!(view.keyed().cursor(), Some(k(21)));
+        assert_eq!(view.cursor, 5, "the view index follows the key");
+
+        assert!(
+            !view.set_cursor_source(k(99), &store).expect("valid"),
+            "an unknown key is refused"
+        );
+        assert_eq!(view.keyed().cursor(), Some(k(21)));
     }
 
     #[test]

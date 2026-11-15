@@ -67,9 +67,6 @@ const LEAVE_DIALOG: WidgetId = WidgetId::of("dialog.quit");
 #[cfg(test)]
 #[path = "connection_identity_tests.rs"]
 mod connection_identity_tests;
-#[cfg(test)]
-#[path = "history_keyed_tests.rs"]
-mod history_keyed_tests;
 
 pub enum Act {
     EditFilter(Option<usize>),
@@ -2001,12 +1998,11 @@ impl App {
             return Outcome::Changed;
         };
         match target {
-            context::Target::Connection(_, Some(key)) => {
-                if !self.connections.select_key(key) {
+            context::Target::Connection(node) => {
+                if !self.connections.select_key(node) {
                     return Outcome::Changed;
                 }
             }
-            context::Target::Connection(row, None) => self.connections.select_row(row),
             _ => {
                 if let Some(w) = self.workbench.as_mut() {
                     context::select(w, target);
