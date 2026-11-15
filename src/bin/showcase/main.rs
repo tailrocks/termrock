@@ -73,6 +73,7 @@ fn main() -> std::io::Result<()> {
         coverage::PICKER_ALLOWLIST,
         coverage::GRID_EDIT_COVERAGE,
         coverage::GRID_CHANGE_ALLOWLIST,
+        coverage::GRID_PARSER_ALLOWLIST,
         coverage::KEYMAP_ALLOWLIST,
     );
     let cli: Cli = junie_tui::cli::parse(cli_after_help());

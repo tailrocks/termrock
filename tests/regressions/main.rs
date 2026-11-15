@@ -8,6 +8,7 @@
 mod common;
 
 mod data_shape;
+mod grid_parsers;
 mod grid_validation;
 mod response_batches;
 mod smoke;

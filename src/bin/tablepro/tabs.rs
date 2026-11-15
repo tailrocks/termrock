@@ -2795,3 +2795,50 @@ mod issue9_tests {
         assert!(!highlight_sql(sql).is_empty());
     }
 }
+
+#[cfg(test)]
+mod issue47_tests {
+    use super::*;
+    use junie_tui::widgets::grid::{CellKind, default_validator};
+
+    #[test]
+    fn issue47_fixture_named_values_parse_under_the_explicit_grammar() {
+        let catalog = Catalog::acme_prod();
+        let mut checked = [0usize; 3];
+        for table in catalog.tables.iter().filter(|t| !t.columns.is_empty()) {
+            let columns: Vec<(String, ColType)> = table
+                .columns
+                .iter()
+                .map(|c| (c.name.clone(), c.ty))
+                .collect();
+            let specs = column_specs(table, &columns);
+            for row in crate::db::rows(table, 0, 64) {
+                for (spec, value) in specs.iter().zip(&row) {
+                    let slot = match spec.kind {
+                        CellKind::Timestamp => 0,
+                        CellKind::Id => 1,
+                        CellKind::Json => 2,
+                        _ => continue,
+                    };
+                    if *value == Value::Null {
+                        continue;
+                    }
+                    let text = value.display();
+                    let parsed = default_validator(spec, &text);
+                    assert_eq!(
+                        parsed.map(|v| v == to_cell(value)),
+                        Ok(true),
+                        "{}.{} fixture {text:?} must round-trip the default parser",
+                        table.name,
+                        spec.name
+                    );
+                    checked[slot] += 1;
+                }
+            }
+        }
+        assert!(
+            checked.iter().all(|&n| n > 0),
+            "every named kind is exercised: {checked:?}"
+        );
+    }
+}
