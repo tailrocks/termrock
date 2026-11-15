@@ -1402,6 +1402,11 @@ pub static SIDEBARS: &[Opt] = &[
         &["Navigation", "Explorer"],
     )
     .needs(&[("sidebars.hidden", "on")]),
+    Opt::new(
+        "sidebars.items",
+        "Item set",
+        &["full", "short", "empty", "all-disabled"],
+    ),
 ];
 
 pub static METERS: &[Opt] = &[

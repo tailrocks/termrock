@@ -7,5 +7,6 @@
 #[path = "../common/mod.rs"]
 mod common;
 mod help_geometry;
+mod nav_list_state;
 mod scroll_view_navigation;
 mod smoke;
