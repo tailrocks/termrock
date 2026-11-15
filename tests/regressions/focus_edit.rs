@@ -148,9 +148,9 @@ fn text_area_blur_commit_is_visible_to_widgets_drawn_before_it() {
 
 #[test]
 fn code_editor_blur_commit_is_visible_to_widgets_drawn_before_it() {
-    assert_blur_commit_is_visible_to_widgets_drawn_before_it(Badge::new(Field::Code(Box::new(
+    assert_blur_commit_is_visible_to_widgets_drawn_before_it(Field::Code(Box::new(
         CodeEditor::new(FIELD, "let x = 1;"),
-    ))));
+    )));
 }
 
 #[test]
