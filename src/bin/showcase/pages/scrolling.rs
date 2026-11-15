@@ -987,9 +987,9 @@ mod tests {
     }
 
     #[test]
-    fn nested_bars_switch_is_reachable_but_adds_no_options_row() {
+    fn nested_bars_switch_is_listed_on_the_options_tab_and_off_by_default() {
         let opt = crate::options::find("scrolling.nested").expect("--opt can set it");
-        assert!(opt.hidden && opt.default == 0);
+        assert_eq!(opt.default, 0);
         let view = crate::options::OptionsView::new(
             ID.sub("options"),
             &[crate::options::Group {
@@ -998,8 +998,7 @@ mod tests {
                 empty: "",
             }],
         );
-        assert!(view.control_id("scrolling.nested").is_none());
-        assert!(view.control_id("scrolling.context").is_some());
+        assert!(view.control_id("scrolling.nested").is_some());
     }
 
     #[test]
