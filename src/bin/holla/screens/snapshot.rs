@@ -816,7 +816,7 @@ impl SnapshotPage {
                         }
                         other => (other.label().to_owned(), Tone::Normal),
                     };
-                    let freed = if matches!(
+                    let processed = if matches!(
                         r.outcome,
                         crate::domain::cleanup::Outcome::Removed
                             | crate::domain::cleanup::Outcome::Trashed
@@ -829,7 +829,7 @@ impl SnapshotPage {
                         r.timestamp_ms.div_euclid(1000),
                         r.path,
                         method,
-                        freed,
+                        processed,
                         outcome,
                         tone,
                     ));
@@ -837,9 +837,9 @@ impl SnapshotPage {
                 rows.sort_by_key(|r| r.0);
                 self.lines.push(m(&format!(
                     "{:<18}{:<44}{:<12}{:>10}   {}",
-                    "when", "target", "method", "freed", "outcome"
+                    "when", "target", "method", "processed", "outcome"
                 )));
-                for (when, target, method, freed, outcome, tone) in rows {
+                for (when, target, method, processed, outcome, tone) in rows {
                     if tone == Tone::Success {
                         self.marks
                             .push((self.lines.len(), 18 + 44 + 12 + 10 + 3, StatusKind::Ok));
@@ -850,7 +850,7 @@ impl SnapshotPage {
                             crate::scenario::CLOCK.stamp(when),
                             truncate(&w.location.short(&target), 42),
                             method,
-                            freed,
+                            processed,
                             outcome
                         ),
                         tone,

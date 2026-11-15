@@ -100,6 +100,31 @@ pub struct Trashed {
     pub trash_path: String,
     pub bytes: u64,
     pub at_secs: i64,
+    /// Nodes moved into Trash. They keep their inodes alive, so a later
+    /// permanent removal of another link must not reclaim those blocks.
+    retained_nodes: Vec<Node>,
+}
+
+/// Accounting for one removal. `removed_allocated_bytes` is the processed
+/// estimate: each removed inode counts once, even when other links survive.
+/// `reclaimed_bytes` counts only inodes whose last reference was removed.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct RemovalStats {
+    pub removed_entry_bytes: u64,
+    pub removed_allocated_bytes: u64,
+    pub reclaimed_bytes: u64,
+}
+
+struct Removal {
+    keys: Vec<String>,
+    nodes: Vec<Node>,
+    stats: RemovalStats,
+    reclaimed_by_mount: BTreeMap<String, u64>,
+}
+
+fn checked_total(a: u64, b: u64) -> Result<u64, String> {
+    a.checked_add(b)
+        .ok_or_else(|| "simulated allocation total exceeds u64 · nothing removed".to_owned())
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -802,7 +827,7 @@ impl Fs {
             .max_by_key(|v| v.mount.len())
     }
 
-    pub fn trash(&mut self, path: &str, now_secs: i64) -> Result<u64, String> {
+    pub fn trash(&mut self, path: &str, now_secs: i64) -> Result<RemovalStats, String> {
         if let Some(reason) = &self.trash_broken {
             return Err(format!("Trash unavailable: {reason}"));
         }
@@ -814,65 +839,142 @@ impl Fs {
                 return Err("Trash: AlreadyExists after 3 attempts".into());
             }
         }
-        let bytes = self.detach(path)?;
+        let removal = self.plan_removal(path)?;
         let name = path.rsplit('/').next().unwrap_or("item").to_owned();
         let trash_path = format!("~/.Trash/{name}");
+        let stats = removal.stats;
+        self.commit_removal(&removal.keys);
         self.trash.push(Trashed {
             original: path.into(),
             trash_path,
-            bytes,
+            bytes: stats.removed_allocated_bytes,
             at_secs: now_secs,
+            retained_nodes: removal.nodes,
         });
-        Ok(bytes)
+        // Trash keeps every inode alive, so no block returns to the volume.
+        Ok(RemovalStats {
+            reclaimed_bytes: 0,
+            ..stats
+        })
     }
 
-    pub fn remove_permanent(&mut self, path: &str) -> Result<u64, String> {
-        let bytes = self.detach(path)?;
-        if let Some(v) = self.volume_mut_for(path) {
-            v.used = v.used.saturating_sub(bytes);
+    pub fn remove_permanent(&mut self, path: &str) -> Result<RemovalStats, String> {
+        let removal = self.plan_removal(path)?;
+        self.commit_removal(&removal.keys);
+        for (mount, bytes) in &removal.reclaimed_by_mount {
+            if let Some(v) = self.volumes.iter_mut().find(|v| &v.mount == mount) {
+                v.used = v.used.saturating_sub(*bytes);
+            }
         }
-        Ok(bytes)
+        Ok(removal.stats)
     }
 
-    fn volume_mut_for(&mut self, path: &str) -> Option<&mut Volume> {
-        let mount = self.volume_for(path).map(|v| v.mount.clone())?;
-        self.volumes.iter_mut().find(|v| v.mount == mount)
+    fn commit_removal(&mut self, keys: &[String]) {
+        for k in keys {
+            self.nodes.remove(k);
+        }
     }
 
-    fn detach(&mut self, path: &str) -> Result<u64, String> {
+    /// Validates a removal and computes its accounting without mutating
+    /// anything. An inode's blocks count as reclaimed only when no reference
+    /// survives outside the removed set, where Trash-retained nodes count as
+    /// surviving references.
+    fn plan_removal(&self, path: &str) -> Result<Removal, String> {
+        let keys = self.removal_keys(path)?;
+        let key_set: BTreeSet<&str> = keys.iter().map(String::as_str).collect();
+        let mut nodes = Vec::with_capacity(keys.len());
+        let mut removed_by_inode: BTreeMap<u64, &Node> = BTreeMap::new();
+        let mut removed_entry_bytes = 0_u64;
+        for k in &keys {
+            let Some(node) = self.nodes.get(k) else {
+                continue;
+            };
+            removed_entry_bytes = checked_total(removed_entry_bytes, node.apparent)?;
+            removed_by_inode.entry(node.inode).or_insert(node);
+            nodes.push(node.clone());
+        }
+
+        // Every live reference, removed or not, plus every Trash-retained one.
+        // A live reference outside the removal, or any retained one, survives.
+        let live_refs = self
+            .nodes
+            .iter()
+            .map(|(p, n)| (n, !key_set.contains(p.as_str())));
+        let retained_refs = self
+            .trash
+            .iter()
+            .flat_map(|t| t.retained_nodes.iter())
+            .map(|n| (n, true));
+        let mut survivors: BTreeSet<u64> = BTreeSet::new();
+        for (node, survives) in live_refs.chain(retained_refs) {
+            let Some(first) = removed_by_inode.get(&node.inode) else {
+                continue;
+            };
+            if std::mem::discriminant(&first.kind) != std::mem::discriminant(&node.kind)
+                || first.allocated != node.allocated
+            {
+                return Err(format!(
+                    "{path}: inode {} has inconsistent references · nothing removed",
+                    node.inode
+                ));
+            }
+            if self.volume_for(&first.path).map(|v| &v.mount)
+                != self.volume_for(&node.path).map(|v| &v.mount)
+            {
+                return Err(format!(
+                    "{path}: cross-volume hardlink is not modeled · nothing removed"
+                ));
+            }
+            if survives {
+                survivors.insert(node.inode);
+            }
+        }
+
+        let mut removed_allocated_bytes = 0_u64;
+        let mut reclaimed_bytes = 0_u64;
+        let mut reclaimed_by_mount: BTreeMap<String, u64> = BTreeMap::new();
+        for (inode, node) in &removed_by_inode {
+            removed_allocated_bytes = checked_total(removed_allocated_bytes, node.allocated)?;
+            if survivors.contains(inode) {
+                continue;
+            }
+            reclaimed_bytes = checked_total(reclaimed_bytes, node.allocated)?;
+            if let Some(v) = self.volume_for(&node.path) {
+                let total = reclaimed_by_mount.entry(v.mount.clone()).or_insert(0);
+                *total = checked_total(*total, node.allocated)?;
+            }
+        }
+
+        Ok(Removal {
+            keys,
+            nodes,
+            reclaimed_by_mount,
+            stats: RemovalStats {
+                removed_entry_bytes,
+                removed_allocated_bytes,
+                reclaimed_bytes,
+            },
+        })
+    }
+
+    fn removal_keys(&self, path: &str) -> Result<Vec<String>, String> {
         let node = self
             .nodes
             .get(path)
-            .cloned()
             .ok_or_else(|| FsError::NotFound(path.into()).message())?;
         if let Some(parent) = Self::parent(path)
             && self.nodes.get(&parent).is_some_and(|p| !p.readable)
         {
             return Err(FsError::PermissionDenied(parent).message());
         }
-        match node.kind {
-            NodeKind::Symlink { .. } => {
-                self.nodes.remove(path);
-                Ok(0)
+        let mut keys = vec![path.to_owned()];
+        if node.is_dir() {
+            if !node.readable {
+                return Err(FsError::PermissionDenied(path.into()).message());
             }
-            NodeKind::Dir => {
-                if !node.readable {
-                    return Err(FsError::PermissionDenied(path.into()).message());
-                }
-                let bytes = self.size_of(path);
-                let doomed: Vec<String> =
-                    self.subtree(path).iter().map(|n| n.path.clone()).collect();
-                for p in doomed {
-                    self.nodes.remove(&p);
-                }
-                self.nodes.remove(path);
-                Ok(bytes)
-            }
-            _ => {
-                self.nodes.remove(path);
-                Ok(node.allocated)
-            }
+            keys.extend(self.subtree(path).iter().map(|n| n.path.clone()));
         }
+        Ok(keys)
     }
 
     pub fn home_index(&self, home: &str) -> Vec<String> {
@@ -1000,6 +1102,194 @@ pub fn sanitize(s: &str) -> String {
         }
     }
     out
+}
+
+#[cfg(test)]
+mod link_reclaim_tests {
+    use super::*;
+
+    fn stats(entry: u64, allocated: u64, reclaimed: u64) -> RemovalStats {
+        RemovalStats {
+            removed_entry_bytes: entry,
+            removed_allocated_bytes: allocated,
+            reclaimed_bytes: reclaimed,
+        }
+    }
+
+    fn used(fs: &Fs, mount: &str) -> u64 {
+        fs.volumes.iter().find(|v| v.mount == mount).unwrap().used
+    }
+
+    #[test]
+    fn fs_hardlink_reclaims_only_last_live_reference() {
+        let mut fs = Fs::new();
+        fs.dir("/w", 1)
+            .file("/w/a", 100, 1)
+            .hardlink("/w/b", "/w/a")
+            .hardlink("/w/c", "/w/a")
+            .volume("/", 1 << 30, 1 << 20);
+
+        assert_eq!(
+            fs.remove_permanent("/w/a").unwrap(),
+            stats(100, BLOCK, 0),
+            "first link processes its blocks but reclaims none"
+        );
+        assert_eq!(fs.remove_permanent("/w/b").unwrap(), stats(100, BLOCK, 0));
+        assert_eq!(
+            fs.remove_permanent("/w/c").unwrap(),
+            stats(100, BLOCK, BLOCK),
+            "the last reference reclaims the inode once"
+        );
+        assert_eq!(used(&fs, "/"), (1 << 20) - BLOCK);
+    }
+
+    #[test]
+    fn fs_subtree_removal_counts_inodes_once() {
+        let mut inside = Fs::new();
+        inside
+            .dir("/w/proj", 1)
+            .file("/w/proj/a", 100, 1)
+            .hardlink("/w/proj/b", "/w/proj/a")
+            .volume("/", 1 << 30, 1 << 20);
+        assert_eq!(
+            inside.remove_permanent("/w/proj").unwrap(),
+            stats(200, 2 * BLOCK, 2 * BLOCK),
+            "dir plus one shared inode, each counted once, all links inside"
+        );
+
+        let mut outside = Fs::new();
+        outside
+            .dir("/w/proj", 1)
+            .file("/w/proj/a", 100, 1)
+            .hardlink("/w/proj/b", "/w/proj/a")
+            .hardlink("/w/outside", "/w/proj/a")
+            .volume("/", 1 << 30, 1 << 20);
+        assert_eq!(
+            outside.remove_permanent("/w/proj").unwrap(),
+            stats(200, 2 * BLOCK, BLOCK),
+            "a surviving link outside the subtree keeps the shared inode alive"
+        );
+        assert_eq!(used(&outside, "/"), (1 << 20) - BLOCK);
+    }
+
+    #[test]
+    fn fs_trashed_hardlink_retains_allocation() {
+        let mut fs = Fs::new();
+        fs.dir("/w", 1)
+            .file("/w/a", 100, 1)
+            .hardlink("/w/b", "/w/a")
+            .volume("/", 1 << 30, 1 << 20);
+
+        let trashed = fs.trash("/w/a", 0).unwrap();
+        assert_eq!(trashed, stats(100, BLOCK, 0), "trash never reclaims");
+        assert_eq!(fs.trash.len(), 1);
+        assert_eq!(fs.trash[0].bytes, BLOCK);
+        assert_eq!(used(&fs, "/"), 1 << 20, "trash leaves volume usage alone");
+
+        assert_eq!(
+            fs.remove_permanent("/w/b").unwrap(),
+            stats(100, BLOCK, 0),
+            "the Trash record still owns the inode"
+        );
+        assert_eq!(used(&fs, "/"), 1 << 20);
+    }
+
+    #[test]
+    fn fs_trash_directory_retains_descendant_inodes() {
+        let mut fs = Fs::new();
+        fs.dir("/w/d", 1)
+            .file("/w/d/a", 100, 1)
+            .hardlink("/w/out", "/w/d/a")
+            .volume("/", 1 << 30, 1 << 20);
+
+        assert_eq!(fs.trash("/w/d", 0).unwrap(), stats(100, 2 * BLOCK, 0));
+        assert_eq!(
+            fs.remove_permanent("/w/out").unwrap(),
+            stats(100, BLOCK, 0),
+            "a retained descendant inode cannot be reclaimed through a live link"
+        );
+        assert_eq!(used(&fs, "/"), 1 << 20);
+    }
+
+    #[test]
+    fn fs_removal_permission_and_cross_volume_errors_are_atomic() {
+        let mut locked = Fs::new();
+        locked
+            .dir("/w/locked", 1)
+            .file("/w/locked/a", 100, 1)
+            .unreadable("/w/locked")
+            .volume("/", 1 << 30, 1 << 20);
+        let before = locked.clone();
+        assert!(locked.remove_permanent("/w/locked").is_err());
+        assert_eq!(locked, before, "denied removal changes nothing");
+
+        let mut cross = Fs::new();
+        cross
+            .dir("/w", 1)
+            .file("/w/a", 100, 1)
+            .volume("/", 1 << 30, 1 << 20)
+            .volume("/ext", 1 << 30, 1 << 20)
+            .hardlink("/ext/b", "/w/a");
+        let before = cross.clone();
+        let err = cross.remove_permanent("/w/a").unwrap_err();
+        assert!(err.contains("cross-volume hardlink"), "{err}");
+        assert_eq!(cross, before, "cross-volume refusal changes nothing");
+    }
+
+    #[test]
+    fn fs_removal_size_overflow_is_atomic() {
+        let mut fs = Fs::new();
+        fs.dir("/w/d", 1)
+            .sparse("/w/d/a", 1, u64::MAX - 10, 1)
+            .sparse("/w/d/b", 1, 20, 1)
+            .volume("/", 1 << 30, 1 << 20);
+        let before = fs.clone();
+        let err = fs.remove_permanent("/w/d").unwrap_err();
+        assert!(err.contains("exceeds u64"), "{err}");
+        assert_eq!(fs, before, "overflow refusal changes nothing");
+    }
+
+    #[test]
+    fn fs_inconsistent_inode_refuses_before_mutation() {
+        for outside in ["/w/a_outside", "/w/z_outside"] {
+            let mut fs = Fs::new();
+            fs.dir("/w/d", 1)
+                .file("/w/d/a", 100, 1)
+                .hardlink(outside, "/w/d/a")
+                .volume("/", 1 << 30, 1 << 20);
+            fs.nodes.get_mut(outside).unwrap().allocated = 2 * BLOCK;
+            let before = fs.clone();
+            let err = fs.remove_permanent("/w/d").unwrap_err();
+            assert!(err.contains("inconsistent references"), "{err}");
+            assert_eq!(fs, before, "an inconsistent inode refuses without mutation");
+        }
+    }
+
+    #[test]
+    fn fs_subtree_reclaims_each_volume_independently() {
+        let mut fs = Fs::new();
+        fs.dir("/work", 1)
+            .file("/work/one", 100, 1)
+            .dir("/work/ext", 1)
+            .file("/work/ext/two", 100, 1)
+            .volume("/", 1 << 30, 100 * BLOCK)
+            .volume("/work/ext", 1 << 30, 50 * BLOCK);
+
+        assert_eq!(
+            fs.remove_permanent("/work").unwrap(),
+            stats(200, 4 * BLOCK, 4 * BLOCK)
+        );
+        assert_eq!(
+            used(&fs, "/"),
+            98 * BLOCK,
+            "root volume loses its own two inodes"
+        );
+        assert_eq!(
+            used(&fs, "/work/ext"),
+            48 * BLOCK,
+            "the mounted volume loses only its own two inodes"
+        );
+    }
 }
 
 #[cfg(test)]
