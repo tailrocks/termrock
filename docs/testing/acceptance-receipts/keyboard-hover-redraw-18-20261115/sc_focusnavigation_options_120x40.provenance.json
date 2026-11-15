@@ -1,0 +1,72 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane13-target/debug/showcase",
+  "binary_sha256": "89b435eb0d055486c55fda527de2010a8ffe1aa1740006141fa618bc6926e332",
+  "fixture_args": [],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "4620759c1e304ad84bce45748aa9d05a99541e7d969ccf34a461de45264d871d",
+  "expect_baseline": "441920866d24f22980f6f079f481747840847dc1195639b81a10b38e0f0d78ee",
+  "precondition": "Re-pin for #18: the Focus & navigation Options tab gains a 'Focus ring' option row (always, keyboard-only) so keyboard-only focus visibility is reachable from the options control; captured from the live candidate build of fix/18-keyboard-hover-redraw, diff confined to the added options row",
+  "session": null,
+  "expected_test_id": "pre_refactor/s01_focusnavigation/sc_focusnavigation_options_120x40",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/keyboard-hover-redraw-18-20261115/sc_focusnavigation_options_120x40.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/keyboard-hover-redraw-18-20261115/sc_focusnavigation_options_120x40.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/keyboard-hover-redraw-18-20261115/superseded/pre_refactor/s01_focusnavigation/sc_focusnavigation_options_120x40.tui.pb",
+  "test_id": "pre_refactor/s01_focusnavigation/sc_focusnavigation_options_120x40",
+  "acceptance": {
+    "expected_baseline_sha256": "441920866d24f22980f6f079f481747840847dc1195639b81a10b38e0f0d78ee",
+    "accepted_baseline_sha256": "4620759c1e304ad84bce45748aa9d05a99541e7d969ccf34a461de45264d871d",
+    "candidate_sha256": "4620759c1e304ad84bce45748aa9d05a99541e7d969ccf34a461de45264d871d",
+    "transaction_receipt": "docs/testing/acceptance-receipts/keyboard-hover-redraw-18-20261115/sc_focusnavigation_options_120x40.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "441920866d24f22980f6f079f481747840847dc1195639b81a10b38e0f0d78ee"
+  },
+  "candidate": {
+    "sha256": "4620759c1e304ad84bce45748aa9d05a99541e7d969ccf34a461de45264d871d",
+    "path": "tests/functional/baselines/pre_refactor/s01_focusnavigation/sc_focusnavigation_options_120x40.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/keyboard-hover-redraw-18-20261115/superseded/pre_refactor/s01_focusnavigation/sc_focusnavigation_options_120x40.tui.pb",
+    "superseded_baseline_sha256": "441920866d24f22980f6f079f481747840847dc1195639b81a10b38e0f0d78ee"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/s01_focusnavigation/sc_focusnavigation_options_120x40.tui.pb",
+    "candidate_sha256": "4620759c1e304ad84bce45748aa9d05a99541e7d969ccf34a461de45264d871d",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane13-target/debug/showcase",
+    "binary_sha256": "89b435eb0d055486c55fda527de2010a8ffe1aa1740006141fa618bc6926e332",
+    "note": "Live candidate capture of this branch. The pinned reference binary predates #18, so no Reference-mode capture of this change exists."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s01_focusnavigation/sc_focusnavigation_options_120x40",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane13/target/functional/s01-focusnavigation-sections-52193-1794709006660924000-0/check-artifacts/pre_refactor/s01_focusnavigation/sc_focusnavigation_options_120x40/4620759c1e304ad84bce45748aa9d05a99541e7d969ccf34a461de45264d871d/sample.tui.pb"
+    },
+    "candidate_sha256": "4620759c1e304ad84bce45748aa9d05a99541e7d969ccf34a461de45264d871d",
+    "baseline_sha256": "4620759c1e304ad84bce45748aa9d05a99541e7d969ccf34a461de45264d871d",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane13/tests/functional/baselines/pre_refactor/s01_focusnavigation/sc_focusnavigation_options_120x40.tui.pb"
+    },
+    "error_code": null
+  }
+}

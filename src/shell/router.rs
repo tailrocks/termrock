@@ -262,8 +262,13 @@ impl KeyRouter {
     }
 
     pub fn route<H: KeyHost + ?Sized>(host: &mut H, key: &Key) -> Outcome {
-        host.shell_mut().pointer.suppress_hover();
-        Self::replay(host, key)
+        let interaction_changed = host.shell_mut().pointer.suppress_hover();
+        let command = Self::replay(host, key);
+        command.or(if interaction_changed {
+            Outcome::Changed
+        } else {
+            Outcome::Ignored
+        })
     }
 
     pub fn replay<H: KeyHost + ?Sized>(host: &mut H, key: &Key) -> Outcome {

@@ -12,7 +12,7 @@ use junie_tui::core::intent::Phase;
 use junie_tui::core::keyboard::{self, KeyboardProtocol, ProtocolState};
 use junie_tui::core::keymap::{KeyBinding, Nav, NavKeys, select_all_bindings};
 use junie_tui::core::pointer::MouseTarget;
-use junie_tui::ui::ctx::RenderCtx;
+use junie_tui::ui::ctx::{FocusVisible, RenderCtx};
 use junie_tui::ui::measure::{Tile, Tiled, tiles};
 use junie_tui::ui::specimen::{SpecimenState, StateGrid};
 use junie_tui::widgets::button::{Button, row_layout};
@@ -101,6 +101,7 @@ pub struct FocusNavPage {
 
     nav: usize,
     tab_stays: bool,
+    focus_visible: FocusVisible,
 
     pub last_change: String,
 
@@ -133,6 +134,7 @@ impl FocusNavPage {
             list: ListBox::new(ID.child(4), items, SelectMode::Single).nav(NavKeys::DESKTOP),
             nav: 0,
             tab_stays: false,
+            focus_visible: FocusVisible::Always,
             last_change: "none yet".into(),
             ring_len: 0,
             last_nav: "none yet".into(),
@@ -330,12 +332,15 @@ impl FocusNavPage {
         let y = inner.y + 5;
         let widths = [self.save.width(), self.cancel.width()];
         let r = row_layout(Rect::new(inner.x, y, inner.width, 1), &widths, 2);
+        self.save.focus_visible = self.focus_visible;
+        self.cancel.focus_visible = self.focus_visible;
         self.save.render(r[0], buf, ctx, bg);
         self.cancel.render(r[1], buf, ctx, bg);
         let y = inner.y + 7;
         let widths: Vec<u16> = self.tags.iter().map(|b| b.width()).collect();
         let r = row_layout(Rect::new(inner.x, y, inner.width, 1), &widths, 1);
         for (b, r) in self.tags.iter_mut().zip(r) {
+            b.focus_visible = self.focus_visible;
             b.render(r, buf, ctx, bg);
         }
 
@@ -538,6 +543,9 @@ impl Page for FocusNavPage {
         match key {
             "focusnavigation.nav" => Some(self.nav),
             "focusnavigation.tab_in_field" => Some(usize::from(self.tab_stays)),
+            "focusnavigation.focus_visible" => Some(usize::from(
+                self.focus_visible == FocusVisible::KeyboardOnly,
+            )),
             _ => None,
         }
     }
@@ -556,6 +564,13 @@ impl Page for FocusNavPage {
                 self.list.cursor = cursor;
             }
             "focusnavigation.tab_in_field" => self.tab_stays = value == 1,
+            "focusnavigation.focus_visible" => {
+                self.focus_visible = if value == 1 {
+                    FocusVisible::KeyboardOnly
+                } else {
+                    FocusVisible::Always
+                };
+            }
             _ => {}
         }
     }
