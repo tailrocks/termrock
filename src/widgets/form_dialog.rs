@@ -287,6 +287,11 @@ impl FormDialog {
         self.fields.iter_mut().find(|f| f.name == name)
     }
 
+    fn changed_field(&mut self, name: String) {
+        self.dirty = true;
+        self.events.push(FormAction::Changed(name));
+    }
+
     pub fn set_visible(&mut self, name: &str, v: bool) {
         if let Some(f) = self.field_mut(name) {
             f.visible = v;
@@ -310,11 +315,7 @@ impl FormDialog {
     pub fn set_text(&mut self, name: &str, v: &str) {
         if let Some(f) = self.field_mut(name) {
             match &mut f.kind {
-                FormFieldKind::Input(i) => {
-                    *i = TextInput::new(i.id, &i.label.clone())
-                        .value(v)
-                        .placeholder(&i.placeholder.clone())
-                }
+                FormFieldKind::Input(i) => i.set_value(v),
                 FormFieldKind::Chooser { value, .. } => *value = v.to_owned(),
                 _ => {}
             }
@@ -469,10 +470,11 @@ impl FormDialog {
                     }
                 }
                 FormFieldKind::Check(c) if cur == Some(c.id) => {
+                    let before = (c.checked, c.mixed);
                     let o = c.on_key(key);
-                    if o == Outcome::Changed {
-                        self.dirty = true;
-                        self.events.push(FormAction::Changed(name));
+                    if (c.checked, c.mixed) != before {
+                        self.changed_field(name);
+                        return o;
                     }
                     if o.consumed() {
                         return o;
@@ -482,8 +484,8 @@ impl FormDialog {
                     let before = r.selected;
                     let o = r.on_key(key);
                     if r.selected != before {
-                        self.dirty = true;
-                        self.events.push(FormAction::Changed(name));
+                        self.changed_field(name);
+                        return o;
                     }
                     if o.consumed() {
                         return o;
@@ -647,17 +649,22 @@ impl FormDialog {
                 }
                 FormFieldKind::Check(c) if c.id == id => {
                     focus.focus(id);
-                    self.dirty = true;
-                    self.events.push(FormAction::Changed(name));
-                    return c.on_click();
+                    let before = (c.checked, c.mixed);
+                    let o = c.on_click();
+                    if (c.checked, c.mixed) != before {
+                        self.changed_field(name);
+                    }
+                    return o;
                 }
                 FormFieldKind::Radio(r) => {
                     for i in 0..r.options.len() {
                         if r.option_id(i) == id {
                             focus.focus(r.id);
+                            let before = r.selected;
                             let o = r.on_click(i);
-                            self.dirty = true;
-                            self.events.push(FormAction::Changed(name));
+                            if r.selected != before {
+                                self.changed_field(name);
+                            }
                             return o;
                         }
                     }
@@ -1047,6 +1054,9 @@ impl FormDialog {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;
 
 #[cfg(test)]
 mod issue35_tests {

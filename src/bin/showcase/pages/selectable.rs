@@ -388,10 +388,6 @@ impl SelectablePage {
         self.loaded = self.table.selected_rows();
         let sel: Vec<&Member> = self.loaded.iter().map(|&r| &self.members[r]).collect();
         let single = sel.len() == 1;
-        for input in [&mut self.name, &mut self.email, &mut self.notes] {
-            input.editing = false;
-            input.field.error = None;
-        }
         let text = |f: fn(&Member) -> &str| {
             if single {
                 f(sel[0]).to_owned()
@@ -399,8 +395,8 @@ impl SelectablePage {
                 String::new()
             }
         };
-        self.name.field.buffer.set_text(text(|m| &m.name));
-        self.email.field.buffer.set_text(text(|m| &m.email));
+        self.name.set_value(&text(|m| &m.name));
+        self.email.set_value(&text(|m| &m.email));
         let pick = |sel_w: &mut Select, v: Option<usize>| {
             sel_w.open = false;
             match v {
@@ -429,7 +425,7 @@ impl SelectablePage {
         }
         let notes = shared(sel.iter().map(|m| m.notes.clone()));
         self.notes_mixed = notes.is_none() && !sel.is_empty();
-        self.notes.field.buffer.set_text(notes.unwrap_or_default());
+        self.notes.set_value(&notes.unwrap_or_default());
         self.notes.placeholder = if self.notes_mixed {
             MIXED.to_owned()
         } else {
@@ -1236,5 +1232,52 @@ impl Page for SelectablePage {
             Some(f) if f == self.delete.id => vec![("Enter", "Delete…"), ("Tab", "Next")],
             _ => vec![("Tab", "Members table")],
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use junie_tui::core::event::Key;
+    use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+
+    fn type_into(input: &mut TextInput, s: &str) {
+        for c in s.chars() {
+            input.on_key(&Key {
+                code: KeyCode::Char(c),
+                mods: KeyModifiers::NONE,
+            });
+        }
+    }
+
+    fn page_on_row(row: usize) -> SelectablePage {
+        let mut page = SelectablePage::for_platform(ClientPlatform::Other);
+        assert!(page.table.toggle_row(row), "row {row} is selectable");
+        page.selection_changed();
+        page
+    }
+
+    #[test]
+    fn loading_another_member_replaces_the_value_history_and_cancel_baseline() {
+        let mut page = page_on_row(1);
+        let first = page.name.text().to_owned();
+        assert!(!first.is_empty(), "a single selection loads its name");
+
+        page.name.begin_edit();
+        type_into(&mut page.name, "zz");
+        assert!(page.name.can_undo());
+
+        assert!(page.table.toggle_row(1), "deselect the first member");
+        assert!(page.table.toggle_row(2), "select the second member");
+        page.selection_changed();
+        let second = page.name.text().to_owned();
+        assert_ne!(second, first);
+        assert!(!page.name.editing, "loading ends the edit session");
+        assert!(!page.name.can_undo(), "undo cannot reach the first member");
+
+        page.name.begin_edit();
+        type_into(&mut page.name, "x");
+        page.name.cancel();
+        assert_eq!(page.name.text(), second, "cancel returns the loaded member");
     }
 }

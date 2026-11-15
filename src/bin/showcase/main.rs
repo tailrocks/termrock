@@ -71,6 +71,7 @@ fn main() -> std::io::Result<()> {
     let _ = (
         coverage::PICKER_COVERAGE,
         coverage::PICKER_ALLOWLIST,
+        coverage::TEXT_INPUT_COVERAGE,
         coverage::KEYMAP_ALLOWLIST,
         coverage::INSPECT_CHANGES_COVERAGE,
         coverage::INSPECT_CHANGES_ALLOWLIST,
