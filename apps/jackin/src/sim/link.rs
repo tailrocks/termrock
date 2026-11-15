@@ -27,7 +27,15 @@ pub struct SimLink {
 #[derive(Debug)]
 struct Plan {
     started: Option<i64>,
-    steps: VecDeque<Timed>,
+    steps: VecDeque<QueuedStep>,
+}
+
+/// A step waiting to be drained. `output_offset` counts the bytes of an
+/// Output that earlier drains already returned; it stays zero for controls.
+#[derive(Debug)]
+struct QueuedStep {
+    timed: Timed,
+    output_offset: usize,
 }
 
 impl SimLink {
@@ -35,7 +43,13 @@ impl SimLink {
         Self {
             plan: Mutex::new(Plan {
                 started: None,
-                steps: steps.into(),
+                steps: steps
+                    .into_iter()
+                    .map(|timed| QueuedStep {
+                        timed,
+                        output_offset: 0,
+                    })
+                    .collect(),
             }),
         }
     }
@@ -52,20 +66,34 @@ impl PaneLink for SimLink {
         let mut plan = self.plan.lock().expect("plan");
         let started = *plan.started.get_or_insert(now_ms);
         let mut out = Vec::new();
+        // Never exceeds `output_budget`, so `output_budget - bytes` cannot underflow.
         let mut bytes = 0;
-        while let Some(step) = plan.steps.front() {
-            if started + step.after_ms > now_ms {
+        while let Some(front) = plan.steps.front_mut() {
+            if started.saturating_add(front.timed.after_ms) > now_ms {
                 break;
             }
-            if let LinkEvent::Output(chunk) = &step.event {
-                if bytes > 0 && bytes + chunk.len() > output_budget {
-                    break;
+            let LinkEvent::Output(chunk) = &front.timed.event else {
+                if let Some(step) = plan.steps.pop_front() {
+                    out.push(step.timed.event);
                 }
-                bytes += chunk.len();
+                continue;
+            };
+            let offset = front.output_offset;
+            let take = (chunk.len() - offset).min(output_budget - bytes);
+            if !chunk.is_empty() && take == 0 {
+                break;
             }
-            if let Some(step) = plan.steps.pop_front() {
-                out.push(step.event);
+            let piece = chunk[offset..offset + take].to_vec();
+            bytes += take;
+            if offset + take < chunk.len() {
+                // A partly sent output holds back everything behind it, so
+                // no control overtakes its remainder.
+                front.output_offset = offset + take;
+                out.push(LinkEvent::Output(piece));
+                break;
             }
+            out.push(LinkEvent::Output(piece));
+            plan.steps.pop_front();
         }
         out
     }
@@ -221,4 +249,219 @@ fn pager_screen() -> Vec<u8> {
     ]
     .concat()
     .into_bytes()
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use ratatui::layout::Rect;
+
+    use super::*;
+    use crate::domain::instance::InstanceId;
+    use crate::panes::{
+        Lease, LinkFault, LinkSource, PaneBody, PaneLink, PanePolicy, PaneRequest, PaneTiming,
+        TerminalPane,
+    };
+
+    fn output_bytes(events: &[LinkEvent]) -> Vec<u8> {
+        events
+            .iter()
+            .filter_map(|event| match event {
+                LinkEvent::Output(bytes) => Some(bytes.as_slice()),
+                _ => None,
+            })
+            .flatten()
+            .copied()
+            .collect()
+    }
+
+    fn output(bytes: &[u8]) -> LinkEvent {
+        LinkEvent::Output(bytes.to_vec())
+    }
+
+    #[test]
+    fn sim_link_first_chunk_obeys_budget() {
+        let link = SimLink::new(vec![at(0, output(b"0123456789"))]);
+        let parts: Vec<Vec<u8>> = (0..4)
+            .map(|_| {
+                let events = link.drain(0, 3);
+                assert!(output_bytes(&events).len() <= 3, "{events:?}");
+                output_bytes(&events)
+            })
+            .collect();
+        let lengths: Vec<usize> = parts.iter().map(Vec::len).collect();
+        assert_eq!(lengths, [3, 3, 3, 1]);
+        assert_eq!(parts.concat(), b"0123456789");
+        assert_eq!(link.drain(0, 3), []);
+    }
+
+    #[test]
+    fn sim_link_zero_budget_retains_output_in_fifo() {
+        let link = SimLink::new(vec![
+            at(0, LinkEvent::Attached),
+            at(0, LinkEvent::Lease(Lease::Owner)),
+            at(0, output(b"abc")),
+            at(0, LinkEvent::Notice("after".into())),
+        ]);
+        assert_eq!(
+            link.drain(0, 0),
+            [LinkEvent::Attached, LinkEvent::Lease(Lease::Owner)],
+            "controls before the blocked output drain at zero budget"
+        );
+        assert_eq!(link.drain(0, 0), [], "a zero budget takes no output");
+        assert_eq!(
+            link.drain(0, 10),
+            [output(b"abc"), LinkEvent::Notice("after".into())],
+            "the notice waits behind the output it follows"
+        );
+    }
+
+    #[test]
+    fn sim_link_budget_applies_across_many_chunks() {
+        let link = SimLink::new(vec![
+            at(0, output(b"aaaa")),
+            at(0, LinkEvent::Notice("1".into())),
+            at(0, output(b"bbbbbb")),
+            at(0, LinkEvent::Exited(Some(0))),
+        ]);
+        let first = link.drain(0, 5);
+        assert_eq!(
+            first,
+            [output(b"aaaa"), LinkEvent::Notice("1".into()), output(b"b"),]
+        );
+        let second = link.drain(0, 5);
+        assert_eq!(
+            second,
+            [output(b"bbbbb"), LinkEvent::Exited(Some(0))],
+            "the exit follows once the output it waited behind is complete"
+        );
+        assert_eq!(link.drain(0, 5), []);
+    }
+
+    #[test]
+    fn sim_link_partial_utf8_and_escape_stream_is_lossless() {
+        let stream = "é日本語 😀\x1b]2;tïtle 😀\x07\x1b[31;1mred\x1b[0m\r\n😀\x1b[2;3Hend"
+            .as_bytes()
+            .to_vec();
+        let link = SimLink::new(vec![at(0, output(&stream))]);
+        let mut received = Vec::new();
+        for _ in 0..stream.len() {
+            let events = link.drain(0, 1);
+            let bytes = output_bytes(&events);
+            assert!(bytes.len() <= 1, "{events:?}");
+            received.extend(bytes);
+        }
+        assert_eq!(received, stream);
+        assert_eq!(link.drain(0, 1), []);
+
+        let mut reference = pane_over(stream.clone(), 64 * 1024);
+        reference.tick(0);
+        assert!(
+            reference.title().is_some(),
+            "the OSC title reaches the pane"
+        );
+        let mut budgeted = pane_over(stream.clone(), 1);
+        for now in 0..=stream.len() as i64 {
+            budgeted.tick(now);
+        }
+        assert_eq!(screen(&budgeted), screen(&reference));
+    }
+
+    #[test]
+    fn sim_link_empty_output_and_large_clock_are_safe() {
+        let empty = SimLink::new(vec![
+            at(0, output(b"")),
+            at(0, LinkEvent::Notice("x".into())),
+        ]);
+        assert_eq!(
+            empty.drain(0, 0),
+            [output(b""), LinkEvent::Notice("x".into())],
+            "an empty chunk costs no budget and does not stall the queue"
+        );
+
+        let late = SimLink::new(vec![at(10, LinkEvent::Notice("late".into()))]);
+        assert_eq!(late.drain(i64::MAX - 2, 0), []);
+        assert_eq!(
+            late.drain(i64::MAX, 0),
+            [LinkEvent::Notice("late".into())],
+            "the due time saturates instead of overflowing"
+        );
+
+        let early = SimLink::new(vec![at(-10, LinkEvent::Notice("early".into()))]);
+        assert_eq!(
+            early.drain(i64::MIN + 2, 0),
+            [LinkEvent::Notice("early".into())]
+        );
+    }
+
+    /// Hands one prepared link to the pane, which opens it once.
+    #[derive(Debug)]
+    struct OneLink(Mutex<Option<SimLink>>);
+
+    impl LinkSource for OneLink {
+        fn open(&self, _: &PaneRequest, _: PaneSize) -> Result<Box<dyn PaneLink>, LinkFault> {
+            let link = self.0.lock().expect("link").take().expect("one open");
+            Ok(Box::new(link))
+        }
+
+        fn restart(
+            &self,
+            request: &PaneRequest,
+            size: PaneSize,
+        ) -> Result<Box<dyn PaneLink>, LinkFault> {
+            self.open(request, size)
+        }
+    }
+
+    /// What the user sees of a pane: every cell's text, the cursor, the title
+    /// and the history kept above the screen.
+    #[derive(Debug, PartialEq, Eq)]
+    struct Screen {
+        cells: Vec<(String, bool)>,
+        cursor: (u16, u16),
+        title: Option<String>,
+        history: usize,
+    }
+
+    fn screen(pane: &TerminalPane) -> Screen {
+        let state = pane.grid().state();
+        let view = state.view(0);
+        let cells = (0..view.rows())
+            .flat_map(|row| (0..view.cols()).map(move |col| (row, col)))
+            .filter_map(|(row, col)| view.cell(row, col))
+            .map(|cell| (cell.text().to_owned(), cell.is_wide_continuation()))
+            .collect();
+        Screen {
+            cells,
+            cursor: view.cursor(),
+            title: pane.title().map(str::to_owned),
+            history: state.scrollback_len(),
+        }
+    }
+
+    /// A pane over one attach that shows `stream`, fed at most `feed_budget_bytes`
+    /// per tick.
+    fn pane_over(stream: Vec<u8>, feed_budget_bytes: usize) -> TerminalPane {
+        let instance = InstanceId::simulated("jk-sim-link");
+        let request = PaneRequest::new(&instance, None, None);
+        let link = SimLink::new(vec![
+            at(0, LinkEvent::Attached),
+            at(0, LinkEvent::Lease(Lease::Owner)),
+            at(0, LinkEvent::Output(stream)),
+        ]);
+        let mut pane = TerminalPane::new(
+            1,
+            request,
+            Arc::new(OneLink(Mutex::new(Some(link)))),
+            PaneTiming::default(),
+            0,
+        );
+        pane.set_policy(&Arc::new(PanePolicy {
+            feed_budget_bytes,
+            ..PanePolicy::default()
+        }));
+        pane.sync_size(Rect::new(0, 0, 81, 24));
+        pane
+    }
 }

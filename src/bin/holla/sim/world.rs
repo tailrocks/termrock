@@ -127,6 +127,8 @@ pub struct World {
 
     pub service_failures: Vec<String>,
 
+    pub explore_tiles: Vec<crate::domain::catalog::ExploreTile>,
+
     pub task_failures: Vec<String>,
     pub ops_log: OpsLog,
     pub size_cache: SizeCache,
@@ -582,10 +584,32 @@ impl World {
         if self.plans[pi].is_done() && self.plans[pi].phase == PlanPhase::Running {
             self.plans[pi].phase = PlanPhase::Done;
             self.plans[pi].ended_tick = Some(tick);
-            self.apply_plan_effects(pi);
-            msgs.push(Msg::PlanDone { plan: plan_id });
+            msgs.push(self.publish_plan_completion(pi));
         }
         msgs
+    }
+
+    /// Stops a running plan as a whole: every live step becomes terminal, the
+    /// plan is Done, and its completion is published once. Returns the messages
+    /// to deliver (empty when the plan is unknown or not running).
+    pub fn stop_plan(&mut self, id: &str) -> Vec<Msg> {
+        let tick = self.tick;
+        let Some(pi) = self.plans.iter().position(|p| p.id == id) else {
+            return vec![];
+        };
+        if !self.plans[pi].stop(tick) {
+            return vec![];
+        }
+        vec![self.publish_plan_completion(pi)]
+    }
+
+    /// The one place a Running to Done plan transition is published: applies the
+    /// effects of newly succeeded steps and builds the completion message.
+    fn publish_plan_completion(&mut self, pi: usize) -> Msg {
+        self.apply_plan_effects(pi);
+        Msg::PlanDone {
+            plan: self.plans[pi].id.clone(),
+        }
     }
 
     pub fn pg_blocker(&self) -> Option<u32> {
@@ -870,11 +894,8 @@ impl World {
 
     fn apply_plan_effects(&mut self, pi: usize) {
         let plan = self.plans[pi].clone();
-        let ok = |id: &str| {
-            plan.steps
-                .iter()
-                .any(|s| s.id == id && s.state == StepState::Succeeded)
-        };
+        let newly_succeeded = plan.unapplied_successful_step_ids();
+        let ok = |id: &str| newly_succeeded.contains(id);
         match plan.id.as_str() {
             "docker-cleanup" => {
                 if ok("stop") {
@@ -902,7 +923,6 @@ impl World {
                 }
                 self.docker.reclaimable_gb =
                     self.docker.images_gb + self.docker.volumes_gb() + self.docker.builder_cache_gb;
-                self.docker.cleanup_uses += 1;
             }
             "upgrade" => {
                 if ok("apt-apply")
@@ -943,7 +963,7 @@ impl World {
                 for s in plan
                     .steps
                     .iter()
-                    .filter(|s| s.state == StepState::Succeeded)
+                    .filter(|s| newly_succeeded.contains(&s.id))
                 {
                     let Some(target) = s.target.clone() else {
                         continue;
@@ -961,7 +981,7 @@ impl World {
                 for s in plan
                     .steps
                     .iter()
-                    .filter(|s| s.state == StepState::Succeeded)
+                    .filter(|s| newly_succeeded.contains(&s.id))
                 {
                     if let Some(g) = self.git.iter_mut().find(|g| g.path == s.cwd) {
                         g.behind = 0;
@@ -972,7 +992,7 @@ impl World {
                 for s in plan
                     .steps
                     .iter()
-                    .filter(|s| s.state == StepState::Succeeded)
+                    .filter(|s| newly_succeeded.contains(&s.id))
                 {
                     if let Some(g) = self.git.iter_mut().find(|g| g.path == s.cwd) {
                         g.branch = Some(g.primary.clone());
@@ -980,6 +1000,10 @@ impl World {
                 }
             }
             _ => {}
+        }
+        self.plans[pi].mark_step_effects_applied(&newly_succeeded);
+        if plan.id == "docker-cleanup" && self.plans[pi].count_completion_once() {
+            self.docker.cleanup_uses += 1;
         }
     }
 
@@ -1070,4 +1094,175 @@ pub enum SourceState {
     Loading,
     Done,
     Failed(String),
+}
+
+#[cfg(test)]
+mod plan_tests {
+    use super::*;
+    use crate::domain::fixtures::world_for;
+    use crate::scenario::Motion;
+
+    const ID: &str = "docker-cleanup";
+
+    fn armed_world() -> World {
+        let mut w = world_for(Scenario::DockerCleanup, Motion::Full);
+        w.clock.running = true;
+        let tick = w.tick;
+        assert!(w.plan_mut(ID).expect("plan").arm(tick));
+        w
+    }
+
+    fn step_state(w: &World, id: &str) -> StepState {
+        w.plan(ID)
+            .expect("plan")
+            .steps
+            .iter()
+            .find(|s| s.id == id)
+            .expect("step")
+            .state
+    }
+
+    fn tick_until(w: &mut World, mut done: impl FnMut(&World) -> bool) -> Vec<Msg> {
+        let mut msgs = vec![];
+        for _ in 0..400 {
+            if done(w) {
+                return msgs;
+            }
+            msgs.extend(w.tick());
+        }
+        panic!("condition never reached");
+    }
+
+    fn plan_done_count(msgs: &[Msg]) -> usize {
+        msgs.iter()
+            .filter(|m| matches!(m, Msg::PlanDone { .. }))
+            .count()
+    }
+
+    #[test]
+    fn plan_stop_world_finalizes_running_step_and_applies_only_successes() {
+        let mut w = armed_world();
+        let uses = w.docker.cleanup_uses;
+        let containers = w.docker.containers.len();
+        assert!(containers > 0);
+        tick_until(&mut w, |w| step_state(w, "rm") == StepState::Running);
+        assert_eq!(step_state(&w, "stop"), StepState::Succeeded);
+
+        let msgs = w.stop_plan(ID);
+
+        assert_eq!(plan_done_count(&msgs), 1);
+        let p = w.plan(ID).expect("plan");
+        assert_eq!(p.phase, PlanPhase::Done);
+        assert!(p.ended_tick.is_some());
+        assert!(p.steps.iter().all(|s| !matches!(
+            s.state,
+            StepState::Ready | StepState::Waiting | StepState::Running
+        )));
+        assert_eq!(step_state(&w, "rm"), StepState::Cancelled);
+        assert!(
+            w.docker.containers.iter().all(|c| !c.running),
+            "the succeeded stop step applied"
+        );
+        assert_eq!(
+            w.docker.containers.len(),
+            containers,
+            "the cancelled rm step applied nothing"
+        );
+        assert_eq!(w.docker.cleanup_uses, uses + 1);
+    }
+
+    #[test]
+    fn plan_stop_is_idempotent_and_emits_completion_once() {
+        let mut w = armed_world();
+        tick_until(&mut w, |w| step_state(w, "rm") == StepState::Running);
+        let first = w.stop_plan(ID);
+        assert_eq!(plan_done_count(&first), 1);
+        let snapshot = w.plan(ID).cloned();
+        let uses = w.docker.cleanup_uses;
+
+        assert!(w.stop_plan(ID).is_empty());
+        let mut later = vec![];
+        for _ in 0..200 {
+            later.extend(w.tick());
+        }
+        assert_eq!(plan_done_count(&later), 0);
+        assert_eq!(w.plan(ID).cloned(), snapshot);
+        assert_eq!(w.docker.cleanup_uses, uses);
+        assert!(w.stop_plan("no-such-plan").is_empty());
+    }
+
+    #[test]
+    fn plan_stop_before_any_success_applies_no_effect_and_no_usage() {
+        let mut w = armed_world();
+        let uses = w.docker.cleanup_uses;
+        let running = w.docker.containers.iter().filter(|c| c.running).count();
+        tick_until(&mut w, |w| step_state(w, "stop") == StepState::Running);
+
+        assert_eq!(plan_done_count(&w.stop_plan(ID)), 1);
+
+        assert_eq!(w.docker.cleanup_uses, uses);
+        assert_eq!(
+            w.docker.containers.iter().filter(|c| c.running).count(),
+            running
+        );
+    }
+
+    #[test]
+    fn plan_cancel_remaining_world_lets_running_step_finish_naturally() {
+        let mut w = armed_world();
+        tick_until(&mut w, |w| step_state(w, "rm") == StepState::Running);
+        w.plan_mut(ID).expect("plan").cancel_remaining();
+        assert_eq!(step_state(&w, "rm"), StepState::Running);
+
+        let msgs = tick_until(&mut w, |w| {
+            w.plan(ID).expect("plan").phase == PlanPhase::Done
+        });
+
+        assert_eq!(plan_done_count(&msgs), 1);
+        assert_eq!(step_state(&w, "rm"), StepState::Succeeded);
+        assert!(w.docker.containers.is_empty(), "the finished step applied");
+    }
+
+    #[test]
+    fn plan_retry_has_new_completion_without_repeating_success_effects() {
+        let mut w = armed_world();
+        let uses = w.docker.cleanup_uses;
+        w.plan_mut(ID)
+            .expect("plan")
+            .steps
+            .iter_mut()
+            .find(|s| s.id == "images")
+            .expect("step")
+            .fails = true;
+        let first = tick_until(&mut w, |w| {
+            w.plan(ID).expect("plan").phase == PlanPhase::Done
+        });
+        assert_eq!(plan_done_count(&first), 1);
+        assert_eq!(step_state(&w, "images"), StepState::Failed);
+        assert_eq!(w.docker.cleanup_uses, uses + 1);
+        assert_eq!(w.docker.networks, 0, "networks step applied");
+        w.docker.networks = 7;
+
+        let images = w
+            .plan(ID)
+            .expect("plan")
+            .steps
+            .iter()
+            .position(|s| s.id == "images")
+            .expect("step");
+        assert!(w.plan_mut(ID).expect("plan").retry(images));
+        let second = tick_until(&mut w, |w| {
+            w.plan(ID).expect("plan").phase == PlanPhase::Done
+        });
+
+        assert_eq!(plan_done_count(&second), 1, "a retry completes again");
+        assert_eq!(step_state(&w, "images"), StepState::Succeeded);
+        assert_eq!(w.docker.images, 0, "the retried step applied");
+        assert_eq!(w.docker.networks, 7, "the earlier success did not repeat");
+        assert_eq!(
+            w.docker.cleanup_uses,
+            uses + 1,
+            "usage counted once per arm"
+        );
+    }
 }
