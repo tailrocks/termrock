@@ -831,12 +831,13 @@ impl PaneTree {
                 h.hit_pad = self.hit_pad;
             }
             let held = self.grab.as_ref().is_some_and(|g| g.index == i);
-            let saved = ctx.interaction.pressed;
+            let saved = (ctx.interaction.pressed, ctx.interaction.hover);
             if self.dead == Some(id) {
                 ctx.interaction.pressed = None;
+                ctx.interaction.hover = None;
             }
             h.render_held(s.handle, buf, ctx, bg, held);
-            ctx.interaction.pressed = saved;
+            (ctx.interaction.pressed, ctx.interaction.hover) = saved;
             self.handles[i] = h;
         }
         let mut inner = Vec::with_capacity(self.rects.len());

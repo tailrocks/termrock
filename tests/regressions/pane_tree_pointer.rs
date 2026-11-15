@@ -122,6 +122,22 @@ fn splitting_the_tree_during_a_drag_cancels_the_grab() {
 }
 
 #[test]
+fn a_seam_drawn_under_the_dead_gesture_id_is_not_hovered() {
+    let mut rig = rig();
+    let x = rig.seam_x();
+    rig.mouse(MouseKind::Down, Position::new(x, Y));
+    rig.mouse(MouseKind::Drag, Position::new(x, Y));
+
+    rig.tree.split(2, 3, SplitDir::Vertical, false);
+
+    assert_eq!(
+        rig.seam_symbol(),
+        rest_glyph(),
+        "the router still hovers the dead seam id, so the new seam under it must not show hover"
+    );
+}
+
+#[test]
 fn replacing_the_root_during_a_drag_does_not_retarget_the_grab() {
     let mut rig = rig();
     let x = rig.seam_x();
