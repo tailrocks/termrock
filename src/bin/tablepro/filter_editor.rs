@@ -594,7 +594,7 @@ mod issue10_tests {
         let view = |t: &TableTab| {
             (
                 t.filters.clone(),
-                t.chips.chips.clone(),
+                t.chips.chips().to_vec(),
                 t.grid.rows().to_vec(),
                 t.total,
             )
