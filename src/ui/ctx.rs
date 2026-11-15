@@ -124,6 +124,8 @@ pub struct RenderCtx<'a> {
     pub peek: Option<String>,
 
     pub(crate) shifts: Vec<Shift>,
+
+    render_mutated: bool,
 }
 
 pub(crate) type Shift = std::rc::Rc<std::cell::Cell<(u16, u16)>>;
@@ -209,6 +211,7 @@ impl<'a> RenderCtx<'a> {
             reveal_hint: None,
             peek: None,
             shifts: Vec::new(),
+            render_mutated: false,
             reveal_slot: {
                 crate::ui::reveal::clear_cuts();
                 crate::ui::reveal::begin_frame();
@@ -239,8 +242,20 @@ impl<'a> RenderCtx<'a> {
             reveal_hint: None,
             peek: None,
             shifts: Vec::new(),
+            render_mutated: false,
             reveal_slot: crate::ui::reveal::Slot::default(),
         }
+    }
+
+    /// Records that a widget changed its own state while rendering, after
+    /// widgets drawn earlier in the frame already read the old state. The
+    /// shell settle repaints the frame once when this is set.
+    pub(crate) fn note_render_mutation(&mut self) {
+        self.render_mutated = true;
+    }
+
+    pub(crate) fn render_mutated(&self) -> bool {
+        self.render_mutated
     }
 
     pub fn control(&mut self, id: WidgetId, area: Rect, disabled: bool) {

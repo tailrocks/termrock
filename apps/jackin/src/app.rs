@@ -167,20 +167,6 @@ pub struct App {
     host_menus: Menus<HostCmd>,
     host_menu_route: Route,
     intro_guard: u8,
-    /// An input changed the screen, so the next tick paints once more.
-    ///
-    /// Remove this when the shell settle can see widget state that changes
-    /// during render. While a layer is open the page footer is drawn before
-    /// the layers render, and a dialog's confirmation `TextInput` turns
-    /// `editing` on inside its own render (`begin_focus_edit`). The page
-    /// footer of that frame therefore lacks the EDIT badge, and its bold
-    /// residue under the modal footer differs from the settled frame (the
-    /// `j06_exit_exit` baseline). `shell::render` (#17) repaints only when
-    /// focus, hover or press differ after a pass, and here none does, so it
-    /// cannot cover this even once it lands. Until the shell settle gains
-    /// such a signal (follow-up to #17), the next tick repaints. Idle ticks
-    /// never do.
-    settle_frame: bool,
     pub clipboard_gen: u32,
     exit_after_status: Option<i64>,
     external: Option<ExternalReceiver>,
@@ -243,7 +229,6 @@ impl App {
             host_menus,
             host_menu_route: Route::Manager,
             intro_guard: 3,
-            settle_frame: false,
             clipboard_gen: 0,
             exit_after_status: None,
             external: None,
@@ -566,7 +551,6 @@ impl App {
         {
             self.world.dismiss_committed_save_warning();
         }
-        let is_tick = matches!(input, Input::Tick);
         let out = match input {
             Input::Resize(..) => Outcome::Changed,
             Input::Tick => self.tick_step(),
@@ -574,11 +558,7 @@ impl App {
             Input::External(external) => self.on_external(&external),
             other => shell::KeyRouter::input(self, other),
         };
-        let out = out.or(self.deliver_due());
-        if !is_tick && out == Outcome::Changed {
-            self.settle_frame = true;
-        }
-        out
+        out.or(self.deliver_due())
     }
 
     /// Delivers the replies that are due now, and the ones they start, so an
@@ -628,8 +608,7 @@ impl App {
         let interval = self.route().tick_ms(true) as i64;
         let tick = self.world.tick_with_changes(interval);
         self.held.extend(tick.messages);
-        let mut out = if std::mem::take(&mut self.settle_frame)
-            || self.animating()
+        let mut out = if self.animating()
             || !tick.summaries_changed.is_empty()
             || tick.panes_changed.iter().any(|id| self.shows_panes_of(id))
         {

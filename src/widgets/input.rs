@@ -653,6 +653,9 @@ impl TextInput {
 
         let has_focus = ctx.interaction.has_focus(self.id) && !ctx.inert;
         if has_focus && !self.focus_seen && self.entry == EditEntry::Immediate {
+            if !self.editing && !self.disabled {
+                ctx.note_render_mutation();
+            }
             self.begin_focus_edit();
         } else if !ctx.interaction.has_focus(self.id)
             && self.entry == EditEntry::Immediate
@@ -662,6 +665,7 @@ impl TextInput {
         {
             self.editing = false;
             self.field.buffer.clear_selection();
+            ctx.note_render_mutation();
         }
         self.focus_seen = has_focus;
         let area = area.intersection(*buf.area());

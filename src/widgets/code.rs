@@ -833,8 +833,14 @@ impl CodeEditor {
         self.field.keys = self.field_keys.or(ctx.theme.field_keys).unwrap_or_default();
 
         let shown = ctx.interaction.focused(self.id) && !ctx.inert;
-        if shown && !self.focus_seen && self.entry == EditEntry::Immediate && !self.read_only {
+        if shown
+            && !self.focus_seen
+            && self.entry == EditEntry::Immediate
+            && !self.read_only
+            && !self.editing
+        {
             self.begin_edit();
+            ctx.note_render_mutation();
         }
         self.focus_seen = shown;
         let area = area.intersection(*buf.area());
@@ -860,6 +866,7 @@ impl CodeEditor {
         if (!held || self.read_only) && self.editing {
             self.commit();
             s.editing = false;
+            ctx.note_render_mutation();
         }
         let focused = s.focused;
         ctx.control(self.id, area, false);
