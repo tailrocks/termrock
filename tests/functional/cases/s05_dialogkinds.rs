@@ -1594,15 +1594,24 @@ fn form_toggle_hides_an_open_driver_popup_and_keeps_its_choice() {
     see(&popup, &["MySQL", "PostgreSQL"], &[]);
 
     app.key("ctrl+d");
-    let hidden = app.wait_absent("MySQL");
-    see(&hidden, &["Host"], &["SQLite", "Driver", "Form · Changed"]);
+    app.wait_absent("MySQL");
+    let hidden = app.settle();
+    see(
+        &hidden,
+        &["Host"],
+        &["SQLite", "Driver", "PostgreSQL", "Form · Changed"],
+    );
 
     app.key("ctrl+d");
-    let shown = app.wait_text("Driver");
+    // PostgreSQL is absent while the field is hidden, so waiting for it syncs
+    // on the reveal. A popup that survived the hide paints on that frame or
+    // just after it, so settle before looking.
+    app.wait_text("PostgreSQL");
+    let shown = app.settle();
     see(
         &shown,
-        &["PostgreSQL"],
-        &["MySQL", "SQLite", "Form · Changed"],
+        &["Driver", "PostgreSQL", "▾"],
+        &["MySQL", "SQLite", "▴", "Form · Changed"],
     );
     close_to_page(&app);
     app.finish();
