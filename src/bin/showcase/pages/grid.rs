@@ -6,7 +6,7 @@ use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, CxExt, Hint, Page, PageEvent};
 use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::focus::BlurAction;
-use junie_tui::core::id::WidgetId;
+use junie_tui::core::id::{ItemKey, WidgetId};
 use junie_tui::core::intent::Phase;
 use junie_tui::core::keymap::{Actions, KeyBinding, KeyMap, NavKeys, hint_key, label_for};
 use junie_tui::core::pointer::{MouseTarget, PointerEvent};
@@ -377,6 +377,7 @@ fn strict(spec: &ColumnSpec, text: &str) -> Result<CellValue, String> {
         ("tier", CellValue::Text(s)) if s.is_empty() => {
             Err("A support tier is required: pick one".into())
         }
+        ("tier", CellValue::Null) => Err("A support tier is required: pick one".into()),
         _ => Ok(parsed),
     }
 }
@@ -888,6 +889,21 @@ impl GridPage {
         Outcome::Changed
     }
 
+    /// Names the row an undo touched by the key the action carries: the id
+    /// the grid shows for it, or a draft row that has no id yet.
+    fn undone_row(&self, key: ItemKey) -> String {
+        match self
+            .grid
+            .source_index(key)
+            .map(|src| self.grid.value(src, 0))
+        {
+            Some(id) if !matches!(id, CellValue::Null | CellValue::Default) => {
+                format!("row {}", id.text())
+            }
+            _ => "a draft row".to_owned(),
+        }
+    }
+
     fn on_event(&mut self, ev: Option<GridAction>, cx: &mut Cx) {
         match ev {
             Some(GridAction::CellChanged { .. }) => {
@@ -895,7 +911,13 @@ impl GridPage {
             }
             Some(GridAction::RowInserted(_)) => cx.status("Row inserted · fill it in, then Save"),
             Some(GridAction::RowDeleted(_)) => cx.status("Row queued for deletion · u undoes"),
-            Some(GridAction::Undone(undone)) => cx.status(undo_status(undone.kind)),
+            Some(GridAction::Undone(undone)) => {
+                cx.status(format!(
+                    "{} ({})",
+                    undo_status(undone.kind),
+                    self.undone_row(undone.key)
+                ));
+            }
             Some(GridAction::FetchMore) => {
                 let from = self.grid.len();
                 match self.grid.try_append_rows(page(
@@ -1592,6 +1614,45 @@ mod tests {
         assert!(
             rig.page.reload_guard.pending().is_none(),
             "a clean grid reloads without asking"
+        );
+    }
+
+    #[test]
+    fn undo_status_names_the_row_by_its_key() {
+        let mut rig = Rig::new();
+        let key = rig.page.grid.row_key(1).expect("row 1 has a key");
+        let id = rig.page.grid.value(1, 0).text();
+        rig.with_cx(|page, cx| {
+            page.on_event(
+                Some(GridAction::Undone(junie_tui::widgets::grid::GridUndo {
+                    key,
+                    kind: GridUndoKind::Cell,
+                })),
+                cx,
+            );
+        });
+        assert_eq!(
+            rig.last_status(),
+            format!("Undid a cell edit (row {id})"),
+            "{:?}",
+            rig.statuses
+        );
+    }
+
+    #[test]
+    fn strict_tier_rejects_a_cleared_cell() {
+        let cols = columns(true);
+        let tier = cols.iter().find(|c| c.name == "tier").expect("tier column");
+        for text in ["", "NULL"] {
+            assert_eq!(
+                strict(tier, text),
+                Err("A support tier is required: pick one".to_owned()),
+                "{text:?}"
+            );
+        }
+        assert_eq!(
+            strict(tier, "priority"),
+            Ok(CellValue::Text("priority".into()))
         );
     }
 
