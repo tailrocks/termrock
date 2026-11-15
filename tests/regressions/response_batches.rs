@@ -3,7 +3,9 @@
 use crate::common::*;
 use junie_tui::core::event::Outcome;
 use junie_tui::core::id::WidgetId;
-use junie_tui::core::response::{Actions, Flow, Invalidate, Response};
+use junie_tui::core::response::{
+    Actions, ActionsIntoIter, ActionsIter, Flow, Invalidate, Response,
+};
 use junie_tui::widgets::grid::{
     CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridRows, RowTotal,
 };
@@ -392,4 +394,73 @@ fn tree_both_collapse_still_activates() {
         .branch_activate(BranchAction::Both);
     let r = t.on_key(&key(KeyCode::Enter));
     assert_eq!(actions(r), vec![TreeAction::Activate(vec![0])]);
+}
+
+// ----- Actions iterators ----------------------------------------------------
+
+#[test]
+fn actions_iter_zero_and_one_use_the_small_representation() {
+    let none: Actions<u8> = Actions::None;
+    let it = none.iter();
+    assert!(matches!(it, ActionsIter::Small(_)));
+    assert_eq!(it.len(), 0);
+    assert!(none.iter().next().is_none());
+
+    let one = Actions::One(7u8);
+    let it = one.iter();
+    assert!(matches!(it, ActionsIter::Small(_)));
+    assert_eq!(it.len(), 1);
+    assert_eq!(one.iter().copied().collect::<Vec<_>>(), vec![7]);
+}
+
+#[test]
+fn actions_iter_many_yields_every_action_in_order() {
+    let many = Actions::Many(vec![1u8, 2, 3]);
+    let it = many.iter();
+    assert!(matches!(it, ActionsIter::Many(_)));
+    assert_eq!(it.len(), 3);
+    assert_eq!(many.iter().copied().collect::<Vec<_>>(), vec![1, 2, 3]);
+}
+
+#[test]
+fn actions_into_iter_small_and_many_keep_count_and_order() {
+    let none: Actions<u8> = Actions::None;
+    let it: ActionsIntoIter<u8> = none.into_iter();
+    assert!(matches!(it, ActionsIntoIter::Small(_)));
+    assert_eq!(it.len(), 0);
+
+    let one: ActionsIntoIter<u8> = Actions::One(7).into_iter();
+    assert!(matches!(one, ActionsIntoIter::Small(_)));
+    assert_eq!(one.len(), 1);
+    assert_eq!(one.collect::<Vec<_>>(), vec![7]);
+
+    let many: ActionsIntoIter<u8> = Actions::Many(vec![4, 5, 6]).into_iter();
+    assert!(matches!(many, ActionsIntoIter::Many(_)));
+    assert_eq!(many.len(), 3);
+    assert_eq!(
+        Actions::Many(vec![4, 5, 6]).into_iter().collect::<Vec<_>>(),
+        vec![4, 5, 6]
+    );
+}
+
+#[test]
+fn response_actions_and_into_actions_report_zero_one_and_many_in_order() {
+    let none: Response<u8> = Response::consumed();
+    assert_eq!(none.actions().len(), 0);
+    assert!(none.actions().next().is_none());
+    assert!(matches!(none.into_actions(), Actions::None));
+
+    let one = Response::emit(4u8);
+    assert_eq!(one.actions().len(), 1);
+    assert_eq!(one.actions().copied().collect::<Vec<_>>(), vec![4]);
+    assert_eq!(actions(one), vec![4]);
+
+    let mut many = Response::emit(1u8);
+    many.push_action(2);
+    many.push_action(3);
+    assert_eq!(many.actions().len(), 3);
+    assert_eq!(many.actions().copied().collect::<Vec<_>>(), vec![1, 2, 3]);
+    let owned: ActionsIntoIter<u8> = many.into_actions().into_iter();
+    assert!(matches!(owned, ActionsIntoIter::Many(_)));
+    assert_eq!(owned.collect::<Vec<_>>(), vec![1, 2, 3]);
 }
