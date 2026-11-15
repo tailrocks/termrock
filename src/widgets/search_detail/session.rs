@@ -3,7 +3,7 @@ use ratatui::crossterm::event::KeyCode;
 use super::projection::{self, Move, Selectable, Slot};
 use super::{
     MissingSelection, QueryRequest, QueryToken, SearchAction, SearchCmd, SearchConfig, SearchError,
-    SearchFocusMode, SearchSource, SelectionOwner, fresh_owner,
+    SearchFocusMode, SearchSource, fresh_owner,
 };
 use crate::core::edit::{EditKind, TextCmd};
 use crate::core::event::Key;
@@ -77,6 +77,9 @@ pub struct SearchSession {
     column: usize,
     context_intent: Option<ItemKey>,
     press_was_selected: bool,
+    /// A paint moved the selection off a cell it left out. The composition
+    /// reports it with the next response.
+    relocated: bool,
 }
 
 impl SearchSession {
@@ -95,6 +98,7 @@ impl SearchSession {
             column: 0,
             context_intent: None,
             press_was_selected: false,
+            relocated: false,
         }
     }
 
@@ -134,9 +138,64 @@ impl SearchSession {
             .map(|accepted| accepted.text.as_str())
     }
 
-    /// Whether `key` is an enabled item or cell of the displayed results.
+    /// Whether `key` is an enabled item or cell of the displayed results that
+    /// the last paint placed.
     pub fn is_selectable(&self, key: ItemKey) -> bool {
-        self.slot(key).is_some_and(|slot| slot.enabled)
+        self.slot(key).is_some_and(|slot| slot.selectable())
+    }
+
+    /// Records which cells of `row` the paint placed. A cell it left out is
+    /// skipped by navigation and cannot run until a later paint places it.
+    ///
+    /// Placement is part of what the selection may rest on. When the paint
+    /// leaves out the selected cell, the selection moves to the nearest placed
+    /// cell, or clears when none is placed, so no key or detail action can
+    /// reach a cell the user cannot see.
+    pub(super) fn place_cells(&mut self, row: usize, placed: &[usize]) {
+        let Some(accepted) = self.accepted.as_mut() else {
+            return;
+        };
+        let start = accepted.slots.partition_point(|s| s.row < row);
+        let end = accepted.slots.partition_point(|s| s.row <= row);
+        for slot in &mut accepted.slots[start..end] {
+            slot.placed = placed.contains(&slot.cell);
+        }
+        let Some(at) = self
+            .state
+            .cursor()
+            .and_then(|key| self.state.visible_index(key))
+            .filter(|&at| (start..end).contains(&at) && !accepted.slots[at].placed)
+        else {
+            return;
+        };
+        let target = projection::nearest_selectable(&accepted.slots, at);
+        let moved = match target {
+            Some(to) => {
+                let slot = accepted.slots[to];
+                self.column = slot.cell;
+                self.state.set_cursor(slot.key)
+            }
+            None => self.state.clear_cursor(),
+        };
+        self.relocated |= moved;
+        self.drop_stale_intent();
+    }
+
+    /// Whether a paint moved the selection since the last response.
+    pub(super) fn take_relocation(&mut self) -> bool {
+        std::mem::take(&mut self.relocated)
+    }
+
+    pub(super) fn has_relocation(&self) -> bool {
+        self.relocated
+    }
+
+    /// The selected key, when it may act: displayed results that answer the
+    /// newest request and a cell or item the last paint placed.
+    fn actionable(&self) -> Option<ItemKey> {
+        self.state
+            .cursor()
+            .filter(|&key| self.is_interactive() && self.is_selectable(key))
     }
 
     pub fn phase(&self) -> SearchPhase {
@@ -188,26 +247,6 @@ impl SearchSession {
     fn slot(&self, key: ItemKey) -> Option<&Slot> {
         let at = self.state.visible_index(key)?;
         self.accepted.as_ref()?.slots.get(at)
-    }
-
-    fn external(&self) -> bool {
-        self.config.selection_owner == SelectionOwner::External
-    }
-
-    /// Reports the host's own cursor under [`SelectionOwner::External`]. The
-    /// key must be an enabled key of the displayed results. No
-    /// [`SearchAction::SelectionChanged`] comes back: the host moved first.
-    pub fn set_selection(&mut self, key: ItemKey) -> Reply {
-        if !self.external() || !self.is_selectable(key) {
-            return Response::ignored();
-        }
-        let before = self.state.cursor();
-        if !self.state.set_cursor(key) || before == Some(key) {
-            return Response::ignored();
-        }
-        self.column = self.slot(key).map_or(0, |slot| slot.cell);
-        self.drop_stale_intent();
-        Response::changed()
     }
 
     fn can_navigate(&self) -> bool {
@@ -367,9 +406,7 @@ impl SearchSession {
 
     fn drop_stale_intent(&mut self) {
         let key = self.context_intent;
-        let alive = key.is_some_and(|key| {
-            self.state.cursor() == Some(key) && self.is_interactive() && self.slot(key).is_some()
-        });
+        let alive = key.is_some_and(|key| self.actionable() == Some(key));
         if !alive {
             self.context_intent = None;
         }
@@ -507,9 +544,6 @@ impl SearchSession {
     }
 
     fn navigate(&mut self, mv: Move) -> Reply {
-        if self.external() {
-            return Response::ignored();
-        }
         let from = self
             .state
             .cursor()
@@ -543,9 +577,6 @@ impl SearchSession {
 
     /// Selects `key` if it is an enabled key of the displayed results.
     pub fn select(&mut self, key: ItemKey) -> Reply {
-        if self.external() {
-            return Response::ignored();
-        }
         if !self.can_navigate() {
             return Response::consumed();
         }
@@ -560,30 +591,26 @@ impl SearchSession {
     }
 
     fn activate(&mut self) -> Reply {
-        match self.state.cursor() {
-            Some(key) if self.is_interactive() => Response::emit(SearchAction::Activate(key)),
-            _ => Response::consumed(),
+        match self.actionable() {
+            Some(key) => Response::emit(SearchAction::Activate(key)),
+            None => Response::consumed(),
         }
     }
 
     /// Emits a host-named detail action against the selected key, captured now
     /// so it never resolves a position later.
     pub fn detail_action(&mut self, name: &'static str) -> Reply {
-        match self.state.cursor() {
-            Some(key) if self.is_interactive() => {
-                Response::emit(SearchAction::DetailAction { key, name })
-            }
-            _ => Response::consumed(),
+        match self.actionable() {
+            Some(key) => Response::emit(SearchAction::DetailAction { key, name }),
+            None => Response::consumed(),
         }
     }
 
     /// Emits activation of detail item `index` against the selected key.
     pub fn detail_item(&mut self, index: usize) -> Reply {
-        match self.state.cursor() {
-            Some(key) if self.is_interactive() => {
-                Response::emit(SearchAction::DetailItem { key, index })
-            }
-            _ => Response::consumed(),
+        match self.actionable() {
+            Some(key) => Response::emit(SearchAction::DetailItem { key, index }),
+            None => Response::consumed(),
         }
     }
 
@@ -596,9 +623,6 @@ impl SearchSession {
             return Response::ignored();
         }
         self.press_was_selected = self.state.cursor() == Some(key);
-        if self.external() {
-            return Response::consumed();
-        }
         Response::consumed().merge(self.select(key))
     }
 
@@ -651,8 +675,8 @@ impl SearchSession {
     /// [`ContextConfig`](crate::ui::context::ContextConfig)'s, applied by the
     /// composition.
     pub fn begin_context(&mut self) -> Reply {
-        match self.state.cursor() {
-            Some(key) if self.is_interactive() => {
+        match self.actionable() {
+            Some(key) => {
                 self.context_intent = Some(key);
                 Response::changed()
             }

@@ -9,21 +9,21 @@ use super::{
     SearchSession, SearchSource,
 };
 use crate::core::event::Key;
-use crate::core::focus::Focus;
+use crate::core::focus::{Focus, FocusChange};
 use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
 use crate::core::intent::Phase;
 use crate::core::list::{KeyedRowSource, RowSource, SourceStamp};
 use crate::core::pointer::PointerEvent;
 use crate::core::response::Response;
-use crate::theme::Tone;
 use crate::ui::context::{ContextAnchor, ContextRequest, ContextSource};
 use crate::ui::ctx::{RenderCtx, fill, legible_on_fill};
 use crate::ui::layout::Split;
-use crate::ui::text::{fit, truncate};
+use crate::ui::text::truncate;
 use crate::widgets::edit::EditField;
 use crate::widgets::input::TextInput;
-use crate::widgets::list_detail::{Event, ListDetail, ListDetailSource, MasterRow, SourceFrame};
-use ratatui::style::Modifier;
+use crate::widgets::list_detail::{
+    Event, ListDetail, ListDetailSource, MasterRow, MasterWidths, SourceFrame, paint_master_row,
+};
 
 type Reply = Response<SearchAction>;
 
@@ -68,13 +68,28 @@ pub struct RowPaint<'a, S: ?Sized> {
     /// The displayed results are not the newest answer: loading or failed.
     /// Paint them dimmed; they cannot be acted on.
     pub stale: bool,
+    owner: WidgetId,
     cells: &'a mut Vec<(usize, Rect)>,
+}
+
+impl<S: SearchSource + ?Sized> RowPaint<'_, S> {
+    /// The hit region id the widget registers for cell `cell` of this row, for
+    /// hover and pressed state. It exists only for a cell placed with
+    /// [`place_cell`](Self::place_cell).
+    pub fn cell_hit(&self, cell: usize) -> WidgetId {
+        self.owner.part(PartRef::item(
+            Part::CELL,
+            self.source.cell_key(self.row, cell),
+        ))
+    }
 }
 
 impl<S: ?Sized> RowPaint<'_, S> {
     /// Reports where cell `cell` of a [`Cells`](super::ResultRowKind::Cells)
     /// row was drawn. The widget registers its hit region under the cell's
-    /// stable key, so the painter only draws.
+    /// stable key, so the painter only draws. A cell the painter does not
+    /// place was not drawn, so keys, clicks and activation skip it until a
+    /// later paint places it.
     pub fn place_cell(&mut self, cell: usize, rect: Rect) {
         self.cells.push((cell, rect));
     }
@@ -168,6 +183,36 @@ impl SearchDetail {
         self.session.config_mut()
     }
 
+    /// The narrowest area that shows the preview beside the results. Below it
+    /// the results keep the area and show a summary, and the preview opens as
+    /// a drawer. The default is the shared list-detail width.
+    pub fn collapse_below(mut self, width: u16) -> Self {
+        self.list.set_collapse_below(width);
+        self
+    }
+
+    /// Sets the short status text at the right of a [`Separate`](SearchFocusMode::Separate)
+    /// query, for example the active scope. It never changes the query text.
+    pub fn set_query_readout(&mut self, text: &str) {
+        self.session.query_input_mut().set_readout(text);
+    }
+
+    /// Whether the query is being edited, for a host that suspends its own
+    /// single-key shortcuts while text is typed.
+    pub fn editing(&self) -> bool {
+        self.session.query_input().editing
+    }
+
+    /// Ends query editing when focus leaves the query. Other focus changes are
+    /// ignored.
+    pub fn on_blur(&mut self, change: FocusChange) -> Reply {
+        if change.from != self.session.query_input().id {
+            return Response::ignored();
+        }
+        let _ = self.session.query_input_mut().on_blur();
+        self.session.edited_query().repaint()
+    }
+
     /// The results focus owner, and the query's too in Combined mode.
     pub fn id(&self) -> WidgetId {
         self.id
@@ -220,7 +265,14 @@ impl SearchDetail {
     /// preview to its top when the selected key changed.
     fn settle(&mut self, reply: Reply) -> Reply {
         let carried = std::mem::take(&mut self.carried);
-        let reply = carried.merge(reply);
+        let mut reply = carried.merge(reply);
+        if self.session.take_relocation()
+            && !reply
+                .actions()
+                .any(|a| matches!(a, SearchAction::SelectionChanged(_)))
+        {
+            reply.push_action(SearchAction::SelectionChanged(self.session.selected_key()));
+        }
         if reply
             .actions()
             .any(|a| matches!(a, SearchAction::SelectionChanged(_)))
@@ -292,16 +344,6 @@ impl SearchDetail {
         let reply = self.session.fail(token, message)?;
         self.drop_anchors();
         Ok(self.settle(reply))
-    }
-
-    /// Reports the host's own cursor under
-    /// [`SelectionOwner::External`](super::SelectionOwner::External).
-    pub fn set_selection(&mut self, key: ItemKey) -> Reply {
-        let reply = self.session.set_selection(key);
-        if reply.is_consumed() {
-            self.list.reset_detail();
-        }
-        self.settle(reply)
     }
 
     // ---- keyboard ---------------------------------------------------------
@@ -387,7 +429,7 @@ impl SearchDetail {
                 focus.focus(self.query_focus_id());
                 Response::changed()
             }
-            Some(SearchCmd::FocusResults) => {
+            Some(SearchCmd::FocusResults) if !on_results => {
                 focus.focus(self.id);
                 Response::changed()
             }
@@ -435,6 +477,15 @@ impl SearchDetail {
     /// once a paint has placed its key. Call it after rendering. It returns
     /// ignored while nothing is waiting or the key is not on screen yet.
     pub fn emit_pending_context(&mut self) -> Reply {
+        let reply = self.pending_context();
+        if self.session.has_relocation() {
+            self.settle(reply)
+        } else {
+            reply
+        }
+    }
+
+    fn pending_context(&mut self) -> Reply {
         let Some(key) = self.session.context_intent() else {
             return Response::ignored();
         };
@@ -534,13 +585,21 @@ impl SearchDetail {
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
     ) -> Result<(), SearchError> {
+        let widths = self
+            .session
+            .accepted_stamp()
+            .map(|_| self.list.master_widths(source));
         self.render_source_with(
             area,
             source,
             detail,
             buf,
             ctx,
-            |row, buf, ctx| paint_standard_row(&row, buf, ctx),
+            |mut row, buf, ctx| {
+                if let Some(widths) = widths {
+                    paint_standard_row(&mut row, widths, buf, ctx);
+                }
+            },
             paint_query_default,
         )
     }
@@ -584,6 +643,7 @@ impl SearchDetail {
             list,
             anchors,
             scratch,
+            session,
             ..
         } = self;
         anchors.clear();
@@ -603,6 +663,7 @@ impl SearchDetail {
                         selected,
                         stale,
                         (anchors, scratch),
+                        session,
                         &mut paint_row,
                         buf,
                         ctx,
@@ -695,6 +756,7 @@ fn paint_one<S: SearchSource + ?Sized>(
     selected: Option<(usize, usize)>,
     stale: bool,
     (anchors, scratch): (&mut Vec<Anchor>, &mut Vec<(usize, Rect)>),
+    session: &mut SearchSession,
     paint_row: &mut impl FnMut(RowPaint<'_, S>, &mut Buffer, &mut RenderCtx),
     buf: &mut Buffer,
     ctx: &mut RenderCtx,
@@ -714,6 +776,7 @@ fn paint_one<S: SearchSource + ?Sized>(
             selected_cell,
             focused: master.focused,
             stale,
+            owner,
             cells: scratch,
         },
         buf,
@@ -726,7 +789,14 @@ fn paint_one<S: SearchSource + ?Sized>(
             rect: master.rect,
         }),
         super::ResultRowKind::Cells => {
-            for &(cell, rect) in scratch.iter().filter(|(c, _)| *c < source.cell_count(row)) {
+            let count = source.cell_count(row);
+            let placed: Vec<usize> = scratch
+                .iter()
+                .map(|&(cell, _)| cell)
+                .filter(|&cell| cell < count)
+                .collect();
+            session.place_cells(row, &placed);
+            for &(cell, rect) in scratch.iter().filter(|(c, _)| *c < count) {
                 let key = source.cell_key(row, cell);
                 let id = ctx.register_part(owner, PartRef::item(Part::CELL, key), rect);
                 anchors.push(Anchor { key, id, rect });
@@ -768,58 +838,65 @@ pub fn paint_query_default(
 }
 
 fn paint_standard_row<S: SearchDetailSource + ?Sized>(
-    row: &RowPaint<'_, S>,
+    row: &mut RowPaint<'_, S>,
+    widths: MasterWidths,
+    buf: &mut Buffer,
+    ctx: &mut RenderCtx,
+) {
+    let mut data = row.source.row(row.row);
+    data.faint |= row.stale || matches!(row.kind, super::ResultRowKind::Heading);
+    paint_master_row(
+        buf,
+        ctx,
+        row.hit,
+        row.rect,
+        data,
+        row.selected,
+        row.focused,
+        widths,
+    );
+    if row.kind == super::ResultRowKind::Cells {
+        paint_cells(row, widths.label as u16, buf, ctx);
+    }
+}
+
+/// The cells of a [`Cells`](super::ResultRowKind::Cells) row as chips after the
+/// row label. A chip that does not fit is left out and not placed.
+fn paint_cells<S: SearchSource + ?Sized>(
+    row: &mut RowPaint<'_, S>,
+    label_w: u16,
     buf: &mut Buffer,
     ctx: &mut RenderCtx,
 ) {
     let t = ctx.theme;
-    let data = row.source.row(row.row);
-    let mut state = ctx.state(row.hit);
-    state.focused = row.focused && row.selected;
-    state.selected = row.selected;
     let bg = t.canvas;
-    let style = t.row(state, bg);
-    let rect = row.rect;
-    fill(buf, rect, style);
-    buf.set_string(
-        rect.x,
-        rect.y,
-        t.gutter_symbol(state),
-        t.gutter(state, style.bg.unwrap_or(bg), false),
-    );
-    let faint = row.stale || matches!(row.kind, super::ResultRowKind::Heading);
-    let label_style = if faint {
-        style.fg(t.text_muted)
-    } else if state.selected {
-        style.fg(t.accent)
-    } else {
-        style
-    };
-    let x = rect.x + 2;
-    let right = rect.right().saturating_sub(1);
-    let meta_w = crate::ui::text::width(data.meta) as u16;
-    let label_w = right.saturating_sub(x + meta_w + 1) as usize;
-    buf.set_string(
-        x,
-        rect.y,
-        fit(&truncate(data.label, label_w), label_w),
-        label_style,
-    );
-    if meta_w > 0 {
-        buf.set_string(
-            right - meta_w,
-            rect.y,
-            data.meta,
+    let right = row.rect.right().saturating_sub(1);
+    let mut x = row.rect.x + 4 + label_w + 2;
+    for cell in 0..row.source.cell_count(row.row) {
+        let text = format!(" {} ", row.source.cell_label(row.row, cell));
+        let w = crate::ui::text::width(&text) as u16;
+        if x + w > right {
+            break;
+        }
+        let mut state = ctx.state(row.cell_hit(cell));
+        state.selected = row.selected_cell == Some(cell);
+        state.focused = row.focused && state.selected;
+        state.disabled = !row.source.cell_enabled(row.row, cell);
+        let rect = Rect::new(x, row.rect.y, w, 1);
+        let style = t.row(state, bg);
+        fill(buf, rect, style);
+        let text_style = if row.stale {
+            style.fg(t.text_muted)
+        } else if state.selected {
+            style.fg(t.accent)
+        } else {
             style
-                .fg(t.tone(if row.stale {
-                    Tone::Muted
-                } else {
-                    data.meta_tone
-                }))
-                .remove_modifier(Modifier::BOLD),
-        );
+        };
+        buf.set_string(x, rect.y, &text, text_style);
+        legible_on_fill(buf, rect, t, bg);
+        row.place_cell(cell, rect);
+        x += w + 1;
     }
-    legible_on_fill(buf, rect, t, bg);
 }
 
 impl ContextSource for SearchDetail {
