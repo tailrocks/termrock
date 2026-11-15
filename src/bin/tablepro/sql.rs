@@ -269,16 +269,6 @@ fn trim_range(src: &str, mut a: usize, mut b: usize) -> (usize, usize) {
     (a, b)
 }
 
-pub fn statement_at(src: &str, cursor: usize) -> Option<(usize, usize)> {
-    let stmts = split_statements(src);
-    stmts
-        .iter()
-        .copied()
-        .find(|&(a, b)| cursor >= a && cursor <= b)
-        .or_else(|| stmts.iter().copied().rev().find(|&(_, b)| b <= cursor))
-        .or_else(|| stmts.first().copied())
-}
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum Cmp {
     Eq,
