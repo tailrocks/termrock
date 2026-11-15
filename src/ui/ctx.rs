@@ -151,7 +151,7 @@ fn shifted(shifts: Vec<Shift>, draw: OverlayFn) -> OverlayFn {
             screen.width,
             screen.height,
         );
-        let mut off = Buffer::empty(view);
+        let mut off = scratch_buffer(view);
         copy_cells(buf, screen, &mut off, view.as_position());
         let mark = ctx.hits.mark();
         let cursor = ctx.cursor;
@@ -173,6 +173,13 @@ fn shifted(shifts: Vec<Shift>, draw: OverlayFn) -> OverlayFn {
     })
 }
 
+/// An off-screen buffer. Every production scratch allocation goes through here
+/// so `AllocatedBufferCells` counts it.
+pub(crate) fn scratch_buffer(area: Rect) -> Buffer {
+    crate::record_work!(AllocatedBufferCells, area.area());
+    Buffer::empty(area)
+}
+
 pub(crate) fn copy_cells(from: &Buffer, area: Rect, to: &mut Buffer, at: Position) -> usize {
     let area = area.intersection(from.area);
     let mut copied = 0;
@@ -186,6 +193,7 @@ pub(crate) fn copy_cells(from: &Buffer, area: Rect, to: &mut Buffer, at: Positio
             if to.area.contains(p) {
                 to[(p.x, p.y)] = from[(area.x + x, area.y + y)].clone();
                 copied += 1;
+                crate::record_work!(BufferCellsCopied, 1usize);
             }
         }
     }

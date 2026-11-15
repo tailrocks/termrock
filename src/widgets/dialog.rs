@@ -1171,7 +1171,7 @@ impl Dialog {
             }
             DialogBody::Facts { facts, code, ack } => {
                 let sheet_area = Rect::new(0, 0, inner.width, content);
-                let mut sheet = Buffer::empty(sheet_area);
+                let mut sheet = crate::ui::ctx::scratch_buffer(sheet_area);
                 fill(&mut sheet, sheet_area, ratatui::style::Style::new().bg(bg));
                 crate::widgets::props::render(sheet_area, &mut sheet, t, facts, bg);
                 let facts_h = crate::widgets::props::measure(facts, inner.width);

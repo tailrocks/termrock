@@ -731,3 +731,6 @@ impl Page for FinderPage {
         Some(&mut self.template)
     }
 }
+
+#[cfg(all(test, feature = "work-metrics"))]
+pub(crate) const ACTION_COUNT: usize = ACTIONS.len();

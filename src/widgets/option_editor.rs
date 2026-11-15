@@ -646,7 +646,7 @@ impl ChoiceEditor {
             .inner(ratatui::layout::Margin::new(1, 1));
         if search > 0 {
             let line = Rect::new(inner.x + 3, inner.y, inner.width.saturating_sub(3), 1);
-            let mut scratch = Buffer::empty(line);
+            let mut scratch = crate::ui::ctx::scratch_buffer(line);
             self.query
                 .draw_line(&mut scratch, line, &Self::query_look(ctx.theme));
         }

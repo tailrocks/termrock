@@ -15,6 +15,9 @@ mod store;
 mod tabs;
 mod workbench;
 
+#[cfg(all(test, feature = "work-metrics"))]
+mod work_metrics_tests;
+
 use clap::{CommandFactory, Parser, error::ErrorKind};
 use junie_tui::cli::CommonArgs;
 

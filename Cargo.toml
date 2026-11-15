@@ -25,6 +25,7 @@ default = ["cli", "terminal"]
 cli = ["dep:clap", "dep:regex"]
 terminal = ["dep:termpane"]
 product = ["terminal"]
+work-metrics = []
 
 [lib]
 name = "junie_tui"

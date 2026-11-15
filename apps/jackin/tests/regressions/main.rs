@@ -18,3 +18,4 @@ mod product_support;
 
 mod navigation_focus;
 mod smoke;
+mod work_budgets;

@@ -3426,6 +3426,7 @@ impl DataGrid {
 
         let flagged_msg = String::new();
         for (i, d) in self.scroll.visible_range().enumerate() {
+            crate::record_work!(VisibleRowsPainted, 1usize);
             let y = body.y + i as u16;
             let row_rect = Rect::new(
                 grid_area.x,

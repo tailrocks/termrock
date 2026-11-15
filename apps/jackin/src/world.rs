@@ -1408,6 +1408,7 @@ impl World {
         let roster = self.roster();
         let mut panes_changed = Vec::new();
         for (id, d) in self.daemons.iter_mut() {
+            junie_tui::record_work!(SchedulingRecordsVisited, 1usize);
             self.projection.work.count_running_lookup();
             if !roster.is_running(id) {
                 continue;

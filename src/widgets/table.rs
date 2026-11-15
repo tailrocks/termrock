@@ -2320,6 +2320,7 @@ impl DataTable {
         }
 
         for (i, di) in self.scroll.visible_range().enumerate() {
+            crate::record_work!(VisibleRowsPainted, 1usize);
             let y = body.y + i as u16;
             let src = self.order[di];
             let row_rect = Rect::new(

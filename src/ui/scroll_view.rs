@@ -9,7 +9,7 @@ use crate::core::keymap::{Actions, KeyMap};
 use crate::core::pointer::PointerEvent;
 use crate::core::response::Response;
 use crate::core::scroll::{ScrollPane, Scrollable, ScrollbarVisibility, TrackClick};
-use crate::ui::ctx::{RenderCtx, Shift, copy_cells};
+use crate::ui::ctx::{RenderCtx, Shift, copy_cells, scratch_buffer};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Axes {
@@ -562,7 +562,7 @@ impl ScrollView {
         ctx.shifts.push(shift.clone());
 
         let whole = buf.area.union(l.content);
-        let mut off = Buffer::empty(whole);
+        let mut off = scratch_buffer(whole);
         self.work.allocated = off.content().len();
         self.work.copied += copy_cells(buf, buf.area, &mut off, buf.area.as_position());
         let mut blank = Cell::default();
@@ -573,6 +573,7 @@ impl ScrollView {
             for x in l.content.left()..l.content.right() {
                 off[(x, y)] = blank.clone();
                 self.work.filled += 1;
+                crate::record_work!(BufferCellsFilled, 1usize);
             }
         }
         ScrollFrame {
@@ -608,6 +609,7 @@ impl ScrollView {
                     if !l.content.contains(p) {
                         buf[(x, y)] = off[(x, y)].clone();
                         self.work.copied += 1;
+                        crate::record_work!(BufferCellsCopied, 1usize);
                     }
                 }
             }

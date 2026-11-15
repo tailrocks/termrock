@@ -826,6 +826,7 @@ impl ListBox {
             if y >= area.bottom() {
                 break;
             }
+            crate::record_work!(VisibleRowsPainted, 1usize);
             let item = rows.item(li);
             let hit_key = rows.hit_key(li);
             let block = expanded.as_ref().filter(|_| li == self.core.cursor);

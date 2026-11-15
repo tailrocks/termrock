@@ -132,7 +132,7 @@ impl DetailCard {
             panel = panel.meta(m);
         }
         if self.fit {
-            let mut scratch = Buffer::empty(card);
+            let mut scratch = crate::ui::ctx::scratch_buffer(card);
             let probe = panel.render(card, &mut scratch, t);
             let chrome = card.height.saturating_sub(probe.height);
             let need = usize::from(chrome)

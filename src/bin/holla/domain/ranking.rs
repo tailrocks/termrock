@@ -135,6 +135,7 @@ pub fn search_with(
     let text = q.text.trim().to_lowercase();
     let words: Vec<&str> = text.split_whitespace().collect();
     let mut out = vec![];
+    junie_tui::record_work!(RankRowsVisited, items.len());
     for (i, item) in items.iter().enumerate() {
         if item.hidden && !has_query {
             continue;

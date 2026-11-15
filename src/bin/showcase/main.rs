@@ -7,6 +7,9 @@ mod inspector;
 mod options;
 mod pages;
 
+#[cfg(all(test, feature = "work-metrics"))]
+mod work_metrics_tests;
+
 use crate::app::{App, NavExpand, PageId};
 use clap::{Parser, ValueEnum};
 use junie_tui::cli::CommonArgs;

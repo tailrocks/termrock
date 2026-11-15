@@ -281,6 +281,8 @@ impl Actions for TreeCmd {
 
 fn label_matches(label: &str, query: &str) -> bool {
     let lowered = label.to_lowercase();
+    crate::record_work!(LabelsNormalized, 1usize);
+    crate::record_work!(LabelBytesNormalized, lowered.len());
     #[cfg(test)]
     work::record_label_test(lowered.len());
     lowered.contains(query)
@@ -1188,6 +1190,7 @@ impl TreeView {
                 need <= row_w
             });
         for (i, ri) in self.core.scroll.visible_range().enumerate() {
+            crate::record_work!(VisibleRowsPainted, 1usize);
             let y = area.y + i as u16;
             let row = rows.row(ri);
             let hit = rows.hit_key(ri);
