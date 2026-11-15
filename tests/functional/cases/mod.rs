@@ -93,6 +93,7 @@ mod s10_workspaces;
 mod t01_advanced;
 mod t01_basic;
 mod t01_connections;
+mod t01_identity;
 mod t01_leave;
 mod t01_test;
 mod t02_commit;

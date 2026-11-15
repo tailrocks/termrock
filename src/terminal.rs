@@ -1,4 +1,4 @@
-use ratatui::buffer::Buffer;
+use ratatui::buffer::{Buffer, CellWidth};
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Position, Rect};
 use ratatui::style::{Color, Modifier, Style};
@@ -327,6 +327,11 @@ fn style(cell: &termpane::Cell, with_color: bool, defaults: Defaults) -> Style {
     style
 }
 
+/// Paints `view` into `area`, keeping every emitted symbol inside the part of
+/// `area` that overlaps `buf`. Source cell `(row, col)` always lands at
+/// `area` origin plus `(col, row)`, so clipping on the left or top never
+/// shifts the picture. A wide symbol that does not fit completely becomes a
+/// blank cell with its own style.
 fn paint_view(
     view: &TermView<'_>,
     area: Rect,
@@ -334,17 +339,38 @@ fn paint_view(
     with_color: bool,
     defaults: Defaults,
 ) {
-    for row in 0..area.height.min(view.rows()) {
-        for col in 0..area.width.min(view.cols()) {
+    let visible = area.intersection(*buf.area());
+    if visible.is_empty() {
+        return;
+    }
+    let rows = area.height.min(view.rows());
+    let cols = area.width.min(view.cols());
+    let right = visible.right().min(area.x + cols);
+    let first_row = visible.y - area.y;
+    let first_col = visible.x - area.x;
+    for row in first_row..rows.min(visible.bottom() - area.y) {
+        let y = area.y + row;
+        for col in first_col..cols {
+            let x = area.x + col;
+            if x >= right {
+                break;
+            }
             let Some(cell) = view.cell(row, col) else {
                 continue;
             };
-            if cell.is_wide_continuation() {
-                continue;
-            }
-            let target = &mut buf[(area.x + col, area.y + row)];
             let text = cell.text();
-            target.set_symbol(if text.is_empty() { " " } else { text });
+            let symbol = if cell.is_wide_continuation() {
+                if x > visible.x {
+                    continue;
+                }
+                " "
+            } else if text.is_empty() || !(1..=right - x).contains(&text.cell_width()) {
+                " "
+            } else {
+                text
+            };
+            let target = &mut buf[(x, y)];
+            target.set_symbol(symbol);
             target.set_style(style(cell.cell, with_color, defaults));
         }
     }
@@ -356,6 +382,7 @@ impl Widget for TerminalView<'_> {
         paint_view(&view, area, buf, self.color, TERMINAL_DEFAULTS);
         if self.focused
             && let Some(at) = self.state.cursor(area)
+            && buf.area().contains(at)
         {
             let target = &mut buf[(at.x, at.y)];
             target.modifier.toggle(Modifier::REVERSED);
