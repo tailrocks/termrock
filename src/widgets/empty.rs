@@ -5,7 +5,8 @@ use ratatui::style::Color;
 use crate::core::id::WidgetId;
 use crate::theme::Theme;
 use crate::ui::ctx::RenderCtx;
-use crate::widgets::button::Button;
+use crate::ui::measure::terminal_extent;
+use crate::widgets::button::{Button, place_lines};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum EmptyKind {
@@ -106,9 +107,13 @@ pub fn render_ctx(area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, e: &EmptySt
         .hint
         .as_ref()
         .map(|h| crate::ui::text::wrap(h, area.width.saturating_sub(4).max(8) as usize).len() + 1)
-        .unwrap_or(0) as u16;
-    let total = 1 + hint_rows;
-    let y = text.y + text.height.saturating_sub(total) / 2 + total + 1;
+        .unwrap_or(0);
+    let total = terminal_extent(1usize.saturating_add(hint_rows));
+    let y = text
+        .y
+        .saturating_add(text.height.saturating_sub(total) / 2)
+        .saturating_add(total)
+        .saturating_add(1);
     if y >= area.bottom() {
         return;
     }
@@ -124,13 +129,14 @@ pub fn render_ctx(area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, e: &EmptySt
         })
         .collect();
     let gap = ctx.theme.spacing.button_gap;
-    let widths: Vec<u16> = buttons.iter().map(Button::width).collect();
-    let total_w = widths.iter().sum::<u16>() + gap * widths.len().saturating_sub(1) as u16;
-    let x = area.x + area.width.saturating_sub(total_w) / 2;
-    let rects = crate::widgets::button::row_layout(
-        Rect::new(x, y, total_w.min(area.width), 1),
+    let widths: Vec<usize> = buttons.iter().map(Button::intrinsic_width).collect();
+    let total_w = button_row_width(&widths, gap);
+    let x = area.x + area.width.saturating_sub(terminal_extent(total_w)) / 2;
+    let rects = place_lines(
+        Rect::new(x, y, terminal_extent(total_w).min(area.width), 1),
         &widths,
         gap,
+        false,
     );
     for (b, r) in buttons.iter_mut().zip(rects) {
         b.render(r, buf, ctx, bg);
@@ -147,11 +153,13 @@ pub fn render(area: Rect, buf: &mut Buffer, t: &Theme, e: &EmptyState, bg: Color
         .as_ref()
         .map(|h| crate::ui::text::wrap(h, area.width.saturating_sub(4).max(8) as usize))
         .unwrap_or_default();
-    let total = 1 + if hint_lines.is_empty() {
-        0
-    } else {
-        hint_lines.len() + 1
-    } as u16;
+    let total = terminal_extent(
+        1 + if hint_lines.is_empty() {
+            0
+        } else {
+            hint_lines.len() + 1
+        },
+    );
     let y0 = area.y + area.height.saturating_sub(total) / 2;
     let put = |buf: &mut Buffer, y: u16, s: &str, style: ratatui::style::Style| {
         if y >= area.bottom() {
@@ -182,54 +190,77 @@ pub fn render(area: Rect, buf: &mut Buffer, t: &Theme, e: &EmptyState, bg: Color
         }
     }
     for (i, l) in hint_lines.iter().enumerate() {
-        put(buf, y0 + 2 + i as u16, l, t.faint());
+        put(
+            buf,
+            y0.saturating_add(2).saturating_add(terminal_extent(i)),
+            l,
+            t.faint(),
+        );
     }
 }
 
 const SAMPLE_ID: WidgetId = WidgetId::of("empty-sample");
 
+/// Rows the state needs at `width`, saturating at `u16::MAX`.
 pub fn height(e: &EmptyState, width: u16) -> u16 {
     let hint = e
         .hint
         .as_ref()
         .map(|h| crate::ui::text::wrap(h, width.saturating_sub(4).max(8) as usize).len() + 1)
-        .unwrap_or(0) as u16;
+        .unwrap_or(0);
     let actions = if e.actions.is_empty() { 0 } else { 2 };
-    1 + hint + actions
+    terminal_extent(hint.saturating_add(1 + actions))
+}
+
+fn button_row_width(widths: &[usize], gap: u16) -> usize {
+    widths
+        .iter()
+        .fold(0usize, |a, w| a.saturating_add(*w))
+        .saturating_add(usize::from(gap).saturating_mul(widths.len().saturating_sub(1)))
+}
+
+impl EmptyState {
+    fn action_row_width(&self, gap: u16) -> usize {
+        let widths: Vec<usize> = self
+            .actions
+            .iter()
+            .map(|a| Button::secondary(a.id, &a.label).intrinsic_width())
+            .collect();
+        button_row_width(&widths, gap)
+    }
+
+    fn title_width(&self) -> usize {
+        crate::ui::text::width(&self.title).saturating_add(if self.kind == EmptyKind::Error {
+            2
+        } else {
+            0
+        })
+    }
 }
 
 impl crate::ui::measure::Measure for EmptyState {
     fn measure(&self, _avail: ratatui::layout::Size, ctx: &RenderCtx) -> ratatui::layout::Size {
-        let w = |s: &str| crate::ui::text::width(s) as u16;
-        let title = w(&self.title) + if self.kind == EmptyKind::Error { 2 } else { 0 };
-        let hint = self.hint.as_deref().map(|h| w(h) + 4).unwrap_or(0);
-        let gap = ctx.theme.spacing.button_gap;
-        let buttons = self
-            .actions
-            .iter()
-            .map(|a| Button::secondary(a.id, &a.label).width())
-            .sum::<u16>()
-            + gap * self.actions.len().saturating_sub(1) as u16;
-        let width = title.max(hint).max(buttons);
+        let hint = self
+            .hint
+            .as_deref()
+            .map(|h| crate::ui::text::width(h).saturating_add(4))
+            .unwrap_or(0);
+        let buttons = self.action_row_width(ctx.theme.spacing.button_gap);
+        let width = terminal_extent(self.title_width().max(hint).max(buttons));
         ratatui::layout::Size::new(width, height(self, width))
     }
 
     fn min_width(&self, avail: ratatui::layout::Size, ctx: &RenderCtx) -> u16 {
-        let w = |s: &str| crate::ui::text::width(s) as u16;
+        let w = crate::ui::text::width;
         let full = self.measure(avail, ctx).width;
         let hint = self.hint.as_deref().map_or(0, |h| {
             let word = h.split_whitespace().map(w).max().unwrap_or(0);
-            (w(h).min(HINT_MIN)).max(word) + 4
+            (w(h).min(usize::from(HINT_MIN)))
+                .max(word)
+                .saturating_add(4)
         });
-        let title = w(&self.title) + if self.kind == EmptyKind::Error { 2 } else { 0 };
-        let gap = ctx.theme.spacing.button_gap;
-        let buttons = self
-            .actions
-            .iter()
-            .map(|a| Button::secondary(a.id, &a.label).width())
-            .sum::<u16>()
-            + gap * self.actions.len().saturating_sub(1) as u16;
-        title.max(hint).max(buttons).min(full)
+        let buttons = self.action_row_width(ctx.theme.spacing.button_gap);
+        terminal_extent(self.title_width().max(hint).max(buttons)).min(full)
     }
 }
 

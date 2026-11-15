@@ -3,6 +3,7 @@ use ratatui::layout::Rect;
 use ratatui::style::Color;
 
 use crate::ui::ctx::RenderCtx;
+use crate::ui::measure::terminal_extent;
 use crate::widgets::action_row::ActionRow;
 use crate::widgets::button::Button;
 use crate::widgets::empty::{self, EmptyState};
@@ -134,8 +135,10 @@ impl DetailCard {
             let mut scratch = crate::ui::ctx::scratch_buffer(card);
             let probe = panel.render(card, &mut scratch, t);
             let chrome = card.height.saturating_sub(probe.height);
-            let need = chrome + props::measure(&self.props, probe.width) + self.reserve;
-            card.height = card.height.min(need);
+            let need = usize::from(chrome)
+                .saturating_add(usize::from(props::measure(&self.props, probe.width)))
+                .saturating_add(usize::from(self.reserve));
+            card.height = card.height.min(terminal_extent(need));
         }
         let cbg = panel.bg(t);
         let inner = panel.render(card, buf, t);

@@ -10,6 +10,7 @@ use crate::core::keymap::NavKeys;
 use crate::core::list::{Cursor, Navigable, RowFn, RowSource};
 use crate::theme::{ButtonKind, Kind};
 use crate::ui::ctx::RenderCtx;
+use crate::ui::measure::terminal_extent;
 use crate::ui::text::width;
 use crate::ui::tooltip::Tip;
 use crate::widgets::icon_button::IconButton;
@@ -66,13 +67,13 @@ impl ToolItem {
         self
     }
 
-    fn width(&self) -> u16 {
-        let mut w = 1 + width(&self.label) as u16 + 1;
+    fn intrinsic_width(&self) -> usize {
+        let mut w = 1usize.saturating_add(width(&self.label)).saturating_add(1);
         if self.on.is_some() {
-            w += 2;
+            w = w.saturating_add(2);
         }
         if let Some(s) = &self.shortcut {
-            w += width(s) as u16 + 1;
+            w = w.saturating_add(width(s)).saturating_add(1);
         }
         w
     }
@@ -265,12 +266,31 @@ impl Toolbar {
         self.id.item_of(id, Part::ROW, 0..self.items.len())
     }
 
+    /// Natural width of every item, gap and separator, saturating at `u16::MAX`.
+    ///
+    /// Overflow decisions use [`Self::intrinsic_width`], so a saturated result
+    /// never hides the More route.
     pub fn width(&self) -> u16 {
-        let n = self.items.len() as u16;
-        let seps = self.items.iter().filter(|i| i.separator_after).count() as u16;
-        self.items.iter().map(ToolItem::width).sum::<u16>()
-            + self.gap * n.saturating_sub(1)
-            + seps * (1 + self.gap)
+        terminal_extent(self.intrinsic_width())
+    }
+
+    /// Display width of every item, measured once per layout.
+    fn item_widths(&self) -> Vec<usize> {
+        self.items.iter().map(ToolItem::intrinsic_width).collect()
+    }
+
+    fn total_width(&self, widths: &[usize]) -> usize {
+        let gap = usize::from(self.gap);
+        let seps = self.items.iter().filter(|i| i.separator_after).count();
+        widths
+            .iter()
+            .fold(0usize, |a, &w| a.saturating_add(w))
+            .saturating_add(gap.saturating_mul(self.items.len().saturating_sub(1)))
+            .saturating_add(seps.saturating_mul(1 + gap))
+    }
+
+    pub(crate) fn intrinsic_width(&self) -> usize {
+        self.total_width(&self.item_widths())
     }
 
     fn activate(&mut self, i: usize) -> Option<ToolbarAction> {
@@ -390,10 +410,12 @@ impl Toolbar {
             None => self.more_button.with_glyph(t.glyphs.more_titles),
         };
         let more_w = more.width(t);
-        let overflowing = self.overflow && n > 0 && self.width() > area.width;
+        let widths = self.item_widths();
+        let overflowing =
+            self.overflow && n > 0 && self.total_width(&widths) > usize::from(area.width);
 
         let limit = if overflowing {
-            area.right().saturating_sub(more_w + self.gap)
+            area.right().saturating_sub(more_w.saturating_add(self.gap))
         } else {
             area.right()
         };
@@ -401,10 +423,9 @@ impl Toolbar {
         let mut x = area.x;
 
         let mut sep_at: Option<u16> = None;
-        for i in 0..n {
+        for (i, w) in widths.iter().copied().enumerate() {
             let it = &self.items[i];
-            let w = it.width();
-            if x + w > limit {
+            if w > usize::from(limit.saturating_sub(x)) {
                 if overflowing {
                     self.hidden.extend(i..n);
                     if let Some(sx) = sep_at {
@@ -414,6 +435,7 @@ impl Toolbar {
                 break;
             }
             sep_at = None;
+            let w = terminal_extent(w);
             let r = Rect::new(x, y, w, 1);
             self.areas[i] = r;
             let iid = self.item_id(i);
@@ -467,7 +489,7 @@ impl Toolbar {
                 };
                 crate::ui::tooltip::show(ctx, iid, r, &tip, None);
             }
-            x += w + self.gap;
+            x = x.saturating_add(w).saturating_add(self.gap);
             if it.separator_after && x < limit {
                 sep_at = Some(x);
                 buf.set_string(
@@ -476,7 +498,7 @@ impl Toolbar {
                     t.glyphs.divider,
                     ratatui::style::Style::new().fg(t.border_subtle).bg(bg),
                 );
-                x += 1 + self.gap;
+                x = x.saturating_add(1).saturating_add(self.gap);
             }
         }
         if self.hidden.is_empty() {

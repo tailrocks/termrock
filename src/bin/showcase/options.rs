@@ -4,6 +4,7 @@ use ratatui::style::Color;
 
 use crate::app::PageId;
 use crate::pages::layout::Sections;
+use crate::pages::stress;
 use crate::pages::{Cx, Hint, PageEvent};
 use junie_tui::core::event::Outcome;
 use junie_tui::core::id::WidgetId;
@@ -623,6 +624,7 @@ pub static CHIPS: &[Opt] = &[
         &["default", "vim"],
     ),
     Opt::new("chipsselects.mixed", "Sort shows mixed", OFF_ON),
+    Opt::new("chipsselects.stress", "Stress data", stress::VALUES),
 ];
 
 #[derive(Debug, Clone)]
@@ -833,6 +835,7 @@ static CHROME: &[Opt] = &[
     Opt::new("chrome.nav", "Nav keys", &["default", "vim"]),
     Opt::new("chrome.dismiss", "Dismiss", &["light", "escape"]),
     Opt::new("chrome.brand", "Brand", &["lockup", "compact", "none"]),
+    Opt::new("chrome.stress", "Stress data", stress::VALUES),
 ];
 
 static STATUS_HINTS: &[Opt] = &[
@@ -924,6 +927,7 @@ static BREADCRUMBS_RAILS: &[Opt] = &[
     Opt::new("breadcrumbsrails.collapsed_rail", "Collapsed rail", OFF_ON)
         .default(1)
         .needs(&[("breadcrumbsrails.collapsed", "on")]),
+    Opt::new("breadcrumbsrails.stress", "Stress data", stress::VALUES),
 ];
 
 static HELP_KEYS: &[Opt] = &[
@@ -1048,6 +1052,7 @@ pub static TOOLBARS: &[Opt] = &[
     Opt::new("toolbars.skip_disabled", "Skip disabled", OFF_ON).default(1),
     Opt::new("toolbars.gap", "Gap", &["0", "1", "2"]).default(1),
     Opt::new("toolbars.overflow", "Overflow button", &["»", "…", "off"]),
+    Opt::new("toolbars.stress", "Stress data", stress::VALUES),
 ];
 
 pub static FOCUS_NAV: &[Opt] = &[

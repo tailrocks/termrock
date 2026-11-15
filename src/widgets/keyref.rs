@@ -64,7 +64,7 @@ impl KeyReference {
             .max()
             .unwrap_or(0);
         match total {
-            Some(w) => widest.min(w * self.key_max_share as usize / 100),
+            Some(w) => widest.min(percent_of(w, self.key_max_share)),
             None => widest,
         }
     }
@@ -102,6 +102,13 @@ impl KeyReference {
     }
 }
 
+/// `floor(w * percent / 100)` without overflowing for any `w`, clamping
+/// `percent` to 100 at use.
+fn percent_of(w: usize, percent: u16) -> usize {
+    let p = usize::from(percent.min(100));
+    (w / 100) * p + ((w % 100) * p) / 100
+}
+
 const SPECIMEN_W: usize = 32;
 
 impl crate::ui::specimen::Specimen for KeyReference {
@@ -120,7 +127,7 @@ impl crate::ui::specimen::Specimen for KeyReference {
         } else {
             SPECIMEN_W
         };
-        self.sample(state).lines(w).len().max(1) as u16
+        crate::ui::measure::terminal_extent(self.sample(state).lines(w).len().max(1))
     }
 
     fn specimen(
@@ -144,7 +151,9 @@ impl crate::ui::specimen::Specimen for KeyReference {
             .collect();
         let key_w = r.key_column(Some(area.width as usize));
         for (i, line) in r.lines(area.width as usize).iter().enumerate() {
-            let y = area.y + i as u16;
+            let y = area
+                .y
+                .saturating_add(crate::ui::measure::terminal_extent(i));
             if y >= area.bottom() {
                 break;
             }
@@ -176,5 +185,41 @@ impl KeyReference {
             );
         }
         r
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn intrinsic_key_reference_max_width_and_share() {
+        let r = |share: u16| {
+            let mut r = KeyReference::new().key("Ctrl+K", "palette");
+            r.key_max_share = share;
+            r
+        };
+        for share in [0u16, 40, 100, u16::MAX] {
+            let widest = 6;
+            let expect = if share == 0 { 0 } else { widest };
+            assert_eq!(
+                r(share).key_column(Some(usize::MAX)),
+                expect,
+                "share {share}"
+            );
+            assert_eq!(
+                r(share).key_column(Some(10)),
+                (10 * usize::from(share.min(100)) / 100).min(widest)
+            );
+            let lines = r(share).lines(usize::MAX);
+            assert!(lines.len() <= 2, "share {share}");
+        }
+        assert_eq!(percent_of(usize::MAX, 100), usize::MAX);
+        assert_eq!(
+            percent_of(usize::MAX, 40),
+            usize::MAX / 100 * 40 + usize::MAX % 100 * 40 / 100
+        );
+        assert_eq!(percent_of(250, u16::MAX), 250);
+        assert_eq!(percent_of(250, 40), 100);
     }
 }

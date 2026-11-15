@@ -5,6 +5,8 @@ use ratatui::style::{Color, Modifier};
 use crate::core::id::WidgetId;
 use crate::theme::Tone;
 use crate::ui::ctx::RenderCtx;
+use crate::ui::fitting::{removal_order, work};
+use crate::ui::measure::terminal_extent;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Segment {
@@ -55,23 +57,99 @@ impl Segment {
     }
 }
 
+const SEP: usize = 2;
+
+/// Natural width of both segment groups, saturating at `u16::MAX`.
 pub fn width(left: &[Segment], right: &[Segment], t: &crate::theme::Theme) -> u16 {
-    let sep = 2u16;
-    let w: u16 = left
-        .iter()
-        .chain(right)
-        .map(|s| crate::ui::text::width(&s.shown()) as u16 + sep)
-        .sum();
-    w.saturating_sub(sep) + 2 * t.spacing.chrome_edge
+    terminal_extent(intrinsic_width(left, right, t))
 }
 
+fn intrinsic_width(left: &[Segment], right: &[Segment], t: &crate::theme::Theme) -> usize {
+    left.iter()
+        .chain(right)
+        .map(|s| crate::ui::text::width(&s.shown()).saturating_add(SEP))
+        .fold(0usize, usize::saturating_add)
+        .saturating_sub(SEP)
+        .saturating_add(2 * usize::from(t.spacing.chrome_edge))
+}
+
+/// Narrowest width that still shows the strongest segment, saturating at
+/// `u16::MAX`.
 pub fn min_width(left: &[Segment], right: &[Segment], t: &crate::theme::Theme) -> u16 {
     let strongest = left
         .iter()
         .chain(right)
         .max_by_key(|s| s.priority)
-        .map_or(0, |s| crate::ui::text::width(&s.shown()) as u16);
-    strongest + 2 + 1 + 2 * t.spacing.chrome_edge
+        .map_or(0, |s| crate::ui::text::width(&s.shown()));
+    terminal_extent(
+        strongest
+            .saturating_add(2 + 1)
+            .saturating_add(2 * usize::from(t.spacing.chrome_edge)),
+    )
+}
+
+/// What a layout shows: each segment's display text and width, measured once,
+/// and which ones survive. `left` entries come first, then `right`.
+pub(crate) struct Plan {
+    pub shown: Vec<String>,
+    pub widths: Vec<usize>,
+    pub keep: Vec<bool>,
+}
+
+/// Drops the weakest segments until the rest fits `avail` cells.
+///
+/// Removal order is the lowest priority first. On a tie a right segment goes
+/// before a left one, the rightmost right segment first and the leftmost left
+/// segment first. One sort fixes that order and running totals replace a survivor
+/// scan per removal. The totals are exact in `u128`.
+pub(crate) fn plan(left: &[Segment], right: &[Segment], edge: u16, avail: u16) -> Plan {
+    let shown: Vec<String> = left.iter().chain(right).map(Segment::shown).collect();
+    let widths: Vec<usize> = shown.iter().map(|s| crate::ui::text::width(s)).collect();
+    let mut keep = vec![true; shown.len()];
+    let edges = 2 * u128::from(edge);
+    let avail = u128::from(avail);
+    let need = |kept: u128, gone: bool| {
+        let more = if gone { 1 + SEP as u128 } else { 0 };
+        (kept + more).saturating_sub(SEP as u128) + edges
+    };
+    let mut kept: u128 = widths
+        .iter()
+        .map(|&w| {
+            work::visit();
+            w as u128 + SEP as u128
+        })
+        .sum();
+    if need(kept, false) <= avail {
+        return Plan {
+            shown,
+            widths,
+            keep,
+        };
+    }
+    let keys: Vec<(u8, u8, usize)> = left
+        .iter()
+        .enumerate()
+        .map(|(i, s)| (s.priority, 1, i))
+        .chain(
+            right
+                .iter()
+                .enumerate()
+                .map(|(i, s)| (s.priority, 0, usize::MAX - i)),
+        )
+        .collect();
+    for gone in removal_order(&keys) {
+        work::visit();
+        keep[gone] = false;
+        kept -= widths[gone] as u128 + SEP as u128;
+        if need(kept, true) <= avail {
+            break;
+        }
+    }
+    Plan {
+        shown,
+        widths,
+        keep,
+    }
 }
 
 pub fn render(
@@ -87,51 +165,18 @@ pub fn render(
         return;
     }
     let t = ctx.theme;
-    let sep = 2u16;
+    let sep = SEP as u16;
 
     let edge = t.spacing.chrome_edge;
-    let w = |s: &Segment| crate::ui::text::width(&s.shown()) as u16;
-
-    let mut keep_l: Vec<bool> = vec![true; left.len()];
-    let mut keep_r: Vec<bool> = vec![true; right.len()];
-    let total = |kl: &[bool], kr: &[bool]| -> u16 {
-        let l: u16 = left
-            .iter()
-            .zip(kl)
-            .filter(|(_, k)| **k)
-            .map(|(s, _)| w(s) + sep)
-            .sum();
-        let r: u16 = right
-            .iter()
-            .zip(kr)
-            .filter(|(_, k)| **k)
-            .map(|(s, _)| w(s) + sep)
-            .sum();
-
-        let gone = kl.iter().chain(kr).any(|k| !k);
-        let more = if gone { 1 + sep } else { 0 };
-
-        (l + r + more).saturating_sub(sep) + 2 * edge
-    };
-    while total(&keep_l, &keep_r) > area.width {
-        let mut best: Option<(u8, bool, usize)> = None;
-        for (i, s) in left.iter().enumerate() {
-            if keep_l[i] && best.is_none_or(|b| s.priority < b.0) {
-                best = Some((s.priority, true, i));
-            }
-        }
-        for (i, s) in right.iter().enumerate() {
-            if keep_r[i] && best.is_none_or(|b| s.priority <= b.0) {
-                best = Some((s.priority, false, i));
-            }
-        }
-        match best {
-            Some((_, true, i)) => keep_l[i] = false,
-            Some((_, false, i)) => keep_r[i] = false,
-            None => break,
-        }
-    }
-    let draw = |buf: &mut Buffer, ctx: &mut RenderCtx, x: u16, s: &Segment| {
+    let Plan {
+        shown,
+        widths,
+        keep,
+    } = plan(left, right, edge, area.width);
+    let (keep_l, keep_r) = keep.split_at(left.len());
+    let (shown_l, shown_r) = shown.split_at(left.len());
+    let (width_l, width_r) = widths.split_at(left.len());
+    let draw = |buf: &mut Buffer, ctx: &mut RenderCtx, x: u16, s: &Segment, shown: &str| {
         let mut st = match s.id {
             Some(id) => {
                 let mut vs = ctx.state(id);
@@ -147,9 +192,9 @@ pub fn render(
         }
         let pad = u16::from(s.id.is_some());
         let text = if s.id.is_some() {
-            format!(" {} ", s.shown())
+            format!(" {shown} ")
         } else {
-            s.shown()
+            shown.to_owned()
         };
         buf.set_string(x, area.y, &text, st);
         if let Some((g, tone)) = &s.lead {
@@ -169,41 +214,40 @@ pub fn render(
         }
     };
     let mut x = area.x + edge;
-    for (s, k) in left.iter().zip(&keep_l) {
-        if !k {
+    for (i, s) in left.iter().enumerate() {
+        if !keep_l[i] {
             continue;
         }
-        let sw = w(s) + if s.id.is_some() { 2 } else { 0 };
+        let sw = terminal_extent(width_l[i]) + if s.id.is_some() { 2 } else { 0 };
         let start = if s.id.is_some() {
             x.saturating_sub(1)
         } else {
             x
         };
-        draw(buf, ctx, start, s);
+        draw(buf, ctx, start, s, &shown_l[i]);
         x += sw.saturating_sub(if s.id.is_some() { 2 } else { 0 }) + sep;
     }
     let mut rx = area.right().saturating_sub(edge);
-    for (s, k) in right.iter().zip(&keep_r).rev() {
-        if !k {
+    for (i, s) in right.iter().enumerate().rev() {
+        if !keep_r[i] {
             continue;
         }
-        let sw = w(s);
+        let sw = terminal_extent(width_r[i]);
         rx = rx.saturating_sub(sw);
         let start = if s.id.is_some() {
             rx.saturating_sub(1)
         } else {
             rx
         };
-        draw(buf, ctx, start, s);
+        draw(buf, ctx, start, s, &shown_r[i]);
         rx = rx.saturating_sub(sep);
     }
 
-    let hidden: Vec<String> = left
+    let hidden: Vec<&str> = shown
         .iter()
-        .zip(&keep_l)
-        .chain(right.iter().zip(&keep_r))
+        .zip(&keep)
         .filter(|(_, k)| !**k)
-        .map(|(s, _)| s.shown())
+        .map(|(s, _)| s.as_str())
         .collect();
     if !hidden.is_empty() && area.width > 2 * edge {
         let at = if right.is_empty() {

@@ -1,0 +1,154 @@
+//! Overflow fitting does work linear in the number of items. The counters read
+//! real work (display-width evaluations, fitting-loop visits, sort comparisons),
+//! never elapsed time, and every case goes through the public widget path.
+
+use ratatui::buffer::Buffer;
+use ratatui::layout::Rect;
+
+use crate::core::focus::FocusRing;
+use crate::core::hit::HitRegistry;
+use crate::core::id::WidgetId;
+use crate::theme::{ColorLevel, Theme, Tone};
+use crate::ui::ctx::{Interaction, RenderCtx};
+use crate::ui::fitting::work::{self, Work};
+use crate::widgets::breadcrumb::Breadcrumb;
+use crate::widgets::chips::{Chip, ChipBar, overflow_run_cells};
+use crate::widgets::hintbar::{HintBar, HintLayer};
+use crate::widgets::keyhint::Hint;
+use crate::widgets::segments::{self, Segment};
+use crate::widgets::statusbar::{StatusBar, StatusItem};
+use crate::widgets::toolbar::{ToolItem, Toolbar};
+
+const ID: WidgetId = WidgetId::of("overflow.work");
+const SIZES: [usize; 3] = [250, 500, 1000];
+
+fn theme() -> Theme {
+    Theme::for_level(ColorLevel::TrueColor)
+}
+
+fn frame<R>(w: u16, h: u16, f: impl FnOnce(&mut Buffer, &mut RenderCtx<'_>) -> R) -> R {
+    let theme = theme();
+    let mut buf = Buffer::empty(Rect::new(0, 0, w, h));
+    let mut hits = HitRegistry::default();
+    let mut ring = FocusRing::default();
+    let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+    f(&mut buf, &mut ctx)
+}
+
+fn ceil_log2(n: usize) -> u64 {
+    u64::from(usize::BITS - n.saturating_sub(1).leading_zeros())
+}
+
+/// Doubling `n` adds exactly `widths_per_item` evaluations per added item (every
+/// source string measured once, hidden ones never again), at most
+/// `visits_per_item` loop visits, and a sort that stays within `n log n`. `run(n)`
+/// lays out `n` items per collection and `collections` of them.
+fn assert_linear(
+    name: &str,
+    collections: u64,
+    widths_per_item: u64,
+    visits_per_item: u64,
+    run: impl Fn(usize) -> Work,
+) {
+    let runs: Vec<(usize, Work)> = SIZES.iter().map(|&n| (n, run(n))).collect();
+    for pair in runs.windows(2) {
+        let ((n1, w1), (n2, w2)) = (pair[0], pair[1]);
+        let added = (n2 - n1) as u64 * collections;
+        assert_eq!(
+            w2.widths - w1.widths,
+            widths_per_item * added,
+            "{name}: width evaluations for {n1} -> {n2} items ({w1:?} -> {w2:?})"
+        );
+        assert!(
+            w2.visits - w1.visits <= visits_per_item * added,
+            "{name}: loop visits for {n1} -> {n2} items ({w1:?} -> {w2:?})"
+        );
+    }
+    for &(n, w) in &runs {
+        let items = n as u64 * collections;
+        assert!(
+            w.compares <= 2 * items * ceil_log2(items as usize),
+            "{name}: {} comparisons for {items} items",
+            w.compares
+        );
+        assert!(
+            w.visits <= visits_per_item * items + 4,
+            "{name}: {} visits for {items} items",
+            w.visits
+        );
+    }
+}
+
+#[test]
+fn large_overflow_chip_prefix_work_is_linear() {
+    assert_linear("overflow_run_cells", 1, 0, 2, |n| {
+        let widths = vec![1usize; n];
+        work::measure(|| overflow_run_cells(&widths, 80, 1)).1
+    });
+    assert_linear("ChipBar::render", 1, 1, 2, |n| {
+        let mut bar = ChipBar::new(ID);
+        bar.chips = (0..n).map(|_| Chip::new("x")).collect();
+        frame(80, 1, |buf, ctx| {
+            let bg = ctx.theme.canvas;
+            work::measure(|| bar.render(Rect::new(0, 0, 80, 1), buf, ctx, bg)).1
+        })
+    });
+}
+
+#[test]
+fn large_overflow_breadcrumb_work_is_linear() {
+    assert_linear("Breadcrumb::render", 1, 1, 2, |n| {
+        let mut crumbs = Breadcrumb::new(ID, vec!["x".to_owned(); n]);
+        frame(80, 1, |buf, ctx| {
+            let bg = ctx.theme.canvas;
+            work::measure(|| crumbs.render(Rect::new(0, 0, 80, 1), buf, ctx, bg)).1
+        })
+    });
+}
+
+#[test]
+fn large_overflow_segments_work_is_linear() {
+    assert_linear("segments::render", 2, 1, 2, |n| {
+        let seg = |i: usize| Segment::new("x", Tone::Normal).priority((i % 5) as u8);
+        let left: Vec<Segment> = (0..n).map(seg).collect();
+        let right: Vec<Segment> = (0..n).map(seg).collect();
+        frame(80, 1, |buf, ctx| {
+            let bg = ctx.theme.canvas;
+            work::measure(|| segments::render(Rect::new(0, 0, 80, 1), buf, ctx, &left, &right, bg))
+                .1
+        })
+    });
+}
+
+#[test]
+fn large_overflow_statusbar_work_is_linear() {
+    assert_linear("StatusBar::layout", 3, 1, 2, |n| {
+        let item = |i: usize| StatusItem::new("x", Tone::Normal).priority((i % 5) as u8);
+        let mut bar = StatusBar::new();
+        bar.left = (0..n).map(item).collect();
+        bar.center = (0..n).map(item).collect();
+        bar.right = (0..n).map(item).collect();
+        work::measure(|| bar.layout(Rect::new(0, 0, 80, 1))).1
+    });
+}
+
+#[test]
+fn large_overflow_keyhint_work_is_linear() {
+    assert_linear("HintBar::render", 1, 2, 2, |n| {
+        let layer = HintLayer::new((0..n).map(|_| Hint::new("k", "act")).collect());
+        let theme = theme();
+        let mut buf = Buffer::empty(Rect::new(0, 0, 80, 1));
+        work::measure(|| HintBar::render(Rect::new(0, 0, 80, 1), &mut buf, &theme, &layer)).1
+    });
+}
+
+#[test]
+fn large_overflow_toolbar_work_is_linear() {
+    assert_linear("Toolbar::render", 1, 1, 2, |n| {
+        let mut bar = Toolbar::new(ID, (0..n).map(|_| ToolItem::new("x")).collect());
+        frame(80, 1, |buf, ctx| {
+            let bg = ctx.theme.canvas;
+            work::measure(|| bar.render(Rect::new(0, 0, 80, 1), buf, ctx, bg)).1
+        })
+    });
+}
