@@ -3,8 +3,6 @@
 //! Tuiscotti test ids are `[a-z0-9_-]` segments, so the baseline directory is
 //! `pre_refactor/t01_basic/` and each checkpoint's dots become underscores.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{App, Launch, Point, TABLEPRO, find_all, row_text, text, try_launch};
@@ -43,7 +41,6 @@ fn open() -> App {
     launch.rows = 40;
     launch.color = Some("truecolor".to_string());
     launch.motion = Some("reduced".to_string());
-    launch.clock = true;
     let app = try_launch(launch).unwrap_or_else(|error| panic!("{error}"));
     app.wait_text("Filter connections");
     app
@@ -168,7 +165,7 @@ fn click_cancel(app: &App) {
 /// columns the header omits the size chip, and the narrow nudge waits on the
 /// terminal size instead.
 fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.settle_flash();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");

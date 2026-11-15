@@ -4,8 +4,6 @@
 //! `pre_refactor/t01_advanced/` and each case id's dots become underscores.
 //! TablePro has no `--page` flag. It opens on the connections screen.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{App, Launch, TABLEPRO, find_all, row_text, text, try_launch};
@@ -172,7 +170,7 @@ fn no_secret(screen: &TerminalSnapshot) {
 /// about 100 columns the header omits the size chip, and the narrow nudge
 /// waits on the terminal size instead.
 fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.settle_flash();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");

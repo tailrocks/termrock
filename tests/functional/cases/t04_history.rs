@@ -353,6 +353,7 @@ fn rerun_uses_the_selected_entry_sql() {
         text(&copied)
     );
 
+    app.expire_status();
     app.key("r");
     let rerun = app.wait_screen("rerun finished and the copy status faded", |screen| {
         let visible = text(screen);

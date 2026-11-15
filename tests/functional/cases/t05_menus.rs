@@ -108,7 +108,7 @@ fn tab_menu(screen: &TerminalSnapshot) -> bool {
 /// does not force one, so the shot nudges the width and comes back. Below about
 /// 100 columns the header omits the size chip.
 fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.settle_flash();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");
@@ -758,6 +758,7 @@ fn tablepro_menus_highlighted_command_is_the_one_that_runs() {
     );
 
     // The "Opened public.products" note lasts 5s. Both frames are taken after it.
+    app.expire_status();
     app.wait_absent("Opened");
     shot(&app, WIDE, 120, 40);
     app.resize(80, 24);

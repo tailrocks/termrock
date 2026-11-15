@@ -3,8 +3,6 @@
 //! Tuiscotti test ids are `[a-z0-9_-]` segments, so the baseline directory is
 //! `pre_refactor/t01_connections/` and the dotted checkpoint ids use underscores.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{App, Launch, TABLEPRO, find_all, row_text, text, try_launch};
@@ -109,7 +107,7 @@ fn click_connect(app: &App) {
 /// columns the header omits the size chip, and the narrow nudge waits on the
 /// terminal size instead.
 fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.settle_flash();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");

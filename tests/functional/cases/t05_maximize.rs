@@ -41,9 +41,6 @@ fn open(name: &str) -> App {
     launch.rows = 40;
     launch.color = Some("truecolor".to_string());
     launch.motion = Some("reduced".to_string());
-    // The connect toast expires after five wall-clock seconds. The test clock
-    // freezes status expiry so the baselines never depend on how long a journey takes.
-    launch.clock = true;
     let app = try_launch(launch).unwrap_or_else(|error| panic!("{error}"));
     app.wait_text("Filter connections");
     app
@@ -189,7 +186,7 @@ fn restored_layout(screen: &TerminalSnapshot) -> bool {
 /// A same-size resize does not force that frame, so nudge one column and return.
 /// Below about 100 columns the header omits the size chip.
 fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.settle_flash();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");
