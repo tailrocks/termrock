@@ -90,6 +90,17 @@ fn see(screen: &TerminalSnapshot, present: &[&str], absent: &[&str]) {
     }
 }
 
+/// The Playground's "Project" card must be gone from the Options page. The
+/// "Project source" option label contains the word, so it is not counted.
+fn assert_no_project_card(screen: &TerminalSnapshot) {
+    let visible = flat(screen).replace("Project source", "");
+    assert!(
+        !visible.contains("Project"),
+        "the Project tree card is still visible on the Options page\n{}",
+        text(screen)
+    );
+}
+
 fn row_with(screen: &TerminalSnapshot, needle: &str) -> String {
     (0..screen.rows())
         .map(|row| row_text(screen, row))
@@ -535,6 +546,7 @@ fn sections_narrow_then_wide() {
             CAP_OPT,
             CAP_STATES,
             "Compare levels",
+            "Project",
             "Cargo.toml",
             WIDE,
             "truecolor",
@@ -699,6 +711,7 @@ fn sections_narrow_then_wide() {
         &[CRUMB, CAP_OPT, WIDE, "Page options"],
         &[CAP_PLAY, CAP_STATES, "Compare levels", "Cargo.toml"],
     );
+    assert_no_project_card(&wide_opt);
     shot(&app, "sc.trees.options.120x40");
     shot(&app, "sc.trees.options");
 
@@ -917,7 +930,7 @@ fn confirm_control(app: &App, check: impl Fn(&TerminalSnapshot)) {
     let screen = app.wait_text("Page options");
     check(&screen);
     click_tab(app, "Playground");
-    app.wait_absent("Page options");
+    app.wait_text(CAP_PLAY);
 }
 
 #[test]
