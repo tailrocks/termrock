@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-focus_fallback-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/target/functional/s01_focus_fallback_first-41891-1794769243603032000-0/check-artifacts/opt-shell-focus_fallback-boundary/ac32fabf8eb1a766c3868369e9f90f84f717bd9515899cf1ab4b957585eda4ec/sample.tui.pb"
+  },
+  "candidate_sha256": "ac32fabf8eb1a766c3868369e9f90f84f717bd9515899cf1ab4b957585eda4ec",
+  "baseline_sha256": "ac32fabf8eb1a766c3868369e9f90f84f717bd9515899cf1ab4b957585eda4ec",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-focus_fallback-boundary.tui.pb"
+  },
+  "error_code": null
+}
