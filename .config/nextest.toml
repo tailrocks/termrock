@@ -47,6 +47,8 @@ default-filter = '''
   | binary_id(=junie-tui::bin/holla) & test(/holla_projection_/)
   | binary_id(=junie-tui::bin/tablepro) & test(/^work_metrics_tests::/)
   | binary_id(=junie-tui::bin/showcase) & test(/^work_metrics_tests::/)
+  | binary_id(=junie-tui) & test(/^runtime::raw_input_tests::work::/)
+  | binary_id(=jackin-console) & test(/^sim::link::tests::work::/)
   | binary_id(=jackin-console::regressions) & test(/^work_budgets::/)
   | binary_id(=jackin-console::world) & test(/^projection_work::/)
   | binary_id(=junie-tui::regressions) & test(=work_measurements::measurement_edit_samples_are_real_changes)
