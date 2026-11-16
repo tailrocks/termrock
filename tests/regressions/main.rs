@@ -45,5 +45,6 @@ mod smoke;
 mod tabs_overflow_mutation;
 mod tiny_dialogs;
 mod toolbar_hidden_cursor;
+mod tree_lazy_root;
 mod work_budgets;
 mod work_measurements;
