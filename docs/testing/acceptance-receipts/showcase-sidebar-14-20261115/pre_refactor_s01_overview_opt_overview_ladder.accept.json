@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s01_overview/opt_overview_ladder",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s01_overview__opt_overview_ladder.tui.pb"
+  },
+  "candidate_sha256": "dd08910a9d7423948ecdb8aa4aa1936c5a5ed27bc62e6c28187fa1e8395ef517",
+  "baseline_sha256": "dd08910a9d7423948ecdb8aa4aa1936c5a5ed27bc62e6c28187fa1e8395ef517",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s01_overview/opt_overview_ladder.tui.pb"
+  },
+  "error_code": null
+}

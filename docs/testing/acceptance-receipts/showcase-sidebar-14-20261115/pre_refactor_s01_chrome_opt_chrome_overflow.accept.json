@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s01_chrome/opt_chrome_overflow",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s01_chrome__opt_chrome_overflow.tui.pb"
+  },
+  "candidate_sha256": "79b7f8c3d443e3a76853cb0c5857676b78a10ec2270f94c03e590ca3c8560b49",
+  "baseline_sha256": "79b7f8c3d443e3a76853cb0c5857676b78a10ec2270f94c03e590ca3c8560b49",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s01_chrome/opt_chrome_overflow.tui.pb"
+  },
+  "error_code": null
+}

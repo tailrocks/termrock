@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-overrides-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__S01.shell__opt-shell-overrides-boundary.tui.pb"
+  },
+  "candidate_sha256": "29995da2ea427b3fd525a0bd806b885f9a2e83319a3dde9532219ac09c1d6ec5",
+  "baseline_sha256": "29995da2ea427b3fd525a0bd806b885f9a2e83319a3dde9532219ac09c1d6ec5",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-overrides-boundary.tui.pb"
+  },
+  "error_code": null
+}

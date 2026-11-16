@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "sc_breadcrumbsrails_specimen_overflow",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__S01.breadcrumbsrails__sc_breadcrumbsrails_specimen_overflow.tui.pb"
+  },
+  "candidate_sha256": "a195f8f8dfbb20b1ee05ed4cdaac534b77b4b166c55577d398e6dd348f3d8a71",
+  "baseline_sha256": "a195f8f8dfbb20b1ee05ed4cdaac534b77b4b166c55577d398e6dd348f3d8a71",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/S01.breadcrumbsrails/sc_breadcrumbsrails_specimen_overflow.tui.pb"
+  },
+  "error_code": null
+}

@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-wheel-lines-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/target/functional/s01-wheel-one-95872-1794771417902511000-0/check-artifacts/opt-shell-wheel-lines-boundary/ac07e303f4475d13b8d5530d3f16fed4df6e28cf0709f6864ad8b59554e99028/sample.tui.pb"
+  },
+  "candidate_sha256": "ac07e303f4475d13b8d5530d3f16fed4df6e28cf0709f6864ad8b59554e99028",
+  "baseline_sha256": "ac07e303f4475d13b8d5530d3f16fed4df6e28cf0709f6864ad8b59554e99028",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-wheel-lines-boundary.tui.pb"
+  },
+  "error_code": null
+}

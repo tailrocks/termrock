@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s01_quitleave/sc_quitleave_compare-levels_120x40",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s01_quitleave__sc_quitleave_compare-levels_120x40.tui.pb"
+  },
+  "candidate_sha256": "b61fca2409ee5d4d669e15279fa9fa1c16ecafff2523ebe76d12b69045c4cf5a",
+  "baseline_sha256": "b61fca2409ee5d4d669e15279fa9fa1c16ecafff2523ebe76d12b69045c4cf5a",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s01_quitleave/sc_quitleave_compare-levels_120x40.tui.pb"
+  },
+  "error_code": null
+}

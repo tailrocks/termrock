@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s02_buttons/sc_buttons_compare-levels_80x24",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s02_buttons__sc_buttons_compare-levels_80x24.tui.pb"
+  },
+  "candidate_sha256": "b329cb5d8791d33ac8217a43eecd22288d0b0793f60448c8120a969eedf5ddb9",
+  "baseline_sha256": "b329cb5d8791d33ac8217a43eecd22288d0b0793f60448c8120a969eedf5ddb9",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s02_buttons/sc_buttons_compare-levels_80x24.tui.pb"
+  },
+  "error_code": null
+}

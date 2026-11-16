@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s01_chrome/sc_chrome_states_120x40",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s01_chrome__sc_chrome_states_120x40.tui.pb"
+  },
+  "candidate_sha256": "f4c5706b399483f4b0fc8a12aabd699d249aec13dc07907e68acf7abfc8d8a94",
+  "baseline_sha256": "f4c5706b399483f4b0fc8a12aabd699d249aec13dc07907e68acf7abfc8d8a94",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s01_chrome/sc_chrome_states_120x40.tui.pb"
+  },
+  "error_code": null
+}

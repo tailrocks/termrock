@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-shift_wheel_horizontal-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__S01.shell__opt-shell-shift_wheel_horizontal-boundary.tui.pb"
+  },
+  "candidate_sha256": "0758e5095e988d9d7d18d363d4c90aa1e10e60409457153e66952ce27e920696",
+  "baseline_sha256": "0758e5095e988d9d7d18d363d4c90aa1e10e60409457153e66952ce27e920696",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-shift_wheel_horizontal-boundary.tui.pb"
+  },
+  "error_code": null
+}

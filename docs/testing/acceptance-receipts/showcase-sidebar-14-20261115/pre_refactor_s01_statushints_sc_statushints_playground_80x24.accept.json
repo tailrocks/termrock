@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s01_statushints/sc_statushints_playground_80x24",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s01_statushints__sc_statushints_playground_80x24.tui.pb"
+  },
+  "candidate_sha256": "a47993825748003b9285872dcb19576c1e02a70e6845554ef47fe6deaeb7f70f",
+  "baseline_sha256": "a47993825748003b9285872dcb19576c1e02a70e6845554ef47fe6deaeb7f70f",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s01_statushints/sc_statushints_playground_80x24.tui.pb"
+  },
+  "error_code": null
+}

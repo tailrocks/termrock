@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s03_columns/sc_columns_seams_after",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s03_columns__sc_columns_seams_after.tui.pb"
+  },
+  "candidate_sha256": "0768e0d0ed72cfd22461c0d77d9b3a3a036dc57d1208912ab781930a89280567",
+  "baseline_sha256": "0768e0d0ed72cfd22461c0d77d9b3a3a036dc57d1208912ab781930a89280567",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s03_columns/sc_columns_seams_after.tui.pb"
+  },
+  "error_code": null
+}
