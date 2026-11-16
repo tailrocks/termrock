@@ -396,8 +396,14 @@ mod grapheme_sample_tests {
             (2, 3),
             "the CJK glyph takes two cells"
         );
+        assert_eq!(measure("right-to-left"), (4, 4), "four Hebrew letters");
         assert_eq!(measure("ZWJ family"), (5, 2), "three emoji and two joiners");
         assert_eq!(measure("flag"), (2, 2), "two regional indicators");
         assert_eq!(measure("skin tone"), (2, 2), "an emoji and its modifier");
+        assert_eq!(
+            GRAPHEME_SAMPLES.len(),
+            6,
+            "a new sample needs its scalar count and width pinned here"
+        );
     }
 }
