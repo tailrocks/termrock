@@ -19,10 +19,10 @@ use junie_tui::core::selection::ClickPolicy;
 use junie_tui::core::text::TextBuffer;
 use junie_tui::theme::{ColorLevel, CursorStyle, Theme, Tone};
 use junie_tui::ui::content::ContentState;
-use junie_tui::ui::ctx::{Backdrop, Interaction, RenderCtx};
+use junie_tui::ui::ctx::{Backdrop, Interaction, RenderCtx, VisualState};
 use junie_tui::ui::measure::Measure;
 use junie_tui::ui::popup::{Dismiss, Place, Placement, backdrop_id};
-use junie_tui::ui::reveal::Reveal;
+use junie_tui::ui::reveal::{Reveal, RevealMode};
 use junie_tui::ui::scroll_view::ScrollView;
 use junie_tui::widgets::completion::{Completion, CompletionAction, TEXT_INSET};
 use junie_tui::widgets::edit::{EditField, LineLook};
@@ -53,7 +53,7 @@ use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Constraint, Position, Rect};
 use ratatui::style::{Color, Modifier};
 
-use super::{ScenarioCase, key, paint_hits, rows};
+use super::{Painted, ScenarioCase, key, paint_hits, rows};
 use crate::coverage::ScenarioId;
 
 #[rustfmt::skip]
@@ -786,6 +786,24 @@ fn completion_lifecycle() {
     let painted = paint_hits(screen, |area, buf, ctx| blocked.render(area, buf, ctx));
     assert!(rows(&painted.buf).join("\n").contains("no access"));
 
+    // `cursor_style` picks how the accepted-next row is drawn.
+    let t = theme();
+    assert_ne!(
+        expected_cursor(CursorStyle::Fill, t.surface_elevated),
+        expected_cursor(CursorStyle::Bar, t.surface_elevated)
+    );
+    for look in [CursorStyle::Fill, CursorStyle::Bar] {
+        let mut styled = Completion::new(ID).cursor_style(look);
+        styled.open(items(), anchor, 0);
+        let painted = paint_hits(screen, |area, buf, ctx| styled.render(area, buf, ctx));
+        let row = region_of(&painted, styled.row_id(styled.list.cursor.index));
+        assert_eq!(
+            drawn_cursor(&painted.buf, row),
+            expected_cursor(look, t.surface_elevated),
+            "{look:?} draws the cursor row"
+        );
+    }
+
     // The defaults of a bare `Completion`. `NAV` leaves Home and End to the
     // text field while paging still moves, the popup stops at
     // `OptionList::MAX_ROWS` rows and sits `TEXT_INSET` columns left of the anchor.
@@ -892,15 +910,11 @@ fn option_list_navigation() {
         (4, (30, 30)),
         "width keeps max >= min"
     );
-    assert_eq!(list.look, CursorStyle::Bar);
-    assert_eq!(list.dismiss, Dismiss::ESCAPE);
-    assert_eq!((list.placement, list.fit), (Placement::Above, Place::FLUSH));
+    // The builders that change looks, dismissal, placement, fit, fading,
+    // hover and the query have their effects asserted in `option_list_effects`.
     assert_eq!(list.nav, NavKeys::VIM);
-    assert!(
-        list.type_ahead && !list.fade_edges && !list.hover_moves_cursor && !list.clear_on_leave
-    );
+    assert!(list.type_ahead);
     assert_eq!(list.wheel, WheelMode::Cursor);
-    assert_eq!(list.query.as_ref().map(|q| q.text()), Some("q"));
 
     // Navigation skips disabled rows and follows the cursor.
     let items: Vec<Item> = [
@@ -1020,6 +1034,279 @@ fn option_list_navigation() {
             (4, Some(3))
         ]
     );
+    option_list_effects();
+}
+
+/// One frame with the pointer over `hover`, keeping the hit regions it registered.
+fn paint_hover(
+    area: Rect,
+    hover: Option<WidgetId>,
+    draw: impl FnOnce(Rect, &mut Buffer, &mut RenderCtx),
+) -> Painted {
+    let theme = theme();
+    let mut buf = Buffer::empty(area);
+    let mut hits = HitRegistry::default();
+    let mut ring = FocusRing::default();
+    {
+        let interaction = Interaction {
+            hover,
+            ..Interaction::default()
+        };
+        let mut ctx = RenderCtx::new(&theme, interaction, &mut hits, &mut ring);
+        draw(area, &mut buf, &mut ctx);
+        ctx.flush_overlays(&mut buf);
+    }
+    Painted { buf, hits }
+}
+
+/// Lays out and paints `list` over `items` filling `area`.
+fn paint_list(
+    list: &mut OptionList,
+    items: &[Item],
+    area: Rect,
+    hover: Option<WidgetId>,
+) -> Painted {
+    paint_hover(area, hover, |area, buf, ctx| {
+        list.layout(area, items, ctx);
+        list.paint_rows(
+            area,
+            ctx.theme.canvas,
+            items,
+            buf,
+            ctx,
+            |i, paint, buf, _| {
+                buf.set_string(
+                    paint.area.x + 1,
+                    paint.area.y,
+                    &items[i].label,
+                    paint.style(),
+                );
+            },
+        );
+    })
+}
+
+/// The area a widget registered for `id` in `painted`.
+fn region_of(painted: &Painted, id: WidgetId) -> Rect {
+    painted
+        .hits
+        .regions()
+        .iter()
+        .find(|r| r.id == id)
+        .map(|r| r.area)
+        .expect("the row registered a hit region")
+}
+
+/// What the highlighted row's first cell shows for `look` on the plane `bg`:
+/// the gutter glyph and the fill colour.
+fn expected_cursor(look: CursorStyle, bg: Color) -> (String, Color) {
+    let t = theme();
+    let focused = VisualState {
+        focused: true,
+        ..VisualState::default()
+    };
+    let row = t.cursor_row(focused, bg, look);
+    (row.gutter.to_owned(), row.style.bg.unwrap_or(bg))
+}
+
+fn drawn_cursor(buf: &Buffer, row: Rect) -> (String, Color) {
+    let cell = &buf[(row.x, row.y)];
+    (cell.symbol().to_owned(), cell.bg)
+}
+
+/// What the builders that change how an `OptionList` looks and behaves do,
+/// observed through painted cells, popup geometry and key and pointer input.
+fn option_list_effects() {
+    const ID: WidgetId = WidgetId::of("scenario.options.effects");
+    let t = theme();
+    let named = |labels: &[&str]| -> Vec<Item> { labels.iter().map(|l| Item::new(*l)).collect() };
+    let area = Rect::new(0, 0, 20, 3);
+
+    // `look` picks how the highlighted row is drawn.
+    assert_ne!(
+        expected_cursor(CursorStyle::Fill, t.canvas),
+        expected_cursor(CursorStyle::Bar, t.canvas),
+        "the two looks differ, so the test can tell them apart"
+    );
+    for look in [CursorStyle::Fill, CursorStyle::Bar] {
+        let items = named(&["one", "two", "three"]);
+        let mut list = OptionList::new(ID.sub("look")).look(look);
+        list.reset(items.len());
+        let painted = paint_list(&mut list, &items, area, None);
+        let row = region_of(&painted, list.row_id(0));
+        assert_eq!(
+            drawn_cursor(&painted.buf, row),
+            expected_cursor(look, t.canvas),
+            "{look:?} draws the highlighted row"
+        );
+    }
+
+    // `fade_edges` dims the rows at an edge that has more rows past it.
+    let many = named(&["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9"]);
+    let tall = Rect::new(0, 0, 20, 6);
+    let label_fg = |fade: bool, row: usize| {
+        let mut list = OptionList::new(ID.sub("fade")).fade_edges(fade);
+        list.reset(many.len());
+        let painted = paint_list(&mut list, &many, tall, None);
+        assert!(list.more_below(many.len()), "rows are cut off below");
+        let at = region_of(&painted, list.row_id(row));
+        painted.buf[(at.x + 1, at.y)].fg
+    };
+    assert_eq!(
+        label_fg(false, 5),
+        label_fg(false, 2),
+        "without fading the rows share an ink"
+    );
+    assert_ne!(
+        label_fg(true, 5),
+        label_fg(false, 5),
+        "the last row fades into the edge"
+    );
+    assert_eq!(
+        label_fg(true, 2),
+        label_fg(false, 2),
+        "a row away from the edge keeps its ink"
+    );
+
+    // `hover_moves_cursor` and `clear_on_leave` decide what the pointer does
+    // to the highlighted row.
+    let items = named(&["one", "two", "three"]);
+    let pointed = |hover_moves: bool, clear: bool| {
+        let mut list = OptionList::new(ID.sub("hover"))
+            .hover_moves_cursor(hover_moves)
+            .clear_on_leave(clear);
+        list.reset(items.len());
+        let row = list.row_id(2);
+        let _ = paint_list(&mut list, &items, area, Some(row));
+        let over = (list.cursor.index, list.highlighted());
+        let _ = paint_list(&mut list, &items, area, None);
+        (over, list.highlighted())
+    };
+    assert_eq!(
+        pointed(true, true),
+        ((2, Some(2)), None),
+        "hovering moves the cursor and leaving clears the highlight"
+    );
+    assert_eq!(
+        pointed(true, false),
+        ((2, Some(2)), Some(2)),
+        "without clear_on_leave the highlight stays on the row left"
+    );
+    assert_eq!(
+        pointed(false, true),
+        ((0, Some(0)), Some(0)),
+        "without hover_moves_cursor the pointer leaves the cursor alone"
+    );
+
+    // `type_ahead_timeout` ends a typed prefix. `r` extends `b` to `br` while
+    // the prefix is alive and matches nothing on its own once it expired. The
+    // list reads the real clock (`TypeAhead::feed`), so the expiry case waits
+    // six times its timeout, which is always past it.
+    let animals = named(&["Alpha", "Beta", "Bravo", "Cat"]);
+    let typed = |timeout: std::time::Duration, pause: std::time::Duration| {
+        let mut list = OptionList::new(ID.sub("typeahead"))
+            .type_ahead(true)
+            .type_ahead_timeout(timeout);
+        list.reset(animals.len());
+        assert_eq!(
+            list.key(&key(KeyCode::Char('b')), &animals[..]),
+            Moved::To(1)
+        );
+        std::thread::sleep(pause);
+        list.key(&key(KeyCode::Char('r')), &animals[..]);
+        list.cursor.index
+    };
+    assert_eq!(
+        typed(
+            std::time::Duration::from_secs(60),
+            std::time::Duration::ZERO
+        ),
+        2,
+        "a live prefix `br` finds Bravo"
+    );
+    assert_eq!(
+        typed(
+            std::time::Duration::from_millis(20),
+            std::time::Duration::from_millis(120)
+        ),
+        1,
+        "an expired prefix restarts, and `r` alone matches no row"
+    );
+
+    // `dismiss`, `placement` and `fit` are read by the popup that hosts the
+    // list. A completion popup hosts one handed in through its public field.
+    let screen = Rect::new(0, 0, 60, 16);
+    let host = |list: OptionList, anchor: Rect| {
+        let mut completion = Completion::new(ID);
+        completion.list = list;
+        completion.open(named(&["alpha", "beta"]), anchor, 0);
+        completion
+    };
+    let anchor = Rect::new(0, 6, 1, 1);
+    let mut escape_only = host(OptionList::new(ID).dismiss(Dismiss::ESCAPE), anchor);
+    assert_eq!(
+        escape_only.on_click(backdrop_id(ID)),
+        None,
+        "an outside click does not dismiss under Dismiss::ESCAPE"
+    );
+    assert!(escape_only.is_open());
+    assert_eq!(
+        escape_only.on_key(&key(KeyCode::Esc)),
+        (Outcome::Changed, Some(CompletionAction::Dismiss))
+    );
+    let click_only = Dismiss {
+        escape: false,
+        ..Dismiss::LIGHT
+    };
+    let mut outside_only = host(OptionList::new(ID).dismiss(click_only), anchor);
+    assert_eq!(
+        outside_only.on_key(&key(KeyCode::Esc)),
+        (Outcome::Ignored, None),
+        "Esc does not dismiss when the policy refuses it"
+    );
+    assert!(outside_only.is_open());
+    assert_eq!(
+        outside_only.on_click(backdrop_id(ID)),
+        Some(CompletionAction::Dismiss)
+    );
+
+    let popup = |list: OptionList, anchor: Rect| {
+        let mut completion = host(list, anchor);
+        let _ = paint_hits(screen, |area, buf, ctx| completion.render(area, buf, ctx));
+        completion.area
+    };
+    let mid = Rect::new(10, 6, 1, 1);
+    assert!(
+        popup(OptionList::new(ID), mid).y > mid.y,
+        "below by default"
+    );
+    let above = popup(OptionList::new(ID).placement(Placement::Above), mid);
+    assert!(above.bottom() <= mid.y, "above the anchor: {above:?}");
+    let edge = Rect::new(0, 6, 1, 1);
+    assert_eq!(
+        popup(OptionList::new(ID), edge).x,
+        1,
+        "the default fit keeps a one column margin"
+    );
+    assert_eq!(
+        popup(OptionList::new(ID).fit(Place::FLUSH), edge).x,
+        0,
+        "a flush fit sits on the screen edge"
+    );
+
+    // `query` gives a picker its search field, which takes the typed text.
+    let mut picker = Picker::new(ID.sub("picker"), "Pick");
+    assert!(
+        picker.is_searchable(),
+        "Picker::new installs the query field"
+    );
+    picker.set_items(fruit()).expect("keyed items");
+    assert_eq!(
+        picker.on_key(&key(KeyCode::Char('b'))),
+        (Outcome::Changed, Some(PickerAction::QueryChanged))
+    );
+    assert_eq!(picker.query(), "b");
+    assert!(drawn(&mut picker, Rect::new(0, 0, 90, 24)).contains(" b"));
 }
 
 fn alt(code: KeyCode) -> Key {
@@ -1154,6 +1441,26 @@ fn picker_single_actions() {
             .expect("builder")
             .is_searchable()
     );
+
+    // `nav` decides which keys move the cursor: with the arrows off Down is
+    // not a move, while the page keys still are.
+    let mut no_arrows = Picker::new(ID, "Pick fruit").nav(NavKeys::DESKTOP.arrows(false));
+    no_arrows.set_items(fruit()).expect("keyed items");
+    let _ = drawn(&mut no_arrows, screen);
+    let _ = no_arrows.on_key(&key(KeyCode::Down));
+    assert_eq!(no_arrows.list().cursor.index, 0, "Down is not a nav key");
+    assert_eq!(
+        no_arrows.on_key(&key(KeyCode::PageDown)),
+        (Outcome::Changed, None)
+    );
+    assert_eq!(no_arrows.list().cursor.index, 2, "paging still moves");
+    let mut with_arrows = Picker::new(ID, "Pick fruit").nav(NavKeys::DESKTOP);
+    with_arrows.set_items(fruit()).expect("keyed items");
+    assert_eq!(
+        with_arrows.on_key(&key(KeyCode::Down)),
+        (Outcome::Changed, None)
+    );
+    assert_eq!(with_arrows.list().cursor.index, 1, "Down moves by default");
 }
 
 fn picker_multi_selection() {
@@ -1287,17 +1594,68 @@ fn picker_states_and_chrome() {
         .backdrop(Backdrop::FULL)
         .cursor_style(CursorStyle::Bar)
         .max_rows(3);
-    anchored.set_items(fruit()).expect("items");
+    let many = || -> Vec<Item> {
+        (0..6)
+            .map(|i| Item::new(format!("Row{i}")).key(ItemKey::text(&format!("row{i}"))))
+            .collect()
+    };
+    anchored.set_items(many()).expect("items");
     assert_eq!(anchored.anchor, anchor);
     assert_eq!(anchored.backdrop, Backdrop::FULL);
-    assert_eq!(anchored.list().look, CursorStyle::Bar);
-    assert_eq!(anchored.list().max_rows, 3);
-    let _ = drawn(&mut anchored, screen);
+    let text = drawn(&mut anchored, screen);
     assert!(
         anchored.area.y >= anchor.bottom(),
         "below its anchor: {:?}",
         anchored.area
     );
+    // `max_rows` caps the rows the popup shows.
+    assert!(
+        text.contains("Row2") && !text.contains("Row3"),
+        "three of six rows show: {text}"
+    );
+    let mut uncapped = Picker::new(ID, "Pick").anchor(anchor, Placement::Below);
+    uncapped.set_items(many()).expect("items");
+    let text = drawn(&mut uncapped, screen);
+    assert!(text.contains("Row5"), "every row shows by default");
+    assert_eq!(
+        anchored.area.height + 3,
+        uncapped.area.height,
+        "the cap takes three rows off the popup height"
+    );
+    // `fit` sets the margin kept to the screen edge.
+    let edge = Rect::new(0, 3, 10, 1);
+    let edge_x = |fit: Option<Place>| {
+        let mut p = Picker::new(ID, "Pick").anchor(edge, Placement::Below);
+        if let Some(fit) = fit {
+            p = p.fit(fit);
+        }
+        p.set_items(fruit()).expect("items");
+        let _ = drawn(&mut p, screen);
+        p.area.x
+    };
+    assert_eq!(edge_x(None), 1, "the default fit keeps a one column margin");
+    assert_eq!(
+        edge_x(Some(Place::FLUSH)),
+        0,
+        "a flush fit reaches the edge"
+    );
+    // `cursor_style` picks how the highlighted row is drawn.
+    let t = theme();
+    assert_ne!(
+        expected_cursor(CursorStyle::Fill, t.surface_elevated),
+        expected_cursor(CursorStyle::Bar, t.surface_elevated)
+    );
+    for look in [CursorStyle::Fill, CursorStyle::Bar] {
+        let mut styled = Picker::new(ID, "Pick").cursor_style(look);
+        styled.set_items(fruit()).expect("items");
+        let painted = paint_hits(screen, |area, buf, ctx| styled.draw(area, buf, ctx));
+        let row = region_of(&painted, styled.row_id(0));
+        assert_eq!(
+            drawn_cursor(&painted.buf, row),
+            expected_cursor(look, t.surface_elevated),
+            "{look:?} draws the highlighted row"
+        );
+    }
 
     // The default backdrop keeps the bottom row, `Backdrop::FULL` dims it too.
     let bottom = |backdrop: Backdrop| {
@@ -1904,11 +2262,10 @@ fn props_list_interaction() {
         .reveal(Reveal::OFF.hover(true))
         .track_click(TrackClick::Jump)
         .skip_when_empty(true);
-    assert_eq!(list.scrollbar_gap, 2);
-    assert_eq!(list.sheet.label_max_share, 30);
+    // `scrollbar_gap`, `sheet`, `reveal` and `track_click` are asserted by
+    // what they change in `props_list_effects`.
     assert_eq!(list.core.nav, NavKeys::VIM);
     assert_eq!(list.core.click, ClickPolicy::NAVIGATION);
-    assert_eq!(list.core.scroll.track_click, Some(TrackClick::Jump));
     assert_eq!(
         list.row_id(1),
         ID.part(junie_tui::core::id::PartRef::item(
@@ -2024,6 +2381,138 @@ fn props_list_interaction() {
         ring.len()
     };
     assert_eq!((stops(true), stops(false)), (0, 1));
+    props_list_effects();
+}
+
+/// What the layout, scrollbar and reveal builders of a `PropsList` do,
+/// observed through painted cells, the scroll offset and key input.
+fn props_list_effects() {
+    const ID: WidgetId = WidgetId::of("scenario.props.effects");
+    let render = |list: &mut PropsList, area: Rect, focus: bool| {
+        let theme = theme();
+        let mut buf = Buffer::empty(area);
+        let mut hits = HitRegistry::default();
+        let mut ring = FocusRing::default();
+        let interaction = Interaction {
+            focus: focus.then_some(ID),
+            ..Interaction::default()
+        };
+        let mut ctx = RenderCtx::new(&theme, interaction, &mut hits, &mut ring);
+        list.render(area, &mut buf, &mut ctx, theme.canvas);
+        ctx.flush_overlays(&mut buf);
+        buf
+    };
+
+    // `sheet` sets where the value column starts: the label column grows to
+    // its longest label by default, and a sheet that demands a wide value
+    // column squeezes or widens it by its label share.
+    let narrow = Rect::new(0, 0, 30, 6);
+    let value_x = |sheet: Option<Sheet>| {
+        let mut list = PropsList::new(ID, sample_props());
+        if let Some(sheet) = sheet {
+            list = list.sheet(sheet);
+        }
+        let text = rows(&render(&mut list, narrow, false));
+        let byte = text[0].find("alpha").expect("the first value");
+        text[0][..byte].chars().count()
+    };
+    assert_eq!(
+        value_x(None),
+        10,
+        "label column of 8 after a 2 column inset"
+    );
+    assert_eq!(
+        value_x(Some(Sheet {
+            label_max_share: 80,
+            value_min: 40
+        })),
+        24,
+        "an unmeetable value minimum falls back to the label share"
+    );
+    assert_eq!(
+        value_x(Some(Sheet {
+            label_max_share: 10,
+            value_min: 40
+        })),
+        5,
+        "a small label share keeps the minimum label column of 3"
+    );
+
+    // `scrollbar_gap` leaves blank columns between the values and the scrollbar.
+    let tall: Vec<Prop> = (0..20)
+        .map(|i| Prop::new(&format!("P{i}"), "x".repeat(60)))
+        .collect();
+    let area = Rect::new(0, 0, 30, 5);
+    let last_ink = |gap: Option<u16>| {
+        let mut list = PropsList::new(ID, tall.clone());
+        if let Some(gap) = gap {
+            list = list.scrollbar_gap(gap);
+        }
+        let buf = render(&mut list, area, false);
+        let ink = (0..area.width - 1)
+            .filter(|&x| buf[(x, 0)].symbol() != " ")
+            .max()
+            .expect("the value is drawn");
+        assert_ne!(
+            buf[(area.width - 1, 0)].symbol(),
+            " ",
+            "the scrollbar track"
+        );
+        ink
+    };
+    assert_eq!(last_ink(None), 27, "the default gap is one column");
+    assert_eq!(last_ink(Some(3)), 25, "a gap of three columns");
+
+    // `track_click` decides what a click in the scrollbar track does: a page
+    // step by default, a jump to the clicked spot with `Jump`.
+    let offset_after_track_click = |click: Option<TrackClick>| {
+        let mut list = PropsList::new(ID, tall.clone());
+        if let Some(click) = click {
+            list = list.track_click(click);
+        }
+        let _ = render(&mut list, area, false);
+        let at = Position::new(area.width - 1, area.height - 1);
+        assert_eq!(list.core.scroll.press(at).outcome(), Outcome::Changed);
+        list.core.scroll.offset
+    };
+    assert_eq!(offset_after_track_click(None), 5, "one page down");
+    assert_eq!(
+        offset_after_track_click(Some(TrackClick::Page)),
+        5,
+        "one page down"
+    );
+    assert_eq!(
+        offset_after_track_click(Some(TrackClick::Jump)),
+        15,
+        "the end of the list, where the click landed"
+    );
+
+    // `reveal` configures how a cut value opens in full: with the key set to
+    // `r` and inline wrapping, `r` opens the value over extra rows, and the
+    // default key does not.
+    let roomy = Rect::new(0, 0, 30, 8);
+    let reveal = Reveal::OFF
+        .keyboard(Some(KeyCode::Char('r')))
+        .mode(RevealMode::InlineWrap);
+    let mut list = PropsList::new(ID, sample_props()).reveal(reveal);
+    list.core.cursor = 1;
+    let before = rows(&render(&mut list, roomy, true)).join("\n");
+    assert!(
+        !before.contains("data"),
+        "the long path is cut off: {before}"
+    );
+    assert_eq!(
+        list.on_key(&key(KeyCode::Right)),
+        (Outcome::Ignored, None),
+        "the default reveal key is not bound"
+    );
+    assert_eq!(
+        list.on_key(&key(KeyCode::Char('r'))),
+        (Outcome::Changed, None),
+        "the configured key opens the reveal"
+    );
+    let after = rows(&render(&mut list, roomy, true)).join("\n");
+    assert!(after.contains("data"), "the whole path shows: {after}");
 }
 
 fn option_list_select_arrows() {
