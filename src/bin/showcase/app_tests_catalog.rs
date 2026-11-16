@@ -80,6 +80,7 @@ pub const CASES: &[ScenarioCase] = &[
     ScenarioCase { id: ScenarioId::ExternalFeedBounds, run: external_feed_bounds },
     ScenarioCase { id: ScenarioId::ScrollWindowWork, run: scroll_window_work },
     ScenarioCase { id: ScenarioId::ModalFocusPolicy, run: modal_focus_policy },
+    ScenarioCase { id: ScenarioId::DocumentWorkspaceLifecycle, run: document_workspace_lifecycle },
 ];
 
 fn key(code: KeyCode) -> Key {
@@ -1534,4 +1535,267 @@ fn modal_focus_policy() {
     assert_eq!(host.seen, ["first", "second", "close last"]);
     assert!(host.layers.is_empty(), "the close popped the layer");
     assert_eq!(settle(&mut host), Outcome::Ignored, "nothing left to drain");
+}
+
+/// The Query workbench's document workspace, on a minimal document: pinned
+/// and preview opens, activation, operations that only the live generation
+/// may end, and close requests that only the live token may answer.
+fn document_workspace_lifecycle() {
+    use junie_tui::core::response::Response;
+    use junie_tui::widgets::document_workspace::{
+        CloseDecision, CloseToken, DocumentWorkspace, OpenKind, OperationToken, WorkspaceAction,
+        WorkspaceDocument,
+    };
+    use junie_tui::widgets::tabs::Tabs;
+    use ratatui::style::Color;
+    use std::borrow::Cow;
+
+    struct Note {
+        title: String,
+        text: String,
+        opened: String,
+        result: Option<String>,
+    }
+
+    /// The workspace's restricted facet: results, never the text.
+    struct NoteView<'a> {
+        note: &'a mut Note,
+    }
+
+    impl NoteView<'_> {
+        fn show(&mut self, result: &str) {
+            self.note.result = Some(result.to_owned());
+        }
+    }
+
+    impl WorkspaceDocument for Note {
+        type View<'a> = NoteView<'a>;
+
+        fn title(&self) -> Cow<'_, str> {
+            Cow::Borrowed(&self.title)
+        }
+        fn dirty(&self) -> bool {
+            self.text != self.opened
+        }
+        fn focus_target(&self) -> Option<WidgetId> {
+            None
+        }
+        fn view(&mut self) -> NoteView<'_> {
+            NoteView { note: self }
+        }
+    }
+
+    fn note(title: &str) -> Note {
+        Note {
+            title: title.to_owned(),
+            text: String::new(),
+            opened: String::new(),
+            result: None,
+        }
+    }
+
+    /// The transition's actions in order, as short words.
+    fn acts(resp: Response<WorkspaceAction<Note>>) -> Vec<String> {
+        resp.into_actions()
+            .into_iter()
+            .map(|action| match action {
+                WorkspaceAction::Activated(key) => format!("activated {key:?}"),
+                WorkspaceAction::PreviewPromoted(key) => format!("promoted {key:?}"),
+                WorkspaceAction::CloseRequested(token) => format!("asked {:?}", token.document),
+                WorkspaceAction::CancelOperation(token) => format!("cancel {:?}", token.document),
+                WorkspaceAction::Closed { key, document } => {
+                    format!("closed {key:?} {}", document.title)
+                }
+            })
+            .collect()
+    }
+
+    fn edit(workspace: &mut DocumentWorkspace<Note>, key: ItemKey, text: &str) -> Vec<String> {
+        let (_, resp) = workspace
+            .update(key, |note| note.text = text.to_owned())
+            .expect("an open document updates");
+        acts(resp)
+    }
+
+    let mut workspace = DocumentWorkspace::new(WidgetId::of("scenario.workspace"));
+    assert_eq!(workspace.len(), 0);
+    assert_eq!(
+        workspace.active_key(),
+        None,
+        "an empty workspace has no active document"
+    );
+
+    // Pinned opens append and activate; the first key is the strip's first tab.
+    let (a, resp) = workspace.open_with(|_| note("a"), OpenKind::Pinned);
+    assert_eq!(acts(resp), [format!("activated {a:?}")]);
+    let (b, _) = workspace.open_with(|_| note("b"), OpenKind::Pinned);
+    assert_eq!(workspace.ordered_keys(), [a, b]);
+    assert_eq!((workspace.key_at(0), workspace.key_at(2)), (Some(a), None));
+    assert_eq!((workspace.index_of(b), workspace.len()), (Some(1), 2));
+    assert_eq!(workspace.get(b).map(|n| n.title.as_str()), Some("b"));
+    assert_eq!(workspace.active_key(), Some(b));
+    let titles: Vec<_> = workspace.iter().map(|(_, n)| n.title.as_str()).collect();
+    assert_eq!(titles, ["a", "b"], "iter follows strip order");
+
+    // Activation moves the active key; repeating it changes nothing.
+    assert_eq!(acts(workspace.activate(a)), [format!("activated {a:?}")]);
+    assert!(acts(workspace.activate(a)).is_empty());
+    assert_eq!(workspace.active_key(), Some(a));
+
+    // A clean preview is replaced by the next one: Closed comes before Activated.
+    let (p, _) = workspace.open_with(|_| note("p"), OpenKind::Preview);
+    let (q, resp) = workspace.open_with(|_| note("q"), OpenKind::Preview);
+    assert_eq!(
+        acts(resp),
+        [format!("closed {p:?} p"), format!("activated {q:?}")]
+    );
+    assert_eq!(workspace.len(), 3, "the preview slot never grows the strip");
+    assert_eq!(workspace.get(p).map(|n| n.title.as_str()), None);
+
+    // Promote pins the preview once; anything else is a no-op.
+    assert_eq!(acts(workspace.promote(q)), [format!("promoted {q:?}")]);
+    assert!(acts(workspace.promote(q)).is_empty());
+    assert!(acts(workspace.promote(a)).is_empty());
+    let (r, _) = workspace.open_with(|_| note("r"), OpenKind::Preview);
+    assert_eq!(
+        edit(&mut workspace, r, "x"),
+        [format!("promoted {r:?}")],
+        "the first change pins a preview"
+    );
+    let (_, resp) = workspace.open_with(|_| note("s"), OpenKind::Preview);
+    assert_eq!(
+        workspace.len(),
+        5,
+        "a pinned r stays beside the new preview"
+    );
+    assert!(!acts(resp).iter().any(|action| action.starts_with("closed")));
+
+    // An operation is ended only by its own generation.
+    let (first, _): (OperationToken, _) =
+        workspace.begin_operation(a).expect("an open document runs");
+    assert_eq!(workspace.running(a), Some(first));
+    let (second, resp) = workspace.begin_operation(a).expect("a rerun supersedes");
+    assert_eq!(
+        acts(resp),
+        [format!("cancel {a:?}")],
+        "the superseded run is reported"
+    );
+    assert_ne!(first, second);
+    assert_eq!(
+        workspace
+            .end_operation(first, |mut view| view.show("stale"))
+            .err(),
+        Some(junie_tui::widgets::document_workspace::WorkspaceError::StaleOperation)
+    );
+    let (_, _) = workspace
+        .end_operation(second, |mut view| view.show("25 rows"))
+        .expect("the live generation ends");
+    assert_eq!(workspace.running(a), None);
+    assert_eq!(
+        workspace.get(a).and_then(|n| n.result.as_deref()),
+        Some("25 rows")
+    );
+    let mut view = workspace.view_mut(a).expect("an open document has a view");
+    view.show("viewed");
+    assert_eq!(
+        workspace.get(a).and_then(|n| n.result.as_deref()),
+        Some("viewed")
+    );
+
+    // Cancelling reports the token once, and its late result is refused.
+    let (token, _) = workspace.begin_operation(b).expect("b runs");
+    assert_eq!(
+        acts(workspace.cancel_operation(b)),
+        [format!("cancel {b:?}")]
+    );
+    assert!(acts(workspace.cancel_operation(b)).is_empty());
+    assert!(
+        workspace
+            .end_operation(token, |mut view| view.show("late"))
+            .is_err()
+    );
+
+    // The strip is rebuilt from the workspace, with the host's own marks.
+    let (_, _) = workspace.begin_operation(b).expect("b runs again");
+    let mut tabs = Tabs::with_items(WidgetId::of("scenario.workspace.tabs"), vec![]);
+    workspace.sync_tabs_with(&mut tabs, |note, item| {
+        item.prefix(&note.title.to_uppercase())
+    });
+    assert_eq!(tabs.items().len(), workspace.len());
+    assert!(
+        tabs.items()[1].busy && !tabs.items()[0].busy,
+        "only b is busy"
+    );
+    let strip = paint(Rect::new(0, 0, 60, 3), |area, buf, ctx| {
+        tabs.render(area, buf, ctx, Color::Reset)
+    });
+    assert!(
+        text_of(&strip).contains("B b"),
+        "the prefix decorates the tab"
+    );
+    let _ = workspace.cancel_operation(b);
+
+    // A dirty document asks before it closes; a clean one closes at once.
+    let clean = acts(workspace.request_close(q));
+    assert_eq!(
+        clean,
+        [format!("closed {q:?} q")],
+        "a clean document closes at once"
+    );
+    let ask = |workspace: &mut DocumentWorkspace<Note>, key| -> CloseToken {
+        match workspace
+            .request_close(key)
+            .into_actions()
+            .into_iter()
+            .next()
+        {
+            Some(WorkspaceAction::CloseRequested(token)) => token,
+            _ => panic!("the document should ask"),
+        }
+    };
+    edit(&mut workspace, a, "draft");
+    let token = ask(&mut workspace, a);
+    assert_eq!(token.document, a);
+    assert!(workspace.get(a).is_some(), "asking keeps the document");
+    let _ = workspace
+        .resolve_close(token, CloseDecision::Cancel)
+        .expect("the live token answers");
+    assert!(workspace.get(a).is_some(), "Cancel keeps the document");
+    assert!(
+        workspace
+            .resolve_close(token, CloseDecision::Discard)
+            .is_err(),
+        "a token is answered once"
+    );
+
+    // A new request is a new token, and an edit makes it stale.
+    let again = ask(&mut workspace, a);
+    assert_ne!(again, token);
+    edit(&mut workspace, a, "draft 2");
+    assert!(
+        workspace
+            .resolve_close(again, CloseDecision::Discard)
+            .is_err(),
+        "an edit made the request stale"
+    );
+
+    // Discard stops the running work, then closes only its own document.
+    let (_, _) = workspace.begin_operation(a).expect("a runs");
+    let running = ask(&mut workspace, a);
+    let closed = acts(
+        workspace
+            .resolve_close(running, CloseDecision::Discard)
+            .expect("the live token discards"),
+    );
+    assert_eq!(
+        closed.first(),
+        Some(&format!("cancel {a:?}")),
+        "its running work stops first"
+    );
+    assert!(
+        closed
+            .iter()
+            .any(|action| action.starts_with(&format!("closed {a:?}")))
+    );
+    assert!(workspace.get(a).is_none() && workspace.get(b).is_some());
 }

@@ -1600,3 +1600,155 @@ fn option_env() {
         );
     });
 }
+
+/// The strip's row: the tab titles, without the explorer's table names.
+fn tab_row(screen: &TerminalSnapshot) -> String {
+    row_text(screen, 7)
+}
+
+fn open_table(app: &App, table: &str) -> TerminalSnapshot {
+    click_tree(app, table);
+    app.key("enter");
+    app.wait_text(&format!("Opened {table}"))
+}
+
+#[test]
+fn option_explorer_opens_preview_replaces_the_preview_tab_until_it_is_pinned() {
+    let app = page(
+        "s09-preview",
+        Some("queryworkbench.explorer_open=preview"),
+        120,
+        40,
+    );
+    app.wait_text(FROM_ORDERS);
+    confirm_options(&app, |screen| {
+        assert_one(screen, "Explorer opens", "preview", &["pinned", "preview"]);
+        assert_one(screen, "Close with edits", "discard", &["discard", "ask"]);
+    });
+
+    let products = open_table(&app, "products");
+    see(
+        &products,
+        &["Opened products", "SELECT * FROM products", "3 tabs"],
+        &[FROM_ORDERS],
+    );
+    assert!(
+        tab_row(&products).contains("products"),
+        "{}",
+        text(&products)
+    );
+
+    // The next preview replaces the first: the strip does not grow.
+    let payments = open_table(&app, "payments");
+    see(
+        &payments,
+        &["Opened payments", "SELECT * FROM payments", "3 tabs"],
+        &["SELECT * FROM products", "4 tabs"],
+    );
+    let tabs = tab_row(&payments);
+    assert!(
+        tabs.contains("payments") && !tabs.contains("products"),
+        "the preview slot was reused: {tabs}\n{}",
+        text(&payments)
+    );
+
+    // Opening the active preview again pins it, so the next open adds a tab.
+    app.key("enter");
+    app.settle();
+    let subscriptions = open_table(&app, "subscriptions");
+    see(
+        &subscriptions,
+        &[
+            "Opened subscriptions",
+            "SELECT * FROM subscriptions",
+            "4 tabs",
+        ],
+        &["3 tabs"],
+    );
+    let tabs = tab_row(&subscriptions);
+    assert!(
+        tabs.contains("payments") && tabs.contains("subscriptions"),
+        "the pinned tab stayed beside the new preview: {tabs}\n{}",
+        text(&subscriptions)
+    );
+    app.finish();
+}
+
+#[test]
+fn option_explorer_opens_pinned_adds_a_tab_per_table() {
+    let app = page("s09-pinned", None, 120, 40);
+    app.wait_text(FROM_ORDERS);
+    open_table(&app, "products");
+    let payments = open_table(&app, "payments");
+    see(&payments, &["Opened payments", "4 tabs"], &["3 tabs"]);
+    let tabs = tab_row(&payments);
+    assert!(
+        tabs.contains("products") && tabs.contains("payments"),
+        "pinned opens stay: {tabs}\n{}",
+        text(&payments)
+    );
+    app.finish();
+}
+
+#[test]
+fn option_close_with_edits_discard_closes_a_dirty_tab_at_once() {
+    let app = page("s09-close-discard", None, 120, 40);
+    app.wait_text(FROM_ORDERS);
+    click_new_tab(&app);
+    app.wait_text("Query 2");
+    type_query(&app, "SELECT 1;");
+    click_rightmost_close(&app);
+    let closed = app.wait_text("Closed Query 2");
+    see(
+        &closed,
+        &["Closed Query 2", "2 tabs"],
+        &["unsaved changes", "SELECT 1;"],
+    );
+    app.finish();
+}
+
+#[test]
+fn option_close_with_edits_ask_needs_a_second_close_and_esc_keeps_the_tab() {
+    let app = page(
+        "s09-close-ask",
+        Some("queryworkbench.dirty_close=ask"),
+        120,
+        40,
+    );
+    app.wait_text(FROM_ORDERS);
+    click_new_tab(&app);
+    app.wait_text("Query 2");
+    type_query(&app, "SELECT 1;");
+
+    click_rightmost_close(&app);
+    let asked = app.wait_text("has unsaved changes");
+    see(
+        &asked,
+        &[
+            "Query 2 has unsaved changes",
+            "Esc keeps it",
+            "3 tabs",
+            "SELECT 1;",
+        ],
+        &["Closed Query 2"],
+    );
+
+    app.key("esc");
+    let kept = app.wait_text("Kept the tab open");
+    see(
+        &kept,
+        &["Kept the tab open", "3 tabs", "SELECT 1;"],
+        &["Closed Query 2"],
+    );
+
+    click_rightmost_close(&app);
+    app.wait_text("has unsaved changes");
+    click_rightmost_close(&app);
+    let closed = app.wait_text("Closed Query 2");
+    see(
+        &closed,
+        &["Closed Query 2", "2 tabs"],
+        &["unsaved changes", "SELECT 1;"],
+    );
+    app.finish();
+}
