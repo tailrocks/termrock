@@ -464,6 +464,28 @@ variant of these enums stays a breaking change and is recorded here.
   and a close request that an edit has outgrown is refused and asked again. See
   [the audit note](audits/2026-11-15-document-workspace.md) and
   `examples/document_workspace.rs`.
+- Keyed collections (#41). `core::list::KeyedRowSource` and `SourceStamp`
+  extend `RowSource` with an authoritative key set and a revision, and
+  `core::keyed::{KeyedState, KeyedVec}` reconcile cursor, selection, expansion,
+  edit and press state by `ItemKey` instead of by position. `ListBox`,
+  `DataTable`, `TreeView`, `Picker` and `ListDetail` accept a borrowed source
+  for one event or paint call (`on_key_source`, `render_source`) and hold only
+  keys, so a reorder, insert, filter or delete cannot retarget an action. The
+  owned constructors remain and share the same engine. `Picker::items()` is
+  `visible_items()`, `Select::would_edit` no longer clones the options, and
+  `Select`, `Completion` and `ChoiceEditor` queue a visible-rows snapshot
+  instead of a copy of the whole model. The four apps each project one
+  collection through it (Showcase list-detail and Finder, TablePro
+  connections, Jackin roles, Holla Finder). The facade prelude exports
+  `KeyedRowSource` and `SourceStamp`. The independent consumer is
+  `tests/consumers/keyed-modal`, a package with its own workspace and lockfile
+  that depends on `termrock` with default features off; run it with
+  `cargo nextest run --locked --manifest-path tests/consumers/keyed-modal/Cargo.toml`.
+  The work it avoids is counted by the #56 metrics `SourceRowsEnumerated`,
+  `KeyIndexInserts`, `KeyLookups`, `WidthRowsMeasured`, `OverlayRowsSnapshotted`,
+  `LabelsRead` and `PayloadBytesCloned` (see
+  [performance contracts](performance-contracts.md)); the interim test-only
+  `core::work` counters are removed.
 - TablePro's simulator evaluates filters with SQL three-valued logic and
   Rust `regex` syntax, not PostgreSQL's regex dialect or collations (see
   [TablePro filter semantics](audits/2026-11-15-tablepro-filter-semantics.md)).
