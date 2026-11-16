@@ -170,6 +170,7 @@ pub enum ScenarioId {
     StateTextCommands,
     StateUndoHistory,
     StateEditEntry,
+    StatePartRegions,
     // lane:state end
     // lane:scroll begin: this lane adds its ScenarioId variants between these two lines only
     ScrollStateGeometry,

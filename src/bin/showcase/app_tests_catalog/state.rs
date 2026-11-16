@@ -65,6 +65,7 @@ pub const CASES: &[ScenarioCase] = &[
     ScenarioCase { id: ScenarioId::StateTextCommands, run: state_text_commands },
     ScenarioCase { id: ScenarioId::StateUndoHistory, run: state_undo_history },
     ScenarioCase { id: ScenarioId::StateEditEntry, run: state_edit_entry },
+    ScenarioCase { id: ScenarioId::StatePartRegions, run: state_part_regions },
 ];
 
 fn plain(code: KeyCode) -> Key {
@@ -1238,6 +1239,16 @@ fn state_row_selection() {
     .expect("rectangular rows")
     .selection_mode(SelectionMode::None);
     assert!(none.selected_rows().is_empty());
+    // The same stored row counts as selected in single mode and not at all
+    // when selection is off.
+    single.selected = Some(0);
+    assert_eq!(single.selected_rows(), vec![0]);
+    let mut none = none;
+    none.selected = Some(0);
+    assert!(
+        none.selected_rows().is_empty(),
+        "a table with selection off reports no selected row"
+    );
 
     assert_eq!(TriState::None.glyph(), Glyphs::UNICODE.check_off);
     assert_eq!(TriState::Mixed.glyph(), Glyphs::UNICODE.check_mixed);
@@ -1492,6 +1503,11 @@ fn state_text_buffer() {
     assert_eq!(edit.text(), "ab", "a single-line buffer folds pasted lines");
     let blank = TextBuffer::single("");
     assert!(blank.is_empty() && blank.width() == 0);
+    assert_eq!(
+        TextBuffer::single("日本").width(),
+        4,
+        "width counts terminal cells, not bytes or characters"
+    );
 
     let mut doc = TextBuffer::multi("one\ntwo\nthree");
     assert_eq!(doc.line_count(), 3);
@@ -1884,7 +1900,258 @@ fn state_edit_entry() {
 }
 
 // ---------------------------------------------------------------------------
-// Nonvisual exceptions: constants and value types with no page to show them.
+// Part: the parts real widgets register as hit regions
+// ---------------------------------------------------------------------------
+
+/// Every part `owner` registered while painting.
+fn registered_parts(hits: &HitRegistry, owner: WidgetId) -> Vec<Part> {
+    let mut parts: Vec<Part> = hits
+        .regions()
+        .iter()
+        .filter(|r| r.owner == owner)
+        .map(|r| r.part.part)
+        .collect();
+    parts.sort();
+    parts.dedup();
+    parts
+}
+
+/// Each wanted part of `owner` is a region a pointer can land on.
+fn assert_registers(hits: &HitRegistry, owner: WidgetId, wanted: &[Part], what: &str) {
+    let seen = registered_parts(hits, owner);
+    for part in wanted {
+        assert!(
+            seen.contains(part),
+            "{what} registers no {part:?} region, only {seen:?}"
+        );
+        let region = hits
+            .regions()
+            .iter()
+            .rev()
+            .find(|r| r.owner == owner && r.part.part == *part)
+            .expect("a region of the part");
+        assert!(!region.area.is_empty(), "{what}: {part:?} has an area");
+        assert_eq!(
+            hits.hit(region.area.as_position()),
+            Some(region.id),
+            "{what}: the top-left cell of {part:?} resolves to its own region"
+        );
+    }
+}
+
+fn state_part_regions() {
+    use junie_tui::ui::modal::Frame;
+    use junie_tui::ui::popup::Dismiss;
+    use junie_tui::widgets::chips::{Chip, ChipBar};
+    use junie_tui::widgets::grid::{CellKind, CellValue, ColumnSpec, DataGrid, GridRows, RowTotal};
+    use junie_tui::widgets::hintbar::{HintBar, HintLayer};
+    use junie_tui::widgets::keyhint::Hint;
+    use junie_tui::widgets::option_editor::{Affordance, ColumnEditor, EditorConfig, Options};
+    use junie_tui::widgets::panel::ScrollPanel;
+    use junie_tui::widgets::picker::Picker;
+    use junie_tui::widgets::rail::SidebarRail;
+    use junie_tui::widgets::search_detail::{SearchConfig, SearchFocusMode};
+    use junie_tui::widgets::tabs::{TabItem, Tabs};
+    use junie_tui::widgets::tree::{TreeNode, TreeView};
+
+    // Tabs: each tab, its close button and the new-tab button; a crowded
+    // strip adds the overflow button.
+    let id = WidgetId::of("scenario.parts.tabs");
+    let items = |n: usize| -> Vec<TabItem> {
+        (0..n)
+            .map(|i| TabItem::new(&format!("tab {i}")).closable())
+            .collect()
+    };
+    let mut tabs = Tabs::with_items(id, items(3)).allow_new(true);
+    let wide = paint_hits(Rect::new(0, 0, 60, 3), |area, buf, ctx| {
+        tabs.render(area, buf, ctx, ctx.theme.canvas)
+    });
+    assert_registers(&wide.hits, id, &[Part::TAB, Part::CLOSE, Part::NEW], "tabs");
+    let mut crowded = Tabs::with_items(id, items(9))
+        .allow_new(true)
+        .overflow_menu(true);
+    let narrow = paint_hits(Rect::new(0, 0, 36, 3), |area, buf, ctx| {
+        crowded.render(area, buf, ctx, ctx.theme.canvas)
+    });
+    assert_registers(&narrow.hits, id, &[Part::TAB, Part::OVERFLOW], "tabs");
+
+    // Chip bar: the lead title, a close button per chip and the overflow
+    // button once the chips no longer fit; a roomy bar has the add button.
+    let id = WidgetId::of("scenario.parts.chips");
+    let mut bar = ChipBar::new(id).overflow_menu(true);
+    bar.set_lead(Some("match all".to_owned()));
+    bar.set_chips((0..8).map(|i| Chip::new(&format!("filter {i}"))).collect());
+    let chips = paint_hits(Rect::new(0, 0, 50, 1), |area, buf, ctx| {
+        bar.render(area, buf, ctx, ctx.theme.canvas)
+    });
+    assert_registers(
+        &chips.hits,
+        id,
+        &[Part::TITLE, Part::CLOSE, Part::OVERFLOW],
+        "a chip bar",
+    );
+    let mut roomy = ChipBar::new(id);
+    roomy.set_chips(vec![Chip::new("only")]);
+    let roomy = paint_hits(Rect::new(0, 0, 50, 1), |area, buf, ctx| {
+        roomy.render(area, buf, ctx, ctx.theme.canvas)
+    });
+    assert_registers(&roomy.hits, id, &[Part::NEW], "a chip bar");
+
+    // Grid: header, cells, row numbers, column seams and, on a column with a
+    // pop-up editor, the open mark.
+    let mut grid = super::seeded_grid("scenario.parts.grid", 5).resizable_columns(true);
+    let grid_id = grid.id;
+    let sheet = paint_hits(Rect::new(0, 0, 60, 10), |area, buf, ctx| {
+        grid.render(area, buf, ctx, ctx.theme.canvas)
+    });
+    assert_registers(
+        &sheet.hits,
+        grid_id,
+        &[Part::HEADER, Part::CELL, Part::ROW_NUMBER, Part::SEAM],
+        "a grid",
+    );
+    let mut picks = DataGrid::new(
+        WidgetId::of("scenario.parts.picks"),
+        vec![
+            ColumnSpec::new("state", CellKind::Enum).editor(ColumnEditor::Select(Options::values(
+                &["new", "open", "done"],
+            ))),
+        ],
+    )
+    .editor_config(EditorConfig {
+        affordance: Affordance::Always,
+        ..EditorConfig::default()
+    });
+    picks
+        .try_set_rows(GridRows {
+            rows: (0..3)
+                .map(|_| vec![CellValue::Text("new".to_owned())])
+                .collect(),
+            total: RowTotal::Exact(3),
+            more: false,
+        })
+        .expect("rectangular rows");
+    let picks_id = picks.id;
+    let open = paint_hits(Rect::new(0, 0, 40, 8), |area, buf, ctx| {
+        picks.render(area, buf, ctx, ctx.theme.canvas)
+    });
+    assert_registers(
+        &open.hits,
+        picks_id,
+        &[Part::ACTIONS],
+        "a grid with a pop-up editor",
+    );
+
+    // Table: check boxes, rows, cells, headers and seams.
+    let table_id = WidgetId::of("scenario.parts.table");
+    let mut table = DataTable::try_new(
+        table_id,
+        two_columns(),
+        vec![cells(&["lint", "ana"]), cells(&["build", "kai"])],
+    )
+    .expect("rectangular rows")
+    .selection_mode(SelectionMode::Multi)
+    .selection_column(true)
+    .resizable_columns(true);
+    let sheet = paint_hits(Rect::new(0, 0, 40, 6), |area, buf, ctx| {
+        table.render(area, buf, ctx, ctx.theme.canvas)
+    });
+    assert_registers(
+        &sheet.hits,
+        table_id,
+        &[
+            Part::CONTAINER,
+            Part::MARKER,
+            Part::ROW,
+            Part::CELL,
+            Part::HEADER,
+            Part::SEAM,
+        ],
+        "a table",
+    );
+
+    // Tree: the twisty of a branch.
+    let tree_id = WidgetId::of("scenario.parts.tree");
+    let mut branch = TreeNode::leaf("root");
+    branch.children = vec![TreeNode::leaf("kid")];
+    let mut tree = TreeView::new(tree_id, vec![branch]);
+    let leaves = paint_hits(Rect::new(0, 0, 30, 4), |area, buf, ctx| {
+        tree.render(area, buf, ctx, ctx.theme.canvas)
+    });
+    assert_registers(&leaves.hits, tree_id, &[Part::ICON], "a tree");
+
+    // Rail: the collapse icon.
+    let rail_id = WidgetId::of("scenario.parts.rail");
+    let rail = SidebarRail::new(rail_id, "Files");
+    let rails = paint_hits(Rect::new(0, 0, 30, 6), |area, buf, ctx| {
+        rail.render_collapse(area, buf, ctx, ctx.theme.canvas)
+    });
+    assert_registers(&rails.hits, rail_id, &[Part::ICON], "a rail");
+
+    // Hint bar: a clickable key.
+    let layer = HintLayer::new(vec![Hint::new("q", "quit"), Hint::new("?", "help")]);
+    let hints = paint_hits(Rect::new(0, 0, 40, 1), |area, buf, ctx| {
+        HintBar::render_ctx(area, buf, ctx, &layer);
+    });
+    assert_registers(&hints.hits, HintBar::ID, &[Part::KEY], "the hint bar");
+
+    // Picker: its query line, over the dismiss backdrop.
+    let picker_id = WidgetId::of("scenario.parts.picker");
+    let mut picker = Picker::new(picker_id, "Choose")
+        .searchable(true)
+        .expect("an empty picker is searchable");
+    let picked = paint_hits(Rect::new(0, 0, 60, 16), |area, buf, ctx| {
+        picker.draw(area, buf, ctx)
+    });
+    assert_registers(&picked.hits, picker_id, &[Part::QUERY], "a picker");
+
+    // Panel: scrollbar track and thumb.
+    let panel_id = WidgetId::of("scenario.parts.panel");
+    let mut panel = ScrollPanel::new(panel_id, (1..=40).map(|i| format!("line {i}")).collect());
+    let scrolled = paint_hits(Rect::new(0, 0, 30, 8), |area, buf, ctx| {
+        panel.render(area, buf, ctx, ctx.theme.canvas, |theme, _| {
+            theme.secondary()
+        })
+    });
+    let bars: Vec<Part> = scrolled
+        .hits
+        .regions()
+        .iter()
+        .map(|r| r.part.part)
+        .collect();
+    assert!(
+        bars.contains(&Part::TRACK) && bars.contains(&Part::THUMB),
+        "a long panel paints a scrollbar track and thumb, saw {bars:?}"
+    );
+
+    // Modal frame: the dismiss backdrop that fills the screen.
+    let frame = Frame::new(30, 8).dismiss(Dismiss::LIGHT);
+    let framed = paint_hits(Rect::new(0, 0, 60, 20), |area, buf, ctx| {
+        frame.render(area, buf, ctx);
+    });
+    let backdrop = framed
+        .hits
+        .regions()
+        .iter()
+        .find(|r| r.part.part == Part::BACKDROP)
+        .expect("a dismissable frame registers a backdrop");
+    assert_eq!(backdrop.area, Rect::new(0, 0, 60, 20));
+
+    // Search detail in combined focus: the query field.
+    let mut search =
+        super::finder_search(SearchConfig::default().focus_mode(SearchFocusMode::Combined));
+    let cat = super::finder_started(&mut search, super::FINDER_ROWS);
+    let lines = super::preview_lines(5);
+    let mut focus = Focus::default();
+    focus.focus(search.id());
+    let (_, found) =
+        super::draw_source(&mut search, &cat, Rect::new(0, 0, 120, 24), &lines, &focus);
+    assert_registers(&found, search.id(), &[Part::FIELD], "a combined search");
+}
+
+// ---------------------------------------------------------------------------
+// Nonvisual exceptions: the sixteen Part constants no widget registers as a hit
+// region, and the StateFlags bit set that nothing in the workspace consumes.
 // ---------------------------------------------------------------------------
 
 #[test]
