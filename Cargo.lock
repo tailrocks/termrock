@@ -747,6 +747,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "functional-cross"
+version = "0.1.0"
+dependencies = [
+ "junie-tui",
+ "serde_json",
+ "sha2 0.10.9",
+ "tuiscotti",
+ "tuiscotti-tui-test",
+]
+
+[[package]]
 name = "futures-core"
 version = "0.3.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2133,6 +2144,13 @@ dependencies = [
  "smallvec",
  "unicode-width",
  "vte",
+]
+
+[[package]]
+name = "termrock"
+version = "0.1.0"
+dependencies = [
+ "junie-tui",
 ]
 
 [[package]]

@@ -24,20 +24,15 @@
 //! hard-cases screen is `ManagerScreen`, whose `manager.seam` is drawn by
 //! `MasterDetail::layout` on `t.canvas`.
 
-use std::path::PathBuf;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use tui_test::terminal::cell::Attrs;
-use tui_test::{SnapshotColor, SnapshotUnderline, TerminalSnapshot};
-use tuiscotti_latest::check::CheckOutcome;
+use tui_test::{SnapshotColor, TerminalSnapshot};
 
-use crate::support::{App, HOLLA, Launch, Point, SHOWCASE, TABLEPRO, find_all, text, try_launch};
-
-const BOLD: u8 = 1;
-const DIM: u8 = 2;
-const INVERSE: u8 = 4;
-const UNDER: u8 = 8;
+use crate::support::{
+    App, BOLD, INVERSE, Open, Point, check_stored, find_all, holla_bin, kill, mods_at, require,
+    showcase_bin, tablepro_bin, text,
+};
 
 const TITLE: &str = "Scrolling";
 const BLURB: &str = "Wheel under the pointer, keys on the focused container";
@@ -111,41 +106,14 @@ fn paint(text: &str, fg: SnapshotColor, bg: SnapshotColor, mods: u8) -> Paint {
 }
 
 fn open(name: &str, bin: &str, args: &[&str], color: &str) -> App {
-    let mut launch = Launch::new(name, bin);
-    launch.clock = false;
-    launch.cols = 120;
-    launch.rows = 40;
-    launch.color = Some(color.to_string());
-    launch.motion = Some("reduced".to_string());
-    launch.args = args.iter().copied().map(str::to_string).collect();
-    try_launch(launch).unwrap_or_else(|error| panic!("{error}"))
-}
-
-fn require(screen: &TerminalSnapshot, needle: &str) {
-    assert!(
-        text(screen).contains(needle),
-        "missing {needle}\n{}",
-        text(screen)
-    );
+    Open::new(name, bin, args).color(Some(color)).launch()
 }
 
 fn read_paint(screen: &TerminalSnapshot, point: Point) -> Paint {
     let cell = screen
         .cell_at(u32::from(point.x), u32::from(point.y))
         .expect("cell");
-    let mut mods = 0;
-    if cell.has(Attrs::BOLD) {
-        mods |= BOLD;
-    }
-    if cell.has(Attrs::DIM) {
-        mods |= DIM;
-    }
-    if cell.has(Attrs::INVERSE) {
-        mods |= INVERSE;
-    }
-    if cell.underline() != SnapshotUnderline::None {
-        mods |= UNDER;
-    }
+    let mods = mods_at(screen, point);
     Paint {
         text: cell.text().to_string(),
         fg: cell.fg(),
@@ -396,12 +364,6 @@ fn cycle_column(
     dragged
 }
 
-fn kill(app: &App) {
-    assert!(app.child_running(), "child exited before the assertion");
-    app.kill_child();
-    assert!(!app.child_running(), "child still running");
-}
-
 fn thumb_states(color: &str) -> (Paint, Paint, Paint, Paint) {
     if color == "nocolor" {
         let plain = plain();
@@ -457,7 +419,7 @@ fn thumb_near(screen: &TerminalSnapshot) -> Option<Point> {
 fn scrollbar(color: &str) {
     let app = open(
         &format!("x03-chrome-thumb-{color}"),
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "scrolling"],
         color,
     );
@@ -510,7 +472,7 @@ fn scrollbar(color: &str) {
 fn showcase_seam(color: &str) {
     let app = open(
         &format!("x03-chrome-seam-{color}"),
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "splits"],
         color,
     );
@@ -549,7 +511,7 @@ fn count_glyph(screen: &TerminalSnapshot, glyph: &str) -> usize {
 }
 
 fn tablepro_borders() {
-    let app = open("x03-chrome-tablepro", TABLEPRO, &[], "truecolor");
+    let app = open("x03-chrome-tablepro", tablepro_bin(), &[], "truecolor");
     let screen = app.wait_text("Filter connections");
     assert_eq!(
         count_glyph(&screen, THUMB),
@@ -592,7 +554,7 @@ fn tablepro_borders() {
 fn holla_tab_rule() {
     let app = open(
         "x03-chrome-holla",
-        HOLLA,
+        holla_bin(),
         &["--scenario", "activities-multi"],
         "truecolor",
     );
@@ -708,38 +670,10 @@ fn checkpoint_frames(app: &App) -> (TerminalSnapshot, TerminalSnapshot) {
     (wide, narrow)
 }
 
-fn sample_bytes(screen: &TerminalSnapshot, test_id: &str) -> Vec<u8> {
-    let sample = tuiscotti_latest::sample::Sample::state(
-        test_id,
-        screen.clone(),
-        tuiscotti_latest::sample::Observation::empty(),
-    )
-    .expect("build Tuiscotti state sample");
-    sample.to_bytes().expect("serialize Tuiscotti sample")
-}
-
-fn check_stored(app: &App, screen: &TerminalSnapshot, test_id: &str) {
-    let bytes = sample_bytes(screen, test_id);
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines");
-    let artifacts = app.evidence_dir().join("check-artifacts");
-    let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
-        .expect("open Tuiscotti frozen store");
-    let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
-    if let CheckOutcome::Failure(failure) = outcome {
-        panic!(
-            "{test_id} {} sha {} path {} cells {}",
-            failure.reason(),
-            failure.candidate_sha256(),
-            failure.candidate_path().display(),
-            failure.changed_cell_total()
-        );
-    }
-}
-
 fn route() {
     let app = open(
         "x03-chrome-route",
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "scrolling"],
         "truecolor",
     );
@@ -769,7 +703,7 @@ fn route() {
 fn checkpoint() {
     let app = open(
         "x03-chrome-checkpoint",
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "splits"],
         "truecolor",
     );
