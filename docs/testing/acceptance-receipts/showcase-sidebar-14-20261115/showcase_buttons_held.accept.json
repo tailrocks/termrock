@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "showcase/buttons/held",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/showcase__buttons__held.tui.pb"
+  },
+  "candidate_sha256": "a21386b9ab19e080a6d89447db963f38808faa6e70989aa5f9b8f1e6e899b341",
+  "baseline_sha256": "a21386b9ab19e080a6d89447db963f38808faa6e70989aa5f9b8f1e6e899b341",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/showcase/buttons/held.tui.pb"
+  },
+  "error_code": null
+}

@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s10_diskcleanup/opt_diskcleanup_meter_visual",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s10_diskcleanup__opt_diskcleanup_meter_visual.tui.pb"
+  },
+  "candidate_sha256": "d9505a484911a1d83cfeca0e430150e097f81a078180420f6924be4842e19e96",
+  "baseline_sha256": "d9505a484911a1d83cfeca0e430150e097f81a078180420f6924be4842e19e96",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s10_diskcleanup/opt_diskcleanup_meter_visual.tui.pb"
+  },
+  "error_code": null
+}

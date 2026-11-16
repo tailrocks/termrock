@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-double_click_slop-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/target/functional/s01_double_click_slop-4972-1794791025686156000-0/check-artifacts/opt-shell-double_click_slop-boundary/19668dd2d9e8bc357dbd16c9ca80a2739b4006fd9fbdc9496f75a3ed53f973e0/sample.tui.pb"
+  },
+  "candidate_sha256": "19668dd2d9e8bc357dbd16c9ca80a2739b4006fd9fbdc9496f75a3ed53f973e0",
+  "baseline_sha256": "19668dd2d9e8bc357dbd16c9ca80a2739b4006fd9fbdc9496f75a3ed53f973e0",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-double_click_slop-boundary.tui.pb"
+  },
+  "error_code": null
+}

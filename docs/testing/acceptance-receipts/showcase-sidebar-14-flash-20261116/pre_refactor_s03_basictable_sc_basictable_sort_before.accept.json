@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s03_basictable/sc_basictable_sort_before",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/target/functional/s03-sort-92546-1794791693302098000-0/check-artifacts/pre_refactor/s03_basictable/sc_basictable_sort_before/5bcce5117f399fe40bf7dbb57204b88894e3f9d5e70b4b4bb071732d22674a44/sample.tui.pb"
+  },
+  "candidate_sha256": "5bcce5117f399fe40bf7dbb57204b88894e3f9d5e70b4b4bb071732d22674a44",
+  "baseline_sha256": "5bcce5117f399fe40bf7dbb57204b88894e3f9d5e70b4b4bb071732d22674a44",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/tests/functional/baselines/pre_refactor/s03_basictable/sc_basictable_sort_before.tui.pb"
+  },
+  "error_code": null
+}

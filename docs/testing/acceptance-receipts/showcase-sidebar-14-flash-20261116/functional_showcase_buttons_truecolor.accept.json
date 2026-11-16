@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "functional/showcase_buttons_truecolor",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/target/functional/showcase-buttons-truecolor-11255-1794791165919020000-0/check-artifacts/functional/showcase_buttons_truecolor/45b1600e59564c08555a1f4af8398dc9fa11e19e8d11f9b129759c3708443ff2/sample.tui.pb"
+  },
+  "candidate_sha256": "45b1600e59564c08555a1f4af8398dc9fa11e19e8d11f9b129759c3708443ff2",
+  "baseline_sha256": "45b1600e59564c08555a1f4af8398dc9fa11e19e8d11f9b129759c3708443ff2",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/tests/functional/baselines/functional/showcase_buttons_truecolor.tui.pb"
+  },
+  "error_code": null
+}

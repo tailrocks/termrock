@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s02_buttons/opt_buttons_row_width",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/target/functional/s02-width-50838-1794791404733031000-0/check-artifacts/pre_refactor/s02_buttons/opt_buttons_row_width/e2904c2f661cbc49fe01ebf3ee7dbaec88608e541578972aae45c6dded4b6c24/sample.tui.pb"
+  },
+  "candidate_sha256": "e2904c2f661cbc49fe01ebf3ee7dbaec88608e541578972aae45c6dded4b6c24",
+  "baseline_sha256": "e2904c2f661cbc49fe01ebf3ee7dbaec88608e541578972aae45c6dded4b6c24",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/tests/functional/baselines/pre_refactor/s02_buttons/opt_buttons_row_width.tui.pb"
+  },
+  "error_code": null
+}
