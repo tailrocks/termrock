@@ -308,6 +308,16 @@ pub enum ScenarioId {
     OptionListQueryPointer,
     // lane:pickers end
     // lane:collections begin: this lane adds its ScenarioId variants between these two lines only
+    CollectionsTabsLook,
+    CollectionsTabsInput,
+    CollectionsTabsOverflow,
+    CollectionsNavList,
+    CollectionsListSingle,
+    CollectionsListMulti,
+    CollectionsListOptions,
+    CollectionsTreeStructure,
+    CollectionsTreeInput,
+    CollectionsTreeOptions,
     // lane:collections end
     // lane:layout begin: this lane adds its ScenarioId variants between these two lines only
     LayoutSplitGeometry,
