@@ -1205,6 +1205,24 @@ mod tests {
         buf.content().iter().map(|c| c.symbol()).collect()
     }
 
+    /// The switch is a listed option, off by default, and its panel is not drawn.
+    fn assert_switch_listed_and_off(key: &str, label: &str) {
+        let opt = crate::options::find(key).expect("--opt can set it");
+        assert_eq!(opt.default, 0);
+        let view = crate::options::OptionsView::new(
+            ID.sub("options"),
+            &[crate::options::Group {
+                heading: "Scrolling",
+                opts: crate::options::page_options(PageId::Scrolling),
+                empty: "",
+            }],
+        );
+        assert!(view.control_id(key).is_some());
+        let mut page = ScrollingPage::new();
+        let (buf, _) = render(&mut page);
+        assert!(!text(&buf).contains(label));
+    }
+
     #[test]
     fn nested_bars_switch_is_listed_on_the_options_tab_and_off_by_default() {
         let opt = crate::options::find("scrolling.nested").expect("--opt can set it");
@@ -1254,20 +1272,7 @@ mod tests {
 
     #[test]
     fn virtual_rows_switch_is_listed_on_the_options_tab_and_off_by_default() {
-        let opt = crate::options::find("scrolling.window").expect("--opt can set it");
-        assert_eq!(opt.default, 0);
-        let view = crate::options::OptionsView::new(
-            ID.sub("options"),
-            &[crate::options::Group {
-                heading: "Scrolling",
-                opts: crate::options::page_options(PageId::Scrolling),
-                empty: "",
-            }],
-        );
-        assert!(view.control_id("scrolling.window").is_some());
-        let mut page = ScrollingPage::new();
-        let (buf, _) = render(&mut page);
-        assert!(!text(&buf).contains("Virtual"));
+        assert_switch_listed_and_off("scrolling.window", "Virtual");
     }
 
     #[test]
@@ -1323,20 +1328,7 @@ mod tests {
 
     #[test]
     fn horizontal_only_switch_is_listed_on_the_options_tab_and_off_by_default() {
-        let opt = crate::options::find("scrolling.sideways").expect("--opt can set it");
-        assert_eq!(opt.default, 0);
-        let view = crate::options::OptionsView::new(
-            ID.sub("options"),
-            &[crate::options::Group {
-                heading: "Scrolling",
-                opts: crate::options::page_options(PageId::Scrolling),
-                empty: "",
-            }],
-        );
-        assert!(view.control_id("scrolling.sideways").is_some());
-        let mut page = ScrollingPage::new();
-        let (buf, _) = render(&mut page);
-        assert!(!text(&buf).contains("Sideways"));
+        assert_switch_listed_and_off("scrolling.sideways", "Sideways");
     }
 
     #[test]
