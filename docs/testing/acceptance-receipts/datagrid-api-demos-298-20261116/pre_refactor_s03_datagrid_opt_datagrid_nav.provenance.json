@@ -1,0 +1,77 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-q-target/298/debug/showcase",
+  "binary_sha256": "0b811d3d2cc8bbfc878dbdc9e14a6f84d323d37dc039c0b9954cbbc96d0580a6",
+  "fixture_args": [
+    "--page",
+    "datagrid",
+    "--opt",
+    "datagrid.nav=on"
+  ],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "94c00468d90eac98d822d40dadfae8931cdff1c589bf5afd8d27cdc55e8a4959",
+  "expect_baseline": "437bb7d1df84574fcb5811398aaf62956d7911fdd87a3aafb76aaffdbd3f3ca2",
+  "precondition": "Options tab of the Data grid page at its default options",
+  "session": null,
+  "expected_test_id": "pre_refactor/s03_datagrid/opt_datagrid_nav",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/datagrid-api-demos-298-20261116/pre_refactor_s03_datagrid_opt_datagrid_nav.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/datagrid-api-demos-298-20261116/pre_refactor_s03_datagrid_opt_datagrid_nav.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/datagrid-api-demos-298-20261116/superseded/pre_refactor/s03_datagrid/opt_datagrid_nav.tui.pb",
+  "test_id": "pre_refactor/s03_datagrid/opt_datagrid_nav",
+  "acceptance": {
+    "expected_baseline_sha256": "437bb7d1df84574fcb5811398aaf62956d7911fdd87a3aafb76aaffdbd3f3ca2",
+    "accepted_baseline_sha256": "94c00468d90eac98d822d40dadfae8931cdff1c589bf5afd8d27cdc55e8a4959",
+    "candidate_sha256": "94c00468d90eac98d822d40dadfae8931cdff1c589bf5afd8d27cdc55e8a4959",
+    "transaction_receipt": "docs/testing/acceptance-receipts/datagrid-api-demos-298-20261116/pre_refactor_s03_datagrid_opt_datagrid_nav.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "437bb7d1df84574fcb5811398aaf62956d7911fdd87a3aafb76aaffdbd3f3ca2"
+  },
+  "candidate": {
+    "sha256": "94c00468d90eac98d822d40dadfae8931cdff1c589bf5afd8d27cdc55e8a4959",
+    "path": "tests/functional/baselines/pre_refactor/s03_datagrid/opt_datagrid_nav.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/datagrid-api-demos-298-20261116/superseded/pre_refactor/s03_datagrid/opt_datagrid_nav.tui.pb",
+    "superseded_baseline_sha256": "437bb7d1df84574fcb5811398aaf62956d7911fdd87a3aafb76aaffdbd3f3ca2"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/s03_datagrid/opt_datagrid_nav.tui.pb",
+    "candidate_sha256": "94c00468d90eac98d822d40dadfae8931cdff1c589bf5afd8d27cdc55e8a4959",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-q-target/298/debug/showcase",
+    "binary_sha256": "0b811d3d2cc8bbfc878dbdc9e14a6f84d323d37dc039c0b9954cbbc96d0580a6",
+    "note": "The Data grid Options tab gains three rows (Row source, Host call, Identity readout). The Options list now scrolls to its end, so the capture shows the new options at a new scroll offset; this is not scrollbar-only. Re-accepted on top of the signed-off #182 head, whose sidebar captures moved the same files."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s03_datagrid/opt_datagrid_nav",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-298/target/functional/s03-nav-34091-1794802254593779000-0/check-artifacts/pre_refactor/s03_datagrid/opt_datagrid_nav/94c00468d90eac98d822d40dadfae8931cdff1c589bf5afd8d27cdc55e8a4959/sample.tui.pb"
+    },
+    "candidate_sha256": "94c00468d90eac98d822d40dadfae8931cdff1c589bf5afd8d27cdc55e8a4959",
+    "baseline_sha256": "94c00468d90eac98d822d40dadfae8931cdff1c589bf5afd8d27cdc55e8a4959",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-298/tests/functional/baselines/pre_refactor/s03_datagrid/opt_datagrid_nav.tui.pb"
+    },
+    "error_code": null
+  }
+}
