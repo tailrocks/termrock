@@ -237,3 +237,52 @@ fn nested_session_entry_leaves_the_live_terminal_untouched() {
     app.key("enter");
     await_exit(&app);
 }
+
+#[test]
+fn a_session_gives_the_terminal_back_and_takes_it_again_through_its_own_calls() {
+    if std::env::var(SESSION_CHILD).as_deref() == Ok("release") {
+        let mut session = TerminalSession::enter().expect("enter session");
+        session
+            .terminal()
+            .draw(|frame| {
+                frame.render_widget(
+                    Paragraph::new("session active, press Enter to release"),
+                    frame.area(),
+                )
+            })
+            .expect("draw through the session's terminal");
+        await_enter();
+        session.try_leave().expect("try_leave");
+        say(&format!("released: raw={}", raw()));
+        // The host owns the terminal now; a second leave must not undo that.
+        enable_raw_mode().expect("host raw mode");
+        session.leave();
+        say(&format!("left twice: raw={}", raw()));
+        await_enter();
+        let (cols, rows) = session.suspend().expect("suspend and resume");
+        session
+            .terminal()
+            .draw(|frame| {
+                frame.render_widget(
+                    Paragraph::new(format!("resumed: size={cols}x{rows} raw={}", raw())),
+                    frame.area(),
+                )
+            })
+            .expect("draw after the resume");
+        await_enter();
+        return;
+    }
+    let app = launch_session_child(
+        "lifecycle-release-resume",
+        "lifecycle::a_session_gives_the_terminal_back_and_takes_it_again_through_its_own_calls",
+        "release",
+    );
+    app.wait_text("session active, press Enter to release");
+    app.key("enter");
+    app.wait_text("released: raw=false");
+    app.wait_text("left twice: raw=true");
+    app.key("enter");
+    app.wait_text("resumed: size=80x24 raw=true");
+    app.key("enter");
+    await_exit(&app);
+}
