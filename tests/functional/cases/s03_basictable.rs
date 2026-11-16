@@ -920,3 +920,295 @@ fn option_selection_frame() {
     );
     app.finish();
 }
+
+fn keyed_args(source: &str, change: &str) -> [String; 6] {
+    [
+        "--page".to_owned(),
+        "basictable".to_owned(),
+        "--opt".to_owned(),
+        format!("basictable.source={source}"),
+        "--opt".to_owned(),
+        format!("basictable.rows={change}"),
+    ]
+}
+
+fn open_keyed(name: &str, source: &str, change: &str) -> crate::support::App {
+    let args = keyed_args(source, change);
+    let args: Vec<&str> = args.iter().map(String::as_str).collect();
+    open(name, 120, 64, &args)
+}
+
+#[test]
+fn option_source_keyed_follows_rows_by_key() {
+    let app = open_keyed("s03-keyed", "keyed", "moved");
+    let play = app.wait_text("KeyedTable:");
+    assert_eq!(
+        task_ids(&play).first().map(String::as_str),
+        Some("#1063"),
+        "move_row put the last task first\n{}",
+        text(&play)
+    );
+    see(
+        &play,
+        &[
+            "KeyedTable: 24 rows (empty false)",
+            "store: move_row(#1063, 0) → true",
+            "last TableAction: —",
+        ],
+        &["Selected ", "Rows rejected"],
+    );
+
+    click_where(&app, "#1042", |hit| hit.x > 30 && hit.y < 30);
+    let chosen = app.settle();
+    see(
+        &chosen,
+        &["cursor by key #1042 → Fix flaky checkout integration test"],
+        &["Activated("],
+    );
+    app.key("enter");
+    let activated = app.wait_text("Activated(#1042)");
+    assert!(
+        footer(&activated).contains(ACTIVATED_1042),
+        "the status line names the task: {}",
+        footer(&activated)
+    );
+    see(&activated, &["last TableAction: Activated(#1042)"], &[]);
+
+    click_tab(&app, "Options");
+    let options = app.wait_text("Page options");
+    assert!(
+        option_value(&options, "Row source").contains("keyed")
+            && !option_value(&options, "Row source").contains("owned"),
+        "{}",
+        text(&options)
+    );
+    assert!(option_value(&options, "Keyed store").contains("moved"));
+    see(&options, &["Owned update"], &[]);
+    shot(
+        &app,
+        "opt.basictable.source_keyed",
+        "a keyed store moves a row and the table reports activation by key",
+        &[],
+    );
+    app.finish();
+}
+
+const ACTIVATED_1042: &str = "Selected Fix flaky checkout integration test";
+
+#[test]
+fn option_source_keyed_edit_commits_by_key() {
+    let app = open_keyed("s03-edit", "keyed edit", "moved");
+    app.wait_text("KeyedTable:");
+    click_where(&app, "#1063", |hit| hit.x > 30 && hit.y < 30);
+    app.settle();
+    app.key("right");
+    app.key("right");
+    app.key("f2");
+    app.key("!");
+    app.key("enter");
+    let committed = app.wait_text("Committed { row: #1063, col: 2 }");
+    let row = row_with(&committed, "#1063");
+    assert!(
+        row.contains("ana!"),
+        "the commit wrote the new owner into the store: {row}"
+    );
+    see(
+        &committed,
+        &["last TableAction: Committed { row: #1063, col: 2 }"],
+        &[],
+    );
+    let others = row_with(&committed, "#1040");
+    assert!(
+        others.contains("mira") && !others.contains("mira!"),
+        "no other row changed: {others}"
+    );
+    shot(
+        &app,
+        "opt.basictable.source_keyed_edit",
+        "an edit committed through the keyed edit source lands on its row by key",
+        &[],
+    );
+    app.finish();
+}
+
+#[test]
+fn option_source_keyed_edit_commits_by_key_when_focus_leaves() {
+    let app = open_keyed("s03-blur", "keyed edit", "moved");
+    app.wait_text("KeyedTable:");
+    click_where(&app, "#1063", |hit| hit.x > 30 && hit.y < 30);
+    app.settle();
+    app.key("right");
+    app.key("right");
+    app.key("f2");
+    app.key("!");
+    click_where(&app, "jonas", |hit| hit.y > 30);
+    let blurred = app.wait_text("last TableAction: Committed { row: #1063, col: 2 }");
+    let row = row_with(&blurred, "#1063");
+    assert!(
+        row.contains("ana!"),
+        "the blur policy committed the typed text to the row by key: {row}"
+    );
+    shot(
+        &app,
+        "opt.basictable.source_keyed_edit_blur",
+        "focus leaving a keyed edit commits the typed text to its row by key",
+        &[],
+    );
+    app.finish();
+}
+
+#[test]
+fn option_rows_refusals_leave_the_store_unchanged() {
+    let app = open_keyed("s03-duplicate", "keyed", "duplicate key");
+    let duplicate = app.wait_text("KeyedTable:");
+    see(
+        &duplicate,
+        &[
+            "KeyedTable: 24 rows",
+            "store: refused, nothing changed: Key(DuplicateAuthoritative",
+        ],
+        &["Duplicate of the first task"],
+    );
+    assert_eq!(
+        task_ids(&duplicate).first().map(String::as_str),
+        Some("#1040")
+    );
+    app.finish();
+
+    let app = open_keyed("s03-short", "keyed", "short row");
+    let short = app.wait_text("KeyedTable:");
+    see(
+        &short,
+        &[
+            "KeyedTable: 24 rows",
+            "store: refused, nothing changed: Shape(row 0 has 1 cells, expected 7)",
+        ],
+        &["#101 "],
+    );
+    shot(
+        &app,
+        "opt.basictable.rows_short_row",
+        "a short row is refused with a shape error and the keyed store keeps its 24 rows",
+        &[],
+    );
+    app.finish();
+}
+
+#[test]
+fn option_update_model_replaces_columns_and_rows() {
+    let args = ["--page", "basictable", "--opt", "basictable.update=model"];
+    let app = open("s03-model", 120, 64, &args);
+    let play = app.wait_text("DataTable::columns()");
+    see(
+        &play,
+        &[
+            "DataTable::columns() 5 · rows() 24",
+            "try_set_model(5 columns, 24 rows) → Ok",
+            "Duration",
+        ],
+        &["Branch", "Changes", "KeyedTable:"],
+    );
+    shot(
+        &app,
+        "opt.basictable.update_model",
+        "try_set_model drops the Branch and Changes columns and keeps the 24 rows",
+        &args,
+    );
+    app.finish();
+}
+
+#[test]
+fn option_rows_change_the_store_and_the_table_follows() {
+    let inserted = open_keyed("s03-inserted", "keyed", "inserted");
+    let play = inserted.wait_text("KeyedTable: 25 rows");
+    see(
+        &play,
+        &["store: insert(1, #100) → Ok", "Prune stale previews"],
+        &[],
+    );
+    assert_eq!(
+        task_ids(&play)
+            .iter()
+            .map(String::as_str)
+            .take(2)
+            .collect::<Vec<_>>(),
+        ["#1040", "#100 "],
+        "the new row sits at position 1\n{}",
+        text(&play)
+    );
+    inserted.finish();
+
+    let removed = open_keyed("s03-removed", "keyed", "removed");
+    let play = removed.wait_text("KeyedTable: 23 rows");
+    see(
+        &play,
+        &["store: remove(#1041) → Some(\"Migrate sessions table to UUID keys\")"],
+        &[],
+    );
+    assert!(
+        !text(&play).contains("#1041  Migrate"),
+        "the removed row left the table\n{}",
+        text(&play)
+    );
+    removed.finish();
+
+    let replaced = open_keyed("s03-replaced", "keyed", "replaced");
+    let play = replaced.wait_text("KeyedTable: 4 rows");
+    see(
+        &play,
+        &["store: replace_rows(4 rows) → Ok"],
+        &["#1040", "Add rate limiting"],
+    );
+    replaced.finish();
+
+    let updated = open_keyed("s03-updated", "keyed", "updated cell");
+    let play = updated.wait_text("update_cell(#1040, Status) → true");
+    let row = row_with(&play, "#1040");
+    assert!(
+        row.contains("Failed"),
+        "the status cell was rewritten: {row}"
+    );
+    shot(
+        &updated,
+        "opt.basictable.rows_updated_cell",
+        "update_cell rewrites one status cell of the keyed store and the table shows it",
+        &[],
+    );
+    updated.finish();
+}
+
+#[test]
+fn option_update_rewrites_the_owned_table() {
+    let open_update = |name: &str, value: &str| {
+        let opt = format!("basictable.update={value}");
+        open(name, 120, 64, &["--page", "basictable", "--opt", &opt])
+    };
+    let cell = open_update("s03-cell", "cell");
+    let play = cell.wait_text("update_cell(2, 3) → true");
+    let row = row_with(&play, "#1042");
+    assert!(row.contains("Done") && !row.contains("Failed"), "{row}");
+    cell.finish();
+
+    let row = open_update("s03-row", "row");
+    let play = row.wait_text("try_set_row(2, 7 cells) → Ok");
+    see(
+        &play,
+        &[
+            "try_set_row(2, 1 cell) → Err(row 2 has 1 cells, expected 7)",
+            "Fix flaky checkout test",
+        ],
+        &["Fix flaky checkout inte"],
+    );
+    row.finish();
+
+    let column = open_update("s03-column", "column");
+    let play = column.wait_text("update_column(1, rename) → Ok(true)");
+    see(&play, &["update_column(9) → Err(9)", "Summary"], &[]);
+    shot(
+        &column,
+        "opt.basictable.update_column",
+        "update_column renames the Task header and refuses a column that does not exist",
+        &[],
+    );
+    column.finish();
+}

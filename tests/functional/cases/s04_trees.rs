@@ -535,7 +535,6 @@ fn sections_narrow_then_wide() {
             CAP_OPT,
             CAP_STATES,
             "Compare levels",
-            "Project",
             "Cargo.toml",
             WIDE,
             "truecolor",
@@ -698,13 +697,7 @@ fn sections_narrow_then_wide() {
     see(
         &wide_opt,
         &[CRUMB, CAP_OPT, WIDE, "Page options"],
-        &[
-            CAP_PLAY,
-            CAP_STATES,
-            "Compare levels",
-            "Project",
-            "Cargo.toml",
-        ],
+        &[CAP_PLAY, CAP_STATES, "Compare levels", "Cargo.toml"],
     );
     shot(&app, "sc.trees.options.120x40");
     shot(&app, "sc.trees.options");
@@ -924,7 +917,7 @@ fn confirm_control(app: &App, check: impl Fn(&TerminalSnapshot)) {
     let screen = app.wait_text("Page options");
     check(&screen);
     click_tab(app, "Playground");
-    app.wait_text("Project");
+    app.wait_absent("Page options");
 }
 
 #[test]
@@ -1363,5 +1356,186 @@ fn option_filter_keeps_ancestor_of_matching_leaf() {
         assert_select(screen, "Filter connections", "orders", &["off"]);
     });
     shot(&app, "opt.trees.filter");
+    app.finish();
+}
+
+fn keyed_app(name: &str, opts: &[&str]) -> App {
+    let mut args = PAGE_ARGS.to_vec();
+    args.extend(["--opt", "trees.source=keyed"]);
+    for opt in opts {
+        args.extend(["--opt", opt]);
+    }
+    let app = open(name, 120, 48, &args);
+    app.wait_text("Project source keyed (TreeSource: KeyedTree");
+    app
+}
+
+#[test]
+fn option_source_keyed_reports_actions_by_key() {
+    let app = keyed_app("s04-keyed", &[]);
+    let play = app.settle();
+    see(
+        &play,
+        &[
+            "KeyedTree, 31 nodes, empty false",
+            "select_follows_cursor false · show_selection true",
+            "Nothing selected",
+        ],
+        &["edit:", "jump:"],
+    );
+    assert_project(
+        &play,
+        &["src", "api", "config.rs", "generated", "tests", "docs"],
+        &["auth.rs", "migrations.rs"],
+    );
+
+    click_project(&app, "config.rs");
+    app.key("enter");
+    let opened = app.wait_text("Activate(config.rs)");
+    see(
+        &opened,
+        &[
+            "last TreeAction: Activate(config.rs)",
+            "by key · 1 selected",
+        ],
+        &["Nothing selected"],
+    );
+
+    click_project(&app, "api");
+    app.key("right");
+    let folded = app.settle();
+    assert_project(
+        &folded,
+        &[
+            "src",
+            "api",
+            "auth.rs",
+            "billing.rs",
+            "webhooks",
+            "config.rs",
+        ],
+        &[],
+    );
+    assert_project(&folded, &[], &["dispatch.rs"]);
+
+    click_project(&app, "generated");
+    app.key("right");
+    let loaded = app.wait_text("Expand(generated)");
+    see(&loaded, &["last TreeAction: Expand(generated)"], &[]);
+    assert_project(&loaded, &["generated", "client.rs", "schema.rs"], &[]);
+    see(&loaded, &["client.rs 7.4 KB", "schema.rs 21 KB"], &[]);
+    shot(&app, "opt.trees.source_keyed");
+    app.finish();
+}
+
+#[test]
+fn option_edit_keeps_the_view_when_the_keyed_store_changes() {
+    let inserted = keyed_app("s04-insert", &["trees.edit=insert before"]);
+    let screen = inserted.settle();
+    see(
+        &screen,
+        &["edit: insert(src, 0, new.rs) → Ok", "just added"],
+        &[],
+    );
+    let rows: Vec<String> = (0..screen.rows())
+        .map(|row| row_text(&screen, row))
+        .collect();
+    let new_at = rows
+        .iter()
+        .position(|line| line.contains("new.rs") && line.contains("just added"));
+    let api_at = rows.iter().position(|line| line.contains("▸ api"));
+    assert!(
+        new_at.is_some() && new_at < api_at,
+        "the earlier sibling lands before api\n{}",
+        text(&screen)
+    );
+    inserted.finish();
+
+    let renamed = keyed_app("s04-rename", &["trees.edit=rename"]);
+    let screen = renamed.settle();
+    see(&screen, &["edit: update(main.rs) → true", "renamed"], &[]);
+    assert_project(&screen, &["app.rs", "lib.rs"], &["main.rs"]);
+    renamed.finish();
+
+    let removed = keyed_app("s04-remove", &["trees.edit=remove"]);
+    let screen = removed.settle();
+    see(&screen, &["edit: remove(tests/fixtures) → true"], &[]);
+    assert_project(
+        &screen,
+        &["tests", "checkout.rs", "auth_flow.rs"],
+        &["fixtures"],
+    );
+    shot(&removed, "opt.trees.edit_remove");
+    removed.finish();
+}
+
+#[test]
+fn option_jump_moves_the_keyed_cursor_and_selection_by_key() {
+    let reached = keyed_app("s04-jump", &["trees.jump=tests/auth_flow.rs"]);
+    let screen = reached.settle();
+    see(
+        &screen,
+        &[
+            "jump: set_cursor_source(tests/auth_flow.rs) → true · select_source → true",
+            "by key · 1 selected",
+        ],
+        &["Nothing selected"],
+    );
+    see(&screen, &["cursor auth_flow.rs"], &[]);
+    reached.finish();
+
+    let refused = keyed_app("s04-refused", &["trees.jump=src/api/webhooks/retry.rs"]);
+    let screen = refused.settle();
+    see(
+        &screen,
+        &[
+            "jump: set_cursor_source(src/api/webhooks/retry.rs) → false (closed folder) · select_source → true",
+            "retry.rs",
+        ],
+        &["Nothing selected"],
+    );
+    see(&screen, &["cursor src"], &["cursor retry.rs"]);
+    refused.finish();
+
+    let all = keyed_app("s04-expand-all", &["trees.jump=expand all"]);
+    let screen = all.settle();
+    see(
+        &screen,
+        &["jump: expand_all_source → every folder is open"],
+        &[],
+    );
+    assert_project(
+        &screen,
+        &["api", "auth.rs", "billing.rs", "webhooks", "dispatch.rs"],
+        &[],
+    );
+    shot(&all, "opt.trees.jump_expand_all");
+    all.finish();
+}
+
+#[test]
+fn option_follow_selects_the_leaf_under_the_cursor() {
+    let app = keyed_app(
+        "s04-follow",
+        &["trees.follow=on", "trees.show_selection=off"],
+    );
+    let play = app.settle();
+    see(
+        &play,
+        &[
+            "select_follows_cursor true · show_selection false",
+            "Nothing selected",
+        ],
+        &[],
+    );
+    click_project(&app, "config.rs");
+    let followed = app.settle();
+    see(
+        &followed,
+        &["by key · 1 selected"],
+        &["Nothing selected", "Activate("],
+    );
+    see(&followed, &["cursor config.rs", "config.rs"], &[]);
+    shot(&app, "opt.trees.follow");
     app.finish();
 }
