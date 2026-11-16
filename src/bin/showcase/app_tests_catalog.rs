@@ -10,11 +10,10 @@ use junie_tui::clock::Moment;
 use junie_tui::core::edit::{FieldKeys, TextCmd};
 use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::focus::{Focus, FocusChange, FocusRing};
-use junie_tui::core::hit::Axis;
-use junie_tui::core::hit::HitRegistry;
+use junie_tui::core::hit::{Axis, HitRegistry};
 use junie_tui::core::id::{ItemKey, Part, WidgetId};
 use junie_tui::core::intent::Phase;
-use junie_tui::core::keyed::KeyedSourceError;
+use junie_tui::core::keyed::{KeyedSourceError, KeyedVec};
 use junie_tui::core::keymap::{Actions, KeyBinding};
 use junie_tui::core::list::{KeyedRowSource, RowSource, SourceStamp};
 use junie_tui::core::pointer::PointerEvent;
@@ -41,14 +40,13 @@ use junie_tui::widgets::grid::{
     RowTotal,
 };
 use junie_tui::widgets::info_dialog::InfoDialog;
-use junie_tui::widgets::input::TextInput;
-use junie_tui::widgets::input::TextInput as FinderQuery;
+use junie_tui::widgets::input::{TextInput, TextInput as FinderQuery};
 use junie_tui::widgets::list::{
     ListAction, ListBox, ListItem, ListItemRef, ListSource, SelectMode,
 };
 use junie_tui::widgets::list_detail::{
     Action, DetailPane, Event, Frame, Line, ListDetail, ListDetailSource, ListRow, ListRowRef,
-    SourceFrame,
+    MasterRow, PaneHost, SourceFrame,
 };
 use junie_tui::widgets::nav_list::{NavItem, NavList};
 use junie_tui::widgets::option_editor::{
@@ -90,6 +88,8 @@ pub const CASES: &[ScenarioCase] = &[
     ScenarioCase { id: ScenarioId::OverlayDismissPolicy, run: overlay_dismiss_policy },
     ScenarioCase { id: ScenarioId::CollectionReplacement, run: collection_replacement },
     ScenarioCase { id: ScenarioId::NarrowLayout, run: narrow_layout },
+    ScenarioCase { id: ScenarioId::ListDetailKeyedSource, run: list_detail_keyed_source },
+    ScenarioCase { id: ScenarioId::ListDetailHostedPanes, run: list_detail_hosted_panes },
     ScenarioCase { id: ScenarioId::TerminalViewportLifecycle, run: terminal_viewport_lifecycle },
     ScenarioCase { id: ScenarioId::FixedControlsPolicy, run: fixed_controls_policy },
     ScenarioCase { id: ScenarioId::FixedDialogsPolicy, run: fixed_dialogs_policy },
@@ -2471,6 +2471,243 @@ fn keyed_tree_view() {
         .on_pointer_source(&click, &store)
         .expect("valid source");
     assert_eq!(view.keyed().pressed(), None, "the click consumed the press");
+}
+
+/// A keyed list-detail over a `KeyedVec` of rows: the selection is a key, so it
+/// follows its job through a reorder, a click reaches the key that was drawn,
+/// and the list reports its own paging without a frame.
+fn list_detail_keyed_source() {
+    const MASTER: WidgetId = WidgetId::of("scenario.keyed.master");
+    const DETAIL: WidgetId = WidgetId::of("scenario.keyed.detail");
+    let k = ItemKey::num;
+    let mut store = KeyedVec::try_from_rows(
+        [(1, "alpha"), (2, "bravo"), (3, "charlie")]
+            .map(|(n, label)| (k(n), ListRow::new(label).meta("ok", Tone::Success))),
+    )
+    .expect("unique keys");
+    let owned = ListRow::new("alpha").meta("ok", Tone::Success);
+    let shown: ListRowRef<'_> = owned.borrowed();
+    assert_eq!((shown.label, shown.meta), ("alpha", "ok"));
+    assert_eq!(
+        ListDetailSource::row(&store, 1).label,
+        "bravo",
+        "a keyed store lends its rows in place"
+    );
+
+    let area = Rect::new(0, 0, 120, 10);
+    let frame = SourceFrame {
+        title: "Jobs",
+        meta: "3 listed",
+        head: &[],
+        under: None,
+        detail_title: "Detail",
+        detail_meta: "",
+        lines: &[],
+        actions: &[],
+    };
+    let draw = |ld: &mut ListDetail, store: &KeyedVec<ListRow>| {
+        let theme = Theme::for_level(ColorLevel::TrueColor);
+        let mut buf = Buffer::empty(area);
+        let mut hits = HitRegistry::default();
+        let mut ring = FocusRing::default();
+        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        ld.render_source(area, store, &frame, &mut buf, &mut ctx)
+            .expect("a valid source renders");
+        (buf, hits)
+    };
+    let mut ld = ListDetail::new(MASTER, DETAIL, Split::new(50, 36, 40));
+    let (buf, hits) = draw(&mut ld, &store);
+    let first = text_of(&buf);
+    assert!(
+        first.contains("alpha") && first.contains("charlie"),
+        "{first}"
+    );
+    assert_eq!(ld.selected_key(), Some(k(1)));
+    assert_eq!(ld.keyed().cursor(), Some(k(1)));
+    assert_eq!(ld.master_offset(), 0, "a short list is not scrolled");
+    assert!(ld.master_page() >= 3, "page keys move by the visible rows");
+    assert!(!ld.drawer_open(), "a wide area shows the detail beside it");
+
+    ld.select(1);
+    store.move_to(k(2), 0);
+    draw(&mut ld, &store);
+    assert_eq!(
+        (ld.cursor, ld.selected_key()),
+        (0, Some(k(2))),
+        "the view index follows the key through a reorder"
+    );
+
+    ld.select(2);
+    store.move_to(k(3), 0);
+    ld.bind_source(&store).expect("a valid source binds");
+    assert_eq!(
+        ld.selected_key(),
+        Some(k(3)),
+        "binding adopts a moved cursor by key without painting"
+    );
+
+    let row = hits
+        .regions()
+        .iter()
+        .rev()
+        .find(|r| r.area.contains(Position::new(4, 2)) && r.id != MASTER)
+        .map(|r| r.id)
+        .expect("a master row hit");
+    store.move_to(k(2), 2);
+    draw(&mut ld, &store);
+    let (_, event) = ld.click_source(row, &mut Focus::default());
+    assert_eq!(event, Some(Event::Row(2)));
+    assert_eq!(
+        ld.selected_key(),
+        Some(k(2)),
+        "a click reaches the key that was drawn, not the row now at that place"
+    );
+}
+
+/// A list-detail whose panes the host draws, selection owned by the host: the
+/// list hands over keyed rows and the detail pane, and still routes the detail
+/// keys, the wheel and the drawer.
+fn list_detail_hosted_panes() {
+    const MASTER: WidgetId = WidgetId::of("scenario.hosted.master");
+    const DETAIL: WidgetId = WidgetId::of("scenario.hosted.detail");
+    let k = ItemKey::num;
+
+    #[derive(Default)]
+    struct Host {
+        rows: Vec<(usize, ItemKey, bool)>,
+        details: Vec<(bool, usize)>,
+        summaries: usize,
+    }
+    impl PaneHost for Host {
+        fn row(&mut self, row: MasterRow, _buf: &mut Buffer, _ctx: &mut RenderCtx) {
+            self.rows.push((row.index, row.key, row.selected));
+        }
+        fn empty(&mut self, _area: Rect, _buf: &mut Buffer, _ctx: &mut RenderCtx) {}
+        fn detail(&mut self, pane: DetailPane<'_>, _buf: &mut Buffer, _ctx: &mut RenderCtx) {
+            self.details.push((pane.drawer, pane.scroll.offset));
+            pane.scroll.set_content(100);
+            pane.scroll.set_viewport(5);
+        }
+        fn summary(&mut self, _area: Rect, _buf: &mut Buffer, _ctx: &mut RenderCtx) {
+            self.summaries += 1;
+        }
+    }
+
+    let wide = Rect::new(0, 0, 120, 10);
+    let narrow = Rect::new(0, 0, 60, 10);
+    let mut ld = ListDetail::new(MASTER, DETAIL, Split::new(50, 36, 40));
+    let hosted = |ld: &mut ListDetail, area: Rect, host: &mut Host| {
+        let theme = Theme::for_level(ColorLevel::TrueColor);
+        let mut buf = Buffer::empty(area);
+        let mut hits = HitRegistry::default();
+        let mut ring = FocusRing::default();
+        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        ld.render_hosted(
+            area,
+            3,
+            |i| k(i as u64 + 1),
+            Some(1),
+            &mut buf,
+            &mut ctx,
+            host,
+        );
+        hits
+    };
+
+    let mut host = Host::default();
+    let hits = hosted(&mut ld, wide, &mut host);
+    assert_eq!(
+        host.rows,
+        [(0, k(1), false), (1, k(2), true), (2, k(3), false)],
+        "every visible row arrives with its key and the host's selection"
+    );
+    assert_eq!(host.details, [(false, 0)], "a wide area splits beside");
+    assert_eq!(ld.master_offset(), 0);
+    assert!(ld.master_page() >= 1 && !ld.drawer_open());
+
+    let mut focus = Focus::default();
+    focus.focus(DETAIL);
+    assert_eq!(
+        ld.on_detail_key(&key(KeyCode::PageDown), &mut focus)
+            .outcome(),
+        Outcome::Changed,
+        "a detail key scrolls the host's pane"
+    );
+    let wheel = PointerEvent::new(
+        &hits,
+        Phase::Move,
+        DETAIL,
+        Position::new(100, 3),
+        1,
+        KeyModifiers::NONE,
+    );
+    assert_eq!(ld.wheel_event(&wheel, 2), Outcome::Changed);
+    let mut scrolled = Host::default();
+    hosted(&mut ld, wide, &mut scrolled);
+    assert!(scrolled.details[0].1 > 0, "{:?}", scrolled.details);
+    ld.reset_detail();
+    let mut reset = Host::default();
+    hosted(&mut ld, wide, &mut reset);
+    assert_eq!(reset.details[0].1, 0, "a new selection starts at the top");
+
+    let mut summary = Host::default();
+    hosted(&mut ld, narrow, &mut summary);
+    assert!(summary.details.is_empty() && summary.summaries == 1);
+    ld.open_detail(&mut focus);
+    let mut drawer = Host::default();
+    hosted(&mut ld, narrow, &mut drawer);
+    assert!(ld.drawer_open());
+    assert!(drawer.details[0].0, "the pane reports it is a drawer");
+
+    let rows = KeyedVec::try_from_rows(
+        [(1, "alpha"), (2, "bravo"), (3, "charlie")].map(|(n, l)| (k(n), ListRow::new(l))),
+    )
+    .expect("unique keys");
+    let frame = SourceFrame {
+        title: "Rows",
+        meta: "3",
+        head: &[],
+        under: None,
+        detail_title: "Detail",
+        detail_meta: "",
+        lines: &[],
+        actions: &[],
+    };
+    let mut painted = Vec::new();
+    let mut plain = ListDetail::new(MASTER, DETAIL, Split::new(50, 36, 40));
+    let theme = Theme::for_level(ColorLevel::TrueColor);
+    let mut buf = Buffer::empty(wide);
+    let mut hits = HitRegistry::default();
+    let mut ring = FocusRing::default();
+    let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+    plain.render_source_selected_with(
+        wide,
+        &rows,
+        &frame,
+        Some(2),
+        &mut buf,
+        &mut ctx,
+        |source, row: MasterRow, _buf, _ctx| {
+            painted.push((
+                ListDetailSource::row(source, row.index).label.to_owned(),
+                row.selected,
+            ));
+        },
+    );
+    assert_eq!(
+        painted,
+        [
+            ("alpha".to_owned(), false),
+            ("bravo".to_owned(), false),
+            ("charlie".to_owned(), true)
+        ],
+        "the caller paints each row, and the selection is the one supplied"
+    );
+    assert_eq!(
+        plain.selected_key(),
+        None,
+        "the list's own state is untouched"
+    );
 }
 
 #[test]
