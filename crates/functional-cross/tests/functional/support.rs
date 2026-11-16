@@ -36,24 +36,49 @@ fn app_binary(name: &str) -> &'static str {
     if let Some(path) = cache.get(name) {
         return path;
     }
-    let variable = format!("TCB_BIN_{}", name.to_ascii_uppercase());
-    let path = match std::env::var_os(&variable) {
-        Some(value) => PathBuf::from(value),
-        None => std::env::current_exe()
-            .expect("current test executable")
-            .parent()
-            .and_then(|deps| deps.parent())
-            .expect("test executable sits in <target>/<profile>/deps")
-            .join(name),
-    };
-    assert!(
-        path.is_file(),
-        "app binary `{name}` not found at {}. Build it first (`cargo build --workspace --bins`) or set {variable}.",
-        path.display()
-    );
+    let exe = std::env::current_exe().expect("current test executable");
+    let path = locate_app_binary(name, std::env::var_os(override_variable(name)), &exe)
+        .unwrap_or_else(|message| panic!("{message}"));
     let leaked: &'static str = Box::leak(path.to_string_lossy().into_owned().into_boxed_str());
     cache.insert(name.to_string(), leaked);
     leaked
+}
+
+fn override_variable(name: &str) -> String {
+    format!("TCB_BIN_{}", name.to_ascii_uppercase())
+}
+
+/// Resolves `name` without launching anything: the override when one is set,
+/// otherwise the sibling of the `deps/` directory `exe` sits in. It never falls
+/// back to another directory, so a missing build is an error, not a stale
+/// binary from an earlier run.
+pub fn locate_app_binary(
+    name: &str,
+    override_value: Option<std::ffi::OsString>,
+    exe: &std::path::Path,
+) -> Result<PathBuf, String> {
+    let variable = override_variable(name);
+    let path = match override_value {
+        Some(value) => PathBuf::from(value),
+        None => exe
+            .parent()
+            .and_then(|deps| deps.parent())
+            .ok_or_else(|| {
+                format!(
+                    "test executable {} does not sit in <target>/<profile>/deps",
+                    exe.display()
+                )
+            })?
+            .join(name),
+    };
+    if path.is_file() {
+        Ok(path)
+    } else {
+        Err(format!(
+            "app binary `{name}` not found at {}. Build it first (`cargo build --workspace --bins`) or set {variable}.",
+            path.display()
+        ))
+    }
 }
 
 /// Launch one app binary at 120 by 40 with truecolor and reduced motion, a

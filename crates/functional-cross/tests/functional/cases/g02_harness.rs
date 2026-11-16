@@ -493,3 +493,40 @@ fn harness_failing_run_saves_the_latest_checkpoint_cells() {
 fn harness_empty_binary_path_fails_fast() {
     let _ = Launch::new("harness-empty-binary", crate::support::HOLLA);
 }
+
+#[test]
+fn functional_binary_resolution_rejects_missing_candidate() {
+    let missing = std::env::temp_dir().join("termrock-no-such-candidate-bin");
+    assert!(!missing.exists());
+
+    let named = crate::support::locate_app_binary(
+        "holla",
+        Some(missing.clone().into_os_string()),
+        Path::new("/no/target/debug/deps/functional"),
+    )
+    .expect_err("an override naming a missing file is refused");
+    assert!(
+        named.contains("not found") && named.contains("TCB_BIN_HOLLA"),
+        "{named}"
+    );
+
+    let directory = crate::support::locate_app_binary(
+        "holla",
+        Some(std::env::temp_dir().into_os_string()),
+        Path::new("/no/target/debug/deps/functional"),
+    )
+    .expect_err("a directory is not a candidate binary");
+    assert!(directory.contains("not found"), "{directory}");
+
+    let sibling = crate::support::locate_app_binary(
+        "holla",
+        None,
+        Path::new("/no/target/debug/deps/functional"),
+    )
+    .expect_err("no build next to the test executable is an error, not a fallback");
+    assert!(sibling.contains("/no/target/debug/holla"), "{sibling}");
+
+    let bare = crate::support::locate_app_binary("holla", None, Path::new("functional"))
+        .expect_err("an executable path without a deps directory is refused");
+    assert!(bare.contains("does not sit in"), "{bare}");
+}
