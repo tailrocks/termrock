@@ -41,10 +41,14 @@ The cases that drive more than one app binary (`g02_harness` and the `x01_*`,
 binaries of its own, so it finds `showcase`, `tablepro` and `holla` by name
 next to its test executable in `target/<profile>/`, or at `TCB_BIN_<NAME>`. A
 nextest setup script (`app-bins` in `.config/nextest.toml`) runs
-`cargo build --locked --workspace --bins` before any selected
-`functional-cross` test, so `cargo nextest run -p functional-cross` works from
-a clean target directory. The script builds the dev profile, so
-`--cargo-profile release` would still launch the debug binaries.
+`scripts/build-app-bins.sh` before any selected `functional-cross` test, so
+`cargo nextest run -p functional-cross` works from a clean target directory.
+The script builds the three binaries with default features into
+`<target>/app-bins` and exports `TCB_BIN_<NAME>` for them. It uses its own
+target directory so that it never replaces `target/<profile>/showcase`, which
+the `functional` target of the root package launches and which a run with
+`--all-features` builds with `work-metrics`. The script builds the dev profile,
+so `--cargo-profile release` would still launch the debug binaries.
 
 Filter one journey during development, without hiding missing tests:
 
