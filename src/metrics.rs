@@ -20,6 +20,8 @@ mod state;
 #[cfg(feature = "work-metrics")]
 pub use state::{measure, record, reset, snapshot, suspended};
 
+pub mod measurement;
+
 #[cfg(feature = "work-metrics")]
 pub mod harness;
 #[cfg(feature = "work-metrics")]
@@ -102,10 +104,46 @@ metrics! {
     FitVisits => "fit_visits",
     /// Key comparisons made while ordering a fitter's removal candidates.
     FitCompares => "fit_compares",
+    /// Probes of the UTF-8 boundary rollback at the end of a bounded prefix,
+    /// one byte examined each.
+    PrefixRollbackProbes => "prefix_rollback_probes",
+    /// Bytes traversed by a NUL probe over a bounded prefix, stopping at the
+    /// first NUL.
+    NulBytesProbed => "nul_bytes_probed",
+    /// Bytes checked by a UTF-8 validation pass over a bounded prefix.
+    Utf8BytesValidated => "utf8_bytes_validated",
+    /// Bytes of preview lines passed through control-character sanitizing.
+    TextBytesSanitized => "text_bytes_sanitized",
+    /// Characters counted to apply a display line cap.
+    LineCharsCounted => "line_chars_counted",
+    /// Row payloads retrieved from a source: a `ScrollPanel` line read while
+    /// it wraps or measures its content, and a terminal grid or scrollback row
+    /// read by a `TerminalView` or `TerminalViewport` paint, copy or lookup.
+    SourceRowsRead => "source_rows_read",
+    /// Bytes handed to a terminal emulator's `feed`, before the feed guard
+    /// filters them.
+    TerminalBytesFed => "terminal_bytes_fed",
+    /// Cells the frame diff handed to the runtime's backend to draw. The diff's
+    /// own comparison of the two buffers happens inside `ratatui` and is not
+    /// counted.
+    DiffCellsVisited => "diff_cells_visited",
+    /// Bytes the runtime's backend wrote to its terminal writer, escape
+    /// sequences included.
+    TerminalBytesWritten => "terminal_bytes_written",
+    /// Raw terminal events the input turn took from the reader (`scan_next`),
+    /// filtered ones included. The discard of stale events at startup
+    /// (`discard_ready`) is not input work and is not counted.
+    RawEventsRead => "raw_events_read",
+    /// Raw events dropped before they became an input (focus guard, release
+    /// and other unhandled kinds).
+    RawEventsFiltered => "raw_events_filtered",
+    /// Inputs, external messages, resizes and ticks the runtime delivered to
+    /// `Application::handle`.
+    InputDispatches => "input_dispatches",
 }
 
 /// Number of [`Metric`] variants.
-pub const METRIC_COUNT: usize = Metric::FitCompares as usize + 1;
+pub const METRIC_COUNT: usize = Metric::InputDispatches as usize + 1;
 
 /// Raw counts of one thread at one instant, tagged so a delta can reject a
 /// snapshot that is not comparable.

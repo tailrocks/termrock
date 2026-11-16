@@ -189,3 +189,147 @@ fn work_contract_jackin_capsule_frame_after_typing() {
         ],
     );
 }
+
+#[test]
+fn work_contract_jackin_account_update() {
+    let mut f = fixture(Scenario::Returning);
+    f.press(KeyCode::Char('c'));
+    f.press(KeyCode::Down);
+    f.press(KeyCode::Down);
+    f.warm(30);
+    let accounts = f.app.world.accounts.accounts.len() as u64;
+    assert_eq!(accounts, 12, "the fixture size");
+    let id = f
+        .app
+        .world
+        .accounts
+        .accounts
+        .iter()
+        .find(|a| a.display_name == "Personal")
+        .map(|a| a.id.clone())
+        .expect("the selected account");
+    assert!(f.screen().contains("Claude · Personal"), "it is selected");
+
+    // The Accounts page is on screen and the Manager sits in its background
+    // tab. A settled tick polls the 2 daemons and rebuilds nothing.
+    let settled = [
+        (Metric::SchedulingRecordsVisited, 2),
+        (Metric::SchedulingPolls, 6),
+        (Metric::IntrinsicWidthCalls, 391),
+        (Metric::TextBytesMeasured, 2_010),
+        (Metric::FitVisits, 15),
+    ];
+    let before = f.screen_without_spinner();
+    let ((), idle) = measure(|| f.tick());
+    assert_eq!(
+        f.screen_without_spinner(),
+        before,
+        "the tick changes nothing"
+    );
+    assert_exact(&idle, "accounts settled tick", &settled);
+    f.report(
+        "jackin_accounts",
+        "settled_tick",
+        accounts as usize,
+        idle,
+        "12 accounts on the Accounts page; the frame text is unchanged by the tick",
+    );
+
+    // A roster change moves the roster epoch only. Neither the visible
+    // Accounts projection nor the Manager in the background rebuilds.
+    let workspace = f.app.world.workspaces[3].id;
+    let pull = f.app.world.workspaces[3].git_pull;
+    f.app
+        .world
+        .workspace_mut(workspace)
+        .expect("workspace")
+        .git_pull = !pull;
+    let ((), background) = measure(|| f.tick());
+    assert_eq!(
+        f.screen_without_spinner(),
+        before,
+        "the git pull policy is not on the Accounts page"
+    );
+    assert_exact(&background, "roster change then tick", &settled);
+    f.report(
+        "jackin_accounts",
+        "background_roster_change_then_tick",
+        accounts as usize,
+        background,
+        "the frame text is unchanged by a workspace policy edit",
+    );
+
+    // `r` marks the account refreshing: one registry change, so one sort of
+    // the 12 accounts and one row build.
+    let ((), start) = measure(|| f.press(KeyCode::Char('r')));
+    assert!(f.app.world.refresh_pending(&id).is_some(), "refresh is out");
+    assert_exact(
+        &start,
+        "refresh started",
+        &[
+            (Metric::ProjectionRebuilds, 2),
+            (Metric::RankRowsVisited, accounts),
+            (Metric::IntrinsicWidthCalls, 438),
+            (Metric::TextBytesMeasured, 2_115),
+            (Metric::FitVisits, 19),
+        ],
+    );
+
+    // While the reply is out, every tick is the same animated frame and
+    // rebuilds nothing.
+    let waiting = [
+        (Metric::SchedulingRecordsVisited, 2),
+        (Metric::SchedulingPolls, 6),
+        (Metric::IntrinsicWidthCalls, 450),
+        (Metric::TextBytesMeasured, 2_175),
+        (Metric::FitVisits, 19),
+    ];
+    let mut ticks = 0;
+    let delivered = loop {
+        let ((), tick) = measure(|| f.tick());
+        ticks += 1;
+        assert!(ticks <= 40, "the simulated reply arrives");
+        if f.app.world.refresh_pending(&id).is_none() {
+            break tick;
+        }
+        assert_exact(&tick, "tick while the refresh is out", &waiting);
+    };
+    assert_eq!(ticks, 10, "the simulated refresh answers on the 10th tick");
+
+    // The reply is one registry change: one sort and one row build, however
+    // many ticks waited for it.
+    assert!(f.screen().contains("Refreshed Claude · Personal"));
+    assert_exact(
+        &delivered,
+        "account update delivered",
+        &[
+            (Metric::ProjectionRebuilds, 2),
+            (Metric::RankRowsVisited, accounts),
+            (Metric::SchedulingRecordsVisited, 2),
+            (Metric::SchedulingPolls, 6),
+            (Metric::IntrinsicWidthCalls, 382),
+            (Metric::TextBytesMeasured, 2_031),
+            (Metric::FitVisits, 19),
+        ],
+    );
+    f.report(
+        "jackin_accounts",
+        "account_update_delivered",
+        accounts as usize,
+        delivered,
+        "the account shows refreshed and its status line says so",
+    );
+
+    let ((), after) = measure(|| f.tick());
+    assert_exact(
+        &after,
+        "settled tick after the update",
+        &[
+            (Metric::SchedulingRecordsVisited, 2),
+            (Metric::SchedulingPolls, 6),
+            (Metric::IntrinsicWidthCalls, 382),
+            (Metric::TextBytesMeasured, 2_031),
+            (Metric::FitVisits, 19),
+        ],
+    );
+}

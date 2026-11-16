@@ -44,6 +44,9 @@ use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Constraint, Rect, Size};
 
+mod scroll_panel;
+mod terminal;
+
 const VIEWPORT: Rect = Rect::new(0, 0, 100, 30);
 const SIZES: [usize; 3] = [1_000, 10_000, 100_000];
 const ID: WidgetId = WidgetId::of("work.budget");
