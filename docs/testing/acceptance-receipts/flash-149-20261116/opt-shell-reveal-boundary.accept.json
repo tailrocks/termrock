@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-reveal-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/target/functional/s01_reveal_off-47270-1794769815025144000-0/check-artifacts/opt-shell-reveal-boundary/f1dfb6e91586566c2fd84f2592ad952091061c3ecf4faa469bb6713f85945991/sample.tui.pb"
+  },
+  "candidate_sha256": "f1dfb6e91586566c2fd84f2592ad952091061c3ecf4faa469bb6713f85945991",
+  "baseline_sha256": "f1dfb6e91586566c2fd84f2592ad952091061c3ecf4faa469bb6713f85945991",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-reveal-boundary.tui.pb"
+  },
+  "error_code": null
+}
