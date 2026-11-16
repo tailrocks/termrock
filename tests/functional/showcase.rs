@@ -1986,8 +1986,10 @@ fn showcase_listdetail_dragging_the_detail_scrollbar_scrolls_the_detail() {
         !text(&screen).contains("port 443 only"),
         "the last binding starts below the fold"
     );
-    let thumb = find_all(&screen, "┃");
-    let track = find_all(&screen, "┆");
+    let beside_sidebar =
+        |points: Vec<Point>| -> Vec<Point> { points.into_iter().filter(|p| p.x > 40).collect() };
+    let thumb = beside_sidebar(find_all(&screen, "┃"));
+    let track = beside_sidebar(find_all(&screen, "┆"));
     assert!(!thumb.is_empty(), "the overflowing detail draws a thumb");
     let top = thumb[0];
     let bottom = *track
@@ -2170,7 +2172,11 @@ fn showcase_dialogkinds_sqlite_hides_remote_fields_and_keeps_their_values() {
 #[test]
 fn showcase_fixeddialogs_browser_box_refuses_and_shows_its_reason() {
     let app = fixed_dialogs("showcase-fixeddialogs-browser", &[]);
-    app.click_text("File browser");
+    let in_page = find_all(&app.screen(), "File browser")
+        .into_iter()
+        .find(|point| point.x > 30)
+        .expect("the page lists its File browser button beside the sidebar");
+    app.click(in_page);
     let open = app.wait_text("Read-only");
     assert!(text(&open).contains("[ ] Read-only"));
     assert!(text(&open).contains("Always read-only · the host decides"));
@@ -2386,6 +2392,33 @@ fn showcase_picker_nav_profiles_toggle_with_the_displayed_key() {
         app.key("enter");
         let selected = app.wait_text("ChoseMany: Row1");
         assert!(text(&selected).contains("1 selected"));
+        app.finish();
+    }
+}
+
+#[test]
+fn showcase_previously_hidden_pages_open_from_the_sidebar() {
+    for (group, label, slug) in [
+        ("Inputs & forms", "Fixed controls", "fixedcontrols"),
+        ("Overlays", "Fixed dialogs", "fixeddialogs"),
+        ("Layout", "List detail", "listdetail"),
+        ("Text & code", "Terminal pane", "terminalpane"),
+        ("Text & code", "Terminal viewport", "terminalviewport"),
+    ] {
+        let app = App::new(
+            &format!("showcase-sidebar-{slug}"),
+            SHOWCASE,
+            &["--motion", "paused"],
+            120,
+            40,
+            "truecolor",
+        );
+        app.wait_text(group);
+        app.click_text(group);
+        app.wait_text(label);
+        app.click_text(label);
+        let crumb = format!("{group} › {label}");
+        app.wait_text(&crumb);
         app.finish();
     }
 }

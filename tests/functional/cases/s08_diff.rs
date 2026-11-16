@@ -436,6 +436,7 @@ fn route_by_page_keyboard_and_pointer() {
         "Inputs & forms › Forms",
         "Inputs & forms › Checks & radios",
         "Inputs & forms › Toolbars",
+        "Inputs & forms › Fixed controls",
         "Tables › Basic table",
         "Tables › Editable",
         "Tables › Data grid",
@@ -452,6 +453,7 @@ fn route_by_page_keyboard_and_pointer() {
         "Overlays › Dialog kinds",
         "Overlays › Popups & tooltips",
         "Overlays › File browser",
+        "Overlays › Fixed dialogs",
         "Feedback › Progress",
         "Feedback › Empty & error",
         "Feedback › Meters",
@@ -461,6 +463,7 @@ fn route_by_page_keyboard_and_pointer() {
         "Layout › Splits & stacks",
         "Layout › Master-detail",
         "Layout › Pane tree",
+        "Layout › List detail",
         EDITOR,
         CRUMB,
     ];

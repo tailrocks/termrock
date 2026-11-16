@@ -992,7 +992,7 @@ fn s01_sidebar_current() {
     wait_focus(&app, "Inputs");
     app.key("right");
     app.wait_text("Buttons");
-    for _ in 0..8 {
+    for _ in 0..9 {
         app.key("down");
     }
     wait_focus(&app, "Tables");
