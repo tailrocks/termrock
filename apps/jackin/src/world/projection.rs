@@ -152,10 +152,12 @@ impl WorkCounters {
     }
 
     pub(crate) fn count_manager_build(&self) {
+        junie_tui::record_work!(ProjectionRebuilds, 1usize);
         add(&self.manager_builds, 1);
     }
 
     pub(crate) fn count_accounts_build(&self) {
+        junie_tui::record_work!(ProjectionRebuilds, 1usize);
         add(&self.accounts_builds, 1);
     }
 
@@ -215,6 +217,7 @@ impl RosterIndex {
     }
 
     pub(super) fn build(entries: &[InstanceEntry], epoch: u64, work: &WorkCounters) -> Self {
+        junie_tui::record_work!(ProjectionRebuilds, 1usize);
         add(&work.source_builds, 1);
         add(&work.membership_visits, entries.len() as u64);
         let (groups, running_ids) = group_instances(entries);
@@ -284,6 +287,8 @@ impl AccountIndex {
     }
 
     pub(super) fn build(registry: &AccountRegistry, epoch: u64, work: &WorkCounters) -> Self {
+        junie_tui::record_work!(ProjectionRebuilds, 1usize);
+        junie_tui::record_work!(RankRowsVisited, registry.accounts.len());
         add(&work.account_sorts, 1);
         let mut sorted: Vec<usize> = (0..registry.accounts.len()).collect();
         sorted.sort_by(|a, b| {

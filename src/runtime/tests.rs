@@ -8,18 +8,27 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Barrier, Mutex};
 use std::thread;
 
-use ratatui::backend::CrosstermBackend;
 use ratatui::layout::Rect;
-use ratatui::{DefaultTerminal, Terminal, TerminalOptions, Viewport};
+use ratatui::{Terminal, TerminalOptions, Viewport};
 
-use super::TerminalSession;
 use super::isolated::child_case;
 use super::job_control;
 use super::panic_bridge::RestoreGate;
+use super::{SessionTerminal, TerminalSession};
 
-fn fixed_terminal() -> io::Result<DefaultTerminal> {
+#[cfg(feature = "work-metrics")]
+fn stdout_backend() -> super::MeteredBackend<io::Stdout> {
+    super::MeteredBackend::new(io::stdout())
+}
+
+#[cfg(not(feature = "work-metrics"))]
+fn stdout_backend() -> ratatui::backend::CrosstermBackend<io::Stdout> {
+    ratatui::backend::CrosstermBackend::new(io::stdout())
+}
+
+fn fixed_terminal() -> io::Result<SessionTerminal> {
     Terminal::with_options(
-        CrosstermBackend::new(io::stdout()),
+        stdout_backend(),
         TerminalOptions {
             viewport: Viewport::Fixed(Rect::new(0, 0, 10, 3)),
         },
