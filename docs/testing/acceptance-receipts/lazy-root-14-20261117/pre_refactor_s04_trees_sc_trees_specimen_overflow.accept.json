@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s04_trees/sc_trees_specimen_overflow",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/lane-collections/target/functional/s04-sections-56477-1794850034055317000-0/check-artifacts/pre_refactor/s04_trees/sc_trees_specimen_overflow/a45d36a2b86b50a248a0997f424979353e0086675db9d7ee2dd7e921656a2023/sample.tui.pb"
+  },
+  "candidate_sha256": "a45d36a2b86b50a248a0997f424979353e0086675db9d7ee2dd7e921656a2023",
+  "baseline_sha256": "a45d36a2b86b50a248a0997f424979353e0086675db9d7ee2dd7e921656a2023",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/lane-collections/tests/functional/baselines/pre_refactor/s04_trees/sc_trees_specimen_overflow.tui.pb"
+  },
+  "error_code": null
+}

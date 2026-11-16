@@ -1,0 +1,75 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-q-target/rev-collections/debug/showcase",
+  "binary_sha256": "a8fb5dec12c47ed58fe02718d67e7cb9b5bef1df024a8add22a3f0bd87542af2",
+  "fixture_args": [
+    "--page",
+    "trees"
+  ],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "9dfebf10a900dbfc14bf9894b2e5a6c9160148b59709aa213dd06658a98ff3b7",
+  "expect_baseline": "13f095fc759a7cc8af6b98ae1ffe63a86894e5670f6c996530c7f693e29afc7f",
+  "precondition": "",
+  "session": null,
+  "expected_test_id": "pre_refactor/s04_trees/sc_trees_specimen_focused_hover",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/lazy-root-14-20261117/pre_refactor_s04_trees_sc_trees_specimen_focused_hover.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/lazy-root-14-20261117/pre_refactor_s04_trees_sc_trees_specimen_focused_hover.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/lazy-root-14-20261117/superseded/pre_refactor/s04_trees/sc_trees_specimen_focused_hover.tui.pb",
+  "test_id": "pre_refactor/s04_trees/sc_trees_specimen_focused_hover",
+  "acceptance": {
+    "expected_baseline_sha256": "13f095fc759a7cc8af6b98ae1ffe63a86894e5670f6c996530c7f693e29afc7f",
+    "accepted_baseline_sha256": "9dfebf10a900dbfc14bf9894b2e5a6c9160148b59709aa213dd06658a98ff3b7",
+    "candidate_sha256": "9dfebf10a900dbfc14bf9894b2e5a6c9160148b59709aa213dd06658a98ff3b7",
+    "transaction_receipt": "docs/testing/acceptance-receipts/lazy-root-14-20261117/pre_refactor_s04_trees_sc_trees_specimen_focused_hover.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "13f095fc759a7cc8af6b98ae1ffe63a86894e5670f6c996530c7f693e29afc7f"
+  },
+  "candidate": {
+    "sha256": "9dfebf10a900dbfc14bf9894b2e5a6c9160148b59709aa213dd06658a98ff3b7",
+    "path": "tests/functional/baselines/pre_refactor/s04_trees/sc_trees_specimen_focused_hover.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/lazy-root-14-20261117/superseded/pre_refactor/s04_trees/sc_trees_specimen_focused_hover.tui.pb",
+    "superseded_baseline_sha256": "13f095fc759a7cc8af6b98ae1ffe63a86894e5670f6c996530c7f693e29afc7f"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/s04_trees/sc_trees_specimen_focused_hover.tui.pb",
+    "candidate_sha256": "9dfebf10a900dbfc14bf9894b2e5a6c9160148b59709aa213dd06658a98ff3b7",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-q-target/rev-collections/debug/showcase",
+    "binary_sha256": "a8fb5dec12c47ed58fe02718d67e7cb9b5bef1df024a8add22a3f0bd87542af2",
+    "note": "A lazy root TreeNode now starts closed, so its disclosure glyph in the Files column draws as a closed arrow instead of an open one; no other cell changes."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s04_trees/sc_trees_specimen_focused_hover",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/lane-collections/target/functional/s04-sections-78224-1794849810792629000-0/check-artifacts/pre_refactor/s04_trees/sc_trees_specimen_focused_hover/9dfebf10a900dbfc14bf9894b2e5a6c9160148b59709aa213dd06658a98ff3b7/sample.tui.pb"
+    },
+    "candidate_sha256": "9dfebf10a900dbfc14bf9894b2e5a6c9160148b59709aa213dd06658a98ff3b7",
+    "baseline_sha256": "9dfebf10a900dbfc14bf9894b2e5a6c9160148b59709aa213dd06658a98ff3b7",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/lane-collections/tests/functional/baselines/pre_refactor/s04_trees/sc_trees_specimen_focused_hover.tui.pb"
+    },
+    "error_code": null
+  }
+}
