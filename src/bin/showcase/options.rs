@@ -1552,6 +1552,7 @@ pub static METERS: &[Opt] = &[
     Opt::new("meters.offline", "Offline (last-good)", OFF_ON),
     Opt::new("meters.stale_style", "Stale style", &["dashed", "faint"]),
     Opt::new("meters.international", "International values", OFF_ON),
+    Opt::new("meters.work", "Work counters", OFF_ON),
 ];
 
 pub static FILE_BROWSER: &[Opt] = &[

@@ -45,6 +45,7 @@ pub mod lists;
 pub mod master_detail;
 pub mod menus;
 pub mod meters;
+pub mod meters_work;
 pub mod notices;
 pub mod overview;
 pub mod pane_tree;

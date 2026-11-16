@@ -86,6 +86,7 @@ pub const CASES: &[ScenarioCase] = &[
     ScenarioCase { id: ScenarioId::SessionAttachReplay, run: session_attach_replay },
     ScenarioCase { id: ScenarioId::SessionInputAndPaste, run: session_input_and_paste },
     ScenarioCase { id: ScenarioId::SessionEndingsAndPolicy, run: session_endings_and_policy },
+    ScenarioCase { id: ScenarioId::WorkCounterContract, run: work_counter_contract },
 ];
 
 fn key(code: KeyCode) -> Key {
@@ -2171,4 +2172,149 @@ fn session_row(
         .collect::<String>()
         .trim_end()
         .to_owned()
+}
+
+/// The #56 work counters, on the Meters page's Work counters card. The same
+/// calls run in a build that records and in one that compiles the counters
+/// away: the catalog and the snapshot contract are always real, and
+/// `record_work!` counts exactly when `ENABLED` says it does.
+fn work_counter_contract() {
+    use crate::pages::meters_work;
+    use junie_tui::metrics::{
+        ENABLED, METRIC_COUNT, Metric, MetricsError, WorkDelta, WorkSnapshot,
+    };
+
+    /// `SegmentedLines` becomes `segmented_lines`: the name every metric must carry,
+    /// derived from the variant so the scenario does not repeat the catalog.
+    fn snake_case(variant: &str) -> String {
+        let mut out = String::new();
+        for (at, ch) in variant.chars().enumerate() {
+            if ch.is_ascii_uppercase() && at > 0 {
+                out.push('_');
+            }
+            out.push(ch.to_ascii_lowercase());
+        }
+        out
+    }
+
+    /// Counts `amount` of every metric through the recorder behind
+    /// `record_work!`, and returns each metric's count.
+    #[cfg(feature = "work-metrics")]
+    fn record_each(amount: u64) -> WorkDelta {
+        junie_tui::metrics::measure(|| {
+            for metric in Metric::ALL {
+                junie_tui::metrics::record(metric, amount);
+            }
+        })
+        .1
+    }
+
+    assert_eq!(ENABLED, cfg!(feature = "work-metrics"));
+    assert_eq!(Metric::ALL.len(), METRIC_COUNT);
+    for (index, metric) in Metric::ALL.into_iter().enumerate() {
+        assert_eq!(metric as usize, index, "ALL follows index order");
+        assert_eq!(metric.name(), snake_case(&format!("{metric:?}")));
+    }
+
+    let thread = std::thread::current().id();
+    let at = |epoch: u64, rows: u64| {
+        let mut counts = [0; METRIC_COUNT];
+        counts[Metric::VisibleRowsPainted as usize] = rows;
+        WorkSnapshot {
+            thread,
+            epoch,
+            counts,
+        }
+    };
+    let delta = at(0, 9).delta(at(0, 4)).expect("comparable snapshots");
+    assert_eq!(delta.get(Metric::VisibleRowsPainted), 5);
+    assert_eq!(
+        delta.nonzero().collect::<Vec<_>>(),
+        [(Metric::VisibleRowsPainted, 5)]
+    );
+    assert_eq!(WorkDelta::ZERO.nonzero().count(), 0);
+    assert_eq!(
+        delta.check_exact(&[(Metric::VisibleRowsPainted, 5)]),
+        Ok(())
+    );
+    assert_eq!(
+        delta.check_budget(&[(Metric::VisibleRowsPainted, 5)]),
+        Ok(())
+    );
+    assert_eq!(
+        delta.check_budget(&[(Metric::VisibleRowsPainted, 4)]),
+        Err("visible_rows_painted was 5, budget 4".to_owned())
+    );
+    assert_eq!(
+        delta.check_exact(&[]),
+        Err("visible_rows_painted was 5, expected 0".to_owned())
+    );
+    assert_eq!(at(1, 9).delta(at(0, 4)), Err(MetricsError::DifferentEpoch));
+    assert_eq!(
+        at(0, 1).delta(at(0, 4)),
+        Err(MetricsError::CounterWentBackwards {
+            index: Metric::VisibleRowsPainted as usize
+        })
+    );
+    let other = std::thread::spawn(|| std::thread::current().id())
+        .join()
+        .expect("thread id");
+    let mut foreign = at(0, 9);
+    foreign.thread = other;
+    assert_eq!(foreign.delta(at(0, 4)), Err(MetricsError::DifferentThread));
+    let merged = delta.merged(delta).expect("a small merge");
+    assert_eq!(merged.get(Metric::VisibleRowsPainted), 10);
+    assert_eq!(
+        WorkDelta([u64::MAX; METRIC_COUNT]).merged(delta),
+        Err(MetricsError::Overflow {
+            index: Metric::VisibleRowsPainted as usize
+        })
+    );
+
+    #[cfg(feature = "work-metrics")]
+    {
+        let counted = record_each(2);
+        assert_eq!(
+            counted.nonzero().count(),
+            METRIC_COUNT,
+            "the recorder accepts every metric variant"
+        );
+        assert_eq!(
+            counted.check_exact(&Metric::ALL.map(|metric| (metric, 2))),
+            Ok(())
+        );
+        let (_, delta) = junie_tui::metrics::measure(|| {
+            junie_tui::record_work!(SegmentedLines, 3usize);
+        });
+        assert_eq!(delta.get(Metric::SegmentedLines), 3);
+        assert_eq!(meters_work::probe(), Some(3));
+    }
+    #[cfg(not(feature = "work-metrics"))]
+    {
+        let evaluated = std::cell::Cell::new(false);
+        junie_tui::record_work!(InputDispatches, {
+            evaluated.set(true);
+            1usize
+        });
+        assert!(!evaluated.get(), "a compiled-out site never evaluates");
+        assert_eq!(meters_work::probe(), None);
+    }
+
+    let mut page = crate::pages::meters::page();
+    page.set_option("meters.work", 1);
+    let text = crate::pages::page_text(page.as_mut(), 120, 90);
+    for needle in [
+        "Work counters",
+        "34 metrics, segmented_lines to input_dispatches",
+        "visible_rows_painted +6, intrinsic_width_calls +40",
+        "intrinsic_width_calls was 40, budget 30",
+        "snapshots are from different threads",
+        "a reset ran between the snapshots",
+        "counter visible_rows_painted went backwards",
+        "counter intrinsic_width_calls overflowed",
+    ] {
+        assert!(text.contains(needle), "{needle:?} missing:\n{text}");
+    }
+    let build = if ENABLED { "recording" } else { "compiled out" };
+    assert!(text.contains(build), "the card names its build: {build}");
 }
