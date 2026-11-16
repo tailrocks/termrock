@@ -5,8 +5,6 @@
 //! `--frame 40` is only the pre-tick loop in `App::launch`. The test does not
 //! advance the clock.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{App, HOLLA, Launch, cell_bg, find_all, row_text, text, try_launch};
@@ -182,7 +180,7 @@ fn open_why_for_b(app: &App) {
 /// back. The size chip is not on screen at 80 columns, so that wait uses the
 /// terminal size rather than the text `80×24`.
 fn nudge(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.flash_expired();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");

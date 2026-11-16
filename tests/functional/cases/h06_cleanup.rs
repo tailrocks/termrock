@@ -14,8 +14,6 @@
 //! The heading is clipped to the list width, so the test locks the visible
 //! prefix, including `dry run: nothing is removed`.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{App, HOLLA, Launch, row_text, text, try_launch};
@@ -126,7 +124,7 @@ fn expand(app: &App) {
 }
 
 fn nudge(app: &App, ready: impl Fn(&TerminalSnapshot) -> bool) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.flash_expired();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");

@@ -9,8 +9,6 @@
 //! `returning` leaves `save_fails_once` false, so the first save succeeds.
 //! `create` does not write the file. The editor preview does.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 use tuiscotti_latest::check::CheckOutcome;
 
@@ -210,7 +208,7 @@ fn rearm_cancelled_duplicate(app: &App) {
 /// A same-size resize does not force a frame, and the cursor column is part
 /// of the hash. Nudge the width and come back while the dialog stays open.
 fn nudge(app: &App, quiet_frame: impl Fn(&TerminalSnapshot) -> bool) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.flash_expired();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");

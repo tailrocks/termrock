@@ -5,8 +5,6 @@
 //! The launch does not pass `--frame`. Reduced motion finishes discovery before
 //! the first frame, so the shots are not a spinner.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{App, HOLLA, Launch, text, try_launch};
@@ -123,7 +121,7 @@ fn back_on_port(screen: &TerminalSnapshot) -> bool {
 /// and comes back. The size chip is not a wait target: at 80 columns it can be
 /// omitted, and the arguments form must stay open with the literal text.
 fn nudge(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.flash_expired();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");

@@ -218,7 +218,7 @@ fn assert_ssh(screen: &TerminalSnapshot) {
 
 /// The waits follow the reported size and the system title, not the size chip.
 fn settle_system(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.flash_expired();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");

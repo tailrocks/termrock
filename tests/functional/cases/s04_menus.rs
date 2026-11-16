@@ -3,8 +3,6 @@
 //! Tuiscotti test ids are `[a-z0-9_-]` segments, so the baseline directory is
 //! `pre_refactor/s04_menus/` and each case id's dots become underscores.
 
-use std::time::Duration;
-
 use tui_test::{MouseButton, MouseOptions, TerminalSnapshot};
 
 use crate::support::{Launch, Point, SHOWCASE, cell_bg, find_all, row_text, text, try_launch};
@@ -176,11 +174,11 @@ fn grid_label(screen: &TerminalSnapshot, label: &str) -> bool {
         .any(|hit| hit.y >= 8 && hit.x >= 20 && hit.x < 40)
 }
 
-/// A released click keeps the 140ms press flash while motion is paused.
-/// Bump the width so the shell redraws, then return. 80 columns do not draw
+/// Wait out the 140ms press flash of a released click, then bump the width so
+/// the shell redraws and return. 80 columns do not draw
 /// the size caption, so the narrow return is checked from the screen size.
 fn quiesce(app: &crate::support::App) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.flash_expired();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");
@@ -1256,7 +1254,7 @@ fn option_release_selects() {
     let item = menu_item(&app, "Open");
     right(&app, item, "drag");
     right(&app, item, "up");
-    std::thread::sleep(Duration::from_millis(200));
+    app.flash_expired();
     let stayed = app.settle();
     assert!(
         menu_is_open(&stayed),
@@ -1445,7 +1443,7 @@ fn option_dismiss() {
     let opened = open_file_menu(&app, "report.pdf");
     assert!(menu_is_open(&opened));
     app.click(Point { x: 100, y: 30 });
-    std::thread::sleep(Duration::from_millis(200));
+    app.flash_expired();
     let stayed = app.settle();
     assert!(
         menu_is_open(&stayed),

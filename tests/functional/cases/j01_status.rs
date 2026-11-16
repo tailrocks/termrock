@@ -6,8 +6,6 @@
 //! tree row paints the meta. `populated(false)` does not create CleanExited.
 //! Superseded and Purged stay out of the list.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{App, JACKIN, Launch, row_text, text, try_launch};
@@ -107,7 +105,7 @@ fn narrow_c41e(screen: &TerminalSnapshot) -> bool {
 }
 
 fn nudge(app: &App, quiet: impl Fn(&TerminalSnapshot) -> bool) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.flash_expired();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");

@@ -147,6 +147,8 @@ pub struct App {
     recent: RefCell<VecDeque<(usize, TerminalSnapshot)>>,
     clock: bool,
     fence: bool,
+    /// A button was pressed or released since the last [`App::flash_expired`].
+    clicked: Cell<bool>,
 }
 
 impl App {
@@ -576,6 +578,12 @@ impl App {
 
     fn mouse(&self, action: CheckedMouseAction) {
         self.log(format!("mouse {action:?}"));
+        if matches!(
+            action,
+            CheckedMouseAction::Press { .. } | CheckedMouseAction::Release { .. }
+        ) {
+            self.clicked.set(true);
+        }
         self.session
             .mouse_checked(action)
             .expect("application must negotiate SGR mouse input for this action");
@@ -646,6 +654,29 @@ impl App {
     pub fn fence(&self) {
         if self.fence {
             self.fence_until(false);
+        }
+    }
+
+    /// Returns once the 140 ms press flash of every click sent so far has
+    /// expired in the app's own time, so the next draw paints the settled
+    /// colour. A same-size resize is such a draw.
+    ///
+    /// The fence proves the app has handled the click, so its flash deadline
+    /// is at most [`PointerConfig::DEFAULT`]`.flash_ms` after now. Waiting that
+    /// long from the fence is exact where a fixed sleep from the click is a guess
+    /// a loaded app can lose. A session on the stepped test clock never needs
+    /// the wait: its flash expires only on [`App::settle_flash`], and the wall
+    /// time that passes changes nothing. A session that does not answer the
+    /// fence (a reference build) keeps a 200 ms sleep.
+    pub fn flash_expired(&self) {
+        let clicked = self.clicked.replace(false);
+        if !self.fence {
+            std::thread::sleep(Duration::from_millis(200));
+            return;
+        }
+        self.fence();
+        if clicked && !self.clock {
+            std::thread::sleep(Duration::from_millis(PointerConfig::DEFAULT.flash_ms + 10));
         }
     }
 
@@ -857,7 +888,7 @@ pub fn flash_settle(app: &App) {
     if app.clock {
         app.settle_flash();
     } else {
-        std::thread::sleep(Duration::from_millis(200));
+        app.flash_expired();
     }
     redraw_after_flash(app);
 }
@@ -967,6 +998,7 @@ pub fn try_launch(launch: Launch) -> Result<App, LaunchError> {
                 recent: RefCell::new(VecDeque::new()),
                 clock: launch.clock,
                 fence: fenced(&launch),
+                clicked: Cell::new(false),
             };
             app.persist_actions();
             Ok(app)

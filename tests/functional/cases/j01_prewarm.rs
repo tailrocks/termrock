@@ -342,8 +342,9 @@ fn j01_prewarm_prewarm() {
         text(&instance)
     );
     app.key("w");
-    std::thread::sleep(Duration::from_millis(250));
-    let ignored = app.screen();
+    // The fence returns once the app has handled `w` and drawn, so an
+    // ignored key is read as ignored, not as not yet read.
+    let ignored = app.settle();
     let visible = text(&ignored);
     assert!(
         !visible.contains(BUSY) && !visible.contains(PROGRESS) && !visible.contains(REFUSAL),

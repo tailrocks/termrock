@@ -3,8 +3,6 @@
 //! Tuiscotti test ids are `[a-z0-9_-]` segments, so the baseline directory is
 //! `pre_refactor/s05_dialogs/` and each case id's dots become underscores.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{App, Launch, Point, SHOWCASE, find_all, row_text, text, try_launch};
@@ -320,11 +318,11 @@ fn assert_size(app: &App, cols: u16, rows: u16) {
     );
 }
 
-/// Paused motion keeps the 140ms press flash, so a released click is redrawn
-/// by growing the terminal until the size caption changes, then restoring it.
+/// Waits out the 140ms press flash, then redraws a released click by growing
+/// the terminal until the size caption changes and restoring it.
 /// Below 110 columns the caption is clipped, so the detour is 121.
 fn quiesce(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.flash_expired();
     let (cols, rows) = term_size(app);
     let bumped = if cols >= 110 { cols + 1 } else { 121 };
     app.resize(bumped, rows);

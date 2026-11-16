@@ -10,8 +10,6 @@
 //! starts. The header age is `ago(now - 1s)`, so it stays `1 s ago` without
 //! `--frame`.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{App, HOLLA, Launch, text, try_launch};
@@ -171,7 +169,7 @@ fn back_to_finder(app: &App) {
 /// A same-size resize does not force a frame, and the cursor column is part
 /// of the hash. Nudge the width and come back. The config page stays open.
 fn nudge(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.flash_expired();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");

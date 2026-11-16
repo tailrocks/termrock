@@ -117,7 +117,7 @@ fn quit_open(screen: &TerminalSnapshot) -> bool {
 }
 
 fn nudge(app: &App, ready: impl Fn(&TerminalSnapshot) -> bool) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.flash_expired();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");

@@ -10,8 +10,6 @@
 //! `OpsLog::append` drops the line when the write fails, so the history page
 //! shows the log failure and no new JSONL row.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{App, HOLLA, Launch, row_text, text, try_launch};
@@ -183,7 +181,7 @@ fn history_page(screen: &TerminalSnapshot) -> bool {
 }
 
 fn nudge(app: &App, ready: impl Fn(&TerminalSnapshot) -> bool) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.flash_expired();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");

@@ -841,10 +841,9 @@ fn cell_edit_shows_the_typed_character_before_commit() {
         ],
         &["Cell saved", "Edit cancelled", "1 edits", "No tasks yet"],
     );
-    // Paused motion does not redraw when the 140ms click flash expires, so the
-    // frame from typing Q can keep the pressed row. Wait past that window and
-    // resize away and back so the settled edit is drawn.
-    std::thread::sleep(std::time::Duration::from_millis(200));
+    // A same-size resize does not force a frame. Wait out the 140ms click
+    // flash, then resize away and back so the settled edit is drawn.
+    app.flash_expired();
     app.resize(121, 40);
     app.wait_text("121×40");
     app.resize(120, 40);

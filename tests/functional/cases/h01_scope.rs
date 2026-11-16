@@ -161,7 +161,7 @@ fn choose(app: &App, label: &str) {
 /// Same-size resize does not force a new frame. Nudge the width and come back.
 /// The wait is the terminal size, not the status-bar size chip.
 fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.flash_expired();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");

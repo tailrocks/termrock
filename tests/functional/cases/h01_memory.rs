@@ -13,8 +13,6 @@
 //! The drawn difference is the seeded frecency. `seed` keeps at most 20 stamps
 //! (`usage.rs`), so the 25-use `git.pull` row reads `used 20 times here`.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{App, Launch, text, try_launch};
@@ -145,7 +143,7 @@ fn assert_foreign(screen: &TerminalSnapshot) {
 /// of the hash (`cursor.col` is too). Nudge the width and come back. The
 /// narrow footer may omit a size chip, so this waits on the terminal size.
 fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.flash_expired();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");

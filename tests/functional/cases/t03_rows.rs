@@ -4,8 +4,6 @@
 //! `pre_refactor/t03_rows/` and each checkpoint's dots become underscores.
 //! TablePro has no `--page` flag. It opens on Connections.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{App, Launch, TABLEPRO, find_all, flash_settle, row_text, text, try_launch};
@@ -527,8 +525,7 @@ fn rows_show_counts_sort_and_refuse_editing() {
     );
 
     app.key("x");
-    std::thread::sleep(Duration::from_millis(300));
-    let kept = app.screen();
+    let kept = app.settle();
     assert!(
         line_with(&kept, KNOWN_TAB).1.contains(PIN),
         "close removed the pinned tab\n{}",

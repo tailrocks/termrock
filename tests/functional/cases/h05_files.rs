@@ -10,8 +10,6 @@
 //! The waits follow the reported size and `Files · ~/work/app`, not the
 //! status-bar size text.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{App, HOLLA, Launch, row_text, text, try_launch};
@@ -124,7 +122,7 @@ fn at_directory(screen: &TerminalSnapshot, path: &str) -> bool {
 }
 
 fn nudge(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.flash_expired();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");

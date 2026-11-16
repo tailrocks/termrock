@@ -120,7 +120,7 @@ fn clear_query(app: &App) {
 /// back. Below about 100 columns the header omits the size chip, so the wait
 /// follows `screen.cols()` and `screen.rows()` plus the page anchor.
 fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.flash_expired();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");

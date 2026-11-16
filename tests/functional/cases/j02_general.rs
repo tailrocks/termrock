@@ -346,7 +346,7 @@ fn quiet_preview(app: &App) -> TerminalSnapshot {
 /// A same-size resize does not force a frame, and the cursor column is part
 /// of the hash. Nudge the width and come back while the preview stays open.
 fn nudge(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.flash_expired();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");

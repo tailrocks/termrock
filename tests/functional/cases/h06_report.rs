@@ -12,8 +12,6 @@
 //! the checklist, not a selectable row, so this journey does not put the
 //! size-traversal failure on the report.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{App, HOLLA, Launch, text, try_launch};
@@ -150,7 +148,7 @@ fn painted(screen: &TerminalSnapshot, cols: u16, rows: u16) -> bool {
 }
 
 fn nudge(app: &App, ready: impl Fn(&TerminalSnapshot) -> bool) {
-    std::thread::sleep(Duration::from_millis(200));
+    app.flash_expired();
     let screen = app.screen();
     let cols = u16::try_from(screen.cols()).expect("cols");
     let rows = u16::try_from(screen.rows()).expect("rows");
