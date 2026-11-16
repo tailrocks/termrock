@@ -20,19 +20,37 @@ to the test ids listed in FILE, one per line.
 """
 
 import argparse
+import contextlib
 import hashlib
+import importlib.util
+import io
 import json
 import re
 import shutil
-import subprocess
 import sys
-import tempfile
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parent.parent
 BASELINES = ROOT / "tests/functional/baselines"
 REFRESH_TSV = ROOT / "docs/testing/baseline-refreshes-20261108.tsv"
 BINARY_TSV = ROOT / "docs/testing/binary-baselines-20261108.tsv"
+CHANGED_CELLS = "Changed cells:"
+TAG = re.compile(r"<[^>]*>")
+WINDOW = 400
+
+
+def load_acceptance():
+    """Load accept-baseline.py so its checks and acceptance run in this process."""
+    spec = importlib.util.spec_from_file_location(
+        "accept_baseline", ROOT / "scripts/accept-baseline.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+ACCEPT = load_acceptance()
 
 
 def sha256(path):
@@ -71,23 +89,39 @@ def latest_samples(evidence):
     return found
 
 
-def cells_changed(tuiscotti, test_id, sample):
+def cells_changed(tuiscotti, test_id, sample, digest):
     """False when the sample matches the baseline cell for cell."""
     baseline = find_baseline(test_id)
-    with tempfile.TemporaryDirectory() as artifacts:
-        result = subprocess.run(
-            [tuiscotti, "--json", "check", "--sample", str(sample),
-             "--baselines", str(baseline_root(test_id, baseline)),
-             "--artifacts", artifacts],
-            capture_output=True, text=True, check=False,
-        )
-        verdict = json.loads(result.stdout)
-        if verdict["status"] == "pass":
-            return False
-        report = Path(verdict["output_path"]["value"])
-        text = report.read_text() if report.exists() else ""
-        match = re.search(r"Changed cells:\s*(?:<[^>]+>\s*|</[^>]+>\s*)*(\d+)", text)
-        return not (match and int(match.group(1)) == 0)
+    check = argparse.Namespace(
+        tuiscotti=tuiscotti, candidate=sample, candidate_sha256=digest
+    )
+    try:
+        verdict = ACCEPT.inspect_sample(check, baseline_root(test_id, baseline), test_id)
+    except SystemExit:
+        return True
+    if verdict["status"] == "pass":
+        return False
+    report = Path(verdict["output_path"]["value"])
+    text = report.read_text() if report.exists() else ""
+    start = text.find(CHANGED_CELLS)
+    if start < 0:
+        return True
+    # Only a short window after the label matters, so the tag strip stays cheap.
+    words = TAG.sub(" ", text[start + len(CHANGED_CELLS):][:WINDOW]).split()
+    return not (words and words[0].isdigit() and int(words[0]) == 0)
+
+
+def accept(arguments):
+    """Run accept-baseline.py in this process; return (exit code, stderr text)."""
+    errors = io.StringIO()
+    code = 0
+    with mock.patch.object(sys, "argv", ["accept-baseline.py", *arguments]):
+        with contextlib.chdir(ROOT), contextlib.redirect_stderr(errors):
+            try:
+                ACCEPT.main()
+            except SystemExit as stop:
+                code = stop.code if isinstance(stop.code, int) else 1
+    return code, errors.getvalue()
 
 
 def main():
@@ -96,7 +130,9 @@ def main():
     parser.add_argument("--capture-note", required=True)
     parser.add_argument("--precondition", default="")
     parser.add_argument("--evidence", default=str(ROOT / "target/functional"))
-    parser.add_argument("--tests", help="file of test ids to accept, one per line")
+    parser.add_argument(
+        "--tests", type=argparse.FileType("r"), help="file of test ids to accept, one per line"
+    )
     parser.add_argument("--tuiscotti", default="tuiscotti")
     parser.add_argument("--dry", action="store_true")
     args = parser.parse_args()
@@ -104,15 +140,14 @@ def main():
     topic = args.topic.rstrip("/")
     wanted = None
     if args.tests:
-        wanted = {
-            line.strip() for line in Path(args.tests).read_text().splitlines() if line.strip()
-        }
+        with args.tests as handle:
+            wanted = {line.strip() for line in handle if line.strip()}
 
     candidates = {}
     for test_id, (sample, run, digest, _) in latest_samples(Path(args.evidence)).items():
         if wanted is not None and test_id not in wanted:
             continue
-        if cells_changed(args.tuiscotti, test_id, sample):
+        if cells_changed(args.tuiscotti, test_id, sample, digest):
             candidates[test_id] = (sample, run, digest)
     print(f"candidates {len(candidates)}")
     if wanted is not None:
@@ -138,7 +173,6 @@ def main():
         shutil.copyfile(baseline, ROOT / archive)
         session = json.loads((run / "session.json").read_text())
         command = [
-            sys.executable, str(ROOT / "scripts/accept-baseline.py"),
             "--candidate", str(sample), "--candidate-sha256", digest,
             "--expect-baseline", expect,
             "--baselines", str(baseline_root(test_id, baseline)),
@@ -152,10 +186,10 @@ def main():
             "--tuiscotti", args.tuiscotti,
         ]
         command += [f"--fixture-arg={arg}" for arg in session["args"]]
-        done = subprocess.run(command, capture_output=True, text=True, cwd=ROOT, check=False)
-        if done.returncode != 0:
+        code, errors = accept(command)
+        if code != 0:
             failed += 1
-            print(f"FAIL {test_id}: {done.stderr[-300:]}")
+            print(f"FAIL {test_id}: {errors[-300:]}")
             continue
         accepted = sha256(baseline)
         if accepted != digest:
@@ -173,7 +207,7 @@ def main():
 
     with REFRESH_TSV.open("a") as handle:
         handle.writelines(row + "\n" for row in refresh_rows)
-    BINARY_TSV.write_text("\n".join(binary_rows) + "\n")
+    ACCEPT.atomic_write_text(BINARY_TSV, "\n".join(binary_rows) + "\n")
     print(f"accepted {len(refresh_rows)}, failed {failed}")
     return 1 if failed else 0
 
