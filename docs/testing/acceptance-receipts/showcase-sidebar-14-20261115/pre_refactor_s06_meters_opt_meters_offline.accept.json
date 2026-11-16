@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s06_meters/opt_meters_offline",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s06_meters__opt_meters_offline.tui.pb"
+  },
+  "candidate_sha256": "cb3878bc93d2799641687485c24e340901c635567f70e6fb0f04a7123b7ee5f1",
+  "baseline_sha256": "cb3878bc93d2799641687485c24e340901c635567f70e6fb0f04a7123b7ee5f1",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s06_meters/opt_meters_offline.tui.pb"
+  },
+  "error_code": null
+}

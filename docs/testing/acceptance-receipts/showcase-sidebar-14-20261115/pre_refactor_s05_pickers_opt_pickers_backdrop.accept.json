@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s05_pickers/opt_pickers_backdrop",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s05_pickers__opt_pickers_backdrop.tui.pb"
+  },
+  "candidate_sha256": "f668cde815cbe684a7eb6e887ba0779c87144a3f6f44bb63ef49ce0872c0fe17",
+  "baseline_sha256": "f668cde815cbe684a7eb6e887ba0779c87144a3f6f44bb63ef49ce0872c0fe17",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s05_pickers/opt_pickers_backdrop.tui.pb"
+  },
+  "error_code": null
+}

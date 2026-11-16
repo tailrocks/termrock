@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s05_dialogs/opt_dialogs_guard_dirty",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s05_dialogs__opt_dialogs_guard_dirty.tui.pb"
+  },
+  "candidate_sha256": "75ce66d512c89ba4af15cda8fcc0dcd2002615888f466e73aad4b3612fd4d9e6",
+  "baseline_sha256": "75ce66d512c89ba4af15cda8fcc0dcd2002615888f466e73aad4b3612fd4d9e6",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s05_dialogs/opt_dialogs_guard_dirty.tui.pb"
+  },
+  "error_code": null
+}

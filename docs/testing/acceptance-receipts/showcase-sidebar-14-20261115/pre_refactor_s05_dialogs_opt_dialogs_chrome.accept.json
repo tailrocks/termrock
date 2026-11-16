@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s05_dialogs/opt_dialogs_chrome",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s05_dialogs__opt_dialogs_chrome.tui.pb"
+  },
+  "candidate_sha256": "0080b43bae71036d8453bae4f333be0b0ed7fc7c113c77472de9118a2b4981a0",
+  "baseline_sha256": "0080b43bae71036d8453bae4f333be0b0ed7fc7c113c77472de9118a2b4981a0",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s05_dialogs/opt_dialogs_chrome.tui.pb"
+  },
+  "error_code": null
+}
