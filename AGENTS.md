@@ -168,7 +168,7 @@ workspaces, Docker, OpenShell, Codex).
   scenario functions), `coverage_debt/<lane>.txt` and its marked block of
   `ScenarioId`. The gate rejects a lane file that is not wired in, a debt file
   with no lane and an id listed twice. `scripts/catalog-debt-lanes.py`
-  classifies the debt and redistributes it (`report`, `write`, `prune`). After a change
+  classifies the debt and redistributes it (`report`, `write`, `list`). After a change
   moves many captures, `scripts/accept-changed-baselines.py` re-accepts each
   changed one through `scripts/accept-baseline.py` with `--expect-baseline` set
   to the digest in the tree (main's, after a rebase); `--dry` lists candidates.
