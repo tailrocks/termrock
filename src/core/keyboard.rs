@@ -339,3 +339,99 @@ pub fn label_deliverable(key: &str) -> bool {
 pub fn set_alt_delivered(on: bool) {
     ALT.store(if on { 1 } else { 2 }, Ordering::SeqCst);
 }
+
+/// These tests change the process-wide negotiation state that only the
+/// runtime host touches. nextest runs each test in its own process, so each
+/// one starts from the untouched default state.
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn chord(code: KeyCode, mods: KeyModifiers) -> Input {
+        Input::Key(Key { code, mods })
+    }
+
+    #[test]
+    fn observe_learns_alt_and_super_from_the_keys_it_sees() {
+        set_alt_keys(AltKeys::UntilSeen);
+        assert!(!alt_delivered(), "nothing has proved Alt arrives yet");
+        assert!(!super_delivered(), "nothing has proved Super arrives yet");
+
+        observe(&Input::Tick);
+        observe(&chord(KeyCode::Char('x'), KeyModifiers::ALT));
+        assert!(
+            !alt_delivered(),
+            "Alt+letter may be Option typing a character, so it proves nothing"
+        );
+        observe(&chord(KeyCode::Up, KeyModifiers::ALT));
+        assert!(alt_delivered(), "Alt+Up can only be a real Alt chord");
+
+        observe(&chord(KeyCode::Char('k'), KeyModifiers::SUPER));
+        assert!(super_delivered(), "a Super chord arrived");
+    }
+
+    #[test]
+    fn observe_does_not_override_a_pinned_refusal() {
+        set_super_delivered(false);
+        set_alt_delivered(false);
+        observe(&chord(KeyCode::Char('k'), KeyModifiers::SUPER));
+        observe(&chord(KeyCode::Up, KeyModifiers::ALT));
+        assert!(!super_delivered());
+        assert!(!alt_delivered());
+    }
+
+    #[test]
+    fn set_alt_keys_selects_the_alt_policy() {
+        for keys in [
+            AltKeys::Delivered,
+            AltKeys::Refused,
+            AltKeys::UntilSeen,
+            AltKeys::WithProtocol,
+        ] {
+            set_alt_keys(keys);
+            assert_eq!(AltKeys::current(), keys);
+        }
+        set_alt_keys(AltKeys::Delivered);
+        assert!(alt_delivered());
+        set_alt_keys(AltKeys::Refused);
+        assert!(!alt_delivered());
+        set_alt_keys(AltKeys::WithProtocol);
+        assert!(!alt_delivered(), "no protocol and no Alt chord seen yet");
+    }
+
+    #[test]
+    fn set_alt_delivered_and_set_super_delivered_pin_what_the_terminal_sends() {
+        set_alt_keys(AltKeys::Refused);
+        set_alt_delivered(true);
+        assert!(alt_delivered(), "a pin beats the policy");
+        set_alt_keys(AltKeys::Delivered);
+        set_alt_delivered(false);
+        assert!(!alt_delivered());
+
+        set_super_delivered(true);
+        assert!(super_delivered());
+        set_super_delivered(false);
+        assert!(!super_delivered());
+    }
+
+    #[test]
+    fn session_enter_leave_and_resume_push_and_pop_the_flags_once() {
+        assert!(!active());
+        assert_eq!(session::enter(KeyboardProtocol::Off, || true), None);
+        assert!(!active());
+        assert_eq!(session::resume(), None, "disabled: nothing to resume");
+        assert_eq!(
+            session::enter(KeyboardProtocol::On, || false),
+            Some(push(FLAGS))
+        );
+        assert!(active());
+        assert_eq!(session::resume(), None, "already pushed");
+        set_alt_keys(AltKeys::WithProtocol);
+        assert!(alt_delivered(), "the protocol delivers Alt chords");
+        assert_eq!(session::leave(), Some(POP));
+        assert!(!active());
+        assert_eq!(session::leave(), None, "nothing left to pop");
+        assert_eq!(session::resume(), Some(push(FLAGS)), "back from suspend");
+        assert_eq!(session::leave(), Some(POP));
+    }
+}
