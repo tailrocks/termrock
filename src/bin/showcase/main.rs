@@ -91,8 +91,8 @@ fn main() -> std::io::Result<()> {
         coverage::SEARCH_SESSION_ALLOWLIST,
         coverage::SEARCH_DETAIL_PAGES,
         coverage::SEARCH_DETAIL_COVERAGE,
-        coverage::PROOFS,
-        coverage::EXCEPTIONS,
+        coverage::proofs,
+        coverage::exceptions,
     );
     let cli: Cli = junie_tui::cli::parse(cli_after_help());
     let motion = cli.common.motion(NO_MOTION_ENV);
