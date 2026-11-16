@@ -7,7 +7,7 @@
 //! No transport I/O happens here.
 
 use std::collections::VecDeque;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 use junie_tui::core::event::Key;
@@ -38,6 +38,8 @@ const ADVANCE_MS: i64 = 200;
 const PLAY_MS: i64 = 1_000;
 const KEPT_EFFECTS: usize = 3;
 const KEPT_COMMANDS: usize = 3;
+const LINK_CLOSED_MS: i64 = 1_500;
+const SEVERED_END_MS: i64 = 2_500;
 
 const BANNER: &[u8] = b"\x1b]0;demo session\x07\x1b[2J\x1b[H\x1b[1;32mdemo\x1b[0m$ ls\r\n\x1b[34mdocs\x1b[0m  notes.txt\r\n\x1b[1;32mdemo\x1b[0m$ ";
 const RESTARTED: &[u8] = b"\x1b[2J\x1b[H\x1b[2mrestarted\x1b[0m\r\n\x1b[1;32mdemo\x1b[0m$ ";
@@ -59,6 +61,8 @@ pub enum Script {
     Detaches,
     Exits,
     Fails,
+    Refuses,
+    Severs,
 }
 
 impl Script {
@@ -68,12 +72,14 @@ impl Script {
             "detaches" => Self::Detaches,
             "exits" => Self::Exits,
             "fails" => Self::Fails,
+            "refused" => Self::Refuses,
+            "severed" => Self::Severs,
             _ => Self::Owner,
         }
     }
 }
 
-type CommandLog = Arc<Mutex<Vec<String>>>;
+pub type CommandLog = Arc<Mutex<Vec<String>>>;
 
 #[derive(Debug, Clone)]
 struct Step {
@@ -129,9 +135,27 @@ fn plan(script: Script, again: bool) -> Vec<Step> {
             steps.push(at(1_500, SessionEvent::Ended(SessionEnd::Detached)));
         }
         Script::Exits if !again => steps.push(at(1_500, SessionEvent::Exited(Some(0)))),
-        Script::Detaches | Script::Exits | Script::Fails => {}
+        Script::Refuses if !again => {
+            steps = vec![at(
+                0,
+                SessionEvent::Ended(SessionEnd::Refused(DemoFault(
+                    "the other side refused the attach",
+                ))),
+            )];
+        }
+        Script::Severs if !again => steps.push(at(
+            SEVERED_END_MS,
+            SessionEvent::Ended(SessionEnd::Failed(DemoFault("the connection dropped"))),
+        )),
+        Script::Detaches | Script::Exits | Script::Fails | Script::Refuses | Script::Severs => {}
     }
     steps
+}
+
+/// When the link of the severed script stops taking commands: before it
+/// reports the end, as a dying connection does.
+fn closes_after_ms(script: Script, again: bool) -> Option<i64> {
+    (script == Script::Severs && !again).then_some(LINK_CLOSED_MS)
 }
 
 /// Plays timed events on the host's clock. The first drain starts the clock.
@@ -142,6 +166,8 @@ fn plan(script: Script, again: bool) -> Vec<Step> {
 struct ScriptedLink {
     plan: Mutex<Plan>,
     commands: CommandLog,
+    closes_after_ms: Option<i64>,
+    closed: AtomicBool,
 }
 
 #[derive(Debug)]
@@ -158,7 +184,14 @@ impl ScriptedLink {
                 steps: steps.into(),
             }),
             commands: Arc::clone(commands),
+            closes_after_ms: None,
+            closed: AtomicBool::new(false),
         }
+    }
+
+    fn closing_after(mut self, closes_after_ms: Option<i64>) -> Self {
+        self.closes_after_ms = closes_after_ms;
+        self
     }
 
     fn log(&self, line: String) {
@@ -168,6 +201,9 @@ impl ScriptedLink {
 
 impl SessionLink<DemoFault> for ScriptedLink {
     fn send(&self, command: SessionCommand) -> SessionSent {
+        if self.closed.load(Ordering::Relaxed) {
+            return SessionSent::Closed;
+        }
         self.log(match command {
             SessionCommand::Input(bytes) => format!("input {}", caret(&bytes)),
             SessionCommand::Reply(bytes) => format!("reply {}", caret(&bytes)),
@@ -184,6 +220,12 @@ impl SessionLink<DemoFault> for ScriptedLink {
     fn drain(&self, now_ms: i64, output_budget: usize) -> Vec<SessionEvent<DemoFault>> {
         let mut plan = self.plan.lock().expect("plan");
         let started = *plan.started.get_or_insert(now_ms);
+        if self
+            .closes_after_ms
+            .is_some_and(|after| started.saturating_add(after) <= now_ms)
+        {
+            self.closed.store(true, Ordering::Relaxed);
+        }
         let mut out = Vec::new();
         let mut bytes = 0;
         while let Some(step) = plan.steps.front_mut() {
@@ -226,8 +268,14 @@ struct ScriptedSource {
 }
 
 impl ScriptedSource {
-    fn link(&self, steps: Vec<Step>) -> Result<Box<dyn SessionLink<DemoFault>>, DemoFault> {
-        Ok(Box::new(ScriptedLink::new(steps, &self.commands)))
+    fn link(
+        &self,
+        steps: Vec<Step>,
+        closes_after_ms: Option<i64>,
+    ) -> Result<Box<dyn SessionLink<DemoFault>>, DemoFault> {
+        Ok(Box::new(
+            ScriptedLink::new(steps, &self.commands).closing_after(closes_after_ms),
+        ))
     }
 }
 
@@ -237,12 +285,15 @@ impl SessionSource<DemoFault> for ScriptedSource {
         if self.script == Script::Fails && !again {
             return Err(DemoFault("no capacity, the host is busy"));
         }
-        self.link(plan(self.script, again))
+        self.link(
+            plan(self.script, again),
+            closes_after_ms(self.script, again),
+        )
     }
 
     fn restart(&self, size: SessionSize) -> Result<Box<dyn SessionLink<DemoFault>>, DemoFault> {
         if self.script == Script::Exits {
-            return self.link(attach(SessionLease::Owner, RESTARTED));
+            return self.link(attach(SessionLease::Owner, RESTARTED), None);
         }
         self.open(size)
     }
@@ -252,10 +303,18 @@ impl SessionSource<DemoFault> for ScriptedSource {
     }
 }
 
-/// Deny-by-default: no program writes or reads this host's clipboard. Titles
-/// and notices lose their control characters.
+/// Deny-by-default: no program writes or reads this host's clipboard, unless
+/// the page's "Clipboard policy" option lets a write through. Titles and
+/// notices lose their control characters.
 #[derive(Debug)]
-struct DemoPolicy;
+struct DemoPolicy {
+    copies: bool,
+}
+
+/// The host policy a session starts with and the page's option swaps.
+pub fn host_policy(copies: bool) -> Arc<dyn SessionHostPolicy> {
+    Arc::new(DemoPolicy { copies })
+}
 
 fn plain(raw: &str) -> String {
     raw.chars()
@@ -280,11 +339,13 @@ impl SessionHostPolicy for DemoPolicy {
         payload: &str,
     ) -> SessionClipboardDecision {
         let data = payload.split_once(';').map_or(payload, |(_, data)| data);
-        SessionClipboardDecision::Refuse(if data == "?" {
-            SessionClipboardRefusal::Read
+        if data == "?" {
+            SessionClipboardDecision::Refuse(SessionClipboardRefusal::Read)
+        } else if self.copies {
+            SessionClipboardDecision::Copy(data.to_owned())
         } else {
-            SessionClipboardRefusal::Write
-        })
+            SessionClipboardDecision::Refuse(SessionClipboardRefusal::Write)
+        }
     }
 }
 
@@ -359,6 +420,32 @@ fn placeholder(session: &TerminalSessionController<DemoFault>) -> Option<[String
     }
 }
 
+/// The page's scripted session without its presentation: a controller over
+/// the script's transport with the deny-by-default policy, and the log of
+/// what the controller sent to the link. It has no area yet.
+pub fn controller(
+    script: Script,
+    feed_budget_bytes: usize,
+) -> (TerminalSessionController<DemoFault>, CommandLog) {
+    let commands = CommandLog::default();
+    let source = Arc::new(ScriptedSource {
+        script,
+        opens: AtomicUsize::new(0),
+        commands: Arc::clone(&commands),
+    });
+    let mut session = TerminalSessionController::new(
+        WidgetId::of("terminalpane.session"),
+        source,
+        SessionConfig::new(200),
+        host_policy(false),
+    );
+    session.set_config(SessionConfig {
+        feed_budget_bytes,
+        ..SessionConfig::new(200)
+    });
+    (session, commands)
+}
+
 pub struct SessionDemo {
     session: TerminalSessionController<DemoFault>,
     commands: CommandLog,
@@ -367,6 +454,7 @@ pub struct SessionDemo {
     budget: usize,
     now_ms: i64,
     held_paste: Option<String>,
+    copies: bool,
     effects: Vec<String>,
     result: Option<String>,
 }
@@ -383,22 +471,7 @@ impl SessionDemo {
                 SessionConfig::MINIMUM.cols - 4,
             )
         };
-        let commands = CommandLog::default();
-        let source = Arc::new(ScriptedSource {
-            script,
-            opens: AtomicUsize::new(0),
-            commands: Arc::clone(&commands),
-        });
-        let mut session = TerminalSessionController::new(
-            WidgetId::of("terminalpane.session"),
-            source,
-            SessionConfig::new(200),
-            Arc::new(DemoPolicy),
-        );
-        session.set_config(SessionConfig {
-            feed_budget_bytes: budget,
-            ..SessionConfig::new(200)
-        });
+        let (mut session, commands) = controller(script, budget);
         session.sync_size(Rect::new(0, 0, cols + 1, rows));
         if session.live() {
             session.pump(0);
@@ -411,11 +484,20 @@ impl SessionDemo {
             budget,
             now_ms: 0,
             held_paste: None,
+            copies: false,
             effects: Vec::new(),
             result: None,
         };
         demo.collect();
         demo
+    }
+
+    /// Lets a program's clipboard write through as a `Copy` effect, or
+    /// refuses it again, by swapping the session's host policy.
+    pub fn clipboard_copies(mut self, copies: bool) -> Self {
+        self.copies = copies;
+        self.session.set_host_policy(host_policy(copies));
+        self
     }
 
     pub fn held_paste(&self) -> bool {
@@ -600,6 +682,14 @@ impl SessionDemo {
                 ),
             ),
             Prop::new("drain budget", format!("{} bytes", self.budget)),
+            Prop::new(
+                "clipboard",
+                if self.copies {
+                    "copies a write"
+                } else {
+                    "refuses a write"
+                },
+            ),
             Prop::new("link commands", commands.len().to_string()),
             Prop::new(
                 "closing",

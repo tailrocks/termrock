@@ -83,6 +83,9 @@ pub const CASES: &[ScenarioCase] = &[
     ScenarioCase { id: ScenarioId::ModalFocusPolicy, run: modal_focus_policy },
     ScenarioCase { id: ScenarioId::DocumentWorkspaceLifecycle, run: document_workspace_lifecycle },
     ScenarioCase { id: ScenarioId::CompletionPopupSnapshot, run: completion_popup_snapshot },
+    ScenarioCase { id: ScenarioId::SessionAttachReplay, run: session_attach_replay },
+    ScenarioCase { id: ScenarioId::SessionInputAndPaste, run: session_input_and_paste },
+    ScenarioCase { id: ScenarioId::SessionEndingsAndPolicy, run: session_endings_and_policy },
 ];
 
 fn key(code: KeyCode) -> Key {
@@ -1874,4 +1877,298 @@ fn document_workspace_lifecycle() {
             .any(|action| action.starts_with(&format!("closed {a:?}")))
     );
     assert!(workspace.get(a).is_none() && workspace.get(b).is_some());
+}
+
+/// The Terminal pane page's session controller, driven directly: the area
+/// the program needs, the attach, the replay window that follows it, the
+/// program's title, bell and clipboard request, and what the host reads back.
+fn session_attach_replay() {
+    use crate::pages::terminal_session::{DemoFault, Script, controller};
+    use junie_tui::terminal::{
+        SessionClipboardRefusal, SessionConfig, SessionEffect, SessionLease, SessionStatus,
+    };
+
+    let (mut session, commands) = controller(Script::Owner, 64 * 1024);
+    assert_eq!(session.status(), &SessionStatus::<DemoFault>::Pending);
+    assert!(!session.live() && !session.has_output() && session.title().is_none());
+
+    let min = SessionConfig::MINIMUM;
+    session.sync_size(Rect::new(0, 0, min.cols - 3, min.rows - 1));
+    assert!(session.too_small(), "below the minimum the session waits");
+    assert_eq!(session.status(), &SessionStatus::Pending);
+    assert!(!session.live());
+
+    session.sync_size(Rect::new(0, 0, 41, 12));
+    assert!(!session.too_small() && session.live());
+    assert_eq!(session.status(), &SessionStatus::Attaching);
+    assert_eq!(session.next_replay_deadline(), None, "no attach yet");
+
+    assert!(session.pump(0), "the attach and the replay arrive");
+    for now in [100, 200, 300, 400, 500] {
+        session.pump(now);
+    }
+    assert_eq!(session.status(), &SessionStatus::Attaching);
+    assert_eq!(session.next_replay_deadline(), Some(600));
+    assert!(session.has_output(), "the replay painted the screen");
+    session.pump(600);
+    assert_eq!(
+        session.status(),
+        &SessionStatus::Attached(SessionLease::Owner)
+    );
+    assert_eq!(session.next_replay_deadline(), None);
+    assert_eq!(session.title(), Some("demo session"));
+    assert_eq!(session_row(&session, 0), "demo$ ls");
+    assert!(session.close_needs_confirm(), "an attached session asks");
+    assert_eq!(session.dropped_replies(), 0);
+
+    let mut now = 600;
+    while now < 1_200 {
+        now += 100;
+        session.pump(now);
+    }
+    assert!(
+        logged(&commands).contains(&"reply ESC [ 3 ; 5 R".to_owned()),
+        "the owner answers the program's query: {:?}",
+        logged(&commands)
+    );
+    while now < 1_500 {
+        now += 100;
+        session.pump(now);
+    }
+    assert!(
+        session.attention(),
+        "a bell while unfocused asks for a look"
+    );
+    session.focus_changed(true);
+    assert!(!session.attention(), "focus clears the attention");
+    while now < 2_000 {
+        now += 100;
+        session.pump(now);
+    }
+    assert_eq!(
+        session.take_effects(),
+        [SessionEffect::ClipboardRefused(
+            SessionClipboardRefusal::Write
+        )],
+        "deny by default"
+    );
+    assert!(session.take_effects().is_empty(), "effects are read once");
+
+    let (mut small, _) = controller(Script::Owner, 64 * 1024);
+    small.set_config(SessionConfig {
+        feed_budget_bytes: 8,
+        ..SessionConfig::new(200)
+    });
+    small.sync_size(Rect::new(0, 0, 41, 12));
+    for now in (0..=700).step_by(100) {
+        small.pump(now);
+    }
+    assert_eq!(
+        small.status(),
+        &SessionStatus::Attaching,
+        "a small drain budget keeps the replay window open"
+    );
+    assert_eq!(small.next_replay_deadline(), Some(800));
+}
+
+/// Typing, clicking, pasting and the wheel through the controller, and what
+/// the link receives for each.
+fn session_input_and_paste() {
+    use crate::pages::terminal_session::{Script, controller};
+    use junie_tui::terminal::{SessionKey, SessionPaste};
+
+    let (mut session, commands) = controller(Script::Owner, 64 * 1024);
+    let a = key(KeyCode::Char('a'));
+    assert_eq!(session.key(&a, 0), SessionKey::Consumed, "no link yet");
+    assert_eq!(session.paste("echo hello", 0), SessionPaste::Dropped);
+
+    session.sync_size(Rect::new(0, 0, 41, 12));
+    for now in (0..=700).step_by(100) {
+        session.pump(now);
+    }
+    assert!(
+        logged(&commands)
+            .iter()
+            .all(|line| !line.starts_with("input"))
+    );
+    assert_eq!(session.key(&a, 700), SessionKey::Forwarded);
+    assert_eq!(
+        logged(&commands).last().map(String::as_str),
+        Some("input a")
+    );
+
+    session.gesture(700);
+    assert_eq!(session.paste("echo hello", 700), SessionPaste::Sent);
+    assert_eq!(
+        session.paste("one\ntwo\nthree", 700),
+        SessionPaste::NeedsConfirm { lines: 3 },
+        "a multi-line paste waits for the operator"
+    );
+    let held = logged(&commands).len();
+    assert_eq!(
+        session.paste_confirmed("one\ntwo\nthree", 700),
+        SessionPaste::Sent
+    );
+    assert_eq!(
+        logged(&commands).len(),
+        held + 1,
+        "the confirmed paste went out"
+    );
+
+    assert_eq!(
+        session.wheel(Axis::Vertical, -1),
+        None,
+        "off the alternate screen the viewport scrolls itself"
+    );
+    session.redraw();
+    assert_eq!(logged(&commands).last().map(String::as_str), Some("redraw"));
+
+    let sent = logged(&commands).len();
+    session.clear();
+    session.viewport_mut().reset();
+    assert_eq!(session.viewport().offset(), 0);
+    assert_eq!(session_row(&session, 0), "", "the host's screen is blank");
+    assert_eq!(logged(&commands).len(), sent, "no byte reached the program");
+}
+
+/// How a session ends and how the host policy answers a program: detach,
+/// exit, a failed or refused attach, a dying link, a viewer lease, and a
+/// policy swapped while the program runs.
+fn session_endings_and_policy() {
+    use crate::pages::terminal_session::{DemoFault, Script, controller, host_policy};
+    use junie_tui::terminal::{
+        SessionDetach, SessionEffect, SessionKey, SessionLease, SessionPaste, SessionStatus,
+    };
+
+    let ready = |script: Script, until: i64| {
+        let (mut session, commands) = controller(script, 64 * 1024);
+        session.sync_size(Rect::new(0, 0, 41, 12));
+        for now in (0..=until).step_by(100) {
+            session.pump(now);
+        }
+        (session, commands)
+    };
+    let enter = key(KeyCode::Enter);
+
+    let (mut session, _) = ready(Script::Detaches, 1_500);
+    assert_eq!(
+        session.status(),
+        &SessionStatus::Detached(SessionDetach::Operator)
+    );
+    assert_eq!(
+        session.take_effects(),
+        [SessionEffect::Detached(SessionDetach::Operator)]
+    );
+    assert_eq!(session.key(&enter, 1_600), SessionKey::Consumed);
+    assert_eq!(
+        session.status(),
+        &SessionStatus::Attaching,
+        "Enter reattaches"
+    );
+
+    let (mut session, _) = ready(Script::Exits, 1_500);
+    assert_eq!(session.status(), &SessionStatus::Exited(Some(0)));
+    assert_eq!(session.key(&enter, 1_600), SessionKey::Consumed);
+    assert_eq!(
+        session.status(),
+        &SessionStatus::Attaching,
+        "Enter restarts"
+    );
+    for now in (1_600..=2_300).step_by(100) {
+        session.pump(now);
+    }
+    assert_eq!(session_row(&session, 0), "restarted");
+
+    let (mut session, _) = ready(Script::Fails, 0);
+    let busy = DemoFault("no capacity, the host is busy");
+    assert_eq!(session.status(), &SessionStatus::Failed(busy.clone()));
+    assert_eq!(session.take_effects(), [SessionEffect::Failed(busy)]);
+    assert_eq!(session.key(&enter, 100), SessionKey::Consumed);
+    assert_eq!(session.status(), &SessionStatus::Attaching, "Enter retries");
+
+    let (mut session, _) = ready(Script::Refuses, 0);
+    let refused = DemoFault("the other side refused the attach");
+    assert_eq!(session.status(), &SessionStatus::Failed(refused.clone()));
+    assert_eq!(session.take_effects(), [SessionEffect::Failed(refused)]);
+    assert!(!session.has_output(), "a refused attach shows no screen");
+
+    let (mut session, commands) = ready(Script::Severs, 2_000);
+    assert_eq!(
+        session.status(),
+        &SessionStatus::Attached(SessionLease::Owner),
+        "the end has not been reported yet"
+    );
+    let sent = logged(&commands).len();
+    assert_eq!(
+        session.key(&key(KeyCode::Char('a')), 2_000),
+        SessionKey::Consumed,
+        "a closed link takes no key"
+    );
+    assert_eq!(session.paste("echo hello", 2_000), SessionPaste::Dropped);
+    assert_eq!(logged(&commands).len(), sent, "nothing reached the link");
+    for now in (2_100..=2_500).step_by(100) {
+        session.pump(now);
+    }
+    assert_eq!(
+        session.status(),
+        &SessionStatus::Detached(SessionDetach::TransportLost)
+    );
+    assert_eq!(
+        session.take_effects(),
+        [SessionEffect::Detached(SessionDetach::TransportLost)]
+    );
+
+    let (mut session, _) = ready(Script::Viewer, 700);
+    assert_eq!(
+        session.status(),
+        &SessionStatus::Attached(SessionLease::ReadOnly)
+    );
+    assert_eq!(
+        session.take_effects(),
+        [SessionEffect::Notice(
+            "another client controls this session".to_owned()
+        )]
+    );
+    for now in (800..=2_500).step_by(100) {
+        session.pump(now);
+    }
+    assert_eq!(
+        session.status(),
+        &SessionStatus::Attached(SessionLease::Owner),
+        "the lease was handed over"
+    );
+
+    let (mut session, _) = ready(Script::Owner, 1_000);
+    session.set_host_policy(host_policy(true));
+    for now in (1_100..=2_000).step_by(100) {
+        session.pump(now);
+    }
+    assert_eq!(
+        session.take_effects(),
+        [SessionEffect::Copy("SGVsbG8=".to_owned())],
+        "the swapped policy lets the write through"
+    );
+}
+
+fn logged(commands: &crate::pages::terminal_session::CommandLog) -> Vec<String> {
+    commands.lock().expect("commands").clone()
+}
+
+fn session_row(
+    session: &junie_tui::terminal::TerminalSessionController<
+        crate::pages::terminal_session::DemoFault,
+    >,
+    row: u16,
+) -> String {
+    let view = session.viewport().state().view(0);
+    (0..view.cols())
+        .filter_map(|col| view.cell(row, col))
+        .filter(|cell| !cell.is_wide_continuation())
+        .map(|cell| match cell.text() {
+            "" => " ".to_owned(),
+            text => text.to_owned(),
+        })
+        .collect::<String>()
+        .trim_end()
+        .to_owned()
 }
