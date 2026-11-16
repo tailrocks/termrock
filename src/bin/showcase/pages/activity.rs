@@ -266,6 +266,15 @@ impl ActivityPage {
         );
     }
 
+    /// The per-turn bound the "Turn budget" option selects: the page's own
+    /// 16-message bound, or the library default.
+    fn budget(&self) -> ExternalPolicy {
+        match self.opts.value("activity.budget") {
+            "default" => ExternalPolicy::default(),
+            _ => FEED_POLICY,
+        }
+    }
+
     fn set_feed(&mut self, on: bool) {
         if on == self.feed.is_some() {
             return;
@@ -492,6 +501,14 @@ impl ActivityPage {
                 Prop::new("Feed sent", feed.sent().to_string()),
                 Prop::new("Handled", self.fed.to_string()),
                 Prop::new("Full retries", feed.full().to_string()).tone(Tone::Warning),
+                Prop::new("Turn budget", {
+                    let policy = self.feed_rx.policy();
+                    format!(
+                        "{} msgs · {} ms",
+                        policy.max_messages,
+                        policy.max_duration.as_millis()
+                    )
+                }),
             ]);
         }
         facts
@@ -898,6 +915,9 @@ impl Page for ActivityPage {
             if key == "activity.feed" {
                 let channel = self.opts.value("activity.feed") == "channel";
                 self.set_feed(channel);
+            }
+            if key == "activity.budget" {
+                self.feed_rx.set_policy(self.budget());
             }
         }
     }
