@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s08_codeeditor/opt_codeeditor_completion_international",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/land-14-fixtures/target/functional/s08-intl-17229-1794845040927445000-0/check-artifacts/pre_refactor/s08_codeeditor/opt_codeeditor_completion_international/2e618ab1f815cc04500e2b291efd22ae7d9f4cd03605253d68748e3933a92a9a/sample.tui.pb"
+  },
+  "candidate_sha256": "2e618ab1f815cc04500e2b291efd22ae7d9f4cd03605253d68748e3933a92a9a",
+  "baseline_sha256": "2e618ab1f815cc04500e2b291efd22ae7d9f4cd03605253d68748e3933a92a9a",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/land-14-fixtures/tests/functional/baselines/pre_refactor/s08_codeeditor/opt_codeeditor_completion_international.tui.pb"
+  },
+  "error_code": null
+}

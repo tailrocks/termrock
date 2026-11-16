@@ -43,6 +43,10 @@ const FITS: WidgetId = ID.sub("fits");
 const OVER: WidgetId = ID.sub("over");
 const NEST_OUTER: WidgetId = ID.sub("nest_outer");
 const NEST_INNER: WidgetId = ID.sub("nest_inner");
+const SIDEWAYS: WidgetId = ID.sub("sideways");
+
+/// Width of the Sideways demo canvas, wider than any panel it sits in.
+const SIDEWAYS_W: u16 = 96;
 const VIRTUAL: WidgetId = ID.sub("virtual");
 
 pub struct VirtualRows(Vec<String>);
@@ -119,6 +123,8 @@ pub struct ScrollingPage {
     pub nest_outer: ScrollView,
     pub nest_inner: ScrollView,
 
+    pub sideways: ScrollView,
+
     pub virtual_rows: ScrollView,
     pub virtual_source: VirtualRows,
     pub virtual_cursor: usize,
@@ -158,6 +164,7 @@ impl ScrollingPage {
             over: ScrollPane::default(),
             nest_outer: ScrollView::new(NEST_OUTER).axes(Axes::VERTICAL),
             nest_inner: ScrollView::new(NEST_INNER).axes(Axes::VERTICAL),
+            sideways: ScrollView::new(SIDEWAYS).axes(Axes::HORIZONTAL),
             virtual_rows: ScrollView::new(VIRTUAL).axes(Axes::VERTICAL),
             virtual_source: VirtualRows::new(0),
             virtual_cursor: 0,
@@ -456,6 +463,8 @@ impl ScrollingPage {
             self.render_virtual(middle, buf, ctx);
         } else if self.opts.on("scrolling.nested") {
             self.render_nested(middle, buf, ctx);
+        } else if self.opts.on("scrolling.sideways") {
+            self.render_sideways(middle, buf, ctx);
         } else {
             self.render_dividers(middle, buf, ctx);
         }
@@ -599,6 +608,42 @@ impl ScrollingPage {
                 }
             });
         });
+    }
+
+    /// A `ScrollView` limited to `Axes::HORIZONTAL`. Home resets the sideways
+    /// offset, as `ScrollCmd::Top` does for whichever axis overflows.
+    fn render_sideways(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
+        let t = ctx.theme;
+        let panel = Panel::card(Some("Sideways"))
+            .focused(ctx.interaction.focused(SIDEWAYS))
+            .title_min(4);
+        let bg = panel.bg(t);
+        let inner = panel.render(area, buf, t);
+        ctx.focus_stop(SIDEWAYS);
+        if inner.height < 2 || inner.width < 8 {
+            return;
+        }
+        ctx.clickable(SIDEWAYS, inner);
+        let content = Size::new(SIDEWAYS_W, inner.height);
+        self.sideways
+            .render(inner, content, buf, ctx, |frame, buf, _| {
+                let width = usize::from(SIDEWAYS_W);
+                let ruler: String = (0..width / 8).map(|k| format!("{:<8}", k * 8)).collect();
+                buf.set_string(frame.x, frame.y, ruler, t.muted().bg(bg));
+                for row in 1..frame.height {
+                    let head = format!("line {row} ");
+                    let tail = " end";
+                    let dots = "\u{b7}".repeat(width - head.len() - tail.len());
+                    buf.set_string(
+                        frame.x,
+                        frame.y + row,
+                        format!("{head}{dots}{tail}"),
+                        t.secondary().bg(bg),
+                    );
+                }
+            });
+        let (x, _) = self.sideways.offset();
+        panel.draw_meta(area, buf, t, &format!("col {x}"));
     }
 
     fn virtual_len(&self) -> usize {
@@ -920,6 +965,14 @@ impl ScrollingPage {
                 return r.outcome();
             }
         }
+        if ev.on(SIDEWAYS) {
+            if ev.is(Phase::Click) || ev.is(Phase::Press) {
+                cx.focus.focus(SIDEWAYS);
+            }
+            if let Some(r) = self.sideways.pointer(ev) {
+                return r.outcome();
+            }
+        }
         if let Some((axis, delta)) = ev.wheel() {
             for (pane, owner) in self.panes() {
                 let over = ev.id == owner || scrollbar::is_bar_of(ev.id, owner);
@@ -1008,6 +1061,9 @@ impl Page for ScrollingPage {
                 if f == VIRTUAL {
                     return self.virtual_key(key);
                 }
+                if f == SIDEWAYS {
+                    return self.sideways.on_key(key).unwrap_or(Outcome::Ignored);
+                }
                 if f == self.prose.id {
                     return self.prose.on_key(key);
                 }
@@ -1078,6 +1134,8 @@ impl Page for ScrollingPage {
                 v.push(("f", "Flag"));
             }
             v
+        } else if focus == Some(SIDEWAYS) {
+            vec![("Alt+PgUp/PgDn", "Sideways"), ("Home", "Start")]
         } else if focus == Some(VIRTUAL) {
             vec![("↑↓", "Move"), ("PgUp/PgDn", "Page"), ("Home/End", "Ends")]
         } else if focus == Some(self.prose.id) {
@@ -1261,5 +1319,58 @@ mod tests {
         assert_eq!(page.virtual_key(&key(KeyCode::Home)), Outcome::Changed);
         let (buf, _) = render(&mut page);
         assert!(text(&buf).contains("Row 00001"));
+    }
+
+    #[test]
+    fn horizontal_only_switch_is_listed_on_the_options_tab_and_off_by_default() {
+        let opt = crate::options::find("scrolling.sideways").expect("--opt can set it");
+        assert_eq!(opt.default, 0);
+        let view = crate::options::OptionsView::new(
+            ID.sub("options"),
+            &[crate::options::Group {
+                heading: "Scrolling",
+                opts: crate::options::page_options(PageId::Scrolling),
+                empty: "",
+            }],
+        );
+        assert!(view.control_id("scrolling.sideways").is_some());
+        let mut page = ScrollingPage::new();
+        let (buf, _) = render(&mut page);
+        assert!(!text(&buf).contains("Sideways"));
+    }
+
+    #[test]
+    fn horizontal_only_view_scrolls_sideways_and_home_resets_it() {
+        let key = |code, mods| Key { code, mods };
+        let none = ratatui::crossterm::event::KeyModifiers::NONE;
+        let alt = ratatui::crossterm::event::KeyModifiers::ALT;
+        let mut page = ScrollingPage::new();
+        page.set_option("scrolling.sideways", 1);
+        let (buf, _) = render(&mut page);
+        assert!(text(&buf).contains("Sideways"));
+        assert!(text(&buf).contains("line 1 "));
+        let layout = page.sideways.last_layout();
+        assert!(layout.h_track.is_some(), "the canvas overflows sideways");
+        assert!(layout.v_track.is_none(), "the view is horizontal only");
+
+        assert_eq!(
+            page.sideways.on_key(&key(KeyCode::PageDown, alt)),
+            Some(Outcome::Changed)
+        );
+        let (buf, _) = render(&mut page);
+        let (x, y) = page.sideways.offset();
+        assert!(x > 0, "Alt+PageDown scrolls the view right");
+        assert_eq!(y, 0, "a horizontal-only view never scrolls vertically");
+        assert!(!text(&buf).contains("line 1 "));
+        assert!(text(&buf).contains(&format!("col {x}")));
+
+        assert_eq!(
+            page.sideways.on_key(&key(KeyCode::Home, none)),
+            Some(Outcome::Changed),
+            "Home resets the horizontal offset although the vertical axis never overflows"
+        );
+        let (buf, _) = render(&mut page);
+        assert_eq!(page.sideways.offset(), (0, 0));
+        assert!(text(&buf).contains("line 1 ") && text(&buf).contains("col 0"));
     }
 }
