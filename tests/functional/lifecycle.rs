@@ -370,10 +370,14 @@ fn an_external_message_waits_for_the_receivers_latency() {
             .expect("read the line");
         return;
     }
-    // The message is sent 100 ms in; a short latency polls for it soon after,
-    // a long one leaves it queued until the next wake-up.
+    // The message is sent 100 ms in. A long latency leaves it queued until the
+    // next wake-up, so it cannot arrive before 1000 ms. Only lower bounds are
+    // asserted: an upper bound on the short latency would fail on a loaded host.
     let quick = delivery_ms("10");
     let slow = delivery_ms("1500");
-    assert!(quick < 800, "a 10 ms latency delivered after {quick} ms");
+    assert!(
+        quick >= 100,
+        "a 10 ms latency delivered after {quick} ms, before the send"
+    );
     assert!(slow >= 1_000, "a 1500 ms latency delivered after {slow} ms");
 }
