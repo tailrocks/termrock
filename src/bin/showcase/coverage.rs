@@ -318,6 +318,12 @@ pub enum ScenarioId {
     CollectionsTreeStructure,
     CollectionsTreeInput,
     CollectionsTreeOptions,
+    CollectionsMasterDetailLayout,
+    CollectionsMasterDetailInput,
+    CollectionsListDetailSurface,
+    CollectionsFileBrowserChoose,
+    CollectionsFileBrowserFields,
+    CollectionsFileBrowserSources,
     // lane:collections end
     // lane:layout begin: this lane adds its ScenarioId variants between these two lines only
     LayoutSplitGeometry,

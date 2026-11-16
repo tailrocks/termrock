@@ -7,7 +7,8 @@
 
 use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::focus::FocusRing;
-use junie_tui::core::hit::HitRegistry;
+use junie_tui::core::focus::{Focus, FocusChange};
+use junie_tui::core::hit::{Axis, HitRegistry};
 use junie_tui::core::id::{Part, WidgetId};
 use junie_tui::core::intent::Phase;
 use junie_tui::core::keymap::{Actions as _, KeyBinding, NavKeys};
@@ -18,15 +19,24 @@ use junie_tui::core::refusal::{Control, Reason, clear_refusal};
 use junie_tui::core::response::Response;
 use junie_tui::core::scroll::TrackClick;
 use junie_tui::core::selection::{ClickPolicy, SelectGesture};
+use junie_tui::theme::{ButtonKind, InactiveSelection, StatusKind, Tone};
 use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::theme::{InactiveSelection, Tone};
 use junie_tui::ui::content::ContentState;
 use junie_tui::ui::ctx::{Interaction, RenderCtx};
+use junie_tui::ui::layout::{Split, SplitCmd, SplitKeys};
+use junie_tui::ui::master_detail::{DetailSize, MasterDetail, MdLayout, Mode, SPLIT_MIN};
+use junie_tui::ui::popup::Dismiss;
 use junie_tui::ui::reveal::Reveal;
 use junie_tui::widgets::empty::EmptyState;
+use junie_tui::widgets::file_browser::{
+    Choose, FileBrowser, FileBrowserResult, FileCmd, FileEntry, FileSource, FsSource, MemorySource,
+    UrlEntry, UrlValidator,
+};
 use junie_tui::widgets::icon_button::IconButton;
 use junie_tui::widgets::list::{ListBox, ListCmd, ListItem, SelectMode};
+use junie_tui::widgets::list_detail::{Action, Event, Frame, Line, ListDetail, ListRow};
 use junie_tui::widgets::nav_list::{NavAction, NavItem, NavList};
+use junie_tui::widgets::notice::Notice;
 use junie_tui::widgets::tabs::{
     CloseReveal, DEFAULT_CLOSE_KEYS, TabAction, TabCmd, TabItem, TabRule, Tabs,
 };
@@ -52,6 +62,12 @@ pub const CASES: &[ScenarioCase] = &[
     ScenarioCase { id: ScenarioId::CollectionsTreeStructure, run: tree_structure },
     ScenarioCase { id: ScenarioId::CollectionsTreeInput, run: tree_input },
     ScenarioCase { id: ScenarioId::CollectionsTreeOptions, run: tree_options },
+    ScenarioCase { id: ScenarioId::CollectionsMasterDetailLayout, run: master_detail_layout },
+    ScenarioCase { id: ScenarioId::CollectionsMasterDetailInput, run: master_detail_input },
+    ScenarioCase { id: ScenarioId::CollectionsListDetailSurface, run: list_detail_surface },
+    ScenarioCase { id: ScenarioId::CollectionsFileBrowserChoose, run: file_browser_choose },
+    ScenarioCase { id: ScenarioId::CollectionsFileBrowserFields, run: file_browser_fields },
+    ScenarioCase { id: ScenarioId::CollectionsFileBrowserSources, run: file_browser_sources },
 ];
 
 fn theme() -> Theme {
@@ -72,6 +88,17 @@ struct Shot {
 
 impl Shot {
     fn event(&self, phase: Phase, owner: WidgetId, part: Part, at: Position) -> PointerEvent {
+        self.event_n(phase, owner, part, at, 1)
+    }
+
+    fn event_n(
+        &self,
+        phase: Phase,
+        owner: WidgetId,
+        part: Part,
+        at: Position,
+        count: u8,
+    ) -> PointerEvent {
         let id = self
             .hits
             .regions()
@@ -80,7 +107,23 @@ impl Shot {
             .find(|r| r.owner == owner && r.part.part == part && r.area.contains(at))
             .map(|r| r.id)
             .unwrap_or_else(|| panic!("no {part:?} region of {owner:?} at {at:?}"));
+        PointerEvent::new(&self.hits, phase, id, at, count, KeyModifiers::NONE)
+    }
+
+    /// A pointer event on whatever is registered under `id`.
+    fn on(&self, phase: Phase, id: WidgetId, at: Position) -> PointerEvent {
         PointerEvent::new(&self.hits, phase, id, at, 1, KeyModifiers::NONE)
+    }
+
+    /// The area registered under exactly `id`.
+    fn region_of(&self, id: WidgetId) -> Rect {
+        self.hits
+            .regions()
+            .iter()
+            .rev()
+            .find(|r| r.id == id)
+            .map(|r| r.area)
+            .unwrap_or_else(|| panic!("no region for {id:?}"))
     }
 
     /// The first cell of `part` of `owner`, by registered region.
@@ -730,13 +773,13 @@ fn list_single() {
     );
 
     let mut wrapping = ListBox::new(id, list_items(), SelectMode::Single).wrap(true);
-    wrapping.on_key(&key(KeyCode::Up));
+    let _ = wrapping.on_key(&key(KeyCode::Up));
     assert_eq!(
         wrapping.cursor, 4,
         "wrap goes from the first row to the last"
     );
     let mut bounded = ListBox::new(id, list_items(), SelectMode::Single).wrap(false);
-    bounded.on_key(&key(KeyCode::Up));
+    let _ = bounded.on_key(&key(KeyCode::Up));
     assert_eq!(bounded.cursor, 0);
 
     let mut vim = ListBox::new(id, list_items(), SelectMode::Single)
@@ -900,7 +943,7 @@ fn list_options() {
 
     let slow_ahead = |timeout: std::time::Duration| {
         let items = ["alpha", "beta", "bravo", "brown"]
-            .map(|label| ListItem::new(label))
+            .map(ListItem::new)
             .to_vec();
         let mut list = ListBox::new(id, items, SelectMode::Single)
             .type_ahead(true)
@@ -929,7 +972,7 @@ fn list_options() {
 
     let vim_items = || {
         ["alpha", "beta", "gamma", "juliet"]
-            .map(|label| ListItem::new(label))
+            .map(ListItem::new)
             .to_vec()
     };
     let routed = |precedence: TypeAheadPrecedence| {
@@ -1454,14 +1497,14 @@ fn tree_options() {
     let leaves = |labels: &[&str]| labels.iter().map(|l| TreeNode::leaf(l)).collect::<Vec<_>>();
 
     let mut wrapping = TreeView::new(id, tree_nodes()).wrap(true);
-    wrapping.on_key(&key(KeyCode::Up));
+    let _ = wrapping.on_key(&key(KeyCode::Up));
     assert_eq!(
         wrapping.cursor_path(),
         Some(&[3usize][..]),
         "wrap goes to the last row"
     );
     let mut bounded = TreeView::new(id, tree_nodes()).wrap(false);
-    bounded.on_key(&key(KeyCode::Up));
+    let _ = bounded.on_key(&key(KeyCode::Up));
     assert_eq!(bounded.cursor_path(), Some(&[0usize][..]));
 
     let mut vim = TreeView::new(id, tree_nodes())
@@ -1567,7 +1610,7 @@ fn tree_options() {
 
     let selected_bg = |look: InactiveSelection| {
         let mut tree = TreeView::new(id, tree_nodes()).inactive_selection(look);
-        tree.on_click_row(6);
+        let _ = tree.on_click_row(6);
         let _ = tree.on_key(&key(KeyCode::Enter));
         let p = draw_tree(&mut tree, 40, 10, Interaction::default());
         let row = at(&p.buf, "README");
@@ -1600,6 +1643,1113 @@ fn tree_options() {
         offset_after_track_press(TrackClick::Page),
     );
     assert!(paged > 0 && jumped > paged, "jump {jumped}, page {paged}");
+}
+
+// ------------------------------------------------------------ MasterDetail
+
+const MD_MASTER: WidgetId = WidgetId::of("collections.md.master");
+const MD_DETAIL: WidgetId = WidgetId::of("collections.md.detail");
+
+fn md_layout(
+    md: &mut MasterDetail,
+    area: Rect,
+    interaction: Interaction,
+    finish: bool,
+) -> (MdLayout, Shot) {
+    let mut out = MdLayout::default();
+    let shot = frame(area, interaction, |area, buf, ctx| {
+        let bg = ctx.theme.canvas;
+        out = md.layout(area, buf, ctx, bg);
+        if finish {
+            md.finish(ctx);
+        }
+    });
+    (out, shot)
+}
+
+fn master_detail_layout() {
+    let wide = Rect::new(0, 0, 120, 20);
+    assert_eq!(SPLIT_MIN, 108);
+    let mut md = MasterDetail::new(MD_MASTER, MD_DETAIL);
+    assert_eq!(
+        (md.size, md.gap, md.collapse_below),
+        (DetailSize::Resizable, 2, SPLIT_MIN)
+    );
+
+    let (master, detail) = md.split_rects(wide).expect("120 columns split");
+    assert_eq!(master.width + 2 + detail.width, 120);
+    assert_eq!(
+        md.split_rects(Rect::new(0, 0, 100, 20)),
+        None,
+        "narrower than collapse_below"
+    );
+    let (l, shot) = md_layout(&mut md, wide, Interaction::default(), false);
+    assert_eq!((l.mode, l.master, l.detail), (Mode::Split, master, detail));
+    assert_eq!(
+        (l.seam.width, l.seam.height),
+        (1, 20),
+        "a resizable split has a seam"
+    );
+    assert!(l.summary.is_empty());
+    assert_eq!(md.last(), l, "last() reports the latest layout");
+    assert!(
+        shot.hits.regions().iter().any(|r| r.id == md.seam.id),
+        "the seam takes the pointer"
+    );
+
+    let shared = MasterDetail::new(MD_MASTER, MD_DETAIL).detail_share(30, 20, 50);
+    assert_eq!(
+        shared.size,
+        DetailSize::Share {
+            pct: 30,
+            min: 20,
+            max: 50
+        }
+    );
+    let (m, d) = shared.split_rects(wide).expect("a share layout");
+    assert_eq!((m.width, d.width), (82, 36), "the detail gets 30 percent");
+    let mastered = MasterDetail::new(MD_MASTER, MD_DETAIL).master_share(30, 20, 50);
+    assert_eq!(
+        mastered.size,
+        DetailSize::MasterShare {
+            pct: 30,
+            min: 20,
+            max: 50
+        }
+    );
+    let (m, d) = mastered.split_rects(wide).expect("a master share layout");
+    assert_eq!((m.width, d.width), (36, 82), "the master gets 30 percent");
+    assert_eq!(
+        shared.panes_width(40, 30),
+        100,
+        "the narrowest width that gives both panes their size"
+    );
+    assert_eq!(mastered.panes_width(30, 40), 99);
+    assert_eq!(
+        shared.natural_width(40, 30),
+        108,
+        "never below collapse_below"
+    );
+    assert_eq!(shared.clone().collapse_below(0).natural_width(40, 30), 100);
+    let mut fixed = shared.clone();
+    let (l, _) = md_layout(&mut fixed, wide, Interaction::default(), false);
+    assert!(l.seam.is_empty(), "a share layout has no seam");
+    let back = fixed.resizable(Split::new(40, 28, 40));
+    assert_eq!(back.size, DetailSize::Resizable);
+    let wider_gap = MasterDetail::new(MD_MASTER, MD_DETAIL).gap(6);
+    let (m, d) = wider_gap.split_rects(wide).expect("split");
+    assert_eq!(m.width + 6 + d.width, 120);
+    let early = MasterDetail::new(MD_MASTER, MD_DETAIL).collapse_below(60);
+    assert!(early.split_rects(Rect::new(0, 0, 70, 10)).is_some());
+    let seamed =
+        MasterDetail::new(MD_MASTER, MD_DETAIL).seam(junie_tui::widgets::splitter::Splitter::new(
+            WidgetId::of("collections.md.custom-seam"),
+            junie_tui::ui::layout::SplitDir::Horizontal,
+        ));
+    assert_eq!(seamed.seam.id, WidgetId::of("collections.md.custom-seam"));
+
+    let narrow = Rect::new(0, 0, 90, 20);
+    let mut collapsed = MasterDetail::new(MD_MASTER, MD_DETAIL).summary_rows(6);
+    let (l, shot) = md_layout(&mut collapsed, narrow, Interaction::default(), false);
+    assert_eq!(l.mode, Mode::Master);
+    assert_eq!(
+        (l.master.height, l.summary.y, l.summary.height),
+        (13, 14, 6)
+    );
+    assert!(!shot.ring.contains(MD_DETAIL));
+    let (_, shot) = md_layout(&mut collapsed, narrow, Interaction::default(), true);
+    assert!(
+        shot.ring.contains(MD_DETAIL),
+        "finish keeps the detail reachable"
+    );
+    let (l, _) = md_layout(
+        &mut MasterDetail::new(MD_MASTER, MD_DETAIL),
+        narrow,
+        Interaction::default(),
+        false,
+    );
+    assert_eq!(
+        (l.master, l.summary),
+        (narrow, Rect::ZERO),
+        "no summary without rows"
+    );
+
+    let on_detail = Interaction {
+        focus: Some(MD_DETAIL),
+        ..Interaction::default()
+    };
+    assert_eq!(
+        collapsed.collapsed_mode(&Interaction::default()),
+        Mode::Master
+    );
+    assert_eq!(collapsed.collapsed_mode(&on_detail), Mode::Drawer);
+    let (l, shot) = md_layout(&mut collapsed, narrow, on_detail, false);
+    assert_eq!(
+        (l.mode, l.detail, l.master),
+        (Mode::Drawer, narrow, Rect::ZERO)
+    );
+    assert!(collapsed.drawer_open());
+    assert!(
+        shot.ring.contains(MD_MASTER),
+        "the hidden master stays a focus stop"
+    );
+
+    let mut focus = Focus::default();
+    focus.focus(MD_MASTER);
+    collapsed.close_drawer(&mut focus);
+    assert!(!collapsed.drawer_open());
+    assert_eq!(focus.current(), Some(MD_MASTER));
+    collapsed.open_drawer(&mut focus);
+    assert!(collapsed.drawer_open());
+    assert_eq!(focus.current(), Some(MD_DETAIL));
+    collapsed.toggle_drawer(&mut focus);
+    assert!(!collapsed.drawer_open() && focus.current() == Some(MD_MASTER));
+    collapsed.toggle_drawer(&mut focus);
+    assert!(collapsed.drawer_open() && focus.current() == Some(MD_DETAIL));
+    assert_eq!(collapsed.menu_item().item.label, "Hide details");
+    collapsed.close_drawer(&mut focus);
+    assert_eq!(collapsed.menu_item().item.label, "Show details");
+
+    let owned = WidgetId::of("collections.md.action");
+    let owner = MasterDetail::new(MD_MASTER, MD_DETAIL).detail_owns(&[owned]);
+    assert!(owner.in_detail(MD_DETAIL) && owner.in_detail(owned));
+    assert!(!owner.in_detail(MD_MASTER) && owner.detail_owns == [owned]);
+    let mut focus = Focus::default();
+    focus.focus(owned);
+    let mut owner = owner;
+    let narrow_focus = Interaction {
+        focus: Some(owned),
+        ..Interaction::default()
+    };
+    let (l, _) = md_layout(&mut owner, narrow, narrow_focus, false);
+    assert_eq!(
+        l.mode,
+        Mode::Drawer,
+        "focus on an owned control shows the detail"
+    );
+}
+
+fn master_detail_input() {
+    let wide = Rect::new(0, 0, 120, 20);
+    let alt_shift = KeyModifiers::ALT | KeyModifiers::SHIFT;
+    let nudge = |code: KeyCode| Key {
+        code,
+        mods: alt_shift,
+    };
+    let master_width = |md: &MasterDetail| md.split_rects(wide).expect("split").0.width;
+
+    let mut md = MasterDetail::new(MD_MASTER, MD_DETAIL);
+    let mut focus = Focus::default();
+    focus.focus(MD_MASTER);
+    assert_eq!(
+        md.on_key(&nudge(KeyCode::Right), &mut focus),
+        Some(Outcome::Consumed),
+        "no laid out split, nothing to resize"
+    );
+    let _ = md_layout(&mut md, wide, Interaction::default(), false);
+    let before = master_width(&md);
+    assert_eq!(
+        md.on_key(&nudge(KeyCode::Right), &mut focus),
+        Some(Outcome::Changed)
+    );
+    assert!(master_width(&md) > before, "the default keys move the seam");
+    assert_eq!(md.on_key(&key(KeyCode::Down), &mut focus), None);
+    focus.focus(WidgetId::of("collections.md.elsewhere"));
+    assert_eq!(
+        md.on_key(&nudge(KeyCode::Left), &mut focus),
+        None,
+        "only the panes' own focus counts"
+    );
+
+    let mut keyed = MasterDetail::new(MD_MASTER, MD_DETAIL).keys(
+        SplitKeys::default()
+            .keymap(vec![(KeyBinding::char('>'), SplitCmd::Right)])
+            .step(6),
+    );
+    let _ = md_layout(&mut keyed, wide, Interaction::default(), false);
+    let mut focus = Focus::default();
+    focus.focus(MD_MASTER);
+    let before = master_width(&keyed);
+    assert_eq!(keyed.on_key(&ch('>'), &mut focus), Some(Outcome::Changed));
+    assert!(
+        master_width(&keyed) >= before + 5,
+        "a larger step moves further"
+    );
+    assert_eq!(
+        keyed.on_key(&nudge(KeyCode::Right), &mut focus),
+        None,
+        "the default chord is unbound"
+    );
+
+    let mut esc = MasterDetail::new(MD_MASTER, MD_DETAIL);
+    let mut focus = Focus::default();
+    esc.open_drawer(&mut focus);
+    assert_eq!(
+        esc.on_key(&key(KeyCode::Esc), &mut focus),
+        Some(Outcome::Changed)
+    );
+    assert!(
+        !esc.drawer_open() && focus.current() == Some(MD_MASTER),
+        "Esc goes back to the master"
+    );
+    let mut stay = MasterDetail::new(MD_MASTER, MD_DETAIL).esc_returns(false);
+    stay.open_drawer(&mut focus);
+    assert_eq!(stay.on_key(&key(KeyCode::Esc), &mut focus), None);
+    assert!(
+        stay.drawer_open(),
+        "esc_returns(false) leaves Esc to the detail"
+    );
+
+    let backs = |md: &MasterDetail, focus: Option<WidgetId>| {
+        md.hints(focus)
+            .iter()
+            .filter(|h| h.action == "Back")
+            .count()
+    };
+    assert_eq!(backs(&esc, Some(MD_DETAIL)), 1);
+    assert_eq!(backs(&esc, Some(MD_MASTER)), 0);
+    assert_eq!(backs(&stay, Some(MD_DETAIL)), 0);
+    assert!(esc.hints(None).is_empty());
+    assert!(
+        esc.hints(Some(WidgetId::of("collections.md.elsewhere")))
+            .is_empty()
+    );
+
+    let mut md = MasterDetail::new(MD_MASTER, MD_DETAIL);
+    let (l, shot) = md_layout(&mut md, wide, Interaction::default(), false);
+    let seam = shot.region_of(md.seam.id);
+    let start = Position::new(seam.x, 5);
+    let before = master_width(&md);
+    let press = shot.on(Phase::Press, md.seam.id, start);
+    assert_eq!(md.on_pointer(&press), Some(Outcome::Consumed));
+    let drag = shot.on(Phase::Drag, md.seam.id, Position::new(seam.x + 6, 5));
+    assert_eq!(md.on_pointer(&drag), Some(Outcome::Changed));
+    assert!(
+        master_width(&md) > before,
+        "dragging the seam resizes the split"
+    );
+    let double = PointerEvent::new(
+        &shot.hits,
+        Phase::Click,
+        md.seam.id,
+        start,
+        2,
+        KeyModifiers::NONE,
+    );
+    assert_eq!(md.on_pointer(&double), Some(Outcome::Changed));
+    assert_eq!(
+        master_width(&md),
+        before,
+        "a double click restores the split"
+    );
+    let release = shot.on(Phase::Release, md.seam.id, start);
+    assert_eq!(md.on_pointer(&release), None);
+    let elsewhere = shot.on(Phase::Press, MD_MASTER, Position::new(1, 1));
+    assert_eq!(md.on_pointer(&elsewhere), None, "only the seam answers");
+    let _ = l;
+    let mut shared = MasterDetail::new(MD_MASTER, MD_DETAIL).detail_share(30, 20, 50);
+    let (_, shot) = md_layout(&mut shared, wide, Interaction::default(), false);
+    let press = shot.on(Phase::Press, shared.seam.id, Position::new(80, 5));
+    assert_eq!(
+        shared.on_pointer(&press),
+        None,
+        "a share layout cannot be dragged"
+    );
+}
+
+// -------------------------------------------------------------- ListDetail
+
+const LD_MASTER: WidgetId = WidgetId::of("collections.ld.master");
+const LD_DETAIL: WidgetId = WidgetId::of("collections.ld.detail");
+
+fn list_detail_surface() {
+    let area = Rect::new(0, 0, 120, 20);
+    let t = theme();
+    let rows = vec![
+        ListRow::new("build")
+            .mark(StatusKind::Ok)
+            .detail("main")
+            .meta("passing", Tone::Success),
+        ListRow::new("lint").faint().detail("fmt"),
+        ListRow::new("test")
+            .mark(StatusKind::Fail)
+            .meta("2 failed", Tone::Error),
+    ];
+    assert_eq!(
+        (rows[0].mark, rows[0].detail.as_str(), rows[0].meta.as_str()),
+        (Some(StatusKind::Ok), "main", "passing")
+    );
+    assert!(rows[1].faint && !rows[0].faint);
+    let lines = vec![
+        Line::Heading("Run".into(), "#12".into()),
+        Line::Prop("Branch".into(), "main".into(), Tone::Secondary),
+        Line::Text("all green".into(), Tone::Success),
+        Line::Blank,
+        Line::Notice(Notice::warning("flaky on CI")),
+        Line::Item {
+            mark: None,
+            cols: ["step one".into(), "fast".into(), "1s".into()],
+            tone: Tone::Secondary,
+        },
+    ];
+    let actions = vec![
+        Action::new("go", "Go", ButtonKind::Primary),
+        Action::new("stop", "Stop", ButtonKind::Danger).disabled(true),
+    ];
+    assert!(!actions[0].disabled && actions[1].disabled);
+    let mut list = ListDetail::new(LD_MASTER, LD_DETAIL, Split::new(42, 36, 44));
+    let mut focus = Focus::default();
+    focus.focus(LD_MASTER);
+    let draw = |list: &mut ListDetail, focus: &Focus| {
+        let interaction = Interaction {
+            focus: focus.current(),
+            ..Interaction::default()
+        };
+        frame(area, interaction, |area, buf, ctx| {
+            let fr = Frame {
+                title: "Runs",
+                meta: String::new(),
+                head: vec![],
+                rows: &rows,
+                under: None,
+                detail_title: "Run".into(),
+                detail_meta: String::new(),
+                lines: lines.clone(),
+                actions: actions.clone(),
+            };
+            list.render(area, buf, ctx, &fr)
+        })
+    };
+    let shot = draw(&mut list, &focus);
+    let text = text_of(&shot.buf);
+    for want in [
+        "build",
+        "passing",
+        "main",
+        "lint",
+        "fmt",
+        "test",
+        "2 failed",
+        "Run",
+        "#12",
+        "Branch",
+        "all green",
+        "flaky on CI",
+        "step one",
+        "Go",
+        "Stop",
+    ] {
+        assert!(text.contains(want), "{want}:\n{text}");
+    }
+    assert!(
+        text.contains(t.status(StatusKind::Ok).0) && text.contains(t.status(StatusKind::Fail).0)
+    );
+    let (faint, plain) = (at(&shot.buf, "lint"), at(&shot.buf, "test"));
+    assert_ne!(
+        shot.buf[(faint.x, faint.y)].fg,
+        shot.buf[(plain.x, plain.y)].fg,
+        "a faint row is muted"
+    );
+    let (ok, fail) = (at(&shot.buf, "passing"), at(&shot.buf, "2 failed"));
+    assert_ne!(
+        shot.buf[(ok.x, ok.y)].fg,
+        shot.buf[(fail.x, fail.y)].fg,
+        "meta takes its tone"
+    );
+
+    let (o, e) = list.click(LD_MASTER.child(2), &mut focus, rows.len());
+    assert_eq!((o, e), (Outcome::Changed, Some(Event::Row(2))));
+    assert_eq!(list.cursor, 2);
+    assert_eq!(
+        list.click(
+            WidgetId::of("collections.ld.nowhere"),
+            &mut focus,
+            rows.len()
+        ),
+        (Outcome::Ignored, None)
+    );
+    let shot = draw(&mut list, &focus);
+    let go = LD_DETAIL.sub("go");
+    assert!(
+        shot.hits.regions().iter().any(|r| r.id == go),
+        "actions are registered"
+    );
+    assert!(!list.actions_focused(focus.current()) && !list.on_detail(focus.current()));
+    let (o, e) = list.click(go, &mut focus, rows.len());
+    assert_eq!((o, e), (Outcome::Changed, Some(Event::Action("go"))));
+    assert_eq!(focus.current(), Some(go));
+    assert!(list.actions_focused(focus.current()) && list.on_detail(focus.current()));
+    let (o, e) = list.click(LD_DETAIL.sub("stop"), &mut focus, rows.len());
+    assert_eq!(
+        (o, e),
+        (Outcome::Changed, None),
+        "a disabled action does nothing"
+    );
+    focus.focus(go);
+    let (o, e) = list.on_key(&key(KeyCode::Enter), &mut focus, rows.len());
+    assert_eq!(
+        (o, e),
+        (Outcome::Changed, Some(Event::Action("go"))),
+        "Enter fires the focused action"
+    );
+
+    let action_hints = list.hints(Some(go), &[]).expect("an action has hints");
+    assert!(
+        action_hints.iter().any(|h| h.action == "Back"),
+        "{action_hints:?}"
+    );
+    let detail_hints = list
+        .hints(Some(LD_DETAIL), &[])
+        .expect("the detail has hints");
+    assert!(detail_hints.iter().any(|h| h.action == "Actions"));
+    assert!(
+        list.hints(Some(LD_MASTER), &[]).is_none(),
+        "the master brings no hints of its own"
+    );
+    assert!(list.hints(None, &[]).is_none());
+
+    assert_eq!(list.wheel(LD_MASTER, 1), Outcome::Changed);
+    assert_eq!(list.wheel(LD_DETAIL, 1), Outcome::Changed);
+    assert_eq!(
+        list.wheel(WidgetId::of("collections.ld.nowhere"), 1),
+        Outcome::Ignored
+    );
+
+    let shot = draw(&mut list, &focus);
+    let seam = LD_MASTER.sub("seam");
+    let area_of_seam = shot.region_of(seam);
+    let start = Position::new(area_of_seam.x, 6);
+    assert_eq!(
+        list.on_pointer(&shot.on(Phase::Press, seam, start)),
+        Some(Outcome::Consumed)
+    );
+    assert_eq!(
+        list.on_pointer(&shot.on(Phase::Drag, seam, Position::new(start.x + 5, 6))),
+        Some(Outcome::Changed),
+        "dragging the seam resizes the master"
+    );
+    assert_eq!(
+        list.on_pointer(&shot.on(Phase::Press, LD_MASTER.child(0), Position::new(2, 2))),
+        None
+    );
+}
+
+// ------------------------------------------------------------- FileBrowser
+
+fn home_source() -> MemorySource {
+    MemorySource::new(vec![
+        FileEntry::dir("/home/me/docs"),
+        FileEntry::dir("/home/me/.config"),
+        FileEntry::file("/home/me/notes.txt").meta("2 KB"),
+        FileEntry::file("/home/me/.secret"),
+        FileEntry::file("/home/me/.profile").hidden(false),
+        FileEntry::file("/home/me/docs/report.md"),
+        FileEntry::file("/home/me/docs/data.csv"),
+    ])
+    .home("/home/me")
+}
+
+fn browser(title: &str) -> FileBrowser {
+    FileBrowser::new(
+        WidgetId::of("collections.files"),
+        title,
+        home_source(),
+        "/home/me",
+    )
+}
+
+fn draw_browser(b: &mut FileBrowser, interaction: Interaction) -> Shot {
+    frame(Rect::new(0, 0, 110, 34), interaction, |area, buf, ctx| {
+        b.render(area, buf, ctx)
+    })
+}
+
+fn labels(b: &FileBrowser) -> Vec<String> {
+    b.list.items.iter().map(|item| item.label.clone()).collect()
+}
+
+fn pressed(b: &mut FileBrowser, focus: &mut Focus, key: Key) -> Outcome {
+    b.on_key(&key, focus, &FocusRing::default())
+}
+
+fn file_browser_choose() {
+    let t = theme();
+    let mut dirs = browser("Pick a folder");
+    assert_eq!(dirs.choose_kind, Choose::Dirs);
+    assert_eq!(labels(&dirs), ["..", "docs/", ".profile", "notes.txt"]);
+    assert!(
+        dirs.list.items[3].disabled && !dirs.list.items[1].disabled,
+        "files cannot be chosen in folder mode"
+    );
+    assert_eq!(dirs.entries.len(), 3);
+    let shot = draw_browser(&mut dirs, Interaction::default());
+    let text = text_of(&shot.buf);
+    for want in [
+        "Pick a folder",
+        "docs/",
+        "notes.txt",
+        "2 KB",
+        "Choose",
+        "Cancel",
+        "Show hidden files",
+    ] {
+        assert!(text.contains(want), "{want}:\n{text}");
+    }
+    assert!(text.contains('~'), "the home folder shows as ~:\n{text}");
+    let mut focus = Focus::default();
+    assert_eq!(dirs.initial_focus(), dirs.list.id);
+    focus.focus(dirs.initial_focus());
+
+    assert_eq!(
+        pressed(&mut dirs, &mut focus, key(KeyCode::Down)),
+        Outcome::Changed
+    );
+    assert_eq!(dirs.list.cursor, 1);
+    assert_eq!(
+        pressed(&mut dirs, &mut focus, key(KeyCode::Enter)),
+        Outcome::Changed
+    );
+    assert_eq!(dirs.cwd, "/home/me/docs");
+    assert_eq!(labels(&dirs), ["..", "data.csv", "report.md"]);
+    assert_eq!(
+        pressed(&mut dirs, &mut focus, key(KeyCode::Left)),
+        Outcome::Changed
+    );
+    assert_eq!(dirs.cwd, "/home/me", "Left goes to the parent folder");
+    pressed(&mut dirs, &mut focus, ch('.'));
+    assert!(
+        dirs.show_hidden && labels(&dirs).contains(&".config/".to_owned()),
+        "{:?}",
+        labels(&dirs)
+    );
+    pressed(&mut dirs, &mut focus, ch('.'));
+    assert!(!dirs.show_hidden && !labels(&dirs).contains(&".config/".to_owned()));
+    dirs.list.cursor = 1;
+    pressed(&mut dirs, &mut focus, ch(' '));
+    assert_eq!(
+        dirs.result.take(),
+        Some(FileBrowserResult::Chosen {
+            path: "/home/me/docs".into(),
+            checked: false
+        })
+    );
+    dirs.list.cursor = 3;
+    pressed(&mut dirs, &mut focus, ch(' '));
+    assert_eq!(
+        (dirs.result.clone(), dirs.error.as_deref()),
+        (None, Some("Choose a folder, not a file"))
+    );
+    dirs.list.cursor = 0;
+    pressed(&mut dirs, &mut focus, ch(' '));
+    assert_eq!(
+        dirs.result.take(),
+        Some(FileBrowserResult::Chosen {
+            path: "/home/me".into(),
+            checked: false
+        }),
+        "choosing .. picks the current folder"
+    );
+    assert_eq!(
+        pressed(&mut dirs, &mut focus, key(KeyCode::Esc)),
+        Outcome::Changed
+    );
+    assert_eq!(dirs.result.take(), Some(FileBrowserResult::Cancelled));
+
+    let mut files = browser("Pick a file").choose(Choose::Files);
+    assert_eq!(files.choose_kind, Choose::Files);
+    assert!(files.list.items.iter().all(|item| !item.disabled));
+    let mut focus = Focus::default();
+    focus.focus(files.list.id);
+    files.list.cursor = 1;
+    pressed(&mut files, &mut focus, ch(' '));
+    assert_eq!(
+        (files.cwd.as_str(), files.result.clone()),
+        ("/home/me/docs", None),
+        "Choose on a folder opens it"
+    );
+    files.list.cursor = 1;
+    pressed(&mut files, &mut focus, ch(' '));
+    assert_eq!(
+        files.result.take(),
+        Some(FileBrowserResult::Chosen {
+            path: "/home/me/docs/data.csv".into(),
+            checked: false
+        })
+    );
+    files.list.cursor = 0;
+    pressed(&mut files, &mut focus, ch(' '));
+    assert_eq!(files.error.as_deref(), Some("Choose a file, not a folder"));
+
+    let mut any = browser("Pick anything")
+        .choose(Choose::Any)
+        .checkbox("Read only", true);
+    assert_eq!(any.choose_kind, Choose::Any);
+    assert!(text_of(&draw_browser(&mut any, Interaction::default()).buf).contains("Read only"));
+    let mut focus = Focus::default();
+    focus.focus(any.list.id);
+    any.list.cursor = 3;
+    pressed(&mut any, &mut focus, ch(' '));
+    assert_eq!(
+        any.result.take(),
+        Some(FileBrowserResult::Chosen {
+            path: "/home/me/notes.txt".into(),
+            checked: true
+        }),
+        "the checkbox travels with the choice"
+    );
+    any.list.cursor = 0;
+    pressed(&mut any, &mut focus, ch(' '));
+    assert_eq!(
+        any.result.take(),
+        Some(FileBrowserResult::Chosen {
+            path: "/home/me".into(),
+            checked: true
+        })
+    );
+
+    let mut sticky = browser("Stay").dismiss(Dismiss::NEVER);
+    let mut focus = Focus::default();
+    focus.focus(sticky.list.id);
+    assert_eq!(
+        pressed(&mut sticky, &mut focus, key(KeyCode::Esc)),
+        Outcome::Consumed
+    );
+    assert_eq!(
+        sticky.result, None,
+        "Esc is not a way out when dismissal is off"
+    );
+    assert!(sticky.hints(None).iter().all(|h| h.action != "Cancel"));
+    assert!(
+        browser("Esc")
+            .hints(None)
+            .iter()
+            .any(|h| h.action == "Cancel")
+    );
+    let _ = t;
+
+    let mut shown = browser("Hidden").show_hidden(true);
+    assert!(shown.show_hidden && labels(&shown).contains(&".secret".to_owned()));
+    assert!(shown.hidden_box.as_ref().is_some_and(|c| c.checked));
+    let bare = browser("No toggle").hidden_toggle(false);
+    assert!(bare.hidden_box.is_none());
+    assert!(bare.hints(None).iter().all(|h| h.action != "Hidden files"));
+    assert!(shown.hints(None).iter().any(|h| h.action == "Hidden files"));
+    shown.cwd = "/home/me/docs".into();
+    shown.load();
+    assert_eq!(
+        labels(&shown),
+        ["..", "data.csv", "report.md"],
+        "load re-reads the current folder"
+    );
+}
+
+fn file_browser_fields() {
+    let id = WidgetId::of("collections.files");
+    let mut b = browser("Fields")
+        .choose(Choose::Any)
+        .filter(true)
+        .path_bar(true)
+        .stepper("Step 1 of 2");
+    let shot = draw_browser(&mut b, Interaction::default());
+    let text = text_of(&shot.buf);
+    assert!(text.contains("Step 1 of 2"), "{text}");
+    assert!(
+        text.contains("Name contains"),
+        "the filter field shows its placeholder:\n{text}"
+    );
+    let mut focus = Focus::default();
+    focus.focus(b.list.id);
+    let ring = &shot.ring;
+    assert!(!b.is_editing());
+
+    let ctrl = |c: char| Key {
+        code: KeyCode::Char(c),
+        mods: KeyModifiers::CONTROL,
+    };
+    assert_eq!(b.on_key(&ctrl('f'), &mut focus, ring), Outcome::Changed);
+    let filter_id = b.filter.as_ref().expect("filter").id;
+    assert_eq!(focus.current(), Some(filter_id));
+    assert!(b.is_editing());
+    b.on_key(&ch('n'), &mut focus, ring);
+    b.on_key(&ch('o'), &mut focus, ring);
+    assert_eq!(
+        labels(&b),
+        ["..", "notes.txt"],
+        "typing filters the listing"
+    );
+    assert_eq!(
+        b.on_key(&key(KeyCode::Enter), &mut focus, ring),
+        Outcome::Changed
+    );
+    assert_eq!(focus.current(), Some(b.list.id));
+    b.on_blur(FocusChange {
+        from: filter_id,
+        to: Some(b.list.id),
+    });
+    assert!(
+        !b.is_editing(),
+        "the shell blurs the field when focus leaves it"
+    );
+    b.on_key(&ctrl('f'), &mut focus, ring);
+    b.on_paste("zzz");
+    assert_eq!(labels(&b), [".."], "pasting extends the filter");
+    b.on_key(&key(KeyCode::Enter), &mut focus, ring);
+
+    let mut go = browser("Go").choose(Choose::Any);
+    let mut focus = Focus::default();
+    focus.focus(go.list.id);
+    assert_eq!(go.on_key(&ch('/'), &mut focus, ring), Outcome::Changed);
+    assert_eq!(focus.current(), Some(go.path.id));
+    assert!(go.is_editing());
+    go.on_paste("/nowhere");
+    go.on_key(&key(KeyCode::Enter), &mut focus, ring);
+    assert_eq!(go.error.as_deref(), Some("Folder not found: ~/nowhere"));
+    assert_eq!(go.cwd, "/home/me");
+    let mut go = browser("Go").choose(Choose::Any);
+    let mut focus = Focus::default();
+    focus.focus(go.list.id);
+    go.on_key(&ch('/'), &mut focus, ring);
+    go.on_paste("/docs");
+    go.on_key(&key(KeyCode::Enter), &mut focus, ring);
+    assert_eq!(
+        go.cwd, "/home/me/docs",
+        "a typed folder is opened, with ~ expanded"
+    );
+    assert_eq!(focus.current(), Some(go.list.id));
+    go.on_key(&ch('/'), &mut focus, ring);
+    assert!(go.is_editing());
+    let blur = FocusChange {
+        from: go.path.id,
+        to: Some(go.list.id),
+    };
+    go.on_blur(blur);
+    assert!(!go.is_editing(), "losing focus ends the edit");
+
+    let mut near = browser("Home").choose(Choose::Any).path_bar(true);
+    near.cwd = "/home/me/docs".into();
+    near.load();
+    let shot = draw_browser(&mut near, Interaction::default());
+    let crumb = near.breadcrumb.as_ref().expect("a path bar").id;
+    let region = shot
+        .hits
+        .regions()
+        .iter()
+        .find(|r| r.owner == crumb)
+        .expect("a clickable segment");
+    let at = Position::new(region.area.x, region.area.y);
+    let mut focus = Focus::default();
+    let click = shot.on(Phase::Click, region.id, at);
+    assert_eq!(near.pointer(&click, &mut focus), Outcome::Changed);
+    assert_eq!(near.cwd, "/home/me", "a path segment jumps to that folder");
+
+    let mut mouse = browser("Mouse").choose(Choose::Any);
+    let shot = draw_browser(&mut mouse, Interaction::default());
+    let docs = at_pos(&shot.buf, "docs/");
+    let mut focus = Focus::default();
+    let single = shot.event(Phase::Click, mouse.list.id, Part::ROW, docs);
+    assert_eq!(mouse.pointer(&single, &mut focus), Outcome::Changed);
+    assert_eq!(
+        (mouse.cwd.as_str(), mouse.list.cursor),
+        ("/home/me", 1),
+        "one click selects"
+    );
+    assert_eq!(focus.current(), Some(mouse.list.id));
+    let double = shot.event_n(Phase::Click, mouse.list.id, Part::ROW, docs, 2);
+    assert_eq!(mouse.pointer(&double, &mut focus), Outcome::Changed);
+    assert_eq!(
+        mouse.cwd, "/home/me/docs",
+        "a double click opens the folder"
+    );
+    let shot = draw_browser(&mut mouse, Interaction::default());
+    let hidden = mouse.hidden_box.as_ref().expect("the toggle").id;
+    let region = shot
+        .hits
+        .regions()
+        .iter()
+        .find(|r| r.id == hidden)
+        .expect("hidden box");
+    let click = shot.on(
+        Phase::Click,
+        hidden,
+        Position::new(region.area.x, region.area.y),
+    );
+    assert_eq!(mouse.pointer(&click, &mut focus), Outcome::Changed);
+    assert!(mouse.show_hidden, "the checkbox shows hidden files");
+    let cancel = mouse.cancel.id;
+    let region = shot
+        .hits
+        .regions()
+        .iter()
+        .find(|r| r.id == cancel)
+        .expect("cancel");
+    let click = shot.on(
+        Phase::Click,
+        cancel,
+        Position::new(region.area.x, region.area.y),
+    );
+    let _ = mouse.pointer(&click, &mut focus);
+    assert_eq!(mouse.result.take(), Some(FileBrowserResult::Cancelled));
+    let choose = mouse.choose.id;
+    let region = shot
+        .hits
+        .regions()
+        .iter()
+        .find(|r| r.id == choose)
+        .expect("choose");
+    let click = shot.on(
+        Phase::Click,
+        choose,
+        Position::new(region.area.x, region.area.y),
+    );
+    let _ = mouse.pointer(&click, &mut focus);
+    assert_eq!(
+        mouse.result.take(),
+        Some(FileBrowserResult::Chosen {
+            path: "/home/me/docs".into(),
+            checked: false
+        })
+    );
+    let wheel = PointerEvent::wheel_on(
+        &shot.hits,
+        mouse.list.id,
+        Axis::Vertical,
+        1,
+        Position::new(docs.x, docs.y),
+        KeyModifiers::NONE,
+    );
+    let _ = mouse.pointer(&wheel, &mut focus);
+
+    let mut tab = browser("Tab");
+    let shot = draw_browser(&mut tab, Interaction::default());
+    let mut focus = Focus::default();
+    focus.focus(tab.list.id);
+    assert_eq!(
+        tab.on_key(&key(KeyCode::Tab), &mut focus, &shot.ring),
+        Outcome::Changed
+    );
+    assert_ne!(focus.current(), Some(tab.list.id), "Tab leaves the list");
+    assert_eq!(
+        tab.on_key(&key(KeyCode::BackTab), &mut focus, &shot.ring),
+        Outcome::Changed
+    );
+    assert_eq!(focus.current(), Some(tab.list.id));
+
+    let ahead = |on: bool| {
+        let mut b = browser("Ahead").choose(Choose::Any).type_ahead(on);
+        let mut focus = Focus::default();
+        focus.focus(b.list.id);
+        pressed(&mut b, &mut focus, ch('n'));
+        b.list.cursor
+    };
+    assert_eq!(ahead(true), 3, "typing n finds notes.txt");
+    assert_eq!(ahead(false), 0, "type-ahead can be turned off");
+
+    let mut vim = browser("Vim")
+        .choose(Choose::Any)
+        .keys(FileCmd::vim_keymap());
+    let mut focus = Focus::default();
+    focus.focus(vim.list.id);
+    vim.list.cursor = 1;
+    pressed(&mut vim, &mut focus, ch('l'));
+    assert_eq!(vim.cwd, "/home/me/docs", "l opens");
+    pressed(&mut vim, &mut focus, ch('h'));
+    assert_eq!(vim.cwd, "/home/me", "h goes up");
+    pressed(&mut vim, &mut focus, ch('s'));
+    assert!(
+        matches!(vim.result, Some(FileBrowserResult::Chosen { .. })),
+        "s chooses"
+    );
+    let _ = id;
+}
+
+fn at_pos(buf: &Buffer, needle: &str) -> Position {
+    at(buf, needle)
+}
+
+struct Shelf;
+
+impl FileSource for Shelf {
+    fn list(&self, dir: &str) -> Result<Vec<FileEntry>, String> {
+        Ok(vec![
+            FileEntry::dir(&format!("{}/inner", dir.trim_end_matches('/'))),
+            FileEntry::file(&format!("{}/page.txt", dir.trim_end_matches('/'))).meta("1 B"),
+        ])
+    }
+
+    fn is_dir(&self, path: &str) -> bool {
+        !path.contains('.')
+    }
+}
+
+fn file_browser_sources() {
+    let entry = || {
+        UrlEntry::new("Git URL", "Repository URL")
+            .back("Browse folders")
+            .placeholder("https://example.com/repo.git")
+            .help(&["Paste a clone URL"])
+            .hint("Enter URL")
+            .empty_error("Type a URL first")
+            .validate(|url| {
+                if url.starts_with("https://") {
+                    Ok(())
+                } else {
+                    Err("Use an https URL".to_owned())
+                }
+            })
+    };
+    let e = entry();
+    assert_eq!(
+        (
+            e.button.as_str(),
+            e.back.as_str(),
+            e.label.as_str(),
+            e.hint.as_str(),
+            e.empty_error.as_str()
+        ),
+        (
+            "Git URL",
+            "Browse folders",
+            "Repository URL",
+            "Enter URL",
+            "Type a URL first"
+        )
+    );
+    assert_eq!(
+        (e.placeholder.as_str(), e.help.len()),
+        ("https://example.com/repo.git", 1)
+    );
+    let check: &UrlValidator = &e.validate;
+    assert_eq!(check("ftp://x"), Err("Use an https URL".to_owned()));
+    assert_eq!(check("https://x"), Ok(()));
+
+    let url_browser = || {
+        FileBrowser::new(
+            WidgetId::of("collections.url"),
+            "Open",
+            home_source(),
+            "/home/me",
+        )
+        .choose(Choose::Any)
+        .url_entry(entry())
+        .keys(FileCmd::vim_keymap())
+    };
+    let mut plain = browser("Plain");
+    assert!(plain.url_button().is_none(), "no URL entry, no button");
+    let b = url_browser();
+    assert_eq!(
+        b.url_button().map(|button| button.label.as_str()),
+        Some("Git URL")
+    );
+    assert!(b.hints(None).iter().any(|h| h.action == "Enter URL"));
+    let _ = draw_browser(&mut plain, Interaction::default());
+
+    let entering = |paste: Option<&str>| {
+        let mut b = url_browser();
+        let mut focus = Focus::default();
+        focus.focus(b.list.id);
+        let ring = FocusRing::default();
+        assert_eq!(b.on_key(&ch('g'), &mut focus, &ring), Outcome::Changed);
+        assert!(b.url_mode, "g switches to URL entry");
+        assert_eq!(focus.current(), Some(b.path.id));
+        let shot = draw_browser(&mut b, Interaction::default());
+        let text = text_of(&shot.buf);
+        assert!(
+            text.contains("Repository URL") && text.contains("Paste a clone URL"),
+            "{text}"
+        );
+        assert!(
+            text.contains("Browse folders"),
+            "the button now leads back:\n{text}"
+        );
+        if let Some(url) = paste {
+            b.on_paste(url);
+        }
+        b.on_key(&key(KeyCode::Enter), &mut focus, &ring);
+        b
+    };
+    let empty = entering(None);
+    assert_eq!(empty.error.as_deref(), Some("Type a URL first"));
+    assert_eq!(empty.result, None);
+    let bad = entering(Some("ftp://host/repo"));
+    assert_eq!(bad.error.as_deref(), Some("Use an https URL"));
+    let good = entering(Some("https://example.com/repo.git"));
+    assert_eq!(
+        good.result,
+        Some(FileBrowserResult::Url(
+            "https://example.com/repo.git".into()
+        ))
+    );
+
+    let mut back = url_browser();
+    let mut focus = Focus::default();
+    focus.focus(back.list.id);
+    back.on_key(&ch('g'), &mut focus, &FocusRing::default());
+    let shot = draw_browser(&mut back, Interaction::default());
+    let button = back.url_button().expect("button").id;
+    let region = shot
+        .hits
+        .regions()
+        .iter()
+        .find(|r| r.id == button)
+        .expect("button region");
+    let click = shot.on(
+        Phase::Click,
+        button,
+        Position::new(region.area.x, region.area.y),
+    );
+    assert_eq!(back.pointer(&click, &mut focus), Outcome::Changed);
+    assert!(!back.url_mode, "the button toggles back to the folder list");
+
+    assert_eq!(FileEntry::file("/a/b.txt").name(), "b.txt");
+    assert!(FileEntry::file("/a/.hid").hidden && !FileEntry::dir("/a/b").hidden);
+    assert!(!FileEntry::file("/a/.hid").hidden(false).hidden);
+    let mem = home_source();
+    assert_eq!(mem.home.as_deref(), Some("/home/me"));
+    assert_eq!(mem.display("/home/me/docs"), "~/docs");
+    assert_eq!(mem.expand("~/docs"), "/home/me/docs");
+    assert_eq!(mem.parent("/home/me"), Some("/home".to_owned()));
+
+    let mut shelf = FileBrowser::new(WidgetId::of("collections.shelf"), "Shelf", Shelf, "/shelf");
+    assert_eq!(
+        labels(&shelf),
+        ["..", "inner/", "page.txt"],
+        "a custom source drives the browser"
+    );
+    assert_eq!(Shelf.parent("/a/b"), Some("/a".to_owned()));
+    assert_eq!(Shelf.parent("/a"), Some("/".to_owned()));
+    assert_eq!(Shelf.parent("/"), None);
+    let mut focus = Focus::default();
+    focus.focus(shelf.list.id);
+    shelf.list.cursor = 1;
+    pressed(&mut shelf, &mut focus, key(KeyCode::Enter));
+    assert_eq!(shelf.cwd, "/shelf/inner");
+
+    let root = std::env::temp_dir().join(format!("junie-collections-fs-{}", std::process::id()));
+    std::fs::create_dir_all(root.join("alpha")).expect("a scratch folder");
+    std::fs::write(root.join("note.txt"), "hello").expect("a scratch file");
+    let start = root.to_string_lossy().into_owned();
+    let fs = FileBrowser::new(
+        WidgetId::of("collections.fs"),
+        "Disk",
+        FsSource::new(),
+        &start,
+    )
+    .choose(Choose::Any);
+    assert_eq!(labels(&fs).len(), 3, "{:?}", labels(&fs));
+    assert!(
+        labels(&fs).contains(&"alpha/".to_owned()) && labels(&fs).contains(&"note.txt".to_owned())
+    );
+    assert!(
+        fs.entries
+            .iter()
+            .any(|e| e.name() == "note.txt" && !e.meta.is_empty()),
+        "files show their size"
+    );
+    assert_eq!(
+        FsSource::new().home,
+        std::env::var("HOME").ok().filter(|h| !h.is_empty())
+    );
+    std::fs::remove_dir_all(&root).expect("clean up");
 }
 
 #[test]
