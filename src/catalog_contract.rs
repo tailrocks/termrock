@@ -1066,10 +1066,21 @@ fn catalog_name_match_is_not_a_disposition() {
     expect_error(&errors, "API has no disposition: clock::area");
 }
 
+/// Pad the debt list back up to `DEBT_CEILING` with stale filler ids, as it was
+/// before any lane landed a proof. Without it the growth tests only pass while
+/// the list is exactly full, and the first lane that lands would break them.
+fn fill_debt_to_ceiling(s: &mut Sources) {
+    let have = debt_ids(&s.debt).len();
+    for n in 0..DEBT_CEILING.saturating_sub(have) {
+        s.debt.push_str(&format!("\nfiller::ratchet_padding_{n}\n"));
+    }
+}
+
 #[test]
 fn catalog_debt_cannot_grow() {
     let mut s = Sources::load();
     with_probe(&mut s);
+    fill_debt_to_ceiling(&mut s);
     s.debt.push_str("\nclock::undeclared_probe\n");
     let errors = check(&s);
     expect_error(&errors, "debt list grew");
@@ -1081,6 +1092,7 @@ fn catalog_debt_cannot_grow() {
 fn catalog_debt_baseline_is_frozen() {
     let mut s = Sources::load();
     with_probe(&mut s);
+    fill_debt_to_ceiling(&mut s);
     s.debt.push_str("\nclock::undeclared_probe\n");
     s.debt_baseline.push_str("\nclock::undeclared_probe\n");
     let errors = check(&s);
