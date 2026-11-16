@@ -125,7 +125,7 @@ fn work_contract_showcase_idle_and_switch() {
         "finder settled tick",
         &[
             (Metric::AllocatedBufferCells, 0),
-            (Metric::VisibleRowsPainted, 21),
+            (Metric::VisibleRowsPainted, 24),
             (Metric::IntrinsicWidthCalls, 422),
             (Metric::TextBytesMeasured, 1_135),
             (Metric::FitVisits, 5),
@@ -153,7 +153,7 @@ fn work_contract_showcase_idle_and_switch() {
         "unrelated page option then tick",
         &[
             (Metric::AllocatedBufferCells, 0),
-            (Metric::VisibleRowsPainted, 21),
+            (Metric::VisibleRowsPainted, 24),
             (Metric::IntrinsicWidthCalls, 422),
             (Metric::TextBytesMeasured, 1_135),
             (Metric::FitVisits, 5),

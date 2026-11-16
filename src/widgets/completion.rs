@@ -265,8 +265,7 @@ impl Completion {
         if let Some(widths) = self.widths {
             return widths;
         }
-        #[cfg(test)]
-        crate::core::work::add(crate::core::work::Counter::WidthRows, self.items.len());
+        crate::record_work!(WidthRowsMeasured, self.items.len());
         let label_w = self
             .items
             .iter()

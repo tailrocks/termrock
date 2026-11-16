@@ -619,7 +619,12 @@ mod gate_logic {
     fn a_function_without_the_test_attribute_does_not_count() {
         let suite = &inventory()[3];
         let name = suite.tests[0].rsplit("::").next().unwrap();
-        assert_eq!(missing_tests(suite, &format!("fn {name}() {{}}")).len(), 1);
+        // Every other required test is missing from this source too, so the
+        // count is the whole suite, not one: the plain function counts for none.
+        assert_eq!(
+            missing_tests(suite, &format!("fn {name}() {{}}")).len(),
+            suite.tests.len()
+        );
     }
 
     #[test]

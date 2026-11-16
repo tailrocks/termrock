@@ -37,8 +37,7 @@ impl Slot {
 /// spacers and cell containers are not selectable, so reconciliation never
 /// sees them, and each must still be listed exactly once among the rows.
 pub(super) fn build<S: SearchSource + ?Sized>(source: &S) -> Result<Vec<Slot>, SearchError> {
-    #[cfg(test)]
-    crate::core::work::add(crate::core::work::Counter::ProjectionRebuilds, 1);
+    crate::record_work!(ProjectionRebuilds, 1usize);
     let authoritative: HashSet<ItemKey> = (0..source.source_len())
         .map(|i| source.source_key(i))
         .collect();

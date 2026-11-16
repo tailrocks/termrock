@@ -1,6 +1,6 @@
 //! Deterministic work counts for collection projections and overlay paint.
 //!
-//! Counters are work units from `core::work` (unit tests only), never timings.
+//! Counters are the #56 work metrics (`work-metrics` feature), never timings.
 
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
@@ -12,7 +12,7 @@ use crate::core::hit::HitRegistry;
 use crate::core::id::{ItemKey, WidgetId};
 use crate::core::keyed::{KeyedRecord, KeyedState, KeyedVec};
 use crate::core::refusal::{Reason, take_refusal};
-use crate::core::work::Work;
+use crate::metrics::{Metric, WorkDelta, measure};
 use crate::theme::{ColorLevel, Theme};
 use crate::ui::ctx::{Interaction, RenderCtx};
 use crate::widgets::completion::Completion;
@@ -24,6 +24,11 @@ use crate::widgets::picker::Picker;
 use crate::widgets::select::Select;
 
 const SCREEN: Rect = Rect::new(0, 0, 80, 30);
+
+/// The metrics a delta recorded, for assertion messages.
+pub(crate) fn nz(delta: &WorkDelta) -> Vec<(Metric, u64)> {
+    delta.nonzero().collect()
+}
 
 fn overlay_frame(paint: impl FnOnce(&mut Buffer, &mut RenderCtx)) -> Buffer {
     let theme = Theme::for_level(ColorLevel::TrueColor);
@@ -47,9 +52,14 @@ fn picker_projection_join_is_linear() {
     const N: usize = 3_000;
     const M: usize = 1_500;
     let mut picker = Picker::new(WidgetId::of("pk"), "Projection");
-    let (set, work) = Work::measure(|| picker.set_items(keyed_items(N)));
+    let (set, work) = measure(|| picker.set_items(keyed_items(N)));
     set.expect("unique keys");
-    assert_eq!(work.index_builds, N as u64, "{work:?}");
+    assert_eq!(
+        work.get(Metric::KeyIndexInserts),
+        N as u64,
+        "{:?}",
+        nz(&work)
+    );
 
     let visible: Vec<Item> = (0..M)
         .map(|i| {
@@ -58,13 +68,15 @@ fn picker_projection_join_is_linear() {
                 .matched(vec![0])
         })
         .collect();
-    let (result, work) = Work::measure(|| picker.set_visible_items(visible));
+    let (result, work) = measure(|| picker.set_visible_items(visible));
     result.expect("every visible key is authoritative");
     assert_eq!(
-        work.join_probes, M as u64,
-        "one lookup per visible key: {work:?}"
+        work.get(Metric::KeyLookups),
+        M as u64,
+        "one lookup per visible key: {:?}",
+        nz(&work)
     );
-    assert_eq!(work.index_builds, 0, "{work:?}");
+    assert_eq!(work.get(Metric::KeyIndexInserts), 0, "{:?}", nz(&work));
     assert_eq!(
         picker.item_for_key(ItemKey::num(7)).expect("known").label,
         "item 7"
@@ -83,35 +95,56 @@ fn overlay_snapshot_copies_visible_rows_only() {
         mods: KeyModifiers::NONE,
     });
     assert!(select.open);
-    let ((), work) = Work::measure(|| {
+    let ((), work) = measure(|| {
         overlay_frame(|buf, ctx| select.render(Rect::new(0, 0, 40, 3), buf, ctx, ctx.theme.canvas));
     });
-    assert!((1..=8).contains(&work.snapshot_rows), "{work:?}");
-    assert_eq!(work.width_rows, 0, "{work:?}");
+    assert!(
+        (1..=8).contains(&work.get(Metric::OverlayRowsSnapshotted)),
+        "{:?}",
+        nz(&work)
+    );
+    assert_eq!(work.get(Metric::WidthRowsMeasured), 0, "{:?}", nz(&work));
 
     let mut completion = Completion::new(WidgetId::of("completion"));
     completion.open(keyed_items(100_000), Rect::new(2, 2, 1, 1), 0);
-    let ((), first) = Work::measure(|| {
+    let ((), first) = measure(|| {
         overlay_frame(|buf, ctx| completion.render(SCREEN, buf, ctx));
     });
-    assert!((1..=8).contains(&first.snapshot_rows), "{first:?}");
-    assert_eq!(
-        first.width_rows, 100_000,
-        "the first frame measures once: {first:?}"
+    assert!(
+        (1..=8).contains(&first.get(Metric::OverlayRowsSnapshotted)),
+        "{:?}",
+        nz(&first)
     );
-    let ((), again) = Work::measure(|| {
+    assert_eq!(
+        first.get(Metric::WidthRowsMeasured),
+        100_000,
+        "the first frame measures once: {:?}",
+        nz(&first)
+    );
+    let ((), again) = measure(|| {
         overlay_frame(|buf, ctx| completion.render(SCREEN, buf, ctx));
     });
     assert_eq!(
-        again.width_rows, 0,
-        "unchanged items are not re-measured: {again:?}"
+        again.get(Metric::WidthRowsMeasured),
+        0,
+        "unchanged items are not re-measured: {:?}",
+        nz(&again)
     );
-    assert!((1..=8).contains(&again.snapshot_rows), "{again:?}");
+    assert!(
+        (1..=8).contains(&again.get(Metric::OverlayRowsSnapshotted)),
+        "{:?}",
+        nz(&again)
+    );
     completion.set_items(keyed_items(10));
-    let ((), changed) = Work::measure(|| {
+    let ((), changed) = measure(|| {
         overlay_frame(|buf, ctx| completion.render(SCREEN, buf, ctx));
     });
-    assert_eq!(changed.width_rows, 10, "{changed:?}");
+    assert_eq!(
+        changed.get(Metric::WidthRowsMeasured),
+        10,
+        "{:?}",
+        nz(&changed)
+    );
 }
 
 #[test]
@@ -134,20 +167,25 @@ fn overlay_snapshot_choice_editor_copies_visible_rows_only() {
     ] {
         let mut ed = ChoiceEditor::open(WidgetId::of("ed"), &editor, "v0", &cfg).expect("popup");
         let rect = Rect::new(1, 1, 20, 1);
-        let ((), first) = Work::measure(|| {
+        let ((), first) = measure(|| {
             overlay_frame(|buf, ctx| ed.render(rect, buf, ctx, &cfg));
         });
         assert!(
-            (1..=16).contains(&first.snapshot_rows),
-            "{editor:?} {first:?}"
+            (1..=16).contains(&first.get(Metric::OverlayRowsSnapshotted)),
+            "{editor:?} {:?}",
+            nz(&first)
         );
-        let ((), again) = Work::measure(|| {
+        let ((), again) = measure(|| {
             overlay_frame(|buf, ctx| ed.render(rect, buf, ctx, &cfg));
         });
         assert_eq!(
-            (again.width_rows, again.source_rows),
+            (
+                again.get(Metric::WidthRowsMeasured),
+                again.get(Metric::SourceRowsEnumerated)
+            ),
             (0, 0),
-            "{editor:?} {again:?}"
+            "{editor:?} {:?}",
+            nz(&again)
         );
     }
 }
@@ -172,18 +210,28 @@ fn keyed_unchanged_stamp_does_not_enumerate_the_source() {
         KeyedVec::try_from_rows((1..=500).map(|n| (ItemKey::num(n), Row { off: false })))
             .expect("valid");
     let mut state = KeyedState::new();
-    let (_, first) = Work::measure(|| state.reconcile(&store).expect("valid"));
+    let (_, first) = measure(|| state.reconcile(&store).expect("valid"));
     assert_eq!(
-        first.source_rows, 1_000,
-        "authoritative plus visible, once: {first:?}"
+        first.get(Metric::SourceRowsEnumerated),
+        1_000,
+        "authoritative plus visible, once: {:?}",
+        nz(&first)
     );
-    let (out, again) = Work::measure(|| state.reconcile(&store).expect("valid"));
-    assert_eq!((out, again.source_rows), (Default::default(), 0));
+    let (out, again) = measure(|| state.reconcile(&store).expect("valid"));
+    assert_eq!(
+        (out, again.get(Metric::SourceRowsEnumerated)),
+        (Default::default(), 0)
+    );
 
     store.update(ItemKey::num(7), |row| row.off = true);
-    let (out, work) = Work::measure(|| state.reconcile(&store).expect("valid"));
+    let (out, work) = measure(|| state.reconcile(&store).expect("valid"));
     assert!(out.data_changed);
-    assert_eq!(work.source_rows, 1_000, "{work:?}");
+    assert_eq!(
+        work.get(Metric::SourceRowsEnumerated),
+        1_000,
+        "{:?}",
+        nz(&work)
+    );
     assert!(!state.is_enabled(ItemKey::num(7)));
 }
 
@@ -194,7 +242,7 @@ fn keyed_resize_cancels_capture_without_source_scan() {
     let mut state = KeyedState::new();
     state.reconcile(&store).expect("valid");
     assert!(state.capture_press(ItemKey::num(2), 5));
-    let (flags, work) = Work::measure(|| {
+    let (flags, work) = measure(|| {
         (
             state.invalidate_layout(5),
             state.invalidate_layout(6),
@@ -203,7 +251,7 @@ fn keyed_resize_cancels_capture_without_source_scan() {
     });
     assert_eq!((flags.0, flags.1), (false, true));
     assert_eq!(flags.2, Default::default());
-    assert_eq!(work.source_rows, 0, "{work:?}");
+    assert_eq!(work.get(Metric::SourceRowsEnumerated), 0, "{:?}", nz(&work));
     assert!(!state.release_press(ItemKey::num(2), 5));
 }
 
@@ -237,22 +285,36 @@ fn list_detail_unchanged_widths_are_cached() {
                 .expect("valid source");
         });
     };
-    let ((), first) = Work::measure(|| paint(&mut detail, &store));
-    assert_eq!(first.width_rows, 5_000, "{first:?}");
-    let ((), again) = Work::measure(|| paint(&mut detail, &store));
+    let ((), first) = measure(|| paint(&mut detail, &store));
     assert_eq!(
-        again.width_rows, 0,
-        "unchanged stamp measures no row: {again:?}"
+        first.get(Metric::WidthRowsMeasured),
+        5_000,
+        "{:?}",
+        nz(&first)
     );
-    assert_eq!(again.source_rows, 0, "{again:?}");
+    let ((), again) = measure(|| paint(&mut detail, &store));
+    assert_eq!(
+        again.get(Metric::WidthRowsMeasured),
+        0,
+        "unchanged stamp measures no row: {:?}",
+        nz(&again)
+    );
+    assert_eq!(
+        again.get(Metric::SourceRowsEnumerated),
+        0,
+        "{:?}",
+        nz(&again)
+    );
 
     store.update(ItemKey::num(3), |row| {
         row.label = "row three, renamed".into()
     });
-    let ((), changed) = Work::measure(|| paint(&mut detail, &store));
+    let ((), changed) = measure(|| paint(&mut detail, &store));
     assert_eq!(
-        changed.width_rows, 5_000,
-        "a data revision re-measures once: {changed:?}"
+        changed.get(Metric::WidthRowsMeasured),
+        5_000,
+        "a data revision re-measures once: {:?}",
+        nz(&changed)
     );
 }
 
@@ -270,18 +332,21 @@ fn select_fixed_probe_never_clones_options() {
         let refs: Vec<&str> = labels.iter().map(String::as_str).collect();
 
         let probe = Select::new(WidgetId::of("fixed"), "Pick", &refs, 0);
-        let (copy, work) = Work::measure(|| probe.clone());
+        let (copy, work) = measure(|| probe.clone());
         assert_eq!(
-            work.option_clones, n as u64,
-            "counter sees a clone: {work:?}"
+            work.get(Metric::PayloadBytesCloned),
+            labels.iter().map(String::len).sum::<usize>() as u64,
+            "counter sees a clone: {:?}",
+            nz(&work)
         );
         drop(copy);
 
         let mut live = Select::new(WidgetId::of("live"), "Pick", &refs, 0);
-        let (_, work) = Work::measure(|| live.on_key(&select_key(KeyCode::Char('o'))));
+        let (_, work) = measure(|| live.on_key(&select_key(KeyCode::Char('o'))));
         assert!(
-            work.label_visits > 0,
-            "counter sees a label search: {work:?}"
+            work.get(Metric::LabelsRead) > 0,
+            "counter sees a label search: {:?}",
+            nz(&work)
         );
 
         let mut select = Select::new(WidgetId::of("fixed"), "Pick", &refs, 0)
@@ -296,11 +361,15 @@ fn select_fixed_probe_never_clones_options() {
         ];
         for (code, refused) in keys {
             let before = (select.selected, select.open, select.list.cursor.index);
-            let (out, work) = Work::measure(|| select.on_key(&select_key(code)));
+            let (out, work) = measure(|| select.on_key(&select_key(code)));
             assert_eq!(
-                (work.option_clones, work.label_visits),
+                (
+                    work.get(Metric::PayloadBytesCloned),
+                    work.get(Metric::LabelsRead)
+                ),
                 (0, 0),
-                "{n} options, {code:?}: {work:?}"
+                "{n} options, {code:?}: {:?}",
+                nz(&work)
             );
             assert_eq!(
                 (select.selected, select.open, select.list.cursor.index),

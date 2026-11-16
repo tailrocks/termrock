@@ -10,8 +10,6 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::core::id::ItemKey;
 use crate::core::list::{KeyedRowSource, RowSource, SourceStamp};
-#[cfg(test)]
-use crate::core::work::{Counter, add};
 
 /// What one reconciliation changed.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -194,8 +192,7 @@ impl KeyedState {
             Some(_) => None,
             None => {
                 let n = source.source_len();
-                #[cfg(test)]
-                add(Counter::SourceRows, n);
+                crate::record_work!(SourceRowsEnumerated, n);
                 let mut set = HashSet::with_capacity(n);
                 for index in 0..n {
                     let key = source.source_key(index);
@@ -214,8 +211,7 @@ impl KeyedState {
         };
         let known = authoritative.as_ref().or(reuse).expect("one set exists");
         let n = source.len();
-        #[cfg(test)]
-        add(Counter::SourceRows, n);
+        crate::record_work!(SourceRowsEnumerated, n);
         let mut visible = Vec::with_capacity(n);
         let mut positions = HashMap::with_capacity(n);
         let mut enabled = HashSet::new();

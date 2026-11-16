@@ -39,8 +39,7 @@ impl RowSource for [String] {
         <[String]>::len(self)
     }
     fn label(&self, i: usize) -> &str {
-        #[cfg(test)]
-        crate::core::work::add(crate::core::work::Counter::LabelVisits, 1);
+        crate::record_work!(LabelsRead, 1usize);
         &self[i]
     }
 }

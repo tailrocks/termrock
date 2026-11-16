@@ -1,6 +1,6 @@
 //! Deterministic work counts for result projections and paint.
 //!
-//! Counters are work units from `core::work` (unit tests only), never timings.
+//! Counters are the #56 work metrics (`work-metrics` feature), never timings.
 
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
@@ -10,11 +10,12 @@ use crate::core::focus::FocusRing;
 use crate::core::hit::HitRegistry;
 use crate::core::id::{ItemKey, WidgetId};
 use crate::core::list::{KeyedRowSource, RowSource, SourceStamp};
-use crate::core::work::Work;
+use crate::metrics::{Metric, measure};
 use crate::theme::{ColorLevel, Theme};
 use crate::ui::ctx::{Interaction, RenderCtx};
 use crate::ui::layout::Split;
 use crate::widgets::input::TextInput;
+use crate::widgets::keyed_cost_tests::nz;
 use crate::widgets::list_detail::SourceFrame;
 
 const AREA: Rect = Rect::new(0, 0, 120, 24);
@@ -139,12 +140,13 @@ fn search_detail_noop_source_does_not_rebuild() {
         stamp: first[0].token.result_stamp(),
         len: N,
     };
-    let (accepted, built) = Work::measure(|| search.submit(first[0].token, &source));
+    let (accepted, built) = measure(|| search.submit(first[0].token, &source));
     accepted.expect("accepted").into_actions();
-    assert_eq!(built.projection_rebuilds, 1, "{built:?}");
+    assert_eq!(built.get(Metric::ProjectionRebuilds), 1, "{:?}", nz(&built));
     assert!(
-        built.source_rows >= N as u64,
-        "the real build is counted: {built:?}"
+        built.get(Metric::SourceRowsEnumerated) >= N as u64,
+        "the real build is counted: {:?}",
+        nz(&built)
     );
 
     let visible = paint(&mut search, &source);
@@ -154,22 +156,24 @@ fn search_detail_noop_source_does_not_rebuild() {
     );
 
     let mut painted = 0;
-    let ((), idle) = Work::measure(|| {
+    let ((), idle) = measure(|| {
         for _ in 0..50 {
             assert!(requests(search.refresh_source(stamp)).is_empty());
             assert!(requests(search.set_query("")).is_empty());
             painted += paint(&mut search, &source);
         }
     });
-    assert_eq!(idle.projection_rebuilds, 0, "{idle:?}");
-    assert_eq!(idle.source_rows, 0, "{idle:?}");
-    assert_eq!(idle.index_builds, 0, "{idle:?}");
-    assert_eq!(idle.join_probes, 0, "{idle:?}");
-    assert_eq!(idle.width_rows, 0, "{idle:?}");
+    assert_eq!(idle.get(Metric::ProjectionRebuilds), 0, "{:?}", nz(&idle));
+    assert_eq!(idle.get(Metric::SourceRowsEnumerated), 0, "{:?}", nz(&idle));
+    assert_eq!(idle.get(Metric::KeyIndexInserts), 0, "{:?}", nz(&idle));
+    assert_eq!(idle.get(Metric::KeyLookups), 0, "{:?}", nz(&idle));
+    assert_eq!(idle.get(Metric::WidthRowsMeasured), 0, "{:?}", nz(&idle));
     assert_eq!(painted, 50 * visible);
     assert_eq!(
-        idle.visible_rows_painted, painted as u64,
-        "paint work is the visible rows only: {idle:?}"
+        idle.get(Metric::VisibleRowsPainted),
+        painted as u64,
+        "paint work is the visible rows only: {:?}",
+        nz(&idle)
     );
 
     let changed = requests(search.set_query("a"));

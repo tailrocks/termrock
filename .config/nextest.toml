@@ -42,6 +42,7 @@ default-filter = '''
     binary_id(=junie-tui) & test(/^metrics::/)
   | binary_id(=junie-tui) & test(/^ui::overflow_work_tests::/)
   | binary_id(=junie-tui) & test(/^widgets::keyed_cost_tests::/)
+  | binary_id(=junie-tui) & test(/^widgets::search_detail::cost_tests::/)
   | binary_id(=junie-tui::regressions) & test(/^work_budgets::/)
   | binary_id(=junie-tui::bin/holla) & test(/^work_metrics_tests::/)
   | binary_id(=junie-tui::bin/holla) & test(/holla_projection_/)

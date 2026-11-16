@@ -582,8 +582,7 @@ impl OptionList {
                 payload: payload(i),
             });
         }
-        #[cfg(test)]
-        crate::core::work::add(crate::core::work::Counter::SnapshotRows, rows.len());
+        crate::record_work!(OverlayRowsSnapshotted, rows.len());
         PopupSnapshot {
             id: self.id,
             rows,

@@ -21,8 +21,16 @@ T	ui::overflow_work_tests::large_overflow_keyhint_work_is_linear
 T	ui::overflow_work_tests::large_overflow_toolbar_work_is_linear
 T	ui::overflow_work_tests::large_overflow_tabs_work_is_linear
 T	ui::overflow_work_tests::tabs_render_measures_each_tab_once
-S	keyed collection joins	junie-tui	/^widgets::keyed_cost_tests::/	src/widgets/keyed_cost_tests.rs
+S	keyed collection costs (joins, overlay snapshots, source enumeration, width caches, Select probe)	junie-tui	/^widgets::keyed_cost_tests::/	src/widgets/keyed_cost_tests.rs
 T	widgets::keyed_cost_tests::picker_projection_join_is_linear
+T	widgets::keyed_cost_tests::overlay_snapshot_copies_visible_rows_only
+T	widgets::keyed_cost_tests::overlay_snapshot_choice_editor_copies_visible_rows_only
+T	widgets::keyed_cost_tests::keyed_unchanged_stamp_does_not_enumerate_the_source
+T	widgets::keyed_cost_tests::keyed_resize_cancels_capture_without_source_scan
+T	widgets::keyed_cost_tests::list_detail_unchanged_widths_are_cached
+T	widgets::keyed_cost_tests::select_fixed_probe_never_clones_options
+S	search detail projection reuse	junie-tui	/^widgets::search_detail::cost_tests::/	src/widgets/search_detail/cost_tests.rs
+T	widgets::search_detail::cost_tests::search_detail_noop_source_does_not_rebuild
 S	library widget budgets (viewport, scroll view, list, table, tree, picker, select, completion, editor, textarea)	junie-tui::regressions	/^work_budgets::/	tests/regressions/work_budgets.rs
 T	work_budgets::work_contract_viewport_first_use_and_prepared_draw
 T	work_budgets::work_contract_viewport_one_append_is_incremental

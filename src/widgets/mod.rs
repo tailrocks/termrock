@@ -68,5 +68,5 @@ pub mod widget_hints;
 
 #[cfg(test)]
 mod collection_edit_tests;
-#[cfg(test)]
+#[cfg(all(test, feature = "work-metrics"))]
 mod keyed_cost_tests;
