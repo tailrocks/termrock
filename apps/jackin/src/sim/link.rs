@@ -253,6 +253,9 @@ fn pager_screen() -> Vec<u8> {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(feature = "work-metrics")]
+    mod work;
+
     use std::sync::Arc;
 
     use ratatui::layout::Rect;

@@ -855,6 +855,7 @@ impl ScrollPanel {
     }
 
     fn widest_of(&self, lines: &[String]) -> usize {
+        crate::record_work!(SourceRowsRead, lines.len());
         #[cfg(test)]
         self.work
             .width_measurements
@@ -894,6 +895,7 @@ impl ScrollPanel {
         let mut rows = Vec::new();
         let mut maps = Vec::new();
         for (source, l) in self.lines.iter().enumerate() {
+            crate::record_work!(SourceRowsRead, 1usize);
             for row in wrap_mapped(l, width as usize, WrapOpts::default()) {
                 rows.push(row.text);
                 maps.push(RowMap {
@@ -1048,6 +1050,7 @@ impl ScrollPanel {
             0
         };
         for (i, li) in self.scroll.visible_range().enumerate() {
+            crate::record_work!(VisibleRowsPainted, 1usize);
             let y = area.y + i as u16;
             let line = &lines[li];
             let st = style_line(t, line).bg(bg);
