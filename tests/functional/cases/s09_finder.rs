@@ -1472,3 +1472,56 @@ fn option_preview_scroll_kept_or_reset() {
         "every accepted result returns the preview to its top"
     );
 }
+
+#[test]
+fn query_edit_commands_say_when_they_change_nothing() {
+    let app = open_with("s09-query-nothing-to-undo", &["finder.query=empty"]);
+    app.wait_text("Stash changes");
+    focus_query(&app, PLACEHOLDER);
+    app.key("ctrl+z");
+    let undo = app.wait_text("Nothing to undo");
+    see(&undo, &["Nothing to undo", "Stash changes"], &["Ran "]);
+    // With something to undo the same key does it: the typed letters go and
+    // the full list returns.
+    app.type_text("pu");
+    app.wait_absent("Stash changes");
+    app.key("ctrl+z");
+    let undone = app.wait_text("Stash changes");
+    see(&undone, &["Stash changes", "Build"], &["No matches"]);
+    app.finish();
+}
+
+#[test]
+fn typing_in_the_preview_returns_to_the_query_only_in_the_hosted_look() {
+    let hosted = page(
+        "s09-type-back-hosted",
+        Some("finder.painter=hosted"),
+        120,
+        40,
+    );
+    hosted.wait_text("git pull --ff-only");
+    click_where(&hosted, "pu", |hit| hit.y == 7 && hit.x < 50);
+    flash_settle(&hosted);
+    hosted.key("end");
+    hosted.key("ctrl+o");
+    flash_settle(&hosted);
+    hosted.type_text("s");
+    let back = hosted.wait_text("pus");
+    see(&back, &["pus", "Push"], &["No matches"]);
+    hosted.finish();
+
+    let standard = page("s09-type-back-standard", None, 120, 40);
+    standard.wait_text("Alternatives…");
+    focus_query(&standard, "pu");
+    standard.key("end");
+    standard.key("ctrl+o");
+    flash_settle(&standard);
+    standard.type_text("s");
+    let stayed = standard.settle();
+    see(
+        &stayed,
+        &["Pull with rebase", "Alternatives…"],
+        &["pus", "No matches"],
+    );
+    standard.finish();
+}

@@ -7,12 +7,19 @@
 //! case keeps a restack mechanical.
 
 use junie_tui::clock::Moment;
+use junie_tui::core::edit::{FieldKeys, TextCmd};
 use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::focus::{Focus, FocusRing};
+use junie_tui::core::focus::{Focus, FocusChange, FocusRing};
 use junie_tui::core::hit::Axis;
 use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::{ItemKey, WidgetId};
+use junie_tui::core::id::{ItemKey, Part, WidgetId};
+use junie_tui::core::intent::Phase;
+use junie_tui::core::keymap::{Actions, KeyBinding};
+use junie_tui::core::list::{KeyedRowSource, RowSource, SourceStamp};
+use junie_tui::core::pointer::PointerEvent;
 use junie_tui::core::refusal::{Reason, clear_refusal, take_refusal};
+use junie_tui::core::response::Response;
+use junie_tui::core::selection::ClickPolicy;
 use junie_tui::core::text::TextBuffer;
 use junie_tui::shell::{Cx, Request, StatusLine, background};
 use junie_tui::terminal::{TerminalState, TerminalViewport};
@@ -34,13 +41,22 @@ use junie_tui::widgets::grid::{
 };
 use junie_tui::widgets::info_dialog::InfoDialog;
 use junie_tui::widgets::input::TextInput;
-use junie_tui::widgets::list_detail::{Action, Event, Frame, Line, ListDetail, ListRow};
+use junie_tui::widgets::input::TextInput as FinderQuery;
+use junie_tui::widgets::list_detail::{
+    Action, DetailPane, Event, Frame, Line, ListDetail, ListDetailSource, ListRow, ListRowRef,
+    SourceFrame,
+};
 use junie_tui::widgets::option_editor::{
     ChoiceEditor, ColumnEditor, EditorConfig, OptionItem, Options,
 };
 use junie_tui::widgets::option_list::Item;
 use junie_tui::widgets::picker::{Picker, PickerAction, PickerItemsError, VisibleKey};
 use junie_tui::widgets::props::Prop;
+use junie_tui::widgets::search_detail::{
+    MissingSelection, QueryPasteMode, QueryRequest, QueryView, ResultRowKind, RowPaint,
+    SearchAction, SearchCmd, SearchConfig, SearchDetail, SearchDetailSource, SearchError,
+    SearchFocusMode, SearchPaint, SearchPhase, SearchSession, SearchSource, paint_query_default,
+};
 use junie_tui::widgets::splitter::Splitter;
 use junie_tui::widgets::viewport_ops::ViewportOps;
 use ratatui::buffer::Buffer;
@@ -87,6 +103,9 @@ pub const CASES: &[ScenarioCase] = &[
     ScenarioCase { id: ScenarioId::SessionInputAndPaste, run: session_input_and_paste },
     ScenarioCase { id: ScenarioId::SessionEndingsAndPolicy, run: session_endings_and_policy },
     ScenarioCase { id: ScenarioId::WorkCounterContract, run: work_counter_contract },
+    ScenarioCase { id: ScenarioId::SearchDetailQuery, run: search_detail_query },
+    ScenarioCase { id: ScenarioId::SearchDetailSelection, run: search_detail_selection },
+    ScenarioCase { id: ScenarioId::SearchDetailPaint, run: search_detail_paint },
 ];
 
 fn key(code: KeyCode) -> Key {
@@ -875,6 +894,932 @@ fn completion_popup_snapshot() {
         Some("cand06"),
         "set_items keeps the highlighted row; open would reset it"
     );
+}
+
+// ---- Finder (SearchDetail) ------------------------------------------------
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Shape {
+    Head,
+    Item,
+    Off,
+    Cells,
+    Gap,
+}
+
+type FinderRow = (u64, &'static str, Shape);
+
+/// A heading, items (one disabled), a spacer and a row of two chips.
+const FINDER_ROWS: &[FinderRow] = &[
+    (1, "Group", Shape::Head),
+    (10, "alpha", Shape::Item),
+    (11, "beta", Shape::Off),
+    (12, "gamma", Shape::Item),
+    (2, "", Shape::Gap),
+    (3, "chips", Shape::Cells),
+    (13, "delta", Shape::Item),
+    (14, "echo", Shape::Item),
+];
+
+const CHIPS: [&str; 2] = ["one", "two"];
+
+fn chip_key(row: u64, cell: usize) -> ItemKey {
+    ItemKey::num(row * 10 + cell as u64)
+}
+
+/// The answer a host builds for one query request.
+struct FinderCat {
+    stamp: SourceStamp,
+    rows: Vec<FinderRow>,
+}
+
+impl FinderCat {
+    fn new(request: &QueryRequest, rows: &[FinderRow]) -> Self {
+        Self {
+            stamp: request.token.result_stamp(),
+            rows: rows.to_vec(),
+        }
+    }
+
+    fn all_keys(&self) -> Vec<ItemKey> {
+        let mut keys = Vec::new();
+        for (key, _, shape) in &self.rows {
+            keys.push(ItemKey::num(*key));
+            if *shape == Shape::Cells {
+                keys.extend((0..CHIPS.len()).map(|cell| chip_key(*key, cell)));
+            }
+        }
+        keys
+    }
+}
+
+impl RowSource for FinderCat {
+    fn len(&self) -> usize {
+        self.rows.len()
+    }
+
+    fn enabled(&self, i: usize) -> bool {
+        self.rows[i].2 != Shape::Off
+    }
+
+    fn label(&self, i: usize) -> &str {
+        self.rows[i].1
+    }
+
+    fn key(&self, i: usize) -> ItemKey {
+        ItemKey::num(self.rows[i].0)
+    }
+}
+
+impl KeyedRowSource for FinderCat {
+    fn stamp(&self) -> SourceStamp {
+        self.stamp
+    }
+
+    fn source_len(&self) -> usize {
+        self.all_keys().len()
+    }
+
+    fn source_key(&self, i: usize) -> ItemKey {
+        self.all_keys()[i]
+    }
+}
+
+impl SearchSource for FinderCat {
+    fn row_kind(&self, row: usize) -> ResultRowKind {
+        match self.rows[row].2 {
+            Shape::Head => ResultRowKind::Heading,
+            Shape::Item | Shape::Off => ResultRowKind::Item,
+            Shape::Cells => ResultRowKind::Cells,
+            Shape::Gap => ResultRowKind::Spacer,
+        }
+    }
+
+    fn cell_count(&self, row: usize) -> usize {
+        match self.rows[row].2 {
+            Shape::Head | Shape::Gap => 0,
+            Shape::Item | Shape::Off => 1,
+            Shape::Cells => CHIPS.len(),
+        }
+    }
+
+    fn cell_key(&self, row: usize, cell: usize) -> ItemKey {
+        match self.rows[row].2 {
+            Shape::Cells => chip_key(self.rows[row].0, cell),
+            _ => ItemKey::num(self.rows[row].0),
+        }
+    }
+
+    fn cell_label(&self, row: usize, cell: usize) -> &str {
+        match self.rows[row].2 {
+            Shape::Cells => CHIPS[cell],
+            _ => self.rows[row].1,
+        }
+    }
+
+    fn cell_enabled(&self, row: usize, _cell: usize) -> bool {
+        self.rows[row].2 != Shape::Off
+    }
+}
+
+impl ListDetailSource for FinderCat {
+    fn row(&self, visible: usize) -> ListRowRef<'_> {
+        ListRowRef {
+            mark: None,
+            label: self.rows[visible].1,
+            detail: "via-list-detail",
+            meta: "",
+            meta_tone: junie_tui::theme::Tone::Muted,
+            faint: false,
+        }
+    }
+}
+
+fn finder_stamp(data: u64) -> SourceStamp {
+    SourceStamp {
+        instance: ItemKey::num(7_000),
+        data,
+        view: 0,
+    }
+}
+
+fn finder_search(config: SearchConfig) -> SearchDetail {
+    SearchDetail::new(
+        WidgetId::of("scenario.fd"),
+        FinderQuery::new(WidgetId::of("scenario.fd.query"), "Search"),
+        Split::new(60, 28, 34),
+    )
+    .config(config)
+}
+
+fn actions_of(reply: Response<SearchAction>) -> Vec<SearchAction> {
+    reply.into_actions().into_iter().collect()
+}
+
+fn requested(reply: Response<SearchAction>) -> QueryRequest {
+    let mut found = actions_of(reply)
+        .into_iter()
+        .filter_map(|action| match action {
+            SearchAction::QueryRequested(request) => Some(request),
+            _ => None,
+        });
+    let request = found.next().expect("the input asked for one query request");
+    assert!(found.next().is_none(), "exactly one request per change");
+    request
+}
+
+/// Starts a search and answers its first request with `rows`.
+fn finder_started(search: &mut SearchDetail, rows: &[FinderRow]) -> FinderCat {
+    let request = requested(search.refresh_source(finder_stamp(1)));
+    let cat = FinderCat::new(&request, rows);
+    let _ = search.submit(request.token, &cat).expect("fresh results");
+    cat
+}
+
+fn finder_key(
+    search: &mut SearchDetail,
+    cat: &FinderCat,
+    focus: &mut Focus,
+    code: KeyCode,
+) -> Vec<SearchAction> {
+    let reply = search
+        .on_key(&key(code), cat, focus)
+        .expect("the displayed results are the accepted ones");
+    actions_of(reply)
+}
+
+fn finder_chord(
+    search: &mut SearchDetail,
+    cat: &FinderCat,
+    focus: &mut Focus,
+    code: KeyCode,
+    mods: KeyModifiers,
+) -> Vec<SearchAction> {
+    let reply = search
+        .on_key(&Key { code, mods }, cat, focus)
+        .expect("the displayed results are the accepted ones");
+    actions_of(reply)
+}
+
+fn num(n: u64) -> Option<ItemKey> {
+    Some(ItemKey::num(n))
+}
+
+fn search_detail_query() {
+    let mut search = finder_search(SearchConfig::default());
+    let query_id = search.session().query_input().id;
+    let _ = search.configure_query(|field| field.keys = FieldKeys::Desktop);
+    search.set_query_readout("scope ‹ here ›");
+    assert!(!search.editing());
+
+    // The first request is for the empty query and nothing is accepted yet.
+    let first = requested(search.refresh_source(finder_stamp(1)));
+    assert_eq!(first.text, "");
+    assert_eq!(search.phase(), SearchPhase::Loading);
+    assert!(!search.session().is_interactive());
+    assert_eq!(search.session().accepted_query(), None);
+
+    // The answer carries the stamp the token asks for, and selects the first
+    // enabled item.
+    let cat = FinderCat::new(&first, FINDER_ROWS);
+    assert_eq!(cat.stamp, first.token.result_stamp());
+    let accepted = actions_of(search.submit(first.token, &cat).expect("fresh results"));
+    assert!(accepted.contains(&SearchAction::SelectionChanged(num(10))));
+    assert_eq!(search.phase(), SearchPhase::Ready);
+    assert!(search.session().is_interactive());
+    assert_eq!(search.session().accepted_query(), Some(""));
+    assert_eq!(search.selected_key(), num(10));
+    let session = search.session();
+    assert!(session.is_selectable(ItemKey::num(10)));
+    assert!(!session.is_selectable(ItemKey::num(11)), "a disabled item");
+    assert!(!session.is_selectable(ItemKey::num(1)), "a heading");
+
+    // A newer request makes the older token stale.
+    let second = requested(search.set_query("al"));
+    assert_eq!(second.text, "al");
+    assert!(second.token.generation > first.token.generation);
+    assert_eq!(
+        search.submit(first.token, &cat).err(),
+        Some(SearchError::StaleQuery)
+    );
+
+    // A failure keeps the old results on screen and Retry asks again.
+    let _ = search
+        .fail(
+            second.token,
+            "the ranking service did not answer".to_owned(),
+        )
+        .expect("the latest request can fail");
+    assert_eq!(search.phase(), SearchPhase::Failed);
+    assert_eq!(
+        search.session().error(),
+        Some("the ranking service did not answer")
+    );
+    let retry = requested(search.retry());
+    assert_eq!(retry.text, "al");
+    let again = FinderCat::new(&retry, FINDER_ROWS);
+    let _ = search
+        .submit(retry.token, &again)
+        .expect("the retry answers");
+    assert_eq!(search.phase(), SearchPhase::Ready);
+    assert_eq!(search.session().error(), None);
+    assert_eq!(search.session().accepted_query(), Some("al"));
+
+    // Paste mode decides what a line break becomes.
+    let mut focus = Focus::default();
+    focus.focus(query_id);
+    let _ = search.set_query("");
+    let _ = search.on_paste("a\nb\n", &mut focus);
+    assert_eq!(search.query(), "ab", "line breaks are stripped by default");
+    search.config_mut().paste_mode = QueryPasteMode::JoinLinesWithSpaceTrim;
+    let _ = search.set_query("");
+    let _ = search.on_paste("a\nb\n", &mut focus);
+    assert_eq!(search.query(), "a b", "line breaks join with a space");
+    assert_eq!(search.session().query_input().field.text(), "a b");
+    let mut joined =
+        finder_search(SearchConfig::default().paste_mode(QueryPasteMode::JoinLinesWithSpaceTrim));
+    let mut at = Focus::default();
+    at.focus(joined.session().query_input().id);
+    let _ = joined.on_paste("x\ny", &mut at);
+    assert_eq!(joined.query(), "x y", "the builder sets the same policy");
+    let mut stripped =
+        finder_search(SearchConfig::default().paste_mode(QueryPasteMode::StripLineBreaks));
+    let mut at = Focus::default();
+    at.focus(stripped.session().query_input().id);
+    let _ = stripped.on_paste("x\ny", &mut at);
+    assert_eq!(stripped.query(), "xy");
+
+    // Leaving the query ends editing.
+    let _ = search.on_blur(FocusChange {
+        from: query_id,
+        to: None,
+    });
+    assert!(!search.editing());
+
+    // The headless session answers an edit command that changed nothing.
+    let mut session = SearchSession::new(
+        FinderQuery::new(WidgetId::of("scenario.fd.session"), "Search"),
+        SearchConfig::default(),
+    );
+    session.config_mut().select_first_on_query = false;
+    let _ = session.configure_query(|field| field.keys = FieldKeys::Desktop);
+    let request = requested(session.refresh_source(finder_stamp(1)));
+    let _ = session
+        .submit(request.token, &FinderCat::new(&request, FINDER_ROWS))
+        .expect("the session accepts its own request");
+    let undo = Key {
+        code: KeyCode::Char('z'),
+        mods: KeyModifiers::CONTROL,
+    };
+    let undone = actions_of(session.on_key(&undo, true, 5));
+    assert!(
+        undone.contains(&SearchAction::QueryCommand {
+            cmd: TextCmd::Undo,
+            effective: false
+        }),
+        "undo with nothing to undo reports that it did nothing: {undone:?}"
+    );
+    assert_eq!(session.query_input().field.text(), "");
+    assert_eq!(session.accepted_query(), Some(""));
+    assert!(session.is_selectable(ItemKey::num(12)));
+    assert_eq!(session.error(), None);
+}
+
+fn search_detail_selection() {
+    // Every command has a label, and the host owns the focus and detail ones.
+    let all = [
+        SearchCmd::FocusQuery,
+        SearchCmd::FocusResults,
+        SearchCmd::OpenDetail,
+        SearchCmd::CloseDetail,
+        SearchCmd::Activate,
+        SearchCmd::Context,
+        SearchCmd::Up,
+        SearchCmd::Down,
+        SearchCmd::Left,
+        SearchCmd::Right,
+        SearchCmd::Home,
+        SearchCmd::End,
+        SearchCmd::PageUp,
+        SearchCmd::PageDown,
+    ];
+    assert!(all.iter().all(|cmd| !cmd.label().is_empty()));
+    assert_eq!(all.iter().filter(|cmd| cmd.is_host_owned()).count(), 5);
+
+    // Keys move over items and chips, skipping headings, spacers and the
+    // disabled row, and Enter activates the selection.
+    let mut search = finder_search(SearchConfig::default());
+    let cat = finder_started(&mut search, FINDER_ROWS);
+    let mut focus = Focus::default();
+    focus.focus(search.id());
+    let selected = |search: &mut SearchDetail, focus: &mut Focus, code| {
+        finder_key(search, &cat, focus, code);
+        search.selected_key()
+    };
+    assert_eq!(selected(&mut search, &mut focus, KeyCode::Down), num(12));
+    assert_eq!(selected(&mut search, &mut focus, KeyCode::Down), num(30));
+    assert_eq!(selected(&mut search, &mut focus, KeyCode::Right), num(31));
+    assert_eq!(selected(&mut search, &mut focus, KeyCode::Left), num(30));
+    assert_eq!(selected(&mut search, &mut focus, KeyCode::Down), num(13));
+    assert_eq!(selected(&mut search, &mut focus, KeyCode::End), num(14));
+    assert_eq!(selected(&mut search, &mut focus, KeyCode::Home), num(10));
+    assert_eq!(selected(&mut search, &mut focus, KeyCode::Down), num(12));
+    assert_eq!(selected(&mut search, &mut focus, KeyCode::Up), num(10));
+    for code in [KeyCode::PageDown, KeyCode::PageUp] {
+        let landed = selected(&mut search, &mut focus, code).expect("a selection");
+        assert!(search.session().is_selectable(landed));
+    }
+    selected(&mut search, &mut focus, KeyCode::Home);
+    let ran = finder_key(&mut search, &cat, &mut focus, KeyCode::Enter);
+    assert!(ran.contains(&SearchAction::Activate(ItemKey::num(10))));
+
+    // Ctrl+O opens the preview, which the host closes again; Ctrl+F returns
+    // to the query.
+    finder_chord(
+        &mut search,
+        &cat,
+        &mut focus,
+        KeyCode::Char('o'),
+        KeyModifiers::CONTROL,
+    );
+    assert!(search.on_detail(focus.current()));
+    assert_eq!(focus.current(), Some(search.detail_id()));
+    search.close_detail(&mut focus);
+    assert!(!search.on_detail(focus.current()));
+    finder_chord(
+        &mut search,
+        &cat,
+        &mut focus,
+        KeyCode::Char('f'),
+        KeyModifiers::CONTROL,
+    );
+    assert_eq!(focus.current(), Some(search.session().query_input().id));
+
+    // The session reports preview actions and items against the selection.
+    let mut session = SearchSession::new(
+        FinderQuery::new(WidgetId::of("scenario.fd.keys"), "Search"),
+        SearchConfig::default(),
+    );
+    let request = requested(session.refresh_source(finder_stamp(1)));
+    let _ = session
+        .submit(request.token, &FinderCat::new(&request, FINDER_ROWS))
+        .expect("accepted");
+    assert_eq!(
+        actions_of(session.detail_item(2)),
+        vec![SearchAction::DetailItem {
+            key: ItemKey::num(10),
+            index: 2
+        }]
+    );
+    assert_eq!(
+        actions_of(session.detail_action("why")),
+        vec![SearchAction::DetailAction {
+            key: ItemKey::num(10),
+            name: "why"
+        }]
+    );
+    session.cancel_press();
+
+    // The lost-selection policy.
+    let nearest = lost_selection(MissingSelection::NearestPosition);
+    let first = lost_selection(MissingSelection::FirstEnabled);
+    assert_eq!(first, num(10), "the first enabled key");
+    assert_eq!(
+        nearest,
+        num(12),
+        "the nearest enabled key to where the selection was"
+    );
+
+    // Focus owner: in Separate the query and the results own focus apart, so
+    // a letter typed over the results edits nothing.
+    let mut apart = finder_search(SearchConfig::default().focus_mode(SearchFocusMode::Separate));
+    let cat = finder_started(&mut apart, FINDER_ROWS);
+    let mut focus = Focus::default();
+    focus.focus(apart.id());
+    let _ = finder_key(&mut apart, &cat, &mut focus, KeyCode::Char('a'));
+    assert_eq!(apart.query(), "", "the results do not take typing");
+    focus.focus(apart.session().query_input().id);
+    let _ = finder_key(&mut apart, &cat, &mut focus, KeyCode::Char('a'));
+    assert_eq!(apart.query(), "a", "the query does");
+
+    // Focus owner: in Combined one owner takes typing and navigation.
+    let mut combined = finder_search(SearchConfig::default().focus_mode(SearchFocusMode::Combined));
+    let cat = finder_started(&mut combined, FINDER_ROWS);
+    let mut focus = Focus::default();
+    focus.focus(combined.id());
+    let typed = finder_key(&mut combined, &cat, &mut focus, KeyCode::Char('a'));
+    assert_eq!(combined.query(), "a");
+    let request = typed
+        .into_iter()
+        .find_map(|action| match action {
+            SearchAction::QueryRequested(request) => Some(request),
+            _ => None,
+        })
+        .expect("typing asked for results");
+    let answer = FinderCat::new(&request, FINDER_ROWS);
+    let _ = combined.submit(request.token, &answer).expect("accepted");
+    let _ = finder_key(&mut combined, &answer, &mut focus, KeyCode::Down);
+    assert_eq!(combined.selected_key(), num(12), "Down still navigates");
+
+    // Typing from the preview returns to the query only when it is allowed.
+    for (allowed, text) in [(false, ""), (true, "x")] {
+        let mut search = finder_search(SearchConfig::default().type_to_query_from_detail(allowed));
+        let cat = finder_started(&mut search, FINDER_ROWS);
+        let mut focus = Focus::default();
+        focus.focus(search.detail_id());
+        let _ = finder_key(&mut search, &cat, &mut focus, KeyCode::Char('x'));
+        assert_eq!(
+            search.query(),
+            text,
+            "type_to_query_from_detail = {allowed}"
+        );
+        assert_eq!(
+            focus.current() == Some(search.session().query_input().id),
+            allowed
+        );
+    }
+
+    // A keymap override replaces the default bindings.
+    let mut keymap = SearchCmd::default_keymap();
+    keymap.push((KeyBinding::ctrl('n'), SearchCmd::Down));
+    keymap.push((KeyBinding::ctrl('w'), SearchCmd::CloseDetail));
+    let mut emacs = finder_search(SearchConfig::default().keymap(keymap));
+    let cat = finder_started(&mut emacs, FINDER_ROWS);
+    let mut focus = Focus::default();
+    focus.focus(emacs.id());
+    finder_chord(
+        &mut emacs,
+        &cat,
+        &mut focus,
+        KeyCode::Char('n'),
+        KeyModifiers::CONTROL,
+    );
+    assert_eq!(emacs.selected_key(), num(12));
+    let closed = Key {
+        code: KeyCode::Char('w'),
+        mods: KeyModifiers::CONTROL,
+    };
+    let closed = emacs
+        .on_key(&closed, &cat, &mut focus)
+        .expect("the displayed results are the accepted ones");
+    assert!(closed.is_consumed(), "a bound CloseDetail is handled");
+
+    // Moving while a request is pending, and the first item of a new query.
+    for (moves, expected) in [(false, num(10)), (true, num(12))] {
+        let mut search = finder_search(SearchConfig::default().navigate_while_loading(moves));
+        let cat = finder_started(&mut search, FINDER_ROWS);
+        let mut focus = Focus::default();
+        focus.focus(search.id());
+        let _ = search.set_query("z");
+        assert_eq!(search.phase(), SearchPhase::Loading);
+        let _ = finder_key(&mut search, &cat, &mut focus, KeyCode::Down);
+        assert_eq!(
+            search.selected_key(),
+            expected,
+            "navigate_while_loading = {moves}"
+        );
+    }
+    for (first, expected) in [(true, num(10)), (false, num(12))] {
+        let mut search = finder_search(SearchConfig::default().select_first_on_query(first));
+        let cat = finder_started(&mut search, FINDER_ROWS);
+        let mut focus = Focus::default();
+        focus.focus(search.id());
+        let _ = finder_key(&mut search, &cat, &mut focus, KeyCode::Down);
+        let request = requested(search.set_query("g"));
+        let answer = FinderCat::new(&request, FINDER_ROWS);
+        let _ = search.submit(request.token, &answer).expect("accepted");
+        assert_eq!(
+            search.selected_key(),
+            expected,
+            "select_first_on_query = {first}"
+        );
+    }
+}
+
+/// Where the selection lands when the last row of the results disappears.
+fn lost_selection(policy: MissingSelection) -> Option<ItemKey> {
+    let mut search = finder_search(SearchConfig::default().missing_selection(policy));
+    let cat = finder_started(&mut search, FINDER_ROWS);
+    let mut focus = Focus::default();
+    focus.focus(search.id());
+    let _ = finder_key(&mut search, &cat, &mut focus, KeyCode::End);
+    assert_eq!(search.selected_key(), num(14));
+    let request = requested(search.refresh_source(finder_stamp(2)));
+    let fewer = &FINDER_ROWS[..4];
+    let _ = search
+        .submit(request.token, &FinderCat::new(&request, fewer))
+        .expect("accepted");
+    search.selected_key()
+}
+
+/// Draws the host's own look for every pane.
+#[derive(Default)]
+struct HostPaint {
+    query: bool,
+    rows: Vec<usize>,
+    chips: usize,
+    empty: bool,
+    detail: bool,
+    summary: bool,
+}
+
+impl SearchPaint<FinderCat> for HostPaint {
+    fn query(&mut self, area: Rect, view: QueryView<'_>, buf: &mut Buffer, ctx: &mut RenderCtx) {
+        self.query = true;
+        paint_query_default(area, view, buf, ctx);
+    }
+
+    fn row(&mut self, mut row: RowPaint<'_, FinderCat>, buf: &mut Buffer, _ctx: &mut RenderCtx) {
+        self.rows.push(row.row);
+        let rect = row.rect;
+        if row.kind == ResultRowKind::Cells {
+            for cell in 0..row.source.cell_count(row.row) {
+                assert_ne!(
+                    row.cell_hit(cell),
+                    row.hit,
+                    "a chip has a region of its own"
+                );
+                let at = Rect::new(rect.x + 3 + cell as u16 * 8, rect.y, 6, 1);
+                buf.set_string(
+                    at.x,
+                    at.y,
+                    format!("[{}]", row.source.cell_label(row.row, cell)),
+                    ratatui::style::Style::default(),
+                );
+                row.place_cell(cell, at);
+                self.chips += 1;
+            }
+        } else {
+            buf.set_string(
+                rect.x + 3,
+                rect.y,
+                row.source.label(row.row),
+                ratatui::style::Style::default(),
+            );
+        }
+    }
+
+    fn empty(&mut self, area: Rect, buf: &mut Buffer, _ctx: &mut RenderCtx) {
+        self.empty = true;
+        buf.set_string(
+            area.x + 1,
+            area.y,
+            "host empty",
+            ratatui::style::Style::default(),
+        );
+    }
+
+    fn detail(&mut self, pane: DetailPane<'_>, buf: &mut Buffer, _ctx: &mut RenderCtx) {
+        self.detail = true;
+        buf.set_string(
+            pane.area.x + 1,
+            pane.area.y,
+            "host detail",
+            ratatui::style::Style::default(),
+        );
+    }
+
+    fn summary(&mut self, area: Rect, buf: &mut Buffer, _ctx: &mut RenderCtx) {
+        self.summary = true;
+        buf.set_string(
+            area.x + 1,
+            area.y,
+            "host summary",
+            ratatui::style::Style::default(),
+        );
+    }
+}
+
+fn preview_frame(lines: &[Line]) -> SourceFrame<'_> {
+    SourceFrame {
+        title: "Results",
+        meta: "5",
+        head: &[],
+        under: None,
+        detail_title: "Preview",
+        detail_meta: "",
+        lines,
+        actions: &[],
+    }
+}
+
+fn preview_lines(count: usize) -> Vec<Line> {
+    (1..=count)
+        .map(|n| Line::Text(format!("entry {n:02}"), junie_tui::theme::Tone::Muted))
+        .collect()
+}
+
+/// Paints the standard look and returns the screen with its hit regions.
+fn draw_source<S: SearchDetailSource + ?Sized>(
+    search: &mut SearchDetail,
+    cat: &S,
+    area: Rect,
+    lines: &[Line],
+    focus: &Focus,
+) -> (Buffer, HitRegistry) {
+    let theme = Theme::for_level(ColorLevel::TrueColor);
+    let mut buf = Buffer::empty(area);
+    let mut hits = HitRegistry::default();
+    let mut ring = FocusRing::default();
+    {
+        let interaction = Interaction {
+            focus: focus.current(),
+            ..Default::default()
+        };
+        let mut ctx = RenderCtx::new(&theme, interaction, &mut hits, &mut ring);
+        search
+            .render_source(area, cat, &preview_frame(lines), &mut buf, &mut ctx)
+            .expect("the accepted results are drawn");
+    }
+    (buf, hits)
+}
+
+/// A press, then a click, on the row of `key`.
+fn click_row(
+    search: &mut SearchDetail,
+    cat: &FinderCat,
+    hits: &HitRegistry,
+    focus: &mut Focus,
+    key: u64,
+    count: u8,
+) -> Vec<SearchAction> {
+    let target = *hits
+        .regions()
+        .iter()
+        .rev()
+        .find(|r| {
+            r.owner == search.id()
+                && r.part.part == Part::ROW
+                && r.part.item == Some(ItemKey::num(key))
+        })
+        .expect("the row has a hit region");
+    let at = Position::new(target.area.x + 4, target.area.y);
+    let mut actions = Vec::new();
+    for phase in [Phase::Press, Phase::Click] {
+        let event = PointerEvent::new(hits, phase, target.id, at, count, KeyModifiers::NONE);
+        actions.extend(actions_of(
+            search.pointer(&event, cat, focus).expect("accepted"),
+        ));
+    }
+    actions
+}
+
+/// Scrolls the preview down, changes the results the way `change` says, and
+/// reports whether the preview is back at its top.
+fn preview_back_at_top(config: SearchConfig, new_query: bool) -> bool {
+    let area = Rect::new(0, 0, 120, 16);
+    let lines = preview_lines(40);
+    let mut search = finder_search(config).detail_share(50, 40, 70);
+    let cat = finder_started(&mut search, FINDER_ROWS);
+    let mut focus = Focus::default();
+    focus.focus(search.id());
+    let _ = draw_source(&mut search, &cat, area, &lines, &focus);
+    finder_chord(
+        &mut search,
+        &cat,
+        &mut focus,
+        KeyCode::Char('o'),
+        KeyModifiers::CONTROL,
+    );
+    assert!(search.on_detail(focus.current()));
+    let _ = draw_source(&mut search, &cat, area, &lines, &focus);
+    for _ in 0..30 {
+        finder_key(&mut search, &cat, &mut focus, KeyCode::Down);
+    }
+    let scrolled = text_of(&draw_source(&mut search, &cat, area, &lines, &focus).0);
+    assert!(
+        scrolled.contains("entry 39") && !scrolled.contains("entry 01"),
+        "the preview scrolled to its end:\n{scrolled}"
+    );
+    let request = if new_query {
+        requested(search.set_query("g"))
+    } else {
+        requested(search.refresh_source(finder_stamp(2)))
+    };
+    let answer = FinderCat::new(&request, FINDER_ROWS);
+    let _ = search.submit(request.token, &answer).expect("accepted");
+    let after = text_of(&draw_source(&mut search, &answer, area, &lines, &focus).0);
+    after.contains("entry 01")
+}
+
+fn search_detail_paint() {
+    let theme = Theme::for_level(ColorLevel::TrueColor);
+    let wide = Rect::new(0, 0, 120, 24);
+
+    // The standard look through the shared list rows, then a pointer press and
+    // a double click on a row.
+    let mut search = finder_search(SearchConfig::default())
+        .collapse_below(90)
+        .detail_share(50, 40, 70)
+        .summary_rows(3);
+    let cat = finder_started(&mut search, FINDER_ROWS);
+    let lines = preview_lines(30);
+    let mut focus = Focus::default();
+    focus.focus(search.id());
+    let (buf, hits) = draw_source(&mut search, &cat, wide, &lines, &focus);
+    let shown = text_of(&buf);
+    assert!(shown.contains("alpha") && shown.contains("gamma") && shown.contains("Preview"));
+    // `render_source` accepts only a `SearchDetailSource`. FinderCat gets that
+    // through the blanket impl from its `SearchSource` and `ListDetailSource`
+    // impls, and the rows come from the latter: the detail text exists nowhere
+    // else, so seeing it proves the controller drew a source it was handed.
+    assert!(
+        shown.contains("via-list-detail"),
+        "the standard rows read ListDetailSource::row: {shown}"
+    );
+    let clicked = click_row(&mut search, &cat, &hits, &mut focus, 12, 2);
+    assert!(clicked.contains(&SearchAction::SelectionChanged(num(12))));
+    assert!(clicked.contains(&SearchAction::Activate(ItemKey::num(12))));
+
+    // A single click runs the row when the click policy says so, and only
+    // selects it under the default policy.
+    let mut single = finder_search(SearchConfig::default().click(ClickPolicy::NAVIGATION));
+    let cat = finder_started(&mut single, FINDER_ROWS);
+    let mut focus = Focus::default();
+    focus.focus(single.id());
+    let (_, hits) = draw_source(&mut single, &cat, wide, &lines, &focus);
+    let ran = click_row(&mut single, &cat, &hits, &mut focus, 12, 1);
+    assert!(
+        ran.contains(&SearchAction::Activate(ItemKey::num(12))),
+        "{ran:?}"
+    );
+    let mut double = finder_search(SearchConfig::default());
+    let cat = finder_started(&mut double, FINDER_ROWS);
+    let mut focus = Focus::default();
+    focus.focus(double.id());
+    let (_, hits) = draw_source(&mut double, &cat, wide, &lines, &focus);
+    let selected = click_row(&mut double, &cat, &hits, &mut focus, 12, 1);
+    assert!(
+        !selected.contains(&SearchAction::Activate(ItemKey::num(12))),
+        "{selected:?}"
+    );
+    assert_eq!(double.selected_key(), num(12));
+
+    // The preview keeps its scroll while the same item answers again, and
+    // returns to its top only when the config says so.
+    assert!(!preview_back_at_top(SearchConfig::default(), true));
+    assert!(!preview_back_at_top(SearchConfig::default(), false));
+    assert!(preview_back_at_top(
+        SearchConfig::default().reset_preview_on_query(true),
+        true
+    ));
+    assert!(preview_back_at_top(
+        SearchConfig::default().preserve_preview_on_same_key(false),
+        false
+    ));
+
+    // A keyboard context request waits for a paint, then anchors to the row.
+    let mut menu = finder_search(SearchConfig::default());
+    let cat = finder_started(&mut menu, FINDER_ROWS);
+    let mut focus = Focus::default();
+    focus.focus(menu.id());
+    let asked = finder_chord(
+        &mut menu,
+        &cat,
+        &mut focus,
+        KeyCode::F(10),
+        KeyModifiers::SHIFT,
+    );
+    assert!(
+        asked.is_empty(),
+        "no row is placed yet, so nothing opens: {asked:?}"
+    );
+    let _ = draw_source(&mut menu, &cat, wide, &lines, &focus);
+    let anchored = actions_of(menu.emit_pending_context());
+    assert!(
+        anchored.iter().any(
+            |a| matches!(a, SearchAction::ContextRequested(r) if r.target == ItemKey::num(10))
+        ),
+        "the paint released the pending request: {anchored:?}"
+    );
+
+    // The host's own row, chip and query painters.
+    let mut combined = finder_search(SearchConfig::default().focus_mode(SearchFocusMode::Combined));
+    let cat = finder_started(&mut combined, FINDER_ROWS);
+    let mut buf = Buffer::empty(wide);
+    let mut hits = HitRegistry::default();
+    let mut ring = FocusRing::default();
+    let mut chips = Vec::new();
+    let mut queried = false;
+    {
+        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        combined
+            .render_source_with(
+                wide,
+                &cat,
+                &preview_frame(&lines),
+                &mut buf,
+                &mut ctx,
+                |mut row: RowPaint<'_, FinderCat>, buf, _ctx| {
+                    let rect = row.rect;
+                    if row.kind == ResultRowKind::Cells {
+                        for cell in 0..row.source.cell_count(row.row) {
+                            let at = Rect::new(rect.x + 3 + cell as u16 * 8, rect.y, 6, 1);
+                            buf.set_string(
+                                at.x,
+                                at.y,
+                                row.source.cell_label(row.row, cell),
+                                ratatui::style::Style::default(),
+                            );
+                            row.place_cell(cell, at);
+                            chips.push(row.cell_hit(cell));
+                        }
+                    } else if row.kind == ResultRowKind::Item {
+                        buf.set_string(
+                            rect.x + 3,
+                            rect.y,
+                            row.source.label(row.row).to_uppercase(),
+                            ratatui::style::Style::default(),
+                        );
+                    }
+                },
+                |area, view, buf, ctx| {
+                    queried = true;
+                    paint_query_default(area, view, buf, ctx);
+                },
+            )
+            .expect("the accepted results are drawn");
+    }
+    let shown = text_of(&buf);
+    assert!(queried && shown.contains("ALPHA") && shown.contains("one") && shown.contains("two"));
+    assert_eq!(chips.len(), 2);
+    assert!(
+        chips
+            .iter()
+            .all(|id| hits.regions().iter().any(|r| r.id == *id)),
+        "each placed chip registered its region"
+    );
+
+    // Every pane in the host's hands, with no answer yet, then answered, then
+    // too narrow for the preview.
+    let mut hosted = finder_search(SearchConfig::default().focus_mode(SearchFocusMode::Combined));
+    let mut paint = HostPaint::default();
+    let render =
+        |search: &mut SearchDetail, source: &FinderCat, area: Rect, paint: &mut HostPaint| {
+            let mut buf = Buffer::empty(area);
+            let mut hits = HitRegistry::default();
+            let mut ring = FocusRing::default();
+            let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+            search
+                .render_hosted(area, source, &mut buf, &mut ctx, paint)
+                .expect("the accepted results are drawn");
+            text_of(&buf)
+        };
+    let request = requested(hosted.refresh_source(finder_stamp(1)));
+    let answer = FinderCat::new(&request, FINDER_ROWS);
+    let blank = render(&mut hosted, &answer, wide, &mut paint);
+    assert!(
+        paint.empty && blank.contains("host empty"),
+        "nothing is listed before an answer"
+    );
+    let _ = hosted.submit(request.token, &answer).expect("accepted");
+    let drawn = render(&mut hosted, &answer, wide, &mut paint);
+    assert!(paint.query && paint.detail && drawn.contains("host detail"));
+    assert_eq!(paint.rows.len(), FINDER_ROWS.len());
+    assert_eq!(paint.chips, 2);
+    assert!(drawn.contains("[one]") && drawn.contains("gamma"));
+    let narrow = render(&mut hosted, &answer, Rect::new(0, 0, 60, 24), &mut paint);
+    assert!(paint.summary && narrow.contains("host summary"));
 }
 
 #[test]
