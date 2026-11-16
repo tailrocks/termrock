@@ -59,7 +59,8 @@ Limits that are not hidden:
 | `IntrinsicWidthCalls`, `TextBytesMeasured` | calls, bytes | `ui::text::width` |
 | `FitVisits`, `FitCompares` | visits, comparisons | Responsive fitters (`ChipBar`, `Breadcrumb`, `segments`, `StatusBar`, `HintBar`, `Toolbar`): loop visits and removal-order sort comparisons |
 | `LabelsNormalized`, `LabelBytesNormalized` | labels, bytes | `TreeView` filter |
-| `ProjectionRebuilds`, `RankRowsVisited` | rebuilds, items | Holla Finder rebuild and ranking pass |
+| `ProjectionRebuilds`, `RankRowsVisited` | rebuilds, items | Holla Finder rebuild and ranking pass; Jackin Manager row build, Accounts row build, roster index build and account index build (the account sort counts its accounts as ranked rows) |
+| `PrefixRollbackProbes`, `NulBytesProbed`, `Utf8BytesValidated`, `TextBytesSanitized`, `LineCharsCounted` | probes, bytes, bytes, bytes, characters | Holla `Fs::preview`: the UTF-8 boundary rollback at the cap, the NUL probe (stops at the first NUL), the UTF-8 validation, the control-character sanitizing of each line and the character count for the line cap. Each pass is counted apart, so a repeated pass shows |
 | `SchedulingRecordsVisited`, `SchedulingPolls` | records, polls | Jackin daemon traversal and pane polls, Holla activity and plan scheduling |
 | `AnnotationQueries` | calls | `CodeEditor` highlighter and block segmenter, once per cache miss (a new text revision or provider generation) |
 | `IdentityComparisons` | comparisons | linear key scans; none are left in `Picker`, which restores its cursor through a key map |
@@ -94,10 +95,10 @@ apps:
 | `work_contract_terminal_prepared_paint`, `work_contract_terminal_feed_and_copy_units` | `tests/regressions/work_budgets/terminal.rs` |
 | `work_contract_runtime_raw_filtered_events_yield`, `work_contract_runtime_flood_services_input`, `work_contract_runtime_frame_diff_and_bytes_written` | `src/runtime/raw_input_tests/work.rs` (lib unit tests: they drive the private `scan_next`, `service_turn`, `drain_ready_inputs` and `paint`) |
 | `work_contract_jackin_scripted_output_budget` | `apps/jackin/src/sim/link/tests/work.rs` (lib unit test over the real `SimLink` and `TerminalPane`) |
-| `work_contract_holla_idle_and_source_update` | `src/bin/holla/work_metrics_tests.rs` |
+| `work_contract_holla_idle_and_source_update`, `work_contract_holla_background_updates_keep_projection`, `work_contract_holla_file_preview_prefix` | `src/bin/holla/work_metrics_tests.rs` |
 | `work_contract_tablepro_idle_and_cell_edit` | `src/bin/tablepro/work_metrics_tests.rs` |
 | `work_contract_showcase_idle_and_switch` | `src/bin/showcase/work_metrics_tests.rs` |
-| `work_contract_jackin_idle_and_roster_update`, `work_contract_jackin_capsule_idle_frame` | `apps/jackin/tests/regressions/work_budgets.rs` |
+| `work_contract_jackin_idle_and_roster_update`, `work_contract_jackin_account_update`, `work_contract_jackin_capsule_idle_frame` | `apps/jackin/tests/regressions/work_budgets.rs` |
 
 The app tests check each scenario with `assert_exact`: every listed metric must
 equal its measured count and every unlisted metric must be zero. A ceiling
@@ -167,6 +168,19 @@ list, table, grid and tree widget in the frame.
 | Holla Finder | settled tick | 106 items, 5 activities, 0 plans | no projection rebuild, scheduling 10, width calls 706 |
 | Holla Finder | unrelated world field, then tick | same | same as the settled tick |
 | Holla Finder | query change | same | projection rebuilds 1, ranked 106, width calls 1,621 |
+| Holla Files preview | open the Files page on a 1 MiB text file | 1 MiB (prefix cut at 256 KiB) | rollback probes 1, NUL probe 262,144, UTF-8 validated 262,144, sanitized 78,000, line chars 78,000, cloned 0; segmented 2,000, reflowed 4,000, index rebuilds 2, width calls 90,111, width bytes 90,868 |
+| Holla Files preview | same, 16 MiB text and 16 MiB bytes | 16 MiB | the same, width bytes 90,871 (only the size label differs); a settled tick after it repeats no pass |
+| Holla Files preview | one 262,143-byte line whose last scalar straddles the cap | 1 MiB + 256 KiB | rollback probes 2, NUL probe, validation, sanitizing and line chars 262,143 each; segmented 1 |
+| Holla Files preview | NUL at byte 100 of a 16 MiB file | 16 MiB | NUL probe 101, nothing validated, sanitized or segmented |
+| Holla Finder | 20 rounds of 50 streamed output lines on a running activity, then a tick | 87 items, 1 activity | per round: no projection rebuild, scheduling 2, width calls 491, width bytes 2,286 |
+| Holla Finder | source change under a hidden Finder, 4 ticks | same | no rebuild, scheduling 8 |
+| Holla Finder | activate the hidden Finder | same | projection rebuilds 1, ranked 87 |
+| Holla Finder | relevant source change, then tick | same | projection rebuilds 1, ranked 87; the next tick rebuilds nothing |
+| Jackin Accounts | settled tick | 12 accounts, 2 daemons | scheduling records 2, polls 6, width calls 391, width bytes 2,010 |
+| Jackin Accounts | workspace policy edit through `workspace_mut`, then tick | same | same as the settled tick: the visible Accounts page and the background Manager rebuild nothing |
+| Jackin Accounts | `r` on the selected account | 12 | projection rebuilds 2 (account sort, row build), ranked 12 |
+| Jackin Accounts | each tick while the reply is out (9 ticks) | 12 | no rebuild, width calls 450 |
+| Jackin Accounts | the tick that absorbs the reply (10th) | 12 | projection rebuilds 2, ranked 12, width calls 382; the next tick rebuilds nothing |
 | TablePro grid | settled tick | 312 rows | rows painted 41, width calls 233 |
 | TablePro grid | one Down key | 312 | same as the settled tick |
 | TablePro grid | one keyed draft edit | 312 | rows painted 39, width calls 268 |
@@ -190,9 +204,11 @@ list, table, grid and tree widget in the frame.
 - Drawing a `TextViewport` through a shared reference after a change, without
   preparing it first, clones the whole history.
 - A settled Holla Finder tick rebuilds and re-ranks nothing: each projection
-  layer rebuilds only for its own dependency (#62). A query change still
-  re-ranks the whole catalog. A relevant source revision change has no
-  scenario here.
+  layer rebuilds only for its own dependency (#62). A query change or a relevant
+  source revision change still re-ranks the whole catalog once (87 items in the
+  background scenario). Streamed activity output, and any change while the
+  Finder sits on a hidden tab, rebuild nothing; the hidden page catches up
+  with one rebuild when it is activated.
 - The Holla Finder counts are the product path only. In test builds, a settled
   `FinderPage::ensure_projection` also rebuilds a reference page and compares
   it (`assert_matches_reference`), which measures 26 width calls and bytes per
@@ -204,6 +220,21 @@ list, table, grid and tree widget in the frame.
   `ensure_projection` (#283). That, not plan rows (the fixture has none), was
   the +26 of the 1,647 to 1,673 re-baseline. The rows above are 758 - 52 = 706
   and 1,673 - 52 = 1,621.
+- Holla's file preview does work bounded by the 256 KiB cap and the 2,000-line
+  cap, not by the file: every pass counts the same for a 1 MiB and a 16 MiB
+  file, and nothing is cloned from the file (#82). Laying out the 2,000 capped
+  lines costs 90,111 width calls on the frame that selects the file, once; a
+  settled tick afterwards repeats none of it. `PayloadBytesCloned` has no
+  production site in `Fs::preview` any more, so a reintroduced copy is caught
+  by the zero count only if it is counted where it is made. The allocation
+  probe test `files_preview_large_selection_uses_bounded_prefix` covers an
+  uncounted copy.
+- A Jackin account update is one registry change: one sort of the 12 accounts
+  and one Accounts row build, however many ticks the reply took. The sort runs
+  again although a usage refresh changes no sort key (surface, default,
+  display name): the accounts epoch does not say which field changed, and
+  O(M log M) once per revision is the documented budget (#29). A workspace edit
+  moves only the roster epoch.
 - The Jackin capsule primes every pane's viewport after each tick and input
   (`CapsuleScreen::sync_all`), so its idle frame draws prepared views. Before
   #249 the sync skipped script panes, and every idle frame cloned 80,059

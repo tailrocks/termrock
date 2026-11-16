@@ -104,6 +104,18 @@ metrics! {
     FitVisits => "fit_visits",
     /// Key comparisons made while ordering a fitter's removal candidates.
     FitCompares => "fit_compares",
+    /// Probes of the UTF-8 boundary rollback at the end of a bounded prefix,
+    /// one byte examined each.
+    PrefixRollbackProbes => "prefix_rollback_probes",
+    /// Bytes traversed by a NUL probe over a bounded prefix, stopping at the
+    /// first NUL.
+    NulBytesProbed => "nul_bytes_probed",
+    /// Bytes checked by a UTF-8 validation pass over a bounded prefix.
+    Utf8BytesValidated => "utf8_bytes_validated",
+    /// Bytes of preview lines passed through control-character sanitizing.
+    TextBytesSanitized => "text_bytes_sanitized",
+    /// Characters counted to apply a display line cap.
+    LineCharsCounted => "line_chars_counted",
     /// Row payloads retrieved from a source: a `ScrollPanel` line read while
     /// it wraps or measures its content, and a terminal grid or scrollback row
     /// read by a `TerminalView` or `TerminalViewport` paint, copy or lookup.
