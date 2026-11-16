@@ -341,7 +341,7 @@ impl EditField {
     pub fn run_as(&mut self, cmd: TextCmd, read_only: bool) -> EditResult {
         if cmd == TextCmd::Paste {
             let text = crate::core::edit::clipboard::text().unwrap_or_default();
-            return EditResult::changed(!read_only && self.paste(&text));
+            return EditResult::changed(self.paste_as(&text, read_only));
         }
         let action = crate::widgets::field_common::text_cmd_action(cmd, self.multiline);
         let key = Key {
@@ -359,7 +359,11 @@ impl EditField {
     }
 
     pub fn paste(&mut self, text: &str) -> bool {
-        if self.read_only || text.is_empty() {
+        self.paste_as(text, self.read_only)
+    }
+
+    fn paste_as(&mut self, text: &str, read_only: bool) -> bool {
+        if read_only || text.is_empty() {
             return false;
         }
         let text = if self.multiline {
@@ -776,5 +780,62 @@ mod issue35_tests {
         let mut field = EditField::single("   ");
         field.required = Some(REQUIRED.to_owned());
         assert!(field.validate(), "whitespace stays nonempty for required");
+    }
+}
+
+#[cfg(test)]
+mod read_only_override_tests {
+    use super::*;
+    use crate::core::edit::clipboard;
+
+    fn field(text: &str, read_only: bool) -> EditField {
+        let mut field = EditField::single(text);
+        field.read_only = read_only;
+        field.buffer.move_doc_end(false);
+        field
+    }
+
+    #[test]
+    fn run_as_paste_override_allows_a_read_only_field() {
+        clipboard::copy("X");
+        let mut field = field("ab", true);
+
+        let forced = field.run_as(TextCmd::Paste, false);
+
+        assert!(forced.edited, "the override says this call may edit");
+        assert_eq!(field.text(), "abX");
+    }
+
+    #[test]
+    fn run_as_paste_override_refuses_a_writable_field() {
+        clipboard::copy("X");
+        let mut field = field("ab", false);
+
+        let refused = field.run_as(TextCmd::Paste, true);
+
+        assert!(!refused.edited, "the override says this call may not edit");
+        assert_eq!(field.text(), "ab");
+    }
+
+    #[test]
+    fn run_as_override_treats_paste_like_cut() {
+        clipboard::copy("X");
+        let mut field = field("ab", true);
+        field.buffer.select_all();
+
+        assert!(field.run_as(TextCmd::Cut, false).edited);
+        assert_eq!(field.text(), "");
+        assert!(field.run_as(TextCmd::Paste, false).edited);
+        assert_eq!(field.text(), "ab");
+    }
+
+    #[test]
+    fn read_only_field_still_refuses_paste_without_an_override() {
+        clipboard::copy("X");
+        let mut field = field("ab", true);
+
+        assert!(!field.run(TextCmd::Paste).edited);
+        assert!(!field.paste("X"));
+        assert_eq!(field.text(), "ab");
     }
 }
