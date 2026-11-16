@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-pointer_shapes-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/target/functional/s01_pointer_off-56936-1794790687586289000-0/check-artifacts/opt-shell-pointer_shapes-boundary/ba0fc544c61bf70bbbf5e0f8079ed1b1aa3df7de83034ff6f6f4307b69b6f5da/sample.tui.pb"
+  },
+  "candidate_sha256": "ba0fc544c61bf70bbbf5e0f8079ed1b1aa3df7de83034ff6f6f4307b69b6f5da",
+  "baseline_sha256": "ba0fc544c61bf70bbbf5e0f8079ed1b1aa3df7de83034ff6f6f4307b69b6f5da",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-pointer_shapes-boundary.tui.pb"
+  },
+  "error_code": null
+}

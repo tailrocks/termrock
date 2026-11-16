@@ -1,0 +1,72 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-q-target/trial/debug/showcase",
+  "binary_sha256": "27474c66e12959cebc61160a7077a5b680e5d80a98217f5e354c610598730776",
+  "fixture_args": [],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "055e05defb53a88ca1d6176cb9f16450f64f7d05c733ac84a1306ee335ab0dbe",
+  "expect_baseline": "feec31b89de507ee649450256e27754edcbcf03cb8ebbc6e6a4b4e9fee136bbb",
+  "precondition": "Deliberate combination of two approved visual changes. #285 (#149) already settled the press flash in this capture on main; #14 adds the five formerly hidden pages to the sidebar (Components 54 to 59, longer page lists). The sample differs from main's baseline in 79 cells, all in sidebar columns 1 to 23, rows 2 to 21; every cell is exactly the cell #14's own baseline holds, and every cell right of the sidebar is main's. Size, palette and default colours are identical.",
+  "session": null,
+  "expected_test_id": "pre_refactor/s02_buttons/opt_buttons_label_width",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-flash-20261116/pre_refactor_s02_buttons_opt_buttons_label_width.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-flash-20261116/pre_refactor_s02_buttons_opt_buttons_label_width.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-flash-20261116/superseded/pre_refactor/s02_buttons/opt_buttons_label_width.tui.pb",
+  "test_id": "pre_refactor/s02_buttons/opt_buttons_label_width",
+  "acceptance": {
+    "expected_baseline_sha256": "feec31b89de507ee649450256e27754edcbcf03cb8ebbc6e6a4b4e9fee136bbb",
+    "accepted_baseline_sha256": "055e05defb53a88ca1d6176cb9f16450f64f7d05c733ac84a1306ee335ab0dbe",
+    "candidate_sha256": "055e05defb53a88ca1d6176cb9f16450f64f7d05c733ac84a1306ee335ab0dbe",
+    "transaction_receipt": "docs/testing/acceptance-receipts/showcase-sidebar-14-flash-20261116/pre_refactor_s02_buttons_opt_buttons_label_width.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "feec31b89de507ee649450256e27754edcbcf03cb8ebbc6e6a4b4e9fee136bbb"
+  },
+  "candidate": {
+    "sha256": "055e05defb53a88ca1d6176cb9f16450f64f7d05c733ac84a1306ee335ab0dbe",
+    "path": "tests/functional/baselines/pre_refactor/s02_buttons/opt_buttons_label_width.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/showcase-sidebar-14-flash-20261116/superseded/pre_refactor/s02_buttons/opt_buttons_label_width.tui.pb",
+    "superseded_baseline_sha256": "feec31b89de507ee649450256e27754edcbcf03cb8ebbc6e6a4b4e9fee136bbb"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/s02_buttons/opt_buttons_label_width.tui.pb",
+    "candidate_sha256": "055e05defb53a88ca1d6176cb9f16450f64f7d05c733ac84a1306ee335ab0dbe",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-q-target/trial/debug/showcase",
+    "binary_sha256": "27474c66e12959cebc61160a7077a5b680e5d80a98217f5e354c610598730776",
+    "note": "Live candidate capture of the merged tree (#14 with #285 on main). No Reference-mode capture exists for the sidebar change."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s02_buttons/opt_buttons_label_width",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/target/functional/s02-label-52355-1794790626608391000-0/check-artifacts/pre_refactor/s02_buttons/opt_buttons_label_width/055e05defb53a88ca1d6176cb9f16450f64f7d05c733ac84a1306ee335ab0dbe/sample.tui.pb"
+    },
+    "candidate_sha256": "055e05defb53a88ca1d6176cb9f16450f64f7d05c733ac84a1306ee335ab0dbe",
+    "baseline_sha256": "055e05defb53a88ca1d6176cb9f16450f64f7d05c733ac84a1306ee335ab0dbe",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/tests/functional/baselines/pre_refactor/s02_buttons/opt_buttons_label_width.tui.pb"
+    },
+    "error_code": null
+  }
+}

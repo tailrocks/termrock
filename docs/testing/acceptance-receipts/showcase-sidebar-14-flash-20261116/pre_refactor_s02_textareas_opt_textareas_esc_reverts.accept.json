@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s02_textareas/opt_textareas_esc_reverts",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/target/functional/s02-textareas-esc-2329-1794790944575657000-0/check-artifacts/pre_refactor/s02_textareas/opt_textareas_esc_reverts/2b5d1ae3cc25eed07df5db63d3546c6cf24ab98989c29817e9195c38fbcceb87/sample.tui.pb"
+  },
+  "candidate_sha256": "2b5d1ae3cc25eed07df5db63d3546c6cf24ab98989c29817e9195c38fbcceb87",
+  "baseline_sha256": "2b5d1ae3cc25eed07df5db63d3546c6cf24ab98989c29817e9195c38fbcceb87",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/tests/functional/baselines/pre_refactor/s02_textareas/opt_textareas_esc_reverts.tui.pb"
+  },
+  "error_code": null
+}

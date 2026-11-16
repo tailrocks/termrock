@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-track_repeat_ms-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/target/functional/s01_track_repeat_ms-50811-1794791402923599000-0/check-artifacts/opt-shell-track_repeat_ms-boundary/1f21bd56caeaea56a7a7fbd4e67e293d8d5367730e330117e525b14ec0d07b74/sample.tui.pb"
+  },
+  "candidate_sha256": "1f21bd56caeaea56a7a7fbd4e67e293d8d5367730e330117e525b14ec0d07b74",
+  "baseline_sha256": "1f21bd56caeaea56a7a7fbd4e67e293d8d5367730e330117e525b14ec0d07b74",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-track_repeat_ms-boundary.tui.pb"
+  },
+  "error_code": null
+}
