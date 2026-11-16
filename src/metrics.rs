@@ -140,10 +140,24 @@ metrics! {
     /// Inputs, external messages, resizes and ticks the runtime delivered to
     /// `Application::handle`.
     InputDispatches => "input_dispatches",
+    /// Source rows enumerated to validate or reconcile a keyed provider,
+    /// walk a keyed tree, or rebuild a filtered option list.
+    SourceRowsEnumerated => "source_rows_enumerated",
+    /// Authoritative keys inserted into a key index.
+    KeyIndexInserts => "key_index_inserts",
+    /// Key resolutions through a key index, one per lookup.
+    KeyLookups => "key_lookups",
+    /// Rows measured to size an aggregate width (list detail, completion and
+    /// choice editors).
+    WidthRowsMeasured => "width_rows_measured",
+    /// Visible paint records prepared for a deferred overlay.
+    OverlayRowsSnapshotted => "overlay_rows_snapshotted",
+    /// Labels read from a `[String]` row source, one per `label` call.
+    LabelsRead => "labels_read",
 }
 
 /// Number of [`Metric`] variants.
-pub const METRIC_COUNT: usize = Metric::InputDispatches as usize + 1;
+pub const METRIC_COUNT: usize = Metric::LabelsRead as usize + 1;
 
 /// Raw counts of one thread at one instant, tagged so a delta can reject a
 /// snapshot that is not comparable.

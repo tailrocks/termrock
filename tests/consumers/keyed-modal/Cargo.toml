@@ -1,0 +1,18 @@
+[package]
+name = "termrock-consumer-keyed-modal"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.99"
+description = "Independent consumer of the keyed borrowed-source contract through the termrock facade"
+publish = false
+
+# Its own workspace root: this package resolves, builds and tests apart from
+# the repository workspace, so only the features it declares are on.
+[workspace]
+
+[lib]
+doctest = false
+
+[dependencies]
+termrock = { path = "../../../crates/termrock", default-features = false }
+ratatui = "0.30"

@@ -19,7 +19,7 @@
 //! refresh by identity. Headings, spacers and cell containers carry keys of
 //! their own and are never selectable.
 
-#[cfg(test)]
+#[cfg(all(test, feature = "work-metrics"))]
 mod cost_tests;
 mod detail;
 mod projection;

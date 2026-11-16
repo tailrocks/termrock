@@ -73,8 +73,10 @@ pub struct Select {
 
 impl Clone for Select {
     fn clone(&self) -> Self {
-        #[cfg(test)]
-        crate::core::work::add(crate::core::work::Counter::OptionClones, self.options.len());
+        crate::record_work!(
+            PayloadBytesCloned,
+            self.options.iter().map(String::len).sum::<usize>()
+        );
         Self {
             id: self.id,
             label: self.label.clone(),

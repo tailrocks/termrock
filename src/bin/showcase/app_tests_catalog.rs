@@ -3899,9 +3899,14 @@ fn work_counter_contract() {
     let mut page = crate::pages::meters::page();
     page.set_option("meters.work", 1);
     let text = crate::pages::page_text(page.as_mut(), 120, 90);
+    let catalog = format!(
+        "{METRIC_COUNT} metrics, {} to {}",
+        Metric::ALL[0].name(),
+        Metric::ALL[METRIC_COUNT - 1].name()
+    );
     for needle in [
         "Work counters",
-        "34 metrics, segmented_lines to input_dispatches",
+        catalog.as_str(),
         "visible_rows_painted +6, intrinsic_width_calls +40",
         "intrinsic_width_calls was 40, budget 30",
         "snapshots are from different threads",

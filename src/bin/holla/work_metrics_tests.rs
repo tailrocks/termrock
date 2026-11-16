@@ -72,6 +72,7 @@ fn work_contract_holla_idle_and_source_update() {
         &idle,
         "settled tick",
         &[
+            (Metric::VisibleRowsPainted, 20),
             (Metric::SchedulingRecordsVisited, 2 * activities + plans),
             (Metric::IntrinsicWidthCalls, 706),
             (Metric::TextBytesMeasured, 3_220),
@@ -105,6 +106,7 @@ fn work_contract_holla_idle_and_source_update() {
         &irrelevant,
         "unrelated field then tick",
         &[
+            (Metric::VisibleRowsPainted, 20),
             (Metric::SchedulingRecordsVisited, 2 * activities + plans),
             (Metric::IntrinsicWidthCalls, 706),
             (Metric::TextBytesMeasured, 3_220),
@@ -130,7 +132,11 @@ fn work_contract_holla_idle_and_source_update() {
         &key,
         "query change",
         &[
-            (Metric::ProjectionRebuilds, 1),
+            // The Finder's own rebuild and the SearchDetail projection built
+            // from its result source (#64) are one rebuild each.
+            (Metric::ProjectionRebuilds, 2),
+            (Metric::SourceRowsEnumerated, 60),
+            (Metric::VisibleRowsPainted, 31),
             (Metric::RankRowsVisited, items),
             (Metric::IntrinsicWidthCalls, 1_621),
             (Metric::TextBytesMeasured, 8_414),
@@ -400,6 +406,7 @@ fn work_contract_holla_background_updates_keep_projection() {
             &format!("output round {round}"),
             &[
                 scheduling,
+                (Metric::VisibleRowsPainted, 16),
                 (Metric::IntrinsicWidthCalls, 491),
                 (Metric::TextBytesMeasured, 2_286),
                 (Metric::FitVisits, 20),
@@ -456,7 +463,11 @@ fn work_contract_holla_background_updates_keep_projection() {
         &entered,
         "Finder activated",
         &[
-            (Metric::ProjectionRebuilds, 1),
+            // The Finder's own rebuild and the SearchDetail projection built
+            // from its result source (#64) are one rebuild each.
+            (Metric::ProjectionRebuilds, 2),
+            (Metric::SourceRowsEnumerated, 125),
+            (Metric::VisibleRowsPainted, 16),
             (Metric::RankRowsVisited, items),
             (Metric::IntrinsicWidthCalls, 508),
             (Metric::TextBytesMeasured, 2_319),
@@ -474,6 +485,7 @@ fn work_contract_holla_background_updates_keep_projection() {
         &settled,
         "settled tick after the catch-up",
         &[
+            (Metric::VisibleRowsPainted, 16),
             scheduling,
             (Metric::IntrinsicWidthCalls, 495),
             (Metric::TextBytesMeasured, 2_306),
@@ -491,7 +503,11 @@ fn work_contract_holla_background_updates_keep_projection() {
         &relevant,
         "relevant source change then tick",
         &[
-            (Metric::ProjectionRebuilds, 1),
+            // The Finder's own rebuild and the SearchDetail projection built
+            // from its result source (#64) are one rebuild each.
+            (Metric::ProjectionRebuilds, 2),
+            (Metric::SourceRowsEnumerated, 125),
+            (Metric::VisibleRowsPainted, 16),
             (Metric::RankRowsVisited, items),
             scheduling,
             (Metric::IntrinsicWidthCalls, 508),
@@ -510,6 +526,7 @@ fn work_contract_holla_background_updates_keep_projection() {
         &after,
         "settled tick after the rebuild",
         &[
+            (Metric::VisibleRowsPainted, 16),
             scheduling,
             (Metric::IntrinsicWidthCalls, 495),
             (Metric::TextBytesMeasured, 2_306),

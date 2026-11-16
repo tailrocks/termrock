@@ -1666,8 +1666,7 @@ impl TreeProjection {
                 stack.push((source.node(child).map_or(&[][..], |n| n.children), 0, at));
             }
         }
-        #[cfg(test)]
-        crate::core::work::add(crate::core::work::Counter::SourceRows, walk.order.len());
+        crate::record_work!(SourceRowsEnumerated, walk.order.len());
         Ok((walk.order, walk.positions, walk.parents))
     }
 

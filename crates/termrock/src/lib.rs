@@ -13,6 +13,6 @@ pub use junie_tui::terminal;
 
 pub mod prelude {
     pub use junie_tui::core::id::{ItemKey, WidgetId};
-    pub use junie_tui::core::list::RowSource;
+    pub use junie_tui::core::list::{KeyedRowSource, RowSource, SourceStamp};
     pub use junie_tui::core::response::{Flow, Invalidate, Response};
 }

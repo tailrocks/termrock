@@ -844,8 +844,7 @@ impl ListDetail {
                         Rect::new(geom.inner.x - 1, geom.inner.y + k as u16, geom.row_w + 1, 1);
                     let key = source.key(i);
                     ctx.register_part(s.master, PartRef::item(Part::ROW, key), rect);
-                    #[cfg(test)]
-                    crate::core::work::add(crate::core::work::Counter::VisibleRowsPainted, 1);
+                    crate::record_work!(VisibleRowsPainted, 1usize);
                     paint(
                         source,
                         MasterRow {
@@ -939,8 +938,7 @@ impl ListDetail {
             let rect = Rect::new(area.x, area.y + k as u16, row_w, 1);
             let key = key_of(i);
             ctx.register_part(self.master, PartRef::item(Part::ROW, key), rect);
-            #[cfg(test)]
-            crate::core::work::add(crate::core::work::Counter::VisibleRowsPainted, 1);
+            crate::record_work!(VisibleRowsPainted, 1usize);
             host.row(
                 MasterRow {
                     index: i,
@@ -1063,8 +1061,7 @@ impl ListDetail {
         {
             return (label, detail, meta);
         }
-        #[cfg(test)]
-        crate::core::work::add(crate::core::work::Counter::WidthRows, rows.len());
+        crate::record_work!(WidthRowsMeasured, rows.len());
         let mut label = 0;
         let (mut detail, mut meta) = (0u16, 0u16);
         for i in 0..rows.len() {

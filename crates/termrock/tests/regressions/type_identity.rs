@@ -1,4 +1,6 @@
-use termrock::prelude::{Flow, Invalidate, ItemKey, Response, RowSource, WidgetId};
+use termrock::prelude::{
+    Flow, Invalidate, ItemKey, KeyedRowSource, Response, RowSource, SourceStamp, WidgetId,
+};
 
 fn takes_impl_response(response: junie_tui::core::response::Response<u8>) -> u8 {
     response.actions().next().copied().unwrap_or_default()
@@ -61,4 +63,50 @@ fn facade_terminal_feature_exposes_the_viewport() {
 fn facade_cli_feature_exposes_the_arguments() {
     let level: junie_tui::theme::ColorLevel = termrock::cli::ColorArg::Mono.into();
     assert_eq!(level, termrock::theme::ColorLevel::Mono);
+}
+
+struct Keyed;
+
+impl RowSource for Keyed {
+    fn len(&self) -> usize {
+        1
+    }
+
+    fn label(&self, _: usize) -> &str {
+        "only"
+    }
+
+    fn key(&self, _: usize) -> ItemKey {
+        ItemKey::num(9)
+    }
+}
+
+impl KeyedRowSource for Keyed {
+    fn stamp(&self) -> SourceStamp {
+        SourceStamp {
+            instance: ItemKey::num(1),
+            data: 0,
+            view: 0,
+        }
+    }
+
+    fn source_len(&self) -> usize {
+        1
+    }
+
+    fn source_key(&self, _: usize) -> ItemKey {
+        ItemKey::num(9)
+    }
+}
+
+fn impl_stamp<S: junie_tui::core::list::KeyedRowSource>(
+    source: &S,
+) -> junie_tui::core::list::SourceStamp {
+    source.stamp()
+}
+
+#[test]
+fn facade_keyed_source_contract_preserves_identity() {
+    let stamp: SourceStamp = impl_stamp(&Keyed);
+    assert_eq!(stamp.instance, ItemKey::num(1));
 }

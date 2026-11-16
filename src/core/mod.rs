@@ -20,5 +20,3 @@ pub mod shape;
 pub mod text;
 pub(crate) mod text_index;
 pub mod typeahead;
-#[cfg(test)]
-pub(crate) mod work;

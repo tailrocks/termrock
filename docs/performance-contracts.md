@@ -52,10 +52,10 @@ Limits that are not hidden:
 | Metric | Unit | Work site |
 | --- | --- | --- |
 | `SegmentedLines`, `ReflowedLines`, `IndexRebuilds`, `IndexExtends`, `IndexShifts` | lines or passes | `TextViewport` layout, next to its own `WorkCounters` |
-| `PayloadBytesCloned` | bytes | `TextViewport` deep clone on an unprepared `ViewportOps::draw`; `Picker` item copies; `Select` and `Completion` overlay copies; `CodeEditor` per-frame text copy; every undo snapshot and edit-entry snapshot of `CodeEditor` and `TextArea` |
+| `PayloadBytesCloned` | bytes | `TextViewport` deep clone on an unprepared `ViewportOps::draw`; `Picker` item copies; `Select` and `Completion` overlay copies and a whole-`Select` clone (its option label bytes); `CodeEditor` per-frame text copy; every undo snapshot and edit-entry snapshot of `CodeEditor` and `TextArea` |
 | `AllocatedBufferCells` | cells | every scratch `Buffer`, through `ui::ctx::scratch_buffer` |
 | `BufferCellsFilled`, `BufferCellsCopied` | cells | `ScrollView` canvas fill and `copy_cells` |
-| `VisibleRowsPainted` | rows | `ListBox`, `DataTable`, `DataGrid`, `TreeView`, `OptionList` (the rows of `Picker`, `Select` and `Completion`), `CodeEditor` and `TextArea` paint loops, summed over a frame |
+| `VisibleRowsPainted` | rows | `ListBox`, `ListDetail` master rows, `DataTable`, `DataGrid`, `TreeView`, `OptionList` (the rows of `Picker`, `Select` and `Completion`), `CodeEditor` and `TextArea` paint loops, summed over a frame |
 | `IntrinsicWidthCalls`, `TextBytesMeasured` | calls, bytes | `ui::text::width` |
 | `FitVisits`, `FitCompares` | visits, comparisons | Responsive fitters (`ChipBar`, `Breadcrumb`, `segments`, `StatusBar`, `HintBar`, `Toolbar`): loop visits and removal-order sort comparisons |
 | `LabelsNormalized`, `LabelBytesNormalized` | labels, bytes | `TreeView` filter |
@@ -70,6 +70,11 @@ Limits that are not hidden:
 | `TerminalBytesWritten` | bytes | `MeteredWriter::write`: bytes the runtime's terminal writer accepted, escape sequences included |
 | `RawEventsRead`, `RawEventsFiltered` | events | the runtime raw reader (`scan_next`): every event an input turn takes, and those dropped by the focus guard or as an unsupported kind. The startup discard of stale events (`discard_ready`) is not counted |
 | `InputDispatches` | dispatches | every `Application::handle` call the runtime makes: input drains, settled pointer moves, external messages, resize, tick and the resume resize |
+| `SourceRowsEnumerated` | rows | keyed provider validation (`KeyedState::reconcile`: authoritative keys, then visible rows, once per stamp change), the `TreeView` flattening walk and the `ChoiceEditor` filtered-option rebuild |
+| `KeyIndexInserts`, `KeyLookups` | keys, lookups | `Picker` key index: one insert per authoritative item, one lookup per visible key |
+| `WidthRowsMeasured` | rows | aggregate widths measured once per revision: `ListDetail` master rows (per `SourceStamp`), `Completion` items, `ChoiceEditor` list and strip widths |
+| `OverlayRowsSnapshotted` | rows | visible paint records a deferred overlay copies: `OptionList` (`Select`, `Completion`) and `ChoiceEditor` list and segment snapshots |
+| `LabelsRead` | labels | `label` calls on a `[String]` row source (the `Select` type-ahead search) |
 
 `TextViewport`, `ScrollView` and the width helper are shared, so every app that
 uses them is counted. `VisibleRowsPainted` does not count `TextViewport` or
@@ -132,15 +137,15 @@ list, table, grid and tree widget in the frame.
 | `DataTable` | settled frame | 1k / 10k / 100k | rows painted 29, width calls 62, width bytes 108 |
 | `TreeView` | settled frame | 1k / 10k / 100k | rows painted 30, width calls 30, width bytes 200 |
 | `TreeView` | filter change | 1k / 10k / 100k | labels normalized = n, label bytes 7,890 / 88,890 / 988,890 |
-| `Picker` | `set_items` | 1k / 10k / 100k items of 17 text bytes | none cloned |
-| `Picker` | settled frame | 1k / 10k / 100k | rows painted 12, width calls 3n + 264, width bytes 17n + 264 |
-| `Picker` | `set_visible_items` of 20 of n items | 1k / 10k / 100k | nothing cloned, identity comparisons 0 |
-| `Picker` | frame over those 20 items | 1k / 10k / 100k | rows painted 12, width calls 324, width bytes 604, independent of n |
-| `Picker` | `replace_items` | 1k / 10k / 100k | nothing cloned, identity comparisons 0 |
-| `Picker` | `set_visible_items` or `replace_items` with the cursor on item 0, item 19 or the middle item | 1k / 10k / 100k | nothing cloned, identity comparisons 0 at every cursor position |
+| `Picker` | `set_items` | 1k / 10k / 100k items of 17 text bytes | none cloned, key index inserts n |
+| `Picker` | settled frame | 1k / 10k / 100k | rows painted 12, overlay rows snapshotted 12, width calls 3n + 264, width bytes 17n + 264 |
+| `Picker` | `set_visible_items` of 20 of n items | 1k / 10k / 100k | nothing cloned, identity comparisons 0, key lookups 20 (one per visible key) |
+| `Picker` | frame over those 20 items | 1k / 10k / 100k | rows painted 12, overlay rows snapshotted 12, width calls 324, width bytes 604, independent of n |
+| `Picker` | `replace_items` | 1k / 10k / 100k | nothing cloned, identity comparisons 0, key index inserts n |
+| `Picker` | `set_visible_items` or `replace_items` with the cursor on item 0, item 19 or the middle item | 1k / 10k / 100k | nothing cloned, identity comparisons 0 at every cursor position; key lookups 20 for `set_visible_items`, key index inserts n for `replace_items` |
 | `Select` | closed frame | 1k / 10k / 100k options | width calls 1, width bytes 6 |
-| `Select` | open frame | 1k / 10k / 100k | payload bytes cloned 104, rows painted 8, width calls 1, independent of n |
-| `Completion` | open frame | 1k / 10k / 100k items of 15 text bytes | payload bytes cloned 120, rows painted 8, width calls 240, width bytes 360, independent of n |
+| `Select` | open frame | 1k / 10k / 100k | payload bytes cloned 104, overlay rows snapshotted 8, rows painted 8, width calls 1, independent of n |
+| `Completion` | open frame | 1k / 10k / 100k items of 15 text bytes | payload bytes cloned 120, overlay rows snapshotted 8, rows painted 8, width calls 240, width bytes 360, independent of n |
 | `CodeEditor` | first focused frame | 1k / 10k / 100k lines | nothing cloned, annotation queries 2, rows painted 29, width calls 30, width bytes 67 / 68 / 69 |
 | `CodeEditor` | settled frame | same | rows painted 29, width calls 30, no annotation query |
 | `CodeEditor` | first keystroke, then second of the run | same | payload bytes cloned L, then none |
@@ -165,17 +170,17 @@ list, table, grid and tree widget in the frame.
 | Runtime frame output | unchanged frame | same | diff cells 0, bytes written 25 (the style reset) |
 | Runtime frame output | one cell changed | same | diff cells 1, bytes written 32, for every size |
 | Jackin `SimLink` into a `TerminalPane` | one 200,000-byte output chunk, feed budget 1,024 / 4,096 / 65,536 | 196 / 49 / 4 ticks | terminal bytes fed per tick = min(budget, remaining), 200,000 in all; nothing fed after the stream |
-| Holla Finder | settled tick | 106 items, 5 activities, 0 plans | no projection rebuild, scheduling 10, width calls 706 |
+| Holla Finder | settled tick | 106 items, 5 activities, 0 plans | no projection rebuild, rows painted 20, scheduling 10, width calls 706 |
 | Holla Finder | unrelated world field, then tick | same | same as the settled tick |
-| Holla Finder | query change | same | projection rebuilds 1, ranked 106, width calls 1,621 |
+| Holla Finder | query change | same | projection rebuilds 2 (the Finder's and the `SearchDetail` selectable projection), source rows enumerated 60, ranked 106, rows painted 31, width calls 1,621 |
 | Holla Files preview | open the Files page on a 1 MiB text file | 1 MiB (prefix cut at 256 KiB) | rollback probes 1, NUL probe 262,144, UTF-8 validated 262,144, sanitized 78,000, line chars 78,000, cloned 0; segmented 2,000, reflowed 4,000, index rebuilds 2, width calls 90,111, width bytes 90,868 |
 | Holla Files preview | same, 16 MiB text and 16 MiB bytes | 16 MiB | the same, width bytes 90,871 (only the size label differs); a settled tick after it repeats no pass |
 | Holla Files preview | one 262,143-byte line whose last scalar straddles the cap | 1 MiB + 256 KiB | rollback probes 2, NUL probe, validation, sanitizing and line chars 262,143 each; segmented 1 |
 | Holla Files preview | NUL at byte 100 of a 16 MiB file | 16 MiB | NUL probe 101, nothing validated, sanitized or segmented |
-| Holla Finder | 20 rounds of 50 streamed output lines on a running activity, then a tick | 87 items, 1 activity | per round: no projection rebuild, scheduling 2, width calls 491, width bytes 2,286 |
+| Holla Finder | 20 rounds of 50 streamed output lines on a running activity, then a tick | 87 items, 1 activity | per round: no projection rebuild, rows painted 16, scheduling 2, width calls 491, width bytes 2,286 |
 | Holla Finder | source change under a hidden Finder, 4 ticks | same | no rebuild, scheduling 8 |
-| Holla Finder | activate the hidden Finder | same | projection rebuilds 1, ranked 87 |
-| Holla Finder | relevant source change, then tick | same | projection rebuilds 1, ranked 87; the next tick rebuilds nothing |
+| Holla Finder | activate the hidden Finder | same | projection rebuilds 2, source rows enumerated 125, ranked 87, rows painted 16 |
+| Holla Finder | relevant source change, then tick | same | projection rebuilds 2, source rows enumerated 125, ranked 87, rows painted 16; the next tick rebuilds nothing |
 | Jackin Accounts | settled tick | 12 accounts, 2 daemons | scheduling records 2, polls 6, width calls 391, width bytes 2,010 |
 | Jackin Accounts | workspace policy edit through `workspace_mut`, then tick | same | same as the settled tick: the visible Accounts page and the background Manager rebuild nothing |
 | Jackin Accounts | `r` on the selected account | 12 | projection rebuilds 2 (account sort, row build), ranked 12 |
@@ -187,7 +192,7 @@ list, table, grid and tree widget in the frame.
 | TablePro grid | unrelated history entry, then tick | 312 | rows painted 39, width calls 268 |
 | Showcase Query workbench | settled tick | 2 documents | rows painted 54, width calls 222 |
 | Showcase Query workbench | click the second tab (two frames) | 2 | rows painted 91, width calls 382 |
-| Showcase Finder | settled tick | 12 actions | allocated 0, rows painted 21, width calls 422 |
+| Showcase Finder | settled tick | 12 actions | allocated 0, rows painted 24, width calls 422 |
 | Showcase Finder | other page's option, then tick | 12 | same as the settled tick |
 | Jackin roster | settled tick | 9 instances, 4 workspaces, 2 daemons | scheduling records 2, polls 6, width calls 205 |
 | Jackin roster | unrelated workspace policy, then tick | same | same as the settled tick |
@@ -203,6 +208,22 @@ list, table, grid and tree widget in the frame.
   (#20). Only the copy back to the screen is bounded by the window.
 - Drawing a `TextViewport` through a shared reference after a change, without
   preparing it first, clones the whole history.
+- Keyed collections (#41) are measured by `widgets::keyed_cost_tests` and
+  `widgets::search_detail::cost_tests` with the metrics above, in the
+  `performance` profile. A `KeyedState` whose `SourceStamp` is unchanged
+  enumerates 0 source rows; a data revision enumerates the authoritative and the
+  visible rows once each (1,000 for a 500-row store). `Picker` indexes n items
+  with n key inserts and joins m visible keys with m lookups and no insert.
+  A `Select`, `Completion` or `ChoiceEditor` (list and segments) over 100,000
+  options snapshots at most its visible rows (8, or 16 for the choice editor)
+  per frame; `Completion` measures its widths once (100,000 rows on the first
+  frame, 0 on an unchanged one, the new length after `set_items`).
+  `ListDetail::render_source` measures 5,000 master rows once per
+  `SourceStamp` and 0 on an unchanged stamp. A fixed `Select` refusing a key
+  copies 0 option bytes and reads 0 labels at 1,000 and 100,000 options,
+  while a whole-`Select` clone copies every label byte (the control that proves
+  the counter is live). A settled `SearchDetail` frame rebuilds no projection,
+  enumerates no row and paints only the visible rows.
 - A settled Holla Finder tick rebuilds and re-ranks nothing: each projection
   layer rebuilds only for its own dependency (#62). A query change or a relevant
   source revision change still re-ranks the whole catalog once (87 items in the

@@ -489,8 +489,12 @@ fn work_contract_picker_linear_projection() {
         let (set, set_work) = measure(|| picker.set_items(items.clone()));
         set.expect("valid items");
         // Measured: set_items moves the items in and indexes them by key, so
-        // it clones nothing.
-        assert_exact(&set_work, &format!("picker set_items, n={n}"), &[]);
+        // it clones nothing and inserts each key once.
+        assert_exact(
+            &set_work,
+            &format!("picker set_items, n={n}"),
+            &[(Metric::KeyIndexInserts, n as u64)],
+        );
 
         draw_picker(&mut picker);
         let (buf, full) = measure(|| draw_picker(&mut picker));
@@ -503,6 +507,7 @@ fn work_contract_picker_linear_projection() {
             &full,
             &format!("picker settled frame, n={n}"),
             &[
+                (Metric::OverlayRowsSnapshotted, 12),
                 (Metric::VisibleRowsPainted, 12),
                 (
                     Metric::IntrinsicWidthCalls,
@@ -521,8 +526,12 @@ fn work_contract_picker_linear_projection() {
         res.expect("known keys");
         // Measured: each visible key resolves through the key index and the
         // projection stores source positions, so the projection compares no
-        // identity and clones no item at any list size.
-        assert_exact(&project, &format!("picker set_visible_items, n={n}"), &[]);
+        // identity and clones no item at any list size: 20 lookups, no scan.
+        assert_exact(
+            &project,
+            &format!("picker set_visible_items, n={n}"),
+            &[(Metric::KeyLookups, 20)],
+        );
 
         let (buf, filtered) = measure(|| draw_picker(&mut picker));
         assert!(screen_has(&buf, "Item 000000"));
@@ -532,6 +541,7 @@ fn work_contract_picker_linear_projection() {
             &filtered,
             &format!("picker filtered frame, n={n}"),
             &[
+                (Metric::OverlayRowsSnapshotted, 12),
                 (Metric::VisibleRowsPainted, 12),
                 (Metric::IntrinsicWidthCalls, 324),
                 (Metric::TextBytesMeasured, 604),
@@ -542,8 +552,12 @@ fn work_contract_picker_linear_projection() {
         res.expect("valid items");
         // Measured: a full replacement moves the items in, rebuilds the key
         // index and restores the cursor by key, so it clones and compares
-        // nothing.
-        assert_exact(&replace, &format!("picker replace_items, n={n}"), &[]);
+        // nothing: one insert per item.
+        assert_exact(
+            &replace,
+            &format!("picker replace_items, n={n}"),
+            &[(Metric::KeyIndexInserts, n as u64)],
+        );
 
         publish(
             "picker",
@@ -588,7 +602,7 @@ fn work_contract_picker_cursor_restore() {
             assert_exact(
                 &work,
                 &format!("picker set_visible_items, cursor {cursor}, n={n}"),
-                &[],
+                &[(Metric::KeyLookups, 20)],
             );
             assert_eq!(picker.current_key(), Some(ItemKey::Index(cursor)));
 
@@ -600,7 +614,7 @@ fn work_contract_picker_cursor_restore() {
             assert_exact(
                 &work,
                 &format!("picker replace_items, cursor {cursor}, n={n}"),
-                &[],
+                &[(Metric::KeyIndexInserts, n as u64)],
             );
             assert_eq!(picker.current_key(), Some(ItemKey::Index(cursor)));
         }
@@ -618,7 +632,7 @@ fn work_contract_picker_cursor_restore() {
         assert_exact(
             &work,
             &format!("picker replace_items from a sparse projection, n={n}"),
-            &[],
+            &[(Metric::KeyIndexInserts, n as u64)],
         );
         assert_eq!(picker.current_key(), Some(ItemKey::Index(19 * stride)));
     }
@@ -664,6 +678,7 @@ fn work_contract_select_open_frame() {
             &format!("select open frame, n={n}"),
             &[
                 (Metric::PayloadBytesCloned, 104),
+                (Metric::OverlayRowsSnapshotted, 8),
                 (Metric::VisibleRowsPainted, 8),
                 (Metric::IntrinsicWidthCalls, 1),
                 (Metric::TextBytesMeasured, 6),
@@ -711,6 +726,7 @@ fn work_contract_completion_open_frame() {
             &format!("completion open frame, n={n}"),
             &[
                 (Metric::PayloadBytesCloned, 120),
+                (Metric::OverlayRowsSnapshotted, 8),
                 (Metric::VisibleRowsPainted, 8),
                 (Metric::IntrinsicWidthCalls, 240),
                 (Metric::TextBytesMeasured, 360),
