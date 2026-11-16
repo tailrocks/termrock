@@ -183,6 +183,19 @@ fn meter_tone_levels() {
         );
     }
 
+    // The default bands start at 60% and 85%: the same fill changes colour
+    // there, so a different `METER_LOW_MAX` or `METER_MEDIUM_MAX` repaints it.
+    for (pct, run) in [
+        (59, t.info),
+        (60, t.warning),
+        (84, t.warning),
+        (85, t.error),
+    ] {
+        let (buf, text) = meter_line(&Meter::new(Some(pct)), 24);
+        assert_eq!(buf[(0, 0)].fg, run, "{pct}% paints {run:?}: {text}");
+    }
+    assert_eq!((METER_LOW_MAX, METER_MEDIUM_MAX), (59, 84));
+
     // The meter draws a run proportional to the percentage.
     let (_, half) = meter_line(&Meter::new(Some(50)), 28);
     let (_, full) = meter_line(&Meter::new(Some(100)), 28);
@@ -329,6 +342,7 @@ fn progress_bar_statuses() {
     };
     let (buf, text) = bar(0.5, ProgressStatus::Active, 40);
     let track = usize::from(40 - VALUE_W);
+    assert_eq!(track, 33, "seven columns stay free for the value");
     assert_eq!(
         count(&text, t.glyphs.bar_fill) + count(&text, t.glyphs.bar_empty),
         track
@@ -444,6 +458,8 @@ fn progress_bar_statuses() {
     // The spinner cycles through SPINNER and labels its frame.
     assert_eq!(spinner_frame(0), SPINNER[0]);
     assert_eq!(spinner_frame(13), SPINNER[3]);
+    assert_eq!((spinner_frame(0), spinner_frame(13)), ("⠋", "⠸"));
+    assert_eq!(spinner_frame(10), spinner_frame(0), "the cycle wraps");
     let spun = frame(Rect::new(0, 0, 20, 1), 3, |area, buf, ctx| {
         render_spinner(area, buf, ctx, "loading", ctx.theme.canvas);
     });
@@ -695,6 +711,10 @@ fn completion_lifecycle() {
         (12..=30).contains(&popup.width),
         "popup_width bounds it: {popup:?}"
     );
+    assert!(
+        popup.width < 24,
+        "popup_width lowers the default minimum of 24: {popup:?}"
+    );
     let shown = rows(&painted.buf).join("\n");
     assert!(
         shown.contains("alphabet") && shown.contains("fn"),
@@ -765,6 +785,25 @@ fn completion_lifecycle() {
     );
     let painted = paint_hits(screen, |area, buf, ctx| blocked.render(area, buf, ctx));
     assert!(rows(&painted.buf).join("\n").contains("no access"));
+
+    // The defaults of a bare `Completion`. `NAV` leaves Home and End to the
+    // text field while paging still moves, the popup stops at
+    // `OptionList::MAX_ROWS` rows and sits `TEXT_INSET` columns left of the anchor.
+    let many: Vec<Item> = (0..12).map(|i| Item::new(format!("item{i:02}"))).collect();
+    let top = Rect::new(anchor.x, 1, 1, 1);
+    let mut bare = Completion::new(ID);
+    assert_eq!(bare.list.nav, Completion::NAV);
+    bare.open(many, top, 0);
+    assert_eq!(bare.on_key(&key(KeyCode::End)), (Outcome::Ignored, None));
+    assert_eq!(bare.on_key(&key(KeyCode::Home)), (Outcome::Ignored, None));
+    assert_eq!(bare.list.cursor.index, 0, "Home and End do not move");
+    assert_eq!(bare.on_key(&key(KeyCode::PageDown)).0, Outcome::Changed);
+    assert!(bare.list.cursor.index > 0, "paging still moves");
+    let _ = paint_hits(screen, |area, buf, ctx| bare.render(area, buf, ctx));
+    assert_eq!(bare.area.height, OptionList::MAX_ROWS + 2);
+    assert_eq!(bare.area.height, 8 + 2);
+    assert_eq!(bare.area.x, top.x - TEXT_INSET);
+    assert_eq!(bare.area.x, 10 - 4);
 }
 
 fn option_list_items() {
