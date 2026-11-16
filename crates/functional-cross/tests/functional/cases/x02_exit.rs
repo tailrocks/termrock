@@ -20,10 +20,10 @@
 use std::time::Duration;
 
 use tui_test::TerminalSnapshot;
-use tuiscotti_latest::check::CheckOutcome;
 
 use crate::support::{
-    App, Launch, find_all, holla_bin, row_text, showcase_bin, tablepro_bin, text, try_launch,
+    App, Open, check_stored, find_all, holla_bin, refuse, require, row_text, showcase_bin,
+    tablepro_bin, text,
 };
 
 const PAGE: &str = "Quit & leave";
@@ -61,14 +61,7 @@ const WIDE_ID: &str = "pre_refactor/x02_exit/x02_exit_exit_120x40";
 const NARROW_ID: &str = "pre_refactor/x02_exit/x02_exit_exit_narrow";
 
 fn open_bin(name: &str, bin: &str, args: &[&str], clock: bool) -> App {
-    let mut launch = Launch::new(name, bin);
-    launch.clock = clock;
-    launch.cols = 120;
-    launch.rows = 40;
-    launch.color = Some("truecolor".to_string());
-    launch.motion = Some("reduced".to_string());
-    launch.args = args.iter().map(|arg| (*arg).to_string()).collect();
-    try_launch(launch).unwrap_or_else(|error| panic!("{error}"))
+    Open::new(name, bin, args).clock(clock).launch()
 }
 
 fn open_showcase(name: &str, args: &[&str], clock: bool) -> App {
@@ -85,22 +78,6 @@ fn open_holla(name: &str, scenario: &str, clock: bool) -> App {
     let app = open_bin(name, holla_bin(), &["--scenario", scenario], clock);
     app.wait_text(HOLLA_QUERY);
     app
-}
-
-fn require(screen: &TerminalSnapshot, needle: &str) {
-    assert!(
-        text(screen).contains(needle),
-        "missing {needle}\n{}",
-        text(screen)
-    );
-}
-
-fn refuse(screen: &TerminalSnapshot, needle: &str) {
-    assert!(
-        !text(screen).contains(needle),
-        "{needle} present\n{}",
-        text(screen)
-    );
 }
 
 fn see(screen: &TerminalSnapshot, present: &[&str], absent: &[&str]) {
@@ -181,34 +158,6 @@ fn stored_frame(app: &App, cols: u16, rows: u16) -> TerminalSnapshot {
     );
     assert!(!focused(&screen, STOP_LEAVE), "Stop and leave is focused");
     screen
-}
-
-fn sample_bytes(screen: &TerminalSnapshot, test_id: &str) -> Vec<u8> {
-    let sample = tuiscotti_latest::sample::Sample::state(
-        test_id,
-        screen.clone(),
-        tuiscotti_latest::sample::Observation::empty(),
-    )
-    .expect("build Tuiscotti state sample");
-    sample.to_bytes().expect("serialize Tuiscotti sample")
-}
-
-fn check_stored(app: &App, screen: &TerminalSnapshot, test_id: &str) {
-    let bytes = sample_bytes(screen, test_id);
-    let root = crate::support::workspace_root().join("tests/functional/baselines");
-    let artifacts = app.evidence_dir().join("check-artifacts");
-    let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
-        .expect("open Tuiscotti frozen store");
-    let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
-    if let CheckOutcome::Failure(failure) = outcome {
-        panic!(
-            "{test_id} {} sha {} path {} cells {}",
-            failure.reason(),
-            failure.candidate_sha256(),
-            failure.candidate_path().display(),
-            failure.changed_cell_total()
-        );
-    }
 }
 
 fn confirm_focused(app: &App, ok: &str, cancel: &str, open: impl Fn(&TerminalSnapshot) -> bool) {

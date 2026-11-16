@@ -14,7 +14,7 @@ use tui_test::TerminalSnapshot;
 use tuiscotti_latest::check::CheckOutcome;
 
 use crate::support::{
-    App, Launch, Point, find_all, holla_bin, showcase_bin, tablepro_bin, text, try_launch,
+    App, Point, find_all, holla_bin, open, refuse, require, showcase_bin, tablepro_bin, text,
 };
 
 const TOO_SMALL: &str = "Terminal too small";
@@ -43,33 +43,6 @@ const REACH: [(u16, u16); 7] = [
     (120, 40),
     (160, 50),
 ];
-
-fn open(name: &str, bin: &str, args: &[&str]) -> App {
-    let mut launch = Launch::new(name, bin);
-    launch.clock = false;
-    launch.cols = 120;
-    launch.rows = 40;
-    launch.color = Some("truecolor".to_string());
-    launch.motion = Some("reduced".to_string());
-    launch.args = args.iter().copied().map(str::to_string).collect();
-    try_launch(launch).unwrap_or_else(|error| panic!("{error}"))
-}
-
-fn require(screen: &TerminalSnapshot, needle: &str) {
-    assert!(
-        text(screen).contains(needle),
-        "missing {needle}\n{}",
-        text(screen)
-    );
-}
-
-fn refuse(screen: &TerminalSnapshot, needle: &str) {
-    assert!(
-        !text(screen).contains(needle),
-        "{needle} present\n{}",
-        text(screen)
-    );
-}
 
 fn need(cols: u16, rows: u16) -> String {
     format!("Need {MIN_WIDTH}×{MIN_HEIGHT}, have {cols}×{rows}")

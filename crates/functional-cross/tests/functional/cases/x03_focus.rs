@@ -20,10 +20,9 @@
 //! and `parse_page`.
 
 use tui_test::{SnapshotColor, TerminalSnapshot};
-use tuiscotti_latest::check::CheckOutcome;
 
 use crate::support::{
-    App, Launch, Point, find_all, holla_bin, showcase_bin, tablepro_bin, text, try_launch,
+    App, Point, check_stored, find_all, holla_bin, open, require, showcase_bin, tablepro_bin, text,
 };
 
 const BAR: &str = "▎";
@@ -74,25 +73,6 @@ struct Bar {
     y: u16,
     fg: SnapshotColor,
     bg: SnapshotColor,
-}
-
-fn open(name: &str, bin: &str, args: &[&str]) -> App {
-    let mut launch = Launch::new(name, bin);
-    launch.clock = false;
-    launch.cols = 120;
-    launch.rows = 40;
-    launch.color = Some("truecolor".to_string());
-    launch.motion = Some("reduced".to_string());
-    launch.args = args.iter().copied().map(str::to_string).collect();
-    try_launch(launch).unwrap_or_else(|error| panic!("{error}"))
-}
-
-fn require(screen: &TerminalSnapshot, needle: &str) {
-    assert!(
-        text(screen).contains(needle),
-        "missing {needle}\n{}",
-        text(screen)
-    );
 }
 
 fn labeled(screen: &TerminalSnapshot, needle: &str, pred: impl Fn(&Point) -> bool) -> Point {
@@ -256,34 +236,6 @@ fn dialog(app: &App) -> (TerminalSnapshot, TerminalSnapshot) {
     assert!(app.child_running(), "dismiss stopped showcase");
     app.finish();
     (wide, narrow)
-}
-
-fn sample_bytes(screen: &TerminalSnapshot, test_id: &str) -> Vec<u8> {
-    let sample = tuiscotti_latest::sample::Sample::state(
-        test_id,
-        screen.clone(),
-        tuiscotti_latest::sample::Observation::empty(),
-    )
-    .expect("build Tuiscotti state sample");
-    sample.to_bytes().expect("serialize Tuiscotti sample")
-}
-
-fn check_stored(app: &App, screen: &TerminalSnapshot, test_id: &str) {
-    let bytes = sample_bytes(screen, test_id);
-    let root = crate::support::workspace_root().join("tests/functional/baselines");
-    let artifacts = app.evidence_dir().join("check-artifacts");
-    let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
-        .expect("open Tuiscotti frozen store");
-    let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
-    if let CheckOutcome::Failure(failure) = outcome {
-        panic!(
-            "{test_id} {} sha {} path {} cells {}",
-            failure.reason(),
-            failure.candidate_sha256(),
-            failure.candidate_path().display(),
-            failure.changed_cell_total()
-        );
-    }
 }
 
 fn moved_focus() {

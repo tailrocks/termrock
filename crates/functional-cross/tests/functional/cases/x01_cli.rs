@@ -12,9 +12,10 @@
 use std::time::{Duration, Instant};
 
 use tui_test::TerminalSnapshot;
-use tuiscotti_latest::check::CheckOutcome;
 
-use crate::support::{App, Launch, holla_bin, showcase_bin, tablepro_bin, text, try_launch};
+use crate::support::{
+    App, Open, check_stored, holla_bin, refuse, require, showcase_bin, tablepro_bin, text,
+};
 
 const HELP_EXIT: i32 = 0;
 const ERROR_EXIT: i32 = 2;
@@ -36,30 +37,7 @@ const WIDE_ID: &str = "pre_refactor/x01_cli/x01_cli_cli_120x40";
 const NARROW_ID: &str = "pre_refactor/x01_cli/x01_cli_cli_narrow";
 
 fn open(name: &str, bin: &str, args: &[&str], cols: u16, rows: u16) -> App {
-    let mut launch = Launch::new(name, bin);
-    launch.args = args.iter().map(|arg| (*arg).to_string()).collect();
-    launch.cols = cols;
-    launch.rows = rows;
-    launch.color = Some("truecolor".to_string());
-    launch.motion = Some("reduced".to_string());
-    launch.clock = false;
-    try_launch(launch).unwrap_or_else(|error| panic!("{error}"))
-}
-
-fn require(screen: &TerminalSnapshot, needle: &str) {
-    assert!(
-        text(screen).contains(needle),
-        "missing {needle}\n{}",
-        text(screen)
-    );
-}
-
-fn refuse(screen: &TerminalSnapshot, needle: &str) {
-    assert!(
-        !text(screen).contains(needle),
-        "{needle} present\n{}",
-        text(screen)
-    );
+    Open::new(name, bin, args).size(cols, rows).launch()
 }
 
 fn wait_settled(
@@ -143,31 +121,7 @@ fn shot(app: &App, test_id: &str, cols: u32, rows: u32) {
     refuse(&screen, SHOWCASE_UI);
     assert!(!app.child_running(), "{test_id} left the UI running");
     app.expect_exited(HELP_EXIT);
-    check_frame(app, &screen, test_id);
-}
-
-fn check_frame(app: &App, screen: &TerminalSnapshot, test_id: &str) {
-    let root = crate::support::workspace_root().join("tests/functional/baselines");
-    let sample = tuiscotti_latest::sample::Sample::state(
-        test_id,
-        screen.clone(),
-        tuiscotti_latest::sample::Observation::empty(),
-    )
-    .expect("build Tuiscotti state sample");
-    let bytes = sample.to_bytes().expect("serialize Tuiscotti sample");
-    let artifacts = app.evidence_dir().join("check-artifacts");
-    let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
-        .expect("open Tuiscotti frozen store");
-    let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
-    if let CheckOutcome::Failure(failure) = outcome {
-        panic!(
-            "{test_id} {} sha {} path {} cells {}",
-            failure.reason(),
-            failure.candidate_sha256(),
-            failure.candidate_path().display(),
-            failure.changed_cell_total()
-        );
-    }
+    check_stored(app, &screen, test_id);
 }
 
 #[test]

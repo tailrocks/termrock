@@ -22,10 +22,10 @@
 use std::time::{Duration, Instant};
 
 use tui_test::TerminalSnapshot;
-use tuiscotti_latest::check::CheckOutcome;
 
 use crate::support::{
-    App, Launch, find, holla_bin, row_text, showcase_bin, tablepro_bin, text, try_launch,
+    App, Open, check_stored, find, holla_bin, kill, require, row_containing, row_text,
+    showcase_bin, tablepro_bin, text,
 };
 
 const TITLE: &str = "Status & hints";
@@ -42,35 +42,10 @@ const WIDE_ID: &str = "pre_refactor/x03_motion/x03_motion_motion_120x40";
 const NARROW_ID: &str = "pre_refactor/x03_motion/x03_motion_motion_narrow";
 
 fn open(name: &str, bin: &str, args: &[&str], motion: &str, clock: bool) -> App {
-    let mut launch = Launch::new(name, bin);
-    launch.clock = clock;
-    launch.cols = 120;
-    launch.rows = 40;
-    launch.color = Some("truecolor".to_string());
-    launch.motion = Some(motion.to_string());
-    launch.args = args.iter().copied().map(str::to_string).collect();
-    try_launch(launch).unwrap_or_else(|error| panic!("{error}"))
-}
-
-fn kill(app: &App) {
-    assert!(app.child_running(), "child exited before the assertion");
-    app.kill_child();
-    assert!(!app.child_running(), "child still running");
-}
-
-fn row_containing(screen: &TerminalSnapshot, needle: &str) -> String {
-    (0..screen.rows())
-        .map(|row| row_text(screen, row))
-        .find(|row| row.contains(needle))
-        .unwrap_or_else(|| panic!("missing {needle}\n{}", text(screen)))
-}
-
-fn require(screen: &TerminalSnapshot, needle: &str) {
-    assert!(
-        text(screen).contains(needle),
-        "missing {needle}\n{}",
-        text(screen)
-    );
+    Open::new(name, bin, args)
+        .motion(Some(motion))
+        .clock(clock)
+        .launch()
 }
 
 fn spinner_marks(screen: &TerminalSnapshot) -> Vec<String> {
@@ -138,34 +113,6 @@ fn narrow_frame(app: &App) -> TerminalSnapshot {
     stable(app, "narrow hints", |screen| {
         screen.cols() == 80 && screen.rows() == 24 && text(screen).contains(TITLE)
     })
-}
-
-fn sample_bytes(screen: &TerminalSnapshot, test_id: &str) -> Vec<u8> {
-    let sample = tuiscotti_latest::sample::Sample::state(
-        test_id,
-        screen.clone(),
-        tuiscotti_latest::sample::Observation::empty(),
-    )
-    .expect("build Tuiscotti state sample");
-    sample.to_bytes().expect("serialize Tuiscotti sample")
-}
-
-fn check_stored(app: &App, screen: &TerminalSnapshot, test_id: &str) {
-    let bytes = sample_bytes(screen, test_id);
-    let root = crate::support::workspace_root().join("tests/functional/baselines");
-    let artifacts = app.evidence_dir().join("check-artifacts");
-    let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
-        .expect("open Tuiscotti frozen store");
-    let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
-    if let CheckOutcome::Failure(failure) = outcome {
-        panic!(
-            "{test_id} {} sha {} path {} cells {}",
-            failure.reason(),
-            failure.candidate_sha256(),
-            failure.candidate_path().display(),
-            failure.changed_cell_total()
-        );
-    }
 }
 
 fn route() {
