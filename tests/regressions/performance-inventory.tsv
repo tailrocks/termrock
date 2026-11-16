@@ -1,0 +1,85 @@
+# Required cost-contract suites for the `performance` nextest profile (#56).
+# S <TAB> family <TAB> nextest binary id <TAB> test matcher (- selects the whole binary) <TAB> source file
+# T <TAB> a test the suite must contain, as nextest names it (module path inside the binary)
+S	counter core (thread isolation, epochs, overflow, budgets)	junie-tui	/^metrics::/	src/metrics/tests.rs
+T	metrics::tests::metrics_delta_counts_units_between_snapshots
+T	metrics::tests::metrics_delta_rejects_other_thread
+T	metrics::tests::metrics_delta_rejects_reset
+T	metrics::tests::metrics_delta_rejects_a_counter_that_went_backwards
+T	metrics::tests::metrics_record_panics_on_counter_overflow
+T	metrics::tests::metrics_check_exact_flags_undercounts_overcounts_and_unlisted_work
+S	timing report schema and statistics	junie-tui	/^metrics::/	src/metrics/measurement.rs
+T	metrics::measurement::tests::measurement_required_fields_are_all_present
+T	metrics::measurement::tests::measurement_unavailable_values_are_null_not_zero
+T	metrics::measurement::tests::measurement_percentiles_follow_the_specified_indices
+S	responsive fit linearity	junie-tui	/^ui::overflow_work_tests::/	src/ui/overflow_work_tests.rs
+T	ui::overflow_work_tests::large_overflow_chip_prefix_work_is_linear
+T	ui::overflow_work_tests::large_overflow_breadcrumb_work_is_linear
+T	ui::overflow_work_tests::large_overflow_segments_work_is_linear
+T	ui::overflow_work_tests::large_overflow_statusbar_work_is_linear
+T	ui::overflow_work_tests::large_overflow_keyhint_work_is_linear
+T	ui::overflow_work_tests::large_overflow_toolbar_work_is_linear
+T	ui::overflow_work_tests::large_overflow_tabs_work_is_linear
+T	ui::overflow_work_tests::tabs_render_measures_each_tab_once
+S	keyed collection joins	junie-tui	/^widgets::keyed_cost_tests::/	src/widgets/keyed_cost_tests.rs
+T	widgets::keyed_cost_tests::picker_projection_join_is_linear
+S	library widget budgets (viewport, scroll view, list, table, tree, picker, select, completion, editor, textarea)	junie-tui::regressions	/^work_budgets::/	tests/regressions/work_budgets.rs
+T	work_budgets::work_contract_viewport_first_use_and_prepared_draw
+T	work_budgets::work_contract_viewport_one_append_is_incremental
+T	work_budgets::work_contract_viewport_adapter_unprepared_draw
+T	work_budgets::work_contract_scroll_view_content_sized_canvas
+T	work_budgets::work_contract_settled_frame_paints_only_visible_rows
+T	work_budgets::work_contract_tree_filtered_rebuild
+T	work_budgets::work_contract_picker_linear_projection
+T	work_budgets::work_contract_select_open_frame
+T	work_budgets::work_contract_completion_open_frame
+T	work_budgets::work_contract_editor_prepared_frame
+T	work_budgets::work_contract_textarea_prepared_frame
+T	work_budgets::work_report_is_count_only_json_with_every_metric
+S	Holla page scenarios	junie-tui::bin/holla	/^work_metrics_tests::/	src/bin/holla/work_metrics_tests.rs
+T	work_metrics_tests::work_contract_holla_idle_and_source_update
+S	Holla projection reuse (app)	junie-tui::bin/holla	/holla_projection_/	src/bin/holla/app/tests.rs
+T	app::tests::holla_projection_idle_ticks_do_no_source_work
+T	app::tests::holla_projection_idle_cleanup_page_ticks_do_no_source_work
+T	app::tests::holla_projection_hidden_pages_catch_up_once
+S	Holla projection reuse (Finder)	junie-tui::bin/holla	/holla_projection_/	src/bin/holla/screens/finder/tests.rs
+T	screens::finder::tests::holla_projection_group_change_reranks_without_source_work
+S	TablePro page scenarios	junie-tui::bin/tablepro	/^work_metrics_tests::/	src/bin/tablepro/work_metrics_tests.rs
+T	work_metrics_tests::work_contract_tablepro_idle_and_cell_edit
+S	Showcase page scenarios and stress fits	junie-tui::bin/showcase	/^work_metrics_tests::/	src/bin/showcase/work_metrics_tests.rs
+T	work_metrics_tests::work_contract_showcase_idle_and_switch
+T	work_metrics_tests::work_contract_stress_toolbars_items
+T	work_metrics_tests::work_contract_stress_breadcrumbs_items
+T	work_metrics_tests::work_contract_stress_chrome_items
+T	work_metrics_tests::work_contract_stress_chips_items
+S	Jackin roster and capsule scenarios	jackin-console::regressions	/^work_budgets::/	apps/jackin/tests/regressions/work_budgets.rs
+T	work_budgets::work_contract_jackin_idle_and_roster_update
+T	work_budgets::work_contract_jackin_capsule_idle_frame
+T	work_budgets::work_contract_jackin_capsule_frame_after_typing
+S	ScrollPanel source-row budgets	junie-tui::regressions	/^work_budgets::/	tests/regressions/work_budgets/scroll_panel.rs
+T	work_budgets::scroll_panel::work_contract_scroll_panel_flat_measures_once_and_appends_incrementally
+T	work_budgets::scroll_panel::work_contract_scroll_panel_wrapped_builds_once_per_content_change
+S	terminal view and viewport budgets	junie-tui::regressions	/^work_budgets::/	tests/regressions/work_budgets/terminal.rs
+T	work_budgets::terminal::work_contract_terminal_prepared_paint
+T	work_budgets::terminal::work_contract_terminal_feed_and_copy_units
+S	runtime input and output budgets	junie-tui	/^runtime::raw_input_tests::work::/	src/runtime/raw_input_tests/work.rs
+T	runtime::raw_input_tests::work::work_contract_runtime_raw_filtered_events_yield
+T	runtime::raw_input_tests::work::work_contract_runtime_startup_discard_is_not_input_work
+T	runtime::raw_input_tests::work::work_contract_runtime_flood_services_input
+T	runtime::raw_input_tests::work::work_contract_runtime_settle_counts_the_settled_pointer_move
+T	runtime::raw_input_tests::work::work_contract_runtime_resume_resize_is_one_dispatch
+T	runtime::raw_input_tests::work::work_contract_runtime_frame_diff_and_bytes_written
+S	Jackin scripted transport	jackin-console	/^sim::link::tests::work::/	apps/jackin/src/sim/link/tests/work.rs
+T	sim::link::tests::work::work_contract_jackin_scripted_output_budget
+S	Jackin projection epochs	jackin-console::world	/^projection_work::/	apps/jackin/tests/world.rs
+T	projection_work::one_epoch_change_builds_once_before_render
+T	projection_work::quiet_many_daemons_do_not_scan_full_roster
+T	projection_work::quiet_panes_do_not_rebuild_roster_or_accounts
+T	projection_work::roster_index_visits_each_instance_once
+S	measurement sampling is real	junie-tui::regressions	=work_measurements::measurement_edit_samples_are_real_changes	tests/regressions/work_measurements.rs
+T	work_measurements::measurement_edit_samples_are_real_changes
+S	this gate	junie-tui::regressions	/^performance_inventory::/	tests/regressions/performance_inventory.rs
+T	performance_inventory::performance_profile_selects_every_required_suite
+T	performance_inventory::performance_nextest_list_runs_every_required_test
+T	performance_inventory::performance_required_tests_exist_in_source
+T	performance_inventory::performance_measure_profile_is_serial_and_runs_only_ignored_measurements
