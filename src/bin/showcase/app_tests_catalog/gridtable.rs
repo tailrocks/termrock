@@ -12,7 +12,7 @@ use junie_tui::core::hit::{Axis, HitRegistry};
 use junie_tui::core::id::WidgetId;
 use junie_tui::core::intent::{DismissReason, Phase};
 use junie_tui::core::keymap::{KeyBinding, NavKeys};
-use junie_tui::core::list::TypeAheadPrecedence;
+use junie_tui::core::list::{TypeAheadPrecedence, route_key};
 use junie_tui::core::pointer::{MouseTarget, PointerEvent};
 use junie_tui::core::response::Response;
 use junie_tui::core::scroll::{HScroll, TrackClick};
@@ -249,6 +249,10 @@ fn diff_model_and_view() {
             Outcome::Changed | Outcome::Consumed
         )
     ));
+    assert!(
+        view.term.selected_text().is_some_and(|t| !t.is_empty()),
+        "a press and a drag select the text between them"
+    );
     view.set_file(Some(sample_file()));
     assert_eq!(view.term.scroll.offset, 0, "a new file starts at the top");
 }
@@ -874,9 +878,18 @@ fn grid_keys_and_commands() {
             ..demo_rows(2)
         })
         .expect("rectangular rows");
+    let more_area = Rect::new(0, 0, 110, 14);
+    let more_bg = Theme::for_level(ColorLevel::TrueColor).surface;
     paged.set_loading(true);
     assert!(paged.loading);
+    let fetching = paint(more_area, |a, b, ctx| paged.render(a, b, ctx, more_bg));
+    assert!(
+        text_of(&fetching).contains("fetching") && !text_of(&fetching).contains("fetches more"),
+        "a loading grid says it is fetching"
+    );
     paged.set_loading(false);
+    let idle = paint(more_area, |a, b, ctx| paged.render(a, b, ctx, more_bg));
+    assert!(text_of(&idle).contains("fetches more"));
     paged.cursor = (2, 0);
     assert_eq!(
         grid_press(&mut paged, KeyCode::Enter),
@@ -1095,6 +1108,41 @@ fn grid_keys_and_commands() {
         None,
         "with type-ahead first a letter is a search, not the sort command"
     );
+    // Routed like the app does, the precedence decides whether a letter that
+    // starts a search is the sort shortcut or the first letter of a prefix.
+    let first_s = |precedence: TypeAheadPrecedence| {
+        let mut fresh = demo_grid("scenario.grid.precedence", 3)
+            .type_ahead(true)
+            .type_ahead_column(Some(1))
+            .type_ahead_precedence(precedence);
+        let mut action = None;
+        route_key(&key(char_key('s')), || {
+            let (outcome, found) = one(fresh.on_key(&key(char_key('s'))));
+            action = action.take().or(found);
+            outcome
+        });
+        action
+    };
+    assert_eq!(first_s(TypeAheadPrecedence::TypeAhead), None);
+    assert_eq!(
+        first_s(TypeAheadPrecedence::Shortcuts),
+        Some(GridAction::SortRequested(Some((0, SortDir::Asc))))
+    );
+    // A zero timeout forgets the prefix before every letter, so the word
+    // never builds up (the pause only guarantees the clock moved on).
+    let mut forgetful = demo_grid("scenario.grid.forgetful", 3)
+        .type_ahead(true)
+        .type_ahead_column(Some(1))
+        .type_ahead_precedence(TypeAheadPrecedence::TypeAhead)
+        .type_ahead_timeout(std::time::Duration::ZERO);
+    for c in "name2".chars() {
+        std::thread::sleep(std::time::Duration::from_millis(2));
+        grid_press(&mut forgetful, char_key(c));
+    }
+    assert_eq!(
+        forgetful.cursor.0, 0,
+        "each letter starts a new search, so the prefix never matches"
+    );
 }
 
 fn one(resp: Response<GridAction>) -> (Outcome, Option<GridAction>) {
@@ -1236,6 +1284,33 @@ fn grid_pointer_and_labels() {
         2,
         "the configured toggle modifier adds a row"
     );
+    // A modifier no platform default uses proves the builder, not the default.
+    let mut hyper = demo_grid("scenario.grid.hyper", 3).toggle_mods(KeyModifiers::HYPER);
+    paint(area, |a, b, ctx| hyper.render(a, b, ctx, bg));
+    one(hyper.on_click_with(
+        hyper.rownum_id(0),
+        Position::new(1, 3),
+        KeyModifiers::NONE,
+        1,
+    ));
+    one(hyper.on_click_with(
+        hyper.rownum_id(2),
+        Position::new(1, 5),
+        KeyModifiers::HYPER,
+        1,
+    ));
+    assert_eq!(hyper.selection.len(), 2, "the custom chord adds a row");
+    one(hyper.on_click_with(
+        hyper.rownum_id(1),
+        Position::new(1, 4),
+        KeyModifiers::ALT | KeyModifiers::CONTROL,
+        1,
+    ));
+    assert_eq!(
+        hyper.selection.len(),
+        1,
+        "a chord outside the configured one replaces the selection"
+    );
 
     // Headers sort, the menu lists what a column offers and applies it.
     let header = area_of(&painted, grid.header_id(1));
@@ -1287,15 +1362,53 @@ fn grid_pointer_and_labels() {
     );
     one(grid.on_click(grid.seam_id(1), seam.as_position()));
     let wider = paint_hits(area, |a, b, ctx| grid.render(a, b, ctx, bg));
+    let x_wider = area_of(&wider, grid.header_id(2)).x;
+    assert!(x_wider > before, "the next column moved right");
+    assert_eq!(seam.width, 3, "the seam hit area is as wide as configured");
+    grid.autofit(1);
+    let fitted = paint_hits(area, |a, b, ctx| grid.render(a, b, ctx, bg));
     assert!(
-        area_of(&wider, grid.header_id(2)).x > before,
-        "the next column moved right"
+        area_of(&fitted, grid.header_id(2)).x < x_wider,
+        "autofit pulls the dragged column back to its content"
+    );
+    let seam = area_of(&fitted, grid.seam_id(1));
+    assert_eq!(
+        grid.on_press(grid.seam_id(1), seam.as_position(), 1),
+        Outcome::Changed
+    );
+    grid.on_drag(grid.seam_id(1), Position::new(seam.x + 6, seam.y));
+    let seam = area_of(
+        &paint_hits(area, |a, b, ctx| grid.render(a, b, ctx, bg)),
+        grid.seam_id(1),
     );
     assert_eq!(
         grid.on_press(grid.seam_id(1), seam.as_position(), 2),
         Outcome::Changed
     );
-    grid.autofit(1);
+    let refit = paint_hits(area, |a, b, ctx| grid.render(a, b, ctx, bg));
+    assert_eq!(
+        area_of(&refit, grid.header_id(2)).x,
+        area_of(&fitted, grid.header_id(2)).x,
+        "a double press on the seam fits the column again"
+    );
+    // Fixed widths: no seams, no resize entries in the header menu.
+    let mut locked = demo_grid("scenario.grid.fixed-widths", 3).resizable_columns(false);
+    let still = paint_hits(area, |a, b, ctx| locked.render(a, b, ctx, bg));
+    assert!(
+        !still
+            .hits
+            .regions()
+            .iter()
+            .any(|r| r.id == locked.seam_id(1)),
+        "fixed widths register no seam"
+    );
+    assert!(
+        !locked
+            .header_menu(1)
+            .iter()
+            .any(|(a, _)| *a == HeaderAction::Autofit),
+        "fixed widths offer no autofit"
+    );
     assert_eq!(
         grid.on_header_action(1, HeaderAction::Autofit),
         (Outcome::Changed, None)
@@ -1703,6 +1816,65 @@ fn table_model_and_selection() {
         vec![0, 2],
         "the chosen chord adds without replacing"
     );
+    // A modifier no platform default uses proves the builder, not the default.
+    let mut hyper = demo_table("scenario.table.hyper", 3)
+        .selection_mode(SelectionMode::Multi)
+        .toggle_mods(KeyModifiers::HYPER);
+    tact(hyper.on_click_cell_with(0, 0, Position::new(0, 0), KeyModifiers::NONE));
+    tact(hyper.on_click_cell_with(2, 0, Position::new(0, 0), KeyModifiers::HYPER));
+    assert_eq!(hyper.selected_rows(), vec![0, 2], "the custom chord adds");
+    tact(hyper.on_click_cell_with(
+        1,
+        0,
+        Position::new(0, 0),
+        KeyModifiers::ALT | KeyModifiers::CONTROL,
+    ));
+    assert_eq!(
+        hyper.selected_rows(),
+        vec![1],
+        "a chord outside the configured one replaces the selection"
+    );
+
+    // Alignment and tone show in the frame.
+    let small = Rect::new(0, 0, 24, 4);
+    let nine_at = |column: Column| {
+        let mut t = DataTable::try_new(
+            WidgetId::of("scenario.table.align"),
+            vec![column],
+            vec![vec![Cell::new("9")]],
+        )
+        .expect("rectangular rows");
+        let buf = paint(small, |a, b, ctx| {
+            t.render(a, b, ctx, Theme::for_level(ColorLevel::TrueColor).surface)
+        });
+        (0..small.height)
+            .flat_map(|y| (0..small.width).map(move |x| (x, y)))
+            .find(|&(x, y)| buf[(x, y)].symbol() == "9")
+            .map(|(x, _)| x)
+            .expect("the cell text is drawn")
+    };
+    assert!(
+        nine_at(Column::new("qty", Constraint::Length(8)).right())
+            > nine_at(Column::new("qty", Constraint::Length(8))),
+        "a right-aligned column ends at its right edge"
+    );
+    let theme = Theme::for_level(ColorLevel::TrueColor);
+    let color_of_o = |tone: Tone| {
+        let mut t = DataTable::try_new(
+            WidgetId::of("scenario.table.tone"),
+            vec![Column::new("c", Constraint::Length(8))],
+            vec![vec![Cell::new("ok").tone(tone)]],
+        )
+        .expect("rectangular rows");
+        let buf = paint(small, |a, b, ctx| t.render(a, b, ctx, theme.surface));
+        (0..small.height)
+            .flat_map(|y| (0..small.width).map(move |x| (x, y)))
+            .find(|&(x, y)| buf[(x, y)].symbol() == "o")
+            .map(|(x, y)| buf[(x, y)].fg)
+            .expect("the cell text is drawn")
+    };
+    assert_eq!(color_of_o(Tone::Success), theme.tone(Tone::Success));
+    assert_ne!(color_of_o(Tone::Normal), theme.tone(Tone::Success));
 
     // Sorting cycles ascending, descending, none; numeric columns compare as numbers.
     let mut sorted = demo_table("scenario.table.sort", 3);
@@ -1774,6 +1946,45 @@ fn table_keys_and_edits() {
     assert_eq!(
         typed.sort, None,
         "with type-ahead first, s is a search letter"
+    );
+    let first_s = |precedence: TypeAheadPrecedence| {
+        let mut fresh = demo_table("scenario.table.precedence", 4)
+            .type_ahead(true)
+            .type_ahead_column(Some(0))
+            .type_ahead_precedence(precedence);
+        route_key(&key(KeyCode::Char('s')), || {
+            tact(fresh.on_key(&key(KeyCode::Char('s')))).0
+        });
+        fresh.sort
+    };
+    assert_eq!(first_s(TypeAheadPrecedence::TypeAhead), None);
+    assert_eq!(
+        first_s(TypeAheadPrecedence::Shortcuts),
+        Some((0, SortDir::Asc)),
+        "the precedence decides whether s sorts or starts a search"
+    );
+    let mut by_qty = demo_table("scenario.table.typeahead-qty", 4)
+        .type_ahead(true)
+        .type_ahead_column(Some(1))
+        .type_ahead_precedence(TypeAheadPrecedence::TypeAhead);
+    table_press(&mut by_qty, KeyCode::Char('9'));
+    assert_eq!(
+        by_qty.cursor_row, 1,
+        "type-ahead searches the chosen column, not the first one"
+    );
+    // A zero timeout forgets the prefix before every letter.
+    let mut forgetful = demo_table("scenario.table.forgetful", 4)
+        .type_ahead(true)
+        .type_ahead_column(Some(0))
+        .type_ahead_precedence(TypeAheadPrecedence::TypeAhead)
+        .type_ahead_timeout(std::time::Duration::ZERO);
+    for c in "name2".chars() {
+        std::thread::sleep(std::time::Duration::from_millis(2));
+        table_press(&mut forgetful, KeyCode::Char(c));
+    }
+    assert_eq!(
+        forgetful.cursor_row, 0,
+        "each letter starts a new search, so the prefix never matches"
     );
 
     // Selection by keyboard: space toggles, shift extends, select all, Esc clears.
@@ -1977,6 +2188,7 @@ fn table_pointer_and_chrome() {
     let text = text_of(&painted.buf);
     assert!(text.contains("name1") && text.contains("qty"), "{text}");
     let origin = |id: WidgetId| area_of(&painted, id).as_position();
+    let origin_in = |frame: &Painted, id: WidgetId| area_of(frame, id).as_position();
 
     // The frame registers every addressable part under the id the table reports.
     for id in [
@@ -2034,16 +2246,54 @@ fn table_pointer_and_chrome() {
         Outcome::Changed
     );
     let wider = paint_hits(area, |a, b, ctx| table.render(a, b, ctx, bg));
+    let x_wider = area_of(&wider, table.header_id(2)).x;
+    assert!(x_wider > before, "the next column moved right");
+    assert_eq!(
+        area_of(&painted, table.seam_id(1)).width,
+        3,
+        "the seam hit area is as wide as configured"
+    );
+    table.autofit(1);
+    let fitted = paint_hits(area, |a, b, ctx| table.render(a, b, ctx, bg));
     assert!(
-        area_of(&wider, table.header_id(2)).x > before,
-        "the next column moved right"
+        area_of(&fitted, table.header_id(2)).x < x_wider,
+        "autofit pulls the dragged column back to its content"
+    );
+    let seam = origin_in(&fitted, table.seam_id(1));
+    assert_eq!(table.on_press(table.seam_id(1), seam, 1), Outcome::Changed);
+    table.on_drag(table.seam_id(1), Position::new(seam.x + 5, seam.y));
+    let seam = origin_in(
+        &paint_hits(area, |a, b, ctx| table.render(a, b, ctx, bg)),
+        table.seam_id(1),
     );
     assert_eq!(
         table.on_press(table.seam_id(1), seam, 2),
         Outcome::Changed,
         "a double press fits"
     );
-    table.autofit(1);
+    let refit = paint_hits(area, |a, b, ctx| table.render(a, b, ctx, bg));
+    assert_eq!(
+        area_of(&refit, table.header_id(2)).x,
+        area_of(&fitted, table.header_id(2)).x,
+        "a double press on the seam fits the column again"
+    );
+    let mut locked = demo_table("scenario.table.fixed-widths", 3).resizable_columns(false);
+    let still = paint_hits(area, |a, b, ctx| locked.render(a, b, ctx, bg));
+    assert!(
+        !still
+            .hits
+            .regions()
+            .iter()
+            .any(|r| r.id == locked.seam_id(1)),
+        "fixed widths register no seam"
+    );
+    assert!(
+        !locked
+            .header_menu(1)
+            .iter()
+            .any(|(a, _)| *a == HeaderAction::Autofit),
+        "fixed widths offer no autofit"
+    );
     assert_eq!(
         table.on_press(WidgetId::of("elsewhere"), seam, 1),
         Outcome::Ignored
@@ -2103,6 +2353,37 @@ fn table_pointer_and_chrome() {
     assert!(
         cells.choice.is_some(),
         "clicking the open affordance opens the editor {at:?}"
+    );
+
+    // A focused table offers the full text of a cut cell, unless reveal is off.
+    let peek_of = |reveal: Option<Reveal>| {
+        let theme = Theme::for_level(ColorLevel::TrueColor);
+        let mut t = DataTable::try_new(
+            WidgetId::of("scenario.table.reveal"),
+            vec![Column::new("n", Constraint::Length(6))],
+            vec![vec![Cell::new("a much longer cell")]],
+        )
+        .expect("rectangular rows");
+        if let Some(reveal) = reveal {
+            t = t.reveal(reveal);
+        }
+        let small = Rect::new(0, 0, 20, 4);
+        let mut buf = Buffer::empty(small);
+        let mut hits = HitRegistry::default();
+        let mut ring = FocusRing::default();
+        let interaction = Interaction {
+            focus: Some(t.id),
+            ..Interaction::default()
+        };
+        let mut ctx = RenderCtx::new(&theme, interaction, &mut hits, &mut ring);
+        t.render(small, &mut buf, &mut ctx, theme.surface);
+        ctx.peek.clone()
+    };
+    assert_eq!(peek_of(None).as_deref(), Some("a much longer cell"));
+    assert_eq!(
+        peek_of(Some(Reveal::OFF)),
+        None,
+        "reveal off offers nothing"
     );
 
     // A navigation table activates on the first click.
