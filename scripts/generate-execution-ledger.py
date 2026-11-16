@@ -285,7 +285,7 @@ ROUTE_CASES = {
 
 
 def parse_options() -> dict[str, list[dict]]:
-    text = (ROOT / "src/bin/showcase/options.rs").read_text()
+    text = (ROOT / "apps/showcase/src/options.rs").read_text()
     groups: dict[str, list[dict]] = defaultdict(list)
     current = None
     # Associate each Opt::new with the static array that contains it.
@@ -514,9 +514,9 @@ def main() -> None:
             ],
             "forbidden_shared_edits": forbidden,
             "source_inputs": [
-                "src/bin/showcase/app.rs",
-                "src/bin/showcase/inspector.rs",
-                "src/bin/showcase/options.rs",
+                "apps/showcase/src/app.rs",
+                "apps/showcase/src/inspector.rs",
+                "apps/showcase/src/options.rs",
                 "src/shell/",
             ],
             "coverage_rows": [item["case_id"] for item in shell_rows],
@@ -664,9 +664,9 @@ def main() -> None:
                 ],
                 "forbidden_shared_edits": forbidden,
                 "source_inputs": [
-                    f"src/bin/showcase/pages/{source}",
-                    "src/bin/showcase/options.rs",
-                    "src/bin/showcase/pages/template.rs",
+                    f"apps/showcase/src/pages/{source}",
+                    "apps/showcase/src/options.rs",
+                    "apps/showcase/src/pages/template.rs",
                     "src/ui/specimen.rs",
                 ],
                 "coverage_rows": [item["case_id"] for item in owned_rows],
@@ -944,7 +944,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T01.connections",
         "tablepro",
-        ["src/bin/tablepro/connections.rs", "src/bin/tablepro/app.rs", "src/bin/tablepro/model.rs"],
+        ["apps/tablepro/src/connections.rs", "apps/tablepro/src/app.rs", "apps/tablepro/src/model.rs"],
         "Tree selection, filtering, empty search, and connection status stay on the selected connection.",
         [
             ("select", "Select each fixture connection and filter until one and then zero remain.", "Details show the selected name and host. Empty search shows the empty state.", "Details keep the previous connection after the selection moves."),
@@ -954,7 +954,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T01.basic",
         "tablepro",
-        ["src/bin/tablepro/connections.rs", "src/bin/tablepro/model.rs"],
+        ["apps/tablepro/src/connections.rs", "apps/tablepro/src/model.rs"],
         "Basic fields reject blank names and invalid ports and preserve the original record when validation fails.",
         [
             ("fields", "Create a connection. Enter a blank name, a whitespace name, an invalid port, and the implemented valid boundaries. Save.", "The saved record shows the exact valid name, host, port, engine, environment, group, and safe mode.", "An invalid Save replaces the original connection."),
@@ -964,7 +964,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T01.advanced",
         "tablepro",
-        ["src/bin/tablepro/connections.rs"],
+        ["apps/tablepro/src/connections.rs"],
         "Advanced fields, including the masked password, round-trip through save and reopen.",
         [
             ("secrets", "Fill host, database, user, password, SSL, SSH, and startup. Paste a synthetic secret.", "The password cells are masked. Reopen shows the non-secret fields exactly and the password still masked.", "The secret appears in the terminal text or the saved evidence."),
@@ -973,7 +973,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T01.test",
         "tablepro",
-        ["src/bin/tablepro/connections.rs", "src/bin/tablepro/db.rs"],
+        ["apps/tablepro/src/connections.rs", "apps/tablepro/src/db.rs"],
         "Test, Save, Save & connect, and Cancel are separate results.",
         [
             ("actions", "Run Test, Save, Save & connect, and Cancel on distinct edits.", "Test does not save. Save reopens with the edit. Save & connect opens the workbench. Cancel keeps the previous record.", "Cancel writes the edit."),
@@ -982,7 +982,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T01.leave",
         "tablepro",
-        ["src/bin/tablepro/connections.rs", "src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/connections.rs", "apps/tablepro/src/app.rs"],
         "Every dirty leave path can Stay, Discard, or Save, and invalid Save from the dialog preserves the original.",
         [
             ("guards", "From a dirty form, try close, New, Edit another, and Quit. Choose Stay, Discard, and Save. Also attempt invalid Save from the dialog.", "Stay and a failed validation keep the draft and the original record. Discard restores the original. Save stores the draft.", "A leave path drops the draft without a choice."),
@@ -991,7 +991,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T02.explorer",
         "tablepro",
-        ["src/bin/tablepro/workbench.rs"],
+        ["apps/tablepro/src/workbench.rs"],
         "Schema expansion, filtering, preview reuse, and permanent open keep object identity.",
         [
             ("tree", "Expand a schema and open a table preview, then pin it.", "The preview title is the chosen object. Pinning does not replace another pinned tab.", "A filter result opens a different object than the selected row."),
@@ -1000,7 +1000,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T02.structure",
         "tablepro",
-        ["src/bin/tablepro/workbench.rs", "src/bin/tablepro/tabs.rs"],
+        ["apps/tablepro/src/workbench.rs", "apps/tablepro/src/tabs.rs"],
         "Each Structure tab shows that object's schema values or its empty state.",
         [
             ("tabs", "Open Columns, Indexes, Foreign keys, Constraints, Triggers, and DDL.", "Each tab's heading and cell values belong to the opened object.", "An empty tab shows another tab's rows."),
@@ -1009,7 +1009,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T02.data",
         "tablepro",
-        ["src/bin/tablepro/workbench.rs", "src/bin/tablepro/tabs.rs"],
+        ["apps/tablepro/src/workbench.rs", "apps/tablepro/src/tabs.rs"],
         "Editable tables, read-only views, and tables without a primary key follow their visible rules.",
         [
             ("kinds", "Open an editable table, a read-only view, and a table without a primary key.", "The read-only view rejects mutation with the current reason. The editable table accepts a valid edit.", "The view stores an edit."),
@@ -1018,7 +1018,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T02.editors",
         "tablepro",
-        ["src/bin/tablepro/workbench.rs"],
+        ["apps/tablepro/src/workbench.rs"],
         "Each implemented data-type editor accepts a valid value and rejects an invalid one, including NULL, insert, duplicate, and delete.",
         [
             ("types", "Edit one value in each implemented type family. Enter an invalid value and NULL where the cell allows it. Insert, duplicate, and delete a row.", "Pending counts match the operations. An invalid value does not become the stored cell.", "Delete removes a row that was not selected."),
@@ -1027,7 +1027,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T02.filters",
         "tablepro",
-        ["src/bin/tablepro/filter_editor.rs"],
+        ["apps/tablepro/src/filter_editor.rs"],
         "Every implemented filter operator and the zero, one, and two-value forms change the visible row set.",
         [
             ("filters", "Add, edit, remove, and reset chips. Exercise match-all, match-any, no rows, and filter-on-cell.", "The visible row identities match the filter. Reset restores the unfiltered identities. Selection stays on the same identity when it remains.", "No-rows shows the previous rows."),
@@ -1036,7 +1036,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T02.commit",
         "tablepro",
-        ["src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/app.rs"],
         "Cancel keeps pending changes. Confirm clears them and adds the expected History entry. The simulator's success-only commit is a recorded scope limit.",
         [
             ("commit", "Open the SQL preview, cancel commit, then confirm commit.", "Cancel leaves the pending counts. Confirm clears them and History contains the previewed statement.", "Confirm commits a different statement than the preview."),
@@ -1045,7 +1045,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T02.discard",
         "tablepro",
-        ["src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/app.rs"],
         "Discard restores the exact prior row values.",
         [
             ("discard", "Edit a cell, open discard review, cancel, then confirm.", "Cancel keeps the edit. Confirm restores the original cell.", "Discard changes a row that was not pending."),
@@ -1054,7 +1054,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T02.viewers",
         "tablepro",
-        ["src/bin/tablepro/workbench.rs", "src/bin/tablepro/context.rs"],
+        ["apps/tablepro/src/workbench.rs", "apps/tablepro/src/context.rs"],
         "Cell viewers, row menus, foreign-key follow, refresh, and additional-row fetch stay on the selected cell.",
         [
             ("viewer", "Open a cell viewer, select and copy its text, follow a foreign key, refresh, and fetch more rows.", "The viewer text is the cell text. Follow opens the referenced row.", "Copy captures a different cell."),
@@ -1063,7 +1063,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T03.query",
         "tablepro",
-        ["src/bin/tablepro/sql.rs", "src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/sql.rs", "apps/tablepro/src/app.rs"],
         "Safe mode, statement scope, and batch classification match the visible decision.",
         [
             ("classify", "Run SELECT, a scoped write, an unscoped write, a destructive statement, a mixed batch, EXPLAIN, and EXPLAIN ANALYZE under each implemented safe mode. Include comments, a quoted semicolon, empty SQL, and a syntax error.", "The safety decision is the highest applicable decision. Denied execution adds no result and no History entry.", "A denied statement produces a result grid."),
@@ -1072,7 +1072,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T03.completion",
         "tablepro",
-        ["src/bin/tablepro/tabs.rs"],
+        ["apps/tablepro/src/tabs.rs"],
         "Completion opens, selects, accepts, and dismisses without changing uncommitted SQL on dismiss.",
         [
             ("complete", "Open completion, move the selection, accept one item, then dismiss another.", "Accepted text is the selected item. Dismiss leaves the SQL unchanged.", "Dismiss inserts the highlighted item."),
@@ -1081,7 +1081,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T03.running",
         "tablepro",
-        ["src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/app.rs"],
         "A running query refuses a duplicate run and can be cancelled before it replaces the result.",
         [
             ("cancel", "Start a query, observe running feedback, refuse a second run, and cancel.", "The cancelled result stays cancelled. A later completion does not replace it.", "Duplicate run starts a second result."),
@@ -1090,7 +1090,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T03.confirm",
         "tablepro",
-        ["src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/app.rs"],
         "Ordinary and typed confirmation accept only the exact arming input, once.",
         [
             ("gates", "Cancel an ordinary confirmation and a typed confirmation. Enter a wrong, partial, and exact phrase.", "Wrong and partial text do not execute. Exact text executes once.", "Cancel leaves a new History entry."),
@@ -1099,7 +1099,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T03.rows",
         "tablepro",
-        ["src/bin/tablepro/tabs.rs"],
+        ["apps/tablepro/src/tabs.rs"],
         "Empty, normal, and large row results show their counts and refuse editing.",
         [
             ("rows", "Run a query with no rows, a query with known rows, and a large result. Try to edit the result. Select, sort, copy, pin, switch, and close it.", "The grid values are the fixture values. Sort changes row order. Editing is refused.", "Sort changes the status text without the row order."),
@@ -1108,7 +1108,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T03.affected",
         "tablepro",
-        ["src/bin/tablepro/tabs.rs", "src/bin/tablepro/sql.rs"],
+        ["apps/tablepro/src/tabs.rs", "apps/tablepro/src/sql.rs"],
         "A write shows the affected-row body rather than a row grid.",
         [
             ("affected", "Confirm one scoped write.", "The affected body shows the simulated count and History records that statement.", "The body shows rows from the previous SELECT."),
@@ -1117,7 +1117,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T03.error",
         "tablepro",
-        ["src/bin/tablepro/sql.rs", "src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/sql.rs", "apps/tablepro/src/app.rs"],
         "A syntax or execution error is visible, and correcting it removes that error.",
         [
             ("recover", "Run a statement that fails, then correct it and run it again.", "The error text is the failure. The recovered result is the corrected statement's result, and the old error is gone.", "Recovery still shows the old error."),
@@ -1126,7 +1126,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T03.plan",
         "tablepro",
-        ["src/bin/tablepro/tabs.rs"],
+        ["apps/tablepro/src/tabs.rs"],
         "Plan tree, raw plan, and analysis output are distinct bodies.",
         [
             ("plan", "Explain a statement, switch to the raw plan, and run EXPLAIN ANALYZE where the mode allows it.", "Each body contains that view's text.", "The raw view still shows only the tree."),
@@ -1135,7 +1135,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T03.cancelled",
         "tablepro",
-        ["src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/app.rs"],
         "A cancelled statement stays cancelled through the rest of the batch.",
         [
             ("boundary", "Cancel before completion and, where the UI allows it, between statements.", "The cancelled body remains the result. A later statement does not overwrite it.", "The batch continues into a success body after cancel."),
@@ -1144,7 +1144,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T04.history",
         "tablepro",
-        ["src/bin/tablepro/tabs.rs", "src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/tabs.rs", "apps/tablepro/src/app.rs"],
         "History search, scope, details, copy, open, and rerun use the selected entry's SQL.",
         [
             ("rerun", "Search, switch connection scope and all-scope, enable failed-only, open details, copy, and rerun the selected entry. Also search a missing phrase.", "The rerun result is that entry's statement. Empty search shows no rows.", "Rerun executes the previously active editor text instead of the selected entry."),
@@ -1153,7 +1153,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T04.quickly",
         "tablepro",
-        ["src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/app.rs"],
         "Open Quickly reaches tables, History, and query tabs, and cancel or no-match changes nothing.",
         [
             ("switcher", "Open Quickly for a table, a History entry, and a query tab. Then show no-match and cancel.", "The opened object is the chosen row. Cancel leaves the active tab unchanged.", "No-match activates the first row."),
@@ -1162,7 +1162,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T04.tabs",
         "tablepro",
-        ["src/bin/tablepro/workbench.rs", "src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/workbench.rs", "apps/tablepro/src/app.rs"],
         "Closing first, last, inactive, active, and only tabs keeps the remaining titles and SQL.",
         [
             ("close", "Close tabs by pointer, keyboard, and middle-click where supported.", "The remaining tab titles and SQL values are the ones that were not closed. Active fallback is the documented neighbour.", "A reused index shows a different tab's SQL."),
@@ -1171,7 +1171,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T04.preview",
         "tablepro",
-        ["src/bin/tablepro/workbench.rs"],
+        ["apps/tablepro/src/workbench.rs"],
         "Preview reuse does not replace a pinned or dirty tab.",
         [
             ("preview", "Preview an object, pin a tab, dirty another tab, and preview again.", "The pinned and dirty tabs keep their identities and SQL.", "Preview replaces the dirty tab."),
@@ -1180,7 +1180,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T04.close",
         "tablepro",
-        ["src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/app.rs"],
         "Dirty close offers Cancel, Discard, and Save, and a modal blocks a second close.",
         [
             ("dirty", "Close a dirty tab and choose Cancel, then Discard, then Save on separate tabs. While confirmation is open, try to close the neighbour.", "Cancel keeps the SQL. The modal refuses the neighbour close.", "Cancel closes the tab."),
@@ -1189,7 +1189,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T05.menus",
         "tablepro",
-        ["src/bin/tablepro/pages.rs", "src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/pages.rs", "apps/tablepro/src/app.rs"],
         "Each shell menu command is the command that was highlighted.",
         [
             ("menus", "Open every implemented shell menu and invoke an enabled command. Invoke a disabled command.", "The enabled command's result is visible. The disabled command does not change state.", "The disabled command runs."),
@@ -1198,7 +1198,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T05.help",
         "tablepro",
-        ["src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/app.rs"],
         "Help shows its own title and returns focus to the opener.",
         [
             ("help", "Open Help, scroll it, press a page key, and close it.", "The Help title is visible while it is open. Focus returns to the opener.", "A page key activates the workbench while Help is open."),
@@ -1207,7 +1207,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T05.context",
         "tablepro",
-        ["src/bin/tablepro/context.rs"],
+        ["apps/tablepro/src/context.rs"],
         "Context-menu actions apply to the selected cell or row.",
         [
             ("context", "Open a row context menu and a cell context menu and run one action in each.", "The action's object is the selected object.", "The action applies to the previously selected row."),
@@ -1216,7 +1216,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T05.viewers",
         "tablepro",
-        ["src/bin/tablepro/workbench.rs"],
+        ["apps/tablepro/src/workbench.rs"],
         "A viewer owns selection, copy, and close.",
         [
             ("viewer", "Open a viewer, select text, copy, and close.", "The copy payload is the viewer text. Close returns focus to the cell.", "Close leaves the viewer title visible."),
@@ -1225,7 +1225,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T05.maximize",
         "tablepro",
-        ["src/bin/tablepro/workbench.rs"],
+        ["apps/tablepro/src/workbench.rs"],
         "Hiding the explorer and maximizing a pane restore the same layout.",
         [
             ("layout", "Hide and show the explorer. Maximize and restore the supported panes. Drag the implemented seams.", "The restored layout shows the same tabs and SQL. Only the dragged seam changes style.", "Maximize closes a tab."),
@@ -1234,7 +1234,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T05.disconnect",
         "tablepro",
-        ["src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/app.rs"],
         "Clean disconnect works. Dirty disconnect can be cancelled and keeps drafts.",
         [
             ("disconnect", "Disconnect with a clean session, then with dirty SQL or pending table edits. Cancel, then confirm on a later attempt.", "Cancel keeps the connection, the SQL, and the pending values.", "Cancel returns to the connection list."),
@@ -1243,7 +1243,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T05.quit",
         "tablepro",
-        ["src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/app.rs"],
         "Quit uses the same guard as disconnect and restores the terminal only after the confirmed exit.",
         [
             ("quit", "Quit clean, then quit dirty and cancel, then confirm.", "Cancel preserves drafts. The confirmed exit is code 0 without a signal.", "The harness kill is treated as the application exit."),
@@ -1254,7 +1254,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H01.finder",
         "holla",
-        ["src/bin/holla/screens/finder.rs", "src/bin/holla/domain/ranking.rs", "src/bin/holla/app.rs"],
+        ["apps/holla/src/screens/finder.rs", "apps/holla/src/domain/ranking.rs", "apps/holla/src/app.rs"],
         "Discovery stages and query edits keep the selected identity and do not run a previous result on an empty list.",
         [
             ("discovery", "Show pending, ready, failed, and unavailable discovery. Type, paste, backspace, and clear the query.", "The selected identity stays while order changes. Empty results have no runnable row.", "Enter on an empty result runs the previous result."),
@@ -1264,7 +1264,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H01.scope",
         "holla",
-        ["src/bin/holla/screens/finder.rs", "src/bin/holla/domain/usage.rs"],
+        ["apps/holla/src/screens/finder.rs", "apps/holla/src/domain/usage.rs"],
         "Here, project, and host scope, groups, pin, hide, and ranking reset change the visible set only.",
         [
             ("scope", "Switch Here, project, and host. Pin, hide, restore, and reset ranking.", "The action row's command, directory, and host match the selected item after reranking.", "Hide removes a different item."),
@@ -1274,7 +1274,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H01.alternatives",
         "holla",
-        ["src/bin/holla/screens/finder.rs"],
+        ["apps/holla/src/screens/finder.rs"],
         "Alternatives lists alternatives for the selected item.",
         [
             ("alternatives", "Open Alternatives for the selected row.", "Every alternative names that row's action.", "Alternatives shows another row's action."),
@@ -1283,7 +1283,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H01.why",
         "holla",
-        ["src/bin/holla/screens/finder.rs", "src/bin/holla/domain/ranking.rs"],
+        ["apps/holla/src/screens/finder.rs", "apps/holla/src/domain/ranking.rs"],
         "Why explains the selected item.",
         [
             ("why", "Open Why for the selected row and close it.", "The explanation names the selected item. Focus returns to that row.", "Why names a different item."),
@@ -1292,7 +1292,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H01.memory",
         "holla",
-        ["src/bin/holla/domain/usage.rs", "src/bin/holla/app.rs"],
+        ["apps/holla/src/domain/usage.rs", "apps/holla/src/app.rs"],
         "Enabled and disabled history, learned queries, malformed memory, and save failure stay inside the simulated contract.",
         [
             ("memory", "Run a search with history enabled and disabled. Load malformed memory and a save failure when the fixture provides them.", "Save failure keeps the current search text.", "A memory failure clears the query."),
@@ -1302,7 +1302,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H02.trust",
         "holla",
-        ["src/bin/holla/screens/review.rs", "src/bin/holla/domain/digest.rs"],
+        ["apps/holla/src/screens/review.rs", "apps/holla/src/domain/digest.rs"],
         "Trust cancel and confirm apply to the reviewed path, directory, and digest.",
         [
             ("trust", "Cancel trust, then confirm trust for the same action.", "Cancel starts no activity. Confirm records trust for that path and digest.", "Confirm trusts a different directory."),
@@ -1312,7 +1312,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H02.args",
         "holla",
-        ["src/bin/holla/screens/review.rs", "src/bin/holla/domain/scripts.rs"],
+        ["apps/holla/src/screens/review.rs", "apps/holla/src/domain/scripts.rs"],
         "Required, choice, and secret arguments reject invalid input and do not reveal the secret.",
         [
             ("args", "Fill each implemented argument type, enter invalid input, correct it, and cancel after an edit.", "The displayed command and directory match the form. The secret is masked.", "Cancel starts the activity."),
@@ -1322,7 +1322,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H02.config",
         "holla",
-        ["src/bin/holla/domain/custom.rs", "src/bin/holla/screens/review.rs"],
+        ["apps/holla/src/domain/custom.rs", "apps/holla/src/screens/review.rs"],
         "Malformed, duplicate, and unavailable custom actions do not start an activity.",
         [
             ("config", "Load a malformed action, a duplicate action, and an unavailable action.", "The error names that action. No activity starts.", "The unavailable action starts."),
@@ -1332,7 +1332,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H02.reload",
         "holla",
-        ["src/bin/holla/domain/custom.rs", "src/bin/holla/app.rs"],
+        ["apps/holla/src/domain/custom.rs", "apps/holla/src/app.rs"],
         "Changed configuration, revocation, and reload failure return to the same action.",
         [
             ("reload", "Change trust, revoke it, and reload. Use the fixture's reload failure.", "Failure leaves the current action selected and starts nothing.", "Reload runs the action."),
@@ -1341,7 +1341,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H02.validation",
         "holla",
-        ["src/bin/holla/screens/review.rs"],
+        ["apps/holla/src/screens/review.rs"],
         "Literal shell syntax stays input text, and the action after an error is the same action.",
         [
             ("literal", "Enter literal shell metacharacters where the argument field allows them, then return after an error.", "The field shows the literal text. The owning action is unchanged.", "The metacharacters are executed as a different command."),
@@ -1350,7 +1350,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H03.output",
         "holla",
-        ["src/bin/holla/screens/activity.rs", "src/bin/holla/domain/activity.rs", "src/bin/holla/sim/world.rs"],
+        ["apps/holla/src/screens/activity.rs", "apps/holla/src/domain/activity.rs", "apps/holla/src/sim/world.rs"],
         "Queued, running, completed, failed, and stopped activities keep their own output.",
         [
             ("states", "Reach each implemented activity state, including spawn failure, nonzero exit, and restart. Filter, find, select, copy, and follow output.", "The visible status and exit status belong to that activity. Another activity's output does not change.", "Restart rewrites the failed run's identity."),
@@ -1360,7 +1360,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H03.input",
         "holla",
-        ["src/bin/holla/screens/activity.rs", "src/bin/holla/domain/exec.rs"],
+        ["apps/holla/src/screens/activity.rs", "apps/holla/src/domain/exec.rs"],
         "Public and secret prompts accept input only when the process can, and Ctrl+C goes to the task while it owns input.",
         [
             ("prompts", "Answer a public prompt and a secret prompt. Try input when it is refused. Press Ctrl+C and then Escape.", "The secret is masked. Escape returns keys to the shell. Refused input does not appear as a delivered line.", "The secret is echoed."),
@@ -1370,7 +1370,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H03.picker",
         "holla",
-        ["src/bin/holla/screens/activity.rs"],
+        ["apps/holla/src/screens/activity.rs"],
         "The activity picker acts on the selected activity.",
         [
             ("picker", "Open the picker and choose one activity.", "The opened output is that activity's output.", "The picker opens the first activity regardless of the highlight."),
@@ -1379,7 +1379,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H03.attach",
         "holla",
-        ["src/bin/holla/screens/activity.rs", "src/bin/holla/domain/activity.rs"],
+        ["apps/holla/src/screens/activity.rs", "apps/holla/src/domain/activity.rs"],
         "Detach and attach do not stop the task. Stop and escalation affect only that task.",
         [
             ("attach", "Detach, observe the monitor, attach, request stop, and escalate a resistant process.", "The task is still running after detach. Stop changes that task only.", "Detach stops the task."),
@@ -1388,7 +1388,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H03.guards",
         "holla",
-        ["src/bin/holla/app.rs", "src/bin/holla/screens/activity.rs"],
+        ["apps/holla/src/app.rs", "apps/holla/src/screens/activity.rs"],
         "Running-tab close and quit offer Stay or Stop. Finder q stays query text. Confirmed exit restores the terminal.",
         [
             ("quit", "Close a completed tab. Close a running tab and choose Stay, then Stop and quit. Type q in the Finder query.", "Stay leaves the task running. q is query text. The confirmed exit is code 0.", "Stay stops the task."),
@@ -1397,7 +1397,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H04.actions",
         "holla",
-        ["src/bin/holla/domain/catalog.rs", "src/bin/holla/domain/outcomes.rs", "src/bin/holla/sim/world.rs"],
+        ["apps/holla/src/domain/catalog.rs", "apps/holla/src/domain/outcomes.rs", "apps/holla/src/sim/world.rs"],
         "Each action family shows its command, directory, host, and confirmation, and the follow-up screen shows the simulated effect.",
         [
             ("families", "Run one action in each of Git, Cargo, Docker, Compose, Homebrew services, Gradle, IDEA, and upgrade managers, including batch members.", "The follow-up state matches that action. A batch member keeps its identity.", "The command preview belongs to a different action than the one confirmed."),
@@ -1416,7 +1416,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H04.snapshots-git",
         "holla",
-        ["src/bin/holla/screens/snapshot.rs"],
+        ["apps/holla/src/screens/snapshot.rs"],
         "Git snapshot families show their own empty, unavailable, or populated body and their follow-up action.",
         [
             ("git", "Open git, git-diff, git-stash, and git-all.", "Each body is that family. The follow-up action names the same repository.", "git-diff shows git-stash entries."),
@@ -1425,7 +1425,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H04.snapshots-host",
         "holla",
-        ["src/bin/holla/screens/snapshot.rs"],
+        ["apps/holla/src/screens/snapshot.rs"],
         "Host snapshot families keep their kind in the title and body.",
         [
             ("host", "Open system, processes, port, disk-history, and ssh.", "The title kind matches the opened snapshot.", "One family shows another family's rows."),
@@ -1434,7 +1434,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H04.snapshots-docker",
         "holla",
-        ["src/bin/holla/screens/snapshot.rs"],
+        ["apps/holla/src/screens/snapshot.rs"],
         "Docker snapshot families include the unavailable state.",
         [
             ("docker", "Open docker-ps, docker-df, compose-ps, and docker-unavailable.", "Unavailable does not list containers as running.", "Unavailable offers a follow-up that claims a container started."),
@@ -1444,7 +1444,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H04.snapshots-services",
         "holla",
-        ["src/bin/holla/screens/snapshot.rs"],
+        ["apps/holla/src/screens/snapshot.rs"],
         "Service snapshot families show their own rows.",
         [
             ("services", "Open pg, pg-blocking, mise, mise-outdated, service, and brew-services.", "Each body names its family.", "A service row appears in the mise snapshot."),
@@ -1454,7 +1454,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H04.plan",
         "holla",
-        ["src/bin/holla/screens/plan.rs", "src/bin/holla/domain/plan.rs"],
+        ["apps/holla/src/screens/plan.rs", "apps/holla/src/domain/plan.rs"],
         "Plan selection, both confirmation stages, drift, start, failure, and final tally use the reviewed steps.",
         [
             ("plan", "Remove an optional step, undo, restore, and reach no runnable steps. Cancel both confirmation stages. Enter the exact phrase and start. Show drift and re-review. Run success and failure. Cancel remaining work.", "The started plan is the reviewed plan. A cancelled confirmation does not start it. Completed steps do not run twice.", "A wrong phrase starts the plan."),
@@ -1464,7 +1464,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H05.files",
         "holla",
-        ["src/bin/holla/screens/files.rs", "src/bin/holla/sim/fs.rs"],
+        ["apps/holla/src/screens/files.rs", "apps/holla/src/sim/fs.rs"],
         "Directory entry and parent or root boundaries keep the path identity.",
         [
             ("nav", "Enter a directory and return to the parent and the root boundary.", "The visible path is that directory and then its parent.", "Parent jumps to an unrelated directory."),
@@ -1474,7 +1474,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H05.find",
         "holla",
-        ["src/bin/holla/screens/files.rs"],
+        ["apps/holla/src/screens/files.rs"],
         "Find queries, empty results, and opening the selected path stay in the file pane.",
         [
             ("find", "Search, clear to empty results, select a hit, and open it.", "The opened directory is the selected hit.", "Empty results open the previous path."),
@@ -1483,7 +1483,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H05.previews",
         "holla",
-        ["src/bin/holla/screens/files.rs", "src/bin/holla/sim/fs.rs"],
+        ["apps/holla/src/screens/files.rs", "apps/holla/src/sim/fs.rs"],
         "Each fixture preview type is distinct, and the file list does not move when the preview scrolls.",
         [
             ("preview", "Show text, binary, missing, unreadable, and symlink previews when the fixture has them. Toggle hidden files. Find, select, and copy inside a large preview.", "Hidden-file toggle keeps a valid selection. Preview scrolling leaves the file list in place.", "Copy returns a different file's text."),
@@ -1492,7 +1492,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H05.scan",
         "holla",
-        ["src/bin/holla/screens/disk.rs", "src/bin/holla/sim/world.rs"],
+        ["apps/holla/src/screens/disk.rs", "apps/holla/src/sim/world.rs"],
         "Scan start, progress, partial data, completion, cancellation, cache, and partial errors are distinct.",
         [
             ("scan", "Start a scan, observe progress and partial data, cancel one scan, and complete another. Change the scan root.", "Cancellation does not show a completed total. A stale result is labelled when the root changes.", "A cancelled scan shows the completed byte total as final."),
@@ -1502,7 +1502,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H05.disk",
         "holla",
-        ["src/bin/holla/screens/disk.rs"],
+        ["apps/holla/src/screens/disk.rs"],
         "Tree sorting, selection totals, Overview, and TopFiles return to the same node.",
         [
             ("tree", "Expand, sort, multi-select, and read the selected-byte total. Open Overview and TopFiles and return.", "The returned node is the node that was open. The neighbour pane is unchanged.", "Sort changes the total without changing the selected set."),
@@ -1512,7 +1512,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H06.cleanup",
         "holla",
-        ["src/bin/holla/screens/cleanup.rs", "src/bin/holla/domain/cleanup.rs"],
+        ["apps/holla/src/screens/cleanup.rs", "apps/holla/src/domain/cleanup.rs"],
         "Only eligible, unprotected items can be selected for a dry run, Trash, or permanent delete.",
         [
             ("select", "Detect categories, try disabled and protected items, and select eligible items in each mode.", "Protected items stay. The mode label matches the selected mode.", "A protected descendant is included."),
@@ -1522,7 +1522,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H06.gate",
         "holla",
-        ["src/bin/holla/screens/review.rs", "src/bin/holla/domain/cleanup.rs"],
+        ["apps/holla/src/screens/review.rs", "apps/holla/src/domain/cleanup.rs"],
         "Each confirmation stage can be cancelled. Partial, wrong, and stale plans do not delete.",
         [
             ("confirm", "Cancel each stage. Enter partial, wrong, and exact text. Change the plan and try the old confirmation. Refuse a second cleanup and a failed Gradle stop.", "Exact text on the current plan is the only path that deletes. A failed prerequisite deletes nothing.", "The old phrase deletes after the plan changes."),
@@ -1532,7 +1532,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H06.report",
         "holla",
-        ["src/bin/holla/screens/snapshot.rs", "src/bin/holla/domain/cleanup.rs"],
+        ["apps/holla/src/screens/snapshot.rs", "apps/holla/src/domain/cleanup.rs"],
         "Per-item success, failure, and partial results and the freed-byte total match the simulation.",
         [
             ("results", "Complete a cleanup with mixed item outcomes and open the running and final reports.", "The total and each item status match the simulation.", "A failed item is counted as freed."),
@@ -1542,7 +1542,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H06.log",
         "holla",
-        ["src/bin/holla/domain/cleanup.rs", "src/bin/holla/app.rs"],
+        ["apps/holla/src/domain/cleanup.rs", "apps/holla/src/app.rs"],
         "Log failure is visible and recovery does not claim a missing log entry.",
         [
             ("log", "Produce an operation log and the fixture's log failure.", "The failure text is the log failure. Recovery does not invent entries.", "Log failure is shown as a successful delete."),
@@ -1551,7 +1551,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H06.quit",
         "holla",
-        ["src/bin/holla/app.rs", "src/bin/holla/screens/cleanup.rs"],
+        ["apps/holla/src/app.rs", "apps/holla/src/screens/cleanup.rs"],
         "Quit during cleanup waits for the current report and log contract.",
         [
             ("quit", "Quit while cleanup runs, including when another activity is running.", "The exit path shows the guard. Confirmed exit waits for the report contract.", "Quit drops the report and returns success immediately."),
@@ -1688,7 +1688,7 @@ def consumer_leaves() -> list[dict]:
         [("export", "Enter an invalid path, cancel a valid path, and confirm a valid path.", "Invalid is rejected. Cancel writes no success report. Confirm reports that path.", "The test claims a host file was written.")])
 
     # Cross-application
-    add("X01.cli", "cross", ["src/cli.rs", "src/bin/showcase/main.rs", "src/bin/tablepro/main.rs", "src/bin/holla/main.rs", "src/bin/jackin/main.rs"],
+    add("X01.cli", "cross", ["src/cli.rs", "apps/showcase/src/main.rs", "apps/tablepro/src/main.rs", "apps/holla/src/main.rs", "src/bin/jackin/main.rs"],
         "Help and invalid CLI values return the current exit status and error text. Short commands do not use the Ctrl+Q helper.",
         [("cli", "Run --help and an unknown page, scenario, connection, option key, and option value for each binary. Repeat --opt and observe precedence.", "The exit status and the error name the bad argument. A valid option is accepted.", "An invalid option starts the full-screen UI and is treated as success.")])
     add("X01.env", "cross", ["src/cli.rs", "src/theme.rs", "src/motion.rs"],
@@ -1704,7 +1704,7 @@ def consumer_leaves() -> list[dict]:
         "The first input after startup and a bounded burst leave the process alive with the expected final screen.",
         [("start", "Send the first key after startup. Send a burst of keys, pointer motion, wheel, and resize.", "The final semantic result is the result of the last intended action. The process is alive.", "The process exits during the burst.")],
         deps=["G03", "G04", "G05"])
-    add("X02.resize", "cross", ["src/core/shape.rs", "src/shell/app.rs", "src/bin/tablepro/app.rs", "src/bin/holla/app.rs", "src/bin/jackin/app.rs"],
+    add("X02.resize", "cross", ["src/core/shape.rs", "src/shell/app.rs", "apps/tablepro/src/app.rs", "apps/holla/src/app.rs", "src/bin/jackin/app.rs"],
         "Narrow and too-small states are captured before the terminal grows. Open layers survive.",
         [("resize", "Shrink to 71x20, 72x19, and 72x20 and to each source breakpoint below, at, and above. Do this with a form, a picker, a destructive gate, and running output open. Then grow.", "The narrow checkpoint is the narrow size. After growth the same draft, selection, and focus remain.", "The narrow baseline is captured after the terminal returns to 120x40.")],
         deps=["G03", "G04", "G05", "T05.quit", "H03.guards", "J06.exit"])
@@ -1731,7 +1731,7 @@ def consumer_leaves() -> list[dict]:
         "Unicode and ASCII modes render the same component family with their own glyphs.",
         [("glyphs", "Open one glyph-dependent family in Unicode and ASCII, including combining text, wide text, and emoji where the fixture has them.", "ASCII mode does not draw the Unicode gutter or seam.", "ASCII mode still draws ┃.")],
         deps=["G03", "G04", "G05", "S02.buttons"])
-    add("X03.motion", "cross", ["src/motion.rs", "src/bin/jackin/rain.rs", "src/bin/showcase/app.rs"],
+    add("X03.motion", "cross", ["src/motion.rs", "src/bin/jackin/rain.rs", "apps/showcase/src/app.rs"],
         "Full, reduced, and paused motion are distinct where the app implements them. A transient that cannot be frozen stays BLOCKED.",
         [("motion", "Capture paused and reduced frames with the existing frame controls. Capture a Jackin phase with the clock hook. Do not add a Showcase clock hook.", "Paused frames are stable. A Showcase transient that cannot be frozen is BLOCKED, not accepted as a changing baseline.", "A changing frame is stored as the expected image.")],
         deps=["G03", "G04", "G05", "J05.intro", "J05.handoff", "J05.outro", "S06.progress"])

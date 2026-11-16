@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use junie_tui::widgets::steps::StepState;
+use termrock::widgets::steps::StepState;
 
 use crate::backend::{OnePassword, OpSession, PlainKey};
 use crate::domain::account::{AccountId, masked};
@@ -424,14 +424,14 @@ impl SimLaunch {
         let suffix = instance_id.short_suffix();
         let container = match content.name_slug {
             Some(n) => {
-                let slug = junie_tui::ui::text::clip(&wsname, n);
+                let slug = termrock::ui::text::clip(&wsname, n);
                 format!("jackin-{}-{suffix}", slug.trim_end_matches('-'))
             }
             None => format!("jackin-{wsname}-{suffix}"),
         };
         let run_id = format!(
             "run-{}-{suffix}",
-            junie_tui::ui::text::clip(
+            termrock::ui::text::clip(
                 &w.clock
                     .stamp(w.now_secs())
                     .replace([' ', ':'], "-")

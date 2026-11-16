@@ -3,7 +3,7 @@
 //! Three proof layers stay separate. This module is layer 1: it checks that
 //! every declared public API has a catalog line and one valid disposition,
 //! and that every capability proof names a callable scenario. The scenarios
-//! themselves run in `src/bin/showcase/app_tests_catalog.rs` (layer 2) and
+//! themselves run in `apps/showcase/src/app_tests_catalog.rs` (layer 2) and
 //! the tuiscotti journeys in `tests/functional` give visual evidence
 //! (layer 3). Name matching here is never behavioral proof.
 
@@ -132,10 +132,10 @@ struct Sources {
     tree: SourceTree,
     catalog: String,
     coverage: String,
-    /// `src/bin/showcase/coverage/*.rs`: one proof/exception file per lane.
+    /// `apps/showcase/src/coverage/*.rs`: one proof/exception file per lane.
     coverage_lanes: Vec<(String, String)>,
     cases: String,
-    /// `src/bin/showcase/app_tests_catalog/*.rs`: one scenario file per lane.
+    /// `apps/showcase/src/app_tests_catalog/*.rs`: one scenario file per lane.
     case_lanes: Vec<(String, String)>,
     app: String,
     showcase: Vec<(String, String)>,
@@ -152,7 +152,7 @@ impl Sources {
             std::fs::read_to_string(root().join(path))
                 .unwrap_or_else(|e| panic!("read {path}: {e}"))
         };
-        let showcase = SourceTree::from_dir(root(), "src/bin/showcase");
+        let showcase = SourceTree::from_dir(root(), "apps/showcase/src");
         let dir_files = |dir: &str, ext: &str| -> Vec<(String, String)> {
             let mut paths: Vec<PathBuf> = std::fs::read_dir(root().join(dir))
                 .map(|d| d.flatten().map(|e| e.path()).collect())
@@ -176,11 +176,11 @@ impl Sources {
         Self {
             tree: SourceTree::from_dir(root(), "src"),
             catalog: read("src/catalog.rs"),
-            coverage: read("src/bin/showcase/coverage.rs"),
-            coverage_lanes: dir_files("src/bin/showcase/coverage", "rs"),
-            cases: read("src/bin/showcase/app_tests_catalog.rs"),
-            case_lanes: dir_files("src/bin/showcase/app_tests_catalog", "rs"),
-            app: read("src/bin/showcase/app.rs"),
+            coverage: read("apps/showcase/src/coverage.rs"),
+            coverage_lanes: dir_files("apps/showcase/src/coverage", "rs"),
+            cases: read("apps/showcase/src/app_tests_catalog.rs"),
+            case_lanes: dir_files("apps/showcase/src/app_tests_catalog", "rs"),
+            app: read("apps/showcase/src/app.rs"),
             showcase: showcase
                 .files
                 .into_iter()

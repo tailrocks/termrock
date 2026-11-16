@@ -1,29 +1,29 @@
 use std::sync::Arc;
 
 use crate::screens::Jackin;
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::{MouseTarget, PointerEvent, scroll_input};
-use junie_tui::shell::Page;
-use junie_tui::theme::{Theme, Tone};
-use junie_tui::ui::ctx::{RenderCtx, fill};
-use junie_tui::ui::text::{plural, width};
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::dialog::Dialog;
-use junie_tui::widgets::form_dialog::{FieldValue, FormDialog, FormField};
-use junie_tui::widgets::input::TextInput;
-use junie_tui::widgets::keyhint::{Hint, hint};
-use junie_tui::widgets::notice::Notice;
-use junie_tui::widgets::progress::spinner_frame;
-use junie_tui::widgets::props::Prop;
-use junie_tui::widgets::segments::Segment;
-use junie_tui::widgets::steps::{Step, StepRail, StepState};
-use junie_tui::widgets::viewport::{Span, TextViewport};
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
+use termrock::core::event::{Key, Outcome};
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::{MouseTarget, PointerEvent, scroll_input};
+use termrock::shell::Page;
+use termrock::theme::{Theme, Tone};
+use termrock::ui::ctx::{RenderCtx, fill};
+use termrock::ui::text::{plural, width};
+use termrock::widgets::button::Button;
+use termrock::widgets::dialog::Dialog;
+use termrock::widgets::form_dialog::{FieldValue, FormDialog, FormField};
+use termrock::widgets::input::TextInput;
+use termrock::widgets::keyhint::{Hint, hint};
+use termrock::widgets::notice::Notice;
+use termrock::widgets::progress::spinner_frame;
+use termrock::widgets::props::Prop;
+use termrock::widgets::segments::Segment;
+use termrock::widgets::steps::{Step, StepRail, StepState};
+use termrock::widgets::viewport::{Span, TextViewport};
 
 use super::modals::{InfoDialog, InfoResult};
 use super::{Cx, Go, LayerTag, ModalResult, Screen};
@@ -43,7 +43,7 @@ use crate::launch::{
     launch_accounts,
 };
 use crate::world::World;
-use junie_tui::motion::Motion;
+use termrock::motion::Motion;
 
 pub const RAIL: WidgetId = WidgetId::of("cockpit.rail");
 pub const LOG: WidgetId = WidgetId::of("cockpit.log");
@@ -255,7 +255,7 @@ impl CockpitScreen {
             (
                 format!(
                     "{} · {primary} · {}",
-                    junie_tui::ui::text::plural(self.accounts.len().max(1), "account", "accounts"),
+                    termrock::ui::text::plural(self.accounts.len().max(1), "account", "accounts"),
                     others.join(" · ")
                 ),
                 val,
@@ -723,11 +723,11 @@ impl CockpitScreen {
         let w = screen.width.saturating_sub(6).min(110);
         let h = screen.height.saturating_sub(4);
 
-        let (_, inner) = junie_tui::ui::modal::Frame::new(w, h)
+        let (_, inner) = termrock::ui::modal::Frame::new(w, h)
             .title(&title)
             .meta(Some(&meta))
-            .placement(junie_tui::ui::popup::Placement::Center)
-            .dismiss(junie_tui::ui::popup::Dismiss::LIGHT)
+            .placement(termrock::ui::popup::Placement::Center)
+            .dismiss(termrock::ui::popup::Dismiss::LIGHT)
             .render(screen, buf, ctx);
         let t = ctx.theme;
         let bg = t.surface_elevated;
@@ -752,15 +752,12 @@ impl CockpitScreen {
         buf.set_string(
             inner.x,
             inner.bottom() - 1,
-            junie_tui::ui::reveal::cut(
-                Rect::new(inner.x, inner.bottom() - 1, inner.width, 1),
-                hint,
-            ),
+            termrock::ui::reveal::cut(Rect::new(inner.x, inner.bottom() - 1, inner.width, 1), hint),
             t.faint().bg(bg),
         );
         ctx.hits.register(LOG, body);
         ctx.hits.register(
-            junie_tui::widgets::scrollbar::id_for(LOG),
+            termrock::widgets::scrollbar::id_for(LOG),
             Rect::new(body.right() - 1, body.y, 1, body.height),
         );
     }
@@ -850,7 +847,7 @@ impl Page<Jackin> for CockpitScreen {
                 }
                 _ => {
                     let (o, ev) = self.log.on_key(key);
-                    if let Some(junie_tui::widgets::viewport::ViewportAction::Copy(text)) = ev {
+                    if let Some(termrock::widgets::viewport::ViewportAction::Copy(text)) = ev {
                         cx.copy(text);
                     }
                     return o.or(Outcome::Consumed);
@@ -900,7 +897,7 @@ impl Page<Jackin> for CockpitScreen {
             if let Some(r) = self.log.route(ev) {
                 return r.outcome();
             }
-            if ev.id == junie_tui::ui::modal::SURFACE
+            if ev.id == termrock::ui::modal::SURFACE
                 && let Some(r) = scroll_input(&mut self.log, ev)
             {
                 return r.outcome();
@@ -910,7 +907,7 @@ impl Page<Jackin> for CockpitScreen {
             return Outcome::Ignored;
         }
         let id = ev.id;
-        if self.log_open && id == junie_tui::ui::modal::CLOSE {
+        if self.log_open && id == termrock::ui::modal::CLOSE {
             self.log_open = false;
             cx.focus.focus(RAIL);
             return Outcome::Changed;
@@ -1105,7 +1102,7 @@ impl Page<Jackin> for CockpitScreen {
             buf.set_string(
                 x,
                 y,
-                junie_tui::ui::reveal::cut(Rect::new(x, y, area.width, 1), text),
+                termrock::ui::reveal::cut(Rect::new(x, y, area.width, 1), text),
                 style,
             );
         };
@@ -1187,13 +1184,13 @@ impl Page<Jackin> for CockpitScreen {
             buf.set_string(
                 x,
                 y,
-                junie_tui::ui::reveal::cut(Rect::new(x, y, (wdt) as u16, 1), &line),
+                termrock::ui::reveal::cut(Rect::new(x, y, (wdt) as u16, 1), &line),
                 t.muted(),
             );
             buf.set_string(
                 x + 13,
                 y + 1,
-                junie_tui::ui::reveal::cut(
+                termrock::ui::reveal::cut(
                     Rect::new(x + 13, y + 1, (wdt.saturating_sub(13)) as u16, 1),
                     val,
                 ),
@@ -1244,7 +1241,7 @@ impl Page<Jackin> for CockpitScreen {
         buf.set_string(
             ax,
             ay,
-            junie_tui::ui::reveal::cut(
+            termrock::ui::reveal::cut(
                 Rect::new(ax, ay, area.width.saturating_sub(2), 1),
                 &activity,
             ),
@@ -1255,7 +1252,7 @@ impl Page<Jackin> for CockpitScreen {
             buf.set_string(
                 ax,
                 ay + 1,
-                junie_tui::ui::reveal::cut(
+                termrock::ui::reveal::cut(
                     Rect::new(ax, ay + 1, area.width.saturating_sub(2), 1),
                     &lines,
                 ),

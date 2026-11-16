@@ -12,9 +12,9 @@ use jackin_console::panes::{
     PaneBody, PaneCommand, PaneEffect, PaneFace, PanePolicy, PaneTiming, TerminalPane,
     sanitize_title,
 };
-use junie_tui::core::hit::Axis;
-use junie_tui::theme::Tone;
 use ratatui::layout::Rect;
+use termrock::core::hit::Axis;
+use termrock::theme::Tone;
 
 use super::pane_support::*;
 

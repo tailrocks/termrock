@@ -6,17 +6,17 @@
 
 use std::sync::Arc;
 
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::hit::Axis;
-use junie_tui::core::id::WidgetId;
-use junie_tui::terminal::{
+use ratatui::layout::Rect;
+use termrock::core::event::{Key, Outcome};
+use termrock::core::hit::Axis;
+use termrock::core::id::WidgetId;
+use termrock::terminal::{
     SessionConfig, SessionDetach, SessionEffect, SessionKey, SessionPaste,
     TerminalSessionController, TerminalViewport,
 };
-use junie_tui::theme::Tone;
-use junie_tui::ui::text::{clip, plural};
-use junie_tui::widgets::viewport_ops::ViewportOps;
-use ratatui::layout::Rect;
+use termrock::theme::Tone;
+use termrock::ui::text::{clip, plural};
+use termrock::widgets::viewport_ops::ViewportOps;
 
 use super::clipboard::ClipRefusal;
 use super::link::{DetachCause, Lease, LinkFault, LinkSource, LinkStatus};

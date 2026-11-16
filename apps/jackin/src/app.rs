@@ -1,31 +1,31 @@
 use std::sync::Arc;
 
-use junie_tui::clock::Clock;
-use junie_tui::core::event::{External, Input, Key, MouseKind, Outcome};
-use junie_tui::core::focus::FocusChange;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::{
-    MouseTarget, PointerEvent, PointerHost, PointerParts, PointerRouter,
-};
-use junie_tui::core::response::Response;
-use junie_tui::motion::Motion;
-use junie_tui::runtime::ExternalReceiver;
-use junie_tui::shell::{self, Chrome, Menus, NativeClipboard, PageKey, Router, Shell};
-use junie_tui::theme::{Theme, Tone};
-use junie_tui::ui::ctx::{RenderCtx, fill};
-use junie_tui::ui::layer::{
-    DismissReason, Dismissed, LayerCx, LayerEntry, LayerPointer, ShellLayers, Taken,
-};
-use junie_tui::widgets::dialog::Dialog;
-use junie_tui::widgets::hintbar::HintBar;
-use junie_tui::widgets::keyhint::hint;
-use junie_tui::widgets::picker::{Picker, PickerAction};
-use junie_tui::widgets::segments::{self, Segment};
-use junie_tui::widgets::too_small::TooSmall;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Position, Rect};
+use termrock::clock::Clock;
+use termrock::core::event::{External, Input, Key, MouseKind, Outcome};
+use termrock::core::focus::FocusChange;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::{
+    MouseTarget, PointerEvent, PointerHost, PointerParts, PointerRouter,
+};
+use termrock::core::response::Response;
+use termrock::motion::Motion;
+use termrock::runtime::ExternalReceiver;
+use termrock::shell::{self, Chrome, Menus, NativeClipboard, PageKey, Router, Shell};
+use termrock::theme::{Theme, Tone};
+use termrock::ui::ctx::{RenderCtx, fill};
+use termrock::ui::layer::{
+    DismissReason, Dismissed, LayerCx, LayerEntry, LayerPointer, ShellLayers, Taken,
+};
+use termrock::widgets::dialog::Dialog;
+use termrock::widgets::hintbar::HintBar;
+use termrock::widgets::keyhint::hint;
+use termrock::widgets::picker::{Picker, PickerAction};
+use termrock::widgets::segments::{self, Segment};
+use termrock::widgets::too_small::TooSmall;
 
 use crate::arbiter::{EntryDecision, ExitDecision};
 use crate::backend::{Effect, Ticket};
@@ -45,11 +45,11 @@ use crate::screens::role_editor::RoleEditorScreen;
 use crate::screens::settings::SettingsScreen;
 use crate::screens::{AppLayer, Cx, Go, LayerTag, ModalResult, Request, Screen};
 use crate::world::{Absorbed, Health, Msg, Snapshot, World, job};
-use junie_tui::shell::Page as _;
-use junie_tui::ui::leave::{LeaveGuard, Stakes};
-use junie_tui::widgets::brand::Lockup;
-use junie_tui::widgets::dialog::DialogResult;
-use junie_tui::widgets::menu::{MenuBar, MenuBarAction, MenuItem};
+use termrock::shell::Page as _;
+use termrock::ui::leave::{LeaveGuard, Stakes};
+use termrock::widgets::brand::Lockup;
+use termrock::widgets::dialog::DialogResult;
+use termrock::widgets::menu::{MenuBar, MenuBarAction, MenuItem};
 
 pub const BRAND_MARK: &str = "jackin❯";
 const STRIP_HELP: WidgetId = WidgetId::of("strip.help");
@@ -243,7 +243,7 @@ impl App {
     /// Feeds [`Remote`] messages from a background host into the app.
     ///
     /// A host whose producer can outrun the UI builds the channel with
-    /// `junie_tui::runtime::bounded_external_channel` and retries
+    /// `termrock::runtime::bounded_external_channel` and retries
     /// `ExternalSender::try_send` on `Full`. The runtime hands the app a bounded
     /// group of queued messages per turn, whichever constructor made the channel.
     pub fn with_external(mut self, receiver: ExternalReceiver) -> Self {
@@ -1149,7 +1149,7 @@ impl App {
                 Segment::new(
                     format!(
                         "{} working",
-                        junie_tui::widgets::progress::spinner_frame(ctx.interaction.tick)
+                        termrock::widgets::progress::spinner_frame(ctx.interaction.tick)
                     ),
                     Tone::Secondary,
                 )
@@ -1549,11 +1549,11 @@ impl App {
             ],
         };
 
-        let mut sections: Vec<junie_tui::widgets::help::HelpSection> = sections
+        let mut sections: Vec<termrock::widgets::help::HelpSection> = sections
             .into_iter()
             .map(|(title, rows)| {
                 rows.into_iter().fold(
-                    junie_tui::widgets::help::HelpSection::new(title),
+                    termrock::widgets::help::HelpSection::new(title),
                     |s, (k, v)| s.row(k, v),
                 )
             })
@@ -1748,7 +1748,7 @@ impl App {
     }
 
     fn post_layer_refusal(&mut self) {
-        if let Some(reason) = junie_tui::core::refusal::take_refusal() {
+        if let Some(reason) = termrock::core::refusal::take_refusal() {
             self.set_status(&reason.text, Tone::Secondary);
         }
     }
@@ -1773,7 +1773,7 @@ impl App {
                     .unwrap_or_default();
                 let now = self.now_ms();
                 if reason == DismissReason::OutsideClick
-                    && junie_tui::ui::modal::refuse_outside_click(
+                    && termrock::ui::modal::refuse_outside_click(
                         &mut self.shell.pointer,
                         dismiss,
                         now,
@@ -1843,7 +1843,7 @@ impl App {
     }
 
     fn layer_pointer(&mut self, ev: &PointerEvent) -> Outcome {
-        if ev.is(Phase::Click) && ev.id == junie_tui::ui::modal::CLOSE {
+        if ev.is(Phase::Click) && ev.id == termrock::ui::modal::CLOSE {
             return self.dismiss_layer(DismissReason::CloseButton);
         }
         let handled = self
@@ -2161,7 +2161,7 @@ impl App {
                 self.set_status(
                     &format!(
                         "Detached · {name} keeps running · {} {}",
-                        junie_tui::ui::text::plural(n, "instance", "instances"),
+                        termrock::ui::text::plural(n, "instance", "instances"),
                         self.world.surfaces.vocabulary.instances_where
                     ),
                     Tone::Secondary,
@@ -2258,7 +2258,7 @@ impl App {
                     self.set_status(
                         &format!(
                             "Launch failed · {} still running {}",
-                            junie_tui::ui::text::plural(
+                            termrock::ui::text::plural(
                                 self.world.running_count(),
                                 "instance",
                                 "instances"
@@ -2332,7 +2332,7 @@ impl App {
                 let text = format!(
                     "{} · {}",
                     self.world.surfaces.vocabulary.still_inside,
-                    junie_tui::ui::text::plural(remaining, "instance remains", "instances remain")
+                    termrock::ui::text::plural(remaining, "instance remains", "instances remain")
                 );
                 self.router.manager_mut().still_inside =
                     Some((text.clone(), rows, self.world.now_ms() + 6_000));
@@ -2469,7 +2469,7 @@ impl App {
     fn draw_strip(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, route: Route) {
         let t = self.theme;
         let (state, tone) = self.construct_state(route);
-        let lockup = junie_tui::widgets::brand::Lockup::new(BRAND_MARK);
+        let lockup = termrock::widgets::brand::Lockup::new(BRAND_MARK);
         let pill_w = lockup.render(area.x + 1, area.y, buf, &t);
         let area = Rect::new(
             area.x + 1 + pill_w,
@@ -2508,7 +2508,7 @@ impl App {
                 Segment::new(
                     format!(
                         "{} working",
-                        junie_tui::widgets::progress::spinner_frame(ctx.interaction.tick)
+                        termrock::widgets::progress::spinner_frame(ctx.interaction.tick)
                     ),
                     Tone::Secondary,
                 )
@@ -2567,7 +2567,7 @@ impl App {
     }
 
     fn footer(&self, modal: bool) -> shell::Footer {
-        use junie_tui::core::hints::{HasHints, HintCx};
+        use termrock::core::hints::{HasHints, HintCx};
         let focus = self.shell.focus.current();
         let editing = self
             .router
@@ -2646,7 +2646,7 @@ impl shell::App for App {
     }
 
     fn advance_clock(&mut self, ms: u64) -> Option<Outcome> {
-        Some(junie_tui::clock::run_step(
+        Some(termrock::clock::run_step(
             self,
             |a| &mut a.world.clock,
             ms,
@@ -2771,10 +2771,10 @@ pub enum JackinCmd {
 }
 
 pub fn shell_keys(world: &World) -> shell::ShellKeys<JackinCmd> {
-    use junie_tui::core::keymap::KeyBinding;
     use shell::ShellAction::{self, App as Cmd};
+    use termrock::core::keymap::KeyBinding;
     let mut keys = shell::ShellKeys::new()
-        .quit(junie_tui::ui::leave::QuitKeys::DEFAULT.letter(None))
+        .quit(termrock::ui::leave::QuitKeys::DEFAULT.letter(None))
         .bind(KeyBinding::char('u'), Cmd(JackinCmd::Usage))
         .bind(KeyBinding::char('c'), Cmd(JackinCmd::Accounts))
         .bind(KeyBinding::char('s'), Cmd(JackinCmd::Settings))

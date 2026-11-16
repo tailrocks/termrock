@@ -44,19 +44,19 @@ T	work_budgets::work_contract_completion_open_frame
 T	work_budgets::work_contract_editor_prepared_frame
 T	work_budgets::work_contract_textarea_prepared_frame
 T	work_budgets::work_report_is_count_only_json_with_every_metric
-S	Holla page scenarios	junie-tui::bin/holla	/^work_metrics_tests::/	src/bin/holla/work_metrics_tests.rs
+S	Holla page scenarios	termrock-holla::bin/holla	/^work_metrics_tests::/	apps/holla/src/work_metrics_tests.rs
 T	work_metrics_tests::work_contract_holla_idle_and_source_update
 T	work_metrics_tests::work_contract_holla_file_preview_prefix
 T	work_metrics_tests::work_contract_holla_background_updates_keep_projection
-S	Holla projection reuse (app)	junie-tui::bin/holla	/holla_projection_/	src/bin/holla/app/tests.rs
+S	Holla projection reuse (app)	termrock-holla::bin/holla	/holla_projection_/	apps/holla/src/app/tests.rs
 T	app::tests::holla_projection_idle_ticks_do_no_source_work
 T	app::tests::holla_projection_idle_cleanup_page_ticks_do_no_source_work
 T	app::tests::holla_projection_hidden_pages_catch_up_once
-S	Holla projection reuse (Finder)	junie-tui::bin/holla	/holla_projection_/	src/bin/holla/screens/finder/tests.rs
+S	Holla projection reuse (Finder)	termrock-holla::bin/holla	/holla_projection_/	apps/holla/src/screens/finder/tests.rs
 T	screens::finder::tests::holla_projection_group_change_reranks_without_source_work
-S	TablePro page scenarios	junie-tui::bin/tablepro	/^work_metrics_tests::/	src/bin/tablepro/work_metrics_tests.rs
+S	TablePro page scenarios	termrock-tablepro::bin/tablepro	/^work_metrics_tests::/	apps/tablepro/src/work_metrics_tests.rs
 T	work_metrics_tests::work_contract_tablepro_idle_and_cell_edit
-S	Showcase page scenarios and stress fits	junie-tui::bin/showcase	/^work_metrics_tests::/	src/bin/showcase/work_metrics_tests.rs
+S	Showcase page scenarios and stress fits	termrock-showcase::bin/showcase	/^work_metrics_tests::/	apps/showcase/src/work_metrics_tests.rs
 T	work_metrics_tests::work_contract_showcase_idle_and_switch
 T	work_metrics_tests::work_contract_stress_toolbars_items
 T	work_metrics_tests::work_contract_stress_breadcrumbs_items

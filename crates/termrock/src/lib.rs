@@ -8,10 +8,10 @@ pub use junie_tui::{
     clock, core, metrics, motion, record_work, runtime, shell, theme, ui, widgets,
 };
 
-/// Tooling surfaces: the public-API catalog and the generated documentation
+/// Tooling surfaces: the public-API catalog, the `reach_tests!` macro and the generated documentation
 /// helpers. Applications such as Showcase use them to prove coverage; ordinary
 /// consumers do not need them.
-pub use junie_tui::{catalog, docs};
+pub use junie_tui::{catalog, docs, reach_tests};
 
 #[cfg(feature = "cli")]
 pub use junie_tui::cli;

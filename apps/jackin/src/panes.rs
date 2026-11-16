@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::hit::Axis;
-use junie_tui::theme::Tone;
-use junie_tui::ui::layout::SplitDir;
-use junie_tui::widgets::viewport_ops::ViewportOps;
 use ratatui::layout::Rect;
+use termrock::core::event::{Key, Outcome};
+use termrock::core::hit::Axis;
+use termrock::theme::Tone;
+use termrock::ui::layout::SplitDir;
+use termrock::widgets::viewport_ops::ViewportOps;
 
 use crate::domain::account::AccountId;
 use crate::domain::agent::Agent;
@@ -25,7 +25,7 @@ pub use link::{
 pub use policy::{ClipboardWrite, PanePolicy, PaneTiming};
 pub use terminal::{TerminalPane, sanitize_title};
 
-pub use junie_tui::ui::pane_tree::PaneId;
+pub use termrock::ui::pane_tree::PaneId;
 
 /// The rows of history a terminal pane keeps.
 pub const SCROLLBACK: usize = 2_000;
@@ -34,7 +34,7 @@ pub const MIN_PANE_COLS: u16 = 20;
 pub const MIN_PANE_ROWS: u16 = 4;
 pub const MAX_LABEL: usize = 16;
 
-pub use junie_tui::ui::pane_tree::{Direction, PaneNode, Seam, nearest};
+pub use termrock::ui::pane_tree::{Direction, PaneNode, Seam, nearest};
 
 #[derive(Debug, Clone)]
 pub struct Tab {
@@ -454,7 +454,7 @@ impl Daemon {
     pub fn tick(&mut self, now_ms: i64) -> bool {
         let mut changed = false;
         for p in &mut self.panes {
-            junie_tui::record_work!(SchedulingPolls, 1usize);
+            termrock::record_work!(SchedulingPolls, 1usize);
             changed |= p.body.tick(now_ms);
         }
         changed

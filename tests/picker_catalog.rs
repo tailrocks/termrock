@@ -512,11 +512,11 @@ fn repository_sources() -> (String, String, String, String, String) {
     (
         std::fs::read_to_string(root.join("src/widgets/picker.rs")).expect("picker source reads"),
         std::fs::read_to_string(root.join("src/catalog.rs")).expect("catalog source reads"),
-        std::fs::read_to_string(root.join("src/bin/showcase/pages/pickers.rs"))
+        std::fs::read_to_string(root.join("apps/showcase/src/pages/pickers.rs"))
             .expect("picker showcase page reads"),
         std::fs::read_to_string(root.join("src/widgets/option_list.rs"))
             .expect("option list source reads"),
-        std::fs::read_to_string(root.join("src/bin/showcase/coverage.rs"))
+        std::fs::read_to_string(root.join("apps/showcase/src/coverage.rs"))
             .expect("showcase coverage source reads"),
     )
 }
@@ -689,7 +689,7 @@ fn picker_scope_respects_let_else_pattern_shadow() {
 #[test]
 fn terminal_session_coverage_declares_catalog_capabilities() {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
-    let source = std::fs::read_to_string(root.join("src/bin/showcase/coverage.rs"))
+    let source = std::fs::read_to_string(root.join("apps/showcase/src/coverage.rs"))
         .expect("showcase coverage source reads");
     let file = syn::parse_file(&source).expect("coverage source parses");
     let table = file

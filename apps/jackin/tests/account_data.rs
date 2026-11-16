@@ -365,9 +365,9 @@ fn the_openshell_projection_of_an_account_blocks_the_edit_of_a_host_variable() {
 
 #[test]
 fn the_enable_toggle_stays_fixed_when_its_reason_has_no_short_text() {
-    use junie_tui::core::event::{Input, Mouse, MouseKind};
-    use junie_tui::runtime::Application;
     use ratatui::layout::Position;
+    use termrock::core::event::{Input, Mouse, MouseKind};
+    use termrock::runtime::Application;
 
     let mut world = world_for(Scenario::AccountsMixed);
     let mut fixed = Fixed::openshell();

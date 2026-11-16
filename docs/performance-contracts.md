@@ -100,9 +100,9 @@ apps:
 | `work_contract_terminal_prepared_paint`, `work_contract_terminal_feed_and_copy_units` | `tests/regressions/work_budgets/terminal.rs` |
 | `work_contract_runtime_raw_filtered_events_yield`, `work_contract_runtime_flood_services_input`, `work_contract_runtime_frame_diff_and_bytes_written` | `src/runtime/raw_input_tests/work.rs` (lib unit tests: they drive the private `scan_next`, `service_turn`, `drain_ready_inputs` and `paint`) |
 | `work_contract_jackin_scripted_output_budget` | `apps/jackin/src/sim/link/tests/work.rs` (lib unit test over the real `SimLink` and `TerminalPane`) |
-| `work_contract_holla_idle_and_source_update`, `work_contract_holla_background_updates_keep_projection`, `work_contract_holla_file_preview_prefix` | `src/bin/holla/work_metrics_tests.rs` |
-| `work_contract_tablepro_idle_and_cell_edit` | `src/bin/tablepro/work_metrics_tests.rs` |
-| `work_contract_showcase_idle_and_switch` | `src/bin/showcase/work_metrics_tests.rs` |
+| `work_contract_holla_idle_and_source_update`, `work_contract_holla_background_updates_keep_projection`, `work_contract_holla_file_preview_prefix` | `apps/holla/src/work_metrics_tests.rs` |
+| `work_contract_tablepro_idle_and_cell_edit` | `apps/tablepro/src/work_metrics_tests.rs` |
+| `work_contract_showcase_idle_and_switch` | `apps/showcase/src/work_metrics_tests.rs` |
 | `work_contract_jackin_idle_and_roster_update`, `work_contract_jackin_account_update`, `work_contract_jackin_capsule_idle_frame` | `apps/jackin/tests/regressions/work_budgets.rs` |
 
 The app tests check each scenario with `assert_exact`: every listed metric must

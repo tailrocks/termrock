@@ -1,0 +1,36 @@
+[package]
+name = "termrock-showcase"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+description = "Showcase, the catalog of every termrock component"
+license = "MIT"
+publish = false
+default-run = "showcase"
+
+[[bin]]
+name = "showcase"
+path = "src/main.rs"
+
+[[test]]
+name = "functional"
+path = "tests/functional/main.rs"
+
+[features]
+default = []
+work-metrics = ["termrock/work-metrics"]
+
+[dependencies]
+termrock = { path = "../../crates/termrock", default-features = false, features = ["cli", "terminal"] }
+clap = { workspace = true }
+ratatui = { workspace = true }
+
+[dev-dependencies]
+syn = { version = "3.0.9", features = ["full", "visit"] }
+tui-test = { workspace = true }
+tuiscotti-latest = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+
+[target.'cfg(unix)'.dev-dependencies]
+libc = "0.2"

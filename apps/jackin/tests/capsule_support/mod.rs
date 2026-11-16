@@ -17,16 +17,16 @@ use jackin_console::panes::{
 };
 use jackin_console::rain::INTRO_END;
 use jackin_console::world::{World, WorldParts};
-use junie_tui::clock::SimClock;
-use junie_tui::core::event::{Input, Mouse, MouseKind};
-use junie_tui::motion::Motion;
-use junie_tui::runtime::Application;
-use junie_tui::shell::NativeClipboard;
-use junie_tui::theme::{ColorLevel, Theme};
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
 use ratatui::crossterm::event::KeyModifiers;
 use ratatui::layout::Position;
+use termrock::clock::SimClock;
+use termrock::core::event::{Input, Mouse, MouseKind};
+use termrock::motion::Motion;
+use termrock::runtime::Application;
+use termrock::shell::NativeClipboard;
+use termrock::theme::{ColorLevel, Theme};
 
 use crate::pane_support::{Bench, INSTANCE, key};
 use crate::product_support::{NOT_USED, SignedInOnly};

@@ -14,9 +14,9 @@ use jackin_console::panes::{
     PanePolicy, PaneRequest, PaneSize, PaneTiming, PasteOutcome, Sent, TerminalPane,
 };
 use jackin_console::sim::link::{SimLink, Timed};
-use junie_tui::core::hit::Axis;
 use pane_support::*;
 use ratatui::layout::Rect;
+use termrock::core::hit::Axis;
 
 fn numbered(n: u32) -> Vec<u8> {
     (1..=n)

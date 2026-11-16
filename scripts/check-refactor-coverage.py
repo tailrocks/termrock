@@ -42,9 +42,9 @@ FAILURE_ORDER = (
     "missing-result",
 )
 SOURCE_FILES = {
-    "routes": Path("src/bin/showcase/app.rs"),
-    "options": Path("src/bin/showcase/options.rs"),
-    "holla": Path("src/bin/holla/scenario.rs"),
+    "routes": Path("apps/showcase/src/app.rs"),
+    "options": Path("apps/showcase/src/options.rs"),
+    "holla": Path("apps/holla/src/scenario.rs"),
     "jackin": Path("src/bin/jackin/scenario.rs"),
 }
 FIXTURES = (

@@ -1,31 +1,31 @@
 use std::collections::{BTreeMap, HashSet};
 
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::hit::Axis;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::PointerEvent;
-use junie_tui::core::refusal::raise;
-use junie_tui::core::scroll::{ScrollState, TrackClick};
-use junie_tui::theme::Tone;
-use junie_tui::ui::ctx::{RenderCtx, fill, legible_on_fill};
-use junie_tui::ui::master_detail::{MasterDetail, Mode};
-use junie_tui::ui::text::{fit, width};
-use junie_tui::widgets::choice::{Checkbox, RadioGroup};
-use junie_tui::widgets::dialog::Dialog;
-use junie_tui::widgets::input::TextInput;
-use junie_tui::widgets::keyhint::{Hint, hint};
-use junie_tui::widgets::notice::Notice;
-use junie_tui::widgets::option_list::Item;
-use junie_tui::widgets::panel::{Panel, PanelFocus};
-use junie_tui::widgets::picker::Picker;
-use junie_tui::widgets::props::Prop;
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::select::Select;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::{Modifier, Style};
+use termrock::core::event::{Key, Outcome};
+use termrock::core::hit::Axis;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::PointerEvent;
+use termrock::core::refusal::raise;
+use termrock::core::scroll::{ScrollState, TrackClick};
+use termrock::theme::Tone;
+use termrock::ui::ctx::{RenderCtx, fill, legible_on_fill};
+use termrock::ui::master_detail::{MasterDetail, Mode};
+use termrock::ui::text::{fit, width};
+use termrock::widgets::choice::{Checkbox, RadioGroup};
+use termrock::widgets::dialog::Dialog;
+use termrock::widgets::input::TextInput;
+use termrock::widgets::keyhint::{Hint, hint};
+use termrock::widgets::notice::Notice;
+use termrock::widgets::option_list::Item;
+use termrock::widgets::panel::{Panel, PanelFocus};
+use termrock::widgets::picker::Picker;
+use termrock::widgets::props::Prop;
+use termrock::widgets::scrollbar;
+use termrock::widgets::select::Select;
 
 use super::modals::{
     BrowserResult, ChoiceDialog, FieldKindW, FieldValue, FormDialog, FormField, FormValues, OpFlow,
@@ -39,10 +39,10 @@ use crate::domain::workspace::{
     env_key_error, is_credential_reference, looks_secret, mask,
 };
 use crate::world::{GlobalConfig, World};
-use junie_tui::ui::context::ContextAnchor;
-use junie_tui::widgets::menu::MenuItem;
-use junie_tui::widgets::row_menu::RowMenu;
 use ratatui::crossterm::event::KeyModifiers;
+use termrock::ui::context::ContextAnchor;
+use termrock::widgets::menu::MenuItem;
+use termrock::widgets::row_menu::RowMenu;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Scope {
@@ -607,7 +607,7 @@ impl ConfigTabs {
                     .replace("global", "Global"),
                 Some(r) => format!("Role: {r}"),
             };
-            let mut meta = junie_tui::ui::text::plural(vars.len(), "var", "vars");
+            let mut meta = termrock::ui::text::plural(vars.len(), "var", "vars");
             if !in_registry {
                 meta = format!("not in registry · {meta}");
             }
@@ -816,7 +816,7 @@ impl ConfigTabs {
                 buf.set_string(
                     x,
                     y,
-                    junie_tui::ui::reveal::cut(Rect::new(x, y, widths[i], 1), h),
+                    termrock::ui::reveal::cut(Rect::new(x, y, widths[i], 1), h),
                     t.muted().bg(bg),
                 );
                 x += widths[i] + 2;
@@ -985,7 +985,7 @@ impl ConfigTabs {
                     }
 
                     let cell = Rect::new(x, y, cw, 1);
-                    let shown = junie_tui::ui::reveal::fit(ctx, cell, text, s.focused);
+                    let shown = termrock::ui::reveal::fit(ctx, cell, text, s.focused);
                     buf.set_string(x, y, fit(&shown, cw as usize), cs);
                     x += cw + 2;
                 }
@@ -1014,7 +1014,7 @@ impl ConfigTabs {
                 buf.set_string(
                     x,
                     ny,
-                    junie_tui::ui::reveal::cut(Rect::new(x, ny, row_w.saturating_sub(6), 1), note),
+                    termrock::ui::reveal::cut(Rect::new(x, ny, row_w.saturating_sub(6), 1), note),
                     t.faint().bg(bg),
                 );
             }
@@ -1184,13 +1184,13 @@ impl ConfigTabs {
             buf.set_string(
                 inner.x,
                 y,
-                junie_tui::ui::reveal::cut(Rect::new(inner.x, y, lw, 1), &k),
+                termrock::ui::reveal::cut(Rect::new(inner.x, y, lw, 1), &k),
                 t.muted().bg(bg),
             );
             buf.set_string(
                 inner.x + lw,
                 y,
-                junie_tui::ui::reveal::cut(
+                termrock::ui::reveal::cut(
                     Rect::new(inner.x + lw, y, inner.width.saturating_sub(lw), 1),
                     &v,
                 ),
@@ -1227,7 +1227,7 @@ impl ConfigTabs {
             }
             (Tab::Mounts, _) => v.push(hint("Enter", "Add mount…")),
             (Tab::Environments, Some(RowKey::Env(..))) => {
-                v.push(junie_tui::widgets::widget_hints::EDIT);
+                v.push(termrock::widgets::widget_hints::EDIT);
                 v.push(hint("m", "Show"));
                 if !fixed {
                     v.push(hint("p", "1Password…"));
@@ -2033,7 +2033,7 @@ impl ConfigTabs {
                     .detail(if n > 0 {
                         format!(
                             "{} · Enter adds another",
-                            junie_tui::ui::text::plural(n, "override", "overrides")
+                            termrock::ui::text::plural(n, "override", "overrides")
                         )
                     } else {
                         "no overrides yet".into()

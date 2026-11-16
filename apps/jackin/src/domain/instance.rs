@@ -310,7 +310,7 @@ fn display_context(value: &str, max_cells: usize, fallback: &str) -> String {
         if piece.is_empty() {
             continue;
         }
-        let piece_cells = junie_tui::ui::text::width(&piece);
+        let piece_cells = termrock::ui::text::width(&piece);
         if cells.saturating_add(piece_cells) > max_cells {
             truncated = true;
             break;
@@ -325,7 +325,7 @@ fn display_context(value: &str, max_cells: usize, fallback: &str) -> String {
         return fallback.to_owned();
     }
     if truncated {
-        let prefix = junie_tui::ui::text::clip(&safe, max_cells.saturating_sub(1));
+        let prefix = termrock::ui::text::clip(&safe, max_cells.saturating_sub(1));
         if prefix.is_empty() {
             fallback.to_owned()
         } else {

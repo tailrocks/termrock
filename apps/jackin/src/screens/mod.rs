@@ -13,9 +13,9 @@ pub mod row_meta;
 pub mod settings;
 pub mod usage;
 
-use junie_tui::core::event::Outcome;
-use junie_tui::widgets::option_list::Item;
-use junie_tui::widgets::segments::Segment;
+use termrock::core::event::Outcome;
+use termrock::widgets::option_list::Item;
+use termrock::widgets::segments::Segment;
 
 use crate::domain::account::AccountId;
 use crate::domain::agent::Agent;
@@ -23,12 +23,12 @@ use crate::domain::instance::InstanceId;
 use crate::domain::onepassword::OpReference;
 use crate::domain::workspace::{RoleName, Workspace, WorkspaceId};
 use crate::world::{Msg, World};
-use junie_tui::ui::layer::Layer;
-pub use junie_tui::ui::layer::LayerTag;
-use junie_tui::ui::layers::LayerResult;
-use junie_tui::widgets::menu::MenuAction;
-use junie_tui::widgets::picker::PickerAction;
 use modals::{BrowserResult, FormAction, FormDialog, FormValues, InfoResult};
+use termrock::ui::layer::Layer;
+pub use termrock::ui::layer::LayerTag;
+use termrock::ui::layers::LayerResult;
+use termrock::widgets::menu::MenuAction;
+use termrock::widgets::picker::PickerAction;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ModalResult {
@@ -37,7 +37,7 @@ pub enum ModalResult {
         text: Option<String>,
     },
     Picked(usize),
-    PickedMany(Vec<junie_tui::core::id::ItemKey>),
+    PickedMany(Vec<termrock::core::id::ItemKey>),
     PickedAlt(usize),
 
     Scope,
@@ -85,9 +85,9 @@ impl From<LayerResult> for ModalResult {
     }
 }
 
-impl From<junie_tui::widgets::inspect_changes::InspectOutcome> for ModalResult {
-    fn from(o: junie_tui::widgets::inspect_changes::InspectOutcome) -> Self {
-        use junie_tui::widgets::inspect_changes::InspectOutcome;
+impl From<termrock::widgets::inspect_changes::InspectOutcome> for ModalResult {
+    fn from(o: termrock::widgets::inspect_changes::InspectOutcome) -> Self {
+        use termrock::widgets::inspect_changes::InspectOutcome;
         ModalResult::Custom(
             match o {
                 InspectOutcome::Back => "back",
@@ -158,24 +158,24 @@ pub enum Go {
     },
     CloseTop {
         tag: LayerTag,
-        then: Option<junie_tui::core::id::WidgetId>,
+        then: Option<termrock::core::id::WidgetId>,
     },
     Quit,
 }
 
 pub fn post_refusal(cx: &mut Cx) {
-    if let Some(reason) = junie_tui::core::refusal::take_refusal() {
+    if let Some(reason) = termrock::core::refusal::take_refusal() {
         cx.refused(reason);
     }
 }
 
-pub type Request = junie_tui::shell::Request<ModalResult, World, Go>;
+pub type Request = termrock::shell::Request<ModalResult, World, Go>;
 
-pub type Cx<'a> = junie_tui::shell::Cx<'a, ModalResult, World, Go>;
+pub type Cx<'a> = termrock::shell::Cx<'a, ModalResult, World, Go>;
 
 pub struct Jackin;
 
-impl junie_tui::shell::PageTypes for Jackin {
+impl termrock::shell::PageTypes for Jackin {
     type State = World;
     type Msg = Msg;
     type Result = ModalResult;
@@ -183,7 +183,7 @@ impl junie_tui::shell::PageTypes for Jackin {
     type Go = Go;
 }
 
-pub trait Screen: junie_tui::shell::Page<Jackin> {
+pub trait Screen: termrock::shell::Page<Jackin> {
     fn picker_items(&mut self, _tag: &LayerTag, _query: &str, _w: &World) -> Option<Vec<Item>> {
         None
     }
@@ -215,10 +215,10 @@ pub trait Screen: junie_tui::shell::Page<Jackin> {
 
 pub fn health_spans(
     s: &crate::domain::usage::OverallSummary,
-) -> Vec<junie_tui::widgets::viewport::Span> {
+) -> Vec<termrock::widgets::viewport::Span> {
     use crate::domain::usage::HealthWord;
-    use junie_tui::theme::Tone;
-    use junie_tui::widgets::viewport::Span;
+    use termrock::theme::Tone;
+    use termrock::widgets::viewport::Span;
     let word = Span::new(
         s.health.label(),
         match s.health {

@@ -29,10 +29,10 @@ use jackin_console::screens::Go;
 use jackin_console::sim::launch::validate_tuples;
 use jackin_console::sim::{self, SimBackend};
 use jackin_console::world::{Msg, Snapshot, World};
-use junie_tui::core::event::Input;
-use junie_tui::motion::Motion;
-use junie_tui::runtime::Application;
-use junie_tui::theme::{ColorLevel, Theme};
+use termrock::core::event::Input;
+use termrock::motion::Motion;
+use termrock::runtime::Application;
+use termrock::theme::{ColorLevel, Theme};
 
 const INFRA: u32 = 2;
 const PORTAL: u32 = 4;

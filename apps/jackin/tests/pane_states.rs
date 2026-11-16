@@ -9,9 +9,9 @@ use jackin_console::panes::{
     DetachCause, EndKind, FailNext, Lease, LinkEvent, LinkFault, LinkStatus, PaneBody, PaneEffect,
     PaneFace, PaneKey, PaneNote,
 };
-use junie_tui::theme::Tone;
 use pane_support::*;
 use ratatui::layout::Rect;
+use termrock::theme::Tone;
 
 fn note(pane: &impl PaneBody) -> Option<String> {
     pane.note(&words()).map(|n| n.text)

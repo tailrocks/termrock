@@ -1,4 +1,4 @@
-use junie_tui::widgets::steps::StepState;
+use termrock::widgets::steps::StepState;
 
 use crate::backend::{OnePassword, PlainKey};
 use crate::domain::account::AccountId;
