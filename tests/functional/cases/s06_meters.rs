@@ -1113,8 +1113,14 @@ fn option_work_counters_card_follows_the_build() {
 
     let app = page("s06-work", &["meters.work=on"], 120, 70);
     let screen = app.wait_text("Work counters");
+    let catalog = format!(
+        "{} metrics, {} to {}",
+        junie_tui::metrics::METRIC_COUNT,
+        junie_tui::metrics::Metric::ALL[0].name(),
+        junie_tui::metrics::Metric::ALL[junie_tui::metrics::METRIC_COUNT - 1].name()
+    );
     let common = [
-        "34 metrics, segmented_lines to input_dispatches",
+        catalog.as_str(),
         "visible_rows_painted +6, intrinsic_width_calls +40",
         "intrinsic_width_calls was 40, budget 30",
         "every count matches",
