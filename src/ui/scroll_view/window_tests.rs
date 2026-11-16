@@ -4,7 +4,7 @@ use ratatui::layout::{Position, Rect, Size};
 use ratatui::style::{Color, Style};
 use ratatui::widgets::Padding;
 
-use super::{Axes, ScrollView, VisibleWindow};
+use super::{Axes, ScrollView, ScrollWork, VisibleWindow};
 use crate::core::event::{Key, Outcome};
 use crate::core::focus::FocusRing;
 use crate::core::hit::{HitRegion, HitRegistry};
@@ -763,5 +763,27 @@ fn scroll_window_matches_the_legacy_hit_of_a_bar_press() {
             mods: KeyModifiers::NONE
         }),
         Some(Outcome::Changed)
+    );
+}
+
+#[test]
+fn scroll_work_starts_at_zero_and_reports_the_latest_frames_scratch_cells() {
+    let screen = Rect::new(0, 0, 40, 10);
+    let mut view = ScrollView::new(VIEW).axes(Axes::VERTICAL);
+    assert_eq!(
+        view.last_work(),
+        ScrollWork::default(),
+        "no frame yet, no work"
+    );
+    prime(&mut view, screen, screen, 100);
+    let work: ScrollWork = view.last_work();
+    let viewport_cells = usize::from(screen.width) * usize::from(screen.height);
+    assert!(
+        work.allocated > 0,
+        "a windowed frame allocates scratch cells: {work:?}"
+    );
+    assert!(
+        work.allocated <= viewport_cells && work.filled <= viewport_cells,
+        "scratch is bounded by the viewport, not the 100 rows: {work:?}"
     );
 }

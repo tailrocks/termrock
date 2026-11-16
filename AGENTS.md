@@ -132,11 +132,39 @@ workspaces, Docker, OpenShell, Codex).
   option tables, never drawing, interaction or state logic of their own.
   See the showcase coverage track in
   `docs/architecture/shared-components-plan.md` (§7).
-- The coverage gate is `src/bin/showcase/app_tests_catalog.rs`. New
-  public API gets its line in `src/catalog.rs` (the failing test prints
-  it), then a declaration in `src/bin/showcase/coverage.rs` or an
-  `id | reason | SCn` allowlist line. A step deletes the lines of what
-  it now shows.
+- The declared-API gate has three layers, reported separately. Layer 1 is
+  source coverage in `src/catalog_contract.rs`: an inventory of every public
+  API under the exported module graph (matrix rows minimal, default and
+  all-features) must match `src/catalog.rs` exactly (`CAPABILITIES` plus
+  `MEMBERS`; fields, trait items and trait impls inherit their owner) and
+  every API needs a disposition: a `CapabilityProof` or
+  `CapabilityException` line in `src/bin/showcase/coverage.rs`, or a line in
+  `src/bin/showcase/coverage_debt.txt`. A Showcase page that merely names an
+  API is not a disposition (the report counts such names separately as
+  information). The debt list is a ratchet: it only shrinks, it must stay a
+  subset of the frozen `coverage_debt_baseline.txt`, and `DEBT_CEILING` in
+  `src/catalog_contract.rs` equals the baseline length, so a new public API
+  gets a catalog line plus a proof or an exception in the same change, never
+  a debt line. A `CapabilityException` has a `kind`: `Nonvisual` (a helper, a
+  host hook or test plumbing no page can show) or `Deferred` (a demo is owed;
+  `tracking_issue` is then required). The gate reads the kind and never the
+  reason text. The `reason` is a sentence of at least four words, not a page
+  name. Its `regression_test` is `path/to/file.rs::test_name` and must name a
+  live `#[test]` in that file, not an `#[ignore]`d one, whose body uses the API:
+  the member identifier, and for a member of a type that type in the body or
+  the file. This is an identifier check, not behavioral proof. The
+  syn scan cannot see macro-generated tests, so name a hand-written test. A
+  public field added to a type that has a proof inherits that proof's
+  disposition (fields, trait items and trait impls inherit their owner), so
+  extend the owning scenario to exercise the new field. Layer 2 is
+  behavior: a `CapabilityProof` names callable scenarios, and `src/bin/showcase/app_tests_catalog.rs` runs each scenario
+  against real components (`catalog_scenarios_execute`). Layer 3 is the
+  tuiscotti journeys in `tests/functional`. Name matching is never behavioral
+  proof. Run `cargo nextest run -p junie-tui --all-features --no-tests fail -E
+  'test(catalog_)'`; the Rust crate CI job already runs it. After a change
+  moves many captures, `scripts/accept-changed-baselines.py` re-accepts each
+  changed one through `scripts/accept-baseline.py` with `--expect-baseline` set
+  to the digest in the tree (main's, after a rebase); `--dry` lists candidates.
 
 ### Visual states
 

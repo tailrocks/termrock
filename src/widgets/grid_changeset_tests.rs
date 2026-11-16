@@ -373,3 +373,39 @@ fn issue50_receipt_records_the_snapshot_it_answers() {
         receipt.origin()
     );
 }
+
+#[test]
+fn a_snapshot_lists_typed_rows_and_the_pending_draft_names_the_same_keys() {
+    let mut g = grid(4);
+    g.record_cell(1, NAME, text("edited")).unwrap();
+    g.toggle_delete(3).unwrap();
+    g.insert_row().expect("the row inserts");
+
+    let set: GridChangeSet = g.snapshot_changes();
+    let inserted: &[InsertedRow] = set.inserted();
+    let updated: &[UpdatedRow] = set.updated();
+    let deleted: &[DeletedRow] = set.deleted();
+    assert_eq!((inserted.len(), updated.len(), deleted.len()), (1, 1, 1));
+    assert_eq!(
+        updated[0]
+            .cells()
+            .iter()
+            .map(CellChange::column)
+            .collect::<Vec<_>>(),
+        [NAME]
+    );
+
+    let pending: &crate::widgets::grid::PendingChanges = g.pending();
+    assert_eq!(pending.inserted().collect::<Vec<_>>(), [inserted[0].key()]);
+    assert_eq!(pending.deleted().collect::<Vec<_>>(), [deleted[0].key()]);
+    assert!(pending.is_inserted(inserted[0].key()));
+    assert!(!pending.is_inserted(updated[0].key()));
+
+    let undone = g.undo().expect("not locked").expect("something to undo");
+    assert_eq!(undone.kind, crate::widgets::grid::GridUndoKind::Insert);
+    assert_eq!(undone.key, inserted[0].key());
+    assert!(
+        !g.pending().is_inserted(inserted[0].key()),
+        "undoing the insert drops it from the pending draft"
+    );
+}

@@ -944,7 +944,17 @@ fn work_report_is_count_only_json_with_every_metric() {
     let parsed: serde_json::Value = serde_json::from_str(&report.to_json()).expect("valid JSON");
 
     assert_eq!(parsed["schema_version"], 1);
+    assert_eq!(
+        parsed["schema_version"],
+        junie_tui::metrics::report::SCHEMA_VERSION,
+        "the JSON states the schema version the crate exports"
+    );
     assert_eq!(parsed["instrumentation_enabled"], true);
+    assert_eq!(
+        parsed["work_delta"][Metric::IdentityComparisons.name()],
+        0,
+        "a metric nothing recorded is listed as a zero"
+    );
     assert_eq!(parsed["timing"], "not measured");
     assert_eq!(parsed["work_delta"]["segmented_lines"], 3);
     assert_eq!(
@@ -1031,4 +1041,26 @@ fn work_report_concurrent_writers_leave_one_whole_report() {
         .map(|e| e.expect("entry").file_name())
         .collect();
     assert_eq!(names.len(), 1, "no temp file is left behind: {names:?}");
+}
+
+#[test]
+fn work_report_write_publishes_under_the_performance_directory() {
+    let report = ScenarioReport {
+        scenario: "write_probe",
+        operation: "one",
+        record_count: 1,
+        viewport: (10, 2),
+        work: WorkDelta::ZERO,
+        correctness_oracle: "the file holds exactly to_json".to_owned(),
+    };
+    let path = report.write().expect("write the count report");
+    assert!(
+        path.ends_with("performance/write_probe-one-1.json"),
+        "{path:?}"
+    );
+    assert_eq!(
+        std::fs::read_to_string(&path).expect("read it back"),
+        report.to_json()
+    );
+    let _ = std::fs::remove_file(&path);
 }

@@ -1,9 +1,5 @@
 mod common;
 
-#[allow(dead_code)]
-#[path = "../src/bin/showcase/coverage.rs"]
-mod coverage;
-
 use common::*;
 use junie_tui::core::focus::{Focus, FocusRing};
 use junie_tui::core::hit::HitRegistry;
@@ -404,7 +400,44 @@ mod showcase_coverage {
 
     use syn::{ImplItem, Item, Type, Visibility};
 
-    use super::coverage;
+    /// Rows of one `&[(&str, &str)]` table in the Showcase coverage source. The
+    /// file is read, not included, because it names Showcase page types.
+    fn coverage_pairs(name: &str) -> Vec<(String, String)> {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let source = std::fs::read_to_string(root.join("src/bin/showcase/coverage.rs"))
+            .expect("showcase coverage source reads");
+        let file = syn::parse_file(&source).expect("coverage source parses");
+        let table = file
+            .items
+            .iter()
+            .find_map(|item| match item {
+                Item::Const(c) if c.ident == name => Some(&*c.expr),
+                _ => None,
+            })
+            .unwrap_or_else(|| panic!("{name} is declared"));
+        let syn::Expr::Reference(reference) = table else {
+            panic!("{name} is a slice reference");
+        };
+        let syn::Expr::Array(rows) = &*reference.expr else {
+            panic!("{name} is an array");
+        };
+        let text = |expr: &syn::Expr| match expr {
+            syn::Expr::Lit(syn::ExprLit {
+                lit: syn::Lit::Str(value),
+                ..
+            }) => value.value(),
+            _ => panic!("{name} holds string literals"),
+        };
+        rows.elems
+            .iter()
+            .map(|row| match row {
+                syn::Expr::Tuple(pair) if pair.elems.len() == 2 => {
+                    (text(&pair.elems[0]), text(&pair.elems[1]))
+                }
+                _ => panic!("{name} holds (id, text) pairs"),
+            })
+            .collect()
+    }
 
     const MODULE: &str = "widgets::inspect_changes";
 
@@ -491,13 +524,14 @@ mod showcase_coverage {
         let exported = exported_api(widget);
         let cataloged = catalog_ids(catalog);
         let page_words = words(page);
-        let claimed: BTreeSet<String> = coverage::INSPECT_CHANGES_COVERAGE
-            .iter()
-            .map(|(id, _)| (*id).to_owned())
+        let claimed: BTreeSet<String> = coverage_pairs("INSPECT_CHANGES_COVERAGE")
+            .into_iter()
+            .map(|(id, _)| id)
             .collect();
-        let allowed: BTreeMap<&str, &str> = coverage::INSPECT_CHANGES_ALLOWLIST
+        let allowlist = coverage_pairs("INSPECT_CHANGES_ALLOWLIST");
+        let allowed: BTreeMap<&str, &str> = allowlist
             .iter()
-            .copied()
+            .map(|(id, reason)| (id.as_str(), reason.as_str()))
             .collect();
         let mut errors = Vec::new();
         for id in exported.difference(&cataloged) {

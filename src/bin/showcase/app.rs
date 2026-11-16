@@ -2371,3 +2371,7 @@ impl shell::KeyHost for App {
         self.set_status(text.into());
     }
 }
+
+#[cfg(test)]
+#[path = "app_tests_catalog.rs"]
+mod app_tests_catalog;

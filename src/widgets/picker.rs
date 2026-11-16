@@ -1726,6 +1726,37 @@ mod tests {
     }
 
     #[test]
+    fn a_custom_toggle_command_binding_checks_the_cursor_item() {
+        use crate::core::keymap::KeyBinding;
+        use crate::widgets::picker::PickerCmd;
+        let mut picker = Picker::new(WidgetId::of("picker-test"), "Choose")
+            .multi_select(true)
+            .expect("empty picker accepts multi-selection")
+            .searchable(false)
+            .expect("disabling search is valid")
+            .keymap(vec![(KeyBinding::key(KeyCode::Insert), PickerCmd::Toggle)]);
+        picker
+            .set_items(vec![
+                Item::new("Alpha").key(ItemKey::text("alpha")),
+                Item::new("Beta").key(ItemKey::text("beta")),
+            ])
+            .expect("valid picker update");
+        picker.set_cursor(1);
+        let insert = Key {
+            code: KeyCode::Insert,
+            mods: KeyModifiers::NONE,
+        };
+        let (outcome, action) = picker.on_key(&insert);
+        assert_eq!(
+            (outcome, action),
+            (Outcome::Changed, Some(PickerAction::Toggled))
+        );
+        assert_eq!(picker.checked(), &[ItemKey::text("beta")]);
+        picker.on_key(&insert);
+        assert!(picker.checked().is_empty(), "the same binding unchecks it");
+    }
+
+    #[test]
     fn multi_toggle_skips_disabled_items_and_non_search_space_toggles() {
         let mut picker = Picker::new(WidgetId::of("picker-test"), "Choose")
             .multi_select(true)
@@ -2833,6 +2864,28 @@ mod tests {
         assert_eq!(picker.checked(), &[ItemKey::index(17)]);
         assert_eq!(picker.item_for_key(ItemKey::index(17)).unwrap().label, "A");
     }
+    #[test]
+    fn picker_visible_projection_reports_rows_in_display_order() {
+        let mut picker = Picker::new(WidgetId::of("projection"), "Projection");
+        let first = Item::new("First").key(ItemKey::index(1));
+        let second = Item::new("Second").key(ItemKey::index(2));
+        picker
+            .set_items(vec![first, second])
+            .expect("valid picker update");
+        picker
+            .set_visible_keys(vec![
+                super::VisibleKey::new(ItemKey::index(2)).matched(vec![0]),
+                super::VisibleKey::new(ItemKey::index(1)),
+            ])
+            .expect("known keys");
+        assert_eq!(picker.visible_len(), 2);
+        let rows: Vec<(&str, Vec<usize>)> = picker
+            .visible_items()
+            .map(|row: super::PickerItemView<'_>| (row.item.label.as_str(), row.matched.to_vec()))
+            .collect();
+        assert_eq!(rows, [("Second", vec![0]), ("First", vec![])]);
+    }
+
     #[test]
     fn picker_rejects_ambiguous_and_unknown_keys_atomically() {
         let mut picker = Picker::new(WidgetId::of("keys"), "Keys")

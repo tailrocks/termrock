@@ -375,6 +375,17 @@ fn a_fence_is_acknowledged_once_and_never_reaches_the_app() {
 }
 
 #[test]
+fn the_fence_opt_in_follows_its_own_variable() {
+    let set = std::env::var_os(TestRequest::FENCE_ENV).is_some_and(|v| v == "1");
+    assert_eq!(TestRequest::fence_opted_in(), set);
+    assert_ne!(
+        TestRequest::FENCE_ENV,
+        TestRequest::ENV,
+        "the fence has its own variable, so the clock stays unfrozen"
+    );
+}
+
+#[test]
 fn the_fence_alone_is_acknowledged_and_a_clock_step_stays_a_paste() {
     junie_tui::shell::clipboard::take_output();
     let mut host = Host::new(Act::Nothing);

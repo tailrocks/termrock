@@ -522,6 +522,22 @@ fn empty_diagnostic_index_does_not_allocate_per_line() {
 }
 
 #[test]
+fn editor_diagnostics_reads_back_the_diagnostics_in_the_order_they_were_set() {
+    let mut e = CodeEditor::new(WidgetId::of("code-test"), "abcdefgh");
+    assert!(e.diagnostics().is_empty(), "a new editor has none");
+    e.set_diagnostics(vec![
+        diagnostic(4..6, Severity::Warning),
+        diagnostic(1..2, Severity::Error),
+    ]);
+    let got: Vec<_> = e
+        .diagnostics()
+        .iter()
+        .map(|d| (d.range.clone(), d.severity))
+        .collect();
+    assert_eq!(got, [(4..6, Severity::Warning), (1..2, Severity::Error)]);
+}
+
+#[test]
 fn editor_diagnostics_merge_exact_and_range_ordinals() {
     let buffer = TextBuffer::multi("abcdefgh");
     let range_first = vec![
@@ -889,5 +905,36 @@ fn editor_caret_keys_do_not_copy_the_document() {
     assert!(
         per_size.iter().all(|(_, bytes)| *bytes <= small + 4096),
         "a caret key and its frame must not allocate with the document: {per_size:?}"
+    );
+}
+
+#[test]
+fn highlighter_fn_returns_the_installed_provider() {
+    let id = WidgetId::of("code-test");
+    let plain = CodeEditor::new(id, "SELECT 1;\n");
+    assert!(plain.highlighter_fn().is_none());
+    let colored = CodeEditor::new(id, "SELECT 1;\n").highlighter(keywords);
+    assert!(colored.highlighter_fn().is_some());
+}
+
+#[test]
+fn invalidate_highlighter_makes_the_next_paint_recompute_unchanged_text() {
+    reset();
+    let mut frame = Frame::new(100, 12);
+    let mut e = CodeEditor::new(WidgetId::of("code-test"), "SELECT 1;\n").highlighter(keywords);
+    frame.paint(&mut e, Interaction::default());
+    let after_first = count(&HIGHLIGHTS);
+    frame.paint(&mut e, Interaction::default());
+    assert_eq!(
+        count(&HIGHLIGHTS),
+        after_first,
+        "an unchanged frame reuses the scan"
+    );
+
+    e.invalidate_highlighter();
+    frame.paint(&mut e, Interaction::default());
+    assert!(
+        count(&HIGHLIGHTS) > after_first,
+        "invalidate_highlighter drops the cached scan, so the provider runs again"
     );
 }

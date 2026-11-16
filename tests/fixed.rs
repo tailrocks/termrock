@@ -770,3 +770,16 @@ fn a_focused_menu_item_with_a_reason_keeps_the_cursor_fill() {
     let (bg, _) = cell(items(), 2, "Live");
     assert_eq!(bg, fill, "a live item keeps its fill");
 }
+
+#[test]
+fn a_notice_with_a_payload_waits_for_the_clock_and_yields_to_a_message() {
+    use junie_tui::clock::Moment;
+    let mut line = StatusLine::<u8>::new();
+    line.notice_with_at("refresh failed", Tone::Secondary, 3, Moment::ZERO);
+    assert_eq!(line.payload(), Some(&3));
+    assert!(!line.expire(Moment::from_millis(1)));
+    line.set_with("saved", Tone::Secondary, 5);
+    line.notice_with("refresh failed again", Tone::Secondary, 9);
+    assert_eq!(line.text(), Some("saved"), "a notice never hides a message");
+    assert_eq!(line.payload(), Some(&5));
+}

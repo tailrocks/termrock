@@ -1,121 +1,20 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use syn::visit::Visit;
-use syn::{Expr, ImplItem, Item, Pat, Type, Visibility};
+use syn::{Expr, Pat, Type};
 
-#[allow(dead_code)]
-#[path = "../src/bin/showcase/coverage.rs"]
-mod coverage;
+#[path = "support/api_inventory.rs"]
+mod api_inventory;
 
 fn picker_api(source: &str) -> BTreeSet<String> {
-    let file = syn::parse_file(source).expect("picker source parses");
-    let mut ids = BTreeSet::new();
-    let mut public_types = BTreeSet::new();
-    for item in &file.items {
-        match item {
-            Item::Enum(item) if matches!(item.vis, Visibility::Public(_)) => {
-                let name = item.ident.to_string();
-                let root = format!("widgets::picker::{name}");
-                ids.insert(root.clone());
-                public_types.insert(name);
-                ids.extend(
-                    item.variants
-                        .iter()
-                        .map(|variant| format!("{root}::{}", variant.ident)),
-                );
-            }
-            Item::Struct(item) if matches!(item.vis, Visibility::Public(_)) => {
-                let name = item.ident.to_string();
-                ids.insert(format!("widgets::picker::{name}"));
-                public_types.insert(name);
-            }
-            Item::Fn(item) if matches!(item.vis, Visibility::Public(_)) => {
-                ids.insert(format!("widgets::picker::{}", item.sig.ident));
-            }
-            Item::Const(item) if matches!(item.vis, Visibility::Public(_)) => {
-                ids.insert(format!("widgets::picker::{}", item.ident));
-            }
-            _ => {}
-        }
-    }
-    for item in file.items {
-        if let Item::Impl(item) = item
-            && item.trait_.is_none()
-        {
-            let Type::Path(path) = *item.self_ty else {
-                continue;
-            };
-            let Some(ty) = path.path.segments.last() else {
-                continue;
-            };
-            if !public_types.contains(&ty.ident.to_string()) {
-                continue;
-            }
-            for method in item.items {
-                match method {
-                    ImplItem::Fn(method) if matches!(method.vis, Visibility::Public(_)) => {
-                        ids.insert(format!(
-                            "widgets::picker::{}::{}",
-                            ty.ident, method.sig.ident
-                        ));
-                    }
-                    ImplItem::Const(constant) if matches!(constant.vis, Visibility::Public(_)) => {
-                        ids.insert(format!("widgets::picker::{}::{}", ty.ident, constant.ident));
-                    }
-                    _ => {}
-                }
-            }
-        }
-    }
-    ids
+    api_inventory::module_api(source, "widgets::picker")
 }
 
 fn option_list_api(source: &str) -> BTreeSet<String> {
-    let file = syn::parse_file(source).expect("option list source parses");
-    let mut ids = BTreeSet::new();
-    let mut public_type = false;
-    for item in &file.items {
-        if let Item::Struct(item) = item
-            && matches!(item.vis, Visibility::Public(_))
-            && item.ident == "OptionList"
-        {
-            public_type = true;
-        }
-    }
-    if !public_type {
-        return ids;
-    }
-    ids.insert("widgets::option_list::OptionList".to_owned());
-    for item in &file.items {
-        if let Item::Impl(item) = item
-            && item.trait_.is_none()
-            && let Type::Path(path) = &*item.self_ty
-            && path
-                .path
-                .segments
-                .last()
-                .is_some_and(|ty| ty.ident == "OptionList")
-        {
-            for method in &item.items {
-                match method {
-                    ImplItem::Fn(method) if matches!(method.vis, Visibility::Public(_)) => {
-                        ids.insert(format!(
-                            "widgets::option_list::OptionList::{}",
-                            method.sig.ident
-                        ));
-                    }
-                    ImplItem::Const(constant) if matches!(constant.vis, Visibility::Public(_)) => {
-                        ids.insert(format!(
-                            "widgets::option_list::OptionList::{}",
-                            constant.ident
-                        ));
-                    }
-                    _ => {}
-                }
-            }
-        }
-    }
-    ids
+    api_inventory::module_api(source, "widgets::option_list")
+        .into_iter()
+        .filter(|id| id.starts_with("widgets::option_list::OptionList"))
+        .collect()
 }
 
 fn picker_catalog(source: &str) -> BTreeMap<String, String> {
@@ -542,19 +441,25 @@ fn validate_picker_sources(
     catalog_source: &str,
     page_source: &str,
     option_list_source: &str,
+    coverage_source: &str,
 ) -> Result<(), Vec<String>> {
     let exported = picker_api(picker_source);
     let option_list_exported = option_list_api(option_list_source);
     let catalog = picker_catalog(catalog_source);
     let page = PageUsage::from_source(page_source, &exported, &catalog);
-    let coverage_ids: BTreeSet<String> = coverage::PICKER_COVERAGE
-        .iter()
-        .map(|(id, _)| (*id).to_owned())
-        .collect();
-    let allowlist: BTreeMap<String, String> = coverage::PICKER_ALLOWLIST
-        .iter()
-        .map(|(id, reason)| ((*id).to_owned(), (*reason).to_owned()))
-        .collect();
+    let coverage_ids: BTreeSet<String> =
+        api_inventory::string_pairs_from_source(coverage_source, "PICKER_COVERAGE")
+            .into_iter()
+            .map(|(id, _)| id)
+            .collect();
+    let allowlist: BTreeMap<String, String> =
+        api_inventory::exceptions_from_source(coverage_source)
+            .into_iter()
+            .filter(|(id, _)| {
+                id.starts_with("widgets::picker::")
+                    || id.starts_with("widgets::option_list::OptionList")
+            })
+            .collect();
     let catalog_ids: BTreeSet<String> = catalog.keys().cloned().collect();
     let mut errors = Vec::new();
 
@@ -602,7 +507,7 @@ fn validate_picker_sources(
     }
 }
 
-fn repository_sources() -> (String, String, String, String) {
+fn repository_sources() -> (String, String, String, String, String) {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
     (
         std::fs::read_to_string(root.join("src/widgets/picker.rs")).expect("picker source reads"),
@@ -611,29 +516,33 @@ fn repository_sources() -> (String, String, String, String) {
             .expect("picker showcase page reads"),
         std::fs::read_to_string(root.join("src/widgets/option_list.rs"))
             .expect("option list source reads"),
+        std::fs::read_to_string(root.join("src/bin/showcase/coverage.rs"))
+            .expect("showcase coverage source reads"),
     )
 }
 
 #[test]
 fn picker_repository_guard_matches_actual_catalog_and_showcase_usage() {
-    let (picker, catalog, page, option_list) = repository_sources();
-    let result = validate_picker_sources(&picker, &catalog, &page, &option_list);
+    let (picker, catalog, page, option_list, coverage) = repository_sources();
+    let result = validate_picker_sources(&picker, &catalog, &page, &option_list, &coverage);
     assert!(result.is_ok(), "{}", result.unwrap_err().join("\n"));
-    assert!(coverage::PICKER_ALLOWLIST.iter().any(|(id, reason)| {
-        *id == "widgets::picker::Picker::reset_selection" && !reason.trim().is_empty()
-    }));
+    assert!(
+        api_inventory::exceptions_from_source(&coverage)
+            .get("widgets::picker::Picker::reset_selection")
+            .is_some_and(|reason| !reason.trim().is_empty())
+    );
 }
 
 #[test]
 fn picker_repository_guard_rejects_a_removed_configured_toggle_demonstration() {
-    let (picker, catalog, page, option_list) = repository_sources();
+    let (picker, catalog, page, option_list, coverage) = repository_sources();
     let old = ".key_profile(match o.value(\"pickers.nav\") {\n                \"vim\" => PickerKeyProfile::Vim,\n                _ => PickerKeyProfile::Desktop,\n            })";
     let broken_page = page.replace(old, ".key_profile(PickerKeyProfile::Desktop)");
     assert_ne!(
         broken_page, page,
         "configured profile demo mutation matched source"
     );
-    let result = validate_picker_sources(&picker, &catalog, &broken_page, &option_list);
+    let result = validate_picker_sources(&picker, &catalog, &broken_page, &option_list, &coverage);
     assert!(
         result.as_ref().is_err_and(|errors| errors
             .iter()
@@ -644,11 +553,11 @@ fn picker_repository_guard_rejects_a_removed_configured_toggle_demonstration() {
 
 #[test]
 fn picker_repository_guard_rejects_a_removed_exported_catalog_entry() {
-    let (picker, catalog, page, option_list) = repository_sources();
+    let (picker, catalog, page, option_list, coverage) = repository_sources();
     let entry = "    Capability::function(\"widgets::picker::Picker::query\"),\n";
     let broken_catalog = catalog.replace(entry, "");
     assert_ne!(broken_catalog, catalog, "catalog mutation matched source");
-    let result = validate_picker_sources(&picker, &broken_catalog, &page, &option_list);
+    let result = validate_picker_sources(&picker, &broken_catalog, &page, &option_list, &coverage);
     assert!(
         result.as_ref().is_err_and(|errors| errors
             .iter()
@@ -659,7 +568,7 @@ fn picker_repository_guard_rejects_a_removed_exported_catalog_entry() {
 
 #[test]
 fn typed_picker_bindings_respect_lexical_scope_and_shadowing() {
-    let (picker, catalog, _, _) = repository_sources();
+    let (picker, catalog, _, _, _) = repository_sources();
     let exported = picker_api(&picker);
     let catalog = picker_catalog(&catalog);
     let has_list = |source: &str| {
@@ -692,7 +601,7 @@ fn typed_picker_bindings_respect_lexical_scope_and_shadowing() {
 
 #[test]
 fn typed_picker_closures_respect_shadowing_and_restore_outer_bindings() {
-    let (picker, catalog, _, _) = repository_sources();
+    let (picker, catalog, _, _, _) = repository_sources();
     let exported = picker_api(&picker);
     let catalog = picker_catalog(&catalog);
     let has_items = |source: &str| {
@@ -715,7 +624,7 @@ fn typed_picker_closures_respect_shadowing_and_restore_outer_bindings() {
 }
 
 fn page_uses_picker_list(source: &str) -> bool {
-    let (picker, catalog, _, _) = repository_sources();
+    let (picker, catalog, _, _, _) = repository_sources();
     PageUsage::from_source(source, &picker_api(&picker), &picker_catalog(&catalog))
         .api
         .contains("widgets::picker::Picker::list")
@@ -779,12 +688,38 @@ fn picker_scope_respects_let_else_pattern_shadow() {
 
 #[test]
 fn terminal_session_coverage_declares_catalog_capabilities() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+    let source = std::fs::read_to_string(root.join("src/bin/showcase/coverage.rs"))
+        .expect("showcase coverage source reads");
+    let file = syn::parse_file(&source).expect("coverage source parses");
+    let table = file
+        .items
+        .iter()
+        .find_map(|item| match item {
+            syn::Item::Const(c) if c.ident == "TERMINAL_SESSION_COVERAGE" => Some(&*c.expr),
+            _ => None,
+        })
+        .expect("TERMINAL_SESSION_COVERAGE is declared");
+    let syn::Expr::Reference(reference) = table else {
+        panic!("TERMINAL_SESSION_COVERAGE is a slice reference");
+    };
+    let syn::Expr::Array(rows) = &*reference.expr else {
+        panic!("TERMINAL_SESSION_COVERAGE is an array");
+    };
     let mut seen = BTreeSet::new();
-    for id in coverage::TERMINAL_SESSION_COVERAGE {
+    for row in &rows.elems {
+        let syn::Expr::Lit(syn::ExprLit {
+            lit: syn::Lit::Str(id),
+            ..
+        }) = row
+        else {
+            panic!("TERMINAL_SESSION_COVERAGE rows are string literals");
+        };
+        let id = id.value();
         assert!(
-            junie_tui::catalog::find(id).is_some(),
+            junie_tui::catalog::find(&id).is_some(),
             "declared id is not a catalog capability: {id}"
         );
-        assert!(seen.insert(*id), "duplicate coverage entry: {id}");
+        assert!(seen.insert(id.clone()), "duplicate coverage entry: {id}");
     }
 }

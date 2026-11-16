@@ -1938,6 +1938,36 @@ mod raw_input_tests {
     }
 
     #[test]
+    fn default_policies_carry_the_documented_default_budgets() {
+        let external = ExternalPolicy::default();
+        assert_eq!(external.max_messages, ExternalPolicy::DEFAULT_MAX_MESSAGES);
+        assert_eq!(external.max_duration, ExternalPolicy::DEFAULT_MAX_DURATION);
+        assert_eq!(
+            (
+                ExternalPolicy::DEFAULT_MAX_MESSAGES,
+                ExternalPolicy::DEFAULT_MAX_DURATION
+            ),
+            (64, Duration::from_millis(2))
+        );
+
+        let raw = RawInputPolicy::default();
+        assert_eq!(raw.max_events, RawInputPolicy::DEFAULT_MAX_EVENTS);
+        assert_eq!(raw.max_duration, RawInputPolicy::DEFAULT_MAX_DURATION);
+        assert_eq!(
+            (
+                RawInputPolicy::DEFAULT_MAX_EVENTS,
+                RawInputPolicy::DEFAULT_MAX_DURATION
+            ),
+            (256, Duration::from_millis(2))
+        );
+    }
+
+    #[test]
+    fn the_public_bounded_drain_with_a_zero_bound_reads_nothing() {
+        assert_eq!(drain_pending_input_bounded(0).unwrap(), 0);
+    }
+
+    #[test]
     fn startup_discard_restores_raw_mode_on_scan_error_and_unwind() {
         let mut failing = Script::releases_then(3, []);
         failing.fail_read_at = Some(1);

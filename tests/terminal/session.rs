@@ -9,10 +9,11 @@ use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::hit::Axis;
 use junie_tui::core::id::WidgetId;
 use junie_tui::terminal::{
-    PENDING_EFFECTS, SessionClipboardContext, SessionClipboardDecision, SessionClipboardRefusal,
-    SessionCommand, SessionConfig, SessionDetach, SessionEffect, SessionEnd, SessionEvent,
-    SessionFault, SessionHostPolicy, SessionKey, SessionLease, SessionLink, SessionPaste,
-    SessionSent, SessionSize, SessionSource, SessionStatus, TerminalSessionController,
+    PENDING_EFFECTS, ReplayTiming, SessionClipboardContext, SessionClipboardDecision,
+    SessionClipboardRefusal, SessionCommand, SessionConfig, SessionDetach, SessionEffect,
+    SessionEnd, SessionEvent, SessionFault, SessionHostPolicy, SessionKey, SessionLease,
+    SessionLink, SessionPaste, SessionSent, SessionSize, SessionSource, SessionStatus,
+    TerminalSessionController,
 };
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::Rect;
@@ -955,4 +956,184 @@ fn session_controller_viewport_handle_cannot_leave_the_grid_off_the_forwarded_si
         "the grid follows the size the program has"
     );
     assert_eq!(bench.sizes(0), [size(24, 80)], "nothing new is forwarded");
+}
+
+/// A link whose stream has ended: every command comes back `Closed`.
+#[derive(Debug)]
+struct GoneLink;
+
+impl SessionLink<Fault> for GoneLink {
+    fn send(&self, _command: SessionCommand) -> SessionSent {
+        SessionSent::Closed
+    }
+
+    fn set_size(&self, _size: SessionSize) {}
+
+    fn drain(&self, _now_ms: i64, _output_budget: usize) -> Vec<SessionEvent<Fault>> {
+        Vec::new()
+    }
+}
+
+/// Upper-cases the title, so a swapped policy is visible in what the
+/// controller shows.
+#[derive(Debug)]
+struct Shout;
+
+impl SessionHostPolicy for Shout {
+    fn title(&self, raw: &str) -> String {
+        raw.to_uppercase()
+    }
+
+    fn notice(&self, raw: &str) -> String {
+        raw.to_owned()
+    }
+
+    fn clipboard(
+        &self,
+        _context: SessionClipboardContext,
+        _payload: &str,
+    ) -> SessionClipboardDecision {
+        SessionClipboardDecision::Drop
+    }
+}
+
+#[test]
+fn session_source_opens_a_link_that_reports_what_it_did_with_each_command() {
+    fn host_fault<F: SessionFault>(fault: F) -> F {
+        fault
+    }
+    let bench = Bench::new();
+    let source: Arc<dyn SessionSource<Fault>> = bench.clone();
+    let minimum: SessionSize = SessionConfig::MINIMUM;
+    assert_eq!((minimum.rows, minimum.cols), (4, 20));
+    let link: Box<dyn SessionLink<Fault>> = source.open(minimum).expect("a source opens a link");
+    assert_eq!(
+        bench.sizes(0),
+        [minimum],
+        "the link starts at the size it was opened at"
+    );
+    link.set_size(size(30, 100));
+    assert_eq!(bench.sizes(0), [minimum, size(30, 100)]);
+
+    assert_eq!(
+        link.send(SessionCommand::Input(b"ls".to_vec())),
+        SessionSent::Queued
+    );
+    assert_eq!(link.send(SessionCommand::Detach), SessionSent::Queued);
+    assert_eq!(bench.commands(0), [input(b"ls"), SessionCommand::Detach]);
+    bench.fill(0, true);
+    assert_eq!(
+        link.send(input(b"more")),
+        SessionSent::Full,
+        "a full queue refuses the command"
+    );
+    assert_eq!(
+        bench.commands(0).len(),
+        2,
+        "a refused command is not queued"
+    );
+    assert_eq!(GoneLink.send(SessionCommand::Redraw), SessionSent::Closed);
+
+    bench.output(0, b"hello");
+    assert_eq!(
+        link.drain(0, 3),
+        [SessionEvent::Output(b"hel".to_vec())],
+        "the budget splits a chunk and the rest waits"
+    );
+    assert_eq!(link.drain(1, 10), [SessionEvent::Output(b"lo".to_vec())]);
+    assert_eq!(
+        host_fault(Fault("boom")),
+        Fault("boom"),
+        "any comparable value is a fault"
+    );
+    assert_eq!(source.closed_before_attach(), Fault("closed before attach"));
+}
+
+#[test]
+fn session_replay_timing_is_the_default_window_a_config_carries() {
+    let timing = ReplayTiming::default();
+    assert_eq!(
+        (timing.replay_cap_ms, timing.nudge_ms, timing.quiet_ms),
+        (800, 600, 150)
+    );
+    assert_eq!(SessionConfig::new(10).timing, timing);
+
+    let bench = Bench::new();
+    let mut session = TerminalSessionController::new(
+        WidgetId::of("test.session"),
+        bench.clone(),
+        SessionConfig {
+            timing: ReplayTiming {
+                nudge_ms: 100,
+                quiet_ms: 10,
+                ..ReplayTiming::default()
+            },
+            ..SessionConfig::new(200)
+        },
+        Arc::new(Policy),
+    );
+    session.sync_size(area(80, 24));
+    bench.push(0, SessionEvent::Attached);
+    session.pump(0);
+    assert_eq!(
+        session.next_replay_deadline(),
+        Some(100),
+        "the nudge of the supplied timing sets the first deadline"
+    );
+}
+
+#[test]
+fn session_host_policy_decides_each_clipboard_request_from_its_context() {
+    let policy: &dyn SessionHostPolicy = &Policy;
+    let context = SessionClipboardContext {
+        owner: true,
+        focused: true,
+        last_gesture_ms: Some(1_000),
+        now_ms: 2_000,
+    };
+    let ask = |payload: &str| policy.clipboard(context, payload);
+    assert_eq!(
+        ask("c;copy:text"),
+        SessionClipboardDecision::Copy("text".to_owned())
+    );
+    assert_eq!(ask("c;drop"), SessionClipboardDecision::Drop);
+    assert_eq!(
+        ask("c;?"),
+        SessionClipboardDecision::Refuse(SessionClipboardRefusal::Read)
+    );
+    let stale = SessionClipboardContext {
+        now_ms: 1_000 + GESTURE_WINDOW_MS + 1,
+        ..context
+    };
+    assert_eq!(
+        policy.clipboard(stale, "c;copy:text"),
+        SessionClipboardDecision::Refuse(SessionClipboardRefusal::Write),
+        "a gesture older than the window no longer permits a write"
+    );
+    let unfocused = SessionClipboardContext {
+        focused: false,
+        ..context
+    };
+    assert_eq!(
+        policy.clipboard(unfocused, "c;copy:text"),
+        SessionClipboardDecision::Refuse(SessionClipboardRefusal::Write)
+    );
+}
+
+#[test]
+fn session_controller_set_host_policy_replaces_the_sanitiser_for_later_events() {
+    let bench = Bench::new();
+    let mut session = live(&bench, SessionLease::Owner);
+    bench.output(0, b"\x1b]0;first\x07");
+    session.pump(900);
+    assert_eq!(session.title(), Some("first"));
+
+    session.set_host_policy(Arc::new(Shout));
+    bench.output(0, b"\x1b]0;second\x07");
+    session.pump(1_000);
+    assert_eq!(
+        session.title(),
+        Some("SECOND"),
+        "the new policy sanitises the next title"
+    );
 }

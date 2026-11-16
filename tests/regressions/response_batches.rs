@@ -472,4 +472,39 @@ fn response_actions_and_into_actions_report_zero_one_and_many_in_order() {
     let owned: ActionsIntoIter<u8> = many.into_actions().into_iter();
     assert!(matches!(owned, ActionsIntoIter::Many(_)));
     assert_eq!(owned.collect::<Vec<_>>(), vec![1, 2, 3]);
+
+    let mut taken = Response::emit(7u8);
+    taken.push_action(8);
+    assert_eq!(
+        taken.take_actions().into_iter().collect::<Vec<_>>(),
+        vec![7, 8]
+    );
+    assert_eq!(taken.actions().len(), 0, "taking leaves no action behind");
+}
+
+#[test]
+fn actions_report_emptiness_and_grow_one_push_at_a_time() {
+    let mut batch: Actions<u8> = Actions::default();
+    assert!(batch.is_empty());
+    batch.push(1);
+    assert!(!batch.is_empty());
+    assert_eq!(batch, Actions::One(1), "one push stays inline");
+    batch.push(2);
+    batch.push(3);
+    assert_eq!(
+        batch,
+        Actions::Many(vec![1, 2, 3]),
+        "later pushes keep their order"
+    );
+    assert_eq!(batch.len(), 3);
+
+    batch.append(Actions::Many(vec![4, 5]));
+    assert_eq!(batch.iter().copied().collect::<Vec<_>>(), [1, 2, 3, 4, 5]);
+    let mut empty: Actions<u8> = Actions::None;
+    empty.append(Actions::One(9));
+    assert_eq!(
+        empty,
+        Actions::One(9),
+        "appending to an empty batch adopts the other"
+    );
 }

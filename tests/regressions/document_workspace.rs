@@ -219,6 +219,40 @@ fn workspace_first_update_that_dirties_a_preview_promotes_once() {
 }
 
 #[test]
+fn workspace_promote_pins_only_the_preview_document() {
+    let mut w = ws();
+    let pinned = open(&mut w, "pinned");
+    let (preview, _) = w.open(doc("preview", ""), OpenKind::Preview);
+    assert!(
+        acts(w.promote(pinned)).is_empty(),
+        "a pinned document is not promoted"
+    );
+    assert_eq!(w.preview_key(), Some(preview));
+    assert_eq!(acts(w.promote(preview)), [format!("promoted:{preview:?}")]);
+    assert_eq!(w.preview_key(), None, "the preview is pinned now");
+    assert!(
+        acts(w.promote(preview)).is_empty(),
+        "promoting twice emits once"
+    );
+}
+
+#[test]
+fn workspace_running_reports_the_operation_in_flight_for_its_document_only() {
+    let mut w = ws();
+    let (a, b) = (open(&mut w, "a"), open(&mut w, "b"));
+    assert_eq!(w.running(a), None, "nothing runs before an operation");
+    let (token, _) = w.begin_operation(a).expect("open");
+    assert_eq!(w.running(a), Some(token));
+    assert_eq!(w.running(b), None, "another document is not running");
+    assert!(w.finish_operation(token, |_| ()).is_ok());
+    assert_eq!(
+        w.running(a),
+        None,
+        "a finished operation is no longer running"
+    );
+}
+
+#[test]
 fn workspace_activating_the_current_key_is_a_no_op() {
     let mut w = ws();
     let a = open(&mut w, "a");
@@ -723,4 +757,62 @@ fn workspace_discard_running_preview_cancels_and_closes() {
     );
     assert_eq!(w.preview_key(), None);
     assert!(w.finish_operation(token, |_| ()).is_err());
+}
+
+#[test]
+fn workspace_open_with_keys_the_document_and_reports_every_transition_as_an_action() {
+    fn is_a_workspace_document<D: WorkspaceDocument>() {}
+    is_a_workspace_document::<TextDoc>();
+    let mut w: DocumentWorkspace<TextDoc> = DocumentWorkspace::new(ID);
+    assert_eq!(w.id(), ID, "the workspace keeps the id it was built with");
+
+    let mut built_for = None;
+    let (a, resp) = w.open_with(
+        |key| {
+            built_for = Some(key);
+            doc("a", "")
+        },
+        OpenKind::Pinned,
+    );
+    assert_eq!(
+        built_for,
+        Some(a),
+        "the build closure is handed the document's own key"
+    );
+    assert_eq!(acts(resp), [format!("activated:{a:?}")]);
+    assert_eq!(w.index_of(a), Some(0));
+    assert_eq!(w.index_of(ItemKey::num(u64::MAX)), None);
+
+    let (p, _) = w.open_with(|_| doc("p", ""), OpenKind::Preview);
+    assert_eq!(w.index_of(p), Some(1), "an open appends");
+
+    // A running operation keeps the preview from being replaced: it is
+    // promoted, which the host hears as PreviewPromoted before Activated.
+    let (token, _): (OperationToken, _) = w.begin_operation(p).expect("open document");
+    assert_eq!(token.document, p);
+    let (q, resp) = w.open_with(|_| doc("q", ""), OpenKind::Preview);
+    let mut heard = resp.into_actions().into_iter();
+    assert!(matches!(heard.next(), Some(WorkspaceAction::PreviewPromoted(key)) if key == p));
+    assert!(matches!(heard.next(), Some(WorkspaceAction::Activated(key)) if key == q));
+    assert!(heard.next().is_none());
+    assert_eq!(w.preview_key(), Some(q));
+
+    // Closing the running document asks first (CloseRequested), and a discard
+    // tells the host to stop the backend work (CancelOperation) before Closed.
+    let request = w.request_close(p);
+    let close: CloseToken = match request.into_actions().into_iter().next() {
+        Some(WorkspaceAction::CloseRequested(close)) => close,
+        _ => panic!("a running document asks before it closes"),
+    };
+    assert_eq!((close.document, close.revision), (p, 0));
+    let resp = w
+        .resolve_close(close, CloseDecision::Discard)
+        .expect("a fresh token");
+    let mut heard = resp.into_actions().into_iter();
+    assert!(
+        matches!(heard.next(), Some(WorkspaceAction::CancelOperation(op)) if op == token),
+        "the host is told to stop the backend work first"
+    );
+    assert!(matches!(heard.next(), Some(WorkspaceAction::Closed { key, .. }) if key == p));
+    assert_eq!(w.index_of(p), None, "a closed document has no position");
 }
