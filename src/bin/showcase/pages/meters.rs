@@ -4,6 +4,7 @@ use ratatui::layout::{Rect, Size};
 use crate::app::PageId;
 use crate::data::GRAPHEME_SAMPLES;
 use crate::options::{PageValues, page_options};
+use crate::pages::meters_work::{self, Frame};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
 use junie_tui::core::event::Outcome;
@@ -19,6 +20,7 @@ use junie_tui::widgets::meter_list::{MeterList, MeterRow};
 use junie_tui::widgets::page_header::{Heading, PageHeader};
 use junie_tui::widgets::panel::Panel;
 use junie_tui::widgets::progress::{Meter, MeterLevel, MeterTone, MeterVisual, StaleStyle};
+use junie_tui::widgets::props;
 
 const ID: WidgetId = WidgetId::of("meters");
 
@@ -223,6 +225,7 @@ impl MetersPage {
     }
 
     fn render_playground(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
+        let frame = self.opts.on("meters.work").then(Frame::begin);
         let header = self.header();
         let rows = header.render(area, buf, ctx.theme);
         debug_assert_eq!(rows, header.height());
@@ -244,7 +247,7 @@ impl MetersPage {
             .any(|&id| ctx.interaction.has_focus(id))
             .then_some(0);
         let (quotas, disks, host) = (self.quotas(), self.disks(), self.host());
-        let children = Self::children(&quotas, &disks, &host);
+        let children = self.children(&quotas, &disks, &host);
         let l = self.sections.layout(area, &children, focus, buf, ctx);
         match l.slot(0) {
             Some(r) => self.render_quotas(r, &quotas, buf, ctx),
@@ -259,14 +262,36 @@ impl MetersPage {
         if let Some(r) = l.slot(2) {
             card(r, buf, ctx, HOST_CARD.0, HOST_CARD.1, &host);
         }
+        if let (Some(frame), Some(r)) = (frame, l.slot(3)) {
+            self.render_work(r, &frame, buf, ctx);
+        }
     }
 
-    fn children(quotas: &MeterList, disks: &MeterList, host: &MeterList) -> [StackChild; 3] {
-        [
+    fn children(&self, quotas: &MeterList, disks: &MeterList, host: &MeterList) -> Vec<StackChild> {
+        let mut children = vec![
             StackChild::fixed(quotas.height() + 5),
             StackChild::fixed(disks.height() + 3),
             StackChild::fixed(host.height() + 3),
-        ]
+        ];
+        if self.opts.on("meters.work") {
+            children.push(StackChild::fixed(
+                work_panel().outer(Size::new(0, meters_work::ROWS)).height,
+            ));
+        }
+        children
+    }
+
+    /// The Work counters card: this frame's own work is the delta since the
+    /// playground began painting, so the three cards above are in it.
+    fn render_work(&self, area: Rect, frame: &Frame, buf: &mut Buffer, ctx: &mut RenderCtx) {
+        let t = ctx.theme;
+        let panel = work_panel();
+        let bg = panel.bg(t);
+        let inner = panel.render(area, buf, t);
+        let delta = frame.delta();
+        let probe = meters_work::probe();
+        let facts = meters_work::facts(delta.as_ref(), probe, meters_work::contract());
+        props::render(inner, buf, t, &facts, bg);
     }
 
     fn quotas_meta(&self) -> &'static str {
@@ -315,6 +340,10 @@ impl MetersPage {
         self.opts.set("meters.offline", usize::from(on));
         self.refreshing = 0;
     }
+}
+
+fn work_panel() -> Panel<'static> {
+    Panel::card(Some("Work counters")).meta(meters_work::meta())
 }
 
 const DISKS_CARD: (&str, &str) = ("Filesystems", "disk 80 / 95 · reserve 4 · min 8");
@@ -421,6 +450,12 @@ impl Page for MetersPage {
                 .meta(HOST_CARD.1)
                 .outer(at(&host))
                 .width,
+            if self.opts.on("meters.work") {
+                let facts = meters_work::facts(None, None, meters_work::contract());
+                work_panel().outer(Size::new(props::width(&facts), 0)).width
+            } else {
+                0
+            },
         ]
         .into_iter()
         .max()
@@ -428,7 +463,7 @@ impl Page for MetersPage {
         let cards = self
             .sections
             .stack
-            .measure(&Self::children(&quotas, &disks, &host));
+            .measure(&self.children(&quotas, &disks, &host));
         Size::new(width, header.height + 1 + 2 + cards)
     }
 

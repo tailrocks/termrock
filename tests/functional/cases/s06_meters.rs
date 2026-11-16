@@ -1094,3 +1094,69 @@ fn option_international_values_paint_whole_clusters() {
     });
     app.finish();
 }
+
+/// The Work counters option adds a card for the #56 counters. They compile
+/// away without the `work-metrics` feature, so the card names its build, shows
+/// the snapshot contract either way, and shows the live rows only where the
+/// counters record. The case reads the build from the card and checks it
+/// against the feature this test target was compiled with.
+#[test]
+fn option_work_counters_card_follows_the_build() {
+    let off = page("s06-work-off", &[], 120, 40);
+    let screen = off.wait_text(PLAN);
+    see(&screen, &[PLAN], &["Work counters"]);
+    confirm_option(&off, |screen| {
+        assert_toggle(screen, "Work counters", "off");
+        assert_option_controls(screen, &[]);
+    });
+    off.finish();
+
+    let app = page("s06-work", &["meters.work=on"], 120, 70);
+    let screen = app.wait_text("Work counters");
+    let common = [
+        "34 metrics, segmented_lines to input_dispatches",
+        "visible_rows_painted +6, intrinsic_width_calls +40",
+        "intrinsic_width_calls was 40, budget 30",
+        "every count matches",
+        "intrinsic_width_calls 42 (40 + a worker's 2)",
+        "snapshots are from different threads",
+        "a reset ran between the snapshots",
+        "counter visible_rows_painted went backwards",
+        "counter intrinsic_width_calls overflowed",
+    ];
+    see(&screen, &common, &[]);
+    assert_size(&app, 120, 70);
+    if junie_tui::metrics::ENABLED {
+        see(
+            &screen,
+            &[
+                "recording",
+                "recording (work-metrics on)",
+                "record_work!(SegmentedLines, 3) counted 3",
+            ],
+            &[
+                "compiled out",
+                "not recorded in this build",
+                "expands to nothing",
+            ],
+        );
+        let frame = row_with(&screen, "This frame");
+        assert!(
+            frame.contains("intrinsic_width_calls"),
+            "the frame's own width measuring is counted: {frame:?}"
+        );
+    } else {
+        see(
+            &screen,
+            &[
+                "compiled out",
+                "compiled out (build with --features work-metrics)",
+                "not recorded in this build",
+                "record_work! expands to nothing here",
+            ],
+            &["recording", "counted 3", "no work counted"],
+        );
+    }
+    confirm_option(&app, |screen| assert_toggle(screen, "Work counters", "on"));
+    app.finish();
+}
