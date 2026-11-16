@@ -15,6 +15,7 @@ use crate::support::{
 
 const CRUMB: &str = "Text & code › Text utilities";
 const TERMINAL: &str = "Text & code › Terminal";
+const PREVIOUS: &str = "Text & code › Terminal viewport";
 const TITLE: &str = "Text utilities";
 const BLURB: &str = "Text helpers (truncation, wrapping, widths), property sheets and PropsList";
 const OVERVIEW: &str = "Tokens and principles behind every component";
@@ -417,6 +418,7 @@ fn route_by_page_keyboard_and_pointer() {
         "Inputs & forms › Forms",
         "Inputs & forms › Checks & radios",
         "Inputs & forms › Toolbars",
+        "Inputs & forms › Fixed controls",
         "Tables › Basic table",
         "Tables › Editable",
         "Tables › Data grid",
@@ -433,6 +435,7 @@ fn route_by_page_keyboard_and_pointer() {
         "Overlays › Dialog kinds",
         "Overlays › Popups & tooltips",
         "Overlays › File browser",
+        "Overlays › Fixed dialogs",
         "Feedback › Progress",
         "Feedback › Empty & error",
         "Feedback › Meters",
@@ -442,9 +445,12 @@ fn route_by_page_keyboard_and_pointer() {
         "Layout › Splits & stacks",
         "Layout › Master-detail",
         "Layout › Pane tree",
+        "Layout › List detail",
         "Text & code › Code editor",
         "Text & code › Diff",
         TERMINAL,
+        "Text & code › Terminal pane",
+        PREVIOUS,
         CRUMB,
     ];
     for stop in stops {
@@ -455,17 +461,17 @@ fn route_by_page_keyboard_and_pointer() {
     see(
         &entered,
         &[CRUMB, BLURB, WIDTH_TITLE, TRUNCATE, CRUMB_FIT],
-        &[OVERVIEW, "Page options", TERMINAL],
+        &[OVERVIEW, "Page options", PREVIOUS],
     );
     app.key("[");
-    let left = app.wait_text(TERMINAL);
-    see(&left, &[TERMINAL], &[CRUMB, WIDTH_TITLE, TRUNCATE]);
+    let left = app.wait_text(PREVIOUS);
+    see(&left, &[PREVIOUS], &[CRUMB, WIDTH_TITLE, TRUNCATE]);
     app.key("]");
     let again = app.wait_text(CRUMB);
     see(
         &again,
         &[CRUMB, WIDTH_TITLE, "PropsList"],
-        &[TERMINAL, OVERVIEW],
+        &[PREVIOUS, OVERVIEW],
     );
     click_side(&app, "Overview");
     let overview = app.wait_text(OVERVIEW);

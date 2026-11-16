@@ -246,6 +246,7 @@ fn route_by_page_keyboard_and_pointer() {
         "Inputs & forms › Forms",
         "Inputs & forms › Checks & radios",
         "Inputs & forms › Toolbars",
+        "Inputs & forms › Fixed controls",
         CRUMB,
     ];
     for stop in stops {
@@ -256,13 +257,13 @@ fn route_by_page_keyboard_and_pointer() {
     see(
         &entered,
         &[CRUMB, BLURB, "Tasks", UNSORTED],
-        &[OVERVIEW, "Page options", "Inputs & forms › Toolbars"],
+        &[OVERVIEW, "Page options", "Inputs & forms › Fixed controls"],
     );
     app.key("[");
-    let left = app.wait_text("Inputs & forms › Toolbars");
+    let left = app.wait_text("Inputs & forms › Fixed controls");
     see(
         &left,
-        &["Inputs & forms › Toolbars"],
+        &["Inputs & forms › Fixed controls"],
         &[CRUMB, "Add rate limiting"],
     );
     app.key("]");
@@ -270,7 +271,7 @@ fn route_by_page_keyboard_and_pointer() {
     see(
         &again,
         &[CRUMB, "Tasks", UNSORTED],
-        &["Inputs & forms › Toolbars"],
+        &["Inputs & forms › Fixed controls"],
     );
     click_side(&app, "Overview");
     let overview = app.wait_text(OVERVIEW);
