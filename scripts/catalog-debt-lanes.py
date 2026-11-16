@@ -14,8 +14,8 @@ Two steps, both rerunnable:
 
   2. Classify and split:
 
-       python3 -I scripts/catalog-debt-lanes.py report target/debt-facts.tsv
-       python3 -I scripts/catalog-debt-lanes.py write  target/debt-facts.tsv
+       python3 -I scripts/catalog-debt-lanes.py report
+       python3 -I scripts/catalog-debt-lanes.py write 
 
 `write` only redistributes ids that are already in the frozen baseline. It
 never adds an id and never drops one, so it cannot loosen the ratchet. `list` shows a lane's
@@ -50,6 +50,8 @@ SHOWCASE = ROOT / "src/bin/showcase"
 DEBT_DIR = SHOWCASE / "coverage_debt"
 BASELINE = SHOWCASE / "coverage_debt_baseline.txt"
 LEGACY = SHOWCASE / "coverage_debt.txt"
+FACTS = ROOT / "target/debt-facts.tsv"
+REPORT = ROOT / "target/debt-classified.tsv"
 COVERAGE = SHOWCASE / "coverage.rs"
 
 # Longest prefix wins. Every id must match one prefix: an unassigned module is
@@ -256,7 +258,7 @@ def classify(rows, proven):
 
 
 def cmd_report(args):
-    rows = read_facts(args.facts)
+    rows = read_facts(FACTS)
     classified = classify(rows, proof_ids())
     unassigned = [c["id"] for c in classified if c["lane"] is None]
     if unassigned:
@@ -297,11 +299,11 @@ def cmd_report(args):
             f"{sum(c['class'] == 'B' for c in mine):>5}"
             f"{sum(c['class'] == 'C' for c in mine):>5}"
         )
-    if args.tsv:
-        with open(args.tsv, "w", newline="") as fh:
-            w = csv.DictWriter(fh, fieldnames=list(classified[0]), delimiter="\t")
-            w.writeheader()
-            w.writerows(classified)
+    with open(REPORT, "w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(classified[0]), delimiter="\t")
+        w.writeheader()
+        w.writerows(classified)
+    print(f"classified rows: {REPORT.relative_to(ROOT)}")
 
 
 HEADER = """# Lane `{lane}` debt for #14: APIs that still owe a disposition.
@@ -433,29 +435,38 @@ def cmd_proofs(args):
     print(f"recorded {len(picked)} proofs in {lane_file.name}, removed them from {debt.name}")
 
 
+def identifier(text):
+    if not re.fullmatch(r"[A-Za-z][A-Za-z0-9]*", text):
+        raise argparse.ArgumentTypeError(f"not a Rust identifier: {text!r}")
+    return text
+
+
+def identifier_list(text):
+    for part in text.split(","):
+        identifier(part)
+    return text
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("report", help="print counts per class, lane and family")
-    r.add_argument("facts")
-    r.add_argument("--tsv", help="also write the classified rows here")
     r.set_defaults(fn=cmd_report)
     w = sub.add_parser("write", help="split the debt into coverage_debt/<lane>.txt")
-    w.add_argument("facts", nargs="?")
     w.set_defaults(fn=cmd_write)
     p = sub.add_parser("prune", help="delete stale debt lines reported by the gate")
     p.set_defaults(fn=cmd_prune)
     ls = sub.add_parser("list", help="print a lane's remaining debt ids")
-    ls.add_argument("lane")
+    ls.add_argument("lane", choices=sorted(LANES))
     ls.add_argument("--match", action="append", help="id prefix (repeatable)")
     ls.set_defaults(fn=cmd_list)
     pr = sub.add_parser(
         "proofs",
         help="record proofs for selected debt ids and delete their debt lines",
     )
-    pr.add_argument("lane")
-    pr.add_argument("--route", required=True, help="an existing PageId, e.g. Pickers")
-    pr.add_argument("--scenarios", required=True, help="ScenarioId variants, comma separated")
+    pr.add_argument("lane", choices=sorted(LANES))
+    pr.add_argument("--route", required=True, type=identifier, help="an existing PageId, e.g. Pickers")
+    pr.add_argument("--scenarios", required=True, type=identifier_list, help="ScenarioId variants, comma separated")
     pr.add_argument("--match", action="append", help="id prefix (repeatable)")
     pr.add_argument("--id", action="append", help="exact id (repeatable)")
     pr.set_defaults(fn=cmd_proofs)
