@@ -3,6 +3,7 @@ use ratatui::layout::Rect;
 
 use crate::app::PageId;
 use crate::options::page_options;
+use crate::pages::keyed_tree::{KeyedConnections, TreeFault};
 use crate::pages::row_menu::{MENU_HINTS, OPEN_HINT, RowMenu, plain};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
@@ -112,6 +113,7 @@ pub struct TreesPage {
     template: Template,
     tree: TreeView,
     conns: TreeView,
+    keyed: KeyedConnections,
 
     /// The keyed store behind the Project tree when its source is keyed.
     store: KeyedTree,
@@ -147,6 +149,7 @@ impl TreesPage {
             was_keyed: false,
             edit_note: String::new(),
             jump_note: String::new(),
+            keyed: KeyedConnections::new(CONNECTIONS),
             loading: None,
             last: "—".into(),
             menu: RowMenu::default(),
@@ -259,6 +262,12 @@ impl TreesPage {
         conns.cursor = old.cursor;
         conns.flatten();
         self.conns = conns;
+        self.keyed
+            .set_fault(TreeFault::from_value(self.opt("trees.connections")));
+    }
+
+    fn keyed_on(&self) -> bool {
+        self.opt("trees.connections") != "nodes"
     }
 
     /// A keyed node's label, for the readout and the status line.
@@ -472,6 +481,13 @@ impl TreesPage {
                 }
             }
         }
+        if self.keyed_on() {
+            lines.push(format!(
+                "connections source: {} · last TreeAction: {}",
+                self.keyed.status(),
+                self.keyed.last
+            ));
+        }
         lines
     }
 
@@ -656,7 +672,10 @@ impl TreesPage {
 
         let top = r.y + r.height.min(SELECTION_H) + 1;
         if top + 4 < r.bottom() {
-            let meta = if self.loading.is_some() {
+            let keyed_meta = self.keyed.meta();
+            let meta = if self.keyed_on() {
+                keyed_meta.as_str()
+            } else if self.loading.is_some() {
                 "loading…"
             } else {
                 "→ loads a database"
@@ -672,7 +691,11 @@ impl TreesPage {
                 (card.bottom().saturating_sub(top)).max(self.conns_h()),
             );
             let inner = panel.render(card, buf, t);
-            self.conns.render(inner, buf, ctx, bg);
+            if self.keyed_on() {
+                self.keyed.render(inner, buf, ctx, bg);
+            } else {
+                self.conns.render(inner, buf, ctx, bg);
+            }
         }
 
         let lines = self.readout_lines(area.width);
@@ -815,6 +838,9 @@ impl Page for TreesPage {
                 let Some(id) = cx.focus.current() else {
                     return Outcome::Ignored;
                 };
+                if id == CONNECTIONS && self.keyed_on() {
+                    return self.keyed.on_key(key, cx);
+                }
                 let Some(t) = self.tree_mut(id) else {
                     return Outcome::Ignored;
                 };
@@ -843,6 +869,14 @@ impl Page for TreesPage {
                 self.on_keyed_actions(response, cx)
             }
             PageEvent::Pointer(ev) => {
+                if self.keyed_on()
+                    && let Some(out) = self.keyed.on_pointer(ev, cx)
+                {
+                    if ev.is(Phase::Click) {
+                        cx.focus.focus(CONNECTIONS);
+                    }
+                    return out;
+                }
                 for tid in [PROJECT, CONNECTIONS] {
                     let Some(t) = self.tree_mut(tid) else {
                         continue;
@@ -872,7 +906,9 @@ impl Page for TreesPage {
             return h;
         }
 
-        let t = if focus == Some(self.conns.id) {
+        let t = if focus == Some(self.conns.id) && self.keyed_on() {
+            &self.keyed.view
+        } else if focus == Some(self.conns.id) {
             &self.conns
         } else {
             &self.tree

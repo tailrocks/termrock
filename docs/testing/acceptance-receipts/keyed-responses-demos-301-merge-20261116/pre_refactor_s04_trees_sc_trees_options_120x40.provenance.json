@@ -1,0 +1,75 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-q-target/land-301/debug/showcase",
+  "binary_sha256": "261bb250d6c31b382b12f50af7be25d4f4269294143bcf47aa000e174e0850b7",
+  "fixture_args": [
+    "--page",
+    "trees"
+  ],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "2b12c858fbec2912648637ebc605097b1a2c41cec52cbf43f9db4255a1c1f0cf",
+  "expect_baseline": "c5a24ef06335c8ece2ffb9d372fe758a6dafa065ef8f30cadbc488a21f9c3f8c",
+  "precondition": "Lists, Trees, Basic table and Text utilities pages at the named options",
+  "session": null,
+  "expected_test_id": "pre_refactor/s04_trees/sc_trees_options_120x40",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/keyed-responses-demos-301-merge-20261116/pre_refactor_s04_trees_sc_trees_options_120x40.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/keyed-responses-demos-301-merge-20261116/pre_refactor_s04_trees_sc_trees_options_120x40.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/keyed-responses-demos-301-merge-20261116/superseded/pre_refactor/s04_trees/sc_trees_options_120x40.tui.pb",
+  "test_id": "pre_refactor/s04_trees/sc_trees_options_120x40",
+  "acceptance": {
+    "expected_baseline_sha256": "c5a24ef06335c8ece2ffb9d372fe758a6dafa065ef8f30cadbc488a21f9c3f8c",
+    "accepted_baseline_sha256": "2b12c858fbec2912648637ebc605097b1a2c41cec52cbf43f9db4255a1c1f0cf",
+    "candidate_sha256": "2b12c858fbec2912648637ebc605097b1a2c41cec52cbf43f9db4255a1c1f0cf",
+    "transaction_receipt": "docs/testing/acceptance-receipts/keyed-responses-demos-301-merge-20261116/pre_refactor_s04_trees_sc_trees_options_120x40.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "c5a24ef06335c8ece2ffb9d372fe758a6dafa065ef8f30cadbc488a21f9c3f8c"
+  },
+  "candidate": {
+    "sha256": "2b12c858fbec2912648637ebc605097b1a2c41cec52cbf43f9db4255a1c1f0cf",
+    "path": "tests/functional/baselines/pre_refactor/s04_trees/sc_trees_options_120x40.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/keyed-responses-demos-301-merge-20261116/superseded/pre_refactor/s04_trees/sc_trees_options_120x40.tui.pb",
+    "superseded_baseline_sha256": "c5a24ef06335c8ece2ffb9d372fe758a6dafa065ef8f30cadbc488a21f9c3f8c"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/s04_trees/sc_trees_options_120x40.tui.pb",
+    "candidate_sha256": "2b12c858fbec2912648637ebc605097b1a2c41cec52cbf43f9db4255a1c1f0cf",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-q-target/land-301/debug/showcase",
+    "binary_sha256": "261bb250d6c31b382b12f50af7be25d4f4269294143bcf47aa000e174e0850b7",
+    "note": "After merging main, the Lists and Trees pages carry the keyed Row source and Project source options from #303 next to this issue's Keyed store card and Connections source option, so the Options lists, the scrollbar thumbs and the cards laid out beside them moved. Real cells changed, not the scrollbar alone."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s04_trees/sc_trees_options_120x40",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/land-301/target/functional/s04-sections-5835-1794839050936538000-0/check-artifacts/pre_refactor/s04_trees/sc_trees_options_120x40/2b12c858fbec2912648637ebc605097b1a2c41cec52cbf43f9db4255a1c1f0cf/sample.tui.pb"
+    },
+    "candidate_sha256": "2b12c858fbec2912648637ebc605097b1a2c41cec52cbf43f9db4255a1c1f0cf",
+    "baseline_sha256": "2b12c858fbec2912648637ebc605097b1a2c41cec52cbf43f9db4255a1c1f0cf",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/land-301/tests/functional/baselines/pre_refactor/s04_trees/sc_trees_options_120x40.tui.pb"
+    },
+    "error_code": null
+  }
+}

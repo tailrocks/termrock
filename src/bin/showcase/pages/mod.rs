@@ -39,6 +39,8 @@ pub mod forms;
 pub mod grid;
 pub mod help_keys;
 pub mod inputs;
+pub mod keyed_store;
+pub mod keyed_tree;
 pub mod launch_cockpit;
 pub mod list_detail;
 pub mod lists;
