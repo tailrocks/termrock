@@ -7,21 +7,37 @@
 
 use super::*;
 use junie_tui::core::keymap::NavKeys;
+use junie_tui::core::list::{KeyStep, Moved};
+use junie_tui::core::pointer::MouseTarget;
+use junie_tui::core::response::Response;
 use junie_tui::core::scroll::TrackClick;
 use junie_tui::ui::columns::{
     Col, ColumnSizing, DEFAULT_SEAM_W, HeaderAction, HeaderLabels, MIN_USER_WIDTH, header_menu,
     render_seam, seam_part, solve,
 };
+use junie_tui::ui::content::ContentState;
 use junie_tui::ui::layout::{
-    Maximized, Overflow, SplitCmd, SplitKeys, Stack, StackChild, StackScroll,
+    Maximized, Overflow, SplitCmd, SplitKeys, Stack, StackChild, StackLayout, StackScroll,
 };
+use junie_tui::ui::list_core::ListCore;
 use junie_tui::ui::pane_tree::{
     Direction, Frames, PaneCmd, PaneId, PaneNode, PaneRefusal, PaneResult, PaneTree, Seam, nearest,
 };
+use junie_tui::widgets::action_row::ActionRow;
+use junie_tui::widgets::breadcrumb::Breadcrumb;
+use junie_tui::widgets::button::Button;
 use junie_tui::widgets::chips::{ChipCmd, overflow_run};
+use junie_tui::widgets::detail_card::{DetailCard, DetailLayout};
+use junie_tui::widgets::empty::EmptyState;
+use junie_tui::widgets::empty::{self, EmptyAction, EmptyKind};
 use junie_tui::widgets::icon_button::IconButton;
+use junie_tui::widgets::notice::{Notice, NoticeKind};
+use junie_tui::widgets::page_header::{Heading, PageHeader};
+use junie_tui::widgets::rail::{RailAction, SidebarRail};
 use junie_tui::widgets::splitter::SeamDoubleClick;
+use junie_tui::widgets::steps::{Step, StepRail, StepState};
 use junie_tui::widgets::table::SortDir;
+use junie_tui::widgets::too_small::TooSmall;
 
 #[rustfmt::skip]
 pub const CASES: &[ScenarioCase] = &[
@@ -40,6 +56,17 @@ pub const CASES: &[ScenarioCase] = &[
     ScenarioCase { id: ScenarioId::LayoutChipBarOverflow, run: layout_chip_bar_overflow },
     ScenarioCase { id: ScenarioId::LayoutToolbarActions, run: layout_toolbar_actions },
     ScenarioCase { id: ScenarioId::LayoutToolbarOverflow, run: layout_toolbar_overflow },
+    ScenarioCase { id: ScenarioId::LayoutStepRail, run: layout_step_rail },
+    ScenarioCase { id: ScenarioId::LayoutStepRailScroll, run: layout_step_rail_scroll },
+    ScenarioCase { id: ScenarioId::LayoutListCore, run: layout_list_core },
+    ScenarioCase { id: ScenarioId::LayoutNoticeKinds, run: layout_notice_kinds },
+    ScenarioCase { id: ScenarioId::LayoutNoticeWrapping, run: layout_notice_wrapping },
+    ScenarioCase { id: ScenarioId::LayoutEmptyState, run: layout_empty_state },
+    ScenarioCase { id: ScenarioId::LayoutPageHeader, run: layout_page_header },
+    ScenarioCase { id: ScenarioId::LayoutDetailCard, run: layout_detail_card },
+    ScenarioCase { id: ScenarioId::LayoutSidebarRail, run: layout_sidebar_rail },
+    ScenarioCase { id: ScenarioId::LayoutTooSmall, run: layout_too_small },
+    ScenarioCase { id: ScenarioId::LayoutBreadcrumb, run: layout_breadcrumb },
 ];
 
 /// A key with the given modifiers.
@@ -228,7 +255,22 @@ fn layout_split_keys() {
         "a vertical command does not move a side-by-side seam"
     );
     assert_eq!(keys.delta(&key(KeyCode::Left), SplitDir::Horizontal), None);
-    assert_eq!(SplitCmd::Left.label(), "Move seam left");
+    for (cmd, label) in [
+        (SplitCmd::Left, "Move seam left"),
+        (SplitCmd::Right, "Move seam right"),
+        (SplitCmd::Up, "Move seam up"),
+        (SplitCmd::Down, "Move seam down"),
+    ] {
+        assert_eq!(cmd.label(), label);
+    }
+    assert_eq!(
+        junie_tui::core::keymap::lookup(&keys.keymap, &up),
+        Some(SplitCmd::Up)
+    );
+    assert_eq!(
+        junie_tui::core::keymap::lookup(&keys.keymap, &down),
+        Some(SplitCmd::Down)
+    );
 
     // apply moves the seam and says whether the layout changed.
     let mut split = Split::new(50, 4, 4);
@@ -319,7 +361,7 @@ fn layout_stack_flow() {
     let flat = Stack::default().gap(0);
     assert_eq!(flat.measure(&children), 13);
     let mut state = StackScroll::default();
-    let laid = flat.layout(area, &children, &mut state, None);
+    let laid: StackLayout = flat.layout(area, &children, &mut state, None);
     assert_eq!(laid.slot(0), Some(Rect::new(0, 0, 30, 3)));
     assert_eq!(laid.slot(1), Some(Rect::new(0, 3, 30, 3)));
     assert_eq!(laid.slot(2), Some(Rect::new(0, 6, 30, 4)));
@@ -343,6 +385,13 @@ fn layout_stack_flow() {
     let wide_gap = gapped.scrollbar_gap(3);
     let laid = wide_gap.layout(area, &children, &mut state, None);
     assert_eq!(laid.slot(0).map(|r| r.width), Some(26));
+
+    assert_eq!(
+        Stack::default().overflow,
+        Overflow::Scroll,
+        "scrolling is the default"
+    );
+    assert_eq!(gapped.overflow(Overflow::Scroll).overflow, Overflow::Scroll);
 
     // Clip drops the scrollbar and shows what fits.
     let mut state = StackScroll::default();
@@ -2107,4 +2156,992 @@ fn layout_toolbar_overflow() {
         "no More button without overflow"
     );
     assert!(!text_of(&frame.buf).contains("Open"));
+}
+
+fn pipeline() -> Vec<Step> {
+    ["Checkout", "Build", "Test", "Deploy"]
+        .iter()
+        .map(|l| Step::new(l))
+        .collect()
+}
+
+fn step_frame(rail: &mut StepRail, area: Rect, tick: u64) -> Painted {
+    let interaction = Interaction {
+        tick,
+        ..Default::default()
+    };
+    paint_with(area, interaction, |area, buf, ctx| {
+        rail.render(area, buf, ctx, ctx.theme.canvas)
+    })
+}
+
+fn layout_step_rail() {
+    let id = WidgetId::of("scenario.layout.steps");
+    let theme = Theme::for_level(ColorLevel::TrueColor);
+    let step = Step::new("Checkout");
+    assert_eq!(
+        (step.state, step.meta.as_deref()),
+        (StepState::Queued, None)
+    );
+
+    // State words and terminal-ness.
+    for (state, label, terminal) in [
+        (StepState::Queued, "queued", false),
+        (StepState::Running, "running", false),
+        (StepState::Done, "done", true),
+        (StepState::Skipped, "skipped", true),
+        (StepState::Failed, "failed", true),
+        (StepState::Blocked, "blocked", false),
+    ] {
+        assert_eq!(state.label(), label);
+        assert_eq!(state.terminal(), terminal, "{label}");
+    }
+
+    let mut rail = StepRail::new(id, pipeline());
+    assert!(!rail.selectable && rail.numbered);
+    assert_eq!(rail.frontier(), Some(0));
+    assert_eq!(rail.counts(), (0, 0, 0));
+    assert_eq!(rail.failed(), None);
+
+    // Progress moves the frontier and the counters.
+    rail.set_state(0, StepState::Done);
+    rail.set_state(1, StepState::Running);
+    rail.set_meta(1, Some("2.1s".to_owned()));
+    rail.set_state(2, StepState::Skipped);
+    rail.set_state(99, StepState::Failed);
+    rail.set_meta(99, None);
+    assert_eq!(rail.frontier(), Some(1));
+    assert_eq!(rail.counts(), (1, 1, 0));
+    assert_eq!(rail.failed(), None);
+    let area = Rect::new(0, 0, 40, 4);
+    let frame = step_frame(&mut rail, area, 0);
+    let rows = rows(&frame.buf);
+    assert!(
+        rows[0].contains("01") && rows[0].contains("Checkout"),
+        "{rows:?}"
+    );
+    assert!(
+        rows[0].contains(theme.glyphs.done),
+        "a done step is ticked: {rows:?}"
+    );
+    assert!(
+        rows[1].contains("Build") && rows[1].contains("2.1s"),
+        "{rows:?}"
+    );
+    assert!(
+        rows[2].contains("skipped"),
+        "a skipped step says so: {rows:?}"
+    );
+    assert!(
+        rows[3].contains("queued"),
+        "a queued step says so: {rows:?}"
+    );
+    let spin_a = frame.buf[(1, 1)].symbol().to_owned();
+    let spin_b = step_frame(&mut rail, area, 3).buf[(1, 1)]
+        .symbol()
+        .to_owned();
+    assert_ne!(spin_a, spin_b, "a running step spins with the tick");
+    rail.set_state(3, StepState::Failed);
+    rail.set_state(2, StepState::Blocked);
+    assert_eq!(rail.failed(), Some(3));
+    assert_eq!(rail.counts(), (1, 0, 1));
+    let rows = rows_of(&step_frame(&mut rail, area, 0).buf);
+    assert!(rows[2].contains("blocked"), "{rows:?}");
+    assert!(rows[3].contains('!'), "a failed step is marked: {rows:?}");
+    rail.numbered = false;
+    let plain = rows_of(&step_frame(&mut rail, area, 0).buf);
+    assert!(!plain[0].contains("01"), "numbers are optional: {plain:?}");
+
+    // A static rail ignores input and registers no rows.
+    assert_eq!(rail.on_key(&key(KeyCode::Down)), Outcome::Ignored);
+    assert_eq!(rail.on_click(1), Outcome::Consumed);
+    assert_eq!(rail.cursor, 0);
+    let frame = step_frame(&mut rail, area, 0);
+    assert!(!frame.hits.regions().iter().any(|r| r.id == rail.row_id(1)));
+
+    // A selectable rail walks and clicks.
+    let mut pick = StepRail::new(id, pipeline()).selectable(true);
+    assert!(pick.selectable);
+    let frame = step_frame(&mut pick, area, 0);
+    for i in 0..4 {
+        assert!(
+            frame.hits.regions().iter().any(|r| r.id == pick.row_id(i)),
+            "row {i} is a hit region"
+        );
+    }
+    assert_ne!(pick.row_id(0), pick.row_id(1));
+    assert_eq!(pick.on_key(&key(KeyCode::Down)), Outcome::Changed);
+    assert_eq!(pick.cursor, 1);
+    assert_eq!(pick.on_key(&key(KeyCode::Char('x'))), Outcome::Ignored);
+    assert_eq!(
+        pick.on_key(&chord(KeyCode::Down, KeyModifiers::CONTROL)),
+        Outcome::Ignored,
+        "a chord is not navigation"
+    );
+    assert_eq!(pick.on_click(3), Outcome::Changed);
+    assert_eq!(pick.cursor, 3);
+    assert_eq!(pick.on_click(9), Outcome::Consumed, "no such row");
+    let click = frame.event(Phase::Click, id, Part::ROW, Position::new(2, 2));
+    assert_eq!(pick.pointer(&click), Response::<()>::changed());
+    assert_eq!(pick.cursor, 2);
+    let mut empty = StepRail::new(id, Vec::new()).selectable(true);
+    assert_eq!(empty.on_key(&key(KeyCode::Down)), Outcome::Ignored);
+
+    // The walk keys are configurable.
+    let mut vim = StepRail::new(id, pipeline())
+        .selectable(true)
+        .nav(NavKeys::VIM);
+    assert_eq!(vim.on_key(&key(KeyCode::Char('j'))), Outcome::Changed);
+    assert_eq!(vim.cursor, 1);
+    let mut desk = StepRail::new(id, pipeline()).selectable(true);
+    assert_eq!(desk.on_key(&key(KeyCode::Char('j'))), Outcome::Ignored);
+
+    // A rail that is loading or failed shows that instead of rows.
+    let mut loading = StepRail::new(id, pipeline()).content(ContentState::loading("Preparing"));
+    let text = text_of(&step_frame(&mut loading, area, 0).buf);
+    assert!(
+        text.contains("Preparing") && !text.contains("Checkout"),
+        "{text}"
+    );
+    let mut broken = StepRail::new(id, pipeline())
+        .content(ContentState::error(EmptyState::new("Pipeline unavailable")));
+    let text = text_of(&step_frame(&mut broken, area, 0).buf);
+    assert!(text.contains("Pipeline unavailable"), "{text}");
+}
+
+fn rows_of(buf: &Buffer) -> Vec<String> {
+    rows(buf)
+}
+
+fn layout_step_rail_scroll() {
+    let id = WidgetId::of("scenario.layout.steps.scroll");
+    let long = || -> Vec<Step> { (1..=12).map(|n| Step::new(&format!("Step {n}"))).collect() };
+    let area = Rect::new(0, 0, 30, 4);
+    let bar = junie_tui::widgets::scrollbar::id_for(id);
+    let press_bottom = |rail: &mut StepRail| {
+        let frame = step_frame(rail, area, 0);
+        let ev = PointerEvent::new(
+            &frame.hits,
+            Phase::Press,
+            bar,
+            Position::new(29, 3),
+            1,
+            KeyModifiers::NONE,
+        );
+        let _ = rail.pointer(&ev);
+        rail.scroll.offset
+    };
+    let mut paged = StepRail::new(id, long());
+    let mut jumped = StepRail::new(id, long()).track_click(TrackClick::Jump);
+    assert_eq!(jumped.core.scroll.track_click, Some(TrackClick::Jump));
+    let (page, jump) = (press_bottom(&mut paged), press_bottom(&mut jumped));
+    assert!(page > 0, "a track click scrolls");
+    assert!(
+        jump > page,
+        "jump goes to the click, paging only a screen: {jump} vs {page}"
+    );
+}
+
+struct Labels(&'static [&'static str]);
+
+impl junie_tui::core::list::RowSource for Labels {
+    fn len(&self) -> usize {
+        self.0.len()
+    }
+    fn label(&self, i: usize) -> &str {
+        self.0[i]
+    }
+}
+
+fn layout_list_core() {
+    let rows = Labels(&["alpha", "beta", "gamma"]);
+    let mut core = ListCore::new(3);
+    assert_eq!(core.cursor, 0);
+    assert!(!core.wrap && core.skip_disabled && core.skip_when_empty);
+    assert_eq!(core.content, ContentState::Ready);
+
+    // The cursor model mirrors the walk settings.
+    let model = core.cursor_model();
+    assert_eq!(
+        (model.index, model.wrap, model.skip_disabled),
+        (0, false, true)
+    );
+    core.cursor = 2;
+    core.wrap = true;
+    core.skip_disabled = false;
+    let model = core.cursor_model();
+    assert_eq!(
+        (model.index, model.wrap, model.skip_disabled),
+        (2, true, false)
+    );
+    core.cursor = 0;
+    core.wrap = false;
+
+    // Keys turn into a step and the move it caused.
+    core.type_ahead = false;
+    let (step, moved) = core
+        .key_step(&key(KeyCode::Down), &rows)
+        .expect("a nav key");
+    assert_eq!(step, KeyStep::Nav(junie_tui::core::keymap::Nav::Down));
+    assert_eq!(moved, Moved::To(1));
+    assert!(
+        core.key_step(&key(KeyCode::F(5)), &rows).is_none(),
+        "not a list key"
+    );
+    core.type_ahead = true;
+    core.type_ahead_precedence = Some(junie_tui::core::list::TypeAheadPrecedence::TypeAhead);
+    let (step, moved) = core
+        .key_step(&key(KeyCode::Char('g')), &rows)
+        .expect("a typed key");
+    assert_eq!(step, KeyStep::Type('g'));
+    assert_eq!(moved.index(), Some(2), "type-ahead jumps to the match");
+
+    // Rows exist only when content is ready and non-empty.
+    assert!(core.has_rows(3));
+    assert!(!core.has_rows(0));
+    core.content = ContentState::loading("Loading");
+    assert!(!core.has_rows(3), "loading hides the rows");
+    core.content = ContentState::Ready;
+
+    // An empty list is skipped by Tab unless focused or told otherwise.
+    assert!(core.is_focus_stop(3, false));
+    assert!(!core.is_focus_stop(0, false), "an empty list is skipped");
+    assert!(core.is_focus_stop(0, true), "a focused list stays a stop");
+    core.skip_when_empty = false;
+    assert!(core.is_focus_stop(0, false));
+    core.skip_when_empty = true;
+
+    // Content states draw in place of rows and say they did.
+    let area = Rect::new(0, 0, 30, 5);
+    let draw = |core: &ListCore, len: usize, default: Option<&str>| {
+        let mut drew = false;
+        let frame = paint(area, |area, buf, ctx| {
+            drew = core.draw_content(len, area, buf, ctx, ctx.theme.canvas, default);
+        });
+        (drew, text_of(&frame))
+    };
+    let (drew, _) = draw(&core, 3, None);
+    assert!(!drew, "ready rows are the caller's to draw");
+    let (drew, text) = draw(&core, 0, Some("No rows"));
+    assert!(drew && text.contains("No rows"), "{text}");
+    let (drew, text) = draw(&core, 0, None);
+    assert!(drew && text.trim().is_empty(), "nothing to say: {text}");
+    core.empty = Some(EmptyState::new("Nothing here"));
+    let (drew, text) = draw(&core, 0, Some("No rows"));
+    assert!(
+        drew && text.contains("Nothing here") && !text.contains("No rows"),
+        "{text}"
+    );
+    core.content = ContentState::loading("Fetching rows");
+    let (drew, text) = draw(&core, 3, None);
+    assert!(drew && text.contains("Fetching rows"), "{text}");
+    core.content = ContentState::error(EmptyState::new("Cannot load"));
+    let (drew, text) = draw(&core, 3, None);
+    assert!(drew && text.contains("Cannot load"), "{text}");
+}
+
+fn layout_notice_kinds() {
+    let theme = Theme::for_level(ColorLevel::TrueColor);
+    assert_eq!(NoticeKind::default(), NoticeKind::Error);
+    for (kind, tone) in [
+        (NoticeKind::Error, Tone::Error),
+        (NoticeKind::Warning, Tone::Warning),
+        (NoticeKind::Info, Tone::Normal),
+        (NoticeKind::Success, Tone::Normal),
+    ] {
+        assert_eq!(kind.message_tone(), tone);
+    }
+
+    let base = Notice::new(NoticeKind::Info, "Saved");
+    assert_eq!((base.message_lines, base.max_lines), (2, 2));
+    assert_eq!(base.detail_tone, Tone::Secondary);
+    assert!(base.mark_cut && base.detail.is_none() && base.hint.is_none());
+    assert_eq!(
+        base.clone().kind(NoticeKind::Warning).kind,
+        NoticeKind::Warning
+    );
+
+    // Each kind has its own mark and message colour.
+    let area = Rect::new(0, 0, 30, 3);
+    for (notice, kind, mark) in [
+        (Notice::error("Disk full"), NoticeKind::Error, "!"),
+        (
+            Notice::warning("Disk full"),
+            NoticeKind::Warning,
+            theme.glyphs.warning,
+        ),
+        (
+            Notice::info("Disk full"),
+            NoticeKind::Info,
+            theme.glyphs.info,
+        ),
+        (
+            Notice::success("Disk full"),
+            NoticeKind::Success,
+            theme.glyphs.done,
+        ),
+    ] {
+        assert_eq!(notice.kind, kind);
+        let mut buf = Buffer::empty(area);
+        let used = notice.render_theme(area, &mut buf, &theme, theme.canvas);
+        assert_eq!(used, 1);
+        assert_eq!(buf[(0, 0)].symbol(), mark, "{kind:?} mark");
+        assert_eq!(buf[(2, 0)].symbol(), "D");
+        assert_eq!(
+            buf[(2, 0)].fg,
+            theme.tone(kind.message_tone()),
+            "{kind:?} ink"
+        );
+    }
+    let marks: Vec<String> = [
+        Notice::error("x"),
+        Notice::warning("x"),
+        Notice::info("x"),
+        Notice::success("x"),
+    ]
+    .iter()
+    .map(|n| {
+        paint(area, |a, buf, ctx| {
+            n.render(a, buf, ctx, ctx.theme.canvas);
+        })[(0, 0)]
+            .symbol()
+            .to_owned()
+    })
+    .collect();
+    let distinct: std::collections::BTreeSet<_> = marks.iter().collect();
+    assert_eq!(distinct.len(), 4, "four kinds, four marks: {marks:?}");
+
+    // A detail line and a hint add rows, each in its own tone.
+    let full = Notice::error("Upload failed")
+        .detail("The server refused the file")
+        .hint("Press r to retry");
+    assert_eq!(full.height(30), 3);
+    let mut buf = Buffer::empty(area);
+    assert_eq!(full.render_theme(area, &mut buf, &theme, theme.canvas), 3);
+    assert_eq!(buf[(2, 1)].fg, theme.tone(Tone::Secondary));
+    assert_eq!(buf[(2, 2)].fg, theme.muted().fg.expect("a muted ink"));
+    let faint = full.clone().detail_tone(Tone::Faint);
+    assert_eq!(faint.detail_tone, Tone::Faint);
+    let mut buf = Buffer::empty(area);
+    faint.render_theme(area, &mut buf, &theme, theme.canvas);
+    assert_eq!(buf[(2, 1)].fg, theme.tone(Tone::Faint));
+
+    // Too narrow for text: only the mark is drawn.
+    let mut buf = Buffer::empty(Rect::new(0, 0, 2, 3));
+    assert_eq!(
+        full.render_theme(Rect::new(0, 0, 2, 3), &mut buf, &theme, theme.canvas),
+        1
+    );
+    assert_eq!(
+        full.render_theme(
+            Rect::ZERO,
+            &mut Buffer::empty(Rect::ZERO),
+            &theme,
+            theme.canvas
+        ),
+        0
+    );
+}
+
+fn layout_notice_wrapping() {
+    let theme = Theme::for_level(ColorLevel::TrueColor);
+    let long = "The disk is full and the write was rejected by the host";
+    let narrow = Rect::new(0, 0, 22, 8);
+    let wide = Notice::error(long);
+    assert_eq!(wide.height(22), 2, "two message lines by default");
+    assert_eq!(wide.clone().message_lines(1).height(22), 1);
+    assert_eq!(wide.clone().message_lines(3).height(22), 3);
+    assert_eq!(wide.height(80), 1, "it fits one line when wide");
+
+    // Detail lines are capped by max_lines.
+    let detailed = Notice::error("Failed").detail(long);
+    assert_eq!(detailed.height(22), 3);
+    assert_eq!(detailed.clone().max_lines(1).height(22), 2);
+    assert_eq!(detailed.clone().max_lines(3).height(22), 4);
+
+    // A cut line ends in an ellipsis unless asked not to.
+    let render = |n: &Notice| {
+        let mut buf = Buffer::empty(narrow);
+        let used = n.render_theme(narrow, &mut buf, &theme, theme.canvas);
+        (used, rows(&buf))
+    };
+    let (used, cut) = render(&wide.clone().message_lines(1));
+    assert_eq!(used, 1);
+    assert!(cut[0].trim_end().ends_with('…'), "{cut:?}");
+    let (_, plain) = render(&wide.clone().message_lines(1).mark_cut(false));
+    assert!(!plain[0].contains('…'), "{plain:?}");
+    assert!(!wide.clone().message_lines(1).mark_cut(false).mark_cut);
+    let (used, two) = render(&wide);
+    assert_eq!(used, 2);
+    assert!(
+        two[0].contains("The disk") && !two[1].trim().is_empty(),
+        "{two:?}"
+    );
+    assert_eq!(used, wide.height(22));
+
+    // The frame renders through the context too, at any area.
+    let frame = paint(narrow, |a, buf, ctx| {
+        assert_eq!(wide.render(a, buf, ctx, ctx.theme.canvas), 2);
+    });
+    assert!(text_of(&frame).contains("The disk"));
+}
+
+fn layout_empty_state() {
+    let theme = Theme::for_level(ColorLevel::TrueColor);
+    let area = Rect::new(0, 0, 40, 10);
+    assert_eq!(EmptyKind::default(), EmptyKind::Empty);
+
+    // The plain state centers a muted title and a faint hint.
+    let blank = EmptyState::new("No results").hint("Try a broader query");
+    assert_eq!(blank.kind, EmptyKind::Empty);
+    assert_eq!(blank.hint.as_deref(), Some("Try a broader query"));
+    let mut buf = Buffer::empty(area);
+    empty::render(area, &mut buf, &theme, &blank, theme.canvas);
+    let lines = rows(&buf);
+    let title_row = lines
+        .iter()
+        .position(|l| l.contains("No results"))
+        .expect("title");
+    let hint_row = lines
+        .iter()
+        .position(|l| l.contains("Try a broader"))
+        .expect("hint");
+    assert_eq!(
+        hint_row,
+        title_row + 2,
+        "a blank row separates hint from title"
+    );
+    let at = lines[title_row].find("No results").expect("column");
+    assert_eq!(at, (40 - "No results".len()) / 2, "centered");
+    assert_eq!(
+        buf[(at as u16, title_row as u16)].fg,
+        theme.muted().fg.expect("muted")
+    );
+    assert_eq!(
+        buf[(12, hint_row as u16)].fg,
+        theme.faint().fg.expect("faint")
+    );
+
+    // The error state leads with a bold mark in the error colour.
+    let broken = EmptyState::error("Cannot connect");
+    assert_eq!(broken.kind, EmptyKind::Error);
+    let mut buf = Buffer::empty(area);
+    empty::render(area, &mut buf, &theme, &broken, theme.canvas);
+    let lines = rows(&buf);
+    let y = lines
+        .iter()
+        .position(|l| l.contains("! Cannot connect"))
+        .expect("error title");
+    let x = lines[y].find('!').expect("mark") as u16;
+    assert_eq!(
+        buf[(x, y as u16)].fg,
+        theme.error_fg().fg.expect("error ink")
+    );
+
+    // Height counts the title, the hint with its gap and the action row.
+    assert_eq!(empty::height(&EmptyState::new("a"), 40), 1);
+    assert_eq!(empty::height(&blank, 40), 3);
+    let retry = WidgetId::of("scenario.layout.empty.retry");
+    let dismiss = WidgetId::of("scenario.layout.empty.dismiss");
+    let primary = EmptyAction::primary(retry, "Retry");
+    let secondary = EmptyAction::secondary(dismiss, "Dismiss");
+    assert!(primary.primary && !secondary.primary);
+    assert_eq!((primary.id, primary.label.as_str()), (retry, "Retry"));
+    let acting = EmptyState::error("Cannot connect")
+        .hint("Check the host")
+        .actions(vec![primary.clone(), secondary.clone()]);
+    assert_eq!(acting.actions.len(), 2);
+    assert_eq!(empty::height(&acting, 40), 5);
+
+    // With actions the context renderer adds buttons and hit regions.
+    let frame = paint_hits(area, |a, buf, ctx| {
+        empty::render_ctx(a, buf, ctx, &acting, ctx.theme.canvas)
+    });
+    let text = text_of(&frame.buf);
+    assert!(text.contains("Retry") && text.contains("Dismiss"), "{text}");
+    assert!(frame.hits.regions().iter().any(|r| r.id == retry));
+    assert!(frame.hits.regions().iter().any(|r| r.id == dismiss));
+    let short = Rect::new(0, 0, 40, 3);
+    let frame = paint_hits(short, |a, buf, ctx| {
+        empty::render_ctx(a, buf, ctx, &acting, ctx.theme.canvas)
+    });
+    assert!(
+        !text_of(&frame.buf).contains("Retry"),
+        "no room for actions"
+    );
+    let plain = paint_hits(area, |a, buf, ctx| {
+        empty::render_ctx(a, buf, ctx, &blank, ctx.theme.canvas)
+    });
+    assert!(plain.hits.regions().is_empty());
+    assert!(text_of(&plain.buf).contains("No results"));
+
+    // Clicks and keys resolve to the action under them.
+    assert_eq!(acting.on_click(retry), Some(&primary));
+    assert_eq!(acting.on_click(dismiss), Some(&secondary));
+    assert_eq!(
+        acting.on_click(WidgetId::of("scenario.layout.empty.other")),
+        None
+    );
+    let (outcome, action) = acting.on_key(retry, &key(KeyCode::Enter));
+    assert_ne!(outcome, Outcome::Ignored);
+    assert_eq!(action, Some(&primary));
+    let (_, action) = acting.on_key(dismiss, &key(KeyCode::Char(' ')));
+    assert_eq!(action, Some(&secondary));
+    assert_eq!(
+        acting.on_key(
+            WidgetId::of("scenario.layout.empty.other"),
+            &key(KeyCode::Enter)
+        ),
+        (Outcome::Ignored, None)
+    );
+    assert_eq!(acting.on_key(retry, &key(KeyCode::Char('q'))).1, None);
+}
+
+fn layout_page_header() {
+    let theme = Theme::for_level(ColorLevel::TrueColor);
+    let area = Rect::new(0, 0, 50, 6);
+    let header = PageHeader::new("Meters");
+    assert_eq!((header.inset, header.right_gap), (1, 4));
+    assert_eq!(header.height(), 1);
+
+    let full = PageHeader::new("Meters")
+        .status("live", Tone::Success)
+        .right("v1.2")
+        .subtitle("CPU and memory", Tone::Muted);
+    assert_eq!(full.height(), 2);
+    assert_eq!(
+        full.body(area),
+        Rect::new(0, 3, 50, 3),
+        "a blank row follows the header"
+    );
+    assert_eq!(header.body(area), Rect::new(0, 2, 50, 4));
+    assert_eq!(
+        full.body(Rect::new(2, 1, 20, 2)),
+        Rect::new(2, 3, 20, 0),
+        "never past the area"
+    );
+
+    let mut buf = Buffer::empty(area);
+    assert_eq!(full.render(area, &mut buf, &theme), 2);
+    let lines = rows(&buf);
+    assert_eq!(
+        lines[0].find("Meters"),
+        Some(1),
+        "the title sits at the inset"
+    );
+    assert!(lines[0].contains("Meterslive"), "{lines:?}");
+    assert_eq!(
+        lines[0].find("v1.2"),
+        Some(45),
+        "right text keeps the inset: {lines:?}"
+    );
+    assert_eq!(lines[1].find("CPU and memory"), Some(1));
+    assert_eq!(buf[(1, 0)].fg, theme.title().fg.expect("title ink"));
+    assert_eq!(buf[(7, 0)].fg, theme.tone(Tone::Success), "status tone");
+    assert_eq!(buf[(1, 1)].fg, theme.tone(Tone::Muted), "subtitle tone");
+    let mut buf = Buffer::empty(area);
+    assert_eq!(header.render(area, &mut buf, &theme), 1);
+    assert_eq!(
+        PageHeader::new("x").render(Rect::ZERO, &mut Buffer::empty(Rect::ZERO), &theme),
+        0
+    );
+    assert_eq!(
+        full.render(Rect::new(0, 0, 50, 1), &mut Buffer::empty(area), &theme),
+        1,
+        "one row has no room for the subtitle"
+    );
+
+    // Inset moves the title; the right gap decides when the right text drops.
+    let flush = PageHeader::new("Meters").inset(0);
+    let mut buf = Buffer::empty(area);
+    flush.render(area, &mut buf, &theme);
+    assert_eq!(rows(&buf)[0].find("Meters"), Some(0));
+    let tight = Rect::new(0, 0, 14, 1);
+    let crowded = PageHeader::new("Meters").right("v1.2");
+    let mut buf = Buffer::empty(tight);
+    crowded.render(tight, &mut buf, &theme);
+    assert!(!rows(&buf)[0].contains("v1.2"), "{:?}", rows(&buf));
+    let mut buf = Buffer::empty(tight);
+    crowded.clone().right_gap(0).render(tight, &mut buf, &theme);
+    assert!(rows(&buf)[0].contains("v1.2"), "{:?}", rows(&buf));
+
+    // Headings: text, optional right-aligned meta, a tone.
+    let heading = Heading::new("Recent");
+    assert_eq!((heading.tone, heading.meta.as_deref()), (Tone::Muted, None));
+    let tagged = heading.clone().meta("3 items").tone(Tone::Secondary);
+    assert_eq!(tagged.meta.as_deref(), Some("3 items"));
+    assert_eq!(tagged.tone, Tone::Secondary);
+    let strip = Rect::new(0, 0, 30, 1);
+    let mut buf = Buffer::empty(strip);
+    tagged.render(strip, &mut buf, &theme, theme.canvas);
+    let line = rows(&buf).remove(0);
+    assert!(
+        line.starts_with("Recent") && line.ends_with("3 items"),
+        "{line}"
+    );
+    assert_eq!(buf[(0, 0)].fg, theme.tone_on(Tone::Secondary, theme.canvas));
+    assert_eq!(buf[(29, 0)].fg, theme.tone_on(Tone::Faint, theme.canvas));
+    let mut buf = Buffer::empty(strip);
+    heading.render(strip, &mut buf, &theme, theme.canvas);
+    assert_eq!(buf[(0, 0)].fg, theme.tone_on(Tone::Muted, theme.canvas));
+    let squeezed = Rect::new(0, 0, 10, 1);
+    let mut buf = Buffer::empty(squeezed);
+    tagged.render(squeezed, &mut buf, &theme, theme.canvas);
+    assert!(
+        !rows(&buf)[0].contains("items"),
+        "meta yields to the text: {:?}",
+        rows(&buf)
+    );
+}
+
+fn layout_detail_card() {
+    let area = Rect::new(0, 0, 44, 14);
+    let props = || {
+        vec![
+            Prop::new("Host", "db.example.com"),
+            Prop::new("User", "admin"),
+        ]
+    };
+    let connect = WidgetId::of("scenario.layout.card.connect");
+    let edit = WidgetId::of("scenario.layout.card.edit");
+    let draw = |card: &DetailCard, interaction: Interaction| {
+        let mut connect_btn = Button::primary(connect, "Connect");
+        let mut edit_btn = Button::secondary(edit, "Edit");
+        let mut layout: Option<DetailLayout> = None;
+        let frame = paint_with(area, interaction, |a, buf, ctx| {
+            layout = Some(card.render(
+                a,
+                buf,
+                ctx,
+                ctx.theme.canvas,
+                &mut [&mut connect_btn, &mut edit_btn],
+            ));
+        });
+        (frame, layout.expect("rendered"))
+    };
+
+    let card = DetailCard::new("Production")
+        .meta("postgres")
+        .props(props())
+        .actions(ActionRow::new());
+    assert_eq!(card.reserve, 3);
+    assert!(!card.fit && !card.focused && card.max_width.is_none());
+    let (frame, layout) = draw(&card, Interaction::default());
+    let text = text_of(&frame.buf);
+    for shown in [
+        "Production",
+        "postgres",
+        "Host",
+        "db.example.com",
+        "User",
+        "Connect",
+        "Edit",
+    ] {
+        assert!(text.contains(shown), "{shown}:\n{text}");
+    }
+    assert_eq!(layout.card, area, "the card fills its area by default");
+    assert_eq!(layout.props_h, 2);
+    assert_eq!(layout.actions.len(), 2);
+    assert!(layout.actions.iter().all(|r| r.y == layout.actions[0].y));
+    assert!(layout.slot.height > 0 && layout.slot.bottom() <= layout.actions[0].y);
+    assert_ne!(layout.bg, ratatui::style::Color::Reset);
+    assert!(frame.hits.regions().iter().any(|r| r.id == connect));
+
+    // A size cap pins the card to the corner of its area.
+    let capped = card.clone().max_size(Some(30), Some(8));
+    assert_eq!((capped.max_width, capped.max_height), (Some(30), Some(8)));
+    let (_, layout) = draw(&capped, Interaction::default());
+    assert_eq!(layout.card, Rect::new(0, 0, 30, 8));
+    let (_, layout) = draw(
+        &card.clone().max_size(None, Some(9)),
+        Interaction::default(),
+    );
+    assert_eq!(layout.card, Rect::new(0, 0, 44, 9));
+
+    // Fit shrinks the card to its props plus the reserved action rows.
+    let fitted = card.clone().fit(true);
+    assert!(fitted.fit);
+    let (_, small) = draw(&fitted, Interaction::default());
+    assert!(small.card.height < area.height, "{small:?}");
+    let (_, roomy) = draw(&fitted.clone().reserve(9), Interaction::default());
+    assert_eq!(
+        roomy.card.height - small.card.height,
+        6,
+        "reserve is whole rows"
+    );
+    assert_eq!(fitted.clone().reserve(9).reserve, 9);
+
+    // Focus is a visible change of the frame.
+    let (plain, _) = draw(&card, Interaction::default());
+    let (focused, _) = draw(&card.clone().focused(true), Interaction::default());
+    assert!(card.clone().focused(true).focused);
+    assert_ne!(plain.buf, focused.buf, "a focused card draws differently");
+
+    // The empty form shows only the empty state.
+    let hollow = DetailCard::empty(EmptyState::new("Pick a connection"));
+    assert!(hollow.empty.is_some());
+    let (frame, layout) = draw(&hollow, Interaction::default());
+    assert!(text_of(&frame.buf).contains("Pick a connection"));
+    assert!(layout.actions.is_empty() && layout.card.is_empty());
+}
+
+fn layout_sidebar_rail() {
+    let id = WidgetId::of("scenario.layout.rail");
+    assert_eq!(SidebarRail::WIDTH, 2);
+    let rail = SidebarRail::new(id, "Files");
+    assert!(rail.collapsed_rail);
+    assert_eq!(rail.width(), SidebarRail::WIDTH);
+    let open = rail.clone().collapsed_rail(false);
+    assert!(!open.collapsed_rail);
+    assert_eq!(open.width(), 0, "an expanded sidebar leaves no rail");
+    assert_ne!(rail.collapse_id(), id);
+
+    // The collapsed rail is a one-column strip with the label running down.
+    let theme = Theme::for_level(ColorLevel::TrueColor);
+    let area = Rect::new(0, 0, 2, 10);
+    let frame = paint_hits(area, |a, buf, ctx| {
+        rail.render_rail(a, buf, ctx, ctx.theme.canvas)
+    });
+    assert_eq!(frame.buf[(0, 0)].symbol(), theme.glyphs.overflow_right);
+    let column: String = (2..7)
+        .map(|y| frame.buf[(0, y)].symbol().to_owned())
+        .collect();
+    assert_eq!(column, "Files");
+    assert_eq!(frame.buf[(0, 8)].symbol(), " ");
+    assert!(
+        frame
+            .hits
+            .regions()
+            .iter()
+            .any(|r| r.id == id && r.area == Rect::new(0, 0, 1, 10)),
+        "the strip is clickable"
+    );
+    let wide = SidebarRail::new(id, "日本");
+    let frame = paint(area, |a, buf, ctx| {
+        wide.render_rail(a, buf, ctx, ctx.theme.canvas)
+    });
+    assert_eq!(
+        frame[(0, 2)].symbol(),
+        "…",
+        "a wide cluster becomes a placeholder"
+    );
+    let silent = paint_hits(area, |a, buf, ctx| {
+        open.render_rail(a, buf, ctx, ctx.theme.canvas)
+    });
+    assert!(silent.hits.regions().is_empty() && text_of(&silent.buf).trim().is_empty());
+    let short = paint(Rect::new(0, 0, 2, 4), |a, buf, ctx| {
+        rail.render_rail(a, buf, ctx, ctx.theme.canvas)
+    });
+    assert_eq!(
+        short[(0, 3)].symbol(),
+        "i",
+        "the label is clipped to the strip"
+    );
+    assert_eq!(short[(0, 4 - 1)].symbol(), "i");
+
+    // Clicks: the strip expands, the collapse control collapses.
+    assert_eq!(rail.on_click(id), Some(RailAction::Expand));
+    assert_eq!(
+        rail.on_click(rail.collapse_id()),
+        Some(RailAction::Collapse)
+    );
+    assert_eq!(
+        rail.on_click(WidgetId::of("scenario.layout.rail.other")),
+        None
+    );
+    assert_eq!(
+        open.on_click(id),
+        None,
+        "an open sidebar's body is not the strip"
+    );
+    assert_eq!(
+        open.on_click(open.collapse_id()),
+        Some(RailAction::Collapse)
+    );
+
+    // The collapse control sits in the panel's top-right corner when it fits.
+    let panel = Rect::new(0, 0, 30, 6);
+    let frame = paint_hits(panel, |a, buf, ctx| {
+        open.render_collapse(a, buf, ctx, ctx.theme.canvas)
+    });
+    assert_eq!(frame.buf[(26, 0)].symbol(), theme.glyphs.overflow_left);
+    assert!(
+        frame
+            .hits
+            .regions()
+            .iter()
+            .any(|r| r.id == open.collapse_id() && r.area == Rect::new(25, 0, 3, 1))
+    );
+    let narrow = paint_hits(Rect::new(0, 0, 11, 6), |a, buf, ctx| {
+        open.render_collapse(a, buf, ctx, ctx.theme.canvas)
+    });
+    assert!(narrow.hits.regions().is_empty(), "no room, no control");
+    let flat = paint_hits(Rect::new(0, 0, 30, 1), |a, buf, ctx| {
+        open.render_collapse(a, buf, ctx, ctx.theme.canvas)
+    });
+    assert!(flat.hits.regions().is_empty());
+}
+
+fn layout_too_small() {
+    let theme = Theme::for_level(ColorLevel::TrueColor);
+    assert_eq!((TooSmall::MIN_WIDTH, TooSmall::MIN_HEIGHT), (72, 20));
+    let guard = TooSmall::new("Showcase");
+    assert!(guard.applies(Rect::new(0, 0, 71, 20)));
+    assert!(guard.applies(Rect::new(0, 0, 72, 19)));
+    assert!(!guard.applies(Rect::new(0, 0, 72, 20)));
+    assert!(!guard.applies(Rect::new(0, 0, 200, 60)));
+    let lenient = TooSmall::new("Showcase").min(40, 10);
+    assert!(!lenient.applies(Rect::new(0, 0, 41, 11)));
+    assert!(lenient.applies(Rect::new(0, 0, 39, 11)));
+
+    let area = Rect::new(0, 0, 40, 10);
+    let mut buf = Buffer::empty(area);
+    guard.render(area, &mut buf, &theme);
+    let text = text_of(&buf);
+    for line in [
+        "Showcase",
+        "Terminal too small",
+        "Need 72×20, have 40×10",
+        "q Quit",
+    ] {
+        assert!(text.contains(line), "{line}:\n{text}");
+    }
+    let lines = rows(&buf);
+    let brand = lines
+        .iter()
+        .position(|l| l.contains("Showcase"))
+        .expect("brand");
+    let hint = lines
+        .iter()
+        .position(|l| l.contains("q Quit"))
+        .expect("hint");
+    assert_eq!(hint, brand + 4, "the quit hint sits apart from the message");
+    assert_eq!(
+        lines[brand].find("Showcase"),
+        Some((40 - 8) / 2),
+        "centered"
+    );
+    assert_eq!(buf[(16, brand as u16)].fg, theme.title().fg.expect("title"));
+
+    // The wording of the hint and the brand colour belong to the app.
+    let custom = TooSmall::new("Showcase")
+        .quit_hint("Esc leaves")
+        .brand_style(ratatui::style::Style::new().fg(ratatui::style::Color::Magenta))
+        .min(60, 8);
+    let mut buf = Buffer::empty(area);
+    custom.render(area, &mut buf, &theme);
+    let text = text_of(&buf);
+    assert!(
+        text.contains("Esc leaves") && !text.contains("q Quit"),
+        "{text}"
+    );
+    assert!(text.contains("Need 60×8, have 40×10"), "{text}");
+    let lines = rows(&buf);
+    let y = lines
+        .iter()
+        .position(|l| l.contains("Showcase"))
+        .expect("brand") as u16;
+    assert_eq!(buf[(16, y)].fg, ratatui::style::Color::Magenta);
+
+    // Inside a larger buffer it paints only its own area.
+    let inner = Rect::new(4, 2, 30, 6);
+    let mut buf = Buffer::empty(Rect::new(0, 0, 40, 10));
+    guard.render(inner, &mut buf, &theme);
+    let lines = rows(&buf);
+    assert!(
+        lines[0].trim().is_empty() && lines[9].trim().is_empty(),
+        "{lines:?}"
+    );
+    assert!(lines[2..8].iter().any(|l| l.contains("Terminal too small")));
+    assert!(lines.iter().all(|l| l[..4].trim().is_empty()), "{lines:?}");
+    // A tiny area truncates instead of overflowing.
+    let tiny = Rect::new(0, 0, 8, 3);
+    let mut buf = Buffer::empty(tiny);
+    guard.render(tiny, &mut buf, &theme);
+    assert!(text_of(&buf).contains("Showcase"));
+}
+
+fn layout_breadcrumb() {
+    let id = WidgetId::of("scenario.layout.crumbs");
+    let theme = Theme::for_level(ColorLevel::TrueColor);
+    let path = || -> Vec<String> {
+        ["Home", "Projects", "terminal", "src"]
+            .iter()
+            .map(|s| (*s).to_owned())
+            .collect()
+    };
+    let mut crumbs = Breadcrumb::new(id, path());
+    assert!(crumbs.clickable);
+    let sep = format!(" {} ", theme.glyphs.overflow_right);
+    let wide = Rect::new(0, 0, 60, 1);
+    let draw = |crumbs: &mut Breadcrumb, area: Rect| {
+        paint_hits(area, |a, buf, ctx| {
+            crumbs.render(a, buf, ctx, ctx.theme.canvas)
+        })
+    };
+    let frame = draw(&mut crumbs, wide);
+    let line = rows(&frame.buf).remove(0);
+    assert_eq!(
+        line.trim_end(),
+        format!("Home{sep}Projects{sep}terminal{sep}src")
+    );
+    assert!(crumbs.areas.iter().all(|r| !r.is_empty()));
+    assert_ne!(crumbs.segment_id(0), crumbs.segment_id(1));
+    for i in 0..3 {
+        assert!(
+            frame
+                .hits
+                .regions()
+                .iter()
+                .any(|r| r.id == crumbs.segment_id(i) && r.area == crumbs.areas[i]),
+            "segment {i} is a link"
+        );
+    }
+    assert!(
+        !frame
+            .hits
+            .regions()
+            .iter()
+            .any(|r| r.id == crumbs.segment_id(3)),
+        "the current page is not a link"
+    );
+
+    // Clicking a parent segment says which level to go to.
+    assert_eq!(crumbs.on_click(crumbs.segment_id(1)), Some(1));
+    assert_eq!(crumbs.on_click(crumbs.segment_id(0)), Some(0));
+    assert_eq!(
+        crumbs.on_click(crumbs.segment_id(3)),
+        None,
+        "the last is current"
+    );
+    assert_eq!(
+        crumbs.on_click(WidgetId::of("scenario.layout.crumbs.other")),
+        None
+    );
+    assert_eq!(
+        Breadcrumb::new(id, Vec::new()).on_click(crumbs.segment_id(0)),
+        None
+    );
+
+    // Not clickable: plain text and no regions.
+    let mut flat = Breadcrumb::new(id, path()).clickable(false);
+    assert!(!flat.clickable);
+    let frame = draw(&mut flat, wide);
+    assert!(frame.hits.regions().is_empty());
+    assert_eq!(flat.on_click(flat.segment_id(1)), None);
+    assert!(text_of(&frame.buf).contains("Projects"));
+
+    // Narrow: earlier segments collapse into an ellipsis, the last stays.
+    let mut narrow = Breadcrumb::new(id, path());
+    let frame = draw(&mut narrow, Rect::new(0, 0, 18, 1));
+    let line = rows(&frame.buf).remove(0);
+    assert!(line.starts_with(theme.glyphs.ellipsis), "{line:?}");
+    assert!(line.trim_end().ends_with("src"), "{line:?}");
+    assert!(!line.contains("Home"), "{line:?}");
+    assert!(
+        narrow.areas[0].is_empty(),
+        "a collapsed segment has no area"
+    );
+    let frame = draw(&mut narrow, Rect::ZERO);
+    assert!(frame.hits.regions().is_empty());
 }

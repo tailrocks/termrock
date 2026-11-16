@@ -284,6 +284,17 @@ pub enum ScenarioId {
     LayoutChipBarOverflow,
     LayoutToolbarActions,
     LayoutToolbarOverflow,
+    LayoutStepRail,
+    LayoutStepRailScroll,
+    LayoutListCore,
+    LayoutNoticeKinds,
+    LayoutNoticeWrapping,
+    LayoutEmptyState,
+    LayoutPageHeader,
+    LayoutDetailCard,
+    LayoutSidebarRail,
+    LayoutTooSmall,
+    LayoutBreadcrumb,
     // lane:layout end
 }
 
