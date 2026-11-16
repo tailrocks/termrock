@@ -165,6 +165,23 @@ pub enum ScenarioId {
     // lane:gridtable begin: this lane adds its ScenarioId variants between these two lines only
     // lane:gridtable end
     // lane:fields begin: this lane adds its ScenarioId variants between these two lines only
+    FieldsButtonControls,
+    FieldsButtonRowLayout,
+    FieldsActionRow,
+    FieldsChoiceControls,
+    FieldsIconButton,
+    FieldsEditFieldCore,
+    FieldsValidators,
+    FieldsFieldCommon,
+    FieldsPointerRouting,
+    FieldsTextInputBuilders,
+    FieldsTextInputEditing,
+    FieldsTextInputPointer,
+    FieldsTextAreaBuilders,
+    FieldsTextAreaEditing,
+    FieldsCodeEditorKeys,
+    FieldsCodeEditorFind,
+    FieldsCodeEditorConfig,
     // lane:fields end
     // lane:dialogs begin: this lane adds its ScenarioId variants between these two lines only
     DialogsLeaveGuardFlow,
