@@ -308,6 +308,17 @@ should not retain its held appearance indefinitely. Some controls show a
 brief release flash. Before comparing the next hover/press sequence, wait
 for that specific target to return to its expected non-flash state.
 
+The press flash runs on the app's own clock. Call `App::flash_expired()`
+before a resize that forces the settled frame, and never sleep a guessed 200 ms:
+it fences first, so the click is known to be handled, then waits the flash
+length once (a session on the stepped test clock only fences, because wall
+time never expires its flash, and `App::settle_flash` steps that clock). Prefer
+the stepped clock (`Launch::clock`) when a case races a simulated job, as
+`j01_prewarm` does: `step_until` advances one tick behind the fence until the
+frame the case pins is on screen. The sleeps that remain in the cases wait out
+real time on purpose (an intro guard, a fixed number of fetch ticks, a
+negative check that a late result does not arrive).
+
 ### Send wheel input to the application component
 
 The inspected fork and upstream convenience `MouseAction::Scroll` encode
