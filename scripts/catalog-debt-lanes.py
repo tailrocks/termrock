@@ -389,8 +389,16 @@ def select(lane, prefixes, exact):
     return picked
 
 
+def known_lane(name):
+    """The lane constant that equals `name`, so a path never carries user text."""
+    for lane in LANES:
+        if lane == name:
+            return lane
+    sys.exit(f"unknown lane {name!r}; choose from {', '.join(sorted(LANES))}")
+
+
 def cmd_list(args):
-    for api in select(args.lane, args.match or [""], []):
+    for api in select(known_lane(args.lane), args.match or [""], []):
         print(api)
 
 
@@ -401,7 +409,8 @@ def cmd_proofs(args):
     gate checks that the records are well formed and the scenario is callable,
     never that the scenario uses the API.
     """
-    picked = select(args.lane, args.match or [], args.id or [])
+    lane = known_lane(args.lane)
+    picked = select(lane, args.match or [], args.id or [])
     if not picked:
         sys.exit("nothing selected: pass --match PREFIX or --id API")
     scenarios = ", ".join(f"ScenarioId::{s}" for s in args.scenarios.split(","))
@@ -410,7 +419,7 @@ def cmd_proofs(args):
         f"scenarios: &[{scenarios}], feature: None }},\n"
         for api in picked
     )
-    lane_file = SHOWCASE / "coverage" / f"lane_{args.lane}.rs"
+    lane_file = SHOWCASE / "coverage" / f"lane_{lane}.rs"
     text = lane_file.read_text()
     anchor = "pub const PROOFS: &[CapabilityProof] = &[\n"
     if anchor not in text:
@@ -426,7 +435,7 @@ def cmd_proofs(args):
     if not any("PageId" in line for line in uses):
         text = text.replace("\nuse super::{", "\nuse crate::app::PageId;\nuse super::{", 1)
     lane_file.write_text(text)
-    debt = lane_debt_path(args.lane)
+    debt = lane_debt_path(lane)
     keep = [
         line for line in debt.read_text().splitlines(keepends=True)
         if line.split("#", 1)[0].strip() not in set(picked)
