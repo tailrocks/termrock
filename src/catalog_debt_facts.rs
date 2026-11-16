@@ -3,7 +3,7 @@
 //! split them without hand work.
 //!
 //! This is not part of the gate. The test is `#[ignore]`d and only writes a
-//! file when `CATALOG_DEBT_FACTS=<path>` is set. It reads the same syn
+//! file when run with `--run-ignored only`, to `target/debt-facts.tsv`. It reads the same syn
 //! inventory the gate uses (the kind of every export) and adds what the
 //! inventory does not carry: the shape of each definition (receiver, return
 //! type, variant fields) and where it is defined.
@@ -191,12 +191,10 @@ fn debt_lines(root: &Path) -> Vec<String> {
 }
 
 #[test]
-#[ignore = "planning aid: set CATALOG_DEBT_FACTS=<path> and run with --run-ignored only"]
+#[ignore = "planning aid: run with --run-ignored only; writes target/debt-facts.tsv"]
 fn catalog_debt_facts_are_emitted() {
-    let Ok(target) = std::env::var("CATALOG_DEBT_FACTS") else {
-        return;
-    };
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let target = root.join("target/debt-facts.tsv");
     let tree = SourceTree::from_dir(root, "src");
     let inventory = build(&tree, MATRIX.last().expect("matrix row"), super::EXPANSIONS)
         .expect("inventory builds");

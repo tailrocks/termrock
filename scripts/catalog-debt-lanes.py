@@ -9,7 +9,7 @@ Two steps, both rerunnable:
 
   1. Emit the facts (kind, shape, owner, definition file) for every debt id:
 
-       CATALOG_DEBT_FACTS=target/debt-facts.tsv cargo nextest run -p junie-tui --lib \
+       cargo nextest run -p junie-tui --lib \
          --run-ignored only -E 'test(catalog_debt_facts)'
 
   2. Classify and split:
