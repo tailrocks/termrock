@@ -143,6 +143,7 @@ pub enum ScenarioId {
     ShellHostLoop,
     ShellPageHelpers,
     ShellClipboardCopy,
+    ShellMotionPolicy,
     RuntimeInputPump,
     RuntimeExternalChannel,
     // lane:shell end

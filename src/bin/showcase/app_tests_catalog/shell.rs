@@ -69,6 +69,7 @@ pub const CASES: &[ScenarioCase] = &[
     ScenarioCase { id: ScenarioId::ShellHostLoop, run: shell_host_loop },
     ScenarioCase { id: ScenarioId::ShellPageHelpers, run: shell_page_helpers },
     ScenarioCase { id: ScenarioId::ShellClipboardCopy, run: shell_clipboard_copy },
+    ScenarioCase { id: ScenarioId::ShellMotionPolicy, run: shell_motion_policy },
     ScenarioCase { id: ScenarioId::RuntimeInputPump, run: runtime_input_pump },
     ScenarioCase { id: ScenarioId::RuntimeExternalChannel, run: runtime_external_channel },
 ];
@@ -168,10 +169,15 @@ fn shell_status_line() {
 /// and which of them a page that is not shown may still make.
 fn shell_cx_requests() {
     const JOB: JobKey = JobKey::new("sync");
-    let (a, b) = (WidgetId::of("scenario.cx.a"), WidgetId::of("scenario.cx.b"));
+    let (a, b, c) = (
+        WidgetId::of("scenario.cx.a"),
+        WidgetId::of("scenario.cx.b"),
+        WidgetId::of("scenario.cx.c"),
+    );
     let mut ring = FocusRing::default();
     ring.register(a);
     ring.register(b);
+    ring.register(c);
     let mut focus = Focus::default();
     focus.set(Some(a));
 
@@ -182,6 +188,10 @@ fn shell_cx_requests() {
     assert_eq!(cx.focus.current(), Some(b));
     cx.focus_prev();
     assert_eq!(cx.focus.current(), Some(a));
+    cx.focus_prev();
+    assert_eq!(cx.focus.current(), Some(c), "previous wraps to the last");
+    cx.focus_next();
+    assert_eq!(cx.focus.current(), Some(a), "next wraps to the first");
 
     cx.status("Saved");
     cx.status_in("Careful", Tone::Warning);
@@ -337,6 +347,16 @@ fn shell_router_stack() {
     assert!(router.drops(&Nav::Replace("Other")));
     assert!(router.drops(&Nav::Reset("Root")));
     assert!(router.drops(&Nav::<&str>::Back));
+    assert!(
+        !Router::new("Solo").drops(&Nav::<&str>::Back),
+        "the root has nothing to go back from"
+    );
+    let mut pair = Router::new("Solo");
+    pair.push("Next");
+    assert!(
+        pair.drops(&Nav::<&str>::Back),
+        "two pages are enough for a back to drop one"
+    );
     assert!(router.drops(&Nav::<&str>::PopTo(0)));
     assert!(
         !router.drops(&Nav::<&str>::PopTo(2)),
@@ -1816,6 +1836,65 @@ fn shell_clipboard_copy() {
     );
     assert!(shell.status.is_error());
     let _ = clipboard::take_output();
+}
+
+/// The motion setting on a page that animates: the showcase Activity page
+/// opens with its feed running, so a tick moves it under `Full`, moves the
+/// state but not the decoration under `Reduced`, and moves nothing under
+/// `Paused`.
+fn shell_motion_policy() {
+    use crate::app::{App as Showcase, PageId};
+    let theme = || Theme::for_level(ColorLevel::TrueColor);
+    let mut frames = Vec::new();
+    // (setting, whether ticks advance state, whether decoration runs, paused)
+    for (motion, ticks, animates, paused) in [
+        (Motion::Full, true, true, false),
+        (Motion::Reduced, true, false, false),
+        (Motion::Paused, false, false, true),
+    ] {
+        assert_eq!(
+            (motion.ticks(), motion.animates(), motion.is_paused()),
+            (ticks, animates, paused),
+            "{motion:?}"
+        );
+        let mut app = Showcase::with_motion(theme(), motion, 0);
+        app.open_page(PageId::Activity);
+        let mut term = Terminal::new(TestBackend::new(140, 44)).expect("test terminal");
+        let mut draw = |app: &mut Showcase| {
+            term.draw(|f| render(app, f))
+                .expect("the test backend draws");
+            text_of(term.backend().buffer())
+        };
+        let before = draw(&mut app);
+        assert_eq!(app.shell.motion, motion);
+        assert_eq!(
+            app.animating(),
+            ticks,
+            "{motion:?}: a running page animates unless motion is paused"
+        );
+        let decor = app.tick;
+        let mut changed = false;
+        for _ in 0..12 {
+            changed |= handle(&mut app, Input::Tick) == Outcome::Changed;
+        }
+        let after = draw(&mut app);
+        assert_eq!(changed, ticks, "{motion:?}: ticks change the view");
+        assert_eq!(
+            app.tick > decor,
+            animates,
+            "{motion:?}: only full motion runs the decorative clock"
+        );
+        assert_eq!(
+            before != after,
+            ticks,
+            "{motion:?}: the drawn page moves exactly when ticks advance"
+        );
+        frames.push(after);
+    }
+    assert_ne!(
+        frames[0], frames[2],
+        "the same page, ticked the same, differs between full and paused motion"
+    );
 }
 
 /// Draining raw input: what folds into one frame, what waits for the next,
