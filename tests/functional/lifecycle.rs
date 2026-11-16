@@ -286,3 +286,94 @@ fn a_session_gives_the_terminal_back_and_takes_it_again_through_its_own_calls() 
     app.key("enter");
     await_exit(&app);
 }
+
+/// How long the event loop sleeps when nothing else wakes it, and so the
+/// longest an external message can wait: the receiver's own latency.
+struct LatencyProbe {
+    start: std::time::Instant,
+    receiver: junie_tui::runtime::ExternalReceiver,
+    delivered_ms: Option<u128>,
+}
+
+impl junie_tui::runtime::Application for LatencyProbe {
+    fn handle(&mut self, input: junie_tui::core::event::Input) -> junie_tui::core::event::Outcome {
+        if matches!(input, junie_tui::core::event::Input::External(_)) {
+            self.delivered_ms = Some(self.start.elapsed().as_millis());
+        }
+        junie_tui::core::event::Outcome::Changed
+    }
+
+    fn render(&mut self, frame: &mut ratatui::Frame) {
+        frame.render_widget(Paragraph::new("waiting for a message"), frame.area());
+    }
+
+    fn should_quit(&self) -> bool {
+        self.delivered_ms.is_some()
+    }
+
+    // Far longer than any latency under test, so only the latency wakes the loop.
+    fn tick_interval(&self) -> std::time::Duration {
+        std::time::Duration::from_secs(60)
+    }
+
+    fn external(&self) -> Option<&junie_tui::runtime::ExternalReceiver> {
+        Some(&self.receiver)
+    }
+}
+
+fn delivery_ms(latency_ms: &str) -> u128 {
+    let app = launch_session_child(
+        "lifecycle-external-latency",
+        "lifecycle::an_external_message_waits_for_the_receivers_latency",
+        &format!("latency:{latency_ms}"),
+    );
+    let screen = app.wait_text("delivered after");
+    let shown = text(&screen);
+    let ms = shown
+        .split("delivered after ")
+        .nth(1)
+        .and_then(|rest| rest.split(" ms").next())
+        .and_then(|n| n.trim().parse().ok())
+        .unwrap_or_else(|| panic!("no delivery time on the screen:\n{shown}"));
+    app.key("enter");
+    await_exit(&app);
+    ms
+}
+
+#[test]
+fn an_external_message_waits_for_the_receivers_latency() {
+    if let Some(ms) = std::env::var(SESSION_CHILD)
+        .ok()
+        .and_then(|mode| mode.strip_prefix("latency:").map(str::to_owned))
+    {
+        let (tx, receiver) = junie_tui::runtime::external_channel();
+        let receiver = receiver.latency(std::time::Duration::from_millis(
+            ms.parse().expect("latency in ms"),
+        ));
+        let mut app = LatencyProbe {
+            start: std::time::Instant::now(),
+            receiver,
+            delivered_ms: None,
+        };
+        std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_millis(100));
+            tx.send(1_u8);
+        });
+        junie_tui::runtime::run(&mut app).expect("the event loop runs");
+        say(&format!(
+            "delivered after {} ms",
+            app.delivered_ms.expect("a message arrived")
+        ));
+        // The session is gone, so the terminal is back in line mode.
+        std::io::stdin()
+            .read_line(&mut String::new())
+            .expect("read the line");
+        return;
+    }
+    // The message is sent 100 ms in; a short latency polls for it soon after,
+    // a long one leaves it queued until the next wake-up.
+    let quick = delivery_ms("10");
+    let slow = delivery_ms("1500");
+    assert!(quick < 800, "a 10 ms latency delivered after {quick} ms");
+    assert!(slow >= 1_000, "a 1500 ms latency delivered after {slow} ms");
+}
