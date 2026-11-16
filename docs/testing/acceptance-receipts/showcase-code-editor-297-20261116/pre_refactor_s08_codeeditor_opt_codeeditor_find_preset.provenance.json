@@ -1,0 +1,73 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-297-target/debug/showcase",
+  "binary_sha256": "cb853b61871543bb6d82901239b73756c67be5a7478fde469f38b6bdb24068ed",
+  "fixture_args": [
+    "--page",
+    "codeeditor",
+    "--opt",
+    "codeeditor.find_preset=delay-3rd"
+  ],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "28e94077fa8e06efc89e6e07988e59c0406276b3bae1edf77e84d3510c940a6d",
+  "expect_baseline": "missing",
+  "precondition": "",
+  "session": null,
+  "expected_test_id": "pre_refactor/s08_codeeditor/opt_codeeditor_find_preset",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/showcase-code-editor-297-20261116/pre_refactor_s08_codeeditor_opt_codeeditor_find_preset.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/showcase-code-editor-297-20261116/pre_refactor_s08_codeeditor_opt_codeeditor_find_preset.provenance.json",
+  "previous_archive_path": null,
+  "test_id": "pre_refactor/s08_codeeditor/opt_codeeditor_find_preset",
+  "acceptance": {
+    "expected_baseline_sha256": "missing",
+    "accepted_baseline_sha256": "28e94077fa8e06efc89e6e07988e59c0406276b3bae1edf77e84d3510c940a6d",
+    "candidate_sha256": "28e94077fa8e06efc89e6e07988e59c0406276b3bae1edf77e84d3510c940a6d",
+    "transaction_receipt": "docs/testing/acceptance-receipts/showcase-code-editor-297-20261116/pre_refactor_s08_codeeditor_opt_codeeditor_find_preset.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "missing"
+  },
+  "candidate": {
+    "sha256": "28e94077fa8e06efc89e6e07988e59c0406276b3bae1edf77e84d3510c940a6d",
+    "path": "tests/functional/baselines/pre_refactor/s08_codeeditor/opt_codeeditor_find_preset.tui.pb"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/s08_codeeditor/opt_codeeditor_find_preset.tui.pb",
+    "candidate_sha256": "28e94077fa8e06efc89e6e07988e59c0406276b3bae1edf77e84d3510c940a6d",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-297-target/debug/showcase",
+    "binary_sha256": "cb853b61871543bb6d82901239b73756c67be5a7478fde469f38b6bdb24068ed",
+    "note": "New Code editor demo capture for the Find query option and the F5 re-scan key (#297)"
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s08_codeeditor/opt_codeeditor_find_preset",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-297/target/functional/s08-findpre-78222-1794778988656591000-0/check-artifacts/pre_refactor/s08_codeeditor/opt_codeeditor_find_preset/28e94077fa8e06efc89e6e07988e59c0406276b3bae1edf77e84d3510c940a6d/sample.tui.pb"
+    },
+    "candidate_sha256": "28e94077fa8e06efc89e6e07988e59c0406276b3bae1edf77e84d3510c940a6d",
+    "baseline_sha256": "28e94077fa8e06efc89e6e07988e59c0406276b3bae1edf77e84d3510c940a6d",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-297/tests/functional/baselines/pre_refactor/s08_codeeditor/opt_codeeditor_find_preset.tui.pb"
+    },
+    "error_code": null
+  }
+}

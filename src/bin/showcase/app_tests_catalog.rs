@@ -12,12 +12,14 @@ use junie_tui::core::hit::Axis;
 use junie_tui::core::hit::HitRegistry;
 use junie_tui::core::id::{ItemKey, WidgetId};
 use junie_tui::core::refusal::{Reason, clear_refusal, take_refusal};
+use junie_tui::core::text::TextBuffer;
 use junie_tui::terminal::{TerminalState, TerminalViewport};
-use junie_tui::theme::{ColorLevel, Theme};
+use junie_tui::theme::{ColorLevel, SyntaxTone, Theme};
 use junie_tui::ui::ctx::{Interaction, RenderCtx};
 use junie_tui::ui::layout::Split;
 use junie_tui::ui::popup::{Dismiss, Placement};
 use junie_tui::widgets::choice::Checkbox;
+use junie_tui::widgets::code::{CodeEditor, Diagnostic, Highlighter, Segmenter, Severity};
 use junie_tui::widgets::dialog::{Dialog, DialogResult};
 use junie_tui::widgets::edit::{EditField, Validator};
 use junie_tui::widgets::grid::{
@@ -54,6 +56,8 @@ pub const CASES: &[ScenarioCase] = &[
     ScenarioCase { id: ScenarioId::FixedControlsPolicy, run: fixed_controls_policy },
     ScenarioCase { id: ScenarioId::FixedDialogsPolicy, run: fixed_dialogs_policy },
     ScenarioCase { id: ScenarioId::ListDetailNavigation, run: list_detail_navigation },
+    ScenarioCase { id: ScenarioId::CodeEditorProviders, run: code_editor_providers },
+    ScenarioCase { id: ScenarioId::CodeEditorDiagnosticsFind, run: code_editor_diagnostics_find },
     ScenarioCase { id: ScenarioId::GridEditSession, run: grid_edit_session },
     ScenarioCase { id: ScenarioId::GridChangeCapture, run: grid_change_capture },
     ScenarioCase { id: ScenarioId::GridSubmissionLock, run: grid_submission_lock },
@@ -932,6 +936,149 @@ fn catalog_picker_setters_and_accessors_behave() {
     assert_eq!(PickerKeyProfile::current(), PickerKeyProfile::Vim);
     PickerKeyProfile::Desktop.install();
     assert_eq!(PickerKeyProfile::current(), PickerKeyProfile::Desktop);
+}
+
+static TONE_RUNS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+static BLOCK_RUNS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
+fn counted_tones(src: &str) -> Vec<(std::ops::Range<usize>, SyntaxTone)> {
+    TONE_RUNS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    src.find("let")
+        .map(|at| vec![(at..at + 3, SyntaxTone::Keyword)])
+        .unwrap_or_default()
+}
+
+fn counted_blocks(src: &str) -> Vec<std::ops::Range<usize>> {
+    BLOCK_RUNS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    std::iter::once(0..src.len()).collect()
+}
+
+fn runs(counter: &std::sync::atomic::AtomicUsize) -> usize {
+    counter.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+fn editor_frame(editor: &mut CodeEditor) {
+    paint(Rect::new(0, 0, 60, 8), |area, buf, ctx| {
+        editor.render(area, buf, ctx, ratatui::style::Color::Reset)
+    });
+}
+
+fn code_editor_providers() {
+    let mut editor = CodeEditor::new(WidgetId::of("scenario.code"), "let delay = 1;");
+    assert!(editor.highlighter_fn().is_none() && editor.segmenter_fn().is_none());
+
+    editor.set_highlighter(Some(counted_tones as Highlighter));
+    editor.set_segmenter(Some(counted_blocks as Segmenter));
+    assert!(editor.highlighter_fn().is_some() && editor.segmenter_fn().is_some());
+    let (tones, blocks) = (runs(&TONE_RUNS), runs(&BLOCK_RUNS));
+    editor_frame(&mut editor);
+    assert_eq!(
+        runs(&TONE_RUNS),
+        tones + 1,
+        "the first paint asks for tones"
+    );
+    assert_eq!(editor.blocks().len(), 1);
+    assert_eq!(editor.blocks()[0], 0..14);
+    assert_eq!(
+        runs(&BLOCK_RUNS),
+        blocks + 1,
+        "the first read asks for blocks"
+    );
+
+    editor_frame(&mut editor);
+    editor.blocks();
+    assert_eq!(
+        runs(&TONE_RUNS),
+        tones + 1,
+        "unchanged text reuses the tones"
+    );
+    assert_eq!(
+        runs(&BLOCK_RUNS),
+        blocks + 1,
+        "unchanged text reuses the blocks"
+    );
+
+    editor.invalidate_highlighter();
+    editor_frame(&mut editor);
+    assert_eq!(
+        runs(&TONE_RUNS),
+        tones + 2,
+        "an invalidated highlighter runs again"
+    );
+    assert_eq!(runs(&BLOCK_RUNS), blocks + 1, "and leaves the blocks alone");
+
+    editor.invalidate_segmenter();
+    editor.blocks();
+    assert_eq!(
+        runs(&BLOCK_RUNS),
+        blocks + 2,
+        "an invalidated segmenter runs again"
+    );
+    assert_eq!(runs(&TONE_RUNS), tones + 2, "and leaves the tones alone");
+
+    editor.set_highlighter(None);
+    editor.set_segmenter(None);
+    assert!(editor.highlighter_fn().is_none() && editor.segmenter_fn().is_none());
+    editor_frame(&mut editor);
+    assert_eq!(runs(&TONE_RUNS), tones + 2, "no highlighter, no scan");
+}
+
+fn code_editor_diagnostics_find() {
+    let src = "let delay = 1;\nsleep(delay);\nlet wide = \"日本\";\ndelay *= 2;";
+    let mut editor = CodeEditor::new(WidgetId::of("scenario.find"), src);
+
+    let warning = Diagnostic {
+        range: 4..9,
+        severity: Severity::Warning,
+        message: "unused".into(),
+    };
+    let error = Diagnostic {
+        range: 15..20,
+        severity: Severity::Error,
+        message: "unknown fn".into(),
+    };
+    editor.set_diagnostics(vec![warning.clone()]);
+    editor.push_diagnostic(error.clone());
+    assert_eq!(editor.diagnostics(), &[warning, error.clone()]);
+    editor.set_diagnostics(vec![error.clone()]);
+    assert_eq!(editor.diagnostics(), &[error]);
+    editor.set_diagnostics(Vec::new());
+    assert!(editor.diagnostics().is_empty());
+
+    assert!(editor.find_state().is_none(), "find starts closed");
+    editor.set_find_query("delay");
+    let find = editor.find_state().expect("a query opens the find bar");
+    assert_eq!(find.needle.text(), "delay");
+    assert_eq!(find.matches.len(), 3);
+    assert_eq!(find.current, 0);
+    assert!(!find.editing, "the query is set by the host, not typed");
+    editor.set_find_current(2);
+    assert_eq!(editor.find_state().map(|f| f.current), Some(2));
+    editor.set_find_current(99);
+    assert_eq!(
+        editor.find_state().map(|f| f.current),
+        Some(2),
+        "the current match clamps to the matches found"
+    );
+    editor.set_find_query("missing");
+    let find = editor.find_state().expect("find stays open");
+    assert!(find.matches.is_empty() && find.current == 0);
+    editor.set_find_current(5);
+    assert_eq!(editor.find_state().map(|f| f.current), Some(0));
+    editor_frame(&mut editor);
+
+    let buffer = TextBuffer::multi(src);
+    assert_eq!(buffer.line_width(0), Some(14));
+    assert_eq!(
+        buffer.line_width(2),
+        Some(18),
+        "wide glyphs count two cells"
+    );
+    assert_eq!(
+        buffer.line_width(9),
+        None,
+        "a line past the end has no width"
+    );
 }
 
 /// The Activity page's channel feed: a real producer thread bursts past a

@@ -102,6 +102,23 @@ fn row_with(screen: &TerminalSnapshot, needle: &str) -> String {
         .unwrap_or_else(|| panic!("row {needle:?} missing\n{}", text(screen)))
 }
 
+/// The State panel's `Scans  N · M` row: how often the tone and block
+/// providers ran, in the order the Providers row names them.
+fn scan_counts(screen: &TerminalSnapshot) -> (usize, usize) {
+    let row = row_with(screen, "Scans");
+    let counts: Vec<usize> = row
+        .split("Scans")
+        .nth(1)
+        .unwrap_or_default()
+        .split(" · ")
+        .filter_map(|part| part.split_whitespace().next()?.parse().ok())
+        .collect();
+    match counts[..] {
+        [tones, blocks] => (tones, blocks),
+        _ => panic!("no provider-run counters in {row:?}"),
+    }
+}
+
 fn footer(screen: &TerminalSnapshot) -> String {
     row_text(screen, screen.rows().saturating_sub(1))
 }
@@ -1829,4 +1846,117 @@ fn option_completion_international_items_paint_whole_clusters() {
         text(&accepted)
     );
     app.finish();
+}
+
+#[test]
+fn option_find_preset_marks_the_chosen_match() {
+    let app = page(
+        "s08-findpre",
+        Some("codeeditor.find_preset=delay-3rd"),
+        120,
+        40,
+    );
+    app.wait_text(FETCH);
+    confirm_options(&app, "Find query", |screen| {
+        assert_select(screen, "Find query", "delay-3rd", &["missing"]);
+    });
+    let screen = app.settle();
+    let find = find_status(&screen);
+    assert!(
+        find.contains("“delay” · 3 of 3"),
+        "the host-set query did not mark the third match: {find:?}"
+    );
+    let width = row_with(&screen, "Line width");
+    assert!(
+        width.contains("cells"),
+        "State shows no line width: {width:?}"
+    );
+    assert_mode(&screen, "navigating");
+    finish_option(&app, "opt.codeeditor.find_preset");
+}
+
+#[test]
+fn option_find_preset_missing_reports_no_matches() {
+    let app = page(
+        "s08-findmiss",
+        Some("codeeditor.find_preset=missing"),
+        120,
+        40,
+    );
+    app.wait_text(FETCH);
+    let screen = app.wait_screen("no matches", |screen| {
+        find_status(screen).contains("no matches")
+    });
+    let find = find_status(&screen);
+    assert!(
+        find.contains("“missing” · no matches"),
+        "a query without matches is not reported: {find:?}"
+    );
+    finish_option(&app, "opt.codeeditor.find_preset_missing");
+}
+
+#[test]
+fn rescan_key_invalidates_the_installed_providers() {
+    let app = page("s08-rescan", None, 120, 40);
+    app.wait_text(FETCH);
+    let state = app.settle();
+    assert!(
+        row_with(&state, "Providers").contains("tones · blocks"),
+        "both providers are installed by default\n{}",
+        text(&state)
+    );
+    let (tones_before, blocks_before) = scan_counts(&state);
+    focus_editor(&app);
+    app.key("f5");
+    app.wait_text("Re-scanned tones and blocks");
+    let rescanned = app.settle();
+    let (tones_after, blocks_after) = scan_counts(&rescanned);
+    assert!(
+        tones_after > tones_before && blocks_after > blocks_before,
+        "F5 did not run the providers again: tones {tones_before} -> {tones_after}, blocks {blocks_before} -> {blocks_after}\n{}",
+        text(&rescanned)
+    );
+    assert!(
+        footer(&rescanned).contains("Re-scanned tones and blocks"),
+        "the status line does not say what was re-scanned\n{}",
+        text(&rescanned)
+    );
+    assert!(
+        text(&rescanned).contains("3 blocks") && text(&rescanned).contains(FETCH),
+        "the re-scan lost the blocks or the text\n{}",
+        text(&rescanned)
+    );
+    assert_ne!(
+        fg_of(&rescanned, "pub"),
+        PLAIN,
+        "the re-scan dropped the syntax tones"
+    );
+    app.finish();
+}
+
+#[test]
+fn rescan_key_skips_a_provider_that_is_off() {
+    let app = page(
+        "s08-rescan-off",
+        Some("codeeditor.highlighter=off"),
+        120,
+        40,
+    );
+    app.wait_text(FETCH);
+    let state = app.settle();
+    assert!(
+        row_with(&state, "Providers").contains("blocks")
+            && !row_with(&state, "Providers").contains("tones"),
+        "only the segmenter is installed\n{}",
+        text(&state)
+    );
+    focus_editor(&app);
+    app.key("f5");
+    let rescanned = app.wait_text("Re-scanned blocks");
+    assert!(
+        !footer(&rescanned).contains("tones"),
+        "the status names a provider that is off\n{}",
+        text(&rescanned)
+    );
+    finish_option(&app, "opt.codeeditor.rescan_segmenter_only");
 }
