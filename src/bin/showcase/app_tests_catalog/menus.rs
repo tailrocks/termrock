@@ -5,7 +5,7 @@
 //! `ScenarioId` variant from the `lane:menus` block in `../coverage.rs`. Edit only
 //! this file, `../coverage/lane_menus.rs` and `../coverage_debt/menus.txt`.
 
-use junie_tui::core::edit::{FieldKeys, TextCmd, clipboard};
+use junie_tui::core::edit::{EditEntry, FieldKeys, TextCmd, clipboard};
 use junie_tui::core::event::ClientPlatform;
 use junie_tui::core::event::Outcome;
 use junie_tui::core::event::{Input, Key};
@@ -121,6 +121,28 @@ fn popup_dismiss_policy() {
         light.refuse_feedback(RefuseFeedback::None).refuse_feedback,
         RefuseFeedback::None
     );
+    // The feedback decides what an ignored outside click does: flash the modal
+    // surface, or nothing. A click the policy honours is never refused.
+    let mut pointer = junie_tui::core::pointer::PointerState::default();
+    assert!(!junie_tui::ui::modal::refuse_outside_click(
+        &mut pointer,
+        light,
+        100
+    ));
+    assert!(!pointer.has_flash());
+    assert!(junie_tui::ui::modal::refuse_outside_click(
+        &mut pointer,
+        escape,
+        100
+    ));
+    assert_eq!(pointer.flashing(100), Some(junie_tui::ui::modal::SURFACE));
+    let mut quiet = junie_tui::core::pointer::PointerState::default();
+    assert!(!junie_tui::ui::modal::refuse_outside_click(
+        &mut quiet,
+        escape.refuse_feedback(RefuseFeedback::None),
+        100
+    ));
+    assert!(!quiet.has_flash());
     assert!(!light.pass_through && light.pass_through(true).pass_through);
 
     // The policy decides what the popup registers behind itself: a backdrop
@@ -215,6 +237,17 @@ fn popup_placement() {
     assert_eq!(Place::DEFAULT.v_align, VAlign::Center);
     let wide = Place::DEFAULT.margin(4);
     assert_eq!(wide.margin, 4);
+    let edge = Rect::new(38, 8, 2, 1);
+    assert_eq!(
+        popup::place_with(screen, edge, w, h, Placement::Below, wide).x,
+        26,
+        "the margin keeps the popup four columns off the screen edge"
+    );
+    assert_eq!(
+        popup::place_with(screen, edge, w, h, Placement::Below, Place::FLUSH).x,
+        30,
+        "a flush fit may touch the edge"
+    );
     let tall = Place::FLUSH.vertical_margin(Some(3));
     assert_eq!(tall.vertical_margin, Some(3));
     assert_eq!(
@@ -2802,6 +2835,25 @@ fn hint_bar() {
     });
     assert!(!rest.contains(Modifier::UNDERLINED) && hover.contains(Modifier::UNDERLINED));
     assert!(press.contains(Modifier::REVERSED));
+
+    // A field that is focused but not yet being edited advertises the shared
+    // "Enter Edit" hint, and the hint bar shows it. A page that lists the
+    // pair itself renders the same text.
+    let input = TextInput::new(WidgetId::of("scenario.hints.input"), "Name")
+        .edit_entry(EditEntry::Explicit)
+        .value("hello");
+    assert!(!input.wants_text_input());
+    assert_eq!(input.hints(), vec![widget_hints::EDIT]);
+    let mut buf = Buffer::empty(area);
+    HintBar::render(area, &mut buf, &t, &HintLayer::new(input.hints()));
+    assert!(bar_row(&buf).contains("Enter Edit"), "{}", bar_row(&buf));
+    let mut editing = input.clone();
+    editing.begin_edit();
+    assert!(!editing.hints().contains(&widget_hints::EDIT));
+    let paired = Hint::new(widget_hints::EDIT_PAIR.0, widget_hints::EDIT_PAIR.1);
+    let mut buf = Buffer::empty(area);
+    HintBar::render(area, &mut buf, &t, &HintLayer::new(vec![paired]));
+    assert!(bar_row(&buf).contains("Enter Edit"), "{}", bar_row(&buf));
 }
 
 fn status_bar() {
@@ -3061,13 +3113,29 @@ fn help_overlay() {
         idle.on_click(WidgetId::of("scenario.elsewhere")),
         Outcome::Consumed
     );
-    let custom = HelpOverlay::new(id, "Showcase", sections())
-        .close_button(IconButton::close(WidgetId::of("scenario.help.x")));
+    let mut custom = HelpOverlay::new(id, "Showcase", sections())
+        .close_button(IconButton::close(WidgetId::of("scenario.help.x")).with_glyph("\u{3a9}"));
     assert_eq!(custom.close_button.id, WidgetId::of("scenario.help.x"));
+    let plain = text_of(
+        &paint_hits(screen, |area, buf, ctx| {
+            HelpOverlay::new(id, "Showcase", sections()).render(area, buf, ctx)
+        })
+        .buf,
+    );
+    let painted = paint_hits(screen, |area, buf, ctx| custom.render(area, buf, ctx));
+    assert!(
+        text_of(&painted.buf).contains('\u{3a9}') && !plain.contains('\u{3a9}'),
+        "the frame draws the replacement close button"
+    );
 
     // Title and size are options; the footer lists only deliverable keys.
-    let titled = HelpOverlay::new(id, "Showcase", sections()).title("Shortcuts");
+    let mut titled = HelpOverlay::new(id, "Showcase", sections()).title("Shortcuts");
     assert_eq!(titled.title, "Shortcuts");
+    let text = text_of(&paint_hits(screen, |area, buf, ctx| titled.render(area, buf, ctx)).buf);
+    assert!(
+        text.contains("Shortcuts"),
+        "the frame shows the title:\n{text}"
+    );
     let width_of = |pct: u16| {
         let mut help = HelpOverlay::new(id, "Showcase", sections()).max_percent(pct);
         paint_hits(screen, |area, buf, ctx| help.render(area, buf, ctx));
@@ -3090,7 +3158,7 @@ fn help_overlay() {
         .map(|i| (format!("F{}", i % 12 + 1), format!("Action {i}")))
         .collect();
     let rows_ref: Vec<(&str, &str)> = long.iter().map(|(k, a)| (k.as_str(), a.as_str())).collect();
-    let mut tall = HelpOverlay::new(id, "Long", vec![("Everything", rows_ref)]);
+    let mut tall = HelpOverlay::new(id, "Long", vec![("Everything", rows_ref.clone())]);
     paint_hits(screen, |area, buf, ctx| tall.render(area, buf, ctx));
     assert_eq!(tall.on_key(&key(KeyCode::Down)), Outcome::Changed);
     assert_eq!(tall.on_key(&key(KeyCode::PageDown)), Outcome::Changed);
@@ -3101,7 +3169,14 @@ fn help_overlay() {
     );
     assert_eq!(tall.on_key(&key(KeyCode::Home)), Outcome::Changed);
     assert_eq!(tall.on_key(&key(KeyCode::Left)), Outcome::Consumed);
-    let vim = HelpOverlay::new(id, "Long", vec![]).nav(NavKeys::VIM);
+    assert_eq!(
+        tall.on_key(&key(KeyCode::Char('j'))),
+        Outcome::Consumed,
+        "j scrolls nothing in the default profile"
+    );
+    let mut vim = HelpOverlay::new(id, "Long", vec![("Everything", rows_ref)]).nav(NavKeys::VIM);
+    paint_hits(screen, |area, buf, ctx| vim.render(area, buf, ctx));
+    assert_eq!(vim.on_key(&key(KeyCode::Char('j'))), Outcome::Changed);
     assert_eq!(vim.nav, NavKeys::VIM);
 }
 

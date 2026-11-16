@@ -7,7 +7,7 @@
 // live `#[test]` that uses it. Delete the API's line from the debt file in the
 // same commit.
 
-use super::{CapabilityException, CapabilityProof, ExceptionKind, ScenarioId};
+use super::{CapabilityException, CapabilityProof, ScenarioId};
 use crate::app::PageId;
 
 #[rustfmt::skip]
@@ -160,7 +160,7 @@ pub const PROOFS: &[CapabilityProof] = &[
     CapabilityProof { api: "widgets::menu::ContextMenu::new", route: PageId::Menus, scenarios: &[ScenarioId::MenusContextMenuKeys], feature: None },
     CapabilityProof { api: "widgets::menu::ContextMenu::on_click_outside", route: PageId::Menus, scenarios: &[ScenarioId::MenusContextMenuKeys], feature: None },
     CapabilityProof { api: "widgets::menu::ContextMenu::on_key", route: PageId::Menus, scenarios: &[ScenarioId::MenusContextMenuKeys], feature: None },
-    CapabilityProof { api: "widgets::menu::ContextMenu::render", route: PageId::Menus, scenarios: &[ScenarioId::MenusContextMenuKeys], feature: None },
+    CapabilityProof { api: "widgets::menu::ContextMenu::render", route: PageId::Menus, scenarios: &[ScenarioId::MenusContextMenuPointer], feature: None },
     CapabilityProof { api: "widgets::menu::ContextMenu::skip_disabled", route: PageId::Menus, scenarios: &[ScenarioId::MenusContextMenuKeys], feature: None },
     CapabilityProof { api: "widgets::menu::ContextMenu::type_ahead", route: PageId::Menus, scenarios: &[ScenarioId::MenusContextMenuKeys], feature: None },
     CapabilityProof { api: "widgets::menu::ContextMenu::type_ahead_timeout", route: PageId::Menus, scenarios: &[ScenarioId::MenusContextMenuKeys], feature: None },
@@ -232,6 +232,8 @@ pub const PROOFS: &[CapabilityProof] = &[
     CapabilityProof { api: "widgets::hintbar::HintLayer::new", route: PageId::StatusHints, scenarios: &[ScenarioId::MenusHintBar], feature: None },
     CapabilityProof { api: "widgets::hintbar::HintLayer::status", route: PageId::StatusHints, scenarios: &[ScenarioId::MenusHintBar], feature: None },
     CapabilityProof { api: "widgets::hintbar::HintLayer::status_parts", route: PageId::StatusHints, scenarios: &[ScenarioId::MenusHintBar], feature: None },
+    CapabilityProof { api: "widgets::widget_hints::EDIT", route: PageId::Inputs, scenarios: &[ScenarioId::MenusHintBar], feature: None },
+    CapabilityProof { api: "widgets::widget_hints::EDIT_PAIR", route: PageId::Inputs, scenarios: &[ScenarioId::MenusHintBar], feature: None },
     CapabilityProof { api: "widgets::help::HelpCmd", route: PageId::HelpKeys, scenarios: &[ScenarioId::MenusHelpOverlay], feature: None },
     CapabilityProof { api: "widgets::help::HelpCmd::Close", route: PageId::HelpKeys, scenarios: &[ScenarioId::MenusHelpOverlay], feature: None },
     CapabilityProof { api: "widgets::help::HelpOverlay", route: PageId::HelpKeys, scenarios: &[ScenarioId::MenusHelpOverlay], feature: None },
@@ -353,6 +355,4 @@ pub const PROOFS: &[CapabilityProof] = &[
 
 #[rustfmt::skip]
 pub const EXCEPTIONS: &[CapabilityException] = &[
-    CapabilityException { api: "widgets::widget_hints::EDIT", kind: ExceptionKind::Nonvisual, reason: "A shared hint constant that no page configures or shows alone.", regression_test: "src/bin/showcase/app_tests_catalog/menus.rs::catalog_menus_widget_hint_constants", tracking_issue: None },
-    CapabilityException { api: "widgets::widget_hints::EDIT_PAIR", kind: ExceptionKind::Nonvisual, reason: "A shared hint constant that no page configures or shows alone.", regression_test: "src/bin/showcase/app_tests_catalog/menus.rs::catalog_menus_widget_hint_constants", tracking_issue: None },
 ];
