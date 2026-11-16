@@ -411,10 +411,27 @@ fn layout_stack_flow() {
     let laid = roomy.layout(area, &children, &mut state, None);
     assert!(laid.track.is_some(), "the minimum forces a scroll");
 
-    // The track-click policy travels with the stack into its scroll state.
-    let jump = Stack::default().gap(1).track_click(TrackClick::Jump);
+    // The track-click policy travels with the stack into its scroll state: a
+    // click at the foot of the track pages by a screen or jumps to the click.
+    let many: Vec<StackChild> = (0..12).map(|_| StackChild::fixed(1)).collect();
+    let short = Rect::new(0, 0, 30, 4);
+    let click_foot = |stack: Stack| {
+        let mut state = StackScroll::default();
+        stack.layout(short, &many, &mut state, None);
+        assert!(
+            state.on_scrollbar(Position::new(29, 3)),
+            "the click scrolls"
+        );
+        state.scroll.offset
+    };
+    let jump = Stack::default().track_click(TrackClick::Jump);
     assert_eq!(jump.track_click, TrackClick::Jump);
     assert_eq!(Stack::default().track_click, TrackClick::Page);
+    let (paged, jumped) = (click_foot(Stack::default()), click_foot(jump));
+    assert!(
+        paged > 0 && jumped > paged,
+        "jump goes to the click, paging only a screen: {jumped} vs {paged}"
+    );
 
     // Focus keeps the focused child visible by scrolling to it.
     let mut state = StackScroll::default();
@@ -1029,6 +1046,17 @@ fn layout_pane_tree_seams() {
         None,
         "the remap replaced F6"
     );
+    let mut stepped = tree_three().split_keys(SplitKeys::default().step(3));
+    stepped.focused = 1;
+    stepped.layout(area);
+    let grow = chord(KeyCode::Right, KeyModifiers::ALT | KeyModifiers::SHIFT);
+    assert_eq!(stepped.on_key(&grow), Some(Ok(Outcome::Changed)));
+    stepped.layout(area);
+    assert_eq!(
+        stepped.panes()[0].1.width,
+        23,
+        "the seam key moves by the configured step"
+    );
 
     // Natural size counts the frame cells on every pane.
     let wish = |_: PaneId| ratatui::layout::Size::new(10, 4);
@@ -1061,6 +1089,32 @@ fn layout_pane_tree_seams() {
     );
     assert_eq!(frame.buf[(20, 3)].symbol(), theme.glyphs.divider);
     assert_eq!(frame.buf[(20, 3)].fg, theme.ladders.seam.rest);
+
+    // The hit pad widens the seam's grab area on each side.
+    let grab_width = |frame: &Painted, tree: &PaneTree| {
+        let seam = tree.seam_id(0);
+        frame
+            .hits
+            .regions()
+            .iter()
+            .filter(|r| r.id == seam)
+            .map(|r| r.area.width)
+            .max()
+    };
+    let mut padded = tree_three();
+    let padded_frame = paint_hits(area, |area, buf, ctx| {
+        padded.render(area, buf, ctx, theme.canvas, &pane_names);
+    });
+    assert_eq!(
+        grab_width(&frame, &tree),
+        Some(1),
+        "no pad, a one cell seam"
+    );
+    assert_eq!(
+        grab_width(&padded_frame, &padded),
+        Some(3),
+        "the default pad adds a cell on each side"
+    );
     let mut bare = tree.clone().frames(Frames::Never);
     let mut raw = Vec::new();
     let unframed = paint_hits(area, |area, buf, ctx| {
@@ -2133,6 +2187,27 @@ fn layout_toolbar_overflow() {
         text_of(&menu.buf)
     );
 
+    // A hidden disabled item says why while the menu cursor rests on it.
+    let mut why = Toolbar::new(
+        id,
+        vec![
+            ToolItem::new("Aaaaaaaa"),
+            ToolItem::new("Bbbbbbbb"),
+            ToolItem::new("Cccc").reason("Offline"),
+        ],
+    );
+    toolbar_frame(&mut why, 22);
+    assert!(why.hidden().contains(&2), "{:?}", why.hidden());
+    why.on_click(why.more_id());
+    toolbar_frame(&mut why, 22);
+    why.on_key(&key(KeyCode::Down));
+    let menu = toolbar_frame(&mut why, 22);
+    assert!(
+        text_of(&menu.buf).contains("Offline"),
+        "{}",
+        text_of(&menu.buf)
+    );
+
     // The More glyph and button are replaceable.
     let mut glyph = Toolbar::new(id, tool_items()).more_glyph("»");
     let text = text_of(&toolbar_frame(&mut glyph, 30).buf);
@@ -2456,9 +2531,14 @@ fn layout_notice_kinds() {
     assert_eq!((base.message_lines, base.max_lines), (2, 2));
     assert_eq!(base.detail_tone, Tone::Secondary);
     assert!(base.mark_cut && base.detail.is_none() && base.hint.is_none());
+    let retargeted = base.clone().kind(NoticeKind::Warning);
+    assert_eq!(retargeted.kind, NoticeKind::Warning);
+    let mut buf = Buffer::empty(Rect::new(0, 0, 30, 3));
+    retargeted.render_theme(buf.area, &mut buf, &theme, theme.canvas);
     assert_eq!(
-        base.clone().kind(NoticeKind::Warning).kind,
-        NoticeKind::Warning
+        buf[(0, 0)].symbol(),
+        theme.glyphs.warning,
+        "the kind decides the mark"
     );
 
     // Each kind has its own mark and message colour.
