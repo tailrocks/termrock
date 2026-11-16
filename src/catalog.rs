@@ -3749,6 +3749,7 @@ pub static CAPABILITIES: &[Capability] = &[
     Capability::function("theme::contrast_ratio"),
     Capability::ty("runtime::Coalesce"),
     Capability::ty("runtime::TerminalSession"),
+    Capability::ty("runtime::SessionTerminal"),
     Capability::ty("runtime::SizeWatch"),
     Capability::ty("runtime::InputPump"),
     Capability::ty("runtime::FocusClickGuard"),

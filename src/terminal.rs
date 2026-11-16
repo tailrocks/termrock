@@ -99,6 +99,7 @@ impl TerminalState {
     }
 
     pub fn feed(&mut self, bytes: &[u8]) -> Vec<TermEvent> {
+        crate::record_work!(TerminalBytesFed, bytes.len());
         let guard::Filtered { bytes, switches } = self.guard.filter(bytes);
         let mut start = 0;
         for end in switches.iter().copied().chain([bytes.len()]) {
@@ -357,6 +358,7 @@ fn paint_view(
     let first_row = visible.y - area.y;
     let first_col = visible.x - area.x;
     for row in first_row..rows.min(visible.bottom() - area.y) {
+        crate::record_work!(SourceRowsRead, 1usize);
         let y = area.y + row;
         for col in first_col..cols {
             let x = area.x + col;

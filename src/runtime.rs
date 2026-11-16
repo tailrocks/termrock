@@ -21,8 +21,24 @@ use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use crate::core::event::{External, Input, InputConfig, Key, Mouse, MouseKind, Outcome};
 use crate::core::keyboard::{self, KeyboardProtocol};
 
+#[cfg(feature = "work-metrics")]
+mod metered;
 mod panic_bridge;
+#[cfg(feature = "work-metrics")]
+use metered::MeteredBackend;
 use panic_bridge::{RestoreGate, SessionOwner};
+
+/// The terminal a [`TerminalSession`] draws into. It is `ratatui`'s
+/// [`DefaultTerminal`](ratatui::DefaultTerminal), crossterm over stdout. With
+/// the `work-metrics` feature the backend counts the cells and bytes of every
+/// frame; the type is then a `ratatui::Terminal` over an unnameable metered
+/// backend, and callers can only use it through `Terminal`'s own methods.
+#[cfg(not(feature = "work-metrics"))]
+pub type SessionTerminal = ratatui::DefaultTerminal;
+
+/// The metered shape of [`SessionTerminal`] (feature `work-metrics`).
+#[cfg(feature = "work-metrics")]
+pub type SessionTerminal = ratatui::Terminal<MeteredBackend<std::io::Stdout>>;
 
 pub trait Application {
     fn handle(&mut self, input: Input) -> Outcome;
@@ -286,6 +302,7 @@ fn pump_external(
         let Some(message) = app.external().and_then(ExternalReceiver::try_recv) else {
             return turn;
         };
+        crate::record_work!(InputDispatches, 1usize);
         turn.changed |= app.handle(Input::External(message)) == Outcome::Changed;
         if app.should_quit() {
             return turn;
@@ -326,10 +343,12 @@ fn service_turn(
         return turn;
     }
     if let Some(resize) = resize() {
+        crate::record_work!(InputDispatches, 1usize);
         turn.changed |= app.handle(resize) == Outcome::Changed;
     }
     if tick_due() {
         turn.ticked = true;
+        crate::record_work!(InputDispatches, 1usize);
         turn.changed |= app.handle(Input::Tick) == Outcome::Changed;
         turn.quit = app.should_quit();
     }
@@ -442,7 +461,7 @@ fn is_navigation(key: &Key) -> bool {
 /// and the interval stays owed one more cleanup, so leave or drop restores the
 /// modes setup enabled after the hook ran.
 pub struct TerminalSession {
-    terminal: ratatui::DefaultTerminal,
+    terminal: SessionTerminal,
     owner: SessionOwner,
     #[cfg(unix)]
     job_control: Option<job_control::JobControlGuard>,
@@ -464,7 +483,7 @@ fn claim_and_initialize<T>(
     Ok((value, owner))
 }
 
-fn open_terminal(protocol: KeyboardProtocol) -> std::io::Result<ratatui::DefaultTerminal> {
+fn open_terminal(protocol: KeyboardProtocol) -> std::io::Result<SessionTerminal> {
     enable_raw_mode()?;
     prime_input()?;
     let mut out = stdout();
@@ -482,6 +501,9 @@ fn open_terminal(protocol: KeyboardProtocol) -> std::io::Result<ratatui::Default
         out.write_all(push.as_bytes())?;
         out.flush()?;
     }
+    #[cfg(feature = "work-metrics")]
+    let backend = MeteredBackend::new(out);
+    #[cfg(not(feature = "work-metrics"))]
     let backend = ratatui::backend::CrosstermBackend::new(out);
     ratatui::Terminal::new(backend)
 }
@@ -501,17 +523,14 @@ impl TerminalSession {
 
     fn enter_on(
         gate: &'static RestoreGate,
-        open: impl FnOnce() -> std::io::Result<ratatui::DefaultTerminal>,
+        open: impl FnOnce() -> std::io::Result<SessionTerminal>,
     ) -> std::io::Result<Self> {
         let (terminal, owner) = claim_and_initialize(gate, open)?;
         Self::with_job_control(terminal, owner)
     }
 
     #[cfg(unix)]
-    fn with_job_control(
-        terminal: ratatui::DefaultTerminal,
-        owner: SessionOwner,
-    ) -> std::io::Result<Self> {
+    fn with_job_control(terminal: SessionTerminal, owner: SessionOwner) -> std::io::Result<Self> {
         let mut session = Self {
             terminal,
             owner,
@@ -522,14 +541,11 @@ impl TerminalSession {
     }
 
     #[cfg(not(unix))]
-    fn with_job_control(
-        terminal: ratatui::DefaultTerminal,
-        owner: SessionOwner,
-    ) -> std::io::Result<Self> {
+    fn with_job_control(terminal: SessionTerminal, owner: SessionOwner) -> std::io::Result<Self> {
         Ok(Self { terminal, owner })
     }
 
-    pub fn terminal(&mut self) -> &mut ratatui::DefaultTerminal {
+    pub fn terminal(&mut self) -> &mut SessionTerminal {
         &mut self.terminal
     }
 
@@ -907,6 +923,16 @@ mod tty_input {
     }
 }
 
+/// Tells the application the size the terminal has after a suspend, and the
+/// size watch that it was told.
+#[cfg(unix)]
+fn deliver_resume_resize(app: &mut impl Application, sizes: &mut SizeWatch, (w, h): (u16, u16)) {
+    let resize = Input::Resize(w, h);
+    sizes.observe(&resize);
+    crate::record_work!(InputDispatches, 1usize);
+    app.handle(resize);
+}
+
 fn event_loop(session: &mut TerminalSession, app: &mut impl Application) -> std::io::Result<()> {
     let suppress_colors = Colored::ansi_color_disabled_memoized();
     let mut dirty = true;
@@ -923,13 +949,11 @@ fn event_loop(session: &mut TerminalSession, app: &mut impl Application) -> std:
     loop {
         #[cfg(unix)]
         if job_control::take_request() {
-            let (w, h) = session.suspend()?;
+            let size = session.suspend()?;
 
             shapes.forget();
 
-            let resize = Input::Resize(w, h);
-            sizes.observe(&resize);
-            app.handle(resize);
+            deliver_resume_resize(app, &mut sizes, size);
             dirty = true;
         }
         let terminal = &mut session.terminal;
@@ -1019,7 +1043,7 @@ fn event_loop(session: &mut TerminalSession, app: &mut impl Application) -> std:
     }
 }
 
-fn terminal_size(terminal: &ratatui::DefaultTerminal) -> Option<(u16, u16)> {
+fn terminal_size(terminal: &SessionTerminal) -> Option<(u16, u16)> {
     terminal.size().ok().map(|s| (s.width, s.height))
 }
 
@@ -1235,8 +1259,10 @@ fn scan_next(
         }
         let ev = source.read()?;
         budget.read += 1;
+        crate::record_work!(RawEventsRead, 1usize);
         if source.dropped(&ev) {
             budget.filtered += 1;
+            crate::record_work!(RawEventsFiltered, 1usize);
             continue;
         }
         match Input::from_crossterm_with(ev, config) {
@@ -1244,7 +1270,10 @@ fn scan_next(
                 keyboard::observe(&input);
                 return Ok(RawRead::Input(input));
             }
-            None => budget.filtered += 1,
+            None => {
+                budget.filtered += 1;
+                crate::record_work!(RawEventsFiltered, 1usize);
+            }
         }
     }
 }
@@ -1348,7 +1377,10 @@ impl InputPump {
 
             let changed = crate::ui::reveal::on_pointer_wheel(&input)
                 .or_else(|| crate::ui::tooltip::on_input(&input))
-                .unwrap_or_else(|| app.handle(input.clone()))
+                .unwrap_or_else(|| {
+                    crate::record_work!(InputDispatches, 1usize);
+                    app.handle(input.clone())
+                })
                 == Outcome::Changed;
             if app.should_quit() {
                 return Ok(changed || burst.is_some());
@@ -1378,14 +1410,17 @@ impl InputPump {
 
     pub fn settle(&mut self, app: &mut impl Application) -> bool {
         match self.settle.take() {
-            Some(m) => app.handle(Input::Mouse(m)) == Outcome::Changed,
+            Some(m) => {
+                crate::record_work!(InputDispatches, 1usize);
+                app.handle(Input::Mouse(m)) == Outcome::Changed
+            }
             None => false,
         }
     }
 }
 
 fn draw_frame(
-    terminal: &mut ratatui::DefaultTerminal,
+    terminal: &mut SessionTerminal,
     app: &mut impl Application,
     suppress_colors: bool,
     dirty: &mut bool,
@@ -1520,6 +1555,9 @@ fn discard_ready(source: &mut impl RawSource, max_events: usize) -> std::io::Res
 
 #[cfg(test)]
 mod raw_input_tests {
+    #[cfg(feature = "work-metrics")]
+    mod work;
+
     use super::*;
     use ratatui::crossterm::event::{
         KeyEvent, KeyEventKind, KeyEventState, MouseButton, MouseEvent,
