@@ -269,6 +269,17 @@ pub enum ScenarioId {
     // lane:collections begin: this lane adds its ScenarioId variants between these two lines only
     // lane:collections end
     // lane:layout begin: this lane adds its ScenarioId variants between these two lines only
+    LayoutSplitGeometry,
+    LayoutSplitKeys,
+    LayoutStackFlow,
+    LayoutStackScroll,
+    LayoutSplitterSeam,
+    LayoutPaneNodes,
+    LayoutPaneTreeFocus,
+    LayoutPaneTreeSeams,
+    LayoutColumnSolve,
+    LayoutColumnSizing,
+    LayoutColumnHeaderMenu,
     // lane:layout end
 }
 
