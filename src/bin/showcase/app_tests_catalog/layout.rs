@@ -6,6 +6,7 @@
 //! this file, `../coverage/lane_layout.rs` and `../coverage_debt/layout.txt`.
 
 use super::*;
+use junie_tui::core::keymap::NavKeys;
 use junie_tui::core::scroll::TrackClick;
 use junie_tui::ui::columns::{
     Col, ColumnSizing, DEFAULT_SEAM_W, HeaderAction, HeaderLabels, MIN_USER_WIDTH, header_menu,
@@ -17,6 +18,8 @@ use junie_tui::ui::layout::{
 use junie_tui::ui::pane_tree::{
     Direction, Frames, PaneCmd, PaneId, PaneNode, PaneRefusal, PaneResult, PaneTree, Seam, nearest,
 };
+use junie_tui::widgets::chips::{ChipCmd, overflow_run};
+use junie_tui::widgets::icon_button::IconButton;
 use junie_tui::widgets::splitter::SeamDoubleClick;
 use junie_tui::widgets::table::SortDir;
 
@@ -33,6 +36,10 @@ pub const CASES: &[ScenarioCase] = &[
     ScenarioCase { id: ScenarioId::LayoutColumnSolve, run: layout_column_solve },
     ScenarioCase { id: ScenarioId::LayoutColumnSizing, run: layout_column_sizing },
     ScenarioCase { id: ScenarioId::LayoutColumnHeaderMenu, run: layout_column_header_menu },
+    ScenarioCase { id: ScenarioId::LayoutChipBarActions, run: layout_chip_bar_actions },
+    ScenarioCase { id: ScenarioId::LayoutChipBarOverflow, run: layout_chip_bar_overflow },
+    ScenarioCase { id: ScenarioId::LayoutToolbarActions, run: layout_toolbar_actions },
+    ScenarioCase { id: ScenarioId::LayoutToolbarOverflow, run: layout_toolbar_overflow },
 ];
 
 /// A key with the given modifiers.
@@ -1446,4 +1453,658 @@ fn layout_column_header_menu() {
         item(&menu, HeaderAction::SortDesc).item.label,
         "Sort Descending"
     );
+}
+
+fn chip_set() -> Vec<Chip> {
+    let mut locked = Chip::new("locked");
+    locked.removable = false;
+    vec![Chip::new("alpha"), Chip::new("beta"), locked]
+}
+
+fn chip_frame(bar: &mut ChipBar, width: u16) -> Painted {
+    paint_hits(Rect::new(0, 0, width, 6), |area, buf, ctx| {
+        bar.render(Rect::new(0, 0, area.width, 1), buf, ctx, ctx.theme.canvas)
+    })
+}
+
+fn layout_chip_bar_actions() {
+    let id = WidgetId::of("scenario.layout.chipbar");
+    let fresh = Chip::new("alpha");
+    assert!(fresh.enabled && fresh.removable && !fresh.error);
+    let mut bar = ChipBar::new(id);
+    bar.set_chips(chip_set());
+    bar.set_lead(Some("match all".to_owned()));
+
+    // Ids are stable parts of the bar's own id and all differ.
+    let ids = [
+        bar.chip_id(0),
+        bar.chip_id(1),
+        bar.close_id(0),
+        bar.add_id(),
+        bar.lead_id(),
+        bar.more_id(),
+        bar.menu_id(),
+    ];
+    for (i, a) in ids.iter().enumerate() {
+        for b in &ids[i + 1..] {
+            assert_ne!(a, b);
+        }
+    }
+
+    // Before a render nothing the bar owns can act.
+    assert_eq!(bar.on_click(bar.chip_id(0)), (Outcome::Consumed, None));
+    let frame = chip_frame(&mut bar, 80);
+    let text = text_of(&frame.buf);
+    for shown in ["match all", "alpha", "beta", "locked", "+ Add filter"] {
+        assert!(text.contains(shown), "{shown}:\n{text}");
+    }
+    let owned = |target| {
+        frame
+            .hits
+            .regions()
+            .iter()
+            .any(|r| r.id == target && !r.area.is_empty())
+    };
+    assert!(
+        owned(bar.chip_id(0))
+            && owned(bar.close_id(0))
+            && owned(bar.add_id())
+            && owned(bar.lead_id())
+    );
+    assert!(!owned(bar.close_id(2)), "a locked chip has no close button");
+    assert!(!owned(bar.more_id()), "nothing overflows at this width");
+
+    // Clicks resolve to typed actions.
+    assert_eq!(
+        bar.on_click(bar.chip_id(1)),
+        (Outcome::Changed, Some(ChipAction::Activate(1)))
+    );
+    assert_eq!(bar.cursor, 1);
+    assert_eq!(
+        bar.on_click(bar.close_id(0)),
+        (Outcome::Changed, Some(ChipAction::Remove(0)))
+    );
+    assert_eq!(
+        bar.on_click(bar.add_id()),
+        (Outcome::Changed, Some(ChipAction::Add))
+    );
+    assert_eq!(bar.cursor, 3, "the add button is the last stop");
+    assert_eq!(
+        bar.on_click(bar.lead_id()),
+        (Outcome::Changed, Some(ChipAction::Lead))
+    );
+    assert_eq!(
+        bar.on_click(WidgetId::of("scenario.layout.nothing")),
+        (Outcome::Ignored, None)
+    );
+
+    // Keys: navigation moves the cursor, commands emit actions.
+    bar.cursor = 0;
+    assert_eq!(bar.on_key(&key(KeyCode::Right)), (Outcome::Changed, None));
+    assert_eq!(bar.cursor, 1);
+    assert_eq!(bar.on_key(&key(KeyCode::Left)), (Outcome::Changed, None));
+    assert_eq!(
+        bar.on_key(&key(KeyCode::Enter)),
+        (Outcome::Changed, Some(ChipAction::Activate(0)))
+    );
+    assert_eq!(
+        bar.on_key(&key(KeyCode::Char(' '))),
+        (Outcome::Changed, Some(ChipAction::Toggle(0)))
+    );
+    for removal in [KeyCode::Delete, KeyCode::Backspace, KeyCode::Char('x')] {
+        assert_eq!(
+            bar.on_key(&key(removal)),
+            (Outcome::Changed, Some(ChipAction::Remove(0))),
+            "{removal:?} removes the chip under the cursor"
+        );
+    }
+    assert_eq!(
+        bar.on_key(&key(KeyCode::Char('+'))),
+        (Outcome::Changed, Some(ChipAction::Add))
+    );
+    assert_eq!(
+        bar.on_key(&key(KeyCode::Char('X'))),
+        (Outcome::Changed, Some(ChipAction::ClearAll))
+    );
+    assert_eq!(
+        bar.on_key(&key(KeyCode::Char('m'))),
+        (Outcome::Changed, Some(ChipAction::Lead))
+    );
+    bar.cursor = 2;
+    assert_eq!(
+        bar.on_key(&key(KeyCode::Delete)),
+        (Outcome::Ignored, None),
+        "a locked chip cannot be removed"
+    );
+    assert_eq!(
+        bar.on_key(&key(KeyCode::Char('2'))),
+        (Outcome::Ignored, None),
+        "digits toggle only when asked to"
+    );
+    let mut bare = ChipBar::new(WidgetId::of("scenario.layout.bare"));
+    assert_eq!(bare.on_key(&key(KeyCode::Enter)).1, Some(ChipAction::Add));
+    bare.set_add_label(None);
+    assert_eq!(bare.on_key(&key(KeyCode::Enter)), (Outcome::Ignored, None));
+    assert_eq!(
+        bare.on_key(&key(KeyCode::Char('m'))),
+        (Outcome::Ignored, None),
+        "no lead, no lead command"
+    );
+    for (cmd, label) in [
+        (ChipCmd::Remove, "Remove"),
+        (ChipCmd::Add, "Add"),
+        (ChipCmd::ClearAll, "Clear all"),
+        (ChipCmd::ShowHidden, "Show hidden"),
+        (ChipCmd::Lead, "Switch the match mode"),
+    ] {
+        assert_eq!(cmd.label(), label);
+    }
+
+    // Digits toggle the numbered chip and move the cursor to it.
+    let mut digits = ChipBar::new(WidgetId::of("scenario.layout.digits")).digit_toggles(true);
+    digits.set_chips(chip_set());
+    assert!(digits.digit_toggles);
+    assert_eq!(
+        digits.on_key(&key(KeyCode::Char('2'))),
+        (Outcome::Changed, Some(ChipAction::Toggle(1)))
+    );
+    assert_eq!(digits.cursor, 1);
+    assert_eq!(
+        digits.on_key(&key(KeyCode::Char('9'))),
+        (Outcome::Ignored, None)
+    );
+
+    // A key map replaces the defaults; a nav profile adds vim keys.
+    let mut remapped = ChipBar::new(WidgetId::of("scenario.layout.remap"))
+        .keymap(vec![(KeyBinding::char('d'), ChipCmd::Remove)])
+        .nav(NavKeys::VIM);
+    remapped.set_chips(chip_set());
+    chip_frame(&mut remapped, 80);
+    assert_eq!(remapped.keymap.len(), 1);
+    assert_eq!(
+        remapped.on_key(&key(KeyCode::Char('d'))),
+        (Outcome::Changed, Some(ChipAction::Remove(0)))
+    );
+    assert_eq!(
+        remapped.on_key(&key(KeyCode::Char('x'))),
+        (Outcome::Ignored, None)
+    );
+    assert_eq!(
+        remapped.on_key(&key(KeyCode::Char('l'))),
+        (Outcome::Changed, None)
+    );
+    assert_eq!(remapped.cursor, 1, "vim l moves right");
+    assert_eq!(bar.nav, NavKeys::DESKTOP);
+    assert_eq!(remapped.nav, NavKeys::VIM);
+
+    // Context items follow the chip: toggle wording, locked removal, bulk clear.
+    let items = bar.context_items(0);
+    assert_eq!(
+        items.iter().map(|(a, _)| *a).collect::<Vec<_>>(),
+        vec![
+            ChipAction::Toggle(0),
+            ChipAction::Remove(0),
+            ChipAction::ClearAll
+        ]
+    );
+    assert_eq!(items[0].1.item.label, "Turn off");
+    assert!(!items[1].1.item.disabled);
+    let locked = bar.context_items(2);
+    assert_eq!(
+        locked[1].1.item.reason.as_deref(),
+        Some("This filter stays")
+    );
+    assert!(locked[1].1.item.disabled);
+    bar.update_chip(0, |chip| chip.enabled = false);
+    assert_eq!(bar.context_items(0)[0].1.item.label, "Turn on");
+    assert!(bar.context_items(99).is_empty());
+
+    // Shift+F10 opens the chip's menu; choosing an item emits its action.
+    chip_frame(&mut bar, 80);
+    bar.cursor = 1;
+    let menu_key = chord(KeyCode::F(10), KeyModifiers::SHIFT);
+    assert_eq!(bar.on_key(&menu_key), (Outcome::Changed, None));
+    assert!(bar.menu_open());
+    let open = chip_frame(&mut bar, 80);
+    assert!(
+        text_of(&open.buf).contains("Turn off"),
+        "{}",
+        text_of(&open.buf)
+    );
+    assert_eq!(
+        bar.on_key(&key(KeyCode::Enter)),
+        (Outcome::Changed, Some(ChipAction::Toggle(1)))
+    );
+    assert!(!bar.menu_open());
+    bar.on_key(&menu_key);
+    assert!(bar.menu_open());
+    bar.on_key(&key(KeyCode::Esc));
+    assert!(!bar.menu_open(), "Esc closes the menu without an action");
+}
+
+fn many_chips() -> Vec<Chip> {
+    ["alpha", "beta", "gamma", "delta", "epsilon", "zeta"]
+        .iter()
+        .map(|l| Chip::new(l))
+        .collect()
+}
+
+fn layout_chip_bar_overflow() {
+    // The run helper: how many chips fit, and the `+N` marker for the rest.
+    assert_eq!(overflow_run(&[5, 5, 5], 100, 1), (3, None));
+    assert_eq!(
+        overflow_run(&[10, 10, 10, 10], 25, 1),
+        (2, Some("+2".to_owned()))
+    );
+    assert_eq!(overflow_run(&[], 10, 1), (0, None));
+    assert_eq!(
+        overflow_run(&[30, 30], 3, 1),
+        (0, Some("+2".to_owned())),
+        "only the marker fits"
+    );
+    assert_eq!(
+        overflow_run(&[30, 30], 1, 1),
+        (0, None),
+        "not even the marker fits"
+    );
+
+    let mut bar = ChipBar::new(WidgetId::of("scenario.layout.overflow"));
+    bar.set_chips(many_chips());
+    bar.set_add_label(None);
+    let frame = chip_frame(&mut bar, 36);
+    let text = text_of(&frame.buf);
+    assert!(text.contains("alpha") && text.contains("beta"), "{text}");
+    assert!(!text.contains("zeta"), "the last chip is hidden:\n{text}");
+    assert!(text.contains("+3") || text.contains("+4"), "{text}");
+    assert!(
+        frame
+            .hits
+            .regions()
+            .iter()
+            .any(|r| r.id == bar.more_id() && !r.area.is_empty()),
+        "the overflow marker is a button"
+    );
+
+    // Down opens the hidden-chip menu; choosing a row activates that chip.
+    assert!(!bar.menu_open());
+    assert_eq!(bar.on_key(&key(KeyCode::Down)), (Outcome::Changed, None));
+    assert!(bar.menu_open());
+    let open = chip_frame(&mut bar, 36);
+    assert!(
+        text_of(&open.buf).contains("zeta"),
+        "{}",
+        text_of(&open.buf)
+    );
+    let (_, action) = bar.on_key(&key(KeyCode::Enter));
+    let Some(ChipAction::Activate(hidden)) = action else {
+        panic!("a hidden chip row activates its chip: {action:?}");
+    };
+    assert!(hidden >= 2, "the first hidden chip");
+    assert!(!bar.menu_open());
+    assert_eq!(bar.cursor, hidden);
+
+    // Clicking the marker toggles the same menu.
+    chip_frame(&mut bar, 36);
+    assert_eq!(bar.on_click(bar.more_id()), (Outcome::Changed, None));
+    assert!(bar.menu_open());
+    chip_frame(&mut bar, 36);
+    assert_eq!(bar.on_click(bar.more_id()), (Outcome::Changed, None));
+    assert!(!bar.menu_open());
+
+    // Without the overflow menu the marker is plain text and Down opens nothing.
+    let mut plain = ChipBar::new(WidgetId::of("scenario.layout.plainmark")).overflow_menu(false);
+    plain.set_chips(many_chips());
+    plain.set_add_label(None);
+    assert!(!plain.overflow_menu);
+    let frame = chip_frame(&mut plain, 36);
+    assert!(text_of(&frame.buf).contains('+'));
+    assert!(
+        !frame.hits.regions().iter().any(|r| r.id == plain.more_id()),
+        "no button, no region"
+    );
+    plain.on_key(&key(KeyCode::Down));
+    assert!(!plain.menu_open());
+
+    // Without the marker nothing announces the hidden chips.
+    let mut silent = ChipBar::new(WidgetId::of("scenario.layout.silent")).overflow_marker(false);
+    silent.set_chips(many_chips());
+    silent.set_add_label(None);
+    assert!(!silent.overflow_marker);
+    let text = text_of(&chip_frame(&mut silent, 36).buf);
+    assert!(!text.contains("+3") && !text.contains("+4"), "{text}");
+    silent.on_key(&key(KeyCode::Down));
+    assert!(!silent.menu_open());
+
+    // The close button and the overflow button are replaceable.
+    let width_of = |bar: &mut ChipBar| {
+        let frame = chip_frame(bar, 80);
+        frame
+            .hits
+            .regions()
+            .iter()
+            .find(|r| r.id == bar.close_id(0))
+            .map(|r| r.area.width)
+            .expect("a close region")
+    };
+    let mut default_close = ChipBar::new(WidgetId::of("scenario.layout.close.a"));
+    default_close.set_chips(many_chips());
+    let mut roomy = ChipBar::new(WidgetId::of("scenario.layout.close.b")).close_target_w(5);
+    roomy.set_chips(many_chips());
+    assert!(width_of(&mut roomy) > width_of(&mut default_close));
+    let mut custom = ChipBar::new(WidgetId::of("scenario.layout.close.c"))
+        .close_button(IconButton::new(WidgetId::of("scenario.layout.x"), "x").pad(2));
+    custom.set_chips(many_chips());
+    assert_eq!(
+        width_of(&mut custom),
+        5,
+        "one glyph plus two pads each side"
+    );
+    let hovered_more = |bar: &mut ChipBar| {
+        let hover = Interaction {
+            hover: Some(bar.more_id()),
+            ..Default::default()
+        };
+        let theme = Theme::for_level(ColorLevel::TrueColor);
+        let mut buf = Buffer::empty(Rect::new(0, 0, 36, 1));
+        let mut hits = HitRegistry::default();
+        let mut ring = FocusRing::default();
+        let mut ctx = RenderCtx::new(&theme, hover, &mut hits, &mut ring);
+        bar.render(Rect::new(0, 0, 36, 1), &mut buf, &mut ctx, theme.canvas);
+        let frame = Painted { buf, hits };
+        let at = (0..36)
+            .find(|&x| frame.buf[(x, 0)].symbol() == "+")
+            .unwrap_or_else(|| panic!("the marker:\n{}", text_of(&frame.buf)));
+        frame.buf[(at, 0)].style()
+    };
+    let mut stock = ChipBar::new(WidgetId::of("scenario.layout.more.a"));
+    stock.set_chips(many_chips());
+    stock.set_add_label(None);
+    let mut styled = ChipBar::new(WidgetId::of("scenario.layout.more.b"))
+        .more_button(IconButton::new(WidgetId::of("scenario.layout.more"), "+").danger_hover(true));
+    styled.set_chips(many_chips());
+    styled.set_add_label(None);
+    assert_ne!(
+        hovered_more(&mut stock),
+        hovered_more(&mut styled),
+        "the replacement button decides how the marker reacts to hover"
+    );
+}
+
+fn tool_items() -> Vec<ToolItem> {
+    vec![
+        ToolItem::new("Run").shortcut("^R").tip("Run the query"),
+        ToolItem::new("Stop").reason("No query is running"),
+        ToolItem::new("Wrap").toggle(false).separator(),
+        ToolItem::new("Save").disabled(true),
+        ToolItem::new("Open"),
+    ]
+}
+
+fn toolbar_frame(bar: &mut Toolbar, width: u16) -> Painted {
+    paint_hits(Rect::new(0, 0, width, 6), |area, buf, ctx| {
+        bar.render(Rect::new(0, 0, area.width, 1), buf, ctx, ctx.theme.canvas)
+    })
+}
+
+fn layout_toolbar_actions() {
+    let id = WidgetId::of("scenario.layout.toolbar");
+    let theme = Theme::for_level(ColorLevel::TrueColor);
+
+    // Item builders set the data the toolbar acts on.
+    let items = tool_items();
+    assert_eq!(items[0].shortcut.as_deref(), Some("^R"));
+    assert_eq!(items[0].tip.as_deref(), Some("Run the query"));
+    assert!(items[1].disabled, "a reason disables the item");
+    assert_eq!(items[1].reason.as_deref(), Some("No query is running"));
+    assert_eq!(items[2].on, Some(false));
+    assert!(items[2].separator_after);
+    assert!(items[3].disabled && items[3].reason.is_none());
+    assert!(!items[4].disabled && items[4].on.is_none());
+
+    let mut bar = Toolbar::new(id, items);
+    assert_eq!(bar.cursor, 0, "the cursor starts on the first enabled item");
+    assert!(bar.skip_disabled && !bar.wrap && bar.overflow);
+    assert_eq!(bar.gap, 1);
+    assert_eq!(
+        Toolbar::new(
+            id,
+            vec![ToolItem::new("a").disabled(true), ToolItem::new("b")]
+        )
+        .cursor,
+        1
+    );
+
+    // Natural width: the full run fits exactly, one cell less overflows.
+    let natural = bar.width();
+    let frame = toolbar_frame(&mut bar, natural);
+    assert!(
+        bar.hidden().is_empty(),
+        "the natural width shows everything"
+    );
+    let text = text_of(&frame.buf);
+    for shown in ["Run", "^R", "Stop", "Wrap", "Save", "Open"] {
+        assert!(text.contains(shown), "{shown}:\n{text}");
+    }
+    assert!(text.contains("○"), "an off toggle shows its mark:\n{text}");
+    assert!(
+        text.contains(theme.glyphs.divider),
+        "a separator follows Wrap:\n{text}"
+    );
+    assert_eq!(bar.areas.len(), 5);
+    assert!(bar.areas.iter().all(|r| !r.is_empty()));
+    assert!(!bar.on_more());
+    toolbar_frame(&mut bar, natural - 1);
+    assert!(!bar.hidden().is_empty(), "one cell less hides an item");
+    toolbar_frame(&mut bar, natural);
+
+    // Ids: every item has its own, and none is the More button.
+    let ids: Vec<_> = (0..5).map(|i| bar.item_id(i)).collect();
+    for (i, a) in ids.iter().enumerate() {
+        assert_ne!(*a, bar.more_id());
+        for b in &ids[i + 1..] {
+            assert_ne!(a, b);
+        }
+    }
+    assert_ne!(bar.menu_id(), bar.more_id());
+
+    // Clicks.
+    assert_eq!(
+        bar.on_click(bar.item_id(0)),
+        (Outcome::Changed, Some(ToolbarAction::Activated(0)))
+    );
+    assert_eq!(
+        bar.on_click(bar.item_id(1)),
+        (Outcome::Consumed, None),
+        "a disabled item eats the click"
+    );
+    assert_eq!(
+        bar.on_click(bar.item_id(2)),
+        (Outcome::Changed, Some(ToolbarAction::Toggled(2, true)))
+    );
+    assert_eq!(bar.items()[2].on, Some(true), "the toggle flipped");
+    assert_eq!(
+        bar.on_click(WidgetId::of("scenario.layout.elsewhere")),
+        (Outcome::Ignored, None)
+    );
+    toolbar_frame(&mut bar, natural);
+    assert_eq!(
+        bar.on_click(bar.item_id(2)),
+        (Outcome::Changed, Some(ToolbarAction::Toggled(2, false)))
+    );
+
+    // Keys: navigation skips disabled items, Enter and Space activate.
+    toolbar_frame(&mut bar, natural);
+    bar.cursor = 0;
+    assert_eq!(bar.on_key(&key(KeyCode::Right)).0, Outcome::Changed);
+    assert_eq!(bar.cursor, 2, "Stop is disabled and skipped");
+    assert_eq!(
+        bar.on_key(&key(KeyCode::Enter)),
+        (Outcome::Changed, Some(ToolbarAction::Toggled(2, true)))
+    );
+    toolbar_frame(&mut bar, natural);
+    bar.cursor = 0;
+    assert_eq!(
+        bar.on_key(&key(KeyCode::Char(' '))),
+        (Outcome::Changed, Some(ToolbarAction::Activated(0)))
+    );
+    assert_eq!(
+        bar.on_key(&key(KeyCode::Char('q'))),
+        (Outcome::Ignored, None)
+    );
+    assert_eq!(
+        Toolbar::new(id, Vec::new()).on_key(&key(KeyCode::Enter)),
+        (Outcome::Ignored, None)
+    );
+
+    // The walk is configurable: stop on disabled items, wrap, vim keys.
+    let mut stops = Toolbar::new(id, tool_items()).skip_disabled(false);
+    assert!(!stops.skip_disabled);
+    toolbar_frame(&mut stops, natural);
+    stops.on_key(&key(KeyCode::Right));
+    assert_eq!(stops.cursor, 1, "a disabled item is a stop");
+    assert_eq!(
+        stops.on_key(&key(KeyCode::Enter)),
+        (Outcome::Consumed, None)
+    );
+    let mut edge = Toolbar::new(id, tool_items());
+    toolbar_frame(&mut edge, natural);
+    edge.on_key(&key(KeyCode::Left));
+    assert_eq!(edge.cursor, 0, "the first item stops the walk");
+    let mut wrapped = Toolbar::new(id, tool_items()).wrap(true);
+    assert!(wrapped.wrap);
+    toolbar_frame(&mut wrapped, natural);
+    wrapped.on_key(&key(KeyCode::Left));
+    assert_eq!(wrapped.cursor, 4, "the walk wraps to the last item");
+    let mut vim = Toolbar::new(id, tool_items()).nav(NavKeys::VIM);
+    assert_eq!(vim.nav, NavKeys::VIM);
+    toolbar_frame(&mut vim, natural);
+    vim.on_key(&key(KeyCode::Char('l')));
+    assert_eq!(vim.cursor, 2, "vim l walks right");
+
+    // The gap is the spacing between items.
+    let mut tight = Toolbar::new(id, tool_items()).gap(0);
+    let mut airy = Toolbar::new(id, tool_items()).gap(3);
+    assert_eq!(tight.gap, 0);
+    toolbar_frame(&mut tight, 120);
+    toolbar_frame(&mut airy, 120);
+    assert_eq!(tight.areas[1].x - tight.areas[0].right(), 0);
+    assert_eq!(airy.areas[1].x - airy.areas[0].right(), 3);
+    assert!(airy.width() > tight.width());
+
+    // A tip shows on hover.
+    let hover = Interaction {
+        hover: Some(bar.item_id(0)),
+        ..Default::default()
+    };
+    let tipped = paint_with(Rect::new(0, 0, 60, 6), hover, |area, buf, ctx| {
+        bar.render(Rect::new(0, 0, area.width, 1), buf, ctx, ctx.theme.canvas)
+    });
+    assert!(
+        text_of(&tipped.buf).contains("Run the query"),
+        "{}",
+        text_of(&tipped.buf)
+    );
+}
+
+fn layout_toolbar_overflow() {
+    let id = WidgetId::of("scenario.layout.toolbar.more");
+    let mut bar = Toolbar::new(id, tool_items());
+    let frame = toolbar_frame(&mut bar, 30);
+    assert!(
+        !bar.hidden().is_empty(),
+        "five items do not fit in 30 cells"
+    );
+    let hidden = bar.hidden().to_vec();
+    assert!(hidden.contains(&4), "the last item is hidden: {hidden:?}");
+    assert!(
+        frame
+            .hits
+            .regions()
+            .iter()
+            .any(|r| r.id == bar.more_id() && !r.area.is_empty()),
+        "the More button is a hit region"
+    );
+    assert!(!text_of(&frame.buf).contains("Open"));
+
+    // The cursor walks onto the More stop and Enter opens the hidden items.
+    for _ in 0..6 {
+        bar.on_key(&key(KeyCode::Right));
+        if bar.on_more() {
+            break;
+        }
+    }
+    assert!(bar.on_more(), "the walk reaches the More stop");
+    assert_eq!(bar.on_key(&key(KeyCode::Enter)), (Outcome::Changed, None));
+    assert!(bar.menu_open());
+    let open = toolbar_frame(&mut bar, 30);
+    assert!(
+        text_of(&open.buf).contains("Open"),
+        "{}",
+        text_of(&open.buf)
+    );
+    let (_, action) = bar.on_key(&key(KeyCode::Enter));
+    assert!(
+        matches!(
+            action,
+            Some(ToolbarAction::Activated(_) | ToolbarAction::Toggled(..))
+        ),
+        "the first enabled hidden row activates: {action:?}"
+    );
+    assert!(!bar.menu_open());
+    assert!(bar.on_more(), "the cursor rests on the More button");
+
+    // Clicking the More button toggles the same menu.
+    toolbar_frame(&mut bar, 30);
+    assert_eq!(bar.on_click(bar.more_id()), (Outcome::Changed, None));
+    assert!(bar.menu_open());
+    toolbar_frame(&mut bar, 30);
+    assert_eq!(bar.on_click(bar.more_id()), (Outcome::Changed, None));
+    assert!(!bar.menu_open());
+    bar.on_key(&key(KeyCode::Enter));
+    toolbar_frame(&mut bar, 30);
+    bar.on_key(&key(KeyCode::Esc));
+    assert!(!bar.menu_open(), "Esc closes the menu");
+
+    // A hidden toggle shows its mark in the menu.
+    let mut toggles = Toolbar::new(
+        id,
+        vec![
+            ToolItem::new("Aaaaaaaa"),
+            ToolItem::new("Bbbbbbbb"),
+            ToolItem::new("Cccc").toggle(true),
+        ],
+    );
+    toolbar_frame(&mut toggles, 22);
+    assert!(toggles.hidden().contains(&2), "{:?}", toggles.hidden());
+    toggles.on_click(toggles.more_id());
+    let menu = toolbar_frame(&mut toggles, 22);
+    assert!(
+        text_of(&menu.buf).contains("● Cccc"),
+        "{}",
+        text_of(&menu.buf)
+    );
+
+    // The More glyph and button are replaceable.
+    let mut glyph = Toolbar::new(id, tool_items()).more_glyph("»");
+    let text = text_of(&toolbar_frame(&mut glyph, 30).buf);
+    assert!(text.contains('»'), "{text}");
+    let mut button = Toolbar::new(id, tool_items())
+        .more_button(IconButton::new(WidgetId::of("scenario.layout.more"), "~").pad(2));
+    let text = text_of(&toolbar_frame(&mut button, 30).buf);
+    assert!(text.contains('~'), "{text}");
+
+    // Overflow off: nothing is hidden behind a button, the bar just clips.
+    let mut clipped = Toolbar::new(id, tool_items()).overflow(false);
+    assert!(!clipped.overflow);
+    let frame = toolbar_frame(&mut clipped, 30);
+    assert!(clipped.hidden().is_empty());
+    assert!(
+        !frame
+            .hits
+            .regions()
+            .iter()
+            .any(|r| r.id == clipped.more_id()),
+        "no More button without overflow"
+    );
+    assert!(!text_of(&frame.buf).contains("Open"));
 }

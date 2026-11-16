@@ -280,6 +280,10 @@ pub enum ScenarioId {
     LayoutColumnSolve,
     LayoutColumnSizing,
     LayoutColumnHeaderMenu,
+    LayoutChipBarActions,
+    LayoutChipBarOverflow,
+    LayoutToolbarActions,
+    LayoutToolbarOverflow,
     // lane:layout end
 }
 
