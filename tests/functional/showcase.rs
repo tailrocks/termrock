@@ -1416,7 +1416,7 @@ fn showcase_terminal_session_refused_and_severed_scripts() {
 }
 
 #[test]
-fn showcase_terminal_session_clipboard_policy_swaps_while_the_program_runs() {
+fn showcase_terminal_session_clipboard_policy_option_copies_writes() {
     let refuse = terminal_pane("showcase-terminal-session-clip-refuse", &[SESSION]);
     refuse.wait_text("refuses a write");
     for _ in 0..2 {
