@@ -1378,6 +1378,72 @@ fn showcase_terminal_session_detach_exit_and_failure_scripts() {
 }
 
 #[test]
+fn showcase_terminal_session_refused_and_severed_scripts() {
+    let refused = session_page("showcase-terminal-session-refused", "refused", "fits");
+    refused.wait_text("Attach failed");
+    let screen = refused.wait_text("the other side refused the attach");
+    assert!(
+        text(&screen).contains("failed: the other side refused the attach"),
+        "the refusal reaches the host as an effect:\n{}",
+        text(&screen)
+    );
+    refused.click_text("Retry");
+    refused.click_text("Run 1 s");
+    refused.wait_text("attached · owner");
+    refused.finish();
+
+    let severed = session_page("showcase-terminal-session-severed", "severed", "fits");
+    severed.click_text("Run 1 s");
+    severed.wait_text("attached · owner");
+    severed.click_text("Run 1 s");
+    severed.wait_text("clock at 2000 ms");
+    severed.click_text("Type");
+    severed.wait_text("a → not sent");
+    severed.click_text("Paste 3 lines");
+    severed.wait_text("paste of 3 lines is held");
+    severed.click_text("Confirm");
+    severed.wait_text("paste → no program to take it");
+    severed.click_text("Run 1 s");
+    let gone = severed.wait_text("detached · transport lost");
+    assert!(
+        text(&gone).contains("transport lost"),
+        "the dropped link reaches the host as an effect:\n{}",
+        text(&gone)
+    );
+    severed.click_text("Retry");
+    severed.wait_text("Attaching…");
+    severed.finish();
+}
+
+#[test]
+fn showcase_terminal_session_clipboard_policy_swaps_while_the_program_runs() {
+    let refuse = terminal_pane("showcase-terminal-session-clip-refuse", &[SESSION]);
+    refuse.wait_text("refuses a write");
+    for _ in 0..2 {
+        refuse.click_text("Run 1 s");
+    }
+    let screen = refuse.wait_text("clipboard write refused");
+    assert!(!text(&screen).contains("copy 8 characters"));
+    refuse.finish();
+
+    let copy = terminal_pane(
+        "showcase-terminal-session-clip-copy",
+        &[SESSION, "terminalpane.clipboard=copy the payload"],
+    );
+    copy.wait_text("copies a write");
+    for _ in 0..2 {
+        copy.click_text("Run 1 s");
+    }
+    let screen = copy.wait_text("copy 8 characters");
+    assert!(
+        !text(&screen).contains("clipboard write refused"),
+        "the swapped policy lets the write through:\n{}",
+        text(&screen)
+    );
+    copy.finish();
+}
+
+#[test]
 fn showcase_terminal_session_drain_budget_option_stretches_the_replay() {
     let app = terminal_pane(
         "showcase-terminal-session-budget",

@@ -1966,7 +1966,9 @@ pub static TERMINAL_PANE: &[Opt] = &[
     Opt::new(
         "terminalpane.script",
         "Session script",
-        &["owner", "viewer", "detaches", "exits", "fails"],
+        &[
+            "owner", "viewer", "detaches", "exits", "fails", "refused", "severed",
+        ],
     )
     .needs(&[("terminalpane.host", "session controller")]),
     Opt::new(
@@ -1979,6 +1981,12 @@ pub static TERMINAL_PANE: &[Opt] = &[
         "terminalpane.budget",
         "Drain budget (bytes)",
         &["65536", "8"],
+    )
+    .needs(&[("terminalpane.host", "session controller")]),
+    Opt::new(
+        "terminalpane.clipboard",
+        "Clipboard policy",
+        &["refuse a write", "copy the payload"],
     )
     .needs(&[("terminalpane.host", "session controller")]),
 ];

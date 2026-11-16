@@ -292,6 +292,10 @@ impl TerminalPanePage {
         self.opts.value("terminalpane.host") == "session controller"
     }
 
+    fn copies_clipboard(&self) -> bool {
+        self.opts.value("terminalpane.clipboard") == "copy the payload"
+    }
+
     fn load_session(&mut self) {
         self.session = self.session_mode().then(|| {
             let (rows, cols) = size_of(self.opts.value("terminalpane.size"));
@@ -305,6 +309,7 @@ impl TerminalPanePage {
                     .parse()
                     .unwrap_or(64 * 1024),
             )
+            .clipboard_copies(self.copies_clipboard())
         });
     }
 
@@ -783,6 +788,13 @@ impl Page for TerminalPanePage {
                     | "terminalpane.budget"
             ) {
                 self.load_session();
+            }
+            if key == "terminalpane.clipboard" {
+                let copies = self.copies_clipboard();
+                self.session = self
+                    .session
+                    .take()
+                    .map(|demo| demo.clipboard_copies(copies));
             }
         }
     }
