@@ -7,11 +7,11 @@ use crate::pages::row_menu::{MENU_HINTS, OPEN_HINT, RowMenu, plain};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
 use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
+use junie_tui::core::id::{ItemKey, Part, WidgetId};
 use junie_tui::core::intent::Phase;
-use junie_tui::core::keymap::{KeyBinding, NavKeys, hint_key};
+use junie_tui::core::keymap::{Actions as KeyActions, KeyBinding, NavKeys, hint_key};
 use junie_tui::core::pointer::MouseTarget;
-use junie_tui::core::response::Actions;
+use junie_tui::core::response::{Actions, Response};
 use junie_tui::core::scroll::TrackClick;
 use junie_tui::core::selection::ClickPolicy;
 use junie_tui::theme::Tone;
@@ -22,7 +22,9 @@ use junie_tui::ui::text;
 use junie_tui::widgets::menu::MenuItem;
 use junie_tui::widgets::panel::Panel;
 use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::tree::{BranchAction, TreeAction, TreeCmd, TreeNode, TreeView};
+use junie_tui::widgets::tree::{
+    BranchAction, KeyedTree, KeyedTreeNode, TreeAction, TreeCmd, TreeNode, TreeView,
+};
 use ratatui::crossterm::event::KeyCode;
 
 fn push_step(last: &mut String, step: String) {
@@ -70,10 +72,53 @@ fn tables() -> Vec<TreeNode> {
     ]
 }
 
+/// The project files as a keyed store: every node is identified by its path,
+/// so the tree keeps its cursor, selection and folds across edits.
+fn keyed_project() -> KeyedTree {
+    fn add(tree: &mut KeyedTree, parent: Option<ItemKey>, prefix: &str, nodes: &[TreeNode]) {
+        for (at, node) in nodes.iter().enumerate() {
+            let path = format!("{prefix}{}", node.label);
+            let key = ItemKey::text(&path);
+            let mut leaf = KeyedTreeNode::new(&node.label);
+            if let Some(meta) = &node.meta {
+                leaf = leaf.meta(meta);
+            }
+            tree.insert(parent, at, key, leaf)
+                .expect("the demo paths are unique");
+            add(tree, Some(key), &format!("{path}/"), &node.children);
+        }
+    }
+    let mut tree = KeyedTree::new();
+    let files = crate::data::project_tree();
+    add(&mut tree, None, "", &files);
+    let src = ItemKey::text("src");
+    let children = tree.get(src).map_or(0, |node| node.children().len());
+    tree.insert(
+        Some(src),
+        children,
+        GENERATED,
+        KeyedTreeNode::lazy("generated"),
+    )
+    .expect("the demo paths are unique");
+    tree
+}
+
+const GENERATED: ItemKey = ItemKey::text("src/generated");
+const MAIN: ItemKey = ItemKey::text("src/main.rs");
+const NEW_FILE: ItemKey = ItemKey::text("src/new.rs");
+const FIXTURES: ItemKey = ItemKey::text("tests/fixtures");
+
 pub struct TreesPage {
     template: Template,
     tree: TreeView,
     conns: TreeView,
+
+    /// The keyed store behind the Project tree when its source is keyed.
+    store: KeyedTree,
+    was_keyed: bool,
+    /// What the last store edit and the last jump reported.
+    edit_note: String,
+    jump_note: String,
 
     loading: Option<(Vec<usize>, u8)>,
 
@@ -98,6 +143,10 @@ impl TreesPage {
             template: Template::new(ID, states_grid()),
             tree: TreeView::new(PROJECT, crate::data::project_tree()),
             conns: TreeView::new(CONNECTIONS, connections()),
+            store: keyed_project(),
+            was_keyed: false,
+            edit_note: String::new(),
+            jump_note: String::new(),
             loading: None,
             last: "—".into(),
             menu: RowMenu::default(),
@@ -127,7 +176,7 @@ impl TreesPage {
     }
 
     fn build(&self, t: TreeView) -> TreeView {
-        let mut t = t
+        let t = t
             .branch_activate(match self.opt("trees.branch") {
                 "activate" => BranchAction::Activate,
                 "both" => BranchAction::Both,
@@ -156,18 +205,37 @@ impl TreesPage {
                 "chevron" => Some("›"),
                 _ => None,
             });
-        if self.opt("trees.keymap") == "custom" {
-            t = t.keymap(vec![
+        t.keymap(if self.opt("trees.keymap") == "custom" {
+            vec![
                 (KeyBinding::char('e'), TreeCmd::ExpandAll),
                 (KeyBinding::char('c'), TreeCmd::CollapseAll),
-            ]);
-        }
-        t
+            ]
+        } else {
+            TreeCmd::default_keymap()
+        })
+    }
+
+    /// Whether the Project tree runs over the keyed store.
+    fn keyed(&self) -> bool {
+        self.opt("trees.source") == "keyed"
     }
 
     fn rebuild(&mut self) {
-        let keep = |old: &TreeView, new: TreeView| {
-            let mut new = new;
+        let keyed = self.keyed();
+        let tree = if keyed && self.was_keyed {
+            // The keyed state (cursor, folds, selection) lives in the view.
+            let live = std::mem::replace(&mut self.tree, TreeView::new(PROJECT, vec![]));
+            self.build(live)
+        } else if keyed != self.was_keyed {
+            let nodes = if keyed {
+                vec![]
+            } else {
+                crate::data::project_tree()
+            };
+            self.build(TreeView::new(PROJECT, nodes))
+        } else {
+            let old = &self.tree;
+            let mut new = self.build(TreeView::new(PROJECT, vec![]));
             new.nodes = old.nodes.clone();
             new.expanded = old.expanded.clone();
             new.selected = old.selected.clone();
@@ -175,14 +243,141 @@ impl TreesPage {
             new.flatten();
             new
         };
-        let tree = self.build(TreeView::new(PROJECT, vec![]));
-        self.tree = keep(&self.tree, tree);
+        self.was_keyed = keyed;
+        self.tree = tree
+            .select_follows_cursor(self.opt("trees.follow") == "on")
+            .show_selection(self.opt("trees.show_selection") == "on");
         let mut conns = self.build(TreeView::new(CONNECTIONS, vec![]));
         conns.filter = match self.opt("trees.filter") {
             "orders" => Some("orders".to_owned()),
             _ => None,
         };
-        self.conns = keep(&self.conns, conns);
+        let old = &self.conns;
+        conns.nodes = old.nodes.clone();
+        conns.expanded = old.expanded.clone();
+        conns.selected = old.selected.clone();
+        conns.cursor = old.cursor;
+        conns.flatten();
+        self.conns = conns;
+    }
+
+    /// A keyed node's label, for the readout and the status line.
+    fn label_of(&self, key: ItemKey) -> String {
+        self.store
+            .get(key)
+            .map_or_else(|| format!("{key:?}"), |node| node.label.clone())
+    }
+
+    /// Puts the store back to the loaded files, then applies the chosen edit.
+    /// The tree keeps its cursor, folds and selection across every step,
+    /// because they are held by path key.
+    fn apply_edit(&mut self) {
+        self.store.remove(NEW_FILE);
+        self.store.update(MAIN, |node| {
+            node.label = "main.rs".to_owned();
+            node.meta = Some("1.2 KB".to_owned());
+        });
+        if self.store.get(FIXTURES).is_none() {
+            let tests = ItemKey::text("tests");
+            let at = 2;
+            self.store
+                .insert(Some(tests), at, FIXTURES, KeyedTreeNode::new("fixtures"))
+                .expect("the tests folder is in the store");
+            for (i, (name, meta)) in [("users.json", "18 KB"), ("orders.json", "44 KB")]
+                .into_iter()
+                .enumerate()
+            {
+                let key = ItemKey::text(&format!("tests/fixtures/{name}"));
+                self.store
+                    .insert(Some(FIXTURES), i, key, KeyedTreeNode::new(name).meta(meta))
+                    .expect("the fixtures are new keys");
+            }
+        }
+        self.edit_note = match self.opt("trees.edit") {
+            "insert before" => {
+                let src = ItemKey::text("src");
+                let node = KeyedTreeNode::new("new.rs").meta("just added").glyph("+");
+                format!(
+                    "insert(src, 0, new.rs) → {}",
+                    self.store
+                        .insert(Some(src), 0, NEW_FILE, node)
+                        .map_or_else(|e| format!("Err({e:?})"), |()| "Ok".to_owned())
+                )
+            }
+            "rename" => format!(
+                "update(main.rs) → {}",
+                self.store.update(MAIN, |node| {
+                    node.label = "app.rs".to_owned();
+                    node.meta = Some("renamed".to_owned());
+                })
+            ),
+            "remove" => format!("remove(tests/fixtures) → {}", self.store.remove(FIXTURES)),
+            _ => String::new(),
+        };
+    }
+
+    /// Moves the keyed tree by identity: a cursor jump, a selection, or every
+    /// folder open at once.
+    fn apply_jump(&mut self) {
+        const KEYED: &str = "the demo tree is a valid keyed store";
+        self.jump_note = match self.opt("trees.jump") {
+            "expand all" => {
+                self.tree.expand_all_source(&self.store).expect(KEYED);
+                "expand_all_source → every folder is open".to_owned()
+            }
+            "none" => String::new(),
+            path => {
+                let key = ItemKey::text(path);
+                let moved = self.tree.set_cursor_source(key, &self.store).expect(KEYED);
+                let picked = self.tree.select_source(key, &self.store).expect(KEYED);
+                format!(
+                    "set_cursor_source({path}) → {moved}{} · select_source → {picked}",
+                    if moved { "" } else { " (closed folder)" }
+                )
+            }
+        };
+    }
+
+    /// A lazy keyed folder loads its children when it opens.
+    fn load_generated(&mut self, key: ItemKey) {
+        self.store.update(key, |node| node.lazy = false);
+        for (i, (name, meta)) in [("client.rs", "7.4 KB"), ("schema.rs", "21 KB")]
+            .into_iter()
+            .enumerate()
+        {
+            let child = ItemKey::text(&format!("src/generated/{name}"));
+            self.store
+                .insert(Some(key), i, child, KeyedTreeNode::new(name).meta(meta))
+                .expect("the generated folder was empty");
+        }
+    }
+
+    /// Folds a keyed tree's actions into the readout and the status line.
+    fn on_keyed_actions(
+        &mut self,
+        response: Result<Response<TreeAction<ItemKey>>, junie_tui::core::keyed::KeyedSourceError>,
+        cx: &mut Cx,
+    ) -> Outcome {
+        let (out, actions) = response
+            .expect("the demo tree is a valid keyed store")
+            .into_parts();
+        let mut steps = Vec::new();
+        for action in actions {
+            match action {
+                TreeAction::Expand(key) => {
+                    steps.push(format!("Expand({})", self.label_of(key)));
+                    self.load_generated(key);
+                }
+                TreeAction::Activate(key) => {
+                    steps.push(format!("Activate({})", self.label_of(key)));
+                    cx.status(format!("Opened {}", self.label_of(key)));
+                }
+            }
+        }
+        if !steps.is_empty() {
+            self.last = steps.join(" → ");
+        }
+        out
     }
 
     fn tree_mut(&mut self, id: WidgetId) -> Option<&mut TreeView> {
@@ -232,7 +427,7 @@ impl TreesPage {
             hint_key(&t.keymap, TreeCmd::ExpandAll).unwrap_or("none"),
             hint_key(&t.keymap, TreeCmd::CollapseAll).unwrap_or("none"),
         );
-        vec![
+        let mut lines = vec![
             format!(
                 "branch_activate {:?} · click {:?} · indent {} · divider {} · alt_click_recursive {} · reserve_right {} · show_meta {}",
                 t.branch_activate,
@@ -259,7 +454,25 @@ impl TreesPage {
                 "last TreeAction: {}   (TreeAction::Expand on a lazy node · TreeAction::Activate on a leaf, or a branch per branch_activate)",
                 self.last
             ),
-        ]
+        ];
+        if self.keyed() {
+            lines.push(format!(
+                "Project source keyed (TreeSource: KeyedTree, {} nodes, empty {})",
+                self.store.len(),
+                self.store.is_empty(),
+            ));
+            lines.push(format!(
+                "select_follows_cursor {} · show_selection {}",
+                self.opt("trees.follow") == "on",
+                self.opt("trees.show_selection") == "on",
+            ));
+            for (what, note) in [("edit", &self.edit_note), ("jump", &self.jump_note)] {
+                if !note.is_empty() {
+                    lines.push(format!("{what}: {note}"));
+                }
+            }
+        }
+        lines
     }
 
     fn row_items(&self, i: usize) -> Vec<(RowAction, MenuItem)> {
@@ -352,7 +565,13 @@ impl TreesPage {
         let bg = panel.bg(t);
         let card = Rect::new(l.x, l.y, l.width, l.height.min(TREE_H));
         let inner = panel.render(card, buf, t);
-        self.tree.render(inner, buf, ctx, bg);
+        if self.keyed() {
+            self.tree
+                .render_source(inner, &self.store, buf, ctx, bg)
+                .expect("the demo tree is a valid keyed store");
+        } else {
+            self.tree.render(inner, buf, ctx, bg);
+        }
         panel.draw_meta(card, buf, t, &scrollbar::position_label(&self.tree.scroll));
 
         let panel = Panel::card(Some("Selection"));
@@ -363,27 +582,35 @@ impl TreesPage {
             t,
         );
         let mut y = inner.y;
-        match self.tree.selected.clone() {
-            Some(path) => {
+        let keyed = self.keyed();
+        let selected: Option<(String, String)> = if keyed {
+            self.tree.keyed().selected().next().map(|key| {
+                (
+                    self.label_of(key),
+                    format!("by key · {} selected", self.tree.keyed().selected().count()),
+                )
+            })
+        } else {
+            self.tree.selected.clone().map(|path| {
                 let mut nodes = &self.tree.nodes;
                 let mut parts = Vec::new();
                 for &i in &path {
                     parts.push(nodes[i].label.clone());
                     nodes = &nodes[i].children;
                 }
+                (parts.join("/"), format!("depth {}", path.len() - 1))
+            })
+        };
+        match selected {
+            Some((label, detail)) => {
                 buf.set_string(
                     inner.x,
                     y,
-                    text::truncate(&parts.join("/"), inner.width as usize),
+                    text::truncate(&label, inner.width as usize),
                     t.primary().bg(bg),
                 );
                 y += 1;
-                buf.set_string(
-                    inner.x,
-                    y,
-                    format!("depth {}", path.len() - 1),
-                    t.muted().bg(bg),
-                );
+                buf.set_string(inner.x, y, detail, t.muted().bg(bg));
             }
             None => {
                 buf.set_string(inner.x, y, "Nothing selected", t.muted().bg(bg));
@@ -392,13 +619,28 @@ impl TreesPage {
             }
         }
         y += 2;
-        let rows = self.tree.rows();
-        let cur = &rows[self.tree.cursor.min(rows.len().saturating_sub(1))];
-        for (k, v) in [
-            ("cursor", cur.label.clone()),
-            ("visible", format!("{} rows", rows.len())),
-            ("open", format!("{} folders", self.tree.expanded.len())),
-        ] {
+        let facts = if keyed {
+            let state = self.tree.keyed();
+            [
+                (
+                    "cursor",
+                    state
+                        .cursor()
+                        .map_or_else(|| "none".to_owned(), |key| self.label_of(key)),
+                ),
+                ("visible", format!("{} rows", state.visible_len())),
+                ("open", format!("{} folders", state.expanded().count())),
+            ]
+        } else {
+            let rows = self.tree.rows();
+            let cur = &rows[self.tree.cursor.min(rows.len().saturating_sub(1))];
+            [
+                ("cursor", cur.label.clone()),
+                ("visible", format!("{} rows", rows.len())),
+                ("open", format!("{} folders", self.tree.expanded.len())),
+            ]
+        };
+        for (k, v) in facts {
             if y >= inner.bottom() {
                 break;
             }
@@ -433,7 +675,8 @@ impl TreesPage {
             self.conns.render(inner, buf, ctx, bg);
         }
 
-        for (y, l) in (area.y + self.top_h() + 1..).zip(self.readout_lines(area.width)) {
+        let lines = self.readout_lines(area.width);
+        for (y, l) in (area.y + self.top_h() + 1..area.bottom()).zip(lines) {
             buf.set_string(area.x, y, l, t.faint().bg(t.canvas));
         }
         self.menu.render(area, buf, ctx);
@@ -559,6 +802,10 @@ impl Page for TreesPage {
         }
         match ev {
             PageEvent::Key(key) => {
+                if self.keyed() && cx.focus.is(PROJECT) {
+                    let response = self.tree.on_key_source(key, &self.store);
+                    return self.on_keyed_actions(response, cx);
+                }
                 if cx.focus.is(self.tree.id)
                     && let Some(req) = self.menu.config.on_key(&self.tree, key)
                 {
@@ -575,6 +822,10 @@ impl Page for TreesPage {
                 self.on_actions(id, actions, cx);
                 o
             }
+            PageEvent::Pointer(ev) if ev.is(Phase::Secondary) && self.keyed() => {
+                // The row menu edits the owned nodes; a borrowed source has none.
+                Outcome::Ignored
+            }
             PageEvent::Pointer(ev) if ev.is(Phase::Secondary) => {
                 let cfg = self.menu.config;
                 let Some(req) = cfg.on_secondary(&mut self.tree, ev) else {
@@ -583,6 +834,13 @@ impl Page for TreesPage {
                 cx.focus.focus(self.tree.id);
                 self.open_menu(req);
                 Outcome::Changed
+            }
+            PageEvent::Pointer(ev) if self.keyed() && ev.on(PROJECT) => {
+                let response = self.tree.on_pointer_source(ev, &self.store);
+                if ev.is(Phase::Click) && ev.key_of(Part::ROW).is_some() {
+                    cx.focus.focus(PROJECT);
+                }
+                self.on_keyed_actions(response, cx)
             }
             PageEvent::Pointer(ev) => {
                 for tid in [PROJECT, CONNECTIONS] {
@@ -658,6 +916,18 @@ impl Page for TreesPage {
         if let Some(i) = table.iter().position(|o| o.key == key) {
             self.opts[i] = value.min(table[i].values.len() - 1);
             self.rebuild();
+            if self.keyed() {
+                match key {
+                    "trees.edit" => self.apply_edit(),
+                    "trees.jump" => self.apply_jump(),
+                    "trees.source" => {
+                        self.store = keyed_project();
+                        self.apply_edit();
+                        self.apply_jump();
+                    }
+                    _ => {}
+                }
+            }
         }
     }
 

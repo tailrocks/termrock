@@ -7,10 +7,12 @@ use crate::pages::row_menu::{MENU_HINTS, OPEN_HINT, RowMenu, plain};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
 use junie_tui::core::event::Outcome;
-use junie_tui::core::id::{Part, WidgetId};
+use junie_tui::core::id::{ItemKey, Part, WidgetId};
 use junie_tui::core::intent::Phase;
-use junie_tui::core::keymap::{KeyBinding, NavKeys, label_for};
+use junie_tui::core::keymap::{Actions, KeyBinding, NavKeys, label_for};
+use junie_tui::core::list::{KeyedRowSource, RowSource, SourceStamp};
 use junie_tui::core::pointer::MouseTarget;
+use junie_tui::core::response::Response;
 use junie_tui::core::scroll::TrackClick;
 use junie_tui::core::selection::{CheckClick, ClickPolicy, SelectGesture};
 use junie_tui::core::typeahead::TypeAhead;
@@ -23,7 +25,9 @@ use junie_tui::ui::reveal::{Reveal, RevealMode};
 use junie_tui::ui::specimen::{SpecimenState, StateGrid};
 use junie_tui::ui::text;
 use junie_tui::widgets::empty::EmptyState;
-use junie_tui::widgets::list::{ListBox, ListCmd, ListItem, SelectMode};
+use junie_tui::widgets::list::{
+    ListAction, ListBox, ListCmd, ListItem, ListItemRef, ListSource, SelectMode,
+};
 use junie_tui::widgets::menu::MenuItem;
 use junie_tui::widgets::panel::Panel;
 use junie_tui::widgets::scrollbar;
@@ -72,6 +76,83 @@ fn files() -> Vec<ListItem> {
         .collect()
 }
 
+/// The demo records as a keyed, borrowed provider. Rows read the records in
+/// place and are identified by label, never by position, so reversing the view
+/// moves rows without moving their cursor, choice or checks.
+struct Rows<'a> {
+    instance: &'static str,
+    items: &'a [ListItem],
+    reversed: bool,
+}
+
+impl<'a> Rows<'a> {
+    fn languages(items: &'a [ListItem], reversed: bool) -> Self {
+        Self {
+            instance: "showcase.lists.languages",
+            items,
+            reversed,
+        }
+    }
+
+    fn files(items: &'a [ListItem], reversed: bool) -> Self {
+        Self {
+            instance: "showcase.lists.files",
+            items,
+            reversed,
+        }
+    }
+
+    fn at(&self, visible: usize) -> usize {
+        if self.reversed {
+            self.items.len() - 1 - visible
+        } else {
+            visible
+        }
+    }
+}
+
+impl RowSource for Rows<'_> {
+    fn len(&self) -> usize {
+        self.items.len()
+    }
+
+    fn enabled(&self, i: usize) -> bool {
+        !self.items[self.at(i)].disabled
+    }
+
+    fn label(&self, i: usize) -> &str {
+        &self.items[self.at(i)].label
+    }
+
+    fn key(&self, i: usize) -> ItemKey {
+        ItemKey::text(self.label(i))
+    }
+}
+
+impl KeyedRowSource for Rows<'_> {
+    fn stamp(&self) -> SourceStamp {
+        SourceStamp {
+            instance: ItemKey::text(self.instance),
+            data: 0,
+            view: u64::from(self.reversed),
+        }
+    }
+
+    fn source_len(&self) -> usize {
+        self.items.len()
+    }
+
+    fn source_key(&self, source_index: usize) -> ItemKey {
+        ItemKey::text(&self.items[source_index].label)
+    }
+}
+
+impl ListSource for Rows<'_> {
+    fn item(&self, visible: usize) -> ListItemRef<'_> {
+        self.items[self.at(visible)].borrowed()
+    }
+}
+
 pub struct ListsPage {
     template: Template,
     single: ListBox,
@@ -79,6 +160,13 @@ pub struct ListsPage {
     empty: ListBox,
 
     menu: RowMenu<(WidgetId, usize)>,
+
+    /// The records the keyed source borrows; the lists hold their own copy.
+    languages: Vec<ListItem>,
+    files: Vec<ListItem>,
+    was_keyed: bool,
+    /// The `ListAction`s of the last keyed input, by label.
+    last_action: String,
 
     opts: Vec<usize>,
 }
@@ -91,6 +179,10 @@ impl ListsPage {
             multi: ListBox::new(MULTI, files(), SelectMode::Multi),
             empty: ListBox::new(EMPTY, vec![], SelectMode::Single),
             menu: RowMenu::default(),
+            languages: languages(),
+            files: files(),
+            was_keyed: false,
+            last_action: "—".into(),
             opts: page_options(PageId::Lists)
                 .iter()
                 .map(|o| o.default)
@@ -118,7 +210,7 @@ impl ListsPage {
     }
 
     fn build(&self, l: ListBox) -> ListBox {
-        let mut l = l
+        let l = l
             .nav(match self.opt("lists.nav") {
                 "vim" => NavKeys::VIM,
                 _ => NavKeys::default(),
@@ -151,24 +243,74 @@ impl ListsPage {
                 "jump" => TrackClick::Jump,
                 _ => TrackClick::Page,
             });
-        if self.opt("lists.keymap") == "custom" {
-            l = l.keymap(vec![
+        l.keymap(if self.opt("lists.keymap") == "custom" {
+            vec![
                 (KeyBinding::char('t'), ListCmd::ToggleAll),
                 (KeyBinding::ctrl('a'), ListCmd::SelectAll),
-            ]);
-        }
-        l
+            ]
+        } else {
+            ListCmd::default_keymap()
+        })
     }
 
-    fn rebuild(&mut self) {
-        let keep = |old: &ListBox, mut new: ListBox| {
+    /// Whether the Language and Files lists run over a keyed, borrowed source.
+    fn keyed(&self) -> bool {
+        self.opt("lists.source") != "owned"
+    }
+
+    fn reversed(&self) -> bool {
+        self.opt("lists.source") == "keyed reversed"
+    }
+
+    /// The label a key names in either list.
+    fn label_of(&self, key: ItemKey) -> String {
+        self.languages
+            .iter()
+            .chain(&self.files)
+            .find(|item| ItemKey::text(&item.label) == key)
+            .map_or_else(|| format!("{key:?}"), |item| item.label.clone())
+    }
+
+    /// Folds the typed actions of one keyed input into the readout.
+    fn note(&mut self, response: Response<ListAction>) -> Outcome {
+        let (outcome, actions) = response.into_parts();
+        let mut steps = Vec::new();
+        for action in actions {
+            steps.push(match action {
+                ListAction::Activated(key) => format!("Activated({})", self.label_of(key)),
+                ListAction::SelectionChanged => "SelectionChanged".to_owned(),
+            });
+        }
+        if !steps.is_empty() {
+            self.last_action = steps.join(" → ");
+        }
+        outcome
+    }
+
+    /// One list's next state: fresh, carrying the cursor and selection, or the
+    /// live box itself while a keyed source keeps driving it (its identity
+    /// state lives inside the box).
+    fn next(&self, old: ListBox, items: Vec<ListItem>, mode: SelectMode, live: bool) -> ListBox {
+        if live {
+            return self.build(old);
+        }
+        let mut new = self.build(ListBox::new(old.id, items, mode));
+        // Positions only mean something between two owned lists; a keyed list
+        // starts with nothing chosen and learns its state by key.
+        if !self.keyed() && !self.was_keyed {
             new.cursor = old.cursor;
             new.chosen = old.chosen;
             new.selection = old.selection.clone();
-            new
-        };
+        }
+        new
+    }
+
+    fn rebuild(&mut self) {
+        let live = self.keyed() && self.was_keyed;
+        let vacant = |id, mode| ListBox::new(id, vec![], mode);
+        let old = std::mem::replace(&mut self.single, vacant(SINGLE, SelectMode::Single));
         let single = self
-            .build(ListBox::new(SINGLE, languages(), SelectMode::Single))
+            .next(old, languages(), SelectMode::Single, live)
             .content(match self.opt("lists.content") {
                 "loading" => ContentState::loading("Loading languages…"),
                 "error" => ContentState::error(
@@ -177,9 +319,15 @@ impl ListsPage {
                 ),
                 _ => ContentState::Ready,
             });
-        self.single = keep(&self.single, single);
-        let multi = self.build(ListBox::new(MULTI, files(), SelectMode::Multi));
-        self.multi = keep(&self.multi, multi);
+        self.single = single;
+        let old = std::mem::replace(&mut self.multi, vacant(MULTI, SelectMode::Multi));
+        self.multi = self.next(old, files(), SelectMode::Multi, live);
+        if !self.keyed() && self.was_keyed {
+            self.single.chosen = Some(0);
+            self.multi.set_checked(0, true);
+            self.multi.set_checked(1, true);
+        }
+        self.was_keyed = self.keyed();
         let empty = self.build(ListBox::new(EMPTY, vec![], SelectMode::Single));
         self.empty = if self.opt("lists.empty") == "state" {
             empty.empty(
@@ -219,7 +367,7 @@ impl ListsPage {
                 .collect::<Vec<_>>()
                 .join("/")
         };
-        vec![
+        let mut lines = vec![
             format!(
                 "nav {nav} · type-ahead {} (TypeAhead, {} ms pause) · click {:?}, check {:?} · wrap {} · skip_disabled {}",
                 if l.type_ahead { "on" } else { "off" },
@@ -237,7 +385,22 @@ impl ListsPage {
                 key(ListCmd::ToggleAll),
                 key(ListCmd::SelectAll),
             ),
-        ]
+        ];
+        if self.keyed() {
+            let cursor = |l: &ListBox| {
+                l.keyed()
+                    .cursor()
+                    .map_or_else(|| "none".to_owned(), |key| self.label_of(key))
+            };
+            lines.push(format!(
+                "source {} (ListSource) · cursor by key: {} / {}",
+                self.opt("lists.source"),
+                cursor(&self.single),
+                cursor(&self.multi),
+            ));
+            lines.push(format!("last ListAction: {}", self.last_action));
+        }
+        lines
     }
 
     fn row_items(l: &ListBox, row: usize) -> Vec<MenuItem> {
@@ -372,10 +535,12 @@ impl ListsPage {
         let tiled = self.tiled(area.width);
         let h = tiled.size.height;
         let cols = [tiled.at(0, area), tiled.at(1, area), tiled.at(2, area)];
+        let reversed = self.reversed();
+        let rows = Rows::languages(&self.languages, reversed);
         let chosen = self
             .single
             .chosen
-            .map(|i| self.single.items[i].label.clone())
+            .map(|i| rows.label(i).to_owned())
             .unwrap_or_default();
         let panel = Panel::card(Some("Language")).focused(ctx.interaction.focused(self.single.id));
         let bg = panel.bg(t);
@@ -386,17 +551,25 @@ impl ListsPage {
             format!("Chosen: {chosen}"),
             t.muted().bg(bg),
         );
-        self.single.render(
-            Rect::new(
-                inner.x,
-                inner.y + 2,
-                inner.width,
-                inner.height.saturating_sub(2),
-            ),
-            buf,
-            ctx,
-            bg,
+        let list = Rect::new(
+            inner.x,
+            inner.y + 2,
+            inner.width,
+            inner.height.saturating_sub(2),
         );
+        if self.keyed() {
+            self.single
+                .render_source(
+                    list,
+                    &Rows::languages(&self.languages, reversed),
+                    buf,
+                    ctx,
+                    bg,
+                )
+                .expect("the demo languages are unique and keyed");
+        } else {
+            self.single.render(list, buf, ctx, bg);
+        }
         panel.draw_meta(
             cols[0],
             buf,
@@ -416,24 +589,27 @@ impl ListsPage {
             text::truncate(&self.multi_header(), inner.width as usize),
             t.muted().bg(bg),
         );
-        self.multi.render(
-            Rect::new(
-                inner.x,
-                inner.y + 2,
-                inner.width,
-                inner.height.saturating_sub(2),
-            ),
-            buf,
-            ctx,
-            bg,
+        let list = Rect::new(
+            inner.x,
+            inner.y + 2,
+            inner.width,
+            inner.height.saturating_sub(2),
         );
+        if self.keyed() {
+            self.multi
+                .render_source(list, &Rows::files(&self.files, reversed), buf, ctx, bg)
+                .expect("the demo files are unique and keyed");
+        } else {
+            self.multi.render(list, buf, ctx, bg);
+        }
 
         let panel = Panel::card(Some("Search results"));
         let bg = panel.bg(t);
         let inner = panel.render(cols[2], buf, t);
         self.empty.render(inner, buf, ctx, bg);
 
-        for (y, l) in (area.y + h + 1..).zip(self.readout_lines(area.width)) {
+        let lines = self.readout_lines(area.width);
+        for (y, l) in (area.y + h + 1..area.bottom()).zip(lines) {
             buf.set_string(area.x, y, l, t.faint().bg(t.canvas));
         }
         self.menu.render(area, buf, ctx);
@@ -520,6 +696,17 @@ impl Page for ListsPage {
                 let Some(f) = cx.focus.current() else {
                     return Outcome::Ignored;
                 };
+                if self.keyed() && (f == SINGLE || f == MULTI) {
+                    let reversed = self.reversed();
+                    let response = if f == SINGLE {
+                        self.single
+                            .on_key_source(key, &Rows::languages(&self.languages, reversed))
+                    } else {
+                        self.multi
+                            .on_key_source(key, &Rows::files(&self.files, reversed))
+                    };
+                    return self.note(response.expect("the demo rows are unique and keyed"));
+                }
                 let cfg = self.menu.config;
                 let Some(l) = self.list_mut(f) else {
                     return Outcome::Ignored;
@@ -529,6 +716,10 @@ impl Page for ListsPage {
                     return Outcome::Changed;
                 }
                 l.on_key(key)
+            }
+            PageEvent::Pointer(ev) if ev.is(Phase::Secondary) && self.keyed() => {
+                // The row menu edits the owned items; a borrowed source has none.
+                Outcome::Ignored
             }
             PageEvent::Pointer(ev) if ev.is(Phase::Secondary) => {
                 let cfg = self.menu.config;
@@ -542,6 +733,26 @@ impl Page for ListsPage {
                 cx.focus.focus(list);
                 self.open_menu(list, req);
                 Outcome::Changed
+            }
+            PageEvent::Pointer(ev) if self.keyed() && (ev.on(SINGLE) || ev.on(MULTI)) => {
+                let reversed = self.reversed();
+                let (id, response) = if ev.on(SINGLE) {
+                    (
+                        SINGLE,
+                        self.single
+                            .on_pointer_source(ev, &Rows::languages(&self.languages, reversed)),
+                    )
+                } else {
+                    (
+                        MULTI,
+                        self.multi
+                            .on_pointer_source(ev, &Rows::files(&self.files, reversed)),
+                    )
+                };
+                if ev.is(Phase::Click) && ev.key_of(Part::ROW).is_some() {
+                    cx.focus.focus(id);
+                }
+                self.note(response.expect("the demo rows are unique and keyed"))
             }
             PageEvent::Pointer(ev) => {
                 for l in self.lists() {

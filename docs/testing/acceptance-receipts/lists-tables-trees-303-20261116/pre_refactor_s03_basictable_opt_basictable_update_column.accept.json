@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s03_basictable/opt_basictable_update_column",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "target/functional/s03-column-23223-1794814758220196000-2/check-artifacts/pre_refactor/s03_basictable/opt_basictable_update_column/fe59cec6e963d0bfe8a713ccc3d70e014d131b391168e814c39cf007c6db7166/sample.tui.pb"
+  },
+  "candidate_sha256": "fe59cec6e963d0bfe8a713ccc3d70e014d131b391168e814c39cf007c6db7166",
+  "baseline_sha256": "fe59cec6e963d0bfe8a713ccc3d70e014d131b391168e814c39cf007c6db7166",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-303/tests/functional/baselines/pre_refactor/s03_basictable/opt_basictable_update_column.tui.pb"
+  },
+  "error_code": null
+}

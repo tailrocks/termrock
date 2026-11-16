@@ -6,7 +6,7 @@ use crate::pages::row_menu::{MENU_HINTS, OPEN_HINT, RowMenu, plain};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
 use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
+use junie_tui::core::id::{ItemKey, WidgetId};
 use junie_tui::core::intent::Phase;
 use junie_tui::core::pointer::{MouseTarget, PointerEvent};
 use junie_tui::core::response::Actions;
@@ -15,10 +15,13 @@ use junie_tui::ui::context::ContextRequest;
 use junie_tui::ui::ctx::RenderCtx;
 use junie_tui::ui::layout::StackChild;
 use junie_tui::ui::specimen::{SpecimenState, StateGrid};
+use junie_tui::ui::text;
 use junie_tui::widgets::menu::{ContextMenu, MenuItem};
 use junie_tui::widgets::panel::Panel;
 use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::table::{Cell, Column, DataTable, SortDir, TableAction, Tone};
+use junie_tui::widgets::table::{
+    Cell, Column, DataTable, KeyedTable, KeyedTableError, SortDir, TableAction, Tone,
+};
 use ratatui::crossterm::event::KeyCode;
 
 const ID: WidgetId = WidgetId::of("tables");
@@ -82,13 +85,81 @@ const SELECTION_MODES: [SelectionMode; 3] = [
     SelectionMode::Multi,
 ];
 
-fn tasks_table(mode: SelectionMode) -> DataTable {
-    DataTable::try_new(ID.sub("tasks"), task_columns(), task_rows())
+/// Where the Tasks table gets its rows: it owns them, or it paints a borrowed
+/// keyed store, read-only or with edits written back by row key.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Source {
+    Owned,
+    Keyed,
+    KeyedEdit,
+}
+
+const SOURCES: [Source; 3] = [Source::Owned, Source::Keyed, Source::KeyedEdit];
+
+fn tasks_table(mode: SelectionMode, source: Source) -> DataTable {
+    let (columns, rows) = match source {
+        Source::Owned => (task_columns(), task_rows()),
+        _ => (keyed_columns(source), vec![]),
+    };
+    let table = DataTable::try_new(ID.sub("tasks"), columns, rows)
         .expect("rectangular fixture")
         .numeric(&[0, 5, 6])
         .selection_mode(mode)
-        .selection_column(mode == SelectionMode::Multi)
+        .selection_column(mode == SelectionMode::Multi);
+    if source == Source::KeyedEdit {
+        table.cell_nav(true)
+    } else {
+        table
+    }
 }
+
+fn keyed_columns(source: Source) -> Vec<Column> {
+    let mut columns = task_columns();
+    if source == Source::KeyedEdit {
+        columns[1] = Column::new("Task", Constraint::Min(24)).editable();
+        columns[2] = Column::new("Owner", Constraint::Length(7)).editable();
+    }
+    columns
+}
+
+/// A task is identified by its id, never by its position.
+fn task_key(id: u32) -> ItemKey {
+    ItemKey::num(u64::from(id))
+}
+
+fn keyed_rows() -> Vec<(ItemKey, Vec<Cell>)> {
+    crate::data::tasks()
+        .into_iter()
+        .map(|task| task_key(task.id))
+        .zip(task_rows())
+        .collect()
+}
+
+fn fresh_store(source: Source) -> KeyedTable {
+    KeyedTable::try_new(keyed_columns(source), keyed_rows()).expect("rectangular, unique fixture")
+}
+
+fn key_label(key: ItemKey) -> String {
+    match key {
+        ItemKey::Num(id) => format!("#{id}"),
+        other => format!("{other:?}"),
+    }
+}
+
+/// What each "Keyed store" value does to the store behind the table.
+const STORE_CHANGES: [&str; 8] = [
+    "loaded",
+    "moved",
+    "inserted",
+    "removed",
+    "replaced",
+    "updated cell",
+    "duplicate key",
+    "short row",
+];
+
+/// What each "Owned update" value does to the table's own data.
+const OWNED_UPDATES: [&str; 5] = ["off", "cell", "row", "column", "model"];
 
 fn states_grid() -> StateGrid {
     use SpecimenState::*;
@@ -135,6 +206,15 @@ pub struct TablesPage {
 
     selection: usize,
     malformed: usize,
+    source: usize,
+    store_change: usize,
+    owned_update: usize,
+    /// The keyed store behind the Tasks table in the keyed sources.
+    store: KeyedTable,
+    /// What the last store change or owned update reported.
+    note: String,
+    /// The last typed action the keyed table reported.
+    last: String,
     pub table: DataTable,
 
     pub reviewers: DataTable,
@@ -226,9 +306,226 @@ impl TablesPage {
             CellAction::Edit => self.table.begin_edit().erase().outcome(),
         }
     }
+    fn source(&self) -> Source {
+        SOURCES[self.source]
+    }
+
+    /// A fresh Tasks table for the chosen selection and source, then the
+    /// source's pending change.
+    fn rebuild_tasks(&mut self) {
+        self.table = tasks_table(SELECTION_MODES[self.selection], self.source());
+        self.last = "—".into();
+        match self.source() {
+            Source::Owned => self.apply_owned_update(),
+            _ => self.apply_store_change(),
+        }
+    }
+
+    /// Resets the store to the loaded tasks (keeping its identity, so the
+    /// table's cursor and selection follow their rows by key), then applies the
+    /// chosen change and records what the store answered.
+    fn apply_store_change(&mut self) {
+        self.store
+            .replace_rows(keyed_rows())
+            .expect("the loaded tasks are rectangular and unique");
+        let keys: Vec<ItemKey> = self.store.row_keys().collect();
+        let (first, second, last) = (keys[0], keys[1], keys[keys.len() - 1]);
+        let new_task = |name: &str| {
+            let mut cells = task_rows().remove(0);
+            cells[0] = Cell::new("#100").tone(Tone::Muted);
+            cells[1] = Cell::new(name);
+            cells
+        };
+        let refused = |err: KeyedTableError| match err {
+            KeyedTableError::Key(key) => format!("refused, nothing changed: Key({key:?})"),
+            KeyedTableError::Shape(shape) => format!("refused, nothing changed: Shape({shape})"),
+        };
+        let done =
+            |result: Result<(), KeyedTableError>, ok: String| result.map_or_else(refused, |()| ok);
+        self.note = match STORE_CHANGES[self.store_change] {
+            "moved" => format!(
+                "move_row({}, 0) → {}",
+                key_label(last),
+                self.store.move_row(last, 0)
+            ),
+            "inserted" => done(
+                self.store
+                    .insert(1, ItemKey::num(100), new_task("Prune stale previews")),
+                "insert(1, #100) → Ok".to_owned(),
+            ),
+            "removed" => format!(
+                "remove({}) → {}",
+                key_label(second),
+                self.store
+                    .remove(second)
+                    .map_or("None".to_owned(), |cells| format!(
+                        "Some({:?})",
+                        cells[1].text
+                    ))
+            ),
+            "replaced" => {
+                let rows = keyed_rows().into_iter().rev().take(4).collect::<Vec<_>>();
+                let count = rows.len();
+                done(
+                    self.store.replace_rows(rows),
+                    format!("replace_rows({count} rows) → Ok"),
+                )
+            }
+            "updated cell" => format!(
+                "update_cell({}, Status) → {}",
+                key_label(first),
+                self.store
+                    .update_cell(first, 3, |cell| *cell = status_cell(TaskStatus::Failed))
+            ),
+            "duplicate key" => done(
+                self.store
+                    .insert(0, first, new_task("Duplicate of the first task")),
+                "insert → Ok".to_owned(),
+            ),
+            "short row" => done(
+                self.store
+                    .insert(0, ItemKey::num(101), vec![Cell::new("#101")]),
+                "insert → Ok".to_owned(),
+            ),
+            _ => format!("replace_rows({} rows) → Ok", self.store.len()),
+        };
+    }
+
+    /// Applies the chosen update to the owned Tasks table.
+    fn apply_owned_update(&mut self) {
+        let table = &mut self.table;
+        self.note = match OWNED_UPDATES[self.owned_update] {
+            "cell" => format!(
+                "update_cell(2, 3) → {}",
+                table.update_cell(2, 3, |cell| *cell = status_cell(TaskStatus::Done))
+            ),
+            "row" => {
+                let mut row = task_rows().remove(2);
+                row[1] = Cell::new("Fix flaky checkout test (retried)");
+                row[3] = status_cell(TaskStatus::Running);
+                let ok = table.try_set_row(2, row);
+                let short = table.try_set_row(2, vec![Cell::new("x")]);
+                format!(
+                    "try_set_row(2, 7 cells) → {} · try_set_row(2, 1 cell) → {}",
+                    ok.map_or_else(|e| e.to_string(), |()| "Ok".to_owned()),
+                    short.map_or_else(|e| format!("Err({e})"), |()| "Ok".to_owned()),
+                )
+            }
+            "column" => {
+                let renamed = table.update_column(1, |column| column.title = "Summary".to_owned());
+                let missing = table.update_column(9, |_| {});
+                format!("update_column(1, rename) → {renamed:?} · update_column(9) → {missing:?}")
+            }
+            "model" => {
+                let keep = [0, 1, 2, 3, 6];
+                let columns = task_columns();
+                let columns = keep.iter().map(|&i| columns[i].clone()).collect();
+                let rows = task_rows()
+                    .into_iter()
+                    .map(|row| keep.iter().map(|&i| row[i].clone()).collect())
+                    .collect();
+                let rows: Vec<Vec<Cell>> = rows;
+                let (kept, count) = (keep.len(), rows.len());
+                format!(
+                    "try_set_model({kept} columns, {count} rows) → {}",
+                    table
+                        .try_set_model(columns, rows)
+                        .map_or_else(|e| e.to_string(), |()| "Ok".to_owned())
+                )
+            }
+            _ => String::new(),
+        };
+    }
+
+    /// The lines under the tables, each short enough to never wrap. The
+    /// default owned table adds none.
+    fn readout(&self) -> Vec<String> {
+        if self.source() == Source::Owned {
+            if self.owned_update == 0 {
+                return vec![];
+            }
+            return vec![
+                format!(
+                    "DataTable::columns() {} · rows() {}",
+                    self.table.columns().len(),
+                    self.table.rows().len(),
+                ),
+                self.note.clone(),
+            ];
+        }
+        let keys: Vec<String> = self.store.row_keys().take(4).map(key_label).collect();
+        let cursor = self.table.keyed().cursor();
+        let row = cursor
+            .and_then(|key| self.store.row(key))
+            .map_or("—", |cells| cells[1].text.as_str());
+        vec![
+            format!(
+                "KeyedTable: {} rows (empty {}) · keys {}…",
+                self.store.len(),
+                self.store.is_empty(),
+                keys.join(" "),
+            ),
+            format!(
+                "cursor by key {} → {row}",
+                cursor.map_or_else(|| "none".to_owned(), key_label),
+            ),
+            format!("last TableAction: {}", self.last),
+            format!(
+                "store: {}",
+                if self.note.is_empty() {
+                    "—"
+                } else {
+                    &self.note
+                }
+            ),
+        ]
+    }
+
+    fn readout_lines(&self, width: u16) -> Vec<String> {
+        self.readout()
+            .iter()
+            .flat_map(|l| text::wrap(l, width.max(1) as usize))
+            .collect()
+    }
+
+    /// Reports a keyed table's actions in the readout and the status line.
+    fn on_keyed_actions(
+        &mut self,
+        response: Result<
+            junie_tui::core::response::Response<TableAction<ItemKey>>,
+            junie_tui::core::keyed::KeyedSourceError,
+        >,
+        cx: &mut Cx,
+    ) -> Outcome {
+        let (out, actions) = response
+            .expect("the demo tasks are rectangular and unique")
+            .into_parts();
+        let mut steps = Vec::new();
+        for action in actions {
+            steps.push(match action {
+                TableAction::Activated(key) => {
+                    let task = self
+                        .store
+                        .row(key)
+                        .map_or("", |cells| cells[1].text.as_str());
+                    cx.status(format!("Selected {task}"));
+                    format!("Activated({})", key_label(key))
+                }
+                TableAction::Committed { row, col } => {
+                    format!("Committed {{ row: {}, col: {col} }}", key_label(row))
+                }
+                other => format!("{other:?}"),
+            });
+        }
+        if !steps.is_empty() {
+            self.last = steps.join(" → ");
+        }
+        out
+    }
+
     pub fn new() -> Self {
         let selection = 1;
-        let table = tasks_table(SELECTION_MODES[selection]);
+        let table = tasks_table(SELECTION_MODES[selection], Source::Owned);
 
         let mut reviewers = DataTable::try_new(
             ID.sub("reviewers"),
@@ -258,6 +555,12 @@ impl TablesPage {
             template: Template::new(ID, states_grid()),
             selection,
             malformed: 0,
+            source: 0,
+            store_change: 0,
+            owned_update: 0,
+            store: fresh_store(Source::Keyed),
+            note: String::new(),
+            last: "—".into(),
             table,
             reviewers,
             empty,
@@ -305,6 +608,22 @@ pub fn route_table(
 
 impl TablesPage {
     fn pointer(&mut self, ev: &PointerEvent, cx: &mut Cx) -> Outcome {
+        let keyed = self.source() != Source::Owned;
+        if keyed && ev.on(self.table.id) {
+            let response = match self.source() {
+                Source::KeyedEdit => self.table.on_pointer_edit_source(ev, &mut self.store),
+                _ => self.table.on_pointer_source(ev, &self.store),
+            };
+            let out = self.on_keyed_actions(response, cx);
+            if ev.is(Phase::Click) && ev.bar.is_none() && out != Outcome::Ignored {
+                cx.focus.focus(self.table.id);
+            }
+            return out;
+        }
+        if ev.is(Phase::Secondary) && keyed {
+            // The row and header menus edit the owned table; a borrowed store has none.
+            return Outcome::Ignored;
+        }
         if ev.is(Phase::Secondary) {
             if let Some(c) = self.table.header_menu_at(ev) {
                 cx.focus.focus(self.table.id);
@@ -329,7 +648,7 @@ impl TablesPage {
             self.open_menu(req);
             return Outcome::Changed;
         }
-        if let Some((out, tev)) = route_table(&mut self.table, ev, cx) {
+        if !keyed && let Some((out, tev)) = route_table(&mut self.table, ev, cx) {
             for action in tev {
                 if let TableAction::Activated(r) = action {
                     cx.status(format!("Selected {}", self.table.rows()[r][1].text));
@@ -348,6 +667,15 @@ impl TablesPage {
 
     fn render_playground(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
         let t = ctx.theme;
+        let notes = self.readout_lines(area.width).len() as u16;
+        let reserved = if notes == 0 { 0 } else { notes + 1 };
+        let page = area;
+        let area = Rect::new(
+            area.x,
+            area.y,
+            area.width,
+            area.height.saturating_sub(reserved),
+        );
 
         let focus = if ctx.interaction.has_focus(self.table.id) {
             Some(0)
@@ -386,7 +714,17 @@ impl TablesPage {
         match l.slot(0) {
             Some(r) => {
                 let inner = panel.render(r, buf, t);
-                self.table.render(inner, buf, ctx, bg);
+                match self.source() {
+                    Source::Owned => self.table.render(inner, buf, ctx, bg),
+                    Source::Keyed => self
+                        .table
+                        .render_source(inner, &self.store, buf, ctx, bg)
+                        .expect("the demo tasks are rectangular and unique"),
+                    Source::KeyedEdit => self
+                        .table
+                        .render_edit_source(inner, &mut self.store, buf, ctx, bg)
+                        .expect("the demo tasks are rectangular and unique"),
+                }
                 let pos = scrollbar::position_label(&self.table.scroll);
                 let meta = if pos.is_empty() {
                     sort
@@ -427,6 +765,10 @@ impl TablesPage {
         }
         self.menu.render(area, buf, ctx);
         self.header_menu.render(area, buf, ctx);
+        // After the tables, so the readout reports the state they just bound.
+        for (y, line) in (area.bottom() + 1..page.bottom()).zip(self.readout_lines(page.width)) {
+            buf.set_string(page.x, y, line, t.faint().bg(t.canvas));
+        }
     }
 }
 
@@ -449,7 +791,9 @@ impl Page for TablesPage {
             .iter()
             .map(|t| t.min_width(any, ctx) + 4)
             .fold(avail.width, u16::max);
-        ratatui::layout::Size::new(w, TASKS_H + REVIEWERS_H + CHECKS_H + 2)
+        let notes = self.readout_lines(w).len() as u16;
+        let notes = if notes == 0 { 0 } else { notes + 1 };
+        ratatui::layout::Size::new(w, TASKS_H + REVIEWERS_H + CHECKS_H + 2 + notes)
     }
 
     fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
@@ -469,6 +813,9 @@ impl Page for TablesPage {
         match key {
             "basictable.selection" => Some(self.selection),
             "basictable.malformed" => Some(self.malformed),
+            "basictable.source" => Some(self.source),
+            "basictable.rows" => Some(self.store_change),
+            "basictable.update" => Some(self.owned_update),
             _ => None,
         }
     }
@@ -477,7 +824,22 @@ impl Page for TablesPage {
         match key {
             "basictable.selection" => {
                 self.selection = value.min(SELECTION_MODES.len() - 1);
-                self.table = tasks_table(SELECTION_MODES[self.selection]);
+                self.rebuild_tasks();
+            }
+            "basictable.source" => {
+                self.source = value.min(SOURCES.len() - 1);
+                self.store = fresh_store(self.source());
+                self.rebuild_tasks();
+            }
+            "basictable.rows" => {
+                self.store_change = value.min(STORE_CHANGES.len() - 1);
+                if self.source() != Source::Owned {
+                    self.apply_store_change();
+                }
+            }
+            "basictable.update" => {
+                self.owned_update = value.min(OWNED_UPDATES.len() - 1);
+                self.rebuild_tasks();
             }
             "basictable.malformed" => {
                 self.malformed = value.min(2);
@@ -519,8 +881,24 @@ impl Page for TablesPage {
             return o;
         }
         match ev {
+            PageEvent::Blur(ch)
+                if ch.from == self.table.id && self.source() == Source::KeyedEdit =>
+            {
+                // Focus left the keyed table: its blur policy decides the open editor.
+                let response = self.table.on_blur_edit_source(&mut self.store);
+                self.on_keyed_actions(response, cx)
+            }
             PageEvent::Key(key) => {
                 if cx.focus.is(self.table.id) {
+                    if self.source() != Source::Owned {
+                        let response = match self.source() {
+                            Source::KeyedEdit => {
+                                self.table.on_key_edit_source(key, &mut self.store)
+                            }
+                            _ => self.table.on_key_source(key, &self.store),
+                        };
+                        return self.on_keyed_actions(response, cx);
+                    }
                     if !self.table.is_editing()
                         && let Some(req) = self.menu.config.on_key(&self.table, key)
                     {
@@ -563,6 +941,14 @@ impl Page for TablesPage {
                 ("Space", "Toggle row"),
                 ("Shift+↑↓", "Extend"),
             ];
+        }
+        if self.source() != Source::Owned {
+            let mut hints = vec![("↑↓", "Move"), ("Enter", "Select")];
+            if self.source() == Source::KeyedEdit {
+                hints.insert(1, ("←→", "Columns"));
+                hints.push(("F2", "Edit cell"));
+            }
+            return hints;
         }
         vec![
             ("↑↓", "Move"),
