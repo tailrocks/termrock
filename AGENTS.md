@@ -139,7 +139,7 @@ workspaces, Docker, OpenShell, Codex).
   `MEMBERS`; fields, trait items and trait impls inherit their owner) and
   every API needs a disposition: a `CapabilityProof` or
   `CapabilityException` line in `src/bin/showcase/coverage.rs`, or a line in
-  `src/bin/showcase/coverage_debt.txt`. A Showcase page that merely names an
+  `src/bin/showcase/coverage_debt/<lane>.txt`. A Showcase page that merely names an
   API is not a disposition (the report counts such names separately as
   information). The debt list is a ratchet: it only shrinks, it must stay a
   subset of the frozen `coverage_debt_baseline.txt`, and `DEBT_CEILING` in
@@ -161,7 +161,14 @@ workspaces, Docker, OpenShell, Codex).
   against real components (`catalog_scenarios_execute`). Layer 3 is the
   tuiscotti journeys in `tests/functional`. Name matching is never behavioral
   proof. Run `cargo nextest run -p junie-tui --all-features --no-tests fail -E
-  'test(catalog_)'`; the Rust crate CI job already runs it. After a change
+  'test(catalog_)'`; the Rust crate CI job already runs it. The burn-down of the
+  debt is split into lanes, one per debt file, so parallel work never edits one
+  file: a lane owns `src/bin/showcase/coverage/lane_<lane>.rs` (its proofs and
+  exceptions), `src/bin/showcase/app_tests_catalog/<lane>.rs` (its cases and
+  scenario functions), `coverage_debt/<lane>.txt` and its marked block of
+  `ScenarioId`. The gate rejects a lane file that is not wired in, a debt file
+  with no lane and an id listed twice. `scripts/catalog-debt-lanes.py`
+  classifies the debt and redistributes it (`report`, `write`, `prune`). After a change
   moves many captures, `scripts/accept-changed-baselines.py` re-accepts each
   changed one through `scripts/accept-baseline.py` with `--expect-baseline` set
   to the digest in the tree (main's, after a rebase); `--dry` lists candidates.

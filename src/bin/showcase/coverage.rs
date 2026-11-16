@@ -3,10 +3,79 @@
 //! `PROOFS` lists the APIs a callable scenario in `app_tests_catalog.rs`
 //! exercises. `EXCEPTIONS` lists APIs with no page demonstration (`Nonvisual`,
 //! or `Deferred` with a tracking issue) and the exact test that pins them.
-//! `coverage_debt.txt` lists what still owes one of the two; it may only shrink. `src/catalog_contract.rs` checks all three against
-//! the exported API. One line per record keeps a restack mechanical.
+//! `coverage_debt/<lane>.txt` lists what still owes one of the two; it may only
+//! shrink. `src/catalog_contract.rs` checks all three against the exported API.
+//! One line per record keeps a restack mechanical.
+//!
+//! The #14 burn-down is split into lanes so parallel work never edits the same
+//! file. A lane owns one `coverage/lane_<lane>.rs` (its `PROOFS` and
+//! `EXCEPTIONS`), one `app_tests_catalog/<lane>.rs` (its `CASES` and scenario
+//! functions), one `coverage_debt/<lane>.txt`, and its own marked section of
+//! `ScenarioId` below. `proofs()` and `exceptions()` chain the lane arrays with
+//! the older records in this file, so nothing else here changes per lane.
 
 use crate::app::PageId;
+
+#[path = "coverage/lane_collections.rs"]
+mod lane_collections;
+#[path = "coverage/lane_dialogs.rs"]
+mod lane_dialogs;
+#[path = "coverage/lane_fields.rs"]
+mod lane_fields;
+#[path = "coverage/lane_gridtable.rs"]
+mod lane_gridtable;
+#[path = "coverage/lane_layout.rs"]
+mod lane_layout;
+#[path = "coverage/lane_menus.rs"]
+mod lane_menus;
+#[path = "coverage/lane_pickers.rs"]
+mod lane_pickers;
+#[path = "coverage/lane_routing.rs"]
+mod lane_routing;
+#[path = "coverage/lane_scroll.rs"]
+mod lane_scroll;
+#[path = "coverage/lane_shell.rs"]
+mod lane_shell;
+#[path = "coverage/lane_state.rs"]
+mod lane_state;
+#[path = "coverage/lane_theme.rs"]
+mod lane_theme;
+
+/// Every proof: the records below, then each lane's.
+pub fn proofs() -> impl Iterator<Item = &'static CapabilityProof> {
+    PROOFS
+        .iter()
+        .chain(lane_shell::PROOFS)
+        .chain(lane_theme::PROOFS)
+        .chain(lane_routing::PROOFS)
+        .chain(lane_state::PROOFS)
+        .chain(lane_scroll::PROOFS)
+        .chain(lane_gridtable::PROOFS)
+        .chain(lane_fields::PROOFS)
+        .chain(lane_dialogs::PROOFS)
+        .chain(lane_menus::PROOFS)
+        .chain(lane_pickers::PROOFS)
+        .chain(lane_collections::PROOFS)
+        .chain(lane_layout::PROOFS)
+}
+
+/// Every exception: the records below, then each lane's.
+pub fn exceptions() -> impl Iterator<Item = &'static CapabilityException> {
+    EXCEPTIONS
+        .iter()
+        .chain(lane_shell::EXCEPTIONS)
+        .chain(lane_theme::EXCEPTIONS)
+        .chain(lane_routing::EXCEPTIONS)
+        .chain(lane_state::EXCEPTIONS)
+        .chain(lane_scroll::EXCEPTIONS)
+        .chain(lane_gridtable::EXCEPTIONS)
+        .chain(lane_fields::EXCEPTIONS)
+        .chain(lane_dialogs::EXCEPTIONS)
+        .chain(lane_menus::EXCEPTIONS)
+        .chain(lane_pickers::EXCEPTIONS)
+        .chain(lane_collections::EXCEPTIONS)
+        .chain(lane_layout::EXCEPTIONS)
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ScenarioId {
@@ -64,6 +133,30 @@ pub enum ScenarioId {
     ResponseBatching,
     DataShapeErrors,
     TextBufferGeometry,
+    // lane:shell begin: this lane adds its ScenarioId variants between these two lines only
+    // lane:shell end
+    // lane:theme begin: this lane adds its ScenarioId variants between these two lines only
+    // lane:theme end
+    // lane:routing begin: this lane adds its ScenarioId variants between these two lines only
+    // lane:routing end
+    // lane:state begin: this lane adds its ScenarioId variants between these two lines only
+    // lane:state end
+    // lane:scroll begin: this lane adds its ScenarioId variants between these two lines only
+    // lane:scroll end
+    // lane:gridtable begin: this lane adds its ScenarioId variants between these two lines only
+    // lane:gridtable end
+    // lane:fields begin: this lane adds its ScenarioId variants between these two lines only
+    // lane:fields end
+    // lane:dialogs begin: this lane adds its ScenarioId variants between these two lines only
+    // lane:dialogs end
+    // lane:menus begin: this lane adds its ScenarioId variants between these two lines only
+    // lane:menus end
+    // lane:pickers begin: this lane adds its ScenarioId variants between these two lines only
+    // lane:pickers end
+    // lane:collections begin: this lane adds its ScenarioId variants between these two lines only
+    // lane:collections end
+    // lane:layout begin: this lane adds its ScenarioId variants between these two lines only
+    // lane:layout end
 }
 
 #[allow(dead_code)]

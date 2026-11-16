@@ -87,6 +87,49 @@ pub struct ScenarioCase {
     pub run: fn(),
 }
 
+#[path = "app_tests_catalog/collections.rs"]
+mod lane_collections;
+#[path = "app_tests_catalog/dialogs.rs"]
+mod lane_dialogs;
+#[path = "app_tests_catalog/fields.rs"]
+mod lane_fields;
+#[path = "app_tests_catalog/gridtable.rs"]
+mod lane_gridtable;
+#[path = "app_tests_catalog/layout.rs"]
+mod lane_layout;
+#[path = "app_tests_catalog/menus.rs"]
+mod lane_menus;
+#[path = "app_tests_catalog/pickers.rs"]
+mod lane_pickers;
+#[path = "app_tests_catalog/routing.rs"]
+mod lane_routing;
+#[path = "app_tests_catalog/scroll.rs"]
+mod lane_scroll;
+#[path = "app_tests_catalog/shell.rs"]
+mod lane_shell;
+#[path = "app_tests_catalog/state.rs"]
+mod lane_state;
+#[path = "app_tests_catalog/theme.rs"]
+mod lane_theme;
+
+/// Every case: the ones below, then each lane's.
+pub fn cases() -> impl Iterator<Item = &'static ScenarioCase> {
+    CASES
+        .iter()
+        .chain(lane_shell::CASES)
+        .chain(lane_theme::CASES)
+        .chain(lane_routing::CASES)
+        .chain(lane_state::CASES)
+        .chain(lane_scroll::CASES)
+        .chain(lane_gridtable::CASES)
+        .chain(lane_fields::CASES)
+        .chain(lane_dialogs::CASES)
+        .chain(lane_menus::CASES)
+        .chain(lane_pickers::CASES)
+        .chain(lane_collections::CASES)
+        .chain(lane_layout::CASES)
+}
+
 #[rustfmt::skip]
 pub const CASES: &[ScenarioCase] = &[
     ScenarioCase { id: ScenarioId::PickerStableSelection, run: picker_stable_selection },
@@ -3496,7 +3539,7 @@ fn text_buffer_geometry() {
 
 #[test]
 fn catalog_scenarios_execute() {
-    for case in CASES {
+    for case in cases() {
         (case.run)();
     }
 }
@@ -3504,7 +3547,7 @@ fn catalog_scenarios_execute() {
 #[test]
 fn catalog_scenario_ids_are_registered_once() {
     let mut seen = std::collections::BTreeSet::new();
-    for case in CASES {
+    for case in cases() {
         assert!(
             seen.insert(case.id),
             "scenario {:?} is registered twice",
@@ -3515,12 +3558,12 @@ fn catalog_scenario_ids_are_registered_once() {
 
 #[test]
 fn catalog_proofs_have_callable_cases() {
-    use super::super::coverage::PROOFS;
-    let registered: std::collections::BTreeSet<_> = CASES.iter().map(|case| case.id).collect();
+    use super::super::coverage::proofs;
+    let registered: std::collections::BTreeSet<_> = cases().map(|case| case.id).collect();
     let routes: std::collections::BTreeSet<_> =
         super::NAV_ENTRIES.iter().map(|e| e.id as u8).collect();
     let mut apis = std::collections::BTreeSet::new();
-    for proof in PROOFS {
+    for proof in proofs() {
         assert!(apis.insert(proof.api), "duplicate proof: {}", proof.api);
         assert!(
             !proof.scenarios.is_empty(),
@@ -3540,11 +3583,9 @@ fn catalog_proofs_have_callable_cases() {
             );
         }
     }
-    for case in CASES {
+    for case in cases() {
         assert!(
-            PROOFS
-                .iter()
-                .any(|proof| proof.scenarios.contains(&case.id)),
+            proofs().any(|proof| proof.scenarios.contains(&case.id)),
             "scenario {:?} proves no API",
             case.id
         );
