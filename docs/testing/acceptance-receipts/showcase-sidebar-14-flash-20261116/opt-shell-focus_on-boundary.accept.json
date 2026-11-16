@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-focus_on-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/target/functional/s01_focus_release-52265-1794790624754136000-0/check-artifacts/opt-shell-focus_on-boundary/48666e77b0e71c712a75944008a2a9bbd356284c17428295e6b0c6aaf6c9e085/sample.tui.pb"
+  },
+  "candidate_sha256": "48666e77b0e71c712a75944008a2a9bbd356284c17428295e6b0c6aaf6c9e085",
+  "baseline_sha256": "48666e77b0e71c712a75944008a2a9bbd356284c17428295e6b0c6aaf6c9e085",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-focus_on-boundary.tui.pb"
+  },
+  "error_code": null
+}

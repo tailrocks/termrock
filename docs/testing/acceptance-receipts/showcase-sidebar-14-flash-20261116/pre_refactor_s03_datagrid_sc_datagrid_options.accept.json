@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s03_datagrid/sc_datagrid_options",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/target/functional/s03-sections-86789-1794792554160465000-0/check-artifacts/pre_refactor/s03_datagrid/sc_datagrid_options/e57960ae0adee60242eee17ac1b69eeab8c7d8303752289bd66bf41012de69a0/sample.tui.pb"
+  },
+  "candidate_sha256": "e57960ae0adee60242eee17ac1b69eeab8c7d8303752289bd66bf41012de69a0",
+  "baseline_sha256": "e57960ae0adee60242eee17ac1b69eeab8c7d8303752289bd66bf41012de69a0",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/tests/functional/baselines/pre_refactor/s03_datagrid/sc_datagrid_options.tui.pb"
+  },
+  "error_code": null
+}

@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-click_skips_animation-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/target/functional/s01_click_skips_off-60367-1794790745681607000-0/check-artifacts/opt-shell-click_skips_animation-boundary/ad27a213418e2ab54bdbe38aa082f89e3b6a134ed39afa8afbb9324a42ea8410/sample.tui.pb"
+  },
+  "candidate_sha256": "ad27a213418e2ab54bdbe38aa082f89e3b6a134ed39afa8afbb9324a42ea8410",
+  "baseline_sha256": "ad27a213418e2ab54bdbe38aa082f89e3b6a134ed39afa8afbb9324a42ea8410",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-click_skips_animation-boundary.tui.pb"
+  },
+  "error_code": null
+}

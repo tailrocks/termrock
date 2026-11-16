@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s02_buttons/opt_buttons_focus_mark",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/target/functional/s02-mark-13710-1794791248354533000-0/check-artifacts/pre_refactor/s02_buttons/opt_buttons_focus_mark/f98e7b4f44d98cbf6e47ed898fb83bf652a34d499eaa6d31232058dcd0e63f75/sample.tui.pb"
+  },
+  "candidate_sha256": "f98e7b4f44d98cbf6e47ed898fb83bf652a34d499eaa6d31232058dcd0e63f75",
+  "baseline_sha256": "f98e7b4f44d98cbf6e47ed898fb83bf652a34d499eaa6d31232058dcd0e63f75",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/tests/functional/baselines/pre_refactor/s02_buttons/opt_buttons_focus_mark.tui.pb"
+  },
+  "error_code": null
+}

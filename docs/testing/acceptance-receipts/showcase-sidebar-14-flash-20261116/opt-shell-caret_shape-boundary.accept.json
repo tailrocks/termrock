@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-caret_shape-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/target/functional/s01_caret_terminal-85195-1794791581518630000-0/check-artifacts/opt-shell-caret_shape-boundary/d5d7d8f0b5098d6d0428128edc2d2f5f8227fec378a70bdd50e2f2629119cdd6/sample.tui.pb"
+  },
+  "candidate_sha256": "d5d7d8f0b5098d6d0428128edc2d2f5f8227fec378a70bdd50e2f2629119cdd6",
+  "baseline_sha256": "d5d7d8f0b5098d6d0428128edc2d2f5f8227fec378a70bdd50e2f2629119cdd6",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-caret_shape-boundary.tui.pb"
+  },
+  "error_code": null
+}
