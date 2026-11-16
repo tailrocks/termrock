@@ -699,9 +699,10 @@ fn showcase_tree_expand_and_file_selection() {
         gutter_text(s).as_deref() == Some("▎")
     });
 
-    // The click on `src` armed the 140 ms press flash. Under `--motion paused` no tick
-    // expires it and a moved mouse that changes no hover paints no frame, so a flash that was
-    // still live at the last paint stays on screen. Let it lapse, then redraw once.
+    // The click on `src` armed the 140 ms press flash. The shared tick repaints once it has
+    // expired (#149), but under `--motion paused` that tick comes every 400 ms and a moved
+    // mouse that changes no hover paints no frame, so a flash that was still live at the last
+    // paint can stay on screen until then. Let it lapse, then redraw once.
     flash_settle(&app);
     assert!(
         app.try_sustained(std::time::Duration::from_millis(600), settled),

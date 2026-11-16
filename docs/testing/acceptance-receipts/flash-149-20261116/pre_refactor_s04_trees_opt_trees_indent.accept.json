@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s04_trees/opt_trees_indent",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/target/functional/s04-indent-96847-1794769650913574000-0/check-artifacts/pre_refactor/s04_trees/opt_trees_indent/2dcb4911b55d8759469e98020eb8012dcb7b333cb864deeefed2c15eb5f0aee0/sample.tui.pb"
+  },
+  "candidate_sha256": "2dcb4911b55d8759469e98020eb8012dcb7b333cb864deeefed2c15eb5f0aee0",
+  "baseline_sha256": "2dcb4911b55d8759469e98020eb8012dcb7b333cb864deeefed2c15eb5f0aee0",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/tests/functional/baselines/pre_refactor/s04_trees/opt_trees_indent.tui.pb"
+  },
+  "error_code": null
+}

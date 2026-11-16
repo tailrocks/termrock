@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s01_quitleave/opt_quitleave_ctrl_q",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/target/functional/s01-ctrl-q-6701-1794770945917861000-4/check-artifacts/pre_refactor/s01_quitleave/opt_quitleave_ctrl_q/7d842f95af42bd66072a6f02162d00038c946ce339a1a3002042574aaa141de7/sample.tui.pb"
+  },
+  "candidate_sha256": "7d842f95af42bd66072a6f02162d00038c946ce339a1a3002042574aaa141de7",
+  "baseline_sha256": "7d842f95af42bd66072a6f02162d00038c946ce339a1a3002042574aaa141de7",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/tests/functional/baselines/pre_refactor/s01_quitleave/opt_quitleave_ctrl_q.tui.pb"
+  },
+  "error_code": null
+}

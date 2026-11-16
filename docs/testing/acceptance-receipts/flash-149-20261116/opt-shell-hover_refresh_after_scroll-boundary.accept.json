@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-hover_refresh_after_scroll-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/target/functional/s01_rehover_off-50966-1794769316555876000-0/check-artifacts/opt-shell-hover_refresh_after_scroll-boundary/75c570b38f84ce2b1e030147ed914101939ead7074af5c97029f05b5c0a471d0/sample.tui.pb"
+  },
+  "candidate_sha256": "75c570b38f84ce2b1e030147ed914101939ead7074af5c97029f05b5c0a471d0",
+  "baseline_sha256": "75c570b38f84ce2b1e030147ed914101939ead7074af5c97029f05b5c0a471d0",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-hover_refresh_after_scroll-boundary.tui.pb"
+  },
+  "error_code": null
+}

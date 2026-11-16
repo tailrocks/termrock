@@ -1,0 +1,23 @@
+[package]
+name = "functional-cross"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+description = "Functional cases that launch more than one app binary"
+license = "MIT"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+doctest = false
+
+[[test]]
+name = "functional"
+path = "tests/functional/main.rs"
+
+[dev-dependencies]
+junie-tui = { path = "../..", features = ["cli", "terminal"] }
+tui-test = { workspace = true }
+tuiscotti-latest = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
