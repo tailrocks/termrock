@@ -1,7 +1,7 @@
 //! Required-suite inventory gate for the `performance` nextest profile (#56).
 //!
 //! #56 asks that every library family and every app contributes a cost
-//! contract and that none can drop out unnoticed. `INVENTORY` names each
+//! contract and that none can drop out unnoticed. `performance-inventory.tsv` names each
 //! required suite: the nextest binary, the test filter that selects it, the
 //! source file that holds it and the tests it must contain. The gate then
 //! fails when
@@ -35,6 +35,7 @@
 use std::fs;
 use std::path::Path;
 use std::process::Command;
+use std::sync::OnceLock;
 
 use syn::visit::Visit;
 
@@ -59,165 +60,52 @@ struct Suite {
     tests: &'static [&'static str],
 }
 
-const INVENTORY: &[Suite] = &[
-    Suite {
-        family: "counter core (thread isolation, epochs, overflow, budgets)",
-        binary_id: "junie-tui",
-        matcher: Some("/^metrics::/"),
-        file: "src/metrics/tests.rs",
-        tests: &[
-            "metrics::tests::metrics_delta_counts_units_between_snapshots",
-            "metrics::tests::metrics_delta_rejects_other_thread",
-            "metrics::tests::metrics_delta_rejects_reset",
-            "metrics::tests::metrics_delta_rejects_a_counter_that_went_backwards",
-            "metrics::tests::metrics_record_panics_on_counter_overflow",
-            "metrics::tests::metrics_check_exact_flags_undercounts_overcounts_and_unlisted_work",
-        ],
-    },
-    Suite {
-        family: "timing report schema and statistics",
-        binary_id: "junie-tui",
-        matcher: Some("/^metrics::/"),
-        file: "src/metrics/measurement.rs",
-        tests: &[
-            "metrics::measurement::tests::measurement_required_fields_are_all_present",
-            "metrics::measurement::tests::measurement_unavailable_values_are_null_not_zero",
-            "metrics::measurement::tests::measurement_percentiles_follow_the_specified_indices",
-        ],
-    },
-    Suite {
-        family: "responsive fit linearity",
-        binary_id: "junie-tui",
-        matcher: Some("/^ui::overflow_work_tests::/"),
-        file: "src/ui/overflow_work_tests.rs",
-        tests: &[
-            "ui::overflow_work_tests::large_overflow_chip_prefix_work_is_linear",
-            "ui::overflow_work_tests::large_overflow_breadcrumb_work_is_linear",
-            "ui::overflow_work_tests::large_overflow_segments_work_is_linear",
-            "ui::overflow_work_tests::large_overflow_statusbar_work_is_linear",
-            "ui::overflow_work_tests::large_overflow_keyhint_work_is_linear",
-            "ui::overflow_work_tests::large_overflow_toolbar_work_is_linear",
-            "ui::overflow_work_tests::large_overflow_tabs_work_is_linear",
-            "ui::overflow_work_tests::tabs_render_measures_each_tab_once",
-        ],
-    },
-    Suite {
-        family: "keyed collection joins",
-        binary_id: "junie-tui",
-        matcher: Some("/^widgets::keyed_cost_tests::/"),
-        file: "src/widgets/keyed_cost_tests.rs",
-        tests: &["widgets::keyed_cost_tests::picker_projection_join_is_linear"],
-    },
-    Suite {
-        family: "library widget budgets (viewport, scroll view, list, table, tree, picker, select, completion, editor, textarea)",
-        binary_id: "junie-tui::regressions",
-        matcher: Some("/^work_budgets::/"),
-        file: "tests/regressions/work_budgets.rs",
-        tests: &[
-            "work_budgets::work_contract_viewport_first_use_and_prepared_draw",
-            "work_budgets::work_contract_viewport_one_append_is_incremental",
-            "work_budgets::work_contract_viewport_adapter_unprepared_draw",
-            "work_budgets::work_contract_scroll_view_content_sized_canvas",
-            "work_budgets::work_contract_settled_frame_paints_only_visible_rows",
-            "work_budgets::work_contract_tree_filtered_rebuild",
-            "work_budgets::work_contract_picker_linear_projection",
-            "work_budgets::work_contract_select_open_frame",
-            "work_budgets::work_contract_completion_open_frame",
-            "work_budgets::work_contract_editor_prepared_frame",
-            "work_budgets::work_contract_textarea_prepared_frame",
-            "work_budgets::work_report_is_count_only_json_with_every_metric",
-        ],
-    },
-    Suite {
-        family: "Holla page scenarios",
-        binary_id: "junie-tui::bin/holla",
-        matcher: Some("/^work_metrics_tests::/"),
-        file: "src/bin/holla/work_metrics_tests.rs",
-        tests: &["work_metrics_tests::work_contract_holla_idle_and_source_update"],
-    },
-    Suite {
-        family: "Holla projection reuse (app)",
-        binary_id: "junie-tui::bin/holla",
-        matcher: Some("/holla_projection_/"),
-        file: "src/bin/holla/app/tests.rs",
-        tests: &[
-            "app::tests::holla_projection_idle_ticks_do_no_source_work",
-            "app::tests::holla_projection_idle_cleanup_page_ticks_do_no_source_work",
-            "app::tests::holla_projection_hidden_pages_catch_up_once",
-        ],
-    },
-    Suite {
-        family: "Holla projection reuse (Finder)",
-        binary_id: "junie-tui::bin/holla",
-        matcher: Some("/holla_projection_/"),
-        file: "src/bin/holla/screens/finder/tests.rs",
-        tests: &[
-            "screens::finder::tests::holla_projection_group_change_reranks_without_source_work",
-        ],
-    },
-    Suite {
-        family: "TablePro page scenarios",
-        binary_id: "junie-tui::bin/tablepro",
-        matcher: Some("/^work_metrics_tests::/"),
-        file: "src/bin/tablepro/work_metrics_tests.rs",
-        tests: &["work_metrics_tests::work_contract_tablepro_idle_and_cell_edit"],
-    },
-    Suite {
-        family: "Showcase page scenarios and stress fits",
-        binary_id: "junie-tui::bin/showcase",
-        matcher: Some("/^work_metrics_tests::/"),
-        file: "src/bin/showcase/work_metrics_tests.rs",
-        tests: &[
-            "work_metrics_tests::work_contract_showcase_idle_and_switch",
-            "work_metrics_tests::work_contract_stress_toolbars_items",
-            "work_metrics_tests::work_contract_stress_breadcrumbs_items",
-            "work_metrics_tests::work_contract_stress_chrome_items",
-            "work_metrics_tests::work_contract_stress_chips_items",
-        ],
-    },
-    Suite {
-        family: "Jackin roster and capsule scenarios",
-        binary_id: "jackin-console::regressions",
-        matcher: Some("/^work_budgets::/"),
-        file: "apps/jackin/tests/regressions/work_budgets.rs",
-        tests: &[
-            "work_budgets::work_contract_jackin_idle_and_roster_update",
-            "work_budgets::work_contract_jackin_capsule_idle_frame",
-            "work_budgets::work_contract_jackin_capsule_frame_after_typing",
-        ],
-    },
-    Suite {
-        family: "Jackin projection epochs",
-        binary_id: "jackin-console::world",
-        matcher: Some("/^projection_work::/"),
-        file: "apps/jackin/tests/world.rs",
-        tests: &[
-            "projection_work::one_epoch_change_builds_once_before_render",
-            "projection_work::quiet_many_daemons_do_not_scan_full_roster",
-            "projection_work::quiet_panes_do_not_rebuild_roster_or_accounts",
-            "projection_work::roster_index_visits_each_instance_once",
-        ],
-    },
-    Suite {
-        family: "measurement sampling is real",
-        binary_id: "junie-tui::regressions",
-        matcher: Some("=work_measurements::measurement_edit_samples_are_real_changes"),
-        file: "tests/regressions/work_measurements.rs",
-        tests: &["work_measurements::measurement_edit_samples_are_real_changes"],
-    },
-    Suite {
-        family: "this gate",
-        binary_id: "junie-tui::regressions",
-        matcher: Some("/^performance_inventory::/"),
-        file: "tests/regressions/performance_inventory.rs",
-        tests: &[
-            "performance_inventory::performance_profile_selects_every_required_suite",
-            "performance_inventory::performance_nextest_list_runs_every_required_test",
-            "performance_inventory::performance_required_tests_exist_in_source",
-            "performance_inventory::performance_measure_profile_is_serial_and_runs_only_ignored_measurements",
-        ],
-    },
-];
+/// The required suites, one `S` line each followed by its `T` lines, in
+/// `performance-inventory.tsv` beside this file.
+const INVENTORY_FILE: &str = "tests/regressions/performance-inventory.tsv";
+
+fn leak(text: &str) -> &'static str {
+    Box::leak(text.to_owned().into_boxed_str())
+}
+
+fn inventory() -> &'static [Suite] {
+    static SUITES: OnceLock<Vec<Suite>> = OnceLock::new();
+    SUITES.get_or_init(|| {
+        let text = fs::read_to_string(root().join(INVENTORY_FILE))
+            .unwrap_or_else(|error| panic!("{INVENTORY_FILE}: {error}"));
+        let mut suites: Vec<(Suite, Vec<&'static str>)> = Vec::new();
+        for (number, line) in text.lines().enumerate() {
+            let fields: Vec<&str> = line.split('\t').collect();
+            match fields.as_slice() {
+                [] | [""] => {}
+                [comment] if comment.starts_with('#') => {}
+                ["S", family, binary_id, matcher, file] => suites.push((
+                    Suite {
+                        family: leak(family),
+                        binary_id: leak(binary_id),
+                        matcher: (*matcher != "-").then(|| leak(matcher)),
+                        file: leak(file),
+                        tests: &[],
+                    },
+                    Vec::new(),
+                )),
+                ["T", test] => suites
+                    .last_mut()
+                    .unwrap_or_else(|| panic!("{INVENTORY_FILE}:{}: T before any S", number + 1))
+                    .1
+                    .push(leak(test)),
+                _ => panic!("{INVENTORY_FILE}:{}: unreadable line `{line}`", number + 1),
+            }
+        }
+        suites
+            .into_iter()
+            .map(|(mut suite, tests)| {
+                suite.tests = Box::leak(tests.into_boxed_slice());
+                suite
+            })
+            .collect()
+    })
+}
 
 /// The ignored measurement tests the `performance-measure` profile runs.
 const MEASUREMENTS: &[&str] = &[
@@ -355,7 +243,7 @@ fn check_profile(filter: &str) -> Vec<String> {
         Err(why) => return vec![why],
     };
     let mut problems = Vec::new();
-    for suite in INVENTORY {
+    for suite in inventory() {
         let want = operand(suite);
         if !have.contains(&want) {
             problems.push(format!(
@@ -392,7 +280,7 @@ fn check_list(json: &str) -> Vec<String> {
         return vec!["the nextest list output has no `rust-suites` object".to_owned()];
     };
     let mut problems = Vec::new();
-    for suite in INVENTORY {
+    for suite in inventory() {
         for test in suite.tests {
             let case = suites
                 .get(suite.binary_id)
@@ -535,7 +423,7 @@ fn performance_nextest_list_runs_every_required_test() {
 #[test]
 fn performance_required_tests_exist_in_source() {
     fail(
-        INVENTORY
+        inventory()
             .iter()
             .flat_map(|suite| missing_tests(suite, &read(suite.file)))
             .collect(),
@@ -586,7 +474,7 @@ mod gate_logic {
     use super::*;
 
     fn full_filter() -> String {
-        INVENTORY
+        inventory()
             .iter()
             .map(operand)
             .collect::<Vec<_>>()
@@ -597,7 +485,7 @@ mod gate_logic {
     /// inventory test were listed, not ignored and selected.
     fn full_list() -> serde_json::Value {
         let mut suites = serde_json::Map::new();
-        for suite in INVENTORY {
+        for suite in inventory() {
             let binary = suites
                 .entry(suite.binary_id)
                 .or_insert_with(|| serde_json::json!({ "testcases": {} }));
@@ -676,8 +564,8 @@ mod gate_logic {
 
     #[test]
     fn a_removed_suite_fails() {
-        for removed in INVENTORY {
-            let kept: Vec<String> = INVENTORY
+        for removed in inventory() {
+            let kept: Vec<String> = inventory()
                 .iter()
                 .filter(|s| !std::ptr::eq(*s, removed))
                 .map(operand)
@@ -711,7 +599,7 @@ mod gate_logic {
 
     #[test]
     fn a_missing_test_fn_fails() {
-        let suite = &INVENTORY[0];
+        let suite = &inventory()[0];
         let without = "#[test] fn something_else() {}";
         assert_eq!(missing_tests(suite, without).len(), suite.tests.len());
         let nested = suite
@@ -729,7 +617,7 @@ mod gate_logic {
 
     #[test]
     fn a_function_without_the_test_attribute_does_not_count() {
-        let suite = &INVENTORY[3];
+        let suite = &inventory()[3];
         let name = suite.tests[0].rsplit("::").next().unwrap();
         assert_eq!(missing_tests(suite, &format!("fn {name}() {{}}")).len(), 1);
     }

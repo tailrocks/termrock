@@ -233,8 +233,8 @@ It needs `--all-features` because the counters compile away without
 `work-metrics`; without it the budgets would not run at all.
 
 `tests/regressions/performance_inventory.rs` (the `performance_inventory`
-module of the shared `regressions` target) is the required-suite inventory. It
-lists each required suite with its nextest binary, the filter that selects it,
+module of the shared `regressions` target) is the required-suite gate. It reads
+the inventory from `tests/regressions/performance-inventory.tsv`, which lists each required suite with its nextest binary, the filter that selects it,
 its source file and the tests it must hold, and fails when
 
 - nextest does not list a required test, lists it `#[ignore]`d, or the profile
