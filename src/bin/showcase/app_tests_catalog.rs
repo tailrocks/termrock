@@ -2306,7 +2306,7 @@ fn work_counter_contract() {
         assert_eq!(
             counted.nonzero().count(),
             METRIC_COUNT,
-            "every metric has a counting site"
+            "record_work! accepts every metric variant"
         );
         assert_eq!(
             counted.check_exact(&CATALOG.map(|(metric, _)| (metric, 2))),
