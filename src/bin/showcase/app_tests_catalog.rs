@@ -22,8 +22,14 @@ use junie_tui::widgets::choice::Checkbox;
 use junie_tui::widgets::code::{CodeEditor, Diagnostic, Highlighter, Segmenter, Severity};
 use junie_tui::widgets::dialog::{Dialog, DialogResult};
 use junie_tui::widgets::edit::{EditField, Validator};
+use junie_tui::widgets::grid::{
+    CellEditResult, CellKind, CellValue, ColumnSpec, DataGrid, FinishEdit, GridAction,
+    GridCommitFailure, GridDataError, GridEditError, GridKeyError, GridRows, GridUndoKind,
+    RowTotal,
+};
 use junie_tui::widgets::input::TextInput;
 use junie_tui::widgets::list_detail::{Action, Event, Frame, Line, ListDetail, ListRow};
+use junie_tui::widgets::option_editor::{ColumnEditor, OptionItem, Options};
 use junie_tui::widgets::option_list::Item;
 use junie_tui::widgets::picker::{Picker, PickerAction, PickerItemsError, VisibleKey};
 use junie_tui::widgets::viewport_ops::ViewportOps;
@@ -52,6 +58,14 @@ pub const CASES: &[ScenarioCase] = &[
     ScenarioCase { id: ScenarioId::ListDetailNavigation, run: list_detail_navigation },
     ScenarioCase { id: ScenarioId::CodeEditorProviders, run: code_editor_providers },
     ScenarioCase { id: ScenarioId::CodeEditorDiagnosticsFind, run: code_editor_diagnostics_find },
+    ScenarioCase { id: ScenarioId::GridEditSession, run: grid_edit_session },
+    ScenarioCase { id: ScenarioId::GridChangeCapture, run: grid_change_capture },
+    ScenarioCase { id: ScenarioId::GridSubmissionLock, run: grid_submission_lock },
+    ScenarioCase { id: ScenarioId::GridSourceIdentity, run: grid_source_identity },
+    ScenarioCase { id: ScenarioId::GridUndoKinds, run: grid_undo_kinds },
+    ScenarioCase { id: ScenarioId::ExternalFeedBounds, run: external_feed_bounds },
+    ScenarioCase { id: ScenarioId::ScrollWindowWork, run: scroll_window_work },
+    ScenarioCase { id: ScenarioId::ModalFocusPolicy, run: modal_focus_policy },
 ];
 
 fn key(code: KeyCode) -> Key {
@@ -411,6 +425,318 @@ fn list_detail_navigation() {
     let _ = Position::new(0, 0);
 }
 
+const GRID_NAME: usize = 0;
+const GRID_SEATS: usize = 1;
+
+fn grid_columns() -> Vec<ColumnSpec> {
+    vec![
+        ColumnSpec::new("name", CellKind::Text),
+        ColumnSpec::new("seats", CellKind::Number),
+    ]
+}
+
+fn grid_rows(n: i64) -> GridRows {
+    GridRows {
+        rows: (0..n)
+            .map(|i| vec![CellValue::Text(format!("row{i}")), CellValue::Int(3 + i)])
+            .collect(),
+        total: RowTotal::Exact(n as usize),
+        more: false,
+    }
+}
+
+fn seeded_grid(name: &'static str, n: i64) -> DataGrid {
+    let mut grid = DataGrid::new(WidgetId::of(name), grid_columns());
+    grid.try_set_rows(grid_rows(n)).expect("rectangular rows");
+    grid
+}
+
+fn grid_action(grid: &mut DataGrid, code: KeyCode) -> Option<GridAction> {
+    grid.on_key(&key(code))
+        .try_into_single()
+        .expect("at most one action")
+        .1
+}
+
+fn grid_edit_session() {
+    let mut grid = seeded_grid("scenario.grid.edit", 3);
+    assert_eq!(
+        grid.try_edit_text(0, GRID_SEATS, "40"),
+        Ok(CellEditResult::Changed)
+    );
+    assert_eq!(
+        grid.try_edit_text(0, GRID_SEATS, "40"),
+        Ok(CellEditResult::Unchanged),
+        "the same value records nothing twice"
+    );
+    assert!(matches!(
+        grid.try_edit_text(0, GRID_SEATS, "lots"),
+        Err(GridEditError::Validation(_))
+    ));
+    assert_eq!(
+        grid.try_edit_text(9, GRID_SEATS, "1"),
+        Err(GridEditError::InvalidTarget)
+    );
+    assert_eq!(
+        grid.pending().total(),
+        1,
+        "a refusal leaves the draft as it was"
+    );
+
+    grid.cursor = (1, GRID_SEATS);
+    let pasted = grid
+        .paste_into_cell("7")
+        .try_into_single()
+        .expect("one action");
+    assert_eq!(
+        pasted.1,
+        Some(GridAction::CellChanged {
+            row: 1,
+            col: GRID_SEATS
+        })
+    );
+    assert_eq!(grid.value(1, GRID_SEATS), &CellValue::Int(7));
+
+    assert_eq!(grid.finish_edit_session(), Ok(FinishEdit::NoSession));
+    grid.cursor = (2, GRID_NAME);
+    grid_action(&mut grid, KeyCode::Enter);
+    for c in "ab".chars() {
+        grid_action(&mut grid, KeyCode::Char(c));
+    }
+    assert_eq!(
+        grid.finish_edit_session(),
+        Ok(FinishEdit::Accepted {
+            row: 2,
+            col: GRID_NAME,
+            result: CellEditResult::Changed
+        })
+    );
+
+    let mut combo = DataGrid::new(
+        WidgetId::of("scenario.grid.combo"),
+        vec![
+            ColumnSpec::new("pick", CellKind::Text).editor(ColumnEditor::Combo(Options::new(
+                ["a", "b"].map(OptionItem::new),
+            ))),
+        ],
+    );
+    combo
+        .try_set_rows(GridRows {
+            rows: vec![vec![CellValue::Text("a".into())]],
+            total: RowTotal::Exact(1),
+            more: false,
+        })
+        .expect("rectangular rows");
+    grid_action(&mut combo, KeyCode::Enter);
+    for c in "zz".chars() {
+        grid_action(&mut combo, KeyCode::Char(c));
+    }
+    assert_eq!(
+        combo.finish_edit_session(),
+        Err(GridEditError::NoChoice),
+        "text that matches no option commits nothing"
+    );
+
+    let snapshot = grid.snapshot_changes();
+    let token = grid
+        .begin_submission(snapshot)
+        .expect("a fresh capture locks");
+    assert_eq!(
+        grid.try_edit_text(0, GRID_SEATS, "5"),
+        Err(GridEditError::Busy)
+    );
+    grid.cancel_submission(token).expect("the lock's own token");
+}
+
+fn grid_change_capture() {
+    let mut grid = seeded_grid("scenario.grid.capture", 3);
+    grid.record_cell(0, GRID_SEATS, CellValue::Int(40))
+        .expect("an unlocked grid");
+    grid.toggle_delete(1).expect("an unlocked grid");
+    grid.insert_row().expect("an unlocked grid");
+    let deleted = grid.row_key(1).expect("row 1 has a key");
+    let inserted = grid.row_key(3).expect("the new row has a key");
+
+    let pending = grid.pending();
+    assert_eq!(pending.cells().count(), 1);
+    assert_eq!(pending.deleted().collect::<Vec<_>>(), vec![deleted]);
+    assert_eq!(pending.inserted().collect::<Vec<_>>(), vec![inserted]);
+    assert!(pending.is_deleted(deleted) && !pending.is_inserted(deleted));
+    assert!(pending.is_inserted(inserted) && !pending.is_deleted(inserted));
+
+    let snapshot = grid.snapshot_changes();
+    assert_eq!(snapshot.counts(), (1, 1, 1));
+    let updated = &snapshot.updated()[0];
+    assert_eq!(Some(updated.key()), grid.row_key(0));
+    assert_eq!(updated.before()[GRID_SEATS], CellValue::Int(3));
+    let change = &updated.cells()[0];
+    assert_eq!(grid.columns()[change.column()].name, "seats");
+    assert_eq!(change.after(), &CellValue::Int(40));
+    let insert = &snapshot.inserted()[0];
+    assert_eq!(insert.key(), inserted);
+    assert_eq!(insert.values().len(), grid.columns().len());
+    let delete = &snapshot.deleted()[0];
+    assert_eq!(delete.before()[GRID_NAME], CellValue::Text("row1".into()));
+
+    grid.record_cell(2, GRID_SEATS, CellValue::Int(9))
+        .expect("an unlocked grid");
+    assert_eq!(
+        snapshot.counts(),
+        (1, 1, 1),
+        "a capture never sees a later edit"
+    );
+}
+
+fn grid_submission_lock() {
+    let mut grid = seeded_grid("scenario.grid.submit", 3);
+    grid.record_cell(0, GRID_SEATS, CellValue::Int(40))
+        .expect("an unlocked grid");
+    assert!(!grid.submission_pending());
+
+    let snapshot = grid.snapshot_changes();
+    let token = grid.begin_submission(snapshot.clone()).expect("locks");
+    assert!(grid.submission_pending());
+    assert_eq!(
+        grid.record_cell(1, GRID_SEATS, CellValue::Int(5)),
+        Err(GridEditError::Busy),
+        "a locked draft refuses edits"
+    );
+    grid.cancel_submission(token).expect("the lock's own token");
+    assert!(!grid.submission_pending());
+    assert_eq!(grid.pending().total(), 1, "a cancel keeps the draft");
+
+    let token = grid
+        .begin_submission(snapshot.clone())
+        .expect("locks again");
+    let refused = GridCommitFailure {
+        key: grid.row_key(0),
+        message: "seats above the plan limit".into(),
+    };
+    grid.complete_submission(token, Err(refused))
+        .expect("the lock's own token");
+    assert!(!grid.submission_pending(), "a failure unlocks");
+    assert_eq!(grid.pending().total(), 1, "and keeps the draft");
+    assert!(grid.row_errors.contains_key(&0), "and marks the row");
+
+    let token = grid
+        .begin_submission(snapshot.clone())
+        .expect("locks again");
+    grid.complete_submission(token, Ok(snapshot.identity_receipt()))
+        .expect("the receipt names the captured rows");
+    assert!(grid.pending().is_empty(), "a saved draft is gone");
+    assert_eq!(grid.value(0, GRID_SEATS), &CellValue::Int(40));
+}
+
+fn grid_source_identity() {
+    let key = ItemKey::num;
+    let mut grid = DataGrid::new(WidgetId::of("scenario.grid.source"), grid_columns());
+    grid.try_set_rows_keyed(grid_rows(3), vec![key(10), key(20), key(30)])
+        .expect("three distinct keys");
+    assert_eq!(grid.row_key(1), Some(key(20)));
+    assert_eq!(grid.source_index(key(30)), Some(2));
+    assert_eq!(grid.source_index(key(99)), None);
+
+    let revision = grid.revision();
+    assert_eq!(
+        grid.try_set_rows_keyed(grid_rows(3), vec![key(1), key(1), key(2)]),
+        Err(GridDataError::Key(GridKeyError::DuplicateKey(key(1))))
+    );
+    assert_eq!(
+        grid.try_set_rows_keyed(grid_rows(3), vec![key(1)]),
+        Err(GridDataError::Key(GridKeyError::KeyCount {
+            expected: 3,
+            actual: 1
+        }))
+    );
+    assert_eq!(
+        grid.revision(),
+        revision,
+        "a refused source changes nothing"
+    );
+    assert_eq!(grid.row_key(0), Some(key(10)));
+
+    grid.try_set_rows(grid_rows(2)).expect("local keys");
+    assert_eq!(grid.len(), 2);
+    assert!(
+        grid.revision().source > revision.source,
+        "a new source bumps the revision"
+    );
+    grid.try_append_rows(grid_rows(2)).expect("a second page");
+    assert_eq!(grid.len(), 4);
+
+    let wide = || {
+        let mut cols = grid_columns();
+        cols.push(ColumnSpec::new("tier", CellKind::Text));
+        cols
+    };
+    let wide_rows = |n: i64| GridRows {
+        rows: (0..n)
+            .map(|i| {
+                vec![
+                    CellValue::Text(format!("row{i}")),
+                    CellValue::Int(i),
+                    CellValue::Null,
+                ]
+            })
+            .collect(),
+        total: RowTotal::Exact(n as usize),
+        more: false,
+    };
+    grid.try_set_model(wide(), wide_rows(2))
+        .expect("a wider model");
+    assert_eq!(grid.columns().len(), 3);
+    grid.try_set_model_keyed(wide(), wide_rows(2), vec![key(7), key(8)])
+        .expect("a keyed model");
+    assert_eq!(grid.row_key(1), Some(key(8)));
+
+    let before = grid.revision();
+    assert_eq!(grid.update_column(0, |c| c.read_only = true), Ok(true));
+    assert_eq!(grid.update_column(0, |c| c.read_only = true), Ok(false));
+    assert_eq!(grid.revision().source, before.source + 1);
+    assert_eq!(
+        grid.update_column(9, |c| c.read_only = true),
+        Err(GridEditError::InvalidTarget)
+    );
+    assert_eq!(grid.update_column(1, |c| c.max_width = 12), Ok(true));
+    assert_eq!(
+        grid.revision().source,
+        before.source + 1,
+        "a width change is not a new schema"
+    );
+}
+
+fn grid_undo_kinds() {
+    let mut grid = seeded_grid("scenario.grid.undo", 3);
+    grid.record_cell(0, GRID_SEATS, CellValue::Int(40))
+        .expect("an unlocked grid");
+    grid.toggle_delete(1).expect("an unlocked grid");
+    grid.insert_row().expect("an unlocked grid");
+    grid.toggle_delete(3).expect("removing a draft row");
+    let marked = grid.row_key(1).expect("row 1 has a key");
+    let first = grid.row_key(0).expect("row 0 has a key");
+
+    let mut seen = Vec::new();
+    while let Some(GridAction::Undone(undone)) = grid_action(&mut grid, KeyCode::Char('u')) {
+        seen.push(undone.kind);
+        match undone.kind {
+            GridUndoKind::DeleteMark => assert_eq!(undone.key, marked),
+            GridUndoKind::Cell => assert_eq!(undone.key, first),
+            GridUndoKind::Insert | GridUndoKind::RemovedInsert => {}
+        }
+    }
+    assert_eq!(
+        seen,
+        [
+            GridUndoKind::RemovedInsert,
+            GridUndoKind::Insert,
+            GridUndoKind::DeleteMark,
+            GridUndoKind::Cell
+        ],
+        "undo walks the draft back newest first"
+    );
+    assert!(grid.pending().is_empty());
+}
+
 #[test]
 fn catalog_scenarios_execute() {
     for case in CASES {
@@ -753,4 +1079,231 @@ fn code_editor_diagnostics_find() {
         None,
         "a line past the end has no width"
     );
+}
+
+/// The Activity page's channel feed: a real producer thread bursts past a
+/// small bounded channel, retries on `Full` and loses nothing, while the
+/// receiver carries the policy the page's "Turn budget" option shows.
+fn external_feed_bounds() {
+    use junie_tui::core::event::External;
+    use junie_tui::runtime::{ExternalPolicy, ExternalSendError, bounded_external_channel};
+    use std::num::NonZeroUsize;
+    use std::time::{Duration, Instant};
+
+    assert_eq!(
+        (
+            ExternalPolicy::DEFAULT_MAX_MESSAGES,
+            ExternalPolicy::DEFAULT_MAX_DURATION
+        ),
+        (64, Duration::from_millis(2))
+    );
+    assert_eq!(
+        ExternalPolicy::default(),
+        ExternalPolicy {
+            max_messages: ExternalPolicy::DEFAULT_MAX_MESSAGES,
+            max_duration: ExternalPolicy::DEFAULT_MAX_DURATION,
+        }
+    );
+
+    let policy = ExternalPolicy {
+        max_messages: 16,
+        max_duration: ExternalPolicy::DEFAULT_MAX_DURATION,
+    };
+    let capacity = NonZeroUsize::new(2).expect("nonzero");
+    let (tx, rx) = bounded_external_channel(capacity, policy);
+    assert_eq!(rx.policy(), policy, "the channel carries the page's budget");
+
+    let feed = crate::feed::Feed::start(tx.clone(), 10, Duration::from_secs(3600));
+    let deadline = Instant::now() + Duration::from_secs(20);
+    let mut seen = Vec::new();
+    while seen.len() < 10 {
+        assert!(Instant::now() < deadline, "feed stalled at {seen:?}");
+        match rx.try_recv() {
+            Some(message) => seen.push(
+                message
+                    .downcast_ref::<crate::feed::FeedLine>()
+                    .expect("a feed line")
+                    .seq,
+            ),
+            None => std::thread::yield_now(),
+        }
+    }
+    assert_eq!(seen, (0..10).collect::<Vec<_>>(), "in order, none dropped");
+    assert!(feed.full() > 0, "a burst of 10 overflows a capacity of 2");
+    feed.stop();
+
+    let mut fill = 0_u32;
+    while tx.try_send(External::new(fill)).is_ok() {
+        fill += 1;
+    }
+    let rejected = External::new(u32::MAX);
+    match tx.try_send(rejected.clone()) {
+        Err(ExternalSendError::Full(back)) => assert_eq!(back, rejected),
+        other => panic!("a full queue answers Full, got {other:?}"),
+    }
+    while rx.try_recv().is_some() {}
+    drop(rx);
+    match tx.try_send(rejected.clone()) {
+        Err(ExternalSendError::Closed(back)) => assert_eq!(back, rejected),
+        other => panic!("a dropped receiver answers Closed, got {other:?}"),
+    }
+}
+
+/// The Scrolling page's Virtual rows: a 10,000-row source paints only the
+/// window, and the frame's scratch work stays bounded by the viewport.
+fn scroll_window_work() {
+    use junie_tui::ui::scroll_view::{Axes, ScrollView, ScrollWork, VisibleWindow};
+    use ratatui::layout::Size;
+
+    let screen = Rect::new(0, 0, 60, 14);
+    let area = Rect::new(2, 2, 40, 8);
+    let rows: u16 = 10_000;
+    let id = WidgetId::of("scenario.scroll_window");
+    let mut view = ScrollView::new(id).axes(Axes::VERTICAL);
+    assert_eq!(view.last_work(), ScrollWork::default(), "no frame, no work");
+
+    let mut painted = Vec::new();
+    let mut window: Option<VisibleWindow> = None;
+    let buf = paint(screen, |_, buf, ctx| {
+        window = Some(view.render_window(
+            screen,
+            area,
+            Size::new(40, rows),
+            None,
+            buf,
+            ctx,
+            |window, buf, _| {
+                for index in window.content_rows() {
+                    painted.push(index);
+                    let rect = window.project_content_rect(Rect::new(0, index as u16, 40, 1));
+                    buf.set_string(
+                        rect.x,
+                        rect.y,
+                        format!("Row {index:05}"),
+                        ratatui::style::Style::default(),
+                    );
+                }
+            },
+        ));
+    });
+    let window = window.expect("the window is returned");
+    assert!(
+        !painted.is_empty() && painted.len() <= usize::from(area.height),
+        "only the window is painted: {painted:?}"
+    );
+    assert_eq!(painted.first(), Some(&0));
+    assert!(text_of(&buf).contains("Row 00000") && !text_of(&buf).contains("Row 09999"));
+    assert_eq!(
+        window.project_content_rect(Rect::new(0, 3, 40, 1)).y,
+        area.y + 3,
+        "a model row maps onto the viewport"
+    );
+
+    let work = view.last_work();
+    let viewport_cells = usize::from(area.width) * usize::from(area.height);
+    assert!(work.allocated > 0, "a windowed frame allocates scratch");
+    assert!(
+        work.allocated <= viewport_cells && work.filled <= viewport_cells,
+        "scratch follows the viewport, not the 10,000 rows: {work:?}"
+    );
+}
+
+/// Layer focus policy on a real `ModalStack`: opening can preserve or move
+/// focus, closing can restore or keep it, and `settle` drains every queued
+/// layer result in order.
+fn modal_focus_policy() {
+    use junie_tui::core::event::Key as KeyEvent;
+    use junie_tui::core::intent::DismissReason;
+    use junie_tui::ui::layer::{Layer, LayerCx, LayerOut, LayerSpec, LayerTag, ShellLayers, Taken};
+    use junie_tui::ui::modal::{FocusOnOpen, ModalStack};
+
+    let (a, b, c, d) = (
+        WidgetId::of("scenario.modal.a"),
+        WidgetId::of("scenario.modal.b"),
+        WidgetId::of("scenario.modal.c"),
+        WidgetId::of("scenario.modal.d"),
+    );
+    let mut focus = Focus::default();
+    focus.set(Some(a));
+    let mut stack: ModalStack<u8> = ModalStack::new();
+
+    stack.push_with_focus_policy(1, &mut focus, FocusOnOpen::Preserve, true);
+    assert_eq!(focus.current(), Some(a), "Preserve leaves focus alone");
+    focus.set(Some(b));
+    stack.pop(&mut focus);
+    assert_eq!(focus.current(), Some(a), "restore returns to the opener");
+
+    stack.push_with_focus_policy(2, &mut focus, FocusOnOpen::Set(Some(c)), false);
+    assert_eq!(focus.current(), Some(c), "Set moves focus on open");
+    focus.set(Some(d));
+    stack.pop(&mut focus);
+    assert_eq!(focus.current(), Some(d), "no restore keeps the moved focus");
+
+    stack.push_with_focus_policy(3, &mut focus, FocusOnOpen::Set(None), true);
+    assert_eq!(focus.current(), None, "Set(None) clears focus on open");
+    stack.pop(&mut focus);
+    assert_eq!(focus.current(), Some(d));
+
+    struct Queued(Vec<LayerOut<&'static str>>);
+
+    impl Layer<&'static str> for Queued {
+        fn spec(&self) -> LayerSpec {
+            LayerSpec::tooltip()
+        }
+        fn render(&mut self, _: Rect, _: &mut Buffer, _: &mut RenderCtx, _: &()) {}
+        fn on_key(&mut self, _: &KeyEvent, _: &mut LayerCx<'_, ()>) -> Outcome {
+            Outcome::Ignored
+        }
+        fn on_dismiss(&mut self, _: DismissReason) {}
+        fn take_result(&mut self) -> Option<LayerOut<&'static str>> {
+            (!self.0.is_empty()).then(|| self.0.remove(0))
+        }
+    }
+
+    struct Host {
+        layers: ShellLayers<&'static str>,
+        focus: Focus,
+        seen: Vec<String>,
+    }
+    let mut host = Host {
+        layers: ShellLayers::new(),
+        focus: Focus::default(),
+        seen: Vec::new(),
+    };
+    host.focus.set(Some(a));
+    host.layers.open(
+        Box::new(Queued(vec![
+            LayerOut::Event("first"),
+            LayerOut::Event("second"),
+            LayerOut::Close("last"),
+        ])),
+        LayerTag::new("queued"),
+        (),
+        &mut host.focus,
+    );
+    assert_eq!(
+        host.focus.current(),
+        Some(a),
+        "a passive layer opens with FocusOnOpen::Preserve"
+    );
+    let settle = |host: &mut Host| {
+        ShellLayers::settle(
+            host,
+            |h| (&mut h.layers, &mut h.focus),
+            Outcome::Ignored,
+            |h, taken| {
+                let (closed, text) = match taken {
+                    Taken::Event(r) => (false, r),
+                    Taken::Closed(_, r) => (true, r),
+                };
+                h.seen
+                    .push(format!("{}{text}", if closed { "close " } else { "" }));
+                Outcome::Changed
+            },
+        )
+    };
+    assert_eq!(settle(&mut host), Outcome::Changed);
+    assert_eq!(host.seen, ["first", "second", "close last"]);
+    assert!(host.layers.is_empty(), "the close popped the layer");
+    assert_eq!(settle(&mut host), Outcome::Ignored, "nothing left to drain");
 }
