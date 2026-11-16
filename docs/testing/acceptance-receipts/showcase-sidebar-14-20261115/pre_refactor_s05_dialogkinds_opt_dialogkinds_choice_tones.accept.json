@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s05_dialogkinds/opt_dialogkinds_choice_tones",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s05_dialogkinds__opt_dialogkinds_choice_tones.tui.pb"
+  },
+  "candidate_sha256": "77d5db7debcca8133bc0576e288801660e5a9d7ce52e6804272ca27aeba746d9",
+  "baseline_sha256": "77d5db7debcca8133bc0576e288801660e5a9d7ce52e6804272ca27aeba746d9",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s05_dialogkinds/opt_dialogkinds_choice_tones.tui.pb"
+  },
+  "error_code": null
+}

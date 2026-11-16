@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s05_pickers/opt_pickers_delete_is_secondary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s05_pickers__opt_pickers_delete_is_secondary.tui.pb"
+  },
+  "candidate_sha256": "73519ef9a6834305eda30cb503544c9c5dfc249a6816f8f4a66945f61a1ee488",
+  "baseline_sha256": "73519ef9a6834305eda30cb503544c9c5dfc249a6816f8f4a66945f61a1ee488",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s05_pickers/opt_pickers_delete_is_secondary.tui.pb"
+  },
+  "error_code": null
+}

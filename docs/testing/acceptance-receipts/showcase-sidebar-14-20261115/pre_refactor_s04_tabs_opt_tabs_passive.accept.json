@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s04_tabs/opt_tabs_passive",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s04_tabs__opt_tabs_passive.tui.pb"
+  },
+  "candidate_sha256": "0b0a6eb0711ce616cf120a52c6995639123cb3e815b262c0972e9978c81b0d71",
+  "baseline_sha256": "0b0a6eb0711ce616cf120a52c6995639123cb3e815b262c0972e9978c81b0d71",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s04_tabs/opt_tabs_passive.tui.pb"
+  },
+  "error_code": null
+}
