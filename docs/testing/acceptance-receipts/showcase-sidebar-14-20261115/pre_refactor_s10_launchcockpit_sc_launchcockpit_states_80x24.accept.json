@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s10_launchcockpit/sc_launchcockpit_states_80x24",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s10_launchcockpit__sc_launchcockpit_states_80x24.tui.pb"
+  },
+  "candidate_sha256": "49a89e3f79a559290d378f18c60f517a1f96c98f5750761ff83e94f917f1f80a",
+  "baseline_sha256": "49a89e3f79a559290d378f18c60f517a1f96c98f5750761ff83e94f917f1f80a",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s10_launchcockpit/sc_launchcockpit_states_80x24.tui.pb"
+  },
+  "error_code": null
+}

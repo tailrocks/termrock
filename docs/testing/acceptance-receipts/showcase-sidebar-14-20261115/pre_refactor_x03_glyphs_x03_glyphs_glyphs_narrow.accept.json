@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/x03_glyphs/x03_glyphs_glyphs_narrow",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__x03_glyphs__x03_glyphs_glyphs_narrow.tui.pb"
+  },
+  "candidate_sha256": "fd324e29800dbac5bf6761f2f389728cf2efea46610b42b6d633f3cf8dd85a9f",
+  "baseline_sha256": "fd324e29800dbac5bf6761f2f389728cf2efea46610b42b6d633f3cf8dd85a9f",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/x03_glyphs/x03_glyphs_glyphs_narrow.tui.pb"
+  },
+  "error_code": null
+}

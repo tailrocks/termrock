@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s10_diskcleanup/sc_diskcleanup_states_120x40",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s10_diskcleanup__sc_diskcleanup_states_120x40.tui.pb"
+  },
+  "candidate_sha256": "4b011e860285ecd4570342937e17a416fac4f92a1ac7f5897d7df5df854548dc",
+  "baseline_sha256": "4b011e860285ecd4570342937e17a416fac4f92a1ac7f5897d7df5df854548dc",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s10_diskcleanup/sc_diskcleanup_states_120x40.tui.pb"
+  },
+  "error_code": null
+}

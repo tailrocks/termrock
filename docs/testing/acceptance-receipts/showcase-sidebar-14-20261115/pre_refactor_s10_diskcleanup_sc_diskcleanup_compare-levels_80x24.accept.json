@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s10_diskcleanup/sc_diskcleanup_compare-levels_80x24",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s10_diskcleanup__sc_diskcleanup_compare-levels_80x24.tui.pb"
+  },
+  "candidate_sha256": "da8b5489c0d8fcda1468a3a4179393cc9ef546f89246b9a2ee6e1393021da405",
+  "baseline_sha256": "da8b5489c0d8fcda1468a3a4179393cc9ef546f89246b9a2ee6e1393021da405",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s10_diskcleanup/sc_diskcleanup_compare-levels_80x24.tui.pb"
+  },
+  "error_code": null
+}

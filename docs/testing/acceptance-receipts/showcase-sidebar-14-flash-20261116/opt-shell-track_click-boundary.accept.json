@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-track_click-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/target/functional/s01_track_click_jump-47419-1794790549348063000-0/check-artifacts/opt-shell-track_click-boundary/4440fb752838ea3de3d20d07777f64c15f920e9ac426ef37793be1157567ced2/sample.tui.pb"
+  },
+  "candidate_sha256": "4440fb752838ea3de3d20d07777f64c15f920e9ac426ef37793be1157567ced2",
+  "baseline_sha256": "4440fb752838ea3de3d20d07777f64c15f920e9ac426ef37793be1157567ced2",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-track_click-boundary.tui.pb"
+  },
+  "error_code": null
+}

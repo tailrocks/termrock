@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "functional/showcase_keyboard_run_task",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/target/functional/showcase-keyboard-84727-1794791569230222000-0/check-artifacts/functional/showcase_keyboard_run_task/6b393c7a87f98b62bd40cf980ea65498ea0fd520d9fa64aaf28de662512f4353/sample.tui.pb"
+  },
+  "candidate_sha256": "6b393c7a87f98b62bd40cf980ea65498ea0fd520d9fa64aaf28de662512f4353",
+  "baseline_sha256": "6b393c7a87f98b62bd40cf980ea65498ea0fd520d9fa64aaf28de662512f4353",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/tests/functional/baselines/functional/showcase_keyboard_run_task.tui.pb"
+  },
+  "error_code": null
+}

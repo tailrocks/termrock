@@ -1,0 +1,72 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-q-target/trial/debug/showcase",
+  "binary_sha256": "27474c66e12959cebc61160a7077a5b680e5d80a98217f5e354c610598730776",
+  "fixture_args": [],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "2f6c2b0b4f356b55e86b618c42af0c9a1833715512d5385b16cb7f84ad39054f",
+  "expect_baseline": "3f45e61bf508e83dda09662d11be7b8c2064bbadad626ab82cb8541da672537b",
+  "precondition": "Deliberate combination of two approved visual changes. #285 (#149) already settled the press flash in this capture on main; #14 adds the five formerly hidden pages to the sidebar (Components 54 to 59, longer page lists). The sample differs from main's baseline in 1 cells, all in sidebar columns 23 to 23, rows 2 to 2; every cell is exactly the cell #14's own baseline holds, and every cell right of the sidebar is main's. Size, palette and default colours are identical.",
+  "session": null,
+  "expected_test_id": "opt-shell-edit_entry-boundary",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-flash-20261116/opt-shell-edit_entry-boundary.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-flash-20261116/opt-shell-edit_entry-boundary.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-flash-20261116/superseded/pre_refactor/S01.shell/opt-shell-edit_entry-boundary.tui.pb",
+  "test_id": "opt-shell-edit_entry-boundary",
+  "acceptance": {
+    "expected_baseline_sha256": "3f45e61bf508e83dda09662d11be7b8c2064bbadad626ab82cb8541da672537b",
+    "accepted_baseline_sha256": "2f6c2b0b4f356b55e86b618c42af0c9a1833715512d5385b16cb7f84ad39054f",
+    "candidate_sha256": "2f6c2b0b4f356b55e86b618c42af0c9a1833715512d5385b16cb7f84ad39054f",
+    "transaction_receipt": "docs/testing/acceptance-receipts/showcase-sidebar-14-flash-20261116/opt-shell-edit_entry-boundary.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "3f45e61bf508e83dda09662d11be7b8c2064bbadad626ab82cb8541da672537b"
+  },
+  "candidate": {
+    "sha256": "2f6c2b0b4f356b55e86b618c42af0c9a1833715512d5385b16cb7f84ad39054f",
+    "path": "tests/functional/baselines/pre_refactor/S01.shell/opt-shell-edit_entry-boundary.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/showcase-sidebar-14-flash-20261116/superseded/pre_refactor/S01.shell/opt-shell-edit_entry-boundary.tui.pb",
+    "superseded_baseline_sha256": "3f45e61bf508e83dda09662d11be7b8c2064bbadad626ab82cb8541da672537b"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/S01.shell/opt-shell-edit_entry-boundary.tui.pb",
+    "candidate_sha256": "2f6c2b0b4f356b55e86b618c42af0c9a1833715512d5385b16cb7f84ad39054f",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-q-target/trial/debug/showcase",
+    "binary_sha256": "27474c66e12959cebc61160a7077a5b680e5d80a98217f5e354c610598730776",
+    "note": "Live candidate capture of the merged tree (#14 with #285 on main). No Reference-mode capture exists for the sidebar change."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "opt-shell-edit_entry-boundary",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/target/functional/s01_edit_entry_explicit-13570-1794791242454480000-0/check-artifacts/opt-shell-edit_entry-boundary/2f6c2b0b4f356b55e86b618c42af0c9a1833715512d5385b16cb7f84ad39054f/sample.tui.pb"
+    },
+    "candidate_sha256": "2f6c2b0b4f356b55e86b618c42af0c9a1833715512d5385b16cb7f84ad39054f",
+    "baseline_sha256": "2f6c2b0b4f356b55e86b618c42af0c9a1833715512d5385b16cb7f84ad39054f",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-edit_entry-boundary.tui.pb"
+    },
+    "error_code": null
+  }
+}
