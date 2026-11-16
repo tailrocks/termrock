@@ -1,0 +1,75 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3-target/debug/showcase",
+  "binary_sha256": "c2ed189e03b11c22298c203b7561871ee950aa47282e70284cdba4686bf6f5d0",
+  "fixture_args": [
+    "--page",
+    "panels"
+  ],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "c6965477f479c133607b83cad4619984f7448ee4c95a434ab00c22b337ccf208",
+  "expect_baseline": "53dcb343d9656ace9ce2f60cba6925b78029db52c0e531b42e6680ab71aba7c6",
+  "precondition": "",
+  "session": null,
+  "expected_test_id": "pre_refactor/s07_panels/sc_panels_specimen_rest",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/pre_refactor_s07_panels_sc_panels_specimen_rest.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/pre_refactor_s07_panels_sc_panels_specimen_rest.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/superseded/pre_refactor/s07_panels/sc_panels_specimen_rest.tui.pb",
+  "test_id": "pre_refactor/s07_panels/sc_panels_specimen_rest",
+  "acceptance": {
+    "expected_baseline_sha256": "53dcb343d9656ace9ce2f60cba6925b78029db52c0e531b42e6680ab71aba7c6",
+    "accepted_baseline_sha256": "c6965477f479c133607b83cad4619984f7448ee4c95a434ab00c22b337ccf208",
+    "candidate_sha256": "c6965477f479c133607b83cad4619984f7448ee4c95a434ab00c22b337ccf208",
+    "transaction_receipt": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/pre_refactor_s07_panels_sc_panels_specimen_rest.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "53dcb343d9656ace9ce2f60cba6925b78029db52c0e531b42e6680ab71aba7c6"
+  },
+  "candidate": {
+    "sha256": "c6965477f479c133607b83cad4619984f7448ee4c95a434ab00c22b337ccf208",
+    "path": "tests/functional/baselines/pre_refactor/s07_panels/sc_panels_specimen_rest.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/superseded/pre_refactor/s07_panels/sc_panels_specimen_rest.tui.pb",
+    "superseded_baseline_sha256": "53dcb343d9656ace9ce2f60cba6925b78029db52c0e531b42e6680ab71aba7c6"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/s07_panels/sc_panels_specimen_rest.tui.pb",
+    "candidate_sha256": "c6965477f479c133607b83cad4619984f7448ee4c95a434ab00c22b337ccf208",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3-target/debug/showcase",
+    "binary_sha256": "c2ed189e03b11c22298c203b7561871ee950aa47282e70284cdba4686bf6f5d0",
+    "note": "Candidate-mode refresh for #14: the five formerly hidden pages join the sidebar, so the Components count and the expanded groups change."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s07_panels/sc_panels_specimen_rest",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/tmp/final/pre_refactor__s07_panels__sc_panels_specimen_rest.tui.pb"
+    },
+    "candidate_sha256": "c6965477f479c133607b83cad4619984f7448ee4c95a434ab00c22b337ccf208",
+    "baseline_sha256": "c6965477f479c133607b83cad4619984f7448ee4c95a434ab00c22b337ccf208",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s07_panels/sc_panels_specimen_rest.tui.pb"
+    },
+    "error_code": null
+  }
+}

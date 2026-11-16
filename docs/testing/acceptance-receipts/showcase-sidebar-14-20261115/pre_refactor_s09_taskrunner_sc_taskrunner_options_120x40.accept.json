@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s09_taskrunner/sc_taskrunner_options_120x40",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s09_taskrunner__sc_taskrunner_options_120x40.tui.pb"
+  },
+  "candidate_sha256": "d8a5b4380be405508776aa211973f8e9d6796c9d0feb44ae45dd09211450a736",
+  "baseline_sha256": "d8a5b4380be405508776aa211973f8e9d6796c9d0feb44ae45dd09211450a736",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s09_taskrunner/sc_taskrunner_options_120x40.tui.pb"
+  },
+  "error_code": null
+}

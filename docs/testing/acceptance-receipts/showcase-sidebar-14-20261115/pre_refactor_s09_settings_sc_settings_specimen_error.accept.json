@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s09_settings/sc_settings_specimen_error",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s09_settings__sc_settings_specimen_error.tui.pb"
+  },
+  "candidate_sha256": "6ff86ad54e29b279851087049d3b72ec6b919ba925a866c2004bc0dd3f87576b",
+  "baseline_sha256": "6ff86ad54e29b279851087049d3b72ec6b919ba925a866c2004bc0dd3f87576b",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s09_settings/sc_settings_specimen_error.tui.pb"
+  },
+  "error_code": null
+}

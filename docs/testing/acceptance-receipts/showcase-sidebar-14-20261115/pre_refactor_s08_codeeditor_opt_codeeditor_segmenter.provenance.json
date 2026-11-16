@@ -1,0 +1,77 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3-target/debug/showcase",
+  "binary_sha256": "c2ed189e03b11c22298c203b7561871ee950aa47282e70284cdba4686bf6f5d0",
+  "fixture_args": [
+    "--page",
+    "codeeditor",
+    "--opt",
+    "codeeditor.segmenter=off"
+  ],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "d43e78ab7b23b34b2a29a6f935884159215cfbe76795da7544693c74f9daa73e",
+  "expect_baseline": "48101c3505968075613cfd398d375dc8a04e440e6ecd144bb57429e5e3d5761e",
+  "precondition": "",
+  "session": null,
+  "expected_test_id": "pre_refactor/s08_codeeditor/opt_codeeditor_segmenter",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/pre_refactor_s08_codeeditor_opt_codeeditor_segmenter.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/pre_refactor_s08_codeeditor_opt_codeeditor_segmenter.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/superseded/pre_refactor/s08_codeeditor/opt_codeeditor_segmenter.tui.pb",
+  "test_id": "pre_refactor/s08_codeeditor/opt_codeeditor_segmenter",
+  "acceptance": {
+    "expected_baseline_sha256": "48101c3505968075613cfd398d375dc8a04e440e6ecd144bb57429e5e3d5761e",
+    "accepted_baseline_sha256": "d43e78ab7b23b34b2a29a6f935884159215cfbe76795da7544693c74f9daa73e",
+    "candidate_sha256": "d43e78ab7b23b34b2a29a6f935884159215cfbe76795da7544693c74f9daa73e",
+    "transaction_receipt": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/pre_refactor_s08_codeeditor_opt_codeeditor_segmenter.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "48101c3505968075613cfd398d375dc8a04e440e6ecd144bb57429e5e3d5761e"
+  },
+  "candidate": {
+    "sha256": "d43e78ab7b23b34b2a29a6f935884159215cfbe76795da7544693c74f9daa73e",
+    "path": "tests/functional/baselines/pre_refactor/s08_codeeditor/opt_codeeditor_segmenter.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/superseded/pre_refactor/s08_codeeditor/opt_codeeditor_segmenter.tui.pb",
+    "superseded_baseline_sha256": "48101c3505968075613cfd398d375dc8a04e440e6ecd144bb57429e5e3d5761e"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/s08_codeeditor/opt_codeeditor_segmenter.tui.pb",
+    "candidate_sha256": "d43e78ab7b23b34b2a29a6f935884159215cfbe76795da7544693c74f9daa73e",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3-target/debug/showcase",
+    "binary_sha256": "c2ed189e03b11c22298c203b7561871ee950aa47282e70284cdba4686bf6f5d0",
+    "note": "Candidate-mode refresh for #14: the five formerly hidden pages join the sidebar, so the Components count and the expanded groups change."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s08_codeeditor/opt_codeeditor_segmenter",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/tmp/final/pre_refactor__s08_codeeditor__opt_codeeditor_segmenter.tui.pb"
+    },
+    "candidate_sha256": "d43e78ab7b23b34b2a29a6f935884159215cfbe76795da7544693c74f9daa73e",
+    "baseline_sha256": "d43e78ab7b23b34b2a29a6f935884159215cfbe76795da7544693c74f9daa73e",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s08_codeeditor/opt_codeeditor_segmenter.tui.pb"
+    },
+    "error_code": null
+  }
+}

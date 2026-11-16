@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s08_codeeditor/opt_codeeditor_completion_width",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s08_codeeditor__opt_codeeditor_completion_width.tui.pb"
+  },
+  "candidate_sha256": "fac16393b333ca373658046913491c02b2d7c0b3187a2237c6c532128e4d73ed",
+  "baseline_sha256": "fac16393b333ca373658046913491c02b2d7c0b3187a2237c6c532128e4d73ed",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s08_codeeditor/opt_codeeditor_completion_width.tui.pb"
+  },
+  "error_code": null
+}

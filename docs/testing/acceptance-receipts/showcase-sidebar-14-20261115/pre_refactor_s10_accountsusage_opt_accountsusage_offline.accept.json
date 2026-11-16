@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s10_accountsusage/opt_accountsusage_offline",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s10_accountsusage__opt_accountsusage_offline.tui.pb"
+  },
+  "candidate_sha256": "976bfcd9c6d57c12238fd67467c0e867cfb851c038ba2da169690c506a3475fe",
+  "baseline_sha256": "976bfcd9c6d57c12238fd67467c0e867cfb851c038ba2da169690c506a3475fe",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s10_accountsusage/opt_accountsusage_offline.tui.pb"
+  },
+  "error_code": null
+}
