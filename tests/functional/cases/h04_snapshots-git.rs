@@ -64,28 +64,10 @@ fn row_containing(screen: &TerminalSnapshot, needle: &str) -> String {
 /// resize does not force a new frame, so the shot nudges the width and comes
 /// back. The waits follow the reported size, not the size text.
 fn flash_settle(app: &App) {
-    app.flash_expired();
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    assert!(
-        text(&screen).contains(ANCHOR),
-        "shot left git status\n{}",
-        text(&screen)
+    app.nudge_width(
+        |screen| text(screen).contains(ANCHOR),
+        Some("shot left git status"),
     );
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    app.wait_screen("nudge", |screen| {
-        screen.cols() == u32::from(nudged)
-            && screen.rows() == u32::from(rows)
-            && text(screen).contains(ANCHOR)
-    });
-    app.resize(cols, rows);
-    app.wait_screen("restored", |screen| {
-        screen.cols() == u32::from(cols)
-            && screen.rows() == u32::from(rows)
-            && text(screen).contains(ANCHOR)
-    });
 }
 
 fn shot(app: &App, checkpoint: &str) {

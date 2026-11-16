@@ -296,24 +296,7 @@ fn dest_marker(app: &App) -> &'static str {
 /// A same-size resize does not force a frame, and the cursor column is part
 /// of the hash. Nudge the width and come back while the form stays open.
 fn nudge(app: &App, quiet_frame: impl Fn(&TerminalSnapshot) -> bool) {
-    app.flash_expired();
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    assert!(
-        quiet_frame(&screen),
-        "nudge left the frame\n{}",
-        text(&screen)
-    );
-    let wider = cols + 1;
-    app.resize(wider, rows);
-    app.wait_screen("nudged", |screen| {
-        screen.cols() == u32::from(wider) && screen.rows() == u32::from(rows) && quiet_frame(screen)
-    });
-    app.resize(cols, rows);
-    app.wait_screen("size restored", |screen| {
-        screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows) && quiet_frame(screen)
-    });
+    app.nudge_width(quiet_frame, Some("nudge left the frame"));
 }
 
 fn shoot(app: &App, checkpoint: &str) {

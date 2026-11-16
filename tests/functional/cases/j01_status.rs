@@ -105,20 +105,7 @@ fn narrow_c41e(screen: &TerminalSnapshot) -> bool {
 }
 
 fn nudge(app: &App, quiet: impl Fn(&TerminalSnapshot) -> bool) {
-    app.flash_expired();
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    assert!(quiet(&screen), "nudge left the frame\n{}", text(&screen));
-    let wider = cols + 1;
-    app.resize(wider, rows);
-    app.wait_screen("nudged", |screen| {
-        screen.cols() == u32::from(wider) && screen.rows() == u32::from(rows) && quiet(screen)
-    });
-    app.resize(cols, rows);
-    app.wait_screen("size restored", |screen| {
-        screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows) && quiet(screen)
-    });
+    app.nudge_width(quiet, Some("nudge left the frame"));
 }
 
 fn down_focused(app: &App, needle: &str) -> TerminalSnapshot {

@@ -143,19 +143,7 @@ fn assert_foreign(screen: &TerminalSnapshot) {
 /// of the hash (`cursor.col` is too). Nudge the width and come back. The
 /// narrow footer may omit a size chip, so this waits on the terminal size.
 fn flash_settle(app: &App) {
-    app.flash_expired();
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    app.wait_screen("nudged width", |screen| {
-        screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-    });
-    app.resize(cols, rows);
-    app.wait_screen("restored size", |screen| {
-        screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-    });
+    app.nudge_width(|_| true, None);
 }
 
 fn shot(app: &App, checkpoint: &str) {

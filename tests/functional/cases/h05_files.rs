@@ -122,28 +122,10 @@ fn at_directory(screen: &TerminalSnapshot, path: &str) -> bool {
 }
 
 fn nudge(app: &App) {
-    app.flash_expired();
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    assert!(
-        at_directory(&screen, APP),
-        "shot left the app directory\n{}",
-        text(&screen)
+    app.nudge_width(
+        |screen| at_directory(screen, APP),
+        Some("shot left the app directory"),
     );
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    app.wait_screen("nudged", |screen| {
-        screen.cols() == u32::from(nudged)
-            && screen.rows() == u32::from(rows)
-            && at_directory(screen, APP)
-    });
-    app.resize(cols, rows);
-    app.wait_screen("size restored", |screen| {
-        screen.cols() == u32::from(cols)
-            && screen.rows() == u32::from(rows)
-            && at_directory(screen, APP)
-    });
 }
 
 fn shot(app: &App, checkpoint: &str) {

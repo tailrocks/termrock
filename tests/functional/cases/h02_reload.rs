@@ -169,25 +169,10 @@ fn back_to_finder(app: &App) {
 /// A same-size resize does not force a frame, and the cursor column is part
 /// of the hash. Nudge the width and come back. The config page stays open.
 fn nudge(app: &App) {
-    app.flash_expired();
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    app.wait_screen("nudged", |screen| {
-        screen.cols() == u32::from(nudged)
-            && screen.rows() == u32::from(rows)
-            && painted(screen, u32::from(nudged), u32::from(rows))
-            && reloaded(screen)
-    });
-    app.resize(cols, rows);
-    app.wait_screen("size restored", |screen| {
-        screen.cols() == u32::from(cols)
-            && screen.rows() == u32::from(rows)
-            && painted(screen, u32::from(cols), u32::from(rows))
-            && reloaded(screen)
-    });
+    app.nudge_sized(
+        |screen, cols, rows| painted(screen, u32::from(cols), u32::from(rows)) && reloaded(screen),
+        None,
+    );
 }
 
 fn shot(app: &App, checkpoint: &str) {

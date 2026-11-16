@@ -180,19 +180,7 @@ fn open_why_for_b(app: &App) {
 /// back. The size chip is not on screen at 80 columns, so that wait uses the
 /// terminal size rather than the text `80×24`.
 fn nudge(app: &App) {
-    app.flash_expired();
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    app.wait_screen("nudged", |screen| {
-        screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows) && why_open(screen)
-    });
-    app.resize(cols, rows);
-    app.wait_screen("size restored", |screen| {
-        screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows) && why_open(screen)
-    });
+    app.nudge_width(why_open, None);
 }
 
 /// The preview age beside the modal is in the wide shot. Waiting for the

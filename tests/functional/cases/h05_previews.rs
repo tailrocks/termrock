@@ -255,20 +255,7 @@ fn tail_open(screen: &TerminalSnapshot) -> bool {
 /// A same-size resize does not force a frame, and the cursor column is part
 /// of the hash. Nudge the width and come back while the preview stays put.
 fn nudge(app: &App, quiet: impl Fn(&TerminalSnapshot) -> bool) {
-    app.flash_expired();
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    assert!(quiet(&screen), "nudge left the frame\n{}", text(&screen));
-    let wider = cols + 1;
-    app.resize(wider, rows);
-    app.wait_screen("nudged", |screen| {
-        screen.cols() == u32::from(wider) && screen.rows() == u32::from(rows) && quiet(screen)
-    });
-    app.resize(cols, rows);
-    app.wait_screen("size restored", |screen| {
-        screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows) && quiet(screen)
-    });
+    app.nudge_width(quiet, Some("nudge left the frame"));
 }
 
 fn shot(app: &App, checkpoint: &str) {

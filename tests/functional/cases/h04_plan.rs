@@ -116,28 +116,10 @@ fn foreign(screen: &TerminalSnapshot) {
 /// resize does not force a new frame, so the shot nudges the width and comes
 /// back. The waits follow the reported size, not the size text.
 fn flash_settle(app: &App) {
-    app.flash_expired();
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    assert!(
-        text(&screen).contains(DIALOG),
-        "shot left the start dialog\n{}",
-        text(&screen)
+    app.nudge_width(
+        |screen| text(screen).contains(DIALOG),
+        Some("shot left the start dialog"),
     );
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    app.wait_screen("nudge", |screen| {
-        screen.cols() == u32::from(nudged)
-            && screen.rows() == u32::from(rows)
-            && text(screen).contains(DIALOG)
-    });
-    app.resize(cols, rows);
-    app.wait_screen("restored", |screen| {
-        screen.cols() == u32::from(cols)
-            && screen.rows() == u32::from(rows)
-            && text(screen).contains(DIALOG)
-    });
 }
 
 fn shot(app: &App, checkpoint: &str) {

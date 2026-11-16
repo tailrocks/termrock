@@ -680,6 +680,94 @@ impl App {
         }
     }
 
+    /// Waits out the press flash, then widens the terminal by one column and
+    /// restores it. A same-size resize does not force a frame, and the frame
+    /// after a flash is the one a capture needs. `ready` must hold on the screen
+    /// at both sizes. With `left`, it must also hold before the nudge, and the
+    /// message says what the screen showed instead.
+    pub fn nudge_width(&self, ready: impl Fn(&TerminalSnapshot) -> bool, left: Option<&str>) {
+        self.nudge_sized(|screen, _, _| ready(screen), left);
+    }
+
+    /// [`App::nudge_width`] for a `ready` that also needs the size the screen is
+    /// expected to have, as columns then rows.
+    pub fn nudge_sized(
+        &self,
+        ready: impl Fn(&TerminalSnapshot, u16, u16) -> bool,
+        left: Option<&str>,
+    ) {
+        self.flash_expired();
+        let screen = self.screen();
+        let cols = u16::try_from(screen.cols()).expect("cols");
+        let rows = u16::try_from(screen.rows()).expect("rows");
+        if let Some(left) = left {
+            assert!(ready(&screen, cols, rows), "{left}\n{}", text(&screen));
+        }
+        let wider = cols + 1;
+        self.resize(wider, rows);
+        self.wait_screen("nudged", |screen| {
+            screen.cols() == u32::from(wider)
+                && screen.rows() == u32::from(rows)
+                && ready(screen, wider, rows)
+        });
+        self.resize(cols, rows);
+        self.wait_screen("size restored", |screen| {
+            screen.cols() == u32::from(cols)
+                && screen.rows() == u32::from(rows)
+                && ready(screen, cols, rows)
+        });
+    }
+
+    /// Waits out the press flash, hops to 121 columns and back to `cols` by
+    /// `rows`, and waits for the frame a capture needs. Below 100 columns the
+    /// hop label is gone and `title` is on screen. From 100 up the size chip
+    /// names the size.
+    pub fn clear_flash_hop(&self, cols: u16, rows: u16, title: &str) {
+        self.flash_expired();
+        self.resize(121, rows);
+        let hopped = format!("121×{rows}");
+        self.wait_text(&hopped);
+        self.resize(cols, rows);
+        self.wait_screen(&format!("settled {cols}x{rows}"), |screen| {
+            let visible = text(screen);
+            if cols >= 100 {
+                visible.contains(&format!("{cols}×{rows}"))
+            } else {
+                !visible.contains(&hopped) && visible.contains(title)
+            }
+        });
+    }
+
+    /// [`App::clear_flash_hop`] for pages whose hop is to 121x40 and shows
+    /// `interim` there. The settled frame holds `token`. Below 100 columns
+    /// neither `interim` nor `wide` is left. The pointer then parks on the last
+    /// row.
+    pub fn clear_flash_interim(&self, cols: u16, rows: u16, token: &str, labels: (&str, &str)) {
+        let (interim, wide) = labels;
+        self.flash_expired();
+        self.resize(121, 40);
+        self.wait_text(interim);
+        self.resize(cols, rows);
+        self.wait_screen(&format!("settled {cols}x{rows}"), |screen| {
+            let visible = text(screen);
+            if screen.cols() != u32::from(cols)
+                || screen.rows() != u32::from(rows)
+                || !visible.contains(token)
+            {
+                return false;
+            }
+            if cols < 100 {
+                !visible.contains(interim) && !visible.contains(wide)
+            } else {
+                visible.contains(&format!("{cols}×{rows}"))
+            }
+        });
+        self.move_to(Point {
+            x: 2,
+            y: rows.saturating_sub(1),
+        });
+    }
+
     /// [`App::fence`] for a read that is also fine with an app that quits on
     /// the input before it: the wait ends when the child is gone.
     fn fence_while_running(&self) {

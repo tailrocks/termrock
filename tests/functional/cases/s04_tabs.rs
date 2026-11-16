@@ -167,19 +167,7 @@ fn cell_fg(screen: &TerminalSnapshot, point: Point) -> SnapshotColor {
 /// A same-size resize does not force a frame. Wait out the 140ms press flash,
 /// then resize away and back so the settled colour is drawn.
 fn clear_flash(app: &App, cols: u16, rows: u16) {
-    app.flash_expired();
-    app.resize(121, rows);
-    let hopped = format!("121×{rows}");
-    app.wait_text(&hopped);
-    app.resize(cols, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow size", |screen| {
-            let visible = text(screen);
-            !visible.contains(&hopped) && visible.contains(TITLE)
-        });
-    }
+    app.clear_flash_hop(cols, rows, TITLE);
 }
 
 fn shot(app: &App, case_id: &str, _precondition: &str, _args: &[&str]) {
