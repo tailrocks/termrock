@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s08_terminal/opt_terminal_rail_nav",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s08_terminal__opt_terminal_rail_nav.tui.pb"
+  },
+  "candidate_sha256": "23896fb3bcfef91d30c85dd3fb70c905636963c5230f50e466fb80fe369880c3",
+  "baseline_sha256": "23896fb3bcfef91d30c85dd3fb70c905636963c5230f50e466fb80fe369880c3",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s08_terminal/opt_terminal_rail_nav.tui.pb"
+  },
+  "error_code": null
+}

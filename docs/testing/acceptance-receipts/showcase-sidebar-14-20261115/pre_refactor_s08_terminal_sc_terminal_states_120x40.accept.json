@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s08_terminal/sc_terminal_states_120x40",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s08_terminal__sc_terminal_states_120x40.tui.pb"
+  },
+  "candidate_sha256": "5525a7e3a573297b54fdac02f294d09da5007f222ce58c3efe7300511dffc4db",
+  "baseline_sha256": "5525a7e3a573297b54fdac02f294d09da5007f222ce58c3efe7300511dffc4db",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s08_terminal/sc_terminal_states_120x40.tui.pb"
+  },
+  "error_code": null
+}

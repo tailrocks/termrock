@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s07_panetree/sc_panetree_states_80x24",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s07_panetree__sc_panetree_states_80x24.tui.pb"
+  },
+  "candidate_sha256": "08c85d9880803eb5850e8be3b90c73a9388f450438c854b94d38f5908e728467",
+  "baseline_sha256": "08c85d9880803eb5850e8be3b90c73a9388f450438c854b94d38f5908e728467",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s07_panetree/sc_panetree_states_80x24.tui.pb"
+  },
+  "error_code": null
+}

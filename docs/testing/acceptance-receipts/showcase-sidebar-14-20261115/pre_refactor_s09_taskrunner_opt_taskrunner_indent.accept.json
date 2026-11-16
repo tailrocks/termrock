@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s09_taskrunner/opt_taskrunner_indent",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s09_taskrunner__opt_taskrunner_indent.tui.pb"
+  },
+  "candidate_sha256": "0215435e54c0489b1be9456db0db0f93e068dea1a27b915f7e58be69925bdab9",
+  "baseline_sha256": "0215435e54c0489b1be9456db0db0f93e068dea1a27b915f7e58be69925bdab9",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s09_taskrunner/opt_taskrunner_indent.tui.pb"
+  },
+  "error_code": null
+}

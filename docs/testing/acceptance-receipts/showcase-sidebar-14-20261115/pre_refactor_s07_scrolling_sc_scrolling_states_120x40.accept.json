@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s07_scrolling/sc_scrolling_states_120x40",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s07_scrolling__sc_scrolling_states_120x40.tui.pb"
+  },
+  "candidate_sha256": "f5a594ec998bdc6c622a2ae77e2ded58e4220788345d6839441ff0b65a2e6809",
+  "baseline_sha256": "f5a594ec998bdc6c622a2ae77e2ded58e4220788345d6839441ff0b65a2e6809",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s07_scrolling/sc_scrolling_states_120x40.tui.pb"
+  },
+  "error_code": null
+}

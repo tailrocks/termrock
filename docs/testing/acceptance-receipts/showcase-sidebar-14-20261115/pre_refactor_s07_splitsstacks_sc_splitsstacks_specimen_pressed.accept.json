@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s07_splitsstacks/sc_splitsstacks_specimen_pressed",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s07_splitsstacks__sc_splitsstacks_specimen_pressed.tui.pb"
+  },
+  "candidate_sha256": "8002f47f9fa5d4a4c3aa9af127707be1d2d941be922cd96c5d5e0264b47b9a9d",
+  "baseline_sha256": "8002f47f9fa5d4a4c3aa9af127707be1d2d941be922cd96c5d5e0264b47b9a9d",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s07_splitsstacks/sc_splitsstacks_specimen_pressed.tui.pb"
+  },
+  "error_code": null
+}
